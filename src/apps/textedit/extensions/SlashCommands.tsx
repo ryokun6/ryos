@@ -92,7 +92,7 @@ const SlashMenuContent = ({
     <div>
       {items.map((item, index) => (
         <button
-          key={index}
+          key={item.key}
           role="menuitem"
           onClick={() => onCommand(item)}
           onMouseEnter={() => setSelectedIndex(index)}

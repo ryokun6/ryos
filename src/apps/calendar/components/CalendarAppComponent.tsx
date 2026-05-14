@@ -57,6 +57,7 @@ const HOUR_END = 24;
 const TODAY_RED = "#E25B4F";
 const TODAY_RED_XP = "#B53325";
 const SEARCH_DIM_OPACITY = 0.28;
+const WEEKDAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
 
 function matchesSearchQuery(value: string | undefined, normalizedQuery: string) {
   if (!normalizedQuery) return true;
@@ -372,15 +373,18 @@ function MiniCalendar({
       </div>
 
       <div className="grid grid-cols-7 mb-0.5">
-        {narrowDayNames.map((d, i) => (
-          <div
-            key={i}
-            className={cn("text-center font-medium", useGeneva && "font-geneva-12")}
-            style={{ opacity: 0.5, fontSize: 9 }}
-          >
-            {d}
-          </div>
-        ))}
+        {WEEKDAY_KEYS.map((dayKey) => {
+          const dayLabel = narrowDayNames[WEEKDAY_KEYS.indexOf(dayKey)] ?? "";
+          return (
+            <div
+              key={dayKey}
+              className={cn("text-center font-medium", useGeneva && "font-geneva-12")}
+              style={{ opacity: 0.5, fontSize: 9 }}
+            >
+              {dayLabel}
+            </div>
+          );
+        })}
       </div>
 
       {calendarGrid.map((week, wi) => (
@@ -614,14 +618,15 @@ function WeekTimeGrid({
                 className="flex-1 relative min-w-0"
                 style={{ borderLeft: isXpTheme ? "1px solid rgba(0,0,0,0.06)" : "1px solid rgba(0,0,0,0.04)" }}
               >
-                {Array.from({ length: totalHours }, (_, i) => (
+                {Array.from({ length: totalHours }, (_, hourOffset) => HOUR_START + hourOffset).map((hour) => (
                   <button
-                    key={i}
+                    key={hour}
                     type="button"
-                    onClick={() => onTimeSlotClick(day.date, HOUR_START + i)}
+                    onClick={() => onTimeSlotClick(day.date, hour)}
                     className="absolute left-0 right-0 border-t hover:bg-black/[0.02] transition-colors"
                     style={{
-                      top: i * hourHeight, height: hourHeight,
+                      top: (hour - HOUR_START) * hourHeight,
+                      height: hourHeight,
                       borderColor: isXpTheme ? "rgba(0,0,0,0.08)" : "rgba(0,0,0,0.06)",
                     }}
                   />
@@ -789,10 +794,17 @@ function DayTimeGrid({
           </div>
 
           <div className="flex-1 relative min-w-0">
-            {Array.from({ length: totalHours }, (_, i) => (
-              <button key={i} type="button" onClick={() => onTimeSlotClick(date, HOUR_START + i)}
+            {Array.from({ length: totalHours }, (_, hourOffset) => HOUR_START + hourOffset).map((hour) => (
+              <button
+                key={hour}
+                type="button"
+                onClick={() => onTimeSlotClick(date, hour)}
                 className="absolute left-0 right-0 border-t hover:bg-black/[0.02] transition-colors"
-                style={{ top: i * hourHeight, height: hourHeight, borderColor: isXpTheme ? "rgba(0,0,0,0.08)" : "rgba(0,0,0,0.06)" }}
+                style={{
+                  top: (hour - HOUR_START) * hourHeight,
+                  height: hourHeight,
+                  borderColor: isXpTheme ? "rgba(0,0,0,0.08)" : "rgba(0,0,0,0.06)",
+                }}
               />
             ))}
 
@@ -876,9 +888,18 @@ function MonthGrid({
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <div className="grid grid-cols-7 border-b" style={{ borderColor: isXpTheme ? "#ACA899" : "rgba(0,0,0,0.08)" }}>
-        {narrowDayNames.map((d, i) => (
-          <div key={i} className="text-center text-[10px] font-medium py-1 select-none" style={{ opacity: 0.5 }}>{d}</div>
-        ))}
+        {WEEKDAY_KEYS.map((dayKey) => {
+          const dayLabel = narrowDayNames[WEEKDAY_KEYS.indexOf(dayKey)] ?? "";
+          return (
+            <div
+              key={dayKey}
+              className="text-center text-[10px] font-medium py-1 select-none"
+              style={{ opacity: 0.5 }}
+            >
+              {dayLabel}
+            </div>
+          );
+        })}
       </div>
       <div className="flex-1 grid grid-rows-6">
         {calendarGrid.map((week, wi) => (

@@ -25,7 +25,6 @@ import { parseLyricTimestamps, findCurrentLineIndex } from "@/utils/lyricsSearch
 // because `Object.is` comparison on prop functions would always fail, and
 // every progress tick (~10/s for the seek bar) would re-render every row.
 const LyricLineItem = memo(function LyricLineItem({
-  line,
   index,
   isCurrent,
   isPast,
@@ -34,7 +33,6 @@ const LyricLineItem = memo(function LyricLineItem({
   onClick,
   setRef,
 }: {
-  line: LyricLine;
   index: number;
   isCurrent: boolean;
   isPast: boolean;
@@ -55,7 +53,6 @@ const LyricLineItem = memo(function LyricLineItem({
   return (
     <button
       type="button"
-      key={`${line.startTimeMs}-${index}`}
       ref={handleRef}
       onClick={handleClick}
       className={cn(
@@ -448,8 +445,7 @@ export function LyricsSyncMode({
           <div className="space-y-0.5">
             {lines.map((line, index) => (
               <LyricLineItem
-                key={`${line.startTimeMs}-${index}`}
-                line={line}
+                key={line.startTimeMs}
                 index={index}
                 isCurrent={index === currentLineIndex}
                 isPast={index < currentLineIndex}

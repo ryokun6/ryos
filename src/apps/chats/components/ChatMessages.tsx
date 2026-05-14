@@ -762,15 +762,24 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                 message.role === "user" ? "items-end" : "items-start"
               }`}
             >
-              {imageUrls.map((url, idx) => (
-                <ImageAttachment
-                  key={`${messageKey}-img-${idx}`}
-                  src={url}
-                  alt={`Attached image ${idx + 1}`}
-                  showRemoveButton={false}
-                  className="max-w-[280px]"
-                />
-              ))}
+              {(() => {
+                const imageKeyCounts = new Map<string, number>();
+                let imageNumber = 0;
+                return imageUrls.map((url) => {
+                  imageNumber += 1;
+                  const urlCount = (imageKeyCounts.get(url) ?? 0) + 1;
+                  imageKeyCounts.set(url, urlCount);
+                  return (
+                    <ImageAttachment
+                      key={`${messageKey}-img-${url}-${urlCount}`}
+                      src={url}
+                      alt={`Attached image ${imageNumber}`}
+                      showRemoveButton={false}
+                      className="max-w-[280px]"
+                    />
+                  );
+                });
+              })()}
             </div>
           );
         })()}

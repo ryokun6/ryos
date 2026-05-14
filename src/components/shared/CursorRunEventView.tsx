@@ -240,15 +240,21 @@ function AssistantSegmentsBody({ segments }: { segments: AssistantStreamSegment[
 
   return (
     <>
-      {segments.map((seg, idx) =>
-        seg.type === "markdown" ? (
-          <div key={`md-${idx}`} className={markdownStreamClass}>
-            <Suspense fallback={<span>{seg.text.trim() ? seg.text : "\u00a0"}</span>}>
-              <LazyMarkdown>{seg.text.trim() ? seg.text : "\u00a0"}</LazyMarkdown>
-            </Suspense>
-          </div>
-        ) : null
-      )}
+      {(() => {
+        let markdownOffset = 0;
+        return segments.map((seg) => {
+          if (seg.type !== "markdown") return null;
+          const segmentOffset = markdownOffset;
+          markdownOffset += seg.text.length;
+          return (
+            <div key={`md-${segmentOffset}-${seg.text.length}`} className={markdownStreamClass}>
+              <Suspense fallback={<span>{seg.text.trim() ? seg.text : "\u00a0"}</span>}>
+                <LazyMarkdown>{seg.text.trim() ? seg.text : "\u00a0"}</LazyMarkdown>
+              </Suspense>
+            </div>
+          );
+        });
+      })()}
     </>
   );
 }

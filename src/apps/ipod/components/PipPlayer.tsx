@@ -97,9 +97,9 @@ export function PipPlayer({
         {isPlaying && (
           <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
             <div className="flex items-end gap-[2px] h-4">
-              {[0, 1, 2].map((i) => (
+              {[0, 1, 2].map((barLevel) => (
                 <motion.div
-                  key={i}
+                  key={`bar-${barLevel}`}
                   className="w-1 bg-white rounded-full"
                   animate={{
                     height: ["40%", "100%", "40%"],
@@ -107,7 +107,7 @@ export function PipPlayer({
                   transition={{
                     duration: 0.6,
                     repeat: Infinity,
-                    delay: i * 0.15,
+                    delay: barLevel * 0.15,
                     ease: "easeInOut",
                   }}
                 />

@@ -540,7 +540,9 @@ export function FullscreenPlayerControls({
               >
                 {translationLanguages.map((lang, index) => {
                   if (lang.separator) {
-                    return <DropdownMenuSeparator key={`sep-${index}`} />;
+                    const prevCode = translationLanguages[index - 1]?.code || "start";
+                    const nextCode = translationLanguages[index + 1]?.code || "end";
+                    return <DropdownMenuSeparator key={`sep-${prevCode}-${nextCode}`} />;
                   }
                   return (
                     <DropdownMenuRadioItem
