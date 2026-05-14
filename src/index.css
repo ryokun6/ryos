@@ -1369,7 +1369,7 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
  * gradients and hairlines match the established reference 1:1:
  *
  *   - Header: linear-gradient(180deg, #feffff 0%, #b1b6b9 100%)
- *             border-bottom: 1px solid #7995a3
+ *             bottom hairline: neutral gray (reference used #7995a3; ours is desaturated)
  *             15px black title (adjusted from reference for readability)
  *   - Selected row: linear-gradient(#3cb8ff 0%, #347ab5 100%)
  *                   white text, no shadow
@@ -1413,7 +1413,7 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
 
 /* iPod-classic-js Header (sampled from app/components/Header/index.tsx):
  *   background: linear-gradient(180deg, #feffff 0%, #b1b6b9 100%);
- *   border-bottom: 1px solid #7995a3;
+ *   reference border-bottom was #7995a3 (slightly blue); we use a neutral gray.
  *
  * The modern titlebar is **21px** tall (`MENU_ITEM_HEIGHT_MODERN`, same rhythm as
  * the nano-style menu rows) — together with six 21px rows it fills the 150px
@@ -1423,7 +1423,7 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
  * add height when the existing border-b utility is also present. */
 .ipod-modern-titlebar {
   background-image: linear-gradient(180deg, #feffff 0%, #b1b6b9 100%);
-  box-shadow: inset 0 -1px 0 #7995a3;
+  box-shadow: inset 0 -1px 0 #939393;
 }
 
 /* iPod-classic-js list rows are simple white cells with no separator —
