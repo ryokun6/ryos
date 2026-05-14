@@ -32,7 +32,7 @@ interface UserAvatarProps {
 function UserAvatar({ username, picture, initials, label, size = "sm", onDrop, className, style }: UserAvatarProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const isLarge = size === "lg";
-  const avatarSize = isLarge ? "w-16 h-16" : "w-12 h-12";
+  const avatarSize = isLarge ? "size-16" : "size-12";
 
   const handleDragOver = useCallback(
     (e: DragEvent<HTMLDivElement>) => {
@@ -113,7 +113,7 @@ function UserAvatar({ username, picture, initials, label, size = "sm", onDrop, c
           <img
             src={picture}
             alt={label}
-            className="w-full h-full object-contain"
+            className="size-full object-contain"
           />
         ) : (
           initials
@@ -221,7 +221,7 @@ export function AirDropView({
         <ThemedIcon
           name="/icons/default/cloud-sync.png"
           alt="AirDrop"
-          className="w-20 h-20"
+          className="size-20"
         />
         <div>
           <p className="text-[13px] font-semibold mb-1">
@@ -250,7 +250,7 @@ export function AirDropView({
   return (
     <div
       ref={containerRef}
-      className="relative h-full w-full select-none overflow-hidden"
+      className="relative size-full select-none overflow-hidden"
     >
       {/* Concentric circles — centered horizontally, bottom-aligned to container */}
       {ringRadii.map((r, i) => (

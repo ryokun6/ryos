@@ -102,8 +102,8 @@ const SlashMenuContent = ({
         >
           {getTranslatedTitle(item)}
           {isActive(item) && (
-            <span className="absolute right-2 flex h-3.5 w-3.5 items-center justify-center">
-              <Check className="h-4 w-4" weight="bold" />
+            <span className="absolute right-2 flex size-3.5 items-center justify-center">
+              <Check className="size-4" weight="bold" />
             </span>
           )}
         </button>

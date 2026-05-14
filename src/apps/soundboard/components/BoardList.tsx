@@ -58,9 +58,9 @@ export function BoardList({
             variant="ghost"
             size="sm"
             onClick={onNewBoard}
-            className="flex items-center text-xs hover:bg-black/5 w-[24px] h-[24px]"
+            className="flex items-center text-xs hover:bg-black/5 size-[24px]"
           >
-            <Plus className="w-3 h-3" weight="bold" />
+            <Plus className="size-3" weight="bold" />
           </Button>
         </div>
         <div

@@ -58,7 +58,7 @@ export function AboutDialog({
         <ThemedIcon
           name={metadata.icon}
           alt="App Icon"
-          className="w-12 h-12 mx-auto [image-rendering:pixelated]"
+          className="size-12 mx-auto [image-rendering:pixelated]"
         />
       </div>
       <div
