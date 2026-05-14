@@ -95,10 +95,10 @@ export function ChannelPromptInput({
         placeholder={isLoading ? " " : placeholder}
         disabled={isLoading}
         className={cn(
-          "w-full outline-none min-w-0 transition-colors text-black placeholder:text-black/40 disabled:placeholder:text-black/30 disabled:bg-white",
+          "w-full outline-none min-w-0 transition-colors text-black placeholder:text-black/40 disabled:placeholder:text-black/30 disabled:bg-white font-os-ui",
           isMacOSTheme
-            ? "rounded-full border border-black/40 bg-white px-3 py-[3px] text-[11px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.3),inset_0_0_1px_rgba(0,0,0,0.15),0_1px_0_rgba(255,255,255,0.45)] font-geneva-12"
-            : "rounded-full border border-black/20 bg-white px-3 py-1 text-[11px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.12)] font-geneva-12",
+            ? "rounded-full border border-black/40 bg-white px-3 py-[3px] text-[11px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.3),inset_0_0_1px_rgba(0,0,0,0.15),0_1px_0_rgba(255,255,255,0.45)]"
+            : "rounded-full border border-black/20 bg-white px-3 py-1 text-[11px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.12)]",
           isLoading && "cursor-progress"
         )}
       />
@@ -112,7 +112,7 @@ export function ChannelPromptInput({
             transition={{ duration: 0.15 }}
             className="absolute inset-0 pointer-events-none flex items-center px-3"
           >
-            <span className="shimmer-gray text-[11px] font-geneva-12 truncate">
+            <span className="shimmer-gray text-[11px] font-os-ui truncate">
               {statusMessage}
               <AnimatedEllipsis />
             </span>
