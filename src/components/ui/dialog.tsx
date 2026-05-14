@@ -68,7 +68,7 @@ const DialogContent = (
     overlayClassName,
     ...props
   }: DialogContentProps & {
-    ref: React.RefObject<React.ElementRef<typeof DialogPrimitive.Content>>;
+    ref?: React.Ref<React.ElementRef<typeof DialogPrimitive.Content>>;
   }
 ) => {
   const { isXpTheme, isMacOSTheme, isSystem7Theme } = useThemeFlags();
@@ -274,7 +274,7 @@ const DialogTitle = (
     className,
     ...props
   }: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title> & {
-    ref: React.RefObject<React.ElementRef<typeof DialogPrimitive.Title>>;
+    ref?: React.Ref<React.ElementRef<typeof DialogPrimitive.Title>>;
   }
 ) => (<DialogPrimitive.Title
   ref={ref}
@@ -292,7 +292,7 @@ const DialogDescription = (
     className,
     ...props
   }: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description> & {
-    ref: React.RefObject<React.ElementRef<typeof DialogPrimitive.Description>>;
+    ref?: React.Ref<React.ElementRef<typeof DialogPrimitive.Description>>;
   }
 ) => (<DialogPrimitive.Description
   ref={ref}

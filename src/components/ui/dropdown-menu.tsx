@@ -40,7 +40,7 @@ const DropdownMenuTrigger = (
     style,
     ...props
   }: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Trigger> & {
-    ref: React.RefObject<React.ElementRef<typeof DropdownMenuPrimitive.Trigger>>;
+    ref?: React.Ref<React.ElementRef<typeof DropdownMenuPrimitive.Trigger>>;
   }
 ) => {
   const { isMacOSTheme } = useThemeFlags();
@@ -77,6 +77,9 @@ const DropdownMenuSubTrigger = (
     inset,
     children,
     ...props
+  }: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubTrigger> & {
+    inset?: boolean;
+    ref?: React.Ref<React.ElementRef<typeof DropdownMenuPrimitive.SubTrigger>>;
   }
 ) => {
   const { isWindowsTheme, isMacOSTheme } = useThemeFlags();
@@ -123,7 +126,7 @@ const DropdownMenuSubContent = (
     style,
     ...props
   }: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubContent> & {
-    ref: React.RefObject<React.ElementRef<typeof DropdownMenuPrimitive.SubContent>>;
+    ref?: React.Ref<React.ElementRef<typeof DropdownMenuPrimitive.SubContent>>;
   }
 ) => {
   const { isMacOSTheme } = useThemeFlags();
@@ -167,6 +170,9 @@ const DropdownMenuContent = (
     style,
     container,
     ...props
+  }: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content> & {
+    container?: HTMLElement | null;
+    ref?: React.Ref<React.ElementRef<typeof DropdownMenuPrimitive.Content>>;
   }
 ) => {
   const { isMacOSTheme } = useThemeFlags();
@@ -210,6 +216,9 @@ const DropdownMenuItem = (
     className,
     inset,
     ...props
+  }: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item> & {
+    inset?: boolean;
+    ref?: React.Ref<React.ElementRef<typeof DropdownMenuPrimitive.Item>>;
   }
 ) => {
   const { isWindowsTheme, isMacOSTheme } = useThemeFlags();
@@ -254,7 +263,7 @@ const DropdownMenuCheckboxItem = (
     checked,
     ...props
   }: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.CheckboxItem> & {
-    ref: React.RefObject<React.ElementRef<typeof DropdownMenuPrimitive.CheckboxItem>>;
+    ref?: React.Ref<React.ElementRef<typeof DropdownMenuPrimitive.CheckboxItem>>;
   }
 ) => {
   const {
@@ -319,7 +328,7 @@ const DropdownMenuRadioItem = (
     children,
     ...props
   }: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.RadioItem> & {
-    ref: React.RefObject<React.ElementRef<typeof DropdownMenuPrimitive.RadioItem>>;
+    ref?: React.Ref<React.ElementRef<typeof DropdownMenuPrimitive.RadioItem>>;
   }
 ) => {
   const { isWindowsTheme, isMacOSTheme } = useThemeFlags();
@@ -355,6 +364,9 @@ const DropdownMenuLabel = (
     className,
     inset,
     ...props
+  }: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Label> & {
+    inset?: boolean;
+    ref?: React.Ref<React.ElementRef<typeof DropdownMenuPrimitive.Label>>;
   }
 ) => {
   const { isWindowsTheme, isMacOSTheme } = useThemeFlags();
@@ -384,7 +396,7 @@ const DropdownMenuSeparator = (
     className,
     ...props
   }: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Separator> & {
-    ref: React.RefObject<React.ElementRef<typeof DropdownMenuPrimitive.Separator>>;
+    ref?: React.Ref<React.ElementRef<typeof DropdownMenuPrimitive.Separator>>;
   }
 ) => {
   const { isSystem7Theme, isMacOSTheme } = useThemeFlags();

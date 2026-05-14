@@ -104,7 +104,7 @@ export const MusicQuiz = function MusicQuiz(
     playScroll,
     vibrate
   }: MusicQuizProps & {
-    ref: React.RefObject<MusicQuizRef>;
+    ref?: React.Ref<MusicQuizRef>;
   }
 ) {
   const { t } = useTranslation();

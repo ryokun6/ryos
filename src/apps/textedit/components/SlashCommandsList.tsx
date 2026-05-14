@@ -1,4 +1,4 @@
-import { useEffect, useImperativeHandle, useState } from "react";
+import { type Ref, useEffect, useImperativeHandle, useState } from "react";
 import { Editor } from "@tiptap/react";
 
 interface CommandItem {
@@ -20,6 +20,8 @@ export const SlashCommandsList = (
   {
     ref,
     ...props
+  }: SlashCommandsListProps & {
+    ref?: Ref<{ onKeyDown: (event: KeyboardEvent) => boolean }>;
   }
 ) => {
   const [selectedIndex, setSelectedIndex] = useState(0);

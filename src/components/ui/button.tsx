@@ -57,7 +57,7 @@ const Button = (
     asChild = false,
     ...props
   }: ButtonProps & {
-    ref: React.RefObject<HTMLButtonElement>;
+    ref?: React.Ref<HTMLButtonElement>;
   }
 ) => {
   const { play: playButtonClick } = useSound(Sounds.BUTTON_CLICK);

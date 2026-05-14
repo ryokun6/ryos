@@ -73,7 +73,7 @@ export const PaintCanvas = (
     canvasHeight = 418,
     isForeground = false
   }: PaintCanvasProps & {
-    ref: React.RefObject<PaintCanvasRef>;
+    ref?: React.Ref<PaintCanvasRef>;
   }
 ) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);

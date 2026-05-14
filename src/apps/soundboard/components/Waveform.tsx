@@ -21,7 +21,7 @@ export const Waveform = (
     onWaveformCreate,
     isPlaying = false
   }: WaveformProps & {
-    ref: React.RefObject<HTMLDivElement>;
+    ref?: React.Ref<HTMLDivElement>;
   }
 ) => {
   const { t } = useTranslation();

@@ -38,7 +38,7 @@ const SelectTrigger = (
     children,
     ...props
   }: React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger> & {
-    ref: React.RefObject<React.ElementRef<typeof SelectPrimitive.Trigger>>;
+    ref?: React.Ref<React.ElementRef<typeof SelectPrimitive.Trigger>>;
   }
 ) => {
   const { play: playClick } = useSound(Sounds.BUTTON_CLICK, 0.3);
@@ -79,7 +79,7 @@ const SelectScrollUpButton = (
     className,
     ...props
   }: React.ComponentPropsWithoutRef<typeof SelectPrimitive.ScrollUpButton> & {
-    ref: React.RefObject<React.ElementRef<typeof SelectPrimitive.ScrollUpButton>>;
+    ref?: React.Ref<React.ElementRef<typeof SelectPrimitive.ScrollUpButton>>;
   }
 ) => (<SelectPrimitive.ScrollUpButton
   ref={ref}
@@ -99,7 +99,7 @@ const SelectScrollDownButton = (
     className,
     ...props
   }: React.ComponentPropsWithoutRef<typeof SelectPrimitive.ScrollDownButton> & {
-    ref: React.RefObject<React.ElementRef<typeof SelectPrimitive.ScrollDownButton>>;
+    ref?: React.Ref<React.ElementRef<typeof SelectPrimitive.ScrollDownButton>>;
   }
 ) => (<SelectPrimitive.ScrollDownButton
   ref={ref}
@@ -122,7 +122,7 @@ const SelectContent = (
     position = "popper",
     ...props
   }: React.ComponentPropsWithoutRef<typeof SelectPrimitive.Content> & {
-    ref: React.RefObject<React.ElementRef<typeof SelectPrimitive.Content>>;
+    ref?: React.Ref<React.ElementRef<typeof SelectPrimitive.Content>>;
   }
 ) => {
   const { isMacOSTheme } = useThemeFlags();
@@ -174,7 +174,7 @@ const SelectLabel = (
     className,
     ...props
   }: React.ComponentPropsWithoutRef<typeof SelectPrimitive.Label> & {
-    ref: React.RefObject<React.ElementRef<typeof SelectPrimitive.Label>>;
+    ref?: React.Ref<React.ElementRef<typeof SelectPrimitive.Label>>;
   }
 ) => (<SelectPrimitive.Label
   ref={ref}
@@ -190,7 +190,7 @@ const SelectItem = (
     children,
     ...props
   }: React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item> & {
-    ref: React.RefObject<React.ElementRef<typeof SelectPrimitive.Item>>;
+    ref?: React.Ref<React.ElementRef<typeof SelectPrimitive.Item>>;
   }
 ) => {
   const { play: playClick } = useSound(Sounds.BUTTON_CLICK, 0.3);
@@ -232,7 +232,7 @@ const SelectItemWithDescription = (
     description,
     ...props
   }: SelectItemWithDescriptionProps & {
-    ref: React.RefObject<React.ElementRef<typeof SelectPrimitive.Item>>;
+    ref?: React.Ref<React.ElementRef<typeof SelectPrimitive.Item>>;
   }
 ) => {
   const { play: playClick } = useSound(Sounds.BUTTON_CLICK, 0.3);
@@ -274,7 +274,7 @@ const SelectSeparator = (
     className,
     ...props
   }: React.ComponentPropsWithoutRef<typeof SelectPrimitive.Separator> & {
-    ref: React.RefObject<React.ElementRef<typeof SelectPrimitive.Separator>>;
+    ref?: React.Ref<React.ElementRef<typeof SelectPrimitive.Separator>>;
   }
 ) => (<SelectPrimitive.Separator
   ref={ref}

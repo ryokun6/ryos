@@ -33,7 +33,7 @@ export const AppStoreFeed = (
     focusWindow,
     onAppletSelect
   }: AppStoreFeedProps & {
-    ref: React.RefObject<AppStoreFeedRef>;
+    ref?: React.Ref<AppStoreFeedRef>;
   }
 ) => {
 const { t } = useTranslation();

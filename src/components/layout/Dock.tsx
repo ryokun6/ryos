@@ -80,7 +80,7 @@ const DockSpacer = (
     magnifyEnabled,
     baseSize: baseSizeProp
   }: DockSpacerProps & {
-    ref: React.RefObject<HTMLDivElement>;
+    ref?: React.Ref<HTMLDivElement>;
   }
 ) => {
   const wrapperRef = useRef<HTMLDivElement | null>(null);
@@ -197,7 +197,7 @@ const IconButton = memo((
     isDraggedOutside = false,
     baseSize: baseSizeProp
   }: IconButtonProps & {
-    ref: React.RefObject<HTMLDivElement>;
+    ref?: React.Ref<HTMLDivElement>;
   }
 ) => {
   const baseButtonSize = baseSizeProp ?? BASE_BUTTON_SIZE;
@@ -480,7 +480,7 @@ const Divider = (
     onTouchMove,
     onTouchCancel
   }: DividerProps & {
-    ref: React.RefObject<HTMLDivElement>;
+    ref?: React.Ref<HTMLDivElement>;
   }
 ) => {
   const baseWidth = 1;

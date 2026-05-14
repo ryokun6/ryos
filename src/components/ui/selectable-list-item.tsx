@@ -16,7 +16,7 @@ export const SelectableListItem = (
     className,
     ...props
   }: SelectableListItemProps & {
-    ref: React.RefObject<HTMLDivElement>;
+    ref?: React.Ref<HTMLDivElement>;
   }
 ) => (<div
   ref={ref}

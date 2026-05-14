@@ -14,7 +14,7 @@ export const ToolbarButton = (
     children,
     ...props
   }: ToolbarButtonProps & {
-    ref: React.RefObject<HTMLButtonElement>;
+    ref?: React.Ref<HTMLButtonElement>;
   }
 ) => (<button
   ref={ref}
@@ -42,7 +42,7 @@ export const ToolbarButtonGroup = (
     children,
     ...props
   }: ToolbarButtonGroupProps & {
-    ref: React.RefObject<HTMLDivElement>;
+    ref?: React.Ref<HTMLDivElement>;
   }
 ) => (<div
   ref={ref}

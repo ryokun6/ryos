@@ -12,7 +12,7 @@ const TabsList = (
     className,
     ...props
   }: React.ComponentPropsWithoutRef<typeof TabsPrimitive.List> & {
-    ref: React.RefObject<React.ElementRef<typeof TabsPrimitive.List>>;
+    ref?: React.Ref<React.ElementRef<typeof TabsPrimitive.List>>;
   }
 ) => (<TabsPrimitive.List
   ref={ref}
@@ -31,7 +31,7 @@ const TabsTrigger = (
     onClick,
     ...props
   }: React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger> & {
-    ref: React.RefObject<React.ElementRef<typeof TabsPrimitive.Trigger>>;
+    ref?: React.Ref<React.ElementRef<typeof TabsPrimitive.Trigger>>;
   }
 ) => {
   const { play: playClick } = useSound(Sounds.BUTTON_CLICK, 0.3);
@@ -61,7 +61,7 @@ const TabsContent = (
     className,
     ...props
   }: React.ComponentPropsWithoutRef<typeof TabsPrimitive.Content> & {
-    ref: React.RefObject<React.ElementRef<typeof TabsPrimitive.Content>>;
+    ref?: React.Ref<React.ElementRef<typeof TabsPrimitive.Content>>;
   }
 ) => (<TabsPrimitive.Content
   ref={ref}

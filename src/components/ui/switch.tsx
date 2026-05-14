@@ -12,7 +12,7 @@ const Switch = (
     onCheckedChange,
     ...props
   }: React.ComponentPropsWithoutRef<typeof SwitchPrimitives.Root> & {
-    ref: React.RefObject<React.ElementRef<typeof SwitchPrimitives.Root>>;
+    ref?: React.Ref<React.ElementRef<typeof SwitchPrimitives.Root>>;
   }
 ) => {
   const { play: playClick } = useSound(Sounds.BUTTON_CLICK, 0.3);

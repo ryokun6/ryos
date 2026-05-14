@@ -1053,7 +1053,7 @@ export const CoverFlow = function CoverFlow(
     groupAppleMusicAlbums = false,
     inline = false
   }: CoverFlowProps & {
-    ref: React.RefObject<CoverFlowRef>;
+    ref?: React.Ref<CoverFlowRef>;
   }
 ) {
   const { t } = useTranslation();

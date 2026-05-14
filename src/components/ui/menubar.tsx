@@ -27,7 +27,7 @@ const Menubar = (
     onValueChange,
     ...props
   }: React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Root> & {
-    ref: React.RefObject<React.ElementRef<typeof MenubarPrimitive.Root>>;
+    ref?: React.Ref<React.ElementRef<typeof MenubarPrimitive.Root>>;
   }
 ) => {
   const { play: playMenuOpen } = useSound(Sounds.MENU_OPEN)
@@ -76,7 +76,7 @@ const MenubarTrigger = (
     style,
     ...props
   }: React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Trigger> & {
-    ref: React.RefObject<React.ElementRef<typeof MenubarPrimitive.Trigger>>;
+    ref?: React.Ref<React.ElementRef<typeof MenubarPrimitive.Trigger>>;
   }
 ) => {
   const { isWindowsTheme, isSystem7Theme, isMacOSTheme } = useThemeFlags()
@@ -123,6 +123,9 @@ const MenubarSubTrigger = (
     inset,
     children,
     ...props
+  }: React.ComponentPropsWithoutRef<typeof MenubarPrimitive.SubTrigger> & {
+    inset?: boolean
+    ref?: React.Ref<React.ElementRef<typeof MenubarPrimitive.SubTrigger>>
   }
 ) => {
   const { isWindowsTheme, isMacOSTheme, isSystem7Theme } = useThemeFlags()
@@ -176,7 +179,7 @@ const MenubarSubContent = (
     style,
     ...props
   }: React.ComponentPropsWithoutRef<typeof MenubarPrimitive.SubContent> & {
-    ref: React.RefObject<React.ElementRef<typeof MenubarPrimitive.SubContent>>;
+    ref?: React.Ref<React.ElementRef<typeof MenubarPrimitive.SubContent>>;
   }
 ) => {
   const { isMacOSTheme } = useThemeFlags()
@@ -221,7 +224,7 @@ const MenubarContent = (
     style,
     ...props
   }: React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Content> & {
-    ref: React.RefObject<React.ElementRef<typeof MenubarPrimitive.Content>>;
+    ref?: React.Ref<React.ElementRef<typeof MenubarPrimitive.Content>>;
   }
 ) => {
   const { isMacOSTheme } = useThemeFlags()
@@ -269,6 +272,9 @@ const MenubarItem = (
     className,
     inset,
     ...props
+  }: React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Item> & {
+    inset?: boolean
+    ref?: React.Ref<React.ElementRef<typeof MenubarPrimitive.Item>>
   }
 ) => {
   const { isWindowsTheme, isMacOSTheme, isSystem7Theme } = useThemeFlags()
@@ -321,7 +327,7 @@ const MenubarCheckboxItem = (
     checked,
     ...props
   }: React.ComponentPropsWithoutRef<typeof MenubarPrimitive.CheckboxItem> & {
-    ref: React.RefObject<React.ElementRef<typeof MenubarPrimitive.CheckboxItem>>;
+    ref?: React.Ref<React.ElementRef<typeof MenubarPrimitive.CheckboxItem>>;
   }
 ) => {
   const {
@@ -385,7 +391,7 @@ const MenubarRadioItem = (
     children,
     ...props
   }: React.ComponentPropsWithoutRef<typeof MenubarPrimitive.RadioItem> & {
-    ref: React.RefObject<React.ElementRef<typeof MenubarPrimitive.RadioItem>>;
+    ref?: React.Ref<React.ElementRef<typeof MenubarPrimitive.RadioItem>>;
   }
 ) => {
   const {
@@ -447,6 +453,9 @@ const MenubarLabel = (
     className,
     inset,
     ...props
+  }: React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Label> & {
+    inset?: boolean
+    ref?: React.Ref<React.ElementRef<typeof MenubarPrimitive.Label>>
   }
 ) => {
   const { isWindowsTheme, isMacOSTheme } = useThemeFlags()
@@ -476,7 +485,7 @@ const MenubarSeparator = (
     className,
     ...props
   }: React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Separator> & {
-    ref: React.RefObject<React.ElementRef<typeof MenubarPrimitive.Separator>>;
+    ref?: React.Ref<React.ElementRef<typeof MenubarPrimitive.Separator>>;
   }
 ) => {
   const { isSystem7Theme, isMacOSTheme } = useThemeFlags()

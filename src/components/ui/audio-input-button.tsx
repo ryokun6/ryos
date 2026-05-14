@@ -30,7 +30,7 @@ export const AudioInputButton = (
     externalWaveform = false,
     frequencyBands = 4
   }: AudioInputButtonProps & {
-    ref: React.RefObject<HTMLButtonElement>;
+    ref?: React.Ref<HTMLButtonElement>;
   }
 ) => {
   const {

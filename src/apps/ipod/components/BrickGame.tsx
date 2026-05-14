@@ -169,7 +169,7 @@ export const BrickGame = function BrickGame(
     playScroll: _playScroll,
     vibrate
   }: BrickGameProps & {
-    ref: React.RefObject<BrickGameRef>;
+    ref?: React.Ref<BrickGameRef>;
   }
 ) {
   const { t } = useTranslation();

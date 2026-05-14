@@ -30,7 +30,7 @@ const Dial = (
     showValue = true,
     valueFormatter = (value) => value.toFixed(2)
   }: DialProps & {
-    ref: React.RefObject<HTMLDivElement>;
+    ref?: React.Ref<HTMLDivElement>;
   }
 ) => {
   const dialRef = React.useRef<HTMLDivElement>(null);

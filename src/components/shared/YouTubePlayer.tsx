@@ -9,7 +9,7 @@ export const YouTubePlayer = function YouTubePlayer(
     config,
     ...props
   }: YouTubePlayerProps & {
-    ref: React.RefObject<ReactPlayerType>;
+    ref?: React.Ref<ReactPlayerType>;
   }
 ) {
   return (

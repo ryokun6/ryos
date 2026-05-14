@@ -127,7 +127,7 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
     onReady,
     onNowPlayingItemChange
   }: AppleMusicPlayerBridgeProps & {
-    ref: React.RefObject<AppleMusicPlayerBridgeHandle>;
+    ref?: React.Ref<AppleMusicPlayerBridgeHandle>;
   }
 ) {
   const instanceRef = useRef<MusicKit.MusicKitInstance | null>(null);
