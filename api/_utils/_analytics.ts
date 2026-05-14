@@ -425,9 +425,13 @@ export function recordProductAnalyticsEvents(
   const events = Array.isArray(batch?.events)
     ? batch.events.slice(0, MAX_PRODUCT_EVENTS_PER_BATCH)
     : [];
-  const sanitized = events
-    .map((event) => sanitizeProductAnalyticsEvent(event))
-    .filter((event): event is SanitizedProductAnalyticsEvent => !!event);
+  const sanitized = events.reduce<SanitizedProductAnalyticsEvent[]>((acc, event) => {
+    const sanitizedEvent = sanitizeProductAnalyticsEvent(event);
+    if (sanitizedEvent) {
+      acc.push(sanitizedEvent);
+    }
+    return acc;
+  }, []);
 
   if (sanitized.length === 0) return;
 

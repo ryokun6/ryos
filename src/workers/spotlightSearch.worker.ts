@@ -70,14 +70,16 @@ const getHostname = (url: string): string | undefined => {
 const buildIndex = (snapshot: SpotlightSearchSnapshot): SpotlightIndex => {
   const items = Object.values(snapshot.items);
 
-  const documents = items
-    .filter(
-      (item) =>
-        item.status === "active" &&
-        !item.isDirectory &&
-        item.path.startsWith("/Documents/")
-    )
-    .map<IndexedEntry>((item) => ({
+  const documents = items.reduce<IndexedEntry[]>((acc, item) => {
+    if (
+      item.status !== "active" ||
+      item.isDirectory ||
+      !item.path.startsWith("/Documents/")
+    ) {
+      return acc;
+    }
+
+    acc.push({
       searchText: normalizeText(item.name, item.path),
       result: {
         id: `doc-${item.path}`,
@@ -85,16 +87,19 @@ const buildIndex = (snapshot: SpotlightSearchSnapshot): SpotlightIndex => {
         title: item.name,
         path: item.path,
       },
-    }));
+    });
+    return acc;
+  }, []);
 
-  const applets = items
-    .filter(
-      (item) =>
-        item.status === "active" &&
-        !item.isDirectory &&
-        item.path.startsWith("/Applets/")
-    )
-    .map<IndexedEntry>((item) => {
+  const applets = items.reduce<IndexedEntry[]>((acc, item) => {
+    if (
+      item.status !== "active" ||
+      item.isDirectory ||
+      !item.path.startsWith("/Applets/")
+    ) {
+      return acc;
+    }
+
       const rawIcon = item.icon;
       const isEmoji =
         !!rawIcon &&
@@ -102,7 +107,7 @@ const buildIndex = (snapshot: SpotlightSearchSnapshot): SpotlightIndex => {
         !rawIcon.startsWith("http") &&
         rawIcon.length <= 10;
 
-      return {
+      acc.push({
         searchText: normalizeText(item.name, item.path),
         result: {
           id: `applet-${item.path}`,
@@ -112,8 +117,9 @@ const buildIndex = (snapshot: SpotlightSearchSnapshot): SpotlightIndex => {
           icon: rawIcon,
           isEmoji,
         },
-      };
-    });
+      });
+      return acc;
+    }, []);
 
   const music = snapshot.tracks.map<IndexedEntry>((track) => {
     const thumbnail = track.cover

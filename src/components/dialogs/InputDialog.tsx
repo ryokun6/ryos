@@ -54,6 +54,19 @@ export function InputDialog({
     isMacOSTheme: isMacTheme,
   } = useThemeFlags();
   const defaultSubmitLabel = submitLabel || t("common.dialog.save");
+  const actionGroups = additionalActions.reduce<
+    { left: typeof additionalActions; right: typeof additionalActions }
+  >(
+    (acc, action) => {
+      if (action.position === "left") {
+        acc.left.push(action);
+      } else {
+        acc.right.push(action);
+      }
+      return acc;
+    },
+    { left: [], right: [] }
+  );
 
   const handleSubmit = () => {
     if (!isLoading) {
@@ -109,9 +122,7 @@ export function InputDialog({
       )}
       <DialogFooter className="mt-4 gap-1 sm:justify-between">
         <div className="flex gap-1 w-full sm:w-auto">
-          {additionalActions
-            .filter((action) => action.position === "left")
-            .map((action, index) => (
+          {actionGroups.left.map((action, index) => (
               <Button
                 key={`left-${index}`}
                 variant={action.variant || "retro"}
@@ -135,9 +146,7 @@ export function InputDialog({
             ))}
         </div>
         <div className="flex flex-col-reverse gap-2 w-full sm:w-auto sm:flex-row">
-          {additionalActions
-            .filter((action) => action.position !== "left")
-            .map((action, index) => (
+          {actionGroups.right.map((action, index) => (
               <Button
                 key={`right-${index}`}
                 variant={action.variant || "retro"}

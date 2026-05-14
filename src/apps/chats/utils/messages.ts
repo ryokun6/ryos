@@ -48,18 +48,20 @@ export const extractPreviousUserMessages = (
 
   return Array.from(
     new Set(
-      userMessages
-        .map((msg) => {
-          if (!msg.parts) return "";
+      userMessages.reduce<string[]>((acc, msg) => {
+          if (!msg.parts) return acc;
 
-          return msg.parts
-            .filter((part) => part.type === "text")
-            .map(
-              (part) => (part as { type: string; text?: string }).text || ""
-            )
-            .join("");
-        })
-        .filter(Boolean)
+          const textContent = msg.parts.reduce<string[]>((partsAcc, part) => {
+            if (part.type === "text") {
+              partsAcc.push((part as { type: string; text?: string }).text || "");
+            }
+            return partsAcc;
+          }, []).join("");
+          if (textContent) {
+            acc.push(textContent);
+          }
+          return acc;
+        }, [])
     )
   ).reverse() as string[];
 };

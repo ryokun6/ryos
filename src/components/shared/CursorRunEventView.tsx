@@ -143,9 +143,13 @@ function toolGroupSecondaryInfo(rows: Record<string, unknown>[]): string {
 
   const uniqueDetails = Array.from(
     new Set(
-      rows
-        .map((row) => (isRecord(row.ev) ? toolSecondaryInfo(row.ev) : ""))
-        .filter((value) => value.length > 0)
+      rows.reduce<string[]>((acc, row) => {
+        const value = isRecord(row.ev) ? toolSecondaryInfo(row.ev) : "";
+        if (value.length > 0) {
+          acc.push(value);
+        }
+        return acc;
+      }, [])
     )
   );
 
@@ -190,9 +194,12 @@ function toolRowParts(rows: Record<string, unknown>[]): {
   secondary: string;
   done: boolean;
 } {
-  const events = rows
-    .map((row) => (isRecord(row.ev) ? row.ev : null))
-    .filter((ev): ev is Record<string, unknown> => ev !== null);
+  const events = rows.reduce<Record<string, unknown>[]>((acc, row) => {
+    if (isRecord(row.ev)) {
+      acc.push(row.ev);
+    }
+    return acc;
+  }, []);
   const latest = events[events.length - 1] ?? {};
   const name = typeof latest.name === "string" ? latest.name : "?";
   const done = events.length > 0 && events.every(isToolCallDone);

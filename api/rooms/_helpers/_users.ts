@@ -151,16 +151,16 @@ export async function handleGetUsers(
 
       if (keys.length > 0) {
         const usersData = await redis.mget<(User | string | null)[]>(...keys);
-        const foundUsers = usersData
-          .map((user) => {
-            try {
-              if (!user) return null;
-              return typeof user === "string" ? JSON.parse(user) : user;
-            } catch {
-              return null;
-            }
-          })
-          .filter((u): u is User => u !== null);
+        const foundUsers = usersData.reduce<User[]>((acc, user) => {
+          try {
+            if (!user) return acc;
+            const parsedUser = typeof user === "string" ? JSON.parse(user) : user;
+            acc.push(parsedUser);
+          } catch {
+            return acc;
+          }
+          return acc;
+        }, []);
 
         users.push(...foundUsers);
 

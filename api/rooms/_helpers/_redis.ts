@@ -232,9 +232,13 @@ export async function getMessages(
   const messagesKey = `${CHAT_MESSAGES_PREFIX}${roomId}`;
   const rawMessages = await client.lrange<(Message | string)[]>(messagesKey, 0, limit - 1);
 
-  return (rawMessages || [])
-    .map((item) => parseMessageData(item))
-    .filter((msg): msg is Message => msg !== null);
+  return (rawMessages || []).reduce<Message[]>((acc, item) => {
+    const message = parseMessageData(item);
+    if (message !== null) {
+      acc.push(message);
+    }
+    return acc;
+  }, []);
 }
 
 /**

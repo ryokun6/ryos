@@ -109,9 +109,15 @@ export function aggregateLogicalCloudSyncMetadata(
   const aggregated = createEmptyLogicalCloudSyncMetadataMap();
 
   for (const logicalDomain of LOGICAL_CLOUD_SYNC_DOMAINS) {
-    const partMetadata = LOGICAL_TO_PHYSICAL_CLOUD_SYNC_DOMAINS[logicalDomain]
-      .map((domain) => metadata[domain])
-      .filter((entry): entry is CloudSyncDomainMetadata => Boolean(entry));
+    const partMetadata = LOGICAL_TO_PHYSICAL_CLOUD_SYNC_DOMAINS[logicalDomain].reduce<
+      CloudSyncDomainMetadata[]
+    >((acc, domain) => {
+      const entry = metadata[domain];
+      if (entry) {
+        acc.push(entry);
+      }
+      return acc;
+    }, []);
 
     if (partMetadata.length === 0) {
       aggregated[logicalDomain] = null;
@@ -133,11 +139,15 @@ export function aggregateLogicalCloudSyncMetadata(
       createdAt: earliestCreatedAt,
       totalSize: partMetadata.reduce((sum, entry) => sum + entry.totalSize, 0),
       parts: Object.fromEntries(
-        LOGICAL_TO_PHYSICAL_CLOUD_SYNC_DOMAINS[logicalDomain]
-          .map((domain) => [domain, metadata[domain]])
-          .filter((entry): entry is [CloudSyncDomain, CloudSyncDomainMetadata] =>
-            Boolean(entry[1])
-          )
+        LOGICAL_TO_PHYSICAL_CLOUD_SYNC_DOMAINS[logicalDomain].reduce<
+          [CloudSyncDomain, CloudSyncDomainMetadata][]
+        >((acc, domain) => {
+          const entry = metadata[domain];
+          if (entry) {
+            acc.push([domain, entry]);
+          }
+          return acc;
+        }, [])
       ),
     };
   }

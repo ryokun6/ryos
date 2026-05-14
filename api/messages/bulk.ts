@@ -23,7 +23,13 @@ export default apiHandler(
       return;
     }
 
-    const roomIds = roomIdsParam.split(",").map((id) => id.trim()).filter((id) => id.length > 0);
+    const roomIds = roomIdsParam.split(",").reduce<string[]>((acc, rawId) => {
+      const id = rawId.trim();
+      if (id.length > 0) {
+        acc.push(id);
+      }
+      return acc;
+    }, []);
 
     if (roomIds.length === 0) {
       logger.response(400, Date.now() - startTime);

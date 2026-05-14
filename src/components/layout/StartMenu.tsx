@@ -224,42 +224,47 @@ export function StartMenu({ apps }: StartMenuProps) {
                 />
 
                 {/* Apps — filter out admin-only apps */}
-                {apps
-                  .filter((app) => app.id !== "admin")
-                  .map((app) => (
-                  <DropdownMenuItem
-                    key={app.id}
-                    onClick={() => handleAppClick(app.id)}
-                    className="h-8 px-3 flex items-center gap-2 hover:bg-blue-500 hover:text-white"
-                    style={{
-                      fontSize: "11px",
-                      color: "#000000",
-                      fontFamily: "var(--font-ms-sans)",
-                      imageRendering: "pixelated",
-                    }}
-                  >
-                    {typeof app.icon === "string" ? (
-                      app.icon.startsWith("/icons/") ? (
+                {apps.reduce<JSX.Element[]>((acc, app) => {
+                  if (app.id === "admin") {
+                    return acc;
+                  }
+
+                  acc.push(
+                    <DropdownMenuItem
+                      key={app.id}
+                      onClick={() => handleAppClick(app.id)}
+                      className="h-8 px-3 flex items-center gap-2 hover:bg-blue-500 hover:text-white"
+                      style={{
+                        fontSize: "11px",
+                        color: "#000000",
+                        fontFamily: "var(--font-ms-sans)",
+                        imageRendering: "pixelated",
+                      }}
+                    >
+                      {typeof app.icon === "string" ? (
+                        app.icon.startsWith("/icons/") ? (
+                          <ThemedIcon
+                            name={app.icon}
+                            alt={app.name}
+                            className="w-6 h-6 [image-rendering:pixelated]"
+                          />
+                        ) : (
+                          <div className="w-6 h-6 flex items-center justify-center">
+                            {app.icon}
+                          </div>
+                        )
+                      ) : (
                         <ThemedIcon
-                          name={app.icon}
+                          name={app.icon.src}
                           alt={app.name}
                           className="w-6 h-6 [image-rendering:pixelated]"
                         />
-                      ) : (
-                        <div className="w-6 h-6 flex items-center justify-center">
-                          {app.icon}
-                        </div>
-                      )
-                    ) : (
-                      <ThemedIcon
-                        name={app.icon.src}
-                        alt={app.name}
-                        className="w-6 h-6 [image-rendering:pixelated]"
-                      />
-                    )}
-                    {getTranslatedAppName(app.id as AppId)}
-                  </DropdownMenuItem>
-                ))}
+                      )}
+                      {getTranslatedAppName(app.id as AppId)}
+                    </DropdownMenuItem>
+                  );
+                  return acc;
+                }, [])}
               </div>
 
             </div>

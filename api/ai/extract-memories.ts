@@ -152,10 +152,13 @@ export function getChatMessageTimestamp(msg: ChatMessage): number | null {
 
 function getMessageText(msg: ChatMessage): string {
   if (msg.parts && Array.isArray(msg.parts)) {
-    return msg.parts
-      .filter((part) => part.type === "text" && part.text)
-      .map((part) => part.text)
-      .join("\n");
+    const textParts = msg.parts.reduce<string[]>((acc, part) => {
+      if (part.type === "text" && part.text) {
+        acc.push(part.text);
+      }
+      return acc;
+    }, []);
+    return textParts.join("\n");
   }
   return msg.content || "";
 }
@@ -241,16 +244,20 @@ export async function extractMemoriesFromConversation({
   }
 
   const userTimeZone = normalizeTimeZone(timeZone);
-  const conversationMessages = messages
-    .filter(
-      (message): message is ChatMessage & { role: "user" | "assistant" } =>
-        message.role === "user" || message.role === "assistant"
-    )
-    .map((message) => ({
+  const conversationMessages = messages.reduce<
+    { role: "user" | "assistant"; text: string; sourceTimestamp: number | null }[]
+  >((acc, message) => {
+    if (message.role !== "user" && message.role !== "assistant") {
+      return acc;
+    }
+
+    acc.push({
       role: message.role,
       text: getMessageText(message),
       sourceTimestamp: getChatMessageTimestamp(message),
-    }));
+    });
+    return acc;
+  }, []);
   const conversationText = conversationMessages
     .map((message, index) => {
       const role = message.role === "user" ? "User" : "Ryo";
@@ -364,9 +371,13 @@ export async function extractMemoriesFromConversation({
       let finalSummary = mem.summary;
       let finalContent = mem.content;
       const keysToDelete: string[] = [];
-      const relatedKeys = (mem.relatedKeys || [])
-        .map((relatedKey) => relatedKey.toLowerCase().replace(/[^a-z0-9_]/g, "_"))
-        .filter((relatedKey) => relatedKey !== key && existingKeys.includes(relatedKey));
+      const relatedKeys = (mem.relatedKeys || []).reduce<string[]>((acc, relatedKey) => {
+        const normalizedKey = relatedKey.toLowerCase().replace(/[^a-z0-9_]/g, "_");
+        if (normalizedKey !== key && existingKeys.includes(normalizedKey)) {
+          acc.push(normalizedKey);
+        }
+        return acc;
+      }, []);
       const targetKeyExists = existingKeys.includes(key);
 
       if (relatedKeys.length > 0 || targetKeyExists) {

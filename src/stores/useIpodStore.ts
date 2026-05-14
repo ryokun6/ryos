@@ -434,9 +434,13 @@ function resolveAppleMusicQueueTracks(state: IpodData): Track[] {
   }
 
   const libraryById = new Map(libraryTracks.map((track) => [track.id, track]));
-  return queue
-    .map((id) => libraryById.get(id) ?? null)
-    .filter((track): track is Track => track !== null);
+  return queue.reduce<Track[]>((acc, id) => {
+    const track = libraryById.get(id);
+    if (track) {
+      acc.push(track);
+    }
+    return acc;
+  }, []);
 }
 
 export function isAppleMusicCollectionTrack(
@@ -617,7 +621,12 @@ function getUnplayedTrackIds(
   playbackHistory: string[]
 ): string[] {
   const playedIds = new Set(playbackHistory);
-  return tracks.map((track) => track.id).filter((id) => !playedIds.has(id));
+  return tracks.reduce<string[]>((acc, track) => {
+    if (!playedIds.has(track.id)) {
+      acc.push(track.id);
+    }
+    return acc;
+  }, []);
 }
 
 // Helper function to get a random track ID avoiding recently played songs
@@ -648,18 +657,24 @@ function getRandomTrackIdAvoidingRecent(
   const recentIds = new Set(recentTrackIds);
 
   // Find tracks that haven't been played recently
-  const availableIds = tracks
-    .map((track) => track.id)
-    .filter((id) => !recentIds.has(id) && id !== currentSongId);
+  const availableIds = tracks.reduce<string[]>((acc, track) => {
+    if (!recentIds.has(track.id) && track.id !== currentSongId) {
+      acc.push(track.id);
+    }
+    return acc;
+  }, []);
 
   if (availableIds.length > 0) {
     return availableIds[Math.floor(Math.random() * availableIds.length)];
   }
 
   // If all tracks have been played recently, just pick any track except current
-  const allIdsExceptCurrent = tracks
-    .map((track) => track.id)
-    .filter((id) => id !== currentSongId);
+  const allIdsExceptCurrent = tracks.reduce<string[]>((acc, track) => {
+    if (track.id !== currentSongId) {
+      acc.push(track.id);
+    }
+    return acc;
+  }, []);
 
   if (allIdsExceptCurrent.length > 0) {
     return allIdsExceptCurrent[Math.floor(Math.random() * allIdsExceptCurrent.length)];
@@ -1907,12 +1922,13 @@ export const useIpodStore = create<IpodState>()(
           );
           const retainedQueueTracks = (
             normalizeAppleMusicPlaybackQueue(state.appleMusicPlaybackQueue) ?? []
-          )
-            .map((id) => previousTracksById.get(id) ?? null)
-            .filter(
-              (track): track is Track =>
-                track !== null && !incomingIds.has(track.id)
-            );
+          ).reduce<Track[]>((acc, id) => {
+            const track = previousTracksById.get(id);
+            if (track !== undefined && !incomingIds.has(track.id)) {
+              acc.push(track);
+            }
+            return acc;
+          }, []);
           const currentTrack =
             state.appleMusicCurrentSongId &&
             !incomingIds.has(state.appleMusicCurrentSongId)
