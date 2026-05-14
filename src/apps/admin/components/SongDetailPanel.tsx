@@ -69,6 +69,10 @@ interface SongDetailPanelProps {
   onSongDeleted: () => void;
 }
 
+const Skeleton = ({ className }: { className?: string }) => (
+  <div className={cn("bg-neutral-200 animate-pulse rounded", className)} />
+);
+
 export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
   youtubeId,
   onBack,
@@ -481,11 +485,6 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
     const sign = ms >= 0 ? "+" : "";
     return `${sign}${ms}ms (${(ms / 1000).toFixed(2)}s)`;
   };
-
-  // Skeleton placeholder component
-  const Skeleton = ({ className }: { className?: string }) => (
-    <div className={cn("bg-neutral-200 animate-pulse rounded", className)} />
-  );
 
   if (!isLoading && !song) {
     return (
