@@ -256,7 +256,7 @@ export function CalendarWidget({ widgetId }: CalendarWidgetProps) {
                 </span>
                 {cell.events.length > 0 && (
                   <div className="absolute flex gap-0.5" style={{ bottom: 1, left: "50%", transform: "translateX(-50%)" }}>
-                    {cell.events.slice(0, 2).map((ev, i) => (
+                    {cell.events.slice(0, 2).map((ev) => (
                       <span
                         key={ev.id}
                         className="w-1 h-1 rounded-full"
