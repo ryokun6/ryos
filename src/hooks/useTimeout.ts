@@ -51,7 +51,6 @@ export function useTimeout(
     }
   }, [delay, clear]);
 
-  // Set up the timeout
   useEffect(() => {
     // Don't schedule if delay is null
     if (delay === null) {
