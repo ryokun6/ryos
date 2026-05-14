@@ -280,15 +280,65 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
       }
     }
 
-    ctx.fillStyle = fg;
-
     // Paddle
-    ctx.fillRect(s.paddleX, PADDLE_Y, PADDLE_WIDTH, PADDLE_HEIGHT);
+    //
+    // Modern skin: 3-stop top-to-bottom gradient with a thin white gloss
+    // strip across the upper ~35% — same glossy-lozenge treatment as the
+    // bricks but in dark graphite tones so the bar reads as a heavier
+    // object than the colored bricks above it. Classic skin keeps the
+    // flat #0a3667 LCD fill.
+    if (isModernUi) {
+      const pGrad = ctx.createLinearGradient(
+        0,
+        PADDLE_Y,
+        0,
+        PADDLE_Y + PADDLE_HEIGHT
+      );
+      pGrad.addColorStop(0, "#5c5c60");
+      pGrad.addColorStop(0.5, "#252527");
+      pGrad.addColorStop(1, "#0a0a0b");
+      ctx.fillStyle = pGrad;
+      ctx.fillRect(s.paddleX, PADDLE_Y, PADDLE_WIDTH, PADDLE_HEIGHT);
+      ctx.fillStyle = "rgba(255,255,255,0.45)";
+      ctx.fillRect(
+        s.paddleX,
+        PADDLE_Y,
+        PADDLE_WIDTH,
+        Math.max(1, PADDLE_HEIGHT * 0.35)
+      );
+    } else {
+      ctx.fillStyle = fg;
+      ctx.fillRect(s.paddleX, PADDLE_Y, PADDLE_WIDTH, PADDLE_HEIGHT);
+    }
 
     // Ball
-    ctx.beginPath();
-    ctx.arc(s.ballX, s.ballY, BALL_RADIUS, 0, Math.PI * 2);
-    ctx.fill();
+    //
+    // Modern skin: radial gradient biased to the upper-left so the ball
+    // reads as a small lit sphere — bright white core fades through a
+    // mid graphite to a near-black rim. Classic stays a flat 1.5-unit
+    // dot in #0a3667. */
+    if (isModernUi) {
+      const bGrad = ctx.createRadialGradient(
+        s.ballX - BALL_RADIUS * 0.4,
+        s.ballY - BALL_RADIUS * 0.4,
+        BALL_RADIUS * 0.1,
+        s.ballX,
+        s.ballY,
+        BALL_RADIUS
+      );
+      bGrad.addColorStop(0, "rgba(255,255,255,0.95)");
+      bGrad.addColorStop(0.45, "#6e6e72");
+      bGrad.addColorStop(1, "#101012");
+      ctx.fillStyle = bGrad;
+      ctx.beginPath();
+      ctx.arc(s.ballX, s.ballY, BALL_RADIUS, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.fillStyle = fg;
+      ctx.beginPath();
+      ctx.arc(s.ballX, s.ballY, BALL_RADIUS, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }, [isModernUi]);
 
   const stopLoop = useCallback(() => {
