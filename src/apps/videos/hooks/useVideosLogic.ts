@@ -921,6 +921,16 @@ export function useVideosLogic({
 
   // Sync playback position when entering fullscreen
   useEffect(() => {
+    const timeoutIds = new Set<ReturnType<typeof setTimeout>>();
+    const scheduleTimeout = (callback: () => void, delay: number) => {
+      const timeoutId = setTimeout(() => {
+        timeoutIds.delete(timeoutId);
+        callback();
+      }, delay);
+      timeoutIds.add(timeoutId);
+      return timeoutId;
+    };
+
     if (isFullScreen && !prevFullScreenRef.current) {
       // Just entered fullscreen - sync position from main player to fullscreen player
       const currentTime = playerRef.current?.getCurrentTime() || playedSeconds;
@@ -945,18 +955,22 @@ export function useVideosLogic({
             if (trackSwitchTimeoutRef.current) {
               clearTimeout(trackSwitchTimeoutRef.current);
             }
-            trackSwitchTimeoutRef.current = setTimeout(() => {
+            trackSwitchTimeoutRef.current = scheduleTimeout(() => {
               isTrackSwitchingRef.current = false;
             }, 500);
             return;
           }
         }
         // Player not ready yet, retry
-        setTimeout(checkAndSync, 100);
+        scheduleTimeout(checkAndSync, 100);
       };
-      setTimeout(checkAndSync, 100);
+      scheduleTimeout(checkAndSync, 100);
     }
     prevFullScreenRef.current = isFullScreen;
+    return () => {
+      timeoutIds.forEach((timeoutId) => clearTimeout(timeoutId));
+      timeoutIds.clear();
+    };
   }, [isFullScreen, playedSeconds, isPlaying]);
 
   // Listen for App Menu fullscreen toggle

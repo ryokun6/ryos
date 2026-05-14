@@ -594,6 +594,11 @@ export function usePhotoBoothLogic({
   // Force visibility refresh for Chrome
   useEffect(() => {
     if (!isChrome || !videoRef.current || !stream) return;
+    const timeoutIds: ReturnType<typeof setTimeout>[] = [];
+    const scheduleTimeout = (callback: () => void, delay: number) => {
+      const timeoutId = setTimeout(callback, delay);
+      timeoutIds.push(timeoutId);
+    };
 
     console.log("Applying Chrome-specific visibility fixes");
 
@@ -605,14 +610,14 @@ export function usePhotoBoothLogic({
       videoRef.current.style.visibility = "hidden";
       videoRef.current.style.display = "none";
 
-      setTimeout(() => {
+      scheduleTimeout(() => {
         if (videoRef.current) {
           videoRef.current.style.visibility = "visible";
           videoRef.current.style.display = "block";
 
           // Some Chrome versions need this nudge
           videoRef.current.style.opacity = "0.99";
-          setTimeout(() => {
+          scheduleTimeout(() => {
             if (videoRef.current) videoRef.current.style.opacity = "1";
           }, 50);
         }
@@ -620,8 +625,11 @@ export function usePhotoBoothLogic({
     };
 
     // Apply fix after a delay to let rendering settle
-    setTimeout(forceVisibility, 300);
-    setTimeout(forceVisibility, 1000);
+    scheduleTimeout(forceVisibility, 300);
+    scheduleTimeout(forceVisibility, 1000);
+    return () => {
+      timeoutIds.forEach((timeoutId) => clearTimeout(timeoutId));
+    };
   }, [stream, isChrome]);
 
   // Add event listener for the video element to handle Safari initialization

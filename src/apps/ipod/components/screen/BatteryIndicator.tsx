@@ -18,12 +18,16 @@ export function BatteryIndicator({
   const [animationFrame, setAnimationFrame] = useState<number>(1);
 
   useEffect(() => {
+    let removeBatteryListeners: (() => void) | undefined;
+    let isDisposed = false;
+
     const getBattery = async () => {
       try {
         if ("getBattery" in navigator) {
           const battery = await (
             navigator as unknown as { getBattery: () => Promise<BatteryManager> }
           ).getBattery();
+          if (isDisposed) return;
           setBatteryLevel(battery.level);
           setIsCharging(battery.charging);
 
@@ -33,19 +37,25 @@ export function BatteryIndicator({
           battery.addEventListener("levelchange", updateLevel);
           battery.addEventListener("chargingchange", updateCharging);
 
-          return () => {
+          removeBatteryListeners = () => {
             battery.removeEventListener("levelchange", updateLevel);
             battery.removeEventListener("chargingchange", updateCharging);
           };
         }
       } catch {
+        if (isDisposed) return;
         // Fallback to a default level
         setBatteryLevel(1.0);
         setIsCharging(false);
       }
     };
 
-    getBattery();
+    void getBattery();
+
+    return () => {
+      isDisposed = true;
+      removeBatteryListeners?.();
+    };
   }, []);
 
   // Animation effect for charging

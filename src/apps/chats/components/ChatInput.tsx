@@ -225,11 +225,12 @@ export const ChatInput = memo(function ChatInput({
     // This ensures we wait for BOTH loading AND speech to complete
     if (wasBusy && isNowDone) {
       // Auto-start recording after a small delay
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         if (!isRecording && !isTranscribing) {
           audioButtonRef.current?.click();
         }
       }, 300);
+      return () => clearTimeout(timeoutId);
     }
   }, [isLoading, isSpeechPlaying, isInKeepTalkingMode, keepTalkingEnabled, isRecording, isTranscribing]);
 

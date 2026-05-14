@@ -46,6 +46,8 @@ export function useJsDos() {
   const [isScriptLoaded, setIsScriptLoaded] = useState(isScriptLoadedRef);
 
   useEffect(() => {
+    let loadCheckTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
     // Only load script if it hasn't been loaded yet
     if (!scriptRef && !window.Dos) {
       console.log("Loading js-dos script...");
@@ -55,10 +57,11 @@ export function useJsDos() {
       script.onload = () => {
         console.log("js-dos script loaded successfully");
         // Wait a bit to ensure the script is fully initialized
-        setTimeout(() => {
+        loadCheckTimeoutId = setTimeout(() => {
           console.log("Checking if Dos function is available:", !!window.Dos);
           isScriptLoadedRef = true;
           setIsScriptLoaded(true);
+          loadCheckTimeoutId = null;
         }, 1000);
       };
       script.onerror = (error) => {
@@ -72,6 +75,9 @@ export function useJsDos() {
     return () => {
       // Don't remove the script or clear the global Dos function
       // We want to keep it loaded for the entire app lifecycle
+      if (loadCheckTimeoutId !== null) {
+        clearTimeout(loadCheckTimeoutId);
+      }
     };
   }, []);
 

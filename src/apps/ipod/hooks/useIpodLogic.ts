@@ -1304,6 +1304,8 @@ export function useIpodLogic({
   // Using null as initial value ensures first render triggers the auto-skip check
   const prevCurrentIndexRef = useRef<number | null>(null);
   useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
     // Check if track changed or this is initial render (prevCurrentIndexRef.current is null)
     if (prevCurrentIndexRef.current !== currentIndex) {
       isTrackSwitchingRef.current = true;
@@ -1325,7 +1327,7 @@ export function useIpodLogic({
       if (newLyricOffset < 0 && seekTarget >= 1) {
         useIpodStore.getState().setElapsedTime(seekTarget);
         
-        trackSwitchTimeoutRef.current = setTimeout(() => {
+        timeoutId = setTimeout(() => {
           isTrackSwitchingRef.current = false;
           const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
           if (activePlayer) {
@@ -1333,15 +1335,25 @@ export function useIpodLogic({
             showStatus(`▶ ${Math.floor(seekTarget / 60)}:${String(Math.floor(seekTarget % 60)).padStart(2, "0")}`);
           }
         }, 2000);
+        trackSwitchTimeoutRef.current = timeoutId;
       } else {
         // Start from beginning for positive/zero offset or small negative offset
         useIpodStore.getState().setElapsedTime(0);
-        trackSwitchTimeoutRef.current = setTimeout(() => {
+        timeoutId = setTimeout(() => {
           isTrackSwitchingRef.current = false;
         }, 2000);
+        trackSwitchTimeoutRef.current = timeoutId;
       }
     }
     prevCurrentIndexRef.current = currentIndex;
+    return () => {
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId);
+        if (trackSwitchTimeoutRef.current === timeoutId) {
+          trackSwitchTimeoutRef.current = null;
+        }
+      }
+    };
   }, [currentIndex, tracks, isFullScreen, showStatus]);
 
   // Cleanup status timeout
@@ -2706,11 +2718,13 @@ export function useIpodLogic({
 
   // Initial data handling
   useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
     if (isWindowOpen && initialData?.videoId && typeof initialData.videoId === "string") {
       if (lastProcessedInitialDataRef.current === initialData) return;
 
       const videoIdToProcess = initialData.videoId;
-      setTimeout(() => {
+      timeoutId = setTimeout(() => {
         processVideoId(videoIdToProcess)
           .then(() => {
             if (instanceId) clearIpodInitialData(instanceId);
@@ -2721,9 +2735,16 @@ export function useIpodLogic({
       }, 100);
       lastProcessedInitialDataRef.current = initialData;
     }
+    return () => {
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId);
+      }
+    };
   }, [isWindowOpen, initialData, processVideoId, clearIpodInitialData, instanceId]);
 
   useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
     if (
       isWindowOpen &&
       initialData?.listenSessionId &&
@@ -2732,7 +2753,7 @@ export function useIpodLogic({
       if (lastProcessedListenSessionRef.current === initialData.listenSessionId) return;
 
       const sessionIdToProcess = initialData.listenSessionId;
-      setTimeout(() => {
+      timeoutId = setTimeout(() => {
         joinListenSession(sessionIdToProcess, username || undefined)
           .then((result) => {
             if (!result.ok) {
@@ -2748,6 +2769,11 @@ export function useIpodLogic({
       }, 100);
       lastProcessedListenSessionRef.current = initialData.listenSessionId;
     }
+    return () => {
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId);
+      }
+    };
   }, [
     isWindowOpen,
     initialData,
@@ -3617,6 +3643,16 @@ export function useIpodLogic({
   const prevFullScreenRef = useRef(isFullScreen);
 
   useEffect(() => {
+    const timeoutIds = new Set<ReturnType<typeof setTimeout>>();
+    const scheduleTimeout = (callback: () => void, delay: number) => {
+      const timeoutId = setTimeout(() => {
+        timeoutIds.delete(timeoutId);
+        callback();
+      }, delay);
+      timeoutIds.add(timeoutId);
+      return timeoutId;
+    };
+
     if (isFullScreen !== prevFullScreenRef.current) {
       // Apple Music plays through a single shared MusicKit instance, so
       // toggling fullscreen never needs the YouTube-style seek-and-resume
@@ -3651,21 +3687,21 @@ export function useIpodLogic({
                 }
               }
               // End track switch after sync complete
-              trackSwitchTimeoutRef.current = setTimeout(() => {
+              trackSwitchTimeoutRef.current = scheduleTimeout(() => {
                 isTrackSwitchingRef.current = false;
               }, 500);
               return;
             }
           }
           // Player not ready, retry
-          setTimeout(checkAndSync, 100);
+          scheduleTimeout(checkAndSync, 100);
         };
-        setTimeout(checkAndSync, 100);
+        scheduleTimeout(checkAndSync, 100);
       } else {
         const currentTime = fullScreenPlayerRef.current?.getCurrentTime() || elapsedTime;
         const wasPlaying = isPlaying;
 
-        setTimeout(() => {
+        scheduleTimeout(() => {
           if (playerRef.current) {
             playerRef.current.seekTo(currentTime);
             if (wasPlaying && !useIpodStore.getState().isPlaying) {
@@ -3673,13 +3709,17 @@ export function useIpodLogic({
             }
           }
           // End track switch after sync complete
-          trackSwitchTimeoutRef.current = setTimeout(() => {
+          trackSwitchTimeoutRef.current = scheduleTimeout(() => {
             isTrackSwitchingRef.current = false;
           }, 500);
         }, 200);
       }
       prevFullScreenRef.current = isFullScreen;
     }
+    return () => {
+      timeoutIds.forEach((timeoutId) => clearTimeout(timeoutId));
+      timeoutIds.clear();
+    };
   }, [isAppleMusic, isFullScreen, elapsedTime, isPlaying, setIsPlaying, isIOSSafari]);
 
   // Seek time for fullscreen (delta)

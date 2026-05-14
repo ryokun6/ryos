@@ -303,7 +303,14 @@ export function MapsAppComponent({
   // composite key so we can diff updates in-place without rebuilding the
   // entire annotation set on every store change.
   const savedAnnotationsRef = useRef<
-    Map<string, { annotation: MapKitMarkerAnnotation; place: SavedPlace }>
+    Map<
+      string,
+      {
+        annotation: MapKitMarkerAnnotation;
+        place: SavedPlace;
+        onSelect: () => void;
+      }
+    >
   >(new Map());
   const mapMarkersClusteredRef = useRef(false);
   const regionChangeEndListenerRef = useRef<(() => void) | null>(null);
@@ -431,6 +438,13 @@ export function MapsAppComponent({
     // a re-render so effects that read `mapInstanceRef.current` actually
     // see the new value instead of skipping it on a stale closure.
     setMapReadyTick((tick) => tick + 1);
+    return () => {
+      try {
+        map.removeEventListener?.("region-change-end", onRegionChangeEnd);
+      } catch {
+        // ignore
+      }
+    };
     // We intentionally do NOT depend on mapType here — the next effect
     // syncs it whenever the user picks a different option.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -894,6 +908,11 @@ export function MapsAppComponent({
     // Drop all previously-attached saved annotations before re-adding.
     for (const value of savedAnnotationsRef.current.values()) {
       try {
+        value.annotation.removeEventListener?.("select", value.onSelect);
+      } catch {
+        // ignore — mapkit may have already detached
+      }
+      try {
         map.removeAnnotation(value.annotation);
       } catch {
         // ignore — mapkit may have already detached
@@ -901,7 +920,11 @@ export function MapsAppComponent({
     }
     const next = new Map<
       string,
-      { annotation: MapKitMarkerAnnotation; place: SavedPlace }
+      {
+        annotation: MapKitMarkerAnnotation;
+        place: SavedPlace;
+        onSelect: () => void;
+      }
     >();
 
     for (const entry of savedPlaceEntries) {
@@ -938,10 +961,10 @@ export function MapsAppComponent({
         withMapPlaceClustering(markerOptions, clusteringId)
       );
 
-      const wrapper = { annotation, place: entry.place };
       const handleSelect = () => {
-        focusSavedPlaceRef.current(wrapper.place);
+        focusSavedPlaceRef.current(entry.place);
       };
+      const wrapper = { annotation, place: entry.place, onSelect: handleSelect };
       annotation.addEventListener?.("select", handleSelect);
 
       try {
@@ -954,6 +977,15 @@ export function MapsAppComponent({
 
     savedAnnotationsRef.current = next;
     syncMapMarkerClustering();
+    return () => {
+      for (const value of next.values()) {
+        try {
+          value.annotation.removeEventListener?.("select", value.onSelect);
+        } catch {
+          // ignore
+        }
+      }
+    };
   }, [
     status,
     savedPlaceEntries,

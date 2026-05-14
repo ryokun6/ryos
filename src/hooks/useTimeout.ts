@@ -58,11 +58,17 @@ export function useTimeout(
       return;
     }
 
-    timeoutRef.current = setTimeout(() => {
+    const timeoutId = setTimeout(() => {
       savedCallback.current();
     }, delay);
+    timeoutRef.current = timeoutId;
 
-    return clear;
+    return () => {
+      clearTimeout(timeoutId);
+      if (timeoutRef.current === timeoutId) {
+        timeoutRef.current = null;
+      }
+    };
   }, [delay, clear]);
 
   return { clear, reset };
