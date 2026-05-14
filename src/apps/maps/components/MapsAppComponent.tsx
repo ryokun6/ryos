@@ -401,6 +401,50 @@ export function MapsAppComponent({
   // the saved-annotations sync silently miss the first map-ready window
   // when status flipped to "ready" mid-render.
   const [mapReadyTick, setMapReadyTick] = useState(0);
+  /** Set when the map container DOM mounts; cleared when it unmounts (e.g. minimize). */
+  const [mapSurfaceEl, setMapSurfaceEl] = useState<HTMLDivElement | null>(null);
+  // Framed viewport once per fresh MapKit instance (reset when the map is torn down).
+  const hasHydratedSelectedRef = useRef(false);
+  const lastFocusedPlaceIdRef = useRef<string | null>(null);
+
+  const tearDownMapsMapInstance = useCallback(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+    const regionListener = regionChangeEndListenerRef.current;
+    if (regionListener) {
+      try {
+        map.removeEventListener?.("region-change-end", regionListener);
+      } catch {
+        // ignore
+      }
+      regionChangeEndListenerRef.current = null;
+    }
+    try {
+      map.destroy();
+    } catch {
+      // ignore — mapkit may have already cleaned up
+    }
+    mapInstanceRef.current = null;
+    annotationRef.current = null;
+    mapMarkersClusteredRef.current = false;
+    savedAnnotationsRef.current = new Map();
+    hasHydratedSelectedRef.current = false;
+    lastFocusedPlaceIdRef.current = null;
+    setMapReadyTick(0);
+  }, []);
+
+  const attachMapSurfaceRef = useCallback(
+    (el: HTMLDivElement | null) => {
+      mapContainerRef.current = el;
+      if (!el) {
+        tearDownMapsMapInstance();
+        setMapSurfaceEl(null);
+        return;
+      }
+      setMapSurfaceEl(el);
+    },
+    [tearDownMapsMapInstance]
+  );
 
   const [uiState, dispatchUi] = useReducer(mapsUiReducer, initialUiState);
   const {
@@ -467,14 +511,16 @@ export function MapsAppComponent({
     return clusteringIdentifierForRegion(map.region);
   }, []);
 
-  // Initialize the map instance once mapkit is ready and the window is open.
+  // Initialize the map instance once mapkit is ready, the window is open,
+  // and the map surface is mounted (it unmounts while minimized unless
+  // WindowFrame keeps content mounted).
   useEffect(() => {
     if (!isWindowOpen) return;
     if (status !== "ready") return;
     const mk = getMapKit();
     if (!mk) return;
     if (mapInstanceRef.current) return;
-    if (!mapContainerRef.current) return;
+    if (!mapSurfaceEl) return;
 
     // Default region: San Francisco. We center here so the map opens on a
     // useful, POI-rich location instead of the world view, and switch to
@@ -487,7 +533,7 @@ export function MapsAppComponent({
     const span = new mk.CoordinateSpan(SF_LATITUDE_DELTA, SF_LONGITUDE_DELTA);
     const region = new mk.CoordinateRegion(center, span);
 
-    const map = new mk.Map(mapContainerRef.current, {
+    const map = new mk.Map(mapSurfaceEl, {
       showsZoomControl: false,
       showsCompass: "hidden",
       showsScale: "adaptive",
@@ -533,7 +579,35 @@ export function MapsAppComponent({
     // We intentionally do NOT depend on mapType here — the next effect
     // syncs it whenever the user picks a different option.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isWindowOpen, status]);
+  }, [isWindowOpen, status, mapSurfaceEl]);
+
+  // MapKit measures its container at creation time; if the surface was hidden,
+  // had zero size, or animates in (minimize/restore), nudge it on layout changes.
+  useEffect(() => {
+    if (mapReadyTick === 0) return;
+    const el = mapContainerRef.current;
+    if (!el || !mapInstanceRef.current) return;
+
+    let raf = 0;
+    const nudgeMapLayout = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        window.dispatchEvent(new Event("resize"));
+        requestAnimationFrame(() => {
+          window.dispatchEvent(new Event("resize"));
+        });
+      });
+    };
+
+    nudgeMapLayout();
+    const ro = new ResizeObserver(() => nudgeMapLayout());
+    ro.observe(el);
+    return () => {
+      if (raf) cancelAnimationFrame(raf);
+      ro.disconnect();
+    };
+  }, [mapReadyTick]);
 
   // Sync map type when the user changes it via the View menu.
   useEffect(() => {
@@ -546,54 +620,14 @@ export function MapsAppComponent({
   // unmounts so repeated open/close cycles don't leak DOM nodes.
   useEffect(() => {
     if (isWindowOpen) return;
-    const map = mapInstanceRef.current;
-    if (!map) return;
-    const regionListener = regionChangeEndListenerRef.current;
-    if (regionListener) {
-      try {
-        map.removeEventListener?.("region-change-end", regionListener);
-      } catch {
-        // ignore
-      }
-      regionChangeEndListenerRef.current = null;
-    }
-    try {
-      map.destroy();
-    } catch {
-      // ignore — mapkit may have already cleaned up
-    }
-    mapInstanceRef.current = null;
-    annotationRef.current = null;
-    mapMarkersClusteredRef.current = false;
-    // Reset the readiness counter so the next time the window opens the
-    // saved-annotations sync re-runs against the freshly-created map.
-    setMapReadyTick(0);
-  }, [isWindowOpen]);
+    tearDownMapsMapInstance();
+  }, [isWindowOpen, tearDownMapsMapInstance]);
 
   useEffect(() => {
     return () => {
-      const map = mapInstanceRef.current;
-      if (map) {
-        const regionListener = regionChangeEndListenerRef.current;
-        if (regionListener) {
-          try {
-            map.removeEventListener?.("region-change-end", regionListener);
-          } catch {
-            // ignore
-          }
-          regionChangeEndListenerRef.current = null;
-        }
-        try {
-          map.destroy();
-        } catch {
-          // ignore
-        }
-        mapInstanceRef.current = null;
-        annotationRef.current = null;
-        mapMarkersClusteredRef.current = false;
-      }
+      tearDownMapsMapInstance();
     };
-  }, []);
+  }, [tearDownMapsMapInstance]);
 
   const performSearch = useCallback(
     (query: string) => {
@@ -1135,9 +1169,9 @@ export function MapsAppComponent({
   //      the dedicated "Locate Me" button is the right place for that.
   //   3. The user's saved Home — city-level zoom around it
   //   4. Otherwise, leave the map at the SF default region
-  // Guarded so it only fires once per mount: subsequent user-driven
-  // selections go through `dropPinAt` / `focusSavedPlace` directly.
-  const hasHydratedSelectedRef = useRef(false);
+  // Guarded so it only fires once per live MapKit map (including after the
+  // surface remounts from minimize): subsequent user-driven selections go
+  // through `dropPinAt` / `focusSavedPlace` directly.
   useEffect(() => {
     if (hasHydratedSelectedRef.current) return;
     if (status !== "ready") return;
@@ -1280,7 +1314,6 @@ export function MapsAppComponent({
   // to `selectedPlace` (e.g. from a chat tool card tap). We track the last
   // place we focused so simultaneous in-app actions (search-result tap,
   // saved-place tap) don't double-frame on the same coordinate.
-  const lastFocusedPlaceIdRef = useRef<string | null>(null);
   useEffect(() => {
     if (!hasHydratedSelectedRef.current) return;
     if (status !== "ready") return;
@@ -1455,7 +1488,7 @@ export function MapsAppComponent({
       >
         <div className="relative size-full min-h-0 flex-1 overflow-hidden bg-transparent font-os-ui">
           <div
-            ref={mapContainerRef}
+            ref={attachMapSurfaceRef}
             className="absolute inset-0 bg-[#e5e3df]"
             role="application"
             aria-label={t("apps.maps.mapAriaLabel", {
