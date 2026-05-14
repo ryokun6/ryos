@@ -33,10 +33,16 @@ const DropdownMenu = ({
 };
 DropdownMenu.displayName = DropdownMenuPrimitive.Root.displayName;
 
-const DropdownMenuTrigger = React.forwardRef<
-  React.ElementRef<typeof DropdownMenuPrimitive.Trigger>,
-  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Trigger>
->(({ className, style, ...props }, ref) => {
+const DropdownMenuTrigger = (
+  {
+    ref,
+    className,
+    style,
+    ...props
+  }: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Trigger> & {
+    ref?: React.Ref<React.ElementRef<typeof DropdownMenuPrimitive.Trigger>>;
+  }
+) => {
   const { isMacOSTheme } = useThemeFlags();
 
   const macosTextShadow = isMacOSTheme
@@ -53,7 +59,7 @@ const DropdownMenuTrigger = React.forwardRef<
       {...props}
     />
   );
-});
+};
 DropdownMenuTrigger.displayName = DropdownMenuPrimitive.Trigger.displayName;
 
 const DropdownMenuGroup = DropdownMenuPrimitive.Group;
@@ -64,12 +70,18 @@ const DropdownMenuSub = DropdownMenuPrimitive.Sub;
 
 const DropdownMenuRadioGroup = DropdownMenuPrimitive.RadioGroup;
 
-const DropdownMenuSubTrigger = React.forwardRef<
-  React.ElementRef<typeof DropdownMenuPrimitive.SubTrigger>,
-  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubTrigger> & {
+const DropdownMenuSubTrigger = (
+  {
+    ref,
+    className,
+    inset,
+    children,
+    ...props
+  }: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubTrigger> & {
     inset?: boolean;
+    ref?: React.Ref<React.ElementRef<typeof DropdownMenuPrimitive.SubTrigger>>;
   }
->(({ className, inset, children, ...props }, ref) => {
+) => {
   const { isWindowsTheme, isMacOSTheme } = useThemeFlags();
 
   return (
@@ -103,14 +115,20 @@ const DropdownMenuSubTrigger = React.forwardRef<
       <CaretRight className="ml-auto" size={12} weight="bold" />
     </DropdownMenuPrimitive.SubTrigger>
   );
-});
+};
 DropdownMenuSubTrigger.displayName =
   DropdownMenuPrimitive.SubTrigger.displayName;
 
-const DropdownMenuSubContent = React.forwardRef<
-  React.ElementRef<typeof DropdownMenuPrimitive.SubContent>,
-  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubContent>
->(({ className, style, ...props }, ref) => {
+const DropdownMenuSubContent = (
+  {
+    ref,
+    className,
+    style,
+    ...props
+  }: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubContent> & {
+    ref?: React.Ref<React.ElementRef<typeof DropdownMenuPrimitive.SubContent>>;
+  }
+) => {
   const { isMacOSTheme } = useThemeFlags();
   const isMobile = useMediaQuery("(max-width: 768px)");
 
@@ -140,16 +158,23 @@ const DropdownMenuSubContent = React.forwardRef<
       />
     </DropdownMenuPrimitive.Portal>
   );
-});
+};
 DropdownMenuSubContent.displayName =
   DropdownMenuPrimitive.SubContent.displayName;
 
-const DropdownMenuContent = React.forwardRef<
-  React.ElementRef<typeof DropdownMenuPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content> & {
+const DropdownMenuContent = (
+  {
+    ref,
+    className,
+    sideOffset = 4,
+    style,
+    container,
+    ...props
+  }: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content> & {
     container?: HTMLElement | null;
+    ref?: React.Ref<React.ElementRef<typeof DropdownMenuPrimitive.Content>>;
   }
->(({ className, sideOffset = 4, style, container, ...props }, ref) => {
+) => {
   const { isMacOSTheme } = useThemeFlags();
   const isMobile = useMediaQuery("(max-width: 768px)");
 
@@ -182,15 +207,20 @@ const DropdownMenuContent = React.forwardRef<
       />
     </DropdownMenuPrimitive.Portal>
   );
-});
+};
 DropdownMenuContent.displayName = DropdownMenuPrimitive.Content.displayName;
 
-const DropdownMenuItem = React.forwardRef<
-  React.ElementRef<typeof DropdownMenuPrimitive.Item>,
-  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item> & {
+const DropdownMenuItem = (
+  {
+    ref,
+    className,
+    inset,
+    ...props
+  }: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item> & {
     inset?: boolean;
+    ref?: React.Ref<React.ElementRef<typeof DropdownMenuPrimitive.Item>>;
   }
->(({ className, inset, ...props }, ref) => {
+) => {
   const { isWindowsTheme, isMacOSTheme } = useThemeFlags();
 
   return (
@@ -222,13 +252,20 @@ const DropdownMenuItem = React.forwardRef<
       {...props}
     />
   );
-});
+};
 DropdownMenuItem.displayName = DropdownMenuPrimitive.Item.displayName;
 
-const DropdownMenuCheckboxItem = React.forwardRef<
-  React.ElementRef<typeof DropdownMenuPrimitive.CheckboxItem>,
-  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.CheckboxItem>
->(({ className, children, checked, ...props }, ref) => {
+const DropdownMenuCheckboxItem = (
+  {
+    ref,
+    className,
+    children,
+    checked,
+    ...props
+  }: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.CheckboxItem> & {
+    ref?: React.Ref<React.ElementRef<typeof DropdownMenuPrimitive.CheckboxItem>>;
+  }
+) => {
   const {
     isWindowsTheme,
     isMacOSTheme,
@@ -280,14 +317,20 @@ const DropdownMenuCheckboxItem = React.forwardRef<
       {children}
     </DropdownMenuPrimitive.CheckboxItem>
   );
-});
+};
 DropdownMenuCheckboxItem.displayName =
   DropdownMenuPrimitive.CheckboxItem.displayName;
 
-const DropdownMenuRadioItem = React.forwardRef<
-  React.ElementRef<typeof DropdownMenuPrimitive.RadioItem>,
-  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.RadioItem>
->(({ className, children, ...props }, ref) => {
+const DropdownMenuRadioItem = (
+  {
+    ref,
+    className,
+    children,
+    ...props
+  }: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.RadioItem> & {
+    ref?: React.Ref<React.ElementRef<typeof DropdownMenuPrimitive.RadioItem>>;
+  }
+) => {
   const { isWindowsTheme, isMacOSTheme } = useThemeFlags();
 
   return (
@@ -312,15 +355,20 @@ const DropdownMenuRadioItem = React.forwardRef<
       {children}
     </DropdownMenuPrimitive.RadioItem>
   );
-});
+};
 DropdownMenuRadioItem.displayName = DropdownMenuPrimitive.RadioItem.displayName;
 
-const DropdownMenuLabel = React.forwardRef<
-  React.ElementRef<typeof DropdownMenuPrimitive.Label>,
-  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Label> & {
+const DropdownMenuLabel = (
+  {
+    ref,
+    className,
+    inset,
+    ...props
+  }: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Label> & {
     inset?: boolean;
+    ref?: React.Ref<React.ElementRef<typeof DropdownMenuPrimitive.Label>>;
   }
->(({ className, inset, ...props }, ref) => {
+) => {
   const { isWindowsTheme, isMacOSTheme } = useThemeFlags();
 
   return (
@@ -339,13 +387,18 @@ const DropdownMenuLabel = React.forwardRef<
       {...props}
     />
   );
-});
+};
 DropdownMenuLabel.displayName = DropdownMenuPrimitive.Label.displayName;
 
-const DropdownMenuSeparator = React.forwardRef<
-  React.ElementRef<typeof DropdownMenuPrimitive.Separator>,
-  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Separator>
->(({ className, ...props }, ref) => {
+const DropdownMenuSeparator = (
+  {
+    ref,
+    className,
+    ...props
+  }: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Separator> & {
+    ref?: React.Ref<React.ElementRef<typeof DropdownMenuPrimitive.Separator>>;
+  }
+) => {
   const { isSystem7Theme, isMacOSTheme } = useThemeFlags();
 
   return (
@@ -369,7 +422,7 @@ const DropdownMenuSeparator = React.forwardRef<
       {...props}
     />
   );
-});
+};
 DropdownMenuSeparator.displayName = DropdownMenuPrimitive.Separator.displayName;
 
 const DropdownMenuShortcut = ({

@@ -48,64 +48,73 @@ export interface ButtonProps
   asChild?: boolean;
 }
 
-const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
-    const { play: playButtonClick } = useSound(Sounds.BUTTON_CLICK);
-    const Comp = asChild ? Slot : "button";
-    const { isXpTheme, isMacOSTheme } = useThemeFlags();
-
-    const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-      playButtonClick();
-      props.onClick?.(e);
-    };
-
-    const resolvedClassName = (() => {
-      // macOS: default/secondary/retro → aqua-button
-      if (isMacOSTheme && variant === "default") return cn("aqua-button primary", className);
-      if (isMacOSTheme && variant === "secondary") return cn("aqua-button secondary", className);
-      if (isMacOSTheme && variant === "retro") return cn("aqua-button secondary", className);
-
-      // macOS: aqua_select → CSS-driven aqua select button
-      if (isMacOSTheme && variant === "aqua_select") {
-        const dataState = (props as Record<string, unknown>)["data-state"];
-        const ariaPressed = (props as Record<string, unknown>)["aria-pressed"];
-        const isActiveSelected = dataState === "on" || ariaPressed === true;
-        return cn(
-          "macos-select-trigger no-chevron aqua-select-btn os-btn-aqua-select inline-flex w-auto items-center justify-center whitespace-nowrap rounded px-2 py-1 text-sm gap-0",
-          isActiveSelected && "aqua-selected",
-          className
-        );
-      }
-
-      // XP/Win98: default/aqua_select → xp.css button class
-      if (isXpTheme && (variant === "default" || variant === "aqua_select")) return cn("button", className);
-
-      // XP/Win98 + macOS: ghost → transparent reset to fight global button styles
-      if ((isXpTheme || isMacOSTheme) && variant === "ghost") {
-        return cn(buttonVariants({ variant, size }), "os-btn-ghost-reset", className);
-      }
-
-      return cn(buttonVariants({ variant, size, className }));
-    })();
-
-    const resolvedStyle = (() => {
-      if (isMacOSTheme && (variant === "default" || variant === "secondary" || variant === "retro")) {
-        return { position: "relative" as const, zIndex: 1, ...props.style };
-      }
-      return props.style;
-    })();
-
-    return (
-      <Comp
-        className={resolvedClassName}
-        ref={ref}
-        style={resolvedStyle}
-        {...props}
-        onClick={handleClick}
-      />
-    );
+const Button = (
+  {
+    ref,
+    className,
+    variant,
+    size,
+    asChild = false,
+    ...props
+  }: ButtonProps & {
+    ref?: React.Ref<HTMLButtonElement>;
   }
-);
+) => {
+  const { play: playButtonClick } = useSound(Sounds.BUTTON_CLICK);
+  const Comp = asChild ? Slot : "button";
+  const { isXpTheme, isMacOSTheme } = useThemeFlags();
+
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    playButtonClick();
+    props.onClick?.(e);
+  };
+
+  const resolvedClassName = (() => {
+    // macOS: default/secondary/retro → aqua-button
+    if (isMacOSTheme && variant === "default") return cn("aqua-button primary", className);
+    if (isMacOSTheme && variant === "secondary") return cn("aqua-button secondary", className);
+    if (isMacOSTheme && variant === "retro") return cn("aqua-button secondary", className);
+
+    // macOS: aqua_select → CSS-driven aqua select button
+    if (isMacOSTheme && variant === "aqua_select") {
+      const dataState = (props as Record<string, unknown>)["data-state"];
+      const ariaPressed = (props as Record<string, unknown>)["aria-pressed"];
+      const isActiveSelected = dataState === "on" || ariaPressed === true;
+      return cn(
+        "macos-select-trigger no-chevron aqua-select-btn os-btn-aqua-select inline-flex w-auto items-center justify-center whitespace-nowrap rounded px-2 py-1 text-sm gap-0",
+        isActiveSelected && "aqua-selected",
+        className
+      );
+    }
+
+    // XP/Win98: default/aqua_select → xp.css button class
+    if (isXpTheme && (variant === "default" || variant === "aqua_select")) return cn("button", className);
+
+    // XP/Win98 + macOS: ghost → transparent reset to fight global button styles
+    if ((isXpTheme || isMacOSTheme) && variant === "ghost") {
+      return cn(buttonVariants({ variant, size }), "os-btn-ghost-reset", className);
+    }
+
+    return cn(buttonVariants({ variant, size, className }));
+  })();
+
+  const resolvedStyle = (() => {
+    if (isMacOSTheme && (variant === "default" || variant === "secondary" || variant === "retro")) {
+      return { position: "relative" as const, zIndex: 1, ...props.style };
+    }
+    return props.style;
+  })();
+
+  return (
+    <Comp
+      className={resolvedClassName}
+      ref={ref}
+      style={resolvedStyle}
+      {...props}
+      onClick={handleClick}
+    />
+  );
+};
 Button.displayName = "Button";
 
 export { Button };

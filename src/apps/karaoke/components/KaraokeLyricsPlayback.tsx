@@ -2,7 +2,7 @@ import {
   createContext,
   memo,
   useCallback,
-  useContext,
+  use,
   useEffect,
   useMemo,
   type CSSProperties,
@@ -51,7 +51,7 @@ const KaraokeLyricsPlaybackContext = createContext<KaraokeLyricsPlaybackContextV
 );
 
 export function useKaraokeLyricsPlayback(): KaraokeLyricsPlaybackContextValue {
-  const ctx = useContext(KaraokeLyricsPlaybackContext);
+  const ctx = use(KaraokeLyricsPlaybackContext);
   if (!ctx) {
     throw new Error("useKaraokeLyricsPlayback must be used within KaraokeLyricsPlaybackProvider");
   }

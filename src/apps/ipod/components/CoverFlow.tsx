@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback, useImperativeHandle, forwardRef, useMemo } from "react";
+import { useEffect, useRef, useState, useCallback, useImperativeHandle, useMemo } from "react";
 import { motion, AnimatePresence, PanInfo, useMotionValue, animate } from "framer-motion";
 import {
   getYouTubeVideoId,
@@ -1037,20 +1037,25 @@ function AlbumFlipFaces({
   );
 }
 
-export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function CoverFlow({
-  tracks,
-  currentIndex,
-  onSelectTrack,
-  onExit,
-  onRotation,
-  isVisible,
-  ipodMode = true,
-  isPlaying = false,
-  onTogglePlay,
-  onPlayTrackInPlace,
-  groupAppleMusicAlbums = false,
-  inline = false,
-}, ref) {
+export const CoverFlow = function CoverFlow(
+  {
+    ref,
+    tracks,
+    currentIndex,
+    onSelectTrack,
+    onExit,
+    onRotation,
+    isVisible,
+    ipodMode = true,
+    isPlaying = false,
+    onTogglePlay,
+    onPlayTrackInPlace,
+    groupAppleMusicAlbums = false,
+    inline = false
+  }: CoverFlowProps & {
+    ref?: React.Ref<CoverFlowRef>;
+  }
+) {
   const { t } = useTranslation();
   const unknownArtistLabel = t("apps.ipod.menu.unknownArtist");
   const unknownAlbumLabel = t("apps.ipod.menuItems.unknownAlbum");
@@ -2113,4 +2118,4 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
       )}
     </AnimatePresence>
   );
-});
+};

@@ -1,4 +1,4 @@
-import { createContext, useContext } from "react";
+import { createContext, use } from "react";
 import type { WindowInsets } from "@/hooks/useWindowInsets";
 
 /**
@@ -50,5 +50,5 @@ export const WindowFrameDrawerContext =
 export function useWindowFrameDrawerContext():
   | WindowFrameDrawerContextValue
   | null {
-  return useContext(WindowFrameDrawerContext);
+  return use(WindowFrameDrawerContext);
 }
