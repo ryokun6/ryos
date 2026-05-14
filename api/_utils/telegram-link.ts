@@ -331,12 +331,17 @@ export async function loadTelegramConversationHistory(
   limit: number = TELEGRAM_HISTORY_LIMIT
 ): Promise<TelegramConversationMessage[]> {
   const values = await redis.lrange<string>(buildTelegramHistoryKey(chatId), 0, limit - 1);
-  return (values || [])
-    .map((value) => parseTelegramConversationMessage(value))
-    .filter(
-      (value): value is TelegramConversationMessage => value !== null
-    )
-    .reverse();
+  const parsedMessages = (values || []).reduce<TelegramConversationMessage[]>(
+    (acc, value) => {
+      const parsed = parseTelegramConversationMessage(value);
+      if (parsed) {
+        acc.push(parsed);
+      }
+      return acc;
+    },
+    []
+  );
+  return parsedMessages.reverse();
 }
 
 export async function appendTelegramConversationMessage(

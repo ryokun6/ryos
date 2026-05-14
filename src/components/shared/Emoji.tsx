@@ -19,12 +19,13 @@ function buildFilenameCandidates(emoji: string): string[] {
 
   const candidates = new Set<string>();
   candidates.add(codepoints.map(toCodepointHex).join("-"));
-  candidates.add(
-    codepoints
-      .filter((cp) => cp !== 0xfe0f)
-      .map(toCodepointHex)
-      .join("-")
-  );
+  const normalizedCodepoints = codepoints.reduce<string[]>((acc, codepoint) => {
+    if (codepoint !== 0xfe0f) {
+      acc.push(toCodepointHex(codepoint));
+    }
+    return acc;
+  }, []);
+  candidates.add(normalizedCodepoints.join("-"));
   // Some single-codepoint emoji files on disk include FE0F.
   if (
     codepoints.length === 1 &&

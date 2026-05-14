@@ -601,23 +601,31 @@ export function MapsAppComponent({
             return;
           }
           const places = data?.places ?? [];
-          const mapped: MapsSearchResult[] = places
-            .filter((p) => p && p.coordinate)
-            .map((p, index) => ({
-              // Prefer Apple's stable Place ID (5.78+) when available so
-              // re-selecting the same result across sessions / search
-              // refreshes hits the same `SavedPlace` entry. Falls back to
-              // the coordinate-based composite for older MapKit JS.
-              id:
-                p.id ||
-                `${p.coordinate.latitude},${p.coordinate.longitude},${index}`,
-              name: p.name || p.formattedAddress || trimmed,
-              subtitle: p.formattedAddress || "",
-              coordinate: p.coordinate,
-              category: p.pointOfInterestCategory,
-              placeId: p.id,
-              place: p,
-            }));
+          const mapped: MapsSearchResult[] = places.reduce<MapsSearchResult[]>(
+            (acc, place, index) => {
+              if (!place?.coordinate) {
+                return acc;
+              }
+
+              acc.push({
+                // Prefer Apple's stable Place ID (5.78+) when available so
+                // re-selecting the same result across sessions / search
+                // refreshes hits the same `SavedPlace` entry. Falls back to
+                // the coordinate-based composite for older MapKit JS.
+                id:
+                  place.id ||
+                  `${place.coordinate.latitude},${place.coordinate.longitude},${index}`,
+                name: place.name || place.formattedAddress || trimmed,
+                subtitle: place.formattedAddress || "",
+                coordinate: place.coordinate,
+                category: place.pointOfInterestCategory,
+                placeId: place.id,
+                place,
+              });
+              return acc;
+            },
+            []
+          );
           setSearchResults(mapped);
         },
         region

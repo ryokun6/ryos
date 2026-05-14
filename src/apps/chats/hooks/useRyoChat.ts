@@ -41,9 +41,12 @@ const getSystemState = () => {
 
   const foregroundApp = foregroundInstance?.appId || null;
 
-  const backgroundApps = openInstances
-    .filter((inst) => inst.instanceId !== foregroundInstanceId)
-    .map((inst) => inst.appId);
+  const backgroundApps = openInstances.reduce<string[]>((acc, instance) => {
+    if (instance.instanceId !== foregroundInstanceId) {
+      acc.push(instance.appId);
+    }
+    return acc;
+  }, []);
 
   return {
     instances: appStore.instances,

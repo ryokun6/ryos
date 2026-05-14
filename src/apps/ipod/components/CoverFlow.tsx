@@ -1244,9 +1244,13 @@ export const CoverFlow = function CoverFlow(
   const currentItem = coverItems[selectedIndex];
   const albumTracks = useMemo<Track[]>(() => {
     if (!currentItem) return [];
-    return currentItem.trackIndices
-      .map((idx) => tracks[idx])
-      .filter((t): t is Track => Boolean(t));
+    return currentItem.trackIndices.reduce<Track[]>((acc, index) => {
+      const track = tracks[index];
+      if (track) {
+        acc.push(track);
+      }
+      return acc;
+    }, []);
   }, [currentItem, tracks]);
 
   // Default the tracklist highlight to the currently-playing song

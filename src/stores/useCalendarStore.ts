@@ -126,12 +126,18 @@ export const useCalendarStore = create<CalendarStoreState>()(
 
         removeCalendar: (id) => {
           const state = get();
-          const deletedEventIds = state.events
-            .filter((event) => event.calendarId === id)
-            .map((event) => event.id);
-          const deletedTodoIds = state.todos
-            .filter((todo) => todo.calendarId === id)
-            .map((todo) => todo.id);
+          const deletedEventIds = state.events.reduce<string[]>((acc, event) => {
+            if (event.calendarId === id) {
+              acc.push(event.id);
+            }
+            return acc;
+          }, []);
+          const deletedTodoIds = state.todos.reduce<string[]>((acc, todo) => {
+            if (todo.calendarId === id) {
+              acc.push(todo.id);
+            }
+            return acc;
+          }, []);
 
           set((state) => ({
             calendars: state.calendars.filter((c) => c.id !== id),
@@ -276,7 +282,12 @@ export const useCalendarStore = create<CalendarStoreState>()(
         getEventsForDate: (date) => {
           const state = get();
           const visibleCalendarIds = new Set(
-            state.calendars.filter((c) => c.visible).map((c) => c.id)
+            state.calendars.reduce<string[]>((acc, calendar) => {
+              if (calendar.visible) {
+                acc.push(calendar.id);
+              }
+              return acc;
+            }, [])
           );
           return state.events.filter(
             (ev) => ev.date === date && visibleCalendarIds.has(ev.calendarId || "home")
@@ -287,7 +298,12 @@ export const useCalendarStore = create<CalendarStoreState>()(
           const state = get();
           const prefix = `${year}-${String(month + 1).padStart(2, "0")}`;
           const visibleCalendarIds = new Set(
-            state.calendars.filter((c) => c.visible).map((c) => c.id)
+            state.calendars.reduce<string[]>((acc, calendar) => {
+              if (calendar.visible) {
+                acc.push(calendar.id);
+              }
+              return acc;
+            }, [])
           );
           return state.events.filter(
             (ev) => ev.date.startsWith(prefix) && visibleCalendarIds.has(ev.calendarId || "home")

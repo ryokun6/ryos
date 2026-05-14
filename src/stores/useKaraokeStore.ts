@@ -15,7 +15,12 @@ function getRandomSongId(tracks: Track[], currentSongId: string | null): string 
   if (tracks.length === 0) return null;
   if (tracks.length === 1) return tracks[0].id;
   
-  const availableIds = tracks.map((t) => t.id).filter((id) => id !== currentSongId);
+  const availableIds = tracks.reduce<string[]>((acc, track) => {
+    if (track.id !== currentSongId) {
+      acc.push(track.id);
+    }
+    return acc;
+  }, []);
   if (availableIds.length === 0) return currentSongId;
   return availableIds[Math.floor(Math.random() * availableIds.length)];
 }

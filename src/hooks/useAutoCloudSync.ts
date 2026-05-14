@@ -1482,12 +1482,18 @@ export function useAutoCloudSync() {
         if (state.tracks !== prevState.tracks) {
           const currentIds = new Set(state.tracks.map((t) => t.id));
           const prevIds = new Set(prevState.tracks.map((t) => t.id));
-          const removedIds = prevState.tracks
-            .map((t) => t.id)
-            .filter((id) => !currentIds.has(id));
-          const addedIds = state.tracks
-            .map((t) => t.id)
-            .filter((id) => !prevIds.has(id));
+          const removedIds = prevState.tracks.reduce<string[]>((acc, track) => {
+            if (!currentIds.has(track.id)) {
+              acc.push(track.id);
+            }
+            return acc;
+          }, []);
+          const addedIds = state.tracks.reduce<string[]>((acc, track) => {
+            if (!prevIds.has(track.id)) {
+              acc.push(track.id);
+            }
+            return acc;
+          }, []);
           const syncStore = useCloudSyncStore.getState();
           if (removedIds.length > 0) {
             syncStore.markDeletedKeys("songTrackIds", removedIds);

@@ -43,15 +43,13 @@ const extractImageParts = (message: {
 }): string[] => {
   if (!message.parts) return [];
   
-  return message.parts
-    .filter((p) => {
-      // Check for file parts with image media types
-      if (p.type === "file" && p.mediaType?.startsWith("image/") && p.url) {
-        return true;
-      }
-      return false;
-    })
-    .map((p) => p.url as string);
+  return message.parts.reduce<string[]>((acc, part) => {
+    // Check for file parts with image media types
+    if (part.type === "file" && part.mediaType?.startsWith("image/") && part.url) {
+      acc.push(part.url);
+    }
+    return acc;
+  }, []);
 };
 
 // --- Color Hashing for Usernames ---
@@ -162,10 +160,12 @@ const getMessageText = (message: {
 }): string => {
   if (!message.parts) return "";
 
-  return message.parts
-    .filter((p) => p.type === "text")
-    .map((p) => (p as { type: string; text?: string }).text || "")
-    .join("");
+  return message.parts.reduce<string[]>((acc, part) => {
+    if (part.type === "text") {
+      acc.push((part as { type: string; text?: string }).text || "");
+    }
+    return acc;
+  }, []).join("");
 };
 
 const getMessageKey = (message: {

@@ -127,16 +127,22 @@ async function searchOneQuery(
       );
     }
 
-    return (data.items ?? [])
-      .filter((item): item is Required<YouTubeSearchItem> & {
-        id: { videoId: string };
-      } => Boolean(item.id?.videoId))
-      .map((item) => ({
-        id: item.id.videoId!,
-        url: `https://youtu.be/${item.id.videoId}`,
-        title: decodeHtml(item.snippet.title),
-        artist: decodeHtml(item.snippet.channelTitle),
-      }));
+    return (data.items ?? []).reduce<ChannelVideo[]>(
+      (acc, item) => {
+        if (!item.id?.videoId) {
+          return acc;
+        }
+
+        acc.push({
+          id: item.id.videoId,
+          url: `https://youtu.be/${item.id.videoId}`,
+          title: decodeHtml(item.snippet.title),
+          artist: decodeHtml(item.snippet.channelTitle),
+        });
+        return acc;
+      },
+      []
+    );
   }
   return [];
 }

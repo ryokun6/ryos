@@ -295,9 +295,13 @@ async function migrateData(redis: RedisLike): Promise<{ migrated: number; skippe
     
     // Remove from old set
     if (metadataKeys.length > 0) {
-      const songIds = metadataKeys
-        .map(k => k.replace(LEGACY_SONG_METADATA_PREFIX, ""))
-        .filter(id => id !== "all");
+      const songIds = metadataKeys.reduce<string[]>((acc, key) => {
+        const songId = key.replace(LEGACY_SONG_METADATA_PREFIX, "");
+        if (songId !== "all") {
+          acc.push(songId);
+        }
+        return acc;
+      }, []);
       if (songIds.length > 0) {
         await redis.srem(LEGACY_SONG_SET, ...songIds);
       }

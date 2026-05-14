@@ -120,9 +120,15 @@ export function SpotlightSearch() {
     }> = [];
 
     for (const type of SECTION_TYPE_ORDER) {
-      const items = results
-        .filter((r) => r.type === type)
-        .map((r) => ({ ...r, globalIndex: 0 }));
+      const items = results.reduce<Array<SpotlightResult & { globalIndex: number }>>(
+        (acc, result) => {
+          if (result.type === type) {
+            acc.push({ ...result, globalIndex: 0 });
+          }
+          return acc;
+        },
+        []
+      );
       if (items.length > 0) {
         groups.push({ type, items });
       }

@@ -379,40 +379,66 @@ const getSystemState = () => {
   const tvCustomChannels = buildTvChannelLineup(
     tvStore.customChannels,
     tvStore.hiddenDefaultChannelIds
-  )
-    .filter((ch) => !DEFAULT_CHANNELS.some((d) => d.id === ch.id))
-    .map((c) => ({
-      id: c.id,
-      number: c.number,
-      name: c.name,
-      description: c.description,
-      videoCount: c.videos.length,
-    }));
+  ).reduce<
+    {
+      id: string;
+      number: number;
+      name: string;
+      description: string;
+      videoCount: number;
+    }[]
+  >((acc, channel) => {
+    if (DEFAULT_CHANNELS.some((defaultChannel) => defaultChannel.id === channel.id)) {
+      return acc;
+    }
+    acc.push({
+      id: channel.id,
+      number: channel.number,
+      name: channel.name,
+      description: channel.description ?? "",
+      videoCount: channel.videos.length,
+    });
+    return acc;
+  }, []);
 
   // Detect user's operating system
   const userOS = detectUserOS();
 
   // Use new instance-based model instead of legacy apps
-  const runningInstances = Object.entries(appStore.instances)
-    .filter(([, instance]) => instance.isOpen)
-    .map(([instanceId, instance]) => {
-      const base = {
-        instanceId,
-        appId: instance.appId,
-        isForeground: instance.isForeground || false,
-        title: instance.title,
-      };
-      // For applet-viewer instances, include the applet path
-      if (instance.appId === "applet-viewer" && instance.initialData) {
-        const appletData = instance.initialData as { path?: string; shareCode?: string };
-        return {
-          ...base,
-          appletPath: appletData.path || undefined,
-          appletId: appletData.shareCode || undefined,
-        };
-      }
-      return base;
-    });
+  const runningInstances = Object.entries(appStore.instances).reduce<
+    {
+      instanceId: string;
+      appId: string;
+      isForeground: boolean;
+      title?: string;
+      appletPath?: string;
+      appletId?: string;
+    }[]
+  >((acc, [instanceId, instance]) => {
+    if (!instance.isOpen) {
+      return acc;
+    }
+
+    const base = {
+      instanceId,
+      appId: instance.appId,
+      isForeground: instance.isForeground || false,
+      title: instance.title,
+    };
+    // For applet-viewer instances, include the applet path
+    if (instance.appId === "applet-viewer" && instance.initialData) {
+      const appletData = instance.initialData as { path?: string; shareCode?: string };
+      acc.push({
+        ...base,
+        appletPath: appletData.path || undefined,
+        appletId: appletData.shareCode || undefined,
+      });
+      return acc;
+    }
+
+    acc.push(base);
+    return acc;
+  }, []);
 
   const foregroundInstance =
     runningInstances.find((inst) => inst.isForeground) || null;
@@ -554,13 +580,15 @@ const getAssistantVisibleText = (message: UIMessage): string => {
 
   // If message has parts, extract text from text parts only
   if (message.parts && message.parts.length > 0) {
-    return message.parts
-      .filter((part: MessagePart) => part.type === "text")
-      .map((part: MessagePart) => {
+    return message.parts.reduce<string[]>((acc, part: MessagePart) => {
+        if (part.type !== "text") {
+          return acc;
+        }
         const text = part.text || "";
         // Handle urgent messages by removing leading !!!!
-        return text.startsWith("!!!!") ? text.slice(4).trimStart() : text;
-      })
+        acc.push(text.startsWith("!!!!") ? text.slice(4).trimStart() : text);
+        return acc;
+      }, [])
       .join("");
   }
 
@@ -949,12 +977,17 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 result = "";
               } else if (path === "/Applications") {
                 // List installed applications
-                const apps = Object.entries(appRegistry)
-                  .filter(([id]) => id !== "finder")
-                  .map(([id, app]) => ({
-                    path: `/Applications/${id}`,
-                    name: app.name,
-                  }));
+                const apps = Object.entries(appRegistry).reduce<
+                  { path: string; name: string }[]
+                >((acc, [id, app]) => {
+                  if (id !== "finder") {
+                    acc.push({
+                      path: `/Applications/${id}`,
+                      name: app.name,
+                    });
+                  }
+                  return acc;
+                }, []);
 
                 const appsMessage = apps.length === 1
                   ? i18n.t("apps.chats.toolCalls.foundApplicationsList", { count: apps.length })

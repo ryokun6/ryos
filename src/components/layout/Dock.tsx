@@ -966,7 +966,13 @@ function MacDock() {
 
   // Pinned apps on the left side (from dock store)
   const pinnedLeft: AppId[] = useMemo(
-    () => pinnedItems.filter(item => item.type === "app").map(item => item.id as AppId),
+    () =>
+      pinnedItems.reduce<AppId[]>((acc, item) => {
+        if (item.type === "app") {
+          acc.push(item.id as AppId);
+        }
+        return acc;
+      }, []),
     [pinnedItems]
   );
   
@@ -1302,12 +1308,15 @@ function MacDock() {
 
     // Group instances by appId
     const openByApp: Record<string, AppInstance[]> = {};
-    Object.values(instances)
-      .filter((i) => i.isOpen)
-      .forEach((i) => {
-        if (!openByApp[i.appId]) openByApp[i.appId] = [];
-        openByApp[i.appId].push(i);
-      });
+    for (const instance of Object.values(instances)) {
+      if (!instance.isOpen) {
+        continue;
+      }
+      if (!openByApp[instance.appId]) {
+        openByApp[instance.appId] = [];
+      }
+      openByApp[instance.appId].push(instance);
+    }
 
     // For each app, either add individual applet instances or a single app entry
     Object.entries(openByApp).forEach(([appId, instancesList]) => {

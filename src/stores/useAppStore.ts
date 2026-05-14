@@ -729,9 +729,12 @@ const createUseAppStore = () =>
 
       _debugCheckInstanceIntegrity: () => {
         set((state) => {
-          const openIds = Object.values(state.instances)
-            .filter((i) => i.isOpen)
-            .map((i) => i.instanceId);
+          const openIds = Object.values(state.instances).reduce<string[]>((acc, instance) => {
+            if (instance.isOpen) {
+              acc.push(instance.instanceId);
+            }
+            return acc;
+          }, []);
           const filtered = state.instanceOrder.filter((id) =>
             openIds.includes(id)
           );
@@ -765,9 +768,10 @@ const createUseAppStore = () =>
         
         // Instance management
         instances: Object.fromEntries(
-          Object.entries(state.instances)
-            .filter(([, inst]) => inst.isOpen)
-            .map(([id, inst]) => {
+          Object.entries(state.instances).reduce<[string, AppInstance][]>((acc, [id, inst]) => {
+              if (!inst.isOpen) {
+                return acc;
+              }
               // Exclude launchOrigin from persisted state - restored windows should
               // animate from window center, not from the original icon position
               const { launchOrigin: _, ...instWithoutLaunchOrigin } = inst;
@@ -775,16 +779,18 @@ const createUseAppStore = () =>
               // For applet-viewer, exclude content from initialData to prevent localStorage storage
               if (inst.appId === "applet-viewer" && inst.initialData) {
                 const appletData = inst.initialData as { path?: string; content?: string; shareCode?: string; icon?: string; name?: string };
-                return [id, {
+                acc.push([id, {
                   ...instWithoutLaunchOrigin,
                   initialData: {
                     ...appletData,
                     content: "", // Exclude content - it should be loaded from IndexedDB
                   },
-                }];
+                } as AppInstance]);
+                return acc;
               }
-              return [id, instWithoutLaunchOrigin];
-            })
+              acc.push([id, instWithoutLaunchOrigin as AppInstance]);
+              return acc;
+            }, [])
         ),
         instanceOrder: state.instanceOrder.filter(
           (id) => state.instances[id]?.isOpen

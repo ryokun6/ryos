@@ -356,25 +356,38 @@ export function createContactFromDraft(
   draft: ContactDraft = {},
   now: number = Date.now()
 ): Contact {
+  const reduceContactValues = (
+    values: Array<ContactValue | string> | undefined,
+    kind: "email" | "phone" | "url"
+  ): ContactValue[] =>
+    (values || []).reduce<ContactValue[]>((acc, value) => {
+      const normalizedValue = normalizeContactValue(kind, value);
+      if (normalizedValue) {
+        acc.push(normalizedValue);
+      }
+      return acc;
+    }, []);
+
+  const reduceContactAddresses = (values: ContactDraft["addresses"]): ContactAddress[] =>
+    (values || []).reduce<ContactAddress[]>((acc, value) => {
+      const normalizedValue = normalizeContactAddress(value);
+      if (normalizedValue) {
+        acc.push(normalizedValue);
+      }
+      return acc;
+    }, []);
+
   const emails = dedupeContactValues(
-    (draft.emails || [])
-      .map((value) => normalizeContactValue("email", value))
-      .filter((value): value is ContactValue => Boolean(value))
+    reduceContactValues(draft.emails, "email")
   );
   const phones = dedupeContactValues(
-    (draft.phones || [])
-      .map((value) => normalizeContactValue("phone", value))
-      .filter((value): value is ContactValue => Boolean(value))
+    reduceContactValues(draft.phones, "phone")
   );
   const urls = dedupeContactValues(
-    (draft.urls || [])
-      .map((value) => normalizeContactValue("url", value))
-      .filter((value): value is ContactValue => Boolean(value))
+    reduceContactValues(draft.urls, "url")
   );
   const addresses = dedupeContactAddresses(
-    (draft.addresses || [])
-      .map((value) => normalizeContactAddress(value))
-      .filter((value): value is ContactAddress => Boolean(value))
+    reduceContactAddresses(draft.addresses)
   );
 
   const contact: Contact = {
@@ -506,9 +519,13 @@ export function normalizeContacts(value: unknown): Contact[] {
     return [];
   }
 
-  return value
-    .map((entry) => normalizeContact(entry))
-    .filter((entry): entry is Contact => Boolean(entry));
+  return value.reduce<Contact[]>((acc, entry) => {
+    const normalizedEntry = normalizeContact(entry);
+    if (normalizedEntry) {
+      acc.push(normalizedEntry);
+    }
+    return acc;
+  }, []);
 }
 
 export function updateContactFromDraft(
