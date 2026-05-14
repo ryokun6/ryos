@@ -80,6 +80,7 @@ export function CreateChannelDialog({
   const {
     isWindowsTheme: isXpTheme,
     isMacOSTheme: isMacTheme,
+    isSystem7Theme,
   } = useThemeFlags();
 
   const { create } = useCreateTvChannel();
@@ -154,7 +155,9 @@ export function CreateChannelDialog({
     : undefined;
   const fontClass = isXpTheme
     ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
-    : "font-geneva-12 text-[12px]";
+    : isSystem7Theme
+      ? "font-geneva-12 text-[12px]"
+      : "font-os-ui text-[12px]";
 
   const dialogContent = (
     <div className={cn(isXpTheme ? "p-2 px-4" : "p-4 px-6")}>
