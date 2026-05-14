@@ -127,7 +127,7 @@ function CursorAgentsToolbar({
           size="sm"
           onClick={onRefresh}
           disabled={refreshDisabled || isSubmitting}
-          className="h-7 w-7 shrink-0 p-0"
+          className="size-7 shrink-0 p-0"
           aria-label={t("apps.admin.cursorAgents.refresh", "Refresh")}
           title={t("apps.admin.cursorAgents.refresh", "Refresh")}
         >
@@ -285,7 +285,7 @@ export function CursorAgentsPanel({
             onClick={handleRefreshClick}
             className="h-8 text-[11px]"
           >
-            <ArrowsClockwise className="h-3.5 w-3.5 mr-1" weight="bold" />
+            <ArrowsClockwise className="size-3.5 mr-1" weight="bold" />
             {t("apps.admin.cursorAgents.retry", "Retry")}
           </Button>
         </div>
@@ -298,7 +298,7 @@ export function CursorAgentsPanel({
       <div className={panelShellClass}>
         {toolbar}
         <div className="flex flex-col items-center justify-center py-16 text-neutral-400 px-6 text-center gap-2">
-          <Robot className="h-9 w-9 opacity-50" weight="bold" />
+          <Robot className="size-9 opacity-50" weight="bold" />
           <p className="text-[12px] font-medium text-neutral-500">
             {t("apps.admin.cursorAgents.emptyTitle", "No Cursor agent runs in Redis")}
           </p>
@@ -377,7 +377,7 @@ export function CursorAgentsPanel({
                 <TableCell className="w-0 align-top py-2 pl-2 pr-1">
                   <span
                     className={cn(
-                      "mt-[5px] inline-block h-2 w-2 shrink-0 rounded-full",
+                      "mt-[5px] inline-block size-2 shrink-0 rounded-full",
                       statusDotClass(run.status)
                     )}
                     title={run.status}

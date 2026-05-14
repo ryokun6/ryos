@@ -50,7 +50,7 @@ export function ConfirmDialog({
         <ThemedIcon
           name="warn.png"
           alt="Warning"
-          className="w-[32px] h-[32px] mt-0.5 [image-rendering:pixelated]"
+          className="size-[32px] mt-0.5 [image-rendering:pixelated]"
           width={32}
           height={32}
         />

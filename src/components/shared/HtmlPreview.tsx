@@ -1083,7 +1083,7 @@ export default function HtmlPreview({
             <button
               onClick={handleSaveAsApplet}
               onMouseDown={(e) => e.stopPropagation()}
-              className="flex items-center justify-center w-6 h-6 hover:bg-black/10 rounded mr-1 group"
+              className="flex items-center justify-center size-6 hover:bg-black/10 rounded mr-1 group"
               aria-label={t("common.htmlPreview.saveApplet")}
               disabled={isStreaming}
             >
@@ -1095,7 +1095,7 @@ export default function HtmlPreview({
             <button
               onClick={handleSaveToDisk}
               onMouseDown={(e) => e.stopPropagation()}
-              className="flex items-center justify-center w-6 h-6 hover:bg-black/10 rounded mr-1 group"
+              className="flex items-center justify-center size-6 hover:bg-black/10 rounded mr-1 group"
               aria-label={t("common.htmlPreview.downloadHtml")}
               disabled={isStreaming}
             >
@@ -1107,7 +1107,7 @@ export default function HtmlPreview({
             <button
               onClick={handleCopy}
               onMouseDown={(e) => e.stopPropagation()}
-              className="flex items-center justify-center w-6 h-6 hover:bg-black/10 rounded mr-1 group"
+              className="flex items-center justify-center size-6 hover:bg-black/10 rounded mr-1 group"
               aria-label={t("common.htmlPreview.copyHtml")}
               disabled={isStreaming}
             >
@@ -1126,7 +1126,7 @@ export default function HtmlPreview({
             <button
               onClick={toggleFullScreen}
               onMouseDown={(e) => e.stopPropagation()}
-              className="flex items-center justify-center w-6 h-6 hover:bg-black/10 rounded group"
+              className="flex items-center justify-center size-6 hover:bg-black/10 rounded group"
               aria-label={
                 isFullScreen
                   ? t("common.htmlPreview.minimizePreview")
@@ -1151,7 +1151,7 @@ export default function HtmlPreview({
         {/* Conditional Rendering: Text Stream or Iframe */}
         {isStreaming && htmlContent ? (
           <div
-            className={`h-full w-full relative overflow-auto ${
+            className={`size-full relative overflow-auto ${
               !isInternetExplorer && (appletTitle || appletIcon) ? "flex-1" : ""
             }`}
             style={{
@@ -1251,7 +1251,7 @@ export default function HtmlPreview({
               >
                 <div
                   ref={fullscreenWrapperRef}
-                  className="relative w-full h-full overflow-hidden"
+                  className="relative size-full overflow-hidden"
                 >
                   {/* Code view layer - always 100% width underneath */}
                   <AnimatePresence>
@@ -1306,7 +1306,7 @@ export default function HtmlPreview({
                     {/* Fullscreen Conditional Rendering: Text Stream or Iframe */}
                     {isStreaming && htmlContent ? (
                       <motion.div
-                        className="h-full w-full overflow-auto"
+                        className="size-full overflow-auto"
                         initial={{ opacity: 0.8, y: 3 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.15, ease: "easeOut" }}
@@ -1337,7 +1337,7 @@ export default function HtmlPreview({
                         // srcDoc is now set by useEffect after streaming finishes
                         // srcDoc={processedHtmlContent()}
                         title={t("common.htmlPreview.codePreviewTitleFullscreen")}
-                        className="border-0 bg-white w-full h-full"
+                        className="border-0 bg-white size-full"
                         sandbox={sandboxAttribute}
                         onClick={(e) => e.stopPropagation()}
                         onMouseDown={(e) => e.stopPropagation()}
@@ -1366,7 +1366,7 @@ export default function HtmlPreview({
                         style={{ opacity: 0.2 }}
                       >
                         <motion.div
-                          className="w-full h-full bg-gray-400"
+                          className="size-full bg-gray-400"
                           animate={{
                             opacity: [0.05, 0.2, 0.05],
                           }}
@@ -1429,7 +1429,7 @@ export default function HtmlPreview({
                     >
                       {/* Plus icon - only visible when collapsed */}
                       <motion.div
-                        className="absolute w-[40px] h-[40px] flex items-center justify-center group hover:scale-110 transition-all duration-200"
+                        className="absolute size-[40px] flex items-center justify-center group hover:scale-110 transition-all duration-200"
                         initial={false}
                         animate={{
                           opacity: isToolbarCollapsed ? 1 : 0,
@@ -1462,7 +1462,7 @@ export default function HtmlPreview({
                         }}
                       >
                         <div
-                          className="flex items-center justify-center w-8 h-8 hover:bg-white/10 rounded-full group cursor-move"
+                          className="flex items-center justify-center size-8 hover:bg-white/10 rounded-full group cursor-move"
                           onPointerDown={(e) => {
                             e.stopPropagation();
                             dragControls.start(e);
@@ -1512,7 +1512,7 @@ export default function HtmlPreview({
                               minimizeSound.play();
                             }
                           }}
-                          className="flex items-center justify-center w-8 h-8 hover:bg-white/10 rounded-full group"
+                          className="flex items-center justify-center size-8 hover:bg-white/10 rounded-full group"
                           aria-label={t("common.htmlPreview.toggleCode")}
                         >
                           <Code
@@ -1522,7 +1522,7 @@ export default function HtmlPreview({
                         </button>
                         <button
                           onClick={handleSaveAsApplet}
-                          className="flex items-center justify-center w-8 h-8 hover:bg-white/10 rounded-full group"
+                          className="flex items-center justify-center size-8 hover:bg-white/10 rounded-full group"
                           aria-label={t("common.htmlPreview.saveApplet")}
                         >
                           <DownloadSimple
@@ -1532,7 +1532,7 @@ export default function HtmlPreview({
                         </button>
                         <button
                           onClick={handleSaveToDisk}
-                          className="flex items-center justify-center w-8 h-8 hover:bg-white/10 rounded-full group"
+                          className="flex items-center justify-center size-8 hover:bg-white/10 rounded-full group"
                           aria-label={t("common.htmlPreview.downloadHtml")}
                         >
                           <Export
@@ -1542,7 +1542,7 @@ export default function HtmlPreview({
                         </button>
                         <button
                           onClick={handleCopy}
-                          className="flex items-center justify-center w-8 h-8 hover:bg-white/10 rounded-full group"
+                          className="flex items-center justify-center size-8 hover:bg-white/10 rounded-full group"
                           aria-label={t("common.htmlPreview.copyHtml")}
                         >
                           {copySuccess ? (
@@ -1563,7 +1563,7 @@ export default function HtmlPreview({
                             minimizeSound.play();
                             setIsFullScreen(false);
                           }}
-                          className="flex items-center justify-center w-8 h-8 hover:bg-white/10 rounded-full group"
+                          className="flex items-center justify-center size-8 hover:bg-white/10 rounded-full group"
                           aria-label={t("common.htmlPreview.exitFullscreen")}
                         >
                           <ArrowsIn

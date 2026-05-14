@@ -398,7 +398,7 @@ function EventTrayEditor({
         <TrayFieldRow label={t("apps.calendar.event.calendar")} useGeneva={useGeneva}>
           <div className="flex items-center gap-1.5 min-w-0">
             <span
-              className="inline-block w-2.5 h-2.5 shrink-0 rounded-sm border border-black/20"
+              className="inline-block size-2.5 shrink-0 rounded-sm border border-black/20"
               style={{
                 backgroundColor:
                   EVENT_COLOR_MAP[
@@ -619,7 +619,7 @@ function TodoDetails({
         <TrayFieldRow label={t("apps.calendar.event.calendar")} useGeneva={useGeneva}>
           <div className="flex items-center gap-1.5 min-w-0">
             <span
-              className="inline-block w-2.5 h-2.5 shrink-0 rounded-sm border border-black/20"
+              className="inline-block size-2.5 shrink-0 rounded-sm border border-black/20"
               style={{ backgroundColor: color }}
             />
             <select

@@ -33,7 +33,7 @@ import type {
   CalendarSnapshotData,
   StickiesSnapshotData,
   ContactsSnapshotData,
-  type StickyColor,
+  StickyColor,
   SongLibraryControlInput,
   SongLibraryControlOutput,
   SongLibraryToolRecord,

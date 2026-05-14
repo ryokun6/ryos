@@ -331,7 +331,7 @@ function ScrollToBottomButton() {
             </>
           )}
           <CaretDown
-            className={`h-2.5 w-2.5 ${
+            className={`size-2.5 ${
               isMacTheme ? "text-black/70 relative z-10" : "text-neutral-800"
             }`}
             weight="bold"
@@ -538,11 +538,11 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                         opacity: isHovered ? 1 : 0,
                         scale: 1,
                       }}
-                      className="h-3 w-3 text-gray-400 hover:text-red-600 transition-colors"
+                      className="size-3 text-gray-400 hover:text-red-600 transition-colors"
                       onClick={() => onDeleteMessage(message)}
                       aria-label={t("apps.chats.ariaLabels.deleteMessage")}
                     >
-                      <Trash className="h-3 w-3" weight="bold" />
+                      <Trash className="size-3" weight="bold" />
                     </motion.button>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -557,14 +557,14 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                 opacity: isHovered ? 1 : 0,
                 scale: 1,
               }}
-              className="h-3 w-3 text-gray-400 hover:text-neutral-600 transition-colors"
+              className="size-3 text-gray-400 hover:text-neutral-600 transition-colors"
               onClick={() => onCopyMessage(message)}
               aria-label={t("apps.chats.ariaLabels.copyMessage")}
             >
               {copiedMessageId === messageKey ? (
-                <Check className="h-3 w-3" weight="bold" />
+                <Check className="size-3" weight="bold" />
               ) : (
-                <Copy className="h-3 w-3" weight="bold" />
+                <Copy className="size-3" weight="bold" />
               )}
             </motion.button>
           </>
@@ -614,14 +614,14 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                 opacity: isHovered ? 1 : 0,
                 scale: 1,
               }}
-              className="h-3 w-3 text-gray-400 hover:text-neutral-600 transition-colors"
+              className="size-3 text-gray-400 hover:text-neutral-600 transition-colors"
               onClick={() => onCopyMessage(message)}
               aria-label={t("apps.chats.ariaLabels.copyMessage")}
             >
               {copiedMessageId === messageKey ? (
-                <Check className="h-3 w-3" weight="bold" />
+                <Check className="size-3" weight="bold" />
               ) : (
-                <Copy className="h-3 w-3" weight="bold" />
+                <Copy className="size-3" weight="bold" />
               )}
             </motion.button>
             {speechEnabled && (
@@ -631,7 +631,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                   opacity: isHovered ? 1 : 0,
                   scale: 1,
                 }}
-                className="h-3 w-3 text-gray-400 hover:text-neutral-600 transition-colors"
+                className="size-3 text-gray-400 hover:text-neutral-600 transition-colors"
                 onClick={() => {
                   if (playingMessageId === messageKey) {
                     stop();
@@ -682,10 +682,10 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                   speechLoadingId === messageKey ? (
                     <ActivityIndicator size="xs" />
                   ) : (
-                    <Pause className="h-3 w-3" weight="bold" />
+                    <Pause className="size-3" weight="bold" />
                   )
                 ) : (
-                  <SpeakerHigh className="h-3 w-3" weight="bold" />
+                  <SpeakerHigh className="size-3" weight="bold" />
                 )}
               </motion.button>
             )}
@@ -704,13 +704,13 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                       opacity: isHovered ? 1 : 0,
                       scale: 1,
                     }}
-                    className="h-3 w-3 text-gray-400 hover:text-blue-600 transition-colors"
+                    className="size-3 text-gray-400 hover:text-blue-600 transition-colors"
                     onClick={() => onSendMessage(message.username!)}
                     aria-label={t("apps.chats.ariaLabels.messageUser", {
                       username: message.username,
                     })}
                   >
-                    <PaperPlaneRight className="h-3 w-3" weight="bold" />
+                    <PaperPlaneRight className="size-3" weight="bold" />
                   </motion.button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -733,11 +733,11 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                     opacity: isHovered ? 1 : 0,
                     scale: 1,
                   }}
-                  className="h-3 w-3 text-gray-400 hover:text-red-600 transition-colors"
+                  className="size-3 text-gray-400 hover:text-red-600 transition-colors"
                   onClick={() => onDeleteMessage(message)}
                   aria-label={t("apps.chats.ariaLabels.deleteMessage")}
                 >
-                  <Trash className="h-3 w-3" weight="bold" />
+                  <Trash className="size-3" weight="bold" />
                 </motion.button>
               </TooltipTrigger>
               <TooltipContent>
@@ -1232,7 +1232,7 @@ function ChatMessagesContent({
           animate={{ opacity: 1, y: 0 }}
           className="flex items-center gap-2 text-gray-500 font-['Geneva-9'] text-[16px] antialiased h-[12px]"
         >
-          <ChatCircle className="h-3 w-3" weight="bold" />
+          <ChatCircle className="size-3" weight="bold" />
           <span>{t("apps.chats.status.startNewConversation")}</span>
           {onClear && (
             <Button
@@ -1339,7 +1339,7 @@ function ChatMessagesContent({
                 animate={{ opacity: 1, y: 0 }}
                 className="flex items-center gap-2 text-gray-500 font-['Geneva-9'] text-[16px] antialiased h-[12px]"
               >
-                <ChatCircle className="h-3 w-3" weight="bold" />
+                <ChatCircle className="size-3" weight="bold" />
                 <span>{errorMessage}</span>
               </motion.div>
             );
@@ -1353,7 +1353,7 @@ function ChatMessagesContent({
               exit={{ opacity: 0 }}
               className="flex items-start gap-2 text-red-600 font-['Geneva-9'] text-[16px] antialiased pl-1 py-1"
             >
-              <WarningCircle className="h-3 w-3 mt-0.5 flex-shrink-0" weight="bold" />
+              <WarningCircle className="size-3 mt-0.5 flex-shrink-0" weight="bold" />
               <div className="flex-1 flex flex-row items-start justify-between gap-1">
                 <span className="leading-none">{errorMessage}</span>
                 {onRetry && (
@@ -1395,7 +1395,7 @@ export function ChatMessages({
   return (
     // Use StickToBottom component as the main container
     <StickToBottom
-      className="flex-1 relative flex flex-col overflow-hidden w-full h-full"
+      className="flex-1 relative flex flex-col overflow-hidden size-full"
       // Optional props for smooth scrolling behavior
       resize="smooth"
       initial="instant"

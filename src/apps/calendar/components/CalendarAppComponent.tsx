@@ -654,7 +654,7 @@ function WeekTimeGrid({
                   return (
                     <div className="absolute left-0 right-0 pointer-events-none" style={{ top: topPos, zIndex: 5 }}>
                       <div className="flex items-center">
-                        <div className="w-2 h-2 rounded-full -ml-1" style={{ backgroundColor: isXpTheme ? TODAY_RED_XP : TODAY_RED }} />
+                        <div className="size-2 rounded-full -ml-1" style={{ backgroundColor: isXpTheme ? TODAY_RED_XP : TODAY_RED }} />
                         <div className="flex-1 h-px" style={{ backgroundColor: isXpTheme ? TODAY_RED_XP : TODAY_RED }} />
                       </div>
                     </div>
@@ -822,7 +822,7 @@ function DayTimeGrid({
               return (
                 <div className="absolute left-0 right-0 pointer-events-none" style={{ top: topPos, zIndex: 5 }}>
                   <div className="flex items-center">
-                    <div className="w-2 h-2 rounded-full -ml-1 shrink-0" style={{ backgroundColor: isXpTheme ? TODAY_RED_XP : TODAY_RED }} />
+                    <div className="size-2 rounded-full -ml-1 shrink-0" style={{ backgroundColor: isXpTheme ? TODAY_RED_XP : TODAY_RED }} />
                     <div className="flex-1 h-px min-w-0" style={{ backgroundColor: isXpTheme ? TODAY_RED_XP : TODAY_RED }} />
                   </div>
                 </div>
@@ -1002,7 +1002,7 @@ function BottomToolbar({
           <div className="shrink-0">
             <div className="metal-inset-btn-group">
               <button type="button" className="metal-inset-btn metal-inset-icon" onClick={onPrev}>
-                <span className="inline-block w-0 h-0 border-t-[4px] border-t-transparent border-b-[4px] border-b-transparent border-r-[5px] border-r-current" />
+                <span className="inline-block size-0 border-t-[4px] border-t-transparent border-b-[4px] border-b-transparent border-r-[5px] border-r-current" />
               </button>
               {views.map((v) => (
                 <button key={v.id} type="button" className="metal-inset-btn font-geneva-12 !text-[11px] w-[48px] justify-center px-0"
@@ -1011,7 +1011,7 @@ function BottomToolbar({
                 </button>
               ))}
               <button type="button" className="metal-inset-btn metal-inset-icon" onClick={onNext}>
-                <span className="inline-block w-0 h-0 border-t-[4px] border-t-transparent border-b-[4px] border-b-transparent border-l-[5px] border-l-current" />
+                <span className="inline-block size-0 border-t-[4px] border-t-transparent border-b-[4px] border-b-transparent border-l-[5px] border-l-current" />
               </button>
             </div>
           </div>
@@ -1048,7 +1048,7 @@ function BottomToolbar({
                   variant={isSystem7Theme ? "player" : "ghost"}
                   onClick={onToggleCalendarSidebar}
                   data-state={showCalendarSidebar ? "on" : "off"}
-                  className={cn("h-6 w-6", isXpTheme && "text-black")}
+                  className={cn("size-6", isXpTheme && "text-black")}
                   title={t("apps.calendar.sidebar.calendars")}
                 >
                   <SidebarSimple size={14} />
@@ -1057,7 +1057,7 @@ function BottomToolbar({
                   variant={isSystem7Theme ? "player" : "ghost"}
                   onClick={onToggleMiniCalendar}
                   data-state={showMiniCalendar ? "on" : "off"}
-                  className={cn("h-6 w-6", isXpTheme && "text-black")}
+                  className={cn("size-6", isXpTheme && "text-black")}
                 >
                   <CalendarBlank size={14} />
                 </Button>
@@ -1094,12 +1094,12 @@ function BottomToolbar({
           )}
           <div className="flex items-center gap-0 shrink-0">
             <Button variant={isSystem7Theme ? "player" : "ghost"} onClick={onNewEvent}
-              className={cn("h-6 w-6", isXpTheme && "text-black")} title={t("apps.calendar.menu.newEvent")}>
+              className={cn("size-6", isXpTheme && "text-black")} title={t("apps.calendar.menu.newEvent")}>
               <Plus size={12} weight="bold" />
             </Button>
             <Button variant={isSystem7Theme ? "player" : "ghost"}
               onClick={onToggleTodoSidebar} data-state={showTodoSidebar ? "on" : "off"}
-              className={cn("h-6 w-6", isXpTheme && "text-black")} title={t("apps.calendar.sidebar.toDoItems")}>
+              className={cn("size-6", isXpTheme && "text-black")} title={t("apps.calendar.sidebar.toDoItems")}>
               <ListChecks size={12} weight="bold" />
             </Button>
           </div>
@@ -1365,7 +1365,7 @@ export function CalendarAppComponent({
       >
         <div
           ref={containerRef}
-          className={cn("flex flex-col h-full w-full font-os-ui overflow-hidden", isMacOSTheme ? "bg-transparent" : "bg-white")}
+          className={cn("flex flex-col size-full font-os-ui overflow-hidden", isMacOSTheme ? "bg-transparent" : "bg-white")}
         >
           {/* Main content area */}
           <div className={cn("flex-1 flex overflow-hidden", isMacOSTheme && "gap-[5px]")}>
