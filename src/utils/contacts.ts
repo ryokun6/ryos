@@ -357,8 +357,8 @@ export function createContactFromDraft(
   now: number = Date.now()
 ): Contact {
   const reduceContactValues = (
-    values: string[] | undefined,
-    kind: ContactValue["kind"]
+    values: Array<ContactValue | string> | undefined,
+    kind: "email" | "phone" | "url"
   ): ContactValue[] =>
     (values || []).reduce<ContactValue[]>((acc, value) => {
       const normalizedValue = normalizeContactValue(kind, value);

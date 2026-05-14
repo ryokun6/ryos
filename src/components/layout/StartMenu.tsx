@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactElement } from "react";
 import { useTranslation } from "react-i18next";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
@@ -224,7 +224,7 @@ export function StartMenu({ apps }: StartMenuProps) {
                 />
 
                 {/* Apps — filter out admin-only apps */}
-                {apps.reduce<JSX.Element[]>((acc, app) => {
+                {apps.reduce<ReactElement[]>((acc, app) => {
                   if (app.id === "admin") {
                     return acc;
                   }

@@ -395,7 +395,7 @@ const getSystemState = () => {
       id: channel.id,
       number: channel.number,
       name: channel.name,
-      description: channel.description,
+      description: channel.description ?? "",
       videoCount: channel.videos.length,
     });
     return acc;

@@ -1,3 +1,4 @@
+import type { ReactElement } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { useSound, Sounds } from "@/hooks/useSound";
@@ -242,7 +243,7 @@ export function ListenSessionToolbar({
                 <div className="px-2 py-1 text-[11px] text-muted-foreground">
                   {t("apps.karaoke.liveListen.makeHost")}
                 </div>
-                {session.users.reduce<JSX.Element[]>((acc, user) => {
+                {session.users.reduce<ReactElement[]>((acc, user) => {
                   if (isSelfConnection(user)) {
                     return acc;
                   }
