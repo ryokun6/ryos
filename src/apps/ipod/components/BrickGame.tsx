@@ -9,6 +9,8 @@ import {
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { useIpodStore } from "@/stores/useIpodStore";
+import { BatteryIndicator } from "./screen/BatteryIndicator";
+import { IpodModernPlayPauseIcon } from "./screen/IpodModernPlayPauseIcon";
 
 // Game-world dimensions in CSS pixels. The iPod screen is 150px tall ×
 // ~218px wide (250px device − 2×16px padding); the title bar takes 26px,
@@ -24,7 +26,42 @@ const BRICK_ROWS = 4;
 const BRICK_GAP = 1;
 const BRICK_TOP_OFFSET = 3;
 const BRICK_SIDE_OFFSET = 2;
-const BRICK_HEIGHT = 4;
+// 6 game units ≈ ~9 device pixels at 2× DPR — enough vertical room for the
+// three-stop gradient + top gloss strip to read as a glossy lozenge in the
+// modern (nano 6G/7G) skin, while still keeping the brick band well above
+// the paddle. The classic skin gets slightly chunkier monochrome bricks
+// which is fine for the 1st-gen LCD aesthetic.
+const BRICK_HEIGHT = 6;
+
+/** Per-row brick palette for the modern (nano 6G/7G) skin. Each row gets
+ *  a top-to-bottom glossy gradient mirroring the iPod nano "Brick" game
+ *  reference photo: bright highlight at the top, saturated body, darker
+ *  shadow at the bottom. Rows cycle (red → orange → yellow → green →
+ *  blue → purple) so additional rows added at higher levels still pick up
+ *  a distinct color. */
+const MODERN_BRICK_COLORS: Array<{
+  highlight: string;
+  body: string;
+  shadow: string;
+  topGloss: string;
+  /** Thin 1-game-unit border drawn on top of the fill to give bricks a
+   *  defined edge, matching the subtle outline visible on each brick in
+   *  the nano 6G/7G reference photo. */
+  border: string;
+}> = [
+  // red
+  { highlight: "#ff8a78", body: "#e34a3a", shadow: "#a0231a", topGloss: "rgba(255,255,255,0.5)", border: "rgba(74,15,8,0.55)" },
+  // orange
+  { highlight: "#ffb673", body: "#ef892c", shadow: "#a8540f", topGloss: "rgba(255,255,255,0.45)", border: "rgba(85,40,5,0.5)" },
+  // yellow
+  { highlight: "#ffe572", body: "#ebc935", shadow: "#9c810e", topGloss: "rgba(255,255,255,0.5)", border: "rgba(80,60,5,0.5)" },
+  // green
+  { highlight: "#a8e879", body: "#5cbf3f", shadow: "#2c761a", topGloss: "rgba(255,255,255,0.45)", border: "rgba(20,55,12,0.55)" },
+  // blue
+  { highlight: "#7a96ff", body: "#3a5fd6", shadow: "#193a96", topGloss: "rgba(255,255,255,0.45)", border: "rgba(12,25,70,0.6)" },
+  // purple
+  { highlight: "#9d70ff", body: "#5d3dc4", shadow: "#31197e", topGloss: "rgba(255,255,255,0.45)", border: "rgba(25,10,60,0.6)" },
+];
 
 // Paddle / ball
 const PADDLE_WIDTH = 28;
@@ -69,6 +106,9 @@ interface Brick {
   w: number;
   h: number;
   alive: boolean;
+  /** Row index from the top (0-based). Used to pick the per-row color in
+   *  the modern skin so each row keeps its hue even as bricks fall. */
+  row: number;
 }
 
 interface GameState {
@@ -95,7 +135,7 @@ function makeBricks(level: number): Brick[] {
     for (let c = 0; c < BRICK_COLS; c++) {
       const x = BRICK_SIDE_OFFSET + c * (brickWidth + BRICK_GAP);
       const y = BRICK_TOP_OFFSET + r * (BRICK_HEIGHT + BRICK_GAP);
-      bricks.push({ x, y, w: brickWidth, h: BRICK_HEIGHT, alive: true });
+      bricks.push({ x, y, w: brickWidth, h: BRICK_HEIGHT, alive: true, row: r });
     }
   }
   return bricks;
@@ -141,9 +181,10 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
   const uiVariant = useIpodStore((s) => s.uiVariant ?? "modern");
   const isModernUi = uiVariant === "modern";
   /** Body offset for `calc(100% - …)` — classic chrome ~26px.
-   *  Modern bar matches `MODERN_TITLEBAR_HEIGHT` in IpodScreen (21px) so the
-   *  brick game's chrome lines up with the main menu's titlebar. */
-  const bodyTopOffsetPx = isModernUi ? 21 : 26;
+   *  Modern bar matches `MODERN_TITLEBAR_HEIGHT` in IpodScreen (17px) so the
+   *  brick game's chrome lines up pixel-for-pixel with the main menu's
+   *  slim nano 6G/7G silver header. */
+  const bodyTopOffsetPx = isModernUi ? 17 : 26;
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const stateRef = useRef<GameState>(initialState());
   const phaseRef = useRef<Phase>("ready");
@@ -209,23 +250,112 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
     ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
     const fg = isModernUi ? "#1c1c1e" : "#0a3667";
-    ctx.fillStyle = fg;
 
     const s = stateRef.current;
 
     // Bricks
+    //
+    // Modern (nano 6G/7G) skin: each row gets a three-stop top-to-bottom
+    // gradient (highlight → body → shadow) plus a thin gloss strip across
+    // the top edge, so bricks read as glossy lozenges matching the
+    // reference photo. The brick row is taken from the precomputed
+    // `row` field on each brick (set in `makeBricks`) so colors cycle
+    // predictably top-down even as bricks are cleared.
+    //
+    // Classic 1st-gen LCD skin: bricks stay flat #0a3667 to preserve
+    // the monochrome aesthetic (no gradients on a 4-shade LCD). */
     for (const b of s.bricks) {
       if (!b.alive) continue;
-      ctx.fillRect(b.x, b.y, b.w, b.h);
+      if (isModernUi) {
+        const color = MODERN_BRICK_COLORS[b.row % MODERN_BRICK_COLORS.length];
+        const grad = ctx.createLinearGradient(0, b.y, 0, b.y + b.h);
+        grad.addColorStop(0, color.highlight);
+        grad.addColorStop(0.5, color.body);
+        grad.addColorStop(1, color.shadow);
+        ctx.fillStyle = grad;
+        ctx.fillRect(b.x, b.y, b.w, b.h);
+        // Top gloss: covers the upper half of the brick and fades from
+        // the per-row gloss color at the top to fully transparent at the
+        // midline, mirroring the classic Aqua/iPod gel highlight. The
+        // gradient fade keeps the shine readable without the hard
+        // top-stripe look of a flat fill.
+        const glossH = b.h * 0.5;
+        const glossGrad = ctx.createLinearGradient(0, b.y, 0, b.y + glossH);
+        glossGrad.addColorStop(0, color.topGloss);
+        glossGrad.addColorStop(1, "rgba(255,255,255,0)");
+        ctx.fillStyle = glossGrad;
+        ctx.fillRect(b.x, b.y, b.w, glossH);
+        // 1-game-unit border traced inside the brick rectangle. Drawn
+        // with lineWidth=1 and inset by 0.5 so the stroke sits flush
+        // with the brick edge (canvas stroke is centered on the path).
+        ctx.strokeStyle = color.border;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(b.x + 0.5, b.y + 0.5, b.w - 1, b.h - 1);
+      } else {
+        ctx.fillStyle = fg;
+        ctx.fillRect(b.x, b.y, b.w, b.h);
+      }
     }
 
     // Paddle
-    ctx.fillRect(s.paddleX, PADDLE_Y, PADDLE_WIDTH, PADDLE_HEIGHT);
+    //
+    // Modern skin: 3-stop top-to-bottom gradient with a thin white gloss
+    // strip across the upper ~35% — same glossy-lozenge treatment as the
+    // bricks but in dark graphite tones so the bar reads as a heavier
+    // object than the colored bricks above it. Classic skin keeps the
+    // flat #0a3667 LCD fill.
+    if (isModernUi) {
+      const pGrad = ctx.createLinearGradient(
+        0,
+        PADDLE_Y,
+        0,
+        PADDLE_Y + PADDLE_HEIGHT
+      );
+      pGrad.addColorStop(0, "#5c5c60");
+      pGrad.addColorStop(0.5, "#252527");
+      pGrad.addColorStop(1, "#0a0a0b");
+      ctx.fillStyle = pGrad;
+      ctx.fillRect(s.paddleX, PADDLE_Y, PADDLE_WIDTH, PADDLE_HEIGHT);
+      ctx.fillStyle = "rgba(255,255,255,0.45)";
+      ctx.fillRect(
+        s.paddleX,
+        PADDLE_Y,
+        PADDLE_WIDTH,
+        Math.max(1, PADDLE_HEIGHT * 0.35)
+      );
+    } else {
+      ctx.fillStyle = fg;
+      ctx.fillRect(s.paddleX, PADDLE_Y, PADDLE_WIDTH, PADDLE_HEIGHT);
+    }
 
     // Ball
-    ctx.beginPath();
-    ctx.arc(s.ballX, s.ballY, BALL_RADIUS, 0, Math.PI * 2);
-    ctx.fill();
+    //
+    // Modern skin: radial gradient biased to the upper-left so the ball
+    // reads as a small lit sphere — bright white core fades through a
+    // mid graphite to a near-black rim. Classic stays a flat 1.5-unit
+    // dot in #0a3667. */
+    if (isModernUi) {
+      const bGrad = ctx.createRadialGradient(
+        s.ballX - BALL_RADIUS * 0.4,
+        s.ballY - BALL_RADIUS * 0.4,
+        BALL_RADIUS * 0.1,
+        s.ballX,
+        s.ballY,
+        BALL_RADIUS
+      );
+      bGrad.addColorStop(0, "rgba(255,255,255,0.95)");
+      bGrad.addColorStop(0.45, "#6e6e72");
+      bGrad.addColorStop(1, "#101012");
+      ctx.fillStyle = bGrad;
+      ctx.beginPath();
+      ctx.arc(s.ballX, s.ballY, BALL_RADIUS, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.fillStyle = fg;
+      ctx.beginPath();
+      ctx.arc(s.ballX, s.ballY, BALL_RADIUS, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }, [isModernUi]);
 
   const stopLoop = useCallback(() => {
@@ -487,7 +617,13 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
         "border border-black border-2 rounded-[2px]",
         lcdFilterOn && !isModernUi ? "lcd-screen" : "",
         isModernUi
-          ? "ipod-modern-screen bg-white"
+          ? // Sky-blue gradient — darker mid-sky at the top fading to a
+            // pale, almost-white blue at the paddle. Overall lighter and
+            // softer than a saturated sea, so the colored bricks pop
+            // against the contrasting top while the paddle sits on a
+            // calm light wash that doesn't compete with the bar's
+            // graphite gloss.
+            "ipod-modern-screen bg-gradient-to-b from-[#5d97c4] via-[#a4cbe6] to-[#dcecf6]"
           : backlightOn
           ? "bg-[#c5e0f5] bg-gradient-to-b from-[#d1e8fa] to-[#e0f0fc]"
           : "bg-[#8a9da9] contrast-65 saturate-50",
@@ -504,39 +640,116 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
         <div className="absolute inset-0 pointer-events-none z-[25] lcd-reflection" />
       )}
 
-      {/* Title bar */}
+      {/* Title bar
+       *
+       * Brick-game-specific layout (matches the nano 6G/7G "Brick" game
+       * reference photo): play indicator on the far left, three "life"
+       * dots immediately after it, a flex spacer, then score and the
+       * battery icon clustered on the right. No centered title — the
+       * brick field below stands in for the screen's identity.
+       *
+       * Modern skin uses the silver titlebar chrome + tinted blue
+       * play/pause SVG (same look as the main iPod menu titlebar).
+       * Classic skin uses Chicago glyphs over the LCD's #0a3667 chrome,
+       * so the dots and battery render in the matching deep blue. */}
       <div
         className={cn(
-          "shrink-0 flex items-center z-10 py-0 px-2 tabular-nums",
+          "shrink-0 flex items-center z-10 py-0 px-2 tabular-nums gap-1.5",
           isModernUi
-            ? "ipod-modern-titlebar font-ipod-modern-ui text-[15px] font-semibold text-black"
+            ? "ipod-modern-titlebar font-ipod-modern-ui text-[12px] font-semibold text-black pl-1.5 pr-1.5"
             : "border-b border-[#0a3667] font-chicago text-[16px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
         )}
-        style={isModernUi ? { height: 21, minHeight: 21 } : undefined}
+        style={isModernUi ? { height: 17, minHeight: 17 } : undefined}
       >
+        {/* Play/pause indicator. ▶ while a level is actively in motion,
+         *  ⏸ for every other phase (ready, paused, lifeLost, won,
+         *  gameOver). */}
+        {isModernUi ? (
+          <div
+            className={cn(
+              "flex shrink-0 items-center justify-center w-[14px] h-[14px] [transform:translateY(-0.5px)]",
+              "[filter:drop-shadow(0_1px_0_rgba(255,255,255,0.9))]"
+            )}
+          >
+            <IpodModernPlayPauseIcon
+              playing={phase === "playing"}
+              size={14}
+            />
+          </div>
+        ) : (
+          <div
+            className={cn(
+              "flex items-center justify-center w-4 h-4 mt-0.5 font-chicago",
+              phase === "playing" ? "text-xs" : "text-[18px]"
+            )}
+          >
+            {phase === "playing" ? "▶" : "⏸︎"}
+          </div>
+        )}
+
+        {/* Life dots — three pips that drain as the player loses lives.
+         *  Modern: each filled dot is a tiny glossy sphere using the same
+         *  upper-left-biased radial gradient as the brick-game ball
+         *  (white core → graphite → near-black rim) so the pips read as
+         *  a row of little balls. Empty dots fade to a soft black/15
+         *  shadow. Classic stays a flat #0a3667 LCD dot. */}
         <div
-          className={cn(
-            "flex w-10 items-center justify-start",
-            isModernUi ? "text-[15px] font-semibold text-black/80" : "text-xs"
-          )}
+          className="flex shrink-0 items-center gap-[3px]"
+          aria-label={`${lives} lives remaining`}
         >
-          {isResultsScreen ? t("apps.ipod.brickGame.results") : `♥ ${lives}`}
+          {Array.from({ length: STARTING_LIVES }, (_, i) => {
+            const filled = i < lives;
+            if (isModernUi) {
+              return (
+                <span
+                  key={i}
+                  className="block size-[6px] rounded-full"
+                  style={
+                    filled
+                      ? {
+                          background:
+                            "radial-gradient(circle at 35% 30%, rgba(255,255,255,0.95) 0%, #6e6e72 45%, #101012 100%)",
+                        }
+                      : { backgroundColor: "rgba(0,0,0,0.15)" }
+                  }
+                />
+              );
+            }
+            return (
+              <span
+                key={i}
+                className={cn(
+                  "block size-[5px] rounded-full",
+                  filled
+                    ? "bg-[#0a3667]"
+                    : "bg-transparent border border-[#0a3667]/50"
+                )}
+              />
+            );
+          })}
         </div>
+
+        <div className="flex-1" aria-hidden />
+
+        {/* Score + battery clustered on the right, mirroring the photo. */}
         <div
           className={cn(
-            "flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-center",
-            isModernUi && "[text-shadow:0_1px_0_rgba(255,255,255,0.9)]"
+            "flex shrink-0 items-center gap-1",
+            isModernUi ? "text-[12px] font-semibold text-black" : "text-xs"
           )}
         >
-          {t("apps.ipod.brickGame.title")}
-        </div>
-        <div
-          className={cn(
-            "flex w-10 items-center justify-end",
-            isModernUi ? "text-[15px] font-semibold text-black/80" : "text-xs"
-          )}
-        >
-          {score}
+          <span
+            className={cn(
+              "tabular-nums leading-none",
+              isModernUi && "[text-shadow:0_1px_0_rgba(255,255,255,0.9)]"
+            )}
+          >
+            {score}
+          </span>
+          <BatteryIndicator
+            backlightOn={backlightOn}
+            variant={isModernUi ? "modern" : "classic"}
+          />
         </div>
       </div>
 
