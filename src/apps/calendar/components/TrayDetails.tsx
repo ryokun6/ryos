@@ -22,6 +22,8 @@ const EVENT_COLOR_MAP: Record<string, string> = {
   purple: "#9B59B6",
 };
 
+const TRAY_SCROLLER_BOTTOM_PADDING = "calc(3rem + env(safe-area-inset-bottom, 0px))";
+
 interface TrayDetailsProps {
   selectedEvent: CalendarEvent | null;
   selectedTodo: TodoItem | null;
@@ -341,7 +343,7 @@ function EventTrayEditor({
   return (
     <div
       className={panelShell}
-      style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom, 0px))" }}
+      style={{ paddingBottom: TRAY_SCROLLER_BOTTOM_PADDING }}
     >
       {/* Title + location (iCal header block) */}
       <div
@@ -622,7 +624,7 @@ function TodoDetails({
   return (
     <div
       className={panelShell}
-      style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom, 0px))" }}
+      style={{ paddingBottom: TRAY_SCROLLER_BOTTOM_PADDING }}
     >
       <div
         className={cn(
