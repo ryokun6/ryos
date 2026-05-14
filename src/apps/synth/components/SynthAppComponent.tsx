@@ -234,6 +234,7 @@ export function SynthAppComponent({
                       <SelectTrigger
                         className={cn(
                           "w-full min-w-0 h-[22px] font-geneva-12 text-[11px] leading-none px-2 py-0 gap-1 [&>span]:truncate",
+                          isSystem7Theme && "!font-geneva-12",
                           isClassicTheme && "text-black bg-transparent",
                           !isClassicTheme &&
                             "bg-black border-[#3a3a3a] text-white"
@@ -243,6 +244,8 @@ export function SynthAppComponent({
                       </SelectTrigger>
                       <SelectContent
                         className={cn(
+                          "font-geneva-12",
+                          isSystem7Theme && "!font-geneva-12",
                           isClassicTheme && "text-black",
                           !isClassicTheme &&
                             "bg-black border-[#3a3a3a] text-white"
@@ -254,6 +257,7 @@ export function SynthAppComponent({
                             value={preset.id}
                             className={cn(
                               "font-geneva-12 text-[11px] select-none",
+                              isSystem7Theme && "!font-geneva-12",
                               isClassicTheme && "text-black"
                             )}
                           >
@@ -402,6 +406,7 @@ export function SynthAppComponent({
                           <SelectTrigger
                             className={cn(
                               "w-full font-geneva-12 text-[12px] p-2",
+                              isSystem7Theme && "!font-geneva-12",
                               isClassicTheme && "text-black",
                               !isClassicTheme &&
                                 "bg-black border-[#3a3a3a] text-white"
@@ -411,6 +416,8 @@ export function SynthAppComponent({
                           </SelectTrigger>
                           <SelectContent
                             className={cn(
+                              "font-geneva-12",
+                              isSystem7Theme && "!font-geneva-12",
                               isClassicTheme && "text-black",
                               !isClassicTheme &&
                                 "bg-black border-[#3a3a3a] text-white"
@@ -420,6 +427,7 @@ export function SynthAppComponent({
                               value="sine"
                               className={cn(
                                 "font-geneva-12 text-[12px]",
+                                isSystem7Theme && "!font-geneva-12",
                                 isClassicTheme && "text-black"
                               )}
                             >
@@ -429,6 +437,7 @@ export function SynthAppComponent({
                               value="square"
                               className={cn(
                                 "font-geneva-12 text-[12px]",
+                                isSystem7Theme && "!font-geneva-12",
                                 isClassicTheme && "text-black"
                               )}
                             >
@@ -438,6 +447,7 @@ export function SynthAppComponent({
                               value="triangle"
                               className={cn(
                                 "font-geneva-12 text-[12px]",
+                                isSystem7Theme && "!font-geneva-12",
                                 isClassicTheme && "text-black"
                               )}
                             >
@@ -447,6 +457,7 @@ export function SynthAppComponent({
                               value="sawtooth"
                               className={cn(
                                 "font-geneva-12 text-[12px]",
+                                isSystem7Theme && "!font-geneva-12",
                                 isClassicTheme && "text-black"
                               )}
                             >
