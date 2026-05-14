@@ -280,6 +280,8 @@ export function TimedEventBlock({
         height,
         backgroundColor: washColor,
         borderLeft: `3px solid ${accentColor}`,
+        // Prevent mobile touch panning while dragging/resizing timed events.
+        touchAction: "none",
         boxShadow:
           selectedEventId === event.id
             ? `0 0 0 1px ${accentColor}`
