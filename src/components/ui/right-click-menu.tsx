@@ -93,12 +93,12 @@ function renderItems(items: MenuItem[]): ReactNode {
             className={menuItemClass}
           >
             {item.icon && (
-              <div className="w-4 h-4 flex items-center justify-center flex-shrink-0">
+              <div className="size-4 flex items-center justify-center flex-shrink-0">
                 {item.icon.startsWith("/") || item.icon.startsWith("http") ? (
                   <ThemedIcon
                     name={item.icon}
                     alt={item.label}
-                    className="w-4 h-4 [image-rendering:pixelated]"
+                    className="size-4 [image-rendering:pixelated]"
                   />
                 ) : (
                   <span className="text-xs leading-none">{item.icon}</span>
@@ -120,12 +120,12 @@ function renderItems(items: MenuItem[]): ReactNode {
               className={menuItemClass}
             >
               {item.icon && (
-                <div className="w-4 h-4 flex items-center justify-center flex-shrink-0">
+                <div className="size-4 flex items-center justify-center flex-shrink-0">
                   {item.icon.startsWith("/") || item.icon.startsWith("http") ? (
                     <ThemedIcon
                       name={item.icon}
                       alt={item.label}
-                      className="w-4 h-4 [image-rendering:pixelated]"
+                      className="size-4 [image-rendering:pixelated]"
                     />
                   ) : (
                     <span className="text-xs leading-none">{item.icon}</span>

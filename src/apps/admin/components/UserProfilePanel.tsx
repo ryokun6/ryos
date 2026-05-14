@@ -424,10 +424,10 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   if (!isLoading && !profile) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-2">
-        <Warning className="h-8 w-8 text-neutral-400" weight="bold" />
+        <Warning className="size-8 text-neutral-400" weight="bold" />
         <span className="text-[11px] text-neutral-500">{t("apps.admin.profile.notFound")}</span>
         <Button variant="ghost" size="sm" onClick={onBack} className="text-[11px]">
-          <ArrowLeft className="h-3 w-3 mr-1" weight="bold" />
+          <ArrowLeft className="size-3 mr-1" weight="bold" />
           {t("apps.admin.profile.back")}
         </Button>
       </div>
@@ -474,7 +474,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
       >
         {showCaret && (
           <CaretRight
-            className={cn("h-3 w-3 transition-transform", isOpen && "rotate-90")}
+            className={cn("size-3 transition-transform", isOpen && "rotate-90")}
             weight="bold"
           />
         )}
@@ -492,13 +492,13 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
           variant="ghost"
           size="sm"
           onClick={onBack}
-          className="h-6 w-6 p-0"
+          className="size-6 p-0"
         >
-          <ArrowLeft className="h-3.5 w-3.5" weight="bold" />
+          <ArrowLeft className="size-3.5" weight="bold" />
         </Button>
         <div className="flex items-center gap-2">
           <div className={cn(
-            "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium text-neutral-600",
+            "size-8 rounded-full flex items-center justify-center text-sm font-medium text-neutral-600",
             isLoading ? "bg-neutral-200 animate-pulse" : "bg-neutral-200"
           )}>
             {!isLoading && username[0].toUpperCase()}
@@ -565,7 +565,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
             <div className="p-2 bg-red-50 rounded border border-red-200">
               <SectionHeader
                 className="flex items-start gap-1.5 text-red-600 mb-1"
-                icon={<Prohibit className="h-3 w-3 mt-px" weight="bold" />}
+                icon={<Prohibit className="size-3 mt-px" weight="bold" />}
               >
                 {t("apps.admin.profile.banDetails")}
               </SectionHeader>
@@ -737,7 +737,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                                       <span className="text-purple-700 font-medium break-all">{memory.key}</span>
                                       <CaretRight
                                         className={cn(
-                                          "h-3 w-3 inline-block ml-1 text-neutral-400 transition-transform",
+                                          "size-3 inline-block ml-1 text-neutral-400 transition-transform",
                                           isExpanded && "rotate-90"
                                         )}
                                         weight="bold"
@@ -810,7 +810,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                                   >
                                     <CaretRight
                                       className={cn(
-                                        "h-3 w-3 text-neutral-400 transition-transform flex-shrink-0",
+                                        "size-3 text-neutral-400 transition-transform flex-shrink-0",
                                         isExpanded && "rotate-90"
                                       )}
                                       weight="bold"
@@ -919,7 +919,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                                         </span>
                                         <CaretRight
                                           className={cn(
-                                            "h-3 w-3 inline-block ml-1 text-neutral-400 transition-transform",
+                                            "size-3 inline-block ml-1 text-neutral-400 transition-transform",
                                             isExpanded && "rotate-90"
                                           )}
                                           weight="bold"

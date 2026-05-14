@@ -99,7 +99,7 @@ function WallpaperItem({
         )}
         <video
           ref={videoRef}
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 size-full object-cover"
           src={displayUrl}
           loop
           muted
@@ -497,7 +497,7 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
                   }
                 }}
               >
-                <Plus className="h-5 w-5 text-gray-500" weight="bold" />
+                <Plus className="size-5 text-gray-500" weight="bold" />
               </button>
               {customWallpaperRefs.length > 0 ? (
                 customWallpaperRefs.map((path) => (
@@ -517,7 +517,7 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
                       className="absolute top-1 right-1 p-0.5 rounded bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer hover:bg-red-600/80"
                       onClick={(e) => handleDeleteWallpaper(e, path)}
                     >
-                      <Trash className="h-3.5 w-3.5" weight="bold" />
+                      <Trash className="size-3.5" weight="bold" />
                     </button>
                   </div>
                 ))

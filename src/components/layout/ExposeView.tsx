@@ -258,7 +258,7 @@ export function ExposeView({ isOpen, onClose }: ExposeViewProps) {
                       <ThemedIcon
                         name={displayIcon}
                         alt=""
-                        className="w-6 h-6 [image-rendering:pixelated]"
+                        className="size-6 [image-rendering:pixelated]"
                       />
                     )}
                     {/* Title */}

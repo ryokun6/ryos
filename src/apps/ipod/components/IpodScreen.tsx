@@ -755,7 +755,7 @@ export function IpodScreen({
               `w-6 font-chicago ${isPlaying ? "text-xs" : "text-[18px]"}`
             )}
           >
-            <div className="flex items-center justify-center w-4 h-4 mt-0.5">
+            <div className="flex items-center justify-center size-4 mt-0.5">
               {isPlaying ? "▶" : "⏸︎"}
             </div>
           </div>
@@ -812,7 +812,7 @@ export function IpodScreen({
             // overshoots and reads slightly high.
             <div
               className={cn(
-                "flex items-center justify-center w-[14px] h-[14px] [transform:translateY(-0.5px)]",
+                "flex items-center justify-center size-[14px] [transform:translateY(-0.5px)]",
                 // Same light top highlight as the title line — title uses
                 // [text-shadow:0_1px_0_rgba(255,255,255,0.9)]; SVG paths
                 // use filter drop-shadow so the blue gradient reads with
@@ -1243,7 +1243,7 @@ export function IpodScreen({
               />
             ) : (
               <div
-                className="w-full h-full"
+                className="size-full"
                 style={
                   effectiveDisplayMode !== DisplayMode.Video
                     ? { visibility: "hidden", pointerEvents: "none" }
@@ -1351,7 +1351,7 @@ export function IpodScreen({
                   <motion.img
                     src={coverUrl}
                     alt={currentTrack?.title}
-                    className="w-full h-full object-cover brightness-50 pointer-events-none"
+                    className="size-full object-cover brightness-50 pointer-events-none"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}

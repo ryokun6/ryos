@@ -139,7 +139,7 @@ export function AboutFinderDialog({
               <ThemedIcon
                 name="mac-classic.png"
                 alt="Happy Mac"
-                className="w-10 h-10 mb-1 mr-0"
+                className="size-10 mb-1 mr-0"
               />
               <div
                 className={cn(

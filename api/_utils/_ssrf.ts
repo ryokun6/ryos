@@ -20,6 +20,8 @@ const BLOCKED_HOST_SUFFIXES = [
   ".localhost",
   ".home.arpa",
 ];
+const ALLOWED_PROTOCOLS = new Set(["http:", "https:"]);
+const REDIRECT_TO_GET_STATUSES = new Set([301, 302, 303]);
 
 export class SsrfBlockedError extends Error {
   readonly code = "SSRF_BLOCKED";
@@ -59,7 +61,7 @@ export const validatePublicUrl = async (rawUrl: string): Promise<URL> => {
     throw new SsrfBlockedError("Invalid URL format");
   }
 
-  if (!["http:", "https:"].includes(parsed.protocol)) {
+  if (!ALLOWED_PROTOCOLS.has(parsed.protocol)) {
     throw new SsrfBlockedError("Only HTTP and HTTPS URLs are allowed");
   }
 
@@ -130,7 +132,7 @@ export const safeFetchWithRedirects = async (
         throw new SsrfBlockedError("Too many redirects");
       }
 
-      if ([301, 302, 303].includes(response.status)) {
+      if (REDIRECT_TO_GET_STATUSES.has(response.status)) {
         currentInit = {
           ...currentInit,
           method: "GET",

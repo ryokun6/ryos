@@ -311,7 +311,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
         className={`flex items-center gap-2 p-3 bg-red-50 border border-red-200 text-sm font-geneva-12 max-w-[420px] ${className}`}
         style={{ borderRadius: "3px" }}
       >
-        <WarningCircle className="h-4 w-4 text-red-500" weight="bold" />
+        <WarningCircle className="size-4 text-red-500" weight="bold" />
         <span className="text-red-600">{error}</span>
       </motion.div>
     );
@@ -437,7 +437,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
             <img
               src={metadata.image}
               alt={metadata.title || "Link preview"}
-              className="w-full h-full object-cover"
+              className="size-full object-cover"
               onError={(e) => {
                 // Hide image if it fails to load
                 e.currentTarget.style.display = "none";
@@ -450,7 +450,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                 <img
                   src={getFaviconUrl(url)}
                   alt="Site favicon"
-                  className="h-4 w-4 flex-shrink-0"
+                  className="size-4 flex-shrink-0"
                   onError={(e) => {
                     // Fallback to a simple circle if favicon fails to load
                     e.currentTarget.style.display = "none";
@@ -459,7 +459,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                     );
                   }}
                 />
-                <div className="h-4 w-4 bg-gray-300 rounded-full flex-shrink-0 hidden"></div>
+                <div className="size-4 bg-gray-300 rounded-full flex-shrink-0 hidden"></div>
                 {metadata.title && (
                   <h3 className="font-semibold text-white text-[10px] truncate">
                     {metadata.title}
@@ -485,7 +485,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                     title={t("components.linkPreview.openIpod")}
                     data-link-preview
                   >
-                    {!isMacOSTheme && <MusicNote className="h-3 w-3" weight="bold" />}
+                    {!isMacOSTheme && <MusicNote className="size-3" weight="bold" />}
                     <span>{t("components.linkPreview.openIpod")}</span>
                   </button>
                   <button
@@ -499,7 +499,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                     title={t("components.linkPreview.openYouTube")}
                     data-link-preview
                   >
-                    {!isMacOSTheme && <ArrowSquareOut className="h-3 w-3" weight="bold" />}
+                    {!isMacOSTheme && <ArrowSquareOut className="size-3" weight="bold" />}
                     <span>{t("components.linkPreview.openYouTube")}</span>
                   </button>
                 </div>
@@ -516,7 +516,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                     title={t("components.linkPreview.openKaraoke")}
                     data-link-preview
                   >
-                    {!isMacOSTheme && <Microphone className="h-3 w-3" weight="bold" />}
+                    {!isMacOSTheme && <Microphone className="size-3" weight="bold" />}
                     <span>{t("components.linkPreview.openKaraoke")}</span>
                   </button>
                   <button
@@ -530,7 +530,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                     title={t("components.linkPreview.openYouTube")}
                     data-link-preview
                   >
-                    {!isMacOSTheme && <ArrowSquareOut className="h-3 w-3" weight="bold" />}
+                    {!isMacOSTheme && <ArrowSquareOut className="size-3" weight="bold" />}
                     <span>{t("components.linkPreview.openYouTube")}</span>
                   </button>
                 </div>
@@ -547,7 +547,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                     title={t("components.linkPreview.addToIpod")}
                     data-link-preview
                   >
-                    {!isMacOSTheme && <MusicNote className="h-3 w-3" weight="bold" />}
+                    {!isMacOSTheme && <MusicNote className="size-3" weight="bold" />}
                     <span>{t("components.linkPreview.addToIpod")}</span>
                   </button>
                   <button
@@ -561,7 +561,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                     title={t("components.linkPreview.openYouTube")}
                     data-link-preview
                   >
-                    {!isMacOSTheme && <ArrowSquareOut className="h-3 w-3" weight="bold" />}
+                    {!isMacOSTheme && <ArrowSquareOut className="size-3" weight="bold" />}
                     <span>{t("components.linkPreview.openYouTube")}</span>
                   </button>
                 </div>
@@ -579,7 +579,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                   title="Open Externally"
                   data-link-preview
                 >
-                  {!isMacOSTheme && <ArrowSquareOut className="h-3 w-3" weight="bold" />}
+                  {!isMacOSTheme && <ArrowSquareOut className="size-3" weight="bold" />}
                   <span>Open Externally</span>
                 </button>
               </div>
@@ -593,14 +593,14 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
             {metadata.image && (
               <div
                 className={cn(
-                  "w-18 h-18 bg-gray-100 relative overflow-hidden flex-shrink-0",
+                  "size-18 bg-gray-100 relative overflow-hidden flex-shrink-0",
                   isMacOSTheme && "hidden"
                 )}
               >
                 <img
                   src={metadata.image}
                   alt={metadata.title || "Link preview"}
-                  className="w-full h-full object-cover"
+                  className="size-full object-cover"
                   onError={(e) => {
                     // Hide image if it fails to load
                     e.currentTarget.style.display = "none";
@@ -660,7 +660,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                   <img
                     src={getFaviconUrl(url)}
                     alt="Site favicon"
-                    className="h-4 w-4 flex-shrink-0"
+                    className="size-4 flex-shrink-0"
                     onError={(e) => {
                       // Fallback to a simple circle if favicon fails to load
                       e.currentTarget.style.display = "none";
@@ -669,7 +669,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                       );
                     }}
                   />
-                  <div className="h-4 w-4 bg-gray-300 rounded-full flex-shrink-0 hidden"></div>
+                  <div className="size-4 bg-gray-300 rounded-full flex-shrink-0 hidden"></div>
                   <p className="text-[10px] text-gray-500 truncate">
                     {metadata.siteName || new URL(url).hostname}
                   </p>
@@ -700,7 +700,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                       title={t("components.linkPreview.openIpod")}
                       data-link-preview
                     >
-                      {!isMacOSTheme && <MusicNote className="h-3 w-3" weight="bold" />}
+                      {!isMacOSTheme && <MusicNote className="size-3" weight="bold" />}
                       <span>{t("components.linkPreview.openIpod")}</span>
                     </button>
                     <button
@@ -715,7 +715,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                       data-link-preview
                     >
                       {!isMacOSTheme && (
-                        <ArrowSquareOut className="h-3 w-3" weight="bold" />
+                        <ArrowSquareOut className="size-3" weight="bold" />
                       )}
                       <span>{t("components.linkPreview.openYouTube")}</span>
                     </button>
@@ -733,7 +733,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                       title={t("components.linkPreview.openKaraoke")}
                       data-link-preview
                     >
-                      {!isMacOSTheme && <Microphone className="h-3 w-3" weight="bold" />}
+                      {!isMacOSTheme && <Microphone className="size-3" weight="bold" />}
                       <span>{t("components.linkPreview.openKaraoke")}</span>
                     </button>
                     <button
@@ -748,7 +748,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                       data-link-preview
                     >
                       {!isMacOSTheme && (
-                        <ArrowSquareOut className="h-3 w-3" weight="bold" />
+                        <ArrowSquareOut className="size-3" weight="bold" />
                       )}
                       <span>{t("components.linkPreview.openYouTube")}</span>
                     </button>
@@ -766,7 +766,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                       title={t("components.linkPreview.addToIpod")}
                       data-link-preview
                     >
-                      {!isMacOSTheme && <MusicNote className="h-3 w-3" weight="bold" />}
+                      {!isMacOSTheme && <MusicNote className="size-3" weight="bold" />}
                       <span>{t("components.linkPreview.addToIpod")}</span>
                     </button>
                     <button
@@ -781,7 +781,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                       data-link-preview
                     >
                       {!isMacOSTheme && (
-                        <ArrowSquareOut className="h-3 w-3" weight="bold" />
+                        <ArrowSquareOut className="size-3" weight="bold" />
                       )}
                       <span>{t("components.linkPreview.openYouTube")}</span>
                     </button>
@@ -800,7 +800,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                     title="Open Externally"
                     data-link-preview
                   >
-                    {!isMacOSTheme && <ArrowSquareOut className="h-3 w-3" weight="bold" />}
+                    {!isMacOSTheme && <ArrowSquareOut className="size-3" weight="bold" />}
                     <span>Open Externally</span>
                   </button>
                 </div>

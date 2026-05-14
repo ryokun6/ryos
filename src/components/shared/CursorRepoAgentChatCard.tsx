@@ -100,8 +100,8 @@ export function CursorRepoAgentChatCard({
       {introMessage ? (
         <div className="mb-2 px-0.5">
           <div className="flex items-start gap-1 text-[12px] text-neutral-800 dark:text-neutral-200">
-            <span className="inline-flex h-3 w-3 shrink-0 items-center justify-center pt-0.5">
-              <Check className="h-3 w-3 text-blue-600 dark:text-blue-400" weight="bold" />
+            <span className="inline-flex size-3 shrink-0 items-center justify-center pt-0.5">
+              <Check className="size-3 text-blue-600 dark:text-blue-400" weight="bold" />
             </span>
             <span className="italic leading-snug">{introMessage}</span>
           </div>
@@ -117,13 +117,13 @@ export function CursorRepoAgentChatCard({
         style={isPanel ? undefined : { boxShadow: "0 0 0 1px rgba(0, 0, 0, 0.3)" }}
       >
         <div className="flex flex-shrink-0 items-center gap-3 border-b border-gray-300 bg-gray-100 px-3 py-2 dark:border-neutral-600 dark:bg-neutral-800/90">
-          <span className="relative inline-flex h-6 w-6 shrink-0 items-center justify-center" aria-hidden>
+          <span className="relative inline-flex size-6 shrink-0 items-center justify-center" aria-hidden>
             <img
               src="/brands/cursor-cube-2d-light.svg"
               alt=""
               width={24}
               height={24}
-              className="h-6 w-6 dark:hidden"
+              className="size-6 dark:hidden"
               draggable={false}
             />
             <img
@@ -131,7 +131,7 @@ export function CursorRepoAgentChatCard({
               alt=""
               width={24}
               height={24}
-              className="hidden h-6 w-6 dark:block"
+              className="hidden size-6 dark:block"
               draggable={false}
             />
           </span>
@@ -148,7 +148,7 @@ export function CursorRepoAgentChatCard({
                 title={prUrl}
                 aria-label={t("apps.chats.toolCalls.cursorCloudAgent.openPr")}
               >
-                <ArrowSquareOut className="h-3 w-3" weight="bold" />
+                <ArrowSquareOut className="size-3" weight="bold" />
                 <span>
                   {t("apps.chats.toolCalls.cursorCloudAgent.openPr")}
                 </span>
@@ -156,12 +156,12 @@ export function CursorRepoAgentChatCard({
             ) : null}
             {!done ? (
               <span className="inline-flex shrink-0 items-center gap-1 text-[10px] font-medium text-amber-900 dark:text-amber-200">
-                <span className="h-1.5 w-1.5 rounded-full bg-amber-500" aria-hidden />
+                <span className="size-1.5 rounded-full bg-amber-500" aria-hidden />
                 {t("apps.chats.toolCalls.cursorCloudAgent.running")}
               </span>
             ) : (
               <span className="inline-flex shrink-0 items-center gap-1 text-[10px] font-medium text-emerald-900 dark:text-emerald-200">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden />
+                <span className="size-1.5 rounded-full bg-emerald-500" aria-hidden />
                 {t("apps.chats.toolCalls.cursorCloudAgent.finished")}
               </span>
             )}
@@ -308,9 +308,9 @@ export function CursorRepoAgentChatCard({
                 title={t(
                   "apps.chats.toolCalls.cursorCloudAgent.followupSend"
                 )}
-                className="inline-flex h-[26px] w-[26px] shrink-0 items-center justify-center self-end rounded border border-blue-500 bg-blue-500 text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:border-neutral-300 disabled:bg-neutral-200 disabled:text-neutral-500 dark:disabled:border-neutral-700 dark:disabled:bg-neutral-800 dark:disabled:text-neutral-500"
+                className="inline-flex size-[26px] shrink-0 items-center justify-center self-end rounded border border-blue-500 bg-blue-500 text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:border-neutral-300 disabled:bg-neutral-200 disabled:text-neutral-500 dark:disabled:border-neutral-700 dark:disabled:bg-neutral-800 dark:disabled:text-neutral-500"
               >
-                <ArrowUp className="h-3.5 w-3.5" weight="bold" />
+                <ArrowUp className="size-3.5" weight="bold" />
               </button>
             </form>
           </div>

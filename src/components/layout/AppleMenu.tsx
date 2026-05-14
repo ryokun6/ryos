@@ -207,14 +207,14 @@ export function AppleMenu() {
                       className="text-md h-6 px-3 flex items-center gap-2"
                     >
                       {typeof app.icon === "string" ? (
-                        <div className="w-4 h-4 flex items-center justify-center">
+                        <div className="size-4 flex items-center justify-center">
                           {app.icon}
                         </div>
                       ) : (
                         <ThemedIcon
                           name={app.icon.src}
                           alt={app.name}
-                          className="w-4 h-4 [image-rendering:pixelated]"
+                          className="size-4 [image-rendering:pixelated]"
                         />
                       )}
                       {getTranslatedAppName(recent.appId)}
@@ -250,14 +250,14 @@ export function AppleMenu() {
                       className="text-md h-6 px-3 flex items-center gap-2"
                     >
                       {isEmoji ? (
-                        <span className="w-4 h-4 flex items-center justify-center text-sm">
+                        <span className="size-4 flex items-center justify-center text-sm">
                           {recent.icon}
                         </span>
                       ) : (
                         <ThemedIcon
                           name={iconPath}
                           alt="Document"
-                          className="w-4 h-4 [image-rendering:pixelated]"
+                          className="size-4 [image-rendering:pixelated]"
                         />
                       )}
                       <span className="truncate max-w-[180px]">{recent.name}</span>

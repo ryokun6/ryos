@@ -80,16 +80,16 @@ export function PipPlayer({
     >
       {/* Thumbnail */}
       <div
-        className="relative w-12 h-12 flex-shrink-0 overflow-hidden rounded"
+        className="relative size-12 flex-shrink-0 overflow-hidden rounded"
       >
         {thumbnailUrl ? (
           <img
             src={thumbnailUrl}
             alt={currentTrack?.title || ""}
-            className="w-full h-full object-cover"
+            className="size-full object-cover"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-white/10 text-white/40">
+          <div className="size-full flex items-center justify-center bg-white/10 text-white/40">
             <MusicNote size={24} weight="fill" />
           </div>
         )}
@@ -138,7 +138,7 @@ export function PipPlayer({
         <button
           onClick={onPreviousTrack}
           onTouchStart={(e) => e.stopPropagation()}
-          className="w-8 h-8 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors touch-manipulation"
+          className="size-8 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors touch-manipulation"
           aria-label={t("apps.ipod.ariaLabels.previousTrack")}
         >
           <SkipBack size={16} weight="fill" />
@@ -148,7 +148,7 @@ export function PipPlayer({
           onClick={onTogglePlay}
           onTouchStart={(e) => e.stopPropagation()}
           disabled={isOffline}
-          className="w-9 h-9 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-50 touch-manipulation"
+          className="size-9 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-50 touch-manipulation"
           aria-label={t("apps.ipod.ariaLabels.playPause")}
         >
           {isPlaying ? <Pause size={18} weight="fill" /> : <Play size={18} weight="fill" />}
@@ -157,7 +157,7 @@ export function PipPlayer({
         <button
           onClick={onNextTrack}
           onTouchStart={(e) => e.stopPropagation()}
-          className="w-8 h-8 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors touch-manipulation"
+          className="size-8 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors touch-manipulation"
           aria-label={t("apps.ipod.ariaLabels.nextTrack")}
         >
           <SkipForward size={16} weight="fill" />

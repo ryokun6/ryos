@@ -259,7 +259,7 @@ export function CalendarWidget({ widgetId }: CalendarWidgetProps) {
                     {cell.events.slice(0, 2).map((ev) => (
                       <span
                         key={ev.id}
-                        className="w-1 h-1 rounded-full"
+                        className="size-1 rounded-full"
                         style={{ backgroundColor: EVENT_COLOR_MAP[ev.color] || "#F0A060" }}
                       />
                     ))}

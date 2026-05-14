@@ -100,6 +100,7 @@ const IGNORE_DIRS = [
   ".vercel",
   "dev-dist",
 ];
+const IGNORE_DIR_SET = new Set(IGNORE_DIRS);
 
 const IGNORE_FILES = [
   ".test.tsx",
@@ -337,7 +338,8 @@ async function analyzeFile(filePath: string): Promise<FileAnalysis> {
 async function findTsxFiles(
   dir: string,
   excludeDirs: string[] = [],
-  pattern?: string
+  pattern?: string,
+  excludeDirSet: ReadonlySet<string> = new Set(excludeDirs)
 ): Promise<string[]> {
   const files: string[] = [];
   
@@ -350,13 +352,13 @@ async function findTsxFiles(
       // Skip ignored directories
       if (
         entry.isDirectory() &&
-        (IGNORE_DIRS.includes(entry.name) || excludeDirs.includes(entry.name))
+        (IGNORE_DIR_SET.has(entry.name) || excludeDirSet.has(entry.name))
       ) {
         continue;
       }
       
       if (entry.isDirectory()) {
-        files.push(...(await findTsxFiles(fullPath, excludeDirs, pattern)));
+        files.push(...(await findTsxFiles(fullPath, excludeDirs, pattern, excludeDirSet)));
       } else if (entry.name.endsWith(".tsx") && !entry.name.endsWith(".d.tsx")) {
         // Check if file should be ignored
         const shouldIgnoreFile = IGNORE_FILES.some(ignore => entry.name.includes(ignore));
@@ -382,6 +384,7 @@ async function findTsxFiles(
 async function main() {
   // Parse arguments
   const args = process.argv.slice(2);
+  const argSet = new Set(args);
   const dirArg = args.find((arg) => arg.startsWith("--dir="))?.split("=")[1];
   const patternArg = args.find((arg) => arg.startsWith("--pattern="))?.split("=")[1];
   const excludeArg = args.find((arg) => arg.startsWith("--exclude="))?.split("=")[1];
@@ -472,7 +475,7 @@ async function main() {
   console.log(`Needs translation: ${untranslated.length}`);
   console.log(`Total strings found: ${totalStrings}`);
   
-  if (args.includes("--help") || args.includes("-h")) {
+  if (argSet.has("--help") || argSet.has("-h")) {
     console.log(`
 Usage: bun run scripts/extract-strings.ts [options]
 
