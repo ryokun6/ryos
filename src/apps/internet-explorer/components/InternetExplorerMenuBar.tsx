@@ -72,7 +72,7 @@ const renderFavoriteItem = (
           <ThemedIcon
             name="directory.png"
             alt="Folder"
-            className="w-4 h-4 [image-rendering:pixelated]"
+            className="size-4 [image-rendering:pixelated]"
           />
           {favorite.title}
         </MenubarSubTrigger>
@@ -95,7 +95,7 @@ const renderFavoriteItem = (
           <img
             src={favorite.favicon}
             alt=""
-            className="w-4 h-4"
+            className="size-4"
             onError={(e) => {
               e.currentTarget.src = "/icons/default/ie-site.png";
             }}
@@ -104,7 +104,7 @@ const renderFavoriteItem = (
           <ThemedIcon
             name="ie-site.png"
             alt=""
-            className="w-4 h-4 [image-rendering:pixelated]"
+            className="size-4 [image-rendering:pixelated]"
           />
         )}
         {favorite.title}
@@ -714,7 +714,7 @@ export function InternetExplorerMenuBar({
                     <img
                       src={entry.favicon}
                       alt=""
-                      className="w-4 h-4"
+                      className="size-4"
                       onError={(e) => {
                         e.currentTarget.src = "/icons/default/ie-site.png";
                       }}
@@ -723,7 +723,7 @@ export function InternetExplorerMenuBar({
                     <ThemedIcon
                       name="ie-site.png"
                       alt=""
-                      className="w-4 h-4 [image-rendering:pixelated]"
+                      className="size-4 [image-rendering:pixelated]"
                     />
                   )}
                   <span className="truncate">

@@ -215,7 +215,7 @@ const ListRowItem = memo(function ListRowItem({
           <img
             src={file.contentUrl}
             alt={file.name}
-            className="w-4 h-4 object-cover rounded-sm"
+            className="size-4 object-cover rounded-sm"
             style={{ imageRendering: isImageFile(file) ? "pixelated" : "auto" }}
             onError={(e) => {
               console.error(`Error loading thumbnail for ${file.name}`);
@@ -226,7 +226,7 @@ const ListRowItem = memo(function ListRowItem({
           <ThemedIcon
             name={getIconPath(file)}
             alt={getListIconAlt(file)}
-            className="w-4 h-4"
+            className="size-4"
             style={{ imageRendering: "pixelated" }}
             data-legacy-aware="true"
           />

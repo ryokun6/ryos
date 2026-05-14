@@ -59,7 +59,7 @@ function ToolInvocationStatusRow({
   const alignmentClass = align === "start" ? "items-start" : "items-center";
   return (
     <div className={`flex ${alignmentClass} gap-1 ${className || ""}`}>
-      <span className="inline-flex h-3 w-3 items-center justify-center shrink-0">
+      <span className="inline-flex size-3 items-center justify-center shrink-0">
         {icon}
       </span>
       {children}
@@ -775,7 +775,7 @@ export function ToolInvocationMessage({
       return (
         <div key={partKey} className="mb-0 px-1 py-0.5 text-[12px]">
           <ToolInvocationStatusRow
-            icon={<Check className="h-3 w-3 text-blue-600" weight="bold" />}
+            icon={<Check className="size-3 text-blue-600" weight="bold" />}
             className="text-gray-700"
             align="start"
           >
@@ -809,7 +809,7 @@ export function ToolInvocationMessage({
           <ToolInvocationStatusRow
             icon={
               <Check
-                className="h-3 w-3 shrink-0 text-neutral-400"
+                className="size-3 shrink-0 text-neutral-400"
                 weight="bold"
                 aria-hidden
               />
@@ -965,7 +965,7 @@ export function ToolInvocationMessage({
         )}
       {state === "output-available" && (
         <ToolInvocationStatusRow
-          icon={<Check className="h-3 w-3 text-blue-600" weight="bold" />}
+          icon={<Check className="size-3 text-blue-600" weight="bold" />}
           className="text-gray-700"
           align="start"
         >
@@ -986,7 +986,7 @@ export function ToolInvocationMessage({
         <ToolInvocationStatusRow
           icon={
             <Check
-              className="h-3 w-3 shrink-0 text-neutral-400"
+              className="size-3 shrink-0 text-neutral-400"
               weight="bold"
               aria-hidden
             />

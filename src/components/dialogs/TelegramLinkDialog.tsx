@@ -76,17 +76,17 @@ export function TelegramLinkDialog({
       <img
         src="/icons/mac-192.png"
         alt="ryOS"
-        className="h-8 w-8 shrink-0 object-contain"
+        className="size-8 shrink-0 object-contain"
       />
       <ArrowRight size={14} weight="bold" className="shrink-0 text-black/45" />
-      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#229ED9] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_1px_2px_rgba(0,0,0,0.18)]">
+      <div className="flex size-8 items-center justify-center rounded-full bg-[#229ED9] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_1px_2px_rgba(0,0,0,0.18)]">
         <PaperPlaneRight size={16} weight="fill" />
       </div>
     </div>
   );
 
   const previewContent = isStatusLoading && !shouldShowLinkSession ? (
-    <div className="flex h-32 w-32 items-center justify-center rounded bg-gray-100">
+    <div className="flex size-32 items-center justify-center rounded bg-gray-100">
       <p
         className={cn(
           "text-gray-500",

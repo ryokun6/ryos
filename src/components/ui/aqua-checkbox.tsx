@@ -8,7 +8,7 @@ interface AquaCheckboxProps {
 export function AquaCheckbox({ checked, color }: AquaCheckboxProps) {
   return (
     <div
-      className="w-[14px] h-[14px] rounded-[3.5px] flex items-center justify-center shrink-0 relative overflow-hidden"
+      className="size-[14px] rounded-[3.5px] flex items-center justify-center shrink-0 relative overflow-hidden"
       style={checked ? {
         background: `linear-gradient(${color}, ${color}dd)`,
         boxShadow: `0 1px 2px rgba(0,0,0,0.3), 0 0.5px 0.5px rgba(0,0,0,0.2), inset 0 1px 2px rgba(0,0,0,0.2), inset 0 1.5px 2px 0.5px ${color}`,

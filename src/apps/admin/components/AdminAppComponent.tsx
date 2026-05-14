@@ -247,7 +247,7 @@ export function AdminAppComponent({
           menuBar={isXpTheme ? menuBar : undefined}
         >
           <div className="flex flex-col items-center justify-center h-full gap-3 p-8 text-center bg-white">
-            <Warning className="h-10 w-10 text-neutral-400" weight="bold" />
+            <Warning className="size-10 text-neutral-400" weight="bold" />
             <h2 className="text-sm font-bold">
               {t("apps.admin.accessDenied.title")}
             </h2>
@@ -282,7 +282,7 @@ export function AdminAppComponent({
           menuBar={isXpTheme ? menuBar : undefined}
         >
           <div className="flex flex-col items-center justify-center h-full gap-3 p-8 text-center bg-white">
-            <WifiSlash className="h-10 w-10 text-neutral-400" weight="bold" />
+            <WifiSlash className="size-10 text-neutral-400" weight="bold" />
             <h2 className="text-sm font-bold">
               {t("apps.admin.offline.title", "Offline")}
             </h2>
@@ -318,7 +318,7 @@ export function AdminAppComponent({
         onNavigatePrevious={onNavigatePrevious}
         menuBar={isXpTheme ? menuBar : undefined}
       >
-        <div ref={containerRef} className="flex h-full w-full admin-force-font">
+        <div ref={containerRef} className="flex size-full admin-force-font">
           {/* Sidebar */}
           <AdminSidebar
             activeSection={activeSection}
@@ -357,7 +357,7 @@ export function AdminAppComponent({
                 {activeSection === "users" && !selectedRoomId && (
                   <div className="relative flex-1">
                     <MagnifyingGlass
-                      className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-400"
+                      className="absolute left-2 top-1/2 -translate-y-1/2 size-3.5 text-neutral-400"
                       weight="bold"
                     />
                     <Input
@@ -373,7 +373,7 @@ export function AdminAppComponent({
                   <>
                     <div className="relative flex-1">
                       <MagnifyingGlass
-                        className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-400"
+                        className="absolute left-2 top-1/2 -translate-y-1/2 size-3.5 text-neutral-400"
                         weight="bold"
                       />
                       <Input
@@ -391,7 +391,7 @@ export function AdminAppComponent({
                       size="sm"
                       onClick={() => setSongsFilterByRyoOnly((v) => !v)}
                       className={cn(
-                        "h-7 w-7 p-0",
+                        "size-7 p-0",
                         songsFilterByRyoOnly && "bg-neutral-200"
                       )}
                       title={t(
@@ -417,7 +417,7 @@ export function AdminAppComponent({
                       size="sm"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={isImporting || isExporting || isDeletingAll}
-                      className="h-7 w-7 p-0"
+                      className="size-7 p-0"
                       title={
                         isImporting
                           ? t("apps.admin.songs.importing", {
@@ -448,7 +448,7 @@ export function AdminAppComponent({
                         isDeletingAll ||
                         songs.length === 0
                       }
-                      className="h-7 w-7 p-0"
+                      className="size-7 p-0"
                       title={t("apps.admin.songs.export", "Export Library")}
                     >
                       {isExporting ? (
@@ -463,7 +463,7 @@ export function AdminAppComponent({
                       size="sm"
                       onClick={handleDeleteAllSongs}
                       disabled={isDeletingAll || isImporting || songs.length === 0}
-                      className="h-7 w-7 p-0"
+                      className="size-7 p-0"
                       title={t("apps.admin.songs.deleteAll", "Delete All Songs")}
                     >
                       {isDeletingAll ? (
@@ -495,7 +495,7 @@ export function AdminAppComponent({
                     onClick={() =>
                       promptDelete("room", selectedRoomId, selectedRoom?.name || "")
                     }
-                    className="h-7 w-7 p-0"
+                    className="size-7 p-0"
                   >
                     <Trash size={14} weight="bold" />
                   </Button>
@@ -505,7 +505,7 @@ export function AdminAppComponent({
                   variant="ghost"
                   size="sm"
                   onClick={handleRefresh}
-                  className="h-7 w-7 p-0"
+                  className="size-7 p-0"
                 >
                   {isLoading ? (
                     <ActivityIndicator size={14} />
@@ -615,7 +615,7 @@ export function AdminAppComponent({
                     {users.length === 0 && !isLoading ? (
                       <div className="flex flex-col items-center justify-center py-12 text-neutral-400">
                         <MagnifyingGlass
-                          className="h-8 w-8 mb-2 opacity-50"
+                          className="size-8 mb-2 opacity-50"
                           weight="bold"
                         />
                         <span className="text-[11px]">
@@ -654,7 +654,7 @@ export function AdminAppComponent({
                                 <TableCell className="flex items-center gap-2">
                                   <div
                                     className={cn(
-                                      "w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-medium",
+                                      "size-4 rounded-full flex items-center justify-center text-[9px] font-medium",
                                       user.banned
                                         ? "bg-red-200 text-red-700"
                                         : "bg-neutral-200 text-neutral-600"
@@ -668,7 +668,7 @@ export function AdminAppComponent({
                                   {user.banned ? (
                                     <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] bg-red-100 text-red-700 rounded">
                                       <Prohibit
-                                        className="h-2.5 w-2.5"
+                                        className="size-2.5"
                                         weight="bold"
                                       />
                                       {t("apps.admin.user.banned")}
@@ -699,7 +699,7 @@ export function AdminAppComponent({
                                           user.username
                                         );
                                       }}
-                                      className="h-5 w-5 p-0 md:opacity-0 md:group-hover:opacity-100 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100"
+                                      className="size-5 p-0 md:opacity-0 md:group-hover:opacity-100 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100"
                                     >
                                       <Trash size={14} weight="bold" />
                                     </Button>
@@ -741,7 +741,7 @@ export function AdminAppComponent({
                     {songs.length === 0 && !isLoading ? (
                       <div className="flex flex-col items-center justify-center py-12 text-neutral-400">
                         <MusicNote
-                          className="h-8 w-8 mb-2 opacity-50"
+                          className="size-8 mb-2 opacity-50"
                           weight="bold"
                         />
                         <span className="text-[11px]">
@@ -751,7 +751,7 @@ export function AdminAppComponent({
                     ) : filteredSongs.length === 0 ? (
                       <div className="flex flex-col items-center justify-center py-12 text-neutral-400">
                         <Funnel
-                          className="h-8 w-8 mb-2 opacity-50"
+                          className="size-8 mb-2 opacity-50"
                           weight="bold"
                         />
                         <span className="text-[11px]">
@@ -775,14 +775,14 @@ export function AdminAppComponent({
                                 }
                               >
                                 {/* Cover Image */}
-                                <div className="w-10 h-10 flex-shrink-0 rounded overflow-hidden bg-gray-200">
+                                <div className="size-10 flex-shrink-0 rounded overflow-hidden bg-gray-200">
                                   <img
                                     src={
                                       formatKugouImageUrl(song.cover, 100) ||
                                       `https://i.ytimg.com/vi/${song.youtubeId}/default.jpg`
                                     }
                                     alt={song.title}
-                                    className="w-full h-full object-cover"
+                                    className="size-full object-cover"
                                     loading="lazy"
                                   />
                                 </div>
@@ -819,7 +819,7 @@ export function AdminAppComponent({
                                       song.title
                                     );
                                   }}
-                                  className="h-6 w-6 p-0 flex-shrink-0 md:opacity-0 md:group-hover:opacity-100 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100"
+                                  className="size-6 p-0 flex-shrink-0 md:opacity-0 md:group-hover:opacity-100 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100"
                                 >
                                   <Trash size={14} weight="bold" />
                                 </Button>
@@ -882,7 +882,7 @@ export function AdminAppComponent({
                             className="border-none hover:bg-gray-100/50 transition-colors cursor-default odd:bg-gray-200/50 group"
                           >
                             <TableCell className="flex items-center gap-2 whitespace-nowrap">
-                              <div className="w-4 h-4 rounded-full bg-neutral-200 flex items-center justify-center text-[9px] font-medium text-neutral-600">
+                              <div className="size-4 rounded-full bg-neutral-200 flex items-center justify-center text-[9px] font-medium text-neutral-600">
                                 {message.username[0].toUpperCase()}
                               </div>
                               {message.username}
@@ -904,7 +904,7 @@ export function AdminAppComponent({
                                     deleteMessage(selectedRoomId, message.id);
                                   }
                                 }}
-                                className="h-5 w-5 p-0 md:opacity-0 md:group-hover:opacity-100 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100"
+                                className="size-5 p-0 md:opacity-0 md:group-hover:opacity-100 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100"
                               >
                                 <Trash size={14} weight="bold" />
                               </Button>
