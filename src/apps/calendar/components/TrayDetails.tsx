@@ -328,7 +328,7 @@ function EventTrayEditor({
 
   const panelShell = cn(
     "flex-1 flex flex-col min-h-0 overflow-y-auto",
-    "bg-white pl-2.5 pr-2.5 pt-2 pb-2",
+    "bg-white pl-2.5 pr-2.5 pt-2",
     !isMacOSTheme && "rounded-sm border border-black/10"
   );
 
@@ -339,7 +339,10 @@ function EventTrayEditor({
   );
 
   return (
-    <div className={panelShell}>
+    <div
+      className={panelShell}
+      style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom, 0px))" }}
+    >
       {/* Title + location (iCal header block) */}
       <div
         className={cn(
@@ -600,7 +603,7 @@ function TodoDetails({
 
   const panelShell = cn(
     "flex-1 flex flex-col min-h-0 overflow-y-auto",
-    "bg-white pl-2.5 pr-2.5 pt-2 pb-2",
+    "bg-white pl-2.5 pr-2.5 pt-2",
     !isMacOSTheme && "rounded-sm border border-black/10"
   );
 
@@ -617,7 +620,10 @@ function TodoDetails({
   ));
 
   return (
-    <div className={panelShell}>
+    <div
+      className={panelShell}
+      style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom, 0px))" }}
+    >
       <div
         className={cn(
           "shrink-0 border-b border-black/20 pb-2 mb-2",
