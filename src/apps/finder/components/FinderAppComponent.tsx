@@ -65,7 +65,7 @@ function SidebarItem({
       )}
       data-selected={isActive ? "true" : undefined}
     >
-      <ThemedIcon name={icon} alt="" className="w-8 h-8 shrink-0 [image-rendering:auto]" />
+      <ThemedIcon name={icon} alt="" className="size-8 shrink-0 [image-rendering:auto]" />
       <span className="truncate">{name}</span>
     </button>
   );
@@ -303,7 +303,7 @@ export function FinderAppComponent({
         <div
           ref={containerRef}
           className={cn(
-            "flex flex-col h-full w-full relative",
+            "flex flex-col size-full relative",
             isDraggingOver && currentPath === "/Documents"
               ? "after:absolute after:inset-0 after:bg-black/20"
               : "",
@@ -410,7 +410,7 @@ export function FinderAppComponent({
                       }
                     }}
                     disabled={!isAirDropView && !canNavigateBack()}
-                    className="h-8 w-8"
+                    className="size-8"
                   >
                     <ArrowLeft size={14} weight="bold" />
                   </Button>
@@ -419,7 +419,7 @@ export function FinderAppComponent({
                     size="icon"
                     onClick={navigateForward}
                     disabled={!canNavigateForward()}
-                    className="h-8 w-8"
+                    className="size-8"
                   >
                     <ArrowRight size={14} weight="bold" />
                   </Button>
@@ -428,7 +428,7 @@ export function FinderAppComponent({
                     size="icon"
                     onClick={navigateUp}
                     disabled={currentPath === "/"}
-                    className="h-8 w-8"
+                    className="size-8"
                     onDragOver={handleParentButtonDragOver}
                     onDragLeave={handleParentButtonDragLeave}
                     onDrop={handleParentButtonDrop}

@@ -98,7 +98,7 @@ export const PaintToolbar: React.FC<PaintToolbarProps> = ({
                   <img
                     src={tool.icon}
                     alt={label}
-                    className="w-[36px] h-[36px] object-contain mix-blend-multiply"
+                    className="size-[36px] object-contain mix-blend-multiply"
                   />
                 </Button>
               </TooltipTrigger>

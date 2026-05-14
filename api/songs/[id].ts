@@ -196,16 +196,17 @@ export default apiHandler<Record<string, unknown>>(
 
       const includeParam = (req.query.include as string) || "metadata";
       const includes = includeParam.split(",").map((s) => s.trim());
+      const includeSet = new Set(includes);
 
       logger.info("GET song", { songId, includes });
 
       // Fetch song with requested includes
       const song = await getSong(redis, songId, {
-        includeMetadata: includes.includes("metadata"),
-        includeLyrics: includes.includes("lyrics"),
-        includeTranslations: includes.includes("translations"),
-        includeFurigana: includes.includes("furigana"),
-        includeSoramimi: includes.includes("soramimi"),
+        includeMetadata: includeSet.has("metadata"),
+        includeLyrics: includeSet.has("lyrics"),
+        includeTranslations: includeSet.has("translations"),
+        includeFurigana: includeSet.has("furigana"),
+        includeSoramimi: includeSet.has("soramimi"),
       });
 
       if (!song) {

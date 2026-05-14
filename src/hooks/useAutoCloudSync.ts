@@ -489,8 +489,9 @@ export function useAutoCloudSync() {
       firstQueuedAtRef.current[logicalDomain] = 0;
       pendingUploadAfterCurrentRef.current[logicalDomain] = false;
       uploadInFlightRef.current[logicalDomain] = true;
+      const enabledPartDomainSet = new Set(enabledPartDomains);
       const dirtyPartDomains = getPersistedLogicalDirtyParts(logicalDomain).filter(
-        (partDomain) => enabledPartDomains.includes(partDomain)
+        (partDomain) => enabledPartDomainSet.has(partDomain)
       );
       const targetPartDomains =
         dirtyPartDomains.length > 0 ? dirtyPartDomains : enabledPartDomains;
@@ -1058,8 +1059,9 @@ export function useAutoCloudSync() {
       // Narrow suppression: applied domains get a short post-apply window,
       // all others are released immediately.
       const postApplyUntil = Date.now() + REMOTE_APPLY_SUPPRESSION_MS;
+      const appliedDomainSet = new Set(appliedDomains);
       for (const d of CLOUD_SYNC_DOMAINS) {
-        remoteApplySuppressUntilRef.current[d] = appliedDomains.includes(d)
+        remoteApplySuppressUntilRef.current[d] = appliedDomainSet.has(d)
           ? postApplyUntil
           : 0;
       }
@@ -1262,8 +1264,9 @@ export function useAutoCloudSync() {
 
       const physicalOrder =
         getLogicalCloudSyncDomainPhysicalParts(logicalDomain);
+      const partsNeedingUploadSet = new Set(partsNeedingUpload);
       const representative =
-        physicalOrder.find((d) => partsNeedingUpload.includes(d)) ??
+        physicalOrder.find((d) => partsNeedingUploadSet.has(d)) ??
         partsNeedingUpload[0];
 
       setTimeout(

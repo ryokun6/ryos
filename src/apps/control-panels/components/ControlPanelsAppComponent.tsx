@@ -178,7 +178,7 @@ function SyncSectionTitle({
         <ThemedIcon
           name="/icons/default/cloud-sync.png"
           alt=""
-          className="w-8 h-8 object-contain"
+          className="size-8 object-contain"
         />
       </div>
       <div className="min-w-0 space-y-1">
@@ -212,7 +212,7 @@ function SyncDomainRow({
         <ThemedIcon
           name={getAppIconPath(appId)}
           alt=""
-          className="h-8 w-8 shrink-0 object-contain"
+          className="size-8 shrink-0 object-contain"
         />
         <div className="space-y-0.5 min-w-0">
           <Label className="leading-none">{label}</Label>
@@ -230,7 +230,7 @@ function SyncDomainRow({
 
 const userAvatarInitialsTextShadow =
   "0 2px 3px rgba(0, 0, 0, 0.45), 0 0 3px rgba(0, 0, 0, 0.15)";
-const controlPanelItemIconShell = "w-8 h-8 shrink-0";
+const controlPanelItemIconShell = "size-8 shrink-0";
 
 export function ControlPanelsAppComponent({
   isWindowOpen,
@@ -460,7 +460,7 @@ export function ControlPanelsAppComponent({
         menuBar={isXpTheme ? menuBar : undefined}
       >
         <div
-          className={`flex flex-col h-full w-full ${
+          className={`flex flex-col size-full ${
             isWindowsLegacyTheme ? "pt-0 pb-2 px-2" : ""
           } ${
             isClassicMacTheme
@@ -470,7 +470,7 @@ export function ControlPanelsAppComponent({
               : ""
           }`}
         >
-          <Tabs defaultValue={defaultTab} className="w-full h-full">
+          <Tabs defaultValue={defaultTab} className="size-full">
             <ThemedTabsList>
               <ThemedTabsTrigger value="appearance">
                 {t("apps.control-panels.appearance")}
@@ -1010,7 +1010,7 @@ export function ControlPanelsAppComponent({
                                 <img
                                   src={myContact.picture}
                                   alt={accountAvatarLabel}
-                                  className="w-full h-full object-contain"
+                                  className="size-full object-contain"
                                 />
                               ) : (
                                 accountAvatarInitials
@@ -1018,7 +1018,7 @@ export function ControlPanelsAppComponent({
                             </div>
                             <span
                               className={cn(
-                                "absolute -bottom-px -right-px block h-[10px] w-[10px] rounded-full border-[1.5px] border-white",
+                                "absolute -bottom-px -right-px block size-[10px] rounded-full border-[1.5px] border-white",
                                 realtimeStatus === "connected"
                                   ? "bg-green-500"
                                   : realtimeStatus === "connecting"
@@ -1117,7 +1117,7 @@ export function ControlPanelsAppComponent({
                             <img
                               src="/apple-touch-icon.png"
                               alt={t("apps.control-panels.ryOSAccount")}
-                              className="w-8 h-8 object-contain"
+                              className="size-8 object-contain"
                             />
                           </div>
                           <div className="flex flex-col gap-0.5 min-w-0">

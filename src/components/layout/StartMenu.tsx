@@ -84,7 +84,7 @@ export function StartMenu({ apps }: StartMenuProps) {
               name="apple.png"
               alt="Start"
               className={`[image-rendering:pixelated] ${
-                isWinXp ? "w-5 h-4" : "w-5 h-5"
+                isWinXp ? "w-5 h-4" : "size-5"
               }`}
               style={{
                 filter:
@@ -191,7 +191,7 @@ export function StartMenu({ apps }: StartMenuProps) {
                   <ThemedIcon
                     name="info.png"
                     alt="About"
-                    className="w-6 h-6 [image-rendering:pixelated]"
+                    className="size-6 [image-rendering:pixelated]"
                   />
                   {t("common.startMenu.aboutThisComputer")}
                 </DropdownMenuItem>
@@ -210,7 +210,7 @@ export function StartMenu({ apps }: StartMenuProps) {
                     imageRendering: "pixelated",
                   }}
                 >
-                  <div className="w-6 h-6 flex items-center justify-center text-base">
+                  <div className="size-6 flex items-center justify-center text-base">
                     🔍
                   </div>
                   <span className="flex-1">{t("common.startMenu.run")}</span>
@@ -246,10 +246,10 @@ export function StartMenu({ apps }: StartMenuProps) {
                           <ThemedIcon
                             name={app.icon}
                             alt={app.name}
-                            className="w-6 h-6 [image-rendering:pixelated]"
+                            className="size-6 [image-rendering:pixelated]"
                           />
                         ) : (
-                          <div className="w-6 h-6 flex items-center justify-center">
+                          <div className="size-6 flex items-center justify-center">
                             {app.icon}
                           </div>
                         )
@@ -257,7 +257,7 @@ export function StartMenu({ apps }: StartMenuProps) {
                         <ThemedIcon
                           name={app.icon.src}
                           alt={app.name}
-                          className="w-6 h-6 [image-rendering:pixelated]"
+                          className="size-6 [image-rendering:pixelated]"
                         />
                       )}
                       {getTranslatedAppName(app.id as AppId)}

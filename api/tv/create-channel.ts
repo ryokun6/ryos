@@ -120,10 +120,7 @@ async function searchOneQuery(
     if (!res.ok || data.error) {
       const message = data.error?.message?.toLowerCase() ?? "";
       const isQuota =
-        res.status === 403 &&
-        (message.includes("quota") ||
-          message.includes("exceeded") ||
-          message.includes("limit"));
+        res.status === 403 && /(quota|exceeded|limit)/.test(message);
       if (isQuota && i < apiKeys.length - 1) continue;
       throw new Error(
         data.error?.message || `YouTube API error (${res.status})`

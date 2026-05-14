@@ -80,7 +80,7 @@ export const AudioInputButton = forwardRef<
               isSilent={isSilent}
             />
           ) : (
-            <Microphone className="h-4 w-4" weight="bold" />
+            <Microphone className="size-4" weight="bold" />
           )}
         </button>
       </div>

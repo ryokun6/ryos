@@ -17,6 +17,9 @@ export const LOGICAL_CLOUD_SYNC_DOMAINS = [
   "contacts",
   "maps",
 ] as const;
+const LOGICAL_CLOUD_SYNC_DOMAIN_SET = new Set<string>(
+  LOGICAL_CLOUD_SYNC_DOMAINS as readonly string[]
+);
 
 export type LogicalCloudSyncDomain = (typeof LOGICAL_CLOUD_SYNC_DOMAINS)[number];
 
@@ -40,6 +43,15 @@ export const LOGICAL_TO_PHYSICAL_CLOUD_SYNC_DOMAINS: Record<
   contacts: ["contacts"],
   maps: ["maps"],
 };
+const LOGICAL_TO_PHYSICAL_CLOUD_SYNC_DOMAIN_SETS: Record<
+  LogicalCloudSyncDomain,
+  Set<CloudSyncDomain>
+> = Object.fromEntries(
+  LOGICAL_CLOUD_SYNC_DOMAINS.map((domain) => [
+    domain,
+    new Set(LOGICAL_TO_PHYSICAL_CLOUD_SYNC_DOMAINS[domain]),
+  ])
+) as Record<LogicalCloudSyncDomain, Set<CloudSyncDomain>>;
 
 export interface LogicalCloudSyncDomainMetadata {
   updatedAt: string;
@@ -56,10 +68,7 @@ export type LogicalCloudSyncMetadataMap = Record<
 export function isLogicalCloudSyncDomain(
   value: unknown
 ): value is LogicalCloudSyncDomain {
-  return (
-    typeof value === "string" &&
-    (LOGICAL_CLOUD_SYNC_DOMAINS as readonly string[]).includes(value)
-  );
+  return typeof value === "string" && LOGICAL_CLOUD_SYNC_DOMAIN_SET.has(value);
 }
 
 export function createEmptyLogicalCloudSyncMetadataMap(): LogicalCloudSyncMetadataMap {
@@ -95,7 +104,7 @@ export function getLogicalCloudSyncDomainForPhysical(
   domain: CloudSyncDomain
 ): LogicalCloudSyncDomain {
   for (const logicalDomain of LOGICAL_CLOUD_SYNC_DOMAINS) {
-    if (LOGICAL_TO_PHYSICAL_CLOUD_SYNC_DOMAINS[logicalDomain].includes(domain)) {
+    if (LOGICAL_TO_PHYSICAL_CLOUD_SYNC_DOMAIN_SETS[logicalDomain].has(domain)) {
       return logicalDomain;
     }
   }
