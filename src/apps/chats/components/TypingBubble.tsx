@@ -13,16 +13,16 @@ export function TypingDots() {
         }
       `}</style>
       <div className="flex items-center gap-[3px]" style={{ minHeight: "1lh" }}>
-        {[0, 1, 2].map((i) => (
+        {[0, 1, 2].map((dotPhase) => (
           <span
-            key={i}
+            key={`typing-dot-${dotPhase}`}
             className="block rounded-full"
             style={{
               width: 7,
               height: 7,
               backgroundColor: "currentColor",
               opacity: 0.3,
-              animation: `typingDot 1.2s ease-in-out ${i * 0.15}s infinite`,
+              animation: `typingDot 1.2s ease-in-out ${dotPhase * 0.15}s infinite`,
             }}
           />
         ))}

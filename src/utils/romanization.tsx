@@ -71,20 +71,24 @@ export function hasChineseTextLocal(text: string): boolean {
  * Render text with Korean romanization as ruby annotation
  */
 export function renderKoreanWithRomanization(text: string, keyPrefix: string = "kr"): React.ReactNode {
-  const segments: { text: string; isKorean: boolean }[] = [];
+  const segments: { text: string; isKorean: boolean; start: number }[] = [];
   let lastIndex = 0;
   let match: RegExpExecArray | null;
   
   KOREAN_REGEX.lastIndex = 0;
   while ((match = KOREAN_REGEX.exec(text)) !== null) {
     if (match.index > lastIndex) {
-      segments.push({ text: text.slice(lastIndex, match.index), isKorean: false });
+      segments.push({
+        text: text.slice(lastIndex, match.index),
+        isKorean: false,
+        start: lastIndex,
+      });
     }
-    segments.push({ text: match[0], isKorean: true });
+    segments.push({ text: match[0], isKorean: true, start: match.index });
     lastIndex = match.index + match[0].length;
   }
   if (lastIndex < text.length) {
-    segments.push({ text: text.slice(lastIndex), isKorean: false });
+    segments.push({ text: text.slice(lastIndex), isKorean: false, start: lastIndex });
   }
   
   if (segments.length === 0) {
@@ -93,11 +97,12 @@ export function renderKoreanWithRomanization(text: string, keyPrefix: string = "
   
   return (
     <>
-      {segments.map((seg, idx) => {
+      {segments.map((seg) => {
+        const segmentKey = `${keyPrefix}-${seg.start}-${seg.text}`;
         if (seg.isKorean) {
           const romanized = romanizeKorean(seg.text);
           return (
-            <ruby key={`${keyPrefix}-${idx}`} className="lyrics-furigana lyrics-korean-ruby">
+            <ruby key={segmentKey} className="lyrics-furigana lyrics-korean-ruby">
               {seg.text}
               <rp>(</rp>
               <rt className="lyrics-furigana-rt lyrics-korean-rt">{romanized}</rt>
@@ -105,7 +110,7 @@ export function renderKoreanWithRomanization(text: string, keyPrefix: string = "
             </ruby>
           );
         }
-        return <span key={`${keyPrefix}-${idx}`}>{seg.text}</span>;
+        return <span key={segmentKey}>{seg.text}</span>;
       })}
     </>
   );
@@ -119,6 +124,11 @@ export function renderChineseWithPinyin(text: string, keyPrefix: string = "cn"):
   // Get pinyin without tone marks for each character
   const pinyinResult = pinyin(text, { type: 'array', toneType: 'none' });
   const chars = [...text]; // Original characters for display
+  const charEntries = chars.map((char, position) => ({
+    char,
+    position,
+    pinyinText: pinyinResult[position] || "",
+  }));
   
   if (chars.length === 0) {
     return text;
@@ -126,21 +136,20 @@ export function renderChineseWithPinyin(text: string, keyPrefix: string = "cn"):
   
   return (
     <>
-      {chars.map((char, idx) => {
+      {charEntries.map(({ char, position, pinyinText }) => {
         // Check if this character is a Chinese character
         CHINESE_REGEX.lastIndex = 0;
         if (CHINESE_REGEX.test(char)) {
-          const charPinyin = pinyinResult[idx] || '';
           return (
-            <ruby key={`${keyPrefix}-${idx}`} className="lyrics-furigana lyrics-pinyin-ruby">
+            <ruby key={`${keyPrefix}-${position}-${char}`} className="lyrics-furigana lyrics-pinyin-ruby">
               {char}
               <rp>(</rp>
-              <rt className="lyrics-furigana-rt lyrics-pinyin-rt">{charPinyin}</rt>
+              <rt className="lyrics-furigana-rt lyrics-pinyin-rt">{pinyinText}</rt>
               <rp>)</rp>
             </ruby>
           );
         }
-        return <span key={`${keyPrefix}-sp-${idx}`}>{char}</span>;
+        return <span key={`${keyPrefix}-sp-${position}-${char}`}>{char}</span>;
       })}
     </>
   );
@@ -151,20 +160,24 @@ export function renderChineseWithPinyin(text: string, keyPrefix: string = "cn"):
  * Converts hiragana/katakana to Latin letters
  */
 export function renderKanaWithRomaji(text: string, keyPrefix: string = "jp"): React.ReactNode {
-  const segments: { text: string; isKana: boolean }[] = [];
+  const segments: { text: string; isKana: boolean; start: number }[] = [];
   let lastIndex = 0;
   let match: RegExpExecArray | null;
   
   KANA_REGEX.lastIndex = 0;
   while ((match = KANA_REGEX.exec(text)) !== null) {
     if (match.index > lastIndex) {
-      segments.push({ text: text.slice(lastIndex, match.index), isKana: false });
+      segments.push({
+        text: text.slice(lastIndex, match.index),
+        isKana: false,
+        start: lastIndex,
+      });
     }
-    segments.push({ text: match[0], isKana: true });
+    segments.push({ text: match[0], isKana: true, start: match.index });
     lastIndex = match.index + match[0].length;
   }
   if (lastIndex < text.length) {
-    segments.push({ text: text.slice(lastIndex), isKana: false });
+    segments.push({ text: text.slice(lastIndex), isKana: false, start: lastIndex });
   }
   
   if (segments.length === 0) {
@@ -173,11 +186,12 @@ export function renderKanaWithRomaji(text: string, keyPrefix: string = "jp"): Re
   
   return (
     <>
-      {segments.map((seg, idx) => {
+      {segments.map((seg) => {
+        const segmentKey = `${keyPrefix}-${seg.start}-${seg.text}`;
         if (seg.isKana) {
           const romaji = toRomaji(seg.text);
           return (
-            <ruby key={`${keyPrefix}-${idx}`} className="lyrics-furigana lyrics-romaji-ruby">
+            <ruby key={segmentKey} className="lyrics-furigana lyrics-romaji-ruby">
               {seg.text}
               <rp>(</rp>
               <rt className="lyrics-furigana-rt lyrics-romaji-rt">{romaji}</rt>
@@ -185,7 +199,7 @@ export function renderKanaWithRomaji(text: string, keyPrefix: string = "jp"): Re
             </ruby>
           );
         }
-        return <span key={`${keyPrefix}-sp-${idx}`}>{seg.text}</span>;
+        return <span key={`${keyPrefix}-sp-${seg.start}-${seg.text}`}>{seg.text}</span>;
       })}
     </>
   );
@@ -203,7 +217,11 @@ export function renderFuriganaSegments(
   
   return (
     <>
-      {segments.map((segment, index) => {
+      {(() => {
+        let segmentOffset = 0;
+        return segments.map((segment) => {
+          const segmentKey = `seg-${segmentOffset}-${segment.text}-${segment.reading ?? ""}`;
+          segmentOffset += Math.max(segment.text.length, 1);
         // Handle Japanese furigana (hiragana reading over kanji)
         const displayReadingSource = getDisplayReading(segment);
         if (displayReadingSource) {
@@ -212,7 +230,7 @@ export function renderFuriganaSegments(
             ? toRomaji(displayReadingSource)
             : displayReadingSource;
           return (
-            <ruby key={index} className="lyrics-furigana">
+            <ruby key={segmentKey} className="lyrics-furigana">
               {segment.text}
               <rp>(</rp>
               <rt className="lyrics-furigana-rt">{displayReading}</rt>
@@ -223,21 +241,22 @@ export function renderFuriganaSegments(
         
         // Check for Korean text when romanization is enabled
         if (koreanRomanization && hasKoreanText(segment.text)) {
-          return <span key={index}>{renderKoreanWithRomanization(segment.text, `seg-${index}`)}</span>;
+          return <span key={`${segmentKey}-kr`}>{renderKoreanWithRomanization(segment.text, segmentKey)}</span>;
         }
         
         // Check for Chinese text when pinyin is enabled
         if (chinesePinyin && isChineseText(segment.text)) {
-          return <span key={index}>{renderChineseWithPinyin(segment.text, `seg-${index}`)}</span>;
+          return <span key={`${segmentKey}-cn`}>{renderChineseWithPinyin(segment.text, segmentKey)}</span>;
         }
         
         // Check for standalone kana when romaji is enabled
         if (japaneseRomaji && hasKanaTextLocal(segment.text)) {
-          return <span key={index}>{renderKanaWithRomaji(segment.text, `seg-${index}`)}</span>;
+          return <span key={`${segmentKey}-jp`}>{renderKanaWithRomaji(segment.text, segmentKey)}</span>;
         }
         
-        return <span key={index}>{segment.text}</span>;
-      })}
+          return <span key={segmentKey}>{segment.text}</span>;
+        });
+      })()}
     </>
   );
 }

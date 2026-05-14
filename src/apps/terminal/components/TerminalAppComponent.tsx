@@ -74,6 +74,18 @@ function TerminalHtmlPreview({
 
 // AnimatedEllipsis component has been extracted to separate file
 
+const commandHistoryKeyCache = new WeakMap<object, string>();
+let commandHistoryKeySeq = 0;
+
+function getCommandHistoryKey(item: object): string {
+  const cached = commandHistoryKeyCache.get(item);
+  if (cached) return cached;
+  commandHistoryKeySeq += 1;
+  const key = `history-${commandHistoryKeySeq}`;
+  commandHistoryKeyCache.set(item, key);
+  return key;
+}
+
 export function TerminalAppComponent({
   onClose,
   isWindowOpen,
@@ -226,7 +238,7 @@ export function TerminalAppComponent({
         <AnimatePresence>
           {commandHistory.map((item, index) => (
             <motion.div
-              key={index}
+              key={item.messageId ? `msg-${item.messageId}` : getCommandHistoryKey(item)}
               className="mb-1 select-text cursor-text"
               variants={lineVariants}
               initial="initial"
@@ -338,7 +350,10 @@ export function TerminalAppComponent({
                             {cleanedTextContent &&
                               (() => {
                                 const parts = cleanedTextContent.split("\n");
+                                let lineOffset = 0;
                                 return parts.map((line, idx) => {
+                                  const currentLineOffset = lineOffset;
+                                  lineOffset += line.length + 1;
                                   const trimmed = line.trimStart();
                                   const isSpin = trimmed.startsWith(":::");
                                   const isRes = trimmed.startsWith("→");
@@ -357,7 +372,7 @@ export function TerminalAppComponent({
                                         : "text-purple-300";
                                   return (
                                     <span
-                                      key={idx}
+                                      key={`${item.messageId ?? item.path}-line-${currentLineOffset}`}
                                       className={`select-text cursor-text ${cls}`}
                                     >
                                       {idx > 0 && <br />}

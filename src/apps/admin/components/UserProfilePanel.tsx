@@ -827,14 +827,14 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                                   </button>
                                   {isExpanded && (
                                     <div className="pl-5 mt-1 space-y-1">
-                                      {note.entries.map((entry, i) => {
+                                      {note.entries.map((entry) => {
                                         const time = new Date(entry.timestamp).toLocaleTimeString("en-US", {
                                           hour: "numeric",
                                           minute: "2-digit",
                                           hour12: true,
                                         });
                                         return (
-                                          <div key={i} className="text-[11px] flex gap-2">
+                                          <div key={`${entry.timestamp}-${entry.content.slice(0, 24)}`} className="text-[11px] flex gap-2">
                                             <span className="text-neutral-400 whitespace-nowrap flex-shrink-0">{time}</span>
                                             <span className="text-neutral-600">{entry.content}</span>
                                           </div>

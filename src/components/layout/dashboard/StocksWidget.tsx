@@ -173,7 +173,7 @@ function MiniChart({
         const xPos = leftPad + (i / Math.max(xLabels.length - 1, 1)) * chartW;
         return (
           <text
-            key={`${label}-${i}`}
+            key={`${label}-${Math.round(xPos)}`}
             x={xPos}
             y={height - 2}
             fill={isXpTheme ? "#666" : "rgba(255,255,255,0.4)"}

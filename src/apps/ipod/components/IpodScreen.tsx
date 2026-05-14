@@ -66,6 +66,17 @@ import { useIpodStore, isAppleMusicCollectionTrack } from "@/stores/useIpodStore
 // the scroll-position math.
 const MENU_ITEM_HEIGHT_CLASSIC = 24;
 const MENU_ITEM_HEIGHT_MODERN = 21;
+const menuItemKeyCache = new WeakMap<object, string>();
+let menuItemKeySeed = 0;
+
+function getMenuItemKey(item: object): string {
+  const cached = menuItemKeyCache.get(item);
+  if (cached) return cached;
+  menuItemKeySeed += 1;
+  const key = `ipod-menu-${menuItemKeySeed}`;
+  menuItemKeyCache.set(item, key);
+  return key;
+}
 // Modern titlebar is intentionally tighter than the row height. The
 // nano 6G/7G + iPod classic 6G silver header is a slim 17px strip with
 // 12px MyriadPro semibold text — slimmer than each list row so the
@@ -890,7 +901,7 @@ export function IpodScreen({
                         const index = visibleRange.start + i;
                         return (
                           <div
-                            key={index}
+                            key={getMenuItemKey(item)}
                             className={`ipod-menu-item ${
                               index === selectedMenuItem ? "selected" : ""
                             }`}

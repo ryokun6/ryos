@@ -26,6 +26,7 @@ const EVENT_COLOR_MAP: Record<string, string> = {
   orange: "#F97316",
   purple: "#A855F7",
 };
+const WEEKDAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
 
 interface CalendarWidgetProps {
   widgetId?: string;
@@ -111,6 +112,14 @@ export function CalendarWidget({ widgetId }: CalendarWidgetProps) {
   }, [events, todayStr, now]);
 
   const dayHeaders = useMemo(() => getLocalizedDayHeaders(locale), [locale]);
+  const keyedDayHeaders = useMemo(
+    () =>
+      dayHeaders.map((label, position) => ({
+        label,
+        key: WEEKDAY_KEYS[position] ?? `day-${label}`,
+      })),
+    [dayHeaders]
+  );
 
   const handleClick = () => {
     requestAppLaunch({ appId: "calendar" });
@@ -124,9 +133,13 @@ export function CalendarWidget({ widgetId }: CalendarWidgetProps) {
           {getLocalizedMonthName(now, locale, "long")} {now.getFullYear()}
         </div>
         <div className="grid grid-cols-7 mb-0.5">
-          {dayHeaders.map((d, i) => (
-            <div key={i} className="text-center text-[9px] font-medium" style={{ color: i === 0 || i === 6 ? "#CC0000" : "#666" }}>
-              {d}
+          {keyedDayHeaders.map((header) => (
+            <div
+              key={header.key}
+              className="text-center text-[9px] font-medium"
+              style={{ color: header.key === "sun" || header.key === "sat" ? "#CC0000" : "#666" }}
+            >
+              {header.label}
             </div>
           ))}
         </div>
@@ -202,13 +215,13 @@ export function CalendarWidget({ widgetId }: CalendarWidgetProps) {
       <div className="px-3 pb-2 flex-1">
         {/* Day headers */}
         <div className="grid grid-cols-7 pb-2" style={{ borderBottom: "1px solid rgba(255,255,255,0.15)" }}>
-          {dayHeaders.map((d, i) => (
+          {keyedDayHeaders.map((header) => (
             <div
-              key={i}
+              key={header.key}
               className="text-center font-bold"
               style={{ fontSize: 14, color: "rgba(255,255,255,0.6)", fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}
             >
-              {d}
+              {header.label}
             </div>
           ))}
         </div>
@@ -245,7 +258,7 @@ export function CalendarWidget({ widgetId }: CalendarWidgetProps) {
                   <div className="absolute flex gap-0.5" style={{ bottom: 1, left: "50%", transform: "translateX(-50%)" }}>
                     {cell.events.slice(0, 2).map((ev, i) => (
                       <span
-                        key={i}
+                        key={ev.id}
                         className="w-1 h-1 rounded-full"
                         style={{ backgroundColor: EVENT_COLOR_MAP[ev.color] || "#F0A060" }}
                       />

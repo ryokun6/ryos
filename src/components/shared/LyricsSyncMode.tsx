@@ -55,7 +55,6 @@ const LyricLineItem = memo(function LyricLineItem({
   return (
     <button
       type="button"
-      key={`${line.startTimeMs}-${index}`}
       ref={handleRef}
       onClick={handleClick}
       className={cn(
@@ -448,7 +447,7 @@ export function LyricsSyncMode({
           <div className="space-y-0.5">
             {lines.map((line, index) => (
               <LyricLineItem
-                key={`${line.startTimeMs}-${index}`}
+                key={line.startTimeMs}
                 line={line}
                 index={index}
                 isCurrent={index === currentLineIndex}

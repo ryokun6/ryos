@@ -758,7 +758,7 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
                   idx !== round.correctIndex;
                 return (
                   <div
-                    key={`${roundNumber}-${idx}-${option.id}`}
+                    key={option.id}
                     className={cn(
                       "ipod-menu-item h-6",
                       isSelected ? "selected" : "",

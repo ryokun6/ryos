@@ -253,9 +253,9 @@ export function AirDropView({
       className="relative h-full w-full select-none overflow-hidden"
     >
       {/* Concentric circles — centered horizontally, bottom-aligned to container */}
-      {ringRadii.map((r, i) => (
+      {ringRadii.map((r) => (
         <div
-          key={i}
+          key={`ring-${r}`}
           className="absolute rounded-full border pointer-events-none"
           style={{
             width: r * 2,
@@ -263,7 +263,7 @@ export function AirDropView({
             bottom: -r + 92,
             left: "50%",
             transform: "translateX(-50%)",
-            borderColor: `rgba(0, 0, 0, ${0.12 - i * 0.03})`,
+            borderColor: `rgba(0, 0, 0, ${0.12 - ringRadii.indexOf(r) * 0.03})`,
           }}
         />
       ))}

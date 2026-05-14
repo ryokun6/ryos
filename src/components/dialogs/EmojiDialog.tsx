@@ -255,9 +255,9 @@ export function EmojiDialog({
         {t("common.dialog.emoji.chooseEmoji")}
       </p>
       <div className="grid grid-cols-10 gap-1 max-h-[300px] overflow-y-auto">
-        {EMOJIS.map((emoji, i) => (
+        {EMOJIS.map((emoji) => (
           <button
-            key={i}
+            key={emoji}
             className="p-1 !text-2xl hover:scale-120 transition-all duration-200 rounded cursor-pointer font-['SerenityOS-Emoji']"
             onClick={() => {
               onEmojiSelect(emoji);

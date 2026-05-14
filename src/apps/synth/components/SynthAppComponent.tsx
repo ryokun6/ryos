@@ -856,11 +856,13 @@ export function SynthAppComponent({
                 {/* Black keys container */}
                 <div className="absolute inset-0 h-full w-full flex pointer-events-none">
                   {blackKeys.map((note, index) => {
+                    const prevNote = blackKeys[index - 1] ?? "none";
+                    const nextNote = blackKeys[index + 1] ?? "none";
                     // Only hide black keys at the end of the visible range
                     if (visibleKeyCount > 0 && index === blackKeys.length - 1) {
                       return (
                         <div
-                          key={`empty-${index}`}
+                          key={`empty-trailing-${prevNote}`}
                           className="flex-1 relative"
                         />
                       );
@@ -868,7 +870,7 @@ export function SynthAppComponent({
 
                     return (
                       <div
-                        key={note || `empty-${index}`}
+                        key={note ?? `empty-${prevNote}-${nextNote}`}
                         className="flex-1 relative"
                       >
                         {note && (

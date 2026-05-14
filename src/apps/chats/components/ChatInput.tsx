@@ -440,6 +440,11 @@ export const ChatInput = memo(function ChatInput({
     };
   }, [isForeground, isFocused, isTranscribing]);
 
+  const waveformBars = waveformFrequencies.map((freq, position) => ({
+    freq,
+    barKey: `wave-${position + 1}`,
+  }));
+
   return (
     <AnimatePresence initial={false}>
       <motion.div
@@ -615,15 +620,15 @@ export const ChatInput = memo(function ChatInput({
                     className="flex gap-[2px] items-center justify-between w-full"
                     style={{ opacity: waveformIsSilent ? 0.4 : 1 }}
                   >
-                    {waveformFrequencies.map((freq, index) => (
+                    {waveformBars.map((bar) => (
                       <motion.div
-                        key={index}
+                        key={bar.barKey}
                         className="flex-1 max-w-[2px] rounded-full origin-center bg-neutral-300"
                         initial={{ scaleY: 0.3 }}
                         animate={{
                           scaleY: waveformIsSilent
                             ? 0.3
-                            : Math.max(0.3, Math.min(freq * 2, 1)),
+                            : Math.max(0.3, Math.min(bar.freq * 2, 1)),
                         }}
                         style={{
                           height: 20,

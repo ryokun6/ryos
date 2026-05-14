@@ -111,9 +111,9 @@ export function InputDialog({
         <div className="flex gap-1 w-full sm:w-auto">
           {additionalActions
             .filter((action) => action.position === "left")
-            .map((action, index) => (
+            .map((action) => (
               <Button
-                key={`left-${index}`}
+                key={`left-${action.label}-${action.variant || "retro"}`}
                 variant={action.variant || "retro"}
                 onClick={action.onClick}
                 disabled={isLoading}
@@ -137,9 +137,9 @@ export function InputDialog({
         <div className="flex flex-col-reverse gap-2 w-full sm:w-auto sm:flex-row">
           {additionalActions
             .filter((action) => action.position !== "left")
-            .map((action, index) => (
+            .map((action) => (
               <Button
-                key={`right-${index}`}
+                key={`right-${action.label}-${action.variant || "retro"}`}
                 variant={action.variant || "retro"}
                 onClick={action.onClick}
                 disabled={isLoading}

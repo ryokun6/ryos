@@ -57,14 +57,37 @@ interface RightClickMenuProps {
 export const menuItemClass =
   "text-md h-6 px-3 active:bg-gray-900 active:text-white min-w-[140px] flex items-center gap-2";
 
+const menuItemKeyCache = new WeakMap<object, string>();
+let menuItemKeySeed = 0;
+
+function getMenuItemKey(item: MenuItem): string {
+  const cached = menuItemKeyCache.get(item);
+  if (cached) return cached;
+
+  let key = "";
+  if (item.type === "item" || item.type === "submenu" || item.type === "checkbox") {
+    key = `${item.type}-${item.label}`;
+  } else if (item.type === "radioGroup") {
+    key = `${item.type}-${item.value}`;
+  } else {
+    key = "separator";
+  }
+
+  menuItemKeySeed += 1;
+  const uniqueKey = `${key}-${menuItemKeySeed}`;
+  menuItemKeyCache.set(item, uniqueKey);
+  return uniqueKey;
+}
+
 // ------------------ Renderer helpers ------------------
 function renderItems(items: MenuItem[]): ReactNode {
-  return items.map((item, idx) => {
+  return items.map((item) => {
+    const itemKey = getMenuItemKey(item);
     switch (item.type) {
       case "item":
         return (
           <DropdownMenuItem
-            key={idx}
+            key={itemKey}
             onSelect={item.onSelect}
             disabled={item.disabled}
             className={menuItemClass}
@@ -87,11 +110,11 @@ function renderItems(items: MenuItem[]): ReactNode {
         );
       case "separator":
         return (
-          <DropdownMenuSeparator key={idx} className="h-[2px] bg-black my-1" />
+          <DropdownMenuSeparator key={itemKey} className="h-[2px] bg-black my-1" />
         );
       case "submenu":
         return (
-          <DropdownMenuSub key={idx}>
+          <DropdownMenuSub key={itemKey}>
             <DropdownMenuSubTrigger
               disabled={item.disabled}
               className={menuItemClass}
@@ -119,7 +142,7 @@ function renderItems(items: MenuItem[]): ReactNode {
       case "checkbox":
         return (
           <DropdownMenuCheckboxItem
-            key={idx}
+            key={itemKey}
             checked={item.checked}
             onSelect={item.onSelect}
             disabled={item.disabled}
