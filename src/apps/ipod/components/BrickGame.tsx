@@ -50,17 +50,17 @@ const MODERN_BRICK_COLORS: Array<{
   border: string;
 }> = [
   // red
-  { highlight: "#ff8a78", body: "#e34a3a", shadow: "#a0231a", topGloss: "rgba(255,255,255,0.3)", border: "rgba(74,15,8,0.55)" },
+  { highlight: "#ff8a78", body: "#e34a3a", shadow: "#a0231a", topGloss: "rgba(255,255,255,0.5)", border: "rgba(74,15,8,0.55)" },
   // orange
-  { highlight: "#ffb673", body: "#ef892c", shadow: "#a8540f", topGloss: "rgba(255,255,255,0.28)", border: "rgba(85,40,5,0.5)" },
+  { highlight: "#ffb673", body: "#ef892c", shadow: "#a8540f", topGloss: "rgba(255,255,255,0.45)", border: "rgba(85,40,5,0.5)" },
   // yellow
-  { highlight: "#ffe572", body: "#ebc935", shadow: "#9c810e", topGloss: "rgba(255,255,255,0.32)", border: "rgba(80,60,5,0.5)" },
+  { highlight: "#ffe572", body: "#ebc935", shadow: "#9c810e", topGloss: "rgba(255,255,255,0.5)", border: "rgba(80,60,5,0.5)" },
   // green
-  { highlight: "#a8e879", body: "#5cbf3f", shadow: "#2c761a", topGloss: "rgba(255,255,255,0.28)", border: "rgba(20,55,12,0.55)" },
+  { highlight: "#a8e879", body: "#5cbf3f", shadow: "#2c761a", topGloss: "rgba(255,255,255,0.45)", border: "rgba(20,55,12,0.55)" },
   // blue
-  { highlight: "#7a96ff", body: "#3a5fd6", shadow: "#193a96", topGloss: "rgba(255,255,255,0.28)", border: "rgba(12,25,70,0.6)" },
+  { highlight: "#7a96ff", body: "#3a5fd6", shadow: "#193a96", topGloss: "rgba(255,255,255,0.45)", border: "rgba(12,25,70,0.6)" },
   // purple
-  { highlight: "#9d70ff", body: "#5d3dc4", shadow: "#31197e", topGloss: "rgba(255,255,255,0.28)", border: "rgba(25,10,60,0.6)" },
+  { highlight: "#9d70ff", body: "#5d3dc4", shadow: "#31197e", topGloss: "rgba(255,255,255,0.45)", border: "rgba(25,10,60,0.6)" },
 ];
 
 // Paddle / ball
@@ -274,11 +274,17 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
         grad.addColorStop(1, color.shadow);
         ctx.fillStyle = grad;
         ctx.fillRect(b.x, b.y, b.w, b.h);
-        // Soft top gloss: lit band over the upper ~22% of the brick, low
-        // alpha so the shine reads as a gentle wash rather than a hard
-        // white stripe.
-        ctx.fillStyle = color.topGloss;
-        ctx.fillRect(b.x, b.y, b.w, Math.max(1, b.h * 0.22));
+        // Top gloss: covers the upper half of the brick and fades from
+        // the per-row gloss color at the top to fully transparent at the
+        // midline, mirroring the classic Aqua/iPod gel highlight. The
+        // gradient fade keeps the shine readable without the hard
+        // top-stripe look of a flat fill.
+        const glossH = b.h * 0.5;
+        const glossGrad = ctx.createLinearGradient(0, b.y, 0, b.y + glossH);
+        glossGrad.addColorStop(0, color.topGloss);
+        glossGrad.addColorStop(1, "rgba(255,255,255,0)");
+        ctx.fillStyle = glossGrad;
+        ctx.fillRect(b.x, b.y, b.w, glossH);
         // 1-game-unit border traced inside the brick rectangle. Drawn
         // with lineWidth=1 and inset by 0.5 so the stroke sits flush
         // with the brick edge (canvas stroke is centered on the path).
