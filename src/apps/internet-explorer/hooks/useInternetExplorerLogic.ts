@@ -1405,18 +1405,17 @@ export function useInternetExplorerLogic({
   }, [url, stripProtocol]);
 
   useEffect(() => {
-    const timeoutIds: ReturnType<typeof setTimeout>[] = [];
+    const timeoutIds = new Set<ReturnType<typeof setTimeout>>();
     const scheduleTimeout = (callback: () => void, delay: number) => {
       const timeoutId = setTimeout(callback, delay);
-      timeoutIds.push(timeoutId);
-    };
-    const clearScheduledTimeouts = () => {
-      timeoutIds.forEach((timeoutId) => clearTimeout(timeoutId));
+      timeoutIds.add(timeoutId);
+      return timeoutId;
     };
 
     // Only run initial navigation logic once when the window opens
     if (!initialNavigationRef.current && isWindowOpen) {
       initialNavigationRef.current = true;
+      let shouldRunDefaultNavigation = true;
       console.log(
         "[IE] Running initial navigation check. Received initialData:",
         initialData
@@ -1453,7 +1452,7 @@ export function useInternetExplorerLogic({
           }, 0);
           // Mark this initialData as processed
           lastProcessedInitialDataRef.current = initialData;
-          return clearScheduledTimeouts; // Skip other initial navigation
+          shouldRunDefaultNavigation = false;
         } else {
           console.warn(
             "[IE] Failed to decode share link code from initialData prop."
@@ -1467,7 +1466,11 @@ export function useInternetExplorerLogic({
       }
 
       // --- NEW: Check for direct url and year in initialData ---
-      if (initialData?.url && typeof initialData.url === "string") {
+      if (
+        shouldRunDefaultNavigation &&
+        initialData?.url &&
+        typeof initialData.url === "string"
+      ) {
         const initialUrl = initialData.url;
         const initialYear =
           typeof initialData.year === "string"
@@ -1492,17 +1495,21 @@ export function useInternetExplorerLogic({
         }, 0);
         // Mark this initialData as processed
         lastProcessedInitialDataRef.current = initialData;
-        return clearScheduledTimeouts; // Skip default navigation
+        shouldRunDefaultNavigation = false;
       }
       // --- END NEW ---
 
-      // Proceed with default navigation if not a share link or if decoding failed
-      console.log("[IE] Proceeding with default navigation.");
-      scheduleTimeout(() => {
-        handleNavigate(url, year, false);
-      }, 0);
+      // Proceed with default navigation if no initialData navigation was queued
+      if (shouldRunDefaultNavigation) {
+        console.log("[IE] Proceeding with default navigation.");
+        scheduleTimeout(() => {
+          handleNavigate(url, year, false);
+        }, 0);
+      }
     }
-    return clearScheduledTimeouts;
+    return () => {
+      timeoutIds.forEach((timeoutId) => clearTimeout(timeoutId));
+    };
   }, [
     initialData,
     isWindowOpen,
