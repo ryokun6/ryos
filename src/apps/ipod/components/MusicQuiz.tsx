@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo, useCallback, useImperativeHandle, forwardRef } from "react";
+import { useEffect, useRef, useState, useMemo, useCallback, useImperativeHandle } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactPlayer from "react-player";
 import { useTranslation } from "react-i18next";
@@ -92,8 +92,9 @@ function pickRound(tracks: Track[]): { options: Track[]; correctIndex: number; c
   return { options, correctIndex, correct: options[correctIndex] };
 }
 
-export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function MusicQuiz(
+export const MusicQuiz = function MusicQuiz(
   {
+    ref,
     isVisible,
     onExit: _onExit,
     lcdFilterOn = false,
@@ -101,9 +102,10 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
     onEnter,
     playClick,
     playScroll,
-    vibrate,
-  },
-  ref
+    vibrate
+  }: MusicQuizProps & {
+    ref: React.RefObject<MusicQuizRef>;
+  }
 ) {
   const { t } = useTranslation();
   const tracks = useIpodStore((s) =>
@@ -862,7 +864,7 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
       )}
     </div>
   );
-});
+};
 
 function formatOption(track: Track): string {
   const artist = track.artist ? ` — ${track.artist}` : "";

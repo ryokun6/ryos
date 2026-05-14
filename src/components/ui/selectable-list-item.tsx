@@ -8,21 +8,26 @@ interface SelectableListItemProps
   className?: string;
 }
 
-export const SelectableListItem = React.forwardRef<
-  HTMLDivElement,
-  SelectableListItemProps
->(({ isSelected, children, className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn(
-      "py-1 px-5 cursor-pointer",
-      !isSelected && "hover:bg-black/5",
-      className
-    )}
-    data-selected={isSelected ? "true" : undefined}
-    {...props}
-  >
-    {children}
-  </div>
-));
+export const SelectableListItem = (
+  {
+    ref,
+    isSelected,
+    children,
+    className,
+    ...props
+  }: SelectableListItemProps & {
+    ref: React.RefObject<HTMLDivElement>;
+  }
+) => (<div
+  ref={ref}
+  className={cn(
+    "py-1 px-5 cursor-pointer",
+    !isSelected && "hover:bg-black/5",
+    className
+  )}
+  data-selected={isSelected ? "true" : undefined}
+  {...props}
+>
+  {children}
+</div>);
 SelectableListItem.displayName = "SelectableListItem";

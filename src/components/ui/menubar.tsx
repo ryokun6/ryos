@@ -20,10 +20,16 @@ const MenubarSub = MenubarPrimitive.Sub
 
 const MenubarRadioGroup = MenubarPrimitive.RadioGroup
 
-const Menubar = React.forwardRef<
-  React.ElementRef<typeof MenubarPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Root>
->(({ className, onValueChange, ...props }, ref) => {
+const Menubar = (
+  {
+    ref,
+    className,
+    onValueChange,
+    ...props
+  }: React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Root> & {
+    ref: React.RefObject<React.ElementRef<typeof MenubarPrimitive.Root>>;
+  }
+) => {
   const { play: playMenuOpen } = useSound(Sounds.MENU_OPEN)
   const { play: playMenuClose } = useSound(Sounds.MENU_CLOSE)
   const [previousValue, setPreviousValue] = React.useState<string | undefined>(undefined)
@@ -60,13 +66,19 @@ const Menubar = React.forwardRef<
       />
     </MenubarSwitchingContext.Provider>
   )
-})
+}
 Menubar.displayName = MenubarPrimitive.Root.displayName
 
-const MenubarTrigger = React.forwardRef<
-  React.ElementRef<typeof MenubarPrimitive.Trigger>,
-  React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Trigger>
->(({ className, style, ...props }, ref) => {
+const MenubarTrigger = (
+  {
+    ref,
+    className,
+    style,
+    ...props
+  }: React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Trigger> & {
+    ref: React.RefObject<React.ElementRef<typeof MenubarPrimitive.Trigger>>;
+  }
+) => {
   const { isWindowsTheme, isSystem7Theme, isMacOSTheme } = useThemeFlags()
 
   // Theme-specific styles for the trigger
@@ -101,15 +113,18 @@ const MenubarTrigger = React.forwardRef<
       {...props}
     />
   )
-})
+}
 MenubarTrigger.displayName = MenubarPrimitive.Trigger.displayName
 
-const MenubarSubTrigger = React.forwardRef<
-  React.ElementRef<typeof MenubarPrimitive.SubTrigger>,
-  React.ComponentPropsWithoutRef<typeof MenubarPrimitive.SubTrigger> & {
-    inset?: boolean
+const MenubarSubTrigger = (
+  {
+    ref,
+    className,
+    inset,
+    children,
+    ...props
   }
->(({ className, inset, children, ...props }, ref) => {
+) => {
   const { isWindowsTheme, isMacOSTheme, isSystem7Theme } = useThemeFlags()
 
   return (
@@ -151,13 +166,19 @@ const MenubarSubTrigger = React.forwardRef<
       <CaretRight className="ml-auto" size={12} weight="bold" />
     </MenubarPrimitive.SubTrigger>
   )
-})
+}
 MenubarSubTrigger.displayName = MenubarPrimitive.SubTrigger.displayName
 
-const MenubarSubContent = React.forwardRef<
-  React.ElementRef<typeof MenubarPrimitive.SubContent>,
-  React.ComponentPropsWithoutRef<typeof MenubarPrimitive.SubContent>
->(({ className, style, ...props }, ref) => {
+const MenubarSubContent = (
+  {
+    ref,
+    className,
+    style,
+    ...props
+  }: React.ComponentPropsWithoutRef<typeof MenubarPrimitive.SubContent> & {
+    ref: React.RefObject<React.ElementRef<typeof MenubarPrimitive.SubContent>>;
+  }
+) => {
   const { isMacOSTheme } = useThemeFlags()
   const isMobile = useMediaQuery("(max-width: 768px)")
 
@@ -187,63 +208,69 @@ const MenubarSubContent = React.forwardRef<
       />
     </MenubarPrimitive.Portal>
   )
-})
+}
 MenubarSubContent.displayName = MenubarPrimitive.SubContent.displayName
 
-const MenubarContent = React.forwardRef<
-  React.ElementRef<typeof MenubarPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Content>
->(
-  (
-    { className, align = "start", alignOffset = 0, sideOffset = 8, style, ...props },
-    ref
-  ) => {
-    const { isMacOSTheme } = useThemeFlags()
-    const isMobile = useMediaQuery("(max-width: 768px)")
-    const isSwitching = React.useContext(MenubarSwitchingContext)
-
-    return (
-      <MenubarPrimitive.Portal>
-        <MenubarPrimitive.Content
-          ref={ref}
-          align={align}
-          alignOffset={alignOffset}
-          sideOffset={sideOffset}
-          className={cn(
-            // Use z-[10003] to ensure menu content appears above the menubar (z-[10002])
-            // This is critical for Safari where backdrop-filter creates new stacking contexts
-            "z-[10003] min-w-[12rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md",
-            // Only animate when not switching between menus
-            !isSwitching && "data-[state=open]:animate-in data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
-            className
-          )}
-          style={{
-            ...(isMacOSTheme && {
-              border: "none",
-              borderRadius: "0px",
-              background: "var(--os-pinstripe-window)",
-              opacity: "0.92",
-              boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
-              padding: "4px 0px",
-              ...(isMobile ? {} : { minWidth: style?.minWidth ?? "180px" }),
-            }),
-            ...(isMobile && { minWidth: "unset" }),
-            ...style,
-          }}
-          {...props}
-        />
-      </MenubarPrimitive.Portal>
-    )
+const MenubarContent = (
+  {
+    ref,
+    className,
+    align = "start",
+    alignOffset = 0,
+    sideOffset = 8,
+    style,
+    ...props
+  }: React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Content> & {
+    ref: React.RefObject<React.ElementRef<typeof MenubarPrimitive.Content>>;
   }
-)
+) => {
+  const { isMacOSTheme } = useThemeFlags()
+  const isMobile = useMediaQuery("(max-width: 768px)")
+  const isSwitching = React.use(MenubarSwitchingContext)
+
+  return (
+    <MenubarPrimitive.Portal>
+      <MenubarPrimitive.Content
+        ref={ref}
+        align={align}
+        alignOffset={alignOffset}
+        sideOffset={sideOffset}
+        className={cn(
+          // Use z-[10003] to ensure menu content appears above the menubar (z-[10002])
+          // This is critical for Safari where backdrop-filter creates new stacking contexts
+          "z-[10003] min-w-[12rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md",
+          // Only animate when not switching between menus
+          !isSwitching && "data-[state=open]:animate-in data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+          className
+        )}
+        style={{
+          ...(isMacOSTheme && {
+            border: "none",
+            borderRadius: "0px",
+            background: "var(--os-pinstripe-window)",
+            opacity: "0.92",
+            boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
+            padding: "4px 0px",
+            ...(isMobile ? {} : { minWidth: style?.minWidth ?? "180px" }),
+          }),
+          ...(isMobile && { minWidth: "unset" }),
+          ...style,
+        }}
+        {...props}
+      />
+    </MenubarPrimitive.Portal>
+  )
+}
 MenubarContent.displayName = MenubarPrimitive.Content.displayName
 
-const MenubarItem = React.forwardRef<
-  React.ElementRef<typeof MenubarPrimitive.Item>,
-  React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Item> & {
-    inset?: boolean
+const MenubarItem = (
+  {
+    ref,
+    className,
+    inset,
+    ...props
   }
->(({ className, inset, ...props }, ref) => {
+) => {
   const { isWindowsTheme, isMacOSTheme, isSystem7Theme } = useThemeFlags()
 
   return (
@@ -283,13 +310,20 @@ const MenubarItem = React.forwardRef<
       {...props}
     />
   )
-})
+}
 MenubarItem.displayName = MenubarPrimitive.Item.displayName
 
-const MenubarCheckboxItem = React.forwardRef<
-  React.ElementRef<typeof MenubarPrimitive.CheckboxItem>,
-  React.ComponentPropsWithoutRef<typeof MenubarPrimitive.CheckboxItem>
->(({ className, children, checked, ...props }, ref) => {
+const MenubarCheckboxItem = (
+  {
+    ref,
+    className,
+    children,
+    checked,
+    ...props
+  }: React.ComponentPropsWithoutRef<typeof MenubarPrimitive.CheckboxItem> & {
+    ref: React.RefObject<React.ElementRef<typeof MenubarPrimitive.CheckboxItem>>;
+  }
+) => {
   const {
     isWindowsTheme,
     isMacOSTheme,
@@ -341,13 +375,19 @@ const MenubarCheckboxItem = React.forwardRef<
       {children}
     </MenubarPrimitive.CheckboxItem>
   )
-})
+}
 MenubarCheckboxItem.displayName = MenubarPrimitive.CheckboxItem.displayName
 
-const MenubarRadioItem = React.forwardRef<
-  React.ElementRef<typeof MenubarPrimitive.RadioItem>,
-  React.ComponentPropsWithoutRef<typeof MenubarPrimitive.RadioItem>
->(({ className, children, ...props }, ref) => {
+const MenubarRadioItem = (
+  {
+    ref,
+    className,
+    children,
+    ...props
+  }: React.ComponentPropsWithoutRef<typeof MenubarPrimitive.RadioItem> & {
+    ref: React.RefObject<React.ElementRef<typeof MenubarPrimitive.RadioItem>>;
+  }
+) => {
   const {
     isWindowsTheme,
     isMacOSTheme,
@@ -398,15 +438,17 @@ const MenubarRadioItem = React.forwardRef<
       {children}
     </MenubarPrimitive.RadioItem>
   )
-})
+}
 MenubarRadioItem.displayName = MenubarPrimitive.RadioItem.displayName
 
-const MenubarLabel = React.forwardRef<
-  React.ElementRef<typeof MenubarPrimitive.Label>,
-  React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Label> & {
-    inset?: boolean
+const MenubarLabel = (
+  {
+    ref,
+    className,
+    inset,
+    ...props
   }
->(({ className, inset, ...props }, ref) => {
+) => {
   const { isWindowsTheme, isMacOSTheme } = useThemeFlags()
 
   return (
@@ -425,13 +467,18 @@ const MenubarLabel = React.forwardRef<
       {...props}
     />
   )
-})
+}
 MenubarLabel.displayName = MenubarPrimitive.Label.displayName
 
-const MenubarSeparator = React.forwardRef<
-  React.ElementRef<typeof MenubarPrimitive.Separator>,
-  React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Separator>
->(({ className, ...props }, ref) => {
+const MenubarSeparator = (
+  {
+    ref,
+    className,
+    ...props
+  }: React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Separator> & {
+    ref: React.RefObject<React.ElementRef<typeof MenubarPrimitive.Separator>>;
+  }
+) => {
   const { isSystem7Theme, isMacOSTheme } = useThemeFlags()
 
   return (
@@ -455,7 +502,7 @@ const MenubarSeparator = React.forwardRef<
       {...props}
     />
   )
-})
+}
 MenubarSeparator.displayName = MenubarPrimitive.Separator.displayName
 
 const MenubarShortcut = ({

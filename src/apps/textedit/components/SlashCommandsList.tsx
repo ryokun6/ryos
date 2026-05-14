@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
+import { useEffect, useImperativeHandle, useState } from "react";
 import { Editor } from "@tiptap/react";
 
 interface CommandItem {
@@ -16,10 +16,12 @@ interface SlashCommandsListProps {
   command: (props: CommandProps) => void;
 }
 
-export const SlashCommandsList = forwardRef<
-  { onKeyDown: (event: KeyboardEvent) => boolean },
-  SlashCommandsListProps
->((props, ref) => {
+export const SlashCommandsList = (
+  {
+    ref,
+    ...props
+  }
+) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   const selectItem = (index: number) => {
@@ -81,4 +83,4 @@ export const SlashCommandsList = forwardRef<
       ))}
     </div>
   );
-});
+};

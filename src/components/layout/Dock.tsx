@@ -1,12 +1,4 @@
-import React, {
-  useMemo,
-  useRef,
-  useState,
-  useCallback,
-  useEffect,
-  forwardRef,
-  memo,
-} from "react";
+import React, { useMemo, useRef, useState, useCallback, useEffect, memo } from "react";
 import { useTranslation } from "react-i18next";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useAppStoreShallow } from "@/stores/helpers";
@@ -80,372 +72,380 @@ interface DockSpacerProps {
   baseSize?: number;
 }
 
-const DockSpacer = forwardRef<HTMLDivElement, DockSpacerProps>(
-  ({ idKey, mouseX, magnifyEnabled, baseSize: baseSizeProp }, ref) => {
-    const wrapperRef = useRef<HTMLDivElement | null>(null);
-    const baseSize = baseSizeProp ?? BASE_BUTTON_SIZE;
-    const maxSize = Math.round(baseSize * MAX_SCALE);
+const DockSpacer = (
+  {
+    ref,
+    idKey,
+    mouseX,
+    magnifyEnabled,
+    baseSize: baseSizeProp
+  }: DockSpacerProps & {
+    ref: React.RefObject<HTMLDivElement>;
+  }
+) => {
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const baseSize = baseSizeProp ?? BASE_BUTTON_SIZE;
+  const maxSize = Math.round(baseSize * MAX_SCALE);
+  
+  // Use a motion value for target size that we can imperatively update
+  const targetSize = useMotionValue(baseSize);
+  
+  // Update target size when base size changes or magnification is disabled
+  useEffect(() => {
+    if (!magnifyEnabled) {
+      targetSize.set(baseSize);
+    }
+  }, [baseSize, magnifyEnabled, targetSize]);
+  
+  const distanceCalc = useTransform(mouseX, (val) => {
+    const bounds = wrapperRef.current?.getBoundingClientRect();
+    if (!bounds || !Number.isFinite(val)) return Infinity;
+    return val - (bounds.left + bounds.width / 2);
+  });
+  
+  // Update target size based on cursor distance when magnification is enabled
+  useEffect(() => {
+    if (!magnifyEnabled) return;
     
-    // Use a motion value for target size that we can imperatively update
-    const targetSize = useMotionValue(baseSize);
-    
-    // Update target size when base size changes or magnification is disabled
-    useEffect(() => {
-      if (!magnifyEnabled) {
+    const unsubscribe = distanceCalc.on("change", (dist) => {
+      if (!Number.isFinite(dist)) {
         targetSize.set(baseSize);
+        return;
       }
-    }, [baseSize, magnifyEnabled, targetSize]);
-    
-    const distanceCalc = useTransform(mouseX, (val) => {
-      const bounds = wrapperRef.current?.getBoundingClientRect();
-      if (!bounds || !Number.isFinite(val)) return Infinity;
-      return val - (bounds.left + bounds.width / 2);
+      const absDist = Math.abs(dist);
+      if (absDist > DISTANCE) {
+        targetSize.set(baseSize);
+      } else {
+        const t = 1 - absDist / DISTANCE;
+        targetSize.set(baseSize + t * (maxSize - baseSize));
+      }
     });
     
-    // Update target size based on cursor distance when magnification is enabled
-    useEffect(() => {
-      if (!magnifyEnabled) return;
-      
-      const unsubscribe = distanceCalc.on("change", (dist) => {
-        if (!Number.isFinite(dist)) {
-          targetSize.set(baseSize);
-          return;
-        }
-        const absDist = Math.abs(dist);
-        if (absDist > DISTANCE) {
-          targetSize.set(baseSize);
-        } else {
-          const t = 1 - absDist / DISTANCE;
-          targetSize.set(baseSize + t * (maxSize - baseSize));
-        }
-      });
-      
-      return unsubscribe;
-    }, [magnifyEnabled, baseSize, maxSize, distanceCalc, targetSize]);
+    return unsubscribe;
+  }, [magnifyEnabled, baseSize, maxSize, distanceCalc, targetSize]);
+  
+  const sizeSpring = useSpring(targetSize, {
+    mass: 0.15,
+    stiffness: 160,
+    damping: 18,
+  });
+  
+  const widthValue = sizeSpring;
+  
+  const setCombinedRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      wrapperRef.current = node;
+      if (typeof ref === "function") {
+        ref(node);
+      } else if (ref && "current" in (ref as object)) {
+        (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+      }
+    },
+    [ref]
+  );
+  
+  return (
+    <motion.div
+      ref={setCombinedRef}
+      layout
+      layoutId={`dock-spacer-${idKey}`}
+      initial={{ width: 0, height: 0 }}
+      animate={{ width: baseSize + 8, height: baseSize }} // Base size for layout, actual size controlled by style
+      exit={{ width: 0, height: 0 }}
+      transition={{
+        type: "spring",
+        stiffness: 400,
+        damping: 30,
+      }}
+      className="flex-shrink-0"
+      style={{
+        width: widthValue,
+        height: widthValue,
+        marginLeft: 4,
+        marginRight: 4,
+        transformOrigin: "bottom center",
+      }}
+    />
+  );
+};
+
+const IconButton = memo((
+  {
+    ref: forwardedRef,
+    label,
+    onClick,
+    icon,
+    idKey,
+    showIndicator = false,
+    isLoading = false,
+    isEmoji = false,
+    onDragOver,
+    onDrop,
+    onDragLeave,
+    onContextMenu,
+    mouseX,
+    magnifyEnabled,
+    isNew,
+    isHovered,
+    isSwapping,
+    onHover,
+    onLeave,
+    draggable = false,
+    onDragStart,
+    onDragEnd,
+    isDragging = false,
+    isDraggedOutside = false,
+    baseSize: baseSizeProp
+  }: IconButtonProps & {
+    ref: React.RefObject<HTMLDivElement>;
+  }
+) => {
+  const baseButtonSize = baseSizeProp ?? BASE_BUTTON_SIZE;
+  const maxButtonSize = Math.round(baseButtonSize * MAX_SCALE);
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const isPresent = useIsPresent();
+  
+  // Use a motion value for target size that we can imperatively update
+  const targetSize = useMotionValue(baseButtonSize);
+  
+  // Update target size when base size changes or magnification is disabled
+  useEffect(() => {
+    if (!magnifyEnabled) {
+      targetSize.set(baseButtonSize);
+    }
+  }, [baseButtonSize, magnifyEnabled, targetSize]);
+  
+  // Calculate distance from cursor to icon center
+  const distanceCalc = useTransform(mouseX, (val) => {
+    const bounds = wrapperRef.current?.getBoundingClientRect();
+    if (!bounds || !Number.isFinite(val)) return Infinity;
+    return val - (bounds.left + bounds.width / 2);
+  });
+  
+  // Update target size based on cursor distance when magnification is enabled
+  useEffect(() => {
+    if (!magnifyEnabled) return;
     
-    const sizeSpring = useSpring(targetSize, {
-      mass: 0.15,
-      stiffness: 160,
-      damping: 18,
+    const unsubscribe = distanceCalc.on("change", (dist) => {
+      if (!Number.isFinite(dist)) {
+        targetSize.set(baseButtonSize);
+        return;
+      }
+      const absDist = Math.abs(dist);
+      if (absDist > DISTANCE) {
+        targetSize.set(baseButtonSize);
+      } else {
+        const t = 1 - absDist / DISTANCE;
+        targetSize.set(baseButtonSize + t * (maxButtonSize - baseButtonSize));
+      }
     });
     
-    const widthValue = sizeSpring;
-    
-    const setCombinedRef = useCallback(
-      (node: HTMLDivElement | null) => {
-        wrapperRef.current = node;
-        if (typeof ref === "function") {
-          ref(node);
-        } else if (ref && "current" in (ref as object)) {
-          (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
-        }
-      },
-      [ref]
-    );
-    
-    return (
-      <motion.div
-        ref={setCombinedRef}
-        layout
-        layoutId={`dock-spacer-${idKey}`}
-        initial={{ width: 0, height: 0 }}
-        animate={{ width: baseSize + 8, height: baseSize }} // Base size for layout, actual size controlled by style
-        exit={{ width: 0, height: 0 }}
-        transition={{
+    return unsubscribe;
+  }, [magnifyEnabled, baseButtonSize, maxButtonSize, distanceCalc, targetSize]);
+  
+  const sizeSpring = useSpring(targetSize, {
+    mass: 0.15,
+    stiffness: 160,
+    damping: 18,
+  });
+  const widthValue = isPresent ? sizeSpring : 0;
+
+  // Scale factor for emoji to match magnification (relative to baseButtonSize)
+  const emojiScale = useTransform(sizeSpring, (val) => val / baseButtonSize);
+
+  // Add long-press support for context menu on mobile
+  const longPressHandlers = useLongPress<HTMLButtonElement>((touchEvent) => {
+    if (onContextMenu) {
+      const touch = touchEvent.touches[0];
+      const syntheticEvent = {
+        preventDefault: () => {},
+        stopPropagation: () => {},
+        clientX: touch.clientX,
+        clientY: touch.clientY,
+      } as unknown as React.MouseEvent<HTMLButtonElement>;
+      onContextMenu(syntheticEvent);
+    }
+  });
+
+  const setCombinedRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      wrapperRef.current = node;
+      if (typeof forwardedRef === "function") {
+        forwardedRef(node);
+      } else if (forwardedRef && "current" in (forwardedRef as object)) {
+        (
+          forwardedRef as React.MutableRefObject<HTMLDivElement | null>
+        ).current = node;
+      }
+    },
+    [forwardedRef]
+  );
+
+  // When dragged outside dock, shrink to 0; when dragging inside, use normal size
+  const dragWidth = isDraggedOutside ? 0 : widthValue;
+  const dragHeight = isDraggedOutside ? 0 : widthValue;
+  const dragMargin = isDraggedOutside ? 0 : (isPresent ? 4 : 0);
+
+  return (
+    <motion.div
+      ref={setCombinedRef}
+      layout
+      layoutId={`dock-icon-${idKey}`}
+      data-dock-icon={idKey}
+      initial={isNew ? { scale: 0, opacity: 0 } : undefined}
+      animate={{
+        scale: 1,
+        // Hide icon completely when dragging
+        opacity: isDragging ? 0 : 1,
+      }}
+      exit={{
+        scale: 0,
+        opacity: 0,
+      }}
+      transition={{
+        type: "spring",
+        stiffness: 500,
+        damping: 36,
+        mass: 0.7,
+        // Snappier layout transition for reorder snap effect
+        layout: {
           type: "spring",
           stiffness: 400,
           damping: 30,
-        }}
-        className="flex-shrink-0"
+        },
+      }}
+      style={{
+        transformOrigin: "bottom center",
+        willChange: "width, height, transform",
+        width: dragWidth,
+        height: dragHeight,
+        marginLeft: dragMargin,
+        marginRight: dragMargin,
+        overflow: "visible",
+        cursor: draggable ? (isDragging ? "grabbing" : "grab") : "pointer",
+      }}
+      className="flex-shrink-0 relative"
+    >
+      <AnimatePresence>
+        {isHovered && (
+          <motion.div
+            initial={{ opacity: 0, y: 10, x: "-50%" }}
+            animate={{ 
+              opacity: 1, 
+              y: 0, 
+              x: "-50%",
+              transition: { duration: isSwapping ? 0 : 0.05 }
+            }}
+            exit={{ 
+              opacity: 0, 
+              y: 5, 
+              x: "-50%",
+              transition: { duration: isSwapping ? 0 : 0.15 }
+            }}
+            className="absolute bottom-full mb-3 left-1/2 px-3 py-1 bg-neutral-800 text-white/90 text-sm font-medium rounded-full shadow-xl whitespace-nowrap pointer-events-none z-50"
+          >
+            {label}
+            <div className="absolute top-full left-1/2 -translate-x-1/2 w-[10px] h-[5px] bg-neutral-800" style={{ clipPath: "polygon(50% 100%, 0% 0%, 100% 0%)" }} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <button
+        aria-label={label}
+        title="" // remove native tooltip
+        onClick={onClick}
+        onContextMenu={onContextMenu}
+        onMouseEnter={onHover}
+        onMouseLeave={onLeave}
+        draggable={draggable}
+        onDragStart={onDragStart}
+        onDragEnd={onDragEnd}
+        onDragOver={onDragOver}
+        onDrop={onDrop}
+        onDragLeave={onDragLeave}
+        {...longPressHandlers}
+        className="relative flex items-end justify-center w-full h-full"
         style={{
-          width: widthValue,
-          height: widthValue,
-          marginLeft: 4,
-          marginRight: 4,
-          transformOrigin: "bottom center",
+          willChange: "transform",
         }}
-      />
-    );
-  }
-);
-
-const IconButton = memo(forwardRef<HTMLDivElement, IconButtonProps>(
-  (
-    {
-      label,
-      onClick,
-      icon,
-      idKey,
-      showIndicator = false,
-      isLoading = false,
-      isEmoji = false,
-      onDragOver,
-      onDrop,
-      onDragLeave,
-      onContextMenu,
-      mouseX,
-      magnifyEnabled,
-      isNew,
-      isHovered,
-      isSwapping,
-      onHover,
-      onLeave,
-      draggable = false,
-      onDragStart,
-      onDragEnd,
-      isDragging = false,
-      isDraggedOutside = false,
-      baseSize: baseSizeProp,
-    },
-    forwardedRef
-  ) => {
-    const baseButtonSize = baseSizeProp ?? BASE_BUTTON_SIZE;
-    const maxButtonSize = Math.round(baseButtonSize * MAX_SCALE);
-    const wrapperRef = useRef<HTMLDivElement | null>(null);
-    const isPresent = useIsPresent();
-    
-    // Use a motion value for target size that we can imperatively update
-    const targetSize = useMotionValue(baseButtonSize);
-    
-    // Update target size when base size changes or magnification is disabled
-    useEffect(() => {
-      if (!magnifyEnabled) {
-        targetSize.set(baseButtonSize);
-      }
-    }, [baseButtonSize, magnifyEnabled, targetSize]);
-    
-    // Calculate distance from cursor to icon center
-    const distanceCalc = useTransform(mouseX, (val) => {
-      const bounds = wrapperRef.current?.getBoundingClientRect();
-      if (!bounds || !Number.isFinite(val)) return Infinity;
-      return val - (bounds.left + bounds.width / 2);
-    });
-    
-    // Update target size based on cursor distance when magnification is enabled
-    useEffect(() => {
-      if (!magnifyEnabled) return;
-      
-      const unsubscribe = distanceCalc.on("change", (dist) => {
-        if (!Number.isFinite(dist)) {
-          targetSize.set(baseButtonSize);
-          return;
-        }
-        const absDist = Math.abs(dist);
-        if (absDist > DISTANCE) {
-          targetSize.set(baseButtonSize);
-        } else {
-          const t = 1 - absDist / DISTANCE;
-          targetSize.set(baseButtonSize + t * (maxButtonSize - baseButtonSize));
-        }
-      });
-      
-      return unsubscribe;
-    }, [magnifyEnabled, baseButtonSize, maxButtonSize, distanceCalc, targetSize]);
-    
-    const sizeSpring = useSpring(targetSize, {
-      mass: 0.15,
-      stiffness: 160,
-      damping: 18,
-    });
-    const widthValue = isPresent ? sizeSpring : 0;
-
-    // Scale factor for emoji to match magnification (relative to baseButtonSize)
-    const emojiScale = useTransform(sizeSpring, (val) => val / baseButtonSize);
-
-    // Add long-press support for context menu on mobile
-    const longPressHandlers = useLongPress<HTMLButtonElement>((touchEvent) => {
-      if (onContextMenu) {
-        const touch = touchEvent.touches[0];
-        const syntheticEvent = {
-          preventDefault: () => {},
-          stopPropagation: () => {},
-          clientX: touch.clientX,
-          clientY: touch.clientY,
-        } as unknown as React.MouseEvent<HTMLButtonElement>;
-        onContextMenu(syntheticEvent);
-      }
-    });
-
-    const setCombinedRef = useCallback(
-      (node: HTMLDivElement | null) => {
-        wrapperRef.current = node;
-        if (typeof forwardedRef === "function") {
-          forwardedRef(node);
-        } else if (forwardedRef && "current" in (forwardedRef as object)) {
-          (
-            forwardedRef as React.MutableRefObject<HTMLDivElement | null>
-          ).current = node;
-        }
-      },
-      [forwardedRef]
-    );
-
-    // When dragged outside dock, shrink to 0; when dragging inside, use normal size
-    const dragWidth = isDraggedOutside ? 0 : widthValue;
-    const dragHeight = isDraggedOutside ? 0 : widthValue;
-    const dragMargin = isDraggedOutside ? 0 : (isPresent ? 4 : 0);
-
-    return (
-      <motion.div
-        ref={setCombinedRef}
-        layout
-        layoutId={`dock-icon-${idKey}`}
-        data-dock-icon={idKey}
-        initial={isNew ? { scale: 0, opacity: 0 } : undefined}
-        animate={{
-          scale: 1,
-          // Hide icon completely when dragging
-          opacity: isDragging ? 0 : 1,
-        }}
-        exit={{
-          scale: 0,
-          opacity: 0,
-        }}
-        transition={{
-          type: "spring",
-          stiffness: 500,
-          damping: 36,
-          mass: 0.7,
-          // Snappier layout transition for reorder snap effect
-          layout: {
-            type: "spring",
-            stiffness: 400,
-            damping: 30,
-          },
-        }}
-        style={{
-          transformOrigin: "bottom center",
-          willChange: "width, height, transform",
-          width: dragWidth,
-          height: dragHeight,
-          marginLeft: dragMargin,
-          marginRight: dragMargin,
-          overflow: "visible",
-          cursor: draggable ? (isDragging ? "grabbing" : "grab") : "pointer",
-        }}
-        className="flex-shrink-0 relative"
       >
-        <AnimatePresence>
-          {isHovered && (
-            <motion.div
-              initial={{ opacity: 0, y: 10, x: "-50%" }}
-              animate={{ 
-                opacity: 1, 
-                y: 0, 
-                x: "-50%",
-                transition: { duration: isSwapping ? 0 : 0.05 }
-              }}
-              exit={{ 
-                opacity: 0, 
-                y: 5, 
-                x: "-50%",
-                transition: { duration: isSwapping ? 0 : 0.15 }
-              }}
-              className="absolute bottom-full mb-3 left-1/2 px-3 py-1 bg-neutral-800 text-white/90 text-sm font-medium rounded-full shadow-xl whitespace-nowrap pointer-events-none z-50"
-            >
-              {label}
-              <div className="absolute top-full left-1/2 -translate-x-1/2 w-[10px] h-[5px] bg-neutral-800" style={{ clipPath: "polygon(50% 100%, 0% 0%, 100% 0%)" }} />
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <button
-          aria-label={label}
-          title="" // remove native tooltip
-          onClick={onClick}
-          onContextMenu={onContextMenu}
-          onMouseEnter={onHover}
-          onMouseLeave={onLeave}
-          draggable={draggable}
-          onDragStart={onDragStart}
-          onDragEnd={onDragEnd}
-          onDragOver={onDragOver}
-          onDrop={onDrop}
-          onDragLeave={onDragLeave}
-          {...longPressHandlers}
-          className="relative flex items-end justify-center w-full h-full"
-          style={{
-            willChange: "transform",
+        <motion.div
+          className="w-full h-full flex items-end justify-center"
+          animate={
+            isLoading
+              ? {
+                  y: [0, -20, 0],
+                  transition: {
+                    y: {
+                      repeat: Infinity,
+                      duration: 0.8,
+                      ease: "easeInOut",
+                      repeatType: "loop",
+                    },
+                  },
+                }
+              : { y: 0 }
+          }
+          transition={{
+            y: {
+              type: "spring",
+              stiffness: 200,
+              damping: 20,
+            },
           }}
         >
-          <motion.div
-            className="w-full h-full flex items-end justify-center"
-            animate={
-              isLoading
-                ? {
-                    y: [0, -20, 0],
-                    transition: {
-                      y: {
-                        repeat: Infinity,
-                        duration: 0.8,
-                        ease: "easeInOut",
-                        repeatType: "loop",
-                      },
-                    },
-                  }
-                : { y: 0 }
-            }
-            transition={{
-              y: {
-                type: "spring",
-                stiffness: 200,
-                damping: 20,
-              },
-            }}
-          >
-            {isEmoji ? (
-              <motion.span
-                className="select-none pointer-events-none flex items-end justify-center"
-                style={{
-                  // Slightly larger base size so initial (non-hover) emoji isn't too small
-                  fontSize: baseButtonSize * 0.84,
-                  lineHeight: 1,
-                  originY: 1,
-                  originX: 0.5,
-                  scale: magnifyEnabled ? emojiScale : 1,
-                  // Lift a couple px so it's not too tight against the bottom
-                  y: -5,
-                  width: "100%",
-                  height: "100%",
-                }}
-              >
-                {icon}
-              </motion.span>
-            ) : (
-              <ThemedIcon
-                name={icon}
-                alt={label}
-                className="select-none pointer-events-none"
-                draggable={false}
-                style={{
-                  imageRendering: "-webkit-optimize-contrast",
-                  width: "100%",
-                  height: "100%",
-                }}
-              />
-            )}
-          </motion.div>
-          {showIndicator ? (
-            <span
-              aria-hidden
-              className="absolute"
+          {isEmoji ? (
+            <motion.span
+              className="select-none pointer-events-none flex items-end justify-center"
               style={{
-                bottom: -3,
-                width: 0,
-                height: 0,
-                borderLeft: "4px solid transparent",
-                borderRight: "4px solid transparent",
-                borderTop: "0",
-                borderBottom: "4px solid #000",
-                filter: "none",
+                // Slightly larger base size so initial (non-hover) emoji isn't too small
+                fontSize: baseButtonSize * 0.84,
+                lineHeight: 1,
+                originY: 1,
+                originX: 0.5,
+                scale: magnifyEnabled ? emojiScale : 1,
+                // Lift a couple px so it's not too tight against the bottom
+                y: -5,
+                width: "100%",
+                height: "100%",
+              }}
+            >
+              {icon}
+            </motion.span>
+          ) : (
+            <ThemedIcon
+              name={icon}
+              alt={label}
+              className="select-none pointer-events-none"
+              draggable={false}
+              style={{
+                imageRendering: "-webkit-optimize-contrast",
+                width: "100%",
+                height: "100%",
               }}
             />
-          ) : null}
-        </button>
-      </motion.div>
-    );
-  }
-));
+          )}
+        </motion.div>
+        {showIndicator ? (
+          <span
+            aria-hidden
+            className="absolute"
+            style={{
+              bottom: -3,
+              width: 0,
+              height: 0,
+              borderLeft: "4px solid transparent",
+              borderRight: "4px solid transparent",
+              borderTop: "0",
+              borderBottom: "4px solid #000",
+              filter: "none",
+            }}
+          />
+        ) : null}
+      </button>
+    </motion.div>
+  );
+});
 
 interface DividerProps {
   idKey: string;
@@ -463,84 +463,101 @@ interface DividerProps {
   onTouchCancel?: React.TouchEventHandler;
 }
 
-const Divider = forwardRef<HTMLDivElement, DividerProps>(
-  ({ idKey, onDragOver, onDrop, onDragLeave, isDropTarget, height = 48, resizable, onResizeStart, onContextMenu, onTouchStart, onTouchEnd, onTouchMove, onTouchCancel }, ref) => {
-    const baseWidth = 1;
-    
-    // Wrap handlers to stop propagation and prevent icon menus from triggering
-    const handleContextMenu = (e: React.MouseEvent) => {
-      e.stopPropagation();
-      onContextMenu?.(e);
-    };
-    
-    const handleTouchStart = (e: React.TouchEvent) => {
-      e.stopPropagation();
-      onTouchStart?.(e);
-    };
-    
-    const handleTouchEnd = (e: React.TouchEvent) => {
-      e.stopPropagation();
-      onTouchEnd?.(e);
-    };
-    
-    const handleTouchMove = (e: React.TouchEvent) => {
-      e.stopPropagation();
-      onTouchMove?.(e);
-    };
-    
-    const handleTouchCancel = (e: React.TouchEvent) => {
-      e.stopPropagation();
-      onTouchCancel?.(e);
-    };
-    
-    return (
-      <motion.div
-        ref={ref}
-        layout
-        layoutId={`dock-divider-${idKey}`}
-        initial={{ opacity: 0, scaleY: 0.8 }}
-        animate={{ 
-          opacity: 0.9, 
-          scaleY: 1,
-        }}
-        exit={{ opacity: 0, scaleY: 0.8 }}
-        transition={{ type: "spring", stiffness: 260, damping: 26 }}
-        onDragOver={onDragOver as React.DragEventHandler<HTMLDivElement>}
-        onDrop={onDrop as React.DragEventHandler<HTMLDivElement>}
-        onDragLeave={onDragLeave as React.DragEventHandler<HTMLDivElement>}
-        onMouseDown={resizable ? onResizeStart : undefined}
-        onContextMenu={handleContextMenu}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-        onTouchMove={handleTouchMove}
-        onTouchCancel={handleTouchCancel}
-        style={{
-          height,
-          // Wider touch area with padding, visual line is the inner element
-          padding: "0 10px",
-          alignSelf: "center",
-          cursor: resizable ? "ns-resize" : undefined,
-          position: "relative",
-          zIndex: 5,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        {/* Visual divider line */}
-        <div
-          style={{
-            width: isDropTarget ? 4 : baseWidth,
-            height: "100%",
-            backgroundColor: isDropTarget ? "rgba(255, 255, 255, 0.5)" : "rgba(0, 0, 0, 0.2)",
-            borderRadius: 2,
-            transition: "width 0.15s ease, background-color 0.15s ease",
-          }}
-        />
-      </motion.div>
-    );
+const Divider = (
+  {
+    ref,
+    idKey,
+    onDragOver,
+    onDrop,
+    onDragLeave,
+    isDropTarget,
+    height = 48,
+    resizable,
+    onResizeStart,
+    onContextMenu,
+    onTouchStart,
+    onTouchEnd,
+    onTouchMove,
+    onTouchCancel
+  }: DividerProps & {
+    ref: React.RefObject<HTMLDivElement>;
   }
-);
+) => {
+  const baseWidth = 1;
+  
+  // Wrap handlers to stop propagation and prevent icon menus from triggering
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onContextMenu?.(e);
+  };
+  
+  const handleTouchStart = (e: React.TouchEvent) => {
+    e.stopPropagation();
+    onTouchStart?.(e);
+  };
+  
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    e.stopPropagation();
+    onTouchEnd?.(e);
+  };
+  
+  const handleTouchMove = (e: React.TouchEvent) => {
+    e.stopPropagation();
+    onTouchMove?.(e);
+  };
+  
+  const handleTouchCancel = (e: React.TouchEvent) => {
+    e.stopPropagation();
+    onTouchCancel?.(e);
+  };
+  
+  return (
+    <motion.div
+      ref={ref}
+      layout
+      layoutId={`dock-divider-${idKey}`}
+      initial={{ opacity: 0, scaleY: 0.8 }}
+      animate={{ 
+        opacity: 0.9, 
+        scaleY: 1,
+      }}
+      exit={{ opacity: 0, scaleY: 0.8 }}
+      transition={{ type: "spring", stiffness: 260, damping: 26 }}
+      onDragOver={onDragOver as React.DragEventHandler<HTMLDivElement>}
+      onDrop={onDrop as React.DragEventHandler<HTMLDivElement>}
+      onDragLeave={onDragLeave as React.DragEventHandler<HTMLDivElement>}
+      onMouseDown={resizable ? onResizeStart : undefined}
+      onContextMenu={handleContextMenu}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onTouchMove={handleTouchMove}
+      onTouchCancel={handleTouchCancel}
+      style={{
+        height,
+        // Wider touch area with padding, visual line is the inner element
+        padding: "0 10px",
+        alignSelf: "center",
+        cursor: resizable ? "ns-resize" : undefined,
+        position: "relative",
+        zIndex: 5,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      {/* Visual divider line */}
+      <div
+        style={{
+          width: isDropTarget ? 4 : baseWidth,
+          height: "100%",
+          backgroundColor: isDropTarget ? "rgba(255, 255, 255, 0.5)" : "rgba(0, 0, 0, 0.2)",
+          borderRadius: 2,
+          transition: "width 0.15s ease, background-color 0.15s ease",
+        }}
+      />
+    </motion.div>
+  );
+};
 
 // Apps that support multi-window
 const MULTI_WINDOW_APPS: AppId[] = ["textedit", "finder", "applet-viewer"];

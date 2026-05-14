@@ -1,11 +1,4 @@
-import {
-  forwardRef,
-  useEffect,
-  useImperativeHandle,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import type { Track } from "@/stores/useIpodStore";
 import { onMusicKitReady } from "@/hooks/useMusicKit";
 import { PLAYER_PROGRESS_INTERVAL_MS } from "../constants";
@@ -119,11 +112,9 @@ function mediaItemToNowPlayingMetadata(
   };
 }
 
-export const AppleMusicPlayerBridge = forwardRef<
-  AppleMusicPlayerBridgeHandle,
-  AppleMusicPlayerBridgeProps
->(function AppleMusicPlayerBridge(
+export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
   {
+    ref,
     currentTrack,
     playing,
     resumeAtSeconds,
@@ -134,9 +125,10 @@ export const AppleMusicPlayerBridge = forwardRef<
     onPause,
     onEnded,
     onReady,
-    onNowPlayingItemChange,
-  },
-  ref
+    onNowPlayingItemChange
+  }: AppleMusicPlayerBridgeProps & {
+    ref: React.RefObject<AppleMusicPlayerBridgeHandle>;
+  }
 ) {
   const instanceRef = useRef<MusicKit.MusicKitInstance | null>(null);
   const [instanceReadyTick, setInstanceReadyTick] = useState(0);
@@ -608,4 +600,4 @@ export const AppleMusicPlayerBridge = forwardRef<
   );
 
   return null;
-});
+};
