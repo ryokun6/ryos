@@ -5,7 +5,7 @@ import {
   AQUA_ICON_BUTTON_PADDING_CLASS,
   AQUA_ICON_BUTTON_PHOSPHOR_SIZE,
 } from "@/lib/aquaIconButton";
-import { Check, Trash, X } from "@phosphor-icons/react";
+import { Check, X } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { AquaCheckbox } from "@/components/ui/aqua-checkbox";
 import type {
@@ -327,9 +327,20 @@ function EventTrayEditor({
   );
 
   const panelShell = cn(
-    "flex-1 flex flex-col min-h-0 overflow-y-auto",
+    "flex-1 flex flex-col min-h-0 overflow-hidden",
     "bg-white pl-2.5 pr-2.5 pt-2 pb-2",
     !isMacOSTheme && "rounded-sm border border-black/10"
+  );
+
+  const trayFooterClass = cn(
+    "shrink-0 w-full min-w-0 mt-1 pt-2 border-t border-black/15",
+    isMacOSTheme && "border-black/12"
+  );
+
+  const deleteButtonClass = cn(
+    "w-full min-w-0 justify-center px-3 py-2 h-auto text-[12px] leading-normal",
+    "text-red-600 hover:text-red-700",
+    useGeneva && "font-geneva-12"
   );
 
   return (
@@ -370,7 +381,7 @@ function EventTrayEditor({
         />
       </div>
 
-      <div className="flex flex-col gap-2 min-h-0">
+      <div className="flex flex-1 min-h-0 flex-col gap-2 overflow-y-auto">
         <TrayFieldRow
           label={t("apps.calendar.views.allDay")}
           useGeneva={useGeneva}
@@ -473,7 +484,7 @@ function EventTrayEditor({
         {/* Notes — section label + scrollable area */}
         <div
           className={cn(
-            "mt-1 pt-1.5 border-t border-black/15 flex flex-col flex-1 min-h-[120px]",
+            "mt-1 pt-1.5 border-t border-black/15 flex flex-col",
             isMacOSTheme && "border-black/12"
           )}
         >
@@ -492,30 +503,25 @@ function EventTrayEditor({
             onKeyDown={(e) => e.stopPropagation()}
             placeholder={t("apps.calendar.event.notes")}
             className={cn(
-              "flex-1 min-h-[88px] w-full resize-none rounded-sm border bg-white px-1.5 py-1 text-[11px] outline-none",
+              "min-h-[88px] w-full resize-none rounded-sm border bg-white px-1.5 py-1 text-[11px] outline-none",
               useGeneva ? "font-geneva-12 border-black/25" : "border-black/20"
             )}
           />
         </div>
+      </div>
 
-        <div className="shrink-0 pt-1 flex justify-end">
-          <Button
-            type="button"
-            variant={isMacOSTheme ? "aqua" : "retro"}
-            size="sm"
-            onClick={() => onDelete(event.id)}
-            className={cn(
-              AQUA_ICON_BUTTON_PADDING_CLASS,
-              "text-[12px] leading-none text-red-600 hover:text-red-700",
-              useGeneva && "font-geneva-12"
-            )}
-            title={t("apps.calendar.event.delete")}
-            aria-label={t("apps.calendar.event.delete")}
-          >
-            <Trash size={AQUA_ICON_BUTTON_PHOSPHOR_SIZE} weight="bold" />
-            {t("apps.calendar.event.delete")}
-          </Button>
-        </div>
+      <div className={trayFooterClass}>
+        <Button
+          type="button"
+          variant={isMacOSTheme ? "aqua" : "retro"}
+          size="sm"
+          onClick={() => onDelete(event.id)}
+          className={deleteButtonClass}
+          title={t("apps.calendar.event.delete")}
+          aria-label={t("apps.calendar.event.delete")}
+        >
+          {t("apps.calendar.event.delete")}
+        </Button>
       </div>
     </div>
   );
@@ -593,9 +599,20 @@ function TodoDetails({
   );
 
   const panelShell = cn(
-    "flex-1 flex flex-col min-h-0 overflow-y-auto",
+    "flex-1 flex flex-col min-h-0 overflow-hidden",
     "bg-white pl-2.5 pr-2.5 pt-2 pb-2",
     !isMacOSTheme && "rounded-sm border border-black/10"
+  );
+
+  const trayFooterClass = cn(
+    "shrink-0 w-full min-w-0 mt-1 pt-2 border-t border-black/15 flex flex-col gap-2",
+    isMacOSTheme && "border-black/12"
+  );
+
+  const deleteButtonClass = cn(
+    "w-full min-w-0 justify-center px-3 py-2 h-auto text-[12px] leading-normal",
+    "text-red-600 hover:text-red-700",
+    useGeneva && "font-geneva-12"
   );
 
   const calendarOptions = calendars.map((c) => (
@@ -631,7 +648,7 @@ function TodoDetails({
         />
       </div>
 
-      <div className="flex flex-col gap-2 min-h-0">
+      <div className="flex flex-1 min-h-0 flex-col gap-2 overflow-y-auto">
         <TrayFieldRow label={t("apps.calendar.tray.done")} useGeneva={useGeneva}>
           <button
             type="button"
@@ -680,48 +697,41 @@ function TodoDetails({
             </select>
           </div>
         </TrayFieldRow>
+      </div>
 
-        <div className="flex-1 min-h-0" />
-
-        <div className="shrink-0 pt-1 flex flex-wrap justify-end gap-2">
-          <Button
-            type="button"
-            variant={isMacOSTheme ? "aqua" : "retro"}
-            size="sm"
-            onClick={() => onToggle(todo.id)}
-            className={cn(
-              AQUA_ICON_BUTTON_PADDING_CLASS,
-              "text-[12px] leading-none",
-              useGeneva && "font-geneva-12",
-              isXpTheme && "text-black"
-            )}
-          >
-            {todo.completed ? (
-              <X size={AQUA_ICON_BUTTON_PHOSPHOR_SIZE} weight="bold" />
-            ) : (
-              <Check size={AQUA_ICON_BUTTON_PHOSPHOR_SIZE} weight="bold" />
-            )}
-            {todo.completed
-              ? t("apps.calendar.tray.markIncomplete")
-              : t("apps.calendar.tray.markComplete")}
-          </Button>
-          <Button
-            type="button"
-            variant={isMacOSTheme ? "aqua" : "retro"}
-            size="sm"
-            onClick={() => onDelete(todo.id)}
-            className={cn(
-              AQUA_ICON_BUTTON_PADDING_CLASS,
-              "text-[12px] leading-none text-red-600 hover:text-red-700",
-              useGeneva && "font-geneva-12"
-            )}
-            title={t("apps.calendar.event.delete")}
-            aria-label={t("apps.calendar.event.delete")}
-          >
-            <Trash size={AQUA_ICON_BUTTON_PHOSPHOR_SIZE} weight="bold" />
-            {t("apps.calendar.event.delete")}
-          </Button>
-        </div>
+      <div className={trayFooterClass}>
+        <Button
+          type="button"
+          variant={isMacOSTheme ? "aqua" : "retro"}
+          size="sm"
+          onClick={() => onToggle(todo.id)}
+          className={cn(
+            AQUA_ICON_BUTTON_PADDING_CLASS,
+            "w-full min-w-0 justify-center text-[12px] leading-normal h-auto py-2",
+            useGeneva && "font-geneva-12",
+            isXpTheme && "text-black"
+          )}
+        >
+          {todo.completed ? (
+            <X size={AQUA_ICON_BUTTON_PHOSPHOR_SIZE} weight="bold" />
+          ) : (
+            <Check size={AQUA_ICON_BUTTON_PHOSPHOR_SIZE} weight="bold" />
+          )}
+          {todo.completed
+            ? t("apps.calendar.tray.markIncomplete")
+            : t("apps.calendar.tray.markComplete")}
+        </Button>
+        <Button
+          type="button"
+          variant={isMacOSTheme ? "aqua" : "retro"}
+          size="sm"
+          onClick={() => onDelete(todo.id)}
+          className={deleteButtonClass}
+          title={t("apps.calendar.event.delete")}
+          aria-label={t("apps.calendar.event.delete")}
+        >
+          {t("apps.calendar.event.delete")}
+        </Button>
       </div>
     </div>
   );
