@@ -599,6 +599,7 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
       return;
     }
     onNowPlayingItemChangeRef.current?.(null);
+    // User explicitly picked a track — always allow a fresh queue load.
     suppressedQueueTrackIdRef.current = null;
     playbackTargetTrackIdRef.current = currentTrack.id;
 
@@ -641,30 +642,41 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
             surface.changeToMediaAtIndex?.bind(surface) ??
             inst.changeToMediaAtIndex?.bind(inst);
           if (changeAtIndex) {
-            await changeAtIndex(inQueueIndex);
-            if (cancelled) return;
-            if (resumeSeconds != null) {
-              await inst.seekToTime(resumeSeconds).catch((err) => {
-                console.warn("[apple music] in-queue resume seek failed", err);
-              });
+            try {
+              await changeAtIndex(inQueueIndex);
+              if (cancelled) return;
+              if (resumeSeconds != null) {
+                await inst.seekToTime(resumeSeconds).catch((err) => {
+                  console.warn(
+                    "[apple music] in-queue resume seek failed",
+                    err
+                  );
+                });
+              }
+              if (cancelled) return;
+              if (currentTrack.durationMs && currentTrack.durationMs > 0) {
+                onDurationRef.current?.(currentTrack.durationMs / 1000);
+              }
+              lastQueuedRequestKeyRef.current = localQueueBuild.requestKey;
+              lastQueuedDefinitionKeyRef.current = localQueueBuild.definitionKey;
+              queuedTrackIdsRef.current = localQueueBuild.queuedTrackIds;
+              isMultiSongQueueRef.current = localQueueBuild.isMultiSongQueue;
+              if (playingRef.current) {
+                await inst.play().catch((err) => {
+                  console.warn(
+                    "[apple music] play() after in-queue jump blocked",
+                    err
+                  );
+                  onPauseRef.current?.();
+                });
+              }
+              return;
+            } catch (err) {
+              console.warn(
+                "[apple music] in-queue jump failed, falling back to setQueue",
+                err
+              );
             }
-            if (cancelled) return;
-            if (currentTrack.durationMs && currentTrack.durationMs > 0) {
-              onDurationRef.current?.(currentTrack.durationMs / 1000);
-            }
-            lastQueuedRequestKeyRef.current = localQueueBuild.requestKey;
-            queuedTrackIdsRef.current = localQueueBuild.queuedTrackIds;
-            isMultiSongQueueRef.current = localQueueBuild.isMultiSongQueue;
-            if (playingRef.current) {
-              await inst.play().catch((err) => {
-                console.warn(
-                  "[apple music] play() after in-queue jump blocked",
-                  err
-                );
-                onPauseRef.current?.();
-              });
-            }
-            return;
           }
         }
         await inst.setQueue({

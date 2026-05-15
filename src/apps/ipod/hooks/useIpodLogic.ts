@@ -207,8 +207,11 @@ export function useIpodLogic({
 
   const appleMusicQueueTracks = useMemo(() => {
     if (!isAppleMusic) return null;
+    // Only pass a contextual queue (album / artist / playlist drill-down)
+    // to MusicKit. The full library uses single-song queues so we don't
+    // feed hundreds of ids into setQueue or trip in-queue navigation.
     if (!appleMusicPlaybackQueue || appleMusicPlaybackQueue.length === 0) {
-      return browsableTracks;
+      return null;
     }
     const tracksById = new Map(tracks.map((track) => [track.id, track]));
     return appleMusicPlaybackQueue.reduce<Track[]>((acc, id) => {
@@ -938,74 +941,20 @@ export function useIpodLogic({
       trackListIndex: number,
       queueIds?: string[] | null,
       queueTracks?: Track[]
-    ) => {
-      const playNow = () =>
+    ) => ({
+      label: track.title,
+      action: () =>
         playAppleMusicTrackFromMenu(
           track,
           trackListIndex,
           queueIds,
           queueTracks,
           "now"
-        );
-      if (!isAppleMusic) {
-        return {
-          label: track.title,
-          action: playNow,
-          showChevron: false,
-          coverUrl: resolveTrackCoverUrl(track),
-        };
-      }
-      return {
-        label: track.title,
-        action: () => {
-          registerActivity();
-          pushMenuChild({
-            title: track.title,
-            items: [
-              {
-                label: t("apps.ipod.menuItems.play", "Play"),
-                action: playNow,
-                showChevron: false,
-              },
-              {
-                label: t("apps.ipod.menuItems.playNext", "Play Next"),
-                action: () =>
-                  playAppleMusicTrackFromMenu(
-                    track,
-                    trackListIndex,
-                    queueIds,
-                    queueTracks,
-                    "next"
-                  ),
-                showChevron: false,
-              },
-              {
-                label: t("apps.ipod.menuItems.playLater", "Play Later"),
-                action: () =>
-                  playAppleMusicTrackFromMenu(
-                    track,
-                    trackListIndex,
-                    queueIds,
-                    queueTracks,
-                    "later"
-                  ),
-                showChevron: false,
-              },
-            ],
-            selectedIndex: 0,
-          });
-        },
-        showChevron: true,
-        coverUrl: resolveTrackCoverUrl(track),
-      };
-    },
-    [
-      isAppleMusic,
-      playAppleMusicTrackFromMenu,
-      pushMenuChild,
-      registerActivity,
-      t,
-    ]
+        ),
+      showChevron: false,
+      coverUrl: resolveTrackCoverUrl(track),
+    }),
+    [playAppleMusicTrackFromMenu]
   );
 
   const handleAppleMusicBufferingChange = useCallback((buffering: boolean) => {
