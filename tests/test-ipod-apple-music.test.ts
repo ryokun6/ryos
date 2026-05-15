@@ -52,6 +52,22 @@ const {
   isWithinEndedFanoutDedupWindow,
   ENDED_FANOUT_DEDUP_WINDOW_MS,
   getMusicKitEventItemId,
+  getMusicKitSongId,
+  buildMusicKitSongQueue,
+  buildMusicKitQueueIdentity,
+  shouldUseNativeMusicKitSongQueue,
+  getMusicKitQueueStartIndex,
+  findTrackIdByMusicKitItemId,
+  isMusicKitPlayingSongId,
+  getQueueOptionsForNativeSongQueue,
+  withMusicKitShuffleSuspended,
+  storeRepeatToMusicKit,
+  storeShuffleToMusicKit,
+  musicKitRepeatToStore,
+  musicKitShuffleToStore,
+  MUSIC_KIT_REPEAT_ONE,
+  MUSIC_KIT_REPEAT_ALL,
+  MUSIC_KIT_SHUFFLE_SONGS,
 } = await import(
   "../src/apps/ipod/components/appleMusicPlayerBridgeUtils"
 );
@@ -321,6 +337,31 @@ describe("useIpodStore Apple Music slice", () => {
     });
     useIpodStore.getState().setAppleMusicCurrentSongId("am:1");
     expect(useIpodStore.getState().appleMusicKitNowPlaying).toBeNull();
+  });
+
+  test("setAppleMusicCurrentSongId drops a stale contextual queue when the song is outside it", () => {
+    useIpodStore.getState().setAppleMusicTracks([
+      { id: "am:1", url: "applemusic:1", title: "One", source: "appleMusic" },
+      { id: "am:2", url: "applemusic:2", title: "Two", source: "appleMusic" },
+      { id: "am:3", url: "applemusic:3", title: "Three", source: "appleMusic" },
+    ]);
+    useIpodStore.getState().setAppleMusicPlaybackQueue(["am:1", "am:2"]);
+    useIpodStore.getState().setAppleMusicCurrentSongId("am:3");
+    expect(useIpodStore.getState().appleMusicPlaybackQueue).toBeNull();
+    expect(useIpodStore.getState().appleMusicCurrentSongId).toBe("am:3");
+  });
+
+  test("setAppleMusicCurrentSongId keeps the contextual queue when the song is inside it", () => {
+    useIpodStore.getState().setAppleMusicTracks([
+      { id: "am:1", url: "applemusic:1", title: "One", source: "appleMusic" },
+      { id: "am:2", url: "applemusic:2", title: "Two", source: "appleMusic" },
+    ]);
+    useIpodStore.getState().setAppleMusicPlaybackQueue(["am:1", "am:2"]);
+    useIpodStore.getState().setAppleMusicCurrentSongId("am:2");
+    expect(useIpodStore.getState().appleMusicPlaybackQueue).toEqual([
+      "am:1",
+      "am:2",
+    ]);
   });
 
   test("setAppleMusicTracks selects the first track when current is no longer in the list", () => {
@@ -869,6 +910,14 @@ describe("AppleMusicPlayerBridge playback-state fan-out", () => {
     // behavior of advancing on `ended` over getting stuck silent.
     expect(shouldFireEndedForPlaybackState(5, null)).toBe(true);
   });
+
+  test("native multi-song queue: ended (5) is suppressed so MusicKit auto-advance wins", () => {
+    expect(shouldFireEndedForPlaybackState(5, baseTrack, true)).toBe(false);
+  });
+
+  test("native multi-song queue: completed (10) still fans out at queue end", () => {
+    expect(shouldFireEndedForPlaybackState(10, baseTrack, true)).toBe(true);
+  });
 });
 
 describe("AppleMusicPlayerBridge ended fan-out dedup window", () => {
@@ -963,5 +1012,159 @@ describe("AppleMusicPlayerBridge MusicKit event item id extraction", () => {
         attributes: { playParams: { catalogId: "1616228595" } },
       })
     ).toBe("1616228595");
+  });
+});
+
+describe("AppleMusicPlayerBridge native multi-song queue helpers", () => {
+  const songA: Track = {
+    id: "am:1",
+    url: "applemusic:1",
+    title: "One",
+    source: "appleMusic",
+    appleMusicPlayParams: { catalogId: "1", kind: "song" },
+  };
+  const songB: Track = {
+    id: "am:2",
+    url: "applemusic:2",
+    title: "Two",
+    source: "appleMusic",
+    appleMusicPlayParams: { catalogId: "2", kind: "song" },
+  };
+  const librarySong: Track = {
+    id: "am:i.foo",
+    url: "applemusic:i.foo",
+    title: "Library",
+    source: "appleMusic",
+    appleMusicPlayParams: {
+      libraryId: "i.foo",
+      kind: "library-songs",
+      isLibrary: true,
+    },
+  };
+  const stationShell: Track = {
+    id: "am:station:ra.1",
+    url: "applemusic:station:ra.1",
+    title: "Station",
+    source: "appleMusic",
+    appleMusicPlayParams: { stationId: "ra.1", kind: "radioStation" },
+  };
+
+  test("getMusicKitSongId uses library id for library-songs kind", () => {
+    const track: Track = {
+      ...librarySong,
+      appleMusicPlayParams: {
+        catalogId: "99",
+        libraryId: "i.foo",
+        kind: "library-songs",
+        isLibrary: true,
+      },
+    };
+    expect(getMusicKitSongId(track)).toBe("i.foo");
+    expect(getMusicKitSongId(songA)).toBe("1");
+    expect(getMusicKitSongId(stationShell)).toBeNull();
+  });
+
+  test("buildMusicKitSongQueue skips collection shells and keeps order", () => {
+    expect(buildMusicKitSongQueue([songA, stationShell, songB])).toEqual({
+      songIds: ["1", "2"],
+      trackIds: ["am:1", "am:2"],
+    });
+  });
+
+  test("shouldUseNativeMusicKitSongQueue requires 2+ playable songs", () => {
+    expect(shouldUseNativeMusicKitSongQueue([songA, songB])).toBe(true);
+    expect(shouldUseNativeMusicKitSongQueue([songA])).toBe(false);
+  });
+
+  test("storeRepeatToMusicKit maps ryOS repeat flags to MusicKit modes", () => {
+    expect(storeRepeatToMusicKit(false, false)).toBe(0);
+    expect(storeRepeatToMusicKit(true, false)).toBe(MUSIC_KIT_REPEAT_ONE);
+    expect(storeRepeatToMusicKit(false, true)).toBe(MUSIC_KIT_REPEAT_ALL);
+  });
+
+  test("storeShuffleToMusicKit maps ryOS shuffle to MusicKit modes", () => {
+    expect(storeShuffleToMusicKit(false)).toBe(0);
+    expect(storeShuffleToMusicKit(true)).toBe(MUSIC_KIT_SHUFFLE_SONGS);
+  });
+
+  test("musicKitRepeatToStore maps MusicKit repeat back to ryOS flags", () => {
+    expect(musicKitRepeatToStore(MUSIC_KIT_REPEAT_ONE)).toEqual({
+      loopCurrent: true,
+      loopAll: false,
+    });
+    expect(musicKitRepeatToStore(MUSIC_KIT_REPEAT_ALL)).toEqual({
+      loopCurrent: false,
+      loopAll: true,
+    });
+    expect(musicKitRepeatToStore(0)).toEqual({
+      loopCurrent: false,
+      loopAll: false,
+    });
+  });
+
+  test("musicKitShuffleToStore maps MusicKit shuffle back to ryOS flag", () => {
+    expect(musicKitShuffleToStore(MUSIC_KIT_SHUFFLE_SONGS)).toEqual({
+      isShuffled: true,
+    });
+    expect(musicKitShuffleToStore(0)).toEqual({ isShuffled: false });
+  });
+
+  test("getMusicKitQueueStartIndex resolves the current track position", () => {
+    expect(getMusicKitQueueStartIndex([songA, songB], songB)).toBe(1);
+    expect(getMusicKitQueueStartIndex([songA, songB], songA)).toBe(0);
+  });
+
+  test("findTrackIdByMusicKitItemId maps MusicKit ids back to ryOS track ids", () => {
+    expect(findTrackIdByMusicKitItemId([songA, songB], "2")).toBe("am:2");
+    expect(findTrackIdByMusicKitItemId([librarySong], "i.foo")).toBe(
+      "am:i.foo"
+    );
+    expect(findTrackIdByMusicKitItemId([songA], "missing")).toBeNull();
+  });
+
+  test("isMusicKitPlayingSongId compares bare and am:-prefixed ids", () => {
+    expect(isMusicKitPlayingSongId("1", "1")).toBe(true);
+    expect(isMusicKitPlayingSongId("am:1", "1")).toBe(true);
+    expect(isMusicKitPlayingSongId("2", "1")).toBe(false);
+  });
+
+  test("getQueueOptionsForNativeSongQueue builds MusicKit v3 multi-song options", () => {
+    expect(
+      getQueueOptionsForNativeSongQueue([songA, songB], songB, false)
+    ).toEqual({
+      songs: ["1", "2"],
+      startWith: 1,
+      startPlaying: false,
+    });
+    expect(
+      getQueueOptionsForNativeSongQueue([songA], songA, false)
+    ).toBeNull();
+  });
+
+  test("withMusicKitShuffleSuspended disables shuffle only while targeting", async () => {
+    const instance = {
+      shuffleMode: MUSIC_KIT_SHUFFLE_SONGS,
+      repeatMode: MUSIC_KIT_REPEAT_ALL,
+    } as MusicKit.MusicKitInstance;
+
+    let ranWhileSuspended = false;
+    await withMusicKitShuffleSuspended(
+      instance,
+      { isShuffled: true, loopCurrent: false, loopAll: true },
+      async () => {
+        ranWhileSuspended = instance.shuffleMode === 0;
+      }
+    );
+
+    expect(ranWhileSuspended).toBe(true);
+    expect(instance.shuffleMode).toBe(MUSIC_KIT_SHUFFLE_SONGS);
+  });
+
+  test("buildMusicKitQueueIdentity is stable for the same song list", () => {
+    const first = buildMusicKitQueueIdentity(["1", "2"]);
+    const second = buildMusicKitQueueIdentity(["1", "2"]);
+    const different = buildMusicKitQueueIdentity(["2", "1"]);
+    expect(first).toBe(second);
+    expect(first).not.toBe(different);
   });
 });

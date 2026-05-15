@@ -117,7 +117,15 @@ export interface IpodScreenProps {
   handlePause: () => void;
   handleReady: () => void;
   loopCurrent: boolean;
+  loopAll: boolean;
   isShuffled: boolean;
+  appleMusicQueueTracks?: Track[];
+  onAppleMusicQueueTrackChange?: (trackId: string) => void;
+  onAppleMusicPlaybackModesChange?: (modes: {
+    isShuffled: boolean;
+    loopCurrent: boolean;
+    loopAll: boolean;
+  }) => void;
   statusMessage: string | null;
   onToggleVideo: () => void;
   lcdFilterOn: boolean;

@@ -51,6 +51,7 @@ export function IpodAppComponent({
     currentIndex,
     coverFlowCurrentIndex,
     loopCurrent,
+    loopAll,
     isShuffled,
     isPlaying,
     showVideo,
@@ -112,6 +113,9 @@ export function IpodAppComponent({
     isSyncModeOpen,
     setIsSyncModeOpen,
     currentTrack,
+    appleMusicQueueTracks,
+    handleAppleMusicQueueTrackChange,
+    handleAppleMusicPlaybackModesChange,
     lyricsSourceOverride,
     lyricsTitle,
     lyricsArtist,
@@ -276,6 +280,9 @@ export function IpodAppComponent({
       onAppleMusicSignIn={handleAppleMusicSignIn}
       onAppleMusicSignOut={handleAppleMusicSignOut}
       onAppleMusicRefresh={handleAppleMusicRefresh}
+      onNextTrack={nextTrack}
+      onPreviousTrack={previousTrack}
+      onTogglePlay={togglePlay}
     />
   );
   const shouldAnimateFullScreenVisuals = isPlaying && (isForeground ?? true);
@@ -430,7 +437,17 @@ export function IpodAppComponent({
                   handlePause={handlePause}
                   handleReady={handleReady}
                   loopCurrent={loopCurrent}
+                  loopAll={loopAll}
                   isShuffled={isShuffled}
+                  appleMusicQueueTracks={
+                    isAppleMusic ? appleMusicQueueTracks : undefined
+                  }
+                  onAppleMusicQueueTrackChange={
+                    isAppleMusic ? handleAppleMusicQueueTrackChange : undefined
+                  }
+                  onAppleMusicPlaybackModesChange={
+                    isAppleMusic ? handleAppleMusicPlaybackModesChange : undefined
+                  }
                   statusMessage={statusMessage}
                   onToggleVideo={toggleVideo}
                   lcdFilterOn={lcdFilterOn}
@@ -656,6 +673,12 @@ export function IpodAppComponent({
                                 fullScreenPlayerRef as unknown as React.RefObject<never>
                               }
                               currentTrack={tracks[currentIndex]}
+                              queueTracks={
+                                isAppleMusic ? appleMusicQueueTracks : undefined
+                              }
+                              isShuffled={isShuffled}
+                              loopCurrent={loopCurrent}
+                              loopAll={loopAll}
                               playing={isPlaying && isFullScreen}
                               resumeAtSeconds={elapsedTime}
                               volume={
@@ -668,6 +691,10 @@ export function IpodAppComponent({
                               onPause={handlePause}
                               onEnded={handleTrackEnd}
                               onReady={handleReady}
+                              onQueueTrackChange={handleAppleMusicQueueTrackChange}
+                              onPlaybackModesChange={
+                                handleAppleMusicPlaybackModesChange
+                              }
                               onNowPlayingItemChange={setAppleMusicKitNowPlaying}
                             />
                           ) : (

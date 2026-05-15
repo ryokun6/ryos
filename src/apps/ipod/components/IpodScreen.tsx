@@ -293,7 +293,11 @@ export function IpodScreen({
   handlePause,
   handleReady,
   loopCurrent,
+  loopAll,
   isShuffled,
+  appleMusicQueueTracks,
+  onAppleMusicQueueTrackChange,
+  onAppleMusicPlaybackModesChange,
   statusMessage,
   onToggleVideo,
   lcdFilterOn,
@@ -1268,6 +1272,10 @@ export function IpodScreen({
               <AppleMusicPlayerBridge
                 ref={playerRef as unknown as React.RefObject<never>}
                 currentTrack={currentTrack}
+                queueTracks={appleMusicQueueTracks}
+                isShuffled={isShuffled}
+                loopCurrent={loopCurrent}
+                loopAll={loopAll}
                 playing={isPlaying && !isFullScreen}
                 resumeAtSeconds={elapsedTime}
                 volume={finalIpodVolume}
@@ -1277,6 +1285,8 @@ export function IpodScreen({
                 onPause={!isFullScreen ? handlePause : undefined}
                 onEnded={!isFullScreen ? handleTrackEnd : undefined}
                 onReady={!isFullScreen ? handleReady : undefined}
+                onQueueTrackChange={onAppleMusicQueueTrackChange}
+                onPlaybackModesChange={onAppleMusicPlaybackModesChange}
                 onNowPlayingItemChange={setAppleMusicKitNowPlaying}
               />
             ) : (

@@ -52,6 +52,19 @@ declare global {
       startTime?: number;
       /** v3-preferred replacement for the deprecated `autoplay`. */
       startPlaying?: boolean;
+      shuffleMode?: PlayerShuffleMode | number;
+      repeatPlayMode?: PlayerRepeatMode | number;
+    }
+
+    enum PlayerRepeatMode {
+      none = 0,
+      one = 1,
+      all = 2,
+    }
+
+    enum PlayerShuffleMode {
+      off = 0,
+      songs = 1,
     }
 
     interface MediaItemArtwork {
@@ -116,6 +129,8 @@ declare global {
       playbackTimeDidChange: PlaybackTimeDidChangeEvent;
       mediaItemDidChange: MediaItemDidChangeEvent;
       nowPlayingItemDidChange: MediaItemDidChangeEvent;
+      shuffleModeDidChange: { shuffleMode?: PlayerShuffleMode | number };
+      repeatModeDidChange: { repeatMode?: PlayerRepeatMode | number };
       authorizationStatusDidChange: { authorizationStatus?: number };
       userTokenDidChange: { token?: string };
     }
@@ -138,6 +153,8 @@ declare global {
       readonly currentPlaybackTime: number;
       readonly currentPlaybackDuration: number;
       readonly volume: number;
+      shuffleMode: PlayerShuffleMode | number;
+      repeatMode: PlayerRepeatMode | number;
 
       addEventListener<K extends keyof MusicKitEventMap>(
         name: K,

@@ -33,6 +33,7 @@ import {
   getEffectiveTranslationLanguage,
   flushPendingLyricOffsetSave,
   isAppleMusicCollectionTrack,
+  resolveAppleMusicQueueTracks,
 } from "@/stores/useIpodStore";
 import {
   resolveLyricsOverrideTargetId as resolveLyricsOverrideTargetIdHelper,
@@ -165,6 +166,14 @@ export function useIpodLogic({
     return browsableTracks.findIndex((track) => track.id === currentSongId);
   }, [browsableTracks, currentSongId]);
   const coverFlowCurrentIndex = browseCurrentIndex >= 0 ? browseCurrentIndex : 0;
+
+  const appleMusicQueueTracks = useMemo(() => {
+    if (!isAppleMusic) return [];
+    return resolveAppleMusicQueueTracks({
+      appleMusicTracks,
+      appleMusicPlaybackQueue,
+    });
+  }, [isAppleMusic, appleMusicTracks, appleMusicPlaybackQueue]);
 
   // Now Playing "X of Y" should reflect the active playback context. When
   // the user picked a song from inside an Artist / Album / Playlist
@@ -2704,6 +2713,44 @@ export function useIpodLogic({
     ]
   );
 
+  const handleAppleMusicQueueTrackChange = useCallback((trackId: string) => {
+    const state = useIpodStore.getState();
+    if (state.librarySource !== "appleMusic") return;
+    if (state.appleMusicCurrentSongId === trackId) return;
+    state.setAppleMusicCurrentSongId(trackId);
+    state.setElapsedTime(0);
+    state.setTotalTime(0);
+  }, []);
+
+  const handleAppleMusicPlaybackModesChange = useCallback(
+    (modes: {
+      isShuffled: boolean;
+      loopCurrent: boolean;
+      loopAll: boolean;
+    }) => {
+      const state = useIpodStore.getState();
+      if (state.librarySource !== "appleMusic") return;
+      const patch: Partial<{
+        isShuffled: boolean;
+        loopCurrent: boolean;
+        loopAll: boolean;
+      }> = {};
+      if (state.isShuffled !== modes.isShuffled) {
+        patch.isShuffled = modes.isShuffled;
+      }
+      if (state.loopCurrent !== modes.loopCurrent) {
+        patch.loopCurrent = modes.loopCurrent;
+      }
+      if (state.loopAll !== modes.loopAll) {
+        patch.loopAll = modes.loopAll;
+      }
+      if (Object.keys(patch).length > 0) {
+        useIpodStore.setState(patch);
+      }
+    },
+    []
+  );
+
   const nextTrack = useCallback(() => {
     if (getCurrentAppleMusicCollectionShellTrack()) {
       void skipAppleMusicCollectionShell("next");
@@ -2917,6 +2964,9 @@ export function useIpodLogic({
   // Playback handlers
   const handleTrackEnd = useCallback(() => {
     if (loopCurrent) {
+      // MusicKit owns repeat-one for Apple Music — the bridge keeps
+      // `repeatMode` in sync so we don't race `seekTo(0)` here.
+      if (isAppleMusic) return;
       const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
       activePlayer?.seekTo(0);
       setIsPlaying(true);
@@ -2924,7 +2974,7 @@ export function useIpodLogic({
       startTrackSwitch();
       nextTrack();
     }
-  }, [loopCurrent, nextTrack, setIsPlaying, isFullScreen, startTrackSwitch]);
+  }, [loopCurrent, isAppleMusic, nextTrack, setIsPlaying, isFullScreen, startTrackSwitch]);
 
   const handleProgress = useCallback((state: { playedSeconds: number }) => {
     // Single source of truth — zustand. The selector at the top of
@@ -4042,6 +4092,9 @@ export function useIpodLogic({
 
     // Current track
     currentTrack,
+    appleMusicQueueTracks,
+    handleAppleMusicQueueTrackChange,
+    handleAppleMusicPlaybackModesChange,
     lyricsSourceOverride,
     fullscreenCoverUrl,
 
