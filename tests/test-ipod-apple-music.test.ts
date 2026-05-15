@@ -53,6 +53,7 @@ const {
   ENDED_FANOUT_DEDUP_WINDOW_MS,
   getMusicKitEventItemId,
   shouldSuppressPlaybackStateFanoutWhileQueueLoading,
+  isStaleQueueLoad,
 } = await import(
   "../src/apps/ipod/components/appleMusicPlayerBridgeUtils"
 );
@@ -962,6 +963,20 @@ describe("AppleMusicPlayerBridge queue-load playback-state fan-out", () => {
     expect(
       shouldSuppressPlaybackStateFanoutWhileQueueLoading(true, 10)
     ).toBe(false);
+  });
+});
+
+describe("AppleMusicPlayerBridge queue-load generation guard", () => {
+  test("stale when cancelled even if generation still matches", () => {
+    expect(isStaleQueueLoad(3, 3, true)).toBe(true);
+  });
+
+  test("stale when a newer selection bumped the generation", () => {
+    expect(isStaleQueueLoad(2, 3, false)).toBe(true);
+  });
+
+  test("fresh when generation matches and effect is still active", () => {
+    expect(isStaleQueueLoad(3, 3, false)).toBe(false);
   });
 });
 

@@ -4,6 +4,7 @@ import { getMusicKitInstance, onMusicKitReady } from "@/hooks/useMusicKit";
 import { PLAYER_PROGRESS_INTERVAL_MS } from "../constants";
 import {
   getMusicKitEventItemId,
+  isStaleQueueLoad,
   isWithinEndedFanoutDedupWindow,
   shouldFireEndedForPlaybackState,
   shouldSuppressPlaybackStateFanoutWhileQueueLoading,
@@ -138,6 +139,7 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
     getMusicKitInstance() ? 1 : 0
   );
   const lastQueuedTrackIdRef = useRef<string | null>(null);
+  const queueGenerationRef = useRef(0);
   const queueLoadingRef = useRef<Promise<void> | null>(null);
   const onReadyRef = useRef(onReady);
   onReadyRef.current = onReady;
@@ -480,6 +482,15 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
     }
 
     const localQueueKey = queueKey;
+    const loadGeneration = ++queueGenerationRef.current;
+    // Silence the outgoing track immediately so the user doesn't keep
+    // hearing song A while the UI already shows song B and we're waiting
+    // for a serialized `setQueue` or a prior in-flight load to settle.
+    try {
+      inst.pause();
+    } catch {
+      /* ignore — best-effort */
+    }
     // Serialize back-to-back queue swaps. If another track change is
     // already in flight (rapid `nextTrack` clicks, an `onEnded` advance
     // racing a user press, etc.), wait for it to settle before issuing
@@ -493,6 +504,12 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
     const previousQueueLoading = queueLoadingRef.current;
     let thisLoad: Promise<void> | null = null;
     thisLoad = (async () => {
+      const isStale = () =>
+        isStaleQueueLoad(
+          loadGeneration,
+          queueGenerationRef.current,
+          cancelled
+        );
       // Capture play intent up front. MusicKit emits `paused` while
       // `setQueue({ startPlaying: false })` runs; if we forwarded that to
       // the store, `playingRef` would flip false before this async block
@@ -506,7 +523,7 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
         } catch {
           /* ignore — the previous load already logged its own error */
         }
-        if (cancelled) return;
+        if (isStale()) return;
       }
       try {
         const resumeSeconds = getSafeStartSeconds(
@@ -520,13 +537,13 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
           // before any audible playback starts.
           startPlaying: false,
         });
-        if (cancelled) return;
+        if (isStale()) return;
         if (resumeSeconds != null) {
           await inst.seekToTime(resumeSeconds).catch((err) => {
             console.warn("[apple music] resume seek failed", err);
           });
         }
-        if (cancelled) return;
+        if (isStale()) return;
         if (currentTrack.durationMs && currentTrack.durationMs > 0) {
           onDurationRef.current?.(currentTrack.durationMs / 1000);
         }
@@ -543,7 +560,9 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
           });
         }
       } catch (err) {
-        lastQueuedTrackIdRef.current = null;
+        if (!isStale()) {
+          lastQueuedTrackIdRef.current = null;
+        }
         console.error("[apple music] setQueue failed", err);
       } finally {
         // Only clear the shared ref when *we* are still the most recent
@@ -563,18 +582,26 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queueKey, instanceReadyTick]);
 
-  // Sync play/pause without re-queueing.
+  // Sync play/pause without re-queueing. Track changes are owned entirely
+  // by the `setQueue` effect above — resuming playback here when
+  // `currentTrack` flips would call `play()` on whatever queue MusicKit
+  // still holds (often the previous song) before the new `setQueue`
+  // resolves, which is the classic audio/UI mismatch on fast skips.
   useEffect(() => {
     const inst = instanceRef.current;
     if (!inst) return;
-    if (!currentTrack) return;
+    const track = currentTrackRef.current;
+    if (!track) return;
     const pending = queueLoadingRef.current;
     const apply = async () => {
       try {
         if (pending) await pending;
+        if (queueLoadingRef.current) return;
+        const queuedTrackId = lastQueuedTrackIdRef.current;
+        if (queuedTrackId !== track.id) return;
         if (playing) {
           const startSeconds = getSafeStartSeconds(
-            currentTrack,
+            track,
             resumeAtSecondsRef.current
           );
           if (startSeconds != null) {
@@ -583,9 +610,7 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
             });
           }
           await inst.play();
-        } else if (!queueLoadingRef.current) {
-          // Don't race `setQueue({ startPlaying: false })` with an
-          // immediate `pause()` from a transient `playing=false` render.
+        } else {
           inst.pause();
         }
       } catch (err) {
@@ -593,7 +618,7 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
       }
     };
     void apply();
-  }, [playing, currentTrack, instanceReadyTick]);
+  }, [playing, instanceReadyTick]);
 
   useImperativeHandle(
     ref,

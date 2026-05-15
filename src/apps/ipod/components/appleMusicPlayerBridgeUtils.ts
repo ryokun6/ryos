@@ -99,6 +99,21 @@ export function shouldSuppressPlaybackStateFanoutWhileQueueLoading(
   return true;
 }
 
+/**
+ * Returns true when an in-flight queue load should abandon further work.
+ * Each explicit track selection bumps `currentGeneration`; stale async
+ * blocks must not call `play()` or stamp `lastQueuedTrackId` after a
+ * newer selection has already started — otherwise MusicKit can keep
+ * playing the previous song while the iPod UI shows the latest pick.
+ */
+export function isStaleQueueLoad(
+  loadGeneration: number,
+  currentGeneration: number,
+  cancelled: boolean
+): boolean {
+  return cancelled || loadGeneration !== currentGeneration;
+}
+
 export function getMusicKitEventItemId(
   item:
     | {
