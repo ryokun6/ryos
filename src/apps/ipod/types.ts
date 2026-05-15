@@ -122,6 +122,8 @@ export interface IpodScreenProps {
   handleReady: () => void;
   loopCurrent: boolean;
   isShuffled: boolean;
+  loopAll: boolean;
+  onAppleMusicBufferingChange?: (buffering: boolean) => void;
   statusMessage: string | null;
   onToggleVideo: () => void;
   lcdFilterOn: boolean;

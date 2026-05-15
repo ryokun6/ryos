@@ -18,6 +18,9 @@ export interface AppleMusicQueueBuildResult {
   /** iPod track ids represented by `options.songs`, in queue order. */
   queuedTrackIds: string[];
   isMultiSongQueue: boolean;
+  /** Index to pass to `changeToMediaAtIndex` when jumping inside a queue. */
+  startWithIndex: number | null;
+  queueKind: "song" | "songs" | "album" | "playlist" | "station";
 }
 
 export function getAppleMusicSongQueueId(track: Track): string | null {
@@ -44,6 +47,66 @@ function dedupeQueueTracks(tracks: Track[]): Track[] {
   });
 }
 
+/** Catalog album id when every track in the list shares one. */
+export function getSharedAlbumCatalogId(tracks: Track[]): string | null {
+  if (tracks.length < 2) return null;
+  const albumIds = tracks
+    .map((track) => track.appleMusicAlbumId)
+    .filter((id): id is string => Boolean(id));
+  if (albumIds.length !== tracks.length) return null;
+  const unique = new Set(albumIds);
+  if (unique.size !== 1) return null;
+  const albumId = albumIds[0]!;
+  // Library album ids (`l.*`) are not valid for `setQueue({ album })`.
+  if (albumId.startsWith("l.") || albumId.startsWith("i.")) return null;
+  return albumId;
+}
+
+export function buildAppleMusicSingleSongQueueOptions(
+  track: Track,
+  songId: string
+): AppleMusicQueueBuildResult {
+  return {
+    options: { song: songId, startPlaying: true },
+    definitionKey: `song:${track.id}`,
+    requestKey: `song:${track.id}`,
+    queuedTrackIds: [track.id],
+    isMultiSongQueue: false,
+    startWithIndex: null,
+    queueKind: "song",
+  };
+}
+
+export function buildAppleMusicQueuePlacementOptions(
+  track: Track
+): MusicKit.SetQueueOptions | null {
+  const built = buildAppleMusicQueueOptions(track, [track]);
+  return built?.options ?? null;
+}
+
+/**
+ * When only the start position changes inside an existing MusicKit queue,
+ * jump with `changeToMediaAtIndex` instead of rebuilding the queue.
+ */
+export function getInQueueNavigationIndex(
+  queueBuild: AppleMusicQueueBuildResult,
+  lastDefinitionKey: string | null
+): number | null {
+  if (!lastDefinitionKey || lastDefinitionKey !== queueBuild.definitionKey) {
+    return null;
+  }
+  if (queueBuild.startWithIndex == null || queueBuild.startWithIndex < 0) {
+    return null;
+  }
+  if (
+    queueBuild.queueKind !== "songs" &&
+    queueBuild.queueKind !== "album"
+  ) {
+    return null;
+  }
+  return queueBuild.startWithIndex;
+}
+
 export function buildAppleMusicQueueOptions(
   currentTrack: Track,
   queueTracks?: Track[] | null
@@ -58,6 +121,8 @@ export function buildAppleMusicQueueOptions(
       requestKey: `station:${params.stationId}`,
       queuedTrackIds: [],
       isMultiSongQueue: false,
+      startWithIndex: null,
+      queueKind: "station",
     };
   }
 
@@ -68,6 +133,8 @@ export function buildAppleMusicQueueOptions(
       requestKey: `playlist:${params.playlistId}`,
       queuedTrackIds: [],
       isMultiSongQueue: false,
+      startWithIndex: null,
+      queueKind: "playlist",
     };
   }
 
@@ -82,13 +149,28 @@ export function buildAppleMusicQueueOptions(
   );
 
   if (songQueueTracks.length > 1 && queueContainsCurrent) {
-    const songs = songQueueTracks
-      .map((track) => getAppleMusicSongQueueId(track))
-      .filter((id): id is string => Boolean(id));
     const startWith = songQueueTracks.findIndex(
       (track) => track.id === currentTrack.id
     );
     const queuedTrackIds = songQueueTracks.map((track) => track.id);
+    const albumQueueId = getSharedAlbumCatalogId(songQueueTracks);
+
+    if (albumQueueId && startWith >= 0) {
+      const definitionKey = `album:${albumQueueId}`;
+      return {
+        options: { album: albumQueueId, startWith, startPlaying: true },
+        definitionKey,
+        requestKey: `${definitionKey}:start:${currentTrack.id}`,
+        queuedTrackIds,
+        isMultiSongQueue: true,
+        startWithIndex: startWith,
+        queueKind: "album",
+      };
+    }
+
+    const songs = songQueueTracks
+      .map((track) => getAppleMusicSongQueueId(track))
+      .filter((id): id is string => Boolean(id));
     const definitionKey = `songs:${queuedTrackIds.join("\u0000")}`;
     return {
       options: { songs, startWith, startPlaying: true },
@@ -96,17 +178,12 @@ export function buildAppleMusicQueueOptions(
       requestKey: `${definitionKey}:start:${currentTrack.id}`,
       queuedTrackIds,
       isMultiSongQueue: true,
+      startWithIndex: startWith,
+      queueKind: "songs",
     };
   }
 
-  const trackId = currentTrack.id;
-  return {
-    options: { song: currentSongId, startPlaying: true },
-    definitionKey: `song:${trackId}`,
-    requestKey: `song:${trackId}`,
-    queuedTrackIds: [trackId],
-    isMultiSongQueue: false,
-  };
+  return buildAppleMusicSingleSongQueueOptions(currentTrack, currentSongId);
 }
 
 /**

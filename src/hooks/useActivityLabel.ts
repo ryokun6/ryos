@@ -28,6 +28,7 @@ export interface ActivityInfo {
   isFetchingSoramimi?: boolean;
   soramimiProgress?: number;
   isAddingSong?: boolean;
+  isBufferingPlayback?: boolean;
 }
 
 export interface ActivityLabelResult {

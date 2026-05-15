@@ -296,6 +296,8 @@ export function IpodScreen({
   handleReady,
   loopCurrent,
   isShuffled,
+  loopAll,
+  onAppleMusicBufferingChange,
   statusMessage,
   onToggleVideo,
   lcdFilterOn,
@@ -324,7 +326,8 @@ export function IpodScreen({
     activityState.isTranslating || 
     activityState.isFetchingFurigana || 
     activityState.isFetchingSoramimi || 
-    activityState.isAddingSong;
+    activityState.isAddingSong ||
+    activityState.isBufferingPlayback;
 
   // Current menu title — Cover Flow takes priority because it covers
   // the entire menu panel, regardless of the underlying menu/now-
@@ -1274,6 +1277,9 @@ export function IpodScreen({
                 playing={isPlaying && !isFullScreen}
                 resumeAtSeconds={elapsedTime}
                 volume={finalIpodVolume}
+                isShuffled={isShuffled}
+                loopCurrent={loopCurrent}
+                loopAll={loopAll}
                 onProgress={!isFullScreen ? handleProgress : undefined}
                 onDuration={!isFullScreen ? handleDuration : undefined}
                 onPlay={!isFullScreen ? handlePlay : undefined}
@@ -1282,6 +1288,7 @@ export function IpodScreen({
                 onReady={!isFullScreen ? handleReady : undefined}
                 onNowPlayingItemChange={setAppleMusicKitNowPlaying}
                 onQueueTrackChange={onAppleMusicQueueTrackChange}
+                onBufferingChange={onAppleMusicBufferingChange}
               />
             ) : (
               <div

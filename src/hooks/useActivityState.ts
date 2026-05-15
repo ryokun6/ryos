@@ -27,6 +27,8 @@ export interface UseActivityStateParams {
   translationLanguage?: string | null;
   /** Whether currently adding a song */
   isAddingSong?: boolean;
+  /** Whether Apple Music playback is loading/buffering */
+  isBufferingPlayback?: boolean;
 }
 
 // =============================================================================
@@ -47,6 +49,7 @@ export function useActivityState({
   furiganaState,
   translationLanguage,
   isAddingSong = false,
+  isBufferingPlayback = false,
 }: UseActivityStateParams): ActivityInfo {
   const activityState: ActivityInfo = useMemo(
     () => ({
@@ -59,6 +62,7 @@ export function useActivityState({
       isFetchingSoramimi: furiganaState.isFetchingSoramimi,
       soramimiProgress: furiganaState.soramimiProgress,
       isAddingSong,
+      isBufferingPlayback,
     }),
     [
       lyricsState.isLoading,
@@ -70,6 +74,7 @@ export function useActivityState({
       furiganaState.isFetchingSoramimi,
       furiganaState.soramimiProgress,
       isAddingSong,
+      isBufferingPlayback,
     ]
   );
 
@@ -88,6 +93,7 @@ export function isAnyActivityActive(activityState: ActivityInfo): boolean {
     activityState.isTranslating ||
     activityState.isFetchingFurigana ||
     activityState.isFetchingSoramimi ||
-    activityState.isAddingSong
+    activityState.isAddingSong ||
+    activityState.isBufferingPlayback
   );
 }

@@ -40,6 +40,8 @@ interface IpodMenuBarProps {
   onAddSong: () => void;
   onShareSong: () => void;
   onAddToFavorites?: () => void;
+  onAppleMusicAirPlay?: () => void;
+  onAppleMusicAddToLibrary?: () => void;
   onRefreshLyrics?: () => void;
   onAdjustTiming?: () => void;
   onToggleCoverFlow?: () => void;
@@ -63,6 +65,8 @@ export function IpodMenuBar({
   onAddSong,
   onShareSong,
   onAddToFavorites,
+  onAppleMusicAirPlay,
+  onAppleMusicAddToLibrary,
   onRefreshLyrics,
   onAdjustTiming,
   onToggleCoverFlow,
@@ -410,6 +414,29 @@ export function IpodMenuBar({
             >
               {t("apps.ipod.menu.addToFavorites", "Add to Favorites")}
             </MenubarItem>
+          )}
+          {isAppleMusic && (
+            <>
+              <MenubarItem
+                onClick={onAppleMusicAirPlay}
+                className="text-md h-6 px-3"
+                disabled={!appleMusicAuthorized || !onAppleMusicAirPlay}
+              >
+                {t("apps.ipod.menu.airPlay", "AirPlay")}
+              </MenubarItem>
+              <MenubarItem
+                onClick={onAppleMusicAddToLibrary}
+                className="text-md h-6 px-3"
+                disabled={
+                  !appleMusicAuthorized ||
+                  !onAppleMusicAddToLibrary ||
+                  tracks.length === 0 ||
+                  currentIndex === -1
+                }
+              >
+                {t("apps.ipod.menu.addToAppleMusicLibrary", "Add to Library")}
+              </MenubarItem>
+            </>
           )}
           {!isAppleMusic && (
             <>

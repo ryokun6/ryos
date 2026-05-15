@@ -26,6 +26,14 @@ declare global {
       completed = 10,
     }
 
+    enum PlaybackBitrate {
+      STANDARD = 64,
+      HIGH = 256,
+    }
+
+    type PlayerRepeatMode = 0 | 1 | 2;
+    type PlayerShuffleMode = 0 | 1;
+
     interface AppMetadata {
       name: string;
       build: string;
@@ -35,7 +43,7 @@ declare global {
     interface ConfigureOptions {
       developerToken: string;
       app: AppMetadata;
-      bitrate?: number;
+      bitrate?: PlaybackBitrate | number;
       storefrontId?: string;
       /** Provided automatically by the JS once a user authorizes. */
       musicUserToken?: string;
@@ -48,6 +56,7 @@ declare global {
       playlist?: string;
       station?: string;
       url?: string;
+      musicVideo?: string;
       startWith?: number;
       startTime?: number;
       /** v3-preferred replacement for the deprecated `autoplay`. */
@@ -91,6 +100,21 @@ declare global {
       artworkURL?: string;
     }
 
+    interface Queue {
+      readonly isEmpty: boolean;
+      readonly items: MediaItem[];
+      readonly length: number;
+      readonly position: number;
+      readonly nextPlayableItem?: MediaItem;
+      readonly previousPlayableItem?: MediaItem;
+      append(descriptor: SetQueueOptions | string): void;
+      prepend(descriptor: SetQueueOptions | string): void;
+      indexForItem(descriptor: string | MediaItem): number;
+      item(index: number): MediaItem | null | undefined;
+      addEventListener(name: string, cb: (event?: unknown) => void): void;
+      removeEventListener(name: string, cb?: (event?: unknown) => void): void;
+    }
+
     /** v3 events emitted by `MusicKit.MusicKitInstance`. */
     interface PlaybackStateDidChangeEvent {
       state: PlaybackStates | number;
@@ -110,6 +134,10 @@ declare global {
       oldItem?: MediaItem;
     }
 
+    interface QueueEvent {
+      queue?: Queue;
+    }
+
     /** Map of MusicKit event names to their event payload types. */
     interface MusicKitEventMap {
       playbackStateDidChange: PlaybackStateDidChangeEvent;
@@ -118,6 +146,8 @@ declare global {
       nowPlayingItemDidChange: MediaItemDidChangeEvent;
       authorizationStatusDidChange: { authorizationStatus?: number };
       userTokenDidChange: { token?: string };
+      queueIsReady: QueueEvent;
+      queueItemsDidChange: QueueEvent;
     }
 
     interface MusicAPI {
@@ -128,17 +158,43 @@ declare global {
       ) => Promise<{ data: T }>;
     }
 
+    interface Player {
+      readonly bitrate?: PlaybackBitrate | number;
+      readonly currentPlaybackDuration: number;
+      readonly currentPlaybackTime: number;
+      readonly isPlaying: boolean;
+      readonly nowPlayingItem?: MediaItem;
+      readonly nowPlayingItemIndex?: number;
+      readonly playbackState: PlaybackStates;
+      readonly playbackTargetAvailable?: boolean;
+      readonly queue: Queue;
+      repeatMode: PlayerRepeatMode;
+      shuffleMode: PlayerShuffleMode;
+      volume: number;
+      changeToMediaAtIndex(index: number): Promise<unknown>;
+      changeToMediaItem(descriptor: string | MediaItem): Promise<unknown>;
+      pause(): void;
+      play(): Promise<void>;
+      seekToTime(time: number): Promise<void>;
+      showPlaybackTargetPicker(): void;
+      skipToNextItem(): Promise<void>;
+      skipToPreviousItem(): Promise<void>;
+      stop(): void;
+    }
+
     interface MusicKitInstance {
       readonly api: MusicAPI;
       readonly developerToken: string;
       readonly isAuthorized: boolean;
       readonly musicUserToken: string;
       readonly playbackState: PlaybackStates;
+      readonly playbackTargetAvailable?: boolean;
       readonly storefrontId: string;
       readonly currentPlaybackTime: number;
       readonly currentPlaybackDuration: number;
       readonly nowPlayingItem?: MediaItem;
       readonly volume: number;
+      readonly player?: Player;
 
       addEventListener<K extends keyof MusicKitEventMap>(
         name: K,
@@ -154,17 +210,19 @@ declare global {
       authorize(): Promise<string>;
       unauthorize(): Promise<void>;
 
+      addToLibrary?(id: string, type: string): Promise<unknown>;
       setQueue(options: SetQueueOptions): Promise<unknown>;
       play(): Promise<void>;
       pause(): void;
       stop(): void;
       seekToTime(time: number): Promise<void>;
-      changeToMediaAtIndex(index: number): Promise<void>;
+      changeToMediaAtIndex(index: number): Promise<unknown>;
+      changeToMediaItem?(descriptor: string | MediaItem): Promise<unknown>;
+      playNext?(options: SetQueueOptions): Promise<unknown>;
+      playLater?(options: SetQueueOptions): Promise<unknown>;
       skipToNextItem(): Promise<void>;
       skipToPreviousItem(): Promise<void>;
-
-      // Volume control (read-only on the type but settable in practice — we
-      // assign through the bridge to honour the iPod volume slider).
+      showPlaybackTargetPicker?(): void;
     }
 
     function configure(

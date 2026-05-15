@@ -52,6 +52,7 @@ export function IpodAppComponent({
     coverFlowCurrentIndex,
     loopCurrent,
     isShuffled,
+    loopAll,
     isPlaying,
     showVideo,
     backlightOn,
@@ -142,6 +143,9 @@ export function IpodAppComponent({
     handleAppleMusicSearch,
     handleAppleMusicSearchSelect,
     handleAppleMusicAddToFavorites,
+    handleAppleMusicAirPlay,
+    handleAppleMusicAddToLibrary,
+    handleAppleMusicBufferingChange,
     handleRefreshLyrics,
     handleLyricsSearchSelect,
     handleLyricsSearchReset,
@@ -263,6 +267,8 @@ export function IpodAppComponent({
       onAddSong={handleAddSong}
       onShareSong={handleShareSong}
       onAddToFavorites={handleAppleMusicAddToFavorites}
+      onAppleMusicAirPlay={handleAppleMusicAirPlay}
+      onAppleMusicAddToLibrary={handleAppleMusicAddToLibrary}
       onRefreshLyrics={handleRefreshLyrics}
       onAdjustTiming={() => setIsSyncModeOpen(true)}
       onToggleCoverFlow={() => setIsCoverFlowOpen(!isCoverFlowOpen)}
@@ -435,6 +441,7 @@ export function IpodAppComponent({
                   handleReady={handleReady}
                   loopCurrent={loopCurrent}
                   isShuffled={isShuffled}
+                  loopAll={loopAll}
                   statusMessage={statusMessage}
                   onToggleVideo={toggleVideo}
                   lcdFilterOn={lcdFilterOn}
@@ -454,6 +461,7 @@ export function IpodAppComponent({
                   activityState={activityState}
                   appleMusicQueueTracks={appleMusicQueueTracks}
                   onAppleMusicQueueTrackChange={handleAppleMusicQueueTrackChange}
+                  onAppleMusicBufferingChange={handleAppleMusicBufferingChange}
                   isCoverFlowOpen={isCoverFlowOpen}
                   // Modern UI: render Cover Flow inline inside the menu
                   // panel so the panel's own width transition (50%↔100%
@@ -669,6 +677,9 @@ export function IpodAppComponent({
                                 ipodVolume *
                                 useAudioSettingsStore.getState().masterVolume
                               }
+                              isShuffled={isShuffled}
+                              loopCurrent={loopCurrent}
+                              loopAll={loopAll}
                               onProgress={handleProgress}
                               onDuration={handleDuration}
                               onPlay={handlePlay}
@@ -677,6 +688,7 @@ export function IpodAppComponent({
                               onReady={handleReady}
                               onNowPlayingItemChange={setAppleMusicKitNowPlaying}
                               onQueueTrackChange={handleAppleMusicQueueTrackChange}
+                              onBufferingChange={handleAppleMusicBufferingChange}
                             />
                           ) : (
                             <ReactPlayer

@@ -68,6 +68,10 @@ import type { IpodInitialData } from "../../base/types";
 import type { CoverFlowRef } from "../components/CoverFlow";
 import type { MusicQuizRef } from "../components/MusicQuiz";
 import type { BrickGameRef } from "../components/BrickGame";
+import type {
+  AppleMusicPlayerBridgeHandle,
+  AppleMusicQueuePlacement,
+} from "../components/AppleMusicPlayerBridge";
 import type { SongSearchResult } from "@/components/dialogs/SongSearchDialog";
 import { helpItems } from "..";
 
@@ -397,6 +401,7 @@ export function useIpodLogic({
   const [isSongSearchDialogOpen, setIsSongSearchDialogOpen] = useState(false);
   const [isSyncModeOpen, setIsSyncModeOpen] = useState(false);
   const [isAddingSong, setIsAddingSong] = useState(false);
+  const [isAppleMusicBuffering, setIsAppleMusicBuffering] = useState(false);
   // Recently Added + Favorites moved into the global iPod store (mirrored
   // from IndexedDB on iPod open) so the opportunistic refresh path in
   // `useAppleMusicLibrary` can update the same source the menu reads
@@ -882,12 +887,10 @@ export function useIpodLogic({
       track: Track,
       trackIndexInActiveMenu: number,
       queueIds?: string[] | null,
-      queueTracks?: Track[]
+      queueTracks?: Track[],
+      placement: "now" | AppleMusicQueuePlacement = "now"
     ) => {
       const state = useIpodStore.getState();
-      // Merge any queue tracks that aren't already in the cached
-      // library so next/previous can resolve them. Playlist drill-downs
-      // can include songs not present in the user's full library.
       const toMerge = queueTracks ?? [track];
       const existingIds = new Set(state.appleMusicTracks.map((t) => t.id));
       const additions = toMerge.filter((t) => !existingIds.has(t.id));
@@ -899,10 +902,162 @@ export function useIpodLogic({
           state.setAppleMusicTracks(nextTracks);
         }
       }
+      if (placement === "next" || placement === "later") {
+        const activePlayer = isFullScreen
+          ? fullScreenPlayerRef.current
+          : playerRef.current;
+        const bridge = activePlayer as AppleMusicPlayerBridgeHandle | null;
+        void bridge
+          ?.queueTrack(track, placement)
+          .then(() => {
+            showStatus(
+              placement === "next"
+                ? t("apps.ipod.status.queuedNext", "Queued Next")
+                : t("apps.ipod.status.queuedLater", "Queued Later")
+            );
+          })
+          .catch((err) => {
+            console.warn("[apple music] queue placement failed", err);
+            toast.error(
+              t("apps.ipod.dialogs.appleMusicQueueFailed", "Failed to queue song"),
+              {
+                description: err instanceof Error ? err.message : String(err),
+              }
+            );
+          });
+        return;
+      }
       playTrackFromMenu(track, trackIndexInActiveMenu, queueIds);
     },
-    [playTrackFromMenu]
+    [isFullScreen, playTrackFromMenu, showStatus, t]
   );
+
+  const makeAppleMusicTrackMenuItem = useCallback(
+    (
+      track: Track,
+      trackListIndex: number,
+      queueIds?: string[] | null,
+      queueTracks?: Track[]
+    ) => {
+      const playNow = () =>
+        playAppleMusicTrackFromMenu(
+          track,
+          trackListIndex,
+          queueIds,
+          queueTracks,
+          "now"
+        );
+      if (!isAppleMusic) {
+        return {
+          label: track.title,
+          action: playNow,
+          showChevron: false,
+          coverUrl: resolveTrackCoverUrl(track),
+        };
+      }
+      return {
+        label: track.title,
+        action: () => {
+          registerActivity();
+          pushMenuChild({
+            title: track.title,
+            items: [
+              {
+                label: t("apps.ipod.menuItems.play", "Play"),
+                action: playNow,
+                showChevron: false,
+              },
+              {
+                label: t("apps.ipod.menuItems.playNext", "Play Next"),
+                action: () =>
+                  playAppleMusicTrackFromMenu(
+                    track,
+                    trackListIndex,
+                    queueIds,
+                    queueTracks,
+                    "next"
+                  ),
+                showChevron: false,
+              },
+              {
+                label: t("apps.ipod.menuItems.playLater", "Play Later"),
+                action: () =>
+                  playAppleMusicTrackFromMenu(
+                    track,
+                    trackListIndex,
+                    queueIds,
+                    queueTracks,
+                    "later"
+                  ),
+                showChevron: false,
+              },
+            ],
+            selectedIndex: 0,
+          });
+        },
+        showChevron: true,
+        coverUrl: resolveTrackCoverUrl(track),
+      };
+    },
+    [
+      isAppleMusic,
+      playAppleMusicTrackFromMenu,
+      pushMenuChild,
+      registerActivity,
+      t,
+    ]
+  );
+
+  const handleAppleMusicBufferingChange = useCallback((buffering: boolean) => {
+    setIsAppleMusicBuffering(buffering);
+  }, []);
+
+  const handleAppleMusicAirPlay = useCallback(() => {
+    registerActivity();
+    const activePlayer = isFullScreen
+      ? fullScreenPlayerRef.current
+      : playerRef.current;
+    const bridge = activePlayer as AppleMusicPlayerBridgeHandle | null;
+    if (bridge?.showAirPlayPicker()) {
+      showStatus(t("apps.ipod.status.airPlay", "AirPlay"));
+      return;
+    }
+    toast.info(
+      t(
+        "apps.ipod.dialogs.airPlayUnavailable",
+        "No AirPlay speakers are available"
+      )
+    );
+  }, [isFullScreen, registerActivity, showStatus, t]);
+
+  const handleAppleMusicAddToLibrary = useCallback(async () => {
+    registerActivity();
+    const track = useIpodStore.getState().appleMusicTracks.find(
+      (candidate) =>
+        candidate.id === useIpodStore.getState().appleMusicCurrentSongId
+    );
+    if (!track) return;
+    const activePlayer = isFullScreen
+      ? fullScreenPlayerRef.current
+      : playerRef.current;
+    const bridge = activePlayer as AppleMusicPlayerBridgeHandle | null;
+    try {
+      if (bridge?.addTrackToLibrary) {
+        await bridge.addTrackToLibrary(track);
+      } else {
+        throw new Error("MusicKit addToLibrary is unavailable");
+      }
+      showStatus(t("apps.ipod.status.addedToLibrary", "Added to Library"));
+    } catch (err) {
+      console.warn("[apple music] addToLibrary failed", err);
+      toast.error(
+        t("apps.ipod.dialogs.addToLibraryFailed", "Failed to add to library"),
+        {
+          description: err instanceof Error ? err.message : String(err),
+        }
+      );
+    }
+  }, [isFullScreen, registerActivity, showStatus, t]);
 
   const requestPlaylistTracksIfNeeded = useCallback((playlistId: string) => {
     // Always trigger a background refresh on playlist open. The fetcher
@@ -1560,14 +1715,17 @@ export function useIpodLogic({
   // new `items` reference, called `setMenuHistory(updated)`, and re-ran.
   const allSongsMenuItems = useMemo(
     () =>
-      browsableTracks.map((track, index) => ({
-        label: track.title,
-        // Full library queue → pass null to clear any contextual queue.
-        action: () => playTrackFromMenu(track, index, null),
-        showChevron: false,
-        coverUrl: resolveTrackCoverUrl(track),
-      })),
-    [browsableTracks, playTrackFromMenu]
+      browsableTracks.map((track, index) =>
+        isAppleMusic
+          ? makeAppleMusicTrackMenuItem(track, index, null, browsableTracks)
+          : {
+              label: track.title,
+              action: () => playTrackFromMenu(track, index, null),
+              showChevron: false,
+              coverUrl: resolveTrackCoverUrl(track),
+            }
+      ),
+    [browsableTracks, isAppleMusic, makeAppleMusicTrackMenuItem, playTrackFromMenu]
   );
 
   const appleMusicRecentlyAddedMenuItems = useMemo(() => {
@@ -1594,22 +1752,18 @@ export function useIpodLogic({
     }
 
     const queueIds = appleMusicRecentlyAddedTracks.map((track) => track.id);
-    return appleMusicRecentlyAddedTracks.map((track, index) => ({
-      label: track.title,
-      action: () =>
-        playAppleMusicTrackFromMenu(
-          track,
-          index,
-          queueIds,
-          appleMusicRecentlyAddedTracks
-        ),
-      showChevron: false,
-      coverUrl: resolveTrackCoverUrl(track),
-    }));
+    return appleMusicRecentlyAddedTracks.map((track, index) =>
+      makeAppleMusicTrackMenuItem(
+        track,
+        index,
+        queueIds,
+        appleMusicRecentlyAddedTracks
+      )
+    );
   }, [
     appleMusicRecentlyAddedTracks,
     isAppleMusicRecentlyAddedLoading,
-    playAppleMusicTrackFromMenu,
+    makeAppleMusicTrackMenuItem,
     t,
   ]);
 
@@ -1637,22 +1791,18 @@ export function useIpodLogic({
     }
 
     const queueIds = appleMusicFavoriteTracks.map((track) => track.id);
-    return appleMusicFavoriteTracks.map((track, index) => ({
-      label: track.title,
-      action: () =>
-        playAppleMusicTrackFromMenu(
-          track,
-          index,
-          queueIds,
-          appleMusicFavoriteTracks
-        ),
-      showChevron: false,
-      coverUrl: resolveTrackCoverUrl(track),
-    }));
+    return appleMusicFavoriteTracks.map((track, index) =>
+      makeAppleMusicTrackMenuItem(
+        track,
+        index,
+        queueIds,
+        appleMusicFavoriteTracks
+      )
+    );
   }, [
     appleMusicFavoriteTracks,
     isAppleMusicFavoritesLoading,
-    playAppleMusicTrackFromMenu,
+    makeAppleMusicTrackMenuItem,
     t,
   ]);
 
@@ -1703,15 +1853,19 @@ export function useIpodLogic({
       const artistTracks = tracksByArtist[artist];
       const queueIds = artistTracks.map(({ track }) => track.id);
       const title = `${artist} - ${allSongsLabel}`;
-      result[title] = artistTracks.map(({ track }, trackListIndex) => ({
-        label: track.title,
-        action: () => playTrackFromMenu(track, trackListIndex, queueIds),
-        showChevron: false,
-        coverUrl: resolveTrackCoverUrl(track),
-      }));
+      result[title] = artistTracks.map(({ track }, trackListIndex) =>
+        isAppleMusic
+          ? makeAppleMusicTrackMenuItem(track, trackListIndex, queueIds, artistTracks.map(({ track: t2 }) => t2))
+          : {
+              label: track.title,
+              action: () => playTrackFromMenu(track, trackListIndex, queueIds),
+              showChevron: false,
+              coverUrl: resolveTrackCoverUrl(track),
+            }
+      );
     }
     return result;
-  }, [tracksByArtist, sortedArtists, playTrackFromMenu, t]);
+  }, [tracksByArtist, sortedArtists, isAppleMusic, makeAppleMusicTrackMenuItem, playTrackFromMenu, t]);
 
   const artistAlbumMenuItemsByTitle = useMemo(() => {
     const result: Record<
@@ -1724,12 +1878,16 @@ export function useIpodLogic({
         const albumTracks = tracksByArtistAlbum[artist]?.[albumKey] ?? [];
         const queueIds = albumTracks.map(({ track }) => track.id);
         const title = `${artist}\u0000${albumKey}`;
-        result[title] = albumTracks.map(({ track }, trackListIndex) => ({
-          label: track.title,
-          action: () => playTrackFromMenu(track, trackListIndex, queueIds),
-          showChevron: false,
-          coverUrl: resolveTrackCoverUrl(track),
-        }));
+        result[title] = albumTracks.map(({ track }, trackListIndex) =>
+          isAppleMusic
+            ? makeAppleMusicTrackMenuItem(track, trackListIndex, queueIds, albumTracks.map(({ track: t2 }) => t2))
+            : {
+                label: track.title,
+                action: () => playTrackFromMenu(track, trackListIndex, queueIds),
+                showChevron: false,
+                coverUrl: resolveTrackCoverUrl(track),
+              }
+        );
       }
     }
     return result;
@@ -1737,6 +1895,8 @@ export function useIpodLogic({
     sortedArtists,
     sortedAlbumsByArtist,
     tracksByArtistAlbum,
+    isAppleMusic,
+    makeAppleMusicTrackMenuItem,
     playTrackFromMenu,
   ]);
 
@@ -1817,15 +1977,30 @@ export function useIpodLogic({
     for (const albumKey of sortedAlbums) {
       const albumTracks = albumGroupsByKey[albumKey].tracks;
       const queueIds = albumTracks.map(({ track }) => track.id);
-      result[albumKey] = albumTracks.map(({ track }, trackListIndex) => ({
-        label: track.title,
-        action: () => playTrackFromMenu(track, trackListIndex, queueIds),
-        showChevron: false,
-        coverUrl: resolveTrackCoverUrl(track),
-      }));
+      result[albumKey] = albumTracks.map(({ track }, trackListIndex) =>
+        isAppleMusic
+          ? makeAppleMusicTrackMenuItem(
+              track,
+              trackListIndex,
+              queueIds,
+              albumTracks.map(({ track: t2 }) => t2)
+            )
+          : {
+              label: track.title,
+              action: () => playTrackFromMenu(track, trackListIndex, queueIds),
+              showChevron: false,
+              coverUrl: resolveTrackCoverUrl(track),
+            }
+      );
     }
     return result;
-  }, [albumGroupsByKey, sortedAlbums, playTrackFromMenu]);
+  }, [
+    albumGroupsByKey,
+    sortedAlbums,
+    isAppleMusic,
+    makeAppleMusicTrackMenuItem,
+    playTrackFromMenu,
+  ]);
 
   const albumsListMenuItems = useMemo(
     () => {
@@ -1953,18 +2128,14 @@ export function useIpodLogic({
         ];
       } else {
         const queueIds = playlistTracks.map((t) => t.id);
-        result[playlist.id] = playlistTracks.map((track, trackListIndex) => ({
-          label: track.title,
-          action: () =>
-            playAppleMusicTrackFromMenu(
-              track,
-              trackListIndex,
-              queueIds,
-              playlistTracks
-            ),
-          showChevron: false,
-          coverUrl: resolveTrackCoverUrl(track),
-        }));
+        result[playlist.id] = playlistTracks.map((track, trackListIndex) =>
+          makeAppleMusicTrackMenuItem(
+            track,
+            trackListIndex,
+            queueIds,
+            playlistTracks
+          )
+        );
       }
     }
     return result;
@@ -1972,7 +2143,7 @@ export function useIpodLogic({
     appleMusicPlaylists,
     appleMusicPlaylistTracks,
     appleMusicPlaylistTracksLoading,
-    playAppleMusicTrackFromMenu,
+    makeAppleMusicTrackMenuItem,
     loadingLabel,
   ]);
 
@@ -2231,6 +2402,23 @@ export function useIpodLogic({
             ? t("apps.ipod.menuItems.signedIn", "Signed In")
             : t("apps.ipod.menuItems.signedOut", "Signed Out"),
       },
+      ...(isAppleMusic && appleMusicAuthorized
+        ? [
+            {
+              label: t("apps.ipod.menuItems.airPlay", "AirPlay"),
+              action: () => void handleAppleMusicAirPlay(),
+              showChevron: false,
+            },
+            {
+              label: t(
+                "apps.ipod.menuItems.addToAppleMusicLibrary",
+                "Add Song to Library"
+              ),
+              action: () => void handleAppleMusicAddToLibrary(),
+              showChevron: false,
+            },
+          ]
+        : []),
     ];
   }, [
     loopCurrent,
@@ -2244,11 +2432,13 @@ export function useIpodLogic({
     memoizedHandleThemeChange,
     isAppleMusic,
     appleMusicAuthorized,
-    musicKitStatus,
-    handleSwitchToYoutube,
-    handleSwitchToAppleMusic,
+    handleAppleMusicAirPlay,
+    handleAppleMusicAddToLibrary,
     handleAppleMusicSignIn,
     handleAppleMusicSignOut,
+    handleSwitchToYoutube,
+    handleSwitchToAppleMusic,
+    musicKitStatus,
     t,
   ]);
 
@@ -2654,7 +2844,9 @@ export function useIpodLogic({
 
   const skipAppleMusicMusicKitQueue = useCallback(
     async (direction: "next" | "previous") => {
-      if (useIpodStore.getState().librarySource !== "appleMusic") return false;
+      const state = useIpodStore.getState();
+      if (state.librarySource !== "appleMusic") return false;
+      if (state.loopCurrent) return false;
       const activePlayer = isFullScreen
         ? fullScreenPlayerRef.current
         : playerRef.current;
@@ -2699,6 +2891,14 @@ export function useIpodLogic({
 
   const nextTrack = useCallback(() => {
     if (useIpodStore.getState().librarySource === "appleMusic") {
+      if (useIpodStore.getState().loopCurrent) {
+        const activePlayer = isFullScreen
+          ? fullScreenPlayerRef.current
+          : playerRef.current;
+        activePlayer?.seekTo(0);
+        setIsPlaying(true);
+        return;
+      }
       void skipAppleMusicMusicKitQueue("next").then((skipped) => {
         if (!skipped) rawNextTrack();
       });
@@ -2708,10 +2908,20 @@ export function useIpodLogic({
   }, [
     rawNextTrack,
     skipAppleMusicMusicKitQueue,
+    isFullScreen,
+    setIsPlaying,
   ]);
 
   const previousTrack = useCallback(() => {
     if (useIpodStore.getState().librarySource === "appleMusic") {
+      if (useIpodStore.getState().loopCurrent) {
+        const activePlayer = isFullScreen
+          ? fullScreenPlayerRef.current
+          : playerRef.current;
+        activePlayer?.seekTo(0);
+        setIsPlaying(true);
+        return;
+      }
       void skipAppleMusicMusicKitQueue("previous").then((skipped) => {
         if (!skipped) rawPreviousTrack();
       });
@@ -2721,6 +2931,8 @@ export function useIpodLogic({
   }, [
     rawPreviousTrack,
     skipAppleMusicMusicKitQueue,
+    isFullScreen,
+    setIsPlaying,
   ]);
 
   const handleAppleMusicQueueTrackChange = useCallback((trackId: string) => {
@@ -3688,6 +3900,7 @@ export function useIpodLogic({
     },
     translationLanguage: effectiveTranslationLanguage,
     isAddingSong,
+    isBufferingPlayback: isAppleMusic && isAppleMusicBuffering,
   });
 
   // Convert furiganaMap to Record for storage - only when content actually changes
@@ -4117,6 +4330,10 @@ export function useIpodLogic({
     previousTrack,
     appleMusicQueueTracks,
     handleAppleMusicQueueTrackChange,
+    handleAppleMusicBufferingChange,
+    handleAppleMusicAirPlay,
+    handleAppleMusicAddToLibrary,
+    isAppleMusicBuffering,
     clearLibrary,
     manualSync,
     restoreInstance,

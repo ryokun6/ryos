@@ -4,12 +4,22 @@ import { onMusicKitReady } from "@/hooks/useMusicKit";
 import { PLAYER_PROGRESS_INTERVAL_MS } from "../constants";
 import {
   buildAppleMusicQueueOptions,
+  buildAppleMusicQueuePlacementOptions,
+  getAppleMusicSongQueueId,
+  getInQueueNavigationIndex,
   resolveAppleMusicQueueTrackIdFromMediaItem,
   getMusicKitEventItemId,
   isWithinEndedFanoutDedupWindow,
   shouldFireEndedForPlaybackState,
   shouldSyncQueueTrackFromMediaItem,
 } from "./appleMusicPlayerBridgeUtils";
+import {
+  applyMusicKitShuffleRepeat,
+  canShowMusicKitAirPlayPicker,
+  getMusicKitPlaybackSurface,
+  isMusicKitBufferingState,
+  showMusicKitAirPlayPicker,
+} from "../utils/musickitPlayerAccess";
 
 /**
  * Apple Music playback bridge.
@@ -39,6 +49,12 @@ export interface AppleMusicPlayerBridgeProps {
   resumeAtSeconds?: number;
   /** Volume in [0, 1]. */
   volume: number;
+  /** Mirror iPod shuffle to MusicKit when true. */
+  isShuffled?: boolean;
+  /** Mirror iPod repeat-one to MusicKit when true. */
+  loopCurrent?: boolean;
+  /** Mirror iPod repeat-all to MusicKit when true. */
+  loopAll?: boolean;
   onProgress?: (state: { playedSeconds: number }) => void;
   onDuration?: (duration: number) => void;
   onPlay?: () => void;
@@ -49,12 +65,19 @@ export interface AppleMusicPlayerBridgeProps {
     metadata: AppleMusicNowPlayingMetadata | null
   ) => void;
   onQueueTrackChange?: (trackId: string) => void;
+  onBufferingChange?: (buffering: boolean) => void;
 }
+
+export type AppleMusicQueuePlacement = "next" | "later";
 
 export interface AppleMusicPlayerBridgeHandle {
   seekTo(seconds: number): void;
   getCurrentTime(): number;
   getInternalPlayer(): MusicKit.MusicKitInstance | null;
+  queueTrack(track: Track, placement: AppleMusicQueuePlacement): Promise<void>;
+  showAirPlayPicker(): boolean;
+  addTrackToLibrary(track: Track): Promise<void>;
+  canShowAirPlayPicker(): boolean;
 }
 
 export interface AppleMusicNowPlayingMetadata {
@@ -108,6 +131,9 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
     playing,
     resumeAtSeconds,
     volume,
+    isShuffled = false,
+    loopCurrent = false,
+    loopAll = true,
     onProgress,
     onDuration,
     onPlay,
@@ -115,7 +141,8 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
     onEnded,
     onReady,
     onNowPlayingItemChange,
-    onQueueTrackChange
+    onQueueTrackChange,
+    onBufferingChange
   }: AppleMusicPlayerBridgeProps & {
     ref?: React.Ref<AppleMusicPlayerBridgeHandle>;
   }
@@ -184,6 +211,7 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
   const onEndedRef = useRef(onEnded);
   const onNowPlayingItemChangeRef = useRef(onNowPlayingItemChange);
   const onQueueTrackChangeRef = useRef(onQueueTrackChange);
+  const onBufferingChangeRef = useRef(onBufferingChange);
   onProgressRef.current = onProgress;
   onDurationRef.current = onDuration;
   onPlayRef.current = onPlay;
@@ -191,6 +219,10 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
   onEndedRef.current = onEnded;
   onNowPlayingItemChangeRef.current = onNowPlayingItemChange;
   onQueueTrackChangeRef.current = onQueueTrackChange;
+  onBufferingChangeRef.current = onBufferingChange;
+
+  const shuffleRepeatRef = useRef({ isShuffled, loopCurrent, loopAll });
+  shuffleRepeatRef.current = { isShuffled, loopCurrent, loopAll };
 
   // Track latest currentTrack so the once-only event listeners can read it
   // without resubscribing on every render.
@@ -271,6 +303,7 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
 
     const handleState = (event: MusicKit.PlaybackStateDidChangeEvent) => {
       const state = event?.state ?? activeInstance?.playbackState;
+      onBufferingChangeRef.current?.(isMusicKitBufferingState(state));
       if (state === 2) {
         onPlayRef.current?.();
         return;
@@ -327,6 +360,27 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
       );
     };
 
+    const handleQueueItemsDidChange = () => {
+      const inst = activeInstance;
+      if (!inst) return;
+      const surface = getMusicKitPlaybackSurface(inst);
+      const index = surface.nowPlayingItemIndex;
+      if (
+        typeof index === "number" &&
+        index >= 0 &&
+        index < queuedTrackIdsRef.current.length
+      ) {
+        const trackId = queuedTrackIdsRef.current[index];
+        if (trackId && trackId !== currentTrackRef.current?.id) {
+          syncQueueTrackFromMediaItem(surface.nowPlayingItem ?? inst.nowPlayingItem);
+        }
+      }
+    };
+
+    const handleQueueReady = () => {
+      queueLoadingRef.current = null;
+    };
+
     const tryAttach = (inst: MusicKit.MusicKitInstance | null) => {
       if (cancelled || !inst) return;
       if (activeInstance === inst) return;
@@ -335,6 +389,14 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
       inst.addEventListener("mediaItemDidChange", handleMediaItem);
       // Some MusicKit builds emit nowPlayingItemDidChange instead.
       inst.addEventListener("nowPlayingItemDidChange", handleMediaItem);
+      inst.addEventListener("queueIsReady", handleQueueReady);
+      inst.addEventListener("queueItemsDidChange", handleQueueItemsDidChange);
+      const surface = getMusicKitPlaybackSurface(inst);
+      surface.queue?.addEventListener?.(
+        "queueItemsDidChange",
+        handleQueueItemsDidChange
+      );
+      applyMusicKitShuffleRepeat(inst, shuffleRepeatRef.current);
     };
 
     tryAttach(instanceRef.current);
@@ -355,6 +417,16 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
         activeInstance.removeEventListener(
           "nowPlayingItemDidChange",
           handleMediaItem
+        );
+        activeInstance.removeEventListener("queueIsReady", handleQueueReady);
+        activeInstance.removeEventListener(
+          "queueItemsDidChange",
+          handleQueueItemsDidChange
+        );
+        const surface = getMusicKitPlaybackSurface(activeInstance);
+        surface.queue?.removeEventListener?.(
+          "queueItemsDidChange",
+          handleQueueItemsDidChange
         );
       }
     };
@@ -466,6 +538,13 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
     }
   }, [volume]);
 
+  // Mirror iPod shuffle / repeat to MusicKit's native queue modes.
+  useEffect(() => {
+    const inst = instanceRef.current;
+    if (!inst) return;
+    applyMusicKitShuffleRepeat(inst, { isShuffled, loopCurrent, loopAll });
+  }, [isShuffled, loopCurrent, loopAll, instanceReadyTick]);
+
   // Stable representation of the queue so MusicKit only receives a fresh
   // queue for explicit iPod selections, not for native auto-advances.
   const queueBuild = useMemo(
@@ -524,6 +603,10 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
     playbackTargetTrackIdRef.current = currentTrack.id;
 
     const localQueueBuild = queueBuild;
+    const inQueueIndex = getInQueueNavigationIndex(
+      localQueueBuild,
+      lastQueuedDefinitionKeyRef.current
+    );
     // Serialize back-to-back queue swaps. If another track change is
     // already in flight (rapid `nextTrack` clicks, an `onEnded` advance
     // racing a user press, etc.), wait for it to settle before issuing
@@ -552,6 +635,38 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
           currentTrack,
           resumeAtSecondsRef.current
         );
+        if (inQueueIndex !== null) {
+          const surface = getMusicKitPlaybackSurface(inst);
+          const changeAtIndex =
+            surface.changeToMediaAtIndex?.bind(surface) ??
+            inst.changeToMediaAtIndex?.bind(inst);
+          if (changeAtIndex) {
+            await changeAtIndex(inQueueIndex);
+            if (cancelled) return;
+            if (resumeSeconds != null) {
+              await inst.seekToTime(resumeSeconds).catch((err) => {
+                console.warn("[apple music] in-queue resume seek failed", err);
+              });
+            }
+            if (cancelled) return;
+            if (currentTrack.durationMs && currentTrack.durationMs > 0) {
+              onDurationRef.current?.(currentTrack.durationMs / 1000);
+            }
+            lastQueuedRequestKeyRef.current = localQueueBuild.requestKey;
+            queuedTrackIdsRef.current = localQueueBuild.queuedTrackIds;
+            isMultiSongQueueRef.current = localQueueBuild.isMultiSongQueue;
+            if (playingRef.current) {
+              await inst.play().catch((err) => {
+                console.warn(
+                  "[apple music] play() after in-queue jump blocked",
+                  err
+                );
+                onPauseRef.current?.();
+              });
+            }
+            return;
+          }
+        }
         await inst.setQueue({
           ...localQueueBuild.options,
           startTime: resumeSeconds ?? undefined,
@@ -657,6 +772,51 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
       },
       getInternalPlayer() {
         return instanceRef.current;
+      },
+      async queueTrack(track: Track, placement: AppleMusicQueuePlacement) {
+        const inst = instanceRef.current;
+        if (!inst) return;
+        const options = buildAppleMusicQueuePlacementOptions(track);
+        if (!options) {
+          throw new Error("Track is missing Apple Music play parameters");
+        }
+        const pending = queueLoadingRef.current;
+        if (pending) await pending;
+        const queueFn =
+          placement === "next"
+            ? inst.playNext?.bind(inst)
+            : inst.playLater?.bind(inst);
+        if (queueFn) {
+          await queueFn(options);
+          return;
+        }
+        const surface = getMusicKitPlaybackSurface(inst);
+        if (placement === "next") {
+          surface.queue?.prepend(options);
+        } else {
+          surface.queue?.append(options);
+        }
+      },
+      showAirPlayPicker() {
+        const inst = instanceRef.current;
+        if (!inst) return false;
+        return showMusicKitAirPlayPicker(inst);
+      },
+      canShowAirPlayPicker() {
+        const inst = instanceRef.current;
+        if (!inst) return false;
+        return canShowMusicKitAirPlayPicker(inst);
+      },
+      async addTrackToLibrary(track: Track) {
+        const inst = instanceRef.current;
+        if (!inst?.addToLibrary) {
+          throw new Error("MusicKit addToLibrary is unavailable");
+        }
+        const songId = getAppleMusicSongQueueId(track);
+        if (!songId) {
+          throw new Error("Track is missing a library/catalog song id");
+        }
+        await inst.addToLibrary(songId, "songs");
       },
     }),
     []

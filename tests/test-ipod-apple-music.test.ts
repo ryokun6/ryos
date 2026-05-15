@@ -54,11 +54,19 @@ const {
   getMusicKitEventItemId,
   getAppleMusicSongQueueId,
   buildAppleMusicQueueOptions,
+  buildAppleMusicQueuePlacementOptions,
+  getSharedAlbumCatalogId,
+  getInQueueNavigationIndex,
   resolveAppleMusicQueueTrackIdFromMediaItem,
   shouldSyncQueueTrackFromMediaItem,
 } = await import(
   "../src/apps/ipod/components/appleMusicPlayerBridgeUtils"
 );
+const {
+  mapIpodRepeatToMusicKit,
+  mapIpodShuffleToMusicKit,
+  isMusicKitBufferingState,
+} = await import("../src/apps/ipod/utils/musickitPlayerAccess");
 type Track = import("../src/stores/useIpodStore").Track;
 const {
   isValidAppleMusicSongId,
@@ -236,12 +244,14 @@ describe("Apple Music MusicKit queue helpers", () => {
   const makeAppleMusicTrack = (
     id: string,
     catalogId: string,
-    title = id
+    title = id,
+    albumId?: string
   ): Track => ({
     id,
     url: `applemusic:${catalogId}`,
     title,
     source: "appleMusic",
+    appleMusicAlbumId: albumId,
     appleMusicPlayParams: {
       catalogId,
       kind: "song",
@@ -332,6 +342,60 @@ describe("Apple Music MusicKit queue helpers", () => {
     expect(
       shouldSyncQueueTrackFromMediaItem("am:2", "am:2", null, queueIds)
     ).toBe(false);
+  });
+
+  test("prefers native album queues when every track shares a catalog album id", () => {
+    const one = makeAppleMusicTrack("am:1", "1", "One", "album-42");
+    const two = makeAppleMusicTrack("am:2", "2", "Two", "album-42");
+
+    const queue = buildAppleMusicQueueOptions(two, [one, two]);
+
+    expect(queue?.options).toEqual({
+      album: "album-42",
+      startWith: 1,
+      startPlaying: true,
+    });
+    expect(queue?.queueKind).toBe("album");
+    expect(queue?.startWithIndex).toBe(1);
+  });
+
+  test("detects in-queue navigation without rebuilding the queue", () => {
+    const one = makeAppleMusicTrack("am:1", "1", "One");
+    const two = makeAppleMusicTrack("am:2", "2", "Two");
+    const queue = buildAppleMusicQueueOptions(two, [one, two]);
+
+    expect(
+      getInQueueNavigationIndex(queue!, queue!.definitionKey)
+    ).toBe(1);
+    expect(getInQueueNavigationIndex(queue!, "different")).toBeNull();
+  });
+
+  test("builds playNext/playLater placement options from a track", () => {
+    const one = makeAppleMusicTrack("am:1", "1", "One");
+    expect(buildAppleMusicQueuePlacementOptions(one)).toEqual({
+      song: "1",
+      startPlaying: true,
+    });
+  });
+
+  test("maps iPod shuffle/repeat settings to MusicKit modes", () => {
+    expect(mapIpodShuffleToMusicKit(true)).toBe(1);
+    expect(mapIpodShuffleToMusicKit(false)).toBe(0);
+    expect(mapIpodRepeatToMusicKit(true, false)).toBe(1);
+    expect(mapIpodRepeatToMusicKit(false, true)).toBe(2);
+    expect(mapIpodRepeatToMusicKit(false, false)).toBe(0);
+  });
+
+  test("treats loading and stalled states as buffering", () => {
+    expect(isMusicKitBufferingState(1)).toBe(true);
+    expect(isMusicKitBufferingState(9)).toBe(true);
+    expect(isMusicKitBufferingState(2)).toBe(false);
+  });
+
+  test("rejects library album ids for native album queues", () => {
+    const one = makeAppleMusicTrack("am:1", "1", "One", "l.album");
+    const two = makeAppleMusicTrack("am:2", "2", "Two", "l.album");
+    expect(getSharedAlbumCatalogId([one, two])).toBeNull();
   });
 });
 

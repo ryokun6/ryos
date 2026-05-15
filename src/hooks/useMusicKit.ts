@@ -296,6 +296,7 @@ async function configureMusicKit(
       window.MusicKit!.configure({
         developerToken,
         app,
+        bitrate: MusicKit.PlaybackBitrate.HIGH,
         ...(musicUserToken ? { musicUserToken } : {}),
       })
     );
