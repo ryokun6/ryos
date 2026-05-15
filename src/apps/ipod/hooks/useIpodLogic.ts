@@ -3237,8 +3237,6 @@ export function useIpodLogic({
           }
           if (isOffline) {
             showOfflineStatus();
-          } else if (getCurrentAppleMusicCollectionShellTrack()) {
-            void skipAppleMusicCollectionShell("next");
           } else {
             skipOperationRef.current = true;
             startTrackSwitch();
@@ -3275,8 +3273,6 @@ export function useIpodLogic({
           }
           if (isOffline) {
             showOfflineStatus();
-          } else if (getCurrentAppleMusicCollectionShellTrack()) {
-            void skipAppleMusicCollectionShell("previous");
           } else {
             skipOperationRef.current = true;
             startTrackSwitch();
@@ -3326,7 +3322,7 @@ export function useIpodLogic({
           break;
       }
     },
-    [playClickSound, vibrate, registerActivity, getCurrentAppleMusicCollectionShellTrack, skipAppleMusicCollectionShell, nextTrack, showStatus, togglePlay, previousTrack, menuMode, menuHistory, selectedMenuItem, tracks, currentIndex, isPlaying, toggleVideo, handleMenuButton, isOffline, showOfflineStatus, startTrackSwitch, isCoverFlowOpen, isMusicQuizOpen, isBrickGameOpen]
+    [playClickSound, vibrate, registerActivity, nextTrack, showStatus, togglePlay, previousTrack, menuMode, menuHistory, selectedMenuItem, tracks, currentIndex, isPlaying, toggleVideo, handleMenuButton, isOffline, showOfflineStatus, startTrackSwitch, isCoverFlowOpen, isMusicQuizOpen, isBrickGameOpen]
   );
 
   // Wheel rotation handler

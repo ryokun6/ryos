@@ -97,6 +97,8 @@ export interface FullScreenPortalProps {
 // IpodScreen props
 export interface IpodScreenProps {
   currentTrack: Track | null;
+  appleMusicQueueTracks?: Track[] | null;
+  onAppleMusicQueueTrackChange?: (trackId: string) => void;
   isPlaying: boolean;
   elapsedTime: number;
   totalTime: number;
