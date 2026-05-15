@@ -178,12 +178,8 @@ export function useIpodLogic({
 
   const usesAppleMusicNativeSongQueue = useMemo(
     () =>
-      isAppleMusic &&
-      shouldUseNativeMusicKitSongQueue(appleMusicQueueTracks, {
-        isShuffled,
-        loopCurrent,
-      }),
-    [isAppleMusic, appleMusicQueueTracks, isShuffled, loopCurrent]
+      isAppleMusic && shouldUseNativeMusicKitSongQueue(appleMusicQueueTracks),
+    [isAppleMusic, appleMusicQueueTracks]
   );
 
   // Now Playing "X of Y" should reflect the active playback context. When
@@ -2770,6 +2766,35 @@ export function useIpodLogic({
     state.setTotalTime(0);
   }, []);
 
+  const handleAppleMusicPlaybackModesChange = useCallback(
+    (modes: {
+      isShuffled: boolean;
+      loopCurrent: boolean;
+      loopAll: boolean;
+    }) => {
+      const state = useIpodStore.getState();
+      if (state.librarySource !== "appleMusic") return;
+      const patch: Partial<{
+        isShuffled: boolean;
+        loopCurrent: boolean;
+        loopAll: boolean;
+      }> = {};
+      if (state.isShuffled !== modes.isShuffled) {
+        patch.isShuffled = modes.isShuffled;
+      }
+      if (state.loopCurrent !== modes.loopCurrent) {
+        patch.loopCurrent = modes.loopCurrent;
+      }
+      if (state.loopAll !== modes.loopAll) {
+        patch.loopAll = modes.loopAll;
+      }
+      if (Object.keys(patch).length > 0) {
+        useIpodStore.setState(patch);
+      }
+    },
+    []
+  );
+
   const nextTrack = useCallback(() => {
     if (getCurrentAppleMusicCollectionShellTrack()) {
       void skipAppleMusicCollectionShell("next");
@@ -2995,6 +3020,9 @@ export function useIpodLogic({
   // Playback handlers
   const handleTrackEnd = useCallback(() => {
     if (loopCurrent) {
+      // MusicKit owns repeat-one for Apple Music — the bridge keeps
+      // `repeatMode` in sync so we don't race `seekTo(0)` here.
+      if (isAppleMusic) return;
       const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
       activePlayer?.seekTo(0);
       setIsPlaying(true);
@@ -3002,7 +3030,7 @@ export function useIpodLogic({
       startTrackSwitch();
       nextTrack();
     }
-  }, [loopCurrent, nextTrack, setIsPlaying, isFullScreen, startTrackSwitch]);
+  }, [loopCurrent, isAppleMusic, nextTrack, setIsPlaying, isFullScreen, startTrackSwitch]);
 
   const handleProgress = useCallback((state: { playedSeconds: number }) => {
     // Single source of truth — zustand. The selector at the top of
@@ -4122,6 +4150,7 @@ export function useIpodLogic({
     currentTrack,
     appleMusicQueueTracks,
     handleAppleMusicQueueTrackChange,
+    handleAppleMusicPlaybackModesChange,
     lyricsSourceOverride,
     fullscreenCoverUrl,
 

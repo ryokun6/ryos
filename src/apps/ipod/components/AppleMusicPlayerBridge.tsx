@@ -3,6 +3,7 @@ import type { Track } from "@/stores/useIpodStore";
 import { onMusicKitReady } from "@/hooks/useMusicKit";
 import { PLAYER_PROGRESS_INTERVAL_MS } from "../constants";
 import {
+  applyMusicKitPlaybackModes,
   buildMusicKitQueueIdentity,
   buildMusicKitSongQueue,
   findTrackIdByMusicKitItemId,
@@ -13,8 +14,11 @@ import {
   getQueueOptionsForTrack,
   isMusicKitPlayingSongId,
   isWithinEndedFanoutDedupWindow,
+  musicKitRepeatToStore,
+  musicKitShuffleToStore,
   shouldFireEndedForPlaybackState,
   shouldUseNativeMusicKitSongQueue,
+  type StorePlaybackModes,
 } from "./appleMusicPlayerBridgeUtils";
 
 /**
@@ -44,10 +48,12 @@ export interface AppleMusicPlayerBridgeProps {
    * When eligible, the bridge builds a native MusicKit multi-song queue.
    */
   queueTracks?: Track[];
-  /** Whether shuffle is active — disables native multi-song queues. */
+  /** ryOS shuffle flag — mirrored to MusicKit `shuffleMode`. */
   isShuffled?: boolean;
-  /** Whether repeat-one is active — disables native multi-song queues. */
+  /** ryOS repeat-one flag — mirrored to MusicKit `repeatMode`. */
   loopCurrent?: boolean;
+  /** ryOS repeat-all flag — mirrored to MusicKit `repeatMode`. */
+  loopAll?: boolean;
   /** Whether playback should be active. */
   playing: boolean;
   /** Saved playback position to seek to after queueing a track. */
@@ -62,6 +68,8 @@ export interface AppleMusicPlayerBridgeProps {
   onReady?: () => void;
   /** Sync ryOS current-song id when MusicKit auto-advances in a native queue. */
   onQueueTrackChange?: (trackId: string) => void;
+  /** Sync ryOS shuffle/repeat when the user changes modes in MusicKit UI. */
+  onPlaybackModesChange?: (modes: StorePlaybackModes) => void;
   onNowPlayingItemChange?: (
     metadata: AppleMusicNowPlayingMetadata | null
   ) => void;
@@ -123,6 +131,7 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
     queueTracks,
     isShuffled = false,
     loopCurrent = false,
+    loopAll = false,
     playing,
     resumeAtSeconds,
     volume,
@@ -133,6 +142,7 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
     onEnded,
     onReady,
     onQueueTrackChange,
+    onPlaybackModesChange,
     onNowPlayingItemChange
   }: AppleMusicPlayerBridgeProps & {
     ref?: React.Ref<AppleMusicPlayerBridgeHandle>;
@@ -147,10 +157,16 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
   const onReadyRef = useRef(onReady);
   onReadyRef.current = onReady;
 
-  const effectiveQueueTracks = queueTracks ?? (currentTrack ? [currentTrack] : []);
+  const effectiveQueueTracks = useMemo(
+    () => queueTracks ?? (currentTrack ? [currentTrack] : []),
+    [queueTracks, currentTrack]
+  );
+  const playbackModes = useMemo<StorePlaybackModes>(
+    () => ({ isShuffled, loopCurrent, loopAll }),
+    [isShuffled, loopCurrent, loopAll]
+  );
   const usesNativeMultiSongQueue = shouldUseNativeMusicKitSongQueue(
-    effectiveQueueTracks,
-    { isShuffled, loopCurrent }
+    effectiveQueueTracks
   );
   const usesNativeMultiSongQueueRef = useRef(usesNativeMultiSongQueue);
   usesNativeMultiSongQueueRef.current = usesNativeMultiSongQueue;
@@ -198,6 +214,7 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
   const onPauseRef = useRef(onPause);
   const onEndedRef = useRef(onEnded);
   const onQueueTrackChangeRef = useRef(onQueueTrackChange);
+  const onPlaybackModesChangeRef = useRef(onPlaybackModesChange);
   const onNowPlayingItemChangeRef = useRef(onNowPlayingItemChange);
   onProgressRef.current = onProgress;
   onDurationRef.current = onDuration;
@@ -205,7 +222,12 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
   onPauseRef.current = onPause;
   onEndedRef.current = onEnded;
   onQueueTrackChangeRef.current = onQueueTrackChange;
+  onPlaybackModesChangeRef.current = onPlaybackModesChange;
   onNowPlayingItemChangeRef.current = onNowPlayingItemChange;
+
+  const playbackModesRef = useRef(playbackModes);
+  playbackModesRef.current = playbackModes;
+  const applyingPlaybackModesFromStoreRef = useRef(false);
 
   const currentTrackRef = useRef(currentTrack);
   currentTrackRef.current = currentTrack;
@@ -285,6 +307,38 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
       );
     };
 
+    const readEventMode = (event: unknown): number | undefined => {
+      if (typeof event === "number") return event;
+      if (event && typeof event === "object") {
+        const record = event as Record<string, unknown>;
+        const candidate = record.shuffleMode ?? record.repeatMode ?? record.mode;
+        return typeof candidate === "number" ? candidate : undefined;
+      }
+      return undefined;
+    };
+
+    const handleShuffleMode = (event: unknown) => {
+      if (applyingPlaybackModesFromStoreRef.current) return;
+      const shuffleMode = readEventMode(event);
+      if (shuffleMode === undefined) return;
+      const storeModes = musicKitShuffleToStore(shuffleMode);
+      onPlaybackModesChangeRef.current?.({
+        ...playbackModesRef.current,
+        ...storeModes,
+      });
+    };
+
+    const handleRepeatMode = (event: unknown) => {
+      if (applyingPlaybackModesFromStoreRef.current) return;
+      const repeatMode = readEventMode(event);
+      if (repeatMode === undefined) return;
+      const storeModes = musicKitRepeatToStore(repeatMode);
+      onPlaybackModesChangeRef.current?.({
+        ...playbackModesRef.current,
+        ...storeModes,
+      });
+    };
+
     const tryAttach = (inst: MusicKit.MusicKitInstance | null) => {
       if (cancelled || !inst) return;
       if (activeInstance === inst) return;
@@ -292,6 +346,8 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
       inst.addEventListener("playbackStateDidChange", handleState);
       inst.addEventListener("mediaItemDidChange", handleMediaItem);
       inst.addEventListener("nowPlayingItemDidChange", handleMediaItem);
+      inst.addEventListener("shuffleModeDidChange", handleShuffleMode);
+      inst.addEventListener("repeatModeDidChange", handleRepeatMode);
     };
 
     tryAttach(instanceRef.current);
@@ -313,9 +369,32 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
           "nowPlayingItemDidChange",
           handleMediaItem
         );
+        activeInstance.removeEventListener(
+          "shuffleModeDidChange",
+          handleShuffleMode
+        );
+        activeInstance.removeEventListener(
+          "repeatModeDidChange",
+          handleRepeatMode
+        );
       }
     };
   }, []);
+
+  // Mirror ryOS shuffle / repeat to MusicKit so the player owns queue order
+  // and looping instead of our store-driven next-track picker.
+  useEffect(() => {
+    const inst = instanceRef.current;
+    if (!inst) return;
+    applyingPlaybackModesFromStoreRef.current = true;
+    try {
+      applyMusicKitPlaybackModes(inst, playbackModes);
+    } catch (err) {
+      console.warn("[apple music] failed to sync playback modes", err);
+    } finally {
+      applyingPlaybackModesFromStoreRef.current = false;
+    }
+  }, [playbackModes, instanceReadyTick]);
 
   useEffect(() => {
     if (!playing || !currentTrack) return;
@@ -450,7 +529,8 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
           ? getQueueOptionsForNativeSongQueue(
               effectiveQueueTracks,
               currentTrack,
-              false
+              false,
+              playbackModesRef.current
             )
           : null;
       const singleTrackOptions =

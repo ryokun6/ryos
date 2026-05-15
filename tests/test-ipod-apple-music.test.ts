@@ -60,6 +60,13 @@ const {
   findTrackIdByMusicKitItemId,
   isMusicKitPlayingSongId,
   getQueueOptionsForNativeSongQueue,
+  storeRepeatToMusicKit,
+  storeShuffleToMusicKit,
+  musicKitRepeatToStore,
+  musicKitShuffleToStore,
+  MUSIC_KIT_REPEAT_ONE,
+  MUSIC_KIT_REPEAT_ALL,
+  MUSIC_KIT_SHUFFLE_SONGS,
 } = await import(
   "../src/apps/ipod/components/appleMusicPlayerBridgeUtils"
 );
@@ -1038,31 +1045,42 @@ describe("AppleMusicPlayerBridge native multi-song queue helpers", () => {
     });
   });
 
-  test("shouldUseNativeMusicKitSongQueue requires 2+ songs and no shuffle/repeat-one", () => {
-    expect(
-      shouldUseNativeMusicKitSongQueue([songA, songB], {
-        isShuffled: false,
-        loopCurrent: false,
-      })
-    ).toBe(true);
-    expect(
-      shouldUseNativeMusicKitSongQueue([songA], {
-        isShuffled: false,
-        loopCurrent: false,
-      })
-    ).toBe(false);
-    expect(
-      shouldUseNativeMusicKitSongQueue([songA, songB], {
-        isShuffled: true,
-        loopCurrent: false,
-      })
-    ).toBe(false);
-    expect(
-      shouldUseNativeMusicKitSongQueue([songA, songB], {
-        isShuffled: false,
-        loopCurrent: true,
-      })
-    ).toBe(false);
+  test("shouldUseNativeMusicKitSongQueue requires 2+ playable songs", () => {
+    expect(shouldUseNativeMusicKitSongQueue([songA, songB])).toBe(true);
+    expect(shouldUseNativeMusicKitSongQueue([songA])).toBe(false);
+  });
+
+  test("storeRepeatToMusicKit maps ryOS repeat flags to MusicKit modes", () => {
+    expect(storeRepeatToMusicKit(false, false)).toBe(0);
+    expect(storeRepeatToMusicKit(true, false)).toBe(MUSIC_KIT_REPEAT_ONE);
+    expect(storeRepeatToMusicKit(false, true)).toBe(MUSIC_KIT_REPEAT_ALL);
+  });
+
+  test("storeShuffleToMusicKit maps ryOS shuffle to MusicKit modes", () => {
+    expect(storeShuffleToMusicKit(false)).toBe(0);
+    expect(storeShuffleToMusicKit(true)).toBe(MUSIC_KIT_SHUFFLE_SONGS);
+  });
+
+  test("musicKitRepeatToStore maps MusicKit repeat back to ryOS flags", () => {
+    expect(musicKitRepeatToStore(MUSIC_KIT_REPEAT_ONE)).toEqual({
+      loopCurrent: true,
+      loopAll: false,
+    });
+    expect(musicKitRepeatToStore(MUSIC_KIT_REPEAT_ALL)).toEqual({
+      loopCurrent: false,
+      loopAll: true,
+    });
+    expect(musicKitRepeatToStore(0)).toEqual({
+      loopCurrent: false,
+      loopAll: false,
+    });
+  });
+
+  test("musicKitShuffleToStore maps MusicKit shuffle back to ryOS flag", () => {
+    expect(musicKitShuffleToStore(MUSIC_KIT_SHUFFLE_SONGS)).toEqual({
+      isShuffled: true,
+    });
+    expect(musicKitShuffleToStore(0)).toEqual({ isShuffled: false });
   });
 
   test("getMusicKitQueueStartIndex resolves the current track position", () => {
@@ -1085,10 +1103,18 @@ describe("AppleMusicPlayerBridge native multi-song queue helpers", () => {
   });
 
   test("getQueueOptionsForNativeSongQueue builds MusicKit v3 multi-song options", () => {
-    expect(getQueueOptionsForNativeSongQueue([songA, songB], songB, false)).toEqual({
+    expect(
+      getQueueOptionsForNativeSongQueue([songA, songB], songB, false, {
+        isShuffled: true,
+        loopCurrent: false,
+        loopAll: true,
+      })
+    ).toEqual({
       songs: ["1", "2"],
       startWith: 1,
       startPlaying: false,
+      shuffleMode: MUSIC_KIT_SHUFFLE_SONGS,
+      repeatPlayMode: MUSIC_KIT_REPEAT_ALL,
     });
     expect(
       getQueueOptionsForNativeSongQueue([songA], songA, false)

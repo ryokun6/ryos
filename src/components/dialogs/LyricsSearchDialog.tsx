@@ -1,4 +1,4 @@
-import React, { useReducer, useEffect, useCallback } from "react";
+import React, { useReducer, useEffect, useCallback, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -123,11 +123,14 @@ export function LyricsSearchDialog({
   const [state, dispatch] = useReducer(reducer, initialState);
   const { query, results, selectedIndex, isSearching, error } = state;
 
-  // Reset state when dialog opens/closes
+  // Reset state when the dialog opens — not when live now-playing metadata
+  // changes underneath an already-open search (Apple Music auto-advance).
+  const prevIsOpenRef = useRef(false);
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !prevIsOpenRef.current) {
       dispatch({ type: "reset", query: initialQuery || "" });
     }
+    prevIsOpenRef.current = isOpen;
   }, [isOpen, initialQuery]);
 
   const handleSearch = async () => {

@@ -42,16 +42,84 @@ export function buildMusicKitQueueIdentity(songIds: string[]): string {
 /**
  * Whether to drive playback through MusicKit's native multi-song queue
  * (`setQueue({ songs, startWith })`) instead of single-song queues.
- *
- * Shuffle and repeat-one need ryOS to own track selection, so they stay on
- * the legacy single-song path.
  */
-export function shouldUseNativeMusicKitSongQueue(
-  queueTracks: Track[],
-  options: { isShuffled: boolean; loopCurrent: boolean }
-): boolean {
-  if (options.isShuffled || options.loopCurrent) return false;
+export function shouldUseNativeMusicKitSongQueue(queueTracks: Track[]): boolean {
   return buildMusicKitSongQueue(queueTracks).songIds.length >= 2;
+}
+
+export interface StorePlaybackModes {
+  isShuffled: boolean;
+  loopCurrent: boolean;
+  loopAll: boolean;
+}
+
+/** MusicKit `PlayerRepeatMode` values (v3). */
+export const MUSIC_KIT_REPEAT_NONE = 0;
+export const MUSIC_KIT_REPEAT_ONE = 1;
+export const MUSIC_KIT_REPEAT_ALL = 2;
+
+/** MusicKit `PlayerShuffleMode` values (v3). */
+export const MUSIC_KIT_SHUFFLE_OFF = 0;
+export const MUSIC_KIT_SHUFFLE_SONGS = 1;
+
+/** Map ryOS repeat flags to MusicKit `PlayerRepeatMode`. */
+export function storeRepeatToMusicKit(
+  loopCurrent: boolean,
+  loopAll: boolean
+): number {
+  if (loopCurrent) return MUSIC_KIT_REPEAT_ONE;
+  if (loopAll) return MUSIC_KIT_REPEAT_ALL;
+  return MUSIC_KIT_REPEAT_NONE;
+}
+
+/** Map MusicKit `PlayerRepeatMode` back to ryOS repeat flags. */
+export function musicKitRepeatToStore(
+  repeatMode: number | undefined
+): Pick<StorePlaybackModes, "loopCurrent" | "loopAll"> {
+  switch (repeatMode) {
+    case MUSIC_KIT_REPEAT_ONE:
+      return { loopCurrent: true, loopAll: false };
+    case MUSIC_KIT_REPEAT_ALL:
+      return { loopCurrent: false, loopAll: true };
+    default:
+      return { loopCurrent: false, loopAll: false };
+  }
+}
+
+/** Map ryOS shuffle flag to MusicKit `PlayerShuffleMode`. */
+export function storeShuffleToMusicKit(isShuffled: boolean): number {
+  return isShuffled ? MUSIC_KIT_SHUFFLE_SONGS : MUSIC_KIT_SHUFFLE_OFF;
+}
+
+/** Map MusicKit `PlayerShuffleMode` back to ryOS shuffle flag. */
+export function musicKitShuffleToStore(
+  shuffleMode: number | undefined
+): Pick<StorePlaybackModes, "isShuffled"> {
+  return { isShuffled: shuffleMode === MUSIC_KIT_SHUFFLE_SONGS };
+}
+
+export function getMusicKitPlaybackModes(modes: StorePlaybackModes): {
+  shuffleMode: number;
+  repeatPlayMode: number;
+} {
+  return {
+    shuffleMode: storeShuffleToMusicKit(modes.isShuffled),
+    repeatPlayMode: storeRepeatToMusicKit(modes.loopCurrent, modes.loopAll),
+  };
+}
+
+/** Apply ryOS playback modes to a MusicKit instance (no-op when already matched). */
+export function applyMusicKitPlaybackModes(
+  instance: MusicKit.MusicKitInstance,
+  modes: StorePlaybackModes
+): void {
+  const { shuffleMode, repeatPlayMode } = getMusicKitPlaybackModes(modes);
+  if (instance.shuffleMode !== shuffleMode) {
+    instance.shuffleMode = shuffleMode;
+  }
+  if (instance.repeatMode !== repeatPlayMode) {
+    instance.repeatMode = repeatPlayMode;
+  }
 }
 
 /** Index of `currentTrack` inside a native MusicKit song queue. */
@@ -224,10 +292,17 @@ export function getQueueOptionsForTrack(
 export function getQueueOptionsForNativeSongQueue(
   queueTracks: Track[],
   currentTrack: Track,
-  startPlaying: boolean
+  startPlaying: boolean,
+  modes?: StorePlaybackModes
 ): MusicKit.SetQueueOptions | null {
   const { songIds } = buildMusicKitSongQueue(queueTracks);
   if (songIds.length < 2) return null;
   const startWith = getMusicKitQueueStartIndex(queueTracks, currentTrack);
-  return { songs: songIds, startWith, startPlaying };
+  const playbackModes = modes ? getMusicKitPlaybackModes(modes) : null;
+  return {
+    songs: songIds,
+    startWith,
+    startPlaying,
+    ...(playbackModes ?? {}),
+  };
 }

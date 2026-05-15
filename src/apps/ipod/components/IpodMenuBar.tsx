@@ -50,6 +50,9 @@ interface IpodMenuBarProps {
   onAppleMusicSignIn?: () => void;
   onAppleMusicSignOut?: () => void;
   onAppleMusicRefresh?: () => void;
+  onNextTrack?: () => void;
+  onPreviousTrack?: () => void;
+  onTogglePlay?: () => void;
 }
 
 export function IpodMenuBar({
@@ -70,6 +73,9 @@ export function IpodMenuBar({
   onAppleMusicSignIn,
   onAppleMusicSignOut,
   onAppleMusicRefresh,
+  onNextTrack,
+  onPreviousTrack,
+  onTogglePlay,
 }: IpodMenuBarProps) {
   const { t } = useTranslation();
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
@@ -213,8 +219,10 @@ export function IpodMenuBar({
   const setCurrentSongId = isAppleMusic
     ? setAppleMusicCurrentSongId
     : setYoutubeCurrentSongId;
-  const nextTrack = isAppleMusic ? appleMusicNext : youtubeNext;
-  const previousTrack = isAppleMusic ? appleMusicPrevious : youtubePrevious;
+  const nextTrack = onNextTrack ?? (isAppleMusic ? appleMusicNext : youtubeNext);
+  const previousTrack =
+    onPreviousTrack ?? (isAppleMusic ? appleMusicPrevious : youtubePrevious);
+  const playPause = onTogglePlay ?? togglePlay;
 
   // Compute currentIndex from currentSongId
   const currentIndex = useMemo(() => {
@@ -445,7 +453,7 @@ export function IpodMenuBar({
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           <MenubarItem
-            onClick={togglePlay}
+            onClick={playPause}
             className="text-md h-6 px-3"
             disabled={tracks.length === 0}
           >

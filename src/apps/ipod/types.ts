@@ -117,11 +117,15 @@ export interface IpodScreenProps {
   handlePause: () => void;
   handleReady: () => void;
   loopCurrent: boolean;
+  loopAll: boolean;
   isShuffled: boolean;
-  /** Active Apple Music playback queue for native MusicKit multi-song queues. */
   appleMusicQueueTracks?: Track[];
-  /** Sync store when MusicKit auto-advances inside a native queue. */
   onAppleMusicQueueTrackChange?: (trackId: string) => void;
+  onAppleMusicPlaybackModesChange?: (modes: {
+    isShuffled: boolean;
+    loopCurrent: boolean;
+    loopAll: boolean;
+  }) => void;
   statusMessage: string | null;
   onToggleVideo: () => void;
   lcdFilterOn: boolean;

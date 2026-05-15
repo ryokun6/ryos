@@ -1855,41 +1855,38 @@ export const useIpodStore = create<IpodState>()(
         }
       },
       setTrackLyricsSource: (trackId, lyricsSource) => {
-        set((state) => {
-          const tracks = state.tracks.map((track) =>
-            track.id === trackId
-              ? {
-                  ...track,
-                  lyricsSource: lyricsSource || undefined,
-                  // Update track metadata from lyricsSource (KuGou has more accurate metadata)
-                  ...(lyricsSource && {
-                    title: lyricsSource.title,
-                    artist: lyricsSource.artist,
-                    album: lyricsSource.album || track.album,
-                  }),
-                }
-              : track
-          );
-          return { tracks };
-        });
-        
-        // Save to server and clear translations/furigana
+        const patchTrack = (track: Track) =>
+          track.id === trackId
+            ? {
+                ...track,
+                lyricsSource: lyricsSource || undefined,
+                ...(lyricsSource && {
+                  title: lyricsSource.title,
+                  artist: lyricsSource.artist,
+                  album: lyricsSource.album || track.album,
+                }),
+              }
+            : track;
+        set((state) => ({
+          tracks: state.tracks.map(patchTrack),
+          appleMusicTracks: state.appleMusicTracks.map(patchTrack),
+        }));
+
         saveLyricsSourceToServer(trackId, lyricsSource);
       },
       clearTrackLyricsSource: (trackId) => {
-        set((state) => {
-          const tracks = state.tracks.map((track) =>
-            track.id === trackId
-              ? {
-                  ...track,
-                  lyricsSource: undefined,
-                }
-              : track
-          );
-          return { tracks };
-        });
-        
-        // Save to server (clearing the source) and clear translations/furigana
+        const clearTrack = (track: Track) =>
+          track.id === trackId
+            ? {
+                ...track,
+                lyricsSource: undefined,
+              }
+            : track;
+        set((state) => ({
+          tracks: state.tracks.map(clearTrack),
+          appleMusicTracks: state.appleMusicTracks.map(clearTrack),
+        }));
+
         saveLyricsSourceToServer(trackId, null);
       },
       setElapsedTime: (time) => set({ elapsedTime: time }),
