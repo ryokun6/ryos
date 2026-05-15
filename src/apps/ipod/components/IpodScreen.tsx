@@ -1071,7 +1071,7 @@ export function IpodScreen({
               <div
                 className={cn(
                   "flex-1 flex flex-col overflow-visible px-2",
-                  isModernUi ? "pt-1.5 pb-0.5" : "py-1"
+                  isModernUi ? "pt-1.5 pb-0" : "py-1"
                 )}
               >
                 {currentTrack && nowPlayingDisplayTrack ? (
@@ -1102,12 +1102,12 @@ export function IpodScreen({
                       </div>
                     )}
                     {isModernUi ? (
-                      <div className="flex min-h-0 flex-1 flex-col overflow-visible">
-                        <div className="flex flex-1 items-start gap-3 overflow-visible pt-1">
+                      <div className="flex flex-col overflow-visible">
+                        <div className="flex items-start gap-3 overflow-visible pt-1">
                           <ModernNowPlayingArtwork coverUrl={coverUrl} />
                           <div
                             className={cn(
-                              "flex min-h-0 min-w-0 flex-1 flex-col justify-start gap-0 overflow-visible text-left",
+                              "flex min-w-0 flex-1 flex-col justify-start gap-0 overflow-visible text-left",
                               // Small downward nudge so the first line
                               // doesn't hug the cover's top edge — matches
                               // the iPod nano 6G/7G "Now Playing" baseline.
@@ -1173,7 +1173,7 @@ export function IpodScreen({
                           </div>
                         </div>
                         </div>
-                        <div className="mt-auto w-full shrink-0 pt-0.5">
+                        <div className="w-full shrink-0 pt-1">
                           <ModernNowPlayingProgressRow
                             elapsedTime={elapsedTime}
                             totalTime={totalTime}
