@@ -328,7 +328,7 @@ function EventTrayEditor({
 
   const panelShell = cn(
     "flex-1 flex flex-col min-h-0 overflow-y-auto",
-    "bg-white pl-2.5 pr-2.5 pt-2 pb-2",
+    "bg-white pl-2.5 pr-2.5 pt-2 pb-4",
     !isMacOSTheme && "rounded-sm border border-black/10"
   );
 
@@ -600,7 +600,7 @@ function TodoDetails({
 
   const panelShell = cn(
     "flex-1 flex flex-col min-h-0 overflow-y-auto",
-    "bg-white pl-2.5 pr-2.5 pt-2 pb-2",
+    "bg-white pl-2.5 pr-2.5 pt-2 pb-4",
     !isMacOSTheme && "rounded-sm border border-black/10"
   );
 
