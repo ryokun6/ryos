@@ -60,6 +60,7 @@ const {
   findTrackIdByMusicKitItemId,
   isMusicKitPlayingSongId,
   getQueueOptionsForNativeSongQueue,
+  withMusicKitShuffleSuspended,
   storeRepeatToMusicKit,
   storeShuffleToMusicKit,
   musicKitRepeatToStore,
@@ -1129,21 +1130,34 @@ describe("AppleMusicPlayerBridge native multi-song queue helpers", () => {
 
   test("getQueueOptionsForNativeSongQueue builds MusicKit v3 multi-song options", () => {
     expect(
-      getQueueOptionsForNativeSongQueue([songA, songB], songB, false, {
-        isShuffled: true,
-        loopCurrent: false,
-        loopAll: true,
-      })
+      getQueueOptionsForNativeSongQueue([songA, songB], songB, false)
     ).toEqual({
       songs: ["1", "2"],
       startWith: 1,
       startPlaying: false,
-      shuffleMode: MUSIC_KIT_SHUFFLE_SONGS,
-      repeatPlayMode: MUSIC_KIT_REPEAT_ALL,
     });
     expect(
       getQueueOptionsForNativeSongQueue([songA], songA, false)
     ).toBeNull();
+  });
+
+  test("withMusicKitShuffleSuspended disables shuffle only while targeting", async () => {
+    const instance = {
+      shuffleMode: MUSIC_KIT_SHUFFLE_SONGS,
+      repeatMode: MUSIC_KIT_REPEAT_ALL,
+    } as MusicKit.MusicKitInstance;
+
+    let ranWhileSuspended = false;
+    await withMusicKitShuffleSuspended(
+      instance,
+      { isShuffled: true, loopCurrent: false, loopAll: true },
+      async () => {
+        ranWhileSuspended = instance.shuffleMode === 0;
+      }
+    );
+
+    expect(ranWhileSuspended).toBe(true);
+    expect(instance.shuffleMode).toBe(MUSIC_KIT_SHUFFLE_SONGS);
   });
 
   test("buildMusicKitQueueIdentity is stable for the same song list", () => {

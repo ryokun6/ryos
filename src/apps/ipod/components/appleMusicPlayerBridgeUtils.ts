@@ -122,6 +122,29 @@ export function applyMusicKitPlaybackModes(
   }
 }
 
+/**
+ * MusicKit reshuffles when `shuffleMode` is set on `setQueue`, so `startWith`
+ * no longer points at the user's pick. Suspend shuffle around queue targeting,
+ * then restore it so future auto-advance still shuffles.
+ */
+export async function withMusicKitShuffleSuspended<T>(
+  instance: MusicKit.MusicKitInstance,
+  modes: StorePlaybackModes,
+  action: () => Promise<T>
+): Promise<T> {
+  const hadShuffle = modes.isShuffled;
+  if (hadShuffle) {
+    applyMusicKitPlaybackModes(instance, { ...modes, isShuffled: false });
+  }
+  try {
+    return await action();
+  } finally {
+    if (hadShuffle) {
+      applyMusicKitPlaybackModes(instance, modes);
+    }
+  }
+}
+
 /** Index of `currentTrack` inside a native MusicKit song queue. */
 export function getMusicKitQueueStartIndex(
   queueTracks: Track[],
@@ -292,17 +315,14 @@ export function getQueueOptionsForTrack(
 export function getQueueOptionsForNativeSongQueue(
   queueTracks: Track[],
   currentTrack: Track,
-  startPlaying: boolean,
-  modes?: StorePlaybackModes
+  startPlaying: boolean
 ): MusicKit.SetQueueOptions | null {
   const { songIds } = buildMusicKitSongQueue(queueTracks);
   if (songIds.length < 2) return null;
   const startWith = getMusicKitQueueStartIndex(queueTracks, currentTrack);
-  const playbackModes = modes ? getMusicKitPlaybackModes(modes) : null;
   return {
     songs: songIds,
     startWith,
     startPlaying,
-    ...(playbackModes ?? {}),
   };
 }

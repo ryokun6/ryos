@@ -19,6 +19,7 @@ import {
   shouldFireEndedForPlaybackState,
   shouldUseNativeMusicKitSongQueue,
   type StorePlaybackModes,
+  withMusicKitShuffleSuspended,
 } from "./appleMusicPlayerBridgeUtils";
 
 /**
@@ -529,8 +530,7 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
           ? getQueueOptionsForNativeSongQueue(
               effectiveQueueTracks,
               currentTrack,
-              false,
-              playbackModesRef.current
+              false
             )
           : null;
       const singleTrackOptions =
@@ -580,37 +580,47 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
           return;
         }
 
-        if (
-          nativeQueueOptions &&
-          queueIdentity &&
-          lastQueueIdentityRef.current === queueIdentity &&
-          !musicKitAlreadyOnTarget
-        ) {
-          const startWith = getMusicKitQueueStartIndex(
-            effectiveQueueTracks,
-            currentTrack
-          );
-          await inst.changeToMediaAtIndex(startWith);
-          if (cancelled) return;
-          if (resumeSeconds != null) {
-            await inst.seekToTime(resumeSeconds).catch((err) => {
-              console.warn("[apple music] resume seek failed", err);
+        const modes = playbackModesRef.current;
+        const targetQueue = async () => {
+          if (
+            nativeQueueOptions &&
+            queueIdentity &&
+            lastQueueIdentityRef.current === queueIdentity &&
+            !musicKitAlreadyOnTarget
+          ) {
+            const startWith = getMusicKitQueueStartIndex(
+              effectiveQueueTracks,
+              currentTrack
+            );
+            await inst.changeToMediaAtIndex(startWith);
+            if (cancelled) return;
+            if (resumeSeconds != null) {
+              await inst.seekToTime(resumeSeconds).catch((err) => {
+                console.warn("[apple music] resume seek failed", err);
+              });
+            }
+          } else {
+            const queueOptions = nativeQueueOptions ?? singleTrackOptions!;
+            await inst.setQueue({
+              ...queueOptions,
+              startTime: resumeSeconds ?? undefined,
+              startPlaying: false,
             });
+            if (cancelled) return;
+            if (resumeSeconds != null) {
+              await inst.seekToTime(resumeSeconds).catch((err) => {
+                console.warn("[apple music] resume seek failed", err);
+              });
+            }
+            lastQueueIdentityRef.current = queueIdentity;
           }
-        } else {
-          const queueOptions = nativeQueueOptions ?? singleTrackOptions!;
-          await inst.setQueue({
-            ...queueOptions,
-            startTime: resumeSeconds ?? undefined,
-            startPlaying: false,
-          });
-          if (cancelled) return;
-          if (resumeSeconds != null) {
-            await inst.seekToTime(resumeSeconds).catch((err) => {
-              console.warn("[apple music] resume seek failed", err);
-            });
-          }
-          lastQueueIdentityRef.current = queueIdentity;
+        };
+
+        applyingPlaybackModesFromStoreRef.current = true;
+        try {
+          await withMusicKitShuffleSuspended(inst, modes, targetQueue);
+        } finally {
+          applyingPlaybackModesFromStoreRef.current = false;
         }
 
         if (cancelled) return;

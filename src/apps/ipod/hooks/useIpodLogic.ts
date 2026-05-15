@@ -39,7 +39,6 @@ import {
   resolveLyricsOverrideTargetId as resolveLyricsOverrideTargetIdHelper,
   resolveLyricsTrackMetadata,
 } from "../utils/lyricsTrackMetadata";
-import { shouldUseNativeMusicKitSongQueue } from "../components/appleMusicPlayerBridgeUtils";
 import { useShallow } from "zustand/react/shallow";
 import {
   useIpodStoreShallow,
@@ -175,12 +174,6 @@ export function useIpodLogic({
       appleMusicPlaybackQueue,
     });
   }, [isAppleMusic, appleMusicTracks, appleMusicPlaybackQueue]);
-
-  const usesAppleMusicNativeSongQueue = useMemo(
-    () =>
-      isAppleMusic && shouldUseNativeMusicKitSongQueue(appleMusicQueueTracks),
-    [isAppleMusic, appleMusicQueueTracks]
-  );
 
   // Now Playing "X of Y" should reflect the active playback context. When
   // the user picked a song from inside an Artist / Album / Playlist
@@ -2720,43 +2713,6 @@ export function useIpodLogic({
     ]
   );
 
-  const skipAppleMusicNativeSongQueue = useCallback(
-    async (direction: "next" | "previous") => {
-      if (!usesAppleMusicNativeSongQueue) return false;
-      const activePlayer = isFullScreen
-        ? fullScreenPlayerRef.current
-        : playerRef.current;
-      const instance = activePlayer?.getInternalPlayer?.();
-      if (!instance) return false;
-      const skipNext = direction === "next";
-      if (skipNext && typeof instance.skipToNextItem !== "function") {
-        return false;
-      }
-      if (!skipNext && typeof instance.skipToPreviousItem !== "function") {
-        return false;
-      }
-
-      try {
-        skipOperationRef.current = true;
-        startTrackSwitch();
-        useIpodStore.getState().setElapsedTime(0);
-        useIpodStore.getState().setTotalTime(0);
-        if (skipNext) {
-          await instance.skipToNextItem();
-        } else {
-          await instance.skipToPreviousItem();
-        }
-        setIsPlaying(true);
-        showStatus(direction === "previous" ? "⏮" : "⏭");
-        return true;
-      } catch (err) {
-        console.warn("[apple music] failed to skip native song queue item", err);
-        return false;
-      }
-    },
-    [usesAppleMusicNativeSongQueue, isFullScreen, setIsPlaying, showStatus, startTrackSwitch]
-  );
-
   const handleAppleMusicQueueTrackChange = useCallback((trackId: string) => {
     const state = useIpodStore.getState();
     if (state.librarySource !== "appleMusic") return;
@@ -2800,24 +2756,11 @@ export function useIpodLogic({
       void skipAppleMusicCollectionShell("next");
       return;
     }
-    // MusicKit owns shuffle ordering — delegate skip to its queue APIs.
-    // In sequential mode the store advances the current song and the
-    // bridge retargets MusicKit via changeToMediaAtIndex.
-    if (usesAppleMusicNativeSongQueue && isShuffled) {
-      void (async () => {
-        const skipped = await skipAppleMusicNativeSongQueue("next");
-        if (!skipped) rawNextTrack();
-      })();
-      return;
-    }
     rawNextTrack();
   }, [
     getCurrentAppleMusicCollectionShellTrack,
-    usesAppleMusicNativeSongQueue,
-    isShuffled,
     rawNextTrack,
     skipAppleMusicCollectionShell,
-    skipAppleMusicNativeSongQueue,
   ]);
 
   const previousTrack = useCallback(() => {
@@ -2825,21 +2768,11 @@ export function useIpodLogic({
       void skipAppleMusicCollectionShell("previous");
       return;
     }
-    if (usesAppleMusicNativeSongQueue && isShuffled) {
-      void (async () => {
-        const skipped = await skipAppleMusicNativeSongQueue("previous");
-        if (!skipped) rawPreviousTrack();
-      })();
-      return;
-    }
     rawPreviousTrack();
   }, [
     getCurrentAppleMusicCollectionShellTrack,
-    usesAppleMusicNativeSongQueue,
-    isShuffled,
     rawPreviousTrack,
     skipAppleMusicCollectionShell,
-    skipAppleMusicNativeSongQueue,
   ]);
 
   // Track handling
