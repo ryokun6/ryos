@@ -162,6 +162,8 @@ export function IpodAppComponent({
     setIsCoverFlowOpen,
     nextTrack,
     previousTrack,
+    appleMusicQueueTracks,
+    handleAppleMusicQueueTrackChange,
     clearLibrary,
     manualSync,
     restoreInstance,
@@ -276,6 +278,8 @@ export function IpodAppComponent({
       onAppleMusicSignIn={handleAppleMusicSignIn}
       onAppleMusicSignOut={handleAppleMusicSignOut}
       onAppleMusicRefresh={handleAppleMusicRefresh}
+      onNextTrack={nextTrack}
+      onPreviousTrack={previousTrack}
     />
   );
   const shouldAnimateFullScreenVisuals = isPlaying && (isForeground ?? true);
@@ -448,6 +452,8 @@ export function IpodAppComponent({
                   furiganaMap={furiganaMap}
                   soramimiMap={soramimiMap}
                   activityState={activityState}
+                  appleMusicQueueTracks={appleMusicQueueTracks}
+                  onAppleMusicQueueTrackChange={handleAppleMusicQueueTrackChange}
                   isCoverFlowOpen={isCoverFlowOpen}
                   // Modern UI: render Cover Flow inline inside the menu
                   // panel so the panel's own width transition (50%↔100%
@@ -656,6 +662,7 @@ export function IpodAppComponent({
                                 fullScreenPlayerRef as unknown as React.RefObject<never>
                               }
                               currentTrack={tracks[currentIndex]}
+                              queueTracks={appleMusicQueueTracks}
                               playing={isPlaying && isFullScreen}
                               resumeAtSeconds={elapsedTime}
                               volume={
@@ -669,6 +676,7 @@ export function IpodAppComponent({
                               onEnded={handleTrackEnd}
                               onReady={handleReady}
                               onNowPlayingItemChange={setAppleMusicKitNowPlaying}
+                              onQueueTrackChange={handleAppleMusicQueueTrackChange}
                             />
                           ) : (
                             <ReactPlayer

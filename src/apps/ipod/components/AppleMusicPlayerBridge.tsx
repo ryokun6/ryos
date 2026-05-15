@@ -3,6 +3,8 @@ import type { Track } from "@/stores/useIpodStore";
 import { onMusicKitReady } from "@/hooks/useMusicKit";
 import { PLAYER_PROGRESS_INTERVAL_MS } from "../constants";
 import {
+  buildAppleMusicQueueOptions,
+  resolveAppleMusicQueueTrackIdFromMediaItem,
   getMusicKitEventItemId,
   isWithinEndedFanoutDedupWindow,
   shouldFireEndedForPlaybackState,
@@ -16,8 +18,9 @@ import {
  * logic depends on (`seekTo`, `getCurrentTime`, `getInternalPlayer`).
  *
  * Lifecycle:
- *   - When `currentTrack` changes the bridge calls `setQueue` with the
- *     track's catalog or library ID, then plays/pauses to match `playing`.
+ *   - When the iPod starts a track, the bridge calls `setQueue` with the
+ *     active MusicKit queue (song array, station, or playlist), then
+ *     plays/pauses to match `playing`.
  *   - Listens to `playbackTimeDidChange` / `playbackStateDidChange` /
  *     `mediaItemDidChange` to drive `onProgress` / `onPlay` / `onPause` /
  *     `onDuration` callbacks identical to `react-player`'s shape.
@@ -27,6 +30,8 @@ import {
 export interface AppleMusicPlayerBridgeProps {
   /** Current Apple Music track to play. Triggers `setQueue` on change. */
   currentTrack: Track | null;
+  /** Active iPod context queue. Song queues are handed to MusicKit as-is. */
+  queueTracks?: Track[] | null;
   /** Whether playback should be active. */
   playing: boolean;
   /** Saved playback position to seek to after queueing a track. */
@@ -42,6 +47,7 @@ export interface AppleMusicPlayerBridgeProps {
   onNowPlayingItemChange?: (
     metadata: AppleMusicNowPlayingMetadata | null
   ) => void;
+  onQueueTrackChange?: (trackId: string) => void;
 }
 
 export interface AppleMusicPlayerBridgeHandle {
@@ -56,25 +62,6 @@ export interface AppleMusicNowPlayingMetadata {
   artist?: string;
   album?: string;
   cover?: string;
-}
-
-function getQueueOptions(track: Track): MusicKit.SetQueueOptions | null {
-  const params = track.appleMusicPlayParams;
-  if (!params) return null;
-  if (params.stationId) {
-    return { station: params.stationId, startPlaying: true };
-  }
-  if (params.playlistId) {
-    return { playlist: params.playlistId, startPlaying: true };
-  }
-  // Prefer catalog ID for streaming. Fall back to the library ID when the
-  // track is library-only (no catalog match available).
-  const id =
-    params.kind === "library-songs"
-      ? params.libraryId || params.catalogId
-      : params.catalogId || params.libraryId;
-  if (!id) return null;
-  return { song: id, startPlaying: true };
 }
 
 function getSafeStartSeconds(
@@ -116,6 +103,7 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
   {
     ref,
     currentTrack,
+    queueTracks,
     playing,
     resumeAtSeconds,
     volume,
@@ -125,14 +113,19 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
     onPause,
     onEnded,
     onReady,
-    onNowPlayingItemChange
+    onNowPlayingItemChange,
+    onQueueTrackChange
   }: AppleMusicPlayerBridgeProps & {
     ref?: React.Ref<AppleMusicPlayerBridgeHandle>;
   }
 ) {
   const instanceRef = useRef<MusicKit.MusicKitInstance | null>(null);
   const [instanceReadyTick, setInstanceReadyTick] = useState(0);
-  const lastQueuedTrackIdRef = useRef<string | null>(null);
+  const lastQueuedRequestKeyRef = useRef<string | null>(null);
+  const lastQueuedDefinitionKeyRef = useRef<string | null>(null);
+  const queuedTrackIdsRef = useRef<string[]>([]);
+  const isMultiSongQueueRef = useRef(false);
+  const suppressedQueueTrackIdRef = useRef<string | null>(null);
   const queueLoadingRef = useRef<Promise<void> | null>(null);
   const onReadyRef = useRef(onReady);
   onReadyRef.current = onReady;
@@ -187,17 +180,21 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
   const onPauseRef = useRef(onPause);
   const onEndedRef = useRef(onEnded);
   const onNowPlayingItemChangeRef = useRef(onNowPlayingItemChange);
+  const onQueueTrackChangeRef = useRef(onQueueTrackChange);
   onProgressRef.current = onProgress;
   onDurationRef.current = onDuration;
   onPlayRef.current = onPlay;
   onPauseRef.current = onPause;
   onEndedRef.current = onEnded;
   onNowPlayingItemChangeRef.current = onNowPlayingItemChange;
+  onQueueTrackChangeRef.current = onQueueTrackChange;
 
   // Track latest currentTrack so the once-only event listeners can read it
   // without resubscribing on every render.
   const currentTrackRef = useRef(currentTrack);
   currentTrackRef.current = currentTrack;
+  const queueTracksRef = useRef(queueTracks);
+  queueTracksRef.current = queueTracks;
 
   // Dedup state for `onEnded` fan-out. MusicKit JS fires both `ended`
   // (5) and `completed` (10) when a single-song queue's only item
@@ -244,7 +241,11 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
       }
       if (
         (state === 5 || state === 10) &&
-        shouldFireEndedForPlaybackState(state, currentTrackRef.current)
+        shouldFireEndedForPlaybackState(
+          state,
+          currentTrackRef.current,
+          isMultiSongQueueRef.current
+        )
       ) {
         // MusicKit fires both `ended` (5) and `completed` (10) when a
         // single-song queue's only item finishes — dedup so the parent's
@@ -284,6 +285,18 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
         0;
       if (durationMs > 0) {
         onDurationRef.current?.(durationMs / 1000);
+      }
+      if (queuedTrackIdsRef.current.length > 0) {
+        const trackId = resolveAppleMusicQueueTrackIdFromMediaItem(
+          event.item,
+          (queueTracksRef.current ?? []).filter((track) =>
+            queuedTrackIdsRef.current.includes(track.id)
+          )
+        );
+        if (trackId && queuedTrackIdsRef.current.includes(trackId)) {
+          suppressedQueueTrackIdRef.current = trackId;
+          onQueueTrackChangeRef.current?.(trackId);
+        }
       }
       onNowPlayingItemChangeRef.current?.(
         mediaItemToNowPlayingMetadata(event.item)
@@ -428,9 +441,16 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
     }
   }, [volume]);
 
-  // Stable representation of the queue so we only call setQueue when the
-  // *track* (not unrelated prop changes) actually flips.
-  const queueKey = useMemo(() => currentTrack?.id ?? null, [currentTrack]);
+  // Stable representation of the queue so MusicKit only receives a fresh
+  // queue for explicit iPod selections, not for native auto-advances.
+  const queueBuild = useMemo(
+    () =>
+      currentTrack
+        ? buildAppleMusicQueueOptions(currentTrack, queueTracks)
+        : null,
+    [currentTrack, queueTracks]
+  );
+  const queueKey = queueBuild?.requestKey ?? null;
 
   // Latest `playing` value, read inside the async setQueue effect to avoid
   // stale closures when the user toggles play before the queue resolves.
@@ -451,22 +471,31 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
         /* ignore */
       }
       onNowPlayingItemChangeRef.current?.(null);
-      lastQueuedTrackIdRef.current = null;
+      lastQueuedRequestKeyRef.current = null;
+      lastQueuedDefinitionKeyRef.current = null;
+      queuedTrackIdsRef.current = [];
+      isMultiSongQueueRef.current = false;
       return;
     }
-    if (lastQueuedTrackIdRef.current === queueKey) return;
-    onNowPlayingItemChangeRef.current?.(null);
-
-    const queueOptions = getQueueOptions(currentTrack);
-    if (!queueOptions) {
+    if (!queueBuild) {
       console.warn(
         "[apple music] track is missing playParams, skipping",
         currentTrack
       );
       return;
     }
+    if (lastQueuedRequestKeyRef.current === queueBuild.requestKey) return;
+    if (
+      suppressedQueueTrackIdRef.current === currentTrack.id &&
+      lastQueuedDefinitionKeyRef.current === queueBuild.definitionKey
+    ) {
+      suppressedQueueTrackIdRef.current = null;
+      lastQueuedRequestKeyRef.current = queueBuild.requestKey;
+      return;
+    }
+    onNowPlayingItemChangeRef.current?.(null);
 
-    const localQueueKey = queueKey;
+    const localQueueBuild = queueBuild;
     // Serialize back-to-back queue swaps. If another track change is
     // already in flight (rapid `nextTrack` clicks, an `onEnded` advance
     // racing a user press, etc.), wait for it to settle before issuing
@@ -496,7 +525,7 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
           resumeAtSecondsRef.current
         );
         await inst.setQueue({
-          ...queueOptions,
+          ...localQueueBuild.options,
           startTime: resumeSeconds ?? undefined,
           // Queue paused first so a restored elapsedTime can be applied
           // before any audible playback starts.
@@ -512,7 +541,10 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
         if (currentTrack.durationMs && currentTrack.durationMs > 0) {
           onDurationRef.current?.(currentTrack.durationMs / 1000);
         }
-        lastQueuedTrackIdRef.current = localQueueKey;
+        lastQueuedRequestKeyRef.current = localQueueBuild.requestKey;
+        lastQueuedDefinitionKeyRef.current = localQueueBuild.definitionKey;
+        queuedTrackIdsRef.current = localQueueBuild.queuedTrackIds;
+        isMultiSongQueueRef.current = localQueueBuild.isMultiSongQueue;
         if (playingRef.current) {
           await inst.play().catch((err) => {
             // Browsers block autoplay until the user interacts; surface as
@@ -542,7 +574,7 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [queueKey, instanceReadyTick]);
+  }, [queueKey, queueBuild, currentTrack, instanceReadyTick]);
 
   // Sync play/pause without re-queueing.
   useEffect(() => {

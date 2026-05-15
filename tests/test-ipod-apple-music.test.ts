@@ -52,6 +52,9 @@ const {
   isWithinEndedFanoutDedupWindow,
   ENDED_FANOUT_DEDUP_WINDOW_MS,
   getMusicKitEventItemId,
+  getAppleMusicSongQueueId,
+  buildAppleMusicQueueOptions,
+  resolveAppleMusicQueueTrackIdFromMediaItem,
 } = await import(
   "../src/apps/ipod/components/appleMusicPlayerBridgeUtils"
 );
@@ -225,6 +228,79 @@ describe("Apple Music playable resources", () => {
       playlistId: "pl.pm-mix",
       kind: "playlist",
     });
+  });
+});
+
+describe("Apple Music MusicKit queue helpers", () => {
+  const makeAppleMusicTrack = (
+    id: string,
+    catalogId: string,
+    title = id
+  ): Track => ({
+    id,
+    url: `applemusic:${catalogId}`,
+    title,
+    source: "appleMusic",
+    appleMusicPlayParams: {
+      catalogId,
+      kind: "song",
+    },
+  });
+
+  test("builds a MusicKit song queue with the selected track as startWith", () => {
+    const one = makeAppleMusicTrack("am:1", "1", "One");
+    const two = makeAppleMusicTrack("am:2", "2", "Two");
+    const three = makeAppleMusicTrack("am:3", "3", "Three");
+
+    const queue = buildAppleMusicQueueOptions(two, [one, two, three]);
+
+    expect(queue?.options).toEqual({
+      songs: ["1", "2", "3"],
+      startWith: 1,
+      startPlaying: true,
+    });
+    expect(queue?.queuedTrackIds).toEqual(["am:1", "am:2", "am:3"]);
+    expect(queue?.isMultiSongQueue).toBe(true);
+  });
+
+  test("falls back to a single song queue when the context is not playable", () => {
+    const one = makeAppleMusicTrack("am:1", "1", "One");
+    const station: Track = {
+      id: "am:station:ra.1",
+      url: "applemusic:station:ra.1",
+      title: "Station",
+      source: "appleMusic",
+      appleMusicPlayParams: { stationId: "ra.1", kind: "radioStation" },
+    };
+
+    expect(getAppleMusicSongQueueId(station)).toBeNull();
+    expect(buildAppleMusicQueueOptions(one, [station])?.options).toEqual({
+      song: "1",
+      startPlaying: true,
+    });
+  });
+
+  test("resolves MusicKit media item IDs back to iPod track IDs", () => {
+    const one = makeAppleMusicTrack("am:1", "1", "One");
+
+    expect(
+      resolveAppleMusicQueueTrackIdFromMediaItem(
+        {
+          id: "1",
+          attributes: {
+            playParams: { id: "1", kind: "song" },
+          },
+        },
+        [one]
+      )
+    ).toBe("am:1");
+  });
+
+  test("suppresses per-song ended fan-out inside MusicKit song queues", () => {
+    const one = makeAppleMusicTrack("am:1", "1", "One");
+
+    expect(shouldFireEndedForPlaybackState(5, one, true)).toBe(false);
+    expect(shouldFireEndedForPlaybackState(10, one, true)).toBe(true);
   });
 });
 
