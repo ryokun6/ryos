@@ -6,26 +6,131 @@
 
 import { isAppleMusicCollectionTrack, type Track } from "@/stores/useIpodStore";
 
+/** MusicKit song id used in `setQueue({ song | songs })`. */
+export function getMusicKitSongId(track: Track): string | null {
+  const params = track.appleMusicPlayParams;
+  if (!params || params.stationId || params.playlistId) return null;
+  return params.kind === "library-songs"
+    ? params.libraryId || params.catalogId || null
+    : params.catalogId || params.libraryId || null;
+}
+
+export interface MusicKitSongQueue {
+  songIds: string[];
+  trackIds: string[];
+}
+
+/** Build parallel MusicKit song ids + ryOS track ids for a playback list. */
+export function buildMusicKitSongQueue(tracks: Track[]): MusicKitSongQueue {
+  const songIds: string[] = [];
+  const trackIds: string[] = [];
+  for (const track of tracks) {
+    if (isAppleMusicCollectionTrack(track)) continue;
+    const songId = getMusicKitSongId(track);
+    if (!songId) continue;
+    songIds.push(songId);
+    trackIds.push(track.id);
+  }
+  return { songIds, trackIds };
+}
+
+/** Stable identity for a native MusicKit multi-song queue. */
+export function buildMusicKitQueueIdentity(songIds: string[]): string {
+  return songIds.join("\0");
+}
+
+/**
+ * Whether to drive playback through MusicKit's native multi-song queue
+ * (`setQueue({ songs, startWith })`) instead of single-song queues.
+ *
+ * Shuffle and repeat-one need ryOS to own track selection, so they stay on
+ * the legacy single-song path.
+ */
+export function shouldUseNativeMusicKitSongQueue(
+  queueTracks: Track[],
+  options: { isShuffled: boolean; loopCurrent: boolean }
+): boolean {
+  if (options.isShuffled || options.loopCurrent) return false;
+  return buildMusicKitSongQueue(queueTracks).songIds.length >= 2;
+}
+
+/** Index of `currentTrack` inside a native MusicKit song queue. */
+export function getMusicKitQueueStartIndex(
+  queueTracks: Track[],
+  currentTrack: Track | null
+): number {
+  if (!currentTrack) return 0;
+  const { trackIds } = buildMusicKitSongQueue(queueTracks);
+  const idx = trackIds.indexOf(currentTrack.id);
+  return idx >= 0 ? idx : 0;
+}
+
+/** Map a MusicKit media-item id back to a ryOS `am:…` track id. */
+export function findTrackIdByMusicKitItemId(
+  queueTracks: Track[],
+  itemId: string | null
+): string | null {
+  if (!itemId) return null;
+  const bare = itemId.startsWith("am:") ? itemId.slice(3) : itemId;
+  for (const track of queueTracks) {
+    const params = track.appleMusicPlayParams;
+    if (!params) continue;
+    if (
+      track.id === itemId ||
+      track.id === `am:${bare}` ||
+      params.catalogId === bare ||
+      params.libraryId === bare ||
+      params.catalogId === itemId ||
+      params.libraryId === itemId
+    ) {
+      return track.id;
+    }
+  }
+  return null;
+}
+
+/** True when MusicKit is already playing the target song id. */
+export function isMusicKitPlayingSongId(
+  nowPlayingItemId: string | null,
+  targetSongId: string | null
+): boolean {
+  if (!nowPlayingItemId || !targetSongId) return false;
+  if (nowPlayingItemId === targetSongId) return true;
+  const bareNow = nowPlayingItemId.startsWith("am:")
+    ? nowPlayingItemId.slice(3)
+    : nowPlayingItemId;
+  const bareTarget = targetSongId.startsWith("am:")
+    ? targetSongId.slice(3)
+    : targetSongId;
+  return bareNow === bareTarget;
+}
+
 /**
  * Decide whether a `playbackStateDidChange` event should fan out to the
  * parent's `onEnded` callback (which triggers our own next-track handler).
  *
  * MusicKit JS fires `ended` (state=5) once for *every* track that finishes.
  * Inside a multi-item queue (catalog station / playlist set up via
- * `setQueue({ station | playlist })`), MusicKit auto-advances to the next
- * item internally — invoking `onEnded` then would call our parent's
+ * `setQueue({ station | playlist })`, or a native multi-song queue via
+ * `setQueue({ songs })`), MusicKit auto-advances to the next item
+ * internally — invoking `onEnded` then would call our parent's
  * `nextTrack` → `skipToNextItem()`, skipping past the item MusicKit just
  * moved to and visibly mismatching the displayed Now Playing entry from
- * what's actually playing. Suppress for shells; the terminal `completed`
- * (state=10) signal still hands control back when the whole queue is
- * exhausted.
+ * what's actually playing. Suppress for shells and native song queues; the
+ * terminal `completed` (state=10) signal still hands control back when the
+ * whole queue is exhausted.
  */
 export function shouldFireEndedForPlaybackState(
   state: number | undefined,
-  currentTrack: Track | null
+  currentTrack: Track | null,
+  usesNativeMultiSongQueue = false
 ): boolean {
   if (state === 10) return true;
-  if (state === 5) return !isAppleMusicCollectionTrack(currentTrack);
+  if (state === 5) {
+    if (isAppleMusicCollectionTrack(currentTrack)) return false;
+    if (usesNativeMultiSongQueue) return false;
+    return true;
+  }
   return false;
 }
 
@@ -98,4 +203,31 @@ export function getMusicKitEventItemId(
     item.attributes?.playParams?.catalogId ||
     null
   );
+}
+
+export function getQueueOptionsForTrack(
+  track: Track
+): MusicKit.SetQueueOptions | null {
+  const params = track.appleMusicPlayParams;
+  if (!params) return null;
+  if (params.stationId) {
+    return { station: params.stationId, startPlaying: true };
+  }
+  if (params.playlistId) {
+    return { playlist: params.playlistId, startPlaying: true };
+  }
+  const id = getMusicKitSongId(track);
+  if (!id) return null;
+  return { song: id, startPlaying: true };
+}
+
+export function getQueueOptionsForNativeSongQueue(
+  queueTracks: Track[],
+  currentTrack: Track,
+  startPlaying: boolean
+): MusicKit.SetQueueOptions | null {
+  const { songIds } = buildMusicKitSongQueue(queueTracks);
+  if (songIds.length < 2) return null;
+  const startWith = getMusicKitQueueStartIndex(queueTracks, currentTrack);
+  return { songs: songIds, startWith, startPlaying };
 }

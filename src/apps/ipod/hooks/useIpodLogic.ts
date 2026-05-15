@@ -33,11 +33,13 @@ import {
   getEffectiveTranslationLanguage,
   flushPendingLyricOffsetSave,
   isAppleMusicCollectionTrack,
+  resolveAppleMusicQueueTracks,
 } from "@/stores/useIpodStore";
 import {
   resolveLyricsOverrideTargetId as resolveLyricsOverrideTargetIdHelper,
   resolveLyricsTrackMetadata,
 } from "../utils/lyricsTrackMetadata";
+import { shouldUseNativeMusicKitSongQueue } from "../components/appleMusicPlayerBridgeUtils";
 import { useShallow } from "zustand/react/shallow";
 import {
   useIpodStoreShallow,
@@ -165,6 +167,24 @@ export function useIpodLogic({
     return browsableTracks.findIndex((track) => track.id === currentSongId);
   }, [browsableTracks, currentSongId]);
   const coverFlowCurrentIndex = browseCurrentIndex >= 0 ? browseCurrentIndex : 0;
+
+  const appleMusicQueueTracks = useMemo(() => {
+    if (!isAppleMusic) return [];
+    return resolveAppleMusicQueueTracks({
+      appleMusicTracks,
+      appleMusicPlaybackQueue,
+    });
+  }, [isAppleMusic, appleMusicTracks, appleMusicPlaybackQueue]);
+
+  const usesAppleMusicNativeSongQueue = useMemo(
+    () =>
+      isAppleMusic &&
+      shouldUseNativeMusicKitSongQueue(appleMusicQueueTracks, {
+        isShuffled,
+        loopCurrent,
+      }),
+    [isAppleMusic, appleMusicQueueTracks, isShuffled, loopCurrent]
+  );
 
   // Now Playing "X of Y" should reflect the active playback context. When
   // the user picked a song from inside an Artist / Album / Playlist
@@ -2704,16 +2724,68 @@ export function useIpodLogic({
     ]
   );
 
+  const skipAppleMusicNativeSongQueue = useCallback(
+    async (direction: "next" | "previous") => {
+      if (!usesAppleMusicNativeSongQueue) return false;
+      const activePlayer = isFullScreen
+        ? fullScreenPlayerRef.current
+        : playerRef.current;
+      const instance = activePlayer?.getInternalPlayer?.();
+      if (!instance) return false;
+      const skipNext = direction === "next";
+      if (skipNext && typeof instance.skipToNextItem !== "function") {
+        return false;
+      }
+      if (!skipNext && typeof instance.skipToPreviousItem !== "function") {
+        return false;
+      }
+
+      try {
+        skipOperationRef.current = true;
+        startTrackSwitch();
+        useIpodStore.getState().setElapsedTime(0);
+        useIpodStore.getState().setTotalTime(0);
+        if (skipNext) {
+          await instance.skipToNextItem();
+        } else {
+          await instance.skipToPreviousItem();
+        }
+        setIsPlaying(true);
+        showStatus(direction === "previous" ? "⏮" : "⏭");
+        return true;
+      } catch (err) {
+        console.warn("[apple music] failed to skip native song queue item", err);
+        return false;
+      }
+    },
+    [usesAppleMusicNativeSongQueue, isFullScreen, setIsPlaying, showStatus, startTrackSwitch]
+  );
+
+  const handleAppleMusicQueueTrackChange = useCallback((trackId: string) => {
+    const state = useIpodStore.getState();
+    if (state.librarySource !== "appleMusic") return;
+    if (state.appleMusicCurrentSongId === trackId) return;
+    state.setAppleMusicCurrentSongId(trackId);
+    state.setElapsedTime(0);
+    state.setTotalTime(0);
+  }, []);
+
   const nextTrack = useCallback(() => {
     if (getCurrentAppleMusicCollectionShellTrack()) {
       void skipAppleMusicCollectionShell("next");
       return;
     }
+    if (usesAppleMusicNativeSongQueue) {
+      void skipAppleMusicNativeSongQueue("next");
+      return;
+    }
     rawNextTrack();
   }, [
     getCurrentAppleMusicCollectionShellTrack,
+    usesAppleMusicNativeSongQueue,
     rawNextTrack,
     skipAppleMusicCollectionShell,
+    skipAppleMusicNativeSongQueue,
   ]);
 
   const previousTrack = useCallback(() => {
@@ -2721,11 +2793,17 @@ export function useIpodLogic({
       void skipAppleMusicCollectionShell("previous");
       return;
     }
+    if (usesAppleMusicNativeSongQueue) {
+      void skipAppleMusicNativeSongQueue("previous");
+      return;
+    }
     rawPreviousTrack();
   }, [
     getCurrentAppleMusicCollectionShellTrack,
+    usesAppleMusicNativeSongQueue,
     rawPreviousTrack,
     skipAppleMusicCollectionShell,
+    skipAppleMusicNativeSongQueue,
   ]);
 
   // Track handling
@@ -4042,6 +4120,8 @@ export function useIpodLogic({
 
     // Current track
     currentTrack,
+    appleMusicQueueTracks,
+    handleAppleMusicQueueTrackChange,
     lyricsSourceOverride,
     fullscreenCoverUrl,
 

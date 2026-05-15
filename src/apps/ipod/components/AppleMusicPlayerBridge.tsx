@@ -3,9 +3,18 @@ import type { Track } from "@/stores/useIpodStore";
 import { onMusicKitReady } from "@/hooks/useMusicKit";
 import { PLAYER_PROGRESS_INTERVAL_MS } from "../constants";
 import {
+  buildMusicKitQueueIdentity,
+  buildMusicKitSongQueue,
+  findTrackIdByMusicKitItemId,
   getMusicKitEventItemId,
+  getMusicKitQueueStartIndex,
+  getMusicKitSongId,
+  getQueueOptionsForNativeSongQueue,
+  getQueueOptionsForTrack,
+  isMusicKitPlayingSongId,
   isWithinEndedFanoutDedupWindow,
   shouldFireEndedForPlaybackState,
+  shouldUseNativeMusicKitSongQueue,
 } from "./appleMusicPlayerBridgeUtils";
 
 /**
@@ -18,6 +27,9 @@ import {
  * Lifecycle:
  *   - When `currentTrack` changes the bridge calls `setQueue` with the
  *     track's catalog or library ID, then plays/pauses to match `playing`.
+ *   - For sequential album/playlist/library playback with 2+ songs, builds
+ *     a native MusicKit multi-song queue (`setQueue({ songs, startWith })`)
+ *     so MusicKit auto-advances between tracks without racing `setQueue`.
  *   - Listens to `playbackTimeDidChange` / `playbackStateDidChange` /
  *     `mediaItemDidChange` to drive `onProgress` / `onPlay` / `onPause` /
  *     `onDuration` callbacks identical to `react-player`'s shape.
@@ -27,6 +39,15 @@ import {
 export interface AppleMusicPlayerBridgeProps {
   /** Current Apple Music track to play. Triggers `setQueue` on change. */
   currentTrack: Track | null;
+  /**
+   * Ordered tracks that scope playback (album, playlist, library subset).
+   * When eligible, the bridge builds a native MusicKit multi-song queue.
+   */
+  queueTracks?: Track[];
+  /** Whether shuffle is active — disables native multi-song queues. */
+  isShuffled?: boolean;
+  /** Whether repeat-one is active — disables native multi-song queues. */
+  loopCurrent?: boolean;
   /** Whether playback should be active. */
   playing: boolean;
   /** Saved playback position to seek to after queueing a track. */
@@ -39,6 +60,8 @@ export interface AppleMusicPlayerBridgeProps {
   onPause?: () => void;
   onEnded?: () => void;
   onReady?: () => void;
+  /** Sync ryOS current-song id when MusicKit auto-advances in a native queue. */
+  onQueueTrackChange?: (trackId: string) => void;
   onNowPlayingItemChange?: (
     metadata: AppleMusicNowPlayingMetadata | null
   ) => void;
@@ -56,25 +79,6 @@ export interface AppleMusicNowPlayingMetadata {
   artist?: string;
   album?: string;
   cover?: string;
-}
-
-function getQueueOptions(track: Track): MusicKit.SetQueueOptions | null {
-  const params = track.appleMusicPlayParams;
-  if (!params) return null;
-  if (params.stationId) {
-    return { station: params.stationId, startPlaying: true };
-  }
-  if (params.playlistId) {
-    return { playlist: params.playlistId, startPlaying: true };
-  }
-  // Prefer catalog ID for streaming. Fall back to the library ID when the
-  // track is library-only (no catalog match available).
-  const id =
-    params.kind === "library-songs"
-      ? params.libraryId || params.catalogId
-      : params.catalogId || params.libraryId;
-  if (!id) return null;
-  return { song: id, startPlaying: true };
 }
 
 function getSafeStartSeconds(
@@ -116,6 +120,9 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
   {
     ref,
     currentTrack,
+    queueTracks,
+    isShuffled = false,
+    loopCurrent = false,
     playing,
     resumeAtSeconds,
     volume,
@@ -125,6 +132,7 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
     onPause,
     onEnded,
     onReady,
+    onQueueTrackChange,
     onNowPlayingItemChange
   }: AppleMusicPlayerBridgeProps & {
     ref?: React.Ref<AppleMusicPlayerBridgeHandle>;
@@ -133,9 +141,21 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
   const instanceRef = useRef<MusicKit.MusicKitInstance | null>(null);
   const [instanceReadyTick, setInstanceReadyTick] = useState(0);
   const lastQueuedTrackIdRef = useRef<string | null>(null);
+  const lastQueueIdentityRef = useRef<string | null>(null);
+  const lastNowPlayingItemIdRef = useRef<string | null>(null);
   const queueLoadingRef = useRef<Promise<void> | null>(null);
   const onReadyRef = useRef(onReady);
   onReadyRef.current = onReady;
+
+  const effectiveQueueTracks = queueTracks ?? (currentTrack ? [currentTrack] : []);
+  const usesNativeMultiSongQueue = shouldUseNativeMusicKitSongQueue(
+    effectiveQueueTracks,
+    { isShuffled, loopCurrent }
+  );
+  const usesNativeMultiSongQueueRef = useRef(usesNativeMultiSongQueue);
+  usesNativeMultiSongQueueRef.current = usesNativeMultiSongQueue;
+  const queueTracksRef = useRef(effectiveQueueTracks);
+  queueTracksRef.current = effectiveQueueTracks;
 
   // Bind the singleton — useMusicKit may not have completed configure() yet
   // when the iPod first mounts, so we subscribe to the ready notification
@@ -155,12 +175,6 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
   }, []);
 
   // Stop MusicKit on unmount.
-  //
-  // MusicKit JS owns its own internal `<audio>` element that is NOT a child
-  // of this React tree, so unmounting the bridge does not stop playback on
-  // its own — the song would keep playing in the background after the iPod
-  // window closes (or the librarySource flips back to YouTube). Force a
-  // stop here so closing the iPod always silences Apple Music.
   useEffect(() => {
     return () => {
       const inst = instanceRef.current;
@@ -178,56 +192,27 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
     };
   }, []);
 
-  // Track latest callbacks via refs to avoid resubscribing event listeners
-  // every render (callbacks are recreated by React but the listeners are
-  // expensive to add/remove on a hot path).
   const onProgressRef = useRef(onProgress);
   const onDurationRef = useRef(onDuration);
   const onPlayRef = useRef(onPlay);
   const onPauseRef = useRef(onPause);
   const onEndedRef = useRef(onEnded);
+  const onQueueTrackChangeRef = useRef(onQueueTrackChange);
   const onNowPlayingItemChangeRef = useRef(onNowPlayingItemChange);
   onProgressRef.current = onProgress;
   onDurationRef.current = onDuration;
   onPlayRef.current = onPlay;
   onPauseRef.current = onPause;
   onEndedRef.current = onEnded;
+  onQueueTrackChangeRef.current = onQueueTrackChange;
   onNowPlayingItemChangeRef.current = onNowPlayingItemChange;
 
-  // Track latest currentTrack so the once-only event listeners can read it
-  // without resubscribing on every render.
   const currentTrackRef = useRef(currentTrack);
   currentTrackRef.current = currentTrack;
 
-  // Dedup state for `onEnded` fan-out. MusicKit JS fires both `ended`
-  // (5) and `completed` (10) when a single-song queue's only item
-  // finishes. Without dedup the parent's `nextTrack` runs twice — the
-  // second pick races MusicKit's first `setQueue`, so the audio the user
-  // hears can mismatch the song the iPod displays. With shuffle on the
-  // mismatch is the most visible because each call picks a different
-  // random song.
-  //
-  // Two layers (either match suppresses):
-  //  - `lastEndedFiredForItemIdRef`: the just-ended item id. State 5 and
-  //    state 10 reference the SAME item, so identical ids dedup
-  //    regardless of timing.
-  //  - `lastEndedFiredAtRef`: wall-clock timestamp + window. Backstop for
-  //    builds that strip `event.item` from the second event.
   const lastEndedFiredForItemIdRef = useRef<string | null>(null);
   const lastEndedFiredAtRef = useRef(0);
 
-  // Wire up MusicKit event listeners once the instance is available.
-  // We deliberately skip `playbackTimeDidChange` for progress updates:
-  // runtime logs (debug session b224e4) confirmed that MusicKit JS v3's
-  // `currentPlaybackTime` is rounded to integer seconds — both the
-  // polling read and the event payload return values like 7, 7, 7, 7,
-  // 8, 8, 8, 8, 9. That gives the lyrics view 1-second "step"
-  // updates, which renders as the stutter the user reported.
-  // Instead, the polling effect below interpolates using wall-clock
-  // time between MusicKit's integer ticks, producing smooth sub-second
-  // progress. The native time event is therefore not needed at all
-  // (it would just race the interpolated source with stale integer
-  // values). State + media-item events are still useful and remain.
   useEffect(() => {
     let cancelled = false;
     let activeInstance: MusicKit.MusicKitInstance | null = null;
@@ -244,15 +229,12 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
       }
       if (
         (state === 5 || state === 10) &&
-        shouldFireEndedForPlaybackState(state, currentTrackRef.current)
+        shouldFireEndedForPlaybackState(
+          state,
+          currentTrackRef.current,
+          usesNativeMultiSongQueueRef.current
+        )
       ) {
-        // MusicKit fires both `ended` (5) and `completed` (10) when a
-        // single-song queue's only item finishes — dedup so the parent's
-        // next-track handler runs once per song-ending event. Most
-        // visible with shuffle on, where two fan-outs would pick two
-        // different random songs and race two `setQueue` calls in
-        // MusicKit, leaving the audio on a different song than the
-        // display.
         const now = Date.now();
         const eventItemId = getMusicKitEventItemId(event?.item);
         const itemIdMatches =
@@ -272,12 +254,14 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
         onEndedRef.current?.();
         return;
       }
-      // loading/seeking/waiting/stalled and the suppressed mid-queue
-      // `ended` for shells — no-op for the iPod UI; the activity
-      // indicator is driven separately.
     };
 
     const handleMediaItem = (event: MusicKit.MediaItemDidChangeEvent) => {
+      const itemId = getMusicKitEventItemId(event.item);
+      if (itemId) {
+        lastNowPlayingItemIdRef.current = itemId;
+      }
+
       const durationMs =
         event.item?.attributes?.durationInMillis ??
         event.item?.playbackDuration ??
@@ -285,6 +269,17 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
       if (durationMs > 0) {
         onDurationRef.current?.(durationMs / 1000);
       }
+
+      if (usesNativeMultiSongQueueRef.current) {
+        const trackId = findTrackIdByMusicKitItemId(
+          queueTracksRef.current,
+          itemId
+        );
+        if (trackId) {
+          onQueueTrackChangeRef.current?.(trackId);
+        }
+      }
+
       onNowPlayingItemChangeRef.current?.(
         mediaItemToNowPlayingMetadata(event.item)
       );
@@ -296,7 +291,6 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
       activeInstance = inst;
       inst.addEventListener("playbackStateDidChange", handleState);
       inst.addEventListener("mediaItemDidChange", handleMediaItem);
-      // Some MusicKit builds emit nowPlayingItemDidChange instead.
       inst.addEventListener("nowPlayingItemDidChange", handleMediaItem);
     };
 
@@ -323,24 +317,6 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
     };
   }, []);
 
-  // Steady-cadence progress polling with wall-clock interpolation.
-  //
-  // Why interpolate: MusicKit JS v3's `currentPlaybackTime` is rounded
-  // to integer seconds (verified in debug session b224e4). Polling
-  // every 200ms therefore yields five identical reads followed by a
-  // sudden +1 jump, which the lyrics view renders as visible stutter.
-  // Instead we snapshot a baseline every time the integer changes, and
-  // between updates report `baseSeconds + (now - baseWallClock) /
-  // 1000`, capped at +1s so we never run past the next integer tick
-  // (which would cause a tiny rewind when the next integer arrives).
-  //
-  // Why requestAnimationFrame: setInterval keeps firing even when the
-  // tab is hidden (just throttled to ~1Hz by the browser), wasting
-  // React render cycles for music nobody is looking at. rAF
-  // automatically pauses when the tab/page isn't visible. We still
-  // throttle React state pushes to ~PLAYER_PROGRESS_INTERVAL_MS using
-  // the wall clock, so the lyrics view sees the same ~5Hz update rate
-  // as before — just without background-tab waste.
   useEffect(() => {
     if (!playing || !currentTrack) return;
     let cancelled = false;
@@ -355,8 +331,6 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
       if (!inst) return;
       const rawSeconds = inst.currentPlaybackTime ?? 0;
 
-      // First read or whenever the underlying integer changes (forward
-      // OR backward, e.g. seek), reset the interpolation baseline.
       if (baseSeconds === null || rawSeconds !== lastReportedSeconds) {
         baseSeconds = rawSeconds;
         baseWallClock = now;
@@ -364,10 +338,6 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
       }
 
       const elapsed = (now - baseWallClock) / 1000;
-      // Cap at just under 1s so we never overshoot the next tick — if
-      // MusicKit's clock jumped forward by exactly 1s, we'd otherwise
-      // briefly report the same value as the next integer and then
-      // visibly rewind when interpolation restarts.
       const interpolated = baseSeconds + Math.min(elapsed, 0.99);
 
       onProgressRef.current?.({ playedSeconds: interpolated });
@@ -377,10 +347,6 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
     const frame = () => {
       if (cancelled) return;
       const now = Date.now();
-      // Throttle to PLAYER_PROGRESS_INTERVAL_MS so we don't push 60
-      // updates/sec into React. rAF gives us automatic
-      // pause-on-hidden-tab; the throttle keeps the React workload
-      // identical to the old setInterval-based path.
       if (now - lastEmittedAt >= PLAYER_PROGRESS_INTERVAL_MS) {
         emit(now);
       }
@@ -411,14 +377,10 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
     };
   }, [playing, currentTrack]);
 
-  // Sync volume — MusicKit reads `volume` as a number in [0, 1].
   useEffect(() => {
     const inst = instanceRef.current;
     if (!inst) return;
     try {
-      // `volume` is typed as readonly in our minimal d.ts, but it's settable
-      // in practice. We cast through `unknown` to silence the compiler
-      // without losing the rest of the typings.
       (inst as unknown as { volume: number }).volume = Math.max(
         0,
         Math.min(1, volume)
@@ -428,18 +390,25 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
     }
   }, [volume]);
 
-  // Stable representation of the queue so we only call setQueue when the
-  // *track* (not unrelated prop changes) actually flips.
-  const queueKey = useMemo(() => currentTrack?.id ?? null, [currentTrack]);
+  const nativeQueueIdentity = useMemo(() => {
+    if (!usesNativeMultiSongQueue) return null;
+    const { songIds } = buildMusicKitSongQueue(effectiveQueueTracks);
+    return buildMusicKitQueueIdentity(songIds);
+  }, [usesNativeMultiSongQueue, effectiveQueueTracks]);
 
-  // Latest `playing` value, read inside the async setQueue effect to avoid
-  // stale closures when the user toggles play before the queue resolves.
+  const queueKey = useMemo(() => {
+    if (!currentTrack) return null;
+    if (usesNativeMultiSongQueue && nativeQueueIdentity) {
+      return `${nativeQueueIdentity}::${currentTrack.id}`;
+    }
+    return currentTrack.id;
+  }, [currentTrack, usesNativeMultiSongQueue, nativeQueueIdentity]);
+
   const playingRef = useRef(playing);
   playingRef.current = playing;
   const resumeAtSecondsRef = useRef(resumeAtSeconds);
   resumeAtSecondsRef.current = resumeAtSeconds;
 
-  // Drive `setQueue` on track change.
   useEffect(() => {
     let cancelled = false;
     const inst = instanceRef.current;
@@ -452,62 +421,118 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
       }
       onNowPlayingItemChangeRef.current?.(null);
       lastQueuedTrackIdRef.current = null;
+      lastQueueIdentityRef.current = null;
       return;
     }
     if (lastQueuedTrackIdRef.current === queueKey) return;
     onNowPlayingItemChangeRef.current?.(null);
 
-    const queueOptions = getQueueOptions(currentTrack);
-    if (!queueOptions) {
-      console.warn(
-        "[apple music] track is missing playParams, skipping",
-        currentTrack
-      );
-      return;
-    }
-
     const localQueueKey = queueKey;
-    // Serialize back-to-back queue swaps. If another track change is
-    // already in flight (rapid `nextTrack` clicks, an `onEnded` advance
-    // racing a user press, etc.), wait for it to settle before issuing
-    // our own `setQueue`. Two concurrent `setQueue` calls inside
-    // MusicKit can resolve out of order — without serialization the
-    // older queue can briefly start playing after the newer one
-    // landed, so the audio mismatches the song the iPod displays
-    // (display reflects the *latest* React state, audio reflects
-    // whichever `setQueue` resolved last). Capture the *previous* ref
-    // so the new chain awaits the old one rather than itself.
     const previousQueueLoading = queueLoadingRef.current;
     let thisLoad: Promise<void> | null = null;
     thisLoad = (async () => {
       if (previousQueueLoading) {
-        // Best-effort wait — failures of the previous queue load
-        // shouldn't block a fresh user action.
         try {
           await previousQueueLoading;
         } catch {
-          /* ignore — the previous load already logged its own error */
+          /* ignore */
         }
         if (cancelled) return;
       }
-      try {
-        const resumeSeconds = getSafeStartSeconds(
-          currentTrack,
-          resumeAtSecondsRef.current
+
+      const resumeSeconds = getSafeStartSeconds(
+        currentTrack,
+        resumeAtSecondsRef.current
+      );
+
+      const nativeQueueOptions =
+        usesNativeMultiSongQueue && currentTrack
+          ? getQueueOptionsForNativeSongQueue(
+              effectiveQueueTracks,
+              currentTrack,
+              false
+            )
+          : null;
+      const singleTrackOptions =
+        nativeQueueOptions == null
+          ? getQueueOptionsForTrack(currentTrack)
+          : null;
+
+      if (!nativeQueueOptions && !singleTrackOptions) {
+        console.warn(
+          "[apple music] track is missing playParams, skipping",
+          currentTrack
         );
-        await inst.setQueue({
-          ...queueOptions,
-          startTime: resumeSeconds ?? undefined,
-          // Queue paused first so a restored elapsedTime can be applied
-          // before any audible playback starts.
-          startPlaying: false,
-        });
-        if (cancelled) return;
-        if (resumeSeconds != null) {
-          await inst.seekToTime(resumeSeconds).catch((err) => {
-            console.warn("[apple music] resume seek failed", err);
-          });
+        return;
+      }
+
+      const queueIdentity = nativeQueueOptions
+        ? buildMusicKitQueueIdentity(
+            buildMusicKitSongQueue(effectiveQueueTracks).songIds
+          )
+        : null;
+      const targetSongId = getMusicKitSongId(currentTrack);
+      const musicKitAlreadyOnTarget = isMusicKitPlayingSongId(
+        lastNowPlayingItemIdRef.current,
+        targetSongId
+      );
+
+      try {
+        if (
+          nativeQueueOptions &&
+          queueIdentity &&
+          lastQueueIdentityRef.current === queueIdentity &&
+          musicKitAlreadyOnTarget
+        ) {
+          // MusicKit auto-advanced (or the user skipped via MusicKit APIs).
+          // The audio is already on the right item — just sync play state.
+          if (cancelled) return;
+          lastQueuedTrackIdRef.current = localQueueKey;
+          if (playingRef.current) {
+            await inst.play().catch((err) => {
+              console.warn(
+                "[apple music] play() blocked, awaiting user gesture",
+                err
+              );
+              onPauseRef.current?.();
+            });
+          }
+          return;
         }
+
+        if (
+          nativeQueueOptions &&
+          queueIdentity &&
+          lastQueueIdentityRef.current === queueIdentity &&
+          !musicKitAlreadyOnTarget
+        ) {
+          const startWith = getMusicKitQueueStartIndex(
+            effectiveQueueTracks,
+            currentTrack
+          );
+          await inst.changeToMediaAtIndex(startWith);
+          if (cancelled) return;
+          if (resumeSeconds != null) {
+            await inst.seekToTime(resumeSeconds).catch((err) => {
+              console.warn("[apple music] resume seek failed", err);
+            });
+          }
+        } else {
+          const queueOptions = nativeQueueOptions ?? singleTrackOptions!;
+          await inst.setQueue({
+            ...queueOptions,
+            startTime: resumeSeconds ?? undefined,
+            startPlaying: false,
+          });
+          if (cancelled) return;
+          if (resumeSeconds != null) {
+            await inst.seekToTime(resumeSeconds).catch((err) => {
+              console.warn("[apple music] resume seek failed", err);
+            });
+          }
+          lastQueueIdentityRef.current = queueIdentity;
+        }
+
         if (cancelled) return;
         if (currentTrack.durationMs && currentTrack.durationMs > 0) {
           onDurationRef.current?.(currentTrack.durationMs / 1000);
@@ -515,8 +540,6 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
         lastQueuedTrackIdRef.current = localQueueKey;
         if (playingRef.current) {
           await inst.play().catch((err) => {
-            // Browsers block autoplay until the user interacts; surface as
-            // a paused state so the iPod's play button shows the right icon.
             console.warn(
               "[apple music] play() blocked, awaiting user gesture",
               err
@@ -527,11 +550,6 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
       } catch (err) {
         console.error("[apple music] setQueue failed", err);
       } finally {
-        // Only clear the shared ref when *we* are still the most recent
-        // load. A newer track change already replaced `queueLoadingRef`
-        // with its own promise; nulling here would let play/pause sync
-        // think there's no pending queue load and race the newer
-        // `setQueue` mid-flight.
         if (queueLoadingRef.current === thisLoad) {
           queueLoadingRef.current = null;
         }
@@ -544,7 +562,6 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queueKey, instanceReadyTick]);
 
-  // Sync play/pause without re-queueing.
   useEffect(() => {
     const inst = instanceRef.current;
     if (!inst) return;

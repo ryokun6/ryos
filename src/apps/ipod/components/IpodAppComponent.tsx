@@ -112,6 +112,8 @@ export function IpodAppComponent({
     isSyncModeOpen,
     setIsSyncModeOpen,
     currentTrack,
+    appleMusicQueueTracks,
+    handleAppleMusicQueueTrackChange,
     lyricsSourceOverride,
     lyricsTitle,
     lyricsArtist,
@@ -431,6 +433,12 @@ export function IpodAppComponent({
                   handleReady={handleReady}
                   loopCurrent={loopCurrent}
                   isShuffled={isShuffled}
+                  appleMusicQueueTracks={
+                    isAppleMusic ? appleMusicQueueTracks : undefined
+                  }
+                  onAppleMusicQueueTrackChange={
+                    isAppleMusic ? handleAppleMusicQueueTrackChange : undefined
+                  }
                   statusMessage={statusMessage}
                   onToggleVideo={toggleVideo}
                   lcdFilterOn={lcdFilterOn}
@@ -656,6 +664,11 @@ export function IpodAppComponent({
                                 fullScreenPlayerRef as unknown as React.RefObject<never>
                               }
                               currentTrack={tracks[currentIndex]}
+                              queueTracks={
+                                isAppleMusic ? appleMusicQueueTracks : undefined
+                              }
+                              isShuffled={isShuffled}
+                              loopCurrent={loopCurrent}
                               playing={isPlaying && isFullScreen}
                               resumeAtSeconds={elapsedTime}
                               volume={
@@ -668,6 +681,7 @@ export function IpodAppComponent({
                               onPause={handlePause}
                               onEnded={handleTrackEnd}
                               onReady={handleReady}
+                              onQueueTrackChange={handleAppleMusicQueueTrackChange}
                               onNowPlayingItemChange={setAppleMusicKitNowPlaying}
                             />
                           ) : (

@@ -426,7 +426,9 @@ function normalizeAppleMusicPlaybackQueue(
   return ids.length > 0 ? ids : null;
 }
 
-function resolveAppleMusicQueueTracks(state: IpodData): Track[] {
+export function resolveAppleMusicQueueTracks(
+  state: Pick<IpodData, "appleMusicTracks" | "appleMusicPlaybackQueue">
+): Track[] {
   const libraryTracks = state.appleMusicTracks;
   const queue = normalizeAppleMusicPlaybackQueue(state.appleMusicPlaybackQueue);
   if (!queue) {
