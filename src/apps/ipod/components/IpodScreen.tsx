@@ -48,12 +48,9 @@ import { useIpodStore, isAppleMusicCollectionTrack } from "@/stores/useIpodStore
 
 // Fixed row height for the iPod menu list. Each `MenuListItem` is a
 // single-line row; the classic skin's Chicago glyphs need 24px row height at
-// 16px type, while the modern (color) skin uses tighter **21px** rows with
-// **15px** Myriad / system UI. At 21px we can fit the titlebar plus
-// six full menu rows inside the 150px screen (21 × 7 = 147, leaving a
-// 3px tail at the bottom of the scroll container) which matches the
-// nano 6G/7G density much more closely than the previous 24px rows
-// (which only fit five rows + a sliver).
+// 16px type, while the modern (color) skin uses **19px** rows with
+// **13px** Helvetica Neue so the titlebar plus seven full menu rows
+// fill the 150px screen exactly (17 + 7 × 19 = 150).
 //
 // We virtualize EVERY menu — not just huge ones — so item geometry
 // stays identical across the main menu, the artist list, and the
@@ -66,7 +63,8 @@ import { useIpodStore, isAppleMusicCollectionTrack } from "@/stores/useIpodStore
 // per-menu choice, so a single value applies cleanly to all menus and
 // the scroll-position math.
 const MENU_ITEM_HEIGHT_CLASSIC = 24;
-const MENU_ITEM_HEIGHT_MODERN = 21;
+const MENU_ITEM_HEIGHT_MODERN = 19;
+const IPOD_SCREEN_HEIGHT_PX = 150;
 const menuItemKeyCache = new WeakMap<object, string>();
 let menuItemKeySeed = 0;
 
@@ -80,12 +78,12 @@ function getMenuItemKey(item: object): string {
 }
 // Modern titlebar is intentionally tighter than the row height. The
 // nano 6G/7G + iPod classic 6G silver header is a slim 17px strip with
-// 12px MyriadPro semibold text — slimmer than each list row so the
-// header reads as a separator, not as another row. Six 21px rows still
-// fit cleanly inside the remaining 133px of screen (21 × 6 = 126), with
-// a 7px tail for the optional Ken Burns split-art column to breathe
-// against the bottom edge.
+// 12px semibold text — slimmer than each list row so the header reads
+// as a separator, not as another row. Seven 19px rows fill the remaining
+// 133px of screen (17 + 7 × 19 = 150) with no tail at the bottom.
 const MODERN_TITLEBAR_HEIGHT = 17;
+const MODERN_MENU_VISIBLE_HEIGHT_PX =
+  IPOD_SCREEN_HEIGHT_PX - MODERN_TITLEBAR_HEIGHT;
 // The Ken Burns album-art strip rendered alongside the menu in the
 // modern UI takes exactly **half** of the screen width and the FULL
 // screen height — the art panel covers the right half from the very
@@ -540,11 +538,20 @@ export function IpodScreen({
       Math.floor(scrollTop / menuItemHeight) - OVERSCAN_ITEMS
     );
     const visibleCount =
-      Math.ceil((containerHeight || 124) / menuItemHeight) +
+      Math.ceil(
+        (containerHeight || (isModernUi ? MODERN_MENU_VISIBLE_HEIGHT_PX : 124)) /
+          menuItemHeight
+      ) +
       OVERSCAN_ITEMS * 2;
     const end = Math.min(currentMenuItems.length, start + visibleCount);
     return { start, end };
-  }, [scrollTop, containerHeight, currentMenuItems.length, menuItemHeight]);
+  }, [
+    scrollTop,
+    containerHeight,
+    currentMenuItems.length,
+    menuItemHeight,
+    isModernUi,
+  ]);
 
   // Keep the selected item in view. We key on `menuHistory` (the array
   // reference, not just its length) so EVERY menu transition triggers a
@@ -568,7 +575,9 @@ export function IpodScreen({
     const isMenuTransition = lastMenuDepthRef.current !== menuHistory.length;
     lastMenuDepthRef.current = menuHistory.length;
 
-    const containerH = el.clientHeight || 124;
+    const containerH =
+      el.clientHeight ||
+      (isModernUi ? MODERN_MENU_VISIBLE_HEIGHT_PX : 124);
 
     // On a menu transition, snap scrollTop based purely on the target
     // index — we don't want to inherit the previous menu's offset.
@@ -854,7 +863,7 @@ export function IpodScreen({
                   // Slimmer 12px header type matches the iPod 6G/7G photo
                   // we were referenced to — one full pixel above the
                   // 11px Helvetica Neue used by iOS 6 status bars but
-                  // still well under the 15px MyriadPro list rows so the
+                  // still well under the 13px list rows so the
                   // header reads as secondary chrome.
                   "text-[12px] font-semibold",
                   "[text-shadow:0_1px_0_rgba(255,255,255,0.9)]"
@@ -918,7 +927,7 @@ export function IpodScreen({
         )}
         style={
           isModernUi
-            ? undefined
+            ? { height: MODERN_MENU_VISIBLE_HEIGHT_PX }
             : {
                 height: "calc(100% - 24px)",
               }

@@ -1415,10 +1415,9 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
  *   background: linear-gradient(180deg, #feffff 0%, #b1b6b9 100%);
  *   reference border-bottom was #7995a3 (slightly blue); we use a neutral gray.
  *
- * The modern titlebar is **21px** tall (`MENU_ITEM_HEIGHT_MODERN`, same rhythm as
- * the nano-style menu rows) — together with six 21px rows it fills the 150px
- * screen so the user can see titlebar + 6 list items at once. Classic's title
- * strip stays at 24px to give Chicago bitmap glyphs the room they need.
+ * The modern titlebar is **17px** tall — together with seven **19px** menu rows
+ * it fills the 150px screen so the user can see titlebar + 7 list items at once.
+ * Classic's title strip stays at 24px to give Chicago bitmap glyphs the room they need.
  * The hairline is drawn via inset box-shadow so it doesn't
  * add height when the existing border-b utility is also present. */
 .ipod-modern-titlebar {

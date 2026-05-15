@@ -750,7 +750,7 @@ function AlbumTracklist({
     el.scrollIntoView({ block: "nearest" });
   }, [selectedIndex]);
 
-  // Row height matches the modern menu list (21px) so the panel sits
+  // Row height matches the modern menu list (19px) so the panel sits
   // at the same density as the surrounding chrome. Classic skin gets
   // slightly taller rows because Chicago has more vertical metric.
   const rowHeight = isModern ? 21 : 22;
