@@ -80,6 +80,40 @@ export function isWithinEndedFanoutDedupWindow(
  * (`item.id`, `item.attributes.playParams.id`,
  * `item.attributes.playParams.catalogId`).
  */
+/**
+ * While `setQueue` runs with `startPlaying: false`, MusicKit JS commonly
+ * emits `loading` / `paused` / `stopped` playback states before we call
+ * `play()`. Forwarding those to the iPod store flips `isPlaying` off, so
+ * the post-queue `play()` is skipped and the user hears silence even
+ * though they just tapped a song. Suppress parent fan-out for non-terminal
+ * states until the queue load settles.
+ */
+export function shouldSuppressPlaybackStateFanoutWhileQueueLoading(
+  queueLoading: boolean,
+  state: number | undefined
+): boolean {
+  if (!queueLoading) return false;
+  // Terminal states are still unexpected mid-load, but ended/completed
+  // should never be swallowed if they somehow arrive.
+  if (state === 5 || state === 10) return false;
+  return true;
+}
+
+/**
+ * Returns true when an in-flight queue load should abandon further work.
+ * Each explicit track selection bumps `currentGeneration`; stale async
+ * blocks must not call `play()` or stamp `lastQueuedTrackId` after a
+ * newer selection has already started — otherwise MusicKit can keep
+ * playing the previous song while the iPod UI shows the latest pick.
+ */
+export function isStaleQueueLoad(
+  loadGeneration: number,
+  currentGeneration: number,
+  cancelled: boolean
+): boolean {
+  return cancelled || loadGeneration !== currentGeneration;
+}
+
 export function getMusicKitEventItemId(
   item:
     | {

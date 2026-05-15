@@ -52,6 +52,8 @@ const {
   isWithinEndedFanoutDedupWindow,
   ENDED_FANOUT_DEDUP_WINDOW_MS,
   getMusicKitEventItemId,
+  shouldSuppressPlaybackStateFanoutWhileQueueLoading,
+  isStaleQueueLoad,
 } = await import(
   "../src/apps/ipod/components/appleMusicPlayerBridgeUtils"
 );
@@ -932,6 +934,49 @@ describe("AppleMusicPlayerBridge ended fan-out dedup window", () => {
   test("custom window override works (used by tests + future hardening)", () => {
     expect(isWithinEndedFanoutDedupWindow(100, 50, 100)).toBe(true);
     expect(isWithinEndedFanoutDedupWindow(150, 50, 100)).toBe(false);
+  });
+});
+
+describe("AppleMusicPlayerBridge queue-load playback-state fan-out", () => {
+  // Regression: `setQueue({ startPlaying: false })` makes MusicKit emit
+  // paused/loading/stopped before we call `play()`. Forwarding those
+  // states to the iPod store flips `isPlaying` off so the post-queue
+  // `play()` is skipped — the user taps a song and hears nothing.
+  test("suppresses non-terminal states while a queue load is in flight", () => {
+    for (const state of [0, 1, 2, 3, 4, 6, 8, 9, undefined]) {
+      expect(
+        shouldSuppressPlaybackStateFanoutWhileQueueLoading(true, state)
+      ).toBe(true);
+    }
+  });
+
+  test("does not suppress when no queue load is active", () => {
+    expect(
+      shouldSuppressPlaybackStateFanoutWhileQueueLoading(false, 3)
+    ).toBe(false);
+  });
+
+  test("still allows ended/completed through during queue load", () => {
+    expect(
+      shouldSuppressPlaybackStateFanoutWhileQueueLoading(true, 5)
+    ).toBe(false);
+    expect(
+      shouldSuppressPlaybackStateFanoutWhileQueueLoading(true, 10)
+    ).toBe(false);
+  });
+});
+
+describe("AppleMusicPlayerBridge queue-load generation guard", () => {
+  test("stale when cancelled even if generation still matches", () => {
+    expect(isStaleQueueLoad(3, 3, true)).toBe(true);
+  });
+
+  test("stale when a newer selection bumped the generation", () => {
+    expect(isStaleQueueLoad(2, 3, false)).toBe(true);
+  });
+
+  test("fresh when generation matches and effect is still active", () => {
+    expect(isStaleQueueLoad(3, 3, false)).toBe(false);
   });
 });
 
