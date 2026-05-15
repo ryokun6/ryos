@@ -141,6 +141,39 @@ function formatPlaybackTime(totalSeconds: number): string {
   )}`;
 }
 
+function ModernNowPlayingProgressRow({
+  elapsedTime,
+  totalTime,
+  displayElapsedSeconds,
+  displayRemainingSeconds,
+}: {
+  elapsedTime: number;
+  totalTime: number;
+  displayElapsedSeconds: number;
+  displayRemainingSeconds: number;
+}) {
+  return (
+    <div className="flex w-full items-center gap-1.5 font-ipod-modern-ui text-[12px] leading-[1.06] text-[rgb(99,101,103)] tabular-nums">
+      <span className="shrink-0 min-w-[28px]">
+        {formatPlaybackTime(displayElapsedSeconds)}
+      </span>
+      <div className="aqua-progress h-[9px] min-w-0 flex-1 rounded-none">
+        <div
+          className="aqua-progress-fill h-full rounded-none transition-all duration-200 ease-out"
+          style={{
+            width: `${
+              totalTime > 0 ? (elapsedTime / totalTime) * 100 : 0
+            }%`,
+          }}
+        />
+      </div>
+      <span className="shrink-0 min-w-[32px] text-right">
+        -{formatPlaybackTime(displayRemainingSeconds)}
+      </span>
+    </div>
+  );
+}
+
 /** `rotateY` + perspective for left↔right foreshortening; Karaoke-style reflection stacking.
  *
  * Cover sized at 76px — prominent on the left like the iPod nano 6G/7G
@@ -148,6 +181,8 @@ function formatPlaybackTime(totalSeconds: number): string {
  * Reflection ratio kept at 0.3 so the stack stays inside the now-playing row. */
 const MODERN_NOW_PLAYING_ART_PX = 76;
 const MODERN_NOW_PLAYING_REFLECT_RATIO = 0.3;
+/** Inline progress row (9px bar + 12px type line). */
+const MODERN_NOW_PLAYING_PROGRESS_ROW_PX = 14;
 /** Shared clip radius for modern now-playing sleeve + reflection (modern skin only). */
 const MODERN_NOW_PLAYING_COVER_BORDER_RADIUS_PX = 0;
 // Neutral mid-gray placeholder shown while the cover image is in
@@ -1041,20 +1076,37 @@ export function IpodScreen({
                       </div>
                     )}
                     {isModernUi ? (
-                      <div className="flex flex-1 items-start gap-3 overflow-visible pt-1 pb-0">
-                        <ModernNowPlayingArtwork coverUrl={coverUrl} />
+                      <div className="relative min-h-0 flex-1 overflow-visible">
                         <div
-                          className={cn(
-                            "flex min-h-0 min-w-0 flex-1 flex-col justify-start gap-0 overflow-visible text-left",
-                            // Small downward nudge so the first line
-                            // doesn't hug the cover's top edge — matches
-                            // the iPod nano 6G/7G "Now Playing" baseline.
-                            "pt-1",
-                            "[&>*]:py-0",
-                            "[&>*:not(:first-child)]:-mt-[3px]",
-                            "font-ipod-modern-ui"
-                          )}
+                          className="absolute inset-x-0 top-0 z-10"
+                          style={{ height: MODERN_NOW_PLAYING_PROGRESS_ROW_PX }}
                         >
+                          <ModernNowPlayingProgressRow
+                            elapsedTime={elapsedTime}
+                            totalTime={totalTime}
+                            displayElapsedSeconds={displayElapsedSeconds}
+                            displayRemainingSeconds={displayRemainingSeconds}
+                          />
+                        </div>
+                        <div
+                          className="flex items-start gap-3 overflow-visible pb-0"
+                          style={{
+                            paddingTop: MODERN_NOW_PLAYING_PROGRESS_ROW_PX,
+                          }}
+                        >
+                          <ModernNowPlayingArtwork coverUrl={coverUrl} />
+                          <div
+                            className={cn(
+                              "flex min-h-0 min-w-0 flex-1 flex-col justify-start gap-0 overflow-visible text-left",
+                              // Small downward nudge so the first line
+                              // doesn't hug the cover's top edge — matches
+                              // the iPod nano 6G/7G "Now Playing" baseline.
+                              "pt-1",
+                              "[&>*]:py-0",
+                              "[&>*:not(:first-child)]:-mt-[3px]",
+                              "font-ipod-modern-ui"
+                            )}
+                          >
                           <ScrollingText
                             text={nowPlayingDisplayTrack.title}
                             isPlaying={isPlaying}
@@ -1110,6 +1162,7 @@ export function IpodScreen({
                             )}
                           </div>
                         </div>
+                        </div>
                       </div>
                     ) : (
                       <div
@@ -1140,40 +1193,13 @@ export function IpodScreen({
                         )}
                       </div>
                     )}
-                    <div
-                      className={cn(
-                        "mt-auto flex-shrink-0 w-full",
-                        isModernUi
-                          ? nowPlayingDisplayTrack.album
-                            ? "pt-0.5"
-                            : "pt-1"
-                          : nowPlayingDisplayTrack.album
-                            ? "pt-1.5"
-                            : "pt-3"
-                      )}
-                    >
-                      {isModernUi ? (
-                        <div className="flex w-full items-center gap-1.5 font-ipod-modern-ui text-[12px] leading-[1.06] text-[rgb(99,101,103)] tabular-nums">
-                          <span className="shrink-0 min-w-[28px]">
-                            {formatPlaybackTime(displayElapsedSeconds)}
-                          </span>
-                          <div className="aqua-progress h-[9px] min-w-0 flex-1 rounded-none">
-                            <div
-                              className="aqua-progress-fill h-full rounded-none transition-all duration-200 ease-out"
-                              style={{
-                                width: `${
-                                  totalTime > 0
-                                    ? (elapsedTime / totalTime) * 100
-                                    : 0
-                                }%`,
-                              }}
-                            />
-                          </div>
-                          <span className="shrink-0 min-w-[32px] text-right">
-                            -{formatPlaybackTime(displayRemainingSeconds)}
-                          </span>
-                        </div>
-                      ) : (
+                    {!isModernUi && (
+                      <div
+                        className={cn(
+                          "mt-auto flex-shrink-0 w-full",
+                          nowPlayingDisplayTrack.album ? "pt-1.5" : "pt-3"
+                        )}
+                      >
                         <div className="w-full h-[8px] rounded-full border border-[#0a3667] overflow-hidden">
                           <div
                             className="h-full bg-[#0a3667]"
@@ -1186,8 +1212,6 @@ export function IpodScreen({
                             }}
                           />
                         </div>
-                      )}
-                      {!isModernUi && (
                         <div
                           className={cn(
                             "w-full flex justify-between",
@@ -1201,8 +1225,8 @@ export function IpodScreen({
                             -{formatPlaybackTime(displayRemainingSeconds)}
                           </span>
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </>
                 ) : (
                   <div
