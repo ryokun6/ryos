@@ -180,8 +180,8 @@ const MODERN_NOW_PLAYING_REFLECT_PX = Math.round(
 );
 const MODERN_NOW_PLAYING_STACK_PX =
   MODERN_NOW_PLAYING_ART_PX + MODERN_NOW_PLAYING_REFLECT_PX;
-/** Extra room below the 3D-tipped sleeve so rotateY projection is not clipped. */
-const MODERN_NOW_PLAYING_3D_BLEED_PX = 4;
+/** Extra room below the 3D-tipped stack so rotateY projection is not clipped. */
+const MODERN_NOW_PLAYING_3D_BLEED_PX = 6;
 /** Shared clip radius for modern now-playing sleeve + reflection (modern skin only). */
 const MODERN_NOW_PLAYING_COVER_BORDER_RADIUS_PX = 0;
 // Neutral mid-gray placeholder shown while the cover image is in
@@ -211,7 +211,7 @@ const MODERN_NOW_PLAYING_ART_3D: CSSProperties = {
   width: MODERN_NOW_PLAYING_ART_PX,
 };
 
-/** Tilted sleeve with a flat 2D reflection stacked underneath (not inside rotateY). */
+/** Sleeve + reflection in one `preserve-3d` group tipped with rotateY + perspective. */
 function ModernNowPlayingArtwork({ coverUrl }: { coverUrl: string | null }) {
   const reflectH = MODERN_NOW_PLAYING_REFLECT_PX;
   const sleeve = useImageLoaded(coverUrl);
@@ -221,25 +221,20 @@ function ModernNowPlayingArtwork({ coverUrl }: { coverUrl: string | null }) {
 
   return (
     <div
-      className="relative shrink-0 self-start"
+      className="relative shrink-0 self-start overflow-visible"
       style={{
         width: MODERN_NOW_PLAYING_ART_PX,
-        height: MODERN_NOW_PLAYING_STACK_PX,
+        minHeight: MODERN_NOW_PLAYING_STACK_PX + MODERN_NOW_PLAYING_3D_BLEED_PX,
       }}
     >
       <div
+        className="overflow-visible"
         style={{
           perspective: `${MODERN_NOW_PLAYING_3D_PERSPECTIVE_PX}px`,
-          perspectiveOrigin: "50% 100%",
-          paddingBottom: MODERN_NOW_PLAYING_3D_BLEED_PX,
+          perspectiveOrigin: "50% 55%",
         }}
       >
-        <div
-          style={{
-            ...MODERN_NOW_PLAYING_ART_3D,
-            width: MODERN_NOW_PLAYING_ART_PX,
-          }}
-        >
+        <div className="overflow-visible" style={MODERN_NOW_PLAYING_ART_3D}>
           <div
             className="relative overflow-hidden"
             style={{
@@ -267,32 +262,29 @@ function ModernNowPlayingArtwork({ coverUrl }: { coverUrl: string | null }) {
               </div>
             )}
           </div>
+          {coverUrl ? (
+            <div
+              aria-hidden
+              className="pointer-events-none w-full overflow-hidden"
+              style={{ height: reflectH }}
+            >
+              <img
+                ref={reflection.ref}
+                src={coverUrl}
+                alt=""
+                draggable={false}
+                onLoad={reflection.onLoad}
+                className="block w-full h-auto"
+                style={{
+                  ...MODERN_NOW_PLAYING_REFLECT_IMG,
+                  opacity: reflection.loaded ? reflectTargetOpacity : 0,
+                  transition: COVER_FADE_TRANSITION,
+                }}
+              />
+            </div>
+          ) : null}
         </div>
       </div>
-      {coverUrl ? (
-        <div
-          aria-hidden
-          className="pointer-events-none absolute left-0 w-full overflow-hidden"
-          style={{
-            top: MODERN_NOW_PLAYING_ART_PX,
-            height: reflectH,
-          }}
-        >
-          <img
-            ref={reflection.ref}
-            src={coverUrl}
-            alt=""
-            draggable={false}
-            onLoad={reflection.onLoad}
-            className="block w-full h-auto"
-            style={{
-              ...MODERN_NOW_PLAYING_REFLECT_IMG,
-              opacity: reflection.loaded ? reflectTargetOpacity : 0,
-              transition: COVER_FADE_TRANSITION,
-            }}
-          />
-        </div>
-      ) : null}
     </div>
   );
 }
@@ -1174,7 +1166,7 @@ export function IpodScreen({
                           </div>
                         </div>
                         </div>
-                        <div className="mt-1.5 w-full shrink-0">
+                        <div className="mt-0.5 w-full shrink-0">
                           <ModernNowPlayingProgressRow
                             elapsedTime={elapsedTime}
                             totalTime={totalTime}
