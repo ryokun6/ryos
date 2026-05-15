@@ -37,6 +37,10 @@ import {
   PLAYER_PROGRESS_INTERVAL_MS,
   getYouTubeVideoId,
   formatKugouImageUrl,
+  IPOD_SCREEN_INNER_HEIGHT_PX,
+  MENU_ITEM_HEIGHT_MODERN_PX,
+  MODERN_MENU_LIST_HEIGHT_PX,
+  MODERN_TITLEBAR_HEIGHT_PX,
 } from "../constants";
 import { DisplayMode } from "@/types/lyrics";
 import { LandscapeVideoBackground } from "@/components/shared/LandscapeVideoBackground";
@@ -48,9 +52,9 @@ import { useIpodStore, isAppleMusicCollectionTrack } from "@/stores/useIpodStore
 
 // Fixed row height for the iPod menu list. Each `MenuListItem` is a
 // single-line row; the classic skin's Chicago glyphs need 24px row height at
-// 16px type, while the modern (color) skin uses **19px** rows with
-// **13px** Helvetica Neue so the titlebar plus seven full menu rows
-// fill the 150px screen exactly (17 + 7 × 19 = 150).
+// 16px type, while the modern skin uses **18px** rows with **12px** type so
+// the 20px status bar plus seven rows fill the 146px inner screen exactly
+// (2px border each side on the 150px frame → 20 + 7 × 18 = 146).
 //
 // We virtualize EVERY menu — not just huge ones — so item geometry
 // stays identical across the main menu, the artist list, and the
@@ -63,8 +67,6 @@ import { useIpodStore, isAppleMusicCollectionTrack } from "@/stores/useIpodStore
 // per-menu choice, so a single value applies cleanly to all menus and
 // the scroll-position math.
 const MENU_ITEM_HEIGHT_CLASSIC = 24;
-const MENU_ITEM_HEIGHT_MODERN = 19;
-const IPOD_SCREEN_HEIGHT_PX = 150;
 const menuItemKeyCache = new WeakMap<object, string>();
 let menuItemKeySeed = 0;
 
@@ -76,14 +78,8 @@ function getMenuItemKey(item: object): string {
   menuItemKeyCache.set(item, key);
   return key;
 }
-// Modern titlebar is intentionally tighter than the row height. The
-// nano 6G/7G + iPod classic 6G silver header is a slim 17px strip with
-// 12px semibold text — slimmer than each list row so the header reads
-// as a separator, not as another row. Seven 19px rows fill the remaining
-// 133px of screen (17 + 7 × 19 = 150) with no tail at the bottom.
-const MODERN_TITLEBAR_HEIGHT = 17;
-const MODERN_MENU_VISIBLE_HEIGHT_PX =
-  IPOD_SCREEN_HEIGHT_PX - MODERN_TITLEBAR_HEIGHT;
+// Modern status bar is a slim 20px strip — seven 18px rows fill the
+// remaining 126px of inner screen (20 + 7 × 18 = 146px inner).
 // The Ken Burns album-art strip rendered alongside the menu in the
 // modern UI takes exactly **half** of the screen width and the FULL
 // screen height — the art panel covers the right half from the very
@@ -425,7 +421,7 @@ export function IpodScreen({
     isModernUi && isCoverFlowOpen && coverFlowSlot
   );
   const menuItemHeight = isModernUi
-    ? MENU_ITEM_HEIGHT_MODERN
+    ? MENU_ITEM_HEIGHT_MODERN_PX
     : MENU_ITEM_HEIGHT_CLASSIC;
   const [showShellTitleInTitlebar, setShowShellTitleInTitlebar] =
     useState(false);
@@ -547,7 +543,8 @@ export function IpodScreen({
     );
     const visibleCount =
       Math.ceil(
-        (containerHeight || (isModernUi ? MODERN_MENU_VISIBLE_HEIGHT_PX : 124)) /
+        (containerHeight ||
+          (isModernUi ? MODERN_MENU_LIST_HEIGHT_PX : 124)) /
           menuItemHeight
       ) +
       OVERSCAN_ITEMS * 2;
@@ -585,7 +582,7 @@ export function IpodScreen({
 
     const containerH =
       el.clientHeight ||
-      (isModernUi ? MODERN_MENU_VISIBLE_HEIGHT_PX : 124);
+      (isModernUi ? MODERN_MENU_LIST_HEIGHT_PX : 124);
 
     // On a menu transition, snap scrollTop based purely on the target
     // index — we don't want to inherit the previous menu's offset.
@@ -833,8 +830,9 @@ export function IpodScreen({
         style={
           isModernUi
             ? {
-                height: MODERN_TITLEBAR_HEIGHT,
-                minHeight: MODERN_TITLEBAR_HEIGHT,
+                height: MODERN_TITLEBAR_HEIGHT_PX,
+                minHeight: MODERN_TITLEBAR_HEIGHT_PX,
+                maxHeight: MODERN_TITLEBAR_HEIGHT_PX,
               }
             : undefined
         }
@@ -871,7 +869,7 @@ export function IpodScreen({
                   // Slimmer 12px header type matches the iPod 6G/7G photo
                   // we were referenced to — one full pixel above the
                   // 11px Helvetica Neue used by iOS 6 status bars but
-                  // still well under the 13px list rows so the
+                  // still well under the 12px list rows so the
                   // header reads as secondary chrome.
                   "text-[12px] font-semibold",
                   "[text-shadow:0_1px_0_rgba(255,255,255,0.9)]"
@@ -931,12 +929,12 @@ export function IpodScreen({
           "relative",
           !showVideo && "z-10",
           isModernUi && showSplitMenuArt && "bg-white",
-          isModernUi && "flex-1 min-h-0",
+          isModernUi && "shrink-0",
           isModernUi && !menuMode && !showInlineCoverFlow && "overflow-visible"
         )}
         style={
           isModernUi
-            ? { height: MODERN_MENU_VISIBLE_HEIGHT_PX }
+            ? { height: MODERN_MENU_LIST_HEIGHT_PX }
             : {
                 height: "calc(100% - 24px)",
               }
@@ -976,7 +974,17 @@ export function IpodScreen({
               transition={{ duration: 0.2, ease: "easeInOut" }}
               custom={menuDirection}
             >
-              <div className="flex-1 relative">
+              <div
+                className={cn(
+                  "relative",
+                  isModernUi ? "shrink-0 overflow-hidden" : "flex-1"
+                )}
+                style={
+                  isModernUi
+                    ? { height: MODERN_MENU_LIST_HEIGHT_PX }
+                    : undefined
+                }
+              >
                 <div
                   ref={setMenuScrollRef}
                   className="absolute inset-0 overflow-auto ipod-menu-container"
@@ -1265,7 +1273,7 @@ export function IpodScreen({
   return (
     <div
       className={cn(
-        "relative w-full h-[150px] border border-black border-2 rounded-[2px] overflow-hidden transition-all duration-500 select-none no-select-all",
+        "relative w-full h-[150px] box-border border border-black border-2 rounded-[2px] overflow-hidden transition-all duration-500 select-none no-select-all",
         // The classic LCD filter scan-lines/flicker overlay only makes
         // sense for the monochrome 1st-gen LCD look. The modern iOS 6
         // skin is rendered on a Retina-style high-DPI display, so we
@@ -1641,19 +1649,17 @@ export function IpodScreen({
             // below. The split-art column to the right meanwhile fades
             // its cover image off, revealing the panel's solid-black
             // backface (see `.ipod-modern-split-art`).
-            "relative flex min-h-0 flex-col z-10 h-full ipod-modern-menu-panel",
-            (menuMode || showInlineCoverFlow) && "overflow-hidden",
-            !menuMode && !showInlineCoverFlow && "overflow-visible",
+            "relative flex min-h-0 flex-col z-10 ipod-modern-menu-panel",
             showSplitMenuArt && "is-split",
             splitLayoutTransitionReady &&
-              `transition-[width,box-shadow] ${SPLIT_LAYOUT_TRANSITION_TIMING}`
+              `transition-[width,box-shadow] ${SPLIT_LAYOUT_TRANSITION_TIMING}`,
+            (menuMode || showInlineCoverFlow) && "overflow-hidden",
+            !menuMode && !showInlineCoverFlow && "overflow-visible",
+            isModernUi && "box-border"
           )}
-          // `showSplitMenuArt` already implies `menuMode` (see its
-          // definition above), so the `menuMode ?` ternary collapses:
-          // both !menuMode and (menuMode && !showSplitMenuArt) want
-          // 100%, only showSplitMenuArt wants the split half.
           style={{
             width: showSplitMenuArt ? MODERN_SPLIT_HALF : "100%",
+            height: isModernUi ? IPOD_SCREEN_INNER_HEIGHT_PX : undefined,
           }}
         >
           {menuChrome}

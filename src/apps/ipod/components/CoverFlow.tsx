@@ -11,6 +11,7 @@ import {
   getYouTubeVideoId,
   formatKugouImageUrl,
   getAlbumGroupingKey,
+  MODERN_TITLEBAR_HEIGHT_PX,
 } from "../constants";
 import type { Track } from "@/stores/useIpodStore";
 import { useIpodStore } from "@/stores/useIpodStore";
@@ -30,11 +31,6 @@ import { useImageLoaded } from "../hooks/useImageLoaded";
 // loading (the wrapping element's gray background reads as the
 // placeholder), then fade up to the loaded state in 250ms.
 const COVER_FADE_TRANSITION = "opacity 250ms ease-out" as const;
-
-// Modern-UI titlebar height. Matches `MODERN_TITLEBAR_HEIGHT` in
-// IpodScreen.tsx so the Cover Flow status bar lines up exactly with the
-// main menu's silver header strip when toggling between the two.
-const MODERN_TITLEBAR_HEIGHT = 17;
 
 // Long press delay in milliseconds
 const LONG_PRESS_DELAY = 500;
@@ -1885,8 +1881,8 @@ export const CoverFlow = function CoverFlow(
                 "flex items-center pl-1.5 pr-1.5 gap-1.5",
               )}
               style={{
-                height: MODERN_TITLEBAR_HEIGHT,
-                minHeight: MODERN_TITLEBAR_HEIGHT,
+                height: MODERN_TITLEBAR_HEIGHT_PX,
+                minHeight: MODERN_TITLEBAR_HEIGHT_PX,
               }}
             >
               <ScrollingText
@@ -2160,7 +2156,7 @@ export const CoverFlow = function CoverFlow(
           <div
             className="absolute z-30 pointer-events-none"
             style={{
-              top: isModernIpodCoverFlow ? MODERN_TITLEBAR_HEIGHT : 0,
+              top: isModernIpodCoverFlow ? MODERN_TITLEBAR_HEIGHT_PX : 0,
               left: 0,
               right: 0,
               bottom: 0,

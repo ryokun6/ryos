@@ -68,6 +68,21 @@ export const LYRICS_ALIGNMENT_CYCLE: LyricsAlignment[] = [
   LyricsAlignment.Alternating,
 ];
 
+/** Modern color-screen geometry: 150px outer frame, 2px border → 146px inner. */
+export const IPOD_SCREEN_HEIGHT_PX = 150;
+export const IPOD_SCREEN_BORDER_PX = 2;
+export const IPOD_SCREEN_INNER_HEIGHT_PX =
+  IPOD_SCREEN_HEIGHT_PX - IPOD_SCREEN_BORDER_PX * 2;
+/** Visible menu rows below the silver status bar. */
+export const MODERN_MENU_ROW_COUNT = 7;
+export const MODERN_TITLEBAR_HEIGHT_PX = 20;
+export const MENU_ITEM_HEIGHT_MODERN_PX = Math.floor(
+  (IPOD_SCREEN_INNER_HEIGHT_PX - MODERN_TITLEBAR_HEIGHT_PX) /
+    MODERN_MENU_ROW_COUNT
+);
+export const MODERN_MENU_LIST_HEIGHT_PX =
+  MENU_ITEM_HEIGHT_MODERN_PX * MODERN_MENU_ROW_COUNT;
+
 // Helper to extract YouTube video ID from URL
 export function getYouTubeVideoId(url: string): string | null {
   const match = url.match(
