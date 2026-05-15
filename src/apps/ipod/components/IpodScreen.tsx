@@ -205,10 +205,12 @@ const MODERN_NOW_PLAYING_3D_PERSPECTIVE_PX = 180;
 const MODERN_NOW_PLAYING_ROTATE_Y = "15deg";
 
 const MODERN_NOW_PLAYING_ART_3D: CSSProperties = {
+  width: MODERN_NOW_PLAYING_ART_PX,
+  height: MODERN_NOW_PLAYING_ART_PX,
+  perspective: `${MODERN_NOW_PLAYING_3D_PERSPECTIVE_PX}px`,
   transformStyle: "preserve-3d",
   transform: `rotateY(${MODERN_NOW_PLAYING_ROTATE_Y})`,
   transformOrigin: "center center",
-  width: MODERN_NOW_PLAYING_ART_PX,
 };
 
 /** Sleeve + reflection in one `preserve-3d` group tipped with rotateY + perspective. */
@@ -227,63 +229,54 @@ function ModernNowPlayingArtwork({ coverUrl }: { coverUrl: string | null }) {
         minHeight: MODERN_NOW_PLAYING_STACK_PX + MODERN_NOW_PLAYING_3D_BLEED_PX,
       }}
     >
-      <div
-        className="overflow-visible"
-        style={{
-          perspective: `${MODERN_NOW_PLAYING_3D_PERSPECTIVE_PX}px`,
-          perspectiveOrigin: "50% 55%",
-        }}
-      >
-        <div className="overflow-visible" style={MODERN_NOW_PLAYING_ART_3D}>
+      <div className="relative overflow-visible" style={MODERN_NOW_PLAYING_ART_3D}>
+        <div
+          className="absolute inset-0 overflow-hidden"
+          style={MODERN_NOW_PLAYING_SLEEVE}
+        >
+          {coverUrl ? (
+            <img
+              ref={sleeve.ref}
+              src={coverUrl}
+              alt=""
+              draggable={false}
+              onLoad={sleeve.onLoad}
+              className="size-full object-cover"
+              style={{
+                opacity: sleeve.loaded ? 1 : 0,
+                transition: COVER_FADE_TRANSITION,
+              }}
+            />
+          ) : (
+            <div className="flex size-full items-center justify-center bg-gradient-to-br from-neutral-600 to-neutral-900 text-[22px] leading-none text-white/25 select-none">
+              ♪
+            </div>
+          )}
+        </div>
+        {coverUrl ? (
           <div
-            className="relative overflow-hidden"
+            aria-hidden
+            className="pointer-events-none absolute left-0 w-full"
             style={{
-              ...MODERN_NOW_PLAYING_SLEEVE,
-              height: MODERN_NOW_PLAYING_ART_PX,
-              width: MODERN_NOW_PLAYING_ART_PX,
+              top: "100%",
+              height: reflectH,
             }}
           >
-            {coverUrl ? (
-              <img
-                ref={sleeve.ref}
-                src={coverUrl}
-                alt=""
-                draggable={false}
-                onLoad={sleeve.onLoad}
-                className="size-full object-cover"
-                style={{
-                  opacity: sleeve.loaded ? 1 : 0,
-                  transition: COVER_FADE_TRANSITION,
-                }}
-              />
-            ) : (
-              <div className="flex size-full items-center justify-center bg-gradient-to-br from-neutral-600 to-neutral-900 text-[22px] leading-none text-white/25 select-none">
-                ♪
-              </div>
-            )}
+            <img
+              ref={reflection.ref}
+              src={coverUrl}
+              alt=""
+              draggable={false}
+              onLoad={reflection.onLoad}
+              className="block w-full h-auto"
+              style={{
+                ...MODERN_NOW_PLAYING_REFLECT_IMG,
+                opacity: reflection.loaded ? reflectTargetOpacity : 0,
+                transition: COVER_FADE_TRANSITION,
+              }}
+            />
           </div>
-          {coverUrl ? (
-            <div
-              aria-hidden
-              className="pointer-events-none w-full overflow-hidden"
-              style={{ height: reflectH }}
-            >
-              <img
-                ref={reflection.ref}
-                src={coverUrl}
-                alt=""
-                draggable={false}
-                onLoad={reflection.onLoad}
-                className="block w-full h-auto"
-                style={{
-                  ...MODERN_NOW_PLAYING_REFLECT_IMG,
-                  opacity: reflection.loaded ? reflectTargetOpacity : 0,
-                  transition: COVER_FADE_TRANSITION,
-                }}
-              />
-            </div>
-          ) : null}
-        </div>
+        ) : null}
       </div>
     </div>
   );
