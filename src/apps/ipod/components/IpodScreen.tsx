@@ -143,12 +143,10 @@ function formatPlaybackTime(totalSeconds: number): string {
 
 /** `rotateY` + perspective for left↔right foreshortening; Karaoke-style reflection stacking.
  *
- * Cover sized at 60px — comfortably bigger than the original 54px
- * without crowding the title / artist / album text column to its
- * right or pushing the reflection down into the progress bar.
- * Reflection ratio kept at 0.3 (subtler than the prior 0.5) so the
- * stack stays inside the now-playing row. */
-const MODERN_NOW_PLAYING_ART_PX = 60;
+ * Cover sized at 76px — prominent on the left like the iPod nano 6G/7G
+ * Now Playing screen without crowding the title / artist / album column.
+ * Reflection ratio kept at 0.3 so the stack stays inside the now-playing row. */
+const MODERN_NOW_PLAYING_ART_PX = 76;
 const MODERN_NOW_PLAYING_REFLECT_RATIO = 0.3;
 /** Shared clip radius for modern now-playing sleeve + reflection (modern skin only). */
 const MODERN_NOW_PLAYING_COVER_BORDER_RADIUS_PX = 0;
@@ -1015,31 +1013,31 @@ export function IpodScreen({
               >
                 {currentTrack && nowPlayingDisplayTrack ? (
                   <>
-                    <div
-                      className={cn(
-                        "flex items-center justify-between gap-2",
-                        isModernUi
-                          ? "font-ipod-modern-ui text-[12px] font-normal leading-[1.06] text-[rgb(99,101,103)]"
-                          : "font-chicago text-[12px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]",
-                        nowPlayingDisplayTrack.album ? "mb-1" : "mb-1.5"
-                      )}
-                    >
-                      <span>
-                        {currentTrack?.appleMusicPlayParams?.stationId
-                          ? "LIVE"
-                          : isAppleMusicCollectionShell
-                            ? "MIX"
-                            : `${currentIndex + 1} of ${tracksLength}`}
-                      </span>
-                      {isShuffled && (
-                        <Shuffle
-                          className="shrink-0"
-                          size={isModernUi ? 12 : 13}
-                          weight="bold"
-                          aria-label="shuffle on"
-                        />
-                      )}
-                    </div>
+                    {!isModernUi && (
+                      <div
+                        className={cn(
+                          "flex items-center justify-between gap-2",
+                          "font-chicago text-[12px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]",
+                          nowPlayingDisplayTrack.album ? "mb-1" : "mb-1.5"
+                        )}
+                      >
+                        <span>
+                          {currentTrack?.appleMusicPlayParams?.stationId
+                            ? "LIVE"
+                            : isAppleMusicCollectionShell
+                              ? "MIX"
+                              : `${currentIndex + 1} of ${tracksLength}`}
+                        </span>
+                        {isShuffled && (
+                          <Shuffle
+                            className="shrink-0"
+                            size={13}
+                            weight="bold"
+                            aria-label="shuffle on"
+                          />
+                        )}
+                      </div>
+                    )}
                     {isModernUi ? (
                       <div className="flex min-h-0 flex-1 items-start gap-3 overflow-visible pt-1 pb-0">
                         <ModernNowPlayingArtwork coverUrl={coverUrl} />
@@ -1084,6 +1082,23 @@ export function IpodScreen({
                               className="leading-[1.06] text-[12px] font-normal text-[rgb(99,101,103)]"
                             />
                           )}
+                          <div className="flex items-center justify-between gap-2 leading-[1.06] text-[12px] font-normal text-[rgb(99,101,103)]">
+                            <span>
+                              {currentTrack?.appleMusicPlayParams?.stationId
+                                ? "LIVE"
+                                : isAppleMusicCollectionShell
+                                  ? "MIX"
+                                  : `${currentIndex + 1} of ${tracksLength}`}
+                            </span>
+                            {isShuffled && (
+                              <Shuffle
+                                className="shrink-0"
+                                size={12}
+                                weight="bold"
+                                aria-label="shuffle on"
+                              />
+                            )}
+                          </div>
                         </div>
                       </div>
                     ) : (
@@ -1122,18 +1137,25 @@ export function IpodScreen({
                       )}
                     >
                       {isModernUi ? (
-                        // Same aqua bar as About This Finder memory rows.
-                        <div className="aqua-progress h-[9px] w-full rounded-none">
-                          <div
-                            className="aqua-progress-fill h-full rounded-none transition-all duration-200 ease-out"
-                            style={{
-                              width: `${
-                                totalTime > 0
-                                  ? (elapsedTime / totalTime) * 100
-                                  : 0
-                              }%`,
-                            }}
-                          />
+                        <div className="flex w-full items-center gap-1.5 font-ipod-modern-ui text-[12px] font-normal leading-[1.06] text-[rgb(99,101,103)] tabular-nums">
+                          <span className="shrink-0 min-w-[28px]">
+                            {formatPlaybackTime(displayElapsedSeconds)}
+                          </span>
+                          <div className="aqua-progress h-[9px] min-w-0 flex-1 rounded-none">
+                            <div
+                              className="aqua-progress-fill h-full rounded-none transition-all duration-200 ease-out"
+                              style={{
+                                width: `${
+                                  totalTime > 0
+                                    ? (elapsedTime / totalTime) * 100
+                                    : 0
+                                }%`,
+                              }}
+                            />
+                          </div>
+                          <span className="shrink-0 min-w-[32px] text-right">
+                            -{formatPlaybackTime(displayRemainingSeconds)}
+                          </span>
                         </div>
                       ) : (
                         <div className="w-full h-[8px] rounded-full border border-[#0a3667] overflow-hidden">
@@ -1149,19 +1171,21 @@ export function IpodScreen({
                           />
                         </div>
                       )}
-                      <div
-                        className={cn(
-                          "w-full flex justify-between",
-                          isModernUi
-                            ? "font-ipod-modern-ui text-[12px] min-h-[14px] leading-[1.06] mt-1 text-[rgb(99,101,103)] font-normal tabular-nums"
-                            : "font-chicago text-[16px] h-[22px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
-                        )}
-                      >
-                        <span>
-                          {formatPlaybackTime(displayElapsedSeconds)}
-                        </span>
-                        <span>-{formatPlaybackTime(displayRemainingSeconds)}</span>
-                      </div>
+                      {!isModernUi && (
+                        <div
+                          className={cn(
+                            "w-full flex justify-between",
+                            "font-chicago text-[16px] h-[22px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
+                          )}
+                        >
+                          <span>
+                            {formatPlaybackTime(displayElapsedSeconds)}
+                          </span>
+                          <span>
+                            -{formatPlaybackTime(displayRemainingSeconds)}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </>
                 ) : (

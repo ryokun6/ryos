@@ -1387,15 +1387,14 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
  * ========================================================================= */
 
 .font-ipod-modern-ui {
-  /* MyriadPro (bold cut) is Apple's brand face on the iPod nano 6G/7G
-   * color screen and across iOS 6. We only bundle the bold weight —
-   * the modern skin uses bold everywhere except secondary subtext,
-   * which falls through to Helvetica Neue / -apple-system. */
-  font-family: "MyriadPro", -apple-system, BlinkMacSystemFont, "Segoe UI",
-    Roboto, "Helvetica Neue", "HelveticaNeue", Helvetica, Arial,
-    "Hiragino Sans", "Hiragino Kaku Gothic ProN", "PingFang SC",
-    "Microsoft YaHei", "Apple SD Gothic Neo", "Malgun Gothic", "Nanum Gothic",
-    system-ui, sans-serif;
+  /* Helvetica Neue is the brand face on the iPod nano 6G/7G Now Playing
+   * screen and across iOS 6 system UI. Falls back to -apple-system on
+   * platforms without the face installed. */
+  font-family: "Helvetica Neue", "HelveticaNeue", Helvetica, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", Roboto, Arial, "Hiragino Sans",
+    "Hiragino Kaku Gothic ProN", "PingFang SC", "Microsoft YaHei",
+    "Apple SD Gothic Neo", "Malgun Gothic", "Nanum Gothic", system-ui,
+    sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-smooth: always;
@@ -1403,9 +1402,8 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
 }
 
 .ipod-modern-screen {
-  font-family: "MyriadPro", -apple-system, BlinkMacSystemFont, "Segoe UI",
-    Roboto, "Helvetica Neue", "HelveticaNeue", Helvetica, Arial, system-ui,
-    sans-serif;
+  font-family: "Helvetica Neue", "HelveticaNeue", Helvetica, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", Roboto, Arial, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   color: black;
@@ -1599,11 +1597,11 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
  * `.font-chicago` further down in themes.css. */
 :root[data-os-theme="macosx"] .ipod-force-font .font-ipod-modern-ui,
 :root[data-os-theme="macosx"] .font-ipod-modern-ui {
-  font-family: "MyriadPro", -apple-system, BlinkMacSystemFont, "Segoe UI",
-    Roboto, "Helvetica Neue", "HelveticaNeue", Helvetica, Arial,
-    "Hiragino Sans", "Hiragino Kaku Gothic ProN", "PingFang SC",
-    "Microsoft YaHei", "Apple SD Gothic Neo", "Malgun Gothic", "Nanum Gothic",
-    system-ui, sans-serif !important;
+  font-family: "Helvetica Neue", "HelveticaNeue", Helvetica, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", Roboto, Arial, "Hiragino Sans",
+    "Hiragino Kaku Gothic ProN", "PingFang SC", "Microsoft YaHei",
+    "Apple SD Gothic Neo", "Malgun Gothic", "Nanum Gothic", system-ui,
+    sans-serif !important;
   -webkit-font-smoothing: antialiased !important;
   font-smooth: always !important;
 }
