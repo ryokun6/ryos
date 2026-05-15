@@ -213,6 +213,39 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
   const lastEndedFiredForItemIdRef = useRef<string | null>(null);
   const lastEndedFiredAtRef = useRef(0);
 
+  const emitDurationForMediaItem = (
+    item: MusicKit.MediaItem | null | undefined
+  ) => {
+    const durationMs =
+      item?.attributes?.durationInMillis ?? item?.playbackDuration ?? 0;
+    if (durationMs > 0) {
+      onDurationRef.current?.(durationMs / 1000);
+    }
+  };
+
+  const syncQueueTrackFromMediaItem = (
+    item: MusicKit.MediaItem | null | undefined
+  ): boolean => {
+    if (queuedTrackIdsRef.current.length === 0) return false;
+    const trackId = resolveAppleMusicQueueTrackIdFromMediaItem(
+      item,
+      (queueTracksRef.current ?? []).filter((track) =>
+        queuedTrackIdsRef.current.includes(track.id)
+      )
+    );
+    if (
+      !trackId ||
+      !queuedTrackIdsRef.current.includes(trackId) ||
+      trackId === currentTrackRef.current?.id
+    ) {
+      return false;
+    }
+    suppressedQueueTrackIdRef.current = trackId;
+    onQueueTrackChangeRef.current?.(trackId);
+    emitDurationForMediaItem(item);
+    return true;
+  };
+
   // Wire up MusicKit event listeners once the instance is available.
   // We deliberately skip `playbackTimeDidChange` for progress updates:
   // runtime logs (debug session b224e4) confirmed that MusicKit JS v3's
@@ -279,24 +312,8 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
     };
 
     const handleMediaItem = (event: MusicKit.MediaItemDidChangeEvent) => {
-      const durationMs =
-        event.item?.attributes?.durationInMillis ??
-        event.item?.playbackDuration ??
-        0;
-      if (durationMs > 0) {
-        onDurationRef.current?.(durationMs / 1000);
-      }
-      if (queuedTrackIdsRef.current.length > 0) {
-        const trackId = resolveAppleMusicQueueTrackIdFromMediaItem(
-          event.item,
-          (queueTracksRef.current ?? []).filter((track) =>
-            queuedTrackIdsRef.current.includes(track.id)
-          )
-        );
-        if (trackId && queuedTrackIdsRef.current.includes(trackId)) {
-          suppressedQueueTrackIdRef.current = trackId;
-          onQueueTrackChangeRef.current?.(trackId);
-        }
+      if (!syncQueueTrackFromMediaItem(event.item)) {
+        emitDurationForMediaItem(event.item);
       }
       onNowPlayingItemChangeRef.current?.(
         mediaItemToNowPlayingMetadata(event.item)
@@ -367,6 +384,7 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
       const inst = instanceRef.current;
       if (!inst) return;
       const rawSeconds = inst.currentPlaybackTime ?? 0;
+      syncQueueTrackFromMediaItem(inst.nowPlayingItem);
 
       // First read or whenever the underlying integer changes (forward
       // OR backward, e.g. seek), reset the interpolation baseline.

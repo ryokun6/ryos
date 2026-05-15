@@ -296,6 +296,22 @@ describe("Apple Music MusicKit queue helpers", () => {
     ).toBe("am:1");
   });
 
+  test("resolves MusicKit nowPlayingItem catalog IDs when item.id is absent", () => {
+    const one = makeAppleMusicTrack("am:1", "1", "One");
+
+    expect(
+      resolveAppleMusicQueueTrackIdFromMediaItem(
+        {
+          attributes: {
+            playParams: { id: "library-only-id", catalogId: "1", kind: "song" },
+          },
+          playbackDuration: 180000,
+        },
+        [one]
+      )
+    ).toBe("am:1");
+  });
+
   test("suppresses per-song ended fan-out inside MusicKit song queues", () => {
     const one = makeAppleMusicTrack("am:1", "1", "One");
 
