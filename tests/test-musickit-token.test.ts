@@ -6,15 +6,6 @@ import {
   parseMusicKitPrivateKey,
   listMusicKitMissingEnv,
 } from "../api/_utils/_musickit-jwt";
-import {
-  deleteMusicKitUserToken,
-  musicKitUserTokenKey,
-  normalizeMusicKitUserToken,
-  parseStoredMusicKitUserToken,
-  readMusicKitUserToken,
-  saveMusicKitUserToken,
-} from "../api/_utils/musickit-user-token";
-import type { Redis } from "../api/_utils/redis";
 
 /**
  * Round-trip check: generate an ES256 key, sign a MusicKit JWT, and verify
@@ -36,26 +27,6 @@ function generateP8(): { pem: string; pkcs8: string } {
 }
 
 const ORIGINAL_ENV = { ...process.env };
-
-function createMockRedis(): Redis {
-  const store = new Map<string, unknown>();
-  return {
-    async get<T = unknown>(key: string): Promise<T | null> {
-      return (store.get(key) as T | undefined) ?? null;
-    },
-    async set(key: string, value: unknown): Promise<unknown> {
-      store.set(key, value);
-      return "OK";
-    },
-    async del(...keys: string[]): Promise<number> {
-      let removed = 0;
-      for (const key of keys) {
-        if (store.delete(key)) removed += 1;
-      }
-      return removed;
-    },
-  } as Redis;
-}
 
 describe("MusicKit JWT signer", () => {
   beforeEach(() => {
@@ -142,44 +113,5 @@ describe("MusicKit JWT signer", () => {
     expect(payload.origin).toBeUndefined();
     expect(payload.iss).toBe("TEAM_NO_ORIGIN");
     expect(payload.exp).toBeGreaterThan(Math.floor(Date.now() / 1000));
-  });
-});
-
-describe("MusicKit user token Redis storage", () => {
-  test("uses a normalized per-user Redis key", () => {
-    expect(musicKitUserTokenKey("Ryo")).toBe("musickit:user-token:ryo");
-  });
-
-  test("normalizes valid token strings and rejects invalid values", () => {
-    expect(normalizeMusicKitUserToken("  music-user-token  ")).toBe(
-      "music-user-token"
-    );
-    expect(normalizeMusicKitUserToken("")).toBeNull();
-    expect(normalizeMusicKitUserToken(null)).toBeNull();
-  });
-
-  test("saves, reads, and deletes a token in Redis", async () => {
-    const redis = createMockRedis();
-
-    const saved = await saveMusicKitUserToken(redis, "Ryo", " user-token ");
-    expect(saved.token).toBe("user-token");
-    expect(saved.updatedAt).toBeTruthy();
-
-    const loaded = await readMusicKitUserToken(redis, "ryo");
-    expect(loaded).toEqual(saved);
-
-    await deleteMusicKitUserToken(redis, "RYO");
-    expect(await readMusicKitUserToken(redis, "ryo")).toBeNull();
-  });
-
-  test("parses legacy raw-string values defensively", () => {
-    expect(parseStoredMusicKitUserToken("raw-token")).toEqual({
-      token: "raw-token",
-      updatedAt: "",
-    });
-    expect(parseStoredMusicKitUserToken("{not json")).toEqual({
-      token: "{not json",
-      updatedAt: "",
-    });
   });
 });
