@@ -80,6 +80,25 @@ export function isWithinEndedFanoutDedupWindow(
  * (`item.id`, `item.attributes.playParams.id`,
  * `item.attributes.playParams.catalogId`).
  */
+/**
+ * While `setQueue` runs with `startPlaying: false`, MusicKit JS commonly
+ * emits `loading` / `paused` / `stopped` playback states before we call
+ * `play()`. Forwarding those to the iPod store flips `isPlaying` off, so
+ * the post-queue `play()` is skipped and the user hears silence even
+ * though they just tapped a song. Suppress parent fan-out for non-terminal
+ * states until the queue load settles.
+ */
+export function shouldSuppressPlaybackStateFanoutWhileQueueLoading(
+  queueLoading: boolean,
+  state: number | undefined
+): boolean {
+  if (!queueLoading) return false;
+  // Terminal states are still unexpected mid-load, but ended/completed
+  // should never be swallowed if they somehow arrive.
+  if (state === 5 || state === 10) return false;
+  return true;
+}
+
 export function getMusicKitEventItemId(
   item:
     | {

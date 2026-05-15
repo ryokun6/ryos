@@ -1,11 +1,12 @@
 import { useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import type { Track } from "@/stores/useIpodStore";
-import { onMusicKitReady } from "@/hooks/useMusicKit";
+import { getMusicKitInstance, onMusicKitReady } from "@/hooks/useMusicKit";
 import { PLAYER_PROGRESS_INTERVAL_MS } from "../constants";
 import {
   getMusicKitEventItemId,
   isWithinEndedFanoutDedupWindow,
   shouldFireEndedForPlaybackState,
+  shouldSuppressPlaybackStateFanoutWhileQueueLoading,
 } from "./appleMusicPlayerBridgeUtils";
 
 /**
@@ -130,8 +131,12 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
     ref?: React.Ref<AppleMusicPlayerBridgeHandle>;
   }
 ) {
-  const instanceRef = useRef<MusicKit.MusicKitInstance | null>(null);
-  const [instanceReadyTick, setInstanceReadyTick] = useState(0);
+  const instanceRef = useRef<MusicKit.MusicKitInstance | null>(
+    getMusicKitInstance()
+  );
+  const [instanceReadyTick, setInstanceReadyTick] = useState(() =>
+    getMusicKitInstance() ? 1 : 0
+  );
   const lastQueuedTrackIdRef = useRef<string | null>(null);
   const queueLoadingRef = useRef<Promise<void> | null>(null);
   const onReadyRef = useRef(onReady);
@@ -234,6 +239,14 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
 
     const handleState = (event: MusicKit.PlaybackStateDidChangeEvent) => {
       const state = event?.state ?? activeInstance?.playbackState;
+      if (
+        shouldSuppressPlaybackStateFanoutWhileQueueLoading(
+          queueLoadingRef.current !== null,
+          state
+        )
+      ) {
+        return;
+      }
       if (state === 2) {
         onPlayRef.current?.();
         return;
@@ -480,6 +493,11 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
     const previousQueueLoading = queueLoadingRef.current;
     let thisLoad: Promise<void> | null = null;
     thisLoad = (async () => {
+      // Capture play intent up front. MusicKit emits `paused` while
+      // `setQueue({ startPlaying: false })` runs; if we forwarded that to
+      // the store, `playingRef` would flip false before this async block
+      // finishes and we'd skip the post-queue `play()` call.
+      const shouldPlayAfterQueue = playingRef.current;
       if (previousQueueLoading) {
         // Best-effort wait — failures of the previous queue load
         // shouldn't block a fresh user action.
@@ -513,7 +531,7 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
           onDurationRef.current?.(currentTrack.durationMs / 1000);
         }
         lastQueuedTrackIdRef.current = localQueueKey;
-        if (playingRef.current) {
+        if (shouldPlayAfterQueue) {
           await inst.play().catch((err) => {
             // Browsers block autoplay until the user interacts; surface as
             // a paused state so the iPod's play button shows the right icon.
@@ -525,6 +543,7 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
           });
         }
       } catch (err) {
+        lastQueuedTrackIdRef.current = null;
         console.error("[apple music] setQueue failed", err);
       } finally {
         // Only clear the shared ref when *we* are still the most recent
@@ -564,7 +583,9 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
             });
           }
           await inst.play();
-        } else {
+        } else if (!queueLoadingRef.current) {
+          // Don't race `setQueue({ startPlaying: false })` with an
+          // immediate `pause()` from a transient `playing=false` render.
           inst.pause();
         }
       } catch (err) {
@@ -572,7 +593,7 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
       }
     };
     void apply();
-  }, [playing, currentTrack]);
+  }, [playing, currentTrack, instanceReadyTick]);
 
   useImperativeHandle(
     ref,
