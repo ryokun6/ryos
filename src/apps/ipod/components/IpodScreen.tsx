@@ -179,8 +179,10 @@ function ModernNowPlayingProgressRow({
  * Reflection ratio kept at 0.3 so the stack stays inside the now-playing row. */
 const MODERN_NOW_PLAYING_ART_PX = 76;
 const MODERN_NOW_PLAYING_REFLECT_RATIO = 0.3;
-/** Inline progress row (9px bar + 12px type line). */
-const MODERN_NOW_PLAYING_PROGRESS_ROW_PX = 14;
+const MODERN_NOW_PLAYING_REFLECT_PX =
+  MODERN_NOW_PLAYING_ART_PX * MODERN_NOW_PLAYING_REFLECT_RATIO;
+/** Extra room below the 3D-tipped stack so rotateY projection is not clipped. */
+const MODERN_NOW_PLAYING_3D_BLEED_PX = 6;
 /** Shared clip radius for modern now-playing sleeve + reflection (modern skin only). */
 const MODERN_NOW_PLAYING_COVER_BORDER_RADIUS_PX = 0;
 // Neutral mid-gray placeholder shown while the cover image is in
@@ -212,9 +214,7 @@ const MODERN_NOW_PLAYING_ART_3D: CSSProperties = {
 
 /** Sleeve + reflection in one `preserve-3d` group tipped with rotateY + perspective. */
 function ModernNowPlayingArtwork({ coverUrl }: { coverUrl: string | null }) {
-  const reflectH = MODERN_NOW_PLAYING_ART_PX * MODERN_NOW_PLAYING_REFLECT_RATIO;
-  const stackHeight =
-    MODERN_NOW_PLAYING_ART_PX + (coverUrl ? reflectH : 0);
+  const reflectH = MODERN_NOW_PLAYING_REFLECT_PX;
   // Sleeve and reflection each track their own load. Same URL, so
   // the browser cache lands them within a frame in practice, but
   // each fade is self-contained — the sleeve's gray
@@ -230,12 +230,17 @@ function ModernNowPlayingArtwork({ coverUrl }: { coverUrl: string | null }) {
       className="relative shrink-0 self-start overflow-visible"
       style={{
         width: MODERN_NOW_PLAYING_ART_PX,
-        height: stackHeight,
-        perspective: `${MODERN_NOW_PLAYING_3D_PERSPECTIVE_PX}px`,
-        perspectiveOrigin: "50% 70%",
+        paddingBottom: MODERN_NOW_PLAYING_3D_BLEED_PX,
       }}
     >
-      <div style={MODERN_NOW_PLAYING_ART_3D}>
+      <div
+        className="overflow-visible"
+        style={{
+          perspective: `${MODERN_NOW_PLAYING_3D_PERSPECTIVE_PX}px`,
+          perspectiveOrigin: "50% 55%",
+        }}
+      >
+        <div className="overflow-visible" style={MODERN_NOW_PLAYING_ART_3D}>
         <div
           className="relative overflow-hidden"
           style={{
@@ -266,7 +271,7 @@ function ModernNowPlayingArtwork({ coverUrl }: { coverUrl: string | null }) {
         {coverUrl ? (
           <div
             aria-hidden
-            className="pointer-events-none mt-0 w-full overflow-hidden"
+            className="pointer-events-none w-full overflow-visible"
             style={{ height: reflectH }}
           >
             <img
@@ -275,15 +280,18 @@ function ModernNowPlayingArtwork({ coverUrl }: { coverUrl: string | null }) {
               alt=""
               draggable={false}
               onLoad={reflection.onLoad}
-              className="block w-full h-auto"
+              className="block w-full object-cover object-bottom"
               style={{
                 ...MODERN_NOW_PLAYING_REFLECT_IMG,
+                height: MODERN_NOW_PLAYING_ART_PX,
+                marginTop: -(MODERN_NOW_PLAYING_ART_PX - reflectH),
                 opacity: reflection.loaded ? reflectTargetOpacity : 0,
                 transition: COVER_FADE_TRANSITION,
               }}
             />
           </div>
         ) : null}
+        </div>
       </div>
     </div>
   );
@@ -923,7 +931,8 @@ export function IpodScreen({
           "relative",
           !showVideo && "z-10",
           isModernUi && showSplitMenuArt && "bg-white",
-          isModernUi && "flex-1 min-h-0"
+          isModernUi && "flex-1 min-h-0",
+          isModernUi && !menuMode && !showInlineCoverFlow && "overflow-visible"
         )}
         style={
           isModernUi
@@ -1085,24 +1094,8 @@ export function IpodScreen({
                       </div>
                     )}
                     {isModernUi ? (
-                      <div className="relative min-h-0 flex-1 overflow-visible">
-                        <div
-                          className="absolute inset-x-0 top-0 z-10"
-                          style={{ height: MODERN_NOW_PLAYING_PROGRESS_ROW_PX }}
-                        >
-                          <ModernNowPlayingProgressRow
-                            elapsedTime={elapsedTime}
-                            totalTime={totalTime}
-                            displayElapsedSeconds={displayElapsedSeconds}
-                            displayRemainingSeconds={displayRemainingSeconds}
-                          />
-                        </div>
-                        <div
-                          className="flex items-start gap-3 overflow-visible pb-0"
-                          style={{
-                            paddingTop: MODERN_NOW_PLAYING_PROGRESS_ROW_PX,
-                          }}
-                        >
+                      <div className="flex min-h-0 flex-1 flex-col overflow-visible">
+                        <div className="flex flex-1 items-start gap-3 overflow-visible pt-1">
                           <ModernNowPlayingArtwork coverUrl={coverUrl} />
                           <div
                             className={cn(
@@ -1171,6 +1164,14 @@ export function IpodScreen({
                             )}
                           </div>
                         </div>
+                        </div>
+                        <div className="mt-auto w-full shrink-0 pt-0.5">
+                          <ModernNowPlayingProgressRow
+                            elapsedTime={elapsedTime}
+                            totalTime={totalTime}
+                            displayElapsedSeconds={displayElapsedSeconds}
+                            displayRemainingSeconds={displayRemainingSeconds}
+                          />
                         </div>
                       </div>
                     ) : (
@@ -1289,7 +1290,7 @@ export function IpodScreen({
         maxWidth: "100%",
         maxHeight: "150px",
         position: "relative",
-        contain: "layout style paint",
+        contain: isModernUi ? "layout style" : "layout style paint",
         WebkitUserSelect: "none",
         WebkitTouchCallout: "none",
       }}
@@ -1640,7 +1641,9 @@ export function IpodScreen({
             // below. The split-art column to the right meanwhile fades
             // its cover image off, revealing the panel's solid-black
             // backface (see `.ipod-modern-split-art`).
-            "relative flex min-h-0 flex-col overflow-hidden z-10 h-full ipod-modern-menu-panel",
+            "relative flex min-h-0 flex-col z-10 h-full ipod-modern-menu-panel",
+            (menuMode || showInlineCoverFlow) && "overflow-hidden",
+            !menuMode && !showInlineCoverFlow && "overflow-visible",
             showSplitMenuArt && "is-split",
             splitLayoutTransitionReady &&
               `transition-[width,box-shadow] ${SPLIT_LAYOUT_TRANSITION_TIMING}`
