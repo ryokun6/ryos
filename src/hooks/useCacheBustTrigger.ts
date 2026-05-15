@@ -1,5 +1,6 @@
 import { useRef, useCallback } from "react";
 import { useIpodStore } from "@/stores/useIpodStore";
+import { useLatestRef } from "@/hooks/useLatestRef";
 
 /**
  * Hook for detecting cache bust trigger changes.
@@ -13,6 +14,13 @@ import { useIpodStore } from "@/stores/useIpodStore";
 export function useCacheBustTrigger() {
   const trigger = useIpodStore((s) => s.lyricsCacheBustTrigger);
   const lastTriggerRef = useRef<number>(trigger);
+  // Keep `markHandled` identity stable across renders. Previously the
+  // `[trigger]` dep made `markHandled` churn whenever the user bumped the
+  // cache-bust trigger, which in turn churned every effect that listed it
+  // in its dep array and re-fired the fetch / translation pipeline an
+  // extra time. The ref-based pattern always reads the latest trigger
+  // value when called without invalidating consumer effects.
+  const triggerRef = useLatestRef(trigger);
 
   /**
    * Whether the current trigger value indicates a force request
@@ -25,8 +33,8 @@ export function useCacheBustTrigger() {
    * Call this after successfully processing a force request.
    */
   const markHandled = useCallback(() => {
-    lastTriggerRef.current = trigger;
-  }, [trigger]);
+    lastTriggerRef.current = triggerRef.current;
+  }, [triggerRef]);
 
   /**
    * Get the current trigger value (for dependency arrays)
@@ -52,12 +60,15 @@ export function useCacheBustTrigger() {
 export function useRefetchTrigger() {
   const trigger = useIpodStore((s) => s.lyricsRefetchTrigger);
   const lastTriggerRef = useRef<number>(trigger);
+  // See `useCacheBustTrigger` above for why we use a ref-based identity for
+  // `markHandled` instead of including `trigger` in the dep array.
+  const triggerRef = useLatestRef(trigger);
 
   const isForceRequest = lastTriggerRef.current !== trigger;
 
   const markHandled = useCallback(() => {
-    lastTriggerRef.current = trigger;
-  }, [trigger]);
+    lastTriggerRef.current = triggerRef.current;
+  }, [triggerRef]);
 
   return {
     currentTrigger: trigger,

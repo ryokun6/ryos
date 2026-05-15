@@ -114,8 +114,27 @@ export function useFurigana({
 
   const reducer = (state: FuriganaState, action: FuriganaAction): FuriganaState => {
     switch (action.type) {
-      case "patch":
+      case "patch": {
+        // Bail out when nothing actually changed so we don't trigger a
+        // useless re-render. Many of the dispatches in this hook reset
+        // state to its current value (e.g. `setIsFetchingFurigana(false)`
+        // on an already-idle hook); without this bailout each such call
+        // produces a new state object, fanning out unnecessary re-renders
+        // to consumers (and historically contributing to lyrics-reload
+        // render loops in `useLyrics`).
+        let changed = false;
+        for (const key in action.payload) {
+          if (
+            action.payload[key as keyof FuriganaState] !==
+            state[key as keyof FuriganaState]
+          ) {
+            changed = true;
+            break;
+          }
+        }
+        if (!changed) return state;
         return { ...state, ...action.payload };
+      }
       default:
         return state;
     }
