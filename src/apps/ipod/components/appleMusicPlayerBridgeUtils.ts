@@ -109,6 +109,30 @@ export function buildAppleMusicQueueOptions(
   };
 }
 
+/**
+ * Whether MusicKit's `nowPlayingItem` should drive the iPod's current track.
+ * Skips while an explicit user selection is still being queued so polling
+ * does not revert the UI to the previous song mid-`setQueue`.
+ */
+export function shouldSyncQueueTrackFromMediaItem(
+  resolvedTrackId: string | null,
+  currentTrackId: string | null | undefined,
+  playbackTargetTrackId: string | null,
+  queuedTrackIds: string[]
+): boolean {
+  if (!resolvedTrackId || !queuedTrackIds.includes(resolvedTrackId)) {
+    return false;
+  }
+  if (resolvedTrackId === currentTrackId) return false;
+  if (
+    playbackTargetTrackId &&
+    resolvedTrackId !== playbackTargetTrackId
+  ) {
+    return false;
+  }
+  return true;
+}
+
 export function resolveAppleMusicQueueTrackIdFromMediaItem(
   item: MusicKit.MediaItem | null | undefined,
   queueTracks: Track[]

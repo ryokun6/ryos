@@ -8,6 +8,7 @@ import {
   getMusicKitEventItemId,
   isWithinEndedFanoutDedupWindow,
   shouldFireEndedForPlaybackState,
+  shouldSyncQueueTrackFromMediaItem,
 } from "./appleMusicPlayerBridgeUtils";
 
 /**
@@ -126,6 +127,8 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
   const queuedTrackIdsRef = useRef<string[]>([]);
   const isMultiSongQueueRef = useRef(false);
   const suppressedQueueTrackIdRef = useRef<string | null>(null);
+  /** Blocks MusicKit→iPod sync while a user-selected track is being queued. */
+  const playbackTargetTrackIdRef = useRef<string | null>(null);
   const queueLoadingRef = useRef<Promise<void> | null>(null);
   const onReadyRef = useRef(onReady);
   onReadyRef.current = onReady;
@@ -235,8 +238,12 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
     );
     if (
       !trackId ||
-      !queuedTrackIdsRef.current.includes(trackId) ||
-      trackId === currentTrackRef.current?.id
+      !shouldSyncQueueTrackFromMediaItem(
+        trackId,
+        currentTrackRef.current?.id,
+        playbackTargetTrackIdRef.current,
+        queuedTrackIdsRef.current
+      )
     ) {
       return false;
     }
@@ -493,6 +500,7 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
       lastQueuedDefinitionKeyRef.current = null;
       queuedTrackIdsRef.current = [];
       isMultiSongQueueRef.current = false;
+      playbackTargetTrackIdRef.current = null;
       return;
     }
     if (!queueBuild) {
@@ -512,6 +520,8 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
       return;
     }
     onNowPlayingItemChangeRef.current?.(null);
+    suppressedQueueTrackIdRef.current = null;
+    playbackTargetTrackIdRef.current = currentTrack.id;
 
     const localQueueBuild = queueBuild;
     // Serialize back-to-back queue swaps. If another track change is
@@ -584,6 +594,9 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
         // `setQueue` mid-flight.
         if (queueLoadingRef.current === thisLoad) {
           queueLoadingRef.current = null;
+        }
+        if (playbackTargetTrackIdRef.current === currentTrack.id) {
+          playbackTargetTrackIdRef.current = null;
         }
       }
     })();

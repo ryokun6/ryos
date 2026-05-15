@@ -55,6 +55,7 @@ const {
   getAppleMusicSongQueueId,
   buildAppleMusicQueueOptions,
   resolveAppleMusicQueueTrackIdFromMediaItem,
+  shouldSyncQueueTrackFromMediaItem,
 } = await import(
   "../src/apps/ipod/components/appleMusicPlayerBridgeUtils"
 );
@@ -317,6 +318,20 @@ describe("Apple Music MusicKit queue helpers", () => {
 
     expect(shouldFireEndedForPlaybackState(5, one, true)).toBe(false);
     expect(shouldFireEndedForPlaybackState(10, one, true)).toBe(true);
+  });
+
+  test("blocks MusicKit sync while an explicit playback target is pending", () => {
+    const queueIds = ["am:1", "am:2", "am:3"];
+
+    expect(
+      shouldSyncQueueTrackFromMediaItem("am:2", "am:3", "am:3", queueIds)
+    ).toBe(false);
+    expect(
+      shouldSyncQueueTrackFromMediaItem("am:2", "am:1", null, queueIds)
+    ).toBe(true);
+    expect(
+      shouldSyncQueueTrackFromMediaItem("am:2", "am:2", null, queueIds)
+    ).toBe(false);
   });
 });
 
