@@ -2800,14 +2800,21 @@ export function useIpodLogic({
       void skipAppleMusicCollectionShell("next");
       return;
     }
-    if (usesAppleMusicNativeSongQueue) {
-      void skipAppleMusicNativeSongQueue("next");
+    // MusicKit owns shuffle ordering — delegate skip to its queue APIs.
+    // In sequential mode the store advances the current song and the
+    // bridge retargets MusicKit via changeToMediaAtIndex.
+    if (usesAppleMusicNativeSongQueue && isShuffled) {
+      void (async () => {
+        const skipped = await skipAppleMusicNativeSongQueue("next");
+        if (!skipped) rawNextTrack();
+      })();
       return;
     }
     rawNextTrack();
   }, [
     getCurrentAppleMusicCollectionShellTrack,
     usesAppleMusicNativeSongQueue,
+    isShuffled,
     rawNextTrack,
     skipAppleMusicCollectionShell,
     skipAppleMusicNativeSongQueue,
@@ -2818,14 +2825,18 @@ export function useIpodLogic({
       void skipAppleMusicCollectionShell("previous");
       return;
     }
-    if (usesAppleMusicNativeSongQueue) {
-      void skipAppleMusicNativeSongQueue("previous");
+    if (usesAppleMusicNativeSongQueue && isShuffled) {
+      void (async () => {
+        const skipped = await skipAppleMusicNativeSongQueue("previous");
+        if (!skipped) rawPreviousTrack();
+      })();
       return;
     }
     rawPreviousTrack();
   }, [
     getCurrentAppleMusicCollectionShellTrack,
     usesAppleMusicNativeSongQueue,
+    isShuffled,
     rawPreviousTrack,
     skipAppleMusicCollectionShell,
     skipAppleMusicNativeSongQueue,

@@ -121,6 +121,7 @@ export function IpodMenuBar({
     // Actions
     setYoutubeCurrentSongId,
     setAppleMusicCurrentSongId,
+    setAppleMusicPlaybackQueue,
     setIsPlaying,
     toggleLoopAll,
     toggleLoopCurrent,
@@ -171,6 +172,7 @@ export function IpodMenuBar({
     // Actions
     setYoutubeCurrentSongId: s.setCurrentSongId,
     setAppleMusicCurrentSongId: s.setAppleMusicCurrentSongId,
+    setAppleMusicPlaybackQueue: s.setAppleMusicPlaybackQueue,
     setIsPlaying: s.setIsPlaying,
     toggleLoopAll: s.toggleLoopAll,
     toggleLoopCurrent: s.toggleLoopCurrent,
@@ -231,12 +233,14 @@ export function IpodMenuBar({
     return index >= 0 ? index : (tracks.length > 0 ? 0 : -1);
   }, [tracks, currentSongId]);
 
-  const handlePlayTrack = (index: number) => {
+  const handlePlayTrack = (index: number, queueIds?: string[] | null) => {
     const trackId = tracks[index]?.id;
-    if (trackId) {
-      setCurrentSongId(trackId);
-      setIsPlaying(true);
+    if (!trackId) return;
+    if (isAppleMusic && queueIds !== undefined) {
+      setAppleMusicPlaybackQueue(queueIds);
     }
+    setCurrentSongId(trackId);
+    setIsPlaying(true);
   };
 
   // Group tracks by artist. Memoized because the menubar re-renders on
@@ -960,7 +964,7 @@ export function IpodMenuBar({
                     <MenubarCheckboxItem
                       key={`all-${track.id}`}
                       checked={index === currentIndex}
-                      onCheckedChange={() => handlePlayTrack(index)}
+                      onCheckedChange={() => handlePlayTrack(index, null)}
                       className="text-md h-6 pr-3 max-w-[220px] truncate"
                     >
                       <span className="truncate min-w-0">{track.title}</span>
@@ -988,7 +992,11 @@ export function IpodMenuBar({
                   outer artist list. The full grouping is still memoized
                   above so the iPod screen can use it freely. */}
               <div className="max-h-[300px] overflow-y-auto">
-                {artists.slice(0, MENUBAR_ARTIST_LIMIT).map((artist) => (
+                {artists.slice(0, MENUBAR_ARTIST_LIMIT).map((artist) => {
+                  const artistQueueIds = tracksByArtist[artist].map(
+                    ({ track }) => track.id
+                  );
+                  return (
                   <MenubarSub key={artist}>
                     <MenubarSubTrigger className="text-md h-6 px-3">
                       <div className="flex justify-between w-full items-center overflow-hidden">
@@ -1002,7 +1010,9 @@ export function IpodMenuBar({
                           <MenubarCheckboxItem
                             key={`${artist}-${track.id}`}
                             checked={index === currentIndex}
-                            onCheckedChange={() => handlePlayTrack(index)}
+                            onCheckedChange={() =>
+                              handlePlayTrack(index, artistQueueIds)
+                            }
                             className="text-md h-6 pr-3 max-w-[160px] sm:max-w-[200px] truncate"
                           >
                             <span className="truncate min-w-0">
@@ -1012,7 +1022,8 @@ export function IpodMenuBar({
                         ))}
                     </MenubarSubContent>
                   </MenubarSub>
-                ))}
+                  );
+                })}
                 {artists.length > MENUBAR_ARTIST_LIMIT && (
                   <MenubarItem
                     disabled

@@ -2035,9 +2035,15 @@ export const useIpodStore = create<IpodState>()(
       setAppleMusicCurrentSongId: (songId) =>
         set((state) => {
           if (state.appleMusicCurrentSongId === songId) return {};
+          const queue = normalizeAppleMusicPlaybackQueue(
+            state.appleMusicPlaybackQueue
+          );
+          const songOutsideQueue =
+            Boolean(queue && songId && !queue.includes(songId));
           // Reset transient progress + lyrics whenever the active track changes.
           return {
             appleMusicCurrentSongId: songId,
+            ...(songOutsideQueue ? { appleMusicPlaybackQueue: null } : {}),
             appleMusicKitNowPlaying: null,
             currentLyrics: null,
             currentFuriganaMap: null,

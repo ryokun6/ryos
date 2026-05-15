@@ -338,6 +338,31 @@ describe("useIpodStore Apple Music slice", () => {
     expect(useIpodStore.getState().appleMusicKitNowPlaying).toBeNull();
   });
 
+  test("setAppleMusicCurrentSongId drops a stale contextual queue when the song is outside it", () => {
+    useIpodStore.getState().setAppleMusicTracks([
+      { id: "am:1", url: "applemusic:1", title: "One", source: "appleMusic" },
+      { id: "am:2", url: "applemusic:2", title: "Two", source: "appleMusic" },
+      { id: "am:3", url: "applemusic:3", title: "Three", source: "appleMusic" },
+    ]);
+    useIpodStore.getState().setAppleMusicPlaybackQueue(["am:1", "am:2"]);
+    useIpodStore.getState().setAppleMusicCurrentSongId("am:3");
+    expect(useIpodStore.getState().appleMusicPlaybackQueue).toBeNull();
+    expect(useIpodStore.getState().appleMusicCurrentSongId).toBe("am:3");
+  });
+
+  test("setAppleMusicCurrentSongId keeps the contextual queue when the song is inside it", () => {
+    useIpodStore.getState().setAppleMusicTracks([
+      { id: "am:1", url: "applemusic:1", title: "One", source: "appleMusic" },
+      { id: "am:2", url: "applemusic:2", title: "Two", source: "appleMusic" },
+    ]);
+    useIpodStore.getState().setAppleMusicPlaybackQueue(["am:1", "am:2"]);
+    useIpodStore.getState().setAppleMusicCurrentSongId("am:2");
+    expect(useIpodStore.getState().appleMusicPlaybackQueue).toEqual([
+      "am:1",
+      "am:2",
+    ]);
+  });
+
   test("setAppleMusicTracks selects the first track when current is no longer in the list", () => {
     useIpodStore.getState().setAppleMusicTracks([
       {
