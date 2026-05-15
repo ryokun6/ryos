@@ -219,7 +219,7 @@ export function useIpodLogic({
       if (track) acc.push(track);
       return acc;
     }, []);
-  }, [isAppleMusic, appleMusicPlaybackQueue, tracks, browsableTracks]);
+  }, [isAppleMusic, appleMusicPlaybackQueue, tracks]);
 
   const {
     theme,
