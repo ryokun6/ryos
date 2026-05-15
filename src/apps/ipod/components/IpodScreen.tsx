@@ -171,13 +171,17 @@ function ModernNowPlayingProgressRow({
  *
  * Cover sized at 76px — prominent on the left like the iPod nano 6G/7G
  * Now Playing screen without crowding the title / artist / album column.
- * Reflection ratio 0.42 for a longer fade under the sleeve. */
+ * Reflection ratio 0.38 — tuned to fit the 129px now-playing viewport
+ * (76px sleeve + ~29px reflection + progress row) without clipping. */
 const MODERN_NOW_PLAYING_ART_PX = 76;
-const MODERN_NOW_PLAYING_REFLECT_RATIO = 0.42;
-const MODERN_NOW_PLAYING_REFLECT_PX =
-  MODERN_NOW_PLAYING_ART_PX * MODERN_NOW_PLAYING_REFLECT_RATIO;
-/** Extra room below the 3D-tipped stack so rotateY projection is not clipped. */
-const MODERN_NOW_PLAYING_3D_BLEED_PX = 6;
+const MODERN_NOW_PLAYING_REFLECT_RATIO = 0.38;
+const MODERN_NOW_PLAYING_REFLECT_PX = Math.round(
+  MODERN_NOW_PLAYING_ART_PX * MODERN_NOW_PLAYING_REFLECT_RATIO
+);
+const MODERN_NOW_PLAYING_STACK_PX =
+  MODERN_NOW_PLAYING_ART_PX + MODERN_NOW_PLAYING_REFLECT_PX;
+/** Extra room below the 3D-tipped sleeve so rotateY projection is not clipped. */
+const MODERN_NOW_PLAYING_3D_BLEED_PX = 4;
 /** Shared clip radius for modern now-playing sleeve + reflection (modern skin only). */
 const MODERN_NOW_PLAYING_COVER_BORDER_RADIUS_PX = 0;
 // Neutral mid-gray placeholder shown while the cover image is in
@@ -189,11 +193,11 @@ const MODERN_NOW_PLAYING_SLEEVE: CSSProperties = {
 };
 const MODERN_NOW_PLAYING_REFLECT_IMG: CSSProperties = {
   transform: "scaleY(-1)",
-  opacity: 0.36,
+  opacity: 0.42,
   maskImage:
-    "linear-gradient(to top, rgba(0, 0, 0, 1) 0%, transparent 65%)",
+    "linear-gradient(to top, rgba(0, 0, 0, 1) 0%, transparent 72%)",
   WebkitMaskImage:
-    "linear-gradient(to top, rgba(0, 0, 0, 1) 0%, transparent 65%)",
+    "linear-gradient(to top, rgba(0, 0, 0, 1) 0%, transparent 72%)",
   borderRadius: `${MODERN_NOW_PLAYING_COVER_BORDER_RADIUS_PX}px`,
 };
 const MODERN_NOW_PLAYING_3D_PERSPECTIVE_PX = 180;
@@ -207,14 +211,9 @@ const MODERN_NOW_PLAYING_ART_3D: CSSProperties = {
   width: MODERN_NOW_PLAYING_ART_PX,
 };
 
-/** Sleeve + reflection in one `preserve-3d` group tipped with rotateY + perspective. */
+/** Tilted sleeve with a flat 2D reflection stacked underneath (not inside rotateY). */
 function ModernNowPlayingArtwork({ coverUrl }: { coverUrl: string | null }) {
   const reflectH = MODERN_NOW_PLAYING_REFLECT_PX;
-  // Sleeve and reflection each track their own load. Same URL, so
-  // the browser cache lands them within a frame in practice, but
-  // each fade is self-contained — the sleeve's gray
-  // (`MODERN_NOW_PLAYING_SLEEVE.background`) reads as the
-  // placeholder until the bitmap arrives.
   const sleeve = useImageLoaded(coverUrl);
   const reflection = useImageLoaded(coverUrl);
   const reflectTargetOpacity =
@@ -222,72 +221,78 @@ function ModernNowPlayingArtwork({ coverUrl }: { coverUrl: string | null }) {
 
   return (
     <div
-      className="relative shrink-0 self-start overflow-visible"
+      className="relative shrink-0 self-start"
       style={{
         width: MODERN_NOW_PLAYING_ART_PX,
-        paddingBottom: MODERN_NOW_PLAYING_3D_BLEED_PX,
+        height: MODERN_NOW_PLAYING_STACK_PX,
       }}
     >
       <div
-        className="overflow-visible"
         style={{
           perspective: `${MODERN_NOW_PLAYING_3D_PERSPECTIVE_PX}px`,
-          perspectiveOrigin: "50% 55%",
+          perspectiveOrigin: "50% 100%",
+          paddingBottom: MODERN_NOW_PLAYING_3D_BLEED_PX,
         }}
       >
-        <div className="overflow-visible" style={MODERN_NOW_PLAYING_ART_3D}>
         <div
-          className="relative overflow-hidden"
           style={{
-            ...MODERN_NOW_PLAYING_SLEEVE,
-            height: MODERN_NOW_PLAYING_ART_PX,
+            ...MODERN_NOW_PLAYING_ART_3D,
             width: MODERN_NOW_PLAYING_ART_PX,
           }}
         >
-          {coverUrl ? (
-            <img
-              ref={sleeve.ref}
-              src={coverUrl}
-              alt=""
-              draggable={false}
-              onLoad={sleeve.onLoad}
-              className="size-full object-cover"
-              style={{
-                opacity: sleeve.loaded ? 1 : 0,
-                transition: COVER_FADE_TRANSITION,
-              }}
-            />
-          ) : (
-            <div className="flex size-full items-center justify-center bg-gradient-to-br from-neutral-600 to-neutral-900 text-[22px] leading-none text-white/25 select-none">
-              ♪
-            </div>
-          )}
-        </div>
-        {coverUrl ? (
           <div
-            aria-hidden
-            className="pointer-events-none w-full overflow-visible"
-            style={{ height: reflectH }}
+            className="relative overflow-hidden"
+            style={{
+              ...MODERN_NOW_PLAYING_SLEEVE,
+              height: MODERN_NOW_PLAYING_ART_PX,
+              width: MODERN_NOW_PLAYING_ART_PX,
+            }}
           >
-            <img
-              ref={reflection.ref}
-              src={coverUrl}
-              alt=""
-              draggable={false}
-              onLoad={reflection.onLoad}
-              className="block w-full object-cover object-bottom"
-              style={{
-                ...MODERN_NOW_PLAYING_REFLECT_IMG,
-                height: MODERN_NOW_PLAYING_ART_PX,
-                marginTop: -(MODERN_NOW_PLAYING_ART_PX - reflectH),
-                opacity: reflection.loaded ? reflectTargetOpacity : 0,
-                transition: COVER_FADE_TRANSITION,
-              }}
-            />
+            {coverUrl ? (
+              <img
+                ref={sleeve.ref}
+                src={coverUrl}
+                alt=""
+                draggable={false}
+                onLoad={sleeve.onLoad}
+                className="size-full object-cover"
+                style={{
+                  opacity: sleeve.loaded ? 1 : 0,
+                  transition: COVER_FADE_TRANSITION,
+                }}
+              />
+            ) : (
+              <div className="flex size-full items-center justify-center bg-gradient-to-br from-neutral-600 to-neutral-900 text-[22px] leading-none text-white/25 select-none">
+                ♪
+              </div>
+            )}
           </div>
-        ) : null}
         </div>
       </div>
+      {coverUrl ? (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute left-0 w-full overflow-hidden"
+          style={{
+            top: MODERN_NOW_PLAYING_ART_PX,
+            height: reflectH,
+          }}
+        >
+          <img
+            ref={reflection.ref}
+            src={coverUrl}
+            alt=""
+            draggable={false}
+            onLoad={reflection.onLoad}
+            className="block w-full h-auto"
+            style={{
+              ...MODERN_NOW_PLAYING_REFLECT_IMG,
+              opacity: reflection.loaded ? reflectTargetOpacity : 0,
+              transition: COVER_FADE_TRANSITION,
+            }}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -1070,7 +1075,7 @@ export function IpodScreen({
               <div
                 className={cn(
                   "flex-1 flex flex-col overflow-visible px-2",
-                  isModernUi ? "pt-1.5 pb-0" : "py-1"
+                  isModernUi ? "pt-1 pb-0" : "py-1"
                 )}
               >
                 {currentTrack && nowPlayingDisplayTrack ? (
@@ -1101,16 +1106,13 @@ export function IpodScreen({
                       </div>
                     )}
                     {isModernUi ? (
-                      <div className="flex min-h-0 flex-1 flex-col overflow-visible">
-                        <div className="flex items-start gap-3 overflow-visible pt-1">
+                      <div className="flex flex-col overflow-visible">
+                        <div className="flex items-start gap-3 overflow-visible">
                           <ModernNowPlayingArtwork coverUrl={coverUrl} />
                           <div
                             className={cn(
                               "flex min-w-0 flex-1 flex-col justify-start gap-0 overflow-visible text-left",
-                              // Small downward nudge so the first line
-                              // doesn't hug the cover's top edge — matches
-                              // the iPod nano 6G/7G "Now Playing" baseline.
-                              "pt-1",
+                              "pt-0.5",
                               "[&>*]:py-0",
                               "[&>*:not(:first-child)]:-mt-[3px]",
                               "font-ipod-modern-ui"
@@ -1172,8 +1174,7 @@ export function IpodScreen({
                           </div>
                         </div>
                         </div>
-                        <div className="min-h-0 flex-1" aria-hidden />
-                        <div className="w-full shrink-0 pb-0.5">
+                        <div className="mt-1.5 w-full shrink-0">
                           <ModernNowPlayingProgressRow
                             elapsedTime={elapsedTime}
                             totalTime={totalTime}
@@ -1298,7 +1299,7 @@ export function IpodScreen({
         maxWidth: "100%",
         maxHeight: "150px",
         position: "relative",
-        contain: isModernUi ? "layout style" : "layout style paint",
+        contain: isModernUi ? undefined : "layout style paint",
         WebkitUserSelect: "none",
         WebkitTouchCallout: "none",
       }}
