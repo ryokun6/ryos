@@ -180,6 +180,8 @@ const MODERN_NOW_PLAYING_ART_3D: CSSProperties = {
 /** Sleeve + reflection in one `preserve-3d` group tipped with rotateY + perspective. */
 function ModernNowPlayingArtwork({ coverUrl }: { coverUrl: string | null }) {
   const reflectH = MODERN_NOW_PLAYING_ART_PX * MODERN_NOW_PLAYING_REFLECT_RATIO;
+  const stackHeight =
+    MODERN_NOW_PLAYING_ART_PX + (coverUrl ? reflectH : 0);
   // Sleeve and reflection each track their own load. Same URL, so
   // the browser cache lands them within a frame in practice, but
   // each fade is self-contained — the sleeve's gray
@@ -195,7 +197,7 @@ function ModernNowPlayingArtwork({ coverUrl }: { coverUrl: string | null }) {
       className="relative shrink-0 self-start overflow-visible"
       style={{
         width: MODERN_NOW_PLAYING_ART_PX,
-        height: MODERN_NOW_PLAYING_ART_PX,
+        height: stackHeight,
         perspective: `${MODERN_NOW_PLAYING_3D_PERSPECTIVE_PX}px`,
         perspectiveOrigin: "50% 70%",
       }}
@@ -1039,7 +1041,7 @@ export function IpodScreen({
                       </div>
                     )}
                     {isModernUi ? (
-                      <div className="flex min-h-0 flex-1 items-start gap-3 overflow-visible pt-1 pb-0">
+                      <div className="flex flex-1 items-start gap-3 overflow-visible pt-1 pb-0">
                         <ModernNowPlayingArtwork coverUrl={coverUrl} />
                         <div
                           className={cn(
