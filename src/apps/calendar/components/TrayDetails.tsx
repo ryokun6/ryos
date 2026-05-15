@@ -326,6 +326,10 @@ function EventTrayEditor({
     useGeneva ? "font-geneva-12 border-black/25" : "border-black/20"
   );
 
+  // NOTE: keep the scroller's own `pb-*` modest — Mobile Safari clips
+  // padding-bottom on overflow:auto containers when scrolled to the end.
+  // Real bottom breathing room is added below as a sibling spacer that
+  // lives inside the scroll content (reliably honored across browsers).
   const panelShell = cn(
     "flex-1 flex flex-col min-h-0 overflow-y-auto",
     "bg-white pl-2.5 pr-2.5 pt-2 pb-2",
@@ -522,6 +526,11 @@ function EventTrayEditor({
             {t("apps.calendar.event.delete")}
           </Button>
         </div>
+
+        {/* Trailing spacer: ensures the delete button keeps breathing room
+            above the scroller's bottom edge in browsers (Mobile Safari)
+            that don't honor `padding-bottom` on overflow containers. */}
+        <div aria-hidden className="shrink-0 h-4" />
       </div>
     </div>
   );
@@ -598,6 +607,8 @@ function TodoDetails({
     isXpTheme && "text-black"
   );
 
+  // See note on EventTrayEditor.panelShell: keep scroller `pb-*` minimal and
+  // rely on a trailing spacer below for cross-browser bottom breathing room.
   const panelShell = cn(
     "flex-1 flex flex-col min-h-0 overflow-y-auto",
     "bg-white pl-2.5 pr-2.5 pt-2 pb-2",
@@ -732,6 +743,11 @@ function TodoDetails({
             {t("apps.calendar.event.delete")}
           </Button>
         </div>
+
+        {/* Trailing spacer: ensures the delete button keeps breathing room
+            above the scroller's bottom edge in browsers (Mobile Safari)
+            that don't honor `padding-bottom` on overflow containers. */}
+        <div aria-hidden className="shrink-0 h-4" />
       </div>
     </div>
   );
