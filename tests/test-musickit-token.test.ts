@@ -6,6 +6,7 @@ import {
   parseMusicKitPrivateKey,
   listMusicKitMissingEnv,
 } from "../api/_utils/_musickit-jwt";
+import { fetchMusicKitApi } from "../src/hooks/useMusicKit";
 import {
   deleteMusicKitUserToken,
   musicKitUserTokenKey,
@@ -181,5 +182,76 @@ describe("MusicKit user token Redis storage", () => {
       token: "{not json",
       updatedAt: "",
     });
+  });
+});
+
+describe("MusicKit client token sync fetch", () => {
+  const originalFetch = globalThis.fetch;
+  const originalWindowDescriptor = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "window"
+  );
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+    if (originalWindowDescriptor) {
+      Object.defineProperty(globalThis, "window", originalWindowDescriptor);
+    } else {
+      delete (globalThis as typeof globalThis & { window?: unknown }).window;
+    }
+  });
+
+  test("uses the configured API origin with credentials in Tauri", async () => {
+    const calls: Array<{ url: string; init?: RequestInit }> = [];
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: {
+        __TAURI__: {},
+        __RYOS_RUNTIME_CONFIG__: {
+          appPublicOrigin: "https://os.example.com",
+        },
+        location: {
+          origin: "tauri://localhost",
+        },
+      },
+    });
+
+    globalThis.fetch = (async (url, init) => {
+      calls.push({ url: String(url), init });
+      return new Response("{}", { status: 200 });
+    }) as typeof fetch;
+
+    await fetchMusicKitApi("/api/musickit-user-token", {
+      method: "PUT",
+      credentials: "omit",
+    });
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.url).toBe("https://os.example.com/api/musickit-user-token");
+    expect(calls[0]?.init?.credentials).toBe("include");
+    expect(calls[0]?.init?.method).toBe("PUT");
+  });
+
+  test("keeps web requests same-origin but still includes credentials", async () => {
+    const calls: Array<{ url: string; init?: RequestInit }> = [];
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: {
+        location: {
+          origin: "https://web.example.com",
+        },
+      },
+    });
+
+    globalThis.fetch = (async (url, init) => {
+      calls.push({ url: String(url), init });
+      return new Response("{}", { status: 200 });
+    }) as typeof fetch;
+
+    await fetchMusicKitApi("/api/musickit-token", { method: "GET" });
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.url).toBe("/api/musickit-token");
+    expect(calls[0]?.init?.credentials).toBe("include");
   });
 });

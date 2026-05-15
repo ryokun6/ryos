@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useReducer } from "react";
+import { getApiUrl } from "@/utils/platform";
 
 /**
  * Apple MusicKit JS v3 lazy loader / configurer.
@@ -63,6 +64,16 @@ function getEnvFallbackToken(): string | undefined {
   return token && token.trim().length > 0 ? token.trim() : undefined;
 }
 
+export function fetchMusicKitApi(
+  path: string,
+  init: RequestInit = {}
+): Promise<Response> {
+  return fetch(getApiUrl(path), {
+    ...init,
+    credentials: "include",
+  });
+}
+
 async function fetchDeveloperToken(): Promise<string> {
   const now = Date.now();
   if (
@@ -75,9 +86,8 @@ async function fetchDeveloperToken(): Promise<string> {
   if (inFlightTokenFetch) return inFlightTokenFetch;
 
   inFlightTokenFetch = (async () => {
-    const res = await fetch(MUSICKIT_TOKEN_ENDPOINT, {
+    const res = await fetchMusicKitApi(MUSICKIT_TOKEN_ENDPOINT, {
       method: "GET",
-      credentials: "same-origin",
       headers: { Accept: "application/json" },
     });
     if (!res.ok) {
@@ -130,9 +140,8 @@ async function fetchSyncedMusicUserToken(): Promise<string | null> {
   if (inFlightUserTokenFetch) return inFlightUserTokenFetch;
 
   inFlightUserTokenFetch = (async () => {
-    const res = await fetch(MUSICKIT_USER_TOKEN_ENDPOINT, {
+    const res = await fetchMusicKitApi(MUSICKIT_USER_TOKEN_ENDPOINT, {
       method: "GET",
-      credentials: "same-origin",
       headers: { Accept: "application/json" },
     });
 
@@ -165,9 +174,8 @@ async function saveSyncedMusicUserToken(token: string): Promise<void> {
   const normalized = normalizeMusicUserToken(token);
   if (!normalized || normalized === lastPersistedUserToken) return;
 
-  const res = await fetch(MUSICKIT_USER_TOKEN_ENDPOINT, {
+  const res = await fetchMusicKitApi(MUSICKIT_USER_TOKEN_ENDPOINT, {
     method: "PUT",
-    credentials: "same-origin",
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
@@ -183,9 +191,8 @@ async function saveSyncedMusicUserToken(token: string): Promise<void> {
 }
 
 async function deleteSyncedMusicUserToken(): Promise<void> {
-  const res = await fetch(MUSICKIT_USER_TOKEN_ENDPOINT, {
+  const res = await fetchMusicKitApi(MUSICKIT_USER_TOKEN_ENDPOINT, {
     method: "DELETE",
-    credentials: "same-origin",
     headers: { Accept: "application/json" },
   });
 
