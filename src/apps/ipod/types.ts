@@ -42,6 +42,8 @@ export interface MenuHistoryEntry {
 // PIP Player props
 export interface PipPlayerProps {
   currentTrack: Track | null;
+  appleMusicQueueTracks?: Track[] | null;
+  onAppleMusicQueueTrackChange?: (trackId: string) => void;
   isPlaying: boolean;
   onTogglePlay: () => void;
   onNextTrack: () => void;
@@ -95,6 +97,8 @@ export interface FullScreenPortalProps {
 // IpodScreen props
 export interface IpodScreenProps {
   currentTrack: Track | null;
+  appleMusicQueueTracks?: Track[] | null;
+  onAppleMusicQueueTrackChange?: (trackId: string) => void;
   isPlaying: boolean;
   elapsedTime: number;
   totalTime: number;

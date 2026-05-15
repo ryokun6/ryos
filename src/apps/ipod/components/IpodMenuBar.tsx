@@ -43,6 +43,8 @@ interface IpodMenuBarProps {
   onRefreshLyrics?: () => void;
   onAdjustTiming?: () => void;
   onToggleCoverFlow?: () => void;
+  onNextTrack?: () => void;
+  onPreviousTrack?: () => void;
   // Apple Music integration
   appleMusicAuthorized?: boolean;
   musicKitConfigured?: boolean;
@@ -64,6 +66,8 @@ export function IpodMenuBar({
   onRefreshLyrics,
   onAdjustTiming,
   onToggleCoverFlow,
+  onNextTrack,
+  onPreviousTrack,
   appleMusicAuthorized = false,
   musicKitConfigured = true,
   onSwitchLibrary,
@@ -213,8 +217,9 @@ export function IpodMenuBar({
   const setCurrentSongId = isAppleMusic
     ? setAppleMusicCurrentSongId
     : setYoutubeCurrentSongId;
-  const nextTrack = isAppleMusic ? appleMusicNext : youtubeNext;
-  const previousTrack = isAppleMusic ? appleMusicPrevious : youtubePrevious;
+  const nextTrack = onNextTrack ?? (isAppleMusic ? appleMusicNext : youtubeNext);
+  const previousTrack =
+    onPreviousTrack ?? (isAppleMusic ? appleMusicPrevious : youtubePrevious);
 
   // Compute currentIndex from currentSongId
   const currentIndex = useMemo(() => {

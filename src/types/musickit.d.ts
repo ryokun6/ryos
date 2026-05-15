@@ -137,6 +137,7 @@ declare global {
       readonly storefrontId: string;
       readonly currentPlaybackTime: number;
       readonly currentPlaybackDuration: number;
+      readonly nowPlayingItem?: MediaItem;
       readonly volume: number;
 
       addEventListener<K extends keyof MusicKitEventMap>(

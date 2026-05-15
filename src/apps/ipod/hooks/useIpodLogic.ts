@@ -201,6 +201,19 @@ export function useIpodLogic({
     browseCurrentIndex,
   ]);
 
+  const appleMusicQueueTracks = useMemo(() => {
+    if (!isAppleMusic) return null;
+    if (!appleMusicPlaybackQueue || appleMusicPlaybackQueue.length === 0) {
+      return browsableTracks;
+    }
+    const tracksById = new Map(tracks.map((track) => [track.id, track]));
+    return appleMusicPlaybackQueue.reduce<Track[]>((acc, id) => {
+      const track = tracksById.get(id);
+      if (track) acc.push(track);
+      return acc;
+    }, []);
+  }, [isAppleMusic, appleMusicPlaybackQueue, tracks, browsableTracks]);
+
   const {
     theme,
     lcdFilterOn,
@@ -2639,36 +2652,17 @@ export function useIpodLogic({
     }, 2000);
   }, []);
 
-  const getCurrentAppleMusicCollectionShellTrack = useCallback(() => {
-    const state = useIpodStore.getState();
-    if (state.librarySource !== "appleMusic" || !state.appleMusicCurrentSongId) {
-      return null;
-    }
-    const track =
-      state.appleMusicTracks.find(
-        (candidate) => candidate.id === state.appleMusicCurrentSongId
-      ) ??
-      appleMusicRadioTracks.find(
-        (candidate) => candidate.id === state.appleMusicCurrentSongId
-      ) ??
-      null;
-    return track && isAppleMusicCollectionTrack(track) ? track : null;
-  }, [appleMusicRadioTracks]);
-
-  const skipAppleMusicCollectionShell = useCallback(
+  const skipAppleMusicMusicKitQueue = useCallback(
     async (direction: "next" | "previous") => {
-      const shellTrack = getCurrentAppleMusicCollectionShellTrack();
-      if (!shellTrack) return false;
+      if (useIpodStore.getState().librarySource !== "appleMusic") return false;
       const activePlayer = isFullScreen
         ? fullScreenPlayerRef.current
         : playerRef.current;
       const instance = activePlayer?.getInternalPlayer?.();
       if (!instance) return false;
 
-      const isStation = Boolean(shellTrack.appleMusicPlayParams?.stationId);
       const skipNext =
         direction === "next" ||
-        isStation ||
         typeof instance.skipToPreviousItem !== "function";
       if (skipNext && typeof instance.skipToNextItem !== "function") {
         return false;
@@ -2696,7 +2690,6 @@ export function useIpodLogic({
       }
     },
     [
-      getCurrentAppleMusicCollectionShellTrack,
       isFullScreen,
       setIsPlaying,
       showStatus,
@@ -2705,28 +2698,41 @@ export function useIpodLogic({
   );
 
   const nextTrack = useCallback(() => {
-    if (getCurrentAppleMusicCollectionShellTrack()) {
-      void skipAppleMusicCollectionShell("next");
+    if (useIpodStore.getState().librarySource === "appleMusic") {
+      void skipAppleMusicMusicKitQueue("next").then((skipped) => {
+        if (!skipped) rawNextTrack();
+      });
       return;
     }
     rawNextTrack();
   }, [
-    getCurrentAppleMusicCollectionShellTrack,
     rawNextTrack,
-    skipAppleMusicCollectionShell,
+    skipAppleMusicMusicKitQueue,
   ]);
 
   const previousTrack = useCallback(() => {
-    if (getCurrentAppleMusicCollectionShellTrack()) {
-      void skipAppleMusicCollectionShell("previous");
+    if (useIpodStore.getState().librarySource === "appleMusic") {
+      void skipAppleMusicMusicKitQueue("previous").then((skipped) => {
+        if (!skipped) rawPreviousTrack();
+      });
       return;
     }
     rawPreviousTrack();
   }, [
-    getCurrentAppleMusicCollectionShellTrack,
     rawPreviousTrack,
-    skipAppleMusicCollectionShell,
+    skipAppleMusicMusicKitQueue,
   ]);
+
+  const handleAppleMusicQueueTrackChange = useCallback((trackId: string) => {
+    const state = useIpodStore.getState();
+    if (
+      state.librarySource !== "appleMusic" ||
+      state.appleMusicCurrentSongId === trackId
+    ) {
+      return;
+    }
+    state.setAppleMusicCurrentSongId(trackId);
+  }, []);
 
   // Track handling
   const handleAddTrack = useCallback(
@@ -3231,8 +3237,6 @@ export function useIpodLogic({
           }
           if (isOffline) {
             showOfflineStatus();
-          } else if (getCurrentAppleMusicCollectionShellTrack()) {
-            void skipAppleMusicCollectionShell("next");
           } else {
             skipOperationRef.current = true;
             startTrackSwitch();
@@ -3269,8 +3273,6 @@ export function useIpodLogic({
           }
           if (isOffline) {
             showOfflineStatus();
-          } else if (getCurrentAppleMusicCollectionShellTrack()) {
-            void skipAppleMusicCollectionShell("previous");
           } else {
             skipOperationRef.current = true;
             startTrackSwitch();
@@ -3320,7 +3322,7 @@ export function useIpodLogic({
           break;
       }
     },
-    [playClickSound, vibrate, registerActivity, getCurrentAppleMusicCollectionShellTrack, skipAppleMusicCollectionShell, nextTrack, showStatus, togglePlay, previousTrack, menuMode, menuHistory, selectedMenuItem, tracks, currentIndex, isPlaying, toggleVideo, handleMenuButton, isOffline, showOfflineStatus, startTrackSwitch, isCoverFlowOpen, isMusicQuizOpen, isBrickGameOpen]
+    [playClickSound, vibrate, registerActivity, nextTrack, showStatus, togglePlay, previousTrack, menuMode, menuHistory, selectedMenuItem, tracks, currentIndex, isPlaying, toggleVideo, handleMenuButton, isOffline, showOfflineStatus, startTrackSwitch, isCoverFlowOpen, isMusicQuizOpen, isBrickGameOpen]
   );
 
   // Wheel rotation handler
@@ -4113,6 +4115,8 @@ export function useIpodLogic({
     setIsCoverFlowOpen,
     nextTrack,
     previousTrack,
+    appleMusicQueueTracks,
+    handleAppleMusicQueueTrackChange,
     clearLibrary,
     manualSync,
     restoreInstance,

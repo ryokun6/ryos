@@ -271,6 +271,8 @@ const menuVariants = {
 
 export function IpodScreen({
   currentTrack,
+  appleMusicQueueTracks,
+  onAppleMusicQueueTrackChange,
   isPlaying,
   elapsedTime,
   totalTime,
@@ -1268,6 +1270,7 @@ export function IpodScreen({
               <AppleMusicPlayerBridge
                 ref={playerRef as unknown as React.RefObject<never>}
                 currentTrack={currentTrack}
+                queueTracks={appleMusicQueueTracks}
                 playing={isPlaying && !isFullScreen}
                 resumeAtSeconds={elapsedTime}
                 volume={finalIpodVolume}
@@ -1278,6 +1281,7 @@ export function IpodScreen({
                 onEnded={!isFullScreen ? handleTrackEnd : undefined}
                 onReady={!isFullScreen ? handleReady : undefined}
                 onNowPlayingItemChange={setAppleMusicKitNowPlaying}
+                onQueueTrackChange={onAppleMusicQueueTrackChange}
               />
             ) : (
               <div

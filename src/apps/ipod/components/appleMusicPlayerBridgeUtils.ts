@@ -6,13 +6,169 @@
 
 import { isAppleMusicCollectionTrack, type Track } from "@/stores/useIpodStore";
 
+export interface AppleMusicQueueBuildResult {
+  options: MusicKit.SetQueueOptions;
+  /**
+   * Changes when the MusicKit queue contents change, but not when playback
+   * advances inside that queue.
+   */
+  definitionKey: string;
+  /** Changes for an explicit request to start at a different track. */
+  requestKey: string;
+  /** iPod track ids represented by `options.songs`, in queue order. */
+  queuedTrackIds: string[];
+  isMultiSongQueue: boolean;
+}
+
+export function getAppleMusicSongQueueId(track: Track): string | null {
+  const params = track.appleMusicPlayParams;
+  if (!params || params.stationId || params.playlistId) return null;
+  const id =
+    params.kind === "library-songs"
+      ? params.libraryId || params.catalogId
+      : params.catalogId || params.libraryId;
+  return id || null;
+}
+
+function normalizeAppleMusicTrackId(id: string | null | undefined): string | null {
+  if (!id) return null;
+  return id.startsWith("am:") ? id : `am:${id}`;
+}
+
+function dedupeQueueTracks(tracks: Track[]): Track[] {
+  const seen = new Set<string>();
+  return tracks.filter((track) => {
+    if (seen.has(track.id)) return false;
+    seen.add(track.id);
+    return true;
+  });
+}
+
+export function buildAppleMusicQueueOptions(
+  currentTrack: Track,
+  queueTracks?: Track[] | null
+): AppleMusicQueueBuildResult | null {
+  const params = currentTrack.appleMusicPlayParams;
+  if (!params) return null;
+
+  if (params.stationId) {
+    return {
+      options: { station: params.stationId, startPlaying: true },
+      definitionKey: `station:${params.stationId}`,
+      requestKey: `station:${params.stationId}`,
+      queuedTrackIds: [],
+      isMultiSongQueue: false,
+    };
+  }
+
+  if (params.playlistId) {
+    return {
+      options: { playlist: params.playlistId, startPlaying: true },
+      definitionKey: `playlist:${params.playlistId}`,
+      requestKey: `playlist:${params.playlistId}`,
+      queuedTrackIds: [],
+      isMultiSongQueue: false,
+    };
+  }
+
+  const currentSongId = getAppleMusicSongQueueId(currentTrack);
+  if (!currentSongId) return null;
+
+  const songQueueTracks = dedupeQueueTracks(
+    (queueTracks ?? []).filter((track) => getAppleMusicSongQueueId(track))
+  );
+  const queueContainsCurrent = songQueueTracks.some(
+    (track) => track.id === currentTrack.id
+  );
+
+  if (songQueueTracks.length > 1 && queueContainsCurrent) {
+    const songs = songQueueTracks
+      .map((track) => getAppleMusicSongQueueId(track))
+      .filter((id): id is string => Boolean(id));
+    const startWith = songQueueTracks.findIndex(
+      (track) => track.id === currentTrack.id
+    );
+    const queuedTrackIds = songQueueTracks.map((track) => track.id);
+    const definitionKey = `songs:${queuedTrackIds.join("\u0000")}`;
+    return {
+      options: { songs, startWith, startPlaying: true },
+      definitionKey,
+      requestKey: `${definitionKey}:start:${currentTrack.id}`,
+      queuedTrackIds,
+      isMultiSongQueue: true,
+    };
+  }
+
+  const trackId = currentTrack.id;
+  return {
+    options: { song: currentSongId, startPlaying: true },
+    definitionKey: `song:${trackId}`,
+    requestKey: `song:${trackId}`,
+    queuedTrackIds: [trackId],
+    isMultiSongQueue: false,
+  };
+}
+
+/**
+ * Whether MusicKit's `nowPlayingItem` should drive the iPod's current track.
+ * Skips while an explicit user selection is still being queued so polling
+ * does not revert the UI to the previous song mid-`setQueue`.
+ */
+export function shouldSyncQueueTrackFromMediaItem(
+  resolvedTrackId: string | null,
+  currentTrackId: string | null | undefined,
+  playbackTargetTrackId: string | null,
+  queuedTrackIds: string[]
+): boolean {
+  if (!resolvedTrackId || !queuedTrackIds.includes(resolvedTrackId)) {
+    return false;
+  }
+  if (resolvedTrackId === currentTrackId) return false;
+  if (
+    playbackTargetTrackId &&
+    resolvedTrackId !== playbackTargetTrackId
+  ) {
+    return false;
+  }
+  return true;
+}
+
+export function resolveAppleMusicQueueTrackIdFromMediaItem(
+  item: MusicKit.MediaItem | null | undefined,
+  queueTracks: Track[]
+): string | null {
+  if (!item) return null;
+  const candidates = [
+    item.id,
+    item.attributes?.playParams?.catalogId,
+    item.attributes?.playParams?.id,
+  ].filter((id): id is string => Boolean(id));
+
+  for (const track of queueTracks) {
+    const queueId = getAppleMusicSongQueueId(track);
+    if (
+      candidates.includes(track.id) ||
+      (queueId !== null && candidates.includes(queueId))
+    ) {
+      return track.id;
+    }
+  }
+
+  for (const candidate of candidates) {
+    const normalized = normalizeAppleMusicTrackId(candidate);
+    if (normalized) return normalized;
+  }
+
+  return null;
+}
+
 /**
  * Decide whether a `playbackStateDidChange` event should fan out to the
  * parent's `onEnded` callback (which triggers our own next-track handler).
  *
  * MusicKit JS fires `ended` (state=5) once for *every* track that finishes.
- * Inside a multi-item queue (catalog station / playlist set up via
- * `setQueue({ station | playlist })`), MusicKit auto-advances to the next
+ * Inside a multi-item MusicKit queue (song array, catalog station, or
+ * playlist), MusicKit auto-advances to the next
  * item internally — invoking `onEnded` then would call our parent's
  * `nextTrack` → `skipToNextItem()`, skipping past the item MusicKit just
  * moved to and visibly mismatching the displayed Now Playing entry from
@@ -22,9 +178,11 @@ import { isAppleMusicCollectionTrack, type Track } from "@/stores/useIpodStore";
  */
 export function shouldFireEndedForPlaybackState(
   state: number | undefined,
-  currentTrack: Track | null
+  currentTrack: Track | null,
+  isMultiItemMusicKitQueue = false
 ): boolean {
   if (state === 10) return true;
+  if (state === 5 && isMultiItemMusicKitQueue) return false;
   if (state === 5) return !isAppleMusicCollectionTrack(currentTrack);
   return false;
 }
