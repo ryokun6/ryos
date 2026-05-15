@@ -1069,7 +1069,7 @@ export function IpodScreen({
                             align="left"
                             fadeEdges
                             allowMarquee={modernScrollingMarqueeAllowed}
-                            className="leading-[1.06] text-[12px] font-normal text-[rgb(99,101,103)]"
+                            className="leading-[1.06] text-[12px] text-[rgb(99,101,103)]"
                           />
                           {nowPlayingDisplayTrack.album && (
                             <ScrollingText
@@ -1079,20 +1079,28 @@ export function IpodScreen({
                               align="left"
                               fadeEdges
                               allowMarquee={modernScrollingMarqueeAllowed}
-                              className="leading-[1.06] text-[12px] font-normal text-[rgb(99,101,103)]"
+                              className="leading-[1.06] text-[12px] text-[rgb(99,101,103)]"
                             />
                           )}
-                          <div className="flex items-center justify-between gap-2 leading-[1.06] text-[12px] font-normal text-[rgb(99,101,103)]">
-                            <span>
-                              {currentTrack?.appleMusicPlayParams?.stationId
-                                ? "LIVE"
-                                : isAppleMusicCollectionShell
-                                  ? "MIX"
-                                  : `${currentIndex + 1} of ${tracksLength}`}
-                            </span>
+                          <div className="relative min-w-0">
+                            <ScrollingText
+                              text={
+                                currentTrack?.appleMusicPlayParams?.stationId
+                                  ? "LIVE"
+                                  : isAppleMusicCollectionShell
+                                    ? "MIX"
+                                    : `${currentIndex + 1} of ${tracksLength}`
+                              }
+                              isPlaying={isPlaying}
+                              scrollStartDelaySec={1}
+                              align="left"
+                              fadeEdges
+                              allowMarquee={modernScrollingMarqueeAllowed}
+                              className="leading-[1.06] text-[12px] text-[rgb(99,101,103)]"
+                            />
                             {isShuffled && (
                               <Shuffle
-                                className="shrink-0"
+                                className="absolute right-0 top-1/2 shrink-0 -translate-y-1/2"
                                 size={12}
                                 weight="bold"
                                 aria-label="shuffle on"
@@ -1133,11 +1141,17 @@ export function IpodScreen({
                     <div
                       className={cn(
                         "mt-auto flex-shrink-0 w-full",
-                        nowPlayingDisplayTrack.album ? "pt-1.5" : "pt-3"
+                        isModernUi
+                          ? nowPlayingDisplayTrack.album
+                            ? "pt-0.5"
+                            : "pt-1"
+                          : nowPlayingDisplayTrack.album
+                            ? "pt-1.5"
+                            : "pt-3"
                       )}
                     >
                       {isModernUi ? (
-                        <div className="flex w-full items-center gap-1.5 font-ipod-modern-ui text-[12px] font-normal leading-[1.06] text-[rgb(99,101,103)] tabular-nums">
+                        <div className="flex w-full items-center gap-1.5 font-ipod-modern-ui text-[12px] leading-[1.06] text-[rgb(99,101,103)] tabular-nums">
                           <span className="shrink-0 min-w-[28px]">
                             {formatPlaybackTime(displayElapsedSeconds)}
                           </span>

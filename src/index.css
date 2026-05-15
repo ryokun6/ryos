@@ -1388,13 +1388,14 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
 
 .font-ipod-modern-ui {
   /* Helvetica Neue is the brand face on the iPod nano 6G/7G Now Playing
-   * screen and across iOS 6 system UI. Falls back to -apple-system on
-   * platforms without the face installed. */
+   * screen and across iOS 6 system UI. Weight 600 matches the semibold
+   * cut Apple shipped on the color iPod screens. */
   font-family: "Helvetica Neue", "HelveticaNeue", Helvetica, -apple-system,
     BlinkMacSystemFont, "Segoe UI", Roboto, Arial, "Hiragino Sans",
     "Hiragino Kaku Gothic ProN", "PingFang SC", "Microsoft YaHei",
     "Apple SD Gothic Neo", "Malgun Gothic", "Nanum Gothic", system-ui,
     sans-serif;
+  font-weight: 600;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-smooth: always;
@@ -1404,6 +1405,7 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
 .ipod-modern-screen {
   font-family: "Helvetica Neue", "HelveticaNeue", Helvetica, -apple-system,
     BlinkMacSystemFont, "Segoe UI", Roboto, Arial, system-ui, sans-serif;
+  font-weight: 600;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   color: black;
@@ -1602,6 +1604,7 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     "Hiragino Kaku Gothic ProN", "PingFang SC", "Microsoft YaHei",
     "Apple SD Gothic Neo", "Malgun Gothic", "Nanum Gothic", system-ui,
     sans-serif !important;
+  font-weight: 600 !important;
   -webkit-font-smoothing: antialiased !important;
   font-smooth: always !important;
 }
