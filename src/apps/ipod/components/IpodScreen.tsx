@@ -52,9 +52,8 @@ import { useIpodStore, isAppleMusicCollectionTrack } from "@/stores/useIpodStore
 
 // Fixed row height for the iPod menu list. Each `MenuListItem` is a
 // single-line row; the classic skin's Chicago glyphs need 24px row height at
-// 16px type, while the modern skin uses **18px** rows with **12px** type so
-// the 20px status bar plus seven rows fill the 146px inner screen exactly
-// (2px border each side on the 150px frame → 20 + 7 × 18 = 146).
+// 16px type, while the modern skin uses **18px** rows with **12px** type under
+// a **17px** status bar so seven rows plus a 3px tail fill the 146px inner screen.
 //
 // We virtualize EVERY menu — not just huge ones — so item geometry
 // stays identical across the main menu, the artist list, and the
@@ -78,8 +77,8 @@ function getMenuItemKey(item: object): string {
   menuItemKeyCache.set(item, key);
   return key;
 }
-// Modern status bar is a slim 20px strip — seven 18px rows fill the
-// remaining 126px of inner screen (20 + 7 × 18 = 146px inner).
+// Modern status bar is a slim 17px strip — seven 18px rows plus 3px
+// tail fill the 129px menu viewport (17 + 129 = 146px inner).
 // The Ken Burns album-art strip rendered alongside the menu in the
 // modern UI takes exactly **half** of the screen width and the FULL
 // screen height — the art panel covers the right half from the very
@@ -172,9 +171,9 @@ function ModernNowPlayingProgressRow({
  *
  * Cover sized at 76px — prominent on the left like the iPod nano 6G/7G
  * Now Playing screen without crowding the title / artist / album column.
- * Reflection ratio kept at 0.3 so the stack stays inside the now-playing row. */
+ * Reflection ratio 0.42 for a longer fade under the sleeve. */
 const MODERN_NOW_PLAYING_ART_PX = 76;
-const MODERN_NOW_PLAYING_REFLECT_RATIO = 0.3;
+const MODERN_NOW_PLAYING_REFLECT_RATIO = 0.42;
 const MODERN_NOW_PLAYING_REFLECT_PX =
   MODERN_NOW_PLAYING_ART_PX * MODERN_NOW_PLAYING_REFLECT_RATIO;
 /** Extra room below the 3D-tipped stack so rotateY projection is not clipped. */
@@ -192,9 +191,9 @@ const MODERN_NOW_PLAYING_REFLECT_IMG: CSSProperties = {
   transform: "scaleY(-1)",
   opacity: 0.36,
   maskImage:
-    "linear-gradient(to top, rgba(0, 0, 0, 1) 0%, transparent 50%)",
+    "linear-gradient(to top, rgba(0, 0, 0, 1) 0%, transparent 65%)",
   WebkitMaskImage:
-    "linear-gradient(to top, rgba(0, 0, 0, 1) 0%, transparent 50%)",
+    "linear-gradient(to top, rgba(0, 0, 0, 1) 0%, transparent 65%)",
   borderRadius: `${MODERN_NOW_PLAYING_COVER_BORDER_RADIUS_PX}px`,
 };
 const MODERN_NOW_PLAYING_3D_PERSPECTIVE_PX = 180;
@@ -1102,7 +1101,7 @@ export function IpodScreen({
                       </div>
                     )}
                     {isModernUi ? (
-                      <div className="flex flex-col overflow-visible">
+                      <div className="flex min-h-0 flex-1 flex-col overflow-visible">
                         <div className="flex items-start gap-3 overflow-visible pt-1">
                           <ModernNowPlayingArtwork coverUrl={coverUrl} />
                           <div
@@ -1173,7 +1172,8 @@ export function IpodScreen({
                           </div>
                         </div>
                         </div>
-                        <div className="w-full shrink-0 pt-1">
+                        <div className="min-h-0 flex-1" aria-hidden />
+                        <div className="w-full shrink-0 pb-0.5">
                           <ModernNowPlayingProgressRow
                             elapsedTime={elapsedTime}
                             totalTime={totalTime}

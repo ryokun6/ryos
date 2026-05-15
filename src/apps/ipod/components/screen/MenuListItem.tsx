@@ -44,8 +44,8 @@ export function MenuListItem({
 
   if (isModern) {
     // iPod-classic-js SelectableListItem: white row, blue gradient
-    // selection highlight, no separator. Rows are **18px** with **12px** type so
-    // the 20px status bar plus seven rows fill the 146px inner screen exactly.
+    // selection highlight, no separator. Rows are **18px** with **12px** type under
+    // a 17px status bar (seven rows + 3px tail fill the 129px menu viewport).
     //
     // Long labels truncate via `ScrollingText` with `fadeEdges`:
     //   - When the label fits, ScrollingText renders static text.

@@ -75,13 +75,15 @@ export const IPOD_SCREEN_INNER_HEIGHT_PX =
   IPOD_SCREEN_HEIGHT_PX - IPOD_SCREEN_BORDER_PX * 2;
 /** Visible menu rows below the silver status bar. */
 export const MODERN_MENU_ROW_COUNT = 7;
-export const MODERN_TITLEBAR_HEIGHT_PX = 20;
+/** Slim silver header — 17px matches the nano 6G/7G status strip. */
+export const MODERN_TITLEBAR_HEIGHT_PX = 17;
 export const MENU_ITEM_HEIGHT_MODERN_PX = Math.floor(
   (IPOD_SCREEN_INNER_HEIGHT_PX - MODERN_TITLEBAR_HEIGHT_PX) /
     MODERN_MENU_ROW_COUNT
 );
+/** Menu viewport fills all inner screen space below the status bar. */
 export const MODERN_MENU_LIST_HEIGHT_PX =
-  MENU_ITEM_HEIGHT_MODERN_PX * MODERN_MENU_ROW_COUNT;
+  IPOD_SCREEN_INNER_HEIGHT_PX - MODERN_TITLEBAR_HEIGHT_PX;
 
 // Helper to extract YouTube video ID from URL
 export function getYouTubeVideoId(url: string): string | null {
