@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useReducer } from "react";
+import { useCallback, useEffect, useReducer, useRef } from "react";
 
 /**
  * Apple MusicKit JS v3 lazy loader / configurer.
@@ -312,8 +312,17 @@ export function useMusicKit(
 
   const reducer = (state: MusicKitState, action: MusicKitAction): MusicKitState => {
     switch (action.type) {
-      case "patch":
+      case "patch": {
+        let changed = false;
+        for (const [key, value] of Object.entries(action.payload)) {
+          if (state[key as keyof MusicKitState] !== value) {
+            changed = true;
+            break;
+          }
+        }
+        if (!changed) return state;
         return { ...state, ...action.payload };
+      }
       default:
         return state;
     }
@@ -321,6 +330,8 @@ export function useMusicKit(
 
   const [state, dispatch] = useReducer(reducer, initialState);
   const { status, error, hasToken, instance, isAuthorized } = state;
+  const isAuthorizedRef = useRef(isAuthorized);
+  isAuthorizedRef.current = isAuthorized;
 
   // Track auth state changes via authorizationStatusDidChange events. The
   // event payload isn't strongly typed by MusicKit, so we re-read the
@@ -330,7 +341,9 @@ export function useMusicKit(
     if (!instance) return;
     const refresh = () => {
       const authorized = Boolean(instance.isAuthorized);
-      dispatch({ type: "patch", payload: { isAuthorized: authorized } });
+      if (authorized !== isAuthorizedRef.current) {
+        dispatch({ type: "patch", payload: { isAuthorized: authorized } });
+      }
     };
     instance.addEventListener("authorizationStatusDidChange", refresh);
     instance.addEventListener("userTokenDidChange", refresh);

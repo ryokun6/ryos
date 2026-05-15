@@ -613,13 +613,14 @@ export function IpodScreen({
       seen.add(url);
       urls.push(url);
     }
-    // When the browseable menu has no artwork-bearing items (e.g. the
-    // root menu before any track has loaded), fall back to the
-    // now-playing cover so the split panel still has something to
-    // show. Non-browseable menus stay full-width.
     if (urls.length === 0 && coverUrl) urls.push(coverUrl);
     return urls;
   }, [isBrowseableMenu, currentMenuItems, coverUrl]);
+
+  const splitArtUrlPoolKey = useMemo(
+    () => splitArtUrlPool.join("\0"),
+    [splitArtUrlPool]
+  );
 
   const [splitArtIndex, setSplitArtIndex] = useState(0);
 
@@ -634,7 +635,7 @@ export function IpodScreen({
       return;
     }
     setSplitArtIndex(Math.floor(Math.random() * splitArtUrlPool.length));
-  }, [splitArtUrlPool]);
+  }, [splitArtUrlPoolKey, splitArtUrlPool.length]);
 
   // Cycle through the pool on a slow interval, picking each next
   // cover at RANDOM (instead of strict round-robin) so a long menu
@@ -661,7 +662,7 @@ export function IpodScreen({
       });
     }, 7000);
     return () => window.clearInterval(id);
-  }, [splitArtUrlPool]);
+  }, [splitArtUrlPoolKey, splitArtUrlPool.length, splitArtUrlPool]);
 
   const splitArtUrl =
     splitArtUrlPool[splitArtIndex] ?? splitArtUrlPool[0] ?? null;

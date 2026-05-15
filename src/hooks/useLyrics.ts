@@ -15,6 +15,15 @@ import {
 } from "@/utils/chunkedStream";
 import { parseLyricTimestamps, findCurrentLineIndex } from "@/utils/lyricsSearch";
 
+// Stable empty-lines sentinel used while no lyrics are loaded for the current
+// song. Reusing the same reference across renders is critical: it keeps the
+// memoised `parsedTimestamps` / `calculateCurrentLine` / current-line effect
+// stable during the reload window (after `loadedSongId` is cleared but
+// before the new fetch completes). Without it a fresh `[]` literal every
+// render churns those deps and re-fires `setCurrentLine`, which combined
+// with the no-bailout reducer below would create a render loop.
+const EMPTY_LYRIC_LINES: ReadonlyArray<LyricLine> = Object.freeze([]);
+
 // =============================================================================
 // Types
 // =============================================================================
@@ -138,8 +147,25 @@ export function useLyrics({
 
   const reducer = (state: LyricsLocalState, action: LyricsAction): LyricsLocalState => {
     switch (action.type) {
-      case "patch":
+      case "patch": {
+        // Bail out if the patch doesn't actually change any field. Without
+        // this, every dispatch creates a new state object (even when values
+        // are unchanged) and triggers a re-render. Combined with effects
+        // that re-dispatch on every render (e.g. the current-line tick),
+        // that's enough to produce "Maximum update depth exceeded".
+        let changed = false;
+        for (const key in action.payload) {
+          if (
+            action.payload[key as keyof LyricsLocalState] !==
+            state[key as keyof LyricsLocalState]
+          ) {
+            changed = true;
+            break;
+          }
+        }
+        if (!changed) return state;
         return { ...state, ...action.payload };
+      }
       case "setTranslatedLines": {
         const next =
           typeof action.updater === "function"
@@ -147,6 +173,7 @@ export function useLyrics({
                 action.updater as (prev: LyricLine[] | null) => LyricLine[] | null
               )(state.translatedLines)
             : action.updater;
+        if (next === state.translatedLines) return state;
         return { ...state, translatedLines: next };
       }
       case "setCurrentLine": {
@@ -154,6 +181,7 @@ export function useLyrics({
           typeof action.updater === "function"
             ? (action.updater as (prev: number) => number)(state.currentLine)
             : action.updater;
+        if (next === state.currentLine) return state;
         return { ...state, currentLine: next };
       }
       default:
@@ -570,8 +598,16 @@ export function useLyrics({
   // Current line tracking
   // ==========================================================================
   const hasLyricsForCurrentSong = loadedSongId === songId;
-  const displayOriginalLines = hasLyricsForCurrentSong ? originalLines : [];
-  const displayLines = hasLyricsForCurrentSong ? (translatedLines || originalLines) : [];
+  // Use a stable sentinel array when no lyrics are loaded so downstream
+  // memos / effects (parsedTimestamps, calculateCurrentLine, current-line
+  // effect) keep their references between renders. See `EMPTY_LYRIC_LINES`
+  // declaration above for the full rationale.
+  const displayOriginalLines = hasLyricsForCurrentSong
+    ? originalLines
+    : (EMPTY_LYRIC_LINES as LyricLine[]);
+  const displayLines = hasLyricsForCurrentSong
+    ? translatedLines || originalLines
+    : (EMPTY_LYRIC_LINES as LyricLine[]);
   const currentError = errorSongId === songId ? error : undefined;
   const isLoadingCurrentLyrics =
     isFetchingOriginal || Boolean(songId && !hasLyricsForCurrentSong && !currentError);

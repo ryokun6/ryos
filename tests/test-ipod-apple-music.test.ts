@@ -313,6 +313,18 @@ describe("useIpodStore Apple Music slice", () => {
     expect(state.appleMusicKitNowPlaying).toBeNull();
   });
 
+  test("setLibrarySource can hot-swap between YouTube and Apple Music repeatedly", () => {
+    const { setLibrarySource } = useIpodStore.getState();
+    setLibrarySource("appleMusic");
+    expect(useIpodStore.getState().librarySource).toBe("appleMusic");
+    setLibrarySource("youtube");
+    expect(useIpodStore.getState().librarySource).toBe("youtube");
+    setLibrarySource("appleMusic");
+    expect(useIpodStore.getState().librarySource).toBe("appleMusic");
+    setLibrarySource("youtube");
+    expect(useIpodStore.getState().librarySource).toBe("youtube");
+  });
+
   test("setAppleMusicCurrentSongId clears live MusicKit metadata snapshot", () => {
     useIpodStore.setState({
       librarySource: "appleMusic",
