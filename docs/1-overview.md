@@ -74,7 +74,7 @@ graph TB
 | Audio | Tone.js, WaveSurfer.js, Web Audio API |
 | 3D | Three.js (shaders) |
 | Text Editor | TipTap |
-| Storage | IndexedDB, LocalStorage, Redis (Upstash REST / standard), Vercel Blob / S3-compatible |
+| Storage | IndexedDB, LocalStorage, Redis (Upstash REST / standard), Vercel Blob / S3-compatible | <!-- pragma: allowlist secret -->
 | API Runtime | Vercel Node.js handlers + standalone Bun server |
 | AI | OpenAI, Anthropic, Google via Vercel AI SDK |
 | Real-time | Pusher or local WebSocket (with Redis pub/sub fanout) |
