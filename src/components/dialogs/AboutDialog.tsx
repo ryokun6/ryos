@@ -40,7 +40,7 @@ export function AboutDialog({
   appId,
 }: AboutDialogProps) {
   const { t } = useTranslation();
-  const { isWindowsTheme: isXpTheme, isMacOSTheme } = useThemeFlags();
+  const { isWindowsTheme: isXpTheme, isMacOSTheme, isSystem7Theme } = useThemeFlags();
   const launchApp = useAppStore((state) => state.launchApp);
   
   // Use translated app name if appId is provided, otherwise fall back to metadata.name
@@ -66,7 +66,9 @@ export function AboutDialog({
           "space-y-0 text-center",
           isXpTheme
             ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
-            : "font-geneva-12 text-[10px]"
+            : isSystem7Theme
+            ? "font-geneva-12 text-[10px]"
+            : "font-os-ui text-[12px]"
         )}
         style={{
           fontFamily: isXpTheme
