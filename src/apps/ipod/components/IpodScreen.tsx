@@ -37,6 +37,10 @@ import {
   PLAYER_PROGRESS_INTERVAL_MS,
   getYouTubeVideoId,
   formatKugouImageUrl,
+  IPOD_SCREEN_INNER_HEIGHT_PX,
+  MENU_ITEM_HEIGHT_MODERN_PX,
+  MODERN_MENU_LIST_HEIGHT_PX,
+  MODERN_TITLEBAR_HEIGHT_PX,
 } from "../constants";
 import { DisplayMode } from "@/types/lyrics";
 import { LandscapeVideoBackground } from "@/components/shared/LandscapeVideoBackground";
@@ -48,12 +52,8 @@ import { useIpodStore, isAppleMusicCollectionTrack } from "@/stores/useIpodStore
 
 // Fixed row height for the iPod menu list. Each `MenuListItem` is a
 // single-line row; the classic skin's Chicago glyphs need 24px row height at
-// 16px type, while the modern (color) skin uses tighter **21px** rows with
-// **15px** Myriad / system UI. At 21px we can fit the titlebar plus
-// six full menu rows inside the 150px screen (21 × 7 = 147, leaving a
-// 3px tail at the bottom of the scroll container) which matches the
-// nano 6G/7G density much more closely than the previous 24px rows
-// (which only fit five rows + a sliver).
+// 16px type, while the modern skin uses **18px** rows with **12px** type under
+// a **17px** status bar so seven rows plus a 3px tail fill the 146px inner screen.
 //
 // We virtualize EVERY menu — not just huge ones — so item geometry
 // stays identical across the main menu, the artist list, and the
@@ -66,7 +66,6 @@ import { useIpodStore, isAppleMusicCollectionTrack } from "@/stores/useIpodStore
 // per-menu choice, so a single value applies cleanly to all menus and
 // the scroll-position math.
 const MENU_ITEM_HEIGHT_CLASSIC = 24;
-const MENU_ITEM_HEIGHT_MODERN = 21;
 const menuItemKeyCache = new WeakMap<object, string>();
 let menuItemKeySeed = 0;
 
@@ -78,14 +77,8 @@ function getMenuItemKey(item: object): string {
   menuItemKeyCache.set(item, key);
   return key;
 }
-// Modern titlebar is intentionally tighter than the row height. The
-// nano 6G/7G + iPod classic 6G silver header is a slim 17px strip with
-// 12px MyriadPro semibold text — slimmer than each list row so the
-// header reads as a separator, not as another row. Six 21px rows still
-// fit cleanly inside the remaining 133px of screen (21 × 6 = 126), with
-// a 7px tail for the optional Ken Burns split-art column to breathe
-// against the bottom edge.
-const MODERN_TITLEBAR_HEIGHT = 17;
+// Modern status bar is a slim 17px strip — seven 18px rows plus 3px
+// tail fill the 129px menu viewport (17 + 129 = 146px inner).
 // The Ken Burns album-art strip rendered alongside the menu in the
 // modern UI takes exactly **half** of the screen width and the FULL
 // screen height — the art panel covers the right half from the very
@@ -141,15 +134,54 @@ function formatPlaybackTime(totalSeconds: number): string {
   )}`;
 }
 
+function ModernNowPlayingProgressRow({
+  elapsedTime,
+  totalTime,
+  displayElapsedSeconds,
+  displayRemainingSeconds,
+}: {
+  elapsedTime: number;
+  totalTime: number;
+  displayElapsedSeconds: number;
+  displayRemainingSeconds: number;
+}) {
+  return (
+    <div className="flex w-full items-center gap-1.5 font-ipod-modern-ui text-[12px] leading-[1.06] text-[rgb(99,101,103)] tabular-nums">
+      <span className="shrink-0 min-w-[28px]">
+        {formatPlaybackTime(displayElapsedSeconds)}
+      </span>
+      <div className="aqua-progress h-[9px] min-w-0 flex-1 rounded-none">
+        <div
+          className="aqua-progress-fill h-full rounded-none transition-all duration-200 ease-out"
+          style={{
+            width: `${
+              totalTime > 0 ? (elapsedTime / totalTime) * 100 : 0
+            }%`,
+          }}
+        />
+      </div>
+      <span className="shrink-0 min-w-[32px] text-right">
+        -{formatPlaybackTime(displayRemainingSeconds)}
+      </span>
+    </div>
+  );
+}
+
 /** `rotateY` + perspective for left↔right foreshortening; Karaoke-style reflection stacking.
  *
- * Cover sized at 60px — comfortably bigger than the original 54px
- * without crowding the title / artist / album text column to its
- * right or pushing the reflection down into the progress bar.
- * Reflection ratio kept at 0.3 (subtler than the prior 0.5) so the
- * stack stays inside the now-playing row. */
-const MODERN_NOW_PLAYING_ART_PX = 60;
-const MODERN_NOW_PLAYING_REFLECT_RATIO = 0.3;
+ * Cover sized at 76px — prominent on the left like the iPod nano 6G/7G
+ * Now Playing screen without crowding the title / artist / album column.
+ * Reflection ratio 0.38 — tuned to fit the 129px now-playing viewport
+ * (76px sleeve + ~29px reflection + progress row) without clipping. */
+const MODERN_NOW_PLAYING_ART_PX = 76;
+const MODERN_NOW_PLAYING_REFLECT_RATIO = 0.38;
+const MODERN_NOW_PLAYING_REFLECT_PX = Math.round(
+  MODERN_NOW_PLAYING_ART_PX * MODERN_NOW_PLAYING_REFLECT_RATIO
+);
+const MODERN_NOW_PLAYING_STACK_PX =
+  MODERN_NOW_PLAYING_ART_PX + MODERN_NOW_PLAYING_REFLECT_PX;
+/** Extra room below the 3D-tipped stack so rotateY projection is not clipped. */
+const MODERN_NOW_PLAYING_3D_BLEED_PX = 6;
 /** Shared clip radius for modern now-playing sleeve + reflection (modern skin only). */
 const MODERN_NOW_PLAYING_COVER_BORDER_RADIUS_PX = 0;
 // Neutral mid-gray placeholder shown while the cover image is in
@@ -161,11 +193,11 @@ const MODERN_NOW_PLAYING_SLEEVE: CSSProperties = {
 };
 const MODERN_NOW_PLAYING_REFLECT_IMG: CSSProperties = {
   transform: "scaleY(-1)",
-  opacity: 0.36,
+  opacity: 0.42,
   maskImage:
-    "linear-gradient(to top, rgba(0, 0, 0, 1) 0%, transparent 50%)",
+    "linear-gradient(to top, rgba(0, 0, 0, 1) 0%, transparent 72%)",
   WebkitMaskImage:
-    "linear-gradient(to top, rgba(0, 0, 0, 1) 0%, transparent 50%)",
+    "linear-gradient(to top, rgba(0, 0, 0, 1) 0%, transparent 72%)",
   borderRadius: `${MODERN_NOW_PLAYING_COVER_BORDER_RADIUS_PX}px`,
 };
 const MODERN_NOW_PLAYING_3D_PERSPECTIVE_PX = 180;
@@ -173,20 +205,17 @@ const MODERN_NOW_PLAYING_3D_PERSPECTIVE_PX = 180;
 const MODERN_NOW_PLAYING_ROTATE_Y = "15deg";
 
 const MODERN_NOW_PLAYING_ART_3D: CSSProperties = {
+  width: MODERN_NOW_PLAYING_ART_PX,
+  height: MODERN_NOW_PLAYING_ART_PX,
+  perspective: `${MODERN_NOW_PLAYING_3D_PERSPECTIVE_PX}px`,
   transformStyle: "preserve-3d",
   transform: `rotateY(${MODERN_NOW_PLAYING_ROTATE_Y})`,
   transformOrigin: "center center",
-  width: MODERN_NOW_PLAYING_ART_PX,
 };
 
 /** Sleeve + reflection in one `preserve-3d` group tipped with rotateY + perspective. */
 function ModernNowPlayingArtwork({ coverUrl }: { coverUrl: string | null }) {
-  const reflectH = MODERN_NOW_PLAYING_ART_PX * MODERN_NOW_PLAYING_REFLECT_RATIO;
-  // Sleeve and reflection each track their own load. Same URL, so
-  // the browser cache lands them within a frame in practice, but
-  // each fade is self-contained — the sleeve's gray
-  // (`MODERN_NOW_PLAYING_SLEEVE.background`) reads as the
-  // placeholder until the bitmap arrives.
+  const reflectH = MODERN_NOW_PLAYING_REFLECT_PX;
   const sleeve = useImageLoaded(coverUrl);
   const reflection = useImageLoaded(coverUrl);
   const reflectTargetOpacity =
@@ -197,19 +226,13 @@ function ModernNowPlayingArtwork({ coverUrl }: { coverUrl: string | null }) {
       className="relative shrink-0 self-start overflow-visible"
       style={{
         width: MODERN_NOW_PLAYING_ART_PX,
-        height: MODERN_NOW_PLAYING_ART_PX,
-        perspective: `${MODERN_NOW_PLAYING_3D_PERSPECTIVE_PX}px`,
-        perspectiveOrigin: "50% 70%",
+        minHeight: MODERN_NOW_PLAYING_STACK_PX + MODERN_NOW_PLAYING_3D_BLEED_PX,
       }}
     >
-      <div style={MODERN_NOW_PLAYING_ART_3D}>
+      <div className="relative overflow-visible" style={MODERN_NOW_PLAYING_ART_3D}>
         <div
-          className="relative overflow-hidden"
-          style={{
-            ...MODERN_NOW_PLAYING_SLEEVE,
-            height: MODERN_NOW_PLAYING_ART_PX,
-            width: MODERN_NOW_PLAYING_ART_PX,
-          }}
+          className="absolute inset-0 overflow-hidden"
+          style={MODERN_NOW_PLAYING_SLEEVE}
         >
           {coverUrl ? (
             <img
@@ -233,8 +256,11 @@ function ModernNowPlayingArtwork({ coverUrl }: { coverUrl: string | null }) {
         {coverUrl ? (
           <div
             aria-hidden
-            className="pointer-events-none mt-0 w-full overflow-hidden"
-            style={{ height: reflectH }}
+            className="pointer-events-none absolute left-0 w-full"
+            style={{
+              top: "100%",
+              height: reflectH,
+            }}
           >
             <img
               ref={reflection.ref}
@@ -384,7 +410,7 @@ export function IpodScreen({
     isModernUi && isCoverFlowOpen && coverFlowSlot
   );
   const menuItemHeight = isModernUi
-    ? MENU_ITEM_HEIGHT_MODERN
+    ? MENU_ITEM_HEIGHT_MODERN_PX
     : MENU_ITEM_HEIGHT_CLASSIC;
   const [showShellTitleInTitlebar, setShowShellTitleInTitlebar] =
     useState(false);
@@ -505,11 +531,21 @@ export function IpodScreen({
       Math.floor(scrollTop / menuItemHeight) - OVERSCAN_ITEMS
     );
     const visibleCount =
-      Math.ceil((containerHeight || 124) / menuItemHeight) +
+      Math.ceil(
+        (containerHeight ||
+          (isModernUi ? MODERN_MENU_LIST_HEIGHT_PX : 124)) /
+          menuItemHeight
+      ) +
       OVERSCAN_ITEMS * 2;
     const end = Math.min(currentMenuItems.length, start + visibleCount);
     return { start, end };
-  }, [scrollTop, containerHeight, currentMenuItems.length, menuItemHeight]);
+  }, [
+    scrollTop,
+    containerHeight,
+    currentMenuItems.length,
+    menuItemHeight,
+    isModernUi,
+  ]);
 
   // Keep the selected item in view. We key on `menuHistory` (the array
   // reference, not just its length) so EVERY menu transition triggers a
@@ -533,7 +569,9 @@ export function IpodScreen({
     const isMenuTransition = lastMenuDepthRef.current !== menuHistory.length;
     lastMenuDepthRef.current = menuHistory.length;
 
-    const containerH = el.clientHeight || 124;
+    const containerH =
+      el.clientHeight ||
+      (isModernUi ? MODERN_MENU_LIST_HEIGHT_PX : 124);
 
     // On a menu transition, snap scrollTop based purely on the target
     // index — we don't want to inherit the previous menu's offset.
@@ -781,8 +819,9 @@ export function IpodScreen({
         style={
           isModernUi
             ? {
-                height: MODERN_TITLEBAR_HEIGHT,
-                minHeight: MODERN_TITLEBAR_HEIGHT,
+                height: MODERN_TITLEBAR_HEIGHT_PX,
+                minHeight: MODERN_TITLEBAR_HEIGHT_PX,
+                maxHeight: MODERN_TITLEBAR_HEIGHT_PX,
               }
             : undefined
         }
@@ -819,7 +858,7 @@ export function IpodScreen({
                   // Slimmer 12px header type matches the iPod 6G/7G photo
                   // we were referenced to — one full pixel above the
                   // 11px Helvetica Neue used by iOS 6 status bars but
-                  // still well under the 15px MyriadPro list rows so the
+                  // still well under the 12px list rows so the
                   // header reads as secondary chrome.
                   "text-[12px] font-semibold",
                   "[text-shadow:0_1px_0_rgba(255,255,255,0.9)]"
@@ -879,11 +918,12 @@ export function IpodScreen({
           "relative",
           !showVideo && "z-10",
           isModernUi && showSplitMenuArt && "bg-white",
-          isModernUi && "flex-1 min-h-0"
+          isModernUi && "shrink-0",
+          isModernUi && !menuMode && !showInlineCoverFlow && "overflow-visible"
         )}
         style={
           isModernUi
-            ? undefined
+            ? { height: MODERN_MENU_LIST_HEIGHT_PX }
             : {
                 height: "calc(100% - 24px)",
               }
@@ -923,7 +963,17 @@ export function IpodScreen({
               transition={{ duration: 0.2, ease: "easeInOut" }}
               custom={menuDirection}
             >
-              <div className="flex-1 relative">
+              <div
+                className={cn(
+                  "relative",
+                  isModernUi ? "shrink-0 overflow-hidden" : "flex-1"
+                )}
+                style={
+                  isModernUi
+                    ? { height: MODERN_MENU_LIST_HEIGHT_PX }
+                    : undefined
+                }
+              >
                 <div
                   ref={setMenuScrollRef}
                   className="absolute inset-0 overflow-auto ipod-menu-container"
@@ -1010,51 +1060,49 @@ export function IpodScreen({
               <div
                 className={cn(
                   "flex-1 flex flex-col overflow-visible px-2",
-                  isModernUi ? "pt-1.5 pb-0.5" : "py-1"
+                  isModernUi ? "pt-1 pb-0" : "py-1"
                 )}
               >
                 {currentTrack && nowPlayingDisplayTrack ? (
                   <>
-                    <div
-                      className={cn(
-                        "flex items-center justify-between gap-2",
-                        isModernUi
-                          ? "font-ipod-modern-ui text-[12px] font-normal leading-[1.06] text-[rgb(99,101,103)]"
-                          : "font-chicago text-[12px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]",
-                        nowPlayingDisplayTrack.album ? "mb-1" : "mb-1.5"
-                      )}
-                    >
-                      <span>
-                        {currentTrack?.appleMusicPlayParams?.stationId
-                          ? "LIVE"
-                          : isAppleMusicCollectionShell
-                            ? "MIX"
-                            : `${currentIndex + 1} of ${tracksLength}`}
-                      </span>
-                      {isShuffled && (
-                        <Shuffle
-                          className="shrink-0"
-                          size={isModernUi ? 12 : 13}
-                          weight="bold"
-                          aria-label="shuffle on"
-                        />
-                      )}
-                    </div>
+                    {!isModernUi && (
+                      <div
+                        className={cn(
+                          "flex items-center justify-between gap-2",
+                          "font-chicago text-[12px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]",
+                          nowPlayingDisplayTrack.album ? "mb-1" : "mb-1.5"
+                        )}
+                      >
+                        <span>
+                          {currentTrack?.appleMusicPlayParams?.stationId
+                            ? "LIVE"
+                            : isAppleMusicCollectionShell
+                              ? "MIX"
+                              : `${currentIndex + 1} of ${tracksLength}`}
+                        </span>
+                        {isShuffled && (
+                          <Shuffle
+                            className="shrink-0"
+                            size={13}
+                            weight="bold"
+                            aria-label="shuffle on"
+                          />
+                        )}
+                      </div>
+                    )}
                     {isModernUi ? (
-                      <div className="flex min-h-0 flex-1 items-start gap-3 overflow-visible pt-1 pb-0">
-                        <ModernNowPlayingArtwork coverUrl={coverUrl} />
-                        <div
-                          className={cn(
-                            "flex min-h-0 min-w-0 flex-1 flex-col justify-start gap-0 overflow-visible text-left",
-                            // Small downward nudge so the first line
-                            // doesn't hug the cover's top edge — matches
-                            // the iPod nano 6G/7G "Now Playing" baseline.
-                            "pt-1",
-                            "[&>*]:py-0",
-                            "[&>*:not(:first-child)]:-mt-[3px]",
-                            "font-ipod-modern-ui"
-                          )}
-                        >
+                      <div className="flex flex-col overflow-visible">
+                        <div className="flex items-start gap-3 overflow-visible">
+                          <ModernNowPlayingArtwork coverUrl={coverUrl} />
+                          <div
+                            className={cn(
+                              "flex min-w-0 flex-1 flex-col justify-start gap-0 overflow-visible text-left",
+                              "pt-0.5",
+                              "[&>*]:py-0",
+                              "[&>*:not(:first-child)]:-mt-[3px]",
+                              "font-ipod-modern-ui"
+                            )}
+                          >
                           <ScrollingText
                             text={nowPlayingDisplayTrack.title}
                             isPlaying={isPlaying}
@@ -1071,7 +1119,7 @@ export function IpodScreen({
                             align="left"
                             fadeEdges
                             allowMarquee={modernScrollingMarqueeAllowed}
-                            className="leading-[1.06] text-[12px] font-normal text-[rgb(99,101,103)]"
+                            className="leading-[1.06] text-[12px] text-[rgb(99,101,103)]"
                           />
                           {nowPlayingDisplayTrack.album && (
                             <ScrollingText
@@ -1081,9 +1129,43 @@ export function IpodScreen({
                               align="left"
                               fadeEdges
                               allowMarquee={modernScrollingMarqueeAllowed}
-                              className="leading-[1.06] text-[12px] font-normal text-[rgb(99,101,103)]"
+                              className="leading-[1.06] text-[12px] text-[rgb(99,101,103)]"
                             />
                           )}
+                          <div className="relative min-w-0">
+                            <ScrollingText
+                              text={
+                                currentTrack?.appleMusicPlayParams?.stationId
+                                  ? "LIVE"
+                                  : isAppleMusicCollectionShell
+                                    ? "MIX"
+                                    : `${currentIndex + 1} of ${tracksLength}`
+                              }
+                              isPlaying={isPlaying}
+                              scrollStartDelaySec={1}
+                              align="left"
+                              fadeEdges
+                              allowMarquee={modernScrollingMarqueeAllowed}
+                              className="leading-[1.06] text-[12px] text-[rgb(99,101,103)]"
+                            />
+                            {isShuffled && (
+                              <Shuffle
+                                className="absolute right-0 top-1/2 shrink-0 -translate-y-1/2"
+                                size={12}
+                                weight="bold"
+                                aria-label="shuffle on"
+                              />
+                            )}
+                          </div>
+                        </div>
+                        </div>
+                        <div className="mt-0.5 w-full shrink-0">
+                          <ModernNowPlayingProgressRow
+                            elapsedTime={elapsedTime}
+                            totalTime={totalTime}
+                            displayElapsedSeconds={displayElapsedSeconds}
+                            displayRemainingSeconds={displayRemainingSeconds}
+                          />
                         </div>
                       </div>
                     ) : (
@@ -1115,27 +1197,13 @@ export function IpodScreen({
                         )}
                       </div>
                     )}
-                    <div
-                      className={cn(
-                        "mt-auto flex-shrink-0 w-full",
-                        nowPlayingDisplayTrack.album ? "pt-1.5" : "pt-3"
-                      )}
-                    >
-                      {isModernUi ? (
-                        // Same aqua bar as About This Finder memory rows.
-                        <div className="aqua-progress h-[9px] w-full rounded-none">
-                          <div
-                            className="aqua-progress-fill h-full rounded-none transition-all duration-200 ease-out"
-                            style={{
-                              width: `${
-                                totalTime > 0
-                                  ? (elapsedTime / totalTime) * 100
-                                  : 0
-                              }%`,
-                            }}
-                          />
-                        </div>
-                      ) : (
+                    {!isModernUi && (
+                      <div
+                        className={cn(
+                          "mt-auto flex-shrink-0 w-full",
+                          nowPlayingDisplayTrack.album ? "pt-1.5" : "pt-3"
+                        )}
+                      >
                         <div className="w-full h-[8px] rounded-full border border-[#0a3667] overflow-hidden">
                           <div
                             className="h-full bg-[#0a3667]"
@@ -1148,21 +1216,21 @@ export function IpodScreen({
                             }}
                           />
                         </div>
-                      )}
-                      <div
-                        className={cn(
-                          "w-full flex justify-between",
-                          isModernUi
-                            ? "font-ipod-modern-ui text-[12px] min-h-[14px] leading-[1.06] mt-1 text-[rgb(99,101,103)] font-normal tabular-nums"
-                            : "font-chicago text-[16px] h-[22px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
-                        )}
-                      >
-                        <span>
-                          {formatPlaybackTime(displayElapsedSeconds)}
-                        </span>
-                        <span>-{formatPlaybackTime(displayRemainingSeconds)}</span>
+                        <div
+                          className={cn(
+                            "w-full flex justify-between",
+                            "font-chicago text-[16px] h-[22px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
+                          )}
+                        >
+                          <span>
+                            {formatPlaybackTime(displayElapsedSeconds)}
+                          </span>
+                          <span>
+                            -{formatPlaybackTime(displayRemainingSeconds)}
+                          </span>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </>
                 ) : (
                   <div
@@ -1191,7 +1259,7 @@ export function IpodScreen({
   return (
     <div
       className={cn(
-        "relative w-full h-[150px] border border-black border-2 rounded-[2px] overflow-hidden transition-all duration-500 select-none no-select-all",
+        "relative w-full h-[150px] box-border border border-black border-2 rounded-[2px] overflow-hidden transition-all duration-500 select-none no-select-all",
         // The classic LCD filter scan-lines/flicker overlay only makes
         // sense for the monochrome 1st-gen LCD look. The modern iOS 6
         // skin is rendered on a Retina-style high-DPI display, so we
@@ -1216,7 +1284,7 @@ export function IpodScreen({
         maxWidth: "100%",
         maxHeight: "150px",
         position: "relative",
-        contain: "layout style paint",
+        contain: isModernUi ? undefined : "layout style paint",
         WebkitUserSelect: "none",
         WebkitTouchCallout: "none",
       }}
@@ -1567,17 +1635,17 @@ export function IpodScreen({
             // below. The split-art column to the right meanwhile fades
             // its cover image off, revealing the panel's solid-black
             // backface (see `.ipod-modern-split-art`).
-            "relative flex min-h-0 flex-col overflow-hidden z-10 h-full ipod-modern-menu-panel",
+            "relative flex min-h-0 flex-col z-10 ipod-modern-menu-panel",
             showSplitMenuArt && "is-split",
             splitLayoutTransitionReady &&
-              `transition-[width,box-shadow] ${SPLIT_LAYOUT_TRANSITION_TIMING}`
+              `transition-[width,box-shadow] ${SPLIT_LAYOUT_TRANSITION_TIMING}`,
+            (menuMode || showInlineCoverFlow) && "overflow-hidden",
+            !menuMode && !showInlineCoverFlow && "overflow-visible",
+            isModernUi && "box-border"
           )}
-          // `showSplitMenuArt` already implies `menuMode` (see its
-          // definition above), so the `menuMode ?` ternary collapses:
-          // both !menuMode and (menuMode && !showSplitMenuArt) want
-          // 100%, only showSplitMenuArt wants the split half.
           style={{
             width: showSplitMenuArt ? MODERN_SPLIT_HALF : "100%",
+            height: isModernUi ? IPOD_SCREEN_INNER_HEIGHT_PX : undefined,
           }}
         >
           {menuChrome}

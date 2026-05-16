@@ -44,8 +44,8 @@ export function MenuListItem({
 
   if (isModern) {
     // iPod-classic-js SelectableListItem: white row, blue gradient
-    // selection highlight, no separator. Rows are compact (**21px**) with **15px** type so
-    // titlebar + six rows fit inside the 150px screen (nano 6G/7G density).
+    // selection highlight, no separator. Rows are **18px** with **12px** type under
+    // a 17px status bar (seven rows + 3px tail fill the 129px menu viewport).
     //
     // Long labels truncate via `ScrollingText` with `fadeEdges`:
     //   - When the label fits, ScrollingText renders static text.
@@ -81,13 +81,13 @@ export function MenuListItem({
             isPlaying={isSelected && !isLoading}
             resetOnPause
             scrollStartDelaySec={0.5}
-            className="max-w-full min-w-0 block text-[15px] font-semibold leading-normal"
+            className="max-w-full min-w-0 block text-[12px] font-semibold leading-none"
           />
         </span>
         {value ? (
           <span
             className={cn(
-              "flex shrink-0 items-center text-[15px] font-semibold leading-normal",
+              "flex shrink-0 items-center text-[12px] font-semibold leading-none",
               isSelected && !isLoading
                 ? "text-white/90"
                 : "text-[rgb(99,101,103)]"
@@ -103,7 +103,7 @@ export function MenuListItem({
             <span
               className={cn(
                 "flex shrink-0 items-center justify-center font-normal leading-none",
-                "text-[19px]",
+                "text-[14px]",
                 isSelected && !isLoading ? "text-white/95" : "text-[#b8b8bc]"
               )}
               aria-hidden
