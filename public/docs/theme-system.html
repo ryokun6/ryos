@@ -182,7 +182,13 @@
   
   <div class="container">
     <nav class="sidebar">
-      <div class="nav-group ">
+      <div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/theme-architecture" class="">Theme architecture (implementation)</a>
+  </div>
+</div>
+<div class="nav-group ">
   <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
@@ -226,7 +232,6 @@
     <a href="/docs/calendar" class="nav-child ">2.21 Calendar</a>
     <a href="/docs/dashboard" class="nav-child ">2.22 Dashboard</a>
     <a href="/docs/contacts" class="nav-child ">2.23 Contacts</a>
-    <a href="/docs/candybar" class="nav-child ">2.24 CandyBar</a>
     <a href="/docs/tv" class="nav-child ">2.25 TV</a>
     <a href="/docs/maps" class="nav-child ">2.26 Maps</a>
   </div>
@@ -307,6 +312,7 @@
     <main class="content">
       <article>
         <h1>Theme System</h1>
+<strong>Implementers:</strong> see <a href="./theme-architecture.md">Theme architecture (implementation)</a> for <code>data-os-platform</code>, CSS layers, menu tokens, and Tailwind variants.
 <p>ryOS supports 4 themes emulating classic operating systems with comprehensive CSS variable systems, centralized metadata helpers, and platform-specific UI behaviors.</p>
 <h2>Available Themes</h2>
 <table><thead><tr><th>Theme ID</th><th>Name</th><th>Platform</th><th>Era</th><th>Key Elements</th></tr></thead><tbody><tr><td><code>macosx</code></td><td>Aqua</td><td>Mac OS X</td><td>~2001</td><td>Glossy buttons, traffic lights, pinstripe, dock</td></tr><tr><td><code>system7</code></td><td>System 7</td><td>Classic Mac</td><td>~1991</td><td>Black & white, dotted titlebar pattern</td></tr><tr><td><code>xp</code></td><td>Luna</td><td>Windows XP</td><td>~2001</td><td>Blue chrome, rounded corners, taskbar</td></tr><tr><td><code>win98</code></td><td>Classic</td><td>Windows 98</td><td>~1998</td><td>3D beveled face, blue gradient titlebar</td></tr></tbody></table>

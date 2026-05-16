@@ -29,7 +29,6 @@ export const appIds = [
   "calendar",
   "contacts",
   "dashboard",
-  "candybar",
   "maps",
 ] as const;
 
@@ -79,7 +78,6 @@ export const appNames: Record<AppId, string> = {
   "calendar": "Calendar",
   "contacts": "Contacts",
   "dashboard": "Dashboard",
-  "candybar": "CandyBar",
   "maps": "Maps",
 };
 

@@ -1,6 +1,6 @@
 # Apps
 
-ryOS includes 26 built-in applications, each designed to replicate classic desktop experiences while adding modern functionality.
+ryOS includes 25 built-in applications, each designed to replicate classic desktop experiences while adding modern functionality.
 
 ## App Overview
 
@@ -30,7 +30,6 @@ ryOS includes 26 built-in applications, each designed to replicate classic deskt
 | [Contacts](/docs/contacts) | Address book with vCard import and cloud sync | Productivity |
 | [Dashboard](/docs/dashboard) | Tiger-style widget overlay with clock, calendar, weather, stocks, iPod, translation, sticky notes, and dictionary | Utilities |
 | [Maps](/docs/maps) | Apple MapKit search and pins; directions open in a new tab (Apple Maps); Chats can open results in-app | Utilities |
-| [CandyBar](/docs/candybar) | Browse and apply dock icon packs | Utilities |
 | [Admin](/docs/admin) | Usage analytics dashboard with server info and user management (admin only) | System |
 
 ## App Architecture
