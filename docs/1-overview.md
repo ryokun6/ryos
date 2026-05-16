@@ -1,13 +1,13 @@
 # Overview
 
-ryOS is a web-based desktop environment that brings the nostalgia of classic operating systems to modern browsers. Experience the charm of Mac OS X Aqua, System 7, Windows XP, and Windows 98—all running in your browser with 24 fully-functional apps, an AI assistant, and a complete virtual file system.
+ryOS is a web-based desktop environment that brings the nostalgia of classic operating systems to modern browsers. Experience the charm of Mac OS X Aqua, System 7, Windows XP, and Windows 98—all running in your browser with 25 fully-functional apps, an AI assistant, and a complete virtual file system.
 
 Whether you're exploring the retro aesthetics, building HTML applets, or chatting with Ryo (the AI assistant), ryOS offers a unique blend of nostalgia and modern web technology.
 
 ```mermaid
 graph TB
     subgraph Presentation["Presentation Layer"]
-        Apps[24 App Modules]
+        Apps[25 App Modules]
         UI[UI Components]
         Themes[4 Themes]
     end
@@ -74,7 +74,7 @@ graph TB
 | Audio | Tone.js, WaveSurfer.js, Web Audio API |
 | 3D | Three.js (shaders) |
 | Text Editor | TipTap |
-| Storage | IndexedDB, LocalStorage, Redis (Upstash REST / standard), Vercel Blob / S3-compatible | <!-- pragma: allowlist secret -->
+| Storage | IndexedDB, LocalStorage, Redis (Upstash REST / standard), Vercel Blob and compatible object storage backends |
 | API Runtime | Vercel Node.js handlers + standalone Bun server |
 | AI | OpenAI, Anthropic, Google via Vercel AI SDK |
 | Real-time | Pusher or local WebSocket (with Redis pub/sub fanout) |
@@ -91,12 +91,12 @@ graph TB
 ├── public/           # Static assets
 ├── src/
 │   ├── api/          # Frontend API clients (auth, rooms, admin, songs, listen, core, telegram)
-│   ├── apps/         # 24 app modules
+│   ├── apps/         # 25 app modules
 │   ├── components/   # Shared React components
 │   ├── config/       # App registry
-│   ├── hooks/        # 44 custom hooks
+│   ├── hooks/        # 45 custom hooks
 │   ├── lib/          # Libraries
-│   ├── stores/       # 31 Zustand stores
+│   ├── stores/       # 34 Zustand stores
 │   ├── styles/       # CSS
 │   ├── themes/       # 4 theme definitions
 │   ├── types/        # TypeScript types

@@ -13,9 +13,12 @@ A summary of changes and updates to ryOS, organized by month.
 - Add **Aquarium** dashboard widget alongside the existing 8 widgets.
 - TV polish: channel-bug logo overlay (visible in fullscreen), occasional idle bursts (spin / watermark / shimmer with glossy overlay blend), animations hard-reset on channel switch, drawer open/close SFX, square channel-strip buttons, channel logo tray strip, fullscreen control parity with Karaoke (dismiss + CH± pills, viewport-scaled captions, marquee fade on pause/overflow), CRT static skipped while fullscreen, and synced reset-channel deletes.
 - Docs: **Maps** — add app documentation (MapKit search, pins, Home/Work/Favorites); **Directions** hands off to Apple Maps in a **new tab** (ryOS tab unchanged). **`mapsSearchPlaces`** in Chats opens a chosen place **inside ryOS Maps** without leaving the chat page; in-map turn-by-turn routing is not implemented yet.
+- iPod **modern UI** overhaul: default classic-js–inspired skin with Myriad Pro typography, split-menu Ken Burns slideshow, Cover Flow flip-to-tracklist, brick game and Music Quiz styling, and Apple Music playback stability fixes.
+- Refactor **theme platform layer** with `data-os-platform`, centralized menu tokens, and macOSX font fixes across menubar, Finder list view, About dialog, and TextEdit headings.
+- Remove **CandyBar** app (dock icon pack browser added in March is no longer shipped).
 
 <details>
-<summary>Minor changes (9)</summary>
+<summary>Minor changes (24)</summary>
 
 - iPod: Apple Music sharing now copies Apple Music song links without touching the YouTube shared-song list; Apple Music display defaults to Cover, hides Video mode, keeps other visualizers available, and cleans up Now Playing marquee/shuffle status.
 - Localize Virtual PC UI and v86 preset catalog; translate remaining locale TODOs across all languages.
@@ -26,6 +29,12 @@ A summary of changes and updates to ryOS, organized by month.
 - Chats: extend Cursor SDK run Redis TTL from 1 day to 90 days; rename channel prompt placeholder to "Make a new channel...".
 - Refactor: extract `FullscreenMobileDismiss` for fullscreen portals (shared across TV/Karaoke).
 - Admin: relax rate limits for admin endpoints; reorder admin sidebar and View menu sections.
+- Calendar: fix tray delete button layout, prevent mobile scroll during event drag, and add bottom padding so delete is not clipped.
+- Maps: recreate MapKit after minimize when the map surface unmounts.
+- Synth: mobile preset UI hides metal buttons and sizes the preset select control.
+- TV: theme UI font for channel creation loading shimmer.
+- iPod: remove Apple Music user token sync; fix setQueue pause race and infinite render loops on library switch; classic titlebar no longer overlays video/lyrics.
+- React 19 hardening: migrate deprecated APIs, refactor cascading setState to useReducer, add effect cleanups, stabilize list keys, and lift admin panel helpers to module scope.
 
 </details>
 
@@ -433,4 +442,4 @@ A summary of changes and updates to ryOS, organized by month.
 
 ---
 
-*This changelog is maintained from git history and manual curation. Last updated: 2026-05-02*
+*This changelog is maintained from git history and manual curation. Last updated: 2026-05-16*
