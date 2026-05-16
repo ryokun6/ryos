@@ -873,6 +873,13 @@ export function FileList({
   // ------------------- Render -------------------
 
   if (viewType === "list") {
+    // macOS theme list view picks up larger Lucida Grande sizing so rows match the
+    // icon-view label scale (12px). System 7 / Windows themes keep the pixel-font sizing
+    // they were tuned for. Previously a global `:root[data-os-theme="macosx"] div { font-size: 13px !important }`
+    // rule made these look right; that rule was removed during the typography refactor,
+    // so we opt in explicitly here.
+    const listHeaderTextClass = isMacOSXTheme ? "text-[12px]" : "text-[10px]";
+    const listBodyTextClass = isMacOSXTheme ? "text-[12px]" : "text-[11px]";
     return (
       <div
         ref={containerRef}
@@ -884,7 +891,7 @@ export function FileList({
       >
         <Table key={listTableKey} className="min-w-[480px]">
           <TableHeader>
-            <TableRow className="text-[10px] border-none font-normal">
+            <TableRow className={`${listHeaderTextClass} border-none font-normal`}>
               <TableHead className="font-normal bg-gray-100/50 h-[28px]">
                 {t("apps.finder.tableHeaders.name")}
               </TableHead>
@@ -899,7 +906,7 @@ export function FileList({
               </TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody className="text-[11px]">
+          <TableBody className={listBodyTextClass}>
             {files.map((file) => (
               <ListRowItem
                 key={file.path}

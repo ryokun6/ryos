@@ -1471,6 +1471,11 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
             ? "0 2px 8px rgba(0, 0, 0, 0.15)"
             : undefined,
         fontFamily: "var(--os-font-ui)",
+        // Match clock + non-button text to menubar trigger button size in macOS theme.
+        // The macOS button rule (themes.css) sizes triggers to --os-typography-button via !important;
+        // setting the same here means inheritors (Clock div, Finder app-menu-trigger which is excluded
+        // from the button rule, etc.) line up at 13px instead of falling back to the 12px body size.
+        fontSize: isMacOSTheme ? "var(--os-typography-button)" : undefined,
         color: "var(--os-color-menubar-text)",
         // Add extra left padding for macOS traffic lights in Tauri
         paddingLeft: needsTrafficLightClearance 
