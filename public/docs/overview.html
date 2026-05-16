@@ -182,7 +182,13 @@
   
   <div class="container">
     <nav class="sidebar">
-      <div class="nav-group expanded">
+      <div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/theme-architecture" class="">Theme architecture (implementation)</a>
+  </div>
+</div>
+<div class="nav-group expanded">
   <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
       <path d="M2 0v8l4-4z"/>
@@ -226,7 +232,6 @@
     <a href="/docs/calendar" class="nav-child ">2.21 Calendar</a>
     <a href="/docs/dashboard" class="nav-child ">2.22 Dashboard</a>
     <a href="/docs/contacts" class="nav-child ">2.23 Contacts</a>
-    <a href="/docs/candybar" class="nav-child ">2.24 CandyBar</a>
     <a href="/docs/tv" class="nav-child ">2.25 TV</a>
     <a href="/docs/maps" class="nav-child ">2.26 Maps</a>
   </div>
@@ -345,7 +350,7 @@
 <h2>Quick Start</h2>
 <table><thead><tr><th>I want to...</th><th>Go to</th></tr></thead><tbody><tr><td>Learn about the apps</td><td><a href="/docs/apps">Apps Overview</a></td></tr><tr><td>Understand the architecture</td><td><a href="/docs/architecture">Architecture</a></td></tr><tr><td>Understand the API layer</td><td><a href="/docs/api-architecture">API Architecture</a></td></tr><tr><td>Build with the framework</td><td><a href="/docs/application-framework">Application Framework</a></td></tr><tr><td>Work with AI features</td><td><a href="/docs/ai-system">AI System</a></td></tr><tr><td>Use the APIs</td><td><a href="/docs/api-reference">API Reference</a></td></tr></tbody></table>
 <h2>Key Features</h2>
-<ul><li><strong><a href="/docs/theme-system">Multi-Theme Support</a>:</strong> System 7, Mac OS X (Aqua), Windows XP, Windows 98</li></ul><ul><li><strong><a href="/docs/apps">24 Built-in Apps</a>:</strong> Finder, TextEdit, Paint, iPod, Infinite Mac, Winamp, Calendar, Dashboard, Contacts, CandyBar, and more</li><li><strong><a href="/docs/ai-system">AI Assistant (Ryo)</a>:</strong> Chat, tool calling, app control, code generation</li><li><strong><a href="/docs/file-system">Virtual File System</a>:</strong> IndexedDB-backed with lazy loading and cloud sync</li><li><strong><a href="/docs/rooms-api">Real-time Chat</a>:</strong> RESTful rooms with AI integration</li><li><strong><a href="/docs/audio-system">Audio System</a>:</strong> Synthesizer, soundboard, TTS, and UI sounds</li><li><strong><a href="/docs/component-library">Component Library</a>:</strong> shadcn/ui + custom components with i18n</li><li><strong><a href="/docs/api-architecture">Cloud Sync</a>:</strong> Multi-domain auto-sync with individual file sync, realtime notifications, and switchable storage (Vercel Blob / S3-compatible)</li><li><strong><a href="/docs/api-architecture">Unified API Layer</a>:</strong> Shared <code>apiHandler</code> + middleware utilities for consistent CORS, method routing, auth, and error handling</li><li><strong>Usage Analytics:</strong> Lightweight per-day API analytics with admin dashboard</li><li><strong>Runtime Reliability & Performance:</strong> App/desktop error boundaries, typed app event bus primitives, lazy-loaded non-default locales, and worker-offloaded Spotlight indexing</li></ul>
+<ul><li><strong><a href="/docs/theme-system">Multi-Theme Support</a>:</strong> System 7, Mac OS X (Aqua), Windows XP, Windows 98</li></ul><ul><li><strong><a href="/docs/apps">Built-in Apps</a>:</strong> Finder, TextEdit, Paint, iPod, Infinite Mac, Winamp, Calendar, Dashboard, Contacts, and more</li><li><strong><a href="/docs/ai-system">AI Assistant (Ryo)</a>:</strong> Chat, tool calling, app control, code generation</li><li><strong><a href="/docs/file-system">Virtual File System</a>:</strong> IndexedDB-backed with lazy loading and cloud sync</li><li><strong><a href="/docs/rooms-api">Real-time Chat</a>:</strong> RESTful rooms with AI integration</li><li><strong><a href="/docs/audio-system">Audio System</a>:</strong> Synthesizer, soundboard, TTS, and UI sounds</li><li><strong><a href="/docs/component-library">Component Library</a>:</strong> shadcn/ui + custom components with i18n</li><li><strong><a href="/docs/api-architecture">Cloud Sync</a>:</strong> Multi-domain auto-sync with individual file sync, realtime notifications, and switchable storage (Vercel Blob / S3-compatible) <!-- pragma: allowlist secret --></li><li><strong><a href="/docs/api-architecture">Unified API Layer</a>:</strong> Shared <code>apiHandler</code> + middleware utilities for consistent CORS, method routing, auth, and error handling</li><li><strong>Usage Analytics:</strong> Lightweight per-day API analytics with admin dashboard</li><li><strong>Runtime Reliability & Performance:</strong> App/desktop error boundaries, typed app event bus primitives, lazy-loaded non-default locales, and worker-offloaded Spotlight indexing</li></ul>
 <h2>Tech Stack</h2>
 <table><thead><tr><th>Category</th><th>Technologies</th></tr></thead><tbody><tr><td>Frontend</td><td>React 19, TypeScript, Tailwind CSS v4, shadcn/ui, Framer Motion</td></tr><tr><td>State</td><td>Zustand with localStorage/IndexedDB persistence</td></tr><tr><td>Audio</td><td>Tone.js, WaveSurfer.js, Web Audio API</td></tr><tr><td>3D</td><td>Three.js (shaders)</td></tr><tr><td>Text Editor</td><td>TipTap</td></tr><tr><td>Storage</td><td>IndexedDB, LocalStorage, Redis (Upstash REST / standard), Vercel Blob / S3-compatible</td></tr><tr><td>API Runtime</td><td>Vercel Node.js handlers + standalone Bun server</td></tr><tr><td>AI</td><td>OpenAI, Anthropic, Google via Vercel AI SDK</td></tr><tr><td>Real-time</td><td>Pusher or local WebSocket (with Redis pub/sub fanout)</td></tr><tr><td>Package Manager</td><td>Bun (<code>bun@1.3.5</code>)</td></tr><tr><td>Build</td><td>Vite, Bun</td></tr><tr><td>Desktop</td><td>Tauri (macOS, Windows, Linux)</td></tr><tr><td>Deployment</td><td>Vercel (web), standalone Bun API (self-hosted), Docker / Coolify</td></tr></tbody></table>
 <h2>Project Structure</h2>
@@ -369,7 +374,7 @@
       </article>
       
       <nav class="nav">
-        <span></span>
+        <a href="/docs/theme-architecture">← Theme architecture (implementation)</a>
         <a href="/docs/architecture">Architecture & Build →</a>
       </nav>
       

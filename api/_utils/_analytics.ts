@@ -205,7 +205,6 @@ const KNOWN_APP_IDS = new Set([
   "calendar",
   "contacts",
   "dashboard",
-  "candybar",
   "maps",
 ]);
 

@@ -55,7 +55,6 @@ REACT_OLD_MAP: dict[str, tuple[str, str]] = {
     "admin.png": ("AdministrativeToolsXP.png", "Windows31ControlPanel.png"),
     "applet.png": ("ComponentServices.png", "ComponentServices.png"),
     "calendar.png": ("WindowsXPDateAndTime.png", "WindowsClipbook.png"),  # DateAndTime (xp) / Clipbook (98)
-    "candybar.png": ("WindowsXPWindowsCatalog.png", "ThreeThousandIcons3.png"),
     "cloud-sync.png": ("FilesTransferWizard.png", "FilesTransferWizard.png"),
     "cola.png": ("PepsiThemeMyComputer.png", "PepsiThemeMyComputer.png"),
     "contacts.png": ("WindowsXPAddressBook.png", "WindowsAddressBook.png"),

@@ -26,7 +26,6 @@ export type AppId =
   | "calendar"
   | "contacts"
   | "dashboard"
-  | "candybar"
   | "maps";
 
 /**
@@ -170,7 +169,6 @@ export function getTranslatedHelpItems(appId: AppId): Array<{
     calendar: ["navigateMonths", "createEvents", "dayView", "colorCoding", "deleteEvents", "autoSave"],
     contacts: ["browseContacts", "createContacts", "editDetails", "importVCards", "useWithRyo", "cloudSync"],
     dashboard: ["openDashboard", "clockWidget", "calendarWidget", "weatherWidget", "moveWidgets", "closeDashboard"],
-    candybar: ["browseIconPacks", "iconPackDetails", "applyIconPacks", "favorites", "search", "cloudLibrary"],
     maps: ["searchPlaces", "dropPins", "locateMe", "mapTypes", "poweredByApple", "switchMapStyle"],
   };
 

@@ -196,14 +196,6 @@ const HELP_KEYS: Record<AppId, string[]> = {
     "layoutPersists",
     "closeDashboard",
   ],
-  candybar: [
-    "browseIconPacks",
-    "iconPackDetails",
-    "applyIconPacks",
-    "favorites",
-    "search",
-    "cloudLibrary",
-  ],
   maps: [...MAPS_HELP_I18N_KEYS],
 };
 

@@ -54,13 +54,13 @@ graph TB
 ## Key Features
 
 - **[Multi-Theme Support](/docs/theme-system):** System 7, Mac OS X (Aqua), Windows XP, Windows 98
-- **[24 Built-in Apps](/docs/apps):** Finder, TextEdit, Paint, iPod, Infinite Mac, Winamp, Calendar, Dashboard, Contacts, CandyBar, and more
+- **[Built-in Apps](/docs/apps):** Finder, TextEdit, Paint, iPod, Infinite Mac, Winamp, Calendar, Dashboard, Contacts, and more
 - **[AI Assistant (Ryo)](/docs/ai-system):** Chat, tool calling, app control, code generation
 - **[Virtual File System](/docs/file-system):** IndexedDB-backed with lazy loading and cloud sync
 - **[Real-time Chat](/docs/rooms-api):** RESTful rooms with AI integration
 - **[Audio System](/docs/audio-system):** Synthesizer, soundboard, TTS, and UI sounds
 - **[Component Library](/docs/component-library):** shadcn/ui + custom components with i18n
-- **[Cloud Sync](/docs/api-architecture):** Multi-domain auto-sync with individual file sync, realtime notifications, and switchable storage (Vercel Blob / S3-compatible)
+- **[Cloud Sync](/docs/api-architecture):** Multi-domain auto-sync with individual file sync, realtime notifications, and switchable storage (Vercel Blob / S3-compatible) <!-- pragma: allowlist secret -->
 - **[Unified API Layer](/docs/api-architecture):** Shared `apiHandler` + middleware utilities for consistent CORS, method routing, auth, and error handling
 - **Usage Analytics:** Lightweight per-day API analytics with admin dashboard
 - **Runtime Reliability & Performance:** App/desktop error boundaries, typed app event bus primitives, lazy-loaded non-default locales, and worker-offloaded Spotlight indexing
@@ -74,7 +74,7 @@ graph TB
 | Audio | Tone.js, WaveSurfer.js, Web Audio API |
 | 3D | Three.js (shaders) |
 | Text Editor | TipTap |
-| Storage | IndexedDB, LocalStorage, Redis (Upstash REST / standard), Vercel Blob / S3-compatible |
+| Storage | IndexedDB, LocalStorage, Redis (Upstash REST / standard), Vercel Blob / S3-compatible | <!-- pragma: allowlist secret -->
 | API Runtime | Vercel Node.js handlers + standalone Bun server |
 | AI | OpenAI, Anthropic, Google via Vercel AI SDK |
 | Real-time | Pusher or local WebSocket (with Redis pub/sub fanout) |
