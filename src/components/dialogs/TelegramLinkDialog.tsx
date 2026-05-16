@@ -49,6 +49,7 @@ export function TelegramLinkDialog({
   const {
     isWindowsTheme: isXpTheme,
     isMacOSTheme: isMacOsxTheme,
+    isSystem7Theme,
     isWinXp,
   } = useThemeFlags();
 
@@ -92,7 +93,9 @@ export function TelegramLinkDialog({
           "text-gray-500",
           isXpTheme
             ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[10px]"
-            : "font-geneva-12 text-[10px]"
+            : isSystem7Theme
+            ? "font-geneva-12 text-[10px]"
+            : "font-os-ui text-[12px]"
         )}
         style={{
           fontFamily: isXpTheme

@@ -35,7 +35,8 @@ export function AboutFinderDialog({
   const { t } = useTranslation();
   const instances = useAppStore((state) => state.instances);
   const launchApp = useAppStore((state) => state.launchApp);
-  const { isWindowsTheme: isXpTheme, currentTheme } = useThemeFlags();
+  const { isWindowsTheme: isXpTheme, isSystem7Theme, currentTheme } =
+    useThemeFlags();
   const version = useAppStore((state) => state.ryOSVersion);
   const buildNumber = useAppStore((state) => state.ryOSBuildNumber);
   const buildTime = useAppStore((state) => state.ryOSBuildTime);
@@ -164,7 +165,9 @@ export function AboutFinderDialog({
                   "cursor-pointer select-none transition-opacity hover:opacity-70 text-gray-500",
                   isXpTheme
                     ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[10px]"
-                    : "font-geneva-12 text-[10px]"
+                    : isSystem7Theme
+                    ? "font-geneva-12 text-[10px]"
+                    : "font-os-ui text-[11px]"
                 )}
                 onClick={() => setVersionDisplayMode((prev) => (prev + 1) % 3)}
                 title={t("common.aboutThisMac.clickToToggle")}
@@ -183,7 +186,9 @@ export function AboutFinderDialog({
                 "space-y-4",
                 isXpTheme
                   ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[10px]"
-                  : "font-geneva-12 text-[10px]"
+                  : isSystem7Theme
+                  ? "font-geneva-12 text-[10px]"
+                  : "font-os-ui text-[12px]"
               )}
               style={{
                 fontFamily: isXpTheme
@@ -200,10 +205,12 @@ export function AboutFinderDialog({
                 </div>
                 <div
                   className={cn(
-                    "text-[10px] text-gray-500 mt-2",
+                    "text-gray-500 mt-2",
                     isXpTheme
-                      ? "font-['Pixelated_MS_Sans_Serif',Arial]"
-                      : "font-geneva-12"
+                      ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[10px]"
+                      : isSystem7Theme
+                      ? "font-geneva-12 text-[10px]"
+                      : "font-os-ui text-[11px]"
                   )}
                   style={{
                     fontFamily: isXpTheme
@@ -249,7 +256,9 @@ export function AboutFinderDialog({
               "space-y-2 p-2 px-4 pb-4",
               isXpTheme
                 ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[10px]"
-                : "font-geneva-12 text-[10px]"
+                : isSystem7Theme
+                ? "font-geneva-12 text-[10px]"
+                : "font-os-ui text-[12px]"
             )}
             style={{
               fontFamily: isXpTheme

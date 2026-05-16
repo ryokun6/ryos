@@ -27,8 +27,11 @@ interface HelpCardProps {
 }
 
 function HelpCard({ icon, title, description }: HelpCardProps) {
-  const { isWindowsTheme: isXpTheme, isMacOSTheme: isMacTheme } =
-    useThemeFlags();
+  const {
+    isWindowsTheme: isXpTheme,
+    isMacOSTheme: isMacTheme,
+    isSystem7Theme,
+  } = useThemeFlags();
 
   return (
     <div className="p-4 bg-black/5 rounded-os transition-colors">
@@ -55,7 +58,9 @@ function HelpCard({ icon, title, description }: HelpCardProps) {
           "text-gray-700",
           isXpTheme
             ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[10px]"
-            : "font-geneva-12 text-[10px]"
+            : isSystem7Theme
+            ? "font-geneva-12 text-[10px]"
+            : "font-os-ui text-[12px]"
         )}
         style={{
           fontFamily: isXpTheme
