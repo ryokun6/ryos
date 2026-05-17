@@ -502,24 +502,13 @@ export interface IpodState extends IpodData {
   clearLyricsCache: () => void;
   /** Set the furigana map for current lyrics */
   setCurrentFuriganaMap: (map: Record<string, FuriganaSegment[]> | null) => void;
-  /**
-   * Adjust the lyric offset (in ms) for the track at the given index.
-   * @param librarySlice When set (e.g. `"youtube"` for Karaoke), mutates that
-   * slice regardless of the iPod's active `librarySource`. Omit to follow the
-   * active source (iPod / fullscreen).
-   */
+  /** Optional `librarySlice` targets `tracks` or `appleMusicTracks` regardless of active iPod mode (Karaoke passes `"youtube"`). */
   adjustLyricOffset: (
     trackIndex: number,
     deltaMs: number,
     librarySlice?: LibrarySource
   ) => void;
-  /**
-   * Set the lyric offset (in ms) for the track at the given index.
-   * @param librarySlice When set (e.g. `"youtube"` for Karaoke), mutates that
-   * slice regardless of the iPod's active `librarySource`. Omit to follow the
-   * active source (iPod / fullscreen). Same semantics as `adjustLyricOffset`'s
-   * optional third argument.
-   */
+  /** Same optional `librarySlice` as `adjustLyricOffset`. */
   setLyricOffset: (
     trackIndex: number,
     offsetMs: number,

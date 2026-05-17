@@ -104,9 +104,6 @@ export function useKaraokeLogic({
     setDisplayMode: s.setDisplayMode,
   }));
 
-  // Karaoke always reads/writes the YouTube library slice (`tracks`), even when
-  // the iPod UI is left on Apple Music — offsets and metadata must not bleed
-  // across sources.
   const setLyricOffset = useCallback(
     (index: number, offsetMs: number) =>
       useIpodStore.getState().setLyricOffset(index, offsetMs, "youtube"),
