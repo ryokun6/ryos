@@ -182,13 +182,7 @@
   
   <div class="container">
     <nav class="sidebar">
-      <div class="nav-group">
-  <div class="nav-toggle nav-no-toggle">
-    <span class="nav-spacer"></span>
-    <a href="/docs/theme-architecture" class="">Theme architecture (implementation)</a>
-  </div>
-</div>
-<div class="nav-group ">
+      <div class="nav-group ">
   <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
@@ -247,6 +241,7 @@
     <a href="/docs/window-management" class="nav-child ">3.1 Window Management</a>
     <a href="/docs/state-management" class="nav-child ">3.2 State Management</a>
     <a href="/docs/theme-system" class="nav-child ">3.3 Theme System</a>
+    <a href="/docs/theme-architecture" class="nav-child ">3.3.1 Theme architecture (implementation)</a>
     <a href="/docs/hooks-architecture" class="nav-child ">3.4 Hooks Architecture</a>
     <a href="/docs/component-architecture" class="nav-child ">3.5 Component Architecture</a>
   </div>
@@ -333,7 +328,7 @@
 ├── it/translation.json
 └── ru/translation.json</code></pre>
 <h3>Translation Key Patterns</h3>
-<table><thead><tr><th>Pattern</th><th>Description</th><th>Example</th></tr></thead><tbody><tr><td><code>common.<em></code></td><td>Shared UI elements (menus, dialogs, buttons)</td><td><code>common.menu.file</code></td></tr><tr><td><code>apps.{appId}.</em></code></td><td>App-specific translations</td><td><code>apps.finder.name</code></td></tr><tr><td><code>apps.{appId}.menu.<em></code></td><td>App menu items</td><td><code>apps.ipod.menu.addSong</code></td></tr><tr><td><code>apps.{appId}.help.</em></code></td><td>App help content</td><td><code>apps.chats.help.chatWithRyo</code></td></tr><tr><td><code>apps.{appId}.dialogs.<em></code></td><td>App dialog text</td><td><code>apps.videos.dialogs.clearPlaylistTitle</code></td></tr><tr><td><code>apps.{appId}.widgets.</em></code></td><td>Widget translations (Dashboard)</td><td><code>apps.dashboard.widgets.clock</code></td></tr><tr><td><code>apps.calendar.<em></code></td><td>Calendar views, events, sidebar</td><td><code>apps.calendar.views.month</code></td></tr><tr><td><code>apps.contacts.</em></code></td><td>Address book, groups, fields</td><td><code>apps.contacts.groups.all</code></td></tr><tr><td><code>apps.dashboard.<em></code></td><td>Dashboard widgets, dictionary, stocks</td><td><code>apps.dashboard.stocks.loading</code></td></tr><tr><td><code>settings.</em></code></td><td>Settings panel translations</td><td><code>settings.language.title</code></td></tr><tr><td><code>components.<em></code></td><td>Shared component translations</td><td><code>components.linkPreview.openIpod</code></td></tr><tr><td><code>spotlight.</em></code></td><td>Spotlight Search UI and sections</td><td><code>spotlight.placeholder</code>, <code>spotlight.sections.apps</code></td></tr></tbody></table>
+<table><thead><tr><th>Pattern</th><th>Description</th><th>Example</th></tr></thead><tbody><tr><td><code>common.*</code></td><td>Shared UI elements (menus, dialogs, buttons)</td><td><code>common.menu.file</code></td></tr><tr><td><code>apps.{appId}.*</code></td><td>App-specific translations</td><td><code>apps.finder.name</code></td></tr><tr><td><code>apps.{appId}.menu.*</code></td><td>App menu items</td><td><code>apps.ipod.menu.addSong</code></td></tr><tr><td><code>apps.{appId}.help.*</code></td><td>App help content</td><td><code>apps.chats.help.chatWithRyo</code></td></tr><tr><td><code>apps.{appId}.dialogs.*</code></td><td>App dialog text</td><td><code>apps.videos.dialogs.clearPlaylistTitle</code></td></tr><tr><td><code>apps.{appId}.widgets.*</code></td><td>Widget translations (Dashboard)</td><td><code>apps.dashboard.widgets.clock</code></td></tr><tr><td><code>apps.calendar.*</code></td><td>Calendar views, events, sidebar</td><td><code>apps.calendar.views.month</code></td></tr><tr><td><code>apps.contacts.*</code></td><td>Address book, groups, fields</td><td><code>apps.contacts.groups.all</code></td></tr><tr><td><code>apps.dashboard.*</code></td><td>Dashboard widgets, dictionary, stocks</td><td><code>apps.dashboard.stocks.loading</code></td></tr><tr><td><code>settings.*</code></td><td>Settings panel translations</td><td><code>settings.language.title</code></td></tr><tr><td><code>components.*</code></td><td>Shared component translations</td><td><code>components.linkPreview.openIpod</code></td></tr><tr><td><code>spotlight.*</code></td><td>Spotlight Search UI and sections</td><td><code>spotlight.placeholder</code>, <code>spotlight.sections.apps</code></td></tr></tbody></table>
 <h2>Key Hooks</h2>
 <strong>Window & App Management:</strong>
 <table><thead><tr><th>Hook</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useLaunchApp</code></td><td>Launch apps with multi-window support</td></tr><tr><td><code>useWindowManager</code></td><td>Drag, resize, snap-to-edge</td></tr><tr><td><code>useWindowInsets</code></td><td>Theme-dependent constraints</td></tr></tbody></table>

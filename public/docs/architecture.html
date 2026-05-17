@@ -182,13 +182,7 @@
   
   <div class="container">
     <nav class="sidebar">
-      <div class="nav-group">
-  <div class="nav-toggle nav-no-toggle">
-    <span class="nav-spacer"></span>
-    <a href="/docs/theme-architecture" class="">Theme architecture (implementation)</a>
-  </div>
-</div>
-<div class="nav-group expanded">
+      <div class="nav-group expanded">
   <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
       <path d="M2 0v8l4-4z"/>
@@ -247,6 +241,7 @@
     <a href="/docs/window-management" class="nav-child ">3.1 Window Management</a>
     <a href="/docs/state-management" class="nav-child ">3.2 State Management</a>
     <a href="/docs/theme-system" class="nav-child ">3.3 Theme System</a>
+    <a href="/docs/theme-architecture" class="nav-child ">3.3.1 Theme architecture (implementation)</a>
     <a href="/docs/hooks-architecture" class="nav-child ">3.4 Hooks Architecture</a>
     <a href="/docs/component-architecture" class="nav-child ">3.5 Component Architecture</a>
   </div>
@@ -365,7 +360,7 @@
     API --> External
     State --> API</pre>
 <h2>Deployment Targets</h2>
-<table><thead><tr><th>Target</th><th>Technology</th><th>Description</th></tr></thead><tbody><tr><td><strong>Web (PWA)</strong></td><td>Vercel</td><td>Primary deployment with CDN, serverless functions</td></tr><tr><td><strong>Desktop</strong></td><td>Tauri</td><td>Native app for macOS, Windows, Linux</td></tr><tr><td><strong>Development</strong></td><td>Vite + Bun</td><td>Local frontend with HMR and optional standalone API proxy</td></tr><tr><td><strong>Self-hosted API</strong></td><td>Bun (<code>Bun.serve</code>)</td><td>Run <code>api/<em></code> routes without Vercel via <code><a href="https://github.com/ryokun6/ryos/blob/main/scripts/api-standalone-server.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">scripts/api-standalone-server.ts</a></code></td></tr><tr><td><strong>Docker / Coolify</strong></td><td>Dockerfile + Bun</td><td>Container deployment with health checks at <code>/health</code></td></tr></tbody></table>
+<table><thead><tr><th>Target</th><th>Technology</th><th>Description</th></tr></thead><tbody><tr><td><strong>Web (PWA)</strong></td><td>Vercel</td><td>Primary deployment with CDN, serverless functions</td></tr><tr><td><strong>Desktop</strong></td><td>Tauri</td><td>Native app for macOS, Windows, Linux</td></tr><tr><td><strong>Development</strong></td><td>Vite + Bun</td><td>Local frontend with HMR and optional standalone API proxy</td></tr><tr><td><strong>Self-hosted API</strong></td><td>Bun (<code>Bun.serve</code>)</td><td>Run <code>api/*</code> routes without Vercel via <code><a href="https://github.com/ryokun6/ryos/blob/main/scripts/api-standalone-server.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">scripts/api-standalone-server.ts</a></code></td></tr><tr><td><strong>Docker / Coolify</strong></td><td>Dockerfile + Bun</td><td>Container deployment with health checks at <code>/health</code></td></tr></tbody></table>
 <pre class="mermaid">graph LR
     subgraph Source
         A[Source Code]
@@ -390,7 +385,7 @@
     D --> G[Tauri - macOS/Windows/Linux]
     E --> H[localhost + HMR]</pre>
 <h2>API Runtime Modes</h2>
-<p>The API layer is shared across two execution environments: <ul><li><strong>Vercel serverless functions:</strong> <code>api/</em></code> handlers run as Node.js functions for primary web deployment.</li></ul><ul><li><strong>Standalone Bun server:</strong> <code><a href="https://github.com/ryokun6/ryos/blob/main/scripts/api-standalone-server.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">scripts/api-standalone-server.ts</a></code> uses <code>Bun.serve</code> and adapts requests/responses to the Vercel handler shape for non-Vercel environments.</li></ul></p>
+<p>The API layer is shared across two execution environments: <ul><li><strong>Vercel serverless functions:</strong> <code>api/*</code> handlers run as Node.js functions for primary web deployment.</li></ul><ul><li><strong>Standalone Bun server:</strong> <code><a href="https://github.com/ryokun6/ryos/blob/main/scripts/api-standalone-server.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">scripts/api-standalone-server.ts</a></code> uses <code>Bun.serve</code> and adapts requests/responses to the Vercel handler shape for non-Vercel environments.</li></ul></p>
 <p>Shared utilities under <code>api/_utils/</code> (including <code>api-handler.ts</code>, <code>middleware.ts</code>, <code>request-auth.ts</code>, <code>redis.ts</code>, <code>storage.ts</code>, <code>realtime.ts</code>, <code>runtime-config.ts</code>, <code>constants.ts</code>, <code>_cors.ts</code>, <code>_ssrf.ts</code>, <code>_rate-limit.ts</code>, <code>_validation.ts</code>, <code>_logging.ts</code>, <code>_analytics.ts</code>, <code>_sse.ts</code>, and <code>_memory.ts</code>) provide consistent API patterns across routes.</p>
 <p>Frontend clients under <code>src/api/</code> (<code>auth</code>, <code>rooms</code>, <code>admin</code>, <code>songs</code>, <code>listen</code>, and <code>sync</code>) centralize request logic for app modules.</p>
 <h2>Chunk Splitting Strategy</h2>

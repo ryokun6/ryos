@@ -1,5 +1,5 @@
 /*
- * OS theme CSS architecture (see docs/theme-architecture.md)
+ * OS theme CSS architecture (see docs/3.3.1-theme-architecture.md)
  *
  * Layers (source → consumer):
  *   1) Token blocks — :root[data-os-theme="…"] { --os-* } (per-theme palette + metrics)

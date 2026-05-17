@@ -182,13 +182,7 @@
   
   <div class="container">
     <nav class="sidebar">
-      <div class="nav-group">
-  <div class="nav-toggle nav-no-toggle">
-    <span class="nav-spacer"></span>
-    <a href="/docs/theme-architecture" class="">Theme architecture (implementation)</a>
-  </div>
-</div>
-<div class="nav-group expanded">
+      <div class="nav-group expanded">
   <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
       <path d="M2 0v8l4-4z"/>
@@ -247,6 +241,7 @@
     <a href="/docs/window-management" class="nav-child ">3.1 Window Management</a>
     <a href="/docs/state-management" class="nav-child ">3.2 State Management</a>
     <a href="/docs/theme-system" class="nav-child ">3.3 Theme System</a>
+    <a href="/docs/theme-architecture" class="nav-child ">3.3.1 Theme architecture (implementation)</a>
     <a href="/docs/hooks-architecture" class="nav-child ">3.4 Hooks Architecture</a>
     <a href="/docs/component-architecture" class="nav-child ">3.5 Component Architecture</a>
   </div>
@@ -324,7 +319,7 @@ bun run build
 APP_PUBLIC_ORIGIN="https://your-domain.com" \
 API_ALLOWED_ORIGINS="https://your-domain.com" \
 bun run start</code></pre>
-<p>Important runtime envs: <ul><li><code>PORT</code> or <code>API_PORT</code> — listening port (defaults to <code>3000</code>)</li></ul><ul><li><code>API_HOST</code> — bind host (defaults to <code>0.0.0.0</code>)</li><li><code>APP_PUBLIC_ORIGIN</code> — canonical browser origin, e.g. <code>https://your-domain.com</code></li><li><code>API_ALLOWED_ORIGINS</code> — comma-separated allowed browser origins for <code>/api/<em></code>; supports wildcard subdomain patterns (e.g. <code></em>.example.com</code>), and <code><em></code> to allow all origins</li><li><code>STORAGE_PROVIDER</code> — optional explicit storage backend (<code>s3</code>, <code>vercel-blob</code>); auto-detected if unset</li></ul></p>
+<p>Important runtime envs: <ul><li><code>PORT</code> or <code>API_PORT</code> — listening port (defaults to <code>3000</code>)</li></ul><ul><li><code>API_HOST</code> — bind host (defaults to <code>0.0.0.0</code>)</li><li><code>APP_PUBLIC_ORIGIN</code> — canonical browser origin, e.g. <code>https://your-domain.com</code></li><li><code>API_ALLOWED_ORIGINS</code> — comma-separated allowed browser origins for <code>/api/*</code>; supports wildcard subdomain patterns (e.g. <code>*.example.com</code>), and <code>*</code> to allow all origins</li><li><code>STORAGE_PROVIDER</code> — optional explicit storage backend (<code>s3</code>, <code>vercel-blob</code>); auto-detected if unset</li></ul></p>
 <hr>
 <h2>3) Redis backend options</h2>
 <p>ryOS supports <strong>two Redis modes</strong>.</p>
@@ -392,7 +387,7 @@ S3_SECRET_ACCESS_KEY=your-secret-key</code></pre>
 <h3>Version / build number (avoid "dev")</h3>
 <p>The app shows a version like <code>10.3 (abc1234)</code> from <code>version.json</code>. Without a commit SHA at build time, it falls back to <code>dev</code>. To show the real commit: <ol><li>In Coolify → your app → <strong>Advanced</strong> → enable <strong>Include Source Commit in Build</strong></li></ol><ol><li>The build script reads <code>SOURCE_COMMIT</code> (Coolify) or <code>VERCEL_GIT_COMMIT_SHA</code> (Vercel) or <code>GIT_COMMIT_SHA</code> (generic CI)</li></ol></p>
 <p>No extra env vars needed — Coolify injects <code>SOURCE_COMMIT</code> when that option is enabled.</p>
-<p>Coolify deployments are auto-detected (via <code>COOLIFY_</em></code> environment variables) and displayed in the Admin app's Server page.</p>
+<p>Coolify deployments are auto-detected (via <code>COOLIFY_*</code> environment variables) and displayed in the Admin app's Server page.</p>
 <h3>Gating Coolify deploys behind GitHub Actions</h3>
 <p>The repository ships with a <code>.github/workflows/build-and-deploy.yml</code> workflow that runs on every push and pull request: <ol><li>Installs dependencies with Bun and runs <code>bun run build</code> + <code>bun run test:unit</code>.</li></ol><ol><li>On a green build of <code>main</code>, calls a Coolify deploy webhook so Coolify only redeploys when CI is green.</li></ol></p>
 <p>To wire it up: <ol><li>In Coolify, open your application → <strong>Webhooks</strong> → copy the <strong>Deploy webhook URL</strong> (it looks like <code>https://coolify.example.com/api/v1/deploy?uuid=&lt;resource-uuid&gt;</code>) and the <strong>API token</strong>.</li></ol><ol><li>In GitHub, open <strong>Settings → Secrets and variables → Actions → New repository secret</strong> and add:<ul><li><code>COOLIFY_WEBHOOK_URL</code> — the deploy webhook URL</li><li><code>COOLIFY_TOKEN</code> — the Coolify API token (sent as <code>Authorization: Bearer ...</code>)</li></ul></li><li>Optional: under <strong>Variables</strong>, set <code>COOLIFY_APP_URL</code> to your public app URL so it shows up on the GitHub deployment timeline.</li><li>Optional: in Coolify, disable the built-in Git auto-deploy so the webhook from GitHub Actions is the single source of truth.</li></ol></p>

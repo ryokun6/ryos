@@ -6,8 +6,7 @@
  * Supports hierarchical navigation with numbered sections:
  * - 1-overview.md (main section)
  * - 1.1-architecture.md (subsection)
- * - 1.2-desktop.md (subsection)
- * - 2-ai-integration.md (main section)
+ * - 3.3.1-theme-architecture.md (deeper subsection; slug drops the numeric prefix)
  */
 import { readdir, readFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
@@ -37,11 +36,7 @@ function markdownToHtml(md: string, appContext?: string): string {
     return `__CODE_BLOCK_${codeBlocks.length - 1}__`;
   });
 
-  // Inline code - process before other text processing to avoid conflicts
-  // Must escape HTML entities inside inline code to prevent <title>, <script>, etc. from being interpreted
-  html = html.replace(/`([^`]+)`/g, (_, code) => `<code>${escapeHtml(code)}</code>`);
-
-  // Tables
+  // Tables BEFORE inline/backtick processing — otherwise backticks inside cells break pipes / row shapes
   html = html.replace(
     /\n\|(.+)\|\n\|[-| ]+\|\n((?:\|.+\|\n?)+)/g,
     (_, headerRow, bodyRows) => {
@@ -135,9 +130,10 @@ function markdownToHtml(md: string, appContext?: string): string {
     return result + '\n';
   });
 
-  // Bold and italic
   html = html.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
-  html = html.replace(/\*([^*]+)\*/g, "<em>$1</em>");
+
+  // Inline code after tables/lists/bold — keeps pipe tables valid when cells use backticks
+  html = html.replace(/`([^`]+)`/g, (_, code) => `<code>${escapeHtml(code)}</code>`);
 
   // Links
   html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
@@ -179,6 +175,18 @@ function markdownToHtml(md: string, appContext?: string): string {
     return `<code>${linkedContent}</code>`;
   });
 
+  // Italic must not run inside <code>…</code> (wildcards like os-theme-* use literal asterisks)
+  const codeSpanPlaceholders: string[] = [];
+  html = html.replace(/<code>[\s\S]*?<\/code>/g, (block) => {
+    const i = codeSpanPlaceholders.length;
+    codeSpanPlaceholders.push(block);
+    return `__CODE_SPAN_${i}__`;
+  });
+  html = html.replace(/\*([^*]+)\*/g, "<em>$1</em>");
+  codeSpanPlaceholders.forEach((block, i) => {
+    html = html.replace(`__CODE_SPAN_${i}__`, block);
+  });
+
   // Horizontal rules
   html = html.replace(/^---$/gm, "<hr>");
 
@@ -209,10 +217,17 @@ interface DocEntry {
   children: DocEntry[];
 }
 
-// Parse section number from filename (e.g., "1-overview.md" -> "1", "1.1-architecture.md" -> "1.1")
+const SECTION_PREFIX_RE = /^(\d+(?:\.\d+)*)-/;
+
+// Parse section number from filename (supports 3.3.1-style depth)
 function parseSectionNumber(filename: string): string {
-  const match = filename.match(/^(\d+(?:\.\d+)?)-/);
+  const match = filename.match(SECTION_PREFIX_RE);
   return match ? match[1] : "";
+}
+
+/** Strip numeric filename prefix plus extension for URL slug (`3.3.1-topic.md` -> `topic`) */
+function docSlug(filename: string): string {
+  return filename.replace(SECTION_PREFIX_RE, "").replace(/\.md$/, "");
 }
 
 // Get parent section (e.g., "1.1" -> "1", "2.3" -> "2")
@@ -573,8 +588,8 @@ async function generate() {
     const content = await readFile(join(DOCS_DIR, file), "utf-8");
     const titleMatch = content.match(/^# (.+)$/m);
     const sectionNum = parseSectionNumber(file);
-    const title = titleMatch ? titleMatch[1] : file.replace(/^\d+(?:\.\d+)?-/, "").replace(".md", "");
-    const id = file.replace(/^\d+(?:\.\d+)?-/, "").replace(".md", "");
+    const title = titleMatch ? titleMatch[1] : docSlug(file);
+    const id = docSlug(file);
     const parentSection = getParentSection(sectionNum);
     
     // Extract app name from filename for context (for relative path resolution)
