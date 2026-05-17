@@ -33,6 +33,7 @@ import {
   getEffectiveTranslationLanguage,
   flushPendingLyricOffsetSave,
   isAppleMusicCollectionTrack,
+  type LyricOffsetTrackList,
 } from "@/stores/useIpodStore";
 import {
   resolveLyricsOverrideTargetId as resolveLyricsOverrideTargetIdHelper,
@@ -4260,8 +4261,12 @@ export function useIpodLogic({
 
     // Store actions
     setLyricOffset,
-    adjustLyricOffset: (index: number, delta: number) => {
-      useIpodStore.getState().adjustLyricOffset(index, delta);
+    adjustLyricOffset: (
+      index: number,
+      delta: number,
+      options?: { trackList?: LyricOffsetTrackList }
+    ) => {
+      useIpodStore.getState().adjustLyricOffset(index, delta, options);
     },
   };
 }
