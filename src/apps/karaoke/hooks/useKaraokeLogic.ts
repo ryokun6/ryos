@@ -88,7 +88,6 @@ export function useKaraokeLogic({
     refreshLyrics,
     setTrackLyricsSource,
     clearTrackLyricsSource,
-    setLyricOffset,
     addTrackFromVideoId,
     setDisplayMode,
   } = useIpodStoreShallow((s) => ({
@@ -101,10 +100,20 @@ export function useKaraokeLogic({
     refreshLyrics: s.refreshLyrics,
     setTrackLyricsSource: s.setTrackLyricsSource,
     clearTrackLyricsSource: s.clearTrackLyricsSource,
-    setLyricOffset: s.setLyricOffset,
     addTrackFromVideoId: s.addTrackFromVideoId,
     setDisplayMode: s.setDisplayMode,
   }));
+
+  const setLyricOffset = useCallback(
+    (index: number, offsetMs: number) =>
+      useIpodStore.getState().setLyricOffset(index, offsetMs, "youtube"),
+    []
+  );
+  const adjustLyricOffset = useCallback(
+    (index: number, delta: number) =>
+      useIpodStore.getState().adjustLyricOffset(index, delta, "youtube"),
+    []
+  );
 
   // Library update checker
   const { manualSync } = useLibraryUpdateChecker(
@@ -1567,7 +1576,7 @@ export function useKaraokeLogic({
       } else if (e.key === "[" || e.key === "]") {
         // Offset adjustment: [ = lyrics earlier (negative), ] = lyrics later (positive)
         const delta = e.key === "[" ? -50 : 50;
-        useIpodStore.getState().adjustLyricOffset(currentIndex, delta);
+        useIpodStore.getState().adjustLyricOffset(currentIndex, delta, "youtube");
         const newOffset = (currentTrack?.lyricOffset ?? 0) + delta;
         const sign = newOffset > 0 ? "+" : newOffset < 0 ? "" : "";
         showStatus(`${t("apps.ipod.status.offset")} ${sign}${(newOffset / 1000).toFixed(2)}s`);
@@ -1869,8 +1878,6 @@ export function useKaraokeLogic({
     setLyricOffset,
     isXpTheme,
     getCurrentKaraokeTrack,
-    adjustLyricOffset: (index: number, delta: number) => {
-      useIpodStore.getState().adjustLyricOffset(index, delta);
-    },
+    adjustLyricOffset,
   };
 }

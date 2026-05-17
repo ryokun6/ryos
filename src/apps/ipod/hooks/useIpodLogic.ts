@@ -3740,15 +3740,10 @@ export function useIpodLogic({
   const { title: lyricsTitle, artist: lyricsArtist, songId: lyricsSongId } =
     lyricsMetadata;
 
-  const lyricsTimingOffsetMs = useMemo(() => {
-    if (
-      isAppleMusicCollectionTrack(currentTrack) &&
-      appleMusicKitNowPlaying?.id
-    ) {
-      return 0;
-    }
-    return currentTrack?.lyricOffset ?? 0;
-  }, [currentTrack, appleMusicKitNowPlaying?.id]);
+  const lyricsTimingOffsetMs = useMemo(
+    () => currentTrack?.lyricOffset ?? 0,
+    [currentTrack?.id, currentTrack?.lyricOffset]
+  );
 
   const fullScreenLyricsControls = useLyrics({
     songId: lyricsSongId,

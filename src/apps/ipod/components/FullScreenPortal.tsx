@@ -373,11 +373,16 @@ export function FullScreenPortal({
         // Offset adjustment: [ = lyrics earlier (negative), ] = lyrics later (positive)
         const delta = e.key === "[" ? -50 : 50;
         const store = useIpodStore.getState();
-        const currentTrack = store.currentSongId
-          ? store.tracks.find((t) => t.id === store.currentSongId)
-          : store.tracks[0];
+        const isApple = store.librarySource === "appleMusic";
+        const activeSongId = isApple
+          ? store.appleMusicCurrentSongId
+          : store.currentSongId;
+        const sourceTracks = isApple ? store.appleMusicTracks : store.tracks;
+        const currentTrack = activeSongId
+          ? sourceTracks.find((t) => t.id === activeSongId)
+          : sourceTracks[0];
         const currentTrackIndex = currentTrack
-          ? store.tracks.findIndex((t) => t.id === currentTrack.id)
+          ? sourceTracks.findIndex((t) => t.id === currentTrack.id)
           : -1;
         if (currentTrackIndex >= 0) {
           store.adjustLyricOffset(currentTrackIndex, delta);
