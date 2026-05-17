@@ -69,6 +69,7 @@ const CreateSongSchema = z.object({
   title: z.string().min(1),
   artist: z.string().optional(),
   album: z.string().optional(),
+  cover: z.string().max(2000).optional(),
   lyricOffset: z.number().optional(),
   lyricsSource: LyricsSourceSchema.optional(),
 });
@@ -99,6 +100,7 @@ const BulkImportSchema = z.object({
       title: z.string().min(1),
       artist: z.string().optional(),
       album: z.string().optional(),
+      cover: z.string().max(2000).optional(),
       lyricOffset: z.number().optional(),
       lyricsSource: LyricsSourceSchema.optional(),
       // Legacy format support
@@ -333,7 +335,7 @@ export default apiHandler<Record<string, unknown>>(
           const lyricsValue = getFieldValue<{ lrc?: string; krc?: string; cover?: string }>(songData.lyrics);
           
           // Cover: prefer from lyrics data (backwards compat), otherwise from existing, otherwise fetch later
-          const cover = lyricsValue?.cover || existing?.cover;
+          const cover = songData.cover || lyricsValue?.cover || existing?.cover;
 
           // Build metadata (cover is now in metadata, not lyrics)
           // For imports, respect the original createdBy from the export file
@@ -516,6 +518,7 @@ export default apiHandler<Record<string, unknown>>(
           title: songData.title,
           artist: songData.artist,
           album: songData.album,
+          cover: songData.cover,
           lyricOffset: songData.lyricOffset,
           lyricsSource: songData.lyricsSource as LyricsSource | undefined,
           createdBy: existing?.createdBy || username || undefined,

@@ -88,6 +88,7 @@ type BulkImportSong = {
   title: string;
   artist?: string;
   album?: string;
+  cover?: string;
   lyricOffset?: number;
   lyricsSource?: CachedLyricsSource;
   // Content fields (may be compressed gzip:base64 strings or raw objects)
@@ -332,6 +333,7 @@ export async function saveSongMetadata(
     title: string;
     artist?: string;
     album?: string;
+    cover?: string;
     lyricOffset?: number;
     lyricsSource?: CachedLyricsSource;
   },
@@ -345,6 +347,7 @@ export async function saveSongMetadata(
         title: metadata.title,
         artist: metadata.artist,
         album: metadata.album,
+        cover: metadata.cover,
         lyricOffset: metadata.lyricOffset,
         lyricsSource: metadata.lyricsSource,
         isShare: options?.isShare,
@@ -694,6 +697,7 @@ export async function saveSongMetadataFromTrack(
     title: string;
     artist?: string;
     album?: string;
+    cover?: string;
     lyricOffset?: number;
     lyricsSource?: {
       hash: string;
@@ -718,6 +722,7 @@ export async function saveSongMetadataFromTrack(
       title: track.title,
       artist: track.artist,
       album: track.album,
+      cover: track.cover,
       lyricOffset: track.lyricOffset,
       lyricsSource: track.lyricsSource,
     },
