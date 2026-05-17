@@ -102,8 +102,7 @@ export function MenuListItem({
                 />
               ) : null}
             </div>
-            {/* Tight two-line stack: line-height 1 + negative pull on subtitle so
-                title/subtitle read as one block (extra gap comes from text line boxes). */}
+            {/* Two-line stack: tight line-height; spacing is natural line box only. */}
             <div className="flex min-h-0 min-w-0 flex-1 flex-col justify-center gap-0 py-0 leading-none">
               <ScrollingText
                 text={text}
@@ -121,7 +120,7 @@ export function MenuListItem({
               {subtitleTrim ? (
                 <span
                   className={cn(
-                    "-mt-1 block min-w-0 truncate font-normal !leading-none",
+                    "block min-w-0 truncate font-normal !leading-none",
                     hasCjkText ? "text-[10px]" : "text-[11px]",
                     isSelected && !isLoading
                       ? "text-white/88"
