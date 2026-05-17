@@ -1,5 +1,7 @@
-import { Redis } from "@upstash/redis";
+import { createRedis } from "./redis.js";
+import type { Redis } from "./redis.js";
 import { getAppPublicOrigin } from "./runtime-config.js";
+import { safeFetchWithRedirects } from "./_ssrf.js";
 
 // App display names for OG titles
 const APP_NAMES: Record<string, string> = {
@@ -82,6 +84,18 @@ export type SongShareMetadata = {
   cover: string | null;
 };
 
+const OG_SONG_COVER_PATH = "/api/og-song-cover";
+const OG_COVER_IMAGE_SIZE = 600;
+const OG_IMAGE_FETCH_TIMEOUT_MS = 10_000;
+const OG_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+const YOUTUBE_VIDEO_ID_REGEX = /^[a-zA-Z0-9_-]{11}$/;
+
+type SongMetadataReader = (
+  songId: string
+) => Promise<SongShareMetadata | null>;
+
+type FetchImage = (url: string) => Promise<Response>;
+
 function generateOgHtml(options: {
   title: string;
   description: string;
@@ -133,6 +147,17 @@ function getAppIconUrl(publicOrigin: string, appId: string): string {
   return `${publicOrigin}/icons/macosx/${APP_ICONS[appId]}`;
 }
 
+function getOgSongCoverProxyUrl(
+  publicOrigin: string,
+  appId: "ipod" | "karaoke",
+  songId: string
+): string {
+  const url = new URL(OG_SONG_COVER_PATH, publicOrigin);
+  url.searchParams.set("app", appId);
+  url.searchParams.set("id", songId);
+  return url.toString();
+}
+
 function decodeRouteId(value: string): string {
   try {
     return decodeURIComponent(value);
@@ -151,27 +176,25 @@ function getRecord(value: unknown): Record<string, unknown> | null {
     : null;
 }
 
+function isYouTubeVideoId(value: string): boolean {
+  return YOUTUBE_VIDEO_ID_REGEX.test(value);
+}
+
+function getYouTubeThumbnailUrl(videoId: string): string {
+  return `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+}
+
 // Fetch song metadata from Redis song library
-async function getSongFromRedis(
-  songId: string
+export async function getSongFromRedis(
+  songId: string,
+  redis?: Pick<Redis, "get">
 ): Promise<SongShareMetadata | null> {
   try {
-    // Skip if no Redis credentials
-    if (
-      !process.env.REDIS_KV_REST_API_URL ||
-      !process.env.REDIS_KV_REST_API_TOKEN
-    ) {
-      return null;
-    }
-
-    const redis = new Redis({
-      url: process.env.REDIS_KV_REST_API_URL,
-      token: process.env.REDIS_KV_REST_API_TOKEN,
-    });
+    const client = redis || createRedis();
 
     // Fetch from song:meta:{id} (split storage format)
     const metaKey = `song:meta:${songId}`;
-    const raw = await redis.get(metaKey);
+    const raw = await client.get(metaKey);
 
     if (!raw) return null;
 
@@ -204,9 +227,9 @@ async function getSongFromRedis(
  * Format music cover URLs by replacing Kugou / Apple Music placeholders.
  * Ensures HTTPS is used to avoid mixed content issues.
  */
-function formatMusicCoverUrl(
+export function formatMusicCoverUrl(
   imgUrl: string | null,
-  size: number = 400
+  size: number = OG_COVER_IMAGE_SIZE
 ): string | null {
   if (!imgUrl) return null;
   let url = imgUrl
@@ -215,6 +238,96 @@ function formatMusicCoverUrl(
     .replace("{h}", String(size));
   url = url.replace(/^http:\/\//, "https://");
   return url;
+}
+
+async function fetchRemoteImage(
+  imageUrl: string,
+  fetchImage?: FetchImage
+): Promise<Response> {
+  const upstream = fetchImage
+    ? await fetchImage(imageUrl)
+    : (
+        await safeFetchWithRedirects(
+          imageUrl,
+          {
+            method: "GET",
+            headers: {
+              Accept: "image/avif,image/webp,image/png,image/jpeg,image/*,*/*;q=0.8",
+              "User-Agent": "ryOS-OG-Image-Proxy/1.0",
+            },
+            signal: AbortSignal.timeout(OG_IMAGE_FETCH_TIMEOUT_MS),
+          },
+          { maxRedirects: 3 }
+        )
+      ).response;
+
+  if (!upstream.ok) {
+    throw new Error(`Image upstream failed (${upstream.status})`);
+  }
+
+  const contentType = upstream.headers.get("content-type") || "image/jpeg";
+  if (!contentType.toLowerCase().startsWith("image/")) {
+    throw new Error(`Image upstream returned ${contentType}`);
+  }
+
+  const contentLength = Number(upstream.headers.get("content-length"));
+  if (Number.isFinite(contentLength) && contentLength > OG_IMAGE_MAX_BYTES) {
+    throw new Error("Image upstream response is too large");
+  }
+
+  const bytes = await upstream.arrayBuffer();
+  if (bytes.byteLength > OG_IMAGE_MAX_BYTES) {
+    throw new Error("Image upstream response is too large");
+  }
+
+  return new Response(bytes, {
+    status: 200,
+    headers: {
+      "Content-Type": contentType,
+      "Cache-Control": "public, max-age=3600, s-maxage=86400",
+    },
+  });
+}
+
+function redirectToAppIcon(publicOrigin: string, appId: "ipod" | "karaoke") {
+  return Response.redirect(getAppIconUrl(publicOrigin, appId), 302);
+}
+
+export async function createOgSongCoverResponse(
+  request: Request,
+  options: {
+    getSong?: SongMetadataReader;
+    fetchImage?: FetchImage;
+  } = {}
+): Promise<Response> {
+  const url = new URL(request.url);
+  const publicOrigin = getAppPublicOrigin(url.origin);
+  const appParam = url.searchParams.get("app");
+  const appId: "ipod" | "karaoke" =
+    appParam === "karaoke" ? "karaoke" : "ipod";
+  const songId = url.searchParams.get("id") || "";
+
+  if (!songId) {
+    return redirectToAppIcon(publicOrigin, appId);
+  }
+
+  const getSong = options.getSong || getSongFromRedis;
+  const songInfo = await getSong(songId);
+  const coverUrl = formatMusicCoverUrl(songInfo?.cover ?? null);
+  const youtubeThumbnail = isYouTubeVideoId(songId)
+    ? getYouTubeThumbnailUrl(songId)
+    : null;
+
+  for (const candidate of [coverUrl, youtubeThumbnail]) {
+    if (!candidate) continue;
+    try {
+      return await fetchRemoteImage(candidate, options.fetchImage);
+    } catch {
+      // Try the next candidate so a flaky cover host doesn't break previews.
+    }
+  }
+
+  return redirectToAppIcon(publicOrigin, appId);
 }
 
 // Simple title parser - extracts artist and title from common YouTube formats
@@ -278,7 +391,7 @@ async function getYouTubeInfo(
 export async function createOgShareResponse(
   request: Request,
   options: {
-    getSong?: (songId: string) => Promise<SongShareMetadata | null>;
+    getSong?: SongMetadataReader;
   } = {}
 ): Promise<Response | null> {
   if (request.method !== "GET" && request.method !== "HEAD") {
@@ -331,7 +444,7 @@ export async function createOgShareResponse(
 
     const songInfo = await (options.getSong || getSongFromRedis)(songId);
     if (songInfo) {
-      imageUrl = formatMusicCoverUrl(songInfo.cover, 400) || imageUrl;
+      imageUrl = getOgSongCoverProxyUrl(publicOrigin, "ipod", songId);
       if (songInfo.artist) {
         title = `${songInfo.title} - ${songInfo.artist}`;
         description = "Listen on ryOS iPod";
@@ -340,8 +453,22 @@ export async function createOgShareResponse(
         description = "Listen on ryOS iPod";
       }
     } else {
-      title = "Shared Song - ryOS";
-      description = "Listen on ryOS iPod";
+      const ytInfo = isYouTubeVideoId(songId)
+        ? await getYouTubeInfo(songId)
+        : null;
+      if (ytInfo) {
+        imageUrl = getOgSongCoverProxyUrl(publicOrigin, "ipod", songId);
+        if (ytInfo.artist) {
+          title = `${ytInfo.title} - ${ytInfo.artist}`;
+          description = "Listen on ryOS iPod";
+        } else {
+          title = ytInfo.title;
+          description = "Listen on ryOS iPod";
+        }
+      } else {
+        title = "Shared Song - ryOS";
+        description = "Listen on ryOS iPod";
+      }
     }
     matched = true;
   }
@@ -353,15 +480,27 @@ export async function createOgShareResponse(
 
     const songInfo = await (options.getSong || getSongFromRedis)(songId);
     if (songInfo) {
-      imageUrl = formatMusicCoverUrl(songInfo.cover, 400) || imageUrl;
+      imageUrl = getOgSongCoverProxyUrl(publicOrigin, "karaoke", songId);
       const songDisplay = songInfo.artist
         ? `${songInfo.title} - ${songInfo.artist}`
         : songInfo.title;
       title = `Sing ${songDisplay} on ryOS`;
       description = "Sing along on ryOS Karaoke";
     } else {
-      title = "Sing on ryOS Karaoke";
-      description = "Sing along on ryOS Karaoke";
+      const ytInfo = isYouTubeVideoId(songId)
+        ? await getYouTubeInfo(songId)
+        : null;
+      if (ytInfo) {
+        imageUrl = getOgSongCoverProxyUrl(publicOrigin, "karaoke", songId);
+        const songDisplay = ytInfo.artist
+          ? `${ytInfo.title} - ${ytInfo.artist}`
+          : ytInfo.title;
+        title = `Sing ${songDisplay} on ryOS`;
+        description = "Sing along on ryOS Karaoke";
+      } else {
+        title = "Sing on ryOS Karaoke";
+        description = "Sing along on ryOS Karaoke";
+      }
     }
     matched = true;
   }
