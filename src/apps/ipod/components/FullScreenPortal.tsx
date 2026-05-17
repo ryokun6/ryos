@@ -373,11 +373,20 @@ export function FullScreenPortal({
         // Offset adjustment: [ = lyrics earlier (negative), ] = lyrics later (positive)
         const delta = e.key === "[" ? -50 : 50;
         const store = useIpodStore.getState();
-        const currentTrack = store.currentSongId
-          ? store.tracks.find((t) => t.id === store.currentSongId)
-          : store.tracks[0];
+        // Must match `adjustLyricOffset` / `setLyricOffset`: they index the active
+        // library slice (`appleMusicTracks` when Apple Music is selected), not
+        // always `tracks` (YouTube). Using YouTube ids here was a regression where
+        // fullscreen `[` / `]` updated the wrong row or no-op'd out of range.
+        const isApple = store.librarySource === "appleMusic";
+        const activeSongId = isApple
+          ? store.appleMusicCurrentSongId
+          : store.currentSongId;
+        const sourceTracks = isApple ? store.appleMusicTracks : store.tracks;
+        const currentTrack = activeSongId
+          ? sourceTracks.find((t) => t.id === activeSongId)
+          : sourceTracks[0];
         const currentTrackIndex = currentTrack
-          ? store.tracks.findIndex((t) => t.id === currentTrack.id)
+          ? sourceTracks.findIndex((t) => t.id === currentTrack.id)
           : -1;
         if (currentTrackIndex >= 0) {
           store.adjustLyricOffset(currentTrackIndex, delta);

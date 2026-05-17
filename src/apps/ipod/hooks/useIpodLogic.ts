@@ -3740,15 +3740,14 @@ export function useIpodLogic({
   const { title: lyricsTitle, artist: lyricsArtist, songId: lyricsSongId } =
     lyricsMetadata;
 
-  const lyricsTimingOffsetMs = useMemo(() => {
-    if (
-      isAppleMusicCollectionTrack(currentTrack) &&
-      appleMusicKitNowPlaying?.id
-    ) {
-      return 0;
-    }
-    return currentTrack?.lyricOffset ?? 0;
-  }, [currentTrack, appleMusicKitNowPlaying?.id]);
+  // Use the playing row's `lyricOffset` for lyrics timing (including Apple Music
+  // station/playlist shells). Forcing 0 for collection + live MusicKit metadata
+  // made user offsets never apply to `useLyrics` while fullscreen still added the
+  // offset in `LyricsDisplay`, which broke sync / status feedback.
+  const lyricsTimingOffsetMs = useMemo(
+    () => currentTrack?.lyricOffset ?? 0,
+    [currentTrack?.id, currentTrack?.lyricOffset]
+  );
 
   const fullScreenLyricsControls = useLyrics({
     songId: lyricsSongId,
