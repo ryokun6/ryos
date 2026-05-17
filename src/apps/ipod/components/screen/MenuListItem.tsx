@@ -120,7 +120,7 @@ export function MenuListItem({
               {subtitleTrim ? (
                 <span
                   className={cn(
-                    "block min-w-0 truncate font-normal !leading-none",
+                    "mt-0.5 block min-w-0 truncate font-normal !leading-none",
                     hasCjkText ? "text-[10px]" : "text-[11px]",
                     isSelected && !isLoading
                       ? "text-white/88"
