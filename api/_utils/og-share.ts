@@ -453,11 +453,12 @@ export async function createOgShareResponse(
         description = "Listen on ryOS iPod";
       }
     } else {
-      const ytInfo = isYouTubeVideoId(songId)
-        ? await getYouTubeInfo(songId)
-        : null;
-      if (ytInfo) {
+      const isYouTubeSong = isYouTubeVideoId(songId);
+      const ytInfo = isYouTubeSong ? await getYouTubeInfo(songId) : null;
+      if (isYouTubeSong) {
         imageUrl = getOgSongCoverProxyUrl(publicOrigin, "ipod", songId);
+      }
+      if (ytInfo) {
         if (ytInfo.artist) {
           title = `${ytInfo.title} - ${ytInfo.artist}`;
           description = "Listen on ryOS iPod";
@@ -487,11 +488,12 @@ export async function createOgShareResponse(
       title = `Sing ${songDisplay} on ryOS`;
       description = "Sing along on ryOS Karaoke";
     } else {
-      const ytInfo = isYouTubeVideoId(songId)
-        ? await getYouTubeInfo(songId)
-        : null;
-      if (ytInfo) {
+      const isYouTubeSong = isYouTubeVideoId(songId);
+      const ytInfo = isYouTubeSong ? await getYouTubeInfo(songId) : null;
+      if (isYouTubeSong) {
         imageUrl = getOgSongCoverProxyUrl(publicOrigin, "karaoke", songId);
+      }
+      if (ytInfo) {
         const songDisplay = ytInfo.artist
           ? `${ytInfo.title} - ${ytInfo.artist}`
           : ytInfo.title;
