@@ -417,6 +417,32 @@ describe("useIpodStore Apple Music slice", () => {
     expect(useIpodStore.getState().tracks).toEqual([]);
   });
 
+  test("adjustLyricOffset(..., 'youtube') updates the YouTube slice while Apple Music is active (Karaoke)", () => {
+    useIpodStore.setState({
+      librarySource: "appleMusic",
+      tracks: [
+        {
+          id: "dQw4w9WgXcQ",
+          url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+          title: "YT",
+          lyricOffset: 100,
+        },
+      ],
+      appleMusicTracks: [
+        {
+          id: "am:1",
+          url: "applemusic:1",
+          title: "One",
+          source: "appleMusic",
+          lyricOffset: 0,
+        },
+      ],
+    });
+    useIpodStore.getState().adjustLyricOffset(0, 50, "youtube");
+    expect(useIpodStore.getState().tracks[0].lyricOffset).toBe(150);
+    expect(useIpodStore.getState().appleMusicTracks[0].lyricOffset).toBe(0);
+  });
+
   test("setAppleMusicTracks preserves active contextual queue tracks", () => {
     useIpodStore.setState({
       appleMusicTracks: [

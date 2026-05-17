@@ -502,10 +502,29 @@ export interface IpodState extends IpodData {
   clearLyricsCache: () => void;
   /** Set the furigana map for current lyrics */
   setCurrentFuriganaMap: (map: Record<string, FuriganaSegment[]> | null) => void;
-  /** Adjust the lyric offset (in ms) for the track at the given index. */
-  adjustLyricOffset: (trackIndex: number, deltaMs: number) => void;
-  /** Set the lyric offset (in ms) for the track at the given index to an absolute value. */
-  setLyricOffset: (trackIndex: number, offsetMs: number) => void;
+  /**
+   * Adjust the lyric offset (in ms) for the track at the given index.
+   * @param librarySlice When set (e.g. `"youtube"` for Karaoke), mutates that
+   * slice regardless of the iPod's active `librarySource`. Omit to follow the
+   * active source (iPod / fullscreen).
+   */
+  adjustLyricOffset: (
+    trackIndex: number,
+    deltaMs: number,
+    librarySlice?: LibrarySource
+  ) => void;
+  /**
+   * Set the lyric offset (in ms) for the track at the given index.
+   * @param librarySlice When set (e.g. `"youtube"` for Karaoke), mutates that
+   * slice regardless of the iPod's active `librarySource`. Omit to follow the
+   * active source (iPod / fullscreen). Same semantics as `adjustLyricOffset`'s
+   * optional third argument.
+   */
+  setLyricOffset: (
+    trackIndex: number,
+    offsetMs: number,
+    librarySlice?: LibrarySource
+  ) => void;
   /** Set lyrics alignment mode */
   setLyricsAlignment: (alignment: LyricsAlignment) => void;
   /** Set lyrics font style */
@@ -1215,13 +1234,12 @@ export const useIpodStore = create<IpodState>()(
         }));
       },
       setCurrentFuriganaMap: (map) => set({ currentFuriganaMap: map }),
-      adjustLyricOffset: (trackIndex, deltaMs) => {
+      adjustLyricOffset: (trackIndex, deltaMs, librarySlice) => {
         // Validate before calling set() to avoid unnecessary state updates
         const state = get();
+        const slice = librarySlice ?? state.librarySource;
         const sourceTracks =
-          state.librarySource === "appleMusic"
-            ? state.appleMusicTracks
-            : state.tracks;
+          slice === "appleMusic" ? state.appleMusicTracks : state.tracks;
         if (
           trackIndex < 0 ||
           trackIndex >= sourceTracks.length ||
@@ -1233,7 +1251,7 @@ export const useIpodStore = create<IpodState>()(
         const current = sourceTracks[trackIndex];
         const newOffset = (current.lyricOffset || 0) + deltaMs;
 
-        if (state.librarySource === "appleMusic") {
+        if (slice === "appleMusic") {
           set((s) => ({
             appleMusicTracks: s.appleMusicTracks.map((track, i) =>
               i === trackIndex ? { ...track, lyricOffset: newOffset } : track
@@ -1251,13 +1269,12 @@ export const useIpodStore = create<IpodState>()(
         // and Apple Music (`am:<id>`) keys via the relaxed validator.
         debouncedSaveLyricOffset(current.id, newOffset);
       },
-      setLyricOffset: (trackIndex, offsetMs) => {
+      setLyricOffset: (trackIndex, offsetMs, librarySlice) => {
         // Validate before calling set() to avoid unnecessary state updates
         const state = get();
+        const slice = librarySlice ?? state.librarySource;
         const sourceTracks =
-          state.librarySource === "appleMusic"
-            ? state.appleMusicTracks
-            : state.tracks;
+          slice === "appleMusic" ? state.appleMusicTracks : state.tracks;
         if (
           trackIndex < 0 ||
           trackIndex >= sourceTracks.length ||
@@ -1268,7 +1285,7 @@ export const useIpodStore = create<IpodState>()(
 
         const trackId = sourceTracks[trackIndex].id;
 
-        if (state.librarySource === "appleMusic") {
+        if (slice === "appleMusic") {
           set((s) => ({
             appleMusicTracks: s.appleMusicTracks.map((track, i) =>
               i === trackIndex ? { ...track, lyricOffset: offsetMs } : track
