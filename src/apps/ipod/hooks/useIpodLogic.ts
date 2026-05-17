@@ -1596,18 +1596,23 @@ export function useIpodLogic({
     }
 
     const queueIds = appleMusicRecentlyAddedTracks.map((track) => track.id);
-    return appleMusicRecentlyAddedTracks.map((track, index) => ({
-      label: track.title,
-      action: () =>
-        playAppleMusicTrackFromMenu(
-          track,
-          index,
-          queueIds,
-          appleMusicRecentlyAddedTracks
-        ),
-      showChevron: false,
-      coverUrl: resolveTrackCoverUrl(track),
-    }));
+    return appleMusicRecentlyAddedTracks.map((track, index) => {
+      const displayArtist = (track.albumArtist || track.artist)?.trim();
+      return {
+        label: track.title,
+        subtitle:
+          displayArtist && displayArtist.length > 0 ? displayArtist : undefined,
+        action: () =>
+          playAppleMusicTrackFromMenu(
+            track,
+            index,
+            queueIds,
+            appleMusicRecentlyAddedTracks
+          ),
+        showChevron: false,
+        coverUrl: resolveTrackCoverUrl(track),
+      };
+    });
   }, [
     appleMusicRecentlyAddedTracks,
     isAppleMusicRecentlyAddedLoading,
@@ -1639,18 +1644,23 @@ export function useIpodLogic({
     }
 
     const queueIds = appleMusicFavoriteTracks.map((track) => track.id);
-    return appleMusicFavoriteTracks.map((track, index) => ({
-      label: track.title,
-      action: () =>
-        playAppleMusicTrackFromMenu(
-          track,
-          index,
-          queueIds,
-          appleMusicFavoriteTracks
-        ),
-      showChevron: false,
-      coverUrl: resolveTrackCoverUrl(track),
-    }));
+    return appleMusicFavoriteTracks.map((track, index) => {
+      const displayArtist = (track.albumArtist || track.artist)?.trim();
+      return {
+        label: track.title,
+        subtitle:
+          displayArtist && displayArtist.length > 0 ? displayArtist : undefined,
+        action: () =>
+          playAppleMusicTrackFromMenu(
+            track,
+            index,
+            queueIds,
+            appleMusicFavoriteTracks
+          ),
+        showChevron: false,
+        coverUrl: resolveTrackCoverUrl(track),
+      };
+    });
   }, [
     appleMusicFavoriteTracks,
     isAppleMusicFavoritesLoading,
@@ -2083,6 +2093,7 @@ export function useIpodLogic({
               title: recentlyAddedLabel,
               items: appleMusicRecentlyAddedMenuItems,
               selectedIndex: 0,
+              modernMediaList: true,
             });
             void loadAppleMusicRecentlyAdded();
           },
@@ -2096,6 +2107,7 @@ export function useIpodLogic({
               title: favoriteSongsLabel,
               items: appleMusicFavoritesMenuItems,
               selectedIndex: 0,
+              modernMediaList: true,
             });
             void loadAppleMusicFavorites();
           },
