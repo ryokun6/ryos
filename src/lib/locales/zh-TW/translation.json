@@ -2431,6 +2431,7 @@
       "emptyLibrary": {
         "addSongs": "新增歌曲",
         "subtitle": "從 YouTube 新增音樂即可開始。",
+        "subtitleAppleMusic": "[TODO] Open the iPod, switch the library to Apple Music, and sign in to load your songs here.",
         "title": "卡拉OK 中尚無歌曲"
       },
       "help": {

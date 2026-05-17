@@ -62,7 +62,8 @@ interface KaraokeMenuBarProps {
   onToggleCoverFlow?: () => void;
   // Tracks
   tracks: Track[];
-  currentIndex: number;
+  /** Active track id for library menu selection (may differ from menu index when browsing Apple Music). */
+  currentTrackId: string | null;
 }
 
 export function KaraokeMenuBar({
@@ -97,7 +98,7 @@ export function KaraokeMenuBar({
   onAdjustTiming,
   onToggleCoverFlow,
   tracks,
-  currentIndex,
+  currentTrackId,
 }: KaraokeMenuBarProps) {
   const { t } = useTranslation();
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
@@ -236,7 +237,7 @@ export function KaraokeMenuBar({
           <MenubarItem
             onClick={onShareSong}
             className="text-md h-6 px-3"
-            disabled={tracks.length === 0 || currentIndex === -1}
+            disabled={tracks.length === 0 || !currentTrackId}
           >
             {t("apps.ipod.menu.shareSong")}
           </MenubarItem>
@@ -647,14 +648,14 @@ export function KaraokeMenuBar({
           <MenubarItem
             onClick={onRefreshLyrics || refreshLyrics}
             className="text-md h-6 px-3"
-            disabled={tracks.length === 0 || currentIndex === -1}
+            disabled={tracks.length === 0 || !currentTrackId}
           >
             {t("apps.ipod.menu.refreshLyrics")}
           </MenubarItem>
           <MenubarItem
             onClick={onAdjustTiming}
             className="text-md h-6 px-3"
-            disabled={tracks.length === 0 || currentIndex === -1}
+            disabled={tracks.length === 0 || !currentTrackId}
           >
             {t("apps.ipod.menu.adjustTiming")}
           </MenubarItem>
@@ -666,7 +667,7 @@ export function KaraokeMenuBar({
                 toast.success(t("apps.ipod.menu.cacheCleared"));
               }}
               className="text-md h-6 px-3"
-              disabled={tracks.length === 0 || currentIndex === -1}
+              disabled={tracks.length === 0 || !currentTrackId}
             >
               {t("apps.ipod.menu.clearCache")}
             </MenubarItem>
@@ -722,7 +723,7 @@ export function KaraokeMenuBar({
                   {tracks.map((track, index) => (
                     <MenubarCheckboxItem
                       key={`all-${track.id}`}
-                      checked={index === currentIndex}
+                      checked={track.id === currentTrackId}
                       onCheckedChange={() => onPlayTrack(index)}
                       className="text-md h-6 pr-3 max-w-[220px] truncate"
                     >
@@ -745,7 +746,7 @@ export function KaraokeMenuBar({
                       {tracksByArtist[artist].map(({ track, index }) => (
                         <MenubarCheckboxItem
                           key={`${artist}-${track.id}`}
-                          checked={index === currentIndex}
+                          checked={track.id === currentTrackId}
                           onCheckedChange={() => onPlayTrack(index)}
                           className="text-md h-6 pr-3 max-w-[160px] sm:max-w-[200px] truncate"
                         >

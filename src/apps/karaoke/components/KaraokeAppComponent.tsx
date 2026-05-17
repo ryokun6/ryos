@@ -1,6 +1,8 @@
 import { useCallback, useMemo } from "react";
+import type { RefObject } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import ReactPlayer from "react-player";
+import { AppleMusicPlayerBridge } from "@/apps/ipod/components/AppleMusicPlayerBridge";
 import { cn } from "@/lib/utils";
 import { AppProps, KaraokeInitialData } from "../../base/types";
 import { WindowFrame } from "@/components/layout/WindowFrame";
@@ -40,6 +42,55 @@ import { WaterBackground } from "@/components/shared/WaterBackground";
 import { PLAYER_PROGRESS_INTERVAL_MS } from "@/apps/ipod/constants";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useShallow } from "zustand/react/shallow";
+import { useKaraokeStore } from "@/stores/useKaraokeStore";
+import type { Track, AppleMusicKitNowPlaying } from "@/stores/useIpodStore";
+import type { AppleMusicPlayerBridgeHandle } from "@/apps/ipod/components/AppleMusicPlayerBridge";
+
+function KaraokeAppleMusicBridgeHost({
+  bridgeRef,
+  currentTrack,
+  playing,
+  progressEnabled,
+  ipodVolume,
+  onProgress,
+  onDuration,
+  onPlay,
+  onPause,
+  onEnded,
+  onReady,
+  setAppleMusicKitNowPlaying,
+}: {
+  bridgeRef: RefObject<AppleMusicPlayerBridgeHandle | null>;
+  currentTrack: Track;
+  playing: boolean;
+  progressEnabled: boolean;
+  ipodVolume: number;
+  onProgress?: (state: { playedSeconds: number }) => void;
+  onDuration?: (duration: number) => void;
+  onPlay?: () => void;
+  onPause?: () => void;
+  onEnded?: () => void;
+  onReady?: () => void;
+  setAppleMusicKitNowPlaying: (metadata: AppleMusicKitNowPlaying | null) => void;
+}) {
+  const elapsedTime = useKaraokeStore((s) => s.elapsedTime);
+  return (
+    <AppleMusicPlayerBridge
+      ref={bridgeRef as unknown as React.RefObject<never>}
+      currentTrack={currentTrack}
+      playing={playing}
+      resumeAtSeconds={elapsedTime}
+      volume={ipodVolume * useAudioSettingsStore.getState().masterVolume}
+      onProgress={progressEnabled ? onProgress : undefined}
+      onDuration={progressEnabled ? onDuration : undefined}
+      onPlay={progressEnabled ? onPlay : undefined}
+      onPause={progressEnabled ? onPause : undefined}
+      onEnded={progressEnabled ? onEnded : undefined}
+      onReady={progressEnabled ? onReady : undefined}
+      onNowPlayingItemChange={setAppleMusicKitNowPlaying}
+    />
+  );
+}
 
 export function KaraokeAppComponent({
   isWindowOpen,
@@ -56,6 +107,11 @@ export function KaraokeAppComponent({
     translatedHelpItems,
     tracks,
     currentIndex,
+    coverFlowCurrentIndex,
+    librarySource,
+    isAppleMusicPlaybackTrack,
+    lyricsQuery,
+    setAppleMusicKitNowPlaying,
     loopCurrent,
     loopAll,
     isShuffled,
@@ -112,6 +168,8 @@ export function KaraokeAppComponent({
     LONG_PRESS_MOVE_THRESHOLD,
     fullScreenPlayerRef,
     playerRef,
+    appleMusicBridgeWindowRef,
+    appleMusicBridgeFullscreenRef,
     lyricsPlaybackSyncRef,
     duration,
     setDuration,
@@ -141,6 +199,7 @@ export function KaraokeAppComponent({
     closeSyncMode,
     handleTrackEnd,
     handleProgress,
+    handleDuration,
     handlePlay,
     handlePause,
     handleMainPlayerPause,
@@ -238,7 +297,7 @@ export function KaraokeAppComponent({
       handleNext();
       if (!isListenSessionRemoteOnly) {
         setTimeout(() => {
-          const newIndex = (currentIndex + 1) % tracks.length;
+          const newIndex = (coverFlowCurrentIndex + 1) % tracks.length;
           const newTrack = tracks[newIndex];
           if (newTrack) {
             const artistInfo = newTrack.artist ? ` - ${newTrack.artist}` : "";
@@ -248,7 +307,7 @@ export function KaraokeAppComponent({
       }
     }
   }, [
-    currentIndex,
+    coverFlowCurrentIndex,
     handleNext,
     isListenSessionRemoteOnly,
     isOffline,
@@ -264,7 +323,8 @@ export function KaraokeAppComponent({
       handlePrevious();
       if (!isListenSessionRemoteOnly) {
         setTimeout(() => {
-          const newIndex = currentIndex === 0 ? tracks.length - 1 : currentIndex - 1;
+          const newIndex =
+            coverFlowCurrentIndex === 0 ? tracks.length - 1 : coverFlowCurrentIndex - 1;
           const newTrack = tracks[newIndex];
           if (newTrack) {
             const artistInfo = newTrack.artist ? ` - ${newTrack.artist}` : "";
@@ -274,7 +334,7 @@ export function KaraokeAppComponent({
       }
     }
   }, [
-    currentIndex,
+    coverFlowCurrentIndex,
     handlePrevious,
     isListenSessionRemoteOnly,
     isOffline,
@@ -310,7 +370,7 @@ export function KaraokeAppComponent({
       onRefreshLyrics={handleRefreshLyrics}
       onAdjustTiming={() => setIsSyncModeOpen(true)}
       tracks={tracks}
-      currentIndex={currentIndex}
+      currentTrackId={currentTrack?.id ?? null}
       onToggleCoverFlow={handleToggleCoverFlow}
       onStartListenSession={handleStartListenSession}
       onJoinListenSession={() => setIsJoinListenDialogOpen(true)}
@@ -461,47 +521,67 @@ export function KaraokeAppComponent({
               }
             >
               <div className="w-full h-[calc(100%+400px)] mt-[-200px]">
-                <ReactPlayer
-                  ref={playerRef}
-                  url={currentTrack.url}
-                  playing={isPlaying && !isFullScreen && !isListenSessionRemoteOnly}
-                  width="100%"
-                  height="100%"
-                  volume={ipodVolume * useAudioSettingsStore.getState().masterVolume}
-                  loop={loopCurrent}
-                  onEnded={handleTrackEnd}
-                  onProgress={handleProgress}
-                  onDuration={setDuration}
-                  progressInterval={PLAYER_PROGRESS_INTERVAL_MS}
-                  onPlay={handlePlay}
-                  onPause={handleMainPlayerPause}
-                  onReady={!isFullScreen ? handleReady : undefined}
-                  style={{ pointerEvents: "none" }}
-                  config={{
-                    youtube: {
-                      playerVars: {
-                        modestbranding: 1,
-                        rel: 0,
-                        showinfo: 0,
-                        iv_load_policy: 3,
-                        cc_load_policy: 0,
-                        fs: 0,
-                        playsinline: 1,
-                        enablejsapi: 1,
-                        origin: window.location.origin,
-                        controls: 0,
+                {isAppleMusicPlaybackTrack ? (
+                  <KaraokeAppleMusicBridgeHost
+                    bridgeRef={appleMusicBridgeWindowRef}
+                    currentTrack={currentTrack}
+                    playing={isPlaying && !isFullScreen && !isListenSessionRemoteOnly}
+                    progressEnabled={!isFullScreen}
+                    ipodVolume={ipodVolume}
+                    onProgress={handleProgress}
+                    onDuration={handleDuration}
+                    onPlay={handlePlay}
+                    onPause={handleMainPlayerPause}
+                    onEnded={handleTrackEnd}
+                    onReady={!isFullScreen ? handleReady : undefined}
+                    setAppleMusicKitNowPlaying={setAppleMusicKitNowPlaying}
+                  />
+                ) : (
+                  <ReactPlayer
+                    ref={playerRef}
+                    url={currentTrack.url}
+                    playing={isPlaying && !isFullScreen && !isListenSessionRemoteOnly}
+                    width="100%"
+                    height="100%"
+                    volume={ipodVolume * useAudioSettingsStore.getState().masterVolume}
+                    loop={loopCurrent}
+                    onEnded={handleTrackEnd}
+                    onProgress={handleProgress}
+                    onDuration={setDuration}
+                    progressInterval={PLAYER_PROGRESS_INTERVAL_MS}
+                    onPlay={handlePlay}
+                    onPause={handleMainPlayerPause}
+                    onReady={!isFullScreen ? handleReady : undefined}
+                    style={{ pointerEvents: "none" }}
+                    config={{
+                      youtube: {
+                        playerVars: {
+                          modestbranding: 1,
+                          rel: 0,
+                          showinfo: 0,
+                          iv_load_policy: 3,
+                          cc_load_policy: 0,
+                          fs: 0,
+                          playsinline: 1,
+                          enablejsapi: 1,
+                          origin: window.location.origin,
+                          controls: 0,
+                        },
+                        embedOptions: {
+                          referrerPolicy: "strict-origin-when-cross-origin",
+                        },
                       },
-                      embedOptions: {
-                        referrerPolicy: "strict-origin-when-cross-origin",
-                      },
-                    },
-                  }}
-                />
+                    }}
+                  />
+                )}
               </div>
             </div>
           ) : showEmptyLibrary ? (
             <div className="absolute inset-0 z-[1]">
-              <KaraokeLibraryEmptyState onAddSongs={handleAddSong} />
+              <KaraokeLibraryEmptyState
+                onAddSongs={handleAddSong}
+                librarySource={librarySource}
+              />
             </div>
           ) : (
             <div className="absolute inset-0 flex items-center justify-center text-white/50 font-geneva-12">
@@ -585,6 +665,7 @@ export function KaraokeAppComponent({
 
           <KaraokeLyricsPlaybackProvider
             currentTrack={currentTrack}
+            lyricsQuery={lyricsQuery}
             lyricsFont={lyricsFont}
             romanization={romanization}
             lyricsTranslationLanguage={lyricsTranslationLanguage}
@@ -641,7 +722,7 @@ export function KaraokeAppComponent({
               <CoverFlow
                 ref={coverFlowRef}
                 tracks={tracks}
-                currentIndex={currentIndex}
+                currentIndex={coverFlowCurrentIndex}
                 onSelectTrack={handleCoverFlowSelectTrack}
                 onExit={() => setIsCoverFlowOpen(false)}
                 onRotation={handleCoverFlowRotation}
@@ -650,6 +731,7 @@ export function KaraokeAppComponent({
                 isPlaying={isPlaying}
                 onTogglePlay={handlePlayPause}
                 onPlayTrackInPlace={handleCoverFlowPlayInPlace}
+                groupAppleMusicAlbums={librarySource === "appleMusic"}
               />
             </div>
           )}
@@ -786,9 +868,9 @@ export function KaraokeAppComponent({
           isOpen={isShareDialogOpen}
           onClose={() => setIsShareDialogOpen(false)}
           itemType="Song"
-          itemIdentifier={tracks[currentIndex]?.id || ""}
-          title={tracks[currentIndex]?.title}
-          details={tracks[currentIndex]?.artist}
+          itemIdentifier={currentTrack?.id || ""}
+          title={currentTrack?.title}
+          details={currentTrack?.artist}
           generateShareUrl={karaokeGenerateShareUrl}
         />
         {currentTrack && (
@@ -834,6 +916,7 @@ export function KaraokeAppComponent({
       {isFullScreen && (
         <KaraokeLyricsPlaybackProvider
           currentTrack={currentTrack}
+          lyricsQuery={lyricsQuery}
           lyricsFont={lyricsFont}
           romanization={romanization}
           lyricsTranslationLanguage={lyricsTranslationLanguage}
@@ -925,44 +1008,63 @@ export function KaraokeAppComponent({
                       top: "calc(clamp(240px, 30dvh, 400px) * -1)",
                     }}
                   >
-                    {currentTrack && (
-                      <div className="w-full h-full pointer-events-none">
-                        <ReactPlayer
-                          ref={fullScreenPlayerRef}
-                          url={currentTrack.url}
-                          playing={isPlaying && isFullScreen && !isListenSessionRemoteOnly}
-                          controls
-                          width="100%"
-                          height="100%"
-                          volume={ipodVolume * useAudioSettingsStore.getState().masterVolume}
-                          loop={loopCurrent}
-                          onEnded={handleTrackEnd}
-                          onProgress={handleProgress}
-                          progressInterval={PLAYER_PROGRESS_INTERVAL_MS}
-                          onPlay={handlePlay}
-                          onPause={handlePause}
-                          onReady={isFullScreen ? handleReady : undefined}
-                          config={{
-                            youtube: {
-                              playerVars: {
-                                modestbranding: 1,
-                                rel: 0,
-                                showinfo: 0,
-                                iv_load_policy: 3,
-                                cc_load_policy: 0,
-                                fs: 1,
-                                playsinline: 1,
-                                enablejsapi: 1,
-                                origin: window.location.origin,
+                    {currentTrack &&
+                      (isAppleMusicPlaybackTrack ? (
+                        <div className="w-full h-full pointer-events-none">
+                          <KaraokeAppleMusicBridgeHost
+                            bridgeRef={appleMusicBridgeFullscreenRef}
+                            currentTrack={currentTrack}
+                            playing={isPlaying && isFullScreen && !isListenSessionRemoteOnly}
+                            progressEnabled={isFullScreen}
+                            ipodVolume={ipodVolume}
+                            onProgress={handleProgress}
+                            onDuration={handleDuration}
+                            onPlay={handlePlay}
+                            onPause={handlePause}
+                            onEnded={handleTrackEnd}
+                            onReady={isFullScreen ? handleReady : undefined}
+                            setAppleMusicKitNowPlaying={setAppleMusicKitNowPlaying}
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-full h-full pointer-events-none">
+                          <ReactPlayer
+                            ref={fullScreenPlayerRef}
+                            url={currentTrack.url}
+                            playing={isPlaying && isFullScreen && !isListenSessionRemoteOnly}
+                            controls
+                            width="100%"
+                            height="100%"
+                            volume={ipodVolume * useAudioSettingsStore.getState().masterVolume}
+                            loop={loopCurrent}
+                            onEnded={handleTrackEnd}
+                            onProgress={handleProgress}
+                            onDuration={handleDuration}
+                            progressInterval={PLAYER_PROGRESS_INTERVAL_MS}
+                            onPlay={handlePlay}
+                            onPause={handlePause}
+                            onReady={isFullScreen ? handleReady : undefined}
+                            config={{
+                              youtube: {
+                                playerVars: {
+                                  modestbranding: 1,
+                                  rel: 0,
+                                  showinfo: 0,
+                                  iv_load_policy: 3,
+                                  cc_load_policy: 0,
+                                  fs: 1,
+                                  playsinline: 1,
+                                  enablejsapi: 1,
+                                  origin: window.location.origin,
+                                },
+                                embedOptions: {
+                                  referrerPolicy: "strict-origin-when-cross-origin",
+                                },
                               },
-                              embedOptions: {
-                                referrerPolicy: "strict-origin-when-cross-origin",
-                              },
-                            },
-                          }}
-                        />
-                      </div>
-                    )}
+                            }}
+                          />
+                        </div>
+                      ))}
                   </div>
                 </div>
 
@@ -1041,7 +1143,10 @@ export function KaraokeAppComponent({
 
                 {showEmptyLibrary && (
                   <div className="absolute inset-0 z-[22] bg-black">
-                    <KaraokeLibraryEmptyState onAddSongs={handleAddSong} />
+                    <KaraokeLibraryEmptyState
+                onAddSongs={handleAddSong}
+                librarySource={librarySource}
+              />
                   </div>
                 )}
 

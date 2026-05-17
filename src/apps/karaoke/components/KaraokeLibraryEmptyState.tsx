@@ -1,3 +1,4 @@
+import type { LibrarySource } from "@/stores/useIpodStore";
 import type { CSSProperties, MouseEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
@@ -25,11 +26,14 @@ function KaraokeToolbarShine() {
 
 interface KaraokeLibraryEmptyStateProps {
   onAddSongs: () => void;
+  /** When Apple Music is the active iPod library, prompt to use iPod to load music. */
+  librarySource?: LibrarySource;
   className?: string;
 }
 
 export function KaraokeLibraryEmptyState({
   onAddSongs,
+  librarySource = "youtube",
   className,
 }: KaraokeLibraryEmptyStateProps) {
   const { t } = useTranslation();
@@ -81,23 +85,27 @@ export function KaraokeLibraryEmptyState({
           {t("apps.karaoke.emptyLibrary.title")}
         </p>
         <p className="text-xs leading-snug text-white/50">
-          {t("apps.karaoke.emptyLibrary.subtitle")}
+          {librarySource === "appleMusic"
+            ? t("apps.karaoke.emptyLibrary.subtitleAppleMusic")
+            : t("apps.karaoke.emptyLibrary.subtitle")}
         </p>
       </div>
-      <div className="relative flex items-center justify-center">
-        <div className={segmentClasses} style={aquaSegmentStyle}>
-          {isMacTheme && <KaraokeToolbarShine />}
-          <button
-            type="button"
-            onClick={handleAddSongs}
-            className={cn(buttonClasses, "gap-1 px-2 w-auto")}
-          >
-            <span className={cn("text-sm", iconClasses)}>
-              {t("apps.karaoke.emptyLibrary.addSongs")}
-            </span>
-          </button>
+      {librarySource === "youtube" && (
+        <div className="relative flex items-center justify-center">
+          <div className={segmentClasses} style={aquaSegmentStyle}>
+            {isMacTheme && <KaraokeToolbarShine />}
+            <button
+              type="button"
+              onClick={handleAddSongs}
+              className={cn(buttonClasses, "gap-1 px-2 w-auto")}
+            >
+              <span className={cn("text-sm", iconClasses)}>
+                {t("apps.karaoke.emptyLibrary.addSongs")}
+              </span>
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

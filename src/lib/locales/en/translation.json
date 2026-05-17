@@ -2115,6 +2115,7 @@
       "emptyLibrary": {
         "title": "No songs in Karaoke",
         "subtitle": "Add music from YouTube to get started.",
+        "subtitleAppleMusic": "Open the iPod, switch the library to Apple Music, and sign in to load your songs here.",
         "addSongs": "Add Songs"
       },
       "noTrack": "No track loaded. Open iPod to select a song.",

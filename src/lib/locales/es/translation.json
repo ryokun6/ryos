@@ -2431,6 +2431,7 @@
       "emptyLibrary": {
         "addSongs": "Añadir canciones",
         "subtitle": "Añade música desde YouTube para empezar.",
+        "subtitleAppleMusic": "[TODO] Open the iPod, switch the library to Apple Music, and sign in to load your songs here.",
         "title": "No hay canciones en Karaoke"
       },
       "help": {
