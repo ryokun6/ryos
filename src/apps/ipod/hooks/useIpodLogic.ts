@@ -2009,9 +2009,20 @@ export function useIpodLogic({
         const coverUrl =
           playlist.artworkUrl ??
           (firstTrackWithCover ? resolveTrackCoverUrl(firstTrackWithCover) : null);
+        const description = playlist.description?.trim();
+        const trackCountLine =
+          typeof playlist.trackCount === "number" && playlist.trackCount >= 0
+            ? t("apps.ipod.menuItems.playlistTrackCount", {
+                count: playlist.trackCount,
+              })
+            : undefined;
+        const subtitle =
+          description && description.length > 0
+            ? description
+            : trackCountLine;
         return {
           label: playlist.name,
-          subtitle: playlist.description,
+          subtitle,
           action: () => {
             registerActivity();
             requestPlaylistTracksIfNeeded(playlist.id);
@@ -2033,6 +2044,7 @@ export function useIpodLogic({
       registerActivity,
       requestPlaylistTracksIfNeeded,
       pushMenuChild,
+      menuLocale,
     ]
   );
 

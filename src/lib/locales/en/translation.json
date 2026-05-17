@@ -2005,7 +2005,9 @@
         "appleMusicSignOut": "Apple Music",
         "unconfigured": "Unconfigured",
         "signedIn": "Signed In",
-        "signedOut": "Signed Out"
+        "signedOut": "Signed Out",
+        "playlistTrackCount_one": "{{count}} song",
+        "playlistTrackCount_other": "{{count}} songs"
       },
       "musicQuiz": {
         "title": "Music Quiz",

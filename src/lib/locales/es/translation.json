@@ -2327,6 +2327,8 @@
         "off": "Desactivado",
         "on": "Activado",
         "one": "Una",
+        "playlistTrackCount_one": "{{count}} song",
+        "playlistTrackCount_other": "{{count}} songs",
         "playlists": "Listas de reproducción",
         "radio": "Radio",
         "recentlyAdded": "Añadidas recientemente",

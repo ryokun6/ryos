@@ -2327,6 +2327,8 @@
         "off": "Desligado",
         "on": "Ligado",
         "one": "Uma",
+        "playlistTrackCount_one": "{{count}} song",
+        "playlistTrackCount_other": "{{count}} songs",
         "playlists": "Playlists",
         "radio": "Rádio",
         "recentlyAdded": "Adicionadas Recentemente",
