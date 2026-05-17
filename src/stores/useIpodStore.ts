@@ -503,9 +503,17 @@ export interface IpodState extends IpodData {
   /** Set the furigana map for current lyrics */
   setCurrentFuriganaMap: (map: Record<string, FuriganaSegment[]> | null) => void;
   /** Adjust the lyric offset (in ms) for the track at the given index. */
-  adjustLyricOffset: (trackIndex: number, deltaMs: number) => void;
+  adjustLyricOffset: (
+    trackIndex: number,
+    deltaMs: number,
+    options?: { trackList?: LyricOffsetTrackList }
+  ) => void;
   /** Set the lyric offset (in ms) for the track at the given index to an absolute value. */
-  setLyricOffset: (trackIndex: number, offsetMs: number) => void;
+  setLyricOffset: (
+    trackIndex: number,
+    offsetMs: number,
+    options?: { trackList?: LyricOffsetTrackList }
+  ) => void;
   /** Set lyrics alignment mode */
   setLyricsAlignment: (alignment: LyricsAlignment) => void;
   /** Set lyrics font style */
@@ -710,11 +718,121 @@ function updatePlaybackHistory(
   return updated.slice(-maxHistory);
 }
 
+/** Which track list an index refers to when it may differ from `librarySource` (e.g. Karaoke indexes the YouTube library). */
+export type LyricOffsetTrackList = "youtube" | "appleMusic";
+
+function resolveLyricOffsetSourceTracks(
+  state: IpodData,
+  trackList?: LyricOffsetTrackList
+): Track[] {
+  if (trackList === "youtube") return state.tracks;
+  if (trackList === "appleMusic") return state.appleMusicTracks;
+  return state.librarySource === "appleMusic"
+    ? state.appleMusicTracks
+    : state.tracks;
+}
+
+function findTrackByIdInState(state: IpodData, trackId: string): Track | null {
+  const buckets: (Track[] | undefined)[] = [
+    state.tracks,
+    state.appleMusicTracks,
+    state.appleMusicRecentlyAddedTracks,
+    state.appleMusicFavoriteTracks,
+    ...Object.values(state.appleMusicPlaylistTracks),
+  ];
+  for (const arr of buckets) {
+    const hit = arr?.find((t) => t.id === trackId);
+    if (hit) return hit;
+  }
+  return null;
+}
+
+function collectTrackIdsWithLyricsHash(state: IpodData, lyricsHash: string): string[] {
+  const ids = new Set<string>();
+  const scan = (arr: Track[] | undefined) => {
+    for (const t of arr ?? []) {
+      if (t.lyricsSource?.hash === lyricsHash) ids.add(t.id);
+    }
+  };
+  scan(state.tracks);
+  scan(state.appleMusicTracks);
+  scan(state.appleMusicRecentlyAddedTracks);
+  scan(state.appleMusicFavoriteTracks);
+  for (const arr of Object.values(state.appleMusicPlaylistTracks)) {
+    scan(arr);
+  }
+  return [...ids];
+}
+
+function patchAppleMusicPlaylistTracksForLyricsHash(
+  prev: Record<string, Track[]>,
+  lyricsHash: string,
+  newOffset: number
+): Record<string, Track[]> | undefined {
+  let any = false;
+  const next: Record<string, Track[]> = { ...prev };
+  for (const key of Object.keys(prev)) {
+    const arr = prev[key];
+    if (!arr?.length) continue;
+    let changed = false;
+    const mapped = arr.map((t) => {
+      if (t.lyricsSource?.hash !== lyricsHash) return t;
+      changed = true;
+      return { ...t, lyricOffset: newOffset };
+    });
+    if (changed) {
+      next[key] = mapped;
+      any = true;
+    }
+  }
+  return any ? next : undefined;
+}
+
+/** Apply the same lyric offset to every local track that shares a Kugou `lyricsSource` hash (YouTube + Apple Music rows). */
+function buildLyricOffsetPatchForHash(
+  state: IpodData,
+  lyricsHash: string,
+  newOffset: number
+): Partial<IpodData> {
+  const out: Partial<IpodData> = {};
+  const patchList = (
+    key: "tracks" | "appleMusicTracks" | "appleMusicRecentlyAddedTracks" | "appleMusicFavoriteTracks",
+    arr: Track[]
+  ) => {
+    if (!arr.length) return;
+    let changed = false;
+    const next = arr.map((tr) => {
+      if (tr.lyricsSource?.hash !== lyricsHash) return tr;
+      changed = true;
+      return { ...tr, lyricOffset: newOffset };
+    });
+    if (changed) {
+      (out as Record<string, Track[]>)[key] = next;
+    }
+  };
+  patchList("tracks", state.tracks);
+  patchList("appleMusicTracks", state.appleMusicTracks);
+  patchList("appleMusicRecentlyAddedTracks", state.appleMusicRecentlyAddedTracks);
+  patchList("appleMusicFavoriteTracks", state.appleMusicFavoriteTracks);
+  const pl = patchAppleMusicPlaylistTracksForLyricsHash(
+    state.appleMusicPlaylistTracks,
+    lyricsHash,
+    newOffset
+  );
+  if (pl) out.appleMusicPlaylistTracks = pl;
+  return out;
+}
+
+function lyricOffsetDebounceKey(trackId: string, lyricHash?: string | null): string {
+  if (lyricHash) return `hash:${lyricHash}`;
+  return `id:${trackId}`;
+}
+
 // ============================================================================
 // DEBOUNCED LYRIC OFFSET SAVE
 // ============================================================================
 
-// Debounce timers for saving lyric offset (keyed by track ID)
+// Debounce timers for saving lyric offset (keyed by debounce id: track id or lyrics hash)
 const lyricOffsetSaveTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
 
 /**
@@ -785,31 +903,60 @@ async function saveLyricOffsetToServer(
   }
 }
 
-// Store the last offset value for each track (to flush on demand)
-const pendingLyricOffsets: Map<string, number> = new Map();
+interface PendingLyricOffsetEntry {
+  offset: number;
+  lyricHash?: string;
+  primaryTrackId: string;
+}
+
+/** Pending offset keyed by `lyricOffsetDebounceKey` (per track id or per lyrics hash). */
+const pendingLyricOffsets: Map<string, PendingLyricOffsetEntry> = new Map();
 
 /**
  * Debounced wrapper for saving lyric offset.
  * Waits 2 seconds after the last change before saving.
+ * When the track has a Kugou `lyricsSource.hash`, the same offset is written for every
+ * library row that shares that hash (YouTube id + `am:` id) so Karaoke and Apple Music stay aligned.
  */
-function debouncedSaveLyricOffset(trackId: string, lyricOffset: number): void {
-  // Store the pending value
-  pendingLyricOffsets.set(trackId, lyricOffset);
-  
-  // Clear any existing timer for this track
-  const existingTimer = lyricOffsetSaveTimers.get(trackId);
+function debouncedSaveLyricOffset(
+  trackId: string,
+  lyricOffset: number,
+  lyricHash?: string | null
+): void {
+  const snap = useIpodStore.getState();
+  const track = findTrackByIdInState(snap, trackId);
+  const hash = lyricHash ?? track?.lyricsSource?.hash;
+  const debounceKey = lyricOffsetDebounceKey(trackId, hash);
+
+  pendingLyricOffsets.set(debounceKey, {
+    offset: lyricOffset,
+    lyricHash: hash ?? undefined,
+    primaryTrackId: trackId,
+  });
+
+  const existingTimer = lyricOffsetSaveTimers.get(debounceKey);
   if (existingTimer) {
     clearTimeout(existingTimer);
   }
 
-  // Set new timer
   const timer = setTimeout(() => {
-    lyricOffsetSaveTimers.delete(trackId);
-    pendingLyricOffsets.delete(trackId);
-    saveLyricOffsetToServer(trackId, lyricOffset);
-  }, 2000); // 2 second debounce
+    lyricOffsetSaveTimers.delete(debounceKey);
+    const entry = pendingLyricOffsets.get(debounceKey);
+    pendingLyricOffsets.delete(debounceKey);
+    if (!entry) return;
 
-  lyricOffsetSaveTimers.set(trackId, timer);
+    const latest = useIpodStore.getState();
+    const ids = entry.lyricHash
+      ? collectTrackIdsWithLyricsHash(latest, entry.lyricHash)
+      : [entry.primaryTrackId];
+    const targetIds = ids.length > 0 ? ids : [entry.primaryTrackId];
+
+    for (const id of targetIds) {
+      void saveLyricOffsetToServer(id, entry.offset);
+    }
+  }, 2000);
+
+  lyricOffsetSaveTimers.set(debounceKey, timer);
 }
 
 /**
@@ -818,18 +965,31 @@ function debouncedSaveLyricOffset(trackId: string, lyricOffset: number): void {
  * Returns a Promise that resolves when the save completes.
  */
 export async function flushPendingLyricOffsetSave(trackId: string): Promise<void> {
-  const existingTimer = lyricOffsetSaveTimers.get(trackId);
-  const pendingOffset = pendingLyricOffsets.get(trackId);
-  
-  if (existingTimer && pendingOffset !== undefined) {
-    // Clear the timer
+  const snap = useIpodStore.getState();
+  const t = findTrackByIdInState(snap, trackId);
+  const debounceKey = lyricOffsetDebounceKey(trackId, t?.lyricsSource?.hash);
+
+  const existingTimer = lyricOffsetSaveTimers.get(debounceKey);
+  const pendingEntry = pendingLyricOffsets.get(debounceKey);
+
+  if (existingTimer && pendingEntry) {
     clearTimeout(existingTimer);
-    lyricOffsetSaveTimers.delete(trackId);
-    pendingLyricOffsets.delete(trackId);
-    
-    // Save immediately and wait for completion
-    console.log(`[iPod Store] Flushing pending lyric offset save for ${trackId}: ${pendingOffset}ms`);
-    await saveLyricOffsetToServer(trackId, pendingOffset);
+    lyricOffsetSaveTimers.delete(debounceKey);
+    pendingLyricOffsets.delete(debounceKey);
+
+    console.log(
+      `[iPod Store] Flushing pending lyric offset save for ${trackId} (${debounceKey}): ${pendingEntry.offset}ms`
+    );
+
+    const latest = useIpodStore.getState();
+    const ids = pendingEntry.lyricHash
+      ? collectTrackIdsWithLyricsHash(latest, pendingEntry.lyricHash)
+      : [pendingEntry.primaryTrackId];
+    const targetIds = ids.length > 0 ? ids : [pendingEntry.primaryTrackId];
+
+    for (const id of targetIds) {
+      await saveLyricOffsetToServer(id, pendingEntry.offset);
+    }
   }
 }
 
@@ -1215,13 +1375,9 @@ export const useIpodStore = create<IpodState>()(
         }));
       },
       setCurrentFuriganaMap: (map) => set({ currentFuriganaMap: map }),
-      adjustLyricOffset: (trackIndex, deltaMs) => {
-        // Validate before calling set() to avoid unnecessary state updates
+      adjustLyricOffset: (trackIndex, deltaMs, options) => {
         const state = get();
-        const sourceTracks =
-          state.librarySource === "appleMusic"
-            ? state.appleMusicTracks
-            : state.tracks;
+        const sourceTracks = resolveLyricOffsetSourceTracks(state, options?.trackList);
         if (
           trackIndex < 0 ||
           trackIndex >= sourceTracks.length ||
@@ -1231,9 +1387,13 @@ export const useIpodStore = create<IpodState>()(
         }
 
         const current = sourceTracks[trackIndex];
+        const lyricsHash = current.lyricsSource?.hash;
         const newOffset = (current.lyricOffset || 0) + deltaMs;
+        const patchAppleList = sourceTracks === state.appleMusicTracks;
 
-        if (state.librarySource === "appleMusic") {
+        if (lyricsHash) {
+          set((s) => buildLyricOffsetPatchForHash(s, lyricsHash, newOffset));
+        } else if (patchAppleList) {
           set((s) => ({
             appleMusicTracks: s.appleMusicTracks.map((track, i) =>
               i === trackIndex ? { ...track, lyricOffset: newOffset } : track
@@ -1247,17 +1407,11 @@ export const useIpodStore = create<IpodState>()(
           }));
         }
 
-        // Persist server-side. The endpoint accepts both YouTube (11-char)
-        // and Apple Music (`am:<id>`) keys via the relaxed validator.
-        debouncedSaveLyricOffset(current.id, newOffset);
+        debouncedSaveLyricOffset(current.id, newOffset, lyricsHash);
       },
-      setLyricOffset: (trackIndex, offsetMs) => {
-        // Validate before calling set() to avoid unnecessary state updates
+      setLyricOffset: (trackIndex, offsetMs, options) => {
         const state = get();
-        const sourceTracks =
-          state.librarySource === "appleMusic"
-            ? state.appleMusicTracks
-            : state.tracks;
+        const sourceTracks = resolveLyricOffsetSourceTracks(state, options?.trackList);
         if (
           trackIndex < 0 ||
           trackIndex >= sourceTracks.length ||
@@ -1266,9 +1420,14 @@ export const useIpodStore = create<IpodState>()(
           return;
         }
 
-        const trackId = sourceTracks[trackIndex].id;
+        const current = sourceTracks[trackIndex];
+        const lyricsHash = current.lyricsSource?.hash;
+        const trackId = current.id;
+        const patchAppleList = sourceTracks === state.appleMusicTracks;
 
-        if (state.librarySource === "appleMusic") {
+        if (lyricsHash) {
+          set((s) => buildLyricOffsetPatchForHash(s, lyricsHash, offsetMs));
+        } else if (patchAppleList) {
           set((s) => ({
             appleMusicTracks: s.appleMusicTracks.map((track, i) =>
               i === trackIndex ? { ...track, lyricOffset: offsetMs } : track
@@ -1282,7 +1441,7 @@ export const useIpodStore = create<IpodState>()(
           }));
         }
 
-        debouncedSaveLyricOffset(trackId, offsetMs);
+        debouncedSaveLyricOffset(trackId, offsetMs, lyricsHash);
       },
       setLyricsAlignment: (alignment) => {
         if (get().lyricsAlignment === alignment) {

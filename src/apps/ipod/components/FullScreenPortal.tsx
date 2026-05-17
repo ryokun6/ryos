@@ -380,7 +380,7 @@ export function FullScreenPortal({
           ? store.tracks.findIndex((t) => t.id === currentTrack.id)
           : -1;
         if (currentTrackIndex >= 0) {
-          store.adjustLyricOffset(currentTrackIndex, delta);
+          store.adjustLyricOffset(currentTrackIndex, delta, { trackList: "youtube" });
           const newOffset = (currentTrack?.lyricOffset ?? 0) + delta;
           const sign = newOffset > 0 ? "+" : newOffset < 0 ? "" : "";
           handlers.showStatus(
