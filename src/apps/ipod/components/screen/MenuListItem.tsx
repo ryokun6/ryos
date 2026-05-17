@@ -72,7 +72,7 @@ export function MenuListItem({
         <div
           onClick={isLoading ? undefined : onClick}
           className={cn(
-            "h-full pl-1.5 pr-2 font-ipod-modern-ui flex justify-between items-center gap-1.5",
+            "h-full pl-1 pr-1.5 font-ipod-modern-ui flex justify-between items-center gap-1",
             "ipod-modern-row",
             isLoading ? "cursor-default" : "cursor-pointer",
             isSelected && !isLoading
@@ -82,9 +82,9 @@ export function MenuListItem({
                 : "text-black"
           )}
         >
-          <div className="flex min-h-0 min-w-0 flex-1 items-center gap-2 mr-1">
+          <div className="flex min-h-0 min-w-0 flex-1 items-center gap-1.5 mr-0.5">
             <div
-              className="relative size-[34px] shrink-0 overflow-hidden rounded-[2px] bg-[#a8a8a8]"
+              className="relative size-[26px] shrink-0 overflow-hidden rounded-[2px] bg-[#a8a8a8]"
               aria-hidden
             >
               {thumbSrc ? (
@@ -115,14 +115,14 @@ export function MenuListItem({
                 scrollStartDelaySec={0.5}
                 className={cn(
                   "max-w-full min-w-0 font-semibold leading-none",
-                  hasCjkText ? "text-[13px]" : "text-[14px]"
+                  hasCjkText ? "text-[11px]" : "text-[12px]"
                 )}
               />
               {subtitleTrim ? (
                 <span
                   className={cn(
                     "-mt-0.5 block min-w-0 truncate font-normal leading-none",
-                    hasCjkText ? "text-[11px]" : "text-[12px]",
+                    hasCjkText ? "text-[10px]" : "text-[11px]",
                     isSelected && !isLoading
                       ? "text-white/88"
                       : "text-[rgb(99,101,103)]"
@@ -137,8 +137,8 @@ export function MenuListItem({
           {value ? (
             <span
               className={cn(
-                "flex shrink-0 items-center font-semibold leading-tight",
-                hasCjkText ? "text-[13px]" : "text-[14px]",
+                "flex shrink-0 items-center font-semibold leading-none",
+                hasCjkText ? "text-[11px]" : "text-[12px]",
                 isSelected && !isLoading
                   ? "text-white/90"
                   : "text-[rgb(99,101,103)]"
@@ -152,7 +152,7 @@ export function MenuListItem({
               <span
                 className={cn(
                   "flex shrink-0 items-center justify-center font-normal leading-none",
-                  "text-[19px]",
+                  "text-[16px]",
                   isSelected && !isLoading ? "text-white/95" : "text-[#b8b8bc]"
                 )}
                 aria-hidden

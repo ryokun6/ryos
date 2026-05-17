@@ -67,8 +67,9 @@ import { useIpodStore, isAppleMusicCollectionTrack } from "@/stores/useIpodStore
 // the scroll-position math.
 const MENU_ITEM_HEIGHT_CLASSIC = 24;
 const MENU_ITEM_HEIGHT_MODERN = 21;
-/** Modern playlist / per-artist album browse — thumbnail + two-line label. */
-const MENU_ITEM_HEIGHT_MODERN_MEDIA = 46;
+// Modern **media** rows (playlist / artist album / in-playlist tracks):
+// title bar 17px + **4 × 33px** rows ≈ 149px inside the fixed **150px** LCD.
+const MENU_ITEM_HEIGHT_MODERN_MEDIA = 33;
 const menuItemKeyCache = new WeakMap<object, string>();
 let menuItemKeySeed = 0;
 
