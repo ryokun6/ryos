@@ -60,6 +60,9 @@ graph TD
 | `web_search` | OpenAI provider web search (GPT-5.4 only, authenticated users, with geolocation context) |
 | `google_search` | Google provider web search (Gemini 3 Flash only, authenticated users) |
 | `webFetch` | Server-side URL fetch with HTML-to-text extraction for Ryo (sanitized) |
+| `tvControl` | TV lineup and playback: list/tune channels, AI `createChannel` fanout, add/remove videos on custom channels |
+| `cursorCloudAgent` | Async Cursor Cloud repo-agent runs against `ryokun6/ryos` (owner-only): live stream card, PR link, follow-up turns |
+| `listCursorCloudAgentRuns` | List recent Cursor Cloud agent runs with dashboard URLs (owner-only) |
 
 ## API Endpoints
 
@@ -126,6 +129,7 @@ Client execution handlers remain in `src/apps/chats/tools/`:
 - `settingsHandler.ts` - System settings updates
 - `stickiesHandler.ts` - Sticky note operations
 - `infiniteMacHandler.ts` - Infinite Mac control bridge
+- `tvHandler.ts` - TV channel lineup and tuning execution
 
 Shared conversation preparation lives in `api/_utils/ryo-conversation.ts`:
 

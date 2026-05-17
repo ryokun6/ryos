@@ -6,58 +6,54 @@ A summary of changes and updates to ryOS, organized by month.
 
 ## May 2026
 
-- Cursor Cloud agent **done / failed** Telegram notifications strip markdown (headings, bullets, emphasis, code fences, links) to plain text via shared `telegram-format` helpers; web surfaces keep richer run summaries unchanged.
-- Cursor Cloud agent Telegram completion messages include labeled plain-text **Agent** (dashboard) and **PR** URLs when available; the notifier always includes the dashboard URL, and the PR line is omitted when no PR URL exists yet.
-- Expand **Virtual PC** beyond DOS games: integrate the **v86 x86 emulator** with an OS browser (Windows 1.0–2000/ME, FreeDOS, MS-DOS, Windows 95/98, ReactOS, Haiku, BeOS, Serenity, KolibriOS, FreeBSD/NetBSD/OpenBSD, Linux 2.6/4.x, Arch, Buildroot, MikeOS, MINIX, Fiwix, HelenOS, Oberon, Redox, SolOS, doof, DSL), persisted preset selection, COEP-enabled `/embed/pc.html` route, generated thumbnails, and full UI localization. Renames the app id from `infinite-pc` to `pc` with a legacy alias.
-- Add **Cursor agents** admin tab backed by Redis run metadata: dashboard server card, panel headers, agent counts, relaxed admin rate limits, sidebar/View menu reordering, and improved follow-up UX (Space-key fix, polished submit button).
-- Add **Aquarium** dashboard widget alongside the existing 8 widgets.
-- TV polish: channel-bug logo overlay (visible in fullscreen), occasional idle bursts (spin / watermark / shimmer with glossy overlay blend), animations hard-reset on channel switch, drawer open/close SFX, square channel-strip buttons, channel logo tray strip, fullscreen control parity with Karaoke (dismiss + CH± pills, viewport-scaled captions, marquee fade on pause/overflow), CRT static skipped while fullscreen, and synced reset-channel deletes.
-- Docs: **Maps** — add app documentation (MapKit search, pins, Home/Work/Favorites); **Directions** hands off to Apple Maps in a **new tab** (ryOS tab unchanged). **`mapsSearchPlaces`** in Chats opens a chosen place **inside ryOS Maps** without leaving the chat page; in-map turn-by-turn routing is not implemented yet.
+- Add **Maps** app powered by Apple MapKit JS: place search with IP/region bias, Home/Work/Favorites pins, places drawer, POI category markers, cloud sync, and Chats **`mapsSearchPlaces`** inline cards that open places in-app; **Directions** hand off to Apple Maps in a new tab (in-map routing not yet implemented).
+- iPod **modern UI** overhaul (now default): classic-js–inspired skin with Myriad Pro typography, split-menu Ken Burns slideshow, Cover Flow flip-to-tracklist, brick game and Music Quiz polish, and Apple Music library/radio/quiz support with playback stability fixes.
+- Expand **Virtual PC** beyond DOS games with the **v86** OS browser (Windows 1.0–2000/ME through Linux/BSD/ReactOS catalog), COEP `/embed/pc.html`, generated thumbnails, persisted presets, full localization, and `infinite-pc` → `pc` id migration.
+- **Cursor Cloud agent** workflow: `cursorCloudAgent` + `listCursorCloudAgentRuns` tools, live stream card with follow-up input and Open PR, Admin **Cursor agents** tab (90-day Redis retention), and Telegram completion DMs with plain-text **Agent** / **PR** URLs (markdown stripped via shared `telegram-format` helpers).
+- **Dashboard** additions: **Aquarium** widget, **currency converter** with Frankfurter rates, Apple PNG widget glyphs, and mobile narrow layout with scroll-to-new-widget animation.
+- **TV polish**: channel-bug logo overlay (fullscreen-safe), idle bursts, drawer SFX, square channel-strip buttons, fullscreen control parity with Karaoke (dismiss + CH± pills, viewport-scaled captions), synced reset-channel deletes, and continued CRT/UI refinements.
+- Refactor **theme platform layer** with `data-os-platform`, centralized menu tokens, and macOSX font fixes (menubar, Finder list, About dialog, TextEdit headings, chat meta).
+- Remove **CandyBar** app (dock icon pack browser added in March is no longer shipped).
 
 <details>
-<summary>Minor changes (9)</summary>
+<summary>Minor changes (20)</summary>
 
-- iPod: Apple Music sharing now copies Apple Music song links without touching the YouTube shared-song list; Apple Music display defaults to Cover, hides Video mode, keeps other visualizers available, and cleans up Now Playing marquee/shuffle status.
-- Localize Virtual PC UI and v86 preset catalog; translate remaining locale TODOs across all languages.
-- Add Cover Flow toggle to Karaoke and iPod title bars.
-- Karaoke: fix visual-effect gating order; further optimize hidden video visual effects.
-- TV: slightly increase mobile compact drawer max height; hard-kill channel-bug animations on channel switch; fade right edge of LCD marquee when paused and overflowing (TV + Videos).
-- macOSX: scale fullscreen captions with viewport via theme override.
-- Chats: extend Cursor SDK run Redis TTL from 1 day to 90 days; rename channel prompt placeholder to "Make a new channel...".
-- Refactor: extract `FullscreenMobileDismiss` for fullscreen portals (shared across TV/Karaoke).
-- Admin: relax rate limits for admin endpoints; reorder admin sidebar and View menu sections.
+- Chats: Streamdown message rendering; subtler tool-error styling; extend Cursor SDK run Redis TTL to 90 days; rename channel prompt to "Make a new channel...".
+- iPod / Karaoke: Cover Flow title-bar toggle; Apple Music sharing copies direct links; default Cover display mode; locale-aware lyrics `auto` translation; karaoke visual-effect gating and hidden-video perf.
+- Calendar: tray event/todo details, drag/resize, keyboard delete; fix tray delete layout, mobile scroll during drag, and bottom padding clipping.
+- Maps / Synth / TextEdit / TV: recreate MapKit after minimize; mobile synth preset UI; macOSX TextEdit heading font; theme UI font for TV channel-creation shimmer.
+- Shared UI: extract `FullscreenMobileDismiss` for TV/Karaoke fullscreen portals; generalize **AppDrawer** (TV/Calendar) with viewport-aware repositioning.
+- Admin: dashboard server card, panel headers, agent counts, relaxed rate limits, sidebar/View menu reordering; analytics top songs/sites/countries and app events.
+- React 19 hardening: migrate deprecated APIs, refactor cascading setState to useReducer, effect cleanups, stable list keys, admin helper hoisting.
+- CI / deploy: Coolify webhook deploy, GHCR image pipeline, decouple test/build from main pushes; security batch (password change flow, applet sandboxing, rate-limit hardening).
+- Docs: Maps app page, Virtual PC v86 refresh, Admin Cursor agents, Dashboard Aquarium; regenerate static HTML.
 
 </details>
 
 ## April 2026
 
-- Add **Ryo TV** app: channel-surfing UI with CRT shader effects (power on/off, channel switch, buffering), procedural CRT sound effects, AI-generated channels with import/export, MTV music-video channel with per-word KRC-timed Geneva CC plate captions, `/tv` route, OG card, and full localization.
-- Add **tvControl** chat tool: server-side fanout for `createChannel`, expose current TV channel and custom lineup in system state, client handler with invocation UI; gate channel creation on login with toast and login dialog.
+- Add **Ryo TV** app: channel-surfing UI with CRT shader effects (power on/off, channel switch, buffering), procedural CRT SFX, AI-generated channels with import/export and cloud sync, MTV music-video channel with per-word KRC-timed Geneva CC captions, `/tv` route, OG card, and full localization.
+- Add **tvControl** chat tool: list/tune channels, AI `createChannel` server-side fanout, add/remove videos on custom lineups; expose current TV channel and custom lineup in system state; gate channel creation on login.
 - Add **IRC chat** support: `irc.pieter.com` default, IRC server registry, channel browser in New Chat IRC tab, authenticated-user join via registered servers, `IRC_BRIDGE_DISABLED` env opt-out, and IRC bridge wiring tests.
-- Add **`cursorRyOsRepoAgent`** chat tool: async repo-agent runs with a live stream card, persisted PR url with Open PR button, follow-up endpoint with reply input, and Telegram bridging that sends a completion notification.
-- Add intro title card to Karaoke (5s with lead time, scaling, marquee scroll, paused marquee on pause), empty library state with Add Songs CTA, and smoother ScrollingText marquee for iPod/Karaoke.
-- Refine wallpaper system with Leopard sets, picker layout improvements, category ordering, and a new default `nature earth horizon` wallpaper; persist display settings at version 1.
-- Refine themed desktop: System 7 shows Chats, IE, Karaoke after iPod; Applications shortcut on non-macOS X themes (Applet Store hidden there); themed Chats icons across System 7, macOSX, XP 48px, and Win98.
-- Optimize system prompts for static caching with tiered dynamic context.
+- Add **`cursorCloudAgent`** chat tool (renamed from legacy `cursorRyOsRepoAgent`): async Cursor Cloud repo-agent runs with live stream card, persisted PR URL with Open PR button, follow-up endpoint with reply input, and Telegram completion notification.
+- Karaoke polish: intro title card (5s with lead time, scaling, marquee scroll, pause-aware), empty library state with Add Songs CTA, smoother ScrollingText marquee (shared with iPod), Korean romanization default, and lyrics perf isolation from playback ticks.
+- Refine **wallpaper system** with Leopard sets, picker layout improvements, category ordering, new default `nature earth horizon` wallpaper, and display settings persisted at version 1.
+- Refine **themed desktop**: System 7 shows Chats, IE, Karaoke after iPod; Applications shortcut on non-macOS X themes (Applet Store hidden there); themed Chats icons across System 7, macOSX, XP 48px, and Win98.
+- Optimize system prompts for **static caching** with tiered dynamic context.
 
 <details>
-<summary>Minor changes (14)</summary>
+<summary>Minor changes (10)</summary>
 
-- TV: opaque static, finer noise grain, native-refresh-rate noise canvas, lineup-based channel numbers and dynamic window title, reset-channels item, mobile Safari sync play, hide CC during channel/clip transitions, LCD Filter toggle.
-- TV: rebuilt multi-stage CRT power-on/off (center-beam unfold, scale-coupled glow), close window after power-off, screen on/off on play/pause, power back on for Next/Prev/CH.
-- TV: marquee-scroll long NET channel names, inline AI channel creation prompt with shimmer loading, exclude YouTube Shorts from AI channels and via client `onDuration`, Ryo TV pulls from Videos library, reject substring-confusable YouTube hosts (CodeQL).
-- TV: dedicated channel cloud sync, YouTube URL paste handling in the drawer, playlist drawer with side panel + compact bottom layout, drawer remove control, cached random playlists, playlist-order preservation when removing, prepopulate channels from exported library (with Taiwan), allow default channels to be hidden, reset-channel deletes kept in sync.
-- Chats: localize Chats toasts, Applet Viewer flows, and Finder list icons.
-- Karaoke / iPod: react to locale changes for lyrics translation `auto` mode.
+- TV (CRT & playback): multi-stage power on/off, screen on/off with play/pause, LCD Filter toggle, opaque static and native-refresh noise, lineup-based channel numbers, mobile Safari sync play, hide CC during transitions, reset-channels item, Shorts exclusion, substring-confusable YouTube host rejection (CodeQL).
+- TV (lineup & drawer): dedicated channel cloud sync, YouTube URL paste, playlist drawer (side panel + compact bottom), drawer remove control, cached random playlists, prepopulate from exported library (incl. Taiwan), allow hiding default channels, synced reset-channel deletes.
+- TV (UI): marquee-scroll long NET names, inline AI channel creation shimmer, Ryo TV pulls from Videos library, channel-bug and fullscreen control groundwork.
+- Chats: localize toasts, Applet Viewer flows, and Finder list icons; 400px new-chat dialog max width; IRC channel list aligned with lyrics search dialog; dialog/tab truncation constraints; stabilize IRC tab; delegate embedded `StartGrindPlanning` to parent.
+- Karaoke / iPod: react to locale changes for lyrics translation `auto` mode; open Karaoke cover flow from title art.
 - macOSX: include CJK and emoji pixel fonts in LCD font stack.
-- Karaoke: default Korean romanization on, gradient inactive lyrics match sans, tune interlude dots and outlines, open Karaoke cover flow from title art.
-- Karaoke perf: isolate lyrics subtree from playback-tick rerenders; enable react-scan when display debug mode is on.
-- Tauri: fix fullscreen menubar flicker.
-- Control Panels: retro Login button on System 7.
-- Chats: 400px max width on new chat dialog, align IRC channel list with lyrics search dialog, constrain dialogs and tab content for long-text truncation, stabilize new chat dialog on IRC tab, delegate to parent `StartGrindPlanning` when embedded.
+- Control Panels: retro Login button on System 7; Tauri fullscreen menubar flicker fix.
 - Files: sparse default desktop shortcuts on System 7 and Windows themes; guard optional `aliasTarget` in System 7 desktop migration.
 - IRC: use `crypto.randomInt` for bridge IRC nick suffix.
-- Tests: cover `cursor-agent` PR url extraction and follow-up pre-checks.
+- Tests: cover `cursor-agent` PR URL extraction and follow-up pre-checks; enable react-scan when display debug mode is on.
 
 </details>
 
@@ -433,4 +429,4 @@ A summary of changes and updates to ryOS, organized by month.
 
 ---
 
-*This changelog is maintained from git history and manual curation. Last updated: 2026-05-02*
+*This changelog is maintained from git history and manual curation. Last updated: 2026-05-17*
