@@ -1958,18 +1958,22 @@ export function useIpodLogic({
         ];
       } else {
         const queueIds = playlistTracks.map((t) => t.id);
-        result[playlist.id] = playlistTracks.map((track, trackListIndex) => ({
-          label: track.title,
-          action: () =>
-            playAppleMusicTrackFromMenu(
-              track,
-              trackListIndex,
-              queueIds,
-              playlistTracks
-            ),
-          showChevron: false,
-          coverUrl: resolveTrackCoverUrl(track),
-        }));
+        result[playlist.id] = playlistTracks.map((track, trackListIndex) => {
+          const displayArtist = (track.albumArtist || track.artist)?.trim();
+          return {
+            label: track.title,
+            subtitle: displayArtist && displayArtist.length > 0 ? displayArtist : undefined,
+            action: () =>
+              playAppleMusicTrackFromMenu(
+                track,
+                trackListIndex,
+                queueIds,
+                playlistTracks
+              ),
+            showChevron: false,
+            coverUrl: resolveTrackCoverUrl(track),
+          };
+        });
       }
     }
     return result;
@@ -2005,6 +2009,7 @@ export function useIpodLogic({
               title: playlist.name,
               items: applePlaylistTrackMenuItemsByPlaylist[playlist.id] ?? EMPTY_IPOD_MENU_ITEMS,
               selectedIndex: 0,
+              modernMediaList: true,
             });
           },
           showChevron: true,
