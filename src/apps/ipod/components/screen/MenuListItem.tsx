@@ -102,7 +102,9 @@ export function MenuListItem({
                 />
               ) : null}
             </div>
-            <div className="flex min-h-0 min-w-0 flex-1 flex-col justify-center gap-0">
+            {/* Tight two-line stack: leading-none + tiny negative margin so the
+                pair reads as one vertically centered block beside the thumb. */}
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col justify-center gap-0 py-0">
               <ScrollingText
                 text={text}
                 align="left"
@@ -112,14 +114,14 @@ export function MenuListItem({
                 resetOnPause
                 scrollStartDelaySec={0.5}
                 className={cn(
-                  "max-w-full min-w-0 block font-semibold leading-[1.05]",
+                  "max-w-full min-w-0 font-semibold leading-none",
                   hasCjkText ? "text-[13px]" : "text-[14px]"
                 )}
               />
               {subtitleTrim ? (
                 <span
                   className={cn(
-                    "min-w-0 truncate font-normal leading-[1.05]",
+                    "-mt-0.5 block min-w-0 truncate font-normal leading-none",
                     hasCjkText ? "text-[11px]" : "text-[12px]",
                     isSelected && !isLoading
                       ? "text-white/88"
