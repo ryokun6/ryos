@@ -597,6 +597,10 @@ export function IpodScreen({
   // hierarchical browse menus, not on flat song lists or Settings).
   // The root iPod / Music submenus still qualify because their rows
   // include chevron-bearing categories.
+  //
+  // **Modern media lists** (playlist picker, per-artist albums) already
+  // show artwork in each row — hide the right split so the menu stays
+  // full width without the 50%↔100% chrome transition.
   const isBrowseableMenu = useMemo(
     () =>
       isModernUi &&
@@ -606,8 +610,15 @@ export function IpodScreen({
       // menu→now-playing — so we suppress the split-art carousel
       // entirely while Cover Flow is on screen.
       !showInlineCoverFlow &&
+      !currentMenuModernMediaList &&
       currentMenuItems.some((item) => item.showChevron === true),
-    [isModernUi, menuMode, showInlineCoverFlow, currentMenuItems]
+    [
+      isModernUi,
+      menuMode,
+      showInlineCoverFlow,
+      currentMenuModernMediaList,
+      currentMenuItems,
+    ]
   );
 
   const splitArtUrlPool = useMemo(() => {

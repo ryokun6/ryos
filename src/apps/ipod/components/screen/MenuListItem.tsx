@@ -112,14 +112,14 @@ export function MenuListItem({
                 resetOnPause
                 scrollStartDelaySec={0.5}
                 className={cn(
-                  "max-w-full min-w-0 block font-semibold leading-[1.1]",
+                  "max-w-full min-w-0 block font-semibold leading-[1.05]",
                   hasCjkText ? "text-[13px]" : "text-[14px]"
                 )}
               />
               {subtitleTrim ? (
                 <span
                   className={cn(
-                    "mt-0.5 min-w-0 truncate font-normal leading-[1.1]",
+                    "min-w-0 truncate font-normal leading-[1.05]",
                     hasCjkText ? "text-[11px]" : "text-[12px]",
                     isSelected && !isLoading
                       ? "text-white/88"
