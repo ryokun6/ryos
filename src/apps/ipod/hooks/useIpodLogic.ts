@@ -63,7 +63,12 @@ import {
   getAlbumGroupingKey,
   resolveTrackCoverUrl,
 } from "../constants";
-import type { WheelArea, RotationDirection } from "../types";
+import type {
+  MenuHistoryEntry,
+  MenuItem,
+  WheelArea,
+  RotationDirection,
+} from "../types";
 import type { IpodInitialData } from "../../base/types";
 import type { CoverFlowRef } from "../components/CoverFlow";
 import type { MusicQuizRef } from "../components/MusicQuiz";
@@ -82,11 +87,7 @@ const IS_SAFARI =
 const IS_IOS_SAFARI = IS_IOS && IS_SAFARI;
 
 /** Stable fallback so `rebuildMenuItems` never returns a fresh `[]` per call. */
-const EMPTY_IPOD_MENU_ITEMS: {
-  label: string;
-  action: () => void;
-  showChevron: boolean;
-}[] = [];
+const EMPTY_IPOD_MENU_ITEMS: MenuItem[] = [];
 
 export interface UseIpodLogicOptions {
   isWindowOpen: boolean;
@@ -622,19 +623,7 @@ export function useIpodLogic({
   const setMenuDirection = useCallback((value: "forward" | "backward") => {
     dispatchMenuUi({ type: "setMenuDirection", value });
   }, []);
-  const [menuHistory, setMenuHistory] = useState<
-    {
-      title: string;
-      displayTitle?: string;
-      items: {
-        label: string;
-        action: () => void;
-        showChevron?: boolean;
-        value?: string;
-      }[];
-      selectedIndex: number;
-    }[]
-  >([]);
+  const [menuHistory, setMenuHistory] = useState<MenuHistoryEntry[]>([]);
   const setCameFromNowPlayingMenuItem = useCallback((value: boolean) => {
     dispatchMenuUi({ type: "setCameFromNowPlayingMenuItem", value });
   }, []);
@@ -1777,6 +1766,7 @@ export function useIpodLogic({
         )?.track ?? albumTracks[0]?.track ?? null;
         return {
           label: album,
+          subtitle: artist,
           action: () => {
             registerActivity();
             pushMenuChild({
@@ -1794,6 +1784,7 @@ export function useIpodLogic({
       result[artist] = [
         {
           label: allLabel,
+          subtitle: allSongsLabel,
           action: () => {
             registerActivity();
             pushMenuChild({
@@ -1920,6 +1911,7 @@ export function useIpodLogic({
                 title: artist,
                 items: artistMenuItemsByArtist[artist],
                 selectedIndex: 0,
+                modernMediaList: true,
               });
             },
             showChevron: true,
@@ -2005,6 +1997,7 @@ export function useIpodLogic({
           (firstTrackWithCover ? resolveTrackCoverUrl(firstTrackWithCover) : null);
         return {
           label: playlist.name,
+          subtitle: playlist.description,
           action: () => {
             registerActivity();
             requestPlaylistTracksIfNeeded(playlist.id);
@@ -2049,10 +2042,16 @@ export function useIpodLogic({
 
     const pushSubmenu = (
       title: string,
-      items: { label: string; action: () => void; showChevron: boolean }[]
+      items: MenuItem[],
+      options?: { modernMediaList?: boolean }
     ) => {
       registerActivity();
-      pushMenuChild({ title, items, selectedIndex: 0 });
+      pushMenuChild({
+        title,
+        items,
+        selectedIndex: 0,
+        ...options,
+      });
     };
 
     const coverFlowItem = {
@@ -2099,7 +2098,10 @@ export function useIpodLogic({
         },
         {
           label: playlistsLabel,
-          action: () => pushSubmenu(playlistsLabel, applePlaylistsMenuItems),
+          action: () =>
+            pushSubmenu(playlistsLabel, applePlaylistsMenuItems, {
+              modernMediaList: true,
+            }),
           showChevron: true,
         },
         {
@@ -2572,6 +2574,7 @@ export function useIpodLogic({
       restored.push({
         title: entry.title,
         displayTitle: entry.displayTitle,
+        modernMediaList: entry.modernMediaList,
         items: rebuilt,
         selectedIndex: safeIdx,
       });
@@ -2686,6 +2689,7 @@ export function useIpodLogic({
     const breadcrumb = menuHistory.map((menu, i) => ({
       title: menu.title,
       displayTitle: menu.displayTitle,
+      modernMediaList: menu.modernMediaList,
       selectedIndex:
         i === menuHistory.length - 1 ? selectedMenuItem : menu.selectedIndex,
     }));
@@ -2703,6 +2707,7 @@ export function useIpodLogic({
         (entry, i) =>
           entry.title === breadcrumb[i].title &&
           entry.displayTitle === breadcrumb[i].displayTitle &&
+          entry.modernMediaList === breadcrumb[i].modernMediaList &&
           entry.selectedIndex === breadcrumb[i].selectedIndex
       );
     if (!isSame) store.setIpodMenuBreadcrumb(breadcrumb);

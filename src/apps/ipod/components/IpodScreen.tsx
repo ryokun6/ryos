@@ -67,6 +67,8 @@ import { useIpodStore, isAppleMusicCollectionTrack } from "@/stores/useIpodStore
 // the scroll-position math.
 const MENU_ITEM_HEIGHT_CLASSIC = 24;
 const MENU_ITEM_HEIGHT_MODERN = 21;
+/** Modern playlist / per-artist album browse — thumbnail + two-line label. */
+const MENU_ITEM_HEIGHT_MODERN_MEDIA = 46;
 const menuItemKeyCache = new WeakMap<object, string>();
 let menuItemKeySeed = 0;
 
@@ -374,6 +376,10 @@ export function IpodScreen({
   // toggling from the menubar updates the screen instantly.
   const uiVariant = useIpodStore((s) => s.uiVariant);
   const isModernUi = uiVariant === "modern";
+  const currentMenuModernMediaList = useMemo(() => {
+    if (!menuMode || menuHistory.length === 0) return false;
+    return Boolean(menuHistory[menuHistory.length - 1].modernMediaList);
+  }, [menuMode, menuHistory]);
   // Modern UI renders Cover Flow inline as a third state in the menu
   // panel's AnimatePresence (alongside menu list + now-playing) so the
   // menu↔nowplaying chrome width transition (50%↔100%) seamlessly
@@ -383,9 +389,11 @@ export function IpodScreen({
   const showInlineCoverFlow = Boolean(
     isModernUi && isCoverFlowOpen && coverFlowSlot
   );
-  const menuItemHeight = isModernUi
-    ? MENU_ITEM_HEIGHT_MODERN
-    : MENU_ITEM_HEIGHT_CLASSIC;
+  const menuItemHeight = !isModernUi
+    ? MENU_ITEM_HEIGHT_CLASSIC
+    : currentMenuModernMediaList
+      ? MENU_ITEM_HEIGHT_MODERN_MEDIA
+      : MENU_ITEM_HEIGHT_MODERN;
   const [showShellTitleInTitlebar, setShowShellTitleInTitlebar] =
     useState(false);
   const effectiveDisplayMode =
@@ -965,6 +973,9 @@ export function IpodScreen({
                               showChevron={item.showChevron !== false}
                               value={item.value}
                               isLoading={item.isLoading}
+                              mediaRow={isModernUi && currentMenuModernMediaList}
+                              subtitle={item.subtitle}
+                              thumbnailUrl={item.coverUrl}
                             />
                           </div>
                         );
