@@ -7,13 +7,19 @@ import {
 } from "@/stores/useListenSessionStore";
 import { toast } from "sonner";
 
+/** Minimal player surface used for position sync (ReactPlayer or AppleMusicPlayerBridge). */
+export type ListenSyncPlayer = Pick<
+  ReactPlayer,
+  "getCurrentTime" | "seekTo"
+> | null;
+
 interface ListenSyncOptions {
   currentTrackId: string | null;
   currentTrackMeta: ListenTrackMeta | null;
   isPlaying: boolean;
   setIsPlaying: (playing: boolean) => void;
   setCurrentTrackId: (trackId: string | null) => void;
-  getActivePlayer: () => ReactPlayer | null;
+  getActivePlayer: () => ListenSyncPlayer;
   addTrackFromId?: (trackId: string) => Promise<unknown> | void;
   /** When false, listener shows session state only (no local A/V sync). */
   applyListenerPlayback?: boolean;
@@ -164,11 +170,12 @@ export function useListenSync({
   }, [canBroadcast]);
 
   // Helper to set playback rate on the internal player
-  const setPlaybackRate = useCallback((player: ReactPlayer, rate: number) => {
+  const setPlaybackRate = useCallback((player: ListenSyncPlayer, rate: number) => {
     if (currentPlaybackRateRef.current === rate) return;
 
     try {
-      const internalPlayer = player.getInternalPlayer();
+      const reactPlayer = player as unknown as ReactPlayer;
+      const internalPlayer = reactPlayer.getInternalPlayer?.();
       if (internalPlayer && typeof internalPlayer.playbackRate !== "undefined") {
         internalPlayer.playbackRate = rate;
         currentPlaybackRateRef.current = rate;

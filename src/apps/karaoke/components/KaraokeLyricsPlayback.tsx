@@ -61,6 +61,13 @@ export function useKaraokeLyricsPlayback(): KaraokeLyricsPlaybackContextValue {
 interface ProviderProps {
   children: ReactNode;
   currentTrack: Track | null;
+  /** Resolved id/title/artist/offset for lyrics APIs (Apple Music station shells). */
+  lyricsQuery: {
+    songId: string;
+    title: string;
+    artist: string;
+    timingOffsetMs: number;
+  };
   lyricsFont: LyricsFont | undefined;
   romanization: RomanizationSettings;
   lyricsTranslationLanguage: string | null;
@@ -76,7 +83,8 @@ interface ProviderProps {
 
 export function KaraokeLyricsPlaybackProvider({
   children,
-  currentTrack,
+  currentTrack: _currentTrack,
+  lyricsQuery,
   lyricsFont,
   romanization,
   lyricsTranslationLanguage,
@@ -110,10 +118,10 @@ export function KaraokeLyricsPlaybackProvider({
   );
 
   const lyricsControls = useLyrics({
-    songId: currentTrack?.id ?? "",
-    title: currentTrack?.title ?? "",
-    artist: currentTrack?.artist ?? "",
-    currentTime: elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000,
+    songId: lyricsQuery.songId,
+    title: lyricsQuery.title,
+    artist: lyricsQuery.artist,
+    currentTime: elapsedTime + lyricsQuery.timingOffsetMs / 1000,
     translateTo: effectiveTranslationLanguage,
     selectedMatch: selectedMatchForLyrics,
     includeFurigana: true,
@@ -124,7 +132,7 @@ export function KaraokeLyricsPlaybackProvider({
 
   useLyricsErrorToast({
     error: lyricsControls.error,
-    songId: currentTrack?.id,
+    songId: lyricsQuery.songId || undefined,
     onSearchClick: () => setIsLyricsSearchDialogOpen(true),
     t,
     appId: "karaoke",
@@ -138,7 +146,7 @@ export function KaraokeLyricsPlaybackProvider({
     furiganaProgress,
     soramimiProgress,
   } = useFurigana({
-    songId: currentTrack?.id ?? "",
+    songId: lyricsQuery.songId,
     lines: lyricsControls.originalLines,
     isShowingOriginal: true,
     romanization,

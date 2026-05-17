@@ -2431,6 +2431,7 @@
       "emptyLibrary": {
         "addSongs": "Добавить песни",
         "subtitle": "Добавьте музыку с YouTube, чтобы начать.",
+        "subtitleAppleMusic": "[TODO] Open the iPod, switch the library to Apple Music, and sign in to load your songs here.",
         "title": "В караоке нет песен"
       },
       "help": {

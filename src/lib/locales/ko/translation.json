@@ -2431,6 +2431,7 @@
       "emptyLibrary": {
         "addSongs": "노래 추가",
         "subtitle": "YouTube에서 음악을 추가해 시작하세요.",
+        "subtitleAppleMusic": "[TODO] Open the iPod, switch the library to Apple Music, and sign in to load your songs here.",
         "title": "노래방에 곡이 없습니다"
       },
       "help": {

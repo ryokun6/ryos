@@ -2431,6 +2431,7 @@
       "emptyLibrary": {
         "addSongs": "Ajouter des morceaux",
         "subtitle": "Ajoutez de la musique depuis YouTube pour commencer.",
+        "subtitleAppleMusic": "[TODO] Open the iPod, switch the library to Apple Music, and sign in to load your songs here.",
         "title": "Aucun morceau dans Karaoké"
       },
       "help": {

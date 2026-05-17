@@ -1,7 +1,20 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { SetStateAction } from "react";
-import { useIpodStore, Track } from "./useIpodStore";
+import {
+  useIpodStore,
+  Track,
+  resolveAppleMusicQueueTracks,
+} from "./useIpodStore";
+
+/** Active playlist for Karaoke: YouTube library or Apple Music queue slice. */
+export function getKaraokeActivePlaylistTracks(): Track[] {
+  const ipod = useIpodStore.getState();
+  if (ipod.librarySource === "appleMusic") {
+    return resolveAppleMusicQueueTracks(ipod);
+  }
+  return ipod.tracks;
+}
 
 /** Helper to get current index from song ID */
 function getIndexFromSongId(tracks: Track[], songId: string | null): number {
@@ -83,7 +96,7 @@ export const useKaraokeStore = create<KaraokeState>()(
       // Getter to get current track from iPod library
       getCurrentTrack: () => {
         const { currentSongId } = get();
-        const tracks = useIpodStore.getState().tracks;
+        const tracks = getKaraokeActivePlaylistTracks();
         if (!currentSongId) return tracks[0] ?? null;
         return tracks.find((t) => t.id === currentSongId) ?? null;
       },
@@ -91,7 +104,7 @@ export const useKaraokeStore = create<KaraokeState>()(
       // Getter to get current index (computed from currentSongId)
       getCurrentIndex: () => {
         const { currentSongId } = get();
-        const tracks = useIpodStore.getState().tracks;
+        const tracks = getKaraokeActivePlaylistTracks();
         return getIndexFromSongId(tracks, currentSongId);
       },
 
@@ -125,7 +138,7 @@ export const useKaraokeStore = create<KaraokeState>()(
 
       nextTrack: () =>
         set((state) => {
-          const tracks = useIpodStore.getState().tracks;
+          const tracks = getKaraokeActivePlaylistTracks();
           if (tracks.length === 0) return { currentSongId: null };
 
           let nextSongId: string | null;
@@ -169,7 +182,7 @@ export const useKaraokeStore = create<KaraokeState>()(
 
       previousTrack: () =>
         set((state) => {
-          const tracks = useIpodStore.getState().tracks;
+          const tracks = getKaraokeActivePlaylistTracks();
           if (tracks.length === 0) return { currentSongId: null };
 
           let prevSongId: string | null;

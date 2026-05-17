@@ -2431,6 +2431,7 @@
       "emptyLibrary": {
         "addSongs": "曲を追加",
         "subtitle": "YouTube から音楽を追加して始めましょう。",
+        "subtitleAppleMusic": "[TODO] Open the iPod, switch the library to Apple Music, and sign in to load your songs here.",
         "title": "カラオケに曲がありません"
       },
       "help": {

@@ -3,8 +3,13 @@ import ReactPlayer from "react-player";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
-import { useIpodStore, Track, flushPendingLyricOffsetSave } from "@/stores/useIpodStore";
-import { useKaraokeStore } from "@/stores/useKaraokeStore";
+import {
+  useIpodStore,
+  Track,
+  flushPendingLyricOffsetSave,
+  isAppleMusicCollectionTrack,
+} from "@/stores/useIpodStore";
+import { getKaraokeActivePlaylistTracks, useKaraokeStore } from "@/stores/useKaraokeStore";
 import { useShallow } from "zustand/react/shallow";
 import {
   useIpodStoreShallow,
@@ -14,7 +19,9 @@ import {
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { LyricsAlignment, LyricsFont, DisplayMode } from "@/types/lyrics";
 import { useOffline } from "@/hooks/useOffline";
-import { useListenSync } from "@/hooks/useListenSync";
+import { useListenSync, type ListenSyncPlayer } from "@/hooks/useListenSync";
+import { useMusicKit } from "@/hooks/useMusicKit";
+import { resolveLyricsTrackMetadata } from "@/apps/ipod/utils/lyricsTrackMetadata";
 import { TRANSLATION_LANGUAGES, getYouTubeVideoId, formatKugouImageUrl } from "@/apps/ipod/constants";
 import { useLibraryUpdateChecker } from "@/apps/ipod/hooks/useLibraryUpdateChecker";
 import { saveSongMetadataFromTrack } from "@/utils/songMetadataCache";
@@ -22,6 +29,7 @@ import { useChatsStore } from "@/stores/useChatsStore";
 import { useListenSessionStore } from "@/stores/useListenSessionStore";
 import type { KaraokeInitialData } from "../../base/types";
 import type { CoverFlowRef } from "@/apps/ipod/components/CoverFlow";
+import type { AppleMusicPlayerBridgeHandle } from "@/apps/ipod/components/AppleMusicPlayerBridge";
 import type { SongSearchResult } from "@/components/dialogs/SongSearchDialog";
 import { helpItems } from "..";
 import { onAppUpdate } from "@/utils/appEventBus";
@@ -55,7 +63,10 @@ export function useKaraokeLogic({
 
   // Shared state from iPod store (library and display preferences only)
   const {
-    tracks,
+    youtubeTracks,
+    appleMusicTracks,
+    librarySource,
+    appleMusicKitNowPlaying,
     showLyrics,
     lyricsAlignment,
     lyricsFont,
@@ -66,7 +77,10 @@ export function useKaraokeLogic({
     displayMode,
   } = useIpodStore(
     useShallow((s) => ({
-      tracks: s.tracks,
+      youtubeTracks: s.tracks,
+      appleMusicTracks: s.appleMusicTracks,
+      librarySource: s.librarySource,
+      appleMusicKitNowPlaying: s.appleMusicKitNowPlaying,
       showLyrics: s.showLyrics,
       lyricsAlignment: s.lyricsAlignment,
       lyricsFont: s.lyricsFont,
@@ -77,6 +91,25 @@ export function useKaraokeLogic({
       displayMode: s.displayMode ?? DisplayMode.Video,
     }))
   );
+
+  const isAppleMusic = librarySource === "appleMusic";
+  const libraryTracks = isAppleMusic ? appleMusicTracks : youtubeTracks;
+  const browsableTracks = useMemo(
+    () =>
+      isAppleMusic
+        ? libraryTracks.filter((track) => !isAppleMusicCollectionTrack(track))
+        : libraryTracks,
+    [isAppleMusic, libraryTracks]
+  );
+  /** Browsable slice (matches iPod Cover Flow / library menus). */
+  const tracks = browsableTracks;
+
+  const enableMusicKit = isAppleMusic && isWindowOpen;
+  const {
+    instance: _musicKitInstance,
+    status: _musicKitStatus,
+    authorize: _musicKitAuthorize,
+  } = useMusicKit({ enabled: enableMusicKit });
 
   const {
     setLyricsAlignment,
@@ -91,6 +124,7 @@ export function useKaraokeLogic({
     setLyricOffset,
     addTrackFromVideoId,
     setDisplayMode,
+    setAppleMusicKitNowPlaying,
   } = useIpodStoreShallow((s) => ({
     setLyricsAlignment: s.setLyricsAlignment,
     setLyricsFont: s.setLyricsFont,
@@ -104,6 +138,7 @@ export function useKaraokeLogic({
     setLyricOffset: s.setLyricOffset,
     addTrackFromVideoId: s.addTrackFromVideoId,
     setDisplayMode: s.setDisplayMode,
+    setAppleMusicKitNowPlaying: s.setAppleMusicKitNowPlaying,
   }));
 
   // Library update checker
@@ -221,12 +256,18 @@ export function useKaraokeLogic({
   // In remote-only listen mode, the session track is the source of truth.
   const currentIndex = useMemo(() => {
     if (!activeTrackId) {
-      return listenRemoteOnly ? -1 : (tracks.length > 0 ? 0 : -1);
+      return listenRemoteOnly ? -1 : (libraryTracks.length > 0 ? 0 : -1);
     }
-    const index = tracks.findIndex((t) => t.id === activeTrackId);
+    const index = libraryTracks.findIndex((t) => t.id === activeTrackId);
     if (index >= 0) return index;
-    return listenRemoteOnly ? -1 : (tracks.length > 0 ? 0 : -1);
-  }, [activeTrackId, listenRemoteOnly, tracks]);
+    return listenRemoteOnly ? -1 : (libraryTracks.length > 0 ? 0 : -1);
+  }, [activeTrackId, listenRemoteOnly, libraryTracks]);
+
+  const browseCurrentIndex = useMemo(() => {
+    if (!activeTrackId) return browsableTracks.length > 0 ? 0 : -1;
+    return browsableTracks.findIndex((track) => track.id === activeTrackId);
+  }, [browsableTracks, activeTrackId]);
+  const coverFlowCurrentIndex = browseCurrentIndex >= 0 ? browseCurrentIndex : 0;
 
   const [uiState, dispatchUi] = useReducer(
     (
@@ -386,6 +427,8 @@ export function useKaraokeLogic({
     setStoreTotalTime(d);
   }, [setStoreTotalTime]);
   const playerRef = useRef<ReactPlayer | null>(null);
+  const appleMusicBridgeWindowRef = useRef<AppleMusicPlayerBridgeHandle | null>(null);
+  const appleMusicBridgeFullscreenRef = useRef<AppleMusicPlayerBridgeHandle | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [showControls, setShowControls] = useState(true);
@@ -407,7 +450,7 @@ export function useKaraokeLogic({
   // Current track
   const currentTrack = useMemo<Track | null>(() => {
     if (activeTrackId) {
-      const matchedTrack = tracks.find((track) => track.id === activeTrackId);
+      const matchedTrack = libraryTracks.find((track) => track.id === activeTrackId);
       if (matchedTrack) return matchedTrack;
     }
     if (listenRemoteOnly && activeTrackId && activeListenTrackMeta) {
@@ -421,7 +464,7 @@ export function useKaraokeLogic({
       };
     }
     if (!listenRemoteOnly && currentIndex >= 0) {
-      return tracks[currentIndex] ?? null;
+      return libraryTracks[currentIndex] ?? null;
     }
     return null;
   }, [
@@ -429,7 +472,7 @@ export function useKaraokeLogic({
     activeTrackId,
     currentIndex,
     listenRemoteOnly,
-    tracks,
+    libraryTracks,
   ]);
   const currentTrackMeta = useMemo(
     () =>
@@ -441,6 +484,34 @@ export function useKaraokeLogic({
           }
         : null,
     [currentTrack]
+  );
+
+  const isAppleMusicPlaybackTrack = currentTrack?.source === "appleMusic";
+
+  const lyricsMetadata = useMemo(
+    () => resolveLyricsTrackMetadata(currentTrack, appleMusicKitNowPlaying),
+    [currentTrack, appleMusicKitNowPlaying]
+  );
+  const { title: lyricsLineTitle, artist: lyricsLineArtist, songId: lyricsLineSongId } =
+    lyricsMetadata;
+  const lyricsTimingOffsetMs = useMemo(() => {
+    if (
+      isAppleMusicCollectionTrack(currentTrack) &&
+      appleMusicKitNowPlaying?.id
+    ) {
+      return 0;
+    }
+    return currentTrack?.lyricOffset ?? 0;
+  }, [currentTrack, appleMusicKitNowPlaying?.id]);
+
+  const lyricsQuery = useMemo(
+    () => ({
+      songId: lyricsLineSongId,
+      title: lyricsLineTitle,
+      artist: lyricsLineArtist,
+      timingOffsetMs: lyricsTimingOffsetMs,
+    }),
+    [lyricsLineSongId, lyricsLineTitle, lyricsLineArtist, lyricsTimingOffsetMs]
   );
 
   useEffect(() => {
@@ -457,7 +528,7 @@ export function useKaraokeLogic({
       return;
     }
 
-    if (tracks.some((track) => track.id === activeTrackId)) {
+    if (libraryTracks.some((track) => track.id === activeTrackId)) {
       pendingRemoteTrackHydrationRef.current = null;
       if (currentSongId !== activeTrackId) {
         setCurrentSongId(activeTrackId);
@@ -498,13 +569,19 @@ export function useKaraokeLogic({
     currentSongId,
     listenRemoteOnly,
     setCurrentSongId,
-    tracks,
+    libraryTracks,
   ]);
 
-  const getActivePlayer = useCallback(
-    () => (isFullScreen ? fullScreenPlayerRef.current : playerRef.current),
-    [isFullScreen]
-  );
+  const getActivePlayer = useCallback((): ListenSyncPlayer => {
+    if (isAppleMusicPlaybackTrack) {
+      const b = isFullScreen
+        ? appleMusicBridgeFullscreenRef.current
+        : appleMusicBridgeWindowRef.current;
+      return b as unknown as ListenSyncPlayer;
+    }
+    const p = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
+    return p as unknown as ListenSyncPlayer;
+  }, [isFullScreen, isAppleMusicPlaybackTrack]);
 
   const pushListenState = useCallback(async () => {
     const activePlayer = getActivePlayer();
@@ -709,7 +786,7 @@ export function useKaraokeLogic({
       }
       
       // Get the new track's offset
-      const newTrack = tracks[currentIndex];
+      const newTrack = libraryTracks[currentIndex];
       const newLyricOffset = newTrack?.lyricOffset ?? 0;
       
       // For negative offset, auto-skip to where lyrics time = 0
@@ -724,7 +801,7 @@ export function useKaraokeLogic({
         
         timeoutId = setTimeout(() => {
           isTrackSwitchingRef.current = false;
-          const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
+          const activePlayer = getActivePlayer();
           if (activePlayer) {
             activePlayer.seekTo(seekTarget);
             showStatus(`▶ ${Math.floor(seekTarget / 60)}:${String(Math.floor(seekTarget % 60)).padStart(2, "0")}`);
@@ -749,7 +826,7 @@ export function useKaraokeLogic({
         }
       }
     };
-  }, [currentIndex, tracks, isFullScreen, showStatus, setStoreElapsedTime]);
+  }, [currentIndex, libraryTracks, isFullScreen, showStatus, setStoreElapsedTime, getActivePlayer]);
 
   // Cleanup
   useEffect(() => {
@@ -813,50 +890,68 @@ export function useKaraokeLogic({
       
       if (isFullScreen) {
         trackAnalytics(MEDIA_ANALYTICS.FULLSCREEN, { appId: "karaoke", isOpen: true });
-        // Entering fullscreen - sync position from main player to fullscreen player
-        const currentTime = playerRef.current?.getCurrentTime() ?? useKaraokeStore.getState().elapsedTime;
-        const wasPlaying = isPlaying;
+        if (!isAppleMusicPlaybackTrack) {
+          // Entering fullscreen - sync position from main player to fullscreen player
+          const currentTime =
+            playerRef.current?.getCurrentTime() ?? useKaraokeStore.getState().elapsedTime;
+          const wasPlaying = isPlaying;
 
-        // Wait for fullscreen player to be ready before seeking
-        const checkAndSync = () => {
-          const internalPlayer = fullScreenPlayerRef.current?.getInternalPlayer?.();
-          if (internalPlayer && typeof internalPlayer.getPlayerState === "function") {
-            const playerState = internalPlayer.getPlayerState();
-            // -1 = unstarted, 3 = buffering, 5 = cued are "not ready" states
-            if (playerState !== -1) {
-              fullScreenPlayerRef.current?.seekTo(currentTime);
-              if (wasPlaying && typeof internalPlayer.playVideo === "function") {
-                internalPlayer.playVideo();
+          // Wait for fullscreen player to be ready before seeking
+          const checkAndSync = () => {
+            const ytPlayer = fullScreenPlayerRef.current as ReactPlayer | null;
+            const internalPlayer = ytPlayer?.getInternalPlayer?.() as
+              | { getPlayerState?: () => number; playVideo?: () => void }
+              | undefined;
+            if (internalPlayer && typeof internalPlayer.getPlayerState === "function") {
+              const playerState = internalPlayer.getPlayerState();
+              // -1 = unstarted, 3 = buffering, 5 = cued are "not ready" states
+              if (playerState !== -1) {
+                fullScreenPlayerRef.current?.seekTo(currentTime);
+                if (wasPlaying && typeof internalPlayer.playVideo === "function") {
+                  internalPlayer.playVideo();
+                }
+                // End track switch after sync complete
+                trackSwitchTimeoutRef.current = scheduleTimeout(() => {
+                  isTrackSwitchingRef.current = false;
+                }, 500);
+                return;
               }
-              // End track switch after sync complete
-              trackSwitchTimeoutRef.current = scheduleTimeout(() => {
-                isTrackSwitchingRef.current = false;
-              }, 500);
-              return;
             }
-          }
-          // Player not ready, retry
+            // Player not ready, retry
+            scheduleTimeout(checkAndSync, 100);
+          };
           scheduleTimeout(checkAndSync, 100);
-        };
-        scheduleTimeout(checkAndSync, 100);
-      } else {
-        trackAnalytics(MEDIA_ANALYTICS.FULLSCREEN, { appId: "karaoke", isOpen: false });
-        // Exiting fullscreen - sync position from fullscreen player to main player
-        const currentTime = fullScreenPlayerRef.current?.getCurrentTime() ?? useKaraokeStore.getState().elapsedTime;
-        const wasPlaying = isPlaying;
-
-        scheduleTimeout(() => {
-          if (playerRef.current) {
-            playerRef.current.seekTo(currentTime);
-            if (wasPlaying) {
-              setIsPlaying(true);
-            }
-          }
-          // End track switch after sync complete
+        } else {
           trackSwitchTimeoutRef.current = scheduleTimeout(() => {
             isTrackSwitchingRef.current = false;
-          }, 500);
-        }, 200);
+          }, 350);
+        }
+      } else {
+        trackAnalytics(MEDIA_ANALYTICS.FULLSCREEN, { appId: "karaoke", isOpen: false });
+        if (!isAppleMusicPlaybackTrack) {
+          // Exiting fullscreen - sync position from fullscreen player to main player
+          const currentTime =
+            fullScreenPlayerRef.current?.getCurrentTime() ??
+            useKaraokeStore.getState().elapsedTime;
+          const wasPlaying = isPlaying;
+
+          scheduleTimeout(() => {
+            if (playerRef.current) {
+              playerRef.current.seekTo(currentTime);
+              if (wasPlaying) {
+                setIsPlaying(true);
+              }
+            }
+            // End track switch after sync complete
+            trackSwitchTimeoutRef.current = scheduleTimeout(() => {
+              isTrackSwitchingRef.current = false;
+            }, 500);
+          }, 200);
+        } else {
+          trackSwitchTimeoutRef.current = scheduleTimeout(() => {
+            isTrackSwitchingRef.current = false;
+          }, 350);
+        }
       }
       prevFullScreenRef.current = isFullScreen;
     }
@@ -864,17 +959,17 @@ export function useKaraokeLogic({
       timeoutIds.forEach((timeoutId) => clearTimeout(timeoutId));
       timeoutIds.clear();
     };
-  }, [isFullScreen, isPlaying, setIsPlaying]);
+  }, [isFullScreen, isPlaying, setIsPlaying, isAppleMusicPlaybackTrack]);
 
   // Handle closing sync mode - flush pending offset saves
   const closeSyncMode = useCallback(async () => {
     // Flush any pending lyric offset save for the current track
-    const currentTrackId = tracks[currentIndex]?.id;
+    const currentTrackId = libraryTracks[currentIndex]?.id;
     if (currentTrackId) {
       await flushPendingLyricOffsetSave(currentTrackId);
     }
     setIsSyncModeOpen(false);
-  }, [tracks, currentIndex]);
+  }, [libraryTracks, currentIndex]);
 
   // Playback handlers
   const handleTrackEnd = useCallback(() => {
@@ -896,6 +991,13 @@ export function useKaraokeLogic({
     [listenRemoteOnly, setStoreElapsedTime]
   );
 
+  const handleDuration = useCallback(
+    (d: number) => {
+      setDuration(d);
+    },
+    [setDuration]
+  );
+
   const handlePlay = useCallback(() => {
     if (listenRemoteOnly) return;
     // Don't update state if we're in the middle of a track switch
@@ -903,7 +1005,6 @@ export function useKaraokeLogic({
       return;
     }
     setIsPlaying(true);
-    const currentTrack = tracks[currentIndex];
     if (currentTrack) {
       trackAnalytics(MEDIA_ANALYTICS.SONG_PLAY, {
         appId: "karaoke",
@@ -912,7 +1013,7 @@ export function useKaraokeLogic({
         artist: currentTrack.artist || "",
       });
     }
-  }, [currentIndex, listenRemoteOnly, setIsPlaying, tracks]);
+  }, [currentTrack, listenRemoteOnly, setIsPlaying]);
 
   const handlePause = useCallback(() => {
     if (listenRemoteOnly) return;
@@ -940,7 +1041,7 @@ export function useKaraokeLogic({
   const seekTime = useCallback(
     (delta: number) => {
       if (listenRemoteOnly) return;
-      const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
+      const activePlayer = getActivePlayer();
       if (activePlayer) {
         const currentTime = activePlayer.getCurrentTime() || 0;
         const newTime = Math.max(0, currentTime + delta);
@@ -950,7 +1051,7 @@ export function useKaraokeLogic({
         );
       }
     },
-    [listenRemoteOnly, showStatus, isFullScreen]
+    [getActivePlayer, listenRemoteOnly, showStatus]
   );
 
   const seekActivePlayerToMs = useCallback(
@@ -968,9 +1069,11 @@ export function useKaraokeLogic({
 
       if (!isPlaying) {
         setIsPlaying(true);
-        const internalPlayer = activePlayer.getInternalPlayer?.();
-        if (internalPlayer && typeof internalPlayer.playVideo === "function") {
-          internalPlayer.playVideo();
+        if (!isAppleMusicPlaybackTrack) {
+          const internalPlayer = (activePlayer as unknown as ReactPlayer).getInternalPlayer?.();
+          if (internalPlayer && typeof (internalPlayer as { playVideo?: () => void }).playVideo === "function") {
+            (internalPlayer as { playVideo: () => void }).playVideo();
+          }
         }
       }
 
@@ -980,7 +1083,7 @@ export function useKaraokeLogic({
 
       return true;
     },
-    [getActivePlayer, isPlaying, setIsPlaying]
+    [getActivePlayer, isAppleMusicPlaybackTrack, isPlaying, setIsPlaying]
   );
 
   // Seek to absolute time (in ms) and start playing
@@ -1107,21 +1210,18 @@ export function useKaraokeLogic({
 
   // Share song handler
   const handleShareSong = useCallback(() => {
-    if (tracks.length > 0 && currentIndex >= 0) {
-      const track = tracks[currentIndex];
+    if (currentTrack) {
       trackAnalytics(MEDIA_ANALYTICS.SHARE, { appId: "karaoke", itemType: "song" });
       // Save song metadata to cache when sharing (requires auth)
       // Pass isShare: true to update createdBy (if allowed)
-      if (track) {
-        const { username, isAuthenticated } = useChatsStore.getState();
-        const auth = username && isAuthenticated ? { username, isAuthenticated } : null;
-        saveSongMetadataFromTrack(track, auth, { isShare: true }).catch((error) => {
-          console.error("[Karaoke] Error saving song metadata to cache:", error);
-        });
-      }
+      const { username, isAuthenticated } = useChatsStore.getState();
+      const auth = username && isAuthenticated ? { username, isAuthenticated } : null;
+      saveSongMetadataFromTrack(currentTrack, auth, { isShare: true }).catch((error) => {
+        console.error("[Karaoke] Error saving song metadata to cache:", error);
+      });
       setIsShareDialogOpen(true);
     }
-  }, [tracks, currentIndex]);
+  }, [currentTrack]);
 
   const handleStartListenSession = useCallback(async () => {
     if (!username) {
@@ -1342,27 +1442,25 @@ export function useKaraokeLogic({
 
   // Lyrics search handlers
   const handleRefreshLyrics = useCallback(() => {
-    if (tracks.length > 0 && currentIndex >= 0) setIsLyricsSearchDialogOpen(true);
-  }, [tracks, currentIndex]);
+    if (currentTrack) setIsLyricsSearchDialogOpen(true);
+  }, [currentTrack]);
 
   const handleLyricsSearchSelect = useCallback(
     (result: { hash: string; albumId: string | number; title: string; artist: string; album?: string }) => {
-      const track = tracks[currentIndex];
-      if (track) {
-        setTrackLyricsSource(track.id, result);
+      if (currentTrack) {
+        setTrackLyricsSource(currentTrack.id, result);
         refreshLyrics();
       }
     },
-    [tracks, currentIndex, setTrackLyricsSource, refreshLyrics]
+    [currentTrack, setTrackLyricsSource, refreshLyrics]
   );
 
   const handleLyricsSearchReset = useCallback(() => {
-    const track = tracks[currentIndex];
-    if (track) {
-      clearTrackLyricsSource(track.id);
+    if (currentTrack) {
+      clearTrackLyricsSource(currentTrack.id);
       refreshLyrics();
     }
-  }, [tracks, currentIndex, clearTrackLyricsSource, refreshLyrics]);
+  }, [currentTrack, clearTrackLyricsSource, refreshLyrics]);
 
   // Song search/add handlers
   const handleAddSong = useCallback(() => {
@@ -1616,15 +1714,15 @@ export function useKaraokeLogic({
           });
       }, 100);
       lastProcessedInitialDataRef.current = initialData;
-    } else if (
-      isWindowOpen &&
-      !listenRemoteOnly &&
-      tracks.length > 0 &&
-      currentSongId &&
-      !tracks.some((t) => t.id === currentSongId)
-    ) {
-      // Reset to first track if current song no longer exists in library
-      setCurrentSongId(tracks[0]?.id ?? null);
+    } else if (isWindowOpen && !listenRemoteOnly) {
+      const playlist = getKaraokeActivePlaylistTracks();
+      if (
+        playlist.length > 0 &&
+        currentSongId &&
+        !playlist.some((t) => t.id === currentSongId)
+      ) {
+        setCurrentSongId(playlist[0]?.id ?? null);
+      }
     }
     return () => {
       if (timeoutId !== null) {
@@ -1638,7 +1736,7 @@ export function useKaraokeLogic({
     processVideoId,
     clearInstanceInitialData,
     instanceId,
-    tracks,
+    libraryTracks,
     currentSongId,
     setCurrentSongId,
   ]);
@@ -1742,6 +1840,11 @@ export function useKaraokeLogic({
     tracks,
     currentSongId,
     currentIndex,
+    coverFlowCurrentIndex,
+    librarySource,
+    isAppleMusicPlaybackTrack,
+    lyricsQuery,
+    setAppleMusicKitNowPlaying,
     loopCurrent,
     loopAll,
     isShuffled,
@@ -1805,6 +1908,8 @@ export function useKaraokeLogic({
     LONG_PRESS_MOVE_THRESHOLD,
     fullScreenPlayerRef,
     playerRef,
+    appleMusicBridgeWindowRef,
+    appleMusicBridgeFullscreenRef,
     lyricsPlaybackSyncRef,
     duration,
     setDuration,
@@ -1827,6 +1932,7 @@ export function useKaraokeLogic({
     closeSyncMode,
     handleTrackEnd,
     handleProgress,
+    handleDuration,
     handlePlay,
     handlePause,
     handleMainPlayerPause,
