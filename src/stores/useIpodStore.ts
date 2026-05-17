@@ -42,6 +42,8 @@ export interface AppleMusicPlaylist {
   globalId?: string;
   name: string;
   artworkUrl?: string;
+  /** Editorial / user-visible description when the API supplies one. */
+  description?: string;
   trackCount?: number;
   canEdit?: boolean;
 }
@@ -252,7 +254,12 @@ interface IpodData {
    * top-level menu.
    */
   ipodMenuBreadcrumb:
-    | { title: string; displayTitle?: string; selectedIndex: number }[]
+    | {
+        title: string;
+        displayTitle?: string;
+        selectedIndex: number;
+        modernMediaList?: boolean;
+      }[]
     | null;
   /**
    * Whether the iPod was last in menu mode (true) or Now Playing mode
@@ -606,14 +613,19 @@ export interface IpodState extends IpodData {
   /** Persist the user's current menu navigation breadcrumb. */
   setIpodMenuBreadcrumb: (
     breadcrumb:
-      | { title: string; displayTitle?: string; selectedIndex: number }[]
+      | {
+          title: string;
+          displayTitle?: string;
+          selectedIndex: number;
+          modernMediaList?: boolean;
+        }[]
       | null
   ) => void;
   /** Persist whether the iPod was last in menu mode. */
   setIpodMenuMode: (menuMode: boolean | null) => void;
 }
 
-const CURRENT_IPOD_STORE_VERSION = 36; // Persist new uiVariant ("classic" | "modern") screen skin
+const CURRENT_IPOD_STORE_VERSION = 37; // Breadcrumb may include modernMediaList for iPod media rows
 
 // Helper function to get unplayed track IDs from history
 function getUnplayedTrackIds(

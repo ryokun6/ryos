@@ -2327,6 +2327,8 @@
         "off": "關閉",
         "on": "開啟",
         "one": "單一",
+        "playlistTrackCount_one": "{{count}} song",
+        "playlistTrackCount_other": "{{count}} songs",
         "playlists": "播放清單",
         "radio": "廣播",
         "recentlyAdded": "最近加入",

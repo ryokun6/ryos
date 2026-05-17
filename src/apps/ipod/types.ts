@@ -17,6 +17,12 @@ export interface MenuItem {
   action: () => void;
   showChevron?: boolean;
   value?: string;
+  /**
+   * Second line under `label` for modern **media** list layouts (square
+   * artwork + two-line rows). Ignored for classic rows and default
+   * single-line modern rows.
+   */
+  subtitle?: string | null;
   /** When true, the row renders as a non-interactive loading placeholder. */
   isLoading?: boolean;
   /**
@@ -37,6 +43,11 @@ export interface MenuHistoryEntry {
   displayTitle?: string;
   items: MenuItem[];
   selectedIndex: number;
+  /**
+   * Modern UI only: taller rows with thumbnail + primary/subtitle text.
+   * Used for playlist and per-artist album browses.
+   */
+  modernMediaList?: boolean;
 }
 
 // PIP Player props

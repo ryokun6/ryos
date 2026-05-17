@@ -2327,6 +2327,8 @@
         "off": "Выкл.",
         "on": "Вкл.",
         "one": "Один",
+        "playlistTrackCount_one": "{{count}} song",
+        "playlistTrackCount_other": "{{count}} songs",
         "playlists": "Плейлисты",
         "radio": "Радио",
         "recentlyAdded": "Недавно добавленные",

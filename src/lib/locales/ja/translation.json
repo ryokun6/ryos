@@ -2327,6 +2327,8 @@
         "off": "オフ",
         "on": "オン",
         "one": "1曲",
+        "playlistTrackCount_one": "{{count}} song",
+        "playlistTrackCount_other": "{{count}} songs",
         "playlists": "プレイリスト",
         "radio": "ラジオ",
         "recentlyAdded": "最近追加した項目",

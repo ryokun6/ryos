@@ -1,5 +1,8 @@
 import { cn } from "@/lib/utils";
+import { useImageLoaded } from "../../hooks/useImageLoaded";
 import { ScrollingText } from "./ScrollingText";
+
+const THUMB_FADE = "opacity 250ms ease-out" as const;
 
 interface MenuListItemProps {
   text: string;
@@ -22,6 +25,18 @@ interface MenuListItemProps {
    * selection highlight with white text.
    */
   variant?: "classic" | "modern";
+  /**
+   * Modern media rows only: second line (caption). Single-line ellipsis;
+   * omit or pass empty to show only the primary line.
+   */
+  subtitle?: string | null;
+  /** Modern media rows only: square artwork (`object-cover`). */
+  thumbnailUrl?: string | null;
+  /**
+   * Modern UI + browse menus stamped with `modernMediaList`: two-line label
+   * column with a square thumbnail. Ignored for classic skin.
+   */
+  mediaRow?: boolean;
 }
 
 const CJK_TEXT_PATTERN =
@@ -37,12 +52,118 @@ export function MenuListItem({
   isLoading = false,
   allowScrollingMarquee = true,
   variant = "classic",
+  subtitle,
+  thumbnailUrl,
+  mediaRow = false,
 }: MenuListItemProps) {
   const hasCjkText =
-    CJK_TEXT_PATTERN.test(text) || (value ? CJK_TEXT_PATTERN.test(value) : false);
+    CJK_TEXT_PATTERN.test(text) ||
+    (value ? CJK_TEXT_PATTERN.test(value) : false) ||
+    (subtitle ? CJK_TEXT_PATTERN.test(subtitle) : false);
   const isModern = variant === "modern";
+  const thumbSrc = isModern && mediaRow ? (thumbnailUrl ?? null) : null;
+  const thumb = useImageLoaded(thumbSrc);
+  const subtitleTrim =
+    typeof subtitle === "string" ? subtitle.trim() : "";
 
   if (isModern) {
+    if (mediaRow) {
+      return (
+        <div
+          onClick={isLoading ? undefined : onClick}
+          className={cn(
+            "h-full pl-1 pr-1.5 font-ipod-modern-ui flex justify-between items-center gap-1",
+            "ipod-modern-row",
+            isLoading ? "cursor-default" : "cursor-pointer",
+            isSelected && !isLoading
+              ? "ipod-modern-row-selected"
+              : isLoading
+                ? "text-[#555] animate-pulse"
+                : "text-black"
+          )}
+        >
+          <div className="flex min-h-0 min-w-0 flex-1 items-center gap-1.5 mr-0.5">
+            <div
+              className="relative size-[26px] shrink-0 overflow-hidden rounded-[2px] bg-[#a8a8a8]"
+              aria-hidden
+            >
+              {thumbSrc ? (
+                <img
+                  ref={thumb.ref}
+                  src={thumbSrc}
+                  alt=""
+                  className="size-full object-cover"
+                  draggable={false}
+                  onLoad={thumb.onLoad}
+                  style={{
+                    opacity: thumb.loaded ? 1 : 0,
+                    transition: THUMB_FADE,
+                  }}
+                />
+              ) : null}
+            </div>
+            {/* Two-line stack: tight line-height; spacing is natural line box only. */}
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col justify-center gap-0 py-0 leading-none">
+              <ScrollingText
+                text={text}
+                align="left"
+                fadeEdges
+                allowMarquee={allowScrollingMarquee}
+                isPlaying={isSelected && !isLoading}
+                resetOnPause
+                scrollStartDelaySec={0.5}
+                className={cn(
+                  "m-0 max-w-full min-w-0 p-0 font-semibold !leading-none [&>div]:!leading-none",
+                  hasCjkText ? "text-[11px]" : "text-[12px]"
+                )}
+              />
+              {subtitleTrim ? (
+                <span
+                  className={cn(
+                    "mt-0.5 block min-w-0 truncate font-normal !leading-none",
+                    hasCjkText ? "text-[10px]" : "text-[11px]",
+                    isSelected && !isLoading
+                      ? "text-white/88"
+                      : "text-[rgb(99,101,103)]"
+                  )}
+                  title={subtitleTrim}
+                >
+                  {subtitleTrim}
+                </span>
+              ) : null}
+            </div>
+          </div>
+          {value ? (
+            <span
+              className={cn(
+                "flex shrink-0 items-center font-semibold leading-none",
+                hasCjkText ? "text-[11px]" : "text-[12px]",
+                isSelected && !isLoading
+                  ? "text-white/90"
+                  : "text-[rgb(99,101,103)]"
+              )}
+            >
+              {value}
+            </span>
+          ) : (
+            showChevron &&
+            !isLoading && (
+              <span
+                className={cn(
+                  "flex shrink-0 items-center justify-center font-normal leading-none",
+                  "text-[16px]",
+                  isSelected && !isLoading ? "text-white/95" : "text-[#b8b8bc]"
+                )}
+                aria-hidden
+              >
+                {"›"}
+              </span>
+            )
+          )}
+        </div>
+      );
+    }
+
     // iPod-classic-js SelectableListItem: white row, blue gradient
     // selection highlight, no separator. Rows are compact (**21px**) with **15px** type so
     // titlebar + six rows fit inside the 150px screen (nano 6G/7G density).
@@ -68,8 +189,8 @@ export function MenuListItem({
           isSelected && !isLoading
             ? "ipod-modern-row-selected"
             : isLoading
-            ? "text-[#555] animate-pulse"
-            : "text-black"
+              ? "text-[#555] animate-pulse"
+              : "text-black"
         )}
       >
         <span className="flex min-h-0 min-w-0 flex-1 items-center mr-2">
@@ -96,7 +217,8 @@ export function MenuListItem({
             {value}
           </span>
         ) : (
-          showChevron && !isLoading && (
+          showChevron &&
+          !isLoading && (
             // Right-arrow chevron: thin and light grey when idle, white
             // when the row is selected — same affordance as the
             // arrow_right.svg used in iPod-classic-js.
@@ -131,8 +253,8 @@ export function MenuListItem({
             ? "bg-[#0a3667] text-[#c5e0f5] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
             : "bg-[#0a3667] text-[#8a9da9] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
           : isLoading
-          ? "text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)] animate-pulse"
-          : "text-[#0a3667] hover:bg-[#c0d8f0] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
+            ? "text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)] animate-pulse"
+            : "text-[#0a3667] hover:bg-[#c0d8f0] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
       )}
     >
       <span
@@ -153,7 +275,8 @@ export function MenuListItem({
           {value}
         </span>
       ) : (
-        showChevron && !isLoading && (
+        showChevron &&
+        !isLoading && (
           <span className="flex-shrink-0 text-[16px] leading-none">{">"}</span>
         )
       )}

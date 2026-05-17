@@ -89,11 +89,29 @@ interface LibrarySongsResponse {
   };
 }
 
+function normalizePlaylistDescription(raw: unknown): string | undefined {
+  if (typeof raw === "string") {
+    const trimmed = raw.trim();
+    return trimmed.length > 0 ? trimmed : undefined;
+  }
+  if (raw && typeof raw === "object") {
+    const o = raw as { standard?: unknown; short?: unknown };
+    if (typeof o.standard === "string" && o.standard.trim()) {
+      return o.standard.trim();
+    }
+    if (typeof o.short === "string" && o.short.trim()) {
+      return o.short.trim();
+    }
+  }
+  return undefined;
+}
+
 interface AppleMusicLibraryPlaylistResource {
   id: string;
   type: string;
   attributes?: {
     name?: string;
+    description?: unknown;
     artwork?: {
       url?: string;
       width?: number;
@@ -279,6 +297,7 @@ function libraryPlaylistResourceToPlaylist(
     globalId: playParams?.globalId,
     name: attrs.name,
     artworkUrl: resolveArtworkUrl(attrs.artwork, 300),
+    description: normalizePlaylistDescription(attrs.description),
     trackCount: attrs.trackCount,
     canEdit: attrs.canEdit,
   };

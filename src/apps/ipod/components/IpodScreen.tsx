@@ -67,6 +67,9 @@ import { useIpodStore, isAppleMusicCollectionTrack } from "@/stores/useIpodStore
 // the scroll-position math.
 const MENU_ITEM_HEIGHT_CLASSIC = 24;
 const MENU_ITEM_HEIGHT_MODERN = 21;
+// Modern **media** rows (playlist / artist album / in-playlist tracks):
+// title bar 17px + **4 × 33px** rows ≈ 149px inside the fixed **150px** LCD.
+const MENU_ITEM_HEIGHT_MODERN_MEDIA = 33;
 const menuItemKeyCache = new WeakMap<object, string>();
 let menuItemKeySeed = 0;
 
@@ -374,6 +377,10 @@ export function IpodScreen({
   // toggling from the menubar updates the screen instantly.
   const uiVariant = useIpodStore((s) => s.uiVariant);
   const isModernUi = uiVariant === "modern";
+  const currentMenuModernMediaList = useMemo(() => {
+    if (!menuMode || menuHistory.length === 0) return false;
+    return Boolean(menuHistory[menuHistory.length - 1].modernMediaList);
+  }, [menuMode, menuHistory]);
   // Modern UI renders Cover Flow inline as a third state in the menu
   // panel's AnimatePresence (alongside menu list + now-playing) so the
   // menu↔nowplaying chrome width transition (50%↔100%) seamlessly
@@ -383,9 +390,11 @@ export function IpodScreen({
   const showInlineCoverFlow = Boolean(
     isModernUi && isCoverFlowOpen && coverFlowSlot
   );
-  const menuItemHeight = isModernUi
-    ? MENU_ITEM_HEIGHT_MODERN
-    : MENU_ITEM_HEIGHT_CLASSIC;
+  const menuItemHeight = !isModernUi
+    ? MENU_ITEM_HEIGHT_CLASSIC
+    : currentMenuModernMediaList
+      ? MENU_ITEM_HEIGHT_MODERN_MEDIA
+      : MENU_ITEM_HEIGHT_MODERN;
   const [showShellTitleInTitlebar, setShowShellTitleInTitlebar] =
     useState(false);
   const effectiveDisplayMode =
@@ -589,6 +598,10 @@ export function IpodScreen({
   // hierarchical browse menus, not on flat song lists or Settings).
   // The root iPod / Music submenus still qualify because their rows
   // include chevron-bearing categories.
+  //
+  // **Modern media lists** (playlist picker, per-artist albums) already
+  // show artwork in each row — hide the right split so the menu stays
+  // full width without the 50%↔100% chrome transition.
   const isBrowseableMenu = useMemo(
     () =>
       isModernUi &&
@@ -598,8 +611,15 @@ export function IpodScreen({
       // menu→now-playing — so we suppress the split-art carousel
       // entirely while Cover Flow is on screen.
       !showInlineCoverFlow &&
+      !currentMenuModernMediaList &&
       currentMenuItems.some((item) => item.showChevron === true),
-    [isModernUi, menuMode, showInlineCoverFlow, currentMenuItems]
+    [
+      isModernUi,
+      menuMode,
+      showInlineCoverFlow,
+      currentMenuModernMediaList,
+      currentMenuItems,
+    ]
   );
 
   const splitArtUrlPool = useMemo(() => {
@@ -965,6 +985,9 @@ export function IpodScreen({
                               showChevron={item.showChevron !== false}
                               value={item.value}
                               isLoading={item.isLoading}
+                              mediaRow={isModernUi && currentMenuModernMediaList}
+                              subtitle={item.subtitle}
+                              thumbnailUrl={item.coverUrl}
                             />
                           </div>
                         );

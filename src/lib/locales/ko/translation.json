@@ -2327,6 +2327,8 @@
         "off": "끔",
         "on": "켬",
         "one": "하나",
+        "playlistTrackCount_one": "{{count}} song",
+        "playlistTrackCount_other": "{{count}} songs",
         "playlists": "플레이리스트",
         "radio": "라디오",
         "recentlyAdded": "최근 추가된 항목",
