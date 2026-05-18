@@ -905,6 +905,7 @@ export function KaraokeSyncModeWindowPanel({
   t,
 }: SyncModeWindowProps) {
   const { lyricsControls, furiganaMap, elapsedTime } = useKaraokeLyricsPlayback();
+  const currentTimeMs = elapsedTime * 1000 + (currentTrack?.lyricOffset ?? 0);
   if (!isSyncModeOpen || isFullScreen || lyricsControls.originalLines.length === 0) {
     return null;
   }
@@ -912,7 +913,7 @@ export function KaraokeSyncModeWindowPanel({
     <div className="absolute inset-0 z-40" style={{ borderRadius: "inherit" }}>
       <LyricsSyncMode
         lines={lyricsControls.originalLines}
-        currentTimeMs={elapsedTime * 1000}
+        currentTimeMs={currentTimeMs}
         durationMs={duration * 1000}
         currentOffset={currentTrack?.lyricOffset ?? 0}
         romanization={romanization}
@@ -974,13 +975,14 @@ export function KaraokeSyncModeFullscreenPanel({
   t,
 }: SyncModeFullscreenProps) {
   const { lyricsControls, furiganaMap, elapsedTime } = useKaraokeLyricsPlayback();
+  const currentTimeMs = elapsedTime * 1000 + (currentTrack?.lyricOffset ?? 0);
   if (!isSyncModeOpen || !isFullScreen || lyricsControls.originalLines.length === 0) {
     return null;
   }
   return (
     <LyricsSyncMode
       lines={lyricsControls.originalLines}
-      currentTimeMs={elapsedTime * 1000}
+      currentTimeMs={currentTimeMs}
       durationMs={duration * 1000}
       currentOffset={currentTrack?.lyricOffset ?? 0}
       romanization={romanization}

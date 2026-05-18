@@ -47,6 +47,8 @@ interface RoomHandlers {
   onUserTyping: (data: TypingPayload) => void;
 }
 
+let didBindPusherConnectionLogging = false;
+
 export function useChatRoom(
   isWindowOpen: boolean,
   onPromptSetUsername?: () => void
@@ -131,13 +133,17 @@ export function useChatRoom(
     console.log("[Pusher Hook] Getting singleton Pusher client...");
     pusherRef.current = getPusherClient();
 
-    pusherRef.current.connection.bind("connected", () => {
-      console.log("[Pusher Hook] Connected to Pusher");
-    });
+    if (!didBindPusherConnectionLogging) {
+      didBindPusherConnectionLogging = true;
 
-    pusherRef.current.connection.bind("error", (error: Error) => {
-      console.error("[Pusher Hook] Connection error:", error);
-    });
+      pusherRef.current.connection.bind("connected", () => {
+        console.log("[Pusher Hook] Connected to Pusher");
+      });
+
+      pusherRef.current.connection.bind("error", (error: Error) => {
+        console.error("[Pusher Hook] Connection error:", error);
+      });
+    }
   }, []);
 
   const unsubscribeGlobalChannel = useCallback(() => {
@@ -308,6 +314,7 @@ export function useChatRoom(
           });
         },
         onMessageDeleted: (data) => {
+          if (!data?.roomId || !data?.messageId) return;
           console.log("[Pusher Hook] Message deleted:", data.messageId);
           removeMessageFromRoom(data.roomId, data.messageId);
         },

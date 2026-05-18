@@ -138,8 +138,12 @@ export function useRyoChat({
 
   const handleRyoMention = useCallback(
     async (messageContent: string) => {
+      if (!currentRoomId) return;
+
       // Get recent chat room messages as context (last 20 messages)
-      const recentMessages = roomMessages
+      const latestRoomMessages =
+        useChatsStore.getState().roomMessages[currentRoomId] ?? roomMessages;
+      const recentMessages = latestRoomMessages
         .slice(-20)
         .map((msg) => `${msg.username}: ${msg.content}`)
         .join("\n");
@@ -154,7 +158,6 @@ export function useRyoChat({
         },
       };
 
-      if (!currentRoomId) return;
       try {
         await abortableFetch(getApiUrl("/api/ai/ryo-reply"), {
           method: "POST",

@@ -3106,7 +3106,8 @@ export function useIpodLogic({
 
     const startElapsed = elapsedTime;
     const timer = setTimeout(() => {
-      if (useIpodStore.getState().isPlaying && elapsedTime === startElapsed) {
+      const store = useIpodStore.getState();
+      if (store.isPlaying && store.elapsedTime === startElapsed) {
         setIsPlaying(false);
         showStatus("⏸");
       }
@@ -3920,21 +3921,23 @@ export function useIpodLogic({
   // Seek time for fullscreen (delta)
   const seekTime = useCallback(
     (delta: number) => {
-      if (fullScreenPlayerRef.current) {
-        const currentTime = fullScreenPlayerRef.current.getCurrentTime() || 0;
+      const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
+      if (activePlayer) {
+        const currentTime = activePlayer.getCurrentTime() || 0;
         const newTime = Math.max(0, currentTime + delta);
-        fullScreenPlayerRef.current.seekTo(newTime);
+        activePlayer.seekTo(newTime);
         showStatus(`${delta > 0 ? "⏩︎" : "⏪︎"} ${Math.floor(newTime / 60)}:${String(Math.floor(newTime % 60)).padStart(2, "0")}`);
       }
     },
-    [showStatus]
+    [isFullScreen, showStatus]
   );
 
   // Seek to absolute time (in ms) and start playing
   // timeMs is in "lyrics time" (player time + offset), so we subtract the offset to get player time
   const seekToTime = useCallback(
     (timeMs: number) => {
-      if (fullScreenPlayerRef.current) {
+      const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
+      if (activePlayer) {
         // Set guard to prevent spurious onPause events during seek from killing playback
         isTrackSwitchingRef.current = true;
         if (trackSwitchTimeoutRef.current) {
@@ -3944,13 +3947,13 @@ export function useIpodLogic({
         // Subtract lyricOffset to convert from lyrics time to player time
         const playerTimeMs = timeMs - lyricOffset;
         const newTime = Math.max(0, playerTimeMs / 1000);
-        fullScreenPlayerRef.current.seekTo(newTime);
+        activePlayer.seekTo(newTime);
         
         // Start playing if paused — also poke the internal player directly
         // so iOS Safari (YouTube) and MusicKit honour the user gesture.
         if (!isPlaying) {
           setIsPlaying(true);
-          const internalPlayer = fullScreenPlayerRef.current?.getInternalPlayer?.() as
+          const internalPlayer = activePlayer.getInternalPlayer?.() as
             | { playVideo?: () => void; play?: () => void }
             | null
             | undefined;
@@ -3986,7 +3989,7 @@ export function useIpodLogic({
         }, 500);
       }
     },
-    [showStatus, isPlaying, lyricOffset, setIsPlaying]
+    [isFullScreen, showStatus, isPlaying, lyricOffset, setIsPlaying]
   );
 
   // Fullscreen callbacks

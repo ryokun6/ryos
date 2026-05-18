@@ -1289,20 +1289,22 @@ export function IpodScreen({
                 YouTube embed is hidden when display mode is not Video, but
                 still provides audio. */}
             {isAppleMusicTrack ? (
-              <AppleMusicPlayerBridge
-                ref={playerRef as unknown as React.RefObject<never>}
-                currentTrack={currentTrack}
-                playing={isPlaying && !isFullScreen}
-                resumeAtSeconds={elapsedTime}
-                volume={finalIpodVolume}
-                onProgress={!isFullScreen ? handleProgress : undefined}
-                onDuration={!isFullScreen ? handleDuration : undefined}
-                onPlay={!isFullScreen ? handlePlay : undefined}
-                onPause={!isFullScreen ? handlePause : undefined}
-                onEnded={!isFullScreen ? handleTrackEnd : undefined}
-                onReady={!isFullScreen ? handleReady : undefined}
-                onNowPlayingItemChange={setAppleMusicKitNowPlaying}
-              />
+              isFullScreen ? null : (
+                <AppleMusicPlayerBridge
+                  ref={playerRef as unknown as React.RefObject<never>}
+                  currentTrack={currentTrack}
+                  playing={isPlaying}
+                  resumeAtSeconds={elapsedTime}
+                  volume={finalIpodVolume}
+                  onProgress={handleProgress}
+                  onDuration={handleDuration}
+                  onPlay={handlePlay}
+                  onPause={handlePause}
+                  onEnded={handleTrackEnd}
+                  onReady={handleReady}
+                  onNowPlayingItemChange={setAppleMusicKitNowPlaying}
+                />
+              )
             ) : (
               <div
                 className="size-full"
@@ -1315,7 +1317,7 @@ export function IpodScreen({
                 <ReactPlayer
                   ref={playerRef}
                   url={currentTrack.url}
-                  playing={isPlaying}
+                  playing={isPlaying && !isFullScreen}
                   controls={
                     showVideo && effectiveDisplayMode === DisplayMode.Video
                   }

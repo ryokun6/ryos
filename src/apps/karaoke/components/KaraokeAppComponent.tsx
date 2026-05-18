@@ -189,6 +189,8 @@ export function KaraokeAppComponent({
     () => (username && isAuthenticated ? { username, isAuthenticated } : undefined),
     [username, isAuthenticated]
   );
+  const masterVolume = useAudioSettingsStore((state) => state.masterVolume);
+  const playerVolume = ipodVolume * masterVolume;
 
   const showEmptyLibrary = tracks.length === 0 && !currentTrack;
 
@@ -467,7 +469,7 @@ export function KaraokeAppComponent({
                   playing={isPlaying && !isFullScreen && !isListenSessionRemoteOnly}
                   width="100%"
                   height="100%"
-                  volume={ipodVolume * useAudioSettingsStore.getState().masterVolume}
+                  volume={playerVolume}
                   loop={loopCurrent}
                   onEnded={handleTrackEnd}
                   onProgress={handleProgress}
@@ -934,7 +936,7 @@ export function KaraokeAppComponent({
                           controls
                           width="100%"
                           height="100%"
-                          volume={ipodVolume * useAudioSettingsStore.getState().masterVolume}
+                          volume={playerVolume}
                           loop={loopCurrent}
                           onEnded={handleTrackEnd}
                           onProgress={handleProgress}

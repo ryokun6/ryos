@@ -197,6 +197,8 @@ export function IpodAppComponent({
   // of `IpodScreen` because their chrome has no width transition.
   const uiVariant = useIpodStore((s) => s.uiVariant);
   const isModernIpodUi = uiVariant === "modern";
+  const masterVolume = useAudioSettingsStore((state) => state.masterVolume);
+  const playerVolume = ipodVolume * masterVolume;
 
   const handleClose = useCallback(() => {
     pauseBeforeWindowClose();
@@ -658,10 +660,7 @@ export function IpodAppComponent({
                               currentTrack={tracks[currentIndex]}
                               playing={isPlaying && isFullScreen}
                               resumeAtSeconds={elapsedTime}
-                              volume={
-                                ipodVolume *
-                                useAudioSettingsStore.getState().masterVolume
-                              }
+                              volume={playerVolume}
                               onProgress={handleProgress}
                               onDuration={handleDuration}
                               onPlay={handlePlay}
@@ -678,10 +677,7 @@ export function IpodAppComponent({
                               controls
                               width="100%"
                               height="100%"
-                              volume={
-                                ipodVolume *
-                                useAudioSettingsStore.getState().masterVolume
-                              }
+                              volume={playerVolume}
                               loop={loopCurrent}
                               onEnded={handleTrackEnd}
                               onProgress={handleProgress}
