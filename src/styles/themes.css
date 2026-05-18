@@ -286,6 +286,8 @@
   --os-typography-input: 12px;
   --os-typography-button: 13px;
   --os-typography-native-select: 14px;
+  /* TextEdit: comfortable reading — larger than 13px window chrome, not menu scale */
+  --os-typography-editor-body: 15px;
 }
 
 /* Shared toolbar texture utility. Uses variables defined by the active theme. */
