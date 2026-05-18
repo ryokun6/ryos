@@ -911,20 +911,19 @@ export function Desktop({
       style={finalStyles}
       {...longPressHandlers}
     >
-      <video
-        ref={videoRef}
-        className="absolute inset-0 w-full h-full object-cover z-[-10]"
-        src={wallpaperSource}
-        autoPlay
-        loop
-        muted
-        playsInline
-        preload="auto"
-        data-webkit-playsinline="true"
-        style={{
-          display: isVideoWallpaper ? "block" : "none",
-        }}
-      />
+      {isVideoWallpaper && (
+        <video
+          ref={videoRef}
+          className="absolute inset-0 w-full h-full object-cover z-[-10]"
+          src={wallpaperSource}
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="auto"
+          data-webkit-playsinline="true"
+        />
+      )}
       {/* Invisible draggable area for Tauri window on Windows themes */}
       {isTauriApp && isXpTheme && (
         <div

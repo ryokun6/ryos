@@ -27,6 +27,9 @@ const LEGACY_MANIFEST_KEY = 'ryos-manifest-timestamp';
 
 // Periodic update check interval (5 minutes)
 const UPDATE_CHECK_INTERVAL = 5 * 60 * 1000;
+const INITIAL_PREFETCH_DELAY_MS = 5_000;
+const PREFETCH_CONCURRENCY = 6;
+const PREFETCH_PROGRESS_INTERVAL_MS = 200;
 let updateCheckIntervalId: ReturnType<typeof setInterval> | null = null;
 
 // HMR cleanup - clear interval when module is replaced
@@ -451,7 +454,18 @@ async function runPrefetchWithToast(
     }
   );
   
-  const updateToast = (phase: string, phaseCompleted: number, phaseTotal: number) => {
+  let lastToastUpdate = 0;
+  const updateToast = (
+    phase: string,
+    phaseCompleted: number,
+    phaseTotal: number,
+    force = false
+  ) => {
+    const now = Date.now();
+    if (!force && now - lastToastUpdate < PREFETCH_PROGRESS_INTERVAL_MS) {
+      return;
+    }
+    lastToastUpdate = now;
     const percentage = Math.round((overallCompleted / totalItems) * 100);
     toast.loading(
       createToastContent({
@@ -466,10 +480,9 @@ async function runPrefetchWithToast(
     );
   };
   
-  // Skip browser HTTP cache when prefetching to ensure fresh resources.
-  // The service worker will cache these responses, and ignoreSearch: true
-  // means we don't need ?v= cache busting params anymore.
-  const prefetchOptions = { skipCache: true };
+  // Only bypass the browser HTTP cache after an update clears app caches. First-time
+  // warmups should reuse anything the page already loaded during startup.
+  const prefetchOptions = { skipCache: showVersionToast };
   
   try {
     // Prefetch icons
@@ -478,6 +491,7 @@ async function runPrefetchWithToast(
         overallCompleted = completed;
         updateToast('icons', completed, total);
       }, prefetchOptions);
+      updateToast('icons', iconUrls.length, iconUrls.length, true);
     }
     
     // Prefetch sounds
@@ -487,6 +501,7 @@ async function runPrefetchWithToast(
         overallCompleted = baseCompleted + completed;
         updateToast('sounds', completed, total);
       }, prefetchOptions);
+      updateToast('sounds', soundUrls.length, soundUrls.length, true);
     }
     
     // Prefetch JS chunks
@@ -496,6 +511,7 @@ async function runPrefetchWithToast(
         overallCompleted = baseCompleted + completed;
         updateToast('scripts', completed, total);
       }, prefetchOptions);
+      updateToast('scripts', jsUrls.length, jsUrls.length, true);
     }
     
     // Prefetch static assets (textures, splash screens, etc.)
@@ -505,6 +521,7 @@ async function runPrefetchWithToast(
         overallCompleted = baseCompleted + completed;
         updateToast('assets', completed, total);
       }, prefetchOptions);
+      updateToast('assets', assetUrls.length, assetUrls.length, true);
     }
     
     // Store manifest timestamp
@@ -622,10 +639,15 @@ async function prefetchUrlsWithProgress(
   options?: { skipCache?: boolean }
 ): Promise<number> {
   let completed = 0;
+  let succeeded = 0;
+  let nextIndex = 0;
   const total = urls.length;
-  
-  const results = await Promise.allSettled(
-    urls.map(async (url) => {
+
+  const prefetchNext = async (): Promise<void> => {
+    while (nextIndex < urls.length) {
+      const url = urls[nextIndex];
+      nextIndex++;
+
       try {
         await abortableFetch(url, { 
           method: 'GET',
@@ -637,16 +659,21 @@ async function prefetchUrlsWithProgress(
           throwOnHttpError: false,
           retry: { maxAttempts: 1, initialDelayMs: 250 },
         });
-        completed++;
-        onProgress(completed, total);
+        succeeded++;
       } catch {
+        // Continue warming the remaining assets even if one resource fails.
+      } finally {
         completed++;
         onProgress(completed, total);
       }
-    })
+    }
+  };
+
+  const workerCount = Math.min(PREFETCH_CONCURRENCY, urls.length);
+  await Promise.all(
+    Array.from({ length: workerCount }, () => prefetchNext())
   );
-  
-  const succeeded = results.filter(r => r.status === 'fulfilled').length;
+
   console.log(`[Prefetch] ${label}: ${succeeded}/${urls.length} cached`);
   return succeeded;
 }
@@ -837,6 +864,26 @@ function startPeriodicUpdateCheck(): void {
   }, UPDATE_CHECK_INTERVAL);
 }
 
+function scheduleInitialPrefetch(callback: () => void): void {
+  const scheduleWhenIdle = () => {
+    const idleWindow = window as Window & typeof globalThis & {
+      requestIdleCallback?: (
+        callback: IdleRequestCallback,
+        options?: IdleRequestOptions
+      ) => number;
+    };
+
+    if (idleWindow.requestIdleCallback) {
+      idleWindow.requestIdleCallback(callback, { timeout: INITIAL_PREFETCH_DELAY_MS });
+      return;
+    }
+
+    setTimeout(callback, 0);
+  };
+
+  setTimeout(scheduleWhenIdle, INITIAL_PREFETCH_DELAY_MS);
+}
+
 /**
  * Stop periodic update checking
  */
@@ -888,10 +935,10 @@ export function initPrefetch(): void {
   
   if (document.readyState === 'complete') {
     // Delay to not interfere with initial render
-    setTimeout(runPrefetchFlow, 2000);
+    scheduleInitialPrefetch(runPrefetchFlow);
   } else {
     window.addEventListener('load', () => {
-      setTimeout(runPrefetchFlow, 2000);
+      scheduleInitialPrefetch(runPrefetchFlow);
     }, { once: true });
   }
 }
