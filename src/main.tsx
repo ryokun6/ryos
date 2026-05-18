@@ -137,7 +137,12 @@ if (import.meta.hot) {
 preloadFileSystemData();
 preloadIpodData();
 
+function hideBootSplash(): void {
+  document.getElementById("ryos-boot-splash")?.remove();
+}
+
 const renderApp = () => {
+  hideBootSplash();
   initializeAnalytics();
   ReactDOM.createRoot(document.getElementById("root")!).render(
     <React.StrictMode>
@@ -147,20 +152,16 @@ const renderApp = () => {
 };
 
 const bootstrap = async () => {
+  // Theme attributes for boot splash + first paint (before React)
+  useThemeStore.getState().hydrate();
+
   try {
     await initializeI18n();
   } catch (error) {
     console.error("[ryOS] Failed to initialize i18n during bootstrap:", error);
   }
 
-  // Hydrate theme and language from localStorage before rendering
-  useThemeStore.getState().hydrate();
-
-  try {
-    await useLanguageStore.getState().hydrate();
-  } catch (error) {
-    console.error("[ryOS] Failed to hydrate language store:", error);
-  }
+  useLanguageStore.getState().hydrate();
 
   // ============================================================================
   // PREFETCHING - Cache icons, sounds, and app components after boot

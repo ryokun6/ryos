@@ -5,6 +5,19 @@ import { LazyLoadSignal } from "./LazyLoadSignal";
 // Cache for lazy components to maintain stable references across HMR
 const lazyComponentCache = new Map<string, ComponentType<AppProps<unknown>>>();
 
+/** Dynamic import functions registered per app id for intent-based prefetch. */
+const appChunkLoaders = new Map<string, () => Promise<unknown>>();
+
+/**
+ * Start loading an app chunk before the window mounts (dock/desktop intent).
+ */
+export function prefetchAppChunk(appId: string): void {
+  const loader = appChunkLoaders.get(appId);
+  if (loader) {
+    void loader();
+  }
+}
+
 // Helper to create a lazy-loaded component with Suspense
 // Uses a cache to maintain stable component references across HMR
 export function createLazyComponent<T = unknown>(
@@ -16,6 +29,8 @@ export function createLazyComponent<T = unknown>(
   if (cached) {
     return cached as ComponentType<AppProps<T>>;
   }
+
+  appChunkLoaders.set(cacheKey, importFn);
 
   const LazyComponent = lazy(importFn);
 

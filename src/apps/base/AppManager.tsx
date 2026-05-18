@@ -585,7 +585,10 @@ export function AppManager({ apps }: AppManagerProps) {
         return (
           <div
             key={instance.instanceId}
-            style={{ zIndex: exposeMode ? 9999 : zIndex }}
+            style={{
+              zIndex: exposeMode ? 9999 : zIndex,
+              visibility: instance.isLoading ? "hidden" : "visible",
+            }}
             className="absolute inset-x-0 md:inset-x-auto w-full md:w-auto"
             role="presentation"
             onMouseDown={() => {

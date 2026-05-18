@@ -1,7 +1,7 @@
 // Utility helpers for IndexedDB operations used across ryOS
 
 const DB_NAME = "ryOS";
-const DB_VERSION = 9; // Add Apple Music playlist caches
+const DB_VERSION = 10; // Locale translation bundles (localeCache)
 let hasLoggedOpenSuccess = false;
 
 export const STORES = {
@@ -17,6 +17,8 @@ export const STORES = {
   APPLE_MUSIC_LIBRARY: "apple_music_library",
   APPLE_MUSIC_PLAYLISTS: "apple_music_playlists",
   APPLE_MUSIC_PLAYLIST_TRACKS: "apple_music_playlist_tracks",
+  /** Cached i18n translation JSON per language + build stamp */
+  LOCALE_TRANSLATIONS: "locale_translations",
 } as const;
 
 /**
