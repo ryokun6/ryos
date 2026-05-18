@@ -324,8 +324,33 @@ export default defineConfig({
             },
           },
           {
-            // Cache JS chunks - network first for freshness (code changes often)
-            // Falls back to cache if network is slow/unavailable
+            // App version / update probe — always prefer network (not hashed; must stay fresh)
+            urlPattern: /\/version\.json(?:\?.*)?$/i,
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "version-json",
+              expiration: {
+                maxEntries: 2,
+                maxAgeSeconds: 60 * 5, // 5 minutes
+              },
+              networkTimeoutSeconds: 3,
+            },
+          },
+          {
+            // Vite hashed chunks under /assets/ — cache first for fast/offline loads
+            // (new deploys use new filenames; navigation stays NetworkFirst separately)
+            urlPattern: /\/assets\/.+\.js(?:\?.*)?$/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "js-resources",
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24, // 1 day
+              },
+            },
+          },
+          {
+            // Other same-origin .js (e.g. root register scripts) — network first; listed after /assets/ rule
             urlPattern: /\.js(?:\?.*)?$/i,
             handler: "NetworkFirst",
             options: {
