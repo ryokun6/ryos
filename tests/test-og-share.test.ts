@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, mock, test } from "bun:test";
-import { createOgShareResponse } from "../api/_utils/og-share";
+import {
+  createOgShareResponse,
+  getSongShareMetadataFromRaw,
+  resolveSongShareId,
+} from "../api/_utils/og-share";
 import { UpdateSongSchema } from "../api/songs/_constants";
 
 const ORIGINAL_ENV = { ...process.env };
@@ -119,6 +123,79 @@ describe("og share response", () => {
       '<meta property="og:image" content="https://is1-ssl.mzstatic.com/image/400x400bb.jpg">'
     );
     expect(body).not.toContain("i.ytimg.com");
+  });
+
+  test("uses the YouTube id from encoded share URL routes for song OG lookups", async () => {
+    process.env.APP_PUBLIC_ORIGIN = "https://os.example.com";
+    const encodedUrl = encodeURIComponent(
+      "https://www.youtube.com/watch?v=abc123DEF45"
+    );
+
+    const response = await createOgShareResponse(
+      new Request(`https://os.example.com/karaoke/${encodedUrl}`),
+      {
+        getSong: async (songId) => {
+          expect(songId).toBe("abc123DEF45");
+          return {
+            title: "Stored Song",
+            artist: "Stored Artist",
+            cover: "https://example.com/album-art.jpg",
+          };
+        },
+      }
+    );
+
+    expect(response).not.toBeNull();
+    const body = await response!.text();
+    expect(body).toContain(
+      '<meta property="og:title" content="Sing Stored Song - Stored Artist on ryOS">'
+    );
+    expect(body).toContain(
+      '<meta property="og:image" content="https://example.com/album-art.jpg">'
+    );
+  });
+
+  test("normalizes supported song share route IDs", () => {
+    expect(resolveSongShareId("abc123DEF45")).toBe("abc123DEF45");
+    expect(resolveSongShareId("am%3A1616228595")).toBe("am:1616228595");
+    expect(
+      resolveSongShareId(
+        "https%3A%2F%2Fyoutu.be%2Fabc123DEF45%3Fsi%3Dshare"
+      )
+    ).toBe("abc123DEF45");
+    expect(
+      resolveSongShareId(
+        "https%3A%2F%2Fmusic.apple.com%2Fus%2Falbum%2Falbum%2F123%3Fi%3D1616228595"
+      )
+    ).toBe("am:1616228595");
+  });
+
+  test("extracts album artwork fields from stored song metadata", () => {
+    expect(
+      getSongShareMetadataFromRaw({
+        title: "Album Track",
+        artist: "Album Artist",
+        albumArtworkUrl: "https://example.com/album-artwork.jpg",
+      })
+    ).toEqual({
+      title: "Album Track",
+      artist: "Album Artist",
+      cover: "https://example.com/album-artwork.jpg",
+    });
+
+    expect(
+      getSongShareMetadataFromRaw(
+        JSON.stringify({
+          title: "Artwork Track",
+          artist: "Artwork Artist",
+          artwork: "https://example.com/artwork.jpg",
+        })
+      )
+    ).toEqual({
+      title: "Artwork Track",
+      artist: "Artwork Artist",
+      cover: "https://example.com/artwork.jpg",
+    });
   });
 
   test("song metadata updates accept cover art for share-backed OG pages", () => {
