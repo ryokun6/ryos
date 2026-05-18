@@ -151,50 +151,140 @@ function getRecord(value: unknown): Record<string, unknown> | null {
     : null;
 }
 
+const YOUTUBE_VIDEO_ID_REGEX = /^[a-zA-Z0-9_-]{11}$/;
+const APPLE_MUSIC_ID_REGEX = /^am:[A-Za-z0-9._-]{1,64}$/;
+
+function extractYouTubeVideoId(value: string): string | null {
+  if (YOUTUBE_VIDEO_ID_REGEX.test(value)) {
+    return value;
+  }
+
+  try {
+    const parsed = new URL(value);
+    if (parsed.hostname.includes("youtube.com")) {
+      const vParam = parsed.searchParams.get("v");
+      if (vParam && YOUTUBE_VIDEO_ID_REGEX.test(vParam)) {
+        return vParam;
+      }
+
+      const pathMatch = parsed.pathname.match(
+        /\/(?:embed\/|v\/|shorts\/)?([a-zA-Z0-9_-]{11})/
+      );
+      if (pathMatch) {
+        return pathMatch[1];
+      }
+    }
+
+    if (parsed.hostname === "youtu.be") {
+      const videoId = parsed.pathname.slice(1).split("/")[0];
+      if (YOUTUBE_VIDEO_ID_REGEX.test(videoId)) {
+        return videoId;
+      }
+    }
+  } catch {
+    // Fall through to regex extraction for URL-like strings without a scheme.
+  }
+
+  const match = value.match(
+    /(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|shorts\/|.*[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
+  );
+  return match?.[1] ?? null;
+}
+
+function extractAppleMusicSongId(value: string): string | null {
+  if (APPLE_MUSIC_ID_REGEX.test(value)) {
+    return value;
+  }
+
+  try {
+    const parsed = new URL(value);
+    if (!parsed.hostname.endsWith("music.apple.com")) {
+      return null;
+    }
+
+    const iParam = parsed.searchParams.get("i");
+    if (iParam) {
+      return `am:${iParam}`;
+    }
+
+    const pathId = parsed.pathname.split("/").filter(Boolean).at(-1);
+    return pathId ? `am:${pathId}` : null;
+  } catch {
+    return null;
+  }
+}
+
+export function resolveSongShareId(routeId: string): string {
+  const decoded = decodeRouteId(routeId);
+  return (
+    extractYouTubeVideoId(decoded) ||
+    extractAppleMusicSongId(decoded) ||
+    decoded
+  );
+}
+
+export function getSongShareMetadataFromRaw(
+  raw: unknown
+): SongShareMetadata | null {
+  if (!raw) return null;
+
+  const meta = getRecord(typeof raw === "string" ? JSON.parse(raw) : raw);
+  if (!meta) return null;
+
+  const lyricsSource = getRecord(meta.lyricsSource);
+  const artwork = getRecord(meta.artwork);
+  const title =
+    asNonEmptyString(lyricsSource?.title) || asNonEmptyString(meta?.title);
+  if (!title) return null;
+
+  return {
+    title,
+    artist:
+      asNonEmptyString(lyricsSource?.artist) ||
+      asNonEmptyString(meta?.artist),
+    cover:
+      asNonEmptyString(meta?.cover) ||
+      asNonEmptyString(meta?.artworkUrl) ||
+      asNonEmptyString(meta?.albumArtworkUrl) ||
+      asNonEmptyString(artwork?.url) ||
+      asNonEmptyString(meta?.artwork) ||
+      asNonEmptyString(meta?.image),
+  };
+}
+
+async function createSongRedisClient(): Promise<{
+  get<T = unknown>(key: string): Promise<T | null>;
+} | null> {
+  if (
+    process.env.REDIS_KV_REST_API_URL?.trim() &&
+    process.env.REDIS_KV_REST_API_TOKEN?.trim()
+  ) {
+    return new Redis({
+      url: process.env.REDIS_KV_REST_API_URL,
+      token: process.env.REDIS_KV_REST_API_TOKEN,
+    });
+  }
+
+  if (process.env.REDIS_URL?.trim()) {
+    const { createRedis } = await import("./redis.js");
+    return createRedis();
+  }
+
+  return null;
+}
+
 // Fetch song metadata from Redis song library
 async function getSongFromRedis(
   songId: string
 ): Promise<SongShareMetadata | null> {
   try {
-    // Skip if no Redis credentials
-    if (
-      !process.env.REDIS_KV_REST_API_URL ||
-      !process.env.REDIS_KV_REST_API_TOKEN
-    ) {
-      return null;
-    }
-
-    const redis = new Redis({
-      url: process.env.REDIS_KV_REST_API_URL,
-      token: process.env.REDIS_KV_REST_API_TOKEN,
-    });
+    const redis = await createSongRedisClient();
+    if (!redis) return null;
 
     // Fetch from song:meta:{id} (split storage format)
     const metaKey = `song:meta:${songId}`;
     const raw = await redis.get(metaKey);
-
-    if (!raw) return null;
-
-    const meta = getRecord(typeof raw === "string" ? JSON.parse(raw) : raw);
-    if (!meta) return null;
-
-    const lyricsSource = getRecord(meta.lyricsSource);
-    const artwork = getRecord(meta.artwork);
-    const title =
-      asNonEmptyString(lyricsSource?.title) || asNonEmptyString(meta?.title);
-    if (!title) return null;
-
-    return {
-      title,
-      artist:
-        asNonEmptyString(lyricsSource?.artist) ||
-        asNonEmptyString(meta?.artist),
-      cover:
-        asNonEmptyString(meta?.cover) ||
-        asNonEmptyString(meta?.artworkUrl) ||
-        asNonEmptyString(artwork?.url) ||
-        asNonEmptyString(meta?.image),
-    };
+    return getSongShareMetadataFromRaw(raw);
   } catch {
     return null;
   }
@@ -326,7 +416,7 @@ export async function createOgShareResponse(
 
   const ipodMatch = pathname.match(/^\/ipod\/([^/?#]+)$/);
   if (ipodMatch) {
-    const songId = decodeRouteId(ipodMatch[1]);
+    const songId = resolveSongShareId(ipodMatch[1]);
     imageUrl = getAppIconUrl(publicOrigin, "ipod");
 
     const songInfo = await (options.getSong || getSongFromRedis)(songId);
@@ -348,7 +438,7 @@ export async function createOgShareResponse(
 
   const karaokeMatch = pathname.match(/^\/karaoke\/([^/?#]+)$/);
   if (karaokeMatch) {
-    const songId = decodeRouteId(karaokeMatch[1]);
+    const songId = resolveSongShareId(karaokeMatch[1]);
     imageUrl = getAppIconUrl(publicOrigin, "karaoke");
 
     const songInfo = await (options.getSong || getSongFromRedis)(songId);
