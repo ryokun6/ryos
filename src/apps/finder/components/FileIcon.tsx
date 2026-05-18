@@ -13,6 +13,7 @@ interface FileIconProps {
   content?: string | Blob;
   contentUrl?: string;
   onDoubleClick?: (event: React.MouseEvent<HTMLDivElement>) => void;
+  onPointerDown?: (event: React.PointerEvent<HTMLDivElement>) => void;
   onContextMenu?: (event: React.MouseEvent<HTMLDivElement>) => void;
   isSelected?: boolean;
   isDropTarget?: boolean;
@@ -29,6 +30,7 @@ export function FileIcon({
   content,
   contentUrl,
   onDoubleClick,
+  onPointerDown,
   onContextMenu,
   isSelected,
   isDropTarget,
@@ -318,6 +320,7 @@ export function FileIcon({
         isMacOSXTheme ? "gap-0 pb-1" : "gap-0"
       } ${sizes.container} ${className}`}
       onDoubleClick={handleDoubleClick}
+      onPointerDown={onPointerDown}
       onClick={handleClick}
       onContextMenu={onContextMenu}
       data-desktop-icon="true"

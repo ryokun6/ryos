@@ -7,6 +7,7 @@ import {
   useSpotlightSearch,
   type SpotlightResult,
 } from "@/hooks/useSpotlightSearch";
+import { prefetchAppChunk } from "@/config/lazyAppComponent";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { useTranslation } from "react-i18next";
@@ -44,6 +45,36 @@ function getSectionKey(type: SpotlightResult["type"]): string {
     ai: "spotlight.askRyo",
   };
   return map[type];
+}
+
+function getSpotlightPrefetchAppId(result: SpotlightResult | undefined): string | null {
+  if (!result) return null;
+  switch (result.type) {
+    case "app":
+      return result.id.startsWith("app-") ? result.id.slice(4) : null;
+    case "document":
+      return "textedit";
+    case "applet":
+      return "applet-viewer";
+    case "music":
+      return "ipod";
+    case "site":
+      return "internet-explorer";
+    case "video":
+      return "videos";
+    case "calendar":
+      return "calendar";
+    case "contact":
+      return "contacts";
+    case "setting":
+      return "control-panels";
+    case "command":
+      return "terminal";
+    case "ai":
+      return "chats";
+    default:
+      return null;
+  }
 }
 
 export function SpotlightSearch() {
@@ -183,6 +214,13 @@ export function SpotlightSearch() {
       selected.scrollIntoView({ block: "nearest" });
     }
   }, [selectedIndex]);
+
+  // Intent prefetch: warm the chunk for the highlighted row (keyboard or hover selection).
+  useEffect(() => {
+    if (!isOpen || results.length === 0) return;
+    const appId = getSpotlightPrefetchAppId(results[selectedIndex]);
+    if (appId) prefetchAppChunk(appId);
+  }, [isOpen, results, selectedIndex]);
 
   // ── Theme-specific container styles ──────────────────────────────
   const containerStyles = (() => {

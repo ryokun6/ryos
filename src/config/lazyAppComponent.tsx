@@ -18,6 +18,17 @@ export function prefetchAppChunk(appId: string): void {
   }
 }
 
+/** After boot, warm up to three distinct app chunks from a recent-app list (MRU order). */
+export function prefetchLikelyAppChunks(appIds: readonly string[]): void {
+  const seen = new Set<string>();
+  for (const id of appIds) {
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    prefetchAppChunk(id);
+    if (seen.size >= 3) break;
+  }
+}
+
 // Helper to create a lazy-loaded component with Suspense
 // Uses a cache to maintain stable component references across HMR
 export function createLazyComponent<T = unknown>(

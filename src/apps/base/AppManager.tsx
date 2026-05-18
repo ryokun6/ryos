@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useReducer, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { AnyApp } from "./types";
 import { MenuBar } from "@/components/layout/MenuBar";
@@ -26,6 +26,8 @@ import {
   requestAppLaunch,
   toggleSpotlightSearch,
 } from "@/utils/appEventBus";
+import { prefetchAppChunk, prefetchLikelyAppChunks } from "@/config/lazyAppComponent";
+import { useAppStore, type AppInstance } from "@/stores/useAppStore";
 import { useGlobalUndoRedo } from "@/hooks/useGlobalUndoRedo";
 
 interface AppManagerProps {
@@ -70,6 +72,54 @@ function switcherReducer(state: SwitcherState, action: SwitcherAction): Switcher
   }
 }
 
+const LRU_MOUNT_KEEP = 2;
+
+/**
+ * Gate mounting of heavy per-instance app trees. Keeps foreground, expose tiles,
+ * in-flight lazy loads, recent non-minimized windows, and a single Finder window mounted.
+ */
+export function shouldMountInstance(
+  instance: AppInstance,
+  foregroundInstanceId: string | null,
+  instanceOrder: string[],
+  instances: Record<string, AppInstance>,
+  exposeMode: boolean,
+  onlyFinderInstanceId: string | null,
+): boolean {
+  if (!instance.isOpen) return false;
+
+  if (instance.isLoading) return true;
+
+  // Mission Control arranges live WindowFrames; stickies are omitted upstream in expose.
+  if (exposeMode && !instance.isMinimized && instance.appId !== "stickies") {
+    return true;
+  }
+
+  if (instance.isMinimized) return false;
+
+  if (instance.instanceId === foregroundInstanceId) return true;
+
+  if (instance.appId === "finder" && onlyFinderInstanceId === instance.instanceId) {
+    return true;
+  }
+
+  if (instance.isForeground) return true;
+
+  const openNonMinimizedTail = instanceOrder.filter((id) => {
+    const inst = instances[id];
+    return inst?.isOpen && !inst.isMinimized;
+  });
+  if (
+    openNonMinimizedTail
+      .slice(-LRU_MOUNT_KEEP)
+      .includes(instance.instanceId)
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
 export function AppManager({ apps }: AppManagerProps) {
   const { t } = useTranslation();
 
@@ -101,6 +151,13 @@ export function AppManager({ apps }: AppManagerProps) {
   }));
 
   const { isWindowsTheme: isXpTheme } = useThemeFlags();
+
+  const onlyFinderInstanceId = useMemo(() => {
+    const finders = Object.values(instances).filter(
+      (i) => i.isOpen && i.appId === "finder",
+    );
+    return finders.length === 1 ? finders[0].instanceId : null;
+  }, [instances]);
 
   const [crashedInstanceIds, setCrashedInstanceIds] = useState<Set<string>>(
     () => new Set()
@@ -238,6 +295,8 @@ export function AppManager({ apps }: AppManagerProps) {
       return;
     }
 
+    prefetchAppChunk(routeAction.request.appId);
+
     if (routeAction.toast) {
       const message =
         routeAction.toast.type === "translation"
@@ -262,6 +321,31 @@ export function AppManager({ apps }: AppManagerProps) {
       window.clearTimeout(timer);
     };
   }, [t]);
+
+  // Warm likely app chunks from persisted recent apps after idle (distinct top 3).
+  useEffect(() => {
+    const run = () => {
+      const recent = useAppStore.getState().recentApps;
+      prefetchLikelyAppChunks(recent.map((r) => r.appId));
+    };
+
+    const win = globalThis as typeof globalThis & {
+      requestIdleCallback?: typeof requestIdleCallback;
+      cancelIdleCallback?: typeof cancelIdleCallback;
+    };
+
+    if (typeof win.requestIdleCallback === "function") {
+      const idleHandle = win.requestIdleCallback(run, { timeout: 4500 });
+      return () => {
+        if (typeof win.cancelIdleCallback === "function") {
+          win.cancelIdleCallback(idleHandle);
+        }
+      };
+    }
+
+    const timeoutHandle = globalThis.setTimeout(run, 2500);
+    return () => globalThis.clearTimeout(timeoutHandle);
+  }, []);
 
   // Listen for app launch events (e.g., from Finder, URL handling)
   useEffect(() => {
@@ -582,12 +666,22 @@ export function AppManager({ apps }: AppManagerProps) {
             ? translatedAppName
             : (app?.name ?? appId);
 
+        const shouldMount = shouldMountInstance(
+          instance,
+          foregroundInstanceId,
+          instanceOrder,
+          instances,
+          exposeMode,
+          onlyFinderInstanceId,
+        );
+
         return (
           <div
             key={instance.instanceId}
             style={{
               zIndex: exposeMode ? 9999 : zIndex,
-              visibility: instance.isLoading ? "hidden" : "visible",
+              visibility:
+                shouldMount && instance.isLoading ? "hidden" : "visible",
             }}
             className="absolute inset-x-0 md:inset-x-auto w-full md:w-auto"
             role="presentation"
@@ -651,22 +745,24 @@ export function AppManager({ apps }: AppManagerProps) {
                 );
               }}
             >
-              <AppComponent
-                isWindowOpen={instance.isOpen}
-                isForeground={exposeMode ? false : instance.isForeground}
-                onClose={() => requestCloseWindow(instance.instanceId)}
-                className="pointer-events-auto"
-                helpItems={app?.helpItems}
-                skipInitialSound={isInitialMount}
-                // @ts-expect-error - Dynamic component system with different initialData types per app
-                initialData={instance.initialData}
-                instanceId={instance.instanceId}
-                title={instance.title}
-                onNavigateNext={() => navigateToNextInstance(instance.instanceId)}
-                onNavigatePrevious={() =>
-                  navigateToPreviousInstance(instance.instanceId)
-                }
-              />
+              {shouldMount ? (
+                <AppComponent
+                  isWindowOpen={instance.isOpen}
+                  isForeground={exposeMode ? false : instance.isForeground}
+                  onClose={() => requestCloseWindow(instance.instanceId)}
+                  className="pointer-events-auto"
+                  helpItems={app?.helpItems}
+                  skipInitialSound={isInitialMount}
+                  // @ts-expect-error - Dynamic component system with different initialData types per app
+                  initialData={instance.initialData}
+                  instanceId={instance.instanceId}
+                  title={instance.title}
+                  onNavigateNext={() => navigateToNextInstance(instance.instanceId)}
+                  onNavigatePrevious={() =>
+                    navigateToPreviousInstance(instance.instanceId)
+                  }
+                />
+              ) : null}
             </AppErrorBoundary>
           </div>
         );

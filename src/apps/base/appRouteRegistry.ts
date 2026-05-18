@@ -241,3 +241,12 @@ export function resolveInitialRoute(
     urlCleanupTiming: "immediate",
   };
 }
+
+/** App id to warm with `prefetchAppChunk` when the URL resolves to a launch action; otherwise null. */
+export function getInitialRoutePrefetchAppId(
+  pathname: string,
+  search?: string
+): string | null {
+  const action = resolveInitialRoute(pathname, search);
+  return action?.kind === "launch" ? action.request.appId : null;
+}
