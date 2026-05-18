@@ -198,8 +198,8 @@ import { appMetadata as calendarMetadata, helpItems as calendarHelpItems } from 
 import { appMetadata as contactsMetadata, helpItems as contactsHelpItems } from "@/apps/contacts";
 import { appMetadata as dashboardMetadata, helpItems as dashboardHelpItems } from "@/apps/dashboard/metadata";
 import { appMetadata as mapsMetadata, helpItems as mapsHelpItems } from "@/apps/maps";
-import { DEFAULT_WINDOW_SIZE_WITH_TITLEBAR as infiniteMacDefaultSize } from "@/apps/infinite-mac/hooks/useInfiniteMacLogic";
-import { DEFAULT_WINDOW_SIZE_WITH_TITLEBAR as infinitePcDefaultSize } from "@/apps/infinite-pc/hooks/useInfinitePcLogic";
+import { DEFAULT_WINDOW_SIZE_WITH_TITLEBAR as infiniteMacDefaultSize } from "@/apps/infinite-mac/windowConfig";
+import { DEFAULT_WINDOW_SIZE_WITH_TITLEBAR as infinitePcDefaultSize } from "@/apps/infinite-pc/windowConfig";
 
 // ============================================================================
 // APP REGISTRY

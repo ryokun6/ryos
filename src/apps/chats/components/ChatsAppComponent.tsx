@@ -1,3 +1,4 @@
+import "../chats-streamdown.css";
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { AppProps } from "../../base/types";
 import type { ChatsInitialData } from "../../base/types";

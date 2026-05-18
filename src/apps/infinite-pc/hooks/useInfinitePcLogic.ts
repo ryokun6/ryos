@@ -9,6 +9,10 @@ import {
   type PcPreset,
 } from "@/stores/useInfinitePcStore";
 import { helpItems } from "../metadata";
+import {
+  DEFAULT_WINDOW_SIZE,
+  DEFAULT_WINDOW_SIZE_WITH_TITLEBAR,
+} from "../windowConfig";
 import { useShallow } from "zustand/react/shallow";
 
 export type { PcPreset } from "@/stores/useInfinitePcStore";
@@ -21,14 +25,7 @@ function buildWrapperUrl(preset: PcPreset): string {
   return `/embed/pc?${params.toString()}`;
 }
 
-// Default window size for the preset grid (content only)
-export const DEFAULT_WINDOW_SIZE = { width: 640, height: 480 };
-
-const DEFAULT_TITLEBAR_HEIGHT = 24;
-export const DEFAULT_WINDOW_SIZE_WITH_TITLEBAR = {
-  width: DEFAULT_WINDOW_SIZE.width,
-  height: DEFAULT_WINDOW_SIZE.height + DEFAULT_TITLEBAR_HEIGHT,
-};
+export { DEFAULT_WINDOW_SIZE, DEFAULT_WINDOW_SIZE_WITH_TITLEBAR };
 
 // Titlebar height per theme so auto-resize fits content + titlebar
 const TITLEBAR_HEIGHT_BY_THEME: Record<string, number> = {
