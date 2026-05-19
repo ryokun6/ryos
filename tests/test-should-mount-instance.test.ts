@@ -23,13 +23,13 @@ describe("shouldMountInstance", () => {
     expect(shouldMountInstance(a, false)).toBe(true);
   });
 
-  test("does not mount minimized windows", () => {
+  test("mounts minimized windows for dock minimize/restore animations", () => {
     const a = makeInstance({
       instanceId: "1",
       appId: "textedit",
       isMinimized: true,
     });
-    expect(shouldMountInstance(a, false)).toBe(false);
+    expect(shouldMountInstance(a, false)).toBe(true);
   });
 
   test("mounts while lazy loading even if not foreground", () => {

@@ -1,20 +1,14 @@
 import type { AppInstance } from "@/stores/useAppStore";
 
 /**
- * Gate mounting of heavy per-instance app trees.
- * Open, non-minimized windows stay mounted so background apps remain visible when
- * another app is launched (only minimized instances are unmounted for perf).
+ * Whether to mount the heavy per-instance app tree.
+ *
+ * All open instances stay mounted (including minimized) so `WindowFrame` can run
+ * minimize exit and dock-restore animations. Callers already skip closed instances.
  */
 export function shouldMountInstance(
   instance: AppInstance,
-  exposeMode: boolean,
+  _exposeMode: boolean,
 ): boolean {
-  if (!instance.isOpen) return false;
-  if (instance.isLoading) return true;
-
-  if (exposeMode && !instance.isMinimized && instance.appId !== "stickies") {
-    return true;
-  }
-
-  return !instance.isMinimized;
+  return instance.isOpen;
 }
