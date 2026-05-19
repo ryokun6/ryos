@@ -1350,6 +1350,10 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
 
 /* Hide default scrollbars for custom implementation */
 .ipod-menu-container {
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+  /* Touch/trackpad: vertical list scroll only (marquee text must not drag the menu sideways). */
+  touch-action: pan-y;
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE/Edge */
 }
@@ -1408,6 +1412,8 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   color: black;
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
 }
 
 /* iPod-classic-js Header (sampled from app/components/Header/index.tsx):
