@@ -946,7 +946,7 @@ export function IpodScreen({
               <div className="flex-1 relative">
                 <div
                   ref={setMenuScrollRef}
-                  className="absolute inset-0 overflow-auto ipod-menu-container"
+                  className="absolute inset-0 overflow-y-auto overflow-x-hidden ipod-menu-container"
                 >
                   <div
                     style={{
@@ -1032,8 +1032,10 @@ export function IpodScreen({
             >
               <div
                 className={cn(
-                  "flex-1 flex flex-col overflow-visible px-2",
-                  isModernUi ? "pt-1.5 pb-0.5" : "py-1"
+                  "flex-1 flex flex-col px-2",
+                  isModernUi
+                    ? "overflow-x-hidden overflow-y-visible pt-1.5 pb-0.5"
+                    : "overflow-visible py-1"
                 )}
               >
                 {currentTrack && nowPlayingDisplayTrack ? (

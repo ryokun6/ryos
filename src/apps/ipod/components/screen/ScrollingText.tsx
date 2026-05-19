@@ -131,7 +131,7 @@ export function ScrollingText({
     <div
       ref={containerRef}
       className={cn(
-        "relative overflow-visible",
+        "relative overflow-x-hidden overflow-y-visible",
         !showMarquee && "flex",
         !showMarquee && alignClass,
         className

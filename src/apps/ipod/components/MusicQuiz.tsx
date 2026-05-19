@@ -866,7 +866,7 @@ export const MusicQuiz = function MusicQuiz(
             </div>
 
             {/* Options */}
-            <div className="flex-1 overflow-auto">
+            <div className="flex-1 overflow-y-auto overflow-x-hidden ipod-menu-container">
               {round?.options.map((option, idx) => {
                 const isSelected = idx === selectedIndex;
                 const isCorrectOption = phase === "feedback" && idx === round.correctIndex;
