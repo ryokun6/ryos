@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { AnyApp } from "./types";
 import { MenuBar } from "@/components/layout/MenuBar";
@@ -27,8 +27,11 @@ import {
   toggleSpotlightSearch,
 } from "@/utils/appEventBus";
 import { prefetchAppChunk, prefetchLikelyAppChunks } from "@/config/lazyAppComponent";
-import { useAppStore, type AppInstance } from "@/stores/useAppStore";
+import { useAppStore } from "@/stores/useAppStore";
 import { useGlobalUndoRedo } from "@/hooks/useGlobalUndoRedo";
+import { shouldMountInstance } from "./instanceMountPolicy";
+
+export { shouldMountInstance } from "./instanceMountPolicy";
 
 interface AppManagerProps {
   apps: AnyApp[];
@@ -72,54 +75,6 @@ function switcherReducer(state: SwitcherState, action: SwitcherAction): Switcher
   }
 }
 
-const LRU_MOUNT_KEEP = 2;
-
-/**
- * Gate mounting of heavy per-instance app trees. Keeps foreground, expose tiles,
- * in-flight lazy loads, recent non-minimized windows, and a single Finder window mounted.
- */
-export function shouldMountInstance(
-  instance: AppInstance,
-  foregroundInstanceId: string | null,
-  instanceOrder: string[],
-  instances: Record<string, AppInstance>,
-  exposeMode: boolean,
-  onlyFinderInstanceId: string | null,
-): boolean {
-  if (!instance.isOpen) return false;
-
-  if (instance.isLoading) return true;
-
-  // Mission Control arranges live WindowFrames; stickies are omitted upstream in expose.
-  if (exposeMode && !instance.isMinimized && instance.appId !== "stickies") {
-    return true;
-  }
-
-  if (instance.isMinimized) return false;
-
-  if (instance.instanceId === foregroundInstanceId) return true;
-
-  if (instance.appId === "finder" && onlyFinderInstanceId === instance.instanceId) {
-    return true;
-  }
-
-  if (instance.isForeground) return true;
-
-  const openNonMinimizedTail = instanceOrder.filter((id) => {
-    const inst = instances[id];
-    return inst?.isOpen && !inst.isMinimized;
-  });
-  if (
-    openNonMinimizedTail
-      .slice(-LRU_MOUNT_KEEP)
-      .includes(instance.instanceId)
-  ) {
-    return true;
-  }
-
-  return false;
-}
-
 export function AppManager({ apps }: AppManagerProps) {
   const { t } = useTranslation();
 
@@ -151,13 +106,6 @@ export function AppManager({ apps }: AppManagerProps) {
   }));
 
   const { isWindowsTheme: isXpTheme } = useThemeFlags();
-
-  const onlyFinderInstanceId = useMemo(() => {
-    const finders = Object.values(instances).filter(
-      (i) => i.isOpen && i.appId === "finder",
-    );
-    return finders.length === 1 ? finders[0].instanceId : null;
-  }, [instances]);
 
   const [crashedInstanceIds, setCrashedInstanceIds] = useState<Set<string>>(
     () => new Set()
@@ -672,7 +620,7 @@ export function AppManager({ apps }: AppManagerProps) {
           instanceOrder,
           instances,
           exposeMode,
-          onlyFinderInstanceId,
+          null,
         );
 
         return (
@@ -680,8 +628,11 @@ export function AppManager({ apps }: AppManagerProps) {
             key={instance.instanceId}
             style={{
               zIndex: exposeMode ? 9999 : zIndex,
-              visibility:
-                shouldMount && instance.isLoading ? "hidden" : "visible",
+              visibility: !shouldMount
+                ? "hidden"
+                : instance.isLoading
+                  ? "hidden"
+                  : "visible",
             }}
             className="absolute inset-x-0 md:inset-x-auto w-full md:w-auto"
             role="presentation"
