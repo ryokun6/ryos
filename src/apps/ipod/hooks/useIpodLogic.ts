@@ -75,6 +75,11 @@ import type { MusicQuizRef } from "../components/MusicQuiz";
 import type { BrickGameRef } from "../components/BrickGame";
 import type { SongSearchResult } from "@/components/dialogs/SongSearchDialog";
 import { helpItems } from "..";
+import {
+  appleMusicLoadingPlaceholderMenuItems,
+  resolveAppleMusicMenuTitlebarLoading,
+  shouldUseModernAppleMusicTitlebarLoading,
+} from "../utils/appleMusicMenuLoading";
 
 // User-agent sniffing is constant for the document lifetime, so compute once
 // at module load instead of re-running these regexes on every render of the
@@ -444,6 +449,10 @@ export function useIpodLogic({
   const hasAttemptedRadioRestoreHydrationRef = useRef(false);
   const [isAppleMusicGeniusLoading, setIsAppleMusicGeniusLoading] =
     useState(false);
+
+  const uiVariant = useIpodStore((s) => s.uiVariant);
+  const useModernAppleMusicTitlebarLoading =
+    shouldUseModernAppleMusicTitlebarLoading(uiVariant);
   
   // Cover Flow state
   const [isCoverFlowOpen, setIsCoverFlowOpen] = useState(false);
@@ -897,8 +906,8 @@ export function useIpodLogic({
   const requestPlaylistTracksIfNeeded = useCallback((playlistId: string) => {
     // Always trigger a background refresh on playlist open. The fetcher
     // dedupes in-flight calls via `appleMusicPlaylistTracksLoading`, and
-    // the menu builder gates "Loading…" behind
-    // `playlistTracks.length === 0`, so cached tracks render
+    // the modern UI shows a titlebar spinner instead of a list
+    // placeholder; cached tracks render immediately while a
     // immediately while the refresh updates them in place. This gives
     // users a true SWR experience: opening a playlist shows cached
     // contents instantly AND silently picks up any new songs added
@@ -1034,10 +1043,9 @@ export function useIpodLogic({
   // Reads cached tracks straight from the store (already populated via
   // the IndexedDB hydration in `useAppleMusicLibrary`) and kicks off a
   // background refresh that updates the store in-place when it
-  // resolves. The menu builder gates "Loading…" on cache emptiness, so
-  // the only time the user sees the placeholder is the very first
-  // load — every subsequent open shows cached entries instantly while
-  // the refresh runs invisibly.
+  // resolves. The modern UI uses a titlebar spinner (not a list row)
+  // on first load; every subsequent open shows cached entries while
+  // the refresh runs and updates the list when done.
   const loadAppleMusicRecentlyAdded = useCallback(async () => {
     if (!appleMusicAuthorized) {
       void handleAppleMusicSignIn();
@@ -1108,7 +1116,7 @@ export function useIpodLogic({
     const promptForAuth = options?.promptForAuth ?? true;
     const showErrors = options?.showErrors ?? true;
     const hadCached = appleMusicRadioTracks.length > 0;
-    if (!hadCached) setIsAppleMusicRadioLoading(true);
+    setIsAppleMusicRadioLoading(true);
     try {
       const stations = await fetchAppleMusicRadioStations();
       setAppleMusicRadioTracks(stations);
@@ -1137,7 +1145,7 @@ export function useIpodLogic({
         );
       }
     } finally {
-      if (!hadCached) setIsAppleMusicRadioLoading(false);
+      setIsAppleMusicRadioLoading(false);
     }
   }, [
     appleMusicAuthorized,
@@ -1574,15 +1582,14 @@ export function useIpodLogic({
 
   const appleMusicRecentlyAddedMenuItems = useMemo(() => {
     const loadingLabel = t("apps.ipod.menuItems.loading", "Loading…");
-    if (isAppleMusicRecentlyAddedLoading && appleMusicRecentlyAddedTracks.length === 0) {
-      return [
-        {
-          label: loadingLabel,
-          action: () => {},
-          showChevron: false,
-          isLoading: true,
-        },
-      ];
+    if (
+      isAppleMusicRecentlyAddedLoading &&
+      appleMusicRecentlyAddedTracks.length === 0
+    ) {
+      return appleMusicLoadingPlaceholderMenuItems(
+        loadingLabel,
+        useModernAppleMusicTitlebarLoading
+      );
     }
 
     if (appleMusicRecentlyAddedTracks.length === 0) {
@@ -1618,19 +1625,16 @@ export function useIpodLogic({
     isAppleMusicRecentlyAddedLoading,
     playAppleMusicTrackFromMenu,
     menuLocale,
+    useModernAppleMusicTitlebarLoading,
   ]);
 
   const appleMusicFavoritesMenuItems = useMemo(() => {
     const loadingLabel = t("apps.ipod.menuItems.loading", "Loading…");
     if (isAppleMusicFavoritesLoading && appleMusicFavoriteTracks.length === 0) {
-      return [
-        {
-          label: loadingLabel,
-          action: () => {},
-          showChevron: false,
-          isLoading: true,
-        },
-      ];
+      return appleMusicLoadingPlaceholderMenuItems(
+        loadingLabel,
+        useModernAppleMusicTitlebarLoading
+      );
     }
 
     if (appleMusicFavoriteTracks.length === 0) {
@@ -1666,19 +1670,16 @@ export function useIpodLogic({
     isAppleMusicFavoritesLoading,
     playAppleMusicTrackFromMenu,
     menuLocale,
+    useModernAppleMusicTitlebarLoading,
   ]);
 
   const appleMusicRadioMenuItems = useMemo(() => {
     const loadingLabel = t("apps.ipod.menuItems.loading", "Loading…");
     if (isAppleMusicRadioLoading && appleMusicRadioTracks.length === 0) {
-      return [
-        {
-          label: loadingLabel,
-          action: () => {},
-          showChevron: false,
-          isLoading: true,
-        },
-      ];
+      return appleMusicLoadingPlaceholderMenuItems(
+        loadingLabel,
+        useModernAppleMusicTitlebarLoading
+      );
     }
 
     if (appleMusicRadioTracks.length === 0) {
@@ -1703,6 +1704,7 @@ export function useIpodLogic({
     isAppleMusicRadioLoading,
     playAppleMusicTrackFromMenu,
     menuLocale,
+    useModernAppleMusicTitlebarLoading,
   ]);
 
   const artistAllSongsMenuItemsByTitle = useMemo(() => {
@@ -1943,29 +1945,17 @@ export function useIpodLogic({
 
   const loadingLabel = t("apps.ipod.menuItems.loading", "Loading…");
   const applePlaylistTrackMenuItemsByPlaylist = useMemo(() => {
-    const result: Record<
-      string,
-      {
-        label: string;
-        action: () => void;
-        showChevron: boolean;
-        isLoading?: boolean;
-      }[]
-    > = {};
+    const result: Record<string, MenuItem[]> = {};
     for (const playlist of appleMusicPlaylists) {
       const playlistTracks = appleMusicPlaylistTracks[playlist.id] ?? [];
       const isLoading =
         appleMusicPlaylistTracksLoading[playlist.id] === true &&
         playlistTracks.length === 0;
       if (isLoading) {
-        result[playlist.id] = [
-          {
-            label: loadingLabel,
-            action: () => {},
-            showChevron: false,
-            isLoading: true,
-          },
-        ];
+        result[playlist.id] = appleMusicLoadingPlaceholderMenuItems(
+          loadingLabel,
+          useModernAppleMusicTitlebarLoading
+        );
       } else {
         const queueIds = playlistTracks.map((t) => t.id);
         result[playlist.id] = playlistTracks.map((track, trackListIndex) => {
@@ -1993,6 +1983,52 @@ export function useIpodLogic({
     appleMusicPlaylistTracksLoading,
     playAppleMusicTrackFromMenu,
     loadingLabel,
+    useModernAppleMusicTitlebarLoading,
+  ]);
+
+  const appleMusicMenuTitlebarLoading = useMemo(() => {
+    if (
+      !useModernAppleMusicTitlebarLoading ||
+      !isAppleMusic ||
+      !menuMode ||
+      menuHistory.length === 0
+    ) {
+      return false;
+    }
+    const currentMenu = menuHistory[menuHistory.length - 1];
+    const menuTitle = currentMenu.displayTitle ?? currentMenu.title;
+    return resolveAppleMusicMenuTitlebarLoading({
+      menuTitle,
+      recentlyAddedTitle: t(
+        "apps.ipod.menuItems.recentlyAdded",
+        "Recently Added"
+      ),
+      favoriteSongsTitle: t(
+        "apps.ipod.menuItems.favoriteSongs",
+        "Favorite Songs"
+      ),
+      radioTitle: t("apps.ipod.menuItems.radio", "Radio"),
+      playlistsTitle: t("apps.ipod.menuItems.playlists"),
+      isRecentlyAddedLoading: isAppleMusicRecentlyAddedLoading,
+      isFavoritesLoading: isAppleMusicFavoritesLoading,
+      isRadioLoading: isAppleMusicRadioLoading,
+      isLibraryLoading: appleMusicLibraryLoading,
+      playlistTracksLoading: appleMusicPlaylistTracksLoading,
+      playlists: appleMusicPlaylists,
+      playlistsCount: appleMusicPlaylists.length,
+    });
+  }, [
+    useModernAppleMusicTitlebarLoading,
+    isAppleMusic,
+    menuMode,
+    menuHistory,
+    isAppleMusicRecentlyAddedLoading,
+    isAppleMusicFavoritesLoading,
+    isAppleMusicRadioLoading,
+    appleMusicLibraryLoading,
+    appleMusicPlaylistTracksLoading,
+    appleMusicPlaylists,
+    menuLocale,
   ]);
 
   const applePlaylistsMenuItems = useMemo(
@@ -4137,6 +4173,7 @@ export function useIpodLogic({
     selectedMenuItem,
     menuDirection,
     menuHistory,
+    appleMusicMenuTitlebarLoading,
     cameFromNowPlayingMenuItem,
     isCoverFlowOpen,
     isMusicQuizOpen,

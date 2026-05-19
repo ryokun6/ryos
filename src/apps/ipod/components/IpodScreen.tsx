@@ -18,6 +18,7 @@ import {
   AppleMusicPlayerBridge,
 } from "./AppleMusicPlayerBridge";
 import { ActivityIndicatorWithLabel } from "@/components/ui/activity-indicator-with-label";
+import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import { useTranslation } from "react-i18next";
 import {
   BatteryIndicator,
@@ -316,6 +317,7 @@ export function IpodScreen({
   furiganaMap,
   soramimiMap,
   activityState,
+  appleMusicMenuTitlebarLoading = false,
   isCoverFlowOpen = false,
   coverFlowSlot,
 }: IpodScreenProps) {
@@ -847,6 +849,12 @@ export function IpodScreen({
               : "px-1"
           )}
         />
+        {isModernUi && menuMode && appleMusicMenuTitlebarLoading ? (
+          <ActivityIndicator
+            size={12}
+            className="shrink-0 text-[#636567] [filter:drop-shadow(0_1px_0_rgba(255,255,255,0.9))]"
+          />
+        ) : null}
         <div
           className={cn(
             "flex items-center justify-end",
