@@ -5,13 +5,12 @@ import {
   clearLocaleCache,
   getLocaleBuildStamp,
 } from "../src/utils/localeCache";
-import { ensureIndexedDBInitialized, STORES } from "../src/utils/indexedDB";
 
-const hasIndexedDB = typeof indexedDB !== "undefined";
+const hasLocalStorage = typeof localStorage !== "undefined";
 
 describe("localeCache", () => {
   beforeEach(async () => {
-    if (!hasIndexedDB) return;
+    if (!hasLocalStorage) return;
     await clearLocaleCache();
   });
 
@@ -20,7 +19,7 @@ describe("localeCache", () => {
   });
 
   test("write then read returns messages for same build stamp", async () => {
-    if (!hasIndexedDB) return;
+    if (!hasLocalStorage) return;
 
     const stamp = "test-build-abc";
     const messages = { common: { ok: "OK" } };
@@ -32,7 +31,7 @@ describe("localeCache", () => {
   });
 
   test("read returns null when build stamp differs", async () => {
-    if (!hasIndexedDB) return;
+    if (!hasLocalStorage) return;
 
     await writeCachedLocale("fr", { hello: "bonjour" }, "build-a");
     const cached = await readCachedLocale("fr", "build-b");
@@ -41,7 +40,7 @@ describe("localeCache", () => {
   });
 
   test("clearLocaleCache removes all entries", async () => {
-    if (!hasIndexedDB) return;
+    if (!hasLocalStorage) return;
 
     await writeCachedLocale("ko", { a: 1 }, "build-clear");
     await clearLocaleCache();
@@ -49,11 +48,13 @@ describe("localeCache", () => {
     expect(cached).toBeNull();
   });
 
-  test("locale_translations store exists after DB open", async () => {
-    if (!hasIndexedDB) return;
+  test("write prunes bundles from other build stamps", async () => {
+    if (!hasLocalStorage) return;
 
-    const db = await ensureIndexedDBInitialized();
-    expect(db.objectStoreNames.contains(STORES.LOCALE_TRANSLATIONS)).toBe(true);
-    db.close();
+    await writeCachedLocale("de", { a: 1 }, "old-build");
+    await writeCachedLocale("de", { b: 2 }, "new-build");
+
+    expect(await readCachedLocale("de", "old-build")).toBeNull();
+    expect(await readCachedLocale("de", "new-build")).toEqual({ b: 2 });
   });
 });

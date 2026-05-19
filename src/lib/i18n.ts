@@ -98,20 +98,21 @@ export async function ensureLanguageResources(
 
   const buildStamp = getLocaleBuildStamp();
 
-  const loadPromise = (async () => {
-    const cached = await readCachedLocale(language, buildStamp);
-    if (cached) {
-      if (!i18n.hasResourceBundle(language, "translation")) {
-        i18n.addResourceBundle(language, "translation", cached, true, true);
-      }
-      return;
-    }
-
-    const module = await loader();
-    const messages = module.default;
+  const addBundle = (messages: Record<string, unknown>) => {
     if (!i18n.hasResourceBundle(language, "translation")) {
       i18n.addResourceBundle(language, "translation", messages, true, true);
     }
+  };
+
+  const loadPromise = (async () => {
+    const cached = await readCachedLocale(language, buildStamp);
+    if (cached) {
+      addBundle(cached);
+      return;
+    }
+
+    const messages = (await loader()).default;
+    addBundle(messages);
     void writeCachedLocale(language, messages, buildStamp);
   })().finally(() => {
     loadingLanguages.delete(language);

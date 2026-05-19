@@ -31,8 +31,6 @@ import { useAppStore } from "@/stores/useAppStore";
 import { useGlobalUndoRedo } from "@/hooks/useGlobalUndoRedo";
 import { shouldMountInstance } from "./instanceMountPolicy";
 
-export { shouldMountInstance } from "./instanceMountPolicy";
-
 interface AppManagerProps {
   apps: AnyApp[];
 }
@@ -614,25 +612,15 @@ export function AppManager({ apps }: AppManagerProps) {
             ? translatedAppName
             : (app?.name ?? appId);
 
-        const shouldMount = shouldMountInstance(
-          instance,
-          foregroundInstanceId,
-          instanceOrder,
-          instances,
-          exposeMode,
-          null,
-        );
+        const shouldMount = shouldMountInstance(instance, exposeMode);
+        const hideWindow = !shouldMount || instance.isLoading;
 
         return (
           <div
             key={instance.instanceId}
             style={{
               zIndex: exposeMode ? 9999 : zIndex,
-              visibility: !shouldMount
-                ? "hidden"
-                : instance.isLoading
-                  ? "hidden"
-                  : "visible",
+              visibility: hideWindow ? "hidden" : "visible",
             }}
             className="absolute inset-x-0 md:inset-x-auto w-full md:w-auto"
             role="presentation"

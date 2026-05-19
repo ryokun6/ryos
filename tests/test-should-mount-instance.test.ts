@@ -20,12 +20,7 @@ function makeInstance(
 describe("shouldMountInstance", () => {
   test("mounts open non-minimized background windows", () => {
     const a = makeInstance({ instanceId: "1", appId: "textedit", isForeground: false });
-    const b = makeInstance({ instanceId: "2", appId: "chats", isForeground: true });
-    const instances = { "1": a, "2": b };
-
-    expect(
-      shouldMountInstance(a, "2", ["1", "2"], instances, false, null)
-    ).toBe(true);
+    expect(shouldMountInstance(a, false)).toBe(true);
   });
 
   test("does not mount minimized windows", () => {
@@ -34,10 +29,7 @@ describe("shouldMountInstance", () => {
       appId: "textedit",
       isMinimized: true,
     });
-
-    expect(
-      shouldMountInstance(a, null, ["1"], { "1": a }, false, null)
-    ).toBe(false);
+    expect(shouldMountInstance(a, false)).toBe(false);
   });
 
   test("mounts while lazy loading even if not foreground", () => {
@@ -47,9 +39,6 @@ describe("shouldMountInstance", () => {
       isLoading: true,
       isForeground: false,
     });
-
-    expect(
-      shouldMountInstance(loading, "1", ["1", "2"], { "2": loading }, false, null)
-    ).toBe(true);
+    expect(shouldMountInstance(loading, false)).toBe(true);
   });
 });
