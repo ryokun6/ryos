@@ -152,6 +152,11 @@ export interface IpodScreenProps {
   /** Activity state for loading indicators */
   activityState: ActivityInfo;
   /**
+   * Modern UI: show a titlebar spinner while an Apple Music submenu
+   * (playlist tracks, Recently Added, etc.) is loading or refreshing.
+   */
+  appleMusicMenuTitlebarLoading?: boolean;
+  /**
    * Whether Cover Flow is open. In the modern iPod UI we render Cover
    * Flow inline inside the menu panel so the menu↔nowplaying chrome
    * width transition (50%↔100%) seamlessly carries the user into and

@@ -1070,12 +1070,7 @@ export async function refreshAppleMusicRecentlyAdded(
     return store.appleMusicRecentlyAddedTracks;
   }
 
-  // Only flip the loading flag when there's nothing to display yet — a
-  // background refresh of an existing list should not flash "Loading…".
-  const hadCached = store.appleMusicRecentlyAddedTracks.length > 0;
-  if (!hadCached) {
-    store.setAppleMusicRecentlyAddedLoading(true);
-  }
+  store.setAppleMusicRecentlyAddedLoading(true);
 
   inFlightRecentlyAddedRefresh = (async () => {
     try {
@@ -1093,9 +1088,7 @@ export async function refreshAppleMusicRecentlyAdded(
       return tracks;
     } finally {
       inFlightRecentlyAddedRefresh = null;
-      if (!hadCached) {
-        useIpodStore.getState().setAppleMusicRecentlyAddedLoading(false);
-      }
+      useIpodStore.getState().setAppleMusicRecentlyAddedLoading(false);
     }
   })();
 
@@ -1131,10 +1124,7 @@ export async function refreshAppleMusicFavorites(
     return store.appleMusicFavoriteTracks;
   }
 
-  const hadCached = store.appleMusicFavoriteTracks.length > 0;
-  if (!hadCached) {
-    store.setAppleMusicFavoritesLoading(true);
-  }
+  store.setAppleMusicFavoritesLoading(true);
 
   inFlightFavoritesRefresh = (async () => {
     try {
@@ -1149,9 +1139,7 @@ export async function refreshAppleMusicFavorites(
       return tracks;
     } finally {
       inFlightFavoritesRefresh = null;
-      if (!hadCached) {
-        useIpodStore.getState().setAppleMusicFavoritesLoading(false);
-      }
+      useIpodStore.getState().setAppleMusicFavoritesLoading(false);
     }
   })();
 

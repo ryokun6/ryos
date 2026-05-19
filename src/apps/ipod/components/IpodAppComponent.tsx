@@ -85,6 +85,7 @@ export function IpodAppComponent({
     selectedMenuItem,
     menuDirection,
     menuHistory,
+    appleMusicMenuTitlebarLoading,
     isCoverFlowOpen,
     isMusicQuizOpen,
     setIsMusicQuizOpen,
@@ -448,6 +449,7 @@ export function IpodAppComponent({
                   furiganaMap={furiganaMap}
                   soramimiMap={soramimiMap}
                   activityState={activityState}
+                  appleMusicMenuTitlebarLoading={appleMusicMenuTitlebarLoading}
                   isCoverFlowOpen={isCoverFlowOpen}
                   // Modern UI: render Cover Flow inline inside the menu
                   // panel so the panel's own width transition (50%↔100%
