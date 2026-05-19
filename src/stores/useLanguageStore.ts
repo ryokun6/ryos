@@ -1,8 +1,5 @@
 import { create } from "zustand";
-import {
-  applyLanguage,
-  initializeI18n,
-} from "@/lib/i18n";
+import { applyLanguage } from "@/lib/i18n";
 import {
   DEFAULT_LANGUAGE,
   persistLanguageSelection,
@@ -16,7 +13,7 @@ export type LanguageCode = SupportedLanguage;
 interface LanguageState {
   current: LanguageCode;
   setLanguage: (language: LanguageCode) => Promise<void>;
-  hydrate: () => Promise<void>;
+  hydrate: () => void;
 }
 
 export const useLanguageStore = create<LanguageState>((set) => ({
@@ -33,11 +30,9 @@ export const useLanguageStore = create<LanguageState>((set) => ({
       });
     }
   },
-  hydrate: async () => {
-    const language = resolveInitialLanguage();
-    set({ current: language });
-    await initializeI18n();
-    await applyLanguage(language);
+  /** Sync store with persisted language (i18n is initialized in main bootstrap). */
+  hydrate: () => {
+    set({ current: resolveInitialLanguage() });
   },
 }));
 

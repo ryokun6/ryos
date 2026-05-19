@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { AppId, getWindowConfig, getMobileWindowSize } from "@/config/appRegistry";
+import { prefetchAppChunk } from "@/config/lazyAppComponent";
 import { resolveAppId } from "@/config/appRegistryData";
 import { useAppletStore } from "@/stores/useAppletStore";
 import { AppState } from "@/apps/base/types";
@@ -638,6 +639,8 @@ const createUseAppStore = () =>
         });
       },
       launchApp: (appId, initialData, title, multiWindow = false, launchOrigin) => {
+        prefetchAppChunk(appId);
+
         const state = get();
         const shouldRequestSync = shouldRequestCloudSyncOnAppLaunch(appId);
 

@@ -795,9 +795,18 @@ async function discoverAllJsChunks(): Promise<string[]> {
       allAssets.push(`/assets/${filename}`);
     }
     
-    // Dedupe and return all JS chunks
+    // Dedupe and return all JS chunks (includes locale translation-* chunks)
     const uniqueAssets = [...new Set(allAssets)];
-    
+
+    const localeChunks = uniqueAssets.filter((url) =>
+      /\/translation-[A-Za-z0-9_-]+\.js$/.test(url)
+    );
+    if (localeChunks.length > 0) {
+      console.log(
+        `[Prefetch] Including ${localeChunks.length} locale translation chunks`
+      );
+    }
+
     console.log(`[Prefetch] Discovered ${uniqueAssets.length} JS chunks from main bundle`);
     return uniqueAssets;
     

@@ -18,7 +18,7 @@ import { DownloadSimple } from "@phosphor-icons/react";
 import { ScreenSaverOverlay } from "./components/screensavers/ScreenSaverOverlay";
 import { useBackgroundChatNotifications } from "./hooks/useBackgroundChatNotifications";
 import { DesktopErrorBoundary } from "@/components/errors/ErrorBoundaries";
-import { useAutoCloudSync } from "@/hooks/useAutoCloudSync";
+import { DeferredAutoCloudSync } from "@/hooks/useDeferredAutoCloudSync";
 import { AirDropListener } from "@/components/AirDropListener";
 import { useFilesStore } from "@/stores/useFilesStore";
 import { ReactScanDebug } from "@/components/ReactScanDebug";
@@ -71,7 +71,6 @@ export function App() {
   // Initialize offline detection
   useOffline();
   useBackgroundChatNotifications();
-  useAutoCloudSync();
 
   // Determine toast position and offset based on theme and device
   const toastConfig = useMemo(() => {
@@ -235,6 +234,7 @@ export function App() {
       </DesktopErrorBoundary>
       <Toaster position={toastConfig.position} offset={toastConfig.offset} />
       <AirDropListener />
+      <DeferredAutoCloudSync />
       <ScreenSaverOverlay />
     </>
   );

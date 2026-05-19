@@ -21,6 +21,7 @@ import { getTranslatedAppName, getTranslatedFolderName } from "@/utils/i18n";
 import { useEventListener } from "@/hooks/useEventListener";
 import { cn } from "@/lib/utils";
 import { OS_SHELL_TEXT_SCALE_CLASS } from "@/lib/themeChrome";
+import { prefetchAppChunk } from "@/config/lazyAppComponent";
 import {
   createSelectionRect,
   getIntersectingSelectionIds,
@@ -127,6 +128,40 @@ export function Desktop({
     })
   );
   const getItem = useFilesStore((state) => state.getItem);
+
+  const prefetchDesktopShortcutIntent = useCallback(
+    (shortcut: FileSystemItem) => {
+      if (shortcut.aliasType === "app" && shortcut.aliasTarget) {
+        prefetchAppChunk(shortcut.aliasTarget);
+        return;
+      }
+      if (shortcut.aliasType !== "file" || !shortcut.aliasTarget) return;
+      const target = shortcut.aliasTarget;
+      if (target === "/Applications") {
+        prefetchAppChunk("finder");
+        return;
+      }
+      if (target.startsWith("/Applications/")) {
+        const targetFile = getItem(target);
+        if (targetFile?.appId) prefetchAppChunk(targetFile.appId);
+        else prefetchAppChunk("finder");
+        return;
+      }
+      if (target.startsWith("/Documents/")) {
+        prefetchAppChunk("textedit");
+        return;
+      }
+      if (target.startsWith("/Images/")) {
+        prefetchAppChunk("paint");
+        return;
+      }
+      if (target.startsWith("/Applets/")) {
+        prefetchAppChunk("applet-viewer");
+        return;
+      }
+    },
+    [getItem]
+  );
   const getItemsInPath = useFilesStore((state) => state.getItemsInPath);
   const updateItemMetadata = useFilesStore((state) => state.updateItemMetadata);
   const createAlias = useFilesStore((state) => state.createAlias);
@@ -996,6 +1031,7 @@ export function Desktop({
                 handleDesktopItemClick(getDesktopAppItemId("macintosh-hd"), e)
               }
               onDoubleClick={handleFinderOpen}
+              onPointerDown={() => prefetchAppChunk("finder")}
               onContextMenu={(e: React.MouseEvent<HTMLDivElement>) =>
                 handleIconContextMenu("macintosh-hd", e)
               }
@@ -1055,6 +1091,7 @@ export function Desktop({
                   handleAliasOpen(shortcut, launchOrigin);
                   clearSelection();
                 }}
+                onPointerDown={() => prefetchDesktopShortcutIntent(shortcut)}
                 onContextMenu={(e: React.MouseEvent<HTMLDivElement>) =>
                   handleShortcutContextMenu(shortcut.path, e)
                 }
@@ -1094,6 +1131,7 @@ export function Desktop({
                   toggleApp(app.id, undefined, launchOrigin);
                   clearSelection();
                 }}
+                onPointerDown={() => prefetchAppChunk(app.id)}
                 onContextMenu={(e: React.MouseEvent<HTMLDivElement>) =>
                   handleIconContextMenu(app.id, e)
                 }
@@ -1128,6 +1166,7 @@ export function Desktop({
                   }
                   clearSelection();
                 }}
+                onPointerDown={() => prefetchAppChunk("finder")}
                 onContextMenu={(e: React.MouseEvent<HTMLDivElement>) => {
                   handleIconContextMenu("trash", e);
                 }}

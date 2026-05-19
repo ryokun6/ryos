@@ -1,7 +1,7 @@
 // Utility helpers for IndexedDB operations used across ryOS
 
 const DB_NAME = "ryOS";
-const DB_VERSION = 9; // Add Apple Music playlist caches
+const DB_VERSION = 10;
 let hasLoggedOpenSuccess = false;
 
 export const STORES = {

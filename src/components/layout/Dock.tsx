@@ -38,6 +38,7 @@ import {
 } from "framer-motion";
 import { useShallow } from "zustand/react/shallow";
 import { toggleExposeView } from "@/utils/appEventBus";
+import { prefetchAppChunk } from "@/config/lazyAppComponent";
 
 const MAX_SCALE = 2.3; // peak multiplier at cursor center
 const DISTANCE = 140; // px range where magnification is applied
@@ -70,6 +71,8 @@ interface IconButtonProps {
   isDraggedOutside?: boolean;
   // Scaled size prop
   baseSize?: number;
+  /** When set, warms the lazy app chunk on hover, focus, and primary pointer down. */
+  intentPrefetchAppId?: string;
 }
 
 // Animated spacer for drop preview - with magnification support
@@ -203,7 +206,8 @@ const IconButton = memo((
     onDragEnd,
     isDragging = false,
     isDraggedOutside = false,
-    baseSize: baseSizeProp
+    baseSize: baseSizeProp,
+    intentPrefetchAppId,
   }: IconButtonProps & {
     ref?: React.Ref<HTMLDivElement>;
   }
@@ -289,6 +293,10 @@ const IconButton = memo((
     [forwardedRef]
   );
 
+  const runIntentPrefetch = useCallback(() => {
+    if (intentPrefetchAppId) prefetchAppChunk(intentPrefetchAppId);
+  }, [intentPrefetchAppId]);
+
   // When dragged outside dock, shrink to 0; when dragging inside, use normal size
   const dragWidth = isDraggedOutside ? 0 : widthValue;
   const dragHeight = isDraggedOutside ? 0 : widthValue;
@@ -363,8 +371,16 @@ const IconButton = memo((
         title="" // remove native tooltip
         onClick={onClick}
         onContextMenu={onContextMenu}
-        onMouseEnter={onHover}
+        onMouseEnter={() => {
+          runIntentPrefetch();
+          onHover();
+        }}
         onMouseLeave={onLeave}
+        onFocus={runIntentPrefetch}
+        onPointerDown={(e) => {
+          if (e.pointerType === "mouse" && e.button !== 0) return;
+          runIntentPrefetch();
+        }}
         draggable={draggable}
         onDragStart={onDragStart}
         onDragEnd={onDragEnd}
@@ -2210,6 +2226,7 @@ function MacDock() {
                         isDragging={draggingItemId === item.id}
                         isDraggedOutside={draggingItemId === item.id && isDraggedOutside}
                         baseSize={scaledButtonSize}
+                        intentPrefetchAppId={appId}
                       />
                     );
                   } else {
@@ -2259,6 +2276,7 @@ function MacDock() {
                         isDragging={draggingItemId === item.id}
                         isDraggedOutside={draggingItemId === item.id && isDraggedOutside}
                         baseSize={scaledButtonSize}
+                        intentPrefetchAppId="applet-viewer"
                       />
                     );
                   }
@@ -2321,6 +2339,7 @@ function MacDock() {
                       onHover={() => handleIconHover(item.instanceId!)}
                       onLeave={handleIconLeave}
                       baseSize={scaledButtonSize}
+                      intentPrefetchAppId="applet-viewer"
                     />
                   );
                 } else {
@@ -2350,6 +2369,7 @@ function MacDock() {
                       draggable
                       onDragStart={(e) => handleNonPinnedDragStart(e, item.appId)}
                       baseSize={scaledButtonSize}
+                      intentPrefetchAppId={item.appId}
                     />
                   );
                 }
@@ -2415,6 +2435,7 @@ function MacDock() {
                     onHover={() => handleIconHover("__applications__")}
                     onLeave={handleIconLeave}
                     baseSize={scaledButtonSize}
+                    intentPrefetchAppId="finder"
                   />
                 );
               })()}
@@ -2513,6 +2534,7 @@ function MacDock() {
                       onHover={() => handleIconHover("__trash__")}
                       onLeave={handleIconLeave}
                       baseSize={scaledButtonSize}
+                      intentPrefetchAppId="finder"
                     />
                   </motion.div>
                 );

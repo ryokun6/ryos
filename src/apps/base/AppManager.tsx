@@ -26,7 +26,10 @@ import {
   requestAppLaunch,
   toggleSpotlightSearch,
 } from "@/utils/appEventBus";
+import { prefetchAppChunk, prefetchLikelyAppChunks } from "@/config/lazyAppComponent";
+import { useAppStore } from "@/stores/useAppStore";
 import { useGlobalUndoRedo } from "@/hooks/useGlobalUndoRedo";
+import { shouldMountInstance } from "./instanceMountPolicy";
 
 interface AppManagerProps {
   apps: AnyApp[];
@@ -238,6 +241,8 @@ export function AppManager({ apps }: AppManagerProps) {
       return;
     }
 
+    prefetchAppChunk(routeAction.request.appId);
+
     if (routeAction.toast) {
       const message =
         routeAction.toast.type === "translation"
@@ -262,6 +267,31 @@ export function AppManager({ apps }: AppManagerProps) {
       window.clearTimeout(timer);
     };
   }, [t]);
+
+  // Warm likely app chunks from persisted recent apps after idle (distinct top 3).
+  useEffect(() => {
+    const run = () => {
+      const recent = useAppStore.getState().recentApps;
+      prefetchLikelyAppChunks(recent.map((r) => r.appId));
+    };
+
+    const win = globalThis as typeof globalThis & {
+      requestIdleCallback?: typeof requestIdleCallback;
+      cancelIdleCallback?: typeof cancelIdleCallback;
+    };
+
+    if (typeof win.requestIdleCallback === "function") {
+      const idleHandle = win.requestIdleCallback(run, { timeout: 4500 });
+      return () => {
+        if (typeof win.cancelIdleCallback === "function") {
+          win.cancelIdleCallback(idleHandle);
+        }
+      };
+    }
+
+    const timeoutHandle = globalThis.setTimeout(run, 2500);
+    return () => globalThis.clearTimeout(timeoutHandle);
+  }, []);
 
   // Listen for app launch events (e.g., from Finder, URL handling)
   useEffect(() => {
@@ -582,10 +612,16 @@ export function AppManager({ apps }: AppManagerProps) {
             ? translatedAppName
             : (app?.name ?? appId);
 
+        const shouldMount = shouldMountInstance(instance, exposeMode);
+        const hideWindow = !shouldMount || instance.isLoading;
+
         return (
           <div
             key={instance.instanceId}
-            style={{ zIndex: exposeMode ? 9999 : zIndex }}
+            style={{
+              zIndex: exposeMode ? 9999 : zIndex,
+              visibility: hideWindow ? "hidden" : "visible",
+            }}
             className="absolute inset-x-0 md:inset-x-auto w-full md:w-auto"
             role="presentation"
             onMouseDown={() => {
@@ -648,22 +684,24 @@ export function AppManager({ apps }: AppManagerProps) {
                 );
               }}
             >
-              <AppComponent
-                isWindowOpen={instance.isOpen}
-                isForeground={exposeMode ? false : instance.isForeground}
-                onClose={() => requestCloseWindow(instance.instanceId)}
-                className="pointer-events-auto"
-                helpItems={app?.helpItems}
-                skipInitialSound={isInitialMount}
-                // @ts-expect-error - Dynamic component system with different initialData types per app
-                initialData={instance.initialData}
-                instanceId={instance.instanceId}
-                title={instance.title}
-                onNavigateNext={() => navigateToNextInstance(instance.instanceId)}
-                onNavigatePrevious={() =>
-                  navigateToPreviousInstance(instance.instanceId)
-                }
-              />
+              {shouldMount ? (
+                <AppComponent
+                  isWindowOpen={instance.isOpen}
+                  isForeground={exposeMode ? false : instance.isForeground}
+                  onClose={() => requestCloseWindow(instance.instanceId)}
+                  className="pointer-events-auto"
+                  helpItems={app?.helpItems}
+                  skipInitialSound={isInitialMount}
+                  // @ts-expect-error - Dynamic component system with different initialData types per app
+                  initialData={instance.initialData}
+                  instanceId={instance.instanceId}
+                  title={instance.title}
+                  onNavigateNext={() => navigateToNextInstance(instance.instanceId)}
+                  onNavigatePrevious={() =>
+                    navigateToPreviousInstance(instance.instanceId)
+                  }
+                />
+              ) : null}
             </AppErrorBoundary>
           </div>
         );
