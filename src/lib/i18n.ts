@@ -8,11 +8,6 @@ import {
   resolveInitialLanguage,
   type SupportedLanguage,
 } from "./languageConfig";
-import {
-  getLocaleBuildStamp,
-  readCachedLocale,
-  writeCachedLocale,
-} from "@/utils/localeCache";
 
 type TranslationMessages = Record<string, unknown>;
 type TranslationModule = { default: TranslationMessages };
@@ -96,27 +91,21 @@ export async function ensureLanguageResources(
     return;
   }
 
-  const buildStamp = getLocaleBuildStamp();
-
-  const addBundle = (messages: Record<string, unknown>) => {
-    if (!i18n.hasResourceBundle(language, "translation")) {
-      i18n.addResourceBundle(language, "translation", messages, true, true);
-    }
-  };
-
-  const loadPromise = (async () => {
-    const cached = await readCachedLocale(language, buildStamp);
-    if (cached) {
-      addBundle(cached);
-      return;
-    }
-
-    const messages = (await loader()).default;
-    addBundle(messages);
-    void writeCachedLocale(language, messages, buildStamp);
-  })().finally(() => {
-    loadingLanguages.delete(language);
-  });
+  const loadPromise = loader()
+    .then((module) => {
+      if (!i18n.hasResourceBundle(language, "translation")) {
+        i18n.addResourceBundle(
+          language,
+          "translation",
+          module.default,
+          true,
+          true
+        );
+      }
+    })
+    .finally(() => {
+      loadingLanguages.delete(language);
+    });
 
   loadingLanguages.set(language, loadPromise);
   await loadPromise;

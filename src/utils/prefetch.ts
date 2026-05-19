@@ -20,7 +20,6 @@ import { setNextBootMessage } from "@/utils/bootMessage";
 import i18n from "@/lib/i18n";
 import { getApiUrl, isTauri } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
-import { clearLocaleCache } from "@/utils/localeCache";
 
 // Storage key for manifest timestamp (for cache invalidation)
 const MANIFEST_KEY = 'ryos:manifest-timestamp';
@@ -725,8 +724,6 @@ function getStaticAssetUrls(): string[] {
  */
 async function clearAllCaches(): Promise<void> {
   try {
-    await clearLocaleCache();
-
     // Clear ALL Cache Storage caches (not just filtered ones)
     const cacheNames = await caches.keys();
     await Promise.all(cacheNames.map(name => caches.delete(name)));
