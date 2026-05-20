@@ -137,12 +137,7 @@ if (import.meta.hot) {
 preloadFileSystemData();
 preloadIpodData();
 
-function hideBootSplash(): void {
-  document.getElementById("ryos-boot-splash")?.remove();
-}
-
 const renderApp = () => {
-  hideBootSplash();
   initializeAnalytics();
   ReactDOM.createRoot(document.getElementById("root")!).render(
     <React.StrictMode>
@@ -152,7 +147,7 @@ const renderApp = () => {
 };
 
 const bootstrap = async () => {
-  // Theme attributes for boot splash + first paint (before React)
+  // Theme attributes for first paint (before React)
   useThemeStore.getState().hydrate();
 
   try {

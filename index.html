@@ -207,42 +207,7 @@
       })();
     </script>
   </head>
-  <body style="background-color: black; margin: 0">
-    <div id="ryos-boot-splash" role="status" aria-live="polite" aria-busy="true">
-      <style>
-        #ryos-boot-splash {
-          position: fixed;
-          inset: 0;
-          z-index: 2147483646;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          gap: 1.25rem;
-          background: #000;
-          color: #c0c0c0;
-          font-family: "Lucida Grande", "Geneva", system-ui, sans-serif;
-        }
-        #ryos-boot-splash .ryos-boot-spinner {
-          width: 32px;
-          height: 32px;
-          border: 3px solid rgba(255, 255, 255, 0.15);
-          border-top-color: rgba(255, 255, 255, 0.85);
-          border-radius: 50%;
-          animation: ryos-boot-spin 0.85s linear infinite;
-        }
-        @keyframes ryos-boot-spin {
-          to { transform: rotate(360deg); }
-        }
-        html[data-os-theme="xp"] #ryos-boot-splash,
-        html[data-os-theme="win98"] #ryos-boot-splash {
-          background: #245edb;
-          color: #fff;
-        }
-      </style>
-      <div class="ryos-boot-spinner" aria-hidden="true"></div>
-      <span style="font-size: 13px; letter-spacing: 0.02em">ryOS</span>
-    </div>
+  <body style="background-color: #000; margin: 0">
     <script>
       (function () {
         try {
