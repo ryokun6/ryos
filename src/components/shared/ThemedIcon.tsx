@@ -1,5 +1,5 @@
-import React from "react";
-import { resolveIconLegacyAware, useIconPath } from "@/utils/icons";
+import React, { useEffect, useState } from "react";
+import { pickIconPath, resolveIconLegacyAware, useIconPath } from "@/utils/icons";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { cn } from "@/lib/utils";
 
@@ -79,23 +79,17 @@ export const ThemedIcon: React.FC<ThemedIconProps> = ({
   ...imgProps
 }) => {
   const { currentTheme } = useThemeFlags();
-  const { className, style, ...restImgProps } = imgProps;
+  const { className, style, onError, ...restImgProps } = imgProps;
   const composedClassName = cn("themed-icon", className);
 
-  // Check if name is a remote URL (for early return logic below)
   const isRemoteName = /^https?:\/\//i.test(name);
 
-  // Legacy-aware initial resolution (may already be themed path or absolute /icons/...)
-  // Skip resolution for remote URLs to avoid unnecessary processing
   const resolved = isRemoteName
     ? name
     : resolveIconLegacyAware(name, themeOverride ?? currentTheme);
 
-  // Check if resolved is a remote URL
   const isRemoteResolved = /^https?:\/\//i.test(resolved);
 
-  // Derive logical name for async theming only if inside /icons/ path.
-  // Strip any query string to avoid duplicating cache-busting params downstream.
   const withoutQuery = resolved.split("?")[0];
   const logical = withoutQuery.startsWith("/icons/")
     ? withoutQuery
@@ -103,10 +97,24 @@ export const ThemedIcon: React.FC<ThemedIconProps> = ({
         .replace(/^(?:\/icons\/[^/]+\/)/, "")
     : withoutQuery;
 
-  // Call hook unconditionally at the top level
   const themedPath = useIconPath(logical, themeOverride ?? currentTheme);
+  const activeTheme = themeOverride ?? currentTheme;
+  const primarySrc = themedPath || resolved;
+  const defaultFallbackSrc = pickIconPath(logical, {
+    theme: "default",
+    fallbackTheme: "default",
+  });
+  const [useDefaultFallback, setUseDefaultFallback] = useState(false);
 
-  // Simple passthrough for remote resources (avoid theming logic entirely)
+  useEffect(() => {
+    setUseDefaultFallback(false);
+  }, [primarySrc, defaultFallbackSrc, activeTheme, logical]);
+
+  const src =
+    useDefaultFallback && primarySrc !== defaultFallbackSrc
+      ? defaultFallbackSrc
+      : primarySrc;
+
   if (isRemoteName) {
     return (
       <img
@@ -114,12 +122,12 @@ export const ThemedIcon: React.FC<ThemedIconProps> = ({
         alt={alt || name}
         className={composedClassName}
         style={style}
+        onError={onError}
         {...restImgProps}
       />
     );
   }
 
-  // If result is a remote URL (in case resolver passed one through) just use it.
   if (isRemoteResolved) {
     return (
       <img
@@ -127,13 +135,12 @@ export const ThemedIcon: React.FC<ThemedIconProps> = ({
         alt={alt || name}
         className={composedClassName}
         style={style}
+        onError={onError}
         {...restImgProps}
       />
     );
   }
 
-  // Keep it simple: if async path still pending, show resolved immediately. Avoid switching for remote URLs.
-  const src = themedPath || resolved;
   const normalizedSrc = src.split("?")[0];
   const isThemedVariant =
     normalizedSrc.startsWith("/icons/") &&
@@ -150,6 +157,13 @@ export const ThemedIcon: React.FC<ThemedIconProps> = ({
       alt={alt || name}
       className={composedClassName}
       style={finalStyle}
+      onError={(event) => {
+        onError?.(event);
+        if (event.defaultPrevented) return;
+        if (primarySrc !== defaultFallbackSrc) {
+          setUseDefaultFallback(true);
+        }
+      }}
       {...restImgProps}
     />
   );

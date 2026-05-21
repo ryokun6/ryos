@@ -22,6 +22,7 @@ import { useEventListener } from "@/hooks/useEventListener";
 import { cn } from "@/lib/utils";
 import { OS_SHELL_TEXT_SCALE_CLASS } from "@/lib/themeChrome";
 import { prefetchAppChunk } from "@/config/lazyAppComponent";
+import { useIconPath } from "@/utils/icons";
 import {
   createSelectionRect,
   getIntersectingSelectionIds,
@@ -108,7 +109,11 @@ export function Desktop({
 
   const { currentTheme, isWindowsTheme: isXpTheme, isMacOSTheme, isSystem7Theme } =
     useThemeFlags();
-  
+  const volumeDesktopIcon = useIconPath(
+    isXpTheme ? "pc.png" : "disk.png",
+    currentTheme
+  );
+
   // Check if running in Tauri
   const isTauriApp = typeof window !== "undefined" && "__TAURI__" in window;
 
@@ -1024,9 +1029,7 @@ export function Desktop({
             <FileIcon
               name={isXpTheme ? t("common.desktop.myComputer") : t("apps.finder.window.macintoshHd")}
               isDirectory={true}
-              icon={
-                isXpTheme ? "/icons/default/pc.png" : "/icons/default/disk.png"
-              }
+              icon={volumeDesktopIcon}
               onClick={(e) =>
                 handleDesktopItemClick(getDesktopAppItemId("macintosh-hd"), e)
               }

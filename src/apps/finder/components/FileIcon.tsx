@@ -157,6 +157,8 @@ export function FileIcon({
     if (!iconPath) return false;
     // Check if it's not a file path or URL
     if (iconPath.startsWith("/") || iconPath.startsWith("http")) return false;
+    // Logical asset names (e.g. disk.png) must render as images, not emoji text
+    if (/\.(png|jpe?g|gif|webp|svg|ico)$/i.test(iconPath)) return false;
     // Check if it's a short string (emojis are typically 1-4 characters including multi-byte)
     return iconPath.length <= 10;
   };
