@@ -96,6 +96,11 @@ const MODERN_SPLIT_HALF = "50%";
 // as one continuous motion instead of overlapping easings.
 const SPLIT_LAYOUT_TRANSITION_TIMING =
   "duration-300 ease-in-out motion-reduce:transition-none";
+// Selection-driven split art should not churn on every wheel tick. Wait for
+// a short rest, then preload the next cover before swapping away from the
+// currently displayed image.
+const SPLIT_ART_SELECTION_DEBOUNCE_MS = 160;
+const SPLIT_ART_CROSSFADE_SECONDS = 0.35;
 // Render this many extra items above and below the visible window so
 // scrolling doesn't reveal blank rows before React reconciles.
 const OVERSCAN_ITEMS = 6;
@@ -570,8 +575,11 @@ export function IpodScreen({
 
   // ----- Split-menu Ken Burns artwork (selection-driven) -----------
   //
-  // After the highlight rests on a row for 1s, cross-fade the right-
-  // hand panel to that row's `coverUrl` (albums, artists, playlists).
+  // After the highlight rests briefly, cross-fade the right-hand panel
+  // to that row's `coverUrl` (albums, artists, playlists). The next
+  // image is preloaded before it becomes the displayed image, so slow
+  // artwork keeps showing the previous cover instead of fading down to
+  // the panel's black backface.
   //
   // Heuristic: only show the split panel for **browseable** menus —
   // those whose items drill deeper (`showChevron: true`). Track-list
@@ -630,9 +638,9 @@ export function IpodScreen({
     coverUrl,
   ]);
 
-  // Cover for the right-hand split panel. Selection updates immediately
-  // (no debounce). Now Playing song menu always uses the current track
-  // cover so the menu is already at 50% width when labels are measured.
+  // Cover target for the right-hand split panel. Now Playing song menu
+  // always uses the current track cover so the menu is already at 50%
+  // width when labels are measured.
   const splitMenuArtUrl = useMemo(() => {
     if (!isModernUi || !menuMode || showInlineCoverFlow) return null;
     if (isNowPlayingSongMenu) return coverUrl ?? null;
@@ -650,25 +658,67 @@ export function IpodScreen({
 
   const showSplitMenuArt = Boolean(splitMenuArtUrl);
 
-  // The cover image is rendered against the LAST non-null
-  // `splitMenuArtUrl` (not the live value) so it stays mounted through
-  // the fade-out when `splitMenuArtUrl` flips null in the same render
-  // that `showSplitMenuArt` does — e.g. navigating from a browseable
-  // menu (Music root) into a flat song list / settings menu. Without this, the
-  // image branch would unmount
-  // before the wrapper had a chance to animate its opacity / width
-  // to zero, and the cover would pop instead of fading. We only
-  // update on a real (non-null) value so the previous artwork
-  // remains rendered behind the fading cover-art layer for the full
-  // 300ms transition window.
-  const [renderedSplitArtUrl, setRenderedSplitArtUrl] = useState<
+  // Track the latest *requested* split-art URL separately from the image
+  // currently committed to the DOM. Debouncing avoids flicker while the
+  // wheel is moving, and preloading means the old cover stays visible until
+  // the next bitmap can cross-fade over it.
+  const latestSplitArtUrlRef = useRef<string | null>(splitMenuArtUrl);
+  const [debouncedSplitArtUrl, setDebouncedSplitArtUrl] = useState<
     string | null
   >(splitMenuArtUrl);
+  const [displayedSplitArtUrl, setDisplayedSplitArtUrl] = useState<
+    string | null
+  >(splitMenuArtUrl);
+
   useEffect(() => {
-    if (splitMenuArtUrl) {
-      setRenderedSplitArtUrl(splitMenuArtUrl);
-    }
+    latestSplitArtUrlRef.current = splitMenuArtUrl;
   }, [splitMenuArtUrl]);
+
+  useEffect(() => {
+    if (!splitMenuArtUrl || splitMenuArtUrl === debouncedSplitArtUrl) {
+      return;
+    }
+    const id = window.setTimeout(() => {
+      setDebouncedSplitArtUrl(splitMenuArtUrl);
+    }, SPLIT_ART_SELECTION_DEBOUNCE_MS);
+    return () => window.clearTimeout(id);
+  }, [debouncedSplitArtUrl, splitMenuArtUrl]);
+
+  useEffect(() => {
+    if (
+      !debouncedSplitArtUrl ||
+      debouncedSplitArtUrl === displayedSplitArtUrl
+    ) {
+      return;
+    }
+
+    let cancelled = false;
+    const img = new Image();
+    const commitIfCurrent = () => {
+      if (
+        !cancelled &&
+        latestSplitArtUrlRef.current === debouncedSplitArtUrl
+      ) {
+        setDisplayedSplitArtUrl(debouncedSplitArtUrl);
+      }
+    };
+
+    img.onload = commitIfCurrent;
+    img.onerror = () => {
+      // Keep the previous art on failed loads; the next valid target can
+      // still replace it.
+    };
+    img.src = debouncedSplitArtUrl;
+    if (img.complete && img.naturalWidth > 0) {
+      commitIfCurrent();
+    }
+
+    return () => {
+      cancelled = true;
+      img.onload = null;
+      img.onerror = null;
+    };
+  }, [debouncedSplitArtUrl, displayedSplitArtUrl]);
 
   // Defer width/opacity transitions until after the first paint so
   // mounting in split or full layout does not animate from a default.
@@ -1454,8 +1504,8 @@ export function IpodScreen({
        *  classic 6G/7G "Music + Now Playing" reference photo where the
        *  album art has no titlebar above it. The titlebar + menu below
        *  are clamped to the left half so they don't bleed underneath.
-   *  AnimatePresence cross-fades when the debounced selection cover
-   *  changes. */}
+       *  AnimatePresence cross-fades after the debounced selection cover
+       *  has loaded, keeping the previous cover visible during fetches. */}
       {/* Right-half artwork: width animates 0% <-> 50% in sync with the
        *  menu chrome so entering/leaving split view feels smooth.
        *  Kept mounted for EVERY modern UI frame (not gated on
@@ -1488,12 +1538,11 @@ export function IpodScreen({
            *  window as the width transition — revealing the solid
            *  black backface beneath before the column clips away.
            *
-           *  We render against `renderedSplitArtUrl` (the last non-null
-           *  cover) instead of the live `splitMenuArtUrl` so the image
-           *  stays mounted while the layer fades out — otherwise the
-           *  image would unmount in the same render that
-           *  `showSplitMenuArt` flips false and the cover would pop
-           *  instead of fading. */}
+           *  We render against `displayedSplitArtUrl`, which only changes
+           *  after the debounced target image has loaded. That lets
+           *  AnimatePresence cross-fade loaded bitmap to loaded bitmap
+           *  instead of fading the old cover to black while the next one
+           *  is still in flight. */}
           <div
             className={cn(
               "absolute inset-0",
@@ -1502,18 +1551,21 @@ export function IpodScreen({
             )}
             style={{ opacity: showSplitMenuArt ? 1 : 0 }}
           >
-            {renderedSplitArtUrl ? (
+            {displayedSplitArtUrl ? (
               <AnimatePresence initial={false} mode="sync">
                 <motion.img
-                  key={renderedSplitArtUrl}
-                  src={renderedSplitArtUrl}
+                  key={displayedSplitArtUrl}
+                  src={displayedSplitArtUrl}
                   alt=""
                   draggable={false}
                   className="ipod-modern-split-art-img absolute inset-0 size-full object-cover select-none"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  transition={{ duration: 0.35, ease: "easeInOut" }}
+                  transition={{
+                    duration: SPLIT_ART_CROSSFADE_SECONDS,
+                    ease: "easeInOut",
+                  }}
                 />
               </AnimatePresence>
             ) : null}
