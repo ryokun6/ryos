@@ -333,7 +333,7 @@ export function IpodAppComponent({
               className="relative w-full" 
               style={{ height: "150px", minHeight: "150px", maxHeight: "150px" }}
               onMouseDown={(e) => {
-                // Start long press timer for CoverFlow toggle
+                // Start long press timer for Now Playing song menu
                 if (screenLongPressTimerRef.current) clearTimeout(screenLongPressTimerRef.current);
                 screenLongPressFiredRef.current = false;
                 screenLongPressStartPos.current = { x: e.clientX, y: e.clientY };

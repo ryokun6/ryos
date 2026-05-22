@@ -94,6 +94,9 @@ const IS_IOS_SAFARI = IS_IOS && IS_SAFARI;
 /** Stable fallback so `rebuildMenuItems` never returns a fresh `[]` per call. */
 const EMPTY_IPOD_MENU_ITEMS: MenuItem[] = [];
 
+/** Internal breadcrumb key for the Now Playing long-press song menu. */
+const NOW_PLAYING_SONG_MENU_KEY = "__nowPlayingSongMenu__";
+
 export interface UseIpodLogicOptions {
   isWindowOpen: boolean;
   isForeground: boolean | undefined;
@@ -638,6 +641,17 @@ export function useIpodLogic({
   }, []);
   // Save menu history before entering Now Playing from a song selection
   const menuHistoryBeforeNowPlayingRef = useRef<typeof menuHistory | null>(null);
+  /** When set, Menu pops back to the Now Playing song menu (not up the browse stack). */
+  const returnToNowPlayingSongMenuRef = useRef(false);
+  const nowPlayingSongMenuSnapshotRef = useRef<{
+    displayTitle: string;
+    selectedIndex: number;
+  } | null>(null);
+
+  const clearReturnToNowPlayingSongMenu = useCallback(() => {
+    returnToNowPlayingSongMenuRef.current = false;
+    nowPlayingSongMenuSnapshotRef.current = null;
+  }, []);
 
   // Mirror the latest cursor position for use inside callbacks (especially
   // setMenuHistory updaters) without forcing every menu-item factory to
@@ -841,6 +855,7 @@ export function useIpodLogic({
         showOfflineStatus();
         return;
       }
+      clearReturnToNowPlayingSongMenu();
       setMenuHistory((prev) => {
         const updatedHist = [...prev];
         if (updatedHist.length > 0) {
@@ -873,6 +888,7 @@ export function useIpodLogic({
       setCurrentSongId,
       setIsPlaying,
       toggleVideo,
+      clearReturnToNowPlayingSongMenu,
     ]
   );
 
@@ -2455,6 +2471,376 @@ export function useIpodLogic({
     ];
   }, [registerActivity, toggleVideo, memoizedToggleShuffle, memoizedToggleBacklight, menuLocale, isOffline, showOfflineStatus, setIsPlaying, pushMenuChild]);
 
+  const findMenuItemIndexByLabel = useCallback(
+    (items: MenuItem[], label: string) =>
+      Math.max(0, items.findIndex((item) => item.label === label)),
+    []
+  );
+
+  const isNowPlayingSongMenuOpen =
+    menuMode &&
+    menuHistory.length > 0 &&
+    menuHistory[menuHistory.length - 1]?.title === NOW_PLAYING_SONG_MENU_KEY;
+
+  const findPlaylistContextForNowPlaying = useCallback(() => {
+    const matchFromHistory = (hist: MenuHistoryEntry[] | null) => {
+      if (!hist) return null;
+      for (let i = hist.length - 1; i >= 0; i--) {
+        const playlist = appleMusicPlaylists.find(
+          (entry) => entry.name === hist[i].title
+        );
+        if (playlist) return playlist;
+      }
+      return null;
+    };
+    return (
+      matchFromHistory(menuHistoryBeforeNowPlayingRef.current) ??
+      matchFromHistory(
+        menuHistory.length > 0 &&
+          menuHistory[menuHistory.length - 1]?.title !== NOW_PLAYING_SONG_MENU_KEY
+          ? menuHistory
+          : null
+      )
+    );
+  }, [appleMusicPlaylists, menuHistory]);
+
+  const enterMenuNavigationFromNowPlaying = useCallback(
+    (entries: MenuHistoryEntry[]) => {
+      registerActivity();
+      if (useIpodStore.getState().showVideo) toggleVideo();
+      setMenuDirection("forward");
+      setMenuMode(true);
+      setCameFromNowPlayingMenuItem(false);
+      setMenuHistory(entries);
+      const last = entries[entries.length - 1];
+      setSelectedMenuItem(last?.selectedIndex ?? 0);
+    },
+    [registerActivity, toggleVideo, setCameFromNowPlayingMenuItem]
+  );
+
+  const navigateFromNowPlayingSongMenu = useCallback(
+    (entries: MenuHistoryEntry[]) => {
+      const track = tracks[currentIndex];
+      if (track) {
+        nowPlayingSongMenuSnapshotRef.current = {
+          displayTitle: track.title,
+          selectedIndex: selectedMenuItemRef.current,
+        };
+        returnToNowPlayingSongMenuRef.current = true;
+      }
+      enterMenuNavigationFromNowPlaying(entries);
+    },
+    [tracks, currentIndex, enterMenuNavigationFromNowPlaying]
+  );
+
+  const navigateToAlbumFromNowPlaying = useCallback(
+    (track: Track) => {
+      const ipodLabel = t("apps.ipod.menuItems.ipod");
+      const musicLabel = t("apps.ipod.menuItems.music");
+      const albumsLabel = t("apps.ipod.menuItems.albums");
+      const albumKey = getAlbumGroupingKey(
+        track,
+        unknownAlbumLabel,
+        unknownArtistLabel
+      );
+      const albumDisplay =
+        albumGroupsByKey[albumKey]?.album ?? track.album ?? unknownAlbumLabel;
+      const albumTracks = albumGroupsByKey[albumKey]?.tracks ?? [];
+      const trackIdx = Math.max(
+        0,
+        albumTracks.findIndex(({ track: candidate }) => candidate.id === track.id)
+      );
+      const albumListIdx = sortedAlbums.indexOf(albumKey);
+      const albumRowIdx = albumListIdx >= 0 ? albumListIdx + 1 : 1;
+
+      navigateFromNowPlayingSongMenu([
+        {
+          title: ipodLabel,
+          items: mainMenuItems,
+          selectedIndex: findMenuItemIndexByLabel(mainMenuItems, musicLabel),
+        },
+        {
+          title: musicLabel,
+          items: musicMenuItems,
+          selectedIndex: findMenuItemIndexByLabel(musicMenuItems, albumsLabel),
+        },
+        {
+          title: albumsLabel,
+          items: albumsListMenuItems,
+          selectedIndex: albumRowIdx,
+        },
+        {
+          title: albumKey,
+          displayTitle: albumDisplay,
+          items: albumMenuItemsByAlbum[albumKey] ?? EMPTY_IPOD_MENU_ITEMS,
+          selectedIndex: trackIdx,
+        },
+      ]);
+    },
+    [
+      t,
+      unknownAlbumLabel,
+      unknownArtistLabel,
+      albumGroupsByKey,
+      sortedAlbums,
+      navigateFromNowPlayingSongMenu,
+      mainMenuItems,
+      musicMenuItems,
+      albumsListMenuItems,
+      albumMenuItemsByAlbum,
+      findMenuItemIndexByLabel,
+    ]
+  );
+
+  const navigateToArtistFromNowPlaying = useCallback(
+    (track: Track) => {
+      const ipodLabel = t("apps.ipod.menuItems.ipod");
+      const musicLabel = t("apps.ipod.menuItems.music");
+      const artistsLabel = t("apps.ipod.menuItems.artists");
+      const artist = track.artist || unknownArtistLabel;
+      const artistRowIdx = sortedArtists.indexOf(artist);
+      const artistListIdx = artistRowIdx >= 0 ? artistRowIdx + 1 : 1;
+
+      navigateFromNowPlayingSongMenu([
+        {
+          title: ipodLabel,
+          items: mainMenuItems,
+          selectedIndex: findMenuItemIndexByLabel(mainMenuItems, musicLabel),
+        },
+        {
+          title: musicLabel,
+          items: musicMenuItems,
+          selectedIndex: findMenuItemIndexByLabel(musicMenuItems, artistsLabel),
+        },
+        {
+          title: artistsLabel,
+          items: artistsListMenuItems,
+          selectedIndex: artistListIdx,
+        },
+        {
+          title: artist,
+          items: artistMenuItemsByArtist[artist] ?? EMPTY_IPOD_MENU_ITEMS,
+          selectedIndex: 0,
+          modernMediaList: true,
+        },
+      ]);
+    },
+    [
+      t,
+      unknownArtistLabel,
+      sortedArtists,
+      navigateFromNowPlayingSongMenu,
+      mainMenuItems,
+      musicMenuItems,
+      artistsListMenuItems,
+      artistMenuItemsByArtist,
+      findMenuItemIndexByLabel,
+    ]
+  );
+
+  const navigateToPlaylistFromNowPlaying = useCallback(
+    (track: Track, playlist: { id: string; name: string }) => {
+      const ipodLabel = t("apps.ipod.menuItems.ipod");
+      const musicLabel = t("apps.ipod.menuItems.music");
+      const playlistsLabel = t("apps.ipod.menuItems.playlists");
+      requestPlaylistTracksIfNeeded(playlist.id);
+      const playlistTracks = appleMusicPlaylistTracks[playlist.id] ?? [];
+      const trackIdx = Math.max(
+        0,
+        playlistTracks.findIndex((candidate) => candidate.id === track.id)
+      );
+      const playlistListIdx = Math.max(
+        0,
+        appleMusicPlaylists.findIndex((entry) => entry.id === playlist.id)
+      );
+
+      navigateFromNowPlayingSongMenu([
+        {
+          title: ipodLabel,
+          items: mainMenuItems,
+          selectedIndex: findMenuItemIndexByLabel(mainMenuItems, musicLabel),
+        },
+        {
+          title: musicLabel,
+          items: musicMenuItems,
+          selectedIndex: findMenuItemIndexByLabel(musicMenuItems, playlistsLabel),
+        },
+        {
+          title: playlistsLabel,
+          items: applePlaylistsMenuItems,
+          selectedIndex: playlistListIdx,
+          modernMediaList: true,
+        },
+        {
+          title: playlist.name,
+          items:
+            applePlaylistTrackMenuItemsByPlaylist[playlist.id] ??
+            EMPTY_IPOD_MENU_ITEMS,
+          selectedIndex: trackIdx,
+          modernMediaList: true,
+        },
+      ]);
+    },
+    [
+      t,
+      requestPlaylistTracksIfNeeded,
+      appleMusicPlaylistTracks,
+      appleMusicPlaylists,
+      applePlaylistsMenuItems,
+      applePlaylistTrackMenuItemsByPlaylist,
+      navigateFromNowPlayingSongMenu,
+      mainMenuItems,
+      musicMenuItems,
+      findMenuItemIndexByLabel,
+    ]
+  );
+
+  const nowPlayingSongMenuItems = useMemo(() => {
+    const track = tracks[currentIndex];
+    if (!track) return EMPTY_IPOD_MENU_ITEMS;
+
+    const coverFlowLabel = t("apps.ipod.menu.coverFlow", "Cover Flow");
+    const addToFavoritesLabel = t(
+      "apps.ipod.menu.addToFavorites",
+      "Add to Favorites"
+    );
+    const goToPlaylistLabel = t("apps.ipod.menu.goToPlaylist", "Go to Playlist");
+    const goToAlbumLabel = t("apps.ipod.menu.goToAlbum", "Go to Album");
+    const goToArtistLabel = t("apps.ipod.menu.goToArtist", "Go to Artist");
+    const playlistContext = isAppleMusic
+      ? findPlaylistContextForNowPlaying()
+      : null;
+
+    const items: MenuItem[] = [
+      {
+        label: coverFlowLabel,
+        action: () => {
+          registerActivity();
+          setMenuMode(false);
+          setMenuDirection("forward");
+          setIsCoverFlowOpen(true);
+        },
+        showChevron: true,
+      },
+    ];
+
+    if (isAppleMusic && track.source === "appleMusic") {
+      items.push({
+        label: addToFavoritesLabel,
+        action: () => {
+          setMenuMode(false);
+          setMenuDirection("backward");
+          void handleAppleMusicAddToFavorites();
+        },
+        showChevron: false,
+      });
+    }
+
+    if (playlistContext) {
+      items.push({
+        label: goToPlaylistLabel,
+        action: () => navigateToPlaylistFromNowPlaying(track, playlistContext),
+        showChevron: true,
+      });
+    }
+
+    items.push(
+      {
+        label: goToAlbumLabel,
+        action: () => navigateToAlbumFromNowPlaying(track),
+        showChevron: true,
+      },
+      {
+        label: goToArtistLabel,
+        action: () => navigateToArtistFromNowPlaying(track),
+        showChevron: true,
+      }
+    );
+
+    return items;
+  }, [
+    tracks,
+    currentIndex,
+    t,
+    isAppleMusic,
+    findPlaylistContextForNowPlaying,
+    registerActivity,
+    setIsCoverFlowOpen,
+    handleAppleMusicAddToFavorites,
+    navigateToPlaylistFromNowPlaying,
+    navigateToAlbumFromNowPlaying,
+    navigateToArtistFromNowPlaying,
+    menuLocale,
+  ]);
+
+  const openNowPlayingSongMenu = useCallback(() => {
+    const track = tracks[currentIndex];
+    if (!track || browsableTracks.length === 0) return;
+    registerActivity();
+    setMenuDirection("forward");
+    setMenuMode(true);
+    setMenuHistory([
+      {
+        title: NOW_PLAYING_SONG_MENU_KEY,
+        displayTitle: track.title,
+        items: nowPlayingSongMenuItems,
+        selectedIndex: 0,
+      },
+    ]);
+    setSelectedMenuItem(0);
+  }, [
+    tracks,
+    currentIndex,
+    browsableTracks.length,
+    registerActivity,
+    nowPlayingSongMenuItems,
+  ]);
+
+  const restoreNowPlayingSongMenu = useCallback(() => {
+    clearReturnToNowPlayingSongMenu();
+    const snapshot = nowPlayingSongMenuSnapshotRef.current;
+    const track = tracks[currentIndex];
+    const selectedIndex = snapshot?.selectedIndex ?? 0;
+    setMenuDirection("backward");
+    setMenuMode(true);
+    setMenuHistory([
+      {
+        title: NOW_PLAYING_SONG_MENU_KEY,
+        displayTitle: snapshot?.displayTitle ?? track?.title ?? "",
+        items: nowPlayingSongMenuItems,
+        selectedIndex,
+      },
+    ]);
+    setSelectedMenuItem(selectedIndex);
+  }, [
+    clearReturnToNowPlayingSongMenu,
+    tracks,
+    currentIndex,
+    nowPlayingSongMenuItems,
+  ]);
+
+  const closeNowPlayingSongMenu = useCallback(() => {
+    clearReturnToNowPlayingSongMenu();
+    setMenuDirection("backward");
+    setMenuMode(false);
+    const saved = menuHistoryBeforeNowPlayingRef.current;
+    if (saved && saved.length > 0) {
+      setMenuHistory(saved);
+      const last = saved[saved.length - 1];
+      setSelectedMenuItem(last?.selectedIndex ?? 0);
+      return;
+    }
+    const ipodLabel = t("apps.ipod.menuItems.ipod");
+    setMenuHistory([
+      {
+        title: ipodLabel,
+        items: mainMenuItems,
+        selectedIndex: 0,
+      },
+    ]);
+    setSelectedMenuItem(0);
+  }, [mainMenuItems, t, clearReturnToNowPlayingSongMenu]);
+
   const mainMenuItemsRef = useRef(mainMenuItems);
   mainMenuItemsRef.current = mainMenuItems;
   const suppressMenuSyncRef = useRef(false);
@@ -2480,11 +2866,12 @@ export function useIpodLogic({
       },
     ]);
     menuHistoryBeforeNowPlayingRef.current = null;
+    clearReturnToNowPlayingSongMenu();
     setIsCoverFlowOpen(false);
     queueMicrotask(() => {
       suppressMenuSyncRef.current = false;
     });
-  }, [librarySource, menuLocale, setIsCoverFlowOpen, setMenuDirection, setSelectedMenuItem, t]);
+  }, [librarySource, menuLocale, setIsCoverFlowOpen, setMenuDirection, setSelectedMenuItem, clearReturnToNowPlayingSongMenu, t]);
 
   // Helper function to rebuild menu items based on current tracks
   const rebuildMenuItems = useCallback((menu: typeof menuHistory[0]): typeof menuHistory[0]["items"] | null => {
@@ -2494,6 +2881,8 @@ export function useIpodLogic({
       return musicMenuItems;
     } else if (menu.title === t("apps.ipod.menuItems.settings")) {
       return settingsMenuItems;
+    } else if (menu.title === NOW_PLAYING_SONG_MENU_KEY) {
+      return nowPlayingSongMenuItems;
     } else if (
       !isAppleMusic &&
       (menu.title === t("apps.ipod.menuItems.recentlyAdded", "Recently Added") ||
@@ -2566,6 +2955,7 @@ export function useIpodLogic({
     applePlaylistsMenuItems,
     applePlaylistTrackMenuItemsByPlaylist,
     appleMusicPlaylists,
+    nowPlayingSongMenuItems,
     menuLocale,
   ]);
 
@@ -3186,9 +3576,18 @@ export function useIpodLogic({
       return;
     }
 
+    if (isNowPlayingSongMenuOpen) {
+      closeNowPlayingSongMenu();
+      return;
+    }
+
     if (showVideo) toggleVideo();
 
     if (menuMode) {
+      if (returnToNowPlayingSongMenuRef.current) {
+        restoreNowPlayingSongMenu();
+        return;
+      }
       if (menuHistory.length > 1) {
         setMenuDirection("backward");
         setMenuHistory((prev) => prev.slice(0, -1));
@@ -3255,11 +3654,10 @@ export function useIpodLogic({
       }
       setMenuMode(true);
     }
-  }, [playClickSound, vibrate, registerActivity, isCoverFlowOpen, isMusicQuizOpen, isBrickGameOpen, showVideo, toggleVideo, menuMode, menuHistory, mainMenuItems, musicMenuItems, allSongsMenuItems, browseCurrentIndex, cameFromNowPlayingMenuItem, t]);
+  }, [playClickSound, vibrate, registerActivity, isCoverFlowOpen, isMusicQuizOpen, isBrickGameOpen, isNowPlayingSongMenuOpen, closeNowPlayingSongMenu, restoreNowPlayingSongMenu, showVideo, toggleVideo, menuMode, menuHistory, mainMenuItems, musicMenuItems, allSongsMenuItems, browseCurrentIndex, cameFromNowPlayingMenuItem, t]);
 
   // Cover Flow handlers
   const handleCenterLongPress = useCallback(() => {
-    // Toggle cover flow on long press of center button
     playClickSound();
     vibrate();
     registerActivity();
@@ -3270,19 +3668,34 @@ export function useIpodLogic({
       // slides back in from the left.
       setMenuDirection("backward");
       setIsCoverFlowOpen(false);
-    } else if (
+      return;
+    }
+
+    if (isNowPlayingSongMenuOpen) {
+      return;
+    }
+
+    if (
       !menuMode &&
       !isMusicQuizOpen &&
       !isBrickGameOpen &&
-      browsableTracks.length > 0
+      tracks[currentIndex]
     ) {
-      // Enter cover flow only when in Now Playing mode and no overlay is active.
-      // Forward direction so the modern UI's inline Cover Flow slides in
-      // from the right (matching menu→now-playing).
-      setMenuDirection("forward");
-      setIsCoverFlowOpen(true);
+      openNowPlayingSongMenu();
     }
-  }, [playClickSound, vibrate, registerActivity, isCoverFlowOpen, menuMode, isMusicQuizOpen, isBrickGameOpen, browsableTracks.length]);
+  }, [
+    playClickSound,
+    vibrate,
+    registerActivity,
+    isCoverFlowOpen,
+    isNowPlayingSongMenuOpen,
+    menuMode,
+    isMusicQuizOpen,
+    isBrickGameOpen,
+    tracks,
+    currentIndex,
+    openNowPlayingSongMenu,
+  ]);
 
   const getAppleMusicAlbumQueueIds = useCallback(
     (track: Track) => {
