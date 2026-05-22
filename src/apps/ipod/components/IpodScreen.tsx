@@ -586,13 +586,10 @@ export function IpodScreen({
 
   const shouldShowLyrics = showLyrics;
 
-  // ----- Split-menu Ken Burns artwork carousel ---------------------
+  // ----- Split-menu Ken Burns artwork (selection-driven) -----------
   //
-  // Build a deduped list of cover URLs sourced from the items in the
-  // *current* menu (not the selected row). Each menu item carries an
-  // optional `coverUrl` (e.g. songs, albums, artists, playlists), and
-  // we cycle through them on a slow timer so the right-hand panel
-  // reads as a slideshow of "what's in this list".
+  // After the highlight rests on a row for 1s, cross-fade the right-
+  // hand panel to that row's `coverUrl` (albums, artists, playlists).
   //
   // Heuristic: only show the split panel for **browseable** menus —
   // those whose items drill deeper (`showChevron: true`). Track-list
@@ -604,9 +601,9 @@ export function IpodScreen({
   // The root iPod / Music submenus still qualify because their rows
   // include chevron-bearing categories.
   //
-  // **Modern media lists** (playlist picker, per-artist albums) already
-  // show artwork in each row — hide the right split so the menu stays
-  // full width without the 50%↔100% chrome transition.
+  // **Modern media lists** (playlist picker, Apple Music browses) show
+  // artwork in each row — hide the right split so the menu stays full
+  // width. Per-artist album lists use the same split preview as Albums.
   const isBrowseableMenu = useMemo(
     () =>
       isModernUi &&
@@ -627,70 +624,60 @@ export function IpodScreen({
     ]
   );
 
-  const splitArtUrlPool = useMemo(() => {
-    if (!isBrowseableMenu) return [] as string[];
-    const seen = new Set<string>();
-    const urls: string[] = [];
-    for (const item of currentMenuItems) {
-      const url = item.coverUrl;
-      if (typeof url !== "string" || url.length === 0) continue;
-      if (seen.has(url)) continue;
-      seen.add(url);
-      urls.push(url);
-    }
-    if (urls.length === 0 && coverUrl) urls.push(coverUrl);
-    return urls;
-  }, [isBrowseableMenu, currentMenuItems, coverUrl]);
+  const SPLIT_ART_SELECTION_DELAY_MS = 1000;
 
-  const splitArtUrlPoolKey = useMemo(
-    () => splitArtUrlPool.join("\0"),
-    [splitArtUrlPool]
+  const browseableMenuKey = useMemo(
+    () =>
+      isBrowseableMenu
+        ? `${menuHistory.length}:${currentMenuTitle}:${currentMenuItems.length}`
+        : "",
+    [
+      isBrowseableMenu,
+      menuHistory.length,
+      currentMenuTitle,
+      currentMenuItems.length,
+    ]
   );
 
-  const [splitArtIndex, setSplitArtIndex] = useState(0);
+  const selectedRowSplitArtTarget = useMemo(() => {
+    if (!isBrowseableMenu || currentMenuItems.length === 0) return null;
+    const safeIndex = Math.min(
+      Math.max(0, selectedMenuItem),
+      currentMenuItems.length - 1
+    );
+    const rowUrl = currentMenuItems[safeIndex]?.coverUrl;
+    if (typeof rowUrl === "string" && rowUrl.length > 0) return rowUrl;
+    if (coverUrl) return coverUrl;
+    for (const item of currentMenuItems) {
+      const url = item.coverUrl;
+      if (typeof url === "string" && url.length > 0) return url;
+    }
+    return null;
+  }, [
+    isBrowseableMenu,
+    currentMenuItems,
+    selectedMenuItem,
+    coverUrl,
+  ]);
 
-  // Reset the carousel index whenever the pool changes (i.e. the user
-  // navigates into a different menu) so each new menu starts on its
-  // own random pick rather than jumping mid-cycle into a stale offset.
-  // We seed the first index randomly so two consecutive entries into
-  // the same menu don't always open on the same cover.
+  const [splitArtUrl, setSplitArtUrl] = useState<string | null>(null);
+
+  // Cross-fade to the highlighted row's art after the selection rests.
   useEffect(() => {
-    if (splitArtUrlPool.length <= 1) {
-      setSplitArtIndex(0);
+    if (!isBrowseableMenu) {
+      setSplitArtUrl(null);
       return;
     }
-    setSplitArtIndex(Math.floor(Math.random() * splitArtUrlPool.length));
-  }, [splitArtUrlPoolKey, splitArtUrlPool.length]);
-
-  // Cycle through the pool on a slow interval, picking each next
-  // cover at RANDOM (instead of strict round-robin) so a long menu
-  // surfaces a variety of artwork over time. We exclude the current
-  // index from the random pick so the same cover never replaces
-  // itself — that would look like a missed transition. Skip the
-  // timer when there's nothing to cycle (≤ 1 image) so React doesn't
-  // keep an idle timer alive on simple menus. 7000ms ≈ a comfortable
-  // slideshow cadence that lets the Ken Burns animation play through
-  // a meaningful arc on each cover.
-  useEffect(() => {
-    if (splitArtUrlPool.length <= 1) return;
-    const id = window.setInterval(() => {
-      setSplitArtIndex((prev) => {
-        if (splitArtUrlPool.length <= 1) return 0;
-        // Pick from the pool minus the current index, then map back
-        // into the original index space — guarantees a different
-        // cover than the one currently showing without rejection
-        // sampling.
-        const pick = Math.floor(
-          Math.random() * (splitArtUrlPool.length - 1)
-        );
-        return pick >= prev ? pick + 1 : pick;
-      });
-    }, 7000);
-    return () => window.clearInterval(id);
-  }, [splitArtUrlPoolKey, splitArtUrlPool.length, splitArtUrlPool]);
-
-  const splitArtUrl =
-    splitArtUrlPool[splitArtIndex] ?? splitArtUrlPool[0] ?? null;
+    const id = window.setTimeout(() => {
+      setSplitArtUrl(selectedRowSplitArtTarget);
+    }, SPLIT_ART_SELECTION_DELAY_MS);
+    return () => window.clearTimeout(id);
+  }, [
+    isBrowseableMenu,
+    browseableMenuKey,
+    selectedMenuItem,
+    selectedRowSplitArtTarget,
+  ]);
 
   // True when the modern UI should render its iPod 6G/7G classic
   // "Music + Now Playing" split: titlebar + menu list clamped to the
@@ -703,8 +690,7 @@ export function IpodScreen({
   // `splitArtUrl` (not the live value) so it stays mounted through
   // the fade-out when `splitArtUrl` flips null in the same render
   // that `showSplitMenuArt` does — e.g. navigating from a browseable
-  // menu (Music root) into a flat song list / settings menu, which
-  // empties `splitArtUrlPool` immediately. Without this, the
+  // menu (Music root) into a flat song list / settings menu. Without this, the
   // `{splitArtUrl ? <motion.img/> : null}` branch would unmount
   // before the wrapper had a chance to animate its opacity / width
   // to zero, and the cover would pop instead of fading. We only
@@ -1526,8 +1512,8 @@ export function IpodScreen({
        *  classic 6G/7G "Music + Now Playing" reference photo where the
        *  album art has no titlebar above it. The titlebar + menu below
        *  are clamped to the left half so they don't bleed underneath.
-       *  AnimatePresence cross-fades between covers as the slideshow
-       *  cycles through `splitArtUrlPool`. */}
+   *  AnimatePresence cross-fades when the debounced selection cover
+   *  changes. */}
       {/* Right-half artwork: width animates 0% <-> 50% in sync with the
        *  menu chrome so entering/leaving split view feels smooth.
        *  Kept mounted for EVERY modern UI frame (not gated on

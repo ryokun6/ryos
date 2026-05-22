@@ -1939,7 +1939,6 @@ export function useIpodLogic({
                 title: artist,
                 items: artistMenuItemsByArtist[artist],
                 selectedIndex: 0,
-                modernMediaList: true,
               });
             },
             showChevron: true,
@@ -2621,7 +2620,6 @@ export function useIpodLogic({
           title: artist,
           items: artistMenuItemsByArtist[artist] ?? EMPTY_IPOD_MENU_ITEMS,
           selectedIndex: 0,
-          modernMediaList: true,
         },
       ]);
     },
