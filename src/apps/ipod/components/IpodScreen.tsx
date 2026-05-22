@@ -609,14 +609,12 @@ export function IpodScreen({
       // entirely while Cover Flow is on screen.
       !showInlineCoverFlow &&
       !currentMenuModernMediaList &&
-      !isNowPlayingSongMenu &&
       currentMenuItems.some((item) => item.showChevron === true),
     [
       isModernUi,
       menuMode,
       showInlineCoverFlow,
       currentMenuModernMediaList,
-      isNowPlayingSongMenu,
       currentMenuItems,
     ]
   );
@@ -725,10 +723,6 @@ export function IpodScreen({
       setModernChromeWidthMarqueeBlocked(false);
       return;
     }
-    if (isNowPlayingSongMenu) {
-      setModernChromeWidthMarqueeBlocked(false);
-      return;
-    }
     if (skipModernChromeMarqueeCooldown.current) {
       skipModernChromeMarqueeCooldown.current = false;
       return;
@@ -738,7 +732,7 @@ export function IpodScreen({
       setModernChromeWidthMarqueeBlocked(false);
     }, 320);
     return () => window.clearTimeout(id);
-  }, [showSplitMenuArt, menuMode, isModernUi, isNowPlayingSongMenu]);
+  }, [showSplitMenuArt, menuMode, isModernUi]);
 
   const skipModernMenuRouteMarqueeCooldown = useRef(true);
   const [modernMenuRouteMarqueeBlocked, setModernMenuRouteMarqueeBlocked] =
@@ -992,6 +986,7 @@ export function IpodScreen({
                               backlightOn={backlightOn}
                               variant={uiVariant}
                               allowScrollingMarquee={modernScrollingMarqueeAllowed}
+                              fadeEdges={!isNowPlayingSongMenu}
                               onClick={() => {
                                 onSelectMenuItem(index);
                                 onMenuItemAction(item.action);
