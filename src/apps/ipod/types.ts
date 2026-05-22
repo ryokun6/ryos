@@ -130,6 +130,7 @@ export interface IpodScreenProps {
   handlePause: () => void;
   handleReady: () => void;
   loopCurrent: boolean;
+  loopAll: boolean;
   isShuffled: boolean;
   statusMessage: string | null;
   onToggleVideo: () => void;

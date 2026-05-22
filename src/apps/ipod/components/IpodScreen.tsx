@@ -10,7 +10,7 @@ import {
 } from "react";
 import ReactPlayer from "react-player";
 import { motion, AnimatePresence } from "framer-motion";
-import { Shuffle } from "@phosphor-icons/react";
+import { Repeat, RepeatOnce, Shuffle } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { LyricsDisplay } from "./LyricsDisplay";
@@ -285,6 +285,7 @@ export function IpodScreen({
   handlePause,
   handleReady,
   loopCurrent,
+  loopAll,
   isShuffled,
   statusMessage,
   onToggleVideo,
@@ -1045,14 +1046,31 @@ export function IpodScreen({
                                 defaultValue: `${currentIndex + 1} of ${tracksLength}`,
                               })}
                       </span>
-                      {isShuffled && (
-                        <Shuffle
-                          className="shrink-0"
-                          size={isModernUi ? 12 : 13}
-                          weight="bold"
-                          aria-label={t("apps.ipod.ariaLabels.shuffleOn")}
-                        />
-                      )}
+                      <span className="flex shrink-0 items-center gap-1">
+                        {loopCurrent ? (
+                          <RepeatOnce
+                            className="shrink-0"
+                            size={isModernUi ? 12 : 13}
+                            weight="bold"
+                            aria-label={t("apps.ipod.menu.repeatOne")}
+                          />
+                        ) : loopAll ? (
+                          <Repeat
+                            className="shrink-0"
+                            size={isModernUi ? 12 : 13}
+                            weight="bold"
+                            aria-label={t("apps.ipod.menu.repeatAll")}
+                          />
+                        ) : null}
+                        {isShuffled && (
+                          <Shuffle
+                            className="shrink-0"
+                            size={isModernUi ? 12 : 13}
+                            weight="bold"
+                            aria-label={t("apps.ipod.ariaLabels.shuffleOn")}
+                          />
+                        )}
+                      </span>
                     </div>
                     {isModernUi ? (
                       <div className="flex min-h-0 flex-1 items-start gap-3 overflow-visible pt-1 pb-0">
