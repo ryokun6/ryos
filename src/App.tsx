@@ -1,6 +1,6 @@
 import { AppManager } from "./apps/base/AppManager";
 import { appRegistry } from "./config/appRegistry";
-import { useEffect, useMemo, useReducer, useCallback } from "react";
+import { useEffect, useMemo, useReducer, useCallback, useRef } from "react";
 import { applyDisplayMode } from "./utils/displayMode";
 import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner";
@@ -66,12 +66,44 @@ export function App() {
       setLastSeenDesktopVersion: state.setLastSeenDesktopVersion,
     })
   );
-  const displayMode = useDisplaySettingsStoreShallow((state) => state.displayMode);
+  const { displayMode, checkShaderPerformance: checkShaderCapability } =
+    useDisplaySettingsStoreShallow((state) => ({
+      displayMode: state.displayMode,
+      checkShaderPerformance: state.checkShaderPerformance,
+    }));
   const { isWindowsTheme, isMacOSTheme, isSystem7Theme } = useThemeFlags();
   const isMobile = useIsMobile();
+  const shaderCheckCompletedRef = useRef(false);
   // Initialize offline detection
   useOffline();
   useBackgroundChatNotifications();
+
+  useEffect(() => {
+    if (shaderCheckCompletedRef.current) return;
+
+    try {
+      const persisted = localStorage.getItem("ryos:display-settings");
+      if (persisted) {
+        const parsed = JSON.parse(persisted) as {
+          state?: { shaderEffectEnabled?: unknown };
+        };
+        if (typeof parsed.state?.shaderEffectEnabled === "boolean") {
+          return;
+        }
+      }
+    } catch {
+      // If storage is unavailable or malformed, fall through to the safe async check.
+    }
+
+    const timer = setTimeout(() => {
+      shaderCheckCompletedRef.current = true;
+      void checkShaderCapability().catch((error) => {
+        console.warn("[ryOS] Shader capability check failed", error);
+      });
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, [checkShaderCapability]);
 
   // Determine toast position and offset based on theme and device
   const toastConfig = useMemo(() => {
