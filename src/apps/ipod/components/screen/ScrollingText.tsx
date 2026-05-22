@@ -5,6 +5,7 @@ import {
   useCallback,
   type AnimationEvent,
   type CSSProperties,
+  type RefObject,
 } from "react";
 import { cn } from "@/lib/utils";
 
@@ -31,6 +32,30 @@ interface ScrollingTextProps {
    */
   resetOnPause?: boolean;
   style?: CSSProperties;
+  /**
+   * Menu row element used to measure label width up to the chevron/value
+   * column (`[data-ipod-menu-row-end]`), including gap and row padding.
+   */
+  rowRef?: RefObject<HTMLElement | null>;
+}
+
+/** Visible label width from container left edge to the row end cap (chevron/value). */
+export function getLabelClipWidth(
+  container: HTMLElement,
+  row: HTMLElement | null
+): number {
+  if (!row) return container.clientWidth;
+
+  const endCap = row.querySelector<HTMLElement>("[data-ipod-menu-row-end]");
+  if (!endCap) return container.clientWidth;
+
+  const containerRect = container.getBoundingClientRect();
+  const endRect = endCap.getBoundingClientRect();
+  const clipWidth = endRect.left - containerRect.left;
+  if (!Number.isFinite(clipWidth) || clipWidth <= 0) {
+    return container.clientWidth;
+  }
+  return clipWidth;
 }
 
 export function ScrollingText({
@@ -43,6 +68,7 @@ export function ScrollingText({
   scrollStartDelaySec = 0,
   resetOnPause = false,
   style,
+  rowRef,
 }: ScrollingTextProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
@@ -58,24 +84,18 @@ export function ScrollingText({
     const textElement = textRef.current;
     if (!container || !textElement) return;
 
-    const containerWidth = container.clientWidth;
+    const containerWidth = getLabelClipWidth(
+      container,
+      rowRef?.current ?? null
+    );
     if (containerWidth <= 0) {
       setShouldScroll(false);
       return;
     }
 
-    let contentWidth = textElement.scrollWidth;
-    if (textElement.closest(".scrolling-text-marquee-track")) {
-      contentWidth = Math.max(0, contentWidth - paddingWidth);
-    }
-
+    const contentWidth = textElement.scrollWidth;
     setShouldScroll(contentWidth > containerWidth + 1);
-  }, [paddingWidth]);
-
-  const isResetPaused = resetOnPause && !isPlaying;
-  const showMarquee = shouldScroll && allowMarquee && !isResetPaused;
-  const showStaticOverflowFade =
-    shouldScroll && allowMarquee && isResetPaused && fadeEdges;
+  }, [rowRef]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -84,17 +104,18 @@ export function ScrollingText({
 
     measureOverflow();
 
-    const resizeObserver = new ResizeObserver(() => measureOverflow());
+    const resizeObserver = new ResizeObserver(measureOverflow);
     resizeObserver.observe(container);
     resizeObserver.observe(textElement);
+    const row = rowRef?.current;
+    if (row) resizeObserver.observe(row);
 
     return () => resizeObserver.disconnect();
-  }, [text, allowMarquee, measureOverflow]);
+  }, [text, allowMarquee, measureOverflow, rowRef]);
 
-  useEffect(() => {
-    const id = requestAnimationFrame(() => measureOverflow());
-    return () => cancelAnimationFrame(id);
-  }, [showMarquee, measureOverflow]);
+  const isResetPaused = resetOnPause && !isPlaying;
+  const showMarquee = shouldScroll && allowMarquee && !isResetPaused;
+  const showStaticOverflowFade = shouldScroll && fadeEdges && !showMarquee;
 
   useEffect(() => {
     setEdgeFadeActive(false);

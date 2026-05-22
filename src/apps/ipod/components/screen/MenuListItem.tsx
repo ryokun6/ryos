@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useImageLoaded } from "../../hooks/useImageLoaded";
 import { IPOD_MODERN_MEDIA_THUMB_PX } from "../../constants";
@@ -62,6 +62,7 @@ export function MenuListItem({
   emptyArtworkKind = "album",
   mediaRow = false,
 }: MenuListItemProps) {
+  const rowRef = useRef<HTMLDivElement>(null);
   const hasCjkText =
     CJK_TEXT_PATTERN.test(text) ||
     (value ? CJK_TEXT_PATTERN.test(value) : false) ||
@@ -81,6 +82,7 @@ export function MenuListItem({
     if (mediaRow) {
       return (
         <div
+          ref={rowRef}
           onClick={isLoading ? undefined : onClick}
           className={cn(
             "h-full overflow-x-visible overflow-y-hidden pl-1 pr-1.5 font-ipod-modern-ui flex justify-between items-center gap-1",
@@ -123,12 +125,12 @@ export function MenuListItem({
                 />
               ) : null}
             </div>
-            {/* Two-line stack: 12+1+11 px fits under 26px thumb inside a 33px row. */}
             <div className="flex min-h-0 min-w-0 flex-1 flex-col justify-center gap-px py-0 leading-none">
               <ScrollingText
                 text={text}
                 align="left"
                 fadeEdges
+                rowRef={rowRef}
                 allowMarquee={allowScrollingMarquee}
                 isPlaying={isSelected && !isLoading}
                 resetOnPause
@@ -156,6 +158,7 @@ export function MenuListItem({
           </div>
           {value ? (
             <span
+              data-ipod-menu-row-end
               className={cn(
                 "flex shrink-0 items-center font-semibold leading-none",
                 hasCjkText ? "text-[11px]" : "text-[12px]",
@@ -170,6 +173,7 @@ export function MenuListItem({
             showChevron &&
             !isLoading && (
               <span
+                data-ipod-menu-row-end
                 className={cn(
                   "flex shrink-0 items-center justify-center font-normal leading-none",
                   "text-[16px]",
@@ -185,25 +189,11 @@ export function MenuListItem({
       );
     }
 
-    // iPod-classic-js SelectableListItem: white row, blue gradient
-    // selection highlight, no separator. Rows are **22px** with **15px** type so
-    // 16px status bar + six rows fill the 132px menu body (constants.ts).
-    //
-    // Long labels truncate via `ScrollingText` with `fadeEdges`:
-    //   - When the label fits, ScrollingText renders static text.
-    //   - When it overflows, a fade-to-transparent mask appears on the
-    //     right edge (truncation hint) instead of an ellipsis.
-    //   - When the row is also `isSelected`, the marquee animates and
-    //     both edges fade — matches the iPod nano 6G/7G's behavior of
-    //     scrolling the highlighted row's text horizontally.
-    //   - `resetOnPause` is enabled so deselecting a row snaps the
-    //     marquee back to translate(0) instead of leaving the text
-    //     frozen at whatever offset it had scrolled to.
     return (
       <div
+        ref={rowRef}
         onClick={isLoading ? undefined : onClick}
         className={cn(
-          /* overflow-y-hidden: row slot height; overflow-x-visible: horizontal marquee. */
           "h-full overflow-x-visible overflow-y-hidden pl-1.5 pr-2 font-ipod-modern-ui flex justify-between items-center",
           "ipod-modern-row",
           isLoading ? "cursor-default" : "cursor-pointer",
@@ -219,15 +209,17 @@ export function MenuListItem({
             text={text}
             align="left"
             fadeEdges
+            rowRef={rowRef}
             allowMarquee={allowScrollingMarquee}
             isPlaying={isSelected && !isLoading}
             resetOnPause
             scrollStartDelaySec={0.5}
-            className="h-full w-full min-w-0 text-[15px] font-semibold leading-none"
+            className="w-full min-w-0 text-[15px] font-semibold leading-none"
           />
         </span>
         {value ? (
           <span
+            data-ipod-menu-row-end
             className={cn(
               "flex shrink-0 items-center text-[15px] font-semibold leading-none",
               isSelected && !isLoading
@@ -240,10 +232,8 @@ export function MenuListItem({
         ) : (
           showChevron &&
           !isLoading && (
-            // Right-arrow chevron: thin and light grey when idle, white
-            // when the row is selected — same affordance as the
-            // arrow_right.svg used in iPod-classic-js.
             <span
+              data-ipod-menu-row-end
               className={cn(
                 "flex shrink-0 items-center justify-center font-normal leading-none",
                 "text-[19px]",
@@ -263,10 +253,6 @@ export function MenuListItem({
     <div
       onClick={isLoading ? undefined : onClick}
       className={cn(
-        // h-full makes the row exactly fill its
-        // virtualization wrapper (MENU_ITEM_HEIGHT in IpodScreen) so
-        // items in every menu — main, music, artist, and All Songs —
-        // share the same vertical rhythm.
         "h-full pl-2 pr-3 font-chicago flex justify-between items-center",
         isLoading ? "cursor-default" : "cursor-pointer",
         isSelected && !isLoading
