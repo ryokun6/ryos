@@ -1060,17 +1060,20 @@ export function IpodScreen({
                     >
                       <span>
                         {currentTrack?.appleMusicPlayParams?.stationId
-                          ? "LIVE"
+                          ? t("apps.ipod.playback.live")
                           : isAppleMusicCollectionShell
-                            ? "MIX"
-                            : `${currentIndex + 1} of ${tracksLength}`}
+                            ? t("apps.ipod.playback.mix")
+                            : t("apps.ipod.playback.trackOf", {
+                                current: currentIndex + 1,
+                                total: tracksLength,
+                              })}
                       </span>
                       {isShuffled && (
                         <Shuffle
                           className="shrink-0"
                           size={isModernUi ? 12 : 13}
                           weight="bold"
-                          aria-label="shuffle on"
+                          aria-label={t("apps.ipod.ariaLabels.shuffleOn")}
                         />
                       )}
                     </div>

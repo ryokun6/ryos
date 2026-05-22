@@ -1842,6 +1842,11 @@
         "goToAlbum": "Go to Album",
         "goToArtist": "Go to Artist"
       },
+      "playback": {
+        "live": "LIVE",
+        "mix": "MIX",
+        "trackOf": "{{current}} of {{total}}"
+      },
       "status": {
         "shuffleOn": "Shuffle ON",
         "shuffleOff": "Shuffle OFF",
@@ -1944,6 +1949,10 @@
         "appleMusicRadioFailed": "Failed to load Apple Music radio",
         "appleMusicGeniusFailed": "Failed to play Apple Music recommendations",
         "appleMusicNoRecommendations": "No Apple Music recommendations are available yet",
+        "appleMusicNotConfigured": "Apple Music is not configured",
+        "appleMusicNotConfiguredDescription": "Set MUSICKIT_TEAM_ID, MUSICKIT_KEY_ID, and MUSICKIT_PRIVATE_KEY.",
+        "appleMusicNotConfiguredDescriptionShort": "Set MUSICKIT_TEAM_ID / MUSICKIT_KEY_ID / MUSICKIT_PRIVATE_KEY",
+        "appleMusicSignInFailed": "Sign in failed",
         "lyricsSearchTitle": "Search Lyrics",
         "lyricsSearchDescription": "Search for lyrics for \"{{title}}\" by {{artist}}",
         "lyricsSearchPlaceholder": "Enter search query (e.g., song title, artist)",
@@ -2071,7 +2080,8 @@
         "toggleFurigana": "Toggle Furigana",
         "toggleRomanization": "Toggle Romanization",
         "translateLyrics": "Translate lyrics",
-        "select": "Select"
+        "select": "Select",
+        "shuffleOn": "Shuffle on"
       },
       "keys": {
         "escape": "Escape",

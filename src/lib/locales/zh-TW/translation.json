@@ -2075,6 +2075,7 @@
         "playPause": "播放/暫停",
         "previousTrack": "上一首",
         "select": "選取",
+        "shuffleOn": "隨機播放已開啟",
         "toggleFurigana": "切換振假名",
         "toggleHangulRomanization": "切換韓文 / 羅馬拼音",
         "toggleRomanization": "切換羅馬拼音",
@@ -2116,6 +2117,9 @@
         "appleMusicLibraryProgress": "正在載入 Apple Music 資料庫… {{loaded}} 首歌曲",
         "appleMusicLibraryProgressOf": "正在載入 Apple Music 資料庫… {{loaded}} / {{total}}",
         "appleMusicNoRecommendations": "目前尚無可用的 Apple Music 推薦",
+        "appleMusicNotConfigured": "尚未設定 Apple Music",
+        "appleMusicNotConfiguredDescription": "請設定 MUSICKIT_TEAM_ID、MUSICKIT_KEY_ID 與 MUSICKIT_PRIVATE_KEY。",
+        "appleMusicNotConfiguredDescriptionShort": "請設定 MUSICKIT_TEAM_ID / MUSICKIT_KEY_ID / MUSICKIT_PRIVATE_KEY",
         "appleMusicRadioFailed": "無法載入 Apple Music 廣播",
         "appleMusicRecentlyAddedFailed": "無法載入最近加入的歌曲",
         "appleMusicSearchAppleMusic": "Apple Music",
@@ -2124,6 +2128,7 @@
         "appleMusicSearchSelectResult": "選擇要加入的歌曲：",
         "appleMusicSearchSignInRequired": "登入 Apple Music 以進行搜尋",
         "appleMusicSearchUnavailable": "Apple Music 搜尋目前無法使用",
+        "appleMusicSignInFailed": "登入失敗",
         "autoUpdateFailed": "自動更新失敗",
         "autoUpdatedLibraryAddedSongs": "資料庫已自動更新：新增了 {{newCount}} 首新歌到頂部{{updatedText}}",
         "autoUpdatedTrackMetadata": "已自動更新 {{count}} 首曲目的中繼資料",
@@ -2255,6 +2260,9 @@
         "fontSerifRed": "襯線（紅）",
         "fullScreen": "全螢幕",
         "furigana": "假名標音",
+        "goToAlbum": "前往專輯",
+        "goToArtist": "前往藝人",
+        "goToPlaylist": "前往播放清單",
         "importLibrary": "匯入資料庫...",
         "ipodHelp": "iPod 輔助說明",
         "japaneseFurigana": "日文（假名）",
@@ -2364,6 +2372,11 @@
         "wrong": "不太對！"
       },
       "name": "iPod",
+      "playback": {
+        "live": "LIVE",
+        "mix": "MIX",
+        "trackOf": "第 {{current}} 首，共 {{total}} 首"
+      },
       "status": {
         "added": "♬ 已新增",
         "appleMusicAddedToFavorites": "已加入最愛",

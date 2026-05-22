@@ -250,7 +250,7 @@ export function IpodAppComponent({
         [DisplayMode.Water]: t("apps.ipod.menu.displayWater"),
       };
       const label = labels[nextMode] ?? nextMode;
-      showStatus(`${t("apps.ipod.menu.display", "Display")}: ${label}`);
+      showStatus(`${t("apps.ipod.menu.display")}: ${label}`);
     },
     [isAppleMusic, setDisplayMode, showStatus, t]
   );

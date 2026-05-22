@@ -2075,6 +2075,7 @@
         "playPause": "Lecture/Pause",
         "previousTrack": "Piste précédente",
         "select": "Sélectionner",
+        "shuffleOn": "Lecture aléatoire activée",
         "toggleFurigana": "Basculer Furigana",
         "toggleHangulRomanization": "Basculer Hangul / Romanisation",
         "toggleRomanization": "Basculer la romanisation",
@@ -2116,6 +2117,9 @@
         "appleMusicLibraryProgress": "Chargement de la bibliothèque Apple Music… {{loaded}} morceaux",
         "appleMusicLibraryProgressOf": "Chargement de la bibliothèque Apple Music… {{loaded}} sur {{total}}",
         "appleMusicNoRecommendations": "Aucune recommandation Apple Music n'est encore disponible",
+        "appleMusicNotConfigured": "Apple Music n'est pas configuré",
+        "appleMusicNotConfiguredDescription": "Définissez MUSICKIT_TEAM_ID, MUSICKIT_KEY_ID et MUSICKIT_PRIVATE_KEY.",
+        "appleMusicNotConfiguredDescriptionShort": "Définissez MUSICKIT_TEAM_ID / MUSICKIT_KEY_ID / MUSICKIT_PRIVATE_KEY",
         "appleMusicRadioFailed": "Échec du chargement de la radio Apple Music",
         "appleMusicRecentlyAddedFailed": "Échec du chargement des morceaux ajoutés récemment",
         "appleMusicSearchAppleMusic": "Apple Music",
@@ -2124,6 +2128,7 @@
         "appleMusicSearchSelectResult": "Sélectionnez un morceau à ajouter :",
         "appleMusicSearchSignInRequired": "Connectez-vous à Apple Music pour effectuer une recherche",
         "appleMusicSearchUnavailable": "La recherche Apple Music est indisponible",
+        "appleMusicSignInFailed": "Échec de la connexion",
         "autoUpdateFailed": "Échec de la mise à jour automatique",
         "autoUpdatedLibraryAddedSongs": "Bibliothèque mise à jour automatiquement : ajouté {{newCount}} nouvelle{{newPlural}} chanson{{newPlural}} en haut{{updatedText}}",
         "autoUpdatedTrackMetadata": "Mise à jour automatique des métadonnées de {{count}} piste{{plural}}",
@@ -2255,6 +2260,9 @@
         "fontSerifRed": "Serif (Rouge)",
         "fullScreen": "Plein écran",
         "furigana": "Furigana",
+        "goToAlbum": "Aller à l'album",
+        "goToArtist": "Aller à l'artiste",
+        "goToPlaylist": "Aller à la playlist",
         "importLibrary": "Importer la bibliothèque...",
         "ipodHelp": "Aide iPod",
         "japaneseFurigana": "Japonais (Furigana)",
@@ -2364,6 +2372,11 @@
         "wrong": "Pas tout à fait !"
       },
       "name": "iPod",
+      "playback": {
+        "live": "LIVE",
+        "mix": "MIX",
+        "trackOf": "{{current}} sur {{total}}"
+      },
       "status": {
         "added": "♬ Ajouté",
         "appleMusicAddedToFavorites": "Ajouté aux favoris",

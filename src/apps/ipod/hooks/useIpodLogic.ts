@@ -420,7 +420,7 @@ export function useIpodLogic({
   const isAppleMusicFavoritesLoading = useIpodStore(
     (s) => s.appleMusicFavoritesLoading
   );
-  const radioMenuTitleForRestore = t("apps.ipod.menuItems.radio", "Radio");
+  const radioMenuTitleForRestore = t("apps.ipod.menuItems.radio");
   const [shouldHydrateRadioOnRestore] = useState(() => {
     const state = useIpodStore.getState();
     const currentAppleMusicTrack = state.appleMusicCurrentSongId
@@ -433,8 +433,7 @@ export function useIpodLogic({
         (currentAppleMusicTrack?.appleMusicPlayParams?.stationId ||
           state.ipodMenuBreadcrumb?.some(
             (entry) =>
-              entry.title === radioMenuTitleForRestore ||
-              entry.title === "Radio"
+              entry.title === radioMenuTitleForRestore || entry.title === "Radio"
           ))
     );
   });
@@ -944,9 +943,8 @@ export function useIpodLogic({
   const handleAppleMusicSignIn = useCallback(async () => {
     registerActivity();
     if (musicKitStatus === "missing-token") {
-      toast.error("Apple Music is not configured", {
-        description:
-          "Set MUSICKIT_TEAM_ID, MUSICKIT_KEY_ID, and MUSICKIT_PRIVATE_KEY.",
+      toast.error(t("apps.ipod.dialogs.appleMusicNotConfigured"), {
+        description: t("apps.ipod.dialogs.appleMusicNotConfiguredDescription"),
       });
       return;
     }
@@ -954,11 +952,11 @@ export function useIpodLogic({
       await musicKitAuthorize();
       showStatus(t("apps.ipod.status.appleMusicSignedIn", "Apple Music ✓"));
     } catch (err) {
-      toast.error("Sign in failed", {
+      toast.error(t("apps.ipod.dialogs.appleMusicSignInFailed"), {
         description: err instanceof Error ? err.message : String(err),
       });
     }
-  }, [musicKitAuthorize, musicKitStatus, registerActivity, showStatus, menuLocale]);
+  }, [musicKitAuthorize, musicKitStatus, registerActivity, showStatus, t]);
 
   const handleAppleMusicSignOut = useCallback(async () => {
     registerActivity();
@@ -1325,9 +1323,10 @@ export function useIpodLogic({
       t("apps.ipod.status.libraryAppleMusic", "Library: Apple Music")
     );
     if (musicKitStatus === "missing-token") {
-      toast.error("Apple Music is not configured", {
-        description:
-          "Set MUSICKIT_TEAM_ID / MUSICKIT_KEY_ID / MUSICKIT_PRIVATE_KEY",
+      toast.error(t("apps.ipod.dialogs.appleMusicNotConfigured"), {
+        description: t(
+          "apps.ipod.dialogs.appleMusicNotConfiguredDescriptionShort"
+        ),
       });
       return;
     }
@@ -1346,7 +1345,7 @@ export function useIpodLogic({
     setDisplayMode,
     setLibrarySource,
     showStatus,
-    menuLocale,
+    t,
   ]);
 
   useEffect(() => {
@@ -2694,14 +2693,11 @@ export function useIpodLogic({
     const track = tracks[currentIndex];
     if (!track) return EMPTY_IPOD_MENU_ITEMS;
 
-    const coverFlowLabel = t("apps.ipod.menu.coverFlow", "Cover Flow");
-    const addToFavoritesLabel = t(
-      "apps.ipod.menu.addToFavorites",
-      "Add to Favorites"
-    );
-    const goToPlaylistLabel = t("apps.ipod.menu.goToPlaylist", "Go to Playlist");
-    const goToAlbumLabel = t("apps.ipod.menu.goToAlbum", "Go to Album");
-    const goToArtistLabel = t("apps.ipod.menu.goToArtist", "Go to Artist");
+    const coverFlowLabel = t("apps.ipod.menu.coverFlow");
+    const addToFavoritesLabel = t("apps.ipod.menu.addToFavorites");
+    const goToPlaylistLabel = t("apps.ipod.menu.goToPlaylist");
+    const goToAlbumLabel = t("apps.ipod.menu.goToAlbum");
+    const goToArtistLabel = t("apps.ipod.menu.goToArtist");
     const playlistContext = isAppleMusic
       ? findPlaylistContextForNowPlaying()
       : null;

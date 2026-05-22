@@ -2075,6 +2075,7 @@
         "playPause": "再生/一時停止",
         "previousTrack": "前の曲",
         "select": "選択",
+        "shuffleOn": "シャッフルオン",
         "toggleFurigana": "フリガナ切り替え",
         "toggleHangulRomanization": "ハングル / ローマ字表記を切り替える",
         "toggleRomanization": "読み仮名の切り替え",
@@ -2116,6 +2117,9 @@
         "appleMusicLibraryProgress": "Apple Musicライブラリを読み込み中… {{loaded}}曲",
         "appleMusicLibraryProgressOf": "Apple Musicライブラリを読み込み中… {{loaded}} / {{total}}",
         "appleMusicNoRecommendations": "Apple Music のおすすめはまだありません",
+        "appleMusicNotConfigured": "Apple Musicが設定されていません",
+        "appleMusicNotConfiguredDescription": "MUSICKIT_TEAM_ID、MUSICKIT_KEY_ID、MUSICKIT_PRIVATE_KEYを設定してください。",
+        "appleMusicNotConfiguredDescriptionShort": "MUSICKIT_TEAM_ID / MUSICKIT_KEY_ID / MUSICKIT_PRIVATE_KEY を設定してください",
         "appleMusicRadioFailed": "Apple Music ラジオの読み込みに失敗しました",
         "appleMusicRecentlyAddedFailed": "最近追加した曲の読み込みに失敗しました",
         "appleMusicSearchAppleMusic": "Apple Music",
@@ -2124,6 +2128,7 @@
         "appleMusicSearchSelectResult": "追加する曲を選択してください:",
         "appleMusicSearchSignInRequired": "検索するにはApple Musicにサインインしてください",
         "appleMusicSearchUnavailable": "Apple Music検索は利用できません",
+        "appleMusicSignInFailed": "サインインに失敗しました",
         "autoUpdateFailed": "自動更新失敗",
         "autoUpdatedLibraryAddedSongs": "ライブラリを自動更新しました：先頭に {{newCount}} 曲の新しい曲を追加しました{{updatedText}}",
         "autoUpdatedTrackMetadata": "{{count}} 曲のメタデータを自動更新しました",
@@ -2255,6 +2260,9 @@
         "fontSerifRed": "明朝（赤）",
         "fullScreen": "全画面表示",
         "furigana": "フリガナ",
+        "goToAlbum": "アルバムへ",
+        "goToArtist": "アーティストへ",
+        "goToPlaylist": "プレイリストへ",
         "importLibrary": "ライブラリを読み込む...",
         "ipodHelp": "iPod ヘルプ",
         "japaneseFurigana": "日本語（フリガナ）",
@@ -2364,6 +2372,11 @@
         "wrong": "残念！"
       },
       "name": "iPod",
+      "playback": {
+        "live": "LIVE",
+        "mix": "MIX",
+        "trackOf": "{{total}}曲中{{current}}曲"
+      },
       "status": {
         "added": "♬ 追加しました",
         "appleMusicAddedToFavorites": "お気に入りに追加しました",

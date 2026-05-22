@@ -23,6 +23,7 @@ import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { appRegistry } from "@/config/appRegistry";
 import { useTranslation } from "react-i18next";
+import { TRANSLATION_LANGUAGES } from "../constants";
 
 // Caps for the in-menubar library browser. Radix's MenubarSub doesn't
 // virtualize, so a 5,000-song library would commit thousands of DOM
@@ -76,21 +77,15 @@ export function IpodMenuBar({
   const appId = "ipod";
   const appName = appRegistry[appId as keyof typeof appRegistry]?.name || appId;
 
-  const translationLanguages = [
-    { label: t("apps.ipod.translationLanguages.original"), code: null },
-    { label: t("apps.ipod.translationLanguages.auto"), code: "auto" },
-    { separator: true },
-    { label: "English", code: "en" },
-    { label: "中文", code: "zh-TW" },
-    { label: "日本語", code: "ja" },
-    { label: "한국어", code: "ko" },
-    { label: "Español", code: "es" },
-    { label: "Français", code: "fr" },
-    { label: "Deutsch", code: "de" },
-    { label: "Português", code: "pt" },
-    { label: "Italiano", code: "it" },
-    { label: "Русский", code: "ru" },
-  ];
+  const translationLanguages = useMemo(
+    () =>
+      TRANSLATION_LANGUAGES.map((lang) => ({
+        label: lang.labelKey ? t(lang.labelKey) : lang.label || "",
+        code: lang.code,
+        separator: lang.separator,
+      })),
+    [t]
+  );
   const {
     youtubeTracks,
     youtubeCurrentSongId,

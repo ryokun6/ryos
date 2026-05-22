@@ -2075,6 +2075,7 @@
         "playPause": "Воспроизвести/Пауза",
         "previousTrack": "Предыдущий трек",
         "select": "Выбрать",
+        "shuffleOn": "Случайный порядок включён",
         "toggleFurigana": "Переключить фуригану",
         "toggleHangulRomanization": "Переключить хангыль / романизацию",
         "toggleRomanization": "Переключить романизацию",
@@ -2116,6 +2117,9 @@
         "appleMusicLibraryProgress": "Загрузка медиатеки Apple Music… {{loaded}} песен",
         "appleMusicLibraryProgressOf": "Загрузка медиатеки Apple Music… {{loaded}} из {{total}}",
         "appleMusicNoRecommendations": "Рекомендации Apple Music пока недоступны",
+        "appleMusicNotConfigured": "Apple Music не настроен",
+        "appleMusicNotConfiguredDescription": "Укажите MUSICKIT_TEAM_ID, MUSICKIT_KEY_ID и MUSICKIT_PRIVATE_KEY.",
+        "appleMusicNotConfiguredDescriptionShort": "Укажите MUSICKIT_TEAM_ID / MUSICKIT_KEY_ID / MUSICKIT_PRIVATE_KEY",
         "appleMusicRadioFailed": "Не удалось загрузить радио Apple Music",
         "appleMusicRecentlyAddedFailed": "Не удалось загрузить недавно добавленные песни",
         "appleMusicSearchAppleMusic": "Apple Music",
@@ -2124,6 +2128,7 @@
         "appleMusicSearchSelectResult": "Выберите песню для добавления:",
         "appleMusicSearchSignInRequired": "Войдите в Apple Music для поиска",
         "appleMusicSearchUnavailable": "Поиск в Apple Music недоступен",
+        "appleMusicSignInFailed": "Не удалось войти",
         "autoUpdateFailed": "Сбой автообновления",
         "autoUpdatedLibraryAddedSongs": "Библиотека автоматически обновлена: добавлено {{newCount}} новая песня{{newPlural}} в начало{{updatedText}}",
         "autoUpdatedTrackMetadata": "Автоматически обновлены метаданные {{count}} трек{{plural}}",
@@ -2255,6 +2260,9 @@
         "fontSerifRed": "Serif (Красный)",
         "fullScreen": "На весь экран",
         "furigana": "Фуригана",
+        "goToAlbum": "К альбому",
+        "goToArtist": "К исполнителю",
+        "goToPlaylist": "К плейлисту",
         "importLibrary": "Импорт медиатеки...",
         "ipodHelp": "Справка iPod",
         "japaneseFurigana": "Японский (Фуригана)",
@@ -2364,6 +2372,11 @@
         "wrong": "Не совсем!"
       },
       "name": "iPod",
+      "playback": {
+        "live": "LIVE",
+        "mix": "MIX",
+        "trackOf": "{{current}} из {{total}}"
+      },
       "status": {
         "added": "♬ Добавлено",
         "appleMusicAddedToFavorites": "Добавлено в избранное",

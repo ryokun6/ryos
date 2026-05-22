@@ -2075,6 +2075,7 @@
         "playPause": "재생/일시 정지",
         "previousTrack": "이전 곡",
         "select": "선택",
+        "shuffleOn": "셔플 켜짐",
         "toggleFurigana": "후리가나 전환",
         "toggleHangulRomanization": "한글 / 로마자 표기 전환",
         "toggleRomanization": "발음 표기 전환",
@@ -2116,6 +2117,9 @@
         "appleMusicLibraryProgress": "Apple Music 보관함 불러오는 중… 노래 {{loaded}}곡",
         "appleMusicLibraryProgressOf": "Apple Music 보관함 불러오는 중… {{total}}개 중 {{loaded}}개",
         "appleMusicNoRecommendations": "아직 사용할 수 있는 Apple Music 추천이 없습니다",
+        "appleMusicNotConfigured": "Apple Music이 구성되지 않았습니다",
+        "appleMusicNotConfiguredDescription": "MUSICKIT_TEAM_ID, MUSICKIT_KEY_ID, MUSICKIT_PRIVATE_KEY를 설정하세요.",
+        "appleMusicNotConfiguredDescriptionShort": "MUSICKIT_TEAM_ID / MUSICKIT_KEY_ID / MUSICKIT_PRIVATE_KEY를 설정하세요",
         "appleMusicRadioFailed": "Apple Music 라디오를 불러오지 못했습니다",
         "appleMusicRecentlyAddedFailed": "최근 추가된 노래를 불러오지 못했습니다",
         "appleMusicSearchAppleMusic": "Apple Music",
@@ -2124,6 +2128,7 @@
         "appleMusicSearchSelectResult": "추가할 노래 선택:",
         "appleMusicSearchSignInRequired": "검색하려면 Apple Music에 로그인하세요",
         "appleMusicSearchUnavailable": "Apple Music 검색을 사용할 수 없습니다",
+        "appleMusicSignInFailed": "로그인 실패",
         "autoUpdateFailed": "자동 업데이트 실패",
         "autoUpdatedLibraryAddedSongs": "라이브러리 자동 업데이트됨: 새로운 곡 {{newCount}}개가 상단에 추가되었습니다{{updatedText}}",
         "autoUpdatedTrackMetadata": "트랙 메타데이터 {{count}}개 자동 업데이트됨",
@@ -2255,6 +2260,9 @@
         "fontSerifRed": "세리프 (빨강)",
         "fullScreen": "전체 화면",
         "furigana": "후리가나",
+        "goToAlbum": "앨범으로 이동",
+        "goToArtist": "아티스트로 이동",
+        "goToPlaylist": "재생목록으로 이동",
         "importLibrary": "보관함 가져오기...",
         "ipodHelp": "iPod 도움말",
         "japaneseFurigana": "일본어 (후리가나)",
@@ -2364,6 +2372,11 @@
         "wrong": "아쉽네요!"
       },
       "name": "iPod",
+      "playback": {
+        "live": "LIVE",
+        "mix": "MIX",
+        "trackOf": "{{total}}곡 중 {{current}}곡"
+      },
       "status": {
         "added": "♬ 추가됨",
         "appleMusicAddedToFavorites": "즐겨찾기에 추가됨",

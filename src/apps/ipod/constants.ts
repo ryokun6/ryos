@@ -71,16 +71,16 @@ export const TRANSLATION_LANGUAGES: TranslationLanguage[] = [
   { labelKey: "apps.ipod.translationLanguages.original", code: null },
   { labelKey: "apps.ipod.translationLanguages.auto", code: "auto" },
   { separator: true, code: null, label: "" }, // Separator
-  { label: "English", code: "en" },
-  { label: "中文", code: "zh-TW" },
-  { label: "日本語", code: "ja" },
-  { label: "한국어", code: "ko" },
-  { label: "Español", code: "es" },
-  { label: "Français", code: "fr" },
-  { label: "Deutsch", code: "de" },
-  { label: "Português", code: "pt" },
-  { label: "Italiano", code: "it" },
-  { label: "Русский", code: "ru" },
+  { labelKey: "apps.ipod.translationLanguages.english", code: "en" },
+  { labelKey: "apps.ipod.translationLanguages.chinese", code: "zh-TW" },
+  { labelKey: "apps.ipod.translationLanguages.japanese", code: "ja" },
+  { labelKey: "apps.ipod.translationLanguages.korean", code: "ko" },
+  { labelKey: "apps.ipod.translationLanguages.spanish", code: "es" },
+  { labelKey: "apps.ipod.translationLanguages.french", code: "fr" },
+  { labelKey: "apps.ipod.translationLanguages.german", code: "de" },
+  { labelKey: "apps.ipod.translationLanguages.portuguese", code: "pt" },
+  { labelKey: "apps.ipod.translationLanguages.italian", code: "it" },
+  { labelKey: "apps.ipod.translationLanguages.russian", code: "ru" },
 ];
 
 // Translation badge mappings
