@@ -1060,17 +1060,21 @@ export function IpodScreen({
                     >
                       <span>
                         {currentTrack?.appleMusicPlayParams?.stationId
-                          ? "LIVE"
+                          ? t("apps.ipod.nowPlaying.live")
                           : isAppleMusicCollectionShell
-                            ? "MIX"
-                            : `${currentIndex + 1} of ${tracksLength}`}
+                            ? t("apps.ipod.nowPlaying.mix")
+                            : t("apps.ipod.nowPlaying.trackPosition", {
+                                current: currentIndex + 1,
+                                total: tracksLength,
+                                defaultValue: `${currentIndex + 1} of ${tracksLength}`,
+                              })}
                       </span>
                       {isShuffled && (
                         <Shuffle
                           className="shrink-0"
                           size={isModernUi ? 12 : 13}
                           weight="bold"
-                          aria-label="shuffle on"
+                          aria-label={t("apps.ipod.ariaLabels.shuffleOn")}
                         />
                       )}
                     </div>
@@ -1205,7 +1209,7 @@ export function IpodScreen({
                         : "font-geneva-12 text-[12px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
                     )}
                   >
-                    <p>Don't steal music</p>
+                    <p>Don&apos;t steal music</p>
                     <p>Ne volez pas la musique</p>
                     <p>Bitte keine Musik stehlen</p>
                     <p>音楽を盗用しないでください</p>

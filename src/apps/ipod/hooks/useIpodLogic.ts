@@ -944,9 +944,8 @@ export function useIpodLogic({
   const handleAppleMusicSignIn = useCallback(async () => {
     registerActivity();
     if (musicKitStatus === "missing-token") {
-      toast.error("Apple Music is not configured", {
-        description:
-          "Set MUSICKIT_TEAM_ID, MUSICKIT_KEY_ID, and MUSICKIT_PRIVATE_KEY.",
+      toast.error(t("apps.ipod.dialogs.appleMusicNotConfigured"), {
+        description: t("apps.ipod.dialogs.appleMusicNotConfiguredDescription"),
       });
       return;
     }
@@ -954,7 +953,7 @@ export function useIpodLogic({
       await musicKitAuthorize();
       showStatus(t("apps.ipod.status.appleMusicSignedIn", "Apple Music ✓"));
     } catch (err) {
-      toast.error("Sign in failed", {
+      toast.error(t("apps.ipod.dialogs.appleMusicSignInFailed"), {
         description: err instanceof Error ? err.message : String(err),
       });
     }
@@ -1325,9 +1324,8 @@ export function useIpodLogic({
       t("apps.ipod.status.libraryAppleMusic", "Library: Apple Music")
     );
     if (musicKitStatus === "missing-token") {
-      toast.error("Apple Music is not configured", {
-        description:
-          "Set MUSICKIT_TEAM_ID / MUSICKIT_KEY_ID / MUSICKIT_PRIVATE_KEY",
+      toast.error(t("apps.ipod.dialogs.appleMusicNotConfigured"), {
+        description: t("apps.ipod.dialogs.appleMusicNotConfiguredDescriptionShort"),
       });
       return;
     }
@@ -3371,8 +3369,9 @@ export function useIpodLogic({
         joinListenSession(sessionIdToProcess, username || undefined)
           .then((result) => {
             if (!result.ok) {
-              toast.error("Failed to join session", {
-                description: result.error || "Please try again.",
+              toast.error(t("apps.ipod.dialogs.listenSessionJoinFailed"), {
+                description:
+                  result.error || t("apps.ipod.dialogs.pleaseTryAgain"),
               });
             }
             if (instanceId) clearIpodInitialData(instanceId);
@@ -3417,8 +3416,8 @@ export function useIpodLogic({
         }
         processVideoId(videoId).catch((error) => {
           console.error(`Error processing videoId ${videoId}:`, error);
-          toast.error("Failed to load shared track", {
-            description: `Video ID: ${videoId}`,
+          toast.error(t("apps.ipod.dialogs.failedToLoadSharedTrack"), {
+            description: t("apps.ipod.dialogs.sharedTrackVideoId", { videoId }),
           });
         });
         lastProcessedInitialDataRef.current = updateInitialData;
@@ -3437,8 +3436,9 @@ export function useIpodLogic({
         joinListenSession(sessionId, username || undefined)
           .then((result) => {
             if (!result.ok) {
-              toast.error("Failed to join session", {
-                description: result.error || "Please try again.",
+              toast.error(t("apps.ipod.dialogs.listenSessionJoinFailed"), {
+                description:
+                  result.error || t("apps.ipod.dialogs.pleaseTryAgain"),
               });
             }
           })
@@ -4044,7 +4044,13 @@ export function useIpodLogic({
         await handleAddTrack(url);
       } catch (error) {
         console.error("Error adding track from search:", error);
-        showStatus(`❌ ${t("apps.ipod.dialogs.errorAdding")} ${error instanceof Error ? error.message : "Unknown error"}`);
+        showStatus(
+          `❌ ${t("apps.ipod.dialogs.errorAdding")} ${
+            error instanceof Error
+              ? error.message
+              : t("apps.ipod.dialogs.unknownError")
+          }`
+        );
       }
     },
     [handleAddTrack, showStatus, t]

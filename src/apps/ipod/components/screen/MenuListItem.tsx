@@ -134,14 +134,14 @@ export function MenuListItem({
                 resetOnPause
                 scrollStartDelaySec={0.5}
                 className={cn(
-                  "m-0 w-full min-w-0 p-0 font-semibold leading-none",
+                  "m-0 h-full w-full min-w-0 p-0 font-semibold leading-[1.15]",
                   hasCjkText ? "text-[11px]" : "text-[12px]"
                 )}
               />
               {subtitleTrim ? (
                 <span
                   className={cn(
-                    "block min-w-0 truncate font-normal !leading-none",
+                    "block min-w-0 truncate font-normal leading-[1.15]",
                     hasCjkText ? "text-[10px]" : "text-[11px]",
                     isSelected && !isLoading
                       ? "text-white/88"
@@ -157,7 +157,7 @@ export function MenuListItem({
           {value ? (
             <span
               className={cn(
-                "flex shrink-0 items-center font-semibold leading-none",
+                "flex shrink-0 items-center font-semibold leading-[1.15]",
                 hasCjkText ? "text-[11px]" : "text-[12px]",
                 isSelected && !isLoading
                   ? "text-white/90"
@@ -214,7 +214,7 @@ export function MenuListItem({
               : "text-black"
         )}
       >
-        <span className="flex min-h-0 min-w-0 flex-1 items-center self-stretch mr-2 overflow-y-hidden">
+        <span className="flex h-full min-w-0 flex-1 items-center mr-2">
           <ScrollingText
             text={text}
             align="left"
@@ -223,13 +223,13 @@ export function MenuListItem({
             isPlaying={isSelected && !isLoading}
             resetOnPause
             scrollStartDelaySec={0.5}
-            className="w-full min-w-0 text-[15px] font-semibold leading-none"
+            className="h-full w-full min-w-0 text-[15px] font-semibold leading-[1.15]"
           />
         </span>
         {value ? (
           <span
             className={cn(
-              "flex shrink-0 items-center text-[15px] font-semibold leading-none",
+              "flex shrink-0 items-center text-[15px] font-semibold leading-[1.15]",
               isSelected && !isLoading
                 ? "text-white/90"
                 : "text-[rgb(99,101,103)]"

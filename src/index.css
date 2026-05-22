@@ -1358,10 +1358,13 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   -ms-overflow-style: none; /* IE/Edge */
 }
 
-/* Clip vertical spill for scroll metrics; keep X visible so row marquees can scroll. */
+/* Clip vertical spill for scroll metrics; keep X visible so row marquees can scroll.
+ * overflow-clip-margin gives ascenders/descenders a hairline of paint room without
+ * changing the 22px / 33px row slots used for virtualization math. */
 .ipod-modern-screen .ipod-menu-item {
   overflow-x: visible;
-  overflow-y: hidden;
+  overflow-y: clip;
+  overflow-clip-margin-block: 2px;
 }
 
 .ipod-menu-container::-webkit-scrollbar {

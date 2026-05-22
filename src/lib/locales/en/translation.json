@@ -1878,7 +1878,13 @@
         "libraryYoutube": "Library: YouTube",
         "libraryAppleMusic": "Library: Apple Music",
         "appleMusicAddedToFavorites": "Added to Favorites",
-        "appleMusicGeniusPlaying": "Genius Mix"
+        "appleMusicGeniusPlaying": "Genius Mix",
+        "noTrack": "No track"
+      },
+      "nowPlaying": {
+        "live": "LIVE",
+        "mix": "MIX",
+        "trackPosition": "{{current}} of {{total}}"
       },
       "syncMode": {
         "instructions": "Tap the line you're hearing to sync lyrics",
@@ -1944,6 +1950,14 @@
         "appleMusicRadioFailed": "Failed to load Apple Music radio",
         "appleMusicGeniusFailed": "Failed to play Apple Music recommendations",
         "appleMusicNoRecommendations": "No Apple Music recommendations are available yet",
+        "appleMusicNotConfigured": "Apple Music is not configured",
+        "appleMusicNotConfiguredDescription": "Set MUSICKIT_TEAM_ID, MUSICKIT_KEY_ID, and MUSICKIT_PRIVATE_KEY.",
+        "appleMusicNotConfiguredDescriptionShort": "Set MUSICKIT_TEAM_ID / MUSICKIT_KEY_ID / MUSICKIT_PRIVATE_KEY",
+        "appleMusicSignInFailed": "Sign in failed",
+        "listenSessionJoinFailed": "Failed to join session",
+        "pleaseTryAgain": "Please try again.",
+        "sharedTrackVideoId": "Video ID: {{videoId}}",
+        "unknownError": "Unknown error",
         "lyricsSearchTitle": "Search Lyrics",
         "lyricsSearchDescription": "Search for lyrics for \"{{title}}\" by {{artist}}",
         "lyricsSearchPlaceholder": "Enter search query (e.g., song title, artist)",
@@ -2071,7 +2085,8 @@
         "toggleFurigana": "Toggle Furigana",
         "toggleRomanization": "Toggle Romanization",
         "translateLyrics": "Translate lyrics",
-        "select": "Select"
+        "select": "Select",
+        "shuffleOn": "Shuffle on"
       },
       "keys": {
         "escape": "Escape",
