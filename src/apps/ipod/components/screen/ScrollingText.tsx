@@ -129,7 +129,7 @@ export function ScrollingText({
     <div
       ref={containerRef}
       className={cn(
-        "relative flex min-h-0 min-w-0 items-center overflow-x-hidden overflow-y-visible",
+        "relative flex h-full min-h-0 min-w-0 items-center overflow-x-hidden overflow-y-hidden",
         alignClass,
         className
       )}

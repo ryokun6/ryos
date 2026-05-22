@@ -721,6 +721,10 @@ export function IpodScreen({
       setModernChromeWidthMarqueeBlocked(false);
       return;
     }
+    if (isNowPlayingSongMenu) {
+      setModernChromeWidthMarqueeBlocked(false);
+      return;
+    }
     if (skipModernChromeMarqueeCooldown.current) {
       skipModernChromeMarqueeCooldown.current = false;
       return;
