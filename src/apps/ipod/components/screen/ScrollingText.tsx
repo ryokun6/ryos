@@ -53,34 +53,48 @@ export function ScrollingText({
 
   const durationSec = Math.max(text.length * 0.15, 8);
 
-  // Check if text needs to scroll (is wider than container)
+  const measureOverflow = useCallback(() => {
+    const container = containerRef.current;
+    const textElement = textRef.current;
+    if (!container || !textElement) return;
+
+    const containerWidth = container.clientWidth;
+    if (containerWidth <= 0) {
+      setShouldScroll(false);
+      return;
+    }
+
+    let contentWidth = textElement.scrollWidth;
+    if (textElement.closest(".scrolling-text-marquee-track")) {
+      contentWidth = Math.max(0, contentWidth - paddingWidth);
+    }
+
+    setShouldScroll(contentWidth > containerWidth + 1);
+  }, [paddingWidth]);
+
+  const isResetPaused = resetOnPause && !isPlaying;
+  const showMarquee = shouldScroll && allowMarquee && !isResetPaused;
+  const showStaticOverflowFade =
+    shouldScroll && allowMarquee && isResetPaused && fadeEdges;
+
   useEffect(() => {
     const container = containerRef.current;
     const textElement = textRef.current;
     if (!container || !textElement) return;
 
-    const measure = () => {
-      const newContainerWidth = container.clientWidth;
-      const newContentWidth = textElement.scrollWidth;
-      setShouldScroll(newContentWidth > newContainerWidth);
-    };
+    measureOverflow();
 
-    measure();
-
-    const resizeObserver = new ResizeObserver(measure);
+    const resizeObserver = new ResizeObserver(() => measureOverflow());
     resizeObserver.observe(container);
     resizeObserver.observe(textElement);
 
     return () => resizeObserver.disconnect();
-  }, [text, allowMarquee]);
+  }, [text, allowMarquee, measureOverflow]);
 
-  // When `resetOnPause` is enabled and we're paused, drop the marquee track
-  // entirely so the duplicated text snaps back to translate(0). The static
-  // branch still gets the right-edge truncation fade below.
-  const isResetPaused = resetOnPause && !isPlaying;
-  const showMarquee = shouldScroll && allowMarquee && !isResetPaused;
-  const showStaticOverflowFade =
-    shouldScroll && allowMarquee && isResetPaused && fadeEdges;
+  useEffect(() => {
+    const id = requestAnimationFrame(() => measureOverflow());
+    return () => cancelAnimationFrame(id);
+  }, [showMarquee, measureOverflow]);
 
   useEffect(() => {
     setEdgeFadeActive(false);
@@ -92,12 +106,7 @@ export function ScrollingText({
   }, []);
 
   const fadeInset = "0.75em";
-  // Right-only fade: keep text crisp on the left, hint overflow on the right.
-  // Used for the idle/pre-start frame of the marquee AND for the
-  // `resetOnPause` static fallback (so deselected overflowing rows still
-  // render a truncation hint instead of a hard cut).
   const rightOnlyFadeGradient = `linear-gradient(to right, black 0, black calc(100% - ${fadeInset}), transparent 100%)`;
-  // Full fade: hides the seam at both edges while the marquee loops.
   const bothEdgesFadeGradient = `linear-gradient(to right, transparent 0, black ${fadeInset}, black calc(100% - ${fadeInset}), transparent 100%)`;
   const maskImage = showMarquee && fadeEdges
     ? edgeFadeActive
