@@ -26,7 +26,10 @@ describe("Error Boundary Wiring Tests", () => {
 
     test("relaunches crashed instances via close-and-launch flow", async () => {
       const source = readSource("src/apps/base/AppManager.tsx");
-      expect(source.includes("closeAppInstance(instance.instanceId);")).toBe(true);
+      expect(
+        source.includes("closeAppInstance(instance.instanceId);") ||
+          source.includes("closeAppInstance(instanceId);")
+      ).toBe(true);
       expect(
         /launchApp\(\s*appId,\s*(?:instance\.initialData|relaunchInitialData),\s*instance\.title,\s*supportsMultiWindowApp\(appId\)/.test(
           source,
