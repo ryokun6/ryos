@@ -29,6 +29,16 @@ export function prefetchLikelyAppChunks(appIds: readonly string[]): void {
   }
 }
 
+/**
+ * Warm every registered lazy app import (used after asset URL prefetch so chunks
+ * are in the service worker cache before going offline).
+ */
+export function prefetchAllRegisteredAppChunks(): void {
+  for (const loader of appChunkLoaders.values()) {
+    void loader();
+  }
+}
+
 // Helper to create a lazy-loaded component with Suspense
 // Uses a cache to maintain stable component references across HMR
 export function createLazyComponent<T = unknown>(

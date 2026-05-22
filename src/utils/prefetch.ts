@@ -20,6 +20,8 @@ import { setNextBootMessage } from "@/utils/bootMessage";
 import i18n from "@/lib/i18n";
 import { getApiUrl, isTauri } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { prefetchAllRegisteredAppChunks } from "@/config/lazyAppComponent";
+import { discoverPrefetchAssetUrls } from "@/utils/prefetchChunkDiscovery";
 
 // Storage key for manifest timestamp (for cache invalidation)
 const MANIFEST_KEY = 'ryos:manifest-timestamp';
@@ -489,7 +491,7 @@ async function runPrefetchWithToast(
       }, prefetchOptions);
     }
     
-    // Prefetch JS chunks
+    // Prefetch JS chunks (app lazy entries + shared deps for offline use)
     if (jsUrls.length > 0) {
       const baseCompleted = overallCompleted;
       await prefetchUrlsWithProgress(jsUrls, 'Scripts', (completed, total) => {
@@ -497,6 +499,9 @@ async function runPrefetchWithToast(
         updateToast('scripts', completed, total);
       }, prefetchOptions);
     }
+
+    // Resolve registered app dynamic imports so chunks are in the SW/module graph
+    prefetchAllRegisteredAppChunks();
     
     // Prefetch static assets (textures, splash screens, etc.)
     if (assetUrls.length > 0) {
@@ -745,58 +750,41 @@ async function clearAllCaches(): Promise<void> {
 }
 
 /**
- * Discover all JS chunks by fetching the main bundle and parsing for dynamic imports
+ * Discover hashed JS/CSS assets for offline app support by parsing the main bundle
+ * (__vite__mapDeps + dynamic import targets from the main entry chunk).
  */
 async function discoverAllJsChunks(): Promise<string[]> {
   try {
-    // First, get the main bundle URL from index.html
-    const indexResponse = await abortableFetch('/index.html', {
-      method: 'GET',
+    const indexResponse = await abortableFetch("/index.html", {
+      method: "GET",
       timeout: 15000,
       throwOnHttpError: false,
       retry: { maxAttempts: 1, initialDelayMs: 250 },
     });
     if (!indexResponse.ok) return [];
-    
+
     const html = await indexResponse.text();
-    
-    // Find the main index bundle: /assets/index-XXXX.js
     const mainBundleMatch = html.match(/\/assets\/index-[A-Za-z0-9_-]+\.js/);
     if (!mainBundleMatch) {
-      // In development mode, Vite serves source directly (no bundled assets)
       if (import.meta.env.DEV) {
-        console.log('[Prefetch] Skipping JS chunk discovery in development mode');
+        console.log("[Prefetch] Skipping JS chunk discovery in development mode");
       } else {
-        console.warn('[Prefetch] Could not find main bundle in index.html');
+        console.warn("[Prefetch] Could not find main bundle in index.html");
       }
       return [];
     }
-    
-    // Fetch the main bundle to find dynamic import URLs
+
     const bundleResponse = await abortableFetch(mainBundleMatch[0], {
-      method: 'GET',
+      method: "GET",
       timeout: 15000,
       throwOnHttpError: false,
       retry: { maxAttempts: 1, initialDelayMs: 250 },
     });
     if (!bundleResponse.ok) return [];
-    
-    const bundleCode = await bundleResponse.text();
-    
-    // Find all asset URLs in the bundle
-    // Dynamic imports look like: "assets/ChatsAppComponent-BHyz_x7A.js" or "./ChatsAppComponent-..."
-    const assetPattern = /["'](?:\.\/|assets\/)([A-Za-z0-9_-]+)-[A-Za-z0-9_-]+\.js["']/g;
-    const matches = bundleCode.matchAll(assetPattern);
-    
-    // Extract just the filename part and build full URLs
-    const allAssets: string[] = [];
-    for (const match of matches) {
-      const filename = match[0].replace(/["']/g, '').replace(/^\.\//, '').replace(/^assets\//, '');
-      allAssets.push(`/assets/${filename}`);
-    }
-    
-    // Dedupe and return all JS chunks (includes locale translation-* chunks)
-    const uniqueAssets = [...new Set(allAssets)];
+
+    const mainBundleCode = await bundleResponse.text();
+    // __vite__mapDeps on the main bundle lists every lazy-app dependency (incl. Chats → mermaid).
+    const uniqueAssets = discoverPrefetchAssetUrls(mainBundleCode);
 
     const localeChunks = uniqueAssets.filter((url) =>
       /\/translation-[A-Za-z0-9_-]+\.js$/.test(url)
@@ -807,11 +795,15 @@ async function discoverAllJsChunks(): Promise<string[]> {
       );
     }
 
-    console.log(`[Prefetch] Discovered ${uniqueAssets.length} JS chunks from main bundle`);
+    const appChunks = uniqueAssets.filter((url) =>
+      /AppComponent-|PhotoBoothComponent-|\/mermaid-/.test(url)
+    );
+    console.log(
+      `[Prefetch] Discovered ${uniqueAssets.length} assets (${appChunks.length} app-related chunks)`
+    );
     return uniqueAssets;
-    
   } catch (error) {
-    console.warn('[Prefetch] Failed to discover JS chunks:', error);
+    console.warn("[Prefetch] Failed to discover JS chunks:", error);
     return [];
   }
 }
