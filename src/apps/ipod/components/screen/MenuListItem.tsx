@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useImageLoaded } from "../../hooks/useImageLoaded";
 import { IPOD_MODERN_MEDIA_THUMB_PX } from "../../constants";
@@ -72,11 +71,10 @@ export function MenuListItem({
   const isModern = variant === "modern";
   const thumbSrc = isModern && mediaRow ? (thumbnailUrl ?? null) : null;
   const thumb = useImageLoaded(thumbSrc);
-  const [thumbFailed, setThumbFailed] = useState(false);
-  useEffect(() => {
-    setThumbFailed(false);
-  }, [thumbSrc]);
-  const showThumbImage = Boolean(thumbSrc) && !thumbFailed;
+  const showThumbImage = Boolean(thumbSrc) && !thumb.failed;
+  const showMissingOrFailedArt = !thumbSrc || thumb.failed;
+  const showThumbLoadingBackdrop =
+    Boolean(thumbSrc) && !thumb.failed && !thumb.loaded;
   const subtitleTrim =
     typeof subtitle === "string" ? subtitle.trim() : "";
 
@@ -115,11 +113,21 @@ export function MenuListItem({
               }}
               aria-hidden
             >
-              <IpodArtworkPlaceholder
-                kind={emptyArtworkKind}
-                selected={isSelected && !isLoading}
-                className="size-full rounded-[2px]"
-              />
+              {showMissingOrFailedArt ? (
+                <IpodArtworkPlaceholder
+                  kind={emptyArtworkKind}
+                  selected={isSelected && !isLoading}
+                  className="size-full rounded-[2px]"
+                />
+              ) : null}
+              {showThumbLoadingBackdrop ? (
+                <IpodArtworkPlaceholder
+                  kind={emptyArtworkKind}
+                  hideGlyph
+                  selected={isSelected && !isLoading}
+                  className="absolute inset-0 size-full rounded-[2px]"
+                />
+              ) : null}
               {showThumbImage ? (
                 <img
                   ref={thumb.ref}
@@ -128,7 +136,7 @@ export function MenuListItem({
                   className="absolute inset-0 size-full object-cover"
                   draggable={false}
                   onLoad={thumb.onLoad}
-                  onError={() => setThumbFailed(true)}
+                  onError={thumb.onError}
                   style={{
                     opacity: thumb.loaded ? 1 : 0,
                     transition: THUMB_FADE,

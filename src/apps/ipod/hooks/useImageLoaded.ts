@@ -21,31 +21,51 @@ import { useLayoutEffect, useRef, useState } from "react";
  *     ref={cover.ref}
  *     src={coverUrl}
  *     onLoad={cover.onLoad}
+ *     onError={cover.onError}
  *     style={{
  *       opacity: cover.loaded ? 1 : 0,
  *       transition: "opacity 250ms ease-out",
  *     }}
  *   />
  *
- * The caller supplies the placeholder (typically as the wrapping
- * element's `background`) so this hook stays purely about load
- * state, not chrome.
+ * `failed` turns true after `onError` or when a cached/decoded `<img>`
+ * reports `complete` but `naturalWidth === 0` (broken bitmap).
+ *
+ * The caller overlays real bitmaps vs empty states; this hook only
+ * tracks load lifecycle.
  */
 export function useImageLoaded(src: string | null | undefined) {
   const ref = useRef<HTMLImageElement>(null);
   const [loaded, setLoaded] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   useLayoutEffect(() => {
     setLoaded(false);
+    setFailed(false);
+    if (src == null || src === "") {
+      return;
+    }
     const img = ref.current;
-    if (img && img.complete && img.naturalWidth > 0) {
-      setLoaded(true);
+    if (img && img.complete) {
+      if (img.naturalWidth > 0) {
+        setLoaded(true);
+      } else {
+        setFailed(true);
+      }
     }
   }, [src]);
 
   return {
     ref,
     loaded,
-    onLoad: () => setLoaded(true),
+    failed,
+    onLoad: () => {
+      setFailed(false);
+      setLoaded(true);
+    },
+    onError: () => {
+      setLoaded(false);
+      setFailed(true);
+    },
   };
 }

@@ -225,6 +225,7 @@ function SpinningCD({ coverUrl, size, isPlaying, onClick }: { coverUrl: string |
               alt=""
               draggable={false}
               onLoad={albumArt.onLoad}
+              onError={albumArt.onError}
               className="w-full h-full object-cover"
               style={{
                 opacity: albumArt.loaded ? 1 : 0,
@@ -431,6 +432,7 @@ function CoverImage({
   // contained — neither depends on the other firing onLoad.
   const sleeve = useImageLoaded(coverUrl);
   const reflection = useImageLoaded(coverUrl);
+  const showSleeveBitmap = Boolean(coverUrl) && !sleeve.failed;
 
   // Handle disc click - play track if different, otherwise toggle play/pause
   const handleDiscClick = useCallback(() => {
@@ -622,20 +624,7 @@ function CoverImage({
             ease: "easeOut",
           }}
         />
-        {coverUrl ? (
-          <img
-            ref={sleeve.ref}
-            src={coverUrl}
-            alt={track?.title || ""}
-            draggable={false}
-            onLoad={sleeve.onLoad}
-            className="w-full h-full object-cover"
-            style={{
-              opacity: sleeve.loaded ? 1 : 0,
-              transition: COVER_FADE_TRANSITION,
-            }}
-          />
-        ) : (
+        {!showSleeveBitmap ? (
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-700 to-gray-900">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -647,6 +636,20 @@ function CoverImage({
               <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
             </svg>
           </div>
+        ) : (
+          <img
+            ref={sleeve.ref}
+            src={coverUrl!}
+            alt={track?.title || ""}
+            draggable={false}
+            onLoad={sleeve.onLoad}
+            onError={sleeve.onError}
+            className="w-full h-full object-cover"
+            style={{
+              opacity: sleeve.loaded ? 1 : 0,
+              transition: COVER_FADE_TRANSITION,
+            }}
+          />
         )}
       </motion.div>
       
@@ -689,14 +692,16 @@ function CoverImage({
           alt=""
           draggable={false}
           onLoad={reflection.onLoad}
+          onError={reflection.onError}
           className="w-full h-auto"
           style={{
             transform: "scaleY(-1)",
-            opacity: coverUrl && reflection.loaded ? 0.3 : 0,
+            opacity:
+              coverUrl && !reflection.failed && reflection.loaded ? 0.3 : 0,
             transition: COVER_FADE_TRANSITION,
             maskImage: "linear-gradient(to top, rgba(0,0,0,1) 0%, transparent 50%)",
             WebkitMaskImage: "linear-gradient(to top, rgba(0,0,0,1) 0%, transparent 50%)",
-            display: coverUrl ? "block" : "none",
+            display: coverUrl && !sleeve.failed ? "block" : "none",
             borderRadius: "1%",
           }}
         />
