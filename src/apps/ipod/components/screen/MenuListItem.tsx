@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useImageLoaded } from "../../hooks/useImageLoaded";
+import { IPOD_MODERN_MEDIA_THUMB_PX } from "../../constants";
 import { IpodArtworkPlaceholder, type IpodEmptyArtworkKind } from "./IpodArtworkPlaceholder";
 import { ScrollingText } from "./ScrollingText";
 
@@ -82,7 +83,7 @@ export function MenuListItem({
         <div
           onClick={isLoading ? undefined : onClick}
           className={cn(
-            "h-full pl-1 pr-1.5 font-ipod-modern-ui flex justify-between items-center gap-1",
+            "h-full overflow-x-visible overflow-y-hidden pl-1 pr-1.5 font-ipod-modern-ui flex justify-between items-center gap-1",
             "ipod-modern-row",
             isLoading ? "cursor-default" : "cursor-pointer",
             isSelected && !isLoading
@@ -94,7 +95,11 @@ export function MenuListItem({
         >
           <div className="flex min-h-0 min-w-0 flex-1 items-center gap-1.5 mr-0.5">
             <div
-              className="relative size-[26px] shrink-0 overflow-hidden rounded-[2px]"
+              className="relative shrink-0 overflow-hidden rounded-[2px]"
+              style={{
+                width: IPOD_MODERN_MEDIA_THUMB_PX,
+                height: IPOD_MODERN_MEDIA_THUMB_PX,
+              }}
               aria-hidden
             >
               <IpodArtworkPlaceholder
@@ -118,8 +123,8 @@ export function MenuListItem({
                 />
               ) : null}
             </div>
-            {/* Two-line stack: tight line-height; spacing is natural line box only. */}
-            <div className="flex min-h-0 min-w-0 flex-1 flex-col justify-center gap-0 py-0 leading-none">
+            {/* Two-line stack: 12+1+11 px fits under 26px thumb inside a 33px row. */}
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col justify-center gap-px py-0 leading-none">
               <ScrollingText
                 text={text}
                 align="left"
@@ -129,14 +134,14 @@ export function MenuListItem({
                 resetOnPause
                 scrollStartDelaySec={0.5}
                 className={cn(
-                  "m-0 max-w-full min-w-0 p-0 font-semibold !leading-none [&>div]:!leading-none",
+                  "m-0 w-full min-w-0 p-0 font-semibold leading-none",
                   hasCjkText ? "text-[11px]" : "text-[12px]"
                 )}
               />
               {subtitleTrim ? (
                 <span
                   className={cn(
-                    "mt-0.5 block min-w-0 truncate font-normal !leading-none",
+                    "block min-w-0 truncate font-normal !leading-none",
                     hasCjkText ? "text-[10px]" : "text-[11px]",
                     isSelected && !isLoading
                       ? "text-white/88"
@@ -181,8 +186,8 @@ export function MenuListItem({
     }
 
     // iPod-classic-js SelectableListItem: white row, blue gradient
-    // selection highlight, no separator. Rows are compact (**21px**) with **15px** type so
-    // titlebar + six rows fit inside the 150px screen (nano 6G/7G density).
+    // selection highlight, no separator. Rows are **22px** with **15px** type so
+    // 16px status bar + six rows fill the 132px menu body (constants.ts).
     //
     // Long labels truncate via `ScrollingText` with `fadeEdges`:
     //   - When the label fits, ScrollingText renders static text.
@@ -198,8 +203,8 @@ export function MenuListItem({
       <div
         onClick={isLoading ? undefined : onClick}
         className={cn(
-          /* items-stretch + inner flex items-center: line-box ascent no longer floats labels high */
-          "h-full pl-1.5 pr-2 font-ipod-modern-ui flex justify-between items-stretch",
+          /* overflow-y-hidden: row slot height; overflow-x-visible: horizontal marquee. */
+          "h-full overflow-x-visible overflow-y-hidden pl-1.5 pr-2 font-ipod-modern-ui flex justify-between items-center",
           "ipod-modern-row",
           isLoading ? "cursor-default" : "cursor-pointer",
           isSelected && !isLoading
@@ -209,7 +214,7 @@ export function MenuListItem({
               : "text-black"
         )}
       >
-        <span className="flex min-h-0 min-w-0 flex-1 items-center mr-2">
+        <span className="flex min-h-0 min-w-0 flex-1 items-center self-stretch mr-2 overflow-y-hidden">
           <ScrollingText
             text={text}
             align="left"
@@ -218,13 +223,13 @@ export function MenuListItem({
             isPlaying={isSelected && !isLoading}
             resetOnPause
             scrollStartDelaySec={0.5}
-            className="max-w-full min-w-0 block text-[15px] font-semibold leading-normal"
+            className="w-full min-w-0 text-[15px] font-semibold leading-none"
           />
         </span>
         {value ? (
           <span
             className={cn(
-              "flex shrink-0 items-center text-[15px] font-semibold leading-normal",
+              "flex shrink-0 items-center text-[15px] font-semibold leading-none",
               isSelected && !isLoading
                 ? "text-white/90"
                 : "text-[rgb(99,101,103)]"

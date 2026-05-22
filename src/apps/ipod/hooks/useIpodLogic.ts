@@ -58,6 +58,7 @@ import { onAppUpdate } from "@/utils/appEventBus";
 import {
   BACKLIGHT_TIMEOUT_MS,
   SEEK_AMOUNT_SECONDS,
+  IPOD_NOW_PLAYING_SONG_MENU_KEY as NOW_PLAYING_SONG_MENU_KEY,
   getYouTubeVideoId,
   formatKugouImageUrl,
   getAlbumGroupingKey,
@@ -93,9 +94,6 @@ const IS_IOS_SAFARI = IS_IOS && IS_SAFARI;
 
 /** Stable fallback so `rebuildMenuItems` never returns a fresh `[]` per call. */
 const EMPTY_IPOD_MENU_ITEMS: MenuItem[] = [];
-
-/** Internal breadcrumb key for the Now Playing long-press song menu. */
-const NOW_PLAYING_SONG_MENU_KEY = "__nowPlayingSongMenu__";
 
 export interface UseIpodLogicOptions {
   isWindowOpen: boolean;

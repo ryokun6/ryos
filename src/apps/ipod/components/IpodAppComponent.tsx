@@ -31,7 +31,10 @@ import { LandscapeVideoBackground } from "@/components/shared/LandscapeVideoBack
 import { AmbientBackground } from "@/components/shared/AmbientBackground";
 import { MeshGradientBackground } from "@/components/shared/MeshGradientBackground";
 import { WaterBackground } from "@/components/shared/WaterBackground";
-import { PLAYER_PROGRESS_INTERVAL_MS } from "../constants";
+import {
+  IPOD_MODERN_SCREEN_HEIGHT_PX,
+  PLAYER_PROGRESS_INTERVAL_MS,
+} from "../constants";
 
 export function IpodAppComponent({
   isWindowOpen,
@@ -331,7 +334,11 @@ export function IpodAppComponent({
             {/* Screen container with Cover Flow overlay */}
             <div 
               className="relative w-full" 
-              style={{ height: "150px", minHeight: "150px", maxHeight: "150px" }}
+              style={{
+                height: IPOD_MODERN_SCREEN_HEIGHT_PX,
+                minHeight: IPOD_MODERN_SCREEN_HEIGHT_PX,
+                maxHeight: IPOD_MODERN_SCREEN_HEIGHT_PX,
+              }}
               onMouseDown={(e) => {
                 // Start long press timer for Now Playing song menu
                 if (screenLongPressTimerRef.current) clearTimeout(screenLongPressTimerRef.current);

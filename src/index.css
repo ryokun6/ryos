@@ -1358,6 +1358,12 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   -ms-overflow-style: none; /* IE/Edge */
 }
 
+/* Clip vertical spill for scroll metrics; keep X visible so row marquees can scroll. */
+.ipod-modern-screen .ipod-menu-item {
+  overflow-x: visible;
+  overflow-y: hidden;
+}
+
 .ipod-menu-container::-webkit-scrollbar {
   display: none; /* WebKit browsers */
 }
@@ -1420,8 +1426,8 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
  *   background: linear-gradient(180deg, #feffff 0%, #b1b6b9 100%);
  *   reference border-bottom was #7995a3 (slightly blue); we use a neutral gray.
  *
- * The modern titlebar is **17px** tall; six **21.5px** list rows sit below it
- * (146px total — 4px slack at the bottom of the 150px screen).
+ * The modern titlebar is **16px** tall; the **132px** menu body fits six **22px**
+ * rows or four **33px** media rows with no slack (152px outer + border-2).
  * Classic's title strip stays at 24px to give Chicago bitmap glyphs the room
  * they need.
  * The hairline is drawn via inset box-shadow so it doesn't
@@ -1480,7 +1486,7 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
  *     specular highlight + dark base.
  *   BatteryCap: light grey #c4c4c4 with a #626262 outline.
  *
- * Sized at 14×7 with a 2×3 cap for the slim 17px modern titlebar — the
+ * Sized at 14×7 with a 2×3 cap for the slim 16px modern titlebar — the
  * gradient stops are unchanged from the iPod-classic-js reference. */
 .ipod-modern-battery-container {
   border: 1px solid #626262;

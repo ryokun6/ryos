@@ -22,6 +22,10 @@ import {
   musicQuizMaxScore,
   MUSIC_QUIZ_SNIPPET_MS as SNIPPET_DURATION_MS,
 } from "../utils/musicQuizScoring";
+import {
+  IPOD_MODERN_SCREEN_HEIGHT_PX,
+  IPOD_MODERN_TITLEBAR_HEIGHT_PX,
+} from "../constants";
 
 const FEEDBACK_DURATION_MS = 1800;
 const TOTAL_ROUNDS = 5;
@@ -196,7 +200,7 @@ export const MusicQuiz = function MusicQuiz(
   const isModernUi = uiVariant === "modern";
 
   /** Body area below title bar (`calc(100% - …)`) — classic bar ~26px incl. hairline.
-   *  Modern bar matches `MODERN_TITLEBAR_HEIGHT` in IpodScreen (17px) so the
+   *  Modern bar matches `IPOD_MODERN_TITLEBAR_HEIGHT_PX` in IpodScreen so the
    *  quiz view's chrome lines up exactly with the main menu's titlebar
    *  (nano 6G/7G silver header). */
   const bodyTopOffsetPx = isModernUi ? 17 : 26;
@@ -661,7 +665,7 @@ export const MusicQuiz = function MusicQuiz(
   return (
     <div
       className={cn(
-        "relative z-50 flex h-full min-h-[150px] w-full flex-col overflow-hidden select-none",
+        "relative z-50 flex h-full w-full flex-col overflow-hidden select-none",
         !isModernUi && "font-chicago",
         isModernUi ? "font-ipod-modern-ui" : "",
         "border border-black border-2 rounded-[2px]",
@@ -676,6 +680,9 @@ export const MusicQuiz = function MusicQuiz(
           !isModernUi &&
           "shadow-[0_0_10px_2px_rgba(197,224,245,0.05)]"
       )}
+      style={{
+        minHeight: isModernUi ? IPOD_MODERN_SCREEN_HEIGHT_PX : undefined,
+      }}
     >
       {lcdFilterOn && !isModernUi && (
         <div className="absolute inset-0 pointer-events-none z-[25] lcd-scan-lines" />
@@ -685,9 +692,8 @@ export const MusicQuiz = function MusicQuiz(
       )}
 
       {/* Title bar — classic LCD vs modern (IpodScreen). Modern uses the
-       *  slim 17px silver header (matches `MODERN_TITLEBAR_HEIGHT` in
-       *  IpodScreen.tsx) + 12px MyriadPro semibold type so it lines up
-       *  pixel-for-pixel with the main menu titlebar. */}
+       *  16px silver header (`IPOD_MODERN_TITLEBAR_HEIGHT_PX`) + 12px
+       *  MyriadPro semibold type so it lines up with the main menu. */}
       <div
         className={cn(
           "shrink-0 flex items-center sticky top-0 z-10 py-0 px-2 tabular-nums",
@@ -695,7 +701,14 @@ export const MusicQuiz = function MusicQuiz(
             ? "ipod-modern-titlebar font-ipod-modern-ui text-[12px] font-semibold text-black"
             : "border-b border-[#0a3667] font-chicago text-[16px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
         )}
-        style={isModernUi ? { height: 17, minHeight: 17 } : undefined}
+        style={
+          isModernUi
+            ? {
+                height: IPOD_MODERN_TITLEBAR_HEIGHT_PX,
+                minHeight: IPOD_MODERN_TITLEBAR_HEIGHT_PX,
+              }
+            : undefined
+        }
       >
         <div
           className={cn(

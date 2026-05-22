@@ -106,16 +106,14 @@ export function ScrollingText({
     : showStaticOverflowFade
       ? rightOnlyFadeGradient
       : undefined;
+  const alignClass = align === "left" ? "justify-start" : "justify-center";
+  const textAlignClass = align === "left" ? "text-left" : "text-center";
   const mergedStyle: CSSProperties = {
     ...style,
     maskImage,
     WebkitMaskImage: maskImage,
-    clipPath:
-      style?.clipPath ??
-      (showMarquee ? "inset(-0.25em 0 -0.25em 0)" : undefined),
+    clipPath: style?.clipPath,
   };
-  const alignClass = align === "left" ? "justify-start" : "justify-center";
-  const textAlignClass = align === "left" ? "text-left" : "text-center";
 
   const marqueeStyle: CSSProperties & {
     ["--scrolling-text-duration"]?: string;
@@ -131,9 +129,8 @@ export function ScrollingText({
     <div
       ref={containerRef}
       className={cn(
-        "relative overflow-x-hidden overflow-y-visible",
-        !showMarquee && "flex",
-        !showMarquee && alignClass,
+        "relative flex min-h-0 min-w-0 items-center overflow-x-hidden overflow-y-visible",
+        alignClass,
         className
       )}
       style={mergedStyle}
@@ -154,7 +151,10 @@ export function ScrollingText({
           </div>
         </div>
       ) : (
-        <div ref={textRef} className={cn("whitespace-nowrap", textAlignClass)}>
+        <div
+          ref={textRef}
+          className={cn("whitespace-nowrap leading-[inherit]", textAlignClass)}
+        >
           {text}
         </div>
       )}

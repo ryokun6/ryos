@@ -141,7 +141,7 @@ export function BatteryIndicator({
 
   if (isModern) {
     // Compact iPod nano 6G/7G battery: smaller pill (14×7) sized for the
-    // slim 17px titlebar, with a "half-glossy" highlight that brightens
+    // slim 16px titlebar, with a "half-glossy" highlight that brightens
     // the top half only and fades to transparent at the midline. The
     // green fill carries the same half-gloss so charge level reads as
     // a single glossy lozenge rather than a flat bar.

@@ -39,10 +39,14 @@ import {
   PLAYER_PROGRESS_INTERVAL_MS,
   getYouTubeVideoId,
   formatKugouImageUrl,
+  IPOD_MODERN_MEDIA_BODY_SLACK_PX,
   IPOD_MODERN_MEDIA_ROW_HEIGHT_PX,
+  IPOD_MODERN_MENU_BODY_HEIGHT_PX,
+  IPOD_MODERN_MENU_BODY_SLACK_PX,
   IPOD_MODERN_MENU_ROW_HEIGHT_PX,
   IPOD_MODERN_SCREEN_HEIGHT_PX,
   IPOD_MODERN_TITLEBAR_HEIGHT_PX,
+  IPOD_NOW_PLAYING_SONG_MENU_KEY,
 } from "../constants";
 import { DisplayMode } from "@/types/lyrics";
 import { LandscapeVideoBackground } from "@/components/shared/LandscapeVideoBackground";
@@ -54,11 +58,9 @@ import { useIpodStore, isAppleMusicCollectionTrack } from "@/stores/useIpodStore
 
 // Fixed row height for the iPod menu list. Each `MenuListItem` is a
 // single-line row; the classic skin's Chicago glyphs need 24px row height at
-// 16px type, while the modern (color) skin uses tighter **21px** rows with
-// **15px** Myriad / system UI. At 21px we can fit the titlebar plus
-// six 21.5px rows + 17px titlebar inside the 150px screen which matches the
-// nano 6G/7G density much more closely than the previous 24px rows
-// (which only fit five rows + a sliver).
+// 16px type, while the modern (color) skin uses **22px** rows with **15px**
+// Myriad / system UI. Integer layout inside `border-2` + `border-box`:
+// **16px** status + **132px** menu body (152px outer): 6×22 or 4×33, no slack.
 //
 // We virtualize EVERY menu — not just huge ones — so item geometry
 // stays identical across the main menu, the artist list, and the
@@ -73,7 +75,7 @@ import { useIpodStore, isAppleMusicCollectionTrack } from "@/stores/useIpodStore
 const MENU_ITEM_HEIGHT_CLASSIC = 24;
 const MENU_ITEM_HEIGHT_MODERN = IPOD_MODERN_MENU_ROW_HEIGHT_PX;
 // Modern **media** rows (playlist / artist album / in-playlist tracks):
-// titlebar + four two-line rows fill the 150px LCD (see `constants.ts`).
+// titlebar + four two-line rows fill the LCD (see `constants.ts`).
 const MENU_ITEM_HEIGHT_MODERN_MEDIA = IPOD_MODERN_MEDIA_ROW_HEIGHT_PX;
 const menuItemKeyCache = new WeakMap<object, string>();
 let menuItemKeySeed = 0;
@@ -86,8 +88,10 @@ function getMenuItemKey(item: object): string {
   menuItemKeyCache.set(item, key);
   return key;
 }
-// Slim 17px titlebar; 21.5px rows (see constants.ts).
+// 16px status bar; 22px / 33px rows (see constants.ts).
 const MODERN_TITLEBAR_HEIGHT = IPOD_MODERN_TITLEBAR_HEIGHT_PX;
+const MODERN_MENU_BODY_SLACK_PX = IPOD_MODERN_MENU_BODY_SLACK_PX;
+const MODERN_MEDIA_BODY_SLACK_PX = IPOD_MODERN_MEDIA_BODY_SLACK_PX;
 // The Ken Burns album-art strip rendered alongside the menu in the
 // modern UI takes exactly **half** of the screen width and the FULL
 // screen height — the art panel covers the right half from the very
@@ -507,9 +511,7 @@ export function IpodScreen({
     );
     const visibleCount =
       Math.ceil(
-        (containerHeight ||
-          IPOD_MODERN_SCREEN_HEIGHT_PX - MODERN_TITLEBAR_HEIGHT) /
-          menuItemHeight
+        (containerHeight || IPOD_MODERN_MENU_BODY_HEIGHT_PX) / menuItemHeight
       ) +
       OVERSCAN_ITEMS * 2;
     const end = Math.min(currentMenuItems.length, start + visibleCount);
@@ -538,9 +540,7 @@ export function IpodScreen({
     const isMenuTransition = lastMenuDepthRef.current !== menuHistory.length;
     lastMenuDepthRef.current = menuHistory.length;
 
-    const containerH =
-      el.clientHeight ||
-      IPOD_MODERN_SCREEN_HEIGHT_PX - MODERN_TITLEBAR_HEIGHT;
+    const containerH = el.clientHeight || IPOD_MODERN_MENU_BODY_HEIGHT_PX;
 
     // On a menu transition, snap scrollTop based purely on the target
     // index — we don't want to inherit the previous menu's offset.
@@ -735,8 +735,15 @@ export function IpodScreen({
   const skipModernMenuRouteMarqueeCooldown = useRef(true);
   const [modernMenuRouteMarqueeBlocked, setModernMenuRouteMarqueeBlocked] =
     useState(false);
+  const isNowPlayingSongMenu =
+    menuHistory[menuHistory.length - 1]?.title === IPOD_NOW_PLAYING_SONG_MENU_KEY;
+
   useEffect(() => {
     if (!isModernUi) {
+      setModernMenuRouteMarqueeBlocked(false);
+      return;
+    }
+    if (isNowPlayingSongMenu) {
       setModernMenuRouteMarqueeBlocked(false);
       return;
     }
@@ -749,7 +756,7 @@ export function IpodScreen({
       setModernMenuRouteMarqueeBlocked(false);
     }, 240);
     return () => window.clearTimeout(id);
-  }, [menuMode, isModernUi]);
+  }, [menuMode, isModernUi, isNowPlayingSongMenu]);
 
   const modernScrollingMarqueeAllowed =
     !isModernUi ||
@@ -762,7 +769,7 @@ export function IpodScreen({
       {/* Title bar
        *
        * Modern (nano 6G/7G + iPod classic 6G silver header):
-       *   - Slim 17px silver strip, 12px semibold black text.
+       *   - Slim 16px silver strip, 12px semibold black text.
        *   - Title left-aligned with 6px padding to match the menu
        *     row text indent (`MenuListItem` uses `pl-1.5 pr-2`).
        *   - Status icons (play/pause + battery) clustered on the right.
@@ -893,7 +900,7 @@ export function IpodScreen({
         )}
         style={
           isModernUi
-            ? undefined
+            ? { height: IPOD_MODERN_MENU_BODY_HEIGHT_PX }
             : {
                 height: "calc(100% - 24px)",
               }
@@ -937,6 +944,16 @@ export function IpodScreen({
                 <div
                   ref={setMenuScrollRef}
                   className="absolute inset-0 overflow-y-auto overflow-x-hidden ipod-menu-container"
+                  style={
+                    isModernUi
+                      ? {
+                          paddingBottom:
+                            menuItemHeight === MENU_ITEM_HEIGHT_MODERN_MEDIA
+                              ? MODERN_MEDIA_BODY_SLACK_PX
+                              : MODERN_MENU_BODY_SLACK_PX,
+                        }
+                      : undefined
+                  }
                 >
                   <div
                     style={{
@@ -951,9 +968,10 @@ export function IpodScreen({
                         return (
                           <div
                             key={getMenuItemKey(item)}
-                            className={`ipod-menu-item ${
-                              index === selectedMenuItem ? "selected" : ""
-                            }`}
+                            className={cn(
+                              "ipod-menu-item",
+                              index === selectedMenuItem && "selected"
+                            )}
                             style={{
                               position: "absolute",
                               top: index * menuItemHeight,
@@ -1061,13 +1079,11 @@ export function IpodScreen({
                         <ModernNowPlayingArtwork coverUrl={coverUrl} />
                         <div
                           className={cn(
-                            "flex min-h-0 min-w-0 flex-1 flex-col justify-start gap-0 overflow-visible text-left",
+                            "flex min-h-0 min-w-0 flex-1 flex-col justify-start gap-0 overflow-visible text-left [&>*:not(:first-child)]:-mt-px",
                             // Small downward nudge so the first line
                             // doesn't hug the cover's top edge — matches
                             // the iPod nano 6G/7G "Now Playing" baseline.
                             "pt-1",
-                            "[&>*]:py-0",
-                            "[&>*:not(:first-child)]:-mt-[3px]",
                             "font-ipod-modern-ui"
                           )}
                         >
@@ -1207,7 +1223,7 @@ export function IpodScreen({
   return (
     <div
       className={cn(
-        "relative w-full h-[150px] border border-black border-2 rounded-[2px] overflow-hidden transition-all duration-500 select-none no-select-all",
+        "relative w-full border border-black border-2 rounded-[2px] overflow-hidden transition-all duration-500 select-none no-select-all",
         // The classic LCD filter scan-lines/flicker overlay only makes
         // sense for the monochrome 1st-gen LCD look. The modern iOS 6
         // skin is rendered on a Retina-style high-DPI display, so we
@@ -1228,9 +1244,10 @@ export function IpodScreen({
       )}
       style={{
         minWidth: "100%",
-        minHeight: "150px",
+        height: IPOD_MODERN_SCREEN_HEIGHT_PX,
+        minHeight: IPOD_MODERN_SCREEN_HEIGHT_PX,
         maxWidth: "100%",
-        maxHeight: "150px",
+        maxHeight: IPOD_MODERN_SCREEN_HEIGHT_PX,
         position: "relative",
         contain: "layout style paint",
         WebkitUserSelect: "none",
@@ -1259,7 +1276,8 @@ export function IpodScreen({
           )}
         >
           <div
-            className="w-full h-[calc(100%+300px)] mt-[-150px]"
+            className="w-full h-[calc(100%+300px)]"
+            style={{ marginTop: -IPOD_MODERN_SCREEN_HEIGHT_PX }}
             onClick={(e) => {
               e.stopPropagation();
               registerActivity();

@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { BatteryIndicator } from "./screen/BatteryIndicator";
 import { IpodModernPlayPauseIcon } from "./screen/IpodModernPlayPauseIcon";
+import { IPOD_MODERN_TITLEBAR_HEIGHT_PX } from "../constants";
 
 // Game-world dimensions in CSS pixels. The iPod screen is 150px tall ×
 // ~218px wide (250px device − 2×16px padding); the title bar takes 26px,
@@ -176,10 +177,10 @@ export const BrickGame = function BrickGame(
   const uiVariant = useIpodStore((s) => s.uiVariant ?? "modern");
   const isModernUi = uiVariant === "modern";
   /** Body offset for `calc(100% - …)` — classic chrome ~26px.
-   *  Modern bar matches `MODERN_TITLEBAR_HEIGHT` in IpodScreen (17px) so the
+   *  Modern bar matches `IPOD_MODERN_TITLEBAR_HEIGHT_PX` in IpodScreen so the
    *  brick game's chrome lines up pixel-for-pixel with the main menu's
    *  slim nano 6G/7G silver header. */
-  const bodyTopOffsetPx = isModernUi ? 17 : 26;
+  const bodyTopOffsetPx = isModernUi ? IPOD_MODERN_TITLEBAR_HEIGHT_PX : 26;
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const stateRef = useRef<GameState>(initialState());
   const phaseRef = useRef<Phase>("ready");
@@ -654,7 +655,14 @@ export const BrickGame = function BrickGame(
             ? "ipod-modern-titlebar font-ipod-modern-ui text-[12px] font-semibold text-black pl-1.5 pr-1.5"
             : "border-b border-[#0a3667] font-chicago text-[16px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
         )}
-        style={isModernUi ? { height: 17, minHeight: 17 } : undefined}
+        style={
+          isModernUi
+            ? {
+                height: IPOD_MODERN_TITLEBAR_HEIGHT_PX,
+                minHeight: IPOD_MODERN_TITLEBAR_HEIGHT_PX,
+              }
+            : undefined
+        }
       >
         {/* Play/pause indicator. ▶ while a level is actively in motion,
          *  ⏸ for every other phase (ready, paused, lifeLost, won,

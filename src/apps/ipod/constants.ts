@@ -4,23 +4,60 @@ import { LyricsAlignment } from "@/types/lyrics";
 import i18n from "@/lib/i18n";
 import type { Track } from "@/stores/useIpodStore";
 
-/** Fixed modern iPod LCD height (px). */
-export const IPOD_MODERN_SCREEN_HEIGHT_PX = 150;
+/** Fixed modern iPod LCD outer height (px), including `border-2` on the screen element. */
+export const IPOD_MODERN_SCREEN_HEIGHT_PX = 152;
 
-/** Slim silver status/title bar (nano 6G reference — stays at 17px). */
-export const IPOD_MODERN_TITLEBAR_HEIGHT_PX = 17;
+/** `border-2` on each side; with `border-box` the drawable area is outer − 4. */
+export const IPOD_MODERN_SCREEN_BORDER_PX = 2;
+
+/** Pixels available for titlebar + menu inside the bordered box. */
+export const IPOD_MODERN_DRAWABLE_HEIGHT_PX =
+  IPOD_MODERN_SCREEN_HEIGHT_PX - 2 * IPOD_MODERN_SCREEN_BORDER_PX;
+
+/** Silver status / title bar (iOS 6–style, 12px type). */
+export const IPOD_MODERN_TITLEBAR_HEIGHT_PX = 16;
+
+/** Menu list viewport below the status bar: 148 − 16 = 132 (divisible by 6 and 4). */
+export const IPOD_MODERN_MENU_BODY_HEIGHT_PX =
+  IPOD_MODERN_DRAWABLE_HEIGHT_PX - IPOD_MODERN_TITLEBAR_HEIGHT_PX;
 
 /** Standard modern menus show six rows without scrolling. */
 export const IPOD_MODERN_MENU_VISIBLE_ROWS = 6;
 
-/** Single-line menu row (17px titlebar + 6×21.5 = 146px; 4px slack at bottom). */
-export const IPOD_MODERN_MENU_ROW_HEIGHT_PX = 21.5;
+/** Square artwork in modern media browse rows (fits inside {@link IPOD_MODERN_MEDIA_ROW_HEIGHT_PX}). */
+export const IPOD_MODERN_MEDIA_THUMB_PX = 26;
 
 /** Two-line media browse menus target four visible rows. */
 export const IPOD_MODERN_MEDIA_VISIBLE_ROWS = 4;
 
-/** Media browse row (17px titlebar + 4×32.24 = 145.96px; ~4px slack at bottom). */
-export const IPOD_MODERN_MEDIA_ROW_HEIGHT_PX = 32.24;
+/**
+ * Bottom slack under the last row when the body height is not divisible by the
+ * visible row count (applied as scroll-container `padding-bottom`, not row height).
+ */
+function modernMenuBodySlackPx(visibleRows: number): number {
+  return IPOD_MODERN_MENU_BODY_HEIGHT_PX % visibleRows;
+}
+
+/** Single-line menu: 132 / 6 = 22px rows; 0 slack. */
+export const IPOD_MODERN_MENU_BODY_SLACK_PX = modernMenuBodySlackPx(
+  IPOD_MODERN_MENU_VISIBLE_ROWS
+);
+
+export const IPOD_MODERN_MENU_ROW_HEIGHT_PX =
+  (IPOD_MODERN_MENU_BODY_HEIGHT_PX - IPOD_MODERN_MENU_BODY_SLACK_PX) /
+  IPOD_MODERN_MENU_VISIBLE_ROWS;
+
+/** Media browse: 132 / 4 = 33px rows; 0 slack. */
+export const IPOD_MODERN_MEDIA_BODY_SLACK_PX = modernMenuBodySlackPx(
+  IPOD_MODERN_MEDIA_VISIBLE_ROWS
+);
+
+export const IPOD_MODERN_MEDIA_ROW_HEIGHT_PX =
+  (IPOD_MODERN_MENU_BODY_HEIGHT_PX - IPOD_MODERN_MEDIA_BODY_SLACK_PX) /
+  IPOD_MODERN_MEDIA_VISIBLE_ROWS;
+
+/** Internal breadcrumb key for the Now Playing long-press song menu. */
+export const IPOD_NOW_PLAYING_SONG_MENU_KEY = "__nowPlayingSongMenu__";
 
 // Translation language options
 export interface TranslationLanguage {

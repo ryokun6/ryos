@@ -11,6 +11,7 @@ import {
   getYouTubeVideoId,
   formatKugouImageUrl,
   getAlbumGroupingKey,
+  IPOD_MODERN_MENU_ROW_HEIGHT_PX,
   IPOD_MODERN_TITLEBAR_HEIGHT_PX,
 } from "../constants";
 import type { Track } from "@/stores/useIpodStore";
@@ -749,10 +750,10 @@ function AlbumTracklist({
     el.scrollIntoView({ block: "nearest" });
   }, [selectedIndex]);
 
-  // Row height matches the modern menu list (21px) so the panel sits
-  // at the same density as the surrounding chrome. Classic skin gets
-  // slightly taller rows because Chicago has more vertical metric.
-  const rowHeight = isModern ? 21 : 22;
+  // Row height matches the modern menu list so the panel sits at the same
+  // density as the surrounding chrome. Classic skin gets slightly taller rows
+  // because Chicago has more vertical metric.
+  const rowHeight = isModern ? IPOD_MODERN_MENU_ROW_HEIGHT_PX : 22;
 
   return (
     <div
