@@ -61,9 +61,8 @@ export function ScrollingText({
 
     const measure = () => {
       const newContainerWidth = container.clientWidth;
-      if (newContainerWidth <= 0) return;
       const newContentWidth = textElement.scrollWidth;
-      setShouldScroll(newContentWidth > newContainerWidth + 1);
+      setShouldScroll(newContentWidth > newContainerWidth);
     };
 
     measure();
