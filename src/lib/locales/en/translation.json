@@ -1837,7 +1837,10 @@
         "libraryYoutube": "YouTube Library",
         "libraryAppleMusic": "Apple Music",
         "librarySource": "Library",
-        "addToFavorites": "Add to Favorites"
+        "addToFavorites": "Add to Favorites",
+        "goToPlaylist": "Go to Playlist",
+        "goToAlbum": "Go to Album",
+        "goToArtist": "Go to Artist"
       },
       "status": {
         "shuffleOn": "Shuffle ON",
