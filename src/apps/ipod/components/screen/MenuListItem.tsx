@@ -20,6 +20,8 @@ interface MenuListItemProps {
    * parent layout has settled — e.g. during split-menu width animation.
    */
   allowScrollingMarquee?: boolean;
+  /** `"split"` | `"full"` — remeasures label overflow when menu width changes. */
+  labelLayoutKey?: string;
   /**
    * Visual skin. `"classic"` keeps the monochrome blue-on-blue
    * Chicago-font row from the original 1st-gen LCD. `"modern"` switches
@@ -56,6 +58,7 @@ export function MenuListItem({
   value,
   isLoading = false,
   allowScrollingMarquee = true,
+  labelLayoutKey,
   variant = "classic",
   subtitle,
   thumbnailUrl,
@@ -78,6 +81,11 @@ export function MenuListItem({
     typeof subtitle === "string" ? subtitle.trim() : "";
 
   if (isModern) {
+    // True only when a right-aligned end cap (chevron or `value`) actually
+    // renders — used to drop the label column's right margin when it would
+    // otherwise reserve empty space next to a non-existent chevron.
+    const hasRowEnd = Boolean(value) || (showChevron && !isLoading);
+
     if (mediaRow) {
       return (
         <div
@@ -93,7 +101,12 @@ export function MenuListItem({
                 : "text-black"
           )}
         >
-          <div className="flex min-h-0 min-w-0 flex-1 items-center gap-1.5 mr-0.5">
+          <div
+            className={cn(
+              "flex min-h-0 min-w-0 flex-1 items-center gap-1.5",
+              hasRowEnd && "mr-0.5"
+            )}
+          >
             <div
               className="relative shrink-0 overflow-hidden rounded-[2px]"
               style={{
@@ -129,6 +142,7 @@ export function MenuListItem({
                 text={text}
                 align="left"
                 fadeEdges
+                labelLayoutKey={labelLayoutKey}
                 allowMarquee={allowScrollingMarquee}
                 isPlaying={isSelected && !isLoading}
                 resetOnPause
@@ -156,6 +170,7 @@ export function MenuListItem({
           </div>
           {value ? (
             <span
+              data-ipod-menu-row-end
               className={cn(
                 "flex shrink-0 items-center font-semibold leading-[1.15]",
                 hasCjkText ? "text-[11px]" : "text-[12px]",
@@ -170,6 +185,7 @@ export function MenuListItem({
             showChevron &&
             !isLoading && (
               <span
+                data-ipod-menu-row-end
                 className={cn(
                   "flex shrink-0 items-center justify-center font-normal leading-none",
                   "text-[16px]",
@@ -214,11 +230,17 @@ export function MenuListItem({
               : "text-black"
         )}
       >
-        <span className="flex h-full min-w-0 flex-1 items-center mr-2">
+        <span
+          className={cn(
+            "flex h-full min-w-0 flex-1 items-center",
+            hasRowEnd && "mr-2"
+          )}
+        >
           <ScrollingText
             text={text}
             align="left"
             fadeEdges
+            labelLayoutKey={labelLayoutKey}
             allowMarquee={allowScrollingMarquee}
             isPlaying={isSelected && !isLoading}
             resetOnPause
@@ -228,6 +250,7 @@ export function MenuListItem({
         </span>
         {value ? (
           <span
+            data-ipod-menu-row-end
             className={cn(
               "flex shrink-0 items-center text-[15px] font-semibold leading-[1.15]",
               isSelected && !isLoading
@@ -240,10 +263,8 @@ export function MenuListItem({
         ) : (
           showChevron &&
           !isLoading && (
-            // Right-arrow chevron: thin and light grey when idle, white
-            // when the row is selected — same affordance as the
-            // arrow_right.svg used in iPod-classic-js.
             <span
+              data-ipod-menu-row-end
               className={cn(
                 "flex shrink-0 items-center justify-center font-normal leading-none",
                 "text-[19px]",

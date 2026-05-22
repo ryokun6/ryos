@@ -77,17 +77,6 @@ const MENU_ITEM_HEIGHT_MODERN = IPOD_MODERN_MENU_ROW_HEIGHT_PX;
 // Modern **media** rows (playlist / artist album / in-playlist tracks):
 // titlebar + four two-line rows fill the LCD (see `constants.ts`).
 const MENU_ITEM_HEIGHT_MODERN_MEDIA = IPOD_MODERN_MEDIA_ROW_HEIGHT_PX;
-const menuItemKeyCache = new WeakMap<object, string>();
-let menuItemKeySeed = 0;
-
-function getMenuItemKey(item: object): string {
-  const cached = menuItemKeyCache.get(item);
-  if (cached) return cached;
-  menuItemKeySeed += 1;
-  const key = `ipod-menu-${menuItemKeySeed}`;
-  menuItemKeyCache.set(item, key);
-  return key;
-}
 // 16px status bar; 22px / 33px rows (see constants.ts).
 const MODERN_TITLEBAR_HEIGHT = IPOD_MODERN_TITLEBAR_HEIGHT_PX;
 const MODERN_MENU_BODY_SLACK_PX = IPOD_MODERN_MENU_BODY_SLACK_PX;
@@ -617,20 +606,8 @@ export function IpodScreen({
     ]
   );
 
-  const SPLIT_ART_SELECTION_DELAY_MS = 1000;
-
-  const browseableMenuKey = useMemo(
-    () =>
-      isBrowseableMenu
-        ? `${menuHistory.length}:${currentMenuTitle}:${currentMenuItems.length}`
-        : "",
-    [
-      isBrowseableMenu,
-      menuHistory.length,
-      currentMenuTitle,
-      currentMenuItems.length,
-    ]
-  );
+  const isNowPlayingSongMenu =
+    menuHistory[menuHistory.length - 1]?.title === IPOD_NOW_PLAYING_SONG_MENU_KEY;
 
   const selectedRowSplitArtTarget = useMemo(() => {
     if (!isBrowseableMenu || currentMenuItems.length === 0) return null;
@@ -653,38 +630,32 @@ export function IpodScreen({
     coverUrl,
   ]);
 
-  const [splitArtUrl, setSplitArtUrl] = useState<string | null>(null);
-
-  // Cross-fade to the highlighted row's art after the selection rests.
-  useEffect(() => {
-    if (!isBrowseableMenu) {
-      setSplitArtUrl(null);
-      return;
-    }
-    const id = window.setTimeout(() => {
-      setSplitArtUrl(selectedRowSplitArtTarget);
-    }, SPLIT_ART_SELECTION_DELAY_MS);
-    return () => window.clearTimeout(id);
+  // Cover for the right-hand split panel. Selection updates immediately
+  // (no debounce). Now Playing song menu always uses the current track
+  // cover so the menu is already at 50% width when labels are measured.
+  const splitMenuArtUrl = useMemo(() => {
+    if (!isModernUi || !menuMode || showInlineCoverFlow) return null;
+    if (isNowPlayingSongMenu) return coverUrl ?? null;
+    if (!isBrowseableMenu) return null;
+    return selectedRowSplitArtTarget;
   }, [
+    isModernUi,
+    menuMode,
+    showInlineCoverFlow,
+    isNowPlayingSongMenu,
+    coverUrl,
     isBrowseableMenu,
-    browseableMenuKey,
-    selectedMenuItem,
     selectedRowSplitArtTarget,
   ]);
 
-  // True when the modern UI should render its iPod 6G/7G classic
-  // "Music + Now Playing" split: titlebar + menu list clamped to the
-  // left half, full-height Ken Burns album art on the right half.
-  // Only meaningful in menu mode with an actual cover URL — otherwise
-  // the screen falls back to the standard full-width chrome.
-  const showSplitMenuArt = isModernUi && menuMode && Boolean(splitArtUrl);
+  const showSplitMenuArt = Boolean(splitMenuArtUrl);
 
   // The cover image is rendered against the LAST non-null
-  // `splitArtUrl` (not the live value) so it stays mounted through
-  // the fade-out when `splitArtUrl` flips null in the same render
+  // `splitMenuArtUrl` (not the live value) so it stays mounted through
+  // the fade-out when `splitMenuArtUrl` flips null in the same render
   // that `showSplitMenuArt` does — e.g. navigating from a browseable
   // menu (Music root) into a flat song list / settings menu. Without this, the
-  // `{splitArtUrl ? <motion.img/> : null}` branch would unmount
+  // image branch would unmount
   // before the wrapper had a chance to animate its opacity / width
   // to zero, and the cover would pop instead of fading. We only
   // update on a real (non-null) value so the previous artwork
@@ -692,12 +663,12 @@ export function IpodScreen({
   // 300ms transition window.
   const [renderedSplitArtUrl, setRenderedSplitArtUrl] = useState<
     string | null
-  >(splitArtUrl);
+  >(splitMenuArtUrl);
   useEffect(() => {
-    if (splitArtUrl) {
-      setRenderedSplitArtUrl(splitArtUrl);
+    if (splitMenuArtUrl) {
+      setRenderedSplitArtUrl(splitMenuArtUrl);
     }
-  }, [splitArtUrl]);
+  }, [splitMenuArtUrl]);
 
   // Defer width/opacity transitions until after the first paint so
   // mounting in split or full layout does not animate from a default.
@@ -710,59 +681,13 @@ export function IpodScreen({
     return () => cancelAnimationFrame(id);
   }, []);
 
-  // While the modern chrome column width animates (split ↔ full menu, or
-  // menu ↔ now playing 50% → 100%) or the menu / now-playing panels swap,
-  // marquee measurement sees unstable clientWidth — suppress until settled.
-  const skipModernChromeMarqueeCooldown = useRef(true);
-  const [modernChromeWidthMarqueeBlocked, setModernChromeWidthMarqueeBlocked] =
-    useState(false);
-  useEffect(() => {
-    if (!isModernUi) {
-      setModernChromeWidthMarqueeBlocked(false);
-      return;
-    }
-    if (skipModernChromeMarqueeCooldown.current) {
-      skipModernChromeMarqueeCooldown.current = false;
-      return;
-    }
-    setModernChromeWidthMarqueeBlocked(true);
-    const id = window.setTimeout(() => {
-      setModernChromeWidthMarqueeBlocked(false);
-    }, 320);
-    return () => window.clearTimeout(id);
-  }, [showSplitMenuArt, menuMode, isModernUi]);
-
-  const skipModernMenuRouteMarqueeCooldown = useRef(true);
-  const [modernMenuRouteMarqueeBlocked, setModernMenuRouteMarqueeBlocked] =
-    useState(false);
-  const isNowPlayingSongMenu =
-    menuHistory[menuHistory.length - 1]?.title === IPOD_NOW_PLAYING_SONG_MENU_KEY;
-
-  useEffect(() => {
-    if (!isModernUi) {
-      setModernMenuRouteMarqueeBlocked(false);
-      return;
-    }
-    if (isNowPlayingSongMenu) {
-      setModernMenuRouteMarqueeBlocked(false);
-      return;
-    }
-    if (skipModernMenuRouteMarqueeCooldown.current) {
-      skipModernMenuRouteMarqueeCooldown.current = false;
-      return;
-    }
-    setModernMenuRouteMarqueeBlocked(true);
-    const id = window.setTimeout(() => {
-      setModernMenuRouteMarqueeBlocked(false);
-    }, 240);
-    return () => window.clearTimeout(id);
-  }, [menuMode, isModernUi, isNowPlayingSongMenu]);
-
+  // Defer marquee until the first layout frame so split/full width is real
+  // (not a 0-width flash). Width changes are handled by ScrollingText's
+  // ResizeObserver — no timed marquee cooldowns.
   const modernScrollingMarqueeAllowed =
-    !isModernUi ||
-    (splitLayoutTransitionReady &&
-      !modernChromeWidthMarqueeBlocked &&
-      !modernMenuRouteMarqueeBlocked);
+    !isModernUi || splitLayoutTransitionReady;
+
+  const menuLabelLayoutKey = showSplitMenuArt ? "split" : "full";
 
   const menuChrome = (
     <>
@@ -967,7 +892,7 @@ export function IpodScreen({
                         const index = visibleRange.start + i;
                         return (
                           <div
-                            key={getMenuItemKey(item)}
+                            key={`${index}:${item.label}:${item.value ?? ""}`}
                             className={cn(
                               "ipod-menu-item",
                               index === selectedMenuItem && "selected"
@@ -986,6 +911,7 @@ export function IpodScreen({
                               backlightOn={backlightOn}
                               variant={uiVariant}
                               allowScrollingMarquee={modernScrollingMarqueeAllowed}
+                              labelLayoutKey={menuLabelLayoutKey}
                               onClick={() => {
                                 onSelectMenuItem(index);
                                 onMenuItemAction(item.action);
@@ -1563,7 +1489,7 @@ export function IpodScreen({
            *  black backface beneath before the column clips away.
            *
            *  We render against `renderedSplitArtUrl` (the last non-null
-           *  cover) instead of the live `splitArtUrl` so the image
+           *  cover) instead of the live `splitMenuArtUrl` so the image
            *  stays mounted while the layer fades out — otherwise the
            *  image would unmount in the same render that
            *  `showSplitMenuArt` flips false and the cover would pop
