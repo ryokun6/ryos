@@ -597,6 +597,8 @@ export function IpodScreen({
   // **Modern media lists** (playlist picker, Apple Music browses) show
   // artwork in each row — hide the right split so the menu stays full
   // width. Per-artist album lists use the same split preview as Albums.
+  const isNowPlayingSongMenu =
+    menuHistory[menuHistory.length - 1]?.title === IPOD_NOW_PLAYING_SONG_MENU_KEY;
   const isBrowseableMenu = useMemo(
     () =>
       isModernUi &&
@@ -607,12 +609,14 @@ export function IpodScreen({
       // entirely while Cover Flow is on screen.
       !showInlineCoverFlow &&
       !currentMenuModernMediaList &&
+      !isNowPlayingSongMenu &&
       currentMenuItems.some((item) => item.showChevron === true),
     [
       isModernUi,
       menuMode,
       showInlineCoverFlow,
       currentMenuModernMediaList,
+      isNowPlayingSongMenu,
       currentMenuItems,
     ]
   );
@@ -734,13 +738,11 @@ export function IpodScreen({
       setModernChromeWidthMarqueeBlocked(false);
     }, 320);
     return () => window.clearTimeout(id);
-  }, [showSplitMenuArt, menuMode, isModernUi]);
+  }, [showSplitMenuArt, menuMode, isModernUi, isNowPlayingSongMenu]);
 
   const skipModernMenuRouteMarqueeCooldown = useRef(true);
   const [modernMenuRouteMarqueeBlocked, setModernMenuRouteMarqueeBlocked] =
     useState(false);
-  const isNowPlayingSongMenu =
-    menuHistory[menuHistory.length - 1]?.title === IPOD_NOW_PLAYING_SONG_MENU_KEY;
 
   useEffect(() => {
     if (!isModernUi) {

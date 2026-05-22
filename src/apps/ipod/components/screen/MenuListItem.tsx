@@ -125,21 +125,19 @@ export function MenuListItem({
             </div>
             {/* Two-line stack: 12+1+11 px fits under 26px thumb inside a 33px row. */}
             <div className="flex min-h-0 min-w-0 flex-1 flex-col justify-center gap-px py-0 leading-none">
-              <div className="flex h-[12px] min-h-0 min-w-0 items-center">
-                <ScrollingText
-                  text={text}
-                  align="left"
-                  fadeEdges
-                  allowMarquee={allowScrollingMarquee}
-                  isPlaying={isSelected && !isLoading}
-                  resetOnPause
-                  scrollStartDelaySec={0.5}
-                  className={cn(
-                    "h-full m-0 w-full min-w-0 p-0 font-semibold leading-none",
-                    hasCjkText ? "text-[11px]" : "text-[12px]"
-                  )}
-                />
-              </div>
+              <ScrollingText
+                text={text}
+                align="left"
+                fadeEdges
+                allowMarquee={allowScrollingMarquee}
+                isPlaying={isSelected && !isLoading}
+                resetOnPause
+                scrollStartDelaySec={0.5}
+                className={cn(
+                  "m-0 w-full min-w-0 p-0 font-semibold leading-none",
+                  hasCjkText ? "text-[11px]" : "text-[12px]"
+                )}
+              />
               {subtitleTrim ? (
                 <span
                   className={cn(
@@ -216,7 +214,7 @@ export function MenuListItem({
               : "text-black"
         )}
       >
-        <span className="flex min-h-0 min-w-0 flex-1 items-center self-stretch mr-2 overflow-y-hidden">
+        <span className="flex h-full min-h-0 min-w-0 flex-1 items-center self-stretch mr-2">
           <ScrollingText
             text={text}
             align="left"
@@ -225,7 +223,7 @@ export function MenuListItem({
             isPlaying={isSelected && !isLoading}
             resetOnPause
             scrollStartDelaySec={0.5}
-            className="w-full min-w-0 text-[15px] font-semibold leading-none"
+            className="h-full w-full min-w-0 text-[15px] font-semibold leading-none"
           />
         </span>
         {value ? (
