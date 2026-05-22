@@ -51,23 +51,26 @@ export default apiHandler<Record<string, unknown>>(
     if (req.method === "GET") {
       const listParam = req.query.list as string | undefined;
       const ip = getClientIp(req);
-      const rlConfig = listParam === "true" ? RATE_LIMITS.list : RATE_LIMITS.get;
-      const rlKey = RateLimit.makeKey(["rl", "applet", listParam === "true" ? "list" : "get", "ip", ip]);
-      const rlResult = await RateLimit.checkCounterLimit({
-        key: rlKey,
-        windowSeconds: rlConfig.windowSeconds,
-        limit: rlConfig.limit,
-      });
-      
-      if (!rlResult.allowed) {
-        logger.warn("Rate limit exceeded", { ip });
-        logger.response(429, Date.now() - startTime);
-        res.setHeader("Retry-After", String(rlResult.resetSeconds));
-        res.status(429).json({ error: "rate_limit_exceeded", limit: rlResult.limit, retryAfter: rlResult.resetSeconds });
-        return;
-      }
-      
+
       if (listParam === "true") {
+        const rlResult = await RateLimit.checkCounterLimit({
+          key: RateLimit.makeKey(["rl", "applet", "list", "ip", ip]),
+          windowSeconds: RATE_LIMITS.list.windowSeconds,
+          limit: RATE_LIMITS.list.limit,
+        });
+
+        if (!rlResult.allowed) {
+          logger.warn("Rate limit exceeded", { ip, scope: "list" });
+          logger.response(429, Date.now() - startTime);
+          res.setHeader("Retry-After", String(rlResult.resetSeconds));
+          res.status(429).json({
+            error: "rate_limit_exceeded",
+            limit: rlResult.limit,
+            retryAfter: rlResult.resetSeconds,
+          });
+          return;
+        }
+
         const appletIds: string[] = [];
         let cursor = 0;
         
@@ -117,11 +120,29 @@ export default apiHandler<Record<string, unknown>>(
         res.status(200).json({ applets });
         return;
       }
-      
+
       const id = req.query.id as string | undefined;
       if (!id) {
         logger.response(400, Date.now() - startTime);
         res.status(400).json({ error: "Missing id parameter" });
+        return;
+      }
+
+      const getRlResult = await RateLimit.checkCounterLimit({
+        key: RateLimit.makeKey(["rl", "applet", "get", "ip", ip]),
+        windowSeconds: RATE_LIMITS.get.windowSeconds,
+        limit: RATE_LIMITS.get.limit,
+      });
+
+      if (!getRlResult.allowed) {
+        logger.warn("Rate limit exceeded", { ip, scope: "get" });
+        logger.response(429, Date.now() - startTime);
+        res.setHeader("Retry-After", String(getRlResult.resetSeconds));
+        res.status(429).json({
+          error: "rate_limit_exceeded",
+          limit: getRlResult.limit,
+          retryAfter: getRlResult.resetSeconds,
+        });
         return;
       }
 
@@ -159,25 +180,25 @@ export default apiHandler<Record<string, unknown>>(
         return;
       }
 
+      const validation = SaveAppletRequestSchema.safeParse(body);
+      if (!validation.success) {
+        logger.response(400, Date.now() - startTime);
+        res.status(400).json({ error: "Invalid request body", details: validation.error.format() });
+        return;
+      }
+
       const rlKey = RateLimit.makeKey(["rl", "applet", "save", "user", username || "unknown"]);
       const rlResult = await RateLimit.checkCounterLimit({
         key: rlKey,
         windowSeconds: RATE_LIMITS.save.windowSeconds,
         limit: RATE_LIMITS.save.limit,
       });
-      
+
       if (!rlResult.allowed) {
         logger.warn("Rate limit exceeded", { username });
         logger.response(429, Date.now() - startTime);
         res.setHeader("Retry-After", String(rlResult.resetSeconds));
         res.status(429).json({ error: "rate_limit_exceeded", limit: rlResult.limit, retryAfter: rlResult.resetSeconds });
-        return;
-      }
-
-      const validation = SaveAppletRequestSchema.safeParse(body);
-      if (!validation.success) {
-        logger.response(400, Date.now() - startTime);
-        res.status(400).json({ error: "Invalid request body", details: validation.error.format() });
         return;
       }
 
@@ -243,24 +264,24 @@ export default apiHandler<Record<string, unknown>>(
         return;
       }
 
+      const id = req.query.id as string | undefined;
+      if (!id) {
+        logger.response(400, Date.now() - startTime);
+        res.status(400).json({ error: "Missing id parameter" });
+        return;
+      }
+
       const rlKey = RateLimit.makeKey(["rl", "applet", "delete", "user", username || "unknown"]);
       const rlResult = await RateLimit.checkCounterLimit({
         key: rlKey,
         windowSeconds: RATE_LIMITS.delete.windowSeconds,
         limit: RATE_LIMITS.delete.limit,
       });
-      
+
       if (!rlResult.allowed) {
         logger.response(429, Date.now() - startTime);
         res.setHeader("Retry-After", String(rlResult.resetSeconds));
         res.status(429).json({ error: "rate_limit_exceeded", limit: rlResult.limit, retryAfter: rlResult.resetSeconds });
-        return;
-      }
-
-      const id = req.query.id as string | undefined;
-      if (!id) {
-        logger.response(400, Date.now() - startTime);
-        res.status(400).json({ error: "Missing id parameter" });
         return;
       }
 
@@ -289,20 +310,6 @@ export default apiHandler<Record<string, unknown>>(
         return;
       }
 
-      const rlKey = RateLimit.makeKey(["rl", "applet", "patch", "user", username || "unknown"]);
-      const rlResult = await RateLimit.checkCounterLimit({
-        key: rlKey,
-        windowSeconds: RATE_LIMITS.patch.windowSeconds,
-        limit: RATE_LIMITS.patch.limit,
-      });
-      
-      if (!rlResult.allowed) {
-        logger.response(429, Date.now() - startTime);
-        res.setHeader("Retry-After", String(rlResult.resetSeconds));
-        res.status(429).json({ error: "rate_limit_exceeded", limit: rlResult.limit, retryAfter: rlResult.resetSeconds });
-        return;
-      }
-
       const id = req.query.id as string | undefined;
       if (!id) {
         logger.response(400, Date.now() - startTime);
@@ -314,6 +321,23 @@ export default apiHandler<Record<string, unknown>>(
       if (typeof featured !== "boolean") {
         logger.response(400, Date.now() - startTime);
         res.status(400).json({ error: "Invalid request body: featured must be boolean" });
+        return;
+      }
+
+      const patchRlResult = await RateLimit.checkCounterLimit({
+        key: RateLimit.makeKey(["rl", "applet", "patch", "user", username || "unknown"]),
+        windowSeconds: RATE_LIMITS.patch.windowSeconds,
+        limit: RATE_LIMITS.patch.limit,
+      });
+
+      if (!patchRlResult.allowed) {
+        logger.response(429, Date.now() - startTime);
+        res.setHeader("Retry-After", String(patchRlResult.resetSeconds));
+        res.status(429).json({
+          error: "rate_limit_exceeded",
+          limit: patchRlResult.limit,
+          retryAfter: patchRlResult.resetSeconds,
+        });
         return;
       }
 

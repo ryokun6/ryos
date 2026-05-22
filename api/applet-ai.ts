@@ -9,10 +9,12 @@ import {
   google,
   type GoogleGenerativeAIProviderOptions,
 } from "@ai-sdk/google";
+import type { VercelResponse } from "@vercel/node";
 import { z } from "zod";
 import * as RateLimit from "./_utils/_rate-limit.js";
 import { getClientIp } from "./_utils/_rate-limit.js";
 import { apiHandler } from "./_utils/api-handler.js";
+import type { initLogger } from "./_utils/_logging.js";
 import { isAllowedAppHost } from "./_utils/runtime-config.js";
 
 export const runtime = "nodejs";
@@ -290,6 +292,130 @@ const buildModelMessages = (
   return messages;
 };
 
+type AppletAiLogger = ReturnType<typeof initLogger>["logger"];
+
+const setAppletAiRateLimitHeaders = (
+  res: VercelResponse,
+  limit: number,
+  count: number,
+  resetSeconds: number
+): void => {
+  res.setHeader("X-RateLimit-Limit", String(limit));
+  res.setHeader(
+    "X-RateLimit-Remaining",
+    String(Math.max(0, limit - count))
+  );
+  res.setHeader("X-RateLimit-Reset", String(resetSeconds));
+};
+
+/**
+ * Enforce hourly text/image counters after request validation so malformed
+ * payloads do not consume quota. Returns false when a response was already sent.
+ */
+const enforceAppletAiRateLimit = async ({
+  res,
+  logger,
+  startTime,
+  mode,
+  rateLimitBypass,
+  isAuthenticatedUser,
+  usernameHeader,
+  ip,
+  identifier,
+}: {
+  res: VercelResponse;
+  logger: AppletAiLogger;
+  startTime: number;
+  mode: "text" | "image";
+  rateLimitBypass: boolean;
+  isAuthenticatedUser: boolean;
+  usernameHeader: string | null;
+  ip: string;
+  identifier: string;
+}): Promise<boolean> => {
+  const scope: RateLimitScope = mode === "image" ? "image-hour" : "text-hour";
+  const limit =
+    scope === "image-hour"
+      ? isAuthenticatedUser
+        ? AUTH_IMAGE_LIMIT_PER_HOUR
+        : ANON_IMAGE_LIMIT_PER_HOUR
+      : isAuthenticatedUser
+        ? AUTH_TEXT_LIMIT_PER_HOUR
+        : ANON_TEXT_LIMIT_PER_HOUR;
+
+  if (rateLimitBypass) {
+    logger.info("[rate-limit] Bypass enabled for trusted user", {
+      scope,
+      identifier,
+      wouldHaveLimit: limit,
+    });
+    return true;
+  }
+
+  try {
+    const key = RateLimit.makeKey([
+      "rl",
+      "applet-ai",
+      scope,
+      isAuthenticatedUser ? "user" : "ip",
+      isAuthenticatedUser ? usernameHeader! : ip,
+    ]);
+
+    const result = await RateLimit.checkCounterLimit({
+      key,
+      windowSeconds: RATE_LIMIT_WINDOW_SECONDS,
+      limit,
+    });
+
+    const resetSeconds =
+      typeof result.resetSeconds === "number" && result.resetSeconds > 0
+        ? result.resetSeconds
+        : result.windowSeconds;
+
+    logger.info("[rate-limit] Check", {
+      scope,
+      identifier,
+      isAuthenticatedUser,
+      count: result.count,
+      limit: result.limit,
+      remaining: Math.max(0, result.limit - result.count),
+      resetSeconds,
+      allowed: result.allowed,
+    });
+
+    setAppletAiRateLimitHeaders(res, result.limit, result.count, resetSeconds);
+
+    if (!result.allowed) {
+      logger.info("[rate-limit] Limit exceeded", {
+        scope,
+        identifier,
+        count: result.count,
+        limit: result.limit,
+        resetSeconds,
+      });
+
+      res.setHeader("Retry-After", String(resetSeconds));
+      logger.response(429, Date.now() - startTime);
+      res.status(429).json({
+        error: "rate_limit_exceeded",
+        scope,
+        limit: result.limit,
+        windowSeconds: result.windowSeconds,
+        resetSeconds,
+        identifier,
+      });
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    logger.error("Rate limit check failed:", error);
+    logger.response(503, Date.now() - startTime);
+    res.status(503).json({ error: "rate_limit_unavailable" });
+    return false;
+  }
+};
+
 // ============================================================================
 // Route Handler
 // ============================================================================
@@ -369,91 +495,8 @@ export default apiHandler<z.infer<typeof RequestSchema>>(
     temperature: typeof temperature === "number" ? temperature : "default",
   });
 
-  if (rateLimitBypass) {
-    const scope: RateLimitScope = mode === "image" ? "image-hour" : "text-hour";
-    const limit =
-      scope === "image-hour"
-        ? AUTH_IMAGE_LIMIT_PER_HOUR
-        : AUTH_TEXT_LIMIT_PER_HOUR;
-    logger.info("[rate-limit] Bypass enabled for trusted user", {
-      scope,
-      identifier,
-      wouldHaveLimit: limit,
-    });
-  }
-
-  if (!rateLimitBypass) {
-    try {
-      const scope: RateLimitScope = mode === "image" ? "image-hour" : "text-hour";
-      const limit =
-        scope === "image-hour"
-          ? isAuthenticatedUser
-            ? AUTH_IMAGE_LIMIT_PER_HOUR
-            : ANON_IMAGE_LIMIT_PER_HOUR
-          : isAuthenticatedUser
-          ? AUTH_TEXT_LIMIT_PER_HOUR
-          : ANON_TEXT_LIMIT_PER_HOUR;
-
-      const key = RateLimit.makeKey([
-        "rl",
-        "applet-ai",
-        scope,
-        isAuthenticatedUser ? "user" : "ip",
-        isAuthenticatedUser ? usernameHeader! : ip,
-      ]);
-
-      const result = await RateLimit.checkCounterLimit({
-        key,
-        windowSeconds: RATE_LIMIT_WINDOW_SECONDS,
-        limit,
-      });
-
-      const remaining = Math.max(0, result.limit - result.count);
-      const resetSeconds =
-        typeof result.resetSeconds === "number" && result.resetSeconds > 0
-          ? result.resetSeconds
-          : result.windowSeconds;
-
-      // Log rate limit information for all requests
-      logger.info("[rate-limit] Check", {
-        scope,
-        identifier,
-        isAuthenticatedUser,
-        count: result.count,
-        limit: result.limit,
-        remaining,
-        resetSeconds,
-        allowed: result.allowed,
-      });
-
-      if (!result.allowed) {
-        logger.info("[rate-limit] Limit exceeded", {
-          scope,
-          identifier,
-          count: result.count,
-          limit: result.limit,
-          resetSeconds,
-        });
-        
-        res.setHeader("Retry-After", String(resetSeconds));
-        res.setHeader("X-RateLimit-Limit", String(result.limit));
-        res.setHeader("X-RateLimit-Remaining", String(Math.max(0, result.limit - result.count)));
-        res.setHeader("X-RateLimit-Reset", String(resetSeconds));
-        
-        logger.response(429, Date.now() - startTime);
-        return res.status(429).json({
-          error: "rate_limit_exceeded",
-          scope,
-          limit: result.limit,
-          windowSeconds: result.windowSeconds,
-          resetSeconds,
-          identifier,
-        });
-      }
-    } catch (error) {
-      logger.error("Rate limit check failed:", error);
-    }
-  }
+  let imagePromptParts: Array<TextPart | ImagePart> | null = null;
+  let textGenerationMessages: ModelMessage[] | null = null;
 
   if (mode === "image") {
     const promptText = prompt?.trim() ?? "";
@@ -500,8 +543,47 @@ export default apiHandler<z.infer<typeof RequestSchema>>(
     if (promptParts.length === 0) {
       logger.warn("Image generation requires instructions or image attachments");
       logger.response(400, Date.now() - startTime);
-      return res.status(400).json({ error: "Image generation requires instructions or image attachments." });
+      return res.status(400).json({
+        error: "Image generation requires instructions or image attachments.",
+      });
     }
+
+    imagePromptParts = promptParts;
+  } else {
+    const conversation: ParsedMessage[] =
+      messages && messages.length > 0
+        ? messages
+        : [{ role: "user", content: prompt!.trim() }];
+
+    try {
+      textGenerationMessages = buildModelMessages(conversation, context);
+    } catch (error) {
+      logger.error("Message preparation failed:", error);
+      logger.response(400, Date.now() - startTime);
+      return res.status(400).json({
+        error: "Invalid attachments in request body",
+        ...(error instanceof Error ? { details: error.message } : {}),
+      });
+    }
+  }
+
+  const rateLimitAllowed = await enforceAppletAiRateLimit({
+    res,
+    logger,
+    startTime,
+    mode,
+    rateLimitBypass,
+    isAuthenticatedUser,
+    usernameHeader,
+    ip,
+    identifier,
+  });
+  if (!rateLimitAllowed) {
+    return;
+  }
+
+  if (mode === "image" && imagePromptParts) {
+    const promptParts = imagePromptParts;
 
     try {
       logger.info("Starting image generation (Gemini)", { promptPartsCount: promptParts.length });
@@ -557,22 +639,7 @@ export default apiHandler<z.infer<typeof RequestSchema>>(
     }
   }
 
-  const conversation: ParsedMessage[] =
-    messages && messages.length > 0
-      ? messages
-      : [{ role: "user", content: prompt!.trim() }];
-
-  let finalMessages: ModelMessage[];
-  try {
-    finalMessages = buildModelMessages(conversation, context);
-  } catch (error) {
-    logger.error("Message preparation failed:", error);
-    logger.response(400, Date.now() - startTime);
-    return res.status(400).json({
-      error: "Invalid attachments in request body",
-      ...(error instanceof Error ? { details: error.message } : {}),
-    });
-  }
+  const finalMessages = textGenerationMessages!;
 
   try {
     logger.info("Starting text generation", { messageCount: finalMessages.length });
