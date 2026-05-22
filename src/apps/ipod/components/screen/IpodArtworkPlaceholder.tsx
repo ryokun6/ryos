@@ -1,4 +1,4 @@
-import { Disc, MusicNote } from "@phosphor-icons/react";
+import { MusicNote } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 
 export type IpodEmptyArtworkKind = "album" | "playlist";
@@ -18,12 +18,11 @@ interface IpodArtworkPlaceholderProps {
  * the neutral silver tile appears under a zero-opacity `<img>`.
  */
 export function IpodArtworkPlaceholder({
-  kind = "album",
   selected = false,
   hideGlyph = false,
   className,
 }: IpodArtworkPlaceholderProps) {
-  const Icon = kind === "playlist" ? MusicNote : Disc;
+  const Icon = MusicNote;
   return (
     <div
       aria-hidden

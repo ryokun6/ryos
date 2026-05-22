@@ -175,17 +175,196 @@ const MODERN_NOW_PLAYING_ART_3D: CSSProperties = {
   width: MODERN_NOW_PLAYING_ART_PX,
 };
 
+function modernNowPlayingReflectLayerOpacity(
+  layerLoaded: boolean,
+  fading: boolean,
+  isIncoming: boolean,
+  targetOpacity: number
+): number {
+  if (!layerLoaded) return 0;
+  if (!fading) return isIncoming ? 0 : targetOpacity;
+  return isIncoming ? targetOpacity : 0;
+}
+
 /** Sleeve + reflection in one `preserve-3d` group tipped with rotateY + perspective. */
 function ModernNowPlayingArtwork({ coverUrl }: { coverUrl: string | null }) {
   const reflectH = MODERN_NOW_PLAYING_ART_PX * MODERN_NOW_PLAYING_REFLECT_RATIO;
-  const sleeve = useImageLoaded(coverUrl);
-  const reflection = useImageLoaded(coverUrl);
   const reflectTargetOpacity =
     MODERN_NOW_PLAYING_REFLECT_IMG.opacity as number;
 
-  const showFallback = !coverUrl || sleeve.failed;
-  const showLoadingBackdrop =
-    Boolean(coverUrl) && !sleeve.failed && !sleeve.loaded;
+  /** Bottom = last committed bitmap; optional top cross-fades over it while fetching a new URL. */
+  const stackRef = useRef<{ bottom: string | null; top: string | null }>({
+    bottom: null,
+    top: null,
+  });
+  const [, setVersion] = useState(0);
+  const repaint = () => setVersion((v) => v + 1);
+  const [crossfading, setCrossfading] = useState(false);
+  const crossfadeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingCommitSrcRef = useRef<string | null>(null);
+
+  useLayoutEffect(() => {
+    const clearCrossfadeTimer = () => {
+      if (crossfadeTimerRef.current) {
+        clearTimeout(crossfadeTimerRef.current);
+        crossfadeTimerRef.current = null;
+      }
+    };
+
+    if (!coverUrl) {
+      clearCrossfadeTimer();
+      stackRef.current = { bottom: null, top: null };
+      setCrossfading(false);
+      repaint();
+      return;
+    }
+
+    const s = stackRef.current;
+
+    if (s.bottom === null) {
+      stackRef.current = { bottom: coverUrl, top: null };
+      clearCrossfadeTimer();
+      setCrossfading(false);
+      repaint();
+      return;
+    }
+
+    if (s.bottom === coverUrl && s.top === null) {
+      return;
+    }
+
+    if (s.bottom === coverUrl && s.top !== null) {
+      stackRef.current = { bottom: coverUrl, top: null };
+      clearCrossfadeTimer();
+      setCrossfading(false);
+      repaint();
+      return;
+    }
+
+    if (s.top === coverUrl) {
+      return;
+    }
+
+    stackRef.current = { bottom: s.bottom, top: coverUrl };
+    clearCrossfadeTimer();
+    setCrossfading(false);
+    repaint();
+  }, [coverUrl]);
+
+  useEffect(() => {
+    return () => {
+      if (crossfadeTimerRef.current) {
+        clearTimeout(crossfadeTimerRef.current);
+      }
+    };
+  }, []);
+
+  const { bottom, top } = stackRef.current;
+  const hasIncoming = Boolean(top);
+
+  const bottomSleeve = useImageLoaded(bottom);
+  const topSleeve = useImageLoaded(top);
+  const bottomRefl = useImageLoaded(bottom);
+  const topRefl = useImageLoaded(top);
+
+  const scheduleCommit = useCallback(() => {
+    const incomingTop = stackRef.current.top;
+    if (!incomingTop) return;
+
+    pendingCommitSrcRef.current = incomingTop;
+    setCrossfading(true);
+
+    if (crossfadeTimerRef.current) {
+      clearTimeout(crossfadeTimerRef.current);
+    }
+    crossfadeTimerRef.current = setTimeout(() => {
+      crossfadeTimerRef.current = null;
+      const want = pendingCommitSrcRef.current;
+      pendingCommitSrcRef.current = null;
+      if (want !== null && stackRef.current.top === want) {
+        stackRef.current = { bottom: want, top: null };
+      }
+      setCrossfading(false);
+      repaint();
+    }, 250);
+  }, []);
+
+  useEffect(() => {
+    if (!top) return;
+    if (!topSleeve.loaded) return;
+    if (crossfading) return;
+    scheduleCommit();
+  }, [top, topSleeve.loaded, crossfading, scheduleCommit]);
+
+  const cancelIncomingArt = () => {
+    const s = stackRef.current;
+    if (!s.top) return;
+    stackRef.current = { bottom: s.bottom, top: null };
+    if (crossfadeTimerRef.current) {
+      clearTimeout(crossfadeTimerRef.current);
+      crossfadeTimerRef.current = null;
+    }
+    pendingCommitSrcRef.current = null;
+    setCrossfading(false);
+    repaint();
+  };
+
+  const showFallbackArt =
+    !coverUrl ||
+    (!hasIncoming &&
+      Boolean(bottom) &&
+      bottom === coverUrl &&
+      bottomSleeve.failed);
+
+  const showPrimeLoadingBackdrop =
+    !hasIncoming &&
+    Boolean(bottom) &&
+    bottom === coverUrl &&
+    !bottomSleeve.failed &&
+    !bottomSleeve.loaded;
+
+  const sleeveBottomOpacity = hasIncoming
+    ? crossfading
+      ? 0
+      : 1
+    : bottomSleeve.loaded
+      ? 1
+      : 0;
+
+  const sleeveTopOpacity = hasIncoming
+    ? crossfading && topSleeve.loaded
+      ? 1
+      : 0
+    : 0;
+
+  const reflBottomOpacity = hasIncoming
+    ? modernNowPlayingReflectLayerOpacity(
+        bottomRefl.loaded,
+        crossfading,
+        false,
+        reflectTargetOpacity
+      )
+    : bottomRefl.loaded
+      ? reflectTargetOpacity
+      : 0;
+
+  const reflTopOpacity = hasIncoming
+    ? modernNowPlayingReflectLayerOpacity(
+        topRefl.loaded,
+        crossfading,
+        true,
+        reflectTargetOpacity
+      )
+    : 0;
+
+  const reflectionImgStyle = (opacity: number): CSSProperties => ({
+    ...MODERN_NOW_PLAYING_REFLECT_IMG,
+    opacity,
+    transition: COVER_FADE_TRANSITION,
+  });
+
+  const showReflectStack =
+    Boolean(bottom) && (!bottomSleeve.failed || Boolean(top));
 
   return (
     <div
@@ -206,51 +385,88 @@ function ModernNowPlayingArtwork({ coverUrl }: { coverUrl: string | null }) {
             width: MODERN_NOW_PLAYING_ART_PX,
           }}
         >
-          {showFallback ? (
-            <IpodArtworkPlaceholder kind="album" className="absolute inset-0 size-full" />
+          {showFallbackArt ? (
+            <IpodArtworkPlaceholder
+              kind="album"
+              className="absolute inset-0 size-full"
+            />
           ) : null}
-          {showLoadingBackdrop ? (
+          {showPrimeLoadingBackdrop ? (
             <div
               className="ipod-empty-artwork absolute inset-0 size-full"
               aria-hidden
             />
           ) : null}
-          {coverUrl && !sleeve.failed ? (
+          {bottom && (!hasIncoming ? !bottomSleeve.failed : true) ? (
             <img
-              ref={sleeve.ref}
-              src={coverUrl}
+              ref={bottomSleeve.ref}
+              src={bottom}
               alt=""
               draggable={false}
-              onLoad={sleeve.onLoad}
-              onError={sleeve.onError}
+              onLoad={bottomSleeve.onLoad}
+              onError={() => {
+                if (hasIncoming) return;
+                bottomSleeve.onError();
+              }}
               className="absolute inset-0 size-full object-cover"
               style={{
-                opacity: sleeve.loaded ? 1 : 0,
+                opacity: sleeveBottomOpacity,
+                transition: COVER_FADE_TRANSITION,
+              }}
+            />
+          ) : null}
+          {top ? (
+            <img
+              ref={topSleeve.ref}
+              src={top}
+              alt=""
+              draggable={false}
+              onLoad={topSleeve.onLoad}
+              onError={() => {
+                topSleeve.onError();
+                cancelIncomingArt();
+              }}
+              className="absolute inset-0 size-full object-cover z-[1]"
+              style={{
+                opacity: sleeveTopOpacity,
                 transition: COVER_FADE_TRANSITION,
               }}
             />
           ) : null}
         </div>
-        {coverUrl && !sleeve.failed ? (
+        {showReflectStack ? (
           <div
             aria-hidden
-            className="pointer-events-none mt-0 w-full overflow-hidden"
+            className="relative pointer-events-none mt-0 w-full overflow-hidden"
             style={{ height: reflectH }}
           >
-            <img
-              ref={reflection.ref}
-              src={coverUrl}
-              alt=""
-              draggable={false}
-              onLoad={reflection.onLoad}
-              onError={reflection.onError}
-              className="block w-full h-auto"
-              style={{
-                ...MODERN_NOW_PLAYING_REFLECT_IMG,
-                opacity: reflection.loaded ? reflectTargetOpacity : 0,
-                transition: COVER_FADE_TRANSITION,
-              }}
-            />
+            {bottom && (!hasIncoming ? !bottomSleeve.failed : true) ? (
+              <img
+                ref={bottomRefl.ref}
+                src={bottom}
+                alt=""
+                draggable={false}
+                onLoad={bottomRefl.onLoad}
+                onError={() => {
+                  if (hasIncoming) return;
+                  bottomRefl.onError();
+                }}
+                className="pointer-events-none absolute left-0 top-0 block w-full h-auto max-w-none"
+                style={reflectionImgStyle(reflBottomOpacity)}
+              />
+            ) : null}
+            {top ? (
+              <img
+                ref={topRefl.ref}
+                src={top}
+                alt=""
+                draggable={false}
+                onLoad={topRefl.onLoad}
+                onError={cancelIncomingArt}
+                className="pointer-events-none absolute left-0 top-0 z-[1] block w-full h-auto max-w-none"
+                style={reflectionImgStyle(reflTopOpacity)}
+              />
+            ) : null}
           </div>
         ) : null}
       </div>
