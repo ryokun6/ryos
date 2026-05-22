@@ -11,6 +11,7 @@ import {
   getYouTubeVideoId,
   formatKugouImageUrl,
   getAlbumGroupingKey,
+  IPOD_MODERN_TITLEBAR_HEIGHT_PX,
 } from "../constants";
 import type { Track } from "@/stores/useIpodStore";
 import { useIpodStore } from "@/stores/useIpodStore";
@@ -31,10 +32,8 @@ import { useImageLoaded } from "../hooks/useImageLoaded";
 // placeholder), then fade up to the loaded state in 250ms.
 const COVER_FADE_TRANSITION = "opacity 250ms ease-out" as const;
 
-// Modern-UI titlebar height. Matches `MODERN_TITLEBAR_HEIGHT` in
-// IpodScreen.tsx so the Cover Flow status bar lines up exactly with the
-// main menu's silver header strip when toggling between the two.
-const MODERN_TITLEBAR_HEIGHT = 17;
+// Matches `MODERN_TITLEBAR_HEIGHT` in IpodScreen (shared constant).
+const MODERN_TITLEBAR_HEIGHT = IPOD_MODERN_TITLEBAR_HEIGHT_PX;
 
 // Long press delay in milliseconds
 const LONG_PRESS_DELAY = 500;
@@ -1974,7 +1973,7 @@ export const CoverFlow = function CoverFlow(
           >
             {/* Covers - centered with a slight vertical offset so the
                 title/artist row at the bottom always has clearance. The
-                modern skin also reserves room at the top for the 17px
+                modern skin also reserves room at the top for the
                 status bar, so we shift the carousel down by half the
                 status bar height (vs. classic which has no titlebar in
                 Cover Flow) to keep it visually centered between the

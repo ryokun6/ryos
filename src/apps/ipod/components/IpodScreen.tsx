@@ -38,6 +38,10 @@ import {
   PLAYER_PROGRESS_INTERVAL_MS,
   getYouTubeVideoId,
   formatKugouImageUrl,
+  IPOD_MODERN_MEDIA_ROW_HEIGHT_PX,
+  IPOD_MODERN_MENU_ROW_HEIGHT_PX,
+  IPOD_MODERN_SCREEN_HEIGHT_PX,
+  IPOD_MODERN_TITLEBAR_HEIGHT_PX,
 } from "../constants";
 import { DisplayMode } from "@/types/lyrics";
 import { LandscapeVideoBackground } from "@/components/shared/LandscapeVideoBackground";
@@ -51,8 +55,7 @@ import { useIpodStore, isAppleMusicCollectionTrack } from "@/stores/useIpodStore
 // single-line row; the classic skin's Chicago glyphs need 24px row height at
 // 16px type, while the modern (color) skin uses tighter **21px** rows with
 // **15px** Myriad / system UI. At 21px we can fit the titlebar plus
-// six full menu rows inside the 150px screen (21 × 7 = 147, leaving a
-// 3px tail at the bottom of the scroll container) which matches the
+// six 21.5px rows + 17px titlebar inside the 150px screen which matches the
 // nano 6G/7G density much more closely than the previous 24px rows
 // (which only fit five rows + a sliver).
 //
@@ -67,10 +70,10 @@ import { useIpodStore, isAppleMusicCollectionTrack } from "@/stores/useIpodStore
 // per-menu choice, so a single value applies cleanly to all menus and
 // the scroll-position math.
 const MENU_ITEM_HEIGHT_CLASSIC = 24;
-const MENU_ITEM_HEIGHT_MODERN = 21;
+const MENU_ITEM_HEIGHT_MODERN = IPOD_MODERN_MENU_ROW_HEIGHT_PX;
 // Modern **media** rows (playlist / artist album / in-playlist tracks):
-// title bar 17px + **4 × 33px** rows ≈ 149px inside the fixed **150px** LCD.
-const MENU_ITEM_HEIGHT_MODERN_MEDIA = 33;
+// titlebar + four two-line rows fill the 150px LCD (see `constants.ts`).
+const MENU_ITEM_HEIGHT_MODERN_MEDIA = IPOD_MODERN_MEDIA_ROW_HEIGHT_PX;
 const menuItemKeyCache = new WeakMap<object, string>();
 let menuItemKeySeed = 0;
 
@@ -82,14 +85,8 @@ function getMenuItemKey(item: object): string {
   menuItemKeyCache.set(item, key);
   return key;
 }
-// Modern titlebar is intentionally tighter than the row height. The
-// nano 6G/7G + iPod classic 6G silver header is a slim 17px strip with
-// 12px MyriadPro semibold text — slimmer than each list row so the
-// header reads as a separator, not as another row. Six 21px rows still
-// fit cleanly inside the remaining 133px of screen (21 × 6 = 126), with
-// a 7px tail for the optional Ken Burns split-art column to breathe
-// against the bottom edge.
-const MODERN_TITLEBAR_HEIGHT = 17;
+// Slim 17px titlebar; 21.5px rows (see constants.ts).
+const MODERN_TITLEBAR_HEIGHT = IPOD_MODERN_TITLEBAR_HEIGHT_PX;
 // The Ken Burns album-art strip rendered alongside the menu in the
 // modern UI takes exactly **half** of the screen width and the FULL
 // screen height — the art panel covers the right half from the very
@@ -516,7 +513,11 @@ export function IpodScreen({
       Math.floor(scrollTop / menuItemHeight) - OVERSCAN_ITEMS
     );
     const visibleCount =
-      Math.ceil((containerHeight || 124) / menuItemHeight) +
+      Math.ceil(
+        (containerHeight ||
+          IPOD_MODERN_SCREEN_HEIGHT_PX - MODERN_TITLEBAR_HEIGHT) /
+          menuItemHeight
+      ) +
       OVERSCAN_ITEMS * 2;
     const end = Math.min(currentMenuItems.length, start + visibleCount);
     return { start, end };
@@ -544,7 +545,9 @@ export function IpodScreen({
     const isMenuTransition = lastMenuDepthRef.current !== menuHistory.length;
     lastMenuDepthRef.current = menuHistory.length;
 
-    const containerH = el.clientHeight || 124;
+    const containerH =
+      el.clientHeight ||
+      IPOD_MODERN_SCREEN_HEIGHT_PX - MODERN_TITLEBAR_HEIGHT;
 
     // On a menu transition, snap scrollTop based purely on the target
     // index — we don't want to inherit the previous menu's offset.
@@ -780,7 +783,7 @@ export function IpodScreen({
       {/* Title bar
        *
        * Modern (nano 6G/7G + iPod classic 6G silver header):
-       *   - Slim 17px strip, 12px MyriadPro semibold black text.
+       *   - Slim 17px silver strip, 12px semibold black text.
        *   - Title left-aligned with 6px padding to match the menu
        *     row text indent (`MenuListItem` uses `pl-1.5 pr-2`).
        *   - Status icons (play/pause + battery) clustered on the right.
@@ -867,7 +870,7 @@ export function IpodScreen({
             // matching the iOS 6 / iPod nano 6G "tinted" status-bar
             // look. Inline SVG with an embedded gradient so it stays
             // a single sharp shape on any DPI. Sized at 14px to
-            // dominate the 17px titlebar (visually matches the title
+            // dominate the titlebar (visually matches the title
             // type x-height + ascender).
             //
             // `translateY(-0.5px)` nudges the glyph up half a pixel

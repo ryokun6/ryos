@@ -4,6 +4,24 @@ import { LyricsAlignment } from "@/types/lyrics";
 import i18n from "@/lib/i18n";
 import type { Track } from "@/stores/useIpodStore";
 
+/** Fixed modern iPod LCD height (px). */
+export const IPOD_MODERN_SCREEN_HEIGHT_PX = 150;
+
+/** Slim silver status/title bar (nano 6G reference — stays at 17px). */
+export const IPOD_MODERN_TITLEBAR_HEIGHT_PX = 17;
+
+/** Standard modern menus show six rows without scrolling. */
+export const IPOD_MODERN_MENU_VISIBLE_ROWS = 6;
+
+/** Single-line menu row (17px titlebar + 6×21.5 = 146px; 4px slack at bottom). */
+export const IPOD_MODERN_MENU_ROW_HEIGHT_PX = 21.5;
+
+/** Two-line media browse menus target four visible rows. */
+export const IPOD_MODERN_MEDIA_VISIBLE_ROWS = 4;
+
+/** Media browse row (restored to 33px; same 1px slack as standard menus). */
+export const IPOD_MODERN_MEDIA_ROW_HEIGHT_PX = 33;
+
 // Translation language options
 export interface TranslationLanguage {
   labelKey?: string;
