@@ -199,3 +199,42 @@ export function getAlbumGroupingKey(
   const albumArtist = track.albumArtist || track.artist || unknownArtistLabel;
   return `${albumArtist}\u0000${album}`;
 }
+
+const APPLE_MUSIC_FEATURED_ARTIST_SUFFIX =
+  /\s*(?:\(|\[)?\s*(?:feat\.?|ft\.?|featuring)\s+.*?(?:\)|\])?\s*$/i;
+
+function normalizeArtistGroupingName(name: string): string {
+  return name.trim().normalize("NFKC").replace(/\s+/g, " ");
+}
+
+function stripAppleMusicFeaturedArtistSuffix(name: string): string {
+  const stripped = name.replace(APPLE_MUSIC_FEATURED_ARTIST_SUFFIX, "").trim();
+  return stripped.length > 0 ? stripped : name.trim();
+}
+
+export function getArtistGroupingDisplayName(
+  track: Track,
+  unknownArtistLabel: string
+): string {
+  const albumArtist = track.albumArtist?.trim();
+  const artist = track.artist?.trim();
+  const rawName =
+    track.source === "appleMusic" && albumArtist
+      ? albumArtist
+      : artist || unknownArtistLabel;
+  const cleanedName =
+    track.source === "appleMusic" && !albumArtist
+      ? stripAppleMusicFeaturedArtistSuffix(rawName)
+      : rawName;
+  return normalizeArtistGroupingName(cleanedName || unknownArtistLabel);
+}
+
+export function getArtistGroupingKey(
+  track: Track,
+  unknownArtistLabel: string
+): string {
+  return getArtistGroupingDisplayName(
+    track,
+    unknownArtistLabel
+  ).toLocaleLowerCase();
+}

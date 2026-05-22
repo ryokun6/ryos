@@ -68,6 +68,9 @@ const {
   generateIpodSongShareUrl,
   shouldCacheSongMetadataForShare,
 } = await import("../src/utils/sharedUrl");
+const { getArtistGroupingDisplayName, getArtistGroupingKey } = await import(
+  "../src/apps/ipod/constants"
+);
 
 describe("Apple Music song ID validation", () => {
   test("accepts the canonical YouTube video ID format", () => {
@@ -171,6 +174,50 @@ describe("libraryResourceToTrack", () => {
       attributes: { name: "No params" },
     });
     expect(track).toBeNull();
+  });
+});
+
+describe("Apple Music artist grouping", () => {
+  test("groups Apple Music tracks by album artist case-insensitively", () => {
+    const baseTrack = {
+      id: "am:1",
+      url: "apple-music://song/1",
+      title: "Song",
+      source: "appleMusic",
+    } satisfies Partial<Track>;
+    const first = {
+      ...baseTrack,
+      artist: "Example Artist feat. Guest",
+      albumArtist: "Example Artist",
+    } as Track;
+    const second = {
+      ...baseTrack,
+      id: "am:2",
+      artist: "example artist",
+      albumArtist: "example artist",
+    } as Track;
+
+    expect(getArtistGroupingDisplayName(first, "Unknown Artist")).toBe(
+      "Example Artist"
+    );
+    expect(getArtistGroupingKey(first, "Unknown Artist")).toBe(
+      getArtistGroupingKey(second, "Unknown Artist")
+    );
+  });
+
+  test("strips featured suffixes when Apple Music album artist is missing", () => {
+    const track = {
+      id: "am:3",
+      url: "apple-music://song/3",
+      title: "Collab",
+      artist: "Example Artist (feat. Guest)",
+      source: "appleMusic",
+    } as Track;
+
+    expect(getArtistGroupingDisplayName(track, "Unknown Artist")).toBe(
+      "Example Artist"
+    );
+    expect(getArtistGroupingKey(track, "Unknown Artist")).toBe("example artist");
   });
 });
 

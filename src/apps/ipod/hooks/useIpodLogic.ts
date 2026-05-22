@@ -62,6 +62,8 @@ import {
   getYouTubeVideoId,
   formatKugouImageUrl,
   getAlbumGroupingKey,
+  getArtistGroupingDisplayName,
+  getArtistGroupingKey,
   resolveTrackCoverUrl,
 } from "../constants";
 import type {
@@ -1474,25 +1476,45 @@ export function useIpodLogic({
   // Group tracks by artist once per `tracks` change. With large libraries
   // (e.g. an Apple Music sync of several thousand songs) this is expensive
   // enough that we don't want it running on every IpodScreen re-render.
+  // Apple Music groups by album artist, so feature/collaboration variants
+  // collapse under the artist the library uses for album browsing.
   const unknownArtistLabel = t("apps.ipod.menu.unknownArtist");
   const unknownAlbumLabel = t("apps.ipod.menuItems.unknownAlbum");
-  const tracksByArtist = useMemo(() => {
-    const grouped: Record<string, { track: Track; index: number }[]> = {};
+  const artistGroupsByKey = useMemo(() => {
+    const grouped: Record<
+      string,
+      {
+        key: string;
+        name: string;
+        tracks: { track: Track; index: number }[];
+      }
+    > = {};
     for (let index = 0; index < browsableTracks.length; index++) {
       const track = browsableTracks[index];
-      const artist = track.artist || unknownArtistLabel;
-      const bucket = grouped[artist] || (grouped[artist] = []);
-      bucket.push({ track, index });
+      const key = getArtistGroupingKey(track, unknownArtistLabel);
+      const name = getArtistGroupingDisplayName(track, unknownArtistLabel);
+      const group =
+        grouped[key] ||
+        (grouped[key] = {
+          key,
+          name,
+          tracks: [],
+        });
+      group.tracks.push({ track, index });
     }
     return grouped;
   }, [browsableTracks, unknownArtistLabel]);
 
-  const sortedArtists = useMemo(
+  const sortedArtistKeys = useMemo(
     () =>
-      Object.keys(tracksByArtist).sort((a, b) =>
-        a.localeCompare(b, undefined, { sensitivity: "base" })
+      Object.keys(artistGroupsByKey).sort((a, b) =>
+        artistGroupsByKey[a].name.localeCompare(
+          artistGroupsByKey[b].name,
+          undefined,
+          { sensitivity: "base" }
+        )
       ),
-    [tracksByArtist]
+    [artistGroupsByKey]
   );
 
   const albumGroupsByKey = useMemo(() => {
@@ -1549,13 +1571,13 @@ export function useIpodLogic({
     > = {};
     for (let index = 0; index < browsableTracks.length; index++) {
       const track = browsableTracks[index];
-      const artist = track.artist || unknownArtistLabel;
+      const artistKey = getArtistGroupingKey(track, unknownArtistLabel);
       const albumKey = getAlbumGroupingKey(
         track,
         unknownAlbumLabel,
         unknownArtistLabel
       );
-      const artistAlbums = grouped[artist] || (grouped[artist] = {});
+      const artistAlbums = grouped[artistKey] || (grouped[artistKey] = {});
       const bucket =
         artistAlbums[albumKey] || (artistAlbums[albumKey] = []);
       bucket.push({ track, index });
@@ -1725,42 +1747,53 @@ export function useIpodLogic({
       { label: string; action: () => void; showChevron: boolean }[]
     > = {};
     const allSongsLabel = t("apps.ipod.menuItems.allSongs");
-    for (const artist of sortedArtists) {
-      const artistTracks = tracksByArtist[artist];
+    for (const artistKey of sortedArtistKeys) {
+      const artist = artistGroupsByKey[artistKey];
+      const artistTracks = artist.tracks;
       const queueIds = artistTracks.map(({ track }) => track.id);
-      const title = `${artist} - ${allSongsLabel}`;
+      const title = `${artistKey} - ${allSongsLabel}`;
+      const legacyTitle = `${artist.name} - ${allSongsLabel}`;
       result[title] = artistTracks.map(({ track }, trackListIndex) => ({
         label: track.title,
         action: () => playTrackFromMenu(track, trackListIndex, queueIds),
         showChevron: false,
         coverUrl: resolveTrackCoverUrl(track),
       }));
+      if (legacyTitle !== title && !result[legacyTitle]) {
+        result[legacyTitle] = result[title];
+      }
     }
     return result;
-  }, [tracksByArtist, sortedArtists, playTrackFromMenu, t]);
+  }, [artistGroupsByKey, sortedArtistKeys, playTrackFromMenu, t]);
 
   const artistAlbumMenuItemsByTitle = useMemo(() => {
     const result: Record<
       string,
       { label: string; action: () => void; showChevron: boolean }[]
     > = {};
-    for (const artist of sortedArtists) {
-      const albums = sortedAlbumsByArtist[artist] ?? [];
+    for (const artistKey of sortedArtistKeys) {
+      const artist = artistGroupsByKey[artistKey];
+      const albums = sortedAlbumsByArtist[artistKey] ?? [];
       for (const albumKey of albums) {
-        const albumTracks = tracksByArtistAlbum[artist]?.[albumKey] ?? [];
+        const albumTracks = tracksByArtistAlbum[artistKey]?.[albumKey] ?? [];
         const queueIds = albumTracks.map(({ track }) => track.id);
-        const title = `${artist}\u0000${albumKey}`;
+        const title = `${artistKey}\u0000${albumKey}`;
+        const legacyTitle = `${artist.name}\u0000${albumKey}`;
         result[title] = albumTracks.map(({ track }, trackListIndex) => ({
           label: track.title,
           action: () => playTrackFromMenu(track, trackListIndex, queueIds),
           showChevron: false,
           coverUrl: resolveTrackCoverUrl(track),
         }));
+        if (legacyTitle !== title && !result[legacyTitle]) {
+          result[legacyTitle] = result[title];
+        }
       }
     }
     return result;
   }, [
-    sortedArtists,
+    artistGroupsByKey,
+    sortedArtistKeys,
     sortedAlbumsByArtist,
     tracksByArtistAlbum,
     playTrackFromMenu,
@@ -1775,22 +1808,23 @@ export function useIpodLogic({
     > = {};
     const allLabel = t("apps.ipod.menuItems.all");
     const allSongsLabel = t("apps.ipod.menuItems.allSongs");
-    for (const artist of sortedArtists) {
-      const allSongsTitle = `${artist} - ${allSongsLabel}`;
-      const artistTracks = tracksByArtist[artist] ?? [];
+    for (const artistKey of sortedArtistKeys) {
+      const artist = artistGroupsByKey[artistKey];
+      const allSongsTitle = `${artistKey} - ${allSongsLabel}`;
+      const artistTracks = artist.tracks;
       const artistAllCoverTrack = artistTracks.find(
         ({ track }) => resolveTrackCoverUrl(track) !== null
       )?.track ?? artistTracks[0]?.track ?? null;
-      const albumItems = (sortedAlbumsByArtist[artist] ?? []).map((albumKey) => {
+      const albumItems = (sortedAlbumsByArtist[artistKey] ?? []).map((albumKey) => {
         const album = albumGroupsByKey[albumKey]?.album ?? albumKey;
-        const albumTitle = `${artist}\u0000${albumKey}`;
-        const albumTracks = tracksByArtistAlbum[artist]?.[albumKey] ?? [];
+        const albumTitle = `${artistKey}\u0000${albumKey}`;
+        const albumTracks = tracksByArtistAlbum[artistKey]?.[albumKey] ?? [];
         const albumCoverTrack = albumTracks.find(
           ({ track }) => resolveTrackCoverUrl(track) !== null
         )?.track ?? albumTracks[0]?.track ?? null;
         return {
           label: album,
-          subtitle: artist,
+          subtitle: artist.name,
           action: () => {
             registerActivity();
             pushMenuChild({
@@ -1805,7 +1839,7 @@ export function useIpodLogic({
         };
       });
 
-      result[artist] = [
+      result[artistKey] = [
         {
           label: allLabel,
           subtitle: allSongsLabel,
@@ -1813,6 +1847,7 @@ export function useIpodLogic({
             registerActivity();
             pushMenuChild({
               title: allSongsTitle,
+              displayTitle: `${artist.name} - ${allSongsLabel}`,
               items: artistAllSongsMenuItemsByTitle[allSongsTitle] ?? EMPTY_IPOD_MENU_ITEMS,
               selectedIndex: 0,
             });
@@ -1822,15 +1857,18 @@ export function useIpodLogic({
         },
         ...albumItems,
       ];
+      if (artist.name !== artistKey && !result[artist.name]) {
+        result[artist.name] = result[artistKey];
+      }
     }
     return result;
   }, [
-    sortedArtists,
+    artistGroupsByKey,
+    sortedArtistKeys,
     sortedAlbumsByArtist,
     albumGroupsByKey,
     artistAllSongsMenuItemsByTitle,
     artistAlbumMenuItemsByTitle,
-    tracksByArtist,
     tracksByArtistAlbum,
     registerActivity,
     pushMenuChild,
@@ -1922,18 +1960,20 @@ export function useIpodLogic({
           },
           showChevron: true,
         },
-        ...sortedArtists.map((artist) => {
-          const artistTracks = tracksByArtist[artist] ?? [];
+        ...sortedArtistKeys.map((artistKey) => {
+          const artist = artistGroupsByKey[artistKey];
+          const artistTracks = artist.tracks;
           const artistCoverTrack = artistTracks.find(
             ({ track }) => resolveTrackCoverUrl(track) !== null
           )?.track ?? artistTracks[0]?.track ?? null;
           return {
-            label: artist,
+            label: artist.name,
             action: () => {
               registerActivity();
               pushMenuChild({
-                title: artist,
-                items: artistMenuItemsByArtist[artist],
+                title: artistKey,
+                displayTitle: artist.name,
+                items: artistMenuItemsByArtist[artistKey],
                 selectedIndex: 0,
               });
             },
@@ -1944,10 +1984,10 @@ export function useIpodLogic({
       ];
     },
     [
-      sortedArtists,
+      artistGroupsByKey,
+      sortedArtistKeys,
       artistMenuItemsByArtist,
       albumsListMenuItems,
-      tracksByArtist,
       registerActivity,
       pushMenuChild,
       menuLocale,
@@ -2591,8 +2631,11 @@ export function useIpodLogic({
       const ipodLabel = t("apps.ipod.menuItems.ipod");
       const musicLabel = t("apps.ipod.menuItems.music");
       const artistsLabel = t("apps.ipod.menuItems.artists");
-      const artist = track.artist || unknownArtistLabel;
-      const artistRowIdx = sortedArtists.indexOf(artist);
+      const artistKey = getArtistGroupingKey(track, unknownArtistLabel);
+      const artistDisplay =
+        artistGroupsByKey[artistKey]?.name ??
+        getArtistGroupingDisplayName(track, unknownArtistLabel);
+      const artistRowIdx = sortedArtistKeys.indexOf(artistKey);
       const artistListIdx = artistRowIdx >= 0 ? artistRowIdx + 1 : 1;
 
       navigateFromNowPlayingSongMenu([
@@ -2612,8 +2655,9 @@ export function useIpodLogic({
           selectedIndex: artistListIdx,
         },
         {
-          title: artist,
-          items: artistMenuItemsByArtist[artist] ?? EMPTY_IPOD_MENU_ITEMS,
+          title: artistKey,
+          displayTitle: artistDisplay,
+          items: artistMenuItemsByArtist[artistKey] ?? EMPTY_IPOD_MENU_ITEMS,
           selectedIndex: 0,
         },
       ]);
@@ -2621,7 +2665,8 @@ export function useIpodLogic({
     [
       t,
       unknownArtistLabel,
-      sortedArtists,
+      artistGroupsByKey,
+      sortedArtistKeys,
       navigateFromNowPlayingSongMenu,
       mainMenuItems,
       musicMenuItems,
