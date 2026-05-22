@@ -5,7 +5,9 @@ import { ArrowUp, Square, Hand, At, Microphone, ImageSquare, X } from "@phosphor
 import { motion, AnimatePresence } from "framer-motion";
 import { AudioInputButton } from "@/components/ui/audio-input-button";
 import { useChatSynth } from "@/hooks/useChatSynth";
-import { useAppStoreShallow, useAudioSettingsStoreShallow, useDisplaySettingsStoreShallow } from "@/stores/helpers";
+import { useAppStoreShallow } from "@/stores/useAppStoreShallow";
+import { useAudioSettingsStoreShallow } from "@/stores/useAudioSettingsStoreShallow";
+import { useDisplaySettingsStoreShallow } from "@/stores/useDisplaySettingsStoreShallow";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { CHAT_ANALYTICS, getTextAnalytics, track } from "@/utils/analytics";
 import {

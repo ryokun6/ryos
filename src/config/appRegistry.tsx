@@ -8,6 +8,7 @@ import type {
   VideosInitialData,
 } from "@/apps/base/types";
 import type { AppletViewerInitialData } from "@/apps/applet-viewer";
+import type { FinderInitialData } from "@/apps/finder/hooks/useFinderLogic";
 import { createLazyComponent } from "./lazyAppComponent";
 
 export type { AppId };
@@ -36,12 +37,13 @@ const defaultWindowConstraints: WindowConstraints = {
 // LAZY-LOADED APP COMPONENTS
 // ============================================================================
 
-// Critical apps (load immediately for perceived performance)
-// Finder is critical - users see it on desktop
-import { FinderAppComponent } from "@/apps/finder/components/FinderAppComponent";
-
 // Lazy-loaded apps (loaded on-demand when opened)
 // Each uses a cache key to maintain stable references across HMR
+const LazyFinderApp = createLazyComponent<FinderInitialData>(
+  () => import("@/apps/finder/components/FinderAppComponent").then(m => ({ default: m.FinderAppComponent })),
+  "finder"
+);
+
 const LazyTextEditApp = createLazyComponent<unknown>(
   () => import("@/apps/textedit/components/TextEditAppComponent").then(m => ({ default: m.TextEditAppComponent })),
   "textedit"
@@ -212,7 +214,7 @@ export const appRegistry = {
     name: "Finder",
     icon: { type: "image", src: "/icons/mac.png" },
     description: "Browse and manage files",
-    component: FinderAppComponent, // Critical - loaded eagerly
+    component: LazyFinderApp,
     helpItems: finderHelpItems,
     metadata: finderMetadata,
     windowConfig: {

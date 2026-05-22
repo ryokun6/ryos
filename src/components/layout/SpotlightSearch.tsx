@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { XCircle } from "@phosphor-icons/react";
@@ -79,8 +79,12 @@ function getSpotlightPrefetchAppId(result: SpotlightResult | undefined): string 
 
 export function SpotlightSearch() {
   const { t } = useTranslation();
-  const { isOpen, query, selectedIndex, setQuery, setSelectedIndex, reset } =
-    useSpotlightStore();
+  const isOpen = useSpotlightStore((state) => state.isOpen);
+  const query = useSpotlightStore((state) => state.query);
+  const selectedIndex = useSpotlightStore((state) => state.selectedIndex);
+  const setQuery = useSpotlightStore((state) => state.setQuery);
+  const setSelectedIndex = useSpotlightStore((state) => state.setSelectedIndex);
+  const reset = useSpotlightStore((state) => state.reset);
   const { results, isSearching } = useSpotlightSearch(query);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -144,7 +148,7 @@ export function SpotlightSearch() {
   }, []);
 
   // Group results by type for section headers
-  const groupedResults = (() => {
+  const groupedResults = useMemo(() => {
     const groups: Array<{
       type: SpotlightResult["type"];
       items: Array<SpotlightResult & { globalIndex: number }>;
@@ -171,7 +175,7 @@ export function SpotlightSearch() {
       }
     }
     return groups;
-  })();
+  }, [results]);
 
   // Keyboard navigation
   const handleKeyDown = useCallback(

@@ -4,8 +4,8 @@
  *
  * Why:
  * A prior regression relied on globalThis.Pusher only, which broke under Vite
- * module builds. These checks ensure module-default + global fallback logic
- * stays in place.
+ * module builds. These checks ensure dynamic module-default + global fallback
+ * logic stays in place without restoring a static pusher-js runtime import.
  */
 
 import { readFileSync } from "node:fs";
@@ -17,10 +17,16 @@ const readPusherClientSource = (): string =>
 
 describe("Pusher Constructor Wiring Tests", () => {
   describe("Constructor resolution fallback", () => {
+    test("dynamically imports pusher-js instead of statically importing runtime", async () => {
+      const source = readPusherClientSource();
+      expect(source.includes('import("pusher-js")')).toBe(true);
+      expect(source.includes('import * as PusherNamespace from "pusher-js"')).toBe(false);
+    });
+
     test("checks module default constructor first", async () => {
       const source = readPusherClientSource();
       expect(source.includes("constructorFromModule")).toBe(true);
-      expect(/PusherNamespace[\s\S]*default\?/.test(source)).toBe(true);
+      expect(/PusherNamespace[\s\S]*\.default/.test(source)).toBe(true);
     });
 
     test("falls back to global constructor when needed", async () => {
@@ -34,10 +40,10 @@ describe("Pusher Constructor Wiring Tests", () => {
       expect(source.includes("[pusherClient] Pusher constructor not available")).toBe(true);
     });
 
-    test("getPusherClient instantiates via constructor resolver", async () => {
+    test("getPusherClient instantiates via lazy realtime wrapper", async () => {
       const source = readPusherClientSource();
-      expect(/const Pusher = getPusherConstructor\(\);/.test(source)).toBe(true);
-      expect(/new Pusher\(PUSHER_APP_KEY/.test(source)).toBe(true);
+      expect(/new LazyPusherRealtimeClient\(PUSHER_APP_KEY/.test(source)).toBe(true);
+      expect(/new Pusher\(this\.key, this\.options\)/.test(source)).toBe(true);
     });
   });
 });

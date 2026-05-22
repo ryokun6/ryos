@@ -15,6 +15,10 @@ const POLL_INTERVAL_MS = 5000;
 const listeners = new Set<() => void>();
 let pollIntervalId: ReturnType<typeof setInterval> | null = null;
 
+function notifyListeners() {
+  listeners.forEach((listener) => listener());
+}
+
 /**
  * Get the current online/offline state from the browser
  */
@@ -40,7 +44,7 @@ function startPolling() {
   
   pollIntervalId = setInterval(() => {
     // Notify all listeners to re-check the state
-    listeners.forEach((listener) => listener());
+    notifyListeners();
   }, POLL_INTERVAL_MS);
 }
 
@@ -62,8 +66,8 @@ function subscribe(callback: () => void): () => void {
 
   // Add browser event listeners (only for the first subscriber)
   if (listeners.size === 1) {
-    window.addEventListener("online", callback);
-    window.addEventListener("offline", callback);
+    window.addEventListener("online", notifyListeners);
+    window.addEventListener("offline", notifyListeners);
     startPolling();
   }
 
@@ -73,8 +77,8 @@ function subscribe(callback: () => void): () => void {
 
     // Clean up browser event listeners when no subscribers left
     if (listeners.size === 0) {
-      window.removeEventListener("online", callback);
-      window.removeEventListener("offline", callback);
+      window.removeEventListener("online", notifyListeners);
+      window.removeEventListener("offline", notifyListeners);
       stopPolling();
     }
   };

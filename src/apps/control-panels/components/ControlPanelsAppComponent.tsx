@@ -33,7 +33,7 @@ import { themes } from "@/themes";
 import { OsThemeId } from "@/themes/types";
 import type { LanguageCode } from "@/stores/useLanguageStore";
 import { useTranslation } from "react-i18next";
-import { useAppStoreShallow } from "@/stores/helpers";
+import { useAppStoreShallow } from "@/stores/useAppStoreShallow";
 import { AIModel } from "@/types/aiModels";
 import { useControlPanelsLogic } from "../hooks/useControlPanelsLogic";
 import { TelegramLinkDialog } from "@/components/dialogs/TelegramLinkDialog";

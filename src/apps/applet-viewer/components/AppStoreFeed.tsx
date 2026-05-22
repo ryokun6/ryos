@@ -12,7 +12,7 @@ import {
 } from "@/utils/appletAuthBridge";
 import { useTranslation } from "react-i18next";
 import { getApiUrl } from "@/utils/platform";
-import { useChatsStoreShallow } from "@/stores/helpers";
+import { useChatsStoreShallow } from "@/stores/useChatsStoreShallow";
 import { abortableFetch } from "@/utils/abortableFetch";
 
 interface AppStoreFeedProps {

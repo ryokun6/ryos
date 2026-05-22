@@ -25,7 +25,7 @@ import {
   compareFinderSortText,
 } from "@/utils/finderDisplay";
 import { helpItems } from "../index";
-import { useFilesStoreShallow } from "@/stores/helpers";
+import { useFilesStoreShallow } from "@/stores/useFilesStoreShallow";
 import { useDockStore } from "@/stores/useDockStore";
 import {
   emitFileRenamed,

@@ -1,5 +1,3 @@
-import * as THREE from 'three';
-
 /**
  * Checks for basic performance indicators to estimate if the device
  * is likely capable of handling intensive shader effects smoothly.
@@ -7,7 +5,7 @@ import * as THREE from 'three';
  *
  * @returns {boolean} True if the device passes the checks, false otherwise.
  */
-export function checkShaderPerformance(): boolean {
+export async function checkShaderPerformance(): Promise<boolean> {
   console.log('[PerformanceCheck] Running checks...');
 
   // 1. Check CPU Cores
@@ -19,12 +17,13 @@ export function checkShaderPerformance(): boolean {
   }
 
   // 2. Check WebGL Capabilities (Requires creating a temporary renderer)
-  let renderer: THREE.WebGLRenderer | null = null;
+  let renderer: import('three').WebGLRenderer | null = null;
   let maxAnisotropy = 0;
   let maxTextureSize = 0;
   let highpSupported = false;
 
   try {
+    const THREE = await import('three');
     renderer = new THREE.WebGLRenderer({ powerPreference: 'high-performance' });
     maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
     maxTextureSize = renderer.capabilities.maxTextureSize;

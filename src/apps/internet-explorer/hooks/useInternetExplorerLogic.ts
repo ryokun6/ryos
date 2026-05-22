@@ -31,7 +31,7 @@ import { useTranslation } from "react-i18next";
 import i18n from "@/lib/i18n";
 import { toast } from "sonner";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
-import { useInternetExplorerStoreShallow } from "@/stores/helpers";
+import { useInternetExplorerStoreShallow } from "@/stores/useInternetExplorerStoreShallow";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { onAppUpdate } from "@/utils/appEventBus";
 import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";

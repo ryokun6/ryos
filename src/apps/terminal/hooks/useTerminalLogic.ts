@@ -7,7 +7,7 @@ import {
 } from "@/apps/finder/hooks/useFileSystem";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { STORES } from "@/utils/indexedDB";
-import { useTerminalStoreShallow } from "@/stores/helpers";
+import { useTerminalStoreShallow } from "@/stores/useTerminalStoreShallow";
 import { useTerminalStore } from "@/stores/useTerminalStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useAiChat } from "@/apps/chats/hooks/useAiChat";

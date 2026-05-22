@@ -5,7 +5,7 @@ import {
   subscribePusherChannel,
   unsubscribePusherChannel,
 } from "@/lib/pusherClient";
-import { useChatsStoreShallow } from "@/stores/helpers";
+import { useChatsStoreShallow } from "@/stores/useChatsStoreShallow";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useAppStore } from "@/stores/useAppStore";
 import type { ChatMessage, ChatRoom } from "@/types/chat";

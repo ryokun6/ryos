@@ -1,4 +1,4 @@
-import { useEffect, useReducer } from "react";
+import { useCallback, useEffect, useReducer, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { X } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
@@ -44,8 +44,31 @@ export function SwipeInstructions({ className }: SwipeInstructionsProps) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const { isVisible, shouldRender } = state;
   const isMobile = useIsMobile();
+  const showTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const animationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearShowTimers = useCallback(() => {
+    if (showTimerRef.current) {
+      clearTimeout(showTimerRef.current);
+      showTimerRef.current = null;
+    }
+    if (animationTimerRef.current) {
+      clearTimeout(animationTimerRef.current);
+      animationTimerRef.current = null;
+    }
+  }, []);
+
+  const clearDismissTimer = useCallback(() => {
+    if (dismissTimerRef.current) {
+      clearTimeout(dismissTimerRef.current);
+      dismissTimerRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
+    clearShowTimers();
+
     // Only show on mobile devices and if not previously dismissed
     // Check both new and legacy keys
     const hasSeenInstructions = localStorage.getItem("ryos:has-seen-swipe-instructions") || 
@@ -54,28 +77,39 @@ export function SwipeInstructions({ className }: SwipeInstructionsProps) {
 
     if (shouldShow) {
       // Delay showing the instructions to not interfere with initial app loading
-      const timer = setTimeout(() => {
+      showTimerRef.current = setTimeout(() => {
+        showTimerRef.current = null;
         dispatch({ type: "showContainer" });
         // Use a separate state for animation
-        const animationTimer = setTimeout(
-          () => dispatch({ type: "setVisible", value: true }),
-          100
-        );
-        return () => clearTimeout(animationTimer);
+        animationTimerRef.current = setTimeout(() => {
+          animationTimerRef.current = null;
+          dispatch({ type: "setVisible", value: true });
+        }, 100);
       }, 1500);
-
-      return () => clearTimeout(timer);
     }
-  }, [isMobile]);
+
+    return clearShowTimers;
+  }, [clearShowTimers, isMobile]);
+
+  useEffect(() => {
+    return () => {
+      clearShowTimers();
+      clearDismissTimer();
+    };
+  }, [clearDismissTimer, clearShowTimers]);
 
   const handleDismiss = () => {
+    clearDismissTimer();
     dispatch({ type: "setVisible", value: false });
     localStorage.setItem("ryos:has-seen-swipe-instructions", "true");
     // Clean up legacy key
     localStorage.removeItem("hasSeenSwipeInstructions");
 
     // Remove from DOM after animation completes
-    setTimeout(() => dispatch({ type: "hideContainer" }), 300);
+    dismissTimerRef.current = setTimeout(() => {
+      dismissTimerRef.current = null;
+      dispatch({ type: "hideContainer" });
+    }, 300);
   };
 
   if (!shouldRender) return null;

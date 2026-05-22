@@ -17,7 +17,7 @@ import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useTranslation } from "react-i18next";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
-import { useIpodStoreShallow } from "@/stores/helpers";
+import { useIpodStoreShallow } from "@/stores/useIpodStoreShallow";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { toast } from "sonner";

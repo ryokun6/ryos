@@ -11,7 +11,7 @@ import { useSwipeNavigation } from "@/hooks/useSwipeNavigation";
 import { AppId } from "@/config/appIds";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useIsPhone } from "@/hooks/useIsPhone";
-import { useAppStoreShallow } from "@/stores/helpers";
+import { useAppStoreShallow } from "@/stores/useAppStoreShallow";
 import { useAppStore } from "@/stores/useAppStore";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 
@@ -71,6 +71,9 @@ interface WindowFrameProps {
   drawer?: React.ReactNode;
 }
 
+const DEFAULT_WINDOW_CONSTRAINTS: NonNullable<WindowFrameProps["windowConstraints"]> = {};
+const EMPTY_EXPOSE_INSTANCE_IDS: string[] = [];
+
 export function WindowFrame({
   children,
   title,
@@ -80,7 +83,7 @@ export function WindowFrame({
   appId,
   material = "default",
   skipInitialSound = false,
-  windowConstraints = {},
+  windowConstraints = DEFAULT_WINDOW_CONSTRAINTS,
   instanceId,
   onNavigateNext,
   onNavigatePrevious,
@@ -96,7 +99,7 @@ export function WindowFrame({
 }: WindowFrameProps) {
   const { t } = useTranslation();
   const coverFlowLabel = t("apps.ipod.menu.coverFlow");
-  const config = getWindowConfig(appId);
+  const config = useMemo(() => getWindowConfig(appId), [appId]);
   const defaultConstraints = useMemo(
     () => ({
       minWidth: config.minSize?.width,
@@ -130,19 +133,26 @@ export function WindowFrame({
     minimizeInstance,
     closeAppInstance,
     updateInstanceTitle,
-    exposeMode,
-    openInstanceCount,
   } = useAppStoreShallow((state) => ({
     bringInstanceToForeground: state.bringInstanceToForeground,
     updateInstanceWindowState: state.updateInstanceWindowState,
     minimizeInstance: state.minimizeInstance,
     closeAppInstance: state.closeAppInstance,
     updateInstanceTitle: state.updateInstanceTitle,
-    exposeMode: state.exposeMode,
-    openInstanceCount: state.exposeMode
-      ? Object.values(state.instances).filter(inst => inst.isOpen && !inst.isMinimized).length
-      : 0,
   }));
+  const exposeMode = useAppStore((state) => state.exposeMode);
+  const exposeInstanceIds = useAppStoreShallow((state) => {
+    if (!state.exposeMode) {
+      return EMPTY_EXPOSE_INSTANCE_IDS;
+    }
+
+    return Object.values(state.instances).reduce<string[]>((ids, inst) => {
+      if (inst.isOpen && !inst.isMinimized) {
+        ids.push(inst.instanceId);
+      }
+      return ids;
+    }, []);
+  });
   
   // Debug mode from display settings store
   const debugMode = useDisplaySettingsStore((s) => s.debugMode);
@@ -456,21 +466,16 @@ export function WindowFrame({
   }, [launchOrigin, windowPosition, windowSize]);
 
   // Calculate expose transform for Mission Control view.
-  // Uses openInstanceCount as a reactive dependency to recompute when windows
-  // open/close, and reads instance order imperatively to avoid infinite loops
-  // from selectors that return new arrays.
+  // The ID selector is shallow-compared, so transforms only recompute when the
+  // expose window set changes instead of recounting every open instance here.
   const exposeTransform = useMemo(() => {
     if (!exposeMode || !instanceId) return null;
-    
-    const allInstances = useAppStore.getState().instances;
-    const openInstances = Object.values(allInstances)
-      .filter(inst => inst.isOpen && !inst.isMinimized);
-    const myIndex = openInstances.findIndex(inst => inst.instanceId === instanceId);
-    
-    if (myIndex === -1 || openInstances.length === 0) return null;
+
+    const myIndex = exposeInstanceIds.indexOf(instanceId);
+    if (myIndex === -1 || exposeInstanceIds.length === 0) return null;
     
     const grid = calculateExposeGrid(
-      openInstances.length,
+      exposeInstanceIds.length,
       window.innerWidth,
       window.innerHeight,
       60, // padding
@@ -490,9 +495,7 @@ export function WindowFrame({
     );
     
     return { ...transform, index: myIndex };
-    // openInstanceCount triggers recomputation when windows open/close/minimize
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [exposeMode, instanceId, openInstanceCount, windowPosition, windowSize, isMobile]);
+  }, [exposeMode, exposeInstanceIds, instanceId, windowPosition, windowSize, isMobile]);
 
 
   // No longer track maximized state based on window dimensions

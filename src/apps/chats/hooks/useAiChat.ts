@@ -30,7 +30,7 @@ import { useTtsQueue } from "@/hooks/useTtsQueue";
 import { useTextEditStore } from "@/stores/useTextEditStore";
 import { useFilesStore } from "@/stores/useFilesStore";
 import { useLanguageStore } from "@/stores/useLanguageStore";
-import { useChatsStoreShallow } from "@/stores/helpers";
+import { useChatsStoreShallow } from "@/stores/useChatsStoreShallow";
 import { htmlToMarkdown, markdownToHtml } from "@/utils/markdown";
 import {
   generateHtmlFromJsonSync,

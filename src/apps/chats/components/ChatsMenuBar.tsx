@@ -11,7 +11,7 @@ import {
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { type ChatRoom } from "@/types/chat";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
-import { useAudioSettingsStoreShallow } from "@/stores/helpers";
+import { useAudioSettingsStoreShallow } from "@/stores/useAudioSettingsStoreShallow";
 import { SYNTH_PRESETS } from "@/hooks/useChatSynth";
 import { getPrivateRoomDisplayName } from "@/utils/chat";
 import { LoginDialog } from "@/components/dialogs/LoginDialog";

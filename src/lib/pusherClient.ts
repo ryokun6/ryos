@@ -1,6 +1,5 @@
 import type PusherType from "pusher-js";
 import type { Channel } from "pusher-js";
-import * as PusherNamespace from "pusher-js";
 import {
   getPusherRuntimeConfig,
   getRealtimeProvider,
@@ -46,16 +45,19 @@ type PusherConstructor = new (
     forceTLS: boolean;
   }
 ) => PusherType;
+type PusherModule = {
+  default?: PusherConstructor;
+};
 
 const pusherRuntimeConfig = getPusherRuntimeConfig();
 const PUSHER_APP_KEY = pusherRuntimeConfig.key;
 const PUSHER_CLUSTER = pusherRuntimeConfig.cluster;
 const PUSHER_FORCE_TLS = pusherRuntimeConfig.forceTLS;
 
-const getPusherConstructor = (): PusherConstructor => {
-  const constructorFromModule = (
-    PusherNamespace as unknown as { default?: PusherConstructor }
-  ).default;
+let pusherConstructorPromise: Promise<PusherConstructor> | null = null;
+
+const resolvePusherConstructor = (PusherNamespace: PusherModule): PusherConstructor => {
+  const constructorFromModule = PusherNamespace.default;
   if (constructorFromModule) {
     return constructorFromModule;
   }
@@ -68,10 +70,39 @@ const getPusherConstructor = (): PusherConstructor => {
   throw new Error("[pusherClient] Pusher constructor not available");
 };
 
+const loadPusherConstructor = (): Promise<PusherConstructor> => {
+  const constructorFromGlobal = globalWithPusher.Pusher;
+  if (constructorFromGlobal) {
+    return Promise.resolve(constructorFromGlobal);
+  }
+
+  if (!pusherConstructorPromise) {
+    pusherConstructorPromise = import("pusher-js")
+      .then((PusherNamespace) =>
+        resolvePusherConstructor(PusherNamespace as unknown as PusherModule)
+      )
+      .catch((error) => {
+        pusherConstructorPromise = null;
+        throw error;
+      });
+  }
+
+  return pusherConstructorPromise;
+};
+
 export type RealtimeConnectionState =
   | "connected"
   | "connecting"
   | "disconnected";
+
+const normalizeRealtimeConnectionState = (
+  state: string
+): RealtimeConnectionState => {
+  if (state === "connected") return "connected";
+  if (state === "connecting" || state === "initialized" || state === "unavailable")
+    return "connecting";
+  return "disconnected";
+};
 
 class LocalRealtimeConnection implements RealtimeConnection {
   private listeners = new Map<string, Set<ConnectionEventHandler>>();
@@ -443,6 +474,192 @@ class LocalRealtimeClient implements RealtimeClient {
   }
 }
 
+class LazyPusherConnection implements RealtimeConnection {
+  private realConnection: (RealtimeConnection & { state?: string }) | null = null;
+  private listeners = new Map<string, Set<ConnectionEventHandler>>();
+  state: RealtimeConnectionState = "connecting";
+
+  bind(eventName: string, handler: ConnectionEventHandler): void {
+    const listeners = this.listeners.get(eventName) || new Set();
+    listeners.add(handler);
+    this.listeners.set(eventName, listeners);
+    this.realConnection?.bind(eventName, handler);
+  }
+
+  unbind(eventName?: string, handler?: ConnectionEventHandler): void {
+    if (!eventName) {
+      this.listeners.clear();
+      this.realConnection?.unbind();
+      return;
+    }
+
+    if (!handler) {
+      this.listeners.delete(eventName);
+      this.realConnection?.unbind(eventName);
+      return;
+    }
+
+    const listeners = this.listeners.get(eventName);
+    listeners?.delete(handler);
+    if (listeners?.size === 0) {
+      this.listeners.delete(eventName);
+    }
+    this.realConnection?.unbind(eventName, handler);
+  }
+
+  attach(connection: RealtimeConnection & { state?: string }): void {
+    this.realConnection = connection;
+    if (typeof connection.state === "string") {
+      this.state = normalizeRealtimeConnectionState(connection.state);
+    }
+    connection.bind("state_change", (change) => {
+      const current =
+        change &&
+        typeof change === "object" &&
+        "current" in change &&
+        typeof change.current === "string"
+          ? change.current
+          : undefined;
+      if (current) {
+        this.state = normalizeRealtimeConnectionState(current);
+      }
+    });
+    for (const [eventName, listeners] of this.listeners) {
+      listeners.forEach((listener) => connection.bind(eventName, listener));
+    }
+  }
+
+  fail(error: unknown): void {
+    this.state = "disconnected";
+    this.emit("error", error);
+  }
+
+  private emit(eventName: string, payload?: unknown): void {
+    const listeners = this.listeners.get(eventName);
+    if (!listeners) return;
+    listeners.forEach((listener) => listener(payload));
+  }
+}
+
+class LazyPusherChannel implements RealtimeChannel {
+  readonly name: string;
+  private realChannel: RealtimeChannel | null = null;
+  private listeners = new Map<string, Set<ChannelEventHandler>>();
+
+  constructor(name: string) {
+    this.name = name;
+  }
+
+  bind(eventName: string, handler: ChannelEventHandler): void {
+    const listeners = this.listeners.get(eventName) || new Set();
+    listeners.add(handler);
+    this.listeners.set(eventName, listeners);
+    this.realChannel?.bind(eventName, handler);
+  }
+
+  unbind(eventName?: string, handler?: ChannelEventHandler): void {
+    if (!eventName) {
+      this.listeners.clear();
+      this.realChannel?.unbind();
+      return;
+    }
+
+    if (!handler) {
+      this.listeners.delete(eventName);
+      this.realChannel?.unbind(eventName);
+      return;
+    }
+
+    const listeners = this.listeners.get(eventName);
+    listeners?.delete(handler);
+    if (listeners?.size === 0) {
+      this.listeners.delete(eventName);
+    }
+    this.realChannel?.unbind(eventName, handler);
+  }
+
+  attach(channel: RealtimeChannel): void {
+    this.realChannel = channel;
+    for (const [eventName, listeners] of this.listeners) {
+      listeners.forEach((listener) => channel.bind(eventName, listener));
+    }
+  }
+}
+
+class LazyPusherRealtimeClient implements RealtimeClient {
+  readonly connection = new LazyPusherConnection();
+
+  private client: PusherType | null = null;
+  private clientPromise: Promise<PusherType> | null = null;
+  private channels = new Map<string, LazyPusherChannel>();
+
+  constructor(
+    private readonly key: string,
+    private readonly options: {
+      cluster: string;
+      forceTLS: boolean;
+    }
+  ) {}
+
+  subscribe(channelName: string): RealtimeChannel {
+    const existing = this.channels.get(channelName);
+    if (existing) {
+      return existing;
+    }
+
+    const channel = new LazyPusherChannel(channelName);
+    this.channels.set(channelName, channel);
+
+    if (this.client) {
+      channel.attach(this.client.subscribe(channelName) as unknown as RealtimeChannel);
+    } else {
+      void this.ensureClient();
+    }
+
+    return channel;
+  }
+
+  unsubscribe(channelName: string): void {
+    this.channels.delete(channelName);
+    this.client?.unsubscribe(channelName);
+  }
+
+  channel(channelName: string): RealtimeChannel | undefined {
+    return (
+      this.channels.get(channelName) ||
+      (this.client?.channel(channelName) as unknown as RealtimeChannel | undefined)
+    );
+  }
+
+  private ensureClient(): Promise<PusherType> {
+    if (this.client) {
+      return Promise.resolve(this.client);
+    }
+
+    if (!this.clientPromise) {
+      this.clientPromise = loadPusherConstructor()
+        .then((Pusher) => {
+          const client = new Pusher(this.key, this.options);
+          this.client = client;
+          this.connection.attach(
+            client.connection as unknown as RealtimeConnection & { state?: string }
+          );
+          for (const [channelName, channel] of this.channels) {
+            channel.attach(client.subscribe(channelName) as unknown as RealtimeChannel);
+          }
+          return client;
+        })
+        .catch((error) => {
+          this.clientPromise = null;
+          this.connection.fail(error);
+          throw error;
+        });
+    }
+
+    return this.clientPromise;
+  }
+}
+
 export function getPusherClient(): RealtimeClient {
   if (!globalWithPusher.__pusherClient) {
     if (getRealtimeProvider() === "local") {
@@ -450,11 +667,10 @@ export function getPusherClient(): RealtimeClient {
         getRealtimeWebSocketUrl()
       );
     } else {
-      const Pusher = getPusherConstructor();
-      globalWithPusher.__pusherClient = new Pusher(PUSHER_APP_KEY, {
+      globalWithPusher.__pusherClient = new LazyPusherRealtimeClient(PUSHER_APP_KEY, {
         cluster: PUSHER_CLUSTER,
         forceTLS: PUSHER_FORCE_TLS,
-      }) as unknown as RealtimeClient;
+      });
     }
   }
   return globalWithPusher.__pusherClient;
@@ -468,11 +684,7 @@ export function getRealtimeConnectionState(): RealtimeConnectionState {
     | LocalRealtimeConnection
     | { state?: string };
   if (conn && typeof conn.state === "string") {
-    const s = conn.state;
-    if (s === "connected") return "connected";
-    if (s === "connecting" || s === "initialized" || s === "unavailable")
-      return "connecting";
-    return "disconnected";
+    return normalizeRealtimeConnectionState(conn.state);
   }
 
   return "disconnected";

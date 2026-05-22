@@ -86,6 +86,7 @@ interface DisplaySettingsState {
   selectedShaderType: ShaderType;
   setShaderEffectEnabled: (v: boolean) => void;
   setSelectedShaderType: (t: ShaderType) => void;
+  checkShaderPerformance: () => Promise<boolean>;
 
   // Wallpaper
   currentWallpaper: string;
@@ -118,7 +119,7 @@ interface DisplaySettingsState {
 }
 
 const STORE_VERSION = 1;
-const initialShaderState = checkShaderPerformance();
+const initialShaderState = false;
 
 export const useDisplaySettingsStore = create<DisplaySettingsState>()(
   persist(
@@ -143,6 +144,11 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
       setSelectedShaderType: (t) => {
         set({ selectedShaderType: t });
         track(SETTINGS_ANALYTICS.SHADER_TYPE_CHANGE, { shaderType: t });
+      },
+      checkShaderPerformance: async () => {
+        const isSupported = await checkShaderPerformance();
+        set({ shaderEffectEnabled: isSupported });
+        return isSupported;
       },
 
       // Wallpaper

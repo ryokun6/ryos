@@ -213,7 +213,8 @@ async function fetchQuotes(symbols: string[]): Promise<StockQuote[]> {
 
 async function fetchChart(
   symbol: string,
-  range: TimeRange
+  range: TimeRange,
+  signal?: AbortSignal
 ): Promise<{ history: number[]; timestamps: number[] }> {
   const key = `${symbol}:${range}`;
   const cached = chartCache.get(key);
@@ -221,7 +222,8 @@ async function fetchChart(
 
   const apiRange = RANGE_TO_API[range];
   const res = await fetch(
-    `/api/stocks?symbols=${encodeURIComponent(symbol)}&chart=${encodeURIComponent(symbol)}&range=${apiRange}`
+    `/api/stocks?symbols=${encodeURIComponent(symbol)}&chart=${encodeURIComponent(symbol)}&range=${apiRange}`,
+    { signal }
   );
   if (!res.ok) throw new Error(`API ${res.status}`);
   const data = await res.json();
@@ -254,6 +256,7 @@ export function StocksWidget({ widgetId }: StocksWidgetProps) {
   const [loading, setLoading] = useState(true);
   const [, setError] = useState(false);
   const refreshTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const chartRequestIdRef = useRef(0);
 
   const loadQuotes = useCallback(async () => {
     try {
@@ -267,12 +270,15 @@ export function StocksWidget({ widgetId }: StocksWidgetProps) {
     }
   }, [symbols]);
 
-  const loadChart = useCallback(async () => {
+  const loadChart = useCallback(async (signal?: AbortSignal) => {
+    const requestId = ++chartRequestIdRef.current;
     try {
-      const { history, timestamps } = await fetchChart(selectedSymbol, selectedRange);
+      const { history, timestamps } = await fetchChart(selectedSymbol, selectedRange, signal);
+      if (signal?.aborted || requestId !== chartRequestIdRef.current) return;
       setChartHistory(history);
       setChartTimestamps(timestamps);
     } catch {
+      if (signal?.aborted || requestId !== chartRequestIdRef.current) return;
       setChartHistory([]);
       setChartTimestamps([]);
     }
@@ -288,7 +294,11 @@ export function StocksWidget({ widgetId }: StocksWidgetProps) {
   }, [loadQuotes]);
 
   useEffect(() => {
-    loadChart();
+    const controller = new AbortController();
+    loadChart(controller.signal);
+    return () => {
+      controller.abort();
+    };
   }, [loadChart]);
 
   useEffect(() => {

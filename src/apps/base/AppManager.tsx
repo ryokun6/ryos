@@ -1,4 +1,13 @@
-import { useCallback, useEffect, useReducer, useRef, useState } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
+import type { Dispatch, SetStateAction } from "react";
 import { useTranslation } from "react-i18next";
 import type { AnyApp } from "./types";
 import { MenuBar } from "@/components/layout/MenuBar";
@@ -7,7 +16,7 @@ import { Dock } from "@/components/layout/Dock";
 import { ExposeView } from "@/components/layout/ExposeView";
 import { getAppComponent } from "@/config/appRegistry";
 import type { AppId } from "@/config/appRegistry";
-import { useAppStoreShallow } from "@/stores/helpers";
+import { useAppStoreShallow } from "@/stores/useAppStoreShallow";
 import { toast } from "sonner";
 import { requestCloseWindow } from "@/utils/windowUtils";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
@@ -36,6 +45,9 @@ interface AppManagerProps {
 }
 
 const BASE_Z_INDEX = 1;
+
+const supportsMultiWindowApp = (appId: AppId) =>
+  appId === "textedit" || appId === "finder" || appId === "applet-viewer";
 
 interface SwitcherState {
   visible: boolean;
@@ -73,13 +85,172 @@ function switcherReducer(state: SwitcherState, action: SwitcherAction): Switcher
   }
 }
 
+interface AppInstanceHostProps {
+  instanceId: string;
+  appsById: ReadonlyMap<string, AnyApp>;
+  appLabelVersion: string;
+  exposeMode: boolean;
+  isInitialMount: boolean;
+  setCrashedInstanceIds: Dispatch<SetStateAction<Set<string>>>;
+}
+
+const AppInstanceHost = memo(function AppInstanceHost({
+  instanceId,
+  appsById,
+  appLabelVersion,
+  exposeMode,
+  isInitialMount,
+  setCrashedInstanceIds,
+}: AppInstanceHostProps) {
+  // This prop intentionally participates in React.memo comparison.
+  void appLabelVersion;
+  const instance = useAppStore((state) => state.instances[instanceId]);
+  const zIndex = useAppStore((state) => {
+    const index = state.instanceOrder.indexOf(instanceId);
+    return index === -1 ? BASE_Z_INDEX : BASE_Z_INDEX + index + 1;
+  });
+  const {
+    bringInstanceToForeground,
+    closeAppInstance,
+    launchApp,
+    navigateToNextInstance,
+    navigateToPreviousInstance,
+  } = useAppStoreShallow((state) => ({
+    bringInstanceToForeground: state.bringInstanceToForeground,
+    closeAppInstance: state.closeAppInstance,
+    launchApp: state.launchApp,
+    navigateToNextInstance: state.navigateToNextInstance,
+    navigateToPreviousInstance: state.navigateToPreviousInstance,
+  }));
+
+  const markCrashed = useCallback(() => {
+    setCrashedInstanceIds((prev) => {
+      if (prev.has(instanceId)) {
+        return prev;
+      }
+      const next = new Set(prev);
+      next.add(instanceId);
+      return next;
+    });
+  }, [instanceId, setCrashedInstanceIds]);
+
+  const clearCrash = useCallback(() => {
+    setCrashedInstanceIds((prev) => {
+      if (!prev.has(instanceId)) {
+        return prev;
+      }
+      const next = new Set(prev);
+      next.delete(instanceId);
+      return next;
+    });
+  }, [instanceId, setCrashedInstanceIds]);
+
+  const handleActivate = useCallback(() => {
+    if (instance && !instance.isForeground && !exposeMode) {
+      bringInstanceToForeground(instanceId);
+    }
+  }, [bringInstanceToForeground, exposeMode, instance, instanceId]);
+
+  const handleCrash = useCallback(() => {
+    markCrashed();
+    bringInstanceToForeground(instanceId);
+  }, [bringInstanceToForeground, instanceId, markCrashed]);
+
+  const handleQuit = useCallback(() => {
+    clearCrash();
+    closeAppInstance(instanceId);
+  }, [clearCrash, closeAppInstance, instanceId]);
+
+  const handleClose = useCallback(() => {
+    requestCloseWindow(instanceId);
+  }, [instanceId]);
+
+  const handleNavigateNext = useCallback(() => {
+    navigateToNextInstance(instanceId);
+  }, [instanceId, navigateToNextInstance]);
+
+  const handleNavigatePrevious = useCallback(() => {
+    navigateToPreviousInstance(instanceId);
+  }, [instanceId, navigateToPreviousInstance]);
+
+  if (!instance?.isOpen) return null;
+  if (exposeMode && instance.appId === "stickies") return null;
+
+  const appId = instance.appId as AppId;
+  const AppComponent = getAppComponent(appId);
+  const app = appsById.get(appId);
+  const translatedAppName = getTranslatedAppName(appId);
+  const crashDialogAppName =
+    translatedAppName !== appId ? translatedAppName : (app?.name ?? appId);
+
+  const shouldMount = shouldMountInstance(instance, exposeMode);
+  const hideWindow = !shouldMount || instance.isLoading;
+
+  const handleRelaunch = () => {
+    clearCrash();
+    const relaunchInitialData =
+      appId === "textedit" && isTextEditInitialData(instance.initialData)
+        ? { path: instance.initialData.path }
+        : instance.initialData;
+
+    closeAppInstance(instanceId);
+    launchApp(
+      appId,
+      relaunchInitialData,
+      instance.title,
+      supportsMultiWindowApp(appId),
+    );
+  };
+
+  return (
+    <div
+      style={{
+        zIndex: exposeMode ? 9999 : zIndex,
+        visibility: hideWindow ? "hidden" : "visible",
+      }}
+      className="absolute inset-x-0 md:inset-x-auto w-full md:w-auto"
+      role="presentation"
+      onMouseDown={handleActivate}
+      onTouchStart={handleActivate}
+    >
+      <AppErrorBoundary
+        appId={appId}
+        appName={crashDialogAppName}
+        instanceId={instanceId}
+        onCrash={handleCrash}
+        onQuit={handleQuit}
+        onRelaunch={handleRelaunch}
+      >
+        {shouldMount ? (
+          <AppComponent
+            isWindowOpen={instance.isOpen}
+            isForeground={exposeMode ? false : instance.isForeground}
+            onClose={handleClose}
+            className="pointer-events-auto"
+            helpItems={app?.helpItems}
+            skipInitialSound={isInitialMount}
+            // @ts-expect-error - Dynamic component system with different initialData types per app
+            initialData={instance.initialData}
+            instanceId={instanceId}
+            title={instance.title}
+            onNavigateNext={handleNavigateNext}
+            onNavigatePrevious={handleNavigatePrevious}
+          />
+        ) : null}
+      </AppErrorBoundary>
+    </div>
+  );
+});
+
 export function AppManager({ apps }: AppManagerProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const appsById = useMemo(
+    () => new Map(apps.map((app) => [app.id, app])),
+    [apps]
+  );
 
   // Instance-based state
   const {
-    instances,
-    instanceOrder,
     launchApp,
     bringInstanceToForeground,
     closeAppInstance,
@@ -87,11 +258,7 @@ export function AppManager({ apps }: AppManagerProps) {
     navigateToPreviousInstance,
     minimizeInstance,
     restoreInstance,
-    foregroundInstanceId,
-    exposeMode,
   } = useAppStoreShallow((state) => ({
-    instances: state.instances,
-    instanceOrder: state.instanceOrder,
     launchApp: state.launchApp,
     bringInstanceToForeground: state.bringInstanceToForeground,
     closeAppInstance: state.closeAppInstance,
@@ -99,11 +266,20 @@ export function AppManager({ apps }: AppManagerProps) {
     navigateToPreviousInstance: state.navigateToPreviousInstance,
     minimizeInstance: state.minimizeInstance,
     restoreInstance: state.restoreInstance,
-    foregroundInstanceId: state.foregroundInstanceId,
-    exposeMode: state.exposeMode,
   }));
+  const foregroundInstanceId = useAppStore((state) => state.foregroundInstanceId);
+  const exposeMode = useAppStore((state) => state.exposeMode);
+  const openInstanceIds = useAppStoreShallow((state) =>
+    Object.values(state.instances).reduce<string[]>((ids, instance) => {
+      if (instance.isOpen) {
+        ids.push(instance.instanceId);
+      }
+      return ids;
+    }, [])
+  );
 
-  const { isWindowsTheme: isXpTheme } = useThemeFlags();
+  const { isWindowsTheme: isXpTheme, currentTheme } = useThemeFlags();
+  const appLabelVersion = `${i18n.resolvedLanguage ?? i18n.language}:${currentTheme}`;
 
   const [crashedInstanceIds, setCrashedInstanceIds] = useState<Set<string>>(
     () => new Set()
@@ -134,10 +310,11 @@ export function AppManager({ apps }: AppManagerProps) {
   const switcherIndex = switcherState.index;
 
   // Refs for stable event listener closures
-  const instancesRef = useRef(instances);
-  const instanceOrderRef = useRef(instanceOrder);
+  const initialAppState = useAppStore.getState();
+  const instancesRef = useRef(initialAppState.instances);
+  const instanceOrderRef = useRef(initialAppState.instanceOrder);
   const launchAppRef = useRef(launchApp);
-  const foregroundInstanceIdRef = useRef(foregroundInstanceId);
+  const foregroundInstanceIdRef = useRef(initialAppState.foregroundInstanceId);
   const minimizeInstanceRef = useRef(minimizeInstance);
   const restoreInstanceRef = useRef(restoreInstance);
   const bringInstanceToForegroundRef = useRef(bringInstanceToForeground);
@@ -148,21 +325,19 @@ export function AppManager({ apps }: AppManagerProps) {
   const switcherAppsRef = useRef<SwitcherApp[]>([]);
   const switcherIndexRef = useRef(0);
 
-  useEffect(() => {
-    instancesRef.current = instances;
-  }, [instances]);
-
-  useEffect(() => {
-    instanceOrderRef.current = instanceOrder;
-  }, [instanceOrder]);
+  useEffect(
+    () =>
+      useAppStore.subscribe((state) => {
+        instancesRef.current = state.instances;
+        instanceOrderRef.current = state.instanceOrder;
+        foregroundInstanceIdRef.current = state.foregroundInstanceId;
+      }),
+    []
+  );
 
   useEffect(() => {
     launchAppRef.current = launchApp;
   }, [launchApp]);
-
-  useEffect(() => {
-    foregroundInstanceIdRef.current = foregroundInstanceId;
-  }, [foregroundInstanceId]);
 
   useEffect(() => {
     minimizeInstanceRef.current = minimizeInstance;
@@ -186,6 +361,7 @@ export function AppManager({ apps }: AppManagerProps) {
 
   // Prune stale crash state when crashed instances are closed.
   useEffect(() => {
+    const openIdSet = new Set(openInstanceIds);
     setCrashedInstanceIds((prev) => {
       if (prev.size === 0) {
         return prev;
@@ -194,7 +370,7 @@ export function AppManager({ apps }: AppManagerProps) {
       let changed = false;
       const next = new Set<string>();
       prev.forEach((instanceId) => {
-        if (instances[instanceId]?.isOpen) {
+        if (openIdSet.has(instanceId)) {
           next.add(instanceId);
         } else {
           changed = true;
@@ -203,17 +379,7 @@ export function AppManager({ apps }: AppManagerProps) {
 
       return changed ? next : prev;
     });
-  }, [instances]);
-
-
-  const getZIndexForInstance = (instanceId: string) => {
-    const index = instanceOrder.indexOf(instanceId);
-    if (index === -1) return BASE_Z_INDEX;
-    return BASE_Z_INDEX + index + 1;
-  };
-
-  const supportsMultiWindowApp = (appId: AppId) =>
-    appId === "textedit" || appId === "finder" || appId === "applet-viewer";
+  }, [openInstanceIds]);
 
   // Set isInitialMount to false after a short delay
   useEffect(() => {
@@ -598,114 +764,17 @@ export function AppManager({ apps }: AppManagerProps) {
       {/* macOS Dock */}
       <Dock />
       {/* App Instances */}
-      {Object.values(instances).map((instance) => {
-        if (!instance.isOpen) return null;
-        if (exposeMode && instance.appId === "stickies") return null;
-
-        const appId = instance.appId as AppId;
-        const zIndex = getZIndexForInstance(instance.instanceId);
-        const AppComponent = getAppComponent(appId);
-        const app = apps.find((registeredApp) => registeredApp.id === appId);
-        const translatedAppName = getTranslatedAppName(appId);
-        const crashDialogAppName =
-          translatedAppName !== appId
-            ? translatedAppName
-            : (app?.name ?? appId);
-
-        const shouldMount = shouldMountInstance(instance, exposeMode);
-        const hideWindow = !shouldMount || instance.isLoading;
-
-        return (
-          <div
-            key={instance.instanceId}
-            style={{
-              zIndex: exposeMode ? 9999 : zIndex,
-              visibility: hideWindow ? "hidden" : "visible",
-            }}
-            className="absolute inset-x-0 md:inset-x-auto w-full md:w-auto"
-            role="presentation"
-            onMouseDown={() => {
-              if (!instance.isForeground && !exposeMode) {
-                bringInstanceToForeground(instance.instanceId);
-              }
-            }}
-            onTouchStart={() => {
-              if (!instance.isForeground && !exposeMode) {
-                bringInstanceToForeground(instance.instanceId);
-              }
-            }}
-          >
-            <AppErrorBoundary
-              appId={appId}
-              appName={crashDialogAppName}
-              instanceId={instance.instanceId}
-              onCrash={() => {
-                setCrashedInstanceIds((prev) => {
-                  if (prev.has(instance.instanceId)) {
-                    return prev;
-                  }
-                  const next = new Set(prev);
-                  next.add(instance.instanceId);
-                  return next;
-                });
-                bringInstanceToForeground(instance.instanceId);
-              }}
-              onQuit={() => {
-                setCrashedInstanceIds((prev) => {
-                  if (!prev.has(instance.instanceId)) {
-                    return prev;
-                  }
-                  const next = new Set(prev);
-                  next.delete(instance.instanceId);
-                  return next;
-                });
-                closeAppInstance(instance.instanceId);
-              }}
-              onRelaunch={() => {
-                setCrashedInstanceIds((prev) => {
-                  if (!prev.has(instance.instanceId)) {
-                    return prev;
-                  }
-                  const next = new Set(prev);
-                  next.delete(instance.instanceId);
-                  return next;
-                });
-                const relaunchInitialData =
-                  appId === "textedit" && isTextEditInitialData(instance.initialData)
-                    ? { path: instance.initialData.path }
-                    : instance.initialData;
-
-                closeAppInstance(instance.instanceId);
-                launchApp(
-                  appId,
-                  relaunchInitialData,
-                  instance.title,
-                  supportsMultiWindowApp(appId),
-                );
-              }}
-            >
-              {shouldMount ? (
-                <AppComponent
-                  isWindowOpen={instance.isOpen}
-                  isForeground={exposeMode ? false : instance.isForeground}
-                  onClose={() => requestCloseWindow(instance.instanceId)}
-                  className="pointer-events-auto"
-                  helpItems={app?.helpItems}
-                  skipInitialSound={isInitialMount}
-                  // @ts-expect-error - Dynamic component system with different initialData types per app
-                  initialData={instance.initialData}
-                  instanceId={instance.instanceId}
-                  title={instance.title}
-                  onNavigateNext={() => navigateToNextInstance(instance.instanceId)}
-                  onNavigatePrevious={() =>
-                    navigateToPreviousInstance(instance.instanceId)
-                  }
-                />
-              ) : null}
-            </AppErrorBoundary>
-          </div>
-        );
-      })}
+      {openInstanceIds.map((instanceId) => (
+        <AppInstanceHost
+          key={instanceId}
+          instanceId={instanceId}
+          appsById={appsById}
+          appLabelVersion={appLabelVersion}
+          exposeMode={exposeMode}
+          isInitialMount={isInitialMount}
+          setCrashedInstanceIds={setCrashedInstanceIds}
+        />
+      ))}
 
       <Desktop
         apps={apps}

@@ -13,11 +13,9 @@ import { useTextEditStore } from "@/stores/useTextEditStore";
 import { useAppStore, type LaunchOriginRect } from "@/stores/useAppStore";
 import { migrateIndexedDBToUUIDs } from "@/utils/indexedDBMigration";
 import { useFinderStore } from "@/stores/useFinderStore";
-import {
-  useFilesStoreShallow,
-  useIpodStoreShallow,
-  useVideoStoreShallow,
-} from "@/stores/helpers";
+import { useFilesStoreShallow } from "@/stores/useFilesStoreShallow";
+import { useIpodStoreShallow } from "@/stores/useIpodStoreShallow";
+import { useVideoStoreShallow } from "@/stores/useVideoStoreShallow";
 import { formatKugouImageUrl } from "@/apps/ipod/constants";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { getStoreForFile } from "@/utils/indexedDBOperations";

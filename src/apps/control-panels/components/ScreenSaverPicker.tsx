@@ -9,7 +9,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { useDisplaySettingsStoreShallow } from "@/stores/helpers";
+import { useDisplaySettingsStoreShallow } from "@/stores/useDisplaySettingsStoreShallow";
 import { Maze, Pipes, SCREEN_SAVER_OPTIONS, Starfield, type ScreenSaverType } from "@/components/screensavers";
 import { useTranslation } from "react-i18next";
 

@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useCallback, useEffect, useState, useRef, type MutableRefObject } from "react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 
@@ -33,6 +33,12 @@ export function IpodWheel({
 }: IpodWheelProps) {
   const { t } = useTranslation();
   const wheelRef = useRef<HTMLDivElement>(null);
+  const mouseMoveHandlerRef = useRef<((event: MouseEvent) => void) | null>(null);
+  const mouseUpHandlerRef = useRef<((event: MouseEvent) => void) | null>(null);
+  const recentTouchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const touchDragTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mouseDragTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const centerTouchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Accumulated mouse wheel delta (for desktop scrolling)
   const [wheelDelta, setWheelDelta] = useState(0);
 
@@ -58,22 +64,41 @@ export function IpodWheel({
   const isInMouseDragRef = useRef(false);
 
   // Long press handling for center button
-  const centerLongPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const centerLongPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const centerLongPressFiredRef = useRef(false);
   const centerTouchActiveRef = useRef(false);
   const centerTouchHandledRef = useRef(false);
 
-  const clearCenterLongPress = () => {
+  const clearTimer = useCallback((timerRef: MutableRefObject<ReturnType<typeof setTimeout> | null>) => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
+
+  const removeWindowMouseListeners = useCallback(() => {
+    if (mouseMoveHandlerRef.current) {
+      window.removeEventListener("mousemove", mouseMoveHandlerRef.current);
+      mouseMoveHandlerRef.current = null;
+    }
+    if (mouseUpHandlerRef.current) {
+      window.removeEventListener("mouseup", mouseUpHandlerRef.current);
+      mouseUpHandlerRef.current = null;
+    }
+  }, []);
+
+  const clearCenterLongPress = useCallback(() => {
     if (centerLongPressTimerRef.current) {
       clearTimeout(centerLongPressTimerRef.current);
       centerLongPressTimerRef.current = null;
     }
-  };
+  }, []);
 
   const startCenterLongPress = (isTouch: boolean) => {
     clearCenterLongPress();
     centerLongPressFiredRef.current = false;
     if (isTouch) {
+      clearTimer(centerTouchTimerRef);
       centerTouchActiveRef.current = true;
       centerTouchHandledRef.current = false;
     }
@@ -97,12 +122,25 @@ export function IpodWheel({
     
     if (isTouch) {
       // Reset touch state after a delay to block any synthetic click
-      setTimeout(() => {
+      clearTimer(centerTouchTimerRef);
+      centerTouchTimerRef.current = setTimeout(() => {
+        centerTouchTimerRef.current = null;
         centerTouchActiveRef.current = false;
         centerTouchHandledRef.current = false;
       }, 400);
     }
   };
+
+  useEffect(() => {
+    return () => {
+      removeWindowMouseListeners();
+      clearCenterLongPress();
+      clearTimer(recentTouchTimerRef);
+      clearTimer(touchDragTimerRef);
+      clearTimer(mouseDragTimerRef);
+      clearTimer(centerTouchTimerRef);
+    };
+  }, [clearCenterLongPress, clearTimer, removeWindowMouseListeners]);
 
   // Calculate angle (in degrees) from the center of the wheel – used for click areas
   const getAngleFromCenterDeg = (x: number, y: number): number => {
@@ -171,6 +209,7 @@ export function IpodWheel({
     rotationAccumulatorRef.current = 0;
     isTouchDraggingRef.current = false;
     touchStartPosRef.current = { x: touch.clientX, y: touch.clientY };
+    clearTimer(touchDragTimerRef);
   };
 
   // Handle touch move
@@ -233,7 +272,9 @@ export function IpodWheel({
 
       // Mark that we just handled a touch event to prevent mouse event double firing
       recentTouchRef.current = true;
-      setTimeout(() => {
+      clearTimer(recentTouchTimerRef);
+      recentTouchTimerRef.current = setTimeout(() => {
+        recentTouchTimerRef.current = null;
         recentTouchRef.current = false;
       }, 500);
     }
@@ -246,7 +287,9 @@ export function IpodWheel({
 
     // Clear the touch drag flag with a small delay to prevent clicks
     if (isInTouchDragRef.current) {
-      setTimeout(() => {
+      clearTimer(touchDragTimerRef);
+      touchDragTimerRef.current = setTimeout(() => {
+        touchDragTimerRef.current = null;
         isInTouchDragRef.current = false;
       }, 100);
     }
@@ -290,6 +333,8 @@ export function IpodWheel({
     lastAngleRef.current = startAngleRad;
     rotationAccumulatorRef.current = 0;
     isDraggingRef.current = false;
+    removeWindowMouseListeners();
+    clearTimer(mouseDragTimerRef);
 
     const threshold = (rotationStepDeg * Math.PI) / 180; // rad
     const dragThreshold = (dragDetectionDeg * Math.PI) / 180; // smaller threshold for drag detection
@@ -338,8 +383,7 @@ export function IpodWheel({
 
     // Mouse up handler – determine if it was a click or a drag
     const handleMouseUp = (upEvent: MouseEvent) => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
+      removeWindowMouseListeners();
 
       // If the user didn't drag beyond the threshold, treat as a click on a wheel section
       if (!isDraggingRef.current) {
@@ -362,13 +406,17 @@ export function IpodWheel({
       
       // Clear the mouse drag flag with a small delay to prevent clicks
       if (isInMouseDragRef.current) {
-        setTimeout(() => {
+        clearTimer(mouseDragTimerRef);
+        mouseDragTimerRef.current = setTimeout(() => {
+          mouseDragTimerRef.current = null;
           isInMouseDragRef.current = false;
         }, 100);
       }
     };
 
     // Attach listeners to the window so the interaction continues smoothly outside the wheel bounds
+    mouseMoveHandlerRef.current = handleMouseMove;
+    mouseUpHandlerRef.current = handleMouseUp;
     window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("mouseup", handleMouseUp);
   };

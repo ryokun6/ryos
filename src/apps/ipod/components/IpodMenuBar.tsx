@@ -13,7 +13,7 @@ import {
   MenubarRadioGroup,
   MenubarRadioItem,
 } from "@/components/ui/menubar";
-import { useIpodStoreShallow } from "@/stores/helpers";
+import { useIpodStoreShallow } from "@/stores/useIpodStoreShallow";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { toast } from "sonner";

@@ -6,11 +6,9 @@ import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useIpodStore, Track, flushPendingLyricOffsetSave } from "@/stores/useIpodStore";
 import { useKaraokeStore } from "@/stores/useKaraokeStore";
 import { useShallow } from "zustand/react/shallow";
-import {
-  useIpodStoreShallow,
-  useAudioSettingsStoreShallow,
-  useAppStoreShallow,
-} from "@/stores/helpers";
+import { useIpodStoreShallow } from "@/stores/useIpodStoreShallow";
+import { useAudioSettingsStoreShallow } from "@/stores/useAudioSettingsStoreShallow";
+import { useAppStoreShallow } from "@/stores/useAppStoreShallow";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { LyricsAlignment, LyricsFont, DisplayMode } from "@/types/lyrics";
 import { useOffline } from "@/hooks/useOffline";

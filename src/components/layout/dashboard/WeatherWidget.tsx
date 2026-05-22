@@ -178,13 +178,15 @@ export function WeatherWidget({ widgetId }: WeatherWidgetProps) {
     return geoLocationName;
   }, [cityConfig?.cityKey, cityConfig?.cityName, geoLocationName, t]);
 
-  const fetchWeather = useCallback(async (lat: number, lon: number) => {
+  const fetchWeather = useCallback(async (lat: number, lon: number, signal?: AbortSignal) => {
     try {
       const res = await fetch(
-        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,wind_speed_10m,relative_humidity_2m,is_day&daily=temperature_2m_max,temperature_2m_min,weather_code&timezone=auto&forecast_days=7`
+        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,wind_speed_10m,relative_humidity_2m,is_day&daily=temperature_2m_max,temperature_2m_min,weather_code&timezone=auto&forecast_days=7`,
+        { signal }
       );
       if (!res.ok) throw new Error("Weather fetch failed");
       const data = await res.json();
+      if (signal?.aborted) return;
 
       const dayFmt = new Intl.DateTimeFormat(locale, { weekday: "short" });
       const forecast: DailyForecast[] = [];
@@ -210,6 +212,7 @@ export function WeatherWidget({ widgetId }: WeatherWidgetProps) {
       dispatch({ type: "fetchSuccess", weather: weatherData });
       setWeatherCacheEntry(widgetId, weatherData);
     } catch {
+      if (signal?.aborted) return;
       dispatch({
         type: "fetchError",
         error: t("apps.dashboard.weather.unavailable"),
@@ -217,13 +220,15 @@ export function WeatherWidget({ widgetId }: WeatherWidgetProps) {
     }
   }, [locale, t, widgetId]);
 
-  const fetchLocationName = useCallback(async (lat: number, lon: number) => {
+  const fetchLocationName = useCallback(async (lat: number, lon: number, signal?: AbortSignal) => {
     try {
       const geoRes = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=10`
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=10`,
+        { signal }
       );
       if (geoRes.ok) {
         const geoData = await geoRes.json();
+        if (signal?.aborted) return;
         const city =
           geoData.address?.city ||
           geoData.address?.town ||
@@ -239,38 +244,49 @@ export function WeatherWidget({ widgetId }: WeatherWidgetProps) {
 
   useEffect(() => {
     dispatch({ type: "reset" });
+    const controller = new AbortController();
+    const { signal } = controller;
+    let cancelled = false;
 
     const SF_LAT = 37.7749;
     const SF_LON = -122.4194;
 
     const fallbackToSF = () => {
+      if (cancelled) return;
       dispatch({
         type: "setGeoLocationName",
         geoLocationName: t("apps.dashboard.cities.sanFrancisco"),
       });
-      fetchWeather(SF_LAT, SF_LON);
+      fetchWeather(SF_LAT, SF_LON, signal);
+    };
+
+    const cleanup = () => {
+      cancelled = true;
+      controller.abort();
     };
 
     if (cityConfig?.lat != null && cityConfig?.lon != null) {
-      fetchWeather(cityConfig.lat, cityConfig.lon);
-      return;
+      fetchWeather(cityConfig.lat, cityConfig.lon, signal);
+      return cleanup;
     }
 
     if (!navigator.geolocation) {
       fallbackToSF();
-      return;
+      return cleanup;
     }
 
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        fetchWeather(pos.coords.latitude, pos.coords.longitude);
-        fetchLocationName(pos.coords.latitude, pos.coords.longitude);
+        if (cancelled) return;
+        fetchWeather(pos.coords.latitude, pos.coords.longitude, signal);
+        fetchLocationName(pos.coords.latitude, pos.coords.longitude, signal);
       },
       () => {
         fallbackToSF();
       },
       { timeout: 10000 }
     );
+    return cleanup;
   }, [cityConfig?.lat, cityConfig?.lon, cityConfig?.cityName, fetchWeather, fetchLocationName, t]);
 
   const needsCitySelection = !loading && error && !weather;

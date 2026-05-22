@@ -39,11 +39,9 @@ import {
   resolveLyricsTrackMetadata,
 } from "../utils/lyricsTrackMetadata";
 import { useShallow } from "zustand/react/shallow";
-import {
-  useIpodStoreShallow,
-  useAppStoreShallow,
-  useAudioSettingsStoreShallow,
-} from "@/stores/helpers";
+import { useIpodStoreShallow } from "@/stores/useIpodStoreShallow";
+import { useAppStoreShallow } from "@/stores/useAppStoreShallow";
+import { useAudioSettingsStoreShallow } from "@/stores/useAudioSettingsStoreShallow";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useListenSessionStore } from "@/stores/useListenSessionStore";
 import { useThemeFlags } from "@/hooks/useThemeFlags";

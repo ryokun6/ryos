@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { toast } from "sonner";
 import { APP_ANALYTICS } from "@/utils/analytics";
 import { track } from "@/utils/analytics";
-import { useChatsStoreShallow } from "@/stores/helpers";
+import { useChatsStoreShallow } from "@/stores/useChatsStoreShallow";
 import { loginWithPassword, verifyAuthToken } from "@/api/auth";
 
 export function useAuth() {
