@@ -1,5 +1,7 @@
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useImageLoaded } from "../../hooks/useImageLoaded";
+import { IpodArtworkPlaceholder, type IpodEmptyArtworkKind } from "./IpodArtworkPlaceholder";
 import { ScrollingText } from "./ScrollingText";
 
 const THUMB_FADE = "opacity 250ms ease-out" as const;
@@ -32,6 +34,8 @@ interface MenuListItemProps {
   subtitle?: string | null;
   /** Modern media rows only: square artwork (`object-cover`). */
   thumbnailUrl?: string | null;
+  /** Placeholder glyph when `thumbnailUrl` is missing (default album). */
+  emptyArtworkKind?: IpodEmptyArtworkKind;
   /**
    * Modern UI + browse menus stamped with `modernMediaList`: two-line label
    * column with a square thumbnail. Ignored for classic skin.
@@ -54,6 +58,7 @@ export function MenuListItem({
   variant = "classic",
   subtitle,
   thumbnailUrl,
+  emptyArtworkKind = "album",
   mediaRow = false,
 }: MenuListItemProps) {
   const hasCjkText =
@@ -63,6 +68,11 @@ export function MenuListItem({
   const isModern = variant === "modern";
   const thumbSrc = isModern && mediaRow ? (thumbnailUrl ?? null) : null;
   const thumb = useImageLoaded(thumbSrc);
+  const [thumbFailed, setThumbFailed] = useState(false);
+  useEffect(() => {
+    setThumbFailed(false);
+  }, [thumbSrc]);
+  const showThumbImage = Boolean(thumbSrc) && !thumbFailed;
   const subtitleTrim =
     typeof subtitle === "string" ? subtitle.trim() : "";
 
@@ -84,17 +94,23 @@ export function MenuListItem({
         >
           <div className="flex min-h-0 min-w-0 flex-1 items-center gap-1.5 mr-0.5">
             <div
-              className="relative size-[26px] shrink-0 overflow-hidden rounded-[2px] bg-[#a8a8a8]"
+              className="relative size-[26px] shrink-0 overflow-hidden rounded-[2px]"
               aria-hidden
             >
-              {thumbSrc ? (
+              <IpodArtworkPlaceholder
+                kind={emptyArtworkKind}
+                selected={isSelected && !isLoading}
+                className="size-full rounded-[2px]"
+              />
+              {showThumbImage ? (
                 <img
                   ref={thumb.ref}
-                  src={thumbSrc}
+                  src={thumbSrc!}
                   alt=""
-                  className="size-full object-cover"
+                  className="absolute inset-0 size-full object-cover"
                   draggable={false}
                   onLoad={thumb.onLoad}
+                  onError={() => setThumbFailed(true)}
                   style={{
                     opacity: thumb.loaded ? 1 : 0,
                     transition: THUMB_FADE,

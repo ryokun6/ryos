@@ -19,8 +19,8 @@ export const IPOD_MODERN_MENU_ROW_HEIGHT_PX = 21.5;
 /** Two-line media browse menus target four visible rows. */
 export const IPOD_MODERN_MEDIA_VISIBLE_ROWS = 4;
 
-/** Media browse row (restored to 33px; same 1px slack as standard menus). */
-export const IPOD_MODERN_MEDIA_ROW_HEIGHT_PX = 33;
+/** Media browse row (17px titlebar + 4×32.24 = 145.96px; ~4px slack at bottom). */
+export const IPOD_MODERN_MEDIA_ROW_HEIGHT_PX = 32.24;
 
 // Translation language options
 export interface TranslationLanguage {

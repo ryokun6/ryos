@@ -5,3 +5,7 @@ export { MenuListItem } from "./MenuListItem";
 export { ScrollingText } from "./ScrollingText";
 export { StatusDisplay } from "./StatusDisplay";
 export { IpodModernPlayPauseIcon } from "./IpodModernPlayPauseIcon";
+export {
+  IpodArtworkPlaceholder,
+  type IpodEmptyArtworkKind,
+} from "./IpodArtworkPlaceholder";

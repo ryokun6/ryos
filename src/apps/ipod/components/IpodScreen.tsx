@@ -27,6 +27,7 @@ import {
   ScrollingText,
   StatusDisplay,
   IpodModernPlayPauseIcon,
+  IpodArtworkPlaceholder,
 } from "./screen";
 import { useImageLoaded } from "../hooks/useImageLoaded";
 
@@ -153,11 +154,7 @@ const MODERN_NOW_PLAYING_ART_PX = 60;
 const MODERN_NOW_PLAYING_REFLECT_RATIO = 0.3;
 /** Shared clip radius for modern now-playing sleeve + reflection (modern skin only). */
 const MODERN_NOW_PLAYING_COVER_BORDER_RADIUS_PX = 0;
-// Neutral mid-gray placeholder shown while the cover image is in
-// flight. Cross-fades to the loaded image via `FadeInImage` so the
-// art panel never flashes from a near-black square to a cover.
 const MODERN_NOW_PLAYING_SLEEVE: CSSProperties = {
-  background: "#a8a8a8",
   borderRadius: `${MODERN_NOW_PLAYING_COVER_BORDER_RADIUS_PX}px`,
 };
 const MODERN_NOW_PLAYING_REFLECT_IMG: CSSProperties = {
@@ -185,9 +182,8 @@ function ModernNowPlayingArtwork({ coverUrl }: { coverUrl: string | null }) {
   const reflectH = MODERN_NOW_PLAYING_ART_PX * MODERN_NOW_PLAYING_REFLECT_RATIO;
   // Sleeve and reflection each track their own load. Same URL, so
   // the browser cache lands them within a frame in practice, but
-  // each fade is self-contained — the sleeve's gray
-  // (`MODERN_NOW_PLAYING_SLEEVE.background`) reads as the
-  // placeholder until the bitmap arrives.
+  // each fade is self-contained — `IpodArtworkPlaceholder` reads as the
+  // chrome until the bitmap arrives.
   const sleeve = useImageLoaded(coverUrl);
   const reflection = useImageLoaded(coverUrl);
   const reflectTargetOpacity =
@@ -212,6 +208,7 @@ function ModernNowPlayingArtwork({ coverUrl }: { coverUrl: string | null }) {
             width: MODERN_NOW_PLAYING_ART_PX,
           }}
         >
+          <IpodArtworkPlaceholder kind="album" className="absolute inset-0 size-full" />
           {coverUrl ? (
             <img
               ref={sleeve.ref}
@@ -219,17 +216,13 @@ function ModernNowPlayingArtwork({ coverUrl }: { coverUrl: string | null }) {
               alt=""
               draggable={false}
               onLoad={sleeve.onLoad}
-              className="size-full object-cover"
+              className="absolute inset-0 size-full object-cover"
               style={{
                 opacity: sleeve.loaded ? 1 : 0,
                 transition: COVER_FADE_TRANSITION,
               }}
             />
-          ) : (
-            <div className="flex size-full items-center justify-center bg-gradient-to-br from-neutral-600 to-neutral-900 text-[22px] leading-none text-white/25 select-none">
-              ♪
-            </div>
-          )}
+          ) : null}
         </div>
         {coverUrl ? (
           <div
@@ -985,6 +978,7 @@ export function IpodScreen({
                               mediaRow={isModernUi && currentMenuModernMediaList}
                               subtitle={item.subtitle}
                               thumbnailUrl={item.coverUrl}
+                              emptyArtworkKind={item.emptyArtworkKind}
                             />
                           </div>
                         );

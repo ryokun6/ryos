@@ -1431,6 +1431,25 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   box-shadow: inset 0 -1px 0 #939393;
 }
 
+/* Missing album / playlist artwork — silver inset tile (modern media rows). */
+.ipod-empty-artwork {
+  background-image: linear-gradient(
+    145deg,
+    #f5f6f8 0%,
+    #e2e5ea 38%,
+    #c4cad2 100%
+  );
+}
+
+.ipod-empty-artwork.is-selected {
+  background-image: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.28) 0%,
+    rgba(255, 255, 255, 0.12) 45%,
+    rgba(0, 0, 0, 0.08) 100%
+  );
+}
+
 /* iPod-classic-js list rows are simple white cells with no separator —
  * the only visual cue is the selection highlight. Hover gives a subtle
  * grey for mouse users, since a real iPod has no hover state. */

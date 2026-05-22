@@ -124,6 +124,21 @@ interface AppleMusicLibraryPlaylistResource {
       globalId?: string;
     };
   };
+  relationships?: {
+    tracks?: {
+      meta?: { total?: number };
+    };
+  };
+}
+
+function resolveLibraryPlaylistTrackCount(
+  res: AppleMusicLibraryPlaylistResource
+): number | undefined {
+  const attrsCount = res.attributes?.trackCount;
+  if (typeof attrsCount === "number" && attrsCount >= 0) return attrsCount;
+  const relTotal = res.relationships?.tracks?.meta?.total;
+  if (typeof relTotal === "number" && relTotal >= 0) return relTotal;
+  return undefined;
 }
 
 interface LibraryPlaylistsResponse {
@@ -298,7 +313,7 @@ function libraryPlaylistResourceToPlaylist(
     name: attrs.name,
     artworkUrl: resolveArtworkUrl(attrs.artwork, 300),
     description: normalizePlaylistDescription(attrs.description),
-    trackCount: attrs.trackCount,
+    trackCount: resolveLibraryPlaylistTrackCount(res),
     canEdit: attrs.canEdit,
   };
 }
@@ -863,6 +878,9 @@ async function fetchAppleMusicPlaylistsList(): Promise<AppleMusicPlaylist[]> {
       {
         limit: PAGE_SIZE,
         offset,
+        // Track totals without loading every song (for playlist row subtitles).
+        include: "tracks",
+        "limit[tracks]": 0,
       }
     );
     const data = response?.data as LibraryPlaylistsResponse | undefined;

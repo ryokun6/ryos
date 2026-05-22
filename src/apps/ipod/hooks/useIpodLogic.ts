@@ -2061,16 +2061,14 @@ export function useIpodLogic({
           playlist.artworkUrl ??
           (firstTrackWithCover ? resolveTrackCoverUrl(firstTrackWithCover) : null);
         const description = playlist.description?.trim();
-        const trackCountLine =
+        const songCount =
           typeof playlist.trackCount === "number" && playlist.trackCount >= 0
-            ? t("apps.ipod.menuItems.playlistTrackCount", {
-                count: playlist.trackCount,
-              })
-            : undefined;
+            ? playlist.trackCount
+            : playlistTracks.length;
         const subtitle =
           description && description.length > 0
             ? description
-            : trackCountLine;
+            : t("apps.ipod.menuItems.playlistTrackCount", { count: songCount });
         return {
           label: playlist.name,
           subtitle,
@@ -2086,6 +2084,7 @@ export function useIpodLogic({
           },
           showChevron: true,
           coverUrl,
+          emptyArtworkKind: "playlist",
         };
       }),
     [

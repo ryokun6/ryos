@@ -35,6 +35,8 @@ export interface MenuItem {
    * now-playing track also has no cover).
    */
   coverUrl?: string | null;
+  /** Glyph for {@link IpodArtworkPlaceholder} when `coverUrl` is missing. */
+  emptyArtworkKind?: "album" | "playlist";
 }
 
 // Menu history entry
