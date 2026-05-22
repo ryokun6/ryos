@@ -178,14 +178,14 @@ const MODERN_NOW_PLAYING_ART_3D: CSSProperties = {
 /** Sleeve + reflection in one `preserve-3d` group tipped with rotateY + perspective. */
 function ModernNowPlayingArtwork({ coverUrl }: { coverUrl: string | null }) {
   const reflectH = MODERN_NOW_PLAYING_ART_PX * MODERN_NOW_PLAYING_REFLECT_RATIO;
-  // Sleeve and reflection each track their own load. Same URL, so
-  // the browser cache lands them within a frame in practice, but
-  // each fade is self-contained — `IpodArtworkPlaceholder` reads as the
-  // chrome until the bitmap arrives.
   const sleeve = useImageLoaded(coverUrl);
   const reflection = useImageLoaded(coverUrl);
   const reflectTargetOpacity =
     MODERN_NOW_PLAYING_REFLECT_IMG.opacity as number;
+
+  const showFallback = !coverUrl || sleeve.failed;
+  const showLoadingBackdrop =
+    Boolean(coverUrl) && !sleeve.failed && !sleeve.loaded;
 
   return (
     <div
@@ -206,14 +206,23 @@ function ModernNowPlayingArtwork({ coverUrl }: { coverUrl: string | null }) {
             width: MODERN_NOW_PLAYING_ART_PX,
           }}
         >
-          <IpodArtworkPlaceholder kind="album" className="absolute inset-0 size-full" />
-          {coverUrl ? (
+          {showFallback ? (
+            <IpodArtworkPlaceholder kind="album" className="absolute inset-0 size-full" />
+          ) : null}
+          {showLoadingBackdrop ? (
+            <div
+              className="ipod-empty-artwork absolute inset-0 size-full"
+              aria-hidden
+            />
+          ) : null}
+          {coverUrl && !sleeve.failed ? (
             <img
               ref={sleeve.ref}
               src={coverUrl}
               alt=""
               draggable={false}
               onLoad={sleeve.onLoad}
+              onError={sleeve.onError}
               className="absolute inset-0 size-full object-cover"
               style={{
                 opacity: sleeve.loaded ? 1 : 0,
@@ -222,7 +231,7 @@ function ModernNowPlayingArtwork({ coverUrl }: { coverUrl: string | null }) {
             />
           ) : null}
         </div>
-        {coverUrl ? (
+        {coverUrl && !sleeve.failed ? (
           <div
             aria-hidden
             className="pointer-events-none mt-0 w-full overflow-hidden"
@@ -234,6 +243,7 @@ function ModernNowPlayingArtwork({ coverUrl }: { coverUrl: string | null }) {
               alt=""
               draggable={false}
               onLoad={reflection.onLoad}
+              onError={reflection.onError}
               className="block w-full h-auto"
               style={{
                 ...MODERN_NOW_PLAYING_REFLECT_IMG,
