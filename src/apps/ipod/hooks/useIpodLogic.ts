@@ -641,6 +641,17 @@ export function useIpodLogic({
   }, []);
   // Save menu history before entering Now Playing from a song selection
   const menuHistoryBeforeNowPlayingRef = useRef<typeof menuHistory | null>(null);
+  /** When set, Menu pops back to the Now Playing song menu (not up the browse stack). */
+  const returnToNowPlayingSongMenuRef = useRef(false);
+  const nowPlayingSongMenuSnapshotRef = useRef<{
+    displayTitle: string;
+    selectedIndex: number;
+  } | null>(null);
+
+  const clearReturnToNowPlayingSongMenu = useCallback(() => {
+    returnToNowPlayingSongMenuRef.current = false;
+    nowPlayingSongMenuSnapshotRef.current = null;
+  }, []);
 
   // Mirror the latest cursor position for use inside callbacks (especially
   // setMenuHistory updaters) without forcing every menu-item factory to
@@ -844,6 +855,7 @@ export function useIpodLogic({
         showOfflineStatus();
         return;
       }
+      clearReturnToNowPlayingSongMenu();
       setMenuHistory((prev) => {
         const updatedHist = [...prev];
         if (updatedHist.length > 0) {
@@ -876,6 +888,7 @@ export function useIpodLogic({
       setCurrentSongId,
       setIsPlaying,
       toggleVideo,
+      clearReturnToNowPlayingSongMenu,
     ]
   );
 
@@ -2505,6 +2518,21 @@ export function useIpodLogic({
     [registerActivity, toggleVideo, setCameFromNowPlayingMenuItem]
   );
 
+  const navigateFromNowPlayingSongMenu = useCallback(
+    (entries: MenuHistoryEntry[]) => {
+      const track = tracks[currentIndex];
+      if (track) {
+        nowPlayingSongMenuSnapshotRef.current = {
+          displayTitle: track.title,
+          selectedIndex: selectedMenuItemRef.current,
+        };
+        returnToNowPlayingSongMenuRef.current = true;
+      }
+      enterMenuNavigationFromNowPlaying(entries);
+    },
+    [tracks, currentIndex, enterMenuNavigationFromNowPlaying]
+  );
+
   const navigateToAlbumFromNowPlaying = useCallback(
     (track: Track) => {
       const ipodLabel = t("apps.ipod.menuItems.ipod");
@@ -2525,7 +2553,7 @@ export function useIpodLogic({
       const albumListIdx = sortedAlbums.indexOf(albumKey);
       const albumRowIdx = albumListIdx >= 0 ? albumListIdx + 1 : 1;
 
-      enterMenuNavigationFromNowPlaying([
+      navigateFromNowPlayingSongMenu([
         {
           title: ipodLabel,
           items: mainMenuItems,
@@ -2555,7 +2583,7 @@ export function useIpodLogic({
       unknownArtistLabel,
       albumGroupsByKey,
       sortedAlbums,
-      enterMenuNavigationFromNowPlaying,
+      navigateFromNowPlayingSongMenu,
       mainMenuItems,
       musicMenuItems,
       albumsListMenuItems,
@@ -2573,7 +2601,7 @@ export function useIpodLogic({
       const artistRowIdx = sortedArtists.indexOf(artist);
       const artistListIdx = artistRowIdx >= 0 ? artistRowIdx + 1 : 1;
 
-      enterMenuNavigationFromNowPlaying([
+      navigateFromNowPlayingSongMenu([
         {
           title: ipodLabel,
           items: mainMenuItems,
@@ -2601,7 +2629,7 @@ export function useIpodLogic({
       t,
       unknownArtistLabel,
       sortedArtists,
-      enterMenuNavigationFromNowPlaying,
+      navigateFromNowPlayingSongMenu,
       mainMenuItems,
       musicMenuItems,
       artistsListMenuItems,
@@ -2626,7 +2654,7 @@ export function useIpodLogic({
         appleMusicPlaylists.findIndex((entry) => entry.id === playlist.id)
       );
 
-      enterMenuNavigationFromNowPlaying([
+      navigateFromNowPlayingSongMenu([
         {
           title: ipodLabel,
           items: mainMenuItems,
@@ -2660,7 +2688,7 @@ export function useIpodLogic({
       appleMusicPlaylists,
       applePlaylistsMenuItems,
       applePlaylistTrackMenuItemsByPlaylist,
-      enterMenuNavigationFromNowPlaying,
+      navigateFromNowPlayingSongMenu,
       mainMenuItems,
       musicMenuItems,
       findMenuItemIndexByLabel,
@@ -2768,7 +2796,31 @@ export function useIpodLogic({
     nowPlayingSongMenuItems,
   ]);
 
+  const restoreNowPlayingSongMenu = useCallback(() => {
+    clearReturnToNowPlayingSongMenu();
+    const snapshot = nowPlayingSongMenuSnapshotRef.current;
+    const track = tracks[currentIndex];
+    const selectedIndex = snapshot?.selectedIndex ?? 0;
+    setMenuDirection("backward");
+    setMenuMode(true);
+    setMenuHistory([
+      {
+        title: NOW_PLAYING_SONG_MENU_KEY,
+        displayTitle: snapshot?.displayTitle ?? track?.title ?? "",
+        items: nowPlayingSongMenuItems,
+        selectedIndex,
+      },
+    ]);
+    setSelectedMenuItem(selectedIndex);
+  }, [
+    clearReturnToNowPlayingSongMenu,
+    tracks,
+    currentIndex,
+    nowPlayingSongMenuItems,
+  ]);
+
   const closeNowPlayingSongMenu = useCallback(() => {
+    clearReturnToNowPlayingSongMenu();
     setMenuDirection("backward");
     setMenuMode(false);
     const saved = menuHistoryBeforeNowPlayingRef.current;
@@ -2787,7 +2839,7 @@ export function useIpodLogic({
       },
     ]);
     setSelectedMenuItem(0);
-  }, [mainMenuItems, t]);
+  }, [mainMenuItems, t, clearReturnToNowPlayingSongMenu]);
 
   const mainMenuItemsRef = useRef(mainMenuItems);
   mainMenuItemsRef.current = mainMenuItems;
@@ -2814,11 +2866,12 @@ export function useIpodLogic({
       },
     ]);
     menuHistoryBeforeNowPlayingRef.current = null;
+    clearReturnToNowPlayingSongMenu();
     setIsCoverFlowOpen(false);
     queueMicrotask(() => {
       suppressMenuSyncRef.current = false;
     });
-  }, [librarySource, menuLocale, setIsCoverFlowOpen, setMenuDirection, setSelectedMenuItem, t]);
+  }, [librarySource, menuLocale, setIsCoverFlowOpen, setMenuDirection, setSelectedMenuItem, clearReturnToNowPlayingSongMenu, t]);
 
   // Helper function to rebuild menu items based on current tracks
   const rebuildMenuItems = useCallback((menu: typeof menuHistory[0]): typeof menuHistory[0]["items"] | null => {
@@ -3531,6 +3584,10 @@ export function useIpodLogic({
     if (showVideo) toggleVideo();
 
     if (menuMode) {
+      if (returnToNowPlayingSongMenuRef.current) {
+        restoreNowPlayingSongMenu();
+        return;
+      }
       if (menuHistory.length > 1) {
         setMenuDirection("backward");
         setMenuHistory((prev) => prev.slice(0, -1));
@@ -3597,7 +3654,7 @@ export function useIpodLogic({
       }
       setMenuMode(true);
     }
-  }, [playClickSound, vibrate, registerActivity, isCoverFlowOpen, isMusicQuizOpen, isBrickGameOpen, isNowPlayingSongMenuOpen, closeNowPlayingSongMenu, showVideo, toggleVideo, menuMode, menuHistory, mainMenuItems, musicMenuItems, allSongsMenuItems, browseCurrentIndex, cameFromNowPlayingMenuItem, t]);
+  }, [playClickSound, vibrate, registerActivity, isCoverFlowOpen, isMusicQuizOpen, isBrickGameOpen, isNowPlayingSongMenuOpen, closeNowPlayingSongMenu, restoreNowPlayingSongMenu, showVideo, toggleVideo, menuMode, menuHistory, mainMenuItems, musicMenuItems, allSongsMenuItems, browseCurrentIndex, cameFromNowPlayingMenuItem, t]);
 
   // Cover Flow handlers
   const handleCenterLongPress = useCallback(() => {
