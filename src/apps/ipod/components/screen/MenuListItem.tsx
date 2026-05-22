@@ -20,8 +20,6 @@ interface MenuListItemProps {
    * parent layout has settled — e.g. during split-menu width animation.
    */
   allowScrollingMarquee?: boolean;
-  /** Modern rows: edge fades when overflowing (song menu in split uses marquee only). */
-  fadeEdges?: boolean;
   /**
    * Visual skin. `"classic"` keeps the monochrome blue-on-blue
    * Chicago-font row from the original 1st-gen LCD. `"modern"` switches
@@ -58,7 +56,6 @@ export function MenuListItem({
   value,
   isLoading = false,
   allowScrollingMarquee = true,
-  fadeEdges = true,
   variant = "classic",
   subtitle,
   thumbnailUrl,
@@ -131,7 +128,7 @@ export function MenuListItem({
               <ScrollingText
                 text={text}
                 align="left"
-                fadeEdges={fadeEdges}
+                fadeEdges
                 allowMarquee={allowScrollingMarquee}
                 isPlaying={isSelected && !isLoading}
                 resetOnPause
@@ -221,7 +218,7 @@ export function MenuListItem({
           <ScrollingText
             text={text}
             align="left"
-            fadeEdges={fadeEdges}
+            fadeEdges
             allowMarquee={allowScrollingMarquee}
             isPlaying={isSelected && !isLoading}
             resetOnPause

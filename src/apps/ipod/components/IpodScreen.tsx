@@ -986,7 +986,6 @@ export function IpodScreen({
                               backlightOn={backlightOn}
                               variant={uiVariant}
                               allowScrollingMarquee={modernScrollingMarqueeAllowed}
-                              fadeEdges={!isNowPlayingSongMenu}
                               onClick={() => {
                                 onSelectMenuItem(index);
                                 onMenuItemAction(item.action);
