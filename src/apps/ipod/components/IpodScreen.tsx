@@ -383,6 +383,14 @@ export function IpodScreen({
     if (!menuMode || menuHistory.length === 0) return false;
     return Boolean(menuHistory[menuHistory.length - 1].modernMediaList);
   }, [menuMode, menuHistory]);
+  const currentMenuModernSplitMenu = useMemo(() => {
+    if (!menuMode || menuHistory.length === 0) return false;
+    return Boolean(menuHistory[menuHistory.length - 1].modernSplitMenu);
+  }, [menuMode, menuHistory]);
+  const activeMenuRouteKey =
+    menuMode && menuHistory.length > 0
+      ? menuHistory[menuHistory.length - 1].title
+      : "";
   // Modern UI renders Cover Flow inline as a third state in the menu
   // panel's AnimatePresence (alongside menu list + now-playing) so the
   // menu↔nowplaying chrome width transition (50%↔100%) seamlessly
@@ -614,12 +622,14 @@ export function IpodScreen({
       // entirely while Cover Flow is on screen.
       !showInlineCoverFlow &&
       !currentMenuModernMediaList &&
-      currentMenuItems.some((item) => item.showChevron === true),
+      (currentMenuModernSplitMenu ||
+        currentMenuItems.some((item) => item.showChevron === true)),
     [
       isModernUi,
       menuMode,
       showInlineCoverFlow,
       currentMenuModernMediaList,
+      currentMenuModernSplitMenu,
       currentMenuItems,
     ]
   );
@@ -739,6 +749,10 @@ export function IpodScreen({
       setModernChromeWidthMarqueeBlocked(false);
       return;
     }
+    if (currentMenuModernSplitMenu) {
+      setModernChromeWidthMarqueeBlocked(false);
+      return;
+    }
     if (skipModernChromeMarqueeCooldown.current) {
       skipModernChromeMarqueeCooldown.current = false;
       return;
@@ -748,13 +762,17 @@ export function IpodScreen({
       setModernChromeWidthMarqueeBlocked(false);
     }, 320);
     return () => window.clearTimeout(id);
-  }, [showSplitMenuArt, menuMode, isModernUi]);
+  }, [showSplitMenuArt, menuMode, isModernUi, currentMenuModernSplitMenu]);
 
   const skipModernMenuRouteMarqueeCooldown = useRef(true);
   const [modernMenuRouteMarqueeBlocked, setModernMenuRouteMarqueeBlocked] =
     useState(false);
   useEffect(() => {
     if (!isModernUi) {
+      setModernMenuRouteMarqueeBlocked(false);
+      return;
+    }
+    if (currentMenuModernSplitMenu) {
       setModernMenuRouteMarqueeBlocked(false);
       return;
     }
@@ -767,7 +785,7 @@ export function IpodScreen({
       setModernMenuRouteMarqueeBlocked(false);
     }, 240);
     return () => window.clearTimeout(id);
-  }, [menuMode, isModernUi]);
+  }, [menuMode, isModernUi, activeMenuRouteKey, currentMenuModernSplitMenu]);
 
   const modernScrollingMarqueeAllowed =
     !isModernUi ||

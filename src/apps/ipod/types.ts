@@ -48,6 +48,12 @@ export interface MenuHistoryEntry {
    * Used for playlist and per-artist album browses.
    */
   modernMediaList?: boolean;
+  /**
+   * Modern UI only: force the 50% split-menu chrome (Ken Burns art + narrow
+   * list column) so row labels get horizontal marquee like Music submenus,
+   * even when rows are action shortcuts rather than drill-down categories.
+   */
+  modernSplitMenu?: boolean;
 }
 
 // PIP Player props

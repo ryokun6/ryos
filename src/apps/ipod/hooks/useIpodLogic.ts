@@ -2710,9 +2710,15 @@ export function useIpodLogic({
     const playlistContext = isAppleMusic
       ? findPlaylistContextForNowPlaying()
       : null;
+    const trackCoverUrl = resolveTrackCoverUrl(track);
+
+    const withTrackCover = (item: MenuItem): MenuItem => ({
+      ...item,
+      coverUrl: trackCoverUrl,
+    });
 
     const items: MenuItem[] = [
-      {
+      withTrackCover({
         label: coverFlowLabel,
         action: () => {
           registerActivity();
@@ -2721,40 +2727,44 @@ export function useIpodLogic({
           setIsCoverFlowOpen(true);
         },
         showChevron: true,
-      },
+      }),
     ];
 
     if (isAppleMusic && track.source === "appleMusic") {
-      items.push({
-        label: addToFavoritesLabel,
-        action: () => {
-          setMenuMode(false);
-          setMenuDirection("backward");
-          void handleAppleMusicAddToFavorites();
-        },
-        showChevron: false,
-      });
+      items.push(
+        withTrackCover({
+          label: addToFavoritesLabel,
+          action: () => {
+            setMenuMode(false);
+            setMenuDirection("backward");
+            void handleAppleMusicAddToFavorites();
+          },
+          showChevron: false,
+        })
+      );
     }
 
     if (playlistContext) {
-      items.push({
-        label: goToPlaylistLabel,
-        action: () => navigateToPlaylistFromNowPlaying(track, playlistContext),
-        showChevron: true,
-      });
+      items.push(
+        withTrackCover({
+          label: goToPlaylistLabel,
+          action: () => navigateToPlaylistFromNowPlaying(track, playlistContext),
+          showChevron: true,
+        })
+      );
     }
 
     items.push(
-      {
+      withTrackCover({
         label: goToAlbumLabel,
         action: () => navigateToAlbumFromNowPlaying(track),
         showChevron: true,
-      },
-      {
+      }),
+      withTrackCover({
         label: goToArtistLabel,
         action: () => navigateToArtistFromNowPlaying(track),
         showChevron: true,
-      }
+      })
     );
 
     return items;
@@ -2785,6 +2795,7 @@ export function useIpodLogic({
         displayTitle: track.title,
         items: nowPlayingSongMenuItems,
         selectedIndex: 0,
+        modernSplitMenu: true,
       },
     ]);
     setSelectedMenuItem(0);
@@ -2809,6 +2820,7 @@ export function useIpodLogic({
         displayTitle: snapshot?.displayTitle ?? track?.title ?? "",
         items: nowPlayingSongMenuItems,
         selectedIndex,
+        modernSplitMenu: true,
       },
     ]);
     setSelectedMenuItem(selectedIndex);
