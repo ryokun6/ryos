@@ -2047,7 +2047,7 @@ export function useIpodLogic({
   ]);
 
   const applePlaylistsMenuItems = useMemo(
-    () =>
+    (): MenuItem[] =>
       appleMusicPlaylists.map((playlist) => {
         // Prefer the playlist's own artwork (Apple Music supplies it
         // directly via MusicKit). Fall back to the first cached track
