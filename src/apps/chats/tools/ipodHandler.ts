@@ -3,7 +3,13 @@
  */
 
 import { useAppStore } from "@/stores/useAppStore";
-import { useIpodStore } from "@/stores/useIpodStore";
+import {
+  getActiveIpodCurrentTrack,
+  getActiveIpodTracks,
+  navigateActiveIpodTrack,
+  setActiveIpodCurrentSongId,
+  useIpodStore,
+} from "@/stores/useIpodStore";
 import i18n from "@/lib/i18n";
 import type { ToolContext } from "./types";
 import {
@@ -143,9 +149,7 @@ const handlePlaybackState = (
   );
   const updatedIpod = useIpodStore.getState();
   const nowPlaying = updatedIpod.isPlaying;
-  const track = updatedIpod.currentSongId 
-    ? updatedIpod.tracks.find((t) => t.id === updatedIpod.currentSongId)
-    : updatedIpod.tracks[0];
+  const track = getActiveIpodCurrentTrack(updatedIpod);
 
   let playbackState: string;
   if (track) {
@@ -181,7 +185,7 @@ const handlePlayKnown = (
 ): void => {
   const { id, title, artist, enableVideo, enableTranslation, enableFullscreen } = input;
   const ipodState = useIpodStore.getState();
-  const { tracks } = ipodState;
+  const tracks = getActiveIpodTracks(ipodState);
 
   // If no identifiers provided, fall back to toggle/play behavior
   if (!id && !title && !artist) {
@@ -238,8 +242,19 @@ const handlePlayKnown = (
     finalCandidateIndices[Math.floor(Math.random() * finalCandidateIndices.length)];
 
   const track = tracks[randomIndexFromArray];
-  const { setCurrentSongId, setIsPlaying } = useIpodStore.getState();
-  setCurrentSongId(track?.id ?? null);
+  if (!track) {
+    const errorMsg = i18n.t("apps.chats.toolCalls.ipodSongNotFound");
+    context.addToolResult({
+      tool: "ipodControl",
+      toolCallId,
+      output: errorMsg,
+    });
+    return;
+  }
+
+  const activeIpodState = useIpodStore.getState();
+  setActiveIpodCurrentSongId(activeIpodState, track.id);
+  const { setIsPlaying } = useIpodStore.getState();
   const trackDescForLog = formatTrackDescription(track.title, track.artist);
 
   // On iOS, don't auto-play - just select the track
@@ -308,7 +323,24 @@ const handleAddAndPlay = async (
     return;
   }
 
+  if (id.startsWith("am:")) {
+    const errorMsg =
+      "Apple Music tracks are already in the active library. Use playKnown with the Apple Music track ID instead of addAndPlay.";
+    context.addToolResult({
+      tool: "ipodControl",
+      toolCallId,
+      output: errorMsg,
+    });
+    console.error(`[ToolCall] ${errorMsg}`);
+    return;
+  }
+
   try {
+    const ipodState = useIpodStore.getState();
+    if (ipodState.librarySource !== "youtube") {
+      ipodState.setLibrarySource("youtube");
+    }
+
     // On iOS, use addTrackFromVideoId with autoPlay=false
     const addedTrack = await useIpodStore
       .getState()
@@ -379,18 +411,12 @@ const handleNavigation = (
 ): void => {
   const { enableVideo, enableTranslation, enableFullscreen } = input;
   const ipodState = useIpodStore.getState();
-  const navigate = action === "next" ? ipodState.nextTrack : ipodState.previousTrack;
-
-  if (typeof navigate === "function") {
-    navigate();
-  }
+  navigateActiveIpodTrack(ipodState, action);
 
   const stateChanges = applyIpodSettings(enableVideo, enableTranslation, enableFullscreen);
 
   const updatedIpod = useIpodStore.getState();
-  const track = updatedIpod.currentSongId 
-    ? updatedIpod.tracks.find((t) => t.id === updatedIpod.currentSongId)
-    : updatedIpod.tracks[0];
+  const track = getActiveIpodCurrentTrack(updatedIpod);
 
   if (track) {
     const desc = formatTrackDescription(track.title, track.artist);

@@ -625,6 +625,133 @@ export interface IpodState extends IpodData {
   setIpodMenuMode: (menuMode: boolean | null) => void;
 }
 
+export interface IpodChatContextTrack {
+  id: string;
+  url?: string;
+  title: string;
+  artist?: string;
+  album?: string;
+  source: LibrarySource;
+}
+
+export function getActiveIpodTracks(
+  state: Pick<IpodState, "librarySource" | "tracks" | "appleMusicTracks">
+): Track[] {
+  return state.librarySource === "appleMusic"
+    ? state.appleMusicTracks
+    : state.tracks;
+}
+
+export function getActiveIpodCurrentSongId(
+  state: Pick<
+    IpodState,
+    "librarySource" | "currentSongId" | "appleMusicCurrentSongId"
+  >
+): string | null {
+  return state.librarySource === "appleMusic"
+    ? state.appleMusicCurrentSongId
+    : state.currentSongId;
+}
+
+export function getActiveIpodCurrentTrack(
+  state: Pick<
+    IpodState,
+    | "librarySource"
+    | "tracks"
+    | "currentSongId"
+    | "appleMusicTracks"
+    | "appleMusicCurrentSongId"
+  >
+): Track | null {
+  const tracks = getActiveIpodTracks(state);
+  const currentSongId = getActiveIpodCurrentSongId(state);
+  if (!currentSongId) return tracks[0] ?? null;
+  return tracks.find((track) => track.id === currentSongId) ?? null;
+}
+
+export function getIpodChatContextTrack(
+  state: Pick<
+    IpodState,
+    | "librarySource"
+    | "tracks"
+    | "currentSongId"
+    | "appleMusicTracks"
+    | "appleMusicCurrentSongId"
+    | "appleMusicKitNowPlaying"
+  >
+): IpodChatContextTrack | null {
+  const currentTrack = getActiveIpodCurrentTrack(state);
+  if (state.librarySource === "appleMusic" && state.appleMusicKitNowPlaying) {
+    const snapshot = state.appleMusicKitNowPlaying;
+    return {
+      id: snapshot.id
+        ? appleMusicKitIdToLyricsSongId(snapshot.id)
+        : currentTrack?.id ?? "apple-music-now-playing",
+      url: currentTrack?.url,
+      title: snapshot.title,
+      artist: snapshot.artist,
+      album: snapshot.album,
+      source: "appleMusic",
+    };
+  }
+
+  return currentTrack
+    ? {
+        id: currentTrack.id,
+        url: currentTrack.url,
+        title: currentTrack.title,
+        artist: currentTrack.artist,
+        album: currentTrack.album,
+        source: state.librarySource,
+      }
+    : null;
+}
+
+export function setActiveIpodCurrentSongId(
+  state: Pick<
+    IpodState,
+    | "librarySource"
+    | "setCurrentSongId"
+    | "setAppleMusicCurrentSongId"
+    | "setAppleMusicPlaybackQueue"
+  >,
+  songId: string | null
+): void {
+  if (state.librarySource === "appleMusic") {
+    state.setAppleMusicPlaybackQueue(null);
+    state.setAppleMusicCurrentSongId(songId);
+    return;
+  }
+  state.setCurrentSongId(songId);
+}
+
+export function navigateActiveIpodTrack(
+  state: Pick<
+    IpodState,
+    | "librarySource"
+    | "nextTrack"
+    | "previousTrack"
+    | "appleMusicNextTrack"
+    | "appleMusicPreviousTrack"
+  >,
+  direction: "next" | "previous"
+): void {
+  if (state.librarySource === "appleMusic") {
+    if (direction === "next") {
+      state.appleMusicNextTrack();
+    } else {
+      state.appleMusicPreviousTrack();
+    }
+    return;
+  }
+
+  if (direction === "next") {
+    state.nextTrack();
+  } else {
+    state.previousTrack();
+  }
+}
+
 const CURRENT_IPOD_STORE_VERSION = 37; // Breadcrumb may include modernMediaList for iPod media rows
 
 // Helper function to get unplayed track IDs from history

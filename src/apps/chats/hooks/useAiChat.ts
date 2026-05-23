@@ -11,7 +11,12 @@ import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useInternetExplorerStore } from "@/stores/useInternetExplorerStore";
 import { getApiUrl } from "@/utils/platform";
 import { useVideoStore } from "@/stores/useVideoStore";
-import { useIpodStore } from "@/stores/useIpodStore";
+import {
+  getActiveIpodTracks,
+  getIpodChatContextTrack,
+  setActiveIpodCurrentSongId,
+  useIpodStore,
+} from "@/stores/useIpodStore";
 import { useKaraokeStore } from "@/stores/useKaraokeStore";
 import { useTvStore } from "@/stores/useTvStore";
 import { buildTvChannelLineup, DEFAULT_CHANNELS } from "@/apps/tv/data/channels";
@@ -336,9 +341,7 @@ const getSystemState = () => {
   const tvStore = useTvStore.getState();
 
   const currentVideo = videoStore.getCurrentVideo();
-  const currentTrack = ipodStore.currentSongId
-    ? ipodStore.tracks.find((t) => t.id === ipodStore.currentSongId)
-    : ipodStore.tracks[0] ?? null;
+  const currentTrack = getIpodChatContextTrack(ipodStore);
   
   // Karaoke uses the shared track library from iPod store
   const karaokeCurrentTrack = karaokeStore.currentSongId
@@ -542,8 +545,10 @@ const getSystemState = () => {
             id: currentTrack.id,
             title: currentTrack.title,
             artist: currentTrack.artist,
+          source: currentTrack.source,
           }
         : null,
+      librarySource: ipodStore.librarySource,
       isPlaying: ipodStore.isPlaying,
       currentLyrics: ipodStore.currentLyrics,
     },
@@ -938,21 +943,64 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             try {
               // Route based on path
               if (path === "/Music") {
-                // List iPod library
+                // List the currently active iPod library.
                 const ipodStore = useIpodStore.getState();
-                const library = ipodStore.tracks.map((track) => ({
+                const normalizedQuery = query
+                  ? normalizeSearchText(query.trim())
+                  : "";
+                const queryTokens = normalizedQuery
+                  ? normalizedQuery.split(/\s+/).filter(Boolean)
+                  : [];
+                const hasQuery = normalizedQuery.length > 0;
+                const maxResults = limit
+                  ? Math.min(Math.max(limit, 1), 50)
+                  : 25;
+                const activeTracks = getActiveIpodTracks(ipodStore);
+                const scoredTracks = activeTracks.map((track) => {
+                  const fields = [
+                    track.id,
+                    track.title,
+                    track.artist ?? "",
+                    track.album ?? "",
+                  ].map(normalizeSearchText);
+                  const score = hasQuery
+                    ? fields.reduce(
+                        (best, field) =>
+                          Math.max(best, computeMatchScore(field, normalizedQuery, queryTokens)),
+                        0
+                      )
+                    : 1;
+                  return { track, score };
+                });
+                const scoreThreshold = hasQuery
+                  ? deriveScoreThreshold(normalizedQuery.length)
+                  : 0;
+                const matchingTracks = scoredTracks
+                  .filter(({ score }) => score >= scoreThreshold)
+                  .sort((a, b) => (hasQuery ? b.score - a.score : 0));
+                const library = matchingTracks.slice(0, maxResults).map(({ track }) => ({
                   path: `/Music/${track.id}`,
                   id: track.id,
                   title: track.title,
                   artist: track.artist,
+                  source: track.source ?? ipodStore.librarySource,
                 }));
+                const hiddenCount = Math.max(matchingTracks.length - library.length, 0);
+                const libraryName =
+                  ipodStore.librarySource === "appleMusic" ? "Apple Music" : "iPod";
 
                 const resultMessage =
                   library.length > 0
                     ? `${library.length === 1 
                         ? i18n.t("apps.chats.toolCalls.foundSongsInMusic", { count: library.length })
-                        : i18n.t("apps.chats.toolCalls.foundSongsInMusicPlural", { count: library.length })}:\n${JSON.stringify(library, null, 2)}`
-                    : i18n.t("apps.chats.toolCalls.musicLibraryEmpty");
+                        : i18n.t("apps.chats.toolCalls.foundSongsInMusicPlural", { count: library.length })} (${libraryName})${
+                        hiddenCount > 0
+                          ? `; showing ${library.length} of ${matchingTracks.length}. Use query or limit to narrow results.`
+                          : ""
+                      }:\n${JSON.stringify(library, null, 2)}`
+                    : hasQuery
+                      ? `No songs matched "${query}" in ${libraryName}.`
+                      : i18n.t("apps.chats.toolCalls.musicLibraryEmpty");
 
                 addToolResult({
                   tool: toolCall.toolName,
@@ -1140,7 +1188,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 // Play iPod song by ID
                 const songId = path.replace("/Music/", "");
                 const ipodState = useIpodStore.getState();
-                const track = ipodState.tracks.find((t) => t.id === songId);
+                const track = getActiveIpodTracks(ipodState).find((t) => t.id === songId);
 
                 if (!track) {
                   throw new Error(`Song not found: ${songId}`);
@@ -1153,7 +1201,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   launchApp("ipod");
                 }
 
-                ipodState.setCurrentSongId(songId);
+                setActiveIpodCurrentSongId(ipodState, songId);
                 ipodState.setIsPlaying(true);
 
                 const playingMessage = track.artist
