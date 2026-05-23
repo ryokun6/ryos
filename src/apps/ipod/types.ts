@@ -50,6 +50,14 @@ export interface MenuHistoryEntry {
    * Used for playlist and per-artist album browses.
    */
   modernMediaList?: boolean;
+  /**
+   * When true, this menu's rows are sorted alphabetically by their
+   * label, so the iPod can pop a large letter overlay (similar to the
+   * iPhone contacts index) on top of the list while the wheel is being
+   * spun quickly. Used for the All Songs / Albums / Artists / Playlists
+   * browses. The overlay is hidden again after a short rest.
+   */
+  alphabetical?: boolean;
 }
 
 // PIP Player props

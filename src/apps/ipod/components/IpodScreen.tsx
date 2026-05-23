@@ -28,6 +28,8 @@ import {
   StatusDisplay,
   IpodModernPlayPauseIcon,
   IpodArtworkPlaceholder,
+  AlphabetScrollOverlay,
+  useAlphabetScrollLetter,
 } from "./screen";
 import { useImageLoaded } from "../hooks/useImageLoaded";
 
@@ -691,6 +693,27 @@ export function IpodScreen({
     [menuMode, menuHistory]
   );
 
+  // Whether the current menu is sorted alphabetically — drives the
+  // big-letter scrubber overlay rendered below the titlebar while the
+  // wheel is being spun quickly.
+  const isAlphabeticalMenu = useMemo(() => {
+    if (!menuMode || menuHistory.length === 0) return false;
+    return Boolean(menuHistory[menuHistory.length - 1].alphabetical);
+  }, [menuMode, menuHistory]);
+
+  // Currently-displayed alphabet letter (or null when the overlay
+  // should be hidden). The hook owns timing + activation thresholds so
+  // tapping the wheel slowly never flashes it; spinning fast smoothly
+  // pops it in and lets the letter follow the wheel until the user
+  // pauses for ~420ms.
+  const alphabetScrollLetter = useAlphabetScrollLetter({
+    isAlphabeticalMenu,
+    menuMode,
+    menuDepth: menuHistory.length,
+    selectedIndex: selectedMenuItem,
+    items: currentMenuItems,
+  });
+
   // Track scroll position + container height so we can compute the
   // visible window for virtualization.
   const [menuScrollState, dispatchMenuScroll] = useReducer(
@@ -1206,6 +1229,10 @@ export function IpodScreen({
                   containerRef={menuScrollRef}
                   backlightOn={backlightOn}
                   menuMode={menuMode}
+                  variant={uiVariant}
+                />
+                <AlphabetScrollOverlay
+                  letter={alphabetScrollLetter}
                   variant={uiVariant}
                 />
               </div>

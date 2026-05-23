@@ -1637,17 +1637,38 @@ export function useIpodLogic({
   // Memoize the entire "All Songs" submenu items array. Without this,
   // every render rebuilt N closures, the menu-history sync effect saw a
   // new `items` reference, called `setMenuHistory(updated)`, and re-ran.
+  //
+  // Items are sorted alphabetically by title — matching iPod classic
+  // "Songs" behavior so the alphabet-scroll letter overlay reads A→Z
+  // as the wheel spins. Tracks are still played by their stable
+  // `track.id`, so reordering the displayed rows does not affect
+  // playback; the `sortedIndex` passed through to `playTrackFromMenu`
+  // is the row index in the visible (sorted) list so menu history's
+  // `selectedIndex` lands on the correct row.
+  const allSongsSortedTracks = useMemo(
+    () =>
+      [...browsableTracks].sort((a, b) =>
+        a.title.localeCompare(b.title, undefined, { sensitivity: "base" })
+      ),
+    [browsableTracks]
+  );
   const allSongsMenuItems = useMemo(
     () =>
-      browsableTracks.map((track, index) => ({
+      allSongsSortedTracks.map((track, sortedIndex) => ({
         label: track.title,
         // Full library queue → pass null to clear any contextual queue.
-        action: () => playTrackFromMenu(track, index, null),
+        action: () => playTrackFromMenu(track, sortedIndex, null),
         showChevron: false,
         coverUrl: resolveTrackCoverUrl(track),
       })),
-    [browsableTracks, playTrackFromMenu]
+    [allSongsSortedTracks, playTrackFromMenu]
   );
+  /** Row in the sorted All Songs list for the currently-playing track. */
+  const allSongsSortedCurrentIndex = useMemo(() => {
+    if (!currentSongId) return 0;
+    const idx = allSongsSortedTracks.findIndex((t) => t.id === currentSongId);
+    return idx >= 0 ? idx : 0;
+  }, [allSongsSortedTracks, currentSongId]);
 
   const appleMusicRecentlyAddedMenuItems = useMemo(() => {
     const loadingLabel = t("apps.ipod.menuItems.loading", "Loading…");
@@ -1941,6 +1962,7 @@ export function useIpodLogic({
               title: allSongsLabel,
               items: allSongsMenuItems,
               selectedIndex: 0,
+              alphabetical: true,
             });
           },
           showChevron: true,
@@ -1991,6 +2013,7 @@ export function useIpodLogic({
               title: albumsLabel,
               items: albumsListMenuItems,
               selectedIndex: 0,
+              alphabetical: true,
             });
           },
           showChevron: true,
@@ -2117,9 +2140,22 @@ export function useIpodLogic({
     menuLocale,
   ]);
 
+  // Playlists are sorted alphabetically by name for display so the
+  // alphabet-scroll overlay reads A→Z, matching iPod classic behavior.
+  // The underlying `appleMusicPlaylists` array in the store is left in
+  // its Apple Music API order; anywhere we need a *display* index
+  // (e.g. `navigateToPlaylistFromNowPlaying`) uses `sortedApplePlaylists`
+  // instead so the row index matches the rendered list.
+  const sortedApplePlaylists = useMemo(
+    () =>
+      [...appleMusicPlaylists].sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
+      ),
+    [appleMusicPlaylists]
+  );
   const applePlaylistsMenuItems = useMemo(
     (): MenuItem[] =>
-      appleMusicPlaylists.map((playlist) => {
+      sortedApplePlaylists.map((playlist) => {
         // Prefer the playlist's own artwork (Apple Music supplies it
         // directly via MusicKit). Fall back to the first cached track
         // with usable artwork so playlists imported before the artwork
@@ -2159,7 +2195,7 @@ export function useIpodLogic({
         };
       }),
     [
-      appleMusicPlaylists,
+      sortedApplePlaylists,
       appleMusicPlaylistTracks,
       applePlaylistTrackMenuItemsByPlaylist,
       registerActivity,
@@ -2191,7 +2227,7 @@ export function useIpodLogic({
     const pushSubmenu = (
       title: string,
       items: MenuItem[],
-      options?: { modernMediaList?: boolean }
+      options?: { modernMediaList?: boolean; alphabetical?: boolean }
     ) => {
       registerActivity();
       pushMenuChild({
@@ -2251,6 +2287,7 @@ export function useIpodLogic({
           action: () => {
             pushSubmenu(playlistsLabel, applePlaylistsMenuItems, {
               modernMediaList: true,
+              alphabetical: true,
             });
             void loadAppleMusicPlaylists();
           },
@@ -2258,17 +2295,26 @@ export function useIpodLogic({
         },
         {
           label: artistsLabel,
-          action: () => pushSubmenu(artistsLabel, artistsListMenuItems),
+          action: () =>
+            pushSubmenu(artistsLabel, artistsListMenuItems, {
+              alphabetical: true,
+            }),
           showChevron: true,
         },
         {
           label: albumsLabel,
-          action: () => pushSubmenu(albumsLabel, albumsListMenuItems),
+          action: () =>
+            pushSubmenu(albumsLabel, albumsListMenuItems, {
+              alphabetical: true,
+            }),
           showChevron: true,
         },
         {
           label: songsLabel,
-          action: () => pushSubmenu(songsLabel, allSongsMenuItems),
+          action: () =>
+            pushSubmenu(songsLabel, allSongsMenuItems, {
+              alphabetical: true,
+            }),
           showChevron: true,
         },
         {
@@ -2298,17 +2344,26 @@ export function useIpodLogic({
       coverFlowItem,
       {
         label: artistsLabel,
-        action: () => pushSubmenu(artistsLabel, artistsListMenuItems),
+        action: () =>
+          pushSubmenu(artistsLabel, artistsListMenuItems, {
+            alphabetical: true,
+          }),
         showChevron: true,
       },
       {
         label: albumsLabel,
-        action: () => pushSubmenu(albumsLabel, albumsListMenuItems),
+        action: () =>
+          pushSubmenu(albumsLabel, albumsListMenuItems, {
+            alphabetical: true,
+          }),
         showChevron: true,
       },
       {
         label: songsLabel,
-        action: () => pushSubmenu(allSongsLabel, allSongsMenuItems),
+        action: () =>
+          pushSubmenu(allSongsLabel, allSongsMenuItems, {
+            alphabetical: true,
+          }),
         showChevron: true,
       },
     ];
@@ -2640,6 +2695,7 @@ export function useIpodLogic({
           title: albumsLabel,
           items: albumsListMenuItems,
           selectedIndex: albumRowIdx,
+          alphabetical: true,
         },
         {
           title: albumKey,
@@ -2691,6 +2747,7 @@ export function useIpodLogic({
           title: artistsLabel,
           items: artistsListMenuItems,
           selectedIndex: artistListIdx,
+          alphabetical: true,
         },
         {
           title: artistKey,
@@ -2727,7 +2784,7 @@ export function useIpodLogic({
       );
       const playlistListIdx = Math.max(
         0,
-        appleMusicPlaylists.findIndex((entry) => entry.id === playlist.id)
+        sortedApplePlaylists.findIndex((entry) => entry.id === playlist.id)
       );
 
       navigateFromNowPlayingSongMenu([
@@ -2746,6 +2803,7 @@ export function useIpodLogic({
           items: applePlaylistsMenuItems,
           selectedIndex: playlistListIdx,
           modernMediaList: true,
+          alphabetical: true,
         },
         {
           title: playlist.name,
@@ -2761,7 +2819,7 @@ export function useIpodLogic({
       t,
       requestPlaylistTracksIfNeeded,
       appleMusicPlaylistTracks,
-      appleMusicPlaylists,
+      sortedApplePlaylists,
       applePlaylistsMenuItems,
       applePlaylistTrackMenuItemsByPlaylist,
       navigateFromNowPlayingSongMenu,
@@ -3725,14 +3783,15 @@ export function useIpodLogic({
           {
             title: allSongsLabel,
             items: allSongsMenuItems,
-            selectedIndex: Math.max(0, browseCurrentIndex),
+            selectedIndex: allSongsSortedCurrentIndex,
+            alphabetical: true,
           },
         ]);
-        setSelectedMenuItem(Math.max(0, browseCurrentIndex));
+        setSelectedMenuItem(allSongsSortedCurrentIndex);
       }
       setMenuMode(true);
     }
-  }, [playClickSound, vibrate, registerActivity, isCoverFlowOpen, isMusicQuizOpen, isBrickGameOpen, isNowPlayingSongMenuOpen, closeNowPlayingSongMenu, restoreNowPlayingSongMenu, showVideo, toggleVideo, menuMode, menuHistory, mainMenuItems, musicMenuItems, allSongsMenuItems, browseCurrentIndex, cameFromNowPlayingMenuItem, t]);
+  }, [playClickSound, vibrate, registerActivity, isCoverFlowOpen, isMusicQuizOpen, isBrickGameOpen, isNowPlayingSongMenuOpen, closeNowPlayingSongMenu, restoreNowPlayingSongMenu, showVideo, toggleVideo, menuMode, menuHistory, mainMenuItems, musicMenuItems, allSongsMenuItems, allSongsSortedCurrentIndex, cameFromNowPlayingMenuItem, t]);
 
   // Cover Flow handlers
   const handleCenterLongPress = useCallback(() => {
