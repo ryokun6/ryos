@@ -220,7 +220,10 @@ const getPartHighlight = (
   partStart: number,
   partLength: number
 ): { start: number; end: number } | null => {
-  if (!matchesHighlightMessage(highlightSegment, message, messageKey)) {
+  if (
+    !highlightSegment ||
+    !matchesHighlightMessage(highlightSegment, message, messageKey)
+  ) {
     return null;
   }
 
@@ -402,7 +405,6 @@ interface ChatMessageItemProps {
   speechLoadingId: string | null;
   speechEnabled: boolean;
   highlightSegment?: HighlightSegment | null;
-  isSpeaking?: boolean;
   speakText: (text: string, onEnd?: () => void) => void;
   stopSpeech: () => void;
   isAdmin: boolean;
@@ -437,7 +439,6 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
     speechLoadingId,
     speechEnabled,
     highlightSegment,
-    isSpeaking,
     speakText,
     stopSpeech,
     isAdmin,
@@ -1342,7 +1343,6 @@ function ChatMessagesContent({
             speechLoadingId={speechLoadingId}
             speechEnabled={speechEnabled}
             highlightSegment={highlightSegment}
-            isSpeaking={isSpeaking}
             speakText={speakText}
             stopSpeech={stopSpeech}
             isAdmin={isAdmin}
