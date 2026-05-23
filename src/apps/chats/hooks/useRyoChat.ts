@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/stores/useAppStore";
 import { useInternetExplorerStore } from "@/stores/useInternetExplorerStore";
 import { useVideoStore } from "@/stores/useVideoStore";
-import { getIpodChatContextTrack, useIpodStore } from "@/stores/useIpodStore";
+import { useIpodStore } from "@/stores/useIpodStore";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useLanguageStore } from "@/stores/useLanguageStore";
 import { getApiUrl } from "@/utils/platform";
@@ -21,7 +21,9 @@ const getSystemState = () => {
   const languageStore = useLanguageStore.getState();
 
   const currentVideo = videoStore.getCurrentVideo();
-  const currentTrack = getIpodChatContextTrack(ipodStore);
+  const currentTrack = ipodStore.currentSongId
+    ? ipodStore.tracks.find((t) => t.id === ipodStore.currentSongId)
+    : ipodStore.tracks[0] ?? null;
 
   // Use new instance-based model
   const openInstances = Object.values(appStore.instances).filter(
@@ -83,10 +85,8 @@ const getSystemState = () => {
             url: currentTrack.url,
             title: currentTrack.title,
             artist: currentTrack.artist,
-            source: currentTrack.source,
           }
         : null,
-      librarySource: ipodStore.librarySource,
       isPlaying: ipodStore.isPlaying,
       loopAll: ipodStore.loopAll,
       loopCurrent: ipodStore.loopCurrent,

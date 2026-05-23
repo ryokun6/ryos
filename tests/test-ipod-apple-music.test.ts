@@ -32,14 +32,9 @@ const browserGlobals = globalThis as typeof globalThis & {
 if (!browserGlobals.localStorage) {
   browserGlobals.localStorage = new MemoryStorage();
 }
-Object.defineProperty(browserGlobals, "navigator", {
-  value: {
-    ...(browserGlobals.navigator ?? {}),
-    onLine: true,
-    userAgent: "test",
-  },
-  configurable: true,
-});
+if (!browserGlobals.navigator) {
+  browserGlobals.navigator = { onLine: true, userAgent: "test" } as Navigator;
+}
 
 const {
   appleMusicPlayableResourceToTrack,
@@ -51,14 +46,7 @@ const {
   APPLE_MUSIC_PLAYLISTS_OPPORTUNISTIC_TTL_MS,
   APPLE_MUSIC_PLAYLIST_TRACKS_OPPORTUNISTIC_TTL_MS,
 } = await import("../src/apps/ipod/hooks/useAppleMusicLibrary");
-const {
-  useIpodStore,
-  appleMusicKitIdToLyricsSongId,
-  getActiveIpodCurrentTrack,
-  getActiveIpodTracks,
-  getIpodChatContextTrack,
-} = await import("../src/stores/useIpodStore");
-const { handleIpodControl } = await import("../src/apps/chats/tools/ipodHandler");
+const { useIpodStore, appleMusicKitIdToLyricsSongId } = await import("../src/stores/useIpodStore");
 const {
   shouldFireEndedForPlaybackState,
   isWithinEndedFanoutDedupWindow,
@@ -366,7 +354,6 @@ describe("useIpodStore Apple Music slice", () => {
       appleMusicTracks: [],
       appleMusicPlaybackQueue: null,
       appleMusicCurrentSongId: null,
-      appleMusicKitNowPlaying: null,
       isPlaying: false,
       currentSongId: null,
       tracks: [],
@@ -625,106 +612,6 @@ describe("useIpodStore Apple Music slice", () => {
     useIpodStore.getState().appleMusicNextTrack();
 
     expect(useIpodStore.getState().appleMusicCurrentSongId).toBe("am:q2");
-  });
-
-  test("active iPod helpers resolve the Apple Music slice and live MusicKit context", () => {
-    useIpodStore.setState({
-      tracks: [{ id: "yt1", url: "youtube:1", title: "YouTube One" }],
-      currentSongId: "yt1",
-      appleMusicTracks: [
-        { id: "am:1", url: "applemusic:1", title: "Apple One", source: "appleMusic" },
-        { id: "am:2", url: "applemusic:2", title: "Apple Two", source: "appleMusic" },
-      ],
-      appleMusicCurrentSongId: "am:2",
-      librarySource: "appleMusic",
-      appleMusicKitNowPlaying: {
-        id: "1616228595",
-        title: "Live Radio Song",
-        artist: "Live Artist",
-        album: "Live Album",
-      },
-    });
-
-    expect(getActiveIpodTracks(useIpodStore.getState()).map((track) => track.id)).toEqual([
-      "am:1",
-      "am:2",
-    ]);
-    expect(getActiveIpodCurrentTrack(useIpodStore.getState())?.id).toBe("am:2");
-    expect(getIpodChatContextTrack(useIpodStore.getState())).toEqual({
-      id: "am:1616228595",
-      url: "applemusic:2",
-      title: "Live Radio Song",
-      artist: "Live Artist",
-      album: "Live Album",
-      source: "appleMusic",
-    });
-  });
-
-  test("ipodControl playKnown selects Apple Music tracks when Apple Music is active", async () => {
-    useIpodStore.setState({
-      tracks: [{ id: "yt1", url: "youtube:1", title: "YouTube One" }],
-      currentSongId: "yt1",
-      appleMusicTracks: [
-        { id: "am:1", url: "applemusic:1", title: "Apple One", source: "appleMusic" },
-        {
-          id: "am:2",
-          url: "applemusic:2",
-          title: "Apple Two",
-          artist: "Apple Artist",
-          source: "appleMusic",
-        },
-      ],
-      appleMusicCurrentSongId: "am:1",
-      librarySource: "appleMusic",
-      appleMusicPlaybackQueue: ["am:1"],
-    });
-    const results: unknown[] = [];
-
-    await handleIpodControl(
-      { action: "playKnown", id: "am:2" },
-      "call-1",
-      {
-        launchApp: () => "ipod-instance",
-        addToolResult: (result) => results.push(result),
-        detectUserOS: () => "Linux",
-      }
-    );
-
-    const state = useIpodStore.getState();
-    expect(state.appleMusicCurrentSongId).toBe("am:2");
-    expect(state.appleMusicPlaybackQueue).toBeNull();
-    expect(state.currentSongId).toBe("yt1");
-    expect(state.isPlaying).toBe(true);
-    expect(results).toHaveLength(1);
-  });
-
-  test("ipodControl next follows Apple Music navigation when Apple Music is active", async () => {
-    useIpodStore.setState({
-      tracks: [{ id: "yt1", url: "youtube:1", title: "YouTube One" }],
-      currentSongId: "yt1",
-      appleMusicTracks: [
-        { id: "am:1", url: "applemusic:1", title: "Apple One", source: "appleMusic" },
-        { id: "am:2", url: "applemusic:2", title: "Apple Two", source: "appleMusic" },
-      ],
-      appleMusicCurrentSongId: "am:1",
-      librarySource: "appleMusic",
-      loopAll: true,
-      isShuffled: false,
-    });
-
-    await handleIpodControl(
-      { action: "next" },
-      "call-2",
-      {
-        launchApp: () => "ipod-instance",
-        addToolResult: () => {},
-        detectUserOS: () => "Linux",
-      }
-    );
-
-    const state = useIpodStore.getState();
-    expect(state.appleMusicCurrentSongId).toBe("am:2");
-    expect(state.currentSongId).toBe("yt1");
   });
 });
 

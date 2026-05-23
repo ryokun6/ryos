@@ -23,9 +23,14 @@ import {
   fetchAppleMusicGeniusTrack,
   addAppleMusicTrackToFavorites,
   cacheAppleMusicFavoriteSongTrack,
+  isAppleMusicUnauthorizedError,
   type AppleMusicSearchScope,
 } from "./useAppleMusicLibrary";
-import { useMusicKit } from "@/hooks/useMusicKit";
+import {
+  forgetMusicKitUserToken,
+  markMusicKitUserTokenValidated,
+  useMusicKit,
+} from "@/hooks/useMusicKit";
 import { clearAppleMusicLibrary } from "@/utils/appleMusicLibraryCache";
 import {
   useIpodStore,
@@ -943,6 +948,36 @@ export function useIpodLogic({
   // reference them via useMemo).
   // -------------------------------------------------------------------
 
+  const syncAppleMusicLibraryWithTokenRecovery = useCallback(async () => {
+    try {
+      const count = await refreshAppleMusicLibrary();
+      void markMusicKitUserTokenValidated();
+      return count;
+    } catch (err) {
+      if (!isAppleMusicUnauthorizedError(err)) {
+        throw err;
+      }
+
+      await forgetMusicKitUserToken();
+      try {
+        await musicKitUnauthorize();
+      } catch (unauthorizeErr) {
+        console.warn(
+          "[apple music] failed to clear expired MusicKit session",
+          unauthorizeErr
+        );
+      }
+
+      const token = await musicKitAuthorize();
+      if (token) {
+        await markMusicKitUserTokenValidated(token);
+      }
+      const count = await refreshAppleMusicLibrary();
+      void markMusicKitUserTokenValidated(token ?? undefined);
+      return count;
+    }
+  }, [musicKitAuthorize, musicKitUnauthorize, refreshAppleMusicLibrary]);
+
   const handleAppleMusicSignIn = useCallback(async () => {
     registerActivity();
     if (musicKitStatus === "missing-token") {
@@ -952,14 +987,33 @@ export function useIpodLogic({
       return;
     }
     try {
-      await musicKitAuthorize();
-      showStatus(t("apps.ipod.status.appleMusicSignedIn", "Apple Music ✓"));
+      if (!appleMusicAuthorized) {
+        await musicKitAuthorize();
+      }
+      const count = await syncAppleMusicLibraryWithTokenRecovery();
+      showStatus(
+        count > 0
+          ? t(
+              "apps.ipod.status.appleMusicLibrarySynced",
+              `Library: ${count} songs`,
+              { count }
+            )
+          : t("apps.ipod.status.appleMusicSignedIn", "Apple Music ✓")
+      );
     } catch (err) {
       toast.error(t("apps.ipod.dialogs.appleMusicSignInFailed"), {
         description: err instanceof Error ? err.message : String(err),
       });
     }
-  }, [musicKitAuthorize, musicKitStatus, registerActivity, showStatus, menuLocale]);
+  }, [
+    appleMusicAuthorized,
+    musicKitAuthorize,
+    musicKitStatus,
+    registerActivity,
+    showStatus,
+    syncAppleMusicLibraryWithTokenRecovery,
+    menuLocale,
+  ]);
 
   const handleAppleMusicSignOut = useCallback(async () => {
     registerActivity();
@@ -995,7 +1049,7 @@ export function useIpodLogic({
     try {
       // refresh() drives a progress toast itself, so don't double-toast on
       // error here — just acknowledge success on the iPod screen.
-      const count = await refreshAppleMusicLibrary();
+      const count = await syncAppleMusicLibraryWithTokenRecovery();
       showStatus(
         t(
           "apps.ipod.status.appleMusicLibrarySynced",
@@ -1009,9 +1063,9 @@ export function useIpodLogic({
   }, [
     appleMusicAuthorized,
     handleAppleMusicSignIn,
-    refreshAppleMusicLibrary,
     registerActivity,
     showStatus,
+    syncAppleMusicLibraryWithTokenRecovery,
     menuLocale,
   ]);
 

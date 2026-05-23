@@ -28,7 +28,6 @@ const baseSystemState: RyoConversationSystemState = {
   },
   ipod: {
     currentTrack: { id: "track1", title: "Test Song", artist: "Test Artist" },
-    librarySource: "youtube",
     isPlaying: true,
   },
 };
@@ -104,30 +103,8 @@ describe("prompt caching structure", () => {
     expect(prompt).toContain("RUNNING APPLICATIONS");
     expect(prompt).toContain("Foreground: chats (Chats)");
     expect(prompt).toContain("MEDIA PLAYBACK");
-    expect(prompt).toContain("iPod (YouTube): Test Song by Test Artist");
+    expect(prompt).toContain("iPod: Test Song by Test Artist");
     expect(prompt).toContain("</system_state>");
-  });
-
-  test("buildVolatileStatePrompt labels Apple Music iPod context", () => {
-    const prompt = buildVolatileStatePrompt({
-      channel: "chat",
-      systemState: {
-        ...baseSystemState,
-        ipod: {
-          currentTrack: {
-            id: "am:1616228595",
-            title: "Apple Song",
-            artist: "Apple Artist",
-            source: "appleMusic",
-          },
-          librarySource: "appleMusic",
-          isPlaying: true,
-        },
-      },
-      username: "testuser",
-    });
-
-    expect(prompt).toContain("iPod (Apple Music): Apple Song by Apple Artist");
   });
 
   test("buildVolatileStatePrompt does not contain memory data", () => {

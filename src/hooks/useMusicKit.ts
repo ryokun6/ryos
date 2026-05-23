@@ -1,4 +1,9 @@
 import { useCallback, useEffect, useReducer, useRef } from "react";
+import {
+  deleteSavedAppleMusicUserToken,
+  getSavedAppleMusicUserToken,
+  saveAppleMusicUserToken,
+} from "@/api/appleMusic";
 
 /**
  * Apple MusicKit JS v3 lazy loader / configurer.
@@ -23,12 +28,14 @@ export const APPLE_MUSIC_STREAMING_BITRATE_KBPS = 256;
 
 export function buildMusicKitConfigureOptions(
   developerToken: string,
-  app: MusicKit.AppMetadata
+  app: MusicKit.AppMetadata,
+  musicUserToken?: string
 ): MusicKit.ConfigureOptions {
   return {
     developerToken,
     app,
     bitrate: APPLE_MUSIC_STREAMING_BITRATE_KBPS,
+    ...(musicUserToken ? { musicUserToken } : {}),
   };
 }
 
@@ -44,8 +51,16 @@ interface CachedDeveloperToken {
   expiresAt: number; // epoch ms
 }
 
+interface CachedMusicUserToken {
+  token: string;
+  updatedAt?: string;
+  lastValidatedAt?: string | null;
+}
+
 let cachedDeveloperToken: CachedDeveloperToken | null = null;
 let inFlightTokenFetch: Promise<string> | null = null;
+let cachedMusicUserToken: CachedMusicUserToken | null | undefined;
+let inFlightMusicUserTokenFetch: Promise<CachedMusicUserToken | null> | null = null;
 
 let scriptPromise: Promise<void> | null = null;
 let configurePromise: Promise<MusicKit.MusicKitInstance> | null = null;
@@ -125,6 +140,79 @@ async function resolveDeveloperToken(): Promise<string> {
       return fallback;
     }
     throw err;
+  }
+}
+
+function normalizeSavedMusicUserTokenResponse(
+  data: Awaited<ReturnType<typeof getSavedAppleMusicUserToken>>
+): CachedMusicUserToken | null {
+  if (!data.authenticated || !data.hasToken || !data.musicUserToken) {
+    return null;
+  }
+  return {
+    token: data.musicUserToken,
+    updatedAt: data.updatedAt,
+    lastValidatedAt: data.lastValidatedAt,
+  };
+}
+
+async function fetchSavedMusicUserToken(): Promise<CachedMusicUserToken | null> {
+  if (cachedMusicUserToken !== undefined) return cachedMusicUserToken;
+  if (inFlightMusicUserTokenFetch) return inFlightMusicUserTokenFetch;
+
+  inFlightMusicUserTokenFetch = (async () => {
+    try {
+      const data = await getSavedAppleMusicUserToken();
+      cachedMusicUserToken = normalizeSavedMusicUserTokenResponse(data);
+      return cachedMusicUserToken;
+    } catch (err) {
+      console.warn("[musickit] failed to load saved Music User Token", err);
+      cachedMusicUserToken = null;
+      return null;
+    }
+  })();
+
+  try {
+    return await inFlightMusicUserTokenFetch;
+  } finally {
+    inFlightMusicUserTokenFetch = null;
+  }
+}
+
+export async function persistMusicKitUserToken(
+  token: string,
+  options: { validated?: boolean } = {}
+): Promise<void> {
+  if (!token) return;
+  cachedMusicUserToken = { token };
+  try {
+    const result = await saveAppleMusicUserToken(token, options);
+    if (result.ok) {
+      cachedMusicUserToken = {
+        token,
+        updatedAt: result.updatedAt,
+        lastValidatedAt: result.lastValidatedAt,
+      };
+    }
+  } catch (err) {
+    console.warn("[musickit] failed to save Music User Token", err);
+  }
+}
+
+export async function markMusicKitUserTokenValidated(
+  token = configuredInstance?.musicUserToken
+): Promise<void> {
+  if (!token) return;
+  await persistMusicKitUserToken(token, { validated: true });
+}
+
+export async function forgetMusicKitUserToken(): Promise<void> {
+  cachedMusicUserToken = null;
+  inFlightMusicUserTokenFetch = null;
+  try {
+    await deleteSavedAppleMusicUserToken();
+  } catch (err) {
+    console.warn("[musickit] failed to delete saved Music User Token", err);
   }
 }
 
@@ -209,7 +297,8 @@ function loadScript(): Promise<void> {
 
 async function configureMusicKit(
   developerToken: string,
-  app: MusicKit.AppMetadata
+  app: MusicKit.AppMetadata,
+  musicUserToken?: string
 ): Promise<MusicKit.MusicKitInstance> {
   if (configuredInstance) return configuredInstance;
   if (configurePromise) return configurePromise;
@@ -222,7 +311,7 @@ async function configureMusicKit(
     // forces script-side init to complete before we hand the instance back.
     const result = await Promise.resolve(
       window.MusicKit!.configure(
-        buildMusicKitConfigureOptions(developerToken, app)
+        buildMusicKitConfigureOptions(developerToken, app, musicUserToken)
       )
     );
     const instance = result ?? window.MusicKit!.getInstance?.();
@@ -385,7 +474,10 @@ export function useMusicKit(
 
     (async () => {
       try {
-        const token = await resolveDeveloperToken();
+        const [token, savedMusicUserToken] = await Promise.all([
+          resolveDeveloperToken(),
+          fetchSavedMusicUserToken(),
+        ]);
         if (cancelled) return;
         dispatch({ type: "patch", payload: { hasToken: true } });
 
@@ -393,7 +485,11 @@ export function useMusicKit(
         if (cancelled) return;
 
         try {
-          const inst = await configureMusicKit(token, app);
+          const inst = await configureMusicKit(
+            token,
+            app,
+            savedMusicUserToken?.token
+          );
           if (cancelled) return;
           dispatch({
             type: "patch",
@@ -446,6 +542,9 @@ export function useMusicKit(
     if (!inst) return null;
     try {
       const token = await inst.authorize();
+      if (token) {
+        void persistMusicKitUserToken(token);
+      }
       dispatch({
         type: "patch",
         payload: { isAuthorized: Boolean(inst.isAuthorized) },
@@ -463,9 +562,13 @@ export function useMusicKit(
 
   const unauthorize = useCallback(async (): Promise<void> => {
     const inst = instance ?? configuredInstance;
-    if (!inst) return;
+    if (!inst) {
+      void forgetMusicKitUserToken();
+      return;
+    }
     try {
       await inst.unauthorize();
+      void forgetMusicKitUserToken();
       dispatch({ type: "patch", payload: { isAuthorized: false } });
     } catch (err) {
       console.error("[musickit] unauthorize failed", err);

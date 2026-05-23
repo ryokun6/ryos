@@ -37,6 +37,9 @@ export const REDIS_PREFIXES = {
   songMeta: "song:meta:",
   songContent: "song:content:",
   songsSet: "songs",
+
+  // Apple Music / MusicKit
+  appleMusicUserToken: "musickit:user-token:",
 } as const;
 
 // ============================================================================

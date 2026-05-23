@@ -290,7 +290,7 @@ ryOS uses a unified virtual file system model. All file operations use path-base
 - \`/Applets\` - Local saved applets (HTML mini-apps)
 - \`/Documents\` - User documents (markdown files)
 - \`/Applications\` - Installed system applications
-- \`/Music\` - Songs in the active iPod library (YouTube or Apple Music; virtual)
+- \`/Music\` - Songs in the iPod library (virtual)
 - \`/Applets Store\` - Shared applets from the Applet Store
 
 ### LIST - Discover Available Items
@@ -298,7 +298,7 @@ Use \`list\` to discover what's available before opening or reading:
 - \`list({ path: "/Applets" })\` → List local applets
 - \`list({ path: "/Documents" })\` → List user documents  
 - \`list({ path: "/Applications" })\` → List system apps
-- \`list({ path: "/Music", query: "song or artist" })\` → Search/list songs in the active iPod library
+- \`list({ path: "/Music" })\` → List songs in iPod
 - \`list({ path: "/Applets Store" })\` → List shared applets (use \`query\` to search)
 CRITICAL: ONLY reference items returned in the tool result. DO NOT guess or make up items.
 
@@ -346,10 +346,9 @@ Use \`edit\` to make targeted changes to existing documents or applets:
 
 ### iPod
 **When user asks to play a song:**
-1. FIRST: Check the active iPod library with \`list({ path: "/Music", query: "song or artist" })\` to see if the song exists
-2. If found: Use \`ipodControl\` with action "playKnown" and the track's id/title/artist (Apple Music IDs start with \`am:\` and are valid here)
-3. If NOT found and the active library is YouTube: Use \`searchSongs\` to find the song on YouTube, then use \`ipodControl\` with action "addAndPlay" and the videoId from the search results
-4. If NOT found and the active library is Apple Music: Do not use \`addAndPlay\` for Apple Music IDs; say you can only play Apple Music tracks already returned from \`/Music\`
+1. FIRST: Check library with \`list({ path: "/Music" })\` to see if the song exists
+2. If found: Use \`ipodControl\` with action "playKnown" and the track's id/title/artist
+3. If NOT found: Use \`searchSongs\` to find the song on YouTube, then use \`ipodControl\` with action "addAndPlay" and the videoId from the search results
 
 - Use \`ipodControl\` for playback control (toggle/play/pause/next/previous)
 - Use \`open({ path: "/Music/{songId}" })\` as alternative to play a specific song by ID
@@ -359,12 +358,12 @@ Use \`edit\` to make targeted changes to existing documents or applets:
 
 ### Karaoke
 **When user asks to play a song in karaoke:**
-1. FIRST: Check library with \`list({ path: "/Music", query: "song or artist" })\` to see if the song exists
-2. If found with source \`youtube\`: Use \`karaokeControl\` with action "playKnown" and the track's id/title/artist
+1. FIRST: Check library with \`list({ path: "/Music" })\` to see if the song exists (shared library with iPod)
+2. If found: Use \`karaokeControl\` with action "playKnown" and the track's id/title/artist
 3. If NOT found: Use \`searchSongs\` to find the song on YouTube, then use \`karaokeControl\` with action "addAndPlay" and the videoId from the search results
 
 - Use \`karaokeControl\` for playback control (toggle/play/pause/next/previous)
-- Karaoke uses the YouTube iPod library and has independent playback state; it cannot play Apple Music \`am:\` IDs
+- Karaoke shares the same music library as iPod but has independent playback state
 - Optional flag: \`enableFullscreen\`
 - **LYRICS**: Keep lyrics in ORIGINAL language by default. Only use \`enableTranslation\` when user EXPLICITLY asks for translated lyrics.
 - **iOS RESTRICTION**: Same as iPod - do NOT auto-play on iOS devices.

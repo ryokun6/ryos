@@ -65,12 +65,9 @@ export interface RyoConversationSystemState {
   ipod?: {
     currentTrack: {
       id: string;
-      url?: string;
       title: string;
       artist?: string;
-      source?: "youtube" | "appleMusic";
     } | null;
-    librarySource?: "youtube" | "appleMusic";
     isPlaying: boolean;
     currentLyrics?: {
       lines: Array<{
@@ -563,12 +560,8 @@ Video: ${effectiveState.video.currentVideo.title}${videoArtist} (Playing)`;
       const trackArtist = effectiveState.ipod.currentTrack.artist
         ? ` by ${effectiveState.ipod.currentTrack.artist}`
         : "";
-      const libraryLabel =
-        effectiveState.ipod.librarySource === "appleMusic"
-          ? "Apple Music"
-          : "YouTube";
       prompt += `
-iPod (${libraryLabel}): ${effectiveState.ipod.currentTrack.title}${trackArtist} (${playingStatus})`;
+iPod: ${effectiveState.ipod.currentTrack.title}${trackArtist} (${playingStatus})`;
 
       if (effectiveState.ipod.currentLyrics?.lines) {
         const lyricsText = effectiveState.ipod.currentLyrics.lines

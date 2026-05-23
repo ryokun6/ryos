@@ -863,6 +863,31 @@ function isAppleMusicNotFoundError(err: unknown): boolean {
   return err instanceof Error && /\b404\b/.test(err.message);
 }
 
+export function isAppleMusicUnauthorizedError(err: unknown): boolean {
+  if (typeof err === "object" && err !== null) {
+    const maybeStatus = err as {
+      status?: unknown;
+      statusCode?: unknown;
+      response?: { status?: unknown };
+    };
+    if (
+      maybeStatus.status === 401 ||
+      maybeStatus.status === 403 ||
+      maybeStatus.statusCode === 401 ||
+      maybeStatus.statusCode === 403 ||
+      maybeStatus.response?.status === 401 ||
+      maybeStatus.response?.status === 403
+    ) {
+      return true;
+    }
+  }
+
+  return (
+    err instanceof Error &&
+    /\b(401|403)\b|unauthori[sz]ed|music user token/i.test(err.message)
+  );
+}
+
 async function fetchAppleMusicPlaylistsList(): Promise<AppleMusicPlaylist[]> {
   const instance = getMusicKitInstance();
   if (!instance) throw new Error("MusicKit instance is not configured");
@@ -1454,7 +1479,7 @@ export function useAppleMusicLibrary({
   );
 
   const refresh = useCallback(async () => {
-    if (!isAuthorized) return 0;
+    if (!isAuthorized && !getMusicKitInstance()?.isAuthorized) return 0;
     return runWithProgressToast(true);
   }, [isAuthorized, runWithProgressToast]);
 

@@ -262,14 +262,14 @@ export const listSchema = z.object({
   path: z
     .enum(VFS_PATHS)
     .describe(
-      "The directory path to list: '/Applets' for local applets, '/Documents' for documents, '/Applications' for apps, '/Music' for songs in the active iPod library, '/Applets Store' for shared applets"
+      "The directory path to list: '/Applets' for local applets, '/Documents' for documents, '/Applications' for apps, '/Music' for iPod songs, '/Applets Store' for shared applets"
     ),
   query: z
     .string()
     .max(200)
     .optional()
     .describe(
-      "Optional search query to filter results. For '/Music', searches id/title/artist/album in the active iPod library. For '/Applets Store', searches title, name, or creator."
+      "Optional search query to filter results (only used for '/Applets Store' path). Case-insensitive substring match on title, name, or creator."
     ),
   limit: z
     .number()
@@ -278,7 +278,7 @@ export const listSchema = z.object({
     .max(50)
     .optional()
     .describe(
-      "Optional maximum number of results to return (default 25 for '/Music', 50 for '/Applets Store')."
+      "Optional maximum number of results to return (default 25, only used for '/Applets Store' path)."
     ),
 });
 
