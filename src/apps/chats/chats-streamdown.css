@@ -1,1 +1,10 @@
 @import "streamdown/styles.css";
+
+/* clause currently spoken by auto TTS (see speechHighlightMarkdown + Streamdown allowedTags.mark) */
+.ryos-chat-tts-mark {
+  background-color: rgba(251, 191, 36, 0.42);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  border-radius: 2px;
+  padding: 0 0.04em;
+}

@@ -2,7 +2,8 @@ import { UIMessage as VercelMessage } from "@ai-sdk/react";
 import { WarningCircle, ChatCircle, Copy, Check, CaretDown, Trash, SpeakerHigh, Pause, PaperPlaneRight } from "@phosphor-icons/react";
 import { createCodePlugin } from "@streamdown/code";
 import { useEffect, useRef, useState, memo, useCallback, type CSSProperties } from "react";
-import { Streamdown, type Components as StreamdownComponents } from "streamdown";
+import { Streamdown, type AllowedTags, type Components as StreamdownComponents } from "streamdown";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import { AnimatePresence, motion } from "framer-motion";
@@ -35,6 +36,7 @@ import { abortableFetch } from "@/utils/abortableFetch";
 import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
 import { formatToolName } from "@/lib/toolInvocationDisplay";
 import { segmentChatMarkdownText } from "@/lib/chatMarkdown";
+import { wrapMarkdownRangeWithSpeechMark } from "../utils/speechHighlightMarkdown";
 import { cleanTextForSpeech } from "../utils/textForSpeech";
 
 // Helper to extract image URLs from message parts
@@ -194,9 +196,19 @@ const chatStreamdownComponents: StreamdownComponents = {
       {children}
     </a>
   ),
+  mark: ({ children, className, ...rest }) => (
+    <mark {...rest} className={cn("ryos-chat-tts-mark", className)}>
+      {children}
+    </mark>
+  ),
 };
 
 const STREAMDOWN_DISALLOWED_ELEMENTS = ["img"] as const;
+
+/** Permit sanitized <mark> when wrapping the clause currently spoken by TTS */
+const CHAT_STREAMDOWN_TTS_ALLOWED_TAGS = {
+  mark: ["class"],
+} satisfies AllowedTags;
 const CHAT_STREAMDOWN_SHIKI_THEME: ["github-light", "github-dark"] = [
   "github-light",
   "github-dark",
@@ -372,6 +384,11 @@ interface ChatMessageItemProps {
   playElevatorMusic: () => void;
   stopElevatorMusic: () => void;
   playDingSound: () => void;
+  highlightSegment?: {
+    messageId: string;
+    start: number;
+    end: number;
+  } | null;
 }
 
 const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProps) {
@@ -405,6 +422,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
     playElevatorMusic,
     stopElevatorMusic,
     playDingSound,
+    highlightSegment,
   } = props;
 
   const [isHovered, setIsHovered] = useState(false);
@@ -839,11 +857,13 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
             <TypingDots />
           ) : message.role === "assistant" ? (
             <motion.div className="select-text flex flex-col gap-1">
-              {message.parts?.map(
-                (
-                  part: ToolInvocationPart | { type: string; text?: string },
-                  partIndex: number
-                ) => {
+              {(() => {
+                let assistantTextUtf16Offset = 0;
+                return message.parts?.map(
+                  (
+                    part: ToolInvocationPart | { type: string; text?: string },
+                    partIndex: number
+                  ) => {
                   const partKey = `${messageKey}-part-${partIndex}`;
                   switch (part.type) {
                     case "text": {
@@ -876,9 +896,32 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                         ? partText.slice(4).trimStart()
                         : partText;
                       const partDisplayContent = decodeHtmlEntities(rawPartContent);
-                      const textContent = partDisplayContent;
-                      const streamdownContent = textContent.trim();
-                      const isEmojiMessage = isEmojiOnly(textContent);
+
+                      let streamMarkdownForSd = partDisplayContent;
+                      let injectedSpeechMark = false;
+                      if (
+                        highlightSegment &&
+                        message.role === "assistant" &&
+                        message.id &&
+                        highlightSegment.messageId === message.id
+                      ) {
+                        const gs = assistantTextUtf16Offset;
+                        const ge = gs + partDisplayContent.length;
+                        const lo = Math.max(highlightSegment.start, gs);
+                        const hi = Math.min(highlightSegment.end, ge);
+                        if (lo < hi) {
+                          streamMarkdownForSd = wrapMarkdownRangeWithSpeechMark(
+                            partDisplayContent,
+                            lo - gs,
+                            hi - gs,
+                          );
+                          injectedSpeechMark = true;
+                        }
+                      }
+
+                      assistantTextUtf16Offset += partDisplayContent.length;
+
+                      const isEmojiMessage = isEmojiOnly(partDisplayContent);
                       return (
                         <div
                           key={partKey}
@@ -890,7 +933,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                               : undefined
                           }
                         >
-                          {streamdownContent && (
+                          {partDisplayContent && (
                             <Streamdown
                               className={`ryos-chat-streamdown ${
                                 isUrgent ? "ryos-chat-streamdown-urgent" : ""
@@ -901,14 +944,19 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                               lineNumbers={false}
                               shikiTheme={CHAT_STREAMDOWN_SHIKI_THEME}
                               plugins={CHAT_STREAMDOWN_PLUGINS}
-                              skipHtml
+                              skipHtml={!injectedSpeechMark}
+                              allowedTags={
+                                injectedSpeechMark
+                                  ? CHAT_STREAMDOWN_TTS_ALLOWED_TAGS
+                                  : undefined
+                              }
                               unwrapDisallowed
                               mode={isStreamingMessage ? "streaming" : "static"}
                               animated={CHAT_STREAMDOWN_ANIMATED}
                               isAnimating={isStreamingMessage}
                               parseIncompleteMarkdown={isStreamingMessage}
                             >
-                              {streamdownContent}
+                              {streamMarkdownForSd}
                             </Streamdown>
                           )}
                         </div>
@@ -939,8 +987,9 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                       return null;
                     }
                   }
-                }
-              )}
+                  }
+                );
+              })()}
             </motion.div>
           ) : (
             displayContent && (
@@ -1027,6 +1076,7 @@ interface ChatMessagesContentProps {
   onMessageDeleted?: (messageId: string) => void;
   fontSize: number;
   scrollToBottomTrigger: number;
+  highlightSegment?: { messageId: string; start: number; end: number } | null;
   onSendMessage?: (username: string) => void;
   isLoadingGreeting?: boolean;
   typingUsers?: string[];
@@ -1045,6 +1095,7 @@ function ChatMessagesContent({
   onMessageDeleted,
   fontSize,
   scrollToBottomTrigger,
+  highlightSegment,
   onSendMessage,
   isLoadingGreeting,
   typingUsers,
@@ -1292,6 +1343,7 @@ function ChatMessagesContent({
             playElevatorMusic={playElevatorMusic}
             stopElevatorMusic={stopElevatorMusic}
             playDingSound={playDingSound}
+            highlightSegment={highlightSegment}
           />
         );
       })}
@@ -1397,6 +1449,7 @@ export function ChatMessages({
   onMessageDeleted,
   fontSize,
   scrollToBottomTrigger,
+  highlightSegment,
   onSendMessage,
   isLoadingGreeting,
   typingUsers,
@@ -1425,6 +1478,7 @@ export function ChatMessages({
           onMessageDeleted={onMessageDeleted}
           fontSize={fontSize}
           scrollToBottomTrigger={scrollToBottomTrigger}
+          highlightSegment={highlightSegment}
           onSendMessage={onSendMessage}
           isLoadingGreeting={isLoadingGreeting}
           typingUsers={typingUsers}

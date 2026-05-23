@@ -39,6 +39,7 @@ import {
 import i18n from "@/lib/i18n";
 import { useTranslation } from "react-i18next";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
 import { tryInvokeParentStartGrindPlanning } from "@/utils/parentGrindPlanning";
 import { showAiMessageNotification } from "@/utils/chatNotificationDisplay";
 import {
@@ -587,7 +588,9 @@ const getAssistantVisibleText = (message: UIMessage): string => {
         }
         const text = part.text || "";
         // Handle urgent messages by removing leading !!!!
-        acc.push(text.startsWith("!!!!") ? text.slice(4).trimStart() : text);
+        const rawVisible =
+          text.startsWith("!!!!") ? text.slice(4).trimStart() : text;
+        acc.push(decodeHtmlEntities(rawVisible));
         return acc;
       }, [])
       .join("");
@@ -734,18 +737,24 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     }[]
   >([]);
 
-  // On first mount, mark any assistant messages already present as fully processed
-  useEffect(() => {
-    aiMessages.forEach((msg) => {
-      if (msg.role === "assistant") {
-        const content = getAssistantVisibleText(msg);
-        speechProgressRef.current[msg.id] = content.length; // mark as fully processed
-      }
-    });
-  }, [aiMessages]);
-
-  // Queue-based TTS – speaks chunks as they arrive
   const { speak, stop: stopTts, isSpeaking } = useTtsQueue();
+
+  const flushAutoSpeechPipelineForNewUserTurn = useCallback(() => {
+    stopTts();
+    highlightQueueRef.current = [];
+    setHighlightSegment(null);
+  }, [stopTts]);
+
+  // Mark historical assistant messages as fully processed so we don't auto-speak
+  // persisted transcript. Never overwrite speechProgress[id] once set — streaming
+  // and multi-step replies depend on the cursor advancing monotonically.
+  useEffect(() => {
+    for (const msg of aiMessages) {
+      if (msg.role !== "assistant" || !msg.id) continue;
+      if (speechProgressRef.current[msg.id] !== undefined) continue;
+      speechProgressRef.current[msg.id] = getAssistantVisibleText(msg).length;
+    }
+  }, [aiMessages]);
 
   // Rate limit state
   const [rateLimitError, setRateLimitError] = useState<{
@@ -2298,6 +2307,8 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         }
       }
 
+      flushAutoSpeechPipelineForNewUserTurn();
+
       // Build message content - text and optionally image
       if (imageContent) {
         // Extract media type from data URL (e.g., "data:image/png;base64,..." -> "image/png")
@@ -2352,6 +2363,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       isAuthenticated,
       aiModel,
       t,
+      flushAutoSpeechPipelineForNewUserTurn,
     ],
   );
 
@@ -2405,6 +2417,8 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         return;
       }
 
+      flushAutoSpeechPipelineForNewUserTurn();
+
       // Proceed with the actual submission using useChat v5
       console.log("Sending direct message to AI chat");
       sendMessage(
@@ -2422,7 +2436,14 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         },
       );
     },
-    [sendMessage, needsUsername, username, isAuthenticated, aiModel],
+    [
+      sendMessage,
+      needsUsername,
+      username,
+      isAuthenticated,
+      aiModel,
+      flushAutoSpeechPipelineForNewUserTurn,
+    ],
   );
 
   const handleNudge = useCallback(() => {
