@@ -173,7 +173,9 @@ export function ScrollingText({
     <div
       ref={containerRef}
       className={cn(
-        "relative flex min-h-min min-w-0 items-center overflow-x-hidden overflow-y-visible",
+        // `overflow-y: visible` + `overflow-x: hidden` resolves to `auto` per CSS Overflow 3
+        // and can show a vertical scrollbar; `clip` keeps horizontal marquee only.
+        "relative flex min-h-min min-w-0 items-center overflow-x-hidden overflow-y-clip",
         alignClass,
         className
       )}
