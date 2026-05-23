@@ -12,6 +12,7 @@ import {
   loadAppleMusicPlaylists,
   loadAppleMusicPlaylistTracks,
   loadAppleMusicTrackCollection,
+  pruneAppleMusicPlaylistTracksCache,
   saveAppleMusicPlaylists,
   saveAppleMusicPlaylistTracks,
   saveAppleMusicTrackCollection,
@@ -408,13 +409,6 @@ function getCatalogStorefront(instance: MusicKit.MusicKitInstance): string {
   );
 }
 
-function isAppleMusicCacheFresh(loadedAt: number | undefined): boolean {
-  return (
-    typeof loadedAt === "number" &&
-    Date.now() - loadedAt < APPLE_MUSIC_LIBRARY_STALE_AFTER_MS
-  );
-}
-
 export async function searchAppleMusicTracks(
   query: string,
   scope: AppleMusicSearchScope
@@ -477,7 +471,11 @@ export async function fetchAppleMusicRadioStations(
   const cached = await loadAppleMusicTrackCollection(
     RADIO_STATIONS_COLLECTION_KEY
   );
-  if (!options.force && cached) {
+  if (
+    !options.force &&
+    cached &&
+    isFreshByTtl(cached.loadedAt, APPLE_MUSIC_SYNC_TTL_MS.radio)
+  ) {
     return cached.tracks;
   }
 
@@ -660,7 +658,7 @@ export async function fetchAppleMusicRecentlyAddedTracks(
   if (
     !options.force &&
     cached?.tracks.length &&
-    isAppleMusicCacheFresh(cached.loadedAt)
+    isFreshByTtl(cached.loadedAt, APPLE_MUSIC_SYNC_TTL_MS.recentlyAdded)
   ) {
     return cached.tracks;
   }
@@ -737,7 +735,7 @@ export async function fetchAppleMusicFavoriteSongTracks(
   if (
     !options.force &&
     cached?.tracks.length &&
-    isAppleMusicCacheFresh(cached.loadedAt)
+    isFreshByTtl(cached.loadedAt, APPLE_MUSIC_SYNC_TTL_MS.favorites)
   ) {
     return cached.tracks;
   }
@@ -908,6 +906,22 @@ export const APPLE_MUSIC_PLAYLISTS_OPPORTUNISTIC_TTL_MS = 15 * 60 * 1000; // 15 
 export const APPLE_MUSIC_PLAYLIST_TRACKS_OPPORTUNISTIC_TTL_MS =
   60 * 60 * 1000; // 1h
 
+const APPLE_MUSIC_SYNC_TTL_MS = {
+  library: APPLE_MUSIC_LIBRARY_STALE_AFTER_MS,
+  playlists: APPLE_MUSIC_PLAYLISTS_OPPORTUNISTIC_TTL_MS,
+  playlistTracks: APPLE_MUSIC_PLAYLIST_TRACKS_OPPORTUNISTIC_TTL_MS,
+  recentlyAdded: APPLE_MUSIC_PLAYLIST_TRACKS_OPPORTUNISTIC_TTL_MS,
+  favorites: APPLE_MUSIC_PLAYLIST_TRACKS_OPPORTUNISTIC_TTL_MS,
+  radio: 6 * 60 * 60 * 1000,
+} as const;
+
+function isFreshByTtl(
+  loadedAt: number | null | undefined,
+  ttlMs: number
+): boolean {
+  return typeof loadedAt === "number" && Date.now() - loadedAt < ttlMs;
+}
+
 let inFlightPlaylistsRefresh: Promise<AppleMusicPlaylist[]> | null = null;
 
 /**
@@ -930,10 +944,9 @@ export async function refreshAppleMusicPlaylists(
 
   if (!options.force) {
     const loadedAt = store.appleMusicPlaylistsLoadedAt;
-    const ageMs = loadedAt ? Date.now() - loadedAt : Infinity;
     if (
       store.appleMusicPlaylists.length > 0 &&
-      ageMs < APPLE_MUSIC_PLAYLISTS_OPPORTUNISTIC_TTL_MS
+      isFreshByTtl(loadedAt, APPLE_MUSIC_SYNC_TTL_MS.playlists)
     ) {
       return store.appleMusicPlaylists;
     }
@@ -967,6 +980,7 @@ export async function refreshAppleMusicPlaylists(
       const loadedAt = Date.now();
       useIpodStore.getState().setAppleMusicPlaylists(playlists, loadedAt);
       void saveAppleMusicPlaylists({ playlists, loadedAt });
+      void pruneAppleMusicPlaylistTracksCache(playlists.map((p) => p.id));
       return playlists;
     } finally {
       inFlightPlaylistsRefresh = null;
@@ -1075,10 +1089,9 @@ export async function refreshAppleMusicRecentlyAdded(
 
   if (!options.force) {
     const loadedAt = store.appleMusicRecentlyAddedLoadedAt;
-    const ageMs = loadedAt ? Date.now() - loadedAt : Infinity;
     if (
       store.appleMusicRecentlyAddedTracks.length > 0 &&
-      ageMs < APPLE_MUSIC_PLAYLIST_TRACKS_OPPORTUNISTIC_TTL_MS
+      isFreshByTtl(loadedAt, APPLE_MUSIC_SYNC_TTL_MS.recentlyAdded)
     ) {
       return store.appleMusicRecentlyAddedTracks;
     }
@@ -1129,10 +1142,9 @@ export async function refreshAppleMusicFavorites(
 
   if (!options.force) {
     const loadedAt = store.appleMusicFavoriteTracksLoadedAt;
-    const ageMs = loadedAt ? Date.now() - loadedAt : Infinity;
     if (
       store.appleMusicFavoriteTracks.length > 0 &&
-      ageMs < APPLE_MUSIC_PLAYLIST_TRACKS_OPPORTUNISTIC_TTL_MS
+      isFreshByTtl(loadedAt, APPLE_MUSIC_SYNC_TTL_MS.favorites)
     ) {
       return store.appleMusicFavoriteTracks;
     }
@@ -1165,6 +1177,57 @@ export async function refreshAppleMusicFavorites(
   })();
 
   return inFlightFavoritesRefresh;
+}
+
+export type AppleMusicSyncResource =
+  | { kind: "library"; force?: boolean }
+  | { kind: "playlists"; force?: boolean; allowEmpty?: boolean }
+  | { kind: "playlistTracks"; playlistId: string; force?: boolean }
+  | { kind: "recentlyAdded"; force?: boolean }
+  | { kind: "favorites"; force?: boolean }
+  | { kind: "radio"; force?: boolean };
+
+type AppleMusicSyncResultByKind = {
+  library: number;
+  playlists: AppleMusicPlaylist[];
+  playlistTracks: Track[];
+  recentlyAdded: Track[];
+  favorites: Track[];
+  radio: Track[];
+};
+
+export async function syncAppleMusicResource<
+  K extends AppleMusicSyncResource["kind"],
+>(
+  resource: Extract<AppleMusicSyncResource, { kind: K }>
+): Promise<AppleMusicSyncResultByKind[K]> {
+  switch (resource.kind) {
+    case "library":
+      return fetchAppleMusicLibrary({
+        force: resource.force,
+      }) as Promise<AppleMusicSyncResultByKind[K]>;
+    case "playlists":
+      return refreshAppleMusicPlaylists({
+        force: resource.force,
+        allowEmpty: resource.allowEmpty,
+      }) as Promise<AppleMusicSyncResultByKind[K]>;
+    case "playlistTracks":
+      return fetchAppleMusicPlaylistTracks(resource.playlistId, {
+        force: resource.force,
+      }) as Promise<AppleMusicSyncResultByKind[K]>;
+    case "recentlyAdded":
+      return refreshAppleMusicRecentlyAdded({
+        force: resource.force,
+      }) as Promise<AppleMusicSyncResultByKind[K]>;
+    case "favorites":
+      return refreshAppleMusicFavorites({
+        force: resource.force,
+      }) as Promise<AppleMusicSyncResultByKind[K]>;
+    case "radio":
+      return fetchAppleMusicRadioStations({
+        force: resource.force,
+      }) as Promise<AppleMusicSyncResultByKind[K]>;
+  }
 }
 
 /**
@@ -1299,8 +1362,7 @@ export async function fetchAppleMusicPlaylistTracks(
     }
   }
 
-  const ageMs = loadedAt ? Date.now() - loadedAt : Infinity;
-  const isFresh = ageMs < APPLE_MUSIC_LIBRARY_STALE_AFTER_MS;
+  const isFresh = isFreshByTtl(loadedAt, APPLE_MUSIC_SYNC_TTL_MS.playlistTracks);
 
   if (!options.force && isFresh && cachedTracks && cachedTracks.length > 0) {
     return cachedTracks;
@@ -1687,8 +1749,6 @@ export function useAppleMusicLibrary({
   //      (hydration has had time to seed the in-memory store first).
   //   2. Re-running whenever the document becomes visible (fast path for
   //      "user came back to the tab").
-  //   3. Polling on a 15-min timer while the iPod is open as a backstop
-  //      for long-lived sessions.
   //
   // All paths are silent (no toast). The refresh helpers themselves
   // short-circuit when the cache is fresh enough, so this is essentially
@@ -1702,8 +1762,6 @@ export function useAppleMusicLibrary({
     let cancelled = false;
     let lastRunAt = 0;
     const MIN_INTERVAL_MS = 60 * 1000; // throttle visibility-driven calls
-    const POLL_INTERVAL_MS = 15 * 60 * 1000;
-
     const runOpportunisticRefresh = async () => {
       if (cancelled) return;
       if (typeof document !== "undefined" && document.hidden) return;
@@ -1741,10 +1799,6 @@ export function useAppleMusicLibrary({
       void runOpportunisticRefresh();
     }, 3000);
 
-    const interval = setInterval(() => {
-      void runOpportunisticRefresh();
-    }, POLL_INTERVAL_MS);
-
     const onVisibilityChange = () => {
       if (typeof document === "undefined" || document.hidden) return;
       void runOpportunisticRefresh();
@@ -1756,7 +1810,6 @@ export function useAppleMusicLibrary({
     return () => {
       cancelled = true;
       clearTimeout(initialTimeout);
-      clearInterval(interval);
       if (typeof document !== "undefined") {
         document.removeEventListener(
           "visibilitychange",

@@ -15,12 +15,8 @@ import { useCustomEventListener, useEventListener } from "@/hooks/useEventListen
 import { useLibraryUpdateChecker } from "./useLibraryUpdateChecker";
 import {
   useAppleMusicLibrary,
-  fetchAppleMusicPlaylistTracks,
-  refreshAppleMusicPlaylists,
-  refreshAppleMusicRecentlyAdded,
-  refreshAppleMusicFavorites,
+  syncAppleMusicResource,
   searchAppleMusicTracks,
-  fetchAppleMusicRadioStations,
   fetchAppleMusicGeniusTrack,
   addAppleMusicTrackToFavorites,
   cacheAppleMusicFavoriteSongTrack,
@@ -337,7 +333,7 @@ export function useIpodLogic({
 
   // Auto-load library after auth + when Apple Music is the active source.
   const { refresh: refreshAppleMusicLibrary } = useAppleMusicLibrary({
-    enabled: isAppleMusic,
+    enabled: enableMusicKit,
     isAuthorized: appleMusicAuthorized,
   });
 
@@ -923,8 +919,9 @@ export function useIpodLogic({
   const requestPlaylistTracksIfNeeded = useCallback((playlistId: string) => {
     // Lazy per-playlist sync: only fetch when this playlist has never
     // been loaded (in-memory or IndexedDB) or its cache is stale.
-    // `fetchAppleMusicPlaylistTracks` handles SWR + in-flight dedupe.
-    void fetchAppleMusicPlaylistTracks(playlistId).catch(
+    // `syncAppleMusicResource` routes through the playlist-track SWR fetcher
+    // and shares dedupe behavior with other Apple Music resources.
+    void syncAppleMusicResource({ kind: "playlistTracks", playlistId }).catch(
       (err) => {
         console.warn(
           `[apple music] failed to load playlist tracks for ${playlistId}`,
@@ -1063,7 +1060,10 @@ export function useIpodLogic({
       return;
     }
     try {
-      const tracks = await refreshAppleMusicRecentlyAdded({ force: true });
+      const tracks = await syncAppleMusicResource({
+        kind: "recentlyAdded",
+        force: true,
+      });
       mergeAppleMusicTracks(tracks);
     } catch (err) {
       // Only surface the toast when there's no cached content to fall
@@ -1096,7 +1096,10 @@ export function useIpodLogic({
       return;
     }
     try {
-      const tracks = await refreshAppleMusicFavorites({ force: true });
+      const tracks = await syncAppleMusicResource({
+        kind: "favorites",
+        force: true,
+      });
       mergeAppleMusicTracks(tracks);
     } catch (err) {
       const hasCached =
@@ -1128,7 +1131,11 @@ export function useIpodLogic({
     try {
       // Always revalidate when opening the Playlists menu so additions/
       // deletions on other devices appear promptly.
-      await refreshAppleMusicPlaylists({ force: true, allowEmpty: true });
+      await syncAppleMusicResource({
+        kind: "playlists",
+        force: true,
+        allowEmpty: true,
+      });
     } catch (err) {
       const hasCached = useIpodStore.getState().appleMusicPlaylists.length > 0;
       if (!hasCached) {
@@ -1159,7 +1166,9 @@ export function useIpodLogic({
     const hadCached = appleMusicRadioTracks.length > 0;
     setIsAppleMusicRadioLoading(true);
     try {
-      const stations = await fetchAppleMusicRadioStations();
+      const stations = await syncAppleMusicResource({
+        kind: "radio",
+      });
       setAppleMusicRadioTracks(stations);
       mergeAppleMusicTracks(stations);
     } catch (err) {
