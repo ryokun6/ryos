@@ -930,6 +930,21 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                               !block.isTerminated;
                             const isSpeakingBlock =
                               currentSpokenBlockId === blockId;
+                            // Inline styles for the highlight — the
+                            // matching CSS exists too, but we set these
+                            // here as well to bypass any Streamdown /
+                            // Tailwind preflight cascade surprises.
+                            const blockStyle = {
+                              borderRadius: 4,
+                              transition:
+                                "background-color 180ms ease, box-shadow 180ms ease",
+                              backgroundColor: isSpeakingBlock
+                                ? "rgba(250, 204, 21, 0.65)"
+                                : "transparent",
+                              boxShadow: isSpeakingBlock
+                                ? "0 0 0 2px rgba(250, 204, 21, 0.55)"
+                                : "none",
+                            } as const;
                             return (
                               <div
                                 key={blockId}
@@ -939,6 +954,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                                     ? " ryos-chat-tts-block-is-speaking"
                                     : ""
                                 }`}
+                                style={blockStyle}
                               >
                                 <Streamdown
                                   className={`ryos-chat-streamdown ${

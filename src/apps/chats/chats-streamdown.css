@@ -10,17 +10,21 @@
  */
 
 .ryos-chat-tts-block {
+  /* Outer-only border-radius and a slight inset so the highlight has a
+     visible silhouette inside the bubble. Padding stays at 0 so layout
+     matches the unwrapped case. */
   border-radius: 4px;
-  /* margin/padding kept at 0 so layout matches the unwrapped case; the
-     highlight rides directly on the existing bubble background. */
   transition:
     background-color 180ms ease,
     box-shadow 180ms ease;
 }
 
-.ryos-chat-tts-block-is-speaking {
-  background-color: rgba(250, 204, 21, 0.45); /* tailwind yellow-400 @ 45% */
-  box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.45);
+/* Specificity bumped via the .ryos-chat-tts-block parent and !important so
+   the highlight reliably wins over any Streamdown / Tailwind preflight
+   resets that would otherwise leave the computed background transparent. */
+.ryos-chat-tts-block.ryos-chat-tts-block-is-speaking {
+  background-color: rgba(250, 204, 21, 0.65) !important; /* yellow-400 @ 65% */
+  box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.55);
 }
 
 @media (prefers-reduced-motion: reduce) {
