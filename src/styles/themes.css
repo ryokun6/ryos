@@ -2712,7 +2712,6 @@
 
 :root[data-os-theme="macosx"] .chat-bubble.ryos-chat-tts-bubble-active {
   overflow: visible;
-  background-color: #fde047 !important;
   color: #111827 !important;
   outline: 2px solid rgba(255, 218, 48, 0.95);
   outline-offset: 1px;
@@ -2810,6 +2809,10 @@
 }
 :root[data-os-theme="macosx"] .chat-bubble.bg-gray-100 {
   background-color: #e5e7eb !important; /* gray-200 */
+}
+
+:root[data-os-theme="macosx"] .chat-bubble.ryos-chat-tts-bubble-active {
+  background-color: #fde047 !important;
 }
 
 :root[data-os-theme="macosx"] .macosx-link-preview.chat-bubble:before {
