@@ -2,7 +2,8 @@ import { UIMessage as VercelMessage } from "@ai-sdk/react";
 import { WarningCircle, ChatCircle, Copy, Check, CaretDown, Trash, SpeakerHigh, Pause, PaperPlaneRight } from "@phosphor-icons/react";
 import { createCodePlugin } from "@streamdown/code";
 import { useEffect, useRef, useState, memo, useCallback, type CSSProperties } from "react";
-import { Streamdown, type AllowedTags, type Components as StreamdownComponents } from "streamdown";
+import { Streamdown, type Components as StreamdownComponents } from "streamdown";
+import type { PluggableList } from "unified";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
@@ -35,7 +36,7 @@ import { abortableFetch } from "@/utils/abortableFetch";
 import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
 import { formatToolName } from "@/lib/toolInvocationDisplay";
 import { segmentChatMarkdownText } from "@/lib/chatMarkdown";
-import { wrapMarkdownRangeWithSpeechMark } from "../utils/speechHighlightMarkdown";
+import { buildRyosAssistTtsStreamdownRehypePlugins } from "../utils/speechHighlightRehype";
 import {
   getAssistantVisibleText,
   splitAssistantVisibleIntoLineSpeechSegments,
@@ -208,10 +209,6 @@ const chatStreamdownComponents: StreamdownComponents = {
 
 const STREAMDOWN_DISALLOWED_ELEMENTS = ["img"] as const;
 
-/** Permit sanitized <mark> when wrapping the clause currently spoken by TTS */
-const CHAT_STREAMDOWN_TTS_ALLOWED_TAGS = {
-  mark: ["class"],
-} satisfies AllowedTags;
 const CHAT_STREAMDOWN_SHIKI_THEME: ["github-light", "github-dark"] = [
   "github-light",
   "github-dark",
@@ -902,8 +899,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                         : partText;
                       const partDisplayContent = decodeHtmlEntities(rawPartContent);
 
-                      let streamMarkdownForSd = partDisplayContent;
-                      let injectedSpeechMark = false;
+                      let assistTtsRehypePlugins: PluggableList | undefined;
                       if (
                         highlightSegment &&
                         message.role === "assistant" &&
@@ -915,12 +911,14 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                         const lo = Math.max(highlightSegment.start, gs);
                         const hi = Math.min(highlightSegment.end, ge);
                         if (lo < hi) {
-                          streamMarkdownForSd = wrapMarkdownRangeWithSpeechMark(
-                            partDisplayContent,
-                            lo - gs,
-                            hi - gs,
-                          );
-                          injectedSpeechMark = true;
+                          const slice = partDisplayContent.slice(lo - gs, hi - gs);
+                          if (!slice.includes("```")) {
+                            assistTtsRehypePlugins =
+                              buildRyosAssistTtsStreamdownRehypePlugins(
+                                lo - gs,
+                                hi - gs,
+                              );
+                          }
                         }
                       }
 
@@ -949,19 +947,15 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                               lineNumbers={false}
                               shikiTheme={CHAT_STREAMDOWN_SHIKI_THEME}
                               plugins={CHAT_STREAMDOWN_PLUGINS}
-                              skipHtml={!injectedSpeechMark}
-                              allowedTags={
-                                injectedSpeechMark
-                                  ? CHAT_STREAMDOWN_TTS_ALLOWED_TAGS
-                                  : undefined
-                              }
+                              skipHtml={true}
+                              rehypePlugins={assistTtsRehypePlugins}
                               unwrapDisallowed
                               mode={isStreamingMessage ? "streaming" : "static"}
                               animated={CHAT_STREAMDOWN_ANIMATED}
                               isAnimating={isStreamingMessage}
                               parseIncompleteMarkdown={isStreamingMessage}
                             >
-                              {streamMarkdownForSd}
+                              {partDisplayContent}
                             </Streamdown>
                           )}
                         </div>

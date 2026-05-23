@@ -1,6 +1,6 @@
 @import "streamdown/styles.css";
 
-/* clause currently spoken by auto TTS (see speechHighlightMarkdown + Streamdown allowedTags.mark) */
+/* clause currently spoken by auto TTS (see speechHighlightRehype.ts + Streamdown components.mark) */
 .ryos-chat-tts-mark {
   background-color: rgba(251, 191, 36, 0.42);
   box-decoration-break: clone;
