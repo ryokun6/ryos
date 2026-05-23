@@ -2033,12 +2033,8 @@ export function useAiChat(onPromptSetUsername?: () => void) {
           };
           highlightQueueRef.current.push(seg);
 
-          if (highlightQueueRef.current.length === 1) {
-            setTimeout(() => {
-              if (highlightQueueRef.current[0] === seg) {
-                setHighlightSegmentRef.current(seg);
-              }
-            }, 80);
+          if (highlightQueueRef.current[0] === seg) {
+            setHighlightSegmentRef.current(seg);
           }
 
           speak(cleaned, () => {
@@ -2247,8 +2243,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     // the same finalized line windows.
     speechProgressRef.current[lastMsg.id] = nextIndex;
 
-    const highlightTimeoutIds: ReturnType<typeof setTimeout>[] = [];
-
     for (const line of lines) {
       const rawChunk = content.slice(line.rawStart, line.rawEnd);
       const cleaned = cleanTextForSpeech(rawChunk.trimEnd());
@@ -2261,13 +2255,10 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       };
       highlightQueueRef.current.push(seg);
 
-      if (highlightQueueRef.current.length === 1) {
-        const highlightTimeoutId = setTimeout(() => {
-          if (highlightQueueRef.current[0] === seg) {
-            setHighlightSegment(seg);
-          }
-        }, 80);
-        highlightTimeoutIds.push(highlightTimeoutId);
+      // Show highlight immediately for the queued head. A deferred timeout was unreliable
+      // because this effect re-runs frequently during streaming and cleanup cleared it.
+      if (highlightQueueRef.current[0] === seg) {
+        setHighlightSegment(seg);
       }
 
       speak(cleaned, () => {
@@ -2275,10 +2266,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         setHighlightSegment(highlightQueueRef.current[0] || null);
       });
     }
-
-    return () => {
-      highlightTimeoutIds.forEach((timeoutId) => clearTimeout(timeoutId));
-    };
   }, [currentSdkMessages, isLoading, speechEnabled, speak]);
 
   // Clear rate limit error when username is set
