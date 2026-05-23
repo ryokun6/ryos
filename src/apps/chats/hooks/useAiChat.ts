@@ -545,7 +545,7 @@ const getSystemState = () => {
             id: currentTrack.id,
             title: currentTrack.title,
             artist: currentTrack.artist,
-          source: currentTrack.source,
+            source: currentTrack.source,
           }
         : null,
       librarySource: ipodStore.librarySource,
@@ -966,7 +966,10 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   const score = hasQuery
                     ? fields.reduce(
                         (best, field) =>
-                          Math.max(best, computeMatchScore(field, normalizedQuery, queryTokens)),
+                          Math.max(
+                            best,
+                            computeMatchScore(field, normalizedQuery, queryTokens)
+                          ),
                         0
                       )
                     : 1;
@@ -978,13 +981,15 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 const matchingTracks = scoredTracks
                   .filter(({ score }) => score >= scoreThreshold)
                   .sort((a, b) => (hasQuery ? b.score - a.score : 0));
-                const library = matchingTracks.slice(0, maxResults).map(({ track }) => ({
-                  path: `/Music/${track.id}`,
-                  id: track.id,
-                  title: track.title,
-                  artist: track.artist,
-                  source: track.source ?? ipodStore.librarySource,
-                }));
+                const library = matchingTracks
+                  .slice(0, maxResults)
+                  .map(({ track }) => ({
+                    path: `/Music/${track.id}`,
+                    id: track.id,
+                    title: track.title,
+                    artist: track.artist,
+                    source: track.source ?? ipodStore.librarySource,
+                  }));
                 const hiddenCount = Math.max(matchingTracks.length - library.length, 0);
                 const libraryName =
                   ipodStore.librarySource === "appleMusic" ? "Apple Music" : "iPod";
