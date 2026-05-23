@@ -845,6 +845,12 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     box-shadow: 0 0 0 1px rgba(128, 94, 0, 0.2);
   }
 
+  .ryos-chat-tts-bubble-active {
+    box-shadow:
+      0 0 0 2px rgba(255, 218, 48, 0.95),
+      0 0 10px rgba(255, 218, 48, 0.45);
+  }
+
   /* Draggable area styles - prevents browser gestures on touch devices */
   .draggable-area {
     touch-action: none !important;

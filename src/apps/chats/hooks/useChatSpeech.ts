@@ -4,6 +4,8 @@ import { useTtsQueue } from "@/hooks/useTtsQueue";
 import { cleanTextForSpeech } from "../utils/textForSpeech";
 import { getAssistantVisibleText } from "../utils/messageText";
 
+const HIGHLIGHT_CLEAR_DELAY_MS = 2000;
+
 export type ChatHighlightSegment = {
   messageId: string;
   start: number;
@@ -95,9 +97,11 @@ export function useChatSpeech({
       }
 
       speak(cleaned, () => {
-        highlightQueueRef.current.shift();
-        setHighlightSegment(highlightQueueRef.current[0] || null);
-        onEnd?.();
+        setTimeout(() => {
+          highlightQueueRef.current.shift();
+          setHighlightSegment(highlightQueueRef.current[0] || null);
+          onEnd?.();
+        }, HIGHLIGHT_CLEAR_DELAY_MS);
       });
 
       return true;

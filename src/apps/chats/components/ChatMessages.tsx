@@ -519,6 +519,11 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
   const displayText = getDisplayTextPart(messageText);
   const hasAquariumToken = displayText.includes("[[AQUARIUM]]");
   const displayContent = displayText.replace(/\[\[AQUARIUM\]\]/g, "").trim();
+  const isTtsHighlighted = matchesHighlightMessage(
+    highlightSegment,
+    message,
+    messageKey
+  );
   let assistantTextOffset = 0;
 
   let hasAquarium = false;
@@ -907,6 +912,8 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                 (message.role === "user"
                   ? "bg-yellow-100 text-black"
                   : "bg-blue-100 text-black")
+          } ${
+            isTtsHighlighted ? "ryos-chat-tts-bubble-active" : ""
           } w-fit max-w-[90%] min-h-[12px] rounded leading-snug font-geneva-12 break-words select-text`}
           style={getChatMessageStyle(fontSize)}
         >

@@ -46,6 +46,7 @@ describe("chat speech wiring", () => {
       source.match(/stopSpeech=\{stopSpeech\}/g)?.length
     ).toBeGreaterThanOrEqual(2);
     expect(source.includes("messageId: message.id || messageKey")).toBe(true);
+    expect(source.includes("ryos-chat-tts-bubble-active")).toBe(true);
   });
 
   test("useAiChat delegates speech and highlight orchestration to useChatSpeech", () => {
