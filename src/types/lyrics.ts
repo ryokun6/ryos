@@ -73,6 +73,20 @@ export enum DisplayMode {
   Water = "water",
 }
 
+const DISPLAY_MODE_VALUE_SET = new Set<string>(
+  Object.values(DisplayMode as unknown as Record<string, string>)
+);
+
+/**
+ * Validates persisted/hand-off display modes so UI cycling and menus never
+ * desync due to stale string values removed from DisplayMode enum.
+ */
+export function coerceDisplayMode(mode: unknown): DisplayMode {
+  return typeof mode === "string" && DISPLAY_MODE_VALUE_SET.has(mode)
+    ? (mode as DisplayMode)
+    : DisplayMode.Video;
+}
+
 export enum KoreanDisplay {
   Original = "original",
   Romanized = "romanized",

@@ -7,6 +7,7 @@ import {
   LyricsFont,
   RomanizationSettings,
   DisplayMode,
+  coerceDisplayMode,
   areRomanizationSettingsEqual,
 } from "@/types/lyrics";
 import { LyricLine } from "@/types/lyrics";
@@ -1101,7 +1102,8 @@ export const useIpodStore = create<IpodState>()(
         }
         set((state) => ({ showVideo: !state.showVideo }));
       },
-      setDisplayMode: (mode) => set({ displayMode: mode }),
+      setDisplayMode: (mode) =>
+        set({ displayMode: coerceDisplayMode(mode) }),
       toggleBacklight: () =>
         set((state) => ({ backlightOn: !state.backlightOn })),
       toggleLcdFilter: () =>
@@ -2431,7 +2433,7 @@ export const useIpodStore = create<IpodState>()(
             lyricsFont: shouldUpgradeLegacyDefaultLyricsFont
               ? LyricsFont.SansSerif
               : state.lyricsFont ?? LyricsFont.SansSerif,
-            displayMode: state.displayMode ?? DisplayMode.Video,
+            displayMode: coerceDisplayMode(state.displayMode ?? DisplayMode.Video),
             koreanDisplay: state.koreanDisplay ?? KoreanDisplay.Original,
             japaneseFurigana: state.japaneseFurigana ?? JapaneseFurigana.On,
             romanization,
@@ -2456,7 +2458,7 @@ export const useIpodStore = create<IpodState>()(
           showLyrics: state.showLyrics,
           lyricsAlignment: state.lyricsAlignment,
           lyricsFont: state.lyricsFont,
-          displayMode: state.displayMode ?? DisplayMode.Video,
+          displayMode: coerceDisplayMode(state.displayMode ?? DisplayMode.Video),
           koreanDisplay: state.koreanDisplay,
           japaneseFurigana: state.japaneseFurigana,
           romanization: state.romanization ?? initialIpodData.romanization,
@@ -2479,11 +2481,17 @@ export const useIpodStore = create<IpodState>()(
         return (state, error) => {
           if (error) {
             console.error("Error rehydrating iPod store:", error);
-          } else if (state && state.libraryState === "uninitialized") {
-            // Only auto-initialize if library state is uninitialized
-            Promise.resolve(state.initializeLibrary()).catch((err) =>
-              console.error("Initialization failed on rehydrate", err)
-            );
+          } else if (state) {
+            const corrected = coerceDisplayMode(state.displayMode);
+            if (corrected !== state.displayMode) {
+              useIpodStore.setState({ displayMode: corrected });
+            }
+            if (state.libraryState === "uninitialized") {
+              // Only auto-initialize if library state is uninitialized
+              Promise.resolve(state.initializeLibrary()).catch((err) =>
+                console.error("Initialization failed on rehydrate", err)
+              );
+            }
           }
         };
       },
