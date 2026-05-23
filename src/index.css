@@ -1425,6 +1425,13 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   overscroll-behavior-x: none;
 }
 
+/* Modern LCD backlight-off: dims the full screen (menus, now playing,
+ * Cover Flow inline) while keeping the same white surface — matches the
+ * classic skin's timed backlight-off behavior without swapping backgrounds. */
+.ipod-modern-screen.ipod-modern-backlight-off {
+  filter: brightness(0.5) contrast(0.9);
+}
+
 /* iPod-classic-js Header (sampled from app/components/Header/index.tsx):
  *   background: linear-gradient(180deg, #feffff 0%, #b1b6b9 100%);
  *   reference border-bottom was #7995a3 (slightly blue); we use a neutral gray.

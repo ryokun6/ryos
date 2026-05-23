@@ -619,7 +619,10 @@ export const BrickGame = function BrickGame(
             // against the contrasting top while the paddle sits on a
             // calm light wash that doesn't compete with the bar's
             // graphite gloss.
-            "ipod-modern-screen bg-gradient-to-b from-[#5d97c4] via-[#a4cbe6] to-[#dcecf6]"
+            cn(
+              "ipod-modern-screen bg-gradient-to-b from-[#5d97c4] via-[#a4cbe6] to-[#dcecf6]",
+              !backlightOn && "ipod-modern-backlight-off"
+            )
           : backlightOn
           ? "bg-[#c5e0f5] bg-gradient-to-b from-[#d1e8fa] to-[#e0f0fc]"
           : "bg-[#8a9da9] contrast-65 saturate-50",

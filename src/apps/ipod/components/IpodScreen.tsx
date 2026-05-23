@@ -1453,7 +1453,10 @@ export function IpodScreen({
         isModernUi
           ? // White table surface; avoid neutral chassis fills—they read as
             // gray stripes under the virtualized list and in empty space.
-            "ipod-modern-screen bg-white"
+            cn(
+              "ipod-modern-screen bg-white",
+              !backlightOn && "ipod-modern-backlight-off"
+            )
           : backlightOn
           ? "bg-[#c5e0f5] bg-gradient-to-b from-[#d1e8fa] to-[#e0f0fc]"
           : "bg-[#8a9da9] contrast-65 saturate-50",
