@@ -39,6 +39,7 @@ import {
 import i18n from "@/lib/i18n";
 import { useTranslation } from "react-i18next";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { resumeAudioOutputFromUserGesture } from "@/lib/audioContext";
 import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
 import { tryInvokeParentStartGrindPlanning } from "@/utils/parentGrindPlanning";
 import { showAiMessageNotification } from "@/utils/chatNotificationDisplay";
@@ -740,6 +741,8 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   const { speak, stop: stopTts, isSpeaking } = useTtsQueue();
 
   const flushAutoSpeechPipelineForNewUserTurn = useCallback(() => {
+    // Safari/WebKit only unlock audio in the gesture turn that starts playback.
+    resumeAudioOutputFromUserGesture();
     stopTts();
     highlightQueueRef.current = [];
     setHighlightSegment(null);
@@ -2652,10 +2655,17 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     [username, saveFile, launchApp],
   );
 
-  // Stop streaming only — leave queued/playing TTS so partial replies still read aloud.
   const stop = useCallback(() => {
     sdkStop();
-  }, [sdkStop]);
+    stopTts();
+    highlightQueueRef.current = [];
+    setHighlightSegment(null);
+  }, [sdkStop, stopTts]);
+
+  const reloadWithAudioWarm = useCallback(() => {
+    resumeAudioOutputFromUserGesture();
+    regenerate();
+  }, [regenerate]);
 
   return {
     // AI Chat State & Actions
@@ -2665,7 +2675,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     handleSubmit,
     handleSubmitMessage,
     isLoading,
-    reload: regenerate, // Map v5 regenerate to v4 reload
+    reload: reloadWithAudioWarm, // Regenerate — warm AudioContext in same gesture as Retry
     error,
     stop,
     append: sendMessage, // Map v5 sendMessage to v4 append (for compatibility)

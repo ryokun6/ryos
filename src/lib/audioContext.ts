@@ -214,27 +214,24 @@ const isSafari = typeof navigator !== "undefined" &&
 const GESTURE_EVENTS = ["touchstart", "touchend", "click", "keydown"] as const;
 
 /**
- * Handler that attempts to resume AudioContext during a user gesture.
- * iOS Safari requires resume() to be called directly within a gesture handler.
- * This handler stays attached and will re-unlock audio after returning from background.
+ * Synchronously start audio output from inside a trusted user gesture (tap, click, key).
+ * Safari treats `AudioContext.resume()` as a no-op unless it is invoked in the same task
+ * as that gesture — async TTS (fetch + decode after Send) misses that window unless we unlock
+ * here. Safe to call when already running; cheap on permissive desktops.
  */
-const unlockAudioHandler = () => {
-  // Ensure we have a context to unlock. Creating/resuming inside the gesture
-  // handler is critical for iOS Safari reliability.
+export function resumeAudioOutputFromUserGesture(): void {
+  if (typeof window === "undefined") return;
+
   let ctx = getAudioContext();
 
-  // If context is closed, we need a new one (create it inside this gesture)
   if (ctx.state === "closed") {
     audioContext = null;
     ctx = getAudioContext();
   }
 
-  // Try to resume - iOS Safari requires this to be invoked within the gesture handler.
-  // We also do this when `needsGestureReunlock` is set because Safari can get into a
-  // "looks running but doesn't output" situation after backgrounding.
   const shouldAttemptResume = ctx.state !== "running" || needsGestureReunlock;
   if (shouldAttemptResume) {
-    ctx
+    void ctx
       .resume()
       .then(() => {
         if (ctx.state === "running") {
@@ -247,10 +244,6 @@ const unlockAudioHandler = () => {
       });
   }
 
-  // Also try playing a silent buffer as a fallback for older iOS versions
-  // This technique works on iOS 6-8 where resume() alone may not work
-  // Additionally, after backgrounding we may need to "kick" audio output again
-  // even if the context reports "running".
   if (shouldAttemptResume) {
     try {
       const buffer = ctx.createBuffer(1, 1, 22050);
@@ -261,9 +254,13 @@ const unlockAudioHandler = () => {
       source.stop(0);
       needsGestureReunlock = false;
     } catch {
-      // Ignore errors - this is just a fallback
+      // Ignore errors - best-effort fallback
     }
   }
+}
+
+const unlockAudioHandler = () => {
+  resumeAudioOutputFromUserGesture();
 };
 
 /**

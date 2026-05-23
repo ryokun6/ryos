@@ -1,6 +1,10 @@
 import { useRef, useEffect, useCallback, useReducer } from "react";
 import { useLatestRef } from "@/hooks/useLatestRef";
-import { getAudioContext, resumeAudioContext } from "@/lib/audioContext";
+import {
+  getAudioContext,
+  resumeAudioContext,
+  resumeAudioOutputFromUserGesture,
+} from "@/lib/audioContext";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useKaraokeStore } from "@/stores/useKaraokeStore";
@@ -223,6 +227,8 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
   const speak = useCallback(
     (text: string, onEnd?: () => void) => {
       if (!text || !text.trim()) return;
+
+      resumeAudioOutputFromUserGesture();
 
       // Check if offline and show error
       if (checkOfflineAndShowError("Text-to-speech requires an internet connection")) {
