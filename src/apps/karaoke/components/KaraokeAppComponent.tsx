@@ -196,15 +196,20 @@ export function KaraokeAppComponent({
   // freshly-allocated array on every parent render (this component re-renders
   // on every playback tick because elapsedTime is a hook return value).
   const displayModeOptions = useMemo(
-    () => [
-      { value: DisplayMode.Video, label: t("apps.ipod.menu.displayVideo") },
-      { value: DisplayMode.Mesh, label: t("apps.ipod.menu.displayGradient") },
-      { value: DisplayMode.Water, label: t("apps.ipod.menu.displayWater") },
-      { value: DisplayMode.Shader, label: t("apps.ipod.menu.displayShader") },
-      { value: DisplayMode.Landscapes, label: t("apps.ipod.menu.displayLandscapes") },
-      { value: DisplayMode.Cover, label: t("apps.ipod.menu.displayCover") },
-    ],
-    [t]
+    () => {
+      const all = [
+        { value: DisplayMode.Video, label: t("apps.ipod.menu.displayVideo") },
+        { value: DisplayMode.Mesh, label: t("apps.ipod.menu.displayGradient") },
+        { value: DisplayMode.Water, label: t("apps.ipod.menu.displayWater") },
+        { value: DisplayMode.Shader, label: t("apps.ipod.menu.displayShader") },
+        { value: DisplayMode.Landscapes, label: t("apps.ipod.menu.displayLandscapes") },
+        { value: DisplayMode.Cover, label: t("apps.ipod.menu.displayCover") },
+      ];
+      // Remote listeners have no embedded video/shaders — display is forced to cover-only.
+      if (isListenSessionRemoteOnly) return [];
+      return all;
+    },
+    [isListenSessionRemoteOnly, t]
   );
 
   const handleDisplayModeSelect = useCallback(
@@ -313,6 +318,7 @@ export function KaraokeAppComponent({
       currentIndex={currentIndex}
       onToggleCoverFlow={handleToggleCoverFlow}
       onStartListenSession={handleStartListenSession}
+      listenSessionRemoteOnly={isListenSessionRemoteOnly}
       onJoinListenSession={() => setIsJoinListenDialogOpen(true)}
       onShareListenSession={() => setIsListenInviteOpen(true)}
       onLeaveListenSession={handleLeaveListenSession}
@@ -735,9 +741,9 @@ export function KaraokeAppComponent({
               onNext={handleNext}
               isShuffled={isShuffled}
               onToggleShuffle={toggleShuffle}
-              displayMode={displayMode}
+              displayMode={displayModeOptions.length > 0 ? effectiveDisplayMode : undefined}
               onDisplayModeSelect={handleDisplayModeSelect}
-              displayModeOptions={displayModeOptions}
+              displayModeOptions={displayModeOptions.length > 0 ? displayModeOptions : undefined}
               onSyncMode={() => setIsSyncModeOpen((prev) => !prev)}
               currentAlignment={lyricsAlignment}
               onAlignmentCycle={cycleAlignment}
@@ -884,9 +890,9 @@ export function KaraokeAppComponent({
           onRomanizationChange={setRomanization}
           onSyncMode={() => setIsSyncModeOpen((prev) => !prev)}
           isSyncModeOpen={isSyncModeOpen}
-          displayMode={displayMode}
+          displayMode={displayModeOptions.length > 0 ? effectiveDisplayMode : undefined}
           onDisplayModeSelect={handleDisplayModeSelect}
-          displayModeOptions={displayModeOptions}
+          displayModeOptions={displayModeOptions.length > 0 ? displayModeOptions : undefined}
           syncModeContent={
             <KaraokeSyncModeFullscreenPanel
               isSyncModeOpen={isSyncModeOpen}

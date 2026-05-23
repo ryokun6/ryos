@@ -12,7 +12,7 @@ import {
   useAppStoreShallow,
 } from "@/stores/helpers";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
-import { LyricsAlignment, LyricsFont, DisplayMode } from "@/types/lyrics";
+import { LyricsAlignment, LyricsFont, DisplayMode, coerceDisplayMode } from "@/types/lyrics";
 import { useOffline } from "@/hooks/useOffline";
 import { useListenSync } from "@/hooks/useListenSync";
 import { TRANSLATION_LANGUAGES, getYouTubeVideoId, formatKugouImageUrl } from "@/apps/ipod/constants";
@@ -74,7 +74,7 @@ export function useKaraokeLogic({
       japaneseFurigana: s.japaneseFurigana,
       romanization: s.romanization,
       lyricsTranslationLanguage: s.lyricsTranslationLanguage,
-      displayMode: s.displayMode ?? DisplayMode.Video,
+      displayMode: coerceDisplayMode(s.displayMode ?? DisplayMode.Video),
     }))
   );
 

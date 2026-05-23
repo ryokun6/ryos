@@ -21,7 +21,7 @@ import { useIpodStoreShallow } from "@/stores/helpers";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { toast } from "sonner";
-import { LyricsAlignment, LyricsFont, DisplayMode } from "@/types/lyrics";
+import { LyricsAlignment, LyricsFont, DisplayMode, coerceDisplayMode } from "@/types/lyrics";
 import { Track } from "@/stores/useIpodStore";
 
 interface KaraokeMenuBarProps {
@@ -63,6 +63,8 @@ interface KaraokeMenuBarProps {
   // Tracks
   tracks: Track[];
   currentIndex: number;
+  /** Listen session remote viewers — display is locked to artwork only */
+  listenSessionRemoteOnly?: boolean;
 }
 
 export function KaraokeMenuBar({
@@ -98,6 +100,7 @@ export function KaraokeMenuBar({
   onToggleCoverFlow,
   tracks,
   currentIndex,
+  listenSessionRemoteOnly = false,
 }: KaraokeMenuBarProps) {
   const { t } = useTranslation();
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
@@ -131,7 +134,7 @@ export function KaraokeMenuBar({
     lyricsFont: s.lyricsFont ?? LyricsFont.SansSerif,
     romanization: s.romanization,
     lyricsTranslationLanguage: s.lyricsTranslationLanguage,
-    displayMode: s.displayMode ?? DisplayMode.Video,
+    displayMode: coerceDisplayMode(s.displayMode ?? DisplayMode.Video),
     setLyricsAlignment: s.setLyricsAlignment,
     setLyricsFont: s.setLyricsFont,
     setRomanization: s.setRomanization,
@@ -142,6 +145,11 @@ export function KaraokeMenuBar({
     importLibrary: s.importLibrary,
     exportLibrary: s.exportLibrary,
   }));
+
+  /** Must match karaoke window rendering (Forced cover when remotely listening without local video). */
+  const menuBarDisplayMode = listenSessionRemoteOnly
+    ? DisplayMode.Cover
+    : displayMode;
 
   const translationLanguages = [
     { label: t("apps.ipod.translationLanguages.original"), code: null },
@@ -586,55 +594,61 @@ export function KaraokeMenuBar({
             </MenubarSubTrigger>
             <MenubarSubContent className="px-0">
               <MenubarCheckboxItem
-                checked={displayMode === DisplayMode.Video}
+                checked={menuBarDisplayMode === DisplayMode.Video}
                 onCheckedChange={(checked) => {
                   if (checked) setDisplayMode(DisplayMode.Video);
                 }}
+                disabled={listenSessionRemoteOnly}
                 className="text-md h-6 pr-3"
               >
                 {t("apps.ipod.menu.displayVideo")}
               </MenubarCheckboxItem>
               <MenubarCheckboxItem
-                checked={displayMode === DisplayMode.Mesh}
+                checked={menuBarDisplayMode === DisplayMode.Mesh}
                 onCheckedChange={(checked) => {
                   if (checked) setDisplayMode(DisplayMode.Mesh);
                 }}
+                disabled={listenSessionRemoteOnly}
                 className="text-md h-6 pr-3"
               >
                 {t("apps.ipod.menu.displayGradient")}
               </MenubarCheckboxItem>
               <MenubarCheckboxItem
-                checked={displayMode === DisplayMode.Water}
+                checked={menuBarDisplayMode === DisplayMode.Water}
                 onCheckedChange={(checked) => {
                   if (checked) setDisplayMode(DisplayMode.Water);
                 }}
+                disabled={listenSessionRemoteOnly}
                 className="text-md h-6 pr-3"
               >
                 {t("apps.ipod.menu.displayWater")}
               </MenubarCheckboxItem>
               <MenubarCheckboxItem
-                checked={displayMode === DisplayMode.Shader}
+                checked={menuBarDisplayMode === DisplayMode.Shader}
                 onCheckedChange={(checked) => {
                   if (checked) setDisplayMode(DisplayMode.Shader);
                 }}
+                disabled={listenSessionRemoteOnly}
                 className="text-md h-6 pr-3"
               >
                 {t("apps.ipod.menu.displayShader")}
               </MenubarCheckboxItem>
               <MenubarCheckboxItem
-                checked={displayMode === DisplayMode.Landscapes}
+                checked={menuBarDisplayMode === DisplayMode.Landscapes}
                 onCheckedChange={(checked) => {
                   if (checked) setDisplayMode(DisplayMode.Landscapes);
                 }}
+                disabled={listenSessionRemoteOnly}
                 className="text-md h-6 pr-3"
               >
                 {t("apps.ipod.menu.displayLandscapes")}
               </MenubarCheckboxItem>
               <MenubarCheckboxItem
-                checked={displayMode === DisplayMode.Cover}
+                checked={menuBarDisplayMode === DisplayMode.Cover}
                 onCheckedChange={(checked) => {
                   if (checked) setDisplayMode(DisplayMode.Cover);
                 }}
+                disabled={listenSessionRemoteOnly}
                 className="text-md h-6 pr-3"
               >
                 {t("apps.ipod.menu.displayCover")}

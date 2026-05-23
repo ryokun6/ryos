@@ -322,9 +322,12 @@ export function FullscreenPlayerControls({
 
         {/* Display mode (Karaoke) - cycle toggle, icon only */}
         {displayMode !== undefined && onDisplayModeSelect && displayModeOptions && displayModeOptions.length > 0 && (() => {
-          const currentOpt = displayModeOptions.find((o) => o.value === displayMode) ?? displayModeOptions[0];
-          const currentIndex = displayModeOptions.findIndex((o) => o.value === displayMode);
-          const nextIndex = ((currentIndex >= 0 ? currentIndex : 0) + 1) % displayModeOptions.length;
+          const foundIndex = displayModeOptions.findIndex((o) => o.value === displayMode);
+          // If the persisted mode isn't in this option list (filtered sets, stale values),
+          // treat cycle index as the first row so advancing always applies a defined mode.
+          const currentIndex = foundIndex >= 0 ? foundIndex : 0;
+          const currentOpt = displayModeOptions[currentIndex];
+          const nextIndex = (currentIndex + 1) % displayModeOptions.length;
           const nextMode = displayModeOptions[nextIndex]!;
           return (
             <button
