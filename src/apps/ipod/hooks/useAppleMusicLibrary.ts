@@ -881,17 +881,37 @@ async function fetchAppleMusicPlaylistsList(): Promise<AppleMusicPlaylist[]> {
 
   const aggregated: AppleMusicPlaylist[] = [];
   let offset = 0;
+  let triedWithoutTrackInclude = false;
   for (let page = 0; page < MAX_PAGES; page++) {
-    const response = await instance.api.music<LibraryPlaylistsResponse>(
-      "/v1/me/library/playlists",
-      {
-        limit: PAGE_SIZE,
-        offset,
-        // Track totals without loading every song (for playlist row subtitles).
-        include: "tracks",
-        "limit[tracks]": 0,
+    let response: { data: LibraryPlaylistsResponse };
+    try {
+      response = await instance.api.music<LibraryPlaylistsResponse>(
+        "/v1/me/library/playlists",
+        {
+          limit: PAGE_SIZE,
+          offset,
+          // Track totals without loading every song (for playlist row subtitles).
+          include: "tracks",
+          "limit[tracks]": 0,
+        }
+      );
+    } catch (err) {
+      // Some Apple Music accounts reject the include/limit[tracks] query shape
+      // for playlist-list requests with HTTP 400. Retry without track includes
+      // so the list still loads, even if row-level trackCount metadata is absent.
+      if (!triedWithoutTrackInclude && isAppleMusicBadRequestError(err)) {
+        triedWithoutTrackInclude = true;
+        response = await instance.api.music<LibraryPlaylistsResponse>(
+          "/v1/me/library/playlists",
+          {
+            limit: PAGE_SIZE,
+            offset,
+          }
+        );
+      } else {
+        throw err;
       }
-    );
+    }
     const data = response?.data as LibraryPlaylistsResponse | undefined;
     const items = data?.data ?? [];
 
