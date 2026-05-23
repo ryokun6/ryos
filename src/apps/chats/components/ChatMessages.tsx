@@ -36,8 +36,11 @@ import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
 import { formatToolName } from "@/lib/toolInvocationDisplay";
 import { segmentChatMarkdownText } from "@/lib/chatMarkdown";
 import { wrapMarkdownRangeWithSpeechMark } from "../utils/speechHighlightMarkdown";
-import { cleanTextForSpeech } from "../utils/textForSpeech";
-import { getAssistantVisibleText } from "../utils/assistantVisibleText";
+import {
+  getAssistantVisibleText,
+  splitAssistantVisibleIntoLineSpeechSegments,
+  type AssistSpeechLineSegment,
+} from "../utils/assistantVisibleText";
 
 // Helper to extract image URLs from message parts
 const extractImageParts = (message: {
@@ -271,10 +274,9 @@ interface ChatMessagesProps {
   highlightSegment?: { messageId: string; start: number; end: number } | null;
   isSpeaking?: boolean;
   /** Shared with useAiChat TTS queue (bubble speak + autoplay share one AudioContext chain). */
-  queueAssistSpeechChunks?: (
+  queueAssistSpeechSegments?: (
     messageId: string,
-    highlightEndUtf16: number,
-    chunks: string[],
+    segments: AssistSpeechLineSegment[],
   ) => void;
   stopAssistSpeechPlaybackOnly?: () => void;
   onSendMessage?: (username: string) => void; // Callback when send message button is clicked
@@ -385,10 +387,9 @@ interface ChatMessageItemProps {
   onDeleteMessage: (message: ChatMessage) => void;
   setPlayingMessageId: (id: string | null) => void;
   setSpeechLoadingId: (id: string | null) => void;
-  queueAssistSpeechChunks?: (
+  queueAssistSpeechSegments?: (
     messageId: string,
-    highlightEndUtf16: number,
-    chunks: string[],
+    segments: AssistSpeechLineSegment[],
   ) => void;
   stopAssistSpeechPlaybackOnly?: () => void;
   playNote: () => void;
@@ -427,7 +428,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
     onDeleteMessage,
     setPlayingMessageId,
     setSpeechLoadingId,
-    queueAssistSpeechChunks,
+    queueAssistSpeechSegments,
     stopAssistSpeechPlaybackOnly,
     playNote,
     playElevatorMusic,
@@ -663,7 +664,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                 className="size-3 text-gray-400 hover:text-neutral-600 transition-colors"
                 onClick={() => {
                   if (
-                    !queueAssistSpeechChunks ||
+                    !queueAssistSpeechSegments ||
                     !stopAssistSpeechPlaybackOnly
                   ) {
                     return;
@@ -675,30 +676,22 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                   } else {
                     stopAssistSpeechPlaybackOnly();
                     setSpeechLoadingId(null);
-                    const text = displayContent.trim();
-                    if (text && message.id) {
-                      const chunks: string[] = [];
-                      const lines = text.split(/\r?\n/);
-                      for (const line of lines) {
-                        const cleanedLine = cleanTextForSpeech(line);
-                        if (cleanedLine && cleanedLine.length > 0) {
-                          chunks.push(cleanedLine);
-                        }
-                      }
-                      if (chunks.length > 0) {
+                    if (!message.id) {
+                      setPlayingMessageId(null);
+                      setSpeechLoadingId(null);
+                    } else {
+                      const segments =
+                        splitAssistantVisibleIntoLineSpeechSegments(
+                          getAssistantVisibleText(message as VercelMessage),
+                        );
+                      if (segments.length > 0) {
                         setSpeechLoadingId(messageKey);
                         setPlayingMessageId(messageKey);
-                        const hlLen = getAssistantVisibleText(
-                          message as VercelMessage,
-                        ).length;
-                        queueAssistSpeechChunks(message.id, hlLen, chunks);
+                        queueAssistSpeechSegments(message.id, segments);
                       } else {
                         setPlayingMessageId(null);
                         setSpeechLoadingId(null);
                       }
-                    } else {
-                      setPlayingMessageId(null);
-                      setSpeechLoadingId(null);
                     }
                   }
                 }}
@@ -1090,10 +1083,9 @@ interface ChatMessagesContentProps {
   scrollToBottomTrigger: number;
   highlightSegment?: { messageId: string; start: number; end: number } | null;
   isSpeaking?: boolean;
-  queueAssistSpeechChunks?: (
+  queueAssistSpeechSegments?: (
     messageId: string,
-    highlightEndUtf16: number,
-    chunks: string[],
+    segments: AssistSpeechLineSegment[],
   ) => void;
   stopAssistSpeechPlaybackOnly?: () => void;
   onSendMessage?: (username: string) => void;
@@ -1116,7 +1108,7 @@ function ChatMessagesContent({
   scrollToBottomTrigger,
   highlightSegment,
   isSpeaking: ttsIsSpeaking = false,
-  queueAssistSpeechChunks,
+  queueAssistSpeechSegments,
   stopAssistSpeechPlaybackOnly,
   onSendMessage,
   isLoadingGreeting,
@@ -1365,7 +1357,7 @@ function ChatMessagesContent({
             onDeleteMessage={deleteMessage}
             setPlayingMessageId={setPlayingMessageId}
             setSpeechLoadingId={setSpeechLoadingId}
-            queueAssistSpeechChunks={queueAssistSpeechChunks}
+            queueAssistSpeechSegments={queueAssistSpeechSegments}
             stopAssistSpeechPlaybackOnly={stopAssistSpeechPlaybackOnly}
             playNote={playNote}
             playElevatorMusic={playElevatorMusic}
@@ -1479,7 +1471,7 @@ export function ChatMessages({
   scrollToBottomTrigger,
   highlightSegment,
   isSpeaking,
-  queueAssistSpeechChunks,
+  queueAssistSpeechSegments,
   stopAssistSpeechPlaybackOnly,
   onSendMessage,
   isLoadingGreeting,
@@ -1511,7 +1503,7 @@ export function ChatMessages({
           scrollToBottomTrigger={scrollToBottomTrigger}
           highlightSegment={highlightSegment}
           isSpeaking={isSpeaking}
-          queueAssistSpeechChunks={queueAssistSpeechChunks}
+          queueAssistSpeechSegments={queueAssistSpeechSegments}
           stopAssistSpeechPlaybackOnly={stopAssistSpeechPlaybackOnly}
           onSendMessage={onSendMessage}
           isLoadingGreeting={isLoadingGreeting}

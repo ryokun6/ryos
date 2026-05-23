@@ -51,7 +51,7 @@ import {
   persistChatDocument,
 } from "../utils/chatFilePersistence";
 import { cleanTextForSpeech } from "../utils/textForSpeech";
-import { extractCompletedParagraphRanges } from "../utils/streamingSpeech";
+import { extractCompletedLineRanges } from "../utils/streamingSpeech";
 import {
   handleLaunchApp,
   handleCloseApp,
@@ -75,7 +75,10 @@ import {
   type ContactsControlInput,
   type TvControlInput,
 } from "../tools";
-import { getAssistantVisibleText } from "../utils/assistantVisibleText";
+import {
+  getAssistantVisibleText,
+  type AssistSpeechLineSegment,
+} from "../utils/assistantVisibleText";
 
 /**
  * NOTE: Future refactoring opportunity (tracked in codebase analysis)
@@ -721,34 +724,40 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   }, [stopTts]);
 
   /**
-   * Per-bubble Speak button: same AudioContext/TTS queue as streaming speech; drives highlight.
+   * Per-bubble Speak: queued TTS with highlight advancing per logical line (`\r?\n`).
    */
-  const queueAssistSpeechChunks = useCallback(
-    (messageId: string, highlightEndUtf16: number, chunks: string[]) => {
-      if (!speechEnabled || !messageId.trim() || chunks.length === 0) {
+  const queueAssistSpeechSegments = useCallback(
+    (messageId: string, segments: AssistSpeechLineSegment[]) => {
+      if (!speechEnabled || !messageId.trim() || segments.length === 0) {
         return;
       }
 
       resumeAudioOutputFromUserGesture();
       highlightQueueRef.current = [];
-      const endHighlight = Math.max(0, Math.floor(highlightEndUtf16));
+
+      const first = segments[0]!;
       setHighlightSegment({
         messageId,
-        start: 0,
-        end: endHighlight,
+        start: Math.max(0, first.highlightStart),
+        end: Math.max(first.highlightStart, first.highlightEnd),
       });
 
-      let pending = chunks.length;
-      for (const chunk of chunks) {
-        speak(chunk, () => {
-          pending -= 1;
-          if (pending <= 0) {
+      segments.forEach((seg, i) => {
+        speak(seg.utterance, () => {
+          if (i + 1 < segments.length) {
+            const next = segments[i + 1]!;
+            setHighlightSegment({
+              messageId,
+              start: Math.max(0, next.highlightStart),
+              end: Math.max(next.highlightStart, next.highlightEnd),
+            });
+          } else {
             setHighlightSegment((prev) =>
               prev?.messageId === messageId ? null : prev,
             );
           }
         });
-      }
+      });
     },
     [speak, speechEnabled],
   );
@@ -2227,28 +2236,28 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
     if (progress >= content.length) return;
 
-    const { paragraphs, nextIndex } = extractCompletedParagraphRanges(
+    const { lines, nextIndex } = extractCompletedLineRanges(
       content,
       progress,
     );
 
-    if (paragraphs.length === 0) return;
+    if (lines.length === 0) return;
 
     // Advance before async TTS schedules so rerenders / Strict Mode cannot repeat
-    // the same finalized paragraph window.
+    // the same finalized line windows.
     speechProgressRef.current[lastMsg.id] = nextIndex;
 
     const highlightTimeoutIds: ReturnType<typeof setTimeout>[] = [];
 
-    for (const paragraph of paragraphs) {
-      const rawChunk = content.slice(paragraph.rawStart, paragraph.rawEnd);
+    for (const line of lines) {
+      const rawChunk = content.slice(line.rawStart, line.rawEnd);
       const cleaned = cleanTextForSpeech(rawChunk.trimEnd());
       if (!cleaned) continue;
 
       const seg = {
         messageId: lastMsg.id,
-        start: paragraph.rawStart,
-        end: paragraph.rawEnd,
+        start: line.rawStart,
+        end: line.rawEnd,
       };
       highlightQueueRef.current.push(seg);
 
@@ -2719,7 +2728,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
     highlightSegment,
 
-    queueAssistSpeechChunks,
+    queueAssistSpeechSegments,
     stopAssistSpeechPlaybackOnly,
   };
 }

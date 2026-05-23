@@ -1,10 +1,44 @@
 /**
- * Incremental assistant speech: split streamed markdown-ish text into
- * finalized paragraphs without waiting for the full assistant message.
+ * Incremental assistant speech utilities for streaming TTS.
  *
- * A paragraph boundary is a blank line (`\r?\n\r?\n`). Additional blank lines after
- * that are folded into the same gap so multiple empty lines behave like Markdown.
+ * - **Lines**: each completed `\\r?\\n`-terminated row (empty lines are skipped for TTS).
+ * - **Paragraphs**: blank-line (`\\r?\\n\\r?\\n`) boundaries (legacy / alternative).
  */
+
+export type StreamingSpeechLine = {
+  /** UTF-16 start of the line text (excludes the newline delimiter) */
+  rawStart: number;
+  /** UTF-16 end exclusive (position of `\\r` or `\\n` starting the break) */
+  rawEnd: number;
+};
+
+/**
+ * Consume zero or more complete lines beginning at `fromIndex`.
+ * A line ends at the next `\\r?\\n`. Trailing text with no newline yet is not returned.
+ */
+export function extractCompletedLineRanges(
+  content: string,
+  fromIndex: number,
+): { lines: StreamingSpeechLine[]; nextIndex: number } {
+  const lines: StreamingSpeechLine[] = [];
+  let i = Math.max(0, fromIndex);
+
+  while (i < content.length) {
+    const slice = content.slice(i);
+    const m = /\r?\n/.exec(slice);
+    if (!m) break;
+
+    const rawStart = i;
+    const rawEnd = i + m.index;
+    const lineBody = content.slice(rawStart, rawEnd);
+    if (lineBody.trimEnd().length > 0) {
+      lines.push({ rawStart, rawEnd });
+    }
+    i = rawEnd + m[0].length;
+  }
+
+  return { lines, nextIndex: i };
+}
 
 export type StreamingSpeechParagraph = {
   /** Inclusive UTF-16 index where this paragraph starts in raw streamed text */
