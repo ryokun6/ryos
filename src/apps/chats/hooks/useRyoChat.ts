@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { getSystemState } from "../utils/systemState";
+import { parseRyoMention } from "../utils/ryoMention";
 
 interface UseRyoChatProps {
   currentRoomId: string | null;
@@ -88,17 +89,8 @@ export function useRyoChat({
   );
 
   const detectAndProcessMention = useCallback(
-    (input: string): { isMention: boolean; messageContent: string } => {
-      if (input.startsWith("@ryo ")) {
-        // Extract the message content after @ryo
-        const messageContent = input.substring(4).trim();
-        return { isMention: true, messageContent };
-      } else if (input === "@ryo") {
-        // If they just typed @ryo without a message, treat it as a nudge
-        return { isMention: true, messageContent: t("apps.chats.status.nudgeSent") };
-      }
-      return { isMention: false, messageContent: "" };
-    },
+    (input: string): { isMention: boolean; messageContent: string } =>
+      parseRyoMention(input, t("apps.chats.status.nudgeSent")),
     [t]
   );
 
