@@ -29,6 +29,7 @@ import {
 import {
   forgetMusicKitUserToken,
   markMusicKitUserTokenValidated,
+  restoreSavedMusicKitUserToken,
   useMusicKit,
 } from "@/hooks/useMusicKit";
 import { clearAppleMusicLibrary } from "@/utils/appleMusicLibraryCache";
@@ -1004,7 +1005,10 @@ export function useIpodLogic({
     }
     try {
       if (!appleMusicAuthorized) {
-        await musicKitAuthorize();
+        const restored = await restoreSavedMusicKitUserToken();
+        if (!restored) {
+          await musicKitAuthorize();
+        }
       }
       const count = await syncAppleMusicLibraryWithTokenRecovery();
       showStatus(

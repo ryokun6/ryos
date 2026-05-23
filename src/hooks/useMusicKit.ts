@@ -65,6 +65,8 @@ let inFlightMusicUserTokenFetch: Promise<CachedMusicUserToken | null> | null = n
 let scriptPromise: Promise<void> | null = null;
 let configurePromise: Promise<MusicKit.MusicKitInstance> | null = null;
 let configuredInstance: MusicKit.MusicKitInstance | null = null;
+let configuredDeveloperToken: string | null = null;
+let configuredAppMetadata: MusicKit.AppMetadata | null = null;
 
 /** Subscribers notified when the singleton instance becomes available. */
 const readyListeners = new Set<(instance: MusicKit.MusicKitInstance) => void>();
@@ -156,7 +158,13 @@ function normalizeSavedMusicUserTokenResponse(
   };
 }
 
-async function fetchSavedMusicUserToken(): Promise<CachedMusicUserToken | null> {
+async function fetchSavedMusicUserToken(
+  options: { force?: boolean } = {}
+): Promise<CachedMusicUserToken | null> {
+  if (options.force) {
+    cachedMusicUserToken = undefined;
+    inFlightMusicUserTokenFetch = null;
+  }
   if (cachedMusicUserToken !== undefined) return cachedMusicUserToken;
   if (inFlightMusicUserTokenFetch) return inFlightMusicUserTokenFetch;
 
@@ -213,6 +221,32 @@ export async function forgetMusicKitUserToken(): Promise<void> {
     await deleteSavedAppleMusicUserToken();
   } catch (err) {
     console.warn("[musickit] failed to delete saved Music User Token", err);
+  }
+}
+
+export async function restoreSavedMusicKitUserToken(): Promise<boolean> {
+  const saved = await fetchSavedMusicUserToken({ force: true });
+  if (!saved?.token) return false;
+
+  const developerToken = configuredDeveloperToken ?? cachedDeveloperToken?.token;
+  const app = configuredAppMetadata;
+  if (!developerToken || !app || !window.MusicKit?.configure) {
+    return Boolean(configuredInstance?.isAuthorized);
+  }
+
+  try {
+    const result = await Promise.resolve(
+      window.MusicKit.configure(
+        buildMusicKitConfigureOptions(developerToken, app, saved.token)
+      )
+    );
+    const instance = result ?? window.MusicKit.getInstance?.();
+    if (!instance) return false;
+    notifyReady(instance);
+    return Boolean(instance.isAuthorized);
+  } catch (err) {
+    console.warn("[musickit] failed to restore saved Music User Token", err);
+    return false;
   }
 }
 
@@ -314,6 +348,8 @@ async function configureMusicKit(
         buildMusicKitConfigureOptions(developerToken, app, musicUserToken)
       )
     );
+    configuredDeveloperToken = developerToken;
+    configuredAppMetadata = app;
     const instance = result ?? window.MusicKit!.getInstance?.();
     if (!instance) {
       throw new Error("MusicKit.configure returned no instance");
