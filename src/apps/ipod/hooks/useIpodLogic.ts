@@ -920,15 +920,10 @@ export function useIpodLogic({
   );
 
   const requestPlaylistTracksIfNeeded = useCallback((playlistId: string) => {
-    // Always trigger a background refresh on playlist open. The fetcher
-    // dedupes in-flight calls via `appleMusicPlaylistTracksLoading`, and
-    // the modern UI shows a titlebar spinner instead of a list
-    // placeholder; cached tracks render immediately while a
-    // immediately while the refresh updates them in place. This gives
-    // users a true SWR experience: opening a playlist shows cached
-    // contents instantly AND silently picks up any new songs added
-    // since the last view.
-    void fetchAppleMusicPlaylistTracks(playlistId, { force: true }).catch(
+    // Lazy per-playlist sync: only fetch when this playlist has never
+    // been loaded (in-memory or IndexedDB) or its cache is stale.
+    // `fetchAppleMusicPlaylistTracks` handles SWR + in-flight dedupe.
+    void fetchAppleMusicPlaylistTracks(playlistId).catch(
       (err) => {
         console.warn(
           `[apple music] failed to load playlist tracks for ${playlistId}`,

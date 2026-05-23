@@ -8,7 +8,6 @@ import {
 } from "@/stores/useIpodStore";
 import { getMusicKitInstance } from "@/hooks/useMusicKit";
 import {
-  loadAllAppleMusicPlaylistTracks,
   loadAppleMusicLibrary,
   loadAppleMusicPlaylists,
   loadAppleMusicPlaylistTracks,
@@ -1520,34 +1519,6 @@ export function useAppleMusicLibrary({
           }
         }
 
-        // Per-playlist tracks (bulk hydrate every cached playlist) -------
-        if (
-          Object.keys(useIpodStore.getState().appleMusicPlaylistTracks)
-            .length === 0
-        ) {
-          const all = await loadAllAppleMusicPlaylistTracks();
-          if (cancelled) return;
-          const playlistIds = Object.keys(all);
-          if (playlistIds.length > 0) {
-            useIpodStore.setState((state) => {
-              const tracksMap = { ...state.appleMusicPlaylistTracks };
-              const loadedAtMap = {
-                ...state.appleMusicPlaylistTracksLoadedAt,
-              };
-              for (const id of playlistIds) {
-                if (!tracksMap[id] || tracksMap[id].length === 0) {
-                  tracksMap[id] = all[id].tracks;
-                  loadedAtMap[id] = all[id].loadedAt;
-                }
-              }
-              return {
-                appleMusicPlaylistTracks: tracksMap,
-                appleMusicPlaylistTracksLoadedAt: loadedAtMap,
-              };
-            });
-          }
-        }
-
         // Recently Added & Favorites (each persisted under its own
         // IndexedDB key by `saveAppleMusicTrackCollection`). Hydrating
         // here means the menu shows cached entries instantly on iPod
@@ -1701,14 +1672,11 @@ export function useAppleMusicLibrary({
     if (!isAuthorized) hasLoadedRef.current = false;
   }, [isAuthorized]);
 
-  // Opportunistic background refresh of the playlists list and per-playlist
-  // tracks.
+  // Opportunistic background refresh of the playlist list.
   //
   // The full library fetcher above only re-fetches when the library is
-  // older than 24h, and per-playlist tracks were only refreshed when the
-  // user explicitly opened that playlist. So a user who plays the iPod
-  // every day for a month and never reopens a playlist would see month-old
-  // playlist contents.
+  // older than 24h, so this keeps the top-level playlist list current
+  // without requiring a full library reload.
   //
   // This effect closes that gap by:
   //   1. Running once a few seconds after the hook becomes enabled+authed
@@ -1720,14 +1688,10 @@ export function useAppleMusicLibrary({
   //
   // All paths are silent (no toast). The refresh helpers themselves
   // short-circuit when the cache is fresh enough, so this is essentially
-  // free when nothing has actually expired. Track refresh uses bounded
-  // concurrency so a user with many cached playlists doesn't hammer the
-  // Apple Music API on every visibility change.
+  // free when nothing has actually expired.
   //
-  // Playback is unaffected: only the playlists list and per-playlist
-  // tracks map are mutated, neither of which is read by the
-  // AppleMusicPlayerBridge. The active queue stores ids, so swapping a
-  // playlist's tracks while one of them is playing keeps playback going.
+  // Playback is unaffected: only playlist metadata is mutated, which is
+  // not read by the AppleMusicPlayerBridge.
   useEffect(() => {
     if (!enabled || !isAuthorized) return;
 
@@ -1744,8 +1708,6 @@ export function useAppleMusicLibrary({
       lastRunAt = now;
       try {
         await refreshAppleMusicPlaylists();
-        if (cancelled) return;
-        await refreshStaleAppleMusicPlaylistTracks();
         if (cancelled) return;
         // Recently Added and Favorites have their own freshness windows
         // (handled inside each helper). Run them in parallel since they
