@@ -8,18 +8,12 @@ import { useChatsStore } from "@/stores/useChatsStore";
 import type { AIChatMessage } from "@/types/chat";
 import { useAppStore } from "@/stores/useAppStore";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
-import { useInternetExplorerStore } from "@/stores/useInternetExplorerStore";
 import { getApiUrl } from "@/utils/platform";
-import { useVideoStore } from "@/stores/useVideoStore";
 import {
   getActiveIpodTracks,
-  getIpodChatContextTrack,
   setActiveIpodCurrentSongId,
   useIpodStore,
 } from "@/stores/useIpodStore";
-import { useKaraokeStore } from "@/stores/useKaraokeStore";
-import { useTvStore } from "@/stores/useTvStore";
-import { buildTvChannelLineup, DEFAULT_CHANNELS } from "@/apps/tv/data/channels";
 import { toast } from "@/hooks/useToast";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { AppId } from "@/config/appIds";
@@ -34,18 +28,13 @@ import { STORES } from "@/utils/indexedDB";
 import { useTtsQueue } from "@/hooks/useTtsQueue";
 import { useTextEditStore } from "@/stores/useTextEditStore";
 import { useFilesStore } from "@/stores/useFilesStore";
-import { useLanguageStore } from "@/stores/useLanguageStore";
 import { useChatsStoreShallow } from "@/stores/helpers";
-import { htmlToMarkdown, markdownToHtml } from "@/utils/markdown";
-import {
-  generateHtmlFromJsonSync,
-  generateJsonFromHtml,
-} from "@/utils/tiptapHtml";
+import { markdownToHtml } from "@/utils/markdown";
+import { generateJsonFromHtml } from "@/utils/tiptapHtml";
 import i18n from "@/lib/i18n";
 import { useTranslation } from "react-i18next";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { tryInvokeParentStartGrindPlanning } from "@/utils/parentGrindPlanning";
-import { showAiMessageNotification } from "@/utils/chatNotificationDisplay";
 import {
   emitAppletUpdated,
   emitDocumentUpdated,
@@ -55,6 +44,22 @@ import {
   persistChatDocument,
 } from "../utils/chatFilePersistence";
 import { cleanTextForSpeech } from "../utils/textForSpeech";
+import {
+  getSystemState,
+  getAssistantVisibleText,
+  isChatsInForeground,
+  showBackgroundedMessageNotification,
+} from "../utils/systemState";
+import {
+  trackNewTextEditInstance,
+  getRecentTextEditInstanceForPath,
+} from "../utils/textEditInstanceTracking";
+import {
+  normalizeSearchText,
+  computeMatchScore,
+  deriveScoreThreshold,
+} from "../utils/fuzzySearch";
+import { detectUserOS } from "../tools/helpers";
 import {
   handleLaunchApp,
   handleCloseApp,
@@ -92,534 +97,11 @@ import {
  * Priority: Low - current architecture works well for the use case.
  */
 
-// Track newly created TextEdit instances for fallback mechanism
-const recentlyCreatedTextEditInstances = new Map<
-  string,
-  { instanceId: string; path: string; timestamp: number }
->();
-
-// Helper to add a newly created instance to tracking
-const trackNewTextEditInstance = (instanceId: string, path: string) => {
-  recentlyCreatedTextEditInstances.set(instanceId, {
-    instanceId,
-    path,
-    timestamp: Date.now(),
-  });
-  // Clean up old entries (older than 5 minutes)
-  const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
-  for (const [id, data] of recentlyCreatedTextEditInstances.entries()) {
-    if (data.timestamp < fiveMinutesAgo) {
-      recentlyCreatedTextEditInstances.delete(id);
-    }
-  }
-};
-
-const getRecentTextEditInstanceForPath = (path: string): string | null => {
-  const appStore = useAppStore.getState();
-  let newestMatch: { instanceId: string; timestamp: number } | null = null;
-
-  for (const [id, tracked] of recentlyCreatedTextEditInstances.entries()) {
-    if (tracked.path !== path) {
-      continue;
-    }
-
-    const instance = appStore.instances[id];
-    if (!instance || !instance.isOpen || instance.appId !== "textedit") {
-      recentlyCreatedTextEditInstances.delete(id);
-      continue;
-    }
-
-    if (!newestMatch || tracked.timestamp > newestMatch.timestamp) {
-      newestMatch = { instanceId: id, timestamp: tracked.timestamp };
-    }
-  }
-
-  return newestMatch?.instanceId ?? null;
-};
-
-
-const stripDiacritics = (value: string): string =>
-  value.normalize("NFKD").replace(/\p{Diacritic}/gu, "");
-
-const normalizeSearchText = (value: string): string =>
-  stripDiacritics(value).toLowerCase();
-
-const isLooseSubsequence = (target: string, pattern: string): boolean => {
-  if (pattern.length === 0) {
-    return true;
-  }
-
-  let searchStart = 0;
-  for (const char of pattern) {
-    const foundIndex = target.indexOf(char, searchStart);
-    if (foundIndex === -1) {
-      return false;
-    }
-    searchStart = foundIndex + 1;
-  }
-  return true;
-};
-
-const levenshteinDistance = (a: string, b: string): number => {
-  if (a === b) return 0;
-  if (a.length === 0) return b.length;
-  if (b.length === 0) return a.length;
-
-  const previous = new Array<number>(a.length + 1);
-  const current = new Array<number>(a.length + 1);
-
-  for (let i = 0; i <= a.length; i += 1) {
-    previous[i] = i;
-  }
-
-  for (let i = 1; i <= b.length; i += 1) {
-    current[0] = i;
-    const bChar = b[i - 1]!;
-
-    for (let j = 1; j <= a.length; j += 1) {
-      const substitutionCost = bChar === a[j - 1]! ? 0 : 1;
-      current[j] = Math.min(
-        current[j - 1]! + 1, // insertion
-        previous[j]! + 1, // deletion
-        previous[j - 1]! + substitutionCost, // substitution
-      );
-    }
-
-    for (let j = 0; j <= a.length; j += 1) {
-      previous[j] = current[j]!;
-    }
-  }
-
-  return previous[a.length]!;
-};
-
-const bestSubstringDistance = (text: string, query: string): number => {
-  const textLength = text.length;
-  const queryLength = query.length;
-
-  if (queryLength === 0) return 0;
-  if (textLength === 0) return queryLength;
-  if (queryLength >= textLength) {
-    return levenshteinDistance(text, query);
-  }
-
-  let best = Number.MAX_SAFE_INTEGER;
-  const maxOffset = textLength - queryLength;
-
-  for (let offset = 0; offset <= maxOffset; offset += 1) {
-    const window = text.slice(offset, offset + queryLength);
-    const distance = levenshteinDistance(window, query);
-    if (distance < best) {
-      best = distance;
-      if (best === 0) {
-        break;
-      }
-    }
-  }
-
-  return best;
-};
-
-const computeMatchScore = (
-  text: string,
-  query: string,
-  tokens: string[],
-): number => {
-  if (!query) return 1;
-  if (!text) return 0;
-
-  let score = 0;
-
-  const includeIndex = text.indexOf(query);
-  if (includeIndex !== -1) {
-    const includeScore =
-      0.7 +
-      (1 - includeIndex / Math.max(text.length, query.length)) * 0.3;
-    score = Math.max(score, Math.min(1, includeScore));
-  }
-
-  if (isLooseSubsequence(text, query)) {
-    const subsequenceScore =
-      0.5 +
-      Math.min(
-        0.4,
-        (query.length / Math.max(text.length, query.length)) * 0.4,
-      );
-    score = Math.max(score, Math.min(1, subsequenceScore));
-  }
-
-  const maxLen = Math.max(query.length, Math.min(text.length, query.length));
-  if (maxLen > 0) {
-    const distance = bestSubstringDistance(text, query);
-    const distanceScore = 1 - distance / (maxLen + 1);
-    score = Math.max(score, Math.max(0, distanceScore));
-  }
-
-  if (tokens.length > 1) {
-    let tokenAccumulator = 0;
-    for (const token of tokens) {
-      if (!token) continue;
-      const tokenIndex = text.indexOf(token);
-      if (tokenIndex !== -1) {
-        tokenAccumulator += 1;
-        continue;
-      }
-      const tokenMaxLen = Math.max(
-        token.length,
-        Math.min(text.length, token.length),
-      );
-      if (tokenMaxLen === 0) continue;
-      const tokenDistance = bestSubstringDistance(text, token);
-      const tokenScore = 1 - tokenDistance / (tokenMaxLen + 1);
-      if (tokenScore > 0.5) {
-        tokenAccumulator += tokenScore;
-      }
-    }
-    if (tokenAccumulator > 0) {
-      const normalizedTokenScore = tokenAccumulator / tokens.length;
-      score = Math.max(score, Math.min(1, normalizedTokenScore));
-    }
-  }
-
-  return Math.max(0, Math.min(1, score));
-};
-
-const deriveScoreThreshold = (queryLength: number): number => {
-  if (queryLength <= 2) return 0.65;
-  if (queryLength <= 4) return 0.55;
-  if (queryLength <= 6) return 0.5;
-  if (queryLength <= 8) return 0.45;
-  return 0.4;
-};
-
-// Helper function to detect user's operating system
-const detectUserOS = (): string => {
-  if (typeof navigator === "undefined") return "Unknown";
-  
-  const userAgent = navigator.userAgent;
-  const platform = navigator.platform || "";
-  
-  // Check for iOS (iPhone, iPad, iPod)
-  if (/iPad|iPhone|iPod/.test(userAgent) || 
-      (platform === "MacIntel" && navigator.maxTouchPoints > 1)) {
-    return "iOS";
-  }
-  
-  // Check for Android
-  if (/Android/.test(userAgent)) {
-    return "Android";
-  }
-  
-  // Check for Windows
-  if (/Win/.test(platform)) {
-    return "Windows";
-  }
-  
-  // Check for macOS (not iOS)
-  if (/Mac/.test(platform)) {
-    return "macOS";
-  }
-  
-  // Check for Linux
-  if (/Linux/.test(platform)) {
-    return "Linux";
-  }
-  
-  return "Unknown";
-};
-
-// Replace or update the getSystemState function to use stores
-const getSystemState = () => {
-  const appStore = useAppStore.getState();
-  const ieStore = useInternetExplorerStore.getState();
-  const videoStore = useVideoStore.getState();
-  const ipodStore = useIpodStore.getState();
-  const karaokeStore = useKaraokeStore.getState();
-  const textEditStore = useTextEditStore.getState();
-  const chatsStore = useChatsStore.getState();
-  const languageStore = useLanguageStore.getState();
-  const tvStore = useTvStore.getState();
-
-  const currentVideo = videoStore.getCurrentVideo();
-  const currentTrack = getIpodChatContextTrack(ipodStore);
-  
-  // Karaoke uses the shared track library from iPod store
-  const karaokeCurrentTrack = karaokeStore.currentSongId
-    ? ipodStore.tracks.find((t) => t.id === karaokeStore.currentSongId)
-    : ipodStore.tracks[0] ?? null;
-
-  // --- TV: current channel + lineup ---
-  // The TV app shuffles channel videos at render time, so a persisted
-  // index doesn't map to a stable "current video". Surface the current
-  // channel + lineup metadata so the AI can reason about the lineup,
-  // tune in, and edit channels via tvControl.
-  const tvChannelLineup = buildTvChannelLineup(
-    tvStore.customChannels,
-    tvStore.hiddenDefaultChannelIds
-  ).map((ch) => ({
-    ch,
-    isCustom: !DEFAULT_CHANNELS.some((d) => d.id === ch.id),
-  }));
-  const tvCurrentEntry =
-    tvChannelLineup.find(({ ch }) => ch.id === tvStore.currentChannelId) ??
-    tvChannelLineup[0] ??
-    null;
-  const tvCurrentChannel = tvCurrentEntry
-    ? {
-        id: tvCurrentEntry.ch.id,
-        number: tvCurrentEntry.ch.number,
-        name: tvCurrentEntry.ch.name,
-        description: tvCurrentEntry.ch.description,
-        isCustom: tvCurrentEntry.isCustom,
-        videoCount:
-          tvCurrentEntry.ch.id === "mtv"
-            ? ipodStore.tracks.length
-            : tvCurrentEntry.ch.id === "ryos-picks"
-            ? videoStore.videos.length
-            : tvCurrentEntry.ch.videos.length,
-      }
-    : null;
-  const tvCustomChannels = buildTvChannelLineup(
-    tvStore.customChannels,
-    tvStore.hiddenDefaultChannelIds
-  ).reduce<
-    {
-      id: string;
-      number: number;
-      name: string;
-      description: string;
-      videoCount: number;
-    }[]
-  >((acc, channel) => {
-    if (DEFAULT_CHANNELS.some((defaultChannel) => defaultChannel.id === channel.id)) {
-      return acc;
-    }
-    acc.push({
-      id: channel.id,
-      number: channel.number,
-      name: channel.name,
-      description: channel.description ?? "",
-      videoCount: channel.videos.length,
-    });
-    return acc;
-  }, []);
-
-  // Detect user's operating system
-  const userOS = detectUserOS();
-
-  // Use new instance-based model instead of legacy apps
-  const runningInstances = Object.entries(appStore.instances).reduce<
-    {
-      instanceId: string;
-      appId: string;
-      isForeground: boolean;
-      title?: string;
-      appletPath?: string;
-      appletId?: string;
-    }[]
-  >((acc, [instanceId, instance]) => {
-    if (!instance.isOpen) {
-      return acc;
-    }
-
-    const base = {
-      instanceId,
-      appId: instance.appId,
-      isForeground: instance.isForeground || false,
-      title: instance.title,
-    };
-    // For applet-viewer instances, include the applet path
-    if (instance.appId === "applet-viewer" && instance.initialData) {
-      const appletData = instance.initialData as { path?: string; shareCode?: string };
-      acc.push({
-        ...base,
-        appletPath: appletData.path || undefined,
-        appletId: appletData.shareCode || undefined,
-      });
-      return acc;
-    }
-
-    acc.push(base);
-    return acc;
-  }, []);
-
-  const foregroundInstance =
-    runningInstances.find((inst) => inst.isForeground) || null;
-  const backgroundInstances = runningInstances.filter(
-    (inst) => !inst.isForeground,
-  );
-
-  // --- Local browser time information (client side) ---
-  const nowClient = new Date();
-  const userTimeZone =
-    Intl.DateTimeFormat().resolvedOptions().timeZone || "Unknown";
-  const userTimeString = nowClient.toLocaleTimeString([], {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
-  const userDateString = nowClient.toLocaleDateString([], {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-
-  // Convert TextEdit instances to compact markdown for prompt inclusion
-  const textEditInstances = Object.values(textEditStore.instances);
-  const textEditInstancesData = textEditInstances.map((instance) => {
-    let contentMarkdown: string | null = null;
-    if (instance.contentJson) {
-      try {
-        const htmlStr = generateHtmlFromJsonSync(instance.contentJson);
-        if (htmlStr) contentMarkdown = htmlToMarkdown(htmlStr);
-      } catch (err) {
-        console.error("Failed to convert TextEdit content to markdown:", err);
-      }
-    }
-
-    // Get title from file path if available, otherwise from app store instance
-    let title = "Untitled";
-    if (instance.filePath) {
-      // Extract filename from path (e.g., "/Documents/example.md" -> "example.md")
-      const filename = instance.filePath.split("/").pop() || "Untitled";
-      // Remove .md extension for cleaner display
-      title = filename.replace(/\.md$/, "");
-    } else {
-      // Fall back to app store instance title
-      const appInstance = appStore.instances[instance.instanceId];
-      title = appInstance?.title || "Untitled";
-    }
-
-    return {
-      instanceId: instance.instanceId,
-      filePath: instance.filePath,
-      title,
-      contentMarkdown,
-      hasUnsavedChanges: instance.hasUnsavedChanges,
-    };
-  });
-
-  // Convert IE HTML content to markdown for compact prompts
-  let ieHtmlMarkdown: string | null = null;
-  if (ieStore.aiGeneratedHtml) {
-    try {
-      ieHtmlMarkdown = htmlToMarkdown(ieStore.aiGeneratedHtml);
-    } catch (err) {
-      console.error("Failed to convert IE HTML to markdown:", err);
-    }
-  }
-
-  return {
-    username: chatsStore.username,
-    userOS,
-    locale: languageStore.current,
-    userLocalTime: {
-      timeString: userTimeString,
-      dateString: userDateString,
-      timeZone: userTimeZone,
-    },
-    runningApps: {
-      foreground: foregroundInstance,
-      background: backgroundInstances,
-    },
-    internetExplorer: {
-      url: ieStore.url,
-      year: ieStore.year,
-      currentPageTitle: ieStore.currentPageTitle,
-      aiGeneratedMarkdown: ieHtmlMarkdown,
-    },
-    video: {
-      currentVideo: currentVideo
-        ? {
-            id: currentVideo.id,
-            title: currentVideo.title,
-            artist: currentVideo.artist,
-          }
-        : null,
-      isPlaying: videoStore.isPlaying,
-    },
-    ipod: {
-      currentTrack: currentTrack
-        ? {
-            id: currentTrack.id,
-            title: currentTrack.title,
-            artist: currentTrack.artist,
-            source: currentTrack.source,
-          }
-        : null,
-      librarySource: ipodStore.librarySource,
-      isPlaying: ipodStore.isPlaying,
-      currentLyrics: ipodStore.currentLyrics,
-    },
-    karaoke: {
-      currentTrack: karaokeCurrentTrack
-        ? {
-            id: karaokeCurrentTrack.id,
-            title: karaokeCurrentTrack.title,
-            artist: karaokeCurrentTrack.artist,
-          }
-        : null,
-      isPlaying: karaokeStore.isPlaying,
-    },
-    tv: {
-      currentChannel: tvCurrentChannel,
-      isPlaying: tvStore.isPlaying,
-      // Custom channels can be edited; default channels can be deleted from
-      // the visible lineup and restored via TV's reset action.
-      customChannels: tvCustomChannels,
-    },
-    textEdit: {
-      instances: textEditInstancesData,
-    },
-  };
-};
-
-// Helper function to extract visible text from message parts
-const getAssistantVisibleText = (message: UIMessage): string => {
-  // Define type for message parts
-  type MessagePart = {
-    type: string;
-    text?: string;
-  };
-
-  // If message has parts, extract text from text parts only
-  if (message.parts && message.parts.length > 0) {
-    return message.parts.reduce<string[]>((acc, part: MessagePart) => {
-        if (part.type !== "text") {
-          return acc;
-        }
-        const text = part.text || "";
-        // Handle urgent messages by removing leading !!!!
-        acc.push(text.startsWith("!!!!") ? text.slice(4).trimStart() : text);
-        return acc;
-      }, [])
-      .join("");
-  }
-
-  // Fallback - no content property in v5, return empty string
-  return "";
-};
-
-// Helper to check if chats app is currently in the foreground
-const isChatsInForeground = (): boolean => {
-  const appStore = useAppStore.getState();
-  const foregroundId = appStore.foregroundInstanceId;
-  if (!foregroundId) return false;
-  const foregroundInstance = appStore.instances[foregroundId];
-  return foregroundInstance?.appId === "chats";
-};
-
-// Helper to show notification with assistant's message when chat is backgrounded
-const showBackgroundedMessageNotification = (message: UIMessage) => {
-  const textContent = getAssistantVisibleText(message);
-  if (!textContent.trim()) return;
-
-  showAiMessageNotification({
-    content: textContent,
-    messageId: message.id,
-  });
-};
+// (Wave 2: trackNewTextEditInstance / getRecentTextEditInstanceForPath
+//  moved to utils/textEditInstanceTracking.ts; the fuzzy-search algorithm
+//  moved to utils/fuzzySearch.ts; getSystemState / getAssistantVisibleText
+//  / isChatsInForeground / showBackgroundedMessageNotification moved to
+//  utils/systemState.ts; detectUserOS lives in tools/helpers.ts.)
 
 interface ChatUiState {
   input: string;

@@ -1,97 +1,8 @@
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { useAppStore } from "@/stores/useAppStore";
-import { useInternetExplorerStore } from "@/stores/useInternetExplorerStore";
-import { useVideoStore } from "@/stores/useVideoStore";
-import { getIpodChatContextTrack, useIpodStore } from "@/stores/useIpodStore";
-import { useChatsStore } from "@/stores/useChatsStore";
-import { useLanguageStore } from "@/stores/useLanguageStore";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
-
-// Helper function to get system state for AI chat
-const getSystemState = () => {
-  const appStore = useAppStore.getState();
-  const ieStore = useInternetExplorerStore.getState();
-  const videoStore = useVideoStore.getState();
-  const ipodStore = useIpodStore.getState();
-  const chatsStore = useChatsStore.getState();
-  const languageStore = useLanguageStore.getState();
-
-  const currentVideo = videoStore.getCurrentVideo();
-  const currentTrack = getIpodChatContextTrack(ipodStore);
-
-  // Use new instance-based model
-  const openInstances = Object.values(appStore.instances).filter(
-    (inst) => inst.isOpen
-  );
-
-  const foregroundInstanceId =
-    appStore.instanceOrder.length > 0
-      ? appStore.instanceOrder[appStore.instanceOrder.length - 1]
-      : null;
-
-  const foregroundInstance = foregroundInstanceId
-    ? appStore.instances[foregroundInstanceId]
-    : null;
-
-  const foregroundApp = foregroundInstance?.appId || null;
-
-  const backgroundApps = openInstances.reduce<string[]>((acc, instance) => {
-    if (instance.instanceId !== foregroundInstanceId) {
-      acc.push(instance.appId);
-    }
-    return acc;
-  }, []);
-
-  return {
-    instances: appStore.instances,
-    username: chatsStore.username,
-    locale: languageStore.current,
-    runningApps: {
-      foreground: foregroundApp,
-      background: backgroundApps,
-      instanceWindowOrder: appStore.instanceOrder,
-    },
-    internetExplorer: {
-      url: ieStore.url,
-      year: ieStore.year,
-      status: ieStore.status,
-      currentPageTitle: ieStore.currentPageTitle,
-      aiGeneratedHtml: ieStore.aiGeneratedHtml,
-    },
-    video: {
-      currentVideo: currentVideo
-        ? {
-            id: currentVideo.id,
-            url: currentVideo.url,
-            title: currentVideo.title,
-            artist: currentVideo.artist,
-          }
-        : null,
-      isPlaying: videoStore.isPlaying,
-      loopAll: videoStore.loopAll,
-      loopCurrent: videoStore.loopCurrent,
-      isShuffled: videoStore.isShuffled,
-    },
-    ipod: {
-      currentTrack: currentTrack
-        ? {
-            id: currentTrack.id,
-            url: currentTrack.url,
-            title: currentTrack.title,
-            artist: currentTrack.artist,
-            source: currentTrack.source,
-          }
-        : null,
-      librarySource: ipodStore.librarySource,
-      isPlaying: ipodStore.isPlaying,
-      loopAll: ipodStore.loopAll,
-      loopCurrent: ipodStore.loopCurrent,
-      isShuffled: ipodStore.isShuffled,
-    },
-  };
-};
+import { getSystemState } from "../utils/systemState";
 
 interface UseRyoChatProps {
   currentRoomId: string | null;
@@ -124,7 +35,10 @@ export function useRyoChat({
         .map((msg) => `${msg.username}: ${msg.content}`)
         .join("\n");
 
-      // Include chat room context in the system state
+      // The endpoint only reads `systemState.chatRoomContext` (see
+      // api/ai/ryo-reply.ts), but we send the canonical system-state
+      // payload so the server can opportunistically use any field if
+      // the contract is widened later.
       const systemStateWithChat = {
         ...getSystemState(),
         chatRoomContext: {
