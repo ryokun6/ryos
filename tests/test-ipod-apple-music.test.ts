@@ -71,6 +71,23 @@ const {
 const { getArtistGroupingDisplayName, getArtistGroupingKey } = await import(
   "../src/apps/ipod/constants"
 );
+const {
+  APPLE_MUSIC_STREAMING_BITRATE_KBPS,
+  buildMusicKitConfigureOptions,
+} = await import("../src/hooks/useMusicKit");
+
+describe("MusicKit configuration", () => {
+  test("requests 256kbps Apple Music streaming quality", () => {
+    const app = { name: "ryOS iPod", build: "1.0.0" };
+
+    expect(buildMusicKitConfigureOptions("developer-token", app)).toEqual({
+      developerToken: "developer-token",
+      app,
+      bitrate: 256,
+    });
+    expect(APPLE_MUSIC_STREAMING_BITRATE_KBPS).toBe(256);
+  });
+});
 
 describe("Apple Music song ID validation", () => {
   test("accepts the canonical YouTube video ID format", () => {

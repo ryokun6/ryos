@@ -19,6 +19,18 @@ const MUSICKIT_SCRIPT_SRC = "https://js-cdn.music.apple.com/musickit/v3/musickit
 const MUSICKIT_SCRIPT_ID = "ryos-musickit-js-v3";
 const MUSICKIT_TOKEN_ENDPOINT = "/api/musickit-token";
 const TOKEN_REFRESH_BUFFER_MS = 60 * 60 * 1000; // refresh if <1h left
+export const APPLE_MUSIC_STREAMING_BITRATE_KBPS = 256;
+
+export function buildMusicKitConfigureOptions(
+  developerToken: string,
+  app: MusicKit.AppMetadata
+): MusicKit.ConfigureOptions {
+  return {
+    developerToken,
+    app,
+    bitrate: APPLE_MUSIC_STREAMING_BITRATE_KBPS,
+  };
+}
 
 export type MusicKitStatus =
   | "idle"
@@ -209,10 +221,9 @@ async function configureMusicKit(
     // `configure()` returns a Promise in MusicKit JS v3. Awaiting also
     // forces script-side init to complete before we hand the instance back.
     const result = await Promise.resolve(
-      window.MusicKit!.configure({
-        developerToken,
-        app,
-      })
+      window.MusicKit!.configure(
+        buildMusicKitConfigureOptions(developerToken, app)
+      )
     );
     const instance = result ?? window.MusicKit!.getInstance?.();
     if (!instance) {
