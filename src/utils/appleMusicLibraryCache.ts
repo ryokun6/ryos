@@ -252,9 +252,14 @@ export async function pruneAppleMusicPlaylistTracksCache(
   try {
     const { ensureIndexedDBInitialized } = await import("@/utils/indexedDB");
     db = await ensureIndexedDBInitialized();
+    const database = db;
+    if (!database) return;
     await new Promise<void>((resolve, reject) => {
       try {
-        const tx = db.transaction(STORES.APPLE_MUSIC_PLAYLIST_TRACKS, "readwrite");
+        const tx = database.transaction(
+          STORES.APPLE_MUSIC_PLAYLIST_TRACKS,
+          "readwrite"
+        );
         const store = tx.objectStore(STORES.APPLE_MUSIC_PLAYLIST_TRACKS);
         const keysReq = store.getAllKeys();
         const active = new Set(activePlaylistIds);

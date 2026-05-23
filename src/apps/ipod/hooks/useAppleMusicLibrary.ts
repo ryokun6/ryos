@@ -1187,46 +1187,65 @@ export type AppleMusicSyncResource =
   | { kind: "favorites"; force?: boolean }
   | { kind: "radio"; force?: boolean };
 
-type AppleMusicSyncResultByKind = {
-  library: number;
-  playlists: AppleMusicPlaylist[];
-  playlistTracks: Track[];
-  recentlyAdded: Track[];
-  favorites: Track[];
-  radio: Track[];
-};
-
-export async function syncAppleMusicResource<
-  K extends AppleMusicSyncResource["kind"],
->(
-  resource: Extract<AppleMusicSyncResource, { kind: K }>
-): Promise<AppleMusicSyncResultByKind[K]> {
+export function syncAppleMusicResource(resource: {
+  kind: "library";
+  force?: boolean;
+}): Promise<number>;
+export function syncAppleMusicResource(resource: {
+  kind: "playlists";
+  force?: boolean;
+  allowEmpty?: boolean;
+}): Promise<AppleMusicPlaylist[]>;
+export function syncAppleMusicResource(resource: {
+  kind: "playlistTracks";
+  playlistId: string;
+  force?: boolean;
+}): Promise<Track[]>;
+export function syncAppleMusicResource(resource: {
+  kind: "recentlyAdded";
+  force?: boolean;
+}): Promise<Track[]>;
+export function syncAppleMusicResource(resource: {
+  kind: "favorites";
+  force?: boolean;
+}): Promise<Track[]>;
+export function syncAppleMusicResource(resource: {
+  kind: "radio";
+  force?: boolean;
+}): Promise<Track[]>;
+export async function syncAppleMusicResource(
+  resource: AppleMusicSyncResource
+): Promise<number | AppleMusicPlaylist[] | Track[]> {
   switch (resource.kind) {
     case "library":
       return fetchAppleMusicLibrary({
         force: resource.force,
-      }) as Promise<AppleMusicSyncResultByKind[K]>;
+      });
     case "playlists":
       return refreshAppleMusicPlaylists({
         force: resource.force,
         allowEmpty: resource.allowEmpty,
-      }) as Promise<AppleMusicSyncResultByKind[K]>;
+      });
     case "playlistTracks":
       return fetchAppleMusicPlaylistTracks(resource.playlistId, {
         force: resource.force,
-      }) as Promise<AppleMusicSyncResultByKind[K]>;
+      });
     case "recentlyAdded":
       return refreshAppleMusicRecentlyAdded({
         force: resource.force,
-      }) as Promise<AppleMusicSyncResultByKind[K]>;
+      });
     case "favorites":
       return refreshAppleMusicFavorites({
         force: resource.force,
-      }) as Promise<AppleMusicSyncResultByKind[K]>;
+      });
     case "radio":
       return fetchAppleMusicRadioStations({
         force: resource.force,
-      }) as Promise<AppleMusicSyncResultByKind[K]>;
+      });
+    default: {
+      const _exhaustive: never = resource;
+      throw new Error(`Unknown Apple Music sync resource: ${String(_exhaustive)}`);
+    }
   }
 }
 
