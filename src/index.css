@@ -830,6 +830,21 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     color: inherit;
   }
 
+  .ryos-chat-speech-text {
+    display: inline;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    user-select: text;
+    -webkit-user-select: text;
+  }
+
+  .ryos-chat-tts-highlight {
+    border-radius: 2px;
+    background: rgba(255, 236, 83, 0.85);
+    color: inherit;
+    box-shadow: 0 0 0 1px rgba(128, 94, 0, 0.2);
+  }
+
   /* Draggable area styles - prevents browser gestures on touch devices */
   .draggable-area {
     touch-action: none !important;

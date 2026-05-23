@@ -214,6 +214,60 @@ const CHAT_STREAMDOWN_ANIMATED = {
   sep: "word",
 } as const;
 
+type HighlightSegment = { messageId: string; start: number; end: number };
+
+const matchesHighlightMessage = (
+  highlightSegment: HighlightSegment | null | undefined,
+  message: { id?: string },
+  messageKey: string
+) =>
+  !!highlightSegment &&
+  (highlightSegment.messageId === message.id ||
+    highlightSegment.messageId === messageKey);
+
+const getPartHighlight = (
+  highlightSegment: HighlightSegment | null | undefined,
+  message: { id?: string },
+  messageKey: string,
+  partStart: number,
+  partLength: number
+): { start: number; end: number } | null => {
+  if (!matchesHighlightMessage(highlightSegment, message, messageKey)) {
+    return null;
+  }
+
+  const start = Math.max(highlightSegment.start - partStart, 0);
+  const end = Math.min(highlightSegment.end - partStart, partLength);
+  return end > start ? { start, end } : null;
+};
+
+function SpeechHighlightedText({
+  text,
+  highlight,
+}: {
+  text: string;
+  highlight: { start: number; end: number };
+}) {
+  const leadingTrimmed = text.length - text.trimStart().length;
+  const renderedText = text.trim();
+  const start = Math.max(0, Math.min(renderedText.length, highlight.start - leadingTrimmed));
+  const end = Math.max(start, Math.min(renderedText.length, highlight.end - leadingTrimmed));
+
+  if (!renderedText || start === end) {
+    return null;
+  }
+
+  return (
+    <span className="ryos-chat-speech-text">
+      {renderedText.slice(0, start)}
+      <mark className="ryos-chat-tts-highlight">
+        {renderedText.slice(start, end)}
+      </mark>
+      {renderedText.slice(end)}
+    </span>
+  );
+}
+
 type ChatMessageStyle = CSSProperties & {
   "--ryos-chat-font-size": string;
 };
@@ -256,7 +310,7 @@ interface ChatMessagesProps {
   onMessageDeleted?: (messageId: string) => void; // Callback when a message is deleted locally
   fontSize: number; // Add font size prop
   scrollToBottomTrigger: number; // Add scroll trigger prop
-  highlightSegment?: { messageId: string; start: number; end: number } | null;
+  highlightSegment?: HighlightSegment | null;
   isSpeaking?: boolean;
   onSendMessage?: (username: string) => void; // Callback when send message button is clicked
   isLoadingGreeting?: boolean; // Show typing bubble for proactive greeting
@@ -357,6 +411,8 @@ interface ChatMessageItemProps {
   playingMessageId: string | null;
   speechLoadingId: string | null;
   speechEnabled: boolean;
+  highlightSegment?: HighlightSegment | null;
+  isSpeaking?: boolean;
   isAdmin: boolean;
   roomId?: string;
   username?: string;
@@ -390,6 +446,8 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
     playingMessageId,
     speechLoadingId,
     speechEnabled,
+    highlightSegment,
+    isSpeaking: _isSpeaking,
     isAdmin,
     roomId: _roomId,
     username: _username,
@@ -463,6 +521,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
   const decodedContent = decodeHtmlEntities(rawContent);
   const hasAquariumToken = decodedContent.includes("[[AQUARIUM]]");
   const displayContent = decodedContent.replace(/\[\[AQUARIUM\]\]/g, "").trim();
+  let assistantTextOffset = 0;
 
   let hasAquarium = false;
   if (message.role === "assistant" && message.parts) {
@@ -876,6 +935,14 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                         ? partText.slice(4).trimStart()
                         : partText;
                       const partDisplayContent = decodeHtmlEntities(rawPartContent);
+                      const partHighlight = getPartHighlight(
+                        highlightSegment,
+                        message,
+                        messageKey,
+                        assistantTextOffset,
+                        partDisplayContent.length
+                      );
+                      assistantTextOffset += partDisplayContent.length;
                       const textContent = partDisplayContent;
                       const streamdownContent = textContent.trim();
                       const isEmojiMessage = isEmojiOnly(textContent);
@@ -891,25 +958,32 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                           }
                         >
                           {streamdownContent && (
-                            <Streamdown
-                              className={`ryos-chat-streamdown ${
-                                isUrgent ? "ryos-chat-streamdown-urgent" : ""
-                              }`}
-                              components={chatStreamdownComponents}
-                              disallowedElements={STREAMDOWN_DISALLOWED_ELEMENTS}
-                              controls={false}
-                              lineNumbers={false}
-                              shikiTheme={CHAT_STREAMDOWN_SHIKI_THEME}
-                              plugins={CHAT_STREAMDOWN_PLUGINS}
-                              skipHtml
-                              unwrapDisallowed
-                              mode={isStreamingMessage ? "streaming" : "static"}
-                              animated={CHAT_STREAMDOWN_ANIMATED}
-                              isAnimating={isStreamingMessage}
-                              parseIncompleteMarkdown={isStreamingMessage}
-                            >
-                              {streamdownContent}
-                            </Streamdown>
+                            partHighlight ? (
+                              <SpeechHighlightedText
+                                text={textContent}
+                                highlight={partHighlight}
+                              />
+                            ) : (
+                              <Streamdown
+                                className={`ryos-chat-streamdown ${
+                                  isUrgent ? "ryos-chat-streamdown-urgent" : ""
+                                }`}
+                                components={chatStreamdownComponents}
+                                disallowedElements={STREAMDOWN_DISALLOWED_ELEMENTS}
+                                controls={false}
+                                lineNumbers={false}
+                                shikiTheme={CHAT_STREAMDOWN_SHIKI_THEME}
+                                plugins={CHAT_STREAMDOWN_PLUGINS}
+                                skipHtml
+                                unwrapDisallowed
+                                mode={isStreamingMessage ? "streaming" : "static"}
+                                animated={CHAT_STREAMDOWN_ANIMATED}
+                                isAnimating={isStreamingMessage}
+                                parseIncompleteMarkdown={isStreamingMessage}
+                              >
+                                {streamdownContent}
+                              </Streamdown>
+                            )
                           )}
                         </div>
                       );
@@ -1027,6 +1101,8 @@ interface ChatMessagesContentProps {
   onMessageDeleted?: (messageId: string) => void;
   fontSize: number;
   scrollToBottomTrigger: number;
+  highlightSegment?: HighlightSegment | null;
+  isSpeaking?: boolean;
   onSendMessage?: (username: string) => void;
   isLoadingGreeting?: boolean;
   typingUsers?: string[];
@@ -1045,6 +1121,8 @@ function ChatMessagesContent({
   onMessageDeleted,
   fontSize,
   scrollToBottomTrigger,
+  highlightSegment,
+  isSpeaking,
   onSendMessage,
   isLoadingGreeting,
   typingUsers,
@@ -1277,6 +1355,8 @@ function ChatMessagesContent({
             playingMessageId={playingMessageId}
             speechLoadingId={speechLoadingId}
             speechEnabled={speechEnabled}
+            highlightSegment={highlightSegment}
+            isSpeaking={isSpeaking}
             isAdmin={isAdmin}
             roomId={roomId}
             username={username}
@@ -1397,6 +1477,8 @@ export function ChatMessages({
   onMessageDeleted,
   fontSize,
   scrollToBottomTrigger,
+  highlightSegment,
+  isSpeaking,
   onSendMessage,
   isLoadingGreeting,
   typingUsers,
@@ -1425,6 +1507,8 @@ export function ChatMessages({
           onMessageDeleted={onMessageDeleted}
           fontSize={fontSize}
           scrollToBottomTrigger={scrollToBottomTrigger}
+          highlightSegment={highlightSegment}
+          isSpeaking={isSpeaking}
           onSendMessage={onSendMessage}
           isLoadingGreeting={isLoadingGreeting}
           typingUsers={typingUsers}
