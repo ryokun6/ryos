@@ -714,9 +714,8 @@ function CoverImage({
 // Cover Flow. Mirrors the iPod nano/classic 6G "flip the album cover
 // over to reveal its tracklist" gesture: header band shows album +
 // artist, rows below list every song in the album with its duration.
-// The currently-selected row uses the same glossy blue gradient
-// (`ipod-modern-row-selected`) as the menu list so the affordance reads
-// as a single design system across the device.
+// The header uses a softer blue gradient than selected rows, matching
+// the muted album title band on the physical Cover Flow tracklist.
 function AlbumTracklist({
   album,
   artist,
@@ -768,9 +767,9 @@ function AlbumTracklist({
         ipodMode ? "ipod-force-font" : "karaoke-force-font"
       )}
     >
-      {/* Album header — same blue gradient as the modern list selection
-          highlight on modern, deep blue on classic / karaoke. Tap on
-          the header exits the flip back to the carousel; row taps
+      {/* Album header — muted blue gradient on modern, deep blue on
+          classic / karaoke. Tap on the header exits the flip back to
+          the carousel; row taps
           below stop propagation so they still play their song
           instead of just unflipping. */}
       <div
@@ -781,7 +780,7 @@ function AlbumTracklist({
         }}
         className={cn(
           "shrink-0 px-1.5 flex flex-col justify-center cursor-pointer select-none",
-          isModern ? "ipod-modern-row-selected" : "bg-[#0a3667] text-white",
+          isModern ? "ipod-modern-album-header" : "bg-[#0a3667] text-white",
           // Modern iPod keeps its iOS-style UI font; classic iPod
           // uses Geneva-12 (the 1st-gen iPod's own UI bitmap font);
           // karaoke uses the theme-aware OS sans-serif so it blends
@@ -792,16 +791,20 @@ function AlbumTracklist({
               ? "font-geneva-12"
               : "font-os-ui"
         )}
-        style={{ minHeight: isModern ? 24 : 22, paddingTop: 1, paddingBottom: 1 }}
+        style={{
+          minHeight: isModern ? 26 : 22,
+          paddingTop: isModern ? 3 : 1,
+          paddingBottom: 1,
+        }}
       >
         <div
           className={cn(
-            "truncate font-semibold leading-none",
+            "truncate font-semibold",
             isModern
-              ? "text-[12px] tracking-tight"
+              ? "text-[12px] leading-[0.96] tracking-tight"
               : ipodMode
-                ? "text-[11px]"
-                : "text-[13px]"
+                ? "text-[11px] leading-none"
+                : "text-[13px] leading-none"
           )}
           title={album}
         >
@@ -810,13 +813,13 @@ function AlbumTracklist({
         {artist && (
           <div
             className={cn(
-              "truncate leading-none",
+              "truncate",
               // Modern stack reads tightest with no extra gap between
               // the two lines (the font's natural metrics already
               // give a small visible separation). Classic / karaoke
               // get a 1px nudge so the bitmap / OS font lines don't
               // visually collide.
-              isModern ? "" : "mt-[1px]",
+              isModern ? "-mt-[2px] leading-[0.96]" : "mt-[1px] leading-none",
               isModern
                 ? "text-[10px] text-white/85 tracking-tight"
                 : ipodMode

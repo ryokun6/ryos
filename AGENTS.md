@@ -169,7 +169,7 @@ Tests use `describe`/`test`/`expect` from `bun:test`. Shared HTTP helpers are in
 - **Skip computer use / GUI-driven testing** unless the user explicitly requests it
 - When demoing UI changes or visual verification, prefer screenshots over video walkthroughs
 - Only create video walkthroughs when the user explicitly asks for a video
-- For most changes, `bun run build` is sufficient to verify the code compiles correctly
+- Do **not** run `bun run build` for self-verification in local Cursor sessions unless the user explicitly asks. Running `bun run build` is okay when operating on a cloud agent / cloud environment.
 - For API testing, use `bun run dev` (full stack) or `bun run dev:api` + `bun run dev:vite` separately
 - Only use the `computerUse` subagent for manual browser testing when the user specifically asks for visual verification or UI testing
 
