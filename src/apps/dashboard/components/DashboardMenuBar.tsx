@@ -27,6 +27,7 @@ interface DashboardMenuBarProps {
   onAddStickyNote: () => void;
   onAddDictionary: () => void;
   onAddAquarium: () => void;
+  onAddTerrarium: () => void;
   onResetWidgets: () => void;
 }
 
@@ -44,6 +45,7 @@ export function DashboardMenuBar({
   onAddStickyNote,
   onAddDictionary,
   onAddAquarium,
+  onAddTerrarium,
   onResetWidgets,
 }: DashboardMenuBarProps) {
   const { t } = useTranslation();
@@ -102,6 +104,10 @@ export function DashboardMenuBar({
               <MenubarItem onClick={onAddAquarium} className="text-md h-6 px-3 gap-1.5">
                 <Emoji emoji="🐠" size={14} />
                 {t("apps.dashboard.widgets.aquarium", "Aquarium")}
+              </MenubarItem>
+              <MenubarItem onClick={onAddTerrarium} className="text-md h-6 px-3 gap-1.5">
+                <Emoji emoji="🌿" size={14} />
+                {t("apps.dashboard.widgets.terrarium", "Terrarium")}
               </MenubarItem>
             </MenubarSubContent>
           </MenubarSub>

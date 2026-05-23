@@ -2,7 +2,18 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { EventColor } from "./useCalendarStore";
 
-export type WidgetType = "clock" | "weather" | "calendar" | "stocks" | "ipod" | "dictionary" | "stickynote" | "translation" | "currency" | "aquarium";
+export type WidgetType =
+  | "clock"
+  | "weather"
+  | "calendar"
+  | "stocks"
+  | "ipod"
+  | "dictionary"
+  | "stickynote"
+  | "translation"
+  | "currency"
+  | "aquarium"
+  | "terrarium";
 
 export interface WeatherWidgetConfig {
   cityName?: string;
@@ -113,6 +124,7 @@ const DEFAULT_WIDGET_SIZES: Record<WidgetType, { width: number; height: number }
   weather: { width: 340, height: 180 },
   stocks: { width: 240, height: 340 },
   aquarium: { width: 340, height: 200 },
+  terrarium: { width: 340, height: 200 },
   ipod: { width: 320, height: 125 },
   dictionary: { width: 340, height: 220 },
   stickynote: { width: 200, height: 200 },
