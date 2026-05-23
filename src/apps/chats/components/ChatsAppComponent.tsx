@@ -68,6 +68,8 @@ export function ChatsAppComponent({
     error,
     stop,
     isSpeaking,
+    speakText,
+    stopSpeech,
     handleDirectMessageSubmit,
     handleNudge,
     handleSaveTranscript,
@@ -828,6 +830,8 @@ export function ChatsAppComponent({
                     scrollToBottomTrigger={scrollToBottomTrigger}
                     highlightSegment={highlightSegment}
                     isSpeaking={isSpeaking}
+                    speakText={speakText}
+                    stopSpeech={stopSpeech}
                     onSendMessage={handleSendMessage}
                     isLoadingGreeting={isLoadingGreeting}
                     typingUsers={currentRoomTypingUsers}

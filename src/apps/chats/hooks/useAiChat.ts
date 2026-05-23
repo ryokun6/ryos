@@ -2696,11 +2696,24 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     [username, saveFile, launchApp],
   );
 
+  const stopSpeech = useCallback(() => {
+    stopTts();
+    highlightQueueRef.current = [];
+    setHighlightSegment(null);
+  }, [stopTts]);
+
+  const speakText = useCallback(
+    (text: string, onEnd?: () => void) => {
+      speak(text, onEnd);
+    },
+    [speak],
+  );
+
   // Stop both chat streaming and TTS queue
   const stop = useCallback(() => {
     sdkStop();
-    stopTts();
-  }, [sdkStop, stopTts]);
+    stopSpeech();
+  }, [sdkStop, stopSpeech]);
 
   return {
     // AI Chat State & Actions
@@ -2739,6 +2752,8 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     handleSaveSubmit,
 
     isSpeaking,
+    speakText,
+    stopSpeech,
 
     highlightSegment,
   };

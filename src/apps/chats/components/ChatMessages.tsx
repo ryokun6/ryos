@@ -11,7 +11,6 @@ import { useTerminalSounds } from "@/hooks/useTerminalSounds";
 
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
 import { TypingDots } from "./TypingBubble";
-import { useTtsQueue } from "@/hooks/useTtsQueue";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { appNames } from "@/config/appRegistryData";
 import {
@@ -312,6 +311,8 @@ interface ChatMessagesProps {
   scrollToBottomTrigger: number; // Add scroll trigger prop
   highlightSegment?: HighlightSegment | null;
   isSpeaking?: boolean;
+  speakText: (text: string, onEnd?: () => void) => void;
+  stopSpeech: () => void;
   onSendMessage?: (username: string) => void; // Callback when send message button is clicked
   isLoadingGreeting?: boolean; // Show typing bubble for proactive greeting
   typingUsers?: string[];
@@ -413,6 +414,8 @@ interface ChatMessageItemProps {
   speechEnabled: boolean;
   highlightSegment?: HighlightSegment | null;
   isSpeaking?: boolean;
+  speakText: (text: string, onEnd?: () => void) => void;
+  stopSpeech: () => void;
   isAdmin: boolean;
   roomId?: string;
   username?: string;
@@ -422,8 +425,6 @@ interface ChatMessageItemProps {
   onDeleteMessage: (message: ChatMessage) => void;
   setPlayingMessageId: (id: string | null) => void;
   setSpeechLoadingId: (id: string | null) => void;
-  speak: (text: string, onDone?: () => void) => void;
-  stop: () => void;
   playNote: () => void;
   playElevatorMusic: () => void;
   stopElevatorMusic: () => void;
@@ -447,7 +448,9 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
     speechLoadingId,
     speechEnabled,
     highlightSegment,
-    isSpeaking: _isSpeaking,
+    isSpeaking,
+    speakText,
+    stopSpeech,
     isAdmin,
     roomId: _roomId,
     username: _username,
@@ -457,8 +460,6 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
     onDeleteMessage,
     setPlayingMessageId,
     setSpeechLoadingId,
-    speak,
-    stop,
     playNote,
     playElevatorMusic,
     stopElevatorMusic,
@@ -693,10 +694,10 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                 className="size-3 text-gray-400 hover:text-neutral-600 transition-colors"
                 onClick={() => {
                   if (playingMessageId === messageKey) {
-                    stop();
+                    stopSpeech();
                     setPlayingMessageId(null);
                   } else {
-                    stop();
+                    stopSpeech();
                     setSpeechLoadingId(null);
                     const text = displayContent.trim();
                     if (text) {
@@ -713,7 +714,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                         setSpeechLoadingId(messageKey);
                         setPlayingMessageId(messageKey);
                         chunks.forEach((chunk) => {
-                          speak(chunk, () => {
+                          speakText(chunk, () => {
                             pendingChunks -= 1;
                             if (pendingChunks === 0) {
                               setPlayingMessageId(null);
@@ -1103,6 +1104,8 @@ interface ChatMessagesContentProps {
   scrollToBottomTrigger: number;
   highlightSegment?: HighlightSegment | null;
   isSpeaking?: boolean;
+  speakText: (text: string, onEnd?: () => void) => void;
+  stopSpeech: () => void;
   onSendMessage?: (username: string) => void;
   isLoadingGreeting?: boolean;
   typingUsers?: string[];
@@ -1123,6 +1126,8 @@ function ChatMessagesContent({
   scrollToBottomTrigger,
   highlightSegment,
   isSpeaking,
+  speakText,
+  stopSpeech,
   onSendMessage,
   isLoadingGreeting,
   typingUsers,
@@ -1132,7 +1137,6 @@ function ChatMessagesContent({
   const { playElevatorMusic, stopElevatorMusic, playDingSound } =
     useTerminalSounds();
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
-  const { speak, stop, isSpeaking: localTtsSpeaking } = useTtsQueue();
   const speechEnabled = useAudioSettingsStore((state) => state.speechEnabled);
   const { isMacOSTheme } = useThemeFlags();
   const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
@@ -1200,10 +1204,10 @@ function ChatMessagesContent({
 
   // Clear loading indicator when TTS actually starts playing
   useEffect(() => {
-    if (localTtsSpeaking && speechLoadingId) {
+    if (isSpeaking && speechLoadingId) {
       setSpeechLoadingId(null);
     }
-  }, [localTtsSpeaking, speechLoadingId]);
+  }, [isSpeaking, speechLoadingId]);
 
   const copyMessage = useCallback(async (message: ChatMessage) => {
     const messageText = getMessageText(message);
@@ -1357,6 +1361,8 @@ function ChatMessagesContent({
             speechEnabled={speechEnabled}
             highlightSegment={highlightSegment}
             isSpeaking={isSpeaking}
+            speakText={speakText}
+            stopSpeech={stopSpeech}
             isAdmin={isAdmin}
             roomId={roomId}
             username={username}
@@ -1366,8 +1372,6 @@ function ChatMessagesContent({
             onDeleteMessage={deleteMessage}
             setPlayingMessageId={setPlayingMessageId}
             setSpeechLoadingId={setSpeechLoadingId}
-            speak={speak}
-            stop={stop}
             playNote={playNote}
             playElevatorMusic={playElevatorMusic}
             stopElevatorMusic={stopElevatorMusic}
@@ -1479,6 +1483,8 @@ export function ChatMessages({
   scrollToBottomTrigger,
   highlightSegment,
   isSpeaking,
+  speakText,
+  stopSpeech,
   onSendMessage,
   isLoadingGreeting,
   typingUsers,
@@ -1509,6 +1515,8 @@ export function ChatMessages({
           scrollToBottomTrigger={scrollToBottomTrigger}
           highlightSegment={highlightSegment}
           isSpeaking={isSpeaking}
+          speakText={speakText}
+          stopSpeech={stopSpeech}
           onSendMessage={onSendMessage}
           isLoadingGreeting={isLoadingGreeting}
           typingUsers={typingUsers}
