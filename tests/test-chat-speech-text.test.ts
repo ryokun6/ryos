@@ -57,6 +57,7 @@ describe("chat speech wiring", () => {
     expect(
       source.includes("outline: 2px solid rgba(255, 218, 48, 0.95)")
     ).toBe(true);
+    expect(source.includes("background-color: #fde047 !important")).toBe(true);
     expect(
       source.includes(
         ':root[data-os-theme="macosx"] .chat-bubble.ryos-chat-tts-bubble-active'
