@@ -923,7 +923,12 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
           } ${
             isTtsHighlighted ? "ryos-chat-tts-bubble-active" : ""
           } w-fit max-w-[90%] min-h-[12px] rounded leading-snug font-geneva-12 break-words select-text`}
-          style={getChatMessageStyle(fontSize)}
+          style={{
+            ...getChatMessageStyle(fontSize),
+            ...(isTtsHighlighted
+              ? { backgroundColor: "#fde047", color: "#111827" }
+              : {}),
+          }}
         >
           {showTypingDots ? (
             <TypingDots />
