@@ -924,7 +924,7 @@ let inFlightPlaylistsRefresh: Promise<AppleMusicPlaylist[]> | null = null;
  * fetcher so a flaky network response can't wipe the cached list.
  */
 export async function refreshAppleMusicPlaylists(
-  options: { force?: boolean } = {}
+  options: { force?: boolean; allowEmpty?: boolean } = {}
 ): Promise<AppleMusicPlaylist[]> {
   const store = useIpodStore.getState();
 
@@ -954,7 +954,11 @@ export async function refreshAppleMusicPlaylists(
       // refresh result. Apple Music occasionally returns 0 playlists when
       // a token is mid-rotation; preserving the cached list keeps the
       // menu populated.
-      if (playlists.length === 0 && existing.length > 0) {
+      if (
+        playlists.length === 0 &&
+        existing.length > 0 &&
+        !options.allowEmpty
+      ) {
         console.warn(
           "[apple music] playlist refresh returned 0; keeping cached list"
         );

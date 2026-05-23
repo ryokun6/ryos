@@ -16,6 +16,7 @@ import { useLibraryUpdateChecker } from "./useLibraryUpdateChecker";
 import {
   useAppleMusicLibrary,
   fetchAppleMusicPlaylistTracks,
+  refreshAppleMusicPlaylists,
   refreshAppleMusicRecentlyAdded,
   refreshAppleMusicFavorites,
   searchAppleMusicTracks,
@@ -1119,6 +1120,36 @@ export function useIpodLogic({
     }
   }, [appleMusicAuthorized, handleAppleMusicSignIn, mergeAppleMusicTracks, menuLocale]);
 
+  const loadAppleMusicPlaylists = useCallback(async () => {
+    if (!appleMusicAuthorized) {
+      void handleAppleMusicSignIn();
+      return;
+    }
+    try {
+      // Always revalidate when opening the Playlists menu so additions/
+      // deletions on other devices appear promptly.
+      await refreshAppleMusicPlaylists({ force: true, allowEmpty: true });
+    } catch (err) {
+      const hasCached = useIpodStore.getState().appleMusicPlaylists.length > 0;
+      if (!hasCached) {
+        toast.error(
+          t(
+            "apps.ipod.dialogs.appleMusicPlaylistsFailed",
+            "Failed to load playlists"
+          ),
+          {
+            description: err instanceof Error ? err.message : String(err),
+          }
+        );
+      } else {
+        console.warn(
+          "[apple music] playlist refresh failed (using cached playlist list)",
+          err
+        );
+      }
+    }
+  }, [appleMusicAuthorized, handleAppleMusicSignIn, menuLocale]);
+
   const loadAppleMusicRadioStations = useCallback(async (options?: {
     promptForAuth?: boolean;
     showErrors?: boolean;
@@ -2208,10 +2239,12 @@ export function useIpodLogic({
         },
         {
           label: playlistsLabel,
-          action: () =>
+          action: () => {
             pushSubmenu(playlistsLabel, applePlaylistsMenuItems, {
               modernMediaList: true,
-            }),
+            });
+            void loadAppleMusicPlaylists();
+          },
           showChevron: true,
         },
         {
@@ -2280,6 +2313,7 @@ export function useIpodLogic({
     albumsListMenuItems,
     applePlaylistsMenuItems,
     loadAppleMusicFavorites,
+    loadAppleMusicPlaylists,
     loadAppleMusicRecentlyAdded,
     loadAppleMusicRadioStations,
     playAppleMusicGenius,
