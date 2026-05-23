@@ -222,10 +222,14 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
    */
   const speak = useCallback(
     (text: string, onEnd?: () => void) => {
-      if (!text || !text.trim()) return;
+      if (!text || !text.trim()) {
+        onEnd?.();
+        return;
+      }
 
       // Check if offline and show error
       if (checkOfflineAndShowError("Text-to-speech requires an internet connection")) {
+        onEnd?.();
         return;
       }
 
@@ -245,10 +249,18 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
 
         try {
           const arrayBuf = await fetchPromise;
-          if (!arrayBuf) return;
+          if (!arrayBuf) {
+            onEnd?.();
+            return;
+          }
           // Ensure the shared context is ready
           await resumeAudioContext();
           const ctx = ensureContext();
+          if (gainNodeRef.current) {
+            const targetVolume = speechVolumeRef.current * masterVolumeRef.current;
+            gainNodeRef.current.gain.cancelScheduledValues(ctx.currentTime);
+            gainNodeRef.current.gain.setValueAtTime(targetVolume, ctx.currentTime);
+          }
 
           const audioBuf = await ctx.decodeAudioData(arrayBuf);
 
@@ -289,6 +301,7 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
           if ((err as DOMException)?.name !== "AbortError") {
             console.error("Error during speak()", err);
           }
+          onEnd?.();
         }
       });
     },

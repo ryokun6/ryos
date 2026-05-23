@@ -1,99 +1,9 @@
-import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useAppStore } from "@/stores/useAppStore";
-import { useInternetExplorerStore } from "@/stores/useInternetExplorerStore";
-import { useVideoStore } from "@/stores/useVideoStore";
-import { getIpodChatContextTrack, useIpodStore } from "@/stores/useIpodStore";
-import { useChatsStore } from "@/stores/useChatsStore";
-import { useLanguageStore } from "@/stores/useLanguageStore";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
-
-// Helper function to get system state for AI chat
-const getSystemState = () => {
-  const appStore = useAppStore.getState();
-  const ieStore = useInternetExplorerStore.getState();
-  const videoStore = useVideoStore.getState();
-  const ipodStore = useIpodStore.getState();
-  const chatsStore = useChatsStore.getState();
-  const languageStore = useLanguageStore.getState();
-
-  const currentVideo = videoStore.getCurrentVideo();
-  const currentTrack = getIpodChatContextTrack(ipodStore);
-
-  // Use new instance-based model
-  const openInstances = Object.values(appStore.instances).filter(
-    (inst) => inst.isOpen
-  );
-
-  const foregroundInstanceId =
-    appStore.instanceOrder.length > 0
-      ? appStore.instanceOrder[appStore.instanceOrder.length - 1]
-      : null;
-
-  const foregroundInstance = foregroundInstanceId
-    ? appStore.instances[foregroundInstanceId]
-    : null;
-
-  const foregroundApp = foregroundInstance?.appId || null;
-
-  const backgroundApps = openInstances.reduce<string[]>((acc, instance) => {
-    if (instance.instanceId !== foregroundInstanceId) {
-      acc.push(instance.appId);
-    }
-    return acc;
-  }, []);
-
-  return {
-    instances: appStore.instances,
-    username: chatsStore.username,
-    locale: languageStore.current,
-    runningApps: {
-      foreground: foregroundApp,
-      background: backgroundApps,
-      instanceWindowOrder: appStore.instanceOrder,
-    },
-    internetExplorer: {
-      url: ieStore.url,
-      year: ieStore.year,
-      status: ieStore.status,
-      currentPageTitle: ieStore.currentPageTitle,
-      aiGeneratedHtml: ieStore.aiGeneratedHtml,
-    },
-    video: {
-      currentVideo: currentVideo
-        ? {
-            id: currentVideo.id,
-            url: currentVideo.url,
-            title: currentVideo.title,
-            artist: currentVideo.artist,
-          }
-        : null,
-      isPlaying: videoStore.isPlaying,
-      loopAll: videoStore.loopAll,
-      loopCurrent: videoStore.loopCurrent,
-      isShuffled: videoStore.isShuffled,
-    },
-    ipod: {
-      currentTrack: currentTrack
-        ? {
-            id: currentTrack.id,
-            url: currentTrack.url,
-            title: currentTrack.title,
-            artist: currentTrack.artist,
-            source: currentTrack.source,
-          }
-        : null,
-      librarySource: ipodStore.librarySource,
-      isPlaying: ipodStore.isPlaying,
-      loopAll: ipodStore.loopAll,
-      loopCurrent: ipodStore.loopCurrent,
-      isShuffled: ipodStore.isShuffled,
-    },
-  };
-};
+import { getSystemState } from "../utils/systemState";
+import { parseRyoMention } from "../utils/ryoMention";
 
 interface UseRyoChatProps {
   currentRoomId: string | null;
@@ -113,28 +23,16 @@ export function useRyoChat({
 }: UseRyoChatProps) {
   const { t } = useTranslation();
 
-  // Create a separate AI chat hook for @ryo mentions in chat rooms
-  const ryoChatTransport = useMemo(
-    () =>
-      new DefaultChatTransport({
-        api: getApiUrl("/api/chat"),
-        body: {
-          systemState: getSystemState(),
-        },
-      }),
-    []
-  );
+  const [isRyoLoading, setIsRyoLoading] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
 
-  const {
-    messages: ryoMessages,
-    status,
-    stop: stopRyo,
-  } = useChat({
-    transport: ryoChatTransport,
-    // We no longer stream client-side AI to avoid spoofing. onFinish unused.
-  });
+  const stopRyo = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setIsRyoLoading(false);
+  }, []);
 
-  const isRyoLoading = status === "streaming" || status === "submitted";
+  useEffect(() => stopRyo, [stopRyo]);
 
   const handleRyoMention = useCallback(
     async (messageContent: string) => {
@@ -155,6 +53,12 @@ export function useRyoChat({
       };
 
       if (!currentRoomId) return;
+
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+      setIsRyoLoading(true);
+
       try {
         await abortableFetch(getApiUrl("/api/ai/ryo-reply"), {
           method: "POST",
@@ -164,11 +68,19 @@ export function useRyoChat({
             prompt: messageContent,
             systemState: systemStateWithChat,
           }),
+          signal: controller.signal,
           timeout: 20000,
           retry: { maxAttempts: 1, initialDelayMs: 250 },
         });
       } catch (error) {
-        console.error("[RyoChat] Failed to request @ryo reply:", error);
+        if (!(error instanceof DOMException && error.name === "AbortError")) {
+          console.error("[RyoChat] Failed to request @ryo reply:", error);
+        }
+      } finally {
+        if (abortRef.current === controller) {
+          abortRef.current = null;
+          setIsRyoLoading(false);
+        }
       }
 
       onScrollToBottom();
@@ -177,22 +89,12 @@ export function useRyoChat({
   );
 
   const detectAndProcessMention = useCallback(
-    (input: string): { isMention: boolean; messageContent: string } => {
-      if (input.startsWith("@ryo ")) {
-        // Extract the message content after @ryo
-        const messageContent = input.substring(4).trim();
-        return { isMention: true, messageContent };
-      } else if (input === "@ryo") {
-        // If they just typed @ryo without a message, treat it as a nudge
-        return { isMention: true, messageContent: t("apps.chats.status.nudgeSent") };
-      }
-      return { isMention: false, messageContent: "" };
-    },
+    (input: string): { isMention: boolean; messageContent: string } =>
+      parseRyoMention(input, t("apps.chats.status.nudgeSent")),
     [t]
   );
 
   return {
-    ryoMessages,
     isRyoLoading,
     stopRyo,
     handleRyoMention,
