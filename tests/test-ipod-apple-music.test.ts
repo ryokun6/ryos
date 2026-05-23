@@ -32,9 +32,14 @@ const browserGlobals = globalThis as typeof globalThis & {
 if (!browserGlobals.localStorage) {
   browserGlobals.localStorage = new MemoryStorage();
 }
-if (!browserGlobals.navigator) {
-  browserGlobals.navigator = { onLine: true, userAgent: "test" } as Navigator;
-}
+Object.defineProperty(browserGlobals, "navigator", {
+  value: {
+    ...(browserGlobals.navigator ?? {}),
+    onLine: true,
+    userAgent: "test",
+  },
+  configurable: true,
+});
 
 const {
   appleMusicPlayableResourceToTrack,
