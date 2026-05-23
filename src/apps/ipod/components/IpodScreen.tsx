@@ -187,8 +187,10 @@ function menuScrollReducer(
 ): MenuScrollState {
   switch (action.type) {
     case "setScrollTop":
+      if (state.scrollTop === action.value) return state;
       return { ...state, scrollTop: action.value };
     case "setContainerHeight":
+      if (state.containerHeight === action.value) return state;
       return { ...state, containerHeight: action.value };
     default:
       return state;
