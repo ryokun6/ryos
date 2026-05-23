@@ -36,6 +36,8 @@ import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
 import { formatToolName } from "@/lib/toolInvocationDisplay";
 import { segmentChatMarkdownText } from "@/lib/chatMarkdown";
 import { cleanTextForSpeech } from "../utils/textForSpeech";
+import { getVisibleTextPartText } from "../utils/aiMessageText";
+import type { ChatHighlightSegment } from "../hooks/useChatSpeechSync";
 
 // Helper to extract image URLs from message parts
 const extractImageParts = (message: {
@@ -256,7 +258,7 @@ interface ChatMessagesProps {
   onMessageDeleted?: (messageId: string) => void; // Callback when a message is deleted locally
   fontSize: number; // Add font size prop
   scrollToBottomTrigger: number; // Add scroll trigger prop
-  highlightSegment?: { messageId: string; start: number; end: number } | null;
+  highlightSegment?: ChatHighlightSegment | null;
   isSpeaking?: boolean;
   onSendMessage?: (username: string) => void; // Callback when send message button is clicked
   isLoadingGreeting?: boolean; // Show typing bubble for proactive greeting
@@ -357,6 +359,7 @@ interface ChatMessageItemProps {
   playingMessageId: string | null;
   speechLoadingId: string | null;
   speechEnabled: boolean;
+  highlightSegment?: ChatHighlightSegment | null;
   isAdmin: boolean;
   roomId?: string;
   username?: string;
@@ -390,6 +393,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
     playingMessageId,
     speechLoadingId,
     speechEnabled,
+    highlightSegment,
     isAdmin,
     roomId: _roomId,
     username: _username,
@@ -463,6 +467,63 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
   const decodedContent = decodeHtmlEntities(rawContent);
   const hasAquariumToken = decodedContent.includes("[[AQUARIUM]]");
   const displayContent = decodedContent.replace(/\[\[AQUARIUM\]\]/g, "").trim();
+  const activeHighlight =
+    message.role === "assistant" && highlightSegment?.messageId === message.id
+      ? highlightSegment
+      : null;
+  let assistantTextOffset = 0;
+
+  const renderAssistantMarkdown = (
+    content: string,
+    keyPrefix: string,
+    highlightRange?: { start: number; end: number } | null
+  ) => {
+    const renderSlice = (slice: string, key: string, highlighted = false) => {
+      if (!slice.trim()) return null;
+      return (
+        <span
+          key={key}
+          className={highlighted ? "ryos-chat-tts-highlight" : undefined}
+        >
+          <Streamdown
+            className={`ryos-chat-streamdown ${
+              isUrgent ? "ryos-chat-streamdown-urgent" : ""
+            }`}
+            components={chatStreamdownComponents}
+            disallowedElements={STREAMDOWN_DISALLOWED_ELEMENTS}
+            controls={false}
+            lineNumbers={false}
+            shikiTheme={CHAT_STREAMDOWN_SHIKI_THEME}
+            plugins={CHAT_STREAMDOWN_PLUGINS}
+            skipHtml
+            unwrapDisallowed
+            mode={isStreamingMessage ? "streaming" : "static"}
+            animated={CHAT_STREAMDOWN_ANIMATED}
+            isAnimating={isStreamingMessage}
+            parseIncompleteMarkdown={isStreamingMessage}
+          >
+            {slice}
+          </Streamdown>
+        </span>
+      );
+    };
+
+    if (!highlightRange || highlightRange.start >= highlightRange.end) {
+      return renderSlice(content, `${keyPrefix}-full`);
+    }
+
+    return (
+      <>
+        {renderSlice(content.slice(0, highlightRange.start), `${keyPrefix}-before`)}
+        {renderSlice(
+          content.slice(highlightRange.start, highlightRange.end),
+          `${keyPrefix}-highlight`,
+          true
+        )}
+        {renderSlice(content.slice(highlightRange.end), `${keyPrefix}-after`)}
+      </>
+    );
+  };
 
   let hasAquarium = false;
   if (message.role === "assistant" && message.parts) {
@@ -872,12 +933,20 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                           );
                         }
                       }
-                      const rawPartContent = isUrgentMessage(partText)
-                        ? partText.slice(4).trimStart()
-                        : partText;
+                      const rawPartContent = getVisibleTextPartText(partText);
                       const partDisplayContent = decodeHtmlEntities(rawPartContent);
                       const textContent = partDisplayContent;
-                      const streamdownContent = textContent.trim();
+                      const partStart = assistantTextOffset;
+                      assistantTextOffset += textContent.length;
+                      const highlightRange = activeHighlight
+                        ? {
+                            start: Math.max(0, activeHighlight.start - partStart),
+                            end: Math.min(
+                              textContent.length,
+                              activeHighlight.end - partStart
+                            ),
+                          }
+                        : null;
                       const isEmojiMessage = isEmojiOnly(textContent);
                       return (
                         <div
@@ -890,26 +959,12 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                               : undefined
                           }
                         >
-                          {streamdownContent && (
-                            <Streamdown
-                              className={`ryos-chat-streamdown ${
-                                isUrgent ? "ryos-chat-streamdown-urgent" : ""
-                              }`}
-                              components={chatStreamdownComponents}
-                              disallowedElements={STREAMDOWN_DISALLOWED_ELEMENTS}
-                              controls={false}
-                              lineNumbers={false}
-                              shikiTheme={CHAT_STREAMDOWN_SHIKI_THEME}
-                              plugins={CHAT_STREAMDOWN_PLUGINS}
-                              skipHtml
-                              unwrapDisallowed
-                              mode={isStreamingMessage ? "streaming" : "static"}
-                              animated={CHAT_STREAMDOWN_ANIMATED}
-                              isAnimating={isStreamingMessage}
-                              parseIncompleteMarkdown={isStreamingMessage}
-                            >
-                              {streamdownContent}
-                            </Streamdown>
+                          {renderAssistantMarkdown(
+                            textContent,
+                            partKey,
+                            highlightRange && highlightRange.end > highlightRange.start
+                              ? highlightRange
+                              : null
                           )}
                         </div>
                       );
@@ -1030,6 +1085,7 @@ interface ChatMessagesContentProps {
   onSendMessage?: (username: string) => void;
   isLoadingGreeting?: boolean;
   typingUsers?: string[];
+  highlightSegment?: ChatHighlightSegment | null;
 }
 
 function ChatMessagesContent({
@@ -1048,6 +1104,7 @@ function ChatMessagesContent({
   onSendMessage,
   isLoadingGreeting,
   typingUsers,
+  highlightSegment,
 }: ChatMessagesContentProps) {
   const { t } = useTranslation();
   const { playNote } = useChatSynth();
@@ -1277,6 +1334,7 @@ function ChatMessagesContent({
             playingMessageId={playingMessageId}
             speechLoadingId={speechLoadingId}
             speechEnabled={speechEnabled}
+            highlightSegment={highlightSegment}
             isAdmin={isAdmin}
             roomId={roomId}
             username={username}
@@ -1400,6 +1458,7 @@ export function ChatMessages({
   onSendMessage,
   isLoadingGreeting,
   typingUsers,
+  highlightSegment,
 }: ChatMessagesProps) {
   return (
     // Use StickToBottom component as the main container
@@ -1428,6 +1487,7 @@ export function ChatMessages({
           onSendMessage={onSendMessage}
           isLoadingGreeting={isLoadingGreeting}
           typingUsers={typingUsers}
+          highlightSegment={highlightSegment}
         />
       </StickToBottom.Content>
 
