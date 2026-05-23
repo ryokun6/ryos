@@ -379,16 +379,19 @@ const TITLE_CARD_OUTER_STYLE_FULLSCREEN: CSSProperties = {
 const TITLE_CARD_OUTER_STYLE_WINDOW: CSSProperties = {
   paddingLeft: "clamp(24px, 6cqw, 80px)",
 };
+/** Extra room under stroked/glow titles so `ScrollingText` avoids clipping glyphs */
+const TITLE_CARD_TITLE_LINE_HEIGHT = 1.22;
+
 const TITLE_CARD_REGULAR_OUTLINE_STYLE: TitleCardLineStyle = {
   color: "#fff",
-  lineHeight: 1,
+  lineHeight: TITLE_CARD_TITLE_LINE_HEIGHT,
   WebkitTextStroke: "0.12em rgba(0,0,0,0.7)",
   paintOrder: "stroke fill",
   textShadow: "none",
 };
 const TITLE_CARD_REGULAR_GRADIENT_STYLE: TitleCardLineStyle = {
   color: "rgba(255, 255, 255, 0.78)",
-  lineHeight: 1,
+  lineHeight: TITLE_CARD_TITLE_LINE_HEIGHT,
   textShadow: TITLE_CARD_BASE_SHADOW,
 };
 
@@ -452,7 +455,7 @@ const KaraokeTitleCard = memo(function KaraokeTitleCard({
       case "glow-gold":
         return {
           color: primaryGlow.baseColor,
-          lineHeight: 1,
+          lineHeight: TITLE_CARD_TITLE_LINE_HEIGHT,
           textShadow: TITLE_CARD_BASE_SHADOW,
           filter: "none",
         };

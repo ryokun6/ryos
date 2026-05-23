@@ -173,7 +173,10 @@ export function ScrollingText({
     <div
       ref={containerRef}
       className={cn(
-        "relative flex min-h-min min-w-0 items-center overflow-x-hidden overflow-y-visible",
+        // Use `overflow-hidden` on both axes — pairing `overflow-x: hidden` with
+        // `overflow-y: visible` is invalid per spec and resolves to `overflow-y: auto`,
+        // which can show vertical scrollbars on the title row.
+        "relative flex min-h-min min-w-0 items-center overflow-hidden",
         alignClass,
         className
       )}
