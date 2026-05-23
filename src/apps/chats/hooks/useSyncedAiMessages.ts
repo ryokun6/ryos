@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import type { UIMessage } from "@ai-sdk/react";
 import type { AIChatMessage } from "@/types/chat";
 
@@ -13,13 +13,17 @@ export function useSyncedAiMessages({
   currentMessages,
   setMessages,
 }: UseSyncedAiMessagesOptions) {
-  useEffect(() => {
-    const storeLast = aiMessages.at(-1);
-    const sdkLast = currentMessages.at(-1);
+  const currentMessagesRef = useRef(currentMessages);
+  currentMessagesRef.current = currentMessages;
 
-    if (aiMessages.length !== currentMessages.length || storeLast?.id !== sdkLast?.id) {
+  useEffect(() => {
+    const sdkMessages = currentMessagesRef.current;
+    const storeLast = aiMessages.at(-1);
+    const sdkLast = sdkMessages.at(-1);
+
+    if (aiMessages.length !== sdkMessages.length || storeLast?.id !== sdkLast?.id) {
       console.log("Syncing Zustand store messages to SDK.");
       setMessages(aiMessages);
     }
-  }, [aiMessages, currentMessages, setMessages]);
+  }, [aiMessages, setMessages]);
 }

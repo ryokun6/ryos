@@ -468,7 +468,9 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
   const hasAquariumToken = decodedContent.includes("[[AQUARIUM]]");
   const displayContent = decodedContent.replace(/\[\[AQUARIUM\]\]/g, "").trim();
   const activeHighlight =
-    message.role === "assistant" && highlightSegment?.messageId === message.id
+    !isStreamingMessage &&
+    message.role === "assistant" &&
+    highlightSegment?.messageId === message.id
       ? highlightSegment
       : null;
   let assistantTextOffset = 0;
