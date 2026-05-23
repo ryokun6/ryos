@@ -11,6 +11,7 @@ import { useTerminalStoreShallow } from "@/stores/helpers";
 import { useTerminalStore } from "@/stores/useTerminalStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useAiChat } from "@/apps/chats/hooks/useAiChat";
+import { useAppStore } from "@/stores/useAppStore";
 import { useTerminalSounds } from "@/hooks/useTerminalSounds";
 import { getTextAnalytics, track } from "@/utils/analytics";
 import { useChatsStore } from "@/stores/useChatsStore";
@@ -28,6 +29,16 @@ import { helpItems } from "../index";
 import { useVimLogic } from "./useVimLogic";
 import type { AIChatMessage } from "@/types/chat";
 import { getSystemState } from "@/apps/chats/utils/systemState";
+
+
+// Helper function to check if a message is urgent (starts with "!!!!")
+export const isUrgentMessage = (content: string): boolean =>
+  content.startsWith("!!!!");
+
+// Function to clean urgent message prefix
+export const cleanUrgentPrefix = (content: string): string => {
+  return isUrgentMessage(content) ? content.slice(4).trimStart() : content;
+};
 
 interface UseTerminalLogicOptions {
   isForeground?: boolean;
