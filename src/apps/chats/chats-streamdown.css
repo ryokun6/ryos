@@ -1,13 +1,13 @@
 @import "streamdown/styles.css";
 
-
-.ryos-chat-tts-highlight {
-  display: inline;
-  border-radius: 3px;
-  background: rgba(255, 241, 118, 0.85);
-  box-shadow: 0 0 0 1px rgba(180, 137, 0, 0.2);
-}
-
-.ryos-chat-tts-highlight .ryos-chat-streamdown {
-  display: inline;
+/*
+ * TTS highlight is painted via the CSS Custom Highlight API
+ * (Highlight + CSS.highlights, registered as `ryos-chat-tts`) so it overlays
+ * the rendered markdown without splitting the source string. Browsers that
+ * don't support ::highlight() simply skip painting — the markdown still
+ * renders correctly.
+ */
+::highlight(ryos-chat-tts) {
+  background-color: rgba(255, 241, 118, 0.85);
+  color: inherit;
 }
