@@ -46,13 +46,3 @@ export type ToolHandler<T = unknown> = (
   toolCallId: string,
   context: ToolContext
 ) => Promise<void> | void;
-
-/**
- * Tool handler registry entry
- */
-export interface ToolHandlerEntry<T = unknown> {
-  /** Handler function */
-  handler: ToolHandler<T>;
-  /** Tool name for matching */
-  toolName: string;
-}

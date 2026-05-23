@@ -14,17 +14,6 @@ const BARE_URL_RE = /\bhttps?:\/\/[^\s<>()]+/gi;
 const BARE_WWW_RE = /\bwww\.[^\s<>()]+/gi;
 const BARE_EMAIL_RE = /\b[\w.+-]+@[\w-]+\.[\w.-]+\b/gi;
 
-export function stripUrlsForSpeech(text: string): string {
-  return text
-    .replace(MARKDOWN_IMAGE_RE, "")
-    .replace(MARKDOWN_LINK_RE, "$1")
-    .replace(ANGLE_AUTOLINK_RE, "")
-    .replace(BARE_URL_RE, "")
-    .replace(BARE_WWW_RE, "")
-    .replace(BARE_EMAIL_RE, "")
-    .replace(/[ \t]{2,}/g, " ");
-}
-
 export function cleanTextForSpeech(text: string): string {
   return text
     .replace(/```[\s\S]*?```/g, "")

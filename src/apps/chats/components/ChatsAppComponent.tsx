@@ -235,12 +235,11 @@ export function ChatsAppComponent({
   }, []);
 
   // Use the @ryo chat hook
-  const { isRyoLoading, stopRyo, handleRyoMention, detectAndProcessMention } =
-    useRyoChat({
-      currentRoomId,
-      onScrollToBottom: handleRyoScrollToBottom,
-      roomMessages: ryoRoomMessages,
-    });
+  const { handleRyoMention, detectAndProcessMention } = useRyoChat({
+    currentRoomId,
+    onScrollToBottom: handleRyoScrollToBottom,
+    roomMessages: ryoRoomMessages,
+  });
 
   // Wrapper for room selection that handles unread scroll triggering
   const handleRoomSelectWithScroll = useCallback(
@@ -344,11 +343,12 @@ export function ChatsAppComponent({
     setScrollToBottomTrigger((prev) => prev + 1);
   }, [handleNudge]);
 
-  // Combined stop function for both AI chat and @ryo mentions
+  // @ryo replies in rooms are server-side only (POST /api/ai/ryo-reply +
+  // Pusher), so there is nothing client-side to abort for them. Only the
+  // AI chat needs its in-flight stream stopped.
   const handleStop = useCallback(() => {
-    stop(); // Stop regular AI chat
-    stopRyo(); // Stop @ryo chat
-  }, [stop, stopRyo]);
+    stop();
+  }, [stop]);
 
   // Font size handlers using store action
   const handleIncreaseFontSize = useCallback(() => {
@@ -812,10 +812,7 @@ export function ChatsAppComponent({
                   <ChatMessages
                     key={currentRoomId || "ryo"}
                     messages={currentMessagesToDisplay}
-                    isLoading={
-                      (isLoading && !currentRoomId) ||
-                      (!!currentRoomId && isRyoLoading)
-                    }
+                    isLoading={isLoading && !currentRoomId}
                     error={!currentRoomId ? error : undefined}
                     onRetry={reload}
                     onClear={handleOpenClearDialog}
@@ -865,7 +862,7 @@ export function ChatsAppComponent({
                     )
                   ) : (
                     <ChatInput
-                      isLoading={isLoading || isRyoLoading}
+                      isLoading={isLoading}
                       isForeground={isForeground}
                       onSubmitMessage={handleSubmit}
                       onStop={handleStop}

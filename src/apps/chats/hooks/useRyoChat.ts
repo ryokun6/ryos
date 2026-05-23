@@ -1,6 +1,4 @@
-import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
-import { useCallback, useMemo } from "react";
+import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/stores/useAppStore";
 import { useInternetExplorerStore } from "@/stores/useInternetExplorerStore";
@@ -113,28 +111,10 @@ export function useRyoChat({
 }: UseRyoChatProps) {
   const { t } = useTranslation();
 
-  // Create a separate AI chat hook for @ryo mentions in chat rooms
-  const ryoChatTransport = useMemo(
-    () =>
-      new DefaultChatTransport({
-        api: getApiUrl("/api/chat"),
-        body: {
-          systemState: getSystemState(),
-        },
-      }),
-    []
-  );
-
-  const {
-    messages: ryoMessages,
-    status,
-    stop: stopRyo,
-  } = useChat({
-    transport: ryoChatTransport,
-    // We no longer stream client-side AI to avoid spoofing. onFinish unused.
-  });
-
-  const isRyoLoading = status === "streaming" || status === "submitted";
+  // Note: @ryo mentions in rooms are handled entirely server-side via
+  // POST /api/ai/ryo-reply. The reply is broadcast back via Pusher and
+  // appears in the room message stream — there is no client-side streaming
+  // here. As a result, no local "loading" state is exposed.
 
   const handleRyoMention = useCallback(
     async (messageContent: string) => {
@@ -192,9 +172,6 @@ export function useRyoChat({
   );
 
   return {
-    ryoMessages,
-    isRyoLoading,
-    stopRyo,
     handleRyoMention,
     detectAndProcessMention,
   };
