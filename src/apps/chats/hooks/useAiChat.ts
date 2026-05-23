@@ -55,6 +55,7 @@ import {
   persistChatDocument,
 } from "../utils/chatFilePersistence";
 import { cleanTextForSpeech } from "../utils/textForSpeech";
+import { getAssistantVisibleText } from "../utils/messageText";
 import {
   handleLaunchApp,
   handleCloseApp,
@@ -573,32 +574,6 @@ const getSystemState = () => {
       instances: textEditInstancesData,
     },
   };
-};
-
-// Helper function to extract visible text from message parts
-const getAssistantVisibleText = (message: UIMessage): string => {
-  // Define type for message parts
-  type MessagePart = {
-    type: string;
-    text?: string;
-  };
-
-  // If message has parts, extract text from text parts only
-  if (message.parts && message.parts.length > 0) {
-    return message.parts.reduce<string[]>((acc, part: MessagePart) => {
-        if (part.type !== "text") {
-          return acc;
-        }
-        const text = part.text || "";
-        // Handle urgent messages by removing leading !!!!
-        acc.push(text.startsWith("!!!!") ? text.slice(4).trimStart() : text);
-        return acc;
-      }, [])
-      .join("");
-  }
-
-  // Fallback - no content property in v5, return empty string
-  return "";
 };
 
 // Helper to check if chats app is currently in the foreground

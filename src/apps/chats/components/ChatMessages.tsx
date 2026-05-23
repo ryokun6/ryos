@@ -31,10 +31,13 @@ import EmojiAquarium from "@/components/shared/EmojiAquarium";
 import { useTranslation } from "react-i18next";
 import i18n from "@/lib/i18n";
 import { abortableFetch } from "@/utils/abortableFetch";
-import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
 import { formatToolName } from "@/lib/toolInvocationDisplay";
 import { segmentChatMarkdownText } from "@/lib/chatMarkdown";
 import { cleanTextForSpeech } from "../utils/textForSpeech";
+import {
+  getChatMessageText,
+  getDisplayTextPart,
+} from "../utils/messageText";
 
 // Helper to extract image URLs from message parts
 const extractImageParts = (message: {
@@ -153,26 +156,12 @@ const getAppName = (id?: string): string => {
   }
 };
 
-// Helper to extract text content from v5 UIMessage parts
-const getMessageText = (message: {
-  parts?: Array<{ type: string; text?: string }>;
-}): string => {
-  if (!message.parts) return "";
-
-  return message.parts.reduce<string[]>((acc, part) => {
-    if (part.type === "text") {
-      acc.push((part as { type: string; text?: string }).text || "");
-    }
-    return acc;
-  }, []).join("");
-};
-
 const getMessageKey = (message: {
   id?: string;
   role: string;
   parts?: Array<{ type: string; text?: string }>;
 }): string => {
-  const messageText = getMessageText(message);
+  const messageText = getChatMessageText(message);
   return message.id === "1" || message.id === "proactive-1"
     ? "greeting"
     : message.id || `${message.role}-${messageText.substring(0, 10)}`;
@@ -501,7 +490,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
     []
   );
 
-  let messageText = getMessageText(message);
+  let messageText = getChatMessageText(message);
   const isStaticGreeting = message.role === "assistant" && message.id === "1";
   if (isStaticGreeting && !messageText) {
     messageText = t("apps.chats.messages.greeting");
@@ -518,10 +507,9 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
   else if (message.role === "human")
     bgColorClass = getUserColorClass(message.username);
 
-  const rawContent = isUrgent ? messageText.slice(4).trimStart() : messageText;
-  const decodedContent = decodeHtmlEntities(rawContent);
-  const hasAquariumToken = decodedContent.includes("[[AQUARIUM]]");
-  const displayContent = decodedContent.replace(/\[\[AQUARIUM\]\]/g, "").trim();
+  const displayText = getDisplayTextPart(messageText);
+  const hasAquariumToken = displayText.includes("[[AQUARIUM]]");
+  const displayContent = displayText.replace(/\[\[AQUARIUM\]\]/g, "").trim();
   let assistantTextOffset = 0;
 
   let hasAquarium = false;
@@ -932,10 +920,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                           );
                         }
                       }
-                      const rawPartContent = isUrgentMessage(partText)
-                        ? partText.slice(4).trimStart()
-                        : partText;
-                      const partDisplayContent = decodeHtmlEntities(rawPartContent);
+                      const partDisplayContent = getDisplayTextPart(partText);
                       const partHighlight = getPartHighlight(
                         highlightSegment,
                         message,
@@ -1055,10 +1040,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
               if (part.type === "text") {
                 const partText =
                   (part as { type: string; text?: string }).text || "";
-                const partContent = isUrgentMessage(partText)
-                  ? partText.slice(4).trimStart()
-                  : partText;
-                extractUrls(decodeHtmlEntities(partContent)).forEach((u) =>
+                extractUrls(getDisplayTextPart(partText)).forEach((u) =>
                   allUrls.add(u)
                 );
               }
@@ -1157,14 +1139,14 @@ function ChatMessagesContent({
     ) {
       const previousIds = new Set(
         previousMessagesRef.current.map(
-          (m) => m.id || `${m.role}-${getMessageText(m).substring(0, 10)}`
+          (m) => m.id || `${m.role}-${getChatMessageText(m).substring(0, 10)}`
         )
       );
       const newMessages = messages.filter(
         (currentMsg) =>
           !previousIds.has(
             currentMsg.id ||
-              `${currentMsg.role}-${getMessageText(currentMsg).substring(
+              `${currentMsg.role}-${getChatMessageText(currentMsg).substring(
                 0,
                 10
               )}`
@@ -1210,7 +1192,7 @@ function ChatMessagesContent({
   }, [isSpeaking, speechLoadingId]);
 
   const copyMessage = useCallback(async (message: ChatMessage) => {
-    const messageText = getMessageText(message);
+    const messageText = getChatMessageText(message);
     try {
       await navigator.clipboard.writeText(messageText);
       setCopiedMessageId(
