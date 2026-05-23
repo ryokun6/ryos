@@ -1353,9 +1353,6 @@ export function useIpodLogic({
     if (librarySource === "appleMusic") return;
     pauseBeforeWindowClose();
     setLibrarySource("appleMusic");
-    if (useIpodStore.getState().displayMode === DisplayMode.Video) {
-      setDisplayMode(DisplayMode.Cover);
-    }
     setMenuMode(true);
     showStatus(
       t("apps.ipod.status.libraryAppleMusic", "Library: Apple Music")
@@ -1378,17 +1375,10 @@ export function useIpodLogic({
     musicKitStatus,
     pauseBeforeWindowClose,
     registerActivity,
-    setDisplayMode,
     setLibrarySource,
     showStatus,
     menuLocale,
   ]);
-
-  useEffect(() => {
-    if (isAppleMusic && displayMode === DisplayMode.Video) {
-      setDisplayMode(DisplayMode.Cover);
-    }
-  }, [isAppleMusic, displayMode, setDisplayMode]);
 
   // Backlight timer
   useEffect(() => {

@@ -20,7 +20,7 @@ export const helpItems = [
     icon: "🧩",
     title: "Widget Library",
     description:
-      "Add clock, weather, calendar, stocks, mini iPod, sticky note, dictionary, and more",
+      "Add clock, weather, calendar, stocks, mini iPod, aquarium, terrarium, sticky note, dictionary, and more",
   },
   {
     icon: "🌤️",

@@ -17,6 +17,7 @@ import { CurrencyWidget, CurrencyBackPanel } from "@/components/layout/dashboard
 import { StickyNoteWidget, StickyNoteBackPanel } from "@/components/layout/dashboard/StickyNoteWidget";
 import { DictionaryWidget, DictionaryBackPanel } from "@/components/layout/dashboard/DictionaryWidget";
 import { AquariumWidget, AquariumBubbleOverflow } from "@/components/layout/dashboard/AquariumWidget";
+import { TerrariumWidget, TerrariumFireflyOverflow } from "@/components/layout/dashboard/TerrariumWidget";
 import { DashboardMenuBar } from "./DashboardMenuBar";
 import { useAppStore } from "@/stores/useAppStore";
 import { useTranslation } from "react-i18next";
@@ -47,6 +48,8 @@ function WidgetContent({ type, widgetId, isFlipped }: { type: string; widgetId: 
       return <DictionaryWidget widgetId={widgetId} />;
     case "aquarium":
       return <AquariumWidget widgetId={widgetId} />;
+    case "terrarium":
+      return <TerrariumWidget widgetId={widgetId} />;
     default:
       return null;
   }
@@ -80,6 +83,7 @@ function WidgetBackContent({ type, widgetId, onDone }: { type: string; widgetId:
 function WidgetOverflow({ type, widgetId }: { type: string; widgetId: string }) {
   if (type === "weather") return <WeatherEmojiOverflow widgetId={widgetId} />;
   if (type === "aquarium") return <AquariumBubbleOverflow widgetId={widgetId} />;
+  if (type === "terrarium") return <TerrariumFireflyOverflow widgetId={widgetId} />;
   return null;
 }
 
@@ -94,6 +98,7 @@ const WIDGET_ICONS: Record<WidgetType, string> = {
   stickynote: "📝",
   dictionary: "📖",
   aquarium: "🐠",
+  terrarium: "🌿",
 };
 
 function WidgetStrip({
@@ -133,6 +138,7 @@ function WidgetStrip({
     { type: "stickynote", label: t("apps.dashboard.widgets.stickyNote", "Sticky Note") },
     { type: "dictionary", label: t("apps.dashboard.widgets.dictionary", "Dictionary") },
     { type: "aquarium", label: t("apps.dashboard.widgets.aquarium", "Aquarium") },
+    { type: "terrarium", label: t("apps.dashboard.widgets.terrarium", "Terrarium") },
   ];
 
   return (
@@ -314,6 +320,7 @@ export function DashboardAppComponent({
       onAddStickyNote={() => handleAddWidget("stickynote")}
       onAddDictionary={() => handleAddWidget("dictionary")}
       onAddAquarium={() => handleAddWidget("aquarium")}
+      onAddTerrarium={() => handleAddWidget("terrarium")}
       onResetWidgets={resetToDefaults}
     />
   );

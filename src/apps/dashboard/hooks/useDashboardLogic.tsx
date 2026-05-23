@@ -53,6 +53,7 @@ export function useDashboardLogic() {
         weather: { width: 340, height: 180 },
         stocks: { width: 240, height: 340 },
         aquarium: { width: 340, height: 200 },
+        terrarium: { width: 340, height: 200 },
         ipod: { width: 320, height: 125 },
         dictionary: { width: 340, height: 220 },
         stickynote: { width: 200, height: 200 },
