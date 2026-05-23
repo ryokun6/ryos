@@ -23,6 +23,7 @@ import { useChatsStore } from "@/stores/useChatsStore";
 import { toast } from "sonner";
 import { LyricsAlignment, LyricsFont, DisplayMode } from "@/types/lyrics";
 import { Track } from "@/stores/useIpodStore";
+import { useKaraokeStore } from "@/stores/useKaraokeStore";
 
 interface KaraokeMenuBarProps {
   onClose: () => void;
@@ -116,12 +117,10 @@ export function KaraokeMenuBar({
     lyricsFont,
     romanization,
     lyricsTranslationLanguage,
-    displayMode,
     setLyricsAlignment,
     setLyricsFont,
     setRomanization,
     setLyricsTranslationLanguage,
-    setDisplayMode,
     refreshLyrics,
     clearLyricsCache,
     importLibrary,
@@ -131,17 +130,18 @@ export function KaraokeMenuBar({
     lyricsFont: s.lyricsFont ?? LyricsFont.SansSerif,
     romanization: s.romanization,
     lyricsTranslationLanguage: s.lyricsTranslationLanguage,
-    displayMode: s.displayMode ?? DisplayMode.Video,
     setLyricsAlignment: s.setLyricsAlignment,
     setLyricsFont: s.setLyricsFont,
     setRomanization: s.setRomanization,
     setLyricsTranslationLanguage: s.setLyricsTranslationLanguage,
-    setDisplayMode: s.setDisplayMode,
     refreshLyrics: s.refreshLyrics,
     clearLyricsCache: s.clearLyricsCache,
     importLibrary: s.importLibrary,
     exportLibrary: s.exportLibrary,
   }));
+
+  const displayMode = useKaraokeStore((s) => s.displayMode ?? DisplayMode.Video);
+  const setDisplayMode = useKaraokeStore((s) => s.setDisplayMode);
 
   const translationLanguages = [
     { label: t("apps.ipod.translationLanguages.original"), code: null },

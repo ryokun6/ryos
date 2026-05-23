@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { SetStateAction } from "react";
+import { DisplayMode } from "@/types/lyrics";
 import { useIpodStore, Track } from "./useIpodStore";
 
 /** Helper to get current index from song ID */
@@ -39,6 +40,8 @@ interface KaraokeData {
   elapsedTime: number;
   /** Total duration of current track in seconds (not persisted, synced from ReactPlayer) */
   totalTime: number;
+  /** Visual background mode (independent from iPod display mode) */
+  displayMode: DisplayMode;
 }
 
 export interface KaraokeState extends KaraokeData {
@@ -59,6 +62,7 @@ export interface KaraokeState extends KaraokeData {
   setFullScreen: (fullScreen: boolean) => void;
   setElapsedTime: (time: SetStateAction<number>) => void;
   setTotalTime: (time: number) => void;
+  setDisplayMode: (mode: DisplayMode) => void;
 }
 
 const initialKaraokeData: KaraokeData = {
@@ -71,9 +75,35 @@ const initialKaraokeData: KaraokeData = {
   isFullScreen: false,
   elapsedTime: 0,
   totalTime: 0,
+  displayMode: DisplayMode.Video,
 };
 
-const CURRENT_KARAOKE_STORE_VERSION = 2; // Updated for currentSongId
+const CURRENT_KARAOKE_STORE_VERSION = 3; // Independent displayMode from iPod store
+
+function readLegacyIpodDisplayMode(): DisplayMode {
+  try {
+    const ipodRaw = localStorage.getItem("ryos:ipod");
+    if (!ipodRaw) return DisplayMode.Video;
+    const parsed = JSON.parse(ipodRaw) as {
+      state?: { displayMode?: string };
+    };
+    const mode = parsed.state?.displayMode;
+    if (mode === "liquid") return DisplayMode.Water;
+    if (
+      mode === DisplayMode.Video ||
+      mode === DisplayMode.Cover ||
+      mode === DisplayMode.Landscapes ||
+      mode === DisplayMode.Shader ||
+      mode === DisplayMode.Mesh ||
+      mode === DisplayMode.Water
+    ) {
+      return mode;
+    }
+  } catch {
+    // ignore parse errors
+  }
+  return DisplayMode.Video;
+}
 
 export const useKaraokeStore = create<KaraokeState>()(
   persist(
@@ -208,6 +238,8 @@ export const useKaraokeStore = create<KaraokeState>()(
             typeof time === "function" ? (time as (prev: number) => number)(state.elapsedTime) : time,
         })),
       setTotalTime: (time) => set({ totalTime: time }),
+
+      setDisplayMode: (mode) => set({ displayMode: mode }),
     }),
     {
       name: "ryos:karaoke",
@@ -218,20 +250,27 @@ export const useKaraokeStore = create<KaraokeState>()(
         loopAll: state.loopAll,
         isShuffled: state.isShuffled,
         isFullScreen: state.isFullScreen,
+        displayMode: state.displayMode,
         // Don't persist isPlaying or playbackHistory
       }),
       migrate: (persistedState, version) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const state = persistedState as any;
-        if (version < CURRENT_KARAOKE_STORE_VERSION) {
+        let state = persistedState as any;
+        if (version < 2) {
           console.log(
             `Migrating Karaoke store from version ${version} to ${CURRENT_KARAOKE_STORE_VERSION}`
           );
-          return {
+          state = {
             ...state,
-            currentSongId: null, // Reset - will pick first track
+            currentSongId: null,
             isPlaying: false,
             playbackHistory: [],
+          };
+        }
+        if (version < 3) {
+          state = {
+            ...state,
+            displayMode: state.displayMode ?? readLegacyIpodDisplayMode(),
           };
         }
         return state;

@@ -63,7 +63,6 @@ export function useKaraokeLogic({
     japaneseFurigana,
     romanization,
     lyricsTranslationLanguage,
-    displayMode,
   } = useIpodStore(
     useShallow((s) => ({
       tracks: s.tracks,
@@ -74,7 +73,6 @@ export function useKaraokeLogic({
       japaneseFurigana: s.japaneseFurigana,
       romanization: s.romanization,
       lyricsTranslationLanguage: s.lyricsTranslationLanguage,
-      displayMode: s.displayMode ?? DisplayMode.Video,
     }))
   );
 
@@ -90,7 +88,6 @@ export function useKaraokeLogic({
     clearTrackLyricsSource,
     setLyricOffset,
     addTrackFromVideoId,
-    setDisplayMode,
   } = useIpodStoreShallow((s) => ({
     setLyricsAlignment: s.setLyricsAlignment,
     setLyricsFont: s.setLyricsFont,
@@ -103,7 +100,6 @@ export function useKaraokeLogic({
     clearTrackLyricsSource: s.clearTrackLyricsSource,
     setLyricOffset: s.setLyricOffset,
     addTrackFromVideoId: s.addTrackFromVideoId,
-    setDisplayMode: s.setDisplayMode,
   }));
 
   // Library update checker
@@ -123,10 +119,11 @@ export function useKaraokeLogic({
   const lastProcessedListenSessionRef = useRef<string | null>(null);
   const pendingRemoteTrackHydrationRef = useRef<string | null>(null);
 
-  // Independent playback state from Karaoke store (not shared with iPod)
+  // Independent playback + display state from Karaoke store (not shared with iPod)
   const {
     currentSongId,
     isPlaying,
+    displayMode,
     loopCurrent,
     loopAll,
     isShuffled,
@@ -143,10 +140,12 @@ export function useKaraokeLogic({
     setFullScreen,
     setStoreElapsedTime,
     setStoreTotalTime,
+    setDisplayMode,
   } = useKaraokeStore(
     useShallow((s) => ({
       currentSongId: s.currentSongId,
       isPlaying: s.isPlaying,
+      displayMode: s.displayMode ?? DisplayMode.Video,
       loopCurrent: s.loopCurrent,
       loopAll: s.loopAll,
       isShuffled: s.isShuffled,
@@ -163,6 +162,7 @@ export function useKaraokeLogic({
       setFullScreen: s.setFullScreen,
       setStoreElapsedTime: s.setElapsedTime,
       setStoreTotalTime: s.setTotalTime,
+      setDisplayMode: s.setDisplayMode,
     }))
   );
 
