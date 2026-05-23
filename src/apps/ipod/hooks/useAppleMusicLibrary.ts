@@ -1327,8 +1327,9 @@ export async function fetchAppleMusicLibrary(
 }
 
 /**
- * Lazy-load tracks for one library playlist. Uses a 24h stale-while-revalidate
- * window keyed per playlist id.
+ * Lazy-load tracks for one library playlist. Uses playlist-track freshness
+ * policy (`APPLE_MUSIC_PLAYLIST_TRACKS_OPPORTUNISTIC_TTL_MS`) keyed per
+ * playlist id.
  */
 export async function fetchAppleMusicPlaylistTracks(
   playlistId: string,
