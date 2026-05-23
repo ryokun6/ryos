@@ -64,7 +64,7 @@ const REQUIRED_KEYS = [
   "handleSaveSubmit",
   // TTS
   "isSpeaking",
-  "highlightSegment",
+  "currentSpokenBlockId",
 ] as const;
 
 describe("useAiChat return shape", () => {

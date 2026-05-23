@@ -1,1 +1,30 @@
 @import "streamdown/styles.css";
+
+/* --- TTS "currently spoken" highlight (Wave 4) ---
+ *
+ * Each assistant message paragraph is wrapped in a `.ryos-chat-tts-block`
+ * with a `data-tts-block-id` attribute. When useAiChat's
+ * `currentSpokenBlockId` matches this block, `.ryos-chat-tts-block-is-speaking`
+ * is added and the paragraph gets a soft yellow highlight that follows
+ * the audio.
+ */
+
+.ryos-chat-tts-block {
+  border-radius: 4px;
+  /* margin/padding kept at 0 so layout matches the unwrapped case; the
+     highlight rides directly on the existing bubble background. */
+  transition:
+    background-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.ryos-chat-tts-block-is-speaking {
+  background-color: rgba(250, 204, 21, 0.45); /* tailwind yellow-400 @ 45% */
+  box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.45);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ryos-chat-tts-block {
+    transition: none;
+  }
+}

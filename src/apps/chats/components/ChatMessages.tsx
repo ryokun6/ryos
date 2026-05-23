@@ -36,6 +36,10 @@ import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
 import { formatToolName } from "@/lib/toolInvocationDisplay";
 import { segmentChatMarkdownText } from "@/lib/chatMarkdown";
 import { cleanTextForSpeech } from "../utils/textForSpeech";
+import {
+  splitTextIntoBlocks,
+  buildSpeechBlockId,
+} from "../utils/speechBlocks";
 
 // Helper to extract image URLs from message parts
 const extractImageParts = (message: {
@@ -256,7 +260,13 @@ interface ChatMessagesProps {
   onMessageDeleted?: (messageId: string) => void; // Callback when a message is deleted locally
   fontSize: number; // Add font size prop
   scrollToBottomTrigger: number; // Add scroll trigger prop
-  highlightSegment?: { messageId: string; start: number; end: number } | null;
+  /**
+   * Block id of the speech chunk currently being read aloud. The renderer
+   * matches this against each rendered paragraph's `data-tts-block-id`
+   * and adds an `.is-speaking` class to drive the live highlight.
+   * Format: `{messageId}:p{partIndex}:b{blockIndex}` (see speechBlocks.ts).
+   */
+  currentSpokenBlockId?: string | null;
   isSpeaking?: boolean;
   onSendMessage?: (username: string) => void; // Callback when send message button is clicked
   isLoadingGreeting?: boolean; // Show typing bubble for proactive greeting
@@ -372,6 +382,8 @@ interface ChatMessageItemProps {
   playElevatorMusic: () => void;
   stopElevatorMusic: () => void;
   playDingSound: () => void;
+  /** Block id of the speech chunk currently playing (from useAiChat). */
+  currentSpokenBlockId?: string | null;
 }
 
 const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProps) {
@@ -396,6 +408,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
     onMessageDeleted: _onMessageDeleted,
     onSendMessage,
     onCopyMessage,
+    currentSpokenBlockId,
     onDeleteMessage,
     setPlayingMessageId,
     setSpeechLoadingId,
@@ -877,12 +890,21 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                         : partText;
                       const partDisplayContent = decodeHtmlEntities(rawPartContent);
                       const textContent = partDisplayContent;
-                      const streamdownContent = textContent.trim();
                       const isEmojiMessage = isEmojiOnly(textContent);
+                      // Wave 4 (TTS highlighting): split each text part
+                      // into paragraph blocks so each rendered DOM block
+                      // matches a TTS chunk 1:1. The block id format is
+                      // shared with `computeSpeechBlocks` in useAiChat so
+                      // `currentSpokenBlockId` directly addresses a DOM
+                      // element via `data-tts-block-id`.
+                      const speechBlocks = splitTextIntoBlocks(textContent);
+                      if (speechBlocks.length === 0) {
+                        return null;
+                      }
                       return (
                         <div
                           key={partKey}
-                          className="w-full"
+                          className="w-full flex flex-col gap-1"
                           style={getChatMessageStyle(fontSize, isEmojiMessage)}
                           onAnimationStart={
                             isStreamingMessage
@@ -890,27 +912,60 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                               : undefined
                           }
                         >
-                          {streamdownContent && (
-                            <Streamdown
-                              className={`ryos-chat-streamdown ${
-                                isUrgent ? "ryos-chat-streamdown-urgent" : ""
-                              }`}
-                              components={chatStreamdownComponents}
-                              disallowedElements={STREAMDOWN_DISALLOWED_ELEMENTS}
-                              controls={false}
-                              lineNumbers={false}
-                              shikiTheme={CHAT_STREAMDOWN_SHIKI_THEME}
-                              plugins={CHAT_STREAMDOWN_PLUGINS}
-                              skipHtml
-                              unwrapDisallowed
-                              mode={isStreamingMessage ? "streaming" : "static"}
-                              animated={CHAT_STREAMDOWN_ANIMATED}
-                              isAnimating={isStreamingMessage}
-                              parseIncompleteMarkdown={isStreamingMessage}
-                            >
-                              {streamdownContent}
-                            </Streamdown>
-                          )}
+                          {speechBlocks.map((block, blockIndex) => {
+                            const blockId = buildSpeechBlockId(
+                              message.id ?? messageKey,
+                              partIndex,
+                              blockIndex
+                            );
+                            const isLastBlockOfPart =
+                              blockIndex === speechBlocks.length - 1;
+                            // The actively-streaming block is the last
+                            // block of the last (currently streaming)
+                            // text part — and only while it hasn't been
+                            // terminated by a paragraph break yet.
+                            const isAnimatingBlock =
+                              isStreamingMessage &&
+                              isLastBlockOfPart &&
+                              !block.isTerminated;
+                            const isSpeakingBlock =
+                              currentSpokenBlockId === blockId;
+                            return (
+                              <div
+                                key={blockId}
+                                data-tts-block-id={blockId}
+                                className={`ryos-chat-tts-block${
+                                  isSpeakingBlock
+                                    ? " ryos-chat-tts-block-is-speaking"
+                                    : ""
+                                }`}
+                              >
+                                <Streamdown
+                                  className={`ryos-chat-streamdown ${
+                                    isUrgent
+                                      ? "ryos-chat-streamdown-urgent"
+                                      : ""
+                                  }`}
+                                  components={chatStreamdownComponents}
+                                  disallowedElements={STREAMDOWN_DISALLOWED_ELEMENTS}
+                                  controls={false}
+                                  lineNumbers={false}
+                                  shikiTheme={CHAT_STREAMDOWN_SHIKI_THEME}
+                                  plugins={CHAT_STREAMDOWN_PLUGINS}
+                                  skipHtml
+                                  unwrapDisallowed
+                                  mode={
+                                    isAnimatingBlock ? "streaming" : "static"
+                                  }
+                                  animated={CHAT_STREAMDOWN_ANIMATED}
+                                  isAnimating={isAnimatingBlock}
+                                  parseIncompleteMarkdown={isAnimatingBlock}
+                                >
+                                  {block.text}
+                                </Streamdown>
+                              </div>
+                            );
+                          })}
                         </div>
                       );
                     }
@@ -1027,6 +1082,8 @@ interface ChatMessagesContentProps {
   onMessageDeleted?: (messageId: string) => void;
   fontSize: number;
   scrollToBottomTrigger: number;
+  /** See ChatMessagesProps.currentSpokenBlockId. */
+  currentSpokenBlockId?: string | null;
   onSendMessage?: (username: string) => void;
   isLoadingGreeting?: boolean;
   typingUsers?: string[];
@@ -1045,6 +1102,7 @@ function ChatMessagesContent({
   onMessageDeleted,
   fontSize,
   scrollToBottomTrigger,
+  currentSpokenBlockId,
   onSendMessage,
   isLoadingGreeting,
   typingUsers,
@@ -1292,6 +1350,7 @@ function ChatMessagesContent({
             playElevatorMusic={playElevatorMusic}
             stopElevatorMusic={stopElevatorMusic}
             playDingSound={playDingSound}
+            currentSpokenBlockId={currentSpokenBlockId}
           />
         );
       })}
@@ -1397,10 +1456,16 @@ export function ChatMessages({
   onMessageDeleted,
   fontSize,
   scrollToBottomTrigger,
+  currentSpokenBlockId,
+  // `isSpeaking` is consumed by parents (ChatsAppComponent uses it to
+  // gate the "keep talking" button) but ChatMessagesContent doesn't need
+  // it directly — destructure to avoid the unused-prop warning.
+  isSpeaking: _isSpeaking,
   onSendMessage,
   isLoadingGreeting,
   typingUsers,
 }: ChatMessagesProps) {
+  void _isSpeaking;
   return (
     // Use StickToBottom component as the main container
     <StickToBottom
@@ -1425,6 +1490,7 @@ export function ChatMessages({
           onMessageDeleted={onMessageDeleted}
           fontSize={fontSize}
           scrollToBottomTrigger={scrollToBottomTrigger}
+          currentSpokenBlockId={currentSpokenBlockId}
           onSendMessage={onSendMessage}
           isLoadingGreeting={isLoadingGreeting}
           typingUsers={typingUsers}

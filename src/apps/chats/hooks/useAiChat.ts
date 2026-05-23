@@ -61,6 +61,7 @@ import {
   deriveScoreThreshold,
 } from "../utils/fuzzySearch";
 import { detectUserOS } from "../tools/helpers";
+import { computeSpeechBlocks } from "../utils/speechBlocks";
 import {
   handleLaunchApp,
   handleCloseApp,
@@ -138,37 +139,83 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     saveFileName,
   } = chatUiState;
 
-  // Track how many characters of each assistant message have already been sent to TTS
-  const speechProgressRef = useRef<Record<string, number>>({});
+  // --- Speech blocks / live "currently spoken" highlight ---
+  //
+  // Wave 4 (plans/chats_useaichat_tts_cleanup.md):
+  //   Replaced the previous char-offset highlight model with paragraph
+  //   blocks. Each speech chunk is identified by a stable blockId
+  //   (`{messageId}:p{partIndex}:b{blockIndex}`); the renderer in
+  //   ChatMessages tags each rendered paragraph with `data-tts-block-id`
+  //   and adds an `.is-speaking` class when the current id matches.
+  //
+  //   - spokenBlocksRef:    blocks we've already queued into TTS (don't double-queue)
+  //   - speechQueueRef:     FIFO of queued blockIds awaiting playback completion
+  //   - currentSpokenBlockId: the block currently playing (drives the UI highlight)
 
-  // Currently highlighted chunk for UI animation
-  const [highlightSegment, setHighlightSegment] = useState<{
-    messageId: string;
-    start: number;
-    end: number;
-  } | null>(null);
+  const spokenBlocksRef = useRef<Set<string>>(new Set());
+  const speechQueueRef = useRef<string[]>([]);
+  const [currentSpokenBlockId, setCurrentSpokenBlockId] = useState<
+    string | null
+  >(null);
 
-  // Queue of upcoming highlight segments awaiting playback completion
-  const highlightQueueRef = useRef<
-    {
-      messageId: string;
-      start: number;
-      end: number;
-    }[]
-  >([]);
-
-  // On first mount, mark any assistant messages already present as fully processed
+  // On first mount, mark any persisted assistant blocks as already spoken so
+  // we never re-play them aloud when the user reopens the app.
   useEffect(() => {
     aiMessages.forEach((msg) => {
       if (msg.role === "assistant") {
-        const content = getAssistantVisibleText(msg);
-        speechProgressRef.current[msg.id] = content.length; // mark as fully processed
+        const blocks = computeSpeechBlocks(msg);
+        blocks.forEach((block) => spokenBlocksRef.current.add(block.blockId));
       }
     });
-  }, [aiMessages]);
+    // Intentionally only runs once at mount. Subsequent additions are
+    // handled by the streaming effect / onFinish below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  // Queue-based TTS – speaks chunks as they arrive
+  // Queue-based TTS — speaks chunks as they arrive
   const { speak, stop: stopTts, isSpeaking } = useTtsQueue();
+
+  // Advance the highlight when a block finishes playing.
+  const handleSpeechBlockEnd = useCallback((blockId: string) => {
+    // Pop matching id off the head of the queue (or anywhere — handles
+    // out-of-order or skipped chunks defensively).
+    const idx = speechQueueRef.current.indexOf(blockId);
+    if (idx >= 0) speechQueueRef.current.splice(idx, 1);
+    setCurrentSpokenBlockId(speechQueueRef.current[0] ?? null);
+  }, []);
+
+  /**
+   * Queue a speech block into TTS. Tracks the block id, kicks off
+   * speech with the cleaned text, and arms the highlight if nothing
+   * else is currently playing (slight delay so the visual lands at
+   * roughly the same moment audio starts).
+   */
+  const queueSpeechBlock = useCallback(
+    (blockId: string, rawText: string) => {
+      if (spokenBlocksRef.current.has(blockId)) return;
+      const cleaned = cleanTextForSpeech(rawText);
+      if (!cleaned) {
+        // Even if there's nothing audible, mark it spoken so we don't
+        // re-evaluate this block on every render.
+        spokenBlocksRef.current.add(blockId);
+        return;
+      }
+
+      spokenBlocksRef.current.add(blockId);
+      speechQueueRef.current.push(blockId);
+      speak(cleaned, () => handleSpeechBlockEnd(blockId));
+
+      if (speechQueueRef.current.length === 1) {
+        // Only this block is in the queue — arm the highlight.
+        setTimeout(() => {
+          if (speechQueueRef.current[0] === blockId) {
+            setCurrentSpokenBlockId(blockId);
+          }
+        }, 80);
+      }
+    },
+    [speak, handleSpeechBlockEnd]
+  );
 
   // Rate limit state
   const [rateLimitError, setRateLimitError] = useState<{
@@ -190,10 +237,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   }, []);
 
   // --- AI Chat Hook (Vercel AI SDK v5) ---
-  // Store reference to setHighlightSegment for use in callbacks
-  const setHighlightSegmentRef = useRef(setHighlightSegment);
-  setHighlightSegmentRef.current = setHighlightSegment;
-
   const {
     messages: currentSdkMessages,
     status,
@@ -1448,49 +1491,14 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         showBackgroundedMessageNotification(lastMsg);
       }
 
-      // Ensure any final content that wasn't processed is spoken
+      // Ensure any blocks the streaming effect didn't get a chance to
+      // queue (typically the final trailing block, which has no `\n\n`
+      // terminator until onFinish makes it implicit) are spoken now.
       if (!speechEnabled) return;
 
-      const progress = speechProgressRef.current[lastMsg.id] ?? 0;
-      const content = getAssistantVisibleText(lastMsg);
-
-      console.log(
-        `[onFinish] Progress: ${progress}, Content length: ${content.length}`,
-      );
-
-      // If there's unprocessed content, speak it now
-      if (progress < content.length) {
-        const remainingRaw = content.slice(progress);
-        const cleaned = cleanTextForSpeech(remainingRaw);
-        console.log(`[onFinish] Speaking final content: "${cleaned}"`);
-
-        if (cleaned) {
-          const seg = {
-            messageId: lastMsg.id,
-            start: progress,
-            end: content.length,
-          };
-          highlightQueueRef.current.push(seg);
-
-          // Use ref to get current setHighlightSegment function
-          if (highlightQueueRef.current.length === 1) {
-            setTimeout(() => {
-              if (highlightQueueRef.current[0] === seg) {
-                setHighlightSegmentRef.current(seg);
-              }
-            }, 80);
-          }
-
-          speak(cleaned, () => {
-            highlightQueueRef.current.shift();
-            setHighlightSegmentRef.current(
-              highlightQueueRef.current[0] || null,
-            );
-          });
-
-          // Mark as fully processed
-          speechProgressRef.current[lastMsg.id] = content.length;
-        }
+      const blocks = computeSpeechBlocks(lastMsg);
+      for (const block of blocks) {
+        queueSpeechBlock(block.blockId, block.text);
       }
     },
 
@@ -1662,75 +1670,20 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   useEffect(() => {
     if (!speechEnabled) return;
 
-    // Only process while streaming is active
+    // Only process while streaming is active. The trailing in-progress
+    // block (no `\n\n` terminator yet) is intentionally left for
+    // `onFinish` to flush, so we don't speak half-paragraphs.
     if (!isLoading) return;
 
     const lastMsg = currentSdkMessages.at(-1);
     if (!lastMsg || lastMsg.role !== "assistant") return;
 
-    // Get current progress for this message
-    const progress =
-      typeof speechProgressRef.current[lastMsg.id] === "number"
-        ? (speechProgressRef.current[lastMsg.id] as number)
-        : 0;
-
-    // Use helper function to get actual visible text
-    const content = getAssistantVisibleText(lastMsg);
-
-    // IMPORTANT: Handle multi-step tool calls
-    // If progress equals content length, this message was previously complete
-    // but if content.length has grown, we have new content to speak
-    if (progress >= content.length) return;
-
-    let scanPos = progress;
-    const highlightTimeoutIds: ReturnType<typeof setTimeout>[] = [];
-    const processChunk = (endPos: number) => {
-      const rawChunk = content.slice(scanPos, endPos);
-      const cleaned = cleanTextForSpeech(rawChunk);
-      if (cleaned) {
-        const seg = { messageId: lastMsg.id, start: scanPos, end: endPos };
-        highlightQueueRef.current.push(seg);
-        if (!highlightSegment) {
-          // Delay highlighting slightly so text sync aligns closer to actual speech start
-          const highlightTimeoutId = setTimeout(() => {
-            if (highlightQueueRef.current[0] === seg) {
-              setHighlightSegment(seg);
-            }
-          }, 80);
-          highlightTimeoutIds.push(highlightTimeoutId);
-        }
-
-        speak(cleaned, () => {
-          highlightQueueRef.current.shift();
-          setHighlightSegment(highlightQueueRef.current[0] || null);
-        });
-      }
-      scanPos = endPos;
-      speechProgressRef.current[lastMsg.id] = scanPos;
-    };
-
-    // Iterate over any *completed* lines since the last progress marker.
-    while (scanPos < content.length) {
-      const nextNlIdx = content.indexOf("\n", scanPos);
-      if (nextNlIdx === -1) {
-        // No further newlines - wait for more content or let onFinish handle the rest
-        break;
-      }
-
-      // We have a newline that marks the end of a full chunk.
-      processChunk(nextNlIdx);
-
-      // Skip the newline (and potential carriage-return) characters.
-      scanPos = nextNlIdx + 1;
-      if (content[scanPos] === "\r") scanPos += 1;
-
-      // Record updated progress so subsequent effect runs start after the newline
-      speechProgressRef.current[lastMsg.id] = scanPos;
+    const blocks = computeSpeechBlocks(lastMsg);
+    for (const block of blocks) {
+      if (!block.isTerminated) break;
+      queueSpeechBlock(block.blockId, block.text);
     }
-    return () => {
-      highlightTimeoutIds.forEach((timeoutId) => clearTimeout(timeoutId));
-    };
-  }, [currentSdkMessages, isLoading, speechEnabled, speak, highlightSegment]);
+  }, [currentSdkMessages, isLoading, speechEnabled, queueSpeechBlock]);
 
   // Clear rate limit error when username is set
   useEffect(() => {
@@ -1967,27 +1920,24 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     }
 
     // --- Reset speech & highlight state so the next reply starts clean ---
-    // Stop any ongoing TTS playback or pending requests
     stopTts();
+    spokenBlocksRef.current.clear();
+    speechQueueRef.current = [];
+    setCurrentSpokenBlockId(null);
 
-    // Clear progress tracking so new messages are treated as fresh
-    speechProgressRef.current = {};
-
-    // Reset highlight queue & currently highlighted segment
-    highlightQueueRef.current = [];
-    setHighlightSegment(null);
-
-    // Define the initial message and mark it as fully processed so it is never spoken
+    // Define the initial greeting and mark its blocks as already spoken
+    // so the assistant doesn't read its own canned welcome aloud.
     const initialMessage: AIChatMessage = {
-      id: "1", // Ensure consistent ID for the initial message
+      id: "1",
       role: "assistant",
       parts: [{ type: "text", text: i18n.t("apps.chats.messages.greeting") }],
       metadata: {
         createdAt: new Date(),
       },
     };
-    const initialText = getAssistantVisibleText(initialMessage);
-    speechProgressRef.current[initialMessage.id] = initialText.length;
+    computeSpeechBlocks(initialMessage as unknown as UIMessage).forEach(
+      (block) => spokenBlocksRef.current.add(block.blockId)
+    );
 
     // Update both the Zustand store and the SDK state directly
     setAiMessages([initialMessage]);
@@ -2159,6 +2109,10 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
     isSpeaking,
 
-    highlightSegment,
+    // Wave 4: replaces the previous char-offset `highlightSegment`. The
+    // id of the speech block currently playing, or null if nothing is
+    // playing. ChatMessages tags every rendered paragraph with
+    // `data-tts-block-id` and toggles `.is-speaking` when this matches.
+    currentSpokenBlockId,
   };
 }
