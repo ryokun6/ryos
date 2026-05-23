@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo, useReducer } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useChat, type UIMessage } from "@ai-sdk/react";
 import {
   DefaultChatTransport,
@@ -8,18 +8,12 @@ import { useChatsStore } from "@/stores/useChatsStore";
 import type { AIChatMessage } from "@/types/chat";
 import { useAppStore } from "@/stores/useAppStore";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
-import { useInternetExplorerStore } from "@/stores/useInternetExplorerStore";
 import { getApiUrl } from "@/utils/platform";
-import { useVideoStore } from "@/stores/useVideoStore";
 import {
   getActiveIpodTracks,
-  getIpodChatContextTrack,
   setActiveIpodCurrentSongId,
   useIpodStore,
 } from "@/stores/useIpodStore";
-import { useKaraokeStore } from "@/stores/useKaraokeStore";
-import { useTvStore } from "@/stores/useTvStore";
-import { buildTvChannelLineup, DEFAULT_CHANNELS } from "@/apps/tv/data/channels";
 import { toast } from "@/hooks/useToast";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { AppId } from "@/config/appIds";
@@ -33,13 +27,9 @@ import {
 import { STORES } from "@/utils/indexedDB";
 import { useTextEditStore } from "@/stores/useTextEditStore";
 import { useFilesStore } from "@/stores/useFilesStore";
-import { useLanguageStore } from "@/stores/useLanguageStore";
 import { useChatsStoreShallow } from "@/stores/helpers";
-import { htmlToMarkdown, markdownToHtml } from "@/utils/markdown";
-import {
-  generateHtmlFromJsonSync,
-  generateJsonFromHtml,
-} from "@/utils/tiptapHtml";
+import { markdownToHtml } from "@/utils/markdown";
+import { generateJsonFromHtml } from "@/utils/tiptapHtml";
 import i18n from "@/lib/i18n";
 import { useTranslation } from "react-i18next";
 import { abortableFetch } from "@/utils/abortableFetch";
@@ -55,6 +45,8 @@ import {
 } from "../utils/chatFilePersistence";
 import { getAssistantVisibleText } from "../utils/aiMessageText";
 import { useChatSpeechSync } from "./useChatSpeechSync";
+import { useSyncedAiMessages } from "./useSyncedAiMessages";
+import { detectUserOS, getSystemState } from "../utils/systemState";
 import {
   handleLaunchApp,
   handleCloseApp,
@@ -292,289 +284,6 @@ const deriveScoreThreshold = (queryLength: number): number => {
   return 0.4;
 };
 
-// Helper function to detect user's operating system
-const detectUserOS = (): string => {
-  if (typeof navigator === "undefined") return "Unknown";
-  
-  const userAgent = navigator.userAgent;
-  const platform = navigator.platform || "";
-  
-  // Check for iOS (iPhone, iPad, iPod)
-  if (/iPad|iPhone|iPod/.test(userAgent) || 
-      (platform === "MacIntel" && navigator.maxTouchPoints > 1)) {
-    return "iOS";
-  }
-  
-  // Check for Android
-  if (/Android/.test(userAgent)) {
-    return "Android";
-  }
-  
-  // Check for Windows
-  if (/Win/.test(platform)) {
-    return "Windows";
-  }
-  
-  // Check for macOS (not iOS)
-  if (/Mac/.test(platform)) {
-    return "macOS";
-  }
-  
-  // Check for Linux
-  if (/Linux/.test(platform)) {
-    return "Linux";
-  }
-  
-  return "Unknown";
-};
-
-// Replace or update the getSystemState function to use stores
-const getSystemState = () => {
-  const appStore = useAppStore.getState();
-  const ieStore = useInternetExplorerStore.getState();
-  const videoStore = useVideoStore.getState();
-  const ipodStore = useIpodStore.getState();
-  const karaokeStore = useKaraokeStore.getState();
-  const textEditStore = useTextEditStore.getState();
-  const chatsStore = useChatsStore.getState();
-  const languageStore = useLanguageStore.getState();
-  const tvStore = useTvStore.getState();
-
-  const currentVideo = videoStore.getCurrentVideo();
-  const currentTrack = getIpodChatContextTrack(ipodStore);
-  
-  // Karaoke uses the shared track library from iPod store
-  const karaokeCurrentTrack = karaokeStore.currentSongId
-    ? ipodStore.tracks.find((t) => t.id === karaokeStore.currentSongId)
-    : ipodStore.tracks[0] ?? null;
-
-  // --- TV: current channel + lineup ---
-  // The TV app shuffles channel videos at render time, so a persisted
-  // index doesn't map to a stable "current video". Surface the current
-  // channel + lineup metadata so the AI can reason about the lineup,
-  // tune in, and edit channels via tvControl.
-  const tvChannelLineup = buildTvChannelLineup(
-    tvStore.customChannels,
-    tvStore.hiddenDefaultChannelIds
-  ).map((ch) => ({
-    ch,
-    isCustom: !DEFAULT_CHANNELS.some((d) => d.id === ch.id),
-  }));
-  const tvCurrentEntry =
-    tvChannelLineup.find(({ ch }) => ch.id === tvStore.currentChannelId) ??
-    tvChannelLineup[0] ??
-    null;
-  const tvCurrentChannel = tvCurrentEntry
-    ? {
-        id: tvCurrentEntry.ch.id,
-        number: tvCurrentEntry.ch.number,
-        name: tvCurrentEntry.ch.name,
-        description: tvCurrentEntry.ch.description,
-        isCustom: tvCurrentEntry.isCustom,
-        videoCount:
-          tvCurrentEntry.ch.id === "mtv"
-            ? ipodStore.tracks.length
-            : tvCurrentEntry.ch.id === "ryos-picks"
-            ? videoStore.videos.length
-            : tvCurrentEntry.ch.videos.length,
-      }
-    : null;
-  const tvCustomChannels = buildTvChannelLineup(
-    tvStore.customChannels,
-    tvStore.hiddenDefaultChannelIds
-  ).reduce<
-    {
-      id: string;
-      number: number;
-      name: string;
-      description: string;
-      videoCount: number;
-    }[]
-  >((acc, channel) => {
-    if (DEFAULT_CHANNELS.some((defaultChannel) => defaultChannel.id === channel.id)) {
-      return acc;
-    }
-    acc.push({
-      id: channel.id,
-      number: channel.number,
-      name: channel.name,
-      description: channel.description ?? "",
-      videoCount: channel.videos.length,
-    });
-    return acc;
-  }, []);
-
-  // Detect user's operating system
-  const userOS = detectUserOS();
-
-  // Use new instance-based model instead of legacy apps
-  const runningInstances = Object.entries(appStore.instances).reduce<
-    {
-      instanceId: string;
-      appId: string;
-      isForeground: boolean;
-      title?: string;
-      appletPath?: string;
-      appletId?: string;
-    }[]
-  >((acc, [instanceId, instance]) => {
-    if (!instance.isOpen) {
-      return acc;
-    }
-
-    const base = {
-      instanceId,
-      appId: instance.appId,
-      isForeground: instance.isForeground || false,
-      title: instance.title,
-    };
-    // For applet-viewer instances, include the applet path
-    if (instance.appId === "applet-viewer" && instance.initialData) {
-      const appletData = instance.initialData as { path?: string; shareCode?: string };
-      acc.push({
-        ...base,
-        appletPath: appletData.path || undefined,
-        appletId: appletData.shareCode || undefined,
-      });
-      return acc;
-    }
-
-    acc.push(base);
-    return acc;
-  }, []);
-
-  const foregroundInstance =
-    runningInstances.find((inst) => inst.isForeground) || null;
-  const backgroundInstances = runningInstances.filter(
-    (inst) => !inst.isForeground,
-  );
-
-  // --- Local browser time information (client side) ---
-  const nowClient = new Date();
-  const userTimeZone =
-    Intl.DateTimeFormat().resolvedOptions().timeZone || "Unknown";
-  const userTimeString = nowClient.toLocaleTimeString([], {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
-  const userDateString = nowClient.toLocaleDateString([], {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-
-  // Convert TextEdit instances to compact markdown for prompt inclusion
-  const textEditInstances = Object.values(textEditStore.instances);
-  const textEditInstancesData = textEditInstances.map((instance) => {
-    let contentMarkdown: string | null = null;
-    if (instance.contentJson) {
-      try {
-        const htmlStr = generateHtmlFromJsonSync(instance.contentJson);
-        if (htmlStr) contentMarkdown = htmlToMarkdown(htmlStr);
-      } catch (err) {
-        console.error("Failed to convert TextEdit content to markdown:", err);
-      }
-    }
-
-    // Get title from file path if available, otherwise from app store instance
-    let title = "Untitled";
-    if (instance.filePath) {
-      // Extract filename from path (e.g., "/Documents/example.md" -> "example.md")
-      const filename = instance.filePath.split("/").pop() || "Untitled";
-      // Remove .md extension for cleaner display
-      title = filename.replace(/\.md$/, "");
-    } else {
-      // Fall back to app store instance title
-      const appInstance = appStore.instances[instance.instanceId];
-      title = appInstance?.title || "Untitled";
-    }
-
-    return {
-      instanceId: instance.instanceId,
-      filePath: instance.filePath,
-      title,
-      contentMarkdown,
-      hasUnsavedChanges: instance.hasUnsavedChanges,
-    };
-  });
-
-  // Convert IE HTML content to markdown for compact prompts
-  let ieHtmlMarkdown: string | null = null;
-  if (ieStore.aiGeneratedHtml) {
-    try {
-      ieHtmlMarkdown = htmlToMarkdown(ieStore.aiGeneratedHtml);
-    } catch (err) {
-      console.error("Failed to convert IE HTML to markdown:", err);
-    }
-  }
-
-  return {
-    username: chatsStore.username,
-    userOS,
-    locale: languageStore.current,
-    userLocalTime: {
-      timeString: userTimeString,
-      dateString: userDateString,
-      timeZone: userTimeZone,
-    },
-    runningApps: {
-      foreground: foregroundInstance,
-      background: backgroundInstances,
-    },
-    internetExplorer: {
-      url: ieStore.url,
-      year: ieStore.year,
-      currentPageTitle: ieStore.currentPageTitle,
-      aiGeneratedMarkdown: ieHtmlMarkdown,
-    },
-    video: {
-      currentVideo: currentVideo
-        ? {
-            id: currentVideo.id,
-            title: currentVideo.title,
-            artist: currentVideo.artist,
-          }
-        : null,
-      isPlaying: videoStore.isPlaying,
-    },
-    ipod: {
-      currentTrack: currentTrack
-        ? {
-            id: currentTrack.id,
-            title: currentTrack.title,
-            artist: currentTrack.artist,
-            source: currentTrack.source,
-          }
-        : null,
-      librarySource: ipodStore.librarySource,
-      isPlaying: ipodStore.isPlaying,
-      currentLyrics: ipodStore.currentLyrics,
-    },
-    karaoke: {
-      currentTrack: karaokeCurrentTrack
-        ? {
-            id: karaokeCurrentTrack.id,
-            title: karaokeCurrentTrack.title,
-            artist: karaokeCurrentTrack.artist,
-          }
-        : null,
-      isPlaying: karaokeStore.isPlaying,
-    },
-    tv: {
-      currentChannel: tvCurrentChannel,
-      isPlaying: tvStore.isPlaying,
-      // Custom channels can be edited; default channels can be deleted from
-      // the visible lineup and restored via TV's reset action.
-      customChannels: tvCustomChannels,
-    },
-    textEdit: {
-      instances: textEditInstancesData,
-    },
-  };
-};
-
 // Helper to check if chats app is currently in the foreground
 const isChatsInForeground = (): boolean => {
   const appStore = useAppStore.getState();
@@ -595,49 +304,6 @@ const showBackgroundedMessageNotification = (message: UIMessage) => {
   });
 };
 
-interface ChatUiState {
-  input: string;
-  selectedImage: string | null;
-  isClearDialogOpen: boolean;
-  isSaveDialogOpen: boolean;
-  saveFileName: string;
-}
-
-const initialChatUiState: ChatUiState = {
-  input: "",
-  selectedImage: null,
-  isClearDialogOpen: false,
-  isSaveDialogOpen: false,
-  saveFileName: "",
-};
-
-type ChatUiAction =
-  | { type: "setInput"; value: string }
-  | { type: "setSelectedImage"; value: string | null }
-  | { type: "setClearDialogOpen"; value: boolean }
-  | { type: "setSaveDialogOpen"; value: boolean }
-  | { type: "setSaveFileName"; value: string }
-  | { type: "clearComposer" };
-
-function chatUiReducer(state: ChatUiState, action: ChatUiAction): ChatUiState {
-  switch (action.type) {
-    case "setInput":
-      return { ...state, input: action.value };
-    case "setSelectedImage":
-      return { ...state, selectedImage: action.value };
-    case "setClearDialogOpen":
-      return { ...state, isClearDialogOpen: action.value };
-    case "setSaveDialogOpen":
-      return { ...state, isSaveDialogOpen: action.value };
-    case "setSaveFileName":
-      return { ...state, saveFileName: action.value };
-    case "clearComposer":
-      return { ...state, input: "", selectedImage: null };
-    default:
-      return state;
-  }
-}
-
 export function useAiChat(onPromptSetUsername?: () => void) {
   const { aiMessages, setAiMessages, username, isAuthenticated } =
     useChatsStoreShallow((state) => ({
@@ -651,47 +317,10 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   const speechEnabled = useAudioSettingsStore((state) => state.speechEnabled);
   const { saveFile } = useFileSystem("/Documents", { skipLoad: true });
 
-  // Local input state (SDK v5 no longer provides this)
   const { t } = useTranslation();
-  const [chatUiState, dispatchChatUi] = useReducer(
-    chatUiReducer,
-    initialChatUiState
-  );
-  const {
-    input,
-    selectedImage,
-    isClearDialogOpen,
-    isSaveDialogOpen,
-    saveFileName,
-  } = chatUiState;
-  const setInput = useCallback((value: string) => {
-    dispatchChatUi({ type: "setInput", value });
-  }, []);
-  const setSelectedImage = useCallback((value: string | null) => {
-    dispatchChatUi({ type: "setSelectedImage", value });
-  }, []);
-  const setIsClearDialogOpen = useCallback((value: boolean) => {
-    dispatchChatUi({ type: "setClearDialogOpen", value });
-  }, []);
-  const setIsSaveDialogOpen = useCallback((value: boolean) => {
-    dispatchChatUi({ type: "setSaveDialogOpen", value });
-  }, []);
-  const setSaveFileName = useCallback((value: string) => {
-    dispatchChatUi({ type: "setSaveFileName", value });
-  }, []);
-  const handleInputChange = useCallback(
-    (
-      e:
-        | React.ChangeEvent<HTMLInputElement>
-        | React.ChangeEvent<HTMLTextAreaElement>,
-    ) => {
-      setInput(e.target.value);
-    },
-    [],
-  );
-  const handleImageChange = useCallback((imageData: string | null) => {
-    setSelectedImage(imageData);
-  }, []);
+  const [isClearDialogOpen, setIsClearDialogOpen] = useState(false);
+  const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
+  const [saveFileName, setSaveFileName] = useState("");
 
   // Rate limit state
   const [rateLimitError, setRateLimitError] = useState<{
@@ -2118,23 +1747,11 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   const currentSdkMessagesRef = useRef<AIChatMessage[]>([]);
   currentSdkMessagesRef.current = messagesWithTimestamps;
 
-  // --- State Synchronization & Message Processing ---
-  // Sync store to SDK ONLY on initial load or external store changes
-  useEffect(() => {
-    // If aiMessages (from store) differs from the SDK state, update SDK.
-    // This handles loading persisted messages.
-    // Avoid deep comparison issues by comparing lengths and last message ID/content
-    if (
-      aiMessages.length !== currentSdkMessages.length ||
-      (aiMessages.length > 0 &&
-        aiMessages[aiMessages.length - 1].id !==
-          currentSdkMessages[currentSdkMessages.length - 1]?.id)
-    ) {
-      console.log("Syncing Zustand store messages to SDK.");
-      setSdkMessages(aiMessages);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [aiMessages, setSdkMessages]); // Only run when aiMessages changes
+  useSyncedAiMessages({
+    aiMessages,
+    currentMessages: currentSdkMessages as UIMessage[],
+    setMessages: setSdkMessages as (messages: AIChatMessage[]) => void,
+  });
 
   const isLoading = status === "streaming" || status === "submitted";
   const {
@@ -2256,22 +1873,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       isAuthenticated,
       aiModel,
       t,
-    ],
-  );
-
-  const handleSubmit = useCallback(
-    async (e: React.FormEvent<HTMLFormElement>) => {
-      e.preventDefault();
-      const didSubmit = await handleSubmitMessage(input, selectedImage);
-      if (didSubmit) {
-        dispatchChatUi({ type: "clearComposer" }); // Clear input and image after sending
-      }
-    },
-    [
-      handleSubmitMessage,
-      input,
-      selectedImage,
-      dispatchChatUi,
     ],
   );
 
@@ -2418,9 +2019,8 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     // Add small delay for dialog close animation
     setTimeout(() => {
       clearChats();
-      setInput(""); // Clear input field
     }, 100);
-  }, [clearChats, setInput]);
+  }, [clearChats]);
 
   const handleSaveTranscript = useCallback(() => {
     const now = new Date();
@@ -2543,9 +2143,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   return {
     // AI Chat State & Actions
     messages: messagesWithTimestamps, // Return messages with timestamps
-    input,
-    handleInputChange,
-    handleSubmit,
     handleSubmitMessage,
     isLoading,
     reload: regenerate, // Map v5 regenerate to v4 reload
@@ -2557,9 +2154,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     clearChats, // Expose the action
     handleSaveTranscript, // Expose the action
 
-    // Image attachment state
-    selectedImage,
-    handleImageChange,
 
     // Rate limit state
     rateLimitError,
