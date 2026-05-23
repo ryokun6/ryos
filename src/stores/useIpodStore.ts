@@ -2110,13 +2110,36 @@ export const useIpodStore = create<IpodState>()(
         });
       },
       setAppleMusicPlaylists: (playlists, loadedAt) =>
-        set({
-          appleMusicPlaylists: playlists,
-          // `null` is reserved for "never synced". When the caller doesn't
-          // pass a timestamp, treat this as a fresh sync (default behavior
-          // for opportunistic / foreground refresh paths).
-          appleMusicPlaylistsLoadedAt:
-            loadedAt === undefined ? Date.now() : loadedAt,
+        set((state) => {
+          const activeIds = new Set(playlists.map((playlist) => playlist.id));
+          const nextPlaylistTracks: Record<string, Track[]> = {};
+          const nextPlaylistTracksLoadedAt: Record<string, number> = {};
+          const nextPlaylistTracksLoading: Record<string, boolean> = {};
+          for (const [playlistId, tracks] of Object.entries(
+            state.appleMusicPlaylistTracks
+          )) {
+            if (!activeIds.has(playlistId)) continue;
+            nextPlaylistTracks[playlistId] = tracks;
+            const cachedLoadedAt = state.appleMusicPlaylistTracksLoadedAt[playlistId];
+            if (typeof cachedLoadedAt === "number") {
+              nextPlaylistTracksLoadedAt[playlistId] = cachedLoadedAt;
+            }
+            if (state.appleMusicPlaylistTracksLoading[playlistId]) {
+              nextPlaylistTracksLoading[playlistId] = true;
+            }
+          }
+          return {
+            appleMusicPlaylists: playlists,
+            // `null` is reserved for "never synced". When the caller doesn't
+            // pass a timestamp, treat this as a fresh sync (default behavior
+            // for opportunistic / foreground refresh paths).
+            appleMusicPlaylistsLoadedAt:
+              loadedAt === undefined ? Date.now() : loadedAt,
+            // Keep only tracks for playlists that still exist on the server.
+            appleMusicPlaylistTracks: nextPlaylistTracks,
+            appleMusicPlaylistTracksLoadedAt: nextPlaylistTracksLoadedAt,
+            appleMusicPlaylistTracksLoading: nextPlaylistTracksLoading,
+          };
         }),
       setAppleMusicPlaylistTracks: (playlistId, tracks) =>
         set((state) => ({

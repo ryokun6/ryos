@@ -241,6 +241,52 @@ export async function loadAllAppleMusicPlaylistTracks(): Promise<
   }
 }
 
+/**
+ * Remove cached per-playlist track payloads whose playlist IDs are no longer
+ * present in the latest playlist list response.
+ */
+export async function pruneAppleMusicPlaylistTracksCache(
+  activePlaylistIds: readonly string[]
+): Promise<void> {
+  let db: IDBDatabase | null = null;
+  try {
+    const { ensureIndexedDBInitialized } = await import("@/utils/indexedDB");
+    db = await ensureIndexedDBInitialized();
+    const database = db;
+    if (!database) return;
+    await new Promise<void>((resolve, reject) => {
+      try {
+        const tx = database.transaction(
+          STORES.APPLE_MUSIC_PLAYLIST_TRACKS,
+          "readwrite"
+        );
+        const store = tx.objectStore(STORES.APPLE_MUSIC_PLAYLIST_TRACKS);
+        const keysReq = store.getAllKeys();
+        const active = new Set(activePlaylistIds);
+
+        keysReq.onsuccess = () => {
+          const keys = (keysReq.result || []) as IDBValidKey[];
+          for (const key of keys) {
+            if (typeof key !== "string") continue;
+            if (key.startsWith(TRACK_COLLECTION_KEY_PREFIX)) continue;
+            if (active.has(key)) continue;
+            store.delete(key);
+          }
+        };
+        keysReq.onerror = () => reject(keysReq.error);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      } catch (err) {
+        reject(err);
+      }
+    });
+  } catch (err) {
+    console.warn("[apple music cache] failed to prune playlist track cache", err);
+  } finally {
+    db?.close();
+  }
+}
+
 async function clearAppleMusicPlaylists(): Promise<void> {
   try {
     await dbOperations.delete(STORES.APPLE_MUSIC_PLAYLISTS, PLAYLISTS_KEY);
