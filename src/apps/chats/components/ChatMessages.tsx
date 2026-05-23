@@ -201,7 +201,6 @@ const CHAT_STREAMDOWN_ANIMATED = {
   easing: "ease-out",
   sep: "word",
 } as const;
-const RECENT_TTS_HIGHLIGHT_MS = 10000;
 
 type HighlightSegment = { messageId: string; start: number; end: number };
 
@@ -412,7 +411,6 @@ interface ChatMessageItemProps {
   highlightSegment?: HighlightSegment | null;
   isSpeaking?: boolean;
   latestAssistantMessageKey?: string | null;
-  recentTtsMessageKey?: string | null;
   speakText: (
     text: string,
     onEnd?: () => void,
@@ -453,7 +451,6 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
     highlightSegment,
     isSpeaking,
     latestAssistantMessageKey,
-    recentTtsMessageKey,
     speakText,
     stopSpeech,
     isAdmin,
@@ -534,7 +531,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
     (!!isSpeaking &&
       message.role === "assistant" &&
       latestAssistantMessageKey === messageKey) ||
-    recentTtsMessageKey === messageKey;
+    latestAssistantMessageKey === messageKey;
   let assistantTextOffset = 0;
 
   let hasAquarium = false;
@@ -1336,21 +1333,6 @@ function ChatMessagesContent({
   const latestAssistantMessageKey = latestSpeechMessage
     ? getMessageKey(latestSpeechMessage)
     : null;
-  const [recentTtsMessageKey, setRecentTtsMessageKey] = useState<string | null>(
-    null
-  );
-  useEffect(() => {
-    if (!latestAssistantMessageKey) {
-      return;
-    }
-
-    setRecentTtsMessageKey(latestAssistantMessageKey);
-    const timeoutId = setTimeout(
-      () => setRecentTtsMessageKey(null),
-      RECENT_TTS_HIGHLIGHT_MS
-    );
-    return () => clearTimeout(timeoutId);
-  }, [latestAssistantMessageKey]);
 
   // Belt-and-suspenders: once a message key has been seen as streaming and
   // then leaves that state, lock its `isAnimating` to false forever so any
@@ -1414,7 +1396,6 @@ function ChatMessagesContent({
             highlightSegment={highlightSegment}
             isSpeaking={isSpeaking}
             latestAssistantMessageKey={latestAssistantMessageKey}
-            recentTtsMessageKey={recentTtsMessageKey}
             speakText={speakText}
             stopSpeech={stopSpeech}
             isAdmin={isAdmin}
