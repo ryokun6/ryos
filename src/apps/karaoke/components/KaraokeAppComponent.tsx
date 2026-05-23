@@ -32,6 +32,7 @@ import { FullscreenPlayerControls } from "@/components/shared/FullscreenPlayerCo
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useKaraokeLogic } from "../hooks/useKaraokeLogic";
 import { KaraokeLibraryEmptyState } from "./KaraokeLibraryEmptyState";
+import { KtvAmbientReactions } from "./KtvAmbientReactions";
 import { DisplayMode } from "@/types/lyrics";
 import { LandscapeVideoBackground } from "@/components/shared/LandscapeVideoBackground";
 import { AmbientBackground } from "@/components/shared/AmbientBackground";
@@ -76,6 +77,8 @@ export function KaraokeAppComponent({
     toggleLoopAll,
     toggleLoopCurrent,
     toggleFullScreen,
+    karaokeKtvRoomFx,
+    toggleKaraokeKtvRoomFx,
     setIsPlaying,
     isOffline,
     manualSync,
@@ -446,7 +449,7 @@ export function KaraokeAppComponent({
             userHasInteractedRef={userHasInteractedRef}
           />
           {/* Reaction overlay for listen sessions */}
-          {listenSession && !isSyncModeOpen && (
+          {listenSession && !isSyncModeOpen && !isFullScreen && (
             <ReactionOverlay className="z-40" />
           )}
           {/* Video Player - container clips YouTube UI by extending height and using negative margin */}
@@ -887,6 +890,8 @@ export function KaraokeAppComponent({
           displayMode={displayMode}
           onDisplayModeSelect={handleDisplayModeSelect}
           displayModeOptions={displayModeOptions}
+          karaokeKtvRoomFxEnabled={karaokeKtvRoomFx}
+          onToggleKaraokeKtvRoomFx={toggleKaraokeKtvRoomFx}
           syncModeContent={
             <KaraokeSyncModeFullscreenPanel
               isSyncModeOpen={isSyncModeOpen}
@@ -1043,6 +1048,24 @@ export function KaraokeAppComponent({
                   <div className="absolute inset-0 z-[22] bg-black">
                     <KaraokeLibraryEmptyState onAddSongs={handleAddSong} />
                   </div>
+                )}
+
+                {!isSyncModeOpen && listenSession && (
+                  <ReactionOverlay className="absolute inset-0 z-[15]" />
+                )}
+                {!isSyncModeOpen && !listenSession && (
+                  <KtvAmbientReactions
+                    enabled={
+                      karaokeKtvRoomFx &&
+                      Boolean(currentTrack) &&
+                      (isForeground ?? true)
+                    }
+                    isPlaying={
+                      isPlaying &&
+                      Boolean(currentTrack) &&
+                      !isListenSessionRemoteOnly
+                    }
+                  />
                 )}
 
                 <KaraokeFullscreenLyricsOverlay

@@ -2539,7 +2539,9 @@
         "view": "檢視"
       },
       "name": "卡拉 OK",
-      "noTrack": "未載入任何曲目。開啟 iPod 以選取歌曲。"
+      "noTrack": "未載入任何曲目。開啟 iPod 以選取歌曲。",
+      "ktvRoomFx": "觀眾反應",
+      "ktvRoomFxHint": "切換全螢幕卡拉 OK 漂浮觀眾反應",
     },
     "maps": {
       "description": "使用 Apple 地圖尋找地點",

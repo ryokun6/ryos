@@ -2136,6 +2136,8 @@
         "addSongs": "Add Songs"
       },
       "noTrack": "No track loaded. Open iPod to select a song.",
+      "ktvRoomFx": "Audience reactions",
+      "ktvRoomFxHint": "Toggle floating audience reactions in fullscreen karaoke",
       "liveListen": {
         "start": "Open KTV Room",
         "join": "Join KTV Room...",

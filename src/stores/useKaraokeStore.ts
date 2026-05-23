@@ -32,6 +32,8 @@ interface KaraokeData {
   loopCurrent: boolean;
   loopAll: boolean;
   isShuffled: boolean;
+  /** Ambient fullscreen “audience” reaction bursts – solo karaoke KTV vibes */
+  karaokeKtvRoomFx: boolean;
   /** Playback history for shuffle mode (song IDs) */
   playbackHistory: string[];
   isFullScreen: boolean;
@@ -57,6 +59,8 @@ export interface KaraokeState extends KaraokeData {
   previousTrack: () => void;
   toggleFullScreen: () => void;
   setFullScreen: (fullScreen: boolean) => void;
+  toggleKaraokeKtvRoomFx: () => void;
+  setKaraokeKtvRoomFx: (value: boolean) => void;
   setElapsedTime: (time: SetStateAction<number>) => void;
   setTotalTime: (time: number) => void;
 }
@@ -67,6 +71,7 @@ const initialKaraokeData: KaraokeData = {
   loopCurrent: false,
   loopAll: true,
   isShuffled: false,
+  karaokeKtvRoomFx: true,
   playbackHistory: [],
   isFullScreen: false,
   elapsedTime: 0,
@@ -202,6 +207,10 @@ export const useKaraokeStore = create<KaraokeState>()(
 
       setFullScreen: (fullScreen) => set({ isFullScreen: fullScreen }),
 
+      toggleKaraokeKtvRoomFx: () =>
+        set((state) => ({ karaokeKtvRoomFx: !state.karaokeKtvRoomFx })),
+      setKaraokeKtvRoomFx: (karaokeKtvRoomFx) => set({ karaokeKtvRoomFx }),
+
       setElapsedTime: (time) =>
         set((state) => ({
           elapsedTime:
@@ -217,6 +226,7 @@ export const useKaraokeStore = create<KaraokeState>()(
         loopCurrent: state.loopCurrent,
         loopAll: state.loopAll,
         isShuffled: state.isShuffled,
+        karaokeKtvRoomFx: state.karaokeKtvRoomFx,
         isFullScreen: state.isFullScreen,
         // Don't persist isPlaying or playbackHistory
       }),

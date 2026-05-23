@@ -4,7 +4,7 @@ import { useSound, Sounds } from "@/hooks/useSound";
 import type { LyricsAlignment, RomanizationSettings } from "@/types/lyrics";
 import { DisplayMode, LyricsFont, getLyricsFontClassName } from "@/types/lyrics";
 import { getTranslationBadge } from "@/apps/ipod/constants";
-import { Translate, X, ClockClockwise, SkipBack, SkipForward, Play, Pause, Shuffle, Video } from "@phosphor-icons/react";
+import { Translate, X, ClockClockwise, SkipBack, SkipForward, Play, Pause, Shuffle, Video, HandsClapping } from "@phosphor-icons/react";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -105,6 +105,10 @@ export interface FullscreenPlayerControlsProps {
   // Portal container for fullscreen mode (dropdown menus need to render inside the fullscreen element)
   portalContainer?: HTMLElement | null;
 
+  /** Karaoke fullscreen: solo “room reactions” bursts */
+  karaokeKtvRoomFxEnabled?: boolean;
+  onToggleKaraokeKtvRoomFx?: () => void;
+
   // Hide lyrics controls island (for video players without lyrics)
   hideLyricsControls?: boolean;
 }
@@ -144,6 +148,8 @@ export function FullscreenPlayerControls({
   bgOpacity = "35",
   onInteraction,
   portalContainer,
+  karaokeKtvRoomFxEnabled,
+  onToggleKaraokeKtvRoomFx,
   hideLyricsControls = false,
 }: FullscreenPlayerControlsProps) {
   const { t, i18n } = useTranslation();
@@ -401,6 +407,22 @@ export function FullscreenPlayerControls({
             title={t("apps.ipod.syncMode.title", "Sync Lyrics")}
           >
             <ClockClockwise weight="fill" className={cn(variant === "compact" ? "w-3.5 h-3.5" : "w-4 h-4", svgClasses())} />
+          </button>
+        )}
+
+        {karaokeKtvRoomFxEnabled !== undefined && onToggleKaraokeKtvRoomFx && (
+          <button
+            type="button"
+            onClick={handleClick(onToggleKaraokeKtvRoomFx)}
+            aria-pressed={karaokeKtvRoomFxEnabled}
+            aria-label={t("apps.karaoke.ktvRoomFx")}
+            className={cn(buttonClasses, !karaokeKtvRoomFxEnabled && "opacity-[0.42]")}
+            title={t("apps.karaoke.ktvRoomFxHint")}
+          >
+            <HandsClapping
+              weight={karaokeKtvRoomFxEnabled ? "fill" : "regular"}
+              className={cn(variant === "compact" ? "w-3.5 h-3.5" : "w-4 h-4", svgClasses())}
+            />
           </button>
         )}
 

@@ -2539,7 +2539,9 @@
         "view": "Ver"
       },
       "name": "Karaoke",
-      "noTrack": "Nenhuma faixa carregada. Abra o iPod para selecionar uma música."
+      "noTrack": "Nenhuma faixa carregada. Abra o iPod para selecionar uma música.",
+      "ktvRoomFx": "Reações da plateia",
+      "ktvRoomFxHint": "Ativar reações flutuantes da plateia em tela cheia",
     },
     "maps": {
       "description": "Encontre lugares com o Apple Mapas",

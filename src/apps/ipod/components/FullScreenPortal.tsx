@@ -49,6 +49,8 @@ export function FullScreenPortal({
   onDisplayModeSelect,
   displayModeOptions,
   fullScreenPlayerRef,
+  karaokeKtvRoomFxEnabled,
+  onToggleKaraokeKtvRoomFx,
   activityState,
 }: FullScreenPortalProps) {
   const isAnyActivityActive = activityState
@@ -548,6 +550,8 @@ export function FullScreenPortal({
           onFontCycle={onCycleLyricsFont}
           romanization={romanization}
           onRomanizationChange={onRomanizationChange}
+          karaokeKtvRoomFxEnabled={karaokeKtvRoomFxEnabled}
+          onToggleKaraokeKtvRoomFx={onToggleKaraokeKtvRoomFx}
           isPronunciationMenuOpen={isPronunciationMenuOpen}
           setIsPronunciationMenuOpen={setIsPronunciationMenuOpen}
           currentTranslationCode={currentTranslationCode}

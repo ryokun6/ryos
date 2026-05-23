@@ -2539,7 +2539,9 @@
         "view": "Ansicht"
       },
       "name": "Karaoke",
-      "noTrack": "Kein Titel geladen. Öffne den iPod, um einen Titel auszuwählen."
+      "noTrack": "Kein Titel geladen. Öffne den iPod, um einen Titel auszuwählen.",
+      "ktvRoomFx": "Publikumsreaktionen",
+      "ktvRoomFxHint": "Schwebende Publikumsreaktionen im Vollbild umschalten",
     },
     "maps": {
       "description": "Orte mit Apple Karten finden",
