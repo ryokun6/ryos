@@ -18,6 +18,14 @@ interface TerrariumFireflyOverflowLayerProps {
 
 const FIREFLY_EMOJI = "✨";
 
+/** Smooth ease for looping foliage sway (avoids snappy easeInOut reversals). */
+const FOLIAGE_SWAY_EASE = [0.42, 0.05, 0.58, 0.95] as const;
+
+function foliageRotateKeyframes(base: number, amplitude: number) {
+  const a = amplitude;
+  return [base, base + a * 0.65, base + a, base + a * 0.65, base, base - a * 0.65, base - a, base - a * 0.65, base];
+}
+
 function createSeededRandom(seed?: string) {
   let a = 0;
   if (seed && seed.length > 0) {
@@ -105,6 +113,7 @@ export function TerrariumFireflyOverflowLayer({
 }
 
 const PLANTS = ["🌿", "🌱", "🍀", "🌸", "🌼", "🌾", "🪴"];
+const GRASS_TUFTS = ["🌿", "🌱", "☘️", "🍀"];
 const ROCK_COUNT = 4;
 const PLANT_COUNT = 7;
 const MOTE_COUNT = 5;
@@ -172,6 +181,62 @@ export function EmojiTerrarium({ seed, className }: EmojiTerrariumProps) {
     return xs;
   }, [stableSeed, width]);
 
+  const grassTufts = useMemo(() => {
+    const rnd = createSeededRandom(`${stableSeed}:terrarium-grass:${width}`);
+    const count = Math.max(10, Math.min(20, Math.floor(width / 20)));
+    const leftPad = 2;
+    const rightPad = 6;
+    const usable = Math.max(0, width - leftPad - rightPad);
+    const seg = usable / Math.max(count, 1);
+    return Array.from({ length: count }, (_, i) => {
+      const base = leftPad + seg * (i + 0.5);
+      const x = Math.max(leftPad, Math.min(width - rightPad - 18, base + (rnd() - 0.5) * seg * 0.65));
+      const baseRotate = (rnd() - 0.5) * 10;
+      return {
+        x,
+        emoji: GRASS_TUFTS[Math.floor(rnd() * GRASS_TUFTS.length)],
+        size: 15 + Math.round(rnd() * 11),
+        baseRotate,
+        swayAmp: 1 + rnd() * 1.4,
+        delay: rnd() * 2.5,
+        swayDur: 7.5 + rnd() * 5.5,
+        layer: rnd() > 0.72 ? 1 : 0,
+      };
+    });
+  }, [stableSeed, width]);
+
+  const plantSprites = useMemo(() => {
+    const rnd = createSeededRandom(`${stableSeed}:terrarium-plants:${width}:${height}`);
+    return Array.from({ length: PLANT_COUNT }, (_, i) => {
+      const x = floorXs[i] ?? 12 + rnd() * Math.max(0, width - 24);
+      const sizePx = 20 + Math.round(rnd() * 11);
+      const top = Math.max(groundY - sizePx + 10 + rnd() * 12, 16);
+      const baseRotate = (rnd() - 0.5) * 8;
+      return {
+        x,
+        top,
+        emoji: PLANTS[Math.floor(rnd() * PLANTS.length)],
+        sizePx,
+        baseRotate,
+        swayAmp: 1.1 + rnd() * 1.6,
+        delay: rnd() * 2.8,
+        swayDur: 8.5 + rnd() * 6.5,
+      };
+    });
+  }, [stableSeed, width, height, groundY, floorXs]);
+
+  const meadowGradient = useMemo(() => {
+    const horizonPct = Math.min(92, Math.max(48, Math.round((groundY / Math.max(height, 1)) * 100)));
+    return `linear-gradient(180deg,
+      #cdd85a 0%,
+      #c0d052 14%,
+      #b2c64a 30%,
+      #9fbb42 48%,
+      #8aad3c 64%,
+      #7a9f38 ${horizonPct}%,
+      #6b9234 100%)`;
+  }, [groundY, height]);
+
   const decor = createSeededRandom(`${stableSeed}:terrarium-decor:${width}:${height}`);
   const moth = createSeededRandom(`${stableSeed}:terrarium-moth:${width}:${height}`);
   const bug = createSeededRandom(`${stableSeed}:terrarium-bug:${width}:${height}`);
@@ -193,25 +258,16 @@ export function EmojiTerrarium({ seed, className }: EmojiTerrariumProps) {
     <MotionConfig reducedMotion="never">
       <div
         className={cn(
-          "relative h-full min-h-[inherit] w-full overflow-visible rounded-[inherit]",
-          "bg-[#c4cfbc] text-neutral-900",
+          "relative h-full min-h-[inherit] w-full overflow-visible rounded-[inherit] text-neutral-900",
           className
         )}
+        style={{ background: meadowGradient }}
         ref={containerRef}
       >
         <div
           className="relative z-0 overflow-hidden rounded-[inherit]"
-          style={{ width: "100%", height }}
+          style={{ width: "100%", height, background: meadowGradient }}
         >
-          <div
-            className="pointer-events-none absolute inset-x-0 top-0 z-0 opacity-55"
-            style={{
-              height: Math.max(32, Math.round(height * 0.22)),
-              backgroundColor: "#9cb09a",
-            }}
-            aria-hidden
-          />
-
           {Array.from({ length: MOTE_COUNT }).map((_, i) => {
             const x = 12 + decor() * (width - 24);
             const yBase = 10 + decor() * (height * 0.52);
@@ -251,22 +307,46 @@ export function EmojiTerrarium({ seed, className }: EmojiTerrariumProps) {
             className="pointer-events-none absolute inset-x-0 bottom-0 z-[1]"
             style={{
               height: soilHeight,
-              backgroundColor: "#5c4d40",
-              boxShadow: "inset 0 12px 0 rgba(62,52,46,0.35)",
+              background:
+                "linear-gradient(180deg, #6b5a48 0%, #5c4d40 18%, #4a3f36 100%)",
+              boxShadow: "inset 0 10px 14px rgba(72,58,46,0.45)",
             }}
             aria-hidden
           />
 
-          <div
-            className="pointer-events-none absolute inset-x-0 z-[2]"
-            style={{
-              top: groundY - 4,
-              height: 14,
-              background:
-                "repeating-linear-gradient(90deg, transparent 0 6px, rgba(124,154,114,0.35) 6px 8px)",
-            }}
-            aria-hidden
-          />
+          {grassTufts.map((tuft, i) => {
+            const top = groundY - tuft.size * (tuft.layer === 1 ? 0.72 : 0.88);
+            return (
+              <motion.span
+                key={`grass-${i}`}
+                className="z-[12] select-none"
+                initial={{ opacity: 0, rotate: tuft.baseRotate }}
+                animate={{
+                  opacity: 1,
+                  rotate: foliageRotateKeyframes(tuft.baseRotate, tuft.swayAmp),
+                }}
+                transition={{
+                  opacity: { duration: 0.45, ease: "easeOut" },
+                  rotate: {
+                    duration: tuft.swayDur,
+                    repeat: Infinity,
+                    ease: FOLIAGE_SWAY_EASE,
+                    delay: tuft.delay,
+                  },
+                }}
+                style={{
+                  position: "absolute",
+                  left: tuft.x,
+                  top,
+                  transformOrigin: "bottom center",
+                  willChange: "transform",
+                  filter: "drop-shadow(0 1px 1px rgba(40,55,35,0.25))",
+                }}
+              >
+                <Emoji emoji={tuft.emoji} size={tuft.size} />
+              </motion.span>
+            );
+          })}
 
           {Array.from({ length: ROCK_COUNT }).map((_, i) => {
             const x = floorXs[i] ?? 14 + decor() * (width - 28);
@@ -302,43 +382,35 @@ export function EmojiTerrarium({ seed, className }: EmojiTerrariumProps) {
             );
           })}
 
-          {Array.from({ length: PLANT_COUNT }).map((_, i) => {
-            const emoji = PLANTS[Math.floor(decor() * PLANTS.length)];
-            const x = floorXs[i] ?? 12 + decor() * (width - 24);
-            const sizePx = 20 + Math.round(decor() * 11);
-            const top = Math.max(groundY - sizePx + 10 + decor() * 12, 16);
-            const sway = decor() > 0.55 ? [-4, 4, -4] : [4, -4, 4];
-            const delay = 0.12 + decor() * 0.4;
-            const swayDur = 6 + decor() * 4;
-            return (
-              <motion.span
-                key={`plant-${i}`}
-                className="z-20 select-none"
-                initial={{ opacity: 0, scale: 0.93 }}
-                animate={{
-                  opacity: 1,
-                  scale: [0.93, 1, 0.96, 1],
-                  rotate: sway,
-                }}
-                transition={{
-                  opacity: { duration: 0.4 },
-                  rotate: {
-                    duration: swayDur,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                    delay,
-                  },
-                  scale: {
-                    duration: swayDur,
-                    repeat: Infinity,
-                  },
-                }}
-                style={{ position: "absolute", left: x, top }}
-              >
-                <Emoji emoji={emoji} size={sizePx} />
-              </motion.span>
-            );
-          })}
+          {plantSprites.map((plant, i) => (
+            <motion.span
+              key={`plant-${i}`}
+              className="z-20 select-none"
+              initial={{ opacity: 0, rotate: plant.baseRotate }}
+              animate={{
+                opacity: 1,
+                rotate: foliageRotateKeyframes(plant.baseRotate, plant.swayAmp),
+              }}
+              transition={{
+                opacity: { duration: 0.45, ease: "easeOut" },
+                rotate: {
+                  duration: plant.swayDur,
+                  repeat: Infinity,
+                  ease: FOLIAGE_SWAY_EASE,
+                  delay: plant.delay,
+                },
+              }}
+              style={{
+                position: "absolute",
+                left: plant.x,
+                top: plant.top,
+                transformOrigin: "bottom center",
+                willChange: "transform",
+              }}
+            >
+              <Emoji emoji={plant.emoji} size={plant.sizePx} />
+            </motion.span>
+          ))}
 
           <motion.span
             key="bfly"
@@ -440,15 +512,6 @@ export function EmojiTerrarium({ seed, className }: EmojiTerrariumProps) {
             }}
           >
             <Emoji emoji="🐞" size={22} />
-          </motion.span>
-
-          <motion.span
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.45 }}
-            className="absolute right-3 top-2 select-none z-35"
-          >
-            <Emoji emoji="🫙" size={22} />
           </motion.span>
 
           {Array.from({ length: 6 }).map((_, i) => {

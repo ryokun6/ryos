@@ -9,7 +9,7 @@ interface TerrariumWidgetProps {
 
 export function TerrariumWidget({ widgetId }: TerrariumWidgetProps) {
   return (
-    <div className="flex h-full min-h-[inherit] items-stretch rounded-[inherit] bg-[#b9c8b4] shadow-[inset_0_1px_8px_rgba(255,255,255,0.28)]">
+    <div className="flex h-full min-h-[inherit] items-stretch rounded-[inherit] shadow-[inset_0_1px_10px_rgba(255,255,255,0.32)]">
       <EmojiTerrarium
         seed={widgetId}
         className="h-full min-h-[inherit] rounded-[inherit] shadow-[inset_0_-8px_16px_rgba(45,40,34,0.12)]"
