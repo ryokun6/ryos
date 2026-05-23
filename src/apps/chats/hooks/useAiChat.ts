@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo, useReducer } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useChat, type UIMessage } from "@ai-sdk/react";
 import {
   DefaultChatTransport,
@@ -54,6 +54,7 @@ import {
   trackNewTextEditInstance,
   getRecentTextEditInstanceForPath,
 } from "../utils/textEditInstanceTracking";
+import { useChatComposer } from "./useChatComposer";
 import {
   normalizeSearchText,
   computeMatchScore,
@@ -101,50 +102,8 @@ import {
 //  moved to utils/textEditInstanceTracking.ts; the fuzzy-search algorithm
 //  moved to utils/fuzzySearch.ts; getSystemState / getAssistantVisibleText
 //  / isChatsInForeground / showBackgroundedMessageNotification moved to
-//  utils/systemState.ts; detectUserOS lives in tools/helpers.ts.)
-
-interface ChatUiState {
-  input: string;
-  selectedImage: string | null;
-  isClearDialogOpen: boolean;
-  isSaveDialogOpen: boolean;
-  saveFileName: string;
-}
-
-const initialChatUiState: ChatUiState = {
-  input: "",
-  selectedImage: null,
-  isClearDialogOpen: false,
-  isSaveDialogOpen: false,
-  saveFileName: "",
-};
-
-type ChatUiAction =
-  | { type: "setInput"; value: string }
-  | { type: "setSelectedImage"; value: string | null }
-  | { type: "setClearDialogOpen"; value: boolean }
-  | { type: "setSaveDialogOpen"; value: boolean }
-  | { type: "setSaveFileName"; value: string }
-  | { type: "clearComposer" };
-
-function chatUiReducer(state: ChatUiState, action: ChatUiAction): ChatUiState {
-  switch (action.type) {
-    case "setInput":
-      return { ...state, input: action.value };
-    case "setSelectedImage":
-      return { ...state, selectedImage: action.value };
-    case "setClearDialogOpen":
-      return { ...state, isClearDialogOpen: action.value };
-    case "setSaveDialogOpen":
-      return { ...state, isSaveDialogOpen: action.value };
-    case "setSaveFileName":
-      return { ...state, saveFileName: action.value };
-    case "clearComposer":
-      return { ...state, input: "", selectedImage: null };
-    default:
-      return state;
-  }
-}
+//  utils/systemState.ts; detectUserOS lives in tools/helpers.ts.
+//  Wave 3: composer state / reducer moved to hooks/useChatComposer.ts.)
 
 export function useAiChat(onPromptSetUsername?: () => void) {
   const { aiMessages, setAiMessages, username, isAuthenticated } =
@@ -159,12 +118,18 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   const speechEnabled = useAudioSettingsStore((state) => state.speechEnabled);
   const { saveFile } = useFileSystem("/Documents", { skipLoad: true });
 
-  // Local input state (SDK v5 no longer provides this)
+  // Local input state (SDK v5 no longer provides this) — owned by useChatComposer
   const { t } = useTranslation();
-  const [chatUiState, dispatchChatUi] = useReducer(
-    chatUiReducer,
-    initialChatUiState
-  );
+  const {
+    state: chatUiState,
+    setInput,
+    setIsClearDialogOpen,
+    setIsSaveDialogOpen,
+    setSaveFileName,
+    clearComposer,
+    handleInputChange,
+    handleImageChange,
+  } = useChatComposer();
   const {
     input,
     selectedImage,
@@ -172,34 +137,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     isSaveDialogOpen,
     saveFileName,
   } = chatUiState;
-  const setInput = useCallback((value: string) => {
-    dispatchChatUi({ type: "setInput", value });
-  }, []);
-  const setSelectedImage = useCallback((value: string | null) => {
-    dispatchChatUi({ type: "setSelectedImage", value });
-  }, []);
-  const setIsClearDialogOpen = useCallback((value: boolean) => {
-    dispatchChatUi({ type: "setClearDialogOpen", value });
-  }, []);
-  const setIsSaveDialogOpen = useCallback((value: boolean) => {
-    dispatchChatUi({ type: "setSaveDialogOpen", value });
-  }, []);
-  const setSaveFileName = useCallback((value: string) => {
-    dispatchChatUi({ type: "setSaveFileName", value });
-  }, []);
-  const handleInputChange = useCallback(
-    (
-      e:
-        | React.ChangeEvent<HTMLInputElement>
-        | React.ChangeEvent<HTMLTextAreaElement>,
-    ) => {
-      setInput(e.target.value);
-    },
-    [],
-  );
-  const handleImageChange = useCallback((imageData: string | null) => {
-    setSelectedImage(imageData);
-  }, []);
 
   // Track how many characters of each assistant message have already been sent to TTS
   const speechProgressRef = useRef<Record<string, number>>({});
@@ -1907,14 +1844,14 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       e.preventDefault();
       const didSubmit = await handleSubmitMessage(input, selectedImage);
       if (didSubmit) {
-        dispatchChatUi({ type: "clearComposer" }); // Clear input and image after sending
+        clearComposer(); // Clear input and image after sending
       }
     },
     [
       handleSubmitMessage,
       input,
       selectedImage,
-      dispatchChatUi,
+      clearComposer,
     ],
   );
 
