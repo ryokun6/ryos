@@ -50,6 +50,7 @@ import {
   persistChatDocument,
 } from "../utils/chatFilePersistence";
 import { cleanTextForSpeech } from "../utils/textForSpeech";
+import { extractCompletedParagraphRanges } from "../utils/streamingSpeech";
 import {
   handleLaunchApp,
   handleCloseApp,
@@ -1893,7 +1894,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       }
     },
 
-    onFinish: ({ messages, isError }) => {
+    onFinish: ({ messages, isError, isAbort, isDisconnect }) => {
       // Ensure all messages have metadata with createdAt
       const finalMessages: AIChatMessage[] = (messages as UIMessage[]).map(
         (msg) =>
@@ -1976,21 +1977,20 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         showBackgroundedMessageNotification(lastMsg);
       }
 
-      // Ensure any final content that wasn't processed is spoken
+      // Speak any finalized tail once the assistant turn ends. When the stream is
+      // aborted or drops mid-flight, keep queued audio but do not read the leftover
+      // partial buffer aloud.
       if (!speechEnabled) return;
 
       const progress = speechProgressRef.current[lastMsg.id] ?? 0;
       const content = getAssistantVisibleText(lastMsg);
 
-      console.log(
-        `[onFinish] Progress: ${progress}, Content length: ${content.length}`,
-      );
+      const skipTailBecauseStreamCut =
+        Boolean(isAbort) || Boolean(isDisconnect);
 
-      // If there's unprocessed content, speak it now
-      if (progress < content.length) {
+      if (!skipTailBecauseStreamCut && progress < content.length) {
         const remainingRaw = content.slice(progress);
-        const cleaned = cleanTextForSpeech(remainingRaw);
-        console.log(`[onFinish] Speaking final content: "${cleaned}"`);
+        const cleaned = cleanTextForSpeech(remainingRaw.trimEnd());
 
         if (cleaned) {
           const seg = {
@@ -2000,7 +2000,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
           };
           highlightQueueRef.current.push(seg);
 
-          // Use ref to get current setHighlightSegment function
           if (highlightQueueRef.current.length === 1) {
             setTimeout(() => {
               if (highlightQueueRef.current[0] === seg) {
@@ -2015,11 +2014,10 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               highlightQueueRef.current[0] || null,
             );
           });
-
-          // Mark as fully processed
-          speechProgressRef.current[lastMsg.id] = content.length;
         }
       }
+
+      speechProgressRef.current[lastMsg.id] = content.length;
     },
 
     onError: (err) => {
@@ -2196,69 +2194,59 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     const lastMsg = currentSdkMessages.at(-1);
     if (!lastMsg || lastMsg.role !== "assistant") return;
 
-    // Get current progress for this message
     const progress =
       typeof speechProgressRef.current[lastMsg.id] === "number"
         ? (speechProgressRef.current[lastMsg.id] as number)
         : 0;
 
-    // Use helper function to get actual visible text
     const content = getAssistantVisibleText(lastMsg);
 
-    // IMPORTANT: Handle multi-step tool calls
-    // If progress equals content length, this message was previously complete
-    // but if content.length has grown, we have new content to speak
     if (progress >= content.length) return;
 
-    let scanPos = progress;
+    const { paragraphs, nextIndex } = extractCompletedParagraphRanges(
+      content,
+      progress,
+    );
+
+    if (paragraphs.length === 0) return;
+
+    // Advance before async TTS schedules so rerenders / Strict Mode cannot repeat
+    // the same finalized paragraph window.
+    speechProgressRef.current[lastMsg.id] = nextIndex;
+
     const highlightTimeoutIds: ReturnType<typeof setTimeout>[] = [];
-    const processChunk = (endPos: number) => {
-      const rawChunk = content.slice(scanPos, endPos);
-      const cleaned = cleanTextForSpeech(rawChunk);
-      if (cleaned) {
-        const seg = { messageId: lastMsg.id, start: scanPos, end: endPos };
-        highlightQueueRef.current.push(seg);
-        if (!highlightSegment) {
-          // Delay highlighting slightly so text sync aligns closer to actual speech start
-          const highlightTimeoutId = setTimeout(() => {
-            if (highlightQueueRef.current[0] === seg) {
-              setHighlightSegment(seg);
-            }
-          }, 80);
-          highlightTimeoutIds.push(highlightTimeoutId);
-        }
 
-        speak(cleaned, () => {
-          highlightQueueRef.current.shift();
-          setHighlightSegment(highlightQueueRef.current[0] || null);
-        });
-      }
-      scanPos = endPos;
-      speechProgressRef.current[lastMsg.id] = scanPos;
-    };
+    for (const paragraph of paragraphs) {
+      const rawChunk = content.slice(paragraph.rawStart, paragraph.rawEnd);
+      const cleaned = cleanTextForSpeech(rawChunk.trimEnd());
+      if (!cleaned) continue;
 
-    // Iterate over any *completed* lines since the last progress marker.
-    while (scanPos < content.length) {
-      const nextNlIdx = content.indexOf("\n", scanPos);
-      if (nextNlIdx === -1) {
-        // No further newlines - wait for more content or let onFinish handle the rest
-        break;
+      const seg = {
+        messageId: lastMsg.id,
+        start: paragraph.rawStart,
+        end: paragraph.rawEnd,
+      };
+      highlightQueueRef.current.push(seg);
+
+      if (highlightQueueRef.current.length === 1) {
+        const highlightTimeoutId = setTimeout(() => {
+          if (highlightQueueRef.current[0] === seg) {
+            setHighlightSegment(seg);
+          }
+        }, 80);
+        highlightTimeoutIds.push(highlightTimeoutId);
       }
 
-      // We have a newline that marks the end of a full chunk.
-      processChunk(nextNlIdx);
-
-      // Skip the newline (and potential carriage-return) characters.
-      scanPos = nextNlIdx + 1;
-      if (content[scanPos] === "\r") scanPos += 1;
-
-      // Record updated progress so subsequent effect runs start after the newline
-      speechProgressRef.current[lastMsg.id] = scanPos;
+      speak(cleaned, () => {
+        highlightQueueRef.current.shift();
+        setHighlightSegment(highlightQueueRef.current[0] || null);
+      });
     }
+
     return () => {
       highlightTimeoutIds.forEach((timeoutId) => clearTimeout(timeoutId));
     };
-  }, [currentSdkMessages, isLoading, speechEnabled, speak, highlightSegment]);
+  }, [currentSdkMessages, isLoading, speechEnabled, speak]);
 
   // Clear rate limit error when username is set
   useEffect(() => {
@@ -2643,11 +2631,10 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     [username, saveFile, launchApp],
   );
 
-  // Stop both chat streaming and TTS queue
+  // Stop streaming only — leave queued/playing TTS so partial replies still read aloud.
   const stop = useCallback(() => {
     sdkStop();
-    stopTts();
-  }, [sdkStop, stopTts]);
+  }, [sdkStop]);
 
   return {
     // AI Chat State & Actions
