@@ -1340,7 +1340,7 @@ function ChatMessagesContent({
     null
   );
   useEffect(() => {
-    if (!speechEnabled || isRoomView || !latestAssistantMessageKey) {
+    if (!latestAssistantMessageKey) {
       return;
     }
 
@@ -1350,7 +1350,7 @@ function ChatMessagesContent({
       RECENT_TTS_HIGHLIGHT_MS
     );
     return () => clearTimeout(timeoutId);
-  }, [isRoomView, latestAssistantMessageKey, speechEnabled]);
+  }, [latestAssistantMessageKey]);
 
   // Belt-and-suspenders: once a message key has been seen as streaming and
   // then leaves that state, lock its `isAnimating` to false forever so any
