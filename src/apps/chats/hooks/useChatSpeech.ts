@@ -4,7 +4,7 @@ import { useTtsQueue } from "@/hooks/useTtsQueue";
 import { cleanTextForSpeech } from "../utils/textForSpeech";
 import { getAssistantVisibleText } from "../utils/messageText";
 
-const HIGHLIGHT_CLEAR_DELAY_MS = 2000;
+const HIGHLIGHT_CLEAR_DELAY_MS = 6000;
 
 export type ChatHighlightSegment = {
   messageId: string;
