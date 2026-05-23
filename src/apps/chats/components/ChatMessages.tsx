@@ -12,7 +12,6 @@ import { useTerminalSounds } from "@/hooks/useTerminalSounds";
 
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
 import { TypingDots } from "./TypingBubble";
-import { useTtsQueue } from "@/hooks/useTtsQueue";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { appNames } from "@/config/appRegistryData";
 import {
@@ -38,6 +37,7 @@ import { formatToolName } from "@/lib/toolInvocationDisplay";
 import { segmentChatMarkdownText } from "@/lib/chatMarkdown";
 import { wrapMarkdownRangeWithSpeechMark } from "../utils/speechHighlightMarkdown";
 import { cleanTextForSpeech } from "../utils/textForSpeech";
+import { getAssistantVisibleText } from "../utils/assistantVisibleText";
 
 // Helper to extract image URLs from message parts
 const extractImageParts = (message: {
@@ -270,6 +270,13 @@ interface ChatMessagesProps {
   scrollToBottomTrigger: number; // Add scroll trigger prop
   highlightSegment?: { messageId: string; start: number; end: number } | null;
   isSpeaking?: boolean;
+  /** Shared with useAiChat TTS queue (bubble speak + autoplay share one AudioContext chain). */
+  queueAssistSpeechChunks?: (
+    messageId: string,
+    highlightEndUtf16: number,
+    chunks: string[],
+  ) => void;
+  stopAssistSpeechPlaybackOnly?: () => void;
   onSendMessage?: (username: string) => void; // Callback when send message button is clicked
   isLoadingGreeting?: boolean; // Show typing bubble for proactive greeting
   typingUsers?: string[];
@@ -378,8 +385,12 @@ interface ChatMessageItemProps {
   onDeleteMessage: (message: ChatMessage) => void;
   setPlayingMessageId: (id: string | null) => void;
   setSpeechLoadingId: (id: string | null) => void;
-  speak: (text: string, onDone?: () => void) => void;
-  stop: () => void;
+  queueAssistSpeechChunks?: (
+    messageId: string,
+    highlightEndUtf16: number,
+    chunks: string[],
+  ) => void;
+  stopAssistSpeechPlaybackOnly?: () => void;
   playNote: () => void;
   playElevatorMusic: () => void;
   stopElevatorMusic: () => void;
@@ -416,8 +427,8 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
     onDeleteMessage,
     setPlayingMessageId,
     setSpeechLoadingId,
-    speak,
-    stop,
+    queueAssistSpeechChunks,
+    stopAssistSpeechPlaybackOnly,
     playNote,
     playElevatorMusic,
     stopElevatorMusic,
@@ -651,14 +662,21 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                 }}
                 className="size-3 text-gray-400 hover:text-neutral-600 transition-colors"
                 onClick={() => {
+                  if (
+                    !queueAssistSpeechChunks ||
+                    !stopAssistSpeechPlaybackOnly
+                  ) {
+                    return;
+                  }
                   if (playingMessageId === messageKey) {
-                    stop();
+                    stopAssistSpeechPlaybackOnly();
                     setPlayingMessageId(null);
+                    setSpeechLoadingId(null);
                   } else {
-                    stop();
+                    stopAssistSpeechPlaybackOnly();
                     setSpeechLoadingId(null);
                     const text = displayContent.trim();
-                    if (text) {
+                    if (text && message.id) {
                       const chunks: string[] = [];
                       const lines = text.split(/\r?\n/);
                       for (const line of lines) {
@@ -668,18 +686,12 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                         }
                       }
                       if (chunks.length > 0) {
-                        let pendingChunks = chunks.length;
                         setSpeechLoadingId(messageKey);
                         setPlayingMessageId(messageKey);
-                        chunks.forEach((chunk) => {
-                          speak(chunk, () => {
-                            pendingChunks -= 1;
-                            if (pendingChunks === 0) {
-                              setPlayingMessageId(null);
-                              setSpeechLoadingId(null);
-                            }
-                          });
-                        });
+                        const hlLen = getAssistantVisibleText(
+                          message as VercelMessage,
+                        ).length;
+                        queueAssistSpeechChunks(message.id, hlLen, chunks);
                       } else {
                         setPlayingMessageId(null);
                         setSpeechLoadingId(null);
@@ -1077,6 +1089,13 @@ interface ChatMessagesContentProps {
   fontSize: number;
   scrollToBottomTrigger: number;
   highlightSegment?: { messageId: string; start: number; end: number } | null;
+  isSpeaking?: boolean;
+  queueAssistSpeechChunks?: (
+    messageId: string,
+    highlightEndUtf16: number,
+    chunks: string[],
+  ) => void;
+  stopAssistSpeechPlaybackOnly?: () => void;
   onSendMessage?: (username: string) => void;
   isLoadingGreeting?: boolean;
   typingUsers?: string[];
@@ -1096,6 +1115,9 @@ function ChatMessagesContent({
   fontSize,
   scrollToBottomTrigger,
   highlightSegment,
+  isSpeaking: ttsIsSpeaking = false,
+  queueAssistSpeechChunks,
+  stopAssistSpeechPlaybackOnly,
   onSendMessage,
   isLoadingGreeting,
   typingUsers,
@@ -1105,7 +1127,6 @@ function ChatMessagesContent({
   const { playElevatorMusic, stopElevatorMusic, playDingSound } =
     useTerminalSounds();
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
-  const { speak, stop, isSpeaking: localTtsSpeaking } = useTtsQueue();
   const speechEnabled = useAudioSettingsStore((state) => state.speechEnabled);
   const { isMacOSTheme } = useThemeFlags();
   const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
@@ -1171,12 +1192,19 @@ function ChatMessagesContent({
     }
   }, [scrollToBottomTrigger, scrollToBottom]);
 
-  // Clear loading indicator when TTS actually starts playing
+  // Clear spinner when queued audio actually starts playing; reset bubble UI when playback ends.
   useEffect(() => {
-    if (localTtsSpeaking && speechLoadingId) {
+    if (ttsIsSpeaking && speechLoadingId) {
       setSpeechLoadingId(null);
     }
-  }, [localTtsSpeaking, speechLoadingId]);
+  }, [ttsIsSpeaking, speechLoadingId]);
+
+  useEffect(() => {
+    if (!ttsIsSpeaking && playingMessageId) {
+      setPlayingMessageId(null);
+      setSpeechLoadingId(null);
+    }
+  }, [ttsIsSpeaking, playingMessageId]);
 
   const copyMessage = useCallback(async (message: ChatMessage) => {
     const messageText = getMessageText(message);
@@ -1337,8 +1365,8 @@ function ChatMessagesContent({
             onDeleteMessage={deleteMessage}
             setPlayingMessageId={setPlayingMessageId}
             setSpeechLoadingId={setSpeechLoadingId}
-            speak={speak}
-            stop={stop}
+            queueAssistSpeechChunks={queueAssistSpeechChunks}
+            stopAssistSpeechPlaybackOnly={stopAssistSpeechPlaybackOnly}
             playNote={playNote}
             playElevatorMusic={playElevatorMusic}
             stopElevatorMusic={stopElevatorMusic}
@@ -1450,6 +1478,9 @@ export function ChatMessages({
   fontSize,
   scrollToBottomTrigger,
   highlightSegment,
+  isSpeaking,
+  queueAssistSpeechChunks,
+  stopAssistSpeechPlaybackOnly,
   onSendMessage,
   isLoadingGreeting,
   typingUsers,
@@ -1479,6 +1510,9 @@ export function ChatMessages({
           fontSize={fontSize}
           scrollToBottomTrigger={scrollToBottomTrigger}
           highlightSegment={highlightSegment}
+          isSpeaking={isSpeaking}
+          queueAssistSpeechChunks={queueAssistSpeechChunks}
+          stopAssistSpeechPlaybackOnly={stopAssistSpeechPlaybackOnly}
           onSendMessage={onSendMessage}
           isLoadingGreeting={isLoadingGreeting}
           typingUsers={typingUsers}

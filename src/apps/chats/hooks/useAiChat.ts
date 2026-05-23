@@ -40,7 +40,6 @@ import i18n from "@/lib/i18n";
 import { useTranslation } from "react-i18next";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { resumeAudioOutputFromUserGesture } from "@/lib/audioContext";
-import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
 import { tryInvokeParentStartGrindPlanning } from "@/utils/parentGrindPlanning";
 import { showAiMessageNotification } from "@/utils/chatNotificationDisplay";
 import {
@@ -76,6 +75,7 @@ import {
   type ContactsControlInput,
   type TvControlInput,
 } from "../tools";
+import { getAssistantVisibleText } from "../utils/assistantVisibleText";
 
 /**
  * NOTE: Future refactoring opportunity (tracked in codebase analysis)
@@ -573,34 +573,6 @@ const getSystemState = () => {
   };
 };
 
-// Helper function to extract visible text from message parts
-const getAssistantVisibleText = (message: UIMessage): string => {
-  // Define type for message parts
-  type MessagePart = {
-    type: string;
-    text?: string;
-  };
-
-  // If message has parts, extract text from text parts only
-  if (message.parts && message.parts.length > 0) {
-    return message.parts.reduce<string[]>((acc, part: MessagePart) => {
-        if (part.type !== "text") {
-          return acc;
-        }
-        const text = part.text || "";
-        // Handle urgent messages by removing leading !!!!
-        const rawVisible =
-          text.startsWith("!!!!") ? text.slice(4).trimStart() : text;
-        acc.push(decodeHtmlEntities(rawVisible));
-        return acc;
-      }, [])
-      .join("");
-  }
-
-  // Fallback - no content property in v5, return empty string
-  return "";
-};
-
 // Helper to check if chats app is currently in the foreground
 const isChatsInForeground = (): boolean => {
   const appStore = useAppStore.getState();
@@ -743,6 +715,46 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   const flushAutoSpeechPipelineForNewUserTurn = useCallback(() => {
     // Safari/WebKit only unlock audio in the gesture turn that starts playback.
     resumeAudioOutputFromUserGesture();
+    stopTts();
+    highlightQueueRef.current = [];
+    setHighlightSegment(null);
+  }, [stopTts]);
+
+  /**
+   * Per-bubble Speak button: same AudioContext/TTS queue as streaming speech; drives highlight.
+   */
+  const queueAssistSpeechChunks = useCallback(
+    (messageId: string, highlightEndUtf16: number, chunks: string[]) => {
+      if (!speechEnabled || !messageId.trim() || chunks.length === 0) {
+        return;
+      }
+
+      resumeAudioOutputFromUserGesture();
+      highlightQueueRef.current = [];
+      const endHighlight = Math.max(0, Math.floor(highlightEndUtf16));
+      setHighlightSegment({
+        messageId,
+        start: 0,
+        end: endHighlight,
+      });
+
+      let pending = chunks.length;
+      for (const chunk of chunks) {
+        speak(chunk, () => {
+          pending -= 1;
+          if (pending <= 0) {
+            setHighlightSegment((prev) =>
+              prev?.messageId === messageId ? null : prev,
+            );
+          }
+        });
+      }
+    },
+    [speak, speechEnabled],
+  );
+
+  /** Stops queued/playing bubble or auto speech without affecting generation stream. */
+  const stopAssistSpeechPlaybackOnly = useCallback(() => {
     stopTts();
     highlightQueueRef.current = [];
     setHighlightSegment(null);
@@ -1924,7 +1936,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       setAiMessages(finalMessages);
 
       const lastMsg = finalMessages.at(-1);
-      if (!lastMsg || lastMsg.role !== "assistant") return;
+      if (!lastMsg || lastMsg.role !== "assistant" || !lastMsg.id) return;
 
       // Recovery for AI SDK v6 bug (GitHub issue #10291):
       // When stopWhen + tool calls trigger a TypeValidationError, the SDK
@@ -2204,7 +2216,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     if (!isLoading) return;
 
     const lastMsg = currentSdkMessages.at(-1);
-    if (!lastMsg || lastMsg.role !== "assistant") return;
+    if (!lastMsg || lastMsg.role !== "assistant" || !lastMsg.id) return;
 
     const progress =
       typeof speechProgressRef.current[lastMsg.id] === "number"
@@ -2706,5 +2718,8 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     isSpeaking,
 
     highlightSegment,
+
+    queueAssistSpeechChunks,
+    stopAssistSpeechPlaybackOnly,
   };
 }

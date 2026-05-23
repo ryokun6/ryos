@@ -82,6 +82,8 @@ export function ChatsAppComponent({
     highlightSegment,
     rateLimitError,
     needsUsername,
+    queueAssistSpeechChunks,
+    stopAssistSpeechPlaybackOnly,
   } = useAiChat(promptSetUsername); // Pass promptSetUsername to useAiChat
 
   // Destructure auth properties from authResult
@@ -828,6 +830,8 @@ export function ChatsAppComponent({
                     scrollToBottomTrigger={scrollToBottomTrigger}
                     highlightSegment={highlightSegment}
                     isSpeaking={isSpeaking}
+                    queueAssistSpeechChunks={queueAssistSpeechChunks}
+                    stopAssistSpeechPlaybackOnly={stopAssistSpeechPlaybackOnly}
                     onSendMessage={handleSendMessage}
                     isLoadingGreeting={isLoadingGreeting}
                     typingUsers={currentRoomTypingUsers}

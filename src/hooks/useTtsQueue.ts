@@ -265,6 +265,12 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
           const src = ctx.createBufferSource();
           src.buffer = audioBuf;
           if (gainNodeRef.current) {
+            // stop() fades this gain node to zero; subsequent clips must restore it.
+            const targetVolume =
+              speechVolumeRef.current * masterVolumeRef.current;
+            const gn = gainNodeRef.current.gain;
+            gn.cancelScheduledValues(ctx.currentTime);
+            gn.setValueAtTime(targetVolume, ctx.currentTime);
             src.connect(gainNodeRef.current);
           } else {
             src.connect(ctx.destination);
