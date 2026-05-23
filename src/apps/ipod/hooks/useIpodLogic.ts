@@ -338,6 +338,22 @@ export function useIpodLogic({
   } = useMusicKit({ enabled: enableMusicKit });
   const musicKitInstanceRef = useRef(musicKitInstance);
   musicKitInstanceRef.current = musicKitInstance;
+  const lastRyOSBackedMusicUserTokenRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const token = musicKitInstance?.musicUserToken;
+    if (!isAuthenticated || !appleMusicAuthorized || !token) return;
+    if (lastRyOSBackedMusicUserTokenRef.current === token) return;
+
+    lastRyOSBackedMusicUserTokenRef.current = token;
+    void markMusicKitUserTokenValidated(token).catch((err) => {
+      lastRyOSBackedMusicUserTokenRef.current = null;
+      console.warn(
+        "[apple music] failed to bind Music User Token after ryOS login",
+        err
+      );
+    });
+  }, [appleMusicAuthorized, isAuthenticated, musicKitInstance?.musicUserToken]);
 
   // Auto-load library after auth + when Apple Music is the active source.
   const { refresh: refreshAppleMusicLibrary } = useAppleMusicLibrary({
