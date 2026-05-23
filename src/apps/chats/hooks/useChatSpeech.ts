@@ -13,7 +13,11 @@ export type ChatHighlightSegment = {
 export type ChatSpeechControls = {
   highlightSegment: ChatHighlightSegment | null;
   isSpeaking: boolean;
-  speakText: (text: string, onEnd?: () => void) => void;
+  speakText: (
+    text: string,
+    onEnd?: () => void,
+    highlight?: ChatHighlightSegment
+  ) => void;
   stopSpeech: () => void;
   speakFinalMessage: (message: UIMessage) => void;
   resetSpeech: (initialMessage?: UIMessage) => void;
@@ -75,7 +79,8 @@ export function useChatSpeech({
       start: number,
       end: number,
       rawText: string,
-      timeoutIds?: ReturnType<typeof setTimeout>[]
+      timeoutIds?: ReturnType<typeof setTimeout>[],
+      onEnd?: () => void
     ) => {
       const cleaned = cleanTextForSpeech(rawText);
       if (!cleaned) {
@@ -92,6 +97,7 @@ export function useChatSpeech({
       speak(cleaned, () => {
         highlightQueueRef.current.shift();
         setHighlightSegment(highlightQueueRef.current[0] || null);
+        onEnd?.();
       });
 
       return true;
@@ -191,10 +197,26 @@ export function useChatSpeech({
   );
 
   const speakText = useCallback(
-    (text: string, onEnd?: () => void) => {
+    (
+      text: string,
+      onEnd?: () => void,
+      highlight?: ChatHighlightSegment
+    ) => {
+      if (highlight) {
+        queueSpeechSegment(
+          highlight.messageId,
+          highlight.start,
+          highlight.end,
+          text,
+          undefined,
+          onEnd
+        );
+        return;
+      }
+
       speak(text, onEnd);
     },
-    [speak]
+    [queueSpeechSegment, speak]
   );
 
   return {

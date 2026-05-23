@@ -303,7 +303,11 @@ interface ChatMessagesProps {
   scrollToBottomTrigger: number; // Add scroll trigger prop
   highlightSegment?: HighlightSegment | null;
   isSpeaking?: boolean;
-  speakText: (text: string, onEnd?: () => void) => void;
+  speakText: (
+    text: string,
+    onEnd?: () => void,
+    highlight?: HighlightSegment
+  ) => void;
   stopSpeech: () => void;
   onSendMessage?: (username: string) => void; // Callback when send message button is clicked
   isLoadingGreeting?: boolean; // Show typing bubble for proactive greeting
@@ -405,7 +409,11 @@ interface ChatMessageItemProps {
   speechLoadingId: string | null;
   speechEnabled: boolean;
   highlightSegment?: HighlightSegment | null;
-  speakText: (text: string, onEnd?: () => void) => void;
+  speakText: (
+    text: string,
+    onEnd?: () => void,
+    highlight?: HighlightSegment
+  ) => void;
   stopSpeech: () => void;
   isAdmin: boolean;
   roomId?: string;
@@ -690,12 +698,22 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                     setSpeechLoadingId(null);
                     const text = displayContent.trim();
                     if (text) {
-                      const chunks: string[] = [];
-                      const lines = text.split(/\r?\n/);
-                      for (const line of lines) {
+                      const chunks: Array<{
+                        text: string;
+                        start: number;
+                        end: number;
+                      }> = [];
+                      const lines = text.matchAll(/[^\r\n]+/g);
+                      for (const lineMatch of lines) {
+                        const line = lineMatch[0];
+                        const start = lineMatch.index ?? 0;
                         const cleanedLine = cleanTextForSpeech(line);
                         if (cleanedLine && cleanedLine.length > 0) {
-                          chunks.push(cleanedLine);
+                          chunks.push({
+                            text: line,
+                            start,
+                            end: start + line.length,
+                          });
                         }
                       }
                       if (chunks.length > 0) {
@@ -703,13 +721,21 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                         setSpeechLoadingId(messageKey);
                         setPlayingMessageId(messageKey);
                         chunks.forEach((chunk) => {
-                          speakText(chunk, () => {
-                            pendingChunks -= 1;
-                            if (pendingChunks === 0) {
-                              setPlayingMessageId(null);
-                              setSpeechLoadingId(null);
+                          speakText(
+                            chunk.text,
+                            () => {
+                              pendingChunks -= 1;
+                              if (pendingChunks === 0) {
+                                setPlayingMessageId(null);
+                                setSpeechLoadingId(null);
+                              }
+                            },
+                            {
+                              messageId: message.id || messageKey,
+                              start: chunk.start,
+                              end: chunk.end,
                             }
-                          });
+                          );
                         });
                       } else {
                         setPlayingMessageId(null);
@@ -1087,7 +1113,11 @@ interface ChatMessagesContentProps {
   scrollToBottomTrigger: number;
   highlightSegment?: HighlightSegment | null;
   isSpeaking?: boolean;
-  speakText: (text: string, onEnd?: () => void) => void;
+  speakText: (
+    text: string,
+    onEnd?: () => void,
+    highlight?: HighlightSegment
+  ) => void;
   stopSpeech: () => void;
   onSendMessage?: (username: string) => void;
   isLoadingGreeting?: boolean;

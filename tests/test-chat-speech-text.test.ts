@@ -45,6 +45,7 @@ describe("chat speech wiring", () => {
     expect(
       source.match(/stopSpeech=\{stopSpeech\}/g)?.length
     ).toBeGreaterThanOrEqual(2);
+    expect(source.includes("messageId: message.id || messageKey")).toBe(true);
   });
 
   test("useAiChat delegates speech and highlight orchestration to useChatSpeech", () => {
