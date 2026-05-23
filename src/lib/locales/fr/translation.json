@@ -2542,7 +2542,7 @@
       "name": "Karaoké",
       "noTrack": "Aucun morceau n'est chargé. Ouvrez l'iPod pour sélectionner un morceau.",
       "ktvRoomFx": "Réactions du public",
-      "ktvRoomFxHint": "Activer les réactions du public flottantes en karaoké plein écran",
+      "ktvRoomFxHint": "Activer les réactions du public flottantes en karaoké plein écran"
     },
     "maps": {
       "description": "Trouvez des lieux avec Apple Maps",
