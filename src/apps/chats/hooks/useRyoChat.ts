@@ -1,6 +1,4 @@
-import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
@@ -24,28 +22,16 @@ export function useRyoChat({
 }: UseRyoChatProps) {
   const { t } = useTranslation();
 
-  // Create a separate AI chat hook for @ryo mentions in chat rooms
-  const ryoChatTransport = useMemo(
-    () =>
-      new DefaultChatTransport({
-        api: getApiUrl("/api/chat"),
-        body: {
-          systemState: getSystemState(),
-        },
-      }),
-    []
-  );
+  const [isRyoLoading, setIsRyoLoading] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
 
-  const {
-    messages: ryoMessages,
-    status,
-    stop: stopRyo,
-  } = useChat({
-    transport: ryoChatTransport,
-    // We no longer stream client-side AI to avoid spoofing. onFinish unused.
-  });
+  const stopRyo = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setIsRyoLoading(false);
+  }, []);
 
-  const isRyoLoading = status === "streaming" || status === "submitted";
+  useEffect(() => stopRyo, [stopRyo]);
 
   const handleRyoMention = useCallback(
     async (messageContent: string) => {
@@ -66,6 +52,12 @@ export function useRyoChat({
       };
 
       if (!currentRoomId) return;
+
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+      setIsRyoLoading(true);
+
       try {
         await abortableFetch(getApiUrl("/api/ai/ryo-reply"), {
           method: "POST",
@@ -75,11 +67,19 @@ export function useRyoChat({
             prompt: messageContent,
             systemState: systemStateWithChat,
           }),
+          signal: controller.signal,
           timeout: 20000,
           retry: { maxAttempts: 1, initialDelayMs: 250 },
         });
       } catch (error) {
-        console.error("[RyoChat] Failed to request @ryo reply:", error);
+        if (!(error instanceof DOMException && error.name === "AbortError")) {
+          console.error("[RyoChat] Failed to request @ryo reply:", error);
+        }
+      } finally {
+        if (abortRef.current === controller) {
+          abortRef.current = null;
+          setIsRyoLoading(false);
+        }
       }
 
       onScrollToBottom();
@@ -103,7 +103,6 @@ export function useRyoChat({
   );
 
   return {
-    ryoMessages,
     isRyoLoading,
     stopRyo,
     handleRyoMention,
