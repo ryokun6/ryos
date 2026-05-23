@@ -860,6 +860,18 @@ function isAppleMusicNotFoundError(err: unknown): boolean {
   return err instanceof Error && /\b404\b/.test(err.message);
 }
 
+function isAppleMusicBadRequestError(err: unknown): boolean {
+  if (typeof err === "object" && err !== null) {
+    const maybeStatus = (err as { status?: unknown; statusCode?: unknown });
+    if (maybeStatus.status === 400 || maybeStatus.statusCode === 400) {
+      return true;
+    }
+    const maybeResponse = (err as { response?: { status?: unknown } }).response;
+    if (maybeResponse?.status === 400) return true;
+  }
+  return err instanceof Error && /\b400\b/.test(err.message);
+}
+
 async function fetchAppleMusicPlaylistsList(): Promise<AppleMusicPlaylist[]> {
   const instance = getMusicKitInstance();
   if (!instance) throw new Error("MusicKit instance is not configured");
@@ -1395,6 +1407,7 @@ export async function fetchAppleMusicPlaylistTracks(
   store.setAppleMusicPlaylistTracksLoading(playlistId, true);
 
   const aggregated: Track[] = [];
+  let triedWithoutInclude = false;
   try {
     let offset = 0;
     let total: number | undefined;
@@ -1410,6 +1423,19 @@ export async function fetchAppleMusicPlaylistTracks(
           }
         );
       } catch (err) {
+        // Some Apple Music library playlists reject include[library-songs]
+        // with 400. Retry once per fetch cycle without include params so
+        // those playlists still load instead of hard-failing the menu.
+        if (!triedWithoutInclude && isAppleMusicBadRequestError(err)) {
+          triedWithoutInclude = true;
+          response = await instance.api.music<LibraryPlaylistTracksResponse>(
+            `/v1/me/library/playlists/${encodeURIComponent(playlistId)}/tracks`,
+            {
+              limit: PAGE_SIZE,
+              offset,
+            }
+          );
+        } else {
         if (offset > 0 && isAppleMusicNotFoundError(err)) {
           console.warn(
             `[apple music] playlist ${playlistId} returned 404 after ${aggregated.length} tracks; treating as end of pagination`
@@ -1417,6 +1443,7 @@ export async function fetchAppleMusicPlaylistTracks(
           break;
         }
         throw err;
+        }
       }
       const data = response?.data as LibraryPlaylistTracksResponse | undefined;
       const items = data?.data ?? [];
