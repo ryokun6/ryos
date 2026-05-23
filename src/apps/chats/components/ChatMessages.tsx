@@ -3,7 +3,6 @@ import { WarningCircle, ChatCircle, Copy, Check, CaretDown, Trash, SpeakerHigh, 
 import { createCodePlugin } from "@streamdown/code";
 import { useEffect, useRef, useState, memo, useCallback, type CSSProperties } from "react";
 import { Streamdown, type Components as StreamdownComponents } from "streamdown";
-import type { PluggableList } from "unified";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
@@ -36,7 +35,7 @@ import { abortableFetch } from "@/utils/abortableFetch";
 import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
 import { formatToolName } from "@/lib/toolInvocationDisplay";
 import { segmentChatMarkdownText } from "@/lib/chatMarkdown";
-import { buildRyosAssistTtsStreamdownRehypePlugins } from "../utils/speechHighlightRehype";
+import { ryosAssistTtsRehypePluginsForAssistantMarkdownPart } from "../utils/speechHighlightRehype";
 import {
   getAssistantVisibleText,
   splitAssistantVisibleIntoLineSpeechSegments,
@@ -899,28 +898,14 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                         : partText;
                       const partDisplayContent = decodeHtmlEntities(rawPartContent);
 
-                      let assistTtsRehypePlugins: PluggableList | undefined;
-                      if (
-                        highlightSegment &&
-                        message.role === "assistant" &&
-                        message.id &&
-                        highlightSegment.messageId === message.id
-                      ) {
-                        const gs = assistantTextUtf16Offset;
-                        const ge = gs + partDisplayContent.length;
-                        const lo = Math.max(highlightSegment.start, gs);
-                        const hi = Math.min(highlightSegment.end, ge);
-                        if (lo < hi) {
-                          const slice = partDisplayContent.slice(lo - gs, hi - gs);
-                          if (!slice.includes("```")) {
-                            assistTtsRehypePlugins =
-                              buildRyosAssistTtsStreamdownRehypePlugins(
-                                lo - gs,
-                                hi - gs,
-                              );
-                          }
-                        }
-                      }
+                      const assistTtsRehypePlugins =
+                        ryosAssistTtsRehypePluginsForAssistantMarkdownPart({
+                          highlightSegment,
+                          messageId: message.id,
+                          messageRole: message.role,
+                          partMarkdownUtf16: partDisplayContent,
+                          partGlobalUtf16Start: assistantTextUtf16Offset,
+                        });
 
                       assistantTextUtf16Offset += partDisplayContent.length;
 

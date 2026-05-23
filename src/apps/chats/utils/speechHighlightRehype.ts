@@ -3,157 +3,177 @@ import type { Element, Parent, Root, Text } from "hast";
 import type { PluggableList } from "unified";
 import { visitParents } from "unist-util-visit-parents";
 
-/** Streamdown + hast-util-sanitizer use `className`, not HTML `class`, for whitelist entries. */
-const RYOS_TTS_MARK: ["className"] = ["className"];
+type StreamdownSanitizeSchema = Record<string, unknown> & {
+  tagNames: string[];
+  attributes: Record<string, unknown>;
+};
 
-const streamdownSanitizePair = defaultRehypePlugins.sanitize as unknown as readonly [
+/** hast-util-sanitizer uses `className`, not `"class"`, when whitelisting. */
+const TTS_MARK_ATTRS = ["className"] as const;
+
+const streamdownSanitizeTuple = defaultRehypePlugins.sanitize as unknown as readonly [
   unknown,
-  Record<string, unknown> & {
-    tagNames: string[];
-    attributes: Record<string, unknown>;
-  },
+  StreamdownSanitizeSchema,
 ];
 
-const [, streamdownSanitizeSchema] = streamdownSanitizePair;
+const streamdownSanitizePlugin = streamdownSanitizeTuple[0];
+const streamdownSanitizeSchema = streamdownSanitizeTuple[1];
 
-/**
- * Matches Streamdown’s own `allowedTags` merge (`mark` whitelist for TTS highlighting).
- * Used because a custom `rehypePlugins` array bypasses Streamdown's `allowedTags===default`
- * sanitization merge.
- */
-export const RYOS_CHAT_STREAMDOWN_SANITIZE_WITH_TTS_MARK = {
+const sanitizeSchemaWithRyosAssistTtsMark: StreamdownSanitizeSchema = {
   ...streamdownSanitizeSchema,
   tagNames: [...streamdownSanitizeSchema.tagNames, "mark"],
   attributes: {
     ...streamdownSanitizeSchema.attributes,
-    mark: RYOS_TTS_MARK,
+    mark: TTS_MARK_ATTRS,
   },
-} as typeof streamdownSanitizeSchema;
+};
 
-const TTS_MARK_CLASS = "ryos-chat-tts-mark";
+const MARK_CLASS = "ryos-chat-tts-mark";
 
-function isUnderPre(ancestors: unknown[]): boolean {
+function ancestorIsPre(ancestors: readonly unknown[]): boolean {
   return ancestors.some(
     (a) =>
-      a &&
       typeof a === "object" &&
+      a !== null &&
       (a as Element).type === "element" &&
       (a as Element).tagName === "pre",
   );
 }
 
-function makeMarkElement(text: Text): Element {
+function markElementHighlightedText(textNode: Text): Element {
   return {
     type: "element",
     tagName: "mark",
-    properties: { className: [TTS_MARK_CLASS] },
-    children: [text],
+    properties: { className: [MARK_CLASS] },
+    children: [textNode],
   };
 }
 
-/** Inserts sanitized `<mark>` in the HAST after markdown parses so inner emphasis/lists stay semantic. */
-function rehypeRyosAssistSpeechHighlightPlugin(
-  rangeStart: number,
-  rangeEndExclusive: number,
-): () => (tree: Root, file?: unknown) => undefined {
-  const lo = rangeStart;
-  const hi = rangeEndExclusive;
+type SplitEdit = Readonly<{ parent: Parent; index: number; newNodes: Array<Text | Element> }>;
 
-  /** unified calls this attacher once at freeze (`attacher.apply(processor)`) → must return transformer. */
-  return function attacher(): (tree: Root, file?: unknown) => undefined {
-    return function transformer(
+/**
+ * unified freezes attachers via `plugin.apply(processor, ...)` and expects the
+ * return value of that call to be the tree transformer (`rehype-raw`,
+ * `rehype-sanitize`, etc. all follow `options => (tree,file) => void`).
+ */
+function createRyosAssistTtsSpeechMarkPlugin(lo: number, hi: number) {
+  return function speechMarkAttacher() {
+    return function speechMarkTransform(
       tree: Root | null | undefined,
-      _file?: unknown,
     ): undefined {
-      if (!tree || typeof tree !== "object") return;
-      if (hi <= lo) return;
+      if (!tree || hi <= lo) return;
 
-      const edits: {
-        parent: Parent;
-        index: number;
-        newNodes: Array<Text | Element>;
-      }[] = [];
+      const edits: SplitEdit[] = [];
 
       visitParents(tree, "text", (node, ancestors) => {
         if (node.type !== "text") return;
-        const tnode = node as Text;
 
-        const pos = tnode.position;
+        const pos = node.position;
         const ts =
           typeof pos?.start?.offset === "number" ? pos.start.offset : undefined;
         const te =
           typeof pos?.end?.offset === "number" ? pos.end.offset : undefined;
         if (ts === undefined || te === undefined) return;
-        if (isUnderPre(ancestors)) return;
+        if (ancestorIsPre(ancestors)) return;
 
-        const parent = ancestors[ancestors.length - 1] as Parent | undefined;
-        if (!parent?.children) return;
+        const parent = ancestors.at(-1) as Parent | undefined;
+        const children = parent?.children;
+        if (!children) return;
 
-        const idx = parent.children.indexOf(tnode);
+        const idx = children.indexOf(node);
         if (idx < 0) return;
 
-        const a = Math.max(lo, ts);
-        const b = Math.min(hi, te);
-        if (b <= a) return;
+        const segStartInSource = Math.max(lo, ts);
+        const segEndInSource = Math.min(hi, te);
+        if (segEndInSource <= segStartInSource) return;
 
-        const rel0 = a - ts;
-        const rel1 = b - ts;
-        const value = tnode.value;
-        const prefix = value.slice(0, rel0);
-        const mid = value.slice(rel0, rel1);
-        const suffix = value.slice(rel1);
+        const i0 = segStartInSource - ts;
+        const i1 = segEndInSource - ts;
+        const v = node.value;
+        const before = v.slice(0, i0);
+        const mid = v.slice(i0, i1);
+        const after = v.slice(i1);
 
-        const newNodes: Array<Text | Element> = [];
-        if (prefix.length > 0) {
-          newNodes.push({ type: "text", value: prefix });
-        }
-        newNodes.push(makeMarkElement({ type: "text", value: mid }));
-        if (suffix.length > 0) {
-          newNodes.push({ type: "text", value: suffix });
-        }
+        const replacement: Array<Text | Element> = [];
+        if (before.length > 0) replacement.push({ type: "text", value: before });
+        replacement.push(markElementHighlightedText({ type: "text", value: mid }));
+        if (after.length > 0) replacement.push({ type: "text", value: after });
 
-        edits.push({
-          parent,
-          index: idx,
-          newNodes,
-        });
+        edits.push({ parent, index: idx, newNodes: replacement });
       });
 
-      edits.sort((x, y) => {
-        if (x.parent === y.parent) return y.index - x.index;
-        return 0;
+      /* Same parent only: splice high indices first */
+      edits.sort((a, b) => {
+        if (a.parent !== b.parent) return 0;
+        return b.index - a.index;
       });
 
-      for (const edit of edits) {
-        edit.parent.children.splice(
-          edit.index,
-          1,
-          ...(edit.newNodes as never[]),
-        );
+      for (const { parent, index, newNodes } of edits) {
+        parent.children.splice(index, 1, ...(newNodes as never[]));
       }
     };
   };
 }
 
 /**
- * Full Streamdown rehype prelude (raw → sanitize+harden → TTS mark) minus animate/math,
- * matching how Streamdown composes defaults when overriding `rehypePlugins`.
+ * Mirrors Streamdown’s default rehype stack when `rehypePlugins !== default`:
+ * raw → sanitize+harden → mark pass. Animated / math plugins Streamdown adds
+ * after this list unchanged.
+ *
+ * Indices are UTF-16, relative to the markdown string fed to Streamdown for
+ * this bubble text part (`getAssistantVisibleText` offsets).
  */
 export function buildRyosAssistTtsStreamdownRehypePlugins(
-  utf16RangeStartInPartMarkdown: number,
-  utf16RangeEndExclusiveInPartMarkdown: number,
+  partRelativeUtf16Start: number,
+  partRelativeUtf16EndExclusive: number,
 ): PluggableList {
-  const [sanitizePlugin] = streamdownSanitizePair;
   return [
     defaultRehypePlugins.raw,
     [
-      sanitizePlugin,
-      RYOS_CHAT_STREAMDOWN_SANITIZE_WITH_TTS_MARK,
+      streamdownSanitizePlugin,
+      sanitizeSchemaWithRyosAssistTtsMark,
     ] as unknown as PluggableList[number],
     defaultRehypePlugins.harden,
-    rehypeRyosAssistSpeechHighlightPlugin(
-      utf16RangeStartInPartMarkdown,
-      utf16RangeEndExclusiveInPartMarkdown,
+    createRyosAssistTtsSpeechMarkPlugin(
+      partRelativeUtf16Start,
+      partRelativeUtf16EndExclusive,
     ),
   ] as PluggableList;
+}
+
+export type AssistTtsHighlightSlice = Readonly<{
+  messageId: string;
+  start: number;
+  end: number;
+}>;
+
+/** `rehypePlugins` for assistant Streamdown bubbles when auto/bubble speech is highlighting this part */
+export function ryosAssistTtsRehypePluginsForAssistantMarkdownPart(opts: Readonly<{
+  highlightSegment: AssistTtsHighlightSlice | null | undefined;
+  messageId: string | undefined | null;
+  messageRole: string;
+  partMarkdownUtf16: string;
+  /** Cursor from `getAssistantVisibleText`-space UTF-16 before this part */
+  partGlobalUtf16Start: number;
+}>): PluggableList | undefined {
+  if (
+    opts.messageRole !== "assistant" ||
+    !opts.messageId ||
+    !opts.highlightSegment ||
+    opts.highlightSegment.messageId !== opts.messageId
+  ) {
+    return undefined;
+  }
+
+  const gs = opts.partGlobalUtf16Start;
+  const ge = gs + opts.partMarkdownUtf16.length;
+  const lo = Math.max(opts.highlightSegment.start, gs);
+  const hi = Math.min(opts.highlightSegment.end, ge);
+
+  if (lo >= hi) return undefined;
+
+  const highlightedSliceUtf16 = opts.partMarkdownUtf16.slice(lo - gs, hi - gs);
+  if (highlightedSliceUtf16.includes("```")) return undefined;
+
+  return buildRyosAssistTtsStreamdownRehypePlugins(lo - gs, hi - gs);
 }
