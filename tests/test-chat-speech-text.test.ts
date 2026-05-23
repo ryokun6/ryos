@@ -49,6 +49,20 @@ describe("chat speech wiring", () => {
     expect(source.includes("ryos-chat-tts-bubble-active")).toBe(true);
   });
 
+  test("chat TTS active bubble outline survives macOS chat bubble shadows", () => {
+    const source = readSource("src/index.css");
+
+    expect(source.includes(".ryos-chat-tts-bubble-active")).toBe(true);
+    expect(
+      source.includes("outline: 2px solid rgba(255, 218, 48, 0.95)")
+    ).toBe(true);
+    expect(
+      source.includes(
+        ':root[data-os-theme="macosx"] .chat-bubble.ryos-chat-tts-bubble-active'
+      )
+    ).toBe(true);
+  });
+
   test("useAiChat delegates speech and highlight orchestration to useChatSpeech", () => {
     const source = readSource("src/apps/chats/hooks/useAiChat.ts");
 

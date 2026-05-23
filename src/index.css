@@ -846,7 +846,21 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   }
 
   .ryos-chat-tts-bubble-active {
+    outline: 2px solid rgba(255, 218, 48, 0.95);
+    outline-offset: 1px;
     box-shadow:
+      0 0 0 2px rgba(255, 218, 48, 0.95),
+      0 0 10px rgba(255, 218, 48, 0.45);
+  }
+
+  :root[data-os-theme="macosx"] .chat-bubble.ryos-chat-tts-bubble-active {
+    box-shadow:
+      0 2px 4px rgba(0, 0, 0, 0.14),
+      0 1px 1px rgba(0, 0, 0, 0.25),
+      inset 0 1px 2px rgba(255, 255, 255, 0.6),
+      inset 0 0 4px rgba(0, 0, 0, 0.05),
+      inset 0 0 0 0.5px rgba(0, 0, 0, 0.48),
+      inset 0 0 0 1px rgba(0, 0, 0, 0.08),
       0 0 0 2px rgba(255, 218, 48, 0.95),
       0 0 10px rgba(255, 218, 48, 0.45);
   }
