@@ -52,7 +52,7 @@ describe("chat speech wiring", () => {
   });
 
   test("chat TTS active bubble outline survives macOS chat bubble shadows", () => {
-    const source = readSource("src/index.css");
+    const source = `${readSource("src/index.css")}\n${readSource("src/styles/themes.css")}`;
 
     expect(source.includes(".ryos-chat-tts-bubble-active")).toBe(true);
     expect(
