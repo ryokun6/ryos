@@ -47,6 +47,7 @@ describe("chat speech wiring", () => {
     ).toBeGreaterThanOrEqual(2);
     expect(source.includes("messageId: message.id || messageKey")).toBe(true);
     expect(source.includes("ryos-chat-tts-bubble-active")).toBe(true);
+    expect(source.includes("latestAssistantMessageKey === messageKey")).toBe(true);
   });
 
   test("chat TTS active bubble outline survives macOS chat bubble shadows", () => {

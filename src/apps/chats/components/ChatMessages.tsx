@@ -409,6 +409,8 @@ interface ChatMessageItemProps {
   speechLoadingId: string | null;
   speechEnabled: boolean;
   highlightSegment?: HighlightSegment | null;
+  isSpeaking?: boolean;
+  latestAssistantMessageKey?: string | null;
   speakText: (
     text: string,
     onEnd?: () => void,
@@ -447,6 +449,8 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
     speechLoadingId,
     speechEnabled,
     highlightSegment,
+    isSpeaking,
+    latestAssistantMessageKey,
     speakText,
     stopSpeech,
     isAdmin,
@@ -523,7 +527,10 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
     highlightSegment,
     message,
     messageKey
-  );
+  ) || playingMessageId === messageKey ||
+    (!!isSpeaking &&
+      message.role === "assistant" &&
+      latestAssistantMessageKey === messageKey);
   let assistantTextOffset = 0;
 
   let hasAquarium = false;
@@ -1319,6 +1326,12 @@ function ChatMessagesContent({
   const streamingAssistantMessageKey = streamingAssistantMessage
     ? getMessageKey(streamingAssistantMessage)
     : null;
+  const latestAssistantMessage = [...messages]
+    .reverse()
+    .find((message) => message.role === "assistant");
+  const latestAssistantMessageKey = latestAssistantMessage
+    ? getMessageKey(latestAssistantMessage)
+    : null;
 
   // Belt-and-suspenders: once a message key has been seen as streaming and
   // then leaves that state, lock its `isAnimating` to false forever so any
@@ -1380,6 +1393,8 @@ function ChatMessagesContent({
             speechLoadingId={speechLoadingId}
             speechEnabled={speechEnabled}
             highlightSegment={highlightSegment}
+            isSpeaking={isSpeaking}
+            latestAssistantMessageKey={latestAssistantMessageKey}
             speakText={speakText}
             stopSpeech={stopSpeech}
             isAdmin={isAdmin}
