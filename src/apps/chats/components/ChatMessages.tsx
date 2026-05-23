@@ -1330,11 +1330,11 @@ function ChatMessagesContent({
   const streamingAssistantMessageKey = streamingAssistantMessage
     ? getMessageKey(streamingAssistantMessage)
     : null;
-  const latestAssistantMessage = [...messages]
+  const latestSpeechMessage = [...messages]
     .reverse()
-    .find((message) => message.role === "assistant");
-  const latestAssistantMessageKey = latestAssistantMessage
-    ? getMessageKey(latestAssistantMessage)
+    .find((message) => message.role !== "user");
+  const latestAssistantMessageKey = latestSpeechMessage
+    ? getMessageKey(latestSpeechMessage)
     : null;
   const [recentTtsMessageKey, setRecentTtsMessageKey] = useState<string | null>(
     null
