@@ -788,12 +788,22 @@ export function IpodScreen({
     const itemBottom = itemTop + menuItemHeight;
     const visibleTop = el.scrollTop;
     const visibleBottom = visibleTop + containerH;
-    if (itemBottom > visibleBottom) {
+    if (fastScrollLetter) {
+      // Scroll-by-letter mode: every jump lands on the first row of a
+      // new letter group, so anchor that row to the top of the
+      // viewport (clamped to the list bottom) instead of pulling it up
+      // from the bottom edge — feels much more like a "page" jump.
+      const maxScrollTop = Math.max(
+        0,
+        currentMenuItems.length * menuItemHeight - containerH
+      );
+      el.scrollTop = Math.min(itemTop, maxScrollTop);
+    } else if (itemBottom > visibleBottom) {
       el.scrollTop = itemBottom - containerH;
     } else if (itemTop < visibleTop) {
       el.scrollTop = itemTop;
     }
-  }, [menuMode, selectedMenuItem, menuHistory, currentMenuItems, menuItemHeight]);
+  }, [menuMode, selectedMenuItem, menuHistory, currentMenuItems, menuItemHeight, fastScrollLetter]);
 
   const shouldShowLyrics = showLyrics;
 
