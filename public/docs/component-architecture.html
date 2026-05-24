@@ -591,11 +591,17 @@
 <strong>Features:</strong>
 <ul><li>Gradient fills matching Aqua design</li><li>Inactive state styling</li><li>Enlarged clickable area</li><li>Proper accessibility labels</li></ul>
 <h3>EmojiAquarium</h3>
-<p>Decorative animated emoji display.</p>
+<p>Animated emoji aquarium in <code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/shared/EmojiAquarium.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/components/shared/EmojiAquarium.tsx</a></code>; used by Chats bubbles and the Dashboard aquarium widget.</p>
 <pre><code>interface EmojiAquariumProps {
-  emojis: string[];
-  containerRef: RefObject&lt;HTMLDivElement&gt;;
-  speed?: number;
+  seed?: string;
+  className?: string;
+  variant?: "chat" | "widget";
+}</code></pre>
+<h3>EmojiTerrarium</h3>
+<p>Land-biome companion in <code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/shared/EmojiTerrarium.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/components/shared/EmojiTerrarium.tsx</a></code> for the Dashboard terrarium widget: soil/moss strata, floating motes and fireflies, snail, frog, butterfly, and ladybug. Seeded placements and CSS/Framer motion only (no canvas).</p>
+<pre><code>interface EmojiTerrariumProps {
+  seed?: string;
+  className?: string;
 }</code></pre>
 <h3>LinkPreview</h3>
 <p>URL preview card with OpenGraph data.</p>
