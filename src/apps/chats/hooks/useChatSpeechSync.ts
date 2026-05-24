@@ -100,7 +100,24 @@ export function useChatSpeechSync({
         if (queueIndex !== -1) {
           highlightQueueRef.current.splice(queueIndex, 1);
         }
-        setCurrentHighlightSegment(highlightQueueRef.current[0] || null);
+        const next = highlightQueueRef.current[0] || null;
+        setCurrentHighlightSegment(next);
+        // When the last spoken segment ends, force-clear the global CSS Custom
+        // Highlight registry directly instead of relying solely on the per-
+        // message effect cleanup. React's `setHighlightSegment(null)` schedules
+        // a re-render, but the commit (and the cleanup that calls
+        // `clearTtsHighlight(ownerToken)`) can be delayed — most reproducibly
+        // when the chat window is backgrounded inside ryOS or the browser tab
+        // is in another foreground, since `setTimeout`/`requestAnimationFrame`
+        // are throttled there and React's commit can sit on the scheduler
+        // queue. That gap is what users see as "the highlight for done lines
+        // lingers until I switch the window in and out of focus": the
+        // foreground switch forces a fresh render that finally runs the
+        // cleanup. Wiping the registry here removes the overlay immediately,
+        // mirroring what `stopSpeech` already does for user-initiated stops.
+        if (next === null) {
+          clearTtsHighlight();
+        }
         onComplete?.();
       });
     },
