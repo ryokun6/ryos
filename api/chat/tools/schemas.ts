@@ -119,7 +119,7 @@ export const createMediaControlSchema = (options: { hasEnableVideo?: boolean } =
       .describe("Playback operation to perform. Defaults to 'toggle' when omitted."),
     id: z
       .preprocess(normalizeOptionalString, z.string().optional())
-      .describe("For 'playKnown' (optional) or 'addAndPlay' (required): YouTube video ID or supported URL."),
+      .describe("For 'playKnown' (optional): YouTube or Apple Music track ID. For 'addAndPlay' (required): YouTube video ID or supported URL."),
     title: z
       .preprocess(normalizeOptionalString, z.string().optional())
       .describe("For 'playKnown': The title (or part of it) of the song to play."),

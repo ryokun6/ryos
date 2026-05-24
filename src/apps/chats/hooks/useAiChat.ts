@@ -14,6 +14,10 @@ import {
   setActiveIpodCurrentSongId,
   useIpodStore,
 } from "@/stores/useIpodStore";
+import {
+  listActiveIpodMusicLibrary,
+  searchAndCacheAppleMusicTracks,
+} from "../tools/ipodMusicLookup";
 import { toast } from "@/hooks/useToast";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { AppId } from "@/config/appIds";
@@ -515,55 +519,13 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               // Route based on path
               if (path === "/Music") {
                 // List the currently active iPod library.
-                const ipodStore = useIpodStore.getState();
-                const normalizedQuery = query
-                  ? normalizeSearchText(query.trim())
-                  : "";
-                const queryTokens = normalizedQuery
-                  ? normalizedQuery.split(/\s+/).filter(Boolean)
-                  : [];
-                const hasQuery = normalizedQuery.length > 0;
-                const maxResults = limit
-                  ? Math.min(Math.max(limit, 1), 50)
-                  : 25;
-                const activeTracks = getActiveIpodTracks(ipodStore);
-                const scoredTracks = activeTracks.map((track) => {
-                  const fields = [
-                    track.id,
-                    track.title,
-                    track.artist ?? "",
-                    track.album ?? "",
-                  ].map(normalizeSearchText);
-                  const score = hasQuery
-                    ? fields.reduce(
-                        (best, field) =>
-                          Math.max(
-                            best,
-                            computeMatchScore(field, normalizedQuery, queryTokens)
-                          ),
-                        0
-                      )
-                    : 1;
-                  return { track, score };
-                });
-                const scoreThreshold = hasQuery
-                  ? deriveScoreThreshold(normalizedQuery.length)
-                  : 0;
-                const matchingTracks = scoredTracks
-                  .filter(({ score }) => score >= scoreThreshold)
-                  .sort((a, b) => (hasQuery ? b.score - a.score : 0));
-                const library = matchingTracks
-                  .slice(0, maxResults)
-                  .map(({ track }) => ({
-                    path: `/Music/${track.id}`,
-                    id: track.id,
-                    title: track.title,
-                    artist: track.artist,
-                    source: track.source ?? ipodStore.librarySource,
-                  }));
-                const hiddenCount = Math.max(matchingTracks.length - library.length, 0);
-                const libraryName =
-                  ipodStore.librarySource === "appleMusic" ? "Apple Music" : "iPod";
+                const {
+                  entries: library,
+                  totalMatches,
+                  libraryName,
+                } = await listActiveIpodMusicLibrary({ query, limit });
+                const hiddenCount = Math.max(totalMatches - library.length, 0);
+                const hasQuery = !!query?.trim();
 
                 const resultMessage =
                   library.length > 0
@@ -571,7 +533,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                         ? i18n.t("apps.chats.toolCalls.foundSongsInMusic", { count: library.length })
                         : i18n.t("apps.chats.toolCalls.foundSongsInMusicPlural", { count: library.length })} (${libraryName})${
                         hiddenCount > 0
-                          ? `; showing ${library.length} of ${matchingTracks.length}. Use query or limit to narrow results.`
+                          ? `; showing ${library.length} of ${totalMatches}. Use query or limit to narrow results.`
                           : ""
                       }:\n${JSON.stringify(library, null, 2)}`
                     : hasQuery
@@ -762,9 +724,16 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               // Route based on path prefix
               if (path.startsWith("/Music/")) {
                 // Play iPod song by ID
-                const songId = path.replace("/Music/", "");
-                const ipodState = useIpodStore.getState();
-                const track = getActiveIpodTracks(ipodState).find((t) => t.id === songId);
+                const rawSongId = path.replace("/Music/", "");
+                const songId = decodeURIComponent(rawSongId);
+                let ipodState = useIpodStore.getState();
+                let track = getActiveIpodTracks(ipodState).find((t) => t.id === songId);
+
+                if (!track && ipodState.librarySource === "appleMusic") {
+                  await searchAndCacheAppleMusicTracks(songId.replace(/^am:/, ""));
+                  ipodState = useIpodStore.getState();
+                  track = getActiveIpodTracks(ipodState).find((t) => t.id === songId);
+                }
 
                 if (!track) {
                   throw new Error(`Song not found: ${songId}`);

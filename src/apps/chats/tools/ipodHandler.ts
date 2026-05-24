@@ -13,13 +13,18 @@ import {
 import i18n from "@/lib/i18n";
 import type { ToolContext } from "./types";
 import {
-  ciIncludes,
   formatTrackDescription,
   buildResultMessage,
   shouldDisableTranslation,
   getLanguageName,
   isIOSDevice,
 } from "./helpers";
+import {
+  createAppleMusicLookupQuery,
+  findIpodTrackMatches,
+  searchAndCacheAppleMusicTracks,
+  type SearchAppleMusicTracksFn,
+} from "./ipodMusicLookup";
 
 export interface IpodControlInput {
   action?: "toggle" | "play" | "pause" | "playKnown" | "addAndPlay" | "next" | "previous";
@@ -29,6 +34,10 @@ export interface IpodControlInput {
   enableVideo?: boolean;
   enableTranslation?: string | null;
   enableFullscreen?: boolean;
+}
+
+export interface IpodControlDeps {
+  searchAppleMusicTracks?: SearchAppleMusicTracksFn;
 }
 
 /**
@@ -177,57 +186,41 @@ const handlePlaybackState = (
  * Handle playKnown action - play existing track by id/title/artist
  * If no identifiers are provided, falls back to toggle/play current track
  */
-const handlePlayKnown = (
+const handlePlayKnown = async (
   input: IpodControlInput,
   toolCallId: string,
   context: ToolContext,
-  isIOS: boolean
-): void => {
+  isIOS: boolean,
+  deps: IpodControlDeps = {}
+): Promise<void> => {
   const { id, title, artist, enableVideo, enableTranslation, enableFullscreen } = input;
-  const ipodState = useIpodStore.getState();
-  const tracks = getActiveIpodTracks(ipodState);
 
   // If no identifiers provided, fall back to toggle/play behavior
   if (!id && !title && !artist) {
     handlePlaybackState("toggle", input, toolCallId, context, isIOS);
-    return;
+    return Promise.resolve();
   }
 
-  let finalCandidateIndices: number[] = [];
-  const allTracksWithIndices = tracks.map((t, idx) => ({
-    track: t,
-    index: idx,
-  }));
+  let ipodState = useIpodStore.getState();
+  let tracks = getActiveIpodTracks(ipodState);
+  let candidates = findIpodTrackMatches(tracks, { id, title, artist });
 
-  const idFilteredTracks = id
-    ? allTracksWithIndices.filter(({ track }) => track.id === id)
-    : allTracksWithIndices;
+  if (candidates.length === 0 && ipodState.librarySource === "appleMusic") {
+    const lookupQuery = createAppleMusicLookupQuery({ id, title, artist });
+    const remoteTracks = await searchAndCacheAppleMusicTracks(
+      lookupQuery,
+      deps.searchAppleMusicTracks
+    );
+    ipodState = useIpodStore.getState();
+    tracks = getActiveIpodTracks(ipodState);
+    candidates = findIpodTrackMatches(tracks, { id, title, artist });
 
-  const primaryCandidates = idFilteredTracks.filter(({ track }) => {
-    const titleMatches = title ? ciIncludes(track.title, title) : true;
-    const artistMatches = artist ? ciIncludes(track.artist, artist) : true;
-    return titleMatches && artistMatches;
-  });
-
-  if (primaryCandidates.length > 0) {
-    finalCandidateIndices = primaryCandidates.map(({ index }) => index);
-  } else if (title || artist) {
-    // Try swapped matching (title in artist field, etc.)
-    const secondaryCandidates = idFilteredTracks.filter(({ track }) => {
-      const titleInArtistMatches = title ? ciIncludes(track.artist, title) : false;
-      const artistInTitleMatches = artist ? ciIncludes(track.title, artist) : false;
-
-      if (title && artist) {
-        return titleInArtistMatches || artistInTitleMatches;
-      }
-      if (title) return titleInArtistMatches;
-      if (artist) return artistInTitleMatches;
-      return false;
-    });
-    finalCandidateIndices = secondaryCandidates.map(({ index }) => index);
+    if (candidates.length === 0 && (title || artist)) {
+      candidates = remoteTracks;
+    }
   }
 
-  if (finalCandidateIndices.length === 0) {
+  if (candidates.length === 0) {
     const errorMsg = i18n.t("apps.chats.toolCalls.ipodSongNotFound");
     context.addToolResult({
       tool: "ipodControl",
@@ -238,10 +231,7 @@ const handlePlayKnown = (
     return;
   }
 
-  const randomIndexFromArray =
-    finalCandidateIndices[Math.floor(Math.random() * finalCandidateIndices.length)];
-
-  const track = tracks[randomIndexFromArray];
+  const track = candidates[Math.floor(Math.random() * candidates.length)];
   if (!track) {
     const errorMsg = i18n.t("apps.chats.toolCalls.ipodSongNotFound");
     context.addToolResult({
@@ -464,7 +454,8 @@ const handleNavigation = (
 export const handleIpodControl = async (
   input: IpodControlInput,
   toolCallId: string,
-  context: ToolContext
+  context: ToolContext,
+  deps: IpodControlDeps = {}
 ): Promise<void> => {
   const {
     action = "toggle",
@@ -489,7 +480,7 @@ export const handleIpodControl = async (
   }
 
   if (normalizedAction === "playKnown") {
-    handlePlayKnown(input, toolCallId, context, isIOS);
+    await handlePlayKnown(input, toolCallId, context, isIOS, deps);
     return;
   }
 

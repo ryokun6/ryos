@@ -59,6 +59,9 @@ const {
   getIpodChatContextTrack,
 } = await import("../src/stores/useIpodStore");
 const { handleIpodControl } = await import("../src/apps/chats/tools/ipodHandler");
+const { listActiveIpodMusicLibrary } = await import(
+  "../src/apps/chats/tools/ipodMusicLookup"
+);
 const {
   shouldFireEndedForPlaybackState,
   isWithinEndedFanoutDedupWindow,
@@ -696,6 +699,109 @@ describe("useIpodStore Apple Music slice", () => {
     expect(state.currentSongId).toBe("yt1");
     expect(state.isPlaying).toBe(true);
     expect(results).toHaveLength(1);
+  });
+
+  test("ipodControl playKnown searches Apple Music when the local cache misses", async () => {
+    useIpodStore.setState({
+      tracks: [{ id: "yt1", url: "youtube:1", title: "YouTube One" }],
+      currentSongId: "yt1",
+      appleMusicTracks: [],
+      appleMusicCurrentSongId: null,
+      librarySource: "appleMusic",
+      appleMusicPlaybackQueue: null,
+      isPlaying: false,
+    });
+    const results: unknown[] = [];
+    const searchCalls: Array<{ query: string; scope: string }> = [];
+
+    await handleIpodControl(
+      { action: "playKnown", title: "Apple Search Song", artist: "Apple Artist" },
+      "call-search",
+      {
+        launchApp: () => "ipod-instance",
+        addToolResult: (result) => results.push(result),
+        detectUserOS: () => "Linux",
+      },
+      {
+        searchAppleMusicTracks: async (query, scope) => {
+          searchCalls.push({ query, scope });
+          return [
+            {
+              id: "am:search-hit",
+              url: "applemusic:search-hit",
+              title: "Apple Search Song",
+              artist: "Apple Artist",
+              source: "appleMusic",
+              appleMusicPlayParams: {
+                catalogId: "search-hit",
+                kind: "song",
+              },
+            },
+          ];
+        },
+      }
+    );
+
+    const state = useIpodStore.getState();
+    expect(searchCalls).toEqual([
+      { query: "Apple Search Song Apple Artist", scope: "library" },
+    ]);
+    expect(state.appleMusicTracks.map((track) => track.id)).toContain(
+      "am:search-hit"
+    );
+    expect(state.appleMusicCurrentSongId).toBe("am:search-hit");
+    expect(state.currentSongId).toBe("yt1");
+    expect(state.isPlaying).toBe(true);
+    expect(results).toHaveLength(1);
+  });
+
+  test("listing /Music searches Apple Music when the local cache misses", async () => {
+    useIpodStore.setState({
+      tracks: [{ id: "yt1", url: "youtube:1", title: "YouTube One" }],
+      currentSongId: "yt1",
+      appleMusicTracks: [],
+      appleMusicCurrentSongId: null,
+      librarySource: "appleMusic",
+      appleMusicPlaybackQueue: null,
+    });
+    const searchCalls: Array<{ query: string; scope: string }> = [];
+
+    const result = await listActiveIpodMusicLibrary({
+      query: "Plastic Love",
+      limit: 5,
+      searchAppleMusicTracks: async (query, scope) => {
+        searchCalls.push({ query, scope });
+        return [
+          {
+            id: "am:plastic-love",
+            url: "applemusic:plastic-love",
+            title: "Plastic Love",
+            artist: "Mariya Takeuchi",
+            source: "appleMusic",
+            appleMusicPlayParams: {
+              catalogId: "plastic-love",
+              kind: "song",
+            },
+          },
+        ];
+      },
+    });
+
+    expect(searchCalls).toEqual([{ query: "Plastic Love", scope: "library" }]);
+    expect(result.libraryName).toBe("Apple Music");
+    expect(result.entries).toEqual([
+      {
+        path: "/Music/am:plastic-love",
+        id: "am:plastic-love",
+        title: "Plastic Love",
+        artist: "Mariya Takeuchi",
+        album: undefined,
+        source: "appleMusic",
+      },
+    ]);
+    expect(useIpodStore.getState().appleMusicTracks[0]?.id).toBe(
+      "am:plastic-love"
+    );
   });
 
   test("ipodControl next follows Apple Music navigation when Apple Music is active", async () => {
