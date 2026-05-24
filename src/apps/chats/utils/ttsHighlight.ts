@@ -23,6 +23,47 @@ const HIGHLIGHT_NAME = "ryos-chat-tts";
 export type TtsHighlightOwner = symbol;
 
 let currentOwner: TtsHighlightOwner | null = null;
+let pendingWebKitApplyRaf = 0;
+let webKitApplyToken = 0;
+/** Reused on WebKit — registry delete + re-set must use the same Highlight instance to repaint. */
+let webKitRegistryHighlight: { clear: () => void; add: (range: AbstractRange) => void } | null =
+  null;
+
+interface HighlightLike {
+  clear: () => void;
+  add: (range: AbstractRange) => void;
+}
+
+function forceRepaint(el: HTMLElement | null): void {
+  if (!el) return;
+  void el.getBoundingClientRect();
+}
+
+/** WebKit (Safari) often skips repaint when highlights are deleted and re-set in one turn. */
+function isWebKitBrowser(): boolean {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent;
+  return (
+    /AppleWebKit/i.test(ua) &&
+    !/Chrome|Chromium|CriOS|Edg|OPR|Firefox|FxiOS/i.test(ua)
+  );
+}
+
+function deleteRegistryEntry(reg: HighlightsRegistry): void {
+  try {
+    reg.delete(HIGHLIGHT_NAME);
+  } catch {
+    // ignore
+  }
+}
+
+function cancelPendingWebKitApply(): void {
+  webKitApplyToken += 1;
+  if (pendingWebKitApplyRaf !== 0) {
+    cancelAnimationFrame(pendingWebKitApplyRaf);
+    pendingWebKitApplyRaf = 0;
+  }
+}
 
 interface HighlightCtor {
   new (...ranges: AbstractRange[]): unknown;
@@ -61,12 +102,40 @@ export function clearTtsHighlight(owner?: TtsHighlightOwner | null): void {
   if (owner != null && owner !== currentOwner) {
     return;
   }
-  try {
-    reg.delete(HIGHLIGHT_NAME);
-  } catch {
-    // ignore
+  cancelPendingWebKitApply();
+  if (isWebKitBrowser() && webKitRegistryHighlight) {
+    try {
+      webKitRegistryHighlight.clear();
+    } catch {
+      // ignore
+    }
   }
+  deleteRegistryEntry(reg);
   currentOwner = null;
+}
+
+function scheduleWebKitRegistryCommit(
+  reg: HighlightsRegistry,
+  highlight: HighlightLike,
+  container: HTMLElement | null,
+  owner: TtsHighlightOwner,
+  applyToken: number
+): void {
+  deleteRegistryEntry(reg);
+  forceRepaint(container);
+  pendingWebKitApplyRaf = requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      pendingWebKitApplyRaf = 0;
+      if (currentOwner !== owner || applyToken !== webKitApplyToken) return;
+      try {
+        deleteRegistryEntry(reg);
+        forceRepaint(container);
+        reg.set(HIGHLIGHT_NAME, highlight);
+      } catch {
+        clearTtsHighlight();
+      }
+    });
+  });
 }
 
 // Strip markdown formatting so the resulting text approximates what ends up
@@ -268,10 +337,32 @@ export function applyTtsHighlight(
   }
 
   try {
-    const highlight = new Highlight(range);
-    reg.set(HIGHLIGHT_NAME, highlight);
     const owner: TtsHighlightOwner = Symbol("ryos-chat-tts");
     currentOwner = owner;
+
+    if (!isWebKitBrowser()) {
+      const highlight = new Highlight(range);
+      deleteRegistryEntry(reg);
+      reg.set(HIGHLIGHT_NAME, highlight);
+      return owner;
+    }
+
+    // WebKit: mutate one Highlight, remove from registry, repaint, re-add the
+    // same instance (LayoutTests/highlight registry repaint pattern).
+    if (!webKitRegistryHighlight) {
+      webKitRegistryHighlight = new Highlight() as unknown as HighlightLike;
+    }
+    webKitRegistryHighlight.clear();
+    webKitRegistryHighlight.add(range);
+    cancelPendingWebKitApply();
+    const applyToken = webKitApplyToken;
+    scheduleWebKitRegistryCommit(
+      reg,
+      webKitRegistryHighlight,
+      container,
+      owner,
+      applyToken
+    );
     return owner;
   } catch {
     clearTtsHighlight();
