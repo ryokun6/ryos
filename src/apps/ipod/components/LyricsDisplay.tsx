@@ -2201,8 +2201,13 @@ export function LyricsDisplay({
     const linesChanged = prevLinesRef.current !== displayOriginalLines;
     prevLinesRef.current = displayOriginalLines;
 
-    // Instantly update on song load, translation switch, or initial state
-    if (linesChanged || actualCurrentLine < 0) {
+    // Instantly update on song load, translation switch, initial state, or while
+    // the overlay is hidden. Keeping the pair in sync with the current line
+    // whenever the lyrics are not on screen prevents a stale pair from being
+    // rendered on the first paint after the user re-enters the lyrics view,
+    // which would otherwise cause a second visible animation right after the
+    // entry animation (the "double shift" bug).
+    if (linesChanged || actualCurrentLine < 0 || !visible) {
       setAltLines(computeAltVisibleLines(displayOriginalLines, actualCurrentLine));
       return;
     }
@@ -2231,7 +2236,7 @@ export function LyricsDisplay({
     }, delayMs);
 
     return () => clearTimeout(timer);
-  }, [alignment, displayOriginalLines, actualCurrentLine]);
+  }, [alignment, displayOriginalLines, actualCurrentLine, visible]);
 
   const nonAltVisibleLines = useMemo(() => {
     if (!displayOriginalLines.length) return [] as LyricLine[];
