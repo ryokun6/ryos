@@ -11,3 +11,17 @@
   background-color: rgba(255, 241, 118, 0.85);
   color: inherit;
 }
+
+/*
+ * Respect reduced motion: skip the streaming word-fade entirely so users
+ * who opt out don't see overlapping animations across paragraphs while
+ * tokens stream in.
+ */
+@media (prefers-reduced-motion: reduce) {
+  [data-sd-animate] {
+    animation: none !important;
+    opacity: 1 !important;
+    filter: none !important;
+    transform: none !important;
+  }
+}
