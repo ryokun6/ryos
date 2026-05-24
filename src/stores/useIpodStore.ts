@@ -264,6 +264,13 @@ interface IpodData {
         displayTitle?: string;
         selectedIndex: number;
         modernMediaList?: boolean;
+        /**
+         * Mirrors {@link MenuHistoryEntry.alphabetic} so the wheel's
+         * fast scroll-by-letter affordance survives reopening the
+         * iPod at a deep menu level (Artists, Albums, the new All
+         * Songs / Songs flows).
+         */
+        alphabetic?: boolean;
       }[]
     | null;
   /**
@@ -626,6 +633,7 @@ export interface IpodState extends IpodData {
           displayTitle?: string;
           selectedIndex: number;
           modernMediaList?: boolean;
+          alphabetic?: boolean;
         }[]
       | null
   ) => void;
@@ -760,7 +768,7 @@ export function navigateActiveIpodTrack(
   }
 }
 
-const CURRENT_IPOD_STORE_VERSION = 37; // Breadcrumb may include modernMediaList for iPod media rows
+const CURRENT_IPOD_STORE_VERSION = 38; // Breadcrumb may include alphabetic flag so fast scroll-by-letter mode survives reopen
 
 // Helper function to get unplayed track IDs from history
 function getUnplayedTrackIds(

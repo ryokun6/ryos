@@ -1650,17 +1650,35 @@ export function useIpodLogic({
   // Memoize the entire "All Songs" submenu items array. Without this,
   // every render rebuilt N closures, the menu-history sync effect saw a
   // new `items` reference, called `setMenuHistory(updated)`, and re-ran.
-  const allSongsMenuItems = useMemo(
+  //
+  // The list is sorted by track title so the classic iPod "scroll by
+  // letter" affordance lands on the right alphabetic group (the menu
+  // pushes that surface this list — Music > Songs and Music > Albums >
+  // All — opt into `alphabetic: true` so the wheel switches into
+  // letter-jump mode after a sustained fast spin). The playback queue
+  // mirrors the displayed order: tapping a song sets an Apple Music
+  // contextual queue of the sorted ids so next/previous walks the list
+  // exactly as the user sees it.
+  const sortedBrowsableTracks = useMemo(
     () =>
-      browsableTracks.map((track, index) => ({
-        label: track.title,
-        // Full library queue → pass null to clear any contextual queue.
-        action: () => playTrackFromMenu(track, index, null),
-        showChevron: false,
-        coverUrl: resolveTrackCoverUrl(track),
-      })),
-    [browsableTracks, playTrackFromMenu]
+      [...browsableTracks].sort((a, b) => {
+        const byTitle = a.title.localeCompare(b.title, undefined, {
+          sensitivity: "base",
+        });
+        if (byTitle !== 0) return byTitle;
+        return a.id.localeCompare(b.id, undefined, { sensitivity: "base" });
+      }),
+    [browsableTracks]
   );
+  const allSongsMenuItems = useMemo(() => {
+    const queueIds = sortedBrowsableTracks.map((track) => track.id);
+    return sortedBrowsableTracks.map((track, index) => ({
+      label: track.title,
+      action: () => playTrackFromMenu(track, index, queueIds),
+      showChevron: false,
+      coverUrl: resolveTrackCoverUrl(track),
+    }));
+  }, [sortedBrowsableTracks, playTrackFromMenu]);
 
   const appleMusicRecentlyAddedMenuItems = useMemo(() => {
     const loadingLabel = t("apps.ipod.menuItems.loading", "Loading…");
@@ -1967,6 +1985,7 @@ export function useIpodLogic({
               title: allSongsLabel,
               items: allSongsMenuItems,
               selectedIndex: 0,
+              alphabetic: true,
             });
           },
           showChevron: true,
@@ -2310,7 +2329,10 @@ export function useIpodLogic({
         },
         {
           label: songsLabel,
-          action: () => pushSubmenu(songsLabel, allSongsMenuItems),
+          action: () =>
+            pushSubmenu(songsLabel, allSongsMenuItems, {
+              alphabetic: true,
+            }),
           showChevron: true,
         },
         {
@@ -2356,7 +2378,10 @@ export function useIpodLogic({
       },
       {
         label: songsLabel,
-        action: () => pushSubmenu(allSongsLabel, allSongsMenuItems),
+        action: () =>
+          pushSubmenu(allSongsLabel, allSongsMenuItems, {
+            alphabetic: true,
+          }),
         showChevron: true,
       },
     ];
@@ -3275,6 +3300,7 @@ export function useIpodLogic({
         title: entry.title,
         displayTitle: entry.displayTitle,
         modernMediaList: entry.modernMediaList,
+        alphabetic: entry.alphabetic,
         items: rebuilt,
         selectedIndex: safeIdx,
       });
@@ -3390,6 +3416,7 @@ export function useIpodLogic({
       title: menu.title,
       displayTitle: menu.displayTitle,
       modernMediaList: menu.modernMediaList,
+      alphabetic: menu.alphabetic,
       selectedIndex:
         i === menuHistory.length - 1 ? selectedMenuItem : menu.selectedIndex,
     }));
@@ -3408,6 +3435,7 @@ export function useIpodLogic({
           entry.title === breadcrumb[i].title &&
           entry.displayTitle === breadcrumb[i].displayTitle &&
           entry.modernMediaList === breadcrumb[i].modernMediaList &&
+          entry.alphabetic === breadcrumb[i].alphabetic &&
           entry.selectedIndex === breadcrumb[i].selectedIndex
       );
     if (!isSame) store.setIpodMenuBreadcrumb(breadcrumb);
@@ -3875,7 +3903,10 @@ export function useIpodLogic({
         setSelectedMenuItem(lastMenu?.selectedIndex || 0);
       } else {
         // Last-resort fallback (truly empty navigation history): go to
-        // All Songs with the current track highlighted.
+        // All Songs with the current track highlighted. `allSongsMenuItems`
+        // is sorted by title, so look up the current song's index in
+        // that sorted order rather than reusing `browseCurrentIndex`
+        // (which is an index into the unsorted browsable library).
         const allSongsLabel = t("apps.ipod.menuItems.allSongs");
         const songsLabel = t("apps.ipod.menuItems.songs");
         const songsMenuIndex = Math.max(
@@ -3884,6 +3915,18 @@ export function useIpodLogic({
             (item) => item.label === songsLabel || item.label === allSongsLabel
           )
         );
+        const currentBrowseTrack =
+          browseCurrentIndex >= 0
+            ? browsableTracks[browseCurrentIndex]
+            : null;
+        const allSongsSelectedIndex = currentBrowseTrack
+          ? Math.max(
+              0,
+              sortedBrowsableTracks.findIndex(
+                (track) => track.id === currentBrowseTrack.id
+              )
+            )
+          : 0;
         setMenuHistory([
           mainMenu,
           {
@@ -3894,14 +3937,15 @@ export function useIpodLogic({
           {
             title: allSongsLabel,
             items: allSongsMenuItems,
-            selectedIndex: Math.max(0, browseCurrentIndex),
+            selectedIndex: allSongsSelectedIndex,
+            alphabetic: true,
           },
         ]);
-        setSelectedMenuItem(Math.max(0, browseCurrentIndex));
+        setSelectedMenuItem(allSongsSelectedIndex);
       }
       setMenuMode(true);
     }
-  }, [playClickSound, vibrate, registerActivity, isCoverFlowOpen, isMusicQuizOpen, isBrickGameOpen, isNowPlayingSongMenuOpen, closeNowPlayingSongMenu, restoreNowPlayingSongMenu, showVideo, toggleVideo, menuMode, menuHistory, mainMenuItems, musicMenuItems, allSongsMenuItems, browseCurrentIndex, cameFromNowPlayingMenuItem, t]);
+  }, [playClickSound, vibrate, registerActivity, isCoverFlowOpen, isMusicQuizOpen, isBrickGameOpen, isNowPlayingSongMenuOpen, closeNowPlayingSongMenu, restoreNowPlayingSongMenu, showVideo, toggleVideo, menuMode, menuHistory, mainMenuItems, musicMenuItems, allSongsMenuItems, browsableTracks, sortedBrowsableTracks, browseCurrentIndex, cameFromNowPlayingMenuItem, t]);
 
   // Cover Flow handlers
   const handleCenterLongPress = useCallback(() => {
