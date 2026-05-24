@@ -5,6 +5,7 @@ import type { OsMacChrome, OsPlatform } from "@/themes/types";
 
 export function useThemeFlags() {
   const currentTheme = useThemeStore((state) => state.current);
+  const isDark = useThemeStore((state) => state.isDark);
   const metadata = useMemo(() => getThemeMetadata(currentTheme), [currentTheme]);
   const osPlatform: OsPlatform = getOsPlatform(currentTheme);
   const macChrome: OsMacChrome | null = getOsMacChrome(currentTheme);
@@ -22,6 +23,7 @@ export function useThemeFlags() {
 
   return {
     currentTheme,
+    isDark,
     osPlatform,
     macChrome,
     isMacAquaChrome: macChrome === "aqua",

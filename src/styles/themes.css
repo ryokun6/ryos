@@ -3025,3 +3025,304 @@
   filter: blur(1px);
   pointer-events: none;
 }
+
+/* =====================================================================
+ * DARK MODE
+ * =====================================================================
+ *
+ * Each base theme has a dark variant opted into by setting
+ * `data-os-color-scheme="dark"` on the document root, orthogonal to
+ * `data-os-theme`. Dark mode is implemented as CSS-variable overrides
+ * on the existing token surface so that any component already reading
+ * `--os-color-*` / `--os-window-shadow` etc. adapts automatically.
+ *
+ * Specificity: `:root[data-os-theme="…"][data-os-color-scheme="dark"]`
+ * beats the base `:root[data-os-theme="…"]` blocks above thanks to the
+ * extra attribute selector. Theme-specific extras (gradients, brushed
+ * metal filters, pinstripes, legacy Win chrome) get follow-up rules.
+ */
+
+/* ---------- Shared root defaults under dark scheme ---------- */
+:root[data-os-color-scheme="dark"] {
+  color-scheme: dark;
+}
+
+/* ---------- System 7 — high-contrast inverted (black ↔ white) ---------- */
+:root[data-os-theme="system7"][data-os-color-scheme="dark"] {
+  --os-color-window-bg: #000000;
+  --os-color-menubar-bg: #000000;
+  --os-color-menubar-border: #ffffff;
+  --os-color-menubar-text: #ffffff;
+  --os-color-window-border: #ffffff;
+  --os-color-titlebar-active-bg: #000000;
+  --os-color-titlebar-inactive-bg: #000000;
+  --os-color-titlebar-text: #ffffff;
+  --os-color-titlebar-text-inactive: #9a9a9a;
+  --os-color-titlebar-pattern: linear-gradient(#fff 50%, transparent 0);
+  --os-color-button-face: #1a1a1a;
+  --os-color-button-highlight: #ffffff;
+  --os-color-button-shadow: #5a5a5a;
+  --os-color-button-active-face: #333333;
+  --os-color-selection-bg: #ffffff;
+  --os-color-selection-text: #000000;
+  --os-color-text-primary: #ffffff;
+  --os-color-text-secondary: #bdbdbd;
+  --os-color-text-disabled: #6a6a6a;
+  --os-color-panel-bg: #141414;
+  --os-color-separator: #5a5a5a;
+  --os-color-input-bg: #000000;
+  --os-color-input-border: #ffffff;
+  --os-color-input-focus-border: #ffffff;
+  --os-color-input-focus-ring: transparent;
+  --os-color-sidebar-border: #ffffff;
+  --os-color-sidebar-inset-shadow: none;
+  --os-color-switch-track: #4a4a4a;
+  --os-color-switch-track-checked: #ffffff;
+  --os-window-shadow: 2px 2px 0px 0px rgba(255, 255, 255, 0.5);
+}
+
+/* Inactive selection palette for background System 7 windows (dark) */
+:root[data-os-theme="system7"][data-os-color-scheme="dark"] .window:not(.is-foreground) {
+  --os-color-selection-bg: #3a3a3a;
+  --os-color-selection-text: #ffffff;
+}
+
+/* System 7 title bar: grid/back button icon white under dark */
+:root[data-os-theme="system7"][data-os-color-scheme="dark"] .h-os-titlebar > span.mr-2 > button {
+  color: #ffffff;
+}
+
+/* ---------- macOS X — Aqua Dark (Graphite-style) ---------- */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] {
+  --os-color-window-bg: #2c2c2e;
+  --os-color-menubar-bg: linear-gradient(to bottom, #2a2a2c, #1a1a1c);
+  --os-color-menubar-border: rgba(0, 0, 0, 0.65);
+  --os-color-menubar-text: #f5f5f7;
+  --os-color-window-border: rgba(0, 0, 0, 0.75);
+  --os-color-window-border-inactive: rgba(0, 0, 0, 0.55);
+  --os-color-titlebar-border: rgba(0, 0, 0, 0.6);
+  --os-color-titlebar-border-inactive: rgba(0, 0, 0, 0.45);
+  --os-color-titlebar-active-bg: linear-gradient(
+    to bottom,
+    #3c3c3e 0%,
+    #2a2a2c 100%
+  );
+  --os-color-titlebar-inactive-bg: linear-gradient(
+    to bottom,
+    #2a2a2c,
+    #1f1f21
+  );
+  --os-color-titlebar-text: #f5f5f7;
+  --os-color-titlebar-text-inactive: #8a8a8c;
+  --os-color-button-face: #4a4a4c;
+  --os-color-button-highlight: rgba(255, 255, 255, 0.18);
+  --os-color-button-shadow: rgba(0, 0, 0, 0.6);
+  --os-color-button-active-face: #5c5c5e;
+  --os-color-traffic-light-close: #4a0a07;
+  --os-color-traffic-light-minimize: #7a5915;
+  --os-color-traffic-light-maximize: #10541a;
+  --os-color-selection-bg: rgba(10, 132, 255, 0.85);
+  --os-color-selection-text: #ffffff;
+  --os-color-selection-glow: rgba(10, 132, 255, 0.5);
+  --os-color-text-primary: #f5f5f7;
+  --os-color-text-secondary: #b6b6b9;
+  --os-color-text-disabled: #6d6d70;
+  --os-color-panel-bg: #2c2c2e;
+  --os-color-separator: rgba(255, 255, 255, 0.12);
+  --os-color-input-bg: rgba(255, 255, 255, 0.06);
+  --os-color-input-border: rgba(255, 255, 255, 0.18);
+  --os-color-input-focus-border: rgba(10, 132, 255, 0.7);
+  --os-color-input-focus-ring: rgba(10, 132, 255, 0.3);
+  --os-color-sidebar-border: rgba(255, 255, 255, 0.18);
+  --os-color-sidebar-inset-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+  --os-color-switch-track: #4a4a4c;
+  --os-color-switch-track-checked: #0a84ff;
+  --os-window-shadow: 0 6px 18px rgba(0, 0, 0, 0.65);
+  /* Darker pinstripe surfaces */
+  --os-pinstripe-titlebar: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.06) 0%,
+    rgba(0, 0, 0, 0.25) 70%,
+    rgba(0, 0, 0, 0.4) 100%
+  );
+  --os-pinstripe-window: repeating-linear-gradient(
+      0deg,
+      transparent 0px,
+      transparent 1.5px,
+      rgba(255, 255, 255, 0.04) 1.5px,
+      rgba(255, 255, 255, 0.04) 4px
+    ),
+    linear-gradient(to bottom, #2c2c2e 0%, #232325 100%);
+  --os-pinstripe-menubar: repeating-linear-gradient(
+    0deg,
+    transparent 0px,
+    transparent 1.5px,
+    rgba(255, 255, 255, 0.04) 1.5px,
+    rgba(255, 255, 255, 0.04) 4px
+  );
+}
+
+/* Aqua Dark — brushed metal: darken the metal texture */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .window-material-brushedmetal::before {
+  filter: contrast(0.85) brightness(0.32) saturate(0.7);
+}
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .window-material-brushedmetal:not(.is-foreground)::before {
+  filter: contrast(0.7) brightness(0.42) saturate(0.4);
+}
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .window-material-brushedmetal.is-foreground .title-bar {
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.7) !important;
+  color: #f5f5f7 !important;
+}
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .os-drawer-metal::before {
+  filter: contrast(0.85) brightness(0.32) saturate(0.7);
+}
+
+/* ---------- Windows XP (Luna) Dark — keep XP DNA but darken chrome ---------- */
+:root[data-os-theme="xp"][data-os-color-scheme="dark"] {
+  --os-color-window-bg: #2a2a2a;
+  --os-color-menubar-bg: linear-gradient(to bottom, #0c2766, #051442);
+  --os-color-menubar-border: #02061f;
+  --os-color-menubar-text: #ffffff;
+  --os-color-window-border: #0c2766;
+  --os-color-titlebar-active-bg: linear-gradient(to bottom, #0c2766, #051442);
+  --os-color-titlebar-inactive-bg: linear-gradient(to bottom, #3a3a3a, #2a2a2a);
+  --os-color-titlebar-text: #ffffff;
+  --os-color-titlebar-text-inactive: #9a9a9a;
+  --os-color-button-face: #3a3a3a;
+  --os-color-button-highlight: #5a5a5a;
+  --os-color-button-shadow: #1a1a1a;
+  --os-color-button-active-face: #4a4a4a;
+  --os-color-selection-bg: #1e4d8a;
+  --os-color-selection-text: #ffffff;
+  --os-color-text-primary: #f0f0f0;
+  --os-color-text-secondary: #b0b0b0;
+  --os-color-text-disabled: #707070;
+  --os-color-panel-bg: #2a2a2a;
+  --os-color-separator: #4a4a4a;
+  --os-color-input-bg: #1a1a1a;
+  --os-color-input-border: #555555;
+  --os-color-input-focus-border: #4a90e2;
+  --os-color-input-focus-ring: transparent;
+  --os-color-sidebar-border: #4a4a4a;
+  --os-color-sidebar-inset-shadow: none;
+  --os-color-switch-track: #4a4a4a;
+  --os-color-switch-track-checked: #1e4d8a;
+  --os-window-shadow: 0 4px 14px rgba(0, 0, 0, 0.7);
+}
+
+/* Inactive selection palette for background XP windows (dark) */
+:root[data-os-theme="xp"][data-os-color-scheme="dark"] .window:not(.is-foreground) {
+  --os-color-selection-bg: #3a3a3a;
+  --os-color-selection-text: #ffffff;
+}
+
+/* XP dark — repaint hard-coded Luna chrome surfaces from xp-custom.css.
+ * xp-custom.css uses hardcoded ECE9D8 (cream tan) for window/dialog bodies,
+ * field surfaces, button faces, etc. We override the most visible chrome
+ * here so windows feel dark instead of looking like a halfway theme. */
+:root[data-os-theme="xp"][data-os-color-scheme="dark"] .window,
+:root[data-os-theme="xp"][data-os-color-scheme="dark"] .window-body,
+:root[data-os-theme="xp"][data-os-color-scheme="dark"] .has-space {
+  background: #2a2a2a !important;
+  color: #f0f0f0;
+}
+:root[data-os-theme="xp"][data-os-color-scheme="dark"] .field-row,
+:root[data-os-theme="xp"][data-os-color-scheme="dark"] fieldset {
+  color: #f0f0f0;
+}
+:root[data-os-theme="xp"][data-os-color-scheme="dark"] .status-bar {
+  background: #232323 !important;
+  color: #f0f0f0;
+}
+:root[data-os-theme="xp"][data-os-color-scheme="dark"] .button,
+:root[data-os-theme="xp"][data-os-color-scheme="dark"] button[type="button"],
+:root[data-os-theme="xp"][data-os-color-scheme="dark"] button[type="submit"] {
+  filter: brightness(0.55) saturate(0.85);
+}
+
+/* ---------- Windows 98 Dark — dark graphite 3D face ---------- */
+:root[data-os-theme="win98"][data-os-color-scheme="dark"] {
+  --os-color-window-bg: #303030;
+  --os-color-menubar-bg: #303030;
+  --os-color-menubar-border: #1a1a1a;
+  --os-color-menubar-text: #f0f0f0;
+  --os-color-window-border: #000000;
+  --os-color-titlebar-active-bg: linear-gradient(to right, #000040, #084080);
+  --os-color-titlebar-inactive-bg: linear-gradient(to right, #303030, #555555);
+  --os-color-titlebar-text: #ffffff;
+  --os-color-titlebar-text-inactive: #b0b0b0;
+  --os-color-button-face: #303030;
+  --os-color-button-highlight: #5a5a5a;
+  --os-color-button-shadow: #1a1a1a;
+  --os-color-button-active-face: #404040;
+  --os-color-selection-bg: #000080;
+  --os-color-selection-text: #ffffff;
+  --os-color-text-primary: #f0f0f0;
+  --os-color-text-secondary: #c0c0c0;
+  --os-color-text-disabled: #707070;
+  --os-color-panel-bg: #303030;
+  --os-color-separator: #1a1a1a;
+  --os-color-input-bg: #1a1a1a;
+  --os-color-input-border: #5a5a5a;
+  --os-color-input-focus-border: #000080;
+  --os-color-input-focus-ring: transparent;
+  --os-color-sidebar-border: #1a1a1a;
+  --os-color-sidebar-inset-shadow: none;
+  --os-color-switch-track: #4a4a4a;
+  --os-color-switch-track-checked: #000080;
+  --os-window-shadow: none;
+}
+
+/* Inactive selection palette for background Win98 windows (dark) */
+:root[data-os-theme="win98"][data-os-color-scheme="dark"] .window:not(.is-foreground) {
+  --os-color-selection-bg: #404040;
+  --os-color-selection-text: #ffffff;
+}
+
+/* Win98 dark — repaint hard-coded #c0c0c0 chrome from 98-custom.css.
+ * Same approach as XP: 98-custom.css ships hardcoded silver button/window
+ * surfaces; without these overrides the chrome stays light gray and clashes
+ * with the dark titlebars. */
+:root[data-os-theme="win98"][data-os-color-scheme="dark"] .window,
+:root[data-os-theme="win98"][data-os-color-scheme="dark"] .window-body,
+:root[data-os-theme="win98"][data-os-color-scheme="dark"] .has-space {
+  background: #303030 !important;
+  color: #f0f0f0;
+}
+:root[data-os-theme="win98"][data-os-color-scheme="dark"] .field-row,
+:root[data-os-theme="win98"][data-os-color-scheme="dark"] fieldset {
+  color: #f0f0f0;
+}
+:root[data-os-theme="win98"][data-os-color-scheme="dark"] .status-bar {
+  background: #2a2a2a !important;
+  color: #f0f0f0;
+}
+:root[data-os-theme="win98"][data-os-color-scheme="dark"] .button,
+:root[data-os-theme="win98"][data-os-color-scheme="dark"] button[type="button"],
+:root[data-os-theme="win98"][data-os-color-scheme="dark"] button[type="submit"] {
+  filter: brightness(0.55) saturate(0.85);
+}
+
+/* ---------- Cross-cutting dark adjustments ---------- *
+ * Many places use hardcoded Tailwind utility colors (bg-white, text-black,
+ * text-neutral-600, etc.) for app interiors. We surface a few high-impact
+ * overrides so common chrome stays readable in dark mode without
+ * refactoring every component. App-specific dark polish can be added
+ * incrementally over this baseline. */
+
+:root[data-os-color-scheme="dark"] body {
+  background-color: #000;
+}
+
+/* Common chrome surfaces used by dialogs and panels */
+:root[data-os-color-scheme="dark"] .bg-system7-window-bg,
+:root[data-os-color-scheme="dark"] [data-window-content="true"].bg-white {
+  background-color: var(--os-color-window-bg) !important;
+  color: var(--os-color-text-primary);
+}
+
+/* Dialog scrim — slightly heavier in dark mode for separation */
+:root[data-os-color-scheme="dark"] [data-radix-dialog-overlay],
+:root[data-os-color-scheme="dark"] [data-radix-alert-dialog-overlay] {
+  background-color: rgba(0, 0, 0, 0.7);
+}

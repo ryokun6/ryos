@@ -1319,6 +1319,8 @@
       "crashDesktop": "デスクトップをクラッシュ",
       "crt": "CRT",
       "custom": "カスタム",
+      "darkMode": "ダークモード",
+      "darkModeDescription": "ウィンドウ、メニュー、コントロールに暗いパレットを使用します",
       "debugMode": "デバッグモード",
       "debugModeDescription": "デバッグ設定を有効にする",
       "default": "デフォルト",
@@ -2478,6 +2480,8 @@
           "title": "iPodと共有"
         }
       },
+      "ktvRoomFx": "観客のリアクション",
+      "ktvRoomFxHint": "全画面カラオケの観客リアクション効果を切り替え",
       "liveListen": {
         "activeSessions": "アクティブなカラオケルーム",
         "anonymous": "{{count}} 匿名",
@@ -2540,9 +2544,7 @@
         "view": "表示"
       },
       "name": "カラオケ",
-      "noTrack": "トラックが読み込まれていません。曲を選択するにはiPodを開いてください。",
-      "ktvRoomFx": "観客のリアクション",
-      "ktvRoomFxHint": "全画面カラオケの観客リアクション効果を切り替え"
+      "noTrack": "トラックが読み込まれていません。曲を選択するにはiPodを開いてください。"
     },
     "maps": {
       "description": "Apple マップで場所を検索",

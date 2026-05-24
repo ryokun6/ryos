@@ -2822,6 +2822,8 @@
       "system": "System",
       "theme": "Theme",
       "themeDescription": "Changes the appearance of windows, menus, and controls",
+      "darkMode": "Dark Mode",
+      "darkModeDescription": "Use a darker palette for windows, menus, and chrome",
       "select": "Select",
       "uiSounds": "UI Sounds",
       "terminalIeAmbientSynth": "Synth",

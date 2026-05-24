@@ -1319,6 +1319,8 @@
       "crashDesktop": "Bloquear escritorio",
       "crt": "CRT",
       "custom": "Personalizado",
+      "darkMode": "Modo oscuro",
+      "darkModeDescription": "Usa una paleta más oscura para ventanas, menús y controles",
       "debugMode": "Modo de depuración",
       "debugModeDescription": "Habilitar ajustes de depuración",
       "default": "Predeterminado",
@@ -2478,6 +2480,8 @@
           "title": "Compartido con iPod"
         }
       },
+      "ktvRoomFx": "Reacciones del público",
+      "ktvRoomFxHint": "Activa las reacciones flotantes del público en pantalla completa",
       "liveListen": {
         "activeSessions": "Salas KTV activas",
         "anonymous": "{{count}} anónimos",
@@ -2540,9 +2544,7 @@
         "view": "Ver"
       },
       "name": "Karaoke",
-      "noTrack": "No hay pista cargada. Abre el iPod para seleccionar una canción.",
-      "ktvRoomFx": "Reacciones del público",
-      "ktvRoomFxHint": "Activa las reacciones flotantes del público en pantalla completa"
+      "noTrack": "No hay pista cargada. Abre el iPod para seleccionar una canción."
     },
     "maps": {
       "description": "Busca lugares con Apple Maps",

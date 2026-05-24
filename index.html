@@ -213,6 +213,13 @@
         try {
           var theme = localStorage.getItem("ryos:theme") || localStorage.getItem("os_theme");
           if (theme) document.documentElement.dataset.osTheme = theme;
+          var dark = localStorage.getItem("ryos:theme:dark");
+          if (dark === "1" || dark === "true") {
+            document.documentElement.dataset.osColorScheme = "dark";
+            document.documentElement.style.colorScheme = "dark";
+          } else {
+            document.documentElement.style.colorScheme = "light";
+          }
         } catch (e) {}
       })();
     </script>
