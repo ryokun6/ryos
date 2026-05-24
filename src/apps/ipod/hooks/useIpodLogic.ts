@@ -2181,7 +2181,7 @@ export function useIpodLogic({
     const pushSubmenu = (
       title: string,
       items: MenuItem[],
-      options?: { modernMediaList?: boolean }
+      options?: { modernMediaList?: boolean; alphabetic?: boolean }
     ) => {
       registerActivity();
       pushMenuChild({
@@ -2248,12 +2248,18 @@ export function useIpodLogic({
         },
         {
           label: artistsLabel,
-          action: () => pushSubmenu(artistsLabel, artistsListMenuItems),
+          action: () =>
+            pushSubmenu(artistsLabel, artistsListMenuItems, {
+              alphabetic: true,
+            }),
           showChevron: true,
         },
         {
           label: albumsLabel,
-          action: () => pushSubmenu(albumsLabel, albumsListMenuItems),
+          action: () =>
+            pushSubmenu(albumsLabel, albumsListMenuItems, {
+              alphabetic: true,
+            }),
           showChevron: true,
         },
         {
@@ -2288,12 +2294,18 @@ export function useIpodLogic({
       coverFlowItem,
       {
         label: artistsLabel,
-        action: () => pushSubmenu(artistsLabel, artistsListMenuItems),
+        action: () =>
+          pushSubmenu(artistsLabel, artistsListMenuItems, {
+            alphabetic: true,
+          }),
         showChevron: true,
       },
       {
         label: albumsLabel,
-        action: () => pushSubmenu(albumsLabel, albumsListMenuItems),
+        action: () =>
+          pushSubmenu(albumsLabel, albumsListMenuItems, {
+            alphabetic: true,
+          }),
         showChevron: true,
       },
       {
@@ -3965,6 +3977,81 @@ export function useIpodLogic({
     [playClickSound, vibrate, registerActivity, getCurrentAppleMusicCollectionShellTrack, skipAppleMusicCollectionShell, nextTrack, showStatus, togglePlay, previousTrack, menuMode, menuHistory, selectedMenuItem, tracks, currentIndex, isPlaying, toggleVideo, handleMenuButton, isOffline, showOfflineStatus, startTrackSwitch, isCoverFlowOpen, isMusicQuizOpen, isBrickGameOpen]
   );
 
+  // -------------------------------------------------------------------
+  // "Scroll by letter" fast-scroll affordance.
+  //
+  // Classic iPod behavior: when the user spins the wheel quickly through
+  // an alphabetic menu (Artists / Albums), each rotation begins jumping
+  // to the next/previous letter group instead of one row at a time, and
+  // a big letter overlay appears on screen so the user can see which
+  // section they're skimming. After a brief idle period the iPod drops
+  // back to normal per-item scrolling.
+  //
+  // We track rotation timestamps in a ring buffer. When enough events
+  // land inside `FAST_SCROLL_WINDOW_MS`, the menu enters letter-jump
+  // mode for the rest of the gesture. The mode is sticky until
+  // `FAST_SCROLL_IDLE_MS` of no rotation, so a brief pause between
+  // letter jumps still feels like one continuous fast scroll.
+  // -------------------------------------------------------------------
+  const FAST_SCROLL_WINDOW_MS = 500;
+  const FAST_SCROLL_THRESHOLD = 5;
+  const FAST_SCROLL_IDLE_MS = 900;
+  const rotationTimestampsRef = useRef<number[]>([]);
+  const fastScrollIdleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+  const [fastScrollLetter, setFastScrollLetter] = useState<string | null>(null);
+  const fastScrollActiveRef = useRef(false);
+
+  const getMenuItemLetter = useCallback((label: string | undefined): string => {
+    if (!label) return "#";
+    const trimmed = label.trim();
+    if (trimmed.length === 0) return "#";
+    // First-code-point upper case; non-ASCII (CJK, etc.) keeps its own glyph.
+    const first = Array.from(trimmed)[0] ?? "";
+    if (/[0-9]/.test(first)) return "#";
+    return first.toLocaleUpperCase();
+  }, []);
+
+  const scheduleFastScrollIdle = useCallback(() => {
+    if (fastScrollIdleTimerRef.current) {
+      clearTimeout(fastScrollIdleTimerRef.current);
+    }
+    fastScrollIdleTimerRef.current = setTimeout(() => {
+      fastScrollActiveRef.current = false;
+      rotationTimestampsRef.current = [];
+      setFastScrollLetter(null);
+      fastScrollIdleTimerRef.current = null;
+    }, FAST_SCROLL_IDLE_MS);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (fastScrollIdleTimerRef.current) {
+        clearTimeout(fastScrollIdleTimerRef.current);
+        fastScrollIdleTimerRef.current = null;
+      }
+    };
+  }, []);
+
+  // If the user navigates away from the alphabetic menu (back button,
+  // selection, etc.) drop the letter overlay immediately instead of
+  // waiting for the idle timer.
+  useEffect(() => {
+    const top = menuHistory[menuHistory.length - 1];
+    if (!menuMode || !top?.alphabetic) {
+      if (fastScrollActiveRef.current || fastScrollLetter !== null) {
+        fastScrollActiveRef.current = false;
+        rotationTimestampsRef.current = [];
+        if (fastScrollIdleTimerRef.current) {
+          clearTimeout(fastScrollIdleTimerRef.current);
+          fastScrollIdleTimerRef.current = null;
+        }
+        setFastScrollLetter(null);
+      }
+    }
+  }, [menuMode, menuHistory, fastScrollLetter]);
+
   // Wheel rotation handler
   const handleWheelRotation = useCallback(
     (direction: RotationDirection) => {
@@ -4007,15 +4094,86 @@ export function useIpodLogic({
         const menuLength = currentMenu.items.length;
         if (menuLength === 0) return;
 
+        // Track rotation cadence for the letter-jump affordance.
+        // Only meaningful inside alphabetic menus, but we keep the
+        // bookkeeping cheap so we can update it unconditionally and
+        // simply gate behavior on `currentMenu.alphabetic`.
+        const now = Date.now();
+        const stamps = rotationTimestampsRef.current;
+        stamps.push(now);
+        const cutoff = now - FAST_SCROLL_WINDOW_MS;
+        while (stamps.length > 0 && stamps[0] < cutoff) stamps.shift();
+        const isAlphabetic = Boolean(currentMenu.alphabetic);
+        if (
+          isAlphabetic &&
+          !fastScrollActiveRef.current &&
+          stamps.length >= FAST_SCROLL_THRESHOLD
+        ) {
+          fastScrollActiveRef.current = true;
+        }
+        const useLetterJump = isAlphabetic && fastScrollActiveRef.current;
+
         setSelectedMenuItem((prevIndex) => {
-          let newIndex = prevIndex;
-          if (direction === "clockwise") {
-            newIndex = Math.min(menuLength - 1, prevIndex + 1);
+          const safePrev = Math.max(0, Math.min(prevIndex, menuLength - 1));
+          let newIndex = safePrev;
+          if (!useLetterJump) {
+            if (direction === "clockwise") {
+              newIndex = Math.min(menuLength - 1, safePrev + 1);
+            } else {
+              newIndex = Math.max(0, safePrev - 1);
+            }
           } else {
-            newIndex = Math.max(0, prevIndex - 1);
+            const items = currentMenu.items;
+            const currentLetter = getMenuItemLetter(items[safePrev]?.label);
+            if (direction === "clockwise") {
+              // Jump to the first item whose letter differs from the
+              // current one; if we're already on the last letter,
+              // sit on the final row.
+              let next = safePrev;
+              for (let i = safePrev + 1; i < menuLength; i++) {
+                if (getMenuItemLetter(items[i]?.label) !== currentLetter) {
+                  next = i;
+                  break;
+                }
+                next = i;
+              }
+              newIndex = next;
+            } else {
+              // Jump to the first item of the previous letter group.
+              // Walk back until the letter changes (that's the last
+              // row of the prior group), then keep walking until the
+              // letter changes again — the row after that is the
+              // first row of the prior group.
+              let cursor = safePrev;
+              let priorLetter: string | null = null;
+              for (let i = safePrev - 1; i >= 0; i--) {
+                const letter = getMenuItemLetter(items[i]?.label);
+                if (priorLetter === null) {
+                  if (letter !== currentLetter) {
+                    priorLetter = letter;
+                    cursor = i;
+                  }
+                } else if (letter !== priorLetter) {
+                  cursor = i + 1;
+                  priorLetter = null;
+                  break;
+                } else {
+                  cursor = i;
+                }
+              }
+              newIndex = cursor;
+            }
+          }
+          if (useLetterJump) {
+            const letter = getMenuItemLetter(currentMenu.items[newIndex]?.label);
+            setFastScrollLetter(letter);
           }
           return newIndex;
         });
+
+        if (isAlphabetic && fastScrollActiveRef.current) {
+          scheduleFastScrollIdle();
+        }
       } else {
         const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
         const currentTime = activePlayer?.getCurrentTime() || 0;
@@ -4032,7 +4190,7 @@ export function useIpodLogic({
         );
       }
     },
-    [playScrollSound, registerActivity, registerActivityRef, menuMode, menuHistory, isFullScreen, showStatus, isCoverFlowOpen, isMusicQuizOpen, isBrickGameOpen]
+    [playScrollSound, registerActivity, registerActivityRef, menuMode, menuHistory, isFullScreen, showStatus, isCoverFlowOpen, isMusicQuizOpen, isBrickGameOpen, getMenuItemLetter, scheduleFastScrollIdle, setSelectedMenuItem]
   );
 
   // Scaling
@@ -4661,6 +4819,7 @@ export function useIpodLogic({
     menuDirection,
     menuHistory,
     appleMusicMenuTitlebarLoading,
+    fastScrollLetter,
     cameFromNowPlayingMenuItem,
     isCoverFlowOpen,
     isMusicQuizOpen,

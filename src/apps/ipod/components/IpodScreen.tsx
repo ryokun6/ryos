@@ -531,6 +531,7 @@ export function IpodScreen({
   appleMusicMenuTitlebarLoading = false,
   isCoverFlowOpen = false,
   coverFlowSlot,
+  fastScrollLetter = null,
 }: IpodScreenProps) {
   const { t } = useTranslation();
   
@@ -1434,6 +1435,49 @@ export function IpodScreen({
               </div>
             </motion.div>
           )}
+        </AnimatePresence>
+        {/* Big letter overlay — painted on top of the menu rows when
+         *  the user is fast-scrolling through an alphabetic menu
+         *  (Artists / Albums). Mirrors classic iPod behavior: every
+         *  rotation jumps to the next letter group and the letter
+         *  the user just landed on flashes large in the center of the
+         *  screen. Cleared by `useIpodLogic` after a brief idle. */}
+        <AnimatePresence>
+          {menuMode && fastScrollLetter ? (
+            <motion.div
+              key="fast-scroll-letter"
+              className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center"
+              initial={{ opacity: 0, scale: 0.85 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.85 }}
+              transition={{ duration: 0.12, ease: "easeOut" }}
+              aria-hidden
+            >
+              <div
+                className={cn(
+                  "flex items-center justify-center rounded-2xl select-none",
+                  isModernUi
+                    ? "bg-black/55 text-white font-ipod-modern-ui font-semibold backdrop-blur-[2px]"
+                    : "bg-[#0a3667]/85 text-[#e6f1fa] font-chicago"
+                )}
+                style={{
+                  width: 84,
+                  height: 84,
+                  fontSize: 60,
+                  lineHeight: 1,
+                  letterSpacing: "-0.02em",
+                  textShadow: isModernUi
+                    ? "0 2px 6px rgba(0,0,0,0.45)"
+                    : "1px 1px 0 rgba(0,0,0,0.25)",
+                  boxShadow: isModernUi
+                    ? "0 4px 16px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.18)"
+                    : "0 2px 8px rgba(0,0,0,0.35)",
+                }}
+              >
+                {fastScrollLetter}
+              </div>
+            </motion.div>
+          ) : null}
         </AnimatePresence>
       </div>
     </>

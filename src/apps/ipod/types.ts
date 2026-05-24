@@ -50,6 +50,15 @@ export interface MenuHistoryEntry {
    * Used for playlist and per-artist album browses.
    */
   modernMediaList?: boolean;
+  /**
+   * When true, this menu's items are sorted alphabetically by `label`
+   * and the iPod's classic "scroll by letter" affordance kicks in
+   * when the user spins the wheel quickly: rotation events jump to
+   * the next/previous letter group instead of one row at a time, and
+   * a large letter overlay is painted on top of the menu so the user
+   * can see which section they're rapidly skimming through.
+   */
+  alphabetic?: boolean;
 }
 
 // PIP Player props
@@ -180,6 +189,14 @@ export interface IpodScreenProps {
    * overlay outside `IpodScreen` and leave this slot undefined.
    */
   coverFlowSlot?: React.ReactNode;
+  /**
+   * When the user spins the wheel quickly through an alphabetic menu
+   * (Artists / Albums), the iPod enters "scroll by letter" mode and
+   * a large letter overlay is painted on the menu. The parent owns
+   * the timing + letter computation (see `useIpodLogic`); this
+   * `IpodScreen` just renders the overlay when this prop is set.
+   */
+  fastScrollLetter?: string | null;
 }
 
 // Battery manager interface for browsers that expose navigator.getBattery
