@@ -76,8 +76,18 @@ export function stripMarkdownForMatching(input: string): string {
   // Angle autolink: <https://x> → https://x.
   out = out.replace(/<((?:https?:\/\/|www\.|mailto:)[^>\s]+)>/gi, "$1");
 
-  // Strip raw HTML tags (kept simple).
-  out = out.replace(/<\/?[a-zA-Z][^>]*>/g, "");
+  // Strip raw HTML tags. The replacement runs until stable so nested or
+  // overlapping constructs like `<scr<script>ipt>` can't reform into a fresh
+  // tag after a single pass. This output is only ever used as an argument to
+  // `String.prototype.indexOf` against pre-rendered text nodes — it is never
+  // injected into the DOM — but we keep the loop so the helper stays safe to
+  // reuse in other contexts.
+  const tagPattern = /<\/?[a-zA-Z][^>]*>/g;
+  let prev: string;
+  do {
+    prev = out;
+    out = out.replace(tagPattern, "");
+  } while (out !== prev);
 
   // Bold / italic / strike emphasis. The CommonMark-ish guards around the
   // inner text (require non-whitespace at both ends) prevent us from
