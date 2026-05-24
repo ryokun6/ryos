@@ -2530,7 +2530,7 @@ export function useIpodLogic({
               showChevron: true,
             },
             {
-              label: t("apps.ipod.menu.searchSongs", "Search Songs..."),
+              label: t("apps.ipod.menu.searchSongs", "Search Songs"),
               action: () => {
                 registerActivity();
                 setIsSongSearchDialogOpen(true);
