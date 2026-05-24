@@ -213,11 +213,21 @@ const chatCodePlugin = createCodePlugin({
 const CHAT_STREAMDOWN_PLUGINS = {
   code: chatCodePlugin,
 };
+// Animation timing for the streaming word fade. Streamdown's animate plugin
+// staggers each NEW word in a render by `newIndex * stagger`, so the last
+// word in a batch lands at `(N - 1) * stagger + duration` ms. Token deltas
+// from the AI SDK typically arrive in chunks of 10–40 words every 50–200ms;
+// at the previous values (duration 400 / stagger 40) a 30-word chunk took
+// 1.6s to fully settle, which let two or three paragraphs ripple at the
+// same time as the next chunk landed. Tighter values keep each chunk's
+// animation comfortably inside the inter-chunk gap so paragraphs settle
+// before the next one starts streaming in.
 const CHAT_STREAMDOWN_ANIMATED = {
   animation: "fadeIn",
-  duration: 400,
+  duration: 180,
   easing: "ease-out",
   sep: "word",
+  stagger: 8,
 } as const;
 
 type ChatMessageStyle = CSSProperties & {
