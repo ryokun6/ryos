@@ -14,6 +14,16 @@
 
 const HIGHLIGHT_NAME = "ryos-chat-tts";
 
+// Opaque token returned by `applyTtsHighlight` and accepted by
+// `clearTtsHighlight` so callers can scope a clear to "only if I'm still the
+// active highlight". Without this, sibling React effects can race: when the
+// highlight moves between message bubbles, the previous bubble's cleanup may
+// run AFTER the next bubble's setup, wiping out the freshly-applied highlight
+// from the global registry. Ownership tracking turns those races into no-ops.
+export type TtsHighlightOwner = symbol;
+
+let currentOwner: TtsHighlightOwner | null = null;
+
 interface HighlightCtor {
   new (...ranges: AbstractRange[]): unknown;
 }
@@ -40,14 +50,23 @@ export function isTtsHighlightSupported(): boolean {
   return getHighlightsRegistry() !== null && getHighlightCtor() !== null;
 }
 
-export function clearTtsHighlight(): void {
+// Clear the registered highlight. If `owner` is supplied, only clears when
+// that token still owns the active highlight — this is what consumer effect
+// cleanups should pass to avoid stomping on a sibling's freshly-applied
+// highlight. Pass nothing (or null/undefined) to force-clear, e.g. when
+// speech is stopped globally.
+export function clearTtsHighlight(owner?: TtsHighlightOwner | null): void {
   const reg = getHighlightsRegistry();
   if (!reg) return;
+  if (owner != null && owner !== currentOwner) {
+    return;
+  }
   try {
     reg.delete(HIGHLIGHT_NAME);
   } catch {
     // ignore
   }
+  currentOwner = null;
 }
 
 // Strip markdown formatting so the resulting text approximates what ends up
@@ -224,32 +243,38 @@ function buildRange(
   }
 }
 
+// Returns an opaque owner token on success so the caller can pass it back to
+// `clearTtsHighlight` for a scoped clear. Returns null when the API is not
+// supported, the container is missing, or the range cannot be built — in those
+// cases the registry is also force-cleared so no stale highlight lingers.
 export function applyTtsHighlight(
   container: HTMLElement | null,
   highlightSource: string,
   prefixSource: string
-): boolean {
+): TtsHighlightOwner | null {
   const reg = getHighlightsRegistry();
   const Highlight = getHighlightCtor();
-  if (!reg || !Highlight) return false;
+  if (!reg || !Highlight) return null;
 
   if (!container) {
     clearTtsHighlight();
-    return false;
+    return null;
   }
 
   const range = buildRange(container, highlightSource, prefixSource);
   if (!range) {
     clearTtsHighlight();
-    return false;
+    return null;
   }
 
   try {
     const highlight = new Highlight(range);
     reg.set(HIGHLIGHT_NAME, highlight);
-    return true;
+    const owner: TtsHighlightOwner = Symbol("ryos-chat-tts");
+    currentOwner = owner;
+    return owner;
   } catch {
     clearTtsHighlight();
-    return false;
+    return null;
   }
 }

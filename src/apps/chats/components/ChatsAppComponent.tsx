@@ -80,6 +80,8 @@ export function ChatsAppComponent({
     setSaveFileName,
     handleSaveSubmit,
     highlightSegment,
+    speakAssistantMessageManually,
+    stopSpeech,
     rateLimitError,
     needsUsername,
   } = useAiChat(promptSetUsername); // Pass promptSetUsername to useAiChat
@@ -828,6 +830,8 @@ export function ChatsAppComponent({
                     scrollToBottomTrigger={scrollToBottomTrigger}
                     highlightSegment={highlightSegment}
                     isSpeaking={isSpeaking}
+                    speakAssistantMessageManually={speakAssistantMessageManually}
+                    stopSpeech={stopSpeech}
                     onSendMessage={handleSendMessage}
                     isLoadingGreeting={isLoadingGreeting}
                     typingUsers={currentRoomTypingUsers}

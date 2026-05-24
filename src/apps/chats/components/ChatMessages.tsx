@@ -11,7 +11,6 @@ import { useTerminalSounds } from "@/hooks/useTerminalSounds";
 
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
 import { TypingDots } from "./TypingBubble";
-import { useTtsQueue } from "@/hooks/useTtsQueue";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { appNames } from "@/config/appRegistryData";
 import {
@@ -35,7 +34,6 @@ import { abortableFetch } from "@/utils/abortableFetch";
 import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
 import { formatToolName } from "@/lib/toolInvocationDisplay";
 import { segmentChatMarkdownText } from "@/lib/chatMarkdown";
-import { cleanTextForSpeech } from "../utils/textForSpeech";
 import { getVisibleTextPartText } from "../utils/aiMessageText";
 import {
   applyTtsHighlight,
@@ -274,6 +272,12 @@ interface ChatMessagesProps {
   scrollToBottomTrigger: number; // Add scroll trigger prop
   highlightSegment?: ChatHighlightSegment | null;
   isSpeaking?: boolean;
+  speakAssistantMessageManually: (
+    messageId: string,
+    fullSource: string,
+    onAllDone?: () => void
+  ) => void;
+  stopSpeech: () => void;
   onSendMessage?: (username: string) => void; // Callback when send message button is clicked
   isLoadingGreeting?: boolean; // Show typing bubble for proactive greeting
   typingUsers?: string[];
@@ -383,8 +387,12 @@ interface ChatMessageItemProps {
   onDeleteMessage: (message: ChatMessage) => void;
   setPlayingMessageId: (id: string | null) => void;
   setSpeechLoadingId: (id: string | null) => void;
-  speak: (text: string, onDone?: () => void) => void;
-  stop: () => void;
+  speakAssistantMessageManually: (
+    messageId: string,
+    fullSource: string,
+    onAllDone?: () => void
+  ) => void;
+  stopSpeech: () => void;
   playNote: () => void;
   playElevatorMusic: () => void;
   stopElevatorMusic: () => void;
@@ -417,8 +425,8 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
     onDeleteMessage,
     setPlayingMessageId,
     setSpeechLoadingId,
-    speak,
-    stop,
+    speakAssistantMessageManually,
+    stopSpeech,
     playNote,
     playElevatorMusic,
     stopElevatorMusic,
@@ -551,11 +559,14 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
     const end = Math.max(start, Math.min(activeHighlight.end, fullAssistantSource.length));
     const prefix = fullAssistantSource.slice(0, start);
     const target = fullAssistantSource.slice(start, end);
-    applyTtsHighlight(container, target, prefix);
+    // Capture the owner token so the cleanup below only clears the registry
+    // when our highlight is still the active one. Sibling components and
+    // segment transitions within the same message can apply a new highlight
+    // before this cleanup runs; without the token check, that newer highlight
+    // would be wiped out and the user would see a stale or missing overlay.
+    const ownerToken = applyTtsHighlight(container, target, prefix);
     return () => {
-      // Only clear if our highlight is still the active one. The next active
-      // message will overwrite the registry entry on its own effect run.
-      clearTtsHighlight();
+      clearTtsHighlight(ownerToken);
     };
   }, [activeHighlight, fullAssistantSource]);
 
@@ -729,42 +740,33 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                 className="size-3 text-gray-400 hover:text-neutral-600 transition-colors"
                 onClick={() => {
                   if (playingMessageId === messageKey) {
-                    stop();
+                    stopSpeech();
                     setPlayingMessageId(null);
-                  } else {
-                    stop();
                     setSpeechLoadingId(null);
-                    const text = displayContent.trim();
-                    if (text) {
-                      const chunks: string[] = [];
-                      const lines = text.split(/\r?\n/);
-                      for (const line of lines) {
-                        const cleanedLine = cleanTextForSpeech(line);
-                        if (cleanedLine && cleanedLine.length > 0) {
-                          chunks.push(cleanedLine);
-                        }
-                      }
-                      if (chunks.length > 0) {
-                        let pendingChunks = chunks.length;
-                        setSpeechLoadingId(messageKey);
-                        setPlayingMessageId(messageKey);
-                        chunks.forEach((chunk) => {
-                          speak(chunk, () => {
-                            pendingChunks -= 1;
-                            if (pendingChunks === 0) {
-                              setPlayingMessageId(null);
-                              setSpeechLoadingId(null);
-                            }
-                          });
-                        });
-                      } else {
+                  } else {
+                    // Use fullAssistantSource (not displayContent) so highlight
+                    // offsets line up with the rendered DOM the same way they
+                    // do for streaming playback. Falling back to displayContent
+                    // keeps non-assistant edge cases working.
+                    const sourceForHighlight =
+                      message.role === "assistant" && fullAssistantSource
+                        ? fullAssistantSource
+                        : displayContent.trim();
+                    if (!sourceForHighlight) {
+                      setPlayingMessageId(null);
+                      setSpeechLoadingId(null);
+                      return;
+                    }
+                    setSpeechLoadingId(messageKey);
+                    setPlayingMessageId(messageKey);
+                    speakAssistantMessageManually(
+                      messageKey,
+                      sourceForHighlight,
+                      () => {
                         setPlayingMessageId(null);
                         setSpeechLoadingId(null);
                       }
-                    } else {
-                      setPlayingMessageId(null);
-                      setSpeechLoadingId(null);
-                    }
+                    );
                   }
                 }}
                 aria-label={
@@ -1106,6 +1108,13 @@ interface ChatMessagesContentProps {
   isLoadingGreeting?: boolean;
   typingUsers?: string[];
   highlightSegment?: ChatHighlightSegment | null;
+  isSpeaking?: boolean;
+  speakAssistantMessageManually: (
+    messageId: string,
+    fullSource: string,
+    onAllDone?: () => void
+  ) => void;
+  stopSpeech: () => void;
 }
 
 function ChatMessagesContent({
@@ -1125,13 +1134,15 @@ function ChatMessagesContent({
   isLoadingGreeting,
   typingUsers,
   highlightSegment,
+  isSpeaking: sharedTtsSpeaking,
+  speakAssistantMessageManually,
+  stopSpeech,
 }: ChatMessagesContentProps) {
   const { t } = useTranslation();
   const { playNote } = useChatSynth();
   const { playElevatorMusic, stopElevatorMusic, playDingSound } =
     useTerminalSounds();
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
-  const { speak, stop, isSpeaking: localTtsSpeaking } = useTtsQueue();
   const speechEnabled = useAudioSettingsStore((state) => state.speechEnabled);
   const { isMacOSTheme } = useThemeFlags();
   const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
@@ -1197,12 +1208,15 @@ function ChatMessagesContent({
     }
   }, [scrollToBottomTrigger, scrollToBottom]);
 
-  // Clear loading indicator when TTS actually starts playing
+  // Clear loading indicator when TTS actually starts playing. We subscribe to
+  // the shared queue's speaking state (the same one driving streaming
+  // highlights) so manual playback and streaming playback both clear the
+  // spinner consistently.
   useEffect(() => {
-    if (localTtsSpeaking && speechLoadingId) {
+    if (sharedTtsSpeaking && speechLoadingId) {
       setSpeechLoadingId(null);
     }
-  }, [localTtsSpeaking, speechLoadingId]);
+  }, [sharedTtsSpeaking, speechLoadingId]);
 
   const copyMessage = useCallback(async (message: ChatMessage) => {
     const messageText = getMessageText(message);
@@ -1364,8 +1378,8 @@ function ChatMessagesContent({
             onDeleteMessage={deleteMessage}
             setPlayingMessageId={setPlayingMessageId}
             setSpeechLoadingId={setSpeechLoadingId}
-            speak={speak}
-            stop={stop}
+            speakAssistantMessageManually={speakAssistantMessageManually}
+            stopSpeech={stopSpeech}
             playNote={playNote}
             playElevatorMusic={playElevatorMusic}
             stopElevatorMusic={stopElevatorMusic}
@@ -1479,6 +1493,9 @@ export function ChatMessages({
   isLoadingGreeting,
   typingUsers,
   highlightSegment,
+  isSpeaking,
+  speakAssistantMessageManually,
+  stopSpeech,
 }: ChatMessagesProps) {
   return (
     // Use StickToBottom component as the main container
@@ -1508,6 +1525,9 @@ export function ChatMessages({
           isLoadingGreeting={isLoadingGreeting}
           typingUsers={typingUsers}
           highlightSegment={highlightSegment}
+          isSpeaking={isSpeaking}
+          speakAssistantMessageManually={speakAssistantMessageManually}
+          stopSpeech={stopSpeech}
         />
       </StickToBottom.Content>
 

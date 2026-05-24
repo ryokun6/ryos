@@ -1759,6 +1759,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     isSpeaking,
     markAssistantMessageProcessed,
     resetSpeechState,
+    speakAssistantMessageManually,
     speakFinalAssistantMessage,
     stopSpeech,
   } = useChatSpeechSync({
@@ -2173,5 +2174,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     isSpeaking,
 
     highlightSegment,
+    speakAssistantMessageManually,
+    stopSpeech,
   };
 }

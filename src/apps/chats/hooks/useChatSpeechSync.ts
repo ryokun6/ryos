@@ -4,6 +4,7 @@ import type { AIChatMessage } from "@/types/chat";
 import { useTtsQueue } from "@/hooks/useTtsQueue";
 import { cleanTextForSpeech } from "../utils/textForSpeech";
 import { getAssistantVisibleText } from "../utils/aiMessageText";
+import { clearTtsHighlight } from "../utils/ttsHighlight";
 
 export interface ChatHighlightSegment {
   messageId: string;
@@ -45,10 +46,17 @@ export function useChatSpeechSync({
   // their fetches abort; those fall through harmlessly because the queue is
   // already empty and `setCurrentHighlightSegment(queue[0] || null)` resolves
   // to null.
+  //
+  // We also force-clear the global CSS Custom Highlight registry directly here
+  // because relying solely on the per-message effect cleanup leaves a window
+  // (between this state update and the next React commit) where the painted
+  // overlay is still visible on screen — that's exactly the "past highlights
+  // don't get cleared" symptom users were seeing when stopping mid-speech.
   const stopSpeech = useCallback(() => {
     stopTts();
     highlightQueueRef.current = [];
     setCurrentHighlightSegment(null);
+    clearTtsHighlight();
   }, [setCurrentHighlightSegment, stopTts]);
 
   useEffect(() => {
@@ -61,9 +69,16 @@ export function useChatSpeechSync({
   }, [aiMessages]);
 
   const enqueueHighlightSpeech = useCallback(
-    (messageId: string, start: number, end: number, rawChunk: string) => {
+    (
+      messageId: string,
+      start: number,
+      end: number,
+      rawChunk: string,
+      onComplete?: () => void
+    ) => {
       const cleaned = cleanTextForSpeech(rawChunk);
       if (!cleaned) {
+        onComplete?.();
         return;
       }
 
@@ -86,6 +101,7 @@ export function useChatSpeechSync({
           highlightQueueRef.current.splice(queueIndex, 1);
         }
         setCurrentHighlightSegment(highlightQueueRef.current[0] || null);
+        onComplete?.();
       });
     },
     [setCurrentHighlightSegment, speak]
@@ -112,6 +128,65 @@ export function useChatSpeechSync({
       speechProgressRef.current[message.id] = content.length;
     },
     [enqueueHighlightSpeech, speechEnabled]
+  );
+
+  // Manually play an assistant message end-to-end (triggered by the speaker
+  // button on a message bubble). We route through the same highlight-aware
+  // queue used during streaming so the on-screen overlay tracks the spoken
+  // segments — previously this path used a second, isolated TTS queue and
+  // therefore never painted any highlight.
+  //
+  // `fullSource` must be the same string the bubble uses to resolve
+  // highlight offsets (i.e. the concatenated visible text across the
+  // assistant's `text` parts, decoded the same way), otherwise the painted
+  // range will land on the wrong span.
+  const speakAssistantMessageManually = useCallback(
+    (messageId: string, fullSource: string, onAllDone?: () => void) => {
+      if (!fullSource) {
+        onAllDone?.();
+        return;
+      }
+
+      // Stop anything currently playing and wipe the highlight registry so
+      // the new playback starts from a clean slate.
+      stopTts();
+      highlightQueueRef.current = [];
+      setCurrentHighlightSegment(null);
+
+      // Mark the message as fully processed so the streaming detector never
+      // tries to re-enqueue the same text on the next render.
+      speechProgressRef.current[messageId] = fullSource.length;
+
+      const segments: Array<{ start: number; end: number; chunk: string }> = [];
+      let scanPos = 0;
+      while (scanPos < fullSource.length) {
+        const nextNlIdx = fullSource.indexOf("\n", scanPos);
+        const endPos = nextNlIdx === -1 ? fullSource.length : nextNlIdx;
+        const chunk = fullSource.slice(scanPos, endPos);
+        if (chunk.trim().length > 0) {
+          segments.push({ start: scanPos, end: endPos, chunk });
+        }
+        if (nextNlIdx === -1) break;
+        scanPos = nextNlIdx + 1;
+        if (fullSource[scanPos] === "\r") scanPos += 1;
+      }
+
+      if (segments.length === 0) {
+        onAllDone?.();
+        return;
+      }
+
+      let pending = segments.length;
+      const handleSegmentDone = () => {
+        pending -= 1;
+        if (pending === 0) onAllDone?.();
+      };
+
+      segments.forEach(({ start, end, chunk }) => {
+        enqueueHighlightSpeech(messageId, start, end, chunk, handleSegmentDone);
+      });
+    },
+    [enqueueHighlightSpeech, setCurrentHighlightSegment, stopTts]
   );
 
   const resetSpeechState = useCallback(() => {
@@ -176,6 +251,7 @@ export function useChatSpeechSync({
     isSpeaking,
     markAssistantMessageProcessed,
     resetSpeechState,
+    speakAssistantMessageManually,
     speakFinalAssistantMessage,
     stopSpeech,
   };
