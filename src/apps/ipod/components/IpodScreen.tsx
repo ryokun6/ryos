@@ -1487,13 +1487,21 @@ export function IpodScreen({
         <div className="absolute inset-0 pointer-events-none z-25 lcd-reflection"></div>
       )}
 
-      {/* Video & Lyrics Overlay */}
+      {/* Video & Lyrics Overlay
+       *
+       * When Cover Flow is open inline (modern UI), demote this overlay
+       * out of the way so the inline carousel inside the menu panel
+       * (z-10) is no longer occluded. We drop z-index back to z-0 and
+       * fade opacity to 0 — same shape as menu mode — so audio keeps
+       * playing while the user browses Cover Flow. As soon as Cover
+       * Flow is dismissed, the overlay fades back over the carousel
+       * and video resumes its painted frame. */}
       {currentTrack && (
         <div
           className={cn(
             "absolute inset-0 transition-opacity duration-300 overflow-hidden",
-            menuMode ? "z-0" : "z-20",
-            menuMode || !showVideo
+            menuMode || isCoverFlowOpen ? "z-0" : "z-20",
+            menuMode || !showVideo || isCoverFlowOpen
               ? "opacity-0 pointer-events-none"
               : "opacity-100"
           )}
