@@ -1020,24 +1020,29 @@ function SnippetProgressBar({
   running: boolean;
   isModernUi: boolean;
 }) {
-  return (
-    <div
-      className={cn(
-        "h-[6px] w-full shrink-0 rounded-full overflow-hidden",
-        isModernUi
-          ? "border border-[rgb(200,200,205)] bg-[rgb(245,245,247)]"
-          : "border border-[#0a3667]"
-      )}
-    >
+  // Modern UI uses the same aqua-progress chrome as the Now Playing screen
+  // (see `IpodScreen.tsx` — `aqua-progress` + `aqua-progress-fill`, 9px tall,
+  // square corners) so the quiz countdown reads as the same glossy aqua bar
+  // the player shows during normal playback. Classic skin keeps the
+  // monochrome 1st-gen LCD outline.
+  return isModernUi ? (
+    <div className="aqua-progress h-[9px] w-full shrink-0 rounded-none">
       <AnimatePresence mode="wait">
         <motion.div
           key={running ? "run" : "stop"}
-          className={cn(
-            "h-full",
-            isModernUi
-              ? "bg-gradient-to-b from-[rgb(96,176,246)] to-[rgb(52,122,181)]"
-              : "bg-[#0a3667]"
-          )}
+          className="aqua-progress-fill h-full rounded-none"
+          initial={{ width: "0%" }}
+          animate={{ width: running ? "100%" : "0%" }}
+          transition={{ duration: running ? durationMs / 1000 : 0, ease: "linear" }}
+        />
+      </AnimatePresence>
+    </div>
+  ) : (
+    <div className="h-[6px] w-full shrink-0 rounded-full overflow-hidden border border-[#0a3667]">
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={running ? "run" : "stop"}
+          className="h-full bg-[#0a3667]"
           initial={{ width: "0%" }}
           animate={{ width: running ? "100%" : "0%" }}
           transition={{ duration: running ? durationMs / 1000 : 0, ease: "linear" }}
