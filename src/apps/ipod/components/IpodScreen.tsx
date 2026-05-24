@@ -1456,26 +1456,31 @@ export function IpodScreen({
             >
               <div
                 className={cn(
-                  "flex items-center justify-center rounded-lg select-none",
+                  "grid place-items-center leading-none select-none",
                   isModernUi
-                    ? "bg-black/55 text-white font-ipod-modern-ui font-semibold backdrop-blur-[2px]"
-                    : "bg-[#0a3667]/85 text-[#e6f1fa] font-chicago"
+                    ? "text-white font-ipod-modern-ui font-semibold"
+                    : "text-[#e6f1fa] font-chicago"
                 )}
                 style={{
-                  width: 40,
-                  height: 40,
-                  fontSize: 24,
+                  width: 34,
+                  height: 34,
+                  borderRadius: 8,
+                  background:
+                    "linear-gradient(to bottom, rgba(42,42,42,0.95), rgba(0,0,0,0.9))",
+                  fontSize: 20,
                   lineHeight: 1,
                   letterSpacing: "-0.02em",
                   textShadow: isModernUi
                     ? "0 1px 2px rgba(0,0,0,0.45)"
                     : "1px 1px 0 rgba(0,0,0,0.25)",
                   boxShadow: isModernUi
-                    ? "0 2px 8px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.18)"
-                    : "0 1px 4px rgba(0,0,0,0.35)",
+                    ? "0 2px 8px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.16), inset 0 -1px 0 rgba(255,255,255,0.04)"
+                    : "0 1px 4px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.12)",
                 }}
               >
-                {fastScrollLetter}
+                <span style={{ transform: "translateY(0.75px)" }}>
+                  {fastScrollLetter}
+                </span>
               </div>
             </motion.div>
           ) : null}

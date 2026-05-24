@@ -3990,14 +3990,14 @@ export function useIpodLogic({
   // We count consecutive rotations (any rotation within
   // `FAST_SCROLL_RESET_MS` of the previous counts). Letter mode kicks
   // in after the user has scrolled at least `FAST_SCROLL_THRESHOLD`
-  // items in one continuous gesture — roughly three pages of the
+  // items in one continuous gesture — roughly five pages of the
   // 6-row modern menu — so it never fires from a casual flick of the
   // wheel. The mode is sticky until `FAST_SCROLL_IDLE_MS` of no
   // rotation, so a brief pause between letter jumps still feels like
   // one continuous fast scroll.
   // -------------------------------------------------------------------
   const FAST_SCROLL_RESET_MS = 600;
-  const FAST_SCROLL_THRESHOLD = 18; // 3 pages × 6 rows per page
+  const FAST_SCROLL_THRESHOLD = 30; // 5 pages × 6 rows per page
   const FAST_SCROLL_IDLE_MS = 900;
   const rotationStreakCountRef = useRef(0);
   const rotationStreakLastAtRef = useRef(0);
