@@ -37,6 +37,10 @@ import { formatToolName } from "@/lib/toolInvocationDisplay";
 import { segmentChatMarkdownText } from "@/lib/chatMarkdown";
 import { cleanTextForSpeech } from "../utils/textForSpeech";
 import { getVisibleTextPartText } from "../utils/aiMessageText";
+import {
+  applyTtsHighlight,
+  clearTtsHighlight,
+} from "../utils/ttsHighlight";
 import type { ChatHighlightSegment } from "../hooks/useChatSpeechSync";
 
 // Helper to extract image URLs from message parts
@@ -473,59 +477,77 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
     highlightSegment?.messageId === message.id
       ? highlightSegment
       : null;
-  let assistantTextOffset = 0;
 
-  const renderAssistantMarkdown = (
-    content: string,
-    keyPrefix: string,
-    highlightRange?: { start: number; end: number } | null
-  ) => {
-    const renderSlice = (slice: string, key: string, highlighted = false) => {
-      if (!slice.trim()) return null;
-      return (
-        <span
-          key={key}
-          className={highlighted ? "ryos-chat-tts-highlight" : undefined}
-        >
-          <Streamdown
-            className={`ryos-chat-streamdown ${
-              isUrgent ? "ryos-chat-streamdown-urgent" : ""
-            }`}
-            components={chatStreamdownComponents}
-            disallowedElements={STREAMDOWN_DISALLOWED_ELEMENTS}
-            controls={false}
-            lineNumbers={false}
-            shikiTheme={CHAT_STREAMDOWN_SHIKI_THEME}
-            plugins={CHAT_STREAMDOWN_PLUGINS}
-            skipHtml
-            unwrapDisallowed
-            mode={isStreamingMessage ? "streaming" : "static"}
-            animated={CHAT_STREAMDOWN_ANIMATED}
-            isAnimating={isStreamingMessage}
-            parseIncompleteMarkdown={isStreamingMessage}
-          >
-            {slice}
-          </Streamdown>
-        </span>
-      );
-    };
+  // Concatenated visible text across all `text` parts, mirroring how
+  // useChatSpeechSync computes its character offsets. Used to derive the
+  // highlight prefix/target source for the CSS Custom Highlight overlay.
+  const fullAssistantSource =
+    message.role === "assistant" && message.parts
+      ? message.parts.reduce((acc, part) => {
+          if (part.type === "text") {
+            return (
+              acc +
+              decodeHtmlEntities(
+                getVisibleTextPartText(
+                  (part as { type: string; text?: string }).text ||
+                    (isStaticGreeting
+                      ? t("apps.chats.messages.greeting")
+                      : "")
+                )
+              )
+            );
+          }
+          return acc;
+        }, "")
+      : "";
 
-    if (!highlightRange || highlightRange.start >= highlightRange.end) {
-      return renderSlice(content, `${keyPrefix}-full`);
-    }
-
+  const renderAssistantMarkdown = (content: string, keyPrefix: string) => {
+    if (!content.trim()) return null;
     return (
-      <>
-        {renderSlice(content.slice(0, highlightRange.start), `${keyPrefix}-before`)}
-        {renderSlice(
-          content.slice(highlightRange.start, highlightRange.end),
-          `${keyPrefix}-highlight`,
-          true
-        )}
-        {renderSlice(content.slice(highlightRange.end), `${keyPrefix}-after`)}
-      </>
+      <Streamdown
+        key={`${keyPrefix}-full`}
+        className={`ryos-chat-streamdown ${
+          isUrgent ? "ryos-chat-streamdown-urgent" : ""
+        }`}
+        components={chatStreamdownComponents}
+        disallowedElements={STREAMDOWN_DISALLOWED_ELEMENTS}
+        controls={false}
+        lineNumbers={false}
+        shikiTheme={CHAT_STREAMDOWN_SHIKI_THEME}
+        plugins={CHAT_STREAMDOWN_PLUGINS}
+        skipHtml
+        unwrapDisallowed
+        mode={isStreamingMessage ? "streaming" : "static"}
+        animated={CHAT_STREAMDOWN_ANIMATED}
+        isAnimating={isStreamingMessage}
+        parseIncompleteMarkdown={isStreamingMessage}
+      >
+        {content}
+      </Streamdown>
     );
   };
+
+  // Apply the TTS highlight via the CSS Custom Highlight API, scoped to this
+  // message bubble. This paints the spoken span over the existing text nodes
+  // without splitting the rendered markdown.
+  const assistantContentRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!activeHighlight || !fullAssistantSource) {
+      return;
+    }
+    const container = assistantContentRef.current;
+    if (!container) return;
+    const start = Math.max(0, Math.min(activeHighlight.start, fullAssistantSource.length));
+    const end = Math.max(start, Math.min(activeHighlight.end, fullAssistantSource.length));
+    const prefix = fullAssistantSource.slice(0, start);
+    const target = fullAssistantSource.slice(start, end);
+    applyTtsHighlight(container, target, prefix);
+    return () => {
+      // Only clear if our highlight is still the active one. The next active
+      // message will overwrite the registry entry on its own effect run.
+      clearTtsHighlight();
+    };
+  }, [activeHighlight, fullAssistantSource]);
 
   let hasAquarium = false;
   if (message.role === "assistant" && message.parts) {
@@ -901,7 +923,10 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
           {showTypingDots ? (
             <TypingDots />
           ) : message.role === "assistant" ? (
-            <motion.div className="select-text flex flex-col gap-1">
+            <motion.div
+              ref={assistantContentRef}
+              className="select-text flex flex-col gap-1"
+            >
               {message.parts?.map(
                 (
                   part: ToolInvocationPart | { type: string; text?: string },
@@ -938,17 +963,6 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                       const rawPartContent = getVisibleTextPartText(partText);
                       const partDisplayContent = decodeHtmlEntities(rawPartContent);
                       const textContent = partDisplayContent;
-                      const partStart = assistantTextOffset;
-                      assistantTextOffset += textContent.length;
-                      const highlightRange = activeHighlight
-                        ? {
-                            start: Math.max(0, activeHighlight.start - partStart),
-                            end: Math.min(
-                              textContent.length,
-                              activeHighlight.end - partStart
-                            ),
-                          }
-                        : null;
                       const isEmojiMessage = isEmojiOnly(textContent);
                       return (
                         <div
@@ -961,13 +975,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                               : undefined
                           }
                         >
-                          {renderAssistantMarkdown(
-                            textContent,
-                            partKey,
-                            highlightRange && highlightRange.end > highlightRange.start
-                              ? highlightRange
-                              : null
-                          )}
+                          {renderAssistantMarkdown(textContent, partKey)}
                         </div>
                       );
                     }

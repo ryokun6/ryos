@@ -86,7 +86,7 @@ export function KtvAmbientReactions({ enabled, isPlaying }: KtvAmbientReactionsP
     });
 
     for (const item of toRegister) {
-      timeoutsRef.current[item.id] = window.setTimeout(
+      timeoutsRef.current[item.id] = setTimeout(
         () => removeItem(item.id),
         REACTION_LIFETIME_MS
       );
@@ -108,7 +108,7 @@ export function KtvAmbientReactions({ enabled, isPlaying }: KtvAmbientReactionsP
     const loop = () => {
       clearSchedule();
       const delay = 3200 + Math.random() * 5400;
-      scheduleRef.current = window.setTimeout(() => {
+      scheduleRef.current = setTimeout(() => {
         spawnBurst();
         loop();
       }, delay);

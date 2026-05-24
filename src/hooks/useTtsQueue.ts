@@ -317,8 +317,20 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
     controllersRef.current.clear();
     scheduleChainRef.current = Promise.resolve();
 
-    // Clear pending requests and reset counters
+    // Drain pending requests by resolving them with null so each speak()
+    // chain unblocks, sees no audio, and still invokes its `onEnd` callback.
+    // (Just emptying the array would leave callers' `onEnd` callbacks — and
+    // any state they reset, like a TTS highlight or a "speaking" indicator —
+    // hanging indefinitely.)
+    const pending = pendingRequestsRef.current;
     pendingRequestsRef.current = [];
+    pending.forEach((p) => {
+      try {
+        p.resolve(null);
+      } catch {
+        /* ignore */
+      }
+    });
     activeRequestsCountRef.current = 0;
 
     // Micro-fade before stopping to avoid clicks
