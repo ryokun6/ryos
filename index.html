@@ -217,8 +217,10 @@
           if (dark === "1" || dark === "true") {
             document.documentElement.dataset.osColorScheme = "dark";
             document.documentElement.style.colorScheme = "dark";
+            document.documentElement.classList.add("dark");
           } else {
             document.documentElement.style.colorScheme = "light";
+            document.documentElement.classList.remove("dark");
           }
         } catch (e) {}
       })();

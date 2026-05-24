@@ -77,12 +77,18 @@ function applyRootThemeAttributes(theme: OsThemeId, isDark: boolean) {
   if (macChrome) root.dataset.osMacChrome = macChrome;
   else delete root.dataset.osMacChrome;
   // Color scheme: dark variant is opt-in per-theme and orthogonal to the theme id.
+  // We set both `data-os-color-scheme` (used by the OS theme overrides in
+  // themes.css) AND the `.dark` class (used by the shadcn variable layer in
+  // index.css). The shadcn `.dark` toggle is what makes Radix portals
+  // (dropdown menus, popovers, dialogs) follow dark mode automatically.
   if (isDark) {
     root.dataset.osColorScheme = "dark";
     root.style.colorScheme = "dark";
+    root.classList.add("dark");
   } else {
     delete root.dataset.osColorScheme;
     root.style.colorScheme = "light";
+    root.classList.remove("dark");
   }
 }
 

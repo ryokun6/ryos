@@ -3326,3 +3326,20 @@
 :root[data-os-color-scheme="dark"] [data-radix-alert-dialog-overlay] {
   background-color: rgba(0, 0, 0, 0.7);
 }
+
+/* Description / muted text inside window bodies and dialog content.
+ * Many secondary captions use Tailwind's text-neutral-600 / text-gray-500
+ * etc. which render as nearly-invisible on dark window bodies. Scope the
+ * override to window/dialog interiors so we don't recolor cases that
+ * deliberately use white-on-dark or dark-on-light (desktop icon labels,
+ * traffic light glyphs, etc.). Light mode is unaffected. */
+:root[data-os-color-scheme="dark"] .window-body .text-neutral-600,
+:root[data-os-color-scheme="dark"] .window-body .text-neutral-500,
+:root[data-os-color-scheme="dark"] .window-body .text-gray-600,
+:root[data-os-color-scheme="dark"] .window-body .text-gray-500,
+:root[data-os-color-scheme="dark"] [role="dialog"] .text-neutral-600,
+:root[data-os-color-scheme="dark"] [role="dialog"] .text-neutral-500,
+:root[data-os-color-scheme="dark"] [role="dialog"] .text-gray-600,
+:root[data-os-color-scheme="dark"] [role="dialog"] .text-gray-500 {
+  color: var(--os-color-text-secondary) !important;
+}
