@@ -531,6 +531,7 @@ export function IpodScreen({
   appleMusicMenuTitlebarLoading = false,
   isCoverFlowOpen = false,
   coverFlowSlot,
+  fastScrollLetter = null,
 }: IpodScreenProps) {
   const { t } = useTranslation();
   
@@ -1434,6 +1435,55 @@ export function IpodScreen({
               </div>
             </motion.div>
           )}
+        </AnimatePresence>
+        {/* Letter chip overlay — painted on top of the menu rows when
+         *  the user is fast-scrolling through an alphabetic menu
+         *  (Artists / Albums). Mirrors classic iPod behavior: every
+         *  rotation jumps to the next letter group and the letter
+         *  the user just landed on appears in a small rounded chip
+         *  centered on the menu. Cleared by `useIpodLogic` after a
+         *  brief idle. */}
+        <AnimatePresence>
+          {menuMode && fastScrollLetter ? (
+            <motion.div
+              key="fast-scroll-letter"
+              className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center"
+              initial={{ opacity: 0, scale: 0.85 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.85 }}
+              transition={{ duration: 0.12, ease: "easeOut" }}
+              aria-hidden
+            >
+              <div
+                className={cn(
+                  "grid place-items-center leading-none select-none",
+                  isModernUi
+                    ? "text-white font-ipod-modern-ui font-semibold"
+                    : "text-[#e6f1fa] font-chicago"
+                )}
+                style={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: 8,
+                  background:
+                    "linear-gradient(to bottom, rgba(42,42,42,0.95), rgba(0,0,0,0.9))",
+                  fontSize: 20,
+                  lineHeight: 1,
+                  letterSpacing: "-0.02em",
+                  textShadow: isModernUi
+                    ? "0 1px 2px rgba(0,0,0,0.45)"
+                    : "1px 1px 0 rgba(0,0,0,0.25)",
+                  boxShadow: isModernUi
+                    ? "0 2px 8px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.16), inset 0 -1px 0 rgba(255,255,255,0.04)"
+                    : "0 1px 4px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.12)",
+                }}
+              >
+                <span style={{ transform: "translateY(0.75px)" }}>
+                  {fastScrollLetter}
+                </span>
+              </div>
+            </motion.div>
+          ) : null}
         </AnimatePresence>
       </div>
     </>
