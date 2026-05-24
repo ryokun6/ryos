@@ -129,13 +129,27 @@ export function AboutFinderDialog({
     return memoryUsage.reduce((acc, app) => acc + app.memoryMB, 0);
   }, [memoryUsage]);
 
+  const aboutFinderSmallClass = cn(
+    "about-finder-small",
+    isXpTheme
+      ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[10px]"
+      : currentTheme === "macosx"
+      ? "font-os-ui text-[13px]"
+      : "text-[10px]"
+  );
+
   const dialogContent = (
-    <div className={isXpTheme ? "p-2 px-4" : "p-4"}>
+    <div
+      className={cn(
+        "about-finder-dialog",
+        isXpTheme ? "p-2 px-4" : "p-4"
+      )}
+    >
       <div className="flex">
         {/* Right side with system info */}
         <div className="space-y-3 flex-1 ">
           <div className="flex flex-row items-center space-x-2 p-2 px-4">
-            <div className="flex flex-col w-1/3 items-center">
+            <div className="about-finder-branding flex flex-col w-1/3 items-center">
               <ThemedIcon
                 name="mac-classic.png"
                 alt="Happy Mac"
@@ -145,7 +159,9 @@ export function AboutFinderDialog({
                 className={cn(
                   isXpTheme
                     ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[16px]"
-                    : "font-apple-garamond text-2xl "
+                    : currentTheme === "macosx"
+                    ? "font-apple-garamond text-2xl"
+                    : "font-os-ui text-xl"
                 )}
               >
                 ryOS
@@ -161,11 +177,17 @@ export function AboutFinderDialog({
               </div>
               <div
                 className={cn(
-                  "cursor-pointer select-none transition-opacity hover:opacity-70 text-gray-500",
-                  isXpTheme
-                    ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[10px]"
-                    : "font-geneva-12 text-[10px]"
+                  aboutFinderSmallClass,
+                  "cursor-pointer select-none transition-opacity hover:opacity-70 text-gray-500"
                 )}
+                style={
+                  isXpTheme
+                    ? {
+                        fontFamily:
+                          '"Pixelated MS Sans Serif", "ArkPixel", Arial',
+                      }
+                    : undefined
+                }
                 onClick={() => setVersionDisplayMode((prev) => (prev + 1) % 3)}
                 title={t("common.aboutThisMac.clickToToggle")}
               >
@@ -178,86 +200,68 @@ export function AboutFinderDialog({
               </div>
             </div>
 
-            <div
-              className={cn(
-                "space-y-4",
-                isXpTheme
-                  ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[10px]"
-                  : "font-geneva-12 text-[10px]"
-              )}
-              style={{
-                fontFamily: isXpTheme
-                  ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-                  : undefined,
-                fontSize: isXpTheme ? "10px" : undefined,
-              }}
-            >
-              <div>
+            <div className="flex-1 space-y-4">
+              <div className={aboutFinderSmallClass}>
                 <div>{t("common.aboutThisMac.builtInMemory")}: 32{t("common.aboutThisMac.mb")}</div>
                 <div>{t("common.aboutThisMac.virtualMemory")}: {t("common.aboutThisMac.virtualMemoryOff")}</div>
                 <div>
                   {t("common.aboutThisMac.largestUnusedBlock")}: {(32 - totalUsedMemory).toFixed(1)}{t("common.aboutThisMac.mb")}
                 </div>
-                <div
-                  className={cn(
-                    "text-[10px] text-gray-500 mt-2",
-                    isXpTheme
-                      ? "font-['Pixelated_MS_Sans_Serif',Arial]"
-                      : "font-geneva-12"
-                  )}
-                  style={{
-                    fontFamily: isXpTheme
-                      ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-                      : undefined,
-                  }}
-                >
-                  <p>© Ryo Lu. 1992-{new Date().getFullYear()}</p>
-                  {isMac && desktopVersion && (
-                    <p>
-                      <a 
-                        href={`https://github.com/ryokun6/ryos/releases/download/v${desktopVersion}/ryOS_${desktopVersion}_aarch64.dmg`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline"
-                      >
-                        {t("apps.control-panels.downloadMacApp")}
-                      </a>
-                    </p>
-                  )}
+              </div>
+              <div
+                className={cn(
+                  "text-gray-500",
+                  isXpTheme
+                    ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[10px]"
+                    : currentTheme === "macosx"
+                    ? "font-os-ui text-[11px]"
+                    : "font-os-ui text-[10px]"
+                )}
+                style={
+                  isXpTheme
+                    ? {
+                        fontFamily:
+                          '"Pixelated MS Sans Serif", "ArkPixel", Arial',
+                      }
+                    : undefined
+                }
+              >
+                <p>© Ryo Lu. 1992-{new Date().getFullYear()}</p>
+                {isMac && desktopVersion && (
                   <p>
                     <a
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        launchApp("internet-explorer", { url: "os.ryo.lu/docs/changelog", year: "current" });
-                        onOpenChange(false);
-                      }}
+                      href={`https://github.com/ryokun6/ryos/releases/download/v${desktopVersion}/ryOS_${desktopVersion}_aarch64.dmg`}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="text-blue-600 hover:underline"
                     >
-                      {t("common.aboutThisMac.viewChangelog")}
+                      {t("apps.control-panels.downloadMacApp")}
                     </a>
                   </p>
-                </div>
+                )}
+                <p>
+                  <a
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      launchApp("internet-explorer", {
+                        url: "os.ryo.lu/docs/changelog",
+                        year: "current",
+                      });
+                      onOpenChange(false);
+                    }}
+                    className="text-blue-600 hover:underline"
+                  >
+                    {t("common.aboutThisMac.viewChangelog")}
+                  </a>
+                </p>
               </div>
             </div>
           </div>
           <hr className="border-gray-300" />
 
           {/* Memory usage bars */}
-          <div
-            className={cn(
-              "space-y-2 p-2 px-4 pb-4",
-              isXpTheme
-                ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[10px]"
-                : "font-geneva-12 text-[10px]"
-            )}
-            style={{
-              fontFamily: isXpTheme
-                      ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-                : undefined,
-              fontSize: isXpTheme ? "10px" : undefined,
-            }}
-          >
+          <div className={cn("space-y-2 p-2 px-4 pb-4", aboutFinderSmallClass)}>
             {memoryUsage.map((app) => (
               <div className="flex flex-row items-center gap-1" key={app.name}>
                 <div className="flex justify-between w-full">

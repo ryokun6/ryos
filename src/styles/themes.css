@@ -2530,6 +2530,31 @@
   font-size: 11px !important;
 }
 
+/* About This Computer — branding uses normal UI/Garamond. Detail lines (memory,
+   version, app rows): Lucida on macOS Aqua; bitmap Geneva-12 on System 7 only. */
+:root[data-os-theme="macosx"] .about-finder-dialog .about-finder-branding {
+  font-family: var(--os-font-ui) !important;
+  -webkit-font-smoothing: antialiased !important;
+  font-smooth: auto !important;
+}
+
+:root[data-os-theme="macosx"] .about-finder-dialog .about-finder-small,
+:root[data-os-theme="macosx"] .about-finder-dialog .about-finder-small * {
+  font-family: var(--os-font-ui) !important;
+  font-size: var(--os-typography-window) !important;
+  -webkit-font-smoothing: antialiased !important;
+  font-smooth: auto !important;
+}
+
+:root[data-os-theme="system7"] .about-finder-dialog .about-finder-small,
+:root[data-os-theme="system7"] .about-finder-dialog .about-finder-small * {
+  font-family: "Geneva-12", "ArkPixel", "SerenityOS-Emoji", system-ui,
+    -apple-system, sans-serif !important;
+  font-size: 10px !important;
+  -webkit-font-smoothing: antialiased !important;
+  font-smooth: always !important;
+}
+
 /* Status bar specific sizing - force 10px and prevent global overrides */
 :root[data-os-theme="macosx"] .os-status-bar,
 :root[data-os-theme="macosx"] .os-status-bar-text {
