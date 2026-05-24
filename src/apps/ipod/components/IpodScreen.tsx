@@ -1436,12 +1436,13 @@ export function IpodScreen({
             </motion.div>
           )}
         </AnimatePresence>
-        {/* Big letter overlay — painted on top of the menu rows when
+        {/* Letter chip overlay — painted on top of the menu rows when
          *  the user is fast-scrolling through an alphabetic menu
          *  (Artists / Albums). Mirrors classic iPod behavior: every
          *  rotation jumps to the next letter group and the letter
-         *  the user just landed on flashes large in the center of the
-         *  screen. Cleared by `useIpodLogic` after a brief idle. */}
+         *  the user just landed on appears in a small rounded chip
+         *  centered on the menu. Cleared by `useIpodLogic` after a
+         *  brief idle. */}
         <AnimatePresence>
           {menuMode && fastScrollLetter ? (
             <motion.div
@@ -1455,23 +1456,23 @@ export function IpodScreen({
             >
               <div
                 className={cn(
-                  "flex items-center justify-center rounded-2xl select-none",
+                  "flex items-center justify-center rounded-lg select-none",
                   isModernUi
                     ? "bg-black/55 text-white font-ipod-modern-ui font-semibold backdrop-blur-[2px]"
                     : "bg-[#0a3667]/85 text-[#e6f1fa] font-chicago"
                 )}
                 style={{
-                  width: 84,
-                  height: 84,
-                  fontSize: 60,
+                  width: 40,
+                  height: 40,
+                  fontSize: 24,
                   lineHeight: 1,
                   letterSpacing: "-0.02em",
                   textShadow: isModernUi
-                    ? "0 2px 6px rgba(0,0,0,0.45)"
+                    ? "0 1px 2px rgba(0,0,0,0.45)"
                     : "1px 1px 0 rgba(0,0,0,0.25)",
                   boxShadow: isModernUi
-                    ? "0 4px 16px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.18)"
-                    : "0 2px 8px rgba(0,0,0,0.35)",
+                    ? "0 2px 8px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.18)"
+                    : "0 1px 4px rgba(0,0,0,0.35)",
                 }}
               >
                 {fastScrollLetter}

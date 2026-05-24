@@ -3980,23 +3980,27 @@ export function useIpodLogic({
   // -------------------------------------------------------------------
   // "Scroll by letter" fast-scroll affordance.
   //
-  // Classic iPod behavior: when the user spins the wheel quickly through
-  // an alphabetic menu (Artists / Albums), each rotation begins jumping
-  // to the next/previous letter group instead of one row at a time, and
-  // a big letter overlay appears on screen so the user can see which
-  // section they're skimming. After a brief idle period the iPod drops
-  // back to normal per-item scrolling.
+  // Classic iPod behavior: when the user spins the wheel through an
+  // alphabetic menu (Artists / Albums) for a sustained stretch, each
+  // rotation begins jumping to the next/previous letter group instead
+  // of one row at a time, and a letter chip appears on screen so the
+  // user can see which section they're skimming. After a brief idle
+  // period the iPod drops back to normal per-item scrolling.
   //
-  // We track rotation timestamps in a ring buffer. When enough events
-  // land inside `FAST_SCROLL_WINDOW_MS`, the menu enters letter-jump
-  // mode for the rest of the gesture. The mode is sticky until
-  // `FAST_SCROLL_IDLE_MS` of no rotation, so a brief pause between
-  // letter jumps still feels like one continuous fast scroll.
+  // We count consecutive rotations (any rotation within
+  // `FAST_SCROLL_RESET_MS` of the previous counts). Letter mode kicks
+  // in after the user has scrolled at least `FAST_SCROLL_THRESHOLD`
+  // items in one continuous gesture — roughly three pages of the
+  // 6-row modern menu — so it never fires from a casual flick of the
+  // wheel. The mode is sticky until `FAST_SCROLL_IDLE_MS` of no
+  // rotation, so a brief pause between letter jumps still feels like
+  // one continuous fast scroll.
   // -------------------------------------------------------------------
-  const FAST_SCROLL_WINDOW_MS = 500;
-  const FAST_SCROLL_THRESHOLD = 5;
+  const FAST_SCROLL_RESET_MS = 600;
+  const FAST_SCROLL_THRESHOLD = 18; // 3 pages × 6 rows per page
   const FAST_SCROLL_IDLE_MS = 900;
-  const rotationTimestampsRef = useRef<number[]>([]);
+  const rotationStreakCountRef = useRef(0);
+  const rotationStreakLastAtRef = useRef(0);
   const fastScrollIdleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
     null
   );
@@ -4019,7 +4023,8 @@ export function useIpodLogic({
     }
     fastScrollIdleTimerRef.current = setTimeout(() => {
       fastScrollActiveRef.current = false;
-      rotationTimestampsRef.current = [];
+      rotationStreakCountRef.current = 0;
+      rotationStreakLastAtRef.current = 0;
       setFastScrollLetter(null);
       fastScrollIdleTimerRef.current = null;
     }, FAST_SCROLL_IDLE_MS);
@@ -4042,7 +4047,8 @@ export function useIpodLogic({
     if (!menuMode || !top?.alphabetic) {
       if (fastScrollActiveRef.current || fastScrollLetter !== null) {
         fastScrollActiveRef.current = false;
-        rotationTimestampsRef.current = [];
+        rotationStreakCountRef.current = 0;
+        rotationStreakLastAtRef.current = 0;
         if (fastScrollIdleTimerRef.current) {
           clearTimeout(fastScrollIdleTimerRef.current);
           fastScrollIdleTimerRef.current = null;
@@ -4094,20 +4100,27 @@ export function useIpodLogic({
         const menuLength = currentMenu.items.length;
         if (menuLength === 0) return;
 
-        // Track rotation cadence for the letter-jump affordance.
-        // Only meaningful inside alphabetic menus, but we keep the
-        // bookkeeping cheap so we can update it unconditionally and
-        // simply gate behavior on `currentMenu.alphabetic`.
+        // Track rotation streak for the letter-jump affordance. We
+        // count consecutive rotations (any rotation within
+        // `FAST_SCROLL_RESET_MS` of the last) and trigger letter-jump
+        // mode once the user has scrolled enough rows in one
+        // continuous gesture (~3 pages of the modern 6-row menu).
         const now = Date.now();
-        const stamps = rotationTimestampsRef.current;
-        stamps.push(now);
-        const cutoff = now - FAST_SCROLL_WINDOW_MS;
-        while (stamps.length > 0 && stamps[0] < cutoff) stamps.shift();
+        const sinceLast = now - rotationStreakLastAtRef.current;
+        if (
+          rotationStreakLastAtRef.current === 0 ||
+          sinceLast > FAST_SCROLL_RESET_MS
+        ) {
+          rotationStreakCountRef.current = 1;
+        } else {
+          rotationStreakCountRef.current += 1;
+        }
+        rotationStreakLastAtRef.current = now;
         const isAlphabetic = Boolean(currentMenu.alphabetic);
         if (
           isAlphabetic &&
           !fastScrollActiveRef.current &&
-          stamps.length >= FAST_SCROLL_THRESHOLD
+          rotationStreakCountRef.current >= FAST_SCROLL_THRESHOLD
         ) {
           fastScrollActiveRef.current = true;
         }
