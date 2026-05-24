@@ -37,6 +37,7 @@ describe("appleMusicMenuLoading", () => {
         isFavoritesLoading: false,
         isRadioLoading: false,
         isLibraryLoading: false,
+        isPlaylistsLoading: false,
         playlistTracksLoading: { "p:1": true },
         playlists: [{ id: "p:1", name: "Road Trip" }],
         playlistsCount: 3,
@@ -56,9 +57,76 @@ describe("appleMusicMenuLoading", () => {
         isFavoritesLoading: false,
         isRadioLoading: false,
         isLibraryLoading: false,
+        isPlaylistsLoading: false,
         playlistTracksLoading: { "p:1": true },
         playlists: [{ id: "p:1", name: "Road Trip" }],
         playlistsCount: 3,
+      })
+    ).toBe(false);
+  });
+
+  test("resolveAppleMusicMenuTitlebarLoading shows spinner on Playlists while the list refreshes", () => {
+    expect(
+      resolveAppleMusicMenuTitlebarLoading({
+        menuTitle: "Playlists",
+        recentlyAddedTitle: "Recently Added",
+        favoriteSongsTitle: "Favorite Songs",
+        radioTitle: "Radio",
+        playlistsTitle: "Playlists",
+        isRecentlyAddedLoading: false,
+        isFavoritesLoading: false,
+        isRadioLoading: false,
+        isLibraryLoading: false,
+        isPlaylistsLoading: true,
+        playlistTracksLoading: {},
+        playlists: [{ id: "p:1", name: "Road Trip" }],
+        playlistsCount: 1,
+      })
+    ).toBe(true);
+  });
+
+  test("resolveAppleMusicMenuTitlebarLoading shows spinner on Playlists while any per-playlist tracks pre-fetch", () => {
+    expect(
+      resolveAppleMusicMenuTitlebarLoading({
+        menuTitle: "Playlists",
+        recentlyAddedTitle: "Recently Added",
+        favoriteSongsTitle: "Favorite Songs",
+        radioTitle: "Radio",
+        playlistsTitle: "Playlists",
+        isRecentlyAddedLoading: false,
+        isFavoritesLoading: false,
+        isRadioLoading: false,
+        isLibraryLoading: false,
+        isPlaylistsLoading: false,
+        playlistTracksLoading: { "p:1": false, "p:2": true },
+        playlists: [
+          { id: "p:1", name: "Road Trip" },
+          { id: "p:2", name: "Workout" },
+        ],
+        playlistsCount: 2,
+      })
+    ).toBe(true);
+  });
+
+  test("resolveAppleMusicMenuTitlebarLoading is quiet on Playlists when nothing is in flight", () => {
+    expect(
+      resolveAppleMusicMenuTitlebarLoading({
+        menuTitle: "Playlists",
+        recentlyAddedTitle: "Recently Added",
+        favoriteSongsTitle: "Favorite Songs",
+        radioTitle: "Radio",
+        playlistsTitle: "Playlists",
+        isRecentlyAddedLoading: false,
+        isFavoritesLoading: false,
+        isRadioLoading: false,
+        isLibraryLoading: false,
+        isPlaylistsLoading: false,
+        playlistTracksLoading: { "p:1": false, "p:2": false },
+        playlists: [
+          { id: "p:1", name: "Road Trip" },
+          { id: "p:2", name: "Workout" },
+        ],
+        playlistsCount: 2,
       })
     ).toBe(false);
   });

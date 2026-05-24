@@ -196,6 +196,11 @@ interface IpodData {
    * fetch (which has its own `appleMusicLibraryLoadedAt`).
    */
   appleMusicPlaylistsLoadedAt: number | null;
+  /** True while the Apple Music playlist *list* refresh is in flight.
+   *  Drives the titlebar activity indicator on the Playlists menu so
+   *  the user sees a spinner while the list is syncing (even when a
+   *  cached list is already on screen, e.g. an opportunistic refresh). */
+  appleMusicPlaylistsLoading: boolean;
   /** Tracks per playlist id; lazy-loaded on drill-down. */
   appleMusicPlaylistTracks: Record<string, Track[]>;
   /** Per-playlist cache timestamp for stale-while-revalidate. */
@@ -404,6 +409,7 @@ const initialIpodData: IpodData = {
   appleMusicTracks: [],
   appleMusicPlaylists: [],
   appleMusicPlaylistsLoadedAt: null,
+  appleMusicPlaylistsLoading: false,
   appleMusicPlaylistTracks: {},
   appleMusicPlaylistTracksLoadedAt: {},
   appleMusicPlaylistTracksLoading: {},
@@ -581,6 +587,8 @@ export interface IpodState extends IpodData {
     loadedAt?: number | null
   ) => void;
   setAppleMusicFavoritesLoading: (loading: boolean) => void;
+  /** Toggle the in-flight flag for the Apple Music playlist *list* refresh. */
+  setAppleMusicPlaylistsLoading: (loading: boolean) => void;
   /**
    * Optimistically prepend a track to the favorites list (used right
    * after `addAppleMusicTrackToFavorites` succeeds). Doesn't bump
@@ -2181,6 +2189,8 @@ export const useIpodStore = create<IpodState>()(
         }),
       setAppleMusicFavoritesLoading: (loading) =>
         set({ appleMusicFavoritesLoading: loading }),
+      setAppleMusicPlaylistsLoading: (loading) =>
+        set({ appleMusicPlaylistsLoading: loading }),
       prependAppleMusicFavoriteTrack: (track) =>
         set((state) => ({
           appleMusicFavoriteTracks: [

@@ -991,6 +991,7 @@ export async function refreshAppleMusicPlaylists(
     return store.appleMusicPlaylists;
   }
 
+  useIpodStore.getState().setAppleMusicPlaylistsLoading(true);
   inFlightPlaylistsRefresh = (async () => {
     try {
       const playlists = await fetchAppleMusicPlaylistsList();
@@ -1016,6 +1017,7 @@ export async function refreshAppleMusicPlaylists(
       return playlists;
     } finally {
       inFlightPlaylistsRefresh = null;
+      useIpodStore.getState().setAppleMusicPlaylistsLoading(false);
     }
   })();
 
@@ -1041,14 +1043,31 @@ const inFlightPlaylistTracksRefresh = new Set<string>();
  * by design — failures per playlist are logged but never thrown.
  */
 export async function refreshStaleAppleMusicPlaylistTracks(
-  options: { force?: boolean; concurrency?: number } = {}
+  options: {
+    force?: boolean;
+    concurrency?: number;
+    /**
+     * Also include playlists that exist in `appleMusicPlaylists` but have
+     * never been viewed (no `loadedAt` entry). This makes the function
+     * pre-fetch every playlist's tracks during the initial library sync
+     * so the Playlists menu row subtitles ("N songs") render correctly
+     * without requiring the user to click into each playlist first.
+     */
+    includeUncached?: boolean;
+  } = {}
 ): Promise<void> {
   const instance = getMusicKitInstance();
   if (!instance || !instance.isAuthorized) return;
 
   const state = useIpodStore.getState();
   const loadedAtMap = state.appleMusicPlaylistTracksLoadedAt;
-  const playlistIds = Object.keys(loadedAtMap);
+  const knownIds = new Set<string>(Object.keys(loadedAtMap));
+  if (options.includeUncached) {
+    for (const playlist of state.appleMusicPlaylists) {
+      knownIds.add(playlist.id);
+    }
+  }
+  const playlistIds = Array.from(knownIds);
   if (playlistIds.length === 0) return;
 
   const stalePlaylistIds = options.force
@@ -1369,6 +1388,27 @@ export async function fetchAppleMusicLibrary(
       console.warn("[apple music] playlist sync failed (songs kept)", err);
     }
 
+    // After the playlist list is fresh, kick off a background pre-fetch
+    // of EVERY playlist's tracks (including playlists the user has never
+    // opened). This populates `appleMusicPlaylistTracks[playlistId]`, so
+    // the Playlists menu can show accurate "N songs" subtitles for every
+    // row without the user having to click into each playlist first.
+    //
+    // Fire-and-forget on purpose:
+    //   - We don't want the library-load promise to wait for potentially
+    //     dozens of per-playlist round-trips before resolving.
+    //   - `refreshStaleAppleMusicPlaylistTracks` already runs with bounded
+    //     concurrency and swallows per-playlist errors, so it can't take
+    //     down the library sync if a single playlist fetch fails.
+    void refreshStaleAppleMusicPlaylistTracks({ includeUncached: true }).catch(
+      (err) => {
+        console.warn(
+          "[apple music] background pre-fetch of playlist tracks failed",
+          err
+        );
+      }
+    );
+
     return aggregated.length || existingTracks.length;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -1543,18 +1583,18 @@ export function useAppleMusicLibrary({
       try {
         const count = await fetchAppleMusicLibrary({
           force,
-          onProgress: (loaded, total) => {
-            const message = total
-              ? t(
-                  "apps.ipod.dialogs.appleMusicLibraryProgressOf",
-                  `Loading Apple Music library… ${loaded} of ${total}`,
-                  { loaded, total }
-                )
-              : t(
-                  "apps.ipod.dialogs.appleMusicLibraryProgress",
-                  `Loading Apple Music library… ${loaded} songs`,
-                  { loaded }
-                );
+          onProgress: (loaded) => {
+            // The `total` reported by the Apple Music
+            // `/v1/me/library/songs` endpoint is unreliable — it can
+            // overcount actual sync results (e.g. 8k reported when the
+            // sync finishes at 4k due to dropped items, region-locked
+            // tracks, etc.), which made the progress toast look broken.
+            // Show only the running count of loaded songs instead.
+            const message = t(
+              "apps.ipod.dialogs.appleMusicLibraryProgress",
+              `Loading Apple Music library… ${loaded} songs`,
+              { loaded }
+            );
             toast.loading(message, { id: toastId, duration: Infinity });
           },
         });
@@ -1842,9 +1882,19 @@ export function useAppleMusicLibrary({
         // (handled inside each helper). Run them in parallel since they
         // hit separate Apple Music endpoints and don't share the same
         // in-flight guard.
+        //
+        // `refreshStaleAppleMusicPlaylistTracks` is included with
+        // `includeUncached: true` so the per-playlist track caches get
+        // populated for every playlist (not just those the user has
+        // already opened). This is what backs the Playlists menu's
+        // "N songs" subtitles, so without this they'd stay at 0 for any
+        // playlist the user hasn't drilled into yet. The helper has its
+        // own per-playlist in-flight guard + bounded concurrency, so
+        // running it here in parallel with the other refreshes is safe.
         await Promise.allSettled([
           refreshAppleMusicRecentlyAdded(),
           refreshAppleMusicFavorites(),
+          refreshStaleAppleMusicPlaylistTracks({ includeUncached: true }),
         ]);
       } catch (err) {
         // Each helper handles its own per-call errors; a top-level

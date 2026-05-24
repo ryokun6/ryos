@@ -16,6 +16,7 @@ export function resolveAppleMusicMenuTitlebarLoading(options: {
   isFavoritesLoading: boolean;
   isRadioLoading: boolean;
   isLibraryLoading: boolean;
+  isPlaylistsLoading: boolean;
   playlistTracksLoading: Record<string, boolean>;
   playlists: { id: string; name: string }[];
   playlistsCount: number;
@@ -30,6 +31,7 @@ export function resolveAppleMusicMenuTitlebarLoading(options: {
     isFavoritesLoading,
     isRadioLoading,
     isLibraryLoading,
+    isPlaylistsLoading,
     playlistTracksLoading,
     playlists,
     playlistsCount,
@@ -39,7 +41,22 @@ export function resolveAppleMusicMenuTitlebarLoading(options: {
   if (menuTitle === favoriteSongsTitle) return isFavoritesLoading;
   if (menuTitle === radioTitle) return isRadioLoading;
   if (menuTitle === playlistsTitle) {
-    return isLibraryLoading && playlistsCount === 0;
+    // Show the titlebar spinner whenever ANY of the following is in flight:
+    //   - The very first library load (`isLibraryLoading` with no cached
+    //     playlists), so the menu reads as actively populating rather
+    //     than empty.
+    //   - The playlist *list* refresh itself, even when a cached list
+    //     is already on screen (opportunistic background revalidation,
+    //     `loadAppleMusicPlaylists` on menu entry, etc.).
+    //   - Any per-playlist track pre-fetch — this is what fills in the
+    //     "N songs" subtitles on each row, so the spinner remains until
+    //     every row has its count.
+    if (isLibraryLoading && playlistsCount === 0) return true;
+    if (isPlaylistsLoading) return true;
+    for (const id in playlistTracksLoading) {
+      if (playlistTracksLoading[id] === true) return true;
+    }
+    return false;
   }
 
   const playlist = playlists.find((entry) => entry.name === menuTitle);

@@ -20,6 +20,7 @@ import {
   fetchAppleMusicGeniusTrack,
   addAppleMusicTrackToFavorites,
   cacheAppleMusicFavoriteSongTrack,
+  refreshStaleAppleMusicPlaylistTracks,
   type AppleMusicSearchScope,
 } from "./useAppleMusicLibrary";
 import { useMusicKit } from "@/hooks/useMusicKit";
@@ -125,6 +126,7 @@ export function useIpodLogic({
     appleMusicPlaylists,
     appleMusicPlaylistTracks,
     appleMusicPlaylistTracksLoading,
+    appleMusicPlaylistsLoading,
     appleMusicPlaybackQueue,
     appleMusicCurrentSongId,
     librarySource,
@@ -142,6 +144,7 @@ export function useIpodLogic({
       appleMusicPlaylists: s.appleMusicPlaylists,
       appleMusicPlaylistTracks: s.appleMusicPlaylistTracks,
       appleMusicPlaylistTracksLoading: s.appleMusicPlaylistTracksLoading,
+      appleMusicPlaylistsLoading: s.appleMusicPlaylistsLoading,
       appleMusicPlaybackQueue: s.appleMusicPlaybackQueue,
       appleMusicCurrentSongId: s.appleMusicCurrentSongId,
       librarySource: s.librarySource,
@@ -962,6 +965,7 @@ export function useIpodLogic({
     useIpodStore.setState({
       appleMusicPlaylists: [],
       appleMusicPlaylistsLoadedAt: null,
+      appleMusicPlaylistsLoading: false,
       appleMusicPlaylistTracks: {},
       appleMusicPlaylistTracksLoadedAt: {},
       appleMusicPlaylistTracksLoading: {},
@@ -1129,12 +1133,31 @@ export function useIpodLogic({
       return;
     }
     try {
-      // Always revalidate when opening the Playlists menu so additions/
-      // deletions on other devices appear promptly.
+      // Use the regular SWR window (15 min by default) so opening the
+      // Playlists menu serves cached results immediately when fresh,
+      // instead of forcing a round-trip on every entry. The opportunistic
+      // background refresh in `useAppleMusicLibrary` still revalidates
+      // the list when it goes stale or when the tab regains visibility,
+      // so cross-device additions/deletions still show up promptly
+      // without paying a network fetch for every menu open.
       await syncAppleMusicResource({
         kind: "playlists",
-        force: true,
         allowEmpty: true,
+      });
+      // Kick off a background pre-fetch of tracks for every cached
+      // playlist (including ones the user has never opened) so the
+      // "N songs" subtitles render correctly on first paint instead of
+      // showing 0 until the user clicks into each row. Fire-and-forget:
+      // the helper runs with bounded concurrency and dedupes against
+      // any in-flight per-playlist fetches, so this is safe to call
+      // every time the Playlists menu opens.
+      void refreshStaleAppleMusicPlaylistTracks({
+        includeUncached: true,
+      }).catch((err) => {
+        console.warn(
+          "[apple music] background pre-fetch of playlist tracks failed",
+          err
+        );
       });
     } catch (err) {
       const hasCached = useIpodStore.getState().appleMusicPlaylists.length > 0;
@@ -2103,6 +2126,7 @@ export function useIpodLogic({
       isFavoritesLoading: isAppleMusicFavoritesLoading,
       isRadioLoading: isAppleMusicRadioLoading,
       isLibraryLoading: appleMusicLibraryLoading,
+      isPlaylistsLoading: appleMusicPlaylistsLoading,
       playlistTracksLoading: appleMusicPlaylistTracksLoading,
       playlists: appleMusicPlaylists,
       playlistsCount: appleMusicPlaylists.length,
@@ -2116,24 +2140,22 @@ export function useIpodLogic({
     isAppleMusicFavoritesLoading,
     isAppleMusicRadioLoading,
     appleMusicLibraryLoading,
+    appleMusicPlaylistsLoading,
     appleMusicPlaylistTracksLoading,
     appleMusicPlaylists,
     menuLocale,
   ]);
 
-  // Sort Apple Music playlists alphabetically by name so the wheel's
-  // fast scroll-by-letter mode lands the user on the right section.
-  const sortedAppleMusicPlaylists = useMemo(
-    () =>
-      [...appleMusicPlaylists].sort((a, b) =>
-        a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
-      ),
-    [appleMusicPlaylists]
-  );
-
+  // Preserve the original playlist order returned by Apple Music
+  // (`/v1/me/library/playlists` returns playlists in the user's chosen
+  // order — pinned/recently-modified first, etc.). Sorting alphabetically
+  // here hides that intent, and on the iPod the Playlists menu is short
+  // enough that the wheel's fast scroll-by-letter mode isn't worth the
+  // trade-off. The submenu is also pushed WITHOUT `alphabetic: true` so
+  // the wheel doesn't try to group rows by leading letter.
   const applePlaylistsMenuItems = useMemo(
     (): MenuItem[] =>
-      sortedAppleMusicPlaylists.map((playlist) => {
+      appleMusicPlaylists.map((playlist) => {
         // Prefer the playlist's own artwork (Apple Music supplies it
         // directly via MusicKit). Fall back to the first cached track
         // with usable artwork so playlists imported before the artwork
@@ -2173,7 +2195,7 @@ export function useIpodLogic({
         };
       }),
     [
-      sortedAppleMusicPlaylists,
+      appleMusicPlaylists,
       appleMusicPlaylistTracks,
       applePlaylistTrackMenuItemsByPlaylist,
       registerActivity,
@@ -2265,7 +2287,6 @@ export function useIpodLogic({
           action: () => {
             pushSubmenu(playlistsLabel, applePlaylistsMenuItems, {
               modernMediaList: true,
-              alphabetic: true,
             });
             void loadAppleMusicPlaylists();
           },
@@ -2581,14 +2602,55 @@ export function useIpodLogic({
     menuHistory.length > 0 &&
     menuHistory[menuHistory.length - 1]?.title === NOW_PLAYING_SONG_MENU_KEY;
 
-  const findPlaylistContextForNowPlaying = useCallback(() => {
-    const matchFromHistory = (hist: MenuHistoryEntry[] | null) => {
+  // Source the user was browsing when they opened the now-playing
+  // song menu. `userPlaylist` covers Music > Playlists > <name>; the
+  // `system` variants cover the dedicated Music > Recently Added and
+  // Music > Favorite Songs collections, which are NOT exposed under
+  // the Playlists submenu and therefore need their own navigation
+  // path back from "Go to Playlist".
+  type NowPlayingPlaylistContext =
+    | { kind: "system"; system: "recentlyAdded" | "favorites" }
+    | { kind: "userPlaylist"; playlist: { id: string; name: string } };
+
+  const findPlaylistContextForNowPlaying = useCallback((): NowPlayingPlaylistContext | null => {
+    const musicLabel = t("apps.ipod.menuItems.music");
+    const recentlyAddedLabel = t(
+      "apps.ipod.menuItems.recentlyAdded",
+      "Recently Added"
+    );
+    const favoriteSongsLabel = t(
+      "apps.ipod.menuItems.favoriteSongs",
+      "Favorite Songs"
+    );
+    const matchFromHistory = (
+      hist: MenuHistoryEntry[] | null
+    ): NowPlayingPlaylistContext | null => {
       if (!hist) return null;
       for (let i = hist.length - 1; i >= 0; i--) {
+        const entry = hist[i];
+        const parent = i > 0 ? hist[i - 1] : null;
+        // Dedicated system collections under `Music` — match BEFORE the
+        // user-playlist fall-through so an Apple Music library playlist
+        // literally named "Favorite Songs" (which also lives in
+        // `appleMusicPlaylists`) doesn't hijack Go to Playlist when the
+        // user originally entered via Music > Favorite Songs instead of
+        // Music > Playlists > Favorite Songs.
+        if (
+          entry.title === recentlyAddedLabel &&
+          parent?.title === musicLabel
+        ) {
+          return { kind: "system", system: "recentlyAdded" };
+        }
+        if (
+          entry.title === favoriteSongsLabel &&
+          parent?.title === musicLabel
+        ) {
+          return { kind: "system", system: "favorites" };
+        }
         const playlist = appleMusicPlaylists.find(
-          (entry) => entry.name === hist[i].title
+          (candidate) => candidate.name === entry.title
         );
-        if (playlist) return playlist;
+        if (playlist) return { kind: "userPlaylist", playlist };
       }
       return null;
     };
@@ -2601,7 +2663,7 @@ export function useIpodLogic({
           : null
       )
     );
-  }, [appleMusicPlaylists, menuHistory]);
+  }, [appleMusicPlaylists, menuHistory, t]);
 
   const enterMenuNavigationFromNowPlaying = useCallback(
     (entries: MenuHistoryEntry[]) => {
@@ -2798,6 +2860,73 @@ export function useIpodLogic({
     ]
   );
 
+  const navigateToSystemPlaylistFromNowPlaying = useCallback(
+    (track: Track, system: "recentlyAdded" | "favorites") => {
+      const ipodLabel = t("apps.ipod.menuItems.ipod");
+      const musicLabel = t("apps.ipod.menuItems.music");
+      const recentlyAddedLabel = t(
+        "apps.ipod.menuItems.recentlyAdded",
+        "Recently Added"
+      );
+      const favoriteSongsLabel = t(
+        "apps.ipod.menuItems.favoriteSongs",
+        "Favorite Songs"
+      );
+      const targetLabel =
+        system === "recentlyAdded" ? recentlyAddedLabel : favoriteSongsLabel;
+      const sourceTracks =
+        system === "recentlyAdded"
+          ? appleMusicRecentlyAddedTracks
+          : appleMusicFavoriteTracks;
+      const sourceItems =
+        system === "recentlyAdded"
+          ? appleMusicRecentlyAddedMenuItems
+          : appleMusicFavoritesMenuItems;
+      const trackIdx = Math.max(
+        0,
+        sourceTracks.findIndex((candidate) => candidate.id === track.id)
+      );
+
+      navigateFromNowPlayingSongMenu([
+        {
+          title: ipodLabel,
+          items: mainMenuItems,
+          selectedIndex: findMenuItemIndexByLabel(mainMenuItems, musicLabel),
+        },
+        {
+          title: musicLabel,
+          items: musicMenuItems,
+          selectedIndex: findMenuItemIndexByLabel(musicMenuItems, targetLabel),
+        },
+        {
+          title: targetLabel,
+          items: sourceItems,
+          selectedIndex: trackIdx,
+          modernMediaList: true,
+        },
+      ]);
+
+      if (system === "recentlyAdded") {
+        void loadAppleMusicRecentlyAdded();
+      } else {
+        void loadAppleMusicFavorites();
+      }
+    },
+    [
+      t,
+      appleMusicRecentlyAddedTracks,
+      appleMusicFavoriteTracks,
+      appleMusicRecentlyAddedMenuItems,
+      appleMusicFavoritesMenuItems,
+      navigateFromNowPlayingSongMenu,
+      mainMenuItems,
+      musicMenuItems,
+      findMenuItemIndexByLabel,
+      loadAppleMusicRecentlyAdded,
+      loadAppleMusicFavorites,
+    ]
+  );
+
   const nowPlayingSongMenuItems = useMemo(() => {
     const track = tracks[currentIndex];
     if (!track) return EMPTY_IPOD_MENU_ITEMS;
@@ -2842,7 +2971,19 @@ export function useIpodLogic({
     if (playlistContext) {
       items.push({
         label: goToPlaylistLabel,
-        action: () => navigateToPlaylistFromNowPlaying(track, playlistContext),
+        action: () => {
+          if (playlistContext.kind === "system") {
+            navigateToSystemPlaylistFromNowPlaying(
+              track,
+              playlistContext.system
+            );
+          } else {
+            navigateToPlaylistFromNowPlaying(
+              track,
+              playlistContext.playlist
+            );
+          }
+        },
         showChevron: true,
       });
     }
@@ -2871,6 +3012,7 @@ export function useIpodLogic({
     setIsCoverFlowOpen,
     handleAppleMusicAddToFavorites,
     navigateToPlaylistFromNowPlaying,
+    navigateToSystemPlaylistFromNowPlaying,
     navigateToAlbumFromNowPlaying,
     navigateToArtistFromNowPlaying,
     menuLocale,
