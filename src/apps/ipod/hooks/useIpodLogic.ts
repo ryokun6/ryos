@@ -1994,6 +1994,7 @@ export function useIpodLogic({
               title: albumsLabel,
               items: albumsListMenuItems,
               selectedIndex: 0,
+              alphabetic: true,
             });
           },
           showChevron: true,
