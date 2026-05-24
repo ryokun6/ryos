@@ -36,6 +36,7 @@ import {
   resolveLyricsOverrideTargetId as resolveLyricsOverrideTargetIdHelper,
   resolveLyricsTrackMetadata,
 } from "../utils/lyricsTrackMetadata";
+import { recordRotationAndEvaluate } from "../utils/fastScrollVelocity";
 import { useShallow } from "zustand/react/shallow";
 import {
   useIpodStoreShallow,
@@ -4191,27 +4192,36 @@ export function useIpodLogic({
   // -------------------------------------------------------------------
   // "Scroll by letter" fast-scroll affordance.
   //
-  // Classic iPod behavior: when the user spins the wheel through an
-  // alphabetic menu (Artists / Albums) for a sustained stretch, each
-  // rotation begins jumping to the next/previous letter group instead
-  // of one row at a time, and a letter chip appears on screen so the
-  // user can see which section they're skimming. After a brief idle
-  // period the iPod drops back to normal per-item scrolling.
+  // Classic iPod behavior: when the user spins the wheel quickly
+  // through an alphabetic menu (Artists / Albums), each rotation
+  // begins jumping to the next/previous letter group instead of one
+  // row at a time, and a letter chip appears on screen so the user
+  // can see which section they're skimming. After the user slows
+  // down or stops, the iPod drops back to normal per-item scrolling.
   //
-  // We count consecutive rotations (any rotation within
-  // `FAST_SCROLL_RESET_MS` of the previous counts). Letter mode kicks
-  // in after the user has scrolled at least `FAST_SCROLL_THRESHOLD`
-  // items in one continuous gesture — roughly five pages of the
-  // 6-row modern menu — so it never fires from a casual flick of the
-  // wheel. The mode is sticky until `FAST_SCROLL_IDLE_MS` of no
-  // rotation, so a brief pause between letter jumps still feels like
-  // one continuous fast scroll.
+  // Detection is velocity-based, not count-based: we keep a sliding
+  // window of the last `FAST_SCROLL_WINDOW_SIZE` rotation timestamps
+  // and only activate letter mode when that window spans at most
+  // `FAST_SCROLL_ACTIVATE_MAX_MS` (i.e. the user is currently
+  // spinning the wheel rapidly). This means deliberate slow browsing
+  // never triggers letter-jump — no matter how many items the user
+  // scrolls through — because the inter-rotation interval stays
+  // wide. Only sustained rapid wheel-turning qualifies.
+  //
+  // Hysteresis: once active, letter mode stays sticky until either
+  // (a) the recent-window velocity drops below
+  // `FAST_SCROLL_DEACTIVATE_MAX_MS` (the user slowed down on
+  // purpose), or (b) `FAST_SCROLL_IDLE_MS` elapses with no rotation
+  // (the user stopped). This keeps brief mid-spin jitter from
+  // bouncing out of fast mode while still letting an intentional
+  // slow-down return to per-item scrolling without waiting for the
+  // idle timer.
   // -------------------------------------------------------------------
-  const FAST_SCROLL_RESET_MS = 600;
-  const FAST_SCROLL_THRESHOLD = 30; // 5 pages × 6 rows per page
+  const FAST_SCROLL_WINDOW_SIZE = 6;
+  const FAST_SCROLL_ACTIVATE_MAX_MS = 500; // ~12 rotations/sec average
+  const FAST_SCROLL_DEACTIVATE_MAX_MS = 900; // drop out when avg slows past ~6.7 rot/sec
   const FAST_SCROLL_IDLE_MS = 900;
-  const rotationStreakCountRef = useRef(0);
-  const rotationStreakLastAtRef = useRef(0);
+  const rotationTimestampsRef = useRef<number[]>([]);
   const fastScrollIdleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
     null
   );
@@ -4234,8 +4244,7 @@ export function useIpodLogic({
     }
     fastScrollIdleTimerRef.current = setTimeout(() => {
       fastScrollActiveRef.current = false;
-      rotationStreakCountRef.current = 0;
-      rotationStreakLastAtRef.current = 0;
+      rotationTimestampsRef.current = [];
       setFastScrollLetter(null);
       fastScrollIdleTimerRef.current = null;
     }, FAST_SCROLL_IDLE_MS);
@@ -4258,8 +4267,7 @@ export function useIpodLogic({
     if (!menuMode || !top?.alphabetic) {
       if (fastScrollActiveRef.current || fastScrollLetter !== null) {
         fastScrollActiveRef.current = false;
-        rotationStreakCountRef.current = 0;
-        rotationStreakLastAtRef.current = 0;
+        rotationTimestampsRef.current = [];
         if (fastScrollIdleTimerRef.current) {
           clearTimeout(fastScrollIdleTimerRef.current);
           fastScrollIdleTimerRef.current = null;
@@ -4311,29 +4319,39 @@ export function useIpodLogic({
         const menuLength = currentMenu.items.length;
         if (menuLength === 0) return;
 
-        // Track rotation streak for the letter-jump affordance. We
-        // count consecutive rotations (any rotation within
-        // `FAST_SCROLL_RESET_MS` of the last) and trigger letter-jump
-        // mode once the user has scrolled enough rows in one
-        // continuous gesture (~3 pages of the modern 6-row menu).
-        const now = Date.now();
-        const sinceLast = now - rotationStreakLastAtRef.current;
-        if (
-          rotationStreakLastAtRef.current === 0 ||
-          sinceLast > FAST_SCROLL_RESET_MS
-        ) {
-          rotationStreakCountRef.current = 1;
-        } else {
-          rotationStreakCountRef.current += 1;
-        }
-        rotationStreakLastAtRef.current = now;
+        // Velocity-based letter-jump detection. `recordRotationAndEvaluate`
+        // pushes the current timestamp into a ring buffer and returns
+        // an activate/deactivate suggestion when the window-span
+        // crosses the configured thresholds. We deliberately ignore
+        // how many rotations the user has produced in total — only
+        // how quickly they're producing them right now — so a long,
+        // slow browse never trips into letter-skip mode the way the
+        // old count-based threshold could.
         const isAlphabetic = Boolean(currentMenu.alphabetic);
-        if (
-          isAlphabetic &&
-          !fastScrollActiveRef.current &&
-          rotationStreakCountRef.current >= FAST_SCROLL_THRESHOLD
-        ) {
-          fastScrollActiveRef.current = true;
+        if (isAlphabetic) {
+          const decision = recordRotationAndEvaluate(
+            rotationTimestampsRef.current,
+            Date.now(),
+            fastScrollActiveRef.current,
+            {
+              windowSize: FAST_SCROLL_WINDOW_SIZE,
+              activateMaxMs: FAST_SCROLL_ACTIVATE_MAX_MS,
+              deactivateMaxMs: FAST_SCROLL_DEACTIVATE_MAX_MS,
+            }
+          );
+          if (decision === "activate") {
+            fastScrollActiveRef.current = true;
+          } else if (decision === "deactivate") {
+            // User intentionally slowed down — leave letter mode
+            // immediately rather than waiting for the idle timer so
+            // deliberate row-by-row navigation feels responsive.
+            fastScrollActiveRef.current = false;
+            setFastScrollLetter(null);
+            if (fastScrollIdleTimerRef.current) {
+              clearTimeout(fastScrollIdleTimerRef.current);
+              fastScrollIdleTimerRef.current = null;
+            }
+          }
         }
         const useLetterJump = isAlphabetic && fastScrollActiveRef.current;
 
