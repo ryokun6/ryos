@@ -1753,7 +1753,7 @@
       "description": "Music player",
       "menu": {
         "addSong": "Add Song...",
-        "searchSongs": "Search Songs...",
+        "searchSongs": "Search Songs",
         "shareSong": "Share Song...",
         "exportLibrary": "Export Library...",
         "importLibrary": "Import Library...",
