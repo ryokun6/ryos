@@ -206,6 +206,39 @@ describe("song library chat tools", () => {
     expect(typeof tools.songLibraryControl.execute).toBe("function");
   });
 
+  test("searchSongs tells the model to use karaokeControl for Karaoke playback", async () => {
+    const tools = createChatTools(
+      createContext(new FakeRedis(), "alice", { YOUTUBE_API_KEY: "test-key" }),
+      { profile: "all" }
+    );
+
+    await withMockedFetch(async () => {
+      return new Response(
+        JSON.stringify({
+          items: [
+            {
+              id: { videoId: "yt_1" },
+              snippet: {
+                title: "Mariya Takeuchi - Plastic Love",
+                channelTitle: "Mariya Takeuchi - Topic",
+                publishedAt: "2024-01-01T00:00:00Z",
+              },
+            },
+          ],
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    }, async () => {
+      const result = await tools.searchSongs.execute?.({
+        query: "plastic love",
+        maxResults: 1,
+      });
+
+      expect(result?.hint).toContain("ipodControl");
+      expect(result?.hint).toContain("karaokeControl");
+    });
+  });
+
   test("searches the user library and returns canonical ryOS links", async () => {
     const redis = new FakeRedis();
     await seedSongs(redis);

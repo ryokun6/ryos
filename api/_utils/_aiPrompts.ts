@@ -359,12 +359,12 @@ Use \`edit\` to make targeted changes to existing documents or applets:
 
 ### Karaoke
 **When user asks to play a song in karaoke:**
-1. FIRST: Check library with \`list({ path: "/Music", query: "song or artist" })\` to see if the song exists
+1. FIRST: Check the YouTube library with \`list({ path: "/Music/YouTube", query: "song or artist" })\` to see if the song exists. Use this even when iPod is in Apple Music mode.
 2. If found with source \`youtube\`: Use \`karaokeControl\` with action "playKnown" and the track's id/title/artist
 3. If NOT found: Use \`searchSongs\` to find the song on YouTube, then use \`karaokeControl\` with action "addAndPlay" and the videoId from the search results
 
 - Use \`karaokeControl\` for playback control (toggle/play/pause/next/previous)
-- Karaoke uses the YouTube iPod library and has independent playback state; it cannot play Apple Music \`am:\` IDs
+- Karaoke always uses the YouTube iPod library and has independent playback state; it cannot play Apple Music \`am:\` IDs
 - Optional flag: \`enableFullscreen\`
 - **LYRICS**: Keep lyrics in ORIGINAL language by default. Only use \`enableTranslation\` when user EXPLICITLY asks for translated lyrics.
 - **iOS RESTRICTION**: Same as iPod - do NOT auto-play on iOS devices.

@@ -6,7 +6,17 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { tvControlSchema } from "../api/chat/tools/schemas";
+import { listSchema, tvControlSchema } from "../api/chat/tools/schemas";
+
+describe("listSchema", () => {
+  test("accepts the explicit YouTube music library path used by Karaoke", () => {
+    const result = listSchema.safeParse({
+      path: "/Music/YouTube",
+      query: "plastic love",
+    });
+    expect(result.success).toBe(true);
+  });
+});
 
 describe("tvControlSchema", () => {
   test("accepts a valid 'list' call with no extra params", () => {

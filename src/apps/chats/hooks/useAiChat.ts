@@ -513,9 +513,11 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
             try {
               // Route based on path
-              if (path === "/Music") {
-                // List the currently active iPod library.
+              if (path === "/Music" || path === "/Music/YouTube") {
+                // /Music follows the active iPod library; Karaoke explicitly
+                // uses the YouTube library even when iPod is in Apple Music mode.
                 const ipodStore = useIpodStore.getState();
+                const useYoutubeLibrary = path === "/Music/YouTube";
                 const normalizedQuery = query
                   ? normalizeSearchText(query.trim())
                   : "";
@@ -526,7 +528,10 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 const maxResults = limit
                   ? Math.min(Math.max(limit, 1), 50)
                   : 25;
-                const activeTracks = getActiveIpodTracks(ipodStore);
+                const activeTracks = useYoutubeLibrary
+                  ? ipodStore.tracks
+                  : getActiveIpodTracks(ipodStore);
+                const librarySource = useYoutubeLibrary ? "youtube" : ipodStore.librarySource;
                 const scoredTracks = activeTracks.map((track) => {
                   const fields = [
                     track.id,
@@ -555,15 +560,17 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 const library = matchingTracks
                   .slice(0, maxResults)
                   .map(({ track }) => ({
-                    path: `/Music/${track.id}`,
+                    path: `${useYoutubeLibrary ? "/Music/YouTube" : "/Music"}/${track.id}`,
                     id: track.id,
                     title: track.title,
                     artist: track.artist,
-                    source: track.source ?? ipodStore.librarySource,
+                    source: track.source ?? librarySource,
                   }));
                 const hiddenCount = Math.max(matchingTracks.length - library.length, 0);
                 const libraryName =
-                  ipodStore.librarySource === "appleMusic" ? "Apple Music" : "iPod";
+                  useYoutubeLibrary
+                    ? "YouTube iPod"
+                    : ipodStore.librarySource === "appleMusic" ? "Apple Music" : "iPod";
 
                 const resultMessage =
                   library.length > 0
@@ -762,9 +769,15 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               // Route based on path prefix
               if (path.startsWith("/Music/")) {
                 // Play iPod song by ID
-                const songId = path.replace("/Music/", "");
+                const useYoutubeLibrary = path.startsWith("/Music/YouTube/");
+                const songId = useYoutubeLibrary
+                  ? path.replace("/Music/YouTube/", "")
+                  : path.replace("/Music/", "");
                 const ipodState = useIpodStore.getState();
-                const track = getActiveIpodTracks(ipodState).find((t) => t.id === songId);
+                const track = (useYoutubeLibrary
+                  ? ipodState.tracks
+                  : getActiveIpodTracks(ipodState)
+                ).find((t) => t.id === songId);
 
                 if (!track) {
                   throw new Error(`Song not found: ${songId}`);
@@ -777,8 +790,14 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   launchApp("ipod");
                 }
 
-                setActiveIpodCurrentSongId(ipodState, songId);
-                ipodState.setIsPlaying(true);
+                if (useYoutubeLibrary && ipodState.librarySource !== "youtube") {
+                  ipodState.setLibrarySource("youtube");
+                  useIpodStore.getState().setCurrentSongId(songId);
+                  useIpodStore.getState().setIsPlaying(true);
+                } else {
+                  setActiveIpodCurrentSongId(ipodState, songId);
+                  ipodState.setIsPlaying(true);
+                }
 
                 const playingMessage = track.artist
                   ? i18n.t("apps.chats.toolCalls.playingTrackByArtist", { title: track.title, artist: track.artist })

@@ -20,7 +20,7 @@ export const MEDIA_ACTIONS = ["toggle", "play", "pause", "playKnown", "addAndPla
 export type MediaAction = typeof MEDIA_ACTIONS[number];
 
 // VFS paths
-export const VFS_PATHS = ["/Applets", "/Documents", "/Applications", "/Music", "/Applets Store"] as const;
+export const VFS_PATHS = ["/Applets", "/Documents", "/Applications", "/Music", "/Music/YouTube", "/Applets Store"] as const;
 export type VfsPath = typeof VFS_PATHS[number];
 
 /**

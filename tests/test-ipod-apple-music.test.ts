@@ -58,7 +58,9 @@ const {
   getActiveIpodTracks,
   getIpodChatContextTrack,
 } = await import("../src/stores/useIpodStore");
+const { useKaraokeStore } = await import("../src/stores/useKaraokeStore");
 const { handleIpodControl } = await import("../src/apps/chats/tools/ipodHandler");
+const { handleKaraokeControl } = await import("../src/apps/chats/tools/karaokeHandler");
 const {
   shouldFireEndedForPlaybackState,
   isWithinEndedFanoutDedupWindow,
@@ -373,6 +375,14 @@ describe("useIpodStore Apple Music slice", () => {
       loopAll: false,
       loopCurrent: false,
       isShuffled: false,
+    });
+    useKaraokeStore.setState({
+      currentSongId: null,
+      isPlaying: false,
+      loopAll: true,
+      loopCurrent: false,
+      isShuffled: false,
+      playbackHistory: [],
     });
   });
 
@@ -695,6 +705,45 @@ describe("useIpodStore Apple Music slice", () => {
     expect(state.appleMusicPlaybackQueue).toBeNull();
     expect(state.currentSongId).toBe("yt1");
     expect(state.isPlaying).toBe(true);
+    expect(results).toHaveLength(1);
+  });
+
+  test("karaokeControl playKnown uses YouTube tracks while iPod is in Apple Music mode", async () => {
+    useIpodStore.setState({
+      tracks: [
+        { id: "yt1", url: "youtube:1", title: "YouTube One", source: "youtube" },
+        {
+          id: "yt2",
+          url: "youtube:2",
+          title: "Plastic Love",
+          artist: "Mariya Takeuchi",
+          source: "youtube",
+        },
+      ],
+      currentSongId: "yt1",
+      appleMusicTracks: [
+        { id: "am:1", url: "applemusic:1", title: "Apple One", source: "appleMusic" },
+      ],
+      appleMusicCurrentSongId: "am:1",
+      librarySource: "appleMusic",
+    });
+    const results: unknown[] = [];
+
+    await handleKaraokeControl(
+      { action: "playKnown", title: "Plastic Love" },
+      "call-karaoke",
+      {
+        launchApp: () => "karaoke-instance",
+        addToolResult: (result) => results.push(result),
+        detectUserOS: () => "Linux",
+      }
+    );
+
+    expect(useKaraokeStore.getState().currentSongId).toBe("yt2");
+    expect(useKaraokeStore.getState().isPlaying).toBe(true);
+    expect(useIpodStore.getState().librarySource).toBe("appleMusic");
+    expect(useIpodStore.getState().appleMusicCurrentSongId).toBe("am:1");
+    expect(useIpodStore.getState().currentSongId).toBe("yt1");
     expect(results).toHaveLength(1);
   });
 
