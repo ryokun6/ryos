@@ -47,6 +47,16 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
   const { isSpeaking } = state;
   // Track any sources currently playing so we can stop them
   const playingSourcesRef = useRef<Set<AudioBufferSourceNode>>(new Set());
+  // Pending fallback timers keyed by source. We schedule a timer based on the
+  // known audio buffer duration so `onEnd` still fires even when `src.onended`
+  // is throttled or delayed (background tabs, AudioContext briefly suspended,
+  // iOS Safari quirks, etc.). Without this, the chats TTS highlight overlay
+  // could linger on a finished sentence until something else (e.g. the user
+  // bringing the window back to foreground, which fires `focusHandler` and
+  // resumes the AudioContext) flushes the pending audio events.
+  const fallbackTimersRef = useRef<
+    Map<AudioBufferSourceNode, ReturnType<typeof setTimeout>>
+  >(new Map());
   // Promise chain that guarantees *scheduling* order while still allowing
   // individual fetches to run in parallel.
   const scheduleChainRef = useRef<Promise<void>>(Promise.resolve());
@@ -280,8 +290,23 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
           playingSourcesRef.current.add(src);
           dispatch({ type: "setIsSpeaking", value: true });
 
-          src.onended = () => {
-            // Disconnect the source node to prevent memory leaks
+          // Idempotent end handler — must be safe to invoke from either the
+          // native `src.onended` event OR the fallback timer below. The
+          // fallback exists because some browsers (notably iOS Safari, and
+          // any browser when its AudioContext briefly suspends or the page
+          // loses focus) defer the `ended` dispatch until the page is
+          // brought back to focus. That delay is what made the chats TTS
+          // highlight visually stick on a finished sentence until the user
+          // switched the window background and back to foreground.
+          let ended = false;
+          const finishSrc = () => {
+            if (ended) return;
+            ended = true;
+            const timer = fallbackTimersRef.current.get(src);
+            if (timer) {
+              clearTimeout(timer);
+              fallbackTimersRef.current.delete(src);
+            }
             try {
               src.disconnect();
             } catch {
@@ -293,10 +318,50 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
             }
             if (onEnd) onEnd();
           };
+          src.onended = finishSrc;
 
           src.start(start);
 
           nextStartRef.current = start + audioBuf.duration;
+
+          // Schedule a fallback that fires `finishSrc` shortly after the
+          // source is *expected* to finish playing. We re-check against
+          // `ctx.currentTime` (audio-clock time, which only advances while
+          // the context is running) instead of just trusting wall-clock
+          // time, so a briefly suspended/interrupted AudioContext doesn't
+          // cause us to clear the highlight before the audio has actually
+          // played. The 250ms cushion gives the native `onended` a tiny
+          // grace period to win the race in the happy path; `finishSrc` is
+          // idempotent so whichever path fires first wins and the other
+          // becomes a no-op.
+          const expectedEndTime = start + audioBuf.duration;
+          const scheduleFallback = (delayMs: number) => {
+            const timer = setTimeout(() => {
+              if (ended) return;
+              const ctxState = ctx.state as
+                | AudioContextState
+                | "interrupted";
+              if (ctxState === "closed") {
+                finishSrc();
+                return;
+              }
+              const remainingSec = expectedEndTime - ctx.currentTime;
+              if (remainingSec <= 0.05) {
+                finishSrc();
+                return;
+              }
+              // Audio clock hasn't caught up yet (context paused, or our
+              // initial estimate underestimated decode latency). Try again
+              // once the remaining audio should have played.
+              scheduleFallback(remainingSec * 1000 + 250);
+            }, Math.max(0, delayMs));
+            fallbackTimersRef.current.set(src, timer);
+          };
+          const initialDelayMs = Math.max(
+            0,
+            (expectedEndTime - ctx.currentTime) * 1000
+          );
+          scheduleFallback(initialDelayMs + 250);
         } catch (err) {
           if ((err as DOMException)?.name !== "AbortError") {
             console.error("Error during speak()", err);
@@ -344,6 +409,13 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
     if (stopTimeoutRef.current) {
       clearTimeout(stopTimeoutRef.current);
     }
+
+    // Cancel any pending fallback timers — `src.stop()` below should make
+    // each source dispatch `onended` (and our handler is idempotent), so the
+    // fallback path is no longer needed for these sources. Leaving the timers
+    // running would just queue up stale no-op work.
+    fallbackTimersRef.current.forEach((timer) => clearTimeout(timer));
+    fallbackTimersRef.current.clear();
 
     // Small delay before stopping sources to allow fade
     stopTimeoutRef.current = setTimeout(() => {
