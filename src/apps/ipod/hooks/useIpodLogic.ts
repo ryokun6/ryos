@@ -1774,7 +1774,19 @@ export function useIpodLogic({
     const allSongsLabel = t("apps.ipod.menuItems.allSongs");
     for (const artistKey of sortedArtistKeys) {
       const artist = artistGroupsByKey[artistKey];
-      const artistTracks = artist.tracks;
+      // Per-artist "All" lists are sorted by track title so the wheel's
+      // "scroll by letter" mode lands on the right group. The
+      // playback queue mirrors this order so next/previous walks the
+      // list as it appears on screen.
+      const artistTracks = [...artist.tracks].sort((a, b) => {
+        const byTitle = a.track.title.localeCompare(b.track.title, undefined, {
+          sensitivity: "base",
+        });
+        if (byTitle !== 0) return byTitle;
+        return a.track.id.localeCompare(b.track.id, undefined, {
+          sensitivity: "base",
+        });
+      });
       const queueIds = artistTracks.map(({ track }) => track.id);
       const title = `${artistKey} - ${allSongsLabel}`;
       const legacyTitle = `${artist.name} - ${allSongsLabel}`;
@@ -1875,6 +1887,7 @@ export function useIpodLogic({
               displayTitle: `${artist.name} - ${allSongsLabel}`,
               items: artistAllSongsMenuItemsByTitle[allSongsTitle] ?? EMPTY_IPOD_MENU_ITEMS,
               selectedIndex: 0,
+              alphabetic: true,
             });
           },
           showChevron: true,
@@ -2107,9 +2120,19 @@ export function useIpodLogic({
     menuLocale,
   ]);
 
+  // Sort Apple Music playlists alphabetically by name so the wheel's
+  // fast scroll-by-letter mode lands the user on the right section.
+  const sortedAppleMusicPlaylists = useMemo(
+    () =>
+      [...appleMusicPlaylists].sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
+      ),
+    [appleMusicPlaylists]
+  );
+
   const applePlaylistsMenuItems = useMemo(
     (): MenuItem[] =>
-      appleMusicPlaylists.map((playlist) => {
+      sortedAppleMusicPlaylists.map((playlist) => {
         // Prefer the playlist's own artwork (Apple Music supplies it
         // directly via MusicKit). Fall back to the first cached track
         // with usable artwork so playlists imported before the artwork
@@ -2149,7 +2172,7 @@ export function useIpodLogic({
         };
       }),
     [
-      appleMusicPlaylists,
+      sortedAppleMusicPlaylists,
       appleMusicPlaylistTracks,
       applePlaylistTrackMenuItemsByPlaylist,
       registerActivity,
@@ -2241,6 +2264,7 @@ export function useIpodLogic({
           action: () => {
             pushSubmenu(playlistsLabel, applePlaylistsMenuItems, {
               modernMediaList: true,
+              alphabetic: true,
             });
             void loadAppleMusicPlaylists();
           },
