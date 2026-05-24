@@ -2,8 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { getOpenAIProviderOptions } from "../api/_utils/_aiModels.js";
 
 describe("OpenAI provider options", () => {
-  test("preserves explicit reasoning effort for gpt-5.4", () => {
-    expect(getOpenAIProviderOptions("gpt-5.4")).toEqual({
+  test("preserves explicit reasoning effort for gpt-5.5", () => {
+    expect(getOpenAIProviderOptions("gpt-5.5")).toEqual({
       openai: {
         reasoningEffort: "none",
       },

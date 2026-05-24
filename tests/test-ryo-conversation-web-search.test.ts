@@ -22,7 +22,7 @@ const baseSystemState: RyoConversationSystemState = {
 
 async function prepareConversation(options: {
   channel: "chat" | "telegram";
-  model: "gpt-5.4" | "sonnet-4.6" | "gemini-3-flash";
+  model: "gpt-5.5" | "sonnet-4.6" | "gemini-3-flash";
   username?: string | null;
   systemState?: RyoConversationSystemState;
 }) {
@@ -48,10 +48,10 @@ function hasGoogleSearchTool(
 }
 
 describe("prepareRyoConversationModelInput web search gating", () => {
-  test("adds web_search for authenticated chat on gpt-5.4", async () => {
+  test("adds web_search for authenticated chat on gpt-5.5", async () => {
     const prepared = await prepareConversation({
       channel: "chat",
-      model: "gpt-5.4",
+      model: "gpt-5.5",
       username: "ryo",
       systemState: baseSystemState,
     });
@@ -60,10 +60,10 @@ describe("prepareRyoConversationModelInput web search gating", () => {
     expect(prepared.tools.web_search.id).toBe("openai.web_search");
   });
 
-  test("does not add web_search for anonymous chat on gpt-5.4", async () => {
+  test("does not add web_search for anonymous chat on gpt-5.5", async () => {
     const prepared = await prepareConversation({
       channel: "chat",
-      model: "gpt-5.4",
+      model: "gpt-5.5",
       username: null,
       systemState: baseSystemState,
     });
@@ -82,10 +82,10 @@ describe("prepareRyoConversationModelInput web search gating", () => {
     expect("web_search" in prepared.tools).toBe(false);
   });
 
-  test("adds web_search for telegram on gpt-5.4", async () => {
+  test("adds web_search for telegram on gpt-5.5", async () => {
     const prepared = await prepareConversation({
       channel: "telegram",
-      model: "gpt-5.4",
+      model: "gpt-5.5",
       username: "ryo",
     });
 

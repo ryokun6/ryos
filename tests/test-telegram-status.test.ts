@@ -130,7 +130,7 @@ describe("telegram status helpers", () => {
   });
 
   test("uses shared OpenAI provider options for Telegram replies", () => {
-    expect(getOpenAIProviderOptions("gpt-5.4")).toEqual({
+    expect(getOpenAIProviderOptions("gpt-5.5")).toEqual({
       openai: {
         reasoningEffort: "none",
       },

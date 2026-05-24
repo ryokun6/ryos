@@ -470,14 +470,14 @@
 <h2>AI Provider Abstraction</h2>
 <h3>Supported Models (AI SDK 6.0)</h3>
 <p>The API uses Vercel AI SDK 6.0 with structured outputs for type-safe responses.</p>
-<table><thead><tr><th>Provider</th><th>Models</th><th>Use Cases</th></tr></thead><tbody><tr><td><strong>OpenAI</strong></td><td>gpt-5.4</td><td>Default chat, code generation</td></tr><tr><td><strong>Anthropic</strong></td><td>sonnet-4.6 (claude-sonnet-4-6)</td><td>Complex reasoning</td></tr><tr><td><strong>Google</strong></td><td>gemini-3-flash, gemini-3.1-pro-preview</td><td>Image generation, title parsing</td></tr></tbody></table>
+<table><thead><tr><th>Provider</th><th>Models</th><th>Use Cases</th></tr></thead><tbody><tr><td><strong>OpenAI</strong></td><td>gpt-5.5</td><td>Default chat, code generation</td></tr><tr><td><strong>Anthropic</strong></td><td>sonnet-4.6 (claude-sonnet-4-6)</td><td>Complex reasoning</td></tr><tr><td><strong>Google</strong></td><td>gemini-3-flash, gemini-3.1-pro-preview</td><td>Image generation, title parsing</td></tr></tbody></table>
 <strong>Structured Outputs:</strong> Used for deterministic responses like song title parsing (<code>/api/parse-title</code>).
 <h3>Model Selection</h3>
 <pre><code>// api/_utils/_aiModels.ts
 export const getModelInstance = (model: SupportedModel): LanguageModel =&gt; {
   switch (model) {
-    case "gpt-5.4":
-      return openai("gpt-5.4");
+    case "gpt-5.5":
+      return openai("gpt-5.5");
     case "sonnet-4.6":
       return anthropic("claude-sonnet-4-6");
     case "gemini-3-flash":

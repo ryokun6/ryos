@@ -11,7 +11,7 @@ import type { LanguageModel } from "ai";
 // Single source of truth for AI models
 export const AI_MODELS = {
   "sonnet-4.6": { name: "sonnet-4.6", provider: "Anthropic" },
-  "gpt-5.4": { name: "gpt-5.4", provider: "OpenAI" },
+  "gpt-5.5": { name: "gpt-5.5", provider: "OpenAI" },
   "gemini-3-flash": { name: "gemini-3-flash", provider: "Google" },
   "gemini-3.1-pro-preview": { name: "gemini-3.1-pro-preview", provider: "Google" },
 } as const;
@@ -23,7 +23,7 @@ export type SupportedModel = keyof typeof AI_MODELS;
 export const SUPPORTED_AI_MODELS = Object.keys(AI_MODELS) as SupportedModel[];
 
 // Default model
-export const DEFAULT_MODEL: SupportedModel = "gpt-5.4";
+export const DEFAULT_MODEL: SupportedModel = "gpt-5.5";
 export const TELEGRAM_DEFAULT_MODEL: SupportedModel = DEFAULT_MODEL;
 
 type OpenAIReasoningEffort = "none" | "medium";
@@ -31,7 +31,7 @@ type OpenAIReasoningEffort = "none" | "medium";
 const OPENAI_REASONING_EFFORT_BY_MODEL: Partial<
   Record<SupportedModel, OpenAIReasoningEffort>
 > = {
-  "gpt-5.4": "none",
+  "gpt-5.5": "none",
 };
 
 // Factory that returns a LanguageModel instance for the requested model
@@ -41,14 +41,14 @@ export const getModelInstance = (model: SupportedModel): LanguageModel => {
   switch (modelToUse) {
     case "sonnet-4.6":
       return anthropic("claude-sonnet-4-6");
-    case "gpt-5.4":
-      return openai("gpt-5.4");
+    case "gpt-5.5":
+      return openai("gpt-5.5");
     case "gemini-3-flash":
       return google("gemini-3-flash-preview");
     case "gemini-3.1-pro-preview":
       return google("gemini-3.1-pro-preview");
     default:
-      return openai("gpt-5.4");
+      return openai("gpt-5.5");
   }
 };
 
