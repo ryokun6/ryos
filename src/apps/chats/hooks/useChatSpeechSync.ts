@@ -29,7 +29,7 @@ export function useChatSpeechSync({
   const [highlightSegment, setHighlightSegment] =
     useState<ChatHighlightSegment | null>(null);
   const highlightSegmentRef = useRef<ChatHighlightSegment | null>(null);
-  const { speak, stop: stopSpeech, isSpeaking } = useTtsQueue();
+  const { speak, stop: stopTts, isSpeaking } = useTtsQueue();
 
   const setCurrentHighlightSegment = useCallback(
     (segment: ChatHighlightSegment | null) => {
@@ -38,6 +38,18 @@ export function useChatSpeechSync({
     },
     []
   );
+
+  // Stop both audio playback and the highlight state. Called when the user
+  // hits stop or when speech finishes — both should leave no stale highlight
+  // behind. Lingering speak() chains may still fire `onEnd` callbacks after
+  // their fetches abort; those fall through harmlessly because the queue is
+  // already empty and `setCurrentHighlightSegment(queue[0] || null)` resolves
+  // to null.
+  const stopSpeech = useCallback(() => {
+    stopTts();
+    highlightQueueRef.current = [];
+    setCurrentHighlightSegment(null);
+  }, [setCurrentHighlightSegment, stopTts]);
 
   useEffect(() => {
     aiMessages.forEach((msg) => {
@@ -103,11 +115,12 @@ export function useChatSpeechSync({
   );
 
   const resetSpeechState = useCallback(() => {
+    // stopSpeech already stops audio, drains the highlight queue, and clears
+    // the active segment; only the per-message progress map needs explicit
+    // reset on top.
     stopSpeech();
     speechProgressRef.current = {};
-    highlightQueueRef.current = [];
-    setCurrentHighlightSegment(null);
-  }, [setCurrentHighlightSegment, stopSpeech]);
+  }, [stopSpeech]);
 
   const markAssistantMessageProcessed = useCallback((message: UIMessage) => {
     if (message.role !== "assistant") {
