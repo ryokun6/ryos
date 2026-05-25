@@ -123,6 +123,7 @@ export interface ListInput {
   path: VfsPath;
   query?: string;
   limit?: number;
+  librarySource?: "active" | "youtube" | "appleMusic";
 }
 
 // Open input
