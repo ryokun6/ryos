@@ -50,6 +50,7 @@ export function BootScreen({
     isMacOSTheme: isMacOSX,
     isWinXp,
     isWin98,
+    isDarkMode,
   } = useThemeFlags();
   const localizedTitle = title ?? t("common.system.systemRestoring");
 
@@ -190,7 +191,10 @@ export function BootScreen({
               left: 0, 
               right: 0, 
               bottom: 0,
-              backgroundColor: "#4566a0"
+              // Light mode keeps the classic Aqua blue boot backdrop;
+              // dark mode falls back to a near-black surface so the
+              // boot screen doesn't blast bright blue on a dark desktop.
+              backgroundColor: isDarkMode ? "#0a0a0c" : "#4566a0"
             }}
           />
           <DialogContent
@@ -216,7 +220,15 @@ export function BootScreen({
                 src="/icons/macosx/apple.png"
                 alt="Apple"
                 className="size-[120px] object-contain"
-                style={{ marginBottom: "-30px", filter: "grayscale(50%) brightness(1.25)" }}
+                style={{
+                  marginBottom: "-30px",
+                  // Light mode: soft gray Apple. Dark mode: invert the
+                  // dark logo to a light glyph so it reads against the
+                  // dark pinstripe surface instead of disappearing.
+                  filter: isDarkMode
+                    ? "grayscale(50%) brightness(1.25) invert(1)"
+                    : "grayscale(50%) brightness(1.25)",
+                }}
               />
               {/* ryOS X text */}
               <h1 
