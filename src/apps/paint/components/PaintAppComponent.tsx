@@ -123,7 +123,11 @@ export const PaintAppComponent: React.FC<AppProps<PaintInitialData>> = ({
         keepMountedWhenMinimized
       >
         <div
-          className="flex flex-col h-full w-full min-h-0 p-2"
+          // Paint UI is intentionally skinned for the classic Paint look in
+          // every theme — opt out of the macOS Aqua dark coverage layer so
+          // toolbars, the canvas chrome, and the pattern palette keep their
+          // light surfaces in dark mode too.
+          className="flex flex-col h-full w-full min-h-0 p-2 os-native-chrome-skip"
           style={{
             backgroundImage: 'url("/patterns/Property 1=7.svg")',
             backgroundRepeat: "repeat",

@@ -4021,3 +4021,129 @@
   :where(.bg-gray-100\/50, .hover\:bg-gray-100\/50:hover) {
   background-color: rgba(255, 255, 255, 0.06) !important;
 }
+
+/* --- Chat stop button ----------------------------------------------------- */
+/* The send/stop pair use Aqua-styled gradient pills inline. The stop button's
+   light pink gradient reads more like "send (red theme)" than "stop"; tighten
+   it to a deeper, more saturated red across themes and flip the glyph white
+   so the stop affordance is unambiguous. */
+.chat-stop-btn {
+  background: linear-gradient(
+    rgba(220, 38, 38, 0.95),
+    rgba(159, 18, 24, 0.95)
+  ) !important;
+  box-shadow:
+    0 2px 3px rgba(0, 0, 0, 0.3),
+    0 1px 1px rgba(0, 0, 0, 0.35),
+    inset 0 0 0 0.5px rgba(0, 0, 0, 0.45),
+    inset 0 1px 2px rgba(0, 0, 0, 0.4),
+    inset 0 2px 3px 1px rgba(220, 38, 38, 0.45) !important;
+}
+
+.chat-stop-glyph {
+  color: #ffffff !important;
+}
+
+/* Dark mode keeps the same red but slightly less luminous so it doesn't
+   over-pop against the dim window. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .chat-stop-btn {
+  background: linear-gradient(
+    rgba(185, 28, 28, 0.9),
+    rgba(127, 14, 19, 0.95)
+  ) !important;
+  box-shadow:
+    0 2px 3px rgba(0, 0, 0, 0.55),
+    0 1px 1px rgba(0, 0, 0, 0.45),
+    inset 0 0 0 0.5px rgba(0, 0, 0, 0.6),
+    inset 0 1px 2px rgba(0, 0, 0, 0.45),
+    inset 0 2px 3px 1px rgba(185, 28, 28, 0.4) !important;
+}
+
+/* --- Inline search/text inputs that don't use the shared SearchInput ----- */
+/* TV / Contacts / Calendar / TrayDetails / etc. inline their own inputs with
+   hardcoded `bg-white border-black/40` (or /20) Tailwind classes — they
+   don't carry the `data-os-search-input` marker the shared SearchInput
+   uses. Catch the broader pattern here so dark mode lands consistently:
+   any inline-styled input/textarea inside `.window-body` with `bg-white`,
+   `bg-white/{alpha}`, or `bg-white/60`-style class lands on the dark
+   input surface, and `border-black/{alpha}` borders get a faint white
+   hairline. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .window-body
+  :where(input, textarea, select):where(
+    .bg-white,
+    .bg-white\/90,
+    .bg-white\/85,
+    .bg-white\/80,
+    .bg-white\/70,
+    .bg-white\/60,
+    .bg-white\/50,
+    .bg-white\/40,
+    .bg-white\/30,
+    .bg-white\/20,
+    .bg-white\/10
+  ):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *):not(.synth-force-font *):not(.dashboard-overlay *) {
+  background-color: var(--os-color-input-bg) !important;
+  color: var(--os-color-text-primary) !important;
+}
+
+/* `border-black/{alpha}` and similar on inputs read as nearly invisible on
+   the dark window. Lift to a faint white-on-dark hairline. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .window-body
+  :where(input, textarea, select):where(
+    .border-black,
+    .border-black\/40,
+    .border-black\/30,
+    .border-black\/20,
+    .border-black\/10,
+    .border-\[\#7f9db9\]
+  ):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *):not(.synth-force-font *):not(.dashboard-overlay *) {
+  border-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+/* Placeholders. Contacts/TV/Calendar set `placeholder:text-black/40` etc.
+   inline; remap to the disabled-text token. The `::placeholder` pseudo
+   sits at the very end after all class / negation selectors. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .window-body
+  :where(input, textarea):where(
+    .placeholder\:text-black\/30,
+    .placeholder\:text-black\/40,
+    .placeholder\:text-black\/50,
+    .placeholder\:text-black\/60
+  ):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *):not(.synth-force-font *):not(.dashboard-overlay *)::placeholder {
+  color: var(--os-color-text-disabled) !important;
+}
+/* Note: `:not(.x *)::placeholder` is valid — `::placeholder` attaches to the
+   compound selector, and `:not()` is part of that compound. */
+
+/* Inline magnifier / clear-icon glyphs that use `text-black/{alpha}` next to
+   inline inputs (Contacts, ChannelPromptInput, etc.). Recolor to a soft
+   white so the icon is visible against the dark input pill. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .window-body
+  :where(.text-black\/35, .text-black\/45, .text-black\/55):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *):not(.synth-force-font *):not(.dashboard-overlay *) {
+  color: rgba(255, 255, 255, 0.55) !important;
+}
+
+/* --- Synth piano keys & paint toolbar opt-out --------------------------- */
+/* Synth piano keys carry their own authored bg colors (`bg-white` for white
+   keys, `bg-black` for black keys) and the pressed-state magenta. The
+   broad dark-mode coverage above remaps `bg-white`, but a piano key MUST
+   stay white regardless of OS color scheme. Pin the authored colors with
+   a higher-specificity selector. The light-mode rules in `index.css`
+   already enforce `!important`; mirror them here for dark mode parity. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] button.piano-key.bg-white,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] button.piano-key.bg-white.bg-white {
+  background: rgb(255 255 255) !important;
+  background-color: rgb(255 255 255) !important;
+  color: #000 !important;
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] button.piano-key.bg-black,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] button.piano-key.bg-black.bg-black {
+  background: rgb(0 0 0) !important;
+  background-color: rgb(0 0 0) !important;
+  color: #fff !important;
+}

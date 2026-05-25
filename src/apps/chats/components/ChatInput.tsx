@@ -882,7 +882,7 @@ export const ChatInput = memo(function ChatInput({
                       onManualStop?.();
                     }
                   }}
-                  className={`text-xs size-9 p-0 flex items-center justify-center ${
+                  className={`chat-stop-btn text-xs size-9 p-0 flex items-center justify-center ${
                     isMacTheme ? "rounded-full" : "rounded-none"
                   } ${
                     isMacTheme
@@ -936,7 +936,7 @@ export const ChatInput = memo(function ChatInput({
                     </>
                   )}
                   <Square
-                    className={`size-4 ${
+                    className={`chat-stop-glyph size-4 ${
                       isMacTheme
                         ? "text-black/70 relative z-10"
                         : isXpTheme
