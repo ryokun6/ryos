@@ -4147,3 +4147,84 @@
   background-color: rgb(0 0 0) !important;
   color: #fff !important;
 }
+
+/* --- Toast title / description in dark mode ------------------------------ */
+/* The light-mode rule pins toast title/description to `rgba(0, 0, 0, 0.9)` —
+   that wins over the container's `color` token in dark mode. Re-pin the
+   inner text colors so the dark toast actually reads as light-on-dark. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .toaster [data-sonner-toast] [data-title],
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .toaster [data-sonner-toast] [data-description] {
+  color: var(--os-color-text-primary) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .toaster [data-sonner-toast] [data-description] {
+  color: var(--os-color-text-secondary) !important;
+}
+
+/* --- Dialog body content in dark mode (HelpDialog, About, etc.) ---------- */
+/* HelpDialog renders its HelpCards directly inside `.macosx-dialog` (no
+   `.window-body` wrapper for the mac theme), so the broad `.window-body`
+   coverage doesn't reach. Mirror the most common patterns inside the
+   dialog surface so help cards / about cards / form rows read correctly. */
+
+/* Card-like soft tinted backgrounds (`bg-black/5` / `/10` / `/20`) inside a
+   dialog read as nearly invisible against the dark window — lift them to a
+   faint white wash so the card silhouette is still visible. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .macosx-dialog
+  :where(.bg-black\/5, .bg-black\/10, .bg-black\/15, .bg-black\/20):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *):not(.synth-force-font *) {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Body / secondary copy inside dialogs. The `text-gray-700` class lands
+   too dark on the dark dialog surface; lift to the secondary token. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .macosx-dialog
+  :where(
+    .text-gray-500,
+    .text-gray-600,
+    .text-gray-700,
+    .text-gray-800,
+    .text-neutral-500,
+    .text-neutral-600,
+    .text-neutral-700,
+    .text-neutral-800,
+    .text-zinc-600,
+    .text-zinc-700,
+    .text-slate-600,
+    .text-slate-700
+  ):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *):not(.synth-force-font *):not([class*="bg-pink-"]):not([class*="bg-blue-"]):not([class*="bg-yellow-"]):not([class*="bg-purple-"]):not([class*="bg-indigo-"]):not([class*="bg-teal-"]):not([class*="bg-amber-"]) {
+  color: var(--os-color-text-secondary) !important;
+}
+
+/* Primary headings inside dialogs default to inheriting `text-foreground`,
+   but `text-black` and `.text-[#000]` variants used in custom titles need
+   the same flip we apply inside `.window-body`. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .macosx-dialog
+  :where(.text-black, .text-\[\#000\], .text-\[\#000000\]):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *):not(.synth-force-font *):not([class*="bg-pink-"]):not([class*="bg-blue-"]):not([class*="bg-yellow-"]):not([class*="bg-purple-"]):not([class*="bg-indigo-"]):not([class*="bg-teal-"]):not([class*="bg-amber-"]) {
+  color: var(--os-color-text-primary) !important;
+}
+
+/* Inline `bg-white(/alpha)` surfaces inside a dialog (e.g. AboutDialog
+   sub-cards) — same recipe as the .window-body rule. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .macosx-dialog
+  :where(.bg-white):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *):not(.synth-force-font *) {
+  background-color: var(--os-color-window-bg) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .macosx-dialog
+  :where(.bg-white\/90, .bg-white\/85, .bg-white\/80, .bg-white\/70, .bg-white\/60, .bg-white\/50, .bg-white\/40, .bg-white\/30, .bg-white\/20, .bg-white\/10):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *):not(.synth-force-font *) {
+  background-color: rgba(31, 31, 34, 0.92) !important;
+}
+
+/* Ensure `.macosx-dialog` itself paints the right primary text fallback so
+   anything not explicitly recolored falls through to the dark scheme. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .macosx-dialog {
+  color: var(--os-color-text-primary);
+}
