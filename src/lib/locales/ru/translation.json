@@ -1319,6 +1319,8 @@
       "crashDesktop": "Сбой рабочего стола",
       "crt": "ЭЛТ",
       "custom": "Пользовательский",
+      "darkMode": "Тёмный режим",
+      "darkModeDescription": "Использовать тёмный вариант текущей темы",
       "debugMode": "Режим отладки",
       "debugModeDescription": "Включить параметры отладки",
       "default": "По умолчанию",
@@ -2319,6 +2321,7 @@
         "albums": "Альбомы",
         "all": "Все",
         "allSongs": "Все песни",
+        "alwaysOn": "Оставить включённым",
         "appleMusicSignIn": "Apple Music",
         "appleMusicSignOut": "Apple Music",
         "artists": "Артисты",
@@ -2478,6 +2481,8 @@
           "title": "Общий доступ с iPod"
         }
       },
+      "ktvRoomFx": "Реакции зала",
+      "ktvRoomFxHint": "Плавающие реакции зала в полноэкранном караоке",
       "liveListen": {
         "activeSessions": "Активные караоке-комнаты",
         "anonymous": "{{count}} анонимов",
@@ -2540,9 +2545,7 @@
         "view": "Вид"
       },
       "name": "Караоке",
-      "noTrack": "Трек не загружен. Откройте iPod, чтобы выбрать песню.",
-      "ktvRoomFx": "Реакции зала",
-      "ktvRoomFxHint": "Плавающие реакции зала в полноэкранном караоке"
+      "noTrack": "Трек не загружен. Откройте iPod, чтобы выбрать песню."
     },
     "maps": {
       "description": "Ищите места в Apple Maps",
