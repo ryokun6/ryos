@@ -85,6 +85,13 @@ export function ScrollingText({
   }, []);
 
   useEffect(() => {
+    const shouldMeasureForMarquee =
+      allowMarquee && (!resetOnPause || isPlaying);
+    if (!shouldMeasureForMarquee) {
+      setShouldScroll((prev) => (prev ? false : prev));
+      return;
+    }
+
     const container = containerRef.current;
     if (!container) return;
 
@@ -115,7 +122,14 @@ export function ScrollingText({
       window.clearTimeout(settleTimeout);
       resizeObserver.disconnect();
     };
-  }, [text, allowMarquee, labelLayoutKey, measureOverflow]);
+  }, [
+    text,
+    allowMarquee,
+    resetOnPause,
+    isPlaying,
+    labelLayoutKey,
+    measureOverflow,
+  ]);
 
   // When `resetOnPause` is enabled and we're paused, drop the marquee track
   // entirely so the duplicated text snaps back to translate(0). The static
