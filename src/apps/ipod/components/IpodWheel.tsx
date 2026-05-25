@@ -454,7 +454,7 @@ export function IpodWheel({
       >
         {/* Wheel labels - no click handlers */}
         <div
-          className="absolute top-1 text-center left-1/2 transform -translate-x-1/2 font-ipod-modern-ui font-semibold text-[15px] leading-none tracking-wide text-white menu-button cursor-default select-none no-select-gesture"
+          className="absolute top-1.5 text-center left-1/2 transform -translate-x-1/2 font-ipod-modern-ui font-semibold text-[12px] leading-none tracking-wide text-white menu-button cursor-default select-none no-select-gesture"
           onClick={(e) => {
             if (recentTouchRef.current || isInTouchDragRef.current || isInMouseDragRef.current) return;
             e.stopPropagation(); // Prevent triggering wheel mousedown
