@@ -101,7 +101,10 @@ const IS_IOS_SAFARI = IS_IOS && IS_SAFARI;
 
 /** Stable fallback so `rebuildMenuItems` never returns a fresh `[]` per call. */
 const EMPTY_IPOD_MENU_ITEMS: MenuItem[] = [];
-const BACKLIGHT_TIMEOUT_BY_SETTING: Record<Exclude<IpodBacklightTimeout, "off">, number> = {
+const BACKLIGHT_TIMEOUT_BY_SETTING: Record<
+  Exclude<IpodBacklightTimeout, "off" | "always-on">,
+  number
+> = {
   "2s": 2000,
   "10s": 10000,
 };
@@ -725,7 +728,13 @@ export function useIpodLogic({
   const memoizedCycleBacklightTimeout = useCallback(() => {
     const currentSetting = useIpodStore.getState().backlightTimeout;
     const nextSetting: IpodBacklightTimeout =
-      currentSetting === "2s" ? "10s" : currentSetting === "10s" ? "off" : "2s";
+      currentSetting === "2s"
+        ? "10s"
+        : currentSetting === "10s"
+        ? "always-on"
+        : currentSetting === "always-on"
+        ? "off"
+        : "2s";
     setBacklightTimeout(nextSetting);
 
     if (nextSetting === "off") {
@@ -733,6 +742,15 @@ export function useIpodLogic({
         toggleBacklight();
       }
       showStatus(t("apps.ipod.menuItems.off"));
+      return;
+    }
+
+    if (nextSetting === "always-on") {
+      if (!useIpodStore.getState().backlightOn) {
+        toggleBacklight();
+      }
+      showStatus(t("apps.ipod.menuItems.alwaysOn", "Always On"));
+      registerActivity();
       return;
     }
 
@@ -1387,7 +1405,7 @@ export function useIpodLogic({
     }
 
     const timeoutMs =
-      backlightTimeout === "off"
+      backlightTimeout === "off" || backlightTimeout === "always-on"
         ? null
         : BACKLIGHT_TIMEOUT_BY_SETTING[backlightTimeout];
 
@@ -2462,6 +2480,8 @@ export function useIpodLogic({
             ? "2s"
             : backlightTimeout === "10s"
             ? "10s"
+            : backlightTimeout === "always-on"
+            ? t("apps.ipod.menuItems.alwaysOn", "Always On")
             : t("apps.ipod.menuItems.off"),
       },
       {

@@ -815,11 +815,14 @@ export function IpodMenuBar({
               <MenubarRadioGroup
                 value={backlightTimeout}
                 onValueChange={(value) => {
-                  const timeout = value as "2s" | "10s" | "off";
+                  const timeout = value as "2s" | "10s" | "always-on" | "off";
                   setBacklightTimeout(timeout);
                   if (timeout === "off" && isBacklightOn) {
                     toggleBacklight();
-                  } else if ((timeout === "2s" || timeout === "10s") && !isBacklightOn) {
+                  } else if (
+                    (timeout === "2s" || timeout === "10s" || timeout === "always-on") &&
+                    !isBacklightOn
+                  ) {
                     toggleBacklight();
                   }
                 }}
@@ -829,6 +832,9 @@ export function IpodMenuBar({
                 </MenubarRadioItem>
                 <MenubarRadioItem value="10s" className="text-md h-6 pr-3">
                   10s
+                </MenubarRadioItem>
+                <MenubarRadioItem value="always-on" className="text-md h-6 pr-3">
+                  {t("apps.ipod.menuItems.alwaysOn", "Always On")}
                 </MenubarRadioItem>
                 <MenubarRadioItem value="off" className="text-md h-6 pr-3">
                   {t("apps.ipod.menuItems.off")}

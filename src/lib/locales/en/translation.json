@@ -1999,6 +1999,7 @@
         "backlight": "Backlight",
         "theme": "Theme",
         "on": "On",
+        "alwaysOn": "Always On",
         "off": "Off",
         "one": "One",
         "all": "All",

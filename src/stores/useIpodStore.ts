@@ -36,7 +36,7 @@ export interface LyricsSource {
 /** Library source the iPod is currently displaying. */
 export type LibrarySource = "youtube" | "appleMusic";
 
-export const IPOD_BACKLIGHT_TIMEOUT_OPTIONS = ["2s", "10s", "off"] as const;
+export const IPOD_BACKLIGHT_TIMEOUT_OPTIONS = ["2s", "10s", "always-on", "off"] as const;
 export type IpodBacklightTimeout = (typeof IPOD_BACKLIGHT_TIMEOUT_OPTIONS)[number];
 
 /** User playlist from the Apple Music library. */
@@ -2501,6 +2501,7 @@ export const useIpodStore = create<IpodState>()(
           backlightTimeout:
             state.backlightTimeout === "2s" ||
             state.backlightTimeout === "10s" ||
+            state.backlightTimeout === "always-on" ||
             state.backlightTimeout === "off"
               ? state.backlightTimeout
               : "2s",
