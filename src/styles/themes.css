@@ -4006,19 +4006,30 @@
 }
 
 /* --- Finder list view: zebra + header bg ---------------------------------- */
-/* The list view uses `odd:bg-gray-200/50` for zebra rows and `bg-gray-100/50`
-   for table headers. Those compile to `rgb(229, 231, 235, 0.5)` /
-   `rgb(243, 244, 246, 0.5)` which are very bright on the dark window. Tone
-   them down to faint white-on-dark stripes. */
+/* The list view uses `odd:bg-neutral-200/50` for zebra rows and
+   `bg-neutral-100/50` for table headers. Those compile to a near-white
+   alpha that's bright on the dark window. Tone them down to faint
+   white-on-dark stripes. (Both `gray` and `neutral` listed here so the
+   rules stay matched after the project-wide `gray → neutral` rename.) */
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"]
   .window-body
-  :where(.bg-gray-200\/50, .odd\:bg-gray-200\/50:nth-child(odd)) {
+  :where(
+    .bg-gray-200\/50,
+    .odd\:bg-gray-200\/50:nth-child(odd),
+    .bg-neutral-200\/50,
+    .odd\:bg-neutral-200\/50:nth-child(odd)
+  ) {
   background-color: rgba(255, 255, 255, 0.04) !important;
 }
 
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"]
   .window-body
-  :where(.bg-gray-100\/50, .hover\:bg-gray-100\/50:hover) {
+  :where(
+    .bg-gray-100\/50,
+    .hover\:bg-gray-100\/50:hover,
+    .bg-neutral-100\/50,
+    .hover\:bg-neutral-100\/50:hover
+  ) {
   background-color: rgba(255, 255, 255, 0.06) !important;
 }
 

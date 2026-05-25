@@ -580,14 +580,14 @@ function DefaultMenuItems() {
           <MenubarItem
             onClick={() => undoRedoEntry?.undo()}
             disabled={!undoRedoEntry?.canUndo}
-            className={`text-md h-6 px-3 ${!undoRedoEntry?.canUndo ? "text-gray-500" : ""}`}
+            className={`text-md h-6 px-3 ${!undoRedoEntry?.canUndo ? "text-neutral-500" : ""}`}
           >
             {t("common.menu.undo")}
           </MenubarItem>
           <MenubarItem
             onClick={() => undoRedoEntry?.redo()}
             disabled={!undoRedoEntry?.canRedo}
-            className={`text-md h-6 px-3 ${!undoRedoEntry?.canRedo ? "text-gray-500" : ""}`}
+            className={`text-md h-6 px-3 ${!undoRedoEntry?.canRedo ? "text-neutral-500" : ""}`}
           >
             {t("common.menu.redo")}
           </MenubarItem>

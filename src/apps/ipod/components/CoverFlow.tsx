@@ -625,7 +625,7 @@ function CoverImage({
           }}
         />
         {!showSleeveBitmap ? (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-700 to-gray-900">
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-neutral-700 to-neutral-900">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="32"

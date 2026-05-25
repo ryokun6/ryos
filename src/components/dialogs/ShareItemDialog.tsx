@@ -149,10 +149,10 @@ export function ShareItemDialog({
       <div className="flex flex-col items-center space-y-3 w-full">
         {/* QR Code */}
         {isLoading ? (
-          <div className="size-32 flex items-center justify-center bg-gray-100 rounded">
+          <div className="size-32 flex items-center justify-center bg-neutral-100 rounded">
             <p
               className={cn(
-                "text-gray-500",
+                "text-neutral-500",
                 isXpTheme
                   ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[10px]"
                   : "font-geneva-12 text-[10px]"
@@ -178,10 +178,10 @@ export function ShareItemDialog({
             />
           </div>
         ) : (
-          <div className="size-32 flex items-center justify-center bg-gray-100 rounded">
+          <div className="size-32 flex items-center justify-center bg-neutral-100 rounded">
             <p
               className={cn(
-                "text-gray-500",
+                "text-neutral-500",
                 isXpTheme
                   ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[10px]"
                   : "font-geneva-12 text-[10px]"

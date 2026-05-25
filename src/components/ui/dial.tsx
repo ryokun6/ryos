@@ -162,7 +162,7 @@ const Dial = (
           onMouseDown={handleValueMouseDown}
           onTouchStart={handleValueTouchStart}
         >
-          <div className="text-[10px] text-gray-400">{label}</div>
+          <div className="text-[10px] text-neutral-400">{label}</div>
           {showValue && (
             <div className="text-xs">{valueFormatter(value)}</div>
           )}

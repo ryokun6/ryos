@@ -74,7 +74,7 @@ function ErrorPage({
       <p className="mb-3">{primaryMessage}</p>
       {secondaryMessage && <p className="mb-3">{secondaryMessage}</p>}
 
-      <div className="h-px bg-gray-300 my-5"></div>
+      <div className="h-px bg-neutral-300 my-5"></div>
 
       <p className="mb-3">Please try the following:</p>
 
@@ -163,12 +163,12 @@ function ErrorPage({
       </ul>
 
       {details && !footerText.includes("HTTP") && (
-        <div className="p-3 bg-gray-100 border border-gray-300 rounded mb-5">
+        <div className="p-3 bg-neutral-100 border border-neutral-300 rounded mb-5">
           {details}
         </div>
       )}
 
-      <div className="mt-10 text-gray-700 whitespace-pre-wrap">
+      <div className="mt-10 text-neutral-700 whitespace-pre-wrap">
         {footerText}
       </div>
     </div>
@@ -389,8 +389,8 @@ export function InternetExplorerAppComponent({
                   : currentTheme === "macosx"
                   ? "bg-transparent"
                   : currentTheme === "system7"
-                  ? "bg-gray-100 border-b border-black"
-                  : "bg-gray-100 border-b border-gray-300"
+                  ? "bg-neutral-100 border-b border-black"
+                  : "bg-neutral-100 border-b border-neutral-300"
               }`}
               style={{
                 borderBottom:
@@ -598,7 +598,7 @@ export function InternetExplorerAppComponent({
                             return (
                               <div
                                 key={suggestionKey}
-                                className="px-2 py-1.5 hover:bg-gray-100 focus:bg-gray-200 cursor-pointer flex items-center gap-2 text-sm outline-none"
+                                className="px-2 py-1.5 hover:bg-neutral-100 focus:bg-neutral-200 cursor-pointer flex items-center gap-2 text-sm outline-none"
                                 onClick={() => {
                                   setSelectedSuggestionIndex(index);
                                   if (suggestion.type === "search") {
@@ -692,18 +692,18 @@ export function InternetExplorerAppComponent({
                                     {suggestion.title}
                                     {suggestion.year &&
                                       suggestion.year !== "current" && (
-                                        <span className="font-normal text-gray-500 ml-1">
+                                        <span className="font-normal text-neutral-500 ml-1">
                                           ({suggestion.year})
                                         </span>
                                       )}
                                   </div>
-                                  <div className="font-geneva-12 text-[10px] text-gray-500 truncate">
+                                  <div className="font-geneva-12 text-[10px] text-neutral-500 truncate">
                                     {suggestion.type === "search"
                                       ? "bing.com"
                                       : stripProtocol(suggestion.url)}
                                   </div>
                                 </div>
-                                <div className="font-geneva-12 text-[10px] ml-2 text-gray-500 whitespace-nowrap hidden sm:block">
+                                <div className="font-geneva-12 text-[10px] ml-2 text-neutral-500 whitespace-nowrap hidden sm:block">
                                   {suggestion.type === "favorite" && "Favorite"}
                                   {suggestion.type === "history" && "History"}
                                   {suggestion.type === "search" && "Search"}
@@ -775,14 +775,14 @@ export function InternetExplorerAppComponent({
                         <SelectItem
                           key={y}
                           value={y}
-                          className="text-md h-6 px-3 active:bg-gray-900 active:text-white text-blue-600"
+                          className="text-md h-6 px-3 active:bg-neutral-900 active:text-white text-blue-600"
                         >
                           {y}
                         </SelectItem>
                       ))}
                       <SelectItem
                         value="current"
-                        className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                        className="text-md h-6 px-3 active:bg-neutral-900 active:text-white"
                       >
                         {t("apps.internet-explorer.now")}
                       </SelectItem>
@@ -790,7 +790,7 @@ export function InternetExplorerAppComponent({
                         <SelectItem
                           key={y}
                           value={y}
-                          className={`text-md h-6 px-3 active:bg-gray-900 active:text-white ${
+                          className={`text-md h-6 px-3 active:bg-neutral-900 active:text-white ${
                             parseInt(y) <= 1995 ? "text-blue-600" : ""
                           }`}
                         >
@@ -824,7 +824,7 @@ export function InternetExplorerAppComponent({
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="whitespace-nowrap hover:bg-gray-200 font-geneva-12 text-[10px] gap-1 px-1 mr-1 w-content min-w-[60px] max-w-[120px] flex-shrink-0"
+                                className="whitespace-nowrap hover:bg-neutral-200 font-geneva-12 text-[10px] gap-1 px-1 mr-1 w-content min-w-[60px] max-w-[120px] flex-shrink-0"
                               >
                                 <ThemedIcon
                                   name="directory.png"
@@ -851,7 +851,7 @@ export function InternetExplorerAppComponent({
                                       child.year
                                     )
                                   }
-                                  className="text-md h-6 px-3 active:bg-gray-900 active:text-white flex items-center gap-2"
+                                  className="text-md h-6 px-3 active:bg-neutral-900 active:text-white flex items-center gap-2"
                                 >
                                   {child.favicon && !isOffline ? (
                                     <img
@@ -872,7 +872,7 @@ export function InternetExplorerAppComponent({
                                   )}
                                   {child.title}
                                   {child.year && child.year !== "current" && (
-                                    <span className="text-xs text-gray-500 ml-1">
+                                    <span className="text-xs text-neutral-500 ml-1">
                                       ({child.year})
                                     </span>
                                   )}
@@ -888,7 +888,7 @@ export function InternetExplorerAppComponent({
                             key={favoriteKey}
                             variant="ghost"
                             size="sm"
-                            className="whitespace-nowrap hover:bg-gray-200 font-geneva-12 text-[10px] gap-1 px-1 mr-1 w-content min-w-[60px] max-w-[120px] flex-shrink-0"
+                            className="whitespace-nowrap hover:bg-neutral-200 font-geneva-12 text-[10px] gap-1 px-1 mr-1 w-content min-w-[60px] max-w-[120px] flex-shrink-0"
                             onClick={(e) => {
                               const normalizedFavUrl = normalizeUrlForHistory(
                                 favorite.url!
@@ -932,7 +932,7 @@ export function InternetExplorerAppComponent({
                   </div>
                 </div>
                 {favorites.length > 0 && hasMoreToScroll && (
-                  <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-gray-100 to-transparent pointer-events-none" />
+                  <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-neutral-100 to-transparent pointer-events-none" />
                 )}
               </div>
             </div>
@@ -1035,10 +1035,10 @@ export function InternetExplorerAppComponent({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 20 }}
                   transition={{ duration: 0.15 }}
-                  className={`os-status-bar os-status-bar-text font-geneva-12 absolute bottom-0 left-0 right-0 bg-gray-100 text-[10px] px-2 py-1 flex items-center z-50 ${
+                  className={`os-status-bar os-status-bar-text font-geneva-12 absolute bottom-0 left-0 right-0 bg-neutral-100 text-[10px] px-2 py-1 flex items-center z-50 ${
                     currentTheme === "system7"
                       ? "border-t border-black"
-                      : "border-t border-gray-300"
+                      : "border-t border-neutral-300"
                   }`}
                 >
                   <div className="flex-1 truncate">

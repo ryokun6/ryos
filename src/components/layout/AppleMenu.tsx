@@ -222,7 +222,7 @@ export function AppleMenu() {
                   );
                 })
               ) : (
-                <MenubarItem disabled className="text-md h-6 px-3 text-gray-400">
+                <MenubarItem disabled className="text-md h-6 px-3 text-neutral-400">
                   {t("common.appleMenu.noRecentApps")}
                 </MenubarItem>
               )}
@@ -265,7 +265,7 @@ export function AppleMenu() {
                   );
                 })
               ) : (
-                <MenubarItem disabled className="text-md h-6 px-3 text-gray-400">
+                <MenubarItem disabled className="text-md h-6 px-3 text-neutral-400">
                   {t("common.appleMenu.noRecentDocuments")}
                 </MenubarItem>
               )}

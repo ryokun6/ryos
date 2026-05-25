@@ -224,7 +224,7 @@ export function VideosMenuBar({
                       onClick={() => onPlayVideo(video.id)}
                       className={cn(
                         "text-md h-6 px-3 max-w-[220px] truncate",
-                        video.id === currentVideoId && "bg-gray-200"
+                        video.id === currentVideoId && "bg-neutral-200"
                       )}
                     >
                       <div className="flex items-center w-full">
@@ -258,7 +258,7 @@ export function VideosMenuBar({
                         onClick={() => onPlayVideo(video.id)}
                         className={cn(
                           "text-md h-6 px-3 max-w-[160px] sm:max-w-[200px] truncate",
-                          video.id === currentVideoId && "bg-gray-200"
+                          video.id === currentVideoId && "bg-neutral-200"
                         )}
                       >
                         <div className="flex items-center w-full">

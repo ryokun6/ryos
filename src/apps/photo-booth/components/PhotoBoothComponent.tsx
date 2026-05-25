@@ -490,7 +490,7 @@ export function PhotoBoothComponent({
                 isMacTheme
                   ? "transition-transform hover:scale-105"
                   : isMultiPhotoMode
-                  ? "bg-gray-500 cursor-not-allowed"
+                  ? "bg-neutral-500 cursor-not-allowed"
                   : "bg-red-500 hover:bg-red-600"
               )}
               style={

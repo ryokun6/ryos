@@ -70,7 +70,7 @@ const userColors = [
 
 const getUserColorClass = (username?: string): string => {
   if (!username) {
-    return "bg-gray-100 text-black"; // Default or fallback color
+    return "bg-neutral-100 text-black"; // Default or fallback color
   }
   // Simple hash function
   const hash = username
@@ -630,7 +630,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
       <div
         className={`${
           isMacOSTheme ? "text-[10px]" : "text-[16px]"
-        } chat-messages-meta text-gray-500 mb-0.5 font-['Geneva-9'] mb-[-2px] select-text flex items-center gap-2`}
+        } chat-messages-meta text-neutral-500 mb-0.5 font-['Geneva-9'] mb-[-2px] select-text flex items-center gap-2`}
       >
         {message.role === "user" && (
           <>
@@ -644,7 +644,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                         opacity: isHovered ? 1 : 0,
                         scale: 1,
                       }}
-                      className="size-3 text-gray-400 hover:text-red-600 transition-colors"
+                      className="size-3 text-neutral-400 hover:text-red-600 transition-colors"
                       onClick={() => onDeleteMessage(message)}
                       aria-label={t("apps.chats.ariaLabels.deleteMessage")}
                     >
@@ -663,7 +663,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                 opacity: isHovered ? 1 : 0,
                 scale: 1,
               }}
-              className="size-3 text-gray-400 hover:text-neutral-600 transition-colors"
+              className="size-3 text-neutral-400 hover:text-neutral-600 transition-colors"
               onClick={() => onCopyMessage(message)}
               aria-label={t("apps.chats.ariaLabels.copyMessage")}
             >
@@ -689,7 +689,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
               ? t("apps.chats.messages.you")
               : t("apps.chats.messages.ryo"))}
         </span>{" "}
-        <span className="text-gray-400 select-text">
+        <span className="text-neutral-400 select-text">
           {message.metadata?.createdAt ? (
             (() => {
               const messageDate = new Date(message.metadata.createdAt);
@@ -720,7 +720,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                 opacity: isHovered ? 1 : 0,
                 scale: 1,
               }}
-              className="size-3 text-gray-400 hover:text-neutral-600 transition-colors"
+              className="size-3 text-neutral-400 hover:text-neutral-600 transition-colors"
               onClick={() => onCopyMessage(message)}
               aria-label={t("apps.chats.ariaLabels.copyMessage")}
             >
@@ -737,7 +737,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                   opacity: isHovered ? 1 : 0,
                   scale: 1,
                 }}
-                className="size-3 text-gray-400 hover:text-neutral-600 transition-colors"
+                className="size-3 text-neutral-400 hover:text-neutral-600 transition-colors"
                 onClick={() => {
                   if (playingMessageId === messageKey) {
                     stopSpeech();
@@ -801,7 +801,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                       opacity: isHovered ? 1 : 0,
                       scale: 1,
                     }}
-                    className="size-3 text-gray-400 hover:text-blue-600 transition-colors"
+                    className="size-3 text-neutral-400 hover:text-blue-600 transition-colors"
                     onClick={() => onSendMessage(message.username!)}
                     aria-label={t("apps.chats.ariaLabels.messageUser", {
                       username: message.username,
@@ -830,7 +830,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                     opacity: isHovered ? 1 : 0,
                     scale: 1,
                   }}
-                  className="size-3 text-gray-400 hover:text-red-600 transition-colors"
+                  className="size-3 text-neutral-400 hover:text-red-600 transition-colors"
                   onClick={() => onDeleteMessage(message)}
                   aria-label={t("apps.chats.ariaLabels.deleteMessage")}
                 >
@@ -1330,7 +1330,7 @@ function ChatMessagesContent({
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-2 text-gray-500 font-['Geneva-9'] text-[16px] antialiased h-[12px]"
+          className="flex items-center gap-2 text-neutral-500 font-['Geneva-9'] text-[16px] antialiased h-[12px]"
         >
           <ChatCircle className="size-3" weight="bold" />
           <span>{t("apps.chats.status.startNewConversation")}</span>
@@ -1339,7 +1339,7 @@ function ChatMessagesContent({
               size="sm"
               variant="link"
               onClick={onClear}
-              className="m-0 p-0 text-[16px] h-0 text-gray-500 hover:text-gray-700"
+              className="m-0 p-0 text-[16px] h-0 text-neutral-500 hover:text-neutral-700"
             >
               {t("apps.chats.status.newChat")}
             </Button>
@@ -1438,7 +1438,7 @@ function ChatMessagesContent({
                 key="login-message"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex items-center gap-2 text-gray-500 font-['Geneva-9'] text-[16px] antialiased h-[12px]"
+                className="flex items-center gap-2 text-neutral-500 font-['Geneva-9'] text-[16px] antialiased h-[12px]"
               >
                 <ChatCircle className="size-3" weight="bold" />
                 <span>{errorMessage}</span>

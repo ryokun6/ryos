@@ -161,7 +161,7 @@ export function CreateChannelDialog({
 
   const dialogContent = (
     <div className={cn(isXpTheme ? "p-2 px-4" : "p-4 px-6")}>
-      <p className={cn("text-gray-500 mb-2", fontClass)} style={fontStyle}>
+      <p className={cn("text-neutral-500 mb-2", fontClass)} style={fontStyle}>
         {t("apps.tv.create.description")}
       </p>
 
@@ -191,8 +191,8 @@ export function CreateChannelDialog({
               dispatch({ type: "patch", payload: { description: s } })
             }
             className={cn(
-              "px-2 py-0.5 rounded-full border text-gray-700",
-              "border-gray-300 hover:bg-gray-100 disabled:opacity-50"
+              "px-2 py-0.5 rounded-full border text-neutral-700",
+              "border-neutral-300 hover:bg-neutral-100 disabled:opacity-50"
             )}
           >
             {s}

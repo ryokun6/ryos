@@ -172,7 +172,7 @@ const ListRowItem = memo(function ListRowItem({
       className={`border-none cursor-default ${
         isSelected || dropTargetPath === file.path
           ? ""
-          : "odd:bg-gray-200/50 hover:bg-gray-100/50 transition-colors"
+          : "odd:bg-neutral-200/50 hover:bg-neutral-100/50 transition-colors"
       }`}
       data-selected={isSelected || dropTargetPath === file.path ? "true" : undefined}
       onClick={handleClick}
@@ -892,16 +892,16 @@ export function FileList({
         <Table key={listTableKey} className="min-w-[480px]">
           <TableHeader>
             <TableRow className={`${listHeaderTextClass} border-none font-normal`}>
-              <TableHead className="font-normal bg-gray-100/50 h-[28px]">
+              <TableHead className="font-normal bg-neutral-100/50 h-[28px]">
                 {t("apps.finder.tableHeaders.name")}
               </TableHead>
-              <TableHead className="font-normal bg-gray-100/50 h-[28px]">
+              <TableHead className="font-normal bg-neutral-100/50 h-[28px]">
                 {t("apps.finder.tableHeaders.type")}
               </TableHead>
-              <TableHead className="font-normal bg-gray-100/50 h-[28px] whitespace-nowrap">
+              <TableHead className="font-normal bg-neutral-100/50 h-[28px] whitespace-nowrap">
                 {t("apps.finder.tableHeaders.size")}
               </TableHead>
-              <TableHead className="font-normal bg-gray-100/50 h-[28px] whitespace-nowrap">
+              <TableHead className="font-normal bg-neutral-100/50 h-[28px] whitespace-nowrap">
                 {t("apps.finder.tableHeaders.modified")}
               </TableHead>
             </TableRow>

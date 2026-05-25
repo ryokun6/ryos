@@ -171,7 +171,7 @@ function ScreenSaverPreview({ type, onClick, disabled, label }: ScreenSaverPrevi
       {useEmbeddedPreview ? (
         <div
           ref={embeddedContainerRef}
-          className="relative overflow-hidden rounded border border-gray-600 group-hover:border-gray-400 transition-colors bg-black"
+          className="relative overflow-hidden rounded border border-neutral-600 group-hover:border-neutral-400 transition-colors bg-black"
           style={{ width: 120, height: 85 }}
         >
           {type === "starfield" && (
@@ -189,7 +189,7 @@ function ScreenSaverPreview({ type, onClick, disabled, label }: ScreenSaverPrevi
           ref={canvasRef}
           width={120}
           height={85}
-          className="rounded border border-gray-600 group-hover:border-gray-400 transition-colors"
+          className="rounded border border-neutral-600 group-hover:border-neutral-400 transition-colors"
           style={{ imageRendering: "pixelated" }}
         />
       )}
@@ -310,7 +310,7 @@ export function ScreenSaverPicker({ onPreview }: ScreenSaverPickerProps) {
                   step={1}
                   className="w-full"
                 />
-                <div className="flex justify-between text-[10px] text-gray-500 font-geneva-12 os-slider-labels">
+                <div className="flex justify-between text-[10px] text-neutral-500 font-geneva-12 os-slider-labels">
                   <span>1 {t("apps.control-panels.min")}</span>
                   <span>30 {t("apps.control-panels.min")}</span>
                 </div>

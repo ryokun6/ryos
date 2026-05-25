@@ -109,7 +109,7 @@ const renderFavoriteItem = (
         )}
         {favorite.title}
         {favorite.year && favorite.year !== "current" && (
-          <span className="text-xs text-gray-500 ml-1">({favorite.year})</span>
+          <span className="text-xs text-neutral-500 ml-1">({favorite.year})</span>
         )}
       </MenubarItem>
     );
@@ -255,7 +255,7 @@ export function InternetExplorerMenuBar({
             disabled={!isLoading}
             className={
               !isLoading
-                ? "text-gray-400 text-md h-6 px-3"
+                ? "text-neutral-400 text-md h-6 px-3"
                 : "text-md h-6 px-3"
             }
           >
@@ -681,7 +681,7 @@ export function InternetExplorerMenuBar({
             disabled={!canGoBack}
             className={
               !canGoBack
-                ? "text-gray-400 text-md h-6 px-3"
+                ? "text-neutral-400 text-md h-6 px-3"
                 : "text-md h-6 px-3"
             }
           >
@@ -692,7 +692,7 @@ export function InternetExplorerMenuBar({
             disabled={!canGoForward}
             className={
               !canGoForward
-                ? "text-gray-400 text-md h-6 px-3"
+                ? "text-neutral-400 text-md h-6 px-3"
                 : "text-md h-6 px-3"
             }
           >
@@ -729,7 +729,7 @@ export function InternetExplorerMenuBar({
                   <span className="truncate">
                     {entry.title}
                     {entry.year && entry.year !== "current" && (
-                      <span className="text-xs text-gray-500 ml-1">
+                      <span className="text-xs text-neutral-500 ml-1">
                         ({entry.year})
                       </span>
                     )}

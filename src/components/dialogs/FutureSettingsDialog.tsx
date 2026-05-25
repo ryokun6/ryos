@@ -104,7 +104,7 @@ const FutureSettingsDialog = ({
         <div className="flex items-center gap-2">
           <span
             className={cn(
-              "text-gray-900",
+              "text-neutral-900",
               isXpTheme
                 ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
                 : "font-geneva-12 text-[12px]"

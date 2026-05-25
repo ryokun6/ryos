@@ -576,7 +576,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
   return (
     <div className="flex flex-col h-full font-geneva-12">
       {/* Header */}
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-200 bg-gray-50">
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-neutral-200 bg-neutral-50">
         <Button
           variant="ghost"
           size="sm"

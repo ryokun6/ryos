@@ -345,9 +345,9 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
         className={cn(
           "h-[106px] w-full min-w-[280px] max-w-[420px]",
           "relative overflow-hidden",
-          "border border-gray-200 rounded",
+          "border border-neutral-200 rounded",
           "before:absolute before:inset-0",
-          "before:bg-gradient-to-r before:from-gray-200 before:via-gray-100 before:to-gray-200",
+          "before:bg-gradient-to-r before:from-neutral-200 before:via-neutral-100 before:to-neutral-200",
           "before:animate-[shimmer_2s_linear_infinite]",
           "before:bg-[length:200%_100%]",
           className
@@ -466,8 +466,8 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
       className={cn(
         "link-preview-container relative overflow-hidden cursor-pointer font-geneva-12 group max-w-[420px]",
         isMacOSTheme
-          ? "chat-bubble macosx-link-preview bg-gray-100 border-none shadow-none"
-          : "bg-white border border-gray-200 rounded",
+          ? "chat-bubble macosx-link-preview bg-neutral-100 border-none shadow-none"
+          : "bg-white border border-neutral-200 rounded",
         className
       )}
       onClick={handleClick}
@@ -483,7 +483,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
         <>
           <div
             className={cn(
-              "relative aspect-video bg-gray-100 overflow-hidden",
+              "relative aspect-video bg-neutral-100 overflow-hidden",
               isMacOSTheme && "-mx-3 -mt-[6px] rounded-t-[14px]"
             )}
           >
@@ -512,7 +512,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                     );
                   }}
                 />
-                <div className="size-4 bg-gray-300 rounded-full flex-shrink-0 hidden"></div>
+                <div className="size-4 bg-neutral-300 rounded-full flex-shrink-0 hidden"></div>
                 {metadata.title && (
                   <h3 className="font-semibold text-white text-[10px] truncate">
                     {metadata.title}
@@ -526,14 +526,14 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
           <div className="px-2 pb-2">
             {isYouTubeUrl(url) ? (
               url.includes("/ipod/") ? (
-                <div className="flex gap-2 pt-2 border-t border-gray-100">
+                <div className="flex gap-2 pt-2 border-t border-neutral-100">
                   <button
                     onClick={handleAddToIpod}
                     onTouchStart={(e) => e.stopPropagation()}
                     className={cn(
                       isMacOSTheme
                         ? "aqua-button secondary flex-1"
-                        : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex-1"
+                        : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-neutral-100 hover:bg-neutral-200 rounded-md transition-colors flex-1"
                     )}
                     title={t("components.linkPreview.openIpod")}
                     data-link-preview
@@ -547,7 +547,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                     className={cn(
                       isMacOSTheme
                         ? "aqua-button secondary flex-1"
-                        : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex-1"
+                        : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-neutral-100 hover:bg-neutral-200 rounded-md transition-colors flex-1"
                     )}
                     title={t("components.linkPreview.openYouTube")}
                     data-link-preview
@@ -557,14 +557,14 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                   </button>
                 </div>
               ) : url.includes("/karaoke/") ? (
-                <div className="flex gap-2 pt-2 border-t border-gray-100">
+                <div className="flex gap-2 pt-2 border-t border-neutral-100">
                   <button
                     onClick={handleOpenInKaraoke}
                     onTouchStart={(e) => e.stopPropagation()}
                     className={cn(
                       isMacOSTheme
                         ? "aqua-button secondary flex-1"
-                        : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex-1"
+                        : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-neutral-100 hover:bg-neutral-200 rounded-md transition-colors flex-1"
                     )}
                     title={t("components.linkPreview.openKaraoke")}
                     data-link-preview
@@ -578,7 +578,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                     className={cn(
                       isMacOSTheme
                         ? "aqua-button secondary flex-1"
-                        : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex-1"
+                        : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-neutral-100 hover:bg-neutral-200 rounded-md transition-colors flex-1"
                     )}
                     title={t("components.linkPreview.openYouTube")}
                     data-link-preview
@@ -588,14 +588,14 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                   </button>
                 </div>
               ) : (
-                <div className="flex gap-2 pt-2 border-t border-gray-100">
+                <div className="flex gap-2 pt-2 border-t border-neutral-100">
                   <button
                     onClick={handleAddToIpod}
                     onTouchStart={(e) => e.stopPropagation()}
                     className={cn(
                       isMacOSTheme
                         ? "aqua-button secondary flex-1"
-                        : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex-1"
+                        : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-neutral-100 hover:bg-neutral-200 rounded-md transition-colors flex-1"
                     )}
                     title={t("components.linkPreview.addToIpod")}
                     data-link-preview
@@ -609,7 +609,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                     className={cn(
                       isMacOSTheme
                         ? "aqua-button secondary flex-1"
-                        : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex-1"
+                        : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-neutral-100 hover:bg-neutral-200 rounded-md transition-colors flex-1"
                     )}
                     title={t("components.linkPreview.openYouTube")}
                     data-link-preview
@@ -620,14 +620,14 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                 </div>
               )
             ) : (
-              <div className="flex gap-2 pt-2 border-t border-gray-100">
+              <div className="flex gap-2 pt-2 border-t border-neutral-100">
                 <button
                   onClick={handleOpenExternally}
                   onTouchStart={(e) => e.stopPropagation()}
                   className={cn(
                     isMacOSTheme
                       ? "aqua-button secondary w-full"
-                      : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors w-full"
+                      : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-neutral-100 hover:bg-neutral-200 rounded-md transition-colors w-full"
                   )}
                   title="Open Externally"
                   data-link-preview
@@ -646,7 +646,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
             {metadata.image && (
               <div
                 className={cn(
-                  "size-18 bg-gray-100 relative overflow-hidden flex-shrink-0",
+                  "size-18 bg-neutral-100 relative overflow-hidden flex-shrink-0",
                   isMacOSTheme && "hidden"
                 )}
               >
@@ -683,7 +683,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
             >
               {metadata.title && (
                 <h3
-                  className="font-semibold text-gray-900 text-[10px]"
+                  className="font-semibold text-neutral-900 text-[10px]"
                   style={{
                     display: "-webkit-box",
                     WebkitLineClamp: 1,
@@ -725,8 +725,8 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                       );
                     }}
                   />
-                  <div className="size-4 bg-gray-300 rounded-full flex-shrink-0 hidden"></div>
-                  <p className="text-[10px] text-gray-500 truncate">
+                  <div className="size-4 bg-neutral-300 rounded-full flex-shrink-0 hidden"></div>
+                  <p className="text-[10px] text-neutral-500 truncate">
                     {metadata.siteName || new URL(url).hostname}
                   </p>
                 </div>
@@ -738,8 +738,8 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
           <div className={cn(
             "pb-2 border-t",
             isMacOSTheme 
-              ? "border-gray-300" 
-              : "border-gray-200"
+              ? "border-neutral-300" 
+              : "border-neutral-200"
           )}>
             <div className="px-2 pt-2">
               {isYouTubeUrl(url) ? (
@@ -751,7 +751,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                       className={cn(
                         isMacOSTheme
                           ? "aqua-button secondary flex-1"
-                          : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex-1"
+                          : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-neutral-100 hover:bg-neutral-200 rounded-md transition-colors flex-1"
                       )}
                       title={t("components.linkPreview.openIpod")}
                       data-link-preview
@@ -765,7 +765,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                       className={cn(
                         isMacOSTheme
                           ? "aqua-button secondary flex-1"
-                          : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex-1"
+                          : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-neutral-100 hover:bg-neutral-200 rounded-md transition-colors flex-1"
                       )}
                       title={t("components.linkPreview.openYouTube")}
                       data-link-preview
@@ -784,7 +784,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                       className={cn(
                         isMacOSTheme
                           ? "aqua-button secondary flex-1"
-                          : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex-1"
+                          : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-neutral-100 hover:bg-neutral-200 rounded-md transition-colors flex-1"
                       )}
                       title={t("components.linkPreview.openKaraoke")}
                       data-link-preview
@@ -798,7 +798,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                       className={cn(
                         isMacOSTheme
                           ? "aqua-button secondary flex-1"
-                          : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex-1"
+                          : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-neutral-100 hover:bg-neutral-200 rounded-md transition-colors flex-1"
                       )}
                       title={t("components.linkPreview.openYouTube")}
                       data-link-preview
@@ -817,7 +817,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                       className={cn(
                         isMacOSTheme
                           ? "aqua-button secondary flex-1"
-                          : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex-1"
+                          : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-neutral-100 hover:bg-neutral-200 rounded-md transition-colors flex-1"
                       )}
                       title={t("components.linkPreview.addToIpod")}
                       data-link-preview
@@ -831,7 +831,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                       className={cn(
                         isMacOSTheme
                           ? "aqua-button secondary flex-1"
-                          : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex-1"
+                          : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-neutral-100 hover:bg-neutral-200 rounded-md transition-colors flex-1"
                       )}
                       title={t("components.linkPreview.openYouTube")}
                       data-link-preview
@@ -851,7 +851,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                     className={cn(
                       isMacOSTheme
                         ? "aqua-button secondary w-full"
-                        : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors w-full"
+                        : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-neutral-100 hover:bg-neutral-200 rounded-md transition-colors w-full"
                     )}
                     title="Open Externally"
                     data-link-preview

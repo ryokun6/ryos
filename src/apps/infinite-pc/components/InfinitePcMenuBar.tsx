@@ -98,7 +98,7 @@ export function InfinitePcMenuBar({
                     key={game.id}
                     onClick={() => onLoadGame(game)}
                     className={`text-md h-6 px-3 ${
-                      selectedGame.id === game.id ? "bg-gray-100" : ""
+                      selectedGame.id === game.id ? "bg-neutral-100" : ""
                     }`}
                   >
                     {game.name}
@@ -152,7 +152,7 @@ export function InfinitePcMenuBar({
                     key={sensitivity}
                     onClick={() => onSetMouseSensitivity?.(sensitivity)}
                     className={`text-md h-6 px-3 ${
-                      mouseSensitivity === sensitivity ? "bg-gray-100" : ""
+                      mouseSensitivity === sensitivity ? "bg-neutral-100" : ""
                     }`}
                   >
                     {sensitivity}x
@@ -171,7 +171,7 @@ export function InfinitePcMenuBar({
                     key={aspect}
                     onClick={() => onSetRenderAspect?.(aspect)}
                     className={`text-md h-6 px-3 ${
-                      currentRenderAspect === aspect ? "bg-gray-100" : ""
+                      currentRenderAspect === aspect ? "bg-neutral-100" : ""
                     }`}
                   >
                     {t(`apps.pc.aspectRatios.${aspect}`, { defaultValue: aspect })}

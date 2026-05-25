@@ -23,7 +23,7 @@ export function InfinitePcBrowseHeader({
     `font-apple-garamond !text-[18px] leading-tight transition-colors border-0 bg-transparent p-0 cursor-pointer ${
       active
         ? "text-white"
-        : "text-gray-500 hover:text-gray-300"
+        : "text-neutral-500 hover:text-neutral-300"
     }`;
 
   return (
@@ -38,7 +38,7 @@ export function InfinitePcBrowseHeader({
             {t("apps.pc.tabs.os")}
           </button>
           <span
-            className="font-apple-garamond !text-[18px] leading-tight text-gray-600 select-none"
+            className="font-apple-garamond !text-[18px] leading-tight text-neutral-600 select-none"
             aria-hidden
           >
             |
@@ -51,7 +51,7 @@ export function InfinitePcBrowseHeader({
             {t("apps.pc.tabs.games")}
           </button>
         </div>
-        <div className="font-geneva-12 text-gray-400 text-[12px] shrink-0 text-right">
+        <div className="font-geneva-12 text-neutral-400 text-[12px] shrink-0 text-right">
           {tab === "os"
             ? t("apps.pc.systemsAvailable", { count: osCount })
             : gamesReady

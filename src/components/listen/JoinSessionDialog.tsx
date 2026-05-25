@@ -165,12 +165,12 @@ export function JoinSessionDialog({
     <div className={isXpTheme ? "p-2 px-4" : "p-4 px-6"}>
       {/* Session List - Primary view */}
       <div className="mb-3">
-        <ScrollArea className="h-[160px] border border-gray-300 rounded-md overflow-hidden bg-white">
+        <ScrollArea className="h-[160px] border border-neutral-300 rounded-md overflow-hidden bg-white">
           <div>
             {isLoading ? (
               <div
                 className={cn(
-                  "flex items-center justify-center h-[140px] text-gray-500",
+                  "flex items-center justify-center h-[140px] text-neutral-500",
                   isXpTheme
                     ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
                     : "font-geneva-12 text-[12px]"
@@ -204,7 +204,7 @@ export function JoinSessionDialog({
             ) : sessions.length === 0 ? (
               <div
                 className={cn(
-                  "flex items-center justify-center h-[140px] text-gray-500",
+                  "flex items-center justify-center h-[140px] text-neutral-500",
                   isXpTheme
                     ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
                     : "font-geneva-12 text-[12px]"
@@ -237,7 +237,7 @@ export function JoinSessionDialog({
                     selectedIndex === index
                       ? ""
                       : index % 2 === 1
-                        ? "bg-gray-100"
+                        ? "bg-neutral-100"
                         : "bg-white",
                     isXpTheme
                       ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
@@ -290,7 +290,7 @@ export function JoinSessionDialog({
       {/* Manual Entry - Secondary option */}
       <p
         className={cn(
-          "text-gray-500 mb-2",
+          "text-neutral-500 mb-2",
           isXpTheme
             ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
             : "font-geneva-12 text-[12px]"

@@ -587,7 +587,7 @@ export function SongSearchDialog({
   const dialogContent = (
     <div className={cn(isXpTheme ? "p-2 px-4" : "p-4 px-6", "overflow-hidden w-full box-border")}>
       {!isAppleMusicMode && (
-        <p className={cn("text-gray-500 mb-2", fontClass)} style={fontStyle}>
+        <p className={cn("text-neutral-500 mb-2", fontClass)} style={fontStyle}>
           {t("apps.ipod.dialogs.songSearchDescription")}
         </p>
       )}
@@ -602,7 +602,7 @@ export function SongSearchDialog({
 
       {hasResults && (
         <div style={{ marginBottom: "12px" }}>
-          <p className={cn("text-gray-500 mb-2", fontClass)} style={fontStyle}>
+          <p className={cn("text-neutral-500 mb-2", fontClass)} style={fontStyle}>
             {isAppleMusicMode
               ? t(
                   "apps.ipod.dialogs.appleMusicSearchSelectResult",
