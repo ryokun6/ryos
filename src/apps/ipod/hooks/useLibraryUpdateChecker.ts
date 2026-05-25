@@ -182,79 +182,52 @@ export function useLibraryUpdateChecker(isActive: boolean) {
     };
   }, [isActive, syncLibrary, debugMode, t]);
 
-  // Manual check function that can be called externally
-  const manualCheck = async () => {
-    try {
-      const wasEmptyBefore = useIpodStore.getState().tracks.length === 0;
-      const result = await syncLibrary();
-
-      if (result.newTracksAdded > 0 || result.tracksUpdated > 0) {
-        const message =
-          wasEmptyBefore && result.newTracksAdded > 0
-            ? t("apps.ipod.dialogs.addedSongsToTop", {
-                count: result.newTracksAdded,
-                plural: result.newTracksAdded === 1 ? "" : "s",
-              })
-            : t("apps.ipod.dialogs.addedNewSongsToTop", {
-                newCount: result.newTracksAdded,
-                newPlural: result.newTracksAdded === 1 ? "" : "s",
-                updatedText:
-                  result.tracksUpdated > 0
-                    ? t("apps.ipod.dialogs.andUpdated", {
-                        count: result.tracksUpdated,
-                        plural: result.tracksUpdated === 1 ? "" : "s",
-                      })
-                    : "",
-                total: result.totalTracks,
-              });
-
-        toast.success(t("apps.ipod.dialogs.libraryUpdated"), {
-          description: message,
-        });
-        return true;
-      } else {
-        toast.info(t("apps.ipod.dialogs.noUpdates"), {
-          description: t("apps.ipod.dialogs.libraryAlreadyUpToDate"),
-        });
-        return false;
-      }
-    } catch (error) {
-      console.error("Error during manual library update check:", error);
-      toast.error(t("apps.ipod.dialogs.updateCheckFailed"), {
-        description: t("apps.ipod.dialogs.failedToCheckForLibraryUpdates"),
+  const buildSyncDescription = (
+    wasEmptyBefore: boolean,
+    result: Awaited<ReturnType<typeof syncLibrary>>
+  ) => {
+    if (wasEmptyBefore && result.newTracksAdded > 0) {
+      return t("apps.ipod.dialogs.addedSongsToTop", {
+        count: result.newTracksAdded,
+        plural: result.newTracksAdded === 1 ? "" : "s",
       });
-      return false;
     }
+    return t("apps.ipod.dialogs.addedNewSongsToTop", {
+      newCount: result.newTracksAdded,
+      newPlural: result.newTracksAdded === 1 ? "" : "s",
+      updatedText:
+        result.tracksUpdated > 0
+          ? t("apps.ipod.dialogs.andUpdated", {
+              count: result.tracksUpdated,
+              plural: result.tracksUpdated === 1 ? "" : "s",
+            })
+          : "",
+      total: result.totalTracks,
+    });
   };
 
-  // Manual sync function that syncs with server library
-  const manualSync = async () => {
+  const runManualSync = async (mode: "check" | "sync") => {
     try {
       const wasEmptyBefore = useIpodStore.getState().tracks.length === 0;
       const result = await syncLibrary();
 
       if (result.newTracksAdded > 0 || result.tracksUpdated > 0) {
-        const message =
-          wasEmptyBefore && result.newTracksAdded > 0
-            ? t("apps.ipod.dialogs.addedSongsToTop", {
-                count: result.newTracksAdded,
-                plural: result.newTracksAdded === 1 ? "" : "s",
-              })
-            : t("apps.ipod.dialogs.addedNewSongsToTop", {
-                newCount: result.newTracksAdded,
-                newPlural: result.newTracksAdded === 1 ? "" : "s",
-                updatedText:
-                  result.tracksUpdated > 0
-                    ? t("apps.ipod.dialogs.andUpdated", {
-                        count: result.tracksUpdated,
-                        plural: result.tracksUpdated === 1 ? "" : "s",
-                      })
-                    : "",
-                total: result.totalTracks,
-              });
+        toast.success(
+          t(
+            mode === "check"
+              ? "apps.ipod.dialogs.libraryUpdated"
+              : "apps.ipod.dialogs.librarySynced"
+          ),
+          {
+            description: buildSyncDescription(wasEmptyBefore, result),
+          }
+        );
+        return true;
+      }
 
-        toast.success(t("apps.ipod.dialogs.librarySynced"), {
-          description: message,
+      if (mode === "check") {
+        toast.info(t("apps.ipod.dialogs.noUpdates"), {
+          description: t("apps.ipod.dialogs.libraryAlreadyUpToDate"),
         });
       } else {
         toast.info(t("apps.ipod.dialogs.librarySynced"), {
@@ -263,15 +236,38 @@ export function useLibraryUpdateChecker(isActive: boolean) {
           }),
         });
       }
-      return true;
+      return false;
     } catch (error) {
-      console.error("Error during library sync:", error);
-      toast.error(t("apps.ipod.dialogs.syncFailed"), {
-        description: t("apps.ipod.dialogs.failedToSyncWithServerLibrary"),
-      });
+      const isCheck = mode === "check";
+      console.error(
+        isCheck
+          ? "Error during manual library update check:"
+          : "Error during library sync:",
+        error
+      );
+      toast.error(
+        t(
+          isCheck
+            ? "apps.ipod.dialogs.updateCheckFailed"
+            : "apps.ipod.dialogs.syncFailed"
+        ),
+        {
+          description: t(
+            isCheck
+              ? "apps.ipod.dialogs.failedToCheckForLibraryUpdates"
+              : "apps.ipod.dialogs.failedToSyncWithServerLibrary"
+          ),
+        }
+      );
       return false;
     }
   };
+
+  // Manual check function that can be called externally
+  const manualCheck = async () => runManualSync("check");
+
+  // Manual sync function that syncs with server library
+  const manualSync = async () => runManualSync("sync");
 
   return { manualCheck, manualSync };
 }

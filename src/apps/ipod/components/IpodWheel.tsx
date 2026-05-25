@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useRef } from "react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 
@@ -33,8 +33,9 @@ export function IpodWheel({
 }: IpodWheelProps) {
   const { t } = useTranslation();
   const wheelRef = useRef<HTMLDivElement>(null);
-  // Accumulated mouse wheel delta (for desktop scrolling)
-  const [wheelDelta, setWheelDelta] = useState(0);
+  // Accumulated mouse wheel delta (for desktop scrolling). Keep this in a
+  // ref so high-frequency wheel events don't trigger component re-renders.
+  const wheelDeltaRef = useRef(0);
 
   // Refs for tracking continuous touch rotation
   const lastAngleRef = useRef<number | null>(null); // Last touch angle in radians
@@ -255,18 +256,17 @@ export function IpodWheel({
   // Handle mouse wheel scroll for rotation
   const handleMouseWheel = (e: React.WheelEvent) => {
     // Accumulate delta and only trigger when it reaches threshold
-    const newDelta = wheelDelta + Math.abs(e.deltaY);
-    setWheelDelta(newDelta);
+    wheelDeltaRef.current += Math.abs(e.deltaY);
 
     // Using a threshold of 50 to reduce sensitivity
-    if (newDelta >= 50) {
+    if (wheelDeltaRef.current >= 50) {
       if (e.deltaY < 0) {
         onWheelRotation("counterclockwise");
       } else {
         onWheelRotation("clockwise");
       }
       // Reset delta after triggering action
-      setWheelDelta(0);
+      wheelDeltaRef.current = 0;
     }
   };
 

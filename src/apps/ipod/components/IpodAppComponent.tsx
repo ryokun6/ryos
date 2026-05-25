@@ -257,6 +257,60 @@ export function IpodAppComponent({
     [isAppleMusic, setDisplayMode, showStatus, t]
   );
 
+  const clearScreenLongPressTimer = useCallback(() => {
+    if (screenLongPressTimerRef.current) {
+      clearTimeout(screenLongPressTimerRef.current);
+      screenLongPressTimerRef.current = null;
+    }
+  }, [screenLongPressTimerRef]);
+
+  const startScreenLongPress = useCallback(
+    (x: number, y: number) => {
+      clearScreenLongPressTimer();
+      screenLongPressFiredRef.current = false;
+      screenLongPressStartPos.current = { x, y };
+      screenLongPressTimerRef.current = setTimeout(() => {
+        screenLongPressFiredRef.current = true;
+        handleCenterLongPress();
+      }, 500);
+    },
+    [
+      clearScreenLongPressTimer,
+      screenLongPressFiredRef,
+      screenLongPressStartPos,
+      screenLongPressTimerRef,
+      handleCenterLongPress,
+    ]
+  );
+
+  const cancelScreenLongPressOnMove = useCallback(
+    (x: number, y: number) => {
+      if (!screenLongPressStartPos.current || !screenLongPressTimerRef.current) {
+        return;
+      }
+      const dx = x - screenLongPressStartPos.current.x;
+      const dy = y - screenLongPressStartPos.current.y;
+      if (
+        Math.abs(dx) > SCREEN_LONG_PRESS_MOVE_THRESHOLD ||
+        Math.abs(dy) > SCREEN_LONG_PRESS_MOVE_THRESHOLD
+      ) {
+        clearScreenLongPressTimer();
+        screenLongPressStartPos.current = null;
+      }
+    },
+    [
+      clearScreenLongPressTimer,
+      screenLongPressStartPos,
+      screenLongPressTimerRef,
+      SCREEN_LONG_PRESS_MOVE_THRESHOLD,
+    ]
+  );
+
+  const stopScreenLongPress = useCallback(() => {
+    clearScreenLongPressTimer();
+    screenLongPressStartPos.current = null;
+  }, [clearScreenLongPressTimer, screenLongPressStartPos]);
+
   const menuBar = (
     <IpodMenuBar
       onClose={handleClose}
@@ -342,78 +396,24 @@ export function IpodAppComponent({
                 maxHeight: IPOD_MODERN_SCREEN_HEIGHT_PX,
               }}
               onMouseDown={(e) => {
-                // Start long press timer for Now Playing song menu
-                if (screenLongPressTimerRef.current) clearTimeout(screenLongPressTimerRef.current);
-                screenLongPressFiredRef.current = false;
-                screenLongPressStartPos.current = { x: e.clientX, y: e.clientY };
-                screenLongPressTimerRef.current = setTimeout(() => {
-                  screenLongPressFiredRef.current = true;
-                  handleCenterLongPress();
-                }, 500);
+                // Start long press timer for Now Playing song menu.
+                startScreenLongPress(e.clientX, e.clientY);
               }}
               onMouseMove={(e) => {
-                // Cancel long press if moved too far from start position
-                if (screenLongPressStartPos.current && screenLongPressTimerRef.current) {
-                  const dx = e.clientX - screenLongPressStartPos.current.x;
-                  const dy = e.clientY - screenLongPressStartPos.current.y;
-                  if (Math.abs(dx) > SCREEN_LONG_PRESS_MOVE_THRESHOLD || Math.abs(dy) > SCREEN_LONG_PRESS_MOVE_THRESHOLD) {
-                    clearTimeout(screenLongPressTimerRef.current);
-                    screenLongPressTimerRef.current = null;
-                    screenLongPressStartPos.current = null;
-                  }
-                }
+                cancelScreenLongPressOnMove(e.clientX, e.clientY);
               }}
-              onMouseUp={() => {
-                if (screenLongPressTimerRef.current) {
-                  clearTimeout(screenLongPressTimerRef.current);
-                  screenLongPressTimerRef.current = null;
-                }
-                screenLongPressStartPos.current = null;
-              }}
-              onMouseLeave={() => {
-                if (screenLongPressTimerRef.current) {
-                  clearTimeout(screenLongPressTimerRef.current);
-                  screenLongPressTimerRef.current = null;
-                }
-                screenLongPressStartPos.current = null;
-              }}
+              onMouseUp={stopScreenLongPress}
+              onMouseLeave={stopScreenLongPress}
               onTouchStart={(e) => {
-                if (screenLongPressTimerRef.current) clearTimeout(screenLongPressTimerRef.current);
-                screenLongPressFiredRef.current = false;
                 const touch = e.touches[0];
-                screenLongPressStartPos.current = { x: touch.clientX, y: touch.clientY };
-                screenLongPressTimerRef.current = setTimeout(() => {
-                  screenLongPressFiredRef.current = true;
-                  handleCenterLongPress();
-                }, 500);
+                startScreenLongPress(touch.clientX, touch.clientY);
               }}
               onTouchMove={(e) => {
-                // Cancel long press if moved too far from start position
-                if (screenLongPressStartPos.current && screenLongPressTimerRef.current) {
-                  const touch = e.touches[0];
-                  const dx = touch.clientX - screenLongPressStartPos.current.x;
-                  const dy = touch.clientY - screenLongPressStartPos.current.y;
-                  if (Math.abs(dx) > SCREEN_LONG_PRESS_MOVE_THRESHOLD || Math.abs(dy) > SCREEN_LONG_PRESS_MOVE_THRESHOLD) {
-                    clearTimeout(screenLongPressTimerRef.current);
-                    screenLongPressTimerRef.current = null;
-                    screenLongPressStartPos.current = null;
-                  }
-                }
+                const touch = e.touches[0];
+                cancelScreenLongPressOnMove(touch.clientX, touch.clientY);
               }}
-              onTouchEnd={() => {
-                if (screenLongPressTimerRef.current) {
-                  clearTimeout(screenLongPressTimerRef.current);
-                  screenLongPressTimerRef.current = null;
-                }
-                screenLongPressStartPos.current = null;
-              }}
-              onTouchCancel={() => {
-                if (screenLongPressTimerRef.current) {
-                  clearTimeout(screenLongPressTimerRef.current);
-                  screenLongPressTimerRef.current = null;
-                }
-                screenLongPressStartPos.current = null;
-              }}
+              onTouchEnd={stopScreenLongPress}
+              onTouchCancel={stopScreenLongPress}
             >
               {!isMusicQuizOpen && !isBrickGameOpen && (
                 <IpodScreen
