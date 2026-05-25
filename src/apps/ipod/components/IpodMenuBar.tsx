@@ -834,7 +834,7 @@ export function IpodMenuBar({
                   10s
                 </MenubarRadioItem>
                 <MenubarRadioItem value="always-on" className="text-md h-6 pr-3">
-                  {t("apps.ipod.menuItems.alwaysOn", "Always On")}
+                  {t("apps.ipod.menuItems.alwaysOn", "Keep On")}
                 </MenubarRadioItem>
                 <MenubarRadioItem value="off" className="text-md h-6 pr-3">
                   {t("apps.ipod.menuItems.off")}

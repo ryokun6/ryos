@@ -749,7 +749,7 @@ export function useIpodLogic({
       if (!useIpodStore.getState().backlightOn) {
         toggleBacklight();
       }
-      showStatus(t("apps.ipod.menuItems.alwaysOn", "Always On"));
+      showStatus(t("apps.ipod.menuItems.alwaysOn", "Keep On"));
       registerActivity();
       return;
     }
@@ -2481,7 +2481,7 @@ export function useIpodLogic({
             : backlightTimeout === "10s"
             ? "10s"
             : backlightTimeout === "always-on"
-            ? t("apps.ipod.menuItems.alwaysOn", "Always On")
+            ? t("apps.ipod.menuItems.alwaysOn", "Keep On")
             : t("apps.ipod.menuItems.off"),
       },
       {
