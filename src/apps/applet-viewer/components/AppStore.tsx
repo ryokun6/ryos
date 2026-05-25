@@ -122,6 +122,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
     isMacOSTheme: osIsMac,
     isSystem7Theme: osIsSystem7,
     isWindowsTheme: isXpTheme,
+    isDarkMode,
   } = useThemeFlags();
   const isMacChrome = theme === "macosx" || osIsMac;
   const isSystem7Chrome = theme === "system7" || osIsSystem7;
@@ -804,6 +805,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
                 )}
                 style={{
                   display: "block",
+                  ...(isDarkMode ? { colorScheme: "dark" as const } : {}),
                 }}
               />
             ) : (

@@ -236,6 +236,7 @@ export function InternetExplorerAppComponent({
     playDingSound,
     currentTheme,
     isXpTheme,
+    isDarkMode,
     isOffline,
     pastYears,
     futureYears,
@@ -937,7 +938,17 @@ export function InternetExplorerAppComponent({
               </div>
             </div>
 
-            <div className="flex-1 relative bg-white">
+            <div
+              className="flex-1 relative bg-white"
+              style={
+                isDarkMode
+                  ? {
+                      backgroundColor: "var(--os-color-window-bg)",
+                      colorScheme: "dark",
+                    }
+                  : undefined
+              }
+            >
               {errorDetails ? (
                 renderErrorPage()
               ) : isFutureYear ||
@@ -976,6 +987,11 @@ export function InternetExplorerAppComponent({
                   style={{
                     width: "calc(100% + 1px)",
                     height: "calc(100% + 1px)",
+                    // In dark mode, hint the iframe's UA stylesheet so empty
+                    // documents (about:blank, data:, slow-loading pages) paint
+                    // dark instead of flashing the browser-default white slab.
+                    // Loaded pages that set their own background override this.
+                    ...(isDarkMode ? { colorScheme: "dark" } : {}),
                   }}
                   sandbox="allow-scripts allow-forms allow-same-origin allow-popups allow-pointer-lock"
                   onLoad={handleIframeLoad}

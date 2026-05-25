@@ -33,6 +33,7 @@ export function AppletViewerAppComponent({
     currentTheme,
     isXpTheme,
     isMacTheme,
+    isDarkMode,
     hasAppletContent,
     htmlContent,
     shareCode,
@@ -107,7 +108,14 @@ export function AppletViewerAppComponent({
         instanceId={instanceId}
         menuBar={isXpTheme ? menuBar : undefined}
       >
-        <div className="w-full h-full bg-white overflow-hidden">
+        <div
+          className="w-full h-full bg-white overflow-hidden"
+          style={
+            isDarkMode
+              ? { backgroundColor: "var(--os-color-window-bg)" }
+              : undefined
+          }
+        >
           {hasAppletContent ? (
             <div className="relative h-full w-full">
               <iframe
@@ -122,6 +130,10 @@ export function AppletViewerAppComponent({
                   padding: 0,
                   width: "calc(100% + 1px)",
                   height: "calc(100% + 1px)",
+                  // Hint UA stylesheet so applets that don't paint their own
+                  // body bg render dark instead of flashing browser-default
+                  // white while srcdoc is being applied.
+                  ...(isDarkMode ? { colorScheme: "dark" as const } : {}),
                 }}
                 onLoad={() =>
                   sendAuthPayload(iframeRef.current?.contentWindow || null)

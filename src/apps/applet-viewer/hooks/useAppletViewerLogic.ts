@@ -155,6 +155,7 @@ export function useAppletViewerLogic({
     currentTheme,
     isWindowsTheme: isXpTheme,
     isMacOSTheme: isMacTheme,
+    isDarkMode,
   } = useThemeFlags();
   const username = useChatsStore((state) => state.username);
   const isAuthenticated = useChatsStore((state) => state.isAuthenticated);
@@ -1616,6 +1617,7 @@ export function useAppletViewerLogic({
     currentTheme,
     isXpTheme,
     isMacTheme,
+    isDarkMode,
     hasAppletContent,
     htmlContent,
     shareCode,

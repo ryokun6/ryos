@@ -55,6 +55,7 @@ const {
   isMacOSTheme: osIsMac,
   isSystem7Theme: osIsSystem7,
   isWindowsTheme: osIsXp,
+  isDarkMode,
 } = useThemeFlags();
 const { username, isAuthenticated } = useChatsStoreShallow((state) => ({
   username: state.username,
@@ -562,6 +563,7 @@ const renderAppletCard = (applet: Applet, index: number) => {
                 data-ryos-trusted-applet={trusted ? "1" : "0"}
                 style={{
                   display: "block",
+                  ...(isDarkMode ? { colorScheme: "dark" as const } : {}),
                 }}
               />
             );

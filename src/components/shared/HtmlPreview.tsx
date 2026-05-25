@@ -126,7 +126,7 @@ export default function HtmlPreview({
   const terminalSoundsEnabled = useAudioSettingsStore(
     (state) => state.terminalSoundsEnabled
   );
-  const { isMacOSTheme: isMacOsXTheme } = useThemeFlags();
+  const { isMacOSTheme: isMacOsXTheme, isDarkMode } = useThemeFlags();
 
   const sendAuthPayload = useCallback(
     (target: Window | null | undefined) => {
@@ -1205,6 +1205,11 @@ export default function HtmlPreview({
               // pointerEvents: isStreaming ? "none" : "auto", // Already handled by parent div conditional
               position: "relative",
               zIndex: 1,
+              // In OS dark mode, propagate `color-scheme: dark` so the iframe's
+              // UA stylesheet paints empty / about:blank documents dark instead
+              // of the browser-default white slab. Content that sets its own
+              // background still wins inside the document.
+              ...(isDarkMode ? { colorScheme: "dark" as const } : {}),
               }}
               onMouseDown={(e) => e.stopPropagation()}
               onLoad={() =>
@@ -1274,7 +1279,9 @@ export default function HtmlPreview({
 
                   {/* Preview iframe layer - positioned above code OR Text stream */}
                   <motion.div
-                    className="absolute z-100 bg-white" // Added bg-white for text stream background
+                    className={`absolute z-100 ${
+                      isDarkMode ? "" : "bg-white"
+                    }`} // Added bg-white for text stream background (dark mode uses window bg instead)
                     initial={false}
                     animate={{
                       width:
@@ -1301,6 +1308,9 @@ export default function HtmlPreview({
                       top: showCode && isSplitView && isMobile ? "50%" : 0,
                       right: 0,
                       overflow: "hidden", // Clip content
+                      ...(isDarkMode
+                        ? { backgroundColor: "var(--os-color-window-bg)" }
+                        : {}),
                     }}
                   >
                     {/* Fullscreen Conditional Rendering: Text Stream or Iframe */}
@@ -1337,7 +1347,9 @@ export default function HtmlPreview({
                         // srcDoc is now set by useEffect after streaming finishes
                         // srcDoc={processedHtmlContent()}
                         title={t("common.htmlPreview.codePreviewTitleFullscreen")}
-                        className="border-0 bg-white size-full"
+                        className={`border-0 size-full ${
+                          isDarkMode ? "" : "bg-white"
+                        }`}
                         sandbox={sandboxAttribute}
                         onClick={(e) => e.stopPropagation()}
                         onMouseDown={(e) => e.stopPropagation()}
@@ -1351,6 +1363,13 @@ export default function HtmlPreview({
                           margin: 0,
                           padding: 0,
                           pointerEvents: isDragging ? "none" : "auto",
+                          ...(isDarkMode
+                            ? {
+                                colorScheme: "dark" as const,
+                                backgroundColor:
+                                  "var(--os-color-window-bg)",
+                              }
+                            : {}),
                           ...(isInternetExplorer && {
                             position: "absolute",
                             inset: 0,
