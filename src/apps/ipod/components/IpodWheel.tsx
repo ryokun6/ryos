@@ -1,4 +1,5 @@
 import { useRef } from "react";
+import { PlayPause, SkipBack, SkipForward } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 
@@ -453,7 +454,7 @@ export function IpodWheel({
       >
         {/* Wheel labels - no click handlers */}
         <div
-          className="absolute top-1.5 text-center left-1/2 transform -translate-x-1/2 font-chicago text-xs text-white menu-button cursor-default select-none no-select-gesture"
+          className="absolute top-1 text-center left-1/2 transform -translate-x-1/2 font-ipod-modern-ui font-semibold text-[15px] leading-none tracking-wide text-white menu-button cursor-default select-none no-select-gesture"
           onClick={(e) => {
             if (recentTouchRef.current || isInTouchDragRef.current || isInMouseDragRef.current) return;
             e.stopPropagation(); // Prevent triggering wheel mousedown
@@ -462,14 +463,14 @@ export function IpodWheel({
         >
           MENU
         </div>
-        <div className="absolute right-2 text-right top-1/2 transform -translate-y-1/2 font-chicago text-[12px] text-white cursor-default select-none no-select-gesture">
-          ⏭
+        <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-white cursor-default select-none no-select-gesture">
+          <SkipForward size={16} weight="fill" />
         </div>
-        <div className="absolute bottom-1 text-center left-1/2 transform -translate-x-1/2 font-chicago text-[12px] text-white cursor-default select-none no-select-gesture">
-          ⏯
+        <div className="absolute bottom-1.5 left-1/2 transform -translate-x-1/2 text-white cursor-default select-none no-select-gesture">
+          <PlayPause size={16} weight="fill" />
         </div>
-        <div className="absolute left-2 text-left top-1/2 transform -translate-y-1/2 font-chicago text-[12px] text-white cursor-default select-none no-select-gesture">
-          ⏮
+        <div className="absolute left-2 top-1/2 transform -translate-y-1/2 text-white cursor-default select-none no-select-gesture">
+          <SkipBack size={16} weight="fill" />
         </div>
       </div>
     </div>
