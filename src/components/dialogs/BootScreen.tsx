@@ -222,7 +222,9 @@ export function BootScreen({
               <h1 
                 className="text-[52px] mb-6"
                 style={{ 
-                  color: "#333333",
+                  // Theme tokens so dark mode flips the boot title to a
+                  // light glyph against the dark pinstripe surface.
+                  color: "var(--os-color-text-primary, #333333)",
                   fontFamily: "AppleGaramond, 'Apple Garamond', 'Times New Roman', serif",
                   letterSpacing: "1px",
                   textShadow: "0 1px 2px rgba(0, 0, 0, 0.15)"
@@ -241,7 +243,7 @@ export function BootScreen({
               <p 
                 className="text-[12px] mt-5"
                 style={{ 
-                  color: "#000000",
+                  color: "var(--os-color-text-primary, #000000)",
                   fontFamily: "LucidaGrande, 'Lucida Grande', sans-serif"
                 }}
               >

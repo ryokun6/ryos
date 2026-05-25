@@ -108,7 +108,7 @@ export function LoginDialog({
     <div className="space-y-3">
       <div className="space-y-2">
         <Label
-          className={cn("text-gray-700", themeFont)}
+          className={cn("text-neutral-700", themeFont)}
           style={themeFontStyle}
         >
           {t("common.auth.username")}
@@ -124,7 +124,7 @@ export function LoginDialog({
       </div>
       <div className="space-y-2">
         <Label
-          className={cn("text-gray-700", themeFont)}
+          className={cn("text-neutral-700", themeFont)}
           style={themeFontStyle}
         >
           {t("common.auth.password")}
@@ -145,7 +145,7 @@ export function LoginDialog({
     <div className="space-y-3">
       <div className="space-y-2">
         <Label
-          className={cn("text-gray-700", themeFont)}
+          className={cn("text-neutral-700", themeFont)}
           style={themeFontStyle}
         >
           {t("common.auth.username")}
@@ -161,7 +161,7 @@ export function LoginDialog({
       </div>
       <div className="space-y-2">
         <Label
-          className={cn("text-gray-700", themeFont)}
+          className={cn("text-neutral-700", themeFont)}
           style={themeFontStyle}
         >
           {t("common.auth.password")}

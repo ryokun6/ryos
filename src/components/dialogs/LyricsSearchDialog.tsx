@@ -211,7 +211,7 @@ export function LyricsSearchDialog({
     <div className={isXpTheme ? "p-2 px-4" : "p-4 px-6"}>
       <p
         className={cn(
-          "text-gray-500 mb-2",
+          "text-neutral-500 mb-2",
           isXpTheme
             ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
             : "font-geneva-12 text-[12px]"
@@ -287,7 +287,7 @@ export function LyricsSearchDialog({
         <div className="mb-3">
           <p
             className={cn(
-              "text-gray-500 mb-2",
+              "text-neutral-500 mb-2",
               isXpTheme
                 ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
                 : "font-geneva-12 text-[12px]"
@@ -301,7 +301,7 @@ export function LyricsSearchDialog({
           >
             {t("apps.ipod.dialogs.lyricsSearchCurrentSelection")}
           </p>
-          <div className="border border-gray-300 rounded-md overflow-hidden bg-white">
+          <div className="border border-neutral-300 rounded-md overflow-hidden bg-white">
             <div
               className={cn(
                 "flex items-center gap-2 px-2 py-1.5",
@@ -322,8 +322,8 @@ export function LyricsSearchDialog({
                 return (
                   <div
                     className={cn(
-                      "flex-shrink-0 w-9 h-9 overflow-hidden bg-gray-200",
-                      isXpTheme ? "border border-gray-400" : "rounded-sm"
+                      "flex-shrink-0 w-9 h-9 overflow-hidden bg-neutral-200",
+                      isXpTheme ? "border border-neutral-400" : "rounded-sm"
                     )}
                     aria-hidden="true"
                   >
@@ -377,7 +377,7 @@ export function LyricsSearchDialog({
         <div className="mb-3">
           <p
             className={cn(
-              "text-gray-500 mb-2",
+              "text-neutral-500 mb-2",
               isXpTheme
                 ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
                 : "font-geneva-12 text-[12px]"
@@ -391,7 +391,7 @@ export function LyricsSearchDialog({
           >
             {t("apps.ipod.dialogs.lyricsSearchSelectResult")}
           </p>
-          <ScrollArea className="h-[200px] border border-gray-300 rounded-md overflow-hidden bg-white">
+          <ScrollArea className="h-[200px] border border-neutral-300 rounded-md overflow-hidden bg-white">
             <div>
               {results.map((result, index) => {
                 const coverUrl = formatKugouImageUrl(result.cover, 100);
@@ -414,7 +414,7 @@ export function LyricsSearchDialog({
                       selectedIndex === index
                         ? "" // Selection styling handled by inline style
                         : index % 2 === 1
-                          ? "bg-gray-100"
+                          ? "bg-neutral-100"
                           : "bg-white",
                       isXpTheme
                         ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
@@ -430,8 +430,8 @@ export function LyricsSearchDialog({
                   >
                     <div
                       className={cn(
-                        "flex-shrink-0 w-9 h-9 overflow-hidden bg-gray-200",
-                        isXpTheme ? "border border-gray-400" : "rounded-sm"
+                        "flex-shrink-0 w-9 h-9 overflow-hidden bg-neutral-200",
+                        isXpTheme ? "border border-neutral-400" : "rounded-sm"
                       )}
                       aria-hidden="true"
                     >

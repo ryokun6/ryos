@@ -279,17 +279,17 @@ export function TerminalAppComponent({
                 (item.toolInvocations && item.toolInvocations.length > 0)) && (
                 <div
                   className={`ml-0 select-text ${
-                    item.path === "ai-thinking" ? "text-gray-400" : ""
+                    item.path === "ai-thinking" ? "text-neutral-400" : ""
                   } ${item.path === "ai-assistant" ? "text-purple-100" : ""} ${
                     item.path === "ai-error" ? "text-red-400" : ""
-                  } ${item.path === "welcome-message" ? "text-gray-400" : ""} ${
+                  } ${item.path === "welcome-message" ? "text-neutral-400" : ""} ${
                     // Add urgent message styling
                     item.output && isUrgentMessage(item.output)
                       ? "text-red-400"
                       : ""
                   } ${
                     // System messages (errors, usage hints) styled in gray
-                    item.isSystemMessage ? "text-gray-400" : ""
+                    item.isSystemMessage ? "text-neutral-400" : ""
                   }`}
                 >
                   {item.path === "ai-thinking" ? (
@@ -300,7 +300,7 @@ export function TerminalAppComponent({
                         </span>{" "}
                         ryo
                       </span>
-                      <span className="text-gray-500 italic shimmer-subtle">
+                      <span className="text-neutral-500 italic shimmer-subtle">
                         {" "}
                         {i18n.t("apps.terminal.output.isThinking")}
                         <AnimatedEllipsis />
@@ -368,7 +368,7 @@ export function TerminalAppComponent({
                                     : isSpin
                                       ? "gradient-spin italic"
                                       : isRes
-                                        ? "text-gray-400"
+                                        ? "text-neutral-400"
                                         : "text-purple-300";
                                   return (
                                     <span
@@ -524,7 +524,7 @@ export function TerminalAppComponent({
               />
               {isAiLoading && isInAiMode && (
                 <div className="absolute top-0 left-0 w-full h-full pointer-events-none flex items-center">
-                  <span className="text-gray-400/40 opacity-30 shimmer">
+                  <span className="text-neutral-400/40 opacity-30 shimmer">
                     {i18n.t("apps.terminal.output.isThinking")}
                     <AnimatedEllipsis />
                   </span>

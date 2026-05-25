@@ -97,7 +97,7 @@ const SlashMenuContent = ({
           onClick={() => onCommand(item)}
           onMouseEnter={() => setSelectedIndex(index)}
           className={`relative flex w-full items-center h-8 px-2 text-sm ${
-            index === selectedIndex ? "bg-gray-100" : ""
+            index === selectedIndex ? "bg-neutral-100" : ""
           }`}
         >
           {getTranslatedTitle(item)}

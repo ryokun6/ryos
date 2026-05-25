@@ -13,6 +13,7 @@ export const system7: OsTheme = {
     menuBarHeight: 30,
     taskbarHeight: 0,
     baseDockHeight: 0,
+    supportsDarkMode: false,
   },
   fonts: {
     ui: "Geneva, Chicago, -apple-system, BlinkMacSystemFont, sans-serif",

@@ -281,7 +281,7 @@ export function SynthAppComponent({
                             </button>
                           ))
                         ) : (
-                          <p className="text-xs text-gray-400 font-geneva-12 select-none px-2">
+                          <p className="text-xs text-neutral-400 font-geneva-12 select-none px-2">
                             {t("apps.synth.noPresetsYet")}
                           </p>
                         )}
@@ -305,7 +305,7 @@ export function SynthAppComponent({
                           </Button>
                         ))
                       ) : (
-                        <p className="text-xs text-gray-400 font-geneva-12 select-none">
+                        <p className="text-xs text-neutral-400 font-geneva-12 select-none">
                           {t("apps.synth.noPresetsYet")}
                         </p>
                       )}

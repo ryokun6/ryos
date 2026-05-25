@@ -26,6 +26,7 @@ import {
 } from "./useAppleMusicLibrary";
 import { useMusicKit } from "@/hooks/useMusicKit";
 import { clearAppleMusicLibrary } from "@/utils/appleMusicLibraryCache";
+import { useThemeStore } from "@/stores/useThemeStore";
 import {
   useIpodStore,
   Track,
@@ -157,7 +158,7 @@ export function useIpodLogic({
   } = useIpodActiveLibrary();
 
   const {
-    theme,
+    theme: persistedTheme,
     backlightTimeout,
     lcdFilterOn,
     displayMode,
@@ -236,6 +237,16 @@ export function useIpodLogic({
     setLyricOffset: s.setLyricOffset,
     setCurrentFuriganaMap: s.setCurrentFuriganaMap,
   }));
+
+  // System dark-mode override for the iPod skin: when the OS is in dark mode
+  // and the user's persisted iPod theme is "classic" (the only one with a
+  // light shell), render as "black" so the iPod fits the rest of the dark
+  // chrome. The persisted preference itself isn't mutated — flip dark mode off
+  // and the classic skin returns. Menu radio checks read the persisted value
+  // directly so the user always sees what they actually picked.
+  const isSystemDark = useThemeStore((s) => s.isDark);
+  const theme: typeof persistedTheme =
+    isSystemDark && persistedTheme === "classic" ? "black" : persistedTheme;
 
   // Pick navigation methods + setter based on the active library. Apple
   // Music has its own queue / shuffle pointers in the store so YouTube

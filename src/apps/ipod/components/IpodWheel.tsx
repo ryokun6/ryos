@@ -375,7 +375,7 @@ export function IpodWheel({
       className={cn(
         "mt-6 relative w-[180px] h-[180px] rounded-full flex items-center justify-center select-none no-select-gesture",
         theme === "classic"
-          ? "bg-gray-300/60"
+          ? "bg-neutral-300/60"
           : theme === "u2"
           ? "bg-red-700/60"
           : "bg-neutral-800/50"

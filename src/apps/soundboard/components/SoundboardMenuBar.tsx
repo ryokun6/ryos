@@ -147,7 +147,7 @@ export function SoundboardMenuBar({
             disabled={!canDeleteBoard}
             className={
               !canDeleteBoard
-                ? "text-gray-400 text-md h-6 px-3"
+                ? "text-neutral-400 text-md h-6 px-3"
                 : "text-md h-6 px-3"
             }
           >

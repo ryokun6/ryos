@@ -211,8 +211,34 @@
     <script>
       (function () {
         try {
-          var theme = localStorage.getItem("ryos:theme") || localStorage.getItem("os_theme");
-          if (theme) document.documentElement.dataset.osTheme = theme;
+          var rawTheme = localStorage.getItem("ryos:theme") || localStorage.getItem("os_theme");
+          var allowed = { system7: 1, macosx: 1, xp: 1, win98: 1 };
+          var theme = rawTheme && allowed[rawTheme] ? rawTheme : "macosx";
+          var root = document.documentElement;
+          root.dataset.osTheme = theme;
+          // Mirror the platform/chrome attributes the React store will set later so first paint matches.
+          var isWindows = theme === "xp" || theme === "win98";
+          root.dataset.osPlatform = isWindows ? "windows" : "mac";
+          if (!isWindows) {
+            root.dataset.osMacChrome = theme === "macosx" ? "aqua" : "system7";
+          } else {
+            delete root.dataset.osMacChrome;
+          }
+          // Dark mode is per-theme, only honored when the theme advertises support.
+          // Today only macosx has dark tokens — see src/styles/themes.css.
+          var supportsDark = theme === "macosx";
+          if (supportsDark) {
+            try {
+              var rawDark = localStorage.getItem("ryos:theme:dark");
+              if (rawDark) {
+                var parsed = JSON.parse(rawDark);
+                if (parsed && parsed[theme] === true) {
+                  root.dataset.osColorScheme = "dark";
+                  root.style.colorScheme = "dark";
+                }
+              }
+            } catch (e) {}
+          }
         } catch (e) {}
       })();
     </script>

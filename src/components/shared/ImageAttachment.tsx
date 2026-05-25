@@ -39,8 +39,8 @@ export function ImageAttachment({
         className={cn(
           "relative overflow-hidden",
           isMacTheme
-            ? "chat-bubble macosx-link-preview rounded-[16px] bg-gray-100"
-            : "bg-white border border-gray-200 rounded"
+            ? "chat-bubble macosx-link-preview rounded-[16px] bg-neutral-100"
+            : "bg-white border border-neutral-200 rounded"
         )}
       >
         {/* Full bleed image for macOS */}

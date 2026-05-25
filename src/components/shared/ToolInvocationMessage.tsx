@@ -776,7 +776,7 @@ export function ToolInvocationMessage({
         <div key={partKey} className="mb-0 px-1 py-0.5 text-[12px]">
           <ToolInvocationStatusRow
             icon={<Check className="size-3 text-blue-600" weight="bold" />}
-            className="text-gray-700"
+            className="text-neutral-700"
             align="start"
           >
             <span>
@@ -899,7 +899,7 @@ export function ToolInvocationMessage({
       return (
         <div key={partKey} className="mb-0 px-1 py-0.5 italic text-[12px]">
           <ToolInvocationStatusRow
-            icon={<ActivityIndicator size="xs" className="text-gray-500" />}
+            icon={<ActivityIndicator size="xs" className="text-neutral-500" />}
             className="text-neutral-600"
           >
             <span className="shimmer">
@@ -929,8 +929,8 @@ export function ToolInvocationMessage({
       return (
         <div key={partKey} className="mb-0 px-1 py-0.5 italic text-[12px]">
           <ToolInvocationStatusRow
-            icon={<ActivityIndicator size="xs" className="text-gray-500" />}
-            className="text-gray-500"
+            icon={<ActivityIndicator size="xs" className="text-neutral-500" />}
+            className="text-neutral-500"
           >
             <span>{t("apps.chats.toolCalls.preparingHtmlPreview")}</span>
           </ToolInvocationStatusRow>
@@ -949,8 +949,8 @@ export function ToolInvocationMessage({
       {(state === "input-streaming" || state === "input-available") &&
         !output && (
           <ToolInvocationStatusRow
-            icon={<ActivityIndicator size="xs" className="text-gray-500" />}
-            className="text-gray-700"
+            icon={<ActivityIndicator size="xs" className="text-neutral-500" />}
+            className="text-neutral-700"
           >
             {displayCallMessage ? (
               <span className="shimmer">{displayCallMessage}</span>
@@ -966,7 +966,7 @@ export function ToolInvocationMessage({
       {state === "output-available" && (
         <ToolInvocationStatusRow
           icon={<Check className="size-3 text-blue-600" weight="bold" />}
-          className="text-gray-700"
+          className="text-neutral-700"
           align="start"
         >
           {displayResultMessage ? (
@@ -974,7 +974,7 @@ export function ToolInvocationMessage({
           ) : (
             <div className="flex flex-col">
               {typeof output === "string" && output.length > 0 ? (
-                <span className="text-gray-500">{output}</span>
+                <span className="text-neutral-500">{output}</span>
               ) : (
                 <span>{formatToolName(toolName)}</span>
               )}

@@ -44,7 +44,7 @@ export function MapsMenuBar({
           <MenubarItem
             onClick={onLocateMe}
             disabled={!canUseMap}
-            className={`text-md h-6 px-3 ${!canUseMap ? "text-gray-500" : ""}`}
+            className={`text-md h-6 px-3 ${!canUseMap ? "text-neutral-500" : ""}`}
           >
             {t("apps.maps.menu.locateMe")}
           </MenubarItem>

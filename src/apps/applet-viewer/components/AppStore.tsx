@@ -614,7 +614,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
         <div
           key={applet.id}
           className={`group flex items-center gap-3 px-3 py-2 rounded transition-colors ${
-            installed ? "cursor-pointer hover:bg-gray-100" : "cursor-pointer hover:bg-gray-100"
+            installed ? "cursor-pointer hover:bg-neutral-100" : "cursor-pointer hover:bg-neutral-100"
           }`}
           onClick={(e) => {
             // Don't trigger if clicking on buttons or admin actions
@@ -639,11 +639,11 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
               </span>
             </div>
             {updateAvailable && applet.createdAt ? (
-              <div className="text-[10px] text-gray-500 font-geneva-12 truncate">
+              <div className="text-[10px] text-neutral-500 font-geneva-12 truncate">
                 {formatUpdateTime(applet.createdAt)}
               </div>
             ) : applet.createdBy ? (
-              <div className="text-[10px] text-gray-500 font-geneva-12 truncate">
+              <div className="text-[10px] text-neutral-500 font-geneva-12 truncate">
                 {applet.createdBy}
               </div>
             ) : null}
@@ -656,11 +656,11 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
                     e.stopPropagation();
                     handleToggleFeatured(applet.id, applet.featured || false);
                   }}
-                  className="p-1 hover:bg-gray-200 rounded transition-all inline-flex md:hidden md:group-hover:inline-flex"
+                  className="p-1 hover:bg-neutral-200 rounded transition-all inline-flex md:hidden md:group-hover:inline-flex"
                   title={applet.featured ? t("apps.applet-viewer.labels.removeFromFeatured") : t("apps.applet-viewer.labels.addToFeatured")}
                 >
                   <Star
-                    className={`size-4 ${applet.featured ? "text-yellow-400" : "text-gray-400"}`}
+                    className={`size-4 ${applet.featured ? "text-yellow-400" : "text-neutral-400"}`}
                     weight={applet.featured ? "fill" : "bold"}
                   />
                 </button>
@@ -669,7 +669,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
                     e.stopPropagation();
                     handleDelete(applet.id);
                   }}
-                  className="p-1 hover:bg-gray-200 rounded transition-all text-gray-400 inline-flex md:hidden md:group-hover:inline-flex"
+                  className="p-1 hover:bg-neutral-200 rounded transition-all text-neutral-400 inline-flex md:hidden md:group-hover:inline-flex"
                   title={t("apps.applet-viewer.labels.deleteApplet")}
                 >
                   <Trash className="size-4" weight="bold" />
@@ -741,8 +741,8 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
                 : isMacChrome
                 ? ""
                 : isSystem7Chrome
-                ? "bg-gray-100 border-b border-black"
-                : "bg-gray-100 border-b border-gray-200"
+                ? "bg-neutral-100 border-b border-black"
+                : "bg-neutral-100 border-b border-neutral-200"
             }`}
             style={{
               background: isXpTheme ? "transparent" : undefined,
@@ -877,8 +877,8 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
                   : isMacChrome
                   ? ""
                   : isSystem7Chrome
-                  ? "bg-gray-100 border-b border-black"
-                  : "bg-gray-100 border-b border-gray-200"
+                  ? "bg-neutral-100 border-b border-black"
+                  : "bg-neutral-100 border-b border-neutral-200"
               }`}
               style={{
                 background: isXpTheme ? "transparent" : undefined,

@@ -170,7 +170,7 @@ export function PcAppComponent({
           ? "text-transparent cursor-default"
           : isDarkTitlebar
             ? "text-white/80 hover:text-white cursor-pointer"
-            : "text-gray-600 hover:text-gray-800 cursor-pointer"
+            : "text-neutral-600 hover:text-neutral-800 cursor-pointer"
       }`}
       style={{
         filter: isGameRunning && isDarkTitlebar
@@ -226,12 +226,12 @@ export function PcAppComponent({
                     <div className="font-apple-garamond text-white text-lg">
                       {t("apps.pc.virtualPc")}
                     </div>
-                    <div className="font-geneva-12 text-gray-400 text-[12px] flex items-center gap-2">
+                    <div className="font-geneva-12 text-neutral-400 text-[12px] flex items-center gap-2">
                       {isScriptLoaded ? (
                         t("apps.pc.programsAvailable", { count: games.length })
                       ) : (
                         <>
-                          <ActivityIndicator size="xs" className="text-gray-400" />
+                          <ActivityIndicator size="xs" className="text-neutral-400" />
                           {t("apps.pc.loadingEmulator")}
                         </>
                       )}

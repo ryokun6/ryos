@@ -11,7 +11,7 @@ export function VolumeBar({ volume, className = "" }: VolumeBarProps) {
 
   return (
     <div
-      className={`h-1 bg-gray-200 rounded-full overflow-hidden ${className}`}
+      className={`h-1 bg-neutral-200 rounded-full overflow-hidden ${className}`}
     >
       <motion.div
         className="h-full bg-black rounded-full"

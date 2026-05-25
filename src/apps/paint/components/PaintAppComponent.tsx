@@ -123,7 +123,11 @@ export const PaintAppComponent: React.FC<AppProps<PaintInitialData>> = ({
         keepMountedWhenMinimized
       >
         <div
-          className="flex flex-col h-full w-full min-h-0 p-2"
+          // Paint UI is intentionally skinned for the classic Paint look in
+          // every theme — opt out of the macOS Aqua dark coverage layer so
+          // toolbars, the canvas chrome, and the pattern palette keep their
+          // light surfaces in dark mode too.
+          className="flex flex-col h-full w-full min-h-0 p-2 os-native-chrome-skip"
           style={{
             backgroundImage: 'url("/patterns/Property 1=7.svg")',
             backgroundRepeat: "repeat",
@@ -149,7 +153,7 @@ export const PaintAppComponent: React.FC<AppProps<PaintInitialData>> = ({
             <div className="flex flex-col flex-1 gap-2 min-h-0 min-w-0">
               <div className="flex-1 bg-white min-h-0 min-w-0 border border-black border-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)] overflow-auto relative">
                 {error && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-gray-200 text-red-500 p-4">
+                  <div className="absolute inset-0 flex items-center justify-center bg-neutral-200 text-red-500 p-4">
                     Error: {error}
                   </div>
                 )}

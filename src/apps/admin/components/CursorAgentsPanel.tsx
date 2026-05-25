@@ -368,7 +368,7 @@ export function CursorAgentsPanel({
                   }
                 }}
                 className={cn(
-                  "border-none odd:bg-gray-200/50 cursor-pointer",
+                  "border-none odd:bg-neutral-200/50 cursor-pointer",
                   run.status === "running" && "bg-amber-50/60 odd:bg-amber-50/70",
                   selectedRunId === run.runId &&
                     "bg-blue-100/80 odd:bg-blue-100/80"

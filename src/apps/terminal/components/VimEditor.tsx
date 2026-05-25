@@ -109,7 +109,7 @@ export function VimEditor({
             key={`line-${lineNumber}`}
             className={`vim-line flex ${isCursorLine ? "bg-white/10" : ""} ${isVisualSelected ? "bg-blue-900/40" : ""}`}
           >
-            <span className="text-gray-500 w-6 text-right mr-2 shrink-0">
+            <span className="text-neutral-500 w-6 text-right mr-2 shrink-0">
               {isFiller ? "" : lineNumber + 1}
             </span>
             {isCursorLine ? (

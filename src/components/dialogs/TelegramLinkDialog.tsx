@@ -86,10 +86,10 @@ export function TelegramLinkDialog({
   );
 
   const previewContent = isStatusLoading && !shouldShowLinkSession ? (
-    <div className="flex size-32 items-center justify-center rounded bg-gray-100">
+    <div className="flex size-32 items-center justify-center rounded bg-neutral-100">
       <p
         className={cn(
-          "text-gray-500",
+          "text-neutral-500",
           isXpTheme
             ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[10px]"
             : "font-geneva-12 text-[10px]"

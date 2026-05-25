@@ -148,17 +148,17 @@ export function DictionaryWidget({ widgetId }: DictionaryWidgetProps) {
         {/* XP content */}
         <div className="flex-1 overflow-y-auto px-3 py-2" style={{ fontSize: 11, minHeight: 0, maxHeight: 200 }}>
           {loading && (
-            <div className="text-center text-gray-400 py-4" style={{ fontSize: 10 }}>
+            <div className="text-center text-neutral-400 py-4" style={{ fontSize: 10 }}>
               {t("apps.dashboard.dictionary.loading", "Looking up…")}
             </div>
           )}
           {!loading && error && (
-            <div className="text-center text-gray-400 py-4" style={{ fontSize: 10 }}>
+            <div className="text-center text-neutral-400 py-4" style={{ fontSize: 10 }}>
               {error}
             </div>
           )}
           {!loading && !error && !entry && (
-            <div className="text-center text-gray-400 py-6" style={{ fontSize: 10 }}>
+            <div className="text-center text-neutral-400 py-6" style={{ fontSize: 10 }}>
               {hasSearched ? t("apps.dashboard.dictionary.noResults", "No results.") : t("apps.dashboard.dictionary.placeholder", "Type a word to look it up.")}
             </div>
           )}

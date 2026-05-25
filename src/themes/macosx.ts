@@ -13,6 +13,7 @@ export const macosx: OsTheme = {
     menuBarHeight: 25,
     taskbarHeight: 0,
     baseDockHeight: 56,
+    supportsDarkMode: true,
   },
   fonts: {
     ui: "LucidaGrande, 'Lucida Grande', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif",

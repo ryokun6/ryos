@@ -238,8 +238,20 @@ module.exports = {
       addVariant("os-windows", ':root[data-os-platform="windows"] &');
       addVariant("os-mac-aqua", ':root[data-os-mac-chrome="aqua"] &');
       addVariant("os-mac-system7", ':root[data-os-mac-chrome="system7"] &');
+      // OS-level color-scheme variants. Only attached when the active theme
+      // supports dark mode (see useThemeStore#applyRootThemeAttributes), so
+      // these never accidentally fire on themes without dark tokens.
+      addVariant("os-dark", ':root[data-os-color-scheme="dark"] &');
+      addVariant(
+        "os-mac-aqua-dark",
+        ':root[data-os-mac-chrome="aqua"][data-os-color-scheme="dark"] &'
+      );
       for (const id of ["system7", "macosx", "xp", "win98"]) {
         addVariant(`os-theme-${id}`, `:root[data-os-theme="${id}"] &`);
+        addVariant(
+          `os-theme-${id}-dark`,
+          `:root[data-os-theme="${id}"][data-os-color-scheme="dark"] &`
+        );
       }
     },
     function ({ addBase }) {

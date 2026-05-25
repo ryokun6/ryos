@@ -154,7 +154,7 @@ export function InfiniteMacAppComponent({
           ? "text-transparent cursor-default"
           : isDarkTitlebar
             ? "text-white/80 hover:text-white cursor-pointer"
-            : "text-gray-600 hover:text-gray-800 cursor-pointer"
+            : "text-neutral-600 hover:text-neutral-800 cursor-pointer"
       }`}
       style={{
         filter: selectedPreset && isDarkTitlebar
@@ -221,7 +221,7 @@ export function InfiniteMacAppComponent({
                     <div className="font-apple-garamond text-white text-lg">
                       {t("apps.infinite-mac.title")}
                     </div>
-                    <div className="font-geneva-12 text-gray-400 text-[12px]">
+                    <div className="font-geneva-12 text-neutral-400 text-[12px]">
                       {t("apps.infinite-mac.systemsAvailable", {
                         count: MAC_PRESETS.length,
                       })}

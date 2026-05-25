@@ -295,7 +295,7 @@ export function WeatherWidget({ widgetId }: WeatherWidgetProps) {
     if (loading)
       return (
         <div
-          className="flex items-center justify-center p-4 text-xs text-gray-500"
+          className="flex items-center justify-center p-4 text-xs text-neutral-500"
           style={{ minHeight: 120 }}
         >
           {t("apps.dashboard.weather.loading")}
@@ -317,7 +317,7 @@ export function WeatherWidget({ widgetId }: WeatherWidgetProps) {
           />
           <div>
             <div className="text-xl font-light">{weather.temperature}°</div>
-            <div className="text-[10px] text-gray-500">
+            <div className="text-[10px] text-neutral-500">
               {t("apps.dashboard.weather.high")} {weather.temperatureMax}° {t("apps.dashboard.weather.low")} {weather.temperatureMin}°
             </div>
           </div>

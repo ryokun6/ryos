@@ -87,7 +87,7 @@ export function AboutDialog({
         >
           {displayName}
         </div>
-        <p className="text-gray-500 mb-2">{t("common.dialog.version")} {metadata.version}</p>
+        <p className="text-neutral-500 mb-2">{t("common.dialog.version")} {metadata.version}</p>
         <p>
           {t("common.dialog.madeBy")}{" "}
           <a

@@ -477,6 +477,10 @@ function serializeSettingsSnapshot(): SettingsSnapshotData {
 
   return {
     theme: useThemeStore.getState().current,
+    themeDarkMode: useThemeStore.getState().darkModeByTheme as Record<
+      string,
+      boolean
+    >,
     language: useLanguageStore.getState().current,
     languageInitialized:
       localStorage.getItem("ryos:language-initialized") === "true",
@@ -989,7 +993,20 @@ async function applySettingsSnapshot(
   try {
     if (sectionsToApply.includes("theme")) {
       try {
-        useThemeStore.getState().setTheme(normalizedData.theme as never);
+        const themeStore = useThemeStore.getState();
+        themeStore.setTheme(normalizedData.theme as never);
+        // Apply per-theme dark-mode preferences in a separate pass so each
+        // entry is only set when the theme advertises support. The store
+        // itself guards against unsupported themes — this loop is purely a
+        // bulk setter for the persisted map.
+        const remoteDarkMap = normalizedData.themeDarkMode;
+        if (remoteDarkMap && typeof remoteDarkMap === "object") {
+          for (const [themeId, enabled] of Object.entries(remoteDarkMap)) {
+            useThemeStore
+              .getState()
+              .setDarkMode(Boolean(enabled), themeId as never);
+          }
+        }
         appliedSections.push("theme");
       } catch (e) {
         console.error("[CloudSync] Failed to apply remote theme:", e);

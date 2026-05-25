@@ -242,7 +242,7 @@ const DialogHeader = ({
       <DialogPrimitive.Close asChild>
         <div className="relative ml-2 size-4 cursor-default select-none">
           <div className="absolute inset-0 -m-2" />
-          <div className="size-4 bg-os-button-face shadow-[0_0_0_1px_var(--os-color-button-face)] border-2 border-os-window hover:bg-gray-200 active:bg-gray-300 flex items-center justify-center" />
+          <div className="size-4 bg-os-button-face shadow-[0_0_0_1px_var(--os-color-button-face)] border-2 border-os-window hover:bg-neutral-200 active:bg-neutral-300 flex items-center justify-center" />
         </div>
       </DialogPrimitive.Close>
       <div className="select-none mx-auto bg-os-button-face px-2 py-0 h-full flex items-center justify-center text-os-titlebar-active-text">

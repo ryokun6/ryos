@@ -5,6 +5,7 @@ import type { OsMacChrome, OsPlatform } from "@/themes/types";
 
 export function useThemeFlags() {
   const currentTheme = useThemeStore((state) => state.current);
+  const isDark = useThemeStore((state) => state.isDark);
   const metadata = useMemo(() => getThemeMetadata(currentTheme), [currentTheme]);
   const osPlatform: OsPlatform = getOsPlatform(currentTheme);
   const macChrome: OsMacChrome | null = getOsMacChrome(currentTheme);
@@ -19,6 +20,9 @@ export function useThemeFlags() {
   const isClassicTheme = isXpTheme || isSystem7Theme;
   /** Menu / menubar styling for Mac OS X Aqua only (not System 7). */
   const isAquaMenuChrome = isMacOSTheme;
+  const supportsDarkMode = metadata.supportsDarkMode;
+  /** True only when dark mode is both supported by the active theme AND enabled. */
+  const isDarkMode = supportsDarkMode && isDark;
 
   return {
     currentTheme,
@@ -35,5 +39,7 @@ export function useThemeFlags() {
     isXpTheme,
     isClassicTheme,
     isAquaMenuChrome,
+    supportsDarkMode,
+    isDarkMode,
   };
 }

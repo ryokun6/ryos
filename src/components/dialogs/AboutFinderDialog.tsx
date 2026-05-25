@@ -178,7 +178,7 @@ export function AboutFinderDialog({
               <div
                 className={cn(
                   aboutFinderSmallClass,
-                  "cursor-pointer select-none transition-opacity hover:opacity-70 text-gray-500"
+                  "cursor-pointer select-none transition-opacity hover:opacity-70 text-neutral-500"
                 )}
                 style={
                   isXpTheme
@@ -210,7 +210,7 @@ export function AboutFinderDialog({
               </div>
               <div
                 className={cn(
-                  "text-gray-500",
+                  "text-neutral-500",
                   isXpTheme
                     ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[10px]"
                     : currentTheme === "macosx"
@@ -258,7 +258,11 @@ export function AboutFinderDialog({
               </div>
             </div>
           </div>
-          <hr className="border-gray-300" />
+          <hr
+            // Theme-aware divider so dark mode lifts the rule to a faint
+            // white-on-dark hairline instead of the bright neutral-300 stripe.
+            style={{ borderTopColor: "var(--os-color-separator)" }}
+          />
 
           {/* Memory usage bars */}
           <div className={cn("space-y-2 p-2 px-4 pb-4", aboutFinderSmallClass)}>
@@ -271,7 +275,7 @@ export function AboutFinderDialog({
                 <div
                   className={cn(
                     "h-2 w-full",
-                    currentTheme === "macosx" ? "aqua-progress" : "bg-gray-200"
+                    currentTheme === "macosx" ? "aqua-progress" : "bg-neutral-200"
                   )}
                 >
                   <div

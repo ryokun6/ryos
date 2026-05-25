@@ -1020,7 +1020,7 @@ export default function HtmlPreview({
         {/* Loading PULSE overlay (now breathing effect) */}
         {isStreaming && (
           <motion.div
-            className="absolute inset-0 bg-gray-300 z-10 pointer-events-none"
+            className="absolute inset-0 bg-neutral-300 z-10 pointer-events-none"
             initial={{ opacity: 0.2 }} // Start at lower opacity
             animate={{
               opacity: [0.2, 0.6, 0.2], // Loop between 0.6 and 1
@@ -1035,7 +1035,7 @@ export default function HtmlPreview({
 
         {/* Applet banner - similar to AppStore detail view */}
           {!isInternetExplorer && (appletTitle || appletIcon) && (
-            <div className="flex items-center gap-3 px-3 py-2 bg-gray-100 border-b border-gray-300 flex-shrink-0">
+            <div className="flex items-center gap-3 px-3 py-2 bg-neutral-100 border-b border-neutral-300 flex-shrink-0">
               <div
                 className="!text-2xl flex-shrink-0 applet-icon"
                 style={{ fontSize: "1.5rem" }}
@@ -1173,7 +1173,7 @@ export default function HtmlPreview({
               <pre
                 className={`p-2 text-[12px] ${
                   isMacOsXTheme ? "font-mono" : "font-monaco"
-                } antialiased text-gray-700 whitespace-pre-wrap break-words`}
+                } antialiased text-neutral-700 whitespace-pre-wrap break-words`}
               >
                 {htmlContent.split("\n").slice(-8).join("\n")}
               </pre>
@@ -1265,7 +1265,7 @@ export default function HtmlPreview({
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.25 }}
                       >
-                        <pre className="text-[12px] font-monaco text-gray-300 whitespace-pre-wrap break-words m-0">
+                        <pre className="text-[12px] font-monaco text-neutral-300 whitespace-pre-wrap break-words m-0">
                           {finalProcessedHtmlRef.current || processedHtmlContent}
                         </pre>
                       </motion.div>
@@ -1324,7 +1324,7 @@ export default function HtmlPreview({
                           <pre
                             className={`p-4 text-xs ${
                               isMacOsXTheme ? "font-sans" : "font-geneva-12"
-                            } text-gray-700 whitespace-pre-wrap break-words`}
+                            } text-neutral-700 whitespace-pre-wrap break-words`}
                           >
                             {htmlContent.split("\n").slice(-15).join("\n")}
                           </pre>
@@ -1362,11 +1362,11 @@ export default function HtmlPreview({
                     {/* Loading PULSE overlay for fullscreen (kept for visual feedback) */}
                     {isStreaming && htmlContent && (
                       <div
-                        className="absolute inset-0 bg-gray-100 z-10 pointer-events-none"
+                        className="absolute inset-0 bg-neutral-100 z-10 pointer-events-none"
                         style={{ opacity: 0.2 }}
                       >
                         <motion.div
-                          className="size-full bg-gray-400"
+                          className="size-full bg-neutral-400"
                           animate={{
                             opacity: [0.05, 0.2, 0.05],
                           }}

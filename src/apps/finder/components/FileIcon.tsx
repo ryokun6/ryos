@@ -346,6 +346,12 @@ export function FileIcon({
               ? "bg-white text-black"
               : (isXpTheme || isMacOSXTheme) && !isFinderContext
               ? "bg-transparent text-white"
+              : isMacOSXTheme && isFinderContext
+              ? // Finder file labels (Mac OS X): transparent so the label
+                // blends with the file pane background. This also lets dark
+                // mode stay clean — text inherits the window-body color
+                // cascade instead of stamping a white pill on every icon.
+                "bg-transparent text-os-text-primary"
               : "bg-white text-black"
           }`}
           data-selected={isSelected ? "true" : undefined}

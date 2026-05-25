@@ -1319,6 +1319,8 @@
       "crashDesktop": "桌面崩潰",
       "crt": "CRT",
       "custom": "自訂",
+      "darkMode": "深色模式",
+      "darkModeDescription": "使用目前主題的深色版本",
       "debugMode": "偵錯模式",
       "debugModeDescription": "啟用偵錯設定",
       "default": "預設",
@@ -2319,6 +2321,7 @@
         "albums": "專輯",
         "all": "全部",
         "allSongs": "所有歌曲",
+        "alwaysOn": "保持開啟",
         "appleMusicSignIn": "Apple Music",
         "appleMusicSignOut": "Apple Music",
         "artists": "演出者",
@@ -2478,6 +2481,8 @@
           "title": "與 iPod 共享"
         }
       },
+      "ktvRoomFx": "觀眾反應",
+      "ktvRoomFxHint": "切換全螢幕卡拉 OK 漂浮觀眾反應",
       "liveListen": {
         "activeSessions": "進行中的包房",
         "anonymous": "{{count}} 位匿名使用者",
@@ -2540,9 +2545,7 @@
         "view": "檢視"
       },
       "name": "卡拉 OK",
-      "noTrack": "未載入任何曲目。開啟 iPod 以選取歌曲。",
-      "ktvRoomFx": "觀眾反應",
-      "ktvRoomFxHint": "切換全螢幕卡拉 OK 漂浮觀眾反應"
+      "noTrack": "未載入任何曲目。開啟 iPod 以選取歌曲。"
     },
     "maps": {
       "description": "使用 Apple 地圖尋找地點",

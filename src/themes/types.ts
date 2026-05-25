@@ -6,6 +6,9 @@ export type OsPlatform = "mac" | "windows";
 /** Mac subset for Aqua vs System 7 (`data-os-mac-chrome` on `<html>`); unset on Windows themes. */
 export type OsMacChrome = "aqua" | "system7";
 
+/** Color-scheme variant (`data-os-color-scheme` on `<html>`); attribute is omitted in light mode. */
+export type OsColorScheme = "light" | "dark";
+
 /**
  * Theme metadata for conditional rendering and layout decisions.
  * Centralizes theme-based checks that were previously scattered throughout the codebase.
@@ -29,6 +32,8 @@ export interface ThemeMetadata {
   taskbarHeight: number;
   /** Base dock height before scaling (0 if no dock) */
   baseDockHeight: number;
+  /** Whether this theme has dark-mode tokens defined in `themes.css`. */
+  supportsDarkMode: boolean;
 }
 
 export interface OsTheme {

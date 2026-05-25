@@ -189,14 +189,14 @@ export function FinderMenuBar({
           <MenubarItem
             onClick={undo}
             disabled={!canUndo}
-            className={`text-md h-6 px-3 ${!canUndo ? "text-gray-500" : ""}`}
+            className={`text-md h-6 px-3 ${!canUndo ? "text-neutral-500" : ""}`}
           >
             {t("common.menu.undo")}
           </MenubarItem>
           <MenubarItem
             onClick={redo}
             disabled={!canRedo}
-            className={`text-md h-6 px-3 ${!canRedo ? "text-gray-500" : ""}`}
+            className={`text-md h-6 px-3 ${!canRedo ? "text-neutral-500" : ""}`}
           >
             {t("common.menu.redo")}
           </MenubarItem>

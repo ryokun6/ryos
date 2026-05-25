@@ -2823,6 +2823,8 @@
       "system": "System",
       "theme": "Theme",
       "themeDescription": "Changes the appearance of windows, menus, and controls",
+      "darkMode": "Dark Mode",
+      "darkModeDescription": "Use the dark variant of the current theme",
       "select": "Select",
       "uiSounds": "UI Sounds",
       "terminalIeAmbientSynth": "Synth",

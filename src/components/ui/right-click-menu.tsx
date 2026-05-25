@@ -55,7 +55,7 @@ interface RightClickMenuProps {
 }
 
 export const menuItemClass =
-  "text-md h-6 px-3 active:bg-gray-900 active:text-white min-w-[140px] flex items-center gap-2";
+  "text-md h-6 px-3 active:bg-neutral-900 active:text-white min-w-[140px] flex items-center gap-2";
 
 const menuItemKeyCache = new WeakMap<object, string>();
 let menuItemKeySeed = 0;

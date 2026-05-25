@@ -87,7 +87,7 @@ function WallpaperItem({
         }}
       >
         {isLoading && (
-          <div className="absolute inset-0 bg-gray-700/30">
+          <div className="absolute inset-0 bg-neutral-700/30">
             <div
               className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-50"
               style={{
@@ -526,7 +526,7 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
             <>
               <button
                 type="button"
-                className="preview-button w-full aspect-video !border-[2px] !border-dotted !border-gray-400 cursor-pointer hover:opacity-90 flex items-center justify-center"
+                className="preview-button w-full aspect-video !border-[2px] !border-dotted !border-neutral-400 cursor-pointer hover:opacity-90 flex items-center justify-center"
                 onClick={() => fileInputRef.current?.click()}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
@@ -535,7 +535,7 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
                   }
                 }}
               >
-                <Plus className="size-5 text-gray-500" weight="bold" />
+                <Plus className="size-5 text-neutral-500" weight="bold" />
               </button>
               {customWallpaperRefs.length > 0 ? (
                 customWallpaperRefs.map((path) => (
@@ -573,7 +573,7 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
               />
             ))
           ) : (
-            <div className="col-span-4 text-center py-8 text-gray-500">
+            <div className="col-span-4 text-center py-8 text-neutral-500">
               {t("apps.control-panels.noWallpapers")}
             </div>
           )}

@@ -78,7 +78,7 @@ export function InputDialog({
     <div className={isXpTheme ? "p-2 px-4" : "p-4 px-6"}>
       <p
         className={cn(
-          "text-gray-500 mb-2",
+          "text-neutral-500 mb-2",
           isXpTheme
             ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
             : "font-geneva-12 text-[12px]"

@@ -56,7 +56,7 @@ export function ConfirmDialog({
         />
         <p
           className={cn(
-            "text-gray-900 mb-2 leading-tight",
+            "text-neutral-900 mb-2 leading-tight",
             isXpTheme
               ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
               : "font-geneva-12 text-[12px]"

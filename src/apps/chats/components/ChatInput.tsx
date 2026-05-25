@@ -539,10 +539,10 @@ export const ChatInput = memo(function ChatInput({
                 <div
                   className={`relative overflow-hidden ${
                     isMacTheme 
-                      ? "chat-bubble macosx-link-preview rounded-[16px] bg-gray-100" 
+                      ? "chat-bubble macosx-link-preview rounded-[16px] bg-neutral-100" 
                       : isXpTheme 
                       ? "rounded-none border border-[#7f9db9] bg-white" 
-                      : "rounded-md border border-gray-200 bg-white"
+                      : "rounded-md border border-neutral-200 bg-white"
                   }`}
                 >
                   {/* Full bleed image for macOS */}
@@ -726,7 +726,7 @@ export const ChatInput = memo(function ChatInput({
                       ? t("apps.chats.status.typeMessage")
                       : t("apps.chats.status.typeOrPushSpace")
                   }
-                  className={`w-full border-1 border-gray-800 text-xs font-geneva-12 h-9 ${
+                  className={`w-full border-1 border-neutral-800 text-xs font-geneva-12 h-9 ${
                     isMacTheme ? "pl-3 pr-[88px] rounded-full" : "pl-2 pr-[88px]"
                   } backdrop-blur-lg bg-white/80 ${
                     isFocused ? "input--focused" : ""
@@ -752,7 +752,7 @@ export const ChatInput = memo(function ChatInput({
                       transition={{ duration: 0.15 }}
                       className="absolute top-0 left-0 size-full pointer-events-none flex items-center pl-3"
                     >
-                      <span className="text-gray-500 opacity-70 shimmer-gray text-[13px] font-geneva-12">
+                      <span className="text-neutral-500 opacity-70 shimmer-gray text-[13px] font-geneva-12">
                         {t("apps.chats.status.thinking")}
                         <AnimatedEllipsis />
                       </span>
@@ -882,14 +882,14 @@ export const ChatInput = memo(function ChatInput({
                       onManualStop?.();
                     }
                   }}
-                  className={`text-xs size-9 p-0 flex items-center justify-center ${
+                  className={`chat-stop-btn text-xs size-9 p-0 flex items-center justify-center ${
                     isMacTheme ? "rounded-full" : "rounded-none"
                   } ${
                     isMacTheme
                       ? "relative overflow-hidden transition-transform hover:scale-105"
                       : isXpTheme
                       ? "text-black"
-                      : "bg-black hover:bg-black/80 text-white border-2 border-gray-800"
+                      : "bg-black hover:bg-black/80 text-white border-2 border-neutral-800"
                   }`}
                   style={
                     isMacTheme
@@ -936,7 +936,7 @@ export const ChatInput = memo(function ChatInput({
                     </>
                   )}
                   <Square
-                    className={`size-4 ${
+                    className={`chat-stop-glyph size-4 ${
                       isMacTheme
                         ? "text-black/70 relative z-10"
                         : isXpTheme
@@ -964,7 +964,7 @@ export const ChatInput = memo(function ChatInput({
                       ? "relative overflow-hidden transition-transform hover:scale-105"
                       : isXpTheme
                       ? "text-black"
-                      : "bg-black hover:bg-black/80 text-white border-2 border-gray-800"
+                      : "bg-black hover:bg-black/80 text-white border-2 border-neutral-800"
                   }`}
                   style={
                     isMacTheme

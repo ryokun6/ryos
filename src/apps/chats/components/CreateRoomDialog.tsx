@@ -557,7 +557,7 @@ export function CreateRoomDialog({
               <div className="space-y-2">
                 <Label
                   htmlFor="room-name"
-                  className={cn("text-gray-700", themeFont)}
+                  className={cn("text-neutral-700", themeFont)}
                   style={themeFontStyle}
                 >
                   {t("apps.chats.dialogs.roomName")}
@@ -565,7 +565,7 @@ export function CreateRoomDialog({
                 <div className="relative">
                   <span
                     className={cn(
-                      "absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none",
+                      "absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none",
                       themeFont
                     )}
                     style={themeFontStyle}
@@ -597,7 +597,7 @@ export function CreateRoomDialog({
               <div className="space-y-2">
                 <Label
                   htmlFor="irc-server"
-                  className={cn("text-gray-700", themeFont)}
+                  className={cn("text-neutral-700", themeFont)}
                   style={themeFontStyle}
                 >
                   Server
@@ -691,9 +691,9 @@ export function CreateRoomDialog({
 
               {/* Inline "add server" form */}
               {isAdmin && showAddServerForm && (
-                <div className="space-y-2 border border-gray-300 rounded p-3 bg-gray-50">
+                <div className="space-y-2 border border-neutral-300 rounded p-3 bg-neutral-50">
                   <Label
-                    className={cn("text-gray-700 font-semibold", themeFont)}
+                    className={cn("text-neutral-700 font-semibold", themeFont)}
                     style={themeFontStyle}
                   >
                     Add a server
@@ -788,7 +788,7 @@ export function CreateRoomDialog({
                 <div className="space-y-2">
                   {!isAdmin && (
                     <p
-                      className={cn("text-gray-500 text-[11px]", themeFont)}
+                      className={cn("text-neutral-500 text-[11px]", themeFont)}
                       style={themeFontStyle}
                     >
                       IRC servers are managed by an admin. Choose a channel
@@ -798,7 +798,7 @@ export function CreateRoomDialog({
                   <div className="flex items-center justify-between">
                     <Label
                       htmlFor="irc-channel-filter"
-                      className={cn("text-gray-700", themeFont)}
+                      className={cn("text-neutral-700", themeFont)}
                       style={themeFontStyle}
                     >
                       Channel
@@ -855,7 +855,7 @@ export function CreateRoomDialog({
                       {isLoadingChannels && (
                         <ActivityIndicator
                           size="sm"
-                          className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500"
                         />
                       )}
                     </div>
@@ -879,7 +879,7 @@ export function CreateRoomDialog({
                       {isLoadingChannels && (
                         <ActivityIndicator
                           size="sm"
-                          className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500"
                         />
                       )}
                     </div>
@@ -893,13 +893,13 @@ export function CreateRoomDialog({
                     </p>
                   )}
                   {!isLoadingChannels && !channelsError && (
-                    <ScrollArea className="h-[200px] w-full min-w-0 max-w-full overflow-x-hidden border border-gray-300 rounded-md bg-white">
+                    <ScrollArea className="h-[200px] w-full min-w-0 max-w-full overflow-x-hidden border border-neutral-300 rounded-md bg-white">
                       <div className="min-w-0 max-w-full overflow-x-hidden">
                         {filteredChannels.length === 0 &&
                           !(isAdmin && customChannel) && (
                             <p
                               className={cn(
-                                "text-gray-500 px-2 py-1.5",
+                                "text-neutral-500 px-2 py-1.5",
                                 themeFont
                               )}
                               style={themeFontStyle}
@@ -950,7 +950,7 @@ export function CreateRoomDialog({
                                   ? "cursor-not-allowed opacity-60"
                                   : "cursor-pointer",
                                 !isSelected &&
-                                  (index % 2 === 1 ? "bg-gray-100" : "bg-white"),
+                                  (index % 2 === 1 ? "bg-neutral-100" : "bg-white"),
                                 themeFont
                               )}
                               style={themeFontStyle}
@@ -979,7 +979,7 @@ export function CreateRoomDialog({
                   {channelsTruncated && (
                     <p
                       className={cn(
-                        "text-gray-500 min-w-0 max-w-full break-words",
+                        "text-neutral-500 min-w-0 max-w-full break-words",
                         themeFont
                       )}
                       style={themeFontStyle}
@@ -993,7 +993,7 @@ export function CreateRoomDialog({
                     (!isAdmin && selectedChannel)) && (
                     <p
                       className={cn(
-                        "text-gray-500 min-w-0 max-w-full break-words",
+                        "text-neutral-500 min-w-0 max-w-full break-words",
                         themeFont
                       )}
                       style={themeFontStyle}
@@ -1022,7 +1022,7 @@ export function CreateRoomDialog({
               <div className="space-y-2">
                 <Label
                   htmlFor="search-users"
-                  className={cn("text-gray-700", themeFont)}
+                  className={cn("text-neutral-700", themeFont)}
                   style={themeFontStyle}
                 >
                   {t("apps.chats.dialogs.addUsersToPrivateChat")}
@@ -1042,7 +1042,7 @@ export function CreateRoomDialog({
                   {isSearching && searchTerm.length >= 2 && (
                     <ActivityIndicator
                       size="sm"
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500"
                     />
                   )}
                 </div>
@@ -1055,7 +1055,7 @@ export function CreateRoomDialog({
                         key={username}
                         variant="secondary"
                         className={cn(
-                          "py-0.5 pl-2 pr-1 bg-gray-100 hover:bg-gray-200 border-gray-300",
+                          "py-0.5 pl-2 pr-1 bg-neutral-100 hover:bg-neutral-200 border-neutral-300",
                           isXpTheme
                             ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[10px]"
                             : "font-geneva-12 text-[11px]"
@@ -1074,7 +1074,7 @@ export function CreateRoomDialog({
                         <button
                           type="button"
                           onClick={() => toggleUserSelection(username)}
-                          className="ml-1 hover:bg-gray-300 rounded-sm p-0.5"
+                          className="ml-1 hover:bg-neutral-300 rounded-sm p-0.5"
                           disabled={isLoading}
                         >
                           <X className="size-3" weight="bold" />
@@ -1087,13 +1087,13 @@ export function CreateRoomDialog({
 
               {/* Show results */}
               {!isSearching && searchTerm.length >= 2 && users.length > 0 && (
-                <div className="border border-gray-300 rounded max-h-[180px] overflow-y-auto bg-white">
+                <div className="border border-neutral-300 rounded max-h-[180px] overflow-y-auto bg-white">
                   <div className="p-1">
                     {users.map((user) => (
                       <label
                         key={user.username}
                         className={cn(
-                          "flex items-center p-2 hover:bg-gray-100 cursor-pointer rounded",
+                          "flex items-center p-2 hover:bg-neutral-100 cursor-pointer rounded",
                           themeFont
                         )}
                         style={themeFontStyle}

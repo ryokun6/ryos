@@ -131,8 +131,8 @@ export function DashboardServerCard({ reloadKey = 0 }: { reloadKey?: number }) {
   const commitUrl = ryosGitHubCommitUrl(versionInfo);
 
   return (
-    <div className="overflow-hidden rounded border border-gray-200 bg-white">
-      <div className="border-b border-gray-100 bg-gray-50 px-3 py-2">
+    <div className="overflow-hidden rounded border border-neutral-200 bg-white">
+      <div className="border-b border-neutral-100 bg-neutral-50 px-3 py-2">
         <span className="text-[10px] uppercase tracking-wide text-neutral-400">
           {t("apps.admin.server.title", "Server")}
         </span>
@@ -153,7 +153,7 @@ export function DashboardServerCard({ reloadKey = 0 }: { reloadKey?: number }) {
           </Button>
         </div>
       ) : (
-        <div className="divide-y divide-gray-100">
+        <div className="divide-y divide-neutral-100">
           <InfoRow
             label={t("apps.admin.server.version", "Version")}
             value={versionInfo?.version ?? "—"}

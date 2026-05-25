@@ -328,7 +328,7 @@ export function TerminalToolInvocation({
 
   return (
     <div
-      className="flex items-center gap-1.5 text-gray-400 py-0.5 select-text terminal-tool-invocation"
+      className="flex items-center gap-1.5 text-neutral-400 py-0.5 select-text terminal-tool-invocation"
       style={fontSize ? { fontSize: `${fontSize}px` } : undefined}
     >
       {state === "output-available" && displayResultMessage ? (

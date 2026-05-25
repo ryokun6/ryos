@@ -37,7 +37,7 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 }
 
 const markdownStreamClass =
-  "cursor-stream-md px-1 py-0.5 font-geneva-12 text-[12px] leading-snug text-gray-700 break-words dark:text-neutral-200";
+  "cursor-stream-md px-1 py-0.5 font-geneva-12 text-[12px] leading-snug text-neutral-700 break-words dark:text-neutral-200";
 
 const toolDisplayNameOverrides: Record<string, string> = {
   run_terminal_cmd: "Run terminal command",
@@ -223,10 +223,10 @@ function CursorToolInvocationRow({
 }) {
   return (
     <div className="mb-0 px-1 py-0.5 text-[12px]">
-      <div className="flex min-w-0 flex-nowrap items-baseline gap-1 text-gray-700">
+      <div className="flex min-w-0 flex-nowrap items-baseline gap-1 text-neutral-700">
         <span className={`shrink-0 ${done ? "" : "shimmer"}`}>{primary}</span>
         {secondary ? (
-          <span className="min-w-0 truncate text-gray-500 dark:text-neutral-400">
+          <span className="min-w-0 truncate text-neutral-500 dark:text-neutral-400">
             {secondary}
           </span>
         ) : null}
@@ -323,7 +323,7 @@ function ThinkingCollapsible({ text }: { text: string }) {
     );
   }
   return (
-    <div className="mb-0 px-1 py-0.5 text-[12px] text-gray-500 dark:text-neutral-500">
+    <div className="mb-0 px-1 py-0.5 text-[12px] text-neutral-500 dark:text-neutral-500">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
