@@ -3555,3 +3555,271 @@
   [role="tab"][data-state="active"] {
   color: var(--os-color-text-primary);
 }
+
+/* ============================================================================
+ * Dark mode — Mac OS X (Aqua) — chrome polish (round 3)
+ *
+ * Fixes surfaced by app-by-app survey:
+ *   - Menubar / Dock surface tint goes dark (Apple logo PNG keeps its colors).
+ *   - Aqua tabs' inactive-state gradient + text-shadow flipped for dark.
+ *   - Title bar text-shadow loses its white halo and gains a soft drop.
+ *   - SearchInput field, magnifier glyph, and clear button switch to
+ *     light-on-dark.
+ *   - Brushed-metal `metal-inset-btn` / `metal-inset-btn-group` get a graphite
+ *     gradient with the same inset-recess feel, and the toggled / active state
+ *     keeps the Aqua-blue selection but on a darker base.
+ *   - Videos LCD + Minesweeper LCD swap to a dark green CRT look with light
+ *     glyphs (and an inverted text-shadow).
+ * ============================================================================ */
+
+/* --- Menubar + Dock surface tint ----------------------------------------- */
+:root[data-os-theme="macosx"] {
+  /* Light defaults — matches the previous inline values in MenuBar.tsx / Dock.tsx. */
+  --os-color-menubar-surface: rgba(248, 248, 248, 0.85);
+  --os-color-dock-surface: rgba(248, 248, 248, 0.75);
+  --os-color-dock-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] {
+  /* Dark translucent panel — picks up the desktop wallpaper through the blur,
+     similar to how macOS Big Sur+ dark mode tints the menubar. */
+  --os-color-menubar-surface: rgba(28, 28, 30, 0.78);
+  --os-color-dock-surface: rgba(28, 28, 30, 0.72);
+  --os-color-dock-shadow: 0 2px 10px rgba(0, 0, 0, 0.55);
+  /* Menubar text + separator on the new dark tint. */
+  --os-color-menubar-text: #f4f4f5;
+  --os-color-menubar-border: rgba(0, 0, 0, 0.85);
+}
+
+/* The Apple logo is a PNG asset (`apple.png`) — explicitly leave it alone so
+   it keeps its color in dark mode. We only neutralize image-rendering filters
+   that some opt-out themes apply globally. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .menubar
+  img[alt="Apple Menu"] {
+  filter: none !important;
+}
+
+/* --- Title bar text-shadow ------------------------------------------------ */
+/* The light-mode rule on `.menubar` text uses a bright drop-shadow; on dark
+   surfaces we want a soft black halo so the labels still pop without the
+   "embossed white" look. The titlebar inherits the same. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .menubar {
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.65) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .title-bar {
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55) !important;
+}
+
+/* Generic light-on-dark titlebar text fallback for any direct children that
+   still inherit the light-mode `text-shadow: 0 1px 0 rgba(255,255,255,0.7)`
+   from elsewhere — strip the white halo. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .window
+  .title-bar
+  :where(span, h1, h2, h3) {
+  text-shadow: inherit;
+}
+
+/* --- Aqua tabs ------------------------------------------------------------ */
+/* Inactive tab: dark graphite gradient instead of light gray-to-white. Active
+   tab keeps its blue gloss (matches macOS dark mode behavior — the active
+   selection stays branded). The dropshadow text-shadow under the label loses
+   its `rgba(0,0,0,0.25)` and switches to a soft black + light highlight so
+   inactive-tab labels are readable on the dark base. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .aqua-tab {
+  background: linear-gradient(rgb(64, 64, 68), rgb(40, 40, 44));
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.55),
+    inset 0 2px 3px 1px rgba(0, 0, 0, 0.3),
+    0 1px 1px rgba(0, 0, 0, 0.45);
+  color: var(--os-color-text-primary);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .aqua-tab:hover:not([data-state="active"]) {
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.45),
+    inset 0 2px 3px 1px rgba(0, 0, 0, 0.22),
+    0 1px 1px rgba(0, 0, 0, 0.35);
+}
+
+/* Inactive-tab top-shine becomes a faint light wash (was `rgba(255,255,255,0.55)`
+   which would create a glaring stripe on the dark gradient). */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .aqua-tab:before {
+  background: linear-gradient(
+    rgba(255, 255, 255, 0.12),
+    rgba(255, 255, 255, 0.04)
+  );
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .aqua-tab:after {
+  background: linear-gradient(transparent, rgba(255, 255, 255, 0.08));
+}
+
+/* Active tab keeps its branded blue gradient — but the under-tab strip
+   (`.aqua-tab-bar:after`) is a light-blue/white seam by default, which reads
+   as an unwelcome glow on dark windows. Darken to a deeper indigo seam. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .aqua-tab-bar:after {
+  background: linear-gradient(
+    to bottom,
+    #082c5a 0%,
+    #1a4f8c 8%,
+    #1a4276 25%,
+    #133861 40%,
+    #1a4683 60%,
+    #1a4683 80%,
+    #205a9c 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(0, 0, 0, 0.55),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.55);
+}
+
+/* --- Search input + icon -------------------------------------------------- */
+/* The `SearchInput` component pins `bg-white`, `border-black/40`, and a
+   white-glow inset. Override per-attribute so the field reads as a recessed
+   dark pill with a light glyph. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  input[data-os-search-input="true"] {
+  background-color: var(--os-color-input-bg) !important;
+  color: var(--os-color-text-primary) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.55),
+    inset 0 0 1px rgba(0, 0, 0, 0.3),
+    0 1px 0 rgba(255, 255, 255, 0.05) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  input[data-os-search-input="true"]::placeholder {
+  color: var(--os-color-text-disabled);
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .os-search-icon {
+  color: rgba(255, 255, 255, 0.55) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .os-search-clear {
+  color: rgba(255, 255, 255, 0.45) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .os-search-clear:hover {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* --- Brushed-metal inset toggle buttons (toolbars) ------------------------ */
+/* The `.metal-inset-btn-group` reads as a recessed pill on light brushed
+   metal. In dark mode, swap the metal-stack gradients for a graphite stack
+   so the same depth illusion lands on the dark window. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .metal-inset-btn-group {
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.7),
+    inset 0 0 1px rgba(0, 0, 0, 0.45),
+    0 1px 0 rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.85);
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .metal-inset-btn {
+  color: rgba(255, 255, 255, 0.85);
+  background: linear-gradient(
+    to bottom,
+    #4a4a50 0%,
+    #3e3e44 49%,
+    #2f2f33 50%,
+    #3a3a3f 100%
+  );
+  border-right-color: rgba(0, 0, 0, 0.5);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55);
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .metal-inset-btn:active,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .metal-inset-btn[data-state="on"] {
+  /* Toggled state — keep the Aqua blue family (matches the active-tab gloss
+     and selection bg) but clip the highlights so the gradient reads on the
+     darker chrome around it. */
+  background: linear-gradient(
+    to bottom,
+    #1f4d8a 0%,
+    #2864a8 49%,
+    #1c4f87 50%,
+    #2a76c2 100%
+  );
+  color: #ffffff;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+  border-right-color: rgba(0, 0, 0, 0.4);
+}
+
+/* --- LCD displays (Videos / TV / Minesweeper) ----------------------------- */
+/* Override the `--videos-lcd-*` variables so the existing `.videos-lcd` rules
+   automatically pick up the dark CRT palette (deep green-black background,
+   muted phosphor-green glyphs, inverted text-shadow). The rules already use
+   `var(--videos-lcd-bg)` and `var(--videos-lcd-text)`. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] {
+  --videos-lcd-bg: #0d1d0d;
+  --videos-lcd-text: #6fd07a;
+  --videos-lcd-text-muted: #4ea355;
+  --videos-lcd-fade: #0d1d0d;
+  --videos-lcd-border-dark: #000000d0;
+  --videos-lcd-border-light: rgba(255, 255, 255, 0.05);
+}
+
+/* Existing rule baked in `1px 1px 0 rgba(0, 0, 0, 0.2)` text-shadow that
+   only reads on a light background; swap to a dark drop-shadow that adds
+   a faint green glow under each glyph. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .videos-lcd {
+  text-shadow: 0 0 4px rgba(111, 208, 122, 0.35),
+    1px 1px 0 rgba(0, 0, 0, 0.85) !important;
+}
+
+/* TV LCD wraps the `.videos-lcd` div in `bg-black` for its strip layout —
+   leave that as-is (the CRT body is meant to be black). The fade-edges
+   inherited from `--videos-lcd-bg` already swap. */
+
+/* Minesweeper LCD — its panel is rendered with hardcoded `bg-[#8a9a8a]
+   text-[#1a2a1a]` Tailwind classes (so the same panel can stay green in
+   light mode for all four themes). Target those exact arbitrary classes
+   only inside the Aqua dark surface. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .window-body
+  :where(.bg-\[\#8a9a8a\]) {
+  background-color: #0d1d0d !important;
+  border-top-color: #000 !important;
+  border-left-color: #000 !important;
+  border-right-color: rgba(255, 255, 255, 0.08) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+  text-shadow: 0 0 4px rgba(111, 208, 122, 0.35),
+    1px 1px 0 rgba(0, 0, 0, 0.85) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .window-body
+  :where(.text-\[\#1a2a1a\]) {
+  color: #6fd07a !important;
+}
+
+/* Minesweeper face/bezel + cell tray (light gray `bg-[#c0c0c0]` and the
+   `bg-[#b7bcc1]` rounded outer plate) need a graphite skin so the bevels
+   still read. Only swap the panel; cell content uses Geneva-12 numerals
+   that stay readable on the slightly lighter graphite base. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .window-body
+  :where(.bg-\[\#c0c0c0\]) {
+  background-color: #3a3a3f !important;
+  color: var(--os-color-text-primary) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .window-body
+  :where(.bg-\[\#b7bcc1\]) {
+  background-color: #2f2f33 !important;
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .window-body
+  :where(.hover\:bg-\[\#d0d0d0\]:hover) {
+  background-color: #45454a !important;
+}

@@ -33,7 +33,7 @@ export function SearchInput({
         size={13}
         weight="bold"
         className={cn(
-          "pointer-events-none absolute left-2 top-1/2 -translate-y-1/2",
+          "pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 os-search-icon",
           isMacOSTheme ? "text-black/45" : "text-black/35"
         )}
       />
@@ -44,6 +44,7 @@ export function SearchInput({
         onKeyDown={onKeyDown}
         aria-label={ariaLabel}
         placeholder={placeholder}
+        data-os-search-input="true"
         className={cn(
           "w-full outline-none min-w-0",
           isMacOSTheme
@@ -57,7 +58,7 @@ export function SearchInput({
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => onChange("")}
           className={cn(
-            "absolute right-1.5 top-1/2 flex -translate-y-1/2 items-center justify-center",
+            "absolute right-1.5 top-1/2 flex -translate-y-1/2 items-center justify-center os-search-clear",
             isMacOSTheme
               ? "text-black/40 hover:text-black/60"
               : "text-black/35 hover:text-black/55"

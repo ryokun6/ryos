@@ -1457,10 +1457,13 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
     <div
       className={`fixed top-0 left-0 right-0 flex border-b-[length:var(--os-metrics-border-width)] border-os-menubar items-center font-os-ui ${exposeMode ? "z-[9997]" : "z-[10002]"}`}
       style={{
-        background:
-          isMacOSTheme
-            ? "rgba(248, 248, 248, 0.85)"
-            : "var(--os-color-menubar-bg)",
+        // Use the theme variable so dark mode can swap the surface tint.
+        // The Aqua light fallback (#f8f8f8 with 0.85 alpha) is published as
+        // `--os-color-menubar-surface` so dark mode can override just the
+        // tint without losing the pinstripe overlay.
+        background: isMacOSTheme
+          ? "var(--os-color-menubar-surface, rgba(248, 248, 248, 0.85))"
+          : "var(--os-color-menubar-bg)",
         backgroundImage:
           isMacOSTheme ? "var(--os-pinstripe-menubar)" : undefined,
         backdropFilter: isMacOSTheme ? "blur(20px)" : undefined,
