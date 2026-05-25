@@ -638,6 +638,63 @@ describe("useIpodStore Apple Music slice", () => {
     expect(useIpodStore.getState().appleMusicCurrentSongId).toBe("am:q2");
   });
 
+  test("fresh shuffle flow advances YouTube playback without toggling shuffle off", () => {
+    useIpodStore.setState({
+      librarySource: "youtube",
+      tracks: [
+        { id: "yt:1", url: "youtube:1", title: "One" },
+        { id: "yt:2", url: "youtube:2", title: "Two" },
+        { id: "yt:3", url: "youtube:3", title: "Three" },
+      ],
+      currentSongId: "yt:1",
+      isShuffled: false,
+      playbackHistory: ["stale"],
+      historyPosition: 0,
+    });
+
+    useIpodStore.setState({
+      isShuffled: true,
+      playbackHistory: [],
+      historyPosition: -1,
+    });
+    useIpodStore.getState().nextTrack();
+
+    const state = useIpodStore.getState();
+    expect(state.isShuffled).toBe(true);
+    expect(state.currentSongId).not.toBe("yt:1");
+    expect(state.playbackHistory).toEqual(["yt:1"]);
+    expect(state.isPlaying).toBe(true);
+  });
+
+  test("fresh shuffle flow clears Apple Music queue and advances playback", () => {
+    useIpodStore.setState({
+      librarySource: "appleMusic",
+      appleMusicTracks: [
+        { id: "am:1", url: "applemusic:1", title: "One", source: "appleMusic" },
+        { id: "am:2", url: "applemusic:2", title: "Two", source: "appleMusic" },
+        { id: "am:3", url: "applemusic:3", title: "Three", source: "appleMusic" },
+      ],
+      appleMusicPlaybackQueue: ["am:2"],
+      appleMusicCurrentSongId: "am:2",
+      isShuffled: false,
+    });
+
+    useIpodStore.getState().setAppleMusicPlaybackQueue(null);
+    useIpodStore.setState({
+      isShuffled: true,
+      playbackHistory: [],
+      historyPosition: -1,
+    });
+    useIpodStore.getState().appleMusicNextTrack();
+
+    const state = useIpodStore.getState();
+    expect(state.appleMusicPlaybackQueue).toBeNull();
+    expect(state.isShuffled).toBe(true);
+    expect(state.appleMusicCurrentSongId).not.toBe("am:2");
+    expect(["am:1", "am:2", "am:3"]).toContain(state.appleMusicCurrentSongId);
+    expect(state.isPlaying).toBe(true);
+  });
+
   test("active iPod helpers resolve the Apple Music slice and live MusicKit context", () => {
     useIpodStore.setState({
       tracks: [{ id: "yt1", url: "youtube:1", title: "YouTube One" }],

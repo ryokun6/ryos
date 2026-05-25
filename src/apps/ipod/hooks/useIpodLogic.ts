@@ -2655,12 +2655,22 @@ export function useIpodLogic({
         label: t("apps.ipod.menuItems.shuffleSongs"),
         action: () => {
           registerActivity();
-          if (useIpodStore.getState().showVideo) toggleVideo();
+          const store = useIpodStore.getState();
+          if (store.showVideo) toggleVideo();
           // Shuffle across the full library — drop any contextual queue.
-          if (useIpodStore.getState().librarySource === "appleMusic") {
-            useIpodStore.getState().setAppleMusicPlaybackQueue(null);
+          if (store.librarySource === "appleMusic") {
+            store.setAppleMusicPlaybackQueue(null);
           }
-          memoizedToggleShuffle();
+          useIpodStore.setState({
+            isShuffled: true,
+            playbackHistory: [],
+            historyPosition: -1,
+          });
+          if (store.librarySource === "appleMusic") {
+            store.appleMusicNextTrack();
+          } else {
+            store.nextTrack();
+          }
           setMenuMode(false);
         },
         showChevron: false,
@@ -2681,7 +2691,7 @@ export function useIpodLogic({
         showChevron: true,
       },
     ];
-  }, [registerActivity, toggleVideo, memoizedToggleShuffle, memoizedToggleBacklight, menuLocale, isOffline, showOfflineStatus, setIsPlaying, pushMenuChild]);
+  }, [registerActivity, toggleVideo, memoizedToggleBacklight, menuLocale, isOffline, showOfflineStatus, setIsPlaying, pushMenuChild]);
 
   const findMenuItemIndexByLabel = useCallback(
     (items: MenuItem[], label: string) =>
