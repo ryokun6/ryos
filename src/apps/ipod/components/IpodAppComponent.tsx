@@ -440,101 +440,99 @@ export function IpodAppComponent({
                 screenLongPressStartPos.current = null;
               }}
             >
-              {!isMusicQuizOpen && !isBrickGameOpen && (
-                <IpodScreen
-                  currentTrack={tracks[currentIndex] || null}
-                  isPlaying={isPlaying && !isFullScreen}
-                  elapsedTime={elapsedTime}
-                  totalTime={totalTime}
-                  menuMode={menuMode}
-                  menuHistory={menuHistory}
-                  selectedMenuItem={selectedMenuItem}
-                  onSelectMenuItem={setSelectedMenuItem}
-                  currentIndex={nowPlayingScope.index}
-                  tracksLength={nowPlayingScope.total}
-                  backlightOn={backlightOn}
-                  menuDirection={menuDirection}
-                  onMenuItemAction={handleMenuItemAction}
-                  showVideo={showVideo}
-                  displayMode={effectiveDisplayMode}
-                  playerRef={playerRef}
-                  handleTrackEnd={handleTrackEnd}
-                  handleProgress={handleProgress}
-                  handleDuration={handleDuration}
-                  handlePlay={handlePlay}
-                  handlePause={handlePause}
-                  handleReady={handleReady}
-                  loopCurrent={loopCurrent}
-                  loopAll={loopAll}
-                  isShuffled={isShuffled}
-                  statusMessage={statusMessage}
-                  onToggleVideo={toggleVideo}
-                  lcdFilterOn={lcdFilterOn}
-                  ipodVolume={ipodVolume}
-                  showStatusCallback={showStatus}
-                  showLyrics={showLyrics}
-                  lyricsAlignment={lyricsAlignment}
-                  koreanDisplay={koreanDisplay}
-                  japaneseFurigana={japaneseFurigana}
-                  lyricOffset={lyricOffset ?? 0}
-                  adjustLyricOffset={(delta) => adjustLyricOffset(currentIndex, delta)}
-                  registerActivity={registerActivity}
-                  isFullScreen={isFullScreen}
-                  lyricsControls={fullScreenLyricsControls}
-                  furiganaMap={furiganaMap}
-                  soramimiMap={soramimiMap}
-                  activityState={activityState}
-                  appleMusicMenuTitlebarLoading={appleMusicMenuTitlebarLoading}
-                  fastScrollLetter={fastScrollLetter}
-                  isCoverFlowOpen={isCoverFlowOpen}
-                  // Modern UI: render Cover Flow inline inside the menu
-                  // panel so the panel's own width transition (50%↔100%
-                  // — the same chrome animation as menu→now-playing)
-                  // carries the user into and out of Cover Flow. The
-                  // classic skin keeps the standalone overlay below
-                  // because it has no equivalent panel chrome.
-                  coverFlowSlot={
-                    isModernIpodUi ? (
-                      <Suspense fallback={null}>
-                        <CoverFlow
-                          ref={coverFlowRef}
-                          tracks={coverFlowTracks}
-                          currentIndex={coverFlowCurrentIndex}
-                          onSelectTrack={handleCoverFlowSelect}
-                          onExit={handleCoverFlowExit}
-                          onRotation={handleCoverFlowRotation}
-                          isVisible={isCoverFlowOpen}
-                          isPlaying={isPlaying}
-                          onTogglePlay={togglePlay}
-                          onPlayTrackInPlace={handleCoverFlowPlayInPlace}
-                          groupAppleMusicAlbums={isAppleMusic}
-                          inline
-                        />
-                      </Suspense>
-                    ) : undefined
+              <IpodScreen
+                currentTrack={tracks[currentIndex] || null}
+                isPlaying={isPlaying && !isFullScreen}
+                elapsedTime={elapsedTime}
+                totalTime={totalTime}
+                menuMode={menuMode}
+                menuHistory={menuHistory}
+                selectedMenuItem={selectedMenuItem}
+                onSelectMenuItem={setSelectedMenuItem}
+                currentIndex={nowPlayingScope.index}
+                tracksLength={nowPlayingScope.total}
+                backlightOn={backlightOn}
+                menuDirection={menuDirection}
+                onMenuItemAction={handleMenuItemAction}
+                showVideo={showVideo}
+                displayMode={effectiveDisplayMode}
+                playerRef={playerRef}
+                handleTrackEnd={handleTrackEnd}
+                handleProgress={handleProgress}
+                handleDuration={handleDuration}
+                handlePlay={handlePlay}
+                handlePause={handlePause}
+                handleReady={handleReady}
+                loopCurrent={loopCurrent}
+                loopAll={loopAll}
+                isShuffled={isShuffled}
+                statusMessage={statusMessage}
+                onToggleVideo={toggleVideo}
+                lcdFilterOn={lcdFilterOn}
+                ipodVolume={ipodVolume}
+                showStatusCallback={showStatus}
+                showLyrics={showLyrics}
+                lyricsAlignment={lyricsAlignment}
+                koreanDisplay={koreanDisplay}
+                japaneseFurigana={japaneseFurigana}
+                lyricOffset={lyricOffset ?? 0}
+                adjustLyricOffset={(delta) => adjustLyricOffset(currentIndex, delta)}
+                registerActivity={registerActivity}
+                isFullScreen={isFullScreen}
+                lyricsControls={fullScreenLyricsControls}
+                furiganaMap={furiganaMap}
+                soramimiMap={soramimiMap}
+                activityState={activityState}
+                appleMusicMenuTitlebarLoading={appleMusicMenuTitlebarLoading}
+                fastScrollLetter={fastScrollLetter}
+                isCoverFlowOpen={isCoverFlowOpen}
+                // Modern UI: render Cover Flow inline inside the menu
+                // panel so the panel's own width transition (50%↔100%
+                // — the same chrome animation as menu→now-playing)
+                // carries the user into and out of Cover Flow. The
+                // classic skin keeps the standalone overlay below
+                // because it has no equivalent panel chrome.
+                coverFlowSlot={
+                  isModernIpodUi ? (
+                    <Suspense fallback={null}>
+                      <CoverFlow
+                        ref={coverFlowRef}
+                        tracks={coverFlowTracks}
+                        currentIndex={coverFlowCurrentIndex}
+                        onSelectTrack={handleCoverFlowSelect}
+                        onExit={handleCoverFlowExit}
+                        onRotation={handleCoverFlowRotation}
+                        isVisible={isCoverFlowOpen}
+                        isPlaying={isPlaying}
+                        onTogglePlay={togglePlay}
+                        onPlayTrackInPlace={handleCoverFlowPlayInPlace}
+                        groupAppleMusicAlbums={isAppleMusic}
+                        inline
+                      />
+                    </Suspense>
+                  ) : undefined
+                }
+                onNextTrack={() => {
+                  if (isOffline) {
+                    showOfflineStatus();
+                  } else {
+                    skipOperationRef.current = true;
+                    startTrackSwitch();
+                    nextTrack();
+                    showStatus("⏭");
                   }
-                  onNextTrack={() => {
-                    if (isOffline) {
-                      showOfflineStatus();
-                    } else {
-                      skipOperationRef.current = true;
-                      startTrackSwitch();
-                      nextTrack();
-                      showStatus("⏭");
-                    }
-                  }}
-                  onPreviousTrack={() => {
-                    if (isOffline) {
-                      showOfflineStatus();
-                    } else {
-                      skipOperationRef.current = true;
-                      startTrackSwitch();
-                      previousTrack();
-                      showStatus("⏮");
-                    }
-                  }}
-                />
-              )}
+                }}
+                onPreviousTrack={() => {
+                  if (isOffline) {
+                    showOfflineStatus();
+                  } else {
+                    skipOperationRef.current = true;
+                    startTrackSwitch();
+                    previousTrack();
+                    showStatus("⏮");
+                  }
+                }}
+              />
 
               {/* Cover Flow overlay — only used by the classic 1st-gen
                *  LCD / karaoke skins. The modern skin renders Cover
@@ -560,37 +558,61 @@ export function IpodAppComponent({
                 </Suspense>
               )}
 
-              {/* Music Quiz overlay - positioned within screen bounds */}
-              {isMusicQuizOpen && (
-                <Suspense fallback={null}>
-                  <MusicQuiz
-                    ref={musicQuizRef}
-                    isVisible={isMusicQuizOpen}
-                    onExit={() => setIsMusicQuizOpen(false)}
-                    lcdFilterOn={lcdFilterOn}
-                    backlightOn={backlightOn}
-                    playClick={playClickSound}
-                    playScroll={playScrollSound}
-                    vibrate={vibrate}
-                  />
-                </Suspense>
-              )}
-
-              {/* Brick Game overlay - positioned within screen bounds */}
-              {isBrickGameOpen && (
-                <Suspense fallback={null}>
-                  <BrickGame
-                    ref={brickGameRef}
-                    isVisible={isBrickGameOpen}
-                    onExit={() => setIsBrickGameOpen(false)}
-                    lcdFilterOn={lcdFilterOn}
-                    backlightOn={backlightOn}
-                    playClick={playClickSound}
-                    playScroll={playScrollSound}
-                    vibrate={vibrate}
-                  />
-                </Suspense>
-              )}
+              {/* Game overlays stay above the mounted screen so the LCD
+               * frame and previous content remain visible while lazy chunks
+               * load, avoiding a brief blank flash when opening a game. */}
+              <AnimatePresence mode="wait">
+                {isMusicQuizOpen ? (
+                  <motion.div
+                    key="music-quiz"
+                    className="absolute inset-0 z-40"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2, ease: "easeInOut" }}
+                  >
+                    <Suspense
+                      fallback={<div className="absolute inset-0 z-40 pointer-events-auto" />}
+                    >
+                      <MusicQuiz
+                        ref={musicQuizRef}
+                        isVisible={isMusicQuizOpen}
+                        onExit={() => setIsMusicQuizOpen(false)}
+                        lcdFilterOn={lcdFilterOn}
+                        backlightOn={backlightOn}
+                        playClick={playClickSound}
+                        playScroll={playScrollSound}
+                        vibrate={vibrate}
+                      />
+                    </Suspense>
+                  </motion.div>
+                ) : null}
+                {isBrickGameOpen ? (
+                  <motion.div
+                    key="brick-game"
+                    className="absolute inset-0 z-40"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2, ease: "easeInOut" }}
+                  >
+                    <Suspense
+                      fallback={<div className="absolute inset-0 z-40 pointer-events-auto" />}
+                    >
+                      <BrickGame
+                        ref={brickGameRef}
+                        isVisible={isBrickGameOpen}
+                        onExit={() => setIsBrickGameOpen(false)}
+                        lcdFilterOn={lcdFilterOn}
+                        backlightOn={backlightOn}
+                        playClick={playClickSound}
+                        playScroll={playScrollSound}
+                        vibrate={vibrate}
+                      />
+                    </Suspense>
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
             </div>
 
             <IpodWheel
