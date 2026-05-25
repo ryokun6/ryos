@@ -258,7 +258,11 @@ export function AboutFinderDialog({
               </div>
             </div>
           </div>
-          <hr className="border-neutral-300" />
+          <hr
+            // Theme-aware divider so dark mode lifts the rule to a faint
+            // white-on-dark hairline instead of the bright neutral-300 stripe.
+            style={{ borderTopColor: "var(--os-color-separator)" }}
+          />
 
           {/* Memory usage bars */}
           <div className={cn("space-y-2 p-2 px-4 pb-4", aboutFinderSmallClass)}>

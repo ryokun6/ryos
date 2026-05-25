@@ -3139,9 +3139,10 @@
   --os-color-selection-glow: rgba(0, 0, 0, 0.35);
 }
 
-/* Menubar gloss — replace the ::before white-on-white sheen with a darker overlay */
+/* Menubar gloss — replace the ::before white-on-white sheen with a darker
+   overlay. Keep the light-mode `text-shadow` (already a dark drop) so the
+   menubar and dropdown labels read the same way they do in light mode. */
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .menubar {
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.7);
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset,
     0 -1px 0 rgba(0, 0, 0, 0.45) inset;
 }
@@ -3615,26 +3616,11 @@
 }
 
 /* --- Title bar text-shadow ------------------------------------------------ */
-/* The light-mode rule on `.menubar` text uses a bright drop-shadow; on dark
-   surfaces we want a soft black halo so the labels still pop without the
-   "embossed white" look. The titlebar inherits the same. */
-:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .menubar {
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.65) !important;
-}
-
-:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .title-bar {
-  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55) !important;
-}
-
-/* Generic light-on-dark titlebar text fallback for any direct children that
-   still inherit the light-mode `text-shadow: 0 1px 0 rgba(255,255,255,0.7)`
-   from elsewhere — strip the white halo. */
-:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
-  .window
-  .title-bar
-  :where(span, h1, h2, h3) {
-  text-shadow: inherit;
-}
+/* Regular (non-brushed-metal) windows keep the light-mode dark-colored
+   text-shadow on titlebar / menubar labels so dark mode looks visually
+   continuous with light mode. The brushed-metal variant (white halo in
+   light mode) is the one exception — its dark-mode override stays in the
+   brushed-metal block above. */
 
 /* --- Aqua tabs ------------------------------------------------------------ */
 /* Inactive tab: dark graphite gradient instead of light gray-to-white. Active
