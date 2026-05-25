@@ -281,6 +281,9 @@ export function ControlPanelsAppComponent({
     setShaderEffectEnabled,
     currentTheme,
     setTheme,
+    supportsDarkMode,
+    isDarkMode,
+    setDarkMode,
     currentLanguage,
     setLanguage,
     tabStyles,
@@ -515,6 +518,23 @@ export function ControlPanelsAppComponent({
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* Dark Mode toggle — only shown for themes that ship dark tokens */}
+                {supportsDarkMode && (
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex flex-col gap-1">
+                      <Label>{t("apps.control-panels.darkMode")}</Label>
+                      <Label className="text-[11px] text-neutral-600 font-geneva-12">
+                        {t("apps.control-panels.darkModeDescription")}
+                      </Label>
+                    </div>
+                    <Switch
+                      checked={isDarkMode}
+                      onCheckedChange={(checked) => setDarkMode(checked)}
+                      className="data-[state=checked]:bg-[#000000]"
+                    />
+                  </div>
+                )}
 
                 {/* Language Selector */}
                 <div className="flex items-center justify-between gap-2">

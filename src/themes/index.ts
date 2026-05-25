@@ -2,7 +2,13 @@ import { system7 } from "./system7";
 import { macosx } from "./macosx";
 import { xp } from "./xp";
 import { win98 } from "./win98";
-import { OsMacChrome, OsPlatform, OsTheme, OsThemeId, ThemeMetadata } from "./types";
+import {
+  OsMacChrome,
+  OsPlatform,
+  OsTheme,
+  OsThemeId,
+  ThemeMetadata,
+} from "./types";
 
 export const themes: Record<OsThemeId, OsTheme> = {
   system7,
@@ -69,7 +75,16 @@ export function isMacTheme(id: OsThemeId): boolean {
   return themes[id].metadata.isMac;
 }
 
+/**
+ * Whether a theme has dark-mode tokens defined in `themes.css`.
+ * Themes without dark-mode coverage ignore the dark-mode preference at apply time.
+ */
+export function themeSupportsDarkMode(id: OsThemeId): boolean {
+  return themes[id].metadata.supportsDarkMode;
+}
+
 export type {
+  OsColorScheme,
   OsMacChrome,
   OsPlatform,
   OsTheme,

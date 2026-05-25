@@ -11,6 +11,8 @@ import {
 
 export interface SettingsSnapshotData {
   theme: string;
+  /** Per-theme dark-mode preferences. Optional for backward compatibility. */
+  themeDarkMode?: Record<string, boolean>;
   language: LanguageCode;
   languageInitialized: boolean;
   aiModel: AIModel | null;
@@ -143,6 +145,9 @@ export function mergeSettingsSnapshotData(
     normalizedRemote.theme !== undefined
   ) {
     merged.theme = normalizedRemote.theme;
+    if (normalizedRemote.themeDarkMode !== undefined) {
+      merged.themeDarkMode = normalizedRemote.themeDarkMode;
+    }
     merged.sectionUpdatedAt!.theme = remoteSectionUpdatedAt.theme;
   }
 
@@ -229,6 +234,12 @@ export function getSectionPayloadForSettingsPatch(
 ): unknown {
   switch (section) {
     case "theme":
+      // Older clients only read this as a string. New clients can also send a
+      // dark-mode map alongside; the receiving side's `applyRemote` handles both
+      // shapes (string-only OR `{ theme, darkMode }`).
+      if (data.themeDarkMode && Object.keys(data.themeDarkMode).length > 0) {
+        return { theme: data.theme, darkMode: data.themeDarkMode };
+      }
       return data.theme;
     case "language":
       return {
@@ -350,7 +361,20 @@ export function applySettingsRedisPatch(
     const val = patch.sections[section];
     switch (section) {
       case "theme":
-        next.theme = val as string;
+        // Backward compat: older patches sent a plain string id. New patches send
+        // `{ theme, darkMode }` so both pieces are written atomically.
+        if (typeof val === "string") {
+          next.theme = val;
+        } else if (val && typeof val === "object") {
+          const v = val as {
+            theme?: string;
+            darkMode?: Record<string, boolean>;
+          };
+          if (typeof v.theme === "string") next.theme = v.theme;
+          if (v.darkMode && typeof v.darkMode === "object") {
+            next.themeDarkMode = { ...v.darkMode };
+          }
+        }
         break;
       case "language": {
         const v = val as {

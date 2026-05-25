@@ -16,7 +16,9 @@ description: Design and style UI components for ryOS following the 4 OS themes (
 
 ## Essential Utilities
 
-Root attributes: `data-os-theme` (exact id), **`data-os-platform`** (`mac` | `windows`), and **`data-os-mac-chrome`** (`aqua` | `system7`, Mac only). Prefer Tailwind `os-mac:` / `os-windows:` / `os-mac-aqua:` / `os-mac-system7:` / `os-theme-*:` variants (see `docs/3.3.1-theme-architecture.md`). For Aqua global typography opt-out, use **`OS_NATIVE_CHROME_SKIP_CLASS`** from `@/lib/themeChrome`.
+Root attributes: `data-os-theme` (exact id), **`data-os-platform`** (`mac` | `windows`), **`data-os-mac-chrome`** (`aqua` | `system7`, Mac only), and **`data-os-color-scheme`** (`dark`, only when the theme supports it). Prefer Tailwind `os-mac:` / `os-windows:` / `os-mac-aqua:` / `os-mac-system7:` / `os-theme-*:` / `os-dark:` / `os-mac-aqua-dark:` variants (see `docs/3.3.1-theme-architecture.md`). For Aqua global typography opt-out, use **`OS_NATIVE_CHROME_SKIP_CLASS`** from `@/lib/themeChrome`.
+
+Dark mode today: only macOS Aqua (`macosx`) ships dark tokens; the toggle is hidden for other themes. Dark CSS lives in a single block at the bottom of `src/styles/themes.css`. Use the `os-dark:` Tailwind variant (or the `--os-color-*` tokens, which already swap automatically) instead of branching on `isDarkMode` whenever possible.
 
 ```tsx
 import { cn } from "@/lib/utils";

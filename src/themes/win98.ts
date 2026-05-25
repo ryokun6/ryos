@@ -13,6 +13,7 @@ export const win98: OsTheme = {
     menuBarHeight: 0,
     taskbarHeight: 30,
     baseDockHeight: 0,
+    supportsDarkMode: false,
   },
   fonts: {
     ui: "Tahoma, MS Sans Serif, sans-serif",

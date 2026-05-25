@@ -3025,3 +3025,232 @@
   filter: blur(1px);
   pointer-events: none;
 }
+
+/* ============================================================================
+ * Dark mode — Mac OS X (Aqua)
+ *
+ * Controlled by `data-os-color-scheme="dark"` on `<html>`, which is only set by
+ * `useThemeStore` when the active theme advertises `supportsDarkMode = true`.
+ * This block redefines the per-theme `--os-*` tokens for dark and adds
+ * structural overrides for chrome that bakes in light-mode hues (menubar gloss,
+ * brushed metal, drawer panels, traffic lights, spotlight pinstripe, etc.).
+ *
+ * Light tokens stay the canonical defaults. Anything new should layer on top
+ * here using `[data-os-color-scheme="dark"]` so removing the attribute is a
+ * complete revert. Other themes are NOT yet covered — see
+ * `docs/3.3.1-theme-architecture.md`.
+ * ============================================================================ */
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] {
+  color-scheme: dark;
+
+  /* Surfaces */
+  --os-color-window-bg: #2b2b2e;
+  --os-color-panel-bg: #2b2b2e;
+  --os-color-menubar-bg: linear-gradient(to bottom, #3b3b40, #232327);
+  --os-color-menubar-border: rgba(0, 0, 0, 0.7);
+  --os-color-menubar-text: #f4f4f5;
+
+  /* Window borders + titlebar */
+  --os-color-window-border: rgba(0, 0, 0, 0.85);
+  --os-color-window-border-inactive: rgba(0, 0, 0, 0.55);
+  --os-color-titlebar-border: rgba(0, 0, 0, 0.65);
+  --os-color-titlebar-border-inactive: rgba(0, 0, 0, 0.45);
+  --os-color-titlebar-active-bg: linear-gradient(
+    to bottom,
+    #4a4a50 0%,
+    #2e2e33 100%
+  );
+  --os-color-titlebar-inactive-bg: linear-gradient(
+    to bottom,
+    #3a3a3f,
+    #2a2a2e
+  );
+  --os-color-titlebar-text: #f4f4f5;
+  --os-color-titlebar-text-inactive: #8b8b90;
+
+  /* Buttons */
+  --os-color-button-face: #4a4a50;
+  --os-color-button-highlight: rgba(255, 255, 255, 0.15);
+  --os-color-button-shadow: rgba(0, 0, 0, 0.6);
+  --os-color-button-active-face: #5a5a60;
+
+  /* Text */
+  --os-color-text-primary: #f4f4f5;
+  --os-color-text-secondary: #c8c8cc;
+  --os-color-text-disabled: #6b6b70;
+
+  /* Selection — keep the Aqua blue so highlights stay readable */
+  --os-color-selection-bg: rgba(48, 103, 218, 0.85);
+  --os-color-selection-text: #ffffff;
+  --os-color-selection-glow: rgba(48, 103, 218, 0.55);
+
+  /* Inputs */
+  --os-color-input-bg: #1f1f22;
+  --os-color-input-border: rgba(255, 255, 255, 0.18);
+  --os-color-input-focus-border: rgba(95, 152, 247, 0.7);
+  --os-color-input-focus-ring: rgba(95, 152, 247, 0.3);
+
+  /* Sidebar / separators */
+  --os-color-separator: rgba(255, 255, 255, 0.14);
+  --os-color-sidebar-border: rgba(255, 255, 255, 0.22);
+  --os-color-sidebar-inset-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.55);
+
+  /* Switch */
+  --os-color-switch-track: #4a4a50;
+  --os-color-switch-track-checked: #3067da;
+
+  /* Window shadow on dark wallpaper needs more spread to read at all */
+  --os-window-shadow: 0 8px 28px rgba(0, 0, 0, 0.55);
+
+  /* Pinstripes — invert the brightness so the subtle stripes still register */
+  --os-pinstripe-window: repeating-linear-gradient(
+      0deg,
+      transparent 0px,
+      transparent 1.5px,
+      rgba(255, 255, 255, 0.04) 1.5px,
+      rgba(255, 255, 255, 0.04) 4px
+    ),
+    linear-gradient(to bottom, #2b2b2e 0%, #2b2b2e 100%);
+  --os-pinstripe-menubar: repeating-linear-gradient(
+    0deg,
+    transparent 0px,
+    transparent 1.5px,
+    rgba(255, 255, 255, 0.05) 1.5px,
+    rgba(255, 255, 255, 0.05) 4px
+  );
+  --os-pinstripe-titlebar: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(255, 255, 255, 0.04) 70%,
+    rgba(0, 0, 0, 0.18) 100%
+  );
+
+  /* Traffic-light glyph color — dimmer arrows on darker buttons */
+  --os-color-traffic-light-close: #2a0606;
+  --os-color-traffic-light-minimize: #3a2a08;
+  --os-color-traffic-light-maximize: #062c0e;
+}
+
+/* Background-window selection in dark mode (keeps inactive windows muted but legible) */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .window:not(.is-foreground) {
+  --os-color-selection-bg: rgba(120, 120, 124, 0.55);
+  --os-color-selection-text: #f4f4f5;
+  --os-color-selection-glow: rgba(0, 0, 0, 0.35);
+}
+
+/* Menubar gloss — replace the ::before white-on-white sheen with a darker overlay */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .menubar {
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.7);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.45) inset;
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .menubar::before {
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.06),
+    rgba(255, 255, 255, 0.02)
+  );
+}
+
+/* Brushed metal in dark mode — desaturate + darken the texture so the chrome reads
+   like graphite instead of glowing brushed steel. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .window-material-brushedmetal::before {
+  filter: contrast(0.9) brightness(0.35) saturate(0.4);
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .window-material-brushedmetal:not(.is-foreground)::before {
+  filter: contrast(0.7) brightness(0.45) saturate(0.3);
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .window-material-brushedmetal.is-foreground {
+  border: 0.5px solid rgba(0, 0, 0, 0.85) !important;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.7) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .window-material-brushedmetal.is-foreground::after {
+  box-shadow:
+    inset 0 2px 2px rgba(255, 255, 255, 0.18),
+    inset 0 8px 14px rgba(255, 255, 255, 0.04),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.05),
+    inset 1px 0 0 rgba(255, 255, 255, 0.06),
+    inset -1px 0 0 rgba(255, 255, 255, 0.06);
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .window.window-material-brushedmetal.is-foreground .title-bar {
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.85) !important;
+}
+
+/* Side drawer (AppDrawer / TV drawer) reuses the brushed-metal stack */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .os-drawer-metal {
+  border: 0.5px solid rgba(0, 0, 0, 0.85) !important;
+  box-shadow:
+    0 8px 22px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.04);
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .os-drawer-metal::before {
+  filter: contrast(0.9) brightness(0.35) saturate(0.4);
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .os-drawer-metal::after {
+  box-shadow:
+    inset 0 2px 2px rgba(255, 255, 255, 0.16),
+    inset 0 8px 12px rgba(255, 255, 255, 0.03),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.05),
+    inset 1px 0 0 rgba(255, 255, 255, 0.05),
+    inset -1px 0 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Recessed list well inside the drawer — match the dark window surface */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .os-drawer-list-well {
+  background: #1f1f22;
+  border: 1px solid rgba(0, 0, 0, 0.7);
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.55),
+    inset 0 0 1px rgba(0, 0, 0, 0.4),
+    0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Spotlight pinstripe panel uses --os-pinstripe-window which we've already
+   redefined above; ensure the panel's input/text stay light-on-dark. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .spotlight-panel {
+  color: var(--os-color-text-primary);
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .spotlight-panel
+  input.spotlight-input {
+  color: var(--os-color-text-primary);
+  caret-color: var(--os-color-text-primary);
+}
+
+/* Aqua select trigger uses light gradients hard-coded in CSS — soften them so
+   they read on dark window chrome (full Aqua-button pulse stays light blue,
+   so leave that alone). */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .macos-select-trigger,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  select:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *)) {
+  color: var(--os-color-text-primary);
+  background-color: var(--os-color-input-bg);
+}
+
+/* Ensure body / html paint the dark surface even before any window mounts */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] body {
+  background-color: var(--os-color-window-bg);
+  color: var(--os-color-text-primary);
+}
+
+/* Dialogs / cards rendered through Radix portals don't inherit window-body tokens.
+   Provide a minimal default surface so portaled popovers don't blast white. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  [data-radix-popper-content-wrapper] {
+  color: var(--os-color-text-primary);
+}

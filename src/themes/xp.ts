@@ -13,6 +13,7 @@ export const xp: OsTheme = {
     menuBarHeight: 0,
     taskbarHeight: 30,
     baseDockHeight: 0,
+    supportsDarkMode: false,
   },
   fonts: {
     ui: "Tahoma, Segoe UI, sans-serif",

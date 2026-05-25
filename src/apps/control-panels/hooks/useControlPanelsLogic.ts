@@ -283,8 +283,9 @@ export function useControlPanelsLogic({
   }));
 
   // Theme state
-  const { currentTheme } = useThemeFlags();
+  const { currentTheme, supportsDarkMode, isDarkMode } = useThemeFlags();
   const setTheme = useThemeStore((state) => state.setTheme);
+  const setDarkMode = useThemeStore((state) => state.setDarkMode);
 
   // Language state
   const currentLanguage = useLanguageStore((state) => state.current);
@@ -1603,6 +1604,9 @@ export function useControlPanelsLogic({
     setShaderEffectEnabled,
     currentTheme,
     setTheme,
+    supportsDarkMode,
+    isDarkMode,
+    setDarkMode,
     currentLanguage,
     setLanguage,
     tabStyles,
