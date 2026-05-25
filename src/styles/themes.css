@@ -3659,23 +3659,54 @@
   background: linear-gradient(transparent, rgba(255, 255, 255, 0.08));
 }
 
-/* Active tab keeps its branded blue gradient — but the under-tab strip
-   (`.aqua-tab-bar:after`) is a light-blue/white seam by default, which reads
-   as an unwelcome glow on dark windows. Darken to a deeper indigo seam. */
+/* Active tab — keep the same Aqua-blue gradient family the light theme uses,
+   just dimmer so it doesn't blast out against the dark window. Stops mirror
+   the light gradient (deep blue → mid → light) but each step is shifted into
+   the lower-saturation / darker half of the family. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .aqua-tab[data-state="active"] {
+  background: linear-gradient(
+    rgb(28, 76, 130),
+    rgb(70, 117, 168),
+    rgb(132, 178, 224)
+  );
+  box-shadow:
+    inset 0 1px 3px rgba(0, 0, 0, 0.7),
+    inset 0 2px 3px 1px rgba(0, 50, 120, 0.55),
+    0 2px 3px rgba(0, 0, 0, 0.5),
+    0 1px 1px rgba(0, 60, 140, 0.45);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
+  border-bottom: 1px solid rgb(132, 178, 224) !important;
+}
+
+/* Soften the active-tab top shine to match the dimmer base. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .aqua-tab[data-state="active"]:before {
+  background: linear-gradient(
+    rgba(255, 255, 255, 0.32),
+    rgba(255, 255, 255, 0.1)
+  );
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .aqua-tab[data-state="active"]:after {
+  background: linear-gradient(transparent, rgba(255, 255, 255, 0.18));
+}
+
+/* Under-tab seam — same Aqua-blue family as the light theme but with the
+   stops dragged toward the darker / less-saturated end so it reads as a
+   continuation of the dimmer active tab above. */
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .aqua-tab-bar:after {
   background: linear-gradient(
     to bottom,
-    #082c5a 0%,
-    #1a4f8c 8%,
-    #1a4276 25%,
-    #133861 40%,
-    #1a4683 60%,
-    #1a4683 80%,
-    #205a9c 100%
+    #16345c 0%,
+    #6e9bcb 8%,
+    #5a85b8 25%,
+    #4670a3 40%,
+    #5a85b8 60%,
+    #6090c0 80%,
+    #4d80b4 100%
   );
   box-shadow:
-    inset 0 1px 0 rgba(0, 0, 0, 0.55),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.55);
+    inset 0 1px 0 rgba(0, 0, 0, 0.45),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.45);
 }
 
 /* --- Search input + icon -------------------------------------------------- */
@@ -3737,42 +3768,101 @@
 
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .metal-inset-btn:active,
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .metal-inset-btn[data-state="on"] {
-  /* Toggled state — keep the Aqua blue family (matches the active-tab gloss
-     and selection bg) but clip the highlights so the gradient reads on the
-     darker chrome around it. */
+  /* Toggled state — same Aqua-blue family as the active tab, dimmer than the
+     light theme's sky-blue gradient so it doesn't pop against the dark chrome. */
   background: linear-gradient(
     to bottom,
-    #1f4d8a 0%,
-    #2864a8 49%,
-    #1c4f87 50%,
-    #2a76c2 100%
+    #1a3a66 0%,
+    #2a528a 49%,
+    #1f3f6f 50%,
+    #355d96 100%
   );
-  color: #ffffff;
-  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
-  border-right-color: rgba(0, 0, 0, 0.4);
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45);
+  border-right-color: rgba(0, 0, 0, 0.45);
+}
+
+/* macOS Aqua switch — the thumb's "checked" gradient comes from
+   `.aqua-button.primary` which is a vivid blue intentional for light mode.
+   In dark mode, dim it to match the rest of the toggled-on chrome above. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .os-switch[data-state="checked"]
+  .os-switch-thumb,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .os-slider-thumb {
+  background: linear-gradient(
+    rgba(0, 50, 130, 0.7),
+    rgba(40, 95, 165, 0.7),
+    rgba(70, 135, 195, 0.7)
+  );
+  box-shadow:
+    0 2px 3px rgba(0, 0, 0, 0.45),
+    0 1px 1px rgba(0, 35, 90, 0.55),
+    inset 0 1px 3px rgba(0, 12, 35, 0.65),
+    inset 0 2px 3px 1px rgba(0, 50, 130, 0.7);
+}
+
+/* Off thumb on the dark switch track — the existing
+   `.os-switch:not([data-state="checked"]) .os-switch-thumb` light gradient
+   blends fine with the existing track surface, but the track itself is the
+   light Aqua `linear-gradient(#d0d0d0,#f5f5f5)` which would scream against
+   the dark window. Tone the track to a darker pill while keeping the same
+   inset-recess shading. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .os-switch,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .os-switch[data-state="checked"] {
+  background: linear-gradient(#3a3a3f, #4d4d52);
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.6),
+    0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* Generic shadcn Switch (non-aqua) — Control Panels uses
+   `data-[state=checked]:bg-[#000000]` inline; in dark mode that solid black
+   pill disappears against the window. Lift it to match the `--switch-track`
+   token instead. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .window-body
+  [data-state="checked"].bg-\[\#000000\]:not(.os-switch) {
+  background-color: #5a5a60 !important;
+}
+
+/* Aqua segmented selector (`aqua-select-btn.aqua-selected`) — the light theme
+   darkens the gradient + outline against a bright window. In dark mode its
+   gray-on-gray reads as bright; soften both the gradient and the outline. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .aqua-select-btn.aqua-selected {
+  background: linear-gradient(
+    rgb(70 75 80 / 92%),
+    rgb(95 102 108 / 80%)
+  ) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55) !important;
+  box-shadow:
+    0 2px 3px rgba(0, 0, 0, 0.4),
+    0 1px 1px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(0, 0, 0, 0.6) !important;
 }
 
 /* --- LCD displays (Videos / TV / Minesweeper) ----------------------------- */
 /* Override the `--videos-lcd-*` variables so the existing `.videos-lcd` rules
-   automatically pick up the dark CRT palette (deep green-black background,
-   muted phosphor-green glyphs, inverted text-shadow). The rules already use
-   `var(--videos-lcd-bg)` and `var(--videos-lcd-text)`. */
+   automatically pick up the dark CRT palette. The light theme uses a sage-
+   green panel with near-black text; dark mode mirrors that contrast inversion
+   but with a subdued, near-monochrome graphite tint instead of vivid phosphor
+   green so the LCD blends with the rest of the dark chrome. */
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"] {
-  --videos-lcd-bg: #0d1d0d;
-  --videos-lcd-text: #6fd07a;
-  --videos-lcd-text-muted: #4ea355;
-  --videos-lcd-fade: #0d1d0d;
-  --videos-lcd-border-dark: #000000d0;
+  --videos-lcd-bg: #1c1f1c;
+  --videos-lcd-text: #b6c0b6;
+  --videos-lcd-text-muted: #889088;
+  --videos-lcd-fade: #1c1f1c;
+  --videos-lcd-border-dark: #000000c0;
   --videos-lcd-border-light: rgba(255, 255, 255, 0.05);
 }
 
 /* Existing rule baked in `1px 1px 0 rgba(0, 0, 0, 0.2)` text-shadow that
-   only reads on a light background; swap to a dark drop-shadow that adds
-   a faint green glow under each glyph. */
+   only reads on a light background; swap to a soft black drop-shadow without
+   the bright phosphor glow. */
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .videos-lcd {
-  text-shadow: 0 0 4px rgba(111, 208, 122, 0.35),
-    1px 1px 0 rgba(0, 0, 0, 0.85) !important;
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.7) !important;
 }
 
 /* TV LCD wraps the `.videos-lcd` div in `bg-black` for its strip layout —
@@ -3786,19 +3876,18 @@
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"]
   .window-body
   :where(.bg-\[\#8a9a8a\]) {
-  background-color: #0d1d0d !important;
+  background-color: #1c1f1c !important;
   border-top-color: #000 !important;
   border-left-color: #000 !important;
   border-right-color: rgba(255, 255, 255, 0.08) !important;
   border-bottom-color: rgba(255, 255, 255, 0.08) !important;
-  text-shadow: 0 0 4px rgba(111, 208, 122, 0.35),
-    1px 1px 0 rgba(0, 0, 0, 0.85) !important;
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.7) !important;
 }
 
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"]
   .window-body
   :where(.text-\[\#1a2a1a\]) {
-  color: #6fd07a !important;
+  color: #b6c0b6 !important;
 }
 
 /* Minesweeper face/bezel + cell tray (light gray `bg-[#c0c0c0]` and the
@@ -3822,4 +3911,82 @@
   .window-body
   :where(.hover\:bg-\[\#d0d0d0\]:hover) {
   background-color: #45454a !important;
+}
+
+/* --- Chat bubbles — dark themed ------------------------------------------ */
+/* Light theme uses bright pastel role colors (`bg-yellow-100` for user,
+   `bg-blue-100` for assistant, hashed pastels for human). In dark mode,
+   recolor the bubble fills to dim, low-saturation versions of the same hue
+   family so role identification is preserved without the bright pastels.
+   Text inside the bubble flips to near-white so contrast holds. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .chat-bubble.bg-yellow-100 {
+  background-color: #5a4a1c !important; /* dim amber */
+}
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .chat-bubble.bg-blue-100 {
+  background-color: #1f3a5c !important; /* dim slate-blue */
+}
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .chat-bubble.bg-pink-100,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .chat-bubble.bg-pink-200 {
+  background-color: #5a2a3a !important;
+}
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .chat-bubble.bg-purple-100,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .chat-bubble.bg-purple-200 {
+  background-color: #3d2c5a !important;
+}
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .chat-bubble.bg-indigo-100,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .chat-bubble.bg-indigo-200 {
+  background-color: #2a3260 !important;
+}
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .chat-bubble.bg-teal-100 {
+  background-color: #1d4a48 !important;
+}
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .chat-bubble.bg-lime-100 {
+  background-color: #2e4a1c !important;
+}
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .chat-bubble.bg-amber-100 {
+  background-color: #5a4a1c !important;
+}
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .chat-bubble.bg-cyan-100 {
+  background-color: #1c454d !important;
+}
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .chat-bubble.bg-rose-100 {
+  background-color: #5a2630 !important;
+}
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .chat-bubble.bg-gray-100,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .chat-bubble.bg-neutral-200 {
+  background-color: #353539 !important;
+}
+
+/* Bubble text — recolor light Tailwind `text-black` and `text-current`
+   variants so they land on the dim role colors with comfortable contrast. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .chat-bubble,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .chat-bubble * {
+  color: rgba(255, 255, 255, 0.92);
+}
+
+/* Top shine — the light-mode shine is white-on-pastel (`rgba(255,255,255,0.9)`
+   → `rgba(255,255,255,0.25)`). On dark fills the same alpha would create a
+   harsh white smear; clip it down so the shine stays subtle. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .chat-bubble:before {
+  background: linear-gradient(
+    rgba(255, 255, 255, 0.18),
+    rgba(255, 255, 255, 0.05)
+  );
+}
+
+/* Bottom shine — dim AND larger radius (matches the bubble's outer 16px).
+   Light theme used `border-radius: 4px` which felt too tight inside the
+   16px bubble; bumping it now also reads better on the dim fills. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .chat-bubble:after {
+  background: linear-gradient(
+    rgba(255, 255, 255, 0),
+    rgba(255, 255, 255, 0.12)
+  );
+  border-radius: 4px 4px 14px 14px;
+}
+
+/* Same larger bottom radius for the light theme too — keeps the two modes
+   visually consistent and addresses the request to grow the radius. */
+:root[data-os-theme="macosx"] .chat-bubble:after {
+  border-radius: 4px 4px 14px 14px;
 }
