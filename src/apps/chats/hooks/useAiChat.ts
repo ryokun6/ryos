@@ -11,6 +11,8 @@ import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { getApiUrl } from "@/utils/platform";
 import {
   getActiveIpodTracks,
+  getIpodTracksForLibrary,
+  type IpodLibrarySelection,
   setActiveIpodCurrentSongId,
   useIpodStore,
 } from "@/stores/useIpodStore";
@@ -492,10 +494,11 @@ export function useAiChat(onPromptSetUsername?: () => void) {
           }
           // === Unified VFS Tools ===
           case "list": {
-            const { path, query, limit } = toolCall.input as {
+            const { path, query, limit, librarySource } = toolCall.input as {
               path: string;
               query?: string;
               limit?: number;
+              librarySource?: IpodLibrarySelection;
             };
 
             if (!path) {
@@ -514,8 +517,10 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             try {
               // Route based on path
               if (path === "/Music") {
-                // List the currently active iPod library.
+                // List the selected iPod library. Karaoke asks for the YouTube
+                // slice even when the iPod UI is currently showing Apple Music.
                 const ipodStore = useIpodStore.getState();
+                const selectedLibrary = librarySource ?? "active";
                 const normalizedQuery = query
                   ? normalizeSearchText(query.trim())
                   : "";
@@ -526,7 +531,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 const maxResults = limit
                   ? Math.min(Math.max(limit, 1), 50)
                   : 25;
-                const activeTracks = getActiveIpodTracks(ipodStore);
+                const activeTracks = getIpodTracksForLibrary(ipodStore, selectedLibrary);
                 const scoredTracks = activeTracks.map((track) => {
                   const fields = [
                     track.id,
@@ -559,11 +564,17 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                     id: track.id,
                     title: track.title,
                     artist: track.artist,
-                    source: track.source ?? ipodStore.librarySource,
+                    source:
+                      track.source ??
+                      (selectedLibrary === "active"
+                        ? ipodStore.librarySource
+                        : selectedLibrary),
                   }));
                 const hiddenCount = Math.max(matchingTracks.length - library.length, 0);
+                const resolvedLibrary =
+                  selectedLibrary === "active" ? ipodStore.librarySource : selectedLibrary;
                 const libraryName =
-                  ipodStore.librarySource === "appleMusic" ? "Apple Music" : "iPod";
+                  resolvedLibrary === "appleMusic" ? "Apple Music" : "YouTube";
 
                 const resultMessage =
                   library.length > 0

@@ -650,12 +650,20 @@ export interface IpodChatContextTrack {
   source: LibrarySource;
 }
 
+export type IpodLibrarySelection = LibrarySource | "active";
+
+export function getIpodTracksForLibrary(
+  state: Pick<IpodState, "librarySource" | "tracks" | "appleMusicTracks">,
+  library: IpodLibrarySelection = "active"
+): Track[] {
+  const resolvedLibrary = library === "active" ? state.librarySource : library;
+  return resolvedLibrary === "appleMusic" ? state.appleMusicTracks : state.tracks;
+}
+
 export function getActiveIpodTracks(
   state: Pick<IpodState, "librarySource" | "tracks" | "appleMusicTracks">
 ): Track[] {
-  return state.librarySource === "appleMusic"
-    ? state.appleMusicTracks
-    : state.tracks;
+  return getIpodTracksForLibrary(state);
 }
 
 export function getActiveIpodCurrentSongId(

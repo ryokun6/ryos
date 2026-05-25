@@ -262,14 +262,20 @@ export const listSchema = z.object({
   path: z
     .enum(VFS_PATHS)
     .describe(
-      "The directory path to list: '/Applets' for local applets, '/Documents' for documents, '/Applications' for apps, '/Music' for songs in the active iPod library, '/Applets Store' for shared applets"
+      "The directory path to list: '/Applets' for local applets, '/Documents' for documents, '/Applications' for apps, '/Music' for songs in the iPod music libraries, '/Applets Store' for shared applets"
+    ),
+  librarySource: z
+    .enum(["active", "youtube", "appleMusic"])
+    .optional()
+    .describe(
+      "For '/Music' only: which iPod library to list. Defaults to 'active'. Use 'youtube' for Karaoke because Karaoke always plays YouTube-library tracks."
     ),
   query: z
     .string()
     .max(200)
     .optional()
     .describe(
-      "Optional search query to filter results. For '/Music', searches id/title/artist/album in the active iPod library. For '/Applets Store', searches title, name, or creator."
+      "Optional search query to filter results. For '/Music', searches id/title/artist/album in the selected iPod library. For '/Applets Store', searches title, name, or creator."
     ),
   limit: z
     .number()
