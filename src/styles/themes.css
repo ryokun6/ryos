@@ -4020,29 +4020,31 @@
 }
 
 /* --- Chat stop button ----------------------------------------------------- */
-/* The send/stop pair use Aqua-styled gradient pills inline. The stop button's
-   light pink gradient reads more like "send (red theme)" than "stop"; tighten
-   it to a deeper, more saturated red across themes and flip the glyph white
-   so the stop affordance is unambiguous. */
+/* The send/stop pair use Aqua-styled gradient pills inline. Light mode now
+   uses a pale red gradient (matches the original ChatInput inline pinkish
+   stop) so the stop affordance still reads as "warning red" but doesn't
+   blast the bright Aqua chat input; dark mode swaps to a deeper red.
+   In both modes the glyph stays white so the icon is unambiguous against
+   the gradient. */
 .chat-stop-btn {
   background: linear-gradient(
-    rgba(220, 38, 38, 0.95),
-    rgba(159, 18, 24, 0.95)
+    rgba(252, 165, 165, 0.95),
+    rgba(220, 38, 38, 0.92)
   ) !important;
   box-shadow:
-    0 2px 3px rgba(0, 0, 0, 0.3),
-    0 1px 1px rgba(0, 0, 0, 0.35),
-    inset 0 0 0 0.5px rgba(0, 0, 0, 0.45),
-    inset 0 1px 2px rgba(0, 0, 0, 0.4),
-    inset 0 2px 3px 1px rgba(220, 38, 38, 0.45) !important;
+    0 2px 3px rgba(0, 0, 0, 0.22),
+    0 1px 1px rgba(0, 0, 0, 0.28),
+    inset 0 0 0 0.5px rgba(127, 14, 19, 0.4),
+    inset 0 1px 2px rgba(220, 38, 38, 0.25),
+    inset 0 2px 3px 1px rgba(254, 205, 211, 0.55) !important;
 }
 
 .chat-stop-glyph {
   color: #ffffff !important;
 }
 
-/* Dark mode keeps the same red but slightly less luminous so it doesn't
-   over-pop against the dim window. */
+/* Dark mode uses a darker, more saturated red so the stop pill reads
+   against the dim window chrome. */
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .chat-stop-btn {
   background: linear-gradient(
     rgba(185, 28, 28, 0.9),
@@ -4054,6 +4056,16 @@
     inset 0 0 0 0.5px rgba(0, 0, 0, 0.6),
     inset 0 1px 2px rgba(0, 0, 0, 0.45),
     inset 0 2px 3px 1px rgba(185, 28, 28, 0.4) !important;
+}
+
+/* --- Chat submit (send) glyph --------------------------------------------- */
+/* The send button uses a bright Aqua-green gradient with a dark glyph on
+   top. In dark mode the broader `.window-body` rules remap `text-black/70`
+   to the secondary-text token (#c8c8cc), which sinks the arrow into the
+   green pill. Pin the glyph back to black so the submit affordance keeps
+   its high-contrast dark icon against the green gradient. */
+.chat-submit-glyph {
+  color: rgba(0, 0, 0, 0.75) !important;
 }
 
 /* --- Inline search/text inputs that don't use the shared SearchInput ----- */
@@ -4224,4 +4236,242 @@
    anything not explicitly recolored falls through to the dark scheme. */
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .macosx-dialog {
   color: var(--os-color-text-primary);
+}
+
+/* ============================================================================
+ * Dark mode — Mac OS X (Aqua) — round 4 polish
+ *
+ * Fixes from per-app survey:
+ *   - Chats: bubble top inset highlight + TTS highlight dimmed for dark
+ *   - Sidebar headers (Contacts/Calendar) get a dark gradient strip
+ *   - Drawer inner content (Calendar tray, TV strip+rows, Maps list) is
+ *     outside `.window-body`, so the broad dark utility remaps don't reach
+ *     it. Add scoped overrides on `.os-drawer-metal` so drawer content
+ *     darkens to match the drawer shell.
+ *   - Spotlight section headers (hardcoded inline `rgba(0,0,0,…)`) need
+ *     `!important` overrides to beat inline styles in dark mode.
+ * ============================================================================ */
+
+/* --- Chats: bubble top inset highlight (the bright top "shine" stroke
+   baked into `.chat-bubble`'s `box-shadow`). Light mode uses a
+   `rgba(255,255,255,0.6)` inset that creates a glossy top edge; on dim
+   dark fills this reads as a bright stripe. Repaint the entire box-shadow
+   stack with a softer top inset so the bubble keeps its 3D affordance
+   without screaming on the dark window. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .chat-bubble {
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.35),
+    0 1px 1px rgba(0, 0, 0, 0.4),
+    inset 0 1px 2px rgba(255, 255, 255, 0.22),
+    inset 0 0 4px rgba(0, 0, 0, 0.18),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.18),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* --- Chats: TTS highlight ------------------------------------------------ */
+/* The light TTS highlight uses `rgba(255, 241, 118, 0.85)` (saturated
+   sunshine yellow). On dim dark bubble fills the same alpha is too bright
+   and recolors the underlying text. Dim the alpha so the highlight reads
+   as a soft amber wash instead of a glaring stripe. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] ::highlight(ryos-chat-tts) {
+  background-color: rgba(255, 222, 110, 0.35);
+}
+
+/* --- Sidebar panel headers (Contacts "Name", Calendar "To Do Items",
+   "Calendars") ----------------------------------------------------------- */
+/* These render via inline `style={{ background: "linear-gradient(...)",
+   color: "#222", textShadow: "0 1px 0 #e1e1e1", borderTop: "1px solid
+   rgba(255,255,255,0.5)", borderBottom: "1px solid #787878" }}` on a div
+   with the `text-[11px] font-regular text-center` Tailwind shape. Inline
+   styles win over class rules, so the only reliable hook is the unique
+   class combination + `!important`.
+
+   The headers don't share a class, but the inline gradient
+   `linear-gradient(to bottom, #e6e5e5, #aeadad)` AND `text-center` shape
+   only show up on these panel headers (Contacts, Calendar TodoSidebar,
+   Calendar list). Target `.window-body` descendants matching that exact
+   pattern via the `text-center text-[11px] font-regular` class chain that
+   is unique to these headers. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .os-sidebar
+  > .text-\[11px\].text-center,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .os-sidebar
+  .text-\[11px\].text-center.font-regular,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .os-sidebar
+  .relative.text-\[11px\].text-center {
+  background: linear-gradient(to bottom, #3d3d42, #2a2a2e) !important;
+  color: var(--os-color-text-primary) !important;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55) !important;
+  border-top-color: rgba(255, 255, 255, 0.08) !important;
+  border-bottom-color: rgba(0, 0, 0, 0.7) !important;
+}
+
+/* --- Drawer inner content (Calendar / TV / Maps) ------------------------- */
+/* Drawers render as a sibling of `.window-body` (inside `.window` but
+   outside the body), so the broad dark remap rules don't reach their
+   content. The drawer shell (`.os-drawer-metal` / `.os-drawer-list-well`)
+   already has dark rules; here we extend the same remaps to drawer
+   children so list rows, panels, toolbars, etc. align with the dark
+   chrome. We mirror the exclusion list used by the `.window-body` block
+   so per-app opt-out containers still work. */
+
+/* Default text color inside the drawer well falls back to the dark token. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .os-drawer-list-well {
+  color: var(--os-color-text-primary);
+}
+
+/* White surfaces inside the drawer (Calendar TrayDetails `panelShell`) — keep
+   distinct from the well by lifting one shade so the panel still reads as
+   layered content above the recessed well. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .os-drawer-list-well
+  :where(.bg-white, .bg-\[\#FFFFFF\], .bg-\[\#ffffff\]):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *) {
+  background-color: #2b2b2e !important;
+}
+
+/* Translucent whites inside the drawer (TV channel-strip button face). */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .os-drawer-list-well
+  :where(
+    .bg-white\/95,
+    .bg-white\/90,
+    .bg-white\/85,
+    .bg-white\/80,
+    .bg-white\/70,
+    .bg-white\/60,
+    .bg-white\/50,
+    .bg-white\/40,
+    .bg-white\/30,
+    .bg-white\/20,
+    .bg-white\/10
+  ):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *) {
+  background-color: rgba(58, 58, 63, 0.92) !important;
+}
+
+/* TV drawer top channel strip (`bg-[#f7f7f7]/95`) — light platinum surface
+   that needs a graphite analog in dark mode. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .os-drawer-list-well
+  :where(.bg-\[\#f7f7f7\]\/95, .bg-\[\#f7f7f7\]) {
+  background-color: rgba(40, 40, 44, 0.95) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Inputs / textareas inside drawer (Calendar event editor field). */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .os-drawer-list-well
+  :where(input, textarea, select):where(
+    .bg-white,
+    .bg-white\/95,
+    .bg-white\/90,
+    .bg-white\/85,
+    .bg-white\/80,
+    .bg-white\/70,
+    .bg-white\/60,
+    .bg-white\/50
+  ):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *) {
+  background-color: var(--os-color-input-bg) !important;
+  color: var(--os-color-text-primary) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+/* Black-text utilities inside the drawer — flip to light text tokens. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .os-drawer-list-well
+  :where(.text-black, .text-\[\#000\], .text-\[\#000000\], .text-\[\#222\]):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *) {
+  color: var(--os-color-text-primary) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .os-drawer-list-well
+  :where(
+    .text-black\/90,
+    .text-black\/80,
+    .text-black\/70,
+    .text-black\/60,
+    .text-black\/55,
+    .text-black\/50,
+    .text-black\/45,
+    .text-black\/40,
+    .text-black\/35,
+    .text-black\/30
+  ):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *) {
+  color: var(--os-color-text-secondary) !important;
+}
+
+/* Hover wash defined as `hover:bg-black/5` — invisible on dark drawer.
+   Lift to a faint white-on-dark hover so list rows have a hover affordance. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .os-drawer-list-well
+  :where(.hover\:bg-black\/5):hover,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .os-drawer-list-well
+  :where(.hover\:bg-black\/10):hover {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Hairline borders defined as `border-black/*` inside the drawer — lift to
+   faint white-on-dark hairline so dividers still read. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .os-drawer-list-well
+  :where(
+    .border-black,
+    .border-black\/5,
+    .border-black\/10,
+    .border-black\/15,
+    .border-black\/20,
+    .border-black\/30,
+    .border-black\/40,
+    .border-black\/50,
+    .border-black\/60
+  ):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *) {
+  border-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+/* Placeholders inside drawer inputs. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .os-drawer-list-well
+  :where(input, textarea):where(
+    .placeholder\:text-black\/30,
+    .placeholder\:text-black\/40,
+    .placeholder\:text-black\/45,
+    .placeholder\:text-black\/50,
+    .placeholder\:text-black\/55,
+    .placeholder\:text-black\/60
+  )::placeholder {
+  color: var(--os-color-text-disabled) !important;
+}
+
+/* TV drawer active row uses a sky-blue gradient (`.tv-drawer-mac-row-active`)
+   that pops too hard against dark chrome. Dim it to the same Aqua-blue family
+   the dark active tab uses elsewhere. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .tv-drawer-mac-row-active {
+  background: linear-gradient(
+    rgba(28, 76, 130, 0.85),
+    rgba(40, 95, 165, 0.85)
+  ) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
+}
+
+/* --- Spotlight section headers ------------------------------------------ */
+/* Headers use inline `style.color: "rgba(0,0,0,0.4)"` (single-column) or
+   `"rgba(0,0,0,0.5)"` (two-column table cell). Inline styles beat
+   non-`!important` rules, so use `!important` on the class. Selected rows
+   already set `color` via the same inline style, so the selection-text
+   path keeps working (inline still wins for that case). */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .spotlight-panel
+  .spotlight-section-header {
+  color: rgba(255, 255, 255, 0.55) !important;
+}
+
+/* Two-column header right border (`borderRight: "1px solid rgba(0,0,0,0.1)"`)
+   disappears on dark chrome. Lift to a faint white hairline. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .spotlight-panel
+  .spotlight-section-header[style*="border-right"] {
+  border-right-color: rgba(255, 255, 255, 0.12) !important;
 }
