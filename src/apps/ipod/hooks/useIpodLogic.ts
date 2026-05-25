@@ -2246,8 +2246,6 @@ export function useIpodLogic({
       "apps.ipod.menuItems.favoriteSongs",
       "Favorite Songs"
     );
-    const playlistsLabel = t("apps.ipod.menuItems.playlists");
-    const radioLabel = t("apps.ipod.menuItems.radio", "Radio");
     const radioLabel = t("apps.ipod.menuItems.radio", "Radio");
     const geniusLabel = t("apps.ipod.menuItems.genius", "Genius");
 
@@ -2655,6 +2653,8 @@ export function useIpodLogic({
       "apps.ipod.menuItems.favoriteSongs",
       "Favorite Songs"
     );
+    const playlistsLabel = t("apps.ipod.menuItems.playlists");
+    const radioLabel = t("apps.ipod.menuItems.radio", "Radio");
     const matchFromHistory = (
       hist: MenuHistoryEntry[] | null
     ): NowPlayingPlaylistContext | null => {
