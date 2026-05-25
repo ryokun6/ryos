@@ -10,7 +10,7 @@ import {
 } from "react";
 import ReactPlayer from "react-player";
 import { motion, AnimatePresence } from "framer-motion";
-import { Repeat, Shuffle } from "@phosphor-icons/react";
+import { Repeat, RepeatOnce, Shuffle } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { LyricsDisplay } from "./LyricsDisplay";
@@ -1281,29 +1281,29 @@ export function IpodScreen({
                               })}
                       </span>
                       <span className="flex shrink-0 items-center gap-1">
-                        {loopCurrent ? (
-                          <Shuffle
-                            className="shrink-0"
-                            size={isModernUi ? 12 : 13}
-                            weight="bold"
-                            aria-label={t("apps.ipod.menu.repeatOne")}
-                          />
-                        ) : loopAll ? (
-                          <Shuffle
-                            className="shrink-0"
-                            size={isModernUi ? 12 : 13}
-                            weight="bold"
-                            aria-label={t("apps.ipod.menu.repeatAll")}
-                          />
-                        ) : null}
                         {isShuffled && (
-                          <Repeat
+                          <Shuffle
                             className="shrink-0"
                             size={isModernUi ? 12 : 13}
                             weight="bold"
                             aria-label={t("apps.ipod.ariaLabels.shuffleOn")}
                           />
                         )}
+                        {loopCurrent ? (
+                          <RepeatOnce
+                            className="shrink-0"
+                            size={isModernUi ? 12 : 13}
+                            weight="bold"
+                            aria-label={t("apps.ipod.menu.repeatOne")}
+                          />
+                        ) : loopAll ? (
+                          <Repeat
+                            className="shrink-0"
+                            size={isModernUi ? 12 : 13}
+                            weight="bold"
+                            aria-label={t("apps.ipod.menu.repeatAll")}
+                          />
+                        ) : null}
                       </span>
                     </div>
                     {isModernUi ? (
