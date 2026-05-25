@@ -36,6 +36,9 @@ export interface LyricsSource {
 /** Library source the iPod is currently displaying. */
 export type LibrarySource = "youtube" | "appleMusic";
 
+export const IPOD_BACKLIGHT_TIMEOUT_OPTIONS = ["2s", "10s", "off"] as const;
+export type IpodBacklightTimeout = (typeof IPOD_BACKLIGHT_TIMEOUT_OPTIONS)[number];
+
 /** User playlist from the Apple Music library. */
 export interface AppleMusicPlaylist {
   id: string;
@@ -135,6 +138,7 @@ interface IpodData {
   /** Display mode for visual background (video, cover art, or landscapes) */
   displayMode: DisplayMode;
   backlightOn: boolean;
+  backlightTimeout: IpodBacklightTimeout;
   theme: "classic" | "black" | "u2";
   /**
    * On-screen UI variant for the iPod display.
@@ -388,6 +392,7 @@ const initialIpodData: IpodData = {
   showVideo: false,
   displayMode: DisplayMode.Video,
   backlightOn: true,
+  backlightTimeout: "2s",
   theme: "classic",
   uiVariant: "modern",
   lcdFilterOn: true,
@@ -502,6 +507,7 @@ export interface IpodState extends IpodData {
   /** Set the display mode for visual background */
   setDisplayMode: (mode: DisplayMode) => void;
   toggleBacklight: () => void;
+  setBacklightTimeout: (timeout: IpodBacklightTimeout) => void;
   toggleLcdFilter: () => void;
   toggleFullScreen: () => void;
   setTheme: (theme: "classic" | "black" | "u2") => void;
@@ -783,7 +789,7 @@ export function navigateActiveIpodTrack(
   }
 }
 
-const CURRENT_IPOD_STORE_VERSION = 38; // Breadcrumb may include alphabetic flag so fast scroll-by-letter mode survives reopen
+const CURRENT_IPOD_STORE_VERSION = 39; // Add persisted iPod backlight timeout preference
 
 // Helper function to get unplayed track IDs from history
 function getUnplayedTrackIds(
@@ -1135,6 +1141,7 @@ export const useIpodStore = create<IpodState>()(
       setDisplayMode: (mode) => set({ displayMode: mode }),
       toggleBacklight: () =>
         set((state) => ({ backlightOn: !state.backlightOn })),
+      setBacklightTimeout: (timeout) => set({ backlightTimeout: timeout }),
       toggleLcdFilter: () =>
         set((state) => ({ lcdFilterOn: !state.lcdFilterOn })),
       toggleFullScreen: () =>
@@ -2374,6 +2381,7 @@ export const useIpodStore = create<IpodState>()(
         loopAll: state.loopAll,
         loopCurrent: state.loopCurrent,
         isShuffled: state.isShuffled,
+        backlightTimeout: state.backlightTimeout,
         theme: state.theme,
         uiVariant: state.uiVariant,
         lcdFilterOn: state.lcdFilterOn,
@@ -2490,6 +2498,12 @@ export const useIpodStore = create<IpodState>()(
           loopAll: state.loopAll,
           loopCurrent: state.loopCurrent,
           isShuffled: state.isShuffled,
+          backlightTimeout:
+            state.backlightTimeout === "2s" ||
+            state.backlightTimeout === "10s" ||
+            state.backlightTimeout === "off"
+              ? state.backlightTimeout
+              : "2s",
           theme: state.theme,
           uiVariant:
             state.uiVariant === "modern" || state.uiVariant === "classic"

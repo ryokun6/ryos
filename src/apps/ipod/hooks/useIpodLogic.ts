@@ -29,6 +29,7 @@ import { clearAppleMusicLibrary } from "@/utils/appleMusicLibraryCache";
 import {
   useIpodStore,
   Track,
+  IpodBacklightTimeout,
   getEffectiveTranslationLanguage,
   flushPendingLyricOffsetSave,
   isAppleMusicCollectionTrack,
@@ -55,7 +56,6 @@ import {
 } from "@/utils/sharedUrl";
 import { onAppUpdate } from "@/utils/appEventBus";
 import {
-  BACKLIGHT_TIMEOUT_MS,
   SEEK_AMOUNT_SECONDS,
   IPOD_NOW_PLAYING_SONG_MENU_KEY as NOW_PLAYING_SONG_MENU_KEY,
   getYouTubeVideoId,
@@ -101,6 +101,10 @@ const IS_IOS_SAFARI = IS_IOS && IS_SAFARI;
 
 /** Stable fallback so `rebuildMenuItems` never returns a fresh `[]` per call. */
 const EMPTY_IPOD_MENU_ITEMS: MenuItem[] = [];
+const BACKLIGHT_TIMEOUT_BY_SETTING: Record<Exclude<IpodBacklightTimeout, "off">, number> = {
+  "2s": 2000,
+  "10s": 10000,
+};
 
 export interface UseIpodLogicOptions {
   isWindowOpen: boolean;
@@ -151,6 +155,7 @@ export function useIpodLogic({
 
   const {
     theme,
+    backlightTimeout,
     lcdFilterOn,
     displayMode,
     showLyrics,
@@ -174,7 +179,9 @@ export function useIpodLogic({
     setDisplayMode,
     toggleVideo,
     toggleBacklight,
+    setBacklightTimeout,
     setTheme,
+    setUiVariant,
     clearLibrary,
     // addTrackFromVideoId - accessed via store.getState() directly
     youtubeNextTrack,
@@ -188,6 +195,7 @@ export function useIpodLogic({
     setCurrentFuriganaMap,
   } = useIpodStoreShallow((s) => ({
     theme: s.theme,
+    backlightTimeout: s.backlightTimeout,
     lcdFilterOn: s.lcdFilterOn,
     displayMode: s.displayMode ?? DisplayMode.Video,
     showLyrics: s.showLyrics,
@@ -210,7 +218,9 @@ export function useIpodLogic({
     setIsPlaying: s.setIsPlaying,
     toggleVideo: s.toggleVideo,
     toggleBacklight: s.toggleBacklight,
+    setBacklightTimeout: s.setBacklightTimeout,
     setTheme: s.setTheme,
+    setUiVariant: s.setUiVariant,
     clearLibrary: s.clearLibrary,
     youtubeNextTrack: s.nextTrack,
     youtubePreviousTrack: s.previousTrack,
@@ -682,7 +692,9 @@ export function useIpodLogic({
   const registerActivity = useCallback(() => {
     setLastActivityTime(Date.now());
     userHasInteractedRef.current = true;
-    if (!useIpodStore.getState().backlightOn) {
+    const { backlightOn: isBacklightOn, backlightTimeout: timeoutSetting } =
+      useIpodStore.getState();
+    if (timeoutSetting !== "off" && !isBacklightOn) {
       toggleBacklight();
     }
   }, [toggleBacklight]);
@@ -710,6 +722,27 @@ export function useIpodLogic({
     }
   }, [toggleBacklight, showStatus, registerActivity, menuLocale]);
 
+  const memoizedCycleBacklightTimeout = useCallback(() => {
+    const currentSetting = useIpodStore.getState().backlightTimeout;
+    const nextSetting: IpodBacklightTimeout =
+      currentSetting === "2s" ? "10s" : currentSetting === "10s" ? "off" : "2s";
+    setBacklightTimeout(nextSetting);
+
+    if (nextSetting === "off") {
+      if (useIpodStore.getState().backlightOn) {
+        toggleBacklight();
+      }
+      showStatus(t("apps.ipod.menuItems.off"));
+      return;
+    }
+
+    if (!useIpodStore.getState().backlightOn) {
+      toggleBacklight();
+    }
+    showStatus(nextSetting);
+    registerActivity();
+  }, [setBacklightTimeout, toggleBacklight, showStatus, registerActivity, menuLocale]);
+
   const memoizedChangeTheme = useCallback(
     (newTheme: "classic" | "black" | "u2") => {
       setTheme(newTheme);
@@ -727,14 +760,14 @@ export function useIpodLogic({
 
   const handleMenuItemAction = useCallback(
     (action: () => void) => {
-      if (action === memoizedToggleBacklight) {
+      if (action === memoizedToggleBacklight || action === memoizedCycleBacklightTimeout) {
         action();
       } else {
         registerActivity();
         action();
       }
     },
-    [registerActivity, memoizedToggleBacklight]
+    [registerActivity, memoizedToggleBacklight, memoizedCycleBacklightTimeout]
   );
 
   const memoizedToggleRepeat = useCallback(() => {
@@ -765,6 +798,18 @@ export function useIpodLogic({
         : "classic";
     memoizedChangeTheme(nextTheme);
   }, [memoizedChangeTheme]);
+
+  const memoizedHandleUiThemeChange = useCallback(() => {
+    const currentVariant = useIpodStore.getState().uiVariant;
+    const nextVariant = currentVariant === "modern" ? "classic" : "modern";
+    setUiVariant(nextVariant);
+    showStatus(
+      nextVariant === "modern"
+        ? t("apps.ipod.menu.screenModern")
+        : t("apps.ipod.menu.screenClassic")
+    );
+    registerActivity();
+  }, [setUiVariant, showStatus, registerActivity, menuLocale]);
 
   // Stable callback used by every "play this track from a menu" entry. We
   // factor this out so per-track menu items can be memoized — without it,
@@ -1341,19 +1386,24 @@ export function useIpodLogic({
       clearTimeout(backlightTimerRef.current);
     }
 
-    if (backlightOn) {
+    const timeoutMs =
+      backlightTimeout === "off"
+        ? null
+        : BACKLIGHT_TIMEOUT_BY_SETTING[backlightTimeout];
+
+    if (backlightOn && timeoutMs !== null) {
       backlightTimerRef.current = setTimeout(() => {
         const currentShowVideo = useIpodStore.getState().showVideo;
         const currentIsPlaying = useIpodStore.getState().isPlaying;
         const isGameOpen = isMusicQuizOpen || isBrickGameOpen;
         if (
-          Date.now() - lastActivityTime >= BACKLIGHT_TIMEOUT_MS &&
+          Date.now() - lastActivityTime >= timeoutMs &&
           !(currentShowVideo && currentIsPlaying) &&
           !isGameOpen
         ) {
           toggleBacklight();
         }
-      }, BACKLIGHT_TIMEOUT_MS);
+      }, timeoutMs);
     }
 
     return () => {
@@ -1363,6 +1413,7 @@ export function useIpodLogic({
     };
   }, [
     backlightOn,
+    backlightTimeout,
     isBrickGameOpen,
     isMusicQuizOpen,
     lastActivityTime,
@@ -1372,7 +1423,9 @@ export function useIpodLogic({
   // Foreground handling
   useEffect(() => {
     if (isForeground && !prevIsForeground.current) {
-      if (!useIpodStore.getState().backlightOn) {
+      const { backlightOn: isBacklightOn, backlightTimeout: timeoutSetting } =
+        useIpodStore.getState();
+      if (!isBacklightOn && timeoutSetting !== "off") {
         toggleBacklight();
       }
       registerActivity();
@@ -2402,9 +2455,14 @@ export function useIpodLogic({
       },
       {
         label: t("apps.ipod.menuItems.backlight"),
-        action: memoizedToggleBacklight,
+        action: memoizedCycleBacklightTimeout,
         showChevron: false,
-        value: backlightOn ? t("apps.ipod.menuItems.on") : t("apps.ipod.menuItems.off"),
+        value:
+          backlightTimeout === "2s"
+            ? "2s"
+            : backlightTimeout === "10s"
+            ? "10s"
+            : t("apps.ipod.menuItems.off"),
       },
       {
         label: t("apps.ipod.menuItems.theme"),
@@ -2416,6 +2474,15 @@ export function useIpodLogic({
             : theme === "black"
             ? t("apps.ipod.menu.black")
             : t("apps.ipod.menu.u2"),
+      },
+      {
+        label: t("apps.ipod.menu.uiTheme", "UI Theme"),
+        action: memoizedHandleUiThemeChange,
+        showChevron: false,
+        value:
+          uiVariant === "modern"
+            ? t("apps.ipod.menu.screenModern")
+            : t("apps.ipod.menu.screenClassic"),
       },
       {
         label: t("apps.ipod.menuItems.librarySource", "Library"),
@@ -2449,12 +2516,14 @@ export function useIpodLogic({
     loopCurrent,
     loopAll,
     isShuffled,
-    backlightOn,
+    backlightTimeout,
     theme,
+    uiVariant,
     memoizedToggleRepeat,
     memoizedToggleShuffle,
-    memoizedToggleBacklight,
+    memoizedCycleBacklightTimeout,
     memoizedHandleThemeChange,
+    memoizedHandleUiThemeChange,
     isAppleMusic,
     appleMusicAuthorized,
     musicKitStatus,
