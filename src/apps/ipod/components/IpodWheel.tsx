@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useRef } from "react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 
@@ -33,8 +33,9 @@ export function IpodWheel({
 }: IpodWheelProps) {
   const { t } = useTranslation();
   const wheelRef = useRef<HTMLDivElement>(null);
-  // Accumulated mouse wheel delta (for desktop scrolling)
-  const [wheelDelta, setWheelDelta] = useState(0);
+  // Accumulated desktop wheel delta. Keep this out of React state so partial
+  // scroll gestures do not re-render the whole click wheel.
+  const wheelDeltaRef = useRef(0);
 
   // Refs for tracking continuous touch rotation
   const lastAngleRef = useRef<number | null>(null); // Last touch angle in radians
@@ -104,26 +105,27 @@ export function IpodWheel({
     }
   };
 
+  const getWheelCenter = (): { x: number; y: number } | null => {
+    if (!wheelRef.current) return null;
+    const rect = wheelRef.current.getBoundingClientRect();
+    return {
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2,
+    };
+  };
+
   // Calculate angle (in degrees) from the center of the wheel – used for click areas
   const getAngleFromCenterDeg = (x: number, y: number): number => {
-    if (!wheelRef.current) return 0;
-
-    const rect = wheelRef.current.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-
-    return (Math.atan2(y - centerY, x - centerX) * 180) / Math.PI;
+    const center = getWheelCenter();
+    if (!center) return 0;
+    return (Math.atan2(y - center.y, x - center.x) * 180) / Math.PI;
   };
 
   // Same as above but returns radians – used for rotation calculation
   const getAngleFromCenterRad = (x: number, y: number): number => {
-    if (!wheelRef.current) return 0;
-
-    const rect = wheelRef.current.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-
-    return Math.atan2(y - centerY, x - centerX);
+    const center = getWheelCenter();
+    if (!center) return 0;
+    return Math.atan2(y - center.y, x - center.x);
   };
 
   // Determine wheel section from angle
@@ -143,13 +145,9 @@ export function IpodWheel({
 
   // Check if touch point is in center button area
   const isTouchInCenter = (x: number, y: number): boolean => {
-    if (!wheelRef.current) return false;
-
-    const rect = wheelRef.current.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-
-    const distance = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
+    const center = getWheelCenter();
+    if (!center) return false;
+    const distance = Math.sqrt((x - center.x) ** 2 + (y - center.y) ** 2);
     // Center button is w-16 h-16 (64px), so radius is 32px
     return distance <= 32;
   };
@@ -255,18 +253,17 @@ export function IpodWheel({
   // Handle mouse wheel scroll for rotation
   const handleMouseWheel = (e: React.WheelEvent) => {
     // Accumulate delta and only trigger when it reaches threshold
-    const newDelta = wheelDelta + Math.abs(e.deltaY);
-    setWheelDelta(newDelta);
+    wheelDeltaRef.current += Math.abs(e.deltaY);
 
     // Using a threshold of 50 to reduce sensitivity
-    if (newDelta >= 50) {
+    if (wheelDeltaRef.current >= 50) {
       if (e.deltaY < 0) {
         onWheelRotation("counterclockwise");
       } else {
         onWheelRotation("clockwise");
       }
       // Reset delta after triggering action
-      setWheelDelta(0);
+      wheelDeltaRef.current = 0;
     }
   };
 

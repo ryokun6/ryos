@@ -117,6 +117,11 @@ export function appleMusicKitIdToLyricsSongId(
 }
 
 type LibraryState = "uninitialized" | "loaded" | "cleared";
+const PLAYBACK_TIME_UPDATE_EPSILON_SECONDS = 0.05;
+
+function shouldUpdatePlaybackTime(previous: number, next: number): boolean {
+  return Math.abs(previous - next) >= PLAYBACK_TIME_UPDATE_EPSILON_SECONDS;
+}
 
 interface IpodData {
   tracks: Track[];
@@ -260,6 +265,8 @@ interface IpodData {
    */
   ipodMenuBreadcrumb:
     | {
+        kind?: import("@/apps/ipod/types").IpodMenuKind;
+        id?: string;
         title: string;
         displayTitle?: string;
         selectedIndex: number;
@@ -2053,8 +2060,18 @@ export const useIpodStore = create<IpodState>()(
         // Save to server (clearing the source) and clear translations/furigana
         saveLyricsSourceToServer(trackId, null);
       },
-      setElapsedTime: (time) => set({ elapsedTime: time }),
-      setTotalTime: (time) => set({ totalTime: time }),
+      setElapsedTime: (time) =>
+        set((state) =>
+          shouldUpdatePlaybackTime(state.elapsedTime, time)
+            ? { elapsedTime: time }
+            : state
+        ),
+      setTotalTime: (time) =>
+        set((state) =>
+          shouldUpdatePlaybackTime(state.totalTime, time)
+            ? { totalTime: time }
+            : state
+        ),
 
       // -----------------------------------------------------------------
       // Apple Music actions

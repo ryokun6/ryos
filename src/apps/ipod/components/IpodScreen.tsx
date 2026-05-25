@@ -849,6 +849,7 @@ export function IpodScreen({
   );
 
   const isNowPlayingSongMenu =
+    menuHistory[menuHistory.length - 1]?.kind === "nowPlayingSong" ||
     menuHistory[menuHistory.length - 1]?.title === IPOD_NOW_PLAYING_SONG_MENU_KEY;
 
   const selectedRowSplitArtTarget = useMemo(() => {

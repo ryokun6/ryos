@@ -40,7 +40,30 @@ export interface MenuItem {
 }
 
 // Menu history entry
+export type IpodMenuKind =
+  | "root"
+  | "music"
+  | "settings"
+  | "extras"
+  | "artists"
+  | "albums"
+  | "songs"
+  | "playlists"
+  | "recentlyAdded"
+  | "favorites"
+  | "radio"
+  | "artist"
+  | "album"
+  | "artistAllSongs"
+  | "artistAlbum"
+  | "appleMusicPlaylist"
+  | "nowPlayingSong";
+
 export interface MenuHistoryEntry {
+  /** Stable identity used for rebuild/restore. `title` remains for legacy breadcrumbs. */
+  kind?: IpodMenuKind;
+  /** Stable menu instance id (artist key, album key, playlist id, etc.). */
+  id?: string;
   title: string;
   displayTitle?: string;
   items: MenuItem[];

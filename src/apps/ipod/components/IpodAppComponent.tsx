@@ -14,9 +14,6 @@ import { IpodWheel } from "./IpodWheel";
 import { PipPlayer } from "./PipPlayer";
 import { FullScreenPortal } from "./FullScreenPortal";
 import { LyricsDisplay } from "./LyricsDisplay";
-import { CoverFlow } from "./CoverFlow";
-import { MusicQuiz } from "./MusicQuiz";
-import { BrickGame } from "./BrickGame";
 import { LyricsSyncMode } from "@/components/shared/LyricsSyncMode";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { LyricsSearchDialog } from "@/components/dialogs/LyricsSearchDialog";
@@ -26,15 +23,41 @@ import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useIpodLogic } from "../hooks/useIpodLogic";
 import { DisplayMode } from "@/types/lyrics";
-import { useCallback, useMemo } from "react";
-import { LandscapeVideoBackground } from "@/components/shared/LandscapeVideoBackground";
-import { AmbientBackground } from "@/components/shared/AmbientBackground";
-import { MeshGradientBackground } from "@/components/shared/MeshGradientBackground";
-import { WaterBackground } from "@/components/shared/WaterBackground";
+import { lazy, Suspense, useCallback, useMemo } from "react";
 import {
   IPOD_MODERN_SCREEN_HEIGHT_PX,
   PLAYER_PROGRESS_INTERVAL_MS,
 } from "../constants";
+
+const CoverFlow = lazy(() =>
+  import("./CoverFlow").then(({ CoverFlow }) => ({ default: CoverFlow }))
+);
+const MusicQuiz = lazy(() =>
+  import("./MusicQuiz").then(({ MusicQuiz }) => ({ default: MusicQuiz }))
+);
+const BrickGame = lazy(() =>
+  import("./BrickGame").then(({ BrickGame }) => ({ default: BrickGame }))
+);
+const LandscapeVideoBackground = lazy(() =>
+  import("@/components/shared/LandscapeVideoBackground").then(
+    ({ LandscapeVideoBackground }) => ({ default: LandscapeVideoBackground })
+  )
+);
+const AmbientBackground = lazy(() =>
+  import("@/components/shared/AmbientBackground").then(({ AmbientBackground }) => ({
+    default: AmbientBackground,
+  }))
+);
+const MeshGradientBackground = lazy(() =>
+  import("@/components/shared/MeshGradientBackground").then(
+    ({ MeshGradientBackground }) => ({ default: MeshGradientBackground })
+  )
+);
+const WaterBackground = lazy(() =>
+  import("@/components/shared/WaterBackground").then(({ WaterBackground }) => ({
+    default: WaterBackground,
+  }))
+);
 
 export function IpodAppComponent({
   isWindowOpen,
@@ -203,6 +226,8 @@ export function IpodAppComponent({
   // of `IpodScreen` because their chrome has no width transition.
   const uiVariant = useIpodStore((s) => s.uiVariant);
   const isModernIpodUi = uiVariant === "modern";
+  const masterVolume = useAudioSettingsStore((s) => s.masterVolume);
+  const finalIpodVolume = ipodVolume * masterVolume;
 
   const handleClose = useCallback(() => {
     pauseBeforeWindowClose();
@@ -470,20 +495,22 @@ export function IpodAppComponent({
                   // because it has no equivalent panel chrome.
                   coverFlowSlot={
                     isModernIpodUi ? (
-                      <CoverFlow
-                        ref={coverFlowRef}
-                        tracks={coverFlowTracks}
-                        currentIndex={coverFlowCurrentIndex}
-                        onSelectTrack={handleCoverFlowSelect}
-                        onExit={handleCoverFlowExit}
-                        onRotation={handleCoverFlowRotation}
-                        isVisible={isCoverFlowOpen}
-                        isPlaying={isPlaying}
-                        onTogglePlay={togglePlay}
-                        onPlayTrackInPlace={handleCoverFlowPlayInPlace}
-                        groupAppleMusicAlbums={isAppleMusic}
-                        inline
-                      />
+                      <Suspense fallback={null}>
+                        <CoverFlow
+                          ref={coverFlowRef}
+                          tracks={coverFlowTracks}
+                          currentIndex={coverFlowCurrentIndex}
+                          onSelectTrack={handleCoverFlowSelect}
+                          onExit={handleCoverFlowExit}
+                          onRotation={handleCoverFlowRotation}
+                          isVisible={isCoverFlowOpen}
+                          isPlaying={isPlaying}
+                          onTogglePlay={togglePlay}
+                          onPlayTrackInPlace={handleCoverFlowPlayInPlace}
+                          groupAppleMusicAlbums={isAppleMusic}
+                          inline
+                        />
+                      </Suspense>
                     ) : undefined
                   }
                   onNextTrack={() => {
@@ -515,45 +542,55 @@ export function IpodAppComponent({
                *  the standalone overlay there to avoid double-mounting
                *  the carousel and to let the menu panel's width
                *  transition own the entry/exit animation. */}
-              {!isModernIpodUi && (
-                <CoverFlow
-                  ref={coverFlowRef}
-                  tracks={coverFlowTracks}
-                  currentIndex={coverFlowCurrentIndex}
-                  onSelectTrack={handleCoverFlowSelect}
-                  onExit={handleCoverFlowExit}
-                  onRotation={handleCoverFlowRotation}
-                  isVisible={isCoverFlowOpen}
-                  isPlaying={isPlaying}
-                  onTogglePlay={togglePlay}
-                  onPlayTrackInPlace={handleCoverFlowPlayInPlace}
-                  groupAppleMusicAlbums={isAppleMusic}
-                />
+              {!isModernIpodUi && isCoverFlowOpen && (
+                <Suspense fallback={null}>
+                  <CoverFlow
+                    ref={coverFlowRef}
+                    tracks={coverFlowTracks}
+                    currentIndex={coverFlowCurrentIndex}
+                    onSelectTrack={handleCoverFlowSelect}
+                    onExit={handleCoverFlowExit}
+                    onRotation={handleCoverFlowRotation}
+                    isVisible={isCoverFlowOpen}
+                    isPlaying={isPlaying}
+                    onTogglePlay={togglePlay}
+                    onPlayTrackInPlace={handleCoverFlowPlayInPlace}
+                    groupAppleMusicAlbums={isAppleMusic}
+                  />
+                </Suspense>
               )}
 
               {/* Music Quiz overlay - positioned within screen bounds */}
-              <MusicQuiz
-                ref={musicQuizRef}
-                isVisible={isMusicQuizOpen}
-                onExit={() => setIsMusicQuizOpen(false)}
-                lcdFilterOn={lcdFilterOn}
-                backlightOn={backlightOn}
-                playClick={playClickSound}
-                playScroll={playScrollSound}
-                vibrate={vibrate}
-              />
+              {isMusicQuizOpen && (
+                <Suspense fallback={null}>
+                  <MusicQuiz
+                    ref={musicQuizRef}
+                    isVisible={isMusicQuizOpen}
+                    onExit={() => setIsMusicQuizOpen(false)}
+                    lcdFilterOn={lcdFilterOn}
+                    backlightOn={backlightOn}
+                    playClick={playClickSound}
+                    playScroll={playScrollSound}
+                    vibrate={vibrate}
+                  />
+                </Suspense>
+              )}
 
               {/* Brick Game overlay - positioned within screen bounds */}
-              <BrickGame
-                ref={brickGameRef}
-                isVisible={isBrickGameOpen}
-                onExit={() => setIsBrickGameOpen(false)}
-                lcdFilterOn={lcdFilterOn}
-                backlightOn={backlightOn}
-                playClick={playClickSound}
-                playScroll={playScrollSound}
-                vibrate={vibrate}
-              />
+              {isBrickGameOpen && (
+                <Suspense fallback={null}>
+                  <BrickGame
+                    ref={brickGameRef}
+                    isVisible={isBrickGameOpen}
+                    onExit={() => setIsBrickGameOpen(false)}
+                    lcdFilterOn={lcdFilterOn}
+                    backlightOn={backlightOn}
+                    playClick={playClickSound}
+                    playScroll={playScrollSound}
+                    vibrate={vibrate}
+                  />
+                </Suspense>
+              )}
             </div>
 
             <IpodWheel
@@ -671,10 +708,7 @@ export function IpodAppComponent({
                               currentTrack={tracks[currentIndex]}
                               playing={isPlaying && isFullScreen}
                               resumeAtSeconds={elapsedTime}
-                              volume={
-                                ipodVolume *
-                                useAudioSettingsStore.getState().masterVolume
-                              }
+                              volume={finalIpodVolume}
                               onProgress={handleProgress}
                               onDuration={handleDuration}
                               onPlay={handlePlay}
@@ -691,10 +725,7 @@ export function IpodAppComponent({
                               controls
                               width="100%"
                               height="100%"
-                              volume={
-                                ipodVolume *
-                                useAudioSettingsStore.getState().masterVolume
-                              }
+                              volume={finalIpodVolume}
                               loop={loopCurrent}
                               onEnded={handleTrackEnd}
                               onProgress={handleProgress}
@@ -733,44 +764,52 @@ export function IpodAppComponent({
                   {effectiveDisplayMode === DisplayMode.Landscapes &&
                     shouldRenderFullScreenAnimatedVisuals &&
                     tracks[currentIndex] && (
-                    <LandscapeVideoBackground
-                      isActive={shouldRenderFullScreenAnimatedVisuals}
-                      className="fixed inset-0 z-[5]"
-                    />
+                    <Suspense fallback={null}>
+                      <LandscapeVideoBackground
+                        isActive={shouldRenderFullScreenAnimatedVisuals}
+                        className="fixed inset-0 z-[5]"
+                      />
+                    </Suspense>
                   )}
 
                   {/* Warp shader background (fullscreen) */}
                   {effectiveDisplayMode === DisplayMode.Shader &&
                     shouldRenderFullScreenAnimatedVisuals &&
                     tracks[currentIndex] && (
-                    <AmbientBackground
-                      coverUrl={fullscreenCoverUrl}
-                      variant="warp"
-                      isActive={shouldRenderFullScreenAnimatedVisuals}
-                      className="fixed inset-0 z-[5]"
-                    />
+                    <Suspense fallback={null}>
+                      <AmbientBackground
+                        coverUrl={fullscreenCoverUrl}
+                        variant="warp"
+                        isActive={shouldRenderFullScreenAnimatedVisuals}
+                        className="fixed inset-0 z-[5]"
+                      />
+                    </Suspense>
                   )}
 
                   {/* Mesh gradient background (fullscreen) */}
                   {effectiveDisplayMode === DisplayMode.Mesh &&
                     shouldRenderFullScreenAnimatedVisuals &&
                     tracks[currentIndex] && (
-                    <MeshGradientBackground
-                      coverUrl={fullscreenCoverUrl}
-                      isActive={shouldRenderFullScreenAnimatedVisuals}
-                      className="fixed inset-0 z-[5]"
-                    />
+                    <Suspense fallback={null}>
+                      <MeshGradientBackground
+                        coverUrl={fullscreenCoverUrl}
+                        isActive={shouldRenderFullScreenAnimatedVisuals}
+                        className="fixed inset-0 z-[5]"
+                      />
+                    </Suspense>
                   )}
 
                   {/* Water shader background (fullscreen) */}
                   {effectiveDisplayMode === DisplayMode.Water &&
                     shouldRenderFullScreenAnimatedVisuals &&
                     tracks[currentIndex] && (
-                    <WaterBackground
-                      coverUrl={fullscreenCoverUrl}
-                      isActive={shouldRenderFullScreenAnimatedVisuals}
-                      className="fixed inset-0 z-[5]"
-                    />
+                    <Suspense fallback={null}>
+                      <WaterBackground
+                        coverUrl={fullscreenCoverUrl}
+                        isActive={shouldRenderFullScreenAnimatedVisuals}
+                        className="fixed inset-0 z-[5]"
+                      />
+                    </Suspense>
                   )}
 
                   {/* Cover overlay: shows when paused (any mode) or in Cover
