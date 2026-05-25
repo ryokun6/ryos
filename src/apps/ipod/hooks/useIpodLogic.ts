@@ -86,6 +86,10 @@ import {
   getAppleMusicPlaylistMenuTitle,
   resolveAppleMusicPlaylistMenu,
 } from "../utils/appleMusicPlaylistMenu";
+import {
+  buildIpodLibraryIndex,
+  resolveCurrentTrackIndex,
+} from "../utils/ipodLibraryIndex";
 
 // User-agent sniffing is constant for the document lifetime, so compute once
 // at module load instead of re-running these regexes on every render of the
@@ -177,17 +181,32 @@ export function useIpodLogic({
   const currentSongId = isAppleMusic
     ? appleMusicCurrentSongId
     : youtubeCurrentSongId;
+  const trackIndex = useMemo(() => buildIpodLibraryIndex(tracks), [tracks]);
+  const browsableTrackIndex = useMemo(
+    () => buildIpodLibraryIndex(browsableTracks),
+    [browsableTracks]
+  );
 
-  // Compute currentIndex from currentSongId
-  const currentIndex = useMemo(() => {
-    if (!currentSongId) return tracks.length > 0 ? 0 : -1;
-    const index = tracks.findIndex((t) => t.id === currentSongId);
-    return index >= 0 ? index : (tracks.length > 0 ? 0 : -1);
-  }, [tracks, currentSongId]);
-  const browseCurrentIndex = useMemo(() => {
-    if (!currentSongId) return browsableTracks.length > 0 ? 0 : -1;
-    return browsableTracks.findIndex((track) => track.id === currentSongId);
-  }, [browsableTracks, currentSongId]);
+  // Resolve current indexes through memoized lookup tables so large Apple
+  // Music libraries don't pay repeated linear scans on each controller rebuild.
+  const currentIndex = useMemo(
+    () =>
+      resolveCurrentTrackIndex(
+        trackIndex.indexById,
+        currentSongId,
+        tracks.length
+      ),
+    [trackIndex, currentSongId, tracks.length]
+  );
+  const browseCurrentIndex = useMemo(
+    () =>
+      resolveCurrentTrackIndex(
+        browsableTrackIndex.indexById,
+        currentSongId,
+        browsableTracks.length
+      ),
+    [browsableTrackIndex, currentSongId, browsableTracks.length]
+  );
   const coverFlowCurrentIndex = browseCurrentIndex >= 0 ? browseCurrentIndex : 0;
 
   // Now Playing "X of Y" should reflect the active playback context. When
@@ -205,8 +224,9 @@ export function useIpodLogic({
         total: browsableTracks.length,
       };
     }
-    const validIds = new Set(tracks.map((t) => t.id));
-    const queue = appleMusicPlaybackQueue.filter((id) => validIds.has(id));
+    const queue = appleMusicPlaybackQueue.filter((id) =>
+      trackIndex.idSet.has(id)
+    );
     if (queue.length === 0) {
       return { index: currentIndex, total: tracks.length };
     }
@@ -219,6 +239,7 @@ export function useIpodLogic({
     isAppleMusic,
     appleMusicPlaybackQueue,
     tracks,
+    trackIndex,
     browsableTracks.length,
     currentSongId,
     currentIndex,
