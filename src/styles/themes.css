@@ -3182,9 +3182,23 @@
     inset -1px 0 0 rgba(255, 255, 255, 0.06);
 }
 
+/* Brushed-metal titlebar text in dark mode — the brushed texture is darker
+   than the regular Aqua titlebar gradient, so the title needs a punchier
+   black drop-shadow (no white halo) to keep the label from sinking into the
+   metal. Stack a sharp 1px drop with a softer 2px blur so it reads as cut
+   through the chrome. */
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"]
-  .window.window-material-brushedmetal.is-foreground .title-bar {
-  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.85) !important;
+  .window.window-material-brushedmetal.is-foreground .title-bar,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .window.window-material-brushedmetal:not(.is-foreground) .title-bar {
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.95),
+    0 1px 2px rgba(0, 0, 0, 0.65) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .window.window-material-brushedmetal .title-bar :where(span, h1, h2, h3) {
+  text-shadow: inherit !important;
 }
 
 /* Side drawer (AppDrawer / TV drawer) reuses the brushed-metal stack */
@@ -3989,4 +4003,21 @@
    visually consistent and addresses the request to grow the radius. */
 :root[data-os-theme="macosx"] .chat-bubble:after {
   border-radius: 4px 4px 14px 14px;
+}
+
+/* --- Finder list view: zebra + header bg ---------------------------------- */
+/* The list view uses `odd:bg-gray-200/50` for zebra rows and `bg-gray-100/50`
+   for table headers. Those compile to `rgb(229, 231, 235, 0.5)` /
+   `rgb(243, 244, 246, 0.5)` which are very bright on the dark window. Tone
+   them down to faint white-on-dark stripes. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .window-body
+  :where(.bg-gray-200\/50, .odd\:bg-gray-200\/50:nth-child(odd)) {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .window-body
+  :where(.bg-gray-100\/50, .hover\:bg-gray-100\/50:hover) {
+  background-color: rgba(255, 255, 255, 0.06) !important;
 }
