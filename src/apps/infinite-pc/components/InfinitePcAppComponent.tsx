@@ -293,7 +293,7 @@ export function InfinitePcAppComponent({
           ? "text-transparent cursor-default"
           : isDarkTitlebar
             ? "text-white/80 hover:text-white cursor-pointer"
-            : "text-gray-600 hover:text-gray-800 cursor-pointer"
+            : "text-neutral-600 hover:text-neutral-800 cursor-pointer"
       }`}
       style={{
         filter: inSession && isDarkTitlebar

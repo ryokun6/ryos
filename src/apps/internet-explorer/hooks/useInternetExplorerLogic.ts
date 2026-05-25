@@ -1910,7 +1910,7 @@ export function useInternetExplorerLogic({
         debugMode &&
           React.createElement(
             "span",
-            { className: "text-gray-500" },
+            { className: "text-neutral-500" },
             t("apps.internet-explorer.fetch")
           ),
         React.createElement(
@@ -1931,7 +1931,7 @@ export function useInternetExplorerLogic({
           debugMode &&
             React.createElement(
               "span",
-              { className: "text-gray-500" },
+              { className: "text-neutral-500" },
               modelInfo,
               language !== "auto" && ` ${languageDisplayName}`,
               location !== "auto" && ` ${locationDisplayName}`
@@ -1953,7 +1953,7 @@ export function useInternetExplorerLogic({
             debugMode &&
               React.createElement(
                 "span",
-                { className: "text-gray-500" },
+                { className: "text-neutral-500" },
                 modelInfo,
                 language !== "auto" && ` ${languageDisplayName}`,
                 location !== "auto" && ` ${locationDisplayName}`

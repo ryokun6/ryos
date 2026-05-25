@@ -634,7 +634,7 @@ export function VideosAppComponent({
                 </AnimatePresence>
               </div>
             ) : (
-              <div className="flex items-center justify-center h-full text-gray-400 font-geneva-12 text-sm">
+              <div className="flex items-center justify-center h-full text-neutral-400 font-geneva-12 text-sm">
                 <a
                   onClick={() => setIsAddDialogOpen(true)}
                   className="text-[#ff00ff] hover:underline cursor-pointer"

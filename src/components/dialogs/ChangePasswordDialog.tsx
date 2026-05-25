@@ -190,7 +190,7 @@ export function ChangePasswordDialog({
       {hasPassword && (
         <div className="space-y-2">
           <Label
-            className={cn("text-gray-700", themeFont)}
+            className={cn("text-neutral-700", themeFont)}
             style={themeFontStyle}
             htmlFor="change-password-current"
           >
@@ -214,7 +214,7 @@ export function ChangePasswordDialog({
 
       <div className="space-y-2">
         <Label
-          className={cn("text-gray-700", themeFont)}
+          className={cn("text-neutral-700", themeFont)}
           style={themeFontStyle}
           htmlFor="change-password-new"
         >
@@ -235,7 +235,7 @@ export function ChangePasswordDialog({
 
       <div className="space-y-2">
         <Label
-          className={cn("text-gray-700", themeFont)}
+          className={cn("text-neutral-700", themeFont)}
           style={themeFontStyle}
           htmlFor="change-password-confirm"
         >
@@ -296,7 +296,7 @@ export function ChangePasswordDialog({
   const dialogBody = (
     <div className={isXpTheme ? "p-2 px-4" : "p-4 px-6"}>
       <p
-        className={cn("text-gray-500 mb-3", themeFont)}
+        className={cn("text-neutral-500 mb-3", themeFont)}
         style={themeFontStyle}
         id="change-password-description"
       >

@@ -92,7 +92,7 @@ export function SwipeInstructions({ className }: SwipeInstructionsProps) {
         <h3 className="font-bold text-lg">{t("common.swipeInstructions.title")}</h3>
         <button
           onClick={handleDismiss}
-          className="bg-transparent p-1 rounded-full hover:bg-gray-100"
+          className="bg-transparent p-1 rounded-full hover:bg-neutral-100"
         >
           <X size={18} weight="bold" />
         </button>
@@ -101,7 +101,7 @@ export function SwipeInstructions({ className }: SwipeInstructionsProps) {
       <div className="mt-2 flex items-center justify-center space-x-8 py-4">
         <div className="flex flex-col items-center">
           <div className="relative size-16 flex items-center justify-center">
-            <div className="absolute border-2 border-black rounded-md size-12 bg-gray-100" />
+            <div className="absolute border-2 border-black rounded-md size-12 bg-neutral-100" />
             <svg
               width="24"
               height="24"
@@ -123,7 +123,7 @@ export function SwipeInstructions({ className }: SwipeInstructionsProps) {
 
         <div className="flex flex-col items-center">
           <div className="relative size-16 flex items-center justify-center">
-            <div className="absolute border-2 border-black rounded-md size-12 bg-gray-100" />
+            <div className="absolute border-2 border-black rounded-md size-12 bg-neutral-100" />
             <svg
               width="24"
               height="24"
@@ -144,7 +144,7 @@ export function SwipeInstructions({ className }: SwipeInstructionsProps) {
         </div>
       </div>
 
-      <p className="text-xs text-gray-500 mt-2 text-center">
+      <p className="text-xs text-neutral-500 mt-2 text-center">
         {t("common.swipeInstructions.description")}
       </p>
     </div>

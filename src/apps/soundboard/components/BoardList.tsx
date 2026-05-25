@@ -82,7 +82,7 @@ export function BoardList({
         {micPermissionGranted && (
           <div
             className={`mt-auto pt-2 border-t px-3 pb-3 ${
-              isWindowsLegacyTheme ? "border-[#919b9c]" : "border-gray-300"
+              isWindowsLegacyTheme ? "border-[#919b9c]" : "border-neutral-300"
             }`}
           >
             <Select value={selectedDeviceId} onValueChange={onDeviceSelect}>

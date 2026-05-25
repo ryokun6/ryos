@@ -567,13 +567,13 @@ const renderAppletCard = (applet: Applet, index: number) => {
             );
           })()
         ) : isLoadingContent ? (
-          <div className="flex items-center justify-center h-full bg-gray-50">
+          <div className="flex items-center justify-center h-full bg-neutral-50">
             <div className="text-center">
               <p className="text-sm text-neutral-600 font-geneva-12 shimmer-gray">{t("apps.applet-viewer.dialogs.loading")}</p>
             </div>
           </div>
         ) : (
-          <div className="h-full w-full bg-gray-50" />
+          <div className="h-full w-full bg-neutral-50" />
         )}
       </div>
 
@@ -585,8 +585,8 @@ const renderAppletCard = (applet: Applet, index: number) => {
             : isMacTheme
             ? ""
             : isSystem7Theme
-            ? "bg-gray-100 border-b border-black"
-            : "bg-gray-100 border-b border-gray-200"
+            ? "bg-neutral-100 border-b border-black"
+            : "bg-neutral-100 border-b border-neutral-200"
         }`}
         style={{
           flexWrap: "nowrap",
@@ -609,7 +609,7 @@ const renderAppletCard = (applet: Applet, index: number) => {
             {displayName}
           </div>
           {applet.createdBy && (
-            <div className="text-[10px] text-gray-500 font-geneva-12 truncate">
+            <div className="text-[10px] text-neutral-500 font-geneva-12 truncate">
               {applet.createdBy}
             </div>
           )}

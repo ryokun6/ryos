@@ -308,8 +308,8 @@ export function EditorToolbar({
           : isMacOSTheme
           ? "bg-transparent"
           : currentTheme === "system7"
-          ? "bg-gray-100 border-b border-black"
-          : "bg-gray-100 border-b border-gray-300"
+          ? "bg-neutral-100 border-b border-black"
+          : "bg-neutral-100 border-b border-neutral-300"
       }`}
       style={{
         borderBottom:

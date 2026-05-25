@@ -243,7 +243,7 @@ export function MinesweeperAppComponent({
             )}
           >
             <div
-              className="flex-1 bg-[#8a9a8a] text-[#1a2a1a] text-lg px-2 py-0.5 border border-t-gray-800 border-l-gray-800 border-r-white border-b-white shadow-inner [text-shadow:1px_1px_0px_rgba(0,0,0,0.2)] h-[48px] flex items-center"
+              className="flex-1 bg-[#8a9a8a] text-[#1a2a1a] text-lg px-2 py-0.5 border border-t-neutral-800 border-l-neutral-800 border-r-white border-b-white shadow-inner [text-shadow:1px_1px_0px_rgba(0,0,0,0.2)] h-[48px] flex items-center"
             >
               <div className="flex items-center justify-between text-sm relative w-full">
                 <div className="flex flex-col items-start w-[80px]">
@@ -274,7 +274,7 @@ export function MinesweeperAppComponent({
                     className={
                       isMacTheme
                         ? "!w-[34px] !h-[34px] aspect-square !rounded-full overflow-hidden flex items-center justify-center text-xl leading-none !p-0"
-                        : "aspect-square h-[34px] flex items-center justify-center text-xl leading-none bg-[#c0c0c0] hover:bg-[#d0d0d0] border-2 border-t-white border-l-white border-r-gray-800 border-b-gray-800 active:border active:border-gray-600 shadow-none p-0"
+                        : "aspect-square h-[34px] flex items-center justify-center text-xl leading-none bg-[#c0c0c0] hover:bg-[#d0d0d0] border-2 border-t-white border-l-white border-r-neutral-800 border-b-neutral-800 active:border active:border-neutral-600 shadow-none p-0"
                     }
                   >
                     {gameOver ? "💀" : gameWon ? "😎" : "🙂"}
@@ -304,7 +304,7 @@ export function MinesweeperAppComponent({
               "grid grid-cols-9 gap-0 m-auto w-fit",
               isMacTheme
                 ? "p-[2px] rounded-[4px] bg-[#b7bcc1]"
-                : "bg-gray-800 p-[1px] border border-t-gray-800 border-l-gray-800 border-r-white border-b-white max-w-[250px]"
+                : "bg-neutral-800 p-[1px] border border-t-neutral-800 border-l-neutral-800 border-r-white border-b-white max-w-[250px]"
             )}
             style={boardFrameStyle}
           >
@@ -365,7 +365,7 @@ function getNumberColor(num: number): string {
     "red-800",
     "cyan-600",
     "black",
-    "gray-600",
+    "neutral-600",
   ];
   return colors[num] || "black";
 }

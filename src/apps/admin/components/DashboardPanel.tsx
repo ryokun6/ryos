@@ -170,7 +170,7 @@ function StatCard({
   trend?: { value: number; label: string };
 }) {
   return (
-    <div className="flex flex-col gap-1 p-3 bg-white rounded border border-gray-200">
+    <div className="flex flex-col gap-1 p-3 bg-white rounded border border-neutral-200">
       <span className="text-[10px] uppercase tracking-wide text-neutral-400">
         {label}
       </span>
@@ -248,14 +248,14 @@ function BreakdownList({
   }
   const max = items[0]?.count || 1;
   return (
-    <div className="divide-y divide-gray-100">
+    <div className="divide-y divide-neutral-100">
       {items.slice(0, 10).map((item) => (
         <div key={item.name} className="flex items-center gap-2 px-3 py-1.5">
           <span className={cn("text-[11px] text-neutral-600 flex-1 truncate", nameClassName)}>
             {renderName ? renderName(item.name) : item.name}
           </span>
           <div className="w-24 flex items-center gap-1.5">
-            <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+            <div className="flex-1 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
               <div
                 className={cn("h-full rounded-full", barClassName)}
                 style={{ width: `${(item.count / max) * 100}%` }}
@@ -469,7 +469,7 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
 
         {showTimeSeriesCharts ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 px-3 pb-3">
-            <div className="border border-gray-200 rounded p-3 bg-white">
+            <div className="border border-neutral-200 rounded p-3 bg-white">
               <div className="text-[10px] uppercase tracking-wide text-neutral-400 mb-2">
                 {t("apps.admin.dashboard.charts.apiCalls")}
               </div>
@@ -486,7 +486,7 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
               </div>
             </div>
 
-            <div className="border border-gray-200 rounded p-3 bg-white">
+            <div className="border border-neutral-200 rounded p-3 bg-white">
               <div className="text-[10px] uppercase tracking-wide text-neutral-400 mb-2">
                 {t("apps.admin.dashboard.charts.uniqueVisitors")}
               </div>
@@ -508,7 +508,7 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
               </div>
             </div>
 
-            <div className="border border-gray-200 rounded p-3 bg-white">
+            <div className="border border-neutral-200 rounded p-3 bg-white">
               <div className="text-[10px] uppercase tracking-wide text-neutral-400 mb-2">
                 {t("apps.admin.dashboard.charts.aiRequests")}
               </div>
@@ -525,7 +525,7 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
               </div>
             </div>
 
-            <div className="border border-gray-200 rounded p-3 bg-white">
+            <div className="border border-neutral-200 rounded p-3 bg-white">
               <div className="text-[10px] uppercase tracking-wide text-neutral-400 mb-2">
                 {t("apps.admin.dashboard.charts.errors")}
               </div>
@@ -546,8 +546,8 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
 
         {/* Top Endpoints */}
         <div className="px-3 pb-3">
-          <div className="border border-gray-200 rounded bg-white overflow-hidden">
-            <div className="px-3 py-2 border-b border-gray-100 bg-gray-50">
+          <div className="border border-neutral-200 rounded bg-white overflow-hidden">
+            <div className="px-3 py-2 border-b border-neutral-100 bg-neutral-50">
               <span className="text-[10px] uppercase tracking-wide text-neutral-400">
                 {t("apps.admin.dashboard.sections.topEndpoints")} ({rangeLabel})
               </span>
@@ -555,7 +555,7 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
             {topEndpoints.length === 0 ? (
               <EmptyState message={t("apps.admin.dashboard.empty.noData")} />
             ) : (
-              <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-neutral-100">
                 {topEndpoints.slice(0, 10).map((ep) => (
                   <div
                     key={ep.endpoint}
@@ -565,7 +565,7 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
                       {ep.endpoint}
                     </span>
                     <div className="w-24 flex items-center gap-1.5">
-                      <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div className="flex-1 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
                         <div
                           className="h-full bg-indigo-400 rounded-full"
                           style={{
@@ -586,8 +586,8 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
 
         {/* Status Codes & AI Usage */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 px-3 pb-3">
-          <div className="border border-gray-200 rounded bg-white overflow-hidden">
-            <div className="px-3 py-2 border-b border-gray-100 bg-gray-50">
+          <div className="border border-neutral-200 rounded bg-white overflow-hidden">
+            <div className="px-3 py-2 border-b border-neutral-100 bg-neutral-50">
               <span className="text-[10px] uppercase tracking-wide text-neutral-400">
                 {t("apps.admin.dashboard.sections.statusCodes")}
               </span>
@@ -595,7 +595,7 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
             {statusCodes.length === 0 ? (
               <EmptyState message={t("apps.admin.dashboard.empty.noData")} />
             ) : (
-              <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-neutral-100">
                 {statusCodes.map((sc) => (
                   <div
                     key={sc.status}
@@ -621,8 +621,8 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
             )}
           </div>
 
-          <div className="border border-gray-200 rounded bg-white overflow-hidden">
-            <div className="px-3 py-2 border-b border-gray-100 bg-gray-50">
+          <div className="border border-neutral-200 rounded bg-white overflow-hidden">
+            <div className="px-3 py-2 border-b border-neutral-100 bg-neutral-50">
               <span className="text-[10px] uppercase tracking-wide text-neutral-400">
                 {t("apps.admin.dashboard.sections.aiUsageByUser")}
               </span>
@@ -630,7 +630,7 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
             {aiByUser.length === 0 ? (
               <EmptyState message={t("apps.admin.dashboard.empty.noAiUsage")} />
             ) : (
-              <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-neutral-100">
                 {aiByUser.map((entry) => {
                   const rl = aiRateLimits.find(
                     (r) => r.identifier === entry.username
@@ -677,7 +677,7 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
 
         {showTimeSeriesCharts ? (
           <div className="px-3 pb-3">
-            <div className="border border-gray-200 rounded p-3 bg-white">
+            <div className="border border-neutral-200 rounded p-3 bg-white">
               <div className="text-[10px] uppercase tracking-wide text-neutral-400 mb-2">
                 {t("apps.admin.dashboard.charts.avgResponseTime")}
               </div>
@@ -786,9 +786,9 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
               ).map((section) => (
                 <div
                   key={section.title}
-                  className="border border-gray-200 rounded bg-white overflow-hidden"
+                  className="border border-neutral-200 rounded bg-white overflow-hidden"
                 >
-                  <div className="px-3 py-2 border-b border-gray-100 bg-gray-50">
+                  <div className="px-3 py-2 border-b border-neutral-100 bg-neutral-50">
                     <span className="text-[10px] uppercase tracking-wide text-neutral-400">
                       {section.title}
                     </span>

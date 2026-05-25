@@ -258,7 +258,7 @@ const SelectItemWithDescription = (
       <div className="flex flex-col gap-0.5">
         <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
         {description && (
-          <span className="text-[11px] text-gray-500 group-focus:text-inherit font-normal leading-tight">
+          <span className="text-[11px] text-neutral-500 group-focus:text-inherit font-normal leading-tight">
             {description}
           </span>
         )}

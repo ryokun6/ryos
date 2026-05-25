@@ -52,7 +52,7 @@ function HelpCard({ icon, title, description }: HelpCardProps) {
       </h3>
       <p
         className={cn(
-          "text-gray-700",
+          "text-neutral-700",
           isXpTheme
             ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[10px]"
             : "font-geneva-12 text-[10px]"

@@ -528,7 +528,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   return (
     <div className="flex flex-col h-full font-geneva-12">
       {/* Header */}
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-200 bg-gray-50">
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-neutral-200 bg-neutral-50">
         <Button
           variant="ghost"
           size="sm"
@@ -763,13 +763,13 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                         <Table className="table-fixed">
                           <TableHeader>
                             <TableRow className="text-[10px] border-none font-normal">
-                              <TableHead className="font-normal bg-gray-100/50 h-[24px] w-[30%]">
+                              <TableHead className="font-normal bg-neutral-100/50 h-[24px] w-[30%]">
                                 {t("apps.admin.profile.memoryKey")}
                               </TableHead>
-                              <TableHead className="font-normal bg-gray-100/50 h-[24px]">
+                              <TableHead className="font-normal bg-neutral-100/50 h-[24px]">
                                 {t("apps.admin.profile.memorySummary")}
                               </TableHead>
-                              <TableHead className="font-normal bg-gray-100/50 h-[24px] whitespace-nowrap w-[20%]">
+                              <TableHead className="font-normal bg-neutral-100/50 h-[24px] whitespace-nowrap w-[20%]">
                                 {t("apps.admin.tableHeaders.time")}
                               </TableHead>
                             </TableRow>
@@ -782,8 +782,8 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                                   <TableRow
                                     onClick={() => toggleMemory(memory.key)}
                                     className={cn(
-                                      "border-none hover:bg-gray-100/50 transition-colors cursor-pointer",
-                                      index % 2 === 1 && "bg-gray-200/30"
+                                      "border-none hover:bg-neutral-100/50 transition-colors cursor-pointer",
+                                      index % 2 === 1 && "bg-neutral-200/30"
                                     )}
                                   >
                                     <TableCell>
@@ -807,7 +807,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                                     <TableRow
                                       className={cn(
                                         "border-none",
-                                        index % 2 === 1 ? "bg-gray-200/30" : ""
+                                        index % 2 === 1 ? "bg-neutral-200/30" : ""
                                       )}
                                     >
                                       <TableCell colSpan={3} className="pt-0 pb-3">
@@ -859,7 +859,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                                 <div key={note.date}>
                                   <button
                                     onClick={() => toggleDailyNote(note.date)}
-                                    className="flex items-center gap-1.5 w-full text-left text-[11px] hover:bg-gray-100/50 px-1 py-0.5 rounded transition-colors"
+                                    className="flex items-center gap-1.5 w-full text-left text-[11px] hover:bg-neutral-100/50 px-1 py-0.5 rounded transition-colors"
                                   >
                                     <CaretRight
                                       className={cn(
@@ -940,13 +940,13 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                           <Table className="table-fixed">
                             <TableHeader>
                               <TableRow className="text-[10px] border-none font-normal">
-                                <TableHead className="font-normal bg-gray-100/50 h-[24px] w-[22%]">
+                                <TableHead className="font-normal bg-neutral-100/50 h-[24px] w-[22%]">
                                   {t("apps.admin.tableHeaders.status")}
                                 </TableHead>
-                                <TableHead className="font-normal bg-gray-100/50 h-[24px]">
+                                <TableHead className="font-normal bg-neutral-100/50 h-[24px]">
                                   {t("apps.admin.tableHeaders.message")}
                                 </TableHead>
-                                <TableHead className="font-normal bg-gray-100/50 h-[24px] whitespace-nowrap w-[25%]">
+                                <TableHead className="font-normal bg-neutral-100/50 h-[24px] whitespace-nowrap w-[25%]">
                                   {t("apps.admin.tableHeaders.time")}
                                 </TableHead>
                               </TableRow>
@@ -959,8 +959,8 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                                     <TableRow
                                       onClick={() => toggleHeartbeat(hb.id)}
                                       className={cn(
-                                        "border-none hover:bg-gray-100/50 transition-colors cursor-pointer",
-                                        index % 2 === 1 && "bg-gray-200/30"
+                                        "border-none hover:bg-neutral-100/50 transition-colors cursor-pointer",
+                                        index % 2 === 1 && "bg-neutral-200/30"
                                       )}
                                     >
                                       <TableCell className="whitespace-nowrap">
@@ -993,7 +993,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                                       <TableRow
                                         className={cn(
                                           "border-none",
-                                          index % 2 === 1 ? "bg-gray-200/30" : ""
+                                          index % 2 === 1 ? "bg-neutral-200/30" : ""
                                         )}
                                       >
                                         <TableCell colSpan={3} className="pt-0 pb-3">
@@ -1067,7 +1067,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                       {profile?.rooms?.map((room) => (
                         <span
                           key={room.id}
-                          className="px-2 py-1 text-[10px] bg-gray-100 rounded"
+                          className="px-2 py-1 text-[10px] bg-neutral-100 rounded"
                         >
                           #{room.name}
                         </span>
@@ -1112,13 +1112,13 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                     <Table className="table-fixed">
                       <TableHeader>
                         <TableRow className="text-[10px] border-none font-normal">
-                          <TableHead className="font-normal bg-gray-100/50 h-[24px] w-[25%]">
+                          <TableHead className="font-normal bg-neutral-100/50 h-[24px] w-[25%]">
                             {t("apps.admin.profile.room")}
                           </TableHead>
-                          <TableHead className="font-normal bg-gray-100/50 h-[24px]">
+                          <TableHead className="font-normal bg-neutral-100/50 h-[24px]">
                             {t("apps.admin.tableHeaders.message")}
                           </TableHead>
-                          <TableHead className="font-normal bg-gray-100/50 h-[24px] whitespace-nowrap w-[20%]">
+                          <TableHead className="font-normal bg-neutral-100/50 h-[24px] whitespace-nowrap w-[20%]">
                             {t("apps.admin.tableHeaders.time")}
                           </TableHead>
                         </TableRow>
@@ -1127,7 +1127,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                         {messages.map((message) => (
                           <TableRow
                             key={message.id}
-                            className="border-none hover:bg-gray-100/50 transition-colors cursor-default odd:bg-gray-200/30"
+                            className="border-none hover:bg-neutral-100/50 transition-colors cursor-default odd:bg-neutral-200/30"
                           >
                             <TableCell>
                               <span className="text-neutral-500">#</span>

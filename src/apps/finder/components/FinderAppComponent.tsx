@@ -390,8 +390,8 @@ export function FinderAppComponent({
                 isXpTheme
                   ? "border-b border-[#919b9c]"
                   : currentTheme === "system7"
-                  ? "bg-gray-100 border-b border-black"
-                  : "bg-gray-100 border-b border-gray-300"
+                  ? "bg-neutral-100 border-b border-black"
+                  : "bg-neutral-100 border-b border-neutral-300"
               )}
               style={{
                 background: isXpTheme ? "transparent" : undefined,
@@ -548,7 +548,7 @@ export function FinderAppComponent({
           ) : (
             <>
               {isAirDropView ? (
-                <div className="flex-1 bg-gradient-to-b from-gray-100 to-gray-200">
+                <div className="flex-1 bg-gradient-to-b from-neutral-100 to-neutral-200">
                   <AirDropView
                     onSendFile={handleAirDropSendFile}
                     onRequestLogin={promptVerifyToken}
@@ -591,7 +591,7 @@ export function FinderAppComponent({
                   )}
                 </div>
               )}
-              <div className="os-status-bar os-status-bar-text flex items-center justify-between px-2 py-1 text-[10px] font-geneva-12 bg-gray-100 border-t border-gray-300">
+              <div className="os-status-bar os-status-bar-text flex items-center justify-between px-2 py-1 text-[10px] font-geneva-12 bg-neutral-100 border-t border-neutral-300">
                 <span>
                   {sortedFiles.length}{" "}
                   {sortedFiles.length !== 1

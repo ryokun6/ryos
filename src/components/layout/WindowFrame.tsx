@@ -551,11 +551,11 @@ export function WindowFrame({
         ? "text-white/80"
         : variant === "aqua"
           ? isForeground
-            ? "text-gray-500"
-            : "text-gray-400"
+            ? "text-neutral-500"
+            : "text-neutral-400"
           : isForeground
-            ? "text-gray-600"
-            : "text-gray-400",
+            ? "text-neutral-600"
+            : "text-neutral-400",
       onCoverFlowToggle &&
         isCoverFlowActive &&
         (isAquaNoTitlebar ? "text-white" : "text-os-titlebar-active-text")
@@ -1669,7 +1669,7 @@ export function WindowFrame({
                     : "bg-os-titlebar-active-bg bg-os-titlebar-pattern bg-clip-content bg-[length:6.6666666667%_13.3333333333%] border-b-os-window"
                   : isTransparent
                   ? "bg-white/20 backdrop-blur-sm border-b-os-window"
-                  : "bg-os-titlebar-inactive-bg border-b-gray-400"
+                  : "bg-os-titlebar-inactive-bg border-b-neutral-400"
               )}
               onMouseDown={handleMouseDownWithForeground}
               onDoubleClick={(e) => {
@@ -1711,7 +1711,7 @@ export function WindowFrame({
                   className={`size-4 ${
                     !isTransparent &&
                     "bg-os-button-face shadow-[0_0_0_1px_var(--os-color-button-face)]"
-                  } border-2 border-os-window hover:bg-gray-200 active:bg-gray-300 flex items-center justify-center ${
+                  } border-2 border-os-window hover:bg-neutral-200 active:bg-neutral-300 flex items-center justify-center ${
                     !isForeground && "invisible"
                   }`}
                 />

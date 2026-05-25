@@ -240,7 +240,7 @@ export function EmojiDialog({
       <p
         id="dialog-description"
         className={cn(
-          "mb-2 text-gray-500",
+          "mb-2 text-neutral-500",
           isXpTheme
             ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
             : "font-geneva-12 text-[12px]"

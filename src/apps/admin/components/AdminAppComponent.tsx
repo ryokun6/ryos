@@ -627,16 +627,16 @@ export function AdminAppComponent({
                         <Table>
                           <TableHeader>
                             <TableRow className="text-[10px] border-none font-normal">
-                              <TableHead className="font-normal bg-gray-100/50 h-[28px]">
+                              <TableHead className="font-normal bg-neutral-100/50 h-[28px]">
                                 {t("apps.admin.tableHeaders.username")}
                               </TableHead>
-                              <TableHead className="font-normal bg-gray-100/50 h-[28px]">
+                              <TableHead className="font-normal bg-neutral-100/50 h-[28px]">
                                 {t("apps.admin.tableHeaders.status")}
                               </TableHead>
-                              <TableHead className="font-normal bg-gray-100/50 h-[28px] whitespace-nowrap">
+                              <TableHead className="font-normal bg-neutral-100/50 h-[28px] whitespace-nowrap">
                                 {t("apps.admin.tableHeaders.lastActive")}
                               </TableHead>
-                              <TableHead className="font-normal bg-gray-100/50 h-[28px] w-8"></TableHead>
+                              <TableHead className="font-normal bg-neutral-100/50 h-[28px] w-8"></TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody className="text-[11px]">
@@ -644,7 +644,7 @@ export function AdminAppComponent({
                               <TableRow
                                 key={user.username}
                                 className={cn(
-                                  "border-none hover:bg-gray-100/50 transition-colors cursor-pointer odd:bg-gray-200/50 group",
+                                  "border-none hover:bg-neutral-100/50 transition-colors cursor-pointer odd:bg-neutral-200/50 group",
                                   user.banned && "bg-red-50/50 odd:bg-red-50/70"
                                 )}
                                 onClick={() =>
@@ -763,19 +763,19 @@ export function AdminAppComponent({
                       </div>
                     ) : (
                       <>
-                        <div className="w-full min-w-0 divide-y divide-gray-200">
+                        <div className="w-full min-w-0 divide-y divide-neutral-200">
                           {filteredSongs
                             .slice(0, visibleSongsCount)
                             .map((song) => (
                               <div
                                 key={song.youtubeId}
-                                className="flex w-full min-w-0 items-center gap-3 px-3 py-2 hover:bg-gray-100/50 transition-colors cursor-pointer group"
+                                className="flex w-full min-w-0 items-center gap-3 px-3 py-2 hover:bg-neutral-100/50 transition-colors cursor-pointer group"
                                 onClick={() =>
                                   setSelectedSongId(song.youtubeId)
                                 }
                               >
                                 {/* Cover Image */}
-                                <div className="size-10 flex-shrink-0 rounded overflow-hidden bg-gray-200">
+                                <div className="size-10 flex-shrink-0 rounded overflow-hidden bg-neutral-200">
                                   <img
                                     src={
                                       formatKugouImageUrl(song.cover, 100) ||
@@ -863,23 +863,23 @@ export function AdminAppComponent({
                     <Table>
                       <TableHeader>
                         <TableRow className="text-[10px] border-none font-normal">
-                          <TableHead className="font-normal bg-gray-100/50 h-[28px]">
+                          <TableHead className="font-normal bg-neutral-100/50 h-[28px]">
                             {t("apps.admin.tableHeaders.user")}
                           </TableHead>
-                          <TableHead className="font-normal bg-gray-100/50 h-[28px]">
+                          <TableHead className="font-normal bg-neutral-100/50 h-[28px]">
                             {t("apps.admin.tableHeaders.message")}
                           </TableHead>
-                          <TableHead className="font-normal bg-gray-100/50 h-[28px] whitespace-nowrap">
+                          <TableHead className="font-normal bg-neutral-100/50 h-[28px] whitespace-nowrap">
                             {t("apps.admin.tableHeaders.time")}
                           </TableHead>
-                          <TableHead className="font-normal bg-gray-100/50 h-[28px] w-8"></TableHead>
+                          <TableHead className="font-normal bg-neutral-100/50 h-[28px] w-8"></TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody className="text-[11px]">
                         {roomMessages.map((message) => (
                           <TableRow
                             key={message.id}
-                            className="border-none hover:bg-gray-100/50 transition-colors cursor-default odd:bg-gray-200/50 group"
+                            className="border-none hover:bg-neutral-100/50 transition-colors cursor-default odd:bg-neutral-200/50 group"
                           >
                             <TableCell className="flex items-center gap-2 whitespace-nowrap">
                               <div className="size-4 rounded-full bg-neutral-200 flex items-center justify-center text-[9px] font-medium text-neutral-600">
@@ -919,7 +919,7 @@ export function AdminAppComponent({
             </ScrollArea>
 
             {/* Status Bar */}
-            <div className="os-status-bar os-status-bar-text flex items-center justify-between px-2 py-1 text-[10px] font-geneva-12 bg-gray-100 border-t border-gray-300">
+            <div className="os-status-bar os-status-bar-text flex items-center justify-between px-2 py-1 text-[10px] font-geneva-12 bg-neutral-100 border-t border-neutral-300">
               <span>
                 {activeSection === "dashboard"
                   ? t("apps.admin.sidebar.dashboard", "Dashboard")

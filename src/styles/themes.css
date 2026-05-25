@@ -1049,12 +1049,12 @@
 /* Preserve bookmark bar button text size in Internet Explorer */
 /* Target bookmark buttons with highest specificity */
 :root[data-os-theme="macosx"]
-  button.whitespace-nowrap.hover\:bg-gray-200.font-geneva-12.text-\[10px\] {
+  button.whitespace-nowrap.hover\:bg-neutral-200.font-geneva-12.text-\[10px\] {
   font-size: 10px !important;
 }
 
 :root[data-os-theme="macosx"]
-  button.whitespace-nowrap.hover\:bg-gray-200.font-geneva-12.text-\[10px\]
+  button.whitespace-nowrap.hover\:bg-neutral-200.font-geneva-12.text-\[10px\]
   span {
   font-size: 10px !important;
 }
@@ -1121,9 +1121,9 @@
   font-size: 10px !important;
 }
 
-:root[data-os-theme="macosx"] p.text-\[10px\].text-gray-700.font-geneva-12,
+:root[data-os-theme="macosx"] p.text-\[10px\].text-neutral-700.font-geneva-12,
 :root[data-os-theme="macosx"]
-  .text-\[10px\].text-gray-700.font-geneva-12:not(
+  .text-\[10px\].text-neutral-700.font-geneva-12:not(
     .ipod-force-font .font-geneva-12
   ):not(.videos-lcd .font-geneva-12) {
   font-size: 11px !important;
@@ -2526,7 +2526,7 @@
   font-size: 13px !important;
 }
 
-:root[data-os-theme="macosx"] .macosx-dialog .text-gray-500 {
+:root[data-os-theme="macosx"] .macosx-dialog .text-neutral-500 {
   font-size: 11px !important;
 }
 
@@ -2816,8 +2816,8 @@
 :root[data-os-theme="macosx"] .chat-bubble.bg-rose-100 {
   background-color: #fecdd3 !important; /* rose-200 */
 }
-:root[data-os-theme="macosx"] .chat-bubble.bg-gray-100 {
-  background-color: #e5e7eb !important; /* gray-200 */
+:root[data-os-theme="macosx"] .chat-bubble.bg-neutral-100 {
+  background-color: #e5e7eb !important; /* neutral-200 */
 }
 
 :root[data-os-theme="macosx"] .macosx-link-preview.chat-bubble:before {
