@@ -1281,6 +1281,14 @@ export function IpodScreen({
                               })}
                       </span>
                       <span className="flex shrink-0 items-center gap-1">
+                        {isShuffled && (
+                          <Shuffle
+                            className="shrink-0"
+                            size={isModernUi ? 12 : 13}
+                            weight="bold"
+                            aria-label={t("apps.ipod.ariaLabels.shuffleOn")}
+                          />
+                        )}
                         {loopCurrent ? (
                           <RepeatOnce
                             className="shrink-0"
@@ -1296,14 +1304,6 @@ export function IpodScreen({
                             aria-label={t("apps.ipod.menu.repeatAll")}
                           />
                         ) : null}
-                        {isShuffled && (
-                          <Shuffle
-                            className="shrink-0"
-                            size={isModernUi ? 12 : 13}
-                            weight="bold"
-                            aria-label={t("apps.ipod.ariaLabels.shuffleOn")}
-                          />
-                        )}
                       </span>
                     </div>
                     {isModernUi ? (

@@ -97,9 +97,8 @@ export function IpodMenuBar({
     isPlaying,
     isShuffled,
     isBacklightOn,
-    isVideoOn,
+    backlightTimeout,
     displayMode,
-    isLcdFilterOn,
     currentTheme,
     uiVariant,
     showLyrics,
@@ -120,9 +119,8 @@ export function IpodMenuBar({
     appleMusicNext,
     appleMusicPrevious,
     toggleBacklight,
-    toggleVideo,
+    setBacklightTimeout,
     setDisplayMode,
-    toggleLcdFilter,
     toggleFullScreen,
     setTheme,
     setUiVariant,
@@ -147,9 +145,8 @@ export function IpodMenuBar({
     isPlaying: s.isPlaying,
     isShuffled: s.isShuffled,
     isBacklightOn: s.backlightOn,
-    isVideoOn: s.showVideo,
+    backlightTimeout: s.backlightTimeout,
     displayMode: s.displayMode ?? DisplayMode.Video,
-    isLcdFilterOn: s.lcdFilterOn,
     currentTheme: s.theme,
     uiVariant: s.uiVariant ?? "modern",
     showLyrics: s.showLyrics,
@@ -170,9 +167,8 @@ export function IpodMenuBar({
     appleMusicNext: s.appleMusicNextTrack,
     appleMusicPrevious: s.appleMusicPreviousTrack,
     toggleBacklight: s.toggleBacklight,
-    toggleVideo: s.toggleVideo,
+    setBacklightTimeout: s.setBacklightTimeout,
     setDisplayMode: s.setDisplayMode,
-    toggleLcdFilter: s.toggleLcdFilter,
     toggleFullScreen: s.toggleFullScreen,
     setTheme: s.setTheme,
     setUiVariant: s.setUiVariant,
@@ -810,36 +806,40 @@ export function IpodMenuBar({
 
           <MenubarSeparator className="h-[2px] bg-black my-1" />
 
-          {/* Screen: backlight, monochrome filter, embedded video */}
+          {/* Backlight timeout options */}
           <MenubarSub>
             <MenubarSubTrigger className="text-md h-6 px-3">
-              {t("apps.ipod.menu.screen")}
+              {t("apps.ipod.menu.backlight")}
             </MenubarSubTrigger>
             <MenubarSubContent className="px-0">
-              <MenubarCheckboxItem
-                checked={isBacklightOn}
-                onCheckedChange={() => toggleBacklight()}
-                className="text-md h-6 px-3"
+              <MenubarRadioGroup
+                value={backlightTimeout}
+                onValueChange={(value) => {
+                  const timeout = value as "2s" | "10s" | "always-on" | "off";
+                  setBacklightTimeout(timeout);
+                  if (timeout === "off" && isBacklightOn) {
+                    toggleBacklight();
+                  } else if (
+                    (timeout === "2s" || timeout === "10s" || timeout === "always-on") &&
+                    !isBacklightOn
+                  ) {
+                    toggleBacklight();
+                  }
+                }}
               >
-                {t("apps.ipod.menu.backlight")}
-              </MenubarCheckboxItem>
-
-              <MenubarCheckboxItem
-                checked={isLcdFilterOn}
-                onCheckedChange={() => toggleLcdFilter()}
-                className="text-md h-6 px-3"
-              >
-                {t("apps.ipod.menu.lcdFilter")}
-              </MenubarCheckboxItem>
-
-              <MenubarCheckboxItem
-                checked={isVideoOn}
-                onCheckedChange={() => toggleVideo()}
-                className="text-md h-6 px-3"
-                disabled={!isPlaying}
-              >
-                {t("apps.ipod.menu.video")}
-              </MenubarCheckboxItem>
+                <MenubarRadioItem value="2s" className="text-md h-6 pr-3">
+                  2s
+                </MenubarRadioItem>
+                <MenubarRadioItem value="10s" className="text-md h-6 pr-3">
+                  10s
+                </MenubarRadioItem>
+                <MenubarRadioItem value="always-on" className="text-md h-6 pr-3">
+                  {t("apps.ipod.menuItems.alwaysOn", "Keep On")}
+                </MenubarRadioItem>
+                <MenubarRadioItem value="off" className="text-md h-6 pr-3">
+                  {t("apps.ipod.menuItems.off")}
+                </MenubarRadioItem>
+              </MenubarRadioGroup>
             </MenubarSubContent>
           </MenubarSub>
 
