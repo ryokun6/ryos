@@ -3254,3 +3254,304 @@
   [data-radix-popper-content-wrapper] {
   color: var(--os-color-text-primary);
 }
+
+/* ============================================================================
+ * Dark mode — Mac OS X (Aqua) — broader coverage layer
+ *
+ * Components hardcode Tailwind utilities like `bg-white`, `text-black`,
+ * `text-neutral-600`, etc. that bake light-mode assumptions into the markup.
+ * Rewriting them all would be invasive and easy to regress; instead, we pin
+ * the most-used utilities to dark-friendly values inside the macOS Aqua dark
+ * window surface using `:where()` so specificity stays low and per-component
+ * overrides keep winning. Everything here is scoped to the dark color scheme —
+ * remove the attribute and the original light styles return verbatim.
+ *
+ * Rules of thumb when extending this block:
+ *   1. Don't recolor Tailwind tinted utilities (`bg-pink-100`, `bg-blue-100`,
+ *      etc.) — those carry their own readable foregrounds and are commonly
+ *      used inside chat bubbles, badges, etc.
+ *   2. Prefer remapping shadcn CSS variables (`--popover`, `--card`,
+ *      `--background`) over targeting `bg-popover` etc. directly so any
+ *      foreground/border tokens flow through together.
+ *   3. Always exclude opt-out containers (dashboard overlay, iPod / karaoke /
+ *      TV CC force-font, os-native-chrome-skip) so legacy chrome that bakes
+ *      in its own colors (Webamp, iPod LCD, etc.) is left alone.
+ * ============================================================================ */
+
+/* -----------------------------------------------------------------------
+ * shadcn/Tailwind theme tokens consumed via `bg-background`, `bg-popover`,
+ * `bg-card`, `text-foreground`, `border-border`. The `index.css` `.dark`
+ * class block already defines dark equivalents — we re-publish them here so
+ * the dark scheme kicks in based on the OS attribute (independent of the
+ * `.dark` class chain).
+ * ----------------------------------------------------------------------- */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] {
+  --background: 240 4% 18%;
+  --foreground: 0 0% 96%;
+  --card: 240 4% 18%;
+  --card-foreground: 0 0% 96%;
+  --popover: 240 4% 16%;
+  --popover-foreground: 0 0% 96%;
+  --primary: 0 0% 96%;
+  --primary-foreground: 0 0% 8%;
+  --secondary: 240 4% 22%;
+  --secondary-foreground: 0 0% 96%;
+  --muted: 240 4% 22%;
+  --muted-foreground: 0 0% 70%;
+  --accent: 240 4% 26%;
+  --accent-foreground: 0 0% 96%;
+  --destructive: 0 62.8% 50%;
+  --destructive-foreground: 0 0% 96%;
+  --border: 0 0% 100% / 0.14;
+  --input: 240 4% 14%;
+  --ring: 217 91% 65%;
+}
+
+/* -----------------------------------------------------------------------
+ * Window-body content surface. `.window-body` already gets
+ * `--os-color-window-bg` from the dark token block above, but many app
+ * chrome panels paint their own `bg-white` over it. Override the most
+ * common variants inside `.window-body` so the surface goes dark while
+ * tinted Tailwind colors (pink-100, blue-100, etc.) keep rendering.
+ *
+ * We DO NOT touch:
+ *   - `.bg-pink-*`, `.bg-blue-*`, `.bg-yellow-*` etc. (chat bubbles, badges)
+ *   - Anything inside iPod / karaoke / TV closed-caption surfaces
+ *   - Brushed-metal windows (texture handles its own dark variant)
+ *   - Webamp (`#webamp` is fully isolated)
+ * ----------------------------------------------------------------------- */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .window-body
+  :where(
+    .bg-white,
+    .bg-\[\#FFFFFF\],
+    .bg-\[\#ffffff\]
+  ):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *):not(.dashboard-overlay *) {
+  background-color: var(--os-color-window-bg) !important;
+}
+
+/* Translucent white panels used as content surfaces (`/85`, `/80`, `/70`, `/40`).
+   These are used by the Chats conversation pane, Finder file list, and similar
+   "soft pane" surfaces. Map them to a slightly translucent dark shade so the
+   pane reads as a recessed surface instead of a paper-white slab. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .window-body
+  :where(
+    .bg-white\/90,
+    .bg-white\/85,
+    .bg-white\/80,
+    .bg-white\/70,
+    .bg-white\/60,
+    .bg-white\/50,
+    .bg-white\/40,
+    .bg-white\/30,
+    .bg-white\/20,
+    .bg-white\/10
+  ):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *):not(.dashboard-overlay *) {
+  background-color: rgba(31, 31, 34, 0.92) !important;
+}
+
+/* Inputs / textareas often use `bg-white` directly — keep them distinct from
+   the surrounding window background so the field still reads as an input. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .window-body
+  input.bg-white,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .window-body
+  textarea.bg-white,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .window-body
+  select.bg-white {
+  background-color: var(--os-color-input-bg) !important;
+  color: var(--os-color-text-primary) !important;
+  border-color: var(--os-color-input-border);
+}
+
+/* Default text color for `.window-body` content — anything not explicitly
+   recolored falls back to the dark theme's primary text token. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .window-body {
+  color: var(--os-color-text-primary);
+}
+
+/* Common hardcoded text utilities. We keep this list narrow and only touch
+   the neutral / black variants — colored text utilities (`text-red-*`,
+   `text-blue-*`, etc.) stay as authored so error text, links, and tinted
+   labels keep their semantics. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .window-body
+  :where(
+    .text-black,
+    .text-\[\#000\],
+    .text-\[\#000000\]
+  ):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *):not(.dashboard-overlay *):not([class*="bg-pink-"]):not([class*="bg-blue-"]):not([class*="bg-yellow-"]):not([class*="bg-purple-"]):not([class*="bg-indigo-"]):not([class*="bg-teal-"]):not([class*="bg-lime-"]):not([class*="bg-amber-"]):not([class*="bg-cyan-"]):not([class*="bg-rose-"]):not([class*="bg-green-"]):not([class*="bg-orange-"]):not([class*="bg-red-"]):not([class*="bg-gray-1"]):not([class*="bg-neutral-1"]):not([class*="bg-zinc-1"]):not([class*="bg-slate-1"]) {
+  color: var(--os-color-text-primary) !important;
+}
+
+/* Black-with-alpha utilities (`text-black/70`, etc.) used for de-emphasized
+   labels / icons. Map them to the secondary text color. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .window-body
+  :where(
+    .text-black\/80,
+    .text-black\/70,
+    .text-black\/60,
+    .text-black\/50,
+    .text-black\/40,
+    .text-black\/30,
+    .text-black\/20
+  ):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *):not(.dashboard-overlay *):not([class*="bg-pink-"]):not([class*="bg-blue-"]):not([class*="bg-yellow-"]):not([class*="bg-purple-"]):not([class*="bg-indigo-"]):not([class*="bg-teal-"]):not([class*="bg-lime-"]):not([class*="bg-amber-"]):not([class*="bg-cyan-"]):not([class*="bg-rose-"]):not([class*="bg-green-"]):not([class*="bg-orange-"]):not([class*="bg-red-"]) {
+  color: var(--os-color-text-secondary) !important;
+}
+
+/* Mid-gray neutrals used for secondary/muted copy. Map them all to the
+   secondary text token so the contrast stays consistent inside the window. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .window-body
+  :where(
+    .text-neutral-500,
+    .text-neutral-600,
+    .text-neutral-700,
+    .text-neutral-800,
+    .text-gray-500,
+    .text-gray-600,
+    .text-gray-700,
+    .text-gray-800,
+    .text-zinc-500,
+    .text-zinc-600,
+    .text-zinc-700,
+    .text-zinc-800,
+    .text-slate-500,
+    .text-slate-600,
+    .text-slate-700,
+    .text-slate-800
+  ):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *):not(.dashboard-overlay *):not([class*="bg-pink-"]):not([class*="bg-blue-"]):not([class*="bg-yellow-"]):not([class*="bg-purple-"]):not([class*="bg-indigo-"]):not([class*="bg-teal-"]):not([class*="bg-lime-"]):not([class*="bg-amber-"]):not([class*="bg-cyan-"]):not([class*="bg-rose-"]):not([class*="bg-green-"]):not([class*="bg-orange-"]):not([class*="bg-red-"]):not([class*="bg-gray-1"]):not([class*="bg-neutral-1"]):not([class*="bg-zinc-1"]):not([class*="bg-slate-1"]) {
+  color: var(--os-color-text-secondary) !important;
+}
+
+/* Disabled / placeholder gray (gray-400 et al.). Map to the disabled text
+   token so it still recedes against the dark surface. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .window-body
+  :where(
+    .text-neutral-400,
+    .text-gray-400,
+    .text-zinc-400,
+    .text-slate-400
+  ):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *):not(.dashboard-overlay *):not([class*="bg-pink-"]):not([class*="bg-blue-"]):not([class*="bg-yellow-"]):not([class*="bg-purple-"]):not([class*="bg-indigo-"]):not([class*="bg-teal-"]):not([class*="bg-lime-"]):not([class*="bg-amber-"]):not([class*="bg-cyan-"]):not([class*="bg-rose-"]):not([class*="bg-green-"]):not([class*="bg-orange-"]):not([class*="bg-red-"]) {
+  color: var(--os-color-text-disabled) !important;
+}
+
+/* Hairline borders defined as `border-black/*` or low-alpha black look
+   invisible on the dark surface. Lift them to a faint white-on-dark
+   hairline so dividers still read. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .window-body
+  :where(
+    .border-black,
+    .border-black\/5,
+    .border-black\/10,
+    .border-black\/20,
+    .border-black\/30,
+    .border-black\/40,
+    .border-black\/50,
+    .border-black\/60,
+    .border-neutral-200,
+    .border-neutral-300,
+    .border-gray-200,
+    .border-gray-300
+  ):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *):not(.dashboard-overlay *) {
+  border-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+/* `bg-neutral-100` / `bg-gray-100` are commonly used for secondary panes
+   (sidebars, recessed surfaces). Map them to a slightly lighter shade than
+   the window background so layered surfaces still have depth. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .window-body
+  :where(
+    .bg-neutral-50,
+    .bg-neutral-100,
+    .bg-neutral-200,
+    .bg-gray-50,
+    .bg-gray-100,
+    .bg-gray-200,
+    .bg-zinc-50,
+    .bg-zinc-100,
+    .bg-zinc-200,
+    .bg-slate-50,
+    .bg-slate-100,
+    .bg-slate-200
+  ):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *):not(.dashboard-overlay *) {
+  background-color: #353539 !important;
+}
+
+/* Status-bar shell used by Finder etc. — explicit `color: #333` and white
+   text-shadow bake light-mode assumptions in inline styles. Override them
+   so the bar reads on the dark window. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .os-status-bar {
+  color: var(--os-color-text-secondary) !important;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5) !important;
+  border-top-color: rgba(255, 255, 255, 0.12);
+}
+
+/* -----------------------------------------------------------------------
+ * Menu / dropdown popovers (Radix portaled). They render outside any
+ * `.window-body`, so the rules above don't reach them. Repaint the surface,
+ * separators, items, and hover/highlight states. The selection rule keeps
+ * using the existing Aqua blue token so highlights remain branded.
+ * ----------------------------------------------------------------------- */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  [data-radix-popper-content-wrapper]
+  :where(
+    [role="menu"],
+    [role="listbox"],
+    [data-radix-menu-content],
+    [data-radix-popover-content],
+    [data-radix-select-content]
+  ) {
+  background-color: #2f2f33 !important;
+  color: var(--os-color-text-primary) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Menubar (top bar) dropdown items — Radix exposes
+   `[data-radix-collection-item]` for menu items. Default items inherit dark
+   surface; only repaint disabled items. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  [data-radix-popper-content-wrapper]
+  [data-disabled] {
+  color: var(--os-color-text-disabled) !important;
+}
+
+/* Separator strokes inside dropdowns. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  [data-radix-popper-content-wrapper]
+  [role="separator"],
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  [data-radix-popper-content-wrapper]
+  hr {
+  background-color: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Toast surface (Sonner) — dark scheme. The light theme toast styling lives
+   higher up in this file under generic and per-theme rules; redirect it to
+   the dark surface when the OS attribute flips. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] [data-sonner-toast] {
+  background-color: #303035 !important;
+  color: var(--os-color-text-primary) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Tabs — the active tab indicator uses light gradients. Soften so it reads
+   on the dark window surface. (Affects ThemedTabsTrigger + Radix Tabs.) */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .window-body
+  [role="tab"] {
+  color: var(--os-color-text-secondary);
+}
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .window-body
+  [role="tab"][data-state="active"] {
+  color: var(--os-color-text-primary);
+}
