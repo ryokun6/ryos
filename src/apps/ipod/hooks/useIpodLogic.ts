@@ -13,6 +13,7 @@ import { useActivityState } from "@/hooks/useActivityState";
 import { useLyricsErrorToast } from "@/hooks/useLyricsErrorToast";
 import { useCustomEventListener, useEventListener } from "@/hooks/useEventListener";
 import { useLibraryUpdateChecker } from "./useLibraryUpdateChecker";
+import { useIpodActiveLibrary } from "./useIpodActiveLibrary";
 import {
   useAppleMusicLibrary,
   syncAppleMusicResource,
@@ -86,10 +87,6 @@ import {
   getAppleMusicPlaylistMenuTitle,
   resolveAppleMusicPlaylistMenu,
 } from "../utils/appleMusicPlaylistMenu";
-import {
-  buildIpodLibraryIndex,
-  resolveCurrentTrackIndex,
-} from "../utils/ipodLibraryIndex";
 import { getMenuMemoryKey, isNowPlayingSongMenu } from "../utils/menuIdentity";
 
 // User-agent sniffing is constant for the document lifetime, so compute once
@@ -128,124 +125,29 @@ export function useIpodLogic({
   const isOffline = useOffline();
   const translatedHelpItems = useTranslatedHelpItems("ipod", helpItems);
 
-  // Store state
+  // Active library and playback state
   const {
-    youtubeTracks,
-    youtubeCurrentSongId,
-    appleMusicTracks,
     appleMusicPlaylists,
     appleMusicPlaylistTracks,
     appleMusicPlaylistTracksLoading,
     appleMusicPlaylistsLoading,
-    appleMusicPlaybackQueue,
     appleMusicCurrentSongId,
     librarySource,
+    isAppleMusic,
+    tracks,
+    browsableTracks,
+    currentSongId,
+    currentIndex,
+    browseCurrentIndex,
+    coverFlowCurrentIndex,
+    nowPlayingScope,
     loopCurrent,
     loopAll,
     isShuffled,
     isPlaying,
     showVideo,
     backlightOn,
-  } = useIpodStore(
-    useShallow((s) => ({
-      youtubeTracks: s.tracks,
-      youtubeCurrentSongId: s.currentSongId,
-      appleMusicTracks: s.appleMusicTracks,
-      appleMusicPlaylists: s.appleMusicPlaylists,
-      appleMusicPlaylistTracks: s.appleMusicPlaylistTracks,
-      appleMusicPlaylistTracksLoading: s.appleMusicPlaylistTracksLoading,
-      appleMusicPlaylistsLoading: s.appleMusicPlaylistsLoading,
-      appleMusicPlaybackQueue: s.appleMusicPlaybackQueue,
-      appleMusicCurrentSongId: s.appleMusicCurrentSongId,
-      librarySource: s.librarySource,
-      loopCurrent: s.loopCurrent,
-      loopAll: s.loopAll,
-      isShuffled: s.isShuffled,
-      isPlaying: s.isPlaying,
-      showVideo: s.showVideo,
-      backlightOn: s.backlightOn,
-    }))
-  );
-
-  // Active library — when the user toggles between YouTube and Apple Music,
-  // the iPod displays whichever slice is selected without rewriting the rest
-  // of the hook's logic. Each slice has its own current-song pointer.
-  const isAppleMusic = librarySource === "appleMusic";
-  const tracks = isAppleMusic ? appleMusicTracks : youtubeTracks;
-  const browsableTracks = useMemo(
-    () =>
-      isAppleMusic
-        ? tracks.filter((track) => !isAppleMusicCollectionTrack(track))
-        : tracks,
-    [isAppleMusic, tracks]
-  );
-  const currentSongId = isAppleMusic
-    ? appleMusicCurrentSongId
-    : youtubeCurrentSongId;
-  const trackIndex = useMemo(() => buildIpodLibraryIndex(tracks), [tracks]);
-  const browsableTrackIndex = useMemo(
-    () => buildIpodLibraryIndex(browsableTracks),
-    [browsableTracks]
-  );
-
-  // Resolve current indexes through memoized lookup tables so large Apple
-  // Music libraries don't pay repeated linear scans on each controller rebuild.
-  const currentIndex = useMemo(
-    () =>
-      resolveCurrentTrackIndex(
-        trackIndex.indexById,
-        currentSongId,
-        tracks.length
-      ),
-    [trackIndex, currentSongId, tracks.length]
-  );
-  const browseCurrentIndex = useMemo(
-    () =>
-      resolveCurrentTrackIndex(
-        browsableTrackIndex.indexById,
-        currentSongId,
-        browsableTracks.length
-      ),
-    [browsableTrackIndex, currentSongId, browsableTracks.length]
-  );
-  const coverFlowCurrentIndex = browseCurrentIndex >= 0 ? browseCurrentIndex : 0;
-
-  // Now Playing "X of Y" should reflect the active playback context. When
-  // the user picked a song from inside an Artist / Album / Playlist
-  // submenu, an Apple Music playback queue is set on the store; in that
-  // case scope the counter to that ordered list. Otherwise fall back to
-  // the full library count.
-  const nowPlayingScope = useMemo(() => {
-    if (!isAppleMusic) {
-      return { index: currentIndex, total: tracks.length };
-    }
-    if (!appleMusicPlaybackQueue || appleMusicPlaybackQueue.length === 0) {
-      return {
-        index: browseCurrentIndex >= 0 ? browseCurrentIndex : currentIndex,
-        total: browsableTracks.length,
-      };
-    }
-    const queue = appleMusicPlaybackQueue.filter((id) =>
-      trackIndex.idSet.has(id)
-    );
-    if (queue.length === 0) {
-      return { index: currentIndex, total: tracks.length };
-    }
-    const idx = currentSongId ? queue.indexOf(currentSongId) : -1;
-    // If the current song isn't part of the active queue, fall back to
-    // the full-library counter rather than showing "0 of N".
-    if (idx < 0) return { index: currentIndex, total: tracks.length };
-    return { index: idx, total: queue.length };
-  }, [
-    isAppleMusic,
-    appleMusicPlaybackQueue,
-    tracks,
-    trackIndex,
-    browsableTracks.length,
-    currentSongId,
-    currentIndex,
-    browseCurrentIndex,
-  ]);
+  } = useIpodActiveLibrary();
 
   const {
     theme,
