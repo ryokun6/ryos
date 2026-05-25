@@ -81,6 +81,11 @@ import {
   resolveAppleMusicMenuTitlebarLoading,
   shouldUseModernAppleMusicTitlebarLoading,
 } from "../utils/appleMusicMenuLoading";
+import {
+  getAppleMusicPlaylistIdFromMenuTitle,
+  getAppleMusicPlaylistMenuTitle,
+  resolveAppleMusicPlaylistMenu,
+} from "../utils/appleMusicPlaylistMenu";
 
 // User-agent sniffing is constant for the document lifetime, so compute once
 // at module load instead of re-running these regexes on every render of the
@@ -2202,7 +2207,8 @@ export function useIpodLogic({
             registerActivity();
             requestPlaylistTracksIfNeeded(playlist.id);
             pushMenuChild({
-              title: playlist.name,
+              title: getAppleMusicPlaylistMenuTitle(playlist.id),
+              displayTitle: playlist.name,
               items: applePlaylistTrackMenuItemsByPlaylist[playlist.id] ?? EMPTY_IPOD_MENU_ITEMS,
               selectedIndex: 0,
               modernMediaList: true,
@@ -2647,6 +2653,8 @@ export function useIpodLogic({
       "apps.ipod.menuItems.favoriteSongs",
       "Favorite Songs"
     );
+    const playlistsLabel = t("apps.ipod.menuItems.playlists");
+    const radioLabel = t("apps.ipod.menuItems.radio", "Radio");
     const matchFromHistory = (
       hist: MenuHistoryEntry[] | null
     ): NowPlayingPlaylistContext | null => {
@@ -2672,10 +2680,14 @@ export function useIpodLogic({
         ) {
           return { kind: "system", system: "favorites" };
         }
-        const playlist = appleMusicPlaylists.find(
-          (candidate) => candidate.name === entry.title
-        );
-        if (playlist) return { kind: "userPlaylist", playlist };
+        const playlist = resolveAppleMusicPlaylistMenu(entry, appleMusicPlaylists);
+        const isAppleMusicPlaylistsMenu =
+          entry.title === playlistsLabel && parent?.title === musicLabel;
+        const isAppleMusicRadioMenu =
+          entry.title === radioLabel && parent?.title === musicLabel;
+        if (playlist && !isAppleMusicPlaylistsMenu && !isAppleMusicRadioMenu) {
+          return { kind: "userPlaylist", playlist };
+        }
       }
       return null;
     };
@@ -2862,7 +2874,8 @@ export function useIpodLogic({
           modernMediaList: true,
         },
         {
-          title: playlist.name,
+          title: getAppleMusicPlaylistMenuTitle(playlist.id),
+          displayTitle: playlist.name,
           items:
             applePlaylistTrackMenuItemsByPlaylist[playlist.id] ??
             EMPTY_IPOD_MENU_ITEMS,
@@ -3145,6 +3158,33 @@ export function useIpodLogic({
 
   // Helper function to rebuild menu items based on current tracks
   const rebuildMenuItems = useCallback((menu: typeof menuHistory[0]): typeof menuHistory[0]["items"] | null => {
+    const playlistsLabel = t("apps.ipod.menuItems.playlists");
+    const recentlyAddedLabel = t(
+      "apps.ipod.menuItems.recentlyAdded",
+      "Recently Added"
+    );
+    const favoriteSongsLabel = t(
+      "apps.ipod.menuItems.favoriteSongs",
+      "Favorite Songs"
+    );
+    const radioLabel = t("apps.ipod.menuItems.radio", "Radio");
+    const playlistMenu = resolveAppleMusicPlaylistMenu(menu, appleMusicPlaylists);
+    const playlistMenuUsesOpaqueTitle =
+      getAppleMusicPlaylistIdFromMenuTitle(menu.title) !== null;
+    if (
+      playlistMenu &&
+      (playlistMenuUsesOpaqueTitle ||
+        (menu.title !== playlistsLabel &&
+          menu.title !== recentlyAddedLabel &&
+          menu.title !== favoriteSongsLabel &&
+          menu.title !== radioLabel))
+    ) {
+      return (
+        applePlaylistTrackMenuItemsByPlaylist[playlistMenu.id] ??
+        EMPTY_IPOD_MENU_ITEMS
+      );
+    }
+
     if (menu.title === t("apps.ipod.menuItems.ipod")) {
       return mainMenuItems;
     } else if (menu.title === t("apps.ipod.menuItems.music")) {
@@ -3155,21 +3195,17 @@ export function useIpodLogic({
       return nowPlayingSongMenuItems;
     } else if (
       !isAppleMusic &&
-      (menu.title === t("apps.ipod.menuItems.recentlyAdded", "Recently Added") ||
-        menu.title === t("apps.ipod.menuItems.favoriteSongs", "Favorite Songs") ||
-        menu.title === t("apps.ipod.menuItems.radio", "Radio") ||
-        menu.title === t("apps.ipod.menuItems.playlists"))
+      (menu.title === recentlyAddedLabel ||
+        menu.title === favoriteSongsLabel ||
+        menu.title === radioLabel ||
+        menu.title === playlistsLabel)
     ) {
       return null;
-    } else if (
-      menu.title === t("apps.ipod.menuItems.recentlyAdded", "Recently Added")
-    ) {
+    } else if (menu.title === recentlyAddedLabel) {
       return appleMusicRecentlyAddedMenuItems;
-    } else if (
-      menu.title === t("apps.ipod.menuItems.favoriteSongs", "Favorite Songs")
-    ) {
+    } else if (menu.title === favoriteSongsLabel) {
       return appleMusicFavoritesMenuItems;
-    } else if (menu.title === t("apps.ipod.menuItems.radio", "Radio")) {
+    } else if (menu.title === radioLabel) {
       return appleMusicRadioMenuItems;
     } else if (menu.title === t("apps.ipod.menuItems.extras")) {
       // Extras submenu has stable items; keep existing references to avoid stale closures.
@@ -3181,7 +3217,7 @@ export function useIpodLogic({
       // Return the memoized array — same reference unless tracks changed,
       // so the menu-history sync effect skips a redundant setMenuHistory.
       return allSongsMenuItems;
-    } else if (menu.title === t("apps.ipod.menuItems.playlists")) {
+    } else if (menu.title === playlistsLabel) {
       return applePlaylistsMenuItems;
     } else if (menu.title === t("apps.ipod.menuItems.artists")) {
       return artistsListMenuItems;
@@ -3196,12 +3232,9 @@ export function useIpodLogic({
     } else if (albumMenuItemsByAlbum[menu.title]) {
       return albumMenuItemsByAlbum[menu.title];
     } else {
-      const playlist = appleMusicPlaylists.find(
-        (entry) => entry.name === menu.title
-      );
-      if (playlist) {
+      if (playlistMenu) {
         return (
-          applePlaylistTrackMenuItemsByPlaylist[playlist.id] ??
+          applePlaylistTrackMenuItemsByPlaylist[playlistMenu.id] ??
           EMPTY_IPOD_MENU_ITEMS
         );
       }
