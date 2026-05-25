@@ -265,6 +265,8 @@ interface IpodData {
    */
   ipodMenuBreadcrumb:
     | {
+        kind?: import("@/apps/ipod/types").IpodMenuKind;
+        id?: string;
         title: string;
         displayTitle?: string;
         selectedIndex: number;

@@ -90,6 +90,7 @@ import {
   buildIpodLibraryIndex,
   resolveCurrentTrackIndex,
 } from "../utils/ipodLibraryIndex";
+import { getMenuMemoryKey, isNowPlayingSongMenu } from "../utils/menuIdentity";
 
 // User-agent sniffing is constant for the document lifetime, so compute once
 // at module load instead of re-running these regexes on every render of the
@@ -461,6 +462,7 @@ export function useIpodLogic({
         (currentAppleMusicTrack?.appleMusicPlayParams?.stationId ||
           state.ipodMenuBreadcrumb?.some(
             (entry) =>
+              entry.kind === "radio" ||
               entry.title === radioMenuTitleForRestore ||
               entry.title === "Radio"
           ))
@@ -687,15 +689,16 @@ export function useIpodLogic({
     selectedMenuItemRef.current = selectedMenuItem;
   }, [selectedMenuItem]);
 
-  // Remember the last cursor position for each menu title. This keeps
+  // Remember the last cursor position for each stable menu identity. This keeps
   // forward navigation symmetric with back navigation: if the user backs
   // out of a playlist/artist/album and then enters it again, we restore
   // the item they were on instead of resetting that child menu to row 0.
   const rememberedMenuSelectedIndexRef = useRef<Record<string, number>>({});
 
   const getRememberedMenuSelectedIndex = useCallback(
-    (title: string, fallback: number, itemCount: number) => {
-      const remembered = rememberedMenuSelectedIndexRef.current[title];
+    (menu: MenuHistoryEntry, fallback: number, itemCount: number) => {
+      const remembered =
+        rememberedMenuSelectedIndexRef.current[getMenuMemoryKey(menu)];
       const next =
         typeof remembered === "number" && Number.isFinite(remembered)
           ? remembered
@@ -716,7 +719,7 @@ export function useIpodLogic({
       const childWithRememberedSelection = {
         ...child,
         selectedIndex: getRememberedMenuSelectedIndex(
-          child.title,
+          child,
           child.selectedIndex,
           child.items.length
         ),
@@ -725,7 +728,7 @@ export function useIpodLogic({
         if (prev.length === 0) return [childWithRememberedSelection];
         const updated = prev.slice();
         const parent = updated[updated.length - 1];
-        rememberedMenuSelectedIndexRef.current[parent.title] =
+        rememberedMenuSelectedIndexRef.current[getMenuMemoryKey(parent)] =
           selectedMenuItemRef.current;
         updated[updated.length - 1] = {
           ...parent,
@@ -1259,6 +1262,7 @@ export function useIpodLogic({
 
     const hasRadioMenuInHistory = menuHistory.some(
       (menu) =>
+        menu.kind === "radio" ||
         menu.title === radioMenuTitleForRestore || menu.title === "Radio"
     );
     const currentAppleMusicTrack = currentSongId
@@ -1932,6 +1936,8 @@ export function useIpodLogic({
           action: () => {
             registerActivity();
             pushMenuChild({
+              kind: "artistAlbum",
+              id: albumTitle,
               title: albumTitle,
               displayTitle: album,
               items: artistAlbumMenuItemsByTitle[albumTitle] ?? EMPTY_IPOD_MENU_ITEMS,
@@ -1950,6 +1956,8 @@ export function useIpodLogic({
           action: () => {
             registerActivity();
             pushMenuChild({
+              kind: "artistAllSongs",
+              id: artistKey,
               title: allSongsTitle,
               displayTitle: `${artist.name} - ${allSongsLabel}`,
               items: artistAllSongsMenuItemsByTitle[allSongsTitle] ?? EMPTY_IPOD_MENU_ITEMS,
@@ -2008,6 +2016,8 @@ export function useIpodLogic({
           action: () => {
             registerActivity();
             pushMenuChild({
+              kind: "songs",
+              id: "all",
               title: allSongsLabel,
               items: allSongsMenuItems,
               selectedIndex: 0,
@@ -2026,6 +2036,8 @@ export function useIpodLogic({
             action: () => {
               registerActivity();
               pushMenuChild({
+                kind: "album",
+                id: albumKey,
                 title: albumKey,
                 displayTitle: albumGroupsByKey[albumKey].album,
                 items: albumMenuItemsByAlbum[albumKey],
@@ -2059,6 +2071,8 @@ export function useIpodLogic({
           action: () => {
             registerActivity();
             pushMenuChild({
+              kind: "albums",
+              id: "all",
               title: albumsLabel,
               items: albumsListMenuItems,
               selectedIndex: 0,
@@ -2078,6 +2092,8 @@ export function useIpodLogic({
             action: () => {
               registerActivity();
               pushMenuChild({
+                kind: "artist",
+                id: artistKey,
                 title: artistKey,
                 displayTitle: artist.name,
                 items: artistMenuItemsByArtist[artistKey],
@@ -2228,6 +2244,8 @@ export function useIpodLogic({
             registerActivity();
             requestPlaylistTracksIfNeeded(playlist.id);
             pushMenuChild({
+              kind: "appleMusicPlaylist",
+              id: playlist.id,
               title: getAppleMusicPlaylistMenuTitle(playlist.id),
               displayTitle: playlist.name,
               items: applePlaylistTrackMenuItemsByPlaylist[playlist.id] ?? EMPTY_IPOD_MENU_ITEMS,
@@ -2273,7 +2291,12 @@ export function useIpodLogic({
     const pushSubmenu = (
       title: string,
       items: MenuItem[],
-      options?: { modernMediaList?: boolean; alphabetic?: boolean }
+      options?: {
+        kind?: MenuHistoryEntry["kind"];
+        id?: string;
+        modernMediaList?: boolean;
+        alphabetic?: boolean;
+      }
     ) => {
       registerActivity();
       pushMenuChild({
@@ -2305,6 +2328,8 @@ export function useIpodLogic({
           action: () => {
             registerActivity();
             pushMenuChild({
+              kind: "recentlyAdded",
+              id: "recentlyAdded",
               title: recentlyAddedLabel,
               items: appleMusicRecentlyAddedMenuItems,
               selectedIndex: 0,
@@ -2319,6 +2344,8 @@ export function useIpodLogic({
           action: () => {
             registerActivity();
             pushMenuChild({
+              kind: "favorites",
+              id: "favorites",
               title: favoriteSongsLabel,
               items: appleMusicFavoritesMenuItems,
               selectedIndex: 0,
@@ -2332,6 +2359,8 @@ export function useIpodLogic({
           label: playlistsLabel,
           action: () => {
             pushSubmenu(playlistsLabel, applePlaylistsMenuItems, {
+              kind: "playlists",
+              id: "playlists",
               modernMediaList: true,
             });
             void loadAppleMusicPlaylists();
@@ -2342,6 +2371,8 @@ export function useIpodLogic({
           label: artistsLabel,
           action: () =>
             pushSubmenu(artistsLabel, artistsListMenuItems, {
+              kind: "artists",
+              id: "artists",
               alphabetic: true,
             }),
           showChevron: true,
@@ -2350,6 +2381,8 @@ export function useIpodLogic({
           label: albumsLabel,
           action: () =>
             pushSubmenu(albumsLabel, albumsListMenuItems, {
+              kind: "albums",
+              id: "albums",
               alphabetic: true,
             }),
           showChevron: true,
@@ -2358,6 +2391,8 @@ export function useIpodLogic({
           label: songsLabel,
           action: () =>
             pushSubmenu(songsLabel, allSongsMenuItems, {
+              kind: "songs",
+              id: "songs",
               alphabetic: true,
             }),
           showChevron: true,
@@ -2367,6 +2402,8 @@ export function useIpodLogic({
           action: () => {
             registerActivity();
             pushMenuChild({
+              kind: "radio",
+              id: "radio",
               title: radioLabel,
               items: appleMusicRadioMenuItems,
               selectedIndex: 0,
@@ -2391,6 +2428,8 @@ export function useIpodLogic({
         label: artistsLabel,
         action: () =>
           pushSubmenu(artistsLabel, artistsListMenuItems, {
+            kind: "artists",
+            id: "artists",
             alphabetic: true,
           }),
         showChevron: true,
@@ -2399,6 +2438,8 @@ export function useIpodLogic({
         label: albumsLabel,
         action: () =>
           pushSubmenu(albumsLabel, albumsListMenuItems, {
+            kind: "albums",
+            id: "albums",
             alphabetic: true,
           }),
         showChevron: true,
@@ -2407,6 +2448,8 @@ export function useIpodLogic({
         label: songsLabel,
         action: () =>
           pushSubmenu(allSongsLabel, allSongsMenuItems, {
+            kind: "songs",
+            id: "all",
             alphabetic: true,
           }),
         showChevron: true,
@@ -2535,6 +2578,8 @@ export function useIpodLogic({
           registerActivity();
           if (useIpodStore.getState().showVideo) toggleVideo();
           pushMenuChild({
+            kind: "music",
+            id: "music",
             title: musicLabel,
             items: musicMenuItemsRef.current,
             selectedIndex: 0,
@@ -2591,6 +2636,8 @@ export function useIpodLogic({
             },
           ];
           pushMenuChild({
+            kind: "extras",
+            id: "extras",
             title: extrasLabel,
             items: extrasItems,
             selectedIndex: 0,
@@ -2604,6 +2651,8 @@ export function useIpodLogic({
           registerActivity();
           if (useIpodStore.getState().showVideo) toggleVideo();
           pushMenuChild({
+            kind: "settings",
+            id: "settings",
             title: settingsLabel,
             items: settingsMenuItemsRef.current,
             selectedIndex: 0,
@@ -2652,7 +2701,10 @@ export function useIpodLogic({
   const isNowPlayingSongMenuOpen =
     menuMode &&
     menuHistory.length > 0 &&
-    menuHistory[menuHistory.length - 1]?.title === NOW_PLAYING_SONG_MENU_KEY;
+    isNowPlayingSongMenu(
+      menuHistory[menuHistory.length - 1],
+      NOW_PLAYING_SONG_MENU_KEY
+    );
 
   // Source the user was browsing when they opened the now-playing
   // song menu. `userPlaylist` covers Music > Playlists > <name>; the
@@ -2689,6 +2741,12 @@ export function useIpodLogic({
         // `appleMusicPlaylists`) doesn't hijack Go to Playlist when the
         // user originally entered via Music > Favorite Songs instead of
         // Music > Playlists > Favorite Songs.
+        if (entry.kind === "recentlyAdded") {
+          return { kind: "system", system: "recentlyAdded" };
+        }
+        if (entry.kind === "favorites") {
+          return { kind: "system", system: "favorites" };
+        }
         if (
           entry.title === recentlyAddedLabel &&
           parent?.title === musicLabel
@@ -2716,7 +2774,10 @@ export function useIpodLogic({
       matchFromHistory(menuHistoryBeforeNowPlayingRef.current) ??
       matchFromHistory(
         menuHistory.length > 0 &&
-          menuHistory[menuHistory.length - 1]?.title !== NOW_PLAYING_SONG_MENU_KEY
+          !isNowPlayingSongMenu(
+            menuHistory[menuHistory.length - 1],
+            NOW_PLAYING_SONG_MENU_KEY
+          )
           ? menuHistory
           : null
       )
@@ -2774,21 +2835,29 @@ export function useIpodLogic({
 
       navigateFromNowPlayingSongMenu([
         {
+          kind: "root",
+          id: "ipod",
           title: ipodLabel,
           items: mainMenuItems,
           selectedIndex: findMenuItemIndexByLabel(mainMenuItems, musicLabel),
         },
         {
+          kind: "music",
+          id: "music",
           title: musicLabel,
           items: musicMenuItems,
           selectedIndex: findMenuItemIndexByLabel(musicMenuItems, albumsLabel),
         },
         {
+          kind: "albums",
+          id: "albums",
           title: albumsLabel,
           items: albumsListMenuItems,
           selectedIndex: albumRowIdx,
         },
         {
+          kind: "album",
+          id: albumKey,
           title: albumKey,
           displayTitle: albumDisplay,
           items: albumMenuItemsByAlbum[albumKey] ?? EMPTY_IPOD_MENU_ITEMS,
@@ -2825,21 +2894,29 @@ export function useIpodLogic({
 
       navigateFromNowPlayingSongMenu([
         {
+          kind: "root",
+          id: "ipod",
           title: ipodLabel,
           items: mainMenuItems,
           selectedIndex: findMenuItemIndexByLabel(mainMenuItems, musicLabel),
         },
         {
+          kind: "music",
+          id: "music",
           title: musicLabel,
           items: musicMenuItems,
           selectedIndex: findMenuItemIndexByLabel(musicMenuItems, artistsLabel),
         },
         {
+          kind: "artists",
+          id: "artists",
           title: artistsLabel,
           items: artistsListMenuItems,
           selectedIndex: artistListIdx,
         },
         {
+          kind: "artist",
+          id: artistKey,
           title: artistKey,
           displayTitle: artistDisplay,
           items: artistMenuItemsByArtist[artistKey] ?? EMPTY_IPOD_MENU_ITEMS,
@@ -2879,22 +2956,30 @@ export function useIpodLogic({
 
       navigateFromNowPlayingSongMenu([
         {
+          kind: "root",
+          id: "ipod",
           title: ipodLabel,
           items: mainMenuItems,
           selectedIndex: findMenuItemIndexByLabel(mainMenuItems, musicLabel),
         },
         {
+          kind: "music",
+          id: "music",
           title: musicLabel,
           items: musicMenuItems,
           selectedIndex: findMenuItemIndexByLabel(musicMenuItems, playlistsLabel),
         },
         {
+          kind: "playlists",
+          id: "playlists",
           title: playlistsLabel,
           items: applePlaylistsMenuItems,
           selectedIndex: playlistListIdx,
           modernMediaList: true,
         },
         {
+          kind: "appleMusicPlaylist",
+          id: playlist.id,
           title: getAppleMusicPlaylistMenuTitle(playlist.id),
           displayTitle: playlist.name,
           items:
@@ -2948,16 +3033,22 @@ export function useIpodLogic({
 
       navigateFromNowPlayingSongMenu([
         {
+          kind: "root",
+          id: "ipod",
           title: ipodLabel,
           items: mainMenuItems,
           selectedIndex: findMenuItemIndexByLabel(mainMenuItems, musicLabel),
         },
         {
+          kind: "music",
+          id: "music",
           title: musicLabel,
           items: musicMenuItems,
           selectedIndex: findMenuItemIndexByLabel(musicMenuItems, targetLabel),
         },
         {
+          kind: system === "recentlyAdded" ? "recentlyAdded" : "favorites",
+          id: system,
           title: targetLabel,
           items: sourceItems,
           selectedIndex: trackIdx,
@@ -3085,6 +3176,8 @@ export function useIpodLogic({
     setMenuMode(true);
     setMenuHistory([
       {
+        kind: "nowPlayingSong",
+        id: "nowPlayingSong",
         title: NOW_PLAYING_SONG_MENU_KEY,
         displayTitle: track.title,
         items: nowPlayingSongMenuItems,
@@ -3109,6 +3202,8 @@ export function useIpodLogic({
     setMenuMode(true);
     setMenuHistory([
       {
+        kind: "nowPlayingSong",
+        id: "nowPlayingSong",
         title: NOW_PLAYING_SONG_MENU_KEY,
         displayTitle: snapshot?.displayTitle ?? track?.title ?? "",
         items: nowPlayingSongMenuItems,
@@ -3137,6 +3232,8 @@ export function useIpodLogic({
     const ipodLabel = t("apps.ipod.menuItems.ipod");
     setMenuHistory([
       {
+        kind: "root",
+        id: "ipod",
         title: ipodLabel,
         items: mainMenuItems,
         selectedIndex: 0,
@@ -3164,6 +3261,8 @@ export function useIpodLogic({
     setSelectedMenuItem(0);
     setMenuHistory([
       {
+        kind: "root",
+        id: "ipod",
         title: ipodLabel,
         items: mainMenuItemsRef.current,
         selectedIndex: 0,
@@ -3189,6 +3288,59 @@ export function useIpodLogic({
       "Favorite Songs"
     );
     const radioLabel = t("apps.ipod.menuItems.radio", "Radio");
+
+    if (menu.kind) {
+      switch (menu.kind) {
+        case "root":
+          return mainMenuItems;
+        case "music":
+          return musicMenuItems;
+        case "settings":
+          return settingsMenuItems;
+        case "extras":
+          return menu.items;
+        case "nowPlayingSong":
+          return nowPlayingSongMenuItems;
+        case "recentlyAdded":
+          return isAppleMusic ? appleMusicRecentlyAddedMenuItems : null;
+        case "favorites":
+          return isAppleMusic ? appleMusicFavoritesMenuItems : null;
+        case "radio":
+          return isAppleMusic ? appleMusicRadioMenuItems : null;
+        case "songs":
+          return allSongsMenuItems;
+        case "playlists":
+          return isAppleMusic ? applePlaylistsMenuItems : null;
+        case "artists":
+          return artistsListMenuItems;
+        case "albums":
+          return albumsListMenuItems;
+        case "artistAllSongs": {
+          if (menu.id && artistAllSongsMenuItemsByTitle[menu.title]) {
+            return artistAllSongsMenuItemsByTitle[menu.title];
+          }
+          const fallbackTitle = menu.id ? `${menu.id} - ${t("apps.ipod.menuItems.allSongs")}` : menu.title;
+          return artistAllSongsMenuItemsByTitle[fallbackTitle] ?? null;
+        }
+        case "artistAlbum":
+          return menu.id ? artistAlbumMenuItemsByTitle[menu.id] ?? null : null;
+        case "artist":
+          return menu.id ? artistMenuItemsByArtist[menu.id] ?? null : null;
+        case "album":
+          return menu.id ? albumMenuItemsByAlbum[menu.id] ?? null : null;
+        case "appleMusicPlaylist": {
+          const playlistMenu = resolveAppleMusicPlaylistMenu(
+            menu,
+            appleMusicPlaylists
+          );
+          return playlistMenu
+            ? applePlaylistTrackMenuItemsByPlaylist[playlistMenu.id] ??
+                EMPTY_IPOD_MENU_ITEMS
+            : null;
+        }
+      }
+    }
+
     const playlistMenu = resolveAppleMusicPlaylistMenu(menu, appleMusicPlaylists);
     const playlistMenuUsesOpaqueTitle =
       getAppleMusicPlaylistIdFromMenuTitle(menu.title) !== null;
@@ -3304,6 +3456,8 @@ export function useIpodLogic({
     const breadcrumb = useIpodStore.getState().ipodMenuBreadcrumb;
     const ipodLabel = t("apps.ipod.menuItems.ipod");
     const baseMenu = {
+      kind: "root" as const,
+      id: "ipod",
       title: ipodLabel,
       items: mainMenuItems,
       selectedIndex: 0,
@@ -3315,7 +3469,7 @@ export function useIpodLogic({
       return;
     }
     for (const entry of breadcrumb) {
-      rememberedMenuSelectedIndexRef.current[entry.title] =
+      rememberedMenuSelectedIndexRef.current[getMenuMemoryKey(entry)] =
         entry.selectedIndex;
     }
 
@@ -3329,13 +3483,21 @@ export function useIpodLogic({
         // Force the first entry to be the localized root label so back
         // navigation always lands at the iPod main menu.
         restored.push({
+          kind: "root",
+          id: "ipod",
           title: ipodLabel,
           items: mainMenuItems,
           selectedIndex: Math.max(0, Math.min(entry.selectedIndex, mainMenuItems.length - 1)),
         });
         continue;
       }
-      const skeleton = { title: entry.title, items: [], selectedIndex: 0 };
+      const skeleton = {
+        kind: entry.kind,
+        id: entry.id,
+        title: entry.title,
+        items: [],
+        selectedIndex: 0,
+      };
       const rebuilt = rebuildMenuItems(skeleton);
       // If we can't rebuild a level (e.g. the menu shape changed after an
       // app update, or async data hasn't arrived yet), stop walking — the
@@ -3351,6 +3513,8 @@ export function useIpodLogic({
             )
           : Math.max(0, entry.selectedIndex);
       restored.push({
+        kind: entry.kind,
+        id: entry.id,
         title: entry.title,
         displayTitle: entry.displayTitle,
         modernMediaList: entry.modernMediaList,
@@ -3457,7 +3621,7 @@ export function useIpodLogic({
   }, [menuHistory, setSelectedMenuItem]);
 
   // Persist the menu navigation breadcrumb whenever the user moves around
-  // the menus or moves the cursor. We only store `{ title, selectedIndex }`
+  // the menus or moves the cursor. We only store identity/display fields
   // per level — actions and item arrays are recomputed on restore via
   // `rebuildMenuItems`. The deepest entry's `selectedIndex` mirrors the
   // live cursor (`selectedMenuItem`) so reopening lands the user on the
@@ -3467,6 +3631,8 @@ export function useIpodLogic({
     if (menuHistory.length === 0) return;
 
     const breadcrumb = menuHistory.map((menu, i) => ({
+      kind: menu.kind,
+      id: menu.id,
       title: menu.title,
       displayTitle: menu.displayTitle,
       modernMediaList: menu.modernMediaList,
@@ -3475,7 +3641,7 @@ export function useIpodLogic({
         i === menuHistory.length - 1 ? selectedMenuItem : menu.selectedIndex,
     }));
     for (const entry of breadcrumb) {
-      rememberedMenuSelectedIndexRef.current[entry.title] =
+      rememberedMenuSelectedIndexRef.current[getMenuMemoryKey(entry)] =
         entry.selectedIndex;
     }
 
@@ -3486,6 +3652,8 @@ export function useIpodLogic({
       prev.length === breadcrumb.length &&
       prev.every(
         (entry, i) =>
+          entry.kind === breadcrumb[i].kind &&
+          entry.id === breadcrumb[i].id &&
           entry.title === breadcrumb[i].title &&
           entry.displayTitle === breadcrumb[i].displayTitle &&
           entry.modernMediaList === breadcrumb[i].modernMediaList &&
@@ -3930,7 +4098,13 @@ export function useIpodLogic({
       const mainMenu =
         menuHistory.length > 0
           ? menuHistory[0]
-          : { title: t("apps.ipod.menuItems.ipod"), items: mainMenuItems, selectedIndex: 0 };
+          : {
+              kind: "root" as const,
+              id: "ipod",
+              title: t("apps.ipod.menuItems.ipod"),
+              items: mainMenuItems,
+              selectedIndex: 0,
+            };
 
       if (cameFromNowPlayingMenuItem) {
         setMenuHistory([mainMenu]);
@@ -3984,11 +4158,15 @@ export function useIpodLogic({
         setMenuHistory([
           mainMenu,
           {
+            kind: "music",
+            id: "music",
             title: t("apps.ipod.menuItems.music"),
             items: musicMenuItems,
             selectedIndex: songsMenuIndex,
           },
           {
+            kind: "songs",
+            id: "all",
             title: allSongsLabel,
             items: allSongsMenuItems,
             selectedIndex: allSongsSelectedIndex,

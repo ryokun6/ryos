@@ -32,6 +32,30 @@ describe("Apple Music playlist menu titles", () => {
     expect(playlist?.id).toBe("p-ipod");
   });
 
+  test("resolves typed playlist breadcrumbs by id", () => {
+    const playlist = resolveAppleMusicPlaylistMenu(
+      {
+        kind: "appleMusicPlaylist",
+        id: "p-ipod",
+        title: "iPod",
+        displayTitle: "iPod",
+        modernMediaList: true,
+      },
+      playlists
+    );
+
+    expect(playlist?.id).toBe("p-ipod");
+  });
+
+  test("typed root breadcrumbs do not resolve as playlists", () => {
+    const playlist = resolveAppleMusicPlaylistMenu(
+      { kind: "root", id: "ipod", title: "iPod", modernMediaList: true },
+      playlists
+    );
+
+    expect(playlist).toBeNull();
+  });
+
   test("keeps legacy root breadcrumb titles from resolving as playlists", () => {
     const playlist = resolveAppleMusicPlaylistMenu(
       { title: "iPod", modernMediaList: false },

@@ -16,9 +16,19 @@ export function getAppleMusicPlaylistIdFromMenuTitle(
 }
 
 export function resolveAppleMusicPlaylistMenu(
-  menu: Pick<MenuHistoryEntry, "title" | "displayTitle" | "modernMediaList">,
+  menu: Pick<
+    MenuHistoryEntry,
+    "kind" | "id" | "title" | "displayTitle" | "modernMediaList"
+  >,
   playlists: AppleMusicPlaylist[]
 ): AppleMusicPlaylist | null {
+  if (menu.kind === "appleMusicPlaylist" && menu.id) {
+    return playlists.find((playlist) => playlist.id === menu.id) ?? null;
+  }
+  if (menu.kind) {
+    return null;
+  }
+
   const playlistId = getAppleMusicPlaylistIdFromMenuTitle(menu.title);
   if (playlistId) {
     return playlists.find((playlist) => playlist.id === playlistId) ?? null;
