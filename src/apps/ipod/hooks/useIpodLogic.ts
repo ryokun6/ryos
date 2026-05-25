@@ -2655,13 +2655,61 @@ export function useIpodLogic({
         label: t("apps.ipod.menuItems.shuffleSongs"),
         action: () => {
           registerActivity();
-          if (useIpodStore.getState().showVideo) toggleVideo();
-          // Shuffle across the full library — drop any contextual queue.
-          if (useIpodStore.getState().librarySource === "appleMusic") {
-            useIpodStore.getState().setAppleMusicPlaybackQueue(null);
+          const store = useIpodStore.getState();
+          if (store.showVideo) toggleVideo();
+          // Always force shuffle ON (don't toggle off if already on) so the
+          // root "Shuffle Songs" item starts a fresh shuffle every time.
+          if (!store.isShuffled) {
+            store.toggleShuffle();
           }
-          memoizedToggleShuffle();
+          // Shuffle across the full library — drop any contextual queue.
+          const isAppleMusicSource = store.librarySource === "appleMusic";
+          if (isAppleMusicSource) {
+            store.setAppleMusicPlaybackQueue(null);
+          }
+
+          // Pick a random track from the active library and play it. Avoid
+          // landing on the current song when there are alternatives so the
+          // user gets a fresh start every time.
+          const refreshed = useIpodStore.getState();
+          let pool: Track[];
+          let currentId: string | null;
+          if (isAppleMusicSource) {
+            pool = refreshed.appleMusicTracks.filter(
+              (track) => !isAppleMusicCollectionTrack(track)
+            );
+            currentId = refreshed.appleMusicCurrentSongId;
+          } else {
+            pool = refreshed.tracks;
+            currentId = refreshed.currentSongId;
+          }
+
+          if (pool.length === 0) {
+            setMenuMode(false);
+            return;
+          }
+
+          const candidates =
+            pool.length > 1
+              ? pool.filter((track) => track.id !== currentId)
+              : pool;
+          const picked =
+            candidates[Math.floor(Math.random() * candidates.length)] ?? null;
+
+          if (picked) {
+            if (isAppleMusicSource) {
+              useIpodStore.getState().setAppleMusicCurrentSongId(picked.id);
+            } else {
+              useIpodStore.getState().setCurrentSongId(picked.id);
+            }
+            setIsPlaying(true);
+          }
+
+          showStatus(t("apps.ipod.status.shuffleOn"));
+          setMenuDirection("forward");
           setMenuMode(false);
+          setCameFromNowPlayingMenuItem(false);
+          clearReturnToNowPlayingSongMenu();
         },
         showChevron: false,
       },
@@ -2681,7 +2729,7 @@ export function useIpodLogic({
         showChevron: true,
       },
     ];
-  }, [registerActivity, toggleVideo, memoizedToggleShuffle, memoizedToggleBacklight, menuLocale, isOffline, showOfflineStatus, setIsPlaying, pushMenuChild]);
+  }, [registerActivity, toggleVideo, memoizedToggleBacklight, menuLocale, isOffline, showOfflineStatus, setIsPlaying, pushMenuChild, showStatus, clearReturnToNowPlayingSongMenu]);
 
   const findMenuItemIndexByLabel = useCallback(
     (items: MenuItem[], label: string) =>
