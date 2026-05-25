@@ -10,7 +10,7 @@ import {
 } from "react";
 import ReactPlayer from "react-player";
 import { motion, AnimatePresence } from "framer-motion";
-import { Repeat, RepeatOnce, Shuffle } from "@phosphor-icons/react";
+import { Repeat, Shuffle } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { LyricsDisplay } from "./LyricsDisplay";
@@ -1282,14 +1282,14 @@ export function IpodScreen({
                       </span>
                       <span className="flex shrink-0 items-center gap-1">
                         {loopCurrent ? (
-                          <RepeatOnce
+                          <Shuffle
                             className="shrink-0"
                             size={isModernUi ? 12 : 13}
                             weight="bold"
                             aria-label={t("apps.ipod.menu.repeatOne")}
                           />
                         ) : loopAll ? (
-                          <Repeat
+                          <Shuffle
                             className="shrink-0"
                             size={isModernUi ? 12 : 13}
                             weight="bold"
@@ -1297,7 +1297,7 @@ export function IpodScreen({
                           />
                         ) : null}
                         {isShuffled && (
-                          <Shuffle
+                          <Repeat
                             className="shrink-0"
                             size={isModernUi ? 12 : 13}
                             weight="bold"
