@@ -3414,7 +3414,7 @@
     .text-black\/40,
     .text-black\/30,
     .text-black\/20
-  ):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *):not(.dashboard-overlay *):not([class*="bg-pink-"]):not([class*="bg-blue-"]):not([class*="bg-yellow-"]):not([class*="bg-purple-"]):not([class*="bg-indigo-"]):not([class*="bg-teal-"]):not([class*="bg-lime-"]):not([class*="bg-amber-"]):not([class*="bg-cyan-"]):not([class*="bg-rose-"]):not([class*="bg-green-"]):not([class*="bg-orange-"]):not([class*="bg-red-"]) {
+  ):not(.chat-submit-glyph):not(.chat-stop-glyph):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *):not(.dashboard-overlay *):not([class*="bg-pink-"]):not([class*="bg-blue-"]):not([class*="bg-yellow-"]):not([class*="bg-purple-"]):not([class*="bg-indigo-"]):not([class*="bg-teal-"]):not([class*="bg-lime-"]):not([class*="bg-amber-"]):not([class*="bg-cyan-"]):not([class*="bg-rose-"]):not([class*="bg-green-"]):not([class*="bg-orange-"]):not([class*="bg-red-"]) {
   color: var(--os-color-text-secondary) !important;
 }
 
@@ -4061,16 +4061,12 @@
 /* --- Chat submit (send) glyph --------------------------------------------- */
 /* The send button uses a bright Aqua-green gradient with a dark glyph on
    top. In dark mode the broader `.window-body` rules remap `text-black/70`
-   to the secondary-text token (#c8c8cc), which sinks the arrow into the
-   green pill. Pin the glyph back to black so the submit affordance keeps
-   its high-contrast dark icon against the green gradient.
-   We need the same root-attribute specificity the dark-mode `text-black/*`
-   remap uses, otherwise the broader rule wins on the cascade. */
-.chat-submit-glyph,
-:root[data-os-theme="macosx"] .window-body .chat-submit-glyph,
-:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
-  .window-body
-  .chat-submit-glyph {
+   to the secondary-text token (#c8c8cc), which would sink the arrow into
+   the green pill. The dark `text-black/*` rule now explicitly excludes
+   `.chat-submit-glyph` (and `.chat-stop-glyph`), so this lightweight pin
+   wins across all themes / both color schemes. The Phosphor glyph uses
+   `fill="currentColor"`, so setting color is enough. */
+.chat-submit-glyph {
   color: rgba(0, 0, 0, 0.85) !important;
 }
 
