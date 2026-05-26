@@ -1012,7 +1012,7 @@ export const ChatInput = memo(function ChatInput({
                     </>
                   )}
                   <ArrowUp
-                    className={`size-4 ${
+                    className={`chat-submit-glyph size-4 ${
                       isMacTheme
                         ? "text-black/70 relative z-10"
                         : isXpTheme

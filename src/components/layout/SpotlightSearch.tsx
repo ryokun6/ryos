@@ -718,6 +718,7 @@ export function SpotlightSearch() {
                                             result.type !== "ai" &&
                                             result.subtitle !== sectionLabel && (
                                               <span
+                                                className="spotlight-row-subtitle"
                                                 style={{
                                                   color: isSelected
                                                       ? "rgba(255,255,255,0.6)"
@@ -874,6 +875,7 @@ export function SpotlightSearch() {
                                 {result.title}
                                 {result.subtitle && result.type !== "ai" && (
                                   <span
+                                    className="spotlight-row-subtitle"
                                     style={{
                                       color: isSelected
                                         ? "rgba(255,255,255,0.6)"
