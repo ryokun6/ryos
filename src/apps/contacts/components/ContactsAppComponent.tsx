@@ -357,6 +357,7 @@ export function ContactsAppComponent({
                       onChange={(event) => setSearchQuery(event.target.value)}
                       aria-label={t("apps.contacts.searchPlaceholder")}
                       title={t("apps.contacts.searchPlaceholder")}
+                      data-os-search-input="true"
                       className="w-full rounded-full border border-black/40 bg-white pl-7 pr-7 py-[3px] text-[11px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.3),inset_0_0_1px_rgba(0,0,0,0.15),0_1px_0_rgba(255,255,255,0.45)] outline-none font-geneva-12"
                     />
                     {searchQuery && (
@@ -431,6 +432,7 @@ export function ContactsAppComponent({
                       onChange={(event) => setSearchQuery(event.target.value)}
                       aria-label={t("apps.contacts.searchPlaceholder")}
                       title={t("apps.contacts.searchPlaceholder")}
+                      data-os-search-input="true"
                       className="w-full rounded-full border border-black/20 bg-white pl-7 pr-7 py-1 text-[11px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.12)] outline-none min-w-0"
                     />
                     {searchQuery && (

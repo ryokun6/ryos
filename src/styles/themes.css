@@ -4063,9 +4063,15 @@
    top. In dark mode the broader `.window-body` rules remap `text-black/70`
    to the secondary-text token (#c8c8cc), which sinks the arrow into the
    green pill. Pin the glyph back to black so the submit affordance keeps
-   its high-contrast dark icon against the green gradient. */
-.chat-submit-glyph {
-  color: rgba(0, 0, 0, 0.75) !important;
+   its high-contrast dark icon against the green gradient.
+   We need the same root-attribute specificity the dark-mode `text-black/*`
+   remap uses, otherwise the broader rule wins on the cascade. */
+.chat-submit-glyph,
+:root[data-os-theme="macosx"] .window-body .chat-submit-glyph,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .window-body
+  .chat-submit-glyph {
+  color: rgba(0, 0, 0, 0.85) !important;
 }
 
 /* --- Inline search/text inputs that don't use the shared SearchInput ----- */
@@ -4091,9 +4097,16 @@
     .bg-white\/30,
     .bg-white\/20,
     .bg-white\/10
-  ):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *):not(.synth-force-font *):not(.dashboard-overlay *) {
+  ):not([data-os-search-input="true"]):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *):not(.synth-force-font *):not(.dashboard-overlay *) {
   background-color: var(--os-color-input-bg) !important;
   color: var(--os-color-text-primary) !important;
+  /* Subtle inset recess — matches the canonical Finder SearchInput dark
+     treatment so inline inputs (Contacts/Calendar/TV sidebar fields) get
+     the same gentle dark recess instead of the original heavy light shadow. */
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.45),
+    inset 0 0 1px rgba(0, 0, 0, 0.25),
+    0 1px 0 rgba(255, 255, 255, 0.04) !important;
 }
 
 /* `border-black/{alpha}` and similar on inputs read as nearly invisible on
@@ -4359,7 +4372,11 @@
   border-color: rgba(255, 255, 255, 0.08) !important;
 }
 
-/* Inputs / textareas inside drawer (Calendar event editor field). */
+/* Inputs / textareas inside drawer (Calendar event editor field). The
+   light-mode style on these fields is a flat `border-black/25 bg-white` with
+   no inset shadow; on the dark surface we mirror the canonical Finder
+   search-input dark treatment so the field reads as a subtle recess instead
+   of a flat solid pill. */
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"]
   .os-drawer-list-well
   :where(input, textarea, select):where(
@@ -4375,6 +4392,10 @@
   background-color: var(--os-color-input-bg) !important;
   color: var(--os-color-text-primary) !important;
   border-color: rgba(255, 255, 255, 0.18) !important;
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.45),
+    inset 0 0 1px rgba(0, 0, 0, 0.25),
+    0 1px 0 rgba(255, 255, 255, 0.04) !important;
 }
 
 /* Black-text utilities inside the drawer — flip to light text tokens. */
@@ -4456,7 +4477,7 @@
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
 }
 
-/* --- Spotlight section headers ------------------------------------------ */
+/* --- Spotlight section headers + secondary text ------------------------- */
 /* Headers use inline `style.color: "rgba(0,0,0,0.4)"` (single-column) or
    `"rgba(0,0,0,0.5)"` (two-column table cell). Inline styles beat
    non-`!important` rules, so use `!important` on the class. Selected rows
@@ -4474,4 +4495,35 @@
   .spotlight-panel
   .spotlight-section-header[style*="border-right"] {
   border-right-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Result-row subtitle text ("Title — Subtitle"). The component sets an
+   inline `style.color: "rgba(0,0,0,0.4)"` for the subtitle span; remap it
+   to a light tone on the dark pinstripe panel. The selected-row branch
+   (`isSelected` uses `rgba(255,255,255,0.6)` — already light) doesn't need
+   to change. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .spotlight-panel
+  .spotlight-row-subtitle {
+  color: rgba(255, 255, 255, 0.45) !important;
+}
+
+/* No-results helper text ("No results for …") — inline `rgba(0,0,0,0.4)`. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .spotlight-panel
+  .spotlight-no-results {
+  color: rgba(255, 255, 255, 0.55) !important;
+}
+
+/* Two-column table column backgrounds + row borders (`rgba(0,0,0,0.04)` /
+   `rgba(0,0,0,0.1)`) baked inline. Lift to faint white-on-dark so the
+   table column gutter and per-row separator still register on the dark
+   pinstripe panel. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .spotlight-panel
+  td[style*="rgba(0, 0, 0, 0.04)"],
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .spotlight-panel
+  td[style*="rgba(0,0,0,0.04)"] {
+  background-color: rgba(255, 255, 255, 0.03) !important;
 }

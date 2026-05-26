@@ -90,6 +90,9 @@ export function ChannelPromptInput({
         }}
         aria-label={ariaLabel}
         aria-busy={isLoading || undefined}
+        // Mark as a "search-shaped" pill so the dark-mode rule in themes.css
+        // applies the subtle dark recess instead of the light inset shadow.
+        data-os-search-input="true"
         // Keep a single space as the placeholder while loading so the
         // browser doesn't render the static placeholder text underneath
         // the shimmer overlay.
