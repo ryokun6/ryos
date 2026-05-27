@@ -3257,14 +3257,128 @@
   caret-color: var(--os-color-text-primary);
 }
 
-/* Aqua select trigger uses light gradients hard-coded in CSS — soften them so
-   they read on dark window chrome (full Aqua-button pulse stays light blue,
-   so leave that alone). */
+/* Aqua select triggers, the Radix `.os-select-trigger-macos` / `.os-btn-aqua-select`
+   variants, and `.aqua-button.secondary` all bake light gradients
+   (`rgba(160,160,160) → rgba(255,255,255)`) into CSS. In dark mode those
+   render as bright pills sitting on top of the dark window chrome. Swap
+   them for a darker translucent gradient — same dark-glass aesthetic the
+   karaoke fullscreen toolbar segments use (`rgba(60,60,60,0.6) →
+   rgba(30,30,30,0.5)`) — so dropdown toggles and secondary buttons look
+   like graphite chips instead of bright slabs.
+
+   `.aqua-button.primary` is intentionally left alone — primary OK buttons
+   keep their pulsing Aqua blue in both color schemes. */
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .macos-select-trigger,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .os-select-trigger-macos,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .os-btn-aqua-select,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .aqua-button.secondary,
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"]
   select:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *)) {
-  color: var(--os-color-text-primary);
-  background-color: var(--os-color-input-bg);
+  background: linear-gradient(
+    to bottom,
+    rgba(72, 72, 78, 0.78),
+    rgba(34, 34, 38, 0.78)
+  ) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55) !important;
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.35),
+    0 1px 1px rgba(0, 0, 0, 0.35),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
+}
+
+/* The `.aqua-button.secondary span, .aqua-button.secondary` rule pins
+   `color: black` on the span child too, which would beat inherited color
+   from the parent button. Repaint the inner span explicitly so the label
+   reads on the dark gradient. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .aqua-button.secondary span {
+  color: rgba(255, 255, 255, 0.92) !important;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55) !important;
+}
+
+/* Native <select> uses `background:` shorthand to layer a chevron SVG on
+   top of the light gradient. The dark gradient rule above blew away the
+   chevron — re-layer a light-colored chevron over the new dark gradient. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  select:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *)) {
+  background-image:
+    url("data:image/svg+xml;charset=utf-8,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 2L6 7L11 2' stroke='%23e5e7eb' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"),
+    linear-gradient(
+      to bottom,
+      rgba(72, 72, 78, 0.78),
+      rgba(34, 34, 38, 0.78)
+    ) !important;
+  background-position: right 6px center, 0 0 !important;
+  background-repeat: no-repeat, no-repeat !important;
+}
+
+/* `.macos-select-trigger` paints its chevron via the ::after pseudo (dark
+   SVG stroke). Swap the stroke color for a light glyph so the indicator
+   still reads on the dark pill. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .macos-select-trigger:after {
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg width='8' height='10' viewBox='0 0 8 10' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 3.5L4 1L7 3.5M1 6.5L4 9L7 6.5' stroke='%23e5e7eb' stroke-width='1' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+/* Dim the bright top gloss strip baked into the light-mode `::before` so
+   the dark gradient isn't capped with a glaring white smear. Mirrors the
+   recipe `.aqua-tab:before` already uses in dark mode. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .macos-select-trigger:before,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  select:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *)):before,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .aqua-button.secondary:before {
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.14),
+    rgba(255, 255, 255, 0.04)
+  ) !important;
+}
+
+/* Bottom shine on every aqua button — the light-mode `:after` uses
+   `border-radius: 4px`, which crops the glow into a tight rounded
+   rectangle. On the dark window that reads as a hard rectangular band
+   along the bottom edge of the pill. Match the bottom shine's radius to
+   the pill itself so the highlight follows the button's outline. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .aqua-button:after {
+  border-radius: 9999px !important;
+}
+
+/* Secondary variant additionally dims the highlight so the pill keeps a
+   soft lift without smearing bright white across the dark gradient. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .aqua-button.secondary:after {
+  background: linear-gradient(rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.08)) !important;
+}
+
+/* Pressed / focus state — push the gradient one shade darker so the
+   "pushed in" affordance still reads in dark mode. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .aqua-button.secondary:focus,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .aqua-button.secondary:active,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .macos-select-trigger:active,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .os-select-trigger-macos:active,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .os-btn-aqua-select:active,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  select:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *)):active {
+  background: linear-gradient(
+    to bottom,
+    rgba(48, 48, 52, 0.9),
+    rgba(22, 22, 26, 0.9)
+  ) !important;
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.6),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.06),
+    0 0 3px rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Pressed/active on native <select> also needs the chevron layer to stay. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  select:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *)):active {
+  background-image:
+    url("data:image/svg+xml;charset=utf-8,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 2L6 7L11 2' stroke='%23e5e7eb' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"),
+    linear-gradient(
+      to bottom,
+      rgba(48, 48, 52, 0.9),
+      rgba(22, 22, 26, 0.9)
+    ) !important;
 }
 
 /* Ensure body / html paint the dark surface even before any window mounts */
