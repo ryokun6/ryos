@@ -49,7 +49,7 @@ export function MapsSearchPlacesCard({
   results,
 }: MapsSearchPlacesCardProps) {
   const { t } = useTranslation();
-  const { isMacOSTheme, isXpTheme, isSystem7Theme } = useThemeFlags();
+  const { isMacOSTheme, isXpTheme, isSystem7Theme, isDarkMode } = useThemeFlags();
   const launchApp = useLaunchApp();
 
   const handleOpenInMaps = useCallback(
@@ -75,20 +75,25 @@ export function MapsSearchPlacesCard({
     return (
       <div
         className={cn(
-          "my-1 px-2.5 py-2 text-[12px] text-black/70",
-          isMacOSTheme
-            ? "rounded-[0.5rem] bg-white/85 shadow-sm"
-            : isSystem7Theme
-              ? "rounded border-2 border-black bg-white shadow-[2px_2px_0_0_rgba(0,0,0,0.5)]"
-              : isXpTheme
-                ? "rounded-[0.4rem] border-2 border-[#0054E3] bg-[#ECE9D8]"
-                : "rounded border border-black/30 bg-white"
+          "my-1 px-2.5 py-2 text-[12px]",
+          isMacOSTheme && "maps-place-card-aqua rounded-[0.5rem] shadow-md",
+          !isMacOSTheme &&
+            isSystem7Theme &&
+            "rounded border-2 border-black bg-white text-black shadow-[2px_2px_0_0_rgba(0,0,0,0.5)]",
+          !isMacOSTheme &&
+            !isSystem7Theme &&
+            isXpTheme &&
+            "rounded-[0.4rem] border-2 border-[#0054E3] bg-[#ECE9D8] text-black",
+          !isMacOSTheme && !isSystem7Theme && !isXpTheme &&
+            "rounded border border-black/30 bg-white text-black"
         )}
       >
-        {t("apps.chats.toolCalls.maps.noResults", {
-          defaultValue: 'No places found for "{{query}}".',
-          query,
-        })}
+        <p className="text-[color:var(--os-color-text-secondary)]">
+          {t("apps.chats.toolCalls.maps.noResults", {
+            defaultValue: 'No places found for "{{query}}".',
+            query,
+          })}
+        </p>
       </div>
     );
   }
@@ -100,7 +105,7 @@ export function MapsSearchPlacesCard({
         // Theme shells mirror the in-app place card so the chat surface
         // looks like a sibling of the real Maps UI.
         isMacOSTheme &&
-          "maps-place-card-aqua rounded-[0.5rem] text-black",
+          "maps-place-card-aqua rounded-[0.5rem] text-[color:var(--os-color-text-primary)]",
         !isMacOSTheme &&
           isSystem7Theme &&
           "rounded border-2 border-black bg-white text-black shadow-[2px_2px_0_0_rgba(0,0,0,0.5)]",
@@ -112,7 +117,14 @@ export function MapsSearchPlacesCard({
           "rounded border border-black/30 bg-white text-black shadow-md"
       )}
     >
-      <ul className="divide-y divide-black/10">
+      <ul
+        className={cn(
+          "divide-y",
+          isMacOSTheme && isDarkMode
+            ? "divide-[color:var(--os-color-separator)]"
+            : "divide-black/10"
+        )}
+      >
         {results.map((place) => {
           const visual = getPoiVisual(place.category);
           const Icon = visual.Icon;
@@ -123,8 +135,13 @@ export function MapsSearchPlacesCard({
                 onClick={() => handleOpenInMaps(place)}
                 className={cn(
                   "flex w-full items-center gap-2.5 px-2.5 py-2 text-left",
-                  "hover:bg-black/5 active:bg-black/10",
-                  "focus:outline-none focus-visible:ring-1 focus-visible:ring-black/30"
+                  isMacOSTheme && isDarkMode
+                    ? "hover:bg-white/10 active:bg-white/14"
+                    : "hover:bg-black/5 active:bg-black/10",
+                  "focus:outline-none focus-visible:ring-1",
+                  isMacOSTheme && isDarkMode
+                    ? "focus-visible:ring-white/35"
+                    : "focus-visible:ring-black/30"
                 )}
                 aria-label={t("apps.chats.toolCalls.maps.openInMaps", {
                   defaultValue: "Open {{name}} in Maps",
@@ -139,11 +156,11 @@ export function MapsSearchPlacesCard({
                   <Icon size={20} weight="fill" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-[13px] font-semibold leading-tight text-black">
+                  <div className="truncate text-[13px] font-semibold leading-tight text-[color:var(--os-color-text-primary)]">
                     {place.name}
                   </div>
                   {place.address && (
-                    <div className="line-clamp-2 text-[11px] leading-snug text-black/60">
+                    <div className="line-clamp-2 text-[11px] leading-snug text-[color:var(--os-color-text-secondary)]">
                       {place.address}
                     </div>
                   )}
@@ -155,8 +172,10 @@ export function MapsSearchPlacesCard({
                   onClick={(e) => e.stopPropagation()}
                   className={cn(
                     "shrink-0 -mr-0.5 flex size-7 items-center justify-center rounded-full",
-                    "text-black/55 hover:bg-black/10 hover:text-black/85",
-                    "focus:outline-none focus-visible:ring-1 focus-visible:ring-black/30"
+                    isMacOSTheme && isDarkMode
+                      ? "text-[color:var(--os-color-text-secondary)] hover:bg-white/12 hover:text-[color:var(--os-color-text-primary)] focus-visible:ring-white/35"
+                      : "text-black/55 hover:bg-black/10 hover:text-black/85 focus-visible:ring-black/30",
+                    "focus:outline-none focus-visible:ring-1"
                   )}
                   aria-label={t("apps.chats.toolCalls.maps.openInAppleMaps", {
                     defaultValue: "Open in Apple Maps",

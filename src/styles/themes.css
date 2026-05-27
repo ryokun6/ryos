@@ -2939,6 +2939,36 @@
   color: #ffffff;
 }
 
+/* Aqua dark: veil over the wallpaper so desktop icons/readability stay crisp */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .desktop-background {
+  isolation: isolate;
+}
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .desktop-background::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: rgb(0 0 0 / 0.36);
+}
+
+/* macOS dark: Maps search / place / chat tool cards — dark glass, not light pinstripe */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .maps-place-card-aqua {
+  background: color-mix(in srgb, var(--os-color-panel-bg) 88%, transparent);
+  background-image: var(--os-pinstripe-window);
+  box-shadow: 0 6px 22px rgb(0 0 0 / 0.45);
+  border: 1px solid var(--os-color-sidebar-border);
+  color: var(--os-color-text-primary);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+/* macOS dark: Maps saved-places drawer rows (not on the light pinstripe card surface) */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .maps-places-place-row:hover {
+  background-color: rgb(255 255 255 / 0.08);
+}
+
 /* macOS: Style toast containers with semi-transparent pinstripes like dock */
 :root[data-os-theme="macosx"] .toaster [data-sonner-toast] {
   background: rgba(248, 248, 248, 0.75) !important;

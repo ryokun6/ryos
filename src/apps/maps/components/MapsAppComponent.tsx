@@ -1578,11 +1578,11 @@ export function MapsAppComponent({
             {isShowingResults && (
               <div
                 className={cn(
-                  "pointer-events-auto min-h-0 w-full min-w-0 overflow-y-auto rounded-[0.4rem] border shadow-md",
+                  "pointer-events-auto min-h-0 w-full min-w-0 overflow-y-auto rounded-[0.4rem] shadow-md",
                   "max-h-[min(50vh,24rem)]",
                   isMacOSTheme
-                    ? "maps-place-card-aqua border-black/20 text-black"
-                    : "border-black/40 bg-white/95 backdrop-blur-sm"
+                    ? "maps-place-card-aqua border-transparent text-[color:var(--os-color-text-primary)]"
+                    : "border border-black/40 bg-white/95 backdrop-blur-sm"
                 )}
               >
                 {/*
@@ -1593,19 +1593,37 @@ export function MapsAppComponent({
                  * dropdown is empty until the first hit lands.
                  */}
                 {!isSearching && searchError && (
-                  <div className="px-3 py-2 text-[11px] text-red-700">
+                  <div
+                    className={cn(
+                      "px-3 py-2 text-[11px]",
+                      isMacOSTheme && isDarkMode
+                        ? "text-red-300"
+                        : "text-red-700"
+                    )}
+                  >
                     {searchError}
                   </div>
                 )}
                 {!isSearching && !searchError && searchResults.length === 0 && (
-                  <div className="px-3 py-2 text-[11px] text-black/60">
+                  <div
+                    className={cn(
+                      "px-3 py-2 text-[11px] text-[color:var(--os-color-text-secondary)]"
+                    )}
+                  >
                     {t("apps.maps.noResults", {
                       defaultValue: "No results",
                     })}
                   </div>
                 )}
                 {searchResults.length > 0 && (
-                  <ul className="divide-y divide-black/10">
+                  <ul
+                    className={cn(
+                      "divide-y",
+                      isMacOSTheme && isDarkMode
+                        ? "divide-[color:var(--os-color-separator)]"
+                        : "divide-black/10"
+                    )}
+                  >
                     {searchResults.map((result) => {
                       const isSelected = selectedResultId === result.id;
                       const visual = getPoiVisual(result.category);
@@ -1617,8 +1635,13 @@ export function MapsAppComponent({
                             onClick={() => handleSelectResult(result)}
                             className={cn(
                               "flex w-full items-center gap-3 px-3 py-2 text-left text-[12px]",
-                              "hover:bg-black/5",
-                              isSelected && "bg-black/5"
+                              isMacOSTheme && isDarkMode
+                                ? "hover:bg-white/8"
+                                : "hover:bg-black/5",
+                              isSelected &&
+                                (isMacOSTheme && isDarkMode
+                                  ? "bg-white/10"
+                                  : "bg-black/5")
                             )}
                           >
                             <div
@@ -1631,11 +1654,11 @@ export function MapsAppComponent({
                               <Icon size={17} weight="fill" />
                             </div>
                             <div className="min-w-0 flex-1">
-                              <div className="truncate font-medium text-black">
+                              <div className="truncate font-medium text-[color:var(--os-color-text-primary)]">
                                 {result.name}
                               </div>
                               {result.subtitle && (
-                                <div className="truncate text-[11px] text-black/55">
+                                <div className="truncate text-[11px] text-[color:var(--os-color-text-secondary)]">
                                   {result.subtitle}
                                 </div>
                               )}
