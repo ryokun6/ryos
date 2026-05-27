@@ -3324,8 +3324,17 @@
   ) !important;
 }
 
-/* Bottom highlight under the secondary aqua button — dim to a faint glow
-   so the pill still has a soft lift on the dark window. */
+/* Bottom shine on every aqua button — the light-mode `:after` uses
+   `border-radius: 4px`, which crops the glow into a tight rounded
+   rectangle. On the dark window that reads as a hard rectangular band
+   along the bottom edge of the pill. Match the bottom shine's radius to
+   the pill itself so the highlight follows the button's outline. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .aqua-button:after {
+  border-radius: 9999px !important;
+}
+
+/* Secondary variant additionally dims the highlight so the pill keeps a
+   soft lift without smearing bright white across the dark gradient. */
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .aqua-button.secondary:after {
   background: linear-gradient(rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.08)) !important;
 }
