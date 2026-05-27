@@ -1,4 +1,4 @@
-import { describe, expect, mock, test } from "bun:test";
+import { afterAll, beforeAll, describe, expect, mock, test } from "bun:test";
 import type { Redis } from "@upstash/redis";
 import { createChatTools } from "../api/chat/tools/index.js";
 import {
@@ -195,6 +195,27 @@ async function seedSongs(redis: FakeRedis): Promise<void> {
 }
 
 describe("song library chat tools", () => {
+  const ORIGIN_ENV_KEYS = ["APP_PUBLIC_ORIGIN", "PUBLIC_APP_ORIGIN"] as const;
+  const savedOriginEnv: Partial<Record<(typeof ORIGIN_ENV_KEYS)[number], string | undefined>> = {};
+
+  beforeAll(() => {
+    for (const key of ORIGIN_ENV_KEYS) {
+      savedOriginEnv[key] = process.env[key];
+      delete process.env[key];
+    }
+  });
+
+  afterAll(() => {
+    for (const key of ORIGIN_ENV_KEYS) {
+      const prev = savedOriginEnv[key];
+      if (prev === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = prev;
+      }
+    }
+  });
+
   test("all profile does not expose songLibraryControl", () => {
     const tools = createChatTools(createContext(new FakeRedis()), { profile: "all" });
     expect("songLibraryControl" in tools).toBe(false);
