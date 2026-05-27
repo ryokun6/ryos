@@ -2939,22 +2939,45 @@
   color: #ffffff;
 }
 
-/* Aqua dark — same glass lineage as dock / Sonner toasts; keeps chat + Maps readable */
-:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .maps-place-card-aqua {
-  background: rgba(40, 40, 44, 0.82);
-  background-image: var(--os-pinstripe-menubar);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
-  border: none;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  color: var(--os-color-text-primary);
+/* Aqua dark: veil over the wallpaper so desktop icons/readability stay crisp */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .desktop-background {
+  isolation: isolate;
 }
-:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .maps-place-card-aqua .aqua-icon-badge,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .desktop-background::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: rgb(0 0 0 / 0.36);
+}
+
+/* macOS dark: Maps search / place / chat tool cards — dark glass, not light pinstripe */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .maps-place-card-aqua {
+  background: color-mix(in srgb, var(--os-color-panel-bg) 88%, transparent);
+  background-image: var(--os-pinstripe-window);
+  box-shadow: 0 6px 22px rgb(0 0 0 / 0.45);
+  border: 1px solid var(--os-color-sidebar-border);
+  color: var(--os-color-text-primary);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+/* Same as light: keep gradient badge glyphs white on dark glass */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .maps-place-card-aqua
+  .aqua-icon-badge,
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"]
   .maps-place-card-aqua
   .aqua-icon-badge
   * {
   color: #ffffff;
+}
+
+/* macOS dark: Maps saved-places drawer rows (not on the light pinstripe card surface) */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .maps-places-place-row:hover {
+  background-color: rgb(255 255 255 / 0.08);
 }
 
 /* macOS: Style toast containers with semi-transparent pinstripes like dock */

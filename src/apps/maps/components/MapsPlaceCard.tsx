@@ -95,7 +95,8 @@ export function MapsPlaceCard({
   onClose,
 }: MapsPlaceCardProps) {
   const { t } = useTranslation();
-  const { isMacOSTheme, isXpTheme, isSystem7Theme } = useThemeFlags();
+  const { isMacOSTheme, isXpTheme, isSystem7Theme, isDarkMode } = useThemeFlags();
+  const aquaDarkCard = isMacOSTheme && isDarkMode;
 
   return (
     <AnimatePresence>
@@ -119,7 +120,7 @@ export function MapsPlaceCard({
               // other themes mirror their drawer panels so the surfaces look
               // like siblings.
               isMacOSTheme &&
-                "maps-place-card-aqua rounded-[0.5rem] text-os-text-primary",
+                "maps-place-card-aqua rounded-[0.5rem] border-transparent text-os-text-primary",
               !isMacOSTheme &&
                 isSystem7Theme &&
                 "rounded border-2 border-black bg-white text-black shadow-[2px_2px_0_0_rgba(0,0,0,0.5)]",
@@ -138,6 +139,7 @@ export function MapsPlaceCard({
               isWork={isWork}
               onClose={onClose}
               t={t}
+              aquaDarkCard={aquaDarkCard}
             />
             <PlaceCardActions
               place={place}
@@ -165,6 +167,7 @@ interface PlaceCardHeaderProps {
   isWork: boolean;
   onClose: () => void;
   t: ReturnType<typeof useTranslation>["t"];
+  aquaDarkCard: boolean;
 }
 
 function PlaceCardHeader({
@@ -173,6 +176,7 @@ function PlaceCardHeader({
   isWork,
   onClose,
   t,
+  aquaDarkCard,
 }: PlaceCardHeaderProps) {
   const homeTitle = t("apps.maps.places.home", { defaultValue: "Home" });
   const workTitle = t("apps.maps.places.work", { defaultValue: "Work" });
@@ -228,9 +232,10 @@ function PlaceCardHeader({
         onClick={onClose}
         className={cn(
           "shrink-0 -mr-0.5 -mt-0.5 flex size-6 items-center justify-center rounded-full",
-          "text-os-text-secondary hover:bg-black/10 hover:text-os-text-primary",
-          "focus:outline-none focus-visible:ring-1 focus-visible:ring-black/30",
-          "dark:hover:bg-white/10 dark:focus-visible:ring-white/35"
+          "focus:outline-none focus-visible:ring-1",
+          aquaDarkCard
+            ? "text-os-text-secondary hover:bg-white/12 hover:text-os-text-primary focus-visible:ring-white/35"
+            : "text-os-text-secondary hover:bg-black/10 hover:text-os-text-primary focus-visible:ring-black/30"
         )}
         aria-label={t("apps.maps.placeCard.close", {
           defaultValue: "Close place card",
