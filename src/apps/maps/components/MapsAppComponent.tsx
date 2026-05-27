@@ -70,6 +70,14 @@ interface MapKitMapInstance {
   showsUserLocation: boolean;
   tracksUserLocation: boolean;
   mapType: string;
+  /**
+   * MapKit JS color scheme — accepts the string values from
+   * `mapkit.Map.ColorSchemes` (`"light"` / `"dark"` / `"adaptive"`).
+   * Only honored when `mapType` is `Standard` or `MutedStandard`;
+   * Hybrid / Satellite ignore the value but accept assignments.
+   *   https://developer.apple.com/documentation/mapkitjs/map/colorscheme
+   */
+  colorScheme: string;
   region: unknown;
   setRegionAnimated: (region: unknown, animated?: boolean) => void;
   setCenterAnimated: (
@@ -181,6 +189,19 @@ function mapTypeToMapKit(type: MapsMapType): string {
     default:
       return "standard";
   }
+}
+
+// Mirror MapKit JS's `mapkit.Map.ColorSchemes` runtime values. We use plain
+// string literals for the same reason as `mapTypeToMapKit` above — the
+// enum lives under `mapkit.Map` and may not be populated synchronously
+// during the first construction. ryOS exposes a single `isDarkMode` flag
+// (only the Aqua theme supports dark mode today) so we collapse straight
+// to "dark" / "light" rather than using "adaptive" — that way an explicit
+// per-theme light/dark override in the ryOS theme store always wins over
+// the OS-level `prefers-color-scheme`.
+//   https://developer.apple.com/documentation/mapkitjs/colorscheme
+function isDarkModeToMapKit(isDarkMode: boolean): string {
+  return isDarkMode ? "dark" : "light";
 }
 
 interface MapsSearchResult {
@@ -361,6 +382,7 @@ export function MapsAppComponent({
     translatedHelpItems,
     isXpTheme,
     isMacOSTheme,
+    isDarkMode,
     isHelpDialogOpen,
     setIsHelpDialogOpen,
     isAboutDialogOpen,
@@ -544,8 +566,10 @@ export function MapsAppComponent({
       // filter" sentinel which means every POI category is rendered.
       pointOfInterestFilter: null,
       region,
+      colorScheme: isDarkModeToMapKit(isDarkMode),
     });
     map.mapType = mapTypeToMapKit(mapType);
+    map.colorScheme = isDarkModeToMapKit(isDarkMode);
     map.showsUserLocation = false;
     map.tracksUserLocation = false;
     map.annotationForCluster = (cluster) => {
@@ -615,6 +639,17 @@ export function MapsAppComponent({
     if (!map) return;
     map.mapType = mapTypeToMapKit(mapType);
   }, [mapType]);
+
+  // Sync MapKit's `colorScheme` when the ryOS theme's dark-mode flag flips
+  // (Aqua is the only theme that supports dark mode today). MapKit only
+  // applies the value to `Standard`/`MutedStandard`, but assigning while
+  // on Hybrid/Satellite is harmless — the new value sticks and takes
+  // effect the next time the user switches back to a standard map type.
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+    map.colorScheme = isDarkModeToMapKit(isDarkMode);
+  }, [isDarkMode, mapReadyTick]);
 
   // Tear down the map instance when the window closes or the component
   // unmounts so repeated open/close cycles don't leak DOM nodes.
@@ -1489,7 +1524,13 @@ export function MapsAppComponent({
         <div className="relative size-full min-h-0 flex-1 overflow-hidden bg-transparent font-os-ui">
           <div
             ref={attachMapSurfaceRef}
-            className="absolute inset-0 bg-[#e5e3df]"
+            className={cn(
+              "absolute inset-0",
+              // Tile-load placeholder. Light: Apple-Maps tan. Dark: dim
+              // neutral that matches the map's dark color scheme so the
+              // window doesn't flash a bright fill before MapKit paints.
+              isDarkMode ? "bg-[#1c1c1e]" : "bg-[#e5e3df]"
+            )}
             role="application"
             aria-label={t("apps.maps.mapAriaLabel", {
               defaultValue: "Map",
@@ -1501,16 +1542,27 @@ export function MapsAppComponent({
               className={cn(
                 "absolute inset-0 z-[5] flex items-center justify-center px-6 text-center",
                 "bg-os-window-bg/90 backdrop-blur-sm",
-                "font-os-ui text-[12px] text-black/70"
+                "font-os-ui text-[12px]",
+                isDarkMode ? "text-white/70" : "text-black/70"
               )}
             >
               <div className="max-w-[360px] space-y-2">
-                <div className="text-[14px] font-semibold text-black">
+                <div
+                  className={cn(
+                    "text-[14px] font-semibold",
+                    isDarkMode ? "text-white" : "text-black"
+                  )}
+                >
                   {t("apps.maps.title", { defaultValue: "Maps" })}
                 </div>
                 <div>{overlayMessage}</div>
                 {!hasToken && (
-                  <div className="text-[11px] text-black/60">
+                  <div
+                    className={cn(
+                      "text-[11px]",
+                      isDarkMode ? "text-white/60" : "text-black/60"
+                    )}
+                  >
                     {t("apps.maps.status.tokenHint", {
                       defaultValue:
                         "The server signs short-lived MapKit tokens automatically once credentials are configured.",
