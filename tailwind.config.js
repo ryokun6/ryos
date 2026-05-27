@@ -196,6 +196,29 @@ module.exports = {
             },
           },
         },
+        /** TextEdit: drive @tailwindcss/typography from `themes.css` OS tokens so dark Aqua stays readable when `bg-white` is remapped to the dark window surface. */
+        textedit: {
+          css: {
+            "--tw-prose-body": "var(--os-color-text-primary)",
+            "--tw-prose-headings": "var(--os-color-text-primary)",
+            "--tw-prose-lead": "var(--os-color-text-secondary)",
+            "--tw-prose-links": "rgb(52, 106, 227)",
+            "--tw-prose-bold": "var(--os-color-text-primary)",
+            "--tw-prose-counters": "var(--os-color-text-secondary)",
+            "--tw-prose-bullets": "var(--os-color-text-secondary)",
+            "--tw-prose-hr": "var(--os-color-separator)",
+            "--tw-prose-quotes": "var(--os-color-text-secondary)",
+            "--tw-prose-quote-borders": "var(--os-color-separator)",
+            "--tw-prose-captions": "var(--os-color-text-secondary)",
+            "--tw-prose-kbd": "var(--os-color-text-primary)",
+            "--tw-prose-kbd-shadows": "rgba(0, 0, 0, 0.12)",
+            "--tw-prose-code": "var(--os-color-text-primary)",
+            "--tw-prose-pre-code": "var(--os-color-text-secondary)",
+            "--tw-prose-pre-bg": "var(--os-color-input-bg)",
+            "--tw-prose-th-borders": "var(--os-color-separator)",
+            "--tw-prose-td-borders": "var(--os-color-separator)",
+          },
+        },
       },
       keyframes: {
         "accordion-down": {

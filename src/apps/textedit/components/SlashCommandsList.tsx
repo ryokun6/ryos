@@ -68,18 +68,18 @@ export const SlashCommandsList = (
   }));
 
   return (
-    <div className="z-50 h-auto max-h-[330px] w-72 overflow-y-auto rounded-lg border border-neutral-200 bg-white p-1 shadow-lg">
+    <div className="z-50 h-auto max-h-[330px] w-72 overflow-y-auto rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-lg">
       {props.items.map((item, index) => (
         <button
           key={`${item.title}-${item.description}`}
           className={`flex w-full items-start gap-2 rounded-md px-2 py-1 text-left ${
-            index === selectedIndex ? "bg-neutral-100" : ""
+            index === selectedIndex ? "bg-accent text-accent-foreground" : ""
           }`}
           onClick={() => selectItem(index)}
         >
           <div className="flex flex-col">
             <span className="text-sm font-medium">{item.title}</span>
-            <span className="text-xs text-neutral-500">{item.description}</span>
+            <span className="text-xs text-muted-foreground">{item.description}</span>
           </div>
         </button>
       ))}

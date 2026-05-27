@@ -330,8 +330,8 @@ export function EditorToolbar({
           <BoldIcon
             className={`size-4 ${
               editor?.isActive("bold")
-                ? "text-black"
-                : "text-neutral-500"
+                ? "text-os-text-primary"
+                : "text-os-text-secondary"
             }`}
             weight="bold"
           />
@@ -346,8 +346,8 @@ export function EditorToolbar({
           <ItalicIcon
             className={`size-4 ${
               editor?.isActive("italic")
-                ? "text-black"
-                : "text-neutral-500"
+                ? "text-os-text-primary"
+                : "text-os-text-secondary"
             }`}
             weight="bold"
           />
@@ -364,8 +364,8 @@ export function EditorToolbar({
           <UnderlineIcon
             className={`size-4 ${
               editor?.isActive("underline")
-                ? "text-black"
-                : "text-neutral-500"
+                ? "text-os-text-primary"
+                : "text-os-text-secondary"
             }`}
             weight="bold"
           />
@@ -438,8 +438,8 @@ export function EditorToolbar({
           <AlignLeft
             className={`size-4 ${
               editor?.isActive({ textAlign: "left" })
-                ? "text-black"
-                : "text-neutral-500"
+                ? "text-os-text-primary"
+                : "text-os-text-secondary"
             }`}
             weight="bold"
           />
@@ -456,8 +456,8 @@ export function EditorToolbar({
           <AlignCenter
             className={`size-4 ${
               editor?.isActive({ textAlign: "center" })
-                ? "text-black"
-                : "text-neutral-500"
+                ? "text-os-text-primary"
+                : "text-os-text-secondary"
             }`}
             weight="bold"
           />
@@ -474,8 +474,8 @@ export function EditorToolbar({
           <AlignRight
             className={`size-4 ${
               editor?.isActive({ textAlign: "right" })
-                ? "text-black"
-                : "text-neutral-500"
+                ? "text-os-text-primary"
+                : "text-os-text-secondary"
             }`}
             weight="bold"
           />
@@ -496,8 +496,8 @@ export function EditorToolbar({
           <ListIcon
             className={`size-4 ${
               editor?.isActive("bulletList")
-                ? "text-black"
-                : "text-neutral-500"
+                ? "text-os-text-primary"
+                : "text-os-text-secondary"
             }`}
             weight="bold"
           />
@@ -514,8 +514,8 @@ export function EditorToolbar({
           <ListOrdered
             className={`size-4 ${
               editor?.isActive("orderedList")
-                ? "text-black"
-                : "text-neutral-500"
+                ? "text-os-text-primary"
+                : "text-os-text-secondary"
             }`}
             weight="bold"
           />
@@ -528,7 +528,7 @@ export function EditorToolbar({
           onTranscriptionComplete={onTranscriptionComplete}
           onTranscriptionStart={onTranscriptionStart}
           isLoading={isTranscribing}
-          className="size-7 inline-flex items-center justify-center text-neutral-500 hover:text-black"
+          className="size-7 inline-flex items-center justify-center text-os-text-secondary hover:text-os-text-primary"
           silenceThreshold={10000}
         />
         {speechEnabled && (
@@ -540,11 +540,11 @@ export function EditorToolbar({
             aria-label={isSpeaking ? t("apps.textedit.stopSpeech") : t("apps.textedit.speak")}
           >
             {isTtsLoading ? (
-              <ActivityIndicator size="sm" color="black" />
+              <ActivityIndicator size="sm" color="var(--os-color-text-primary)" />
             ) : isSpeaking ? (
-              <PlaybackBars color="black" />
+              <PlaybackBars color="os" />
             ) : (
-              <SpeakerHigh className="size-4 text-neutral-500" weight="bold" />
+              <SpeakerHigh className="size-4 text-os-text-secondary" weight="bold" />
             )}
           </Button>
         )}

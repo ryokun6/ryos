@@ -3,7 +3,7 @@ import { useMemo } from "react";
 
 interface PlaybackBarsProps {
   className?: string;
-  color?: "white" | "black";
+  color?: "white" | "black" | "os";
   /** Number of bars to render (default 5) */
   barCount?: number;
 }
@@ -46,7 +46,11 @@ export function PlaybackBars({
         <motion.div
           key={index}
           className={`w-[2px] rounded-full ${
-            color === "white" ? "bg-white" : "bg-black"
+            color === "white"
+              ? "bg-white"
+              : color === "os"
+                ? "bg-[color:var(--os-color-text-primary)]"
+              : "bg-black"
           }`}
           initial={{ scaleY: MIN_SCALE }}
           animate={{
