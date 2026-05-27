@@ -2939,6 +2939,24 @@
   color: #ffffff;
 }
 
+/* Aqua dark — same glass lineage as dock / Sonner toasts; keeps chat + Maps readable */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .maps-place-card-aqua {
+  background: rgba(40, 40, 44, 0.82);
+  background-image: var(--os-pinstripe-menubar);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+  border: none;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: var(--os-color-text-primary);
+}
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .maps-place-card-aqua .aqua-icon-badge,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .maps-place-card-aqua
+  .aqua-icon-badge
+  * {
+  color: #ffffff;
+}
+
 /* macOS: Style toast containers with semi-transparent pinstripes like dock */
 :root[data-os-theme="macosx"] .toaster [data-sonner-toast] {
   background: rgba(248, 248, 248, 0.75) !important;

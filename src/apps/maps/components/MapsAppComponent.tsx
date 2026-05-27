@@ -1581,7 +1581,7 @@ export function MapsAppComponent({
                   "pointer-events-auto min-h-0 w-full min-w-0 overflow-y-auto rounded-[0.4rem] border shadow-md",
                   "max-h-[min(50vh,24rem)]",
                   isMacOSTheme
-                    ? "maps-place-card-aqua border-black/20 text-black"
+                    ? "maps-place-card-aqua border-black/20 text-os-text-primary dark:border-white/15"
                     : "border-black/40 bg-white/95 backdrop-blur-sm"
                 )}
               >
@@ -1593,19 +1593,19 @@ export function MapsAppComponent({
                  * dropdown is empty until the first hit lands.
                  */}
                 {!isSearching && searchError && (
-                  <div className="px-3 py-2 text-[11px] text-red-700">
+                  <div className="px-3 py-2 text-[11px] text-red-700 dark:text-red-300">
                     {searchError}
                   </div>
                 )}
                 {!isSearching && !searchError && searchResults.length === 0 && (
-                  <div className="px-3 py-2 text-[11px] text-black/60">
+                  <div className="px-3 py-2 text-[11px] text-os-text-secondary">
                     {t("apps.maps.noResults", {
                       defaultValue: "No results",
                     })}
                   </div>
                 )}
                 {searchResults.length > 0 && (
-                  <ul className="divide-y divide-black/10">
+                  <ul className="divide-y divide-black/10 dark:divide-white/10">
                     {searchResults.map((result) => {
                       const isSelected = selectedResultId === result.id;
                       const visual = getPoiVisual(result.category);
@@ -1617,8 +1617,8 @@ export function MapsAppComponent({
                             onClick={() => handleSelectResult(result)}
                             className={cn(
                               "flex w-full items-center gap-3 px-3 py-2 text-left text-[12px]",
-                              "hover:bg-black/5",
-                              isSelected && "bg-black/5"
+                              "hover:bg-black/5 dark:hover:bg-white/10",
+                              isSelected && "bg-black/5 dark:bg-white/10"
                             )}
                           >
                             <div
@@ -1631,11 +1631,11 @@ export function MapsAppComponent({
                               <Icon size={17} weight="fill" />
                             </div>
                             <div className="min-w-0 flex-1">
-                              <div className="truncate font-medium text-black">
+                              <div className="truncate font-medium text-os-text-primary">
                                 {result.name}
                               </div>
                               {result.subtitle && (
-                                <div className="truncate text-[11px] text-black/55">
+                                <div className="truncate text-[11px] text-os-text-secondary">
                                   {result.subtitle}
                                 </div>
                               )}

@@ -119,7 +119,7 @@ export function MapsPlaceCard({
               // other themes mirror their drawer panels so the surfaces look
               // like siblings.
               isMacOSTheme &&
-                "maps-place-card-aqua rounded-[0.5rem] text-black",
+                "maps-place-card-aqua rounded-[0.5rem] text-os-text-primary",
               !isMacOSTheme &&
                 isSystem7Theme &&
                 "rounded border-2 border-black bg-white text-black shadow-[2px_2px_0_0_rgba(0,0,0,0.5)]",
@@ -208,17 +208,17 @@ function PlaceCardHeader({
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-1.5">
-          <div className="truncate text-[13px] font-semibold leading-tight text-black">
+          <div className="truncate text-[13px] font-semibold leading-tight text-os-text-primary">
             {title}
           </div>
           {categoryLabel && (
-            <div className="shrink-0 text-[11px] leading-tight text-black/45">
+            <div className="shrink-0 text-[11px] leading-tight text-os-text-secondary">
               {categoryLabel}
             </div>
           )}
         </div>
         {subtitle && (
-          <div className="line-clamp-2 text-[11px] leading-snug text-black/60">
+          <div className="line-clamp-2 text-[11px] leading-snug text-os-text-secondary">
             {subtitle}
           </div>
         )}
@@ -228,8 +228,9 @@ function PlaceCardHeader({
         onClick={onClose}
         className={cn(
           "shrink-0 -mr-0.5 -mt-0.5 flex size-6 items-center justify-center rounded-full",
-          "text-black/55 hover:bg-black/10 hover:text-black/85",
-          "focus:outline-none focus-visible:ring-1 focus-visible:ring-black/30"
+          "text-os-text-secondary hover:bg-black/10 hover:text-os-text-primary",
+          "focus:outline-none focus-visible:ring-1 focus-visible:ring-black/30",
+          "dark:hover:bg-white/10 dark:focus-visible:ring-white/35"
         )}
         aria-label={t("apps.maps.placeCard.close", {
           defaultValue: "Close place card",

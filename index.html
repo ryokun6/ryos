@@ -226,18 +226,41 @@
           }
           // Dark mode is per-theme, only honored when the theme advertises support.
           // Today only macosx has dark tokens — see src/styles/themes.css.
+          // Match useThemeStore#effectiveDarkFor (string prefs + legacy booleans + system).
           var supportsDark = theme === "macosx";
+          var systemDark = false;
+          try {
+            systemDark =
+              window.matchMedia &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches;
+          } catch (e0) {}
+
+          var isDarkBoot = false;
           if (supportsDark) {
             try {
               var rawDark = localStorage.getItem("ryos:theme:dark");
+              var pref = null;
               if (rawDark) {
-                var parsed = JSON.parse(rawDark);
-                if (parsed && parsed[theme] === true) {
-                  root.dataset.osColorScheme = "dark";
-                  root.style.colorScheme = "dark";
+                var parsedDark = JSON.parse(rawDark);
+                if (
+                  parsedDark &&
+                  typeof parsedDark === "object" &&
+                  parsedDark[theme] !== undefined &&
+                  parsedDark[theme] !== null
+                ) {
+                  pref = parsedDark[theme];
                 }
               }
-            } catch (e) {}
+              if (pref === true || pref === "dark") isDarkBoot = true;
+              else if (pref === false || pref === "light") isDarkBoot = false;
+              else isDarkBoot = systemDark;
+            } catch (e1) {}
+
+            if (isDarkBoot) {
+              root.dataset.osColorScheme = "dark";
+              root.style.colorScheme = "dark";
+              root.classList.add("dark");
+            }
           }
         } catch (e) {}
       })();

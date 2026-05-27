@@ -775,8 +775,8 @@ export function ToolInvocationMessage({
       return (
         <div key={partKey} className="mb-0 px-1 py-0.5 text-[12px]">
           <ToolInvocationStatusRow
-            icon={<Check className="size-3 text-blue-600" weight="bold" />}
-            className="text-neutral-700"
+            icon={<Check className="size-3 text-blue-600 dark:text-blue-400" weight="bold" />}
+            className="text-neutral-700 dark:text-neutral-200"
             align="start"
           >
             <span>
@@ -809,12 +809,12 @@ export function ToolInvocationMessage({
           <ToolInvocationStatusRow
             icon={
               <Check
-                className="size-3 shrink-0 text-neutral-400"
+                className="size-3 shrink-0 text-neutral-400 dark:text-neutral-500"
                 weight="bold"
                 aria-hidden
               />
             }
-            className="text-neutral-500"
+            className="text-neutral-500 dark:text-neutral-400"
             align="start"
           >
             <span>
@@ -899,8 +899,8 @@ export function ToolInvocationMessage({
       return (
         <div key={partKey} className="mb-0 px-1 py-0.5 italic text-[12px]">
           <ToolInvocationStatusRow
-            icon={<ActivityIndicator size="xs" className="text-neutral-500" />}
-            className="text-neutral-600"
+            icon={<ActivityIndicator size="xs" className="text-neutral-500 dark:text-neutral-400" />}
+            className="text-neutral-600 dark:text-neutral-300"
           >
             <span className="shimmer">
               {t("apps.chats.toolCalls.generating")}
@@ -929,8 +929,8 @@ export function ToolInvocationMessage({
       return (
         <div key={partKey} className="mb-0 px-1 py-0.5 italic text-[12px]">
           <ToolInvocationStatusRow
-            icon={<ActivityIndicator size="xs" className="text-neutral-500" />}
-            className="text-neutral-500"
+            icon={<ActivityIndicator size="xs" className="text-neutral-500 dark:text-neutral-400" />}
+            className="text-neutral-500 dark:text-neutral-400"
           >
             <span>{t("apps.chats.toolCalls.preparingHtmlPreview")}</span>
           </ToolInvocationStatusRow>
@@ -949,8 +949,8 @@ export function ToolInvocationMessage({
       {(state === "input-streaming" || state === "input-available") &&
         !output && (
           <ToolInvocationStatusRow
-            icon={<ActivityIndicator size="xs" className="text-neutral-500" />}
-            className="text-neutral-700"
+            icon={<ActivityIndicator size="xs" className="text-neutral-500 dark:text-neutral-400" />}
+            className="text-neutral-700 dark:text-neutral-200"
           >
             {displayCallMessage ? (
               <span className="shimmer">{displayCallMessage}</span>
@@ -965,8 +965,8 @@ export function ToolInvocationMessage({
         )}
       {state === "output-available" && (
         <ToolInvocationStatusRow
-          icon={<Check className="size-3 text-blue-600" weight="bold" />}
-          className="text-neutral-700"
+          icon={<Check className="size-3 text-blue-600 dark:text-blue-400" weight="bold" />}
+          className="text-neutral-700 dark:text-neutral-200"
           align="start"
         >
           {displayResultMessage ? (
@@ -974,7 +974,7 @@ export function ToolInvocationMessage({
           ) : (
             <div className="flex flex-col">
               {typeof output === "string" && output.length > 0 ? (
-                <span className="text-neutral-500">{output}</span>
+                <span className="text-neutral-500 dark:text-neutral-400">{output}</span>
               ) : (
                 <span>{formatToolName(toolName)}</span>
               )}
@@ -986,12 +986,12 @@ export function ToolInvocationMessage({
         <ToolInvocationStatusRow
           icon={
             <Check
-              className="size-3 shrink-0 text-neutral-400"
+              className="size-3 shrink-0 text-neutral-400 dark:text-neutral-500"
               weight="bold"
               aria-hidden
             />
           }
-          className="text-neutral-500"
+          className="text-neutral-500 dark:text-neutral-400"
         >
           <span>{toolAttemptedLabel}</span>
         </ToolInvocationStatusRow>

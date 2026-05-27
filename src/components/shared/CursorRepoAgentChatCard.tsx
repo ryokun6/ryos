@@ -136,7 +136,7 @@ export function CursorRepoAgentChatCard({
             />
           </span>
           <div className="flex min-w-0 flex-1 items-center gap-2">
-            <div className="min-w-0 flex-1 truncate text-sm font-medium" title={displayTitle}>
+            <div className="min-w-0 flex-1 truncate text-sm font-medium text-neutral-900 dark:text-neutral-100" title={displayTitle}>
               {displayTitle}
             </div>
             {prUrl ? (

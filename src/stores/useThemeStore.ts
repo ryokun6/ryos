@@ -161,12 +161,16 @@ function applyRootThemeAttributes(theme: OsThemeId, isDark: boolean) {
   else delete root.dataset.osMacChrome;
   // Color-scheme attribute is only applied when the theme supports dark mode AND it's enabled.
   // This keeps the existing light-mode CSS the single source of truth for unsupported themes.
+  // Mirror the same predicate on Tailwind's `dark` class so `dark:*` utilities match Aqua dark mode
+  // (Tailwind `darkMode: ["class"]` expects a `.dark` ancestor — `data-os-color-scheme` alone is insufficient).
   if (isDark && themeSupportsDarkMode(theme)) {
     root.dataset.osColorScheme = "dark";
     root.style.colorScheme = "dark";
+    root.classList.add("dark");
   } else {
     delete root.dataset.osColorScheme;
     root.style.colorScheme = "light";
+    root.classList.remove("dark");
   }
 }
 
