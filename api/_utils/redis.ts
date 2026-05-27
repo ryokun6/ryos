@@ -69,6 +69,7 @@ export interface RedisLike {
   ltrim(key: string, start: number, stop: number): Promise<string>;
   lrem(key: string, count: number, value: string): Promise<number>;
   llen(key: string): Promise<number>;
+  lindex<T = unknown>(key: string, index: number): Promise<T | null>;
   mget<T = unknown>(...keys: string[]): Promise<(T | null)[]>;
   hincrby(key: string, field: string, increment: number): Promise<number>;
   hgetall<T = Record<string, string>>(key: string): Promise<T | null>;
@@ -356,6 +357,10 @@ class StandardRedisAdapter implements RedisLike {
 
   async llen(key: string): Promise<number> {
     return await this.client.llen(key);
+  }
+
+  async lindex<T = unknown>(key: string, index: number): Promise<T | null> {
+    return (await this.client.lindex(key, index)) as T | null;
   }
 
   async mget<T = unknown>(...keys: string[]): Promise<(T | null)[]> {
