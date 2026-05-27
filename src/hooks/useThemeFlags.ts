@@ -1,11 +1,15 @@
 import { useMemo } from "react";
 import { useThemeStore } from "@/stores/useThemeStore";
+import type { DarkModePreference } from "@/stores/useThemeStore";
 import { getOsMacChrome, getOsPlatform, getThemeMetadata } from "@/themes";
 import type { OsMacChrome, OsPlatform } from "@/themes/types";
 
 export function useThemeFlags() {
   const currentTheme = useThemeStore((state) => state.current);
   const isDark = useThemeStore((state) => state.isDark);
+  const darkModePreference: DarkModePreference = useThemeStore(
+    (state) => state.darkModeByTheme[state.current] ?? "system"
+  );
   const metadata = useMemo(() => getThemeMetadata(currentTheme), [currentTheme]);
   const osPlatform: OsPlatform = getOsPlatform(currentTheme);
   const macChrome: OsMacChrome | null = getOsMacChrome(currentTheme);
@@ -41,5 +45,6 @@ export function useThemeFlags() {
     isAquaMenuChrome,
     supportsDarkMode,
     isDarkMode,
+    darkModePreference,
   };
 }

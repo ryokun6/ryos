@@ -15,8 +15,25 @@ function sanitizeStoredTheme(id: string | null | undefined): OsThemeId {
   return "macosx";
 }
 
-/** Per-theme dark-mode preference (only honored when the theme supports it). */
-type DarkModeMap = Partial<Record<OsThemeId, boolean>>;
+/**
+ * Per-theme dark-mode preference (only honored when the theme supports it):
+ * - `"system"` (default): track the OS `prefers-color-scheme: dark` media query.
+ * - `"light"` / `"dark"`: explicit override that ignores the OS preference.
+ */
+export type DarkModePreference = "system" | "light" | "dark";
+type DarkModeMap = Partial<Record<OsThemeId, DarkModePreference>>;
+
+function isPreference(value: unknown): value is DarkModePreference {
+  return value === "system" || value === "light" || value === "dark";
+}
+
+/** Accept both the legacy boolean shape and the new string shape. */
+function coercePreference(value: unknown): DarkModePreference | undefined {
+  if (isPreference(value)) return value;
+  if (value === true) return "dark";
+  if (value === false) return "light";
+  return undefined;
+}
 
 function safeReadDarkModeMap(): DarkModeMap {
   try {
@@ -26,8 +43,10 @@ function safeReadDarkModeMap(): DarkModeMap {
     if (!parsed || typeof parsed !== "object") return {};
     const out: DarkModeMap = {};
     for (const id of Object.keys(themes) as OsThemeId[]) {
-      const v = (parsed as Record<string, unknown>)[id];
-      if (typeof v === "boolean") out[id] = v;
+      const coerced = coercePreference(
+        (parsed as Record<string, unknown>)[id]
+      );
+      if (coerced) out[id] = coerced;
     }
     return out;
   } catch {
@@ -50,7 +69,18 @@ interface ThemeState {
   /** Per-theme dark-mode preferences; persisted so each theme remembers its own choice. */
   darkModeByTheme: DarkModeMap;
   setTheme: (theme: OsThemeId) => void;
-  setDarkMode: (enabled: boolean, theme?: OsThemeId) => void;
+  /**
+   * Set the dark-mode preference for a theme (defaults to the current theme).
+   *
+   * Accepts either a `DarkModePreference` string (`"system" | "light" | "dark"`)
+   * or a plain boolean. Boolean inputs map to `"dark"` / `"light"` so existing
+   * callers (including older cloud-sync payloads) continue to work.
+   */
+  setDarkMode: (
+    pref: DarkModePreference | boolean,
+    theme?: OsThemeId
+  ) => void;
+  /** Cycle the current theme through System → Light → Dark → System. */
   toggleDarkMode: () => void;
   hydrate: () => void;
 }
@@ -102,8 +132,25 @@ const LEGACY_THEME_KEY = "os_theme";
  * Per-theme dark-mode preferences, keyed by theme id.
  * Stored as a single JSON blob so settings sync (which round-trips localStorage)
  * picks it up alongside `ryos:theme` without needing a new sync section.
+ *
+ * Values are `DarkModePreference` strings. Older builds wrote booleans; the
+ * reader coerces those to `"dark"` / `"light"` so upgrades are seamless.
  */
 const DARK_MODE_KEY = "ryos:theme:dark";
+
+function getSystemPrefersDark(): boolean {
+  if (typeof window === "undefined" || !window.matchMedia) return false;
+  try {
+    return window.matchMedia("(prefers-color-scheme: dark)").matches;
+  } catch {
+    return false;
+  }
+}
+
+/** Resolve a stored preference (defaulting to "system" when none recorded). */
+function resolvePreference(map: DarkModeMap, theme: OsThemeId): DarkModePreference {
+  return map[theme] ?? "system";
+}
 
 function applyRootThemeAttributes(theme: OsThemeId, isDark: boolean) {
   const root = document.documentElement;
@@ -125,7 +172,40 @@ function applyRootThemeAttributes(theme: OsThemeId, isDark: boolean) {
 
 function effectiveDarkFor(theme: OsThemeId, map: DarkModeMap): boolean {
   if (!themeSupportsDarkMode(theme)) return false;
-  return map[theme] === true;
+  const pref = resolvePreference(map, theme);
+  if (pref === "dark") return true;
+  if (pref === "light") return false;
+  return getSystemPrefersDark();
+}
+
+// Track the OS prefers-color-scheme listener so we can re-evaluate `isDark`
+// whenever the user's system preference flips while we're following it.
+let systemDarkQuery: MediaQueryList | null = null;
+let systemDarkListener: ((event: MediaQueryListEvent) => void) | null = null;
+
+function ensureSystemDarkListener() {
+  if (typeof window === "undefined" || !window.matchMedia) return;
+  if (systemDarkQuery && systemDarkListener) return;
+  try {
+    systemDarkQuery = window.matchMedia("(prefers-color-scheme: dark)");
+  } catch {
+    return;
+  }
+  systemDarkListener = () => {
+    const state = useThemeStore.getState();
+    const pref = resolvePreference(state.darkModeByTheme, state.current);
+    if (pref !== "system") return; // explicit override wins
+    const nextDark = effectiveDarkFor(state.current, state.darkModeByTheme);
+    if (nextDark === state.isDark) return;
+    useThemeStore.setState({ isDark: nextDark });
+    applyRootThemeAttributes(state.current, nextDark);
+  };
+  if (typeof systemDarkQuery.addEventListener === "function") {
+    systemDarkQuery.addEventListener("change", systemDarkListener);
+  } else if (typeof systemDarkQuery.addListener === "function") {
+    // Safari < 14 fallback
+    systemDarkQuery.addListener(systemDarkListener);
+  }
 }
 
 const createThemeStore = () => create<ThemeState>((set) => ({
@@ -153,22 +233,26 @@ const createThemeStore = () => create<ThemeState>((set) => ({
       });
     }
   },
-  setDarkMode: (enabled, theme) => {
+  setDarkMode: (pref, theme) => {
+    const normalized = coercePreference(pref);
+    if (!normalized) return;
     const state = useThemeStore.getState();
     const target = theme ?? state.current;
     if (!themeSupportsDarkMode(target)) {
       // Persist the preference anyway so it's remembered if the theme later gains support,
-      // but never apply it. This also avoids surprising the user when they toggle the
-      // Dark Mode switch on a theme that doesn't support it.
-      const nextMap = { ...state.darkModeByTheme, [target]: enabled };
+      // but never apply it. This also avoids surprising the user when they change the
+      // Dark Mode preference on a theme that doesn't support it.
+      const nextMap = { ...state.darkModeByTheme, [target]: normalized };
       writeDarkModeMap(nextMap);
       set({ darkModeByTheme: nextMap });
       return;
     }
-    const nextMap = { ...state.darkModeByTheme, [target]: enabled };
+    const nextMap = { ...state.darkModeByTheme, [target]: normalized };
     writeDarkModeMap(nextMap);
     const isCurrent = target === state.current;
-    const nextDark = isCurrent ? enabled : state.isDark;
+    const nextDark = isCurrent
+      ? effectiveDarkFor(state.current, nextMap)
+      : state.isDark;
     set({
       darkModeByTheme: nextMap,
       isDark: nextDark,
@@ -177,13 +261,18 @@ const createThemeStore = () => create<ThemeState>((set) => ({
       applyRootThemeAttributes(state.current, nextDark);
       track(SETTINGS_ANALYTICS.THEME_CHANGE, {
         theme: state.current,
-        darkMode: enabled,
+        darkMode: nextDark,
+        darkModePreference: normalized,
       });
     }
   },
   toggleDarkMode: () => {
     const state = useThemeStore.getState();
-    state.setDarkMode(!state.isDark);
+    const current = resolvePreference(state.darkModeByTheme, state.current);
+    // Cycle: system → light → dark → system
+    const next: DarkModePreference =
+      current === "system" ? "light" : current === "light" ? "dark" : "system";
+    state.setDarkMode(next);
   },
   hydrate: () => {
     let saved = localStorage.getItem(THEME_KEY);
@@ -199,10 +288,25 @@ const createThemeStore = () => create<ThemeState>((set) => ({
       localStorage.setItem(THEME_KEY, theme);
     }
     const map = safeReadDarkModeMap();
+    // If the persisted map upgraded from booleans, rewrite so we don't keep
+    // re-coercing on every page load (and so sync payloads carry strings).
+    try {
+      const raw = localStorage.getItem(DARK_MODE_KEY);
+      const parsed = raw ? JSON.parse(raw) : null;
+      const needsRewrite =
+        parsed && typeof parsed === "object" &&
+        Object.values(parsed as Record<string, unknown>).some(
+          (v) => typeof v === "boolean"
+        );
+      if (needsRewrite) writeDarkModeMap(map);
+    } catch {
+      // ignore
+    }
     const isDark = effectiveDarkFor(theme, map);
     set({ current: theme, isDark, darkModeByTheme: map });
     applyRootThemeAttributes(theme, isDark);
     ensureLegacyCss(theme);
+    ensureSystemDarkListener();
   },
 }));
 

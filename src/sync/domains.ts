@@ -479,7 +479,7 @@ function serializeSettingsSnapshot(): SettingsSnapshotData {
     theme: useThemeStore.getState().current,
     themeDarkMode: useThemeStore.getState().darkModeByTheme as Record<
       string,
-      boolean
+      "system" | "light" | "dark"
     >,
     language: useLanguageStore.getState().current,
     languageInitialized:
@@ -1001,10 +1001,12 @@ async function applySettingsSnapshot(
         // bulk setter for the persisted map.
         const remoteDarkMap = normalizedData.themeDarkMode;
         if (remoteDarkMap && typeof remoteDarkMap === "object") {
-          for (const [themeId, enabled] of Object.entries(remoteDarkMap)) {
+          for (const [themeId, value] of Object.entries(remoteDarkMap)) {
+            // setDarkMode accepts both the new preference strings and legacy
+            // booleans, so we can forward each entry as-is.
             useThemeStore
               .getState()
-              .setDarkMode(Boolean(enabled), themeId as never);
+              .setDarkMode(value as never, themeId as never);
           }
         }
         appliedSections.push("theme");

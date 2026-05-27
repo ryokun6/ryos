@@ -216,6 +216,7 @@ const IconButton = memo((
   const maxButtonSize = Math.round(baseButtonSize * MAX_SCALE);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const isPresent = useIsPresent();
+  const { isDarkMode } = useThemeFlags();
   
   // Use a motion value for target size that we can imperatively update
   const targetSize = useMotionValue(baseButtonSize);
@@ -461,7 +462,7 @@ const IconButton = memo((
               borderLeft: "4px solid transparent",
               borderRight: "4px solid transparent",
               borderTop: "0",
-              borderBottom: "4px solid #000",
+              borderBottom: `4px solid ${isDarkMode ? "#fff" : "#000"}`,
               filter: "none",
             }}
           />
