@@ -95,7 +95,8 @@ export function MapsPlaceCard({
   onClose,
 }: MapsPlaceCardProps) {
   const { t } = useTranslation();
-  const { isMacOSTheme, isXpTheme, isSystem7Theme } = useThemeFlags();
+  const { isMacOSTheme, isXpTheme, isSystem7Theme, isDarkMode } = useThemeFlags();
+  const aquaDarkCard = isMacOSTheme && isDarkMode;
 
   return (
     <AnimatePresence>
@@ -119,7 +120,7 @@ export function MapsPlaceCard({
               // other themes mirror their drawer panels so the surfaces look
               // like siblings.
               isMacOSTheme &&
-                "maps-place-card-aqua rounded-[0.5rem] text-black",
+                "maps-place-card-aqua rounded-[0.5rem] text-[color:var(--os-color-text-primary)]",
               !isMacOSTheme &&
                 isSystem7Theme &&
                 "rounded border-2 border-black bg-white text-black shadow-[2px_2px_0_0_rgba(0,0,0,0.5)]",
@@ -138,6 +139,7 @@ export function MapsPlaceCard({
               isWork={isWork}
               onClose={onClose}
               t={t}
+              aquaDarkCard={aquaDarkCard}
             />
             <PlaceCardActions
               place={place}
@@ -165,6 +167,7 @@ interface PlaceCardHeaderProps {
   isWork: boolean;
   onClose: () => void;
   t: ReturnType<typeof useTranslation>["t"];
+  aquaDarkCard: boolean;
 }
 
 function PlaceCardHeader({
@@ -173,6 +176,7 @@ function PlaceCardHeader({
   isWork,
   onClose,
   t,
+  aquaDarkCard,
 }: PlaceCardHeaderProps) {
   const homeTitle = t("apps.maps.places.home", { defaultValue: "Home" });
   const workTitle = t("apps.maps.places.work", { defaultValue: "Work" });
@@ -208,17 +212,17 @@ function PlaceCardHeader({
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-1.5">
-          <div className="truncate text-[13px] font-semibold leading-tight text-black">
+          <div className="truncate text-[13px] font-semibold leading-tight text-[color:var(--os-color-text-primary)]">
             {title}
           </div>
           {categoryLabel && (
-            <div className="shrink-0 text-[11px] leading-tight text-black/45">
+            <div className="shrink-0 text-[11px] leading-tight text-[color:var(--os-color-text-secondary)]">
               {categoryLabel}
             </div>
           )}
         </div>
         {subtitle && (
-          <div className="line-clamp-2 text-[11px] leading-snug text-black/60">
+          <div className="line-clamp-2 text-[11px] leading-snug text-[color:var(--os-color-text-secondary)]">
             {subtitle}
           </div>
         )}
@@ -228,8 +232,10 @@ function PlaceCardHeader({
         onClick={onClose}
         className={cn(
           "shrink-0 -mr-0.5 -mt-0.5 flex size-6 items-center justify-center rounded-full",
-          "text-black/55 hover:bg-black/10 hover:text-black/85",
-          "focus:outline-none focus-visible:ring-1 focus-visible:ring-black/30"
+          aquaDarkCard
+            ? "text-[color:var(--os-color-text-secondary)] hover:bg-white/12 hover:text-[color:var(--os-color-text-primary)] focus-visible:ring-1 focus-visible:ring-white/35"
+            : "text-black/55 hover:bg-black/10 hover:text-black/85 focus-visible:ring-1 focus-visible:ring-black/30",
+          "focus:outline-none"
         )}
         aria-label={t("apps.maps.placeCard.close", {
           defaultValue: "Close place card",

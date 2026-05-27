@@ -35,7 +35,7 @@ interface SectionProps {
 function Section({ title, children }: SectionProps) {
   return (
     <div className="space-y-1">
-      <div className="px-2 pt-1 text-[11px] font-normal text-black/45">
+      <div className="px-2 pt-1 text-[11px] font-normal text-[color:var(--os-color-text-secondary)]">
         {title}
       </div>
       <div>{children}</div>
@@ -71,7 +71,7 @@ function PlaceRow({
       type="button"
       onClick={onClick}
       className={cn(
-        "flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-[12px]",
+        "maps-places-place-row flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-[12px]",
         "hover:bg-black/5"
       )}
     >
@@ -83,9 +83,11 @@ function PlaceRow({
         <Icon size={14} weight="fill" />
       </div>
       <div className="min-w-0 flex-1">
-        <div className="truncate font-medium text-black">{title}</div>
+        <div className="truncate font-medium text-[color:var(--os-color-text-primary)]">
+          {title}
+        </div>
         {subtitle && (
-          <div className="truncate text-[11px] text-black/55">
+          <div className="truncate text-[11px] text-[color:var(--os-color-text-secondary)]">
             {subtitle}
           </div>
         )}
@@ -96,7 +98,9 @@ function PlaceRow({
 
 function EmptyState({ message }: { message: string }) {
   return (
-    <div className="px-2 py-1 text-[11px] text-black/50">{message}</div>
+    <div className="px-2 py-1 text-[11px] text-[color:var(--os-color-text-secondary)]">
+      {message}
+    </div>
   );
 }
 
