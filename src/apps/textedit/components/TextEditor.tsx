@@ -11,7 +11,10 @@ export function TextEditor({ className }: TextEditorProps) {
   return (
     <EditorContent
       editor={editor}
-      className={className || "flex-1 overflow-y-auto w-full min-h-0 bg-white"}
+      className={
+        className ||
+        "flex-1 overflow-y-auto w-full min-h-0 bg-os-input-bg text-os-text-primary"
+      }
     />
   );
 }

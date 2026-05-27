@@ -530,7 +530,7 @@ function TextEditContent({
                     onSpeak={handleSpeak}
                   />
                   {/* Editor content container with correct positioning */}
-                  <TextEditor className="flex-1 overflow-y-auto w-full min-h-0 bg-white" />
+                  <TextEditor className="flex-1 overflow-y-auto w-full min-h-0 bg-os-input-bg text-os-text-primary" />
                 </>
               )}
             </SpeechManager>

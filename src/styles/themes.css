@@ -290,6 +290,16 @@
   --os-typography-editor-body: 15px;
 }
 
+/* TextEdit (TipTap) — caret/selection follow OS tokens; body/headings/lists use Tailwind `prose-textedit`. */
+.textedit-prosemirror-root.ProseMirror {
+  caret-color: var(--os-color-text-primary);
+}
+
+.textedit-prosemirror-root.ProseMirror ::selection {
+  background: var(--os-color-selection-bg);
+  color: var(--os-color-selection-text);
+}
+
 /* Shared toolbar texture utility. Uses variables defined by the active theme. */
 .os-toolbar-texture {
   background-image: var(--os-texture-toolbar-image, none);
