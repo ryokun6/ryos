@@ -223,7 +223,7 @@ function CursorToolInvocationRow({
 }) {
   return (
     <div className="mb-0 px-1 py-0.5 text-[12px]">
-      <div className="flex min-w-0 flex-nowrap items-baseline gap-1 text-neutral-700">
+      <div className="flex min-w-0 flex-nowrap items-baseline gap-1 text-neutral-700 dark:text-neutral-200">
         <span className={`shrink-0 ${done ? "" : "shimmer"}`}>{primary}</span>
         {secondary ? (
           <span className="min-w-0 truncate text-neutral-500 dark:text-neutral-400">

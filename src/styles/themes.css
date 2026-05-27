@@ -2963,6 +2963,17 @@
   -webkit-backdrop-filter: blur(14px);
 }
 
+/* Same as light: keep gradient badge glyphs white on dark glass */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .maps-place-card-aqua
+  .aqua-icon-badge,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .maps-place-card-aqua
+  .aqua-icon-badge
+  * {
+  color: #ffffff;
+}
+
 /* macOS dark: Maps saved-places drawer rows (not on the light pinstripe card surface) */
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"]
   .maps-places-place-row:hover {
