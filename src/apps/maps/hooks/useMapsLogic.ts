@@ -30,6 +30,7 @@ export function useMapsLogic() {
     isMacOSTheme,
     isSystem7Theme,
     isClassicTheme,
+    isDarkMode,
   } = useThemeFlags();
 
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
@@ -46,6 +47,7 @@ export function useMapsLogic() {
     isMacOSTheme,
     isSystem7Theme,
     isClassicTheme,
+    isDarkMode,
     isHelpDialogOpen,
     setIsHelpDialogOpen,
     isAboutDialogOpen,
