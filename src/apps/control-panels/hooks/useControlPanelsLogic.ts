@@ -283,7 +283,8 @@ export function useControlPanelsLogic({
   }));
 
   // Theme state
-  const { currentTheme, supportsDarkMode, isDarkMode } = useThemeFlags();
+  const { currentTheme, supportsDarkMode, isDarkMode, darkModePreference } =
+    useThemeFlags();
   const setTheme = useThemeStore((state) => state.setTheme);
   const setDarkMode = useThemeStore((state) => state.setDarkMode);
 
@@ -1606,6 +1607,7 @@ export function useControlPanelsLogic({
     setTheme,
     supportsDarkMode,
     isDarkMode,
+    darkModePreference,
     setDarkMode,
     currentLanguage,
     setLanguage,

@@ -11,8 +11,12 @@ import {
 
 export interface SettingsSnapshotData {
   theme: string;
-  /** Per-theme dark-mode preferences. Optional for backward compatibility. */
-  themeDarkMode?: Record<string, boolean>;
+  /**
+   * Per-theme dark-mode preferences. Optional for backward compatibility.
+   * Values may be the new preference strings (`"system" | "light" | "dark"`)
+   * or legacy booleans from older clients (`true` → dark, `false` → light).
+   */
+  themeDarkMode?: Record<string, "system" | "light" | "dark" | boolean>;
   language: LanguageCode;
   languageInitialized: boolean;
   aiModel: AIModel | null;
@@ -368,7 +372,7 @@ export function applySettingsRedisPatch(
         } else if (val && typeof val === "object") {
           const v = val as {
             theme?: string;
-            darkMode?: Record<string, boolean>;
+            darkMode?: Record<string, "system" | "light" | "dark" | boolean>;
           };
           if (typeof v.theme === "string") next.theme = v.theme;
           if (v.darkMode && typeof v.darkMode === "object") {
