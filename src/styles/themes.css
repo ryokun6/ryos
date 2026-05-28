@@ -2908,28 +2908,37 @@
 
 /* Dark mode: darken the gray track so the bright base gradient no longer
    pops against the dark window. The blue Aqua fill keeps its identity
-   (matches Big Sur+ dark-mode progress bars). */
-:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .aqua-progress {
+   (matches Big Sur+ dark-mode progress bars).
+
+   `:not(.ipod-modern-screen *)` excludes any `.aqua-progress` rendered
+   inside the iPod's modern screen — the iPod chrome runs its own
+   self-contained "backlight" theme that is intentionally independent
+   from the OS dark-mode setting, so the bar must keep its light look. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .aqua-progress:not(.ipod-modern-screen *) {
   background:
     /* Subtle top shine */
     linear-gradient(
       to bottom,
-      rgba(255, 255, 255, 0.12) 0%,
-      rgba(255, 255, 255, 0.04) 30%,
+      rgba(255, 255, 255, 0.14) 0%,
+      rgba(255, 255, 255, 0.05) 30%,
       transparent 50%
     ),
-    /* Recessed dark track */
-    linear-gradient(#1f1f22, #2c2c30);
+    /* Recessed dark track — keyed off Big Sur+ progress track (~#3a3a3c)
+       so the bar reads as a graphite recess rather than near-black. */
+    linear-gradient(#3a3a3e, #48484c);
   box-shadow:
-    0 1px 1px rgba(0, 0, 0, 0.45),
-    inset 0 0 0 1px rgba(0, 0, 0, 0.6),
-    inset 0 1px 2px rgba(0, 0, 0, 0.55),
-    0 1px 0 rgba(255, 255, 255, 0.05);
+    0 1px 1px rgba(0, 0, 0, 0.4),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.55),
+    inset 0 1px 2px rgba(0, 0, 0, 0.45),
+    0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 /* Slightly dim the bright top highlights on the fill so it reads as a
-   recessed, lit element instead of a beaming light pill on the dark track. */
-:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .aqua-progress-fill {
+   recessed, lit element instead of a beaming light pill on the dark track.
+   Scoped away from the iPod screen for the same reason as the track rule. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .aqua-progress-fill:not(.ipod-modern-screen *) {
   background:
     repeating-linear-gradient(
       to right,
