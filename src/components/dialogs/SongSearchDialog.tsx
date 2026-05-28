@@ -492,14 +492,14 @@ export function SongSearchDialog({
             alignItems: "center",
             gap: "8px",
             boxSizing: "border-box",
-            background: selected
-              ? undefined
-              : index % 2 === 1
-              ? "#f3f4f6"
-              : "white",
-          }}
-        >
-          {result.cover && (
+          background: selected
+            ? undefined
+            : index % 2 === 1
+            ? "var(--os-color-list-row-alt-bg)"
+            : "var(--os-color-input-bg)",
+        }}
+      >
+        {result.cover && (
             <img
               src={result.cover}
               alt=""
@@ -518,7 +518,7 @@ export function SongSearchDialog({
               className="truncate"
               style={{
                 opacity: selected ? 0.8 : 1,
-                color: selected ? undefined : "#4b5563",
+                color: selected ? undefined : "var(--os-color-text-secondary)",
               }}
             >
               {[result.artist, result.album].filter(Boolean).join(" · ")}
@@ -555,8 +555,8 @@ export function SongSearchDialog({
           background: selected
             ? undefined
             : index % 2 === 1
-            ? "#f3f4f6"
-            : "white",
+            ? "var(--os-color-list-row-alt-bg)"
+            : "var(--os-color-input-bg)",
         }}
       >
         {result.thumbnail && (
@@ -574,7 +574,7 @@ export function SongSearchDialog({
             className="truncate"
             style={{
               opacity: selected ? 0.8 : 1,
-              color: selected ? undefined : "#4b5563",
+              color: selected ? undefined : "var(--os-color-text-secondary)",
             }}
           >
             {decodeHtmlEntities(result.channelTitle)}
@@ -612,9 +612,9 @@ export function SongSearchDialog({
           </p>
           <div
             style={{
-              border: "1px solid #d1d5db",
+              border: "1px solid var(--os-color-input-border)",
               borderRadius: "6px",
-              backgroundColor: "white",
+              backgroundColor: "var(--os-color-input-bg)",
               height: "280px",
               overflowY: "auto",
               overflowX: "hidden",
