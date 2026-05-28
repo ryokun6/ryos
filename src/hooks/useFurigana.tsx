@@ -73,6 +73,37 @@ function normalizeClientFuriganaSegments(segments: FuriganaSegment[]): FuriganaS
   return normalizeFuriganaSegments(segments);
 }
 
+type StreamRequestSlot = React.MutableRefObject<{
+  controller: AbortController;
+  requestId: string;
+} | null>;
+
+function abortStreamRequest(slot: StreamRequestSlot) {
+  const active = slot.current;
+  if (active && !active.controller.signal.aborted) {
+    active.controller.abort();
+  }
+  slot.current = null;
+}
+
+function buildSegmentsMap(
+  lines: LyricLine[],
+  rows: Array<Array<FuriganaSegment>> | undefined,
+  normalizeReadings: boolean
+): Map<string, FuriganaSegment[]> {
+  const map = new Map<string, FuriganaSegment[]>();
+  if (!rows) return map;
+  rows.forEach((segments, index) => {
+    if (index < lines.length && segments) {
+      map.set(
+        lines[index].startTimeMs,
+        normalizeReadings ? normalizeClientFuriganaSegments(segments) : segments
+      );
+    }
+  });
+  return map;
+}
+
 /**
  * Hook for fetching and managing Japanese furigana annotations and other romanization
  * 
@@ -215,22 +246,28 @@ export function useFurigana({
   const prefetchedSoramimiInfoRef = useLatestRef(prefetchedSoramimiInfo);
   const prefetchedFuriganaInfoRef = useLatestRef(prefetchedInfo);
 
-  const abortActiveFuriganaRequest = useCallback(() => {
-    const active = furiganaForceRequestRef.current;
-    if (active && !active.controller.signal.aborted) {
-      active.controller.abort();
-    }
-    furiganaForceRequestRef.current = null;
-  }, []);
+  const finishFuriganaFetch = useCallback(
+    (clearProgress = true) => {
+      setIsFetchingFurigana(false);
+      if (clearProgress) {
+        setProgress(undefined);
+        setFuriganaProgress(undefined);
+      }
+    },
+    [setIsFetchingFurigana, setProgress, setFuriganaProgress]
+  );
 
-  const abortActiveSoramimiRequest = useCallback(() => {
-    const active = soramimiForceRequestRef.current;
-    if (active && !active.controller.signal.aborted) {
-      active.controller.abort();
-    }
-    soramimiForceRequestRef.current = null;
-  }, []);
-  
+  const finishSoramimiFetch = useCallback(
+    (clearProgress = true) => {
+      setIsFetchingSoramimi(false);
+      if (clearProgress) {
+        setProgress(undefined);
+        setSoramimiProgress(undefined);
+      }
+    },
+    [setIsFetchingSoramimi, setProgress, setSoramimiProgress]
+  );
+
   // Stable refs for callbacks to avoid effect re-runs
   const onLoadingChangeRef = useLatestRef(onLoadingChange);
 
@@ -298,7 +335,7 @@ export function useFurigana({
 
     // If completely disabled, no songId, or no lines, handle cleanup
     if (!effectSongId || !shouldFetchFurigana || !hasLines) {
-      abortActiveFuriganaRequest();
+      abortStreamRequest(furiganaForceRequestRef);
       const songChanged = effectSongId !== lastFuriganaSongIdRef.current;
       if (songChanged && furiganaCacheKeyRef.current !== "") {
         setFuriganaMap(new Map());
@@ -314,14 +351,14 @@ export function useFurigana({
     lastFuriganaSongIdRef.current = effectSongId;
 
     if (!isShowingOriginal) {
-      abortActiveFuriganaRequest();
+      abortStreamRequest(furiganaForceRequestRef);
       finishFuriganaFetch();
       return;
     }
 
     const hasJapanese = lines.some((line) => isJapaneseText(line.words));
     if (!hasJapanese) {
-      abortActiveFuriganaRequest();
+      abortStreamRequest(furiganaForceRequestRef);
       setFuriganaMap(new Map());
       furiganaCacheKeyRef.current = "";
       finishFuriganaFetch();
@@ -331,7 +368,7 @@ export function useFurigana({
     }
 
     if (isOffline()) {
-      abortActiveFuriganaRequest();
+      abortStreamRequest(furiganaForceRequestRef);
       finishFuriganaFetch();
       setError("iPod requires an internet connection");
       return;
@@ -344,20 +381,14 @@ export function useFurigana({
 
     const prefetchedFurigana = prefetchedFuriganaInfoRef.current;
     if (prefetchedFurigana?.cached && prefetchedFurigana.data && !isFuriganaForceRequest) {
-      abortActiveFuriganaRequest();
-      const finalMap = new Map<string, FuriganaSegment[]>();
-      prefetchedFurigana.data.forEach((segments, index) => {
-        if (index < lines.length && segments) {
-          finalMap.set(lines[index].startTimeMs, normalizeClientFuriganaSegments(segments));
-        }
-      });
-      setFuriganaMap(finalMap);
+      abortStreamRequest(furiganaForceRequestRef);
+      setFuriganaMap(buildSegmentsMap(lines, prefetchedFurigana.data, true));
       furiganaCacheKeyRef.current = cacheKey;
       finishFuriganaFetch();
       return;
     }
 
-    abortActiveFuriganaRequest();
+    abortStreamRequest(furiganaForceRequestRef);
 
     const requestId = `${effectSongId}-${lyricsCacheBustTrigger}-${Date.now()}`;
     let timedOut = false;
@@ -399,7 +430,6 @@ export function useFurigana({
         
         const currentLines = linesRef.current;
         if (lineIndex < currentLines.length && segments) {
-          console.log(`[Furigana] Line ${lineIndex} received:`, segments.length, 'segments');
           progressiveMap.set(
             currentLines[lineIndex].startTimeMs,
             normalizeClientFuriganaSegments(segments)
@@ -467,7 +497,7 @@ export function useFurigana({
       }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- cacheKey uses linesSignature; prefetched furigana read via ref
-  }, [songId, cacheKey, shouldFetchFurigana, hasLines, isShowingOriginal, lyricsCacheBustTrigger, finishFuriganaFetch, abortActiveFuriganaRequest]);
+  }, [songId, cacheKey, shouldFetchFurigana, hasLines, isShowingOriginal, lyricsCacheBustTrigger, finishFuriganaFetch]);
 
   // Check conditions for soramimi fetching
   const shouldFetchSoramimi = romanization.enabled && romanization.soramimi;
@@ -495,28 +525,6 @@ export function useFurigana({
   // This prevents the soramimi effect from re-running during furigana streaming
   const furiganaMapRef = useLatestRef(furiganaMap);
 
-  const finishFuriganaFetch = useCallback(
-    (clearProgress = true) => {
-      setIsFetchingFurigana(false);
-      if (clearProgress) {
-        setProgress(undefined);
-        setFuriganaProgress(undefined);
-      }
-    },
-    [setIsFetchingFurigana, setProgress, setFuriganaProgress]
-  );
-
-  const finishSoramimiFetch = useCallback(
-    (clearProgress = true) => {
-      setIsFetchingSoramimi(false);
-      if (clearProgress) {
-        setProgress(undefined);
-        setSoramimiProgress(undefined);
-      }
-    },
-    [setIsFetchingSoramimi, setProgress, setSoramimiProgress]
-  );
-
   // Fetch soramimi for lyrics when enabled using line-by-line streaming
   // For Japanese songs, waits for furigana to complete first so we can pass readings to the AI
   // biome-ignore lint/correctness/useExhaustiveDependencies: cacheKey captures lines content, shouldFetchSoramimi captures romanization settings
@@ -526,7 +534,7 @@ export function useFurigana({
 
     // If completely disabled, no songId, or no lines, handle cleanup
     if (!effectSongId || !shouldFetchSoramimi || !hasLines) {
-      abortActiveSoramimiRequest();
+      abortStreamRequest(soramimiForceRequestRef);
       // Only clear cache if songId actually changed (not just temporarily empty lines during re-fetch)
       const songChanged = effectSongId !== lastSoramimiSongIdRef.current;
       if (songChanged && soramimiCacheKeyRef.current !== "") {
@@ -545,14 +553,14 @@ export function useFurigana({
 
     // If not showing original, don't fetch new data but keep existing soramimi cached
     if (!isShowingOriginal) {
-      abortActiveSoramimiRequest();
+      abortStreamRequest(soramimiForceRequestRef);
       finishSoramimiFetch();
       return;
     }
 
     // Check if offline
     if (isOffline()) {
-      abortActiveSoramimiRequest();
+      abortStreamRequest(soramimiForceRequestRef);
       finishSoramimiFetch();
       setSoramimiError("iPod requires an internet connection");
       return;
@@ -573,7 +581,7 @@ export function useFurigana({
     const prefetchedSoramimi = prefetchedSoramimiInfoRef.current;
 
     if (prefetchedSoramimi?.skipped && !isSoramimiForceRequest) {
-      abortActiveSoramimiRequest();
+      abortStreamRequest(soramimiForceRequestRef);
       setSoramimiMap(new Map());
       soramimiCacheKeyRef.current = soramimiCacheKey;
       finishSoramimiFetch();
@@ -592,14 +600,8 @@ export function useFurigana({
       !isSoramimiForceRequest &&
       prefetchedIsCorrectLanguage
     ) {
-      abortActiveSoramimiRequest();
-      const finalMap = new Map<string, FuriganaSegment[]>();
-      prefetchedSoramimi.data.forEach((segments, index) => {
-        if (index < lines.length && segments) {
-          finalMap.set(lines[index].startTimeMs, segments);
-        }
-      });
-      setSoramimiMap(finalMap);
+      abortStreamRequest(soramimiForceRequestRef);
+      setSoramimiMap(buildSegmentsMap(lines, prefetchedSoramimi.data, false));
       soramimiCacheKeyRef.current = soramimiCacheKey;
       finishSoramimiFetch();
       setSoramimiError(undefined);
@@ -607,7 +609,7 @@ export function useFurigana({
     }
 
     // Abort any prior stream before starting a new one (effect re-runs must not orphan requests)
-    abortActiveSoramimiRequest();
+    abortStreamRequest(soramimiForceRequestRef);
 
     // Generate a unique requestId for this effect run
     const requestId = `${effectSongId}-${lyricsCacheBustTrigger}-${Date.now()}`;
@@ -650,11 +652,8 @@ export function useFurigana({
         furiganaForApi.push(segments || [{ text: currentLines[i].words }]);
       }
       // Only include if there's actual reading data
-      const hasReadings = furiganaForApi.some(line => line.some(seg => seg.reading));
-      if (!hasReadings) {
+      if (!furiganaForApi.some((line) => line.some((seg) => seg.reading))) {
         furiganaForApi = undefined;
-      } else {
-        console.log('[Soramimi] Starting with furigana data for Japanese song');
       }
     }
     
@@ -679,7 +678,6 @@ export function useFurigana({
         
         const currentLines = linesRef.current;
         if (lineIndex < currentLines.length && segments) {
-          console.log(`[Soramimi] Line ${lineIndex} received:`, segments.length, 'segments');
           progressiveMap.set(currentLines[lineIndex].startTimeMs, segments);
           setSoramimiMap(new Map(progressiveMap));
         }
@@ -747,7 +745,7 @@ export function useFurigana({
       }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- soramimiCacheKey captures lines content + target language; prefetched soramimi read via ref to avoid abort/restart loops when useLyrics metadata updates
-  }, [songId, soramimiCacheKey, shouldFetchSoramimi, hasLines, isShowingOriginal, lyricsCacheBustTrigger, isJapanese, furiganaReadyForSoramimi, soramimiTargetLanguage, finishSoramimiFetch, abortActiveSoramimiRequest]);
+  }, [songId, soramimiCacheKey, shouldFetchSoramimi, hasLines, isShowingOriginal, lyricsCacheBustTrigger, isJapanese, furiganaReadyForSoramimi, soramimiTargetLanguage, finishSoramimiFetch]);
 
   // Unified render function that handles all romanization types
   // Delegates to extracted utility for better separation of concerns

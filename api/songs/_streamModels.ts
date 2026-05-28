@@ -24,15 +24,18 @@ export async function* withStreamChunkTimeout<T>(
 ): AsyncGenerator<T> {
   const iterator = source[Symbol.asyncIterator]();
   while (true) {
+    let timer: ReturnType<typeof setTimeout> | undefined;
     const next = await Promise.race([
       iterator.next(),
       new Promise<IteratorResult<T>>((_, reject) => {
-        setTimeout(
+        timer = setTimeout(
           () => reject(new Error(`${label} timed out waiting for data`)),
           timeoutMs
         );
       }),
-    ]);
+    ]).finally(() => {
+      if (timer !== undefined) clearTimeout(timer);
+    });
     if (next.done) {
       return;
     }
