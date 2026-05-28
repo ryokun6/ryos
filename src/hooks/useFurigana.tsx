@@ -213,6 +213,15 @@ export function useFurigana({
   } | null>(null);
 
   const prefetchedSoramimiInfoRef = useLatestRef(prefetchedSoramimiInfo);
+  const prefetchedFuriganaInfoRef = useLatestRef(prefetchedInfo);
+
+  const abortActiveFuriganaRequest = useCallback(() => {
+    const active = furiganaForceRequestRef.current;
+    if (active && !active.controller.signal.aborted) {
+      active.controller.abort();
+    }
+    furiganaForceRequestRef.current = null;
+  }, []);
 
   const abortActiveSoramimiRequest = useCallback(() => {
     const active = soramimiForceRequestRef.current;
@@ -231,19 +240,22 @@ export function useFurigana({
     onLoadingChangeRef.current?.(isFetchingFurigana || isFetchingSoramimi);
   }, [isFetchingFurigana, isFetchingSoramimi, onLoadingChangeRef]);
 
-  // Compute cache key outside effect - only when lines actually change
+  // Content signature (not array reference) so effects don't restart on parent re-renders
+  const linesSignature =
+    lines.length === 0
+      ? ""
+      : lines.map((l) => `${l.startTimeMs}:${l.words.slice(0, 20)}`).join("|");
+
   const cacheKey = useMemo(() => {
-    if (!songId || lines.length === 0) return "";
-    return `song:${songId}:` + lines.map((l) => `${l.startTimeMs}:${l.words.slice(0, 20)}`).join("|");
-  }, [songId, lines]);
-  
-  // Compute soramimi-specific cache key that includes target language
-  // This ensures switching between Chinese and English soramimi triggers a refetch
+    if (!songId || !linesSignature) return "";
+    return `song:${songId}:${linesSignature}`;
+  }, [songId, linesSignature]);
+
   const soramimiTargetLanguage = romanization.soramamiTargetLanguage;
   const soramimiCacheKey = useMemo(() => {
-    if (!songId || lines.length === 0) return "";
+    if (!cacheKey) return "";
     return `${cacheKey}:soramimi:${soramimiTargetLanguage}`;
-  }, [cacheKey, songId, lines.length, soramimiTargetLanguage]);
+  }, [cacheKey, soramimiTargetLanguage]);
 
   // Clear force request refs when songId changes to prevent cross-song pollution
   useEffect(() => {
@@ -286,101 +298,93 @@ export function useFurigana({
 
     // If completely disabled, no songId, or no lines, handle cleanup
     if (!effectSongId || !shouldFetchFurigana || !hasLines) {
-      // Only clear cache if songId actually changed (not just temporarily empty lines during re-fetch)
+      abortActiveFuriganaRequest();
       const songChanged = effectSongId !== lastFuriganaSongIdRef.current;
       if (songChanged && furiganaCacheKeyRef.current !== "") {
         setFuriganaMap(new Map());
         furiganaCacheKeyRef.current = "";
         lastFuriganaSongIdRef.current = effectSongId || "";
-        setIsFetchingFurigana(false);
-        setProgress(undefined);
-        setError(undefined);
-        // Mark handled to keep ref in sync for next song
         markFuriganaHandled();
       }
+      finishFuriganaFetch();
+      setError(undefined);
       return;
     }
     
-    // Update last songId when we have data
     lastFuriganaSongIdRef.current = effectSongId;
 
-    // If not showing original, don't fetch new data but keep existing furigana cached
     if (!isShowingOriginal) {
-      setIsFetchingFurigana(false);
+      abortActiveFuriganaRequest();
+      finishFuriganaFetch();
       return;
     }
 
-    // Check if any lines are Japanese text (has both kanji and kana)
     const hasJapanese = lines.some((line) => isJapaneseText(line.words));
     if (!hasJapanese) {
+      abortActiveFuriganaRequest();
       setFuriganaMap(new Map());
-      furiganaCacheKeyRef.current = "";  // Clear cache key to prevent stale cache detection
-      setIsFetchingFurigana(false);
-      setProgress(undefined);
+      furiganaCacheKeyRef.current = "";
+      finishFuriganaFetch();
       setError(undefined);
-      // Mark handled even when skipping to keep ref in sync for next song
       markFuriganaHandled();
       return;
     }
 
-    // Check if offline
     if (isOffline()) {
+      abortActiveFuriganaRequest();
+      finishFuriganaFetch();
       setError("iPod requires an internet connection");
-      setIsFetchingFurigana(false);
       return;
     }
 
-    // Skip if we already have this data and it's not a force request
     if (!isFuriganaForceRequest && cacheKey === furiganaCacheKeyRef.current) {
+      finishFuriganaFetch();
       return;
     }
 
-    // If we have cached furigana from initial fetch, use it immediately
-    if (prefetchedInfo?.cached && prefetchedInfo.data && !isFuriganaForceRequest) {
+    const prefetchedFurigana = prefetchedFuriganaInfoRef.current;
+    if (prefetchedFurigana?.cached && prefetchedFurigana.data && !isFuriganaForceRequest) {
+      abortActiveFuriganaRequest();
       const finalMap = new Map<string, FuriganaSegment[]>();
-      prefetchedInfo.data.forEach((segments, index) => {
+      prefetchedFurigana.data.forEach((segments, index) => {
         if (index < lines.length && segments) {
           finalMap.set(lines[index].startTimeMs, normalizeClientFuriganaSegments(segments));
         }
       });
       setFuriganaMap(finalMap);
       furiganaCacheKeyRef.current = cacheKey;
-      setIsFetchingFurigana(false);
+      finishFuriganaFetch();
       return;
     }
 
-    // If there's already a request in flight for this song, skip this effect run
-    // This prevents duplicate requests when React re-runs the effect
-    const existingReq = furiganaForceRequestRef.current;
-    if (existingReq && !existingReq.controller.signal.aborted) {
-      return;
-    }
-    // Clear stale aborted ref so we can start fresh
-    if (existingReq?.controller.signal.aborted) {
-      furiganaForceRequestRef.current = null;
-    }
+    abortActiveFuriganaRequest();
 
-    // Generate a unique requestId for this effect run
     const requestId = `${effectSongId}-${lyricsCacheBustTrigger}-${Date.now()}`;
+    let timedOut = false;
 
-    // Start loading
     setIsFetchingFurigana(true);
     setProgress(0);
     setFuriganaProgress(0);
     setError(undefined);
     
     const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, SORAMIMI_FETCH_TIMEOUT_MS);
 
-    // Track this request so we can detect duplicates
     furiganaForceRequestRef.current = { controller, requestId };
 
-    // Use line-by-line streaming for furigana
     const progressiveMap = new Map<string, FuriganaSegment[]>();
     
+    if (import.meta.env.DEV) {
+      console.log("[Furigana] Starting SSE", { songId: effectSongId, lines: lines.length });
+    }
+
     processFuriganaSSE(effectSongId, {
       force: isFuriganaForceRequest,
       signal: controller.signal,
-      prefetchedInfo: !isFuriganaForceRequest ? prefetchedInfo : undefined,
+      prefetchedInfo: !isFuriganaForceRequest ? prefetchedFurigana : undefined,
       auth,
       onProgress: (progress) => {
         if (!controller.signal.aborted) {
@@ -431,6 +435,9 @@ export function useFurigana({
         if (effectSongId !== currentSongIdRef.current) return;
         
         if (err instanceof Error && err.name === "AbortError") {
+          if (timedOut) {
+            setError(i18n.t("common.errors.failedToFetchFurigana"));
+          }
           return;
         }
 
@@ -438,31 +445,29 @@ export function useFurigana({
         setError(err instanceof Error ? err.message : i18n.t("common.errors.failedToFetchFurigana"));
       })
       .finally(() => {
-        // Clear force request ref when this request completes
+        window.clearTimeout(timeoutId);
         if (furiganaForceRequestRef.current?.requestId === requestId) {
           furiganaForceRequestRef.current = null;
         }
 
-        if (!controller.signal.aborted && effectSongId === currentSongIdRef.current) {
-          setIsFetchingFurigana(false);
-          setProgress(undefined);
-          setFuriganaProgress(undefined);
+        if (effectSongId === currentSongIdRef.current) {
+          finishFuriganaFetch();
         }
       });
 
     return () => {
-      // Always abort this request on cleanup - this controller is scoped to this effect run
+      window.clearTimeout(timeoutId);
       controller.abort();
-      // Only clear the ref if this is still the current request
       const isThisRequest = furiganaForceRequestRef.current?.requestId === requestId;
       if (isThisRequest) {
         furiganaForceRequestRef.current = null;
       }
-      setIsFetchingFurigana(false);
-      setFuriganaProgress(undefined);
+      if (effectSongId === currentSongIdRef.current) {
+        finishFuriganaFetch();
+      }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- cacheKey captures lines content, shouldFetchFurigana captures romanization settings
-  }, [songId, cacheKey, shouldFetchFurigana, hasLines, isShowingOriginal, lyricsCacheBustTrigger, prefetchedInfo]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- cacheKey uses linesSignature; prefetched furigana read via ref
+  }, [songId, cacheKey, shouldFetchFurigana, hasLines, isShowingOriginal, lyricsCacheBustTrigger, finishFuriganaFetch, abortActiveFuriganaRequest]);
 
   // Check conditions for soramimi fetching
   const shouldFetchSoramimi = romanization.enabled && romanization.soramimi;
@@ -473,7 +478,10 @@ export function useFurigana({
   // Determine if lyrics are Japanese (have both kanji and kana)
   // For Japanese songs, we need to wait for furigana to complete before fetching soramimi
   // so we can pass the furigana readings to help the AI know how to pronounce kanji
-  const isJapanese = useMemo(() => lyricsHaveJapanese(lines), [lines]);
+  const isJapanese = useMemo(
+    () => (linesSignature ? lyricsHaveJapanese(lines) : false),
+    [lines, linesSignature]
+  );
   
   // For Japanese songs, check if furigana is ready (needed for accurate soramimi)
   // For non-Japanese songs (Korean, etc.), we can start soramimi immediately
@@ -486,6 +494,17 @@ export function useFurigana({
   // Keep a ref to furiganaMap so we can access it in the effect without adding it as a dependency
   // This prevents the soramimi effect from re-running during furigana streaming
   const furiganaMapRef = useLatestRef(furiganaMap);
+
+  const finishFuriganaFetch = useCallback(
+    (clearProgress = true) => {
+      setIsFetchingFurigana(false);
+      if (clearProgress) {
+        setProgress(undefined);
+        setFuriganaProgress(undefined);
+      }
+    },
+    [setIsFetchingFurigana, setProgress, setFuriganaProgress]
+  );
 
   const finishSoramimiFetch = useCallback(
     (clearProgress = true) => {
@@ -553,6 +572,16 @@ export function useFurigana({
 
     const prefetchedSoramimi = prefetchedSoramimiInfoRef.current;
 
+    if (prefetchedSoramimi?.skipped && !isSoramimiForceRequest) {
+      abortActiveSoramimiRequest();
+      setSoramimiMap(new Map());
+      soramimiCacheKeyRef.current = soramimiCacheKey;
+      finishSoramimiFetch();
+      setSoramimiError(undefined);
+      markSoramimiHandled();
+      return;
+    }
+
     // If we have cached soramimi from initial fetch, use it immediately
     // Only use if the cached data is for the same language we're requesting
     const prefetchedIsCorrectLanguage =
@@ -599,7 +628,15 @@ export function useFurigana({
 
     soramimiForceRequestRef.current = { controller, requestId };
 
-    // Use line-by-line streaming for soramimi
+    if (import.meta.env.DEV) {
+      console.log("[Soramimi] Starting SSE", {
+        songId: effectSongId,
+        targetLanguage: soramimiTargetLanguage,
+        isJapanese,
+        hasFurigana: furiganaMapRef.current.size > 0,
+      });
+    }
+
     const progressiveMap = new Map<string, FuriganaSegment[]>();
     
     // For Japanese songs, convert furigana map to array format for the API
@@ -665,6 +702,9 @@ export function useFurigana({
         setSoramimiMap(finalMap);
         soramimiCacheKeyRef.current = soramimiCacheKey;
         markSoramimiHandled();
+        if (import.meta.env.DEV) {
+          console.log("[Soramimi] SSE complete", { lines: finalMap.size });
+        }
       })
       .catch((err) => {
         if (controller.signal.aborted) return;
@@ -677,7 +717,7 @@ export function useFurigana({
           return;
         }
 
-        console.error("Failed to fetch soramimi:", err);
+        console.error("[Soramimi] Failed to fetch soramimi:", err);
         setSoramimiError(
           err instanceof Error
             ? err.message

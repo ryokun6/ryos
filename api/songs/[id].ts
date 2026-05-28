@@ -90,6 +90,12 @@ import {
 
 import { streamText } from "ai";
 import { openai } from "@ai-sdk/openai";
+import {
+  FURIGANA_STREAM_MODEL,
+  SORAMIMI_STREAM_MODEL,
+  TRANSLATE_STREAM_MODEL,
+  withStreamChunkTimeout,
+} from "./_streamModels.js";
 
 export const runtime = "nodejs";
 /** Soramimi/furigana/translate streams can run long on full songs (gpt-5.5). */
@@ -944,7 +950,7 @@ export default apiHandler<Record<string, unknown>>(
 
           // Use streamText with GPT-5.2
           const result = streamText({
-            model: openai("gpt-5.5"),
+            model: openai(TRANSLATE_STREAM_MODEL),
             messages: [
               { role: "system", content: getTranslationSystemPrompt(language) },
               { role: "user", content: textsToProcess },
@@ -952,11 +958,13 @@ export default apiHandler<Record<string, unknown>>(
             temperature: 0.3,
           });
 
-          // Manually iterate textStream to process and emit custom events
-          for await (const textChunk of result.textStream) {
+          for await (const textChunk of withStreamChunkTimeout(
+            result.textStream,
+            undefined,
+            "Translation stream"
+          )) {
             currentLineBuffer += textChunk;
             
-            // Process complete lines
             let newlineIdx;
             while ((newlineIdx = currentLineBuffer.indexOf("\n")) !== -1) {
               const completeLine = currentLineBuffer.slice(0, newlineIdx);
@@ -965,7 +973,6 @@ export default apiHandler<Record<string, unknown>>(
             }
           }
           
-          // Process any remaining buffer
           if (currentLineBuffer.trim()) {
             processLine(currentLineBuffer);
           }
@@ -1172,7 +1179,7 @@ export default apiHandler<Record<string, unknown>>(
           };
 
           const result = streamText({
-            model: openai("gpt-5.5"),
+            model: openai(FURIGANA_STREAM_MODEL),
             messages: [
               { role: "system", content: FURIGANA_STREAM_SYSTEM_PROMPT },
               { role: "user", content: textsToProcess },
@@ -1180,11 +1187,13 @@ export default apiHandler<Record<string, unknown>>(
             temperature: 0.1,
           });
 
-          // Manually iterate textStream to process and emit custom events
-          for await (const textChunk of result.textStream) {
+          for await (const textChunk of withStreamChunkTimeout(
+            result.textStream,
+            undefined,
+            "Furigana stream"
+          )) {
             currentLineBuffer += textChunk;
             
-            // Process complete lines
             let newlineIdx;
             while ((newlineIdx = currentLineBuffer.indexOf("\n")) !== -1) {
               const completeLine = currentLineBuffer.slice(0, newlineIdx);
@@ -1193,7 +1202,6 @@ export default apiHandler<Record<string, unknown>>(
             }
           }
           
-          // Process any remaining buffer
           if (currentLineBuffer.trim()) {
             processLine(currentLineBuffer);
           }
@@ -1466,7 +1474,7 @@ export default apiHandler<Record<string, unknown>>(
 
           // Use streamText
           const result = streamText({
-            model: openai("gpt-5.5"),
+            model: openai(SORAMIMI_STREAM_MODEL),
             messages: [
               { role: "system", content: systemPrompt },
               { role: "user", content: textsToProcess },
@@ -1474,11 +1482,15 @@ export default apiHandler<Record<string, unknown>>(
             temperature: 0.7,
           });
 
-          // Manually iterate textStream to process and emit custom events
-          for await (const textChunk of result.textStream) {
+          logger.info("Soramimi streamText model", { model: SORAMIMI_STREAM_MODEL });
+
+          for await (const textChunk of withStreamChunkTimeout(
+            result.textStream,
+            undefined,
+            "Soramimi stream"
+          )) {
             currentLineBuffer += textChunk;
             
-            // Process complete lines
             let newlineIdx;
             while ((newlineIdx = currentLineBuffer.indexOf("\n")) !== -1) {
               const completeLine = currentLineBuffer.slice(0, newlineIdx);
@@ -1487,7 +1499,6 @@ export default apiHandler<Record<string, unknown>>(
             }
           }
           
-          // Process any remaining buffer
           if (currentLineBuffer.trim()) {
             processLine(currentLineBuffer);
           }
