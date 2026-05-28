@@ -19,7 +19,6 @@ import {
 import {
   isFuriganaReadyForSoramimi,
   SORAMIMI_FETCH_TIMEOUT_MS,
-  SORAMIMI_INFLIGHT_MAX_MS,
 } from "@/utils/soramimiFetch";
 import { renderLyricsWithAnnotations } from "@/utils/renderLyricsWithAnnotations";
 
@@ -211,8 +210,17 @@ export function useFurigana({
   const soramimiForceRequestRef = useRef<{
     controller: AbortController;
     requestId: string;
-    startedAt: number;
   } | null>(null);
+
+  const prefetchedSoramimiInfoRef = useLatestRef(prefetchedSoramimiInfo);
+
+  const abortActiveSoramimiRequest = useCallback(() => {
+    const active = soramimiForceRequestRef.current;
+    if (active && !active.controller.signal.aborted) {
+      active.controller.abort();
+    }
+    soramimiForceRequestRef.current = null;
+  }, []);
   
   // Stable refs for callbacks to avoid effect re-runs
   const onLoadingChangeRef = useLatestRef(onLoadingChange);
@@ -499,6 +507,7 @@ export function useFurigana({
 
     // If completely disabled, no songId, or no lines, handle cleanup
     if (!effectSongId || !shouldFetchSoramimi || !hasLines) {
+      abortActiveSoramimiRequest();
       // Only clear cache if songId actually changed (not just temporarily empty lines during re-fetch)
       const songChanged = effectSongId !== lastSoramimiSongIdRef.current;
       if (songChanged && soramimiCacheKeyRef.current !== "") {
@@ -517,12 +526,14 @@ export function useFurigana({
 
     // If not showing original, don't fetch new data but keep existing soramimi cached
     if (!isShowingOriginal) {
+      abortActiveSoramimiRequest();
       finishSoramimiFetch();
       return;
     }
 
     // Check if offline
     if (isOffline()) {
+      abortActiveSoramimiRequest();
       finishSoramimiFetch();
       setSoramimiError("iPod requires an internet connection");
       return;
@@ -530,6 +541,7 @@ export function useFurigana({
     
     // For Japanese songs, wait for furigana to complete before fetching soramimi
     if (!furiganaReadyForSoramimi) {
+      finishSoramimiFetch();
       return;
     }
 
@@ -539,12 +551,21 @@ export function useFurigana({
       return;
     }
 
+    const prefetchedSoramimi = prefetchedSoramimiInfoRef.current;
+
     // If we have cached soramimi from initial fetch, use it immediately
     // Only use if the cached data is for the same language we're requesting
-    const prefetchedIsCorrectLanguage = prefetchedSoramimiInfo?.targetLanguage === soramimiTargetLanguage;
-    if (prefetchedSoramimiInfo?.cached && prefetchedSoramimiInfo.data && !isSoramimiForceRequest && prefetchedIsCorrectLanguage) {
+    const prefetchedIsCorrectLanguage =
+      prefetchedSoramimi?.targetLanguage === soramimiTargetLanguage;
+    if (
+      prefetchedSoramimi?.cached &&
+      prefetchedSoramimi.data &&
+      !isSoramimiForceRequest &&
+      prefetchedIsCorrectLanguage
+    ) {
+      abortActiveSoramimiRequest();
       const finalMap = new Map<string, FuriganaSegment[]>();
-      prefetchedSoramimiInfo.data.forEach((segments, index) => {
+      prefetchedSoramimi.data.forEach((segments, index) => {
         if (index < lines.length && segments) {
           finalMap.set(lines[index].startTimeMs, segments);
         }
@@ -556,39 +577,27 @@ export function useFurigana({
       return;
     }
 
-    // If there's already a request in flight, reuse it or abort if it stalled
-    const existingReq = soramimiForceRequestRef.current;
-    if (existingReq && !existingReq.controller.signal.aborted) {
-      const ageMs = Date.now() - existingReq.startedAt;
-      if (ageMs < SORAMIMI_INFLIGHT_MAX_MS) {
-        setIsFetchingSoramimi(true);
-        return;
-      }
-      existingReq.controller.abort();
-      soramimiForceRequestRef.current = null;
-    }
-    if (existingReq?.controller.signal.aborted) {
-      soramimiForceRequestRef.current = null;
-    }
-    
+    // Abort any prior stream before starting a new one (effect re-runs must not orphan requests)
+    abortActiveSoramimiRequest();
+
     // Generate a unique requestId for this effect run
     const requestId = `${effectSongId}-${lyricsCacheBustTrigger}-${Date.now()}`;
-    const startedAt = Date.now();
-    
+    let timedOut = false;
+
     // Start loading - clear old soramimi map to avoid showing stale data while fetching
     setIsFetchingSoramimi(true);
     setProgress(0);
     setSoramimiProgress(0);
     setSoramimiError(undefined);
     setSoramimiMap(new Map());
-    
+
     const controller = new AbortController();
     const timeoutId = window.setTimeout(() => {
+      timedOut = true;
       controller.abort();
     }, SORAMIMI_FETCH_TIMEOUT_MS);
-    
-    // Track this request so we can detect duplicates
-    soramimiForceRequestRef.current = { controller, requestId, startedAt };
+
+    soramimiForceRequestRef.current = { controller, requestId };
 
     // Use line-by-line streaming for soramimi
     const progressiveMap = new Map<string, FuriganaSegment[]>();
@@ -615,7 +624,7 @@ export function useFurigana({
     processSoramimiSSE(effectSongId, {
       force: isSoramimiForceRequest,
       signal: controller.signal,
-      prefetchedInfo: !isSoramimiForceRequest ? prefetchedSoramimiInfo : undefined,
+      prefetchedInfo: !isSoramimiForceRequest ? prefetchedSoramimi : undefined,
       // Pass furigana data for Japanese songs so AI knows kanji pronunciation
       furigana: furiganaForApi,
       targetLanguage: soramimiTargetLanguage,
@@ -662,6 +671,9 @@ export function useFurigana({
         if (effectSongId !== currentSongIdRef.current) return;
 
         if (err instanceof Error && err.name === "AbortError") {
+          if (timedOut) {
+            setSoramimiError(i18n.t("common.errors.failedToFetchSoramimi"));
+          }
           return;
         }
 
@@ -694,8 +706,8 @@ export function useFurigana({
         finishSoramimiFetch();
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- soramimiCacheKey captures lines content + target language, shouldFetchSoramimi captures romanization settings, furiganaReadyForSoramimi handles furigana sequencing, furiganaMapRef accessed via ref to avoid re-runs during streaming
-  }, [songId, soramimiCacheKey, shouldFetchSoramimi, hasLines, isShowingOriginal, lyricsCacheBustTrigger, prefetchedSoramimiInfo, isJapanese, furiganaReadyForSoramimi, soramimiTargetLanguage, finishSoramimiFetch]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- soramimiCacheKey captures lines content + target language; prefetched soramimi read via ref to avoid abort/restart loops when useLyrics metadata updates
+  }, [songId, soramimiCacheKey, shouldFetchSoramimi, hasLines, isShowingOriginal, lyricsCacheBustTrigger, isJapanese, furiganaReadyForSoramimi, soramimiTargetLanguage, finishSoramimiFetch, abortActiveSoramimiRequest]);
 
   // Unified render function that handles all romanization types
   // Delegates to extracted utility for better separation of concerns

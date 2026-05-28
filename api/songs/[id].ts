@@ -92,7 +92,8 @@ import { streamText } from "ai";
 import { openai } from "@ai-sdk/openai";
 
 export const runtime = "nodejs";
-export const maxDuration = 120;
+/** Soramimi/furigana/translate streams can run long on full songs (gpt-5.5). */
+export const maxDuration = 300;
 
 // Helper for SSE responses with Node.js VercelResponse
 function sendSSEResponse(res: VercelResponse, origin: string | null, data: unknown): void {

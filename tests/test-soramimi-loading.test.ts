@@ -3,7 +3,6 @@ import { getActivityLabel } from "@/hooks/useActivityLabel";
 import {
   isFuriganaReadyForSoramimi,
   SORAMIMI_FETCH_TIMEOUT_MS,
-  SORAMIMI_INFLIGHT_MAX_MS,
 } from "@/utils/soramimiFetch";
 import { SSE_STREAM_IDLE_TIMEOUT_MS } from "@/utils/chunkedStream";
 
@@ -14,10 +13,11 @@ describe("soramimi fetch sequencing", () => {
     expect(isFuriganaReadyForSoramimi(true, false)).toBe(true);
   });
 
-  test("uses conservative timeout constants", () => {
-    expect(SORAMIMI_INFLIGHT_MAX_MS).toBeGreaterThanOrEqual(60_000);
-    expect(SORAMIMI_FETCH_TIMEOUT_MS).toBeGreaterThanOrEqual(SORAMIMI_INFLIGHT_MAX_MS);
+  test("uses conservative timeout constants aligned with API maxDuration", () => {
+    expect(SORAMIMI_FETCH_TIMEOUT_MS).toBeGreaterThan(120_000);
+    expect(SORAMIMI_FETCH_TIMEOUT_MS).toBeLessThanOrEqual(180_000);
     expect(SSE_STREAM_IDLE_TIMEOUT_MS).toBeGreaterThanOrEqual(30_000);
+    expect(SSE_STREAM_IDLE_TIMEOUT_MS).toBeLessThan(SORAMIMI_FETCH_TIMEOUT_MS);
   });
 });
 

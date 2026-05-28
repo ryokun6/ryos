@@ -14,7 +14,7 @@ const MAX_BUFFER_SIZE = 1024 * 1024; // 1MB
 const MAX_RETRIES = 3;
 const INITIAL_DELAY_MS = 1000;
 /** Abort SSE body reads if the server sends no data for this long. */
-export const SSE_STREAM_IDLE_TIMEOUT_MS = 120_000;
+export const SSE_STREAM_IDLE_TIMEOUT_MS = 90_000;
 
 // =============================================================================
 // Types
@@ -706,9 +706,15 @@ export async function processSoramimiSSE(
                 }
                 break;
 
-              case "error":
-                console.warn("SSE: Soramimi stream error:", eventData.error || rawData.error);
-                break;
+              case "error": {
+                const message =
+                  (typeof eventData.error === "string" && eventData.error) ||
+                  (typeof rawData.error === "string" && rawData.error) ||
+                  "Soramimi stream error";
+                console.warn("SSE: Soramimi stream error:", message);
+                reader.cancel();
+                throw new Error(message);
+              }
 
               case "cached":
                 finalSoramimi = { data: eventData.soramimi, success: true };

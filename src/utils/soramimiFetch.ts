@@ -10,8 +10,8 @@ export function isFuriganaReadyForSoramimi(
   return !isJapanese || !isFetchingFurigana;
 }
 
-/** Default in-flight guard: abort and restart if a prior request exceeds this age. */
-export const SORAMIMI_INFLIGHT_MAX_MS = 5 * 60 * 1000;
-
-/** Effect-level safety timeout for a single soramimi fetch attempt. */
-export const SORAMIMI_FETCH_TIMEOUT_MS = 5 * 60 * 1000;
+/**
+ * Client safety timeout — slightly above api/songs/[id].ts maxDuration (120s)
+ * so we clear UI loading when the platform cuts the SSE stream.
+ */
+export const SORAMIMI_FETCH_TIMEOUT_MS = 130_000;
