@@ -86,7 +86,6 @@ export function useKaraokeLogic({
     refreshLyrics,
     setTrackLyricsSource,
     clearTrackLyricsSource,
-    setLyricOffset,
     addTrackFromVideoId,
   } = useIpodStoreShallow((s) => ({
     setLyricsAlignment: s.setLyricsAlignment,
@@ -98,7 +97,6 @@ export function useKaraokeLogic({
     refreshLyrics: s.refreshLyrics,
     setTrackLyricsSource: s.setTrackLyricsSource,
     clearTrackLyricsSource: s.clearTrackLyricsSource,
-    setLyricOffset: s.setLyricOffset,
     addTrackFromVideoId: s.addTrackFromVideoId,
   }));
 
@@ -1571,7 +1569,7 @@ export function useKaraokeLogic({
       } else if (e.key === "[" || e.key === "]") {
         // Offset adjustment: [ = lyrics earlier (negative), ] = lyrics later (positive)
         const delta = e.key === "[" ? -50 : 50;
-        useIpodStore.getState().adjustLyricOffset(currentIndex, delta);
+        useIpodStore.getState().adjustLyricOffset(currentIndex, delta, "youtube");
         const newOffset = (currentTrack?.lyricOffset ?? 0) + delta;
         const sign = newOffset > 0 ? "+" : newOffset < 0 ? "" : "";
         showStatus(`${t("apps.ipod.status.offset")} ${sign}${(newOffset / 1000).toFixed(2)}s`);
@@ -1872,11 +1870,13 @@ export function useKaraokeLogic({
     handleCoverFlowPlayInPlace,
     handleCoverFlowRotation,
     clearLibrary,
-    setLyricOffset,
+    setLyricOffset: (index: number, offsetMs: number) => {
+      useIpodStore.getState().setLyricOffset(index, offsetMs, "youtube");
+    },
     isXpTheme,
     getCurrentKaraokeTrack,
     adjustLyricOffset: (index: number, delta: number) => {
-      useIpodStore.getState().adjustLyricOffset(index, delta);
+      useIpodStore.getState().adjustLyricOffset(index, delta, "youtube");
     },
   };
 }
