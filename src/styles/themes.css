@@ -44,6 +44,9 @@
   --os-color-sidebar-inset-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25);
   --os-color-switch-track: #9ca3af;
   --os-color-switch-track-checked: #111827;
+  /* List surfaces (e.g. song / video search results). Container uses
+     `--os-color-input-bg`; alternating rows tint with this value. */
+  --os-color-list-row-alt-bg: #f3f4f6;
   --os-metrics-border-width: 2px;
   --os-metrics-radius: 0.5rem;
   --os-metrics-titlebar-height: 1.5rem;
@@ -1635,7 +1638,7 @@
 }
 
 .os-themed-input:focus {
-  background-color: #ffffff;
+  background-color: var(--os-color-input-bg);
   border-color: var(--os-color-input-focus-border);
   box-shadow: 0 0 0 3px var(--os-color-input-focus-ring);
   outline: none;
@@ -3141,6 +3144,10 @@
   --os-color-input-border: rgba(255, 255, 255, 0.18);
   --os-color-input-focus-border: rgba(95, 152, 247, 0.7);
   --os-color-input-focus-ring: rgba(95, 152, 247, 0.3);
+
+  /* List surfaces — slightly lifted off the input bg so alternating
+     rows still read against the dark surface. */
+  --os-color-list-row-alt-bg: rgba(255, 255, 255, 0.05);
 
   /* Sidebar / separators */
   --os-color-separator: rgba(255, 255, 255, 0.14);
