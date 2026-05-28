@@ -505,6 +505,58 @@ describe("useIpodStore Apple Music slice", () => {
     expect(useIpodStore.getState().tracks).toEqual([]);
   });
 
+  test("adjustLyricOffset with youtube library updates YouTube slice while Apple Music is active", () => {
+    useIpodStore.setState({
+      tracks: [
+        {
+          id: "yt1",
+          url: "https://www.youtube.com/watch?v=yt1",
+          title: "YouTube One",
+          lyricOffset: 100,
+        },
+      ],
+      appleMusicTracks: [
+        {
+          id: "am:1",
+          url: "applemusic:1",
+          title: "Apple One",
+          source: "appleMusic",
+          lyricOffset: 0,
+        },
+      ],
+      librarySource: "appleMusic",
+    });
+    useIpodStore.getState().adjustLyricOffset(0, 50, "youtube");
+    expect(useIpodStore.getState().tracks[0].lyricOffset).toBe(150);
+    expect(useIpodStore.getState().appleMusicTracks[0].lyricOffset).toBe(0);
+  });
+
+  test("setLyricOffset with youtube library updates YouTube slice while Apple Music is active", () => {
+    useIpodStore.setState({
+      tracks: [
+        {
+          id: "yt1",
+          url: "https://www.youtube.com/watch?v=yt1",
+          title: "YouTube One",
+          lyricOffset: 100,
+        },
+      ],
+      appleMusicTracks: [
+        {
+          id: "am:1",
+          url: "applemusic:1",
+          title: "Apple One",
+          source: "appleMusic",
+          lyricOffset: 500,
+        },
+      ],
+      librarySource: "appleMusic",
+    });
+    useIpodStore.getState().setLyricOffset(0, 900, "youtube");
+    expect(useIpodStore.getState().tracks[0].lyricOffset).toBe(900);
+    expect(useIpodStore.getState().appleMusicTracks[0].lyricOffset).toBe(500);
+  });
+
   test("setAppleMusicTracks preserves active contextual queue tracks", () => {
     useIpodStore.setState({
       appleMusicTracks: [
