@@ -4973,6 +4973,7 @@ export function useIpodLogic({
     isFetchingSoramimi,
     furiganaProgress,
     soramimiProgress,
+    soramimiError,
   } = useFurigana({
     songId: lyricsSongId,
     lines: fullScreenLyricsControls.originalLines,
@@ -4995,6 +4996,7 @@ export function useIpodLogic({
       furiganaProgress,
       isFetchingSoramimi,
       soramimiProgress,
+      soramimiError: soramimiError ?? null,
     },
     translationLanguage: effectiveTranslationLanguage,
     isAddingSong,

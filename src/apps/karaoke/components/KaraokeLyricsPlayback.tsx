@@ -137,6 +137,7 @@ export function KaraokeLyricsPlaybackProvider({
     isFetchingSoramimi,
     furiganaProgress,
     soramimiProgress,
+    soramimiError,
   } = useFurigana({
     songId: currentTrack?.id ?? "",
     lines: lyricsControls.originalLines,
@@ -158,6 +159,7 @@ export function KaraokeLyricsPlaybackProvider({
       furiganaProgress,
       isFetchingSoramimi,
       soramimiProgress,
+      soramimiError: soramimiError ?? null,
     },
     translationLanguage: effectiveTranslationLanguage,
     isAddingSong,

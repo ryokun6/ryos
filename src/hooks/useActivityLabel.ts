@@ -27,6 +27,8 @@ export interface ActivityInfo {
   furiganaProgress?: number;
   isFetchingSoramimi?: boolean;
   soramimiProgress?: number;
+  /** Shown when misheard lyrics failed (non-blocking; no spinner) */
+  soramimiError?: string | null;
   isAddingSong?: boolean;
 }
 
@@ -35,6 +37,8 @@ export interface ActivityLabelResult {
   isActive: boolean;
   /** Label to display (e.g., "45% English") */
   label: string | null;
+  /** When true, show label only (no spinner) — e.g. soramimi fetch error */
+  isError?: boolean;
 }
 
 /** Translation function type */
@@ -56,17 +60,41 @@ export function getActivityLabel(info: ActivityInfo, t?: TranslationFn): Activit
     furiganaProgress,
     isFetchingSoramimi,
     soramimiProgress,
+    soramimiError,
     isAddingSong,
   } = info;
 
-  const isActive = !!(isLoadingLyrics || isTranslating || isFetchingFurigana || isFetchingSoramimi || isAddingSong);
+  const translate = (key: string, fallback: string) =>
+    t ? t(key, { defaultValue: fallback }) : fallback;
+
+  const soramimiErrorLabel =
+    soramimiError && !isFetchingSoramimi
+      ? translate("common.activity.soramimiError", "Misheard unavailable")
+      : null;
+
+  const isActive = !!(
+    isLoadingLyrics ||
+    isTranslating ||
+    isFetchingFurigana ||
+    isFetchingSoramimi ||
+    isAddingSong ||
+    soramimiErrorLabel
+  );
   
   if (!isActive) {
     return { isActive: false, label: null };
   }
 
-  // Helper to translate or return fallback
-  const translate = (key: string, fallback: string) => t ? t(key, { defaultValue: fallback }) : fallback;
+  if (
+    soramimiErrorLabel &&
+    !isLoadingLyrics &&
+    !isTranslating &&
+    !isFetchingFurigana &&
+    !isFetchingSoramimi &&
+    !isAddingSong
+  ) {
+    return { isActive: true, label: soramimiErrorLabel, isError: true };
+  }
 
   let label: string | null = null;
 

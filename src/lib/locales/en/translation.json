@@ -12,6 +12,7 @@
     "activity": {
       "adding": "Adding",
       "soramimi": "Misheard",
+      "soramimiError": "Misheard unavailable",
       "furigana": "Furigana"
     },
     "window": {

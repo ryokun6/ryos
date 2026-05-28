@@ -13,6 +13,8 @@ import { abortableFetch } from "@/utils/abortableFetch";
 const MAX_BUFFER_SIZE = 1024 * 1024; // 1MB
 const MAX_RETRIES = 3;
 const INITIAL_DELAY_MS = 1000;
+/** Abort SSE body reads if the server sends no data for this long. */
+export const SSE_STREAM_IDLE_TIMEOUT_MS = 120_000;
 
 // =============================================================================
 // Types
@@ -657,6 +659,14 @@ export async function processSoramimiSSE(
         let totalLines = 0;
         let completedLines = 0;
         let finalSoramimi: SoramimiResult | null = null;
+        let lastChunkAt = Date.now();
+
+        const assertStreamNotIdle = () => {
+          if (Date.now() - lastChunkAt > SSE_STREAM_IDLE_TIMEOUT_MS) {
+            reader.cancel();
+            throw new Error("SSE stream timed out waiting for data");
+          }
+        };
 
         const processLine = (line: string) => {
           if (!line.startsWith("data: ")) return;
@@ -741,6 +751,7 @@ export async function processSoramimiSSE(
         };
 
         while (true) {
+          assertStreamNotIdle();
           const { done, value } = await reader.read();
           
           if (done) {
@@ -752,6 +763,7 @@ export async function processSoramimiSSE(
             break;
           }
 
+          lastChunkAt = Date.now();
           buffer += decoder.decode(value, { stream: true });
           
           // Check buffer size limit

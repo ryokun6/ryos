@@ -16,6 +16,7 @@ export interface UseFuriganaState {
   furiganaProgress?: number;
   isFetchingSoramimi: boolean;
   soramimiProgress?: number;
+  soramimiError?: string | null;
 }
 
 export interface UseActivityStateParams {
@@ -58,6 +59,7 @@ export function useActivityState({
       furiganaProgress: furiganaState.furiganaProgress,
       isFetchingSoramimi: furiganaState.isFetchingSoramimi,
       soramimiProgress: furiganaState.soramimiProgress,
+      soramimiError: furiganaState.soramimiError ?? null,
       isAddingSong,
     }),
     [
@@ -69,6 +71,7 @@ export function useActivityState({
       furiganaState.furiganaProgress,
       furiganaState.isFetchingSoramimi,
       furiganaState.soramimiProgress,
+      furiganaState.soramimiError,
       isAddingSong,
     ]
   );

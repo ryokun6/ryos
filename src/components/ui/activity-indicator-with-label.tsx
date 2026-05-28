@@ -30,7 +30,7 @@ export function ActivityIndicatorWithLabel({
   showLabel = true,
 }: ActivityIndicatorWithLabelProps) {
   const { t } = useTranslation();
-  const { isActive, label } = getActivityLabel(state, t);
+  const { isActive, label, isError } = getActivityLabel(state, t);
 
   if (!isActive) {
     return null;
@@ -41,7 +41,8 @@ export function ActivityIndicatorWithLabel({
       {showLabel && label && (
         <span
           className={cn(
-            "font-geneva-12 text-white whitespace-nowrap",
+            "font-geneva-12 whitespace-nowrap",
+            isError ? "text-amber-200/95" : "text-white",
             "drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]",
             "[text-shadow:_0_1px_0_rgba(0,0,0,0.8),_0_-1px_0_rgba(0,0,0,0.8),_1px_0_0_rgba(0,0,0,0.8),_-1px_0_0_rgba(0,0,0,0.8)]",
             labelClassName
@@ -50,10 +51,12 @@ export function ActivityIndicatorWithLabel({
           {label}
         </span>
       )}
-      <ActivityIndicator
-        size={size}
-        className="text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] flex-shrink-0"
-      />
+      {!isError && (
+        <ActivityIndicator
+          size={size}
+          className="text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] flex-shrink-0"
+        />
+      )}
     </div>
   );
 }
