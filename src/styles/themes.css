@@ -252,7 +252,7 @@
   --os-metrics-menubar-height: 25px;
   --os-window-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
   --os-menu-item-font-size: 13px;
-  --os-menu-subtrigger-font-size: 12px;
+  --os-menu-subtrigger-font-size: var(--os-menu-item-font-size);
   /* Shared texture variables */
   --os-texture-toolbar-image: url("/assets/brushed-metal.jpg");
   --os-texture-toolbar-size: cover;
