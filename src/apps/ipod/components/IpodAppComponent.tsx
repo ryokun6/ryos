@@ -68,7 +68,8 @@ export function IpodAppComponent({
   instanceId,
   onNavigateNext,
   onNavigatePrevious,
-}: AppProps<IpodInitialData>) {
+  standalone = false,
+}: AppProps<IpodInitialData> & { standalone?: boolean }) {
   const {
     t,
     translatedHelpItems,
@@ -315,29 +316,17 @@ export function IpodAppComponent({
 
   if (!isWindowOpen) return null;
 
-  return (
+  const ipodShellContent = (
     <>
-      {!isXpTheme && isForeground && menuBar}
-      <WindowFrame
-        title={getTranslatedAppName("ipod")}
-        onClose={handleClose}
-        isForeground={isForeground}
-        appId="ipod"
-        interceptClose
-        material="transparent"
-        skipInitialSound={skipInitialSound}
-        instanceId={instanceId}
-        onNavigateNext={onNavigateNext}
-        onNavigatePrevious={onNavigatePrevious}
-        menuBar={isXpTheme ? menuBar : undefined}
-        keepMountedWhenMinimized
-        onFullscreenToggle={toggleFullScreen}
-        onCoverFlowToggle={() => setIsCoverFlowOpen(!isCoverFlowOpen)}
-        isCoverFlowActive={isCoverFlowOpen}
-      >
         <div
           ref={containerRef}
-          className="ipod-force-font flex flex-col items-center justify-center w-full h-full bg-gradient-to-b from-neutral-100/20 to-neutral-300/20 backdrop-blur-lg p-4 select-none"
+          className={cn(
+            "ipod-force-font flex flex-col items-center justify-center w-full h-full select-none",
+            standalone
+              ? "bg-[#1a1a1a] p-0"
+              : "bg-gradient-to-b from-neutral-100/20 to-neutral-300/20 backdrop-blur-lg p-4",
+            standalone && isFullScreen && "hidden"
+          )}
           style={{ position: "relative", overflow: "hidden", contain: "layout style paint" }}
         >
           <div
@@ -1044,11 +1033,46 @@ export function IpodAppComponent({
             />
           </div>
         )}
-      </WindowFrame>
+    </>
+  );
+
+  return (
+    <>
+      {!standalone && !isXpTheme && isForeground && menuBar}
+      {standalone ? (
+        <div
+          className={cn(
+            "fixed inset-0 z-0 overflow-hidden",
+            isFullScreen ? "bg-black" : "bg-[#1a1a1a]"
+          )}
+        >
+          {ipodShellContent}
+        </div>
+      ) : (
+        <WindowFrame
+          title={getTranslatedAppName("ipod")}
+          onClose={handleClose}
+          isForeground={isForeground}
+          appId="ipod"
+          interceptClose
+          material="transparent"
+          skipInitialSound={skipInitialSound}
+          instanceId={instanceId}
+          onNavigateNext={onNavigateNext}
+          onNavigatePrevious={onNavigatePrevious}
+          menuBar={isXpTheme ? menuBar : undefined}
+          keepMountedWhenMinimized
+          onFullscreenToggle={toggleFullScreen}
+          onCoverFlowToggle={() => setIsCoverFlowOpen(!isCoverFlowOpen)}
+          isCoverFlowActive={isCoverFlowOpen}
+        >
+          {ipodShellContent}
+        </WindowFrame>
+      )}
 
       {/* PIP Player */}
       <AnimatePresence>
-        {isMinimized && !isFullScreen && tracks.length > 0 && currentIndex >= 0 && (
+        {!standalone && isMinimized && !isFullScreen && tracks.length > 0 && currentIndex >= 0 && (
           <PipPlayer
             currentTrack={tracks[currentIndex] || null}
             isPlaying={isPlaying}
