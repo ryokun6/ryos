@@ -15,7 +15,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { getRedisBackend } from "../api/_utils/redis.js";
 import {
   buildClientRuntimeConfig,
-  getConfiguredPublicOrigin,
+  getAppPublicOrigin,
   getRealtimeProvider,
   getRealtimeWebSocketPath,
   shouldEnableLocalRealtime,
@@ -766,10 +766,9 @@ async function bootstrap(): Promise<void> {
       }
 
       if (pathname === "/app-config.js") {
-        const origin =
-          getConfiguredPublicOrigin() ||
-          (url.origin && !url.origin.includes(",") ? url.origin : null) ||
-          "https://os.ryo.lu";
+        const origin = getAppPublicOrigin(
+          url.origin && !url.origin.includes(",") ? url.origin : null
+        );
         return jsResponse(buildAppConfigScript(origin), 200);
       }
 

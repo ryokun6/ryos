@@ -6,6 +6,7 @@ import {
   getRealtimeProvider,
   getRealtimeWebSocketPath,
   isAllowedAppHost,
+  shouldPreferRequestPublicOrigin,
 } from "../api/_utils/runtime-config";
 
 const ORIGINAL_ENV = { ...process.env };
@@ -55,5 +56,23 @@ describe("self-host runtime config", () => {
     expect(isAllowedAppHost("ryos.example.net")).toBe(true);
     expect(isAllowedAppHost("localhost:3000")).toBe(true);
     expect(isAllowedAppHost("evil.example.net")).toBe(false);
+  });
+
+  test("prefers request origin for os.ryo.lu preview deploys over APP_PUBLIC_ORIGIN", () => {
+    process.env.APP_PUBLIC_ORIGIN = "https://canonical.example.com"; // pragma: allowlist secret
+
+    expect(isAllowedAppHost("1331-preview.os.ryo.lu")).toBe(true);
+    expect(
+      shouldPreferRequestPublicOrigin("https://1331-preview.os.ryo.lu")
+    ).toBe(true);
+    expect(getAppPublicOrigin("https://1331-preview.os.ryo.lu")).toBe(
+      "https://1331-preview.os.ryo.lu"
+    );
+    expect(shouldPreferRequestPublicOrigin("http://127.0.0.1:4010")).toBe(
+      false
+    );
+    expect(getAppPublicOrigin("http://127.0.0.1:4010")).toBe(
+      "https://canonical.example.com"
+    );
   });
 });

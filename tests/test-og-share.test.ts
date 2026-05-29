@@ -21,6 +21,24 @@ afterEach(() => {
 });
 
 describe("og share response", () => {
+  test("keeps OG redirect on PR preview host when APP_PUBLIC_ORIGIN is canonical dev", async () => {
+    process.env.APP_PUBLIC_ORIGIN = "https://canonical.example.com"; // pragma: allowlist secret
+
+    const response = await createOgShareResponse(
+      new Request("https://1331-preview.os.ryo.lu/standalone/ipod")
+    );
+
+    expect(response).not.toBeNull();
+    const body = await response!.text();
+    expect(body).toContain(
+      '<meta property="og:url" content="https://1331-preview.os.ryo.lu/standalone/ipod">'
+    );
+    expect(body).toContain(
+      'location.replace("https://1331-preview.os.ryo.lu/standalone/ipod?_ryo=1")'
+    );
+    expect(body).not.toContain("canonical.example.com/standalone/ipod");
+  });
+
   test("uses configured public origin for Coolify/self-host share pages", async () => {
     process.env.APP_PUBLIC_ORIGIN = "https://coolify.example.com";
 

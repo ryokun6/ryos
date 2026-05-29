@@ -65,12 +65,34 @@ export function getConfiguredPublicOrigin(): string | null {
   );
 }
 
+/** True when the browser-facing request host should win over APP_PUBLIC_ORIGIN. */
+export function shouldPreferRequestPublicOrigin(
+  fallbackOrigin?: string | null
+): boolean {
+  const fallback = normalizeOrigin(fallbackOrigin);
+  if (!fallback) return false;
+
+  try {
+    const host = new URL(fallback).host.toLowerCase();
+    // Local dev API probes (127.0.0.1, localhost) should still use configured origin.
+    if (/^localhost(:\d+)?$/.test(host)) return false;
+    if (/^127\.0\.0\.1(:\d+)?$/.test(host)) return false;
+    if (/^\[::1\](:\d+)?$/.test(host)) return false;
+    return isAllowedAppHost(host);
+  } catch {
+    return false;
+  }
+}
+
 export function getAppPublicOrigin(fallbackOrigin?: string | null): string {
-  return (
-    getConfiguredPublicOrigin() ||
-    normalizeOrigin(fallbackOrigin) ||
-    DEFAULT_PUBLIC_ORIGIN
-  );
+  const configured = getConfiguredPublicOrigin();
+  const fallback = normalizeOrigin(fallbackOrigin);
+
+  if (fallback && shouldPreferRequestPublicOrigin(fallback)) {
+    return fallback;
+  }
+
+  return configured || fallback || DEFAULT_PUBLIC_ORIGIN;
 }
 
 export function getDocsBaseUrl(fallbackOrigin?: string | null): string {
@@ -161,7 +183,8 @@ export function getAllowedAppHosts(): {
     ...(configuredHost ? [configuredHost] : []),
   ];
 
-  const subdomainSuffixes: string[] = [];
+  // PR / preview deploys (e.g. 1331-preview.os.ryo.lu) share this suffix.
+  const subdomainSuffixes: string[] = [".os.ryo.lu"];
 
   for (const token of tokens) {
     const wildcard = token.match(/^\*\.(.+)$/);
