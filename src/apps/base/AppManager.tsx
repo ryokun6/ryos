@@ -21,11 +21,10 @@ import { isTextEditInitialData } from "@/types/appInitialData";
 import {
   emitAppUpdate,
   onAppLaunchRequest,
-  onExposeToggle,
-  onSpotlightToggle,
   requestAppLaunch,
   toggleSpotlightSearch,
 } from "@/utils/appEventBus";
+import { useDashboardShellTriggers } from "@/hooks/useDashboardShellTriggers";
 import { prefetchAppChunk, prefetchLikelyAppChunks } from "@/config/lazyAppComponent";
 import { useAppStore } from "@/stores/useAppStore";
 import { useGlobalUndoRedo } from "@/hooks/useGlobalUndoRedo";
@@ -354,53 +353,30 @@ export function AppManager({ apps }: AppManagerProps) {
     }
   }, [closeAppInstance]);
 
-  // Listen for expose view toggle events (e.g., from keyboard shortcut, dock menu)
-  useEffect(() => {
-    const handleExposeToggle = () => {
-      closeDashboardIfOpen();
+  const closeOverlaysForSpotlight = useCallback(() => {
+    setIsExposeViewOpen(false);
+    closeDashboardIfOpen();
+  }, [closeDashboardIfOpen]);
+
+  useDashboardShellTriggers({
+    closeDashboardIfOpen,
+    toggleExposeFromKeyboard: () => {
       setIsExposeViewOpen((prev) => !prev);
-    };
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // F3 key to toggle Expose view (Mission Control)
-      if (e.key === "F3" || (e.key === "f" && e.metaKey)) {
-        e.preventDefault();
-        // Close Dashboard if open
-        closeDashboardIfOpen();
-        setIsExposeViewOpen((prev) => !prev);
-      }
-      // F4 key to toggle Dashboard
-      if (e.key === "F4") {
-        e.preventDefault();
-        // Close Expose if open
-        setIsExposeViewOpen(false);
-        toggleDashboard();
-      }
-      // ⌘+Space / Ctrl+Space to toggle Spotlight Search
-      if (e.key === " " && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-        // Close Expose and Dashboard if open before toggling Spotlight
-        setIsExposeViewOpen(false);
-        closeDashboardIfOpen();
-        toggleSpotlightSearch();
-      }
-    };
-
-    // Close Expose when Spotlight opens via any trigger (icon click, Start Menu "Run...")
-    const handleSpotlightToggle = () => {
+    },
+    toggleExposeFromEvent: () => {
+      setIsExposeViewOpen((prev) => !prev);
+    },
+    toggleDashboardFromKeyboard: () => {
+      setIsExposeViewOpen(false);
+      toggleDashboard();
+    },
+    toggleSpotlightFromKeyboard: () => {
       setIsExposeViewOpen(false);
       closeDashboardIfOpen();
-    };
-
-    const unsubscribeExposeToggle = onExposeToggle(handleExposeToggle);
-    const unsubscribeSpotlightToggle = onSpotlightToggle(handleSpotlightToggle);
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      unsubscribeExposeToggle();
-      unsubscribeSpotlightToggle();
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [closeDashboardIfOpen, toggleDashboard]);
+      toggleSpotlightSearch();
+    },
+    closeOverlaysForSpotlightEvent: closeOverlaysForSpotlight,
+  });
 
   // Global macOS-style window management and app switcher keyboard shortcuts
   useEffect(() => {
