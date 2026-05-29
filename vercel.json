@@ -240,6 +240,8 @@
     { "source": "/videos", "destination": "/" },
     { "source": "/tv", "destination": "/" },
     { "source": "/ipod", "destination": "/" },
+    { "source": "/standalone/ipod", "destination": "/" },
+    { "source": "/standalone/ipod/:track", "destination": "/" },
     { "source": "/karaoke", "destination": "/" },
     { "source": "/applet-viewer", "destination": "/" },
     { "source": "/synth", "destination": "/" },

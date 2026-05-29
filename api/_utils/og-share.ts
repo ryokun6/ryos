@@ -414,6 +414,35 @@ export async function createOgShareResponse(
     matched = true;
   }
 
+  const standaloneIpodMatch = pathname.match(/^\/standalone\/ipod\/([^/?#]+)$/);
+  if (standaloneIpodMatch) {
+    const songId = resolveSongShareId(standaloneIpodMatch[1]);
+    imageUrl = getAppIconUrl(publicOrigin, "ipod");
+
+    const songInfo = await (options.getSong || getSongFromRedis)(songId);
+    if (songInfo) {
+      imageUrl = formatMusicCoverUrl(songInfo.cover, 400) || imageUrl;
+      if (songInfo.artist) {
+        title = `${songInfo.title} - ${songInfo.artist}`;
+        description = "Listen on ryOS iPod";
+      } else {
+        title = songInfo.title;
+        description = "Listen on ryOS iPod";
+      }
+    } else {
+      title = "Shared Song - ryOS";
+      description = "Listen on ryOS iPod";
+    }
+    matched = true;
+  }
+
+  if (pathname === "/standalone/ipod") {
+    imageUrl = getAppIconUrl(publicOrigin, "ipod");
+    title = "iPod on ryOS";
+    description = APP_DESCRIPTIONS.ipod || "Open app in ryOS";
+    matched = true;
+  }
+
   const ipodMatch = pathname.match(/^\/ipod\/([^/?#]+)$/);
   if (ipodMatch) {
     const songId = resolveSongShareId(ipodMatch[1]);

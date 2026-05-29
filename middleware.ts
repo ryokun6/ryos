@@ -19,6 +19,8 @@ export const config = {
     "/videos/:path*",
     "/ipod",
     "/ipod/:path*",
+    "/standalone/ipod",
+    "/standalone/ipod/:path*",
     "/karaoke",
     "/karaoke/:path*",
     "/listen/:path*",

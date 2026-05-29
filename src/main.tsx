@@ -1,6 +1,8 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { App } from "./App";
+import { StandaloneIpodApp } from "./StandaloneIpodApp";
+import { isStandaloneIpodPath } from "./utils/standaloneIpodRoute";
 import "./index.css";
 import { useThemeStore } from "./stores/useThemeStore";
 import { useLanguageStore } from "./stores/useLanguageStore";
@@ -139,9 +141,10 @@ preloadIpodData();
 
 const renderApp = () => {
   initializeAnalytics();
+  const RootComponent = isStandaloneIpodPath() ? StandaloneIpodApp : App;
   ReactDOM.createRoot(document.getElementById("root")!).render(
     <React.StrictMode>
-      <App />
+      <RootComponent />
     </React.StrictMode>
   );
 };
