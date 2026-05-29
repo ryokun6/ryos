@@ -33,6 +33,7 @@ import {
   discoverApiRouteManifest,
   type ApiRouteManifestEntry,
 } from "./api-route-manifest";
+import { shouldServeSpaFallback } from "./spa-static-fallback";
 
 type QueryValue = string | string[];
 type QueryMap = Record<string, QueryValue>;
@@ -604,13 +605,6 @@ async function serveSpaIndex(): Promise<Response> {
     },
     503
   );
-}
-
-function shouldServeSpaFallback(pathname: string): boolean {
-  if (pathname === "/" || pathname === "") return true;
-  if (pathname.startsWith("/api/")) return false;
-  if (pathname === "/api") return false;
-  return !path.posix.basename(pathname).includes(".");
 }
 
 function buildAppConfigScript(origin: string): string {
