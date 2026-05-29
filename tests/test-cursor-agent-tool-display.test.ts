@@ -13,7 +13,7 @@ describe("cursorAgentToolDisplay", () => {
     expect(isTerminalToolName("Read")).toBe(false);
   });
 
-  test("collapses terminal tool calls to running/ran without command detail", () => {
+  test("shows Running/Ran with the actual command", () => {
     const running = buildToolInvocationLabel([
       {
         ev: {
@@ -24,8 +24,8 @@ describe("cursorAgentToolDisplay", () => {
         },
       },
     ]);
-    expect(running.primary).toBe("Running terminal command");
-    expect(running.secondary).toBe("");
+    expect(running.primary).toBe("Running");
+    expect(running.secondary).toBe("cd /workspace && bun test");
     expect(running.done).toBe(false);
 
     const done = buildToolInvocationLabel([
@@ -39,8 +39,8 @@ describe("cursorAgentToolDisplay", () => {
         },
       },
     ]);
-    expect(done.primary).toBe("Ran terminal command");
-    expect(done.secondary).toBe("");
+    expect(done.primary).toBe("Ran");
+    expect(done.secondary).toBe("bun test");
     expect(done.done).toBe(true);
   });
 

@@ -57,14 +57,25 @@ function truncateDetail(value: string): string {
   return oneLine.length > 120 ? `${oneLine.slice(0, 117)}...` : oneLine;
 }
 
+const COMMAND_ARG_KEYS = ["command", "cmd", "shell_command"] as const;
+
+export function terminalCommandFromInput(input: unknown): string {
+  if (typeof input === "string") return truncateDetail(input);
+  const payload = toolPayload(input);
+  if (!payload) return "";
+  return truncateDetail(pickString(payload, [...COMMAND_ARG_KEYS]));
+}
+
+function terminalCommandFromEv(ev: Record<string, unknown>): string {
+  return terminalCommandFromInput(ev.args ?? ev.input ?? ev.parameters ?? ev);
+}
+
 export function toolSecondaryInfo(input: unknown): string {
   if (typeof input === "string") return truncateDetail(input);
   const payload = toolPayload(input);
   if (!payload) return "";
   return pickString(payload, [
-    "command",
-    "cmd",
-    "shell_command",
+    ...COMMAND_ARG_KEYS,
     "path",
     "filePath",
     "file_path",
@@ -81,11 +92,37 @@ function fileNameFromPath(path: string): string {
   return path.split(/[\\/]/).filter(Boolean).pop() || path;
 }
 
+function toolGroupTerminalCommandInfo(rows: Record<string, unknown>[]): string {
+  if (rows.length <= 1) {
+    const ev = isRecord(rows[0]?.ev) ? rows[0].ev : {};
+    return terminalCommandFromEv(ev);
+  }
+
+  const uniqueCommands = Array.from(
+    new Set(
+      rows.reduce<string[]>((acc, row) => {
+        const value = isRecord(row.ev) ? terminalCommandFromEv(row.ev) : "";
+        if (value.length > 0) acc.push(value);
+        return acc;
+      }, [])
+    )
+  );
+
+  if (uniqueCommands.length === 1) return uniqueCommands[0];
+  if (uniqueCommands.length > 1) {
+    const preview = uniqueCommands.slice(0, 2).join("; ");
+    return uniqueCommands.length > 2 ? `${preview}; ...` : preview;
+  }
+  return "";
+}
+
 function toolGroupSecondaryInfo(
   rows: Record<string, unknown>[],
   toolName: string
 ): string {
-  if (isTerminalToolName(toolName)) return "";
+  if (isTerminalToolName(toolName)) {
+    return toolGroupTerminalCommandInfo(rows);
+  }
 
   if (rows.length <= 1) {
     const ev = isRecord(rows[0]?.ev) ? rows[0].ev : {};
@@ -147,7 +184,7 @@ function toolPrimaryText(
   rows: Record<string, unknown>[]
 ): string {
   if (isTerminalToolName(name)) {
-    return done ? "Ran terminal command" : "Running terminal command";
+    return done ? "Ran" : "Running";
   }
 
   const count = rows.length;
@@ -185,8 +222,9 @@ export function buildToolInvocationLabel(rows: Record<string, unknown>[]): {
   return {
     primary: toolPrimaryText(name, done, rows),
     secondary:
-      isTerminalToolName(name) ||
-      (rows.length === 1 && secondary === fileNameFromPath(secondary))
+      !isTerminalToolName(name) &&
+      rows.length === 1 &&
+      secondary === fileNameFromPath(secondary)
         ? ""
         : secondary,
     done,
