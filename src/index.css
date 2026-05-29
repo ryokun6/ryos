@@ -114,9 +114,9 @@
     -webkit-overscroll-behavior-x: none;
     -webkit-overscroll-behavior-y: none;
   }
-  /* Browser fullscreen for the entire ryOS shell (#root) */
-  #root:fullscreen,
-  #root:-webkit-full-screen {
+  /* Browser fullscreen for the entire ryOS page (html, so body portals/menus stay visible) */
+  html:fullscreen,
+  html:-webkit-full-screen {
     width: 100%;
     height: 100%;
     background-color: #000;

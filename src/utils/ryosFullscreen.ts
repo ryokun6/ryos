@@ -1,6 +1,14 @@
 /** DOM id of the React root that hosts the full ryOS shell. */
 export const RYOS_FULLSCREEN_ROOT_ID = "root";
 
+/** Element that enters browser fullscreen for the whole ryOS page. */
+export function getRyosFullscreenElement(): HTMLElement | null {
+  if (typeof document === "undefined") {
+    return null;
+  }
+  return document.documentElement;
+}
+
 export function getRyosFullscreenRoot(): HTMLElement | null {
   if (typeof document === "undefined") {
     return null;
@@ -10,40 +18,37 @@ export function getRyosFullscreenRoot(): HTMLElement | null {
 
 /** Whether the browser exposes a usable Fullscreen API. */
 export function isRyosFullscreenSupported(): boolean {
-  if (typeof document === "undefined") {
-    return false;
-  }
-  const root = getRyosFullscreenRoot();
-  if (!root) {
+  const target = getRyosFullscreenElement();
+  if (!target || !getRyosFullscreenRoot()) {
     return false;
   }
   return (
     typeof document.fullscreenEnabled === "boolean" &&
     document.fullscreenEnabled &&
-    typeof root.requestFullscreen === "function" &&
+    typeof target.requestFullscreen === "function" &&
     typeof document.exitFullscreen === "function"
   );
 }
 
-/** True when the ryOS shell root is the active fullscreen element. */
+/** True when the ryOS page is in browser fullscreen. */
 export function isRyosFullscreenActive(): boolean {
-  const root = getRyosFullscreenRoot();
-  if (!root) {
+  const target = getRyosFullscreenElement();
+  if (!target) {
     return false;
   }
-  return document.fullscreenElement === root;
+  return document.fullscreenElement === target;
 }
 
 export async function enterRyosFullscreen(): Promise<void> {
   if (!isRyosFullscreenSupported()) {
     return;
   }
-  const root = getRyosFullscreenRoot();
-  if (!root || isRyosFullscreenActive()) {
+  const target = getRyosFullscreenElement();
+  if (!target || isRyosFullscreenActive()) {
     return;
   }
   try {
-    await root.requestFullscreen();
+    await target.requestFullscreen();
   } catch (err) {
     console.warn("[ryOS] Failed to enter fullscreen:", err);
   }

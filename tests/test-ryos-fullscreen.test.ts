@@ -3,6 +3,7 @@
 import { describe, expect, test, beforeEach, afterEach } from "bun:test";
 import {
   RYOS_FULLSCREEN_ROOT_ID,
+  getRyosFullscreenElement,
   getRyosFullscreenRoot,
   isRyosFullscreenActive,
   isRyosFullscreenSupported,
@@ -26,14 +27,26 @@ describe("ryosFullscreen", () => {
     }
     root.remove();
     root = null;
+    Object.defineProperty(document, "fullscreenElement", {
+      configurable: true,
+      get: () => null,
+    });
   });
 
-  test("getRyosFullscreenRoot returns the shell root element", () => {
+  test("getRyosFullscreenRoot returns the React shell root", () => {
     if (typeof document === "undefined") {
       expect(true).toBe(true);
       return;
     }
     expect(getRyosFullscreenRoot()).toBe(root);
+  });
+
+  test("getRyosFullscreenElement returns documentElement", () => {
+    if (typeof document === "undefined") {
+      expect(true).toBe(true);
+      return;
+    }
+    expect(getRyosFullscreenElement()).toBe(document.documentElement);
   });
 
   test("isRyosFullscreenActive is false when another element is fullscreen", () => {
@@ -49,29 +62,21 @@ describe("ryosFullscreen", () => {
     });
     expect(isRyosFullscreenActive()).toBe(false);
     other.remove();
-    Object.defineProperty(document, "fullscreenElement", {
-      configurable: true,
-      get: () => null,
-    });
   });
 
-  test("isRyosFullscreenActive is true when shell root is fullscreen", () => {
-    if (typeof document === "undefined" || !root) {
+  test("isRyosFullscreenActive is true when documentElement is fullscreen", () => {
+    if (typeof document === "undefined") {
       expect(true).toBe(true);
       return;
     }
     Object.defineProperty(document, "fullscreenElement", {
       configurable: true,
-      get: () => root,
+      get: () => document.documentElement,
     });
     expect(isRyosFullscreenActive()).toBe(true);
-    Object.defineProperty(document, "fullscreenElement", {
-      configurable: true,
-      get: () => null,
-    });
   });
 
-  test("isRyosFullscreenSupported requires fullscreenEnabled and requestFullscreen", () => {
+  test("isRyosFullscreenSupported requires fullscreenEnabled and requestFullscreen on html", () => {
     if (typeof document === "undefined" || !root) {
       expect(true).toBe(true);
       return;
@@ -81,7 +86,7 @@ describe("ryosFullscreen", () => {
       configurable: true,
       value: true,
     });
-    root.requestFullscreen = async () => {};
+    document.documentElement.requestFullscreen = async () => {};
     document.exitFullscreen = async () => {};
     expect(isRyosFullscreenSupported()).toBe(true);
     Object.defineProperty(document, "fullscreenEnabled", {
