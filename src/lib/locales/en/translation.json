@@ -191,7 +191,9 @@
       "moreDocuments": "More Documents…",
       "createAccount": "Create Account…",
       "login": "Login…",
-      "logOut": "Log Out {{username}}…"
+      "logOut": "Log Out {{username}}…",
+      "enterFullScreen": "Enter Full Screen",
+      "exitFullScreen": "Exit Full Screen"
     },
     "appMenu": {
       "aboutApp": "About {{appName}}",

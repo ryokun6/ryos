@@ -15,6 +15,7 @@ import { LoginDialog } from "@/components/dialogs/LoginDialog";
 import { LogoutDialog } from "@/components/dialogs/LogoutDialog";
 import { AppId, appRegistry } from "@/config/appRegistry";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
+import { useRyosFullscreen } from "@/hooks/useRyosFullscreen";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useAppStore, RecentDocument } from "@/stores/useAppStore";
 import { useAuth } from "@/hooks/useAuth";
@@ -71,6 +72,8 @@ export function AppleMenu() {
   const [aboutFinderOpen, setAboutFinderOpen] = useState(false);
   const launchApp = useLaunchApp();
   const { isMacOSTheme: isMacOsxTheme } = useThemeFlags();
+  const { isFullscreen, supported: fullscreenSupported, toggle: toggleFullscreen } =
+    useRyosFullscreen();
 
   // Recent items from store
   const recentApps = useAppStore((state) => state.recentApps);
@@ -279,6 +282,17 @@ export function AppleMenu() {
               </MenubarItem>
             </MenubarSubContent>
           </MenubarSub>
+
+          {fullscreenSupported && (
+            <MenubarItem
+              onClick={toggleFullscreen}
+              className="text-md h-6 px-3"
+            >
+              {isFullscreen
+                ? t("common.appleMenu.exitFullScreen")
+                : t("common.appleMenu.enterFullScreen")}
+            </MenubarItem>
+          )}
 
           <MenubarSeparator className="h-[2px] bg-black my-1" />
 

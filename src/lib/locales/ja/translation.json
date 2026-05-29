@@ -3804,7 +3804,9 @@
       "noRecentDocuments": "最近使った書類はありません",
       "recentItems": "最近使った項目",
       "softwareUpdate": "ソフトウェア・アップデート…",
-      "systemPreferences": "システム環境設定…"
+      "systemPreferences": "システム環境設定…",
+      "enterFullScreen": "フルスクリーンにする",
+      "exitFullScreen": "フルスクリーンを解除"
     },
     "auth": {
       "changePassword": {

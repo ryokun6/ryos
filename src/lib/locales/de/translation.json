@@ -3804,7 +3804,9 @@
       "noRecentDocuments": "Keine kürzlich verwendeten Dokumente",
       "recentItems": "Benutzte Objekte",
       "softwareUpdate": "Softwareaktualisierung…",
-      "systemPreferences": "Systemeinstellungen…"
+      "systemPreferences": "Systemeinstellungen…",
+      "enterFullScreen": "Vollbild aktivieren",
+      "exitFullScreen": "Vollbild beenden"
     },
     "auth": {
       "changePassword": {

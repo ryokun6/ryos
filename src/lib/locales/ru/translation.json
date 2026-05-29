@@ -3804,7 +3804,9 @@
       "noRecentDocuments": "Нет недавних документов",
       "recentItems": "Недавние объекты",
       "softwareUpdate": "Обновление ПО…",
-      "systemPreferences": "Системные настройки…"
+      "systemPreferences": "Системные настройки…",
+      "enterFullScreen": "Перейти в полноэкранный режим",
+      "exitFullScreen": "Выйти из полноэкранного режима"
     },
     "auth": {
       "changePassword": {
