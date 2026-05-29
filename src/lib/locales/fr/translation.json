@@ -3804,7 +3804,9 @@
       "noRecentDocuments": "Aucun document récent",
       "recentItems": "Éléments récents",
       "softwareUpdate": "Mise à jour de logiciels…",
-      "systemPreferences": "Préférences Système…"
+      "systemPreferences": "Préférences Système…",
+      "enterFullScreen": "Passer en plein écran",
+      "exitFullScreen": "Quitter le plein écran"
     },
     "auth": {
       "changePassword": {

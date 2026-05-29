@@ -3804,7 +3804,9 @@
       "noRecentDocuments": "No hay documentos recientes",
       "recentItems": "Elementos Recientes",
       "softwareUpdate": "Actualización de Software…",
-      "systemPreferences": "Preferencias del Sistema…"
+      "systemPreferences": "Preferencias del Sistema…",
+      "enterFullScreen": "Entrar en pantalla completa",
+      "exitFullScreen": "Salir de pantalla completa"
     },
     "auth": {
       "changePassword": {

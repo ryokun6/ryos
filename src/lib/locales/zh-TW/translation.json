@@ -3804,7 +3804,9 @@
       "noRecentDocuments": "沒有最近使用的文件",
       "recentItems": "最近使用過的項目",
       "softwareUpdate": "軟體更新…",
-      "systemPreferences": "系統偏好設定…"
+      "systemPreferences": "系統偏好設定…",
+      "enterFullScreen": "進入全螢幕",
+      "exitFullScreen": "離開全螢幕"
     },
     "auth": {
       "changePassword": {
