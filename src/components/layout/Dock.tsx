@@ -39,6 +39,11 @@ import {
 import { useShallow } from "zustand/react/shallow";
 import { toggleExposeView } from "@/utils/appEventBus";
 import { prefetchAppChunk } from "@/config/lazyAppComponent";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
+import {
+  isClientYInBottomZone,
+  shouldRevealDockFromSwipeUp,
+} from "@/utils/dockRevealGesture";
 
 const MAX_SCALE = 2.3; // peak multiplier at cursor center
 const DISTANCE = 140; // px range where magnification is applied
@@ -590,6 +595,10 @@ const MULTI_WINDOW_APPS: AppId[] = ["textedit", "finder", "applet-viewer"];
 function MacDock() {
   const { t } = useTranslation();
   const isPhone = useIsPhone();
+  const isCompactHeight = useMediaQuery("(max-height: 520px)");
+  const hasCoarsePointer = useMediaQuery("(pointer: coarse)");
+  /** Touch + phone width, or touch + short viewport (e.g. phone landscape). */
+  const useSwipeToRevealDock = isPhone || (hasCoarsePointer && isCompactHeight);
   const { instances, instanceOrder, bringInstanceToForeground, restoreInstance, minimizeInstance, closeAppInstance } =
     useAppStoreShallow((s) => ({
       instances: s.instances,
@@ -906,6 +915,77 @@ function MacDock() {
     
     setIsDockVisible(false);
   }, [dockHiding, draggingItemId, externalDragIndex, trashContextMenuPos, applicationsContextMenuPos, appContextMenu, dividerContextMenuPos]);
+
+  // Mobile / small-height: swipe up from bottom reveals dock; taps pass through.
+  useEffect(() => {
+    if (!dockHiding || isDockVisible || !useSwipeToRevealDock) {
+      return;
+    }
+
+    const getZoneHeightPx = () => {
+      const safeInset = parseInt(
+        getComputedStyle(document.documentElement).getPropertyValue(
+          "--sat-safe-area-bottom",
+        ),
+        10,
+      );
+      const safeBottom = Number.isFinite(safeInset) ? safeInset : 0;
+      return scaledDockHeight + safeBottom;
+    };
+
+    let activePointer: {
+      pointerId: number;
+      startX: number;
+      startY: number;
+    } | null = null;
+
+    const clearActivePointer = () => {
+      activePointer = null;
+    };
+
+    const onPointerDown = (e: PointerEvent) => {
+      if (e.pointerType === "mouse") return;
+      const zoneHeight = getZoneHeightPx();
+      if (!isClientYInBottomZone(e.clientY, window.innerHeight, zoneHeight)) {
+        return;
+      }
+      activePointer = {
+        pointerId: e.pointerId,
+        startX: e.clientX,
+        startY: e.clientY,
+      };
+    };
+
+    const onPointerUp = (e: PointerEvent) => {
+      if (!activePointer || e.pointerId !== activePointer.pointerId) {
+        return;
+      }
+      const deltaX = e.clientX - activePointer.startX;
+      const deltaY = e.clientY - activePointer.startY;
+      clearActivePointer();
+
+      if (shouldRevealDockFromSwipeUp(deltaX, deltaY)) {
+        showDock();
+      }
+    };
+
+    window.addEventListener("pointerdown", onPointerDown);
+    window.addEventListener("pointerup", onPointerUp);
+    window.addEventListener("pointercancel", clearActivePointer);
+
+    return () => {
+      window.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("pointerup", onPointerUp);
+      window.removeEventListener("pointercancel", clearActivePointer);
+      clearActivePointer();
+    };
+  }, [
+    dockHiding,
+    isDockVisible,
+    useSwipeToRevealDock,
+    scaledDockHeight,
+    showDock,
+  ]);
 
   // Divider context menu handler
   const handleDividerContextMenu = useCallback((e: React.MouseEvent) => {
@@ -2548,25 +2628,18 @@ function MacDock() {
         </motion.div>
       </div>
       
-      {/* Invisible hover zone at bottom edge to trigger dock reveal when hiding is enabled */}
-      {dockHiding && !isDockVisible && (
+      {/* Desktop: hover zone reveals hidden dock. Mobile uses swipe (see effect above). */}
+      {dockHiding && !isDockVisible && !useSwipeToRevealDock && (
         <div
           className="fixed left-0 right-0 z-40"
           style={{
             bottom: 0,
-            // Desktop: half dock height, Mobile: full dock height + safe area
-            height: isPhone 
-              ? `calc(${scaledDockHeight}px + env(safe-area-inset-bottom, 0px))` 
-              : Math.max(Math.round(scaledDockHeight / 2), 8),
+            height: Math.max(Math.round(scaledDockHeight / 2), 8),
             pointerEvents: "auto",
             // Debug: uncomment to visualize hover zone
             // backgroundColor: "rgba(255, 0, 0, 0.2)",
           }}
           onMouseEnter={showDock}
-          onTouchStart={(e) => {
-            e.preventDefault();
-            showDock();
-          }}
         />
       )}
       
