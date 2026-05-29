@@ -3,9 +3,8 @@ import { useTranslation } from "react-i18next";
 import { Toaster } from "@/components/ui/sonner";
 import { AppErrorBoundary } from "@/components/errors/ErrorBoundaries";
 import { DesktopErrorBoundary } from "@/components/errors/ErrorBoundaries";
-import { getAppComponent } from "@/config/appRegistry";
-import { getWindowConfig } from "@/config/appRegistry";
-import { appRegistry } from "@/config/appRegistry";
+import { IpodAppComponent } from "@/apps/ipod/components/IpodAppComponent";
+import { getWindowConfig, appRegistry } from "@/config/appRegistry";
 import { useAppStoreShallow } from "@/stores/helpers";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -116,7 +115,6 @@ export function StandaloneIpodApp() {
     };
   }, [isWindowsTheme, isMacOSTheme, isSystem7Theme, isMobile]);
 
-  const AppComponent = getAppComponent(IPOD_APP_ID);
   const appMeta = appRegistry[IPOD_APP_ID];
   const translatedAppName = getTranslatedAppName(IPOD_APP_ID);
   const crashDialogAppName =
@@ -144,7 +142,7 @@ export function StandaloneIpodApp() {
                   launchApp(IPOD_APP_ID, routeInitialData as IpodInitialData);
                 }}
               >
-                <AppComponent
+                <IpodAppComponent
                   isWindowOpen={ipodInstance.isOpen}
                   isForeground
                   onClose={exitToDesktop}
