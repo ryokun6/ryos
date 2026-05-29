@@ -1,6 +1,9 @@
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
-import { shouldDisableDashboardAccidentalShellTriggers } from "@/utils/dashboardShellGuards";
+import {
+  collectDashboardShellGuardSignals,
+  shouldDisableDashboardAccidentalShellTriggers,
+} from "@/utils/dashboardShellGuards";
 
 /**
  * True when Dashboard shell shortcuts / edge triggers should not fire accidentally
@@ -19,4 +22,11 @@ export function useDashboardShellInputDisabled(): boolean {
     hasHoverNone,
     isCompactViewport: isNarrowWidth || isCompactHeight,
   });
+}
+
+/** Synchronous guard for event handlers (avoids stale hook snapshot on keydown). */
+export function isDashboardShellInputDisabledNow(): boolean {
+  return shouldDisableDashboardAccidentalShellTriggers(
+    collectDashboardShellGuardSignals(),
+  );
 }
