@@ -219,6 +219,10 @@ function isToolCallRow(row: unknown): row is Record<string, unknown> {
   return isRecord(ev) && ev.type === "tool_call";
 }
 
+function isTerminalMarkerRow(row: unknown): row is Record<string, unknown> {
+  return isRecord(row) && row.type === "terminal";
+}
+
 function stableJson(value: unknown): string {
   try {
     return JSON.stringify(value, (_key, v) =>
@@ -234,11 +238,11 @@ function toolCallKey(row: Record<string, unknown>): string {
   if (!isRecord(ev)) return "";
 
   const idCandidates = [
-    ev.id,
+    ev.call_id,
+    ev.callId,
     ev.toolCallId,
     ev.tool_call_id,
-    ev.callId,
-    ev.call_id,
+    ev.id,
   ];
   const id = idCandidates.find((v): v is string => typeof v === "string" && v.length > 0);
   if (id) return `id:${id}`;
@@ -474,6 +478,19 @@ export function coalesceCursorRunRows(events: unknown[]): CoalescedCursorRow[] {
           if (k) toolKeyToLocation.set(k, { outIndex, rowIndex: idx });
         });
       }
+      continue;
+    }
+
+    if (isTerminalMarkerRow(row)) {
+      const terminalRow = row as Record<string, unknown>;
+      const last = out[out.length - 1];
+      if (last?.kind === "single" && isTerminalMarkerRow(last.row)) {
+        const prev = last.row as Record<string, unknown>;
+        last.row = { ...prev, ...terminalRow };
+      } else {
+        out.push({ kind: "single", row: terminalRow });
+      }
+      i++;
       continue;
     }
 

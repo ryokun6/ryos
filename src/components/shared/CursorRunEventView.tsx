@@ -13,6 +13,10 @@ const LazyMarkdown = lazy(() =>
 );
 import type { AssistantStreamSegment } from "@/lib/cursorSdkRunCoalesce";
 import {
+  buildToolInvocationLabel,
+  shouldRenderTerminalMarkerInPlainStream,
+} from "@/lib/cursorAgentToolDisplay";
+import {
   mergeAssistantStream,
   mergeStatusParts,
   mergeThinkingText,
@@ -38,179 +42,6 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 
 const markdownStreamClass =
   "cursor-stream-md px-1 py-0.5 font-geneva-12 text-[12px] leading-snug text-neutral-700 break-words dark:text-neutral-200";
-
-const toolDisplayNameOverrides: Record<string, string> = {
-  run_terminal_cmd: "Run terminal command",
-  read_file: "Read file",
-  edit_file: "Edit file",
-  list_dir: "List directory",
-  file_search: "Search files",
-  grep_search: "Search text",
-  web_search: "Search web",
-};
-
-function humanizeToolName(name: string): string {
-  const trimmed = name.trim();
-  if (!trimmed) return "Tool";
-  const override = toolDisplayNameOverrides[trimmed];
-  if (override) return override;
-
-  const words = trimmed
-    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
-    .replace(/[_-]+/g, " ")
-    .trim()
-    .split(/\s+/)
-    .map((word) => (word.toLowerCase() === "cmd" ? "command" : word.toLowerCase()));
-
-  if (words.length === 0) return "Tool";
-  return words
-    .map((word, idx) => (idx === 0 ? word.charAt(0).toUpperCase() + word.slice(1) : word))
-    .join(" ");
-}
-
-function truncateDetail(value: string): string {
-  const oneLine = value.replace(/\s+/g, " ").trim();
-  return oneLine.length > 120 ? `${oneLine.slice(0, 117)}...` : oneLine;
-}
-
-function getNestedRecord(value: unknown, key: string): Record<string, unknown> | null {
-  if (!isRecord(value)) return null;
-  const candidate = value[key];
-  return isRecord(candidate) ? candidate : null;
-}
-
-function pickString(value: Record<string, unknown>, keys: string[]): string {
-  for (const key of keys) {
-    const candidate = value[key];
-    if (typeof candidate === "string" && candidate.trim().length > 0) {
-      return candidate.trim();
-    }
-  }
-  return "";
-}
-
-function toolPayload(input: unknown): Record<string, unknown> | null {
-  if (!isRecord(input)) return null;
-  return (
-    getNestedRecord(input, "args") ??
-    getNestedRecord(input, "input") ??
-    getNestedRecord(input, "parameters") ??
-    input
-  );
-}
-
-function toolSecondaryInfo(input: unknown): string {
-  if (typeof input === "string") return truncateDetail(input);
-  const payload = toolPayload(input);
-  if (!payload) return "";
-  return pickString(payload, [
-    "command",
-    "cmd",
-    "shell_command",
-    "path",
-    "filePath",
-    "file_path",
-    "target_file",
-    "relative_workspace_path",
-    "query",
-    "pattern",
-    "url",
-    "description",
-  ]);
-}
-
-function fileNameFromPath(path: string): string {
-  return path.split(/[\\/]/).filter(Boolean).pop() || path;
-}
-
-function isToolCallDone(ev: Record<string, unknown>): boolean {
-  const status = typeof ev.status === "string" ? ev.status : "";
-  return (
-    status === "completed" ||
-    status === "success" ||
-    status === "finished" ||
-    status === "error" ||
-    ev.result !== undefined ||
-    ev.error !== undefined
-  );
-}
-
-function toolGroupSecondaryInfo(rows: Record<string, unknown>[]): string {
-  if (rows.length <= 1) {
-    const ev = isRecord(rows[0]?.ev) ? rows[0].ev : {};
-    return toolSecondaryInfo(ev);
-  }
-
-  const uniqueDetails = Array.from(
-    new Set(
-      rows.reduce<string[]>((acc, row) => {
-        const value = isRecord(row.ev) ? toolSecondaryInfo(row.ev) : "";
-        if (value.length > 0) {
-          acc.push(value);
-        }
-        return acc;
-      }, [])
-    )
-  );
-
-  if (uniqueDetails.length === 1) return truncateDetail(uniqueDetails[0]);
-  if (uniqueDetails.length > 1) {
-    const preview = uniqueDetails
-      .slice(0, 3)
-      .map((detail) => fileNameFromPath(detail))
-      .join(", ");
-    return uniqueDetails.length > 3 ? `${preview}, ...` : preview;
-  }
-  return "";
-}
-
-function toolPrimaryText(name: string, done: boolean, rows: Record<string, unknown>[]): string {
-  const count = rows.length;
-  const latest = rows[rows.length - 1];
-  const latestEv = isRecord(latest?.ev) ? latest.ev : {};
-  const detail = toolSecondaryInfo(latestEv);
-
-  if (name === "read_file" || name === "edit_file") {
-    const noun =
-      count > 1 ? `${count} files` : fileNameFromPath(detail) || "file";
-    if (name === "read_file") return `${done ? "Read" : "Reading"} ${noun}`;
-    return `${done ? "Edited" : "Editing"} ${noun}`;
-  }
-
-  if (name === "run_terminal_cmd") {
-    return done ? "Ran terminal command" : "Running terminal command";
-  }
-
-  if (name === "grep_search" || name === "file_search" || name === "web_search") {
-    return done ? humanizeToolName(name) : humanizeToolName(name);
-  }
-
-  if (count > 1) return `${humanizeToolName(name)} (${count})`;
-  return humanizeToolName(name);
-}
-
-function toolRowParts(rows: Record<string, unknown>[]): {
-  primary: string;
-  secondary: string;
-  done: boolean;
-} {
-  const events = rows.reduce<Record<string, unknown>[]>((acc, row) => {
-    if (isRecord(row.ev)) {
-      acc.push(row.ev);
-    }
-    return acc;
-  }, []);
-  const latest = events[events.length - 1] ?? {};
-  const name = typeof latest.name === "string" ? latest.name : "?";
-  const done = events.length > 0 && events.every(isToolCallDone);
-  const secondary = toolGroupSecondaryInfo(rows);
-  return {
-    primary: toolPrimaryText(name, done, rows),
-    secondary:
-      rows.length === 1 && secondary === fileNameFromPath(secondary) ? "" : secondary,
-    done,
-  };
-}
 
 function CursorToolInvocationRow({
   primary,
@@ -390,7 +221,7 @@ function ThinkingBody({
 }
 
 function ToolCallEvent({ ev }: { ev: Record<string, unknown> }) {
-  const parts = toolRowParts([{ ev }]);
+  const parts = buildToolInvocationLabel([{ ev }]);
   return (
     <CursorToolInvocationRow
       primary={parts.primary}
@@ -401,7 +232,7 @@ function ToolCallEvent({ ev }: { ev: Record<string, unknown> }) {
 }
 
 function ToolCallGroupEvent({ rows }: { rows: Record<string, unknown>[] }) {
-  const parts = toolRowParts(rows);
+  const parts = buildToolInvocationLabel(rows);
   return (
     <CursorToolInvocationRow
       primary={parts.primary}
@@ -430,6 +261,10 @@ function TerminalBanner({
 
   const bad = status === "error" || err;
 
+  if (plain && !shouldRenderTerminalMarkerInPlainStream(row)) {
+    return null;
+  }
+
   if (plain) {
     if (bad && err) {
       return (
@@ -447,15 +282,14 @@ function TerminalBanner({
         </div>
       );
     }
-    return (
-      <p className="text-[11px] leading-snug text-neutral-700 dark:text-neutral-300">
-        {bad
-          ? t("apps.chats.toolCalls.cursorCloudAgent.stream.runEndedError")
-          : t("apps.chats.toolCalls.cursorCloudAgent.stream.runEnded", {
-              status: status?.trim() ? status : "—",
-            })}
-      </p>
-    );
+    if (bad) {
+      return (
+        <p className="text-[11px] leading-snug text-neutral-700 dark:text-neutral-300">
+          {t("apps.chats.toolCalls.cursorCloudAgent.stream.runEndedError")}
+        </p>
+      );
+    }
+    return null;
   }
 
   return (

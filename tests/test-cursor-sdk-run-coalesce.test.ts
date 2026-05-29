@@ -193,6 +193,40 @@ describe("coalesceCursorRunRows tool calls", () => {
     }
   });
 
+  test("collapses Shell tool lifecycle the same as run_terminal_cmd", () => {
+    const rows = [
+      {
+        ts: 1,
+        ev: {
+          type: "tool_call",
+          call_id: "shell-1",
+          name: "Shell",
+          status: "running",
+          args: { command: "bun test" },
+        },
+      },
+      {
+        ts: 2,
+        ev: {
+          type: "tool_call",
+          call_id: "shell-1",
+          name: "Shell",
+          status: "completed",
+          args: { command: "bun test" },
+        },
+      },
+    ];
+
+    const out = coalesceCursorRunRows(rows);
+    expect(out).toHaveLength(1);
+    if (out[0]?.kind === "merged_tool_call") {
+      expect(out[0].row.ev).toMatchObject({
+        name: "Shell",
+        status: "completed",
+      });
+    }
+  });
+
   test("does not duplicate when same id appears across non-adjacent tool batches", () => {
     const rows = [
       {
