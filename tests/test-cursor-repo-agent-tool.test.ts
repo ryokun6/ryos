@@ -1,12 +1,15 @@
-import { describe, expect, test } from "bun:test";
+import { afterAll, describe, expect, test } from "bun:test";
 import {
   cursorSdkMetaKey,
+  DEFAULT_CURSOR_SDK_MODEL,
+  DEFAULT_CURSOR_SDK_MODEL_ID,
   DEFAULT_RYOS_GITHUB_REPO_URL,
   executeCursorCloudAgent,
   executeListCursorCloudAgentRuns,
   formatCursorRunCompletionTelegramMessage,
   listCursorSdkRunsFromRedis,
   pickPrUrlFromRunGit,
+  resolveCursorSdkModelSelection,
   sendCursorAgentFollowup,
 } from "../api/chat/tools/cursor-repo-agent.js";
 import type { Redis } from "../api/_utils/redis.js";
@@ -47,6 +50,43 @@ describe("cursorCloudAgent gate", () => {
     expect(DEFAULT_RYOS_GITHUB_REPO_URL).toBe(
       "https://github.com/ryokun6/ryos"
     );
+  });
+});
+
+describe("resolveCursorSdkModelSelection", () => {
+  const prevEnv = process.env.CURSOR_SDK_MODEL;
+
+  test("defaults to Composer 2.5 fast when unset", () => {
+    delete process.env.CURSOR_SDK_MODEL;
+    expect(resolveCursorSdkModelSelection()).toEqual(DEFAULT_CURSOR_SDK_MODEL);
+    expect(DEFAULT_CURSOR_SDK_MODEL_ID).toBe("composer-2.5");
+  });
+
+  test("maps legacy composer-2 to Composer 2.5 fast", () => {
+    expect(resolveCursorSdkModelSelection("composer-2")).toEqual(
+      DEFAULT_CURSOR_SDK_MODEL
+    );
+  });
+
+  test("maps composer-2.5-fast alias to ModelSelection params", () => {
+    expect(resolveCursorSdkModelSelection("composer-2.5-fast")).toEqual({
+      id: "composer-2.5",
+      params: [{ id: "fast", value: "true" }],
+    });
+  });
+
+  test("respects explicit non-composer model ids", () => {
+    expect(resolveCursorSdkModelSelection("claude-4.6-sonnet")).toEqual({
+      id: "claude-4.6-sonnet",
+    });
+  });
+
+  afterAll(() => {
+    if (prevEnv === undefined) {
+      delete process.env.CURSOR_SDK_MODEL;
+    } else {
+      process.env.CURSOR_SDK_MODEL = prevEnv;
+    }
   });
 });
 

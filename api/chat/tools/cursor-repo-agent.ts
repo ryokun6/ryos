@@ -52,6 +52,71 @@ export function pickPrUrlFromRunGit(git: unknown): string | undefined {
 /** Default repo for ryOS Cursor Cloud runs (override with CURSOR_CLOUD_REPO_URL). */
 export const DEFAULT_RYOS_GITHUB_REPO_URL = "https://github.com/ryokun6/ryos";
 
+/** Default cloud model — Composer 2.5 Fast (`fast` is default; set explicitly for clarity). */
+export const DEFAULT_CURSOR_SDK_MODEL_ID = "composer-2.5";
+
+export const DEFAULT_CURSOR_SDK_MODEL: import("@cursor/sdk").ModelSelection = {
+  id: DEFAULT_CURSOR_SDK_MODEL_ID,
+  params: [{ id: "fast", value: "true" }],
+};
+
+const LEGACY_FAST_MODEL_IDS = new Set(["composer-2.5-fast", "composer-2-fast"]);
+
+/**
+ * Resolve a dashboard/env model id to SDK `ModelSelection`.
+ * Maps legacy `composer-2` / `composer-*-fast` aliases to Composer 2.5 Fast.
+ */
+export function resolveCursorSdkModelSelection(
+  modelIdOverride?: string | null
+): import("@cursor/sdk").ModelSelection {
+  const raw =
+    modelIdOverride?.trim() ||
+    process.env.CURSOR_SDK_MODEL?.trim() ||
+    "";
+  if (!raw) return DEFAULT_CURSOR_SDK_MODEL;
+  if (raw === "composer-2") {
+    return DEFAULT_CURSOR_SDK_MODEL;
+  }
+  if (LEGACY_FAST_MODEL_IDS.has(raw)) {
+    return {
+      id: raw.replace(/-fast$/, ""),
+      params: [{ id: "fast", value: "true" }],
+    };
+  }
+  if (raw === DEFAULT_CURSOR_SDK_MODEL_ID) {
+    return DEFAULT_CURSOR_SDK_MODEL;
+  }
+  return { id: raw };
+}
+
+function modelSelectionFromMeta(
+  meta: Record<string, unknown>
+): import("@cursor/sdk").ModelSelection | undefined {
+  const id = typeof meta.modelId === "string" ? meta.modelId.trim() : "";
+  if (!id) return undefined;
+  const params = meta.modelParams;
+  if (Array.isArray(params) && params.length > 0) {
+    const normalized: import("@cursor/sdk").ModelParameterValue[] = [];
+    for (const p of params) {
+      if (
+        p &&
+        typeof p === "object" &&
+        typeof (p as { id?: unknown }).id === "string" &&
+        typeof (p as { value?: unknown }).value === "string"
+      ) {
+        normalized.push({
+          id: (p as { id: string }).id,
+          value: (p as { value: string }).value,
+        });
+      }
+    }
+    if (normalized.length > 0) {
+      return { id, params: normalized };
+    }
+  }
+  return resolveCursorSdkModelSelection(id);
+}
+
 /** Cursor dashboard URL for a cloud agent (`bc_…` id from the SDK). */
 export function cursorCloudAgentDashboardUrl(agentId: string): string {
   const id = agentId.trim();
@@ -76,7 +141,7 @@ export const cursorCloudAgentSchema = z.object({
     .min(1)
     .optional()
     .describe(
-      "Optional model id (default composer-2). Use Cursor.models from dashboard-valid IDs."
+      "Optional model id (default composer-2.5 fast). Use Cursor.models.list() for valid ids; fast is a param on composer-2.5, not a separate id."
     ),
 });
 
@@ -480,13 +545,13 @@ async function executeBlockingPrompt(
     repoUrl: string;
     startingRef: string;
     autoCreatePR: boolean;
-    modelId: string;
+    model: import("@cursor/sdk").ModelSelection;
   }
 ): Promise<CursorCloudAgentToolOutput> {
   const { Agent } = await import("@cursor/sdk");
   const result = await Agent.prompt(input.prompt, {
     apiKey: context.apiKey,
-    model: { id: cloudOpts.modelId },
+    model: cloudOpts.model,
     cloud: {
       repos: [{ url: cloudOpts.repoUrl, startingRef: cloudOpts.startingRef }],
       autoCreatePR: cloudOpts.autoCreatePR,
@@ -715,10 +780,8 @@ export async function executeCursorCloudAgent(
     };
   }
 
-  const modelId =
-    input.modelId?.trim() ||
-    process.env.CURSOR_SDK_MODEL?.trim() ||
-    "composer-2";
+  const model = resolveCursorSdkModelSelection(input.modelId);
+  const modelId = model.id;
 
   const repoUrl =
     process.env.CURSOR_CLOUD_REPO_URL?.trim() || DEFAULT_RYOS_GITHUB_REPO_URL;
@@ -742,7 +805,7 @@ export async function executeCursorCloudAgent(
         repoUrl,
         startingRef,
         autoCreatePR,
-        modelId,
+        model,
       });
     } catch (e) {
       context.logError("[cursorCloudAgent] Agent.prompt failed", e);
@@ -757,7 +820,7 @@ export async function executeCursorCloudAgent(
     const { Agent } = await import("@cursor/sdk");
     const agent = await Agent.create({
       apiKey: context.apiKey,
-      model: { id: modelId },
+      model,
       cloud: {
         repos: [{ url: repoUrl, startingRef }],
         autoCreatePR,
@@ -802,6 +865,7 @@ export async function executeCursorCloudAgent(
         repoUrl,
         startingRef,
         modelId,
+        ...(model.params?.length ? { modelParams: model.params } : {}),
         autoCreatePR,
         createdAt: Date.now(),
         promptPreview: input.prompt.slice(0, 280),
@@ -953,8 +1017,8 @@ export async function sendCursorAgentFollowup(input: {
     typeof prevMeta.startingRef === "string"
       ? prevMeta.startingRef
       : undefined;
-  const modelId =
-    typeof prevMeta.modelId === "string" ? prevMeta.modelId : undefined;
+  const modelFromMeta = modelSelectionFromMeta(prevMeta);
+  const modelId = modelFromMeta?.id;
   const autoCreatePR =
     typeof prevMeta.autoCreatePR === "boolean"
       ? prevMeta.autoCreatePR
@@ -967,7 +1031,7 @@ export async function sendCursorAgentFollowup(input: {
     const { Agent } = await import("@cursor/sdk");
     const resumeOptions: Partial<import("@cursor/sdk").AgentOptions> = {
       apiKey,
-      ...(modelId ? { model: { id: modelId } } : {}),
+      ...(modelFromMeta ? { model: modelFromMeta } : {}),
     };
     agent = await Agent.resume(agentId, resumeOptions);
   } catch (e) {
@@ -983,6 +1047,15 @@ export async function sendCursorAgentFollowup(input: {
   try {
     run = await agent.send(prompt);
   } catch (e) {
+    const { AgentBusyError } = await import("@cursor/sdk");
+    if (e instanceof AgentBusyError) {
+      log("[cursorCloudAgent] follow-up rejected: agent busy (SDK)", { agentId });
+      return {
+        ok: false,
+        status: 409,
+        error: "Agent is busy with another run",
+      };
+    }
     logError("[cursorCloudAgent] follow-up send failed", e);
     try {
       const dispose = agent[Symbol.asyncDispose];
@@ -1014,6 +1087,9 @@ export async function sendCursorAgentFollowup(input: {
       ...(repoUrl ? { repoUrl } : {}),
       ...(startingRef ? { startingRef } : {}),
       ...(modelId ? { modelId } : {}),
+      ...(modelFromMeta?.params?.length
+        ? { modelParams: modelFromMeta.params }
+        : {}),
       ...(typeof autoCreatePR === "boolean" ? { autoCreatePR } : {}),
       ...(inheritedPrUrl ? { prUrl: inheritedPrUrl } : {}),
       createdAt: Date.now(),
