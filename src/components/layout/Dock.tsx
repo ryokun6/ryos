@@ -39,11 +39,11 @@ import {
 import { useShallow } from "zustand/react/shallow";
 import { toggleExposeView } from "@/utils/appEventBus";
 import { prefetchAppChunk } from "@/config/lazyAppComponent";
-import { useMediaQuery } from "@/hooks/useMediaQuery";
 import {
   isClientYInBottomZone,
   shouldRevealDockFromSwipeUp,
 } from "@/utils/dockRevealGesture";
+import { useDashboardShellInputDisabled } from "@/hooks/useDashboardShellInputDisabled";
 
 const MAX_SCALE = 2.3; // peak multiplier at cursor center
 const DISTANCE = 140; // px range where magnification is applied
@@ -595,10 +595,8 @@ const MULTI_WINDOW_APPS: AppId[] = ["textedit", "finder", "applet-viewer"];
 function MacDock() {
   const { t } = useTranslation();
   const isPhone = useIsPhone();
-  const isCompactHeight = useMediaQuery("(max-height: 520px)");
-  const hasCoarsePointer = useMediaQuery("(pointer: coarse)");
-  /** Touch + phone width, or touch + short viewport (e.g. phone landscape). */
-  const useSwipeToRevealDock = isPhone || (hasCoarsePointer && isCompactHeight);
+  // Match Dashboard shell guards: no bottom hover capture zone on touch-first viewports.
+  const useSwipeToRevealDock = useDashboardShellInputDisabled();
   const { instances, instanceOrder, bringInstanceToForeground, restoreInstance, minimizeInstance, closeAppInstance } =
     useAppStoreShallow((s) => ({
       instances: s.instances,

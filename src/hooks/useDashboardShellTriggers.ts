@@ -1,5 +1,8 @@
 import { useEffect } from "react";
-import { useDashboardShellInputDisabled } from "@/hooks/useDashboardShellInputDisabled";
+import {
+  isDashboardShellInputDisabledNow,
+  useDashboardShellInputDisabled,
+} from "@/hooks/useDashboardShellInputDisabled";
 import { onExposeToggle, onSpotlightToggle } from "@/utils/appEventBus";
 import { shouldEnableDashboardShellKeyboardTriggers } from "@/utils/dashboardShellGuards";
 
@@ -51,8 +54,11 @@ export function useDashboardShellTriggers({
       }
 
       // F4 key to toggle Dashboard (desktop / non-touch-first only)
-      if (e.key === "F4") {
-        if (!shouldEnableDashboardShellKeyboardTriggers(shellInputDisabled)) {
+      if (e.key === "F4" || e.code === "F4") {
+        if (
+          !shouldEnableDashboardShellKeyboardTriggers(shellInputDisabled) ||
+          isDashboardShellInputDisabledNow()
+        ) {
           return;
         }
         e.preventDefault();
