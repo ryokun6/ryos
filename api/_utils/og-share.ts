@@ -365,6 +365,14 @@ async function getYouTubeInfo(
   }
 }
 
+/** Link-preview crawlers that need OG HTML; normal browsers should receive the SPA directly. */
+export function isSocialPreviewCrawler(userAgent: string | null): boolean {
+  if (!userAgent) return false;
+  return /facebookexternalhit|Facebot|Twitterbot|Slackbot|Discordbot|LinkedInBot|WhatsApp|TelegramBot|Googlebot|bingbot|Pinterest|Embedly|preview|bot|crawler|spider/i.test(
+    userAgent
+  );
+}
+
 export async function createOgShareResponse(
   request: Request,
   options: {
@@ -378,6 +386,11 @@ export async function createOgShareResponse(
   const url = new URL(request.url);
   const pathname = url.pathname;
   const publicOrigin = getAppPublicOrigin(url.origin);
+
+  // Browsers should load the SPA shell directly (see StandaloneIpodApp / appRouteRegistry).
+  if (!isSocialPreviewCrawler(request.headers.get("user-agent"))) {
+    return null;
+  }
 
   // Skip if already redirected (has _ryo param)
   if (url.searchParams.has("_ryo")) {

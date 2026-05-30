@@ -2,9 +2,14 @@ import { afterEach, describe, expect, mock, test } from "bun:test";
 import {
   createOgShareResponse,
   getSongShareMetadataFromRaw,
+  isSocialPreviewCrawler,
   resolveSongShareId,
 } from "../api/_utils/og-share";
 import { UpdateSongSchema } from "../api/songs/_constants";
+
+const CRAWLER_UA = "Mozilla/5.0 (compatible; Twitterbot/1.0)";
+const BROWSER_UA =
+  "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/120.0.0.0 Mobile Safari/537.36";
 
 const ORIGINAL_ENV = { ...process.env };
 
@@ -21,29 +26,29 @@ afterEach(() => {
 });
 
 describe("og share response", () => {
-  test("keeps OG redirect on PR preview host when APP_PUBLIC_ORIGIN is canonical dev", async () => {
-    process.env.APP_PUBLIC_ORIGIN = "https://canonical.example.com"; // pragma: allowlist secret
+  test("isSocialPreviewCrawler detects link-preview bots", () => {
+    expect(isSocialPreviewCrawler(CRAWLER_UA)).toBe(true);
+    expect(isSocialPreviewCrawler(BROWSER_UA)).toBe(false);
+    expect(isSocialPreviewCrawler(null)).toBe(false);
+  });
 
+  test("skips OG HTML for normal browsers (SPA loads directly)", async () => {
     const response = await createOgShareResponse(
-      new Request("https://1331-preview.os.ryo.lu/standalone/ipod")
+      new Request("https://coolify.example.com/standalone/ipod", {
+        headers: { "User-Agent": BROWSER_UA },
+      })
     );
 
-    expect(response).not.toBeNull();
-    const body = await response!.text();
-    expect(body).toContain(
-      '<meta property="og:url" content="https://1331-preview.os.ryo.lu/standalone/ipod">'
-    );
-    expect(body).toContain(
-      'location.replace("https://1331-preview.os.ryo.lu/standalone/ipod?_ryo=1")'
-    );
-    expect(body).not.toContain("canonical.example.com/standalone/ipod");
+    expect(response).toBeNull();
   });
 
   test("uses configured public origin for Coolify/self-host share pages", async () => {
     process.env.APP_PUBLIC_ORIGIN = "https://coolify.example.com";
 
     const response = await createOgShareResponse(
-      new Request("http://127.0.0.1:4010/finder")
+      new Request("http://127.0.0.1:4010/finder", {
+        headers: { "User-Agent": CRAWLER_UA },
+      })
     );
 
     expect(response).not.toBeNull();
@@ -63,7 +68,9 @@ describe("og share response", () => {
 
   test("skips requests that already include the bypass query", async () => {
     const response = await createOgShareResponse(
-      new Request("https://coolify.example.com/finder?_ryo=1")
+      new Request("https://coolify.example.com/finder?_ryo=1", {
+        headers: { "User-Agent": CRAWLER_UA },
+      })
     );
 
     expect(response).toBeNull();
@@ -71,10 +78,33 @@ describe("og share response", () => {
 
   test("skips unrelated routes", async () => {
     const response = await createOgShareResponse(
-      new Request("https://coolify.example.com/api/health")
+      new Request("https://coolify.example.com/api/health", {
+        headers: { "User-Agent": CRAWLER_UA },
+      })
     );
 
     expect(response).toBeNull();
+  });
+
+  test("serves OG HTML for standalone iPod routes when requested by crawlers", async () => {
+    process.env.APP_PUBLIC_ORIGIN = "https://os.example.com";
+
+    const response = await createOgShareResponse(
+      new Request("https://os.example.com/standalone/ipod/track-1", {
+        headers: { "User-Agent": CRAWLER_UA },
+      }),
+      {
+        getSong: async (songId) => {
+          expect(songId).toBe("track-1");
+          return { title: "Test Song", artist: "Test Artist", cover: "" };
+        },
+      }
+    );
+
+    expect(response).not.toBeNull();
+    const body = await response!.text();
+    expect(body).toContain("Test Song - Test Artist");
+    expect(body).toContain("/standalone/ipod/track-1?_ryo=1");
   });
 
   test("uses stored iPod song metadata and formatted Kugou cover for OG tags", async () => {
@@ -87,7 +117,9 @@ describe("og share response", () => {
 
     try {
       const response = await createOgShareResponse(
-        new Request("https://os.example.com/ipod/abc123DEF45"),
+        new Request("https://os.example.com/ipod/abc123DEF45", {
+          headers: { "User-Agent": CRAWLER_UA },
+        }),
         {
           getSong: async (songId) => {
             expect(songId).toBe("abc123DEF45");
@@ -119,7 +151,9 @@ describe("og share response", () => {
     process.env.APP_PUBLIC_ORIGIN = "https://os.example.com";
 
     const response = await createOgShareResponse(
-      new Request("https://os.example.com/karaoke/am%3A1616228595"),
+      new Request("https://os.example.com/karaoke/am%3A1616228595", {
+        headers: { "User-Agent": CRAWLER_UA },
+      }),
       {
         getSong: async (songId) => {
           expect(songId).toBe("am:1616228595");
@@ -150,7 +184,9 @@ describe("og share response", () => {
     );
 
     const response = await createOgShareResponse(
-      new Request(`https://os.example.com/karaoke/${encodedUrl}`),
+      new Request(`https://os.example.com/karaoke/${encodedUrl}`, {
+        headers: { "User-Agent": CRAWLER_UA },
+      }),
       {
         getSong: async (songId) => {
           expect(songId).toBe("abc123DEF45");
