@@ -313,6 +313,20 @@ export function IpodAppComponent({
   const shouldRenderFullScreenAnimatedVisuals =
     shouldAnimateFullScreenVisuals && effectiveDisplayMode !== DisplayMode.Video;
 
+  const handleFullscreenSurfaceLongPress = useCallback(() => {
+    if (coverFlowTracks.length === 0) return;
+    playClickSound();
+    vibrate();
+    registerActivity();
+    setIsCoverFlowOpen((open) => !open);
+  }, [
+    coverFlowTracks.length,
+    playClickSound,
+    vibrate,
+    registerActivity,
+    setIsCoverFlowOpen,
+  ]);
+
   if (!isWindowOpen) return null;
 
   return (
@@ -701,8 +715,11 @@ export function IpodAppComponent({
             }
             fullScreenPlayerRef={fullScreenPlayerRef}
             activityState={activityState}
+            onSurfaceLongPress={handleFullscreenSurfaceLongPress}
+            surfaceLongPressEnabled={coverFlowTracks.length > 0}
+            suppressToolbar={isCoverFlowOpen}
           >
-            {({ controlsVisible }) => (
+            {({ controlsVisible, consumeSurfaceLongPressClick }) => (
               <div className="flex flex-col w-full h-full">
                 <div className="relative w-full h-full overflow-hidden">
                   <div
@@ -848,6 +865,7 @@ export function IpodAppComponent({
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.3 }}
                         onClick={(e) => {
+                          if (consumeSurfaceLongPressClick?.()) return;
                           e.stopPropagation();
                           togglePlay();
                         }}
@@ -934,6 +952,34 @@ export function IpodAppComponent({
                         onSeekToTime={seekToTime}
                         coverUrl={fullscreenCoverUrl}
                       />
+                    </div>
+                  )}
+
+                  {coverFlowTracks.length > 0 && (
+                    <div
+                      data-cover-flow
+                      className={`absolute inset-0 z-[45] ${
+                        isCoverFlowOpen
+                          ? "pointer-events-auto"
+                          : "pointer-events-none"
+                      }`}
+                    >
+                      <Suspense fallback={null}>
+                        <CoverFlow
+                          ref={coverFlowRef}
+                          tracks={coverFlowTracks}
+                          currentIndex={coverFlowCurrentIndex}
+                          onSelectTrack={handleCoverFlowSelect}
+                          onExit={handleCoverFlowExit}
+                          onRotation={handleCoverFlowRotation}
+                          isVisible={isCoverFlowOpen}
+                          isPlaying={isPlaying}
+                          onTogglePlay={togglePlay}
+                          onPlayTrackInPlace={handleCoverFlowPlayInPlace}
+                          groupAppleMusicAlbums={isAppleMusic}
+                          ipodMode
+                        />
+                      </Suspense>
                     </div>
                   )}
                 </div>
