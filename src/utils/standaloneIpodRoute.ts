@@ -31,13 +31,12 @@ export function parseStandaloneIpodRoute(
 
   const initialData: IpodInitialData = {};
 
-  const trackMatch = path.match(
-    new RegExp(
-      `^${STANDALONE_IPOD_BASE_PATH.replace(/\//g, "\\/")}/([^/]+)$`
-    )
-  );
-  if (trackMatch?.[1]) {
-    initialData.videoId = decodeURIComponent(trackMatch[1]);
+  const trackPrefix = `${STANDALONE_IPOD_BASE_PATH}/`;
+  if (path.startsWith(trackPrefix)) {
+    const segment = path.slice(trackPrefix.length);
+    if (segment.length > 0 && !segment.includes("/")) {
+      initialData.videoId = decodeURIComponent(segment);
+    }
   }
 
   const searchParams =
