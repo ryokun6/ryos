@@ -639,7 +639,7 @@ export function KaraokeAppComponent({
           </KaraokeLyricsPlaybackProvider>
 
           {/* CoverFlow overlay - full height, below notitlebar (z-50) */}
-          {tracks.length > 0 && (
+          {tracks.length > 0 && !isFullScreen && (
             <div className={`absolute inset-0 z-40 ${isCoverFlowOpen ? "pointer-events-auto" : "pointer-events-none"}`}>
               <CoverFlow
                 ref={coverFlowRef}
@@ -1089,6 +1089,31 @@ export function KaraokeAppComponent({
                   onSwipeUp={handleFullscreenLyricsSwipeUp}
                   onSwipeDown={handleFullscreenLyricsSwipeDown}
                 />
+
+                {tracks.length > 0 && (
+                  <div
+                    className={cn(
+                      "absolute inset-0 z-[45]",
+                      isCoverFlowOpen
+                        ? "pointer-events-auto"
+                        : "pointer-events-none"
+                    )}
+                  >
+                    <CoverFlow
+                      ref={coverFlowRef}
+                      tracks={tracks}
+                      currentIndex={currentIndex}
+                      onSelectTrack={handleCoverFlowSelectTrack}
+                      onExit={() => setIsCoverFlowOpen(false)}
+                      onRotation={handleCoverFlowRotation}
+                      isVisible={isCoverFlowOpen}
+                      ipodMode={false}
+                      isPlaying={isPlaying}
+                      onTogglePlay={handlePlayPause}
+                      onPlayTrackInPlace={handleCoverFlowPlayInPlace}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           )}

@@ -17,8 +17,22 @@ import {
 import type { Track } from "@/stores/useIpodStore";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { Play, Pause, VinylRecord } from "@phosphor-icons/react";
-import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useEventListener } from "@/hooks/useEventListener";
+import {
+  COVERFLOW_MODERN_FLOOR_GRADIENT,
+  COVERFLOW_SHARED_CONTROL_BUTTON_ACTIVE_STYLE,
+  COVERFLOW_SHARED_CONTROL_BUTTON_CLASS,
+  COVERFLOW_SHARED_CONTROL_BUTTON_STYLE,
+  COVERFLOW_SHARED_FLOOR_GRADIENT,
+  COVERFLOW_SHARED_STAGE_ARTIST_CLASS,
+  COVERFLOW_SHARED_STAGE_CLASS,
+  COVERFLOW_SHARED_STAGE_TITLE_CLASS,
+  coverFlowArtistTextClass,
+  coverFlowLabelFontClass,
+  coverFlowSharedStageRootClass,
+  coverFlowTitleTextClass,
+  isCoverFlowSharedStage,
+} from "../coverflowStage";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import {
@@ -102,20 +116,6 @@ function formatTrackDuration(durationMs?: number): string {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
-}
-
-// Aqua-style shine overlay for macOS X theme buttons
-function AquaShineOverlay() {
-  return (
-    <div
-      className="pointer-events-none absolute top-[3px] blur-[0.5px] left-1/2 -translate-x-1/2 rounded-full"
-      style={{
-        width: "40%",
-        height: "35%",
-        background: "linear-gradient(to bottom, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0))",
-      }}
-    />
-  );
 }
 
 // Spinning CD component using Framer Motion exclusively
@@ -764,7 +764,11 @@ function AlbumTracklist({
       className={cn(
         "absolute inset-0 flex flex-col",
         isModern ? "bg-white" : "bg-black",
-        ipodMode ? "ipod-force-font" : "karaoke-force-font"
+        isModern
+          ? ipodMode
+            ? "ipod-force-font"
+            : "karaoke-force-font"
+          : cn(COVERFLOW_SHARED_STAGE_CLASS, "karaoke-force-font")
       )}
     >
       {/* Album header — muted blue gradient on modern, deep blue on
@@ -785,11 +789,7 @@ function AlbumTracklist({
           // uses Geneva-12 (the 1st-gen iPod's own UI bitmap font);
           // karaoke uses the theme-aware OS sans-serif so it blends
           // with whichever desktop theme is active.
-          isModern
-            ? "font-ipod-modern-ui"
-            : ipodMode
-              ? "font-geneva-12"
-              : "font-os-ui"
+          isModern ? "font-ipod-modern-ui" : "font-os-ui"
         )}
         style={{
           minHeight: isModern ? 26 : 22,
@@ -871,11 +871,7 @@ function AlbumTracklist({
                 // Same font policy as the header: modern → iPod-
                 // modern UI font; classic iPod → Geneva-12 bitmap;
                 // karaoke → theme-aware OS sans.
-                isModern
-                  ? "font-ipod-modern-ui"
-                  : ipodMode
-                    ? "font-geneva-12"
-                    : "font-os-ui",
+                isModern ? "font-ipod-modern-ui" : "font-os-ui",
                 isSelected
                   ? isModern
                     ? "ipod-modern-row-selected"
@@ -1247,9 +1243,17 @@ export const CoverFlow = function CoverFlow(
     []
   );
   const containerRef = useRef<HTMLDivElement>(null);
-  const { isMacOSTheme: isMacTheme } = useThemeFlags();
   const uiVariant = useIpodStore((s) => s.uiVariant);
   const isModernIpodCoverFlow = ipodMode && uiVariant === "modern";
+  const sharedStage = isCoverFlowSharedStage(isModernIpodCoverFlow);
+  const stageRootClass = coverFlowSharedStageRootClass(
+    ipodMode,
+    isModernIpodCoverFlow
+  );
+  const labelFontClass = coverFlowLabelFontClass(isModernIpodCoverFlow);
+  const floorGradient = isModernIpodCoverFlow
+    ? COVERFLOW_MODERN_FLOOR_GRADIENT
+    : COVERFLOW_SHARED_FLOOR_GRADIENT;
 
   // Track swipe state
   const swipeStartX = useRef<number | null>(null);
@@ -1625,7 +1629,7 @@ export const CoverFlow = function CoverFlow(
         className={cn(
           "relative w-full h-full overflow-hidden",
           isModernIpodCoverFlow ? "bg-white" : "bg-black",
-          ipodMode ? "ipod-force-font" : "karaoke-force-font",
+          stageRootClass,
         )}
         style={{ containerType: "size" }}
       >
@@ -1633,9 +1637,7 @@ export const CoverFlow = function CoverFlow(
         <div
           className="absolute inset-0"
           style={{
-            background: isModernIpodCoverFlow
-              ? "linear-gradient(to bottom, transparent 55%, rgba(0,0,0,0.06) 78%, rgba(0,0,0,0.12) 100%)"
-              : "linear-gradient(to bottom, transparent 40%, rgba(38,38,38,0.5) 70%, rgba(64,64,64,0.3) 100%)",
+            background: floorGradient,
             pointerEvents: "none",
           }}
         />
@@ -1734,7 +1736,7 @@ export const CoverFlow = function CoverFlow(
         <div
           className={cn(
             "absolute left-0 right-0 flex items-center justify-center gap-2 pointer-events-none",
-            isModernIpodCoverFlow ? "font-ipod-modern-ui" : "font-geneva-12",
+            labelFontClass,
             ipodMode ? "px-2" : "px-6",
           )}
           style={{
@@ -1755,25 +1757,18 @@ export const CoverFlow = function CoverFlow(
             )}
           >
             <div
-              className={cn(
-                "truncate",
-                isModernIpodCoverFlow
-                  ? "text-black text-[12px] font-semibold tracking-tight"
-                  : "text-white",
-                ipodMode && !isModernIpodCoverFlow && "text-[10px]",
+              className={coverFlowTitleTextClass(
+                isModernIpodCoverFlow,
+                ipodMode
               )}
             >
               {currentItem?.title || t("apps.ipod.coverFlow.noTrack")}
             </div>
             {currentItem?.artist && (
               <div
-                className={cn(
-                  "truncate",
-                  isModernIpodCoverFlow &&
-                    "text-[10px] text-[rgb(99,101,103)] tracking-tight",
-                  ipodMode &&
-                    !isModernIpodCoverFlow &&
-                    "text-white/60 text-[8px]",
+                className={coverFlowArtistTextClass(
+                  isModernIpodCoverFlow,
+                  ipodMode
                 )}
               >
                 {currentItem.artist}
@@ -1849,15 +1844,12 @@ export const CoverFlow = function CoverFlow(
             // skin (Music + Now Playing, settings menus). Classic /
             // karaoke variants keep the original deep-black backdrop.
             isModernIpodCoverFlow ? "bg-white" : "bg-black",
-            // Retain the iPod screen's black bezel + rounded corners
-            // when Cover Flow is open. The overlay is rendered as a
-            // sibling of `IpodScreen` (not a child), so without its
-            // own border it would obscure the bezel and the carousel
-            // would read as a different frame than every other view.
-            // Karaoke Cover Flow opens full-bleed inside its own
-            // window chrome and skips the bezel.
-            ipodMode && "border border-black border-2 rounded-[2px]",
-            ipodMode ? "ipod-force-font" : "karaoke-force-font",
+            // Classic / shared stage matches Karaoke full-bleed Cover
+            // Flow. Only the modern inline panel keeps the device bezel.
+            !sharedStage &&
+              ipodMode &&
+              "border border-black border-2 rounded-[2px]",
+            stageRootClass,
           )}
           style={{ containerType: "size" }}
           initial={{ opacity: 0, scale: ipodMode ? 1 : 1.05 }}
@@ -1872,9 +1864,7 @@ export const CoverFlow = function CoverFlow(
           <div
             className="absolute inset-0"
             style={{
-              background: isModernIpodCoverFlow
-                ? "linear-gradient(to bottom, transparent 55%, rgba(0,0,0,0.06) 78%, rgba(0,0,0,0.12) 100%)"
-                : "linear-gradient(to bottom, transparent 40%, rgba(38,38,38,0.5) 70%, rgba(64,64,64,0.3) 100%)",
+              background: floorGradient,
               pointerEvents: "none",
             }}
           />
@@ -2027,7 +2017,7 @@ export const CoverFlow = function CoverFlow(
           <motion.div
             className={cn(
               "absolute left-0 right-0 flex items-center justify-center gap-2",
-              isModernIpodCoverFlow ? "font-ipod-modern-ui" : "font-geneva-12",
+              labelFontClass,
               ipodMode ? "px-2" : "px-6"
             )}
             style={{
@@ -2055,20 +2045,10 @@ export const CoverFlow = function CoverFlow(
                     onTogglePlay?.();
                   }
                 }}
-                className="relative flex-shrink-0 rounded-full transition-all text-white/80 hover:text-white hover:brightness-110 p-3"
-                style={{
-                  width: "clamp(40px, 8cqmin, 48px)",
-                  height: "clamp(40px, 8cqmin, 48px)",
-                  ...(isMacTheme ? {
-                    background: "linear-gradient(to bottom, rgba(60, 60, 60, 0.6), rgba(30, 30, 30, 0.5))",
-                    boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2), inset 0 0 0 0.5px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.15)",
-                  } : {
-                    background: "rgba(255, 255, 255, 0.08)",
-                  }),
-                }}
+                className={COVERFLOW_SHARED_CONTROL_BUTTON_CLASS}
+                style={COVERFLOW_SHARED_CONTROL_BUTTON_STYLE}
                 title={isPlaying && selectedIndex === currentCoverIndex ? t("apps.ipod.menu.pause") : t("apps.ipod.menu.play")}
               >
-                {isMacTheme && <AquaShineOverlay />}
                 {isPlaying && selectedIndex === currentCoverIndex ? (
                   <Pause className="w-full h-full relative z-10" weight="fill" />
                 ) : (
@@ -2094,36 +2074,18 @@ export const CoverFlow = function CoverFlow(
             >
               <div
                 className={cn(
-                  "truncate",
-                  isModernIpodCoverFlow
-                    ? "text-black text-[12px] font-semibold tracking-tight"
-                    : "text-white",
-                  ipodMode && !isModernIpodCoverFlow && "text-[10px]",
+                  coverFlowTitleTextClass(isModernIpodCoverFlow, ipodMode),
+                  !ipodMode && COVERFLOW_SHARED_STAGE_TITLE_CLASS
                 )}
-                style={ipodMode ? undefined : { fontSize: "clamp(14px, 5cqmin, 24px)" }}
               >
                 {currentItem?.title || t("apps.ipod.coverFlow.noTrack")}
               </div>
               {currentItem?.artist && (
                 <div
                   className={cn(
-                    "truncate",
-                    isModernIpodCoverFlow
-                      ? "text-[10px] text-[rgb(99,101,103)] tracking-tight"
-                      : // Classic iPod and karaoke share the same
-                        // light-on-black treatment — the parent
-                        // backdrop is `bg-black` and the title above
-                        // is already `text-white`, so the artist
-                        // sits one rung down at 60% white. Without
-                        // this, karaoke artist text inherited the
-                        // default near-black colour and disappeared
-                        // against the black Cover Flow stage.
-                        "text-white/60",
-                    ipodMode && !isModernIpodCoverFlow && "text-[8px]",
+                    coverFlowArtistTextClass(isModernIpodCoverFlow, ipodMode),
+                    !ipodMode && COVERFLOW_SHARED_STAGE_ARTIST_CLASS
                   )}
-                  style={
-                    ipodMode ? undefined : { fontSize: "clamp(12px, 4cqmin, 18px)" }
-                  }
                 >
                   {currentItem.artist}
                 </div>
@@ -2137,24 +2099,17 @@ export const CoverFlow = function CoverFlow(
                   e.stopPropagation();
                   setShowCD(!showCD);
                 }}
-                className={`relative flex-shrink-0 rounded-full transition-all hover:brightness-110 p-3 ${
+                className={cn(
+                  COVERFLOW_SHARED_CONTROL_BUTTON_CLASS,
                   showCD ? "text-white" : "text-white/80 hover:text-white"
-                }`}
-                style={{
-                  width: "clamp(40px, 8cqmin, 48px)",
-                  height: "clamp(40px, 8cqmin, 48px)",
-                  ...(isMacTheme ? {
-                    background: showCD 
-                      ? "linear-gradient(to bottom, rgba(80, 80, 80, 0.7), rgba(50, 50, 50, 0.6))"
-                      : "linear-gradient(to bottom, rgba(60, 60, 60, 0.6), rgba(30, 30, 30, 0.5))",
-                    boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2), inset 0 0 0 0.5px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.15)",
-                  } : {
-                    background: showCD ? "rgba(255, 255, 255, 0.15)" : "rgba(255, 255, 255, 0.08)",
-                  }),
-                }}
+                )}
+                style={
+                  showCD
+                    ? COVERFLOW_SHARED_CONTROL_BUTTON_ACTIVE_STYLE
+                    : COVERFLOW_SHARED_CONTROL_BUTTON_STYLE
+                }
                 title={showCD ? t("apps.ipod.coverFlow.hideMedia") : t("apps.ipod.coverFlow.showMedia")}
               >
-                {isMacTheme && <AquaShineOverlay />}
                 <VinylRecord className="w-full h-full relative z-10" weight="fill" />
               </button>
             )}

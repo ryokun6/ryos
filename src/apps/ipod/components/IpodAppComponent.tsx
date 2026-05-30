@@ -540,7 +540,7 @@ export function IpodAppComponent({
                *  the standalone overlay there to avoid double-mounting
                *  the carousel and to let the menu panel's width
                *  transition own the entry/exit animation. */}
-              {!isModernIpodUi && isCoverFlowOpen && (
+              {!isModernIpodUi && isCoverFlowOpen && !isFullScreen && (
                 <Suspense fallback={null}>
                   <CoverFlow
                     ref={coverFlowRef}
@@ -868,6 +868,35 @@ export function IpodAppComponent({
                   {/* Lyrics overlays - positioned relative to viewport, not video container */}
                   {showLyrics && tracks[currentIndex] && (
                     <div className="fixed inset-0 bg-black/50 z-10 pointer-events-none" />
+                  )}
+
+                  {/* Cover Flow — same shared stage as Karaoke (below toolbar) */}
+                  {coverFlowTracks.length > 0 && (
+                    <div
+                      className={cn(
+                        "absolute inset-0 z-[45]",
+                        isCoverFlowOpen
+                          ? "pointer-events-auto"
+                          : "pointer-events-none"
+                      )}
+                    >
+                      <Suspense fallback={null}>
+                        <CoverFlow
+                          ref={coverFlowRef}
+                          tracks={coverFlowTracks}
+                          currentIndex={coverFlowCurrentIndex}
+                          onSelectTrack={handleCoverFlowSelect}
+                          onExit={handleCoverFlowExit}
+                          onRotation={handleCoverFlowRotation}
+                          isVisible={isCoverFlowOpen}
+                          ipodMode={false}
+                          isPlaying={isPlaying}
+                          onTogglePlay={togglePlay}
+                          onPlayTrackInPlace={handleCoverFlowPlayInPlace}
+                          groupAppleMusicAlbums={isAppleMusic}
+                        />
+                      </Suspense>
+                    </div>
                   )}
 
                   {showLyrics && tracks[currentIndex] && (

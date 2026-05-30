@@ -522,6 +522,19 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     container-type: inline-size;
   }
 
+  /* Shared Cover Flow stage (Karaoke + iPod classic / fullscreen) */
+  .coverflow-shared-stage {
+    container-type: size;
+  }
+
+  .coverflow-shared-stage-title {
+    font-size: clamp(14px, 5cqmin, 24px);
+  }
+
+  .coverflow-shared-stage-artist {
+    font-size: clamp(12px, 4cqmin, 18px);
+  }
+
   /* Karaoke lyrics text - uses container query units for window-relative sizing */
   .karaoke-lyrics-text {
     font-size: clamp(32px, 8cqw, 96px);
