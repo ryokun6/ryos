@@ -1337,10 +1337,14 @@ export function useKaraokeLogic({
   );
 
   // Generate share URL for song
-  const karaokeGenerateShareUrl = useCallback(
-    (videoId: string): string => `${window.location.origin}/karaoke/${videoId}`,
-    []
-  );
+  const karaokeGenerateShareUrl = useCallback((videoId: string): string => {
+    const base =
+      typeof document !== "undefined" &&
+      document.documentElement.dataset.standaloneKaraoke === "true"
+        ? "/standalone/karaoke"
+        : "/karaoke";
+    return `${window.location.origin}${base}/${encodeURIComponent(videoId)}`;
+  }, []);
 
   // Lyrics search handlers
   const handleRefreshLyrics = useCallback(() => {

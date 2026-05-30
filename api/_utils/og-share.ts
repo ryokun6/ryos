@@ -449,6 +449,34 @@ export async function createOgShareResponse(
     matched = true;
   }
 
+
+  const standaloneKaraokeMatch = pathname.match(/^\/standalone\/karaoke\/([^/?#]+)$/);
+  if (standaloneKaraokeMatch) {
+    const songId = resolveSongShareId(standaloneKaraokeMatch[1]);
+    imageUrl = getAppIconUrl(publicOrigin, "karaoke");
+
+    const songInfo = await (options.getSong || getSongFromRedis)(songId);
+    if (songInfo) {
+      imageUrl = formatMusicCoverUrl(songInfo.cover, 400) || imageUrl;
+      const songDisplay = songInfo.artist
+        ? `${songInfo.title} - ${songInfo.artist}`
+        : songInfo.title;
+      title = `Sing ${songDisplay} on ryOS`;
+      description = "Sing along on ryOS Karaoke";
+    } else {
+      title = "Sing on ryOS Karaoke";
+      description = "Sing along on ryOS Karaoke";
+    }
+    matched = true;
+  }
+
+  if (pathname === "/standalone/karaoke") {
+    imageUrl = getAppIconUrl(publicOrigin, "karaoke");
+    title = "Karaoke on ryOS";
+    description = APP_DESCRIPTIONS.karaoke || "Open app in ryOS";
+    matched = true;
+  }
+
   if (pathname === "/standalone/ipod") {
     imageUrl = getAppIconUrl(publicOrigin, "ipod");
     title = "iPod on ryOS";

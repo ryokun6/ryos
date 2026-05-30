@@ -2,11 +2,15 @@ import { describe, expect, test } from "bun:test";
 import { shouldServeSpaFallback } from "../scripts/spa-static-fallback";
 
 describe("standalone Bun server SPA fallback (non-Vercel)", () => {
-  test("serves index.html for standalone iPod app routes", () => {
+  test("serves index.html for standalone media app routes", () => {
     expect(shouldServeSpaFallback("/standalone/ipod")).toBe(true);
     expect(shouldServeSpaFallback("/standalone/ipod/")).toBe(true);
     expect(shouldServeSpaFallback("/standalone/ipod/my-track-id")).toBe(true);
+    expect(shouldServeSpaFallback("/standalone/karaoke")).toBe(true);
+    expect(shouldServeSpaFallback("/standalone/karaoke/my-track-id")).toBe(true);
     expect(shouldServeSpaFallback("/ipod")).toBe(true);
+    expect(shouldServeSpaFallback("/karaoke")).toBe(true);
+    expect(shouldServeSpaFallback("/karaoke/shared-song")).toBe(true);
     expect(shouldServeSpaFallback("/ipod/shared-song")).toBe(true);
   });
 

@@ -242,6 +242,8 @@
     { "source": "/ipod", "destination": "/" },
     { "source": "/standalone/ipod", "destination": "/" },
     { "source": "/standalone/ipod/:track", "destination": "/" },
+    { "source": "/standalone/karaoke", "destination": "/" },
+    { "source": "/standalone/karaoke/:track", "destination": "/" },
     { "source": "/karaoke", "destination": "/" },
     { "source": "/applet-viewer", "destination": "/" },
     { "source": "/synth", "destination": "/" },

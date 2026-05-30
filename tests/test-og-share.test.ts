@@ -107,6 +107,38 @@ describe("og share response", () => {
     expect(body).toContain("/standalone/ipod/track-1?_ryo=1");
   });
 
+
+  test("skips OG HTML for standalone Karaoke in normal browsers", async () => {
+    const response = await createOgShareResponse(
+      new Request("https://coolify.example.com/standalone/karaoke", {
+        headers: { "User-Agent": BROWSER_UA },
+      })
+    );
+
+    expect(response).toBeNull();
+  });
+
+  test("serves OG HTML for standalone Karaoke routes when requested by crawlers", async () => {
+    process.env.APP_PUBLIC_ORIGIN = "https://os.example.com";
+
+    const response = await createOgShareResponse(
+      new Request("https://os.example.com/standalone/karaoke/track-1", {
+        headers: { "User-Agent": CRAWLER_UA },
+      }),
+      {
+        getSong: async (songId) => {
+          expect(songId).toBe("track-1");
+          return { title: "Karaoke Song", artist: "Karaoke Artist", cover: "" };
+        },
+      }
+    );
+
+    expect(response).not.toBeNull();
+    const body = await response!.text();
+    expect(body).toContain("Sing Karaoke Song - Karaoke Artist on ryOS");
+    expect(body).toContain("/standalone/karaoke/track-1?_ryo=1");
+  });
+
   test("uses stored iPod song metadata and formatted Kugou cover for OG tags", async () => {
     process.env.APP_PUBLIC_ORIGIN = "https://os.example.com";
     const fetchMock = mock(() => {

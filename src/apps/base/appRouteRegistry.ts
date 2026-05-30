@@ -1,6 +1,7 @@
 import { appIds, appNames, resolveAppId, type AppId } from "@/config/appRegistryData";
 import type { AppLaunchRequest } from "@/utils/appEventBus";
 import { isStandaloneIpodPath } from "@/utils/standaloneIpodRoute";
+import { isStandaloneKaraokePath } from "@/utils/standaloneKaraokeRoute";
 
 export interface RouteToastDescriptor {
   type: "translation" | "text";
@@ -56,8 +57,8 @@ export function resolveInitialRoute(
     return null;
   }
 
-  // Standalone iPod is handled in main.tsx (StandaloneIpodApp); never rewrite the URL to /.
-  if (isStandaloneIpodPath(pathname)) {
+  // Standalone apps are handled in main.tsx; never rewrite these URLs to /.
+  if (isStandaloneIpodPath(pathname) || isStandaloneKaraokePath(pathname)) {
     return null;
   }
 

@@ -296,6 +296,7 @@ export default defineConfig({
           /^\/tv$/,
           /^\/ipod(\/|$)/,
           /^\/standalone\/ipod(\/|$)/,
+          /^\/standalone\/karaoke(\/|$)/,
           /^\/karaoke(\/|$)/,
           /^\/listen(\/|$)/,
           /^\/synth$/,

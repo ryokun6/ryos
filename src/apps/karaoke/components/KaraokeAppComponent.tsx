@@ -51,7 +51,8 @@ export function KaraokeAppComponent({
   instanceId,
   onNavigateNext,
   onNavigatePrevious,
-}: AppProps<KaraokeInitialData>) {
+  standalone = false,
+}: AppProps<KaraokeInitialData> & { standalone?: boolean }) {
   const {
     t,
     translatedHelpItems,
@@ -335,24 +336,8 @@ export function KaraokeAppComponent({
 
   if (!isWindowOpen) return null;
 
-  return (
+  const karaokeShellBody = (
     <>
-      {!isXpTheme && isForeground && menuBar}
-      <WindowFrame
-        title={currentTrack ? `${currentTrack.title}${currentTrack.artist ? ` - ${currentTrack.artist}` : ""}` : getTranslatedAppName("karaoke")}
-        onClose={onClose}
-        isForeground={isForeground}
-        appId="karaoke"
-        material="notitlebar"
-        skipInitialSound={skipInitialSound}
-        instanceId={instanceId}
-        onNavigateNext={onNavigateNext}
-        onNavigatePrevious={onNavigatePrevious}
-        menuBar={isXpTheme ? menuBar : undefined}
-        onFullscreenToggle={toggleFullScreen}
-        onCoverFlowToggle={handleToggleCoverFlow}
-        isCoverFlowActive={isCoverFlowOpen}
-      >
         <div
           className="relative w-full h-full bg-black select-none overflow-hidden @container"
           onMouseMove={(e) => {
@@ -830,10 +815,37 @@ export function KaraokeAppComponent({
           isOpen={isJoinListenDialogOpen}
           onClose={() => setIsJoinListenDialogOpen(false)}
           onJoin={handleJoinListenSession}
-        />
-      </WindowFrame>
+        />    </>
+  );
 
-      {/* Full screen portal */}
+  return (
+    <>
+      {!standalone && !isXpTheme && isForeground && menuBar}
+      {standalone ? (
+        <div className={cn("fixed inset-0 z-0 overflow-hidden bg-black")}>
+          {karaokeShellBody}
+        </div>
+      ) : (
+      <WindowFrame
+        title={currentTrack ? `${currentTrack.title}${currentTrack.artist ? ` - ${currentTrack.artist}` : ""}` : getTranslatedAppName("karaoke")}
+        onClose={onClose}
+        isForeground={isForeground}
+        appId="karaoke"
+        material="notitlebar"
+        skipInitialSound={skipInitialSound}
+        instanceId={instanceId}
+        onNavigateNext={onNavigateNext}
+        onNavigatePrevious={onNavigatePrevious}
+        menuBar={isXpTheme ? menuBar : undefined}
+        onFullscreenToggle={toggleFullScreen}
+        onCoverFlowToggle={handleToggleCoverFlow}
+        isCoverFlowActive={isCoverFlowOpen}
+      >
+          {karaokeShellBody}
+      </WindowFrame>
+      )}
+
+
       {isFullScreen && (
         <KaraokeLyricsPlaybackProvider
           currentTrack={currentTrack}
