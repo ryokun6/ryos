@@ -2,6 +2,8 @@ import { Check } from "@phosphor-icons/react";
 import type { ReactNode } from "react";
 import HtmlPreview from "@/components/shared/HtmlPreview";
 import { CursorRepoAgentChatCard } from "@/components/shared/CursorRepoAgentChatCard";
+import { CursorCloudAgentRunsListCard } from "@/components/shared/CursorCloudAgentRunsListCard";
+import { parseListCursorCloudAgentRunsOutput } from "@/lib/cursorAgentChatPreview";
 import {
   MapsSearchPlacesCard,
   type MapsSearchPlaceCardData,
@@ -737,7 +739,9 @@ export function ToolInvocationMessage({
       runId: string;
       agentId?: string;
       agentTitle?: string;
+      agentDashboardUrl?: string;
       message?: string;
+      createdAt?: number;
     };
     const headerTitle =
       typeof out.agentTitle === "string" && out.agentTitle.trim().length > 0
@@ -750,8 +754,37 @@ export function ToolInvocationMessage({
         runId={out.runId}
         headerTitle={headerTitle}
         introMessage={out.message}
+        agentDashboardUrl={out.agentDashboardUrl}
+        createdAt={out.createdAt}
       />
     );
+  }
+
+  if (state === "output-available" && toolName === "listCursorCloudAgentRuns") {
+    const runs = parseListCursorCloudAgentRunsOutput(output);
+    const truncated = Boolean(
+      output &&
+        typeof output === "object" &&
+        (output as { truncated?: boolean }).truncated
+    );
+    if (runs.length > 0) {
+      return (
+        <div key={partKey} className="mb-0 px-1 py-0.5 text-[12px]">
+          <ToolInvocationStatusRow
+            icon={<Check className="size-3 text-blue-600 dark:text-blue-400" weight="bold" />}
+            className="text-neutral-700 dark:text-neutral-200"
+            align="start"
+          >
+            <span>
+              {t("apps.chats.toolCalls.listCursorCloudAgentRuns.listed", {
+                count: runs.length,
+              })}
+            </span>
+          </ToolInvocationStatusRow>
+          <CursorCloudAgentRunsListCard runs={runs} truncated={truncated} />
+        </div>
+      );
+    }
   }
 
   // Special handling for mapsSearchPlaces — render a rich place-card list

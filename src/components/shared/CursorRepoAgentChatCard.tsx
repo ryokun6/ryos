@@ -1,5 +1,9 @@
 import { ArrowSquareOut, ArrowUp, Check } from "@phosphor-icons/react";
 import {
+  cursorAgentDashboardUrl,
+  formatCursorAgentTimestamp,
+} from "@/lib/cursorAgentChatPreview";
+import {
   KeyboardEvent,
   useCallback,
   useEffect,
@@ -25,6 +29,10 @@ interface CursorRepoAgentChatCardProps {
   headerTitle: string;
   /** Intro line shown above the card (outside applet chrome) */
   introMessage?: string;
+  /** https://cursor.com/agents/… from tool JSON when meta is still loading */
+  agentDashboardUrl?: string;
+  /** Epoch ms from tool start payload */
+  createdAt?: number;
   /** Admin side panel: fill parent height, no chat card chrome (margin/shadow/rounded). */
   variant?: "chat" | "panel";
 }
@@ -39,10 +47,12 @@ export function CursorRepoAgentChatCard({
   runId,
   headerTitle,
   introMessage,
+  agentDashboardUrl: agentDashboardUrlProp,
+  createdAt: createdAtProp,
   variant = "chat",
 }: CursorRepoAgentChatCardProps) {
   const isPanel = variant === "panel";
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const {
     events,
     done,
@@ -68,6 +78,19 @@ export function CursorRepoAgentChatCard({
   }, [events]);
 
   const prUrl = meta.prUrl;
+  const dashboardUrl =
+    agentDashboardUrlProp?.trim() ||
+    (meta.agentId ? cursorAgentDashboardUrl(meta.agentId) : undefined);
+  const createdLabel = formatCursorAgentTimestamp(
+    meta.createdAt ?? createdAtProp,
+    i18n.language
+  );
+  const headerSummary =
+    done && meta.summary?.trim()
+      ? meta.summary.trim().length > 120
+        ? `${meta.summary.trim().slice(0, 117)}…`
+        : meta.summary.trim()
+      : "";
   const canFollowup = done && !isSendingFollowup;
   const items = useMemo(
     () =>
@@ -115,6 +138,7 @@ export function CursorRepoAgentChatCard({
             : "my-1 flex flex-col overflow-hidden rounded bg-white font-geneva-12 dark:bg-neutral-950"
         }
         style={isPanel ? undefined : { boxShadow: "0 0 0 1px rgba(0, 0, 0, 0.3)" }}
+        data-cursor-agent-stream-card
       >
         <div className="flex flex-shrink-0 items-center gap-3 border-b border-neutral-300 bg-neutral-100 px-3 py-2 dark:border-neutral-600 dark:bg-neutral-800/90">
           <span className="relative inline-flex size-6 shrink-0 items-center justify-center" aria-hidden>
@@ -135,10 +159,25 @@ export function CursorRepoAgentChatCard({
               draggable={false}
             />
           </span>
-          <div className="flex min-w-0 flex-1 items-center gap-2">
+          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <div className="flex min-w-0 flex-1 items-center gap-2">
             <div className="min-w-0 flex-1 truncate text-sm font-medium text-neutral-900 dark:text-neutral-100" title={displayTitle}>
               {displayTitle}
             </div>
+            {dashboardUrl ? (
+              <a
+                href={dashboardUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex shrink-0 items-center gap-1 rounded border border-neutral-300 bg-white/85 px-1.5 py-0.5 text-[10px] font-medium text-neutral-700 transition-colors hover:bg-neutral-100 dark:border-neutral-600 dark:bg-neutral-900/70 dark:text-neutral-200 dark:hover:bg-neutral-800"
+                title={dashboardUrl}
+              >
+                <ArrowSquareOut className="size-3" weight="bold" />
+                <span>
+                  {t("apps.chats.toolCalls.cursorCloudAgent.openDashboard")}
+                </span>
+              </a>
+            ) : null}
             {prUrl ? (
               <a
                 href={prUrl}
@@ -165,6 +204,23 @@ export function CursorRepoAgentChatCard({
                 {t("apps.chats.toolCalls.cursorCloudAgent.finished")}
               </span>
             )}
+            </div>
+            {(createdLabel || headerSummary) ? (
+              <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0 text-[10px] text-neutral-600 dark:text-neutral-400">
+                {createdLabel ? (
+                  <span>
+                    {t("apps.chats.toolCalls.cursorCloudAgent.createdAt", {
+                      time: createdLabel,
+                    })}
+                  </span>
+                ) : null}
+                {headerSummary ? (
+                  <span className="min-w-0 truncate italic" title={meta.summary}>
+                    {headerSummary}
+                  </span>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         </div>
 

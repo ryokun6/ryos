@@ -1016,6 +1016,11 @@
           "panelTitle": "Cursor Cloud agent",
           "running": "Running",
           "finished": "Finished",
+          "live": "live",
+          "statusError": "Error",
+          "statusUnknown": "Unknown",
+          "createdAt": "{{time}}",
+          "openDashboard": "Open agent",
           "noEventsYet": "Waiting for stream events…",
           "openPr": "Open PR",
           "followupPlaceholder": "Reply to the agent…",
@@ -1041,7 +1046,8 @@
         "listCursorCloudAgentRuns": {
           "loading": "Listing Cursor Cloud agent runs…",
           "listed": "Listed {{count}} recent run(s).",
-          "truncatedHint": "(list may be truncated)"
+          "truncatedHint": "(list may be truncated)",
+          "empty": "No recent Cursor agent runs found."
         },
         "searchedWebFor": "Searched the web for {{query}}",
         "foundVideos": "Found {{count}} videos",

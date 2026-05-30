@@ -6,6 +6,9 @@ export interface CursorAgentRunMeta {
   agentId?: string;
   agentTitle?: string;
   prUrl?: string;
+  createdAt?: number;
+  summary?: string;
+  promptPreview?: string;
   /** Set on the meta when a follow-up has been queued; UI follows the chain. */
   nextRunId?: string;
   /** When non-null, a run is in flight on this agent. */
@@ -23,6 +26,9 @@ interface CursorRunStatusResponse {
     nextRunId?: unknown;
     activeRunId?: unknown;
     terminalStatus?: unknown;
+    createdAt?: unknown;
+    summary?: unknown;
+    promptPreview?: unknown;
   };
   terminal?: { prUrl?: unknown } | null;
 }
@@ -54,6 +60,15 @@ function pickMeta(raw: CursorRunStatusResponse | null): CursorAgentRunMeta {
   }
   if (typeof m.terminalStatus === "string") {
     next.terminalStatus = m.terminalStatus;
+  }
+  if (typeof m.createdAt === "number" && Number.isFinite(m.createdAt)) {
+    next.createdAt = m.createdAt;
+  }
+  if (typeof m.summary === "string" && m.summary.trim().length > 0) {
+    next.summary = m.summary.trim();
+  }
+  if (typeof m.promptPreview === "string" && m.promptPreview.trim().length > 0) {
+    next.promptPreview = m.promptPreview.trim();
   }
   return next;
 }

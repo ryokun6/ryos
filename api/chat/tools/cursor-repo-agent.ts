@@ -257,6 +257,8 @@ export type CursorCloudAgentToolOutput =
       agentDashboardUrl: string;
       /** Cloud catalog display name when available (`Agent.get`) */
       agentTitle?: string;
+      /** Epoch ms when the run was queued (for chat card header) */
+      createdAt?: number;
       message: string;
       pollHint: string;
     }
@@ -903,11 +905,13 @@ export async function executeCursorCloudAgent(
       notifyTelegram: context.notifyTelegram,
     });
 
+    const createdAt = Date.now();
     return {
       async: true,
       runId,
       agentId,
       agentDashboardUrl: cursorCloudAgentDashboardUrl(agentId),
+      createdAt,
       ...(agentTitle ? { agentTitle } : {}),
       message: "Started — live progress streams in the chat card below.",
       pollHint:

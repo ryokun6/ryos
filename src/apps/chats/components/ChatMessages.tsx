@@ -25,6 +25,14 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { LinkPreview } from "@/components/shared/LinkPreview";
+import { CursorAgentRunSummaryCard } from "@/components/shared/CursorAgentRunSummaryCard";
+import {
+  collectCursorAgentCoverageFromParts,
+  isCursorAgentUrlCoveredByMessage,
+  parseCursorAgentDashboardUrl,
+  partitionMessageUrlsForPreviews,
+  type CursorAgentRunPreviewData,
+} from "@/lib/cursorAgentChatPreview";
 import { ImageAttachment } from "@/components/shared/ImageAttachment";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import EmojiAquarium from "@/components/shared/EmojiAquarium";
@@ -1070,13 +1078,39 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
           extractUrls(displayContent).forEach((u) => allUrls.add(u));
         }
         if (allUrls.size === 0) return null;
+
+        const coverage = collectCursorAgentCoverageFromParts(message.parts);
+        const uncoveredUrls = Array.from(allUrls).filter(
+          (url) => !isCursorAgentUrlCoveredByMessage(url, coverage)
+        );
+        const { genericUrls, cursorAgentUrls } =
+          partitionMessageUrlsForPreviews(uncoveredUrls);
+
+        if (genericUrls.length === 0 && cursorAgentUrls.length === 0) {
+          return null;
+        }
+
         return (
           <div
             className={`flex flex-col gap-2 w-full ${
               !isUrlOnly(displayContent) ? "mt-2" : ""
             } ${message.role === "user" ? "items-end" : "items-start"}`}
           >
-            {Array.from(allUrls).map((url, index) => (
+            {cursorAgentUrls.map((url, index) => {
+              const agentId = parseCursorAgentDashboardUrl(url);
+              const run: CursorAgentRunPreviewData = {
+                agentId: agentId ?? undefined,
+                agentDashboardUrl: url,
+              };
+              return (
+                <CursorAgentRunSummaryCard
+                  key={`${messageKey}-cursor-${index}`}
+                  run={run}
+                  className="max-w-[90%]"
+                />
+              );
+            })}
+            {genericUrls.map((url, index) => (
               <LinkPreview
                 key={`${messageKey}-link-${index}`}
                 url={url}
