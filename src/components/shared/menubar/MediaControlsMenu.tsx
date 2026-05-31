@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import {
   MenubarMenu,
   MenubarTrigger,
@@ -29,6 +30,8 @@ export type MediaControlsMenuProps = {
   onToggleLoopAll: () => void;
   isLoopCurrent: boolean;
   onToggleLoopCurrent: () => void;
+  /** Extra items rendered between the transport items and the shuffle/repeat block. */
+  extraItems?: ReactNode;
 };
 
 export function MediaControlsMenu({
@@ -52,6 +55,7 @@ export function MediaControlsMenu({
   onToggleLoopAll,
   isLoopCurrent,
   onToggleLoopCurrent,
+  extraItems,
 }: MediaControlsMenuProps) {
   const tracksDisabled = tracksCount === 0;
 
@@ -80,6 +84,7 @@ export function MediaControlsMenu({
         >
           {nextLabel}
         </MenubarItem>
+        {extraItems}
         <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
         <MenubarCheckboxItem
           checked={isShuffled}

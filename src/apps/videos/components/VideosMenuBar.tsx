@@ -7,9 +7,9 @@ import {
   MenubarSub,
   MenubarSubTrigger,
   MenubarSubContent,
-  MenubarCheckboxItem,
 } from "@/components/ui/menubar";
 import { AppMenuBarShell } from "@/components/shared/menubar/AppMenuBarShell";
+import { MediaControlsMenu } from "@/components/shared/menubar/MediaControlsMenu";
 import { MENUBAR_SEPARATOR_CLASS } from "@/components/shared/menubar/menubarStyles";
 import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
 import { cn } from "@/lib/utils";
@@ -140,69 +140,36 @@ export function VideosMenuBar({
       </MenubarMenu>
 
       {/* Controls Menu */}
-      <MenubarMenu>
-        <MenubarTrigger className="px-2 py-1 text-md focus-visible:ring-0">
-          {t("apps.videos.menu.controls")}
-        </MenubarTrigger>
-        <MenubarContent align="start" sideOffset={1} className="px-0">
-          <MenubarItem
-            onClick={onTogglePlay}
-            className="text-md h-6 px-3"
-            disabled={videos.length === 0}
-          >
-            {isPlaying ? t("apps.videos.menu.pause") : t("apps.videos.menu.play")}
-          </MenubarItem>
-          <MenubarItem
-            onClick={onPrevious}
-            className="text-md h-6 px-3"
-            disabled={videos.length === 0}
-          >
-            {t("apps.videos.menu.previous")}
-          </MenubarItem>
-          <MenubarItem
-            onClick={onNext}
-            className="text-md h-6 px-3"
-            disabled={videos.length === 0}
-          >
-            {t("apps.videos.menu.next")}
-          </MenubarItem>
-          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
-          <MenubarItem
-            onClick={onFullScreen}
-            className="text-md h-6 px-3"
-          >
-            {t("apps.videos.menu.fullScreen")}
-          </MenubarItem>
-          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
-          <MenubarCheckboxItem
-            checked={isShuffled}
-            onCheckedChange={(checked) => {
-              if (checked !== isShuffled) onShufflePlaylist();
-            }}
-            className="text-md h-6 px-3"
-          >
-            {t("apps.videos.menu.shuffle")}
-          </MenubarCheckboxItem>
-          <MenubarCheckboxItem
-            checked={isLoopAll}
-            onCheckedChange={(checked) => {
-              if (checked !== isLoopAll) onToggleLoopAll();
-            }}
-            className="text-md h-6 px-3"
-          >
-            {t("apps.videos.menu.repeatAll")}
-          </MenubarCheckboxItem>
-          <MenubarCheckboxItem
-            checked={isLoopCurrent}
-            onCheckedChange={(checked) => {
-              if (checked !== isLoopCurrent) onToggleLoopCurrent();
-            }}
-            className="text-md h-6 px-3"
-          >
-            {t("apps.videos.menu.repeatOne")}
-          </MenubarCheckboxItem>
-        </MenubarContent>
-      </MenubarMenu>
+      <MediaControlsMenu
+        menuLabel={t("apps.videos.menu.controls")}
+        triggerClassName="px-2 py-1 text-md focus-visible:ring-0"
+        tracksCount={videos.length}
+        isPlaying={isPlaying}
+        onTogglePlay={onTogglePlay}
+        onPreviousTrack={onPrevious}
+        onNextTrack={onNext}
+        playLabel={t("apps.videos.menu.play")}
+        pauseLabel={t("apps.videos.menu.pause")}
+        previousLabel={t("apps.videos.menu.previous")}
+        nextLabel={t("apps.videos.menu.next")}
+        shuffleLabel={t("apps.videos.menu.shuffle")}
+        repeatAllLabel={t("apps.videos.menu.repeatAll")}
+        repeatOneLabel={t("apps.videos.menu.repeatOne")}
+        isShuffled={isShuffled}
+        onToggleShuffle={onShufflePlaylist}
+        isLoopAll={isLoopAll}
+        onToggleLoopAll={onToggleLoopAll}
+        isLoopCurrent={isLoopCurrent}
+        onToggleLoopCurrent={onToggleLoopCurrent}
+        extraItems={
+          <>
+            <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
+            <MenubarItem onClick={onFullScreen} className="text-md h-6 px-3">
+              {t("apps.videos.menu.fullScreen")}
+            </MenubarItem>
+          </>
+        }
+      />
 
       {/* Library Menu */}
       <MenubarMenu>
