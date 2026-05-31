@@ -3,6 +3,7 @@ import {
   formatKugouImageUrl,
 } from "../../constants";
 import type { Track } from "@/stores/useIpodStore";
+import type { CoverFlowItem } from "./types";
 
 // Format a track duration in milliseconds as `m:ss`. Returns an empty
 // string when the duration is unknown so the tracklist row collapses
@@ -45,4 +46,33 @@ export function getCoverSizeCqmin(
   compactIpodCarousel: boolean
 ): number {
   return ipodMode && !compactIpodCarousel ? 65 : ipodMode ? 58 : 60;
+}
+
+export interface VisibleCoverEntry {
+  item: CoverFlowItem;
+  index: number;
+  position: number;
+}
+
+/** Covers within ±3 positions of the selected index, sorted for z-order. */
+export function getVisibleCoverEntries(
+  coverItems: CoverFlowItem[],
+  selectedIndex: number
+): VisibleCoverEntry[] {
+  const visibleRange = 3;
+  const covers: VisibleCoverEntry[] = [];
+
+  for (
+    let i = Math.max(0, selectedIndex - visibleRange);
+    i <= Math.min(coverItems.length - 1, selectedIndex + visibleRange);
+    i++
+  ) {
+    covers.push({
+      item: coverItems[i],
+      index: i,
+      position: i - selectedIndex,
+    });
+  }
+
+  return covers.sort((a, b) => Math.abs(b.position) - Math.abs(a.position));
 }
