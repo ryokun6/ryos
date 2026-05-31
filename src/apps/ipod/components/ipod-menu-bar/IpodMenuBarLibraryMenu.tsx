@@ -10,6 +10,7 @@ import {
   MenubarCheckboxItem,
 } from "@/components/ui/menubar";
 import { MENUBAR_TRACK_LIMIT, MENUBAR_ARTIST_LIMIT } from "./constants";
+import { MENUBAR_SEPARATOR_CLASS } from "@/components/shared/menubar/menubarStyles";
 import { IpodMenuBarLibrarySourceActions } from "./IpodMenuBarLibrarySourceActions";
 import { IpodMenuBarLibrarySwitchItem } from "./IpodMenuBarLibrarySwitchItem";
 import type { IpodMenuBarViewModel } from "./useIpodMenuBar";
@@ -36,7 +37,7 @@ export function IpodMenuBarLibraryMenu({ vm }: { vm: IpodMenuBarViewModel }) {
 
           <IpodMenuBarLibrarySourceActions vm={vm} />
 
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
 
           {tracks.length > 0 && (
             <>
@@ -117,7 +118,7 @@ export function IpodMenuBarLibraryMenu({ vm }: { vm: IpodMenuBarViewModel }) {
                 )}
               </div>
 
-              <MenubarSeparator className="h-[2px] bg-black my-1" />
+              <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
             </>
           )}
 

@@ -5,6 +5,7 @@ import {
   MenubarItem,
   MenubarSeparator,
 } from "@/components/ui/menubar";
+import { MENUBAR_SEPARATOR_CLASS } from "@/components/shared/menubar/menubarStyles";
 import type { KaraokeMenuBarViewModel } from "./useKaraokeMenuBar";
 
 export function KaraokeMenuBarFileMenu({ vm }: { vm: KaraokeMenuBarViewModel }) {
@@ -41,7 +42,7 @@ export function KaraokeMenuBarFileMenu({ vm }: { vm: KaraokeMenuBarViewModel }) 
         >
           {t("apps.ipod.menu.shareSong")}
         </MenubarItem>
-        <MenubarSeparator className="h-[2px] bg-black my-1" />
+        <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
         {!isInListenSession ? (
           <>
             <MenubarItem
@@ -75,7 +76,7 @@ export function KaraokeMenuBarFileMenu({ vm }: { vm: KaraokeMenuBarViewModel }) 
             </MenubarItem>
           </>
         )}
-        <MenubarSeparator className="h-[2px] bg-black my-1" />
+        <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
         <MenubarItem
           onClick={handleExportLibrary}
           className="text-md h-6 px-3"
@@ -89,7 +90,7 @@ export function KaraokeMenuBarFileMenu({ vm }: { vm: KaraokeMenuBarViewModel }) 
         >
           {t("apps.ipod.menu.importLibrary")}
         </MenubarItem>
-        <MenubarSeparator className="h-[2px] bg-black my-1" />
+        <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
         <MenubarItem onClick={onClose} className="text-md h-6 px-3">
           {t("common.menu.close")}
         </MenubarItem>

@@ -8,6 +8,8 @@ import {
   MenubarSubTrigger,
   MenubarSubContent,
   MenubarCheckboxItem,
+  MenubarRadioGroup,
+  MenubarRadioItem,
 } from "@/components/ui/menubar";
 import { LyricsAlignmentMenuItems } from "@/components/shared/menubar/lyrics/LyricsAlignmentMenuItems";
 import { LyricsPronunciationSubmenu } from "@/components/shared/menubar/lyrics/LyricsPronunciationSubmenu";
@@ -49,60 +51,47 @@ export function KaraokeMenuBarViewMenu({ vm }: { vm: KaraokeMenuBarViewModel }) 
 
             <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
 
-            <MenubarCheckboxItem
-              checked={vm.lyricsFont === LyricsFont.Rounded}
-              onCheckedChange={(checked) => {
-                if (checked) vm.setLyricsFont(LyricsFont.Rounded);
-              }}
-              className="text-md h-6 pr-3"
+            <MenubarRadioGroup
+              value={vm.lyricsFont}
+              onValueChange={(v) => vm.setLyricsFont(v as LyricsFont)}
             >
-              {vm.t("apps.ipod.menu.fontRounded")}
-            </MenubarCheckboxItem>
-            <MenubarCheckboxItem
-              checked={vm.lyricsFont === LyricsFont.Serif}
-              onCheckedChange={(checked) => {
-                if (checked) vm.setLyricsFont(LyricsFont.Serif);
-              }}
-              className="text-md h-6 pr-3"
-            >
-              {vm.t("apps.ipod.menu.fontSerif")}
-            </MenubarCheckboxItem>
-            <MenubarCheckboxItem
-              checked={vm.lyricsFont === LyricsFont.SansSerif}
-              onCheckedChange={(checked) => {
-                if (checked) vm.setLyricsFont(LyricsFont.SansSerif);
-              }}
-              className="text-md h-6 pr-3"
-            >
-              {vm.t("apps.ipod.menu.fontSansSerif")}
-            </MenubarCheckboxItem>
-            <MenubarCheckboxItem
-              checked={vm.lyricsFont === LyricsFont.SerifRed}
-              onCheckedChange={(checked) => {
-                if (checked) vm.setLyricsFont(LyricsFont.SerifRed);
-              }}
-              className="text-md h-6 pr-3"
-            >
-              {vm.t("apps.ipod.menu.fontSerifRed")}
-            </MenubarCheckboxItem>
-            <MenubarCheckboxItem
-              checked={vm.lyricsFont === LyricsFont.GoldGlow}
-              onCheckedChange={(checked) => {
-                if (checked) vm.setLyricsFont(LyricsFont.GoldGlow);
-              }}
-              className="text-md h-6 pr-3"
-            >
-              {vm.t("apps.ipod.menu.fontGoldGlow")}
-            </MenubarCheckboxItem>
-            <MenubarCheckboxItem
-              checked={vm.lyricsFont === LyricsFont.Gradient}
-              onCheckedChange={(checked) => {
-                if (checked) vm.setLyricsFont(LyricsFont.Gradient);
-              }}
-              className="text-md h-6 pr-3"
-            >
-              {vm.t("apps.ipod.menu.fontGradient")}
-            </MenubarCheckboxItem>
+              <MenubarRadioItem
+                value={LyricsFont.Rounded}
+                className="text-md h-6 pr-3"
+              >
+                {vm.t("apps.ipod.menu.fontRounded")}
+              </MenubarRadioItem>
+              <MenubarRadioItem
+                value={LyricsFont.Serif}
+                className="text-md h-6 pr-3"
+              >
+                {vm.t("apps.ipod.menu.fontSerif")}
+              </MenubarRadioItem>
+              <MenubarRadioItem
+                value={LyricsFont.SansSerif}
+                className="text-md h-6 pr-3"
+              >
+                {vm.t("apps.ipod.menu.fontSansSerif")}
+              </MenubarRadioItem>
+              <MenubarRadioItem
+                value={LyricsFont.SerifRed}
+                className="text-md h-6 pr-3"
+              >
+                {vm.t("apps.ipod.menu.fontSerifRed")}
+              </MenubarRadioItem>
+              <MenubarRadioItem
+                value={LyricsFont.GoldGlow}
+                className="text-md h-6 pr-3"
+              >
+                {vm.t("apps.ipod.menu.fontGoldGlow")}
+              </MenubarRadioItem>
+              <MenubarRadioItem
+                value={LyricsFont.Gradient}
+                className="text-md h-6 pr-3"
+              >
+                {vm.t("apps.ipod.menu.fontGradient")}
+              </MenubarRadioItem>
+            </MenubarRadioGroup>
           </MenubarSubContent>
         </MenubarSub>
 

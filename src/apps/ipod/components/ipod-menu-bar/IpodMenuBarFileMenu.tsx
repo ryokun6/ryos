@@ -5,6 +5,7 @@ import {
   MenubarItem,
   MenubarSeparator,
 } from "@/components/ui/menubar";
+import { MENUBAR_SEPARATOR_CLASS } from "@/components/shared/menubar/menubarStyles";
 import { IpodMenuBarLibrarySourceActions } from "./IpodMenuBarLibrarySourceActions";
 import { IpodMenuBarLibrarySwitchItem } from "./IpodMenuBarLibrarySwitchItem";
 import type { IpodMenuBarViewModel } from "./useIpodMenuBar";
@@ -50,7 +51,7 @@ export function IpodMenuBarFileMenu({ vm }: { vm: IpodMenuBarViewModel }) {
           )}
           {!isAppleMusic && (
             <>
-              <MenubarSeparator className="h-[2px] bg-black my-1" />
+              <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
               <MenubarItem
                 onClick={handleExportLibrary}
                 className="text-md h-6 px-3"
@@ -66,11 +67,11 @@ export function IpodMenuBarFileMenu({ vm }: { vm: IpodMenuBarViewModel }) {
               </MenubarItem>
             </>
           )}
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <IpodMenuBarLibrarySourceActions vm={vm} />
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <IpodMenuBarLibrarySwitchItem vm={vm} />
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <MenubarItem
             onClick={onClose}
             className="text-md h-6 px-3"

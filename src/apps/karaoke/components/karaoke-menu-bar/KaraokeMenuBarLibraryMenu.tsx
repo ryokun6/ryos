@@ -9,6 +9,11 @@ import {
   MenubarSubContent,
   MenubarCheckboxItem,
 } from "@/components/ui/menubar";
+import {
+  MENUBAR_TRACK_LIMIT,
+  MENUBAR_ARTIST_LIMIT,
+} from "@/components/shared/menubar/libraryMenuConstants";
+import { MENUBAR_SEPARATOR_CLASS } from "@/components/shared/menubar/menubarStyles";
 import type { KaraokeMenuBarViewModel } from "./useKaraokeMenuBar";
 
 export function KaraokeMenuBarLibraryMenu({
@@ -44,7 +49,7 @@ export function KaraokeMenuBarLibraryMenu({
 
         {tracks.length > 0 && (
           <>
-            <MenubarSeparator className="h-[2px] bg-black my-1" />
+            <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
 
             <MenubarSub>
               <MenubarSubTrigger className="text-md h-6 px-3">
@@ -55,7 +60,7 @@ export function KaraokeMenuBarLibraryMenu({
                 </div>
               </MenubarSubTrigger>
               <MenubarSubContent className="px-0 max-w-[180px] sm:max-w-[220px] max-h-[400px] overflow-y-auto">
-                {tracks.map((track, index) => (
+                {tracks.slice(0, MENUBAR_TRACK_LIMIT).map((track, index) => (
                   <MenubarCheckboxItem
                     key={`all-${track.id}`}
                     checked={index === currentIndex}
@@ -65,11 +70,26 @@ export function KaraokeMenuBarLibraryMenu({
                     <span className="truncate min-w-0">{track.title}</span>
                   </MenubarCheckboxItem>
                 ))}
+                {tracks.length > MENUBAR_TRACK_LIMIT && (
+                  <MenubarItem
+                    disabled
+                    className="text-md h-6 px-3 italic opacity-70"
+                  >
+                    {t(
+                      "apps.ipod.menu.menubarTrackLimit",
+                      `Showing ${MENUBAR_TRACK_LIMIT} of ${tracks.length} — open to browse all`,
+                      {
+                        limit: MENUBAR_TRACK_LIMIT,
+                        total: tracks.length,
+                      }
+                    )}
+                  </MenubarItem>
+                )}
               </MenubarSubContent>
             </MenubarSub>
 
             <div className="max-h-[300px] overflow-y-auto">
-              {artists.map((artist) => (
+              {artists.slice(0, MENUBAR_ARTIST_LIMIT).map((artist) => (
                 <MenubarSub key={artist}>
                   <MenubarSubTrigger className="text-md h-6 px-3">
                     <div className="flex justify-between w-full items-center overflow-hidden">
@@ -77,22 +97,41 @@ export function KaraokeMenuBarLibraryMenu({
                     </div>
                   </MenubarSubTrigger>
                   <MenubarSubContent className="px-0 max-w-[180px] sm:max-w-[220px] max-h-[200px] overflow-y-auto">
-                    {tracksByArtist[artist].map(({ track, index }) => (
-                      <MenubarCheckboxItem
-                        key={`${artist}-${track.id}`}
-                        checked={index === currentIndex}
-                        onCheckedChange={() => onPlayTrack(index)}
-                        className="text-md h-6 pr-3 max-w-[160px] sm:max-w-[200px] truncate"
-                      >
-                        <span className="truncate min-w-0">{track.title}</span>
-                      </MenubarCheckboxItem>
-                    ))}
+                    {tracksByArtist[artist]
+                      .slice(0, MENUBAR_TRACK_LIMIT)
+                      .map(({ track, index }) => (
+                        <MenubarCheckboxItem
+                          key={`${artist}-${track.id}`}
+                          checked={index === currentIndex}
+                          onCheckedChange={() => onPlayTrack(index)}
+                          className="text-md h-6 pr-3 max-w-[160px] sm:max-w-[200px] truncate"
+                        >
+                          <span className="truncate min-w-0">
+                            {track.title}
+                          </span>
+                        </MenubarCheckboxItem>
+                      ))}
                   </MenubarSubContent>
                 </MenubarSub>
               ))}
+              {artists.length > MENUBAR_ARTIST_LIMIT && (
+                <MenubarItem
+                  disabled
+                  className="text-md h-6 px-3 italic opacity-70"
+                >
+                  {t(
+                    "apps.ipod.menu.menubarArtistLimit",
+                    `Showing ${MENUBAR_ARTIST_LIMIT} of ${artists.length} artists`,
+                    {
+                      limit: MENUBAR_ARTIST_LIMIT,
+                      total: artists.length,
+                    }
+                  )}
+                </MenubarItem>
+              )}
             </div>
 
-            <MenubarSeparator className="h-[2px] bg-black my-1" />
+            <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           </>
         )}
 
