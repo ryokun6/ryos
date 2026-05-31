@@ -1,4 +1,4 @@
-import React, { useReducer, useEffect, useCallback } from "react";
+import React, { useReducer, useEffect, useCallback, type CSSProperties } from "react";
 import {
   Dialog,
   DialogContent,
@@ -13,9 +13,36 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { getApiUrl } from "@/utils/platform";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { formatKugouImageUrl } from "@/utils/coverArt";
+
+const lyricsSearchListStyle: CSSProperties = {
+  border: "1px solid var(--os-color-input-border)",
+  borderRadius: "6px",
+  backgroundColor: "var(--os-color-input-bg)",
+  overflowX: "hidden",
+};
+
+function lyricsSearchRowStyle(
+  index: number,
+  selected: boolean,
+  fontStyle?: CSSProperties
+): CSSProperties {
+  return {
+    ...fontStyle,
+    padding: "6px 8px",
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    boxSizing: "border-box",
+    background: selected
+      ? undefined
+      : index % 2 === 1
+        ? "var(--os-color-list-row-alt-bg)"
+        : "var(--os-color-input-bg)",
+  };
+}
 
 export interface LyricsSearchResult {
   title: string;
@@ -301,30 +328,31 @@ export function LyricsSearchDialog({
           >
             {t("apps.ipod.dialogs.lyricsSearchCurrentSelection")}
           </p>
-          <div className="border border-neutral-300 rounded-md overflow-hidden bg-white">
+          <div style={lyricsSearchListStyle}>
             <div
               className={cn(
-                "flex items-center gap-2 px-2 py-1.5",
+                "w-full",
                 isXpTheme
                   ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
                   : "font-geneva-12 text-[12px]"
               )}
               data-selected="true"
-              style={{
+              style={lyricsSearchRowStyle(0, true, {
                 fontFamily: isXpTheme
                   ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
                   : undefined,
                 fontSize: isXpTheme ? "11px" : undefined,
-              }}
+              })}
             >
               {(() => {
                 const coverUrl = formatKugouImageUrl(currentSelection.cover, 100);
                 return (
                   <div
                     className={cn(
-                      "flex-shrink-0 w-9 h-9 overflow-hidden bg-neutral-200",
+                      "flex-shrink-0 w-9 h-9 overflow-hidden",
                       isXpTheme ? "border border-neutral-400" : "rounded-sm"
                     )}
+                    style={{ backgroundColor: "var(--os-color-list-row-alt-bg)" }}
                     aria-hidden="true"
                   >
                     {coverUrl ? (
@@ -391,10 +419,16 @@ export function LyricsSearchDialog({
           >
             {t("apps.ipod.dialogs.lyricsSearchSelectResult")}
           </p>
-          <ScrollArea className="h-[200px] border border-neutral-300 rounded-md overflow-hidden bg-white">
-            <div>
-              {results.map((result, index) => {
+          <div
+            style={{
+              ...lyricsSearchListStyle,
+              height: "200px",
+              overflowY: "auto",
+            }}
+          >
+            {results.map((result, index) => {
                 const coverUrl = formatKugouImageUrl(result.cover, 100);
+                const rowSelected = selectedIndex === index;
                 return (
                   <div
                     key={result.hash}
@@ -410,29 +444,25 @@ export function LyricsSearchDialog({
                     tabIndex={0}
                     role="button"
                     className={cn(
-                      "flex items-center gap-2 px-2 py-1.5 cursor-pointer",
-                      selectedIndex === index
-                        ? "" // Selection styling handled by inline style
-                        : index % 2 === 1
-                          ? "bg-neutral-100"
-                          : "bg-white",
+                      "w-full",
                       isXpTheme
                         ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
                         : "font-geneva-12 text-[12px]"
                     )}
-                    data-selected={selectedIndex === index ? "true" : undefined}
-                    style={{
+                    data-selected={rowSelected ? "true" : undefined}
+                    style={lyricsSearchRowStyle(index, rowSelected, {
                       fontFamily: isXpTheme
                         ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
                         : undefined,
                       fontSize: isXpTheme ? "11px" : undefined,
-                    }}
+                    })}
                   >
                     <div
                       className={cn(
-                        "flex-shrink-0 w-9 h-9 overflow-hidden bg-neutral-200",
+                        "flex-shrink-0 w-9 h-9 overflow-hidden",
                         isXpTheme ? "border border-neutral-400" : "rounded-sm"
                       )}
+                      style={{ backgroundColor: "var(--os-color-list-row-alt-bg)" }}
                       aria-hidden="true"
                     >
                       {coverUrl ? (
@@ -451,10 +481,13 @@ export function LyricsSearchDialog({
                     <div className="min-w-0 flex-1">
                       <div className="font-semibold truncate">{result.title}</div>
                       <div
-                        className={cn(
-                          "truncate",
-                          selectedIndex === index ? "opacity-80" : "text-neutral-600"
-                        )}
+                        className="truncate"
+                        style={{
+                          opacity: rowSelected ? 0.8 : 1,
+                          color: rowSelected
+                            ? undefined
+                            : "var(--os-color-text-secondary)",
+                        }}
                       >
                         {result.artist}
                         {result.album && ` • ${result.album}`}
@@ -463,8 +496,7 @@ export function LyricsSearchDialog({
                   </div>
                 );
               })}
-            </div>
-          </ScrollArea>
+          </div>
         </div>
       )}
 
