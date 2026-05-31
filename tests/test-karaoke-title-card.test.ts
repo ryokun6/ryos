@@ -118,7 +118,9 @@ describe("karaoke title card timing", () => {
   });
 
   test("wires title card album art click to open cover flow", () => {
-    const lyricsSource = readSource("src/apps/karaoke/components/KaraokeLyricsPlayback.tsx");
+    const lyricsSource = readSource(
+      "src/apps/karaoke/components/karaoke-lyrics-playback/KaraokeTitleCard.tsx",
+    );
     const windowSource = readSource(
       "src/apps/karaoke/components/karaoke-app/KaraokeWindowContent.tsx",
     );
