@@ -2844,6 +2844,18 @@
   background-color: #e5e7eb !important; /* gray-200 */
 }
 
+/* Link preview cards (chat) — 16px outer radius matches chat-bubble + image top radii */
+:root[data-os-theme="macosx"] .macosx-link-preview.chat-bubble.link-preview-container,
+:root[data-os-theme="macosx"] .macosx-link-preview.chat-bubble.link-preview-loading {
+  border-radius: 16px !important;
+  overflow: hidden;
+}
+
+/* Loading bubble: fill edge-to-edge so the skeleton sweep is visible (not just padding box) */
+:root[data-os-theme="macosx"] .link-preview-loading.macosx-link-preview.chat-bubble {
+  padding: 0 !important;
+}
+
 :root[data-os-theme="macosx"] .macosx-link-preview.chat-bubble:before {
   top: 2px; /* extend shine to very top when image flush */
   left: 8px;
@@ -2852,6 +2864,46 @@
   border-radius: 14px 14px 4px 4px;
   z-index: 10; /* above image */
 }
+
+:root[data-os-theme="macosx"] .link-preview-loading.link-preview-loading-skeleton {
+  border-radius: 16px;
+}
+
+/* macOS Aqua dark — mirror .dark skeleton when only data-os-color-scheme is set */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .link-preview-loading.link-preview-loading-skeleton {
+  background-color: rgba(38, 38, 42, 0.95);
+  background-image: linear-gradient(
+    90deg,
+    rgba(63, 63, 70, 0.95) 0%,
+    rgba(63, 63, 70, 0.95) 25%,
+    rgba(82, 82, 91, 0.85) 40%,
+    rgba(63, 63, 70, 0.95) 75%,
+    rgba(63, 63, 70, 0.95) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite linear;
+}
+
+/* Loading: shimmer must sit above the fill but below is wrong — gloss pseudo-elements
+   default to z-index 10 on link previews and fully obscure the animated skeleton. */
+:root[data-os-theme="macosx"]
+  .link-preview-loading.macosx-link-preview.chat-bubble:before,
+:root[data-os-theme="macosx"]
+  .link-preview-loading.macosx-link-preview.chat-bubble:after {
+  display: none;
+}
+
+:root[data-os-theme="macosx"] .macosx-link-preview .link-preview-actions-divider {
+  border-top-color: rgba(0, 0, 0, 0.1);
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .macosx-link-preview
+  .link-preview-actions-divider {
+  border-top-color: var(--os-color-separator);
+}
+
 
 /* macOS Memory/Progress bar styling */
 :root[data-os-theme="macosx"] .aqua-progress,
@@ -4271,6 +4323,7 @@
   background-color: #423739 !important;
 }
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .chat-bubble.bg-gray-100,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .chat-bubble.bg-neutral-100,
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .chat-bubble.bg-neutral-200 {
   background-color: #3a3a3f !important;
 }

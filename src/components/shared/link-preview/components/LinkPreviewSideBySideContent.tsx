@@ -29,7 +29,7 @@ export function LinkPreviewSideBySideContent({
         {metadata.image && (
           <div
             className={cn(
-              "size-18 bg-neutral-100 relative overflow-hidden flex-shrink-0",
+              "size-18 bg-neutral-100 dark:bg-neutral-800 relative overflow-hidden flex-shrink-0",
               isMacOSTheme && "hidden"
             )}
           >
@@ -64,7 +64,7 @@ export function LinkPreviewSideBySideContent({
         >
           {metadata.title && (
             <h3
-              className="font-semibold text-neutral-900 text-[10px]"
+              className="font-semibold text-neutral-900 dark:text-neutral-100 text-[10px]"
               style={{
                 display: "-webkit-box",
                 WebkitLineClamp: 1,
@@ -78,7 +78,7 @@ export function LinkPreviewSideBySideContent({
 
           {metadata.description && (
             <p
-              className={`text-[10px] text-neutral-600 ${
+              className={`text-[10px] text-neutral-600 dark:text-neutral-400 ${
                 metadata.image ? "" : "mb-2"
               }`}
               style={{
@@ -105,8 +105,8 @@ export function LinkPreviewSideBySideContent({
                   );
                 }}
               />
-              <div className="size-4 bg-neutral-300 rounded-full flex-shrink-0 hidden"></div>
-              <p className="text-[10px] text-neutral-500 truncate">
+              <div className="size-4 bg-neutral-300 dark:bg-neutral-600 rounded-full flex-shrink-0 hidden"></div>
+              <p className="text-[10px] text-neutral-500 dark:text-neutral-400 truncate">
                 {metadata.siteName || new URL(url).hostname}
               </p>
             </div>

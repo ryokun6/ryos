@@ -1,10 +1,26 @@
 import type { MouseEvent, TouchEvent } from "react";
 import { ArrowSquareOut, Microphone, MusicNote } from "@phosphor-icons/react";
 import { useTranslation } from "react-i18next";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { cn } from "@/lib/utils";
 import { isYouTubeUrl } from "../utils";
 
 type LayoutVariant = "fullWidth" | "sideBySide";
+
+/** Border above link-preview action rows — OS tokens on macOS Aqua, Tailwind elsewhere. */
+function linkPreviewActionsDividerClass(
+  isMacOSTheme: boolean,
+  isDarkMode: boolean
+) {
+  return cn(
+    "link-preview-actions-divider border-t",
+    isMacOSTheme
+      ? isDarkMode
+        ? "border-[color:var(--os-color-separator)]"
+        : "border-black/10"
+      : "border-neutral-200 dark:border-neutral-700"
+  );
+}
 
 function actionButtonClass(
   isMacOSTheme: boolean,
@@ -17,7 +33,7 @@ function actionButtonClass(
     );
   }
   return cn(
-    "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-neutral-100 hover:bg-neutral-200 rounded-md transition-colors",
+    "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:text-neutral-100 rounded-md transition-colors",
     variant === "pair" ? "flex-1" : "w-full"
   );
 }
@@ -40,6 +56,8 @@ export function LinkPreviewActionButtons({
   handleOpenExternally: (e: MouseEvent | TouchEvent) => void;
 }) {
   const { t } = useTranslation();
+  const { isDarkMode } = useThemeFlags();
+  const dividerClass = linkPreviewActionsDividerClass(isMacOSTheme, isDarkMode);
   const stopTouch = (e: TouchEvent) => e.stopPropagation();
 
   const flexRow = (
@@ -145,7 +163,7 @@ export function LinkPreviewActionButtons({
   if (layout === "fullWidth") {
     return (
       <div className="px-2 pb-2">
-        <div className="flex gap-2 pt-2 border-t border-neutral-100">
+        <div className={cn("flex gap-2 pt-2", dividerClass)}>
           {flexRow}
         </div>
       </div>
@@ -153,12 +171,7 @@ export function LinkPreviewActionButtons({
   }
 
   return (
-    <div
-      className={cn(
-        "pb-2 border-t",
-        isMacOSTheme ? "border-neutral-300" : "border-neutral-200"
-      )}
-    >
+    <div className={cn("pb-2", dividerClass)}>
       <div className="px-2 pt-2">
         <div className="flex gap-2">{flexRow}</div>
       </div>

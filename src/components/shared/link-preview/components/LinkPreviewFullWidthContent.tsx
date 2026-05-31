@@ -25,7 +25,7 @@ export function LinkPreviewFullWidthContent({
     <>
       <div
         className={cn(
-          "relative aspect-video bg-neutral-100 overflow-hidden",
+          "relative aspect-video bg-neutral-100 dark:bg-neutral-800 overflow-hidden",
           isMacOSTheme && "-mx-3 -mt-[6px] rounded-t-[14px]"
         )}
       >
@@ -49,7 +49,7 @@ export function LinkPreviewFullWidthContent({
                 e.currentTarget.nextElementSibling?.classList.remove("hidden");
               }}
             />
-            <div className="size-4 bg-neutral-300 rounded-full flex-shrink-0 hidden"></div>
+            <div className="size-4 bg-neutral-300 dark:bg-neutral-600 rounded-full flex-shrink-0 hidden"></div>
             {metadata.title && (
               <h3 className="font-semibold text-white text-[10px] truncate">
                 {metadata.title}
