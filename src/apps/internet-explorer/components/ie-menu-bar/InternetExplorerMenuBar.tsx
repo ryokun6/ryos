@@ -1,6 +1,5 @@
 import { MenuBar } from "@/components/layout/MenuBar";
-import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
-import { generateAppShareUrl } from "@/utils/sharedUrl";
+import { AppShareItemDialog } from "@/components/shared/menubar/AppShareItemDialog";
 import type { InternetExplorerMenuBarProps } from "./types";
 import { useInternetExplorerMenuBar } from "./useInternetExplorerMenuBar";
 import { IeMenuBarFileMenu } from "./IeMenuBarFileMenu";
@@ -19,13 +18,11 @@ export function InternetExplorerMenuBar(props: InternetExplorerMenuBarProps) {
       <IeMenuBarFavoritesMenu vm={vm} />
       <IeMenuBarHistoryMenu vm={vm} />
       <IeMenuBarHelpMenu vm={vm} />
-      <ShareItemDialog
+      <AppShareItemDialog
+        appId={vm.appId}
+        appName={vm.appName}
         isOpen={vm.isShareDialogOpen}
         onClose={() => vm.setIsShareDialogOpen(false)}
-        itemType="App"
-        itemIdentifier={vm.appId}
-        title={vm.appName}
-        generateShareUrl={generateAppShareUrl}
       />
     </MenuBar>
   );

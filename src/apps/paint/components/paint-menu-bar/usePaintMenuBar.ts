@@ -1,7 +1,6 @@
-import React, { useState } from "react";
-import { useThemeFlags } from "@/hooks/useThemeFlags";
-import { appRegistry } from "@/config/appRegistry";
+import React from "react";
 import { useTranslation } from "react-i18next";
+import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
 import type { PaintMenuBarProps } from "./types";
 
 export type PaintMenuBarViewModel = ReturnType<typeof usePaintMenuBar>;
@@ -30,12 +29,15 @@ export function usePaintMenuBar(props: PaintMenuBarProps) {
   } = props;
 
   const { t } = useTranslation();
-  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
-  const { isWindowsTheme: isXpTheme, isMacOSTheme: isMacOsxTheme } =
-    useThemeFlags();
+  const {
+    isShareDialogOpen,
+    setIsShareDialogOpen,
+    isXpTheme,
+    isMacOsxTheme,
+    appId,
+    appName,
+  } = useAppMenuBarChrome("paint");
   const fileInputRef = React.useRef<HTMLInputElement>(null);
-  const appId = "paint";
-  const appName = appRegistry[appId as keyof typeof appRegistry]?.name || appId;
 
   return {
     t,

@@ -28,5 +28,4 @@ export const MAIN_CURRENCIES = [
 
 export const RATE_STALE_MS = 24 * 60 * 60 * 1000;
 
-export const CURRENCY_WIDGET_FONT =
-  "'Helvetica Neue', Helvetica, Arial, sans-serif";
+export { DASHBOARD_WIDGET_FONT as CURRENCY_WIDGET_FONT } from "../dashboardWidgetConstants";

@@ -23,4 +23,4 @@ export const RANGE_TO_API: Record<TimeRange, string> = {
   "2y": "2y",
 };
 
-export const STOCKS_FONT = "'Helvetica Neue', Helvetica, Arial, sans-serif";
+export { DASHBOARD_WIDGET_FONT as STOCKS_FONT } from "../dashboardWidgetConstants";

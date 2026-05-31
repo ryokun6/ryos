@@ -1,14 +1,16 @@
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { useIpodStoreShallow } from "@/stores/helpers";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
-import { useChatsStore } from "@/stores/useChatsStore";
-import { toast } from "sonner";
 import { LyricsAlignment, DisplayMode } from "@/types/lyrics";
-import { useThemeFlags } from "@/hooks/useThemeFlags";
-import { appRegistry } from "@/config/appRegistry";
 import { useTranslation } from "react-i18next";
-import type { Track } from "@/stores/useIpodStore";
-import { TRANSLATION_LANGUAGES } from "../../constants";
+import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
+import { useTranslatedLyricsLanguages } from "@/hooks/useTranslatedLyricsLanguages";
+import { useIpodLibraryJsonImportExport } from "@/hooks/useIpodLibraryJsonImportExport";
+import { useIsRyoAdmin } from "@/hooks/useIsRyoAdmin";
+import {
+  getSortedArtistNames,
+  groupTracksByArtist,
+} from "@/utils/groupTracksByArtist";
 import type { IpodMenuBarProps } from "./types";
 
 export type IpodMenuBarViewModel = ReturnType<typeof useIpodMenuBar>;
@@ -34,19 +36,15 @@ export function useIpodMenuBar(props: IpodMenuBarProps) {
     onAppleMusicRefresh,
   } = props;
   const { t } = useTranslation();
-  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
-  const appId = "ipod";
-  const appName = appRegistry[appId as keyof typeof appRegistry]?.name || appId;
-
-  const translationLanguages = useMemo(
-    () =>
-      TRANSLATION_LANGUAGES.map((lang) => ({
-        label: lang.labelKey ? t(lang.labelKey) : lang.label || "",
-        code: lang.code,
-        separator: lang.separator,
-      })),
-    [t]
-  );
+  const {
+    isShareDialogOpen,
+    setIsShareDialogOpen,
+    isXpTheme,
+    isMacOsxTheme,
+    appId,
+    appName,
+  } = useAppMenuBarChrome("ipod");
+  const translationLanguages = useTranslatedLyricsLanguages();
   const {
     youtubeTracks,
     youtubeCurrentSongId,
@@ -144,11 +142,8 @@ export function useIpodMenuBar(props: IpodMenuBarProps) {
     exportLibrary: s.exportLibrary,
   }));
 
-  const { isWindowsTheme: isXpTheme, isMacOSTheme: isMacOsxTheme } =
-    useThemeFlags();
   const debugMode = useDisplaySettingsStore((state) => state.debugMode);
-  const username = useChatsStore((state) => state.username);
-  const isAdmin = username?.toLowerCase() === "ryo";
+  const isAdmin = useIsRyoAdmin();
 
   // The menubar reflects whichever library is currently active so the
   // "All Songs" / per-artist views stay in sync with what the iPod is
@@ -194,67 +189,17 @@ export function useIpodMenuBar(props: IpodMenuBarProps) {
     onSwitchLibrary(isAppleMusic ? "youtube" : "appleMusic");
   };
 
-  const tracksByArtist = useMemo(() => {
-    const grouped: Record<string, { track: Track; index: number }[]> = {};
-    for (let index = 0; index < tracks.length; index++) {
-      const track = tracks[index];
-      const artist = track.artist || unknownArtistLabel;
-      const bucket = grouped[artist] || (grouped[artist] = []);
-      bucket.push({ track, index });
-    }
-    return grouped;
-  }, [tracks, unknownArtistLabel]);
+  const tracksByArtist = useMemo(
+    () => groupTracksByArtist(tracks, unknownArtistLabel),
+    [tracks, unknownArtistLabel],
+  );
   const artists = useMemo(
-    () =>
-      Object.keys(tracksByArtist).sort((a, b) =>
-        a.localeCompare(b, undefined, { sensitivity: "base" })
-      ),
-    [tracksByArtist]
+    () => getSortedArtistNames(tracksByArtist),
+    [tracksByArtist],
   );
 
-  const handleExportLibrary = () => {
-    try {
-      const json = exportLibrary();
-      const blob = new Blob([json], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "ipod-library.json";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      toast.success(t("apps.ipod.dialogs.libraryExportedSuccessfully"));
-    } catch (error) {
-      console.error("Failed to export library:", error);
-      toast.error(t("apps.ipod.dialogs.failedToExportLibrary"));
-    }
-  };
-
-  const handleImportLibrary = () => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = ".json";
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        try {
-          const json = event.target?.result as string;
-          importLibrary(json);
-          toast.success(t("apps.ipod.dialogs.libraryImportedSuccessfully"));
-        } catch (error) {
-          console.error("Failed to import library:", error);
-          toast.error(t("apps.ipod.dialogs.failedToImportLibrary"));
-        }
-      };
-      reader.readAsText(file);
-    };
-    input.click();
-  };
-
+  const { handleExportLibrary, handleImportLibrary } =
+    useIpodLibraryJsonImportExport(exportLibrary, importLibrary, t);
 
   return {
     t,

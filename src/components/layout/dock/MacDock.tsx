@@ -12,8 +12,8 @@ import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useFinderStore } from "@/stores/useFinderStore";
 import { useFilesStore } from "@/stores/useFilesStore";
 import { useDockStore } from "@/stores/useDockStore";
-import { useChatsStore } from "@/stores/useChatsStore";
 import { useIsPhone } from "@/hooks/useIsPhone";
+import { useIsRyoAdmin } from "@/hooks/useIsRyoAdmin";
 import { useLongPress } from "@/hooks/useLongPress";
 import { useSound, Sounds } from "@/hooks/useSound";
 import type { AppInstance, LaunchOriginRect } from "@/stores/useAppStore";
@@ -67,9 +67,7 @@ export function MacDock() {
   );
   const finderInstances = useFinderStore((s) => s.instances);
   
-  // Get current username for admin check
-  const username = useChatsStore((state) => state.username);
-  const isAdmin = username?.toLowerCase() === "ryo";
+  const isAdmin = useIsRyoAdmin();
   
   // Dock store for customization
   const { 

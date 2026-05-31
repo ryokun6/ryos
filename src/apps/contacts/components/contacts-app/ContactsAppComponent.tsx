@@ -1,5 +1,5 @@
 import type { AppProps } from "@/apps/base/types";
-import { WindowFrame } from "@/components/layout/WindowFrame";
+import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { ContactsAppDialogs } from "./ContactsAppDialogs";
 import { ContactsWindowContent } from "./ContactsWindowContent";
 import { useContactsAppController } from "./useContactsAppController";
@@ -21,26 +21,24 @@ export function ContactsAppComponent({
 
   const { t, isXpTheme, isMacOsxTheme, menuBar } = c;
 
-  if (!isWindowOpen) {
-    return null;
-  }
-
   return (
-    <>
-      {!isXpTheme && isForeground && menuBar}
-      <WindowFrame
-        title={t("apps.contacts.title")}
-        onClose={onClose}
-        isForeground={isForeground}
-        appId="contacts"
-        material={isMacOsxTheme ? "brushedmetal" : "default"}
-        skipInitialSound={skipInitialSound}
-        instanceId={instanceId}
-        menuBar={isXpTheme ? menuBar : undefined}
-      >
-        <ContactsWindowContent c={c} />
-        <ContactsAppDialogs c={c} />
-      </WindowFrame>
-    </>
+    <AppWindowShell
+      isWindowOpen={isWindowOpen}
+      isXpTheme={isXpTheme}
+      isForeground={isForeground}
+      menuBar={menuBar}
+      windowFrameProps={{
+        title: t("apps.contacts.title"),
+        onClose,
+        isForeground,
+        appId: "contacts",
+        material: isMacOsxTheme ? "brushedmetal" : "default",
+        skipInitialSound,
+        instanceId,
+      }}
+    >
+      <ContactsWindowContent c={c} />
+      <ContactsAppDialogs c={c} />
+    </AppWindowShell>
   );
 }

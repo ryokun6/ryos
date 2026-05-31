@@ -1,5 +1,5 @@
 import type { AppProps } from "@/apps/base/types";
-import { WindowFrame } from "@/components/layout/WindowFrame";
+import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { SynthAppDialogs } from "./SynthAppDialogs";
 import { SynthWindowContent } from "./SynthWindowContent";
@@ -22,40 +22,41 @@ export function SynthAppComponent({
 
   const { isXpTheme, isMacOSTheme, menuBar } = c;
 
-  if (!isWindowOpen) return null;
-
   return (
-    <>
-      {!isXpTheme && isForeground && menuBar}
-      <WindowFrame
-        title={getTranslatedAppName("synth")}
-        onClose={onClose}
-        isForeground={isForeground}
-        appId="synth"
-        material={isMacOSTheme ? "brushedmetal" : "default"}
-        skipInitialSound={skipInitialSound}
-        instanceId={instanceId}
-        onNavigateNext={onNavigateNext}
-        onNavigatePrevious={onNavigatePrevious}
-        menuBar={isXpTheme ? menuBar : undefined}
-      >
-        <SynthWindowContent c={c} />
-      </WindowFrame>
-
-      <SynthAppDialogs
-        t={c.t}
-        translatedHelpItems={c.translatedHelpItems}
-        isHelpOpen={c.isHelpOpen}
-        setIsHelpOpen={c.setIsHelpOpen}
-        isAboutOpen={c.isAboutOpen}
-        setIsAboutOpen={c.setIsAboutOpen}
-        isPresetDialogOpen={c.isPresetDialogOpen}
-        setIsPresetDialogOpen={c.setIsPresetDialogOpen}
-        isSavingNewPreset={c.isSavingNewPreset}
-        presetName={c.presetName}
-        setPresetName={c.setPresetName}
-        savePreset={c.savePreset}
-      />
-    </>
+    <AppWindowShell
+      isWindowOpen={isWindowOpen}
+      isXpTheme={isXpTheme}
+      isForeground={isForeground}
+      menuBar={menuBar}
+      windowFrameProps={{
+        title: getTranslatedAppName("synth"),
+        onClose,
+        isForeground,
+        appId: "synth",
+        material: isMacOSTheme ? "brushedmetal" : "default",
+        skipInitialSound,
+        instanceId,
+        onNavigateNext,
+        onNavigatePrevious,
+      }}
+      trailing={
+        <SynthAppDialogs
+          t={c.t}
+          translatedHelpItems={c.translatedHelpItems}
+          isHelpOpen={c.isHelpOpen}
+          setIsHelpOpen={c.setIsHelpOpen}
+          isAboutOpen={c.isAboutOpen}
+          setIsAboutOpen={c.setIsAboutOpen}
+          isPresetDialogOpen={c.isPresetDialogOpen}
+          setIsPresetDialogOpen={c.setIsPresetDialogOpen}
+          isSavingNewPreset={c.isSavingNewPreset}
+          presetName={c.presetName}
+          setPresetName={c.setPresetName}
+          savePreset={c.savePreset}
+        />
+      }
+    >
+      <SynthWindowContent c={c} />
+    </AppWindowShell>
   );
 }
