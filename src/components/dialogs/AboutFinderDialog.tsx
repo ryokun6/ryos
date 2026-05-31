@@ -9,7 +9,7 @@ import { useTranslation } from "react-i18next";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { getNonFinderApps } from "@/config/appRegistry";
 import { useAppStore } from "@/stores/useAppStore";
-import { useChatsStore } from "@/stores/useChatsStore";
+import { useIsRyoAdmin } from "@/hooks/useIsRyoAdmin";
 import { cn } from "@/lib/utils";
 import { useMemo, useState, useEffect } from "react";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
@@ -85,9 +85,7 @@ export function AboutFinderDialog({
     };
   }, [isMac]);
 
-  // Get current username for admin check
-  const username = useChatsStore((state) => state.username);
-  const isAdmin = username?.toLowerCase() === "ryo";
+  const isAdmin = useIsRyoAdmin();
 
   const memoryUsage = useMemo(() => {
     const totalMemory = 32; // 32MB total memory

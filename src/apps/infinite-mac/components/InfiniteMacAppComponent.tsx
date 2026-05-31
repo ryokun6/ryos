@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AppProps } from "@/apps/base/types";
-import { WindowFrame } from "@/components/layout/WindowFrame";
+import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { appMetadata } from "../metadata";
@@ -168,20 +168,23 @@ export function InfiniteMacAppComponent({
   );
 
   return (
-    <>
-      {!isXpTheme && isForeground && menuBar}
-      <WindowFrame
-        title={windowTitle}
-        onClose={onClose}
-        isForeground={isForeground}
-        appId="infinite-mac"
-        material="notitlebar"
-        disableTitlebarAutoHide={true}
-        skipInitialSound={skipInitialSound}
-        instanceId={instanceId}
-        menuBar={isXpTheme ? menuBar : undefined}
-        titleBarRightContent={backButton}
-      >
+    <AppWindowShell
+      isWindowOpen={isWindowOpen}
+      isXpTheme={isXpTheme}
+      isForeground={isForeground}
+      menuBar={menuBar}
+      windowFrameProps={{
+        title: windowTitle,
+        onClose,
+        isForeground,
+        appId: "infinite-mac",
+        material: "notitlebar",
+        disableTitlebarAutoHide: true,
+        skipInitialSound,
+        instanceId,
+        titleBarRightContent: backButton,
+      }}
+    >
         <div className="flex flex-col flex-1 min-h-0 w-full bg-black">
           {currentTheme === "macosx" && <div className="h-6 shrink-0 bg-black" />}
           <div className="flex flex-col flex-1 min-h-0 relative bg-[#1a1a1a]">
@@ -256,7 +259,6 @@ export function InfiniteMacAppComponent({
           metadata={appMetadata}
           appId="infinite-mac"
         />
-      </WindowFrame>
-    </>
+    </AppWindowShell>
   );
 }

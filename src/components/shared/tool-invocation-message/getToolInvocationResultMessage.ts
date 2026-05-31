@@ -1,0 +1,430 @@
+import type { TFunction } from "i18next";
+import {
+  getSongLibraryResultSummary,
+  getWebSearchSummary,
+} from "@/lib/toolInvocationDisplay";
+import type { ToolInvocationPart } from "./types";
+
+export function getToolInvocationResultMessage(
+  params: {
+    toolName: string;
+    state: ToolInvocationPart["state"];
+    input?: ToolInvocationPart["input"];
+    output?: unknown;
+    t: TFunction;
+    getAppName: (id?: string) => string;
+    formatToolName: (name: string) => string;
+  }
+): string | null {
+  const { toolName, state, input, output, t, getAppName, formatToolName } = params;
+  if (state !== "output-available") {
+    return null;
+  }
+
+  let displayResultMessage: string | null = null;
+    if (toolName === "listCursorCloudAgentRuns" && output && typeof output === "object") {
+      const o = output as {
+        success?: boolean;
+        runs?: unknown[];
+        truncated?: boolean;
+        error?: string;
+      };
+      if (o.success === false) {
+        displayResultMessage = t("apps.chats.toolCalls.toolAttempted", {
+          toolName: formatToolName(toolName),
+        });
+      } else if (o.success === true && Array.isArray(o.runs)) {
+        const more = o.truncated
+          ? ` ${t("apps.chats.toolCalls.listCursorCloudAgentRuns.truncatedHint")}`
+          : "";
+        displayResultMessage = `${t(
+          "apps.chats.toolCalls.listCursorCloudAgentRuns.listed",
+          { count: o.runs.length }
+        )}${more}`;
+      }
+    }
+    // Unified VFS tools
+    if (toolName === "list") {
+      if (typeof output === "string") {
+        // Try to parse JSON array from output to get accurate count
+        let count: number | null = null;
+        let itemType: "songs" | "applets" | "documents" | "applications" | "sharedApplets" | null = null;
+        
+        // Extract JSON part (after the colon and newline)
+        const jsonMatch = output.match(/:\n(\[.*\])/s);
+        if (jsonMatch) {
+          try {
+            const jsonData = JSON.parse(jsonMatch[1]);
+            if (Array.isArray(jsonData)) {
+              count = jsonData.length;
+            }
+          } catch {
+            // JSON parsing failed, fall back to regex
+          }
+        }
+        
+        // If we couldn't parse JSON, try to extract number from the string
+        if (count === null) {
+          const numberMatch = output.match(/(\d+)/);
+          if (numberMatch) {
+            count = parseInt(numberMatch[1], 10);
+          }
+        }
+        
+        // Determine item type based on path or output content
+        const path = typeof input?.path === "string" ? input.path : "";
+        if (path === "/Music") {
+          itemType = "songs";
+        } else if (path === "/Applets Store") {
+          itemType = "sharedApplets";
+        } else if (path === "/Applications") {
+          itemType = "applications";
+        } else if (path === "/Applets") {
+          itemType = "applets";
+        } else if (path === "/Documents") {
+          itemType = "documents";
+        } else {
+          // Fall back to checking output content for keywords (case-insensitive)
+          const lowerOutput = output.toLowerCase();
+          if (lowerOutput.includes("song") || lowerOutput.includes("morceau") || lowerOutput.includes("曲") || lowerOutput.includes("곡") || lowerOutput.includes("Lied")) {
+            itemType = "songs";
+          } else if (lowerOutput.includes("shared applet") || lowerOutput.includes("applet partagée") || lowerOutput.includes("共有アプレット") || lowerOutput.includes("공유 앱릿") || lowerOutput.includes("geteiltes applet")) {
+            itemType = "sharedApplets";
+          } else if (lowerOutput.includes("application") || lowerOutput.includes("アプリケーション") || lowerOutput.includes("응용 프로그램") || lowerOutput.includes("Anwendung")) {
+            itemType = "applications";
+          } else if (lowerOutput.includes("document") || lowerOutput.includes("ドキュメント") || lowerOutput.includes("문서") || lowerOutput.includes("Dokument")) {
+            itemType = "documents";
+          } else if (lowerOutput.includes("applet") || lowerOutput.includes("アプレット") || lowerOutput.includes("앱릿")) {
+            itemType = "applets";
+          }
+        }
+        
+        // Display appropriate message based on type and count
+        if (count !== null && count > 0) {
+          if (itemType === "songs") {
+            displayResultMessage = count === 1
+              ? t("apps.chats.toolCalls.foundSongs", { count })
+              : t("apps.chats.toolCalls.foundSongsPlural", { count });
+          } else if (itemType === "sharedApplets") {
+            displayResultMessage = count === 1
+              ? t("apps.chats.toolCalls.foundSharedApplets", { count })
+              : t("apps.chats.toolCalls.foundSharedAppletsPlural", { count });
+          } else if (itemType === "applications") {
+            displayResultMessage = count === 1
+              ? t("apps.chats.toolCalls.foundApplications", { count })
+              : t("apps.chats.toolCalls.foundApplicationsPlural", { count });
+          } else if (itemType === "documents") {
+            displayResultMessage = count === 1
+              ? t("apps.chats.toolCalls.foundDocuments", { count })
+              : t("apps.chats.toolCalls.foundDocumentsPlural", { count });
+          } else if (itemType === "applets") {
+            displayResultMessage = count === 1
+              ? t("apps.chats.toolCalls.foundApplets", { count })
+              : t("apps.chats.toolCalls.foundAppletsPlural", { count });
+          } else {
+            // Unknown type, use generic message
+            displayResultMessage = t("apps.chats.toolCalls.listedItems");
+          }
+        } else if (output.includes("empty") || output.toLowerCase().includes("no ") || output.toLowerCase().includes("pas de") || output.toLowerCase().includes("없습니다") || output.toLowerCase().includes("ありません") || output.toLowerCase().includes("keine")) {
+          displayResultMessage = t("apps.chats.toolCalls.noItemsFound");
+        } else {
+          displayResultMessage = t("apps.chats.toolCalls.listedItems");
+        }
+      }
+    } else if (toolName === "open") {
+      if (typeof output === "string" && output.trim().length > 0) {
+        // Use the output directly - it's already a properly localized message
+        // (e.g., "Playing X by Y" for music, "Opened X" for files, etc.)
+        displayResultMessage = output;
+      } else {
+        displayResultMessage = t("apps.chats.toolCalls.opened");
+      }
+    } else if (toolName === "read") {
+      const path = typeof input?.path === "string" ? input.path : "";
+      let fileName = path.split("/").filter(Boolean).pop() || "file";
+      
+      // For Applets Store, try to extract title/name from output JSON
+      if (path.startsWith("/Applets Store/") && typeof output === "string") {
+        try {
+          const parsed = JSON.parse(output);
+          if (parsed.title || parsed.name) {
+            fileName = parsed.title || parsed.name;
+          }
+        } catch {
+          // Keep the ID as filename if parsing fails
+        }
+      }
+      
+      displayResultMessage = t("apps.chats.toolCalls.read", { fileName });
+    } else if (toolName === "write") {
+      if (typeof output === "string") {
+        if (output.includes("Successfully")) {
+          displayResultMessage = t("apps.chats.toolCalls.contentWritten");
+        } else {
+          displayResultMessage = output;
+        }
+      } else {
+        displayResultMessage = t("apps.chats.toolCalls.contentWritten");
+      }
+    } else if (toolName === "edit") {
+      if (typeof output === "string") {
+        if (output.includes("not found")) {
+          displayResultMessage = t("apps.chats.toolCalls.textNotFound");
+        } else if (output.includes("matches") && output.includes("locations")) {
+          displayResultMessage = t("apps.chats.toolCalls.multipleMatchesFound");
+        } else if (output.includes("Successfully") || output.includes("edited")) {
+          const path = typeof input?.path === "string" ? input.path : "";
+          const fileName = path.split("/").filter(Boolean).pop() || "file";
+          displayResultMessage = t("apps.chats.toolCalls.edited", { fileName });
+        } else if (output.includes("Created")) {
+          displayResultMessage = t("apps.chats.toolCalls.fileCreated");
+        } else {
+          displayResultMessage = output;
+        }
+      } else {
+        const path = typeof input?.path === "string" ? input.path : "";
+        const fileName = path.split("/").filter(Boolean).pop() || "file";
+        displayResultMessage = t("apps.chats.toolCalls.edited", { fileName });
+      }
+    } else if (toolName === "launchApp" && input?.id === "internet-explorer") {
+      const urlPart = input.url ? String(input.url) : "";
+      const yearPart = input.year && input.year !== "" ? String(input.year) : "";
+      if (urlPart && yearPart) {
+        displayResultMessage = t("apps.chats.toolCalls.launchedWithUrlAndYear", { url: urlPart, year: yearPart });
+      } else if (urlPart) {
+        displayResultMessage = t("apps.chats.toolCalls.launchedWithUrl", { url: urlPart });
+      } else {
+        displayResultMessage = t("apps.chats.toolCalls.launched", { appName: getAppName(input?.id) });
+      }
+    } else if (toolName === "launchApp") {
+      displayResultMessage = t("apps.chats.toolCalls.launched", { appName: getAppName(input?.id) });
+    } else if (toolName === "closeApp") {
+      displayResultMessage = t("apps.chats.toolCalls.closed", { appName: getAppName(input?.id) });
+    } else if (toolName === "ipodControl" || toolName === "karaokeControl") {
+      // Use output directly if available (it contains detailed state information)
+      if (typeof output === "string" && output.trim().length > 0) {
+        displayResultMessage = output;
+      } else {
+        // Fallback to basic messages if output is not available
+        const action = input?.action || "toggle";
+        if (action === "addAndPlay") {
+          displayResultMessage = t("apps.chats.toolCalls.addedAndStartedPlaying");
+        } else if (action === "playKnown") {
+          const title = input?.title ? String(input.title) : null;
+          const artist = input?.artist ? String(input.artist) : null;
+
+          if (title && artist) {
+            displayResultMessage = t("apps.chats.toolCalls.playingByArtist", { title, artist });
+          } else if (title) {
+            displayResultMessage = t("apps.chats.toolCalls.playing", { title });
+          } else if (artist) {
+            displayResultMessage = t("apps.chats.toolCalls.playingSongByArtist", { artist });
+          } else if (input?.id) {
+            displayResultMessage = t("apps.chats.toolCalls.playingSongWithId", { id: String(input.id) });
+          } else {
+            displayResultMessage = t("apps.chats.toolCalls.playingSongGeneric");
+          }
+        } else if (action === "next") {
+          displayResultMessage = t("apps.chats.toolCalls.skippedToNextTrack");
+        } else if (action === "previous") {
+          displayResultMessage = t("apps.chats.toolCalls.skippedToPreviousTrack");
+        } else {
+          displayResultMessage =
+            action === "play"
+              ? t("apps.chats.toolCalls.playingIpod")
+              : action === "pause"
+                ? t("apps.chats.toolCalls.pausedIpod")
+                : t("apps.chats.toolCalls.toggledIpodPlayback");
+        }
+      }
+    } else if (toolName === "settings") {
+      // Use the output directly as it contains the detailed changes
+      if (typeof output === "string" && output.trim().length > 0) {
+        displayResultMessage = output;
+      } else {
+        displayResultMessage = t("apps.chats.toolCalls.settingsUpdated");
+      }
+    } else if (toolName === "searchSongs") {
+      // Try to get count from output
+      let count = 0;
+      if (typeof output === "object" && output !== null && "results" in output) {
+        const results = (output as { results?: unknown[] }).results;
+        if (Array.isArray(results)) {
+          count = results.length;
+        }
+      }
+      displayResultMessage = t("apps.chats.toolCalls.foundVideos", { count });
+    } else if (toolName === "songLibraryControl") {
+      displayResultMessage = getSongLibraryResultSummary(output, input);
+    } else if (toolName === "web_search" || toolName === "google_search") {
+      const summary = getWebSearchSummary(output);
+      displayResultMessage = summary?.query
+        ? t("apps.chats.toolCalls.searchedWebFor", { query: summary.query })
+        : t("apps.chats.toolCalls.searchedWeb");
+    } else if (toolName === "calendarControl") {
+      const out = output as { success?: boolean; message?: string; event?: { title?: string }; todo?: { title?: string; completed?: boolean }; events?: unknown[]; todos?: unknown[] } | undefined;
+      const action = input?.action;
+      if (out?.success) {
+        if (action === "create" && out.event?.title) {
+          displayResultMessage = t("apps.chats.toolCalls.calendar.addedEvent", { title: out.event.title });
+        } else if (action === "update" && out.event?.title) {
+          displayResultMessage = t("apps.chats.toolCalls.calendar.updatedEvent", { title: out.event.title });
+        } else if (action === "update" && out.message) {
+          const titleMatch = out.message.match(/"(.+?)"/);
+          displayResultMessage = t("apps.chats.toolCalls.calendar.updatedEvent", { title: titleMatch?.[1] ?? "event" });
+        } else if (action === "delete" && out.message) {
+          const titleMatch = out.message.match(/"(.+?)"/);
+          displayResultMessage = t("apps.chats.toolCalls.calendar.deletedEvent", { title: titleMatch?.[1] ?? "event" });
+        } else if (action === "list" && out.events) {
+          displayResultMessage = out.events.length === 1
+            ? t("apps.chats.toolCalls.calendar.foundEvents", { count: out.events.length })
+            : t("apps.chats.toolCalls.calendar.foundEventsPlural", { count: out.events.length });
+        } else if (action === "createTodo" && out.todo?.title) {
+          displayResultMessage = t("apps.chats.toolCalls.calendar.addedTodo", { title: out.todo.title });
+        } else if (action === "toggleTodo" && out.todo) {
+          displayResultMessage = out.todo.completed
+            ? t("apps.chats.toolCalls.calendar.toggledTodoCompleted", { title: out.todo.title ?? "to-do" })
+            : t("apps.chats.toolCalls.calendar.toggledTodoPending", { title: out.todo.title ?? "to-do" });
+        } else if (action === "deleteTodo" && out.message) {
+          const titleMatch = out.message.match(/"(.+?)"/);
+          displayResultMessage = t("apps.chats.toolCalls.calendar.deletedTodo", { title: titleMatch?.[1] ?? "to-do" });
+        } else if (action === "listTodos" && out.todos) {
+          displayResultMessage = out.todos.length === 1
+            ? t("apps.chats.toolCalls.calendar.foundTodos", { count: out.todos.length })
+            : t("apps.chats.toolCalls.calendar.foundTodosPlural", { count: out.todos.length });
+        } else if (out.message) {
+          displayResultMessage = out.message;
+        }
+      }
+    } else if (toolName === "tvControl") {
+      const out = output as
+        | {
+            success?: boolean;
+            message?: string;
+            channels?: unknown[];
+          }
+        | undefined;
+      if (out?.success && out.message) {
+        displayResultMessage = out.message;
+      } else if (out?.success && Array.isArray(out.channels)) {
+        displayResultMessage = t("apps.chats.toolCalls.tv.foundChannels", {
+          defaultValue: "Found {{count}} channels",
+          count: out.channels.length,
+        });
+      }
+    } else if (toolName === "stickiesControl") {
+      if (typeof output === "string") {
+        // Extract just the first line (the summary) for display
+        const firstLine = output.split("\n")[0];
+        displayResultMessage = firstLine;
+      } else {
+        displayResultMessage = t("apps.chats.toolCalls.stickies.updated");
+      }
+    } else if (toolName === "contactsControl") {
+      const out = output as {
+        success?: boolean;
+        message?: string;
+        contacts?: unknown[];
+        contact?: { displayName?: string } | null;
+      } | undefined;
+      const action = input?.action;
+
+      if (out?.success) {
+        if (action === "list" && out.contacts) {
+          displayResultMessage =
+            out.contacts.length === 0
+              ? t("apps.chats.toolCalls.contacts.noContacts")
+              : out.contacts.length === 1
+              ? t("apps.chats.toolCalls.contacts.foundOne")
+              : t("apps.chats.toolCalls.contacts.foundMany", {
+                  count: out.contacts.length,
+                });
+        } else if (action === "get" && out.contact?.displayName) {
+          displayResultMessage = t("apps.chats.toolCalls.contacts.loadedContact", {
+            name: out.contact.displayName,
+          });
+        } else if (action === "create" && out.contact?.displayName) {
+          displayResultMessage = t("apps.chats.toolCalls.contacts.createdContact", {
+            name: out.contact.displayName,
+          });
+        } else if (action === "update" && out.contact?.displayName) {
+          displayResultMessage = t("apps.chats.toolCalls.contacts.updatedContact", {
+            name: out.contact.displayName,
+          });
+        } else if (action === "delete" && out.message) {
+          displayResultMessage = out.message;
+        } else if (out.message) {
+          displayResultMessage = out.message;
+        }
+      }
+    } else if (toolName === "webFetch") {
+      const out = output as { success?: boolean; message?: string; title?: string; siteName?: string } | undefined;
+      if (out?.success) {
+        displayResultMessage = out.title
+          ? t("apps.chats.toolCalls.webFetch.fetchedPage", { title: out.title })
+          : t("apps.chats.toolCalls.webFetch.fetched", { siteName: out.siteName || out.message || "" });
+      } else if (out?.message) {
+        displayResultMessage = out.message;
+      }
+    } else if (toolName === "infiniteMacControl") {
+      const action = input?.action;
+      const x = input?.x;
+      const y = input?.y;
+      const key = input?.key;
+      const button = input?.button;
+      
+      // Try to extract system name from output
+      let systemName = "";
+      if (typeof output === "string") {
+        // Parse system name from output like "Successfully launched System 7.5.3 (1996)"
+        const systemMatch = output.match(/launched\s+([^(]+)/i);
+        if (systemMatch) {
+          systemName = systemMatch[1].trim();
+        }
+        // Or "Running System 7.5.3"
+        const runningMatch = output.match(/Running\s+(.+)/);
+        if (runningMatch) {
+          systemName = runningMatch[1].trim();
+        }
+      } else if (typeof output === "object" && output !== null) {
+        const outputObj = output as { currentSystem?: string; message?: string };
+        if (outputObj.currentSystem) {
+          systemName = outputObj.currentSystem;
+        }
+      }
+      
+      if (action === "launchSystem") {
+        if (typeof output === "string" && output.includes("loading")) {
+          displayResultMessage = t("apps.chats.toolCalls.infiniteMac.systemLoading", { system: systemName || "System" });
+        } else {
+          displayResultMessage = t("apps.chats.toolCalls.infiniteMac.startedSystem", { system: systemName || "System" });
+        }
+      } else if (action === "getStatus") {
+        if (systemName) {
+          displayResultMessage = t("apps.chats.toolCalls.infiniteMac.statusRunning", { system: systemName });
+        } else {
+          displayResultMessage = t("apps.chats.toolCalls.infiniteMac.statusNotRunning");
+        }
+      } else if (action === "readScreen") {
+        displayResultMessage = t("apps.chats.toolCalls.infiniteMac.capturedScreen");
+      } else if (action === "mouseMove") {
+        displayResultMessage = t("apps.chats.toolCalls.infiniteMac.movedMouse", { x: x ?? 0, y: y ?? 0 });
+      } else if (action === "mouseClick") {
+        if (button === "right") {
+          displayResultMessage = t("apps.chats.toolCalls.infiniteMac.rightClicked", { x: x ?? 0, y: y ?? 0 });
+        } else {
+          displayResultMessage = t("apps.chats.toolCalls.infiniteMac.clicked", { x: x ?? 0, y: y ?? 0 });
+        }
+      } else if (action === "doubleClick") {
+        displayResultMessage = t("apps.chats.toolCalls.infiniteMac.doubleClicked", { x: x ?? 0, y: y ?? 0 });
+      } else if (action === "keyPress") {
+        displayResultMessage = t("apps.chats.toolCalls.infiniteMac.pressedKey", { key: key ?? "key" });
+      } else if (action === "pause") {
+        displayResultMessage = t("apps.chats.toolCalls.infiniteMac.paused");
+      } else if (action === "unpause") {
+        displayResultMessage = t("apps.chats.toolCalls.infiniteMac.resumed");
+      }
+    }
+
+  return displayResultMessage;
+}

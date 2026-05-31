@@ -9,7 +9,14 @@ import {
   MenubarRadioGroup,
   MenubarRadioItem,
 } from "@/components/ui/menubar";
-import { useThemeFlags } from "@/hooks/useThemeFlags";
+import { AppMenuBarHelpMenu } from "@/components/shared/menubar/AppMenuBarHelpMenu";
+import { AppShareItemDialog } from "@/components/shared/menubar/AppShareItemDialog";
+import {
+  MENUBAR_ITEM_CLASS,
+  MENUBAR_SEPARATOR_CLASS,
+  MENUBAR_TRIGGER_CLASS,
+} from "@/components/shared/menubar/menubarStyles";
+import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
 import { useTranslation } from "react-i18next";
 import { WEBAMP_SKINS } from "../skins";
 
@@ -47,23 +54,29 @@ export function WinampMenuBar({
   onToggleRepeat,
 }: WinampMenuBarProps) {
   const { t } = useTranslation();
-  const { isWindowsTheme: isXpTheme, isMacOSTheme: isMacOsxTheme } =
-    useThemeFlags();
+  const {
+    isShareDialogOpen,
+    setIsShareDialogOpen,
+    isXpTheme,
+    isMacOsxTheme,
+    appId,
+    appName,
+  } = useAppMenuBarChrome("winamp");
 
   return (
     <MenuBar inWindowFrame={isXpTheme}>
       <MenubarMenu>
-        <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
+        <MenubarTrigger className={MENUBAR_TRIGGER_CLASS}>
           {t("common.menu.file")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
-          <MenubarItem onClick={onClose} className="text-md h-6 px-3">
+          <MenubarItem onClick={onClose} className={MENUBAR_ITEM_CLASS}>
             {t("common.menu.close")}
           </MenubarItem>
         </MenubarContent>
       </MenubarMenu>
       <MenubarMenu>
-        <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
+        <MenubarTrigger className={MENUBAR_TRIGGER_CLASS}>
           {t("apps.winamp.menu.skins")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
@@ -73,13 +86,10 @@ export function WinampMenuBar({
               onSkinChange(value === "default" ? null : value)
             }
           >
-            <MenubarRadioItem
-              value="default"
-              className="text-md h-6 pr-3"
-            >
+            <MenubarRadioItem value="default" className="text-md h-6 pr-3">
               {t("apps.winamp.skins.default")}
             </MenubarRadioItem>
-            <MenubarSeparator className="h-[2px] bg-black my-1" />
+            <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
             {WEBAMP_SKINS.map((skin) => (
               <MenubarRadioItem
                 key={skin.url}
@@ -93,71 +103,56 @@ export function WinampMenuBar({
         </MenubarContent>
       </MenubarMenu>
       <MenubarMenu>
-        <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
+        <MenubarTrigger className={MENUBAR_TRIGGER_CLASS}>
           {t("apps.winamp.menu.controls")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
-          <MenubarItem
-            onClick={onTogglePlay}
-            className="text-md h-6 px-3"
-          >
+          <MenubarItem onClick={onTogglePlay} className={MENUBAR_ITEM_CLASS}>
             {isPlaying
               ? t("apps.winamp.menu.pause")
               : t("apps.winamp.menu.play")}
           </MenubarItem>
-          <MenubarItem
-            onClick={onStopPlayback}
-            className="text-md h-6 px-3"
-          >
+          <MenubarItem onClick={onStopPlayback} className={MENUBAR_ITEM_CLASS}>
             {t("apps.winamp.menu.stop")}
           </MenubarItem>
-          <MenubarItem
-            onClick={onPreviousTrack}
-            className="text-md h-6 px-3"
-          >
+          <MenubarItem onClick={onPreviousTrack} className={MENUBAR_ITEM_CLASS}>
             {t("apps.winamp.menu.previous")}
           </MenubarItem>
-          <MenubarItem
-            onClick={onNextTrack}
-            className="text-md h-6 px-3"
-          >
+          <MenubarItem onClick={onNextTrack} className={MENUBAR_ITEM_CLASS}>
             {t("apps.winamp.menu.next")}
           </MenubarItem>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <MenubarCheckboxItem
             checked={isShuffleEnabled}
             onCheckedChange={() => onToggleShuffle()}
-            className="text-md h-6 px-3"
+            className={MENUBAR_ITEM_CLASS}
           >
             {t("apps.winamp.menu.shuffle")}
           </MenubarCheckboxItem>
           <MenubarCheckboxItem
             checked={isRepeatEnabled}
             onCheckedChange={() => onToggleRepeat()}
-            className="text-md h-6 px-3"
+            className={MENUBAR_ITEM_CLASS}
           >
             {t("apps.winamp.menu.repeat")}
           </MenubarCheckboxItem>
         </MenubarContent>
       </MenubarMenu>
-      <MenubarMenu>
-        <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
-          {t("common.menu.help")}
-        </MenubarTrigger>
-        <MenubarContent align="start" sideOffset={1} className="px-0">
-          <MenubarItem onClick={onShowHelp} className="text-md h-6 px-3">
-            {t("apps.winamp.menu.help")}
-          </MenubarItem>
-          {!isMacOsxTheme && (
-            <>
-              <MenubarSeparator className="h-[2px] bg-black my-1" />
-              <MenubarItem onClick={onShowAbout} className="text-md h-6 px-3">
-                {t("apps.winamp.menu.about")}
-              </MenubarItem>
-            </>
-          )}
-        </MenubarContent>
-      </MenubarMenu>
+
+      <AppMenuBarHelpMenu
+        helpItemLabel={t("apps.winamp.menu.help")}
+        aboutItemLabel={t("apps.winamp.menu.about")}
+        isMacOsxTheme={isMacOsxTheme}
+        onShowHelp={onShowHelp}
+        onShowAbout={onShowAbout}
+        onOpenShareDialog={() => setIsShareDialogOpen(true)}
+      />
+      <AppShareItemDialog
+        appId={appId}
+        appName={appName}
+        isOpen={isShareDialogOpen}
+        onClose={() => setIsShareDialogOpen(false)}
+      />
     </MenuBar>
   );
 }

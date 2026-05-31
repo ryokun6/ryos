@@ -118,13 +118,19 @@ describe("karaoke title card timing", () => {
   });
 
   test("wires title card album art click to open cover flow", () => {
-    const lyricsSource = readSource("src/apps/karaoke/components/KaraokeLyricsPlayback.tsx");
-    const appSource = readSource("src/apps/karaoke/components/KaraokeAppComponent.tsx");
+    const lyricsSource = readSource(
+      "src/apps/karaoke/components/karaoke-lyrics-playback/KaraokeTitleCard.tsx",
+    );
+    const windowSource = readSource(
+      "src/apps/karaoke/components/karaoke-app/KaraokeWindowContent.tsx",
+    );
 
     expect(lyricsSource.includes("onOpenCoverFlow?: () => void")).toBe(true);
     expect(lyricsSource.includes("aria-label={coverFlowLabel}")).toBe(true);
     expect(lyricsSource.includes("pointer-events-auto")).toBe(true);
     expect(lyricsSource.includes("onOpenCoverFlow()")).toBe(true);
-    expect(appSource.includes("onOpenCoverFlow={handleOpenCoverFlowFromTitleCard}")).toBe(true);
+    expect(
+      windowSource.includes("onOpenCoverFlow={handleOpenCoverFlowFromTitleCard}"),
+    ).toBe(true);
   });
 });

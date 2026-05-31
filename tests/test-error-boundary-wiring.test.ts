@@ -19,13 +19,17 @@ const readSource = (relativePath: string): string =>
 describe("Error Boundary Wiring Tests", () => {
   describe("App manager isolation", () => {
     test("wraps app instances in AppErrorBoundary", async () => {
-      const source = readSource("src/apps/base/AppManager.tsx");
+      const source = readSource(
+        "src/apps/base/app-manager/AppManagerView.tsx",
+      );
       expect(source.includes("<AppErrorBoundary")).toBe(true);
       expect(/<AppErrorBoundary[\s\S]*<AppComponent/.test(source)).toBe(true);
     });
 
     test("relaunches crashed instances via close-and-launch flow", async () => {
-      const source = readSource("src/apps/base/AppManager.tsx");
+      const source = readSource(
+        "src/apps/base/app-manager/AppManagerView.tsx",
+      );
       expect(source.includes("closeAppInstance(instance.instanceId);")).toBe(true);
       expect(
         /launchApp\(\s*appId,\s*(?:instance\.initialData|relaunchInitialData),\s*instance\.title,\s*supportsMultiWindowApp\(appId\)/.test(
@@ -67,12 +71,17 @@ describe("Error Boundary Wiring Tests", () => {
 
   describe("Control Panels debug wiring", () => {
     test("renders debug-only error boundary controls in Control Panels", async () => {
-      const source = readSource(
-        "src/apps/control-panels/components/ControlPanelsAppComponent.tsx",
+      const shellSource = readSource(
+        "src/apps/control-panels/components/control-panels-app/ControlPanelsAppComponent.tsx",
       );
-      expect(source.includes('t("apps.control-panels.errorBoundaries")')).toBe(true);
-      expect(source.includes("handleTriggerAppCrashTest")).toBe(true);
-      expect(source.includes("handleTriggerDesktopCrashTest")).toBe(true);
+      const systemTabSource = readSource(
+        "src/apps/control-panels/components/control-panels-app/SystemTabContent.tsx",
+      );
+      expect(
+        systemTabSource.includes('t("apps.control-panels.errorBoundaries")'),
+      ).toBe(true);
+      expect(shellSource.includes("handleTriggerAppCrashTest")).toBe(true);
+      expect(shellSource.includes("handleTriggerDesktopCrashTest")).toBe(true);
     });
 
     test("dispatches shared crash events from Control Panels logic", async () => {

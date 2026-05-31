@@ -4,6 +4,7 @@ import { AnimatePresence } from "framer-motion";
 import { StickyNote } from "./StickyNote";
 import { StickiesMenuBar } from "./StickiesMenuBar";
 import { AppProps } from "@/apps/base/types";
+import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { useStickiesLogic } from "../hooks/useStickiesLogic";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
@@ -89,8 +90,6 @@ export function StickiesAppComponent({
     />
   );
 
-  if (!isWindowOpen) return null;
-
   // Calculate z-indices for notes based on foreground state
   // Windows use z-index starting at 2 (BASE_Z_INDEX + index + 1)
   // When NOT foreground: z-index 1 (above desktop at 0, below windows at 2+)
@@ -110,11 +109,29 @@ export function StickiesAppComponent({
   };
 
   return (
-    <>
-      {/* Menu bar for macOS/System7 themes */}
-      {!isXpTheme && isForeground && menuBar}
-
-      {/* Render sticky notes in a portal with AnimatePresence for in/out animations (like window frames) */}
+    <AppWindowShell
+      frameless
+      isWindowOpen={isWindowOpen}
+      isXpTheme={isXpTheme}
+      isForeground={isForeground}
+      menuBar={menuBar}
+      trailing={
+        <>
+          <HelpDialog
+            isOpen={isHelpDialogOpen}
+            onOpenChange={setIsHelpDialogOpen}
+            appId="stickies"
+            helpItems={translatedHelpItems}
+          />
+          <AboutDialog
+            isOpen={isAboutDialogOpen}
+            onOpenChange={setIsAboutDialogOpen}
+            metadata={appMetadata}
+            appId="stickies"
+          />
+        </>
+      }
+    >
       {createPortal(
         <AnimatePresence>
           {notes.map((note) => (
@@ -134,20 +151,6 @@ export function StickiesAppComponent({
         </AnimatePresence>,
         document.body
       )}
-
-      {/* Dialogs */}
-      <HelpDialog
-        isOpen={isHelpDialogOpen}
-        onOpenChange={setIsHelpDialogOpen}
-        appId="stickies"
-        helpItems={translatedHelpItems}
-      />
-      <AboutDialog
-        isOpen={isAboutDialogOpen}
-        onOpenChange={setIsAboutDialogOpen}
-        metadata={appMetadata}
-        appId="stickies"
-      />
-    </>
+    </AppWindowShell>
   );
 }

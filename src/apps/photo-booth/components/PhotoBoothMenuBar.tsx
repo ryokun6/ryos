@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { MenuBar } from "@/components/layout/MenuBar";
 import {
   MenubarMenu,
@@ -8,10 +7,9 @@ import {
   MenubarSeparator,
   MenubarCheckboxItem,
 } from "@/components/ui/menubar";
-import { generateAppShareUrl } from "@/utils/sharedUrl";
-import { useThemeFlags } from "@/hooks/useThemeFlags";
-import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
-import { appRegistry } from "@/config/appRegistry";
+import { AppMenuBarHelpMenu } from "@/components/shared/menubar/AppMenuBarHelpMenu";
+import { AppShareItemDialog } from "@/components/shared/menubar/AppShareItemDialog";
+import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
 import { useTranslation } from "react-i18next";
 
 interface Effect {
@@ -48,11 +46,14 @@ export function PhotoBoothMenuBar({
   onCameraSelect,
 }: PhotoBoothMenuBarProps) {
   const { t } = useTranslation();
-  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
-  const appId = "photo-booth";
-  const appName = appRegistry[appId as keyof typeof appRegistry]?.name || appId;
-  const { isWindowsTheme: isXpTheme, isMacOSTheme: isMacOsxTheme } =
-    useThemeFlags();
+  const {
+    isShareDialogOpen,
+    setIsShareDialogOpen,
+    isXpTheme,
+    isMacOsxTheme,
+    appId,
+    appName,
+  } = useAppMenuBarChrome("photo-booth");
 
   return (
     <MenuBar inWindowFrame={isXpTheme}>
@@ -125,44 +126,19 @@ export function PhotoBoothMenuBar({
         </MenubarContent>
       </MenubarMenu>
 
-      {/* Help Menu */}
-      <MenubarMenu>
-        <MenubarTrigger className="px-2 py-1 text-md focus-visible:ring-0">
-          {t("common.menu.help")}
-        </MenubarTrigger>
-        <MenubarContent align="start" sideOffset={1} className="px-0">
-          <MenubarItem
-            onClick={onShowHelp}
-            className="text-md h-6 px-3"
-          >
-            {t("apps.photo-booth.menu.photoBoothHelp")}
-          </MenubarItem>
-          {!isMacOsxTheme && (
-            <>
-              <MenubarItem
-                onSelect={() => setIsShareDialogOpen(true)}
-                className="text-md h-6 px-3"
-              >
-                {t("common.menu.shareApp")}
-              </MenubarItem>
-              <MenubarSeparator className="h-[2px] bg-black my-1" />
-              <MenubarItem
-                onClick={onShowAbout}
-                className="text-md h-6 px-3"
-              >
-                {t("apps.photo-booth.menu.aboutPhotoBooth")}
-              </MenubarItem>
-            </>
-          )}
-        </MenubarContent>
-      </MenubarMenu>
-      <ShareItemDialog
+      <AppMenuBarHelpMenu
+        helpItemLabel={t("apps.photo-booth.menu.photoBoothHelp")}
+        aboutItemLabel={t("apps.photo-booth.menu.aboutPhotoBooth")}
+        isMacOsxTheme={isMacOsxTheme}
+        onShowHelp={onShowHelp}
+        onShowAbout={onShowAbout}
+        onOpenShareDialog={() => setIsShareDialogOpen(true)}
+      />
+      <AppShareItemDialog
+        appId={appId}
+        appName={appName}
         isOpen={isShareDialogOpen}
         onClose={() => setIsShareDialogOpen(false)}
-        itemType="App"
-        itemIdentifier={appId}
-        title={appName}
-        generateShareUrl={generateAppShareUrl}
       />
     </MenuBar>
   );

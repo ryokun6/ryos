@@ -4,7 +4,7 @@ import { PaintCanvas } from "./PaintCanvas";
 import { PaintMenuBar } from "./PaintMenuBar";
 import { PaintPatternPalette } from "./PaintPatternPalette";
 import { PaintStrokeSettings } from "./PaintStrokeSettings";
-import { WindowFrame } from "@/components/layout/WindowFrame";
+import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { AppProps, PaintInitialData } from "../../base/types";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
@@ -105,23 +105,56 @@ export const PaintAppComponent: React.FC<AppProps<PaintInitialData>> = ({
     />
   );
 
-  if (!isWindowOpen) return null;
-
   return (
-    <>
-      {!isXpTheme && isForeground && menuBar}
-      <WindowFrame
-        title={windowTitle}
-        onClose={onClose}
-        isForeground={isForeground}
-        appId="paint"
-        skipInitialSound={skipInitialSound}
-        instanceId={instanceId}
-        onNavigateNext={onNavigateNext}
-        onNavigatePrevious={onNavigatePrevious}
-        menuBar={isXpTheme ? menuBar : undefined}
-        keepMountedWhenMinimized
-      >
+    <AppWindowShell
+      isWindowOpen={isWindowOpen}
+      isXpTheme={isXpTheme}
+      isForeground={isForeground}
+      menuBar={menuBar}
+      windowFrameProps={{
+        title: windowTitle,
+        onClose,
+        isForeground,
+        appId: "paint",
+        skipInitialSound,
+        instanceId,
+        onNavigateNext,
+        onNavigatePrevious,
+        keepMountedWhenMinimized: true,
+      }}
+      trailing={
+        <>
+          <InputDialog
+            isOpen={isSaveDialogOpen}
+            onOpenChange={setIsSaveDialogOpen}
+            onSubmit={handleSaveSubmit}
+            title="Save Image"
+            description="Enter a name for your image"
+            value={saveFileName}
+            onChange={setSaveFileName}
+          />
+          <HelpDialog
+            isOpen={isHelpDialogOpen}
+            onOpenChange={setIsHelpDialogOpen}
+            helpItems={translatedHelpItems}
+            appId="paint"
+          />
+          <AboutDialog
+            isOpen={isAboutDialogOpen}
+            onOpenChange={setIsAboutDialogOpen}
+            metadata={appMetadata}
+            appId="paint"
+          />
+          <ConfirmDialog
+            isOpen={isConfirmNewDialogOpen}
+            onOpenChange={setIsConfirmNewDialogOpen}
+            onConfirm={handleConfirmNew}
+            title={t("apps.paint.dialogs.discardChanges")}
+            description={t("apps.paint.dialogs.discardChangesDescription")}
+          />
+        </>
+      }
+    >
         <div
           // Paint UI is intentionally skinned for the classic Paint look in
           // every theme — opt out of the macOS Aqua dark coverage layer so
@@ -193,35 +226,6 @@ export const PaintAppComponent: React.FC<AppProps<PaintInitialData>> = ({
             </div>
           </div>
         </div>
-      </WindowFrame>
-      <InputDialog
-        isOpen={isSaveDialogOpen}
-        onOpenChange={setIsSaveDialogOpen}
-        onSubmit={handleSaveSubmit}
-        title="Save Image"
-        description="Enter a name for your image"
-        value={saveFileName}
-        onChange={setSaveFileName}
-      />
-      <HelpDialog
-        isOpen={isHelpDialogOpen}
-        onOpenChange={setIsHelpDialogOpen}
-        helpItems={translatedHelpItems}
-        appId="paint"
-      />
-      <AboutDialog
-        isOpen={isAboutDialogOpen}
-        onOpenChange={setIsAboutDialogOpen}
-        metadata={appMetadata}
-        appId="paint"
-      />
-      <ConfirmDialog
-        isOpen={isConfirmNewDialogOpen}
-        onOpenChange={setIsConfirmNewDialogOpen}
-        onConfirm={handleConfirmNew}
-        title={t("apps.paint.dialogs.discardChanges")}
-        description={t("apps.paint.dialogs.discardChangesDescription")}
-      />
-    </>
+    </AppWindowShell>
   );
 };

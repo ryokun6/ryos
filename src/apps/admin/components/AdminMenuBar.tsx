@@ -7,7 +7,14 @@ import {
   MenubarSeparator,
   MenubarTrigger,
 } from "@/components/ui/menubar";
-import { useThemeFlags } from "@/hooks/useThemeFlags";
+import { AppMenuBarHelpMenu } from "@/components/shared/menubar/AppMenuBarHelpMenu";
+import { AppShareItemDialog } from "@/components/shared/menubar/AppShareItemDialog";
+import {
+  MENUBAR_ITEM_CLASS,
+  MENUBAR_SEPARATOR_CLASS,
+  MENUBAR_TRIGGER_CLASS,
+} from "@/components/shared/menubar/menubarStyles";
+import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
 import { useTranslation } from "react-i18next";
 import type { AdminSection } from "../utils/navigationState";
 
@@ -33,22 +40,28 @@ export function AdminMenuBar({
   onSectionChange,
 }: AdminMenuBarProps) {
   const { t } = useTranslation();
-  const { isWindowsTheme: isXpTheme, isMacOSTheme: isMacOsxTheme } =
-    useThemeFlags();
+  const {
+    isShareDialogOpen,
+    setIsShareDialogOpen,
+    isXpTheme,
+    isMacOsxTheme,
+    appId,
+    appName,
+  } = useAppMenuBarChrome("admin");
 
   return (
     <MenuBar inWindowFrame={isXpTheme}>
       {/* File Menu */}
       <MenubarMenu>
-        <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
+        <MenubarTrigger className={MENUBAR_TRIGGER_CLASS}>
           {t("common.menu.file")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
-          <MenubarItem onClick={onRefresh} className="text-md h-6 px-3">
+          <MenubarItem onClick={onRefresh} className={MENUBAR_ITEM_CLASS}>
             {t("apps.admin.menu.refreshData")}
           </MenubarItem>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
-          <MenubarItem onClick={onClose} className="text-md h-6 px-3">
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
+          <MenubarItem onClick={onClose} className={MENUBAR_ITEM_CLASS}>
             {t("common.menu.close")}
           </MenubarItem>
         </MenubarContent>
@@ -56,7 +69,7 @@ export function AdminMenuBar({
 
       {/* View Menu */}
       <MenubarMenu>
-        <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
+        <MenubarTrigger className={MENUBAR_TRIGGER_CLASS}>
           {t("common.menu.view")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
@@ -66,7 +79,7 @@ export function AdminMenuBar({
             onCheckedChange={(checked) => {
               if (checked) onSectionChange("dashboard");
             }}
-            className="text-md h-6 px-3"
+            className={MENUBAR_ITEM_CLASS}
           >
             {t("apps.admin.sidebar.dashboard", "Dashboard")}
           </MenubarCheckboxItem>
@@ -75,7 +88,7 @@ export function AdminMenuBar({
             onCheckedChange={(checked) => {
               if (checked) onSectionChange("users");
             }}
-            className="text-md h-6 px-3"
+            className={MENUBAR_ITEM_CLASS}
           >
             {t("apps.admin.sidebar.users")}
           </MenubarCheckboxItem>
@@ -84,7 +97,7 @@ export function AdminMenuBar({
             onCheckedChange={(checked) => {
               if (checked) onSectionChange("songs");
             }}
-            className="text-md h-6 px-3"
+            className={MENUBAR_ITEM_CLASS}
           >
             {t("apps.admin.sidebar.songs")}
           </MenubarCheckboxItem>
@@ -93,53 +106,48 @@ export function AdminMenuBar({
             onCheckedChange={(checked) => {
               if (checked) onSectionChange("cursorAgents");
             }}
-            className="text-md h-6 px-3"
+            className={MENUBAR_ITEM_CLASS}
           >
             {t("apps.admin.sidebar.cursorAgents", "Cursor Agents")}
           </MenubarCheckboxItem>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <MenubarCheckboxItem
             checked={activeSection === "rooms"}
             onCheckedChange={(checked) => {
               if (checked) onSectionChange("rooms");
             }}
-            className="text-md h-6 px-3"
+            className={MENUBAR_ITEM_CLASS}
           >
             {t("apps.admin.sidebar.rooms")}
           </MenubarCheckboxItem>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           {/* Sidebar Toggle */}
           <MenubarCheckboxItem
             checked={isSidebarVisible}
             onCheckedChange={(checked) => {
               if (checked !== isSidebarVisible) onToggleSidebar();
             }}
-            className="text-md h-6 px-3"
+            className={MENUBAR_ITEM_CLASS}
           >
             {t("apps.admin.menu.showSidebar")}
           </MenubarCheckboxItem>
         </MenubarContent>
       </MenubarMenu>
 
-      {/* Help Menu */}
-      <MenubarMenu>
-        <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
-          {t("common.menu.help")}
-        </MenubarTrigger>
-        <MenubarContent align="start" sideOffset={1} className="px-0">
-          <MenubarItem onClick={onShowHelp} className="text-md h-6 px-3">
-            {t("apps.admin.menu.adminHelp")}
-          </MenubarItem>
-          {!isMacOsxTheme && (
-            <>
-              <MenubarSeparator className="h-[2px] bg-black my-1" />
-              <MenubarItem onClick={onShowAbout} className="text-md h-6 px-3">
-                {t("apps.admin.menu.aboutAdmin")}
-              </MenubarItem>
-            </>
-          )}
-        </MenubarContent>
-      </MenubarMenu>
+      <AppMenuBarHelpMenu
+        helpItemLabel={t("apps.admin.menu.adminHelp")}
+        aboutItemLabel={t("apps.admin.menu.aboutAdmin")}
+        isMacOsxTheme={isMacOsxTheme}
+        onShowHelp={onShowHelp}
+        onShowAbout={onShowAbout}
+        onOpenShareDialog={() => setIsShareDialogOpen(true)}
+      />
+      <AppShareItemDialog
+        appId={appId}
+        appName={appName}
+        isOpen={isShareDialogOpen}
+        onClose={() => setIsShareDialogOpen(false)}
+      />
     </MenuBar>
   );
 }
