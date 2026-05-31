@@ -57,6 +57,34 @@ interface RightClickMenuProps {
 export const menuItemClass =
   "text-md h-6 px-3 active:bg-neutral-900 active:text-white min-w-[140px] flex items-center gap-2";
 
+// On touch devices the browser does not synthesize a `click` from a tap on
+// these menu items (the app sets `touch-action: none` globally), and Radix
+// only manufactures one when the pointer-down happened *outside* the item.
+// So a normal tap fires `pointerup` but never `onSelect`, leaving the menu
+// inert on mobile. For non-mouse pointers we forward the tap to a synthetic
+// click (mirroring Radix's own keyboard-selection path), and dedupe so a
+// real click that does arrive afterwards never double-triggers an action.
+let lastTouchSelect: { item: object; at: number } | null = null;
+
+function selectOnce(item: object, run: () => void) {
+  const now = Date.now();
+  if (lastTouchSelect && lastTouchSelect.item === item && now - lastTouchSelect.at < 500) {
+    return;
+  }
+  lastTouchSelect = { item, at: now };
+  run();
+}
+
+function handleTouchPointerUp(
+  event: React.PointerEvent<HTMLDivElement>
+) {
+  if (event.pointerType !== "mouse") {
+    // Route the tap through a real click so Radix runs its normal
+    // select-and-close logic. `selectOnce` guards against duplicates.
+    event.currentTarget.click();
+  }
+}
+
 const menuItemKeyCache = new WeakMap<object, string>();
 let menuItemKeySeed = 0;
 
@@ -88,7 +116,8 @@ function renderItems(items: MenuItem[]): ReactNode {
         return (
           <DropdownMenuItem
             key={itemKey}
-            onSelect={item.onSelect}
+            onSelect={() => selectOnce(item, () => item.onSelect?.())}
+            onPointerUp={handleTouchPointerUp}
             disabled={item.disabled}
             className={menuItemClass}
           >
@@ -144,7 +173,8 @@ function renderItems(items: MenuItem[]): ReactNode {
           <DropdownMenuCheckboxItem
             key={itemKey}
             checked={item.checked}
-            onSelect={item.onSelect}
+            onSelect={() => selectOnce(item, () => item.onSelect?.())}
+            onPointerUp={handleTouchPointerUp}
             disabled={item.disabled}
             className="text-md h-6 min-w-[140px]"
           >
@@ -160,7 +190,8 @@ function renderItems(items: MenuItem[]): ReactNode {
                 <DropdownMenuCheckboxItem
                   key={ri.value}
                   checked={isActive}
-                  onSelect={() => item.onChange(ri.value)}
+                  onSelect={() => selectOnce(ri, () => item.onChange(ri.value))}
+                  onPointerUp={handleTouchPointerUp}
                   className="text-md h-6 min-w-[140px]"
                 >
                   {ri.label}
@@ -211,6 +242,13 @@ export function RightClickMenu({
         sideOffset={4}
         alignOffset={4}
         className="px-0"
+        // React portals propagate events through the React tree, so a touch on
+        // a menu item would otherwise reach the long-press handler on the
+        // surface that rendered this menu (desktop/Finder/dock) and reopen the
+        // menu right after it closes. Keep touch events from leaking out.
+        onTouchStart={(e) => e.stopPropagation()}
+        onTouchMove={(e) => e.stopPropagation()}
+        onTouchEnd={(e) => e.stopPropagation()}
       >
         {renderItems(items)}
       </DropdownMenuContent>
