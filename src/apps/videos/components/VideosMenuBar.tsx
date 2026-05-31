@@ -1,4 +1,3 @@
-import { MenuBar } from "@/components/layout/MenuBar";
 import {
   MenubarMenu,
   MenubarTrigger,
@@ -10,8 +9,8 @@ import {
   MenubarSubContent,
   MenubarCheckboxItem,
 } from "@/components/ui/menubar";
-import { AppMenuBarHelpMenu } from "@/components/shared/menubar/AppMenuBarHelpMenu";
-import { AppShareItemDialog } from "@/components/shared/menubar/AppShareItemDialog";
+import { AppMenuBarShell } from "@/components/shared/menubar/AppMenuBarShell";
+import { MENUBAR_SEPARATOR_CLASS } from "@/components/shared/menubar/menubarStyles";
 import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
@@ -99,7 +98,18 @@ export function VideosMenuBar({
   const artists = Object.keys(videosByArtist).sort();
 
   return (
-    <MenuBar inWindowFrame={isXpTheme}>
+    <AppMenuBarShell
+      isXpTheme={isXpTheme}
+      isMacOsxTheme={isMacOsxTheme}
+      appId={appId}
+      appName={appName}
+      isShareDialogOpen={isShareDialogOpen}
+      setIsShareDialogOpen={setIsShareDialogOpen}
+      helpItemLabel={t("apps.videos.menu.videosHelp")}
+      aboutItemLabel={t("apps.videos.menu.aboutVideos")}
+      onShowHelp={onShowHelp}
+      onShowAbout={onShowAbout}
+    >
       {/* File Menu */}
       <MenubarMenu>
         <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
@@ -119,7 +129,7 @@ export function VideosMenuBar({
           >
             {t("apps.videos.menu.shareVideo")}
           </MenubarItem>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <MenubarItem
             onClick={onClose}
             className="text-md h-6 px-3"
@@ -156,14 +166,14 @@ export function VideosMenuBar({
           >
             {t("apps.videos.menu.next")}
           </MenubarItem>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <MenubarItem
             onClick={onFullScreen}
             className="text-md h-6 px-3"
           >
             {t("apps.videos.menu.fullScreen")}
           </MenubarItem>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <MenubarCheckboxItem
             checked={isShuffled}
             onCheckedChange={(checked) => {
@@ -209,7 +219,7 @@ export function VideosMenuBar({
           
           {videos.length > 0 && (
             <>
-              <MenubarSeparator className="h-[2px] bg-black my-1" />
+              <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
               
               {/* All Videos section */}
               <MenubarSub>
@@ -279,7 +289,7 @@ export function VideosMenuBar({
                 </MenubarSub>
               ))}
               
-              <MenubarSeparator className="h-[2px] bg-black my-1" />
+              <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
             </>
           )}
           
@@ -298,20 +308,6 @@ export function VideosMenuBar({
         </MenubarContent>
       </MenubarMenu>
 
-      <AppMenuBarHelpMenu
-        helpItemLabel={t("apps.videos.menu.videosHelp")}
-        aboutItemLabel={t("apps.videos.menu.aboutVideos")}
-        isMacOsxTheme={isMacOsxTheme}
-        onShowHelp={onShowHelp}
-        onShowAbout={onShowAbout}
-        onOpenShareDialog={() => setIsShareDialogOpen(true)}
-      />
-      <AppShareItemDialog
-        appId={appId}
-        appName={appName}
-        isOpen={isShareDialogOpen}
-        onClose={() => setIsShareDialogOpen(false)}
-      />
-    </MenuBar>
+    </AppMenuBarShell>
   );
 }

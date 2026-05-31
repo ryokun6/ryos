@@ -2,8 +2,7 @@ import { useState, useCallback, useRef } from "react";
 import { AppProps } from "../../base/types";
 import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { MinesweeperMenuBar } from "./MinesweeperMenuBar";
-import { HelpDialog } from "@/components/dialogs/HelpDialog";
-import { AboutDialog } from "@/components/dialogs/AboutDialog";
+import { AppHelpAboutDialogs } from "@/components/shared/AppHelpAboutDialogs";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -324,15 +323,9 @@ export function MinesweeperAppComponent({
             )}
           </div>
         </div>
-        <HelpDialog
-          isOpen={isHelpDialogOpen}
-          onOpenChange={setIsHelpDialogOpen}
-          helpItems={translatedHelpItems}
+        <AppHelpAboutDialogs
           appId="minesweeper"
-        />
-        <AboutDialog
-          isOpen={isAboutDialogOpen}
-          onOpenChange={setIsAboutDialogOpen}
+          helpItems={translatedHelpItems}
           metadata={
             appMetadata || {
               name: "Minesweeper",
@@ -342,7 +335,10 @@ export function MinesweeperAppComponent({
               icon: "/icons/default/minesweeper.png",
             }
           }
-          appId="minesweeper"
+          isHelpOpen={isHelpDialogOpen}
+          onHelpOpenChange={setIsHelpDialogOpen}
+          isAboutOpen={isAboutDialogOpen}
+          onAboutOpenChange={setIsAboutDialogOpen}
         />
         <ConfirmDialog
           isOpen={isNewGameDialogOpen}

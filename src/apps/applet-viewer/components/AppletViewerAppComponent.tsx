@@ -1,7 +1,6 @@
 import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { AppProps } from "@/apps/base/types";
-import { HelpDialog } from "@/components/dialogs/HelpDialog";
-import { AboutDialog } from "@/components/dialogs/AboutDialog";
+import { AppHelpAboutDialogs } from "@/components/shared/AppHelpAboutDialogs";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { LoginDialog } from "@/components/dialogs/LoginDialog";
 import { AppletViewerMenuBar } from "./AppletViewerMenuBar";
@@ -109,17 +108,14 @@ export function AppletViewerAppComponent({
       }}
       trailing={
         <>
-          <HelpDialog
-            isOpen={isHelpDialogOpen}
-            onOpenChange={setIsHelpDialogOpen}
+          <AppHelpAboutDialogs
             appId="applet-viewer"
             helpItems={translatedHelpItems}
-          />
-          <AboutDialog
-            isOpen={isAboutDialogOpen}
-            onOpenChange={setIsAboutDialogOpen}
             metadata={appMetadata}
-            appId="applet-viewer"
+            isHelpOpen={isHelpDialogOpen}
+            onHelpOpenChange={setIsHelpDialogOpen}
+            isAboutOpen={isAboutDialogOpen}
+            onAboutOpenChange={setIsAboutDialogOpen}
           />
           <ShareItemDialog
             isOpen={isShareDialogOpen}

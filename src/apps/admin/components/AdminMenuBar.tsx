@@ -1,4 +1,3 @@
-import { MenuBar } from "@/components/layout/MenuBar";
 import {
   MenubarCheckboxItem,
   MenubarContent,
@@ -7,8 +6,7 @@ import {
   MenubarSeparator,
   MenubarTrigger,
 } from "@/components/ui/menubar";
-import { AppMenuBarHelpMenu } from "@/components/shared/menubar/AppMenuBarHelpMenu";
-import { AppShareItemDialog } from "@/components/shared/menubar/AppShareItemDialog";
+import { AppMenuBarShell } from "@/components/shared/menubar/AppMenuBarShell";
 import {
   MENUBAR_ITEM_CLASS,
   MENUBAR_SEPARATOR_CLASS,
@@ -50,7 +48,18 @@ export function AdminMenuBar({
   } = useAppMenuBarChrome("admin");
 
   return (
-    <MenuBar inWindowFrame={isXpTheme}>
+    <AppMenuBarShell
+      isXpTheme={isXpTheme}
+      isMacOsxTheme={isMacOsxTheme}
+      appId={appId}
+      appName={appName}
+      isShareDialogOpen={isShareDialogOpen}
+      setIsShareDialogOpen={setIsShareDialogOpen}
+      helpItemLabel={t("apps.admin.menu.adminHelp")}
+      aboutItemLabel={t("apps.admin.menu.aboutAdmin")}
+      onShowHelp={onShowHelp}
+      onShowAbout={onShowAbout}
+    >
       {/* File Menu */}
       <MenubarMenu>
         <MenubarTrigger className={MENUBAR_TRIGGER_CLASS}>
@@ -133,21 +142,6 @@ export function AdminMenuBar({
           </MenubarCheckboxItem>
         </MenubarContent>
       </MenubarMenu>
-
-      <AppMenuBarHelpMenu
-        helpItemLabel={t("apps.admin.menu.adminHelp")}
-        aboutItemLabel={t("apps.admin.menu.aboutAdmin")}
-        isMacOsxTheme={isMacOsxTheme}
-        onShowHelp={onShowHelp}
-        onShowAbout={onShowAbout}
-        onOpenShareDialog={() => setIsShareDialogOpen(true)}
-      />
-      <AppShareItemDialog
-        appId={appId}
-        appName={appName}
-        isOpen={isShareDialogOpen}
-        onClose={() => setIsShareDialogOpen(false)}
-      />
-    </MenuBar>
+    </AppMenuBarShell>
   );
 }

@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { AppWindowShell } from "@/components/shared/AppWindowShell";
-import { HelpDialog } from "@/components/dialogs/HelpDialog";
-import { AboutDialog } from "@/components/dialogs/AboutDialog";
+import { AppHelpAboutDialogs } from "@/components/shared/AppHelpAboutDialogs";
 import { appMetadata } from "..";
 import { PhotoBoothMenuBar } from "./PhotoBoothMenuBar";
 import { AppProps } from "../../base/types";
@@ -624,17 +623,14 @@ export function PhotoBoothComponent({
             </div>
           </div>
 
-          <HelpDialog
-            isOpen={showHelp}
-            onOpenChange={setShowHelp}
+          <AppHelpAboutDialogs
+            appId="photo-booth"
             helpItems={translatedHelpItems}
-            appId="photo-booth"
-          />
-          <AboutDialog
-            isOpen={showAbout}
-            onOpenChange={setShowAbout}
             metadata={appMetadata}
-            appId="photo-booth"
+            isHelpOpen={showHelp}
+            onHelpOpenChange={setShowHelp}
+            isAboutOpen={showAbout}
+            onAboutOpenChange={setShowAbout}
           />
         </div>
     </AppWindowShell>

@@ -1,4 +1,3 @@
-import { MenuBar } from "@/components/layout/MenuBar";
 import {
   MenubarMenu,
   MenubarTrigger,
@@ -9,8 +8,8 @@ import {
   MenubarSubTrigger,
   MenubarSubContent,
 } from "@/components/ui/menubar";
-import { AppMenuBarHelpMenu } from "@/components/shared/menubar/AppMenuBarHelpMenu";
-import { AppShareItemDialog } from "@/components/shared/menubar/AppShareItemDialog";
+import { AppMenuBarShell } from "@/components/shared/menubar/AppMenuBarShell";
+import { MENUBAR_SEPARATOR_CLASS } from "@/components/shared/menubar/menubarStyles";
 import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
 import { useTranslation } from "react-i18next";
 import { Game, loadGames } from "@/stores/usePcStore";
@@ -78,7 +77,18 @@ export function InfinitePcMenuBar({
 
   if (isGameRunning && selectedGame && onLoadGame && onReset) {
     return (
-      <MenuBar inWindowFrame={isXpTheme}>
+      <AppMenuBarShell
+        isXpTheme={isXpTheme}
+        isMacOsxTheme={isMacOsxTheme}
+        appId={appId}
+        appName={appName}
+        isShareDialogOpen={isShareDialogOpen}
+        setIsShareDialogOpen={setIsShareDialogOpen}
+        helpItemLabel={t("apps.pc.menu.virtualPcHelp")}
+        aboutItemLabel={t("apps.pc.menu.aboutVirtualPc")}
+        onShowHelp={onShowHelp}
+        onShowAbout={onShowAbout}
+      >
         <MenubarMenu>
           <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
             {t("common.menu.file")}
@@ -90,7 +100,7 @@ export function InfinitePcMenuBar({
             >
               {t("apps.pc.menu.backToBrowse")}
             </MenubarItem>
-            <MenubarSeparator className="h-[2px] bg-black my-1" />
+            <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
             <MenubarSub>
               <MenubarSubTrigger className="text-md h-6 px-3">
                 {t("apps.pc.menu.loadGame")}
@@ -109,18 +119,18 @@ export function InfinitePcMenuBar({
                 ))}
               </MenubarSubContent>
             </MenubarSub>
-            <MenubarSeparator className="h-[2px] bg-black my-1" />
+            <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
             <MenubarItem onClick={onSaveState} className="text-md h-6 px-3">
               {t("apps.pc.menu.saveState")}
             </MenubarItem>
             <MenubarItem onClick={onLoadState} className="text-md h-6 px-3">
               {t("apps.pc.menu.loadState")}
             </MenubarItem>
-            <MenubarSeparator className="h-[2px] bg-black my-1" />
+            <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
             <MenubarItem onClick={onReset} className="text-md h-6 px-3">
               {t("apps.pc.menu.reset")}
             </MenubarItem>
-            <MenubarSeparator className="h-[2px] bg-black my-1" />
+            <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
             <MenubarItem onClick={onClose} className="text-md h-6 px-3">
               {t("common.menu.close")}
             </MenubarItem>
@@ -138,7 +148,7 @@ export function InfinitePcMenuBar({
             >
               {t("apps.pc.menu.fullScreen")}
             </MenubarItem>
-            <MenubarSeparator className="h-[2px] bg-black my-1" />
+            <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
             <MenubarItem
               onClick={() => onSetMouseCapture?.(!isMouseCaptured)}
               className="text-md h-6 px-3"
@@ -163,7 +173,7 @@ export function InfinitePcMenuBar({
                 ))}
               </MenubarSubContent>
             </MenubarSub>
-            <MenubarSeparator className="h-[2px] bg-black my-1" />
+            <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
             <MenubarSub>
               <MenubarSubTrigger className="text-md h-6 px-3">
                 {t("apps.pc.menu.aspectRatio")}
@@ -184,27 +194,23 @@ export function InfinitePcMenuBar({
             </MenubarSub>
           </MenubarContent>
         </MenubarMenu>
-
-        <AppMenuBarHelpMenu
-          helpItemLabel={t("apps.pc.menu.virtualPcHelp")}
-          aboutItemLabel={t("apps.pc.menu.aboutVirtualPc")}
-          isMacOsxTheme={isMacOsxTheme}
-          onShowHelp={onShowHelp}
-          onShowAbout={onShowAbout}
-          onOpenShareDialog={() => setIsShareDialogOpen(true)}
-        />
-        <AppShareItemDialog
-          appId={appId}
-          appName={appName}
-          isOpen={isShareDialogOpen}
-          onClose={() => setIsShareDialogOpen(false)}
-        />
-      </MenuBar>
+      </AppMenuBarShell>
     );
   }
 
   return (
-    <MenuBar inWindowFrame={isXpTheme}>
+    <AppMenuBarShell
+      isXpTheme={isXpTheme}
+      isMacOsxTheme={isMacOsxTheme}
+      appId={appId}
+      appName={appName}
+      isShareDialogOpen={isShareDialogOpen}
+      setIsShareDialogOpen={setIsShareDialogOpen}
+      helpItemLabel={t("apps.pc.menu.virtualPcHelp")}
+      aboutItemLabel={t("apps.pc.menu.aboutVirtualPc")}
+      onShowHelp={onShowHelp}
+      onShowAbout={onShowAbout}
+    >
       <MenubarMenu>
         <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
           {t("common.menu.file")}
@@ -218,7 +224,7 @@ export function InfinitePcMenuBar({
               >
                 {t("apps.pc.menu.backToBrowse")}
               </MenubarItem>
-              <MenubarSeparator className="h-[2px] bg-black my-1" />
+              <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
             </>
           )}
           <MenubarItem onClick={onClose} className="text-md h-6 px-3">
@@ -248,21 +254,6 @@ export function InfinitePcMenuBar({
           </MenubarItem>
         </MenubarContent>
       </MenubarMenu>
-
-      <AppMenuBarHelpMenu
-        helpItemLabel={t("apps.pc.menu.virtualPcHelp")}
-        aboutItemLabel={t("apps.pc.menu.aboutVirtualPc")}
-        isMacOsxTheme={isMacOsxTheme}
-        onShowHelp={onShowHelp}
-        onShowAbout={onShowAbout}
-        onOpenShareDialog={() => setIsShareDialogOpen(true)}
-      />
-      <AppShareItemDialog
-        appId={appId}
-        appName={appName}
-        isOpen={isShareDialogOpen}
-        onClose={() => setIsShareDialogOpen(false)}
-      />
-    </MenuBar>
+    </AppMenuBarShell>
   );
 }

@@ -5,8 +5,7 @@ import { WinampMenuBar } from "./WinampMenuBar";
 import { AppProps } from "@/apps/base/types";
 import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { useWinampLogic } from "../hooks/useWinampLogic";
-import { HelpDialog } from "@/components/dialogs/HelpDialog";
-import { AboutDialog } from "@/components/dialogs/AboutDialog";
+import { AppHelpAboutDialogs } from "@/components/shared/AppHelpAboutDialogs";
 import { appMetadata } from "..";
 import { useAppStore } from "@/stores/useAppStore";
 import { useIpodStore, type Track } from "@/stores/useIpodStore";
@@ -330,20 +329,15 @@ export function WinampAppComponent({
       isForeground={isForeground}
       menuBar={menuBar}
       trailing={
-        <>
-          <HelpDialog
-            isOpen={isHelpDialogOpen}
-            onOpenChange={setIsHelpDialogOpen}
-            appId="winamp"
-            helpItems={translatedHelpItems}
-          />
-          <AboutDialog
-            isOpen={isAboutDialogOpen}
-            onOpenChange={setIsAboutDialogOpen}
-            metadata={appMetadata}
-            appId="winamp"
-          />
-        </>
+        <AppHelpAboutDialogs
+          appId="winamp"
+          helpItems={translatedHelpItems}
+          metadata={appMetadata}
+          isHelpOpen={isHelpDialogOpen}
+          onHelpOpenChange={setIsHelpDialogOpen}
+          isAboutOpen={isAboutDialogOpen}
+          onAboutOpenChange={setIsAboutDialogOpen}
+        />
       }
     >
       {createPortal(<div />, document.body)}

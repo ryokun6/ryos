@@ -1,5 +1,4 @@
-import { HelpDialog } from "@/components/dialogs/HelpDialog";
-import { AboutDialog } from "@/components/dialogs/AboutDialog";
+import { AppHelpAboutDialogs } from "@/components/shared/AppHelpAboutDialogs";
 import { InputDialog } from "@/components/dialogs/InputDialog";
 import { appMetadata } from "../..";
 import type { SynthAppController } from "./useSynthAppController";
@@ -36,18 +35,14 @@ export function SynthAppDialogs({
 }: SynthAppDialogsProps) {
   return (
     <>
-      <HelpDialog
-        isOpen={isHelpOpen}
-        onOpenChange={setIsHelpOpen}
+      <AppHelpAboutDialogs
+        appId="synth"
         helpItems={translatedHelpItems}
-        appId="synth"
-      />
-
-      <AboutDialog
-        isOpen={isAboutOpen}
-        onOpenChange={setIsAboutOpen}
         metadata={appMetadata}
-        appId="synth"
+        isHelpOpen={isHelpOpen}
+        onHelpOpenChange={setIsHelpOpen}
+        isAboutOpen={isAboutOpen}
+        onAboutOpenChange={setIsAboutOpen}
       />
 
       <InputDialog

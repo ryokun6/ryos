@@ -15,7 +15,8 @@ interface AppMenuBarShellProps {
   setIsShareDialogOpen: (open: boolean) => void;
   helpItemLabel: string;
   aboutItemLabel: string;
-  shareItemLabel: string;
+  /** Optional override; defaults to the shared `common.menu.shareApp` label. */
+  shareItemLabel?: string;
   onShowHelp?: () => void;
   onShowAbout?: () => void;
 }

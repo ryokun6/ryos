@@ -1,5 +1,4 @@
 import { memo, useCallback, useState } from "react";
-import { MenuBar } from "@/components/layout/MenuBar";
 import {
   MenubarMenu,
   MenubarTrigger,
@@ -13,8 +12,8 @@ import { useAudioSettingsStoreShallow } from "@/stores/helpers";
 import { SYNTH_PRESETS } from "@/hooks/useChatSynth";
 import { getPrivateRoomDisplayName } from "@/utils/chat";
 import { LoginDialog } from "@/components/dialogs/LoginDialog";
-import { AppMenuBarHelpMenu } from "@/components/shared/menubar/AppMenuBarHelpMenu";
-import { AppShareItemDialog } from "@/components/shared/menubar/AppShareItemDialog";
+import { AppMenuBarShell } from "@/components/shared/menubar/AppMenuBarShell";
+import { MENUBAR_SEPARATOR_CLASS } from "@/components/shared/menubar/menubarStyles";
 import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
 import { useTranslation } from "react-i18next";
 import { TelegramLinkDialog } from "@/components/dialogs/TelegramLinkDialog";
@@ -182,7 +181,18 @@ export const ChatsMenuBar = memo(function ChatsMenuBar({
 
   return (
     <>
-      <MenuBar inWindowFrame={isXpTheme}>
+      <AppMenuBarShell
+        isXpTheme={isXpTheme}
+        isMacOsxTheme={isMacOsxTheme}
+        appId={appId}
+        appName={appName}
+        isShareDialogOpen={isShareDialogOpen}
+        setIsShareDialogOpen={setIsShareDialogOpen}
+        helpItemLabel={t("apps.chats.menu.chatsHelp")}
+        aboutItemLabel={t("apps.chats.menu.aboutChats")}
+        onShowHelp={onShowHelp}
+        onShowAbout={onShowAbout}
+      >
         {/* File Menu */}
         <MenubarMenu>
           <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
@@ -202,7 +212,7 @@ export const ChatsMenuBar = memo(function ChatsMenuBar({
             >
               {t("apps.chats.menu.clearChat")}
             </MenubarItem>
-            <MenubarSeparator className="h-[2px] bg-black my-1" />
+            <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
 
             {/* Account Section */}
             {username && isAuthenticated ? (
@@ -238,7 +248,7 @@ export const ChatsMenuBar = memo(function ChatsMenuBar({
               </>
             )}
 
-            <MenubarSeparator className="h-[2px] bg-black my-1" />
+            <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
             <MenubarItem
               onClick={onClose}
               className="text-md h-6 px-3"
@@ -268,7 +278,7 @@ export const ChatsMenuBar = memo(function ChatsMenuBar({
 
             {/* Show separator between menu actions and chat list */}
             {rooms.length > 0 && (
-              <MenubarSeparator className="h-[2px] bg-black my-1" />
+              <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
             )}
 
             {/* Ryo Chat Option */}
@@ -330,7 +340,7 @@ export const ChatsMenuBar = memo(function ChatsMenuBar({
                 {preset.name}
               </MenubarCheckboxItem>
             ))}
-            <MenubarSeparator className="h-[2px] bg-black my-1" />
+            <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
             <MenubarCheckboxItem
               checked={speechEnabled}
               onCheckedChange={(checked) => setSpeechEnabled(checked)}
@@ -345,7 +355,7 @@ export const ChatsMenuBar = memo(function ChatsMenuBar({
             >
               {t("apps.chats.menu.typingSynth")}
             </MenubarCheckboxItem>
-            <MenubarSeparator className="h-[2px] bg-black my-1" />
+            <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
             <MenubarCheckboxItem
               checked={keepTalkingEnabled}
               onCheckedChange={(checked) => setKeepTalkingEnabled(checked)}
@@ -375,14 +385,14 @@ export const ChatsMenuBar = memo(function ChatsMenuBar({
             >
               {t("apps.chats.menu.decreaseFontSize")}
             </MenubarItem>
-            <MenubarSeparator className="h-[2px] bg-black my-1" />
+            <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
             <MenubarItem
               onClick={onResetFontSize}
               className="text-md h-6 px-3"
             >
               {t("apps.chats.menu.resetFontSize")}
             </MenubarItem>
-            <MenubarSeparator className="h-[2px] bg-black my-1" />
+            <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
             {/* Sidebar Toggle */}
             <MenubarCheckboxItem
               checked={isSidebarVisible}
@@ -395,7 +405,7 @@ export const ChatsMenuBar = memo(function ChatsMenuBar({
             </MenubarCheckboxItem>
             {isNotificationApiAvailable() && (
               <>
-                <MenubarSeparator className="h-[2px] bg-black my-1" />
+                <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
                 <MenubarCheckboxItem
                   checked={notificationPermission === "granted"}
                   disabled={notificationPermission === "denied"}
@@ -412,16 +422,7 @@ export const ChatsMenuBar = memo(function ChatsMenuBar({
             )}
           </MenubarContent>
         </MenubarMenu>
-
-        <AppMenuBarHelpMenu
-          helpItemLabel={t("apps.chats.menu.chatsHelp")}
-          aboutItemLabel={t("apps.chats.menu.aboutChats")}
-          isMacOsxTheme={isMacOsxTheme}
-          onShowHelp={onShowHelp}
-          onShowAbout={onShowAbout}
-          onOpenShareDialog={() => setIsShareDialogOpen(true)}
-        />
-      </MenuBar>
+      </AppMenuBarShell>
 
       {/* Log In / Sign Up Dialog */}
       <LoginDialog
@@ -443,12 +444,6 @@ export const ChatsMenuBar = memo(function ChatsMenuBar({
         onSignUpSubmit={handleSignUpSubmit}
         isSignUpLoading={false}
         signUpError={null}
-      />
-      <AppShareItemDialog
-        appId={appId}
-        appName={appName}
-        isOpen={isShareDialogOpen}
-        onClose={() => setIsShareDialogOpen(false)}
       />
       <TelegramLinkDialog
         isOpen={isTelegramDialogOpen}

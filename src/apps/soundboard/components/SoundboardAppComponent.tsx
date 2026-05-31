@@ -3,8 +3,7 @@ import { BoardList } from "./BoardList";
 import { SoundGrid } from "./SoundGrid";
 import { EmojiDialog } from "@/components/dialogs/EmojiDialog";
 import { InputDialog } from "@/components/dialogs/InputDialog";
-import { HelpDialog } from "@/components/dialogs/HelpDialog";
-import { AboutDialog } from "@/components/dialogs/AboutDialog";
+import { AppHelpAboutDialogs } from "@/components/shared/AppHelpAboutDialogs";
 import { AppProps } from "../../base/types";
 import { SoundboardMenuBar } from "./SoundboardMenuBar";
 import { appMetadata } from "..";
@@ -211,17 +210,14 @@ export function SoundboardAppComponent({
           onChange={(value) => setDialogState((prev) => ({ ...prev, value }))}
         />
 
-        <HelpDialog
-          isOpen={helpDialogOpen}
-          onOpenChange={setHelpDialogOpen}
+        <AppHelpAboutDialogs
+          appId="soundboard"
           helpItems={translatedHelpItems}
-          appId="soundboard"
-        />
-        <AboutDialog
-          isOpen={aboutDialogOpen}
-          onOpenChange={setAboutDialogOpen}
           metadata={appMetadata}
-          appId="soundboard"
+          isHelpOpen={helpDialogOpen}
+          onHelpOpenChange={setHelpDialogOpen}
+          isAboutOpen={aboutDialogOpen}
+          onAboutOpenChange={setAboutDialogOpen}
         />
         </>
       )}

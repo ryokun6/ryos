@@ -1,4 +1,3 @@
-import { MenuBar } from "@/components/layout/MenuBar";
 import {
   MenubarMenu,
   MenubarTrigger,
@@ -7,8 +6,8 @@ import {
   MenubarSeparator,
   MenubarCheckboxItem,
 } from "@/components/ui/menubar";
-import { AppMenuBarHelpMenu } from "@/components/shared/menubar/AppMenuBarHelpMenu";
-import { AppShareItemDialog } from "@/components/shared/menubar/AppShareItemDialog";
+import { AppMenuBarShell } from "@/components/shared/menubar/AppMenuBarShell";
+import { MENUBAR_SEPARATOR_CLASS } from "@/components/shared/menubar/menubarStyles";
 import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
 import { FileItem } from "./FileList";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
@@ -106,7 +105,18 @@ export function FinderMenuBar({
   const canDuplicate = selectedFile && onDuplicate && !selectedFile.isDirectory;
 
   return (
-    <MenuBar inWindowFrame={isXpTheme}>
+    <AppMenuBarShell
+      isXpTheme={isXpTheme}
+      isMacOsxTheme={isMacOsxTheme}
+      appId={appId}
+      appName={appName}
+      isShareDialogOpen={isShareDialogOpen}
+      setIsShareDialogOpen={setIsShareDialogOpen}
+      helpItemLabel={t("apps.finder.menu.finderHelp")}
+      aboutItemLabel={t("apps.finder.menu.aboutFinder")}
+      onShowHelp={onShowHelp}
+      onShowAbout={onShowAbout}
+    >
       {/* File Menu */}
       <MenubarMenu>
         <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
@@ -132,7 +142,7 @@ export function FinderMenuBar({
           >
             {t("apps.finder.menu.importFromDevice")}
           </MenubarItem>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <MenubarItem
             onClick={onRename}
             disabled={!canRename}
@@ -147,7 +157,7 @@ export function FinderMenuBar({
           >
             {t("apps.finder.menu.duplicate")}
           </MenubarItem>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           {isInTrash ? (
             <MenubarItem
               onClick={onRestore}
@@ -171,7 +181,7 @@ export function FinderMenuBar({
           >
             {t("apps.finder.menu.emptyTrash")}
           </MenubarItem>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <MenubarItem
             onClick={onClose}
             className="text-md h-6 px-3"
@@ -201,7 +211,7 @@ export function FinderMenuBar({
           >
             {t("common.menu.redo")}
           </MenubarItem>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <MenubarItem className="text-md h-6 px-3">
             {t("common.menu.cut")}
           </MenubarItem>
@@ -214,7 +224,7 @@ export function FinderMenuBar({
           <MenubarItem className="text-md h-6 px-3">
             {t("common.menu.clear")}
           </MenubarItem>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <MenubarItem className="text-md h-6 px-3">
             {t("common.menu.selectAll")}
           </MenubarItem>
@@ -236,7 +246,7 @@ export function FinderMenuBar({
               >
                 {t("apps.finder.menu.sidebar")}
               </MenubarCheckboxItem>
-              <MenubarSeparator className="h-[2px] bg-black my-1" />
+              <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
             </>
           )}
           <MenubarCheckboxItem
@@ -266,7 +276,7 @@ export function FinderMenuBar({
           >
             {t("apps.finder.menu.byList")}
           </MenubarCheckboxItem>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <MenubarCheckboxItem
             checked={sortType === "name"}
             onCheckedChange={(checked) => {
@@ -326,7 +336,7 @@ export function FinderMenuBar({
           >
             {t("apps.finder.menu.forward")}
           </MenubarItem>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <MenubarItem
             onClick={onNavigateToAirDrop}
             className="text-md h-6 px-3 flex items-center gap-2"
@@ -338,7 +348,7 @@ export function FinderMenuBar({
             />
             {t("apps.finder.airdrop.title")}
           </MenubarItem>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
 
           {/* Root directory folders */}
           {rootFolders?.map((folder) => (
@@ -374,21 +384,6 @@ export function FinderMenuBar({
           </MenubarItem>
         </MenubarContent>
       </MenubarMenu>
-
-      <AppMenuBarHelpMenu
-        helpItemLabel={t("apps.finder.menu.finderHelp")}
-        aboutItemLabel={t("apps.finder.menu.aboutFinder")}
-        isMacOsxTheme={isMacOsxTheme}
-        onShowHelp={onShowHelp}
-        onShowAbout={onShowAbout}
-        onOpenShareDialog={() => setIsShareDialogOpen(true)}
-      />
-      <AppShareItemDialog
-        appId={appId}
-        appName={appName}
-        isOpen={isShareDialogOpen}
-        onClose={() => setIsShareDialogOpen(false)}
-      />
-    </MenuBar>
+    </AppMenuBarShell>
   );
 }

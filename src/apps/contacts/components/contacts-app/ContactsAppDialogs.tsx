@@ -1,5 +1,4 @@
-import { AboutDialog } from "@/components/dialogs/AboutDialog";
-import { HelpDialog } from "@/components/dialogs/HelpDialog";
+import { AppHelpAboutDialogs } from "@/components/shared/AppHelpAboutDialogs";
 import { appMetadata } from "../../";
 import { UserPicturePicker } from "../UserPicturePicker";
 import type { ContactsAppController } from "./useContactsAppController";
@@ -25,17 +24,14 @@ export function ContactsAppDialogs({ c }: ContactsAppDialogsProps) {
 
   return (
     <>
-      <HelpDialog
-        isOpen={isHelpDialogOpen}
-        onOpenChange={setIsHelpDialogOpen}
+      <AppHelpAboutDialogs
         appId="contacts"
         helpItems={translatedHelpItems}
-      />
-      <AboutDialog
-        isOpen={isAboutDialogOpen}
-        onOpenChange={setIsAboutDialogOpen}
         metadata={appMetadata}
-        appId="contacts"
+        isHelpOpen={isHelpDialogOpen}
+        onHelpOpenChange={setIsHelpDialogOpen}
+        isAboutOpen={isAboutDialogOpen}
+        onAboutOpenChange={setIsAboutDialogOpen}
       />
       <UserPicturePicker
         isOpen={isPicturePickerOpen}

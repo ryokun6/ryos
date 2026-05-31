@@ -1,5 +1,4 @@
 import { Editor } from "@tiptap/react";
-import { MenuBar } from "@/components/layout/MenuBar";
 import {
   MenubarMenu,
   MenubarTrigger,
@@ -11,8 +10,8 @@ import {
   MenubarSubContent,
   MenubarCheckboxItem,
 } from "@/components/ui/menubar";
-import { AppMenuBarHelpMenu } from "@/components/shared/menubar/AppMenuBarHelpMenu";
-import { AppShareItemDialog } from "@/components/shared/menubar/AppShareItemDialog";
+import { AppMenuBarShell } from "@/components/shared/menubar/AppMenuBarShell";
+import { MENUBAR_SEPARATOR_CLASS } from "@/components/shared/menubar/menubarStyles";
 import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
 import React from "react";
 import { useTranslation } from "react-i18next";
@@ -61,7 +60,18 @@ export function TextEditMenuBar({
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   return (
-    <MenuBar inWindowFrame={isXpTheme}>
+    <AppMenuBarShell
+      isXpTheme={isXpTheme}
+      isMacOsxTheme={isMacOsxTheme}
+      appId={appId}
+      appName={appName}
+      isShareDialogOpen={isShareDialogOpen}
+      setIsShareDialogOpen={setIsShareDialogOpen}
+      helpItemLabel={t("apps.textedit.menu.texteditHelp")}
+      aboutItemLabel={t("apps.textedit.menu.aboutTextEdit")}
+      onShowHelp={onShowHelp}
+      onShowAbout={onShowAbout}
+    >
       <input
         type="file"
         ref={fileInputRef}
@@ -80,7 +90,7 @@ export function TextEditMenuBar({
           >
             {t("apps.textedit.menu.newFile")}
           </MenubarItem>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <MenubarItem
             onClick={onImportFile}
             className="text-md h-6 px-3"
@@ -93,7 +103,7 @@ export function TextEditMenuBar({
           >
             {currentFilePath ? t("apps.textedit.menu.save") : t("apps.textedit.menu.saveEllipsis")}
           </MenubarItem>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <MenubarItem
             onClick={() => fileInputRef.current?.click()}
             className="text-md h-6 px-3"
@@ -125,7 +135,7 @@ export function TextEditMenuBar({
               </MenubarItem>
             </MenubarSubContent>
           </MenubarSub>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <MenubarItem
             onClick={onClose}
             className="text-md h-6 px-3"
@@ -154,7 +164,7 @@ export function TextEditMenuBar({
           >
             {t("common.menu.redo")}
           </MenubarItem>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <MenubarItem
             onClick={() => {
               if (window.getSelection()?.toString()) {
@@ -181,7 +191,7 @@ export function TextEditMenuBar({
           >
             {t("common.menu.paste")}
           </MenubarItem>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <MenubarItem
             onClick={() => editor?.chain().focus().selectAll().run()}
             className="text-md h-6 px-3"
@@ -217,7 +227,7 @@ export function TextEditMenuBar({
           >
             {t("apps.textedit.menu.underline")}
           </MenubarCheckboxItem>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <MenubarCheckboxItem
             checked={editor?.isActive("paragraph") ?? false}
             onCheckedChange={() => editor?.chain().focus().setParagraph().run()}
@@ -246,7 +256,7 @@ export function TextEditMenuBar({
           >
             {t("apps.textedit.menu.heading3")}
           </MenubarCheckboxItem>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <MenubarCheckboxItem
             checked={editor?.isActive({ textAlign: "left" }) ?? false}
             onCheckedChange={() => editor?.chain().focus().setTextAlign("left").run()}
@@ -268,7 +278,7 @@ export function TextEditMenuBar({
           >
             {t("apps.textedit.menu.alignRight")}
           </MenubarCheckboxItem>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <MenubarCheckboxItem
             checked={editor?.isActive("bulletList") ?? false}
             onCheckedChange={() => editor?.chain().focus().toggleBulletList().run()}
@@ -293,20 +303,6 @@ export function TextEditMenuBar({
         </MenubarContent>
       </MenubarMenu>
 
-      <AppMenuBarHelpMenu
-        helpItemLabel={t("apps.textedit.menu.texteditHelp")}
-        aboutItemLabel={t("apps.textedit.menu.aboutTextEdit")}
-        isMacOsxTheme={isMacOsxTheme}
-        onShowHelp={onShowHelp}
-        onShowAbout={onShowAbout}
-        onOpenShareDialog={() => setIsShareDialogOpen(true)}
-      />
-      <AppShareItemDialog
-        appId={appId}
-        appName={appName}
-        isOpen={isShareDialogOpen}
-        onClose={() => setIsShareDialogOpen(false)}
-      />
-    </MenuBar>
+    </AppMenuBarShell>
   );
 }

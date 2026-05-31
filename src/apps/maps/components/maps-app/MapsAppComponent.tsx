@@ -1,6 +1,5 @@
 import { AppWindowShell } from "@/components/shared/AppWindowShell";
-import { HelpDialog } from "@/components/dialogs/HelpDialog";
-import { AboutDialog } from "@/components/dialogs/AboutDialog";
+import { AppHelpAboutDialogs } from "@/components/shared/AppHelpAboutDialogs";
 import { cn } from "@/lib/utils";
 import type { AppProps } from "@/apps/base/types";
 import { appMetadata } from "../..";
@@ -106,20 +105,15 @@ export function MapsAppComponent({
         ),
       }}
       trailing={
-        <>
-          <HelpDialog
-            isOpen={isHelpDialogOpen}
-            onOpenChange={setIsHelpDialogOpen}
-            appId="maps"
-            helpItems={translatedHelpItems}
-          />
-          <AboutDialog
-            isOpen={isAboutDialogOpen}
-            onOpenChange={setIsAboutDialogOpen}
-            metadata={appMetadata}
-            appId="maps"
-          />
-        </>
+        <AppHelpAboutDialogs
+          appId="maps"
+          helpItems={translatedHelpItems}
+          metadata={appMetadata}
+          isHelpOpen={isHelpDialogOpen}
+          onHelpOpenChange={setIsHelpDialogOpen}
+          isAboutOpen={isAboutDialogOpen}
+          onAboutOpenChange={setIsAboutDialogOpen}
+        />
       }
     >
         <div className="relative size-full min-h-0 flex-1 overflow-hidden bg-transparent font-os-ui">

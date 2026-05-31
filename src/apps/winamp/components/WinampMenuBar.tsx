@@ -1,4 +1,3 @@
-import { MenuBar } from "@/components/layout/MenuBar";
 import {
   MenubarMenu,
   MenubarTrigger,
@@ -9,8 +8,7 @@ import {
   MenubarRadioGroup,
   MenubarRadioItem,
 } from "@/components/ui/menubar";
-import { AppMenuBarHelpMenu } from "@/components/shared/menubar/AppMenuBarHelpMenu";
-import { AppShareItemDialog } from "@/components/shared/menubar/AppShareItemDialog";
+import { AppMenuBarShell } from "@/components/shared/menubar/AppMenuBarShell";
 import {
   MENUBAR_ITEM_CLASS,
   MENUBAR_SEPARATOR_CLASS,
@@ -64,7 +62,18 @@ export function WinampMenuBar({
   } = useAppMenuBarChrome("winamp");
 
   return (
-    <MenuBar inWindowFrame={isXpTheme}>
+    <AppMenuBarShell
+      isXpTheme={isXpTheme}
+      isMacOsxTheme={isMacOsxTheme}
+      appId={appId}
+      appName={appName}
+      isShareDialogOpen={isShareDialogOpen}
+      setIsShareDialogOpen={setIsShareDialogOpen}
+      helpItemLabel={t("apps.winamp.menu.help")}
+      aboutItemLabel={t("apps.winamp.menu.about")}
+      onShowHelp={onShowHelp}
+      onShowAbout={onShowAbout}
+    >
       <MenubarMenu>
         <MenubarTrigger className={MENUBAR_TRIGGER_CLASS}>
           {t("common.menu.file")}
@@ -139,20 +148,6 @@ export function WinampMenuBar({
         </MenubarContent>
       </MenubarMenu>
 
-      <AppMenuBarHelpMenu
-        helpItemLabel={t("apps.winamp.menu.help")}
-        aboutItemLabel={t("apps.winamp.menu.about")}
-        isMacOsxTheme={isMacOsxTheme}
-        onShowHelp={onShowHelp}
-        onShowAbout={onShowAbout}
-        onOpenShareDialog={() => setIsShareDialogOpen(true)}
-      />
-      <AppShareItemDialog
-        appId={appId}
-        appName={appName}
-        isOpen={isShareDialogOpen}
-        onClose={() => setIsShareDialogOpen(false)}
-      />
-    </MenuBar>
+    </AppMenuBarShell>
   );
 }

@@ -10,9 +10,8 @@ import {
   MenubarSubContent,
   MenubarCheckboxItem,
 } from "@/components/ui/menubar";
-import { MenuBar } from "@/components/layout/MenuBar";
-import { AppMenuBarHelpMenu } from "@/components/shared/menubar/AppMenuBarHelpMenu";
-import { AppShareItemDialog } from "@/components/shared/menubar/AppShareItemDialog";
+import { AppMenuBarShell } from "@/components/shared/menubar/AppMenuBarShell";
+import { MENUBAR_SEPARATOR_CLASS } from "@/components/shared/menubar/menubarStyles";
 import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import React from "react";
@@ -82,7 +81,18 @@ export function AppletViewerMenuBar({
   const isLoggedIn = !!(username && isAuthenticated);
 
   return (
-    <MenuBar inWindowFrame={isXpTheme}>
+    <AppMenuBarShell
+      isXpTheme={isXpTheme}
+      isMacOsxTheme={isMacOsxTheme}
+      appId={appId}
+      appName={appName}
+      isShareDialogOpen={isShareDialogOpen}
+      setIsShareDialogOpen={setIsShareDialogOpen}
+      helpItemLabel={t("apps.applet-viewer.menu.appletsHelp")}
+      aboutItemLabel={t("apps.applet-viewer.menu.aboutApplets")}
+      onShowHelp={onShowHelp}
+      onShowAbout={onShowAbout}
+    >
       <input
         type="file"
         ref={fileInputRef}
@@ -110,7 +120,7 @@ export function AppletViewerMenuBar({
               {t("apps.applet-viewer.menu.shareApplet")}
             </MenubarItem>
           )}
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <MenubarItem
             onClick={() => fileInputRef.current?.click()}
             className="text-md h-6 px-3"
@@ -138,7 +148,7 @@ export function AppletViewerMenuBar({
               </MenubarSubContent>
             </MenubarSub>
           )}
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <MenubarItem
             onClick={onClose}
             className="text-md h-6 px-3"
@@ -178,7 +188,7 @@ export function AppletViewerMenuBar({
                 : t("apps.applet-viewer.menu.updateAppletsPlural", { count: updateCount })
               : t("apps.applet-viewer.menu.checkForUpdates")}
           </MenubarItem>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           {username && isAuthenticated ? (
             <MenubarItem
               onClick={() => onLogout?.()}
@@ -243,21 +253,6 @@ export function AppletViewerMenuBar({
           )}
         </MenubarContent>
       </MenubarMenu>
-
-      <AppMenuBarHelpMenu
-        helpItemLabel={t("apps.applet-viewer.menu.appletsHelp")}
-        aboutItemLabel={t("apps.applet-viewer.menu.aboutApplets")}
-        isMacOsxTheme={isMacOsxTheme}
-        onShowHelp={onShowHelp}
-        onShowAbout={onShowAbout}
-        onOpenShareDialog={() => setIsShareDialogOpen(true)}
-      />
-      <AppShareItemDialog
-        appId={appId}
-        appName={appName}
-        isOpen={isShareDialogOpen}
-        onClose={() => setIsShareDialogOpen(false)}
-      />
-    </MenuBar>
+    </AppMenuBarShell>
   );
 }

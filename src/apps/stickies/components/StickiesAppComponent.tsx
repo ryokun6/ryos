@@ -6,8 +6,7 @@ import { StickiesMenuBar } from "./StickiesMenuBar";
 import { AppProps } from "@/apps/base/types";
 import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { useStickiesLogic } from "../hooks/useStickiesLogic";
-import { HelpDialog } from "@/components/dialogs/HelpDialog";
-import { AboutDialog } from "@/components/dialogs/AboutDialog";
+import { AppHelpAboutDialogs } from "@/components/shared/AppHelpAboutDialogs";
 import { appMetadata } from "..";
 import { useAppStore } from "@/stores/useAppStore";
 import { requestCloudSyncDomainCheck } from "@/utils/cloudSyncEvents";
@@ -117,17 +116,14 @@ export function StickiesAppComponent({
       menuBar={menuBar}
       trailing={
         <>
-          <HelpDialog
-            isOpen={isHelpDialogOpen}
-            onOpenChange={setIsHelpDialogOpen}
+          <AppHelpAboutDialogs
             appId="stickies"
             helpItems={translatedHelpItems}
-          />
-          <AboutDialog
-            isOpen={isAboutDialogOpen}
-            onOpenChange={setIsAboutDialogOpen}
             metadata={appMetadata}
-            appId="stickies"
+            isHelpOpen={isHelpDialogOpen}
+            onHelpOpenChange={setIsHelpDialogOpen}
+            isAboutOpen={isAboutDialogOpen}
+            onAboutOpenChange={setIsAboutDialogOpen}
           />
         </>
       }

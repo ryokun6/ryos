@@ -1,7 +1,6 @@
 import type { Video } from "@/stores/useVideoStore";
-import { abortableFetch } from "@/utils/abortableFetch";
-import { getApiUrl } from "@/utils/platform";
 import { isYouTubeUrl, parseYouTubeId } from "@/apps/tv/utils";
+import { fetchYouTubeOembed, parseYouTubeTitle } from "@/utils/youtubeMetadata";
 
 /**
  * Returns the pasted substring that should be treated as a single YouTube
@@ -27,49 +26,11 @@ export async function fetchYoutubeVideoForTvPrompt(
       ? rawInput.trim()
       : `https://www.youtube.com/watch?v=${id}`;
 
-  const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(`https://www.youtube.com/watch?v=${id}`)}&format=json`;
-  const oembedResponse = await abortableFetch(oembedUrl, {
-    timeout: 15000,
-    throwOnHttpError: false,
-    credentials: "omit",
-    retry: { maxAttempts: 1, initialDelayMs: 250 },
-  });
-  if (!oembedResponse.ok) return null;
+  const oembed = await fetchYouTubeOembed(id);
+  if (!oembed.ok) return null;
 
-  const oembedData = await oembedResponse.json();
-  const rawTitle = (oembedData.title as string) || `Video ${id}`;
-  const authorName = oembedData.author_name as string | undefined;
+  const rawTitle = oembed.rawTitle || `Video ${id}`;
+  const { title, artist } = await parseYouTubeTitle(rawTitle, oembed.authorName);
 
-  const videoInfo: Partial<Video> = {
-    title: rawTitle,
-    artist: undefined,
-  };
-
-  try {
-    const parseResponse = await abortableFetch(getApiUrl("/api/parse-title"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title: rawTitle,
-        author_name: authorName,
-      }),
-      timeout: 15000,
-      throwOnHttpError: false,
-      retry: { maxAttempts: 1, initialDelayMs: 250 },
-    });
-    if (parseResponse.ok) {
-      const parsedData = await parseResponse.json();
-      videoInfo.title = parsedData.title || rawTitle;
-      videoInfo.artist = parsedData.artist;
-    }
-  } catch {
-    // ignore — keep oEmbed title
-  }
-
-  return {
-    id,
-    url,
-    title: videoInfo.title!,
-    artist: videoInfo.artist,
-  };
+  return { id, url, title, artist };
 }

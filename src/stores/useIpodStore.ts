@@ -17,6 +17,10 @@ import { getCachedSongMetadata, listAllCachedSongMetadata } from "@/utils/songMe
 import i18n from "@/lib/i18n";
 import { useChatsStore } from "./useChatsStore";
 import { abortableFetch } from "@/utils/abortableFetch";
+import {
+  fetchYouTubeOembed,
+  parseYouTubeTitle,
+} from "@/utils/youtubeMetadata";
 import { emitCloudSyncDomainChange } from "@/utils/cloudSyncEvents";
 import { sortTracksLikeServerOrder } from "@/stores/ipodTrackOrder";
 import { saveAppleMusicLibrary } from "@/utils/appleMusicLibraryCache";
@@ -1657,24 +1661,13 @@ export const useIpodStore = create<IpodState>()(
         let authorName: string | undefined = undefined; // Store author_name
 
         try {
-          // Fetch oEmbed data
-          const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(
-            youtubeUrl
-          )}&format=json`;
-          const oembedResponse = await abortableFetch(oembedUrl, {
-            timeout: 15000,
-            throwOnHttpError: false,
-            credentials: "omit",
-            retry: { maxAttempts: 1, initialDelayMs: 250 },
-          });
-
-          if (oembedResponse.ok) {
-            const oembedData = await oembedResponse.json();
-            rawTitle = oembedData.title || rawTitle;
-            authorName = oembedData.author_name; // Extract author_name
+          const oembed = await fetchYouTubeOembed(videoId);
+          if (oembed.ok) {
+            rawTitle = oembed.rawTitle || rawTitle;
+            authorName = oembed.authorName; // Extract author_name
           } else {
             throw new Error(
-              `Failed to fetch video info (${oembedResponse.status}). Please check the YouTube URL.`
+              `Failed to fetch video info (${oembed.status}). Please check the YouTube URL.`
             );
           }
         } catch (error) {
@@ -1741,36 +1734,10 @@ export const useIpodStore = create<IpodState>()(
         // If no Kugou match found (no lyricsSource), fall back to AI title parsing
         if (!trackInfo.lyricsSource) {
           console.log(`[iPod Store] No Kugou match for ${videoId}, falling back to AI parse`);
-          try {
-            // Call /api/parse-title
-            const parseResponse = await abortableFetch(
-              getApiUrl("/api/parse-title"),
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  title: rawTitle,
-                  author_name: authorName,
-                }),
-                timeout: 15000,
-                throwOnHttpError: false,
-                retry: { maxAttempts: 1, initialDelayMs: 250 },
-              }
-            );
-
-            if (parseResponse.ok) {
-              const parsedData = await parseResponse.json();
-              trackInfo.title = parsedData.title || rawTitle;
-              trackInfo.artist = parsedData.artist;
-              trackInfo.album = parsedData.album;
-            } else {
-              console.warn(
-                `Failed to parse title with AI (status: ${parseResponse.status}), using raw title from oEmbed/default.`
-              );
-            }
-          } catch (error) {
-            console.error("Error calling /api/parse-title:", error);
-          }
+          const parsed = await parseYouTubeTitle(rawTitle, authorName);
+          trackInfo.title = parsed.title;
+          trackInfo.artist = parsed.artist;
+          trackInfo.album = parsed.album;
         }
 
         const newTrack: Track = {

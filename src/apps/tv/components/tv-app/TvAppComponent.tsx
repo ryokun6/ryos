@@ -8,8 +8,7 @@ import { ChannelPromptInput } from "../ChannelPromptInput";
 import { TvCrtEffects } from "../TvCrtEffects";
 import { TvVideoDrawer } from "../TvVideoDrawer";
 import { LoginDialog } from "@/components/dialogs/LoginDialog";
-import { HelpDialog } from "@/components/dialogs/HelpDialog";
-import { AboutDialog } from "@/components/dialogs/AboutDialog";
+import { AppHelpAboutDialogs } from "@/components/shared/AppHelpAboutDialogs";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { appMetadata } from "../..";
 import { Button } from "@/components/ui/button";
@@ -85,17 +84,14 @@ export function TvAppComponent(props: AppProps) {
       }}
       trailing={
         <>
-          <HelpDialog
-            isOpen={c.isHelpDialogOpen}
-            onOpenChange={c.setIsHelpDialogOpen}
+          <AppHelpAboutDialogs
             appId="tv"
             helpItems={c.translatedHelpItems}
-          />
-          <AboutDialog
-            isOpen={c.isAboutDialogOpen}
-            onOpenChange={c.setIsAboutDialogOpen}
             metadata={appMetadata}
-            appId="tv"
+            isHelpOpen={c.isHelpDialogOpen}
+            onHelpOpenChange={c.setIsHelpDialogOpen}
+            isAboutOpen={c.isAboutDialogOpen}
+            onAboutOpenChange={c.setIsAboutDialogOpen}
           />
           <CreateChannelDialog
             isOpen={c.isCreateChannelOpen}
