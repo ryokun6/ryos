@@ -1041,7 +1041,8 @@
         "listCursorCloudAgentRuns": {
           "loading": "Listing Cursor Cloud agent runs…",
           "listed": "Listed {{count}} recent run(s).",
-          "truncatedHint": "(list may be truncated)"
+          "truncatedHint": "(list may be truncated)",
+          "openDashboard": "Open agent in Cursor"
         },
         "searchedWebFor": "Searched the web for {{query}}",
         "foundVideos": "Found {{count}} videos",

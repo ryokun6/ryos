@@ -2,6 +2,10 @@ import { Check } from "@phosphor-icons/react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import HtmlPreview from "@/components/shared/HtmlPreview";
+import {
+  CursorCloudAgentRunsListCard,
+  type CursorCloudAgentRunListRow,
+} from "@/components/shared/CursorCloudAgentRunsListCard";
 import { CursorRepoAgentChatCard } from "@/components/shared/CursorRepoAgentChatCard";
 import {
   MapsSearchPlacesCard,
@@ -74,6 +78,46 @@ export function tryRenderToolInvocationSpecialContent(
         introMessage={out.message}
       />
     );
+  }
+
+  if (state === "output-available" && toolName === "listCursorCloudAgentRuns") {
+    const out = output as
+      | {
+          success?: boolean;
+          runs?: CursorCloudAgentRunListRow[];
+          truncated?: boolean;
+          error?: string;
+        }
+      | undefined;
+    if (out && out.success === true && Array.isArray(out.runs)) {
+      const runs = out.runs;
+      const more = out.truncated
+        ? ` ${t("apps.chats.toolCalls.listCursorCloudAgentRuns.truncatedHint")}`
+        : "";
+      return (
+        <div key={partKey} className="mb-0 px-1 py-0.5 text-[12px]">
+          <ToolInvocationStatusRow
+            icon={
+              <Check
+                className="size-3 text-blue-600 dark:text-blue-400"
+                weight="bold"
+              />
+            }
+            className="text-neutral-700 dark:text-neutral-200"
+            align="start"
+          >
+            <span>
+              {`${t("apps.chats.toolCalls.listCursorCloudAgentRuns.listed", {
+                count: runs.length,
+              })}${more}`}
+            </span>
+          </ToolInvocationStatusRow>
+          {runs.length > 0 ? (
+            <CursorCloudAgentRunsListCard runs={runs} />
+          ) : null}
+        </div>
+      );
+    }
   }
 
   // Special handling for mapsSearchPlaces — render a rich place-card list

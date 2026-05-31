@@ -10,6 +10,11 @@ import {
 } from "@/apps/maps/utils/poiVisuals";
 import type { SavedPlace } from "@/apps/maps/utils/types";
 import { cn } from "@/lib/utils";
+import {
+  toolInlineCardListClassName,
+  toolInlineCardListRowClassName,
+  toolInlineCardShellClassName,
+} from "@/components/shared/toolInlineCardShell";
 
 /**
  * Result returned by the `mapsSearchPlaces` server tool. Mirrors
@@ -71,24 +76,19 @@ export function MapsSearchPlacesCard({
     [launchApp]
   );
 
+  const emptyShell = cn(
+    toolInlineCardShellClassName({
+      isMacOSTheme,
+      isSystem7Theme,
+      isXpTheme,
+    }),
+    "px-2.5 py-2 text-[12px]",
+    isMacOSTheme && "text-os-text-secondary"
+  );
+
   if (!results || results.length === 0) {
     return (
-      <div
-        className={cn(
-          "my-1 px-2.5 py-2 text-[12px]",
-          isMacOSTheme &&
-            "maps-place-card-aqua rounded-[0.5rem] text-os-text-secondary shadow-md",
-          !isMacOSTheme &&
-            isSystem7Theme &&
-            "rounded border-2 border-black bg-white text-black shadow-[2px_2px_0_0_rgba(0,0,0,0.5)]",
-          !isMacOSTheme &&
-            !isSystem7Theme &&
-            isXpTheme &&
-            "rounded-[0.4rem] border-2 border-[#0054E3] bg-[#ECE9D8] text-black",
-          !isMacOSTheme && !isSystem7Theme && !isXpTheme &&
-            "rounded border border-black/30 bg-white text-black"
-        )}
-      >
+      <div className={emptyShell}>
         <p className="text-os-text-secondary">
           {t("apps.chats.toolCalls.maps.noResults", {
             defaultValue: 'No places found for "{{query}}".',
@@ -101,30 +101,14 @@ export function MapsSearchPlacesCard({
 
   return (
     <div
-      className={cn(
-        "my-1 overflow-hidden",
-        // Theme shells mirror the in-app place card so the chat surface
-        // looks like a sibling of the real Maps UI.
-        isMacOSTheme &&
-          "maps-place-card-aqua rounded-[0.5rem] border-transparent text-os-text-primary",
-        !isMacOSTheme &&
-          isSystem7Theme &&
-          "rounded border-2 border-black bg-white text-black shadow-[2px_2px_0_0_rgba(0,0,0,0.5)]",
-        !isMacOSTheme &&
-          !isSystem7Theme &&
-          isXpTheme &&
-          "rounded-[0.4rem] border-2 border-[#0054E3] bg-[#ECE9D8] text-black",
-        !isMacOSTheme && !isSystem7Theme && !isXpTheme &&
-          "rounded border border-black/30 bg-white text-black shadow-md"
-      )}
+      className={toolInlineCardShellClassName({
+        isMacOSTheme,
+        isSystem7Theme,
+        isXpTheme,
+      })}
     >
       <ul
-        className={cn(
-          "divide-y",
-          isMacOSTheme && isDarkMode
-            ? "divide-[color:var(--os-color-separator)]"
-            : "divide-black/10"
-        )}
+        className={toolInlineCardListClassName({ isMacOSTheme, isDarkMode })}
       >
         {results.map((place) => {
           const visual = getPoiVisual(place.category);
@@ -134,16 +118,10 @@ export function MapsSearchPlacesCard({
               <button
                 type="button"
                 onClick={() => handleOpenInMaps(place)}
-                className={cn(
-                  "flex w-full items-center gap-2.5 px-2.5 py-2 text-left",
-                  isMacOSTheme && isDarkMode
-                    ? "hover:bg-white/10 active:bg-white/14"
-                    : "hover:bg-black/5 active:bg-black/10",
-                  "focus:outline-none focus-visible:ring-1",
-                  isMacOSTheme && isDarkMode
-                    ? "focus-visible:ring-white/35"
-                    : "focus-visible:ring-black/30"
-                )}
+                className={toolInlineCardListRowClassName({
+                  isMacOSTheme,
+                  isDarkMode,
+                })}
                 aria-label={t("apps.chats.toolCalls.maps.openInMaps", {
                   defaultValue: "Open {{name}} in Maps",
                   name: place.name,

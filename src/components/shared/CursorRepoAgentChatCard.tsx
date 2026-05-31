@@ -16,7 +16,13 @@ import {
   MergedToolCallStreamBlock,
   MergedUserStreamBlock,
 } from "@/components/shared/CursorRunEventView";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { coalesceCursorRunRows } from "@/lib/cursorSdkRunCoalesce";
+import { cn } from "@/lib/utils";
+import {
+  cursorAgentCardHeaderClassName,
+  toolInlineCardShellClassName,
+} from "@/components/shared/toolInlineCardShell";
 import { useCursorAgentRunPoll } from "@/components/shared/useCursorAgentRunPoll";
 
 interface CursorRepoAgentChatCardProps {
@@ -43,6 +49,7 @@ export function CursorRepoAgentChatCard({
 }: CursorRepoAgentChatCardProps) {
   const isPanel = variant === "panel";
   const { t } = useTranslation();
+  const { isMacOSTheme, isXpTheme, isSystem7Theme, isDarkMode } = useThemeFlags();
   const {
     events,
     done,
@@ -109,14 +116,24 @@ export function CursorRepoAgentChatCard({
       ) : null}
 
       <div
-        className={
-          isPanel
-            ? "flex h-full min-h-0 flex-col overflow-hidden bg-white font-geneva-12 dark:bg-neutral-950"
-            : "my-1 flex flex-col overflow-hidden rounded bg-white font-geneva-12 dark:bg-neutral-950"
-        }
-        style={isPanel ? undefined : { boxShadow: "0 0 0 1px rgba(0, 0, 0, 0.3)" }}
+        className={cn(
+          toolInlineCardShellClassName({
+            isMacOSTheme,
+            isSystem7Theme,
+            isXpTheme,
+            embed: isPanel ? "panel" : "chat",
+          }),
+          isPanel && "h-full min-h-0"
+        )}
       >
-        <div className="flex flex-shrink-0 items-center gap-3 border-b border-neutral-300 bg-neutral-100 px-3 py-2 dark:border-neutral-600 dark:bg-neutral-800/90">
+        <div
+          className={cursorAgentCardHeaderClassName({
+            isMacOSTheme,
+            isSystem7Theme,
+            isXpTheme,
+            isDarkMode,
+          })}
+        >
           <span className="relative inline-flex size-6 shrink-0 items-center justify-center" aria-hidden>
             <img
               src="/brands/cursor-cube-2d-light.svg"
@@ -136,7 +153,15 @@ export function CursorRepoAgentChatCard({
             />
           </span>
           <div className="flex min-w-0 flex-1 items-center gap-2">
-            <div className="min-w-0 flex-1 truncate text-sm font-medium text-neutral-900 dark:text-neutral-100" title={displayTitle}>
+            <div
+              className={cn(
+                "min-w-0 flex-1 truncate text-sm font-medium",
+                isXpTheme && !isMacOSTheme
+                  ? "text-white"
+                  : "text-os-text-primary"
+              )}
+              title={displayTitle}
+            >
               {displayTitle}
             </div>
             {prUrl ? (
@@ -144,7 +169,17 @@ export function CursorRepoAgentChatCard({
                 href={prUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex shrink-0 items-center gap-1 rounded border border-neutral-300 bg-white/85 px-1.5 py-0.5 text-[10px] font-medium text-neutral-700 transition-colors hover:bg-neutral-100 dark:border-neutral-600 dark:bg-neutral-900/70 dark:text-neutral-200 dark:hover:bg-neutral-800"
+                className={cn(
+                  "inline-flex shrink-0 items-center gap-1 rounded border px-1.5 py-0.5 text-[10px] font-medium transition-colors",
+                  isMacOSTheme &&
+                    "border-black/20 bg-white/70 hover:bg-white/90 dark:border-white/15 dark:bg-white/10 dark:hover:bg-white/16",
+                  !isMacOSTheme &&
+                    isXpTheme &&
+                    "border-white/40 bg-white/20 text-white hover:bg-white/30",
+                  !isMacOSTheme &&
+                    !isXpTheme &&
+                    "border-neutral-300 bg-white/85 text-neutral-700 hover:bg-neutral-100 dark:border-neutral-600 dark:bg-neutral-900/70 dark:text-neutral-200 dark:hover:bg-neutral-800"
+                )}
                 title={prUrl}
                 aria-label={t("apps.chats.toolCalls.cursorCloudAgent.openPr")}
               >
@@ -155,12 +190,26 @@ export function CursorRepoAgentChatCard({
               </a>
             ) : null}
             {!done ? (
-              <span className="inline-flex shrink-0 items-center gap-1 text-[10px] font-medium text-amber-900 dark:text-amber-200">
+              <span
+                className={cn(
+                  "inline-flex shrink-0 items-center gap-1 text-[10px] font-medium",
+                  isXpTheme && !isMacOSTheme
+                    ? "text-amber-100"
+                    : "text-amber-900 dark:text-amber-200"
+                )}
+              >
                 <span className="size-1.5 rounded-full bg-amber-500" aria-hidden />
                 {t("apps.chats.toolCalls.cursorCloudAgent.running")}
               </span>
             ) : (
-              <span className="inline-flex shrink-0 items-center gap-1 text-[10px] font-medium text-emerald-900 dark:text-emerald-200">
+              <span
+                className={cn(
+                  "inline-flex shrink-0 items-center gap-1 text-[10px] font-medium",
+                  isXpTheme && !isMacOSTheme
+                    ? "text-emerald-100"
+                    : "text-emerald-900 dark:text-emerald-200"
+                )}
+              >
                 <span className="size-1.5 rounded-full bg-emerald-500" aria-hidden />
                 {t("apps.chats.toolCalls.cursorCloudAgent.finished")}
               </span>
@@ -169,11 +218,15 @@ export function CursorRepoAgentChatCard({
         </div>
 
         <div
-          className={
-            isPanel
-              ? "flex min-h-0 flex-1 flex-col border-t border-neutral-200 bg-neutral-50/50 dark:border-neutral-600 dark:bg-neutral-900/40"
-              : "border-t border-neutral-200 bg-neutral-50/50 dark:border-neutral-600 dark:bg-neutral-900/40"
-          }
+          className={cn(
+            "flex flex-col",
+            isPanel && "min-h-0 flex-1",
+            isMacOSTheme
+              ? isDarkMode
+                ? "border-t border-[color:var(--os-color-separator)] bg-black/15"
+                : "border-t border-black/10 bg-white/45"
+              : "border-t border-black/10 bg-neutral-50/80 dark:border-neutral-600 dark:bg-neutral-900/40"
+          )}
         >
           {error ? (
             <div className="border-b border-red-200/80 bg-red-50/90 px-3 py-1.5 text-[11px] text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-200">
@@ -256,11 +309,14 @@ export function CursorRepoAgentChatCard({
           </div>
 
           <div
-            className={
-              isPanel
-                ? "shrink-0 border-t border-neutral-200 bg-white/80 px-2 py-1.5 dark:border-neutral-700 dark:bg-neutral-900/60"
-                : "border-t border-neutral-200 bg-white/80 px-2 py-1.5 dark:border-neutral-700 dark:bg-neutral-900/60"
-            }
+            className={cn(
+              "shrink-0 border-t px-2 py-1.5",
+              isMacOSTheme
+                ? isDarkMode
+                  ? "border-[color:var(--os-color-separator)] bg-black/20"
+                  : "border-black/10 bg-white/55"
+                : "border-neutral-200 bg-white/80 dark:border-neutral-700 dark:bg-neutral-900/60"
+            )}
           >
             {followupError ? (
               <div className="mb-1 text-[10px] text-red-700 dark:text-red-300">
