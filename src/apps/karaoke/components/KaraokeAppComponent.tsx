@@ -911,8 +911,11 @@ export function KaraokeAppComponent({
             />
           }
           fullScreenPlayerRef={fullScreenPlayerRef}
+          onSurfaceLongPress={handleToggleCoverFlow}
+          surfaceLongPressEnabled={tracks.length > 0}
+          suppressToolbar={isCoverFlowOpen}
         >
-          {({ controlsVisible }) => (
+          {({ controlsVisible, consumeSurfaceLongPressClick }) => (
             <div className="flex flex-col w-full h-full">
               <div className="relative w-full h-full overflow-hidden">
                 <div
@@ -1027,6 +1030,7 @@ export function KaraokeAppComponent({
                       exit={{ opacity: 0 }}
                       transition={{ duration: 0.3 }}
                       onClick={(e) => {
+                        if (consumeSurfaceLongPressClick?.()) return;
                         e.stopPropagation();
                         registerActivity();
                       }}
@@ -1089,6 +1093,31 @@ export function KaraokeAppComponent({
                   onSwipeUp={handleFullscreenLyricsSwipeUp}
                   onSwipeDown={handleFullscreenLyricsSwipeDown}
                 />
+
+                {tracks.length > 0 && (
+                  <div
+                    data-cover-flow
+                    className={`absolute inset-0 z-[45] ${
+                      isCoverFlowOpen
+                        ? "pointer-events-auto"
+                        : "pointer-events-none"
+                    }`}
+                  >
+                    <CoverFlow
+                      ref={coverFlowRef}
+                      tracks={tracks}
+                      currentIndex={currentIndex}
+                      onSelectTrack={handleCoverFlowSelectTrack}
+                      onExit={() => setIsCoverFlowOpen(false)}
+                      onRotation={handleCoverFlowRotation}
+                      isVisible={isCoverFlowOpen}
+                      ipodMode={false}
+                      isPlaying={isPlaying}
+                      onTogglePlay={handlePlayPause}
+                      onPlayTrackInPlace={handleCoverFlowPlayInPlace}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           )}

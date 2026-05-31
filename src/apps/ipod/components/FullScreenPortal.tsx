@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo, type ReactNode } from "react";
+import { usePointerLongPress } from "@/hooks/usePointerLongPress";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
@@ -52,6 +53,9 @@ export function FullScreenPortal({
   karaokeKtvRoomFxEnabled,
   onToggleKaraokeKtvRoomFx,
   activityState,
+  onSurfaceLongPress,
+  surfaceLongPressEnabled = true,
+  suppressToolbar = false,
 }: FullScreenPortalProps) {
   const isAnyActivityActive = activityState
     ? activityState.isLoadingLyrics ||
@@ -181,6 +185,32 @@ export function FullScreenPortal({
     onCycleLyricsFont,
   ]);
 
+  const shouldIgnoreLongPressTarget = useCallback((target: EventTarget | null) => {
+    const el = target as HTMLElement | null;
+    if (!el?.closest) return false;
+    return Boolean(
+      el.closest("[data-toolbar]") ||
+        el.closest("[data-lyrics]") ||
+        el.closest("[data-cover-flow]") ||
+        el.closest("button") ||
+        el.closest("a") ||
+        el.closest("input") ||
+        el.closest("select") ||
+        el.closest("textarea")
+    );
+  }, []);
+
+  const surfaceLongPress = usePointerLongPress(
+    () => {
+      handlersRef.current.registerActivity();
+      onSurfaceLongPress?.();
+    },
+    {
+      enabled: Boolean(onSurfaceLongPress) && surfaceLongPressEnabled,
+      shouldIgnoreTarget: shouldIgnoreLongPressTarget,
+    }
+  );
+
   // Touch handling for swipe gestures
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(
     null
@@ -191,7 +221,7 @@ export function FullScreenPortal({
     (e: TouchEvent) => {
       // Don't handle touches on toolbar or lyrics elements
       const target = e.target as HTMLElement;
-      if (target.closest("[data-toolbar]") || target.closest("[data-lyrics]")) {
+      if (shouldIgnoreLongPressTarget(target)) {
         return;
       }
 
@@ -207,7 +237,7 @@ export function FullScreenPortal({
         time: Date.now(),
       };
     },
-    [hasUserInteracted]
+    [hasUserInteracted, shouldIgnoreLongPressTarget]
   );
 
   const handleTouchEnd = useCallback(
@@ -216,7 +246,7 @@ export function FullScreenPortal({
 
       // Don't handle touches on toolbar or lyrics elements
       const target = e.target as HTMLElement;
-      if (target.closest("[data-toolbar]") || target.closest("[data-lyrics]")) {
+      if (shouldIgnoreLongPressTarget(target)) {
         touchStartRef.current = null;
         return;
       }
@@ -248,7 +278,7 @@ export function FullScreenPortal({
 
       touchStartRef.current = null;
     },
-    []
+    [shouldIgnoreLongPressTarget]
   );
 
   // Effect to request fullscreen when component mounts
@@ -402,11 +432,10 @@ export function FullScreenPortal({
       className="ipod-force-font fixed inset-0 z-[9999] bg-black select-none flex flex-col"
       onClick={(e) => {
         const target = e.target as HTMLElement;
-        if (target.closest("[data-toolbar]")) {
+        if (shouldIgnoreLongPressTarget(target)) {
           return;
         }
-        // Don't handle clicks on lyrics (let them handle their own click events for seeking)
-        if (target.closest("[data-lyrics]")) {
+        if (surfaceLongPress.consumeClickIfLongPressFired()) {
           return;
         }
 
@@ -500,17 +529,35 @@ export function FullScreenPortal({
         />
       )}
 
-      <div className="flex-1 min-h-0">
+      <div
+        className="flex-1 min-h-0"
+        {...(onSurfaceLongPress
+          ? {
+              onMouseDown: surfaceLongPress.onMouseDown,
+              onMouseMove: surfaceLongPress.onMouseMove,
+              onMouseUp: surfaceLongPress.onMouseUp,
+              onMouseLeave: surfaceLongPress.onMouseLeave,
+              onTouchStart: surfaceLongPress.onTouchStart,
+              onTouchMove: surfaceLongPress.onTouchMove,
+              onTouchEnd: surfaceLongPress.onTouchEnd,
+              onTouchCancel: surfaceLongPress.onTouchCancel,
+            }
+          : {})}
+      >
         {typeof children === "function"
           ? (
               children as (ctx: {
                 controlsVisible: boolean;
                 isLangMenuOpen: boolean;
-              }) => React.ReactNode
+                consumeSurfaceLongPressClick?: () => boolean;
+              }) => ReactNode
             )({
                 controlsVisible:
                   showControls || anyMenuOpen || !getActualPlayerState(),
                 isLangMenuOpen,
+                consumeSurfaceLongPressClick: onSurfaceLongPress
+                  ? surfaceLongPress.consumeClickIfLongPressFired
+                  : undefined,
             })
           : children}
       </div>
@@ -520,7 +567,8 @@ export function FullScreenPortal({
         data-toolbar
         className={cn(
           "fixed bottom-0 left-0 right-0 flex justify-center z-[10001] transition-opacity duration-200",
-          showControls || anyMenuOpen || !getActualPlayerState()
+          !suppressToolbar &&
+          (showControls || anyMenuOpen || !getActualPlayerState())
             ? "opacity-100 pointer-events-auto"
             : "opacity-0 pointer-events-none"
         )}

@@ -101,6 +101,8 @@ export interface FullScreenPortalProps {
     | ((ctx: {
         controlsVisible: boolean;
         isLangMenuOpen: boolean;
+        /** Skip surface clicks (e.g. album art tap) right after a long-press. */
+        consumeSurfaceLongPressClick?: () => boolean;
       }) => React.ReactNode);
   onClose: () => void;
   togglePlay: () => void;
@@ -138,6 +140,15 @@ export interface FullScreenPortalProps {
   fullScreenPlayerRef: React.RefObject<ReactPlayer | null>;
   /** Activity state for loading indicators (optional — karaoke supplies from lyrics subtree) */
   activityState?: ActivityInfo;
+  /**
+   * Long-press on the main fullscreen surface (album art / background).
+   * Ignored on toolbar and lyrics. Scoped to fullscreen portal only.
+   */
+  onSurfaceLongPress?: () => void;
+  /** When false, surface long-press is disabled (e.g. no library tracks). */
+  surfaceLongPressEnabled?: boolean;
+  /** Hide bottom player toolbar (e.g. while Cover Flow is open). */
+  suppressToolbar?: boolean;
 }
 
 // IpodScreen props
