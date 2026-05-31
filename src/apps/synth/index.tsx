@@ -1,5 +1,5 @@
 import { BaseApp } from "../base/types";
-import { SynthAppComponent } from "./components/SynthAppComponent";
+import { SynthAppComponent } from "./components/synth-app/SynthAppComponent";
 
 // Re-export metadata from separate file to avoid eager loading of components
 export { appMetadata, helpItems } from "./metadata";

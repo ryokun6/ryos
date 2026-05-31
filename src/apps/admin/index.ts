@@ -1,5 +1,5 @@
 import { BaseApp } from "../base/types";
-import { AdminAppComponent } from "./components/AdminAppComponent";
+import { AdminAppComponent } from "./components/admin-app/AdminAppComponent";
 
 // Re-export metadata from separate file to avoid eager loading of components
 export { appMetadata, helpItems } from "./metadata";

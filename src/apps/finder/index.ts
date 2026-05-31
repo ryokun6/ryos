@@ -1,5 +1,5 @@
 import { BaseApp, FinderInitialData } from "../base/types";
-import { FinderAppComponent } from "./components/FinderAppComponent";
+import { FinderAppComponent } from "./components/finder-app/FinderAppComponent";
 
 // Re-export metadata from separate file to avoid eager loading of components
 export { appMetadata, helpItems } from "./metadata";

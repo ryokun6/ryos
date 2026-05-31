@@ -1,5 +1,5 @@
 import { BaseApp, VideosInitialData } from "../base/types";
-import { VideosAppComponent } from "./components/VideosAppComponent";
+import { VideosAppComponent } from "./components/videos-app/VideosAppComponent";
 
 // Re-export metadata from separate file to avoid eager loading of components
 export { appMetadata, helpItems } from "./metadata";

@@ -1,5 +1,5 @@
 import { BaseApp, InternetExplorerInitialData } from "../base/types";
-import { InternetExplorerAppComponent } from "./components/InternetExplorerAppComponent";
+import { InternetExplorerAppComponent } from "./components/internet-explorer-app/InternetExplorerAppComponent";
 
 // Re-export metadata from separate file to avoid eager loading of components
 export { appMetadata, helpItems } from "./metadata";

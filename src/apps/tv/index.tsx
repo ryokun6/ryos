@@ -1,5 +1,5 @@
 import { BaseApp } from "../base/types";
-import { TvAppComponent } from "./components/TvAppComponent";
+import { TvAppComponent } from "./components/tv-app/TvAppComponent";
 
 export { appMetadata, helpItems } from "./metadata";
 import { appMetadata, helpItems } from "./metadata";
