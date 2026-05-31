@@ -7,31 +7,30 @@ import React, {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { useAppStoreShallow } from "@/stores/helpers";
-import { AppId, getAppIconPath } from "@/config/appRegistry";
-import { getTranslatedAppName } from "@/utils/i18n";
+import { AppId, getAppIconPath, appRegistry, getNonFinderApps } from "@/config/appRegistry";
+import { getTranslatedAppName, getTranslatedFolderNameFromName } from "@/utils/i18n";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useFinderStore } from "@/stores/useFinderStore";
 import { useFilesStore } from "@/stores/useFilesStore";
-import { useDockStore, PROTECTED_DOCK_ITEMS } from "@/stores/useDockStore";
+import { useDockStore, PROTECTED_DOCK_ITEMS, type DockItem } from "@/stores/useDockStore";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useIsPhone } from "@/hooks/useIsPhone";
 import { useLongPress } from "@/hooks/useLongPress";
 import { useSound, Sounds } from "@/hooks/useSound";
 import type { AppInstance, LaunchOriginRect } from "@/stores/useAppStore";
-import { RightClickMenu } from "@/components/ui/right-click-menu";
+import type { AppletViewerInitialData } from "@/apps/applet-viewer";
+import { RightClickMenu, MenuItem } from "@/components/ui/right-click-menu";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
+import { requestCloseWindow } from "@/utils/windowUtils";
 import { AnimatePresence, motion, LayoutGroup } from "framer-motion";
 import { useShallow } from "zustand/react/shallow";
+import { toggleExposeView } from "@/utils/appEventBus";
 import {
   isClientYInBottomZone,
   shouldRevealDockFromSwipeUp,
 } from "@/utils/dockRevealGesture";
 import { useDashboardShellInputDisabled } from "@/hooks/useDashboardShellInputDisabled";
-import { DOCK_BASE_BUTTON_SIZE } from "./dockConstants";
-import { getDockAppletInfo } from "./dockAppletInfo";
-import { useDockContextMenus } from "./useDockContextMenus";
-import { useDockDragDrop } from "./useDockDragDrop";
-import { createDockTrashHandlers } from "./dockTrashHandlers";
+import { DOCK_BASE_BUTTON_SIZE, DOCK_MULTI_WINDOW_APPS } from "./dockConstants";
 import { DockSpacer } from "./DockSpacer";
 import { DockIconButton } from "./DockIconButton";
 import { DockDivider } from "./DockDivider";
@@ -128,6 +127,12 @@ export function MacDock() {
   const { hoveredId, isSwapping, handleIconHover, handleIconLeave } =
     useDockIconHover();
 
+  // Drag-and-drop state
+  const [externalDragIndex, setExternalDragIndex] = useState<number | null>(null);
+  const [draggingItemId, setDraggingItemId] = useState<string | null>(null);
+  const [isDraggedOutside, setIsDraggedOutside] = useState(false);
+  const [isDividerDropTarget, setIsDividerDropTarget] = useState(false);
+  
   // Resize dragging state
   const [isResizing, setIsResizing] = useState(false);
   const [liveDockScale, setLiveDockScale] = useState<number | null>(null);
@@ -153,36 +158,6 @@ export function MacDock() {
   const scaledButtonSize = Math.round(DOCK_BASE_BUTTON_SIZE * effectiveDockScale);
   const scaledDockHeight = Math.round(56 * effectiveDockScale); // Base dock height is 56px
   const scaledPadding = Math.round(4 * effectiveDockScale); // Base padding is 4px (py-1, px-1)
-
-
-  const {
-    externalDragIndex,
-    draggingItemId,
-    isDraggedOutside,
-    isDividerDropTarget,
-    handleDockDragOver,
-    handleDockDragEnter,
-    handleDockDragLeave,
-    handleDockDrop,
-    handleItemDragStart,
-    handleItemDragEnd,
-    handleItemDrag,
-    handleItemDragOver,
-    handleNonPinnedDragStart,
-    handleDividerDragOver,
-    handleDividerDragLeave,
-    handleDividerDrop,
-  } = useDockDragDrop({
-    pinnedItems,
-    effectiveDockScale,
-    scaledPadding,
-    getFileItem,
-    addDockItem,
-    removeDockItem,
-    reorderItems,
-    dockBarRef,
-    iconRefsMap,
-  });
 
   // Resize handlers for divider drag (only on desktop)
   const handleResizeStart = useCallback((e: React.MouseEvent) => {
@@ -426,6 +401,22 @@ export function MacDock() {
     });
   }, []);
 
+  // Get divider context menu items (dock settings)
+  const getDividerContextMenuItems = useCallback((): MenuItem[] => {
+    return [
+      {
+        type: "item",
+        label: dockHiding ? t("common.dock.turnHidingOff") : t("common.dock.turnHidingOn"),
+        onSelect: () => setDockHiding(!dockHiding),
+      },
+      {
+        type: "item",
+        label: dockMagnification ? t("common.dock.turnMagnificationOff") : t("common.dock.turnMagnificationOn"),
+        onSelect: () => setDockMagnification(!dockMagnification),
+      },
+    ];
+  }, [dockHiding, dockMagnification, setDockHiding, setDockMagnification, t]);
+
   // Long press handler for divider on mobile (opens context menu)
   const handleDividerLongPress = useCallback((e: React.TouchEvent) => {
     e.preventDefault();
@@ -453,6 +444,45 @@ export function MacDock() {
   );
   const isTrashEmpty = trashItemCount === 0;
 
+  // Helper to get applet info (icon and name) from instance
+  const getAppletInfo = useCallback(
+    (instance: AppInstance) => {
+      const initialData = instance.initialData as
+        | AppletViewerInitialData
+        | undefined;
+      const path = initialData?.path || "";
+      const file = path ? getFileItem(path) : undefined;
+
+      const getFileName = (p: string): string => {
+        const parts = p.split("/");
+        const fileName = parts[parts.length - 1];
+        return fileName.replace(/\.(html|app)$/i, "");
+      };
+
+      const label = path ? getFileName(path) : t("common.dock.appletStore");
+
+      const fileIcon = file?.icon;
+      const isEmojiIcon =
+        fileIcon &&
+        !fileIcon.startsWith("/") &&
+        !fileIcon.startsWith("http") &&
+        fileIcon.length <= 10;
+
+      let icon: string;
+      let isEmoji: boolean;
+      if (!path) {
+        icon = getAppIconPath("applet-viewer");
+        isEmoji = false;
+      } else {
+        icon = isEmojiIcon ? fileIcon : "📦";
+        isEmoji = true;
+      }
+
+      return { icon, label, isEmoji };
+    },
+    [getFileItem, t]
+  );
+
   // Pinned apps on the left side (from dock store)
   const pinnedLeft: AppId[] = useMemo(
     () =>
@@ -465,6 +495,327 @@ export function MacDock() {
     [pinnedItems]
   );
   
+  // Calculate drop index based on cursor position
+  const calculateDropIndex = useCallback((clientX: number): number => {
+    // Get dock bar bounds
+    const dockBar = dockBarRef.current;
+    if (!dockBar) return pinnedItems.length;
+    
+    const dockRect = dockBar.getBoundingClientRect();
+    
+    // If no pinned items, return 0
+    if (pinnedItems.length === 0) return 0;
+    
+    // Calculate icon width (including margin) based on dock width
+    // Each icon is about 56px wide (48px + 8px margin), scaled by effective dock scale
+    const iconWidth = Math.round(56 * effectiveDockScale);
+    
+    // Get the starting X position of the first icon
+    // Account for padding (scaled)
+    const startX = dockRect.left + scaledPadding;
+    
+    // Calculate relative position
+    const relativeX = clientX - startX;
+    
+    // Calculate which slot the cursor is in
+    const slotIndex = Math.floor(relativeX / iconWidth);
+    
+    // Clamp to valid range
+    return Math.max(0, Math.min(slotIndex, pinnedItems.length));
+  }, [pinnedItems.length, effectiveDockScale, scaledPadding]);
+  
+  // Check if this is an external drag (from desktop/finder, not internal dock reorder)
+  const isExternalDrag = useCallback((e: React.DragEvent): boolean => {
+    const types = Array.from(e.dataTransfer.types);
+    return types.includes("application/json") && !types.includes("application/x-dock-item");
+  }, []);
+
+  // Handle external drag over dock (from desktop/finder)
+  const handleDockDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    // Always allow drops so drop event fires
+    e.preventDefault();
+
+    // Only show spacer for external drags
+    if (!isExternalDrag(e)) return;
+
+    const dropIndex = calculateDropIndex(e.clientX);
+    setExternalDragIndex(dropIndex);
+  }, [calculateDropIndex, isExternalDrag]);
+  
+  const handleDockDragEnter = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    if (!isExternalDrag(e)) return;
+    setExternalDragIndex((prev) => prev ?? pinnedItems.length);
+  }, [isExternalDrag, pinnedItems.length]);
+  
+  const handleDockDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    if (!isExternalDrag(e)) return;
+    setExternalDragIndex(null);
+  }, [isExternalDrag]);
+  
+  const handleDockDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Only handle external drops
+    if (!isExternalDrag(e)) return;
+    
+    const dropIndex = externalDragIndex ?? pinnedItems.length;
+    setExternalDragIndex(null);
+    
+    try {
+      const jsonData = e.dataTransfer.getData("application/json");
+      if (!jsonData) {
+        console.warn("[Dock] No JSON data in drop");
+        return;
+      }
+      
+      const data = JSON.parse(jsonData);
+      console.log("[Dock] Drop data:", data);
+      
+      const { path, name, appId, aliasType, aliasTarget } = data;
+      
+      // Determine what to add to dock
+      let newItem: DockItem | null = null;
+      
+      // Case 1: App alias from desktop shortcuts (aliasType === "app")
+      if (aliasType === "app" && aliasTarget) {
+        newItem = { type: "app", id: aliasTarget };
+      }
+      // Case 2: Direct app ID (from Applications folder files)
+      else if (appId) {
+        newItem = { type: "app", id: appId };
+      }
+      // Case 3: Application from /Applications/ path
+      else if (path && path.startsWith("/Applications/")) {
+        const appFile = getFileItem(path);
+        if (appFile?.appId) {
+          newItem = { type: "app", id: appFile.appId };
+        }
+      }
+      // Case 4: Applet file (.app or .html)
+      else if (path && (path.endsWith(".app") || path.endsWith(".html"))) {
+        const file = getFileItem(path);
+        const fileName = path.split("/").pop()?.replace(/\.(app|html)$/i, "") || name;
+        newItem = {
+          type: "file",
+          id: `file-${path}`,
+          path,
+          name: fileName,
+          icon: file?.icon,
+        };
+      }
+      
+      console.log("[Dock] Adding item:", newItem, "at index:", dropIndex);
+      
+      if (newItem) {
+        const added = addDockItem(newItem, dropIndex);
+        console.log("[Dock] Item added:", added);
+      }
+    } catch (err) {
+      console.warn("[Dock] Failed to handle drop:", err);
+    }
+  }, [externalDragIndex, pinnedItems.length, getFileItem, addDockItem, isExternalDrag]);
+  
+  // Handle internal dock item drag start
+  const handleItemDragStart = useCallback((e: React.DragEvent, itemId: string, index: number) => {
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("application/x-dock-item", JSON.stringify({ id: itemId, index }));
+    // Also set application/json so we can distinguish from external drags
+    e.dataTransfer.setData("text/plain", itemId);
+    setDraggingItemId(itemId);
+    setIsDraggedOutside(false);
+  }, []);
+  
+  // Handle internal dock item drag end
+  const handleItemDragEnd = useCallback((e: React.DragEvent, itemId: string) => {
+    // Check if dropped outside the dock
+    const dockRect = dockBarRef.current?.getBoundingClientRect();
+    if (dockRect) {
+      const isOutside = 
+        e.clientX < dockRect.left ||
+        e.clientX > dockRect.right ||
+        e.clientY < dockRect.top - 50 || // Allow some margin above
+        e.clientY > dockRect.bottom + 50; // Allow some margin below
+      
+      if (isOutside && !PROTECTED_DOCK_ITEMS.has(itemId)) {
+        // Remove item from dock
+        removeDockItem(itemId);
+      }
+    }
+    
+    setDraggingItemId(null);
+    setIsDraggedOutside(false);
+  }, [removeDockItem]);
+  
+  // Track when drag leaves dock area
+  const handleItemDrag = useCallback((e: React.DragEvent) => {
+    const dockRect = dockBarRef.current?.getBoundingClientRect();
+    if (dockRect && draggingItemId) {
+      const isOutside = 
+        e.clientX < dockRect.left - 20 ||
+        e.clientX > dockRect.right + 20 ||
+        e.clientY < dockRect.top - 60 ||
+        e.clientY > dockRect.bottom + 60;
+      
+      setIsDraggedOutside(isOutside);
+    }
+  }, [draggingItemId]);
+  
+  // Reorder state with hysteresis to prevent flip-flopping
+  const lastReorderTimeRef = useRef<number>(0);
+  const lastReorderTargetRef = useRef<number | null>(null);
+  const pendingReorderRef = useRef<{ targetIndex: number; timeout: ReturnType<typeof setTimeout> } | null>(null);
+  
+  const REORDER_DELAY = 150; // ms delay before reorder commits
+  const REORDER_COOLDOWN = 300; // ms cooldown after a reorder before another can happen
+  const SWAP_THRESHOLD = 0.65; // Must drag past 65% of an icon's width to trigger swap
+  
+  // Handle internal reordering when dragging over another item
+  const handleItemDragOver = useCallback((e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault();
+    const types = Array.from(e.dataTransfer.types);
+    
+    if (!types.includes("application/x-dock-item") || !draggingItemId) {
+      return;
+    }
+    
+    e.dataTransfer.dropEffect = "move";
+    
+    // Don't allow targeting index 0 (Finder's reserved spot)
+    if (targetIndex === 0 && pinnedItems[0]?.id === "finder") {
+      if (pendingReorderRef.current) {
+        clearTimeout(pendingReorderRef.current.timeout);
+        pendingReorderRef.current = null;
+      }
+      return;
+    }
+    
+    const currentIndex = pinnedItems.findIndex(item => item.id === draggingItemId);
+    if (currentIndex === -1 || currentIndex === targetIndex) {
+      // Clear pending if we're back at current position
+      if (pendingReorderRef.current && currentIndex === targetIndex) {
+        clearTimeout(pendingReorderRef.current.timeout);
+        pendingReorderRef.current = null;
+      }
+      return;
+    }
+    
+    // Check cooldown - don't allow rapid successive reorders
+    const now = Date.now();
+    if (now - lastReorderTimeRef.current < REORDER_COOLDOWN) {
+      return;
+    }
+    
+    // Get the target element to check cursor position within it
+    const targetElement = iconRefsMap.current.get(pinnedItems[targetIndex]?.id);
+    if (targetElement) {
+      const rect = targetElement.getBoundingClientRect();
+      const relativeX = e.clientX - rect.left;
+      const percentAcross = relativeX / rect.width;
+      
+      // Determine if we should swap based on direction and threshold
+      // For moving right, cursor must be past SWAP_THRESHOLD of the target
+      // For moving left, cursor must be before (1 - SWAP_THRESHOLD) of the target
+      const movingRight = targetIndex > currentIndex;
+      const shouldSwap = movingRight 
+        ? percentAcross > SWAP_THRESHOLD
+        : percentAcross < (1 - SWAP_THRESHOLD);
+      
+      if (!shouldSwap) {
+        // Clear pending if threshold not met
+        if (pendingReorderRef.current) {
+          clearTimeout(pendingReorderRef.current.timeout);
+          pendingReorderRef.current = null;
+        }
+        return;
+      }
+    }
+    
+    // If we're already pending for this target, do nothing
+    if (pendingReorderRef.current?.targetIndex === targetIndex) {
+      return;
+    }
+    
+    // Clear any existing pending reorder
+    if (pendingReorderRef.current) {
+      clearTimeout(pendingReorderRef.current.timeout);
+    }
+    
+    // Schedule reorder after delay
+    const timeout = setTimeout(() => {
+      // Re-check conditions
+      const newCurrentIndex = pinnedItems.findIndex(item => item.id === draggingItemId);
+      const timeSinceLastReorder = Date.now() - lastReorderTimeRef.current;
+      
+      if (newCurrentIndex !== -1 && newCurrentIndex !== targetIndex && timeSinceLastReorder >= REORDER_COOLDOWN) {
+        reorderItems(newCurrentIndex, targetIndex);
+        lastReorderTimeRef.current = Date.now();
+        lastReorderTargetRef.current = targetIndex;
+      }
+      pendingReorderRef.current = null;
+    }, REORDER_DELAY);
+    
+    pendingReorderRef.current = { targetIndex, timeout };
+  }, [draggingItemId, pinnedItems, reorderItems]);
+  
+  // Clean up pending reorder on drag end and reset state
+  useEffect(() => {
+    if (!draggingItemId) {
+      if (pendingReorderRef.current) {
+        clearTimeout(pendingReorderRef.current.timeout);
+        pendingReorderRef.current = null;
+      }
+      lastReorderTargetRef.current = null;
+    }
+  }, [draggingItemId]);
+
+  // Handle non-pinned app drag start (for pinning)
+  const handleNonPinnedDragStart = useCallback((e: React.DragEvent, appId: AppId) => {
+    e.dataTransfer.effectAllowed = "copy";
+    // Set data as application/json so it's treated like an external drag for pinning
+    e.dataTransfer.setData("application/json", JSON.stringify({ appId }));
+  }, []);
+
+  // Handle divider drag over (for pinning non-pinned apps)
+  const handleDividerDragOver = useCallback((e: React.DragEvent) => {
+    const types = Array.from(e.dataTransfer.types);
+    // Only accept external drags (non-pinned apps or from finder/desktop)
+    if (types.includes("application/json") && !types.includes("application/x-dock-item")) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "copy";
+      setIsDividerDropTarget(true);
+      // Set drop index to end of pinned items
+      setExternalDragIndex(pinnedItems.length);
+    }
+  }, [pinnedItems.length]);
+
+  const handleDividerDragLeave = useCallback(() => {
+    setIsDividerDropTarget(false);
+  }, []);
+
+  const handleDividerDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDividerDropTarget(false);
+    setExternalDragIndex(null);
+
+    try {
+      const jsonData = e.dataTransfer.getData("application/json");
+      if (!jsonData) return;
+
+      const data = JSON.parse(jsonData);
+      const { appId } = data;
+
+      if (appId && appRegistry[appId as AppId]) {
+        // Pin the app at the end
+        addDockItem({ type: "app", id: appId }, pinnedItems.length);
+      }
+    } catch (err) {
+      console.warn("[Dock] Failed to handle divider drop:", err);
+    }
+  }, [addDockItem, pinnedItems.length]);
+
   // Compute open apps and individual applet instances
   const openItems = useMemo(() => {
     const items: Array<{
@@ -662,38 +1013,424 @@ export function MacDock() {
     ]
   );
 
-  const {
-    getDividerContextMenuItems,
-    getAppContextMenuItems,
-    getFolderContextMenuItems,
-  } = useDockContextMenus({
-    t,
-    instances,
-    finderInstances,
-    pinnedItems,
-    dockHiding,
-    dockMagnification,
-    setDockHiding,
-    setDockMagnification,
-    isAdmin,
-    isTrashEmpty,
-    getFileItem,
-    getFilesInPath,
-    launchApp,
-    restoreInstance,
-    bringInstanceToForeground,
-    minimizeInstance,
-    closeAppInstance,
-    playZoomMinimize,
-    removeDockItem,
-    addDockItem,
-    focusFinderAtPathOrLaunch,
-    focusOrLaunchFinder,
-    focusOrLaunchApp,
-    setTrashContextMenuPos,
-    setApplicationsContextMenuPos,
-    setIsEmptyTrashDialogOpen,
-  });
+  // Generate context menu items for an app
+  const getAppContextMenuItems = useCallback(
+    (appId: AppId, specificInstanceId?: string): MenuItem[] => {
+      const items: MenuItem[] = [];
+      
+      // Get all open instances of this app
+      const appInstances = Object.values(instances).filter(
+        (inst) => inst.appId === appId && inst.isOpen
+      );
+      
+      // For non-opened apps, show "Open" and optionally "Remove from Dock"
+      if (appInstances.length === 0 && !specificInstanceId) {
+        items.push({
+          type: "item",
+          label: t("common.dock.open"),
+          onSelect: () => {
+            if (appId === "finder") {
+              launchApp("finder", { initialPath: "/" });
+            } else {
+              launchApp(appId);
+            }
+          },
+        });
+        
+        // Add "Remove from Dock" for pinned, non-protected items
+        const isPinned = pinnedItems.some(item => item.type === "app" && item.id === appId);
+        const isProtected = PROTECTED_DOCK_ITEMS.has(appId);
+        
+        if (isPinned && !isProtected) {
+          items.push({ type: "separator" });
+          items.push({
+            type: "item",
+            label: t("common.dock.removeFromDock") || "Remove from Dock",
+            onSelect: () => {
+              removeDockItem(appId);
+            },
+          });
+        }
+        
+        return items;
+      }
+      
+      // For applet-viewer with a specific instance, only show that applet's menu
+      if (appId === "applet-viewer" && specificInstanceId) {
+        const instance = instances[specificInstanceId];
+        if (instance) {
+          // Single applet instance - show its window
+          const { label } = getAppletInfo(instance);
+          const isForeground = !!(instance.isForeground && !instance.isMinimized);
+          items.push({
+            type: "checkbox",
+            label: `${label}${instance.isMinimized ? ` ${t("common.dock.minimized")}` : ""}`,
+            checked: isForeground,
+            onSelect: () => {
+              if (instance.isMinimized) {
+                restoreInstance(specificInstanceId);
+              }
+              bringInstanceToForeground(specificInstanceId);
+            },
+          });
+          
+          items.push({ type: "separator" });
+          
+          // Show All Windows (Expose View)
+          items.push({
+            type: "item",
+            label: t("common.dock.showAllWindows"),
+            onSelect: () => {
+              // Trigger Expose View
+              toggleExposeView();
+            },
+          });
+          
+          // Hide
+          items.push({
+            type: "item",
+            label: t("common.dock.hide"),
+            onSelect: () => {
+              playZoomMinimize();
+              minimizeInstance(specificInstanceId);
+            },
+            disabled: instance.isMinimized,
+          });
+          
+          // Quit
+          items.push({
+            type: "item",
+            label: t("common.dock.quit"),
+            onSelect: () => {
+              // If minimized, close directly without animation/sound (window isn't visible)
+              if (instance.isMinimized) {
+                closeAppInstance(specificInstanceId);
+              } else {
+                requestCloseWindow(specificInstanceId);
+              }
+            },
+          });
+          
+          return items;
+        }
+      }
+      
+      // List existing windows if any
+      if (appInstances.length > 0) {
+        appInstances.forEach((inst) => {
+          let windowLabel = inst.displayTitle || inst.title || appRegistry[appId]?.name || appId;
+          
+          // For Finder, show the current path with localized folder name
+          if (appId === "finder") {
+            const finderState = finderInstances[inst.instanceId];
+            if (finderState?.currentPath) {
+              if (finderState.currentPath === "/") {
+                // Root path - use localized "Macintosh HD"
+                windowLabel = t("apps.finder.window.macintoshHd");
+              } else {
+                const pathParts = finderState.currentPath.split("/");
+                const lastSegment = pathParts[pathParts.length - 1] || "";
+                try {
+                  const decodedName = decodeURIComponent(lastSegment);
+                  windowLabel = getTranslatedFolderNameFromName(decodedName);
+                } catch {
+                  windowLabel = getTranslatedFolderNameFromName(lastSegment);
+                }
+              }
+            }
+          }
+          
+          const isForeground = !!(inst.isForeground && !inst.isMinimized);
+          items.push({
+            type: "checkbox",
+            label: `${windowLabel}${inst.isMinimized ? ` ${t("common.dock.minimized")}` : ""}`,
+            checked: isForeground,
+            onSelect: () => {
+              if (inst.isMinimized) {
+                restoreInstance(inst.instanceId);
+              }
+              bringInstanceToForeground(inst.instanceId);
+            },
+          });
+        });
+        
+        items.push({ type: "separator" });
+      }
+      
+      // New Window option for multi-instance apps
+      if (DOCK_MULTI_WINDOW_APPS.includes(appId)) {
+        items.push({
+          type: "item",
+          label: t("common.dock.newWindow"),
+          onSelect: () => {
+            if (appId === "finder") {
+              launchApp("finder", { initialPath: "/" });
+            } else {
+              launchApp(appId);
+            }
+          },
+        });
+        
+        items.push({ type: "separator" });
+      }
+      
+      // Add/Remove from Dock options (before Show All Windows section)
+      const isPinned = pinnedItems.some(item => item.type === "app" && item.id === appId);
+      const isProtected = PROTECTED_DOCK_ITEMS.has(appId);
+      
+      if (isPinned && !isProtected) {
+        // Show "Remove from Dock" for pinned, non-protected items
+        items.push({
+          type: "item",
+          label: t("common.dock.removeFromDock"),
+          onSelect: () => {
+            removeDockItem(appId);
+          },
+        });
+        items.push({ type: "separator" });
+      } else if (!isPinned && !isProtected && appInstances.length > 0) {
+        // Show "Add to Dock" for running apps that aren't pinned
+        items.push({
+          type: "item",
+          label: t("common.dock.addToDock"),
+          onSelect: () => {
+            addDockItem({ type: "app", id: appId });
+          },
+        });
+        items.push({ type: "separator" });
+      }
+      
+      // Show All Windows (Expose View)
+      items.push({
+        type: "item",
+        label: t("common.dock.showAllWindows"),
+        onSelect: () => {
+          // Trigger Expose View
+          toggleExposeView();
+        },
+        disabled: appInstances.length === 0,
+      });
+      
+      // Hide (minimize all)
+      items.push({
+        type: "item",
+        label: t("common.dock.hide"),
+        onSelect: () => {
+          // Play sound once for the hide action
+          playZoomMinimize();
+          appInstances.forEach((inst) => {
+            if (!inst.isMinimized) {
+              minimizeInstance(inst.instanceId);
+            }
+          });
+        },
+        disabled: appInstances.length === 0 || appInstances.every((inst) => inst.isMinimized),
+      });
+      
+      // Quit (close all)
+      items.push({
+        type: "item",
+        label: t("common.dock.quit"),
+        onSelect: () => {
+          appInstances.forEach((inst) => {
+            // If minimized, close directly without animation/sound (window isn't visible)
+            if (inst.isMinimized) {
+              closeAppInstance(inst.instanceId);
+            } else {
+              requestCloseWindow(inst.instanceId);
+            }
+          });
+        },
+        disabled: appInstances.length === 0,
+      });
+      
+      return items;
+    },
+    [instances, finderInstances, getAppletInfo, restoreInstance, bringInstanceToForeground, minimizeInstance, closeAppInstance, playZoomMinimize, launchApp, pinnedItems, removeDockItem, addDockItem, t]
+  );
+
+  // Generate context menu items for a folder shortcut
+  const getFolderContextMenuItems = useCallback(
+    (folderPath: string, isTrash: boolean = false): MenuItem[] => {
+      const items: MenuItem[] = [];
+      
+      // Handle virtual directories
+      let sortedItems: Array<{
+        name: string;
+        path: string;
+        isDirectory: boolean;
+        appId?: AppId;
+        aliasType?: "file" | "app";
+        aliasTarget?: string;
+        icon?: string;
+      }> = [];
+      
+      if (folderPath === "/Applications") {
+        // Applications is a virtual directory - get apps from registry
+        const apps = getNonFinderApps(isAdmin);
+        sortedItems = apps.map((app) => ({
+          name: app.name,
+          path: `/Applications/${app.name}`,
+          isDirectory: false,
+          appId: app.id,
+          aliasType: "app" as const,
+          aliasTarget: app.id,
+          icon: app.icon,
+        })).sort((a, b) => a.name.localeCompare(b.name));
+      } else {
+        // Regular directory - get items from file store
+        const folderItems = getFilesInPath(folderPath);
+        sortedItems = folderItems.map((item) => {
+          let icon: string | undefined;
+          
+          // Get icon for the item
+          if (item.aliasType === "app" && item.aliasTarget) {
+            // App alias - get icon from app registry
+            icon = getAppIconPath(item.aliasTarget as AppId);
+          } else if (item.aliasType === "file" && item.aliasTarget) {
+            // File alias - get icon from target file
+            const targetFile = getFileItem(item.aliasTarget);
+            icon = targetFile?.icon || "/icons/default/file.png";
+          } else if (item.isDirectory) {
+            // Directory - use folder icon
+            icon = item.icon || "/icons/directory.png";
+          } else if (item.icon) {
+            // Use stored icon
+            icon = item.icon;
+          } else {
+            // Default file icon
+            icon = "/icons/default/file.png";
+          }
+          
+          return {
+            name: item.name,
+            path: item.path,
+            isDirectory: item.isDirectory,
+            appId: item.appId as AppId | undefined,
+            aliasType: item.aliasType,
+            aliasTarget: item.aliasTarget,
+            icon,
+          };
+        }).sort((a, b) => {
+          if (a.isDirectory && !b.isDirectory) return -1;
+          if (!a.isDirectory && b.isDirectory) return 1;
+          return a.name.localeCompare(b.name);
+        });
+      }
+      
+      // Add "Open" option
+      items.push({
+        type: "item",
+        label: t("common.dock.open"),
+        onSelect: () => {
+          focusFinderAtPathOrLaunch(folderPath);
+          if (isTrash) {
+            setTrashContextMenuPos(null);
+          } else {
+            setApplicationsContextMenuPos(null);
+          }
+        },
+      });
+      
+      // Add separator if there are items
+      if (sortedItems.length > 0) {
+        items.push({ type: "separator" });
+        
+        // Create submenu items for folder contents
+        const submenuItems: MenuItem[] = sortedItems.map((item) => {
+          let displayName = item.name;
+          
+          // For directories, use translated folder name
+          if (item.isDirectory) {
+            displayName = getTranslatedFolderNameFromName(item.name);
+          } else if (item.aliasType === "app" && item.aliasTarget) {
+            // For app aliases, use translated app name
+            displayName = getTranslatedAppName(item.aliasTarget as AppId);
+          } else if (item.appId) {
+            // For Applications folder apps, use translated app name
+            displayName = getTranslatedAppName(item.appId);
+          } else {
+            // Remove file extension for display
+            displayName = item.name.replace(/\.[^/.]+$/, "");
+          }
+          
+          return {
+            type: "item",
+            label: displayName,
+            icon: item.icon,
+            onSelect: () => {
+              if (item.isDirectory) {
+                // Open folder in Finder
+                focusFinderAtPathOrLaunch(item.path);
+              } else if (item.appId) {
+                // Launch app (from Applications folder)
+                const appId = item.appId;
+                if (appId === "finder") {
+                  focusOrLaunchFinder("/");
+                } else {
+                  focusOrLaunchApp(appId);
+                }
+              } else if (item.aliasType === "app" && item.aliasTarget) {
+                // Launch app
+                const appId = item.aliasTarget as AppId;
+                if (appId === "finder") {
+                  focusOrLaunchFinder("/");
+                } else {
+                  focusOrLaunchApp(appId);
+                }
+              } else if (item.aliasType === "file" && item.aliasTarget) {
+                // Open file alias - resolve target and open
+                const targetFile = getFileItem(item.aliasTarget);
+                if (targetFile) {
+                  if (targetFile.isDirectory) {
+                    focusFinderAtPathOrLaunch(targetFile.path);
+                  } else {
+                    // For files, open in Finder at the file's location
+                    const parentPath = item.aliasTarget.substring(0, item.aliasTarget.lastIndexOf("/"));
+                    focusFinderAtPathOrLaunch(parentPath || "/");
+                  }
+                }
+              } else {
+                // Regular file - open in Finder at the file's location
+                const parentPath = item.path.substring(0, item.path.lastIndexOf("/"));
+                focusFinderAtPathOrLaunch(parentPath || "/");
+              }
+              // Close the context menu
+              if (isTrash) {
+                setTrashContextMenuPos(null);
+              } else {
+                setApplicationsContextMenuPos(null);
+              }
+            },
+          };
+        });
+        
+        // Add submenu with folder contents
+        items.push({
+          type: "submenu",
+          label: t("common.dock.folderContents") || "Folder Contents",
+          items: submenuItems,
+        });
+      }
+      
+      // For Trash, add separator and Empty Trash option
+      if (isTrash) {
+        items.push({ type: "separator" });
+        items.push({
+          type: "item",
+          label: t("apps.finder.contextMenu.emptyTrash"),
+          onSelect: () => {
+            setIsEmptyTrashDialogOpen(true);
+            setTrashContextMenuPos(null);
+          },
+          disabled: isTrashEmpty,
+        });
+      }
+      
+      return items;
+    },
+    [getFilesInPath, getFileItem, focusFinderAtPathOrLaunch, focusOrLaunchFinder, focusOrLaunchApp, isTrashEmpty, t, isAdmin]
+  );
 
   // Handle app context menu
   const handleAppContextMenu = useCallback(
@@ -716,9 +1453,6 @@ export function MacDock() {
     },
     []
   );
-
-  const { handleTrashDragOver, handleTrashDrop, handleTrashDragLeave } =
-    createDockTrashHandlers(removeFileItem, setIsDraggingOverTrash);
 
   const { mouseX, effectiveMagnifyEnabled } = useDockMagnification(
     dockMagnification,
@@ -1004,7 +1738,7 @@ export function MacDock() {
                   const instance = instances[item.instanceId];
                   if (!instance) return null;
 
-                  const { icon, label, isEmoji } = getDockAppletInfo(instance, getFileItem, t);
+                  const { icon, label, isEmoji } = getAppletInfo(instance);
                   return (
                     <DockIconButton
                       key={item.instanceId}
@@ -1134,6 +1868,44 @@ export function MacDock() {
 
               {/* Trash (right side) */}
               {(() => {
+                const handleTrashDragOver = (e: React.DragEvent<HTMLButtonElement>) => {
+                  // Check if this is a desktop shortcut being dragged
+                  // We can't use getData in dragOver, so check types instead
+                  const types = Array.from(e.dataTransfer.types);
+                  if (types.includes("application/json")) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.dataTransfer.dropEffect = "move";
+                    setIsDraggingOverTrash(true);
+                  }
+                };
+
+                const handleTrashDrop = (e: React.DragEvent<HTMLButtonElement>) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsDraggingOverTrash(false);
+
+                  try {
+                    const data = e.dataTransfer.getData("application/json");
+                    if (data) {
+                      const parsed = JSON.parse(data);
+                      // Only handle desktop shortcuts
+                      if (parsed.path && parsed.path.startsWith("/Desktop/")) {
+                        // Move shortcut to trash
+                        removeFileItem(parsed.path);
+                      }
+                    }
+                  } catch (err) {
+                    console.warn("[Dock] Failed to handle trash drop:", err);
+                  }
+                };
+
+                const handleTrashDragLeave = (e: React.DragEvent<HTMLButtonElement>) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsDraggingOverTrash(false);
+                };
+
                 const handleTrashContextMenu = (
                   e: React.MouseEvent<HTMLButtonElement>
                 ) => {
