@@ -20,6 +20,7 @@ import { setNextBootMessage } from "@/utils/bootMessage";
 import i18n from "@/lib/i18n";
 import { getApiUrl, isTauri } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { parseChunkReferences } from "@/utils/chunkReferences";
 
 // Storage key for manifest timestamp (for cache invalidation)
 const MANIFEST_KEY = 'ryos:manifest-timestamp';
@@ -745,11 +746,21 @@ async function clearAllCaches(): Promise<void> {
 }
 
 /**
- * Discover all JS chunks by fetching the main bundle and parsing for dynamic imports
+ * Discover all JS chunks by walking the dynamic-import graph transitively.
+ *
+ * Historically this only scanned the entry bundle, which captured first-level
+ * dynamic imports but MISSED chunks that are dynamically imported from inside
+ * lazily-loaded app chunks (e.g. syntax-highlight grammars, mermaid, the
+ * Spotlight worker, react-player providers, phosphor icon `.es` chunks). Those
+ * un-prefetched chunks then failed to load when offline, so opening an app
+ * could crash. We now BFS the whole graph so every reachable chunk is cached.
+ *
+ * Fetching each chunk body is also what warms the service-worker cache, so the
+ * subsequent progress pass in runPrefetchWithToast resolves from cache.
  */
 async function discoverAllJsChunks(): Promise<string[]> {
   try {
-    // First, get the main bundle URL from index.html
+    // First, get the entry + module preloads from index.html
     const indexResponse = await abortableFetch('/index.html', {
       method: 'GET',
       timeout: 15000,
@@ -757,13 +768,11 @@ async function discoverAllJsChunks(): Promise<string[]> {
       retry: { maxAttempts: 1, initialDelayMs: 250 },
     });
     if (!indexResponse.ok) return [];
-    
+
     const html = await indexResponse.text();
-    
-    // Find the main index bundle: /assets/index-XXXX.js
-    const mainBundleMatch = html.match(/\/assets\/index-[A-Za-z0-9_-]+\.js/);
-    if (!mainBundleMatch) {
-      // In development mode, Vite serves source directly (no bundled assets)
+
+    // No hashed entry bundle means we're in dev (Vite serves source directly).
+    if (!/\/assets\/index-[A-Za-z0-9_-]+\.js/.test(html)) {
       if (import.meta.env.DEV) {
         console.log('[Prefetch] Skipping JS chunk discovery in development mode');
       } else {
@@ -771,32 +780,57 @@ async function discoverAllJsChunks(): Promise<string[]> {
       }
       return [];
     }
-    
-    // Fetch the main bundle to find dynamic import URLs
-    const bundleResponse = await abortableFetch(mainBundleMatch[0], {
-      method: 'GET',
-      timeout: 15000,
-      throwOnHttpError: false,
-      retry: { maxAttempts: 1, initialDelayMs: 250 },
-    });
-    if (!bundleResponse.ok) return [];
-    
-    const bundleCode = await bundleResponse.text();
-    
-    // Find all asset URLs in the bundle
-    // Dynamic imports look like: "assets/ChatsAppComponent-BHyz_x7A.js" or "./ChatsAppComponent-..."
-    const assetPattern = /["'](?:\.\/|assets\/)([A-Za-z0-9_-]+)-[A-Za-z0-9_-]+\.js["']/g;
-    const matches = bundleCode.matchAll(assetPattern);
-    
-    // Extract just the filename part and build full URLs
-    const allAssets: string[] = [];
-    for (const match of matches) {
-      const filename = match[0].replace(/["']/g, '').replace(/^\.\//, '').replace(/^assets\//, '');
-      allAssets.push(`/assets/${filename}`);
+
+    // Safety caps to keep the crawl bounded even if a regex false-positive
+    // sneaks in a self-referential or runaway reference.
+    const MAX_CHUNKS = 2000;
+    const BATCH_SIZE = 16;
+
+    const discovered = new Set<string>(); // full URLs, e.g. /assets/foo.js
+    const queue: string[] = [];
+
+    const enqueue = (filename: string) => {
+      const url = `/assets/${filename}`;
+      if (!discovered.has(url) && discovered.size < MAX_CHUNKS) {
+        discovered.add(url);
+        queue.push(url);
+      }
+    };
+
+    // Seed from index.html (entry chunk + <link rel="modulepreload"> targets).
+    for (const match of html.matchAll(/\/assets\/([\w.-]+\.js)/g)) {
+      enqueue(match[1]);
     }
-    
-    // Dedupe and return all JS chunks (includes locale translation-* chunks)
-    const uniqueAssets = [...new Set(allAssets)];
+
+    // Breadth-first crawl: fetch each chunk, scan it for further references.
+    // Batched so we parallelize network without overwhelming the connection.
+    const scanned = new Set<string>();
+    while (queue.length > 0) {
+      const batch = queue.splice(0, BATCH_SIZE);
+      await Promise.all(
+        batch.map(async (url) => {
+          if (scanned.has(url)) return;
+          scanned.add(url);
+          try {
+            const response = await abortableFetch(url, {
+              method: 'GET',
+              timeout: 15000,
+              throwOnHttpError: false,
+              retry: { maxAttempts: 1, initialDelayMs: 250 },
+            });
+            if (!response.ok) return;
+            const code = await response.text();
+            for (const filename of parseChunkReferences(code)) {
+              enqueue(filename);
+            }
+          } catch {
+            // Ignore individual chunk failures; prefetch is best-effort.
+          }
+        })
+      );
+    }
+
+    const uniqueAssets = [...discovered];
 
     const localeChunks = uniqueAssets.filter((url) =>
       /\/translation-[A-Za-z0-9_-]+\.js$/.test(url)
@@ -807,9 +841,10 @@ async function discoverAllJsChunks(): Promise<string[]> {
       );
     }
 
-    console.log(`[Prefetch] Discovered ${uniqueAssets.length} JS chunks from main bundle`);
+    console.log(
+      `[Prefetch] Discovered ${uniqueAssets.length} JS chunks (transitive graph walk)`
+    );
     return uniqueAssets;
-    
   } catch (error) {
     console.warn('[Prefetch] Failed to discover JS chunks:', error);
     return [];
