@@ -1102,6 +1102,33 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   );
 }
 
+/* Link preview loading skeleton — surface + animated sweep (not text clip) */
+.link-preview-loading-skeleton {
+  background-color: rgba(245, 245, 245, 0.9);
+  background-image: linear-gradient(
+    90deg,
+    rgba(229, 229, 229, 0.9) 0%,
+    rgba(229, 229, 229, 0.9) 25%,
+    rgba(250, 250, 250, 1) 40%,
+    rgba(229, 229, 229, 0.9) 75%,
+    rgba(229, 229, 229, 0.9) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite linear;
+}
+
+.dark .link-preview-loading-skeleton {
+  background-color: rgba(38, 38, 42, 0.95);
+  background-image: linear-gradient(
+    90deg,
+    rgba(63, 63, 70, 0.95) 0%,
+    rgba(63, 63, 70, 0.95) 25%,
+    rgba(82, 82, 91, 0.85) 40%,
+    rgba(63, 63, 70, 0.95) 75%,
+    rgba(63, 63, 70, 0.95) 100%
+  );
+}
+
 /* Cursor agent stream markdown — compact rhythm aligned with tool-call rows */
 .cursor-stream-md > *:first-child {
   margin-top: 0;
