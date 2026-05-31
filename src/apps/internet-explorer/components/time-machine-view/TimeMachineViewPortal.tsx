@@ -19,7 +19,7 @@ export type TimeMachineViewVm = ReturnType<typeof useTimeMachineView>;
 
 export function TimeMachineViewPortal({ vm, isOpen }: { vm: TimeMachineViewVm; isOpen: boolean }) {
   return (
-            <AnimatePresence>
+    <AnimatePresence>
               {isOpen && (
                 <motion.div
                   className={`fixed inset-0 z-[10000] ${
@@ -550,7 +550,6 @@ export function TimeMachineViewPortal({ vm, isOpen }: { vm: TimeMachineViewVm; i
                   />
                 </motion.div>
               )}
-            </AnimatePresence>,
-            document.body
+    </AnimatePresence>
   );
 }
