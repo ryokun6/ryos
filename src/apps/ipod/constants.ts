@@ -2,7 +2,7 @@
 
 import { LyricsAlignment } from "@/types/lyrics";
 import type { Track } from "@/stores/useIpodStore";
-import { parseYouTubeVideoId } from "@/utils/youtubeUrl";
+import { parseYouTubeVideoId, youtubeThumbnailUrl } from "@/utils/youtubeUrl";
 import { formatKugouImageUrl } from "@/utils/coverArt";
 
 // Re-exported from shared utils so existing iPod-internal imports keep working
@@ -125,9 +125,7 @@ export function resolveTrackCoverUrl(
     return track.cover ?? null;
   }
   const videoId = track.url ? getYouTubeVideoId(track.url) : null;
-  const youtubeThumbnail = videoId
-    ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
-    : null;
+  const youtubeThumbnail = videoId ? youtubeThumbnailUrl(videoId) : null;
   return formatKugouImageUrl(track.cover, 400) ?? youtubeThumbnail;
 }
 

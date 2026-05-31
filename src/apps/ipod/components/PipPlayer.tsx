@@ -7,6 +7,7 @@ import { useOffline } from "@/hooks/useOffline";
 import { useTranslation } from "react-i18next";
 import { useIsPhone } from "@/hooks/useIsPhone";
 import { getYouTubeVideoId, formatKugouImageUrl } from "../constants";
+import { youtubeThumbnailUrl } from "@/utils/youtubeUrl";
 import type { PipPlayerProps } from "../types";
 import { SkipBack, SkipForward, Play, Pause, MusicNote } from "@phosphor-icons/react";
 
@@ -45,7 +46,7 @@ export function PipPlayer({
     ? getYouTubeVideoId(currentTrack.url)
     : null;
   const youtubeThumbnail = youtubeVideoId
-    ? `https://img.youtube.com/vi/${youtubeVideoId}/mqdefault.jpg`
+    ? youtubeThumbnailUrl(youtubeVideoId, "mqdefault")
     : null;
   const thumbnailUrl = formatKugouImageUrl(currentTrack?.cover) ?? youtubeThumbnail;
 

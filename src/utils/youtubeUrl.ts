@@ -25,6 +25,21 @@ export function isYouTubeUrl(url: string | undefined | null): boolean {
 
 const YOUTUBE_ID_RE = /^[a-zA-Z0-9_-]{11}$/;
 
+export type YouTubeThumbnailQuality =
+  | "default"
+  | "mqdefault"
+  | "hqdefault"
+  | "sddefault"
+  | "maxresdefault";
+
+/** Build the `img.youtube.com` thumbnail URL for a video id. */
+export function youtubeThumbnailUrl(
+  videoId: string,
+  quality: YouTubeThumbnailQuality = "maxresdefault"
+): string {
+  return `https://img.youtube.com/vi/${videoId}/${quality}.jpg`;
+}
+
 /**
  * Canonical YouTube video-id extractor. Accepts a raw 11-char id or any
  * supported YouTube URL (watch, youtu.be, embed, shorts, v/). Returns null

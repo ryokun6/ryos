@@ -15,7 +15,7 @@ import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { LyricsAlignment, LyricsFont, DisplayMode } from "@/types/lyrics";
 import { useOffline } from "@/hooks/useOffline";
 import { useListenSync } from "@/hooks/useListenSync";
-import { parseYouTubeVideoId } from "@/utils/youtubeUrl";
+import { parseYouTubeVideoId, youtubeThumbnailUrl } from "@/utils/youtubeUrl";
 import { formatKugouImageUrl } from "@/utils/coverArt";
 import { TRANSLATION_LANGUAGES } from "@/utils/lyricsTranslation";
 import { useLibraryUpdateChecker } from "@/apps/ipod/hooks/useLibraryUpdateChecker";
@@ -544,9 +544,7 @@ export function useKaraokeLogic({
   const coverUrl = useMemo(() => {
     if (!currentTrack) return null;
     const videoId = parseYouTubeVideoId(currentTrack.url);
-    const youtubeThumbnail = videoId
-      ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
-      : null;
+    const youtubeThumbnail = videoId ? youtubeThumbnailUrl(videoId) : null;
     return formatKugouImageUrl(currentTrack.cover, 800) ?? youtubeThumbnail;
   }, [currentTrack]);
 

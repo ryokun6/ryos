@@ -17,6 +17,7 @@ import {
   IPOD_MODERN_SCREEN_HEIGHT_PX,
   IPOD_NOW_PLAYING_SONG_MENU_KEY,
 } from "../../constants";
+import { youtubeThumbnailUrl } from "@/utils/youtubeUrl";
 import { DisplayMode } from "@/types/lyrics";
 import type { IpodScreenProps } from "../../types";
 import { useIpodStore, isAppleMusicCollectionTrack } from "@/stores/useIpodStore";
@@ -231,9 +232,7 @@ export function IpodScreen({
       return nowPlayingDisplayTrack.cover ?? null;
     }
     const videoId = getYouTubeVideoId(nowPlayingDisplayTrack.url);
-    const youtubeThumbnail = videoId
-      ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
-      : null;
+    const youtubeThumbnail = videoId ? youtubeThumbnailUrl(videoId) : null;
     return (
       formatKugouImageUrl(nowPlayingDisplayTrack.cover, 400) ?? youtubeThumbnail
     );
