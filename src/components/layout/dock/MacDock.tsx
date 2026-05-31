@@ -7,7 +7,7 @@ import React, {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { useAppStoreShallow } from "@/stores/helpers";
-import { AppId } from "@/config/appRegistry";
+import { AppId, appRegistry } from "@/config/appRegistry";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useFinderStore } from "@/stores/useFinderStore";
 import { useFilesStore } from "@/stores/useFilesStore";
@@ -16,7 +16,7 @@ import { useIsPhone } from "@/hooks/useIsPhone";
 import { useIsRyoAdmin } from "@/hooks/useIsRyoAdmin";
 import { useLongPress } from "@/hooks/useLongPress";
 import { useSound, Sounds } from "@/hooks/useSound";
-import type { AppInstance, LaunchOriginRect } from "@/stores/useAppStore";
+import type { LaunchOriginRect } from "@/stores/useAppStore";
 import { RightClickMenu } from "@/components/ui/right-click-menu";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { AnimatePresence, motion, LayoutGroup } from "framer-motion";
@@ -27,9 +27,9 @@ import {
 } from "@/utils/dockRevealGesture";
 import { useDashboardShellInputDisabled } from "@/hooks/useDashboardShellInputDisabled";
 import { DOCK_BASE_BUTTON_SIZE } from "./dockConstants";
-import type { DockOpenItem } from "./dockTypes";
 import { DockPinnedItems } from "./DockPinnedItems";
 import { DockOpenItems } from "./DockOpenItems";
+import { computeDockOpenItems } from "./dockOpenList";
 import { DockApplicationsButton } from "./DockApplicationsButton";
 import { DockTrashButton } from "./DockTrashButton";
 import { useDockContextMenus } from "./useDockContextMenus";
@@ -452,62 +452,42 @@ export function MacDock() {
   );
   const isTrashEmpty = trashItemCount === 0;
 
+  // Drop pinned app entries whose id no longer exists in the registry (e.g.
+  // stale localStorage / cross-version cloud sync). These would otherwise throw
+  // in getAppIconPath and paint a broken/empty slot. File items are kept as-is
+  // because they have their own icon fallbacks.
+  const sanitizedPinnedItems = useMemo(
+    () =>
+      pinnedItems.filter(
+        (item) => item.type !== "app" || Boolean(appRegistry[item.id as AppId])
+      ),
+    [pinnedItems]
+  );
+
   // Pinned apps on the left side (from dock store)
   const pinnedLeft: AppId[] = useMemo(
     () =>
-      pinnedItems.reduce<AppId[]>((acc, item) => {
+      sanitizedPinnedItems.reduce<AppId[]>((acc, item) => {
         if (item.type === "app") {
           acc.push(item.id as AppId);
         }
         return acc;
       }, []),
-    [pinnedItems]
+    [sanitizedPinnedItems]
   );
-  
-  // Compute open apps and individual applet instances
-  const openItems = useMemo(() => {
-    const items: DockOpenItem[] = [];
 
-    // Group instances by appId
-    const openByApp: Record<string, AppInstance[]> = {};
-    for (const instance of Object.values(instances)) {
-      if (!instance.isOpen) {
-        continue;
-      }
-      if (!openByApp[instance.appId]) {
-        openByApp[instance.appId] = [];
-      }
-      openByApp[instance.appId].push(instance);
-    }
-
-    // For each app, either add individual applet instances or a single app entry
-    Object.entries(openByApp).forEach(([appId, instancesList]) => {
-      if (appId === "applet-viewer") {
-        // Add each applet instance separately
-        instancesList.forEach((inst) => {
-          items.push({
-            type: "applet",
-            appId: inst.appId as AppId,
-            instanceId: inst.instanceId,
-            sortKey: inst.createdAt || 0,
-          });
-        });
-      } else {
-        // Add a single entry for this app
-        items.push({
-          type: "app",
-          appId: appId as AppId,
-          sortKey: instancesList[0]?.createdAt ?? 0,
-        });
-      }
-    });
-
-    // Sort by creation time to keep a stable order
-    items.sort((a, b) => a.sortKey - b.sortKey);
-    
-    // Filter out pinned apps
-    return items.filter((item) => !pinnedLeft.includes(item.appId));
-  }, [instances, pinnedLeft]);
+  // Compute open apps and individual applet instances. Entries that can't be
+  // rendered (unknown app ids, applet instances without an id) are filtered out
+  // so the dock never shows an empty slot.
+  const openItems = useMemo(
+    () =>
+      computeDockOpenItems(
+        instances,
+        pinnedLeft,
+        (appId) => Boolean(appRegistry[appId])
+      ),
+    [instances, pinnedLeft]
+  );
 
   const openAppsAllSet = useMemo(() => {
     const set = new Set<AppId>();
@@ -851,7 +831,7 @@ export function MacDock() {
           <LayoutGroup>
             <AnimatePresence mode="popLayout" initial={false}>
               <DockPinnedItems
-                pinnedItems={pinnedItems}
+                pinnedItems={sanitizedPinnedItems}
                 externalDragIndex={externalDragIndex}
                 openAppsAllSet={openAppsAllSet}
                 instances={instances}
