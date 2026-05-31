@@ -1,5 +1,5 @@
 import { AppProps, InternetExplorerInitialData } from "@/apps/base/types";
-import { WindowFrame } from "@/components/layout/WindowFrame";
+import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { InternetExplorerMenuBar } from "../InternetExplorerMenuBar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";

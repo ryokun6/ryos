@@ -18,6 +18,7 @@ import { SyncTabContent } from "./SyncTabContent";
 import { SystemTabContent } from "./SystemTabContent";
 import { ControlPanelsDialogs } from "./ControlPanelsDialogs";
 import { getUsernameInitials } from "./syncUtils";
+import { useIsRyoAdmin } from "@/hooks/useIsRyoAdmin";
 
 export function ControlPanelsAppComponent({
   isWindowOpen,
@@ -195,7 +196,7 @@ export function ControlPanelsAppComponent({
     CLOUD_BACKUP_MAX_SIZE,
   } = logic;
 
-  const isAdmin = username?.toLowerCase() === "ryo";
+  const isAdmin = useIsRyoAdmin();
   const myContact = useContactsStore((state) =>
     state.myContactId
       ? state.contacts.find((contact) => contact.id === state.myContactId) ?? null
