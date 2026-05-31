@@ -13,6 +13,7 @@ import {
   getUserColorClass,
   isUrgentMessage,
 } from "../utils";
+import { filterUrlsForChatLinkPreviews } from "@/utils/cursorAgentDashboardUrl";
 import { extractUrlsFromContent } from "./utils";
 
 export type ChatMessageItemViewModel = ReturnType<typeof useChatMessageItem>;
@@ -162,7 +163,7 @@ export function useChatMessageItem(props: ChatMessageItemProps) {
     } else {
       extractUrlsFromContent(displayContent).forEach((u) => allUrls.add(u));
     }
-    return Array.from(allUrls);
+    return filterUrlsForChatLinkPreviews(allUrls);
   })();
 
   return {
