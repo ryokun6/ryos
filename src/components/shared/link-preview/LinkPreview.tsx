@@ -43,7 +43,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
       className={cn(
         "link-preview-container relative overflow-hidden cursor-pointer font-geneva-12 group max-w-[420px]",
         isMacOSTheme
-          ? "chat-bubble macosx-link-preview bg-neutral-100 border-none shadow-none dark:bg-neutral-800/90"
+          ? "chat-bubble macosx-link-preview rounded-[16px] bg-neutral-100 border-none shadow-none dark:bg-neutral-800/90"
           : "bg-white border border-neutral-200 rounded dark:border-neutral-700 dark:bg-neutral-950",
         className
       )}

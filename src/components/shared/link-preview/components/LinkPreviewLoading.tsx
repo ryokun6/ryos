@@ -13,7 +13,7 @@ export function LinkPreviewLoading({ className }: { className?: string }) {
         "link-preview-loading h-[106px] w-full min-w-[280px] max-w-[420px]",
         "relative overflow-hidden",
         isMacOSTheme
-          ? "chat-bubble macosx-link-preview bg-neutral-100 border-none shadow-none"
+          ? "chat-bubble macosx-link-preview rounded-[16px] bg-neutral-100 border-none shadow-none"
           : "rounded border border-neutral-200 dark:border-neutral-700",
         className
       )}
@@ -24,7 +24,7 @@ export function LinkPreviewLoading({ className }: { className?: string }) {
       <div
         className={cn(
           "link-preview-loading-skeleton absolute inset-0",
-          !isMacOSTheme && "rounded-[inherit]"
+          isMacOSTheme ? "rounded-[16px]" : "rounded-[inherit]"
         )}
         aria-hidden
       />

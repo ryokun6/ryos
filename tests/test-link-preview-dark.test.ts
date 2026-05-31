@@ -36,7 +36,12 @@ describe("link preview dark mode styling", () => {
   test("loading component uses shared skeleton class and macOS bubble shell", () => {
     expect(loadingSource).toContain("link-preview-loading-skeleton");
     expect(loadingSource).toContain("macosx-link-preview");
+    expect(loadingSource).toContain("rounded-[16px]");
     expect(loadingSource).toContain("useThemeFlags");
+  });
+
+  test("loaded macOS link preview uses 16px radius to match chat image previews", () => {
+    expect(previewSource).toContain("rounded-[16px]");
   });
 
   test(".dark .link-preview-loading-skeleton avoids bright white sweep", () => {
@@ -61,5 +66,15 @@ describe("link preview dark mode styling", () => {
   test("macOS dark tones down link preview loading bubble gloss", () => {
     expect(themesCss).toContain(".link-preview-loading.macosx-link-preview.chat-bubble:before");
     expect(themesCss).toContain("rgba(255, 255, 255, 0.1)");
+  });
+
+  test("macOS themes enforce 16px radius on link preview cards and loading shells", () => {
+    expect(themesCss).toContain(
+      ".macosx-link-preview.chat-bubble.link-preview-container"
+    );
+    expect(themesCss).toContain(
+      ".macosx-link-preview.chat-bubble.link-preview-loading"
+    );
+    expect(themesCss).toContain("border-radius: 16px !important");
   });
 });

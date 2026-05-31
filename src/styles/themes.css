@@ -2844,6 +2844,13 @@
   background-color: #e5e7eb !important; /* gray-200 */
 }
 
+/* Link preview cards (chat) — 16px outer radius matches chat-bubble + image top radii */
+:root[data-os-theme="macosx"] .macosx-link-preview.chat-bubble.link-preview-container,
+:root[data-os-theme="macosx"] .macosx-link-preview.chat-bubble.link-preview-loading {
+  border-radius: 16px !important;
+  overflow: hidden;
+}
+
 :root[data-os-theme="macosx"] .macosx-link-preview.chat-bubble:before {
   top: 2px; /* extend shine to very top when image flush */
   left: 8px;
@@ -2851,6 +2858,10 @@
   filter: blur(0.5px);
   border-radius: 14px 14px 4px 4px;
   z-index: 10; /* above image */
+}
+
+:root[data-os-theme="macosx"] .macosx-link-preview .link-preview-loading-skeleton {
+  border-radius: 16px;
 }
 
 /* Link preview loading: keep aqua chrome but avoid a bright gloss stripe on dark fills */
