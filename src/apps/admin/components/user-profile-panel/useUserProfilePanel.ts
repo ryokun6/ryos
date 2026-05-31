@@ -323,7 +323,12 @@ export function useUserProfilePanel({
     return new Date(timestamp).toLocaleString();
   };
 
-  
+  const isTargetAdmin = username.toLowerCase() === "ryo";
+  const roomsCount = profile?.rooms?.length ?? 0;
+  const messagesCount = hasLoadedMessages
+    ? messages.length
+    : Math.min(profile?.messageCount ?? 0, RECENT_MESSAGES_LIMIT);
+
   const dispatchProfileUi = dispatchUi;
 
   return {
