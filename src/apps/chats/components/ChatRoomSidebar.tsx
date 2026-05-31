@@ -101,7 +101,7 @@ export const ChatRoomSidebar = React.memo(function ChatRoomSidebar({
           </span>
           {room.type === "irc" && (
             <span
-              className="ml-1 text-[9px] font-bold uppercase tracking-wider text-purple-700/70"
+              className="chat-room-irc-label ml-1 text-[9px] font-bold uppercase tracking-wider"
               title={`IRC ${room.ircHost || "irc.pieter.com"}`}
             >
               irc

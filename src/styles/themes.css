@@ -2822,6 +2822,26 @@
 :root[data-os-theme="macosx"] .chat-bubble.bg-purple-200 {
   background-color: #e9d5ff !important; /* purple-200 */
 }
+
+/* Chats sidebar — IRC room-type pill (purple tint; remapped in Aqua dark mode) */
+.chat-room-irc-label {
+  color: rgb(126 34 206 / 0.7);
+}
+
+[data-selected="true"] .chat-room-irc-label {
+  color: rgba(255, 255, 255, 0.75) !important;
+}
+
+:root[data-os-theme="macosx"] .chat-room-irc-label {
+  color: rgb(109 40 217 / 0.75);
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .window-body
+  .chat-room-irc-label {
+  color: #c4b5fd !important;
+}
+
 :root[data-os-theme="macosx"] .chat-bubble.bg-indigo-200 {
   background-color: #c7d2fe !important; /* indigo-200 */
 }
