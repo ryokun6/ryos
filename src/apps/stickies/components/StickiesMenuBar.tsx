@@ -9,7 +9,14 @@ import {
   MenubarSubTrigger,
   MenubarSubContent,
 } from "@/components/ui/menubar";
-import { useThemeFlags } from "@/hooks/useThemeFlags";
+import { AppMenuBarHelpMenu } from "@/components/shared/menubar/AppMenuBarHelpMenu";
+import { AppShareItemDialog } from "@/components/shared/menubar/AppShareItemDialog";
+import {
+  MENUBAR_ITEM_CLASS,
+  MENUBAR_SEPARATOR_CLASS,
+  MENUBAR_TRIGGER_CLASS,
+} from "@/components/shared/menubar/menubarStyles";
+import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
 import { requestCloudSyncDomainCheck } from "@/utils/cloudSyncEvents";
 import { useTranslation } from "react-i18next";
 import { StickyColor } from "@/stores/useStickiesStore";
@@ -45,43 +52,55 @@ export function StickiesMenuBar({
   onDeleteNote,
 }: StickiesMenuBarProps) {
   const { t } = useTranslation();
-  const { isWindowsTheme: isXpTheme, isMacOSTheme: isMacOsxTheme } =
-    useThemeFlags();
+  const {
+    isShareDialogOpen,
+    setIsShareDialogOpen,
+    isXpTheme,
+    isMacOsxTheme,
+    appId,
+    appName,
+  } = useAppMenuBarChrome("stickies");
 
   return (
     <MenuBar inWindowFrame={isXpTheme}>
-      {/* File Menu */}
       <MenubarMenu>
-        <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
+        <MenubarTrigger className={MENUBAR_TRIGGER_CLASS}>
           {t("common.menu.file")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
-          <MenubarItem onClick={() => onNewNote()} className="text-md h-6 px-3">
+          <MenubarItem onClick={() => onNewNote()} className={MENUBAR_ITEM_CLASS}>
             {t("apps.stickies.menu.newNote")}
           </MenubarItem>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
-          <MenubarItem onClick={onClearAll} className="text-md h-6 px-3">
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
+          <MenubarItem onClick={onClearAll} className={MENUBAR_ITEM_CLASS}>
             {t("apps.stickies.menu.clearAll")}
           </MenubarItem>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
-          <MenubarItem onClick={() => requestCloudSyncDomainCheck("stickies")} className="text-md h-6 px-3">
-            {t("apps.stickies.menu.syncStickies", { defaultValue: "Sync Stickies" })}
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
+          <MenubarItem
+            onClick={() => requestCloudSyncDomainCheck("stickies")}
+            className={MENUBAR_ITEM_CLASS}
+          >
+            {t("apps.stickies.menu.syncStickies", {
+              defaultValue: "Sync Stickies",
+            })}
           </MenubarItem>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
-          <MenubarItem onClick={onClose} className="text-md h-6 px-3">
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
+          <MenubarItem onClick={onClose} className={MENUBAR_ITEM_CLASS}>
             {t("common.menu.close")}
           </MenubarItem>
         </MenubarContent>
       </MenubarMenu>
 
-      {/* Note Menu */}
       <MenubarMenu>
-        <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
+        <MenubarTrigger className={MENUBAR_TRIGGER_CLASS}>
           {t("apps.stickies.menu.note")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           <MenubarSub>
-            <MenubarSubTrigger disabled={!selectedNoteId} className="text-md h-6 px-3">
+            <MenubarSubTrigger
+              disabled={!selectedNoteId}
+              className={MENUBAR_ITEM_CLASS}
+            >
               {t("apps.stickies.menu.color")}
             </MenubarSubTrigger>
             <MenubarSubContent className="px-0">
@@ -91,9 +110,9 @@ export function StickiesMenuBar({
                   onClick={() =>
                     selectedNoteId && onChangeColor(selectedNoteId, color.value)
                   }
-                  className="text-md h-6 px-3 flex items-center gap-2"
+                  className={`${MENUBAR_ITEM_CLASS} flex items-center gap-2`}
                 >
-                  <span 
+                  <span
                     className="w-4 h-3 border border-black/30 inline-block"
                     style={{ backgroundColor: color.hex }}
                   />
@@ -102,36 +121,31 @@ export function StickiesMenuBar({
               ))}
             </MenubarSubContent>
           </MenubarSub>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <MenubarItem
             disabled={!selectedNoteId}
             onClick={() => selectedNoteId && onDeleteNote(selectedNoteId)}
-            className="text-md h-6 px-3"
+            className={MENUBAR_ITEM_CLASS}
           >
             {t("apps.stickies.menu.deleteNote")}
           </MenubarItem>
         </MenubarContent>
       </MenubarMenu>
 
-      {/* Help Menu */}
-      <MenubarMenu>
-        <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
-          {t("common.menu.help")}
-        </MenubarTrigger>
-        <MenubarContent align="start" sideOffset={1} className="px-0">
-          <MenubarItem onClick={onShowHelp} className="text-md h-6 px-3">
-            {t("apps.stickies.menu.help")}
-          </MenubarItem>
-          {!isMacOsxTheme && (
-            <>
-              <MenubarSeparator className="h-[2px] bg-black my-1" />
-              <MenubarItem onClick={onShowAbout} className="text-md h-6 px-3">
-                {t("apps.stickies.menu.about")}
-              </MenubarItem>
-            </>
-          )}
-        </MenubarContent>
-      </MenubarMenu>
+      <AppMenuBarHelpMenu
+        helpItemLabel={t("apps.stickies.menu.help")}
+        aboutItemLabel={t("apps.stickies.menu.about")}
+        isMacOsxTheme={isMacOsxTheme}
+        onShowHelp={onShowHelp}
+        onShowAbout={onShowAbout}
+        onOpenShareDialog={() => setIsShareDialogOpen(true)}
+      />
+      <AppShareItemDialog
+        appId={appId}
+        appName={appName}
+        isOpen={isShareDialogOpen}
+        onClose={() => setIsShareDialogOpen(false)}
+      />
     </MenuBar>
   );
 }
