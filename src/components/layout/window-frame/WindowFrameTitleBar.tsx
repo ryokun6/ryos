@@ -73,8 +73,7 @@ export function WindowFrameTitleBar({
   const coverFlowLabel = t("apps.ipod.menu.coverFlow");
 
   return (
-    <>
-      {isXpTheme ? (
+    isXpTheme ? (
         // XP/98 theme title bar structure
         <div
           className={cn(
@@ -434,7 +433,6 @@ export function WindowFrameTitleBar({
             onFullscreenToggle={onFullscreenToggle}
           />
         </div>
-      )}
-    </>
+      )
   );
 }
