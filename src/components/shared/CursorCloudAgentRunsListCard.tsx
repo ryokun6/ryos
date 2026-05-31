@@ -1,6 +1,7 @@
-import { ArrowSquareOut, Robot } from "@phosphor-icons/react";
+import { ArrowSquareOut } from "@phosphor-icons/react";
 import { useTranslation } from "react-i18next";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
+import { CursorBrandMark } from "@/components/shared/CursorBrandMark";
 import { cn } from "@/lib/utils";
 import {
   toolInlineCardListClassName,
@@ -22,6 +23,15 @@ export interface CursorCloudAgentRunListRow {
 
 export interface CursorCloudAgentRunsListCardProps {
   runs: CursorCloudAgentRunListRow[];
+}
+
+function formatRunStatusLabel(status: string): string {
+  const normalized = status.trim().replace(/_/g, " ");
+  if (!normalized) return normalized;
+  return normalized
+    .split(/\s+/)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
 }
 
 function statusDotClass(status: string): string {
@@ -88,24 +98,25 @@ export function CursorCloudAgentRunsListCard({
                   isDarkMode,
                 })}
               >
-                <div
+                <CursorBrandMark
                   className={cn(
-                    "flex size-9 shrink-0 items-center justify-center rounded-[0.35rem]",
                     isMacOSTheme && isDarkMode
                       ? "bg-white/10"
                       : isMacOSTheme
                         ? "bg-black/[0.06]"
                         : "bg-neutral-200 dark:bg-neutral-800"
                   )}
-                  aria-hidden
-                >
-                  <Robot
-                    className="size-5 text-os-text-secondary"
-                    weight="duotone"
-                  />
-                </div>
+                />
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5">
+                  <div className="min-w-0 truncate text-[13px] font-semibold leading-tight text-os-text-primary">
+                    {primary}
+                  </div>
+                  {secondary ? (
+                    <div className="line-clamp-2 text-[11px] leading-snug text-os-text-secondary">
+                      {secondary}
+                    </div>
+                  ) : null}
+                  <div className="mt-0.5 flex items-center gap-1.5 text-[10px] text-os-text-secondary">
                     <span
                       className={cn(
                         "size-1.5 shrink-0 rounded-full",
@@ -113,17 +124,7 @@ export function CursorCloudAgentRunsListCard({
                       )}
                       aria-hidden
                     />
-                    <div className="min-w-0 flex-1 truncate text-[13px] font-semibold leading-tight text-os-text-primary">
-                      {primary}
-                    </div>
-                  </div>
-                  {secondary ? (
-                    <div className="line-clamp-2 text-[11px] leading-snug text-os-text-secondary">
-                      {secondary}
-                    </div>
-                  ) : null}
-                  <div className="mt-0.5 text-[10px] text-os-text-secondary">
-                    {run.status}
+                    <span>{formatRunStatusLabel(run.status)}</span>
                   </div>
                 </div>
                 {dash ? (

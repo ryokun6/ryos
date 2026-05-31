@@ -23,6 +23,7 @@ import {
   cursorAgentCardHeaderClassName,
   toolInlineCardShellClassName,
 } from "@/components/shared/toolInlineCardShell";
+import { CursorBrandMark } from "@/components/shared/CursorBrandMark";
 import { useCursorAgentRunPoll } from "@/components/shared/useCursorAgentRunPoll";
 
 interface CursorRepoAgentChatCardProps {
@@ -134,24 +135,7 @@ export function CursorRepoAgentChatCard({
             isDarkMode,
           })}
         >
-          <span className="relative inline-flex size-6 shrink-0 items-center justify-center" aria-hidden>
-            <img
-              src="/brands/cursor-cube-2d-light.svg"
-              alt=""
-              width={24}
-              height={24}
-              className="size-6 dark:hidden"
-              draggable={false}
-            />
-            <img
-              src="/brands/cursor-cube-2d-dark.svg"
-              alt=""
-              width={24}
-              height={24}
-              className="hidden size-6 dark:block"
-              draggable={false}
-            />
-          </span>
+          <CursorBrandMark size={6} />
           <div className="flex min-w-0 flex-1 items-center gap-2">
             <div
               className={cn(
