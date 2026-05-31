@@ -1062,6 +1062,18 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   animation: shimmer 2s infinite linear;
 }
 
+/* Tool-call / chat loading text — subdued sweep on dark surfaces (matches .dark on <html>) */
+.dark .shimmer {
+  background-image: linear-gradient(
+    90deg,
+    rgba(163, 163, 163, 0.32) 0%,
+    rgba(163, 163, 163, 0.32) 25%,
+    rgba(212, 212, 212, 0.62) 40%,
+    rgba(163, 163, 163, 0.32) 75%,
+    rgba(163, 163, 163, 0.32) 100%
+  );
+}
+
 .shimmer-gray {
   /* Use a gradient suitable for gray text */
   background-image: linear-gradient(
@@ -1077,6 +1089,17 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   background-clip: text;
   -webkit-text-fill-color: transparent;
   animation: shimmer 2s infinite linear;
+}
+
+.dark .shimmer-gray {
+  background-image: linear-gradient(
+    90deg,
+    rgba(115, 115, 115, 0.38) 0%,
+    rgba(115, 115, 115, 0.38) 25%,
+    rgba(212, 212, 212, 0.58) 40%,
+    rgba(115, 115, 115, 0.38) 75%,
+    rgba(115, 115, 115, 0.38) 100%
+  );
 }
 
 /* Cursor agent stream markdown — compact rhythm aligned with tool-call rows */

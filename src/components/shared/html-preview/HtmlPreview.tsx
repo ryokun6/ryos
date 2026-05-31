@@ -332,7 +332,7 @@ export default function HtmlPreview({
         ref={previewRef}
         className={`${
           isInternetExplorer ? "" : "rounded"
-        } bg-white m-0 relative ${className} ${
+        } bg-white dark:bg-neutral-950 m-0 relative ${className} ${
           isStreaming ? "loading-pulse" : ""
         } ${
           !isInternetExplorer && (appletTitle || appletIcon) ? "flex flex-col overflow-hidden" : isInternetExplorer ? "overflow-hidden" : "overflow-auto"
