@@ -19,13 +19,17 @@ const readSource = (relativePath: string): string =>
 describe("Error Boundary Wiring Tests", () => {
   describe("App manager isolation", () => {
     test("wraps app instances in AppErrorBoundary", async () => {
-      const source = readSource("src/apps/base/AppManager.tsx");
+      const source = readSource(
+        "src/apps/base/app-manager/AppManagerView.tsx",
+      );
       expect(source.includes("<AppErrorBoundary")).toBe(true);
       expect(/<AppErrorBoundary[\s\S]*<AppComponent/.test(source)).toBe(true);
     });
 
     test("relaunches crashed instances via close-and-launch flow", async () => {
-      const source = readSource("src/apps/base/AppManager.tsx");
+      const source = readSource(
+        "src/apps/base/app-manager/AppManagerView.tsx",
+      );
       expect(source.includes("closeAppInstance(instance.instanceId);")).toBe(true);
       expect(
         /launchApp\(\s*appId,\s*(?:instance\.initialData|relaunchInitialData),\s*instance\.title,\s*supportsMultiWindowApp\(appId\)/.test(
