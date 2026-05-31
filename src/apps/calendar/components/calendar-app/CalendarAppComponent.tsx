@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState, useMemo, useCallback } from "react";
 import { AppProps } from "@/apps/base/types";
-import { WindowFrame } from "@/components/layout/WindowFrame";
+import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { CalendarMenuBar } from "../CalendarMenuBar";
 import { requestCloudSyncDomainCheck } from "@/utils/cloudSyncEvents";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
@@ -241,24 +241,24 @@ export function CalendarAppComponent({
     handleDeleteTodoFromTray,
   ]);
 
-  if (!isWindowOpen) return null;
-
   return (
-    <>
-      {!isXpTheme && isForeground && menuBar}
-      <WindowFrame
-        title={headerLabel}
-        onClose={onClose}
-        isForeground={isForeground}
-        appId="calendar"
-        material={isMacOSTheme ? "brushedmetal" : "default"}
-        skipInitialSound={skipInitialSound}
-        instanceId={instanceId}
-        onNavigateNext={onNavigateNext}
-        onNavigatePrevious={onNavigatePrevious}
-        menuBar={isXpTheme ? menuBar : undefined}
-        windowConstraints={{ minWidth: 300, minHeight: 380 }}
-        drawer={
+    <AppWindowShell
+      isWindowOpen={isWindowOpen}
+      isXpTheme={isXpTheme}
+      isForeground={isForeground}
+      menuBar={menuBar}
+      windowFrameProps={{
+        title: headerLabel,
+        onClose,
+        isForeground,
+        appId: "calendar",
+        material: isMacOSTheme ? "brushedmetal" : "default",
+        skipInitialSound,
+        instanceId,
+        onNavigateNext,
+        onNavigatePrevious,
+        windowConstraints: { minWidth: 300, minHeight: 380 },
+        drawer: (
           <AppDrawer isOpen={showTrayDrawer}>
             <TrayDetails
               selectedEvent={selectedEvent}
@@ -274,8 +274,22 @@ export function CalendarAppComponent({
               onDeleteTodo={handleDeleteTodoFromTray}
             />
           </AppDrawer>
-        }
-      >
+        ),
+      }}
+      trailing={
+        <>
+          <HelpDialog isOpen={isHelpDialogOpen} onOpenChange={setIsHelpDialogOpen} appId="calendar" helpItems={translatedHelpItems} />
+          <AboutDialog isOpen={isAboutDialogOpen} onOpenChange={setIsAboutDialogOpen} metadata={appMetadata} appId="calendar" />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".ics,.ical,.ifb,.icalendar"
+            className="hidden"
+            onChange={handleFileSelected}
+          />
+        </>
+      }
+    >
         <div
           ref={containerRef}
           className={cn("flex flex-col size-full font-os-ui overflow-hidden", isMacOSTheme ? "bg-transparent" : "bg-white")}
@@ -452,19 +466,6 @@ export function CalendarAppComponent({
             isXpTheme={isXpTheme} isMacOSTheme={isMacOSTheme} isSystem7Theme={isSystem7Theme} t={t}
           />
         </div>
-
-        <HelpDialog isOpen={isHelpDialogOpen} onOpenChange={setIsHelpDialogOpen} appId="calendar" helpItems={translatedHelpItems} />
-        <AboutDialog isOpen={isAboutDialogOpen} onOpenChange={setIsAboutDialogOpen} metadata={appMetadata} appId="calendar" />
-
-        {/* Hidden file input for iCal import */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".ics,.ical,.ifb,.icalendar"
-          className="hidden"
-          onChange={handleFileSelected}
-        />
-      </WindowFrame>
-    </>
+    </AppWindowShell>
   );
 }

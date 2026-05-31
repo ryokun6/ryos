@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { WindowFrame } from "@/components/layout/WindowFrame";
+import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { FinderMenuBar } from "../FinderMenuBar";
 import { AppProps } from "@/apps/base/types";
 import {
@@ -194,29 +194,80 @@ export function FinderAppComponent({
     },
   };
 
-  if (!isWindowOpen) return null;
-
   return (
-    <>
-      {!isXpTheme && isForeground && menuBar}
-      <FinderHiddenFileInput
-        fileInputRef={fileInputRef}
-        currentPath={currentPath}
-        onChange={handleFileInputChange}
-      />
-      <WindowFrame
-        title={windowTitle}
-        onClose={onClose}
-        isForeground={isForeground}
-        appId="finder"
-        material={isMacOSXTheme ? "brushedmetal" : "default"}
-        skipInitialSound={skipInitialSound}
-        instanceId={instanceId}
-        onNavigateNext={onNavigateNext}
-        onNavigatePrevious={onNavigatePrevious}
-        menuBar={isXpTheme ? menuBar : undefined}
-      >
-        <FinderWindowBody
+    <AppWindowShell
+      isWindowOpen={isWindowOpen}
+      isXpTheme={isXpTheme}
+      isForeground={isForeground}
+      menuBar={menuBar}
+      leading={
+        <FinderHiddenFileInput
+          fileInputRef={fileInputRef}
+          currentPath={currentPath}
+          onChange={handleFileInputChange}
+        />
+      }
+      windowFrameProps={{
+        title: windowTitle,
+        onClose,
+        isForeground,
+        appId: "finder",
+        material: isMacOSXTheme ? "brushedmetal" : "default",
+        skipInitialSound,
+        instanceId,
+        onNavigateNext,
+        onNavigatePrevious,
+      }}
+      trailing={
+        <FinderAppDialogs
+          t={t}
+          translatedHelpItems={translatedHelpItems}
+          isHelpDialogOpen={isHelpDialogOpen}
+          setIsHelpDialogOpen={setIsHelpDialogOpen}
+          isAboutDialogOpen={isAboutDialogOpen}
+          setIsAboutDialogOpen={setIsAboutDialogOpen}
+          isEmptyTrashDialogOpen={isEmptyTrashDialogOpen}
+          setIsEmptyTrashDialogOpen={setIsEmptyTrashDialogOpen}
+          confirmEmptyTrash={confirmEmptyTrash}
+          isRenameDialogOpen={isRenameDialogOpen}
+          setIsRenameDialogOpen={setIsRenameDialogOpen}
+          renameValue={renameValue}
+          setRenameValue={setRenameValue}
+          handleRenameSubmit={handleRenameSubmit}
+          selectedFile={selectedFile}
+          isNewFolderDialogOpen={isNewFolderDialogOpen}
+          setIsNewFolderDialogOpen={setIsNewFolderDialogOpen}
+          newFolderName={newFolderName}
+          setNewFolderName={setNewFolderName}
+          handleNewFolderSubmit={handleNewFolderSubmit}
+          isUsernameDialogOpen={auth.isUsernameDialogOpen}
+          setIsUsernameDialogOpen={auth.setIsUsernameDialogOpen}
+          newUsername={auth.newUsername}
+          setNewUsername={auth.setNewUsername}
+          newPassword={auth.newPassword}
+          setNewPassword={auth.setNewPassword}
+          submitUsernameDialog={auth.submitUsernameDialog}
+          isSettingUsername={auth.isSettingUsername}
+          usernameError={auth.usernameError}
+          isVerifyDialogOpen={auth.isVerifyDialogOpen}
+          setVerifyDialogOpen={auth.setVerifyDialogOpen}
+          verifyPasswordInput={auth.verifyPasswordInput}
+          setVerifyPasswordInput={auth.setVerifyPasswordInput}
+          verifyUsernameInput={auth.verifyUsernameInput}
+          setVerifyUsernameInput={auth.setVerifyUsernameInput}
+          isVerifyingToken={auth.isVerifyingToken}
+          verifyError={auth.verifyError}
+          handleVerifyTokenSubmit={auth.handleVerifyTokenSubmit}
+          promptSetUsername={auth.promptSetUsername}
+          contextMenuPos={contextMenuPos}
+          setContextMenuPos={setContextMenuPos}
+          contextMenuFile={contextMenuFile}
+          fileMenuItems={fileMenuItems}
+          blankMenuItems={blankMenuItems}
+        />
+      }
+    >
+      <FinderWindowBody
           containerRef={containerRef}
           isMacOSXTheme={isMacOSXTheme}
           isDraggingOver={isDraggingOver}
@@ -292,53 +343,6 @@ export function FinderAppComponent({
             promptVerifyToken: auth.promptVerifyToken,
           }}
         />
-      </WindowFrame>
-      <FinderAppDialogs
-        t={t}
-        translatedHelpItems={translatedHelpItems}
-        isHelpDialogOpen={isHelpDialogOpen}
-        setIsHelpDialogOpen={setIsHelpDialogOpen}
-        isAboutDialogOpen={isAboutDialogOpen}
-        setIsAboutDialogOpen={setIsAboutDialogOpen}
-        isEmptyTrashDialogOpen={isEmptyTrashDialogOpen}
-        setIsEmptyTrashDialogOpen={setIsEmptyTrashDialogOpen}
-        confirmEmptyTrash={confirmEmptyTrash}
-        isRenameDialogOpen={isRenameDialogOpen}
-        setIsRenameDialogOpen={setIsRenameDialogOpen}
-        renameValue={renameValue}
-        setRenameValue={setRenameValue}
-        handleRenameSubmit={handleRenameSubmit}
-        selectedFile={selectedFile}
-        isNewFolderDialogOpen={isNewFolderDialogOpen}
-        setIsNewFolderDialogOpen={setIsNewFolderDialogOpen}
-        newFolderName={newFolderName}
-        setNewFolderName={setNewFolderName}
-        handleNewFolderSubmit={handleNewFolderSubmit}
-        isUsernameDialogOpen={auth.isUsernameDialogOpen}
-        setIsUsernameDialogOpen={auth.setIsUsernameDialogOpen}
-        newUsername={auth.newUsername}
-        setNewUsername={auth.setNewUsername}
-        newPassword={auth.newPassword}
-        setNewPassword={auth.setNewPassword}
-        submitUsernameDialog={auth.submitUsernameDialog}
-        isSettingUsername={auth.isSettingUsername}
-        usernameError={auth.usernameError}
-        isVerifyDialogOpen={auth.isVerifyDialogOpen}
-        setVerifyDialogOpen={auth.setVerifyDialogOpen}
-        verifyPasswordInput={auth.verifyPasswordInput}
-        setVerifyPasswordInput={auth.setVerifyPasswordInput}
-        verifyUsernameInput={auth.verifyUsernameInput}
-        setVerifyUsernameInput={auth.setVerifyUsernameInput}
-        isVerifyingToken={auth.isVerifyingToken}
-        verifyError={auth.verifyError}
-        handleVerifyTokenSubmit={auth.handleVerifyTokenSubmit}
-        promptSetUsername={auth.promptSetUsername}
-        contextMenuPos={contextMenuPos}
-        setContextMenuPos={setContextMenuPos}
-        contextMenuFile={contextMenuFile}
-        fileMenuItems={fileMenuItems}
-        blankMenuItems={blankMenuItems}
-      />
-    </>
+    </AppWindowShell>
   );
 }

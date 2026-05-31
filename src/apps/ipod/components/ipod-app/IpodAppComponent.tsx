@@ -1,5 +1,5 @@
 import type { AppProps, IpodInitialData } from "@/apps/base/types";
-import { WindowFrame } from "@/components/layout/WindowFrame";
+import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { IpodAppDialogs } from "./IpodAppDialogs";
 import { IpodDeviceBody } from "./IpodDeviceBody";
@@ -33,33 +33,33 @@ export function IpodAppComponent({
     setIsCoverFlowOpen,
   } = c;
 
-  if (!isWindowOpen) return null;
-
   return (
-    <>
-      {!isXpTheme && isForeground && menuBar}
-      <WindowFrame
-        title={getTranslatedAppName("ipod")}
-        onClose={handleClose}
-        isForeground={isForeground}
-        appId="ipod"
-        interceptClose
-        material="transparent"
-        skipInitialSound={skipInitialSound}
-        instanceId={instanceId}
-        onNavigateNext={onNavigateNext}
-        onNavigatePrevious={onNavigatePrevious}
-        menuBar={isXpTheme ? menuBar : undefined}
-        keepMountedWhenMinimized
-        onFullscreenToggle={toggleFullScreen}
-        onCoverFlowToggle={() => setIsCoverFlowOpen(!isCoverFlowOpen)}
-        isCoverFlowActive={isCoverFlowOpen}
-      >
-        <IpodDeviceBody c={c} />
-        <IpodFullScreenView c={c} />
-        <IpodAppDialogs c={c} />
-      </WindowFrame>
-      <IpodPipPlayer c={c} />
-    </>
+    <AppWindowShell
+      isWindowOpen={isWindowOpen}
+      isXpTheme={isXpTheme}
+      isForeground={isForeground}
+      menuBar={menuBar}
+      windowFrameProps={{
+        title: getTranslatedAppName("ipod"),
+        onClose: handleClose,
+        isForeground,
+        appId: "ipod",
+        interceptClose: true,
+        material: "transparent",
+        skipInitialSound,
+        instanceId,
+        onNavigateNext,
+        onNavigatePrevious,
+        keepMountedWhenMinimized: true,
+        onFullscreenToggle: toggleFullScreen,
+        onCoverFlowToggle: () => setIsCoverFlowOpen(!isCoverFlowOpen),
+        isCoverFlowActive: isCoverFlowOpen,
+      }}
+      trailing={<IpodPipPlayer c={c} />}
+    >
+      <IpodDeviceBody c={c} />
+      <IpodFullScreenView c={c} />
+      <IpodAppDialogs c={c} />
+    </AppWindowShell>
   );
 }
