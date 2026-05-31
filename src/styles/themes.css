@@ -4259,6 +4259,7 @@
   background-color: #423739 !important;
 }
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .chat-bubble.bg-gray-100,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .chat-bubble.bg-neutral-100,
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .chat-bubble.bg-neutral-200 {
   background-color: #3a3a3f !important;
 }

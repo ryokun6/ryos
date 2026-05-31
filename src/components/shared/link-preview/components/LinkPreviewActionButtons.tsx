@@ -17,7 +17,7 @@ function actionButtonClass(
     );
   }
   return cn(
-    "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-neutral-100 hover:bg-neutral-200 rounded-md transition-colors",
+    "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:text-neutral-100 rounded-md transition-colors",
     variant === "pair" ? "flex-1" : "w-full"
   );
 }
@@ -145,7 +145,7 @@ export function LinkPreviewActionButtons({
   if (layout === "fullWidth") {
     return (
       <div className="px-2 pb-2">
-        <div className="flex gap-2 pt-2 border-t border-neutral-100">
+        <div className="flex gap-2 pt-2 border-t border-neutral-100 dark:border-neutral-700">
           {flexRow}
         </div>
       </div>
@@ -156,7 +156,9 @@ export function LinkPreviewActionButtons({
     <div
       className={cn(
         "pb-2 border-t",
-        isMacOSTheme ? "border-neutral-300" : "border-neutral-200"
+        isMacOSTheme
+          ? "border-neutral-300 dark:border-neutral-600"
+          : "border-neutral-200 dark:border-neutral-700"
       )}
     >
       <div className="px-2 pt-2">
