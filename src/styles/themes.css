@@ -3052,15 +3052,15 @@
   background-color: rgb(255 255 255 / 0.08);
 }
 
-/* macOS: Cursor agent chat card header — titlebar pinstripe band on the glass card */
+/* macOS: Cursor agent chat card header — pinstripes only (no titlebar gray gloss) */
 :root[data-os-theme="macosx"] .cursor-agent-card-header-aqua {
   background-color: rgba(248, 248, 248, 0.88);
-  background-image: var(--os-pinstripe-titlebar), var(--os-pinstripe-menubar);
+  background-image: var(--os-pinstripe-menubar);
 }
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"]
   .cursor-agent-card-header-aqua {
   background-color: color-mix(in srgb, var(--os-color-panel-bg) 90%, transparent);
-  background-image: var(--os-pinstripe-titlebar);
+  background-image: var(--os-pinstripe-menubar);
   color: var(--os-color-text-primary);
 }
 
