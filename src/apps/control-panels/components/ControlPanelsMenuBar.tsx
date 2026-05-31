@@ -1,16 +1,13 @@
-import { useState } from "react";
 import { MenuBar } from "@/components/layout/MenuBar";
 import {
   MenubarMenu,
   MenubarTrigger,
   MenubarContent,
   MenubarItem,
-  MenubarSeparator,
 } from "@/components/ui/menubar";
-import { useThemeFlags } from "@/hooks/useThemeFlags";
-import { generateAppShareUrl } from "@/utils/sharedUrl";
-import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
-import { appRegistry } from "@/config/appRegistry";
+import { AppMenuBarHelpMenu } from "@/components/shared/menubar/AppMenuBarHelpMenu";
+import { AppShareItemDialog } from "@/components/shared/menubar/AppShareItemDialog";
+import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
 import { useTranslation } from "react-i18next";
 
 interface ControlPanelsMenuBarProps {
@@ -25,11 +22,14 @@ export function ControlPanelsMenuBar({
   onShowAbout,
 }: ControlPanelsMenuBarProps) {
   const { t } = useTranslation();
-  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
-  const appId = "control-panels";
-  const appName = appRegistry[appId as keyof typeof appRegistry]?.name || appId;
-  const { isWindowsTheme: isXpTheme, isMacOSTheme: isMacOsxTheme } =
-    useThemeFlags();
+  const {
+    isShareDialogOpen,
+    setIsShareDialogOpen,
+    isXpTheme,
+    isMacOsxTheme,
+    appId,
+    appName,
+  } = useAppMenuBarChrome("control-panels");
 
   return (
     <MenuBar inWindowFrame={isXpTheme}>
@@ -47,44 +47,19 @@ export function ControlPanelsMenuBar({
         </MenubarContent>
       </MenubarMenu>
 
-      {/* Help Menu */}
-      <MenubarMenu>
-        <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
-          {t("common.menu.help")}
-        </MenubarTrigger>
-        <MenubarContent align="start" sideOffset={1} className="px-0">
-          <MenubarItem
-            onClick={onShowHelp}
-            className="text-md h-6 px-3"
-          >
-            {t("apps.control-panels.menu.controlPanelsHelp")}
-          </MenubarItem>
-          {!isMacOsxTheme && (
-            <>
-              <MenubarItem
-                onSelect={() => setIsShareDialogOpen(true)}
-                className="text-md h-6 px-3"
-              >
-                {t("common.menu.shareApp")}
-              </MenubarItem>
-              <MenubarSeparator className="h-[2px] bg-black my-1" />
-              <MenubarItem
-                onClick={onShowAbout}
-                className="text-md h-6 px-3"
-              >
-                {t("apps.control-panels.menu.aboutControlPanels")}
-              </MenubarItem>
-            </>
-          )}
-        </MenubarContent>
-      </MenubarMenu>
-      <ShareItemDialog
+      <AppMenuBarHelpMenu
+        helpItemLabel={t("apps.control-panels.menu.controlPanelsHelp")}
+        aboutItemLabel={t("apps.control-panels.menu.aboutControlPanels")}
+        isMacOsxTheme={isMacOsxTheme}
+        onShowHelp={onShowHelp}
+        onShowAbout={onShowAbout}
+        onOpenShareDialog={() => setIsShareDialogOpen(true)}
+      />
+      <AppShareItemDialog
+        appId={appId}
+        appName={appName}
         isOpen={isShareDialogOpen}
         onClose={() => setIsShareDialogOpen(false)}
-        itemType={t("apps.control-panels.menu.app")}
-        itemIdentifier={appId}
-        title={appName}
-        generateShareUrl={generateAppShareUrl}
       />
     </MenuBar>
   );

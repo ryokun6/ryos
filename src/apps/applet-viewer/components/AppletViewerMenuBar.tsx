@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import {
   MenubarMenu,
   MenubarTrigger,
@@ -11,14 +11,13 @@ import {
   MenubarCheckboxItem,
 } from "@/components/ui/menubar";
 import { MenuBar } from "@/components/layout/MenuBar";
-import { useThemeFlags } from "@/hooks/useThemeFlags";
+import { AppMenuBarHelpMenu } from "@/components/shared/menubar/AppMenuBarHelpMenu";
+import { AppShareItemDialog } from "@/components/shared/menubar/AppShareItemDialog";
+import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
-import { generateAppShareUrl } from "@/utils/sharedUrl";
 import React from "react";
 import { useAppStore } from "@/stores/useAppStore";
 import { useChatsStore } from "@/stores/useChatsStore";
-import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
-import { appRegistry } from "@/config/appRegistry";
 import { useTranslation } from "react-i18next";
 
 interface AppletViewerMenuBarProps {
@@ -57,11 +56,14 @@ export function AppletViewerMenuBar({
   onUpdateAll,
 }: AppletViewerMenuBarProps) {
   const { t } = useTranslation();
-  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
-  const appId = "applet-viewer";
-  const appName = appRegistry[appId as keyof typeof appRegistry]?.name || appId;
-  const { isWindowsTheme: isXpTheme, isMacOSTheme: isMacOsxTheme } =
-    useThemeFlags();
+  const {
+    isShareDialogOpen,
+    setIsShareDialogOpen,
+    isXpTheme,
+    isMacOsxTheme,
+    appId,
+    appName,
+  } = useAppMenuBarChrome("applet-viewer");
   const launchApp = useLaunchApp();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const bringInstanceToForeground = useAppStore(
@@ -242,44 +244,19 @@ export function AppletViewerMenuBar({
         </MenubarContent>
       </MenubarMenu>
 
-      {/* Help Menu */}
-      <MenubarMenu>
-        <MenubarTrigger className="px-2 py-1 text-md focus-visible:ring-0">
-          {t("common.menu.help")}
-        </MenubarTrigger>
-        <MenubarContent align="start" sideOffset={1} className="px-0">
-          <MenubarItem
-            onClick={onShowHelp}
-            className="text-md h-6 px-3"
-          >
-            {t("apps.applet-viewer.menu.appletsHelp")}
-          </MenubarItem>
-          {!isMacOsxTheme && (
-            <>
-              <MenubarItem
-                onSelect={() => setIsShareDialogOpen(true)}
-                className="text-md h-6 px-3"
-              >
-                {t("common.menu.shareApp")}
-              </MenubarItem>
-              <MenubarSeparator className="h-[2px] bg-black my-1" />
-              <MenubarItem
-                onClick={onShowAbout}
-                className="text-md h-6 px-3"
-              >
-                {t("apps.applet-viewer.menu.aboutApplets")}
-              </MenubarItem>
-            </>
-          )}
-        </MenubarContent>
-      </MenubarMenu>
-      <ShareItemDialog
+      <AppMenuBarHelpMenu
+        helpItemLabel={t("apps.applet-viewer.menu.appletsHelp")}
+        aboutItemLabel={t("apps.applet-viewer.menu.aboutApplets")}
+        isMacOsxTheme={isMacOsxTheme}
+        onShowHelp={onShowHelp}
+        onShowAbout={onShowAbout}
+        onOpenShareDialog={() => setIsShareDialogOpen(true)}
+      />
+      <AppShareItemDialog
+        appId={appId}
+        appName={appName}
         isOpen={isShareDialogOpen}
         onClose={() => setIsShareDialogOpen(false)}
-        itemType="App"
-        itemIdentifier={appId}
-        title={appName}
-        generateShareUrl={generateAppShareUrl}
       />
     </MenuBar>
   );

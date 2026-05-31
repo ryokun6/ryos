@@ -8,15 +8,14 @@ import {
   MenubarSeparator,
   MenubarCheckboxItem,
 } from "@/components/ui/menubar";
-import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { type ChatRoom } from "@/types/chat";
-import { generateAppShareUrl } from "@/utils/sharedUrl";
 import { useAudioSettingsStoreShallow } from "@/stores/helpers";
 import { SYNTH_PRESETS } from "@/hooks/useChatSynth";
 import { getPrivateRoomDisplayName } from "@/utils/chat";
 import { LoginDialog } from "@/components/dialogs/LoginDialog";
-import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
-import { appRegistry } from "@/config/appRegistry";
+import { AppMenuBarHelpMenu } from "@/components/shared/menubar/AppMenuBarHelpMenu";
+import { AppShareItemDialog } from "@/components/shared/menubar/AppShareItemDialog";
+import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
 import { useTranslation } from "react-i18next";
 import { TelegramLinkDialog } from "@/components/dialogs/TelegramLinkDialog";
 import {
@@ -115,12 +114,15 @@ export const ChatsMenuBar = memo(function ChatsMenuBar({
   onDisconnectTelegramLink,
 }: ChatsMenuBarProps) {
   const { t } = useTranslation();
-  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [isTelegramDialogOpen, setIsTelegramDialogOpen] = useState(false);
-  const appId = "chats";
-  const appName = appRegistry[appId as keyof typeof appRegistry]?.name || appId;
-  const { isWindowsTheme: isXpTheme, isMacOSTheme: isMacOsxTheme } =
-    useThemeFlags();
+  const {
+    isShareDialogOpen,
+    setIsShareDialogOpen,
+    isXpTheme,
+    isMacOsxTheme,
+    appId,
+    appName,
+  } = useAppMenuBarChrome("chats");
 
   const handleVerifyDialogOpenChange = useCallback(
     (open: boolean) => {
@@ -137,14 +139,6 @@ export const ChatsMenuBar = memo(function ChatsMenuBar({
     setVerifyDialogOpen(false);
     onSetUsername();
   }, [onSetUsername, setVerifyDialogOpen]);
-
-  const handleOpenShareDialog = useCallback(() => {
-    setIsShareDialogOpen(true);
-  }, []);
-
-  const handleCloseShareDialog = useCallback(() => {
-    setIsShareDialogOpen(false);
-  }, []);
 
   const handleCloseTelegramDialog = useCallback(() => {
     setIsTelegramDialogOpen(false);
@@ -419,37 +413,14 @@ export const ChatsMenuBar = memo(function ChatsMenuBar({
           </MenubarContent>
         </MenubarMenu>
 
-        {/* Help Menu */}
-        <MenubarMenu>
-          <MenubarTrigger className="px-2 py-1 text-md focus-visible:ring-0">
-            {t("common.menu.help")}
-          </MenubarTrigger>
-          <MenubarContent align="start" sideOffset={1} className="px-0">
-            <MenubarItem
-              onClick={onShowHelp}
-              className="text-md h-6 px-3"
-            >
-              {t("apps.chats.menu.chatsHelp")}
-            </MenubarItem>
-            {!isMacOsxTheme && (
-              <>
-                <MenubarItem
-                  onSelect={handleOpenShareDialog}
-                  className="text-md h-6 px-3"
-                >
-                  {t("common.menu.shareApp")}
-                </MenubarItem>
-                <MenubarSeparator className="h-[2px] bg-black my-1" />
-                <MenubarItem
-                  onClick={onShowAbout}
-                  className="text-md h-6 px-3"
-                >
-                  {t("apps.chats.menu.aboutChats")}
-                </MenubarItem>
-              </>
-            )}
-          </MenubarContent>
-        </MenubarMenu>
+        <AppMenuBarHelpMenu
+          helpItemLabel={t("apps.chats.menu.chatsHelp")}
+          aboutItemLabel={t("apps.chats.menu.aboutChats")}
+          isMacOsxTheme={isMacOsxTheme}
+          onShowHelp={onShowHelp}
+          onShowAbout={onShowAbout}
+          onOpenShareDialog={() => setIsShareDialogOpen(true)}
+        />
       </MenuBar>
 
       {/* Log In / Sign Up Dialog */}
@@ -473,13 +444,11 @@ export const ChatsMenuBar = memo(function ChatsMenuBar({
         isSignUpLoading={false}
         signUpError={null}
       />
-      <ShareItemDialog
+      <AppShareItemDialog
+        appId={appId}
+        appName={appName}
         isOpen={isShareDialogOpen}
-        onClose={handleCloseShareDialog}
-        itemType="App"
-        itemIdentifier={appId}
-        title={appName}
-        generateShareUrl={generateAppShareUrl}
+        onClose={() => setIsShareDialogOpen(false)}
       />
       <TelegramLinkDialog
         isOpen={isTelegramDialogOpen}

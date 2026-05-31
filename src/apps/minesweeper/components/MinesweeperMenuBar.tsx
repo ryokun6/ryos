@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { MenuBar } from "@/components/layout/MenuBar";
 import {
   MenubarMenu,
@@ -7,10 +6,9 @@ import {
   MenubarItem,
   MenubarSeparator,
 } from "@/components/ui/menubar";
-import { useThemeFlags } from "@/hooks/useThemeFlags";
-import { generateAppShareUrl } from "@/utils/sharedUrl";
-import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
-import { appRegistry } from "@/config/appRegistry";
+import { AppMenuBarHelpMenu } from "@/components/shared/menubar/AppMenuBarHelpMenu";
+import { AppShareItemDialog } from "@/components/shared/menubar/AppShareItemDialog";
+import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
 import { useTranslation } from "react-i18next";
 
 interface MinesweeperMenuBarProps {
@@ -27,11 +25,14 @@ export function MinesweeperMenuBar({
   onNewGame,
 }: MinesweeperMenuBarProps) {
   const { t } = useTranslation();
-  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
-  const appId = "minesweeper";
-  const appName = appRegistry[appId as keyof typeof appRegistry]?.name || appId;
-  const { isWindowsTheme: isXpTheme, isMacOSTheme: isMacOsxTheme } =
-    useThemeFlags();
+  const {
+    isShareDialogOpen,
+    setIsShareDialogOpen,
+    isXpTheme,
+    isMacOsxTheme,
+    appId,
+    appName,
+  } = useAppMenuBarChrome("minesweeper");
 
   return (
     <MenuBar inWindowFrame={isXpTheme}>
@@ -57,44 +58,19 @@ export function MinesweeperMenuBar({
         </MenubarContent>
       </MenubarMenu>
 
-      {/* Help Menu */}
-      <MenubarMenu>
-        <MenubarTrigger className="px-2 py-1 text-md focus-visible:ring-0">
-          {t("common.menu.help")}
-        </MenubarTrigger>
-        <MenubarContent align="start" sideOffset={1} className="px-0">
-          <MenubarItem
-            onClick={onShowHelp}
-            className="text-md h-6 px-3"
-          >
-            {t("apps.minesweeper.menu.minesweeperHelp")}
-          </MenubarItem>
-          {!isMacOsxTheme && (
-            <>
-              <MenubarItem
-                onSelect={() => setIsShareDialogOpen(true)}
-                className="text-md h-6 px-3"
-              >
-                {t("common.menu.shareApp")}
-              </MenubarItem>
-              <MenubarSeparator className="h-[2px] bg-black my-1" />
-              <MenubarItem
-                onClick={onShowAbout}
-                className="text-md h-6 px-3"
-              >
-                {t("apps.minesweeper.menu.aboutMinesweeper")}
-              </MenubarItem>
-            </>
-          )}
-        </MenubarContent>
-      </MenubarMenu>
-      <ShareItemDialog
+      <AppMenuBarHelpMenu
+        helpItemLabel={t("apps.minesweeper.menu.minesweeperHelp")}
+        aboutItemLabel={t("apps.minesweeper.menu.aboutMinesweeper")}
+        isMacOsxTheme={isMacOsxTheme}
+        onShowHelp={onShowHelp}
+        onShowAbout={onShowAbout}
+        onOpenShareDialog={() => setIsShareDialogOpen(true)}
+      />
+      <AppShareItemDialog
+        appId={appId}
+        appName={appName}
         isOpen={isShareDialogOpen}
         onClose={() => setIsShareDialogOpen(false)}
-        itemType="App"
-        itemIdentifier={appId}
-        title={appName}
-        generateShareUrl={generateAppShareUrl}
       />
     </MenuBar>
   );

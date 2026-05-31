@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { MenuBar } from "@/components/layout/MenuBar";
 import {
   MenubarMenu,
@@ -10,11 +9,11 @@ import {
   MenubarSubTrigger,
   MenubarSubContent,
 } from "@/components/ui/menubar";
-import { useThemeFlags } from "@/hooks/useThemeFlags";
+import { AppMenuBarHelpMenu } from "@/components/shared/menubar/AppMenuBarHelpMenu";
+import { AppShareItemDialog } from "@/components/shared/menubar/AppShareItemDialog";
+import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
 import { useTranslation } from "react-i18next";
 import { Game, loadGames } from "@/stores/usePcStore";
-import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
-import { generateAppShareUrl } from "@/utils/sharedUrl";
 import { getTranslatedAppName } from "@/utils/i18n";
 
 interface InfinitePcMenuBarProps {
@@ -65,13 +64,17 @@ export function InfinitePcMenuBar({
   mouseSensitivity = 1,
 }: InfinitePcMenuBarProps) {
   const { t } = useTranslation();
-  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
-  const { isWindowsTheme: isXpTheme, isMacOSTheme: isMacOsxTheme } =
-    useThemeFlags();
+  const appName = getTranslatedAppName("pc");
+  const {
+    isShareDialogOpen,
+    setIsShareDialogOpen,
+    isXpTheme,
+    isMacOsxTheme,
+    appId,
+  } = useAppMenuBarChrome("pc", appName);
   const availableGames = loadGames();
   const renderAspects = ["AsIs", "1/1", "5/4", "4/3", "16/10", "16/9", "Fit"];
   const sensitivityOptions = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
-  const appName = getTranslatedAppName("pc");
 
   if (isGameRunning && selectedGame && onLoadGame && onReset) {
     return (
@@ -182,37 +185,19 @@ export function InfinitePcMenuBar({
           </MenubarContent>
         </MenubarMenu>
 
-        <MenubarMenu>
-          <MenubarTrigger className="px-2 py-1 text-md focus-visible:ring-0">
-            {t("common.menu.help")}
-          </MenubarTrigger>
-          <MenubarContent align="start" sideOffset={1} className="px-0">
-            <MenubarItem onClick={onShowHelp} className="text-md h-6 px-3">
-              {t("apps.pc.menu.virtualPcHelp")}
-            </MenubarItem>
-            {!isMacOsxTheme && (
-              <>
-                <MenubarItem
-                  onSelect={() => setIsShareDialogOpen(true)}
-                  className="text-md h-6 px-3"
-                >
-                  {t("common.menu.shareApp")}
-                </MenubarItem>
-                <MenubarSeparator className="h-[2px] bg-black my-1" />
-                <MenubarItem onClick={onShowAbout} className="text-md h-6 px-3">
-                  {t("apps.pc.menu.aboutVirtualPc")}
-                </MenubarItem>
-              </>
-            )}
-          </MenubarContent>
-        </MenubarMenu>
-        <ShareItemDialog
+        <AppMenuBarHelpMenu
+          helpItemLabel={t("apps.pc.menu.virtualPcHelp")}
+          aboutItemLabel={t("apps.pc.menu.aboutVirtualPc")}
+          isMacOsxTheme={isMacOsxTheme}
+          onShowHelp={onShowHelp}
+          onShowAbout={onShowAbout}
+          onOpenShareDialog={() => setIsShareDialogOpen(true)}
+        />
+        <AppShareItemDialog
+          appId={appId}
+          appName={appName}
           isOpen={isShareDialogOpen}
           onClose={() => setIsShareDialogOpen(false)}
-          itemType="App"
-          itemIdentifier="pc"
-          title={appName}
-          generateShareUrl={generateAppShareUrl}
         />
       </MenuBar>
     );
@@ -264,37 +249,19 @@ export function InfinitePcMenuBar({
         </MenubarContent>
       </MenubarMenu>
 
-      <MenubarMenu>
-        <MenubarTrigger className="px-2 py-1 text-md focus-visible:ring-0">
-          {t("common.menu.help")}
-        </MenubarTrigger>
-        <MenubarContent align="start" sideOffset={1} className="px-0">
-          <MenubarItem onClick={onShowHelp} className="text-md h-6 px-3">
-            {t("apps.pc.menu.virtualPcHelp")}
-          </MenubarItem>
-          {!isMacOsxTheme && (
-            <>
-              <MenubarItem
-                onSelect={() => setIsShareDialogOpen(true)}
-                className="text-md h-6 px-3"
-              >
-                {t("common.menu.shareApp")}
-              </MenubarItem>
-              <MenubarSeparator className="h-[2px] bg-black my-1" />
-              <MenubarItem onClick={onShowAbout} className="text-md h-6 px-3">
-                {t("apps.pc.menu.aboutVirtualPc")}
-              </MenubarItem>
-            </>
-          )}
-        </MenubarContent>
-      </MenubarMenu>
-      <ShareItemDialog
+      <AppMenuBarHelpMenu
+        helpItemLabel={t("apps.pc.menu.virtualPcHelp")}
+        aboutItemLabel={t("apps.pc.menu.aboutVirtualPc")}
+        isMacOsxTheme={isMacOsxTheme}
+        onShowHelp={onShowHelp}
+        onShowAbout={onShowAbout}
+        onOpenShareDialog={() => setIsShareDialogOpen(true)}
+      />
+      <AppShareItemDialog
+        appId={appId}
+        appName={appName}
         isOpen={isShareDialogOpen}
         onClose={() => setIsShareDialogOpen(false)}
-        itemType="App"
-        itemIdentifier="pc"
-        title={appName}
-        generateShareUrl={generateAppShareUrl}
       />
     </MenuBar>
   );
