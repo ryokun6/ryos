@@ -1,6 +1,13 @@
 import type { AppId } from "@/config/appRegistry";
 import type { MotionValue } from "framer-motion";
 
+export interface DockOpenItem {
+  type: "app" | "applet";
+  appId: AppId;
+  instanceId?: string;
+  sortKey: number;
+}
+
 export interface DockIconButtonProps {
   label: string;
   onClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
