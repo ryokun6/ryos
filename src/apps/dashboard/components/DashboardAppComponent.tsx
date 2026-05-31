@@ -2,6 +2,7 @@ import { useEffect, useCallback, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { AppProps } from "@/apps/base/types";
+import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { appMetadata } from "../metadata";
@@ -375,9 +376,30 @@ export function DashboardAppComponent({
   }, [showOverlay, isMobile]);
 
   return (
-    <>
-      {isWindowOpen && !isXpTheme && isForeground && menuBar}
-
+    <AppWindowShell
+      frameless
+      alwaysRenderWhenClosed
+      isWindowOpen={isWindowOpen}
+      isXpTheme={isXpTheme}
+      isForeground={isForeground}
+      menuBar={menuBar}
+      trailing={
+        <>
+          <HelpDialog
+            isOpen={isHelpDialogOpen}
+            onOpenChange={setIsHelpDialogOpen}
+            appId="dashboard"
+            helpItems={translatedHelpItems}
+          />
+          <AboutDialog
+            isOpen={isAboutDialogOpen}
+            onOpenChange={setIsAboutDialogOpen}
+            metadata={appMetadata}
+            appId="dashboard"
+          />
+        </>
+      }
+    >
       {createPortal(
         <AnimatePresence onExitComplete={handleExitComplete}>
           {showOverlay && (
@@ -586,19 +608,6 @@ export function DashboardAppComponent({
         </AnimatePresence>,
         document.body
       )}
-
-      <HelpDialog
-        isOpen={isHelpDialogOpen}
-        onOpenChange={setIsHelpDialogOpen}
-        appId="dashboard"
-        helpItems={translatedHelpItems}
-      />
-      <AboutDialog
-        isOpen={isAboutDialogOpen}
-        onOpenChange={setIsAboutDialogOpen}
-        metadata={appMetadata}
-        appId="dashboard"
-      />
-    </>
+    </AppWindowShell>
   );
 }

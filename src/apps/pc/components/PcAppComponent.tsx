@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AppProps } from "@/apps/base/types";
-import { WindowFrame } from "@/components/layout/WindowFrame";
+import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { PcMenuBar } from "./PcMenuBar";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
@@ -184,22 +184,25 @@ export function PcAppComponent({
   );
 
   return (
-    <>
-      {!isXpTheme && isForeground && menuBar}
-      <WindowFrame
-        title={windowTitle}
-        onClose={onClose}
-        isForeground={isForeground}
-        appId="pc"
-        material="notitlebar"
-        disableTitlebarAutoHide={true}
-        skipInitialSound={skipInitialSound}
-        instanceId={instanceId}
-        onNavigateNext={onNavigateNext}
-        onNavigatePrevious={onNavigatePrevious}
-        menuBar={isXpTheme ? menuBar : undefined}
-        titleBarRightContent={backButton}
-      >
+    <AppWindowShell
+      isWindowOpen={isWindowOpen}
+      isXpTheme={isXpTheme}
+      isForeground={isForeground}
+      menuBar={menuBar}
+      windowFrameProps={{
+        title: windowTitle,
+        onClose,
+        isForeground,
+        appId: "pc",
+        material: "notitlebar",
+        disableTitlebarAutoHide: true,
+        skipInitialSound,
+        instanceId,
+        onNavigateNext,
+        onNavigatePrevious,
+        titleBarRightContent: backButton,
+      }}
+    >
         <div className="flex flex-col h-full w-full bg-black">
           {currentTheme === "macosx" && <div className="h-6 shrink-0 bg-black" />}
 
@@ -279,7 +282,6 @@ export function PcAppComponent({
           title={t("apps.pc.dialogs.resetVirtualPcTitle")}
           description={t("apps.pc.dialogs.resetVirtualPcDescription")}
         />
-      </WindowFrame>
-    </>
+    </AppWindowShell>
   );
 }

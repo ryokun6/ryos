@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { AppProps } from "../../base/types";
-import { WindowFrame } from "@/components/layout/WindowFrame";
+import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { MinesweeperMenuBar } from "./MinesweeperMenuBar";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
@@ -197,8 +197,6 @@ export function MinesweeperAppComponent({
     />
   );
 
-  if (!isWindowOpen) return null;
-
   const boardFrameStyle = isMacTheme
     ? {
         border: "1px solid rgba(0, 0, 0, 0.55)",
@@ -208,26 +206,29 @@ export function MinesweeperAppComponent({
     : undefined;
 
   return (
-    <>
-      <style>{minesweeperStyles}</style>
-      {!isXpTheme && isForeground && menuBar}
-      <WindowFrame
-        title={getTranslatedAppName("minesweeper")}
-        onClose={onClose}
-        isForeground={isForeground}
-        appId="minesweeper"
-        material={isMacTheme ? "brushedmetal" : "default"}
-        skipInitialSound={skipInitialSound}
-        instanceId={instanceId}
-        onNavigateNext={onNavigateNext}
-        onNavigatePrevious={onNavigatePrevious}
-        menuBar={isXpTheme ? menuBar : undefined}
-        windowConstraints={{
+    <AppWindowShell
+      isWindowOpen={isWindowOpen}
+      isXpTheme={isXpTheme}
+      isForeground={isForeground}
+      menuBar={menuBar}
+      leading={<style>{minesweeperStyles}</style>}
+      windowFrameProps={{
+        title: getTranslatedAppName("minesweeper"),
+        onClose,
+        isForeground,
+        appId: "minesweeper",
+        material: isMacTheme ? "brushedmetal" : "default",
+        skipInitialSound,
+        instanceId,
+        onNavigateNext,
+        onNavigatePrevious,
+        windowConstraints: {
           minWidth: 270,
           maxWidth: 270,
           minHeight: 360,
-        }}
-      >
+        },
+      }}
+    >
         <div
           className={cn(
             "flex flex-col h-full w-full",
@@ -350,8 +351,7 @@ export function MinesweeperAppComponent({
           title={t("apps.minesweeper.dialogs.newGameTitle")}
           description={t("apps.minesweeper.dialogs.newGameDescription")}
         />
-      </WindowFrame>
-    </>
+    </AppWindowShell>
   );
 }
 

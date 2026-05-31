@@ -1,4 +1,4 @@
-import { WindowFrame } from "@/components/layout/WindowFrame";
+import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { AppProps } from "@/apps/base/types";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
@@ -93,20 +93,74 @@ export function AppletViewerAppComponent({
     />
   );
 
-  if (!isWindowOpen) return null;
-
   return (
-    <>
-      {!isXpTheme && isForeground && menuBar}
-      <WindowFrame
-        title={windowTitle}
-        onClose={onClose}
-        isForeground={isForeground}
-        appId="applet-viewer"
-        skipInitialSound={skipInitialSound}
-        instanceId={instanceId}
-        menuBar={isXpTheme ? menuBar : undefined}
-      >
+    <AppWindowShell
+      isWindowOpen={isWindowOpen}
+      isXpTheme={isXpTheme}
+      isForeground={isForeground}
+      menuBar={menuBar}
+      windowFrameProps={{
+        title: windowTitle,
+        onClose,
+        isForeground,
+        appId: "applet-viewer",
+        skipInitialSound,
+        instanceId,
+      }}
+      trailing={
+        <>
+          <HelpDialog
+            isOpen={isHelpDialogOpen}
+            onOpenChange={setIsHelpDialogOpen}
+            appId="applet-viewer"
+            helpItems={translatedHelpItems}
+          />
+          <AboutDialog
+            isOpen={isAboutDialogOpen}
+            onOpenChange={setIsAboutDialogOpen}
+            metadata={appMetadata}
+            appId="applet-viewer"
+          />
+          <ShareItemDialog
+            isOpen={isShareDialogOpen}
+            onClose={() => {
+              setIsShareDialogOpen(false);
+              setShareId("");
+            }}
+            itemType="Applet"
+            itemIdentifier={shareId}
+            title={shareId ? getAppletTitle(htmlContent) : undefined}
+            generateShareUrl={generateAppletShareUrl}
+          />
+          <LoginDialog
+            initialTab={isVerifyDialogOpen ? "login" : "signup"}
+            isOpen={isUsernameDialogOpen || isVerifyDialogOpen}
+            onOpenChange={(open) => {
+              if (!open) {
+                setIsUsernameDialogOpen(false);
+                setVerifyDialogOpen(false);
+              }
+            }}
+            usernameInput={verifyUsernameInput}
+            onUsernameInputChange={setVerifyUsernameInput}
+            passwordInput={verifyPasswordInput}
+            onPasswordInputChange={setVerifyPasswordInput}
+            onLoginSubmit={async () => {
+              await handleVerifyTokenSubmit(verifyPasswordInput, true);
+            }}
+            isLoginLoading={isVerifyingToken}
+            loginError={verifyError}
+            newUsername={newUsername}
+            onNewUsernameChange={setNewUsername}
+            newPassword={newPassword}
+            onNewPasswordChange={setNewPassword}
+            onSignUpSubmit={submitUsernameDialog}
+            isSignUpLoading={isSettingUsername}
+            signUpError={usernameError}
+          />
+        </>
+      }
+    >
         <div className="w-full h-full bg-white overflow-hidden">
           {hasAppletContent ? (
             <div className="relative h-full w-full">
@@ -174,58 +228,6 @@ export function AppletViewerAppComponent({
             </div>
           )}
         </div>
-      </WindowFrame>
-      <HelpDialog
-        isOpen={isHelpDialogOpen}
-        onOpenChange={setIsHelpDialogOpen}
-        appId="applet-viewer"
-        helpItems={translatedHelpItems}
-      />
-      <AboutDialog
-        isOpen={isAboutDialogOpen}
-        onOpenChange={setIsAboutDialogOpen}
-        metadata={appMetadata}
-        appId="applet-viewer"
-      />
-      <ShareItemDialog
-        isOpen={isShareDialogOpen}
-        onClose={() => {
-          setIsShareDialogOpen(false);
-          setShareId("");
-        }}
-        itemType="Applet"
-        itemIdentifier={shareId}
-        title={shareId ? getAppletTitle(htmlContent) : undefined}
-        generateShareUrl={generateAppletShareUrl}
-      />
-      <LoginDialog
-        initialTab={isVerifyDialogOpen ? "login" : "signup"}
-        isOpen={isUsernameDialogOpen || isVerifyDialogOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            setIsUsernameDialogOpen(false);
-            setVerifyDialogOpen(false);
-          }
-        }}
-        /* Login props */
-        usernameInput={verifyUsernameInput}
-        onUsernameInputChange={setVerifyUsernameInput}
-        passwordInput={verifyPasswordInput}
-        onPasswordInputChange={setVerifyPasswordInput}
-        onLoginSubmit={async () => {
-          await handleVerifyTokenSubmit(verifyPasswordInput, true);
-        }}
-        isLoginLoading={isVerifyingToken}
-        loginError={verifyError}
-        /* Sign-up props */
-        newUsername={newUsername}
-        onNewUsernameChange={setNewUsername}
-        newPassword={newPassword}
-        onNewPasswordChange={setNewPassword}
-        onSignUpSubmit={submitUsernameDialog}
-        isSignUpLoading={isSettingUsername}
-        signUpError={usernameError}
-      />
-    </>
+    </AppWindowShell>
   );
 }

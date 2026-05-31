@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { AppProps } from "@/apps/base/types";
-import { WindowFrame } from "@/components/layout/WindowFrame";
+import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { TextEditMenuBar } from "./TextEditMenuBar";
 import { EditorProvider } from "./EditorProvider";
 import { useEditorContext } from "./EditorContext";
@@ -474,38 +474,39 @@ function TextEditContent({
     />
   );
 
-  if (!isWindowOpen) return null;
-
   return (
-    <>
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleFileSelect}
-        accept=".txt,.html,.md,.rtf,.doc,.docx"
-        className="hidden"
-      />
-      {!isXpTheme && isForeground && menuBar}
-
-      <WindowFrame
-        title={
+    <AppWindowShell
+      isWindowOpen={isWindowOpen}
+      isXpTheme={isXpTheme}
+      isForeground={isForeground}
+      menuBar={menuBar}
+      leading={
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileSelect}
+          accept=".txt,.html,.md,.rtf,.doc,.docx"
+          className="hidden"
+        />
+      }
+      windowFrameProps={{
+        title:
           customTitle ||
           (currentFilePath
             ? `${removeFileExtension(currentFilePath.split("/").pop() || "")}${
                 hasUnsavedChanges ? " •" : ""
               }`
-            : `${t("apps.textedit.untitled")}${showUnsavedIndicator ? " •" : ""}`)
-        }
-        onClose={handleClose}
-        isForeground={isForeground}
-        appId="textedit"
-        skipInitialSound={skipInitialSound}
-        instanceId={instanceId}
-        interceptClose={true}
-        onNavigateNext={onNavigateNext}
-        onNavigatePrevious={onNavigatePrevious}
-        menuBar={isXpTheme ? menuBar : undefined}
-      >
+            : `${t("apps.textedit.untitled")}${showUnsavedIndicator ? " •" : ""}`),
+        onClose: handleClose,
+        isForeground,
+        appId: "textedit",
+        skipInitialSound,
+        instanceId,
+        interceptClose: true,
+        onNavigateNext,
+        onNavigatePrevious,
+      }}
+    >
         <div className="flex flex-col h-full w-full">
           <div
             className={`flex-1 flex flex-col relative min-h-0 ${
@@ -549,8 +550,7 @@ function TextEditContent({
             isUntitledForClose={!currentFilePath}
           />
         </div>
-      </WindowFrame>
-    </>
+    </AppWindowShell>
   );
 }
 

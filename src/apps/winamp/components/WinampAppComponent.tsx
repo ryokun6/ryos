@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import Webamp from "webamp";
 import { WinampMenuBar } from "./WinampMenuBar";
 import { AppProps } from "@/apps/base/types";
+import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { useWinampLogic } from "../hooks/useWinampLogic";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
@@ -321,26 +322,31 @@ export function WinampAppComponent({
     />
   );
 
-  if (!isWindowOpen) return null;
-
   return (
-    <>
-      {!isXpTheme && isForeground && menuBar}
-
+    <AppWindowShell
+      frameless
+      isWindowOpen={isWindowOpen}
+      isXpTheme={isXpTheme}
+      isForeground={isForeground}
+      menuBar={menuBar}
+      trailing={
+        <>
+          <HelpDialog
+            isOpen={isHelpDialogOpen}
+            onOpenChange={setIsHelpDialogOpen}
+            appId="winamp"
+            helpItems={translatedHelpItems}
+          />
+          <AboutDialog
+            isOpen={isAboutDialogOpen}
+            onOpenChange={setIsAboutDialogOpen}
+            metadata={appMetadata}
+            appId="winamp"
+          />
+        </>
+      }
+    >
       {createPortal(<div />, document.body)}
-
-      <HelpDialog
-        isOpen={isHelpDialogOpen}
-        onOpenChange={setIsHelpDialogOpen}
-        appId="winamp"
-        helpItems={translatedHelpItems}
-      />
-      <AboutDialog
-        isOpen={isAboutDialogOpen}
-        onOpenChange={setIsAboutDialogOpen}
-        metadata={appMetadata}
-        appId="winamp"
-      />
-    </>
+    </AppWindowShell>
   );
 }

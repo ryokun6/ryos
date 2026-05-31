@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { WindowFrame } from "@/components/layout/WindowFrame";
+import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { appMetadata } from "..";
@@ -101,24 +101,25 @@ export function PhotoBoothComponent({
     />
   );
 
-  if (!isWindowOpen) return null;
-
   return (
-    <>
-      {!isXpTheme && isForeground && menuBar}
-      <WindowFrame
-        title={windowTitle}
-        onClose={onClose}
-        isForeground={isForeground}
-        appId="photo-booth"
-        material="notitlebar"
-        disableTitlebarAutoHide
-        skipInitialSound={skipInitialSound}
-        instanceId={instanceId}
-        onNavigateNext={onNavigateNext}
-        onNavigatePrevious={onNavigatePrevious}
-        menuBar={isXpTheme ? menuBar : undefined}
-      >
+    <AppWindowShell
+      isWindowOpen={isWindowOpen}
+      isXpTheme={isXpTheme}
+      isForeground={isForeground}
+      menuBar={menuBar}
+      windowFrameProps={{
+        title: windowTitle,
+        onClose,
+        isForeground,
+        appId: "photo-booth",
+        material: "notitlebar",
+        disableTitlebarAutoHide: true,
+        skipInitialSound,
+        instanceId,
+        onNavigateNext,
+        onNavigatePrevious,
+      }}
+    >
         <div className="flex flex-col w-full h-full bg-neutral-500 max-h-full overflow-hidden">
           {/* Camera view area - takes available space but doesn't overflow */}
           <div
@@ -636,7 +637,6 @@ export function PhotoBoothComponent({
             appId="photo-booth"
           />
         </div>
-      </WindowFrame>
-    </>
+    </AppWindowShell>
   );
 }

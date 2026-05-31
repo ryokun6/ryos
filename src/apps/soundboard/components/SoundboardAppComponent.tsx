@@ -1,4 +1,4 @@
-import { WindowFrame } from "@/components/layout/WindowFrame";
+import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { BoardList } from "./BoardList";
 import { SoundGrid } from "./SoundGrid";
 import { EmojiDialog } from "@/components/dialogs/EmojiDialog";
@@ -85,49 +85,44 @@ export function SoundboardAppComponent({
     />
   );
 
-  if (!hasInitialized || !activeBoard || !activeBoardId) {
-    return (
-      <WindowFrame
-        title={getTranslatedAppName("soundboard")}
-        onClose={onClose}
-        isForeground={isForeground}
-        appId="soundboard"
-        skipInitialSound={skipInitialSound}
-        instanceId={instanceId}
-        onNavigateNext={onNavigateNext}
-        onNavigatePrevious={onNavigatePrevious}
-      >
+  const windowFrameProps = {
+    title: getTranslatedAppName("soundboard"),
+    onClose,
+    isForeground,
+    appId: "soundboard" as const,
+    skipInitialSound,
+    instanceId,
+    onNavigateNext,
+    onNavigatePrevious,
+    ...(!hasInitialized || !activeBoard || !activeBoardId
+      ? {}
+      : {
+          title: isEditingTitle
+            ? getTranslatedAppName("soundboard")
+            : activeBoard?.name ||
+              `${getTranslatedAppName("soundboard")} ${activeBoardId}`,
+          windowConstraints: {
+            minHeight: window.innerWidth >= 768 ? 475 : 625,
+          },
+        }),
+  };
+
+  return (
+    <AppWindowShell
+      isWindowOpen={isWindowOpen}
+      isXpTheme={isXpTheme}
+      isForeground={isForeground}
+      menuBar={menuBar}
+      windowFrameProps={windowFrameProps}
+    >
+      {!hasInitialized || !activeBoard || !activeBoardId ? (
         <div className="flex-1 flex items-center justify-center">
           {!hasInitialized
             ? "Initializing soundboard..."
             : "Loading soundboard..."}
         </div>
-      </WindowFrame>
-    );
-  }
-
-  return (
-    <>
-      {!isXpTheme && isForeground && menuBar}
-      <WindowFrame
-        title={
-          isEditingTitle
-            ? getTranslatedAppName("soundboard")
-            : activeBoard?.name ||
-              `${getTranslatedAppName("soundboard")} ${activeBoardId}`
-        }
-        onClose={onClose}
-        isForeground={isForeground}
-        appId="soundboard"
-        skipInitialSound={skipInitialSound}
-        instanceId={instanceId}
-        onNavigateNext={onNavigateNext}
-        onNavigatePrevious={onNavigatePrevious}
-        menuBar={isXpTheme ? menuBar : undefined}
-        windowConstraints={{
-          minHeight: window.innerWidth >= 768 ? 475 : 625,
-        }}
-      >
+      ) : (
+        <>
         <div
           className={`h-full w-full flex flex-col md:flex-row ${
             isXpTheme ? "border-t border-[#919b9c]" : ""
@@ -228,7 +223,8 @@ export function SoundboardAppComponent({
           metadata={appMetadata}
           appId="soundboard"
         />
-      </WindowFrame>
-    </>
+        </>
+      )}
+    </AppWindowShell>
   );
 }

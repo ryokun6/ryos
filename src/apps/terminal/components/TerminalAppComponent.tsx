@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { WindowFrame } from "@/components/layout/WindowFrame";
+import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { AppProps } from "@/apps/base/types";
 import type { TerminalInitialData } from "@/apps/base/types";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
@@ -551,23 +551,51 @@ export function TerminalAppComponent({
     />
   );
 
-  if (!isWindowOpen) return null;
-
   return (
-    <>
-      {!isXpTheme && isForeground && menuBar}
-      <WindowFrame
-        appId="terminal"
-        title={getTranslatedAppName("terminal")}
-        onClose={onClose}
-        isForeground={isForeground}
-        material="transparent"
-        skipInitialSound={skipInitialSound}
-        instanceId={instanceId}
-        onNavigateNext={onNavigateNext}
-        onNavigatePrevious={onNavigatePrevious}
-        menuBar={isXpTheme ? menuBar : undefined}
-      >
+    <AppWindowShell
+      isWindowOpen={isWindowOpen}
+      isXpTheme={isXpTheme}
+      isForeground={isForeground}
+      menuBar={menuBar}
+      windowFrameProps={{
+        appId: "terminal",
+        title: getTranslatedAppName("terminal"),
+        onClose,
+        isForeground,
+        material: "transparent",
+        skipInitialSound,
+        instanceId,
+        onNavigateNext,
+        onNavigatePrevious,
+      }}
+      trailing={
+        <>
+          <HelpDialog
+            isOpen={isHelpDialogOpen}
+            onOpenChange={setIsHelpDialogOpen}
+            appId="terminal"
+            helpItems={translatedHelpItems}
+          />
+          <AboutDialog
+            isOpen={isAboutDialogOpen}
+            onOpenChange={setIsAboutDialogOpen}
+            metadata={
+              appMetadata || {
+                name: "Terminal",
+                version: "1.0",
+                creator: {
+                  name: "Ryo Lu",
+                  url: "https://ryo.lu",
+                },
+                github: "https://github.com/ryokun6/ryos",
+                icon: "/icons/default/terminal.png",
+              }
+            }
+            appId="terminal"
+          />
+        </>
+      }
+    >
         <motion.div
           className="terminal-content flex flex-col h-full w-full bg-black/80 backdrop-blur-lg text-white antialiased font-monaco overflow-hidden select-text"
           style={
@@ -611,30 +639,6 @@ export function TerminalAppComponent({
             {renderMainContent()}
           </div>
         </motion.div>
-      </WindowFrame>
-      <HelpDialog
-        isOpen={isHelpDialogOpen}
-        onOpenChange={setIsHelpDialogOpen}
-        appId="terminal"
-        helpItems={translatedHelpItems}
-      />
-      <AboutDialog
-        isOpen={isAboutDialogOpen}
-        onOpenChange={setIsAboutDialogOpen}
-        metadata={
-          appMetadata || {
-            name: "Terminal",
-            version: "1.0",
-            creator: {
-              name: "Ryo Lu",
-              url: "https://ryo.lu",
-            },
-            github: "https://github.com/ryokun6/ryos",
-            icon: "/icons/default/terminal.png",
-          }
-        }
-        appId="terminal"
-      />
-    </>
+    </AppWindowShell>
   );
 }
