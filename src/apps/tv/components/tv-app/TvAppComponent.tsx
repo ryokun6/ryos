@@ -2,7 +2,7 @@ import { type RefObject } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import type { AppProps } from "@/apps/base/types";
-import { WindowFrame } from "@/components/layout/WindowFrame";
+import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { CreateChannelDialog } from "../CreateChannelDialog";
 import { ChannelPromptInput } from "../ChannelPromptInput";
 import { TvCrtEffects } from "../TvCrtEffects";
@@ -42,7 +42,6 @@ import { useTvAppController } from "./useTvAppController";
 
 export function TvAppComponent(props: AppProps) {
   const c = useTvAppController(props);
-  if (!c.isWindowOpen) return null;
 
   const url = c.currentVideo?.url ?? "";
   const hasVideos = (c.currentChannel?.videos.length ?? 0) > 0;
@@ -56,20 +55,22 @@ export function TvAppComponent(props: AppProps) {
     c.lcdSlot === "now" ? c.animationDirection : c.scheduleAnimDirection;
 
   return (
-    <>
-      {!c.isXpTheme && c.isForeground && c.menuBar}
-      <WindowFrame
-        title={c.windowTitle}
-        onClose={c.handleInterceptedClose}
-        isForeground={c.isForeground}
-        appId="tv"
-        material={c.isMacOSTheme ? "brushedmetal" : "default"}
-        skipInitialSound={c.skipInitialSound}
-        instanceId={c.instanceId}
-        interceptClose={true}
-        menuBar={c.isXpTheme ? c.menuBar : undefined}
-        onFullscreenToggle={c.toggleFullScreen}
-        drawer={
+    <AppWindowShell
+      isWindowOpen={c.isWindowOpen}
+      isXpTheme={c.isXpTheme}
+      isForeground={c.isForeground}
+      menuBar={c.menuBar}
+      windowFrameProps={{
+        title: c.windowTitle,
+        onClose: c.handleInterceptedClose,
+        isForeground: c.isForeground,
+        appId: "tv",
+        material: c.isMacOSTheme ? "brushedmetal" : "default",
+        skipInitialSound: c.skipInitialSound,
+        instanceId: c.instanceId,
+        interceptClose: true,
+        onFullscreenToggle: c.toggleFullScreen,
+        drawer: (
           <TvVideoDrawer
             isOpen={c.isDrawerOpen && !c.isFullScreen}
             channel={c.currentChannel ?? null}
@@ -80,8 +81,138 @@ export function TvAppComponent(props: AppProps) {
             onSelectVideo={c.selectVideoFromPlaylist}
             onRemoveVideo={c.playlistRemoveVideo}
           />
-        }
-      >
+        ),
+      }}
+      trailing={
+        <>
+          <HelpDialog
+            isOpen={c.isHelpDialogOpen}
+            onOpenChange={c.setIsHelpDialogOpen}
+            appId="tv"
+            helpItems={c.translatedHelpItems}
+          />
+          <AboutDialog
+            isOpen={c.isAboutDialogOpen}
+            onOpenChange={c.setIsAboutDialogOpen}
+            metadata={appMetadata}
+            appId="tv"
+          />
+          <CreateChannelDialog
+            isOpen={c.isCreateChannelOpen}
+            onOpenChange={c.setIsCreateChannelOpen}
+            onChannelCreated={(id) => {
+              c.setChannelById(id);
+            }}
+          />
+          <ConfirmDialog
+            isOpen={Boolean(c.pendingDeleteChannel)}
+            onOpenChange={(open) => {
+              if (!open) c.setPendingDeleteId(null);
+            }}
+            onConfirm={() => {
+              if (c.pendingDeleteId) {
+                c.removeChannel(c.pendingDeleteId);
+                c.setPendingDeleteId(null);
+              }
+            }}
+            title={c.t("apps.tv.delete.title")}
+            description={c.t("apps.tv.delete.description", {
+              name: c.pendingDeleteChannel?.name ?? "",
+            })}
+          />
+          <ConfirmDialog
+            isOpen={c.isResetConfirmOpen}
+            onOpenChange={c.setIsResetConfirmOpen}
+            onConfirm={() => {
+              c.resetChannels();
+              c.setIsResetConfirmOpen(false);
+              toast.success(c.t("apps.tv.toasts.resetSuccess"));
+            }}
+            title={c.t("apps.tv.reset.title")}
+            description={c.t("apps.tv.reset.description")}
+          />
+          <LoginDialog
+            initialTab={c.isVerifyDialogOpen ? "login" : "signup"}
+            isOpen={c.isUsernameDialogOpen || c.isVerifyDialogOpen}
+            onOpenChange={(open) => {
+              if (!open) {
+                c.setIsUsernameDialogOpen(false);
+                c.setVerifyDialogOpen(false);
+              }
+            }}
+            usernameInput={c.verifyUsernameInput}
+            onUsernameInputChange={c.setVerifyUsernameInput}
+            passwordInput={c.verifyPasswordInput}
+            onPasswordInputChange={c.setVerifyPasswordInput}
+            onLoginSubmit={async () => {
+              await c.handleVerifyTokenSubmit(c.verifyPasswordInput, true);
+            }}
+            isLoginLoading={c.isVerifyingToken}
+            loginError={c.verifyError}
+            newUsername={c.newUsername}
+            onNewUsernameChange={c.setNewUsername}
+            newPassword={c.newPassword}
+            onNewPasswordChange={c.setNewPassword}
+            onSignUpSubmit={
+              c.isVerifyDialogOpen
+                ? async () => {
+                    c.setVerifyDialogOpen(false);
+                    c.promptSetUsername();
+                  }
+                : c.submitUsernameDialog
+            }
+            isSignUpLoading={c.isSettingUsername}
+            signUpError={c.usernameError}
+          />
+          {c.isFullScreen && url ? (
+            <VideoFullScreenPortal
+              isOpen={c.isFullScreen}
+              onClose={() => c.toggleFullScreen()}
+              url={url}
+              isPlaying={c.isPlaying}
+              onPlay={() => c.setIsPlaying(true)}
+              onPause={() => c.setIsPlaying(false)}
+              onTogglePlay={c.handleTogglePlay}
+              onEnded={c.handleVideoEnd}
+              onProgress={c.handleProgress}
+              onDuration={c.handleDuration}
+              onReady={() => {}}
+              loop={false}
+              volume={c.masterVolume}
+              playerRef={c.fullScreenPlayerRef as RefObject<ReactPlayer>}
+              onSeek={c.handleSeek}
+              onNext={c.nextVideo}
+              onPrevious={c.prevVideo}
+              onChannelNext={c.nextChannel}
+              onChannelPrev={c.prevChannel}
+              showStatus={c.showStatus}
+              statusMessage={c.statusMessage}
+              videoOverlay={
+                <>
+                  {c.channelBugOverlay}
+                  {c.currentChannelId === MTV_CHANNEL_ID && c.closedCaptionsOn ? (
+                    <MtvLyricsOverlay
+                      songId={c.currentVideo?.id}
+                      title={c.currentVideo?.title}
+                      artist={c.currentVideo?.artist}
+                      playedSeconds={c.playedSeconds}
+                      visible={
+                        !c.screenOff &&
+                        !c.poweringOff &&
+                        !c.isBuffering &&
+                        !c.isTransitioningCc &&
+                        Boolean(url)
+                      }
+                      variant="fullscreen"
+                    />
+                  ) : null}
+                </>
+              }
+            />
+          ) : null}
+        </>
+      }
+    >
         <div
           className={cn(
             "flex flex-col w-full h-full text-white",
@@ -471,135 +602,6 @@ export function TvAppComponent(props: AppProps) {
             </div>
           </div>
         </div>
-      </WindowFrame>
-      <HelpDialog
-        isOpen={c.isHelpDialogOpen}
-        onOpenChange={c.setIsHelpDialogOpen}
-        appId="tv"
-        helpItems={c.translatedHelpItems}
-      />
-      <AboutDialog
-        isOpen={c.isAboutDialogOpen}
-        onOpenChange={c.setIsAboutDialogOpen}
-        metadata={appMetadata}
-        appId="tv"
-      />
-      <CreateChannelDialog
-        isOpen={c.isCreateChannelOpen}
-        onOpenChange={c.setIsCreateChannelOpen}
-        onChannelCreated={(id) => {
-          // Tune in immediately so the user can see what they got. The
-          // store has already inserted the channel; c.setChannelById drives
-          // the same status-flash UX as the menu / CH+/CH- buttons.
-          c.setChannelById(id);
-        }}
-      />
-      <ConfirmDialog
-        isOpen={Boolean(c.pendingDeleteChannel)}
-        onOpenChange={(open) => {
-          if (!open) c.setPendingDeleteId(null);
-        }}
-        onConfirm={() => {
-          if (c.pendingDeleteId) {
-            c.removeChannel(c.pendingDeleteId);
-            c.setPendingDeleteId(null);
-          }
-        }}
-        title={c.t("apps.tv.delete.title")}
-        description={c.t("apps.tv.delete.description", {
-          name: c.pendingDeleteChannel?.name ?? "",
-        })}
-      />
-      <ConfirmDialog
-        isOpen={c.isResetConfirmOpen}
-        onOpenChange={c.setIsResetConfirmOpen}
-        onConfirm={() => {
-          c.resetChannels();
-          c.setIsResetConfirmOpen(false);
-          toast.success(c.t("apps.tv.toasts.resetSuccess"));
-        }}
-        title={c.t("apps.tv.reset.title")}
-        description={c.t("apps.tv.reset.description")}
-      />
-      <LoginDialog
-        initialTab={c.isVerifyDialogOpen ? "login" : "signup"}
-        isOpen={c.isUsernameDialogOpen || c.isVerifyDialogOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            c.setIsUsernameDialogOpen(false);
-            c.setVerifyDialogOpen(false);
-          }
-        }}
-        usernameInput={c.verifyUsernameInput}
-        onUsernameInputChange={c.setVerifyUsernameInput}
-        passwordInput={c.verifyPasswordInput}
-        onPasswordInputChange={c.setVerifyPasswordInput}
-        onLoginSubmit={async () => {
-          await c.handleVerifyTokenSubmit(c.verifyPasswordInput, true);
-        }}
-        isLoginLoading={c.isVerifyingToken}
-        loginError={c.verifyError}
-        newUsername={c.newUsername}
-        onNewUsernameChange={c.setNewUsername}
-        newPassword={c.newPassword}
-        onNewPasswordChange={c.setNewPassword}
-        onSignUpSubmit={
-          c.isVerifyDialogOpen
-            ? async () => {
-                c.setVerifyDialogOpen(false);
-                c.promptSetUsername();
-              }
-            : c.submitUsernameDialog
-        }
-        isSignUpLoading={c.isSettingUsername}
-        signUpError={c.usernameError}
-      />
-      {c.isFullScreen && url && (
-        <VideoFullScreenPortal
-          isOpen={c.isFullScreen}
-          onClose={() => c.toggleFullScreen()}
-          url={url}
-          isPlaying={c.isPlaying}
-          onPlay={() => c.setIsPlaying(true)}
-          onPause={() => c.setIsPlaying(false)}
-          onTogglePlay={c.handleTogglePlay}
-          onEnded={c.handleVideoEnd}
-          onProgress={c.handleProgress}
-          onDuration={c.handleDuration}
-          onReady={() => {}}
-          loop={false}
-          volume={c.masterVolume}
-          playerRef={c.fullScreenPlayerRef as RefObject<ReactPlayer>}
-          onSeek={c.handleSeek}
-          onNext={c.nextVideo}
-          onPrevious={c.prevVideo}
-          onChannelNext={c.nextChannel}
-          onChannelPrev={c.prevChannel}
-          showStatus={c.showStatus}
-          statusMessage={c.statusMessage}
-          videoOverlay={
-            <>
-              {c.channelBugOverlay}
-              {c.currentChannelId === MTV_CHANNEL_ID && c.closedCaptionsOn ? (
-                <MtvLyricsOverlay
-                  songId={c.currentVideo?.id}
-                  title={c.currentVideo?.title}
-                  artist={c.currentVideo?.artist}
-                  playedSeconds={c.playedSeconds}
-                  visible={
-                    !c.screenOff &&
-                    !c.poweringOff &&
-                    !c.isBuffering &&
-                    !c.isTransitioningCc &&
-                    Boolean(url)
-                  }
-                  variant="fullscreen"
-                />
-              ) : null}
-            </>
-          }
-        />
-      )}
-    </>
+    </AppWindowShell>
   );
 }
