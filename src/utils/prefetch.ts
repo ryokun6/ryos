@@ -20,6 +20,13 @@ import { setNextBootMessage } from "@/utils/bootMessage";
 import i18n from "@/lib/i18n";
 import { getApiUrl, isTauri } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
+import {
+  isInReloadLoop,
+  trackReload,
+  clearStaleReload,
+} from "@/utils/reloadGuard";
+import { shouldPrefetchNow } from "@/utils/network";
+import { track, SYSTEM_ANALYTICS } from "@/utils/analytics";
 
 // Storage key for manifest timestamp (for cache invalidation)
 const MANIFEST_KEY = 'ryos:manifest-timestamp';
@@ -43,41 +50,8 @@ if (import.meta.hot) {
 // Flag to prevent concurrent operations
 let isUpdateInProgress = false;
 
-// Reload loop detection — shared keys with index.html and main.tsx
-const RELOAD_COUNT_KEY = 'ryos:reload-count';
-const RELOAD_WINDOW_KEY = 'ryos:reload-window-start';
-const MAX_RELOADS_PER_WINDOW = 3;
-const RELOAD_WINDOW_MS = 60_000; // 1 minute
-
-function isInReloadLoop(): boolean {
-  try {
-    const count = parseInt(sessionStorage.getItem(RELOAD_COUNT_KEY) || '0', 10);
-    const windowStart = parseInt(sessionStorage.getItem(RELOAD_WINDOW_KEY) || '0', 10);
-    if (!windowStart || Date.now() - windowStart > RELOAD_WINDOW_MS) {
-      sessionStorage.removeItem(RELOAD_COUNT_KEY);
-      sessionStorage.removeItem(RELOAD_WINDOW_KEY);
-      return false;
-    }
-    return count >= MAX_RELOADS_PER_WINDOW;
-  } catch {
-    return false;
-  }
-}
-
-function trackReload(): void {
-  try {
-    const windowStart = parseInt(sessionStorage.getItem(RELOAD_WINDOW_KEY) || '0', 10);
-    const count = parseInt(sessionStorage.getItem(RELOAD_COUNT_KEY) || '0', 10);
-    if (!windowStart || Date.now() - windowStart > RELOAD_WINDOW_MS) {
-      sessionStorage.setItem(RELOAD_WINDOW_KEY, String(Date.now()));
-      sessionStorage.setItem(RELOAD_COUNT_KEY, '1');
-    } else {
-      sessionStorage.setItem(RELOAD_COUNT_KEY, String(count + 1));
-    }
-  } catch {
-    // sessionStorage might not be available
-  }
-}
+// Reload-loop detection is centralized in @/utils/reloadGuard (shared keys with
+// index.html's inline bootstrap script and main.tsx).
 
 /**
  * Get the currently stored version from the app store
@@ -120,20 +94,27 @@ async function reloadPage(version?: string, buildNumber?: string): Promise<void>
     setNextBootMessage(i18n.t("common.system.rebooting"));
   }
   
+  track(SYSTEM_ANALYTICS.UPDATE_APPLIED, {
+    category: "events",
+    buildNumber: buildNumber ?? null,
+  });
+
   try {
-    // Unregister service worker before reloading to avoid Safari navigation issues
-    // Safari can error with "redirections from worker" when SW is in transitional state
+    // Nudge any waiting service worker to take over so the reload lands on the
+    // fresh precache. We intentionally do NOT unregister the SW anymore:
+    // unregistering would discard the Workbox precache and force a full
+    // re-download on the next load. skipWaiting/clientsClaim + the cache-bust
+    // navigation below are enough to get fresh content.
     if ('serviceWorker' in navigator) {
       const registration = await navigator.serviceWorker.getRegistration();
-      if (registration) {
-        await registration.unregister();
-        console.log('[Prefetch] Service worker unregistered for clean reload');
+      if (registration?.waiting) {
+        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
       }
     }
   } catch (error) {
-    console.warn('[Prefetch] Failed to unregister service worker:', error);
+    console.warn('[Prefetch] Failed to activate waiting service worker:', error);
   }
-  
+
   // Add cache-busting query param to force fresh index.html fetch
   const url = new URL(window.location.href);
   url.searchParams.set('_cb', Date.now().toString());
@@ -331,14 +312,14 @@ async function checkAndUpdate(isManual: boolean = false): Promise<void> {
     if (result.action === 'update') {
       // Store version IMMEDIATELY to prevent re-detection if the page reloads
       // mid-flow (e.g. VitePWA's auto-update triggers a controllerchange reload
-      // during clearAllCaches → registration.update()).  Without this, the
+      // during clearRuntimeCaches → registration.update()).  Without this, the
       // stored version would still be old after reload, causing an infinite
       // detect-update → clear-caches → reload cycle.
       storeVersion(result.server.version, result.server.buildNumber, result.server.buildTime);
 
       toast.dismiss('prefetch-progress');
       clearPrefetchFlag();
-      await clearAllCaches();
+      await clearRuntimeCaches();
     }
     
     // Run prefetch - show reload toast for updates, dismiss silently for first-time
@@ -390,10 +371,11 @@ export async function forceRefreshCache(): Promise<void> {
     // Store version immediately (same early-store rationale as checkAndUpdate)
     storeVersion(serverVersion.version, serverVersion.buildNumber, serverVersion.buildTime);
 
-    // Clear caches and refetch for new version
+    // Clear runtime caches and refetch for new version (preserves the Workbox
+    // precache so JS updates stay revision-efficient).
     toast.dismiss('prefetch-progress');
     clearPrefetchFlag();
-    await clearAllCaches();
+    await clearRuntimeCaches();
     
     // Show update ready toast with reboot button (only for new versions)
     await runPrefetchWithToast(true, serverVersion);
@@ -413,7 +395,21 @@ async function runPrefetchWithToast(
   server: ServerVersion
 ): Promise<void> {
   console.log('[Prefetch] Starting prefetch...');
-  
+
+  // JS chunks are now precached by the service worker (Workbox) and load from
+  // cache offline, so we no longer crawl/prefetch them here. This pass only
+  // warms NON-JS runtime assets (themed icons, UI sounds, static textures).
+
+  // Be polite on metered / slow connections: skip the background asset warmup
+  // but still finalize the version + update toast. Missing assets just load
+  // on-demand (and the SW caches them then).
+  if (!shouldPrefetchNow()) {
+    console.log('[Prefetch] Skipping asset warmup (data saver / slow network)');
+    track(SYSTEM_ANALYTICS.PREFETCH_SKIPPED_NETWORK, { category: "events" });
+    finalizePrefetch(showVersionToast, server);
+    return;
+  }
+
   // Fetch manifest first
   const manifest = await fetchIconManifest();
   if (!manifest) {
@@ -424,17 +420,21 @@ async function runPrefetchWithToast(
   
   // Gather all URLs
   const iconUrls = getIconUrlsFromManifest(manifest);
-  const jsUrls = await discoverAllJsChunks();
   const soundUrls = getSoundUrls();
   const assetUrls = getStaticAssetUrls();
   
-  const totalItems = iconUrls.length + soundUrls.length + jsUrls.length + assetUrls.length;
+  const totalItems = iconUrls.length + soundUrls.length + assetUrls.length;
   
   if (totalItems === 0) {
     toast.info('No assets to cache');
     console.log('[Prefetch] No assets to prefetch');
     return;
   }
+
+  track(SYSTEM_ANALYTICS.PREFETCH_START, {
+    category: "events",
+    total: totalItems,
+  });
   
   let overallCompleted = 0;
   
@@ -489,15 +489,6 @@ async function runPrefetchWithToast(
       }, prefetchOptions);
     }
     
-    // Prefetch JS chunks
-    if (jsUrls.length > 0) {
-      const baseCompleted = overallCompleted;
-      await prefetchUrlsWithProgress(jsUrls, 'Scripts', (completed, total) => {
-        overallCompleted = baseCompleted + completed;
-        updateToast('scripts', completed, total);
-      }, prefetchOptions);
-    }
-    
     // Prefetch static assets (textures, splash screens, etc.)
     if (assetUrls.length > 0) {
       const baseCompleted = overallCompleted;
@@ -509,36 +500,47 @@ async function runPrefetchWithToast(
     
     // Store manifest timestamp
     storeManifestTimestamp(manifest);
-    
-    // Store version in app store after successful prefetch
-    storeVersion(server.version, server.buildNumber, server.buildTime);
-    
-    // Dismiss the progress toast
+
+    track(SYSTEM_ANALYTICS.PREFETCH_COMPLETE, {
+      category: "events",
+      total: totalItems,
+    });
+
+    // Dismiss the progress toast and finalize (store version + reboot toast)
     toast.dismiss(toastId);
-    
-    // Show completion toast - with version/reload for updates, just dismiss for first-time
-    if (showVersionToast) {
-      console.log(`[Prefetch] Showing update toast: ${server.version} (${server.buildNumber})`);
-      
-      // Create a new toast (not replacing the old one)
-      toast.success(
-        createElement(PrefetchCompleteToast, {
-          version: server.version,
-          buildNumber: server.buildNumber,
-        }),
-        {
-          duration: Infinity,
-          action: {
-            label: i18n.t("common.toast.reboot"),
-            onClick: () => reloadPage(server.version, server.buildNumber),
-          },
-        }
-      );
-    }
-    
+    finalizePrefetch(showVersionToast, server);
   } catch (error) {
     console.error('[Prefetch] Error during prefetch:', error);
     toast.error('Failed to cache assets', { id: toastId });
+  }
+}
+
+/**
+ * Persist the resolved version and (for updates) show the reboot toast.
+ * Shared by the normal and network-skipped prefetch paths.
+ */
+function finalizePrefetch(
+  showVersionToast: boolean,
+  server: ServerVersion
+): void {
+  // Store version in app store so update detection settles
+  storeVersion(server.version, server.buildNumber, server.buildTime);
+
+  if (showVersionToast) {
+    console.log(`[Prefetch] Showing update toast: ${server.version} (${server.buildNumber})`);
+    toast.success(
+      createElement(PrefetchCompleteToast, {
+        version: server.version,
+        buildNumber: server.buildNumber,
+      }),
+      {
+        duration: Infinity,
+        action: {
+          label: i18n.t("common.toast.reboot"),
+          onClick: () => reloadPage(server.version, server.buildNumber),
+        },
+      }
+    );
   }
 }
 
@@ -612,8 +614,32 @@ const UI_SOUNDS = [
   'WindowZoomMinimize.mp3',
 ];
 
+// Max simultaneous prefetch requests. Bounded so the background warmup doesn't
+// saturate the connection or contend with foreground app/network traffic.
+const PREFETCH_CONCURRENCY = 8;
+
 /**
- * Prefetch a list of URLs with progress tracking
+ * Run an async task over items with a bounded concurrency pool.
+ */
+async function runWithConcurrency<T>(
+  items: T[],
+  limit: number,
+  task: (item: T) => Promise<void>
+): Promise<void> {
+  if (items.length === 0) return;
+  const poolSize = Math.max(1, Math.min(limit, items.length));
+  let cursor = 0;
+  const workers = Array.from({ length: poolSize }, async () => {
+    while (cursor < items.length) {
+      const index = cursor++;
+      await task(items[index]);
+    }
+  });
+  await Promise.all(workers);
+}
+
+/**
+ * Prefetch a list of URLs with progress tracking, bounded concurrency.
  */
 async function prefetchUrlsWithProgress(
   urls: string[], 
@@ -622,31 +648,30 @@ async function prefetchUrlsWithProgress(
   options?: { skipCache?: boolean }
 ): Promise<number> {
   let completed = 0;
+  let succeeded = 0;
   const total = urls.length;
-  
-  const results = await Promise.allSettled(
-    urls.map(async (url) => {
-      try {
-        await abortableFetch(url, { 
-          method: 'GET',
-          // Use 'reload' when skipCache is true (e.g., after cache clear on updates)
-          // to bypass browser HTTP cache and fetch fresh from network.
-          // Otherwise use 'default' to let browser decide (respects cache headers).
-          cache: options?.skipCache ? 'reload' : 'default',
-          timeout: 15000,
-          throwOnHttpError: false,
-          retry: { maxAttempts: 1, initialDelayMs: 250 },
-        });
-        completed++;
-        onProgress(completed, total);
-      } catch {
-        completed++;
-        onProgress(completed, total);
-      }
-    })
-  );
-  
-  const succeeded = results.filter(r => r.status === 'fulfilled').length;
+
+  await runWithConcurrency(urls, PREFETCH_CONCURRENCY, async (url) => {
+    try {
+      await abortableFetch(url, {
+        method: 'GET',
+        // Use 'reload' when skipCache is true (e.g., after cache clear on updates)
+        // to bypass browser HTTP cache and fetch fresh from network.
+        // Otherwise use 'default' to let browser decide (respects cache headers).
+        cache: options?.skipCache ? 'reload' : 'default',
+        timeout: 15000,
+        throwOnHttpError: false,
+        retry: { maxAttempts: 1, initialDelayMs: 250 },
+      });
+      succeeded++;
+    } catch {
+      // best-effort: count as attempted below regardless
+    } finally {
+      completed++;
+      onProgress(completed, total);
+    }
+  });
+
   console.log(`[Prefetch] ${label}: ${succeeded}/${urls.length} cached`);
   return succeeded;
 }
@@ -720,99 +745,35 @@ function getStaticAssetUrls(): string[] {
 }
 
 /**
- * Clear ALL caches and update service worker to ensure fresh assets
+ * Clear runtime (non-precache) caches so themed icons / sounds / data refresh
+ * on update, while PRESERVING the Workbox precache (`workbox-precache-*`). This
+ * keeps JS updates revision-efficient — only changed hashed chunks are fetched
+ * by the new service worker — instead of nuking and re-downloading everything.
  */
-async function clearAllCaches(): Promise<void> {
+async function clearRuntimeCaches(): Promise<void> {
   try {
-    // Clear ALL Cache Storage caches (not just filtered ones)
+    if (typeof caches === 'undefined') return;
     const cacheNames = await caches.keys();
-    await Promise.all(cacheNames.map(name => caches.delete(name)));
-    console.log(`[Prefetch] Cleared ${cacheNames.length} caches:`, cacheNames);
-    
-    // Tell service worker to skip waiting and activate new version
+    const runtimeCaches = cacheNames.filter(
+      (name) => !name.startsWith('workbox-precache')
+    );
+    await Promise.all(runtimeCaches.map((name) => caches.delete(name)));
+    console.log(
+      `[Prefetch] Cleared ${runtimeCaches.length} runtime caches (precache preserved):`,
+      runtimeCaches
+    );
+
+    // Ask the service worker to check for an updated precache.
     if ('serviceWorker' in navigator) {
       const registration = await navigator.serviceWorker.getRegistration();
       if (registration?.waiting) {
         registration.waiting.postMessage({ type: 'SKIP_WAITING' });
       }
-      // Force update check
       await registration?.update();
       console.log('[Prefetch] Service worker update triggered');
     }
   } catch (error) {
-    console.warn('[Prefetch] Failed to clear caches:', error);
-  }
-}
-
-/**
- * Discover all JS chunks by fetching the main bundle and parsing for dynamic imports
- */
-async function discoverAllJsChunks(): Promise<string[]> {
-  try {
-    // First, get the main bundle URL from index.html
-    const indexResponse = await abortableFetch('/index.html', {
-      method: 'GET',
-      timeout: 15000,
-      throwOnHttpError: false,
-      retry: { maxAttempts: 1, initialDelayMs: 250 },
-    });
-    if (!indexResponse.ok) return [];
-    
-    const html = await indexResponse.text();
-    
-    // Find the main index bundle: /assets/index-XXXX.js
-    const mainBundleMatch = html.match(/\/assets\/index-[A-Za-z0-9_-]+\.js/);
-    if (!mainBundleMatch) {
-      // In development mode, Vite serves source directly (no bundled assets)
-      if (import.meta.env.DEV) {
-        console.log('[Prefetch] Skipping JS chunk discovery in development mode');
-      } else {
-        console.warn('[Prefetch] Could not find main bundle in index.html');
-      }
-      return [];
-    }
-    
-    // Fetch the main bundle to find dynamic import URLs
-    const bundleResponse = await abortableFetch(mainBundleMatch[0], {
-      method: 'GET',
-      timeout: 15000,
-      throwOnHttpError: false,
-      retry: { maxAttempts: 1, initialDelayMs: 250 },
-    });
-    if (!bundleResponse.ok) return [];
-    
-    const bundleCode = await bundleResponse.text();
-    
-    // Find all asset URLs in the bundle
-    // Dynamic imports look like: "assets/ChatsAppComponent-BHyz_x7A.js" or "./ChatsAppComponent-..."
-    const assetPattern = /["'](?:\.\/|assets\/)([A-Za-z0-9_-]+)-[A-Za-z0-9_-]+\.js["']/g;
-    const matches = bundleCode.matchAll(assetPattern);
-    
-    // Extract just the filename part and build full URLs
-    const allAssets: string[] = [];
-    for (const match of matches) {
-      const filename = match[0].replace(/["']/g, '').replace(/^\.\//, '').replace(/^assets\//, '');
-      allAssets.push(`/assets/${filename}`);
-    }
-    
-    // Dedupe and return all JS chunks (includes locale translation-* chunks)
-    const uniqueAssets = [...new Set(allAssets)];
-
-    const localeChunks = uniqueAssets.filter((url) =>
-      /\/translation-[A-Za-z0-9_-]+\.js$/.test(url)
-    );
-    if (localeChunks.length > 0) {
-      console.log(
-        `[Prefetch] Including ${localeChunks.length} locale translation chunks`
-      );
-    }
-
-    console.log(`[Prefetch] Discovered ${uniqueAssets.length} JS chunks from main bundle`);
-    return uniqueAssets;
-    
-  } catch (error) {
-    console.warn('[Prefetch] Failed to discover JS chunks:', error);
-    return [];
+    console.warn('[Prefetch] Failed to clear runtime caches:', error);
   }
 }
 
@@ -873,11 +834,7 @@ export function initPrefetch(): void {
     url.searchParams.delete('_cb');
     window.history.replaceState({}, '', url.toString());
     // Clear the stale reload flag since we successfully loaded fresh content
-    try {
-      sessionStorage.removeItem('ryos-stale-reload');
-    } catch {
-      // sessionStorage might not be available
-    }
+    clearStaleReload();
   }
   
   const runPrefetchFlow = async () => {

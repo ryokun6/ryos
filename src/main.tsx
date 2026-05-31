@@ -9,7 +9,14 @@ import { preloadIpodData } from "./stores/useIpodStore";
 import { initPrefetch } from "./utils/prefetch";
 import { initializeI18n } from "./lib/i18n";
 import { primeReactResources } from "./lib/reactResources";
-import { initializeAnalytics } from "./utils/analytics";
+import { initializeAnalytics, track, SYSTEM_ANALYTICS } from "./utils/analytics";
+import {
+  isInReloadLoop,
+  trackReload,
+  isStaleReloadOnCooldown,
+  markStaleReload,
+  clearStaleReload,
+} from "./utils/reloadGuard";
 
 // Prime React 19 resource hints before anything else runs
 primeReactResources();
@@ -26,7 +33,7 @@ primeReactResources();
 // ============================================================================
 try {
   if (new URL(window.location.href).searchParams.has("_cb")) {
-    sessionStorage.removeItem("ryos-stale-reload");
+    clearStaleReload();
   }
 } catch {
   // URL parsing or sessionStorage may throw in edge cases
@@ -54,42 +61,28 @@ const handlePreloadError = (event: Event) => {
   if (isPreloadReloading) return;
 
   if (!navigator.onLine) {
+    // Offline + chunk missing means the chunk wasn't precached/cached. Don't
+    // reload (it can't help offline); just record it so we can tune what we
+    // precache. Most chunks are precached by the service worker now.
     console.warn("[ryOS] Skipping reload - device is offline");
+    track(SYSTEM_ANALYTICS.OFFLINE_CHUNK_FAILURE, { category: "errors" });
     return;
   }
 
-  // Counter-based loop guard (shared with index.html and prefetch.ts)
-  const countKey = "ryos:reload-count";
-  const windowKey = "ryos:reload-window-start";
-  try {
-    const now = Date.now();
-    const count = parseInt(sessionStorage.getItem(countKey) || "0", 10);
-    const wStart = parseInt(sessionStorage.getItem(windowKey) || "0", 10);
-    if (wStart && now - wStart <= 60000 && count >= 3) {
-      console.warn("[ryOS] Too many reloads (" + count + "), stopping to prevent loop");
-      return;
-    }
-    if (!wStart || now - wStart > 60000) {
-      sessionStorage.setItem(windowKey, String(now));
-      sessionStorage.setItem(countKey, "1");
-    } else {
-      sessionStorage.setItem(countKey, String(count + 1));
-    }
-  } catch {
-    // sessionStorage may throw
+  // Shared reload-loop + cooldown guards (see utils/reloadGuard).
+  if (isInReloadLoop()) {
+    console.warn("[ryOS] Too many reloads, stopping to prevent loop");
+    return;
   }
+  trackReload();
 
-  const reloadKey = "ryos-stale-reload";
-  const lastReload = sessionStorage.getItem(reloadKey);
-  const now = Date.now();
-
-  if (lastReload && now - parseInt(lastReload, 10) < 10000) {
+  if (isStaleReloadOnCooldown()) {
     console.warn("[ryOS] Recently reloaded for stale bundle, skipping to prevent loop");
     return;
   }
 
   isPreloadReloading = true;
-  sessionStorage.setItem(reloadKey, String(now));
+  markStaleReload();
   console.log("[ryOS] Stale chunk detected — clearing caches and reloading...");
 
   const doNavigate = () => {
