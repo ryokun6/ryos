@@ -10,7 +10,14 @@ import {
   MenubarSubContent,
   MenubarCheckboxItem,
 } from "@/components/ui/menubar";
-import { useThemeFlags } from "@/hooks/useThemeFlags";
+import { AppMenuBarHelpMenu } from "@/components/shared/menubar/AppMenuBarHelpMenu";
+import { AppShareItemDialog } from "@/components/shared/menubar/AppShareItemDialog";
+import {
+  MENUBAR_ITEM_CLASS,
+  MENUBAR_SEPARATOR_CLASS,
+  MENUBAR_TRIGGER_CLASS,
+} from "@/components/shared/menubar/menubarStyles";
+import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
 import { useTranslation } from "react-i18next";
 import type { ScaleOption } from "../hooks/useInfiniteMacLogic";
 
@@ -42,70 +49,73 @@ export function InfiniteMacMenuBar({
   currentScale,
 }: InfiniteMacMenuBarProps) {
   const { t } = useTranslation();
-  const { isWindowsTheme: isXpTheme, isMacOSTheme: isMacOsxTheme } =
-    useThemeFlags();
+  const {
+    isShareDialogOpen,
+    setIsShareDialogOpen,
+    isXpTheme,
+    isMacOsxTheme,
+    appId,
+    appName,
+  } = useAppMenuBarChrome("infinite-mac");
 
   return (
     <MenuBar inWindowFrame={isXpTheme}>
       <MenubarMenu>
-        <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
+        <MenubarTrigger className={MENUBAR_TRIGGER_CLASS}>
           {t("common.menu.file")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           {hasEmulator && (
             <>
-              <MenubarItem
-                onClick={onBackToPresets}
-                className="text-md h-6 px-3"
-              >
+              <MenubarItem onClick={onBackToPresets} className={MENUBAR_ITEM_CLASS}>
                 {t("apps.infinite-mac.menu.backToPresets")}
               </MenubarItem>
-              <MenubarSeparator className="h-[2px] bg-black my-1" />
+              <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
             </>
           )}
-          <MenubarItem onClick={onClose} className="text-md h-6 px-3">
+          <MenubarItem onClick={onClose} className={MENUBAR_ITEM_CLASS}>
             {t("common.menu.close")}
           </MenubarItem>
         </MenubarContent>
       </MenubarMenu>
 
       <MenubarMenu>
-        <MenubarTrigger className="px-2 py-1 text-md focus-visible:ring-0">
+        <MenubarTrigger className={MENUBAR_TRIGGER_CLASS}>
           {t("common.menu.view")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           <MenubarSub>
-            <MenubarSubTrigger className="text-md h-6 px-3">
+            <MenubarSubTrigger className={MENUBAR_ITEM_CLASS}>
               {t("apps.infinite-mac.menu.scaling")}
             </MenubarSubTrigger>
             <MenubarSubContent className="px-0">
               <MenubarCheckboxItem
                 checked={currentScale === 1}
                 onCheckedChange={() => onSetScale(1)}
-                className="text-md h-6 px-3"
+                className={MENUBAR_ITEM_CLASS}
               >
                 1x
               </MenubarCheckboxItem>
               <MenubarCheckboxItem
                 checked={currentScale === 1.5}
                 onCheckedChange={() => onSetScale(1.5)}
-                className="text-md h-6 px-3"
+                className={MENUBAR_ITEM_CLASS}
               >
                 1.5x
               </MenubarCheckboxItem>
               <MenubarCheckboxItem
                 checked={currentScale === 2}
                 onCheckedChange={() => onSetScale(2)}
-                className="text-md h-6 px-3"
+                className={MENUBAR_ITEM_CLASS}
               >
                 2x
               </MenubarCheckboxItem>
             </MenubarSubContent>
           </MenubarSub>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <MenubarItem
             onClick={isPaused ? onUnpause : onPause}
-            className="text-md h-6 px-3"
+            className={MENUBAR_ITEM_CLASS}
             disabled={!hasEmulator}
           >
             {isPaused
@@ -114,7 +124,7 @@ export function InfiniteMacMenuBar({
           </MenubarItem>
           <MenubarItem
             onClick={onCaptureScreenshot}
-            className="text-md h-6 px-3"
+            className={MENUBAR_ITEM_CLASS}
             disabled={!hasEmulator}
           >
             {t("apps.infinite-mac.menu.captureScreenshot")}
@@ -122,24 +132,20 @@ export function InfiniteMacMenuBar({
         </MenubarContent>
       </MenubarMenu>
 
-      <MenubarMenu>
-        <MenubarTrigger className="px-2 py-1 text-md focus-visible:ring-0">
-          {t("common.menu.help")}
-        </MenubarTrigger>
-        <MenubarContent align="start" sideOffset={1} className="px-0">
-          <MenubarItem onClick={onShowHelp} className="text-md h-6 px-3">
-            {t("apps.infinite-mac.menu.infiniteMacHelp")}
-          </MenubarItem>
-          {!isMacOsxTheme && (
-            <>
-              <MenubarSeparator className="h-[2px] bg-black my-1" />
-              <MenubarItem onClick={onShowAbout} className="text-md h-6 px-3">
-                {t("apps.infinite-mac.menu.aboutInfiniteMac")}
-              </MenubarItem>
-            </>
-          )}
-        </MenubarContent>
-      </MenubarMenu>
+      <AppMenuBarHelpMenu
+        helpItemLabel={t("apps.infinite-mac.menu.infiniteMacHelp")}
+        aboutItemLabel={t("apps.infinite-mac.menu.aboutInfiniteMac")}
+        isMacOsxTheme={isMacOsxTheme}
+        onShowHelp={onShowHelp}
+        onShowAbout={onShowAbout}
+        onOpenShareDialog={() => setIsShareDialogOpen(true)}
+      />
+      <AppShareItemDialog
+        appId={appId}
+        appName={appName}
+        isOpen={isShareDialogOpen}
+        onClose={() => setIsShareDialogOpen(false)}
+      />
     </MenuBar>
   );
 }
