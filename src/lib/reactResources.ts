@@ -18,9 +18,10 @@ type FetchResource = {
 const STYLE_RESOURCES = ["/fonts/fonts.css"];
 
 const FONT_RESOURCES: FontResource[] = [
-  { href: "/fonts/ChicagoKare-Regular.woff2", type: "font/woff2", priority: "high" },
+  // NOTE: ChicagoKare-Regular and geneva-12 are intentionally omitted here —
+  // index.html already preloads them with high priority before this module
+  // runs, so re-declaring them would emit duplicate <link rel=preload> hints.
   { href: "/fonts/fusion-pixel-12px-proportional-ja.woff2", type: "font/woff2" },
-  { href: "/fonts/geneva-12.woff2", type: "font/woff2", priority: "high" },
   { href: "/fonts/Mondwest-Regular.woff2", type: "font/woff2" },
 ];
 

@@ -34,6 +34,66 @@ function readBuildNumber(): string {
 
 const ryosBuildNumber = readBuildNumber();
 
+// ---------------------------------------------------------------------------
+// Curated Workbox precache
+//
+// We precache the app shell + every "normal" JS chunk so apps load offline and
+// updates only re-download content-hashed chunks that actually changed. But we
+// EXCLUDE a handful of heavy / rarely-needed-offline families from the precache
+// to keep the service-worker install small: they stay available on-demand via
+// the runtime CacheFirst /assets/*.js rule (and degrade gracefully offline):
+//   - shiki syntax grammars + themes  (chat code highlighting; falls back to
+//     plain text offline)
+//   - mermaid                         (chat diagrams)
+//   - webamp                          (Winamp app)
+//   - v86                             (Virtual PC emulator)
+// `three` (3D wallpapers / Synth) and `audio` (Synth/Soundboard/iPod) are NOT
+// excluded so those keep working offline.
+//
+// The set is populated at build time by `collectHeavyChunksPlugin` (which
+// inspects each emitted chunk's modules) and consumed by the Workbox
+// `manifestTransforms` hook below.
+// ---------------------------------------------------------------------------
+const HEAVY_PRECACHE_PACKAGES =
+  /[/\\]node_modules[/\\](?:\.pnpm[/\\][^/\\]+[/\\]node_modules[/\\])?(?:shiki|@shikijs|mermaid|webamp|v86)[/\\]/;
+const heavyPrecacheExclusions = new Set<string>();
+
+function collectHeavyChunksPlugin() {
+  return {
+    name: "ryos-collect-heavy-chunks",
+    apply: "build" as const,
+    generateBundle(_options: unknown, bundle: Record<string, unknown>) {
+      for (const [fileName, output] of Object.entries(bundle)) {
+        const chunk = output as {
+          type?: string;
+          moduleIds?: string[];
+          modules?: Record<string, unknown>;
+          facadeModuleId?: string | null;
+        };
+        if (chunk.type !== "chunk" || !fileName.endsWith(".js")) continue;
+        const moduleIds =
+          chunk.moduleIds ?? Object.keys(chunk.modules ?? {});
+        if (moduleIds.length === 0) continue;
+        // Exclude a chunk when it is ENTIRELY composed of heavy packages
+        // (catches shiki language/theme grammars and manual heavy chunks), OR
+        // when its facade module is a heavy package (catches dynamic-import
+        // entry chunks like mermaid that also bundle non-heavy transitive deps
+        // such as d3/dagre). Requiring all-heavy or a heavy facade avoids ever
+        // dropping a shared chunk that also contains app code.
+        const allHeavy = moduleIds.every((id) =>
+          HEAVY_PRECACHE_PACKAGES.test(id)
+        );
+        const heavyFacade =
+          typeof chunk.facadeModuleId === "string" &&
+          HEAVY_PRECACHE_PACKAGES.test(chunk.facadeModuleId);
+        if (allHeavy || heavyFacade) {
+          heavyPrecacheExclusions.add(fileName.split("/").pop() as string);
+        }
+      }
+    },
+  };
+}
+
 // https://vite.dev/config/
 export default defineConfig({
   envPrefix: ['VITE_', 'TAURI_ENV_*'],
@@ -232,6 +292,7 @@ export default defineConfig({
     // Only include PWA plugin in production builds (not Tauri, not dev)
     // Skip PWA plugin entirely in dev mode to save ~50MB memory (Workbox config is heavy)
     ...(process.env.TAURI_ENV || isDev ? [] : [
+      collectHeavyChunksPlugin(),
       VitePWA({
       registerType: "autoUpdate",
       manifestFilename: "manifest.json",
@@ -486,12 +547,14 @@ export default defineConfig({
             },
           },
         ],
-        // Precache the most important assets for offline support
-        // index.html is precached to serve as navigation fallback when offline
-        // Service worker uses skipWaiting + clientsClaim to update immediately,
-        // minimizing risk of stale HTML referencing old scripts
+        // Precache the app shell + JS chunks for reliable offline support and
+        // efficient, revision-aware updates (only changed hashed chunks are
+        // re-fetched). Heavy/optional chunks are filtered out below via
+        // manifestTransforms so the install stays small; they load on-demand
+        // through the runtime CacheFirst /assets/*.js rule instead.
         globPatterns: [
           "index.html",
+          "assets/*.js",
           "**/*.css",
           "fonts/*.woff2",
           "icons/manifest.json",
@@ -500,6 +563,24 @@ export default defineConfig({
         globIgnores: [
           "**/data/all-sounds.json", // 4.7MB - too large
           "**/node_modules/**",
+        ],
+        // Drop heavy / rarely-needed-offline chunk families from the precache
+        // manifest (see heavyPrecacheExclusions above). They remain runtime
+        // cacheable on first use, and chat code/diagrams degrade gracefully.
+        manifestTransforms: [
+          (
+            entries: Array<{
+              url: string;
+              revision: string | null;
+              size: number;
+            }>
+          ) => {
+            const manifest = entries.filter((entry) => {
+              const base = entry.url.split("/").pop() ?? entry.url;
+              return !heavyPrecacheExclusions.has(base);
+            });
+            return { manifest, warnings: [] };
+          },
         ],
         // Allow the main bundle to be precached (it's chunked, but entry is ~3MB)
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB limit

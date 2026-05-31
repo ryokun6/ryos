@@ -29,6 +29,15 @@ export const APP_ANALYTICS = {
   USER_LOGOUT: "user:logout",
 } as const;
 
+// System / runtime events (prefetch, offline, updates)
+export const SYSTEM_ANALYTICS = {
+  PREFETCH_START: "system:prefetch_start",
+  PREFETCH_COMPLETE: "system:prefetch_complete",
+  PREFETCH_SKIPPED_NETWORK: "system:prefetch_skipped_network",
+  OFFLINE_CHUNK_FAILURE: "system:offline_chunk_failure",
+  UPDATE_APPLIED: "system:update_applied",
+} as const;
+
 // Chat-specific events (existing)
 export const CHAT_ANALYTICS = {
   TEXT_MESSAGE: "chats:text",
