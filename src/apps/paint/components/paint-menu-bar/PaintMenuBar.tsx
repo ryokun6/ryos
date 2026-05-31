@@ -5,7 +5,7 @@ import { usePaintMenuBar } from "./usePaintMenuBar";
 import { PaintMenuBarFileMenu } from "./PaintMenuBarFileMenu";
 import { PaintMenuBarEditMenu } from "./PaintMenuBarEditMenu";
 import { PaintMenuBarFiltersMenu } from "./PaintMenuBarFiltersMenu";
-import { PaintMenuBarHelpMenu } from "./PaintMenuBarHelpMenu";
+import { AppMenuBarHelpMenu } from "@/components/shared/menubar/AppMenuBarHelpMenu";
 
 export function PaintMenuBar(props: PaintMenuBarProps) {
   const vm = usePaintMenuBar(props);
@@ -17,7 +17,14 @@ export function PaintMenuBar(props: PaintMenuBarProps) {
       <PaintMenuBarFileMenu vm={vm} />
       <PaintMenuBarEditMenu vm={vm} />
       <PaintMenuBarFiltersMenu vm={vm} />
-      <PaintMenuBarHelpMenu vm={vm} />
+      <AppMenuBarHelpMenu
+        helpItemLabel={vm.t("apps.paint.menu.paintHelp")}
+        aboutItemLabel={vm.t("apps.paint.menu.aboutPaint")}
+        isMacOsxTheme={vm.isMacOsxTheme}
+        onShowHelp={vm.onShowHelp}
+        onShowAbout={vm.onShowAbout}
+        onOpenShareDialog={() => vm.setIsShareDialogOpen(true)}
+      />
       <AppShareItemDialog
         appId={vm.appId}
         appName={vm.appName}

@@ -15,7 +15,7 @@ import {
   KaraokeWindowLyricsOverlay,
   KaraokeLyricsActivityIndicator,
   KaraokeSyncModeWindowPanel,
-} from "../KaraokeLyricsPlayback";
+} from "../karaoke-lyrics-playback";
 import { KaraokeVisualLayers } from "./KaraokeVisualLayers";
 import type { KaraokeAppController } from "./useKaraokeAppController";
 

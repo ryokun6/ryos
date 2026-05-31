@@ -6,7 +6,7 @@ import { IpodMenuBarFileMenu } from "./IpodMenuBarFileMenu";
 import { IpodMenuBarControlsMenu } from "./IpodMenuBarControlsMenu";
 import { IpodMenuBarViewMenu } from "./IpodMenuBarViewMenu";
 import { IpodMenuBarLibraryMenu } from "./IpodMenuBarLibraryMenu";
-import { IpodMenuBarHelpMenu } from "./IpodMenuBarHelpMenu";
+import { AppMenuBarHelpMenu } from "@/components/shared/menubar/AppMenuBarHelpMenu";
 
 export function IpodMenuBar(props: IpodMenuBarProps) {
   const vm = useIpodMenuBar(props);
@@ -16,7 +16,15 @@ export function IpodMenuBar(props: IpodMenuBarProps) {
       <IpodMenuBarControlsMenu vm={vm} />
       <IpodMenuBarViewMenu vm={vm} />
       <IpodMenuBarLibraryMenu vm={vm} />
-      <IpodMenuBarHelpMenu vm={vm} />
+      <AppMenuBarHelpMenu
+        helpItemLabel={vm.t("apps.ipod.menu.ipodHelp")}
+        aboutItemLabel={vm.t("apps.ipod.menu.aboutIpod")}
+        shareItemLabel={vm.t("apps.ipod.menu.shareApp")}
+        isMacOsxTheme={vm.isMacOsxTheme}
+        onShowHelp={vm.onShowHelp}
+        onShowAbout={vm.onShowAbout}
+        onOpenShareDialog={() => vm.setIsShareDialogOpen(true)}
+      />
       <AppShareItemDialog
         appId={vm.appId}
         appName={vm.appName}

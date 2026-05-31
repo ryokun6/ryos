@@ -1,1 +1,1 @@
-export { LinkPreview, default } from "./link-preview/LinkPreview";
+export { LinkPreview } from "./link-preview/LinkPreview";

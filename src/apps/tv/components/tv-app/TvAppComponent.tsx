@@ -26,18 +26,18 @@ import {
 } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import ReactPlayer from "react-player";
-import {
-  AnimatedNumber,
-  AnimatedScheduleLabel,
-  AnimatedTitle,
-  ScrollingChannelName,
-  StatusDisplay,
-} from "./TvLcdWidgets";
+import { AnimatedNumber } from "@/components/shared/lcd/AnimatedNumber";
+import { LcdAnimatedTitle } from "@/components/shared/lcd/LcdAnimatedTitle";
+import { LcdStatusDisplay } from "@/components/shared/lcd/LcdStatusDisplay";
 import {
   STATUS_FADE_TRANSITION,
   STATUS_OPACITY_ANIMATE,
   STATUS_OPACITY_INITIAL,
-} from "./tvMotionConstants";
+} from "@/components/shared/lcd/lcdMotionConstants";
+import {
+  AnimatedScheduleLabel,
+  ScrollingChannelName,
+} from "./TvLcdWidgets";
 import { useTvAppController } from "./useTvAppController";
 
 export function TvAppComponent(props: AppProps) {
@@ -312,7 +312,7 @@ export function TvAppComponent(props: AppProps) {
                     transition={STATUS_FADE_TRANSITION}
                     className="absolute top-4 left-4 z-[45]"
                   >
-                    <StatusDisplay message={c.statusMessage} />
+                    <LcdStatusDisplay message={c.statusMessage} />
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -389,7 +389,7 @@ export function TvAppComponent(props: AppProps) {
                       />
                     </div>
                     <div className="relative overflow-hidden">
-                      <AnimatedTitle
+                      <LcdAnimatedTitle
                         title={lcdScrollTitle}
                         direction={titleAnimDirection}
                         isPlaying={lcdScrollPlaying}

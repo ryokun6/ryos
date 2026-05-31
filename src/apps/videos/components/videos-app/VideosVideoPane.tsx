@@ -1,9 +1,9 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { YouTubePlayer } from "@/components/shared/YouTubePlayer";
 import { SeekBar } from "../SeekBar";
-import { StatusDisplay } from "./VideosLcdWidgets";
+import { LcdStatusDisplay } from "@/components/shared/lcd/LcdStatusDisplay";
 import { VideosWhiteNoiseOverlay } from "./VideosWhiteNoise";
-import { STATUS_FADE_TRANSITION } from "./videosMotionConstants";
+import { STATUS_FADE_TRANSITION } from "@/components/shared/lcd/lcdMotionConstants";
 import type { VideosAppController } from "./useVideosAppController";
 
 type VideosVideoPaneProps = {
@@ -149,7 +149,7 @@ export function VideosVideoPane({
             transition={STATUS_FADE_TRANSITION}
             className="absolute top-4 left-4 z-40"
           >
-            <StatusDisplay message={statusMessage} />
+            <LcdStatusDisplay message={statusMessage} />
           </motion.div>
         )}
       </AnimatePresence>

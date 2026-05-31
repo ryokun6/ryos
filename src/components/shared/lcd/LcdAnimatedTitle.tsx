@@ -9,13 +9,9 @@ import {
   SPRING_TRANSITION,
   STATIC_OVERFLOW_MASK_STYLE,
   STATIC_TRANSITION,
-  STATUS_TEXT_STROKE_STYLE,
-} from "./videosMotionConstants";
+} from "./lcdMotionConstants";
 
-export { AnimatedDigit } from "@/components/shared/lcd/AnimatedDigit";
-export { AnimatedNumber } from "@/components/shared/lcd/AnimatedNumber";
-
-export const AnimatedTitle = memo(function AnimatedTitle({
+export const LcdAnimatedTitle = memo(function LcdAnimatedTitle({
   title,
   direction,
   isPlaying,
@@ -96,26 +92,6 @@ export const AnimatedTitle = memo(function AnimatedTitle({
           </motion.div>
         </motion.div>
       </AnimatePresence>
-    </div>
-  );
-});
-
-export const StatusDisplay = memo(function StatusDisplay({
-  message,
-}: {
-  message: string;
-}) {
-  return (
-    <div className="relative videos-status">
-      <div className="font-geneva-12 text-white text-xl relative z-10">
-        {message}
-      </div>
-      <div
-        className="font-geneva-12 text-black text-xl absolute inset-0"
-        style={STATUS_TEXT_STROKE_STYLE}
-      >
-        {message}
-      </div>
     </div>
   );
 });

@@ -10,7 +10,7 @@ import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { TypingDots } from "../TypingBubble";
-import { ChatMessageItem } from "./ChatMessageItem";
+import { ChatMessageItem } from "./chat-message-item/ChatMessageItem";
 import { getChatMessageStyle } from "./streamdown";
 import type { ChatMessage, ChatMessagesContentProps } from "./types";
 import { getErrorMessage, getMessageKey, getMessageText } from "./utils";

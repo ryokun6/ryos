@@ -6,7 +6,7 @@ import { KaraokeMenuBarFileMenu } from "./KaraokeMenuBarFileMenu";
 import { KaraokeMenuBarControlsMenu } from "./KaraokeMenuBarControlsMenu";
 import { KaraokeMenuBarViewMenu } from "./KaraokeMenuBarViewMenu";
 import { KaraokeMenuBarLibraryMenu } from "./KaraokeMenuBarLibraryMenu";
-import { KaraokeMenuBarHelpMenu } from "./KaraokeMenuBarHelpMenu";
+import { AppMenuBarHelpMenu } from "@/components/shared/menubar/AppMenuBarHelpMenu";
 
 export function KaraokeMenuBar(props: KaraokeMenuBarProps) {
   const vm = useKaraokeMenuBar(props);
@@ -16,7 +16,15 @@ export function KaraokeMenuBar(props: KaraokeMenuBarProps) {
       <KaraokeMenuBarControlsMenu vm={vm} />
       <KaraokeMenuBarViewMenu vm={vm} />
       <KaraokeMenuBarLibraryMenu vm={vm} />
-      <KaraokeMenuBarHelpMenu vm={vm} />
+      <AppMenuBarHelpMenu
+        helpItemLabel={vm.t("apps.karaoke.menu.karaokeHelp")}
+        aboutItemLabel={vm.t("apps.karaoke.menu.aboutKaraoke")}
+        shareItemLabel={vm.t("apps.karaoke.menu.shareApp")}
+        isMacOsxTheme={vm.isMacOsxTheme}
+        onShowHelp={vm.onShowHelp}
+        onShowAbout={vm.onShowAbout}
+        onOpenShareDialog={() => vm.setIsShareDialogOpen(true)}
+      />
       <AppShareItemDialog
         appId={vm.appId}
         appName={vm.appName}

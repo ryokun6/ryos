@@ -1,10 +1,8 @@
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { SkipBack, SkipForward, Play, Pause } from "@phosphor-icons/react";
-import {
-  AnimatedNumber,
-  AnimatedTitle,
-} from "./VideosLcdWidgets";
+import { AnimatedNumber } from "@/components/shared/lcd/AnimatedNumber";
+import { LcdAnimatedTitle } from "@/components/shared/lcd/LcdAnimatedTitle";
 import type { VideosAppController } from "./useVideosAppController";
 
 type VideosCdPlayerControlsProps = {
@@ -88,7 +86,7 @@ export function VideosCdPlayerControls({ c }: VideosCdPlayerControlsProps) {
           </div>
           {videos.length > 0 && (
             <div className="relative overflow-hidden">
-              <AnimatedTitle
+              <LcdAnimatedTitle
                 title={lcdTitle}
                 direction={animationDirection}
                 isPlaying={isPlaying}

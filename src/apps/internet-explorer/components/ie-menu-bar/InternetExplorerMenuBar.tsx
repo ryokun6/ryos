@@ -6,7 +6,7 @@ import { IeMenuBarFileMenu } from "./IeMenuBarFileMenu";
 import { IeMenuBarEditMenu } from "./IeMenuBarEditMenu";
 import { IeMenuBarFavoritesMenu } from "./IeMenuBarFavoritesMenu";
 import { IeMenuBarHistoryMenu } from "./IeMenuBarHistoryMenu";
-import { IeMenuBarHelpMenu } from "./IeMenuBarHelpMenu";
+import { AppMenuBarHelpMenu } from "@/components/shared/menubar/AppMenuBarHelpMenu";
 
 export function InternetExplorerMenuBar(props: InternetExplorerMenuBarProps) {
   const vm = useInternetExplorerMenuBar(props);
@@ -17,7 +17,16 @@ export function InternetExplorerMenuBar(props: InternetExplorerMenuBarProps) {
       <IeMenuBarEditMenu vm={vm} />
       <IeMenuBarFavoritesMenu vm={vm} />
       <IeMenuBarHistoryMenu vm={vm} />
-      <IeMenuBarHelpMenu vm={vm} />
+      <AppMenuBarHelpMenu
+        helpItemLabel={vm.t("apps.internet-explorer.menu.internetExplorerHelp")}
+        aboutItemLabel={vm.t(
+          "apps.internet-explorer.menu.aboutInternetExplorer"
+        )}
+        isMacOsxTheme={vm.isMacOsxTheme}
+        onShowHelp={vm.onShowHelp}
+        onShowAbout={vm.onShowAbout}
+        onOpenShareDialog={() => vm.setIsShareDialogOpen(true)}
+      />
       <AppShareItemDialog
         appId={vm.appId}
         appName={vm.appName}

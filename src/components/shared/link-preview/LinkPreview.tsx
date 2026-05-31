@@ -79,5 +79,3 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
     </motion.div>
   );
 }
-
-export default LinkPreview;
