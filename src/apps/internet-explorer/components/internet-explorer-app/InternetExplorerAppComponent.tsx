@@ -164,24 +164,36 @@ export function InternetExplorerAppComponent({
     />
   );
 
-  if (!isWindowOpen) return null;
-
   return (
-    <>
-      {!isXpTheme && isForeground && menuBar}
+    <AppWindowShell
+      isWindowOpen={isWindowOpen}
+      isXpTheme={isXpTheme}
+      isForeground={isForeground}
+      menuBar={menuBar}
+      windowFrameProps={{
+        title: displayTitle,
+        onClose,
+        isForeground,
+        appId: "internet-explorer",
+        skipInitialSound,
+        instanceId,
+        onNavigateNext,
+        onNavigatePrevious,
+      }}
+      trailing={
+        <ShareItemDialog
+          isOpen={isShareDialogOpen}
+          onClose={() => setIsShareDialogOpen(false)}
+          itemType="Page"
+          itemIdentifier={url}
+          secondaryIdentifier={year}
+          title={currentPageTitle || url}
+          generateShareUrl={ieGenerateShareUrl}
+        />
+      }
+    >
       <TooltipProvider>
-        <WindowFrame
-          title={displayTitle}
-          onClose={onClose}
-          isForeground={isForeground}
-          appId="internet-explorer"
-          skipInitialSound={skipInitialSound}
-          instanceId={instanceId}
-          onNavigateNext={onNavigateNext}
-          onNavigatePrevious={onNavigatePrevious}
-          menuBar={isXpTheme ? menuBar : undefined}
-        >
-          <div className="flex flex-col size-full relative">
+        <div className="flex flex-col size-full relative">
             <InternetExplorerToolbar
               isXpTheme={isXpTheme}
               currentTheme={currentTheme}
@@ -281,18 +293,7 @@ export function InternetExplorerAppComponent({
             clearHistory={clearHistory}
             handleNavigate={handleNavigate}
           />
-        </WindowFrame>
       </TooltipProvider>
-
-      <ShareItemDialog
-        isOpen={isShareDialogOpen}
-        onClose={() => setIsShareDialogOpen(false)}
-        itemType="Page"
-        itemIdentifier={url}
-        secondaryIdentifier={year}
-        title={currentPageTitle || url}
-        generateShareUrl={ieGenerateShareUrl}
-      />
-    </>
+    </AppWindowShell>
   );
 }

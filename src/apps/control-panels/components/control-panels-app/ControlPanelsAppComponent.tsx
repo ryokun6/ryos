@@ -1,5 +1,5 @@
 import React from "react";
-import { WindowFrame } from "@/components/layout/WindowFrame";
+import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { ControlPanelsMenuBar } from "../ControlPanelsMenuBar";
 import { Tabs } from "@/components/ui/tabs";
 import {
@@ -235,22 +235,89 @@ export function ControlPanelsAppComponent({
     />
   );
 
-  if (!isWindowOpen) return null;
-
   return (
-    <>
-      {!isXpTheme && isForeground && menuBar}
-      <WindowFrame
-        title={windowTitle}
-        onClose={onClose}
-        isForeground={isForeground}
-        appId="control-panels"
-        skipInitialSound={skipInitialSound}
-        instanceId={instanceId}
-        onNavigateNext={onNavigateNext}
-        onNavigatePrevious={onNavigatePrevious}
-        menuBar={isXpTheme ? menuBar : undefined}
-      >
+    <AppWindowShell
+      isWindowOpen={isWindowOpen}
+      isXpTheme={isXpTheme}
+      isForeground={isForeground}
+      menuBar={menuBar}
+      windowFrameProps={{
+        title: windowTitle,
+        onClose,
+        isForeground,
+        appId: "control-panels",
+        skipInitialSound,
+        instanceId,
+        onNavigateNext,
+        onNavigatePrevious,
+      }}
+      trailing={
+        <ControlPanelsDialogs
+          t={t}
+          translatedHelpItems={translatedHelpItems}
+          isHelpDialogOpen={isHelpDialogOpen}
+          setIsHelpDialogOpen={setIsHelpDialogOpen}
+          isAboutDialogOpen={isAboutDialogOpen}
+          setIsAboutDialogOpen={setIsAboutDialogOpen}
+          isConfirmResetOpen={isConfirmResetOpen}
+          setIsConfirmResetOpen={setIsConfirmResetOpen}
+          handleConfirmReset={handleConfirmReset}
+          isConfirmFormatOpen={isConfirmFormatOpen}
+          setIsConfirmFormatOpen={setIsConfirmFormatOpen}
+          handleConfirmFormat={handleConfirmFormat}
+          isUsernameDialogOpen={isUsernameDialogOpen}
+          setIsUsernameDialogOpen={setIsUsernameDialogOpen}
+          verifyUsernameInput={verifyUsernameInput}
+          setVerifyUsernameInput={setVerifyUsernameInput}
+          verifyPasswordInput={verifyPasswordInput}
+          setVerifyPasswordInput={setVerifyPasswordInput}
+          handleVerifyTokenSubmit={handleVerifyTokenSubmit}
+          isVerifyingToken={isVerifyingToken}
+          verifyError={verifyError}
+          newUsername={newUsername}
+          setNewUsername={setNewUsername}
+          newPassword={newPassword}
+          setNewPassword={setNewPassword}
+          submitUsernameDialog={submitUsernameDialog}
+          isSettingUsername={isSettingUsername}
+          usernameError={usernameError}
+          isVerifyDialogOpen={isVerifyDialogOpen}
+          setVerifyDialogOpen={setVerifyDialogOpen}
+          promptSetUsername={promptSetUsername}
+          isPasswordDialogOpen={isPasswordDialogOpen}
+          setIsPasswordDialogOpen={setIsPasswordDialogOpen}
+          setPasswordInput={setPasswordInput}
+          setPasswordError={setPasswordError}
+          hasPassword={hasPassword}
+          isSettingPassword={isSettingPassword}
+          passwordError={passwordError}
+          handleSetPassword={handleSetPassword}
+          isLogoutConfirmDialogOpen={isLogoutConfirmDialogOpen}
+          setIsLogoutConfirmDialogOpen={setIsLogoutConfirmDialogOpen}
+          confirmLogout={confirmLogout}
+          isConfirmCloudRestoreOpen={isConfirmCloudRestoreOpen}
+          setIsConfirmCloudRestoreOpen={setIsConfirmCloudRestoreOpen}
+          handleCloudRestore={handleCloudRestore}
+          isConfirmForceUploadOpen={isConfirmForceUploadOpen}
+          setIsConfirmForceUploadOpen={setIsConfirmForceUploadOpen}
+          handleCloudForceUpload={handleCloudForceUpload}
+          isConfirmForceDownloadOpen={isConfirmForceDownloadOpen}
+          setIsConfirmForceDownloadOpen={setIsConfirmForceDownloadOpen}
+          handleCloudForceDownload={handleCloudForceDownload}
+          isTelegramDialogOpen={isTelegramDialogOpen}
+          setIsTelegramDialogOpen={setIsTelegramDialogOpen}
+          telegramLinkedAccount={telegramLinkedAccount}
+          telegramLinkSession={telegramLinkSession}
+          isTelegramStatusLoading={isTelegramStatusLoading}
+          isCreatingTelegramLink={isCreatingTelegramLink}
+          isDisconnectingTelegramLink={isDisconnectingTelegramLink}
+          handleCreateTelegramLink={handleCreateTelegramLink}
+          handleOpenTelegramLink={handleOpenTelegramLink}
+          handleCopyTelegramCode={handleCopyTelegramCode}
+          handleDisconnectTelegramLink={handleDisconnectTelegramLink}
+        />
+      }
+    >
         <div
           className={`flex flex-col size-full ${
             isWindowsLegacyTheme ? "pt-0 pb-2 px-2" : ""
@@ -421,72 +488,6 @@ export function ControlPanelsAppComponent({
             </ThemedTabsContent>
           </Tabs>
         </div>
-
-        <ControlPanelsDialogs
-          t={t}
-          translatedHelpItems={translatedHelpItems}
-          isHelpDialogOpen={isHelpDialogOpen}
-          setIsHelpDialogOpen={setIsHelpDialogOpen}
-          isAboutDialogOpen={isAboutDialogOpen}
-          setIsAboutDialogOpen={setIsAboutDialogOpen}
-          isConfirmResetOpen={isConfirmResetOpen}
-          setIsConfirmResetOpen={setIsConfirmResetOpen}
-          handleConfirmReset={handleConfirmReset}
-          isConfirmFormatOpen={isConfirmFormatOpen}
-          setIsConfirmFormatOpen={setIsConfirmFormatOpen}
-          handleConfirmFormat={handleConfirmFormat}
-          isUsernameDialogOpen={isUsernameDialogOpen}
-          setIsUsernameDialogOpen={setIsUsernameDialogOpen}
-          verifyUsernameInput={verifyUsernameInput}
-          setVerifyUsernameInput={setVerifyUsernameInput}
-          verifyPasswordInput={verifyPasswordInput}
-          setVerifyPasswordInput={setVerifyPasswordInput}
-          handleVerifyTokenSubmit={handleVerifyTokenSubmit}
-          isVerifyingToken={isVerifyingToken}
-          verifyError={verifyError}
-          newUsername={newUsername}
-          setNewUsername={setNewUsername}
-          newPassword={newPassword}
-          setNewPassword={setNewPassword}
-          submitUsernameDialog={submitUsernameDialog}
-          isSettingUsername={isSettingUsername}
-          usernameError={usernameError}
-          isVerifyDialogOpen={isVerifyDialogOpen}
-          setVerifyDialogOpen={setVerifyDialogOpen}
-          promptSetUsername={promptSetUsername}
-          isPasswordDialogOpen={isPasswordDialogOpen}
-          setIsPasswordDialogOpen={setIsPasswordDialogOpen}
-          setPasswordInput={setPasswordInput}
-          setPasswordError={setPasswordError}
-          hasPassword={hasPassword}
-          isSettingPassword={isSettingPassword}
-          passwordError={passwordError}
-          handleSetPassword={handleSetPassword}
-          isLogoutConfirmDialogOpen={isLogoutConfirmDialogOpen}
-          setIsLogoutConfirmDialogOpen={setIsLogoutConfirmDialogOpen}
-          confirmLogout={confirmLogout}
-          isConfirmCloudRestoreOpen={isConfirmCloudRestoreOpen}
-          setIsConfirmCloudRestoreOpen={setIsConfirmCloudRestoreOpen}
-          handleCloudRestore={handleCloudRestore}
-          isConfirmForceUploadOpen={isConfirmForceUploadOpen}
-          setIsConfirmForceUploadOpen={setIsConfirmForceUploadOpen}
-          handleCloudForceUpload={handleCloudForceUpload}
-          isConfirmForceDownloadOpen={isConfirmForceDownloadOpen}
-          setIsConfirmForceDownloadOpen={setIsConfirmForceDownloadOpen}
-          handleCloudForceDownload={handleCloudForceDownload}
-          isTelegramDialogOpen={isTelegramDialogOpen}
-          setIsTelegramDialogOpen={setIsTelegramDialogOpen}
-          telegramLinkedAccount={telegramLinkedAccount}
-          telegramLinkSession={telegramLinkSession}
-          isTelegramStatusLoading={isTelegramStatusLoading}
-          isCreatingTelegramLink={isCreatingTelegramLink}
-          isDisconnectingTelegramLink={isDisconnectingTelegramLink}
-          handleCreateTelegramLink={handleCreateTelegramLink}
-          handleOpenTelegramLink={handleOpenTelegramLink}
-          handleCopyTelegramCode={handleCopyTelegramCode}
-          handleDisconnectTelegramLink={handleDisconnectTelegramLink}
-        />
-      </WindowFrame>
-    </>
+    </AppWindowShell>
   );
 }
