@@ -2862,6 +2862,16 @@
 
 :root[data-os-theme="macosx"] .macosx-link-preview .link-preview-loading-skeleton {
   border-radius: 16px;
+  z-index: 2;
+}
+
+/* Loading: shimmer must sit above the fill but below is wrong — gloss pseudo-elements
+   default to z-index 10 on link previews and fully obscure the animated skeleton. */
+:root[data-os-theme="macosx"]
+  .link-preview-loading.macosx-link-preview.chat-bubble:before,
+:root[data-os-theme="macosx"]
+  .link-preview-loading.macosx-link-preview.chat-bubble:after {
+  display: none;
 }
 
 :root[data-os-theme="macosx"] .macosx-link-preview .link-preview-actions-divider {
@@ -2874,22 +2884,6 @@
   border-top-color: var(--os-color-separator);
 }
 
-/* Link preview loading: keep aqua chrome but avoid a bright gloss stripe on dark fills */
-:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
-  .link-preview-loading.macosx-link-preview.chat-bubble:before {
-  background: linear-gradient(
-    rgba(255, 255, 255, 0.1),
-    rgba(255, 255, 255, 0.02)
-  );
-}
-
-:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
-  .link-preview-loading.macosx-link-preview.chat-bubble:after {
-  background: linear-gradient(
-    rgba(255, 255, 255, 0),
-    rgba(255, 255, 255, 0.08)
-  );
-}
 
 /* macOS Memory/Progress bar styling */
 :root[data-os-theme="macosx"] .aqua-progress,

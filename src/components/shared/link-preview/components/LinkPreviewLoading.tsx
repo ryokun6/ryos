@@ -13,7 +13,7 @@ export function LinkPreviewLoading({ className }: { className?: string }) {
         "link-preview-loading h-[106px] w-full min-w-[280px] max-w-[420px]",
         "relative overflow-hidden",
         isMacOSTheme
-          ? "chat-bubble macosx-link-preview rounded-[16px] bg-neutral-100 border-none shadow-none"
+          ? "chat-bubble macosx-link-preview rounded-[16px] border-none shadow-none bg-transparent"
           : "rounded border border-neutral-200 dark:border-neutral-700",
         className
       )}

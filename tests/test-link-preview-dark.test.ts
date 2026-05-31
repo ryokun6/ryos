@@ -70,9 +70,12 @@ describe("link preview dark mode styling", () => {
     expect(previewSource).toContain("dark:bg-neutral-800/90");
   });
 
-  test("macOS dark tones down link preview loading bubble gloss", () => {
-    expect(themesCss).toContain(".link-preview-loading.macosx-link-preview.chat-bubble:before");
-    expect(themesCss).toContain("rgba(255, 255, 255, 0.1)");
+  test("macOS loading hides bubble gloss pseudo-elements so skeleton shimmer shows", () => {
+    expect(themesCss).toContain(
+      ".link-preview-loading.macosx-link-preview.chat-bubble:before"
+    );
+    expect(themesCss).toContain("display: none");
+    expect(loadingSource).toContain("bg-transparent");
   });
 
   test("macOS themes enforce 16px radius on link preview cards and loading shells", () => {
