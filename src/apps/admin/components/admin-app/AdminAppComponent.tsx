@@ -1,5 +1,5 @@
 import { AppProps } from "../../../base/types";
-import { WindowFrame } from "@/components/layout/WindowFrame";
+import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { AdminMenuBar } from "../AdminMenuBar";
 import { useMemo } from "react";
 import { useAdminLogic } from "../../hooks/useAdminLogic";
@@ -131,14 +131,13 @@ export function AdminAppComponent({
   const importProgressPercent = getAdminImportProgressPercent(importStatus);
   const importStatusText = getAdminImportStatusText(importStatus, t);
 
-  if (!isWindowOpen) return null;
-
   if (!isAdmin) {
     return (
       <AdminRestrictedView
         variant="accessDenied"
         t={t}
         username={username}
+        isWindowOpen={isWindowOpen}
         isXpTheme={isXpTheme}
         menuBar={menuBar}
         onClose={onClose}
@@ -157,6 +156,7 @@ export function AdminAppComponent({
         variant="offline"
         t={t}
         username={username}
+        isWindowOpen={isWindowOpen}
         isXpTheme={isXpTheme}
         menuBar={menuBar}
         onClose={onClose}
@@ -176,20 +176,23 @@ export function AdminAppComponent({
     !selectedSongId;
 
   return (
-    <>
-      {!isXpTheme && isForeground && menuBar}
-      <WindowFrame
-        title={t("apps.admin.title")}
-        onClose={onClose}
-        isForeground={isForeground}
-        appId="admin"
-        skipInitialSound={skipInitialSound}
-        instanceId={instanceId}
-        onNavigateNext={onNavigateNext}
-        onNavigatePrevious={onNavigatePrevious}
-        menuBar={isXpTheme ? menuBar : undefined}
-      >
-        <AdminMainPane
+    <AppWindowShell
+      isWindowOpen={isWindowOpen}
+      isXpTheme={isXpTheme}
+      isForeground={isForeground}
+      menuBar={menuBar}
+      windowFrameProps={{
+        title: t("apps.admin.title"),
+        onClose,
+        isForeground,
+        appId: "admin",
+        skipInitialSound,
+        instanceId,
+        onNavigateNext,
+        onNavigatePrevious,
+      }}
+    >
+      <AdminMainPane
           containerRef={containerRef}
           scrollAreaRef={scrollAreaRef}
           activeSection={activeSection}
@@ -252,19 +255,18 @@ export function AdminAppComponent({
           username={username}
         />
 
-        <AdminAppDialogs
-          isHelpDialogOpen={isHelpDialogOpen}
-          setIsHelpDialogOpen={setIsHelpDialogOpen}
-          translatedHelpItems={translatedHelpItems}
-          isAboutDialogOpen={isAboutDialogOpen}
-          setIsAboutDialogOpen={setIsAboutDialogOpen}
-          isDeleteDialogOpen={isDeleteDialogOpen}
-          setIsDeleteDialogOpen={setIsDeleteDialogOpen}
-          deleteTarget={deleteTarget}
-          onDeleteConfirm={handleDeleteConfirm}
-          t={t}
-        />
-      </WindowFrame>
-    </>
+      <AdminAppDialogs
+        isHelpDialogOpen={isHelpDialogOpen}
+        setIsHelpDialogOpen={setIsHelpDialogOpen}
+        translatedHelpItems={translatedHelpItems}
+        isAboutDialogOpen={isAboutDialogOpen}
+        setIsAboutDialogOpen={setIsAboutDialogOpen}
+        isDeleteDialogOpen={isDeleteDialogOpen}
+        setIsDeleteDialogOpen={setIsDeleteDialogOpen}
+        deleteTarget={deleteTarget}
+        onDeleteConfirm={handleDeleteConfirm}
+        t={t}
+      />
+    </AppWindowShell>
   );
 }
