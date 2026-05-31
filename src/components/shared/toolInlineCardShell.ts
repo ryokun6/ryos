@@ -1,0 +1,97 @@
+import { cn } from "@/lib/utils";
+
+/** Outer shell for inline chat tool cards (Maps places, Cursor agents, …). */
+export function toolInlineCardShellClassName(flags: {
+  isMacOSTheme: boolean;
+  isSystem7Theme: boolean;
+  isXpTheme: boolean;
+  /** Chat embed; panel fills parent without outer margin/shadow. */
+  embed?: "chat" | "panel";
+}): string {
+  const { isMacOSTheme, isSystem7Theme, isXpTheme, embed = "chat" } = flags;
+  return cn(
+    "flex flex-col overflow-hidden font-geneva-12",
+    embed === "chat" && "my-1",
+    isMacOSTheme &&
+      "maps-place-card-aqua rounded-[0.5rem] border-transparent text-os-text-primary",
+    !isMacOSTheme &&
+      isSystem7Theme &&
+      cn(
+        embed === "chat" && "rounded",
+        "border-2 border-black bg-white text-black shadow-[2px_2px_0_0_rgba(0,0,0,0.5)]"
+      ),
+    !isMacOSTheme &&
+      !isSystem7Theme &&
+      isXpTheme &&
+      cn(
+        embed === "chat" && "rounded-[0.4rem]",
+        "border-2 border-[#0054E3] bg-[#ECE9D8] text-black"
+      ),
+    !isMacOSTheme &&
+      !isSystem7Theme &&
+      !isXpTheme &&
+      cn(
+        embed === "chat" && "rounded",
+        "border border-black/30 bg-white text-black shadow-md"
+      )
+  );
+}
+
+/** Header band for Cursor agent stream card (pinstripe on macOS via CSS). */
+export function cursorAgentCardHeaderClassName(flags: {
+  isMacOSTheme: boolean;
+  isSystem7Theme: boolean;
+  isXpTheme: boolean;
+  isDarkMode: boolean;
+}): string {
+  const { isMacOSTheme, isSystem7Theme, isXpTheme, isDarkMode } = flags;
+  return cn(
+    "flex flex-shrink-0 items-center gap-3 border-b px-3 py-2",
+    isMacOSTheme && "cursor-agent-card-header-aqua",
+    isMacOSTheme &&
+      (isDarkMode
+        ? "border-[color:var(--os-color-separator)]"
+        : "border-black/10"),
+    !isMacOSTheme &&
+      isSystem7Theme &&
+      "border-black bg-[#DDDDDD]",
+    !isMacOSTheme &&
+      !isSystem7Theme &&
+      isXpTheme &&
+      "border-[#919b9c] bg-gradient-to-b from-[#3A6EA5] to-[#1E4A8C] text-white",
+    !isMacOSTheme &&
+      !isSystem7Theme &&
+      !isXpTheme &&
+      "border-black/20 bg-neutral-100 dark:border-neutral-600 dark:bg-neutral-800/90"
+  );
+}
+
+export function toolInlineCardListClassName(flags: {
+  isMacOSTheme: boolean;
+  isDarkMode: boolean;
+}): string {
+  const { isMacOSTheme, isDarkMode } = flags;
+  return cn(
+    "divide-y",
+    isMacOSTheme && isDarkMode
+      ? "divide-[color:var(--os-color-separator)]"
+      : "divide-black/10"
+  );
+}
+
+export function toolInlineCardListRowClassName(flags: {
+  isMacOSTheme: boolean;
+  isDarkMode: boolean;
+}): string {
+  const { isMacOSTheme, isDarkMode } = flags;
+  return cn(
+    "flex w-full items-center gap-2.5 px-2.5 py-2 text-left",
+    isMacOSTheme && isDarkMode
+      ? "hover:bg-white/10 active:bg-white/14"
+      : "hover:bg-black/5 active:bg-black/10",
+    "focus:outline-none focus-visible:ring-1",
+    isMacOSTheme && isDarkMode
+      ? "focus-visible:ring-white/35"
+      : "focus-visible:ring-black/30"
+  );
+}
