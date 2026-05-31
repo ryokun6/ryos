@@ -532,68 +532,77 @@ export default defineConfig({
     target: 'es2022',
     rollupOptions: {
       output: {
-        manualChunks: {
-          // Core React - loaded immediately
-          react: ["react", "react-dom"],
-          
-          // UI primitives - loaded early
+        // Function-form manualChunks: only assigns vendor (node_modules) packages
+        // to named chunks. App code and Vite's internal helpers (e.g. the
+        // `vite/preload-helper`, which is NOT under node_modules) return
+        // `undefined` so Vite keeps them in the entry chunk. The previous
+        // object form caused the `__vitePreload` helper and react-dom to leak
+        // into vendor chunks, which forced heavy chunks (audio/media-player)
+        // to be eagerly `modulepreload`ed from index.html on every page load.
+        manualChunks(id) {
+          // Co-locate Vite's dynamic-import preload helper with the eagerly
+          // loaded react chunk. Otherwise Rollup merges this tiny virtual
+          // module into whichever vendor chunk it picks first (react-player /
+          // media-player), forcing that heavy chunk to be eagerly
+          // `modulepreload`ed from index.html even though it's only used by
+          // lazy apps.
+          if (id.includes("vite/preload-helper")) return "react";
+
+          if (!id.includes("node_modules")) return undefined;
+
+          // Core React + scheduler - loaded immediately, kept in a stable
+          // vendor chunk for long-term caching (so app changes don't bust it).
+          if (
+            /[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)
+          ) {
+            return "react";
+          }
+
+          // UI primitives - loaded early.
           // Note: ui-form was merged into ui-core to eliminate a circular chunk
           // dependency (ui-form -> ui-core -> ui-form) that caused a TDZ crash
           // in Vite 6.4.x: "can't access lexical declaration before initialization"
-          "ui-core": [
-            "@radix-ui/react-dialog",
-            "@radix-ui/react-dropdown-menu",
-            "@radix-ui/react-menubar",
-            "@radix-ui/react-scroll-area",
-            "@radix-ui/react-tooltip",
-            "@radix-ui/react-label",
-            "@radix-ui/react-select",
-            "@radix-ui/react-slider",
-            "@radix-ui/react-switch",
-            "@radix-ui/react-checkbox",
-            "@radix-ui/react-tabs",
-          ],
-          
+          if (id.includes("@radix-ui/")) return "ui-core";
+
           // Heavy audio libs - deferred until Soundboard/iPod/Synth opens
-          audio: ["tone", "wavesurfer.js", "audio-buffer-utils"],
-          
+          if (
+            /[\\/]node_modules[\\/](tone|wavesurfer\.js|audio-buffer-utils)[\\/]/.test(
+              id
+            )
+          ) {
+            return "audio";
+          }
+
           // Media player - shared by iPod and Videos apps
-          "media-player": ["react-player"],
+          if (id.includes("react-player")) return "media-player";
 
           // Korean romanization - only needed for lyrics
-          "hangul": ["hangul-romanization"],
-          
-          // AI SDK - deferred until Chats/IE opens  
-          "ai-sdk": ["ai", "@ai-sdk/anthropic", "@ai-sdk/google", "@ai-sdk/openai", "@ai-sdk/react"],
-          
+          if (id.includes("hangul-romanization")) return "hangul";
+
+          // AI SDK - deferred until Chats/IE opens
+          if (/[\\/]node_modules[\\/](ai|@ai-sdk)[\\/]/.test(id)) {
+            return "ai-sdk";
+          }
+
           // Rich text editor - deferred until TextEdit opens
-          // Note: @tiptap/pm is excluded because it only exports subpaths (e.g. @tiptap/pm/state)
-          // and has no main entry point, which causes Vite to fail
-          tiptap: [
-            "@tiptap/core",
-            "@tiptap/react",
-            "@tiptap/starter-kit",
-            "@tiptap/extension-task-item",
-            "@tiptap/extension-task-list",
-            "@tiptap/extension-text-align",
-            "@tiptap/extension-underline",
-            "@tiptap/suggestion",
-          ],
-          
+          if (id.includes("@tiptap/")) return "tiptap";
+
           // 3D rendering - deferred until PC app opens
-          three: ["three"],
-          
+          if (/[\\/]node_modules[\\/]three[\\/]/.test(id)) return "three";
+
           // Animation - used by multiple apps
-          motion: ["framer-motion"],
-          
+          if (id.includes("framer-motion")) return "motion";
+
           // State management
-          zustand: ["zustand"],
-          
+          if (/[\\/]node_modules[\\/]zustand[\\/]/.test(id)) return "zustand";
+
           // Realtime chat
-          pusher: ["pusher-js"],
+          if (id.includes("pusher-js")) return "pusher";
 
           // Winamp player - deferred until Winamp app opens
-          webamp: ["webamp"],
+          if (id.includes("webamp")) return "webamp";
+
+          return undefined;
         },
       },
     },

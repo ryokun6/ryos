@@ -1,4 +1,4 @@
-import WaveSurfer from "wavesurfer.js";
+import type WaveSurfer from "wavesurfer.js";
 
 export interface SoundSlot {
   audioData: string | null;
