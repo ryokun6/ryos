@@ -7,7 +7,15 @@ import {
   MenubarSeparator,
   MenubarCheckboxItem,
 } from "@/components/ui/menubar";
-import { useThemeFlags } from "@/hooks/useThemeFlags";
+import { AppMenuBarHelpMenu } from "@/components/shared/menubar/AppMenuBarHelpMenu";
+import { AppShareItemDialog } from "@/components/shared/menubar/AppShareItemDialog";
+import {
+  MENUBAR_ITEM_CLASS,
+  MENUBAR_SEPARATOR_CLASS,
+  MENUBAR_TRIGGER_CLASS,
+} from "@/components/shared/menubar/menubarStyles";
+import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
+import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import type { MapsMapType } from "../hooks/useMapsLogic";
 
@@ -31,84 +39,89 @@ export function MapsMenuBar({
   canUseMap,
 }: MapsMenuBarProps) {
   const { t } = useTranslation();
-  const { isWindowsTheme: isXpTheme, isMacOSTheme: isMacOsxTheme } =
-    useThemeFlags();
+  const {
+    isShareDialogOpen,
+    setIsShareDialogOpen,
+    isXpTheme,
+    isMacOsxTheme,
+    appId,
+    appName,
+  } = useAppMenuBarChrome("maps");
 
   return (
     <MenuBar inWindowFrame={isXpTheme}>
       <MenubarMenu>
-        <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
+        <MenubarTrigger className={MENUBAR_TRIGGER_CLASS}>
           {t("common.menu.file")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           <MenubarItem
             onClick={onLocateMe}
             disabled={!canUseMap}
-            className={`text-md h-6 px-3 ${!canUseMap ? "text-neutral-500" : ""}`}
+            className={cn(
+              MENUBAR_ITEM_CLASS,
+              !canUseMap ? "text-neutral-500" : "",
+            )}
           >
             {t("apps.maps.menu.locateMe")}
           </MenubarItem>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
-          <MenubarItem onClick={onClose} className="text-md h-6 px-3">
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
+          <MenubarItem onClick={onClose} className={MENUBAR_ITEM_CLASS}>
             {t("common.menu.close")}
           </MenubarItem>
         </MenubarContent>
       </MenubarMenu>
 
       <MenubarMenu>
-        <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
+        <MenubarTrigger className={MENUBAR_TRIGGER_CLASS}>
           {t("common.menu.view")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           <MenubarCheckboxItem
             checked={mapType === "standard"}
             onClick={() => onSetMapType("standard")}
-            className="text-md h-6 px-3"
+            className={MENUBAR_ITEM_CLASS}
           >
             {t("apps.maps.menu.standard")}
           </MenubarCheckboxItem>
           <MenubarCheckboxItem
             checked={mapType === "hybrid"}
             onClick={() => onSetMapType("hybrid")}
-            className="text-md h-6 px-3"
+            className={MENUBAR_ITEM_CLASS}
           >
             {t("apps.maps.menu.hybrid")}
           </MenubarCheckboxItem>
           <MenubarCheckboxItem
             checked={mapType === "satellite"}
             onClick={() => onSetMapType("satellite")}
-            className="text-md h-6 px-3"
+            className={MENUBAR_ITEM_CLASS}
           >
             {t("apps.maps.menu.satellite")}
           </MenubarCheckboxItem>
           <MenubarCheckboxItem
             checked={mapType === "mutedStandard"}
             onClick={() => onSetMapType("mutedStandard")}
-            className="text-md h-6 px-3"
+            className={MENUBAR_ITEM_CLASS}
           >
             {t("apps.maps.menu.mutedStandard")}
           </MenubarCheckboxItem>
         </MenubarContent>
       </MenubarMenu>
 
-      <MenubarMenu>
-        <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
-          {t("common.menu.help")}
-        </MenubarTrigger>
-        <MenubarContent align="start" sideOffset={1} className="px-0">
-          <MenubarItem onClick={onShowHelp} className="text-md h-6 px-3">
-            {t("apps.maps.menu.help")}
-          </MenubarItem>
-          {!isMacOsxTheme && (
-            <>
-              <MenubarSeparator className="h-[2px] bg-black my-1" />
-              <MenubarItem onClick={onShowAbout} className="text-md h-6 px-3">
-                {t("apps.maps.menu.about")}
-              </MenubarItem>
-            </>
-          )}
-        </MenubarContent>
-      </MenubarMenu>
+      <AppMenuBarHelpMenu
+        helpItemLabel={t("apps.maps.menu.help")}
+        aboutItemLabel={t("apps.maps.menu.about")}
+        isMacOsxTheme={isMacOsxTheme}
+        onShowHelp={onShowHelp}
+        onShowAbout={onShowAbout}
+        onOpenShareDialog={() => setIsShareDialogOpen(true)}
+      />
+      <AppShareItemDialog
+        appId={appId}
+        appName={appName}
+        isOpen={isShareDialogOpen}
+        onClose={() => setIsShareDialogOpen(false)}
+      />
     </MenuBar>
   );
 }
