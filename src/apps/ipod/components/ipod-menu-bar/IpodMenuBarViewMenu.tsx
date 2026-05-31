@@ -11,12 +11,15 @@ import {
   MenubarRadioGroup,
   MenubarRadioItem,
 } from "@/components/ui/menubar";
+import { LyricsAlignmentMenuItems } from "@/components/shared/menubar/lyrics/LyricsAlignmentMenuItems";
+import { LyricsPronunciationSubmenu } from "@/components/shared/menubar/lyrics/LyricsPronunciationSubmenu";
+import { LyricsTranslationLanguageSubmenu } from "@/components/shared/menubar/lyrics/LyricsTranslationLanguageSubmenu";
+import { MENUBAR_SEPARATOR_CLASS } from "@/components/shared/menubar/menubarStyles";
 import { toast } from "sonner";
-import { LyricsAlignment, DisplayMode, LyricsFont } from "@/types/lyrics";
+import { DisplayMode, LyricsFont } from "@/types/lyrics";
 import type { IpodMenuBarViewModel } from "./useIpodMenuBar";
 
 export function IpodMenuBarViewMenu({ vm }: { vm: IpodMenuBarViewModel }) {
-
   return (
     <>
       <MenubarMenu>
@@ -37,36 +40,16 @@ export function IpodMenuBarViewMenu({ vm }: { vm: IpodMenuBarViewModel }) {
                 {vm.t("apps.ipod.menu.showLyrics")}
               </MenubarCheckboxItem>
 
-              <MenubarSeparator className="h-[2px] bg-black my-1" />
-              <MenubarCheckboxItem
-                checked={vm.lyricsAlignment === LyricsAlignment.FocusThree}
-                onCheckedChange={(checked) => {
-                  if (checked) vm.setLyricsAlignment(LyricsAlignment.FocusThree);
-                }}
-                className="text-md h-6 pr-3"
-              >
-                {vm.t("apps.ipod.menu.multi")}
-              </MenubarCheckboxItem>
-              <MenubarCheckboxItem
-                checked={vm.lyricsAlignment === LyricsAlignment.Center}
-                onCheckedChange={(checked) => {
-                  if (checked) vm.setLyricsAlignment(LyricsAlignment.Center);
-                }}
-                className="text-md h-6 pr-3"
-              >
-                {vm.t("apps.ipod.menu.single")}
-              </MenubarCheckboxItem>
-              <MenubarCheckboxItem
-                checked={vm.lyricsAlignment === LyricsAlignment.Alternating}
-                onCheckedChange={(checked) => {
-                  if (checked) vm.setLyricsAlignment(LyricsAlignment.Alternating);
-                }}
-                className="text-md h-6 pr-3"
-              >
-                {vm.t("apps.ipod.menu.alternating")}
-              </MenubarCheckboxItem>
+              <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
+              <LyricsAlignmentMenuItems
+                lyricsAlignment={vm.lyricsAlignment}
+                setLyricsAlignment={vm.setLyricsAlignment}
+                multiLabel={vm.t("apps.ipod.menu.multi")}
+                singleLabel={vm.t("apps.ipod.menu.single")}
+                alternatingLabel={vm.t("apps.ipod.menu.alternating")}
+              />
 
-              <MenubarSeparator className="h-[2px] bg-black my-1" />
+              <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
 
               <MenubarRadioGroup
                 value={vm.lyricsFont}
@@ -109,135 +92,27 @@ export function IpodMenuBarViewMenu({ vm }: { vm: IpodMenuBarViewModel }) {
                   {vm.t("apps.ipod.menu.fontGradient")}
                 </MenubarRadioItem>
               </MenubarRadioGroup>
-
             </MenubarSubContent>
           </MenubarSub>
-          <MenubarSub>
-            <MenubarSubTrigger className="text-md h-6 px-3">
-              {vm.t("apps.ipod.menu.translate")}
-            </MenubarSubTrigger>
-            <MenubarSubContent className="px-0 max-h-[400px] overflow-y-auto">
-              <MenubarRadioGroup
-                value={vm.lyricsTranslationLanguage || "off"}
-                onValueChange={(value) => {
-                  vm.setLyricsTranslationLanguage(value === "off" ? null : value);
-                }}
-              >
-                {vm.translationLanguages.map((lang, index) => {
-                  if (lang.separator) {
-                    const prevCode = vm.translationLanguages[index - 1]?.code || "start";
-                    const nextCode = vm.translationLanguages[index + 1]?.code || "end";
-                    return <MenubarSeparator key={`sep-${prevCode}-${nextCode}`} className="h-[2px] bg-black my-1" />;
-                  }
-                  const value = lang.code || "off";
-                  return (
-                    <MenubarRadioItem
-                      key={value}
-                      value={value}
-                      className="text-md h-6 pr-3"
-                    >
-                      {lang.label}
-                    </MenubarRadioItem>
-                  );
-                })}
-              </MenubarRadioGroup>
-            </MenubarSubContent>
-          </MenubarSub>
-          <MenubarSub>
-            <MenubarSubTrigger className="text-md h-6 px-3">
-              {vm.t("apps.ipod.menu.pronunciation")}
-            </MenubarSubTrigger>
-            <MenubarSubContent className="px-0">
-              <MenubarCheckboxItem
-                checked={vm.romanization?.enabled ?? true}
-                onCheckedChange={(checked) =>
-                  vm.setRomanization({ enabled: checked })
-                }
-                className="text-md h-6 px-3 truncate"
-              >
-                {vm.t("apps.ipod.menu.pronunciation")}
-              </MenubarCheckboxItem>
-              <MenubarCheckboxItem
-                checked={vm.romanization?.pronunciationOnly ?? false}
-                onCheckedChange={(checked) =>
-                  vm.setRomanization({ pronunciationOnly: checked })
-                }
-                disabled={!vm.romanization?.enabled}
-                className="text-md h-6 px-3"
-              >
-                {vm.t("apps.ipod.menu.pronunciationOnly")}
-              </MenubarCheckboxItem>
-              <MenubarSeparator className="h-[2px] bg-black my-1" />
-              <MenubarCheckboxItem
-                checked={vm.romanization?.japaneseFurigana ?? true}
-                onCheckedChange={(checked) =>
-                  vm.setRomanization({ japaneseFurigana: checked })
-                }
-                disabled={!vm.romanization?.enabled || vm.romanization?.japaneseRomaji}
-                className="text-md h-6 px-3"
-              >
-                {vm.t("apps.ipod.menu.japaneseFurigana")}
-              </MenubarCheckboxItem>
-              <MenubarCheckboxItem
-                checked={vm.romanization?.japaneseRomaji ?? false}
-                onCheckedChange={(checked) =>
-                  // Romaji requires furigana to annotate kanji
-                  vm.setRomanization({ japaneseRomaji: checked, japaneseFurigana: checked || (vm.romanization?.japaneseFurigana ?? true) })
-                }
-                disabled={!vm.romanization?.enabled}
-                className="text-md h-6 px-3"
-              >
-                {vm.t("apps.ipod.menu.japaneseRomaji")}
-              </MenubarCheckboxItem>
-              <MenubarCheckboxItem
-                checked={vm.romanization?.korean ?? true}
-                onCheckedChange={(checked) =>
-                  vm.setRomanization({ korean: checked })
-                }
-                disabled={!vm.romanization?.enabled}
-                className="text-md h-6 px-3"
-              >
-                {vm.t("apps.ipod.menu.koreanRomanization")}
-              </MenubarCheckboxItem>
-              <MenubarCheckboxItem
-                checked={vm.romanization?.chinese ?? false}
-                onCheckedChange={(checked) =>
-                  vm.setRomanization({ chinese: checked })
-                }
-                disabled={!vm.romanization?.enabled}
-                className="text-md h-6 px-3"
-              >
-                {vm.t("apps.ipod.menu.chinesePinyin")}
-              </MenubarCheckboxItem>
-              <MenubarSeparator className="h-[2px] bg-black my-1" />
-              <MenubarCheckboxItem
-                checked={vm.romanization?.soramimi && vm.romanization?.soramamiTargetLanguage === "zh-TW"}
-                onCheckedChange={(checked) =>
-                  vm.setRomanization({ 
-                    soramimi: checked, 
-                    soramamiTargetLanguage: "zh-TW" 
-                  })
-                }
-                disabled={!vm.romanization?.enabled}
-                className="text-md h-6 px-3"
-              >
-                {vm.t("apps.ipod.menu.chineseSoramimi")}
-              </MenubarCheckboxItem>
-              <MenubarCheckboxItem
-                checked={vm.romanization?.soramimi && vm.romanization?.soramamiTargetLanguage === "en"}
-                onCheckedChange={(checked) =>
-                  vm.setRomanization({ 
-                    soramimi: checked, 
-                    soramamiTargetLanguage: "en" 
-                  })
-                }
-                disabled={!vm.romanization?.enabled}
-                className="text-md h-6 px-3"
-              >
-                {vm.t("apps.ipod.menu.soramimi")}
-              </MenubarCheckboxItem>
-            </MenubarSubContent>
-          </MenubarSub>
+          <LyricsTranslationLanguageSubmenu
+            submenuLabel={vm.t("apps.ipod.menu.translate")}
+            translationLanguages={vm.translationLanguages}
+            lyricsTranslationLanguage={vm.lyricsTranslationLanguage}
+            setLyricsTranslationLanguage={vm.setLyricsTranslationLanguage}
+          />
+          <LyricsPronunciationSubmenu
+            submenuLabel={vm.t("apps.ipod.menu.pronunciation")}
+            pronunciationLabel={vm.t("apps.ipod.menu.pronunciation")}
+            pronunciationOnlyLabel={vm.t("apps.ipod.menu.pronunciationOnly")}
+            japaneseFuriganaLabel={vm.t("apps.ipod.menu.japaneseFurigana")}
+            japaneseRomajiLabel={vm.t("apps.ipod.menu.japaneseRomaji")}
+            koreanRomanizationLabel={vm.t("apps.ipod.menu.koreanRomanization")}
+            chinesePinyinLabel={vm.t("apps.ipod.menu.chinesePinyin")}
+            chineseSoramimiLabel={vm.t("apps.ipod.menu.chineseSoramimi")}
+            soramimiLabel={vm.t("apps.ipod.menu.soramimi")}
+            romanization={vm.romanization}
+            setRomanization={vm.setRomanization}
+          />
           <MenubarSub>
             <MenubarSubTrigger className="text-md h-6 px-3">
               {vm.t("apps.ipod.menu.display")}
@@ -302,7 +177,7 @@ export function IpodMenuBarViewMenu({ vm }: { vm: IpodMenuBarViewModel }) {
             </MenubarSubContent>
           </MenubarSub>
 
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
 
           <MenubarItem
             onClick={vm.onRefreshLyrics || vm.refreshLyrics}
@@ -332,7 +207,7 @@ export function IpodMenuBarViewMenu({ vm }: { vm: IpodMenuBarViewModel }) {
             </MenubarItem>
           )}
 
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <MenubarSub>
             <MenubarSubTrigger className="text-md h-6 px-3">
               {vm.t("apps.ipod.menu.backlight")}
@@ -412,7 +287,7 @@ export function IpodMenuBarViewMenu({ vm }: { vm: IpodMenuBarViewModel }) {
             </MenubarSubContent>
           </MenubarSub>
 
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
 
           <MenubarItem
             onClick={() => vm.onToggleCoverFlow?.()}

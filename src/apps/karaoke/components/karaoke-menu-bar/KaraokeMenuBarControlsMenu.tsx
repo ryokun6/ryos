@@ -1,11 +1,5 @@
-import {
-  MenubarMenu,
-  MenubarTrigger,
-  MenubarContent,
-  MenubarItem,
-  MenubarSeparator,
-  MenubarCheckboxItem,
-} from "@/components/ui/menubar";
+import { MediaControlsMenu } from "@/components/shared/menubar/MediaControlsMenu";
+import { MENUBAR_TRIGGER_CLASS } from "@/components/shared/menubar/menubarStyles";
 import type { KaraokeMenuBarViewModel } from "./useKaraokeMenuBar";
 
 export function KaraokeMenuBarControlsMenu({
@@ -29,55 +23,27 @@ export function KaraokeMenuBarControlsMenu({
   } = vm;
 
   return (
-    <MenubarMenu>
-      <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
-        {t("apps.karaoke.menu.controls")}
-      </MenubarTrigger>
-      <MenubarContent align="start" sideOffset={1} className="px-0">
-        <MenubarItem
-          onClick={onTogglePlay}
-          className="text-md h-6 px-3"
-          disabled={tracks.length === 0}
-        >
-          {isPlaying ? t("apps.ipod.menu.pause") : t("apps.ipod.menu.play")}
-        </MenubarItem>
-        <MenubarItem
-          onClick={onPreviousTrack}
-          className="text-md h-6 px-3"
-          disabled={tracks.length === 0}
-        >
-          {t("apps.karaoke.menu.previous")}
-        </MenubarItem>
-        <MenubarItem
-          onClick={onNextTrack}
-          className="text-md h-6 px-3"
-          disabled={tracks.length === 0}
-        >
-          {t("apps.karaoke.menu.next")}
-        </MenubarItem>
-        <MenubarSeparator className="h-[2px] bg-black my-1" />
-        <MenubarCheckboxItem
-          checked={isShuffled}
-          onCheckedChange={onToggleShuffle}
-          className="text-md h-6 px-3"
-        >
-          {t("apps.karaoke.menu.shuffle")}
-        </MenubarCheckboxItem>
-        <MenubarCheckboxItem
-          checked={loopAll}
-          onCheckedChange={onToggleLoopAll}
-          className="text-md h-6 px-3"
-        >
-          {t("apps.karaoke.menu.repeatAll")}
-        </MenubarCheckboxItem>
-        <MenubarCheckboxItem
-          checked={loopCurrent}
-          onCheckedChange={onToggleLoopCurrent}
-          className="text-md h-6 px-3"
-        >
-          {t("apps.karaoke.menu.repeatOne")}
-        </MenubarCheckboxItem>
-      </MenubarContent>
-    </MenubarMenu>
+    <MediaControlsMenu
+      menuLabel={t("apps.karaoke.menu.controls")}
+      triggerClassName={MENUBAR_TRIGGER_CLASS}
+      tracksCount={tracks.length}
+      isPlaying={isPlaying}
+      onTogglePlay={onTogglePlay}
+      onPreviousTrack={onPreviousTrack}
+      onNextTrack={onNextTrack}
+      playLabel={t("apps.ipod.menu.play")}
+      pauseLabel={t("apps.ipod.menu.pause")}
+      previousLabel={t("apps.karaoke.menu.previous")}
+      nextLabel={t("apps.karaoke.menu.next")}
+      shuffleLabel={t("apps.karaoke.menu.shuffle")}
+      repeatAllLabel={t("apps.karaoke.menu.repeatAll")}
+      repeatOneLabel={t("apps.karaoke.menu.repeatOne")}
+      isShuffled={isShuffled}
+      onToggleShuffle={onToggleShuffle}
+      isLoopAll={loopAll}
+      onToggleLoopAll={onToggleLoopAll}
+      isLoopCurrent={loopCurrent}
+      onToggleLoopCurrent={onToggleLoopCurrent}
+    />
   );
 }
