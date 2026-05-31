@@ -1,7 +1,7 @@
 import ReactPlayer from "react-player";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { CoverFlow } from "@/apps/ipod/components/CoverFlow";
+import { CoverFlow } from "@/apps/ipod/components/cover-flow/CoverFlow";
 import { ReactionOverlay } from "@/components/listen/ReactionOverlay";
 import { ListenSessionToolbar } from "@/components/listen/ListenSessionToolbar";
 import { FullscreenPlayerControls } from "@/components/shared/FullscreenPlayerControls";

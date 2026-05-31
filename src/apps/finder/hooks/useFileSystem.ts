@@ -18,7 +18,7 @@ import {
   useIpodStoreShallow,
   useVideoStoreShallow,
 } from "@/stores/helpers";
-import { formatKugouImageUrl } from "@/apps/ipod/constants";
+import { formatKugouImageUrl } from "@/utils/coverArt";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { getStoreForFile } from "@/utils/indexedDBOperations";
 import {

@@ -98,12 +98,12 @@ const LazySynthApp = createLazyComponent<unknown>(
 );
 
 const LazyIpodApp = createLazyComponent<IpodInitialData>(
-  () => import("@/apps/ipod/components/IpodAppComponent").then(m => ({ default: m.IpodAppComponent })),
+  () => import("@/apps/ipod/components/ipod-app/IpodAppComponent").then(m => ({ default: m.IpodAppComponent })),
   "ipod"
 );
 
 const LazyKaraokeApp = createLazyComponent<IpodInitialData>(
-  () => import("@/apps/karaoke/components/KaraokeAppComponent").then(m => ({ default: m.KaraokeAppComponent })),
+  () => import("@/apps/karaoke/components/karaoke-app/KaraokeAppComponent").then(m => ({ default: m.KaraokeAppComponent })),
   "karaoke"
 );
 

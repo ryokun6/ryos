@@ -15,7 +15,7 @@ import { useTranslation } from "react-i18next";
 import { getApiUrl } from "@/utils/platform";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { abortableFetch } from "@/utils/abortableFetch";
-import { formatKugouImageUrl } from "@/apps/ipod/constants";
+import { formatKugouImageUrl } from "@/utils/coverArt";
 
 export interface LyricsSearchResult {
   title: string;

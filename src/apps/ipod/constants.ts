@@ -1,8 +1,19 @@
 // Shared constants for the iPod app
 
 import { LyricsAlignment } from "@/types/lyrics";
-import i18n from "@/lib/i18n";
 import type { Track } from "@/stores/useIpodStore";
+import { parseYouTubeVideoId } from "@/utils/youtubeUrl";
+import { formatKugouImageUrl } from "@/utils/coverArt";
+
+// Re-exported from shared utils so existing iPod-internal imports keep working
+// while the canonical implementations live under `src/utils/`.
+export { formatKugouImageUrl } from "@/utils/coverArt";
+export {
+  type TranslationLanguage,
+  TRANSLATION_LANGUAGES,
+  TRANSLATION_BADGES,
+  getTranslationBadge,
+} from "@/utils/lyricsTranslation";
 
 /** Fixed modern iPod LCD outer height (px), including `border-2` on the screen element. */
 export const IPOD_MODERN_SCREEN_HEIGHT_PX = 152;
@@ -59,44 +70,6 @@ export const IPOD_MODERN_MEDIA_ROW_HEIGHT_PX =
 /** Internal breadcrumb key for the Now Playing long-press song menu. */
 export const IPOD_NOW_PLAYING_SONG_MENU_KEY = "__nowPlayingSongMenu__";
 
-// Translation language options
-export interface TranslationLanguage {
-  labelKey?: string;
-  label?: string;
-  code: string | null;
-  separator?: boolean;
-}
-
-export const TRANSLATION_LANGUAGES: TranslationLanguage[] = [
-  { labelKey: "apps.ipod.translationLanguages.original", code: null },
-  { labelKey: "apps.ipod.translationLanguages.auto", code: "auto" },
-  { separator: true, code: null, label: "" }, // Separator
-  { labelKey: "apps.ipod.translationLanguages.english", code: "en" },
-  { labelKey: "apps.ipod.translationLanguages.chinese", code: "zh-TW" },
-  { labelKey: "apps.ipod.translationLanguages.japanese", code: "ja" },
-  { labelKey: "apps.ipod.translationLanguages.korean", code: "ko" },
-  { labelKey: "apps.ipod.translationLanguages.spanish", code: "es" },
-  { labelKey: "apps.ipod.translationLanguages.french", code: "fr" },
-  { labelKey: "apps.ipod.translationLanguages.german", code: "de" },
-  { labelKey: "apps.ipod.translationLanguages.portuguese", code: "pt" },
-  { labelKey: "apps.ipod.translationLanguages.italian", code: "it" },
-  { labelKey: "apps.ipod.translationLanguages.russian", code: "ru" },
-];
-
-// Translation badge mappings
-export const TRANSLATION_BADGES: Record<string, string> = {
-  "zh-TW": "中",
-  en: "En",
-  ja: "日",
-  ko: "한",
-  es: "Es",
-  fr: "Fr",
-  de: "De",
-  pt: "Pt",
-  it: "It",
-  ru: "Ru",
-};
-
 // iPod themes
 export const IPOD_THEMES = ["classic", "black", "u2"] as const;
 export type IpodTheme = (typeof IPOD_THEMES)[number];
@@ -123,25 +96,10 @@ export const LYRICS_ALIGNMENT_CYCLE: LyricsAlignment[] = [
   LyricsAlignment.Alternating,
 ];
 
-// Helper to extract YouTube video ID from URL
+// Helper to extract YouTube video ID from URL. Delegates to the canonical,
+// host-safe parser in `@/utils/youtubeUrl`.
 export function getYouTubeVideoId(url: string): string | null {
-  const match = url.match(
-    /(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/
-  );
-  return match ? match[1] : null;
-}
-
-/**
- * Replace {size} placeholder in Kugou image URL with actual size
- * Kugou image URLs contain {size} that needs to be replaced with: 100, 150, 240, 400, etc.
- * Also ensures HTTPS is used to avoid mixed content issues
- */
-export function formatKugouImageUrl(imgUrl: string | undefined, size: number = 400): string | null {
-  if (!imgUrl) return null;
-  let url = imgUrl.replace("{size}", String(size));
-  // Ensure HTTPS
-  url = url.replace(/^http:\/\//, "https://");
-  return url;
+  return parseYouTubeVideoId(url);
 }
 
 /**
@@ -171,17 +129,6 @@ export function resolveTrackCoverUrl(
     ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
     : null;
   return formatKugouImageUrl(track.cover, 400) ?? youtubeThumbnail;
-}
-
-// Helper to get translation badge from code
-export function getTranslationBadge(code: string | null): string | null {
-  if (!code) return null;
-  // For "auto", resolve to the actual ryOS language
-  if (code === "auto") {
-    const actualLang = i18n.language;
-    return TRANSLATION_BADGES[actualLang] || actualLang[0]?.toUpperCase() || "?";
-  }
-  return TRANSLATION_BADGES[code] || code[0]?.toUpperCase() || "?";
 }
 
 export function getAlbumGroupingKey(

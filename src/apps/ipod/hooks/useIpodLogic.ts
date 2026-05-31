@@ -73,9 +73,9 @@ import type {
   RotationDirection,
 } from "../types";
 import type { IpodInitialData } from "../../base/types";
-import type { CoverFlowRef } from "../components/CoverFlow";
-import type { MusicQuizRef } from "../components/MusicQuiz";
-import type { BrickGameRef } from "../components/BrickGame";
+import type { CoverFlowRef } from "../components/cover-flow/types";
+import type { MusicQuizRef } from "../components/music-quiz/types";
+import type { BrickGameRef } from "../components/brick-game/types";
 import type { SongSearchResult } from "@/components/dialogs/SongSearchDialog";
 import { helpItems } from "..";
 import {

@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
-import { getTranslationBadge } from "@/apps/ipod/constants";
+import { getTranslationBadge } from "@/utils/lyricsTranslation";
 import type { LyricsAlignment, RomanizationSettings } from "@/types/lyrics";
 import { getLyricsFontClassName, LyricsFont } from "@/types/lyrics";
 import {

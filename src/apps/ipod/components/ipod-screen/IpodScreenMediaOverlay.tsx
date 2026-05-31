@@ -7,7 +7,7 @@ import { AmbientBackground } from "@/components/shared/AmbientBackground";
 import { MeshGradientBackground } from "@/components/shared/MeshGradientBackground";
 import { WaterBackground } from "@/components/shared/WaterBackground";
 import { DisplayMode } from "@/types/lyrics";
-import { LyricsDisplay } from "../LyricsDisplay";
+import { LyricsDisplay } from "../lyrics-display/LyricsDisplay";
 import {
   AppleMusicPlayerBridge,
 } from "../AppleMusicPlayerBridge";

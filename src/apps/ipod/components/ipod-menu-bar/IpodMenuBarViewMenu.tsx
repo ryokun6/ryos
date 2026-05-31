@@ -7,16 +7,11 @@ import {
   MenubarSub,
   MenubarSubTrigger,
   MenubarSubContent,
-  MenubarCheckboxItem,
   MenubarRadioGroup,
   MenubarRadioItem,
 } from "@/components/ui/menubar";
-import { LyricsAlignmentMenuItems } from "@/components/shared/menubar/lyrics/LyricsAlignmentMenuItems";
-import { LyricsPronunciationSubmenu } from "@/components/shared/menubar/lyrics/LyricsPronunciationSubmenu";
-import { LyricsTranslationLanguageSubmenu } from "@/components/shared/menubar/lyrics/LyricsTranslationLanguageSubmenu";
+import { MediaLyricsViewMenuItems } from "@/components/shared/menubar/MediaLyricsViewMenuItems";
 import { MENUBAR_SEPARATOR_CLASS } from "@/components/shared/menubar/menubarStyles";
-import { toast } from "sonner";
-import { DisplayMode, LyricsFont } from "@/types/lyrics";
 import type { IpodMenuBarViewModel } from "./useIpodMenuBar";
 
 export function IpodMenuBarViewMenu({ vm }: { vm: IpodMenuBarViewModel }) {
@@ -27,185 +22,31 @@ export function IpodMenuBarViewMenu({ vm }: { vm: IpodMenuBarViewModel }) {
           {vm.t("apps.ipod.menu.view")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
-          <MenubarSub>
-            <MenubarSubTrigger className="text-md h-6 px-3">
-              {vm.t("apps.ipod.menu.lyrics")}
-            </MenubarSubTrigger>
-            <MenubarSubContent className="px-0">
-              <MenubarCheckboxItem
-                checked={vm.showLyrics}
-                onCheckedChange={() => vm.toggleLyrics()}
-                className="text-md h-6 px-3"
-              >
-                {vm.t("apps.ipod.menu.showLyrics")}
-              </MenubarCheckboxItem>
-
-              <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
-              <LyricsAlignmentMenuItems
-                lyricsAlignment={vm.lyricsAlignment}
-                setLyricsAlignment={vm.setLyricsAlignment}
-                multiLabel={vm.t("apps.ipod.menu.multi")}
-                singleLabel={vm.t("apps.ipod.menu.single")}
-                alternatingLabel={vm.t("apps.ipod.menu.alternating")}
-              />
-
-              <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
-
-              <MenubarRadioGroup
-                value={vm.lyricsFont}
-                onValueChange={(v) => vm.setLyricsFont(v as LyricsFont)}
-              >
-                <MenubarRadioItem
-                  value={LyricsFont.Rounded}
-                  className="text-md h-6 pr-3"
-                >
-                  {vm.t("apps.ipod.menu.fontRounded")}
-                </MenubarRadioItem>
-                <MenubarRadioItem
-                  value={LyricsFont.Serif}
-                  className="text-md h-6 pr-3"
-                >
-                  {vm.t("apps.ipod.menu.fontSerif")}
-                </MenubarRadioItem>
-                <MenubarRadioItem
-                  value={LyricsFont.SansSerif}
-                  className="text-md h-6 pr-3"
-                >
-                  {vm.t("apps.ipod.menu.fontSansSerif")}
-                </MenubarRadioItem>
-                <MenubarRadioItem
-                  value={LyricsFont.SerifRed}
-                  className="text-md h-6 pr-3"
-                >
-                  {vm.t("apps.ipod.menu.fontSerifRed")}
-                </MenubarRadioItem>
-                <MenubarRadioItem
-                  value={LyricsFont.GoldGlow}
-                  className="text-md h-6 pr-3"
-                >
-                  {vm.t("apps.ipod.menu.fontGoldGlow")}
-                </MenubarRadioItem>
-                <MenubarRadioItem
-                  value={LyricsFont.Gradient}
-                  className="text-md h-6 pr-3"
-                >
-                  {vm.t("apps.ipod.menu.fontGradient")}
-                </MenubarRadioItem>
-              </MenubarRadioGroup>
-            </MenubarSubContent>
-          </MenubarSub>
-          <LyricsTranslationLanguageSubmenu
-            submenuLabel={vm.t("apps.ipod.menu.translate")}
-            translationLanguages={vm.translationLanguages}
-            lyricsTranslationLanguage={vm.lyricsTranslationLanguage}
-            setLyricsTranslationLanguage={vm.setLyricsTranslationLanguage}
-          />
-          <LyricsPronunciationSubmenu
-            submenuLabel={vm.t("apps.ipod.menu.pronunciation")}
-            pronunciationLabel={vm.t("apps.ipod.menu.pronunciation")}
-            pronunciationOnlyLabel={vm.t("apps.ipod.menu.pronunciationOnly")}
-            japaneseFuriganaLabel={vm.t("apps.ipod.menu.japaneseFurigana")}
-            japaneseRomajiLabel={vm.t("apps.ipod.menu.japaneseRomaji")}
-            koreanRomanizationLabel={vm.t("apps.ipod.menu.koreanRomanization")}
-            chinesePinyinLabel={vm.t("apps.ipod.menu.chinesePinyin")}
-            chineseSoramimiLabel={vm.t("apps.ipod.menu.chineseSoramimi")}
-            soramimiLabel={vm.t("apps.ipod.menu.soramimi")}
+          <MediaLyricsViewMenuItems
+            t={vm.t}
+            showLyricsLabel={vm.t("apps.ipod.menu.showLyrics")}
+            showLyrics={vm.showLyrics}
+            onToggleLyrics={() => vm.toggleLyrics()}
+            lyricsAlignment={vm.lyricsAlignment}
+            setLyricsAlignment={vm.setLyricsAlignment}
+            lyricsFont={vm.lyricsFont}
+            setLyricsFont={vm.setLyricsFont}
             romanization={vm.romanization}
             setRomanization={vm.setRomanization}
+            lyricsTranslationLanguage={vm.lyricsTranslationLanguage}
+            setLyricsTranslationLanguage={vm.setLyricsTranslationLanguage}
+            translationLanguages={vm.translationLanguages}
+            displayMode={vm.effectiveDisplayMode}
+            setDisplayMode={vm.setDisplayMode}
+            hideVideoOption={vm.isAppleMusic}
+            onRefreshLyrics={vm.onRefreshLyrics || vm.refreshLyrics}
+            onAdjustTiming={vm.onAdjustTiming}
+            clearLyricsCache={vm.clearLyricsCache}
+            tracks={vm.tracks}
+            currentIndex={vm.currentIndex}
+            debugMode={vm.debugMode}
+            isAdmin={vm.isAdmin}
           />
-          <MenubarSub>
-            <MenubarSubTrigger className="text-md h-6 px-3">
-              {vm.t("apps.ipod.menu.display")}
-            </MenubarSubTrigger>
-            <MenubarSubContent className="px-0">
-              {!vm.isAppleMusic && (
-                <MenubarCheckboxItem
-                  checked={vm.effectiveDisplayMode === DisplayMode.Video}
-                  onCheckedChange={(checked) => {
-                    if (checked) vm.setDisplayMode(DisplayMode.Video);
-                  }}
-                  className="text-md h-6 pr-3"
-                >
-                  {vm.t("apps.ipod.menu.displayVideo")}
-                </MenubarCheckboxItem>
-              )}
-              <MenubarCheckboxItem
-                checked={vm.effectiveDisplayMode === DisplayMode.Mesh}
-                onCheckedChange={(checked) => {
-                  if (checked) vm.setDisplayMode(DisplayMode.Mesh);
-                }}
-                className="text-md h-6 pr-3"
-              >
-                {vm.t("apps.ipod.menu.displayGradient")}
-              </MenubarCheckboxItem>
-              <MenubarCheckboxItem
-                checked={vm.effectiveDisplayMode === DisplayMode.Water}
-                onCheckedChange={(checked) => {
-                  if (checked) vm.setDisplayMode(DisplayMode.Water);
-                }}
-                className="text-md h-6 pr-3"
-              >
-                {vm.t("apps.ipod.menu.displayWater")}
-              </MenubarCheckboxItem>
-              <MenubarCheckboxItem
-                checked={vm.effectiveDisplayMode === DisplayMode.Shader}
-                onCheckedChange={(checked) => {
-                  if (checked) vm.setDisplayMode(DisplayMode.Shader);
-                }}
-                className="text-md h-6 pr-3"
-              >
-                {vm.t("apps.ipod.menu.displayShader")}
-              </MenubarCheckboxItem>
-              <MenubarCheckboxItem
-                checked={vm.effectiveDisplayMode === DisplayMode.Landscapes}
-                onCheckedChange={(checked) => {
-                  if (checked) vm.setDisplayMode(DisplayMode.Landscapes);
-                }}
-                className="text-md h-6 pr-3"
-              >
-                {vm.t("apps.ipod.menu.displayLandscapes")}
-              </MenubarCheckboxItem>
-              <MenubarCheckboxItem
-                checked={vm.effectiveDisplayMode === DisplayMode.Cover}
-                onCheckedChange={(checked) => {
-                  if (checked) vm.setDisplayMode(DisplayMode.Cover);
-                }}
-                className="text-md h-6 pr-3"
-              >
-                {vm.t("apps.ipod.menu.displayCover")}
-              </MenubarCheckboxItem>
-            </MenubarSubContent>
-          </MenubarSub>
-
-          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
-
-          <MenubarItem
-            onClick={vm.onRefreshLyrics || vm.refreshLyrics}
-            className="text-md h-6 px-3"
-            disabled={vm.tracks.length === 0 || vm.currentIndex === -1}
-          >
-            {vm.t("apps.ipod.menu.refreshLyrics")}
-          </MenubarItem>
-          <MenubarItem
-            onClick={vm.onAdjustTiming}
-            className="text-md h-6 px-3"
-            disabled={vm.tracks.length === 0 || vm.currentIndex === -1}
-          >
-            {vm.t("apps.ipod.menu.adjustTiming")}
-          </MenubarItem>
-
-          {(vm.debugMode || vm.isAdmin) && (
-            <MenubarItem
-              onClick={() => {
-                vm.clearLyricsCache();
-                toast.success(vm.t("apps.ipod.menu.cacheCleared"));
-              }}
-              className="text-md h-6 px-3"
-              disabled={vm.tracks.length === 0 || vm.currentIndex === -1}
-            >
-              {vm.t("apps.ipod.menu.clearCache")}
-            </MenubarItem>
-          )}
 
           <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <MenubarSub>

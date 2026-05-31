@@ -13,7 +13,7 @@ import { useIpodStore, type Track } from "@/stores/useIpodStore";
 import { YouTubeMedia } from "../utils/youtubeMedia";
 import { WEBAMP_SKINS } from "../skins";
 import { useTranslation } from "react-i18next";
-import { getYouTubeVideoId } from "@/apps/ipod/constants";
+import { parseYouTubeVideoId } from "@/utils/youtubeUrl";
 import { WINAMP_ANALYTICS, track } from "@/utils/analytics";
 
 const MAIN_WINDOW_WIDTH = 275;
@@ -23,7 +23,7 @@ const PLAYLIST_HEIGHT = 116;
 /** Convert iPod tracks to Webamp-compatible track objects */
 function ipodTracksToWebamp(tracks: Track[], unknownArtist: string) {
   return tracks.map((track) => ({
-    url: getYouTubeVideoId(track.url) ?? track.url,
+    url: parseYouTubeVideoId(track.url) ?? track.url,
     metaData: {
       artist: track.artist ?? unknownArtist,
       title: track.title,

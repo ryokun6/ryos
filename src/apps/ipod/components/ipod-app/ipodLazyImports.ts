@@ -1,13 +1,19 @@
 import { lazy } from "react";
 
 export const CoverFlow = lazy(() =>
-  import("../CoverFlow").then(({ CoverFlow }) => ({ default: CoverFlow }))
+  import("../cover-flow/CoverFlow").then(({ CoverFlow }) => ({
+    default: CoverFlow,
+  }))
 );
 export const MusicQuiz = lazy(() =>
-  import("../MusicQuiz").then(({ MusicQuiz }) => ({ default: MusicQuiz }))
+  import("../music-quiz/MusicQuiz").then(({ MusicQuiz }) => ({
+    default: MusicQuiz,
+  }))
 );
 export const BrickGame = lazy(() =>
-  import("../BrickGame").then(({ BrickGame }) => ({ default: BrickGame }))
+  import("../brick-game/BrickGame").then(({ BrickGame }) => ({
+    default: BrickGame,
+  }))
 );
 export const LandscapeVideoBackground = lazy(() =>
   import("@/components/shared/LandscapeVideoBackground").then(
