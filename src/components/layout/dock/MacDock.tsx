@@ -7,11 +7,12 @@ import React, {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { useAppStoreShallow } from "@/stores/helpers";
-import { AppId } from "@/config/appRegistry";
+import { AppId, getAppIconPath } from "@/config/appRegistry";
+import { getTranslatedAppName } from "@/utils/i18n";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useFinderStore } from "@/stores/useFinderStore";
 import { useFilesStore } from "@/stores/useFilesStore";
-import { useDockStore } from "@/stores/useDockStore";
+import { useDockStore, PROTECTED_DOCK_ITEMS } from "@/stores/useDockStore";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useIsPhone } from "@/hooks/useIsPhone";
 import { useLongPress } from "@/hooks/useLongPress";
@@ -27,14 +28,12 @@ import {
 } from "@/utils/dockRevealGesture";
 import { useDashboardShellInputDisabled } from "@/hooks/useDashboardShellInputDisabled";
 import { DOCK_BASE_BUTTON_SIZE } from "./dockConstants";
-import type { DockOpenItem } from "./dockTypes";
-import { DockPinnedItems } from "./DockPinnedItems";
-import { DockOpenItems } from "./DockOpenItems";
-import { DockApplicationsButton } from "./DockApplicationsButton";
-import { DockTrashButton } from "./DockTrashButton";
+import { getDockAppletInfo } from "./dockAppletInfo";
 import { useDockContextMenus } from "./useDockContextMenus";
 import { useDockDragDrop } from "./useDockDragDrop";
 import { createDockTrashHandlers } from "./dockTrashHandlers";
+import { DockSpacer } from "./DockSpacer";
+import { DockIconButton } from "./DockIconButton";
 import { DockDivider } from "./DockDivider";
 import { useDockIconHover } from "./useDockIconHover";
 import { useDockMagnification } from "./useDockMagnification";
@@ -468,7 +467,12 @@ export function MacDock() {
   
   // Compute open apps and individual applet instances
   const openItems = useMemo(() => {
-    const items: DockOpenItem[] = [];
+    const items: Array<{
+      type: "app" | "applet";
+      appId: AppId;
+      instanceId?: string;
+      sortKey: number;
+    }> = [];
 
     // Group instances by appId
     const openByApp: Record<string, AppInstance[]> = {};
@@ -852,32 +856,131 @@ export function MacDock() {
         >
           <LayoutGroup>
             <AnimatePresence mode="popLayout" initial={false}>
-              <DockPinnedItems
-                pinnedItems={pinnedItems}
-                externalDragIndex={externalDragIndex}
-                openAppsAllSet={openAppsAllSet}
-                instances={instances}
-                mouseX={mouseX}
-                effectiveMagnifyEnabled={effectiveMagnifyEnabled}
-                scaledButtonSize={scaledButtonSize}
-                iconRefsMap={iconRefsMap}
-                hasMounted={hasMounted}
-                seenIdsRef={seenIdsRef}
-                hoveredId={hoveredId}
-                isSwapping={isSwapping}
-                handleIconHover={handleIconHover}
-                handleIconLeave={handleIconLeave}
-                draggingItemId={draggingItemId}
-                isDraggedOutside={isDraggedOutside}
-                handleItemDragStart={handleItemDragStart}
-                handleItemDragEnd={handleItemDragEnd}
-                handleItemDragOver={handleItemDragOver}
-                handleAppContextMenu={handleAppContextMenu}
-                focusOrLaunchFinder={focusOrLaunchFinder}
-                focusOrLaunchApp={focusOrLaunchApp}
-                getFileItem={getFileItem}
-                launchApp={launchApp}
-              />
+              {/* Left pinned items from dock store */}
+              {(() => {
+                // Build array of elements with spacer inserted at correct position
+                const elements: React.ReactNode[] = [];
+                
+                pinnedItems.forEach((item, index) => {
+                  // Insert spacer before this item if it's the drop target
+                  if (externalDragIndex === index) {
+                    elements.push(<DockSpacer key="dock-drop-spacer" idKey="dock-drop-spacer" mouseX={mouseX} magnifyEnabled={effectiveMagnifyEnabled} baseSize={scaledButtonSize} />);
+                  }
+                  
+                  if (item.type === "app") {
+                    const appId = item.id as AppId;
+                    const icon = getAppIconPath(appId);
+                    const isOpen = openAppsAllSet.has(appId);
+                    const isLoading = Object.values(instances).some(
+                      (i) => i.appId === appId && i.isOpen && i.isLoading
+                    );
+                    const label = getTranslatedAppName(appId);
+                    const isProtected = PROTECTED_DOCK_ITEMS.has(item.id);
+                    
+                    elements.push(
+                      <DockIconButton
+                        key={appId}
+                        ref={(el) => {
+                          if (el) iconRefsMap.current.set(item.id, el);
+                          else iconRefsMap.current.delete(item.id);
+                        }}
+                        label={label}
+                        icon={icon}
+                        idKey={appId}
+                        onClick={(e) => {
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          const launchOrigin: LaunchOriginRect = {
+                            x: rect.left,
+                            y: rect.top,
+                            width: rect.width,
+                            height: rect.height,
+                          };
+                          if (appId === "finder") {
+                            focusOrLaunchFinder("/", launchOrigin);
+                          } else {
+                            focusOrLaunchApp(appId, undefined, launchOrigin);
+                          }
+                        }}
+                        onContextMenu={(e) => handleAppContextMenu(e, appId)}
+                        showIndicator={isOpen}
+                        isLoading={isLoading}
+                        mouseX={mouseX}
+                        magnifyEnabled={effectiveMagnifyEnabled}
+                        isNew={hasMounted && !seenIdsRef.current.has(appId)}
+                        isHovered={hoveredId === appId}
+                        isSwapping={isSwapping}
+                        onHover={() => handleIconHover(appId)}
+                        onLeave={handleIconLeave}
+                        draggable={!isProtected}
+                        onDragStart={(e) => handleItemDragStart(e, item.id, index)}
+                        onDragEnd={(e) => handleItemDragEnd(e, item.id)}
+                        onDragOver={(e) => handleItemDragOver(e, index)}
+                        isDragging={draggingItemId === item.id}
+                        isDraggedOutside={draggingItemId === item.id && isDraggedOutside}
+                        baseSize={scaledButtonSize}
+                        intentPrefetchAppId={appId}
+                      />
+                    );
+                  } else {
+                    // File/applet pinned item
+                    const file = item.path ? getFileItem(item.path) : null;
+                    const isEmojiIcon = item.icon && !item.icon.startsWith("/") && !item.icon.startsWith("http") && item.icon.length <= 10;
+                    const icon = isEmojiIcon ? item.icon! : (file?.icon || "📦");
+                    const label = item.name || item.path?.split("/").pop()?.replace(/\.(app|html)$/i, "") || "Applet";
+                    
+                    elements.push(
+                      <DockIconButton
+                        key={item.id}
+                        ref={(el) => {
+                          if (el) iconRefsMap.current.set(item.id, el);
+                          else iconRefsMap.current.delete(item.id);
+                        }}
+                        label={label}
+                        icon={icon}
+                        idKey={item.id}
+                        isEmoji={isEmojiIcon || (!item.icon?.startsWith("/") && !item.icon?.startsWith("http"))}
+                        onClick={(e) => {
+                          if (item.path) {
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            const launchOrigin: LaunchOriginRect = {
+                              x: rect.left,
+                              y: rect.top,
+                              width: rect.width,
+                              height: rect.height,
+                            };
+                            launchApp("applet-viewer", {
+                              initialData: { path: item.path },
+                              launchOrigin,
+                            });
+                          }
+                        }}
+                        mouseX={mouseX}
+                        magnifyEnabled={effectiveMagnifyEnabled}
+                        isNew={hasMounted && !seenIdsRef.current.has(item.id)}
+                        isHovered={hoveredId === item.id}
+                        isSwapping={isSwapping}
+                        onHover={() => handleIconHover(item.id)}
+                        onLeave={handleIconLeave}
+                        draggable
+                        onDragStart={(e) => handleItemDragStart(e, item.id, index)}
+                        onDragEnd={(e) => handleItemDragEnd(e, item.id)}
+                        onDragOver={(e) => handleItemDragOver(e, index)}
+                        isDragging={draggingItemId === item.id}
+                        isDraggedOutside={draggingItemId === item.id && isDraggedOutside}
+                        baseSize={scaledButtonSize}
+                        intentPrefetchAppId="applet-viewer"
+                      />
+                    );
+                  }
+                });
+                
+                // Add spacer at end if dropping after all items
+                if (externalDragIndex === pinnedItems.length) {
+                  elements.push(<DockSpacer key="dock-drop-spacer" idKey="dock-drop-spacer" mouseX={mouseX} magnifyEnabled={effectiveMagnifyEnabled} baseSize={scaledButtonSize} />);
+                }
+                
+                return elements;
+              })()}
 
               {/* Divider between pinned and non-pinned apps */}
               {openItems.length > 0 && (
@@ -894,26 +997,75 @@ export function MacDock() {
                 />
               )}
 
-              <DockOpenItems
-                openItems={openItems}
-                instances={instances}
-                mouseX={mouseX}
-                effectiveMagnifyEnabled={effectiveMagnifyEnabled}
-                scaledButtonSize={scaledButtonSize}
-                hasMounted={hasMounted}
-                seenIdsRef={seenIdsRef}
-                hoveredId={hoveredId}
-                isSwapping={isSwapping}
-                handleIconHover={handleIconHover}
-                handleIconLeave={handleIconLeave}
-                handleAppContextMenu={handleAppContextMenu}
-                restoreInstance={restoreInstance}
-                bringInstanceToForeground={bringInstanceToForeground}
-                focusMostRecentInstanceOfApp={focusMostRecentInstanceOfApp}
-                handleNonPinnedDragStart={handleNonPinnedDragStart}
-                getFileItem={getFileItem}
-                t={t}
-              />
+              {/* Open apps and applet instances dynamically (excluding pinned) */}
+              {openItems.map((item) => {
+                if (item.type === "applet" && item.instanceId) {
+                  // Render individual applet instance
+                  const instance = instances[item.instanceId];
+                  if (!instance) return null;
+
+                  const { icon, label, isEmoji } = getDockAppletInfo(instance, getFileItem, t);
+                  return (
+                    <DockIconButton
+                      key={item.instanceId}
+                      label={label}
+                      icon={icon}
+                      idKey={item.instanceId}
+                      onClick={(_e) => {
+                        // If minimized, restore it; otherwise just bring to foreground
+                        if (instance.isMinimized) {
+                          restoreInstance(item.instanceId!);
+                        } else {
+                          bringInstanceToForeground(item.instanceId!);
+                        }
+                      }}
+                      onContextMenu={(e) => handleAppContextMenu(e, "applet-viewer", item.instanceId)}
+                      showIndicator
+                      isLoading={instance.isLoading}
+                      isEmoji={isEmoji}
+                      mouseX={mouseX}
+                      magnifyEnabled={effectiveMagnifyEnabled}
+                      isNew={hasMounted && !seenIdsRef.current.has(item.instanceId!)}
+                      isHovered={hoveredId === item.instanceId}
+                      isSwapping={isSwapping}
+                      onHover={() => handleIconHover(item.instanceId!)}
+                      onLeave={handleIconLeave}
+                      baseSize={scaledButtonSize}
+                      intentPrefetchAppId="applet-viewer"
+                    />
+                  );
+                } else {
+                  // Render regular app
+                  const icon = getAppIconPath(item.appId);
+                  const label = getTranslatedAppName(item.appId);
+                  const isLoading = Object.values(instances).some(
+                    (i) => i.appId === item.appId && i.isOpen && i.isLoading
+                  );
+                  return (
+                    <DockIconButton
+                      key={item.appId}
+                      label={label}
+                      icon={icon}
+                      idKey={item.appId}
+                      onClick={(_e) => focusMostRecentInstanceOfApp(item.appId)}
+                      onContextMenu={(e) => handleAppContextMenu(e, item.appId)}
+                      showIndicator
+                      isLoading={isLoading}
+                      mouseX={mouseX}
+                      magnifyEnabled={effectiveMagnifyEnabled}
+                      isNew={hasMounted && !seenIdsRef.current.has(item.appId)}
+                      isHovered={hoveredId === item.appId}
+                      isSwapping={isSwapping}
+                      onHover={() => handleIconHover(item.appId)}
+                      onLeave={handleIconLeave}
+                      draggable
+                      onDragStart={(e) => handleNonPinnedDragStart(e, item.appId)}
+                      baseSize={scaledButtonSize}
+                      intentPrefetchAppId={item.appId}
+                    />
+                  );
+                }
+              })}
 
               {/* Divider between open apps and Applications/Trash */}
               <DockDivider 
@@ -926,42 +1078,121 @@ export function MacDock() {
                 {...dividerLongPress}
               />
 
-              <DockApplicationsButton
-                dockContainerRef={dockContainerRef}
-                setApplicationsContextMenuPos={setApplicationsContextMenuPos}
-                focusFinderAtPathOrLaunch={focusFinderAtPathOrLaunch}
-                mouseX={mouseX}
-                effectiveMagnifyEnabled={effectiveMagnifyEnabled}
-                scaledButtonSize={scaledButtonSize}
-                hasMounted={hasMounted}
-                seenIdsRef={seenIdsRef}
-                hoveredId={hoveredId}
-                isSwapping={isSwapping}
-                handleIconHover={handleIconHover}
-                handleIconLeave={handleIconLeave}
-                t={t}
-              />
+              {/* Applications (left of Trash) */}
+              {(() => {
+                const handleApplicationsContextMenu = (
+                  e: React.MouseEvent<HTMLButtonElement>
+                ) => {
+                  e.preventDefault();
+                  e.stopPropagation();
 
-              <DockTrashButton
-                dockContainerRef={dockContainerRef}
-                setTrashContextMenuPos={setTrashContextMenuPos}
-                focusFinderAtPathOrLaunch={focusFinderAtPathOrLaunch}
-                trashIcon={trashIcon}
-                handleTrashDragOver={handleTrashDragOver}
-                handleTrashDrop={handleTrashDrop}
-                handleTrashDragLeave={handleTrashDragLeave}
-                isDraggingOverTrash={isDraggingOverTrash}
-                mouseX={mouseX}
-                effectiveMagnifyEnabled={effectiveMagnifyEnabled}
-                scaledButtonSize={scaledButtonSize}
-                hasMounted={hasMounted}
-                seenIdsRef={seenIdsRef}
-                hoveredId={hoveredId}
-                isSwapping={isSwapping}
-                handleIconHover={handleIconHover}
-                handleIconLeave={handleIconLeave}
-                t={t}
-              />
+                  const containerRect =
+                    dockContainerRef.current?.getBoundingClientRect();
+                  if (!containerRect) {
+                    setApplicationsContextMenuPos({ x: e.clientX, y: e.clientY });
+                    return;
+                  }
+
+                  setApplicationsContextMenuPos({
+                    x: e.clientX - containerRect.left,
+                    y: e.clientY - containerRect.top,
+                  });
+                };
+
+                return (
+                  <DockIconButton
+                    key="__applications__"
+                    label={t("common.dock.applications")}
+                    icon="/icons/default/applications.png"
+                    idKey="__applications__"
+                    onClick={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const launchOrigin: LaunchOriginRect = {
+                        x: rect.left,
+                        y: rect.top,
+                        width: rect.width,
+                        height: rect.height,
+                      };
+                      focusFinderAtPathOrLaunch("/Applications", {
+                        path: "/Applications",
+                        viewType: "large",
+                      }, launchOrigin);
+                    }}
+                    onContextMenu={handleApplicationsContextMenu}
+                    mouseX={mouseX}
+                    magnifyEnabled={effectiveMagnifyEnabled}
+                    isNew={hasMounted && !seenIdsRef.current.has("__applications__")}
+                    isHovered={hoveredId === "__applications__"}
+                    isSwapping={isSwapping}
+                    onHover={() => handleIconHover("__applications__")}
+                    onLeave={handleIconLeave}
+                    baseSize={scaledButtonSize}
+                    intentPrefetchAppId="finder"
+                  />
+                );
+              })()}
+
+              {/* Trash (right side) */}
+              {(() => {
+                const handleTrashContextMenu = (
+                  e: React.MouseEvent<HTMLButtonElement>
+                ) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+
+                  const containerRect =
+                    dockContainerRef.current?.getBoundingClientRect();
+                  if (!containerRect) {
+                    setTrashContextMenuPos({ x: e.clientX, y: e.clientY });
+                    return;
+                  }
+
+                  setTrashContextMenuPos({
+                    x: e.clientX - containerRect.left,
+                    y: e.clientY - containerRect.top,
+                  });
+                };
+
+                return (
+                  <motion.div
+                    animate={{
+                      scale: isDraggingOverTrash ? 1.2 : 1,
+                      opacity: isDraggingOverTrash ? 0.7 : 1,
+                    }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <DockIconButton
+                      key="__trash__"
+                      label={t("common.dock.trash")}
+                      icon={trashIcon}
+                      idKey="__trash__"
+                      onClick={(e) => {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const launchOrigin: LaunchOriginRect = {
+                          x: rect.left,
+                          y: rect.top,
+                          width: rect.width,
+                          height: rect.height,
+                        };
+                        focusFinderAtPathOrLaunch("/Trash", undefined, launchOrigin);
+                      }}
+                      onDragOver={handleTrashDragOver}
+                      onDrop={handleTrashDrop}
+                      onDragLeave={handleTrashDragLeave}
+                      onContextMenu={handleTrashContextMenu}
+                      mouseX={mouseX}
+                      magnifyEnabled={effectiveMagnifyEnabled}
+                      isNew={hasMounted && !seenIdsRef.current.has("__trash__")}
+                      isHovered={hoveredId === "__trash__"}
+                      isSwapping={isSwapping}
+                      onHover={() => handleIconHover("__trash__")}
+                      onLeave={handleIconLeave}
+                      baseSize={scaledButtonSize}
+                      intentPrefetchAppId="finder"
+                    />
+                  </motion.div>
+                );
+              })()}
             </AnimatePresence>
           </LayoutGroup>
         </motion.div>
