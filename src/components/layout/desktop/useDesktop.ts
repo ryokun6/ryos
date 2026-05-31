@@ -1,0 +1,736 @@
+import type { AnyApp } from "@/apps/base/types";
+import type { AppId } from "@/config/appRegistry";
+import {
+  useState,
+  useRef,
+  useCallback,
+  useMemo,
+  useEffect,
+} from "react";
+import type { DragEvent, MouseEvent as ReactMouseEvent } from "react";
+import { SortType } from "@/apps/finder/components/FinderMenuBar";
+import { useLongPress } from "@/hooks/useLongPress";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
+import { useFilesStore, type FileSystemItem } from "@/stores/useFilesStore";
+import { useShallow } from "zustand/react/shallow";
+import { useLaunchApp } from "@/hooks/useLaunchApp";
+import type { LaunchOriginRect } from "@/stores/useAppStore";
+import { dbOperations } from "@/apps/finder/hooks/useFileSystem";
+import { STORES } from "@/utils/indexedDB";
+import { useTranslation } from "react-i18next";
+import { useWallpaper } from "@/hooks/useWallpaper";
+import {
+  createSelectionRect,
+  getIntersectingSelectionIds,
+  hasToggleModifier,
+  mergeSelectionIds,
+  resolveMultiSelection,
+  type SelectionPoint,
+} from "@/utils/selection";
+import type { MenuItem } from "@/components/ui/right-click-menu";
+import { getWallpaperStyles } from "./desktopWallpaperUtils";
+import { openDesktopAlias } from "./openDesktopAlias";
+import {
+  getDesktopAppItemId,
+  getDesktopShortcutItemId,
+} from "./desktopConstants";
+import { compareDesktopShortcuts } from "./desktopShortcutSort";
+import {
+  prefetchDesktopShortcutIntent,
+  getDesktopShortcutDisplayName,
+  getDesktopShortcutIcon,
+} from "./desktopShortcutUtils";
+import type {
+  DesktopProps,
+  DesktopItemId,
+  DesktopItemDefinition,
+} from "./desktopTypes";
+import { useDesktopVideoWallpaper } from "./useDesktopVideoWallpaper";
+
+export function useDesktop({
+  apps,
+  toggleApp,
+  onClick,
+  desktopStyles,
+}: DesktopProps) {
+  const { t } = useTranslation();
+  const [selectedItemIds, setSelectedItemIds] = useState<DesktopItemId[]>([]);
+  const [selectionAnchorId, setSelectionAnchorId] =
+    useState<DesktopItemId | null>(null);
+  const { wallpaperSource, isVideoWallpaper } = useWallpaper();
+  const { videoRef } = useDesktopVideoWallpaper(isVideoWallpaper);
+  const desktopRef = useRef<HTMLDivElement>(null);
+  const marqueeStartRef = useRef<SelectionPoint | null>(null);
+  const marqueeBaseSelectionRef = useRef<DesktopItemId[]>([]);
+  const marqueeAdditiveRef = useRef(false);
+  const suppressClickAfterMarqueeRef = useRef(false);
+  const [selectionRect, setSelectionRect] = useState<{
+    start: SelectionPoint;
+    end: SelectionPoint;
+  } | null>(null);
+  const [sortType, setSortType] = useState<SortType>("name");
+  const [contextMenuPos, setContextMenuPos] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+  const [contextMenuAppId, setContextMenuAppId] = useState<string | null>(null);
+  const [contextMenuShortcutPath, setContextMenuShortcutPath] = useState<
+    string | null
+  >(null);
+  const [isEmptyTrashDialogOpen, setIsEmptyTrashDialogOpen] = useState(false);
+
+  const {
+    currentTheme,
+    isWindowsTheme: isXpTheme,
+    isMacOSTheme,
+    isSystem7Theme,
+  } = useThemeFlags();
+
+  const isTauriApp =
+    typeof window !== "undefined" && "__TAURI__" in window;
+
+  const launchApp = useLaunchApp();
+
+  const desktopAndTrashItems = useFilesStore(
+    useShallow((state) => {
+      const result: FileSystemItem[] = [];
+      for (const [path, item] of Object.entries(state.items)) {
+        if (path.startsWith("/Desktop/") || path === "/Trash") {
+          result.push(item);
+        }
+      }
+      return result;
+    })
+  );
+  const getItem = useFilesStore((state) => state.getItem);
+
+  const handlePrefetchShortcut = useCallback(
+    (shortcut: FileSystemItem) => {
+      prefetchDesktopShortcutIntent(shortcut, getItem);
+    },
+    [getItem]
+  );
+
+  const getItemsInPath = useFilesStore((state) => state.getItemsInPath);
+  const updateItemMetadata = useFilesStore((state) => state.updateItemMetadata);
+  const createAlias = useFilesStore((state) => state.createAlias);
+  const removeItem = useFilesStore((state) => state.removeItem);
+  const emptyTrash = useFilesStore((state) => state.emptyTrash);
+  const getTrashItems = useFilesStore((state) => state.getTrashItems);
+  const trashItem = desktopAndTrashItems.find((item) => item.path === "/Trash");
+  const trashIcon = trashItem?.icon || "/icons/trash-empty.png";
+
+  const desktopShortcuts = useMemo(
+    () =>
+      desktopAndTrashItems
+        .filter(
+          (item) =>
+            item.status === "active" &&
+            item.path.startsWith("/Desktop/") &&
+            !item.isDirectory &&
+            (!item.hiddenOnThemes ||
+              !item.hiddenOnThemes.includes(currentTheme))
+        )
+        .sort((a, b) => compareDesktopShortcuts(a, b, isSystem7Theme)),
+    [desktopAndTrashItems, currentTheme, isSystem7Theme]
+  );
+
+  const getDisplayName = useCallback(
+    (shortcut: FileSystemItem) =>
+      getDesktopShortcutDisplayName(shortcut, getItem),
+    [getItem]
+  );
+
+  const getShortcutIcon = useCallback(
+    (shortcut: FileSystemItem) =>
+      getDesktopShortcutIcon(shortcut, getItem),
+    [getItem]
+  );
+
+  const handleAliasOpen = useCallback(
+    async (shortcut: FileSystemItem, launchOrigin?: LaunchOriginRect) => {
+      await openDesktopAlias(shortcut, {
+        toggleApp,
+        launchApp,
+        getItem,
+        launchOrigin,
+      });
+    },
+    [toggleApp, launchApp, getItem]
+  );
+
+  const handleDragOver = (e: DragEvent) => {
+    if (e.dataTransfer.types.includes("application/json")) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
+
+  const handleDragLeave = (e: DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = async (e: DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    try {
+      const jsonData = e.dataTransfer.getData("application/json");
+      if (!jsonData) return;
+
+      const { path, name, appId } = JSON.parse(jsonData);
+
+      if (path && path.startsWith("/Desktop/")) {
+        return;
+      }
+
+      const desktopItems = getItemsInPath("/Desktop");
+      let aliasExists = false;
+
+      if (appId || (path && path.startsWith("/Applications/"))) {
+        const finalAppId = appId || getItem(path)?.appId;
+        if (finalAppId) {
+          const existingShortcut = desktopItems.find(
+            (item) =>
+              item.aliasType === "app" &&
+              item.aliasTarget === finalAppId &&
+              item.status === "active"
+          );
+          aliasExists = !!existingShortcut;
+
+          if (aliasExists && existingShortcut) {
+            if (
+              existingShortcut.hiddenOnThemes &&
+              existingShortcut.hiddenOnThemes.length > 0
+            ) {
+              updateItemMetadata(existingShortcut.path, {
+                hiddenOnThemes: [],
+              });
+            }
+          } else {
+            createAlias(path || "", name, "app", finalAppId);
+          }
+        }
+      } else if (path) {
+        const sourceItem = getItem(path);
+        if (sourceItem) {
+          aliasExists = desktopItems.some(
+            (item) =>
+              item.aliasType === "file" &&
+              item.aliasTarget === path &&
+              item.status === "active"
+          );
+
+          if (!aliasExists) {
+            createAlias(path, name, "file");
+          }
+        }
+      }
+    } catch (err) {
+      console.error("[Desktop] Error handling drop:", err);
+    }
+  };
+
+  const longPressHandlers = useLongPress((e) => {
+    const target = e.target as HTMLElement;
+    const iconContainer = target.closest("[data-desktop-icon]");
+    if (iconContainer) {
+      return;
+    }
+
+    const touch = e.touches[0];
+    setContextMenuPos({ x: touch.clientX, y: touch.clientY });
+    setContextMenuAppId(null);
+  });
+
+  const finalStyles = {
+    ...getWallpaperStyles(wallpaperSource, isVideoWallpaper),
+    ...desktopStyles,
+  };
+
+  const clearSelection = useCallback(() => {
+    setSelectedItemIds([]);
+    setSelectionAnchorId(null);
+  }, []);
+
+  const applySelection = useCallback(
+    (nextSelectedIds: DesktopItemId[], nextAnchorId: DesktopItemId | null) => {
+      setSelectedItemIds(nextSelectedIds);
+      setSelectionAnchorId(nextAnchorId);
+    },
+    []
+  );
+
+  const handleFinderOpen = (e: ReactMouseEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    localStorage.setItem("ryos:app:finder:initial-path", "/");
+    const finderApp = apps.find((app) => app.id === "finder");
+    if (finderApp) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const launchOrigin: LaunchOriginRect = {
+        x: rect.left,
+        y: rect.top,
+        width: rect.width,
+        height: rect.height,
+      };
+      toggleApp(finderApp.id, undefined, launchOrigin);
+    }
+    clearSelection();
+  };
+
+  const handleIconContextMenu = (appId: string, e: ReactMouseEvent) => {
+    const itemId = getDesktopAppItemId(appId);
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenuPos({ x: e.clientX, y: e.clientY });
+    setContextMenuAppId(appId);
+    setContextMenuShortcutPath(null);
+    if (!selectedItemIds.includes(itemId)) {
+      applySelection([itemId], itemId);
+    }
+  };
+
+  const handleShortcutContextMenu = (
+    shortcutPath: string,
+    e: ReactMouseEvent
+  ) => {
+    const itemId = getDesktopShortcutItemId(shortcutPath);
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenuPos({ x: e.clientX, y: e.clientY });
+    setContextMenuShortcutPath(shortcutPath);
+    setContextMenuAppId(null);
+    if (!selectedItemIds.includes(itemId)) {
+      applySelection([itemId], itemId);
+    }
+  };
+
+  const handleShortcutDelete = () => {
+    if (!contextMenuShortcutPath) return;
+    const shortcut = getItem(contextMenuShortcutPath);
+    if (shortcut) {
+      removeItem(contextMenuShortcutPath);
+    }
+    clearSelection();
+    setContextMenuPos(null);
+    setContextMenuShortcutPath(null);
+  };
+
+  const handleOpenApp = (appId: string) => {
+    if (appId === "macintosh-hd") {
+      localStorage.setItem("ryos:app:finder:initial-path", "/");
+      const finderApp = apps.find((app) => app.id === "finder");
+      if (finderApp) {
+        toggleApp(finderApp.id);
+      }
+    } else {
+      toggleApp(appId as AppId);
+    }
+    clearSelection();
+    setContextMenuPos(null);
+  };
+
+  const handleEmptyTrash = () => {
+    setIsEmptyTrashDialogOpen(true);
+  };
+
+  const confirmEmptyTrash = async () => {
+    const contentUUIDsToDelete = emptyTrash();
+
+    try {
+      for (const uuid of contentUUIDsToDelete) {
+        await dbOperations.delete(STORES.TRASH, uuid);
+      }
+      console.log("[Desktop] Cleared trash content from IndexedDB.");
+    } catch (err) {
+      console.error("Error clearing trash content from IndexedDB:", err);
+    }
+
+    setIsEmptyTrashDialogOpen(false);
+  };
+
+  const sortedApps = [...apps]
+    .filter(
+      (app) =>
+        app.id !== "finder" &&
+        app.id !== "control-panels" &&
+        app.id !== "applet-viewer"
+    )
+    .sort((a, b) => {
+      switch (sortType) {
+        case "name":
+          return a.name.localeCompare(b.name);
+        case "kind":
+          return a.id.localeCompare(b.id);
+        default:
+          return 0;
+      }
+    });
+
+  const displayedApps =
+    isMacOSTheme
+      ? sortedApps.filter(
+          (app) => app.id === "ipod" || app.id === "applet-viewer"
+        )
+      : sortedApps;
+
+  const desktopItemsInOrder = useMemo<DesktopItemDefinition[]>(() => {
+    const items: DesktopItemDefinition[] = [
+      {
+        id: getDesktopAppItemId("macintosh-hd"),
+        kind: "app",
+      },
+      ...desktopShortcuts.map((shortcut) => ({
+        id: getDesktopShortcutItemId(shortcut.path),
+        kind: "shortcut" as const,
+      })),
+    ];
+
+    if (desktopShortcuts.length === 0) {
+      items.push(
+        ...displayedApps.map((app) => ({
+          id: getDesktopAppItemId(app.id),
+          kind: "app" as const,
+        }))
+      );
+    }
+
+    if (!isMacOSTheme) {
+      items.push({
+        id: getDesktopAppItemId("trash"),
+        kind: "app",
+      });
+    }
+
+    return items;
+  }, [isMacOSTheme, desktopShortcuts, displayedApps]);
+
+  const updateSelectionFromMarquee = useCallback(
+    (start: SelectionPoint, end: SelectionPoint) => {
+      const desktop = desktopRef.current;
+      if (!desktop) return;
+
+      const intersectingIds = getIntersectingSelectionIds(
+        createSelectionRect(start, end),
+        Array.from(
+          desktop.querySelectorAll<HTMLElement>("[data-desktop-item-id]")
+        ).map((element) => ({
+          id: element.dataset.desktopItemId || "",
+          rect: {
+            left: element.getBoundingClientRect().left,
+            top: element.getBoundingClientRect().top,
+            right: element.getBoundingClientRect().right,
+            bottom: element.getBoundingClientRect().bottom,
+          },
+        }))
+      ).filter(Boolean);
+
+      const nextSelectedIds = marqueeAdditiveRef.current
+        ? mergeSelectionIds(
+            desktopItemsInOrder.map((item) => item.id),
+            marqueeBaseSelectionRef.current,
+            intersectingIds
+          )
+        : intersectingIds;
+      const nextAnchorId = nextSelectedIds[nextSelectedIds.length - 1] ?? null;
+      applySelection(nextSelectedIds, nextAnchorId);
+    },
+    [applySelection, desktopItemsInOrder]
+  );
+
+  useEffect(() => {
+    if (!selectionRect || !marqueeStartRef.current) return;
+
+    const handleMouseMove = (event: MouseEvent) => {
+      const start = marqueeStartRef.current;
+      if (!start) return;
+
+      const end = { x: event.clientX, y: event.clientY };
+      setSelectionRect({ start, end });
+      updateSelectionFromMarquee(start, end);
+    };
+
+    const handleMouseUp = (event: MouseEvent) => {
+      const start = marqueeStartRef.current;
+      if (!start) return;
+
+      const end = { x: event.clientX, y: event.clientY };
+      const movedEnough =
+        Math.abs(end.x - start.x) > 3 || Math.abs(end.y - start.y) > 3;
+
+      if (movedEnough) {
+        updateSelectionFromMarquee(start, end);
+      } else if (!marqueeAdditiveRef.current) {
+        clearSelection();
+      }
+
+      suppressClickAfterMarqueeRef.current = movedEnough;
+      marqueeStartRef.current = null;
+      setSelectionRect(null);
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp, { once: true });
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [clearSelection, selectionRect, updateSelectionFromMarquee]);
+
+  const handleDesktopItemClick = (
+    itemId: DesktopItemId,
+    event: ReactMouseEvent<HTMLDivElement>
+  ) => {
+    event.stopPropagation();
+
+    const nextSelection = resolveMultiSelection({
+      orderedIds: desktopItemsInOrder.map((item) => item.id),
+      currentSelectedIds: selectedItemIds,
+      clickedId: itemId,
+      anchorId: selectionAnchorId,
+      modifiers: {
+        shiftKey: event.shiftKey,
+        toggleKey: hasToggleModifier(event),
+      },
+    });
+
+    applySelection(nextSelection.selectedIds, nextSelection.anchorId);
+  };
+
+  const handleBlankMouseDown = (event: ReactMouseEvent<HTMLDivElement>) => {
+    if (event.button !== 0) return;
+    const target = event.target as HTMLElement;
+    if (target.closest("[data-desktop-icon]")) return;
+
+    const start = { x: event.clientX, y: event.clientY };
+    marqueeStartRef.current = start;
+    marqueeBaseSelectionRef.current = selectedItemIds;
+    marqueeAdditiveRef.current = event.shiftKey || hasToggleModifier(event);
+    setSelectionRect({ start, end: start });
+  };
+
+  const handleDesktopClick = () => {
+    if (suppressClickAfterMarqueeRef.current) {
+      suppressClickAfterMarqueeRef.current = false;
+      onClick?.();
+      return;
+    }
+    if (!marqueeStartRef.current) {
+      clearSelection();
+    }
+    onClick?.();
+  };
+
+  const getContextMenuItems = (): MenuItem[] => {
+    if (contextMenuShortcutPath) {
+      return [
+        {
+          type: "item",
+          label: t("apps.finder.contextMenu.open"),
+          onSelect: () => {
+            const shortcut = getItem(contextMenuShortcutPath);
+            if (shortcut) {
+              void handleAliasOpen(shortcut);
+            }
+            setContextMenuPos(null);
+            setContextMenuShortcutPath(null);
+          },
+        },
+        { type: "separator" },
+        {
+          type: "item",
+          label: t("apps.finder.contextMenu.moveToTrash"),
+          onSelect: handleShortcutDelete,
+        },
+      ];
+    } else if (contextMenuAppId) {
+      if (contextMenuAppId === "trash") {
+        return [
+          {
+            type: "item",
+            label: t("apps.finder.contextMenu.open"),
+            onSelect: () => {
+              localStorage.setItem("ryos:app:finder:initial-path", "/Trash");
+              const finderApp = apps.find((app) => app.id === "finder");
+              if (finderApp) {
+                toggleApp(finderApp.id);
+              }
+              setContextMenuPos(null);
+              setContextMenuAppId(null);
+            },
+          },
+        ];
+      }
+      return [
+        {
+          type: "item",
+          label: t("apps.finder.contextMenu.open"),
+          onSelect: () => handleOpenApp(contextMenuAppId),
+        },
+      ];
+    } else {
+      const trashItems = getTrashItems();
+      const isTrashEmpty = trashItems.length === 0;
+
+      return [
+        {
+          type: "submenu",
+          label: t("apps.finder.contextMenu.sortBy"),
+          items: [
+            {
+              type: "radioGroup",
+              value: sortType,
+              onChange: (val) => setSortType(val as SortType),
+              items: [
+                { label: t("apps.finder.contextMenu.name"), value: "name" },
+                { label: t("apps.finder.contextMenu.kind"), value: "kind" },
+              ],
+            },
+          ],
+        },
+        { type: "separator" },
+        {
+          type: "item",
+          label: t("apps.finder.contextMenu.emptyTrash"),
+          onSelect: handleEmptyTrash,
+          disabled: isTrashEmpty,
+        },
+        { type: "separator" },
+        {
+          type: "item",
+          label: t("common.desktop.setWallpaper"),
+          onSelect: () => toggleApp("control-panels"),
+        },
+      ];
+    }
+  };
+
+  const isItemSelected = useCallback(
+    (itemId: DesktopItemId) => selectedItemIds.includes(itemId),
+    [selectedItemIds]
+  );
+
+  const renderedSelectionRect =
+    selectionRect && desktopRef.current
+      ? createSelectionRect(selectionRect.start, selectionRect.end)
+      : null;
+  const desktopBounds = desktopRef.current?.getBoundingClientRect();
+
+  const macintoshHdName = useMemo(
+    () =>
+      isXpTheme
+        ? t("common.desktop.myComputer")
+        : t("apps.finder.window.macintoshHd"),
+    [isXpTheme, t]
+  );
+
+  const handleShortcutDoubleClick = useCallback(
+    (shortcut: FileSystemItem, e: ReactMouseEvent<HTMLDivElement>) => {
+      e.stopPropagation();
+      const rect = e.currentTarget.getBoundingClientRect();
+      const launchOrigin: LaunchOriginRect = {
+        x: rect.left,
+        y: rect.top,
+        width: rect.width,
+        height: rect.height,
+      };
+      void handleAliasOpen(shortcut, launchOrigin);
+      clearSelection();
+    },
+    [handleAliasOpen, clearSelection]
+  );
+
+  const handleAppDoubleClick = useCallback(
+    (app: AnyApp, e: ReactMouseEvent<HTMLDivElement>) => {
+      e.stopPropagation();
+      const rect = e.currentTarget.getBoundingClientRect();
+      const launchOrigin: LaunchOriginRect = {
+        x: rect.left,
+        y: rect.top,
+        width: rect.width,
+        height: rect.height,
+      };
+      toggleApp(app.id, undefined, launchOrigin);
+      clearSelection();
+    },
+    [toggleApp, clearSelection]
+  );
+
+  const handleTrashDoubleClick = useCallback(
+    (e: ReactMouseEvent<HTMLDivElement>) => {
+      e.stopPropagation();
+      localStorage.setItem("ryos:app:finder:initial-path", "/Trash");
+      const finderApp = apps.find((app) => app.id === "finder");
+      if (finderApp) {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const launchOrigin: LaunchOriginRect = {
+          x: rect.left,
+          y: rect.top,
+          width: rect.width,
+          height: rect.height,
+        };
+        toggleApp(finderApp.id, undefined, launchOrigin);
+      }
+      clearSelection();
+    },
+    [apps, toggleApp, clearSelection]
+  );
+
+  const closeContextMenu = useCallback(() => {
+    setContextMenuPos(null);
+    setContextMenuAppId(null);
+    setContextMenuShortcutPath(null);
+  }, []);
+
+  return {
+    t,
+    desktopRef,
+    videoRef,
+    wallpaperSource,
+    isVideoWallpaper,
+    finalStyles,
+    longPressHandlers,
+    handleBlankMouseDown,
+    handleDesktopClick,
+    handleDragOver,
+    handleDragLeave,
+    handleDrop,
+    desktopContextMenuHandler: (e: ReactMouseEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      setContextMenuPos({ x: e.clientX, y: e.clientY });
+      setContextMenuAppId(null);
+      setContextMenuShortcutPath(null);
+      clearSelection();
+    },
+    isTauriApp,
+    isXpTheme,
+    isMacOSTheme,
+    currentTheme,
+    macintoshHdName,
+    trashName: t("common.menu.trash"),
+    trashIcon,
+    desktopShortcuts,
+    displayedApps,
+    getDisplayName,
+    getShortcutIcon,
+    isItemSelected,
+    handleDesktopItemClick,
+    handleFinderOpen,
+    handleIconContextMenu,
+    handleShortcutContextMenu,
+    handlePrefetchShortcut,
+    handleShortcutDoubleClick,
+    handleAppDoubleClick,
+    handleTrashDoubleClick,
+    contextMenuPos,
+    closeContextMenu,
+    getContextMenuItems,
+    renderedSelectionRect,
+    desktopBounds,
+    isEmptyTrashDialogOpen,
+    setIsEmptyTrashDialogOpen,
+    confirmEmptyTrash,
+  };
+}
