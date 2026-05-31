@@ -3,30 +3,14 @@
  * can be unit-tested without spinning up React.
  */
 
-const YOUTUBE_HOSTS = new Set([
-  "youtube.com",
-  "www.youtube.com",
-  "m.youtube.com",
-  "youtu.be",
-  "music.youtube.com",
-]);
+import {
+  isYouTubeHostname,
+  isYouTubeUrl as isYouTubeHostUrl,
+} from "@/utils/youtubeUrl";
 
-/**
- * Returns true iff `url` parses as a YouTube URL embeddable by ReactPlayer's
- * YouTube driver. Handles `youtu.be`, `youtube.com`, mobile / music subdomains,
- * and gracefully returns false for malformed URLs.
- *
- * Uses an explicit host allow-list (NOT `hostname.includes("youtube.com")`)
- * so spoofed hosts like `evil-youtube.com` or `youtube.com.attacker.test`
- * are rejected.
- */
+/** @see {@link isYouTubeHostUrl} in `@/utils/youtubeUrl` */
 export function isYouTubeUrl(url: string | undefined | null): boolean {
-  if (!url) return false;
-  try {
-    return YOUTUBE_HOSTS.has(new URL(url).hostname.toLowerCase());
-  } catch {
-    return false;
-  }
+  return isYouTubeHostUrl(url);
 }
 
 /**
@@ -46,7 +30,7 @@ export function parseYouTubeId(input: string | undefined | null): string | null 
   try {
     const url = new URL(trimmed);
     const hostname = url.hostname.toLowerCase();
-    if (!YOUTUBE_HOSTS.has(hostname)) return null;
+    if (!isYouTubeHostname(hostname)) return null;
 
     const v = url.searchParams.get("v");
     if (v && /^[a-zA-Z0-9_-]{11}$/.test(v)) return v;

@@ -24,10 +24,6 @@ export function sanitizeHtmlForStream(html: string): string {
     }
   );
 
-  sanitized = sanitized.replace(
-    /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
-    ""
-  );
   sanitized = sanitized.replace(/<link\b[^>]*>/gi, "");
   sanitized = sanitized.replace(/position\s*:\s*fixed/gi, "position: relative");
   sanitized = sanitized.replace(/position\s*:\s*sticky/gi, "position: relative");

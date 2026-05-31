@@ -1,7 +1,11 @@
+import {
+  isYouTubeHostname,
+  isYouTubeUrl as isYouTubeHostUrl,
+} from "@/utils/youtubeUrl";
+
 export function isYouTubeUrl(url: string): boolean {
-  return /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|\/ipod\/|\/karaoke\/)/.test(
-    url
-  );
+  if (/(?:\/ipod\/|\/karaoke\/)/.test(url)) return true;
+  return isYouTubeHostUrl(url);
 }
 
 export function extractYouTubeVideoId(url: string): string | null {
@@ -19,14 +23,15 @@ export function extractYouTubeVideoId(url: string): string | null {
       return validateId(match ? match[1] : null);
     }
 
-    if (url.includes("youtu.be/")) {
-      const match = url.match(/youtu\.be\/([^&\n?#]+)/);
-      return validateId(match ? match[1] : null);
+    const urlObj = new URL(url);
+    const hostname = urlObj.hostname.toLowerCase();
+
+    if (hostname === "youtu.be") {
+      const id = urlObj.pathname.slice(1).split("/")[0] ?? "";
+      return validateId(id || null);
     }
 
-    if (url.includes("youtube.com/")) {
-      const urlObj = new URL(url);
-
+    if (isYouTubeHostname(hostname)) {
       if (urlObj.pathname === "/watch") {
         const videoId = urlObj.searchParams.get("v");
         return validateId(videoId);
