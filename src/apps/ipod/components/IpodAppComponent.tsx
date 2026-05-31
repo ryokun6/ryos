@@ -977,7 +977,7 @@ export function IpodAppComponent({
                           onTogglePlay={togglePlay}
                           onPlayTrackInPlace={handleCoverFlowPlayInPlace}
                           groupAppleMusicAlbums={isAppleMusic}
-                          ipodMode
+                          ipodMode={false}
                         />
                       </Suspense>
                     </div>

@@ -2027,7 +2027,11 @@ export const CoverFlow = function CoverFlow(
           <motion.div
             className={cn(
               "absolute left-0 right-0 flex items-center justify-center gap-2",
-              isModernIpodCoverFlow ? "font-ipod-modern-ui" : "font-geneva-12",
+              isModernIpodCoverFlow
+                ? "font-ipod-modern-ui"
+                : ipodMode
+                  ? "font-geneva-12"
+                  : "font-os-ui",
               ipodMode ? "px-2" : "px-6"
             )}
             style={{
