@@ -1,3 +1,4 @@
+import type React from "react";
 import type { TFunction } from "i18next";
 import type { MotionValue } from "framer-motion";
 import { getAppIconPath, type AppId } from "@/config/appRegistry";
@@ -33,7 +34,10 @@ export interface DockOpenItemsProps {
   t: TFunction;
 }
 
-export function DockOpenItems({
+// Returns a flat array of keyed dock icons (not a wrapping component) so the
+// callers can spread them as DIRECT children of <AnimatePresence>/<LayoutGroup>.
+// See renderDockPinnedItems for why wrapping these would break animations.
+export function renderDockOpenItems({
   openItems,
   instances,
   mouseX,
@@ -52,20 +56,19 @@ export function DockOpenItems({
   handleNonPinnedDragStart,
   getFileItem,
   t,
-}: DockOpenItemsProps) {
-  return (
-    <>
-      {openItems.map((item) => {
-        if (item.type === "applet" && item.instanceId) {
-          const instance = instances[item.instanceId];
-          if (!instance) return null;
+}: DockOpenItemsProps): React.ReactNode[] {
+  return openItems
+    .map((item) => {
+      if (item.type === "applet" && item.instanceId) {
+        const instance = instances[item.instanceId];
+        if (!instance) return null;
 
-          const { icon, label, isEmoji } = getDockAppletInfo(
-            instance,
-            getFileItem,
-            t,
-          );
-          return (
+        const { icon, label, isEmoji } = getDockAppletInfo(
+          instance,
+          getFileItem,
+          t,
+        );
+        return (
             <DockIconButton
               key={item.instanceId}
               label={label}
@@ -127,7 +130,6 @@ export function DockOpenItems({
             intentPrefetchAppId={item.appId}
           />
         );
-      })}
-    </>
-  );
+    })
+    .filter(Boolean);
 }

@@ -27,8 +27,8 @@ import {
 } from "@/utils/dockRevealGesture";
 import { useDashboardShellInputDisabled } from "@/hooks/useDashboardShellInputDisabled";
 import { DOCK_BASE_BUTTON_SIZE } from "./dockConstants";
-import { DockPinnedItems } from "./DockPinnedItems";
-import { DockOpenItems } from "./DockOpenItems";
+import { renderDockPinnedItems } from "./DockPinnedItems";
+import { renderDockOpenItems } from "./DockOpenItems";
 import { computeDockOpenItems } from "./dockOpenList";
 import { DockApplicationsButton } from "./DockApplicationsButton";
 import { DockTrashButton } from "./DockTrashButton";
@@ -830,32 +830,32 @@ export function MacDock() {
         >
           <LayoutGroup>
             <AnimatePresence mode="popLayout" initial={false}>
-              <DockPinnedItems
-                pinnedItems={sanitizedPinnedItems}
-                externalDragIndex={externalDragIndex}
-                openAppsAllSet={openAppsAllSet}
-                instances={instances}
-                mouseX={mouseX}
-                effectiveMagnifyEnabled={effectiveMagnifyEnabled}
-                scaledButtonSize={scaledButtonSize}
-                iconRefsMap={iconRefsMap}
-                hasMounted={hasMounted}
-                seenIdsRef={seenIdsRef}
-                hoveredId={hoveredId}
-                isSwapping={isSwapping}
-                handleIconHover={handleIconHover}
-                handleIconLeave={handleIconLeave}
-                draggingItemId={draggingItemId}
-                isDraggedOutside={isDraggedOutside}
-                handleItemDragStart={handleItemDragStart}
-                handleItemDragEnd={handleItemDragEnd}
-                handleItemDragOver={handleItemDragOver}
-                handleAppContextMenu={handleAppContextMenu}
-                focusOrLaunchFinder={focusOrLaunchFinder}
-                focusOrLaunchApp={focusOrLaunchApp}
-                getFileItem={getFileItem}
-                launchApp={launchApp}
-              />
+              {renderDockPinnedItems({
+                pinnedItems: sanitizedPinnedItems,
+                externalDragIndex,
+                openAppsAllSet,
+                instances,
+                mouseX,
+                effectiveMagnifyEnabled,
+                scaledButtonSize,
+                iconRefsMap,
+                hasMounted,
+                seenIdsRef,
+                hoveredId,
+                isSwapping,
+                handleIconHover,
+                handleIconLeave,
+                draggingItemId,
+                isDraggedOutside,
+                handleItemDragStart,
+                handleItemDragEnd,
+                handleItemDragOver,
+                handleAppContextMenu,
+                focusOrLaunchFinder,
+                focusOrLaunchApp,
+                getFileItem,
+                launchApp,
+              })}
 
               {/* Divider between pinned and non-pinned apps */}
               {openItems.length > 0 && (
@@ -872,26 +872,26 @@ export function MacDock() {
                 />
               )}
 
-              <DockOpenItems
-                openItems={openItems}
-                instances={instances}
-                mouseX={mouseX}
-                effectiveMagnifyEnabled={effectiveMagnifyEnabled}
-                scaledButtonSize={scaledButtonSize}
-                hasMounted={hasMounted}
-                seenIdsRef={seenIdsRef}
-                hoveredId={hoveredId}
-                isSwapping={isSwapping}
-                handleIconHover={handleIconHover}
-                handleIconLeave={handleIconLeave}
-                handleAppContextMenu={handleAppContextMenu}
-                restoreInstance={restoreInstance}
-                bringInstanceToForeground={bringInstanceToForeground}
-                focusMostRecentInstanceOfApp={focusMostRecentInstanceOfApp}
-                handleNonPinnedDragStart={handleNonPinnedDragStart}
-                getFileItem={getFileItem}
-                t={t}
-              />
+              {renderDockOpenItems({
+                openItems,
+                instances,
+                mouseX,
+                effectiveMagnifyEnabled,
+                scaledButtonSize,
+                hasMounted,
+                seenIdsRef,
+                hoveredId,
+                isSwapping,
+                handleIconHover,
+                handleIconLeave,
+                handleAppContextMenu,
+                restoreInstance,
+                bringInstanceToForeground,
+                focusMostRecentInstanceOfApp,
+                handleNonPinnedDragStart,
+                getFileItem,
+                t,
+              })}
 
               {/* Divider between open apps and Applications/Trash */}
               <DockDivider 
@@ -905,6 +905,7 @@ export function MacDock() {
               />
 
               <DockApplicationsButton
+                key="__applications__"
                 dockContainerRef={dockContainerRef}
                 setApplicationsContextMenuPos={setApplicationsContextMenuPos}
                 focusFinderAtPathOrLaunch={focusFinderAtPathOrLaunch}
@@ -921,6 +922,7 @@ export function MacDock() {
               />
 
               <DockTrashButton
+                key="__trash__"
                 dockContainerRef={dockContainerRef}
                 setTrashContextMenuPos={setTrashContextMenuPos}
                 focusFinderAtPathOrLaunch={focusFinderAtPathOrLaunch}
