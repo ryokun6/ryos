@@ -3,8 +3,7 @@ import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { AppProps } from "@/apps/base/types";
 import { AppWindowShell } from "@/components/shared/AppWindowShell";
-import { HelpDialog } from "@/components/dialogs/HelpDialog";
-import { AboutDialog } from "@/components/dialogs/AboutDialog";
+import { AppHelpAboutDialogs } from "@/components/shared/AppHelpAboutDialogs";
 import { appMetadata } from "../metadata";
 import { useDashboardLogic } from "../hooks/useDashboardLogic";
 import { WidgetChrome } from "@/components/layout/dashboard/WidgetChrome";
@@ -385,17 +384,14 @@ export function DashboardAppComponent({
       menuBar={menuBar}
       trailing={
         <>
-          <HelpDialog
-            isOpen={isHelpDialogOpen}
-            onOpenChange={setIsHelpDialogOpen}
+          <AppHelpAboutDialogs
             appId="dashboard"
             helpItems={translatedHelpItems}
-          />
-          <AboutDialog
-            isOpen={isAboutDialogOpen}
-            onOpenChange={setIsAboutDialogOpen}
             metadata={appMetadata}
-            appId="dashboard"
+            isHelpOpen={isHelpDialogOpen}
+            onHelpOpenChange={setIsHelpDialogOpen}
+            isAboutOpen={isAboutDialogOpen}
+            onAboutOpenChange={setIsAboutDialogOpen}
           />
         </>
       }

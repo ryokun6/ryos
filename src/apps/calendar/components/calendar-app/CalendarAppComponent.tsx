@@ -3,8 +3,7 @@ import { AppProps } from "@/apps/base/types";
 import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { CalendarMenuBar } from "../CalendarMenuBar";
 import { requestCloudSyncDomainCheck } from "@/utils/cloudSyncEvents";
-import { HelpDialog } from "@/components/dialogs/HelpDialog";
-import { AboutDialog } from "@/components/dialogs/AboutDialog";
+import { AppHelpAboutDialogs } from "@/components/shared/AppHelpAboutDialogs";
 import { appMetadata } from "../../metadata";
 import { useCalendarLogic } from "../../hooks/useCalendarLogic";
 import { DEFAULT_TIME_GRID_HOUR_HEIGHT } from "../../hooks/useTimeScaleGestures";
@@ -278,8 +277,15 @@ export function CalendarAppComponent({
       }}
       trailing={
         <>
-          <HelpDialog isOpen={isHelpDialogOpen} onOpenChange={setIsHelpDialogOpen} appId="calendar" helpItems={translatedHelpItems} />
-          <AboutDialog isOpen={isAboutDialogOpen} onOpenChange={setIsAboutDialogOpen} metadata={appMetadata} appId="calendar" />
+          <AppHelpAboutDialogs
+            appId="calendar"
+            helpItems={translatedHelpItems}
+            metadata={appMetadata}
+            isHelpOpen={isHelpDialogOpen}
+            onHelpOpenChange={setIsHelpDialogOpen}
+            isAboutOpen={isAboutDialogOpen}
+            onAboutOpenChange={setIsAboutDialogOpen}
+          />
           <input
             ref={fileInputRef}
             type="file"

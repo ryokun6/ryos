@@ -1,6 +1,7 @@
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useTextOverflow } from "@/hooks/useTextOverflow";
 import {
   MARQUEE_INITIAL,
   MARQUEE_TITLE_ANIMATE,
@@ -35,19 +36,7 @@ export const LcdAnimatedTitle = memo(function LcdAnimatedTitle({
 
   const containerRef = useRef<HTMLDivElement>(null);
   const measureRef = useRef<HTMLSpanElement>(null);
-  const [overflows, setOverflows] = useState(false);
-  useEffect(() => {
-    const container = containerRef.current;
-    const measure = measureRef.current;
-    if (!container || !measure) return;
-    const check = () => {
-      setOverflows(measure.scrollWidth > container.clientWidth + 1);
-    };
-    check();
-    const ro = new ResizeObserver(check);
-    ro.observe(container);
-    return () => ro.disconnect();
-  }, [title]);
+  const overflows = useTextOverflow(containerRef, measureRef, [title]);
 
   const showStaticFade = overflows && !isPlaying;
 

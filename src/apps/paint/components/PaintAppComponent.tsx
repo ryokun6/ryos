@@ -6,8 +6,7 @@ import { PaintPatternPalette } from "./PaintPatternPalette";
 import { PaintStrokeSettings } from "./PaintStrokeSettings";
 import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { AppProps, PaintInitialData } from "../../base/types";
-import { HelpDialog } from "@/components/dialogs/HelpDialog";
-import { AboutDialog } from "@/components/dialogs/AboutDialog";
+import { AppHelpAboutDialogs } from "@/components/shared/AppHelpAboutDialogs";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { InputDialog } from "@/components/dialogs/InputDialog";
 import { appMetadata } from "..";
@@ -133,17 +132,14 @@ export const PaintAppComponent: React.FC<AppProps<PaintInitialData>> = ({
             value={saveFileName}
             onChange={setSaveFileName}
           />
-          <HelpDialog
-            isOpen={isHelpDialogOpen}
-            onOpenChange={setIsHelpDialogOpen}
+          <AppHelpAboutDialogs
+            appId="paint"
             helpItems={translatedHelpItems}
-            appId="paint"
-          />
-          <AboutDialog
-            isOpen={isAboutDialogOpen}
-            onOpenChange={setIsAboutDialogOpen}
             metadata={appMetadata}
-            appId="paint"
+            isHelpOpen={isHelpDialogOpen}
+            onHelpOpenChange={setIsHelpDialogOpen}
+            isAboutOpen={isAboutDialogOpen}
+            onAboutOpenChange={setIsAboutDialogOpen}
           />
           <ConfirmDialog
             isOpen={isConfirmNewDialogOpen}

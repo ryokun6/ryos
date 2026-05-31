@@ -1,6 +1,5 @@
 import { InputDialog } from "@/components/dialogs/InputDialog";
-import { HelpDialog } from "@/components/dialogs/HelpDialog";
-import { AboutDialog } from "@/components/dialogs/AboutDialog";
+import { AppHelpAboutDialogs } from "@/components/shared/AppHelpAboutDialogs";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import FutureSettingsDialog from "@/components/dialogs/FutureSettingsDialog";
 import TimeMachineView from "../TimeMachineView";
@@ -77,17 +76,14 @@ export function InternetExplorerAppDialogs({
         value={newFavoriteTitle}
         onChange={setNewFavoriteTitle}
       />
-      <HelpDialog
-        isOpen={isHelpDialogOpen}
-        onOpenChange={setHelpDialogOpen}
+      <AppHelpAboutDialogs
+        appId="internet-explorer"
         helpItems={translatedHelpItems}
-        appId="internet-explorer"
-      />
-      <AboutDialog
-        isOpen={isAboutDialogOpen}
-        onOpenChange={setAboutDialogOpen}
         metadata={appMetadata}
-        appId="internet-explorer"
+        isHelpOpen={isHelpDialogOpen}
+        onHelpOpenChange={setHelpDialogOpen}
+        isAboutOpen={isAboutDialogOpen}
+        onAboutOpenChange={setAboutDialogOpen}
       />
       <ConfirmDialog
         isOpen={isClearFavoritesDialogOpen}

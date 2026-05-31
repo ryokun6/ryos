@@ -2,8 +2,7 @@ import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AppProps } from "@/apps/base/types";
 import { AppWindowShell } from "@/components/shared/AppWindowShell";
-import { HelpDialog } from "@/components/dialogs/HelpDialog";
-import { AboutDialog } from "@/components/dialogs/AboutDialog";
+import { AppHelpAboutDialogs } from "@/components/shared/AppHelpAboutDialogs";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { appMetadata } from "../metadata";
 import { motion } from "framer-motion";
@@ -412,17 +411,14 @@ export function InfinitePcAppComponent({
             ) : null}
           </div>
         </div>
-        <HelpDialog
-          isOpen={isHelpDialogOpen}
-          onOpenChange={setIsHelpDialogOpen}
+        <AppHelpAboutDialogs
+          appId="pc"
           helpItems={translatedHelpItems}
-          appId="pc"
-        />
-        <AboutDialog
-          isOpen={isAboutDialogOpen}
-          onOpenChange={setIsAboutDialogOpen}
           metadata={appMetadata}
-          appId="pc"
+          isHelpOpen={isHelpDialogOpen}
+          onHelpOpenChange={setIsHelpDialogOpen}
+          isAboutOpen={isAboutDialogOpen}
+          onAboutOpenChange={setIsAboutDialogOpen}
         />
         <ConfirmDialog
           isOpen={isResetDialogOpen}

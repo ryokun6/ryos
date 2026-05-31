@@ -1,6 +1,6 @@
 import type { ComponentProps } from "react";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
-import { AboutDialog } from "@/components/dialogs/AboutDialog";
+import { AppHelpAboutDialogs } from "@/components/shared/AppHelpAboutDialogs";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { InputDialog } from "@/components/dialogs/InputDialog";
 import { LoginDialog } from "@/components/dialogs/LoginDialog";
@@ -107,17 +107,14 @@ export function FinderAppDialogs({
 }: FinderAppDialogsProps) {
   return (
     <>
-      <HelpDialog
-        isOpen={isHelpDialogOpen}
-        onOpenChange={setIsHelpDialogOpen}
+      <AppHelpAboutDialogs
         appId="finder"
         helpItems={translatedHelpItems}
-      />
-      <AboutDialog
-        isOpen={isAboutDialogOpen}
-        onOpenChange={setIsAboutDialogOpen}
         metadata={appMetadata}
-        appId="finder"
+        isHelpOpen={isHelpDialogOpen}
+        onHelpOpenChange={setIsHelpDialogOpen}
+        isAboutOpen={isAboutDialogOpen}
+        onAboutOpenChange={setIsAboutDialogOpen}
       />
       <ConfirmDialog
         isOpen={isEmptyTrashDialogOpen}

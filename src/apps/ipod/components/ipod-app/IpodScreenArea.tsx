@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Suspense } from "react";
 import { IPOD_MODERN_SCREEN_HEIGHT_PX } from "../../constants";
-import { IpodScreen } from "../IpodScreen";
+import { IpodScreen } from "../ipod-screen/IpodScreen";
 import type { IpodAppController } from "./useIpodAppController";
 import { useIpodScreenLongPressHandlers } from "./useIpodScreenLongPressHandlers";
 import { BrickGame, CoverFlow, MusicQuiz } from "./ipodLazyImports";

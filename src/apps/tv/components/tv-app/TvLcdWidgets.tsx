@@ -1,11 +1,7 @@
-import {
-  memo,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { memo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useTextOverflow } from "@/hooks/useTextOverflow";
 import {
   MARQUEE_INITIAL,
   MARQUEE_NAME_TRANSITION,
@@ -72,20 +68,7 @@ export const ScrollingChannelName = memo(function ScrollingChannelName({
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLSpanElement>(null);
-  const [overflows, setOverflows] = useState(false);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    const content = contentRef.current;
-    if (!container || !content) return;
-    const check = () => {
-      setOverflows(content.scrollWidth > container.clientWidth + 1);
-    };
-    check();
-    const ro = new ResizeObserver(check);
-    ro.observe(container);
-    return () => ro.disconnect();
-  }, [name]);
+  const overflows = useTextOverflow(containerRef, contentRef, [name]);
 
   const shouldAnimate = overflows && isPlaying;
   const marqueeAnimate = shouldAnimate

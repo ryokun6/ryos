@@ -1,5 +1,5 @@
 import { BaseApp, IpodInitialData } from "../base/types";
-import { IpodAppComponent } from "./components/IpodAppComponent";
+import { IpodAppComponent } from "./components/ipod-app/IpodAppComponent";
 
 // Re-export metadata from separate file to avoid eager loading of components
 export { appMetadata, helpItems } from "./metadata";

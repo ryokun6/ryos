@@ -15,13 +15,15 @@ import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { LyricsAlignment, LyricsFont, DisplayMode } from "@/types/lyrics";
 import { useOffline } from "@/hooks/useOffline";
 import { useListenSync } from "@/hooks/useListenSync";
-import { TRANSLATION_LANGUAGES, getYouTubeVideoId, formatKugouImageUrl } from "@/apps/ipod/constants";
+import { parseYouTubeVideoId, youtubeThumbnailUrl } from "@/utils/youtubeUrl";
+import { formatKugouImageUrl } from "@/utils/coverArt";
+import { TRANSLATION_LANGUAGES } from "@/utils/lyricsTranslation";
 import { useLibraryUpdateChecker } from "@/apps/ipod/hooks/useLibraryUpdateChecker";
 import { saveSongMetadataFromTrack } from "@/utils/songMetadataCache";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useListenSessionStore } from "@/stores/useListenSessionStore";
 import type { KaraokeInitialData } from "../../base/types";
-import type { CoverFlowRef } from "@/apps/ipod/components/CoverFlow";
+import type { CoverFlowRef } from "@/apps/ipod/components/cover-flow/types";
 import type { SongSearchResult } from "@/components/dialogs/SongSearchDialog";
 import { helpItems } from "..";
 import { onAppUpdate } from "@/utils/appEventBus";
@@ -541,10 +543,8 @@ export function useKaraokeLogic({
   // Cover URL for paused state overlay
   const coverUrl = useMemo(() => {
     if (!currentTrack) return null;
-    const videoId = getYouTubeVideoId(currentTrack.url);
-    const youtubeThumbnail = videoId
-      ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
-      : null;
+    const videoId = parseYouTubeVideoId(currentTrack.url);
+    const youtubeThumbnail = videoId ? youtubeThumbnailUrl(videoId) : null;
     return formatKugouImageUrl(currentTrack.cover, 800) ?? youtubeThumbnail;
   }, [currentTrack]);
 
@@ -1401,7 +1401,7 @@ export function useKaraokeLogic({
   const handleAddUrl = useCallback(
     async (url: string) => {
       if (listenRemoteOnly) {
-        const id = getYouTubeVideoId(url);
+        const id = parseYouTubeVideoId(url);
         if (!id) {
           toast.error("Only YouTube links can be queued remotely");
           return;

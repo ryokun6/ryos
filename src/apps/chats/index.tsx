@@ -1,5 +1,5 @@
 import { BaseApp } from "../base/types";
-import { ChatsAppComponent } from "./components/ChatsAppComponent";
+import { ChatsAppComponent } from "./components/chats-app/ChatsAppComponent";
 
 // Re-export metadata from separate file to avoid eager loading of components
 export { appMetadata, helpItems } from "./metadata";

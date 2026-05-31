@@ -1,4 +1,3 @@
-import { MenuBar } from "@/components/layout/MenuBar";
 import {
   MenubarMenu,
   MenubarTrigger,
@@ -9,8 +8,7 @@ import {
   MenubarSubTrigger,
   MenubarSubContent,
 } from "@/components/ui/menubar";
-import { AppMenuBarHelpMenu } from "@/components/shared/menubar/AppMenuBarHelpMenu";
-import { AppShareItemDialog } from "@/components/shared/menubar/AppShareItemDialog";
+import { AppMenuBarShell } from "@/components/shared/menubar/AppMenuBarShell";
 import {
   MENUBAR_ITEM_CLASS,
   MENUBAR_SEPARATOR_CLASS,
@@ -62,7 +60,18 @@ export function StickiesMenuBar({
   } = useAppMenuBarChrome("stickies");
 
   return (
-    <MenuBar inWindowFrame={isXpTheme}>
+    <AppMenuBarShell
+      isXpTheme={isXpTheme}
+      isMacOsxTheme={isMacOsxTheme}
+      appId={appId}
+      appName={appName}
+      isShareDialogOpen={isShareDialogOpen}
+      setIsShareDialogOpen={setIsShareDialogOpen}
+      helpItemLabel={t("apps.stickies.menu.help")}
+      aboutItemLabel={t("apps.stickies.menu.about")}
+      onShowHelp={onShowHelp}
+      onShowAbout={onShowAbout}
+    >
       <MenubarMenu>
         <MenubarTrigger className={MENUBAR_TRIGGER_CLASS}>
           {t("common.menu.file")}
@@ -131,21 +140,6 @@ export function StickiesMenuBar({
           </MenubarItem>
         </MenubarContent>
       </MenubarMenu>
-
-      <AppMenuBarHelpMenu
-        helpItemLabel={t("apps.stickies.menu.help")}
-        aboutItemLabel={t("apps.stickies.menu.about")}
-        isMacOsxTheme={isMacOsxTheme}
-        onShowHelp={onShowHelp}
-        onShowAbout={onShowAbout}
-        onOpenShareDialog={() => setIsShareDialogOpen(true)}
-      />
-      <AppShareItemDialog
-        appId={appId}
-        appName={appName}
-        isOpen={isShareDialogOpen}
-        onClose={() => setIsShareDialogOpen(false)}
-      />
-    </MenuBar>
+    </AppMenuBarShell>
   );
 }

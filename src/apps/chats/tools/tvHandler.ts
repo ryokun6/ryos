@@ -20,6 +20,7 @@ import {
 import type { Video } from "@/stores/useVideoStore";
 import { isYouTubeUrl, parseYouTubeId } from "@/apps/tv/utils";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { fetchYouTubeOembed } from "@/utils/youtubeMetadata";
 import { getApiUrl } from "@/utils/platform";
 import { createShortIdMap, resolveId, type ShortIdMap } from "./helpers";
 
@@ -80,21 +81,11 @@ const extractVideoId = (input: string): string | null => parseYouTubeId(input);
 const fetchVideoMetadata = async (
   videoId: string
 ): Promise<{ title: string; artist?: string }> => {
-  const youtubeUrl = `https://www.youtube.com/watch?v=${videoId}`;
   try {
-    const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(
-      youtubeUrl
-    )}&format=json`;
-    const res = await abortableFetch(oembedUrl, {
-      timeout: 12000,
-      throwOnHttpError: false,
-      credentials: "omit",
-      retry: { maxAttempts: 1, initialDelayMs: 250 },
-    });
-    if (res.ok) {
-      const data = (await res.json()) as { title?: string; author_name?: string };
-      const rawTitle = data.title || `Video ID: ${videoId}`;
-      const authorName = data.author_name;
+    const oembed = await fetchYouTubeOembed(videoId);
+    if (oembed.ok) {
+      const rawTitle = oembed.rawTitle || `Video ID: ${videoId}`;
+      const authorName = oembed.authorName;
 
       // Best-effort AI title parse for cleaner title/artist split — if it
       // fails, we just keep the oEmbed values (still better than nothing).

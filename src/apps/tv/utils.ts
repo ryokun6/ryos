@@ -4,8 +4,8 @@
  */
 
 import {
-  isYouTubeHostname,
   isYouTubeUrl as isYouTubeHostUrl,
+  parseYouTubeVideoId,
 } from "@/utils/youtubeUrl";
 
 /** @see {@link isYouTubeHostUrl} in `@/utils/youtubeUrl` */
@@ -13,38 +13,9 @@ export function isYouTubeUrl(url: string | undefined | null): boolean {
   return isYouTubeHostUrl(url);
 }
 
-/**
- * Extract a YouTube video id from a raw 11-char id or any supported
- * YouTube URL (watch, youtu.be, embed, shorts, v/). Returns null for
- * unsupported hosts or invalid input.
- *
- * Host validation uses the same exact-match allow-list as `isYouTubeUrl`,
- * so substring-confusable hosts like `evil-youtube.com` cannot slip
- * through.
- */
+/** @see {@link parseYouTubeVideoId} in `@/utils/youtubeUrl` */
 export function parseYouTubeId(input: string | undefined | null): string | null {
-  if (!input) return null;
-  const trimmed = input.trim();
-  if (!trimmed) return null;
-  if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) return trimmed;
-  try {
-    const url = new URL(trimmed);
-    const hostname = url.hostname.toLowerCase();
-    if (!isYouTubeHostname(hostname)) return null;
-
-    const v = url.searchParams.get("v");
-    if (v && /^[a-zA-Z0-9_-]{11}$/.test(v)) return v;
-    if (hostname === "youtu.be") {
-      const id = url.pathname.slice(1).split("/")[0] ?? "";
-      return /^[a-zA-Z0-9_-]{11}$/.test(id) ? id : null;
-    }
-    const m = url.pathname.match(
-      /\/(?:embed\/|v\/|shorts\/)?([a-zA-Z0-9_-]{11})/
-    );
-    return m ? m[1] : null;
-  } catch {
-    return null;
-  }
+  return parseYouTubeVideoId(input);
 }
 
 /**

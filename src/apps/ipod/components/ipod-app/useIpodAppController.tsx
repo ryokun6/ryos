@@ -1,9 +1,13 @@
-import { useCallback, useMemo } from "react";
+import { useCallback } from "react";
 import type { AppProps, IpodInitialData } from "@/apps/base/types";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { DisplayMode } from "@/types/lyrics";
-import { IpodMenuBar } from "../IpodMenuBar";
+import {
+  useDisplayModeOptions,
+  useDisplayModeSelect,
+} from "@/hooks/useDisplayModeMenu";
+import { IpodMenuBar } from "../ipod-menu-bar/IpodMenuBar";
 import { useIpodLogic } from "../../hooks/useIpodLogic";
 
 export type UseIpodAppControllerArgs = Pick<
@@ -66,45 +70,16 @@ export function useIpodAppController({
       ? DisplayMode.Cover
       : displayMode;
 
-  const displayModeOptions = useMemo(
-    () => {
-      const options = [
-        { value: DisplayMode.Video, label: t("apps.ipod.menu.displayVideo") },
-        { value: DisplayMode.Mesh, label: t("apps.ipod.menu.displayGradient") },
-        { value: DisplayMode.Water, label: t("apps.ipod.menu.displayWater") },
-        { value: DisplayMode.Shader, label: t("apps.ipod.menu.displayShader") },
-        {
-          value: DisplayMode.Landscapes,
-          label: t("apps.ipod.menu.displayLandscapes"),
-        },
-        { value: DisplayMode.Cover, label: t("apps.ipod.menu.displayCover") },
-      ];
+  const displayModeOptions = useDisplayModeOptions(t, {
+    hideVideoOption: isAppleMusic,
+  });
 
-      return isAppleMusic
-        ? options.filter((option) => option.value !== DisplayMode.Video)
-        : options;
-    },
-    [isAppleMusic, t]
-  );
-
-  const handleDisplayModeSelect = useCallback(
-    (value: DisplayMode) => {
-      const nextMode =
-        isAppleMusic && value === DisplayMode.Video ? DisplayMode.Cover : value;
-      setDisplayMode(nextMode);
-      const labels: Record<DisplayMode, string> = {
-        [DisplayMode.Video]: t("apps.ipod.menu.displayVideo"),
-        [DisplayMode.Cover]: t("apps.ipod.menu.displayCover"),
-        [DisplayMode.Landscapes]: t("apps.ipod.menu.displayLandscapes"),
-        [DisplayMode.Shader]: t("apps.ipod.menu.displayShader"),
-        [DisplayMode.Mesh]: t("apps.ipod.menu.displayGradient"),
-        [DisplayMode.Water]: t("apps.ipod.menu.displayWater"),
-      };
-      const label = labels[nextMode] ?? nextMode;
-      showStatus(`${t("apps.ipod.menu.display", "Display")}: ${label}`);
-    },
-    [isAppleMusic, setDisplayMode, showStatus, t]
-  );
+  const handleDisplayModeSelect = useDisplayModeSelect({
+    t,
+    setDisplayMode,
+    showStatus,
+    coerceVideoToCover: isAppleMusic,
+  });
 
   const menuBar = (
     <IpodMenuBar

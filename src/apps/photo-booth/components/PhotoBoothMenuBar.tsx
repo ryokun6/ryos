@@ -1,4 +1,3 @@
-import { MenuBar } from "@/components/layout/MenuBar";
 import {
   MenubarMenu,
   MenubarTrigger,
@@ -7,8 +6,8 @@ import {
   MenubarSeparator,
   MenubarCheckboxItem,
 } from "@/components/ui/menubar";
-import { AppMenuBarHelpMenu } from "@/components/shared/menubar/AppMenuBarHelpMenu";
-import { AppShareItemDialog } from "@/components/shared/menubar/AppShareItemDialog";
+import { AppMenuBarShell } from "@/components/shared/menubar/AppMenuBarShell";
+import { MENUBAR_SEPARATOR_CLASS } from "@/components/shared/menubar/menubarStyles";
 import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
 import { useTranslation } from "react-i18next";
 
@@ -56,7 +55,18 @@ export function PhotoBoothMenuBar({
   } = useAppMenuBarChrome("photo-booth");
 
   return (
-    <MenuBar inWindowFrame={isXpTheme}>
+    <AppMenuBarShell
+      isXpTheme={isXpTheme}
+      isMacOsxTheme={isMacOsxTheme}
+      appId={appId}
+      appName={appName}
+      isShareDialogOpen={isShareDialogOpen}
+      setIsShareDialogOpen={setIsShareDialogOpen}
+      helpItemLabel={t("apps.photo-booth.menu.photoBoothHelp")}
+      aboutItemLabel={t("apps.photo-booth.menu.aboutPhotoBooth")}
+      onShowHelp={onShowHelp}
+      onShowAbout={onShowAbout}
+    >
       {/* File Menu */}
       <MenubarMenu>
         <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
@@ -69,14 +79,14 @@ export function PhotoBoothMenuBar({
           >
             {t("apps.photo-booth.menu.exportPhotos")}
           </MenubarItem>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <MenubarItem
             onClick={onClearPhotos}
             className="text-md h-6 px-3"
           >
             {t("apps.photo-booth.menu.clearAllPhotos")}
           </MenubarItem>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <MenubarItem
             onClick={onClose}
             className="text-md h-6 px-3"
@@ -125,21 +135,6 @@ export function PhotoBoothMenuBar({
           ))}
         </MenubarContent>
       </MenubarMenu>
-
-      <AppMenuBarHelpMenu
-        helpItemLabel={t("apps.photo-booth.menu.photoBoothHelp")}
-        aboutItemLabel={t("apps.photo-booth.menu.aboutPhotoBooth")}
-        isMacOsxTheme={isMacOsxTheme}
-        onShowHelp={onShowHelp}
-        onShowAbout={onShowAbout}
-        onOpenShareDialog={() => setIsShareDialogOpen(true)}
-      />
-      <AppShareItemDialog
-        appId={appId}
-        appName={appName}
-        isOpen={isShareDialogOpen}
-        onClose={() => setIsShareDialogOpen(false)}
-      />
-    </MenuBar>
+    </AppMenuBarShell>
   );
 }

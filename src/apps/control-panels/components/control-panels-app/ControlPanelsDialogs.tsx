@@ -1,5 +1,4 @@
-import { HelpDialog } from "@/components/dialogs/HelpDialog";
-import { AboutDialog } from "@/components/dialogs/AboutDialog";
+import { AppHelpAboutDialogs } from "@/components/shared/AppHelpAboutDialogs";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { LoginDialog } from "@/components/dialogs/LoginDialog";
 import { ChangePasswordDialog } from "@/components/dialogs/ChangePasswordDialog";
@@ -151,17 +150,14 @@ export function ControlPanelsDialogs(props: ControlPanelsDialogsProps) {
 
   return (
     <>
-      <HelpDialog
-        isOpen={isHelpDialogOpen}
-        onOpenChange={setIsHelpDialogOpen}
+      <AppHelpAboutDialogs
+        appId="control-panels"
         helpItems={translatedHelpItems}
-        appId="control-panels"
-      />
-      <AboutDialog
-        isOpen={isAboutDialogOpen}
-        onOpenChange={setIsAboutDialogOpen}
         metadata={appMetadata}
-        appId="control-panels"
+        isHelpOpen={isHelpDialogOpen}
+        onHelpOpenChange={setIsHelpDialogOpen}
+        isAboutOpen={isAboutDialogOpen}
+        onAboutOpenChange={setIsAboutDialogOpen}
       />
       <ConfirmDialog
         isOpen={isConfirmResetOpen}

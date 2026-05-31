@@ -1,5 +1,4 @@
-import { HelpDialog } from "@/components/dialogs/HelpDialog";
-import { AboutDialog } from "@/components/dialogs/AboutDialog";
+import { AppHelpAboutDialogs } from "@/components/shared/AppHelpAboutDialogs";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { LyricsSearchDialog } from "@/components/dialogs/LyricsSearchDialog";
@@ -50,17 +49,14 @@ export function KaraokeAppDialogs({ c }: KaraokeAppDialogsProps) {
 
   return (
     <>
-      <HelpDialog
-        isOpen={isHelpDialogOpen}
-        onOpenChange={setIsHelpDialogOpen}
+      <AppHelpAboutDialogs
+        appId="karaoke"
         helpItems={translatedHelpItems}
-        appId="karaoke"
-      />
-      <AboutDialog
-        isOpen={isAboutDialogOpen}
-        onOpenChange={setIsAboutDialogOpen}
         metadata={appMetadata}
-        appId="karaoke"
+        isHelpOpen={isHelpDialogOpen}
+        onHelpOpenChange={setIsHelpDialogOpen}
+        isAboutOpen={isAboutDialogOpen}
+        onAboutOpenChange={setIsAboutDialogOpen}
       />
       <ConfirmDialog
         isOpen={isConfirmClearOpen}

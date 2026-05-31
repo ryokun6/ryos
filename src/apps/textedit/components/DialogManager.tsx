@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { HelpDialog } from "@/components/dialogs/HelpDialog";
-import { AboutDialog } from "@/components/dialogs/AboutDialog";
+import { AppHelpAboutDialogs } from "@/components/shared/AppHelpAboutDialogs";
 import { InputDialog } from "@/components/dialogs/InputDialog";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { appMetadata, helpItems } from "..";
@@ -127,18 +126,14 @@ export function DialogManager({
         ]}
       />
 
-      <HelpDialog
-        isOpen={isHelpDialogOpen}
-        onOpenChange={setIsHelpDialogOpen}
+      <AppHelpAboutDialogs
+        appId="textedit"
         helpItems={translatedHelpItems}
-        appId="textedit"
-      />
-
-      <AboutDialog
-        isOpen={isAboutDialogOpen}
-        onOpenChange={setIsAboutDialogOpen}
         metadata={appMetadata}
-        appId="textedit"
+        isHelpOpen={isHelpDialogOpen}
+        onHelpOpenChange={setIsHelpDialogOpen}
+        isAboutOpen={isAboutDialogOpen}
+        onAboutOpenChange={setIsAboutDialogOpen}
       />
     </>
   );

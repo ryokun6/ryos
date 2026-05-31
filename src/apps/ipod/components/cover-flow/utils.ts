@@ -2,6 +2,7 @@ import {
   getYouTubeVideoId,
   formatKugouImageUrl,
 } from "../../constants";
+import { youtubeThumbnailUrl } from "@/utils/youtubeUrl";
 import type { Track } from "@/stores/useIpodStore";
 import type { CoverFlowItem } from "./types";
 
@@ -29,7 +30,7 @@ export function resolveCoverUrl(
   if (!track) return null;
   const videoId = track.url ? getYouTubeVideoId(track.url) : null;
   const youtubeThumbnail = videoId
-    ? `https://img.youtube.com/vi/${videoId}/${ipodMode ? "mqdefault" : "hqdefault"}.jpg`
+    ? youtubeThumbnailUrl(videoId, ipodMode ? "mqdefault" : "hqdefault")
     : null;
   const kugouImageSize = ipodMode ? 400 : 800;
   return track.source === "appleMusic"

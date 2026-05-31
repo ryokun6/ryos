@@ -38,7 +38,7 @@ const defaultWindowConstraints: WindowConstraints = {
 
 // Critical apps (load immediately for perceived performance)
 // Finder is critical - users see it on desktop
-import { FinderAppComponent } from "@/apps/finder/components/FinderAppComponent";
+import { FinderAppComponent } from "@/apps/finder/components/finder-app/FinderAppComponent";
 
 // Lazy-loaded apps (loaded on-demand when opened)
 // Each uses a cache key to maintain stable references across HMR
@@ -48,17 +48,17 @@ const LazyTextEditApp = createLazyComponent<unknown>(
 );
 
 const LazyInternetExplorerApp = createLazyComponent<InternetExplorerInitialData>(
-  () => import("@/apps/internet-explorer/components/InternetExplorerAppComponent").then(m => ({ default: m.InternetExplorerAppComponent })),
+  () => import("@/apps/internet-explorer/components/internet-explorer-app/InternetExplorerAppComponent").then(m => ({ default: m.InternetExplorerAppComponent })),
   "internet-explorer"
 );
 
 const LazyChatsApp = createLazyComponent<unknown>(
-  () => import("@/apps/chats/components/ChatsAppComponent").then(m => ({ default: m.ChatsAppComponent })),
+  () => import("@/apps/chats/components/chats-app/ChatsAppComponent").then(m => ({ default: m.ChatsAppComponent })),
   "chats"
 );
 
 const LazyControlPanelsApp = createLazyComponent<ControlPanelsInitialData>(
-  () => import("@/apps/control-panels/components/ControlPanelsAppComponent").then(m => ({ default: m.ControlPanelsAppComponent })),
+  () => import("@/apps/control-panels/components/control-panels-app/ControlPanelsAppComponent").then(m => ({ default: m.ControlPanelsAppComponent })),
   "control-panels"
 );
 
@@ -78,12 +78,12 @@ const LazyPaintApp = createLazyComponent<PaintInitialData>(
 );
 
 const LazyVideosApp = createLazyComponent<VideosInitialData>(
-  () => import("@/apps/videos/components/VideosAppComponent").then(m => ({ default: m.VideosAppComponent })),
+  () => import("@/apps/videos/components/videos-app/VideosAppComponent").then(m => ({ default: m.VideosAppComponent })),
   "videos"
 );
 
 const LazyTvApp = createLazyComponent<unknown>(
-  () => import("@/apps/tv/components/TvAppComponent").then(m => ({ default: m.TvAppComponent })),
+  () => import("@/apps/tv/components/tv-app/TvAppComponent").then(m => ({ default: m.TvAppComponent })),
   "tv"
 );
 
@@ -93,17 +93,17 @@ const LazyPhotoBoothApp = createLazyComponent<unknown>(
 );
 
 const LazySynthApp = createLazyComponent<unknown>(
-  () => import("@/apps/synth/components/SynthAppComponent").then(m => ({ default: m.SynthAppComponent })),
+  () => import("@/apps/synth/components/synth-app/SynthAppComponent").then(m => ({ default: m.SynthAppComponent })),
   "synth"
 );
 
 const LazyIpodApp = createLazyComponent<IpodInitialData>(
-  () => import("@/apps/ipod/components/IpodAppComponent").then(m => ({ default: m.IpodAppComponent })),
+  () => import("@/apps/ipod/components/ipod-app/IpodAppComponent").then(m => ({ default: m.IpodAppComponent })),
   "ipod"
 );
 
 const LazyKaraokeApp = createLazyComponent<IpodInitialData>(
-  () => import("@/apps/karaoke/components/KaraokeAppComponent").then(m => ({ default: m.KaraokeAppComponent })),
+  () => import("@/apps/karaoke/components/karaoke-app/KaraokeAppComponent").then(m => ({ default: m.KaraokeAppComponent })),
   "karaoke"
 );
 
@@ -118,7 +118,7 @@ const LazyAppletViewerApp = createLazyComponent<AppletViewerInitialData>(
 );
 
 const LazyAdminApp = createLazyComponent<unknown>(
-  () => import("@/apps/admin/components/AdminAppComponent").then(m => ({ default: m.AdminAppComponent })),
+  () => import("@/apps/admin/components/admin-app/AdminAppComponent").then(m => ({ default: m.AdminAppComponent })),
   "admin"
 );
 
@@ -143,12 +143,12 @@ const LazyWinampApp = createLazyComponent<unknown>(
 );
 
 const LazyCalendarApp = createLazyComponent<unknown>(
-  () => import("@/apps/calendar/components/CalendarAppComponent").then(m => ({ default: m.CalendarAppComponent })),
+  () => import("@/apps/calendar/components/calendar-app/CalendarAppComponent").then(m => ({ default: m.CalendarAppComponent })),
   "calendar"
 );
 
 const LazyContactsApp = createLazyComponent<unknown>(
-  () => import("@/apps/contacts/components/ContactsAppComponent").then(m => ({ default: m.ContactsAppComponent })),
+  () => import("@/apps/contacts/components/contacts-app/ContactsAppComponent").then(m => ({ default: m.ContactsAppComponent })),
   "contacts"
 );
 
@@ -158,7 +158,7 @@ const LazyDashboardApp = createLazyComponent<unknown>(
 );
 
 const LazyMapsApp = createLazyComponent<unknown>(
-  () => import("@/apps/maps/components/MapsAppComponent").then(m => ({ default: m.MapsAppComponent })),
+  () => import("@/apps/maps/components/maps-app/MapsAppComponent").then(m => ({ default: m.MapsAppComponent })),
   "maps"
 );
 

@@ -51,6 +51,7 @@ import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { LyricsAlignment, LyricsFont, DisplayMode, getLyricsFontClassName } from "@/types/lyrics";
 import { IPOD_ANALYTICS } from "@/utils/analytics";
 import { saveSongMetadataFromTrack } from "@/utils/songMetadataCache";
+import { youtubeThumbnailUrl } from "@/utils/youtubeUrl";
 import {
   generateIpodSongShareUrl,
   shouldCacheSongMetadataForShare,
@@ -73,9 +74,9 @@ import type {
   RotationDirection,
 } from "../types";
 import type { IpodInitialData } from "../../base/types";
-import type { CoverFlowRef } from "../components/CoverFlow";
-import type { MusicQuizRef } from "../components/MusicQuiz";
-import type { BrickGameRef } from "../components/BrickGame";
+import type { CoverFlowRef } from "../components/cover-flow/types";
+import type { MusicQuizRef } from "../components/music-quiz/types";
+import type { BrickGameRef } from "../components/brick-game/types";
 import type { SongSearchResult } from "@/components/dialogs/SongSearchDialog";
 import { helpItems } from "..";
 import {
@@ -4813,9 +4814,7 @@ export function useIpodLogic({
       return currentTrack.cover ?? null;
     }
     const videoId = getYouTubeVideoId(currentTrack.url);
-    const youtubeThumbnail = videoId
-      ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
-      : null;
+    const youtubeThumbnail = videoId ? youtubeThumbnailUrl(videoId) : null;
     return formatKugouImageUrl(currentTrack.cover, 800) ?? youtubeThumbnail;
   }, [currentTrack]);
 

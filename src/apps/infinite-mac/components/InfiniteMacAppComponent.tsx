@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { AppProps } from "@/apps/base/types";
 import { AppWindowShell } from "@/components/shared/AppWindowShell";
-import { HelpDialog } from "@/components/dialogs/HelpDialog";
-import { AboutDialog } from "@/components/dialogs/AboutDialog";
+import { AppHelpAboutDialogs } from "@/components/shared/AppHelpAboutDialogs";
 import { appMetadata } from "../metadata";
 import { motion } from "framer-motion";
 import { useInfiniteMacLogic } from "../hooks/useInfiniteMacLogic";
@@ -247,17 +246,14 @@ export function InfiniteMacAppComponent({
             )}
           </div>
         </div>
-        <HelpDialog
-          isOpen={isHelpDialogOpen}
-          onOpenChange={setIsHelpDialogOpen}
+        <AppHelpAboutDialogs
+          appId="infinite-mac"
           helpItems={translatedHelpItems}
-          appId="infinite-mac"
-        />
-        <AboutDialog
-          isOpen={isAboutDialogOpen}
-          onOpenChange={setIsAboutDialogOpen}
           metadata={appMetadata}
-          appId="infinite-mac"
+          isHelpOpen={isHelpDialogOpen}
+          onHelpOpenChange={setIsHelpDialogOpen}
+          isAboutOpen={isAboutDialogOpen}
+          onAboutOpenChange={setIsAboutDialogOpen}
         />
     </AppWindowShell>
   );

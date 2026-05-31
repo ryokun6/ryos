@@ -3,8 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { AppProps } from "@/apps/base/types";
 import type { TerminalInitialData } from "@/apps/base/types";
-import { HelpDialog } from "@/components/dialogs/HelpDialog";
-import { AboutDialog } from "@/components/dialogs/AboutDialog";
+import { AppHelpAboutDialogs } from "@/components/shared/AppHelpAboutDialogs";
 import { TerminalMenuBar } from "./TerminalMenuBar";
 import { appMetadata } from "../index";
 import HtmlPreview from "@/components/shared/HtmlPreview";
@@ -569,31 +568,26 @@ export function TerminalAppComponent({
         onNavigatePrevious,
       }}
       trailing={
-        <>
-          <HelpDialog
-            isOpen={isHelpDialogOpen}
-            onOpenChange={setIsHelpDialogOpen}
-            appId="terminal"
-            helpItems={translatedHelpItems}
-          />
-          <AboutDialog
-            isOpen={isAboutDialogOpen}
-            onOpenChange={setIsAboutDialogOpen}
-            metadata={
-              appMetadata || {
-                name: "Terminal",
-                version: "1.0",
-                creator: {
-                  name: "Ryo Lu",
-                  url: "https://ryo.lu",
-                },
-                github: "https://github.com/ryokun6/ryos",
-                icon: "/icons/default/terminal.png",
-              }
+        <AppHelpAboutDialogs
+          appId="terminal"
+          helpItems={translatedHelpItems}
+          metadata={
+            appMetadata || {
+              name: "Terminal",
+              version: "1.0",
+              creator: {
+                name: "Ryo Lu",
+                url: "https://ryo.lu",
+              },
+              github: "https://github.com/ryokun6/ryos",
+              icon: "/icons/default/terminal.png",
             }
-            appId="terminal"
-          />
-        </>
+          }
+          isHelpOpen={isHelpDialogOpen}
+          onHelpOpenChange={setIsHelpDialogOpen}
+          isAboutOpen={isAboutDialogOpen}
+          onAboutOpenChange={setIsAboutDialogOpen}
+        />
       }
     >
         <motion.div

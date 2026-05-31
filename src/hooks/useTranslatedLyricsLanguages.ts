@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { TRANSLATION_LANGUAGES } from "@/apps/ipod/constants";
+import { TRANSLATION_LANGUAGES } from "@/utils/lyricsTranslation";
 
 export type TranslatedLyricsLanguage = {
   label: string;

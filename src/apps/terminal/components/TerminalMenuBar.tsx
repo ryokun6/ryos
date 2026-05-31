@@ -1,4 +1,3 @@
-import { MenuBar } from "@/components/layout/MenuBar";
 import {
   MenubarMenu,
   MenubarTrigger,
@@ -7,8 +6,8 @@ import {
   MenubarSeparator,
   MenubarCheckboxItem,
 } from "@/components/ui/menubar";
-import { AppMenuBarHelpMenu } from "@/components/shared/menubar/AppMenuBarHelpMenu";
-import { AppShareItemDialog } from "@/components/shared/menubar/AppShareItemDialog";
+import { AppMenuBarShell } from "@/components/shared/menubar/AppMenuBarShell";
+import { MENUBAR_SEPARATOR_CLASS } from "@/components/shared/menubar/menubarStyles";
 import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
 import { useTranslation } from "react-i18next";
 
@@ -46,7 +45,18 @@ export function TerminalMenuBar({
   } = useAppMenuBarChrome("terminal");
 
   return (
-    <MenuBar inWindowFrame={isXpTheme}>
+    <AppMenuBarShell
+      isXpTheme={isXpTheme}
+      isMacOsxTheme={isMacOsxTheme}
+      appId={appId}
+      appName={appName}
+      isShareDialogOpen={isShareDialogOpen}
+      setIsShareDialogOpen={setIsShareDialogOpen}
+      helpItemLabel={t("apps.terminal.menu.terminalHelp")}
+      aboutItemLabel={t("apps.terminal.menu.aboutTerminal")}
+      onShowHelp={onShowHelp}
+      onShowAbout={onShowAbout}
+    >
       {/* File Menu */}
       <MenubarMenu>
         <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
@@ -59,7 +69,7 @@ export function TerminalMenuBar({
           >
             {t("apps.terminal.menu.clearTerminal")}
           </MenubarItem>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <MenubarItem
             onClick={onClose}
             className="text-md h-6 px-3"
@@ -81,7 +91,7 @@ export function TerminalMenuBar({
           <MenubarItem className="text-md h-6 px-3">
             {t("common.menu.paste")}
           </MenubarItem>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <MenubarItem className="text-md h-6 px-3">
             {t("common.menu.selectAll")}
           </MenubarItem>
@@ -106,7 +116,7 @@ export function TerminalMenuBar({
           >
             {t("apps.terminal.menu.decreaseFontSize")}
           </MenubarItem>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <MenubarItem
             onClick={onResetFontSize}
             className="text-md h-6 px-3"
@@ -115,7 +125,7 @@ export function TerminalMenuBar({
           </MenubarItem>
           {onToggleMute && (
             <>
-              <MenubarSeparator className="h-[2px] bg-black my-1" />
+              <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
               <MenubarCheckboxItem
                 checked={isMuted}
                 onCheckedChange={(checked) => {
@@ -130,20 +140,6 @@ export function TerminalMenuBar({
         </MenubarContent>
       </MenubarMenu>
 
-      <AppMenuBarHelpMenu
-        helpItemLabel={t("apps.terminal.menu.terminalHelp")}
-        aboutItemLabel={t("apps.terminal.menu.aboutTerminal")}
-        isMacOsxTheme={isMacOsxTheme}
-        onShowHelp={onShowHelp}
-        onShowAbout={onShowAbout}
-        onOpenShareDialog={() => setIsShareDialogOpen(true)}
-      />
-      <AppShareItemDialog
-        appId={appId}
-        appName={appName}
-        isOpen={isShareDialogOpen}
-        onClose={() => setIsShareDialogOpen(false)}
-      />
-    </MenuBar>
+    </AppMenuBarShell>
   );
 }

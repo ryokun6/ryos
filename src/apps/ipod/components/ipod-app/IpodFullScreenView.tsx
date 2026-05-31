@@ -7,7 +7,7 @@ import { LyricsSyncMode } from "@/components/shared/LyricsSyncMode";
 import { PLAYER_PROGRESS_INTERVAL_MS } from "../../constants";
 import { AppleMusicPlayerBridge } from "../AppleMusicPlayerBridge";
 import { FullScreenPortal } from "../FullScreenPortal";
-import { LyricsDisplay } from "../LyricsDisplay";
+import { LyricsDisplay } from "../lyrics-display/LyricsDisplay";
 import type { IpodAppController } from "./useIpodAppController";
 import {
   AmbientBackground,

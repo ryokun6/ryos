@@ -7,10 +7,9 @@ import {
   MenubarCheckboxItem,
 } from "@/components/ui/menubar";
 import { AppProps } from "../../base/types";
-import { MenuBar } from "@/components/layout/MenuBar";
 import { useState, useEffect } from "react";
-import { AppMenuBarHelpMenu } from "@/components/shared/menubar/AppMenuBarHelpMenu";
-import { AppShareItemDialog } from "@/components/shared/menubar/AppShareItemDialog";
+import { AppMenuBarShell } from "@/components/shared/menubar/AppMenuBarShell";
+import { MENUBAR_SEPARATOR_CLASS } from "@/components/shared/menubar/menubarStyles";
 import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
 import { useTranslation } from "react-i18next";
 
@@ -82,7 +81,18 @@ export function SoundboardMenuBar({
   }, []);
 
   return (
-    <MenuBar inWindowFrame={isXpTheme}>
+    <AppMenuBarShell
+      isXpTheme={isXpTheme}
+      isMacOsxTheme={isMacOsxTheme}
+      appId={appId}
+      appName={appName}
+      isShareDialogOpen={isShareDialogOpen}
+      setIsShareDialogOpen={setIsShareDialogOpen}
+      helpItemLabel={t("apps.soundboard.menu.soundboardHelp")}
+      aboutItemLabel={t("apps.soundboard.menu.aboutSoundboard")}
+      onShowHelp={onShowHelp}
+      onShowAbout={onShowAbout}
+    >
       {/* File Menu */}
       <MenubarMenu>
         <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
@@ -95,7 +105,7 @@ export function SoundboardMenuBar({
           >
             {t("apps.soundboard.menu.newSoundboard")}
           </MenubarItem>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <MenubarItem
             onClick={onImportBoard}
             className="text-md h-6 px-3"
@@ -122,7 +132,7 @@ export function SoundboardMenuBar({
               {t("apps.soundboard.menu.loadSpecialSoundboards")}
             </MenubarItem>
           )}
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <MenubarItem
             onClick={onClose}
             className="text-md h-6 px-3"
@@ -180,21 +190,6 @@ export function SoundboardMenuBar({
           </MenubarCheckboxItem>
         </MenubarContent>
       </MenubarMenu>
-
-      <AppMenuBarHelpMenu
-        helpItemLabel={t("apps.soundboard.menu.soundboardHelp")}
-        aboutItemLabel={t("apps.soundboard.menu.aboutSoundboard")}
-        isMacOsxTheme={isMacOsxTheme}
-        onShowHelp={onShowHelp}
-        onShowAbout={onShowAbout}
-        onOpenShareDialog={() => setIsShareDialogOpen(true)}
-      />
-      <AppShareItemDialog
-        appId={appId}
-        appName={appName}
-        isOpen={isShareDialogOpen}
-        onClose={() => setIsShareDialogOpen(false)}
-      />
-    </MenuBar>
+    </AppMenuBarShell>
   );
 }

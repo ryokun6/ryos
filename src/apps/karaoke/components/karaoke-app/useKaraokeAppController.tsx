@@ -3,7 +3,11 @@ import { useShallow } from "zustand/react/shallow";
 import type { AppProps, KaraokeInitialData } from "@/apps/base/types";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { DisplayMode } from "@/types/lyrics";
-import { KaraokeMenuBar } from "../KaraokeMenuBar";
+import {
+  useDisplayModeOptions,
+  useDisplayModeSelect,
+} from "@/hooks/useDisplayModeMenu";
+import { KaraokeMenuBar } from "../karaoke-menu-bar/KaraokeMenuBar";
 import { useKaraokeLogic } from "../../hooks/useKaraokeLogic";
 
 export type UseKaraokeAppControllerArgs = Pick<
@@ -81,34 +85,13 @@ export function useKaraokeAppController({
 
   const showEmptyLibrary = tracks.length === 0 && !logic.currentTrack;
 
-  const displayModeOptions = useMemo(
-    () => [
-      { value: DisplayMode.Video, label: t("apps.ipod.menu.displayVideo") },
-      { value: DisplayMode.Mesh, label: t("apps.ipod.menu.displayGradient") },
-      { value: DisplayMode.Water, label: t("apps.ipod.menu.displayWater") },
-      { value: DisplayMode.Shader, label: t("apps.ipod.menu.displayShader") },
-      { value: DisplayMode.Landscapes, label: t("apps.ipod.menu.displayLandscapes") },
-      { value: DisplayMode.Cover, label: t("apps.ipod.menu.displayCover") },
-    ],
-    [t]
-  );
+  const displayModeOptions = useDisplayModeOptions(t);
 
-  const handleDisplayModeSelect = useCallback(
-    (value: DisplayMode) => {
-      setDisplayMode(value);
-      const labels: Record<DisplayMode, string> = {
-        [DisplayMode.Video]: t("apps.ipod.menu.displayVideo"),
-        [DisplayMode.Cover]: t("apps.ipod.menu.displayCover"),
-        [DisplayMode.Landscapes]: t("apps.ipod.menu.displayLandscapes"),
-        [DisplayMode.Shader]: t("apps.ipod.menu.displayShader"),
-        [DisplayMode.Mesh]: t("apps.ipod.menu.displayGradient"),
-        [DisplayMode.Water]: t("apps.ipod.menu.displayWater"),
-      };
-      const label = labels[value] ?? value;
-      showStatus(`${t("apps.ipod.menu.display", "Display")}: ${label}`);
-    },
-    [setDisplayMode, showStatus, t]
-  );
+  const handleDisplayModeSelect = useDisplayModeSelect({
+    t,
+    setDisplayMode,
+    showStatus,
+  });
 
   const handleOpenCoverFlowFromTitleCard = useCallback(() => {
     if (tracks.length === 0) return;

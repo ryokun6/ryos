@@ -1,4 +1,3 @@
-import { MenuBar } from "@/components/layout/MenuBar";
 import {
   MenubarMenu,
   MenubarTrigger,
@@ -9,8 +8,8 @@ import {
   MenubarSubTrigger,
   MenubarSubContent,
 } from "@/components/ui/menubar";
-import { AppMenuBarHelpMenu } from "@/components/shared/menubar/AppMenuBarHelpMenu";
-import { AppShareItemDialog } from "@/components/shared/menubar/AppShareItemDialog";
+import { AppMenuBarShell } from "@/components/shared/menubar/AppMenuBarShell";
+import { MENUBAR_SEPARATOR_CLASS } from "@/components/shared/menubar/menubarStyles";
 import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
 import { Game, loadGames } from "@/stores/usePcStore";
 import { useTranslation } from "react-i18next";
@@ -66,7 +65,18 @@ export function PcMenuBar({
   const sensitivityOptions = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
 
   return (
-    <MenuBar inWindowFrame={isXpTheme}>
+    <AppMenuBarShell
+      isXpTheme={isXpTheme}
+      isMacOsxTheme={isMacOsxTheme}
+      appId={appId}
+      appName={appName}
+      isShareDialogOpen={isShareDialogOpen}
+      setIsShareDialogOpen={setIsShareDialogOpen}
+      helpItemLabel={t("apps.pc.menu.virtualPcHelp")}
+      aboutItemLabel={t("apps.pc.menu.aboutVirtualPc")}
+      onShowHelp={onShowHelp}
+      onShowAbout={onShowAbout}
+    >
       <MenubarMenu>
         <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
           {t("common.menu.file")}
@@ -90,7 +100,7 @@ export function PcMenuBar({
               ))}
             </MenubarSubContent>
           </MenubarSub>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <MenubarItem
             onClick={onSaveState}
             className="text-md h-6 px-3"
@@ -103,14 +113,14 @@ export function PcMenuBar({
           >
             {t("apps.pc.menu.loadState")}
           </MenubarItem>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <MenubarItem
             onClick={onReset}
             className="text-md h-6 px-3"
           >
             {t("apps.pc.menu.reset")}
           </MenubarItem>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <MenubarItem
             onClick={onClose}
             className="text-md h-6 px-3"
@@ -131,7 +141,7 @@ export function PcMenuBar({
           >
             {t("apps.pc.menu.fullScreen")}
           </MenubarItem>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <MenubarItem
             onClick={() => onSetMouseCapture(!isMouseCaptured)}
             className="text-md h-6 px-3"
@@ -156,7 +166,7 @@ export function PcMenuBar({
               ))}
             </MenubarSubContent>
           </MenubarSub>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <MenubarSub>
             <MenubarSubTrigger className="text-md h-6 px-3">
               {t("apps.pc.menu.aspectRatio")}
@@ -177,21 +187,6 @@ export function PcMenuBar({
           </MenubarSub>
         </MenubarContent>
       </MenubarMenu>
-
-      <AppMenuBarHelpMenu
-        helpItemLabel={t("apps.pc.menu.virtualPcHelp")}
-        aboutItemLabel={t("apps.pc.menu.aboutVirtualPc")}
-        isMacOsxTheme={isMacOsxTheme}
-        onShowHelp={onShowHelp}
-        onShowAbout={onShowAbout}
-        onOpenShareDialog={() => setIsShareDialogOpen(true)}
-      />
-      <AppShareItemDialog
-        appId={appId}
-        appName={appName}
-        isOpen={isShareDialogOpen}
-        onClose={() => setIsShareDialogOpen(false)}
-      />
-    </MenuBar>
+    </AppMenuBarShell>
   );
 }
