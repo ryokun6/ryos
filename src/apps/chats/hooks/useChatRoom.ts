@@ -7,6 +7,7 @@ import {
   unsubscribePusherChannel,
 } from "@/lib/pusherClient";
 import { useChatsStore } from "@/stores/useChatsStore";
+import { useIsRyoAdmin } from "@/hooks/useIsRyoAdmin";
 import { toast } from "@/hooks/useToast";
 import { type ChatRoom, type ChatMessage } from "@/types/chat";
 import { useChatsStoreShallow } from "@/stores/helpers";
@@ -93,8 +94,7 @@ export function useChatRoom(
     messageRenderLimit: state.messageRenderLimit,
   }));
 
-  // Derive isAdmin directly from the username
-  const isAdmin = username === "ryo";
+  const isAdmin = useIsRyoAdmin();
 
   // Pusher refs
   const pusherRef = useRef<ReturnType<typeof getPusherClient> | null>(null);

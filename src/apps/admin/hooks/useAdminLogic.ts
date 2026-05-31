@@ -5,6 +5,7 @@ import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useAuth } from "@/hooks/useAuth";
 import { useOffline } from "@/hooks/useOffline";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
+import { useIsRyoAdmin } from "@/hooks/useIsRyoAdmin";
 import { toast } from "sonner";
 import {
   bulkImportSongMetadata,
@@ -282,7 +283,7 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const importStatusResetTimeoutRef = useRef<number | null>(null);
 
-  const isAdmin = username?.toLowerCase() === "ryo";
+  const isAdmin = useIsRyoAdmin();
   const selectedRoom = rooms.find((r) => r.id === selectedRoomId) || null;
 
   const clearImportStatusResetTimer = useCallback(() => {

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { FileItem as DisplayFileItem } from "../components/FileList";
 import { ensureIndexedDBInitialized, STORES } from "@/utils/indexedDB";
 import { getNonFinderApps, AppId, getAppIconPath } from "@/config/appRegistry";
-import { useChatsStore } from "@/stores/useChatsStore";
+import { useIsRyoAdmin } from "@/hooks/useIsRyoAdmin";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import {
   useInternetExplorerStore,
@@ -425,9 +425,7 @@ export function useFileSystem(
     (state) => state.getViewTypeForPath
   );
   
-  // Get current username for admin check
-  const username = useChatsStore((state) => state.username);
-  const isAdmin = username?.toLowerCase() === "ryo";
+  const isAdmin = useIsRyoAdmin();
   const { currentTheme, isWindowsTheme } = useThemeFlags();
   const finderInstance = instanceId ? finderInstances[instanceId] : null;
 
