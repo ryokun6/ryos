@@ -1,3 +1,4 @@
+/** Props for the iPod app menubar shell (`ipod-menu-bar/`). */
 export interface IpodMenuBarProps {
   onClose: () => void;
   onShowHelp: () => void;
