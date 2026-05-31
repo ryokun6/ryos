@@ -10,11 +10,12 @@ import {
   MenubarCheckboxItem,
 } from "@/components/ui/menubar";
 import { LyricsAlignmentMenuItems } from "@/components/shared/menubar/lyrics/LyricsAlignmentMenuItems";
+import { LyricsDisplayModeSubmenu } from "@/components/shared/menubar/lyrics/LyricsDisplayModeSubmenu";
 import { LyricsPronunciationSubmenu } from "@/components/shared/menubar/lyrics/LyricsPronunciationSubmenu";
 import { LyricsTranslationLanguageSubmenu } from "@/components/shared/menubar/lyrics/LyricsTranslationLanguageSubmenu";
 import { MENUBAR_SEPARATOR_CLASS, MENUBAR_TRIGGER_CLASS } from "@/components/shared/menubar/menubarStyles";
 import { toast } from "sonner";
-import { LyricsFont, DisplayMode } from "@/types/lyrics";
+import { LyricsFont } from "@/types/lyrics";
 import type { KaraokeMenuBarViewModel } from "./useKaraokeMenuBar";
 
 export function KaraokeMenuBarViewMenu({ vm }: { vm: KaraokeMenuBarViewModel }) {
@@ -127,67 +128,18 @@ export function KaraokeMenuBarViewMenu({ vm }: { vm: KaraokeMenuBarViewModel }) 
           setRomanization={vm.setRomanization}
         />
 
-        <MenubarSub>
-          <MenubarSubTrigger className="text-md h-6 px-3">
-            {vm.t("apps.ipod.menu.display")}
-          </MenubarSubTrigger>
-          <MenubarSubContent className="px-0">
-            <MenubarCheckboxItem
-              checked={vm.displayMode === DisplayMode.Video}
-              onCheckedChange={(checked) => {
-                if (checked) vm.setDisplayMode(DisplayMode.Video);
-              }}
-              className="text-md h-6 pr-3"
-            >
-              {vm.t("apps.ipod.menu.displayVideo")}
-            </MenubarCheckboxItem>
-            <MenubarCheckboxItem
-              checked={vm.displayMode === DisplayMode.Mesh}
-              onCheckedChange={(checked) => {
-                if (checked) vm.setDisplayMode(DisplayMode.Mesh);
-              }}
-              className="text-md h-6 pr-3"
-            >
-              {vm.t("apps.ipod.menu.displayGradient")}
-            </MenubarCheckboxItem>
-            <MenubarCheckboxItem
-              checked={vm.displayMode === DisplayMode.Water}
-              onCheckedChange={(checked) => {
-                if (checked) vm.setDisplayMode(DisplayMode.Water);
-              }}
-              className="text-md h-6 pr-3"
-            >
-              {vm.t("apps.ipod.menu.displayWater")}
-            </MenubarCheckboxItem>
-            <MenubarCheckboxItem
-              checked={vm.displayMode === DisplayMode.Shader}
-              onCheckedChange={(checked) => {
-                if (checked) vm.setDisplayMode(DisplayMode.Shader);
-              }}
-              className="text-md h-6 pr-3"
-            >
-              {vm.t("apps.ipod.menu.displayShader")}
-            </MenubarCheckboxItem>
-            <MenubarCheckboxItem
-              checked={vm.displayMode === DisplayMode.Landscapes}
-              onCheckedChange={(checked) => {
-                if (checked) vm.setDisplayMode(DisplayMode.Landscapes);
-              }}
-              className="text-md h-6 pr-3"
-            >
-              {vm.t("apps.ipod.menu.displayLandscapes")}
-            </MenubarCheckboxItem>
-            <MenubarCheckboxItem
-              checked={vm.displayMode === DisplayMode.Cover}
-              onCheckedChange={(checked) => {
-                if (checked) vm.setDisplayMode(DisplayMode.Cover);
-              }}
-              className="text-md h-6 pr-3"
-            >
-              {vm.t("apps.ipod.menu.displayCover")}
-            </MenubarCheckboxItem>
-          </MenubarSubContent>
-        </MenubarSub>
+        <LyricsDisplayModeSubmenu
+          submenuLabel={vm.t("apps.ipod.menu.display")}
+          displayMode={vm.displayMode}
+          setDisplayMode={vm.setDisplayMode}
+          includeVideo
+          videoLabel={vm.t("apps.ipod.menu.displayVideo")}
+          gradientLabel={vm.t("apps.ipod.menu.displayGradient")}
+          waterLabel={vm.t("apps.ipod.menu.displayWater")}
+          shaderLabel={vm.t("apps.ipod.menu.displayShader")}
+          landscapesLabel={vm.t("apps.ipod.menu.displayLandscapes")}
+          coverLabel={vm.t("apps.ipod.menu.displayCover")}
+        />
 
         <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
 

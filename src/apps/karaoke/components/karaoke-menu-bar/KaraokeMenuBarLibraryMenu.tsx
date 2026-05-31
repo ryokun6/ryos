@@ -4,11 +4,8 @@ import {
   MenubarContent,
   MenubarItem,
   MenubarSeparator,
-  MenubarSub,
-  MenubarSubTrigger,
-  MenubarSubContent,
-  MenubarCheckboxItem,
 } from "@/components/ui/menubar";
+import { LyricsLibraryTrackList } from "@/components/shared/menubar/lyrics/LyricsLibraryTrackList";
 import type { KaraokeMenuBarViewModel } from "./useKaraokeMenuBar";
 
 export function KaraokeMenuBarLibraryMenu({
@@ -46,51 +43,14 @@ export function KaraokeMenuBarLibraryMenu({
           <>
             <MenubarSeparator className="h-[2px] bg-black my-1" />
 
-            <MenubarSub>
-              <MenubarSubTrigger className="text-md h-6 px-3">
-                <div className="flex justify-between w-full items-center overflow-hidden">
-                  <span className="truncate min-w-0">
-                    {t("apps.ipod.menu.allSongs")}
-                  </span>
-                </div>
-              </MenubarSubTrigger>
-              <MenubarSubContent className="px-0 max-w-[180px] sm:max-w-[220px] max-h-[400px] overflow-y-auto">
-                {tracks.map((track, index) => (
-                  <MenubarCheckboxItem
-                    key={`all-${track.id}`}
-                    checked={index === currentIndex}
-                    onCheckedChange={() => onPlayTrack(index)}
-                    className="text-md h-6 pr-3 max-w-[220px] truncate"
-                  >
-                    <span className="truncate min-w-0">{track.title}</span>
-                  </MenubarCheckboxItem>
-                ))}
-              </MenubarSubContent>
-            </MenubarSub>
-
-            <div className="max-h-[300px] overflow-y-auto">
-              {artists.map((artist) => (
-                <MenubarSub key={artist}>
-                  <MenubarSubTrigger className="text-md h-6 px-3">
-                    <div className="flex justify-between w-full items-center overflow-hidden">
-                      <span className="truncate min-w-0">{artist}</span>
-                    </div>
-                  </MenubarSubTrigger>
-                  <MenubarSubContent className="px-0 max-w-[180px] sm:max-w-[220px] max-h-[200px] overflow-y-auto">
-                    {tracksByArtist[artist].map(({ track, index }) => (
-                      <MenubarCheckboxItem
-                        key={`${artist}-${track.id}`}
-                        checked={index === currentIndex}
-                        onCheckedChange={() => onPlayTrack(index)}
-                        className="text-md h-6 pr-3 max-w-[160px] sm:max-w-[200px] truncate"
-                      >
-                        <span className="truncate min-w-0">{track.title}</span>
-                      </MenubarCheckboxItem>
-                    ))}
-                  </MenubarSubContent>
-                </MenubarSub>
-              ))}
-            </div>
+            <LyricsLibraryTrackList
+              allSongsLabel={t("apps.ipod.menu.allSongs")}
+              tracks={tracks}
+              currentIndex={currentIndex}
+              artists={artists}
+              tracksByArtist={tracksByArtist}
+              onPlayTrack={onPlayTrack}
+            />
 
             <MenubarSeparator className="h-[2px] bg-black my-1" />
           </>
