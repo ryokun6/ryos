@@ -45,6 +45,11 @@ describe("link preview dark mode styling", () => {
     expect(loadingSource).toContain("macosx-link-preview");
     expect(loadingSource).toContain("rounded-[16px]");
     expect(loadingSource).toContain("useThemeFlags");
+    // macOS: shimmer on the bubble root (chat-bubble > * breaks absolute children)
+    expect(loadingSource).toContain(
+      "chat-bubble macosx-link-preview rounded-[16px] border-none shadow-none link-preview-loading-skeleton"
+    );
+    expect(loadingSource).toContain("!isMacOSTheme");
   });
 
   test("loaded macOS link preview uses 16px radius to match chat image previews", () => {
@@ -75,7 +80,8 @@ describe("link preview dark mode styling", () => {
       ".link-preview-loading.macosx-link-preview.chat-bubble:before"
     );
     expect(themesCss).toContain("display: none");
-    expect(loadingSource).toContain("bg-transparent");
+    expect(themesCss).toContain(".link-preview-loading.macosx-link-preview.chat-bubble");
+    expect(themesCss).toContain("padding: 0 !important");
   });
 
   test("macOS themes enforce 16px radius on link preview cards and loading shells", () => {

@@ -13,7 +13,7 @@ export function LinkPreviewLoading({ className }: { className?: string }) {
         "link-preview-loading h-[106px] w-full min-w-[280px] max-w-[420px]",
         "relative overflow-hidden",
         isMacOSTheme
-          ? "chat-bubble macosx-link-preview rounded-[16px] border-none shadow-none bg-transparent"
+          ? "chat-bubble macosx-link-preview rounded-[16px] border-none shadow-none link-preview-loading-skeleton"
           : "rounded border border-neutral-200 dark:border-neutral-700",
         className
       )}
@@ -21,13 +21,14 @@ export function LinkPreviewLoading({ className }: { className?: string }) {
       aria-busy="true"
       aria-label="Loading link preview"
     >
-      <div
-        className={cn(
-          "link-preview-loading-skeleton absolute inset-0",
-          isMacOSTheme ? "rounded-[16px]" : "rounded-[inherit]"
-        )}
-        aria-hidden
-      />
+      {/* Non-macOS: overlay skeleton. macOS applies skeleton on the bubble itself
+          because `.chat-bubble > * { position: relative }` breaks absolute children. */}
+      {!isMacOSTheme ? (
+        <div
+          className="link-preview-loading-skeleton absolute inset-0 rounded-[inherit]"
+          aria-hidden
+        />
+      ) : null}
     </motion.div>
   );
 }

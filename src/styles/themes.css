@@ -2851,6 +2851,11 @@
   overflow: hidden;
 }
 
+/* Loading bubble: fill edge-to-edge so the skeleton sweep is visible (not just padding box) */
+:root[data-os-theme="macosx"] .link-preview-loading.macosx-link-preview.chat-bubble {
+  padding: 0 !important;
+}
+
 :root[data-os-theme="macosx"] .macosx-link-preview.chat-bubble:before {
   top: 2px; /* extend shine to very top when image flush */
   left: 8px;
@@ -2860,9 +2865,24 @@
   z-index: 10; /* above image */
 }
 
-:root[data-os-theme="macosx"] .macosx-link-preview .link-preview-loading-skeleton {
+:root[data-os-theme="macosx"] .link-preview-loading.link-preview-loading-skeleton {
   border-radius: 16px;
-  z-index: 2;
+}
+
+/* macOS Aqua dark — mirror .dark skeleton when only data-os-color-scheme is set */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .link-preview-loading.link-preview-loading-skeleton {
+  background-color: rgba(38, 38, 42, 0.95);
+  background-image: linear-gradient(
+    90deg,
+    rgba(63, 63, 70, 0.95) 0%,
+    rgba(63, 63, 70, 0.95) 25%,
+    rgba(82, 82, 91, 0.85) 40%,
+    rgba(63, 63, 70, 0.95) 75%,
+    rgba(63, 63, 70, 0.95) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite linear;
 }
 
 /* Loading: shimmer must sit above the fill but below is wrong — gloss pseudo-elements
