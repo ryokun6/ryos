@@ -4,6 +4,7 @@ import type { LyricLine } from "@/types/lyrics";
 import {
   buildInterludeLyricLineWithWordTimings,
   isInterludePlaceholderLine,
+  type InterludePlaceholderLine,
 } from "@/utils/karaokeInterludeDisplay";
 import { ANIMATION_CONFIG } from "./constants";
 import { getVariants } from "./animationVariants";
@@ -97,7 +98,7 @@ export function LyricsDisplayLines({ vm }: LyricsDisplayLinesProps) {
         const prevVisible = index > 0 ? visibleLines[index - 1] : undefined;
         const nextVisible =
           index < visibleLines.length - 1 ? visibleLines[index + 1] : undefined;
-        const interludeLeadForRow =
+        const interludeLeadForRow: InterludePlaceholderLine | undefined =
           introInterludeLead &&
           !isInterludePlaceholder &&
           line.startTimeMs === displayOriginalLines[0]?.startTimeMs &&

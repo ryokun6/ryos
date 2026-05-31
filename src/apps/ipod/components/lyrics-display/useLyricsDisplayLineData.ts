@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import type { LyricLine } from "@/types/lyrics";
 import { parseLyricTimestamps, findCurrentLineIndex } from "@/utils/lyricsSearch";
 import type { LyricsDisplayProps } from "./types";
 

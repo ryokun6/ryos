@@ -1,6 +1,11 @@
 import { useCallback } from "react";
 import type { ReactNode } from "react";
-import type { LyricLine, LyricsAlignment, RomanizationSettings } from "@/types/lyrics";
+import type { LyricsAlignment, RomanizationSettings } from "@/types/lyrics";
+import type { LyricLine } from "@/types/lyrics";
+import type {
+  InterludePlaceholderLine,
+  VisibleLyricLine,
+} from "@/utils/karaokeInterludeDisplay";
 import type { FuriganaSegment } from "@/utils/romanization";
 import {
   EMPTY_FURIGANA_MAP,
@@ -9,7 +14,7 @@ import {
 import type { LyricsDisplayProps } from "./types";
 import { useLyricsDisplaySettings } from "./useLyricsDisplaySettings";
 import { useLyricsDisplayLineData } from "./useLyricsDisplayLineData";
-import { useRenderWithFurigana } from "./useRenderWithFurigana.tsx";
+import { useRenderWithFurigana } from "./useRenderWithFurigana";
 import { useLyricsDisplayKaraokeStyle } from "./useLyricsDisplayKaraokeStyle";
 import { useLyricsVisibleLines } from "./useLyricsVisibleLines";
 import { useLyricsDisplayGestures } from "./useLyricsDisplayGestures";
@@ -24,8 +29,8 @@ export type LyricsDisplayViewModel = {
   actualCurrentLine: number;
   translationMap: Map<string, string>;
   translationByIndex: string[];
-  visibleLines: LyricLine[];
-  introInterludeLead: LyricLine | null;
+  visibleLines: VisibleLyricLine[];
+  introInterludeLead: InterludePlaceholderLine | null;
   currentAnchorIdx: number;
   currentTimeMs: number | undefined;
   isOldSchoolKaraoke: boolean;
