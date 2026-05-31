@@ -348,7 +348,8 @@
 <pre><code>src/components/
 ├── layout/           # Desktop environment structure
 │   ├── Desktop.tsx
-│   ├── Dock.tsx
+│   ├── Dock.tsx          # Public entry: re-exports macOS dock when theme has dock
+│   ├── dock/             # MacDock implementation (see Dock section below)
 │   ├── MenuBar.tsx
 │   ├── WindowFrame.tsx
 │   ├── AppleMenu.tsx
@@ -425,10 +426,16 @@
 <ul><li>Apple menu with logo</li><li>Application menu</li><li>Status area (clock, volume, battery)</li></ul>
 <strong>Windows Themes:</strong>
 <ul><li>Renders as part of taskbar</li><li>Start menu integration</li></ul>
-<h3>Dock (<code>Dock.tsx</code>)</h3>
-<p>macOS-style dock with magnification.</p>
-<strong>Features:</strong>
-<ul><li>Icon magnification on hover</li><li>Running app indicators</li><li>Pinned items management</li><li>Drag-to-reorder</li><li>Context menus</li></ul>
+<h3>Dock (<code>Dock.tsx</code> + <code>dock/</code>)</h3>
+<p>macOS X (Aqua) dock. The public shell import stays <strong><code>Dock</code></strong> from <code>@/components/layout/Dock</code>; Windows themes render a taskbar instead and <strong><code>Dock</code> returns <code>null</code></strong>.</p>
+<h4>Public API invariants</h4>
+<ul><li><strong><code>export function Dock()</code></strong> — only entry point imported by <code>AppManagerView</code>. Do not import <code>MacDock</code> from app code.</li></ul><ul><li>Theme gating uses <strong><code>useThemeFlags().isMacOSTheme</code></strong>; dock visibility/height for layout math still comes from <strong><code>getThemeMetadata()</code></strong> (<code>hasDock</code>, <code>baseDockHeight</code>).</li><li>Pinned/open state and preferences live in <strong><code>useDockStore</code></strong> (<code><a href="https://github.com/ryokun6/ryos/blob/main/src/stores/useDockStore.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/stores/useDockStore.ts</a></code>), persisted under <code>dock-storage</code>. Protected pins: <code>finder</code>, <code>__applications__</code>, <code>__trash__</code>.</li><li>Swipe-to-reveal on mobile shares <strong><code>dockRevealGesture.ts</code></strong> with Dashboard shell guards (<code>useDashboardShellInputDisabled</code>).</li></ul>
+<h4>Module layout (<code>src/components/layout/dock/</code>)</h4>
+<table><thead><tr><th>File</th><th>Role</th></tr></thead><tbody><tr><td><code>MacDock.tsx</code></td><td>Orchestration: open/pinned lists, trash drop, auto-hide, layout animations</td></tr><tr><td><code>DockPinnedItems.tsx</code> / <code>DockOpenItems.tsx</code></td><td>Pinned strip and running-app / applet instances</td></tr><tr><td><code>DockIconButton.tsx</code></td><td>Single icon: magnification, indicators, drag, intent prefetch</td></tr><tr><td><code>DockApplicationsButton.tsx</code> / <code>DockTrashButton.tsx</code></td><td>Launcher folder and Trash targets</td></tr><tr><td><code>DockDivider.tsx</code> / <code>DockSpacer.tsx</code></td><td>Separator and magnify spacer slots</td></tr><tr><td><code>dockConstants.ts</code></td><td><code>DOCK_*</code> sizing/magnification; <code>DOCK_MULTI_WINDOW_APPS</code></td></tr><tr><td><code>dockTypes.ts</code></td><td>Shared props (<code>DockIconButtonProps</code>, <code>DockOpenItem</code>, …)</td></tr><tr><td><code>dockContextMenus.ts</code></td><td>Menu item builders (pin, hide, open, multi-window)</td></tr><tr><td><code>useDockContextMenus.ts</code></td><td>Context-menu state wired to <code>MacDock</code></td></tr><tr><td><code>useDockDragDrop.ts</code></td><td>Reorder pins, file/applet drops, trash highlight</td></tr><tr><td><code>useDockMagnification.ts</code></td><td>Framer <code>mouseX</code> motion + scale curve</td></tr><tr><td><code>useDockIconHover.ts</code></td><td>Hover/swap state for open icons</td></tr><tr><td><code>dockTrashHandlers.ts</code></td><td>Trash empty / delete-on-drop handlers</td></tr><tr><td><code>dockAppletInfo.ts</code></td><td>Resolve applet file metadata for dock file items</td></tr></tbody></table>
+<h4>Changing dock behavior</h4>
+<ol><li><strong>New pinned app defaults</strong> — update <code>DEFAULT_PINNED_ITEMS</code> in <code>useDockStore.ts</code> (respect <code>PROTECTED_DOCK_ITEMS</code>).</li></ol><ol><li><strong>Multi-window from dock</strong> — add <code>AppId</code> to <code>DOCK_MULTI_WINDOW_APPS</code> in <code>dockConstants.ts</code> and ensure context menus in <code>dockContextMenus.ts</code> expose “New Window” where appropriate.</li><li><strong>Icon interactions</strong> — prefer extending <code>DockIconButton</code> / subcomponents; keep store writes in <code>MacDock</code> or hooks, not in presentational children.</li><li><strong>Magnification / size</strong> — tune <code>DOCK_MAX_SCALE</code>, <code>DOCK_MAGNIFY_DISTANCE</code>, <code>DOCK_BASE_BUTTON_SIZE</code>; user scale still flows from <code>useDockStore.scale</code>.</li><li><strong>Cloud sync of pins</strong> — dock domain in <code><a href="https://github.com/ryokun6/ryos/blob/main/src/sync/domains.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/sync/domains.ts</a></code> reads/writes <code>useDockStore</code>; do not add parallel persistence.</li></ol>
+<strong>Features (unchanged behavior, split implementation):</strong>
+<ul><li>Icon magnification on hover (toggle via dock preferences)</li><li>Running app indicators and open applet/file instances</li><li>Pinned items: drag-to-reorder, add from Finder/applets, context menus</li><li>Trash drop target and empty-trash confirm</li><li>Auto-hide dock with bottom-edge hover / mobile swipe reveal</li></ul>
 <h3>Component Hierarchy</h3>
 <pre class="mermaid">graph TD
     AM[AppManager] --> MB[MenuBar]

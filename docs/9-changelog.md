@@ -26,7 +26,8 @@ A summary of changes and updates to ryOS, organized by month.
 - Admin: dashboard server card, panel headers, agent counts, relaxed rate limits, sidebar/View menu reordering; analytics top songs/sites/countries and app events.
 - React 19 hardening: migrate deprecated APIs, refactor cascading setState to useReducer, effect cleanups, stable list keys, admin helper hoisting.
 - CI / deploy: Coolify webhook deploy, GHCR image pipeline, decouple test/build from main pushes; security batch (password change flow, applet sandboxing, rate-limit hardening).
-- Docs: Maps app page, Virtual PC v86 refresh, Admin Cursor agents, Dashboard Aquarium; regenerate static HTML.
+- Docs: Maps app page, Virtual PC v86 refresh, Admin Cursor agents, Dashboard Aquarium; Dock `dock/` module map, Inbox developer notes (feature branch), Chats dark-label guidance; regenerate static HTML.
+- Refactor: macOS **Dock** split into `Dock.tsx` entry + `src/components/layout/dock/` (`MacDock`, hooks, subcomponents); public `Dock` export unchanged (#1342).
 
 </details>
 

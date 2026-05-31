@@ -367,6 +367,34 @@
     B1 & B2 & B3 & B4 & B5 & B6 & B7 --> C1 & C2 & C3 & C4
     C1 & C2 & C3 & C4 --> D1 & D2 & D3</pre>
 <p>All components are theme-aware, automatically adapting to the active system theme (System 7, Mac OS X, Windows XP, Windows 98) through the theme system.</p>
+<h2>System Inbox (notification center)</h2>
+<p>> <strong>On <code>main</code>:</strong> The Inbox app is not merged yet. The implementation below lives on branch <code>origin/cursor/inbox-app-d94f</code> (<code>src/apps/inbox/</code>, <code>src/lib/inbox/</code>, <code>useInboxStore</code>). After merge, register it in <code>appRegistry</code> and <code><a href="https://github.com/ryokun6/ryos/blob/main/docs/2-apps.md" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">docs/2-apps.md</a></code>.</p>
+<p>Local-first <strong>Inbox</strong> app (iOS Notification Center–style UI): durable notices that outlive ephemeral Sonner toasts. Items persist in the browser via <strong><code>useInboxStore</code></strong> (Zustand + <code>persist</code>).</p>
+<h3>What it collects</h3>
+<table><thead><tr><th>Source</th><th>Mechanism</th><th>Category / dedupe</th></tr></thead><tbody><tr><td>Sonner toasts</td><td><code>mirrorToastToInbox</code> (wrapped toast API)</td><td><code>toast_mirror:{toastId}</code>; infers app from message text (iPod, Karaoke, Calendar, Chats, …)</td></tr><tr><td>Calendar</td><td><code>useCalendarEventInboxReminders</code></td><td><code>calendar_reminder:{eventId}</code></td></tr><tr><td>Applet edits from Chats</td><td><code>recordAppletUpdatedInbox</code> on <code>onAppletUpdated</code></td><td><code>applet_updated:{path}</code></td></tr><tr><td>Cursor Cloud agent</td><td><code>CursorRepoAgentInboxTracker</code> + status polling</td><td><code>cursor_agent:{agentId}</code></td></tr><tr><td>Seed</td><td><code>createWelcomeInboxItem</code></td><td><code>welcome:v1</code></td></tr></tbody></table>
+<p>Ephemeral UI hints stay in toasts; Inbox holds the durable copy. Toast mirroring can be skipped per call via <code>inferToastInboxMeta().skip</code>.</p>
+<h3>Stacking / grouping</h3>
+<p>The UI groups rows by <strong><code>source.extras.stackGroupKey</code></strong> (e.g. <code>app:ipod</code>, <code>app:karaoke</code>) and <strong><code>appLabel</code></strong>, so multiple notifications from the same app stack like iOS. Toast mirroring sets these in <code>mirrorToastToInbox.ts</code>; other producers should set the same extras shape.</p>
+<strong>Deduping:</strong> <code>upsertItem</code> merges when <code>dedupeKey</code> matches (updates title/preview/body, preserves <code>readAt</code>).
+<h3>Emitting notifications (developers)</h3>
+<p>Prefer React call sites:</p>
+<pre><code>import { useInboxStore } from "@/stores/useInboxStore";
+
+useInboxStore.getState().upsertItem({
+  dedupeKey: "my_feature:unique-id", // optional but recommended
+  category: "system", // InboxCategory
+  title: "Short title",
+  preview: "One-line summary",
+  body: "Optional detail",
+  action: { kind: "launch_app", appId: "chats", initialData: { … } },
+  source: {
+    producer: "my_feature",
+    extras: { stackGroupKey: "app:chats", appLabel: "Chats" },
+  },
+});</code></pre>
+<p>From non-React code (listeners, API callbacks): <strong><code>pushInboxItem</code></strong> in <code><a href="https://github.com/ryokun6/ryos/blob/main/src/lib/inbox/pushInboxItem.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/lib/inbox/pushInboxItem.ts</a></code> delegates to the same store.</p>
+<p>Wire global listeners once in the shell via <strong><code>inboxRuntimeListeners</code></strong> (applet bus, Cursor agent completion). Types: <code><a href="https://github.com/ryokun6/ryos/blob/main/src/lib/inbox/inboxTypes.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/lib/inbox/inboxTypes.ts</a></code> (<code>InboxCategory</code>, <code>InboxDedupeKey</code>, <code>InboxActionPayload</code>).</p>
+<p>Unit tests on the branch: <code><a href="https://github.com/ryokun6/ryos/blob/main/src/tests/test-inbox-store.test.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">tests/test-inbox-store.test.ts</a></code>, <code><a href="https://github.com/ryokun6/ryos/blob/main/src/tests/test-inbox-toast-mirror.test.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">tests/test-inbox-toast-mirror.test.ts</a></code>.</p>
 <h2>Subsections</h2>
 <ul><li><a href="/docs/component-library">Component Library</a> - Core UI component library including 19 shadcn components, 10 custom primitives, 16 shared components, and crash boundary components</li></ul><ul><li><a href="/docs/i18n">Internationalization</a> - i18n hooks and translation system supporting 10 languages</li></ul>
       </article>

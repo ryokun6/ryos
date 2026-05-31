@@ -57,7 +57,7 @@ A modern web-based desktop environment inspired by classic macOS and Windows, bu
 ├── scripts/          # Build + maintenance + standalone API runner
 ├── src/
 │   ├── apps/         # Individual app modules
-│   ├── components/   # Shared React components (ui, dialogs, layout)
+│   ├── components/   # Shared React components (ui, dialogs, layout; Dock → layout/dock/)
 │   ├── config/       # Configuration files
 │   ├── contexts/     # React context providers
 │   ├── hooks/        # Custom React hooks

@@ -91,6 +91,57 @@ graph TD
 
 All components are theme-aware, automatically adapting to the active system theme (System 7, Mac OS X, Windows XP, Windows 98) through the theme system.
 
+## System Inbox (notification center)
+
+> **On `main`:** The Inbox app is not merged yet. The implementation below lives on branch `origin/cursor/inbox-app-d94f` (`src/apps/inbox/`, `src/lib/inbox/`, `useInboxStore`). After merge, register it in `appRegistry` and `docs/2-apps.md`.
+
+Local-first **Inbox** app (iOS Notification Center–style UI): durable notices that outlive ephemeral Sonner toasts. Items persist in the browser via **`useInboxStore`** (Zustand + `persist`).
+
+### What it collects
+
+| Source | Mechanism | Category / dedupe |
+|--------|-----------|-------------------|
+| Sonner toasts | `mirrorToastToInbox` (wrapped toast API) | `toast_mirror:{toastId}`; infers app from message text (iPod, Karaoke, Calendar, Chats, …) |
+| Calendar | `useCalendarEventInboxReminders` | `calendar_reminder:{eventId}` |
+| Applet edits from Chats | `recordAppletUpdatedInbox` on `onAppletUpdated` | `applet_updated:{path}` |
+| Cursor Cloud agent | `CursorRepoAgentInboxTracker` + status polling | `cursor_agent:{agentId}` |
+| Seed | `createWelcomeInboxItem` | `welcome:v1` |
+
+Ephemeral UI hints stay in toasts; Inbox holds the durable copy. Toast mirroring can be skipped per call via `inferToastInboxMeta().skip`.
+
+### Stacking / grouping
+
+The UI groups rows by **`source.extras.stackGroupKey`** (e.g. `app:ipod`, `app:karaoke`) and **`appLabel`**, so multiple notifications from the same app stack like iOS. Toast mirroring sets these in `mirrorToastToInbox.ts`; other producers should set the same extras shape.
+
+**Deduping:** `upsertItem` merges when `dedupeKey` matches (updates title/preview/body, preserves `readAt`).
+
+### Emitting notifications (developers)
+
+Prefer React call sites:
+
+```typescript
+import { useInboxStore } from "@/stores/useInboxStore";
+
+useInboxStore.getState().upsertItem({
+  dedupeKey: "my_feature:unique-id", // optional but recommended
+  category: "system", // InboxCategory
+  title: "Short title",
+  preview: "One-line summary",
+  body: "Optional detail",
+  action: { kind: "launch_app", appId: "chats", initialData: { … } },
+  source: {
+    producer: "my_feature",
+    extras: { stackGroupKey: "app:chats", appLabel: "Chats" },
+  },
+});
+```
+
+From non-React code (listeners, API callbacks): **`pushInboxItem`** in `src/lib/inbox/pushInboxItem.ts` delegates to the same store.
+
+Wire global listeners once in the shell via **`inboxRuntimeListeners`** (applet bus, Cursor agent completion). Types: `src/lib/inbox/inboxTypes.ts` (`InboxCategory`, `InboxDedupeKey`, `InboxActionPayload`).
+
+Unit tests on the branch: `tests/test-inbox-store.test.ts`, `tests/test-inbox-toast-mirror.test.ts`.
+
 ## Subsections
 
 - [Component Library](/docs/component-library) - Core UI component library including 19 shadcn components, 10 custom primitives, 16 shared components, and crash boundary components
