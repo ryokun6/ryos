@@ -24,10 +24,17 @@ export function composerReducer(
 ): ComposerState {
   switch (action.type) {
     case "setInput":
+      if (state.input === action.value) return state;
       return { ...state, input: action.value };
     case "setHistoryIndex":
+      // Bail out if unchanged so useReducer can skip a re-render. The
+      // input-change effect re-asserts historyIndex: -1 on every keystroke,
+      // which would otherwise force a second wasted render of the composer
+      // because setInputAndResetHistory already reset it.
+      if (state.historyIndex === action.value) return state;
       return { ...state, historyIndex: action.value };
     case "setSelectedImage":
+      if (state.selectedImage === action.value) return state;
       return { ...state, selectedImage: action.value };
     case "setInputAndResetHistory":
       return { ...state, input: action.value, historyIndex: -1 };
