@@ -2864,6 +2864,16 @@
   border-radius: 16px;
 }
 
+:root[data-os-theme="macosx"] .macosx-link-preview .link-preview-actions-divider {
+  border-top-color: rgba(0, 0, 0, 0.1);
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .macosx-link-preview
+  .link-preview-actions-divider {
+  border-top-color: var(--os-color-separator);
+}
+
 /* Link preview loading: keep aqua chrome but avoid a bright gloss stripe on dark fills */
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"]
   .link-preview-loading.macosx-link-preview.chat-bubble:before {

@@ -11,6 +11,13 @@ const previewSource = readFileSync(
   join(import.meta.dir, "../src/components/shared/link-preview/LinkPreview.tsx"),
   "utf8"
 );
+const actionButtonsSource = readFileSync(
+  join(
+    import.meta.dir,
+    "../src/components/shared/link-preview/components/LinkPreviewActionButtons.tsx"
+  ),
+  "utf8"
+);
 const themesCss = readFileSync(
   join(import.meta.dir, "../src/styles/themes.css"),
   "utf8"
@@ -76,5 +83,12 @@ describe("link preview dark mode styling", () => {
       ".macosx-link-preview.chat-bubble.link-preview-loading"
     );
     expect(themesCss).toContain("border-radius: 16px !important");
+  });
+
+  test("action row divider uses OS separator tokens on macOS", () => {
+    expect(actionButtonsSource).toContain("link-preview-actions-divider");
+    expect(actionButtonsSource).toContain("var(--os-color-separator)");
+    expect(actionButtonsSource).toContain("useThemeFlags");
+    expect(themesCss).toContain(".macosx-link-preview .link-preview-actions-divider");
   });
 });
