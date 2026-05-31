@@ -52,7 +52,12 @@ export interface DockPinnedItemsProps {
   ) => void;
 }
 
-export function DockPinnedItems({
+// Returns a flat array of keyed dock icons (not a wrapping component) so the
+// callers can spread them as DIRECT children of <AnimatePresence>/<LayoutGroup>.
+// Wrapping these in a component/fragment hides the individual icons from
+// AnimatePresence, breaking per-icon enter/exit/layout tracking and producing
+// transient empty slots when items mount or unmount.
+export function renderDockPinnedItems({
   pinnedItems,
   externalDragIndex,
   openAppsAllSet,
@@ -77,7 +82,7 @@ export function DockPinnedItems({
   focusOrLaunchApp,
   getFileItem,
   launchApp,
-}: DockPinnedItemsProps) {
+}: DockPinnedItemsProps): React.ReactNode[] {
   const elements: React.ReactNode[] = [];
 
   pinnedItems.forEach((item, index) => {
@@ -221,5 +226,5 @@ export function DockPinnedItems({
     );
   }
 
-  return <>{elements}</>;
+  return elements;
 }
