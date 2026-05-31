@@ -905,6 +905,7 @@ export function MacDock() {
               />
 
               <DockApplicationsButton
+                key="__applications__"
                 dockContainerRef={dockContainerRef}
                 setApplicationsContextMenuPos={setApplicationsContextMenuPos}
                 focusFinderAtPathOrLaunch={focusFinderAtPathOrLaunch}
@@ -921,6 +922,7 @@ export function MacDock() {
               />
 
               <DockTrashButton
+                key="__trash__"
                 dockContainerRef={dockContainerRef}
                 setTrashContextMenuPos={setTrashContextMenuPos}
                 focusFinderAtPathOrLaunch={focusFinderAtPathOrLaunch}
