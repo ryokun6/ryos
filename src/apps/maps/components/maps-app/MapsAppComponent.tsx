@@ -1,4 +1,4 @@
-import { WindowFrame } from "@/components/layout/WindowFrame";
+import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { cn } from "@/lib/utils";
@@ -76,21 +76,21 @@ export function MapsAppComponent({
     />
   );
 
-  if (!isWindowOpen) return null;
-
   return (
-    <>
-      {!isXpTheme && isForeground && menuBar}
-      <WindowFrame
-        title={t("apps.maps.title", { defaultValue: "Maps" })}
-        onClose={onClose}
-        isForeground={isForeground}
-        appId="maps"
-        material="notitlebar"
-        skipInitialSound={skipInitialSound}
-        instanceId={instanceId}
-        menuBar={isXpTheme ? menuBar : undefined}
-        drawer={
+    <AppWindowShell
+      isWindowOpen={isWindowOpen}
+      isXpTheme={isXpTheme}
+      isForeground={isForeground}
+      menuBar={menuBar}
+      windowFrameProps={{
+        title: t("apps.maps.title", { defaultValue: "Maps" }),
+        onClose,
+        isForeground,
+        appId: "maps",
+        material: "notitlebar",
+        skipInitialSound,
+        instanceId,
+        drawer: (
           <MapsPlacesDrawer
             isOpen={isPlacesDrawerOpen}
             onClose={() =>
@@ -103,8 +103,25 @@ export function MapsAppComponent({
             onSelectPlace={handleSelectSavedPlace}
             t={t}
           />
-        }
-      >
+        ),
+      }}
+      trailing={
+        <>
+          <HelpDialog
+            isOpen={isHelpDialogOpen}
+            onOpenChange={setIsHelpDialogOpen}
+            appId="maps"
+            helpItems={translatedHelpItems}
+          />
+          <AboutDialog
+            isOpen={isAboutDialogOpen}
+            onOpenChange={setIsAboutDialogOpen}
+            metadata={appMetadata}
+            appId="maps"
+          />
+        </>
+      }
+    >
         <div className="relative size-full min-h-0 flex-1 overflow-hidden bg-transparent font-os-ui">
           <div
             ref={attachMapSurfaceRef}
@@ -223,19 +240,6 @@ export function MapsAppComponent({
             />
           </div>
         </div>
-      </WindowFrame>
-      <HelpDialog
-        isOpen={isHelpDialogOpen}
-        onOpenChange={setIsHelpDialogOpen}
-        appId="maps"
-        helpItems={translatedHelpItems}
-      />
-      <AboutDialog
-        isOpen={isAboutDialogOpen}
-        onOpenChange={setIsAboutDialogOpen}
-        metadata={appMetadata}
-        appId="maps"
-      />
-    </>
+    </AppWindowShell>
   );
 }

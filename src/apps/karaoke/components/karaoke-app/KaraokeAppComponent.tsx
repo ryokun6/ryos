@@ -1,5 +1,5 @@
 import type { AppProps, KaraokeInitialData } from "@/apps/base/types";
-import { WindowFrame } from "@/components/layout/WindowFrame";
+import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { KaraokeAppDialogs } from "./KaraokeAppDialogs";
 import { KaraokeFullscreenView } from "./KaraokeFullscreenView";
@@ -33,34 +33,34 @@ export function KaraokeAppComponent({
     isCoverFlowOpen,
   } = c;
 
-  if (!isWindowOpen) return null;
-
   const windowTitle = currentTrack
     ? `${currentTrack.title}${currentTrack.artist ? ` - ${currentTrack.artist}` : ""}`
     : getTranslatedAppName("karaoke");
 
   return (
-    <>
-      {!isXpTheme && isForeground && menuBar}
-      <WindowFrame
-        title={windowTitle}
-        onClose={onClose}
-        isForeground={isForeground}
-        appId="karaoke"
-        material="notitlebar"
-        skipInitialSound={skipInitialSound}
-        instanceId={instanceId}
-        onNavigateNext={onNavigateNext}
-        onNavigatePrevious={onNavigatePrevious}
-        menuBar={isXpTheme ? menuBar : undefined}
-        onFullscreenToggle={toggleFullScreen}
-        onCoverFlowToggle={handleToggleCoverFlow}
-        isCoverFlowActive={isCoverFlowOpen}
-      >
-        <KaraokeWindowContent c={c} />
-        <KaraokeAppDialogs c={c} />
-      </WindowFrame>
-      <KaraokeFullscreenView c={c} isForeground={isForeground} />
-    </>
+    <AppWindowShell
+      isWindowOpen={isWindowOpen}
+      isXpTheme={isXpTheme}
+      isForeground={isForeground}
+      menuBar={menuBar}
+      windowFrameProps={{
+        title: windowTitle,
+        onClose,
+        isForeground,
+        appId: "karaoke",
+        material: "notitlebar",
+        skipInitialSound,
+        instanceId,
+        onNavigateNext,
+        onNavigatePrevious,
+        onFullscreenToggle: toggleFullScreen,
+        onCoverFlowToggle: handleToggleCoverFlow,
+        isCoverFlowActive: isCoverFlowOpen,
+      }}
+      trailing={<KaraokeFullscreenView c={c} isForeground={isForeground} />}
+    >
+      <KaraokeWindowContent c={c} />
+      <KaraokeAppDialogs c={c} />
+    </AppWindowShell>
   );
 }

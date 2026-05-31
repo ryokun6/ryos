@@ -1,6 +1,6 @@
 import "../../chats-streamdown.css";
 import { AppProps } from "../../../base/types";
-import { WindowFrame } from "@/components/layout/WindowFrame";
+import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { appMetadata } from "../..";
 import { ChatsDialogs } from "../ChatsDialogs";
 import { ChatsWindowContent } from "./ChatsWindowContent";
@@ -33,25 +33,26 @@ export function ChatsAppComponent({
     translatedHelpItems,
   } = c;
 
-  if (!isWindowOpen) return null;
-
   return (
-    <>
-      {!isXpTheme && isForeground && menuBar}
-      <WindowFrame
-        title={windowTitle}
-        onClose={onClose}
-        isForeground={isForeground}
-        appId="chats"
-        skipInitialSound={skipInitialSound}
-        instanceId={instanceId}
-        onNavigateNext={onNavigateNext}
-        onNavigatePrevious={onNavigatePrevious}
-        isShaking={isShaking}
-        menuBar={isXpTheme ? menuBar : undefined}
-      >
-        <ChatsWindowContent c={c} isForeground={isForeground ?? false} />
-        <ChatsDialogs
+    <AppWindowShell
+      isWindowOpen={isWindowOpen}
+      isXpTheme={isXpTheme}
+      isForeground={isForeground}
+      menuBar={menuBar}
+      windowFrameProps={{
+        title: windowTitle,
+        onClose,
+        isForeground,
+        appId: "chats",
+        skipInitialSound,
+        instanceId,
+        onNavigateNext,
+        onNavigatePrevious,
+        isShaking,
+      }}
+    >
+      <ChatsWindowContent c={c} isForeground={isForeground ?? false} />
+      <ChatsDialogs
           translatedHelpItems={translatedHelpItems}
           appMetadata={appMetadata}
           isHelpDialogOpen={c.isHelpDialogOpen}
@@ -107,7 +108,6 @@ export function ChatsAppComponent({
           passwordError={c.passwordError}
           setPasswordError={c.setPasswordError}
         />
-      </WindowFrame>
-    </>
+    </AppWindowShell>
   );
 }
