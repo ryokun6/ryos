@@ -88,7 +88,7 @@ export const useDockStore = create<DockStoreState>()(
         }
 
         const pinnedItems = computeDockPinnedItems(get().pinnedItems);
-        
+
         // Check for duplicates
         const exists = pinnedItems.some((existing) => {
           if (normalizedItem.type === "app" && existing.type === "app") {
@@ -108,7 +108,7 @@ export const useDockStore = create<DockStoreState>()(
           const newItems = computeDockPinnedItems(state.pinnedItems);
           // Ensure Finder stays at position 0 - insert at minimum position 1
           const minIndex = newItems[0]?.id === "finder" ? 1 : 0;
-          const index = insertIndex !== undefined 
+          const index = insertIndex !== undefined
             ? Math.max(minIndex, Math.min(insertIndex, newItems.length))
             : newItems.length;
           newItems.splice(index, 0, normalizedItem);
@@ -137,17 +137,17 @@ export const useDockStore = create<DockStoreState>()(
         set((state) => {
           const newItems = computeDockPinnedItems(state.pinnedItems);
           const movedItem = newItems[fromIndex];
-          
+
           // Don't allow moving Finder (always stays at position 0)
           if (movedItem?.id === "finder") {
             return state;
           }
-          
+
           // Don't allow moving items to position 0 (Finder's spot)
           if (toIndex === 0 && newItems[0]?.id === "finder") {
             return state;
           }
-          
+
           const [removed] = newItems.splice(fromIndex, 1);
           if (removed) {
             newItems.splice(toIndex, 0, removed);
