@@ -67,12 +67,17 @@ describe("Error Boundary Wiring Tests", () => {
 
   describe("Control Panels debug wiring", () => {
     test("renders debug-only error boundary controls in Control Panels", async () => {
-      const source = readSource(
-        "src/apps/control-panels/components/ControlPanelsAppComponent.tsx",
+      const shellSource = readSource(
+        "src/apps/control-panels/components/control-panels-app/ControlPanelsAppComponent.tsx",
       );
-      expect(source.includes('t("apps.control-panels.errorBoundaries")')).toBe(true);
-      expect(source.includes("handleTriggerAppCrashTest")).toBe(true);
-      expect(source.includes("handleTriggerDesktopCrashTest")).toBe(true);
+      const systemTabSource = readSource(
+        "src/apps/control-panels/components/control-panels-app/SystemTabContent.tsx",
+      );
+      expect(
+        systemTabSource.includes('t("apps.control-panels.errorBoundaries")'),
+      ).toBe(true);
+      expect(shellSource.includes("handleTriggerAppCrashTest")).toBe(true);
+      expect(shellSource.includes("handleTriggerDesktopCrashTest")).toBe(true);
     });
 
     test("dispatches shared crash events from Control Panels logic", async () => {
