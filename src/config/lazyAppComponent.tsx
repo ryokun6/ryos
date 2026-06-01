@@ -29,6 +29,18 @@ export function prefetchLikelyAppChunks(appIds: readonly string[]): void {
   }
 }
 
+function LazyAppFallback({ title }: { title?: string }) {
+  return (
+    <div
+      className="pointer-events-auto flex min-h-[180px] w-[320px] max-w-[calc(100vw-2rem)] items-center justify-center rounded-md border border-black/20 bg-white/90 p-4 text-sm text-neutral-700 shadow-xl backdrop-blur"
+      role="status"
+      aria-live="polite"
+    >
+      Loading {title || "app"}...
+    </div>
+  );
+}
+
 // Helper to create a lazy-loaded component with Suspense
 // Uses a cache to maintain stable component references across HMR
 export function createLazyComponent<T = unknown>(
@@ -47,7 +59,7 @@ export function createLazyComponent<T = unknown>(
 
   // Wrap with Suspense to handle loading state
   const WrappedComponent = (props: AppProps<T>) => (
-    <Suspense fallback={null}>
+    <Suspense fallback={<LazyAppFallback title={props.title} />}>
       <LazyComponent {...props} />
       <LazyLoadSignal instanceId={props.instanceId} />
     </Suspense>

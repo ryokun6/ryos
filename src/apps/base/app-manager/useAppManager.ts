@@ -25,7 +25,7 @@ export function useAppManager({ apps }: AppManagerProps) {
   const { t } = useTranslation();
 
   const {
-    instances,
+    openInstanceIds,
     instanceOrder,
     launchApp,
     bringInstanceToForeground,
@@ -37,7 +37,9 @@ export function useAppManager({ apps }: AppManagerProps) {
     foregroundInstanceId,
     exposeMode,
   } = useAppStoreShallow((state) => ({
-    instances: state.instances,
+    openInstanceIds: Object.values(state.instances)
+      .filter((instance) => instance.isOpen)
+      .map((instance) => instance.instanceId),
     instanceOrder: state.instanceOrder,
     launchApp: state.launchApp,
     bringInstanceToForeground: state.bringInstanceToForeground,
@@ -76,7 +78,7 @@ export function useAppManager({ apps }: AppManagerProps) {
   const switcherApps = switcherState.apps;
   const switcherIndex = switcherState.index;
 
-  const instancesRef = useRef(instances);
+  const instancesRef = useRef(useAppStore.getState().instances);
   const instanceOrderRef = useRef(instanceOrder);
   const launchAppRef = useRef(launchApp);
   const foregroundInstanceIdRef = useRef(foregroundInstanceId);
@@ -90,8 +92,11 @@ export function useAppManager({ apps }: AppManagerProps) {
   const switcherIndexRef = useRef(0);
 
   useEffect(() => {
-    instancesRef.current = instances;
-  }, [instances]);
+    instancesRef.current = useAppStore.getState().instances;
+    return useAppStore.subscribe((state) => {
+      instancesRef.current = state.instances;
+    });
+  }, []);
 
   useEffect(() => {
     instanceOrderRef.current = instanceOrder;
@@ -133,8 +138,9 @@ export function useAppManager({ apps }: AppManagerProps) {
 
       let changed = false;
       const next = new Set<string>();
+      const openIds = new Set(openInstanceIds);
       prev.forEach((instanceId) => {
-        if (instances[instanceId]?.isOpen) {
+        if (openIds.has(instanceId)) {
           next.add(instanceId);
         } else {
           changed = true;
@@ -143,7 +149,7 @@ export function useAppManager({ apps }: AppManagerProps) {
 
       return changed ? next : prev;
     });
-  }, [instances]);
+  }, [openInstanceIds]);
 
   useEffect(() => {
     const timer = setTimeout(() => setIsInitialMount(false), 500);
@@ -318,7 +324,7 @@ export function useAppManager({ apps }: AppManagerProps) {
 
   return {
     apps,
-    instances,
+    openInstanceIds,
     instanceOrder,
     exposeMode,
     showDesktopMenuBar,

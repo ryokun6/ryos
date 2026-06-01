@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useIsPhone } from "@/hooks/useIsPhone";
 
 const ScrollingContext = React.createContext<{
@@ -8,6 +8,11 @@ const ScrollingContext = React.createContext<{
   isScrolling: false,
   preventInteraction: () => false,
 });
+
+const NON_SCROLLING_CONTEXT_VALUE = {
+  isScrolling: false,
+  preventInteraction: () => false,
+};
 
 export function ScrollableMenuWrapper({ children }: { children: React.ReactNode }) {
   const isPhone = useIsPhone();
@@ -95,9 +100,7 @@ export function ScrollableMenuWrapper({ children }: { children: React.ReactNode 
   const canScrollLeft = scrollLeft > 0;
   const canScrollRight = scrollLeft < scrollWidth - clientWidth - 1;
 
-  // Calculate mask gradients based on scroll position
-  // In CSS masks: black = visible, transparent = hidden
-  const getMaskImage = () => {
+  const maskImage = useMemo(() => {
     if (!isPhone || scrollWidth <= clientWidth) {
       return undefined;
     }
@@ -115,7 +118,7 @@ export function ScrollableMenuWrapper({ children }: { children: React.ReactNode 
       return `linear-gradient(to right, black 0%, black calc(100% - ${fadeWidth}px), transparent 100%)`;
     }
     return undefined;
-  };
+  }, [canScrollLeft, canScrollRight, clientWidth, isPhone, scrollWidth]);
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     const touch = e.touches[0];
@@ -154,9 +157,17 @@ export function ScrollableMenuWrapper({ children }: { children: React.ReactNode 
     }
   }, []);
 
+  const scrollingContextValue = useMemo(
+    () => ({
+      isScrolling: hadRecentScrollRef.current,
+      preventInteraction,
+    }),
+    [preventInteraction, scrollLeft, scrollWidth, clientWidth]
+  );
+
   if (!isPhone) {
     return (
-      <ScrollingContext.Provider value={{ isScrolling: false, preventInteraction: () => false }}>
+      <ScrollingContext.Provider value={NON_SCROLLING_CONTEXT_VALUE}>
         <div className="flex items-stretch h-full">
           {children}
         </div>
@@ -165,7 +176,7 @@ export function ScrollableMenuWrapper({ children }: { children: React.ReactNode 
   }
 
   return (
-    <ScrollingContext.Provider value={{ isScrolling: hadRecentScrollRef.current, preventInteraction }}>
+    <ScrollingContext.Provider value={scrollingContextValue}>
       <div
         ref={scrollRef}
         onScroll={handleScroll}
@@ -175,8 +186,8 @@ export function ScrollableMenuWrapper({ children }: { children: React.ReactNode 
           overscrollBehaviorX: "contain",
           scrollbarWidth: "none",
           msOverflowStyle: "none",
-          maskImage: getMaskImage(),
-          WebkitMaskImage: getMaskImage(),
+          maskImage,
+          WebkitMaskImage: maskImage,
           touchAction: "pan-x",
         }}
         onTouchStart={handleTouchStart}

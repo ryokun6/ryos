@@ -13,20 +13,8 @@ export type { MenuBarProps } from "./menu-bar/menuBarTypes";
 
 export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
   const apps: AnyApp[] = useMemo(() => Object.values(appRegistry), []);
-  const {
-    instances,
-    bringInstanceToForeground,
-    restoreInstance,
-    foregroundInstanceId,
-  } = useAppStoreShallow((s) => ({
-    instances: s.instances,
-    bringInstanceToForeground: s.bringInstanceToForeground,
-    restoreInstance: s.restoreInstance,
-    foregroundInstanceId: s.foregroundInstanceId,
-  }));
 
   const { currentTheme, isWindowsTheme: isXpTheme } = useThemeFlags();
-  const getFileItem = useFilesStore((s) => s.getItem);
 
   if (inWindowFrame && isXpTheme) {
     return (
@@ -49,13 +37,8 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
 
   if (isXpTheme && !inWindowFrame) {
     return (
-      <WindowsTaskbar
+      <WindowsTaskbarWithState
         apps={apps}
-        instances={instances}
-        foregroundInstanceId={foregroundInstanceId}
-        bringInstanceToForeground={bringInstanceToForeground}
-        restoreInstance={restoreInstance}
-        getFileItem={getFileItem}
         currentTheme={currentTheme}
         isXpTheme={isXpTheme}
       />
@@ -63,4 +46,40 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
   }
 
   return <MacTopMenuBar>{children}</MacTopMenuBar>;
+}
+
+function WindowsTaskbarWithState({
+  apps,
+  currentTheme,
+  isXpTheme,
+}: {
+  apps: AnyApp[];
+  currentTheme: string;
+  isXpTheme: boolean;
+}) {
+  const {
+    instances,
+    bringInstanceToForeground,
+    restoreInstance,
+    foregroundInstanceId,
+  } = useAppStoreShallow((s) => ({
+    instances: s.instances,
+    bringInstanceToForeground: s.bringInstanceToForeground,
+    restoreInstance: s.restoreInstance,
+    foregroundInstanceId: s.foregroundInstanceId,
+  }));
+  const getFileItem = useFilesStore((s) => s.getItem);
+
+  return (
+    <WindowsTaskbar
+      apps={apps}
+      instances={instances}
+      foregroundInstanceId={foregroundInstanceId}
+      bringInstanceToForeground={bringInstanceToForeground}
+      restoreInstance={restoreInstance}
+      getFileItem={getFileItem}
+      currentTheme={currentTheme}
+      isXpTheme={isXpTheme}
+    />
+  );
 }

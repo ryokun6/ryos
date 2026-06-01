@@ -1,5 +1,5 @@
 import { useSound, Sounds } from "@/hooks/useSound";
-import { useEffect, useReducer, useRef } from "react";
+import { memo, useCallback, useEffect, useReducer, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { isTouchDevice } from "@/utils/device";
 import { useLongPress } from "@/hooks/useLongPress";
@@ -23,7 +23,33 @@ interface FileIconProps {
   context?: "desktop" | "finder";
 }
 
-export function FileIcon({
+type PreviewState = {
+  imgSrc: string | undefined;
+  fallbackToIcon: boolean;
+};
+
+type PreviewAction =
+  | { type: "reset"; imgSrc: string | undefined }
+  | { type: "setImage"; imgSrc: string | undefined }
+  | { type: "fallback" };
+
+const previewReducer = (
+  state: PreviewState,
+  action: PreviewAction
+): PreviewState => {
+  switch (action.type) {
+    case "reset":
+      return { imgSrc: action.imgSrc, fallbackToIcon: false };
+    case "setImage":
+      return { ...state, imgSrc: action.imgSrc };
+    case "fallback":
+      return { ...state, fallbackToIcon: true };
+    default:
+      return state;
+  }
+};
+
+export const FileIcon = memo(function FileIcon({
   name,
   isDirectory,
   icon,
@@ -44,31 +70,11 @@ export function FileIcon({
   const { isWinXp: isXpTheme, isWin98: isWin98Theme, isMacOSTheme: isMacOSXTheme } =
     useThemeFlags();
   const isFinderContext = context === "finder";
-  type PreviewState = {
-    imgSrc: string | undefined;
-    fallbackToIcon: boolean;
-  };
-  type PreviewAction =
-    | { type: "reset"; imgSrc: string | undefined }
-    | { type: "setImage"; imgSrc: string | undefined }
-    | { type: "fallback" };
   const initialState: PreviewState = {
     imgSrc: contentUrl,
     fallbackToIcon: false,
   };
-  const reducer = (state: PreviewState, action: PreviewAction): PreviewState => {
-    switch (action.type) {
-      case "reset":
-        return { imgSrc: action.imgSrc, fallbackToIcon: false };
-      case "setImage":
-        return { ...state, imgSrc: action.imgSrc };
-      case "fallback":
-        return { ...state, fallbackToIcon: true };
-      default:
-        return state;
-    }
-  };
-  const [previewState, dispatch] = useReducer(reducer, initialState);
+  const [previewState, dispatch] = useReducer(previewReducer, initialState);
   const { imgSrc, fallbackToIcon } = previewState;
   const attemptedUrlsRef = useRef<Set<string>>(new Set());
   const blobUrlRef = useRef<string | null>(null);
@@ -180,7 +186,7 @@ export function FileIcon({
 
   const sizes = sizeClasses[size];
 
-  const handleImageError = () => {
+  const handleImageError = useCallback(() => {
     console.error(
       `Error loading thumbnail for ${name}, fallback to icon. Current imgSrc: ${imgSrc?.substring(
         0,
@@ -220,7 +226,7 @@ export function FileIcon({
     // Otherwise fall back to icon
     console.log(`[FileIcon] Falling back to icon for ${name}`);
     dispatch({ type: "fallback" });
-  };
+  }, [fallbackToIcon, imgSrc, name]);
 
   const renderIcon = () => {
     // Show thumbnail for images or music files with cover art
@@ -277,7 +283,7 @@ export function FileIcon({
     );
   };
 
-  const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const now = Date.now();
     if (now - lastClickSoundRef.current >= CLICK_SOUND_COOLDOWN_MS) {
       lastClickSoundRef.current = now;
@@ -291,14 +297,14 @@ export function FileIcon({
       // On desktop, execute the regular onClick handler (selection)
       onClick?.(e);
     }
-  };
+  }, [onClick, onDoubleClick, playClick]);
 
-  const handleDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleDoubleClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     // Only handle double-click on desktop (touch uses single tap)
     if (!isTouchDevice()) {
       onDoubleClick?.(e);
     }
-  };
+  }, [onDoubleClick]);
 
   // Add long-press support for context menu on mobile
   const longPressHandlers = useLongPress((touchEvent) => {
@@ -371,4 +377,4 @@ export function FileIcon({
       </div>
     </div>
   );
-}
+});
