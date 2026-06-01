@@ -1,7 +1,11 @@
 import type { CSSProperties } from "react";
+import {
+  boostGlowColor,
+  makeGlowFromColor,
+  pickPrimaryColor,
+} from "@/apps/ipod/components/lyrics-display/colorUtils";
 
 export const TITLE_CARD_BASE_SHADOW = "0 0 6px rgba(0,0,0,0.5), 0 0 6px rgba(0,0,0,0.5)";
-export const TITLE_CARD_GOLD_GLOW_COLOR_FALLBACK = "#FFD700";
 export const TITLE_CARD_MOVEMENT_TRANSITION = {
   type: "spring" as const,
   stiffness: 200,
@@ -30,101 +34,12 @@ export function getTitleCardStyleCategory(className: string): TitleCardStyleCate
   return "glow-white";
 }
 
-function titleCardHexToRgb(hex: string): [number, number, number] {
-  const match = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
-  if (!match) return [255, 215, 0];
-  return [
-    Number.parseInt(match[1]!, 16),
-    Number.parseInt(match[2]!, 16),
-    Number.parseInt(match[3]!, 16),
-  ];
-}
-
-function titleCardRgbSaturation(r: number, g: number, b: number): number {
-  const rn = r / 255;
-  const gn = g / 255;
-  const bn = b / 255;
-  const max = Math.max(rn, gn, bn);
-  const min = Math.min(rn, gn, bn);
-  if (max === min) return 0;
-  const lightness = (max + min) / 2;
-  return lightness > 0.5
-    ? (max - min) / (2 - max - min)
-    : (max - min) / (max + min);
-}
-
-function pickTitleCardPrimaryColor(palette: string[]): string {
-  let best = palette[0] ?? TITLE_CARD_GOLD_GLOW_COLOR_FALLBACK;
-  let bestScore = -1;
-
-  for (const hex of palette) {
-    const [r, g, b] = titleCardHexToRgb(hex);
-    const saturation = titleCardRgbSaturation(r, g, b);
-    const lightness = (r + g + b) / (3 * 255);
-    const lightnessBoost = 1 - Math.abs(lightness - 0.5) * 2;
-    const score = saturation * 0.7 + lightnessBoost * 0.3;
-    if (score > bestScore) {
-      bestScore = score;
-      best = hex;
-    }
-  }
-
-  return best;
-}
-
-function boostTitleCardGlowColor(hex: string): string {
-  const [r, g, b] = titleCardHexToRgb(hex);
-  const rn = r / 255;
-  const gn = g / 255;
-  const bn = b / 255;
-  const max = Math.max(rn, gn, bn);
-  const min = Math.min(rn, gn, bn);
-  let hue = 0;
-  const lightness = (max + min) / 2;
-  const delta = max - min;
-  const saturation = delta === 0 ? 0 : delta / (1 - Math.abs(2 * lightness - 1));
-
-  if (delta !== 0) {
-    if (max === rn) hue = ((gn - bn) / delta + 6) % 6;
-    else if (max === gn) hue = (bn - rn) / delta + 2;
-    else hue = (rn - gn) / delta + 4;
-    hue /= 6;
-  }
-
-  const boostedSaturation = Math.max(saturation, 0.85);
-  const boostedLightness = Math.max(Math.min(lightness, 0.65), 0.55);
-  const hslToRgb = (p: number, q: number, t: number) => {
-    let nextT = t;
-    if (nextT < 0) nextT += 1;
-    if (nextT > 1) nextT -= 1;
-    if (nextT < 1 / 6) return p + (q - p) * 6 * nextT;
-    if (nextT < 1 / 2) return q;
-    if (nextT < 2 / 3) return p + (q - p) * (2 / 3 - nextT) * 6;
-    return p;
-  };
-  const q =
-    boostedLightness < 0.5
-      ? boostedLightness * (1 + boostedSaturation)
-      : boostedLightness + boostedSaturation - boostedLightness * boostedSaturation;
-  const p = 2 * boostedLightness - q;
-  const ro = Math.round(hslToRgb(p, q, hue + 1 / 3) * 255);
-  const go = Math.round(hslToRgb(p, q, hue) * 255);
-  const bo = Math.round(hslToRgb(p, q, hue - 1 / 3) * 255);
-  return `#${ro.toString(16).padStart(2, "0")}${go.toString(16).padStart(2, "0")}${bo.toString(16).padStart(2, "0")}`;
-}
-
 export function makeTitleCardGlow(hex: string) {
-  const [r, g, b] = titleCardHexToRgb(hex);
-  return {
-    color: hex,
-    shadow: `0 0 8px rgba(${r},${g},${b},0.8), 0 0 16px rgba(${r},${g},${b},0.4), 0 0 6px rgba(0,0,0,0.5)`,
-    filter: `drop-shadow(0 0 8px rgba(${r},${g},${b},0.5))`,
-    baseColor: `rgba(${r},${g},${b},0.6)`,
-  };
+  return makeGlowFromColor(hex);
 }
 
 export function pickBoostedTitleCardGlow(palette: string[]) {
-  return makeTitleCardGlow(boostTitleCardGlowColor(pickTitleCardPrimaryColor(palette)));
+  return makeTitleCardGlow(boostGlowColor(pickPrimaryColor(palette)));
 }
 
 export const TITLE_CARD_SECONDARY_TEXT_STYLE: CSSProperties = {
