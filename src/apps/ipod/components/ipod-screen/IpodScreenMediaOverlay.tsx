@@ -8,6 +8,7 @@ import { MeshGradientBackground } from "@/components/shared/MeshGradientBackgrou
 import { WaterBackground } from "@/components/shared/WaterBackground";
 import { DisplayMode } from "@/types/lyrics";
 import { LyricsDisplay } from "../lyrics-display/LyricsDisplay";
+import { getIpodSmallScreenLyricsFontClassName } from "../lyrics-display/useLyricsDisplaySettings";
 import {
   AppleMusicPlayerBridge,
 } from "../AppleMusicPlayerBridge";
@@ -332,6 +333,7 @@ export function IpodScreenMediaOverlay({
           error={lyricsControls.error}
           visible={shouldShowLyrics}
           videoVisible={showVideo}
+          fontClassName={getIpodSmallScreenLyricsFontClassName(uiVariant)}
           alignment={lyricsAlignment}
           koreanDisplay={koreanDisplay}
           japaneseFurigana={japaneseFurigana}
