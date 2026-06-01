@@ -3,6 +3,7 @@ import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useTranslation } from "react-i18next";
 import { X } from "@phosphor-icons/react";
+import type { ReactNode } from "react";
 
 export interface FullscreenMobileDismissProps {
   visible: boolean;
@@ -10,6 +11,7 @@ export interface FullscreenMobileDismissProps {
   onInteraction?: () => void;
   /** Extra condition to keep the control interactive (e.g. menus open) */
   forceVisible?: boolean;
+  leadingControls?: ReactNode;
 }
 
 /**
@@ -20,6 +22,7 @@ export function FullscreenMobileDismiss({
   onDismiss,
   onInteraction,
   forceVisible = false,
+  leadingControls,
 }: FullscreenMobileDismissProps) {
   const { t } = useTranslation();
   const { isMacOSTheme: isMacTheme } = useThemeFlags();
@@ -56,6 +59,7 @@ export function FullscreenMobileDismiss({
             : {}
         }
       >
+        {leadingControls}
         <button
           type="button"
           onClick={(e) => {

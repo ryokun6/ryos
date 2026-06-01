@@ -530,6 +530,7 @@ export function FullScreenPortal({
           forceVisible={anyMenuOpen}
           onDismiss={onClose}
           onInteraction={registerActivity}
+          leadingControls={renderedTrailingControls}
         />
       )}
 

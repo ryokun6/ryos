@@ -119,13 +119,12 @@ export function FullscreenPlayerControls({
         />
       )}
 
-      {trailingControls}
-
       {onClose && (
         <CloseIsland
           onClose={onClose}
           styles={styles}
           handleClick={handleClick}
+          leadingControls={trailingControls}
         />
       )}
     </div>

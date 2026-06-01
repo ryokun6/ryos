@@ -1,7 +1,6 @@
 import ReactPlayer from "react-player";
 import { FullScreenPortal } from "@/apps/ipod/components/FullScreenPortal";
 import { ReactionOverlay } from "@/components/listen/ReactionOverlay";
-import { ListenSessionToolbar } from "@/components/listen/ListenSessionToolbar";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { PLAYER_PROGRESS_INTERVAL_MS } from "@/apps/ipod/constants";
 import { DisplayMode } from "@/types/lyrics";
@@ -12,6 +11,7 @@ import {
   KaraokeFullscreenLyricsOverlay,
   KaraokeSyncModeFullscreenPanel,
 } from "../karaoke-lyrics-playback";
+import { KaraokeFullscreenRoomControls } from "./KaraokeFullscreenRoomControls";
 import { KaraokeVisualLayers } from "./KaraokeVisualLayers";
 import type { KaraokeAppController } from "./useKaraokeAppController";
 
@@ -33,7 +33,7 @@ export function KaraokeFullscreenView({ c, isForeground }: KaraokeFullscreenView
     koreanDisplay, japaneseFurigana, handleFullscreenLyricsSwipeUp, handleFullscreenLyricsSwipeDown,
     lyricsSourceOverride, isAddingSong, setIsLyricsSearchDialogOpen, auth, lyricsPlaybackSyncRef,
     listenSessionUsername, listenSessionClientInstanceId, listenListenerCount,
-    isListenSessionHost, isListenSessionDj, isListenSessionAnonymous, setIsListenInviteOpen,
+    isListenSessionHost, isListenSessionDj, isListenSessionAnonymous, setIsJoinListenDialogOpen,
     handleLeaveListenSession, handleAssignPlaybackDevice, handlePassDj, handleTransferSessionHost,
     handleSendReaction,
   } = c;
@@ -96,31 +96,26 @@ export function KaraokeFullscreenView({ c, isForeground }: KaraokeFullscreenView
       displayMode={displayMode}
       onDisplayModeSelect={handleDisplayModeSelect}
       displayModeOptions={displayModeOptions}
-      trailingControls={({ portalContainer }) =>
-        listenSession && !isSyncModeOpen ? (
-          <ListenSessionToolbar
-            session={listenSession}
-            isRemoteOnly={isListenSessionRemoteOnly}
-            isHost={isListenSessionHost}
-            isDj={isListenSessionDj}
-            isAnonymous={isListenSessionAnonymous}
-            listenerCount={listenListenerCount}
-            currentUsername={listenSessionUsername}
-            currentClientInstanceId={listenSessionClientInstanceId}
-            onShare={() => setIsListenInviteOpen(true)}
-            onLeave={handleLeaveListenSession}
-            onAssignPlaybackDevice={handleAssignPlaybackDevice}
-            onPassDj={handlePassDj}
-            onTransferHost={handleTransferSessionHost}
-            onSendReaction={handleSendReaction}
-            onInteraction={registerActivity}
-            portalContainer={portalContainer}
-            dropdownSide="top"
-            showShare={false}
-            className="hidden md:flex"
-          />
-        ) : null
-      }
+      trailingControls={({ portalContainer }) => (
+        <KaraokeFullscreenRoomControls
+          session={listenSession}
+          isRemoteOnly={isListenSessionRemoteOnly}
+          isHost={isListenSessionHost}
+          isDj={isListenSessionDj}
+          isAnonymous={isListenSessionAnonymous}
+          listenerCount={listenListenerCount}
+          currentUsername={listenSessionUsername}
+          currentClientInstanceId={listenSessionClientInstanceId}
+          onJoinRoom={() => setIsJoinListenDialogOpen(true)}
+          onLeave={handleLeaveListenSession}
+          onAssignPlaybackDevice={handleAssignPlaybackDevice}
+          onPassDj={handlePassDj}
+          onTransferHost={handleTransferSessionHost}
+          onSendReaction={handleSendReaction}
+          onInteraction={registerActivity}
+          portalContainer={portalContainer}
+        />
+      )}
       syncModeContent={
         <KaraokeSyncModeFullscreenPanel
           isSyncModeOpen={isSyncModeOpen}

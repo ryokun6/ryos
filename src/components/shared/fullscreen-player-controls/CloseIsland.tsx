@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { X } from "@phosphor-icons/react";
 import { AquaShineOverlays } from "./AquaShineOverlays";
@@ -11,12 +12,14 @@ interface CloseIslandProps {
   onClose: () => void;
   styles: FullscreenControlStyles;
   handleClick: FullscreenControlClickHandler;
+  leadingControls?: ReactNode;
 }
 
 export function CloseIsland({
   onClose,
   styles,
   handleClick,
+  leadingControls,
 }: CloseIslandProps) {
   const { t } = useTranslation();
   const {
@@ -41,6 +44,7 @@ export function CloseIsland({
       style={aquaSegmentStyle}
     >
       {isMacTheme && <AquaShineOverlays variant={variant} />}
+      {leadingControls}
       <button
         type="button"
         onClick={handleClick(onClose)}
