@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useReducer, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import type { AppId } from "@/config/appRegistry";
@@ -25,7 +25,7 @@ export function useAppManager({ apps }: AppManagerProps) {
   const { t } = useTranslation();
 
   const {
-    openInstanceIds,
+    instances,
     instanceOrder,
     launchApp,
     bringInstanceToForeground,
@@ -37,9 +37,7 @@ export function useAppManager({ apps }: AppManagerProps) {
     foregroundInstanceId,
     exposeMode,
   } = useAppStoreShallow((state) => ({
-    openInstanceIds: Object.values(state.instances)
-      .filter((instance) => instance.isOpen)
-      .map((instance) => instance.instanceId),
+    instances: state.instances,
     instanceOrder: state.instanceOrder,
     launchApp: state.launchApp,
     bringInstanceToForeground: state.bringInstanceToForeground,
@@ -51,6 +49,14 @@ export function useAppManager({ apps }: AppManagerProps) {
     foregroundInstanceId: state.foregroundInstanceId,
     exposeMode: state.exposeMode,
   }));
+
+  const openInstanceIds = useMemo(
+    () =>
+      Object.values(instances)
+        .filter((instance) => instance.isOpen)
+        .map((instance) => instance.instanceId),
+    [instances]
+  );
 
   const { isWindowsTheme: isXpTheme } = useThemeFlags();
 
