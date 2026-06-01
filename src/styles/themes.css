@@ -1062,7 +1062,7 @@
 /* Internet Explorer favorites bar: compact bookmark labels (below url bar 12px) */
 :root[data-os-theme="macosx"] button.ie-favorites-bar-button,
 :root[data-os-theme="macosx"] button.ie-favorites-bar-button span {
-  font-size: 10px !important;
+  font-size: 11px !important;
   font-family: var(--os-font-ui) !important;
 }
 

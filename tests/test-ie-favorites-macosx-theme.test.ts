@@ -25,7 +25,7 @@ describe("Internet Explorer favorites bar (macosx theme)", () => {
       ':root[data-os-theme="macosx"] button.ie-favorites-bar-button'
     );
     expect(themesCss).toMatch(
-      /button\.ie-favorites-bar-button[\s\S]*?font-size:\s*10px\s*!important/
+      /button\.ie-favorites-bar-button[\s\S]*?font-size:\s*11px\s*!important/
     );
     expect(themesCss).not.toContain("hover\\:bg-gray-200.font-geneva-12");
   });
