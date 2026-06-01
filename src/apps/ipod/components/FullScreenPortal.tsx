@@ -50,7 +50,8 @@ export function FullScreenPortal({
   onDisplayModeSelect,
   displayModeOptions,
   fullScreenPlayerRef,
-  trailingControls,
+  mobileCloseLeadingControls,
+  desktopTopRightControls,
   activityState,
   onSurfaceLongPress,
   surfaceLongPressEnabled = true,
@@ -425,10 +426,14 @@ export function FullScreenPortal({
 
   useEventListener("keydown", handleKeyDown);
 
-  const renderedTrailingControls =
-    typeof trailingControls === "function"
-      ? trailingControls({ portalContainer: containerRef.current })
-      : trailingControls;
+  const renderedMobileCloseLeadingControls =
+    typeof mobileCloseLeadingControls === "function"
+      ? mobileCloseLeadingControls({ portalContainer: containerRef.current })
+      : mobileCloseLeadingControls;
+  const renderedDesktopTopRightControls =
+    typeof desktopTopRightControls === "function"
+      ? desktopTopRightControls({ portalContainer: containerRef.current })
+      : desktopTopRightControls;
 
   return createPortal(
     <div
@@ -530,8 +535,32 @@ export function FullScreenPortal({
           forceVisible={anyMenuOpen}
           onDismiss={onClose}
           onInteraction={registerActivity}
-          leadingControls={renderedTrailingControls}
+          leadingControls={renderedMobileCloseLeadingControls}
         />
+      )}
+
+      {renderedDesktopTopRightControls && (
+        <div
+          data-toolbar
+          className={cn(
+            "fixed z-[10001] hidden md:flex transition-opacity duration-200",
+            !suppressToolbar &&
+            (showControls || anyMenuOpen || !getActualPlayerState())
+              ? "opacity-100 pointer-events-auto"
+              : "opacity-0 pointer-events-none"
+          )}
+          style={{
+            top: "calc(max(env(safe-area-inset-top), 0.75rem) + 1.5rem)",
+            right:
+              "calc(max(env(safe-area-inset-right), 0.75rem) + 1.5rem)",
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            restartAutoHideTimer();
+          }}
+        >
+          {renderedDesktopTopRightControls}
+        </div>
       )}
 
       <div
@@ -615,7 +644,6 @@ export function FullScreenPortal({
           bgOpacity="35"
           onInteraction={registerActivity}
           portalContainer={containerRef.current}
-          trailingControls={renderedTrailingControls}
         />
       </div>
 

@@ -1,4 +1,4 @@
-import type { MouseEvent, ReactElement } from "react";
+import type { CSSProperties, MouseEvent, ReactElement } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { useSound, Sounds } from "@/hooks/useSound";
@@ -45,6 +45,9 @@ interface KaraokeFullscreenRoomControlsProps {
   onSendReaction: (emoji: string) => void;
   onInteraction?: () => void;
   portalContainer?: HTMLElement | null;
+  dropdownSide?: "top" | "bottom";
+  inline?: boolean;
+  className?: string;
 }
 
 export function KaraokeFullscreenRoomControls({
@@ -64,19 +67,33 @@ export function KaraokeFullscreenRoomControls({
   onSendReaction,
   onInteraction,
   portalContainer,
+  dropdownSide = "bottom",
+  inline = false,
+  className,
 }: KaraokeFullscreenRoomControlsProps) {
   const { t } = useTranslation();
   const { isMacOSTheme: isMacTheme } = useThemeFlags();
   const { play: playClick } = useSound(Sounds.BUTTON_CLICK, 0.3);
+  const segmentClasses = isMacTheme
+    ? "relative overflow-hidden rounded-full shadow-lg flex items-center gap-1 px-1 py-1"
+    : "border border-white/10 backdrop-blur-sm rounded-full shadow-lg flex items-center gap-1 px-1 py-1 bg-neutral-800/60";
+  const aquaSegmentStyle: CSSProperties = isMacTheme
+    ? {
+        background:
+          "linear-gradient(to bottom, rgba(60, 60, 60, 0.6), rgba(30, 30, 30, 0.5))",
+        boxShadow:
+          "0 2px 4px rgba(0, 0, 0, 0.2), inset 0 0 0 0.5px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.15)",
+      }
+    : {};
   const iconClasses = isMacTheme
     ? "text-white/70 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]"
     : "";
   const buttonClasses = cn(
-    "w-9 h-9 md:w-12 md:h-12 flex items-center justify-center rounded-full transition-colors focus:outline-none relative z-10",
+    "w-8 h-8 flex items-center justify-center rounded-full transition-colors focus:outline-none relative z-10",
     !isMacTheme && "text-white/70 hover:text-white hover:bg-white/10"
   );
   const svgClasses = cn(
-    "w-[18px] h-[18px] md:w-[22px] md:h-[22px]",
+    "w-[14px] h-[14px]",
     iconClasses
   );
   const playbackValue = session
@@ -149,14 +166,14 @@ export function KaraokeFullscreenRoomControls({
     </button>
   );
 
-  return (
+  const controls = (
     <>
       {session ? (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>{roomButton}</DropdownMenuTrigger>
           <DropdownMenuContent
             container={portalContainer}
-            side="top"
+            side={dropdownSide}
             align="center"
             sideOffset={8}
             className="px-0 w-56"
@@ -265,7 +282,7 @@ export function KaraokeFullscreenRoomControls({
           <DropdownMenuTrigger asChild>{reactionButton}</DropdownMenuTrigger>
           <DropdownMenuContent
             container={portalContainer}
-            side="top"
+            side={dropdownSide}
             align="center"
             sideOffset={8}
             className="px-1 py-1 flex gap-1 min-w-0 w-auto"
@@ -298,5 +315,13 @@ export function KaraokeFullscreenRoomControls({
         reactionButton
       )}
     </>
+  );
+
+  if (inline) return controls;
+
+  return (
+    <div className={cn(segmentClasses, className)} style={aquaSegmentStyle}>
+      {controls}
+    </div>
   );
 }

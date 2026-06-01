@@ -42,7 +42,6 @@ export function FullscreenPlayerControls({
   bgOpacity = "35",
   onInteraction,
   portalContainer,
-  trailingControls,
   hideLyricsControls = false,
 }: FullscreenPlayerControlsProps) {
   const { play: playClick } = useSound(Sounds.BUTTON_CLICK, 0.3);
@@ -124,7 +123,6 @@ export function FullscreenPlayerControls({
           onClose={onClose}
           styles={styles}
           handleClick={handleClick}
-          leadingControls={trailingControls}
         />
       )}
     </div>

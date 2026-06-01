@@ -133,8 +133,12 @@ export interface FullScreenPortalProps {
   displayMode?: DisplayMode;
   onDisplayModeSelect?: (mode: DisplayMode) => void;
   displayModeOptions?: { value: DisplayMode; label: string }[];
-  /** Additional controls rendered immediately before the desktop close button. */
-  trailingControls?:
+  /** Additional controls rendered before the mobile top-right close button. */
+  mobileCloseLeadingControls?:
+    | React.ReactNode
+    | ((ctx: { portalContainer: HTMLElement | null }) => React.ReactNode);
+  /** Additional controls rendered in a desktop top-right fullscreen toolbar. */
+  desktopTopRightControls?:
     | React.ReactNode
     | ((ctx: { portalContainer: HTMLElement | null }) => React.ReactNode);
   // Player ref for mobile Safari handling

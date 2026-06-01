@@ -40,6 +40,32 @@ export function KaraokeFullscreenView({ c, isForeground }: KaraokeFullscreenView
 
   if (!isFullScreen) return null;
 
+  const renderRoomControls = (
+    portalContainer: HTMLElement | null,
+    inline = false
+  ) => (
+    <KaraokeFullscreenRoomControls
+      session={listenSession}
+      isRemoteOnly={isListenSessionRemoteOnly}
+      isHost={isListenSessionHost}
+      isDj={isListenSessionDj}
+      isAnonymous={isListenSessionAnonymous}
+      listenerCount={listenListenerCount}
+      currentUsername={listenSessionUsername}
+      currentClientInstanceId={listenSessionClientInstanceId}
+      onJoinRoom={() => setIsJoinListenDialogOpen(true)}
+      onLeave={handleLeaveListenSession}
+      onAssignPlaybackDevice={handleAssignPlaybackDevice}
+      onPassDj={handlePassDj}
+      onTransferHost={handleTransferSessionHost}
+      onSendReaction={handleSendReaction}
+      onInteraction={registerActivity}
+      portalContainer={portalContainer}
+      dropdownSide="bottom"
+      inline={inline}
+    />
+  );
+
   return (
     <KaraokeLyricsPlaybackProvider
       currentTrack={currentTrack}
@@ -96,26 +122,12 @@ export function KaraokeFullscreenView({ c, isForeground }: KaraokeFullscreenView
       displayMode={displayMode}
       onDisplayModeSelect={handleDisplayModeSelect}
       displayModeOptions={displayModeOptions}
-      trailingControls={({ portalContainer }) => (
-        <KaraokeFullscreenRoomControls
-          session={listenSession}
-          isRemoteOnly={isListenSessionRemoteOnly}
-          isHost={isListenSessionHost}
-          isDj={isListenSessionDj}
-          isAnonymous={isListenSessionAnonymous}
-          listenerCount={listenListenerCount}
-          currentUsername={listenSessionUsername}
-          currentClientInstanceId={listenSessionClientInstanceId}
-          onJoinRoom={() => setIsJoinListenDialogOpen(true)}
-          onLeave={handleLeaveListenSession}
-          onAssignPlaybackDevice={handleAssignPlaybackDevice}
-          onPassDj={handlePassDj}
-          onTransferHost={handleTransferSessionHost}
-          onSendReaction={handleSendReaction}
-          onInteraction={registerActivity}
-          portalContainer={portalContainer}
-        />
-      )}
+      mobileCloseLeadingControls={({ portalContainer }) =>
+        renderRoomControls(portalContainer, true)
+      }
+      desktopTopRightControls={({ portalContainer }) =>
+        renderRoomControls(portalContainer)
+      }
       syncModeContent={
         <KaraokeSyncModeFullscreenPanel
           isSyncModeOpen={isSyncModeOpen}

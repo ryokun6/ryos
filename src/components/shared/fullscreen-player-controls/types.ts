@@ -69,9 +69,6 @@ export interface FullscreenPlayerControlsProps {
   // Portal container for fullscreen mode (dropdown menus need to render inside the fullscreen element)
   portalContainer?: HTMLElement | null;
 
-  /** Extra controls rendered immediately before the close island. */
-  trailingControls?: React.ReactNode;
-
   // Hide lyrics controls island (for video players without lyrics)
   hideLyricsControls?: boolean;
 }
