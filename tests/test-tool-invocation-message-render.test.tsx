@@ -1,23 +1,34 @@
 import React from "react";
-import { describe, expect, test } from "bun:test";
+import { describe, expect, mock, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
-const storage = new Map<string, string>();
+mock.module("react-i18next", () => ({
+  useTranslation: () => ({
+    t: (key: string, values?: Record<string, unknown>) =>
+      values?.appName ? `${key}:${values.appName}` : key,
+  }),
+}));
 
-Object.defineProperty(globalThis, "navigator", {
-  value: { hardwareConcurrency: 4, userAgent: "Bun" },
-  configurable: true,
-});
+mock.module("@/components/shared/HtmlPreview", () => ({
+  default: () => null,
+}));
 
-Object.defineProperty(globalThis, "localStorage", {
-  value: {
-    getItem: (key: string) => storage.get(key) ?? null,
-    setItem: (key: string, value: string) => storage.set(key, value),
-    removeItem: (key: string) => storage.delete(key),
-    clear: () => storage.clear(),
-  },
-  configurable: true,
-});
+mock.module("@/components/shared/CursorCloudAgentRunsListCard", () => ({
+  CursorCloudAgentRunsListCard: () => null,
+}));
+
+mock.module("@/components/shared/CursorRepoAgentChatCard", () => ({
+  CursorRepoAgentChatCard: () => null,
+}));
+
+mock.module("@/components/shared/MapsSearchPlacesCard", () => ({
+  MapsSearchPlacesCard: () => null,
+}));
+
+mock.module("@/components/ui/activity-indicator", () => ({
+  ActivityIndicator: () =>
+    React.createElement("span", { "data-testid": "spinner" }),
+}));
 
 async function loadToolInvocationMessage() {
   const mod = await import("../src/components/shared/ToolInvocationMessage");
@@ -53,4 +64,20 @@ describe("ToolInvocationMessage rendering", () => {
     expect(markup).toBe("");
   });
 
+  test("still renders non-app loading tool calls", async () => {
+    const ToolInvocationMessage = await loadToolInvocationMessage();
+    const markup = renderToStaticMarkup(
+      <ToolInvocationMessage
+        {...defaultProps}
+        part={{
+          type: "tool-read",
+          toolCallId: "call-2",
+          state: "input-available",
+          input: { path: "/Documents/Notes.txt" },
+        }}
+      />
+    );
+
+    expect(markup).toContain("apps.chats.toolCalls.readingFile");
+  });
 });
