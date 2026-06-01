@@ -128,13 +128,6 @@ export const DEFAULT_FAVORITES: Favorite[] = [
     isDirectory: false,
   },
   {
-    title: "NewJeans",
-    url: "https://newjeans.jp",
-    favicon: "https://www.google.com/s2/favicons?domain=newjeans.jp&sz=32",
-    year: "current",
-    isDirectory: false,
-  },
-  {
     title: "Friends",
     isDirectory: true, // Mark as directory
     children: [
