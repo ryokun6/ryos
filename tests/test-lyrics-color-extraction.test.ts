@@ -1,0 +1,68 @@
+import { describe, expect, test } from "bun:test";
+import {
+  boostGlowColor,
+  pickPrimaryColor,
+} from "../src/apps/ipod/components/lyrics-display/colorUtils";
+import { completeCoverPalette } from "../src/hooks/useCoverPalette";
+
+function hexToRgb(hex: string): [number, number, number] {
+  const match = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
+  if (!match) throw new Error(`Invalid hex color: ${hex}`);
+  return [
+    Number.parseInt(match[1]!, 16),
+    Number.parseInt(match[2]!, 16),
+    Number.parseInt(match[3]!, 16),
+  ];
+}
+
+function relativeLuminance(hex: string): number {
+  const [r, g, b] = hexToRgb(hex);
+  const linear = (channel: number) => {
+    const normalized = channel / 255;
+    return normalized <= 0.03928
+      ? normalized / 12.92
+      : ((normalized + 0.055) / 1.055) ** 2.4;
+  };
+
+  return 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b);
+}
+
+describe("lyrics color extraction", () => {
+  test("keeps black and white cover palettes neutral instead of falling back warm", () => {
+    const palette = completeCoverPalette(["#000000", "#ffffff"]);
+
+    expect(palette).toHaveLength(7);
+    expect(palette).toContain("#ffffff");
+    expect(palette).not.toContain("#9c2b2b");
+    expect(pickPrimaryColor(palette)).toBe("#ffffff");
+  });
+
+  test("pads single-color neutral covers without introducing warm defaults", () => {
+    const palette = completeCoverPalette(["#000000"]);
+
+    expect(palette).toHaveLength(7);
+    expect(palette).toContain("#ffffff");
+    expect(palette).not.toContain("#9c2b2b");
+    expect(pickPrimaryColor(palette)).toBe("#ffffff");
+  });
+
+  test("chooses white for purely black and white lyrics glow palettes", () => {
+    expect(pickPrimaryColor(["#000000", "#ffffff"])).toBe("#ffffff");
+    expect(boostGlowColor("#ffffff")).toBe("#ffffff");
+  });
+
+  test("does not turn grayscale colors red when boosting glow", () => {
+    const boosted = boostGlowColor("#101010");
+    const [r, g, b] = hexToRgb(boosted);
+
+    expect(r).toBe(g);
+    expect(g).toBe(b);
+    expect(r).toBeGreaterThanOrEqual(224);
+  });
+
+  test("lifts dark saturated colors to a readable glow luminance", () => {
+    const boosted = boostGlowColor("#1a237e");
+
+    expect(relativeLuminance(boosted)).toBeGreaterThanOrEqual(0.34);
+  });
+});

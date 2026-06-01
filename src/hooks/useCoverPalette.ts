@@ -42,6 +42,61 @@ const MIN_DISTINCT_SQ = 70 * 70;
 
 const COLOR_COUNT = 7;
 
+function hexToRgb(hex: string): [number, number, number] | null {
+  const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
+  if (!m) return null;
+  return [parseInt(m[1]!, 16), parseInt(m[2]!, 16), parseInt(m[3]!, 16)];
+}
+
+function mixHexColors(fromHex: string, toHex: string, amount: number): string | null {
+  const from = hexToRgb(fromHex);
+  const to = hexToRgb(toHex);
+  if (!from || !to) return null;
+
+  return rgbToHex(
+    from[0] + (to[0] - from[0]) * amount,
+    from[1] + (to[1] - from[1]) * amount,
+    from[2] + (to[2] - from[2]) * amount
+  );
+}
+
+export function completeCoverPalette(colors: string[]): string[] {
+  if (colors.length === 0) return DEFAULT_PALETTE;
+
+  const result = [...colors];
+  const selectedHexes = new Set(result.map((hex) => hex.toLowerCase()));
+  const addColor = (hex: string | null) => {
+    if (!hex || result.length >= COLOR_COUNT) return;
+    const key = hex.toLowerCase();
+    if (selectedHexes.has(key)) return;
+    result.push(hex);
+    selectedHexes.add(key);
+  };
+
+  for (let i = 0; i < colors.length && result.length < COLOR_COUNT; i++) {
+    const current = colors[i]!;
+    const next = colors[(i + 1) % colors.length] ?? current;
+    if (current === next) continue;
+    for (const amount of [0.25, 0.5, 0.75]) {
+      addColor(mixHexColors(current, next, amount));
+    }
+  }
+
+  for (const color of colors) {
+    for (const amount of [0.16, 0.32, 0.48, 0.64, 0.8, 1]) {
+      addColor(mixHexColors(color, "#ffffff", amount));
+    }
+    addColor(mixHexColors(color, "#000000", 0.2));
+    addColor(mixHexColors(color, "#000000", 0.4));
+  }
+
+  for (const color of DEFAULT_PALETTE) {
+    addColor(color);
+  }
+
+  return result.slice(0, COLOR_COUNT);
+}
+
 /**
  * Extracts 7 distinct main colors from cover art.
  * Samples a grid, quantizes to reduce noise, counts frequency, then greedily
@@ -131,7 +186,7 @@ function extractPaletteFromImage(img: HTMLImageElement): string[] {
     }
   }
 
-  return result.length >= COLOR_COUNT ? result : DEFAULT_PALETTE;
+  return completeCoverPalette(result);
 }
 
 /**
