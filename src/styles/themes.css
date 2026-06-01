@@ -1059,29 +1059,11 @@
     BlinkMacSystemFont, sans-serif !important;
 }
 
-/* Preserve bookmark bar button text size in Internet Explorer */
-/* Target bookmark buttons with highest specificity */
-:root[data-os-theme="macosx"]
-  button.whitespace-nowrap.hover\:bg-gray-200.font-geneva-12.text-\[10px\] {
-  font-size: 10px !important;
-}
-
-:root[data-os-theme="macosx"]
-  button.whitespace-nowrap.hover\:bg-gray-200.font-geneva-12.text-\[10px\]
-  span {
-  font-size: 10px !important;
-}
-
-/* Also override any text-sm class on these buttons */
-:root[data-os-theme="macosx"]
-  button.text-sm.font-geneva-12:not(.admin-aqua-icon-button) {
-  font-size: 10px !important;
-}
-
-:root[data-os-theme="macosx"]
-  button.text-sm.font-geneva-12:not(.admin-aqua-icon-button)
-  span {
-  font-size: 10px !important;
+/* Internet Explorer favorites bar: compact bookmark labels (below url bar 12px) */
+:root[data-os-theme="macosx"] button.ie-favorites-bar-button,
+:root[data-os-theme="macosx"] button.ie-favorites-bar-button span {
+  font-size: 11px !important;
+  font-family: var(--os-font-ui) !important;
 }
 
 /* Admin compact aqua icon pills — avoid macOS div/button font overrides and IE bookmark text-sm shrink */
