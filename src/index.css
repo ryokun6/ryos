@@ -106,6 +106,7 @@
     -webkit-touch-callout: none;
   }
   html {
+    background-color: #000;
     overscroll-behavior: none;
     overscroll-behavior-x: none;
     overscroll-behavior-y: none;
@@ -123,7 +124,8 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
+    background-color: #000;
     user-select: none;
     -webkit-user-select: none;
     font-family: "ChicagoKare", "ArkPixel", "SerenityOS-Emoji", system-ui,
