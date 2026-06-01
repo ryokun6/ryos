@@ -119,12 +119,13 @@ function ManagedAppInstance({
     translatedAppName !== appId ? translatedAppName : (app?.name ?? appId);
 
   const shouldMount = shouldMountInstance(instance, exposeMode);
+  const hideWindow = !shouldMount || instance.isLoading;
 
   return (
     <div
       style={{
         zIndex: exposeMode ? 9999 : zIndex,
-        visibility: shouldMount ? "visible" : "hidden",
+        visibility: hideWindow ? "hidden" : "visible",
       }}
       className="absolute inset-x-0 md:inset-x-auto w-full md:w-auto"
       role="presentation"
