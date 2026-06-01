@@ -1,10 +1,11 @@
-import { defineConfig } from "vite";
+import { defineConfig, type ViteDevServer } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { readFileSync, existsSync } from "node:fs";
+import type { IncomingMessage, ServerResponse } from "node:http";
 
 // Polyfill __dirname in ESM context (Node >=16)
 const __filename = fileURLToPath(import.meta.url);
@@ -33,6 +34,24 @@ function readBuildNumber(): string {
 }
 
 const ryosBuildNumber = readBuildNumber();
+
+const devServiceWorkerResetScript = `
+self.addEventListener("install", (event) => {
+  self.skipWaiting();
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil((async () => {
+    if (self.caches) {
+      const keys = await self.caches.keys();
+      await Promise.all(keys.map((key) => self.caches.delete(key)));
+    }
+    await self.registration.unregister();
+    const clients = await self.clients.matchAll({ type: "window" });
+    await Promise.all(clients.map((client) => client.navigate(client.url)));
+  })());
+});
+`;
 
 // ---------------------------------------------------------------------------
 // Curated Workbox precache
@@ -224,6 +243,36 @@ export default defineConfig({
     ] : [],
   },
   plugins: [
+    // Replace any production service worker left on localhost with a tiny
+    // cleanup worker so Vite dev sessions cannot be controlled by stale bundles.
+    ...(isDev
+      ? [
+          {
+            name: "serve-dev-service-worker-reset",
+            configureServer(server: ViteDevServer) {
+              server.middlewares.use((
+                req: IncomingMessage,
+                res: ServerResponse,
+                next: () => void
+              ) => {
+                const pathPart = (req.url || "").split("?")[0];
+                if (pathPart !== "/sw.js") {
+                  next();
+                  return;
+                }
+
+                res.statusCode = 200;
+                res.setHeader(
+                  "Content-Type",
+                  "application/javascript; charset=utf-8"
+                );
+                res.setHeader("Cache-Control", "no-store, max-age=0");
+                res.end(devServiceWorkerResetScript);
+              });
+            },
+          },
+        ]
+      : []),
     // Serve static docs HTML files (before SPA fallback kicks in)
     {
       name: 'serve-static-docs',

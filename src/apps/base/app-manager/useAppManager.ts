@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import type { AppId } from "@/config/appRegistry";
@@ -12,7 +19,10 @@ import {
   toggleSpotlightSearch,
 } from "@/utils/appEventBus";
 import { useDashboardShellTriggers } from "@/hooks/useDashboardShellTriggers";
-import { prefetchAppChunk, prefetchLikelyAppChunks } from "@/config/lazyAppComponent";
+import {
+  prefetchAppChunk,
+  prefetchLikelyAppChunks,
+} from "@/config/lazyAppComponent";
 import { useAppStore } from "@/stores/useAppStore";
 import { useGlobalUndoRedo } from "@/hooks/useGlobalUndoRedo";
 import { resolveInitialRoute } from "../appRouteRegistry";
@@ -25,7 +35,7 @@ export function useAppManager({ apps }: AppManagerProps) {
   const { t } = useTranslation();
 
   const {
-    instances,
+    openInstanceIdsKey,
     instanceOrder,
     launchApp,
     bringInstanceToForeground,
@@ -37,7 +47,10 @@ export function useAppManager({ apps }: AppManagerProps) {
     foregroundInstanceId,
     exposeMode,
   } = useAppStoreShallow((state) => ({
-    instances: state.instances,
+    openInstanceIdsKey: Object.values(state.instances)
+      .filter((instance) => instance.isOpen)
+      .map((instance) => instance.instanceId)
+      .join("\0"),
     instanceOrder: state.instanceOrder,
     launchApp: state.launchApp,
     bringInstanceToForeground: state.bringInstanceToForeground,
@@ -51,11 +64,8 @@ export function useAppManager({ apps }: AppManagerProps) {
   }));
 
   const openInstanceIds = useMemo(
-    () =>
-      Object.values(instances)
-        .filter((instance) => instance.isOpen)
-        .map((instance) => instance.instanceId),
-    [instances]
+    () => (openInstanceIdsKey ? openInstanceIdsKey.split("\0") : []),
+    [openInstanceIdsKey]
   );
 
   const { isWindowsTheme: isXpTheme } = useThemeFlags();
