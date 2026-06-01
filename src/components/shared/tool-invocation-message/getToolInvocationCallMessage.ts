@@ -2,6 +2,26 @@ import type { TFunction } from "i18next";
 import { getSongLibraryCallSummary } from "@/lib/toolInvocationDisplay";
 import type { ToolInvocationPart } from "./types";
 
+type ToolInvocationInput = { path?: unknown; [key: string]: unknown };
+
+export function shouldSuppressToolInvocationCallMessage(
+  toolName: string,
+  input?: ToolInvocationInput
+): boolean {
+  if (toolName === "launchApp") {
+    return true;
+  }
+
+  if (toolName === "open") {
+    return (
+      typeof input?.path === "string" &&
+      input.path.startsWith("/Applications/")
+    );
+  }
+
+  return false;
+}
+
 export function getToolInvocationCallMessage(
   params: {
     toolName: string;

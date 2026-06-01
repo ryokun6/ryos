@@ -1,5 +1,8 @@
 import { useTranslation } from "react-i18next";
-import { getToolInvocationCallMessage } from "./getToolInvocationCallMessage";
+import {
+  getToolInvocationCallMessage,
+  shouldSuppressToolInvocationCallMessage,
+} from "./getToolInvocationCallMessage";
 import { getToolInvocationResultMessage } from "./getToolInvocationResultMessage";
 import { tryRenderToolInvocationSpecialContent } from "./tryRenderToolInvocationSpecialContent";
 import { ToolInvocationMessageDefaultView } from "./ToolInvocationMessageDefaultView";
@@ -19,6 +22,15 @@ export function ToolInvocationMessage({
   const { t } = useTranslation();
   const toolName = getToolName(part);
   const { state, input, output } = part;
+  const isPendingToolCall =
+    state === "input-streaming" || (state === "input-available" && !output);
+
+  if (
+    isPendingToolCall &&
+    shouldSuppressToolInvocationCallMessage(toolName, input)
+  ) {
+    return null;
+  }
 
   const displayCallMessage = getToolInvocationCallMessage({
     toolName,

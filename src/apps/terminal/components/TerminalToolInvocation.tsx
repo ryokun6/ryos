@@ -7,6 +7,7 @@ import {
   formatToolName,
   getWebSearchSummary,
 } from "@/lib/toolInvocationDisplay";
+import { shouldSuppressToolInvocationCallMessage } from "@/components/shared/tool-invocation-message/getToolInvocationCallMessage";
 
 // Helper to get app name
 function getAppName(id?: string): string {
@@ -34,6 +35,9 @@ export function TerminalToolInvocation({
 
   // Handle loading states (input-streaming or input-available, or any state that's not output-available/output-error)
   const isLoading = !state || state === "input-streaming" || state === "input-available";
+  if (isLoading && shouldSuppressToolInvocationCallMessage(toolName, input)) {
+    return null;
+  }
   
   if (isLoading) {
     switch (toolName) {

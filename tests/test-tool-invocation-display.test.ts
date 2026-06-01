@@ -5,8 +5,23 @@ import {
   getSongLibraryResultSummary,
   getWebSearchSummary,
 } from "../src/lib/toolInvocationDisplay";
+import { shouldSuppressToolInvocationCallMessage } from "../src/components/shared/tool-invocation-message/getToolInvocationCallMessage";
 
 describe("tool invocation display helpers", () => {
+  test("suppresses transient app launch loading rows", () => {
+    expect(shouldSuppressToolInvocationCallMessage("launchApp")).toBe(true);
+    expect(
+      shouldSuppressToolInvocationCallMessage("open", {
+        path: "/Applications/TextEdit.app",
+      })
+    ).toBe(true);
+    expect(
+      shouldSuppressToolInvocationCallMessage("open", {
+        path: "/Documents/Notes.txt",
+      })
+    ).toBe(false);
+  });
+
   test("formats underscored and camelCase tool names for display", () => {
     expect(formatToolName("web_search")).toBe("Web search");
     expect(formatToolName("calendarControl")).toBe("Calendar Control");
