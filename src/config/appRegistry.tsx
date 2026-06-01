@@ -2,6 +2,7 @@ import { resolveAppId, type AppId } from "./appRegistryData";
 import type {
   BaseApp,
   ControlPanelsInitialData,
+  FinderInitialData,
   InternetExplorerInitialData,
   IpodInitialData,
   PaintInitialData,
@@ -38,7 +39,7 @@ const defaultWindowConstraints: WindowConstraints = {
 
 // Lazy-loaded apps (loaded on-demand when opened)
 // Each uses a cache key to maintain stable references across HMR
-const LazyFinderApp = createLazyComponent<unknown>(
+const LazyFinderApp = createLazyComponent<FinderInitialData>(
   () => import("@/apps/finder/components/finder-app/FinderAppComponent").then(m => ({ default: m.FinderAppComponent })),
   "finder"
 );
