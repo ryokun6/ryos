@@ -4,6 +4,7 @@ import { describe, expect, test } from "bun:test";
 import type { AppId } from "../src/config/appRegistry";
 import type { AppInstance } from "../src/stores/useAppStore";
 import { computeDockOpenItems } from "../src/components/layout/dock/dockOpenList";
+import { computeDockPinnedItems } from "../src/components/layout/dock/dockPinnedList";
 
 // Apps the fake registry knows about for these tests.
 const KNOWN_APPS = new Set<string>([
@@ -129,5 +130,37 @@ describe("computeDockOpenItems", () => {
     };
 
     expect(computeDockOpenItems(instances, [], isValidAppId)).toEqual([]);
+  });
+});
+
+describe("computeDockPinnedItems", () => {
+  test("drops pinned app ids that are unknown", () => {
+    const result = computeDockPinnedItems([
+      { type: "app", id: "finder" },
+      { type: "app", id: "removed-legacy-app" },
+      { type: "file", id: "custom-applet", path: "/Desktop/Custom.app" },
+    ]);
+
+    expect(result).toEqual([
+      { type: "app", id: "finder" },
+      { type: "file", id: "custom-applet", path: "/Desktop/Custom.app" },
+    ]);
+  });
+
+  test("normalizes legacy pinned app ids before icon rendering", () => {
+    const result = computeDockPinnedItems([
+      { type: "app", id: "infinite-pc" },
+    ]);
+
+    expect(result).toEqual([{ type: "app", id: "pc" }]);
+  });
+
+  test("deduplicates pinned apps after legacy id normalization", () => {
+    const result = computeDockPinnedItems([
+      { type: "app", id: "infinite-pc" },
+      { type: "app", id: "pc" },
+    ]);
+
+    expect(result).toEqual([{ type: "app", id: "pc" }]);
   });
 });

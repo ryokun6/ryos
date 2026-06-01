@@ -30,6 +30,7 @@ import { DOCK_BASE_BUTTON_SIZE } from "./dockConstants";
 import { renderDockPinnedItems } from "./DockPinnedItems";
 import { renderDockOpenItems } from "./DockOpenItems";
 import { computeDockOpenItems } from "./dockOpenList";
+import { computeDockPinnedItems } from "./dockPinnedList";
 import { DockApplicationsButton } from "./DockApplicationsButton";
 import { DockTrashButton } from "./DockTrashButton";
 import { useDockContextMenus } from "./useDockContextMenus";
@@ -452,15 +453,10 @@ export function MacDock() {
   );
   const isTrashEmpty = trashItemCount === 0;
 
-  // Drop pinned app entries whose id no longer exists in the registry (e.g.
-  // stale localStorage / cross-version cloud sync). These would otherwise throw
-  // in getAppIconPath and paint a broken/empty slot. File items are kept as-is
-  // because they have their own icon fallbacks.
+  // Normalize pinned app ids before rendering. Stale localStorage / cloud sync
+  // entries would otherwise throw in getAppIconPath and paint a blank slot.
   const sanitizedPinnedItems = useMemo(
-    () =>
-      pinnedItems.filter(
-        (item) => item.type !== "app" || Boolean(appRegistry[item.id as AppId])
-      ),
+    () => computeDockPinnedItems(pinnedItems),
     [pinnedItems]
   );
 
@@ -705,7 +701,7 @@ export function MacDock() {
   // Mark all currently visible ids as seen whenever the set changes
   const allVisibleIds = useMemo(() => {
     const ids = [
-      ...pinnedItems.map(item => item.id),
+      ...sanitizedPinnedItems.map(item => item.id),
       ...openItems.map((item) =>
         item.type === "applet" ? item.instanceId! : item.appId
       ),
@@ -713,7 +709,7 @@ export function MacDock() {
       "__trash__",
     ];
     return ids;
-  }, [pinnedItems, openItems]);
+  }, [sanitizedPinnedItems, openItems]);
   // After first paint, mark everything present as seen and mark mounted
   // Also update seen set whenever visible ids change
   useEffect(() => {

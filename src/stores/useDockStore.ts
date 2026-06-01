@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { resolveAppId, type AppId } from "@/config/appRegistryData";
 
 // Dock item can be an app or a file/applet
 export interface DockItem {
@@ -21,6 +22,40 @@ const DEFAULT_PINNED_ITEMS: DockItem[] = [
   { type: "app", id: "internet-explorer" },
   { type: "app", id: "karaoke" },
 ];
+
+const DOCK_STORE_VERSION = 1;
+
+/**
+ * Persisted dock state can outlive renamed or removed apps. Keep app pins
+ * renderable before any icon lookup, drag/drop index math, or duplicate check.
+ */
+export function computeDockPinnedItems(pinnedItems: DockItem[]): DockItem[] {
+  const seenAppIds = new Set<AppId>();
+  const items: DockItem[] = [];
+
+  for (const item of pinnedItems) {
+    if (item.type !== "app") {
+      items.push(item);
+      continue;
+    }
+
+    const appId = resolveAppId(item.id);
+    if (!appId || seenAppIds.has(appId)) {
+      continue;
+    }
+
+    seenAppIds.add(appId);
+    items.push(appId === item.id ? item : { ...item, id: appId });
+  }
+
+  return items;
+}
+
+function normalizeDockItem(item: DockItem): DockItem | null {
+  if (item.type !== "app") return item;
+  const appId = resolveAppId(item.id);
+  return appId ? { ...item, id: appId } : null;
+}
 
 interface DockStoreState {
   pinnedItems: DockItem[];
@@ -47,15 +82,20 @@ export const useDockStore = create<DockStoreState>()(
       magnification: true, // Default: magnification enabled
 
       addItem: (item: DockItem, insertIndex?: number) => {
-        const { pinnedItems } = get();
-        
+        const normalizedItem = normalizeDockItem(item);
+        if (!normalizedItem) {
+          return false;
+        }
+
+        const pinnedItems = computeDockPinnedItems(get().pinnedItems);
+
         // Check for duplicates
         const exists = pinnedItems.some((existing) => {
-          if (item.type === "app" && existing.type === "app") {
-            return existing.id === item.id;
+          if (normalizedItem.type === "app" && existing.type === "app") {
+            return existing.id === normalizedItem.id;
           }
-          if (item.type === "file" && existing.type === "file") {
-            return existing.path === item.path;
+          if (normalizedItem.type === "file" && existing.type === "file") {
+            return existing.path === normalizedItem.path;
           }
           return false;
         });
@@ -65,13 +105,13 @@ export const useDockStore = create<DockStoreState>()(
         }
 
         set((state) => {
-          const newItems = [...state.pinnedItems];
+          const newItems = computeDockPinnedItems(state.pinnedItems);
           // Ensure Finder stays at position 0 - insert at minimum position 1
           const minIndex = newItems[0]?.id === "finder" ? 1 : 0;
-          const index = insertIndex !== undefined 
+          const index = insertIndex !== undefined
             ? Math.max(minIndex, Math.min(insertIndex, newItems.length))
             : newItems.length;
-          newItems.splice(index, 0, item);
+          newItems.splice(index, 0, normalizedItem);
           return { pinnedItems: newItems };
         });
 
@@ -85,7 +125,9 @@ export const useDockStore = create<DockStoreState>()(
         }
 
         set((state) => ({
-          pinnedItems: state.pinnedItems.filter((item) => item.id !== id),
+          pinnedItems: computeDockPinnedItems(state.pinnedItems).filter(
+            (item) => item.id !== id,
+          ),
         }));
 
         return true;
@@ -93,19 +135,19 @@ export const useDockStore = create<DockStoreState>()(
 
       reorderItems: (fromIndex: number, toIndex: number) => {
         set((state) => {
-          const newItems = [...state.pinnedItems];
+          const newItems = computeDockPinnedItems(state.pinnedItems);
           const movedItem = newItems[fromIndex];
-          
+
           // Don't allow moving Finder (always stays at position 0)
           if (movedItem?.id === "finder") {
             return state;
           }
-          
+
           // Don't allow moving items to position 0 (Finder's spot)
           if (toIndex === 0 && newItems[0]?.id === "finder") {
             return state;
           }
-          
+
           const [removed] = newItems.splice(fromIndex, 1);
           if (removed) {
             newItems.splice(toIndex, 0, removed);
@@ -115,7 +157,11 @@ export const useDockStore = create<DockStoreState>()(
       },
 
       hasItem: (id: string) => {
-        return get().pinnedItems.some((item) => item.id === id);
+        const normalizedItem = normalizeDockItem({ type: "app", id });
+        const normalizedId = normalizedItem?.id ?? id;
+        return computeDockPinnedItems(get().pinnedItems).some(
+          (item) => item.id === normalizedId,
+        );
       },
 
       setScale: (scale: number) => {
@@ -138,7 +184,21 @@ export const useDockStore = create<DockStoreState>()(
     }),
     {
       name: "dock-storage",
+      version: DOCK_STORE_VERSION,
       storage: createJSONStorage(() => localStorage),
+      migrate: (persistedState) => {
+        if (!persistedState || typeof persistedState !== "object") {
+          return persistedState;
+        }
+        const state = persistedState as Partial<DockStoreState>;
+        if (!Array.isArray(state.pinnedItems)) {
+          return persistedState;
+        }
+        return {
+          ...state,
+          pinnedItems: computeDockPinnedItems(state.pinnedItems),
+        };
+      },
     }
   )
 );

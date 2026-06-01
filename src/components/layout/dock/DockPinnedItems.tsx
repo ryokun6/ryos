@@ -7,6 +7,7 @@ import { PROTECTED_DOCK_ITEMS, type DockItem } from "@/stores/useDockStore";
 import type { AppInstance, LaunchOriginRect } from "@/stores/useAppStore";
 import { DockSpacer } from "./DockSpacer";
 import { DockIconButton } from "./DockIconButton";
+import { computeDockPinnedItems } from "./dockPinnedList";
 
 export interface DockPinnedItemsProps {
   pinnedItems: DockItem[];
@@ -84,8 +85,9 @@ export function renderDockPinnedItems({
   launchApp,
 }: DockPinnedItemsProps): React.ReactNode[] {
   const elements: React.ReactNode[] = [];
+  const renderablePinnedItems = computeDockPinnedItems(pinnedItems);
 
-  pinnedItems.forEach((item, index) => {
+  renderablePinnedItems.forEach((item, index) => {
     if (externalDragIndex === index) {
       elements.push(
         <DockSpacer
@@ -214,7 +216,7 @@ export function renderDockPinnedItems({
     }
   });
 
-  if (externalDragIndex === pinnedItems.length) {
+  if (externalDragIndex === renderablePinnedItems.length) {
     elements.push(
       <DockSpacer
         key="dock-drop-spacer"
