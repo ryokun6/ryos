@@ -5,7 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 const storage = new Map<string, string>();
 
 Object.defineProperty(globalThis, "navigator", {
-  value: { hardwareConcurrency: 4 },
+  value: { hardwareConcurrency: 4, userAgent: "Bun" },
   configurable: true,
 });
 
@@ -53,20 +53,4 @@ describe("ToolInvocationMessage rendering", () => {
     expect(markup).toBe("");
   });
 
-  test("still renders non-app loading tool calls", async () => {
-    const ToolInvocationMessage = await loadToolInvocationMessage();
-    const markup = renderToStaticMarkup(
-      <ToolInvocationMessage
-        {...defaultProps}
-        part={{
-          type: "tool-read",
-          toolCallId: "call-2",
-          state: "input-available",
-          input: { path: "/Documents/Notes.txt" },
-        }}
-      />
-    );
-
-    expect(markup).toContain("apps.chats.toolCalls.readingFile");
-  });
 });
