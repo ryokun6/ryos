@@ -50,8 +50,7 @@ export function FullScreenPortal({
   onDisplayModeSelect,
   displayModeOptions,
   fullScreenPlayerRef,
-  karaokeKtvRoomFxEnabled,
-  onToggleKaraokeKtvRoomFx,
+  trailingControls,
   activityState,
   onSurfaceLongPress,
   surfaceLongPressEnabled = true,
@@ -426,6 +425,11 @@ export function FullScreenPortal({
 
   useEventListener("keydown", handleKeyDown);
 
+  const renderedTrailingControls =
+    typeof trailingControls === "function"
+      ? trailingControls({ portalContainer: containerRef.current })
+      : trailingControls;
+
   return createPortal(
     <div
       ref={containerRef}
@@ -598,8 +602,6 @@ export function FullScreenPortal({
           onFontCycle={onCycleLyricsFont}
           romanization={romanization}
           onRomanizationChange={onRomanizationChange}
-          karaokeKtvRoomFxEnabled={karaokeKtvRoomFxEnabled}
-          onToggleKaraokeKtvRoomFx={onToggleKaraokeKtvRoomFx}
           isPronunciationMenuOpen={isPronunciationMenuOpen}
           setIsPronunciationMenuOpen={setIsPronunciationMenuOpen}
           currentTranslationCode={currentTranslationCode}
@@ -612,6 +614,7 @@ export function FullScreenPortal({
           bgOpacity="35"
           onInteraction={registerActivity}
           portalContainer={containerRef.current}
+          trailingControls={renderedTrailingControls}
         />
       </div>
 

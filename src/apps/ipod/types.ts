@@ -133,9 +133,10 @@ export interface FullScreenPortalProps {
   displayMode?: DisplayMode;
   onDisplayModeSelect?: (mode: DisplayMode) => void;
   displayModeOptions?: { value: DisplayMode; label: string }[];
-  /** Karaoke fullscreen: audience-style reaction ambience toggle */
-  karaokeKtvRoomFxEnabled?: boolean;
-  onToggleKaraokeKtvRoomFx?: () => void;
+  /** Additional controls rendered immediately before the desktop close button. */
+  trailingControls?:
+    | React.ReactNode
+    | ((ctx: { portalContainer: HTMLElement | null }) => React.ReactNode);
   // Player ref for mobile Safari handling
   fullScreenPlayerRef: React.RefObject<ReactPlayer | null>;
   /** Activity state for loading indicators (optional — karaoke supplies from lyrics subtree) */

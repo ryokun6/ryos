@@ -3,6 +3,8 @@ import ReactPlayer from "react-player";
 import { Suspense } from "react";
 import type React from "react";
 import { DisplayMode } from "@/types/lyrics";
+import { shouldShowKaraokeTitleCard } from "@/apps/karaoke/utils/titleCard";
+import { KaraokeTitleCard } from "@/apps/karaoke/components/karaoke-lyrics-playback/KaraokeTitleCard";
 import { LyricsSyncMode } from "@/components/shared/LyricsSyncMode";
 import { PLAYER_PROGRESS_INTERVAL_MS } from "../../constants";
 import { AppleMusicPlayerBridge } from "../AppleMusicPlayerBridge";
@@ -45,6 +47,7 @@ export function IpodFullScreenView({ c }: IpodFullScreenViewProps) {
     lyricsAlignment,
     cycleAlignment,
     lyricsFont,
+    lyricsFontClassName,
     cycleLyricsFont,
     romanization,
     setRomanization,
@@ -84,6 +87,14 @@ export function IpodFullScreenView({ c }: IpodFullScreenViewProps) {
   } = c;
 
   if (!isFullScreen) return null;
+
+  const currentTimeMs =
+    (elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000) * 1000;
+  const showTitleCard = showLyrics && Boolean(currentTrack) && shouldShowKaraokeTitleCard({
+    lines: fullScreenLyricsControls.originalLines,
+    currentTimeMs,
+    lyricOffsetMs: currentTrack?.lyricOffset ?? 0,
+  });
 
   return (
     <FullScreenPortal
@@ -324,74 +335,89 @@ export function IpodFullScreenView({ c }: IpodFullScreenViewProps) {
 
             {showLyrics && tracks[currentIndex] && (
               <div className="absolute inset-0 z-20 pointer-events-none" data-lyrics>
-                <LyricsDisplay
-                  lines={fullScreenLyricsControls.lines}
-                  originalLines={fullScreenLyricsControls.originalLines}
-                  currentLine={fullScreenLyricsControls.currentLine}
-                  isLoading={fullScreenLyricsControls.isLoading}
-                  error={fullScreenLyricsControls.error}
-                  visible={true}
-                  videoVisible={true}
-                  alignment={lyricsAlignment}
-                  koreanDisplay={koreanDisplay}
-                  japaneseFurigana={japaneseFurigana}
-                  onAdjustOffset={(delta) => {
-                    adjustLyricOffset(currentIndex, delta);
-                    const newOffset = (tracks[currentIndex]?.lyricOffset ?? 0) + delta;
-                    const sign = newOffset > 0 ? "+" : newOffset < 0 ? "" : "";
-                    showStatus(
-                      `${t("apps.ipod.status.offset")} ${sign}${(newOffset / 1000).toFixed(2)}s`
-                    );
-                    fullScreenLyricsControls.updateCurrentTimeManually(
-                      elapsedTime + newOffset / 1000
-                    );
-                  }}
-                  onSwipeUp={() => {
-                    if (isOffline) {
-                      showOfflineStatus();
-                    } else {
-                      skipOperationRef.current = true;
-                      startTrackSwitch();
-                      nextTrack();
-                      const newTrack = getCurrentStoreTrack();
-                      if (newTrack) {
-                        const artistInfo = newTrack.artist ? ` - ${newTrack.artist}` : "";
-                        showStatus(`⏭ ${newTrack.title}${artistInfo}`);
+                <AnimatePresence>
+                  {showTitleCard && currentTrack && (
+                    <KaraokeTitleCard
+                      title={currentTrack.title}
+                      artist={currentTrack.artist}
+                      album={currentTrack.album}
+                      fontClassName={lyricsFontClassName}
+                      variant="fullscreen"
+                      coverUrl={fullscreenCoverUrl}
+                      bottomPaddingClass={controlsVisible ? "pb-28" : "pb-16"}
+                      isPlaying={isPlaying}
+                    />
+                  )}
+                </AnimatePresence>
+                {!showTitleCard && (
+                  <LyricsDisplay
+                    lines={fullScreenLyricsControls.lines}
+                    originalLines={fullScreenLyricsControls.originalLines}
+                    currentLine={fullScreenLyricsControls.currentLine}
+                    isLoading={fullScreenLyricsControls.isLoading}
+                    error={fullScreenLyricsControls.error}
+                    visible={true}
+                    videoVisible={true}
+                    alignment={lyricsAlignment}
+                    koreanDisplay={koreanDisplay}
+                    japaneseFurigana={japaneseFurigana}
+                    fontClassName={lyricsFontClassName}
+                    onAdjustOffset={(delta) => {
+                      adjustLyricOffset(currentIndex, delta);
+                      const newOffset = (tracks[currentIndex]?.lyricOffset ?? 0) + delta;
+                      const sign = newOffset > 0 ? "+" : newOffset < 0 ? "" : "";
+                      showStatus(
+                        `${t("apps.ipod.status.offset")} ${sign}${(newOffset / 1000).toFixed(2)}s`
+                      );
+                      fullScreenLyricsControls.updateCurrentTimeManually(
+                        elapsedTime + newOffset / 1000
+                      );
+                    }}
+                    onSwipeUp={() => {
+                      if (isOffline) {
+                        showOfflineStatus();
+                      } else {
+                        skipOperationRef.current = true;
+                        startTrackSwitch();
+                        nextTrack();
+                        const newTrack = getCurrentStoreTrack();
+                        if (newTrack) {
+                          const artistInfo = newTrack.artist ? ` - ${newTrack.artist}` : "";
+                          showStatus(`⏭ ${newTrack.title}${artistInfo}`);
+                        }
                       }
-                    }
-                  }}
-                  onSwipeDown={() => {
-                    if (isOffline) {
-                      showOfflineStatus();
-                    } else {
-                      skipOperationRef.current = true;
-                      startTrackSwitch();
-                      previousTrack();
-                      const newTrack = getCurrentStoreTrack();
-                      if (newTrack) {
-                        const artistInfo = newTrack.artist ? ` - ${newTrack.artist}` : "";
-                        showStatus(`⏮ ${newTrack.title}${artistInfo}`);
+                    }}
+                    onSwipeDown={() => {
+                      if (isOffline) {
+                        showOfflineStatus();
+                      } else {
+                        skipOperationRef.current = true;
+                        startTrackSwitch();
+                        previousTrack();
+                        const newTrack = getCurrentStoreTrack();
+                        if (newTrack) {
+                          const artistInfo = newTrack.artist ? ` - ${newTrack.artist}` : "";
+                          showStatus(`⏮ ${newTrack.title}${artistInfo}`);
+                        }
                       }
-                    }
-                  }}
-                  isTranslating={fullScreenLyricsControls.isTranslating}
-                  textSizeClass="fullscreen-lyrics-text"
-                  gapClass="gap-0"
-                  containerStyle={{
-                    gap: "clamp(0.2rem, calc(min(10vw,10vh) * 0.08), 1rem)",
-                    paddingLeft: "env(safe-area-inset-left, 0px)",
-                    paddingRight: "env(safe-area-inset-right, 0px)",
-                  }}
-                  interactive={true}
-                  bottomPaddingClass={controlsVisible ? "pb-28" : "pb-16"}
-                  furiganaMap={furiganaMap}
-                  soramimiMap={soramimiMap}
-                  currentTimeMs={
-                    (elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000) * 1000
-                  }
-                  onSeekToTime={seekToTime}
-                  coverUrl={fullscreenCoverUrl}
-                />
+                    }}
+                    isTranslating={fullScreenLyricsControls.isTranslating}
+                    textSizeClass="fullscreen-lyrics-text"
+                    gapClass="gap-0"
+                    containerStyle={{
+                      gap: "clamp(0.2rem, calc(min(10vw,10vh) * 0.08), 1rem)",
+                      paddingLeft: "env(safe-area-inset-left, 0px)",
+                      paddingRight: "env(safe-area-inset-right, 0px)",
+                    }}
+                    interactive={true}
+                    bottomPaddingClass={controlsVisible ? "pb-28" : "pb-16"}
+                    furiganaMap={furiganaMap}
+                    soramimiMap={soramimiMap}
+                    currentTimeMs={currentTimeMs}
+                    onSeekToTime={seekToTime}
+                    coverUrl={fullscreenCoverUrl}
+                  />
+                )}
               </div>
             )}
           </div>

@@ -76,6 +76,8 @@ interface ListenSessionToolbarProps {
   onSendReaction: (emoji: string) => void;
   onInteraction?: () => void;
   portalContainer?: HTMLElement | null;
+  dropdownSide?: "top" | "bottom";
+  showShare?: boolean;
   className?: string;
 }
 
@@ -96,6 +98,8 @@ export function ListenSessionToolbar({
   onSendReaction,
   onInteraction,
   portalContainer,
+  dropdownSide = "bottom",
+  showShare = true,
   className,
 }: ListenSessionToolbarProps) {
   const { t } = useTranslation();
@@ -182,7 +186,7 @@ export function ListenSessionToolbar({
           </DropdownMenuTrigger>
           <DropdownMenuContent
             container={portalContainer}
-            side="bottom"
+            side={dropdownSide}
             align="center"
             sideOffset={8}
             className="px-0 w-56"
@@ -303,7 +307,7 @@ export function ListenSessionToolbar({
             </DropdownMenuTrigger>
             <DropdownMenuContent
               container={portalContainer}
-              side="bottom"
+              side={dropdownSide}
               align="center"
               sideOffset={8}
               className="px-1 py-1 flex gap-1 min-w-0 w-auto"
@@ -336,17 +340,19 @@ export function ListenSessionToolbar({
       )}
 
       {/* Share/Invite Island */}
-      <div className={segmentClasses} style={aquaSegmentStyle}>
-        {isMacTheme && <AquaShineOverlays />}
-        <button
-          type="button"
-          onClick={handleClick(onShare)}
-          className={buttonClasses}
-          title={t("apps.karaoke.liveListen.inviteTitle")}
-        >
-          <Export weight="regular" size={svgSize} className={iconClasses} />
-        </button>
-      </div>
+      {showShare && (
+        <div className={segmentClasses} style={aquaSegmentStyle}>
+          {isMacTheme && <AquaShineOverlays />}
+          <button
+            type="button"
+            onClick={handleClick(onShare)}
+            className={buttonClasses}
+            title={t("apps.karaoke.liveListen.inviteTitle")}
+          >
+            <Export weight="regular" size={svgSize} className={iconClasses} />
+          </button>
+        </div>
+      )}
 
     </div>
   );

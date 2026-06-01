@@ -1,6 +1,7 @@
 import ReactPlayer from "react-player";
 import { FullScreenPortal } from "@/apps/ipod/components/FullScreenPortal";
 import { ReactionOverlay } from "@/components/listen/ReactionOverlay";
+import { ListenSessionToolbar } from "@/components/listen/ListenSessionToolbar";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { PLAYER_PROGRESS_INTERVAL_MS } from "@/apps/ipod/constants";
 import { DisplayMode } from "@/types/lyrics";
@@ -24,13 +25,17 @@ export function KaraokeFullscreenView({ c, isForeground }: KaraokeFullscreenView
     setLyricsTranslationLanguage, lyricsAlignment, cycleAlignment, lyricsFont,
     cycleLyricsFont, romanization, setRomanization, setIsSyncModeOpen, isSyncModeOpen,
     displayMode, handleDisplayModeSelect, displayModeOptions, karaokeKtvRoomFx,
-    toggleKaraokeKtvRoomFx, currentTrack, currentIndex, duration, setLyricOffset,
+    currentTrack, currentIndex, duration, setLyricOffset,
     adjustLyricOffset, fullScreenPlayerRef, playerRef, closeSyncMode, handleRefreshLyrics,
     t, seekTime, loopCurrent, handleTrackEnd, handleProgress, handlePlay, handlePause,
     handleReady, ipodVolume, effectiveDisplayMode, visualBackgroundActive, coverUrl,
     showEmptyLibrary, handleAddSong, listenSession, showLyrics, isOffline, seekToTime,
     koreanDisplay, japaneseFurigana, handleFullscreenLyricsSwipeUp, handleFullscreenLyricsSwipeDown,
     lyricsSourceOverride, isAddingSong, setIsLyricsSearchDialogOpen, auth, lyricsPlaybackSyncRef,
+    listenSessionUsername, listenSessionClientInstanceId, listenListenerCount,
+    isListenSessionHost, isListenSessionDj, isListenSessionAnonymous, setIsListenInviteOpen,
+    handleLeaveListenSession, handleAssignPlaybackDevice, handlePassDj, handleTransferSessionHost,
+    handleSendReaction,
   } = c;
 
   if (!isFullScreen) return null;
@@ -91,8 +96,31 @@ export function KaraokeFullscreenView({ c, isForeground }: KaraokeFullscreenView
       displayMode={displayMode}
       onDisplayModeSelect={handleDisplayModeSelect}
       displayModeOptions={displayModeOptions}
-      karaokeKtvRoomFxEnabled={karaokeKtvRoomFx}
-      onToggleKaraokeKtvRoomFx={toggleKaraokeKtvRoomFx}
+      trailingControls={({ portalContainer }) =>
+        listenSession && !isSyncModeOpen ? (
+          <ListenSessionToolbar
+            session={listenSession}
+            isRemoteOnly={isListenSessionRemoteOnly}
+            isHost={isListenSessionHost}
+            isDj={isListenSessionDj}
+            isAnonymous={isListenSessionAnonymous}
+            listenerCount={listenListenerCount}
+            currentUsername={listenSessionUsername}
+            currentClientInstanceId={listenSessionClientInstanceId}
+            onShare={() => setIsListenInviteOpen(true)}
+            onLeave={handleLeaveListenSession}
+            onAssignPlaybackDevice={handleAssignPlaybackDevice}
+            onPassDj={handlePassDj}
+            onTransferHost={handleTransferSessionHost}
+            onSendReaction={handleSendReaction}
+            onInteraction={registerActivity}
+            portalContainer={portalContainer}
+            dropdownSide="top"
+            showShare={false}
+            className="hidden md:flex"
+          />
+        ) : null
+      }
       syncModeContent={
         <KaraokeSyncModeFullscreenPanel
           isSyncModeOpen={isSyncModeOpen}
