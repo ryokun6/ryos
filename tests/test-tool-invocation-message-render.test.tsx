@@ -1,7 +1,28 @@
 import React from "react";
 import { describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
-import { ToolInvocationMessage } from "../src/components/shared/ToolInvocationMessage";
+
+const storage = new Map<string, string>();
+
+Object.defineProperty(globalThis, "navigator", {
+  value: { hardwareConcurrency: 4 },
+  configurable: true,
+});
+
+Object.defineProperty(globalThis, "localStorage", {
+  value: {
+    getItem: (key: string) => storage.get(key) ?? null,
+    setItem: (key: string, value: string) => storage.set(key, value),
+    removeItem: (key: string) => storage.delete(key),
+    clear: () => storage.clear(),
+  },
+  configurable: true,
+});
+
+async function loadToolInvocationMessage() {
+  const mod = await import("../src/components/shared/ToolInvocationMessage");
+  return mod.ToolInvocationMessage;
+}
 
 const defaultProps = {
   partKey: "part-1",
@@ -15,7 +36,8 @@ const defaultProps = {
 };
 
 describe("ToolInvocationMessage rendering", () => {
-  test("renders nothing for pending app launch tool calls", () => {
+  test("renders nothing for pending app launch tool calls", async () => {
+    const ToolInvocationMessage = await loadToolInvocationMessage();
     const markup = renderToStaticMarkup(
       <ToolInvocationMessage
         {...defaultProps}
@@ -31,7 +53,8 @@ describe("ToolInvocationMessage rendering", () => {
     expect(markup).toBe("");
   });
 
-  test("still renders non-app loading tool calls", () => {
+  test("still renders non-app loading tool calls", async () => {
+    const ToolInvocationMessage = await loadToolInvocationMessage();
     const markup = renderToStaticMarkup(
       <ToolInvocationMessage
         {...defaultProps}
