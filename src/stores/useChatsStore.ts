@@ -20,6 +20,7 @@ import {
   sendRoomMessage as sendRoomMessageApi,
   switchPresence as switchPresenceApi,
 } from "@/api/rooms";
+import { sortChatRooms } from "@/utils/chatRoomList";
 
 // Username recovery - plain text, username is public info
 const USERNAME_RECOVERY_KEY = "_usr_recovery_key_";
@@ -30,6 +31,14 @@ const MESSAGE_HISTORY_CAP = 500;
 
 const capRoomMessages = (messages: ChatMessage[]): ChatMessage[] =>
   messages.slice(-MESSAGE_HISTORY_CAP);
+
+const withSortedRoomList = (
+  state: { rooms: ChatRoom[]; roomMessages: Record<string, ChatMessage[]> },
+  roomMessages: Record<string, ChatMessage[]>
+) => ({
+  roomMessages,
+  rooms: sortChatRooms(state.rooms, roomMessages),
+});
 
 // API Response Types
 interface ApiMessage {
@@ -451,16 +460,7 @@ export const useChatsStore = create<ChatsStoreState>()(
 
           // Deep comparison to prevent unnecessary updates
           const currentRooms = get().rooms;
-          // Apply stable sort to keep UI order consistent (public first, then name, then id)
-          const sortedNewRooms = [...filtered].sort((a, b) => {
-            const ao = a.type === "private" ? 1 : 0;
-            const bo = b.type === "private" ? 1 : 0;
-            if (ao !== bo) return ao - bo;
-            const an = (a.name || "").toLowerCase();
-            const bn = (b.name || "").toLowerCase();
-            if (an !== bn) return an.localeCompare(bn);
-            return a.id.localeCompare(b.id);
-          });
+          const sortedNewRooms = sortChatRooms(filtered, get().roomMessages);
 
           if (JSON.stringify(currentRooms) === JSON.stringify(sortedNewRooms)) {
             console.log(
@@ -525,12 +525,10 @@ export const useChatsStore = create<ChatsStoreState>()(
                 } as ChatMessage;
                 const updated = [...existingMessages];
                 updated[idxByClientId] = replaced;
-                return {
-                  roomMessages: {
-                    ...state.roomMessages,
-                    [roomId]: sortAndCap(updated),
-                  },
-                };
+                return withSortedRoomList(state, {
+                  ...state.roomMessages,
+                  [roomId]: sortAndCap(updated),
+                });
               }
             }
 
@@ -550,12 +548,10 @@ export const useChatsStore = create<ChatsStoreState>()(
               } as ChatMessage;
               const updated = [...existingMessages];
               updated[tempIndex] = replaced; // replace in place to minimise list churn
-              return {
-                roomMessages: {
-                  ...state.roomMessages,
-                  [roomId]: sortAndCap(updated),
-                },
-              };
+              return withSortedRoomList(state, {
+                ...state.roomMessages,
+                [roomId]: sortAndCap(updated),
+              });
             }
 
             // Second fallback: replace the most recent temp message from same user within time window
@@ -598,21 +594,17 @@ export const useChatsStore = create<ChatsStoreState>()(
               } as ChatMessage;
               const updated = [...existingMessages];
               updated[bestIdx] = replaced;
-              return {
-                roomMessages: {
-                  ...state.roomMessages,
-                  [roomId]: sortAndCap(updated),
-                },
-              };
+              return withSortedRoomList(state, {
+                ...state.roomMessages,
+                [roomId]: sortAndCap(updated),
+              });
             }
 
             // No optimistic message to replace – append normally
-            return {
-              roomMessages: {
-                ...state.roomMessages,
-                [roomId]: sortAndCap([...existingMessages, incoming]),
-              },
-            };
+            return withSortedRoomList(state, {
+              ...state.roomMessages,
+              [roomId]: sortAndCap([...existingMessages, incoming]),
+            });
           });
         },
         removeMessageFromRoom: (roomId, messageId) => {
@@ -727,7 +719,6 @@ export const useChatsStore = create<ChatsStoreState>()(
             const data = await listRoomsApi();
             if (data.rooms && Array.isArray(data.rooms)) {
               clearApiUnavailable("rooms");
-              // Normalize ordering via setRooms to enforce alphabetical sections
               get().setRooms(data.rooms);
               return { ok: true };
             }
@@ -841,12 +832,10 @@ export const useChatsStore = create<ChatsStoreState>()(
                     (a, b) => a.timestamp - b.timestamp
                   )
                 );
-                return {
-                  roomMessages: {
-                    ...state.roomMessages,
-                    [roomId]: merged,
-                  },
-                };
+                return withSortedRoomList(state, {
+                  ...state.roomMessages,
+                  [roomId]: merged,
+                });
               });
 
               return { ok: true };
@@ -967,7 +956,7 @@ export const useChatsStore = create<ChatsStoreState>()(
                   }
                 );
 
-                return { roomMessages: nextRoomMessages };
+                return withSortedRoomList(state, nextRoomMessages);
               });
 
               return { ok: true };
