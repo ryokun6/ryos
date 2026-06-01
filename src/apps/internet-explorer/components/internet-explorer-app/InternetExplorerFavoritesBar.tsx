@@ -49,7 +49,7 @@ export function InternetExplorerFavoritesBar({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="whitespace-nowrap hover:bg-neutral-200 font-geneva-12 text-[10px] gap-1 px-1 mr-1 w-content min-w-[60px] max-w-[120px] flex-shrink-0"
+                        className="ie-favorites-bar-button whitespace-nowrap hover:bg-neutral-200 font-geneva-12 text-[10px] gap-1 px-1 mr-1 w-content min-w-[60px] max-w-[120px] flex-shrink-0"
                       >
                         <ThemedIcon
                           name="directory.png"
@@ -111,7 +111,7 @@ export function InternetExplorerFavoritesBar({
                     key={favoriteKey}
                     variant="ghost"
                     size="sm"
-                    className="whitespace-nowrap hover:bg-neutral-200 font-geneva-12 text-[10px] gap-1 px-1 mr-1 w-content min-w-[60px] max-w-[120px] flex-shrink-0"
+                    className="ie-favorites-bar-button whitespace-nowrap hover:bg-neutral-200 font-geneva-12 text-[10px] gap-1 px-1 mr-1 w-content min-w-[60px] max-w-[120px] flex-shrink-0"
                     onClick={(e) => {
                       const normalizedFavUrl = normalizeUrlForHistory(
                         favorite.url!
