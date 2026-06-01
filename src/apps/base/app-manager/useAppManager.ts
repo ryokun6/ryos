@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useReducer, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import type { AppId } from "@/config/appRegistry";
@@ -12,7 +19,10 @@ import {
   toggleSpotlightSearch,
 } from "@/utils/appEventBus";
 import { useDashboardShellTriggers } from "@/hooks/useDashboardShellTriggers";
-import { prefetchAppChunk, prefetchLikelyAppChunks } from "@/config/lazyAppComponent";
+import {
+  prefetchAppChunk,
+  prefetchLikelyAppChunks,
+} from "@/config/lazyAppComponent";
 import { useAppStore } from "@/stores/useAppStore";
 import { useGlobalUndoRedo } from "@/hooks/useGlobalUndoRedo";
 import { resolveInitialRoute } from "../appRouteRegistry";
@@ -25,7 +35,7 @@ export function useAppManager({ apps }: AppManagerProps) {
   const { t } = useTranslation();
 
   const {
-    instances,
+    openInstanceIdsKey,
     instanceOrder,
     launchApp,
     bringInstanceToForeground,
@@ -37,7 +47,10 @@ export function useAppManager({ apps }: AppManagerProps) {
     foregroundInstanceId,
     exposeMode,
   } = useAppStoreShallow((state) => ({
-    instances: state.instances,
+    openInstanceIdsKey: Object.values(state.instances)
+      .filter((instance) => instance.isOpen)
+      .map((instance) => instance.instanceId)
+      .join("\0"),
     instanceOrder: state.instanceOrder,
     launchApp: state.launchApp,
     bringInstanceToForeground: state.bringInstanceToForeground,
@@ -49,6 +62,11 @@ export function useAppManager({ apps }: AppManagerProps) {
     foregroundInstanceId: state.foregroundInstanceId,
     exposeMode: state.exposeMode,
   }));
+
+  const openInstanceIds = useMemo(
+    () => (openInstanceIdsKey ? openInstanceIdsKey.split("\0") : []),
+    [openInstanceIdsKey]
+  );
 
   const { isWindowsTheme: isXpTheme } = useThemeFlags();
 
@@ -76,7 +94,7 @@ export function useAppManager({ apps }: AppManagerProps) {
   const switcherApps = switcherState.apps;
   const switcherIndex = switcherState.index;
 
-  const instancesRef = useRef(instances);
+  const instancesRef = useRef(useAppStore.getState().instances);
   const instanceOrderRef = useRef(instanceOrder);
   const launchAppRef = useRef(launchApp);
   const foregroundInstanceIdRef = useRef(foregroundInstanceId);
@@ -90,8 +108,11 @@ export function useAppManager({ apps }: AppManagerProps) {
   const switcherIndexRef = useRef(0);
 
   useEffect(() => {
-    instancesRef.current = instances;
-  }, [instances]);
+    instancesRef.current = useAppStore.getState().instances;
+    return useAppStore.subscribe((state) => {
+      instancesRef.current = state.instances;
+    });
+  }, []);
 
   useEffect(() => {
     instanceOrderRef.current = instanceOrder;
@@ -133,8 +154,9 @@ export function useAppManager({ apps }: AppManagerProps) {
 
       let changed = false;
       const next = new Set<string>();
+      const openIds = new Set(openInstanceIds);
       prev.forEach((instanceId) => {
-        if (instances[instanceId]?.isOpen) {
+        if (openIds.has(instanceId)) {
           next.add(instanceId);
         } else {
           changed = true;
@@ -143,7 +165,7 @@ export function useAppManager({ apps }: AppManagerProps) {
 
       return changed ? next : prev;
     });
-  }, [instances]);
+  }, [openInstanceIds]);
 
   useEffect(() => {
     const timer = setTimeout(() => setIsInitialMount(false), 500);
@@ -318,7 +340,7 @@ export function useAppManager({ apps }: AppManagerProps) {
 
   return {
     apps,
-    instances,
+    openInstanceIds,
     instanceOrder,
     exposeMode,
     showDesktopMenuBar,

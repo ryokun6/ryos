@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { getFinderDisplayName } from "@/utils/finderDisplay";
@@ -63,17 +63,20 @@ export function useFileList({
     };
   }, []);
 
-  const handleFileOpen = (file: FileItem, launchOrigin?: LaunchOriginRect) => {
-    if (clickTimeoutRef.current) {
-      clearTimeout(clickTimeoutRef.current);
-      clickTimeoutRef.current = null;
-    }
+  const handleFileOpen = useCallback(
+    (file: FileItem, launchOrigin?: LaunchOriginRect) => {
+      if (clickTimeoutRef.current) {
+        clearTimeout(clickTimeoutRef.current);
+        clickTimeoutRef.current = null;
+      }
 
-    onFileOpen(file, launchOrigin);
-    onFileSelect(undefined, { selectedPaths: [], anchorPath: null });
-  };
+      onFileOpen(file, launchOrigin);
+      onFileSelect(undefined, { selectedPaths: [], anchorPath: null });
+    },
+    [onFileOpen, onFileSelect]
+  );
 
-  const orderedPaths = files.map((file) => file.path);
+  const orderedPaths = useMemo(() => files.map((file) => file.path), [files]);
 
   const applySelection = useCallback(
     (
@@ -179,61 +182,71 @@ export function useFileList({
     };
   }, [applySelection, selectionRect, updateSelectionFromMarquee]);
 
-  const handleFileSelect = (
-    file: FileItem,
-    event: React.MouseEvent<HTMLElement>,
-    options?: { allowRename?: boolean }
-  ) => {
-    const allowRename = options?.allowRename !== false;
-    const toggleKey = hasToggleModifier(event);
-    const shiftKey = event.shiftKey;
-    const isSinglePrimarySelection =
-      selectedFile?.path === file.path &&
-      selectedFiles.length === 1 &&
-      selectedFiles[0] === file.path;
+  const handleFileSelect = useCallback(
+    (
+      file: FileItem,
+      event: React.MouseEvent<HTMLElement>,
+      options?: { allowRename?: boolean }
+    ) => {
+      const allowRename = options?.allowRename !== false;
+      const toggleKey = hasToggleModifier(event);
+      const shiftKey = event.shiftKey;
+      const isSinglePrimarySelection =
+        selectedFile?.path === file.path &&
+        selectedFiles.length === 1 &&
+        selectedFiles[0] === file.path;
 
-    if (allowRename && !toggleKey && !shiftKey && isSinglePrimarySelection) {
-      if (clickTimeoutRef.current) {
+      if (allowRename && !toggleKey && !shiftKey && isSinglePrimarySelection) {
+        if (clickTimeoutRef.current) {
+          return;
+        }
+
+        lastClickedPathRef.current = file.path;
+        clickTimeoutRef.current = setTimeout(() => {
+          if (onRenameRequest && lastClickedPathRef.current === file.path) {
+            onRenameRequest(file);
+          }
+          clickTimeoutRef.current = null;
+        }, 600);
+
         return;
       }
 
-      lastClickedPathRef.current = file.path;
-      clickTimeoutRef.current = setTimeout(() => {
-        if (onRenameRequest && lastClickedPathRef.current === file.path) {
-          onRenameRequest(file);
-        }
+      if (clickTimeoutRef.current) {
+        clearTimeout(clickTimeoutRef.current);
         clickTimeoutRef.current = null;
-      }, 600);
+      }
 
-      return;
-    }
+      lastClickedPathRef.current = file.path;
+      const nextSelection = resolveMultiSelection({
+        orderedIds: orderedPaths,
+        currentSelectedIds: selectedFiles,
+        clickedId: file.path,
+        anchorId:
+          selectionAnchorPath || selectedFile?.path || selectedFiles[0] || null,
+        modifiers: {
+          shiftKey,
+          toggleKey,
+        },
+      });
 
-    if (clickTimeoutRef.current) {
-      clearTimeout(clickTimeoutRef.current);
-      clickTimeoutRef.current = null;
-    }
+      applySelection(
+        nextSelection.selectedIds,
+        nextSelection.primaryId,
+        nextSelection.anchorId
+      );
+    },
+    [
+      applySelection,
+      onRenameRequest,
+      orderedPaths,
+      selectedFile?.path,
+      selectedFiles,
+      selectionAnchorPath,
+    ]
+  );
 
-    lastClickedPathRef.current = file.path;
-    const nextSelection = resolveMultiSelection({
-      orderedIds: orderedPaths,
-      currentSelectedIds: selectedFiles,
-      clickedId: file.path,
-      anchorId:
-        selectionAnchorPath || selectedFile?.path || selectedFiles[0] || null,
-      modifiers: {
-        shiftKey,
-        toggleKey,
-      },
-    });
-
-    applySelection(
-      nextSelection.selectedIds,
-      nextSelection.primaryId,
-      nextSelection.anchorId
-    );
-  };
-
-  const handleDragStart = (e: React.DragEvent<HTMLElement>, file: FileItem) => {
+  const handleDragStart = useCallback((e: React.DragEvent<HTMLElement>, file: FileItem) => {
     if (file.isDirectory) {
       e.preventDefault();
       return;
@@ -348,9 +361,9 @@ export function useFileList({
         document.body.removeChild(dragImage);
       }
     }, 0);
-  };
+  }, [isMacOSXTheme, isXpTheme, viewType]);
 
-  const handleDragOver = (e: React.DragEvent<HTMLElement>, file: FileItem) => {
+  const handleDragOver = useCallback((e: React.DragEvent<HTMLElement>, file: FileItem) => {
     if (
       file.isDirectory &&
       canDropFiles &&
@@ -360,13 +373,13 @@ export function useFileList({
       e.preventDefault();
       setDropTargetPath(file.path);
     }
-  };
+  }, [canDropFiles]);
 
-  const handleDragLeave = () => {
+  const handleDragLeave = useCallback(() => {
     setDropTargetPath(null);
-  };
+  }, []);
 
-  const handleDrop = (
+  const handleDrop = useCallback((
     e: React.DragEvent<HTMLElement>,
     targetFolder: FileItem
   ) => {
@@ -389,14 +402,14 @@ export function useFileList({
 
     onFileDrop(draggedFileRef.current, targetFolder);
     draggedFileRef.current = null;
-  };
+  }, [onFileDrop]);
 
-  const handleDragEnd = () => {
+  const handleDragEnd = useCallback(() => {
     draggedFileRef.current = null;
     setDropTargetPath(null);
-  };
+  }, []);
 
-  const handleContainerDragOver = (e: React.DragEvent<HTMLElement>) => {
+  const handleContainerDragOver = useCallback((e: React.DragEvent<HTMLElement>) => {
     if (
       canDropFiles &&
       draggedFileRef.current &&
@@ -404,11 +417,11 @@ export function useFileList({
     ) {
       e.preventDefault();
     }
-  };
+  }, [canDropFiles, currentPath]);
 
-  const handleContainerDragLeave = () => {};
+  const handleContainerDragLeave = useCallback(() => {}, []);
 
-  const handleContainerDrop = (e: React.DragEvent<HTMLElement>) => {
+  const handleContainerDrop = useCallback((e: React.DragEvent<HTMLElement>) => {
     e.preventDefault();
 
     if (dropTargetPath) {
@@ -425,13 +438,19 @@ export function useFileList({
     }
 
     draggedFileRef.current = null;
-  };
+  }, [currentPath, dropTargetPath, onDropToCurrentDirectory]);
 
-  const getDisplayName = (file: FileItem): string => getFinderDisplayName(file);
-  const getListIconAlt = (file: FileItem): string =>
-    file.isDirectory
-      ? t("apps.finder.fileTypes.directory")
-      : t("apps.finder.fileTypes.file");
+  const getDisplayName = useCallback(
+    (file: FileItem): string => getFinderDisplayName(file),
+    []
+  );
+  const getListIconAlt = useCallback(
+    (file: FileItem): string =>
+      file.isDirectory
+        ? t("apps.finder.fileTypes.directory")
+        : t("apps.finder.fileTypes.file"),
+    [t]
+  );
 
   const renderedSelectionRect =
     selectionRect &&
@@ -450,20 +469,37 @@ export function useFileList({
         }
       : null;
 
-  const containerDragHandlers = {
-    onDragOver: handleContainerDragOver,
-    onDragLeave: handleContainerDragLeave,
-    onDrop: handleContainerDrop,
-    onMouseDown: handleBlankMouseDown,
-  };
+  const containerDragHandlers = useMemo(
+    () => ({
+      onDragOver: handleContainerDragOver,
+      onDragLeave: handleContainerDragLeave,
+      onDrop: handleContainerDrop,
+      onMouseDown: handleBlankMouseDown,
+    }),
+    [
+      handleBlankMouseDown,
+      handleContainerDragLeave,
+      handleContainerDragOver,
+      handleContainerDrop,
+    ]
+  );
 
-  const itemDragHandlers = {
-    onDragStart: handleDragStart,
-    onDragOver: handleDragOver,
-    onDragLeave: handleDragLeave,
-    onDrop: handleDrop,
-    onDragEnd: handleDragEnd,
-  };
+  const itemDragHandlers = useMemo(
+    () => ({
+      onDragStart: handleDragStart,
+      onDragOver: handleDragOver,
+      onDragLeave: handleDragLeave,
+      onDrop: handleDrop,
+      onDragEnd: handleDragEnd,
+    }),
+    [
+      handleDragEnd,
+      handleDragLeave,
+      handleDragOver,
+      handleDragStart,
+      handleDrop,
+    ]
+  );
 
   return {
     files,

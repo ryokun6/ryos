@@ -34,6 +34,8 @@ const localeLoaders: Partial<Record<SupportedLanguage, LocaleLoader>> = {
 const loadingLanguages = new Map<SupportedLanguage, Promise<void>>();
 
 let initializePromise: Promise<void> | null = null;
+let defaultInitPromise: Promise<void> | null = null;
+let initialLanguagePromise: Promise<void> | null = null;
 let hasBoundLanguageSync = false;
 let latestApplyRequestId = 0;
 
@@ -67,6 +69,47 @@ const setLanguageOnI18n = async (language: SupportedLanguage): Promise<void> => 
 
   await i18n.changeLanguage(language);
   syncDocumentLanguage(language);
+};
+
+const initializeDefaultI18n = async (): Promise<void> => {
+  if (defaultInitPromise) {
+    return defaultInitPromise;
+  }
+
+  defaultInitPromise = (async () => {
+    if (!i18n.isInitialized) {
+      await i18n.use(initReactI18next).init({
+        resources,
+        lng: DEFAULT_LANGUAGE,
+        fallbackLng: DEFAULT_LANGUAGE,
+        defaultNS: "translation",
+        ns: ["translation"],
+        initImmediate: false,
+        interpolation: {
+          escapeValue: false, // React already escapes values
+        },
+      });
+    }
+
+    bindLanguageSync();
+    syncDocumentLanguage(getCurrentLanguage());
+  })();
+
+  return defaultInitPromise;
+};
+
+const applyInitialLanguage = async (): Promise<void> => {
+  if (initialLanguagePromise) {
+    return initialLanguagePromise;
+  }
+
+  initialLanguagePromise = (async () => {
+    const initialLanguage = resolveInitialLanguage();
+    await ensureLanguageResources(initialLanguage);
+    await setLanguageOnI18n(initialLanguage);
+  })();
+
+  return initialLanguagePromise;
 };
 
 export async function ensureLanguageResources(
@@ -117,27 +160,18 @@ export async function initializeI18n(): Promise<void> {
   }
 
   initializePromise = (async () => {
-    if (!i18n.isInitialized) {
-      await i18n.use(initReactI18next).init({
-        resources,
-        lng: DEFAULT_LANGUAGE,
-        fallbackLng: DEFAULT_LANGUAGE,
-        defaultNS: "translation",
-        ns: ["translation"],
-        interpolation: {
-          escapeValue: false, // React already escapes values
-        },
-      });
-    }
-
-    bindLanguageSync();
-
-    const initialLanguage = resolveInitialLanguage();
-    await ensureLanguageResources(initialLanguage);
-    await setLanguageOnI18n(initialLanguage);
+    await initializeDefaultI18n();
+    await applyInitialLanguage();
   })();
 
   return initializePromise;
+}
+
+export async function initializeI18nForFirstPaint(): Promise<void> {
+  await initializeDefaultI18n();
+  void applyInitialLanguage().catch((error) => {
+    console.error("[ryOS] Failed to apply initial language:", error);
+  });
 }
 
 export async function applyLanguage(

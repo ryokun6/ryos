@@ -2,6 +2,7 @@ import { resolveAppId, type AppId } from "./appRegistryData";
 import type {
   BaseApp,
   ControlPanelsInitialData,
+  FinderInitialData,
   InternetExplorerInitialData,
   IpodInitialData,
   PaintInitialData,
@@ -36,12 +37,13 @@ const defaultWindowConstraints: WindowConstraints = {
 // LAZY-LOADED APP COMPONENTS
 // ============================================================================
 
-// Critical apps (load immediately for perceived performance)
-// Finder is critical - users see it on desktop
-import { FinderAppComponent } from "@/apps/finder/components/finder-app/FinderAppComponent";
-
 // Lazy-loaded apps (loaded on-demand when opened)
 // Each uses a cache key to maintain stable references across HMR
+const LazyFinderApp = createLazyComponent<FinderInitialData>(
+  () => import("@/apps/finder/components/finder-app/FinderAppComponent").then(m => ({ default: m.FinderAppComponent })),
+  "finder"
+);
+
 const LazyTextEditApp = createLazyComponent<unknown>(
   () => import("@/apps/textedit/components/TextEditAppComponent").then(m => ({ default: m.TextEditAppComponent })),
   "textedit"
@@ -212,7 +214,7 @@ export const appRegistry = {
     name: "Finder",
     icon: { type: "image", src: "/icons/mac.png" },
     description: "Browse and manage files",
-    component: FinderAppComponent, // Critical - loaded eagerly
+    component: LazyFinderApp,
     helpItems: finderHelpItems,
     metadata: finderMetadata,
     windowConfig: {

@@ -284,9 +284,8 @@ const createUseAppStore = () =>
             }
           }
 
-          // Check if app is lazy (most are, except Finder which is critical)
-          // We can assume non-Finder apps might need loading time
-          const isLazy = appId !== "finder";
+          // All app components are chunk-loaded so the shell can paint first.
+          const isLazy = true;
 
           const instances = {
             ...state.instances,
@@ -353,7 +352,7 @@ const createUseAppStore = () =>
               detail: {
                 instanceId: createdId,
                 isOpen: true,
-                isForeground: appId === "finder", // Only finder is foreground immediately
+                isForeground: false,
               },
             })
           );

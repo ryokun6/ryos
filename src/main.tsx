@@ -7,7 +7,7 @@ import { useLanguageStore } from "./stores/useLanguageStore";
 import { preloadFileSystemData } from "./stores/useFilesStore";
 import { preloadIpodData } from "./stores/useIpodStore";
 import { initPrefetch } from "./utils/prefetch";
-import { initializeI18n } from "./lib/i18n";
+import { initializeI18nForFirstPaint } from "./lib/i18n";
 import { primeReactResources } from "./lib/reactResources";
 import { initializeAnalytics, track, SYSTEM_ANALYTICS } from "./utils/analytics";
 import {
@@ -144,7 +144,7 @@ const bootstrap = async () => {
   useThemeStore.getState().hydrate();
 
   try {
-    await initializeI18n();
+    await initializeI18nForFirstPaint();
   } catch (error) {
     console.error("[ryOS] Failed to initialize i18n during bootstrap:", error);
   }
