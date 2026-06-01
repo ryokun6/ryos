@@ -77,7 +77,7 @@ export function KaraokeLyricsPlaybackProvider({
   const appLanguage = i18n.resolvedLanguage ?? i18n.language;
   const elapsedTime = useKaraokeStore(useShallow((s) => s.elapsedTime));
 
-  const lyricsFontClassName = getLyricsFontClassName(lyricsFont ?? LyricsFontEnum.SansSerif);
+  const lyricsFontClassName = getLyricsFontClassName(lyricsFont ?? LyricsFontEnum.GoldGlow);
 
   const selectedMatchForLyrics = useMemo(() => {
     if (!lyricsSourceOverride) return undefined;

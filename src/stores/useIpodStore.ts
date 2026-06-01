@@ -402,7 +402,7 @@ const initialIpodData: IpodData = {
   lcdFilterOn: true,
   showLyrics: true,
   lyricsAlignment: LyricsAlignment.Alternating,
-  lyricsFont: LyricsFont.SansSerif,
+  lyricsFont: LyricsFont.GoldGlow,
   koreanDisplay: KoreanDisplay.Original,
   japaneseFurigana: JapaneseFurigana.On,
   romanization: {
@@ -801,7 +801,7 @@ export function navigateActiveIpodTrack(
   }
 }
 
-const CURRENT_IPOD_STORE_VERSION = 39; // Add persisted iPod backlight timeout preference
+const CURRENT_IPOD_STORE_VERSION = 40; // Default fullscreen/Karaoke lyrics style is Gold Glow
 
 // Helper function to get unplayed track IDs from history
 function getUnplayedTrackIds(
@@ -2454,7 +2454,7 @@ export const useIpodStore = create<IpodState>()(
             lyricsAlignment: state.lyricsAlignment ?? LyricsAlignment.Alternating,
             lyricsFont: shouldUpgradeLegacyDefaultLyricsFont
               ? LyricsFont.SansSerif
-              : state.lyricsFont ?? LyricsFont.SansSerif,
+              : state.lyricsFont ?? LyricsFont.GoldGlow,
             displayMode: state.displayMode ?? DisplayMode.Video,
             koreanDisplay: state.koreanDisplay ?? KoreanDisplay.Original,
             japaneseFurigana: state.japaneseFurigana ?? JapaneseFurigana.On,

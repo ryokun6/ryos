@@ -10,6 +10,15 @@ import {
 import { useIpodStore } from "@/stores/useIpodStore";
 import type { LyricsDisplayProps } from "./types";
 
+/** Small iPod LCD lyrics always use sans-serif; ignore stored lyric style. */
+export function getIpodSmallScreenLyricsFontClassName(
+  uiVariant: "classic" | "modern"
+): string {
+  return uiVariant === "modern"
+    ? "font-ipod-modern-ui font-semibold"
+    : "font-geneva-12";
+}
+
 export function useLyricsDisplaySettings({
   alignment: alignmentOverride,
   koreanDisplay: koreanDisplayOverride,

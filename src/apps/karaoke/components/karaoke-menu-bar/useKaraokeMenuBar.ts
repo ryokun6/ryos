@@ -79,7 +79,7 @@ export function useKaraokeMenuBar(props: KaraokeMenuBarProps) {
     exportLibrary,
   } = useIpodStoreShallow((s) => ({
     lyricsAlignment: s.lyricsAlignment ?? LyricsAlignment.FocusThree,
-    lyricsFont: s.lyricsFont ?? LyricsFont.SansSerif,
+    lyricsFont: s.lyricsFont ?? LyricsFont.GoldGlow,
     romanization: s.romanization,
     lyricsTranslationLanguage: s.lyricsTranslationLanguage,
     setLyricsAlignment: s.setLyricsAlignment,
