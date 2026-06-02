@@ -1,9 +1,6 @@
 import { useCallback, useRef } from "react";
 import { updateSongById } from "@/api/songs";
-import {
-  getNewCoverColorToSave,
-  normalizeCoverColor,
-} from "@/apps/ipod/components/lyrics-display/colorUtils";
+import { getNewCoverColorToSave } from "@/apps/ipod/components/lyrics-display/colorUtils";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useIpodStore } from "@/stores/useIpodStore";
 
