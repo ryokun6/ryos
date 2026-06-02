@@ -1555,6 +1555,11 @@ describe("cloud sync shared helpers", () => {
     browserGlobals.document = {
       documentElement: {
         dataset: {},
+        style: {},
+        classList: {
+          add: () => undefined,
+          remove: () => undefined,
+        },
       },
       visibilityState: "visible",
       head: {
@@ -1570,12 +1575,17 @@ describe("cloud sync shared helpers", () => {
         remove: () => undefined,
         replaceWith: () => undefined,
       }),
+      createElementNS: () => ({
+        getContext: () => null,
+      }),
     } as unknown as Document;
     browserGlobals.window = {
       AudioContext: class {} as typeof AudioContext,
       document: browserGlobals.document,
+      location: { pathname: "/" },
       addEventListener: () => undefined,
       removeEventListener: () => undefined,
+      dispatchEvent: () => true,
     } as unknown as Window & typeof globalThis;
     browserGlobals.fetch = (async () =>
       new Response(JSON.stringify({ songs: [] }), {
