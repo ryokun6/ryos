@@ -13,6 +13,23 @@ interface TrackMetadataFields {
   lyricsSource?: TrackLyricsSourceFields | null;
 }
 
+function normalizeCoverColorForSync(
+  coverColor: string | null | undefined
+): string | undefined {
+  const trimmed = coverColor?.trim();
+  return trimmed ? trimmed.toLowerCase() : undefined;
+}
+
+export function hasCoverColorMetadataChange(
+  currentTrack: TrackMetadataFields,
+  serverTrack: TrackMetadataFields
+): boolean {
+  return (
+    normalizeCoverColorForSync(currentTrack.coverColor) !==
+    normalizeCoverColorForSync(serverTrack.coverColor)
+  );
+}
+
 export function shouldUpdateTrackLyricsSource(
   currentTrack: TrackMetadataFields,
   serverTrack: TrackMetadataFields
@@ -33,6 +50,7 @@ export function hasLibraryTrackMetadataChanges(
     currentTrack.artist !== serverTrack.artist ||
     currentTrack.album !== serverTrack.album ||
     currentTrack.cover !== serverTrack.cover ||
+    hasCoverColorMetadataChange(currentTrack, serverTrack) ||
     currentTrack.url !== serverTrack.url ||
     currentTrack.lyricOffset !== serverTrack.lyricOffset ||
     shouldUpdateTrackLyricsSource(currentTrack, serverTrack)
@@ -48,6 +66,7 @@ export function hasFetchedTrackMetadataChanges(
       (fetchedTrack.artist && fetchedTrack.artist !== currentTrack.artist) ||
       (fetchedTrack.album && fetchedTrack.album !== currentTrack.album) ||
       (fetchedTrack.cover && fetchedTrack.cover !== currentTrack.cover) ||
+      hasCoverColorMetadataChange(currentTrack, fetchedTrack) ||
       (fetchedTrack.lyricOffset !== undefined &&
         fetchedTrack.lyricOffset !== currentTrack.lyricOffset) ||
       shouldUpdateTrackLyricsSource(currentTrack, fetchedTrack)
@@ -58,8 +77,8 @@ export function resolveSyncedCoverColor(
   currentTrack: TrackMetadataFields,
   serverTrack: TrackMetadataFields
 ): string | undefined {
-  return serverTrack.cover === undefined ||
-    currentTrack.cover === serverTrack.cover
-    ? currentTrack.coverColor
-    : serverTrack.coverColor;
+  if (serverTrack.cover !== undefined && currentTrack.cover !== serverTrack.cover) {
+    return serverTrack.coverColor;
+  }
+  return serverTrack.coverColor ?? currentTrack.coverColor;
 }
