@@ -12,7 +12,7 @@ import { getLyricsTextAlign } from "./lyricsAlignmentUtils";
 import { LyricsLineRowContent } from "./LyricsLineRowContent";
 import type { LyricsDisplayViewModel } from "./useLyricsDisplayController";
 
-const LYRICS_LINE_LEFT_BLEED = "24px";
+const LYRICS_LINE_LEFT_BLEED = "48px";
 
 type LyricsDisplayLinesProps = {
   vm: LyricsDisplayViewModel;
