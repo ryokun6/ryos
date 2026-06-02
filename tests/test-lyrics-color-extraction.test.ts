@@ -1,12 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import {
   boostGlowColor,
+  getNewCoverColorToSave,
   normalizeCoverColor,
   pickPrimaryColor,
   resolveCoverGlowColor,
 } from "../src/apps/ipod/components/lyrics-display/colorUtils";
 import { shouldExtractCoverGlowColor } from "../src/hooks/useCoverGlowColor";
-import { getNewCoverColorToSave } from "../src/hooks/useSaveSongCoverColor";
 import { completeCoverPalette } from "../src/hooks/useCoverPalette";
 
 function hexToRgb(hex: string): [number, number, number] {
