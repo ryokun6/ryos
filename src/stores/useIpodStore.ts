@@ -23,7 +23,11 @@ import {
 } from "@/utils/youtubeMetadata";
 import { emitCloudSyncDomainChange } from "@/utils/cloudSyncEvents";
 import { sortTracksLikeServerOrder } from "@/stores/ipodTrackOrder";
-import { saveAppleMusicLibrary } from "@/utils/appleMusicLibraryCache";
+import {
+  saveAppleMusicLibrary,
+  saveAppleMusicPlaylistTracks,
+  saveAppleMusicTrackCollection,
+} from "@/utils/appleMusicLibraryCache";
 
 /** Special value for lyricsTranslationLanguage that means "use ryOS locale" */
 export const LYRICS_TRANSLATION_AUTO = "auto";
@@ -1204,6 +1208,17 @@ export const useIpodStore = create<IpodState>()(
         let appleMusicTracksToSave: Track[] | null = null;
         let appleMusicLoadedAt = Date.now();
         let appleMusicStorefrontId: string | null = null;
+        let recentlyAddedTracksToSave:
+          | { tracks: Track[]; loadedAt: number }
+          | null = null;
+        let favoriteTracksToSave:
+          | { tracks: Track[]; loadedAt: number }
+          | null = null;
+        const playlistTracksToSave: {
+          playlistId: string;
+          tracks: Track[];
+          loadedAt: number;
+        }[] = [];
 
         set((state) => {
           const youtubeUpdate = updateTrackCoverColorList(
@@ -1248,6 +1263,30 @@ export const useIpodStore = create<IpodState>()(
             appleMusicLoadedAt = state.appleMusicLibraryLoadedAt ?? Date.now();
             appleMusicStorefrontId = state.appleMusicStorefrontId;
           }
+          if (recentlyAddedUpdate.changed) {
+            recentlyAddedTracksToSave = {
+              tracks: recentlyAddedUpdate.tracks,
+              loadedAt: state.appleMusicRecentlyAddedLoadedAt ?? Date.now(),
+            };
+          }
+          if (favoritesUpdate.changed) {
+            favoriteTracksToSave = {
+              tracks: favoritesUpdate.tracks,
+              loadedAt: state.appleMusicFavoriteTracksLoadedAt ?? Date.now(),
+            };
+          }
+          if (playlistTracksChanged) {
+            for (const [playlistId, tracks] of Object.entries(nextPlaylistTracks)) {
+              const originalTracks = state.appleMusicPlaylistTracks[playlistId];
+              if (tracks === originalTracks) continue;
+              playlistTracksToSave.push({
+                playlistId,
+                tracks,
+                loadedAt:
+                  state.appleMusicPlaylistTracksLoadedAt[playlistId] ?? Date.now(),
+              });
+            }
+          }
 
           if (
             !youtubeUpdate.changed &&
@@ -1275,6 +1314,18 @@ export const useIpodStore = create<IpodState>()(
             tracks: appleMusicTracksToSave,
             loadedAt: appleMusicLoadedAt,
             storefrontId: appleMusicStorefrontId,
+          });
+        }
+        if (recentlyAddedTracksToSave) {
+          void saveAppleMusicTrackCollection("recently-added", recentlyAddedTracksToSave);
+        }
+        if (favoriteTracksToSave) {
+          void saveAppleMusicTrackCollection("favorite-songs", favoriteTracksToSave);
+        }
+        for (const playlistTracks of playlistTracksToSave) {
+          void saveAppleMusicPlaylistTracks(playlistTracks.playlistId, {
+            tracks: playlistTracks.tracks,
+            loadedAt: playlistTracks.loadedAt,
           });
         }
       },
