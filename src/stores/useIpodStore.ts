@@ -11,7 +11,6 @@ import {
 } from "@/types/lyrics";
 import { LyricLine } from "@/types/lyrics";
 import type { FuriganaSegment } from "@/utils/romanization";
-import { getApiUrl } from "@/utils/platform";
 import { getAppPublicOrigin } from "@/utils/runtimeConfig";
 import { getCachedSongMetadata, listAllCachedSongMetadata } from "@/utils/songMetadataCache";
 import { ApiRequestError } from "@/api/core";
@@ -23,7 +22,6 @@ import {
 } from "@/api/songs";
 import i18n from "@/lib/i18n";
 import { useChatsStore } from "./useChatsStore";
-import { abortableFetch } from "@/utils/abortableFetch";
 import {
   fetchYouTubeOembed,
   parseYouTubeTitle,

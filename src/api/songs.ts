@@ -128,7 +128,7 @@ export async function getSongById<TSong = Record<string, unknown>>(
   });
 }
 
-export async function updateSongById<TPayload extends Record<string, unknown>>(
+export async function updateSongById<TPayload extends object>(
   songId: string,
   payload: TPayload,
   _auth?: SongsAuthContext
