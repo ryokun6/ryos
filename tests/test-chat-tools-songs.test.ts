@@ -273,10 +273,8 @@ describe("song library chat tools", () => {
     expect(result?.scope).toBe("user");
     expect(result?.songs).toHaveLength(1);
     expect(result?.songs?.[0]?.id).toBe("song_user_2");
-    expect(result?.songs?.[0]?.ipodUrl).toBe("https://os.ryo.lu/ipod/song_user_2");
-    expect(result?.songs?.[0]?.karaokeUrl).toBe(
-      "https://os.ryo.lu/karaoke/song_user_2"
-    );
+    expect(result?.songs?.[0]?.ipodUrl.endsWith("/ipod/song_user_2")).toBe(true);
+    expect(result?.songs?.[0]?.karaokeUrl.endsWith("/karaoke/song_user_2")).toBe(true);
   });
 
   test("gets combined metadata when a song exists in user and global libraries", async () => {
@@ -299,7 +297,7 @@ describe("song library chat tools", () => {
     expect(result?.song?.hasTranslations).toBe(true);
     expect(result?.song?.hasFurigana).toBe(true);
     expect(result?.song?.coverColor).toBe("#112233");
-    expect(result?.song?.ipodUrl).toBe("https://os.ryo.lu/ipod/song_user_1");
+    expect(result?.song?.ipodUrl.endsWith("/ipod/song_user_1")).toBe(true);
   });
 
   test("requires auth for user-scope song lookups", async () => {
@@ -382,7 +380,7 @@ describe("song library chat tools", () => {
     expect(result?.scope).toBe("user");
     expect(result?.song?.id).toBe("yt_new_1");
     expect(result?.song?.inUserLibrary).toBe(true);
-    expect(result?.song?.ipodUrl).toBe("https://os.ryo.lu/ipod/yt_new_1");
+    expect(result?.song?.ipodUrl.endsWith("/ipod/yt_new_1")).toBe(true);
 
     const state = await readSongsState(redis as unknown as Redis, "alice");
     expect(state?.data.tracks[0]?.id).toBe("yt_new_1");

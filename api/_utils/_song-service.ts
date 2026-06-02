@@ -217,6 +217,7 @@ export async function getSong(
     result.artist = meta.artist;
     result.album = meta.album;
     result.cover = meta.cover;
+    result.coverColor = meta.coverColor;
     result.lyricOffset = meta.lyricOffset;
     result.lyricsSource = meta.lyricsSource;
     result.createdBy = meta.createdBy;
