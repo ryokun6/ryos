@@ -1,10 +1,11 @@
 import { useEffect, useRef } from "react";
-import { useIpodStore, type Track } from "@/stores/useIpodStore";
+import { useIpodStore } from "@/stores/useIpodStore";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { listAllCachedSongMetadata } from "@/utils/songMetadataCache";
 import { hasLibraryTrackMetadataChanges } from "@/stores/ipodTrackMetadataSync";
+import { mapCatalogSongToTrack } from "@/stores/ipodCatalogTrackMapping";
 
 const CHECK_INTERVAL = 5 * 60 * 1000; // Check every 5 minutes
 
@@ -45,17 +46,7 @@ export function useLibraryUpdateChecker(isActive: boolean) {
           return;
         }
         
-        const serverTracks: Track[] = cachedSongs.map((song) => ({
-          id: song.youtubeId,
-          url: `https://www.youtube.com/watch?v=${song.youtubeId}`,
-          title: song.title,
-          artist: song.artist,
-          album: song.album ?? "",
-          cover: song.cover,
-          coverColor: song.coverColor,
-          lyricOffset: song.lyricOffset,
-          lyricsSource: song.lyricsSource,
-        }));
+        const serverTracks = cachedSongs.map(mapCatalogSongToTrack);
         const serverVersion = Math.max(...cachedSongs.map((s) => s.createdAt || 1));
 
         // Check for new tracks (same logic as syncLibrary)

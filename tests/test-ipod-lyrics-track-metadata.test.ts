@@ -44,6 +44,22 @@ const {
 const { useIpodStore } = await import("../src/stores/useIpodStore");
 type Track = import("../src/stores/useIpodStore").Track;
 
+function readPersistedIpodState(): unknown {
+  const storeWithPersist = useIpodStore as typeof useIpodStore & {
+    persist?: {
+      getOptions?: () => {
+        storage?: {
+          getItem: (name: string) => unknown;
+        };
+      };
+    };
+  };
+  const raw =
+    storeWithPersist.persist?.getOptions?.().storage?.getItem("ryos:ipod") ??
+    localStorage.getItem("ryos:ipod");
+  return typeof raw === "string" ? JSON.parse(raw) : raw;
+}
+
 const youtubeTrack: Track = {
   id: "dQw4w9WgXcQ",
   url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
@@ -238,7 +254,9 @@ describe("setTrackCoverColor", () => {
       updated.appleMusicPlaylistTracks["pl.favorites-mix"]?.[0]?.coverColor
     ).toBe("#abcdef");
 
-    const persisted = JSON.parse(localStorage.getItem("ryos:ipod") ?? "{}");
+    const persisted = readPersistedIpodState() as {
+      state?: { tracks?: Track[] };
+    };
     expect(persisted.state?.tracks?.[0]?.coverColor).toBe("#123456");
   });
 });
