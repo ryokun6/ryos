@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  getCoverColorToSyncToRemote,
   hasCoverColorMetadataChange,
   hasFetchedTrackMetadataChanges,
   hasLibraryTrackMetadataChanges,
@@ -43,6 +44,7 @@ describe("iPod track metadata sync", () => {
 
     expect(hasCoverColorMetadataChange(current, server)).toBe(true);
     expect(hasLibraryTrackMetadataChanges(current, server)).toBe(true);
+    expect(getCoverColorToSyncToRemote(current, server)).toBe("#111111");
     expect(resolveSyncedCoverColor(current, server)).toBe("#111111");
   });
 
@@ -77,6 +79,7 @@ describe("iPod track metadata sync", () => {
     };
 
     expect(hasCoverColorMetadataChange(current, server)).toBe(true);
+    expect(getCoverColorToSyncToRemote(current, server)).toBeUndefined();
     expect(resolveSyncedCoverColor(current, server)).toBe("#222222");
   });
 
@@ -90,6 +93,7 @@ describe("iPod track metadata sync", () => {
       coverColor: "#222222",
     };
 
+    expect(getCoverColorToSyncToRemote(current, server)).toBeUndefined();
     expect(resolveSyncedCoverColor(current, server)).toBe("#222222");
   });
 
@@ -104,6 +108,7 @@ describe("iPod track metadata sync", () => {
     };
 
     expect(hasFetchedTrackMetadataChanges(current, fetched)).toBe(true);
+    expect(getCoverColorToSyncToRemote(current, fetched)).toBeUndefined();
     expect(resolveSyncedCoverColor(current, fetched)).toBe("#222222");
   });
 
@@ -118,6 +123,7 @@ describe("iPod track metadata sync", () => {
     };
 
     expect(hasFetchedTrackMetadataChanges(current, fetched)).toBe(true);
+    expect(getCoverColorToSyncToRemote(current, fetched)).toBe("#111111");
     expect(resolveSyncedCoverColor(current, fetched)).toBe("#111111");
   });
 });

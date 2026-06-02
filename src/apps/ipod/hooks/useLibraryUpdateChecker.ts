@@ -91,6 +91,10 @@ export function useLibraryUpdateChecker(isActive: boolean) {
           // Auto-update: directly sync without asking user
           try {
             const result = await syncLibrary();
+            if (result.newTracksAdded === 0 && result.tracksUpdated === 0) {
+              console.log("[iPod] Auto update check resolved with no applied changes");
+              return;
+            }
             const message =
               wasEmpty && result.newTracksAdded > 0
                 ? t("apps.ipod.dialogs.addedSongsToTop", {

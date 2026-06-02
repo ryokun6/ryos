@@ -11,6 +11,7 @@ import {
 } from "@/types/lyrics";
 import { LyricLine } from "@/types/lyrics";
 import type { FuriganaSegment } from "@/utils/romanization";
+import { updateSongById } from "@/api/songs";
 import { getApiUrl } from "@/utils/platform";
 import { getAppPublicOrigin } from "@/utils/runtimeConfig";
 import { getCachedSongMetadata, listAllCachedSongMetadata } from "@/utils/songMetadataCache";
@@ -24,8 +25,11 @@ import {
 import { emitCloudSyncDomainChange } from "@/utils/cloudSyncEvents";
 import { sortTracksLikeServerOrder } from "@/stores/ipodTrackOrder";
 import {
+  getCoverColorToSyncToRemote,
   hasFetchedTrackMetadataChanges,
+  hasFetchedTrackMetadataChangesExcludingCoverColor,
   hasLibraryTrackMetadataChanges,
+  hasLibraryTrackMetadataChangesExcludingCoverColor,
   resolveSyncedCoverColor,
   shouldUpdateTrackLyricsSource,
 } from "@/stores/ipodTrackMetadataSync";
@@ -127,6 +131,44 @@ function updateTrackCoverColorList(
     return { ...track, coverColor };
   });
   return { tracks: changed ? updatedTracks : tracks, changed };
+}
+
+interface RemoteCoverColorSync {
+  trackId: string;
+  coverColor: string;
+}
+
+async function syncRemoteCoverColors(
+  updates: RemoteCoverColorSync[]
+): Promise<number> {
+  if (updates.length === 0) return 0;
+  const { username, isAuthenticated } = useChatsStore.getState();
+  if (!username || !isAuthenticated) {
+    return 0;
+  }
+
+  const uniqueUpdates = [
+    ...new Map(
+      updates.map((update) => [
+        update.trackId,
+        update,
+      ])
+    ).values(),
+  ];
+  const results = await Promise.allSettled(
+    uniqueUpdates.map((update) =>
+      updateSongById(
+        update.trackId,
+        { coverColor: update.coverColor },
+        { username, isAuthenticated }
+      )
+    )
+  );
+
+  return results.filter(
+    (result) =>
+      result.status === "fulfilled" && result.value.success !== false
+  ).length;
 }
 
 /**
@@ -1939,15 +1981,29 @@ export const useIpodStore = create<IpodState>()(
 
           let newTracksAdded = 0;
           let tracksUpdated = 0;
+          const remoteCoverColorSyncs: RemoteCoverColorSync[] = [];
 
           // Process existing tracks: merge server timestamps + metadata when on server
           const updatedTracks = current.tracks.map((currentTrack) => {
             const serverTrack = serverTrackMap.get(currentTrack.id);
             if (serverTrack) {
-              const hasMetadataChanges = hasLibraryTrackMetadataChanges(
+              const coverColorToSync = getCoverColorToSyncToRemote(
                 currentTrack,
                 serverTrack
               );
+              if (coverColorToSync) {
+                remoteCoverColorSyncs.push({
+                  trackId: currentTrack.id,
+                  coverColor: coverColorToSync,
+                });
+              }
+              const hasMetadataChanges =
+                hasLibraryTrackMetadataChangesExcludingCoverColor(
+                  currentTrack,
+                  serverTrack
+                ) ||
+                (hasLibraryTrackMetadataChanges(currentTrack, serverTrack) &&
+                  !coverColorToSync);
               const shouldUpdateLyricsSource = shouldUpdateTrackLyricsSource(
                 currentTrack,
                 serverTrack
@@ -2052,11 +2108,27 @@ export const useIpodStore = create<IpodState>()(
                 finalTracks = finalTracks.map((track) => {
                   const fetched = fetchedMap.get(track.id);
                   if (fetched) {
+                    const coverColorToSync = getCoverColorToSyncToRemote(
+                      track,
+                      fetched
+                    );
+                    if (coverColorToSync) {
+                      remoteCoverColorSyncs.push({
+                        trackId: track.id,
+                        coverColor: coverColorToSync,
+                      });
+                    }
                     const shouldUpdateLyricsSource = shouldUpdateTrackLyricsSource(
                       track,
                       fetched
                     );
-                    const hasChanges = hasFetchedTrackMetadataChanges(track, fetched);
+                    const hasChanges =
+                      hasFetchedTrackMetadataChangesExcludingCoverColor(
+                        track,
+                        fetched
+                      ) ||
+                      (hasFetchedTrackMetadataChanges(track, fetched) &&
+                        !coverColorToSync);
 
                     if (hasChanges) {
                       tracksUpdated++;
@@ -2111,6 +2183,8 @@ export const useIpodStore = create<IpodState>()(
           const orderChanged =
             finalTracks.length !== current.tracks.length ||
             finalTracks.some((t, i) => t.id !== current.tracks[i]?.id);
+
+          tracksUpdated += await syncRemoteCoverColors(remoteCoverColorSyncs);
 
           // Update store if there were any changes
           if (newTracksAdded > 0 || tracksUpdated > 0 || orderChanged) {
