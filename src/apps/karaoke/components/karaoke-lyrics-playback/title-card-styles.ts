@@ -21,7 +21,17 @@ export type TitleCardStyleCategory =
   | "glow-gradient";
 export type TitleCardLineStyle = Pick<
   CSSProperties,
-  "color" | "filter" | "lineHeight" | "paintOrder" | "textShadow" | "WebkitTextStroke"
+  | "color"
+  | "filter"
+  | "lineHeight"
+  | "marginBottom"
+  | "marginTop"
+  | "paddingBottom"
+  | "paddingLeft"
+  | "paddingTop"
+  | "paintOrder"
+  | "textShadow"
+  | "WebkitTextStroke"
 >;
 
 export function getTitleCardStyleCategory(className: string): TitleCardStyleCategory {
@@ -83,10 +93,19 @@ export const TITLE_CARD_OUTER_STYLE_FULLSCREEN: CSSProperties = {
 export const TITLE_CARD_OUTER_STYLE_WINDOW: CSSProperties = {
   paddingLeft: "clamp(24px, 6cqw, 80px)",
 };
-/** Extra room under stroked/glow titles so `ScrollingText` avoids clipping glyphs */
 export const TITLE_CARD_TITLE_LINE_HEIGHT = 1.22;
+const TITLE_CARD_TITLE_SHADOW_BLEED = "0.18em";
+const TITLE_CARD_TITLE_LEFT_BLEED = "1.25em";
+export const TITLE_CARD_TITLE_SHADOW_BLEED_STYLE = {
+  paddingLeft: TITLE_CARD_TITLE_LEFT_BLEED,
+  paddingTop: TITLE_CARD_TITLE_SHADOW_BLEED,
+  paddingBottom: TITLE_CARD_TITLE_SHADOW_BLEED,
+  marginTop: `-${TITLE_CARD_TITLE_SHADOW_BLEED}`,
+  marginBottom: `-${TITLE_CARD_TITLE_SHADOW_BLEED}`,
+} satisfies TitleCardLineStyle;
 
 export const TITLE_CARD_REGULAR_OUTLINE_STYLE: TitleCardLineStyle = {
+  ...TITLE_CARD_TITLE_SHADOW_BLEED_STYLE,
   color: "#fff",
   lineHeight: TITLE_CARD_TITLE_LINE_HEIGHT,
   WebkitTextStroke: "0.12em rgba(0,0,0,0.7)",
@@ -94,6 +113,7 @@ export const TITLE_CARD_REGULAR_OUTLINE_STYLE: TitleCardLineStyle = {
   textShadow: "none",
 };
 export const TITLE_CARD_REGULAR_GRADIENT_STYLE: TitleCardLineStyle = {
+  ...TITLE_CARD_TITLE_SHADOW_BLEED_STYLE,
   color: "rgba(255, 255, 255, 0.78)",
   lineHeight: TITLE_CARD_TITLE_LINE_HEIGHT,
   textShadow: TITLE_CARD_BASE_SHADOW,

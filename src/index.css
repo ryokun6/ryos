@@ -1994,11 +1994,14 @@ ruby.lyrics-furigana {
 }
 
 .lyrics-word-highlight {
+  --lyrics-shadow-bleed-x: max(18px, 0.45em);
+  --lyrics-shadow-bleed-top: 0.24em;
+  --lyrics-shadow-bleed-bottom: 0.4em;
   display: inline-grid;
   vertical-align: baseline;
   white-space: pre-wrap;
-  padding: 0.15em 10px 0.35em 10px;
-  margin: -0.15em -10px -0.35em -10px;
+  padding: var(--lyrics-shadow-bleed-top) var(--lyrics-shadow-bleed-x) var(--lyrics-shadow-bleed-bottom);
+  margin: calc(-1 * var(--lyrics-shadow-bleed-top)) calc(-1 * var(--lyrics-shadow-bleed-x)) calc(-1 * var(--lyrics-shadow-bleed-bottom));
   overflow: visible;
 }
 
