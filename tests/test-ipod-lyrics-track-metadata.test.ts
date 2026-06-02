@@ -197,6 +197,32 @@ describe("setTrackCoverColor", () => {
           source: "appleMusic",
         },
       ],
+      appleMusicRecentlyAddedTracks: [
+        {
+          id: "am:1616228595",
+          url: "applemusic:1616228595",
+          title: "Bohemian Rhapsody",
+          source: "appleMusic",
+        },
+      ],
+      appleMusicFavoriteTracks: [
+        {
+          id: "am:1616228595",
+          url: "applemusic:1616228595",
+          title: "Bohemian Rhapsody",
+          source: "appleMusic",
+        },
+      ],
+      appleMusicPlaylistTracks: {
+        "pl.favorites-mix": [
+          {
+            id: "am:1616228595",
+            url: "applemusic:1616228595",
+            title: "Bohemian Rhapsody",
+            source: "appleMusic",
+          },
+        ],
+      },
     });
 
     const store = useIpodStore.getState();
@@ -206,6 +232,14 @@ describe("setTrackCoverColor", () => {
     const updated = useIpodStore.getState();
     expect(updated.tracks[0]?.coverColor).toBe("#123456");
     expect(updated.appleMusicTracks[0]?.coverColor).toBe("#abcdef");
+    expect(updated.appleMusicRecentlyAddedTracks[0]?.coverColor).toBe("#abcdef");
+    expect(updated.appleMusicFavoriteTracks[0]?.coverColor).toBe("#abcdef");
+    expect(
+      updated.appleMusicPlaylistTracks["pl.favorites-mix"]?.[0]?.coverColor
+    ).toBe("#abcdef");
+
+    const persisted = JSON.parse(localStorage.getItem("ryos:ipod") ?? "{}");
+    expect(persisted.state?.tracks?.[0]?.coverColor).toBe("#123456");
   });
 });
 

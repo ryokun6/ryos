@@ -103,6 +103,22 @@ export interface Track {
   appleMusicPlayParams?: AppleMusicPlayParams;
 }
 
+function updateTrackCoverColorList(
+  tracks: Track[],
+  trackId: string,
+  coverColor: string
+): { tracks: Track[]; changed: boolean } {
+  let changed = false;
+  const updatedTracks = tracks.map((track) => {
+    if (track.id !== trackId || track.coverColor === coverColor) {
+      return track;
+    }
+    changed = true;
+    return { ...track, coverColor };
+  });
+  return { tracks: changed ? updatedTracks : tracks, changed };
+}
+
 /**
  * Live now-playing row from MusicKit (`mediaItemDidChange`) while a station or
  * catalog playlist queue is active. Drives LCD metadata, title bar rotation,
@@ -1184,15 +1200,84 @@ export const useIpodStore = create<IpodState>()(
           playbackHistory: [], // Clear playback history when adding new tracks
           historyPosition: -1,
         })),
-      setTrackCoverColor: (trackId, coverColor) =>
-        set((state) => ({
-          tracks: state.tracks.map((track) =>
-            track.id === trackId ? { ...track, coverColor } : track
-          ),
-          appleMusicTracks: state.appleMusicTracks.map((track) =>
-            track.id === trackId ? { ...track, coverColor } : track
-          ),
-        })),
+      setTrackCoverColor: (trackId, coverColor) => {
+        let appleMusicTracksToSave: Track[] | null = null;
+        let appleMusicLoadedAt = Date.now();
+        let appleMusicStorefrontId: string | null = null;
+
+        set((state) => {
+          const youtubeUpdate = updateTrackCoverColorList(
+            state.tracks,
+            trackId,
+            coverColor
+          );
+          const appleMusicUpdate = updateTrackCoverColorList(
+            state.appleMusicTracks,
+            trackId,
+            coverColor
+          );
+          const recentlyAddedUpdate = updateTrackCoverColorList(
+            state.appleMusicRecentlyAddedTracks,
+            trackId,
+            coverColor
+          );
+          const favoritesUpdate = updateTrackCoverColorList(
+            state.appleMusicFavoriteTracks,
+            trackId,
+            coverColor
+          );
+
+          let playlistTracksChanged = false;
+          const nextPlaylistTracks: Record<string, Track[]> = {};
+          for (const [playlistId, tracks] of Object.entries(
+            state.appleMusicPlaylistTracks
+          )) {
+            const playlistUpdate = updateTrackCoverColorList(
+              tracks,
+              trackId,
+              coverColor
+            );
+            nextPlaylistTracks[playlistId] = playlistUpdate.tracks;
+            playlistTracksChanged ||= playlistUpdate.changed;
+          }
+
+          if (appleMusicUpdate.changed) {
+            appleMusicTracksToSave = appleMusicUpdate.tracks.filter(
+              (track) => !isAppleMusicCollectionTrack(track)
+            );
+            appleMusicLoadedAt = state.appleMusicLibraryLoadedAt ?? Date.now();
+            appleMusicStorefrontId = state.appleMusicStorefrontId;
+          }
+
+          if (
+            !youtubeUpdate.changed &&
+            !appleMusicUpdate.changed &&
+            !recentlyAddedUpdate.changed &&
+            !favoritesUpdate.changed &&
+            !playlistTracksChanged
+          ) {
+            return {};
+          }
+
+          return {
+            tracks: youtubeUpdate.tracks,
+            appleMusicTracks: appleMusicUpdate.tracks,
+            appleMusicRecentlyAddedTracks: recentlyAddedUpdate.tracks,
+            appleMusicFavoriteTracks: favoritesUpdate.tracks,
+            ...(playlistTracksChanged && {
+              appleMusicPlaylistTracks: nextPlaylistTracks,
+            }),
+          };
+        });
+
+        if (appleMusicTracksToSave) {
+          void saveAppleMusicLibrary({
+            tracks: appleMusicTracksToSave,
+            loadedAt: appleMusicLoadedAt,
+            storefrontId: appleMusicStorefrontId,
+          });
+        }
+      },
       removeTrackById: (trackId) =>
         set((state) => {
           const idx = state.tracks.findIndex((t) => t.id === trackId);
