@@ -135,6 +135,18 @@ export function clearPrefetchFlag(): void {
   }
 }
 
+export function hasStoredPrefetchManifestTimestamp(): boolean {
+  try {
+    return Boolean(
+      localStorage.getItem(MANIFEST_KEY) ||
+        localStorage.getItem(LEGACY_MANIFEST_KEY)
+    );
+  } catch {
+    // Avoid repeatedly running background warmup in storage-restricted contexts.
+    return true;
+  }
+}
+
 export interface ServerVersion {
   version: string;
   buildNumber: string;
@@ -249,7 +261,7 @@ async function checkAndNotifyDesktopUpdate(): Promise<void> {
 }
 
 type CheckResult = 
-  | { action: 'none' }  // Already up to date
+  | { action: 'none'; server?: ServerVersion }  // Already up to date, or version unavailable
   | { action: 'first-time'; server: ServerVersion }
   | { action: 'update'; server: ServerVersion };
 
@@ -278,7 +290,7 @@ async function determineUpdateAction(): Promise<CheckResult> {
   }
   
   console.log('[Prefetch] Already on latest version');
-  return { action: 'none' };
+  return { action: 'none', server: serverVersion };
 }
 
 /**
@@ -296,11 +308,22 @@ async function checkAndUpdate(isManual: boolean = false): Promise<void> {
   const result = await determineUpdateAction();
   
   if (result.action === 'none') {
+    const shouldWarmAssets =
+      Boolean(result.server) && !hasStoredPrefetchManifestTimestamp();
     if (isManual) {
       const stored = getStoredVersion();
       toast.success('Already running the latest version', {
         description: stored.version ? `ryOS ${stored.version} (${stored.buildNumber})` : undefined,
       });
+    }
+    if (shouldWarmAssets && result.server) {
+      console.log('[Prefetch] Asset warmup flag missing, refreshing runtime assets');
+      isUpdateInProgress = true;
+      try {
+        await runPrefetchWithToast(false, result.server);
+      } finally {
+        isUpdateInProgress = false;
+      }
     }
     return;
   }

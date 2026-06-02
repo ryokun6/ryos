@@ -11,8 +11,10 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Detect dev mode for memory optimizations
-const isDev = process.env.NODE_ENV !== 'production' && !process.env.VERCEL;
+// Detect dev mode for memory optimizations. `vite build` may evaluate this
+// config before NODE_ENV is set to "production", so also key off the command.
+const isBuildCommand = process.argv.includes("build");
+const isDev = !isBuildCommand && process.env.NODE_ENV !== 'production' && !process.env.VERCEL;
 const standaloneApiProxyTarget = process.env.STANDALONE_API_PROXY_TARGET?.trim();
 
 // Browserslist warns if caniuse-lite is stale; suppress when up-to-date
@@ -486,6 +488,21 @@ export default defineConfig({
             },
           },
           {
+            // Cache wallpaper images (photos and tiles only, NOT videos)
+            // Videos need range request support which CacheFirst doesn't handle well.
+            // Keep this before the generic image route so wallpapers use their
+            // larger, dedicated cache instead of consuming the shared image cache.
+            urlPattern: /\/wallpapers\/(?:photos|tiles)\/.+\.(?:jpg|jpeg|png|webp)(?:\?.*)?$/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "wallpapers",
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+              },
+            },
+          },
+          {
             // Cache images aggressively
             urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)(?:\?.*)?$/i,
             handler: "CacheFirst",
@@ -580,19 +597,6 @@ export default defineConfig({
                 maxAgeSeconds: 60 * 60 * 24, // 1 day
               },
               networkTimeoutSeconds: 3, // Fall back to cache after 3s
-            },
-          },
-          {
-            // Cache wallpaper images (photos and tiles only, NOT videos)
-            // Videos need range request support which CacheFirst doesn't handle well
-            urlPattern: /\/wallpapers\/(?:photos|tiles)\/.+\.(?:jpg|jpeg|png|webp)(?:\?.*)?$/i,
-            handler: "CacheFirst",
-            options: {
-              cacheName: "wallpapers",
-              expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
-              },
             },
           },
         ],
