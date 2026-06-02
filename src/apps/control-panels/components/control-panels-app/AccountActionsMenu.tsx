@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { CaretDown } from "@phosphor-icons/react";
+import { DotsThree } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -56,13 +57,13 @@ export function AccountActionsMenu({
       <DropdownMenuTrigger asChild>
         <Button
           variant="retro"
-          className="h-7 min-h-9 shrink-0 gap-1 px-2.5 sm:min-h-7"
+          className={cn(
+            "h-7 w-7 min-h-7 min-w-7 shrink-0 rounded-full p-0",
+            "inline-flex items-center justify-center"
+          )}
           aria-label={t("apps.control-panels.accountMenu")}
         >
-          <span className="font-geneva-12 text-[13px] leading-none">
-            {t("apps.control-panels.accountMenu")}
-          </span>
-          <CaretDown size={10} weight="bold" className="shrink-0" aria-hidden />
+          <DotsThree size={16} weight="bold" className="shrink-0" aria-hidden />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" side="bottom" sideOffset={4}>
