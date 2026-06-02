@@ -20,6 +20,7 @@ import {
   TITLE_CARD_REGULAR_OUTLINE_STYLE,
   TITLE_CARD_SECONDARY_TEXT_STYLE,
   TITLE_CARD_TITLE_LINE_HEIGHT,
+  TITLE_CARD_TITLE_SHADOW_BLEED_STYLE,
   type TitleCardLineStyle,
 } from "./title-card-styles";
 
@@ -82,6 +83,7 @@ export const KaraokeTitleCard = memo(function KaraokeTitleCard({
         return TITLE_CARD_REGULAR_OUTLINE_STYLE;
       case "glow-gold":
         return {
+          ...TITLE_CARD_TITLE_SHADOW_BLEED_STYLE,
           color: primaryGlow.baseColor,
           lineHeight: TITLE_CARD_TITLE_LINE_HEIGHT,
           textShadow: TITLE_CARD_BASE_SHADOW,
@@ -164,7 +166,7 @@ export const KaraokeTitleCard = memo(function KaraokeTitleCard({
             </div>
           </div>
         )}
-        <div className="min-w-0 flex-1 text-left overflow-hidden">
+        <div className="min-w-0 flex-1 text-left overflow-visible">
           <ScrollingText
             text={title}
             align="left"

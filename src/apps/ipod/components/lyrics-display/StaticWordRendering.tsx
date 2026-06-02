@@ -17,6 +17,8 @@ import { useMemo } from "react";
 import type { ReactNode } from "react";
 import {
   BASE_SHADOW,
+  LYRICS_SHADOW_BLEED_BOTTOM,
+  LYRICS_SHADOW_BLEED_TOP,
   OLD_SCHOOL_BASE_COLOR,
   OLD_SCHOOL_BASE_STROKE,
   OLD_SCHOOL_PADDING,
@@ -207,10 +209,10 @@ export function StaticWordRendering({
               className={`lyrics-word-layer ${isOldSchoolKaraoke ? "" : baseColor ? "" : "opacity-55"}`} 
               style={{ 
                 textShadow: isOldSchoolKaraoke ? "none" : BASE_SHADOW, 
-                paddingTop: isOldSchoolKaraoke ? OLD_SCHOOL_PADDING_TOP : undefined,
-                marginTop: isOldSchoolKaraoke ? `-${OLD_SCHOOL_PADDING_TOP}` : undefined,
-                paddingBottom: isOldSchoolKaraoke ? OLD_SCHOOL_PADDING_BOTTOM : "0.35em", 
-                marginBottom: isOldSchoolKaraoke ? `-${OLD_SCHOOL_PADDING_BOTTOM}` : "-0.35em",
+                paddingTop: isOldSchoolKaraoke ? OLD_SCHOOL_PADDING_TOP : LYRICS_SHADOW_BLEED_TOP,
+                marginTop: isOldSchoolKaraoke ? `-${OLD_SCHOOL_PADDING_TOP}` : `calc(-1 * ${LYRICS_SHADOW_BLEED_TOP})`,
+                paddingBottom: isOldSchoolKaraoke ? OLD_SCHOOL_PADDING_BOTTOM : LYRICS_SHADOW_BLEED_BOTTOM,
+                marginBottom: isOldSchoolKaraoke ? `-${OLD_SCHOOL_PADDING_BOTTOM}` : `calc(-1 * ${LYRICS_SHADOW_BLEED_BOTTOM})`,
                 paddingLeft: isOldSchoolKaraoke ? OLD_SCHOOL_PADDING : undefined,
                 paddingRight: isOldSchoolKaraoke ? OLD_SCHOOL_PADDING : undefined,
                 marginLeft: isOldSchoolKaraoke ? `-${OLD_SCHOOL_PADDING}` : undefined,

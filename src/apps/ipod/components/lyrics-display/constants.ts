@@ -34,6 +34,8 @@ export const OLD_SCHOOL_PADDING = "0.2em";
 export const OLD_SCHOOL_PADDING_TOP = "0.4em";
 // Bottom padding for old-school (less than default since no glow)
 export const OLD_SCHOOL_PADDING_BOTTOM = "0.2em";
+export const LYRICS_SHADOW_BLEED_TOP = "var(--lyrics-shadow-bleed-top, 0.24em)";
+export const LYRICS_SHADOW_BLEED_BOTTOM = "var(--lyrics-shadow-bleed-bottom, 0.4em)";
 
 // === NEW STYLE CONSTANTS ===
 
