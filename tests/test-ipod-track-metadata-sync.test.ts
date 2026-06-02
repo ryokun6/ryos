@@ -5,6 +5,7 @@ import {
   hasLibraryTrackMetadataChanges,
   resolveSyncedCoverColor,
 } from "../src/stores/ipodTrackMetadataSync";
+import { shouldNotifyCoverGlowColorResolved } from "../src/hooks/useCoverGlowColor";
 
 describe("iPod track metadata sync", () => {
   test("does not treat matching cover colors as library metadata changes", () => {
@@ -66,19 +67,45 @@ describe("iPod track metadata sync", () => {
     expect(resolveSyncedCoverColor(current, server)).toBe("#111111");
   });
 
-  test("uses remote coverColor when remote has a different synced value", () => {
+  test("does not treat remote coverColor-only drift as a library metadata change", () => {
     const current = {
+      title: "Song",
+      artist: "Artist",
+      album: "Album",
       cover: "https://example.com/cover.jpg",
       coverColor: "#111111",
+      url: "https://www.youtube.com/watch?v=song-1",
+      lyricOffset: 500,
     };
     const server = {
+      ...current,
       cover: "https://example.com/cover.jpg",
       coverColor: "#222222",
     };
 
     expect(hasCoverColorMetadataChange(current, server)).toBe(true);
+    expect(hasLibraryTrackMetadataChanges(current, server)).toBe(false);
+    expect(resolveSyncedCoverColor(current, server)).toBe("#111111");
+  });
+
+  test("preserves local same-cover color when real metadata changes sync", () => {
+    const current = {
+      title: "Song",
+      artist: "Artist",
+      album: "Album",
+      cover: "https://example.com/cover.jpg",
+      coverColor: "#111111",
+      url: "https://www.youtube.com/watch?v=song-1",
+      lyricOffset: 500,
+    };
+    const server = {
+      ...current,
+      title: "Song (Remastered)",
+      coverColor: "#222222",
+    };
+
     expect(hasLibraryTrackMetadataChanges(current, server)).toBe(true);
-    expect(resolveSyncedCoverColor(current, server)).toBe("#222222");
+    expect(resolveSyncedCoverColor(current, server)).toBe("#111111");
   });
 
   test("uses server coverColor only when cover art changes", () => {
@@ -94,7 +121,19 @@ describe("iPod track metadata sync", () => {
     expect(resolveSyncedCoverColor(current, server)).toBe("#222222");
   });
 
-  test("uses fetched coverColor when user track metadata has a remote value", () => {
+  test("uses same-cover remote coverColor only when local color is missing", () => {
+    const current = {
+      cover: "https://example.com/cover.jpg",
+    };
+    const server = {
+      cover: "https://example.com/cover.jpg",
+      coverColor: "#222222",
+    };
+
+    expect(resolveSyncedCoverColor(current, server)).toBe("#222222");
+  });
+
+  test("does not treat fetched coverColor-only drift as user track metadata change", () => {
     const current = {
       title: "User Song",
       cover: "https://example.com/cover.jpg",
@@ -104,8 +143,8 @@ describe("iPod track metadata sync", () => {
       coverColor: "#222222",
     };
 
-    expect(hasFetchedTrackMetadataChanges(current, fetched)).toBe(true);
-    expect(resolveSyncedCoverColor(current, fetched)).toBe("#222222");
+    expect(hasFetchedTrackMetadataChanges(current, fetched)).toBe(false);
+    expect(resolveSyncedCoverColor(current, fetched)).toBe("#111111");
   });
 
   test("does not treat missing fetched coverColor as user track metadata change", () => {
@@ -120,5 +159,33 @@ describe("iPod track metadata sync", () => {
 
     expect(hasFetchedTrackMetadataChanges(current, fetched)).toBe(false);
     expect(resolveSyncedCoverColor(current, fetched)).toBe("#111111");
+  });
+});
+
+describe("cover glow color resolution", () => {
+  test("notifies when the extracted palette matches the requested cover URL", () => {
+    expect(
+      shouldNotifyCoverGlowColorResolved(
+        true,
+        "https://example.com/current-cover.jpg",
+        {
+          source: "cover",
+          coverUrl: "https://example.com/current-cover.jpg",
+        }
+      )
+    ).toBe(true);
+  });
+
+  test("does not notify with a stale palette result from a previous cover URL", () => {
+    expect(
+      shouldNotifyCoverGlowColorResolved(
+        true,
+        "https://example.com/current-cover.jpg",
+        {
+          source: "cover",
+          coverUrl: "https://example.com/previous-cover.jpg",
+        }
+      )
+    ).toBe(false);
   });
 });

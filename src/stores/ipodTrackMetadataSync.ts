@@ -52,7 +52,6 @@ export function hasLibraryTrackMetadataChanges(
     currentTrack.artist !== serverTrack.artist ||
     currentTrack.album !== serverTrack.album ||
     currentTrack.cover !== serverTrack.cover ||
-    hasCoverColorMetadataChange(currentTrack, serverTrack) ||
     currentTrack.url !== serverTrack.url ||
     currentTrack.lyricOffset !== serverTrack.lyricOffset ||
     shouldUpdateTrackLyricsSource(currentTrack, serverTrack)
@@ -68,7 +67,6 @@ export function hasFetchedTrackMetadataChanges(
       (fetchedTrack.artist && fetchedTrack.artist !== currentTrack.artist) ||
       (fetchedTrack.album && fetchedTrack.album !== currentTrack.album) ||
       (fetchedTrack.cover && fetchedTrack.cover !== currentTrack.cover) ||
-      hasCoverColorMetadataChange(currentTrack, fetchedTrack) ||
       (fetchedTrack.lyricOffset !== undefined &&
         fetchedTrack.lyricOffset !== currentTrack.lyricOffset) ||
       shouldUpdateTrackLyricsSource(currentTrack, fetchedTrack)
@@ -84,5 +82,5 @@ export function resolveSyncedCoverColor(
   if (serverTrack.cover !== undefined && currentTrack.cover !== serverTrack.cover) {
     return serverCoverColor;
   }
-  return serverCoverColor ?? currentCoverColor;
+  return currentCoverColor ?? serverCoverColor;
 }
