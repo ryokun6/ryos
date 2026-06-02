@@ -154,9 +154,9 @@ describe("karaoke title and alternating lyric alignment", () => {
         visibleLinesLength: 2,
       })
     ).toEqual({
-      paddingLeft: "48px",
+      paddingLeft: "calc(clamp(8px, 2.5%, 24px) + 48px)",
       marginLeft: "calc(-1 * 48px)",
-      width: "calc(100% + 48px)",
+      width: "calc(100% + 48px - clamp(8px, 2.5%, 24px))",
     });
   });
 });

@@ -13,6 +13,7 @@ import { LyricsLineRowContent } from "./LyricsLineRowContent";
 import type { LyricsDisplayViewModel } from "./useLyricsDisplayController";
 
 const LYRICS_LINE_LEFT_BLEED = "48px";
+const LYRICS_LINE_LEFT_INSET = "clamp(8px, 2.5%, 24px)";
 
 type LyricsDisplayLinesProps = {
   vm: LyricsDisplayViewModel;
@@ -55,9 +56,9 @@ export function getLyricsLineBleedStyle({
   } = {};
 
   if (needsLeftBleed) {
-    style.paddingLeft = LYRICS_LINE_LEFT_BLEED;
+    style.paddingLeft = `calc(${LYRICS_LINE_LEFT_INSET} + ${LYRICS_LINE_LEFT_BLEED})`;
     style.marginLeft = `calc(-1 * ${LYRICS_LINE_LEFT_BLEED})`;
-    style.width = `calc(100% + ${LYRICS_LINE_LEFT_BLEED})`;
+    style.width = `calc(100% + ${LYRICS_LINE_LEFT_BLEED} - ${LYRICS_LINE_LEFT_INSET})`;
   }
 
   if (hasAlternatingRightRow) {
