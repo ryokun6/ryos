@@ -19,6 +19,19 @@ export function shouldExtractCoverGlowColor(
   return enabled && !normalizeCoverColor(coverColor);
 }
 
+export function shouldNotifyCoverGlowColorResolved(
+  shouldExtract: boolean,
+  requestedCoverUrl: string | null | undefined,
+  paletteResult: { source: string; coverUrl: string | null }
+): boolean {
+  return (
+    shouldExtract &&
+    paletteResult.source === "cover" &&
+    Boolean(paletteResult.coverUrl) &&
+    paletteResult.coverUrl === (requestedCoverUrl ?? null)
+  );
+}
+
 export function useCoverGlowColor({
   coverUrl,
   coverColor,
@@ -39,10 +52,16 @@ export function useCoverGlowColor({
   );
 
   useEffect(() => {
-    if (shouldExtract && paletteResult.source === "cover" && paletteResult.coverUrl) {
-      onResolved?.(resolvedColor, paletteResult.coverUrl);
+    if (
+      shouldNotifyCoverGlowColorResolved(shouldExtract, coverUrl, paletteResult)
+    ) {
+      const resolvedCoverUrl = paletteResult.coverUrl;
+      if (resolvedCoverUrl) {
+        onResolved?.(resolvedColor, resolvedCoverUrl);
+      }
     }
   }, [
+    coverUrl,
     onResolved,
     paletteResult.coverUrl,
     paletteResult.source,
