@@ -382,52 +382,56 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // Exclude API routes, iframe content, and app deep links from navigation fallback
-        // This prevents the SW from returning index.html for API/iframe requests
-        // and allows the middleware to handle OG meta tags for shared links
-        // IMPORTANT: Safari has issues with service worker responses that contain redirections.
-        // The middleware returns HTML with location.replace() which Safari treats as a redirect.
-        // By denying these routes, the request goes directly to the server/middleware.
-        navigateFallbackDenylist: [
-          /^\/api\//,  // API routes
-          /^\/embed\//,  // embed wrapper pages (e.g. infinite-mac with COEP)
-          /^\/iframe-check/,  // iframe proxy endpoint
-          /^\/404/,  // Don't intercept 404 redirects
-          /^\/docs(\/|$)/,  // Documentation pages - serve static HTML files directly (including /docs root redirect)
-          // App routes handled by middleware for OG preview links
-          // These need to reach the middleware first, then redirect to ?_ryo=1
-          /^\/finder$/,
-          /^\/soundboard$/,
-          /^\/internet-explorer(\/|$)/,
-          /^\/chats$/,
-          /^\/textedit$/,
-          /^\/paint$/,
-          /^\/photo-booth$/,
-          /^\/minesweeper$/,
-          /^\/videos(\/|$)/,
-          /^\/tv$/,
-          /^\/ipod(\/|$)/,
-          /^\/karaoke(\/|$)/,
-          /^\/listen(\/|$)/,
-          /^\/synth$/,
-          /^\/pc$/,
-          /^\/terminal$/,
-          /^\/applet-viewer(\/|$)/,
-          /^\/control-panels$/,
-          /^\/dashboard$/,
-        ],
-        // Enable navigation fallback to precached index.html for offline support
-        // This ensures the app can start when offline by serving the cached shell
-        navigateFallback: 'index.html',
+        // Do not let Workbox auto-register a precached navigation fallback.
+        // GenerateSW emits that route before runtimeCaching, which means it can
+        // serve an old precached index.html before our NetworkFirst navigation
+        // route below gets a chance to fetch the latest shell.
+        navigateFallback: null,
+        // Prevent precacheAndRoute from mapping "/" directly to cached
+        // index.html; navigations should flow through the NetworkFirst route.
+        directoryIndex: null,
         // Cache strategy for different asset types
         runtimeCaching: [
           {
-            // Navigation requests (/, /foo, etc.) - network first to avoid stale index.html
-            // Critical for Safari which can error on missing chunks after updates
-            urlPattern: ({ request }) => request.mode === 'navigate',
+            // Navigation requests (/, /foo, etc.) - network first to avoid stale index.html.
+            // If the network is unavailable, fall back to the precached shell for offline use.
+            // Denied routes still go to the server/middleware for APIs, embeds,
+            // docs, redirects, and OG preview links.
+            urlPattern: ({ request, url }: { request: Request; url: URL }) => {
+              if (request.mode !== 'navigate') return false;
+              return ![
+                /^\/api\//,
+                /^\/embed\//,
+                /^\/iframe-check/,
+                /^\/404/,
+                /^\/docs(\/|$)/,
+                /^\/finder$/,
+                /^\/soundboard$/,
+                /^\/internet-explorer(\/|$)/,
+                /^\/chats$/,
+                /^\/textedit$/,
+                /^\/paint$/,
+                /^\/photo-booth$/,
+                /^\/minesweeper$/,
+                /^\/videos(\/|$)/,
+                /^\/tv$/,
+                /^\/ipod(\/|$)/,
+                /^\/karaoke(\/|$)/,
+                /^\/listen(\/|$)/,
+                /^\/synth$/,
+                /^\/pc$/,
+                /^\/terminal$/,
+                /^\/applet-viewer(\/|$)/,
+                /^\/control-panels$/,
+                /^\/dashboard$/,
+              ].some((pattern) => pattern.test(url.pathname));
+            },
             handler: "NetworkFirst",
             options: {
               cacheName: "html-pages",
+              precacheFallback: {
+                fallbackURL: "/index.html",
+              },
               expiration: {
                 maxEntries: 10,
                 maxAgeSeconds: 60 * 60 * 24, // 1 day
