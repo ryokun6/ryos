@@ -20,6 +20,9 @@ import {
 
 let testToken: string | null = null;
 let testUsername: string | null = null;
+const runId = `${Date.now().toString(36)}${Math.random()
+  .toString(36)
+  .slice(2, 8)}`;
 
 const ADMIN_USERNAME = "ryo";
 const ADMIN_PASSWORD = "testtest";
@@ -71,7 +74,7 @@ describe("New API", () => {
     });
 
     test("Register - success", async () => {
-      testUsername = `tuser${Date.now()}`;
+      testUsername = `tuser${runId}`;
       const res = await fetchWithOrigin(`${BASE_URL}/api/auth/register`, {
         method: "POST",
         headers: makeRateLimitBypassHeaders(),
