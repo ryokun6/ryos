@@ -16,6 +16,17 @@ export function normalizeCoverColor(hex: string | null | undefined): string | un
   return trimmed.toLowerCase();
 }
 
+export function getNewCoverColorToSave(
+  resolvedCoverColor: string,
+  cachedCoverColor: string | null | undefined
+): string | undefined {
+  const normalized = normalizeCoverColor(resolvedCoverColor);
+  if (!normalized || normalizeCoverColor(cachedCoverColor)) {
+    return undefined;
+  }
+  return normalized;
+}
+
 function hexToRgb(hex: string): [number, number, number] {
   const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
   if (!m) return [255, 215, 0];

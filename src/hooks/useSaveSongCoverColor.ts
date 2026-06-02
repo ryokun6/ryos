@@ -1,8 +1,6 @@
 import { useCallback, useRef } from "react";
 import { updateSongById } from "@/api/songs";
-import {
-  normalizeCoverColor,
-} from "@/apps/ipod/components/lyrics-display/colorUtils";
+import { getNewCoverColorToSave } from "@/apps/ipod/components/lyrics-display/colorUtils";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useIpodStore } from "@/stores/useIpodStore";
 
@@ -19,8 +17,11 @@ export function useSaveSongCoverColor(track: SongCoverColorTrack | null) {
 
   return useCallback(
     async (coverColor: string, coverUrl: string) => {
-      const normalized = normalizeCoverColor(coverColor);
-      if (!track || !normalized || normalizeCoverColor(track.coverColor) === normalized) {
+      if (!track) {
+        return;
+      }
+      const normalized = getNewCoverColorToSave(coverColor, track.coverColor);
+      if (!normalized) {
         return;
       }
       setTrackCoverColor(track.id, normalized);

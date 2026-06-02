@@ -1,10 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import {
   boostGlowColor,
+  getNewCoverColorToSave,
   normalizeCoverColor,
   pickPrimaryColor,
   resolveCoverGlowColor,
 } from "../src/apps/ipod/components/lyrics-display/colorUtils";
+import { shouldExtractCoverGlowColor } from "../src/hooks/useCoverGlowColor";
 import { completeCoverPalette } from "../src/hooks/useCoverPalette";
 
 function hexToRgb(hex: string): [number, number, number] {
@@ -76,5 +78,18 @@ describe("lyrics color extraction", () => {
 
   test("resolves the boosted cover glow color from a palette", () => {
     expect(resolveCoverGlowColor(["#1a237e"])).toBe(boostGlowColor("#1a237e"));
+  });
+
+  test("does not extract a cover glow color when a cached color exists", () => {
+    expect(shouldExtractCoverGlowColor(true, "#123456")).toBe(false);
+    expect(shouldExtractCoverGlowColor(true, "  #ABCDEF  ")).toBe(false);
+    expect(shouldExtractCoverGlowColor(true, undefined)).toBe(true);
+    expect(shouldExtractCoverGlowColor(false, undefined)).toBe(false);
+  });
+
+  test("does not save a resolved cover color over a cached color", () => {
+    expect(getNewCoverColorToSave("#abcdef", "#123456")).toBeUndefined();
+    expect(getNewCoverColorToSave("#abcdef", "  #123456  ")).toBeUndefined();
+    expect(getNewCoverColorToSave("#ABCDEF", undefined)).toBe("#abcdef");
   });
 });
