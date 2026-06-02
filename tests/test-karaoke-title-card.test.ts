@@ -145,7 +145,7 @@ describe("karaoke title and lyric alignment", () => {
     expect(TITLE_CARD_TITLE_SHADOW_BLEED_STYLE.width).toBe("calc(100% + 1.25em)");
   });
 
-  test("keeps alternating left lyric rows visually anchored at the original inset", () => {
+  test("keeps alternating left lyric rows from adding an extra left inset", () => {
     expect(
       getLyricsLineBleedStyle({
         alignment: LyricsAlignment.Alternating,
@@ -154,7 +154,7 @@ describe("karaoke title and lyric alignment", () => {
         visibleLinesLength: 2,
       })
     ).toEqual({
-      paddingLeft: "calc(5% + 48px)",
+      paddingLeft: "48px",
       marginLeft: "calc(-1 * 48px)",
       width: "calc(100% + 48px)",
     });

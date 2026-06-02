@@ -43,7 +43,7 @@ export function getLyricsLineBleedStyle({
     index === 1 &&
     visibleLinesLength > 1;
   const linePaddingLeft = hasAlternatingLeftInset
-    ? `calc(5% + ${LYRICS_LINE_LEFT_BLEED})`
+    ? LYRICS_LINE_LEFT_BLEED
     : lineTextAlign === "left" || lineTextAlign === "start"
       ? LYRICS_LINE_LEFT_BLEED
       : undefined;
