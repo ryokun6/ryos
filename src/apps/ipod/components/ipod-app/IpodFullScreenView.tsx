@@ -8,6 +8,7 @@ import { PLAYER_PROGRESS_INTERVAL_MS } from "../../constants";
 import { AppleMusicPlayerBridge } from "../AppleMusicPlayerBridge";
 import { FullScreenPortal } from "../FullScreenPortal";
 import { LyricsDisplay } from "../lyrics-display/LyricsDisplay";
+import { useSaveSongCoverColor } from "@/hooks/useSaveSongCoverColor";
 import type { IpodAppController } from "./useIpodAppController";
 import {
   AmbientBackground,
@@ -82,6 +83,7 @@ export function IpodFullScreenView({ c }: IpodFullScreenViewProps) {
     seekToTime,
     seekTime,
   } = c;
+  const saveCoverColor = useSaveSongCoverColor(currentTrack);
 
   if (!isFullScreen) return null;
 
@@ -391,6 +393,8 @@ export function IpodFullScreenView({ c }: IpodFullScreenViewProps) {
                   }
                   onSeekToTime={seekToTime}
                   coverUrl={fullscreenCoverUrl}
+                  coverColor={currentTrack?.coverColor}
+                  onCoverColorResolved={saveCoverColor}
                 />
               </div>
             )}

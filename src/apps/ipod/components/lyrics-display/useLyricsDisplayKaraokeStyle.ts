@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useCoverPalette } from "@/hooks/useCoverPalette";
+import { useCoverGlowColor } from "@/hooks/useCoverGlowColor";
 import {
   GLOW_FILTER,
   GLOW_SHADOW,
@@ -10,11 +10,13 @@ import {
   SERIF_RED_HIGHLIGHT_COLOR,
   getStyleCategory,
 } from "./constants";
-import { boostGlowColor, makeGlowFromColor, pickPrimaryColor } from "./colorUtils";
+import { makeGlowFromColor } from "./colorUtils";
 
 export function useLyricsDisplayKaraokeStyle(
   fontClassName: string,
-  coverUrl: string | null | undefined
+  coverUrl: string | null | undefined,
+  coverColor: string | null | undefined,
+  onCoverColorResolved?: (coverColor: string, coverUrl: string) => void
 ) {
   const styleCategory = useMemo(
     () => getStyleCategory(fontClassName),
@@ -22,15 +24,15 @@ export function useLyricsDisplayKaraokeStyle(
   );
   const isOldSchoolKaraoke =
     styleCategory === "outline-blue" || styleCategory === "outline-red";
-
-  const palette = useCoverPalette(
-    styleCategory === "glow-gold" ? (coverUrl ?? null) : null
-  );
+  const glowColor = useCoverGlowColor({
+    coverUrl,
+    coverColor,
+    enabled: styleCategory === "glow-gold",
+    onResolved: onCoverColorResolved,
+  });
   const primaryGlow = useMemo(() => {
-    const raw = pickPrimaryColor(palette);
-    const boosted = boostGlowColor(raw);
-    return makeGlowFromColor(boosted);
-  }, [palette]);
+    return makeGlowFromColor(glowColor);
+  }, [glowColor]);
 
   const styleProps = useMemo(() => {
     const isOutline =

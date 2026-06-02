@@ -48,6 +48,8 @@ export interface CachedSongMetadata {
   album?: string;
   /** Cover image URL from Kugou */
   cover?: string;
+  /** Cached boosted cover color for lyrics/title glow */
+  coverColor?: string;
   lyricOffset?: number;
   /** Lyrics source from Kugou (user-selected or auto-detected) */
   lyricsSource?: CachedLyricsSource;
@@ -66,6 +68,7 @@ interface UnifiedSongDocument {
   artist?: string;
   album?: string;
   cover?: string;
+  coverColor?: string;
   lyricOffset?: number;
   lyricsSource?: CachedLyricsSource;
   createdBy?: string;
@@ -89,6 +92,7 @@ type BulkImportSong = {
   artist?: string;
   album?: string;
   cover?: string;
+  coverColor?: string;
   lyricOffset?: number;
   lyricsSource?: CachedLyricsSource;
   // Content fields (may be compressed gzip:base64 strings or raw objects)
@@ -188,6 +192,7 @@ function unifiedToMetadata(doc: UnifiedSongDocument): CachedSongMetadata {
     artist: doc.artist,
     album: doc.album,
     cover: doc.cover,
+    coverColor: doc.coverColor,
     lyricOffset: doc.lyricOffset,
     lyricsSource: doc.lyricsSource,
     createdBy: doc.createdBy,
@@ -334,6 +339,7 @@ export async function saveSongMetadata(
     artist?: string;
     album?: string;
     cover?: string;
+    coverColor?: string;
     lyricOffset?: number;
     lyricsSource?: CachedLyricsSource;
   },
@@ -348,6 +354,7 @@ export async function saveSongMetadata(
         artist: metadata.artist,
         album: metadata.album,
         cover: metadata.cover,
+        coverColor: metadata.coverColor,
         lyricOffset: metadata.lyricOffset,
         lyricsSource: metadata.lyricsSource,
         isShare: options?.isShare,
@@ -698,6 +705,7 @@ export async function saveSongMetadataFromTrack(
     artist?: string;
     album?: string;
     cover?: string;
+    coverColor?: string;
     lyricOffset?: number;
     lyricsSource?: {
       hash: string;
@@ -723,6 +731,7 @@ export async function saveSongMetadataFromTrack(
       artist: track.artist,
       album: track.album,
       cover: track.cover,
+      coverColor: track.coverColor,
       lyricOffset: track.lyricOffset,
       lyricsSource: track.lyricsSource,
     },

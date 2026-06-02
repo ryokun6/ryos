@@ -41,6 +41,7 @@ const {
   resolveLyricsTrackMetadata,
   resolveLyricsOverrideTargetId,
 } = await import("../src/apps/ipod/utils/lyricsTrackMetadata");
+const { useIpodStore } = await import("../src/stores/useIpodStore");
 type Track = import("../src/stores/useIpodStore").Track;
 
 const youtubeTrack: Track = {
@@ -175,6 +176,36 @@ describe("resolveLyricsTrackMetadata", () => {
       artist: "",
       songId: "",
     });
+  });
+});
+
+describe("setTrackCoverColor", () => {
+  test("updates cached cover color on local YouTube and Apple Music tracks", () => {
+    useIpodStore.setState({
+      tracks: [
+        {
+          id: "dQw4w9WgXcQ",
+          url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+          title: "Never Gonna Give You Up",
+        },
+      ],
+      appleMusicTracks: [
+        {
+          id: "am:1616228595",
+          url: "applemusic:1616228595",
+          title: "Bohemian Rhapsody",
+          source: "appleMusic",
+        },
+      ],
+    });
+
+    const store = useIpodStore.getState();
+    store.setTrackCoverColor("dQw4w9WgXcQ", "#123456");
+    store.setTrackCoverColor("am:1616228595", "#abcdef");
+
+    const updated = useIpodStore.getState();
+    expect(updated.tracks[0]?.coverColor).toBe("#123456");
+    expect(updated.appleMusicTracks[0]?.coverColor).toBe("#abcdef");
   });
 });
 

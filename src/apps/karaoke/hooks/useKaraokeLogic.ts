@@ -421,6 +421,7 @@ export function useKaraokeLogic({
         title: activeListenTrackMeta.title,
         artist: activeListenTrackMeta.artist,
         cover: activeListenTrackMeta.cover,
+        coverColor: activeListenTrackMeta.coverColor,
         lyricOffset: 500,
       };
     }
@@ -442,6 +443,7 @@ export function useKaraokeLogic({
             title: currentTrack.title,
             artist: currentTrack.artist,
             cover: currentTrack.cover,
+            coverColor: currentTrack.coverColor,
           }
         : null,
     [currentTrack]
@@ -1426,7 +1428,12 @@ export function useKaraokeLogic({
           action: "playTrack",
           trackId,
           trackMeta: tr
-            ? { title: tr.title, artist: tr.artist, cover: tr.cover }
+            ? {
+                title: tr.title,
+                artist: tr.artist,
+                cover: tr.cover,
+                coverColor: tr.coverColor,
+              }
             : undefined,
         }).then((r) => {
           if (!r.ok) toast.error(r.error ?? "Could not queue track");
@@ -1467,7 +1474,12 @@ export function useKaraokeLogic({
           action: "playTrack",
           trackId,
           trackMeta: tr
-            ? { title: tr.title, artist: tr.artist, cover: tr.cover }
+            ? {
+                title: tr.title,
+                artist: tr.artist,
+                cover: tr.cover,
+                coverColor: tr.coverColor,
+              }
             : undefined,
         }).then((r) => {
           if (!r.ok) toast.error(r.error ?? "Could not queue track");
@@ -1502,7 +1514,12 @@ export function useKaraokeLogic({
           action: "playTrack",
           trackId,
           trackMeta: tr
-            ? { title: tr.title, artist: tr.artist, cover: tr.cover }
+            ? {
+                title: tr.title,
+                artist: tr.artist,
+                cover: tr.cover,
+                coverColor: tr.coverColor,
+              }
             : undefined,
         }).then((r) => {
           if (!r.ok) toast.error(r.error ?? "Could not queue track");

@@ -63,6 +63,7 @@ const LyricsSourceSchema = z.object({
   artist: z.string(),
   album: z.string().optional(),
 });
+const CoverColorSchema = z.string().regex(/^#[0-9a-fA-F]{6}$/);
 
 const CreateSongSchema = z.object({
   id: z.string().min(1),
@@ -70,6 +71,7 @@ const CreateSongSchema = z.object({
   artist: z.string().optional(),
   album: z.string().optional(),
   cover: z.string().max(2000).optional(),
+  coverColor: CoverColorSchema.optional(),
   lyricOffset: z.number().optional(),
   lyricsSource: LyricsSourceSchema.optional(),
 });
@@ -101,6 +103,7 @@ const BulkImportSchema = z.object({
       artist: z.string().optional(),
       album: z.string().optional(),
       cover: z.string().max(2000).optional(),
+      coverColor: CoverColorSchema.optional(),
       lyricOffset: z.number().optional(),
       lyricsSource: LyricsSourceSchema.optional(),
       // Legacy format support
@@ -346,6 +349,9 @@ export default apiHandler<Record<string, unknown>>(
             artist: songData.artist,
             album: songData.album,
             cover, // Will be updated later if we need to fetch it
+            coverColor: songData.coverColor ?? (
+              cover !== existing?.cover ? undefined : existing?.coverColor
+            ),
             lyricOffset: songData.lyricOffset,
             lyricsSource,
             createdBy: songData.createdBy || existing?.createdBy,
@@ -519,6 +525,7 @@ export default apiHandler<Record<string, unknown>>(
           artist: songData.artist,
           album: songData.album,
           cover: songData.cover,
+          coverColor: songData.coverColor,
           lyricOffset: songData.lyricOffset,
           lyricsSource: songData.lyricsSource as LyricsSource | undefined,
           createdBy: existing?.createdBy || username || undefined,

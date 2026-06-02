@@ -10,6 +10,7 @@ export interface ListenTrackMeta {
   title: string;
   artist?: string;
   cover?: string;
+  coverColor?: string;
 }
 
 export interface ListenSessionUser {

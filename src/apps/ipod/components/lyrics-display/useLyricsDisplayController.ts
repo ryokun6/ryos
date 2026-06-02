@@ -85,6 +85,8 @@ export function useLyricsDisplayController(
     currentTimeMs,
     onSeekToTime,
     coverUrl,
+    coverColor,
+    onCoverColorResolved,
     showInterludeEllipsis = false,
   } = props;
 
@@ -117,7 +119,12 @@ export function useLyricsDisplayController(
 
   const processText = useCallback((text: string) => text, []);
 
-  const karaokeStyle = useLyricsDisplayKaraokeStyle(fontClassName, coverUrl);
+  const karaokeStyle = useLyricsDisplayKaraokeStyle(
+    fontClassName,
+    coverUrl,
+    coverColor,
+    onCoverColorResolved
+  );
 
   const { visibleLines, introInterludeLead, currentAnchorIdx } =
     useLyricsVisibleLines({

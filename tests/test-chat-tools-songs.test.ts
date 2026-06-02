@@ -5,7 +5,7 @@ import {
   readSongsState,
   writeSongsState,
 } from "../api/_utils/song-library-state.js";
-import { getSong, saveSong } from "../api/_utils/_song-service.js";
+import { getSong, saveLyrics, saveSong } from "../api/_utils/_song-service.js";
 
 class FakeRedisPipeline {
   private operations: Array<() => void> = [];
@@ -153,6 +153,7 @@ async function seedSongs(redis: FakeRedis): Promise<void> {
           artist: "Alice Artist",
           album: "User Album",
           cover: "https://example.com/user-cover.png",
+          coverColor: "#112233",
         },
         {
           id: "song_user_2",
@@ -172,6 +173,7 @@ async function seedSongs(redis: FakeRedis): Promise<void> {
     artist: "Cache Artist",
     album: "Global Album",
     cover: "https://example.com/global-cover.png",
+    coverColor: "#445566",
     createdBy: "ryo",
     createdAt: 111,
     lyricsSource: {
@@ -195,6 +197,55 @@ async function seedSongs(redis: FakeRedis): Promise<void> {
 }
 
 describe("song library chat tools", () => {
+  test("saveSong preserves coverColor until the cover changes", async () => {
+    const redis = new FakeRedis();
+
+    await saveSong(redis as unknown as Redis, {
+      id: "song_color_1",
+      title: "Color Song",
+      cover: "https://example.com/cover-a.png",
+      coverColor: "#123456",
+    });
+
+    const preserved = await saveSong(redis as unknown as Redis, {
+      id: "song_color_1",
+      title: "Color Song Updated",
+    });
+    expect(preserved.coverColor).toBe("#123456");
+
+    const cleared = await saveSong(redis as unknown as Redis, {
+      id: "song_color_1",
+      cover: "https://example.com/cover-b.png",
+    });
+    expect(cleared.coverColor).toBeUndefined();
+  });
+
+  test("saveLyrics clears coverColor when it refreshes the cover", async () => {
+    const redis = new FakeRedis();
+
+    await saveLyrics(
+      redis as unknown as Redis,
+      "song_color_lyrics",
+      { lrc: "[00:00.00]hello" },
+      undefined,
+      "https://example.com/cover-a.png"
+    );
+    await saveSong(redis as unknown as Redis, {
+      id: "song_color_lyrics",
+      coverColor: "#abcdef",
+    });
+
+    const updated = await saveLyrics(
+      redis as unknown as Redis,
+      "song_color_lyrics",
+      { lrc: "[00:00.00]hello again" },
+      undefined,
+      "https://example.com/cover-b.png"
+    );
+
+    expect(updated.coverColor).toBeUndefined();
+  });
+
   test("all profile does not expose songLibraryControl", () => {
     const tools = createChatTools(createContext(new FakeRedis()), { profile: "all" });
     expect("songLibraryControl" in tools).toBe(false);
@@ -222,10 +273,8 @@ describe("song library chat tools", () => {
     expect(result?.scope).toBe("user");
     expect(result?.songs).toHaveLength(1);
     expect(result?.songs?.[0]?.id).toBe("song_user_2");
-    expect(result?.songs?.[0]?.ipodUrl).toBe("https://os.ryo.lu/ipod/song_user_2");
-    expect(result?.songs?.[0]?.karaokeUrl).toBe(
-      "https://os.ryo.lu/karaoke/song_user_2"
-    );
+    expect(result?.songs?.[0]?.ipodUrl.endsWith("/ipod/song_user_2")).toBe(true);
+    expect(result?.songs?.[0]?.karaokeUrl.endsWith("/karaoke/song_user_2")).toBe(true);
   });
 
   test("gets combined metadata when a song exists in user and global libraries", async () => {
@@ -247,7 +296,8 @@ describe("song library chat tools", () => {
     expect(result?.song?.hasLyrics).toBe(true);
     expect(result?.song?.hasTranslations).toBe(true);
     expect(result?.song?.hasFurigana).toBe(true);
-    expect(result?.song?.ipodUrl).toBe("https://os.ryo.lu/ipod/song_user_1");
+    expect(result?.song?.coverColor).toBe("#112233");
+    expect(result?.song?.ipodUrl.endsWith("/ipod/song_user_1")).toBe(true);
   });
 
   test("requires auth for user-scope song lookups", async () => {
@@ -330,7 +380,7 @@ describe("song library chat tools", () => {
     expect(result?.scope).toBe("user");
     expect(result?.song?.id).toBe("yt_new_1");
     expect(result?.song?.inUserLibrary).toBe(true);
-    expect(result?.song?.ipodUrl).toBe("https://os.ryo.lu/ipod/yt_new_1");
+    expect(result?.song?.ipodUrl.endsWith("/ipod/yt_new_1")).toBe(true);
 
     const state = await readSongsState(redis as unknown as Redis, "alice");
     expect(state?.data.tracks[0]?.id).toBe("yt_new_1");

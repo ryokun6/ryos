@@ -79,6 +79,7 @@ export interface SongMetadata {
   artist?: string;
   album?: string;
   cover?: string; // Cover image URL (from Kugou)
+  coverColor?: string; // Cached boosted cover color for lyrics/title glow
   lyricOffset?: number; // Offset in ms to adjust lyrics timing
   lyricsSource?: LyricsSource;
   createdBy?: string;
@@ -216,6 +217,7 @@ export async function getSong(
     result.artist = meta.artist;
     result.album = meta.album;
     result.cover = meta.cover;
+    result.coverColor = meta.coverColor;
     result.lyricOffset = meta.lyricOffset;
     result.lyricsSource = meta.lyricsSource;
     result.createdBy = meta.createdBy;
@@ -295,6 +297,7 @@ export async function saveSong(
   // Build metadata document
   // Note: For createdBy, we check if the key exists in the song object to allow explicit clearing
   const createdByValue = 'createdBy' in song ? song.createdBy : existing?.createdBy;
+  const coverChanged = song.cover !== undefined && song.cover !== existing?.cover;
   
   const meta: SongMetadata = {
     id: song.id,
@@ -302,6 +305,7 @@ export async function saveSong(
     artist: song.artist ?? existing?.artist,
     album: song.album ?? existing?.album,
     cover: song.cover ?? existing?.cover,
+    coverColor: song.coverColor ?? (coverChanged ? undefined : existing?.coverColor),
     lyricOffset: song.lyricOffset ?? existing?.lyricOffset,
     lyricsSource: song.lyricsSource ?? existing?.lyricsSource,
     createdBy: createdByValue,
@@ -562,12 +566,14 @@ export async function saveLyrics(
   const shouldClearAnnotations = clearAnnotations || lyricsSourceChanged;
 
   // Build/update metadata
+  const coverChanged = cover !== undefined && cover !== existingMeta?.cover;
   const meta: SongMetadata = {
     id,
     title: existingMeta?.title || lyricsSource?.title || id,
     artist: existingMeta?.artist || lyricsSource?.artist,
     album: existingMeta?.album || lyricsSource?.album,
     cover: cover ?? existingMeta?.cover,
+    coverColor: coverChanged ? undefined : existingMeta?.coverColor,
     lyricOffset: existingMeta?.lyricOffset,
     lyricsSource: lyricsSource ?? existingMeta?.lyricsSource,
     createdBy: existingMeta?.createdBy,

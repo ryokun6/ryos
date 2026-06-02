@@ -1,6 +1,6 @@
 import { useReducer, useEffect } from "react";
 
-const DEFAULT_PALETTE = [
+export const DEFAULT_COVER_PALETTE = [
   "#274754",
   "#9c2b2b",
   "#e07c4c",
@@ -9,6 +9,14 @@ const DEFAULT_PALETTE = [
   "#e8dcd0",
   "#ffffff",
 ];
+
+export type CoverPaletteSource = "default" | "cover";
+
+export interface CoverPaletteResult {
+  palette: string[];
+  source: CoverPaletteSource;
+  coverUrl: string | null;
+}
 
 function rgbToHex(r: number, g: number, b: number): string {
   return (
@@ -61,7 +69,7 @@ function mixHexColors(fromHex: string, toHex: string, amount: number): string | 
 }
 
 export function completeCoverPalette(colors: string[]): string[] {
-  if (colors.length === 0) return DEFAULT_PALETTE;
+  if (colors.length === 0) return DEFAULT_COVER_PALETTE;
 
   const result = [...colors];
   const selectedHexes = new Set(result.map((hex) => hex.toLowerCase()));
@@ -90,7 +98,7 @@ export function completeCoverPalette(colors: string[]): string[] {
     addColor(mixHexColors(color, "#000000", 0.4));
   }
 
-  for (const color of DEFAULT_PALETTE) {
+  for (const color of DEFAULT_COVER_PALETTE) {
     addColor(color);
   }
 
@@ -108,7 +116,7 @@ function extractPaletteFromImage(img: HTMLImageElement): string[] {
   canvas.width = size;
   canvas.height = size;
   const ctx = canvas.getContext("2d");
-  if (!ctx) return DEFAULT_PALETTE;
+  if (!ctx) return DEFAULT_COVER_PALETTE;
 
   ctx.drawImage(img, 0, 0, size, size);
   const data = ctx.getImageData(0, 0, size, size).data;
@@ -154,7 +162,7 @@ function extractPaletteFromImage(img: HTMLImageElement): string[] {
     }))
     .sort((a, b) => b.n - a.n);
 
-  if (sorted.length === 0) return DEFAULT_PALETTE;
+  if (sorted.length === 0) return DEFAULT_COVER_PALETTE;
 
   // Greedily pick N distinct colors
   const result: string[] = [];
@@ -193,16 +201,25 @@ function extractPaletteFromImage(img: HTMLImageElement): string[] {
  * Extracts a 7-color palette from cover art for use in mesh gradients.
  * Returns default palette while loading or on CORS/load error.
  */
-export function useCoverPalette(coverUrl: string | null): string[] {
+export function useCoverPaletteResult(coverUrl: string | null): CoverPaletteResult {
   interface CoverPaletteState {
     palette: string[];
+    source: CoverPaletteSource;
+    coverUrl: string | null;
   }
 
   const initialState: CoverPaletteState = {
-    palette: DEFAULT_PALETTE,
+    palette: DEFAULT_COVER_PALETTE,
+    source: "default",
+    coverUrl: null,
   };
 
-  type CoverPaletteAction = { type: "setPalette"; palette: string[] };
+  type CoverPaletteAction = {
+    type: "setPalette";
+    palette: string[];
+    source: CoverPaletteSource;
+    coverUrl: string | null;
+  };
 
   const reducer = (
     state: CoverPaletteState,
@@ -210,38 +227,73 @@ export function useCoverPalette(coverUrl: string | null): string[] {
   ): CoverPaletteState => {
     switch (action.type) {
       case "setPalette":
-        return { ...state, palette: action.palette };
+        return {
+          ...state,
+          palette: action.palette,
+          source: action.source,
+          coverUrl: action.coverUrl,
+        };
       default:
         return state;
     }
   };
 
   const [state, dispatch] = useReducer(reducer, initialState);
-  const { palette } = state;
 
   useEffect(() => {
     if (!coverUrl) {
-      dispatch({ type: "setPalette", palette: DEFAULT_PALETTE });
+      dispatch({
+        type: "setPalette",
+        palette: DEFAULT_COVER_PALETTE,
+        source: "default",
+        coverUrl: null,
+      });
       return;
     }
 
+    let isCancelled = false;
     const img = new Image();
     img.crossOrigin = "anonymous";
 
     img.onload = () => {
       try {
-        dispatch({ type: "setPalette", palette: extractPaletteFromImage(img) });
+        if (isCancelled) return;
+        dispatch({
+          type: "setPalette",
+          palette: extractPaletteFromImage(img),
+          source: "cover",
+          coverUrl,
+        });
       } catch {
-        dispatch({ type: "setPalette", palette: DEFAULT_PALETTE });
+        if (isCancelled) return;
+        dispatch({
+          type: "setPalette",
+          palette: DEFAULT_COVER_PALETTE,
+          source: "default",
+          coverUrl,
+        });
       }
     };
 
     img.onerror = () => {
-      dispatch({ type: "setPalette", palette: DEFAULT_PALETTE });
+      if (isCancelled) return;
+      dispatch({
+        type: "setPalette",
+        palette: DEFAULT_COVER_PALETTE,
+        source: "default",
+        coverUrl,
+      });
     };
 
     img.src = coverUrl;
+    return () => {
+      isCancelled = true;
+    };
   }, [coverUrl]);
 
-  return palette;
+  return state;
+}
+
+export function useCoverPalette(coverUrl: string | null): string[] {
+  return useCoverPaletteResult(coverUrl).palette;
 }

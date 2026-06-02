@@ -534,6 +534,7 @@ export default apiHandler<Record<string, unknown>>(
               artist: song.lyricsSource?.artist || song.artist,
               album: song.lyricsSource?.album || song.album,
               cover: song.cover,
+              coverColor: song.coverColor,
               lyricsSource: song.lyricsSource,
             };
           }
@@ -682,6 +683,7 @@ export default apiHandler<Record<string, unknown>>(
             artist: savedSong.artist,
             album: savedSong.album,
             cover: savedSong.cover,
+            coverColor: savedSong.coverColor,
             lyricsSource: savedSong.lyricsSource,
           };
         }

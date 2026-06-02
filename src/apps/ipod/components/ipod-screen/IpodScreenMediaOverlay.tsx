@@ -21,6 +21,7 @@ import type { Track } from "@/stores/useIpodStore";
 import { useIpodStore } from "@/stores/useIpodStore";
 import type { IpodScreenProps } from "../../types";
 import type { ActivityInfo } from "@/hooks/useActivityLabel";
+import { useSaveSongCoverColor } from "@/hooks/useSaveSongCoverColor";
 
 type SetAppleMusicKitNowPlaying = ReturnType<
   typeof useIpodStore.getState
@@ -111,6 +112,8 @@ export function IpodScreenMediaOverlay({
   soramimiMap,
   t,
 }: IpodScreenMediaOverlayProps) {
+  const saveCoverColor = useSaveSongCoverColor(currentTrack);
+
   return (
     <div
       className={cn(
@@ -354,6 +357,8 @@ export function IpodScreenMediaOverlay({
           soramimiMap={soramimiMap}
           currentTimeMs={(elapsedTime + lyricOffset / 1000) * 1000}
           coverUrl={coverUrl}
+          coverColor={currentTrack.coverColor}
+          onCoverColorResolved={saveCoverColor}
         />
         </div>
       </div>

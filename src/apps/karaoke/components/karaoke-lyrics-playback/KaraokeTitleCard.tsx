@@ -1,10 +1,10 @@
 import { memo, useMemo } from "react";
 import { motion } from "framer-motion";
-import { useCoverPalette } from "@/hooks/useCoverPalette";
+import { useCoverGlowColor } from "@/hooks/useCoverGlowColor";
 import { ScrollingText } from "@/apps/ipod/components/screen";
 import {
   getTitleCardStyleCategory,
-  pickBoostedTitleCardGlow,
+  makeTitleCardGlow,
   TITLE_CARD_BASE_SHADOW,
   TITLE_CARD_CONTENT_STYLE_FULLSCREEN,
   TITLE_CARD_CONTENT_STYLE_WINDOW,
@@ -36,6 +36,8 @@ export const KaraokeTitleCard = memo(function KaraokeTitleCard({
   fontClassName,
   variant,
   coverUrl,
+  coverColor,
+  onCoverColorResolved,
   onOpenCoverFlow,
   coverFlowLabel,
   bottomPaddingClass = "pb-12",
@@ -47,17 +49,24 @@ export const KaraokeTitleCard = memo(function KaraokeTitleCard({
   fontClassName: string;
   variant: "window" | "fullscreen";
   coverUrl?: string | null;
+  coverColor?: string | null;
+  onCoverColorResolved?: (coverColor: string, coverUrl: string) => void;
   onOpenCoverFlow?: () => void;
   coverFlowLabel?: string;
   bottomPaddingClass?: string;
   isPlaying: boolean;
 }) {
   const styleCategory = getTitleCardStyleCategory(fontClassName);
-  const palette = useCoverPalette(styleCategory === "glow-gold" ? (coverUrl ?? null) : null);
-  const primaryGlow = useMemo(
-    () => pickBoostedTitleCardGlow(palette),
-    [palette]
-  );
+  const glowColor = useCoverGlowColor({
+    coverUrl,
+    coverColor,
+    enabled: styleCategory === "glow-gold",
+    onResolved: onCoverColorResolved,
+  });
+  const primaryGlow = useMemo(() => {
+    return makeTitleCardGlow(glowColor);
+  }, [glowColor]);
+
   const titleTextSizeClass =
     variant === "fullscreen"
       ? "karaoke-title-card-title-fullscreen"

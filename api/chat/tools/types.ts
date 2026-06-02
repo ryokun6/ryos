@@ -197,6 +197,7 @@ export interface SongLibraryToolRecord {
   artist?: string;
   album?: string;
   cover?: string;
+  coverColor?: string;
   lyricOffset?: number;
   lyricsSource?: SongLibraryLyricsSource;
   createdBy?: string;

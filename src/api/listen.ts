@@ -4,6 +4,7 @@ export interface ListenTrackMeta {
   title: string;
   artist?: string;
   cover?: string;
+  coverColor?: string;
 }
 
 export interface ListenSessionUser {
@@ -43,6 +44,7 @@ export interface ListenSessionSummary {
     title: string;
     artist?: string;
     cover?: string;
+    coverColor?: string;
   } | null;
   isPlaying: boolean;
   listenerCount: number;

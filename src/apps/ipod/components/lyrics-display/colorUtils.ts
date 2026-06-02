@@ -8,6 +8,13 @@ const MIN_GLOW_LIGHTNESS = 0.58;
 const MAX_GLOW_LIGHTNESS = 0.72;
 const MIN_GLOW_LUMINANCE = 0.34;
 const MIN_NEUTRAL_LIGHTNESS = 0.88;
+const HEX_COLOR_RE = /^#([0-9a-f]{6})$/i;
+
+export function normalizeCoverColor(hex: string | null | undefined): string | undefined {
+  const trimmed = hex?.trim();
+  if (!trimmed || !HEX_COLOR_RE.test(trimmed)) return undefined;
+  return trimmed.toLowerCase();
+}
 
 function hexToRgb(hex: string): [number, number, number] {
   const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
@@ -164,4 +171,8 @@ export function makeGlowFromColor(hex: string) {
     filter: `drop-shadow(0 0 8px rgba(${r},${g},${b},0.5))`,
     baseColor: `rgba(${r},${g},${b},0.6)`,
   };
+}
+
+export function resolveCoverGlowColor(palette: string[]): string {
+  return boostGlowColor(pickPrimaryColor(palette));
 }
