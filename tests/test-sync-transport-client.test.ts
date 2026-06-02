@@ -3,7 +3,7 @@ import { afterEach, describe, expect, mock, test } from "bun:test";
 import {
   fetchBlobDomainPayload,
   requestBlobUploadInstruction,
-} from "../src/utils/syncTransportClient";
+} from "../src/sync/transport";
 
 const originalFetch = globalThis.fetch;
 

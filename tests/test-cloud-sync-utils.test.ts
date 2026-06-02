@@ -75,15 +75,9 @@ class MemoryStorage implements Storage {
 
 describe("cloud sync shared helpers", () => {
   test("validates supported sync domains", () => {
-    expect(isCloudSyncDomain("settings")).toBe(true);
-    expect(isCloudSyncDomain("files-metadata")).toBe(true);
-    expect(isCloudSyncDomain("files-images")).toBe(true);
-    expect(isCloudSyncDomain("files-trash")).toBe(true);
-    expect(isCloudSyncDomain("files-applets")).toBe(true);
-    expect(isCloudSyncDomain("songs")).toBe(true);
-    expect(isCloudSyncDomain("tv")).toBe(true);
-    expect(isCloudSyncDomain("calendar")).toBe(true);
-    expect(isCloudSyncDomain("custom-wallpapers")).toBe(true);
+    for (const domain of CLOUD_SYNC_DOMAINS) {
+      expect(isCloudSyncDomain(domain)).toBe(true);
+    }
     expect(isCloudSyncDomain("files")).toBe(false);
     expect(isCloudSyncDomain("widgets")).toBe(false);
     expect(isCloudSyncDomain(null)).toBe(false);
@@ -106,6 +100,8 @@ describe("cloud sync shared helpers", () => {
     expect(isRedisSyncDomain("videos")).toBe(true);
     expect(isRedisSyncDomain("tv")).toBe(true);
     expect(isRedisSyncDomain("files-metadata")).toBe(true);
+    expect(isRedisSyncDomain("contacts")).toBe(true);
+    expect(isRedisSyncDomain("maps")).toBe(true);
     expect(isRedisSyncDomain(invalidRedisDomain)).toBe(false);
     expect(isRedisSyncDomain(invalidWallpaperDomain)).toBe(false);
 
@@ -123,17 +119,9 @@ describe("cloud sync shared helpers", () => {
 
   test("creates an empty metadata map", () => {
     const map = createEmptyCloudSyncMetadataMap();
-    expect(map.settings).toBeNull();
-    expect(map["files-metadata"]).toBeNull();
-    expect(map["files-images"]).toBeNull();
-    expect(map["files-trash"]).toBeNull();
-    expect(map["files-applets"]).toBeNull();
-    expect(map.songs).toBeNull();
-    expect(map.videos).toBeNull();
-    expect(map.tv).toBeNull();
-    expect(map.stickies).toBeNull();
-    expect(map.calendar).toBeNull();
-    expect(map["custom-wallpapers"]).toBeNull();
+    for (const domain of CLOUD_SYNC_DOMAINS) {
+      expect(map[domain]).toBeNull();
+    }
   });
 
   test("normalizes partial metadata safely", () => {
@@ -168,6 +156,8 @@ describe("cloud sync shared helpers", () => {
     expect(getCloudSyncCategory("songs")).toBe("songs");
     expect(getCloudSyncCategory("tv")).toBe("tv");
     expect(getCloudSyncCategory("calendar")).toBe("calendar");
+    expect(getCloudSyncCategory("contacts")).toBe("contacts");
+    expect(getCloudSyncCategory("maps")).toBe("maps");
   });
 
   test("prioritizes custom wallpapers before settings during remote apply", () => {

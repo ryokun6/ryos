@@ -1,6 +1,6 @@
 /**
  * Tests for /api/songs endpoints (unified song API)
- * Tests: GET song, fetch-lyrics, translate, furigana, search-lyrics
+ * Tests: GET song, fetch-lyrics, translate, furigana-stream, search-lyrics
  */
 
 import { describe, test, expect } from "bun:test";
@@ -315,48 +315,16 @@ describe("POST /api/songs/{id} action: translate", () => {
   }, 30_000);
 });
 
-describe("POST /api/songs/{id} action: furigana", () => {
-  test("Furigana non-existent song", async () => {
+describe("POST /api/songs/{id} action: furigana-stream", () => {
+  test("Furigana stream requires an existing song with lyrics", async () => {
     const res = await fetchWithOrigin(`${BASE_URL}/api/songs/nonexistentsong456`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        action: "furigana",
+        action: "furigana-stream",
       }),
     });
-    expect(res.status === 400 || res.status === 404).toBe(true);
-  });
-
-  test("Furigana response structure", async () => {
-    const japaneseSongId = "test_japanese_song";
-
-    await fetchWithOrigin(`${BASE_URL}/api/songs/${japaneseSongId}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "fetch-lyrics",
-        lyricsSource: {
-          title: "残酷な天使のテーゼ",
-          artist: "高橋洋子",
-        },
-      }),
-    });
-
-    const res = await fetchWithOrigin(`${BASE_URL}/api/songs/${japaneseSongId}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "furigana",
-      }),
-    });
-
-    if (res.status === 200) {
-      const data = await res.json();
-      expect(Array.isArray(data.furigana)).toBe(true);
-      if (data.furigana.length > 0) {
-        expect(Array.isArray(data.furigana[0])).toBe(true);
-      }
-    }
+    expect(res.status).toBe(404);
   });
 });
 
