@@ -4,6 +4,7 @@ import {
   normalizeCoverColor,
 } from "@/apps/ipod/components/lyrics-display/colorUtils";
 import { useChatsStore } from "@/stores/useChatsStore";
+import { useIpodStore } from "@/stores/useIpodStore";
 
 interface SongCoverColorTrack {
   id: string;
@@ -14,6 +15,7 @@ export function useSaveSongCoverColor(track: SongCoverColorTrack | null) {
   const savedKeysRef = useRef<Set<string>>(new Set());
   const username = useChatsStore((state) => state.username);
   const isAuthenticated = useChatsStore((state) => state.isAuthenticated);
+  const setTrackCoverColor = useIpodStore((state) => state.setTrackCoverColor);
 
   return useCallback(
     async (coverColor: string, coverUrl: string) => {
@@ -21,6 +23,7 @@ export function useSaveSongCoverColor(track: SongCoverColorTrack | null) {
       if (!track || !normalized || normalizeCoverColor(track.coverColor) === normalized) {
         return;
       }
+      setTrackCoverColor(track.id, normalized);
       if (!username || !isAuthenticated) {
         return;
       }
@@ -40,6 +43,6 @@ export function useSaveSongCoverColor(track: SongCoverColorTrack | null) {
         console.warn(`[SongCoverColor] Failed to save cover color for ${track.id}`, error);
       }
     },
-    [isAuthenticated, track, username]
+    [isAuthenticated, setTrackCoverColor, track, username]
   );
 }

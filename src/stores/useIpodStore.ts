@@ -521,6 +521,8 @@ export interface IpodState extends IpodData {
   /** Switch between the monochrome classic LCD and the iOS-6 modern skin. */
   setUiVariant: (variant: "classic" | "modern") => void;
   addTrack: (track: Track) => void;
+  /** Cache a resolved cover glow color on any local copy of a track. */
+  setTrackCoverColor: (trackId: string, coverColor: string) => void;
   /** Remove one track from the library by id (e.g. TV playlist trash). */
   removeTrackById: (trackId: string) => void;
   clearLibrary: () => void;
@@ -1181,6 +1183,15 @@ export const useIpodStore = create<IpodState>()(
           libraryState: "loaded",
           playbackHistory: [], // Clear playback history when adding new tracks
           historyPosition: -1,
+        })),
+      setTrackCoverColor: (trackId, coverColor) =>
+        set((state) => ({
+          tracks: state.tracks.map((track) =>
+            track.id === trackId ? { ...track, coverColor } : track
+          ),
+          appleMusicTracks: state.appleMusicTracks.map((track) =>
+            track.id === trackId ? { ...track, coverColor } : track
+          ),
         })),
       removeTrackById: (trackId) =>
         set((state) => {
