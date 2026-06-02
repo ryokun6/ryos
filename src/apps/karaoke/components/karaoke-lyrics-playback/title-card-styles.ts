@@ -25,13 +25,16 @@ export type TitleCardLineStyle = Pick<
   | "filter"
   | "lineHeight"
   | "marginBottom"
+  | "marginLeft"
   | "marginTop"
+  | "maxWidth"
   | "paddingBottom"
   | "paddingLeft"
   | "paddingTop"
   | "paintOrder"
   | "textShadow"
   | "WebkitTextStroke"
+  | "width"
 >;
 
 export function getTitleCardStyleCategory(className: string): TitleCardStyleCategory {
@@ -100,8 +103,11 @@ export const TITLE_CARD_TITLE_SHADOW_BLEED_STYLE = {
   paddingLeft: TITLE_CARD_TITLE_LEFT_BLEED,
   paddingTop: TITLE_CARD_TITLE_SHADOW_BLEED,
   paddingBottom: TITLE_CARD_TITLE_SHADOW_BLEED,
+  marginLeft: `-${TITLE_CARD_TITLE_LEFT_BLEED}`,
   marginTop: `-${TITLE_CARD_TITLE_SHADOW_BLEED}`,
   marginBottom: `-${TITLE_CARD_TITLE_SHADOW_BLEED}`,
+  width: `calc(100% + ${TITLE_CARD_TITLE_LEFT_BLEED})`,
+  maxWidth: `calc(100% + ${TITLE_CARD_TITLE_LEFT_BLEED})`,
 } satisfies TitleCardLineStyle;
 
 export const TITLE_CARD_REGULAR_OUTLINE_STYLE: TitleCardLineStyle = {
