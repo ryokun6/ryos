@@ -1994,7 +1994,7 @@ ruby.lyrics-furigana {
 }
 
 .lyrics-word-highlight {
-  --lyrics-shadow-bleed-x: max(18px, 0.45em);
+  --lyrics-shadow-bleed-x: max(36px, 0.9em);
   --lyrics-shadow-bleed-top: 0.24em;
   --lyrics-shadow-bleed-bottom: 0.4em;
   display: inline-grid;
