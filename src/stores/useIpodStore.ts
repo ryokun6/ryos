@@ -23,7 +23,11 @@ import {
 } from "@/utils/youtubeMetadata";
 import { emitCloudSyncDomainChange } from "@/utils/cloudSyncEvents";
 import { sortTracksLikeServerOrder } from "@/stores/ipodTrackOrder";
-import { saveAppleMusicLibrary } from "@/utils/appleMusicLibraryCache";
+import {
+  saveAppleMusicLibrary,
+  saveAppleMusicPlaylistTracks,
+  saveAppleMusicTrackCollection,
+} from "@/utils/appleMusicLibraryCache";
 
 /** Special value for lyricsTranslationLanguage that means "use ryOS locale" */
 export const LYRICS_TRANSLATION_AUTO = "auto";
@@ -101,6 +105,22 @@ export interface Track {
   durationMs?: number;
   /** Apple Music play parameters used to drive MusicKit playback. */
   appleMusicPlayParams?: AppleMusicPlayParams;
+}
+
+function updateTrackCoverColorList(
+  tracks: Track[],
+  trackId: string,
+  coverColor: string
+): { tracks: Track[]; changed: boolean } {
+  let changed = false;
+  const updatedTracks = tracks.map((track) => {
+    if (track.id !== trackId || track.coverColor === coverColor) {
+      return track;
+    }
+    changed = true;
+    return { ...track, coverColor };
+  });
+  return { tracks: changed ? updatedTracks : tracks, changed };
 }
 
 /**
@@ -1184,15 +1204,131 @@ export const useIpodStore = create<IpodState>()(
           playbackHistory: [], // Clear playback history when adding new tracks
           historyPosition: -1,
         })),
-      setTrackCoverColor: (trackId, coverColor) =>
-        set((state) => ({
-          tracks: state.tracks.map((track) =>
-            track.id === trackId ? { ...track, coverColor } : track
-          ),
-          appleMusicTracks: state.appleMusicTracks.map((track) =>
-            track.id === trackId ? { ...track, coverColor } : track
-          ),
-        })),
+      setTrackCoverColor: (trackId, coverColor) => {
+        let appleMusicTracksToSave: Track[] | null = null;
+        let appleMusicLoadedAt = Date.now();
+        let appleMusicStorefrontId: string | null = null;
+        let recentlyAddedTracksToSave:
+          | { tracks: Track[]; loadedAt: number }
+          | null = null;
+        let favoriteTracksToSave:
+          | { tracks: Track[]; loadedAt: number }
+          | null = null;
+        const playlistTracksToSave: {
+          playlistId: string;
+          tracks: Track[];
+          loadedAt: number;
+        }[] = [];
+
+        set((state) => {
+          const youtubeUpdate = updateTrackCoverColorList(
+            state.tracks,
+            trackId,
+            coverColor
+          );
+          const appleMusicUpdate = updateTrackCoverColorList(
+            state.appleMusicTracks,
+            trackId,
+            coverColor
+          );
+          const recentlyAddedUpdate = updateTrackCoverColorList(
+            state.appleMusicRecentlyAddedTracks,
+            trackId,
+            coverColor
+          );
+          const favoritesUpdate = updateTrackCoverColorList(
+            state.appleMusicFavoriteTracks,
+            trackId,
+            coverColor
+          );
+
+          let playlistTracksChanged = false;
+          const nextPlaylistTracks: Record<string, Track[]> = {};
+          for (const [playlistId, tracks] of Object.entries(
+            state.appleMusicPlaylistTracks
+          )) {
+            const playlistUpdate = updateTrackCoverColorList(
+              tracks,
+              trackId,
+              coverColor
+            );
+            nextPlaylistTracks[playlistId] = playlistUpdate.tracks;
+            playlistTracksChanged ||= playlistUpdate.changed;
+          }
+
+          if (appleMusicUpdate.changed) {
+            appleMusicTracksToSave = appleMusicUpdate.tracks.filter(
+              (track) => !isAppleMusicCollectionTrack(track)
+            );
+            appleMusicLoadedAt = state.appleMusicLibraryLoadedAt ?? Date.now();
+            appleMusicStorefrontId = state.appleMusicStorefrontId;
+          }
+          if (recentlyAddedUpdate.changed) {
+            recentlyAddedTracksToSave = {
+              tracks: recentlyAddedUpdate.tracks,
+              loadedAt: state.appleMusicRecentlyAddedLoadedAt ?? Date.now(),
+            };
+          }
+          if (favoritesUpdate.changed) {
+            favoriteTracksToSave = {
+              tracks: favoritesUpdate.tracks,
+              loadedAt: state.appleMusicFavoriteTracksLoadedAt ?? Date.now(),
+            };
+          }
+          if (playlistTracksChanged) {
+            for (const [playlistId, tracks] of Object.entries(nextPlaylistTracks)) {
+              const originalTracks = state.appleMusicPlaylistTracks[playlistId];
+              if (tracks === originalTracks) continue;
+              playlistTracksToSave.push({
+                playlistId,
+                tracks,
+                loadedAt:
+                  state.appleMusicPlaylistTracksLoadedAt[playlistId] ?? Date.now(),
+              });
+            }
+          }
+
+          if (
+            !youtubeUpdate.changed &&
+            !appleMusicUpdate.changed &&
+            !recentlyAddedUpdate.changed &&
+            !favoritesUpdate.changed &&
+            !playlistTracksChanged
+          ) {
+            return {};
+          }
+
+          return {
+            tracks: youtubeUpdate.tracks,
+            appleMusicTracks: appleMusicUpdate.tracks,
+            appleMusicRecentlyAddedTracks: recentlyAddedUpdate.tracks,
+            appleMusicFavoriteTracks: favoritesUpdate.tracks,
+            ...(playlistTracksChanged && {
+              appleMusicPlaylistTracks: nextPlaylistTracks,
+            }),
+          };
+        });
+
+        if (appleMusicTracksToSave) {
+          void saveAppleMusicLibrary({
+            tracks: appleMusicTracksToSave,
+            loadedAt: appleMusicLoadedAt,
+            storefrontId: appleMusicStorefrontId,
+          });
+        }
+        if (recentlyAddedTracksToSave) {
+          void saveAppleMusicTrackCollection("recently-added", recentlyAddedTracksToSave);
+        }
+        if (favoriteTracksToSave) {
+          void saveAppleMusicTrackCollection("favorite-songs", favoriteTracksToSave);
+        }
+        for (const playlistTracks of playlistTracksToSave) {
+          void saveAppleMusicPlaylistTracks(playlistTracks.playlistId, {
+            tracks: playlistTracks.tracks,
+            loadedAt: playlistTracks.loadedAt,
+          });
+        }
+      },
       removeTrackById: (trackId) =>
         set((state) => {
           const idx = state.tracks.findIndex((t) => t.id === trackId);

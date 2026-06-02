@@ -83,6 +83,7 @@ export function useLibraryUpdateChecker(isActive: boolean) {
               currentTrack.artist !== serverTrack.artist ||
               currentTrack.album !== serverTrack.album ||
               currentTrack.cover !== serverTrack.cover ||
+              currentTrack.coverColor !== serverTrack.coverColor ||
               currentTrack.url !== serverTrack.url ||
               currentTrack.lyricOffset !== serverTrack.lyricOffset ||
               shouldUpdateLyricsSource;
