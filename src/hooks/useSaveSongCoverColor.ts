@@ -11,6 +11,17 @@ interface SongCoverColorTrack {
   coverColor?: string | null;
 }
 
+export function getNewCoverColorToSave(
+  resolvedCoverColor: string,
+  cachedCoverColor: string | null | undefined
+): string | undefined {
+  const normalized = normalizeCoverColor(resolvedCoverColor);
+  if (!normalized || normalizeCoverColor(cachedCoverColor)) {
+    return undefined;
+  }
+  return normalized;
+}
+
 export function useSaveSongCoverColor(track: SongCoverColorTrack | null) {
   const savedKeysRef = useRef<Set<string>>(new Set());
   const username = useChatsStore((state) => state.username);
@@ -19,8 +30,11 @@ export function useSaveSongCoverColor(track: SongCoverColorTrack | null) {
 
   return useCallback(
     async (coverColor: string, coverUrl: string) => {
-      const normalized = normalizeCoverColor(coverColor);
-      if (!track || !normalized || normalizeCoverColor(track.coverColor) === normalized) {
+      if (!track) {
+        return;
+      }
+      const normalized = getNewCoverColorToSave(coverColor, track.coverColor);
+      if (!normalized) {
         return;
       }
       setTrackCoverColor(track.id, normalized);

@@ -12,6 +12,13 @@ interface CoverGlowColorOptions {
   onResolved?: (coverColor: string, coverUrl: string) => void;
 }
 
+export function shouldExtractCoverGlowColor(
+  enabled: boolean,
+  coverColor: string | null | undefined
+): boolean {
+  return enabled && !normalizeCoverColor(coverColor);
+}
+
 export function useCoverGlowColor({
   coverUrl,
   coverColor,
@@ -22,7 +29,7 @@ export function useCoverGlowColor({
     () => normalizeCoverColor(coverColor),
     [coverColor]
   );
-  const shouldExtract = enabled && !cachedCoverColor;
+  const shouldExtract = shouldExtractCoverGlowColor(enabled, coverColor);
   const paletteResult = useCoverPaletteResult(
     shouldExtract ? (coverUrl ?? null) : null
   );
