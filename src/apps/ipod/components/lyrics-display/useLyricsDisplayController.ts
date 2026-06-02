@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import type { ReactNode } from "react";
 import type { LyricsAlignment, RomanizationSettings } from "@/types/lyrics";
 import type { LyricLine } from "@/types/lyrics";
@@ -85,6 +85,8 @@ export function useLyricsDisplayController(
     currentTimeMs,
     onSeekToTime,
     coverUrl,
+    coverColor,
+    onCoverColorResolved,
     showInterludeEllipsis = false,
   } = props;
 
@@ -117,7 +119,29 @@ export function useLyricsDisplayController(
 
   const processText = useCallback((text: string) => text, []);
 
-  const karaokeStyle = useLyricsDisplayKaraokeStyle(fontClassName, coverUrl);
+  const karaokeStyle = useLyricsDisplayKaraokeStyle(
+    fontClassName,
+    coverUrl,
+    coverColor
+  );
+
+  useEffect(() => {
+    if (
+      karaokeStyle.isCoverColorExtracted &&
+      karaokeStyle.extractedCoverUrl &&
+      karaokeStyle.resolvedCoverColor
+    ) {
+      onCoverColorResolved?.(
+        karaokeStyle.resolvedCoverColor,
+        karaokeStyle.extractedCoverUrl
+      );
+    }
+  }, [
+    karaokeStyle.extractedCoverUrl,
+    karaokeStyle.isCoverColorExtracted,
+    karaokeStyle.resolvedCoverColor,
+    onCoverColorResolved,
+  ]);
 
   const { visibleLines, introInterludeLead, currentAnchorIdx } =
     useLyricsVisibleLines({

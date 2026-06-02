@@ -11,6 +11,7 @@ export interface SongDetail {
   artist?: string;
   album?: string;
   cover?: string;
+  coverColor?: string;
   lyricOffset?: number;
   lyricsSource?: CachedLyricsSource;
   lyrics?: {

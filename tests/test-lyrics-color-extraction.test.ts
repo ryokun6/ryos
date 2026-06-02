@@ -1,7 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import {
   boostGlowColor,
+  normalizeCoverColor,
   pickPrimaryColor,
+  resolveCoverGlowColor,
 } from "../src/apps/ipod/components/lyrics-display/colorUtils";
 import { completeCoverPalette } from "../src/hooks/useCoverPalette";
 
@@ -64,5 +66,15 @@ describe("lyrics color extraction", () => {
     const boosted = boostGlowColor("#1a237e");
 
     expect(relativeLuminance(boosted)).toBeGreaterThanOrEqual(0.34);
+  });
+
+  test("normalizes cached cover colors before reuse", () => {
+    expect(normalizeCoverColor("  #AABBCC  ")).toBe("#aabbcc");
+    expect(normalizeCoverColor("aabbcc")).toBeUndefined();
+    expect(normalizeCoverColor("#abc")).toBeUndefined();
+  });
+
+  test("resolves the boosted cover glow color from a palette", () => {
+    expect(resolveCoverGlowColor(["#1a237e"])).toBe(boostGlowColor("#1a237e"));
   });
 });

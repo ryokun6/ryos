@@ -1,10 +1,14 @@
-import { memo, useMemo } from "react";
+import { memo, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
-import { useCoverPalette } from "@/hooks/useCoverPalette";
+import { useCoverPaletteResult } from "@/hooks/useCoverPalette";
 import { ScrollingText } from "@/apps/ipod/components/screen";
 import {
+  normalizeCoverColor,
+  resolveCoverGlowColor,
+} from "@/apps/ipod/components/lyrics-display/colorUtils";
+import {
   getTitleCardStyleCategory,
-  pickBoostedTitleCardGlow,
+  makeTitleCardGlow,
   TITLE_CARD_BASE_SHADOW,
   TITLE_CARD_CONTENT_STYLE_FULLSCREEN,
   TITLE_CARD_CONTENT_STYLE_WINDOW,
@@ -35,6 +39,8 @@ export const KaraokeTitleCard = memo(function KaraokeTitleCard({
   fontClassName,
   variant,
   coverUrl,
+  coverColor,
+  onCoverColorResolved,
   onOpenCoverFlow,
   coverFlowLabel,
   bottomPaddingClass = "pb-12",
@@ -46,17 +52,43 @@ export const KaraokeTitleCard = memo(function KaraokeTitleCard({
   fontClassName: string;
   variant: "window" | "fullscreen";
   coverUrl?: string | null;
+  coverColor?: string | null;
+  onCoverColorResolved?: (coverColor: string, coverUrl: string) => void;
   onOpenCoverFlow?: () => void;
   coverFlowLabel?: string;
   bottomPaddingClass?: string;
   isPlaying: boolean;
 }) {
   const styleCategory = getTitleCardStyleCategory(fontClassName);
-  const palette = useCoverPalette(styleCategory === "glow-gold" ? (coverUrl ?? null) : null);
-  const primaryGlow = useMemo(
-    () => pickBoostedTitleCardGlow(palette),
-    [palette]
+  const cachedCoverColor = useMemo(
+    () => normalizeCoverColor(coverColor),
+    [coverColor]
   );
+  const shouldExtractCoverColor = styleCategory === "glow-gold" && !cachedCoverColor;
+  const paletteResult = useCoverPaletteResult(
+    shouldExtractCoverColor ? (coverUrl ?? null) : null
+  );
+  const primaryGlow = useMemo(() => {
+    const glowColor = cachedCoverColor ?? resolveCoverGlowColor(paletteResult.palette);
+    return makeTitleCardGlow(glowColor);
+  }, [cachedCoverColor, paletteResult.palette]);
+
+  useEffect(() => {
+    if (
+      shouldExtractCoverColor &&
+      paletteResult.source === "cover" &&
+      paletteResult.coverUrl
+    ) {
+      onCoverColorResolved?.(primaryGlow.color, paletteResult.coverUrl);
+    }
+  }, [
+    onCoverColorResolved,
+    paletteResult.coverUrl,
+    paletteResult.source,
+    primaryGlow.color,
+    shouldExtractCoverColor,
+  ]);
+
   const titleTextSizeClass =
     variant === "fullscreen"
       ? "karaoke-title-card-title-fullscreen"

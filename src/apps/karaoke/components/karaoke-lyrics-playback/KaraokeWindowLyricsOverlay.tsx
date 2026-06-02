@@ -4,6 +4,7 @@ import { AnimatePresence } from "framer-motion";
 import type { Track } from "@/stores/useIpodStore";
 import { LyricsDisplay } from "@/apps/ipod/components/lyrics-display/LyricsDisplay";
 import { shouldShowKaraokeTitleCard } from "@/apps/karaoke/utils/titleCard";
+import { useSaveSongCoverColor } from "@/hooks/useSaveSongCoverColor";
 import type {
   JapaneseFurigana,
   KoreanDisplay,
@@ -90,6 +91,7 @@ export function KaraokeWindowLyricsOverlay({
 
   const currentTimeMs =
     (elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000) * 1000;
+  const saveCoverColor = useSaveSongCoverColor(currentTrack);
   const showTitleCard = shouldShowKaraokeTitleCard({
     lines: lyricsControls.originalLines,
     currentTimeMs,
@@ -114,6 +116,8 @@ export function KaraokeWindowLyricsOverlay({
               fontClassName={lyricsFontClassName}
               variant="window"
               coverUrl={coverUrl}
+              coverColor={currentTrack.coverColor}
+              onCoverColorResolved={saveCoverColor}
               onOpenCoverFlow={onOpenCoverFlow}
               coverFlowLabel={t("apps.ipod.menu.coverFlow")}
               bottomPaddingClass={bottomPadding}
@@ -155,6 +159,8 @@ export function KaraokeWindowLyricsOverlay({
             showInterludeEllipsis
             onSeekToTime={seekToTime}
             coverUrl={coverUrl}
+            coverColor={currentTrack.coverColor}
+            onCoverColorResolved={saveCoverColor}
           />
         )}
       </div>

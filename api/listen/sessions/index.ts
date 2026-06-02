@@ -36,6 +36,7 @@ interface ListenSessionSummary {
     title: string;
     artist?: string;
     cover?: string;
+    coverColor?: string;
   } | null;
   isPlaying: boolean;
   listenerCount: number;

@@ -199,6 +199,7 @@ export function IpodScreen({
       artist: appleMusicKitNowPlaying.artist ?? currentTrack.artist,
       album: appleMusicKitNowPlaying.album,
       cover: appleMusicKitNowPlaying.cover ?? currentTrack.cover,
+      coverColor: appleMusicKitNowPlaying.cover ? undefined : currentTrack.coverColor,
     };
   }, [appleMusicKitNowPlaying, currentTrack, isAppleMusicCollectionShell]);
 

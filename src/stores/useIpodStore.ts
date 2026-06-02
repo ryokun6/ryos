@@ -83,6 +83,8 @@ export interface Track {
   appleMusicAlbumId?: string;
   /** Cover image URL from Kugou */
   cover?: string;
+  /** Cached boosted cover color for lyrics/title glow */
+  coverColor?: string;
   /** Offset in milliseconds to adjust lyrics timing for this track (positive = lyrics earlier) */
   lyricOffset?: number;
   /** Selected lyrics source from Kugou (user override) */
@@ -352,6 +354,7 @@ async function loadDefaultTracks(forceRefresh = false): Promise<{
         artist: song.artist,
         album: song.album ?? "",
         cover: song.cover,
+        coverColor: song.coverColor,
         lyricOffset: song.lyricOffset,
         lyricsSource: song.lyricsSource,
         createdAt: song.createdAt,
@@ -1634,6 +1637,7 @@ export const useIpodStore = create<IpodState>()(
               artist: cachedMetadata.artist,
               album: cachedMetadata.album,
               cover: cachedMetadata.cover,
+              coverColor: cachedMetadata.coverColor,
               lyricOffset: cachedMetadata.lyricOffset ?? 500,
               lyricsSource: cachedMetadata.lyricsSource,
               createdAt: cachedMetadata.createdAt,
@@ -1680,6 +1684,7 @@ export const useIpodStore = create<IpodState>()(
           artist: undefined as string | undefined,
           album: undefined as string | undefined,
           cover: undefined as string | undefined,
+          coverColor: undefined as string | undefined,
           lyricsSource: undefined as {
             hash: string;
             albumId: string | number;
@@ -1724,6 +1729,7 @@ export const useIpodStore = create<IpodState>()(
               trackInfo.artist = meta.artist;
               trackInfo.album = meta.album;
               trackInfo.cover = meta.cover;
+              trackInfo.coverColor = meta.coverColor;
               trackInfo.lyricsSource = meta.lyricsSource;
             }
           }
@@ -1747,6 +1753,7 @@ export const useIpodStore = create<IpodState>()(
           artist: trackInfo.artist,
           album: trackInfo.album,
           cover: trackInfo.cover,
+          coverColor: trackInfo.coverColor,
           lyricOffset: 500, // Default 500ms offset for new tracks
           lyricsSource: trackInfo.lyricsSource,
         };
@@ -1790,6 +1797,7 @@ export const useIpodStore = create<IpodState>()(
                 currentTrack.artist !== serverTrack.artist ||
                 currentTrack.album !== serverTrack.album ||
                 currentTrack.cover !== serverTrack.cover ||
+                currentTrack.coverColor !== serverTrack.coverColor ||
                 currentTrack.url !== serverTrack.url ||
                 currentTrack.lyricOffset !== serverTrack.lyricOffset;
 
@@ -1825,6 +1833,7 @@ export const useIpodStore = create<IpodState>()(
                   artist: serverTrack.artist,
                   album: serverTrack.album,
                   cover: serverTrack.cover,
+                  coverColor: serverTrack.coverColor,
                   url: serverTrack.url,
                   lyricOffset: serverTrack.lyricOffset,
                   ...(shouldUpdateLyricsSource && {
@@ -1882,6 +1891,7 @@ export const useIpodStore = create<IpodState>()(
                   artist?: string;
                   album?: string;
                   cover?: string;
+                  coverColor?: string;
                   lyricOffset?: number;
                   lyricsSource?: LyricsSource;
                   createdAt?: number;
@@ -1909,6 +1919,7 @@ export const useIpodStore = create<IpodState>()(
                       (fetched.artist && fetched.artist !== track.artist) ||
                       (fetched.album && fetched.album !== track.album) ||
                       (fetched.cover && fetched.cover !== track.cover) ||
+                      (fetched.coverColor && fetched.coverColor !== track.coverColor) ||
                       (fetched.lyricOffset !== undefined && fetched.lyricOffset !== track.lyricOffset) ||
                       shouldUpdateLyricsSource;
 
@@ -1921,6 +1932,7 @@ export const useIpodStore = create<IpodState>()(
                         artist: fetched.artist ?? track.artist,
                         album: fetched.album ?? track.album,
                         cover: fetched.cover ?? track.cover,
+                        coverColor: fetched.coverColor ?? track.coverColor,
                         lyricOffset: fetched.lyricOffset ?? track.lyricOffset,
                         createdAt: Math.max(
                           track.createdAt ?? 0,

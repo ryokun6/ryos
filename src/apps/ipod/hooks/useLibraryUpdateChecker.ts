@@ -51,6 +51,7 @@ export function useLibraryUpdateChecker(isActive: boolean) {
           artist: song.artist,
           album: song.album ?? "",
           cover: song.cover,
+          coverColor: song.coverColor,
           lyricOffset: song.lyricOffset,
           lyricsSource: song.lyricsSource,
         }));

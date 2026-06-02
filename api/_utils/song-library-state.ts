@@ -89,6 +89,9 @@ function normalizeTrack(value: unknown): Track | null {
     ...(typeof candidate.artist === "string" ? { artist: candidate.artist } : {}),
     ...(typeof candidate.album === "string" ? { album: candidate.album } : {}),
     ...(typeof candidate.cover === "string" ? { cover: candidate.cover } : {}),
+    ...(typeof candidate.coverColor === "string"
+      ? { coverColor: candidate.coverColor }
+      : {}),
     ...(typeof candidate.lyricOffset === "number" &&
     Number.isFinite(candidate.lyricOffset)
       ? { lyricOffset: candidate.lyricOffset }

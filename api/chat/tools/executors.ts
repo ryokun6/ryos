@@ -611,6 +611,7 @@ function toUserLibrarySongRecord(
     artist?: string;
     album?: string;
     cover?: string;
+    coverColor?: string;
     lyricOffset?: number;
     lyricsSource?: SongLibraryLyricsSource;
   },
@@ -622,6 +623,7 @@ function toUserLibrarySongRecord(
     ...(track.artist ? { artist: track.artist } : {}),
     ...(track.album ? { album: track.album } : {}),
     ...(track.cover ? { cover: track.cover } : {}),
+    ...(track.coverColor ? { coverColor: track.coverColor } : {}),
     ...(track.lyricOffset !== undefined ? { lyricOffset: track.lyricOffset } : {}),
     ...(track.lyricsSource ? { lyricsSource: track.lyricsSource } : {}),
     source: "user_library",
@@ -641,6 +643,7 @@ function toGlobalSongRecord(
     ...(song.artist ? { artist: song.artist } : {}),
     ...(song.album ? { album: song.album } : {}),
     ...(song.cover ? { cover: song.cover } : {}),
+    ...(song.coverColor ? { coverColor: song.coverColor } : {}),
     ...(song.lyricOffset !== undefined ? { lyricOffset: song.lyricOffset } : {}),
     ...(song.lyricsSource
       ? { lyricsSource: toSongLibraryLyricsSource(song.lyricsSource) }
@@ -676,6 +679,7 @@ function combineSongRecords(
     artist: userRecord.artist ?? globalRecord.artist,
     album: userRecord.album ?? globalRecord.album,
     cover: userRecord.cover ?? globalRecord.cover,
+    coverColor: userRecord.coverColor ?? globalRecord.coverColor,
     lyricOffset: userRecord.lyricOffset ?? globalRecord.lyricOffset,
     lyricsSource: userRecord.lyricsSource ?? globalRecord.lyricsSource,
     createdBy: globalRecord.createdBy,
@@ -804,6 +808,7 @@ async function loadUserLibrarySongs(
         artist: track.artist,
         album: track.album,
         cover: track.cover,
+        coverColor: track.coverColor,
         lyricOffset: track.lyricOffset,
         lyricsSource: toSongLibraryLyricsSource(track.lyricsSource),
       },
@@ -1072,6 +1077,7 @@ export async function executeSongLibraryControl(
       ...(savedSong.artist ? { artist: savedSong.artist } : {}),
       ...(savedSong.album ? { album: savedSong.album } : {}),
       ...(savedSong.cover ? { cover: savedSong.cover } : {}),
+      ...(savedSong.coverColor ? { coverColor: savedSong.coverColor } : {}),
       ...(savedSong.lyricOffset !== undefined
         ? { lyricOffset: savedSong.lyricOffset }
         : {}),
@@ -1096,6 +1102,7 @@ export async function executeSongLibraryControl(
         artist: savedSong.artist,
         album: savedSong.album,
         cover: savedSong.cover,
+        coverColor: savedSong.coverColor,
         lyricOffset: savedSong.lyricOffset,
         lyricsSource: toSongLibraryLyricsSource(savedSong.lyricsSource),
       },

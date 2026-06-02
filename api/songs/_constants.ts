@@ -59,11 +59,14 @@ export const LyricsSourceSchema = z.object({
   album: z.string().max(500).optional(),
 });
 
+const CoverColorSchema = z.string().regex(/^#[0-9a-fA-F]{6}$/);
+
 export const UpdateSongSchema = z.object({
   title: z.string().max(500).optional(),
   artist: z.string().max(500).optional(),
   album: z.string().max(500).optional(),
   cover: z.string().max(2000).optional(),
+  coverColor: CoverColorSchema.optional(),
   lyricOffset: z.number().min(-300000).max(300000).optional(),
   lyricsSource: LyricsSourceSchema.optional(),
   // Options to clear cached data when lyrics source changes

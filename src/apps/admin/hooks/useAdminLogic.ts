@@ -112,6 +112,7 @@ interface ExportSongDocument {
   artist?: string;
   album?: string;
   cover?: string;
+  coverColor?: string;
   lyricOffset?: number;
   lyricsSource?: CachedSongMetadata["lyricsSource"];
   createdBy?: string;
@@ -846,6 +847,7 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
               title: song.title,
               artist: song.artist,
               album: song.album,
+              coverColor: song.coverColor,
               lyricOffset: song.lyricOffset,
               lyricsSource: song.lyricsSource,
               createdBy: song.createdBy,

@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useCoverPalette } from "@/hooks/useCoverPalette";
+import { useCoverPaletteResult } from "@/hooks/useCoverPalette";
 import {
   GLOW_FILTER,
   GLOW_SHADOW,
@@ -10,11 +10,16 @@ import {
   SERIF_RED_HIGHLIGHT_COLOR,
   getStyleCategory,
 } from "./constants";
-import { boostGlowColor, makeGlowFromColor, pickPrimaryColor } from "./colorUtils";
+import {
+  makeGlowFromColor,
+  normalizeCoverColor,
+  resolveCoverGlowColor,
+} from "./colorUtils";
 
 export function useLyricsDisplayKaraokeStyle(
   fontClassName: string,
-  coverUrl: string | null | undefined
+  coverUrl: string | null | undefined,
+  coverColor: string | null | undefined
 ) {
   const styleCategory = useMemo(
     () => getStyleCategory(fontClassName),
@@ -22,15 +27,22 @@ export function useLyricsDisplayKaraokeStyle(
   );
   const isOldSchoolKaraoke =
     styleCategory === "outline-blue" || styleCategory === "outline-red";
+  const cachedCoverColor = useMemo(
+    () => normalizeCoverColor(coverColor),
+    [coverColor]
+  );
+  const shouldExtractCoverColor = styleCategory === "glow-gold" && !cachedCoverColor;
 
-  const palette = useCoverPalette(
-    styleCategory === "glow-gold" ? (coverUrl ?? null) : null
+  const paletteResult = useCoverPaletteResult(
+    shouldExtractCoverColor ? (coverUrl ?? null) : null
   );
   const primaryGlow = useMemo(() => {
-    const raw = pickPrimaryColor(palette);
-    const boosted = boostGlowColor(raw);
-    return makeGlowFromColor(boosted);
-  }, [palette]);
+    const glowColor = cachedCoverColor ?? resolveCoverGlowColor(paletteResult.palette);
+    return makeGlowFromColor(glowColor);
+  }, [cachedCoverColor, paletteResult.palette]);
+  const resolvedCoverColor = primaryGlow.color;
+  const isCoverColorExtracted =
+    shouldExtractCoverColor && paletteResult.source === "cover";
 
   const styleProps = useMemo(() => {
     const isOutline =
@@ -94,6 +106,9 @@ export function useLyricsDisplayKaraokeStyle(
 
   return {
     isOldSchoolKaraoke,
+    resolvedCoverColor,
+    isCoverColorExtracted,
+    extractedCoverUrl: paletteResult.coverUrl,
     ...styleProps,
   };
 }

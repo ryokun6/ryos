@@ -51,6 +51,10 @@ export interface LyricsDisplayProps {
   onSeekToTime?: (timeMs: number) => void;
   /** Cover art URL for extracting primary color (used by glow-gold style) */
   coverUrl?: string | null;
+  /** Cached cover glow color from song metadata (used by glow-gold style) */
+  coverColor?: string | null;
+  /** Called after extracting a cover glow color from cover art */
+  onCoverColorResolved?: (coverColor: string, coverUrl: string) => void;
   /** Show ellipsis placeholders during long karaoke interludes */
   showInterludeEllipsis?: boolean;
 }
