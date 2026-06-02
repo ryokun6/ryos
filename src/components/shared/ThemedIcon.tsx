@@ -1,5 +1,11 @@
 import React from "react";
-import { resolveIconLegacyAware, useIconPath } from "@/utils/icons";
+import {
+  createCachedIconObjectUrl,
+  getIconRecoveryCandidates,
+  normalizeSameOriginIconPath,
+  resolveIconLegacyAware,
+  useIconPath,
+} from "@/utils/icons";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { cn } from "@/lib/utils";
 
@@ -79,8 +85,11 @@ export const ThemedIcon: React.FC<ThemedIconProps> = ({
   ...imgProps
 }) => {
   const { currentTheme } = useThemeFlags();
-  const { className, style, ...restImgProps } = imgProps;
+  const { className, style, onError, ...restImgProps } = imgProps;
   const composedClassName = cn("themed-icon", className);
+  const [recoveredSrc, setRecoveredSrc] = React.useState<string | null>(null);
+  const recoveryAttemptsRef = React.useRef<Set<string>>(new Set());
+  const objectUrlsRef = React.useRef<Set<string>>(new Set());
 
   // Check if name is a remote URL (for early return logic below)
   const isRemoteName = /^https?:\/\//i.test(name);
@@ -106,6 +115,20 @@ export const ThemedIcon: React.FC<ThemedIconProps> = ({
   // Call hook unconditionally at the top level
   const themedPath = useIconPath(logical, themeOverride ?? currentTheme);
 
+  React.useEffect(() => {
+    recoveryAttemptsRef.current.clear();
+    setRecoveredSrc(null);
+
+    return () => {
+      for (const objectUrl of objectUrlsRef.current) {
+        if (typeof URL.revokeObjectURL === "function") {
+          URL.revokeObjectURL(objectUrl);
+        }
+      }
+      objectUrlsRef.current.clear();
+    };
+  }, [resolved, themedPath]);
+
   // Simple passthrough for remote resources (avoid theming logic entirely)
   if (isRemoteName) {
     return (
@@ -114,6 +137,7 @@ export const ThemedIcon: React.FC<ThemedIconProps> = ({
         alt={alt || name}
         className={composedClassName}
         style={style}
+        onError={onError}
         {...restImgProps}
       />
     );
@@ -127,13 +151,14 @@ export const ThemedIcon: React.FC<ThemedIconProps> = ({
         alt={alt || name}
         className={composedClassName}
         style={style}
+        onError={onError}
         {...restImgProps}
       />
     );
   }
 
   // Keep it simple: if async path still pending, show resolved immediately. Avoid switching for remote URLs.
-  const src = themedPath || resolved;
+  const src = recoveredSrc || themedPath || resolved;
   const normalizedSrc = src.split("?")[0];
   const isThemedVariant =
     normalizedSrc.startsWith("/icons/") &&
@@ -143,6 +168,42 @@ export const ThemedIcon: React.FC<ThemedIconProps> = ({
       ? applySafariImageStabilizer(style)
       : style;
 
+  const handleImageError: React.ReactEventHandler<HTMLImageElement> = (
+    event
+  ) => {
+    const failedPath = normalizeSameOriginIconPath(
+      event.currentTarget.currentSrc || event.currentTarget.src || src
+    );
+    const candidates = getIconRecoveryCandidates(failedPath, logical);
+
+    void (async () => {
+      for (const candidate of [...new Set(candidates)]) {
+        const cacheAttempt = `cache:${candidate}`;
+        if (!recoveryAttemptsRef.current.has(cacheAttempt)) {
+          recoveryAttemptsRef.current.add(cacheAttempt);
+          const cachedSrc = await createCachedIconObjectUrl(candidate);
+          if (cachedSrc) {
+            objectUrlsRef.current.add(cachedSrc);
+            setRecoveredSrc(cachedSrc);
+            return;
+          }
+        }
+
+        const pathAttempt = `path:${candidate}`;
+        if (
+          candidate !== failedPath &&
+          !recoveryAttemptsRef.current.has(pathAttempt)
+        ) {
+          recoveryAttemptsRef.current.add(pathAttempt);
+          setRecoveredSrc(candidate);
+          return;
+        }
+      }
+
+      onError?.(event);
+    })();
+  };
+
   return (
     <img
       src={src}
@@ -150,6 +211,7 @@ export const ThemedIcon: React.FC<ThemedIconProps> = ({
       alt={alt || name}
       className={composedClassName}
       style={finalStyle}
+      onError={handleImageError}
       {...restImgProps}
     />
   );

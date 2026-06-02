@@ -112,6 +112,74 @@ export function resolveIconLegacyAware(
   return pickIconPath(iconOrName, { theme });
 }
 
+export function normalizeSameOriginIconPath(src: string): string | null {
+  const withoutHash = src.split("#")[0];
+  if (withoutHash.startsWith("/icons/")) {
+    return withoutHash;
+  }
+  if (!/^https?:\/\//i.test(withoutHash)) {
+    return null;
+  }
+
+  try {
+    if (typeof window === "undefined") {
+      return null;
+    }
+    const url = new URL(withoutHash);
+    if (
+      url.origin !== window.location.origin ||
+      !url.pathname.startsWith("/icons/")
+    ) {
+      return null;
+    }
+    return `${url.pathname}${url.search}`;
+  } catch {
+    return null;
+  }
+}
+
+export function defaultIconPathForLogicalName(logicalName: string): string {
+  return pickIconPath(logicalName, { theme: "default" });
+}
+
+export function getIconRecoveryCandidates(
+  failedSrc: string | null,
+  logicalName: string
+): string[] {
+  const failedPath = failedSrc ? normalizeSameOriginIconPath(failedSrc) : null;
+  return [
+    ...(failedPath && !failedPath.startsWith("/icons/default/")
+      ? [failedPath]
+      : []),
+    defaultIconPathForLogicalName(logicalName),
+  ];
+}
+
+export async function createCachedIconObjectUrl(
+  iconPath: string
+): Promise<string | null> {
+  const normalizedPath = normalizeSameOriginIconPath(iconPath);
+  if (
+    !normalizedPath ||
+    typeof caches === "undefined" ||
+    typeof URL.createObjectURL !== "function"
+  ) {
+    return null;
+  }
+
+  try {
+    const response = await caches.match(normalizedPath, {
+      ignoreSearch: true,
+    });
+    if (!response?.ok) {
+      return null;
+    }
+    return URL.createObjectURL(await response.blob());
+  } catch {
+    return null;
+  }
+}
+
 export function useIconPath(name: string, theme?: string | null) {
   // Start with an optimistic themed path (or fallback) to prevent flash.
   const [path, setPath] = useState(pickIconPath(name, { theme }));
