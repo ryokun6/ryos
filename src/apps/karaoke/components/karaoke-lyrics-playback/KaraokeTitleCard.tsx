@@ -1,11 +1,7 @@
-import { memo, useEffect, useMemo } from "react";
+import { memo, useMemo } from "react";
 import { motion } from "framer-motion";
-import { useCoverPaletteResult } from "@/hooks/useCoverPalette";
+import { useCoverGlowColor } from "@/hooks/useCoverGlowColor";
 import { ScrollingText } from "@/apps/ipod/components/screen";
-import {
-  normalizeCoverColor,
-  resolveCoverGlowColor,
-} from "@/apps/ipod/components/lyrics-display/colorUtils";
 import {
   getTitleCardStyleCategory,
   makeTitleCardGlow,
@@ -60,34 +56,15 @@ export const KaraokeTitleCard = memo(function KaraokeTitleCard({
   isPlaying: boolean;
 }) {
   const styleCategory = getTitleCardStyleCategory(fontClassName);
-  const cachedCoverColor = useMemo(
-    () => normalizeCoverColor(coverColor),
-    [coverColor]
-  );
-  const shouldExtractCoverColor = styleCategory === "glow-gold" && !cachedCoverColor;
-  const paletteResult = useCoverPaletteResult(
-    shouldExtractCoverColor ? (coverUrl ?? null) : null
-  );
+  const glowColor = useCoverGlowColor({
+    coverUrl,
+    coverColor,
+    enabled: styleCategory === "glow-gold",
+    onResolved: onCoverColorResolved,
+  });
   const primaryGlow = useMemo(() => {
-    const glowColor = cachedCoverColor ?? resolveCoverGlowColor(paletteResult.palette);
     return makeTitleCardGlow(glowColor);
-  }, [cachedCoverColor, paletteResult.palette]);
-
-  useEffect(() => {
-    if (
-      shouldExtractCoverColor &&
-      paletteResult.source === "cover" &&
-      paletteResult.coverUrl
-    ) {
-      onCoverColorResolved?.(primaryGlow.color, paletteResult.coverUrl);
-    }
-  }, [
-    onCoverColorResolved,
-    paletteResult.coverUrl,
-    paletteResult.source,
-    primaryGlow.color,
-    shouldExtractCoverColor,
-  ]);
+  }, [glowColor]);
 
   const titleTextSizeClass =
     variant === "fullscreen"
