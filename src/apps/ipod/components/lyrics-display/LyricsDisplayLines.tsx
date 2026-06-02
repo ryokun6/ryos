@@ -12,61 +12,9 @@ import { getLyricsTextAlign } from "./lyricsAlignmentUtils";
 import { LyricsLineRowContent } from "./LyricsLineRowContent";
 import type { LyricsDisplayViewModel } from "./useLyricsDisplayController";
 
-const LYRICS_LINE_LEFT_BLEED = "48px";
-const LYRICS_LINE_LEFT_INSET = "clamp(8px, 2.5%, 24px)";
-
 type LyricsDisplayLinesProps = {
   vm: LyricsDisplayViewModel;
 };
-
-export function getLyricsLineBleedStyle({
-  alignment,
-  lineTextAlign,
-  index,
-  visibleLinesLength,
-}: {
-  alignment: LyricsAlignment;
-  lineTextAlign: CanvasTextAlign;
-  index: number;
-  visibleLinesLength: number;
-}): {
-  paddingLeft?: string;
-  paddingRight?: string;
-  marginLeft?: string;
-  width?: string;
-} {
-  const hasAlternatingLeftRow =
-    alignment === LyricsAlignment.Alternating &&
-    index === 0 &&
-    visibleLinesLength > 1;
-  const hasAlternatingRightRow =
-    alignment === LyricsAlignment.Alternating &&
-    index === 1 &&
-    visibleLinesLength > 1;
-  const needsLeftBleed =
-    hasAlternatingLeftRow ||
-    lineTextAlign === "left" ||
-    lineTextAlign === "start";
-
-  const style: {
-    paddingLeft?: string;
-    paddingRight?: string;
-    marginLeft?: string;
-    width?: string;
-  } = {};
-
-  if (needsLeftBleed) {
-    style.paddingLeft = `calc(${LYRICS_LINE_LEFT_INSET} + ${LYRICS_LINE_LEFT_BLEED})`;
-    style.marginLeft = `calc(-1 * ${LYRICS_LINE_LEFT_BLEED})`;
-    style.width = `calc(100% + ${LYRICS_LINE_LEFT_BLEED} - ${LYRICS_LINE_LEFT_INSET})`;
-  }
-
-  if (hasAlternatingRightRow) {
-    style.paddingRight = "5%";
-  }
-
-  return style;
-}
 
 export function LyricsDisplayLines({ vm }: LyricsDisplayLinesProps) {
   const {
@@ -203,12 +151,14 @@ export function LyricsDisplayLines({ vm }: LyricsDisplayLinesProps) {
           filter: ANIMATION_CONFIG.fade,
           duration: 0.15,
         };
-        const bleedStyle = getLyricsLineBleedStyle({
-          alignment,
-          lineTextAlign,
-          index,
-          visibleLinesLength: visibleLines.length,
-        });
+        const hasAlternatingLeftInset =
+          alignment === LyricsAlignment.Alternating &&
+          index === 0 &&
+          visibleLines.length > 1;
+        const hasAlternatingRightInset =
+          alignment === LyricsAlignment.Alternating &&
+          index === 1 &&
+          visibleLines.length > 1;
 
         return (
           <motion.div
@@ -224,7 +174,8 @@ export function LyricsDisplayLines({ vm }: LyricsDisplayLinesProps) {
               textAlign: lineTextAlign as CanvasTextAlign,
               width: "100%",
               pointerEvents: interactive ? "auto" : "none",
-              ...bleedStyle,
+              paddingLeft: hasAlternatingLeftInset ? "5%" : undefined,
+              paddingRight: hasAlternatingRightInset ? "5%" : undefined,
               backfaceVisibility: "hidden",
               transform: "translateZ(0)",
             }}
