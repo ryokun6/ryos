@@ -24,23 +24,12 @@ export function hasCoverColorMetadataChange(
   currentTrack: TrackMetadataFields,
   serverTrack: TrackMetadataFields
 ): boolean {
+  const serverCoverColor = normalizeCoverColorForSync(serverTrack.coverColor);
+  if (!serverCoverColor) return false;
   return (
     normalizeCoverColorForSync(currentTrack.coverColor) !==
-    normalizeCoverColorForSync(serverTrack.coverColor)
+    serverCoverColor
   );
-}
-
-export function getCoverColorToSyncToRemote(
-  currentTrack: TrackMetadataFields,
-  serverTrack: TrackMetadataFields
-): string | undefined {
-  const currentCoverColor = normalizeCoverColorForSync(currentTrack.coverColor);
-  const serverCoverColor = normalizeCoverColorForSync(serverTrack.coverColor);
-  if (!currentCoverColor || serverCoverColor) return undefined;
-  if (serverTrack.cover !== undefined && currentTrack.cover !== serverTrack.cover) {
-    return undefined;
-  }
-  return currentCoverColor;
 }
 
 export function shouldUpdateTrackLyricsSource(
@@ -54,7 +43,7 @@ export function shouldUpdateTrackLyricsSource(
   );
 }
 
-export function hasLibraryTrackMetadataChangesExcludingCoverColor(
+export function hasLibraryTrackMetadataChanges(
   currentTrack: TrackMetadataFields,
   serverTrack: TrackMetadataFields
 ): boolean {
@@ -63,37 +52,10 @@ export function hasLibraryTrackMetadataChangesExcludingCoverColor(
     currentTrack.artist !== serverTrack.artist ||
     currentTrack.album !== serverTrack.album ||
     currentTrack.cover !== serverTrack.cover ||
+    hasCoverColorMetadataChange(currentTrack, serverTrack) ||
     currentTrack.url !== serverTrack.url ||
     currentTrack.lyricOffset !== serverTrack.lyricOffset ||
     shouldUpdateTrackLyricsSource(currentTrack, serverTrack)
-  );
-}
-
-export function hasLibraryTrackMetadataChanges(
-  currentTrack: TrackMetadataFields,
-  serverTrack: TrackMetadataFields
-): boolean {
-  return (
-    hasLibraryTrackMetadataChangesExcludingCoverColor(
-      currentTrack,
-      serverTrack
-    ) ||
-    hasCoverColorMetadataChange(currentTrack, serverTrack)
-  );
-}
-
-export function hasFetchedTrackMetadataChangesExcludingCoverColor(
-  currentTrack: TrackMetadataFields,
-  fetchedTrack: TrackMetadataFields
-): boolean {
-  return Boolean(
-    (fetchedTrack.title && fetchedTrack.title !== currentTrack.title) ||
-      (fetchedTrack.artist && fetchedTrack.artist !== currentTrack.artist) ||
-      (fetchedTrack.album && fetchedTrack.album !== currentTrack.album) ||
-      (fetchedTrack.cover && fetchedTrack.cover !== currentTrack.cover) ||
-      (fetchedTrack.lyricOffset !== undefined &&
-        fetchedTrack.lyricOffset !== currentTrack.lyricOffset) ||
-      shouldUpdateTrackLyricsSource(currentTrack, fetchedTrack)
   );
 }
 
@@ -102,11 +64,14 @@ export function hasFetchedTrackMetadataChanges(
   fetchedTrack: TrackMetadataFields
 ): boolean {
   return Boolean(
-    hasFetchedTrackMetadataChangesExcludingCoverColor(
-      currentTrack,
-      fetchedTrack
-    ) ||
-      hasCoverColorMetadataChange(currentTrack, fetchedTrack)
+    (fetchedTrack.title && fetchedTrack.title !== currentTrack.title) ||
+      (fetchedTrack.artist && fetchedTrack.artist !== currentTrack.artist) ||
+      (fetchedTrack.album && fetchedTrack.album !== currentTrack.album) ||
+      (fetchedTrack.cover && fetchedTrack.cover !== currentTrack.cover) ||
+      hasCoverColorMetadataChange(currentTrack, fetchedTrack) ||
+      (fetchedTrack.lyricOffset !== undefined &&
+        fetchedTrack.lyricOffset !== currentTrack.lyricOffset) ||
+      shouldUpdateTrackLyricsSource(currentTrack, fetchedTrack)
   );
 }
 

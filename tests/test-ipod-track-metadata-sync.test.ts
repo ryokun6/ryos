@@ -1,6 +1,5 @@
 import { describe, expect, test } from "bun:test";
 import {
-  getCoverColorToSyncToRemote,
   hasCoverColorMetadataChange,
   hasFetchedTrackMetadataChanges,
   hasLibraryTrackMetadataChanges,
@@ -29,7 +28,7 @@ describe("iPod track metadata sync", () => {
     expect(resolveSyncedCoverColor(current, server)).toBe("#111111");
   });
 
-  test("treats missing remote coverColor as a metadata change to sync", () => {
+  test("does not treat missing remote coverColor as a library metadata change", () => {
     const current = {
       title: "Song",
       cover: "https://example.com/cover.jpg",
@@ -42,9 +41,8 @@ describe("iPod track metadata sync", () => {
       coverColor: undefined,
     };
 
-    expect(hasCoverColorMetadataChange(current, server)).toBe(true);
-    expect(hasLibraryTrackMetadataChanges(current, server)).toBe(true);
-    expect(getCoverColorToSyncToRemote(current, server)).toBe("#111111");
+    expect(hasCoverColorMetadataChange(current, server)).toBe(false);
+    expect(hasLibraryTrackMetadataChanges(current, server)).toBe(false);
     expect(resolveSyncedCoverColor(current, server)).toBe("#111111");
   });
 
@@ -79,7 +77,7 @@ describe("iPod track metadata sync", () => {
     };
 
     expect(hasCoverColorMetadataChange(current, server)).toBe(true);
-    expect(getCoverColorToSyncToRemote(current, server)).toBeUndefined();
+    expect(hasLibraryTrackMetadataChanges(current, server)).toBe(true);
     expect(resolveSyncedCoverColor(current, server)).toBe("#222222");
   });
 
@@ -93,7 +91,6 @@ describe("iPod track metadata sync", () => {
       coverColor: "#222222",
     };
 
-    expect(getCoverColorToSyncToRemote(current, server)).toBeUndefined();
     expect(resolveSyncedCoverColor(current, server)).toBe("#222222");
   });
 
@@ -108,11 +105,10 @@ describe("iPod track metadata sync", () => {
     };
 
     expect(hasFetchedTrackMetadataChanges(current, fetched)).toBe(true);
-    expect(getCoverColorToSyncToRemote(current, fetched)).toBeUndefined();
     expect(resolveSyncedCoverColor(current, fetched)).toBe("#222222");
   });
 
-  test("preserves local coverColor when fetched user track metadata has none", () => {
+  test("does not treat missing fetched coverColor as user track metadata change", () => {
     const current = {
       title: "User Song",
       cover: "https://example.com/cover.jpg",
@@ -122,8 +118,7 @@ describe("iPod track metadata sync", () => {
       title: "User Song",
     };
 
-    expect(hasFetchedTrackMetadataChanges(current, fetched)).toBe(true);
-    expect(getCoverColorToSyncToRemote(current, fetched)).toBe("#111111");
+    expect(hasFetchedTrackMetadataChanges(current, fetched)).toBe(false);
     expect(resolveSyncedCoverColor(current, fetched)).toBe("#111111");
   });
 });
