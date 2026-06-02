@@ -6,6 +6,9 @@ import {
   getFirstLyricStartMs,
   shouldShowKaraokeTitleCard,
 } from "@/apps/karaoke/utils/titleCard";
+import { TITLE_CARD_TITLE_SHADOW_BLEED_STYLE } from "@/apps/karaoke/components/karaoke-lyrics-playback/title-card-styles";
+import { getLyricsLineBleedStyle } from "@/apps/ipod/components/lyrics-display/LyricsDisplayLines";
+import { LyricsAlignment } from "@/types/lyrics";
 
 const readSource = (relativePath: string): string =>
   readFileSync(resolve(process.cwd(), relativePath), "utf-8");
@@ -132,5 +135,28 @@ describe("karaoke title card timing", () => {
     expect(
       windowSource.includes("onOpenCoverFlow={handleOpenCoverFlowFromTitleCard}"),
     ).toBe(true);
+  });
+});
+
+describe("karaoke title and alternating lyric alignment", () => {
+  test("keeps title-card left bleed compact so it does not shift into the art", () => {
+    expect(TITLE_CARD_TITLE_SHADOW_BLEED_STYLE.paddingLeft).toBe("0.18em");
+    expect("marginLeft" in TITLE_CARD_TITLE_SHADOW_BLEED_STYLE).toBe(false);
+    expect("width" in TITLE_CARD_TITLE_SHADOW_BLEED_STYLE).toBe(false);
+  });
+
+  test("keeps alternating left lyric rows flush while preserving shadow bleed", () => {
+    expect(
+      getLyricsLineBleedStyle({
+        alignment: LyricsAlignment.Alternating,
+        lineTextAlign: "left",
+        index: 0,
+        visibleLinesLength: 2,
+      })
+    ).toEqual({
+      paddingLeft: "48px",
+      marginLeft: "calc(-1 * 48px)",
+      width: "calc(100% + 48px)",
+    });
   });
 });
