@@ -77,8 +77,10 @@ export function resolveSyncedCoverColor(
   currentTrack: TrackMetadataFields,
   serverTrack: TrackMetadataFields
 ): string | undefined {
+  const currentCoverColor = normalizeCoverColorForSync(currentTrack.coverColor);
+  const serverCoverColor = normalizeCoverColorForSync(serverTrack.coverColor);
   if (serverTrack.cover !== undefined && currentTrack.cover !== serverTrack.cover) {
-    return serverTrack.coverColor;
+    return serverCoverColor;
   }
-  return serverTrack.coverColor ?? currentTrack.coverColor;
+  return serverCoverColor ?? currentCoverColor;
 }
