@@ -22,6 +22,7 @@ import {
   controlPanelItemIconShell,
   userAvatarInitialsTextShadow,
 } from "./constants";
+import { AccountActionsMenu } from "./AccountActionsMenu";
 import { VersionDisplay } from "./VersionDisplay";
 
 export type SystemTabContentProps = {
@@ -170,58 +171,19 @@ export function SystemTabContent({
                   </span>
                 </div>
               </div>
-              <div className="flex gap-2">
-                {debugMode && (
-                  <Button variant="retro" onClick={promptVerifyToken} className="h-7">
-                    {t("apps.control-panels.logIn")}
-                  </Button>
-                )}
-                {hasPassword === false ? (
-                  <Button
-                    variant="retro"
-                    onClick={() => {
-                      setPasswordInput("");
-                      setPasswordError(null);
-                      setIsPasswordDialogOpen(true);
-                    }}
-                    className="h-7"
-                  >
-                    {t("apps.control-panels.setPassword")}
-                  </Button>
-                ) : (
-                  <>
-                    <Button
-                      variant="retro"
-                      onClick={() => {
-                        setPasswordInput("");
-                        setPasswordError(null);
-                        setIsPasswordDialogOpen(true);
-                      }}
-                      className="h-7"
-                    >
-                      {t("apps.control-panels.changePassword")}
-                    </Button>
-                    <Button variant="retro" onClick={logout} className="h-7">
-                      {t("apps.control-panels.logOut")}
-                    </Button>
-                  </>
-                )}
-              </div>
+              <AccountActionsMenu
+                t={t}
+                hasPassword={hasPassword}
+                debugMode={debugMode}
+                isLoggingOutAllDevices={isLoggingOutAllDevices}
+                setPasswordInput={setPasswordInput}
+                setPasswordError={setPasswordError}
+                setIsPasswordDialogOpen={setIsPasswordDialogOpen}
+                logout={logout}
+                handleLogoutAllDevices={handleLogoutAllDevices}
+                promptVerifyToken={promptVerifyToken}
+              />
             </div>
-            {debugMode && (
-              <div className="flex">
-                <Button
-                  variant="retro"
-                  onClick={handleLogoutAllDevices}
-                  disabled={isLoggingOutAllDevices}
-                  className="w-full"
-                >
-                  {isLoggingOutAllDevices
-                    ? t("apps.control-panels.loggingOut")
-                    : t("apps.control-panels.logOutOfAllDevices")}
-                </Button>
-              </div>
-            )}
           </div>
         ) : (
           <div className="space-y-2">

@@ -2843,6 +2843,7 @@
         "disconnected": "Disconnected"
       },
       "logIn": "Log In",
+      "accountMenu": "Account",
       "setPassword": "Set Password",
       "changePassword": "Change Password",
       "logOut": "Log Out",

@@ -992,6 +992,7 @@
         "listCursorCloudAgentRuns": {
           "listed": "Listed {{count}} recent run(s).",
           "loading": "Listing Cursor Cloud agent runs…",
+          "openDashboard": "Open agent in Cursor",
           "truncatedHint": "(list may be truncated)"
         },
         "listedItems": "Elementi elencati",
@@ -1219,6 +1220,7 @@
       }
     },
     "control-panels": {
+      "accountMenu": "Account",
       "aiModel": "Modello AI",
       "aiModelDescription": "Utilizzato in Chat, IE e altro",
       "alerts": {
@@ -1320,10 +1322,10 @@
       "crt": "CRT",
       "custom": "Personalizzato",
       "darkMode": "Modalità scura",
-      "darkModeDescription": "Segui il sistema o forza la variante scura",
-      "darkModeSystem": "Sistema",
-      "darkModeLight": "Chiaro",
       "darkModeDark": "Scuro",
+      "darkModeDescription": "Segui il sistema o forza la variante scura",
+      "darkModeLight": "Chiaro",
+      "darkModeSystem": "Sistema",
       "debugMode": "Modalità Debug",
       "debugModeDescription": "Abilita impostazioni di debug",
       "default": "Predefinito",
@@ -3796,6 +3798,8 @@
       "appletStore": "Applet Store…",
       "controlPanels": "Pannello di Controllo…",
       "createAccount": "Crea Account…",
+      "enterFullScreen": "Attiva schermo intero",
+      "exitFullScreen": "Esci da schermo intero",
       "logOut": "Esci da {{username}}…",
       "login": "Accedi…",
       "moreApps": "Altre App…",
@@ -3804,9 +3808,7 @@
       "noRecentDocuments": "Nessun documento recente",
       "recentItems": "Elementi recenti",
       "softwareUpdate": "Aggiornamento Software…",
-      "systemPreferences": "Preferenze di Sistema…",
-      "enterFullScreen": "Attiva schermo intero",
-      "exitFullScreen": "Esci da schermo intero"
+      "systemPreferences": "Preferenze di Sistema…"
     },
     "auth": {
       "changePassword": {

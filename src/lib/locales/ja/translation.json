@@ -992,6 +992,7 @@
         "listCursorCloudAgentRuns": {
           "listed": "Listed {{count}} recent run(s).",
           "loading": "Listing Cursor Cloud agent runs…",
+          "openDashboard": "Open agent in Cursor",
           "truncatedHint": "(list may be truncated)"
         },
         "listedItems": "項目を一覧表示しました",
@@ -1219,6 +1220,7 @@
       }
     },
     "control-panels": {
+      "accountMenu": "Account",
       "aiModel": "AIモデル",
       "aiModelDescription": "チャット、IEなどで使用",
       "alerts": {
@@ -1320,10 +1322,10 @@
       "crt": "CRT",
       "custom": "カスタム",
       "darkMode": "ダークモード",
-      "darkModeDescription": "システムに合わせる、またはダークバリアントを強制する",
-      "darkModeSystem": "システム",
-      "darkModeLight": "ライト",
       "darkModeDark": "ダーク",
+      "darkModeDescription": "システムに合わせる、またはダークバリアントを強制する",
+      "darkModeLight": "ライト",
+      "darkModeSystem": "システム",
       "debugMode": "デバッグモード",
       "debugModeDescription": "デバッグ設定を有効にする",
       "default": "デフォルト",
@@ -3796,6 +3798,8 @@
       "appletStore": "アプレットストア…",
       "controlPanels": "コントロールパネル…",
       "createAccount": "アカウントを作成…",
+      "enterFullScreen": "フルスクリーンにする",
+      "exitFullScreen": "フルスクリーンを解除",
       "logOut": "{{username}}をログアウト…",
       "login": "ログイン…",
       "moreApps": "その他のアプリ…",
@@ -3804,9 +3808,7 @@
       "noRecentDocuments": "最近使った書類はありません",
       "recentItems": "最近使った項目",
       "softwareUpdate": "ソフトウェア・アップデート…",
-      "systemPreferences": "システム環境設定…",
-      "enterFullScreen": "フルスクリーンにする",
-      "exitFullScreen": "フルスクリーンを解除"
+      "systemPreferences": "システム環境設定…"
     },
     "auth": {
       "changePassword": {
