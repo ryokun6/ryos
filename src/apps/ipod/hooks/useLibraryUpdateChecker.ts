@@ -4,6 +4,7 @@ import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { listAllCachedSongMetadata } from "@/utils/songMetadataCache";
+import { hasLibraryTrackMetadataChanges } from "@/stores/ipodTrackMetadataSync";
 
 const CHECK_INTERVAL = 5 * 60 * 1000; // Check every 5 minutes
 
@@ -71,23 +72,9 @@ export function useLibraryUpdateChecker(isActive: boolean) {
         currentTracks.forEach((currentTrack) => {
           const serverTrack = serverTrackMap.get(currentTrack.id);
           if (serverTrack) {
-            // Check if lyricsSource should be updated (new or different hash)
-            const shouldUpdateLyricsSource =
-              serverTrack.lyricsSource && (
-                !currentTrack.lyricsSource ||
-                currentTrack.lyricsSource.hash !== serverTrack.lyricsSource.hash
-              );
-
-            const hasChanges =
-              currentTrack.title !== serverTrack.title ||
-              currentTrack.artist !== serverTrack.artist ||
-              currentTrack.album !== serverTrack.album ||
-              currentTrack.cover !== serverTrack.cover ||
-              currentTrack.coverColor !== serverTrack.coverColor ||
-              currentTrack.url !== serverTrack.url ||
-              currentTrack.lyricOffset !== serverTrack.lyricOffset ||
-              shouldUpdateLyricsSource;
-            if (hasChanges) tracksUpdated++;
+            if (hasLibraryTrackMetadataChanges(currentTrack, serverTrack)) {
+              tracksUpdated++;
+            }
           }
         });
 

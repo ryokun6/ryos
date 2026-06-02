@@ -24,6 +24,12 @@ import {
 import { emitCloudSyncDomainChange } from "@/utils/cloudSyncEvents";
 import { sortTracksLikeServerOrder } from "@/stores/ipodTrackOrder";
 import {
+  hasFetchedTrackMetadataChanges,
+  hasLibraryTrackMetadataChanges,
+  resolveSyncedCoverColor,
+  shouldUpdateTrackLyricsSource,
+} from "@/stores/ipodTrackMetadataSync";
+import {
   saveAppleMusicLibrary,
   saveAppleMusicPlaylistTracks,
   saveAppleMusicTrackCollection,
@@ -1938,24 +1944,14 @@ export const useIpodStore = create<IpodState>()(
           const updatedTracks = current.tracks.map((currentTrack) => {
             const serverTrack = serverTrackMap.get(currentTrack.id);
             if (serverTrack) {
-              // Track exists on server, check if metadata needs updating
-              const hasMetadataChanges =
-                currentTrack.title !== serverTrack.title ||
-                currentTrack.artist !== serverTrack.artist ||
-                currentTrack.album !== serverTrack.album ||
-                currentTrack.cover !== serverTrack.cover ||
-                currentTrack.coverColor !== serverTrack.coverColor ||
-                currentTrack.url !== serverTrack.url ||
-                currentTrack.lyricOffset !== serverTrack.lyricOffset;
-
-              // Check if we should update lyricsSource:
-              // - Server has lyricsSource but user doesn't have one yet
-              // - Server has a different lyricsSource (compare by hash)
-              const shouldUpdateLyricsSource =
-                serverTrack.lyricsSource && (
-                  !currentTrack.lyricsSource ||
-                  currentTrack.lyricsSource.hash !== serverTrack.lyricsSource.hash
-                );
+              const hasMetadataChanges = hasLibraryTrackMetadataChanges(
+                currentTrack,
+                serverTrack
+              );
+              const shouldUpdateLyricsSource = shouldUpdateTrackLyricsSource(
+                currentTrack,
+                serverTrack
+              );
 
               const mergedCreatedAt = Math.max(
                 currentTrack.createdAt ?? 0,
@@ -1980,7 +1976,10 @@ export const useIpodStore = create<IpodState>()(
                   artist: serverTrack.artist,
                   album: serverTrack.album,
                   cover: serverTrack.cover,
-                  coverColor: serverTrack.coverColor,
+                  coverColor: resolveSyncedCoverColor(
+                    currentTrack,
+                    serverTrack
+                  ),
                   url: serverTrack.url,
                   lyricOffset: serverTrack.lyricOffset,
                   ...(shouldUpdateLyricsSource && {
@@ -2053,22 +2052,11 @@ export const useIpodStore = create<IpodState>()(
                 finalTracks = finalTracks.map((track) => {
                   const fetched = fetchedMap.get(track.id);
                   if (fetched) {
-                    // Check if lyricsSource should be updated (new or different hash)
-                    const shouldUpdateLyricsSource =
-                      fetched.lyricsSource && (
-                        !track.lyricsSource ||
-                        track.lyricsSource.hash !== fetched.lyricsSource.hash
-                      );
-
-                    // Check if any metadata has changed
-                    const hasChanges =
-                      (fetched.title && fetched.title !== track.title) ||
-                      (fetched.artist && fetched.artist !== track.artist) ||
-                      (fetched.album && fetched.album !== track.album) ||
-                      (fetched.cover && fetched.cover !== track.cover) ||
-                      (fetched.coverColor && fetched.coverColor !== track.coverColor) ||
-                      (fetched.lyricOffset !== undefined && fetched.lyricOffset !== track.lyricOffset) ||
-                      shouldUpdateLyricsSource;
+                    const shouldUpdateLyricsSource = shouldUpdateTrackLyricsSource(
+                      track,
+                      fetched
+                    );
+                    const hasChanges = hasFetchedTrackMetadataChanges(track, fetched);
 
                     if (hasChanges) {
                       tracksUpdated++;
@@ -2079,7 +2067,7 @@ export const useIpodStore = create<IpodState>()(
                         artist: fetched.artist ?? track.artist,
                         album: fetched.album ?? track.album,
                         cover: fetched.cover ?? track.cover,
-                        coverColor: fetched.coverColor ?? track.coverColor,
+                        coverColor: resolveSyncedCoverColor(track, fetched),
                         lyricOffset: fetched.lyricOffset ?? track.lyricOffset,
                         createdAt: Math.max(
                           track.createdAt ?? 0,
