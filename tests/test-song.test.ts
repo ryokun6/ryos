@@ -317,7 +317,7 @@ describe("POST /api/songs/{id} action: translate", () => {
 
 describe("POST /api/songs/{id} action: furigana-stream", () => {
   test("Furigana stream requires an existing song with lyrics", async () => {
-    const res = await fetchWithOrigin(`${BASE_URL}/api/songs/nonexistentsong456`, {
+    const res = await fetchWithOrigin(`${BASE_URL}/api/songs/abcdefghijk`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
