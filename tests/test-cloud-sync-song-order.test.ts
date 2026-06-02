@@ -78,7 +78,11 @@ class MockAudioContext {
 }
 
 function createBrowserTestEnvironment(): void {
-  browserGlobals.localStorage = new MemoryStorage();
+  if (browserGlobals.localStorage instanceof MemoryStorage) {
+    browserGlobals.localStorage.clear();
+  } else {
+    browserGlobals.localStorage = new MemoryStorage();
+  }
   browserGlobals.document = {
     documentElement: {
       dataset: {},
