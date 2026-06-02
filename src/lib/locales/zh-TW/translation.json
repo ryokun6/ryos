@@ -992,6 +992,7 @@
         "listCursorCloudAgentRuns": {
           "listed": "Listed {{count}} recent run(s).",
           "loading": "Listing Cursor Cloud agent runs…",
+          "openDashboard": "Open agent in Cursor",
           "truncatedHint": "(list may be truncated)"
         },
         "listedItems": "已列出項目",
@@ -1219,6 +1220,7 @@
       }
     },
     "control-panels": {
+      "accountMenu": "Account",
       "aiModel": "AI 模型",
       "aiModelDescription": "用於聊天、IE 等",
       "alerts": {
@@ -1320,10 +1322,10 @@
       "crt": "CRT",
       "custom": "自訂",
       "darkMode": "深色模式",
-      "darkModeDescription": "跟隨系統,或強制使用深色版本",
-      "darkModeSystem": "系統",
-      "darkModeLight": "淺色",
       "darkModeDark": "深色",
+      "darkModeDescription": "跟隨系統,或強制使用深色版本",
+      "darkModeLight": "淺色",
+      "darkModeSystem": "系統",
       "debugMode": "偵錯模式",
       "debugModeDescription": "啟用偵錯設定",
       "default": "預設",
@@ -3796,6 +3798,8 @@
       "appletStore": "小程式商店…",
       "controlPanels": "控制台…",
       "createAccount": "建立帳戶…",
+      "enterFullScreen": "進入全螢幕",
+      "exitFullScreen": "離開全螢幕",
       "logOut": "登出 {{username}}…",
       "login": "登入…",
       "moreApps": "更多 App…",
@@ -3804,9 +3808,7 @@
       "noRecentDocuments": "沒有最近使用的文件",
       "recentItems": "最近使用過的項目",
       "softwareUpdate": "軟體更新…",
-      "systemPreferences": "系統偏好設定…",
-      "enterFullScreen": "進入全螢幕",
-      "exitFullScreen": "離開全螢幕"
+      "systemPreferences": "系統偏好設定…"
     },
     "auth": {
       "changePassword": {

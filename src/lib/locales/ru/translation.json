@@ -992,6 +992,7 @@
         "listCursorCloudAgentRuns": {
           "listed": "Listed {{count}} recent run(s).",
           "loading": "Listing Cursor Cloud agent runs…",
+          "openDashboard": "Open agent in Cursor",
           "truncatedHint": "(list may be truncated)"
         },
         "listedItems": "Перечисленные элементы",
@@ -1219,6 +1220,7 @@
       }
     },
     "control-panels": {
+      "accountMenu": "Account",
       "aiModel": "Модель ИИ",
       "aiModelDescription": "Используется в чатах, IE и других местах",
       "alerts": {
@@ -1320,10 +1322,10 @@
       "crt": "ЭЛТ",
       "custom": "Пользовательский",
       "darkMode": "Тёмный режим",
-      "darkModeDescription": "Следовать системе или принудительно использовать тёмный вариант",
-      "darkModeSystem": "Системный",
-      "darkModeLight": "Светлый",
       "darkModeDark": "Тёмный",
+      "darkModeDescription": "Следовать системе или принудительно использовать тёмный вариант",
+      "darkModeLight": "Светлый",
+      "darkModeSystem": "Системный",
       "debugMode": "Режим отладки",
       "debugModeDescription": "Включить параметры отладки",
       "default": "По умолчанию",
@@ -3796,6 +3798,8 @@
       "appletStore": "Applet Store…",
       "controlPanels": "Панель управления…",
       "createAccount": "Создать учётную запись…",
+      "enterFullScreen": "Перейти в полноэкранный режим",
+      "exitFullScreen": "Выйти из полноэкранного режима",
       "logOut": "Завершить сеанс {{username}}…",
       "login": "Войти…",
       "moreApps": "Другие программы…",
@@ -3804,9 +3808,7 @@
       "noRecentDocuments": "Нет недавних документов",
       "recentItems": "Недавние объекты",
       "softwareUpdate": "Обновление ПО…",
-      "systemPreferences": "Системные настройки…",
-      "enterFullScreen": "Перейти в полноэкранный режим",
-      "exitFullScreen": "Выйти из полноэкранного режима"
+      "systemPreferences": "Системные настройки…"
     },
     "auth": {
       "changePassword": {

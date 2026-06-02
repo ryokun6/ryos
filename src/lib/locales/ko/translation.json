@@ -992,6 +992,7 @@
         "listCursorCloudAgentRuns": {
           "listed": "Listed {{count}} recent run(s).",
           "loading": "Listing Cursor Cloud agent runs…",
+          "openDashboard": "Open agent in Cursor",
           "truncatedHint": "(list may be truncated)"
         },
         "listedItems": "항목 목록 표시됨",
@@ -1219,6 +1220,7 @@
       }
     },
     "control-panels": {
+      "accountMenu": "Account",
       "aiModel": "AI 모델",
       "aiModelDescription": "채팅, IE 등에서 사용됨",
       "alerts": {
@@ -1320,10 +1322,10 @@
       "crt": "CRT",
       "custom": "사용자 설정",
       "darkMode": "다크 모드",
-      "darkModeDescription": "시스템 설정을 따르거나 어두운 버전을 강제로 사용합니다",
-      "darkModeSystem": "시스템",
-      "darkModeLight": "라이트",
       "darkModeDark": "다크",
+      "darkModeDescription": "시스템 설정을 따르거나 어두운 버전을 강제로 사용합니다",
+      "darkModeLight": "라이트",
+      "darkModeSystem": "시스템",
       "debugMode": "디버그 모드",
       "debugModeDescription": "디버깅 설정을 활성화합니다.",
       "default": "기본값",
@@ -3796,6 +3798,8 @@
       "appletStore": "애플릿 스토어…",
       "controlPanels": "제어판…",
       "createAccount": "계정 생성…",
+      "enterFullScreen": "전체 화면 사용",
+      "exitFullScreen": "전체 화면 종료",
       "logOut": "{{username}} 로그아웃…",
       "login": "로그인…",
       "moreApps": "더 많은 앱…",
@@ -3804,9 +3808,7 @@
       "noRecentDocuments": "최근 사용한 문서 없음",
       "recentItems": "최근 사용 항목",
       "softwareUpdate": "소프트웨어 업데이트…",
-      "systemPreferences": "시스템 환경설정…",
-      "enterFullScreen": "전체 화면 사용",
-      "exitFullScreen": "전체 화면 종료"
+      "systemPreferences": "시스템 환경설정…"
     },
     "auth": {
       "changePassword": {
