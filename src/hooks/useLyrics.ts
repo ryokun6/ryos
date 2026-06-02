@@ -3,8 +3,8 @@ import type { LyricLine } from "@/types/lyrics";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useCacheBustTrigger, useRefetchTrigger } from "@/hooks/useCacheBustTrigger";
 import { isOffline } from "@/utils/offline";
-import { getApiUrl } from "@/utils/platform";
-import { abortableFetch } from "@/utils/abortableFetch";
+import { ApiRequestError } from "@/api/core";
+import { fetchSongLyrics } from "@/api/songs";
 import {
   processTranslationSSE,
   parseLrcToTranslations,
@@ -379,24 +379,27 @@ export function useLyrics({
       };
     }
 
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
-
-    abortableFetch(getApiUrl(`/api/songs/${effectSongId}`), {
-      method: "POST",
-      headers,
-      body: JSON.stringify(requestBody),
+    fetchSongLyrics(effectSongId, {
+      force: Boolean(requestBody.force),
+      title: typeof requestBody.title === "string" ? requestBody.title : undefined,
+      artist: typeof requestBody.artist === "string" ? requestBody.artist : undefined,
+      translateTo:
+        typeof requestBody.translateTo === "string"
+          ? requestBody.translateTo
+          : undefined,
+      includeFurigana: Boolean(requestBody.includeFurigana),
+      includeSoramimi: Boolean(requestBody.includeSoramimi),
+      soramimiTargetLanguage:
+        requestBody.soramimiTargetLanguage === "en" ? "en" : undefined,
+      lyricsSource: requestBody.lyricsSource as
+        | NonNullable<Parameters<typeof fetchSongLyrics>[1]>["lyricsSource"]
+        | undefined,
       signal: controller.signal,
-      timeout: 15000,
-      retry: { maxAttempts: 3, initialDelayMs: 1000, backoffMultiplier: 2 },
     })
-      .then(async (res) => {
+      .then(async (json) => {
         if (controller.signal.aborted) return null;
         if (effectSongId !== currentSongIdRef.current) return null;
-        if (!res.ok) {
-          if (res.status === 404) return null;
-          throw new Error(`Failed to fetch lyrics (status ${res.status})`);
-        }
-        return res.json() as Promise<UnifiedLyricsResponse>;
+        return json as UnifiedLyricsResponse;
       })
       .then((json) => {
         if (controller.signal.aborted) return;
@@ -438,6 +441,11 @@ export function useLyrics({
       .catch((err: unknown) => {
         if (controller.signal.aborted) return;
         if (effectSongId !== currentSongIdRef.current) return;
+        if (err instanceof ApiRequestError && err.status === 404) {
+          err = new Error("No lyrics found");
+        } else if (err instanceof ApiRequestError) {
+          err = new Error(`Failed to fetch lyrics (status ${err.status})`);
+        }
         handleLyricsError(err, setError, setOriginalLines, setCurrentLine);
         dispatch({
           type: "patch",
