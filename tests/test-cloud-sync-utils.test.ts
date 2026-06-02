@@ -1586,6 +1586,8 @@ describe("cloud sync shared helpers", () => {
       addEventListener: () => undefined,
       removeEventListener: () => undefined,
       dispatchEvent: () => true,
+      setTimeout: (() => 0) as typeof setTimeout,
+      clearTimeout: (() => undefined) as typeof clearTimeout,
     } as unknown as Window & typeof globalThis;
     browserGlobals.fetch = (async () =>
       new Response(JSON.stringify({ songs: [] }), {
