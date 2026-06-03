@@ -69,8 +69,8 @@ export function ScrollToBottomButton() {
             </>
           )}
           <CaretDown
-            className={`size-2.5 ${
-              isMacTheme ? "text-black/70 relative z-10" : "text-neutral-800"
+            className={`chat-scroll-to-bottom-glyph size-2.5 ${
+              isMacTheme ? "relative z-10" : ""
             }`}
             weight="bold"
           />
