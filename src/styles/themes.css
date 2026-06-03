@@ -3718,7 +3718,7 @@
     .text-black\/40,
     .text-black\/30,
     .text-black\/20
-  ):not(.chat-submit-glyph):not(.chat-stop-glyph):not(.chat-scroll-to-bottom-glyph):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *):not(.dashboard-overlay *):not([class*="bg-pink-"]):not([class*="bg-blue-"]):not([class*="bg-yellow-"]):not([class*="bg-purple-"]):not([class*="bg-indigo-"]):not([class*="bg-teal-"]):not([class*="bg-lime-"]):not([class*="bg-amber-"]):not([class*="bg-cyan-"]):not([class*="bg-rose-"]):not([class*="bg-green-"]):not([class*="bg-orange-"]):not([class*="bg-red-"]) {
+  ):not(.chat-submit-glyph):not(.chat-stop-glyph):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *):not(.dashboard-overlay *):not([class*="bg-pink-"]):not([class*="bg-blue-"]):not([class*="bg-yellow-"]):not([class*="bg-purple-"]):not([class*="bg-indigo-"]):not([class*="bg-teal-"]):not([class*="bg-lime-"]):not([class*="bg-amber-"]):not([class*="bg-cyan-"]):not([class*="bg-rose-"]):not([class*="bg-green-"]):not([class*="bg-orange-"]):not([class*="bg-red-"]) {
   color: var(--os-color-text-secondary) !important;
 }
 
@@ -3743,7 +3743,7 @@
     .text-slate-600,
     .text-slate-700,
     .text-slate-800
-  ):not(.chat-scroll-to-bottom-glyph):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *):not(.dashboard-overlay *):not([class*="bg-pink-"]):not([class*="bg-blue-"]):not([class*="bg-yellow-"]):not([class*="bg-purple-"]):not([class*="bg-indigo-"]):not([class*="bg-teal-"]):not([class*="bg-lime-"]):not([class*="bg-amber-"]):not([class*="bg-cyan-"]):not([class*="bg-rose-"]):not([class*="bg-green-"]):not([class*="bg-orange-"]):not([class*="bg-red-"]):not([class*="bg-gray-1"]):not([class*="bg-neutral-1"]):not([class*="bg-zinc-1"]):not([class*="bg-slate-1"]) {
+  ):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *):not(.dashboard-overlay *):not([class*="bg-pink-"]):not([class*="bg-blue-"]):not([class*="bg-yellow-"]):not([class*="bg-purple-"]):not([class*="bg-indigo-"]):not([class*="bg-teal-"]):not([class*="bg-lime-"]):not([class*="bg-amber-"]):not([class*="bg-cyan-"]):not([class*="bg-rose-"]):not([class*="bg-green-"]):not([class*="bg-orange-"]):not([class*="bg-red-"]):not([class*="bg-gray-1"]):not([class*="bg-neutral-1"]):not([class*="bg-zinc-1"]):not([class*="bg-slate-1"]) {
   color: var(--os-color-text-secondary) !important;
 }
 
@@ -4413,17 +4413,41 @@
    top. In dark mode the broader `.window-body` rules remap `text-black/70`
    to the secondary-text token (#c8c8cc), which would sink the arrow into
    the green pill. The dark `text-black/*` rule now explicitly excludes
-   `.chat-submit-glyph`, `.chat-stop-glyph`, and `.chat-scroll-to-bottom-glyph`),
-   so this lightweight pin wins across all themes / both color schemes. The
-   Phosphor glyph uses `fill="currentColor"`, so setting color is enough. */
+   `.chat-submit-glyph` (and `.chat-stop-glyph`), so this lightweight pin
+   wins across all themes / both color schemes. The Phosphor glyph uses
+   `fill="currentColor"`, so setting color is enough. */
 .chat-submit-glyph {
   color: rgba(0, 0, 0, 0.85) !important;
 }
 
-/* Scroll-to-bottom chevron sits on a light pill; keep the caret dark in Aqua dark
-   mode (window-body text remaps would otherwise lighten it). */
-.chat-scroll-to-bottom-glyph {
-  color: rgba(0, 0, 0, 0.7) !important;
+/* --- Chats scroll-to-bottom pill (macOS Aqua) -------------------------------- */
+/* Light mode keeps the inline silver/white gradient; dark mode uses a denser
+   graphite pill so the white chevron (authored in the component) stays legible. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .chat-scroll-to-bottom-btn {
+  background: linear-gradient(
+    rgba(88, 88, 90, 0.96),
+    rgba(48, 48, 50, 0.96)
+  ) !important;
+  box-shadow:
+    0 2px 3px rgba(0, 0, 0, 0.45),
+    0 1px 1px rgba(0, 0, 0, 0.35),
+    inset 0 0 0 0.5px rgba(0, 0, 0, 0.45),
+    inset 0 1px 2px rgba(0, 0, 0, 0.35),
+    inset 0 2px 3px 1px rgba(24, 24, 26, 0.85) !important;
+}
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .chat-scroll-to-bottom-gloss-top {
+  background: linear-gradient(
+    rgba(255, 255, 255, 0.22),
+    rgba(255, 255, 255, 0.04)
+  ) !important;
+}
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .chat-scroll-to-bottom-gloss-bottom {
+  background: linear-gradient(
+    rgba(255, 255, 255, 0.06),
+    rgba(255, 255, 255, 0.18)
+  ) !important;
 }
 
 /* --- Inline search/text inputs that don't use the shared SearchInput ----- */

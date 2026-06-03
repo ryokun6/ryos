@@ -14,23 +14,24 @@ const themesCss = readFileSync(
   "utf8"
 );
 
-describe("Chats scroll-to-bottom chevron in macOS Aqua dark mode", () => {
-  test("ScrollToBottomButton pins glyph color via shared class", () => {
-    expect(scrollButtonSource).toContain("chat-scroll-to-bottom-glyph");
-    expect(scrollButtonSource).not.toContain("text-neutral-800");
-    expect(scrollButtonSource).not.toContain("text-black/70");
+describe("Chats scroll-to-bottom in macOS Aqua dark mode", () => {
+  test("ScrollToBottomButton uses white chevron and dark pill hook class in dark mode", () => {
+    expect(scrollButtonSource).toContain("chat-scroll-to-bottom-btn");
+    expect(scrollButtonSource).toContain("isDarkMode");
+    expect(scrollButtonSource).toContain('"text-white"');
+    expect(scrollButtonSource).toContain("text-black/70");
+    expect(scrollButtonSource).not.toContain("chat-scroll-to-bottom-glyph");
   });
 
-  test("themes.css keeps scroll chevron dark and excludes it from dark remaps", () => {
-    expect(themesCss).toContain(".chat-scroll-to-bottom-glyph");
+  test("themes.css darkens scroll pill and tones gloss; no dark chevron pin", () => {
+    expect(themesCss).toContain(
+      ':root[data-os-theme="macosx"][data-os-color-scheme="dark"] .chat-scroll-to-bottom-btn'
+    );
     expect(themesCss).toMatch(
-      /\.chat-scroll-to-bottom-glyph\s*\{[^}]*color:\s*rgba\(0,\s*0,\s*0/i
+      /\.chat-scroll-to-bottom-btn\s*\{[^}]*rgba\(88,\s*88,\s*90/i
     );
-    expect(themesCss).toContain(
-      ":not(.chat-scroll-to-bottom-glyph):not(.ipod-force-font"
-    );
-    expect(themesCss).toContain(
-      ":not(.chat-submit-glyph):not(.chat-stop-glyph):not(.chat-scroll-to-bottom-glyph)"
-    );
+    expect(themesCss).toContain(".chat-scroll-to-bottom-gloss-top");
+    expect(themesCss).toContain(".chat-scroll-to-bottom-gloss-bottom");
+    expect(themesCss).not.toContain(".chat-scroll-to-bottom-glyph");
   });
 });
