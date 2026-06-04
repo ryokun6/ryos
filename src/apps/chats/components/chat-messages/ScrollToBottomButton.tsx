@@ -6,7 +6,7 @@ import { useThemeFlags } from "@/hooks/useThemeFlags";
 
 export function ScrollToBottomButton() {
   const { t } = useTranslation();
-  const { isMacOSTheme: isMacTheme } = useThemeFlags();
+  const { isMacOSTheme: isMacTheme, isDarkMode } = useThemeFlags();
   const { isAtBottom, scrollToBottom } = useStickToBottomContext();
 
   return (
@@ -17,7 +17,7 @@ export function ScrollToBottomButton() {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.8, y: 10 }}
           transition={{ type: "spring", duration: 0.2 }}
-          className={`absolute bottom-14 right-3 rounded-full z-20 flex items-center justify-center cursor-pointer select-none ${
+          className={`chat-scroll-to-bottom-btn absolute bottom-14 right-3 rounded-full z-20 flex items-center justify-center cursor-pointer select-none ${
             isMacTheme ? "relative overflow-hidden" : ""
           }`}
           style={{
@@ -41,7 +41,7 @@ export function ScrollToBottomButton() {
           {isMacTheme && (
             <>
               <div
-                className="pointer-events-none absolute left-1/2 -translate-x-1/2"
+                className="chat-scroll-to-bottom-gloss-top pointer-events-none absolute left-1/2 -translate-x-1/2"
                 style={{
                   top: "2px",
                   height: "30%",
@@ -54,7 +54,7 @@ export function ScrollToBottomButton() {
                 }}
               />
               <div
-                className="pointer-events-none absolute left-1/2 -translate-x-1/2"
+                className="chat-scroll-to-bottom-gloss-bottom pointer-events-none absolute left-1/2 -translate-x-1/2"
                 style={{
                   bottom: "1px",
                   height: "38%",
@@ -70,7 +70,13 @@ export function ScrollToBottomButton() {
           )}
           <CaretDown
             className={`size-2.5 ${
-              isMacTheme ? "text-black/70 relative z-10" : "text-neutral-800"
+              isMacTheme ? "relative z-10" : ""
+            } ${
+              isMacTheme && isDarkMode
+                ? "text-white"
+                : isMacTheme
+                  ? "text-black/70"
+                  : "text-neutral-800"
             }`}
             weight="bold"
           />
