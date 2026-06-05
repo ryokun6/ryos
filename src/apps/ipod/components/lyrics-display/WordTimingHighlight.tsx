@@ -376,13 +376,10 @@ export function WordTimingHighlight({
                 marginTop: isOldSchoolKaraoke ? `-${OLD_SCHOOL_PADDING_TOP}` : `calc(-1 * ${LYRICS_SHADOW_BLEED_TOP})`,
                 paddingBottom: isOldSchoolKaraoke ? OLD_SCHOOL_PADDING_BOTTOM : LYRICS_SHADOW_BLEED_BOTTOM,
                 marginBottom: isOldSchoolKaraoke ? `-${OLD_SCHOOL_PADDING_BOTTOM}` : `calc(-1 * ${LYRICS_SHADOW_BLEED_BOTTOM})`,
-                // Glow styles get horizontal shadow room from the filtered outer layer.
-                // Repeating that bleed here makes mask percentages resolve against an
-                // invisible wider box, delaying the visible word fill.
-                paddingLeft: isOldSchoolKaraoke ? OLD_SCHOOL_PADDING : undefined,
-                paddingRight: isOldSchoolKaraoke ? OLD_SCHOOL_PADDING : undefined,
-                marginLeft: isOldSchoolKaraoke ? `-${OLD_SCHOOL_PADDING}` : undefined,
-                marginRight: isOldSchoolKaraoke ? `-${OLD_SCHOOL_PADDING}` : undefined,
+                paddingLeft: isOldSchoolKaraoke ? OLD_SCHOOL_PADDING : LYRICS_SHADOW_BLEED_X,
+                paddingRight: isOldSchoolKaraoke ? OLD_SCHOOL_PADDING : LYRICS_SHADOW_BLEED_X,
+                marginLeft: isOldSchoolKaraoke ? `-${OLD_SCHOOL_PADDING}` : `calc(-1 * ${LYRICS_SHADOW_BLEED_X})`,
+                marginRight: isOldSchoolKaraoke ? `-${OLD_SCHOOL_PADDING}` : `calc(-1 * ${LYRICS_SHADOW_BLEED_X})`,
                 // Keep GPU-composited to prevent pixel rounding
                 backfaceVisibility: "hidden",
                 willChange: "mask-image",
