@@ -3,6 +3,8 @@ import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { Warning, WifiSlash } from "@phosphor-icons/react";
 import type { AppProps } from "../../../base/types";
 import type { TFunction } from "i18next";
+import { cn } from "@/lib/utils";
+import { adminSurfaceClass } from "../../utils/adminStyles";
 
 export type AdminRestrictedVariant = "accessDenied" | "offline";
 
@@ -55,7 +57,7 @@ export function AdminRestrictedView({
         onNavigatePrevious,
       }}
     >
-      <div className="flex flex-col items-center justify-center h-full gap-3 p-8 text-center bg-white">
+      <div className={cn("flex flex-col items-center justify-center h-full gap-3 p-8 text-center", adminSurfaceClass)}>
         {variant === "accessDenied" ? (
           <Warning className="size-10 text-neutral-400" weight="bold" />
         ) : (

@@ -9,6 +9,13 @@ import {
 } from "@/components/ui/table";
 import { Trash } from "@phosphor-icons/react";
 import type { TFunction } from "i18next";
+import { cn } from "@/lib/utils";
+import {
+  adminAvatarWellClass,
+  adminGhostIconBtnClass,
+  adminTableHeadClass,
+  adminTableRowClass,
+} from "../../utils/adminStyles";
 
 interface MessageRow {
   id: string;
@@ -44,26 +51,26 @@ export function AdminRoomMessagesView({
         <Table>
           <TableHeader>
             <TableRow className="text-[10px] border-none font-normal">
-              <TableHead className="font-normal bg-neutral-100/50 h-[28px]">
+              <TableHead className={cn(adminTableHeadClass, "h-[28px]")}>
                 {t("apps.admin.tableHeaders.user")}
               </TableHead>
-              <TableHead className="font-normal bg-neutral-100/50 h-[28px]">
+              <TableHead className={cn(adminTableHeadClass, "h-[28px]")}>
                 {t("apps.admin.tableHeaders.message")}
               </TableHead>
-              <TableHead className="font-normal bg-neutral-100/50 h-[28px] whitespace-nowrap">
+              <TableHead className={cn(adminTableHeadClass, "h-[28px] whitespace-nowrap")}>
                 {t("apps.admin.tableHeaders.time")}
               </TableHead>
-              <TableHead className="font-normal bg-neutral-100/50 h-[28px] w-8"></TableHead>
+              <TableHead className={cn(adminTableHeadClass, "h-[28px] w-8")}></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody className="text-[11px]">
             {roomMessages.map((message) => (
               <TableRow
                 key={message.id}
-                className="border-none hover:bg-neutral-100/50 transition-colors cursor-default odd:bg-neutral-200/50 group"
+                className={cn(adminTableRowClass, "cursor-default")}
               >
                 <TableCell className="flex items-center gap-2 whitespace-nowrap">
-                  <div className="size-4 rounded-full bg-neutral-200 flex items-center justify-center text-[9px] font-medium text-neutral-600">
+                  <div className={cn("size-4 rounded-full flex items-center justify-center text-[9px] font-medium", adminAvatarWellClass)}>
                     {message.username[0].toUpperCase()}
                   </div>
                   {message.username}
@@ -83,7 +90,7 @@ export function AdminRoomMessagesView({
                         deleteMessage(selectedRoomId, message.id);
                       }
                     }}
-                    className="size-5 p-0 md:opacity-0 md:group-hover:opacity-100 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100"
+                    className={cn("size-5 p-0 md:opacity-0 md:group-hover:opacity-100", adminGhostIconBtnClass)}
                   >
                     <Trash size={14} weight="bold" />
                   </Button>

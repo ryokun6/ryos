@@ -14,6 +14,7 @@ import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { CursorRepoAgentChatCard } from "@/components/shared/CursorRepoAgentChatCard";
+import { adminSurfaceClass, adminTableRowClass } from "../utils/adminStyles";
 
 export interface AdminCursorAgentRunRow {
   runId: string;
@@ -317,7 +318,7 @@ export function CursorAgentsPanel({
     <div className={panelShellClass}>
       {toolbar}
       {(truncated || scanIncomplete) && (
-        <p className="text-[10px] text-amber-700 bg-amber-50 px-3 py-1 border-b border-amber-100 shrink-0">
+        <p className="text-[10px] text-amber-700 bg-amber-50 px-3 py-1 border-b border-amber-100 shrink-0 os-mac-aqua-dark:text-amber-200 os-mac-aqua-dark:bg-amber-950/40 os-mac-aqua-dark:border-amber-900/50">
           {scanIncomplete && !truncated
             ? t(
                 "apps.admin.cursorAgents.scanIncompleteHint",
@@ -368,11 +369,11 @@ export function CursorAgentsPanel({
                   }
                 }}
                 className={cn(
-                  "border-none odd:bg-neutral-200/50 cursor-pointer",
+                  adminTableRowClass,
+                  "cursor-pointer",
                   run.status === "running" && "bg-amber-50/60 odd:bg-amber-50/70",
-                  selectedRunId === run.runId &&
-                    "bg-blue-100/80 odd:bg-blue-100/80"
                 )}
+                data-selected={selectedRunId === run.runId ? "true" : undefined}
               >
                 <TableCell className="w-0 align-top py-2 pl-2 pr-1">
                   <span
@@ -451,7 +452,7 @@ export function CursorAgentsPanel({
       </Table>
         </div>
         {selectedRunId ? (
-          <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden border-l border-black/10 bg-white">
+          <div className={cn("flex h-full min-h-0 min-w-0 flex-col overflow-hidden border-l border-os-separator", adminSurfaceClass)}>
             <CursorRepoAgentChatCard
               key={selectedRunId}
               runId={selectedRunId}

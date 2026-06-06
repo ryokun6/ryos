@@ -11,6 +11,11 @@ import { CaretRight } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { SectionHeader } from "./SectionHeader";
 import { Skeleton } from "./Skeleton";
+import {
+  adminAltRowBgClass,
+  adminTableHeadClass,
+  adminTableRowClass,
+} from "../../utils/adminStyles";
 import type { UserProfilePanelViewModel } from "./useUserProfilePanel";
 
 type Props = Pick<
@@ -69,13 +74,13 @@ export function UserProfilePanelHeartbeatsSection({
                 <Table className="table-fixed">
                   <TableHeader>
                     <TableRow className="text-[10px] border-none font-normal">
-                      <TableHead className="font-normal bg-neutral-100/50 h-[24px] w-[22%]">
+                      <TableHead className={cn(adminTableHeadClass, "h-[24px] w-[22%]")}>
                         {t("apps.admin.tableHeaders.status")}
                       </TableHead>
-                      <TableHead className="font-normal bg-neutral-100/50 h-[24px]">
+                      <TableHead className={cn(adminTableHeadClass, "h-[24px]")}>
                         {t("apps.admin.tableHeaders.message")}
                       </TableHead>
-                      <TableHead className="font-normal bg-neutral-100/50 h-[24px] whitespace-nowrap w-[25%]">
+                      <TableHead className={cn(adminTableHeadClass, "h-[24px] whitespace-nowrap w-[25%]")}>
                         {t("apps.admin.tableHeaders.time")}
                       </TableHead>
                     </TableRow>
@@ -88,8 +93,9 @@ export function UserProfilePanelHeartbeatsSection({
                           <TableRow
                             onClick={() => toggleHeartbeat(hb.id)}
                             className={cn(
-                              "border-none hover:bg-neutral-100/50 transition-colors cursor-pointer",
-                              index % 2 === 1 && "bg-neutral-200/30"
+                              adminTableRowClass,
+                              "cursor-pointer",
+                              index % 2 === 1 && adminAltRowBgClass,
                             )}
                           >
                             <TableCell className="whitespace-nowrap">
@@ -124,7 +130,7 @@ export function UserProfilePanelHeartbeatsSection({
                             <TableRow
                               className={cn(
                                 "border-none",
-                                index % 2 === 1 ? "bg-neutral-200/30" : ""
+                                index % 2 === 1 ? adminAltRowBgClass : ""
                               )}
                             >
                               <TableCell colSpan={3} className="pt-0 pb-3">

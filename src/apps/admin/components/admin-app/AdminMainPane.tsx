@@ -3,6 +3,7 @@ import { AdminSidebar } from "../AdminSidebar";
 import { CursorAgentsPanel } from "../CursorAgentsPanel";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { adminSurfaceClass } from "../../utils/adminStyles";
 import { AdminToolbar } from "./AdminToolbar";
 import { AdminImportStatusBar } from "./AdminImportStatusBar";
 import { AdminScrollContent } from "./AdminScrollContent";
@@ -188,7 +189,7 @@ export function AdminMainPane({
         isVisible={isSidebarVisible}
       />
 
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-white">
+      <div className={cn("flex min-w-0 flex-1 flex-col overflow-hidden", adminSurfaceClass)}>
         {!selectedUserProfile &&
           !selectedSongId &&
           activeSection !== "dashboard" &&

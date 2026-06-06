@@ -12,6 +12,13 @@ import { StatCard } from "./StatCard";
 import type { DashboardPanelViewModel } from "./useDashboardPanel";
 import type { DailyMetrics, ProductBreakdownSection } from "./types";
 import { formatCountryDisplay, formatDateLabel } from "./utils";
+import {
+  adminCardClass,
+  adminCardHeaderClass,
+  adminListDividerClass,
+  adminSectionLabelClass,
+  adminTrackBgClass,
+} from "../../utils/adminStyles";
 
 export function DashboardPanelView(props: DashboardPanelViewModel) {
   const {
@@ -262,16 +269,16 @@ export function DashboardPanelView(props: DashboardPanelViewModel) {
         ) : null}
 
         <div className="px-3 pb-3">
-          <div className="border border-neutral-200 rounded bg-white overflow-hidden">
-            <div className="px-3 py-2 border-b border-neutral-100 bg-neutral-50">
-              <span className="text-[10px] uppercase tracking-wide text-neutral-400">
+          <div className={adminCardClass}>
+            <div className={adminCardHeaderClass}>
+              <span className={adminSectionLabelClass}>
                 {t("apps.admin.dashboard.sections.topEndpoints")} ({rangeLabel})
               </span>
             </div>
             {topEndpoints.length === 0 ? (
               <EmptyState message={t("apps.admin.dashboard.empty.noData")} />
             ) : (
-              <div className="divide-y divide-neutral-100">
+              <div className={adminListDividerClass}>
                 {topEndpoints.slice(0, 10).map((ep) => (
                   <div
                     key={ep.endpoint}
@@ -281,7 +288,7 @@ export function DashboardPanelView(props: DashboardPanelViewModel) {
                       {ep.endpoint}
                     </span>
                     <div className="w-24 flex items-center gap-1.5">
-                      <div className="flex-1 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
+                      <div className={cn("flex-1 h-1.5 rounded-full overflow-hidden", adminTrackBgClass)}>
                         <div
                           className="h-full bg-indigo-400 rounded-full"
                           style={{
@@ -301,16 +308,16 @@ export function DashboardPanelView(props: DashboardPanelViewModel) {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 px-3 pb-3">
-          <div className="border border-neutral-200 rounded bg-white overflow-hidden">
-            <div className="px-3 py-2 border-b border-neutral-100 bg-neutral-50">
-              <span className="text-[10px] uppercase tracking-wide text-neutral-400">
+          <div className={adminCardClass}>
+            <div className={adminCardHeaderClass}>
+              <span className={adminSectionLabelClass}>
                 {t("apps.admin.dashboard.sections.statusCodes")}
               </span>
             </div>
             {statusCodes.length === 0 ? (
               <EmptyState message={t("apps.admin.dashboard.empty.noData")} />
             ) : (
-              <div className="divide-y divide-neutral-100">
+              <div className={adminListDividerClass}>
                 {statusCodes.map((sc) => (
                   <div
                     key={sc.status}
@@ -336,16 +343,16 @@ export function DashboardPanelView(props: DashboardPanelViewModel) {
             )}
           </div>
 
-          <div className="border border-neutral-200 rounded bg-white overflow-hidden">
-            <div className="px-3 py-2 border-b border-neutral-100 bg-neutral-50">
-              <span className="text-[10px] uppercase tracking-wide text-neutral-400">
+          <div className={adminCardClass}>
+            <div className={adminCardHeaderClass}>
+              <span className={adminSectionLabelClass}>
                 {t("apps.admin.dashboard.sections.aiUsageByUser")}
               </span>
             </div>
             {aiByUser.length === 0 ? (
               <EmptyState message={t("apps.admin.dashboard.empty.noAiUsage")} />
             ) : (
-              <div className="divide-y divide-neutral-100">
+              <div className={adminListDividerClass}>
                 {aiByUser.map((entry) => {
                   const rl = aiRateLimits.find(
                     (r) => r.identifier === entry.username
@@ -428,10 +435,10 @@ export function DashboardPanelView(props: DashboardPanelViewModel) {
                 {productSections.map((section) => (
                   <div
                     key={section.title}
-                    className="border border-neutral-200 rounded bg-white overflow-hidden"
+                    className={adminCardClass}
                   >
-                    <div className="px-3 py-2 border-b border-neutral-100 bg-neutral-50">
-                      <span className="text-[10px] uppercase tracking-wide text-neutral-400">
+                    <div className={adminCardHeaderClass}>
+                      <span className={adminSectionLabelClass}>
                         {section.title}
                       </span>
                     </div>
@@ -471,8 +478,8 @@ function TimeSeriesChartCard({
   height?: number;
 }) {
   return (
-    <div className="border border-neutral-200 rounded p-3 bg-white">
-      <div className="text-[10px] uppercase tracking-wide text-neutral-400 mb-2">
+    <div className={cn("rounded p-3", adminCardClass)}>
+      <div className={cn(adminSectionLabelClass, "mb-2")}>
         {title}
       </div>
       <MiniBarChart
