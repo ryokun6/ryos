@@ -11,6 +11,7 @@ import { ScreenSaverPicker } from "../ScreenSaverPicker";
 import type { LanguageCode } from "@/stores/useLanguageStore";
 import { themes } from "@/themes";
 import type { OsThemeId } from "@/themes/types";
+import { cn } from "@/lib/utils";
 import {
   getAccentOptions,
   type AccentChrome,
@@ -18,14 +19,65 @@ import {
 } from "@/themes/accents";
 import type { TabStyleConfig } from "@/utils/tabStyles";
 
-/** Small round color chip shown in the accent Select trigger + menu items. */
-function AccentSwatch({ color }: { color: string }) {
+/** Small color chip shown in the accent Select trigger + menu items. */
+function AccentSwatch({
+  chrome,
+  color,
+}: {
+  chrome: AccentChrome;
+  color: string;
+}) {
+  const isAqua = chrome === "aqua";
+
   return (
     <span
       aria-hidden="true"
-      className="h-3.5 w-3.5 flex-shrink-0 rounded-full border border-black/30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]"
-      style={{ background: color }}
-    />
+      className={cn(
+        "relative inline-block flex-shrink-0 overflow-hidden",
+        isAqua
+          ? "h-4 w-4 rounded-full border-0"
+          : "h-3.5 w-3.5 rounded-none border border-black shadow-none"
+      )}
+      style={{
+        background: color,
+        ...(isAqua
+          ? {
+              boxShadow:
+                "0 2px 3px rgba(0,0,0,0.2), 0 1px 1px rgba(0,0,0,0.3), inset 0 0 0 0.5px rgba(0,0,0,0.3), inset 0 1px 2px rgba(0,0,0,0.4), inset 0 2px 3px 1px rgba(255,255,255,0.22)",
+              backdropFilter: "blur(2px)",
+            }
+          : {}),
+      }}
+    >
+      {isAqua && (
+        <>
+          <span
+            className="pointer-events-none absolute left-1/2 z-[2] -translate-x-1/2"
+            style={{
+              top: "2px",
+              height: "30%",
+              width: "calc(100% - 8px)",
+              borderRadius: "9999px 9999px 2px 2px",
+              background:
+                "linear-gradient(rgba(255,255,255,0.9), rgba(255,255,255,0.25))",
+              filter: "blur(0.2px)",
+            }}
+          />
+          <span
+            className="pointer-events-none absolute left-1/2 z-[1] -translate-x-1/2"
+            style={{
+              bottom: "1px",
+              height: "38%",
+              width: "calc(100% - 4px)",
+              borderRadius: "4px 4px 9999px 9999px",
+              background:
+                "linear-gradient(rgba(255,255,255,0.15), rgba(255,255,255,0.55))",
+              filter: "blur(0.3px)",
+            }}
+          />
+        </>
+      )}
+    </span>
   );
 }
 
@@ -207,7 +259,7 @@ export function AppearanceTabContent({
                 <SelectTrigger className="w-[120px] flex-shrink-0">
                   <SelectValue placeholder={t("apps.control-panels.select")}>
                     <span className="flex items-center gap-2 min-w-0">
-                      <AccentSwatch color={selectedSwatch} />
+                      <AccentSwatch chrome={accentChrome} color={selectedSwatch} />
                       <span className="truncate">
                         {t(`apps.control-panels.accentColors.${accent}`)}
                       </span>
@@ -218,7 +270,7 @@ export function AppearanceTabContent({
                   {accentOptions.map((option) => (
                     <SelectItem key={option.id} value={option.id}>
                       <span className="flex items-center gap-2">
-                        <AccentSwatch color={option.swatch} />
+                        <AccentSwatch chrome={accentChrome} color={option.swatch} />
                         <span>
                           {t(`apps.control-panels.accentColors.${option.id}`)}
                         </span>
