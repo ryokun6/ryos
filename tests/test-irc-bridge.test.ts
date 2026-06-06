@@ -263,6 +263,20 @@ describe("IRC Bridge", () => {
     expect(client.calls.some((c) => c.type === "part" && c.args[0] === "#pieter")).toBe(true);
   });
 
+  test("repeated bindRoom for same room does not rejoin channel", async () => {
+    const room = makeIrcRoom();
+    await bridge.bindRoom(room);
+    await new Promise((r) => setTimeout(r, 5));
+
+    await bridge.bindRoom(room);
+
+    const client = fakeClients[0];
+    const joinCalls = client.calls.filter(
+      (c) => c.type === "join" && c.args[0] === "#pieter"
+    );
+    expect(joinCalls.length).toBe(1);
+  });
+
   test("multiple rooms bound to the same channel share one connection", async () => {
     const roomA = makeIrcRoom({ id: "rA" });
     const roomB = makeIrcRoom({ id: "rB" });
@@ -423,13 +437,12 @@ describe("IRC Bridge", () => {
 });
 
 describe("IRC Bridge wiring", () => {
-  test("rooms/index.ts wires notifyRoomBindingChange on create", async () => {
+  test("rooms/index.ts does not bind IRC rooms on create", async () => {
     const fs = await import("node:fs/promises");
     const src = await fs.readFile("api/rooms/index.ts", "utf-8");
-    expect(src).toContain("notifyRoomBindingChange");
-    expect(/notifyRoomBindingChange\s*\(\s*"bind"/.test(src)).toBe(true);
+    expect(/notifyRoomBindingChange\s*\(\s*"bind"/.test(src)).toBe(false);
     // The create route must honour the opt-out flag so IRC_BRIDGE_DISABLED=1
-    // never accidentally opens a socket.
+    // never accidentally validates against a disabled bridge.
     expect(src).toContain("isIrcBridgeEnabled");
     expect(src).toContain("getIrcServer");
     expect(src).toContain("ircServerId");
@@ -449,6 +462,23 @@ describe("IRC Bridge wiring", () => {
     expect(src).toContain("getIrcBridge");
     expect(/roomData\.type === "irc"/.test(src)).toBe(true);
     expect(src).toContain("isIrcBridgeEnabled");
+  });
+
+  test("presence switch syncs IRC bridge bindings", async () => {
+    const fs = await import("node:fs/promises");
+    const src = await fs.readFile("api/presence/switch.ts", "utf-8");
+    expect(src).toContain("syncRoomBindingForPresence");
+    expect(src).toContain("isIrcBridgeEnabled");
+    expect(src).toContain("prevCount");
+    expect(src).toContain("userCount");
+  });
+
+  test("IRC bridge initializes only active IRC rooms", async () => {
+    const fs = await import("node:fs/promises");
+    const src = await fs.readFile("api/_utils/irc/_bridge.ts", "utf-8");
+    expect(src).toContain("refreshRoomUserCount");
+    expect(src).toContain("if (userCount <= 0) continue");
+    expect(src).toContain("syncRoomBindingForPresence");
   });
 
   test("standalone server initialises the IRC bridge on startup", async () => {

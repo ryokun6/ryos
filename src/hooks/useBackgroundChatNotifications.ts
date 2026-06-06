@@ -13,6 +13,7 @@ import { removeChatRoomById, upsertChatRoom } from "@/utils/chatRoomList";
 import { shouldNotifyForRoomMessage } from "@/utils/chatNotifications";
 import { showRoomMessageNotification } from "@/utils/chatNotificationDisplay";
 import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
+import { shouldSubscribeToBackgroundRoomUpdates } from "@/utils/chatRoomSubscriptions";
 
 const getGlobalChannelName = (username?: string | null): string =>
   username
@@ -296,13 +297,18 @@ export function useBackgroundChatNotifications() {
       return;
     }
 
-    rooms.forEach((room) => {
+    const backgroundRoomsById = new Map(
+      rooms
+        .filter(shouldSubscribeToBackgroundRoomUpdates)
+        .map((room) => [room.id, room])
+    );
+
+    backgroundRoomsById.forEach((room) => {
       subscribeToRoomChannel(room.id);
     });
 
     Object.keys(roomChannelsRef.current).forEach((roomId) => {
-      const stillVisible = rooms.some((room) => room.id === roomId);
-      if (!stillVisible) {
+      if (!backgroundRoomsById.has(roomId)) {
         unsubscribeFromRoomChannel(roomId);
       }
     });

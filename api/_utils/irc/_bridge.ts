@@ -38,6 +38,7 @@ import {
   parseRoomData,
   setRoom,
 } from "../../rooms/_helpers/_redis.js";
+import { refreshRoomUserCount } from "../../rooms/_helpers/_presence.js";
 import { createRedis } from "../redis.js";
 import { broadcastNewMessage } from "../../rooms/_helpers/_pusher.js";
 import { CHAT_ROOM_PREFIX } from "../../rooms/_helpers/_constants.js";
@@ -138,8 +139,8 @@ export class IrcBridge extends EventEmitter {
   }
 
   /**
-   * Initialize the bridge by loading all Room records flagged as IRC rooms
-   * from Redis and connecting / joining them.
+   * Initialize the bridge by loading active IRC rooms from Redis. Rooms with no
+   * active presence stay unbound until a user enters them.
    */
   async initialize(): Promise<void> {
     if (this.initialized) return;
@@ -163,8 +164,11 @@ export class IrcBridge extends EventEmitter {
         if (room.type !== "irc") continue;
         if (!room.ircChannel) continue;
 
+        const userCount = await refreshRoomUserCount(room.id);
+        if (userCount <= 0) continue;
+
         try {
-          await this.bindRoom(room);
+          await this.bindRoom({ ...room, userCount });
         } catch (err) {
           console.error(
             `[IrcBridge] Failed to bind room ${room.id} during init:`,
@@ -197,11 +201,13 @@ export class IrcBridge extends EventEmitter {
       this.connectServer(server);
     }
 
-    const existing = server.channels.get(channel) || new Set<string>();
-    existing.add(room.id);
-    server.channels.set(channel, existing);
+    const existing = server.channels.get(channel);
+    const wasBound = Boolean(existing?.size);
+    const roomIds = existing || new Set<string>();
+    roomIds.add(room.id);
+    server.channels.set(channel, roomIds);
 
-    if (server.ready) {
+    if (server.ready && !wasBound) {
       if (!server.pendingJoins.has(channel)) {
         server.pendingJoins.add(channel);
         server.client?.join(channel);
@@ -713,6 +719,25 @@ export async function notifyRoomBindingChange(
     await bridge.bindRoom(room);
   } else {
     await bridge.unbindRoom(room);
+  }
+}
+
+/**
+ * Keep IRC bridge bindings aligned with active room presence.
+ */
+export async function syncRoomBindingForPresence(
+  room: Room,
+  userCount: number
+): Promise<void> {
+  if (room.type !== "irc") return;
+  const g = globalThis as GlobalWithBridge;
+  const bridge = g[GLOBAL_KEY];
+  if (!bridge) return;
+
+  if (userCount > 0) {
+    await bridge.bindRoom({ ...room, userCount });
+  } else {
+    await bridge.unbindRoom({ ...room, userCount });
   }
 }
 

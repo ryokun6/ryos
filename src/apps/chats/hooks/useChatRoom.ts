@@ -17,6 +17,7 @@ import { showRoomMessageNotification } from "@/utils/chatNotificationDisplay";
 import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { shouldSubscribeToForegroundRoomUpdates } from "@/utils/chatRoomSubscriptions";
 
 const getGlobalChannelName = (username?: string | null): string =>
   username
@@ -452,17 +453,35 @@ export function useChatRoom(
       const { unreadCounts } = useChatsStore.getState();
       const hadUnreads = newRoomId ? (unreadCounts[newRoomId] || 0) > 0 : false;
 
-      // Simply switch room; we keep subscriptions so notifications still arrive.
+      const previousRoom = currentRoomId
+        ? rooms.find((room) => room.id === currentRoomId)
+        : null;
+
       await switchRoom(newRoomId);
 
-      // Ensure we're subscribed to the new room channel (no-op if already)
-      if (newRoomId) {
-        subscribeToRoomChannel(newRoomId);
+      if (previousRoom?.type === "irc" && currentRoomId) {
+        unsubscribeFromRoomChannel(currentRoomId);
+      }
+
+      const nextRoom = newRoomId
+        ? rooms.find((room) => room.id === newRoomId)
+        : null;
+      if (
+        nextRoom &&
+        shouldSubscribeToForegroundRoomUpdates(nextRoom, newRoomId)
+      ) {
+        subscribeToRoomChannel(nextRoom.id);
       }
 
       return { hadUnreads };
     },
-    [currentRoomId, switchRoom, subscribeToRoomChannel]
+    [
+      currentRoomId,
+      rooms,
+      switchRoom,
+      subscribeToRoomChannel,
+      unsubscribeFromRoomChannel,
+    ]
   );
 
   const sendRoomMessage = useCallback(
@@ -658,23 +677,34 @@ export function useChatRoom(
     subscribeToGlobalChannel();
   }, [isWindowOpen, username, subscribeToGlobalChannel]);
 
-  // Maintain subscriptions for ALL visible rooms
+  // Maintain subscriptions for visible rooms; IRC rooms are live only while open.
   useEffect(() => {
     if (!isWindowOpen) return;
 
-    // Subscribe to any room we can see
+    const visibleRoomsById = new Map(rooms.map((room) => [room.id, room]));
+
     rooms.forEach((room) => {
-      subscribeToRoomChannel(room.id);
+      if (shouldSubscribeToForegroundRoomUpdates(room, currentRoomId)) {
+        subscribeToRoomChannel(room.id);
+      }
     });
 
-    // Unsubscribe from rooms no longer visible
     Object.keys(roomChannelsRef.current).forEach((roomId) => {
-      const stillVisible = rooms.some((room) => room.id === roomId);
-      if (!stillVisible) {
+      const room = visibleRoomsById.get(roomId);
+      if (
+        !room ||
+        !shouldSubscribeToForegroundRoomUpdates(room, currentRoomId)
+      ) {
         unsubscribeFromRoomChannel(roomId);
       }
     });
-  }, [isWindowOpen, rooms, subscribeToRoomChannel, unsubscribeFromRoomChannel]);
+  }, [
+    isWindowOpen,
+    rooms,
+    currentRoomId,
+    subscribeToRoomChannel,
+    unsubscribeFromRoomChannel,
+  ]);
 
   // Cleanup on unmount
   useEffect(() => {
