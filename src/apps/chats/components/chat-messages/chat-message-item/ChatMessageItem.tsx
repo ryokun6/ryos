@@ -28,7 +28,6 @@ export const ChatMessageItem = memo(function ChatMessageItem(
 
   return (
     <motion.div
-      key={messageKey}
       variants={CHAT_BUBBLE_VARIANTS}
       initial={isInitialMessage || isStaticGreeting ? "animate" : "initial"}
       animate="animate"

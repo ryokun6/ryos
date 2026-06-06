@@ -226,6 +226,7 @@ export function ChatMessagesContent({
     <AnimatePresence initial={false} mode="sync">
       {messages.length === 0 && !isRoomView && (
         <motion.div
+          key="empty-conversation"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="flex items-center gap-2 text-neutral-500 font-['Geneva-9'] text-[16px] antialiased h-[12px]"
@@ -286,7 +287,7 @@ export function ChatMessagesContent({
         );
       })}
       {/* Typing indicators for room view */}
-      <AnimatePresence>
+      <AnimatePresence key="typing-presence">
         {isRoomView && typingUsers && typingUsers.length > 0 && (
           <motion.div
             key="typing-indicator"

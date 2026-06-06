@@ -117,11 +117,12 @@ export const getMessageKey = (message: {
   parts?: Array<{ type: string; text?: string }>;
   metadata?: { createdAt?: Date | number | string };
 }): string => {
-  if (message.id) {
-    if (isSyntheticGreetingId(message.id)) {
-      return getSyntheticGreetingKey(message.id);
+  const id = message.id?.trim();
+  if (id) {
+    if (isSyntheticGreetingId(id)) {
+      return getSyntheticGreetingKey(id);
     }
-    return message.id;
+    return id;
   }
 
   const messageText = getMessageText(message);

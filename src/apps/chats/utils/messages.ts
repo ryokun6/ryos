@@ -22,9 +22,13 @@ export const buildDisplayMessages = ({
   username,
 }: BuildDisplayMessagesParams): DisplayMessage[] => {
   if (currentRoomId) {
-    return currentRoomMessagesLimited.map((msg) => ({
-      // For room messages, use clientId (if present) for stable rendering key
-      id: msg.clientId || msg.id,
+    return currentRoomMessagesLimited.map((msg, index) => ({
+      // For room messages, use clientId (if present) for stable rendering key.
+      // Fall back to server id + timestamp so optimistic rows never share "".
+      id:
+        msg.clientId?.trim() ||
+        msg.id?.trim() ||
+        `room-msg-${msg.timestamp}-${msg.username ?? "anon"}-${index}`,
       serverId: msg.id,
       role: msg.username === username ? "user" : "human",
       parts: [{ type: "text" as const, text: msg.content }],

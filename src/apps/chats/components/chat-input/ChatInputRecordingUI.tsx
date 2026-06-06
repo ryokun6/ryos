@@ -19,7 +19,6 @@ export function ChatInputRecordingUI({
 }: Props) {
   return (
     <motion.div
-      key="recording-ui"
       initial={{ opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.98 }}

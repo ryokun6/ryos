@@ -78,6 +78,7 @@ export function ChatInputView(vm: ChatInputViewModel) {
           <AnimatePresence mode="popLayout" initial={false}>
             {vm.isRecording ? (
               <ChatInputRecordingUI
+                key="recording-ui"
                 t={vm.t}
                 isMacTheme={vm.isMacTheme}
                 isXpTheme={vm.isXpTheme}
@@ -86,6 +87,7 @@ export function ChatInputView(vm: ChatInputViewModel) {
               />
             ) : (
               <ChatInputField
+                key="input-ui"
                 t={vm.t}
                 input={vm.input}
                 inputRef={vm.inputRef}
@@ -109,6 +111,7 @@ export function ChatInputView(vm: ChatInputViewModel) {
               />
             )}
             <ChatInputActionButtons
+              key="action-buttons"
               input={vm.input}
               selectedImage={vm.selectedImage}
               isMacTheme={vm.isMacTheme}
