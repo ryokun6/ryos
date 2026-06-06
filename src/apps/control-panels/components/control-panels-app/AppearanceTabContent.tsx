@@ -35,13 +35,47 @@ function AccentSwatch({
       className={cn(
         "relative inline-block flex-shrink-0 overflow-hidden",
         isAqua
-          ? "h-4 w-4 rounded-[5px] border border-black/25 shadow-[0_1px_1px_rgba(0,0,0,0.2),inset_0_0_0_1px_rgba(255,255,255,0.45)]"
+          ? "h-4 w-4 rounded-full border-0"
           : "h-3.5 w-3.5 rounded-none border border-black shadow-none"
       )}
-      style={{ background: color }}
+      style={{
+        background: color,
+        ...(isAqua
+          ? {
+              boxShadow:
+                "0 2px 3px rgba(0,0,0,0.2), 0 1px 1px rgba(0,0,0,0.3), inset 0 0 0 0.5px rgba(0,0,0,0.3), inset 0 1px 2px rgba(0,0,0,0.4), inset 0 2px 3px 1px rgba(255,255,255,0.22)",
+              backdropFilter: "blur(2px)",
+            }
+          : {}),
+      }}
     >
       {isAqua && (
-        <span className="absolute inset-x-[2px] top-[2px] h-[6px] rounded-[3px] bg-gradient-to-b from-white/85 to-white/15" />
+        <>
+          <span
+            className="pointer-events-none absolute left-1/2 z-[2] -translate-x-1/2"
+            style={{
+              top: "2px",
+              height: "30%",
+              width: "calc(100% - 8px)",
+              borderRadius: "9999px 9999px 2px 2px",
+              background:
+                "linear-gradient(rgba(255,255,255,0.9), rgba(255,255,255,0.25))",
+              filter: "blur(0.2px)",
+            }}
+          />
+          <span
+            className="pointer-events-none absolute left-1/2 z-[1] -translate-x-1/2"
+            style={{
+              bottom: "1px",
+              height: "38%",
+              width: "calc(100% - 4px)",
+              borderRadius: "4px 4px 9999px 9999px",
+              background:
+                "linear-gradient(rgba(255,255,255,0.15), rgba(255,255,255,0.55))",
+              filter: "blur(0.3px)",
+            }}
+          />
+        </>
       )}
     </span>
   );
