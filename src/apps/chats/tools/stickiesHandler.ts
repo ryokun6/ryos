@@ -51,7 +51,7 @@ export const handleStickiesControl = (
         const notes = store.notes;
         if (notes.length === 0) {
           stickyIdMap = undefined;
-          context.addToolResult({ tool: "stickiesControl", toolCallId, output: i18n.t("apps.chats.toolCalls.stickies.noStickies") });
+          context.addToolOutput({ tool: "stickiesControl", toolCallId, output: i18n.t("apps.chats.toolCalls.stickies.noStickies") });
           return;
         }
         // Create short ID mapping for efficient AI communication
@@ -64,7 +64,7 @@ export const handleStickiesControl = (
           position: n.position,
           size: n.size,
         }));
-        context.addToolResult({ 
+        context.addToolOutput({ 
           tool: "stickiesControl", 
           toolCallId, 
           output: `${i18n.t("apps.chats.toolCalls.stickies.foundStickies", { count: notes.length })}:\n${JSON.stringify(notesData, null, 2)}` 
@@ -84,7 +84,7 @@ export const handleStickiesControl = (
         }
         const colorKey = color || "yellow";
         const translatedColor = i18n.t(`common.colors.${colorKey}`);
-        context.addToolResult({ 
+        context.addToolOutput({ 
           tool: "stickiesControl", 
           toolCallId, 
           output: i18n.t("apps.chats.toolCalls.stickies.createdWithColor", { color: translatedColor }) 
@@ -94,13 +94,13 @@ export const handleStickiesControl = (
 
       case "update": {
         if (!id) {
-          context.addToolResult({ tool: "stickiesControl", toolCallId, state: "output-error", errorText: i18n.t("apps.chats.toolCalls.stickies.missingId") });
+          context.addToolOutput({ tool: "stickiesControl", toolCallId, state: "output-error", errorText: i18n.t("apps.chats.toolCalls.stickies.missingId") });
           return;
         }
         // Resolve short ID to full UUID if mapping exists
         const resolvedId = resolveId(id, stickyIdMap);
         if (!store.notes.find((n) => n.id === resolvedId)) {
-          context.addToolResult({ tool: "stickiesControl", toolCallId, state: "output-error", errorText: i18n.t("apps.chats.toolCalls.stickies.notFound", { id }) });
+          context.addToolOutput({ tool: "stickiesControl", toolCallId, state: "output-error", errorText: i18n.t("apps.chats.toolCalls.stickies.notFound", { id }) });
           return;
         }
         const updates: Record<string, unknown> = {};
@@ -109,49 +109,49 @@ export const handleStickiesControl = (
         if (position !== undefined) updates.position = position;
         if (size !== undefined) updates.size = size;
         if (Object.keys(updates).length === 0) {
-          context.addToolResult({ tool: "stickiesControl", toolCallId, state: "output-error", errorText: i18n.t("apps.chats.toolCalls.stickies.noUpdates") });
+          context.addToolOutput({ tool: "stickiesControl", toolCallId, state: "output-error", errorText: i18n.t("apps.chats.toolCalls.stickies.noUpdates") });
           return;
         }
         store.updateNote(resolvedId, updates);
-        context.addToolResult({ tool: "stickiesControl", toolCallId, output: i18n.t("apps.chats.toolCalls.stickies.updated") });
+        context.addToolOutput({ tool: "stickiesControl", toolCallId, output: i18n.t("apps.chats.toolCalls.stickies.updated") });
         break;
       }
 
       case "delete": {
         if (!id) {
-          context.addToolResult({ tool: "stickiesControl", toolCallId, state: "output-error", errorText: i18n.t("apps.chats.toolCalls.stickies.missingId") });
+          context.addToolOutput({ tool: "stickiesControl", toolCallId, state: "output-error", errorText: i18n.t("apps.chats.toolCalls.stickies.missingId") });
           return;
         }
         // Resolve short ID to full UUID if mapping exists
         const resolvedId = resolveId(id, stickyIdMap);
         if (!store.notes.find((n) => n.id === resolvedId)) {
-          context.addToolResult({ tool: "stickiesControl", toolCallId, state: "output-error", errorText: i18n.t("apps.chats.toolCalls.stickies.notFound", { id }) });
+          context.addToolOutput({ tool: "stickiesControl", toolCallId, state: "output-error", errorText: i18n.t("apps.chats.toolCalls.stickies.notFound", { id }) });
           return;
         }
         store.deleteNote(resolvedId);
-        context.addToolResult({ tool: "stickiesControl", toolCallId, output: i18n.t("apps.chats.toolCalls.stickies.deleted") });
+        context.addToolOutput({ tool: "stickiesControl", toolCallId, output: i18n.t("apps.chats.toolCalls.stickies.deleted") });
         break;
       }
 
       case "clear": {
         const count = store.notes.length;
         if (count === 0) {
-          context.addToolResult({ tool: "stickiesControl", toolCallId, output: i18n.t("apps.chats.toolCalls.stickies.nothingToClear") });
+          context.addToolOutput({ tool: "stickiesControl", toolCallId, output: i18n.t("apps.chats.toolCalls.stickies.nothingToClear") });
           return;
         }
         store.clearAllNotes();
         // Clear the ID mapping since all notes are removed
         stickyIdMap = undefined;
-        context.addToolResult({ tool: "stickiesControl", toolCallId, output: i18n.t("apps.chats.toolCalls.stickies.cleared", { count }) });
+        context.addToolOutput({ tool: "stickiesControl", toolCallId, output: i18n.t("apps.chats.toolCalls.stickies.cleared", { count }) });
         break;
       }
 
       default:
-        context.addToolResult({ tool: "stickiesControl", toolCallId, state: "output-error", errorText: i18n.t("apps.chats.toolCalls.stickies.invalidAction", { action }) });
+        context.addToolOutput({ tool: "stickiesControl", toolCallId, state: "output-error", errorText: i18n.t("apps.chats.toolCalls.stickies.invalidAction", { action }) });
     }
   } catch (error) {
     console.error("[stickiesControl] Error:", error);
-    context.addToolResult({
+    context.addToolOutput({
       tool: "stickiesControl",
       toolCallId,
       state: "output-error",

@@ -120,13 +120,13 @@ export const handleSettings = (
   if (changes.length > 0) {
     const resultMessage =
       changes.length === 1 ? changes[0] : changes.join(". ") + ".";
-    context.addToolResult({
+    context.addToolOutput({
       tool: "settings",
       toolCallId,
       output: resultMessage,
     });
   } else {
-    context.addToolResult({
+    context.addToolOutput({
       tool: "settings",
       toolCallId,
       output: i18n.t("apps.chats.toolCalls.settingsNoChanges"),

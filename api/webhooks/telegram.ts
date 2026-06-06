@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { stepCountIs, streamText, type ModelMessage, type ToolSet } from "ai";
+import { type ModelMessage, type ToolSet } from "ai";
 import { initLogger } from "../_utils/_logging.js";
 import createRedis from "../_utils/redis.js";
 import * as RateLimit from "../_utils/_rate-limit.js";
@@ -34,12 +34,11 @@ import {
   prepareRyoConversationModelInput,
   type SimpleConversationMessage,
 } from "../_utils/ryo-conversation.js";
+import { getTelegramModel } from "../_utils/_aiModels.js";
 import {
-  TELEGRAM_DEFAULT_MODEL,
-  SUPPORTED_AI_MODELS,
-  getOpenAIProviderOptions,
-  type SupportedModel,
-} from "../_utils/_aiModels.js";
+  createRyoToolLoopAgent,
+  textStreamFromFullStream,
+} from "../_utils/ryo-agent.js";
 import {
   generateElevenLabsSpeech,
   transcribeAudioBuffer,
@@ -99,22 +98,6 @@ function getTelegramWebhookSecret(req: VercelRequest): string | null {
     return value[0] || null;
   }
   return typeof value === "string" ? value : null;
-}
-
-export function getTelegramModel(
-  log: (...args: unknown[]) => void,
-  env: NodeJS.ProcessEnv = process.env
-): SupportedModel {
-  const raw = env.TELEGRAM_BOT_MODEL as SupportedModel | undefined;
-  if (raw && SUPPORTED_AI_MODELS.includes(raw)) {
-    return raw;
-  }
-  if (raw) {
-    log(
-      `Unsupported TELEGRAM_BOT_MODEL "${raw}", falling back to ${TELEGRAM_DEFAULT_MODEL}`
-    );
-  }
-  return TELEGRAM_DEFAULT_MODEL;
 }
 
 async function sendTelegramInfoMessage(
@@ -626,13 +609,7 @@ export default async function handler(
   const telegramModel = getTelegramModel((message, ...rest) =>
     logger.info(String(message), rest.length > 0 ? rest : undefined)
   );
-  const {
-    selectedModel,
-    tools,
-    enrichedMessages,
-    loadedSections,
-    staticSystemPrompt,
-  } = await prepareRyoConversationModelInput({
+  const preparedConversation = await prepareRyoConversationModelInput({
     channel: "telegram",
     messages: conversationMessages,
     username: linkedAccount.username,
@@ -647,6 +624,8 @@ export default async function handler(
     logError: (...args: unknown[]) =>
       logger.error(`[Telegram:${linkedAccount.username}]`, args),
   });
+  const { tools, enrichedMessages, loadedSections, staticSystemPrompt } =
+    preparedConversation;
 
   logger.info("Telegram prompt sections loaded", {
     username: linkedAccount.username,
@@ -682,15 +661,24 @@ export default async function handler(
       }
     );
 
-    const result = streamText({
-      model: selectedModel,
-      messages: finalMessages,
+    const agent = createRyoToolLoopAgent({
+      preset: "telegram",
+      prepared: preparedConversation,
       tools: toolsWithStatus,
-      temperature: 0.7,
-      maxOutputTokens: 4000,
-      stopWhen: stepCountIs(6),
-      providerOptions: getOpenAIProviderOptions(telegramModel),
-      onChunk: async ({ chunk }) => {
+    });
+
+    const result = await agent.stream({
+      messages: finalMessages,
+      onStepFinish: async (stepResult) => {
+        if (stepResult.toolResults.length > 0) {
+          await statusReporter.markThinking();
+        }
+      },
+    });
+
+    const textStream = textStreamFromFullStream(
+      result.fullStream,
+      async (chunk) => {
         if (chunk.type !== "tool-input-start" && chunk.type !== "tool-call") {
           return;
         }
@@ -718,18 +706,13 @@ export default async function handler(
           providerToolCall.toolName,
           providerToolCall.input
         );
-      },
-      onStepFinish: async (stepResult) => {
-        if (stepResult.toolResults.length > 0) {
-          await statusReporter.markThinking();
-        }
-      },
-    });
+      }
+    );
 
     const { text: replyText, previewMode } = shouldSendVoiceOnlyReply
       ? {
           text: await collectTelegramReplyText({
-            textStream: result.textStream,
+            textStream,
             formatText: simplifyTelegramCitationDisplay,
           }),
           previewMode: "none" as const,
@@ -738,7 +721,7 @@ export default async function handler(
           botToken,
           chatId: parsedUpdate.chatId,
           draftId: parsedUpdate.updateId,
-          textStream: result.textStream,
+          textStream,
           replyToMessageId: parsedUpdate.messageId,
           formatText: simplifyTelegramCitationDisplay,
           onBeforePreview: async () => {

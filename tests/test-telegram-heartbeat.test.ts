@@ -30,8 +30,10 @@ import {
   TELEGRAM_HEARTBEAT_TOPIC,
   TELEGRAM_HEARTBEAT_TARGET_USERNAME,
 } from "../api/_utils/telegram-heartbeat";
-import { TELEGRAM_DEFAULT_MODEL } from "../api/_utils/_aiModels.js";
-import { getTelegramModel } from "../api/cron/telegram-heartbeat.js";
+import {
+  TELEGRAM_DEFAULT_MODEL,
+  getTelegramModel,
+} from "../api/_utils/_aiModels.js";
 import { prepareRyoConversationModelInput } from "../api/_utils/ryo-conversation";
 
 class FakeRedis {

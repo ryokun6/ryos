@@ -221,7 +221,7 @@ const handlePlaybackState = (
     if (stateChanges.length > 0) {
       resultParts.push(...stateChanges);
     }
-    context.addToolResult({
+    context.addToolOutput({
       tool: "karaokeControl",
       toolCallId,
       output: buildResultMessage(resultParts),
@@ -269,7 +269,7 @@ const handlePlaybackState = (
   }
 
   const resultParts = [playbackState, ...stateChanges];
-  context.addToolResult({
+  context.addToolOutput({
     tool: "karaokeControl",
     toolCallId,
     output: buildResultMessage(resultParts),
@@ -345,7 +345,7 @@ const handlePlayKnown = (
     const errorMsg = i18n.t("apps.chats.toolCalls.karaokeSongNotFound", {
       defaultValue: "Could not find the requested song in the library",
     });
-    context.addToolResult({
+    context.addToolOutput({
       tool: "karaokeControl",
       toolCallId,
       output: errorMsg,
@@ -374,7 +374,7 @@ const handlePlayKnown = (
     if (stateChanges.length > 0) {
       resultParts.push(...stateChanges);
     }
-    context.addToolResult({
+    context.addToolOutput({
       tool: "karaokeControl",
       toolCallId,
       output: buildResultMessage(resultParts),
@@ -391,7 +391,7 @@ const handlePlayKnown = (
     : i18n.t("apps.chats.toolCalls.playing", { title: track.title });
 
   const resultParts = [trackDescForMsg, ...stateChanges];
-  context.addToolResult({
+  context.addToolOutput({
     tool: "karaokeControl",
     toolCallId,
     output: buildResultMessage(resultParts),
@@ -415,7 +415,7 @@ const handleAddAndPlay = async (
     const errorMsg = i18n.t("apps.chats.toolCalls.karaokeNoIdProvided", {
       defaultValue: "No YouTube ID or URL provided for addAndPlay",
     });
-    context.addToolResult({
+    context.addToolOutput({
       tool: "karaokeControl",
       toolCallId,
       output: errorMsg,
@@ -458,7 +458,7 @@ const handleAddAndPlay = async (
         resultParts.push(...stateChanges);
       }
 
-      context.addToolResult({
+      context.addToolOutput({
         tool: "karaokeControl",
         toolCallId,
         output: buildResultMessage(resultParts),
@@ -474,7 +474,7 @@ const handleAddAndPlay = async (
         id,
         defaultValue: `Failed to add ${id} to library`,
       });
-      context.addToolResult({
+      context.addToolOutput({
         tool: "karaokeControl",
         toolCallId,
         output: errorMsg,
@@ -499,7 +499,7 @@ const handleAddAndPlay = async (
       });
     }
 
-    context.addToolResult({
+    context.addToolOutput({
       tool: "karaokeControl",
       toolCallId,
       output: errorMsg,
@@ -543,7 +543,7 @@ const handleNavigation = (
     if (stateChanges.length > 0) {
       resultParts.push(...stateChanges);
     }
-    context.addToolResult({
+    context.addToolOutput({
       tool: "karaokeControl",
       toolCallId,
       output: buildResultMessage(resultParts),
@@ -561,7 +561,7 @@ const handleNavigation = (
   if (stateChanges.length > 0) {
     resultParts.push(...stateChanges);
   }
-  context.addToolResult({
+  context.addToolOutput({
     tool: "karaokeControl",
     toolCallId,
     output: buildResultMessage(resultParts),
@@ -616,7 +616,7 @@ export const handleKaraokeControl = async (
   const stateChanges = applyKaraokeSettings(enableTranslation, enableFullscreen);
 
   if (stateChanges.length > 0) {
-    context.addToolResult({
+    context.addToolOutput({
       tool: "karaokeControl",
       toolCallId,
       output: buildResultMessage(stateChanges),
@@ -626,7 +626,7 @@ export const handleKaraokeControl = async (
 
   // Always resolve the tool call to prevent hangs
   console.warn(`[ToolCall] karaokeControl: Unhandled action "${normalizedAction}".`);
-  context.addToolResult({
+  context.addToolOutput({
     tool: "karaokeControl",
     toolCallId,
     state: "output-error",

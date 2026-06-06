@@ -1,15 +1,9 @@
-import {
-  streamText,
-  generateText,
-  smoothStream,
-  stepCountIs,
-} from "ai";
+import { generateText, smoothStream } from "ai";
 import { geolocation } from "@vercel/functions";
 import { google } from "@ai-sdk/google";
 import {
   DEFAULT_MODEL,
   SUPPORTED_AI_MODELS,
-  getOpenAIProviderOptions,
   type SupportedModel,
 } from "./_utils/_aiModels.js";
 import {
@@ -26,7 +20,16 @@ import { checkAndIncrementAIMessageCount } from "./_utils/_rate-limit.js";
 import { apiHandler } from "./_utils/api-handler.js";
 import { getHeader } from "./_utils/request-helpers.js";
 import { resolveIpGeolocation } from "./_utils/_geolocation.js";
+import { createRyoToolLoopAgent } from "./_utils/ryo-agent.js";
 type SystemState = RyoConversationSystemState;
+
+const CHAT_MODEL_ALIASES: Record<string, SupportedModel> = {
+  "claude-sonnet": "sonnet-4.6",
+};
+
+function normalizeChatModel(model: string): string {
+  return CHAT_MODEL_ALIASES[model] ?? model;
+}
 
 
 // Node.js runtime configuration
@@ -67,7 +70,7 @@ export default apiHandler<{
     };
 
     // Use query parameter if available, otherwise use body parameter, otherwise use default
-    const model = queryModel || bodyModel || DEFAULT_MODEL;
+    const model = normalizeChatModel(queryModel || bodyModel || DEFAULT_MODEL);
 
     if (!messages || !Array.isArray(messages)) {
       logger.error("400 Error: Invalid messages format", { messages });
@@ -294,13 +297,7 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
       }
     }
 
-    const {
-      selectedModel,
-      tools,
-      enrichedMessages,
-      loadedSections,
-      staticSystemPrompt,
-    } = await prepareRyoConversationModelInput({
+    const preparedConversation = await prepareRyoConversationModelInput({
       channel: "chat",
       messages: messages as SimpleConversationMessage[],
       systemState,
@@ -311,6 +308,8 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
       logError,
       preloadedMemoryContext: loadedMemoryContext,
     });
+    const { enrichedMessages, loadedSections, staticSystemPrompt } =
+      preparedConversation;
 
     log(
       `Context-aware prompts (${
@@ -329,42 +328,31 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
       log(`Message ${index} [${msg.role}]: ${contentStr.substring(0, 100)}...`);
     });
 
-    const result = streamText({
-      model: selectedModel,
+    const agent = createRyoToolLoopAgent({
+      preset: "chat",
+      prepared: preparedConversation,
+    });
+
+    const result = await agent.stream({
       messages: enrichedMessages,
-      tools,
-      temperature: 0.7,
-      maxOutputTokens: 48000, // Increased from 6000 to prevent code generation cutoff
-      stopWhen: stepCountIs(10), // Allow up to 10 steps for multi-tool workflows (agent loop)
       experimental_transform: smoothStream({
         chunking: /[\u4E00-\u9FFF]|\S+\s+/,
       }),
-      headers: {
-        // Enable fine-grained tool streaming for Anthropic models
-        ...(model.startsWith("claude")
-          ? { "anthropic-beta": "fine-grained-tool-streaming-2025-05-14" }
-          : {}),
-      },
-      providerOptions: getOpenAIProviderOptions(model as SupportedModel),
     });
 
-    // Set CORS headers
     res.setHeader("Access-Control-Allow-Origin", validOrigin);
     
-    // Use pipeUIMessageStreamToResponse for Node.js streaming
     result.pipeUIMessageStreamToResponse(res, {
       status: 200,
     });
   } catch (error) {
     logger.error("Chat API error", error);
 
-    // Set CORS headers
     if (validOrigin) {
       res.setHeader("Access-Control-Allow-Origin", validOrigin);
     }
     res.setHeader("Content-Type", "application/json");
 
-    // Check if error is a SyntaxError (likely from parsing JSON)
     if (error instanceof SyntaxError) {
       logger.error(`Invalid JSON`, error.message);
       logger.response(400, Date.now() - startTime);

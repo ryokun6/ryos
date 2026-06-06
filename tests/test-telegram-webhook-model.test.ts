@@ -1,6 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { TELEGRAM_DEFAULT_MODEL } from "../api/_utils/_aiModels.js";
-import { getTelegramModel } from "../api/webhooks/telegram.js";
+import {
+  TELEGRAM_DEFAULT_MODEL,
+  getTelegramModel,
+} from "../api/_utils/_aiModels.js";
 
 describe("telegram webhook model selection", () => {
   test("defaults to gpt-5.5 when TELEGRAM_BOT_MODEL is unset", () => {

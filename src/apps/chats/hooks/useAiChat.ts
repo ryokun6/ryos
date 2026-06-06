@@ -73,24 +73,22 @@ import {
   type TvControlInput,
 } from "../tools";
 
-/**
- * NOTE: Future refactoring opportunity (tracked in codebase analysis)
- * 
- * Consider consolidating more state from ChatsAppComponent into this hook:
- * - AI chat state (currently using useChat hook here)
- * - Message processing (app control markup)
- * - System state generation
- * - Dialog states (clear, save)
- * 
- * This would make the component lighter and improve testability.
- * Priority: Low - current architecture works well for the use case.
- */
-
-// Track newly created TextEdit instances for fallback mechanism
 const recentlyCreatedTextEditInstances = new Map<
   string,
   { instanceId: string; path: string; timestamp: number }
 >();
+
+const SERVER_EXECUTED_TOOL_NAMES = new Set([
+  "generateHtml",
+  "searchSongs",
+  "memoryWrite",
+  "memoryRead",
+  "memoryDelete",
+  "webFetch",
+  "cursorCloudAgent",
+  "listCursorCloudAgentRuns",
+  "mapsSearchPlaces",
+]);
 
 // Helper to add a newly created instance to tracking
 const trackNewTextEditInstance = (instanceId: string, path: string) => {
@@ -347,7 +345,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     ((message: UIMessage) => void) | null
   >(null);
 
-  // --- AI Chat Hook (Vercel AI SDK v5) ---
+  // --- AI Chat Hook (Vercel AI SDK v6) ---
   const {
     messages: currentSdkMessages,
     status,
@@ -356,20 +354,20 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     setMessages: setSdkMessages,
     sendMessage,
     regenerate,
-    addToolResult,
+    addToolOutput,
   } = useChat({
     // Initialize from store
     messages: aiMessages,
 
     experimental_throttle: 50,
 
-    // Automatically submit when all tool results are available
+    // Automatically submit when all tool outputs are available
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
 
     transport: chatTransport,
 
     async onToolCall({ toolCall }) {
-      // In AI SDK 5, client-side tool execution requires calling addToolResult
+      // Client-side tool execution requires returning output to the chat.
       // Short delay to allow the UI to render the "call" state
       await new Promise<void>((resolve) => setTimeout(resolve, 120));
 
@@ -381,13 +379,17 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       // Create tool context for extracted handlers
       const toolContext: ToolContext = {
         launchApp: (appId, options) => launchApp(appId as AppId, options),
-        addToolResult,
+        addToolOutput,
         detectUserOS,
       };
 
       try {
-        // Default result message
         let result: string = "Tool executed successfully";
+
+        if (SERVER_EXECUTED_TOOL_NAMES.has(toolCall.toolName)) {
+          console.log(`[ToolCall] ${toolCall.toolName} (server-side):`, toolCall.input);
+          return;
+        }
 
         switch (toolCall.toolName) {
           case "aquarium": {
@@ -417,7 +419,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               toolCall.toolCallId,
               toolContext
             );
-            result = ""; // Handler manages its own result
+            result = "";
             break;
           }
           case "karaokeControl": {
@@ -426,73 +428,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               toolCall.toolCallId,
               toolContext
             );
-            result = ""; // Handler manages its own result
-            break;
-          }
-          // === Server-side tools (executed on the server via `execute` function) ===
-          // These tools have their results streamed from the server.
-          // We must NOT call addToolResult here, as it would race with and
-          // potentially overwrite the real server result.
-          case "generateHtml": {
-            const { html } = toolCall.input as { html: string };
-            console.log("[ToolCall] generateHtml (server-side):", {
-              htmlLength: html?.length ?? 0,
-            });
-            // Result comes from server — do not call addToolResult
             result = "";
             break;
           }
-          case "searchSongs": {
-            console.log("[ToolCall] searchSongs (server-side):", toolCall.input);
-            // Result comes from server — do not call addToolResult
-            result = "";
-            break;
-          }
-          case "memoryWrite": {
-            console.log("[ToolCall] memoryWrite (server-side):", toolCall.input);
-            // Result comes from server — do not call addToolResult
-            result = "";
-            break;
-          }
-          case "memoryRead": {
-            console.log("[ToolCall] memoryRead (server-side):", toolCall.input);
-            // Result comes from server — do not call addToolResult
-            result = "";
-            break;
-          }
-          case "memoryDelete": {
-            console.log("[ToolCall] memoryDelete (server-side):", toolCall.input);
-            // Result comes from server — do not call addToolResult
-            result = "";
-            break;
-          }
-          case "webFetch": {
-            console.log("[ToolCall] webFetch (server-side):", toolCall.input);
-            // Result comes from server — do not call addToolResult
-            result = "";
-            break;
-          }
-          case "cursorCloudAgent": {
-            console.log("[ToolCall] cursorCloudAgent (server-side):", toolCall.input);
-            // Result comes from server — do not call addToolResult
-            result = "";
-            break;
-          }
-          case "listCursorCloudAgentRuns": {
-            console.log(
-              "[ToolCall] listCursorCloudAgentRuns (server-side):",
-              toolCall.input
-            );
-            result = "";
-            break;
-          }
-          case "mapsSearchPlaces": {
-            console.log("[ToolCall] mapsSearchPlaces (server-side):", toolCall.input);
-            // Result comes from server — do not call addToolResult
-            result = "";
-            break;
-          }
-          // === Unified VFS Tools ===
           case "list": {
             const { path, query, limit, librarySource } = toolCall.input as {
               path: string;
@@ -502,7 +440,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             };
 
             if (!path) {
-              addToolResult({
+              addToolOutput({
                 tool: toolCall.toolName,
                 toolCallId: toolCall.toolCallId,
                 state: "output-error",
@@ -589,7 +527,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                       ? `No songs matched "${query}" in ${libraryName}.`
                       : i18n.t("apps.chats.toolCalls.musicLibraryEmpty");
 
-                addToolResult({
+                addToolOutput({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
                   output: resultMessage,
@@ -671,7 +609,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                     ? i18n.t("apps.chats.toolCalls.noSharedAppletsMatched", { query })
                     : i18n.t("apps.chats.toolCalls.noSharedAppletsAvailable");
 
-                addToolResult({
+                addToolOutput({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
                   output: resultMessage,
@@ -694,7 +632,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 const appsMessage = apps.length === 1
                   ? i18n.t("apps.chats.toolCalls.foundApplicationsList", { count: apps.length })
                   : i18n.t("apps.chats.toolCalls.foundApplicationsListPlural", { count: apps.length });
-                addToolResult({
+                addToolOutput({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
                   output: `${appsMessage}:\n${JSON.stringify(apps, null, 2)}`,
@@ -726,14 +664,14 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                       : i18n.t("apps.chats.toolCalls.foundFileTypePlural", { count: fileList.length, fileType })}:\n${JSON.stringify(fileList, null, 2)}`
                   : i18n.t("apps.chats.toolCalls.noFileTypeFound", { fileType, path });
 
-                addToolResult({
+                addToolOutput({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
                   output: resultMessage,
                 });
                 result = "";
               } else {
-                addToolResult({
+                addToolOutput({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
                   state: "output-error",
@@ -743,7 +681,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               }
             } catch (err) {
               console.error("list error:", err);
-              addToolResult({
+              addToolOutput({
                 tool: toolCall.toolName,
                 toolCallId: toolCall.toolCallId,
                 state: "output-error",
@@ -757,7 +695,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             const { path } = toolCall.input as { path: string };
 
             if (!path) {
-              addToolResult({
+              addToolOutput({
                 tool: toolCall.toolName,
                 toolCallId: toolCall.toolCallId,
                 state: "output-error",
@@ -794,7 +732,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 const playingMessage = track.artist
                   ? i18n.t("apps.chats.toolCalls.playingTrackByArtist", { title: track.title, artist: track.artist })
                   : i18n.t("apps.chats.toolCalls.playingTrack", { title: track.title });
-                addToolResult({
+                addToolOutput({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
                   output: playingMessage,
@@ -824,7 +762,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   initialData: { path: "", content: "", shareCode: shareId },
                 });
 
-                addToolResult({
+                addToolOutput({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
                   output: i18n.t("apps.chats.toolCalls.openedApplet", { appletName }),
@@ -838,7 +776,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 }
 
                 launchApp(appId);
-                addToolResult({
+                addToolOutput({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
                   output: i18n.t("apps.chats.toolCalls.launchedApp", { appName: getTranslatedAppName(appId) }),
@@ -877,7 +815,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   initialData: { path, content },
                 });
 
-                addToolResult({
+                addToolOutput({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
                   output: i18n.t("apps.chats.toolCalls.openedFile", { fileName: fileItem.name }),
@@ -898,7 +836,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 if (existingInstanceId) {
                   if (appStore.instances[existingInstanceId]) {
                     appStore.bringInstanceToForeground(existingInstanceId);
-                    addToolResult({
+                    addToolOutput({
                       tool: toolCall.toolName,
                       toolCallId: toolCall.toolCallId,
                       output: i18n.t("apps.chats.toolCalls.openedDocument", {
@@ -918,7 +856,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 const recentInstanceId = getRecentTextEditInstanceForPath(path);
                 if (recentInstanceId) {
                   appStore.bringInstanceToForeground(recentInstanceId);
-                  addToolResult({
+                  addToolOutput({
                     tool: toolCall.toolName,
                     toolCallId: toolCall.toolCallId,
                     output: i18n.t("apps.chats.toolCalls.openedDocument", {
@@ -956,14 +894,14 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   initialData: { path, content },
                 });
 
-                addToolResult({
+                addToolOutput({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
                   output: i18n.t("apps.chats.toolCalls.openedDocument", { fileName: fileItem.name }),
                 });
                 result = "";
               } else {
-                addToolResult({
+                addToolOutput({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
                   state: "output-error",
@@ -973,7 +911,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               }
             } catch (err) {
               console.error("open error:", err);
-              addToolResult({
+              addToolOutput({
                 tool: toolCall.toolName,
                 toolCallId: toolCall.toolCallId,
                 state: "output-error",
@@ -987,7 +925,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             const { path } = toolCall.input as { path: string };
 
             if (!path) {
-              addToolResult({
+              addToolOutput({
                 tool: toolCall.toolName,
                 toolCallId: toolCall.toolCallId,
                 state: "output-error",
@@ -1030,7 +968,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   content: typeof data?.content === "string" ? data.content : "",
                 };
 
-                addToolResult({
+                addToolOutput({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
                   output: JSON.stringify(payload, null, 2),
@@ -1067,14 +1005,14 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 }
 
                 const fileLabel = isApplet ? i18n.t("apps.chats.toolCalls.applet") : i18n.t("apps.chats.toolCalls.document");
-                addToolResult({
+                addToolOutput({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
                   output: i18n.t("apps.chats.toolCalls.fileContent", { fileLabel, fileName: fileItem.name, charCount: content.length }) + `\n\n${content}`,
                 });
                 result = "";
               } else {
-                addToolResult({
+                addToolOutput({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
                   state: "output-error",
@@ -1084,7 +1022,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               }
             } catch (err) {
               console.error("read error:", err);
-              addToolResult({
+              addToolOutput({
                 tool: toolCall.toolName,
                 toolCallId: toolCall.toolCallId,
                 state: "output-error",
@@ -1102,7 +1040,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             };
 
             if (!path) {
-              addToolResult({
+              addToolOutput({
                 tool: toolCall.toolName,
                 toolCallId: toolCall.toolCallId,
                 state: "output-error",
@@ -1114,7 +1052,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
             // Validate path format for documents
             if (!path.startsWith("/Documents/")) {
-              addToolResult({
+              addToolOutput({
                 tool: toolCall.toolName,
                 toolCallId: toolCall.toolCallId,
                 state: "output-error",
@@ -1127,7 +1065,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             // Validate filename has .md extension
             const fileName = path.split("/").pop() || "";
             if (!fileName.endsWith(".md")) {
-              addToolResult({
+              addToolOutput({
                 tool: toolCall.toolName,
                 toolCallId: toolCall.toolCallId,
                 state: "output-error",
@@ -1138,7 +1076,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             }
 
             if (!content && mode === "overwrite") {
-              addToolResult({
+              addToolOutput({
                 tool: toolCall.toolName,
                 toolCallId: toolCall.toolCallId,
                 state: "output-error",
@@ -1226,7 +1164,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               }
 
               const outputKey = isNewFile ? "createdDocument" : "updatedDocument";
-              addToolResult({
+              addToolOutput({
                 tool: toolCall.toolName,
                 toolCallId: toolCall.toolCallId,
                 output: i18n.t(`apps.chats.toolCalls.${outputKey}`, { path }),
@@ -1234,7 +1172,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               result = "";
             } catch (err) {
               console.error("write error:", err);
-              addToolResult({
+              addToolOutput({
                 tool: toolCall.toolName,
                 toolCallId: toolCall.toolCallId,
                 state: "output-error",
@@ -1252,7 +1190,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             };
 
             if (!path || typeof old_string !== "string" || typeof new_string !== "string") {
-              addToolResult({
+              addToolOutput({
                 tool: toolCall.toolName,
                 toolCallId: toolCall.toolCallId,
                 state: "output-error",
@@ -1295,7 +1233,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 const occurrences = normalizedExisting.split(normalizedOldString).length - 1;
                 
                 if (occurrences === 0) {
-                  addToolResult({
+                  addToolOutput({
                     tool: toolCall.toolName,
                     toolCallId: toolCall.toolCallId,
                     state: "output-error",
@@ -1306,7 +1244,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 }
 
                 if (occurrences > 1) {
-                  addToolResult({
+                  addToolOutput({
                     tool: toolCall.toolName,
                     toolCallId: toolCall.toolCallId,
                     state: "output-error",
@@ -1342,7 +1280,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   }
                 }
 
-                addToolResult({
+                addToolOutput({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
                   output: i18n.t("apps.chats.toolCalls.editedDocument", { path }),
@@ -1373,7 +1311,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 const occurrences = normalizedExisting.split(normalizedOldString).length - 1;
                 
                 if (occurrences === 0) {
-                  addToolResult({
+                  addToolOutput({
                     tool: toolCall.toolName,
                     toolCallId: toolCall.toolCallId,
                     state: "output-error",
@@ -1384,7 +1322,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 }
 
                 if (occurrences > 1) {
-                  addToolResult({
+                  addToolOutput({
                     tool: toolCall.toolName,
                     toolCallId: toolCall.toolCallId,
                     state: "output-error",
@@ -1409,14 +1347,14 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   content: updatedContent,
                 });
 
-                addToolResult({
+                addToolOutput({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
                   output: i18n.t("apps.chats.toolCalls.editedApplet", { path }),
                 });
                 result = "";
               } else {
-                addToolResult({
+                addToolOutput({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
                   state: "output-error",
@@ -1426,7 +1364,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               }
             } catch (err) {
               console.error("edit error:", err);
-              addToolResult({
+              addToolOutput({
                 tool: toolCall.toolName,
                 toolCallId: toolCall.toolCallId,
                 state: "output-error",
@@ -1442,7 +1380,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               toolCall.toolCallId,
               toolContext
             );
-            result = ""; // Handler manages its own result
+            result = "";
             break;
           }
           case "stickiesControl": {
@@ -1451,7 +1389,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               toolCall.toolCallId,
               toolContext
             );
-            result = ""; // Handler manages its own result
+            result = "";
             break;
           }
           case "infiniteMacControl": {
@@ -1460,7 +1398,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               toolCall.toolCallId,
               toolContext
             );
-            result = ""; // Handler manages its own result
+            result = "";
             break;
           }
           case "calendarControl": {
@@ -1469,7 +1407,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               toolCall.toolCallId,
               toolContext
             );
-            result = ""; // Handler manages its own result
+            result = "";
             break;
           }
           case "contactsControl": {
@@ -1478,7 +1416,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               toolCall.toolCallId,
               toolContext
             );
-            result = ""; // Handler manages its own result
+            result = "";
             break;
           }
           case "tvControl": {
@@ -1487,14 +1425,14 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               toolCall.toolCallId,
               toolContext
             );
-            result = ""; // Handler manages its own result
+            result = "";
             break;
           }
           default:
             console.warn("Unhandled tool call:", toolCall.toolName);
             // Report as error rather than false success to avoid masking
             // missing handler wiring or new server-side tools
-            addToolResult({
+            addToolOutput({
               tool: toolCall.toolName,
               toolCallId: toolCall.toolCallId,
               state: "output-error",
@@ -1504,13 +1442,12 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             break;
         }
 
-        // Send the result back to the chat
         if (result) {
           console.log(
             `[onToolCall] Adding result for ${toolCall.toolName}:`,
             result,
           );
-          addToolResult({
+          addToolOutput({
             tool: toolCall.toolName,
             toolCallId: toolCall.toolCallId,
             output: result,
@@ -1518,8 +1455,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         }
       } catch (err) {
         console.error("Error executing tool call:", err);
-        // Send error result
-        addToolResult({
+        addToolOutput({
           tool: toolCall.toolName,
           toolCallId: toolCall.toolCallId,
           state: "output-error",
@@ -1552,32 +1488,21 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       // When stopWhen + tool calls trigger a TypeValidationError, the SDK
       // sets isError=true and skips the built-in sendAutomaticallyWhen check.
       // For server-side tools whose results arrived via the stream, we need
-      // to re-affirm them via addToolResult so sendAutomaticallyWhen fires.
+      // to re-affirm them via addToolOutput so sendAutomaticallyWhen fires.
       // Only target server-side tools (client-side tools already called
-      // addToolResult from their handlers, so they don't need recovery).
+      // addToolOutput from their handlers, so they don't need recovery).
       if (isError) {
-        const SERVER_SIDE_TOOL_SET = new Set([
-          "generateHtml",
-          "searchSongs",
-          "memoryWrite",
-          "memoryRead",
-          "memoryDelete",
-          "webFetch",
-          "cursorCloudAgent",
-          "listCursorCloudAgentRuns",
-          "mapsSearchPlaces",
-        ]);
         const toolParts = lastMsg.parts.filter(
           (part: { type?: string; state?: string }) =>
             typeof part.type === "string" &&
             part.type.startsWith("tool-") &&
             (part.state === "output-available" ||
               part.state === "output-error") &&
-            SERVER_SIDE_TOOL_SET.has((part.type as string).replace(/^tool-/, "")),
+            SERVER_EXECUTED_TOOL_NAMES.has((part.type as string).replace(/^tool-/, "")),
         );
         if (toolParts.length > 0) {
           console.log(
-            `[onFinish] isError recovery: re-affirming ${toolParts.length} server-side tool result(s) to trigger sendAutomaticallyWhen`,
+            `[onFinish] isError recovery: re-affirming ${toolParts.length} server-side tool output(s) to trigger sendAutomaticallyWhen`,
           );
           for (const part of toolParts) {
             const tp = part as {
@@ -1589,14 +1514,14 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             };
             const toolName = tp.type.replace(/^tool-/, "");
             if (tp.state === "output-error") {
-              addToolResult({
+              addToolOutput({
                 tool: toolName,
                 toolCallId: tp.toolCallId,
                 state: "output-error",
                 errorText: tp.errorText || "Tool execution failed",
               });
             } else {
-              addToolResult({
+              addToolOutput({
                 tool: toolName,
                 toolCallId: tp.toolCallId,
                 output: tp.output,
