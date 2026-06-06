@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { stepCountIs, streamText, type ModelMessage, type ToolSet } from "ai";
+import { type ModelMessage, type ToolSet } from "ai";
 import { initLogger } from "../_utils/_logging.js";
 import createRedis from "../_utils/redis.js";
 import * as RateLimit from "../_utils/_rate-limit.js";
@@ -37,9 +37,12 @@ import {
 import {
   TELEGRAM_DEFAULT_MODEL,
   SUPPORTED_AI_MODELS,
-  getOpenAIProviderOptions,
   type SupportedModel,
 } from "../_utils/_aiModels.js";
+import {
+  createRyoToolLoopAgent,
+  textStreamFromFullStream,
+} from "../_utils/ryo-agent.js";
 import {
   generateElevenLabsSpeech,
   transcribeAudioBuffer,
@@ -682,15 +685,27 @@ export default async function handler(
       }
     );
 
-    const result = streamText({
-      model: selectedModel,
-      messages: finalMessages,
+    const agent = createRyoToolLoopAgent({
+      id: "ryo-telegram",
+      prepared: { selectedModel, tools },
       tools: toolsWithStatus,
-      temperature: 0.7,
+      model: telegramModel,
       maxOutputTokens: 4000,
-      stopWhen: stepCountIs(6),
-      providerOptions: getOpenAIProviderOptions(telegramModel),
-      onChunk: async ({ chunk }) => {
+      stopAfterSteps: 6,
+    });
+
+    const result = await agent.stream({
+      messages: finalMessages,
+      onStepFinish: async (stepResult) => {
+        if (stepResult.toolResults.length > 0) {
+          await statusReporter.markThinking();
+        }
+      },
+    });
+
+    const textStream = textStreamFromFullStream(
+      result.fullStream,
+      async (chunk) => {
         if (chunk.type !== "tool-input-start" && chunk.type !== "tool-call") {
           return;
         }
@@ -718,18 +733,13 @@ export default async function handler(
           providerToolCall.toolName,
           providerToolCall.input
         );
-      },
-      onStepFinish: async (stepResult) => {
-        if (stepResult.toolResults.length > 0) {
-          await statusReporter.markThinking();
-        }
-      },
-    });
+      }
+    );
 
     const { text: replyText, previewMode } = shouldSendVoiceOnlyReply
       ? {
           text: await collectTelegramReplyText({
-            textStream: result.textStream,
+            textStream,
             formatText: simplifyTelegramCitationDisplay,
           }),
           previewMode: "none" as const,
@@ -738,7 +748,7 @@ export default async function handler(
           botToken,
           chatId: parsedUpdate.chatId,
           draftId: parsedUpdate.updateId,
-          textStream: result.textStream,
+          textStream,
           replyToMessageId: parsedUpdate.messageId,
           formatText: simplifyTelegramCitationDisplay,
           onBeforePreview: async () => {
