@@ -70,6 +70,8 @@ export function useChatsAppController({
     stopSpeech,
     rateLimitError,
     needsUsername,
+    getLiveMessages,
+    patchLiveMessages,
   } = useAiChat(promptSetUsername);
 
   const {
@@ -127,8 +129,10 @@ export function useChatsAppController({
 
   const globalOnlineUsers = useGlobalPresence();
 
-  const { isLoadingGreeting, triggerGreeting, cancelGreetingFetch } =
-    useProactiveGreeting();
+  const { isLoadingGreeting, triggerGreeting } = useProactiveGreeting({
+    getLiveMessages,
+    patchLiveMessages,
+  });
   const [inputPrefillMessage, setInputPrefillMessage] = useState<string | null>(
     null
   );
@@ -269,7 +273,6 @@ export function useChatsAppController({
           return true;
         }
       } else {
-        cancelGreetingFetch();
         const didSubmit = await submitAiMessage(messageText, imageData);
         if (didSubmit) {
           setScrollToBottomTrigger((prev) => prev + 1);
@@ -282,7 +285,6 @@ export function useChatsAppController({
       username,
       sendRoomMessage,
       submitAiMessage,
-      cancelGreetingFetch,
       t,
       handleRyoMention,
       detectAndProcessMention,
@@ -294,17 +296,10 @@ export function useChatsAppController({
       if (currentRoomId && username) {
         sendRoomMessage(message);
       } else {
-        cancelGreetingFetch();
         handleDirectMessageSubmit(message);
       }
     },
-    [
-      currentRoomId,
-      username,
-      sendRoomMessage,
-      handleDirectMessageSubmit,
-      cancelGreetingFetch,
-    ]
+    [currentRoomId, username, sendRoomMessage, handleDirectMessageSubmit]
   );
 
   const handleNudgeClick = useCallback(() => {

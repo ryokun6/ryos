@@ -1,30 +1,27 @@
 import type { AIChatMessage } from "@/types/chat";
 
-const isDefaultGreeting = (message: AIChatMessage): boolean =>
+export const isDefaultGreetingMessage = (message: AIChatMessage): boolean =>
   message.id === "1" && message.role === "assistant";
 
 export function shouldApplyFreshProactiveGreeting(
-  currentMessages: AIChatMessage[],
-  options: { suppressed: boolean }
+  currentMessages: AIChatMessage[]
 ): boolean {
-  if (options.suppressed) return false;
-  return currentMessages.some(isDefaultGreeting);
+  return currentMessages.some(isDefaultGreetingMessage);
 }
 
 /**
- * Replace only the default greeting in-place so user/assistant messages are
- * preserved when a proactive greeting completes after the user has typed.
+ * Replace only the default greeting in-place so user/assistant messages and
+ * any in-flight assistant stream are preserved.
  */
 export function applyFreshProactiveGreeting(
   currentMessages: AIChatMessage[],
-  proactiveMessage: AIChatMessage,
-  options: { suppressed: boolean }
+  proactiveMessage: AIChatMessage
 ): AIChatMessage[] | null {
-  if (!shouldApplyFreshProactiveGreeting(currentMessages, options)) {
+  if (!shouldApplyFreshProactiveGreeting(currentMessages)) {
     return null;
   }
 
-  const greetingIndex = currentMessages.findIndex(isDefaultGreeting);
+  const greetingIndex = currentMessages.findIndex(isDefaultGreetingMessage);
   if (greetingIndex === -1) return null;
 
   const updated = [...currentMessages];

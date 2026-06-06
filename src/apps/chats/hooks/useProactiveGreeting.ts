@@ -11,6 +11,13 @@ import { applyFreshProactiveGreeting } from "../utils/proactiveGreetingApply";
  */
 const STALE_CHAT_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
 
+export interface UseProactiveGreetingOptions {
+  /** Latest AI SDK messages (may be ahead of the persisted store mid-stream). */
+  getLiveMessages?: () => AIChatMessage[];
+  /** Patch the AI SDK list in-place without resetting the conversation. */
+  patchLiveMessages?: (messages: AIChatMessage[]) => void;
+}
+
 /**
  * Get the timestamp (epoch ms) of the most recent message in the AI chat.
  * Falls back to 0 if no valid timestamp is found.
@@ -44,7 +51,10 @@ function getLastMessageTimestamp(messages: AIChatMessage[]): number {
  * The greeting is fetched as a complete JSON response from the server and
  * displayed in the chat as a single batch update.
  */
-export function useProactiveGreeting() {
+export function useProactiveGreeting({
+  getLiveMessages,
+  patchLiveMessages,
+}: UseProactiveGreetingOptions = {}) {
   const [isLoadingGreeting, setIsLoadingGreeting] = useState(() => {
     const state = useChatsStore.getState();
     const fresh =
@@ -58,7 +68,11 @@ export function useProactiveGreeting() {
   const hasTriggeredStaleRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
   const fetchInFlightRef = useRef(false);
-  const suppressedRef = useRef(false);
+  const liveMessageAccessorsRef = useRef({
+    getLiveMessages,
+    patchLiveMessages,
+  });
+  liveMessageAccessorsRef.current = { getLiveMessages, patchLiveMessages };
 
   const username = useChatsStore((s) => s.username);
   const isAuthenticated = useChatsStore((s) => s.isAuthenticated);
@@ -84,13 +98,6 @@ export function useProactiveGreeting() {
     return Date.now() - lastTs > STALE_CHAT_THRESHOLD_MS;
   })();
 
-  const cancelGreetingFetch = useCallback(() => {
-    suppressedRef.current = true;
-    abortRef.current?.abort();
-    setIsLoadingGreeting(false);
-    fetchInFlightRef.current = false;
-  }, []);
-
   /**
    * Fetch a proactive greeting from the server and display it immediately.
    */
@@ -101,7 +108,6 @@ export function useProactiveGreeting() {
       // Prevent duplicate concurrent requests
       if (fetchInFlightRef.current) return;
       fetchInFlightRef.current = true;
-      suppressedRef.current = false;
 
       // Abort any previous in-flight request
       abortRef.current?.abort();
@@ -137,28 +143,31 @@ export function useProactiveGreeting() {
             metadata: { createdAt: new Date() },
           };
 
-          if (suppressedRef.current) return;
-
-          const currentMessages = useChatsStore.getState().aiMessages;
+          const storeMessages = useChatsStore.getState().aiMessages;
+          const { getLiveMessages: getLive, patchLiveMessages: patchLive } =
+            liveMessageAccessorsRef.current;
+          const liveMessages = getLive?.() ?? storeMessages;
 
           if (mode === "fresh") {
             const updatedMessages = applyFreshProactiveGreeting(
-              currentMessages,
-              proactiveMessage,
-              { suppressed: suppressedRef.current }
+              liveMessages,
+              proactiveMessage
             );
             if (updatedMessages) {
+              patchLive?.(updatedMessages);
               setAiMessages(updatedMessages);
             }
           } else {
-            const lastMsg = currentMessages[currentMessages.length - 1];
-            const lastTs = getLastMessageTimestamp(currentMessages);
+            const lastMsg = storeMessages[storeMessages.length - 1];
+            const lastTs = getLastMessageTimestamp(storeMessages);
             const stillStale =
               lastTs > 0 &&
               Date.now() - lastTs > STALE_CHAT_THRESHOLD_MS;
 
             if (stillStale && !lastMsg.id?.startsWith("proactive-")) {
-              setAiMessages([...currentMessages, proactiveMessage]);
+              const updatedMessages = [...liveMessages, proactiveMessage];
+              patchLive?.(updatedMessages);
+              setAiMessages(updatedMessages);
             }
           }
         }
@@ -232,6 +241,5 @@ export function useProactiveGreeting() {
   return {
     isLoadingGreeting,
     triggerGreeting,
-    cancelGreetingFetch,
   };
 }
