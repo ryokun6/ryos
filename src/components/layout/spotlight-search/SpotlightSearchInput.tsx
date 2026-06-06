@@ -48,7 +48,8 @@ export function SpotlightSearchInput({
               fontSize: "12px",
               fontWeight: 700,
               color: "var(--os-color-selection-text, #FFFFFF)",
-              textShadow: "0 1px 1px rgba(0,0,0,0.3)",
+              textShadow:
+                "var(--os-accent-selection-text-shadow, 0 1px 1px rgba(0,0,0,0.3))",
               whiteSpace: "nowrap",
               flexShrink: 0,
               userSelect: "none",

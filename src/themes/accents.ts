@@ -215,6 +215,18 @@ function readableText(base: RGB): string {
 }
 
 /**
+ * Text shadow for selection labels drawn over the accent gradient (brushed-metal
+ * sidebar rows, Spotlight title). When the accent is light enough that the text
+ * goes dark, a *bright* shadow lifts it off the gradient; when the text stays
+ * white, keep the classic subtle dark drop.
+ */
+function selectionTextShadow(base: RGB): string {
+  return readableText(base) === "#ffffff"
+    ? "0 1px 1px rgba(0, 0, 0, 0.3)"
+    : "0 1px 1px rgba(255, 255, 255, 0.55)";
+}
+
+/**
  * A hyperlink color derived from the accent. Links sit on the window/dialog
  * background (light or dark), so a raw accent swatch (e.g. yellow) can be
  * illegible. Nudge the color until it has enough contrast: darken light
@@ -383,6 +395,7 @@ export function getAccentCssVars(
       "--os-color-switch-track-checked": rgb(base),
       "--os-accent-assistant-bubble-bg": assistantBubbleBgColor,
       "--os-color-link": link,
+      "--os-accent-selection-text-shadow": selectionTextShadow(base),
     };
   }
 
@@ -487,6 +500,7 @@ export function getAccentCssVars(
     // Chats assistant / Ryo AI bubble hue (`.chat-bubble.bg-blue-100`).
     "--os-accent-assistant-bubble-bg": assistantBubbleBgColor,
     "--os-color-link": link,
+    "--os-accent-selection-text-shadow": selectionTextShadow(base),
   };
 }
 
@@ -514,4 +528,5 @@ export const ACCENT_CSS_VAR_NAMES = [
   "--os-accent-apple-filter",
   "--os-accent-assistant-bubble-bg",
   "--os-color-link",
+  "--os-accent-selection-text-shadow",
 ] as const;
