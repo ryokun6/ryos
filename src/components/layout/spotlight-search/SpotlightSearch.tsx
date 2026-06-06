@@ -1,5 +1,5 @@
 import { createPortal } from "react-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import { useSpotlightSearchController } from "./useSpotlightSearchController";
 import { SpotlightSearchPanel } from "./SpotlightSearchPanel";
 

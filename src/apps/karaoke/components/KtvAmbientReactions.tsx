@@ -4,7 +4,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { useReducedMotion } from "framer-motion";
+import { useReducedMotion } from "motion/react";
 import {
   REACTION_LIFETIME_MS,
   generateAmbientReactionPhysics,

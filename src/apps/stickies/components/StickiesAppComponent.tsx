@@ -1,6 +1,6 @@
 import { useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "motion/react";
 import { StickyNote } from "./StickyNote";
 import { StickiesMenuBar } from "./StickiesMenuBar";
 import { AppProps } from "@/apps/base/types";

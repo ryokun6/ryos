@@ -1,5 +1,5 @@
 import ReactPlayer from "react-player";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
 import { ActivityIndicatorWithLabel } from "@/components/ui/activity-indicator-with-label";
 import { LandscapeVideoBackground } from "@/components/shared/LandscapeVideoBackground";

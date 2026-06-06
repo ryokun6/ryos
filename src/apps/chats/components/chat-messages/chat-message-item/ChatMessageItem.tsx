@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import EmojiAquarium from "@/components/shared/EmojiAquarium";
 import type { ChatMessageItemProps } from "../types";
 import { isUrlOnly } from "../utils";

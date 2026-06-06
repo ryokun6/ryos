@@ -5,7 +5,7 @@ import { appMetadata } from "..";
 import { PhotoBoothMenuBar } from "./PhotoBoothMenuBar";
 import { AppProps } from "../../base/types";
 import { Camera, Images, Timer } from "@phosphor-icons/react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import { Webcam } from "@/components/Webcam";
 import { cn } from "@/lib/utils";
 import { usePhotoBoothLogic } from "../hooks/usePhotoBoothLogic";

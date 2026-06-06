@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import { LyricsAlignment } from "@/types/lyrics";
 import type { LyricLine } from "@/types/lyrics";
 import {

@@ -1,5 +1,5 @@
 import { useReducer, useEffect, useRef } from "react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { parseSimpleMarkdown } from "./parseSimpleMarkdown";
 
 interface TypewriterTextProps {

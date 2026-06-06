@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import { AudioInputButton } from "@/components/ui/audio-input-button";
 import { CHAT_ANALYTICS, getTextAnalytics, track } from "@/utils/analytics";
 import { checkOfflineAndShowError } from "@/utils/offline";

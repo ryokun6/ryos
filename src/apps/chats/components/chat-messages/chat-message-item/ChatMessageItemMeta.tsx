@@ -6,7 +6,7 @@ import {
   Pause,
   PaperPlaneRight,
 } from "@phosphor-icons/react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import {
   Tooltip,

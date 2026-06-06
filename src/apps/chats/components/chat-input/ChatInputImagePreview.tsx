@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import { X } from "@phosphor-icons/react";
 import type { ChatInputViewModel } from "./useChatInput";
 

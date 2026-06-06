@@ -5,7 +5,7 @@ import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { AppHelpAboutDialogs } from "@/components/shared/AppHelpAboutDialogs";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { appMetadata } from "../metadata";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { useInfinitePcLogic } from "../hooks/useInfinitePcLogic";
 import type {
   PcPreset,

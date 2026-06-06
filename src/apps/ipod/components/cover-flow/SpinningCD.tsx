@@ -1,9 +1,10 @@
 import { useEffect, useRef } from "react";
-import { motion, useMotionValue, animate } from "framer-motion";
+import { motion, useMotionValue } from "motion/react"
+import { animate } from "motion";
 import { useImageLoaded } from "../../hooks/useImageLoaded";
 import { COVER_FADE_TRANSITION } from "./constants";
 
-// Spinning CD component using Framer Motion exclusively
+// Spinning CD component using Motion exclusively
 export function SpinningCD({ coverUrl, size, isPlaying, onClick }: { coverUrl: string | null; size: string; isPlaying: boolean; onClick?: () => void }) {
   // Initialize with a random rotation (0-60 degrees)
   const initialRotation = useRef(Math.random() * 60);

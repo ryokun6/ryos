@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import type { Track } from "@/stores/useIpodStore";
 import { AlbumTracklist } from "./AlbumTracklist";
 
@@ -95,7 +95,7 @@ export function AlbumFlipFaces({
           animated rather than static so it grows in as the card
           rotates into view (and shrinks back out on the back-flip)
           — both keyframes use the same comma-separated structure so
-          framer-motion can interpolate the values. */}
+          Motion can interpolate the values. */}
       <motion.div
         className="absolute"
         style={{

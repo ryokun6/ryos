@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { X } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useThemeFlags } from "@/hooks/useThemeFlags";

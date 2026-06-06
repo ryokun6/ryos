@@ -1,5 +1,5 @@
 import { useReducer, useRef, useEffect, useCallback, type ReactNode } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import { createPortal } from "react-dom";
 import type ReactPlayer from "react-player";
 import { cn } from "@/lib/utils";

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { useIsPresent } from "framer-motion";
+import { useIsPresent } from "motion/react";
 
 function WhiteNoiseEffect({ active }: { active: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);

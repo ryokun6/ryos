@@ -9,7 +9,7 @@ import {
   type LazyExoticComponent,
 } from "react";
 import { createPortal } from "react-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import { AppProps } from "@/apps/base/types";
 import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { AppHelpAboutDialogs } from "@/components/shared/AppHelpAboutDialogs";

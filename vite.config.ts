@@ -214,8 +214,9 @@ export default defineConfig({
       "zustand",
       "clsx",
       "tailwind-merge",
-      // framer-motion is used on initial load for animations
-      "framer-motion",
+      // Motion (motion/react) is used on initial load for animations
+      "motion/react",
+      "motion",
       // Pre-bundle so CJS→ESM works (avoids "exports is not defined" / "no export named default" in dev)
       "react-player",
       "pinyin-pro",
@@ -721,8 +722,8 @@ export default defineConfig({
           // 3D rendering - deferred until PC app opens
           three: ["three"],
           
-          // Animation - used by multiple apps
-          motion: ["framer-motion"],
+          // Animation - used by multiple apps (Motion / motion/react)
+          motion: ["motion"],
           
           // State management
           zustand: ["zustand"],

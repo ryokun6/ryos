@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { motion, AnimatePresence, useDragControls } from "framer-motion";
+import { motion, AnimatePresence, useDragControls } from "motion/react";
 import { ArrowsIn, Copy, Check, DownloadSimple, Code, Export, DotsSixVertical, Plus } from "@phosphor-icons/react";
 import { createPortal } from "react-dom";
 import {

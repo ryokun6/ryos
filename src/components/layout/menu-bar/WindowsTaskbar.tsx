@@ -5,7 +5,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { CaretUp } from "@phosphor-icons/react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import type { AnyApp } from "@/apps/base/types";
 import { getAppIconPath } from "@/config/appRegistry";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";

@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import type { Point, Selection } from "./types";
 
 export interface PaintCanvasViewProps {

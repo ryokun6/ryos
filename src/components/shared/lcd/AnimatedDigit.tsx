@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import { SPRING_TRANSITION } from "./lcdMotionConstants";
 
 export const AnimatedDigit = memo(function AnimatedDigit({

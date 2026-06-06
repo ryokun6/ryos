@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 import { useThemeFlags } from "@/hooks/useThemeFlags";

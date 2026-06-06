@@ -1,5 +1,5 @@
 import type { FC } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 
 export const SynthStatusDisplay: FC<{ message: string | null }> = ({
   message,

@@ -6,7 +6,7 @@ import { AppHelpAboutDialogs } from "@/components/shared/AppHelpAboutDialogs";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { appMetadata } from "..";
 import { getTranslatedAppName } from "@/utils/i18n";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import { SquaresFour } from "@phosphor-icons/react";
 import { usePcLogic } from "../hooks/usePcLogic";

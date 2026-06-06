@@ -1,5 +1,5 @@
 import { createPortal } from "react-dom";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 
 export interface WindowFrameSnapZoneIndicatorProps {
   snapZone: string | null | undefined;

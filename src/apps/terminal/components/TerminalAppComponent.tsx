@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { AppProps } from "@/apps/base/types";
 import type { TerminalInitialData } from "@/apps/base/types";

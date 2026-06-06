@@ -1,5 +1,5 @@
 import { createPortal } from "react-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import { appRegistry, getAppIconPath } from "@/config/appRegistry";
 import type { AppId } from "@/config/appRegistry";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import type { Game } from "@/stores/usePcStore";
 import { GAME_AVERAGE_COLORS } from "@/apps/pc/gameAverageColors.generated";
 

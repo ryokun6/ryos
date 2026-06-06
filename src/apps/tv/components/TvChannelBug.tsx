@@ -1,5 +1,5 @@
 import { memo, useEffect, type CSSProperties } from "react";
-import { motion, useAnimationControls } from "framer-motion";
+import { motion, useAnimationControls } from "motion/react";
 import { cn } from "@/lib/utils";
 import type { ChannelLogoCorner } from "@/apps/tv/data/channels";
 

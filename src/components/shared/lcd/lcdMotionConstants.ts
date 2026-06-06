@@ -1,7 +1,7 @@
-import type { Transition } from "framer-motion";
+import type { Transition } from "motion/react";
 
 // Hoisted transition / animation prop objects so LCD widgets don't receive
-// freshly-allocated framer-motion props on every parent render.
+// freshly-allocated Motion props on every parent render.
 
 export const SPRING_TRANSITION: Transition = {
   y: { type: "spring", stiffness: 300, damping: 30 },

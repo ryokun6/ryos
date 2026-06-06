@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "motion/react";
 import { CaretDown } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";

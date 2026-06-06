@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { motion, AnimatePresence, type Transition } from "framer-motion";
+import { motion, AnimatePresence, type Transition } from "motion/react";
 import {
   Briefcase,
   House,
@@ -11,6 +11,8 @@ import { cn } from "@/lib/utils";
 import {
   AQUA_ICON_BUTTON_PADDING_CLASS,
   AQUA_ICON_BUTTON_PHOSPHOR_SIZE,
+  AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT,
+  AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT_ACTIVE,
 } from "@/lib/aquaIconButton";
 import { Button } from "@/components/ui/button";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
@@ -293,7 +295,7 @@ function PlaceCardActions({
       >
         <NavigationArrow
           size={AQUA_ICON_BUTTON_PHOSPHOR_SIZE}
-          weight="bold"
+          weight={AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT}
         />
         <span>
           {t("apps.maps.placeCard.directions", {
@@ -321,7 +323,11 @@ function PlaceCardActions({
       >
         <Star
           size={AQUA_ICON_BUTTON_PHOSPHOR_SIZE}
-          weight={isFavorite ? "fill" : "regular"}
+          weight={
+            isFavorite
+              ? AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT_ACTIVE
+              : AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT
+          }
         />
         <span>
           {isFavorite
@@ -348,7 +354,11 @@ function PlaceCardActions({
         >
           <House
             size={AQUA_ICON_BUTTON_PHOSPHOR_SIZE}
-            weight={isHome ? "fill" : "regular"}
+            weight={
+              isHome
+                ? AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT_ACTIVE
+                : AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT
+            }
           />
           <span>
             {isHome
@@ -374,7 +384,11 @@ function PlaceCardActions({
         >
           <Briefcase
             size={AQUA_ICON_BUTTON_PHOSPHOR_SIZE}
-            weight={isWork ? "fill" : "regular"}
+            weight={
+              isWork
+                ? AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT_ACTIVE
+                : AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT
+            }
           />
           <span>
             {isWork

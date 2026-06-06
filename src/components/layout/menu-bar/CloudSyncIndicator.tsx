@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowsClockwise } from "@phosphor-icons/react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useIsPhone } from "@/hooks/useIsPhone";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";

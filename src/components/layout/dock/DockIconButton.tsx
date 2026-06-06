@@ -11,7 +11,7 @@ import {
   useMotionValue,
   useSpring,
   useTransform,
-} from "framer-motion";
+} from "motion/react";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useLongPress } from "@/hooks/useLongPress";

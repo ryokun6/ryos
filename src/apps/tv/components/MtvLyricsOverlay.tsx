@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "motion/react";
 import { useShallow } from "zustand/react/shallow";
 import { useLyrics } from "@/hooks/useLyrics";
 import { useIpodStore } from "@/stores/useIpodStore";
@@ -73,7 +73,7 @@ const LINE_TRANSITION = {
   },
 };
 
-// Stable framer-motion variant objects so the line slide-in/out doesn't
+// Stable Motion variant objects so the line slide-in/out doesn't
 // receive freshly-allocated prop objects on every render.
 const LINE_INITIAL = { y: "100%" } as const;
 const LINE_ANIMATE = { y: 0 } as const;

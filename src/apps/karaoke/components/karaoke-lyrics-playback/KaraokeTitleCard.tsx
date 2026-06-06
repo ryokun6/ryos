@@ -1,5 +1,5 @@
 import { memo, useMemo } from "react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { useCoverGlowColor } from "@/hooks/useCoverGlowColor";
 import { ScrollingText } from "@/apps/ipod/components/screen";
 import {

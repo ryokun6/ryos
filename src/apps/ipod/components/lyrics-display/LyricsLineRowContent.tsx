@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import { useMemo, useReducer, useEffect } from "react";
 import { getInterludeDotsFadeOpacity } from "@/utils/karaokeInterludeDisplay";
 import type { LyricsLineRowContentProps } from "./types";

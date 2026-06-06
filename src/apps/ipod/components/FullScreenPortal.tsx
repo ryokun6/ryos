@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useMemo, type ReactNode } from "react";
 import { usePointerLongPress } from "@/hooks/usePointerLongPress";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 import { ActivityIndicatorWithLabel } from "@/components/ui/activity-indicator-with-label";

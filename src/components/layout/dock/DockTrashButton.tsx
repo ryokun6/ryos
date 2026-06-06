@@ -1,5 +1,5 @@
 import type { TFunction } from "i18next";
-import { motion, type MotionValue } from "framer-motion";
+import { motion, type MotionValue } from "motion/react";
 import type { LaunchOriginRect } from "@/stores/useAppStore";
 import { DockIconButton } from "./DockIconButton";
 

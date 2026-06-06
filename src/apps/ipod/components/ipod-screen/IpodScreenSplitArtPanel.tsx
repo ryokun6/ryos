@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "motion/react";
 import { cn } from "@/lib/utils";
 import {
   MODERN_SPLIT_HALF,

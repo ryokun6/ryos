@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { ArrowUp, Square } from "@phosphor-icons/react";
 import type { ChatInputViewModel } from "./useChatInput";

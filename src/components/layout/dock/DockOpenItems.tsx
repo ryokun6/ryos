@@ -1,6 +1,6 @@
 import type React from "react";
 import type { TFunction } from "i18next";
-import type { MotionValue } from "framer-motion";
+import type { MotionValue } from "motion/react";
 import { getAppIconPath, type AppId } from "@/config/appRegistry";
 import { getTranslatedAppName } from "@/utils/i18n";
 import type { AppInstance } from "@/stores/useAppStore";

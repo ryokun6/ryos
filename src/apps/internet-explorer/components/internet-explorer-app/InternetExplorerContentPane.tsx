@@ -1,5 +1,5 @@
 import type { ReactNode, RefObject } from "react";
-import { motion, AnimatePresence, type Variants } from "framer-motion";
+import { motion, AnimatePresence, type Variants } from "motion/react";
 import HtmlPreview from "@/components/shared/HtmlPreview";
 import type {
   ErrorResponse,

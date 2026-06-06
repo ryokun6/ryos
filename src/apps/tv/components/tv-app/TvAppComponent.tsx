@@ -1,5 +1,5 @@
 import { type RefObject } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
 import type { AppProps } from "@/apps/base/types";
 import { AppWindowShell } from "@/components/shared/AppWindowShell";

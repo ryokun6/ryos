@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import { Input } from "@/components/ui/input";
 import { Hand, At, ImageSquare, Microphone } from "@phosphor-icons/react";
 import {

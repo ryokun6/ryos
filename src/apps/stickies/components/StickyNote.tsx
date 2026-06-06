@@ -1,5 +1,5 @@
 import { useRef, useReducer, useCallback, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { StickyNote as StickyNoteType, StickyColor } from "@/stores/useStickiesStore";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";

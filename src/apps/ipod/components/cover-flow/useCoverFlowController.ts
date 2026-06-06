@@ -6,7 +6,7 @@ import {
   useMemo,
   useReducer,
 } from "react";
-import type { PanInfo } from "framer-motion";
+import type { PanInfo } from "motion/react";
 import type { Track } from "@/stores/useIpodStore";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useThemeFlags } from "@/hooks/useThemeFlags";

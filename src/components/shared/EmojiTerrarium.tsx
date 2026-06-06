@@ -1,5 +1,5 @@
 import { useMemo, useLayoutEffect, useRef, useState, useEffect } from "react";
-import { motion, MotionConfig } from "framer-motion";
+import { motion, MotionConfig } from "motion/react";
 import { cn } from "@/lib/utils";
 import { Emoji } from "@/components/shared/Emoji";
 

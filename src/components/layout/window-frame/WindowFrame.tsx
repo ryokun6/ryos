@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import {
   WindowFrameDrawerContext,
 } from "@/components/shared/WindowFrameDrawerContext";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import { selectExposeWindow } from "@/utils/appEventBus";
 import type { WindowFrameProps } from "./windowFrameTypes";
 import { getSwipeStyle } from "./windowFrameUtils";

@@ -1,5 +1,5 @@
 import React from "react";
-import type { MotionValue } from "framer-motion";
+import type { MotionValue } from "motion/react";
 import { getAppIconPath, type AppId } from "@/config/appRegistry";
 import { getTranslatedAppName } from "@/utils/i18n";
 import type { FileSystemItem } from "@/stores/useFilesStore";

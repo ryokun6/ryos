@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import type { Applet } from "../../utils/appletActions";
 import {
   PREVIEW_SCALE_FACTOR,

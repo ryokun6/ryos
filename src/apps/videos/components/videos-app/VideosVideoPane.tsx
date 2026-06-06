@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import { YouTubePlayer } from "@/components/shared/YouTubePlayer";
 import { SeekBar } from "../SeekBar";
 import { LcdStatusDisplay } from "@/components/shared/lcd/LcdStatusDisplay";

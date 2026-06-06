@@ -1,4 +1,4 @@
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "motion/react";
 import { PipPlayer } from "../PipPlayer";
 import type { IpodAppController } from "./useIpodAppController";
 

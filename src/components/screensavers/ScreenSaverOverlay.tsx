@@ -1,6 +1,6 @@
 import { useEffect, useReducer, useCallback, lazy, Suspense } from "react";
 import { useDisplaySettingsStoreShallow } from "@/stores/helpers";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import type { ScreenSaverType } from "./index";
 import { useTranslation } from "react-i18next";
 

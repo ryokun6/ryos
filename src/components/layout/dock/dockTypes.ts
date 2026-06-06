@@ -1,5 +1,5 @@
 import type { AppId } from "@/config/appRegistry";
-import type { MotionValue } from "framer-motion";
+import type { MotionValue } from "motion/react";
 
 export interface DockOpenItem {
   type: "app" | "applet";

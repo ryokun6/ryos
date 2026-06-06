@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useMotionValue } from "framer-motion";
+import { useMotionValue } from "motion/react";
 
 /**
  * Dock bar magnification: tracks pointer X and respects touch/hover capability

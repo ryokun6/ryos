@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "motion/react";
 import { Suspense } from "react";
 import { IPOD_MODERN_SCREEN_HEIGHT_PX } from "../../constants";
 import { IpodScreen } from "../ipod-screen/IpodScreen";

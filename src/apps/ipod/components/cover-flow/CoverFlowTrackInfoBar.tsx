@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { useTranslation } from "react-i18next";
 import { Play, Pause, VinylRecord } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";

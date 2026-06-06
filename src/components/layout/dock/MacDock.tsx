@@ -19,7 +19,7 @@ import { useSound, Sounds } from "@/hooks/useSound";
 import type { LaunchOriginRect } from "@/stores/useAppStore";
 import { RightClickMenu } from "@/components/ui/right-click-menu";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
-import { AnimatePresence, motion, LayoutGroup } from "framer-motion";
+import { AnimatePresence, motion, LayoutGroup } from "motion/react";
 import { useShallow } from "zustand/react/shallow";
 import {
   isClientYInBottomZone,

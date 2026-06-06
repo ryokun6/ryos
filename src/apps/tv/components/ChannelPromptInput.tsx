@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useId } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "motion/react";
 import { cn } from "@/lib/utils";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { AnimatedEllipsis } from "@/apps/terminal/components/AnimatedEllipsis";

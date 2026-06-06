@@ -19,7 +19,7 @@
  */
 
 import { type ReactNode, useEffect, useRef, useState } from "react";
-import { motion, type Transition } from "framer-motion";
+import { motion, type Transition } from "motion/react";
 import { X } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useThemeFlags } from "@/hooks/useThemeFlags";

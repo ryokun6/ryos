@@ -1,5 +1,5 @@
 import { type RefObject, type ReactNode } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import { Repeat, RepeatOnce, Shuffle } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";

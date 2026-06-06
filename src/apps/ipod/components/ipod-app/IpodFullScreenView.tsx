@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "motion/react";
 import ReactPlayer from "react-player";
 import { Suspense } from "react";
 import type React from "react";

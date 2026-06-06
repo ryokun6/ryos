@@ -1,5 +1,5 @@
 import { ChatCircle, WarningCircle } from "@phosphor-icons/react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useStickToBottomContext } from "use-stick-to-bottom";

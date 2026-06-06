@@ -4,7 +4,7 @@ import {
   useMotionValue,
   useSpring,
   useTransform,
-} from "framer-motion";
+} from "motion/react";
 import {
   DOCK_BASE_BUTTON_SIZE,
   DOCK_MAGNIFY_DISTANCE,

@@ -1,5 +1,5 @@
 import { memo, useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
 
 /** Total durations for the one-shot CRT animations, in ms. Kept in one
@@ -573,7 +573,7 @@ export interface TvCrtEffectsProps {
  * Memoized: the parent re-renders ~5 times/sec while a video is playing
  * (driven by `onProgress` updates feeding the LCD ticker), but none of
  * those updates affect the overlay's inputs. Skipping the reconcile
- * entirely keeps framer-motion's animation work and the gradient
+ * entirely keeps Motion's animation work and the gradient
  * style objects from being thrashed every frame.
  */
 export const TvCrtEffects = memo(function TvCrtEffects({

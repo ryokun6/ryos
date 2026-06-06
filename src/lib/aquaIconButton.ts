@@ -15,6 +15,12 @@ export const AQUA_ICON_BUTTON_CHROME_CLASS = cn(
 
 export const AQUA_ICON_BUTTON_PHOSPHOR_SIZE = 16;
 
+/** Thick outline Phosphor weight for aqua icon+label pills. */
+export const AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT = "bold" as const;
+
+/** Solid Phosphor weight for active/pressed aqua action buttons. */
+export const AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT_ACTIVE = "fill" as const;
+
 export const AQUA_ICON_BUTTON_ICON_CLASS = "h-4 w-4 shrink-0";
 
 /** Tighter padding for compact icon-only aqua pills (matches place-card row height). */

@@ -1,7 +1,7 @@
 import { useEffect, useCallback, useMemo } from "react";
 import { useEventListener } from "@/hooks/useEventListener";
 import { usePrevious } from "@/hooks/useLatestRef";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import { useAppStoreShallow } from "@/stores/helpers";
 import { getAppIconPath } from "@/config/appRegistry";
 import { getTranslatedAppName } from "@/utils/i18n";

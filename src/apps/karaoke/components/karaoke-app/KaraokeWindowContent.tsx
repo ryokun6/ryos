@@ -1,5 +1,5 @@
 import ReactPlayer from "react-player";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "motion/react";
 import { cn } from "@/lib/utils";
 import { CoverFlow } from "@/apps/ipod/components/cover-flow/CoverFlow";
 import { ReactionOverlay } from "@/components/listen/ReactionOverlay";

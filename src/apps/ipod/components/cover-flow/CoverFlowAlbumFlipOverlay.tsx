@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import type { Track } from "@/stores/useIpodStore";
 import { AlbumFlipFaces } from "./AlbumFlipFaces";
 import type { CoverFlowItem } from "./types";

@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "motion/react";
 import { LandscapeVideoBackground } from "@/components/shared/LandscapeVideoBackground";
 import { AmbientBackground } from "@/components/shared/AmbientBackground";
 import { MeshGradientBackground } from "@/components/shared/MeshGradientBackground";

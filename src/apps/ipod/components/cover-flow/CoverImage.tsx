@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import type { Track } from "@/stores/useIpodStore";
 import { useImageLoaded } from "../../hooks/useImageLoaded";
 import { COVER_FADE_TRANSITION } from "./constants";
