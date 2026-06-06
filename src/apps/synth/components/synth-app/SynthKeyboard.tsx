@@ -39,7 +39,10 @@ export function SynthKeyboard({
         isMacOSTheme ? "p-0" : "bg-black p-4"
       )}
     >
-      <div ref={keyboardContainerRef} className="relative size-full">
+      <div
+        ref={keyboardContainerRef}
+        className={cn("relative size-full", isMacOSTheme && "piano-keyboard-aqua")}
+      >
         <div className="absolute inset-0 h-full flex w-full">
           {whiteKeys.map((note) => (
             <div key={note} className="flex-1 relative">
@@ -52,6 +55,7 @@ export function SynthKeyboard({
                 labelType={labelType}
                 keyMap={keyToNoteMap}
                 isSystem7Theme={isSystem7Theme}
+                isMacOSTheme={isMacOSTheme}
               />
             </div>
           ))}
@@ -87,6 +91,7 @@ export function SynthKeyboard({
                       labelType={labelType}
                       keyMap={keyToNoteMap}
                       isSystem7Theme={isSystem7Theme}
+                      isMacOSTheme={isMacOSTheme}
                     />
                   </div>
                 )}

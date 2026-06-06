@@ -920,6 +920,175 @@
   z-index: 3;
 }
 
+/* --- Synth piano keyboard (macOS Aqua) ----------------------------------- */
+/* Ivory / ebony gradients with Aqua-style gloss — keys stay recognizably
+   piano-white and piano-black in both light and dark color schemes. */
+:root[data-os-theme="macosx"] .piano-keyboard-aqua {
+  padding: 3px 5px 5px;
+  background: linear-gradient(
+    180deg,
+    #6a6a6e 0%,
+    #3d3d42 38%,
+    #2a2a2e 100%
+  );
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow:
+    inset 0 3px 10px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+:root[data-os-theme="macosx"] button.piano-key.piano-key-aqua {
+  overflow: hidden;
+  border: none !important;
+}
+
+:root[data-os-theme="macosx"] button.piano-key.piano-key-aqua::before,
+:root[data-os-theme="macosx"] button.piano-key.piano-key-aqua::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* White keys — bright ivory face with a gradual body fade and modest bevel */
+:root[data-os-theme="macosx"] button.piano-key.piano-key-aqua.piano-key-white {
+  background: linear-gradient(
+    180deg,
+    #ffffff 0%,
+    #faf9f6 28%,
+    #f2f0ec 55%,
+    #e6e3dd 78%,
+    #d4d0c8 100%
+  ) !important;
+  background-color: #f5f4f1 !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 1),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.12),
+    inset 1px 0 0 rgba(255, 255, 255, 0.7),
+    inset -1px 0 0 rgba(0, 0, 0, 0.1),
+    0 1px 2px rgba(0, 0, 0, 0.22) !important;
+}
+
+:root[data-os-theme="macosx"]
+  button.piano-key.piano-key-aqua.piano-key-white::before {
+  left: 8%;
+  right: 8%;
+  top: 2px;
+  height: 30%;
+  max-height: 36px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.92) 0%,
+    rgba(255, 255, 255, 0.42) 55%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  border-radius: 36% 36% 10% 10% / 52% 52% 18% 18%;
+  filter: none;
+}
+
+:root[data-os-theme="macosx"]
+  button.piano-key.piano-key-aqua.piano-key-white::after {
+  content: none;
+}
+
+:root[data-os-theme="macosx"]
+  button.piano-key.piano-key-aqua.piano-key-white:hover:not(.piano-key-pressed) {
+  background: linear-gradient(
+    180deg,
+    #ffffff 0%,
+    #fcfbfa 28%,
+    #f5f3ef 55%,
+    #ebe8e2 78%,
+    #dbd7d0 100%
+  ) !important;
+  background-color: #faf9f7 !important;
+}
+
+/* Black keys — matte ebony with a bottom-front specular catch */
+:root[data-os-theme="macosx"] button.piano-key.piano-key-aqua.piano-key-black {
+  background: linear-gradient(
+    180deg,
+    #2e2e32 0%,
+    #1a1a1e 30%,
+    #0c0c0e 100%
+  ) !important;
+  background-color: #141416 !important;
+  box-shadow:
+    inset 0 -2px 3px rgba(0, 0, 0, 0.8),
+    0 4px 7px rgba(0, 0, 0, 0.55),
+    0 1px 2px rgba(0, 0, 0, 0.35) !important;
+}
+
+:root[data-os-theme="macosx"]
+  button.piano-key.piano-key-aqua.piano-key-black::before {
+  content: none;
+}
+
+:root[data-os-theme="macosx"]
+  button.piano-key.piano-key-aqua.piano-key-black::after {
+  left: 10%;
+  right: 10%;
+  bottom: 3px;
+  height: 24%;
+  background: linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.34) 0%,
+    rgba(255, 255, 255, 0.12) 42%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  border-radius: 0 0 35% 35% / 0 0 28% 28%;
+  filter: blur(0.25px);
+}
+
+:root[data-os-theme="macosx"]
+  button.piano-key.piano-key-aqua.piano-key-black:hover:not(.piano-key-pressed) {
+  background: linear-gradient(
+    180deg,
+    #3a3a3e 0%,
+    #222226 30%,
+    #101012 100%
+  ) !important;
+  background-color: #1c1c20 !important;
+}
+
+:root[data-os-theme="macosx"]
+  button.piano-key.piano-key-aqua.piano-key-black:hover:not(.piano-key-pressed)::after {
+  background: linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.4) 0%,
+    rgba(255, 255, 255, 0.14) 42%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+/* Pressed — magenta strike with a depressed inset (shared with other themes) */
+:root[data-os-theme="macosx"] button.piano-key.piano-key-aqua.piano-key-pressed {
+  background: linear-gradient(
+    180deg,
+    #ff66ff 0%,
+    #ff33ff 45%,
+    #d91ad9 100%
+  ) !important;
+  background-color: #ff33ff !important;
+  transform: translateY(1px);
+  filter: saturate(1.08);
+  box-shadow:
+    inset 0 2px 5px rgba(80, 0, 80, 0.55),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.25),
+    0 1px 2px rgba(0, 0, 0, 0.25) !important;
+}
+
+:root[data-os-theme="macosx"]
+  button.piano-key.piano-key-aqua.piano-key-pressed::before {
+  opacity: 0.35;
+  height: 22%;
+}
+
+:root[data-os-theme="macosx"]
+  button.piano-key.piano-key-aqua.piano-key-pressed::after {
+  opacity: 0.2;
+}
+
 /* Text styling */
 .aqua-button span,
 .aqua-button {
@@ -3711,7 +3880,7 @@
     .bg-white,
     .bg-\[\#FFFFFF\],
     .bg-\[\#ffffff\]
-  ):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *):not(.dashboard-overlay *) {
+  ):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *):not(.synth-force-font *):not(.dashboard-overlay *):not(button.piano-key) {
   background-color: var(--os-color-window-bg) !important;
 }
 
@@ -3732,7 +3901,7 @@
     .bg-white\/30,
     .bg-white\/20,
     .bg-white\/10
-  ):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *):not(.dashboard-overlay *) {
+  ):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *):not(.synth-force-font *):not(.dashboard-overlay *):not(button.piano-key) {
   background-color: rgba(31, 31, 34, 0.92) !important;
 }
 
@@ -4627,24 +4796,56 @@
 }
 
 /* --- Synth piano keys & paint toolbar opt-out --------------------------- */
-/* Synth piano keys carry their own authored bg colors (`bg-white` for white
-   keys, `bg-black` for black keys) and the pressed-state magenta. The
-   broad dark-mode coverage above remaps `bg-white`, but a piano key MUST
-   stay white regardless of OS color scheme. Pin the authored colors with
-   a higher-specificity selector. The light-mode rules in `index.css`
-   already enforce `!important`; mirror them here for dark mode parity. */
-:root[data-os-theme="macosx"][data-os-color-scheme="dark"] button.piano-key.bg-white,
-:root[data-os-theme="macosx"][data-os-color-scheme="dark"] button.piano-key.bg-white.bg-white {
+/* Non-Aqua themes: flat authored colors. Aqua keys use `.piano-key-aqua`
+   gradients above — exclude them here so dark mode does not flatten the
+   skeuomorphic treatment. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .window-body
+  button.piano-key.bg-white:not(.piano-key-aqua),
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .window-body
+  button.piano-key.bg-white.bg-white:not(.piano-key-aqua) {
   background: rgb(255 255 255) !important;
   background-color: rgb(255 255 255) !important;
   color: #000 !important;
 }
 
-:root[data-os-theme="macosx"][data-os-color-scheme="dark"] button.piano-key.bg-black,
-:root[data-os-theme="macosx"][data-os-color-scheme="dark"] button.piano-key.bg-black.bg-black {
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .window-body
+  button.piano-key.bg-white:not(.piano-key-aqua):hover,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .window-body
+  button.piano-key.bg-white.bg-white:not(.piano-key-aqua):hover {
+  background: rgb(245 245 245) !important;
+  background-color: rgb(245 245 245) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .window-body
+  button.piano-key.bg-black:not(.piano-key-aqua),
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .window-body
+  button.piano-key.bg-black.bg-black:not(.piano-key-aqua) {
   background: rgb(0 0 0) !important;
   background-color: rgb(0 0 0) !important;
   color: #fff !important;
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .window-body
+  button.piano-key.bg-black:not(.piano-key-aqua):hover,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .window-body
+  button.piano-key.bg-black.bg-black:not(.piano-key-aqua):hover {
+  background: rgb(51 51 51) !important;
+  background-color: rgb(51 51 51) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .window-body
+  button.piano-key[class*="bg-[#ff33ff]"]:not(.piano-key-aqua) {
+  background: #ff33ff !important;
+  background-color: #ff33ff !important;
 }
 
 /* --- Toast title / description in dark mode ------------------------------ */
