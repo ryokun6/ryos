@@ -17,16 +17,12 @@ import { showRoomMessageNotification } from "@/utils/chatNotificationDisplay";
 import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { shouldSubscribeToForegroundRoomUpdates } from "@/utils/chatRoomSubscriptions";
 
 const getGlobalChannelName = (username?: string | null): string =>
   username
     ? `chats-${username.toLowerCase().replace(/[^a-zA-Z0-9_\-.]/g, "_")}`
     : "chats-public";
-
-const shouldSubscribeToRoomUpdates = (
-  room: Pick<ChatRoom, "id" | "type">,
-  currentRoomId: string | null
-): boolean => room.type !== "irc" || room.id === currentRoomId;
 
 interface GlobalHandlers {
   onRoomCreated: (data: { room: ChatRoom }) => void;
@@ -472,7 +468,7 @@ export function useChatRoom(
         : null;
       if (
         nextRoom &&
-        shouldSubscribeToRoomUpdates(nextRoom, newRoomId)
+        shouldSubscribeToForegroundRoomUpdates(nextRoom, newRoomId)
       ) {
         subscribeToRoomChannel(nextRoom.id);
       }
@@ -688,14 +684,17 @@ export function useChatRoom(
     const visibleRoomsById = new Map(rooms.map((room) => [room.id, room]));
 
     rooms.forEach((room) => {
-      if (shouldSubscribeToRoomUpdates(room, currentRoomId)) {
+      if (shouldSubscribeToForegroundRoomUpdates(room, currentRoomId)) {
         subscribeToRoomChannel(room.id);
       }
     });
 
     Object.keys(roomChannelsRef.current).forEach((roomId) => {
       const room = visibleRoomsById.get(roomId);
-      if (!room || !shouldSubscribeToRoomUpdates(room, currentRoomId)) {
+      if (
+        !room ||
+        !shouldSubscribeToForegroundRoomUpdates(room, currentRoomId)
+      ) {
         unsubscribeFromRoomChannel(roomId);
       }
     });

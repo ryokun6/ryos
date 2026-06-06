@@ -1,4 +1,8 @@
 import { describe, test, expect } from "bun:test";
+import {
+  shouldSubscribeToBackgroundRoomUpdates,
+  shouldSubscribeToForegroundRoomUpdates,
+} from "../src/utils/chatRoomSubscriptions";
 
 /**
  * Guardrail tests for chat hook channel lifecycle wiring.
@@ -29,6 +33,42 @@ const assertNoBroadUnbinds = (source: string): void => {
 };
 
 describe("Chat Hook Channel Lifecycle Wiring", () => {
+  describe("Subscription decisions", () => {
+    test("foreground subscribes to IRC updates only for the active room", () => {
+      expect(
+        shouldSubscribeToForegroundRoomUpdates(
+          { id: "irc-active", type: "irc" },
+          "irc-active"
+        )
+      ).toBe(true);
+      expect(
+        shouldSubscribeToForegroundRoomUpdates(
+          { id: "irc-idle", type: "irc" },
+          "other-room"
+        )
+      ).toBe(false);
+      expect(
+        shouldSubscribeToForegroundRoomUpdates(
+          { id: "public-room", type: "public" },
+          "other-room"
+        )
+      ).toBe(true);
+      expect(
+        shouldSubscribeToForegroundRoomUpdates(
+          { id: "private-room", type: "private" },
+          null
+        )
+      ).toBe(true);
+    });
+
+    test("background skips IRC room update subscriptions", () => {
+      expect(shouldSubscribeToBackgroundRoomUpdates({ type: "irc" })).toBe(false);
+      expect(shouldSubscribeToBackgroundRoomUpdates({ type: "public" })).toBe(true);
+      expect(shouldSubscribeToBackgroundRoomUpdates({ type: "private" })).toBe(true);
+      expect(shouldSubscribeToBackgroundRoomUpdates({ type: undefined })).toBe(true);
+    });
+  });
+
   describe("Background notifications hook", () => {
     test("background hook uses shared lifecycle helpers", async () => {
       const source = readSource("src/hooks/useBackgroundChatNotifications.ts");
@@ -42,8 +82,7 @@ describe("Chat Hook Channel Lifecycle Wiring", () => {
 
     test("background hook excludes IRC room channels", async () => {
       const source = readSource("src/hooks/useBackgroundChatNotifications.ts");
-      expect(source).toContain("shouldSubscribeInBackground");
-      expect(source).toContain('room.type !== "irc"');
+      expect(source).toContain("shouldSubscribeToBackgroundRoomUpdates");
       expect(source).toContain("backgroundRoomsById.has(roomId)");
     });
   });
@@ -61,8 +100,7 @@ describe("Chat Hook Channel Lifecycle Wiring", () => {
 
     test("chat room hook scopes IRC updates to the current room", async () => {
       const source = readSource("src/apps/chats/hooks/useChatRoom.ts");
-      expect(source).toContain("shouldSubscribeToRoomUpdates");
-      expect(source).toContain('room.type !== "irc" || room.id === currentRoomId');
+      expect(source).toContain("shouldSubscribeToForegroundRoomUpdates");
       expect(source).toContain("unsubscribeFromRoomChannel(currentRoomId)");
       expect(source).toContain("currentRoomId,");
       expect(source).toContain("subscribeToRoomChannel,");

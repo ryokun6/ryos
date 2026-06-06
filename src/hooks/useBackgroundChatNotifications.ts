@@ -13,15 +13,12 @@ import { removeChatRoomById, upsertChatRoom } from "@/utils/chatRoomList";
 import { shouldNotifyForRoomMessage } from "@/utils/chatNotifications";
 import { showRoomMessageNotification } from "@/utils/chatNotificationDisplay";
 import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
+import { shouldSubscribeToBackgroundRoomUpdates } from "@/utils/chatRoomSubscriptions";
 
 const getGlobalChannelName = (username?: string | null): string =>
   username
     ? `chats-${username.toLowerCase().replace(/[^a-zA-Z0-9_\-.]/g, "_")}`
     : "chats-public";
-
-const shouldSubscribeInBackground = (
-  room: Pick<ChatRoom, "type">
-): boolean => room.type !== "irc";
 
 const toTimestamp = (value: string | number): number =>
   (() => {
@@ -302,7 +299,7 @@ export function useBackgroundChatNotifications() {
 
     const backgroundRoomsById = new Map(
       rooms
-        .filter(shouldSubscribeInBackground)
+        .filter(shouldSubscribeToBackgroundRoomUpdates)
         .map((room) => [room.id, room])
     );
 
