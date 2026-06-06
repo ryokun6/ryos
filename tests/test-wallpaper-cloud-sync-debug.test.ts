@@ -98,12 +98,22 @@ describe("wallpaper cloud sync debug reproduction", () => {
     const { useDisplaySettingsStore, DEFAULT_WALLPAPER_PATH } = await import(
       "../src/stores/useDisplaySettingsStore"
     );
+    const wallpaperManifest = await Bun.file(
+      "public/wallpapers/manifest.json"
+    ).json();
     const syncDomainChecks: string[] = [];
     const unsubscribe = subscribeToCloudSyncDomainCheckRequests((domain) => {
       syncDomainChecks.push(domain);
     });
 
     try {
+      expect(DEFAULT_WALLPAPER_PATH).toBe(
+        "/wallpapers/photos/plants/dandelion_seeds.jpg"
+      );
+      expect(wallpaperManifest.photos.plants).toContain(
+        "photos/plants/dandelion_seeds.jpg"
+      );
+
       useDisplaySettingsStore.setState({
         currentWallpaper: DEFAULT_WALLPAPER_PATH,
         wallpaperSource: DEFAULT_WALLPAPER_PATH,
