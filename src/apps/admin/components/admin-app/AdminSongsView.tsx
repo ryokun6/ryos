@@ -3,6 +3,14 @@ import { Button } from "@/components/ui/button";
 import { MusicNote, Trash, Funnel } from "@phosphor-icons/react";
 import type { TFunction } from "i18next";
 import type { CachedSongMetadata } from "@/utils/songMetadataCache";
+import { cn } from "@/lib/utils";
+import {
+  adminAvatarWellClass,
+  adminGhostIconBtnClass,
+  adminListDividerClass,
+  adminLoadMoreBtnClass,
+  adminRowHoverClass,
+} from "../../utils/adminStyles";
 
 export interface AdminSongsViewProps {
   t: TFunction;
@@ -57,14 +65,17 @@ export function AdminSongsView({
         </div>
       ) : (
         <>
-          <div className="w-full min-w-0 divide-y divide-neutral-200">
+          <div className={cn("w-full min-w-0", adminListDividerClass)}>
             {filteredSongs.slice(0, visibleSongsCount).map((song) => (
               <div
                 key={song.youtubeId}
-                className="flex w-full min-w-0 items-center gap-3 px-3 py-2 hover:bg-neutral-100/50 transition-colors cursor-pointer group"
+                className={cn(
+                  "flex w-full min-w-0 items-center gap-3 px-3 py-2 cursor-pointer group",
+                  adminRowHoverClass,
+                )}
                 onClick={() => setSelectedSongId(song.youtubeId)}
               >
-                <div className="size-10 flex-shrink-0 rounded overflow-hidden bg-neutral-200">
+                <div className={cn("size-10 flex-shrink-0 rounded overflow-hidden", adminAvatarWellClass)}>
                   <img
                     src={
                       formatKugouImageUrl(song.cover, 100) ||
@@ -101,7 +112,7 @@ export function AdminSongsView({
                     e.stopPropagation();
                     promptDelete("song", song.youtubeId, song.title);
                   }}
-                  className="size-6 p-0 flex-shrink-0 md:opacity-0 md:group-hover:opacity-100 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100"
+                  className={cn("size-6 p-0 flex-shrink-0 md:opacity-0 md:group-hover:opacity-100", adminGhostIconBtnClass)}
                 >
                   <Trash size={14} weight="bold" />
                 </Button>
@@ -116,7 +127,7 @@ export function AdminSongsView({
                 onClick={() =>
                   setVisibleSongsCount((prev) => prev + SONGS_PER_PAGE)
                 }
-                className="h-7 text-[11px] text-neutral-500 hover:text-neutral-700"
+                className={adminLoadMoreBtnClass}
               >
                 {t("apps.admin.loadMore", {
                   remaining: filteredSongs.length - visibleSongsCount,

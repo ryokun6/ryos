@@ -3,6 +3,7 @@ import { ArrowLeft } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "./Skeleton";
 import type { UserProfilePanelViewModel } from "./useUserProfilePanel";
+import { adminAvatarWellClass, adminDetailHeaderClass } from "../../utils/adminStyles";
 
 type Props = Pick<
   UserProfilePanelViewModel,
@@ -25,15 +26,16 @@ export function UserProfilePanelHeader({
   formatRelativeTime,
 }: Props) {
   return (
-    <div className="flex items-center gap-2 px-3 py-2 border-b border-neutral-200 bg-neutral-50">
+    <div className={adminDetailHeaderClass}>
       <Button variant="ghost" size="sm" onClick={onBack} className="size-6 p-0">
         <ArrowLeft className="size-3.5" weight="bold" />
       </Button>
       <div className="flex items-center gap-2">
         <div
           className={cn(
-            "size-8 rounded-full flex items-center justify-center text-sm font-medium text-neutral-600",
-            isLoading ? "bg-neutral-200 animate-pulse" : "bg-neutral-200"
+            "size-8 rounded-full flex items-center justify-center text-sm font-medium",
+            adminAvatarWellClass,
+            isLoading && "animate-pulse"
           )}
         >
           {!isLoading && username[0].toUpperCase()}

@@ -33,7 +33,7 @@ export function AdminStatusBar({
   username,
 }: AdminStatusBarProps) {
   return (
-    <div className="os-status-bar os-status-bar-text flex items-center justify-between px-2 py-1 text-[10px] font-geneva-12 bg-neutral-100 border-t border-neutral-300">
+    <div className="os-status-bar os-status-bar-text flex items-center justify-between px-2 py-1 text-[10px] font-geneva-12">
       <span>
         {activeSection === "dashboard"
           ? t("apps.admin.sidebar.dashboard", "Dashboard")

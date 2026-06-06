@@ -15,6 +15,12 @@ import {
 } from "@/lib/aquaIconButton";
 import { SectionHeader } from "./SectionHeader";
 import { Skeleton } from "./Skeleton";
+import {
+  adminAltRowBgClass,
+  adminRowHoverClass,
+  adminTableHeadClass,
+  adminTableRowClass,
+} from "../../utils/adminStyles";
 import type { UserProfilePanelViewModel } from "./useUserProfilePanel";
 
 type Props = Pick<
@@ -113,13 +119,13 @@ export function UserProfilePanelMemoriesSection(props: Props) {
                 <Table className="table-fixed">
                   <TableHeader>
                     <TableRow className="text-[10px] border-none font-normal">
-                  <TableHead className="font-normal bg-neutral-100/50 h-[24px] w-[30%]">
+                  <TableHead className={cn(adminTableHeadClass, "h-[24px] w-[30%]")}>
                     {t("apps.admin.profile.memoryKey")}
                   </TableHead>
-                  <TableHead className="font-normal bg-neutral-100/50 h-[24px]">
+                  <TableHead className={cn(adminTableHeadClass, "h-[24px]")}>
                     {t("apps.admin.profile.memorySummary")}
                   </TableHead>
-                  <TableHead className="font-normal bg-neutral-100/50 h-[24px] whitespace-nowrap w-[20%]">
+                  <TableHead className={cn(adminTableHeadClass, "h-[24px] whitespace-nowrap w-[20%]")}>
                     {t("apps.admin.tableHeaders.time")}
                   </TableHead>
                     </TableRow>
@@ -132,8 +138,9 @@ export function UserProfilePanelMemoriesSection(props: Props) {
                       <TableRow
                         onClick={() => toggleMemory(memory.key)}
                         className={cn(
-                          "border-none hover:bg-neutral-100/50 transition-colors cursor-pointer",
-                          index % 2 === 1 && "bg-neutral-200/30"
+                          adminTableRowClass,
+                          "cursor-pointer",
+                          index % 2 === 1 && adminAltRowBgClass,
                         )}
                       >
                         <TableCell>
@@ -157,7 +164,7 @@ export function UserProfilePanelMemoriesSection(props: Props) {
                         <TableRow
                           className={cn(
                         "border-none",
-                        index % 2 === 1 ? "bg-neutral-200/30" : ""
+                        index % 2 === 1 ? adminAltRowBgClass : ""
                           )}
                         >
                           <TableCell colSpan={3} className="pt-0 pb-3">
@@ -209,7 +216,10 @@ export function UserProfilePanelMemoriesSection(props: Props) {
                     <div key={note.date}>
                       <button
                         onClick={() => toggleDailyNote(note.date)}
-                        className="flex items-center gap-1.5 w-full text-left text-[11px] hover:bg-neutral-100/50 px-1 py-0.5 rounded transition-colors"
+                        className={cn(
+                          "flex items-center gap-1.5 w-full text-left text-[11px] px-1 py-0.5 rounded",
+                          adminRowHoverClass,
+                        )}
                       >
                         <CaretRight
                           className={cn(

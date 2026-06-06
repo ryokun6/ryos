@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { formatKugouImageUrl } from "./utils";
 import { Skeleton } from "./Skeleton";
 import type { SongDetailPanelViewModel } from "./useSongDetailPanel";
+import { adminAvatarWellClass, adminDetailHeaderClass } from "../../utils/adminStyles";
 
 type Props = Pick<
   SongDetailPanelViewModel,
@@ -27,15 +28,16 @@ export function SongDetailPanelHeader({
   setIsDeleteDialogOpen,
 }: Props) {
   return (
-    <div className="flex items-center gap-2 px-3 py-2 border-b border-neutral-200 bg-neutral-50">
+    <div className={adminDetailHeaderClass}>
       <Button variant="ghost" size="sm" onClick={onBack} className="size-6 p-0">
         <ArrowLeft className="size-3.5" weight="bold" />
       </Button>
       <div className="flex items-center gap-2 flex-1 min-w-0">
         <div
           className={cn(
-            "size-10 rounded flex items-center justify-center text-sm font-medium text-neutral-600 flex-shrink-0 overflow-hidden",
-            isLoading ? "bg-neutral-200 animate-pulse" : "bg-neutral-200"
+            "size-10 rounded flex items-center justify-center text-sm font-medium flex-shrink-0 overflow-hidden",
+            adminAvatarWellClass,
+            isLoading && "animate-pulse"
           )}
         >
           {!isLoading && (

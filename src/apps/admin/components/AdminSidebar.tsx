@@ -6,6 +6,7 @@ import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { SelectableListItem } from "@/components/ui/selectable-list-item";
 import { useTranslation } from "react-i18next";
 import type { AdminSection } from "../utils/navigationState";
+import { adminSidebarClass } from "../utils/adminStyles";
 
 interface Room {
   id: string;
@@ -57,7 +58,8 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   return (
     <div
       className={cn(
-        "flex flex-col font-geneva-12 text-[12px] bg-neutral-100 w-56 border-r h-full overflow-hidden",
+        "flex flex-col font-geneva-12 text-[12px] w-56 border-r h-full overflow-hidden",
+        adminSidebarClass,
         isWindowsLegacyTheme
           ? "border-[#919b9c]"
           : isMacOSTheme
@@ -87,7 +89,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           >
             <div className="flex items-center">
               <span>{t("apps.admin.sidebar.users")}</span>
-              <span className={cn("text-[10px] ml-1.5", activeSection === "users" && selectedRoomId === null ? "text-white/40" : "text-black/40")}>
+              <span className={cn("text-[10px] ml-1.5", activeSection === "users" && selectedRoomId === null ? "text-white/40" : "text-os-text-disabled")}>
                 {stats.totalUsers}
               </span>
             </div>
@@ -99,7 +101,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           >
             <div className="flex items-center">
               <span>{t("apps.admin.sidebar.songs", "Songs")}</span>
-              <span className={cn("text-[10px] ml-1.5", activeSection === "songs" && selectedRoomId === null ? "text-white/40" : "text-black/40")}>
+              <span className={cn("text-[10px] ml-1.5", activeSection === "songs" && selectedRoomId === null ? "text-white/40" : "text-os-text-disabled")}>
                 {stats.totalSongs ?? 0}
               </span>
             </div>
@@ -116,7 +118,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                   "ml-1.5 text-[10px]",
                   activeSection === "cursorAgents"
                     ? "text-white/40"
-                    : "text-black/40"
+                    : "text-os-text-disabled"
                 )}
               >
                 {stats.totalCursorAgents ?? 0}
@@ -128,7 +130,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           <div
             className={cn(
               "mt-2 px-4 pt-2 pb-1 w-full flex items-center group cursor-pointer",
-              "!text-[11px] uppercase tracking-wide text-black/50"
+              "!text-[11px] uppercase tracking-wide text-os-text-secondary"
             )}
             onClick={() => {
               playButtonClick();
@@ -139,7 +141,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
             <span className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
               <CaretRight
                 className={cn(
-                  "w-2.5 h-2.5 text-black/50 transition-transform",
+                  "w-2.5 h-2.5 text-os-text-secondary transition-transform",
                   isRoomsExpanded ? "rotate-90" : "rotate-0"
                 )}
               />
@@ -163,7 +165,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                         <span
                           className={cn(
                             "text-[10px] ml-1.5 transition-opacity",
-                            selectedRoomId === room.id ? "text-white/40" : "text-black/40",
+                            selectedRoomId === room.id ? "text-white/40" : "text-os-text-disabled",
                             room.userCount > 0 ? "opacity-100" : selectedRoomId === room.id ? "opacity-100" : "opacity-0 group-hover:opacity-100"
                           )}
                         >

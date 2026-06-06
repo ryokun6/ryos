@@ -10,6 +10,13 @@ import {
 } from "@/components/ui/table";
 import { MagnifyingGlass, Trash, Prohibit } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
+import {
+  adminAvatarWellClass,
+  adminGhostIconBtnClass,
+  adminLoadMoreBtnClass,
+  adminTableHeadClass,
+  adminTableRowClass,
+} from "../../utils/adminStyles";
 import type { TFunction } from "i18next";
 
 interface UserRow {
@@ -57,16 +64,16 @@ export function AdminUsersView({
           <Table>
             <TableHeader>
               <TableRow className="text-[10px] border-none font-normal">
-                <TableHead className="font-normal bg-neutral-100/50 h-[28px]">
+                <TableHead className={cn(adminTableHeadClass, "h-[28px]")}>
                   {t("apps.admin.tableHeaders.username")}
                 </TableHead>
-                <TableHead className="font-normal bg-neutral-100/50 h-[28px]">
+                <TableHead className={cn(adminTableHeadClass, "h-[28px]")}>
                   {t("apps.admin.tableHeaders.status")}
                 </TableHead>
-                <TableHead className="font-normal bg-neutral-100/50 h-[28px] whitespace-nowrap">
+                <TableHead className={cn(adminTableHeadClass, "h-[28px] whitespace-nowrap")}>
                   {t("apps.admin.tableHeaders.lastActive")}
                 </TableHead>
-                <TableHead className="font-normal bg-neutral-100/50 h-[28px] w-8"></TableHead>
+                <TableHead className={cn(adminTableHeadClass, "h-[28px] w-8")}></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody className="text-[11px]">
@@ -74,7 +81,8 @@ export function AdminUsersView({
                 <TableRow
                   key={user.username}
                   className={cn(
-                    "border-none hover:bg-neutral-100/50 transition-colors cursor-pointer odd:bg-neutral-200/50 group",
+                    adminTableRowClass,
+                    "cursor-pointer",
                     user.banned && "bg-red-50/50 odd:bg-red-50/70",
                   )}
                   onClick={() => setSelectedUserProfile(user.username)}
@@ -85,7 +93,7 @@ export function AdminUsersView({
                         "size-4 rounded-full flex items-center justify-center text-[9px] font-medium",
                         user.banned
                           ? "bg-red-200 text-red-700"
-                          : "bg-neutral-200 text-neutral-600",
+                          : adminAvatarWellClass,
                       )}
                     >
                       {user.username[0].toUpperCase()}
@@ -120,7 +128,7 @@ export function AdminUsersView({
                           e.stopPropagation();
                           promptDelete("user", user.username, user.username);
                         }}
-                        className="size-5 p-0 md:opacity-0 md:group-hover:opacity-100 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100"
+                        className={cn("size-5 p-0 md:opacity-0 md:group-hover:opacity-100", adminGhostIconBtnClass)}
                       >
                         <Trash size={14} weight="bold" />
                       </Button>
@@ -138,7 +146,7 @@ export function AdminUsersView({
                 onClick={() =>
                   setVisibleUsersCount((prev) => prev + USERS_PER_PAGE)
                 }
-                className="h-7 text-[11px] text-neutral-500 hover:text-neutral-700"
+                className={adminLoadMoreBtnClass}
               >
                 {t("apps.admin.loadMore", {
                   remaining: users.length - visibleUsersCount,
