@@ -19,7 +19,6 @@ import {
   useVideoStoreShallow,
 } from "@/stores/helpers";
 import { formatKugouImageUrl } from "@/utils/coverArt";
-import { abortableFetch } from "@/utils/abortableFetch";
 import { fetchAndCacheAppletContentFromShare } from "@/utils/appletVfs";
 import { getStoreForFile } from "@/utils/indexedDBOperations";
 import {
@@ -539,7 +538,6 @@ export function useFileSystem(
   const {
     getItem: getFileItem,
     getItemsInPath,
-    updateItemMetadata,
     addItem: addFileItem,
     moveItem: moveFileItem,
     renameItem: renameFileItem,
@@ -550,7 +548,6 @@ export function useFileSystem(
   } = useFilesStoreShallow((state) => ({
     getItem: state.getItem,
     getItemsInPath: state.getItemsInPath,
-    updateItemMetadata: state.updateItemMetadata,
     addItem: state.addItem,
     moveItem: state.moveItem,
     renameItem: state.renameItem,
