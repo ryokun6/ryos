@@ -4,11 +4,13 @@ import { pickPrimaryColor } from "@/apps/ipod/components/lyrics-display/colorUti
 type Rgb = { r: number; g: number; b: number };
 type Hsl = { h: number; s: number; l: number };
 
-// HSL lightness band aligned with stock manual accents (blue ~0.47).
+// HSL lightness band for sampled wallpaper accents. It sits a bit lighter than
+// the stock manual accents so the default wallpaper-driven accent reads clearly
+// in both Aqua light and dark mode chrome.
 export const WALLPAPER_ACCENT_LIGHTNESS = {
-  target: 0.48,
-  min: 0.4,
-  max: 0.52,
+  target: 0.56,
+  min: 0.5,
+  max: 0.6,
 } as const;
 
 export const WALLPAPER_ACCENT_SATURATION = {
@@ -113,7 +115,7 @@ export function normalizeWallpaperAccentColor(
       hslToRgb({
         h: hsl.h,
         s: hsl.s <= 0 ? 0 : Math.min(hsl.s, neutralTint),
-        l: Math.max(target, 0.54),
+        l: Math.max(target, 0.58),
       })
     );
   }
