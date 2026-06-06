@@ -11,6 +11,7 @@ import { ScreenSaverPicker } from "../ScreenSaverPicker";
 import type { LanguageCode } from "@/stores/useLanguageStore";
 import { themes } from "@/themes";
 import type { OsThemeId } from "@/themes/types";
+import { cn } from "@/lib/utils";
 import {
   getAccentOptions,
   type AccentChrome,
@@ -18,14 +19,31 @@ import {
 } from "@/themes/accents";
 import type { TabStyleConfig } from "@/utils/tabStyles";
 
-/** Small round color chip shown in the accent Select trigger + menu items. */
-function AccentSwatch({ color }: { color: string }) {
+/** Small color chip shown in the accent Select trigger + menu items. */
+function AccentSwatch({
+  chrome,
+  color,
+}: {
+  chrome: AccentChrome;
+  color: string;
+}) {
+  const isAqua = chrome === "aqua";
+
   return (
     <span
       aria-hidden="true"
-      className="h-3.5 w-3.5 flex-shrink-0 rounded-full border border-black/30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]"
+      className={cn(
+        "relative inline-block flex-shrink-0 overflow-hidden",
+        isAqua
+          ? "h-4 w-4 rounded-[5px] border border-black/25 shadow-[0_1px_1px_rgba(0,0,0,0.2),inset_0_0_0_1px_rgba(255,255,255,0.45)]"
+          : "h-3.5 w-3.5 rounded-none border border-black shadow-none"
+      )}
       style={{ background: color }}
-    />
+    >
+      {isAqua && (
+        <span className="absolute inset-x-[2px] top-[2px] h-[6px] rounded-[3px] bg-gradient-to-b from-white/85 to-white/15" />
+      )}
+    </span>
   );
 }
 
@@ -207,7 +225,7 @@ export function AppearanceTabContent({
                 <SelectTrigger className="w-[120px] flex-shrink-0">
                   <SelectValue placeholder={t("apps.control-panels.select")}>
                     <span className="flex items-center gap-2 min-w-0">
-                      <AccentSwatch color={selectedSwatch} />
+                      <AccentSwatch chrome={accentChrome} color={selectedSwatch} />
                       <span className="truncate">
                         {t(`apps.control-panels.accentColors.${accent}`)}
                       </span>
@@ -218,7 +236,7 @@ export function AppearanceTabContent({
                   {accentOptions.map((option) => (
                     <SelectItem key={option.id} value={option.id}>
                       <span className="flex items-center gap-2">
-                        <AccentSwatch color={option.swatch} />
+                        <AccentSwatch chrome={accentChrome} color={option.swatch} />
                         <span>
                           {t(`apps.control-panels.accentColors.${option.id}`)}
                         </span>
