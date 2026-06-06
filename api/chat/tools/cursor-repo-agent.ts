@@ -125,7 +125,7 @@ export function cursorCloudAgentDashboardUrl(agentId: string): string {
 
 /** Shown to the model when this tool is enabled */
 export const CURSOR_CLOUD_AGENT_DESCRIPTION =
-  "Run Cursor's coding agent in Cursor Cloud against the GitHub repo ryokun6/ryos (not the browser VFS). Use when the user asks to implement, debug, or refactor the real ryOS product codebase—not virtual paths like /Documents or /Applets (those use read/write/edit). Give clear instructions and desired outcomes. Uses CURSOR_API_KEY and Cursor SDK billing. The run is asynchronous: you get an immediate acknowledgment while work continues, and the user is notified when it completes (live stream in web chat, follow-up message on Telegram). The chat card exposes a reply input that resumes the same Cursor agent for follow-up turns and a button that opens the auto-created GitHub PR. When you tell the user the job started, share the **Cursor agent dashboard link** from the tool result (`agentDashboardUrl`, URL shape https://cursor.com/agents/bc_…) — do **not** lead with the opaque run id. For recent jobs, use `listCursorCloudAgentRuns` (each row includes `agentDashboardUrl`).";
+  "Run Cursor's coding agent in Cursor Cloud against the GitHub repo ryokun6/ryos (not the browser VFS). Use when the user asks to implement, debug, or refactor the real ryOS product codebase—not virtual paths like /Documents or /Applets (those use read/write/edit). Give clear instructions and desired outcomes. Uses CURSOR_API_KEY and Cursor SDK billing. The run is asynchronous: you get an immediate acknowledgment while work continues, and the user is notified when it completes (live stream in web chat, follow-up message on Telegram). The chat card exposes a reply input that resumes the same Cursor agent for follow-up turns and a button that opens the auto-created GitHub PR. When you tell the user the job started, acknowledge briefly and do **not** paste `agentDashboardUrl`, `agentId`, or `runId` in your reply — web chat renders the live Cursor agent card with dashboard access; Telegram users receive completion links separately. For recent jobs, use `listCursorCloudAgentRuns` (the UI lists rows with dashboard links — do not repeat those URLs or ids in text).";
 
 export const cursorCloudAgentSchema = z.object({
   prompt: z
@@ -253,7 +253,7 @@ export type CursorCloudAgentToolOutput =
       async: true;
       runId: string;
       agentId: string;
-      /** https://cursor.com/agents/{agentId} — prefer this when telling the user where to follow the job */
+      /** https://cursor.com/agents/{agentId} — for UI cards; do not ask the model to paste in chat */
       agentDashboardUrl: string;
       /** Cloud catalog display name when available (`Agent.get`) */
       agentTitle?: string;
