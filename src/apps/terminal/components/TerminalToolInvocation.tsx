@@ -333,7 +333,11 @@ export function TerminalToolInvocation({
     >
       {state === "output-available" && displayResultMessage ? (
         <>
-          <Check className="size-3 text-green-400 flex-shrink-0" weight="bold" />
+          <Check
+            className="size-3 flex-shrink-0"
+            style={{ color: "var(--os-accent-color, var(--os-color-selection-bg))" }}
+            weight="bold"
+          />
           <span className="italic">{displayResultMessage}</span>
         </>
       ) : state === "output-error" ? (

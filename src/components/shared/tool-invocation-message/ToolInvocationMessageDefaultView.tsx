@@ -50,7 +50,13 @@ export function ToolInvocationMessageDefaultView({
         )}
       {state === "output-available" && (
         <ToolInvocationStatusRow
-          icon={<Check className="size-3 text-blue-600 dark:text-blue-400" weight="bold" />}
+          icon={
+            <Check
+              className="size-3"
+              style={{ color: "var(--os-accent-color, var(--os-color-selection-bg))" }}
+              weight="bold"
+            />
+          }
           className="text-neutral-700 dark:text-neutral-200"
           align="start"
         >

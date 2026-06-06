@@ -109,7 +109,11 @@ export function CursorRepoAgentChatCard({
         <div className="mb-2 px-0.5">
           <div className="flex items-start gap-1 text-[12px] text-neutral-800 dark:text-neutral-200">
             <span className="inline-flex size-3 shrink-0 items-center justify-center pt-0.5">
-              <Check className="size-3 text-blue-600 dark:text-blue-400" weight="bold" />
+              <Check
+                className="size-3"
+                style={{ color: "var(--os-accent-color, var(--os-color-selection-bg))" }}
+                weight="bold"
+              />
             </span>
             <span className="italic leading-snug">{introMessage}</span>
           </div>

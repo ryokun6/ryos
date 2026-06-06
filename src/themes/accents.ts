@@ -389,6 +389,7 @@ export function getAccentCssVars(
   if (chrome === "system7") {
     // System 7 selections are flat fills — no gradients.
     return {
+      "--os-accent-color": rgb(base),
       "--os-color-selection-bg": rgb(base),
       "--os-color-selection-text": text,
       "--os-color-input-focus-border": rgb(base),
@@ -464,6 +465,7 @@ export function getAccentCssVars(
       )} 100%)`;
 
   return {
+    "--os-accent-color": rgb(base),
     "--os-color-selection-bg": rgba(base, selectionAlpha),
     "--os-color-selection-text": text,
     "--os-color-selection-text-shadow": "none",
@@ -506,6 +508,7 @@ export function getAccentCssVars(
 
 /** CSS custom properties that this module may set, so callers can clear them. */
 export const ACCENT_CSS_VAR_NAMES = [
+  "--os-accent-color",
   "--os-color-selection-bg",
   "--os-color-selection-text",
   "--os-color-selection-text-shadow",
