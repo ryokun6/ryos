@@ -13,11 +13,7 @@ import {
   getUserColorClass,
   isUrgentMessage,
 } from "../utils";
-import {
-  extractUrlsFromContent,
-  filterLinkPreviewUrls,
-  messageHasCursorCloudAgentCard,
-} from "./utils";
+import { extractUrlsFromContent } from "./utils";
 
 export type ChatMessageItemViewModel = ReturnType<typeof useChatMessageItem>;
 
@@ -166,12 +162,7 @@ export function useChatMessageItem(props: ChatMessageItemProps) {
     } else {
       extractUrlsFromContent(displayContent).forEach((u) => allUrls.add(u));
     }
-    const suppressCursorAgentDashboard =
-      message.role === "assistant" &&
-      messageHasCursorCloudAgentCard(message.parts);
-    return filterLinkPreviewUrls(Array.from(allUrls), {
-      suppressCursorAgentDashboard,
-    });
+    return Array.from(allUrls);
   })();
 
   return {
