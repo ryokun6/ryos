@@ -4,39 +4,21 @@ import { pickPrimaryColor } from "@/apps/ipod/components/lyrics-display/colorUti
 type Rgb = { r: number; g: number; b: number };
 type Hsl = { h: number; s: number; l: number };
 
-/**
- * Tunable targets for wallpaper-derived accent colors.
- *
- * Stock manual accents (blue #2765ca, purple #8344c4, red #d23b30, etc.) sit
- * around HSL lightness 0.45–0.52. We normalize extracted wallpaper colors into
- * that band so selections stay readable on both light and dark Aqua/System 7
- * chrome without washing out or sinking into near-black.
- */
+// HSL lightness band aligned with stock manual accents (blue ~0.47).
 export const WALLPAPER_ACCENT_LIGHTNESS = {
-  /** Ideal lightness — aligned with the default Aqua blue accent. */
   target: 0.48,
-  /** Inclusive band; colors already inside are kept (hue/chroma preserved). */
   min: 0.4,
   max: 0.52,
 } as const;
 
-/**
- * Saturation guards for colorful vs neutral wallpaper samples.
- *
- * Below `neutralMax` we treat the sample as achromatic and emit a graphite-like
- * neutral. Colorful samples are lifted to at least `colorfulMin` so a vivid
- * wallpaper does not collapse into a muddy gray accent.
- */
 export const WALLPAPER_ACCENT_SATURATION = {
   neutralMax: 0.12,
-  /** Faint tint retained on neutral wallpapers (graphite is ~6% sat). */
   neutralTint: 0.06,
   colorfulMin: 0.38,
   colorfulMax: 0.72,
 } as const;
 
-/** Fallback when palette extraction yields nothing usable. */
-export const WALLPAPER_ACCENT_FALLBACK = "#2765ca";
+const FALLBACK = "#2765ca";
 
 function parseHex(hex: string): Rgb {
   const clean = hex.replace("#", "");
@@ -115,70 +97,37 @@ function hslToRgb({ h, s, l }: Hsl): Rgb {
   };
 }
 
-function normalizeLightness(lightness: number): number {
-  const { min, max, target } = WALLPAPER_ACCENT_LIGHTNESS;
-  if (lightness >= min && lightness <= max) return lightness;
-  return target;
-}
-
-function normalizeNeutralAccent(hsl: Hsl): string {
-  const { neutralTint } = WALLPAPER_ACCENT_SATURATION;
-  const { target } = WALLPAPER_ACCENT_LIGHTNESS;
-  // Graphite-like neutral: mid lightness; only keep a tint when the source had one.
-  const tint =
-    hsl.s <= 0 ? 0 : Math.min(hsl.s, neutralTint);
-  const tinted = hslToRgb({
-    h: hsl.h,
-    s: tint,
-    l: Math.max(target, 0.54),
-  });
-  return rgbToHex(tinted);
-}
-
-/**
- * Normalize a sampled wallpaper hex for use as a UI accent.
- *
- * Preserves hue (and chroma where present) while pulling lightness into
- * {@link WALLPAPER_ACCENT_LIGHTNESS}. Neutral / near-black / near-white inputs
- * are handled without inventing false chroma.
- */
 export function normalizeWallpaperAccentColor(
   hex: string | null | undefined
 ): string {
   const normalized = normalizeAccentHex(hex);
-  if (!normalized) return WALLPAPER_ACCENT_FALLBACK;
+  if (!normalized) return FALLBACK;
 
   const hsl = rgbToHsl(parseHex(normalized));
-  const { neutralMax, colorfulMin, colorfulMax } = WALLPAPER_ACCENT_SATURATION;
+  const { neutralMax, neutralTint, colorfulMin, colorfulMax } =
+    WALLPAPER_ACCENT_SATURATION;
+  const { min, max, target } = WALLPAPER_ACCENT_LIGHTNESS;
 
   if (hsl.s <= neutralMax) {
-    return normalizeNeutralAccent(hsl);
+    return rgbToHex(
+      hslToRgb({
+        h: hsl.h,
+        s: hsl.s <= 0 ? 0 : Math.min(hsl.s, neutralTint),
+        l: Math.max(target, 0.54),
+      })
+    );
   }
-
-  const saturation = Math.min(
-    Math.max(hsl.s, colorfulMin),
-    colorfulMax
-  );
-  const lightness = normalizeLightness(hsl.l);
 
   return rgbToHex(
     hslToRgb({
       h: hsl.h,
-      s: saturation,
-      l: lightness,
+      s: Math.min(Math.max(hsl.s, colorfulMin), colorfulMax),
+      l: hsl.l >= min && hsl.l <= max ? hsl.l : target,
     })
   );
 }
 
-/** Pick + normalize the accent color from an extracted wallpaper palette. */
 export function resolveWallpaperAccentFromPalette(palette: string[]): string {
-  if (palette.length === 0) return WALLPAPER_ACCENT_FALLBACK;
+  if (palette.length === 0) return FALLBACK;
   return normalizeWallpaperAccentColor(pickPrimaryColor(palette));
-}
-
-/** @internal Exported for unit tests. */
-export function wallpaperAccentHsl(hex: string): Hsl {
-  const normalized = normalizeAccentHex(hex);
-  if (!normalized) throw new Error(`Invalid hex: ${hex}`);
-  return rgbToHsl(parseHex(normalized));
 }

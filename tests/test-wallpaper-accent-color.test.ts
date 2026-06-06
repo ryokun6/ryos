@@ -4,8 +4,33 @@ import {
   resolveWallpaperAccentFromPalette,
   WALLPAPER_ACCENT_LIGHTNESS,
   WALLPAPER_ACCENT_SATURATION,
-  wallpaperAccentHsl,
 } from "../src/themes/wallpaperAccentColor";
+
+function hexToHsl(hex: string): { h: number; s: number; l: number } {
+  const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
+  if (!m) throw new Error(`Invalid hex: ${hex}`);
+  const [r, g, b] = [
+    parseInt(m[1]!, 16),
+    parseInt(m[2]!, 16),
+    parseInt(m[3]!, 16),
+  ];
+  const rn = r / 255;
+  const gn = g / 255;
+  const bn = b / 255;
+  const max = Math.max(rn, gn, bn);
+  const min = Math.min(rn, gn, bn);
+  const delta = max - min;
+  const l = (max + min) / 2;
+  let h = 0;
+  if (delta !== 0) {
+    if (max === rn) h = ((gn - bn) / delta) % 6;
+    else if (max === gn) h = (bn - rn) / delta + 2;
+    else h = (rn - gn) / delta + 4;
+    h = (h * 60 + 360) % 360;
+  }
+  const s = delta === 0 ? 0 : delta / (1 - Math.abs(2 * l - 1));
+  return { h, s, l };
+}
 
 function hueDelta(a: number, b: number): number {
   const delta = Math.abs(a - b) % 360;
@@ -13,7 +38,7 @@ function hueDelta(a: number, b: number): number {
 }
 
 function expectLightnessInBand(hex: string) {
-  const { l } = wallpaperAccentHsl(hex);
+  const { l } = hexToHsl(hex);
   expect(l).toBeGreaterThanOrEqual(WALLPAPER_ACCENT_LIGHTNESS.min);
   expect(l).toBeLessThanOrEqual(WALLPAPER_ACCENT_LIGHTNESS.max);
 }
@@ -22,8 +47,8 @@ describe("wallpaper accent color normalization", () => {
   test("dark wallpaper lifts lightness into the middle band while keeping hue", () => {
     const source = "#1a237e";
     const accent = normalizeWallpaperAccentColor(source);
-    const sourceHsl = wallpaperAccentHsl(source);
-    const accentHsl = wallpaperAccentHsl(accent);
+    const sourceHsl = hexToHsl(source);
+    const accentHsl = hexToHsl(accent);
 
     expectLightnessInBand(accent);
     expect(hueDelta(sourceHsl.h, accentHsl.h)).toBeLessThanOrEqual(5);
@@ -35,8 +60,8 @@ describe("wallpaper accent color normalization", () => {
   test("light wallpaper lowers lightness into the middle band while keeping hue", () => {
     const source = "#ffd6e8";
     const accent = normalizeWallpaperAccentColor(source);
-    const sourceHsl = wallpaperAccentHsl(source);
-    const accentHsl = wallpaperAccentHsl(accent);
+    const sourceHsl = hexToHsl(source);
+    const accentHsl = hexToHsl(accent);
 
     expectLightnessInBand(accent);
     expect(hueDelta(sourceHsl.h, accentHsl.h)).toBeLessThanOrEqual(5);
@@ -48,8 +73,8 @@ describe("wallpaper accent color normalization", () => {
   test("saturated wallpaper preserves hue and lands in the lightness band", () => {
     const source = "#e60026";
     const accent = normalizeWallpaperAccentColor(source);
-    const sourceHsl = wallpaperAccentHsl(source);
-    const accentHsl = wallpaperAccentHsl(accent);
+    const sourceHsl = hexToHsl(source);
+    const accentHsl = hexToHsl(accent);
 
     expectLightnessInBand(accent);
     expect(hueDelta(sourceHsl.h, accentHsl.h)).toBeLessThanOrEqual(5);
@@ -60,11 +85,10 @@ describe("wallpaper accent color normalization", () => {
 
   test("low-chroma wallpaper becomes a graphite-like neutral without false color", () => {
     const accent = normalizeWallpaperAccentColor("#808080");
-    const { s, l } = wallpaperAccentHsl(accent);
+    const { s, l } = hexToHsl(accent);
 
     expect(s).toBeLessThanOrEqual(WALLPAPER_ACCENT_SATURATION.neutralTint);
     expect(l).toBeGreaterThanOrEqual(WALLPAPER_ACCENT_LIGHTNESS.target);
-    // Faint tint only — channels stay close (not a false full-chroma accent).
     const [r, g, b] = [
       parseInt(accent.slice(1, 3), 16),
       parseInt(accent.slice(3, 5), 16),
@@ -75,7 +99,7 @@ describe("wallpaper accent color normalization", () => {
 
   test("near-black neutral wallpaper does not collapse to pure black", () => {
     const accent = normalizeWallpaperAccentColor("#101010");
-    const { s, l } = wallpaperAccentHsl(accent);
+    const { s, l } = hexToHsl(accent);
 
     expect(l).toBeGreaterThanOrEqual(WALLPAPER_ACCENT_LIGHTNESS.target);
     expect(s).toBeLessThanOrEqual(WALLPAPER_ACCENT_SATURATION.neutralTint);
@@ -83,7 +107,7 @@ describe("wallpaper accent color normalization", () => {
 
   test("near-white neutral wallpaper does not stay washed out", () => {
     const accent = normalizeWallpaperAccentColor("#f5f5f5");
-    const { s, l } = wallpaperAccentHsl(accent);
+    const { s, l } = hexToHsl(accent);
 
     expect(l).toBeGreaterThanOrEqual(WALLPAPER_ACCENT_LIGHTNESS.target);
     expect(s).toBeLessThanOrEqual(WALLPAPER_ACCENT_SATURATION.neutralTint);
@@ -92,8 +116,8 @@ describe("wallpaper accent color normalization", () => {
   test("colorful wallpaper already in the band keeps its lightness", () => {
     const source = "#2765ca";
     const accent = normalizeWallpaperAccentColor(source);
-    const sourceHsl = wallpaperAccentHsl(source);
-    const accentHsl = wallpaperAccentHsl(accent);
+    const sourceHsl = hexToHsl(source);
+    const accentHsl = hexToHsl(accent);
 
     expectLightnessInBand(accent);
     expect(Math.abs(accentHsl.l - sourceHsl.l)).toBeLessThan(0.02);
@@ -107,8 +131,7 @@ describe("wallpaper accent color normalization", () => {
       "#3949ab",
     ]);
     expectLightnessInBand(accent);
-    const accentHsl = wallpaperAccentHsl(accent);
-    expect(hueDelta(wallpaperAccentHsl("#1a237e").h, accentHsl.h)).toBeLessThanOrEqual(
+    expect(hueDelta(hexToHsl("#1a237e").h, hexToHsl(accent).h)).toBeLessThanOrEqual(
       15
     );
   });
