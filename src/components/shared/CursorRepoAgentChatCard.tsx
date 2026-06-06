@@ -111,7 +111,7 @@ export function CursorRepoAgentChatCard({
             <span className="inline-flex size-3 shrink-0 items-center justify-center pt-0.5">
               <Check
                 className="size-3"
-                style={{ color: "var(--os-color-selection-bg)" }}
+                style={{ color: "var(--os-accent-color, var(--os-color-selection-bg))" }}
                 weight="bold"
               />
             </span>

@@ -53,7 +53,7 @@ export function ToolInvocationMessageDefaultView({
           icon={
             <Check
               className="size-3"
-              style={{ color: "var(--os-color-selection-bg)" }}
+              style={{ color: "var(--os-accent-color, var(--os-color-selection-bg))" }}
               weight="bold"
             />
           }

@@ -335,7 +335,7 @@ export function TerminalToolInvocation({
         <>
           <Check
             className="size-3 flex-shrink-0"
-            style={{ color: "var(--os-color-selection-bg)" }}
+            style={{ color: "var(--os-accent-color, var(--os-color-selection-bg))" }}
             weight="bold"
           />
           <span className="italic">{displayResultMessage}</span>
