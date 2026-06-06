@@ -19,6 +19,10 @@ const getGlobalChannelName = (username?: string | null): string =>
     ? `chats-${username.toLowerCase().replace(/[^a-zA-Z0-9_\-.]/g, "_")}`
     : "chats-public";
 
+const shouldSubscribeInBackground = (
+  room: Pick<ChatRoom, "type">
+): boolean => room.type !== "irc";
+
 const toTimestamp = (value: string | number): number =>
   (() => {
     if (typeof value !== "string" && typeof value !== "number") {
@@ -296,13 +300,18 @@ export function useBackgroundChatNotifications() {
       return;
     }
 
-    rooms.forEach((room) => {
+    const backgroundRoomsById = new Map(
+      rooms
+        .filter(shouldSubscribeInBackground)
+        .map((room) => [room.id, room])
+    );
+
+    backgroundRoomsById.forEach((room) => {
       subscribeToRoomChannel(room.id);
     });
 
     Object.keys(roomChannelsRef.current).forEach((roomId) => {
-      const stillVisible = rooms.some((room) => room.id === roomId);
-      if (!stillVisible) {
+      if (!backgroundRoomsById.has(roomId)) {
         unsubscribeFromRoomChannel(roomId);
       }
     });

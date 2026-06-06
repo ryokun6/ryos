@@ -10,6 +10,10 @@ import { getRoomWriteAccessError } from "../_helpers/_access.js";
 import { setRoomPresence, refreshRoomUserCount } from "../_helpers/_presence.js";
 import { broadcastRoomUpdated, broadcastPresenceUpdate } from "../_helpers/_pusher.js";
 import type { Room } from "../_helpers/_types.js";
+import {
+  isIrcBridgeEnabled,
+  syncRoomBindingForPresence,
+} from "../../_utils/irc/_bridge.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
@@ -83,6 +87,13 @@ export default apiHandler(
       const userCount = await refreshRoomUserCount(roomId);
       const updatedRoom: Room = { ...roomData, userCount };
       await setRoom(roomId, updatedRoom);
+      if (isIrcBridgeEnabled()) {
+        try {
+          await syncRoomBindingForPresence(updatedRoom, userCount);
+        } catch (err) {
+          logger.warn("IRC bridge presence bind failed", err);
+        }
+      }
       await Promise.all([
         broadcastRoomUpdated(roomId),
         broadcastPresenceUpdate(roomId, { username, action: "joined", userCount }),

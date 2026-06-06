@@ -31,23 +31,41 @@ const assertNoBroadUnbinds = (source: string): void => {
 describe("Chat Hook Channel Lifecycle Wiring", () => {
   describe("Background notifications hook", () => {
     test("background hook uses shared lifecycle helpers", async () => {
-    const source = readSource("src/hooks/useBackgroundChatNotifications.ts");
-    assertUsesSharedLifecycleHelpers(source);
-  });
+      const source = readSource("src/hooks/useBackgroundChatNotifications.ts");
+      assertUsesSharedLifecycleHelpers(source);
+    });
+
     test("background hook uses scoped unbind handlers", async () => {
-    const source = readSource("src/hooks/useBackgroundChatNotifications.ts");
-    assertNoBroadUnbinds(source);
-  });
+      const source = readSource("src/hooks/useBackgroundChatNotifications.ts");
+      assertNoBroadUnbinds(source);
+    });
+
+    test("background hook excludes IRC room channels", async () => {
+      const source = readSource("src/hooks/useBackgroundChatNotifications.ts");
+      expect(source).toContain("shouldSubscribeInBackground");
+      expect(source).toContain('room.type !== "irc"');
+      expect(source).toContain("backgroundRoomsById.has(roomId)");
+    });
   });
 
   describe("Foreground chat room hook", () => {
     test("chat room hook uses shared lifecycle helpers", async () => {
-    const source = readSource("src/apps/chats/hooks/useChatRoom.ts");
-    assertUsesSharedLifecycleHelpers(source);
-  });
+      const source = readSource("src/apps/chats/hooks/useChatRoom.ts");
+      assertUsesSharedLifecycleHelpers(source);
+    });
+
     test("chat room hook uses scoped unbind handlers", async () => {
-    const source = readSource("src/apps/chats/hooks/useChatRoom.ts");
-    assertNoBroadUnbinds(source);
-  });
+      const source = readSource("src/apps/chats/hooks/useChatRoom.ts");
+      assertNoBroadUnbinds(source);
+    });
+
+    test("chat room hook scopes IRC updates to the current room", async () => {
+      const source = readSource("src/apps/chats/hooks/useChatRoom.ts");
+      expect(source).toContain("shouldSubscribeToRoomUpdates");
+      expect(source).toContain('room.type !== "irc" || room.id === currentRoomId');
+      expect(source).toContain("unsubscribeFromRoomChannel(currentRoomId)");
+      expect(source).toContain("currentRoomId,");
+      expect(source).toContain("subscribeToRoomChannel,");
+    });
   });
 });

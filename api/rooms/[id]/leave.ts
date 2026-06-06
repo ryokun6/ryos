@@ -19,6 +19,10 @@ import {
 } from "../_helpers/_presence.js";
 import { broadcastRoomDeleted, broadcastRoomUpdated, broadcastPresenceUpdate } from "../_helpers/_pusher.js";
 import type { Room } from "../_helpers/_types.js";
+import {
+  isIrcBridgeEnabled,
+  syncRoomBindingForPresence,
+} from "../../_utils/irc/_bridge.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
@@ -82,6 +86,13 @@ export default apiHandler(
 
       if (removed) {
         const userCount = await refreshRoomUserCount(roomId);
+        if (isIrcBridgeEnabled() && roomData.type !== "private") {
+          try {
+            await syncRoomBindingForPresence(roomData, userCount);
+          } catch (err) {
+            logger.warn("IRC bridge presence unbind failed", err);
+          }
+        }
 
         if (roomData.type === "private") {
           const updatedMembers = roomData.members ? roomData.members.filter((m) => m !== username) : [];

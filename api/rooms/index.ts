@@ -21,7 +21,6 @@ import {
 } from "../_utils/irc/_types.js";
 import { getIrcServer } from "../_utils/irc/_servers.js";
 import {
-  notifyRoomBindingChange,
   isIrcBridgeEnabled,
   getIrcBridge,
 } from "../_utils/irc/_bridge.js";
@@ -269,14 +268,6 @@ export default apiHandler(
 
       if (type === "private") {
         await Promise.all(normalizedMembers.map((member: string) => setRoomPresence(roomId, member)));
-      }
-
-      if (type === "irc" && isIrcBridgeEnabled()) {
-        try {
-          await notifyRoomBindingChange("bind", room);
-        } catch (err) {
-          logger.warn("IRC bridge bind failed", err);
-        }
       }
 
       await broadcastRoomCreated(room);

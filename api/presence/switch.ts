@@ -10,6 +10,10 @@ import { getRoomWriteAccessError } from "../rooms/_helpers/_access.js";
 import { setRoomPresence, removeRoomPresence, refreshRoomUserCount } from "../rooms/_helpers/_presence.js";
 import { broadcastRoomUpdated, broadcastPresenceUpdate } from "../rooms/_helpers/_pusher.js";
 import { ensureUserExists } from "../rooms/_helpers/_users.js";
+import {
+  isIrcBridgeEnabled,
+  syncRoomBindingForPresence,
+} from "../_utils/irc/_bridge.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
@@ -67,6 +71,13 @@ export default apiHandler(
         if (roomData && roomData.type !== "private") {
           await removeRoomPresence(previousRoomId, username);
           const prevCount = await refreshRoomUserCount(previousRoomId);
+          if (isIrcBridgeEnabled()) {
+            try {
+              await syncRoomBindingForPresence(roomData, prevCount);
+            } catch (err) {
+              logger.warn("IRC bridge presence unbind failed", err);
+            }
+          }
           await Promise.all([
             broadcastRoomUpdated(previousRoomId),
             broadcastPresenceUpdate(previousRoomId, { username, action: "left", userCount: prevCount }),
@@ -91,7 +102,15 @@ export default apiHandler(
 
         await setRoomPresence(nextRoomId, username);
         const userCount = await refreshRoomUserCount(nextRoomId);
-        await setRoom(nextRoomId, { ...roomData, userCount });
+        const updatedRoom = { ...roomData, userCount };
+        await setRoom(nextRoomId, updatedRoom);
+        if (isIrcBridgeEnabled()) {
+          try {
+            await syncRoomBindingForPresence(updatedRoom, userCount);
+          } catch (err) {
+            logger.warn("IRC bridge presence bind failed", err);
+          }
+        }
         await Promise.all([
           broadcastRoomUpdated(nextRoomId),
           broadcastPresenceUpdate(nextRoomId, { username, action: "joined", userCount }),
