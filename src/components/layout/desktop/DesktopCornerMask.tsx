@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 
 const CORNER_SIZE = 18;
 const CORNER_MASK_Z_INDEX = 10004;
@@ -39,6 +40,10 @@ const corners: Array<{
 ];
 
 export function DesktopCornerMask() {
+  const { isMacOSTheme, isSystem7Theme } = useThemeFlags();
+
+  if (!isMacOSTheme && !isSystem7Theme) return null;
+
   return (
     <div
       aria-hidden="true"
