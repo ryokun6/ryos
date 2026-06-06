@@ -23,6 +23,14 @@ import { resolveIpGeolocation } from "./_utils/_geolocation.js";
 import { createRyoToolLoopAgent } from "./_utils/ryo-agent.js";
 type SystemState = RyoConversationSystemState;
 
+const CHAT_MODEL_ALIASES: Record<string, SupportedModel> = {
+  "claude-sonnet": "sonnet-4.6",
+};
+
+function normalizeChatModel(model: string): string {
+  return CHAT_MODEL_ALIASES[model] ?? model;
+}
+
 
 // Node.js runtime configuration
 export const runtime = "nodejs";
@@ -62,7 +70,7 @@ export default apiHandler<{
     };
 
     // Use query parameter if available, otherwise use body parameter, otherwise use default
-    const model = queryModel || bodyModel || DEFAULT_MODEL;
+    const model = normalizeChatModel(queryModel || bodyModel || DEFAULT_MODEL);
 
     if (!messages || !Array.isArray(messages)) {
       logger.error("400 Error: Invalid messages format", { messages });
