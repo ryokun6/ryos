@@ -14,7 +14,7 @@ import { SETTINGS_ANALYTICS, track } from "@/utils/analytics";
 
 /** Default desktop wallpaper (nature photo). */
 export const DEFAULT_WALLPAPER_PATH =
-  "/wallpapers/photos/nature/mt_fuji.jpg";
+  "/wallpapers/photos/nature/earth_moon_horizon.jpg";
 
 /**
  * Display settings store - manages wallpaper, shaders, and screen saver settings.

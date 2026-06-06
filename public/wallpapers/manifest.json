@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-06-06T23:01:30.283Z",
+  "generatedAt": "2026-06-06T23:22:19.166Z",
   "tiles": [
     "tiles/azul_dark.png",
     "tiles/azul_extra_light.png",
@@ -151,6 +151,7 @@
       "photos/nature/dew_drop.jpg",
       "photos/nature/earth.jpg",
       "photos/nature/earth_horizon.jpg",
+      "photos/nature/earth_moon_horizon.jpg",
       "photos/nature/evening_reflections.jpg",
       "photos/nature/flowing_rock.jpg",
       "photos/nature/gentle_rapids.jpg",
