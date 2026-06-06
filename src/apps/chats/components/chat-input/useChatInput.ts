@@ -44,11 +44,8 @@ export function useChatInput({
     composerInitialState
   );
   const { input, historyIndex, selectedImage } = composerState;
-  const setInput = useCallback((value: string) => {
-    dispatchComposer({ type: "setInput", value });
-  }, []);
-  const setHistoryIndex = useCallback((value: number) => {
-    dispatchComposer({ type: "setHistoryIndex", value });
+  const setInputAndResetHistory = useCallback((value: string) => {
+    dispatchComposer({ type: "setInputAndResetHistory", value });
   }, []);
   const setSelectedImage = useCallback((value: string | null) => {
     dispatchComposer({ type: "setSelectedImage", value });
@@ -124,14 +121,10 @@ export function useChatInput({
   }, [isForeground, historyIndex, previousMessages]);
 
   useEffect(() => {
-    setHistoryIndex(-1);
-  }, [input, setHistoryIndex]);
-
-  useEffect(() => {
     if (prefillMessage) {
-      setInput(prefillMessage);
+      setInputAndResetHistory(prefillMessage);
     }
-  }, [prefillMessage, setInput]);
+  }, [prefillMessage, setInputAndResetHistory]);
 
   useEffect(() => {
     if (!didMountRef.current) {
@@ -205,7 +198,7 @@ export function useChatInput({
     } else {
       void Promise.resolve(onSubmitMessage(text.trim(), null)).then(
         (didSubmit) => {
-          if (didSubmit) setInput("");
+          if (didSubmit) setInputAndResetHistory("");
         }
       );
     }
@@ -257,7 +250,7 @@ export function useChatInput({
       newValue = `@ryo ${input}`.trim() + (input.endsWith(" ") ? "" : " ");
     }
 
-    setInput(newValue);
+    setInputAndResetHistory(newValue);
     inputRef.current?.focus();
 
     setTimeout(() => {
