@@ -3,6 +3,7 @@ import { useChatsStore } from "@/stores/useChatsStore";
 import type { AIChatMessage } from "@/types/chat";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { applyFreshProactiveGreeting } from "../utils/proactiveGreetingApply";
 
 /**
  * Minimum idle time (ms) since the last chat message before a proactive
@@ -57,6 +58,7 @@ export function useProactiveGreeting() {
   const hasTriggeredStaleRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
   const fetchInFlightRef = useRef(false);
+  const suppressedRef = useRef(false);
 
   const username = useChatsStore((s) => s.username);
   const isAuthenticated = useChatsStore((s) => s.isAuthenticated);
@@ -82,6 +84,13 @@ export function useProactiveGreeting() {
     return Date.now() - lastTs > STALE_CHAT_THRESHOLD_MS;
   })();
 
+  const cancelGreetingFetch = useCallback(() => {
+    suppressedRef.current = true;
+    abortRef.current?.abort();
+    setIsLoadingGreeting(false);
+    fetchInFlightRef.current = false;
+  }, []);
+
   /**
    * Fetch a proactive greeting from the server and display it immediately.
    */
@@ -92,6 +101,7 @@ export function useProactiveGreeting() {
       // Prevent duplicate concurrent requests
       if (fetchInFlightRef.current) return;
       fetchInFlightRef.current = true;
+      suppressedRef.current = false;
 
       // Abort any previous in-flight request
       abortRef.current?.abort();
@@ -127,15 +137,18 @@ export function useProactiveGreeting() {
             metadata: { createdAt: new Date() },
           };
 
+          if (suppressedRef.current) return;
+
           const currentMessages = useChatsStore.getState().aiMessages;
 
           if (mode === "fresh") {
-            if (
-              currentMessages.length === 1 &&
-              currentMessages[0].id === "1" &&
-              currentMessages[0].role === "assistant"
-            ) {
-              setAiMessages([proactiveMessage]);
+            const updatedMessages = applyFreshProactiveGreeting(
+              currentMessages,
+              proactiveMessage,
+              { suppressed: suppressedRef.current }
+            );
+            if (updatedMessages) {
+              setAiMessages(updatedMessages);
             }
           } else {
             const lastMsg = currentMessages[currentMessages.length - 1];
@@ -219,5 +232,6 @@ export function useProactiveGreeting() {
   return {
     isLoadingGreeting,
     triggerGreeting,
+    cancelGreetingFetch,
   };
 }
