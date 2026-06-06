@@ -17,7 +17,6 @@ export const ChatMessageItem = memo(function ChatMessageItem(
   const vm = useChatMessageItem(props);
   const {
     message,
-    messageKey,
     isInitialMessage,
     isStaticGreeting,
     isInteractingWithPreview,

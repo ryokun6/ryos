@@ -9,8 +9,10 @@ import { useFilesStore } from "@/stores/useFilesStore";
 const MIGRATION_KEY = "ryos:indexeddb-uuid-migration-v1";
 const BACKUP_KEY = "ryos:indexeddb-backup";
 
+type LegacyBackupStatus = "backed-up" | "already-upgraded" | "failed";
+
 // Backup all data before schema migration
-async function backupDataBeforeMigration() {
+async function backupDataBeforeMigration(): Promise<LegacyBackupStatus> {
   console.log("[Migration] Backing up data before schema migration...");
 
   const backup: {
@@ -159,8 +161,16 @@ async function backupDataBeforeMigration() {
       "Wallpapers:",
       backup.custom_wallpapers.length
     );
+    return "backed-up";
   } catch (err) {
+    if (err instanceof DOMException && err.name === "VersionError") {
+      console.log(
+        "[Migration] Legacy backup skipped: IndexedDB is already newer than the legacy schema."
+      );
+      return "already-upgraded";
+    }
     console.error("[Migration] Error backing up data:", err);
+    return "failed";
   }
 }
 
@@ -341,25 +351,34 @@ export async function migrateIndexedDBToUUIDs() {
     );
 
     // First backup all data
-    await backupDataBeforeMigration();
+    const backupStatus = await backupDataBeforeMigration();
+
+    if (backupStatus === "already-upgraded") {
+      await ensureIndexedDBInitialized();
+    }
 
     // Check if backup was successful
     const backupStr = localStorage.getItem(BACKUP_KEY);
-    if (!backupStr || backupStr === "{}") {
+    if (
+      backupStatus === "failed" ||
+      (!backupStr && backupStatus === "backed-up")
+    ) {
       console.error(
         "[Migration] Backup failed or is empty, aborting migration"
       );
       return;
     }
 
-    // Now trigger the schema upgrade by opening with new version
-    await ensureIndexedDBInitialized();
+    if (backupStatus === "backed-up") {
+      // Now trigger the schema upgrade by opening with new version
+      await ensureIndexedDBInitialized();
 
-    // Wait a bit for the upgrade to complete
-    await new Promise((resolve) => setTimeout(resolve, 500));
+      // Wait a bit for the upgrade to complete
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
-    // Restore the backup
-    await restoreBackupAfterMigration();
+      // Restore the backup
+      await restoreBackupAfterMigration();
+    }
   }
 
   // Check if migration has already been done
