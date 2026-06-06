@@ -214,6 +214,31 @@ function readableText(base: RGB): string {
   return luminance(base) > 0.62 ? "#1f1a00" : "#ffffff";
 }
 
+/** Pastel assistant-bubble fill + readable text, tinted to the accent hue. */
+function assistantBubbleTokens(
+  base: RGB,
+  chrome: AccentChrome,
+  isDark: boolean
+): { bg: string; text: string; border: string } {
+  if (isDark && chrome === "aqua") {
+    // Match the graphite conversation surface with a faint accent wash.
+    const graphite: RGB = { r: 53, g: 58, b: 66 };
+    const tinted = mix(graphite, darken(base, 0.32), 0.28);
+    return {
+      bg: rgb(tinted),
+      text: "rgba(255, 255, 255, 0.92)",
+      border: rgba(base, 0.18),
+    };
+  }
+
+  const pastel = lighten(base, chrome === "aqua" ? 0.58 : 0.74);
+  return {
+    bg: rgb(pastel),
+    text: readableText(pastel),
+    border: rgba(base, 0.14),
+  };
+}
+
 /** HSL hue (0..360) + saturation (0..1) for a color. */
 function hueSat({ r, g, b }: RGB): { hue: number; sat: number } {
   const rn = r / 255;
@@ -287,6 +312,8 @@ export function getAccentCssVars(
   }
   const text = readableText(base);
 
+  const assistantBubble = assistantBubbleTokens(base, chrome, isDark);
+
   if (chrome === "system7") {
     // System 7 selections are flat fills — no gradients.
     return {
@@ -294,6 +321,9 @@ export function getAccentCssVars(
       "--os-color-selection-text": text,
       "--os-color-input-focus-border": rgb(base),
       "--os-color-switch-track-checked": rgb(base),
+      "--os-accent-assistant-bubble-bg": assistantBubble.bg,
+      "--os-accent-assistant-bubble-text": assistantBubble.text,
+      "--os-accent-assistant-bubble-border": assistantBubble.border,
     };
   }
 
@@ -394,6 +424,10 @@ export function getAccentCssVars(
     "--os-accent-tab-border": rgb(tabBorder),
     // Apple-logo hue (consumed via `var(--os-accent-apple-filter, none)`).
     "--os-accent-apple-filter": appleFilter(base),
+    // Chats assistant / Ryo AI bubble tint (consumed via `.chat-bubble-assistant`).
+    "--os-accent-assistant-bubble-bg": assistantBubble.bg,
+    "--os-accent-assistant-bubble-text": assistantBubble.text,
+    "--os-accent-assistant-bubble-border": assistantBubble.border,
   };
 }
 
@@ -419,4 +453,7 @@ export const ACCENT_CSS_VAR_NAMES = [
   "--os-accent-tab-text-shadow",
   "--os-accent-tab-border",
   "--os-accent-apple-filter",
+  "--os-accent-assistant-bubble-bg",
+  "--os-accent-assistant-bubble-text",
+  "--os-accent-assistant-bubble-border",
 ] as const;

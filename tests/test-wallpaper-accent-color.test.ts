@@ -162,3 +162,38 @@ describe("wallpaper accent color normalization", () => {
     expect(resolveWallpaperAccentFromPalette([])).toBe("#2765ca");
   });
 });
+
+describe("assistant chat bubble accent tokens", () => {
+  test("default accent emits no assistant bubble overrides", () => {
+    expect(getAccentCssVars("aqua", "default", false)).toEqual({});
+    expect(getAccentCssVars("system7", "default", false)).toEqual({});
+  });
+
+  test("named accent emits assistant bubble vars tinted to the accent hue", () => {
+    const purpleLight = getAccentCssVars("aqua", "purple", false);
+    const purpleDark = getAccentCssVars("aqua", "purple", true);
+
+    expect(purpleLight["--os-accent-assistant-bubble-bg"]).toStartWith("rgb(");
+    expect(purpleLight["--os-accent-assistant-bubble-text"]).toMatch(/^#/);
+    expect(purpleDark["--os-accent-assistant-bubble-bg"]).toStartWith("rgb(");
+    expect(purpleDark["--os-accent-assistant-bubble-text"]).toContain("255");
+
+    const rgbMatch = /^rgb\((\d+), (\d+), (\d+)\)$/.exec(
+      purpleLight["--os-accent-assistant-bubble-bg"]!
+    );
+    expect(rgbMatch).not.toBeNull();
+    const [, pr, pg, pb] = rgbMatch!;
+    const purpleHex = `#${[pr, pg, pb]
+      .map((n) => parseInt(n, 10).toString(16).padStart(2, "0"))
+      .join("")}`;
+    expect(hueDelta(hexToHsl("#8344c4").h, hexToHsl(purpleHex).h)).toBeLessThanOrEqual(
+      12
+    );
+  });
+
+  test("system7 accent includes assistant bubble vars", () => {
+    const vars = getAccentCssVars("system7", "green", false);
+    expect(vars["--os-accent-assistant-bubble-bg"]).toStartWith("rgb(");
+    expect(vars["--os-accent-assistant-bubble-text"]).toMatch(/^#/);
+  });
+});

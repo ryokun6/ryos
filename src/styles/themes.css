@@ -2817,12 +2817,19 @@
   z-index: 2;
 }
 
+/* Assistant / Ryo AI bubble — accent hue via `--os-accent-assistant-bubble-*`
+   (set inline on <html> when a non-default accent is active). */
+.chat-bubble-assistant {
+  background-color: var(--os-accent-assistant-bubble-bg, #dbeafe) !important;
+  color: var(--os-accent-assistant-bubble-text, #000000);
+}
+
 /* macOS chat bubble background overrides (medium Aqua shades, lightened one level) */
 :root[data-os-theme="macosx"] .chat-bubble.bg-yellow-100 {
   background-color: #fde68a !important; /* amber-200 */
 }
-:root[data-os-theme="macosx"] .chat-bubble.bg-blue-100 {
-  background-color: #bfdbfe !important; /* blue-200 */
+:root[data-os-theme="macosx"] .chat-bubble.chat-bubble-assistant {
+  background-color: var(--os-accent-assistant-bubble-bg, #bfdbfe) !important;
 }
 :root[data-os-theme="macosx"] .chat-bubble.bg-pink-200 {
   background-color: #fbcfe8 !important; /* pink-200 */
@@ -4305,7 +4312,7 @@
 
 /* --- Chat bubbles — dark themed ------------------------------------------ */
 /* Light theme uses bright pastel role colors (`bg-yellow-100` for user,
-   `bg-blue-100` for assistant, hashed pastels for human). In dark mode we
+   `.chat-bubble-assistant` for assistant, hashed pastels for human). In dark mode we
    pull every role color toward graphite — fills sit in the same ~#3a-#42
    value range as the metal-button gradient (`#4a4a50` → `#3a3a3f`), with
    only a faint hue shift so role identity is hinted at rather than colored
@@ -4316,8 +4323,9 @@
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .chat-bubble.bg-amber-100 {
   background-color: #423d33 !important; /* graphite + faint warm wash */
 }
-:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .chat-bubble.bg-blue-100 {
-  background-color: #353a42 !important; /* graphite + faint cool wash */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .chat-bubble.chat-bubble-assistant {
+  background-color: var(--os-accent-assistant-bubble-bg, #353a42) !important;
+  color: var(--os-accent-assistant-bubble-text, rgba(255, 255, 255, 0.92));
 }
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .chat-bubble.bg-pink-100,
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .chat-bubble.bg-pink-200 {
