@@ -214,29 +214,71 @@ function readableText(base: RGB): string {
   return luminance(base) > 0.62 ? "#1f1a00" : "#ffffff";
 }
 
-/** Pastel assistant-bubble fill + readable text, tinted to the accent hue. */
-function assistantBubbleTokens(
+/** Stock assistant bubble fills — hue is swapped; S/L stay on these profiles. */
+const ASSISTANT_BUBBLE_REF = {
+  aqua: { light: "#bfdbfe", dark: "#353a42" },
+  system7: { light: "#dbeafe", dark: "#dbeafe" },
+} as const;
+
+function rgbToHsl({ r, g, b }: RGB): { h: number; s: number; l: number } {
+  const rn = r / 255;
+  const gn = g / 255;
+  const bn = b / 255;
+  const max = Math.max(rn, gn, bn);
+  const min = Math.min(rn, gn, bn);
+  const delta = max - min;
+  const lightness = (max + min) / 2;
+  let hue = 0;
+  if (delta !== 0) {
+    if (max === rn) hue = ((gn - bn) / delta) % 6;
+    else if (max === gn) hue = (bn - rn) / delta + 2;
+    else hue = (rn - gn) / delta + 4;
+    hue *= 60;
+    if (hue < 0) hue += 360;
+  }
+  const saturation =
+    delta === 0 ? 0 : delta / (1 - Math.abs(2 * lightness - 1));
+  return { h: hue, s: saturation, l: lightness };
+}
+
+function hslToRgb(h: number, s: number, l: number): RGB {
+  if (s === 0) {
+    const value = clamp(l * 255);
+    return { r: value, g: value, b: value };
+  }
+  const hue2rgb = (p: number, q: number, t: number) => {
+    let tt = t;
+    if (tt < 0) tt += 1;
+    if (tt > 1) tt -= 1;
+    if (tt < 1 / 6) return p + (q - p) * 6 * tt;
+    if (tt < 1 / 2) return q;
+    if (tt < 2 / 3) return p + (q - p) * (2 / 3 - tt) * 6;
+    return p;
+  };
+  const hn = h / 360;
+  const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+  const p = 2 * l - q;
+  return {
+    r: clamp(hue2rgb(p, q, hn + 1 / 3) * 255),
+    g: clamp(hue2rgb(p, q, hn) * 255),
+    b: clamp(hue2rgb(p, q, hn - 1 / 3) * 255),
+  };
+}
+
+/** Same pastel/graphite bubble profile as `bg-blue-100`; only the hue shifts. */
+function assistantBubbleBg(
   base: RGB,
   chrome: AccentChrome,
   isDark: boolean
-): { bg: string; text: string; border: string } {
-  if (isDark && chrome === "aqua") {
-    // Match the graphite conversation surface with a faint accent wash.
-    const graphite: RGB = { r: 53, g: 58, b: 66 };
-    const tinted = mix(graphite, darken(base, 0.32), 0.28);
-    return {
-      bg: rgb(tinted),
-      text: "rgba(255, 255, 255, 0.92)",
-      border: rgba(base, 0.18),
-    };
-  }
-
-  const pastel = lighten(base, chrome === "aqua" ? 0.58 : 0.74);
-  return {
-    bg: rgb(pastel),
-    text: readableText(pastel),
-    border: rgba(base, 0.14),
-  };
+): string {
+  const refHex =
+    isDark && chrome === "aqua"
+      ? ASSISTANT_BUBBLE_REF.aqua.dark
+      : ASSISTANT_BUBBLE_REF[chrome].light;
+  const ref = rgbToHsl(parseHex(refHex));
+  const { hue, sat: accentSat } = hueSat(base);
+  const sat = accentSat < 0.12 ? Math.min(ref.s, 0.08) : ref.s;
+  return rgb(hslToRgb(hue, sat, ref.l));
 }
 
 /** HSL hue (0..360) + saturation (0..1) for a color. */
@@ -312,7 +354,7 @@ export function getAccentCssVars(
   }
   const text = readableText(base);
 
-  const assistantBubble = assistantBubbleTokens(base, chrome, isDark);
+  const assistantBubbleBgColor = assistantBubbleBg(base, chrome, isDark);
 
   if (chrome === "system7") {
     // System 7 selections are flat fills — no gradients.
@@ -321,9 +363,7 @@ export function getAccentCssVars(
       "--os-color-selection-text": text,
       "--os-color-input-focus-border": rgb(base),
       "--os-color-switch-track-checked": rgb(base),
-      "--os-accent-assistant-bubble-bg": assistantBubble.bg,
-      "--os-accent-assistant-bubble-text": assistantBubble.text,
-      "--os-accent-assistant-bubble-border": assistantBubble.border,
+      "--os-accent-assistant-bubble-bg": assistantBubbleBgColor,
     };
   }
 
@@ -424,10 +464,8 @@ export function getAccentCssVars(
     "--os-accent-tab-border": rgb(tabBorder),
     // Apple-logo hue (consumed via `var(--os-accent-apple-filter, none)`).
     "--os-accent-apple-filter": appleFilter(base),
-    // Chats assistant / Ryo AI bubble tint (consumed via `.chat-bubble-assistant`).
-    "--os-accent-assistant-bubble-bg": assistantBubble.bg,
-    "--os-accent-assistant-bubble-text": assistantBubble.text,
-    "--os-accent-assistant-bubble-border": assistantBubble.border,
+    // Chats assistant / Ryo AI bubble hue (`.chat-bubble.bg-blue-100`).
+    "--os-accent-assistant-bubble-bg": assistantBubbleBgColor,
   };
 }
 
@@ -454,6 +492,4 @@ export const ACCENT_CSS_VAR_NAMES = [
   "--os-accent-tab-border",
   "--os-accent-apple-filter",
   "--os-accent-assistant-bubble-bg",
-  "--os-accent-assistant-bubble-text",
-  "--os-accent-assistant-bubble-border",
 ] as const;

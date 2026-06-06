@@ -69,7 +69,7 @@ export function ChatMessageItemBubble({
           : bgColorClass ||
             (message.role === "user"
               ? "bg-yellow-100 text-black"
-              : "chat-bubble-assistant")
+              : "bg-blue-100 text-black")
       } w-fit max-w-[90%] min-h-[12px] rounded leading-snug font-geneva-12 break-words select-text`}
       style={getChatMessageStyle(fontSize)}
     >

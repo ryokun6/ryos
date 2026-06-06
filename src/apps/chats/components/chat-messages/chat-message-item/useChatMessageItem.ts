@@ -70,7 +70,7 @@ export function useChatMessageItem(props: ChatMessageItemProps) {
   } else if (message.role === "user")
     bgColorClass = "bg-yellow-100 text-black";
   else if (message.role === "assistant")
-    bgColorClass = "chat-bubble-assistant";
+    bgColorClass = "bg-blue-100 text-black";
   else if (message.role === "human")
     bgColorClass = getUserColorClass(message.username);
 
