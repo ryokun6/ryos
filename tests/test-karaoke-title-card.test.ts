@@ -6,6 +6,7 @@ import {
   getFirstLyricStartMs,
   shouldShowKaraokeTitleCard,
 } from "@/apps/karaoke/utils/titleCard";
+import { TITLE_CARD_TITLE_SHADOW_BLEED_STYLE } from "@/apps/karaoke/components/karaoke-lyrics-playback/title-card-styles";
 
 const readSource = (relativePath: string): string =>
   readFileSync(resolve(process.cwd(), relativePath), "utf-8");
@@ -132,5 +133,12 @@ describe("karaoke title card timing", () => {
     expect(
       windowSource.includes("onOpenCoverFlow={handleOpenCoverFlowFromTitleCard}"),
     ).toBe(true);
+  });
+
+  test("keeps title-card marquee bleed tight to the visible title lane", () => {
+    expect(TITLE_CARD_TITLE_SHADOW_BLEED_STYLE.paddingLeft).toBe("0.35em");
+    expect(TITLE_CARD_TITLE_SHADOW_BLEED_STYLE.marginLeft).toBe("-0.35em");
+    expect(TITLE_CARD_TITLE_SHADOW_BLEED_STYLE.width).toBe("calc(100% + 0.35em)");
+    expect(TITLE_CARD_TITLE_SHADOW_BLEED_STYLE.maxWidth).toBe("calc(100% + 0.35em)");
   });
 });
