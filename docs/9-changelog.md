@@ -4,6 +4,24 @@ A summary of changes and updates to ryOS, organized by month.
 
 ---
 
+## June 2026
+
+- Add **selectable accent colors** for Aqua and System 7 (Control Panels → Appearance): named swatches, a wallpaper-sampled default, and a **System** option that restores each theme's classic selection color.
+- **iPod / Karaoke lyrics glow**: cache cover-derived glow color in song metadata for stable cross-device sync; default fullscreen lyrics to glow; improve palette extraction and karaoke timing/alignment fixes.
+- **Control Panels**: consolidate account actions (login, change password, logout, logout all devices) into a unified **Account** ⋯ menu on the Account tab.
+
+<details>
+<summary>Minor changes (6)</summary>
+
+- Fix Workbox stale app shell caching after deploys.
+- Fix karaoke word-highlight mask timing, shadow clipping, and left alignment.
+- Fix iPod cover-color sync drift; skip redundant cached glow recalculation.
+- Fix Chats scroll-to-bottom chevron contrast in Aqua dark mode.
+- Fix themed icon cache recovery; set root document background to black.
+- Refactor song metadata sync helpers.
+
+</details>
+
 ## May 2026
 
 - Add **Maps** app powered by Apple MapKit JS: place search with IP/region bias, Home/Work/Favorites pins, places drawer, POI category markers, cloud sync, and Chats **`mapsSearchPlaces`** inline cards that open places in-app; **Directions** hand off to Apple Maps in a new tab (in-map routing not yet implemented).
@@ -429,4 +447,4 @@ A summary of changes and updates to ryOS, organized by month.
 
 ---
 
-*This changelog is maintained from git history and manual curation. Last updated: 2026-05-17*
+*This changelog is maintained from git history and manual curation. Last updated: 2026-06-06*
