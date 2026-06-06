@@ -108,10 +108,10 @@ describe("wallpaper cloud sync debug reproduction", () => {
 
     try {
       expect(DEFAULT_WALLPAPER_PATH).toBe(
-        "/wallpapers/photos/plants/dandelion_seeds.jpg"
+        "/wallpapers/photos/nature/mt_fuji.jpg"
       );
-      expect(wallpaperManifest.photos.plants).toContain(
-        "photos/plants/dandelion_seeds.jpg"
+      expect(wallpaperManifest.photos.nature).toContain(
+        "photos/nature/mt_fuji.jpg"
       );
 
       useDisplaySettingsStore.setState({
