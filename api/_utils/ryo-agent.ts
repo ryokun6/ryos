@@ -4,40 +4,56 @@ import {
   type TextStreamPart,
   type ToolSet,
 } from "ai";
-import { getOpenAIProviderOptions, type SupportedModel } from "./_aiModels.js";
+import { getOpenAIProviderOptions } from "./_aiModels.js";
 import type { PreparedRyoConversation } from "./ryo-conversation.js";
 
+export const RYO_AGENT_PRESETS = {
+  chat: {
+    id: "ryo-chat",
+    stopAfterSteps: 10,
+    maxOutputTokens: 48000,
+  },
+  telegram: {
+    id: "ryo-telegram",
+    stopAfterSteps: 6,
+    maxOutputTokens: 4000,
+  },
+  telegramHeartbeat: {
+    id: "ryo-telegram-heartbeat",
+    stopAfterSteps: 6,
+    maxOutputTokens: 4000,
+  },
+} as const;
+
+type RyoAgentPresetName = keyof typeof RYO_AGENT_PRESETS;
+
 type RyoToolLoopAgentOptions = {
-  id: string;
-  prepared: Pick<PreparedRyoConversation, "selectedModel" | "tools">;
-  model: SupportedModel;
-  stopAfterSteps: number;
-  maxOutputTokens: number;
+  preset: RyoAgentPresetName;
+  prepared: Pick<PreparedRyoConversation, "selectedModel" | "modelId" | "tools">;
   temperature?: number;
-  headers?: Record<string, string> | undefined;
   tools?: ToolSet;
 };
 
 export function createRyoToolLoopAgent({
-  id,
+  preset,
   prepared,
-  model,
-  stopAfterSteps,
-  maxOutputTokens,
   temperature = 0.7,
-  headers,
   tools,
 }: RyoToolLoopAgentOptions): ToolLoopAgent<never, ToolSet> {
-  const providerOptions = getOpenAIProviderOptions(model);
+  const agentPreset = RYO_AGENT_PRESETS[preset];
+  const providerOptions = getOpenAIProviderOptions(prepared.modelId);
+  const headers = prepared.modelId.startsWith("sonnet")
+    ? { "anthropic-beta": "fine-grained-tool-streaming-2025-05-14" }
+    : undefined;
 
   return new ToolLoopAgent<never, ToolSet>({
-    id,
+    id: agentPreset.id,
     model: prepared.selectedModel,
     tools: tools ?? prepared.tools,
     allowSystemInMessages: true,
     temperature,
-    maxOutputTokens,
-    stopWhen: stepCountIs(stopAfterSteps),
+    maxOutputTokens: agentPreset.maxOutputTokens,
+    stopWhen: stepCountIs(agentPreset.stopAfterSteps),
     ...(headers ? { headers } : {}),
     ...(providerOptions ? { providerOptions } : {}),
   });

@@ -34,11 +34,7 @@ import {
   prepareRyoConversationModelInput,
   type SimpleConversationMessage,
 } from "../_utils/ryo-conversation.js";
-import {
-  TELEGRAM_DEFAULT_MODEL,
-  SUPPORTED_AI_MODELS,
-  type SupportedModel,
-} from "../_utils/_aiModels.js";
+import { getTelegramModel } from "../_utils/_aiModels.js";
 import {
   createRyoToolLoopAgent,
   textStreamFromFullStream,
@@ -102,22 +98,6 @@ function getTelegramWebhookSecret(req: VercelRequest): string | null {
     return value[0] || null;
   }
   return typeof value === "string" ? value : null;
-}
-
-export function getTelegramModel(
-  log: (...args: unknown[]) => void,
-  env: NodeJS.ProcessEnv = process.env
-): SupportedModel {
-  const raw = env.TELEGRAM_BOT_MODEL as SupportedModel | undefined;
-  if (raw && SUPPORTED_AI_MODELS.includes(raw)) {
-    return raw;
-  }
-  if (raw) {
-    log(
-      `Unsupported TELEGRAM_BOT_MODEL "${raw}", falling back to ${TELEGRAM_DEFAULT_MODEL}`
-    );
-  }
-  return TELEGRAM_DEFAULT_MODEL;
 }
 
 async function sendTelegramInfoMessage(
@@ -629,13 +609,7 @@ export default async function handler(
   const telegramModel = getTelegramModel((message, ...rest) =>
     logger.info(String(message), rest.length > 0 ? rest : undefined)
   );
-  const {
-    selectedModel,
-    tools,
-    enrichedMessages,
-    loadedSections,
-    staticSystemPrompt,
-  } = await prepareRyoConversationModelInput({
+  const preparedConversation = await prepareRyoConversationModelInput({
     channel: "telegram",
     messages: conversationMessages,
     username: linkedAccount.username,
@@ -650,6 +624,8 @@ export default async function handler(
     logError: (...args: unknown[]) =>
       logger.error(`[Telegram:${linkedAccount.username}]`, args),
   });
+  const { tools, enrichedMessages, loadedSections, staticSystemPrompt } =
+    preparedConversation;
 
   logger.info("Telegram prompt sections loaded", {
     username: linkedAccount.username,
@@ -686,12 +662,9 @@ export default async function handler(
     );
 
     const agent = createRyoToolLoopAgent({
-      id: "ryo-telegram",
-      prepared: { selectedModel, tools },
+      preset: "telegram",
+      prepared: preparedConversation,
       tools: toolsWithStatus,
-      model: telegramModel,
-      maxOutputTokens: 4000,
-      stopAfterSteps: 6,
     });
 
     const result = await agent.stream({

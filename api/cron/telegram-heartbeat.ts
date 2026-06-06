@@ -38,9 +38,7 @@ import {
   type SimpleConversationMessage,
 } from "../_utils/ryo-conversation.js";
 import {
-  TELEGRAM_DEFAULT_MODEL,
-  SUPPORTED_AI_MODELS,
-  type SupportedModel,
+  getTelegramModel,
 } from "../_utils/_aiModels.js";
 import { getHeader } from "../_utils/request-helpers.js";
 import { createRyoToolLoopAgent } from "../_utils/ryo-agent.js";
@@ -58,22 +56,6 @@ function sendJson(
   payload: Record<string, unknown>
 ): void {
   res.status(status).json(payload);
-}
-
-export function getTelegramModel(
-  log: (...args: unknown[]) => void,
-  env: NodeJS.ProcessEnv = process.env
-): SupportedModel {
-  const raw = env.TELEGRAM_BOT_MODEL as SupportedModel | undefined;
-  if (raw && SUPPORTED_AI_MODELS.includes(raw)) {
-    return raw;
-  }
-  if (raw) {
-    log(
-      `Unsupported TELEGRAM_BOT_MODEL "${raw}", falling back to ${TELEGRAM_DEFAULT_MODEL}`
-    );
-  }
-  return TELEGRAM_DEFAULT_MODEL;
 }
 
 async function markHeartbeatSlot(
@@ -376,13 +358,7 @@ export default async function handler(
   );
   const userMemories = await getMemoryIndex(redis, username);
 
-  const {
-    selectedModel,
-    tools,
-    enrichedMessages,
-    loadedSections,
-    staticSystemPrompt,
-  } = await prepareRyoConversationModelInput({
+  const preparedConversation = await prepareRyoConversationModelInput({
     channel: "telegram",
     messages: conversationMessages,
     username,
@@ -398,6 +374,8 @@ export default async function handler(
       userTimeZone: TELEGRAM_HEARTBEAT_TIME_ZONE,
     },
   });
+  const { enrichedMessages, loadedSections, staticSystemPrompt } =
+    preparedConversation;
 
   logger.info("Telegram heartbeat prompt sections loaded", {
     username,
@@ -406,11 +384,8 @@ export default async function handler(
   });
 
   const agent = createRyoToolLoopAgent({
-    id: "ryo-telegram-heartbeat",
-    prepared: { selectedModel, tools },
-    model: telegramModel,
-    maxOutputTokens: 4000,
-    stopAfterSteps: 6,
+    preset: "telegramHeartbeat",
+    prepared: preparedConversation,
   });
 
   const result = await agent.generate({

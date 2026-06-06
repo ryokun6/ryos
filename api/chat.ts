@@ -297,13 +297,7 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
       }
     }
 
-    const {
-      selectedModel,
-      tools,
-      enrichedMessages,
-      loadedSections,
-      staticSystemPrompt,
-    } = await prepareRyoConversationModelInput({
+    const preparedConversation = await prepareRyoConversationModelInput({
       channel: "chat",
       messages: messages as SimpleConversationMessage[],
       systemState,
@@ -314,6 +308,8 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
       logError,
       preloadedMemoryContext: loadedMemoryContext,
     });
+    const { enrichedMessages, loadedSections, staticSystemPrompt } =
+      preparedConversation;
 
     log(
       `Context-aware prompts (${
@@ -333,14 +329,8 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
     });
 
     const agent = createRyoToolLoopAgent({
-      id: "ryo-chat",
-      prepared: { selectedModel, tools },
-      model: model as SupportedModel,
-      maxOutputTokens: 48000, // Increased from 6000 to prevent code generation cutoff
-      stopAfterSteps: 10, // Allow up to 10 steps for multi-tool workflows (agent loop)
-      headers: model.startsWith("claude")
-        ? { "anthropic-beta": "fine-grained-tool-streaming-2025-05-14" }
-        : undefined,
+      preset: "chat",
+      prepared: preparedConversation,
     });
 
     const result = await agent.stream({
