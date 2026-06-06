@@ -99,7 +99,8 @@ export function tryRenderToolInvocationSpecialContent(
           <ToolInvocationStatusRow
             icon={
               <Check
-                className="size-3 text-blue-600 dark:text-blue-400"
+                className="size-3"
+                style={{ color: "var(--os-color-selection-bg)" }}
                 weight="bold"
               />
             }
@@ -141,7 +142,13 @@ export function tryRenderToolInvocationSpecialContent(
       return (
         <div key={partKey} className="mb-0 px-1 py-0.5 text-[12px]">
           <ToolInvocationStatusRow
-            icon={<Check className="size-3 text-blue-600 dark:text-blue-400" weight="bold" />}
+            icon={
+              <Check
+                className="size-3"
+                style={{ color: "var(--os-color-selection-bg)" }}
+                weight="bold"
+              />
+            }
             className="text-neutral-700 dark:text-neutral-200"
             align="start"
           >
