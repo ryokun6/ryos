@@ -1,15 +1,9 @@
-import {
-  streamText,
-  generateText,
-  smoothStream,
-  stepCountIs,
-} from "ai";
+import { generateText, smoothStream } from "ai";
 import { geolocation } from "@vercel/functions";
 import { google } from "@ai-sdk/google";
 import {
   DEFAULT_MODEL,
   SUPPORTED_AI_MODELS,
-  getOpenAIProviderOptions,
   type SupportedModel,
 } from "./_utils/_aiModels.js";
 import {
@@ -26,6 +20,7 @@ import { checkAndIncrementAIMessageCount } from "./_utils/_rate-limit.js";
 import { apiHandler } from "./_utils/api-handler.js";
 import { getHeader } from "./_utils/request-helpers.js";
 import { resolveIpGeolocation } from "./_utils/_geolocation.js";
+import { createRyoToolLoopAgent } from "./_utils/ryo-agent.js";
 type SystemState = RyoConversationSystemState;
 
 
@@ -329,23 +324,22 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
       log(`Message ${index} [${msg.role}]: ${contentStr.substring(0, 100)}...`);
     });
 
-    const result = streamText({
-      model: selectedModel,
-      messages: enrichedMessages,
-      tools,
-      temperature: 0.7,
+    const agent = createRyoToolLoopAgent({
+      id: "ryo-chat",
+      prepared: { selectedModel, tools },
+      model: model as SupportedModel,
       maxOutputTokens: 48000, // Increased from 6000 to prevent code generation cutoff
-      stopWhen: stepCountIs(10), // Allow up to 10 steps for multi-tool workflows (agent loop)
+      stopAfterSteps: 10, // Allow up to 10 steps for multi-tool workflows (agent loop)
+      headers: model.startsWith("claude")
+        ? { "anthropic-beta": "fine-grained-tool-streaming-2025-05-14" }
+        : undefined,
+    });
+
+    const result = await agent.stream({
+      messages: enrichedMessages,
       experimental_transform: smoothStream({
         chunking: /[\u4E00-\u9FFF]|\S+\s+/,
       }),
-      headers: {
-        // Enable fine-grained tool streaming for Anthropic models
-        ...(model.startsWith("claude")
-          ? { "anthropic-beta": "fine-grained-tool-streaming-2025-05-14" }
-          : {}),
-      },
-      providerOptions: getOpenAIProviderOptions(model as SupportedModel),
     });
 
     // Set CORS headers

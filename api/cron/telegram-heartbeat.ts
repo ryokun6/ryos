@@ -1,5 +1,4 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { stepCountIs, streamText } from "ai";
 import { initLogger } from "../_utils/_logging.js";
 import createRedis from "../_utils/redis.js";
 import { getDailyNote, getMemoryIndex, getTodayDateString } from "../_utils/_memory.js";
@@ -41,10 +40,10 @@ import {
 import {
   TELEGRAM_DEFAULT_MODEL,
   SUPPORTED_AI_MODELS,
-  getOpenAIProviderOptions,
   type SupportedModel,
 } from "../_utils/_aiModels.js";
 import { getHeader } from "../_utils/request-helpers.js";
+import { createRyoToolLoopAgent } from "../_utils/ryo-agent.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 80;
@@ -406,14 +405,16 @@ export default async function handler(
     approxTokens: Math.round(staticSystemPrompt.length / 4),
   });
 
-  const result = streamText({
-    model: selectedModel,
-    messages: enrichedMessages,
-    tools,
-    temperature: 0.7,
+  const agent = createRyoToolLoopAgent({
+    id: "ryo-telegram-heartbeat",
+    prepared: { selectedModel, tools },
+    model: telegramModel,
     maxOutputTokens: 4000,
-    stopWhen: stepCountIs(6),
-    providerOptions: getOpenAIProviderOptions(telegramModel),
+    stopAfterSteps: 6,
+  });
+
+  const result = await agent.generate({
+    messages: enrichedMessages,
     onStepFinish: async (stepResult) => {
       if (stepResult.toolResults.length > 0) {
         logger.info("Telegram heartbeat completed tool step", {
@@ -425,10 +426,7 @@ export default async function handler(
     },
   });
 
-  let rawReply = "";
-  for await (const chunk of result.textStream) {
-    rawReply += chunk;
-  }
+  const rawReply = result.text;
 
   const heartbeatResult = parseTelegramHeartbeatResult(rawReply);
   if (!heartbeatResult.shouldSend) {
