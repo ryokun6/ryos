@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
@@ -28,18 +27,11 @@ export function PipPlayer({
   const isPhone = useIsPhone();
 
   // Calculate bottom offset based on theme (similar to Sonner positioning)
-  const bottomOffset = useMemo(() => {
-    if (isWinFamily) {
-      // Windows themes: taskbar height (30px) + padding
-      return "calc(env(safe-area-inset-bottom, 0px) + 42px)";
-    } else if (isMacOSX) {
-      // macOS X: dock height (56px) + padding
-      return "calc(env(safe-area-inset-bottom, 0px) + 72px)";
-    } else {
-      // System 7 and others: just safe area + small padding
-      return "calc(env(safe-area-inset-bottom, 0px) + 16px)";
-    }
-  }, [isWinFamily, isMacOSX]);
+  const bottomOffset = isWinFamily
+    ? "calc(env(safe-area-inset-bottom, 0px) + 42px)"
+    : isMacOSX
+      ? "calc(env(safe-area-inset-bottom, 0px) + 72px)"
+      : "calc(env(safe-area-inset-bottom, 0px) + 16px)";
 
   // Use track's cover (from Kugou, fetched during library sync), fallback to YouTube thumbnail
   const youtubeVideoId = currentTrack?.url

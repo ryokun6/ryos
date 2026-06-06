@@ -116,16 +116,18 @@ export const ThemedIcon: React.FC<ThemedIconProps> = ({
   const themedPath = useIconPath(logical, themeOverride ?? currentTheme);
 
   React.useEffect(() => {
+    const objectUrls = objectUrlsRef.current;
+
     recoveryAttemptsRef.current.clear();
     setRecoveredSrc(null);
 
     return () => {
-      for (const objectUrl of objectUrlsRef.current) {
+      for (const objectUrl of objectUrls) {
         if (typeof URL.revokeObjectURL === "function") {
           URL.revokeObjectURL(objectUrl);
         }
       }
-      objectUrlsRef.current.clear();
+      objectUrls.clear();
     };
   }, [resolved, themedPath]);
 

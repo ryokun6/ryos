@@ -1,4 +1,13 @@
-import { useEffect, useCallback, useState, useRef } from "react";
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useCallback,
+  useState,
+  useRef,
+  type ComponentType,
+  type LazyExoticComponent,
+} from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { AppProps } from "@/apps/base/types";
@@ -7,17 +16,6 @@ import { AppHelpAboutDialogs } from "@/components/shared/AppHelpAboutDialogs";
 import { appMetadata } from "../metadata";
 import { useDashboardLogic } from "../hooks/useDashboardLogic";
 import { WidgetChrome } from "@/components/layout/dashboard/WidgetChrome";
-import { ClockWidget, ClockBackPanel } from "@/components/layout/dashboard/ClockWidget";
-import { CalendarWidget, CalendarBackPanel } from "@/components/layout/dashboard/CalendarWidget";
-import { WeatherWidget, WeatherEmojiOverflow, WeatherBackPanel } from "@/components/layout/dashboard/WeatherWidget";
-import { StocksWidget, StocksBackPanel } from "@/components/layout/dashboard/StocksWidget";
-import { IpodWidget, IpodBackPanel } from "@/components/layout/dashboard/IpodWidget";
-import { TranslationWidget, TranslationBackPanel } from "@/components/layout/dashboard/TranslationWidget";
-import { CurrencyWidget, CurrencyBackPanel } from "@/components/layout/dashboard/CurrencyWidget";
-import { StickyNoteWidget, StickyNoteBackPanel } from "@/components/layout/dashboard/StickyNoteWidget";
-import { DictionaryWidget, DictionaryBackPanel } from "@/components/layout/dashboard/DictionaryWidget";
-import { AquariumWidget, AquariumBubbleOverflow } from "@/components/layout/dashboard/AquariumWidget";
-import { TerrariumWidget, TerrariumFireflyOverflow } from "@/components/layout/dashboard/TerrariumWidget";
 import { DashboardMenuBar } from "./DashboardMenuBar";
 import { useAppStore } from "@/stores/useAppStore";
 import { useTranslation } from "react-i18next";
@@ -26,65 +24,220 @@ import { useDashboardStore, type WidgetType } from "@/stores/useDashboardStore";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { Emoji } from "@/components/shared/Emoji";
 
-function WidgetContent({ type, widgetId, isFlipped }: { type: string; widgetId: string; isFlipped?: boolean }) {
-  switch (type) {
-    case "clock":
-      return <ClockWidget widgetId={widgetId} isFlipped={isFlipped} />;
-    case "calendar":
-      return <CalendarWidget widgetId={widgetId} />;
-    case "weather":
-      return <WeatherWidget widgetId={widgetId} />;
-    case "stocks":
-      return <StocksWidget widgetId={widgetId} />;
-    case "ipod":
-      return <IpodWidget widgetId={widgetId} />;
-    case "translation":
-      return <TranslationWidget widgetId={widgetId} />;
-    case "currency":
-      return <CurrencyWidget widgetId={widgetId} />;
-    case "stickynote":
-      return <StickyNoteWidget widgetId={widgetId} />;
-    case "dictionary":
-      return <DictionaryWidget widgetId={widgetId} />;
-    case "aquarium":
-      return <AquariumWidget widgetId={widgetId} />;
-    case "terrarium":
-      return <TerrariumWidget widgetId={widgetId} />;
-    default:
-      return null;
-  }
+type WidgetFrontProps = {
+  widgetId: string;
+  isFlipped?: boolean;
+};
+
+type WidgetBackProps = {
+  widgetId: string;
+  onDone?: () => void;
+};
+
+type WidgetOverflowProps = {
+  widgetId: string;
+};
+
+type LazyWidgetComponent<Props> = LazyExoticComponent<ComponentType<Props>>;
+
+type WidgetRegistryEntry = {
+  front: LazyWidgetComponent<WidgetFrontProps>;
+  back?: LazyWidgetComponent<WidgetBackProps>;
+  overflow?: LazyWidgetComponent<WidgetOverflowProps>;
+};
+
+function lazyWidget<Props>(
+  loader: () => Promise<{ default: ComponentType<Props> }>
+): LazyWidgetComponent<Props> {
+  return lazy(loader);
 }
 
-function WidgetBackContent({ type, widgetId, onDone }: { type: string; widgetId: string; onDone: () => void }) {
-  switch (type) {
-    case "clock":
-      return <ClockBackPanel widgetId={widgetId} onDone={onDone} />;
-    case "calendar":
-      return <CalendarBackPanel widgetId={widgetId} />;
-    case "weather":
-      return <WeatherBackPanel widgetId={widgetId} onDone={onDone} />;
-    case "stocks":
-      return <StocksBackPanel widgetId={widgetId} onDone={onDone} />;
-    case "ipod":
-      return <IpodBackPanel widgetId={widgetId} onDone={onDone} />;
-    case "translation":
-      return <TranslationBackPanel widgetId={widgetId} onDone={onDone} />;
-    case "currency":
-      return <CurrencyBackPanel widgetId={widgetId} onDone={onDone} />;
-    case "stickynote":
-      return <StickyNoteBackPanel widgetId={widgetId} onDone={onDone} />;
-    case "dictionary":
-      return <DictionaryBackPanel widgetId={widgetId} onDone={onDone} />;
-    default:
-      return null;
-  }
+const WIDGET_REGISTRY: Record<WidgetType, WidgetRegistryEntry> = {
+  clock: {
+    front: lazyWidget<WidgetFrontProps>(() =>
+      import("@/components/layout/dashboard/ClockWidget").then((module) => ({
+        default: module.ClockWidget,
+      }))
+    ),
+    back: lazyWidget<WidgetBackProps>(() =>
+      import("@/components/layout/dashboard/ClockWidget").then((module) => ({
+        default: module.ClockBackPanel,
+      }))
+    ),
+  },
+  calendar: {
+    front: lazyWidget<WidgetFrontProps>(() =>
+      import("@/components/layout/dashboard/CalendarWidget").then((module) => ({
+        default: module.CalendarWidget,
+      }))
+    ),
+    back: lazyWidget<WidgetBackProps>(() =>
+      import("@/components/layout/dashboard/CalendarWidget").then((module) => ({
+        default: module.CalendarBackPanel,
+      }))
+    ),
+  },
+  weather: {
+    front: lazyWidget<WidgetFrontProps>(() =>
+      import("@/components/layout/dashboard/WeatherWidget").then((module) => ({
+        default: module.WeatherWidget,
+      }))
+    ),
+    back: lazyWidget<WidgetBackProps>(() =>
+      import("@/components/layout/dashboard/WeatherWidget").then((module) => ({
+        default: module.WeatherBackPanel,
+      }))
+    ),
+    overflow: lazyWidget<WidgetOverflowProps>(() =>
+      import("@/components/layout/dashboard/WeatherWidget").then((module) => ({
+        default: module.WeatherEmojiOverflow,
+      }))
+    ),
+  },
+  stocks: {
+    front: lazyWidget<WidgetFrontProps>(() =>
+      import("@/components/layout/dashboard/StocksWidget").then((module) => ({
+        default: module.StocksWidget,
+      }))
+    ),
+    back: lazyWidget<WidgetBackProps>(() =>
+      import("@/components/layout/dashboard/StocksWidget").then((module) => ({
+        default: module.StocksBackPanel,
+      }))
+    ),
+  },
+  ipod: {
+    front: lazyWidget<WidgetFrontProps>(() =>
+      import("@/components/layout/dashboard/IpodWidget").then((module) => ({
+        default: module.IpodWidget,
+      }))
+    ),
+    back: lazyWidget<WidgetBackProps>(() =>
+      import("@/components/layout/dashboard/IpodWidget").then((module) => ({
+        default: module.IpodBackPanel,
+      }))
+    ),
+  },
+  translation: {
+    front: lazyWidget<WidgetFrontProps>(() =>
+      import("@/components/layout/dashboard/TranslationWidget").then((module) => ({
+        default: module.TranslationWidget,
+      }))
+    ),
+    back: lazyWidget<WidgetBackProps>(() =>
+      import("@/components/layout/dashboard/TranslationWidget").then((module) => ({
+        default: module.TranslationBackPanel,
+      }))
+    ),
+  },
+  currency: {
+    front: lazyWidget<WidgetFrontProps>(() =>
+      import("@/components/layout/dashboard/CurrencyWidget").then((module) => ({
+        default: module.CurrencyWidget,
+      }))
+    ),
+    back: lazyWidget<WidgetBackProps>(() =>
+      import("@/components/layout/dashboard/CurrencyWidget").then((module) => ({
+        default: module.CurrencyBackPanel,
+      }))
+    ),
+  },
+  stickynote: {
+    front: lazyWidget<WidgetFrontProps>(() =>
+      import("@/components/layout/dashboard/StickyNoteWidget").then((module) => ({
+        default: module.StickyNoteWidget,
+      }))
+    ),
+    back: lazyWidget<WidgetBackProps>(() =>
+      import("@/components/layout/dashboard/StickyNoteWidget").then((module) => ({
+        default: module.StickyNoteBackPanel,
+      }))
+    ),
+  },
+  dictionary: {
+    front: lazyWidget<WidgetFrontProps>(() =>
+      import("@/components/layout/dashboard/DictionaryWidget").then((module) => ({
+        default: module.DictionaryWidget,
+      }))
+    ),
+    back: lazyWidget<WidgetBackProps>(() =>
+      import("@/components/layout/dashboard/DictionaryWidget").then((module) => ({
+        default: module.DictionaryBackPanel,
+      }))
+    ),
+  },
+  aquarium: {
+    front: lazyWidget<WidgetFrontProps>(() =>
+      import("@/components/layout/dashboard/AquariumWidget").then((module) => ({
+        default: module.AquariumWidget,
+      }))
+    ),
+    overflow: lazyWidget<WidgetOverflowProps>(() =>
+      import("@/components/layout/dashboard/AquariumWidget").then((module) => ({
+        default: module.AquariumBubbleOverflow,
+      }))
+    ),
+  },
+  terrarium: {
+    front: lazyWidget<WidgetFrontProps>(() =>
+      import("@/components/layout/dashboard/TerrariumWidget").then((module) => ({
+        default: module.TerrariumWidget,
+      }))
+    ),
+    overflow: lazyWidget<WidgetOverflowProps>(() =>
+      import("@/components/layout/dashboard/TerrariumWidget").then((module) => ({
+        default: module.TerrariumFireflyOverflow,
+      }))
+    ),
+  },
+};
+
+function WidgetContent({
+  type,
+  widgetId,
+  isFlipped,
+}: {
+  type: WidgetType;
+  widgetId: string;
+  isFlipped?: boolean;
+}) {
+  const Front = WIDGET_REGISTRY[type].front;
+
+  return (
+    <Suspense fallback={null}>
+      <Front widgetId={widgetId} isFlipped={isFlipped} />
+    </Suspense>
+  );
 }
 
-function WidgetOverflow({ type, widgetId }: { type: string; widgetId: string }) {
-  if (type === "weather") return <WeatherEmojiOverflow widgetId={widgetId} />;
-  if (type === "aquarium") return <AquariumBubbleOverflow widgetId={widgetId} />;
-  if (type === "terrarium") return <TerrariumFireflyOverflow widgetId={widgetId} />;
-  return null;
+function WidgetBackContent({
+  type,
+  widgetId,
+  onDone,
+}: {
+  type: WidgetType;
+  widgetId: string;
+  onDone: () => void;
+}) {
+  const Back = WIDGET_REGISTRY[type].back;
+  if (!Back) return null;
+
+  return (
+    <Suspense fallback={null}>
+      <Back widgetId={widgetId} onDone={onDone} />
+    </Suspense>
+  );
+}
+
+function WidgetOverflow({ type, widgetId }: { type: WidgetType; widgetId: string }) {
+  const Overflow = WIDGET_REGISTRY[type].overflow;
+  if (!Overflow) return null;
+
+  return (
+    <Suspense fallback={null}>
+      <Overflow widgetId={widgetId} />
+    </Suspense>
+  );
 }
 
 const WIDGET_ICONS: Record<WidgetType, string> = {

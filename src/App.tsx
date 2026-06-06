@@ -143,7 +143,13 @@ export function App() {
     if (isFirstBoot) {
       setHasBooted();
     }
-  }, [isFirstBoot, setHasBooted]);
+  }, [
+    isFirstBoot,
+    setBootDebugMode,
+    setBootScreenMessage,
+    setHasBooted,
+    setShowBootScreen,
+  ]);
 
   // Show download toast for macOS users when new desktop version is available
   // For web: show on first visit and updates

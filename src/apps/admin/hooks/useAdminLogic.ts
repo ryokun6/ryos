@@ -106,6 +106,22 @@ function chunkArray<T>(items: T[], chunkSize: number): T[][] {
   return chunks;
 }
 
+function sortAdminUsers(users: User[]): User[] {
+  return [...users].sort((a: User, b: User) => {
+    if (a.banned && !b.banned) return -1;
+    if (!a.banned && b.banned) return 1;
+    return b.lastActive - a.lastActive;
+  });
+}
+
+function filterAdminUsers(users: User[], search: string): User[] {
+  if (search.length === 0) return users;
+  const lowerSearch = search.toLowerCase();
+  return users.filter((user) =>
+    user.username.toLowerCase().includes(lowerSearch)
+  );
+}
+
 interface ExportSongDocument {
   id: string;
   title: string;
@@ -188,10 +204,12 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
 
+  const [allUsers, setAllUsers] = useState<User[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [roomMessages, setRoomMessages] = useState<Message[]>([]);
   const [userSearch, setUserSearch] = useState("");
+  const userSearchRef = useRef(userSearch);
   const [isLoading, setIsLoading] = useState(false);
   const [visibleUsersCount, setVisibleUsersCount] = useState(USERS_PER_PAGE);
   const [stats, setStats] = useState<Stats>({
@@ -283,9 +301,25 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
   const [isDeletingAll, setIsDeletingAll] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const importStatusResetTimeoutRef = useRef<number | null>(null);
+  const loadingRequestCountRef = useRef(0);
 
   const isAdmin = useIsRyoAdmin();
   const selectedRoom = rooms.find((r) => r.id === selectedRoomId) || null;
+
+  const beginLoading = useCallback(() => {
+    loadingRequestCountRef.current += 1;
+    setIsLoading(true);
+  }, []);
+
+  const endLoading = useCallback(() => {
+    loadingRequestCountRef.current = Math.max(
+      loadingRequestCountRef.current - 1,
+      0
+    );
+    if (loadingRequestCountRef.current === 0) {
+      setIsLoading(false);
+    }
+  }, []);
 
   const clearImportStatusResetTimer = useCallback(() => {
     if (importStatusResetTimeoutRef.current !== null) {
@@ -347,34 +381,21 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
       if (!username || !isAuthenticated) return;
       if (isOffline) return; // Skip API calls when offline
 
-      setIsLoading(true);
+      beginLoading();
       try {
         const data = await getAdminUsers<{ users?: User[] }>();
-        // Sort users: banned first, then by most recently active
-        let sortedUsers = (data.users || []).sort((a: User, b: User) => {
-          // Banned users first
-          if (a.banned && !b.banned) return -1;
-          if (!a.banned && b.banned) return 1;
-          // Then by last active (most recent first)
-          return b.lastActive - a.lastActive;
-        });
-        // Filter by search query client-side
-        if (search.length > 0) {
-          const lowerSearch = search.toLowerCase();
-          sortedUsers = sortedUsers.filter((u: User) =>
-            u.username.toLowerCase().includes(lowerSearch)
-          );
-        }
-        setUsers(sortedUsers);
+        const sortedUsers = sortAdminUsers(data.users || []);
+        setAllUsers(sortedUsers);
+        setUsers(filterAdminUsers(sortedUsers, search));
         setVisibleUsersCount(USERS_PER_PAGE); // Reset pagination when fetching
       } catch (error) {
         console.error("Failed to fetch users:", error);
         toast.error(t("apps.admin.errors.failedToFetchUsers"));
       } finally {
-        setIsLoading(false);
+        endLoading();
       }
     },
-    [username, isAuthenticated, t, isOffline]
+    [username, isAuthenticated, t, isOffline, beginLoading, endLoading]
   );
 
   // Fetch rooms
@@ -382,7 +403,7 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
     if (!username || !isAuthenticated) return;
     if (isOffline) return; // Skip API calls when offline
 
-    setIsLoading(true);
+    beginLoading();
     try {
       const data = await listRoomsApi();
       const normalizedRooms = data.rooms.map((room) => ({
@@ -394,9 +415,9 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
       console.error("Failed to fetch rooms:", error);
       toast.error(t("apps.admin.errors.failedToFetchRooms"));
     } finally {
-      setIsLoading(false);
+      endLoading();
     }
-  }, [username, isAuthenticated, t, isOffline]);
+  }, [username, isAuthenticated, t, isOffline, beginLoading, endLoading]);
 
   // Fetch messages for a room
   const fetchRoomMessages = useCallback(
@@ -404,7 +425,7 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
       if (!username || !isAuthenticated) return;
       if (isOffline) return; // Skip API calls when offline
 
-      setIsLoading(true);
+      beginLoading();
       try {
         const data = await getRoomMessagesApi(roomId);
         setRoomMessages(data.messages || []);
@@ -412,17 +433,17 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
         console.error("Failed to fetch messages:", error);
         toast.error(t("apps.admin.errors.failedToFetchMessages"));
       } finally {
-        setIsLoading(false);
+        endLoading();
       }
     },
-    [username, isAuthenticated, t, isOffline]
+    [username, isAuthenticated, t, isOffline, beginLoading, endLoading]
   );
 
   // Fetch songs from Redis cache
   const fetchSongs = useCallback(async () => {
     if (isOffline) return; // Skip API calls when offline
 
-    setIsLoading(true);
+    beginLoading();
     try {
       const allSongs = await listAllCachedSongMetadata();
       setSongs(allSongs);
@@ -434,9 +455,18 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
         t("apps.admin.errors.failedToFetchSongs", "Failed to fetch songs")
       );
     } finally {
-      setIsLoading(false);
+      endLoading();
     }
-  }, [t, isOffline]);
+  }, [t, isOffline, beginLoading, endLoading]);
+
+  const loadIndependentAdminDatasets = useCallback(async () => {
+    await Promise.all([
+      fetchRooms(),
+      fetchStats(),
+      fetchSongs(),
+      fetchCursorAgentCount(),
+    ]);
+  }, [fetchRooms, fetchStats, fetchSongs, fetchCursorAgentCount]);
 
   // Delete user
   const deleteUser = useCallback(
@@ -483,7 +513,7 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
         toast.error(t("apps.admin.errors.failedToDeleteRoom"));
       }
     },
-    [username, isAuthenticated, fetchRooms, fetchStats, t]
+    [username, isAuthenticated, fetchRooms, fetchStats, setSelectedRoomId, t]
   );
 
   // Delete message
@@ -1036,24 +1066,15 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
   // Load data on mount
   useEffect(() => {
     if (isAdmin && isWindowOpen) {
-      fetchRooms();
-      fetchStats();
-      fetchSongs();
-      fetchCursorAgentCount();
+      void loadIndependentAdminDatasets();
+      void fetchUsers(userSearchRef.current);
     }
   }, [
     isAdmin,
     isWindowOpen,
-    fetchRooms,
-    fetchStats,
-    fetchSongs,
-    fetchCursorAgentCount,
+    loadIndependentAdminDatasets,
+    fetchUsers,
   ]);
-
-  useEffect(() => {
-    if (!isAdmin || !isWindowOpen) return;
-    fetchCursorAgentCount();
-  }, [cursorAgentsRefreshSignal, isAdmin, isWindowOpen, fetchCursorAgentCount]);
 
   useEffect(() => {
     return () => {
@@ -1063,11 +1084,13 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
 
   // Handle user search
   useEffect(() => {
+    userSearchRef.current = userSearch;
     const timer = setTimeout(() => {
-      fetchUsers(userSearch);
+      setUsers(filterAdminUsers(allUsers, userSearch));
+      setVisibleUsersCount(USERS_PER_PAGE);
     }, 300);
     return () => clearTimeout(timer);
-  }, [userSearch, fetchUsers]);
+  }, [allUsers, userSearch]);
 
   // Fetch room messages when room is selected
   useEffect(() => {
@@ -1098,21 +1121,15 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
       toast.error(t("common.offline", "You are offline"));
       return;
     }
-    fetchRooms();
-    fetchStats();
-    fetchCursorAgentCount();
-    fetchSongs();
+    void loadIndependentAdminDatasets();
     if (selectedRoomId) {
-      fetchRoomMessages(selectedRoomId);
+      void fetchRoomMessages(selectedRoomId);
     }
-    fetchUsers(userSearch);
+    void fetchUsers(userSearch);
     setCursorAgentsRefreshSignal((n) => n + 1);
     toast.success(t("apps.admin.messages.dataRefreshed"));
   }, [
-    fetchRooms,
-    fetchStats,
-    fetchCursorAgentCount,
-    fetchSongs,
+    loadIndependentAdminDatasets,
     fetchRoomMessages,
     fetchUsers,
     selectedRoomId,

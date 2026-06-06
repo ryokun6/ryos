@@ -104,20 +104,22 @@ export function AdminAppComponent({
   );
 
   const filteredSongs = useMemo(() => {
-    let list = songs;
-    if (songsFilterByRyoOnly) {
-      list = list.filter((s) => s.createdBy?.toLowerCase() === "ryo");
-    }
-    if (songSearch.length > 0) {
-      list = list.filter(
-        (song) =>
-          song.title.toLowerCase().includes(songSearch.toLowerCase()) ||
-          (song.artist
-            ?.toLowerCase()
-            .includes(songSearch.toLowerCase()) ?? false),
+    const normalizedSearch = songSearch.toLowerCase();
+
+    return songs.filter((song) => {
+      if (songsFilterByRyoOnly && song.createdBy?.toLowerCase() !== "ryo") {
+        return false;
+      }
+
+      if (normalizedSearch.length === 0) {
+        return true;
+      }
+
+      return (
+        song.title.toLowerCase().includes(normalizedSearch) ||
+        (song.artist?.toLowerCase().includes(normalizedSearch) ?? false)
       );
-    }
-    return list;
+    });
   }, [songs, songsFilterByRyoOnly, songSearch]);
 
   const shouldShowImportStatus = getShouldShowAdminImportStatus(

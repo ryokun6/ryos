@@ -11,8 +11,6 @@ export const composerInitialState: ComposerState = {
 };
 
 export type ComposerAction =
-  | { type: "setInput"; value: string }
-  | { type: "setHistoryIndex"; value: number }
   | { type: "setSelectedImage"; value: string | null }
   | { type: "setInputAndResetHistory"; value: string }
   | { type: "setHistoryNavigation"; value: { index: number; input: string } }
@@ -23,10 +21,6 @@ export function composerReducer(
   action: ComposerAction
 ): ComposerState {
   switch (action.type) {
-    case "setInput":
-      return { ...state, input: action.value };
-    case "setHistoryIndex":
-      return { ...state, historyIndex: action.value };
     case "setSelectedImage":
       return { ...state, selectedImage: action.value };
     case "setInputAndResetHistory":
@@ -38,7 +32,7 @@ export function composerReducer(
         input: action.value.input,
       };
     case "clearComposer":
-      return { ...state, input: "", selectedImage: null };
+      return { ...state, input: "", historyIndex: -1, selectedImage: null };
     default:
       return state;
   }

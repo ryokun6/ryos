@@ -14,6 +14,7 @@ let globalSynthRef: {
 } | null = null;
 let lastUsedPreset = "classic"; // Default to classic, "off" will be handled
 const DEFAULT_SYNTH_VOLUME = -12;
+const ONCE_LISTENER_OPTIONS = { once: true } as const;
 
 export type SynthPreset = {
   name: string;
@@ -367,9 +368,9 @@ export function useChatSynth() {
   }, [initializeAudio]);
 
   const interactionTarget = isAudioReady ? null : window;
-  useEventListener("click", handleInteraction, interactionTarget, { once: true });
-  useEventListener("keydown", handleInteraction, interactionTarget, { once: true });
-  useEventListener("touchstart", handleInteraction, interactionTarget, { once: true });
+  useEventListener("click", handleInteraction, interactionTarget, ONCE_LISTENER_OPTIONS);
+  useEventListener("keydown", handleInteraction, interactionTarget, ONCE_LISTENER_OPTIONS);
+  useEventListener("touchstart", handleInteraction, interactionTarget, ONCE_LISTENER_OPTIONS);
 
   // NOTE: Visibility/focus handlers are handled centrally by @/lib/audioContext
   // to prevent race conditions. Do not add duplicate listeners here.

@@ -21,21 +21,15 @@ export function SeekBar({
   autoDismissTimeout = 3000, // Default 3 seconds
 }: SeekBarProps) {
   const [isLocalHovered, setIsLocalHovered] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-  const [seekPosition, setSeekPosition] = useState(0);
+  const [dragPosition, setDragPosition] = useState<number | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const seekBarRef = useRef<HTMLDivElement>(null);
   const autoDismissTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Calculate progress percentage
   const progress = (currentTime / duration) * 100;
-
-  // Update seek position when current time changes
-  useEffect(() => {
-    if (!isDragging) {
-      setSeekPosition(progress);
-    }
-  }, [currentTime, duration, isDragging, progress]);
+  const isDragging = dragPosition !== null;
+  const displayedProgress = dragPosition ?? progress;
 
   // Auto-dismiss functionality
   const startAutoDismissTimer = useCallback(() => {
@@ -74,6 +68,7 @@ export function SeekBar({
       }
     } else if (!isPlaying) {
       setIsVisible(false);
+      setDragPosition(null);
       clearAutoDismissTimer();
     }
   }, [
@@ -119,16 +114,15 @@ export function SeekBar({
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDragging) return;
     const position = calculatePosition(e.clientX);
-    setSeekPosition(position);
+    setDragPosition(position);
   };
 
   // Handle mouse down on seek bar
   const handleMouseDown = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent click from reaching the play/pause overlay
-    setIsDragging(true);
     showSeekBar();
     const position = calculatePosition(e.clientX);
-    setSeekPosition(position);
+    setDragPosition(position);
     if (onDragChange) {
       const seekTime = (position / 100) * duration;
       onDragChange(true, seekTime);
@@ -137,18 +131,17 @@ export function SeekBar({
 
   // Handle mouse up - seek to position
   const handleMouseUp = useCallback(() => {
-    if (isDragging) {
-      onSeek((seekPosition / 100) * duration);
-      setIsDragging(false);
+    if (dragPosition !== null) {
+      onSeek((dragPosition / 100) * duration);
+      setDragPosition(null);
       if (onDragChange) {
         onDragChange(false);
       }
       startAutoDismissTimer();
     }
   }, [
-    isDragging,
+    dragPosition,
     onSeek,
-    seekPosition,
     duration,
     onDragChange,
     startAutoDismissTimer,
@@ -158,11 +151,10 @@ export function SeekBar({
   const handleTouchStart = (e: React.TouchEvent) => {
     e.preventDefault(); // Prevent default touch behavior
     e.stopPropagation();
-    setIsDragging(true);
     showSeekBar();
     const touch = e.touches[0];
     const position = calculatePosition(touch.clientX);
-    setSeekPosition(position);
+    setDragPosition(position);
     if (onDragChange) {
       const seekTime = (position / 100) * duration;
       onDragChange(true, seekTime);
@@ -174,7 +166,7 @@ export function SeekBar({
     e.preventDefault(); // Prevent scrolling while dragging
     const touch = e.touches[0];
     const position = calculatePosition(touch.clientX);
-    setSeekPosition(position);
+    setDragPosition(position);
     if (onDragChange) {
       const seekTime = (position / 100) * duration;
       onDragChange(true, seekTime);
@@ -182,9 +174,9 @@ export function SeekBar({
   };
 
   const handleTouchEnd = () => {
-    if (isDragging) {
-      onSeek((seekPosition / 100) * duration);
-      setIsDragging(false);
+    if (dragPosition !== null) {
+      onSeek((dragPosition / 100) * duration);
+      setDragPosition(null);
       if (onDragChange) {
         onDragChange(false);
       }
@@ -202,7 +194,7 @@ export function SeekBar({
       const handleGlobalMouseMove = (e: MouseEvent) => {
         if (!isDragging) return;
         const position = calculatePosition(e.clientX);
-        setSeekPosition(position);
+        setDragPosition(position);
         if (onDragChange) {
           const seekTime = (position / 100) * duration;
           onDragChange(true, seekTime);
@@ -276,7 +268,7 @@ export function SeekBar({
             className={`absolute left-0 top-0 h-full transition-colors duration-150 ${
               isDragging ? "bg-white/80" : "bg-white/50"
             }`}
-            style={{ width: `${isDragging ? seekPosition : progress}%` }}
+            style={{ width: `${displayedProgress}%` }}
           />
         </div>
       </div>
