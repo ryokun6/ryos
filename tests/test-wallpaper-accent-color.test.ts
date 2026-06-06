@@ -162,3 +162,45 @@ describe("wallpaper accent color normalization", () => {
     expect(resolveWallpaperAccentFromPalette([])).toBe("#2765ca");
   });
 });
+
+describe("assistant chat bubble accent tokens", () => {
+  test("default accent emits no assistant bubble overrides", () => {
+    expect(getAccentCssVars("aqua", "default", false)).toEqual({});
+    expect(getAccentCssVars("system7", "default", false)).toEqual({});
+  });
+
+  test("named accent only shifts assistant bubble hue, keeping stock lightness", () => {
+    const purpleLight = getAccentCssVars("aqua", "purple", false);
+    const purpleDark = getAccentCssVars("aqua", "purple", true);
+    const blueLight = getAccentCssVars("aqua", "blue", false);
+
+    expect(purpleLight["--os-accent-assistant-bubble-text"]).toBeUndefined();
+    expect(purpleLight["--os-accent-assistant-bubble-bg"]).toStartWith("rgb(");
+    expect(purpleDark["--os-accent-assistant-bubble-bg"]).toStartWith("rgb(");
+
+    const rgbToHex = (value: string) => {
+      const match = /^rgb\((\d+), (\d+), (\d+)\)$/.exec(value);
+      expect(match).not.toBeNull();
+      const [, r, g, b] = match!;
+      return `#${[r, g, b]
+        .map((n) => parseInt(n, 10).toString(16).padStart(2, "0"))
+        .join("")}`;
+    };
+
+    const purpleHex = rgbToHex(purpleLight["--os-accent-assistant-bubble-bg"]!);
+    const blueHex = rgbToHex(blueLight["--os-accent-assistant-bubble-bg"]!);
+    const purpleHsl = hexToHsl(purpleHex);
+    const blueHsl = hexToHsl(blueHex);
+    const refLightHsl = hexToHsl("#bfdbfe");
+
+    expect(hueDelta(hexToHsl("#8344c4").h, purpleHsl.h)).toBeLessThanOrEqual(12);
+    expect(Math.abs(purpleHsl.l - refLightHsl.l)).toBeLessThan(0.03);
+    expect(Math.abs(blueHsl.l - refLightHsl.l)).toBeLessThan(0.03);
+  });
+
+  test("system7 accent includes assistant bubble background only", () => {
+    const vars = getAccentCssVars("system7", "green", false);
+    expect(vars["--os-accent-assistant-bubble-bg"]).toStartWith("rgb(");
+    expect(vars["--os-accent-assistant-bubble-text"]).toBeUndefined();
+  });
+});

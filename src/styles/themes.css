@@ -2822,7 +2822,10 @@
   background-color: #fde68a !important; /* amber-200 */
 }
 :root[data-os-theme="macosx"] .chat-bubble.bg-blue-100 {
-  background-color: #bfdbfe !important; /* blue-200 */
+  background-color: var(--os-accent-assistant-bubble-bg, #bfdbfe) !important; /* blue-200 */
+}
+:root[data-os-theme="system7"] .chat-bubble.bg-blue-100 {
+  background-color: var(--os-accent-assistant-bubble-bg, #dbeafe) !important;
 }
 :root[data-os-theme="macosx"] .chat-bubble.bg-pink-200 {
   background-color: #fbcfe8 !important; /* pink-200 */
@@ -4317,7 +4320,7 @@
   background-color: #423d33 !important; /* graphite + faint warm wash */
 }
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .chat-bubble.bg-blue-100 {
-  background-color: #353a42 !important; /* graphite + faint cool wash */
+  background-color: var(--os-accent-assistant-bubble-bg, #353a42) !important; /* graphite + faint cool wash */
 }
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .chat-bubble.bg-pink-100,
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .chat-bubble.bg-pink-200 {
