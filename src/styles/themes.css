@@ -3140,7 +3140,8 @@
   color: rgba(0, 0, 0, 0.9) !important;
 }
 
-/* macOS: Style toast buttons with aqua button */
+/* macOS: Style toast buttons with aqua button — follows active accent via
+   the shared `--os-accent-button-*` vars (same recipe as `.aqua-button.primary`). */
 :root[data-os-theme="macosx"] .toaster [data-button],
 :root[data-os-theme="macosx"] .toaster button:not([data-close-button]) {
   line-height: 1;
@@ -3160,16 +3161,20 @@
   white-space: nowrap;
   -webkit-font-smoothing: antialiased;
   font-smooth: auto;
-  background: linear-gradient(
-    rgba(0, 65, 184, 0.625),
-    rgba(45, 115, 199, 0.625),
-    rgba(33, 160, 196, 0.625)
+  background: var(
+    --os-accent-button-bg,
+    linear-gradient(
+      rgba(0, 65, 184, 0.625),
+      rgba(45, 115, 199, 0.625),
+      rgba(33, 160, 196, 0.625)
+    )
   );
-  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3), 0 1px 1px rgba(0, 78, 187, 0.5),
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3),
+    0 1px 1px var(--os-accent-button-edge, rgba(0, 78, 187, 0.5)),
     inset 0 1px 3px rgba(0, 17, 49, 0.8),
-    inset 0 2px 3px 1px rgba(0, 78, 187, 0.75);
+    inset 0 2px 3px 1px var(--os-accent-button-inner, rgba(0, 78, 187, 0.75));
   color: black;
-  text-shadow: 0 2px 2px rgba(30, 77, 161, 0.5);
+  text-shadow: 0 2px 2px var(--os-accent-tab-text-shadow, rgba(30, 77, 161, 0.5));
   font-weight: 500;
   position: relative;
   z-index: 3;
@@ -3179,9 +3184,11 @@
 :root[data-os-theme="macosx"] .toaster [data-button]:active,
 :root[data-os-theme="macosx"] .toaster button:not([data-close-button]):focus,
 :root[data-os-theme="macosx"] .toaster button:not([data-close-button]):active {
-  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3), 0 1px 1px rgba(0, 78, 187, 0.5),
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3),
+    0 1px 1px var(--os-accent-button-edge, rgba(0, 78, 187, 0.5)),
     inset 0 1px 3px rgba(0, 17, 49, 0.8),
-    inset 0 2px 3px 1px rgba(0, 78, 187, 0.75), 0 0 3px rgba(52, 106, 227, 0.5);
+    inset 0 2px 3px 1px var(--os-accent-button-inner, rgba(0, 78, 187, 0.75)),
+    0 0 3px rgba(52, 106, 227, 0.5);
 }
 
 /* Top shine for toast buttons */
@@ -3881,11 +3888,15 @@
 
 /* Toast surface (Sonner) — dark scheme. The light theme toast styling lives
    higher up in this file under generic and per-theme rules; redirect it to
-   the dark surface when the OS attribute flips. */
-:root[data-os-theme="macosx"][data-os-color-scheme="dark"] [data-sonner-toast] {
-  background-color: #303035 !important;
+   the dark surface when the OS attribute flips. Match `.toaster` specificity
+   so the light pinstripe wash does not bleed through in dark mode. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .toaster [data-sonner-toast] {
+  background: color-mix(in srgb, var(--os-color-panel-bg, #303035) 92%, transparent) !important;
+  background-image: var(--os-pinstripe-menubar) !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.55) !important;
   color: var(--os-color-text-primary) !important;
-  border-color: rgba(255, 255, 255, 0.12) !important;
+  border: none !important;
 }
 
 /* Tabs — the active tab indicator uses light gradients. Soften so it reads
@@ -4593,6 +4604,64 @@
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"]
   .toaster [data-sonner-toast] [data-description] {
   color: var(--os-color-text-secondary) !important;
+}
+
+/* --- Toast action buttons in dark mode ----------------------------------- */
+/* Light-mode toast buttons bake `color: black` and a vivid Aqua gradient.
+   Dim the gloss to match `.aqua-button.primary` / switch-thumb dark mode and
+   flip the label to white so "Open" stays readable on the dark toast surface. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .toaster [data-button],
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .toaster button:not([data-close-button]) {
+  background: var(
+    --os-accent-button-bg,
+    linear-gradient(
+      rgba(0, 50, 130, 0.7),
+      rgba(40, 95, 165, 0.7),
+      rgba(70, 135, 195, 0.7)
+    )
+  ) !important;
+  box-shadow:
+    0 2px 3px rgba(0, 0, 0, 0.45),
+    0 1px 1px var(--os-accent-button-edge, rgba(0, 35, 90, 0.55)),
+    inset 0 1px 3px rgba(0, 12, 35, 0.65),
+    inset 0 2px 3px 1px var(--os-accent-button-inner, rgba(0, 50, 130, 0.7)) !important;
+  color: #ffffff !important;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.55) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .toaster [data-button]:focus,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .toaster [data-button]:active,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .toaster button:not([data-close-button]):focus,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .toaster button:not([data-close-button]):active {
+  box-shadow:
+    0 2px 3px rgba(0, 0, 0, 0.45),
+    0 1px 1px var(--os-accent-button-edge, rgba(0, 35, 90, 0.55)),
+    inset 0 1px 3px rgba(0, 12, 35, 0.65),
+    inset 0 2px 3px 1px var(--os-accent-button-inner, rgba(0, 50, 130, 0.7)),
+    0 0 3px rgba(52, 106, 227, 0.45) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .toaster [data-button]:before,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .toaster button:not([data-close-button]):before {
+  background: linear-gradient(
+    rgba(255, 255, 255, 0.24),
+    rgba(255, 255, 255, 0.06)
+  ) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .toaster [data-button]:after,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .toaster button:not([data-close-button]):after {
+  background: linear-gradient(transparent, rgba(255, 255, 255, 0.08)) !important;
 }
 
 /* --- Dialog body content in dark mode (HelpDialog, About, etc.) ---------- */

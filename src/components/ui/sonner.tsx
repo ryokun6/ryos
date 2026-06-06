@@ -1,12 +1,12 @@
-import { useTheme } from "next-themes";
 import { Toaster as Sonner, ToasterProps } from "sonner";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "light" } = useTheme();
+  const { isDarkMode } = useThemeFlags();
 
   return (
     <Sonner
-      theme={theme as ToasterProps["theme"]}
+      theme={isDarkMode ? "dark" : "light"}
       className="toaster group"
       gap={8}
       {...props}
