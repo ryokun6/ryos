@@ -595,20 +595,6 @@ export function useFileSystem(
     []
   );
 
-  const fetchAppletContentFromShare = useCallback(
-    async (
-      filePath: string,
-      fileMetadata: FileSystemItem
-    ): Promise<string | null> => {
-      const fetched = await fetchAndCacheAppletContentFromShare(
-        filePath,
-        fileMetadata
-      );
-      return fetched?.content ?? null;
-    },
-    []
-  );
-
   // --- REORDERED useCallback DEFINITIONS --- //
 
   // Define navigateToPath first
@@ -1114,11 +1100,11 @@ export function useFileSystem(
               );
               // For applets, fetch content from the share service on first load
               if (storeName === STORES.APPLETS) {
-                const fetchedContent = await fetchAppletContentFromShare(
+                const fetched = await fetchAndCacheAppletContentFromShare(
                   file.path,
                   fileMetadata
                 );
-                contentToUse = fetchedContent ?? "";
+                contentToUse = fetched?.content ?? "";
               } else {
                 // Try to load default content lazily for Documents/Images
                 const hasDefaultContent = await ensureDefaultContent(
@@ -1282,7 +1268,6 @@ export function useFileSystem(
       setVideoIndex,
       setVideoPlaying,
       ensureDefaultContent,
-      fetchAppletContentFromShare,
       getFileItem,
     ]
   );

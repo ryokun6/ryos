@@ -11,79 +11,37 @@ import {
   useFilesStore,
 } from "@/stores/useFilesStore";
 
-export type AppletContentSource = "indexeddb" | "share" | "lazy";
-
-export type AppletVfsErrorCode =
-  | "not_found"
-  | "missing_uuid"
-  | "content_unavailable"
-  | "fetch_failed";
-
 export class AppletVfsError extends Error {
-  readonly code: AppletVfsErrorCode;
-
-  constructor(message: string, code: AppletVfsErrorCode) {
+  constructor(message: string) {
     super(message);
     this.name = "AppletVfsError";
-    this.code = code;
   }
 }
 
-export type FetchedAppletContent = {
-  content: string;
-  windowWidth?: number;
-  windowHeight?: number;
-};
-
-export type ReadAppletContentResult = {
-  content: string;
-  fileItem: FileSystemItem;
-  source: AppletContentSource;
-  windowWidth?: number;
-  windowHeight?: number;
-};
-
-type ReadAppletContentOptions = {
-  fetchIfMissing?: boolean;
-  allowEmpty?: boolean;
-};
-
-/**
- * Normalize a VFS path for lookup (leading slash, decoded segments, collapsed slashes).
- */
 export function normalizeVfsPath(path: string): string {
   if (!path) return path;
 
-  let normalized = path.trim();
-
-  try {
-    normalized = normalized
-      .split("/")
-      .map((segment) => {
-        if (!segment) return segment;
-        try {
-          return decodeURIComponent(segment);
-        } catch {
-          return segment;
-        }
-      })
-      .join("/");
-  } catch {
-    // Keep the trimmed path when decoding fails.
-  }
+  let normalized = path
+    .trim()
+    .split("/")
+    .map((segment) => {
+      if (!segment) return segment;
+      try {
+        return decodeURIComponent(segment);
+      } catch {
+        return segment;
+      }
+    })
+    .join("/");
 
   if (!normalized.startsWith("/")) {
     normalized = `/${normalized}`;
   }
 
   normalized = normalized.replace(/^\/applets\//i, "/Applets/");
-
   return normalized.replace(/\/{2,}/g, "/");
 }
 
-/**
- * Resolve an active file-system item by path, with normalization and applet name fallback.
- */
 export function resolveVfsFileItem(path: string): FileSystemItem | undefined {
   const normalizedPath = normalizeVfsPath(path);
   const items = useFilesStore.getState().items;
@@ -111,61 +69,40 @@ export function resolveVfsFileItem(path: string): FileSystemItem | undefined {
   return undefined;
 }
 
-async function contentRecordToString(
-  content: string | Blob | null | undefined
-): Promise<string | null> {
-  if (content == null) return null;
-  if (typeof content === "string") return content;
-  if (content instanceof Blob) return content.text();
+async function readStoredAppletContent(uuid: string): Promise<string | null> {
+  const stored = await loadFileContent(uuid, STORES.APPLETS);
+  if (stored?.content == null) return null;
+  if (typeof stored.content === "string") return stored.content;
+  if (stored.content instanceof Blob) return stored.content.text();
   return null;
 }
 
-async function readAppletContentFromIndexedDb(
-  uuid: string
-): Promise<string | null> {
-  const stored = await loadFileContent(uuid, STORES.APPLETS);
-  return contentRecordToString(stored?.content);
-}
-
-/**
- * Fetch applet HTML from the share service and cache it in IndexedDB.
- */
 export async function fetchAndCacheAppletContentFromShare(
   filePath: string,
   metadata: Pick<FileSystemItem, "shareId" | "uuid" | "name" | "icon" | "createdBy">
-): Promise<FetchedAppletContent | null> {
+): Promise<{
+  content: string;
+  windowWidth?: number;
+  windowHeight?: number;
+} | null> {
   const { shareId, uuid, name } = metadata;
-  if (!shareId || !uuid) {
-    console.warn(
-      `[appletVfs] Cannot fetch applet content for ${filePath}: missing shareId or uuid`
-    );
-    return null;
-  }
+  if (!shareId || !uuid) return null;
 
   if (
     typeof navigator !== "undefined" &&
     "onLine" in navigator &&
     !navigator.onLine
   ) {
-    console.warn("[appletVfs] Cannot fetch applet content: offline");
     return null;
   }
 
   try {
     const response = await abortableFetch(
       `/api/share-applet?id=${encodeURIComponent(shareId)}`,
-      {
-        timeout: 15000,
-        retry: { maxAttempts: 2, initialDelayMs: 500 },
-      }
+      { timeout: 15000, retry: { maxAttempts: 2, initialDelayMs: 500 } }
     );
 
-    if (!response.ok) {
-      console.warn(
-        `[appletVfs] Share fetch failed for ${shareId}: HTTP ${response.status}`
-      );
-      return null;
-    }
+    if (!response.ok) return null;
 
     const data = await response.json();
     const content = typeof data.content === "string" ? data.content : "";
@@ -179,7 +116,6 @@ export async function fetchAndCacheAppletContentFromShare(
     emitCloudSyncDomainChange("files-applets");
 
     const metadataUpdates: Partial<FileSystemItem> = {};
-
     if (typeof data.icon === "string" && data.icon !== metadata.icon) {
       metadataUpdates.icon = data.icon;
     }
@@ -211,79 +147,66 @@ export async function fetchAndCacheAppletContentFromShare(
       windowHeight:
         typeof data.windowHeight === "number" ? data.windowHeight : undefined,
     };
-  } catch (error) {
-    console.error(
-      `[appletVfs] Error fetching shared applet content for ${shareId}:`,
-      error
-    );
+  } catch {
     return null;
   }
 }
 
-/**
- * Read applet HTML content with IndexedDB, lazy default assets, and share fallbacks.
- */
 export async function readAppletContent(
   path: string,
-  options: ReadAppletContentOptions = {}
-): Promise<ReadAppletContentResult> {
+  options: { fetchIfMissing?: boolean } = {}
+): Promise<{
+  content: string;
+  fileItem: FileSystemItem;
+  windowWidth?: number;
+  windowHeight?: number;
+}> {
   const fetchIfMissing = options.fetchIfMissing ?? true;
-  const allowEmpty = options.allowEmpty ?? false;
-  const normalizedPath = normalizeVfsPath(path);
-  const fileItem = resolveVfsFileItem(normalizedPath);
+  const fileItem = resolveVfsFileItem(path);
 
   if (!fileItem) {
-    throw new AppletVfsError(`Applet not found: ${normalizedPath}`, "not_found");
+    throw new AppletVfsError(`Applet not found: ${normalizeVfsPath(path)}`);
   }
 
   if (!fileItem.uuid) {
-    throw new AppletVfsError(
-      `Applet missing content record: ${normalizedPath}`,
-      "missing_uuid"
-    );
+    throw new AppletVfsError(`Applet missing content record: ${fileItem.path}`);
   }
 
-  const canonicalPath = fileItem.path;
-  let content = await readAppletContentFromIndexedDb(fileItem.uuid);
-
-  if (content != null && (allowEmpty || content.length > 0)) {
-    return { content, fileItem, source: "indexeddb" };
+  let content = await readStoredAppletContent(fileItem.uuid);
+  if (content) {
+    return { content, fileItem };
   }
 
-  const lazyLoaded = await ensureFileContentLoaded(canonicalPath, fileItem.uuid);
-  if (lazyLoaded) {
-    content = await readAppletContentFromIndexedDb(fileItem.uuid);
-    if (content != null && (allowEmpty || content.length > 0)) {
-      return { content, fileItem, source: "lazy" };
+  if (await ensureFileContentLoaded(fileItem.path, fileItem.uuid)) {
+    content = await readStoredAppletContent(fileItem.uuid);
+    if (content) {
+      return { content, fileItem };
     }
   }
 
   if (fetchIfMissing && fileItem.shareId) {
     const fetched = await fetchAndCacheAppletContentFromShare(
-      canonicalPath,
+      fileItem.path,
       fileItem
     );
 
-    if (fetched && (allowEmpty || fetched.content.length > 0)) {
+    if (fetched?.content) {
       return {
         content: fetched.content,
         fileItem,
-        source: "share",
         windowWidth: fetched.windowWidth,
         windowHeight: fetched.windowHeight,
       };
     }
 
     throw new AppletVfsError(
-      `Could not fetch applet content for ${canonicalPath}. The share may be missing or the network is unavailable.`,
-      "fetch_failed"
+      `Could not fetch applet content for ${fileItem.path}. The share may be missing or the network is unavailable.`
     );
   }
 
   throw new AppletVfsError(
     fileItem.shareId
-      ? `Applet content unavailable for ${canonicalPath}. Try again when online.`
-      : `Applet content unavailable for ${canonicalPath}. No cached content or share link.`,
-    "content_unavailable"
+      ? `Applet content unavailable for ${fileItem.path}. Try again when online.`
+      : `Applet content unavailable for ${fileItem.path}. No cached content or share link.`
   );
 }

@@ -41,12 +41,7 @@ import {
   emitAppletUpdated,
   emitDocumentUpdated,
 } from "@/utils/appEventBus";
-import {
-  AppletVfsError,
-  normalizeVfsPath,
-  readAppletContent,
-  resolveVfsFileItem,
-} from "@/utils/appletVfs";
+import { readAppletContent } from "@/utils/appletVfs";
 import {
   persistChatApplet,
   persistChatDocument,
@@ -1036,16 +1031,15 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   break;
                 }
 
-                const documentPath = normalizeVfsPath(path);
                 const filesStore = useFilesStore.getState();
-                const fileItem = filesStore.items[documentPath];
+                const fileItem = filesStore.items[path];
 
                 if (!fileItem || fileItem.status !== "active") {
-                  throw new Error(`File not found: ${documentPath}`);
+                  throw new Error(`File not found: ${path}`);
                 }
 
                 if (!fileItem.uuid) {
-                  throw new Error(`File missing content: ${documentPath}`);
+                  throw new Error(`File missing content: ${path}`);
                 }
 
                 const contentData = await dbOperations.get<DocumentContent>(
@@ -1054,7 +1048,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 );
 
                 if (!contentData || contentData.content == null) {
-                  throw new Error(`Failed to read file content: ${documentPath}`);
+                  throw new Error(`Failed to read file content: ${path}`);
                 }
 
                 let content: string;
@@ -1354,24 +1348,8 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 });
                 result = "";
               } else if (path.startsWith("/Applets/")) {
-                const fileItem = resolveVfsFileItem(path);
-                if (!fileItem || !fileItem.uuid) {
-                  throw new Error(
-                    `Applet not found: ${normalizeVfsPath(path)}. Use generateHtml tool to create new applets, or list({ path: "/Applets" }) to see available files.`
-                  );
-                }
-
-                let existingContent: string;
-                try {
-                  ({ content: existingContent } = await readAppletContent(path));
-                } catch (error) {
-                  if (error instanceof AppletVfsError) {
-                    throw new Error(error.message);
-                  }
-                  throw error;
-                }
-
-                // Normalize existing content
+                const { content: existingContent, fileItem } =
+                  await readAppletContent(path);
                 const normalizedExisting = existingContent.replace(/\r\n?/g, "\n");
 
                 // Check for uniqueness - count occurrences

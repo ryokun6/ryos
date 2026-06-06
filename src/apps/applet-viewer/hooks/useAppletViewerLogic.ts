@@ -13,7 +13,7 @@ import { useAppletActions, type Applet } from "../utils/appletActions";
 import { toast } from "sonner";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
-import { fetchAndCacheAppletContentFromShare } from "@/utils/appletVfs";
+import { readAppletContent } from "@/utils/appletVfs";
 import {
   APPLET_AUTH_BRIDGE_SCRIPT,
   APPLET_AUTH_MESSAGE_TYPE,
@@ -24,7 +24,7 @@ import {
   dbOperations,
   DocumentContent,
 } from "@/apps/finder/hooks/useFileSystem";
-import { useFilesStore, FileSystemItem } from "@/stores/useFilesStore";
+import { useFilesStore } from "@/stores/useFilesStore";
 import { STORES } from "@/utils/indexedDB";
 import { APPLET_ANALYTICS, track } from "@/utils/analytics";
 import { extractMetadataFromHtml } from "@/utils/appletMetadata";
@@ -415,12 +415,6 @@ export function useAppletViewerLogic({
     };
   }, [sendAuthPayload]);
 
-  const fetchAndCacheAppletContent = useCallback(
-    async (filePath: string, metadata: FileSystemItem) =>
-      fetchAndCacheAppletContentFromShare(filePath, metadata),
-    []
-  );
-
   const htmlContent =
     shareCode && !appletPath
       ? ""
@@ -497,52 +491,21 @@ export function useAppletViewerLogic({
       }
 
       try {
-        const fileMetadata = getFileItem(appletPath);
-        if (fileMetadata?.uuid) {
-          const contentData = await dbOperations.get<DocumentContent>(
-            STORES.APPLETS,
-            fileMetadata.uuid
-          );
+        const loaded = await readAppletContent(appletPath);
+        setLoadedContent(loaded.content);
 
-          if (contentData?.content) {
-            let contentStr: string;
-            if (contentData.content instanceof Blob) {
-              contentStr = await contentData.content.text();
-            } else {
-              contentStr = contentData.content;
-            }
-            setLoadedContent(contentStr);
-          } else if (fileMetadata.shareId) {
-            const fetched = await fetchAndCacheAppletContent(
-              appletPath,
-              fileMetadata
-            );
-
-            if (fetched) {
-              setLoadedContent(fetched.content);
-
-              if (instanceId && fetched.windowWidth && fetched.windowHeight) {
-                const appStore = useAppStore.getState();
-                const inst = appStore.instances[instanceId];
-                if (inst) {
-                  const pos = inst.position || { x: 0, y: 0 };
-                  appStore.updateInstanceWindowState(instanceId, pos, {
-                    width: fetched.windowWidth,
-                    height: fetched.windowHeight,
-                  });
-                }
-              }
-            } else {
-              setLoadedContent("");
-            }
-          } else {
-            setLoadedContent("");
+        if (instanceId && loaded.windowWidth && loaded.windowHeight) {
+          const appStore = useAppStore.getState();
+          const inst = appStore.instances[instanceId];
+          if (inst) {
+            const pos = inst.position || { x: 0, y: 0 };
+            appStore.updateInstanceWindowState(instanceId, pos, {
+              width: loaded.windowWidth,
+              height: loaded.windowHeight,
+            });
           }
-        } else {
-          setLoadedContent("");
         }
-      } catch (error) {
-        console.error("[AppletViewer] Error loading content from IndexedDB:", error);
+      } catch {
         setLoadedContent("");
       }
     };
@@ -552,7 +515,6 @@ export function useAppletViewerLogic({
     instanceId,
     getFileItem,
     typedInitialData,
-    fetchAndCacheAppletContent,
   ]);
 
   useEffect(() => {

@@ -53,15 +53,12 @@ export async function openDesktopAlias(
 
     if (
       targetFile.path.startsWith("/Documents/") ||
-      targetFile.path.startsWith("/Images/") ||
-      targetFile.path.startsWith("/Applets/")
+      targetFile.path.startsWith("/Images/")
     ) {
       if (targetFile.uuid) {
         const storeName = targetFile.path.startsWith("/Documents/")
           ? STORES.DOCUMENTS
-          : targetFile.path.startsWith("/Images/")
-            ? STORES.IMAGES
-            : STORES.APPLETS;
+          : STORES.IMAGES;
 
         const contentData = await dbOperations.get<{
           name: string;
@@ -71,10 +68,7 @@ export async function openDesktopAlias(
         if (contentData) {
           contentToUse = contentData.content;
           if (contentToUse instanceof Blob) {
-            if (
-              targetFile.path.startsWith("/Documents/") ||
-              targetFile.path.startsWith("/Applets/")
-            ) {
+            if (targetFile.path.startsWith("/Documents/")) {
               contentAsString = await contentToUse.text();
             }
           } else if (typeof contentToUse === "string") {
