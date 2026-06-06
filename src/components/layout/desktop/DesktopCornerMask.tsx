@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 
-const CORNER_SIZE = 18;
+const CORNER_SIZE = 14;
 const CORNER_MASK_Z_INDEX = 10004;
 
 const sharedCornerStyle: CSSProperties = {
