@@ -92,6 +92,7 @@ export function TrafficLightButton({
           height: "13px",
           background: styles.gradient,
           boxShadow: styles.shadow,
+          opacity: isForeground ? 1 : 0.7,
         }}
       >
         {/* Top shine */}
