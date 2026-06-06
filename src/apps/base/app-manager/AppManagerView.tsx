@@ -1,5 +1,6 @@
 import { MenuBar } from "@/components/layout/MenuBar";
 import { Desktop } from "@/components/layout/Desktop";
+import { DesktopCornerMask } from "@/components/layout/desktop/DesktopCornerMask";
 import { Dock } from "@/components/layout/Dock";
 import { ExposeView } from "@/components/layout/ExposeView";
 import { getAppComponent } from "@/config/appRegistry";
@@ -74,6 +75,7 @@ export function AppManagerView({
         apps={switcherApps}
         selectedIndex={switcherIndex}
       />
+      <DesktopCornerMask />
     </>
   );
 }
