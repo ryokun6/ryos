@@ -73,24 +73,22 @@ import {
   type TvControlInput,
 } from "../tools";
 
-/**
- * NOTE: Future refactoring opportunity (tracked in codebase analysis)
- * 
- * Consider consolidating more state from ChatsAppComponent into this hook:
- * - AI chat state (currently using useChat hook here)
- * - Message processing (app control markup)
- * - System state generation
- * - Dialog states (clear, save)
- * 
- * This would make the component lighter and improve testability.
- * Priority: Low - current architecture works well for the use case.
- */
-
-// Track newly created TextEdit instances for fallback mechanism
 const recentlyCreatedTextEditInstances = new Map<
   string,
   { instanceId: string; path: string; timestamp: number }
 >();
+
+const SERVER_EXECUTED_TOOL_NAMES = new Set([
+  "generateHtml",
+  "searchSongs",
+  "memoryWrite",
+  "memoryRead",
+  "memoryDelete",
+  "webFetch",
+  "cursorCloudAgent",
+  "listCursorCloudAgentRuns",
+  "mapsSearchPlaces",
+]);
 
 // Helper to add a newly created instance to tracking
 const trackNewTextEditInstance = (instanceId: string, path: string) => {
@@ -386,8 +384,12 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       };
 
       try {
-        // Default result message
         let result: string = "Tool executed successfully";
+
+        if (SERVER_EXECUTED_TOOL_NAMES.has(toolCall.toolName)) {
+          console.log(`[ToolCall] ${toolCall.toolName} (server-side):`, toolCall.input);
+          return;
+        }
 
         switch (toolCall.toolName) {
           case "aquarium": {
@@ -417,7 +419,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               toolCall.toolCallId,
               toolContext
             );
-            result = ""; // Handler manages its own result
+            result = "";
             break;
           }
           case "karaokeControl": {
@@ -426,73 +428,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               toolCall.toolCallId,
               toolContext
             );
-            result = ""; // Handler manages its own result
-            break;
-          }
-          // === Server-side tools (executed on the server via `execute` function) ===
-          // These tools have their results streamed from the server.
-          // We must NOT call addToolOutput here, as it would race with and
-          // potentially overwrite the real server result.
-          case "generateHtml": {
-            const { html } = toolCall.input as { html: string };
-            console.log("[ToolCall] generateHtml (server-side):", {
-              htmlLength: html?.length ?? 0,
-            });
-            // Result comes from server — do not call addToolOutput
             result = "";
             break;
           }
-          case "searchSongs": {
-            console.log("[ToolCall] searchSongs (server-side):", toolCall.input);
-            // Result comes from server — do not call addToolOutput
-            result = "";
-            break;
-          }
-          case "memoryWrite": {
-            console.log("[ToolCall] memoryWrite (server-side):", toolCall.input);
-            // Result comes from server — do not call addToolOutput
-            result = "";
-            break;
-          }
-          case "memoryRead": {
-            console.log("[ToolCall] memoryRead (server-side):", toolCall.input);
-            // Result comes from server — do not call addToolOutput
-            result = "";
-            break;
-          }
-          case "memoryDelete": {
-            console.log("[ToolCall] memoryDelete (server-side):", toolCall.input);
-            // Result comes from server — do not call addToolOutput
-            result = "";
-            break;
-          }
-          case "webFetch": {
-            console.log("[ToolCall] webFetch (server-side):", toolCall.input);
-            // Result comes from server — do not call addToolOutput
-            result = "";
-            break;
-          }
-          case "cursorCloudAgent": {
-            console.log("[ToolCall] cursorCloudAgent (server-side):", toolCall.input);
-            // Result comes from server — do not call addToolOutput
-            result = "";
-            break;
-          }
-          case "listCursorCloudAgentRuns": {
-            console.log(
-              "[ToolCall] listCursorCloudAgentRuns (server-side):",
-              toolCall.input
-            );
-            result = "";
-            break;
-          }
-          case "mapsSearchPlaces": {
-            console.log("[ToolCall] mapsSearchPlaces (server-side):", toolCall.input);
-            // Result comes from server — do not call addToolOutput
-            result = "";
-            break;
-          }
-          // === Unified VFS Tools ===
           case "list": {
             const { path, query, limit, librarySource } = toolCall.input as {
               path: string;
@@ -1442,7 +1380,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               toolCall.toolCallId,
               toolContext
             );
-            result = ""; // Handler manages its own result
+            result = "";
             break;
           }
           case "stickiesControl": {
@@ -1451,7 +1389,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               toolCall.toolCallId,
               toolContext
             );
-            result = ""; // Handler manages its own result
+            result = "";
             break;
           }
           case "infiniteMacControl": {
@@ -1460,7 +1398,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               toolCall.toolCallId,
               toolContext
             );
-            result = ""; // Handler manages its own result
+            result = "";
             break;
           }
           case "calendarControl": {
@@ -1469,7 +1407,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               toolCall.toolCallId,
               toolContext
             );
-            result = ""; // Handler manages its own result
+            result = "";
             break;
           }
           case "contactsControl": {
@@ -1478,7 +1416,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               toolCall.toolCallId,
               toolContext
             );
-            result = ""; // Handler manages its own result
+            result = "";
             break;
           }
           case "tvControl": {
@@ -1487,7 +1425,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               toolCall.toolCallId,
               toolContext
             );
-            result = ""; // Handler manages its own result
+            result = "";
             break;
           }
           default:
@@ -1504,7 +1442,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             break;
         }
 
-        // Send the result back to the chat
         if (result) {
           console.log(
             `[onToolCall] Adding result for ${toolCall.toolName}:`,
@@ -1518,7 +1455,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         }
       } catch (err) {
         console.error("Error executing tool call:", err);
-        // Send error result
         addToolOutput({
           tool: toolCall.toolName,
           toolCallId: toolCall.toolCallId,
@@ -1556,24 +1492,13 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       // Only target server-side tools (client-side tools already called
       // addToolOutput from their handlers, so they don't need recovery).
       if (isError) {
-        const SERVER_SIDE_TOOL_SET = new Set([
-          "generateHtml",
-          "searchSongs",
-          "memoryWrite",
-          "memoryRead",
-          "memoryDelete",
-          "webFetch",
-          "cursorCloudAgent",
-          "listCursorCloudAgentRuns",
-          "mapsSearchPlaces",
-        ]);
         const toolParts = lastMsg.parts.filter(
           (part: { type?: string; state?: string }) =>
             typeof part.type === "string" &&
             part.type.startsWith("tool-") &&
             (part.state === "output-available" ||
               part.state === "output-error") &&
-            SERVER_SIDE_TOOL_SET.has((part.type as string).replace(/^tool-/, "")),
+            SERVER_EXECUTED_TOOL_NAMES.has((part.type as string).replace(/^tool-/, "")),
         );
         if (toolParts.length > 0) {
           console.log(

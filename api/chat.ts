@@ -340,23 +340,19 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
       }),
     });
 
-    // Set CORS headers
     res.setHeader("Access-Control-Allow-Origin", validOrigin);
     
-    // Use pipeUIMessageStreamToResponse for Node.js streaming
     result.pipeUIMessageStreamToResponse(res, {
       status: 200,
     });
   } catch (error) {
     logger.error("Chat API error", error);
 
-    // Set CORS headers
     if (validOrigin) {
       res.setHeader("Access-Control-Allow-Origin", validOrigin);
     }
     res.setHeader("Content-Type", "application/json");
 
-    // Check if error is a SyntaxError (likely from parsing JSON)
     if (error instanceof SyntaxError) {
       logger.error(`Invalid JSON`, error.message);
       logger.response(400, Date.now() - startTime);
