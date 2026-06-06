@@ -832,7 +832,7 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   }
 
   .ryos-chat-streamdown-link {
-    color: rgb(37 99 235);
+    color: var(--os-color-link);
     text-decoration: underline;
   }
 

@@ -203,4 +203,15 @@ describe("assistant chat bubble accent tokens", () => {
     expect(vars["--os-accent-assistant-bubble-bg"]).toStartWith("rgb(");
     expect(vars["--os-accent-assistant-bubble-text"]).toBeUndefined();
   });
+
+  test("named accent sets link color derived from the accent swatch", () => {
+    const purple = getAccentCssVars("aqua", "purple", false);
+    const purpleDark = getAccentCssVars("aqua", "purple", true);
+    const system7Green = getAccentCssVars("system7", "green", false);
+
+    expect(purple["--os-color-link"]).toStartWith("rgb(");
+    expect(purpleDark["--os-color-link"]).toStartWith("rgb(");
+    expect(system7Green["--os-color-link"]).toStartWith("rgb(");
+    expect(purple["--os-color-link"]).not.toBe(purpleDark["--os-color-link"]);
+  });
 });

@@ -31,6 +31,15 @@
   --os-color-selection-bg: #000000;
   --os-color-selection-text: #ffffff;
   --os-color-selection-text-shadow: none;
+  /* Inner "gap" ring drawn between a selected thumbnail and the selection-color
+     halo (e.g. wallpaper / screensaver picker). White on light themes; the dark
+     macOS theme overrides it to its window bg so the halo doesn't read as a
+     bright white border. */
+  --os-color-selection-ring-gap: #ffffff;
+  /* Hyperlink color. Classic blue by default; overridden to the chosen accent
+     color (when set) via inline vars from `getAccentCssVars`. Consumed through
+     the Tailwind `text-os-link` utility and the chat link styles. */
+  --os-color-link: #2563eb;
   --os-color-text-primary: #000000;
   --os-color-text-secondary: #666666;
   --os-color-text-disabled: #999999;
@@ -230,6 +239,7 @@
   --os-color-selection-bg: rgba(39, 101, 202, 0.88);
   --os-color-selection-text: #ffffff;
   --os-color-selection-text-shadow: none;
+  --os-color-link: #2765ca;
   /* Derived selection glow (used for focus rings). Keep alpha in a separate var */
   --os-color-selection-glow: rgba(48, 103, 218, 0.5);
   --os-color-text-primary: #000000;
@@ -3289,6 +3299,10 @@
   --os-color-selection-bg: rgba(48, 103, 218, 0.85);
   --os-color-selection-text: #ffffff;
   --os-color-selection-glow: rgba(48, 103, 218, 0.55);
+  --os-color-link: #6ba3ff;
+  /* Dark gap ring so a selected thumbnail's halo blends with the dark window
+     instead of drawing a bright white border. */
+  --os-color-selection-ring-gap: #2b2b2e;
 
   /* Inputs */
   --os-color-input-bg: #1f1f22;
@@ -4032,21 +4046,23 @@
   background: linear-gradient(transparent, rgba(255, 255, 255, 0.08));
 }
 
-/* Under-tab seam — same Aqua-blue family as the light theme but with the
-   stops dragged toward the darker / less-saturated end so it reads as a
-   continuation of the dimmer active tab above. */
+/* Under-tab seam — mirrors the light theme's gloss curve, scaled into the
+   dark-blue family. Light goes: dark edge → near-white peak (8%) → descend →
+   dip at 40% → recover (60–80%) → settle. The key is a dramatically bright
+   8% peak (so it reads as a glossy highlight, not a flat bright bar) with the
+   body staying dimmer and dipping in the middle before a gentle recover. */
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .aqua-tab-bar:after {
   background: var(
     --os-accent-tab-bar-line,
     linear-gradient(
       to bottom,
       #16345c 0%,
-      #6e9bcb 8%,
-      #5a85b8 25%,
-      #4670a3 40%,
-      #5a85b8 60%,
-      #6090c0 80%,
-      #4d80b4 100%
+      #cfe4f8 8%,
+      #5a82b0 25%,
+      #426591 40%,
+      #4f76a3 60%,
+      #4f73a0 80%,
+      #436690 100%
     )
   );
   box-shadow:

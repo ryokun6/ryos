@@ -23,7 +23,7 @@ export function VersionDisplay() {
           e.preventDefault();
           launchApp("internet-explorer", { url: "os.ryo.lu/docs/changelog", year: "current" });
         }}
-        className="text-blue-600 hover:underline"
+        className="text-os-link hover:underline"
       >
         {t("apps.control-panels.viewChangelog")}
       </a>

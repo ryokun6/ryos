@@ -93,6 +93,7 @@ module.exports = {
             bg: "var(--os-color-selection-bg)",
             text: "var(--os-color-selection-text)",
           },
+          link: "var(--os-color-link)",
           text: {
             primary: "var(--os-color-text-primary)",
             secondary: "var(--os-color-text-secondary)",

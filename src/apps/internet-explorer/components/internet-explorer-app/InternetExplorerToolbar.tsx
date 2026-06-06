@@ -199,7 +199,7 @@ export function InternetExplorerToolbar({
                 <SelectItem
                   key={y}
                   value={y}
-                  className="text-md h-6 px-3 active:bg-neutral-900 active:text-white text-blue-600"
+                  className="text-md h-6 px-3 active:bg-neutral-900 active:text-white text-os-link"
                 >
                   {y}
                 </SelectItem>
@@ -215,7 +215,7 @@ export function InternetExplorerToolbar({
                   key={y}
                   value={y}
                   className={`text-md h-6 px-3 active:bg-neutral-900 active:text-white ${
-                    parseInt(y) <= 1995 ? "text-blue-600" : ""
+                    parseInt(y) <= 1995 ? "text-os-link" : ""
                   }`}
                 >
                   {y}

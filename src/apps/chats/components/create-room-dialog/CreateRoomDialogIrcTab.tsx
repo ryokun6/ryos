@@ -120,7 +120,7 @@ export function CreateRoomDialogIrcTab(vm: CreateRoomDialogViewModel) {
                         {isAdmin && (
                           <SelectItem
                             value="__add__"
-                            className={cn(themeFont, "text-blue-600")}
+                            className={cn(themeFont, "text-os-link")}
                           >
                             <span className="inline-flex items-center gap-1">
                               <Plus className="size-3" weight="bold" />

@@ -231,7 +231,7 @@ export function AboutFinderDialog({
                       href={`https://github.com/ryokun6/ryos/releases/download/v${desktopVersion}/ryOS_${desktopVersion}_aarch64.dmg`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline"
+                      className="text-os-link hover:underline"
                     >
                       {t("apps.control-panels.downloadMacApp")}
                     </a>
@@ -248,7 +248,7 @@ export function AboutFinderDialog({
                       });
                       onOpenChange(false);
                     }}
-                    className="text-blue-600 hover:underline"
+                    className="text-os-link hover:underline"
                   >
                     {t("common.aboutThisMac.viewChangelog")}
                   </a>

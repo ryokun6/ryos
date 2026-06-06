@@ -26,7 +26,7 @@ export function IeMenuBarYearSubmenu({
             onCheckedChange={(checked) => {
               if (checked) onYearChange?.(yearOption);
             }}
-            className="text-md h-6 px-3 text-blue-600"
+            className="text-md h-6 px-3 text-os-link"
           >
             {yearOption}
           </MenubarCheckboxItem>
@@ -48,7 +48,7 @@ export function IeMenuBarYearSubmenu({
               if (checked) onYearChange?.(yearOption);
             }}
             className={`text-md h-6 px-3 ${
-              parseInt(yearOption) <= 1995 ? "text-blue-600" : ""
+              parseInt(yearOption) <= 1995 ? "text-os-link" : ""
             }`}
           >
             {yearOption}

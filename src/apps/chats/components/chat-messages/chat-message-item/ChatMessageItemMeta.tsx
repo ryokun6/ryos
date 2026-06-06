@@ -212,7 +212,7 @@ export function ChatMessageItemMeta({ vm }: { vm: ChatMessageItemViewModel }) {
                     opacity: isHovered ? 1 : 0,
                     scale: 1,
                   }}
-                  className="size-3 text-neutral-400 hover:text-blue-600 transition-colors"
+                  className="size-3 text-neutral-400 hover:text-os-link transition-colors"
                   onClick={() => onSendMessage(message.username!)}
                   aria-label={t("apps.chats.ariaLabels.messageUser", {
                     username: message.username,

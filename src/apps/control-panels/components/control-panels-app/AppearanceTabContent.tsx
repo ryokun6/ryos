@@ -44,7 +44,6 @@ function AccentSwatch({
           ? {
               boxShadow:
                 "0 2px 3px rgba(0,0,0,0.2), 0 1px 1px rgba(0,0,0,0.3), inset 0 0 0 0.5px rgba(0,0,0,0.3), inset 0 1px 2px rgba(0,0,0,0.4), inset 0 2px 3px 1px rgba(255,255,255,0.22)",
-              backdropFilter: "blur(2px)",
             }
           : {}),
       }}
@@ -55,11 +54,11 @@ function AccentSwatch({
             className="pointer-events-none absolute left-1/2 z-[2] -translate-x-1/2"
             style={{
               top: "2px",
-              height: "30%",
-              width: "calc(100% - 8px)",
-              borderRadius: "9999px 9999px 2px 2px",
+              height: "26%",
+              width: "calc(100% - 7.5px)",
+              borderRadius: "9999px 9999px 3px 3px",
               background:
-                "linear-gradient(rgba(255,255,255,0.9), rgba(255,255,255,0.25))",
+                "linear-gradient(rgba(255,255,255,0.9), rgba(255,255,255,0.3))",
               filter: "blur(0.2px)",
             }}
           />

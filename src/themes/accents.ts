@@ -214,6 +214,23 @@ function readableText(base: RGB): string {
   return luminance(base) > 0.62 ? "#1f1a00" : "#ffffff";
 }
 
+/**
+ * A hyperlink color derived from the accent. Links sit on the window/dialog
+ * background (light or dark), so a raw accent swatch (e.g. yellow) can be
+ * illegible. Nudge the color until it has enough contrast: darken light
+ * accents on light surfaces, lighten dark accents on dark surfaces.
+ */
+function linkColor(base: RGB, isDark: boolean): string {
+  let c: RGB = base;
+  let guard = 0;
+  if (isDark) {
+    while (luminance(c) < 0.5 && guard++ < 12) c = lighten(c, 0.12);
+  } else {
+    while (luminance(c) > 0.5 && guard++ < 12) c = darken(c, 0.12);
+  }
+  return rgb(c);
+}
+
 /** Stock assistant bubble fills — hue is swapped; S/L stay on these profiles. */
 const ASSISTANT_BUBBLE_REF = {
   aqua: { light: "#bfdbfe", dark: "#353a42" },
@@ -355,6 +372,7 @@ export function getAccentCssVars(
   const text = readableText(base);
 
   const assistantBubbleBgColor = assistantBubbleBg(base, chrome, isDark);
+  const link = linkColor(base, isDark);
 
   if (chrome === "system7") {
     // System 7 selections are flat fills — no gradients.
@@ -364,6 +382,7 @@ export function getAccentCssVars(
       "--os-color-input-focus-border": rgb(base),
       "--os-color-switch-track-checked": rgb(base),
       "--os-accent-assistant-bubble-bg": assistantBubbleBgColor,
+      "--os-color-link": link,
     };
   }
 
@@ -396,18 +415,19 @@ export function getAccentCssVars(
     : `linear-gradient(${rgb(base)}, ${rgb(lighten(base, 0.42))}, ${rgb(
         lighten(base, 0.72)
       )})`;
-  // The glossy strip beneath the tab bar. Dark mode mirrors the multi-stop
-  // depth of the classic blue seam (dark top edge → soft sheen → varied mids)
-  // but stays deep in the darker half so it doesn't read as a bright flat bar
-  // against the dark window.
+  // The glossy strip beneath the tab bar. Dark mode mirrors the light theme's
+  // gloss curve scaled into the darker family: dark edge → bright near-white
+  // peak at 8% (a glossy highlight, well above the active tab's darken(0.22)
+  // bottom) → descend → dip at 40% → gentle recover (60–80%) → settle. The
+  // body stays dimmer than the peak so the strip reads glossy, not flat.
   const tabBarLine = isDark
-    ? `linear-gradient(to bottom, ${rgb(darken(base, 0.72))} 0%, ${rgb(
-        darken(base, 0.32)
-      )} 8%, ${rgb(darken(base, 0.44))} 25%, ${rgb(
-        darken(base, 0.58)
-      )} 40%, ${rgb(darken(base, 0.46))} 60%, ${rgb(
-        darken(base, 0.38)
-      )} 80%, ${rgb(darken(base, 0.52))} 100%)`
+    ? `linear-gradient(to bottom, ${rgb(darken(base, 0.55))} 0%, ${rgb(
+        lighten(base, 0.55)
+      )} 8%, ${rgb(darken(base, 0.34))} 25%, ${rgb(
+        darken(base, 0.48)
+      )} 40%, ${rgb(darken(base, 0.38))} 60%, ${rgb(
+        darken(base, 0.4)
+      )} 80%, ${rgb(darken(base, 0.46))} 100%)`
     : `linear-gradient(to bottom, ${rgb(darken(base, 0.1))} 0%, ${rgb(
         lighten(base, 0.85)
       )} 8%, ${rgb(lighten(base, 0.35))} 40%, ${rgb(lighten(base, 0.5))} 100%)`;
@@ -466,6 +486,7 @@ export function getAccentCssVars(
     "--os-accent-apple-filter": appleFilter(base),
     // Chats assistant / Ryo AI bubble hue (`.chat-bubble.bg-blue-100`).
     "--os-accent-assistant-bubble-bg": assistantBubbleBgColor,
+    "--os-color-link": link,
   };
 }
 
@@ -492,4 +513,5 @@ export const ACCENT_CSS_VAR_NAMES = [
   "--os-accent-tab-border",
   "--os-accent-apple-filter",
   "--os-accent-assistant-bubble-bg",
+  "--os-color-link",
 ] as const;

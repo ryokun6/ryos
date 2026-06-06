@@ -190,7 +190,7 @@ export function ContactsCardPanel({ c }: ContactsCardPanelProps) {
                       key={p.id}
                       label={p.label && p.label !== "other" ? p.label : t("apps.contacts.cardLabels.phone")}
                     >
-                      <a href={`tel:${p.value}`} className="break-all text-blue-600 hover:underline">
+                      <a href={`tel:${p.value}`} className="break-all text-os-link hover:underline">
                         {p.value}
                       </a>
                     </CardRow>
@@ -200,7 +200,7 @@ export function ContactsCardPanel({ c }: ContactsCardPanelProps) {
                       key={e.id}
                       label={e.label && e.label !== "other" ? e.label : t("apps.contacts.cardLabels.email")}
                     >
-                      <a href={`mailto:${e.value}`} className="break-all text-blue-600 hover:underline">
+                      <a href={`mailto:${e.value}`} className="break-all text-os-link hover:underline">
                         {e.value}
                       </a>
                     </CardRow>
@@ -227,7 +227,7 @@ export function ContactsCardPanel({ c }: ContactsCardPanelProps) {
                         href={u.value.startsWith("http") ? u.value : `https://${u.value}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="break-all text-blue-600 hover:underline"
+                        className="break-all text-os-link hover:underline"
                       >
                         {u.value}
                       </a>

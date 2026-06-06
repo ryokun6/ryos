@@ -107,7 +107,7 @@ export function SongDetailPanelMetadataSection({
               </div>
             ) : (
               <div
-                className="text-[11px] cursor-pointer hover:text-blue-600 mt-0.5"
+                className="text-[11px] cursor-pointer hover:text-os-link mt-0.5"
                 onClick={() => {
                   dispatchSongEdit({
                     type: "startEdit",
@@ -172,7 +172,7 @@ export function SongDetailPanelMetadataSection({
               </div>
             ) : (
               <div
-                className="text-[11px] cursor-pointer hover:text-blue-600 mt-0.5"
+                className="text-[11px] cursor-pointer hover:text-os-link mt-0.5"
                 onClick={() => {
                   dispatchSongEdit({
                     type: "startEdit",
@@ -237,7 +237,7 @@ export function SongDetailPanelMetadataSection({
               </div>
             ) : (
               <div
-                className="text-[11px] cursor-pointer hover:text-blue-600 mt-0.5"
+                className="text-[11px] cursor-pointer hover:text-os-link mt-0.5"
                 onClick={() => {
                   dispatchSongEdit({
                     type: "startEdit",
@@ -304,7 +304,7 @@ export function SongDetailPanelMetadataSection({
               </div>
             ) : (
               <div
-                className="text-[11px] cursor-pointer hover:text-blue-600 mt-0.5"
+                className="text-[11px] cursor-pointer hover:text-os-link mt-0.5"
                 onClick={() => {
                   dispatchSongEdit({
                     type: "startEdit",
@@ -351,7 +351,7 @@ export function SongDetailPanelMetadataSection({
                     href={`https://www.youtube.com/watch?v=${song?.id}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-500 hover:text-blue-600"
+                    className="text-os-link hover:opacity-90"
                   >
                     <ArrowSquareOut className="size-3" weight="bold" />
                   </a>

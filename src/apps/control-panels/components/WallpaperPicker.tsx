@@ -76,7 +76,9 @@ function WallpaperItem({
         type="button"
         className="preview-button w-full aspect-video cursor-pointer hover:opacity-90 relative overflow-hidden"
         style={{
-          boxShadow: isSelected ? "0 0 0 1px #fff, 0 0 0 3px var(--os-color-selection-bg)" : undefined,
+          boxShadow: isSelected
+            ? "0 0 0 1px var(--os-color-selection-ring-gap), 0 0 0 3px var(--os-color-selection-bg)"
+            : undefined,
         }}
         onClick={handleClick}
         onKeyDown={(e) => {
@@ -127,7 +129,9 @@ function WallpaperItem({
         backgroundSize: isTile ? "64px 64px" : "cover",
         backgroundPosition: isTile ? undefined : "center",
         backgroundRepeat: isTile ? "repeat" : undefined,
-        boxShadow: isSelected ? "0 0 0 1px #fff, 0 0 0 3px var(--os-color-selection-bg)" : undefined,
+        boxShadow: isSelected
+          ? "0 0 0 1px var(--os-color-selection-ring-gap), 0 0 0 3px var(--os-color-selection-bg)"
+          : undefined,
       }}
       onClick={handleClick}
       onKeyDown={(e) => {

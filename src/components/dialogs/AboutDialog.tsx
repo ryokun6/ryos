@@ -94,7 +94,7 @@ export function AboutDialog({
             href={metadata.creator.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-500 hover:underline"
+            className="text-os-link hover:underline"
           >
             {metadata.creator.name}
           </a>
@@ -104,7 +104,7 @@ export function AboutDialog({
             href={metadata.github}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-500 hover:underline"
+            className="text-os-link hover:underline"
           >
             {t("common.dialog.openInGitHub")}
           </a>
@@ -116,7 +116,7 @@ export function AboutDialog({
               e.preventDefault();
               handleViewDocs();
             }}
-            className="text-blue-500 hover:underline"
+            className="text-os-link hover:underline"
           >
             {t("common.dialog.viewDocs")}
           </a>

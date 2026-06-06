@@ -172,7 +172,7 @@ export function DashboardServerCard({ reloadKey = 0 }: { reloadKey?: number }) {
                   href={commitUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="truncate font-mono text-[11px] font-medium text-blue-600 underline-offset-2 hover:underline"
+                  className="truncate font-mono text-[11px] font-medium text-os-link underline-offset-2 hover:underline"
                   title={versionInfo?.commitSha ?? commitLabel}
                 >
                   {commitLabel}

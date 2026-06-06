@@ -415,7 +415,7 @@ export function CursorAgentsPanel({
                           href={cursorAgentPageUrl(run.agentId)}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline shrink-0"
+                          className="text-os-link hover:underline shrink-0"
                         >
                           {t("apps.admin.cursorAgents.openAgent", "Agent")}
                         </a>
@@ -430,7 +430,7 @@ export function CursorAgentsPanel({
                           href={run.prUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline shrink-0"
+                          className="text-os-link hover:underline shrink-0"
                         >
                           {t("apps.admin.cursorAgents.openPr", "PR")}
                         </a>
