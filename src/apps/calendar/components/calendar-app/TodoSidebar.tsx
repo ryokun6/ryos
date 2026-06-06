@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Trash } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
@@ -42,6 +42,10 @@ export function TodoSidebar({
   const [editingTodoId, setEditingTodoId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
   const defaultCalId = calendars[0]?.id || "home";
+  const calendarById = useMemo(
+    () => new Map(calendars.map((calendar) => [calendar.id, calendar])),
+    [calendars]
+  );
 
   const handleAdd = () => {
     if (!newTitle.trim()) return;
@@ -102,7 +106,7 @@ export function TodoSidebar({
           <div className={cn("text-[10px] opacity-30 px-2 py-2", useGeneva && "font-geneva-12")}>{t("apps.calendar.sidebar.noTodoItems")}</div>
         )}
         {todos.map((todo) => {
-          const cal = calendars.find((c) => c.id === todo.calendarId);
+          const cal = calendarById.get(todo.calendarId);
           const isEditing = editingTodoId === todo.id;
           const isSelected = selectedTodoId === todo.id;
           return (

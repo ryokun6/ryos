@@ -63,9 +63,7 @@ export const KaraokeTitleCard = memo(function KaraokeTitleCard({
     enabled: styleCategory === "glow-gold",
     onResolved: onCoverColorResolved,
   });
-  const primaryGlow = useMemo(() => {
-    return makeTitleCardGlow(glowColor);
-  }, [glowColor]);
+  const primaryGlow = makeTitleCardGlow(glowColor);
 
   const titleTextSizeClass =
     variant === "fullscreen"

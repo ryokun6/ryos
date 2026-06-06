@@ -71,7 +71,7 @@ interface ClockWidgetProps {
 
 export function ClockWidget({ widgetId, isFlipped }: ClockWidgetProps) {
   const { t } = useTranslation();
-  const [time, setTime] = useState(new Date());
+  const [time, setTime] = useState(() => new Date());
   const { isWindowsTheme: isXpTheme } = useThemeFlags();
   const widget = useDashboardStore((s) => widgetId ? s.widgets.find((w) => w.id === widgetId) : undefined);
   const config = widget?.config as ClockWidgetConfig | undefined;

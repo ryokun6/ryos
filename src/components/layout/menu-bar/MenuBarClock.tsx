@@ -7,8 +7,8 @@ import { requestAppLaunch, toggleExposeView } from "@/utils/appEventBus";
 import type { ClockProps } from "./menuBarTypes";
 
 export function Clock({ enableExposeToggle = false, enableCalendarOpen = false }: ClockProps) {
-  const [time, setTime] = useState(new Date());
-  const [viewportWidth, setViewportWidth] = useState(window.innerWidth);
+  const [time, setTime] = useState(() => new Date());
+  const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
   const { isWindowsTheme: isXpTheme, isMacOSTheme } = useThemeFlags();
   const { t, i18n: i18nInstance } = useTranslation();
   

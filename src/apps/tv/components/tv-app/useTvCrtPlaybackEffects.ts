@@ -60,7 +60,7 @@ export function useTvCrtPlaybackEffects({
 }) {
   useEffect(() => {
     setLcdSlot("now");
-  }, [currentChannelId, currentVideoId]);
+  }, [currentChannelId, currentVideoId, setLcdSlot]);
 
   const wasOpenRef = useRef(false);
   useEffect(() => {
@@ -75,7 +75,15 @@ export function useTvCrtPlaybackEffects({
       setPoweringOff(false);
       stopStatic();
     }
-  }, [isWindowOpen, skipInitialSound, playPowerOn, stopStatic, isMobileSafariDevice]);
+  }, [
+    isWindowOpen,
+    skipInitialSound,
+    playPowerOn,
+    setPowerOnKey,
+    setPoweringOff,
+    stopStatic,
+    isMobileSafariDevice,
+  ]);
 
   const channelMountedRef = useRef(false);
   useEffect(() => {
@@ -86,11 +94,11 @@ export function useTvCrtPlaybackEffects({
     if (isFullScreen) return;
     setChannelSwitchKey((k) => k + 1);
     void playChannelSwitch();
-  }, [currentChannelId, playChannelSwitch, isFullScreen]);
+  }, [currentChannelId, playChannelSwitch, setChannelSwitchKey, isFullScreen]);
 
   useEffect(() => {
     setIsBuffering(false);
-  }, [currentVideoId]);
+  }, [currentVideoId, setIsBuffering]);
 
   const ccTransitionMountedRef = useRef(false);
   useEffect(() => {
@@ -101,7 +109,7 @@ export function useTvCrtPlaybackEffects({
     setIsTransitioningCc(true);
     const id = window.setTimeout(() => setIsTransitioningCc(false), 700);
     return () => window.clearTimeout(id);
-  }, [currentChannelId, currentVideoId]);
+  }, [currentChannelId, currentVideoId, setIsTransitioningCc]);
 
   const prevPlayingRef = useRef(isPlaying);
   const prevVideoIdRef = useRef(currentVideoId);
@@ -155,6 +163,8 @@ export function useTvCrtPlaybackEffects({
     currentVideoId,
     playPowerOff,
     playPowerOn,
+    setPowerOnKey,
+    setScreenOff,
     stopStatic,
   ]);
 
@@ -163,7 +173,7 @@ export function useTvCrtPlaybackEffects({
       setScreenOff(isMobileSafariDevice);
       hasPausedRef.current = false;
     }
-  }, [isWindowOpen, isMobileSafariDevice]);
+  }, [isWindowOpen, isMobileSafariDevice, setScreenOff]);
 
   useEffect(() => {
     if (staticBedActive) {

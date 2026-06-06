@@ -6,6 +6,8 @@ import { useEventListener } from "@/hooks/useEventListener";
 type SoundType = "command" | "error" | "aiResponse";
 type TimeMode = "past" | "future" | "now";
 
+const ONCE_LISTENER_OPTIONS = { once: true } as const;
+
 const TERMINAL_SOUND_PRESETS = {
   command: {
     oscillator: {
@@ -820,7 +822,7 @@ export function useTerminalSounds() {
   }, [initializeToneOnce]);
 
   // Initialize Tone.js on first user interaction
-  useEventListener("click", handleFirstInteraction, window, { once: true });
+  useEventListener("click", handleFirstInteraction, window, ONCE_LISTENER_OPTIONS);
 
   const playSound = useCallback(
     async (type: SoundType) => {

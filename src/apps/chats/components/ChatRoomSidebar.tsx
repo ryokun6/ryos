@@ -57,6 +57,23 @@ export const ChatRoomSidebar = React.memo(function ChatRoomSidebar({
   const togglePrivateOpen = useChatsStore((s) => s.togglePrivateOpen);
 
   const onlineUsersSet = useMemo(() => new Set(onlineUsers), [onlineUsers]);
+  const { publicRooms, privateRooms } = useMemo(() => {
+    const nextPublicRooms: ChatRoom[] = [];
+    const nextPrivateRooms: ChatRoom[] = [];
+
+    for (const room of Array.isArray(rooms) ? rooms : []) {
+      if (room.type === "private") {
+        nextPrivateRooms.push(room);
+      } else {
+        nextPublicRooms.push(room);
+      }
+    }
+
+    return {
+      publicRooms: nextPublicRooms,
+      privateRooms: nextPrivateRooms,
+    };
+  }, [rooms]);
 
   if (!isVisible) {
     return null;
@@ -235,12 +252,6 @@ export const ChatRoomSidebar = React.memo(function ChatRoomSidebar({
           {Array.isArray(rooms) && (
             <>
               {(() => {
-                const publicRooms = rooms.filter(
-                  (room) => room.type !== "private"
-                );
-                const privateRooms = rooms.filter(
-                  (room) => room.type === "private"
-                );
                 const hasBoth =
                   publicRooms.length > 0 && privateRooms.length > 0;
                 const hasPrivate = privateRooms.length > 0;

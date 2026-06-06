@@ -6,6 +6,8 @@ import { useIpodStore } from "@/stores/useIpodStore";
 import { cn } from "@/lib/utils";
 import type { LyricLine } from "@/types/lyrics";
 
+const WORD_WITH_TRAILING_SPACE_RE = /\S+\s*/g;
+
 interface MtvLyricsOverlayProps {
   /** The id of the currently playing video. For the MTV channel this maps
    *  1:1 to an iPod track id (see `trackToVideo` in `useTvLogic`). */
@@ -186,9 +188,9 @@ export function MtvLyricsOverlay({
     const trimmed = original.trim();
     if (!trimmed) return [];
     const parts: string[] = [];
-    const re = /\S+\s*/g;
+    WORD_WITH_TRAILING_SPACE_RE.lastIndex = 0;
     let m: RegExpExecArray | null;
-    while ((m = re.exec(trimmed)) !== null) {
+    while ((m = WORD_WITH_TRAILING_SPACE_RE.exec(trimmed)) !== null) {
       parts.push(m[0]);
     }
     const total = lineDurationMs;
@@ -198,7 +200,7 @@ export function MtvLyricsOverlay({
     }));
   }, [activeLine, lineDurationMs]);
 
-  const fullText = useMemo(() => tokens.map((t) => t.text).join(""), [tokens]);
+  const fullText = tokens.map((t) => t.text).join("");
 
   // Track the latest prop time + when we received it so we can
   // extrapolate per-frame for smooth reveal between coarse progress
