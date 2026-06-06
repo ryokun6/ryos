@@ -1220,6 +1220,21 @@
       }
     },
     "control-panels": {
+      "accent": "강조 색상",
+      "accentColors": {
+        "blue": "파란색",
+        "default": "기본",
+        "graphite": "그라파이트",
+        "green": "초록색",
+        "orange": "주황색",
+        "pink": "분홍색",
+        "purple": "보라색",
+        "red": "빨간색",
+        "teal": "청록색",
+        "wallpaper": "배경화면",
+        "yellow": "노란색"
+      },
+      "accentDescription": "선택 항목, 메뉴 및 제어기에 색상을 입힙니다.",
       "accountMenu": "Account",
       "aiModel": "AI 모델",
       "aiModelDescription": "채팅, IE 등에서 사용됨",

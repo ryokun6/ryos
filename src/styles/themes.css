@@ -474,14 +474,20 @@
 }
 
 :root[data-os-theme="macosx"] .tv-drawer-mac-row-active {
-  background: linear-gradient(180deg, #609de9 0%, #3d84e5 50%, #3170dc 100%);
+  background: var(
+    --os-accent-list-gradient,
+    linear-gradient(180deg, #609de9 0%, #3d84e5 50%, #3170dc 100%)
+  );
   color: #fff;
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 
 :root[data-os-theme="macosx"] .tv-drawer-mac-row-active:hover {
-  background: linear-gradient(180deg, #609de9 0%, #3d84e5 50%, #3170dc 100%);
+  background: var(
+    --os-accent-list-gradient,
+    linear-gradient(180deg, #609de9 0%, #3d84e5 50%, #3170dc 100%)
+  );
   color: #fff;
 }
 
@@ -490,9 +496,12 @@
   font-size: 11px !important;
 }
 
-/* Brushed metal list selection: Spotlight-style gradient */
+/* Brushed metal list selection: Spotlight-style gradient (follows accent). */
 :root[data-os-theme="macosx"] .window-material-brushedmetal.is-foreground {
-  --os-color-selection-bg: linear-gradient(180deg, #609de9 0%, #3d84e5 50%, #3170dc 100%);
+  --os-color-selection-bg: var(
+    --os-accent-list-gradient,
+    linear-gradient(180deg, #609de9 0%, #3d84e5 50%, #3170dc 100%)
+  );
   --os-color-selection-text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
 }
 
@@ -536,18 +545,16 @@
 }
 
 .metal-inset-btn:active {
-  background: linear-gradient(to bottom, #7fa0d8 0%,
-    #a3c3e8 49%,
-    #77a8de 50%,
-    #9fd5f5 100%);
+  background: var(
+    --os-accent-inset-gradient,
+    linear-gradient(to bottom, #7fa0d8 0%, #a3c3e8 49%, #77a8de 50%, #9fd5f5 100%)
+  );
 }
 
 .metal-inset-btn[data-state="on"] {
-  background: linear-gradient(to bottom,
-    #7fa0d8 0%,
-    #a3c3e8 49%,
-    #77a8de 50%,
-    #9fd5f5 100%
+  background: var(
+    --os-accent-inset-gradient,
+    linear-gradient(to bottom, #7fa0d8 0%, #a3c3e8 49%, #77a8de 50%, #9fd5f5 100%)
   );
   color: #1a1a1a;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
@@ -757,22 +764,31 @@
   }
 }
 
+/* Primary button gloss follows the active accent color. The `--os-accent-button-*`
+   vars are set inline on <html> only for a non-default accent; the fallbacks
+   keep the classic Aqua blue otherwise. */
 .aqua-button.primary {
-  background: linear-gradient(
-    rgba(0, 65, 184, 0.625),
-    rgba(45, 115, 199, 0.625),
-    rgba(33, 160, 196, 0.625)
+  background: var(
+    --os-accent-button-bg,
+    linear-gradient(
+      rgba(0, 65, 184, 0.625),
+      rgba(45, 115, 199, 0.625),
+      rgba(33, 160, 196, 0.625)
+    )
   );
-  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3), 0 1px 1px rgba(0, 78, 187, 0.5),
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3),
+    0 1px 1px var(--os-accent-button-edge, rgba(0, 78, 187, 0.5)),
     inset 0 1px 3px rgba(0, 17, 49, 0.8),
-    inset 0 2px 3px 1px rgba(0, 78, 187, 0.75);
+    inset 0 2px 3px 1px var(--os-accent-button-inner, rgba(0, 78, 187, 0.75));
   animation: aqua-pulse 1.5s ease-in-out infinite;
 }
 
 .aqua-button.primary:active {
-  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3), 0 1px 1px rgba(0, 78, 187, 0.5),
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3),
+    0 1px 1px var(--os-accent-button-edge, rgba(0, 78, 187, 0.5)),
     inset 0 1px 3px rgba(0, 17, 49, 0.8),
-    inset 0 2px 3px 1px rgba(0, 78, 187, 0.75), 0 0 3px rgba(52, 106, 227, 0.5);
+    inset 0 2px 3px 1px var(--os-accent-button-inner, rgba(0, 78, 187, 0.75)),
+    0 0 3px rgba(52, 106, 227, 0.5);
   animation: none;
 }
 
@@ -2389,17 +2405,19 @@
   /* Active tab - no position shift or extension */
   margin-top: 0;
   z-index: 10;
-  /* Active tab (primary aqua button style) */
-  background: linear-gradient(
-    rgb(48 123 201),
-    rgb(152 189 228),
-    rgb(210 255 255)
+  /* Active tab (primary aqua button style) — follows the accent color. */
+  background: var(
+    --os-accent-tab-active-bg,
+    linear-gradient(rgb(48 123 201), rgb(152 189 228), rgb(210 255 255))
   );
-  box-shadow: inset 0 1px 3px rgba(0, 17, 49, 0.8),
-    inset 0 2px 3px 1px rgba(0, 78, 187, 0.75), 0 2px 3px rgba(0, 0, 0, 0.3),
-    0 1px 1px rgba(0, 78, 187, 0.5);
-  text-shadow: 0 2px 2px rgba(30, 77, 161, 0.5);
-  border-bottom: 1px solid rgb(210 255 255) !important;
+  box-shadow: inset 0 1px 3px
+      var(--os-accent-tab-shadow-deep, rgba(0, 17, 49, 0.8)),
+    inset 0 2px 3px 1px
+      var(--os-accent-tab-shadow-edge-strong, rgba(0, 78, 187, 0.75)),
+    0 2px 3px rgba(0, 0, 0, 0.3),
+    0 1px 1px var(--os-accent-tab-shadow-edge-soft, rgba(0, 78, 187, 0.5));
+  text-shadow: 0 2px 2px var(--os-accent-tab-text-shadow, rgba(30, 77, 161, 0.5));
+  border-bottom: 1px solid var(--os-accent-tab-border, rgb(210 255 255)) !important;
   transition: border-bottom 0;
 }
 
@@ -2465,15 +2483,18 @@
   right: 0;
   height: 6px;
   z-index: 3;
-  background: linear-gradient(
-    to bottom,
-    #2260a4 0%,
-    #e2fbfd 8%,
-    #aecef3 25%,
-    #7aafee 40%,
-    #98ceff 60%,
-    #9dcfff 80%,
-    #74deff 100%
+  background: var(
+    --os-accent-tab-bar-line,
+    linear-gradient(
+      to bottom,
+      #2260a4 0%,
+      #e2fbfd 8%,
+      #aecef3 25%,
+      #7aafee 40%,
+      #98ceff 60%,
+      #9dcfff 80%,
+      #74deff 100%
+    )
   );
   box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.3),
     inset 0 -1px 0 rgba(0, 0, 0, 0.3);
@@ -2623,17 +2644,22 @@
   overflow: hidden; /* hide shine overflow */
 }
 
-/* Primary (ON / active) gradient & shadow identical to .aqua-button.primary */
+/* Primary (ON / active) gradient & shadow identical to .aqua-button.primary —
+   follows the active accent color via the shared `--os-accent-button-*` vars. */
 :root[data-os-theme="macosx"] .os-switch[data-state="checked"] .os-switch-thumb,
 :root[data-os-theme="macosx"] .os-slider-thumb {
-  background: linear-gradient(
-    rgba(0, 65, 184, 0.625),
-    rgba(45, 115, 199, 0.625),
-    rgba(33, 160, 196, 0.625)
+  background: var(
+    --os-accent-button-bg,
+    linear-gradient(
+      rgba(0, 65, 184, 0.625),
+      rgba(45, 115, 199, 0.625),
+      rgba(33, 160, 196, 0.625)
+    )
   );
-  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3), 0 1px 1px rgba(0, 78, 187, 0.5),
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3),
+    0 1px 1px var(--os-accent-button-edge, rgba(0, 78, 187, 0.5)),
     inset 0 1px 3px rgba(0, 17, 49, 0.8),
-    inset 0 2px 3px 1px rgba(0, 78, 187, 0.75);
+    inset 0 2px 3px 1px var(--os-accent-button-inner, rgba(0, 78, 187, 0.75));
 }
 
 /* Secondary (OFF) identical to .aqua-button.secondary */
@@ -3910,13 +3936,11 @@
   --os-color-menubar-border: rgba(0, 0, 0, 0.85);
 }
 
-/* The Apple logo is a PNG asset (`apple.png`) — explicitly leave it alone so
-   it keeps its color in dark mode. We only neutralize image-rendering filters
-   that some opt-out themes apply globally. */
-:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
-  .menubar
-  img[alt="Apple Menu"] {
-  filter: none !important;
+/* The Apple logo is a PNG asset (`apple.png`). By default it keeps its native
+   blue, but a non-default accent recolors it via a hue-rotate filter set inline
+   on <html> (`--os-accent-apple-filter`, falls back to `none`). */
+:root[data-os-theme="macosx"] img[alt="Apple Menu"] {
+  filter: var(--os-accent-apple-filter, none);
 }
 
 /* --- Title bar text-shadow ------------------------------------------------ */
@@ -3968,10 +3992,9 @@
    the light gradient (deep blue → mid → light) but each step is shifted into
    the lower-saturation / darker half of the family. */
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .aqua-tab[data-state="active"] {
-  background: linear-gradient(
-    rgb(28, 76, 130),
-    rgb(70, 117, 168),
-    rgb(132, 178, 224)
+  background: var(
+    --os-accent-tab-active-bg,
+    linear-gradient(rgb(28, 76, 130), rgb(70, 117, 168), rgb(132, 178, 224))
   );
   box-shadow:
     inset 0 1px 3px rgba(0, 0, 0, 0.7),
@@ -3979,34 +4002,38 @@
     0 2px 3px rgba(0, 0, 0, 0.5),
     0 1px 1px rgba(0, 60, 140, 0.45);
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
-  border-bottom: 1px solid rgb(132, 178, 224) !important;
+  border-bottom: 1px solid var(--os-accent-tab-border, rgb(132, 178, 224)) !important;
 }
 
-/* Soften the active-tab top shine to match the dimmer base. */
+/* Soften the active-tab top shine to match the dimmer base — a gentle gloss
+   that fades quickly so the top edge doesn't read as a harsh white line. */
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .aqua-tab[data-state="active"]:before {
   background: linear-gradient(
-    rgba(255, 255, 255, 0.32),
-    rgba(255, 255, 255, 0.1)
+    rgba(255, 255, 255, 0.24),
+    rgba(255, 255, 255, 0.06)
   );
 }
 
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .aqua-tab[data-state="active"]:after {
-  background: linear-gradient(transparent, rgba(255, 255, 255, 0.18));
+  background: linear-gradient(transparent, rgba(255, 255, 255, 0.08));
 }
 
 /* Under-tab seam — same Aqua-blue family as the light theme but with the
    stops dragged toward the darker / less-saturated end so it reads as a
    continuation of the dimmer active tab above. */
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .aqua-tab-bar:after {
-  background: linear-gradient(
-    to bottom,
-    #16345c 0%,
-    #6e9bcb 8%,
-    #5a85b8 25%,
-    #4670a3 40%,
-    #5a85b8 60%,
-    #6090c0 80%,
-    #4d80b4 100%
+  background: var(
+    --os-accent-tab-bar-line,
+    linear-gradient(
+      to bottom,
+      #16345c 0%,
+      #6e9bcb 8%,
+      #5a85b8 25%,
+      #4670a3 40%,
+      #5a85b8 60%,
+      #6090c0 80%,
+      #4d80b4 100%
+    )
   );
   box-shadow:
     inset 0 1px 0 rgba(0, 0, 0, 0.45),
@@ -4072,14 +4099,12 @@
 
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .metal-inset-btn:active,
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .metal-inset-btn[data-state="on"] {
-  /* Toggled state — same Aqua-blue family as the active tab, dimmer than the
-     light theme's sky-blue gradient so it doesn't pop against the dark chrome. */
-  background: linear-gradient(
-    to bottom,
-    #1a3a66 0%,
-    #2a528a 49%,
-    #1f3f6f 50%,
-    #355d96 100%
+  /* Toggled state — follows the active accent via `--os-accent-inset-gradient`
+     (its dark-mode value already sits in the darker half of the accent family),
+     with the classic dimmer Aqua-blue as the default-accent fallback. */
+  background: var(
+    --os-accent-inset-gradient,
+    linear-gradient(to bottom, #1a3a66 0%, #2a528a 49%, #1f3f6f 50%, #355d96 100%)
   );
   color: rgba(255, 255, 255, 0.92);
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
@@ -4094,16 +4119,19 @@
   .os-switch[data-state="checked"]
   .os-switch-thumb,
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .os-slider-thumb {
-  background: linear-gradient(
-    rgba(0, 50, 130, 0.7),
-    rgba(40, 95, 165, 0.7),
-    rgba(70, 135, 195, 0.7)
+  background: var(
+    --os-accent-button-bg,
+    linear-gradient(
+      rgba(0, 50, 130, 0.7),
+      rgba(40, 95, 165, 0.7),
+      rgba(70, 135, 195, 0.7)
+    )
   );
   box-shadow:
     0 2px 3px rgba(0, 0, 0, 0.45),
     0 1px 1px rgba(0, 35, 90, 0.55),
     inset 0 1px 3px rgba(0, 12, 35, 0.65),
-    inset 0 2px 3px 1px rgba(0, 50, 130, 0.7);
+    inset 0 2px 3px 1px var(--os-accent-button-inner, rgba(0, 50, 130, 0.7));
 }
 
 /* Off thumb on the dark switch track — the existing
@@ -4506,9 +4534,14 @@
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"]
   .window-body
   :where(input, textarea):where(
+    .placeholder\:text-black\/20,
+    .placeholder\:text-black\/25,
     .placeholder\:text-black\/30,
+    .placeholder\:text-black\/35,
     .placeholder\:text-black\/40,
+    .placeholder\:text-black\/45,
     .placeholder\:text-black\/50,
+    .placeholder\:text-black\/55,
     .placeholder\:text-black\/60
   ):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *):not(.synth-force-font *):not(.dashboard-overlay *)::placeholder {
   color: var(--os-color-text-disabled) !important;
@@ -4867,7 +4900,10 @@
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"]
   .os-drawer-list-well
   :where(input, textarea):where(
+    .placeholder\:text-black\/20,
+    .placeholder\:text-black\/25,
     .placeholder\:text-black\/30,
+    .placeholder\:text-black\/35,
     .placeholder\:text-black\/40,
     .placeholder\:text-black\/45,
     .placeholder\:text-black\/50,

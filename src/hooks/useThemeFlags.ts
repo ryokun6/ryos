@@ -3,12 +3,16 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import type { DarkModePreference } from "@/stores/useThemeStore";
 import { getOsMacChrome, getOsPlatform, getThemeMetadata } from "@/themes";
 import type { OsMacChrome, OsPlatform } from "@/themes/types";
+import type { AccentId } from "@/themes/accents";
 
 export function useThemeFlags() {
   const currentTheme = useThemeStore((state) => state.current);
   const isDark = useThemeStore((state) => state.isDark);
   const darkModePreference: DarkModePreference = useThemeStore(
     (state) => state.darkModeByTheme[state.current] ?? "system"
+  );
+  const accent: AccentId = useThemeStore(
+    (state) => state.accentByTheme[state.current] ?? "default"
   );
   const metadata = useMemo(() => getThemeMetadata(currentTheme), [currentTheme]);
   const osPlatform: OsPlatform = getOsPlatform(currentTheme);
@@ -27,6 +31,8 @@ export function useThemeFlags() {
   const supportsDarkMode = metadata.supportsDarkMode;
   /** True only when dark mode is both supported by the active theme AND enabled. */
   const isDarkMode = supportsDarkMode && isDark;
+  /** Only the classic Mac chromes (Aqua + System 7) expose an accent picker. */
+  const supportsAccent = macChrome !== null;
 
   return {
     currentTheme,
@@ -46,5 +52,7 @@ export function useThemeFlags() {
     supportsDarkMode,
     isDarkMode,
     darkModePreference,
+    supportsAccent,
+    accent,
   };
 }

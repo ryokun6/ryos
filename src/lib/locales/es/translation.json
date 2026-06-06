@@ -1220,6 +1220,21 @@
       }
     },
     "control-panels": {
+      "accent": "Color de realce",
+      "accentColors": {
+        "blue": "Azul",
+        "default": "Por omisión",
+        "graphite": "Grafito",
+        "green": "Verde",
+        "orange": "Naranja",
+        "pink": "Rosa",
+        "purple": "Morado",
+        "red": "Rojo",
+        "teal": "Turquesa",
+        "wallpaper": "Fondo de pantalla",
+        "yellow": "Amarillo"
+      },
+      "accentDescription": "Tiñe las selecciones, los menús y los controles",
       "accountMenu": "Account",
       "aiModel": "Modelo de IA",
       "aiModelDescription": "Usado en Chats, IE y más",

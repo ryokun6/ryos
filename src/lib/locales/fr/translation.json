@@ -1220,6 +1220,21 @@
       }
     },
     "control-panels": {
+      "accent": "Couleur d'accentuation",
+      "accentColors": {
+        "blue": "Bleu",
+        "default": "Par défaut",
+        "graphite": "Graphite",
+        "green": "Vert",
+        "orange": "Orange",
+        "pink": "Rose",
+        "purple": "Violet",
+        "red": "Rouge",
+        "teal": "Sarcelle",
+        "wallpaper": "Fond d'écran",
+        "yellow": "Jaune"
+      },
+      "accentDescription": "Applique une couleur aux sélections, aux menus et aux commandes",
       "accountMenu": "Account",
       "aiModel": "Modèle d'IA",
       "aiModelDescription": "Utilisé dans les discussions, IE, et plus encore",

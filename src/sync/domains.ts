@@ -481,6 +481,10 @@ function serializeSettingsSnapshot(): SettingsSnapshotData {
       string,
       "system" | "light" | "dark"
     >,
+    themeAccent: useThemeStore.getState().accentByTheme as Record<
+      string,
+      string
+    >,
     language: useLanguageStore.getState().current,
     languageInitialized:
       localStorage.getItem("ryos:language-initialized") === "true",
@@ -1007,6 +1011,16 @@ async function applySettingsSnapshot(
             useThemeStore
               .getState()
               .setDarkMode(value as never, themeId as never);
+          }
+        }
+        // Apply per-theme accent preferences. setAccent guards against
+        // unsupported themes / invalid accent ids, so we can forward as-is.
+        const remoteAccentMap = normalizedData.themeAccent;
+        if (remoteAccentMap && typeof remoteAccentMap === "object") {
+          for (const [themeId, value] of Object.entries(remoteAccentMap)) {
+            useThemeStore
+              .getState()
+              .setAccent(value as never, themeId as never);
           }
         }
         appliedSections.push("theme");

@@ -17,6 +17,11 @@ export interface SettingsSnapshotData {
    * or legacy booleans from older clients (`true` → dark, `false` → light).
    */
   themeDarkMode?: Record<string, "system" | "light" | "dark" | boolean>;
+  /**
+   * Per-theme accent-color preferences. Optional for backward compatibility;
+   * older clients simply ignore it. Keyed by theme id, value is an accent id.
+   */
+  themeAccent?: Record<string, string>;
   language: LanguageCode;
   languageInitialized: boolean;
   aiModel: AIModel | null;
@@ -149,8 +154,22 @@ export function mergeSettingsSnapshotData(
     normalizedRemote.theme !== undefined
   ) {
     merged.theme = normalizedRemote.theme;
+    // `themeDarkMode` / `themeAccent` are per-theme maps keyed by theme id, but
+    // the whole "theme" section shares one timestamp. Deep-merge (remote wins
+    // on per-theme conflicts) so a remote edit to one theme doesn't drop the
+    // local preference for the *other* theme. This matches the additive apply
+    // path in `domains.ts`, which only sets keys present in the map.
     if (normalizedRemote.themeDarkMode !== undefined) {
-      merged.themeDarkMode = normalizedRemote.themeDarkMode;
+      merged.themeDarkMode = {
+        ...normalizedLocal.themeDarkMode,
+        ...normalizedRemote.themeDarkMode,
+      };
+    }
+    if (normalizedRemote.themeAccent !== undefined) {
+      merged.themeAccent = {
+        ...normalizedLocal.themeAccent,
+        ...normalizedRemote.themeAccent,
+      };
     }
     merged.sectionUpdatedAt!.theme = remoteSectionUpdatedAt.theme;
   }
@@ -237,14 +256,24 @@ export function getSectionPayloadForSettingsPatch(
   section: SettingsSyncSection
 ): unknown {
   switch (section) {
-    case "theme":
+    case "theme": {
       // Older clients only read this as a string. New clients can also send a
-      // dark-mode map alongside; the receiving side's `applyRemote` handles both
-      // shapes (string-only OR `{ theme, darkMode }`).
-      if (data.themeDarkMode && Object.keys(data.themeDarkMode).length > 0) {
-        return { theme: data.theme, darkMode: data.themeDarkMode };
+      // dark-mode map and/or accent map alongside; the receiving side's
+      // `applyRemote` handles all shapes (string-only OR `{ theme, darkMode,
+      // accent }`).
+      const hasDarkMode =
+        data.themeDarkMode && Object.keys(data.themeDarkMode).length > 0;
+      const hasAccent =
+        data.themeAccent && Object.keys(data.themeAccent).length > 0;
+      if (hasDarkMode || hasAccent) {
+        return {
+          theme: data.theme,
+          ...(hasDarkMode ? { darkMode: data.themeDarkMode } : {}),
+          ...(hasAccent ? { accent: data.themeAccent } : {}),
+        };
       }
       return data.theme;
+    }
     case "language":
       return {
         language: data.language,
@@ -373,10 +402,17 @@ export function applySettingsRedisPatch(
           const v = val as {
             theme?: string;
             darkMode?: Record<string, "system" | "light" | "dark" | boolean>;
+            accent?: Record<string, string>;
           };
           if (typeof v.theme === "string") next.theme = v.theme;
+          // Deep-merge the per-theme maps over the remote base so the patching
+          // device's edits win per key without dropping the other theme's
+          // preference that only exists remotely (see mergeSettingsSnapshotData).
           if (v.darkMode && typeof v.darkMode === "object") {
-            next.themeDarkMode = { ...v.darkMode };
+            next.themeDarkMode = { ...next.themeDarkMode, ...v.darkMode };
+          }
+          if (v.accent && typeof v.accent === "object") {
+            next.themeAccent = { ...next.themeAccent, ...v.accent };
           }
         }
         break;

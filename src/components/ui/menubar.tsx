@@ -96,10 +96,10 @@ const MenubarTrigger = (
     isWindowsTheme && "rounded-none menubar-trigger",
     // System 7: black background, white text when open
     // Explicitly clear state when closed to prevent lingering styles (overrides focus states)
-    isSystem7Theme && "rounded-none data-[state=open]:bg-black data-[state=open]:text-white data-[state=closed]:!bg-transparent data-[state=closed]:!text-inherit",
+    isSystem7Theme && "rounded-none data-[state=open]:bg-[var(--os-color-selection-bg)] data-[state=open]:text-[var(--os-color-selection-text)] data-[state=closed]:!bg-transparent data-[state=closed]:!text-inherit",
     // macOS X: blue background (matches menu selection color), white text when open
     // Explicitly clear state when closed to prevent lingering styles (use !important to override focus states)
-    isMacOSTheme && "rounded-none data-[state=open]:bg-[rgba(39,101,202,0.88)] data-[state=open]:text-white data-[state=closed]:!bg-transparent data-[state=closed]:!text-inherit",
+    isMacOSTheme && "rounded-none data-[state=open]:bg-[var(--os-color-selection-bg)] data-[state=open]:text-[var(--os-color-selection-text)] data-[state=closed]:!bg-transparent data-[state=closed]:!text-inherit",
     // Default/other themes
     !isWindowsTheme && !isSystem7Theme && !isMacOSTheme && "rounded-sm data-[state=open]:bg-accent data-[state=open]:text-accent-foreground",
     className
@@ -136,8 +136,8 @@ const MenubarSubTrigger = (
       className={cn(
         "flex cursor-default gap-2 select-none items-center px-2 py-1.5 text-sm outline-none [&_svg]:pointer-events-none [&_svg]:shrink-0",
         // Theme-specific hover/focus styles
-        isSystem7Theme && "rounded-none focus:bg-black focus:text-white data-[state=open]:bg-black data-[state=open]:text-white mx-0",
-        isMacOSTheme && "rounded-none focus:bg-[rgba(39,101,202,0.88)] focus:text-white data-[state=open]:bg-[rgba(39,101,202,0.88)] data-[state=open]:text-white",
+        isSystem7Theme && "rounded-none focus:bg-[var(--os-color-selection-bg)] focus:text-[var(--os-color-selection-text)] data-[state=open]:bg-[var(--os-color-selection-bg)] data-[state=open]:text-[var(--os-color-selection-text)] mx-0",
+        isMacOSTheme && "rounded-none focus:bg-[var(--os-color-selection-bg)] focus:text-[var(--os-color-selection-text)] data-[state=open]:bg-[var(--os-color-selection-bg)] data-[state=open]:text-[var(--os-color-selection-text)]",
         !isSystem7Theme && !isMacOSTheme && "rounded-sm focus:bg-accent data-[state=open]:bg-accent",
         inset && "pl-8",
         className
@@ -285,8 +285,8 @@ const MenubarItem = (
       className={cn(
         "relative flex cursor-default select-none items-center gap-2 px-2 py-1.5 text-sm outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0",
         // Theme-specific hover/focus styles
-        isSystem7Theme && "rounded-none focus:bg-black focus:text-white mx-0",
-        isMacOSTheme && "rounded-none focus:bg-[rgba(39,101,202,0.88)] focus:text-white",
+        isSystem7Theme && "rounded-none focus:bg-[var(--os-color-selection-bg)] focus:text-[var(--os-color-selection-text)] mx-0",
+        isMacOSTheme && "rounded-none focus:bg-[var(--os-color-selection-bg)] focus:text-[var(--os-color-selection-text)]",
         !isSystem7Theme && !isMacOSTheme && "rounded-sm focus:bg-accent focus:text-accent-foreground",
         inset && "pl-8",
         className,
@@ -343,8 +343,8 @@ const MenubarCheckboxItem = (
       className={cn(
         "relative flex cursor-default select-none items-center py-1.5 pl-8 pr-2 text-sm outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
         // Theme-specific hover/focus styles
-        isSystem7Theme && "rounded-none focus:bg-black focus:text-white hover:bg-black hover:text-white mx-0",
-        isMacOSTheme && "rounded-none focus:bg-[rgba(39,101,202,0.88)] focus:text-white hover:bg-[rgba(39,101,202,0.88)] hover:text-white",
+        isSystem7Theme && "rounded-none focus:bg-[var(--os-color-selection-bg)] focus:text-[var(--os-color-selection-text)] hover:bg-[var(--os-color-selection-bg)] hover:text-[var(--os-color-selection-text)] mx-0",
+        isMacOSTheme && "rounded-none focus:bg-[var(--os-color-selection-bg)] focus:text-[var(--os-color-selection-text)] hover:bg-[var(--os-color-selection-bg)] hover:text-[var(--os-color-selection-text)]",
         !isSystem7Theme && !isMacOSTheme && "rounded-sm focus:bg-accent focus:text-accent-foreground hover:bg-accent hover:text-accent-foreground",
         className,
         "data-[state=checked]:text-foreground"
@@ -407,8 +407,8 @@ const MenubarRadioItem = (
       className={cn(
         "relative flex cursor-default select-none items-center py-1.5 pl-8 pr-2 text-sm outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
         // Theme-specific hover/focus styles
-        isSystem7Theme && "rounded-none focus:bg-black focus:text-white hover:bg-black hover:text-white mx-0",
-        isMacOSTheme && "rounded-none focus:bg-[rgba(39,101,202,0.88)] focus:text-white hover:bg-[rgba(39,101,202,0.88)] hover:text-white",
+        isSystem7Theme && "rounded-none focus:bg-[var(--os-color-selection-bg)] focus:text-[var(--os-color-selection-text)] hover:bg-[var(--os-color-selection-bg)] hover:text-[var(--os-color-selection-text)] mx-0",
+        isMacOSTheme && "rounded-none focus:bg-[var(--os-color-selection-bg)] focus:text-[var(--os-color-selection-text)] hover:bg-[var(--os-color-selection-bg)] hover:text-[var(--os-color-selection-text)]",
         !isSystem7Theme && !isMacOSTheme && "rounded-sm focus:bg-accent focus:text-accent-foreground hover:bg-accent hover:text-accent-foreground",
         className,
         "data-[state=checked]:text-foreground"

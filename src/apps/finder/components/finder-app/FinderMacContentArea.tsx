@@ -93,7 +93,10 @@ export function FinderMacContentArea({
               {...fileListContentProps}
               listClassName="flex-1 bg-white/90"
               listStyle={
-                { "--os-color-selection-bg": "#3875d7" } as CSSProperties
+                {
+                  "--os-color-selection-bg":
+                    "var(--os-accent-list-gradient, #3875d7)",
+                } as CSSProperties
               }
             />
           )}

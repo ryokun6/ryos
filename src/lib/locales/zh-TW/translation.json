@@ -1220,6 +1220,21 @@
       }
     },
     "control-panels": {
+      "accent": "強調色彩",
+      "accentColors": {
+        "blue": "藍色",
+        "default": "預設",
+        "graphite": "石墨色",
+        "green": "綠色",
+        "orange": "橙色",
+        "pink": "粉紅色",
+        "purple": "紫色",
+        "red": "紅色",
+        "teal": "藍綠色",
+        "wallpaper": "桌布",
+        "yellow": "黃色"
+      },
+      "accentDescription": "為選取項目、選單和控制項目著色",
       "accountMenu": "Account",
       "aiModel": "AI 模型",
       "aiModelDescription": "用於聊天、IE 等",

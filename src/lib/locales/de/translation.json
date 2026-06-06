@@ -1220,6 +1220,21 @@
       }
     },
     "control-panels": {
+      "accent": "Akzentfarbe",
+      "accentColors": {
+        "blue": "Blau",
+        "default": "Standard",
+        "graphite": "Graphit",
+        "green": "Grün",
+        "orange": "Orange",
+        "pink": "Pink",
+        "purple": "Lila",
+        "red": "Rot",
+        "teal": "Blaugrün",
+        "wallpaper": "Hintergrundbild",
+        "yellow": "Gelb"
+      },
+      "accentDescription": "Färbt Auswahlen, Menüs und Steuerelemente",
       "accountMenu": "Account",
       "aiModel": "KI-Modell",
       "aiModelDescription": "Wird in Chats, IE und mehr verwendet",

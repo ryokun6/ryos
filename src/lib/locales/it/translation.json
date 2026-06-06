@@ -1220,6 +1220,21 @@
       }
     },
     "control-panels": {
+      "accent": "Colore accento",
+      "accentColors": {
+        "blue": "Blu",
+        "default": "Predefinito",
+        "graphite": "Grafite",
+        "green": "Verde",
+        "orange": "Arancione",
+        "pink": "Rosa",
+        "purple": "Viola",
+        "red": "Rosso",
+        "teal": "Verde acqua",
+        "wallpaper": "Sfondo",
+        "yellow": "Giallo"
+      },
+      "accentDescription": "Applica il colore a selezioni, menu e controlli",
       "accountMenu": "Account",
       "aiModel": "Modello AI",
       "aiModelDescription": "Utilizzato in Chat, IE e altro",

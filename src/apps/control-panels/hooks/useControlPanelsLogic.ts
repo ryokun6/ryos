@@ -283,10 +283,21 @@ export function useControlPanelsLogic({
   }));
 
   // Theme state
-  const { currentTheme, supportsDarkMode, isDarkMode, darkModePreference } =
-    useThemeFlags();
+  const {
+    currentTheme,
+    supportsDarkMode,
+    isDarkMode,
+    darkModePreference,
+    supportsAccent,
+    accent,
+    macChrome,
+  } = useThemeFlags();
   const setTheme = useThemeStore((state) => state.setTheme);
   const setDarkMode = useThemeStore((state) => state.setDarkMode);
+  const setAccent = useThemeStore((state) => state.setAccent);
+  const wallpaperAccentColor = useThemeStore(
+    (state) => state.wallpaperAccentColor
+  );
 
   // Language state
   const currentLanguage = useLanguageStore((state) => state.current);
@@ -1609,6 +1620,11 @@ export function useControlPanelsLogic({
     isDarkMode,
     darkModePreference,
     setDarkMode,
+    supportsAccent,
+    accent,
+    accentChrome: macChrome,
+    setAccent,
+    wallpaperAccentColor,
     currentLanguage,
     setLanguage,
     tabStyles,

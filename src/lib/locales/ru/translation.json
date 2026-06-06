@@ -1220,6 +1220,21 @@
       }
     },
     "control-panels": {
+      "accent": "Акцент",
+      "accentColors": {
+        "blue": "Синий",
+        "default": "По умолчанию",
+        "graphite": "Графитовый",
+        "green": "Зеленый",
+        "orange": "Оранжевый",
+        "pink": "Розовый",
+        "purple": "Фиолетовый",
+        "red": "Красный",
+        "teal": "Бирюзовый",
+        "wallpaper": "Обои",
+        "yellow": "Желтый"
+      },
+      "accentDescription": "Окрашивание выделения, меню и элементов управления",
       "accountMenu": "Account",
       "aiModel": "Модель ИИ",
       "aiModelDescription": "Используется в чатах, IE и других местах",

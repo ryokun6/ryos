@@ -6,6 +6,14 @@ import {
   themeSupportsDarkMode,
 } from "@/themes";
 import type { OsThemeId } from "@/themes/types";
+import {
+  ACCENT_CSS_VAR_NAMES,
+  getAccentChrome,
+  getAccentCssVars,
+  isValidAccent,
+  normalizeAccentHex,
+  type AccentId,
+} from "@/themes/accents";
 import { SETTINGS_ANALYTICS, track } from "@/utils/analytics";
 
 function sanitizeStoredTheme(id: string | null | undefined): OsThemeId {
@@ -62,12 +70,54 @@ function writeDarkModeMap(map: DarkModeMap) {
   }
 }
 
+/**
+ * Per-theme accent-color preference. Keyed by theme id (only Aqua + System 7
+ * advertise an accent picker today). Absent / `"default"` means "use the
+ * theme's classic selection color".
+ */
+type AccentMap = Partial<Record<OsThemeId, AccentId>>;
+
+function safeReadAccentMap(): AccentMap {
+  try {
+    const raw = localStorage.getItem(ACCENT_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return {};
+    const out: AccentMap = {};
+    for (const id of Object.keys(themes) as OsThemeId[]) {
+      const chrome = getAccentChrome(id);
+      const value = (parsed as Record<string, unknown>)[id];
+      if (chrome && typeof value === "string" && isValidAccent(chrome, value)) {
+        out[id] = value;
+      }
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+function writeAccentMap(map: AccentMap) {
+  try {
+    localStorage.setItem(ACCENT_KEY, JSON.stringify(map));
+  } catch {
+    // ignore quota / private-mode errors
+  }
+}
+
 interface ThemeState {
   current: OsThemeId;
   /** Effective dark-mode flag for the active theme (false if the theme has no dark tokens). */
   isDark: boolean;
   /** Per-theme dark-mode preferences; persisted so each theme remembers its own choice. */
   darkModeByTheme: DarkModeMap;
+  /** Per-theme accent-color preferences (Aqua + System 7); persisted per theme. */
+  accentByTheme: AccentMap;
+  /**
+   * Color sampled from the active wallpaper, driving the `"wallpaper"` accent.
+   * `null` until sampled (or when the wallpaper can't be sampled).
+   */
+  wallpaperAccentColor: string | null;
   setTheme: (theme: OsThemeId) => void;
   /**
    * Set the dark-mode preference for a theme (defaults to the current theme).
@@ -82,6 +132,16 @@ interface ThemeState {
   ) => void;
   /** Cycle the current theme through System → Light → Dark → System. */
   toggleDarkMode: () => void;
+  /**
+   * Set the accent color for a theme (defaults to the current theme). Only
+   * Aqua + System 7 support accents; calls for other themes are ignored.
+   */
+  setAccent: (accent: AccentId, theme?: OsThemeId) => void;
+  /**
+   * Record the latest color sampled from the wallpaper. Re-applies the root
+   * accent immediately when the current theme is using the `"wallpaper"` accent.
+   */
+  setWallpaperAccentColor: (hex: string | null) => void;
   hydrate: () => void;
 }
 
@@ -137,6 +197,36 @@ const LEGACY_THEME_KEY = "os_theme";
  * reader coerces those to `"dark"` / `"light"` so upgrades are seamless.
  */
 const DARK_MODE_KEY = "ryos:theme:dark";
+/**
+ * Per-theme accent-color preferences, keyed by theme id. Stored as a single
+ * JSON blob (same rationale as `DARK_MODE_KEY`) so it round-trips through the
+ * settings-sync localStorage snapshot without a dedicated section.
+ */
+const ACCENT_KEY = "ryos:theme:accent";
+/**
+ * Last color sampled from the active wallpaper for the `"wallpaper"` accent.
+ * Cached so a non-default-accent reload paints the right color immediately
+ * (the sampler re-derives it from the wallpaper shortly after, in case the
+ * wallpaper changed while away). Device-local — not part of settings sync.
+ */
+const WALLPAPER_ACCENT_COLOR_KEY = "ryos:theme:accent:wallpaper-color";
+
+function safeReadWallpaperAccentColor(): string | null {
+  try {
+    return normalizeAccentHex(localStorage.getItem(WALLPAPER_ACCENT_COLOR_KEY));
+  } catch {
+    return null;
+  }
+}
+
+function writeWallpaperAccentColor(hex: string | null) {
+  try {
+    if (hex) localStorage.setItem(WALLPAPER_ACCENT_COLOR_KEY, hex);
+    else localStorage.removeItem(WALLPAPER_ACCENT_COLOR_KEY);
+  } catch {
+    // ignore quota / private-mode errors
+  }
+}
 
 function getSystemPrefersDark(): boolean {
   if (typeof window === "undefined" || !window.matchMedia) return false;
@@ -152,7 +242,43 @@ function resolvePreference(map: DarkModeMap, theme: OsThemeId): DarkModePreferen
   return map[theme] ?? "system";
 }
 
-function applyRootThemeAttributes(theme: OsThemeId, isDark: boolean) {
+/**
+ * Apply (or clear) the accent-color CSS custom properties on `<html>`.
+ *
+ * Inline custom properties win over every stylesheet rule, so a non-default
+ * accent overrides the theme's light/dark selection tokens everywhere. For the
+ * `"default"` accent we remove the inline vars entirely, restoring the
+ * stylesheet's classic look (including dark-mode + brushed-metal variants).
+ */
+function applyRootAccent(
+  theme: OsThemeId,
+  accentMap: AccentMap,
+  isDark: boolean,
+  wallpaperColor: string | null
+) {
+  const root = document.documentElement;
+  const chrome = getAccentChrome(theme);
+  const accent = chrome ? accentMap[theme] ?? "default" : "default";
+  const vars = chrome
+    ? getAccentCssVars(chrome, accent, isDark, wallpaperColor)
+    : {};
+
+  for (const name of ACCENT_CSS_VAR_NAMES) {
+    const value = vars[name];
+    if (value) root.style.setProperty(name, value);
+    else root.style.removeProperty(name);
+  }
+
+  if (chrome && accent !== "default") root.dataset.osAccent = accent;
+  else delete root.dataset.osAccent;
+}
+
+function applyRootThemeAttributes(
+  theme: OsThemeId,
+  isDark: boolean,
+  accentMap: AccentMap,
+  wallpaperColor: string | null
+) {
   const root = document.documentElement;
   root.dataset.osTheme = theme;
   root.dataset.osPlatform = getOsPlatform(theme);
@@ -172,6 +298,8 @@ function applyRootThemeAttributes(theme: OsThemeId, isDark: boolean) {
     root.style.colorScheme = "light";
     root.classList.remove("dark");
   }
+
+  applyRootAccent(theme, accentMap, isDark, wallpaperColor);
 }
 
 function effectiveDarkFor(theme: OsThemeId, map: DarkModeMap): boolean {
@@ -202,7 +330,12 @@ function ensureSystemDarkListener() {
     const nextDark = effectiveDarkFor(state.current, state.darkModeByTheme);
     if (nextDark === state.isDark) return;
     useThemeStore.setState({ isDark: nextDark });
-    applyRootThemeAttributes(state.current, nextDark);
+    applyRootThemeAttributes(
+      state.current,
+      nextDark,
+      state.accentByTheme,
+      state.wallpaperAccentColor
+    );
   };
   if (typeof systemDarkQuery.addEventListener === "function") {
     systemDarkQuery.addEventListener("change", systemDarkListener);
@@ -216,16 +349,24 @@ const createThemeStore = () => create<ThemeState>((set) => ({
   current: "macosx",
   isDark: false,
   darkModeByTheme: {},
+  accentByTheme: {},
+  wallpaperAccentColor: null,
   setTheme: (theme) => {
     const safe = sanitizeStoredTheme(theme);
     const previousTheme = useThemeStore.getState().current;
-    const map = useThemeStore.getState().darkModeByTheme;
+    const state = useThemeStore.getState();
+    const map = state.darkModeByTheme;
     const nextDark = effectiveDarkFor(safe, map);
     set({ current: safe, isDark: nextDark });
     localStorage.setItem(THEME_KEY, safe);
     // Clean up legacy key
     localStorage.removeItem(LEGACY_THEME_KEY);
-    applyRootThemeAttributes(safe, nextDark);
+    applyRootThemeAttributes(
+      safe,
+      nextDark,
+      state.accentByTheme,
+      state.wallpaperAccentColor
+    );
     ensureLegacyCss(safe);
     // Note: No need to invalidate icon cache on theme switch.
     // Theme switching changes the icon PATH (e.g., /icons/default/ → /icons/macosx/),
@@ -262,7 +403,12 @@ const createThemeStore = () => create<ThemeState>((set) => ({
       isDark: nextDark,
     });
     if (isCurrent) {
-      applyRootThemeAttributes(state.current, nextDark);
+      applyRootThemeAttributes(
+        state.current,
+        nextDark,
+        state.accentByTheme,
+        state.wallpaperAccentColor
+      );
       track(SETTINGS_ANALYTICS.THEME_CHANGE, {
         theme: state.current,
         darkMode: nextDark,
@@ -277,6 +423,48 @@ const createThemeStore = () => create<ThemeState>((set) => ({
     const next: DarkModePreference =
       current === "system" ? "light" : current === "light" ? "dark" : "system";
     state.setDarkMode(next);
+  },
+  setAccent: (accent, theme) => {
+    const state = useThemeStore.getState();
+    const target = theme ?? state.current;
+    const chrome = getAccentChrome(target);
+    // Accents only apply to the classic Mac chromes (Aqua + System 7).
+    if (!chrome || !isValidAccent(chrome, accent)) return;
+
+    const nextMap: AccentMap = { ...state.accentByTheme };
+    if (accent === "default") delete nextMap[target];
+    else nextMap[target] = accent;
+    writeAccentMap(nextMap);
+    set({ accentByTheme: nextMap });
+
+    if (target === state.current) {
+      applyRootAccent(
+        state.current,
+        nextMap,
+        state.isDark,
+        state.wallpaperAccentColor
+      );
+      track(SETTINGS_ANALYTICS.THEME_CHANGE, {
+        theme: state.current,
+        accent,
+      });
+    }
+  },
+  setWallpaperAccentColor: (hex) => {
+    const normalized = normalizeAccentHex(hex);
+    const state = useThemeStore.getState();
+    if (normalized === state.wallpaperAccentColor) return;
+    writeWallpaperAccentColor(normalized);
+    set({ wallpaperAccentColor: normalized });
+
+    // Only the active "wallpaper" accent needs a live re-paint.
+    const chrome = getAccentChrome(state.current);
+    const activeAccent = chrome
+      ? state.accentByTheme[state.current] ?? "default"
+      : "default";
+    if (activeAccent === "wallpaper") {
+      applyRootAccent(state.current, state.accentByTheme, state.isDark, normalized);
+    }
   },
   hydrate: () => {
     let saved = localStorage.getItem(THEME_KEY);
@@ -306,9 +494,17 @@ const createThemeStore = () => create<ThemeState>((set) => ({
     } catch {
       // ignore
     }
+    const accentMap = safeReadAccentMap();
+    const wallpaperAccentColor = safeReadWallpaperAccentColor();
     const isDark = effectiveDarkFor(theme, map);
-    set({ current: theme, isDark, darkModeByTheme: map });
-    applyRootThemeAttributes(theme, isDark);
+    set({
+      current: theme,
+      isDark,
+      darkModeByTheme: map,
+      accentByTheme: accentMap,
+      wallpaperAccentColor,
+    });
+    applyRootThemeAttributes(theme, isDark, accentMap, wallpaperAccentColor);
     ensureLegacyCss(theme);
     ensureSystemDarkListener();
   },

@@ -73,6 +73,11 @@ export function ControlPanelsAppComponent({
     supportsDarkMode,
     darkModePreference,
     setDarkMode,
+    supportsAccent,
+    accent,
+    accentChrome,
+    setAccent,
+    wallpaperAccentColor,
     currentLanguage,
     setLanguage,
     tabStyles,
@@ -353,6 +358,11 @@ export function ControlPanelsAppComponent({
                 supportsDarkMode={supportsDarkMode}
                 darkModePreference={darkModePreference}
                 setDarkMode={setDarkMode}
+                supportsAccent={supportsAccent}
+                accent={accent}
+                accentChrome={accentChrome}
+                setAccent={setAccent}
+                wallpaperAccentColor={wallpaperAccentColor}
                 currentLanguage={currentLanguage}
                 setLanguage={setLanguage}
                 tabStyles={tabStyles}

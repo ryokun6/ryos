@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import { X, Minus, Plus } from "@phosphor-icons/react";
 import type { Icon } from "@phosphor-icons/react";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 
 export type TrafficLightColor = "red" | "yellow" | "green";
 
@@ -50,6 +51,19 @@ const inactiveStyles = {
 };
 
 /**
+ * When the macOS accent is set to "graphite", all three traffic lights become a
+ * single cool blue-leaning gray (matching the graphite accent base ~#888d99),
+ * just like the classic Mac graphite appearance. Mode-independent — the colored
+ * lights don't vary by light/dark, so this gray applies in both.
+ */
+const graphiteStyles = {
+  gradient: "linear-gradient(rgb(120, 124, 134), rgb(150, 154, 165))",
+  iconColor: "rgba(66, 70, 80, 0.9)",
+  shadow:
+    "rgba(0, 0, 0, 0.5) 0px 2px 4px, rgba(0, 0, 0, 0.4) 0px 1px 2px, rgba(150, 154, 165, 0.5) 0px 1px 1px, rgba(0, 0, 0, 0.3) 0px 0px 0px 0.5px inset, rgba(82, 86, 96, 0.8) 0px 1px 3px inset, rgba(150, 154, 165, 0.75) 0px 2px 3px 1px inset",
+};
+
+/**
  * macOS-style traffic light window control button (close, minimize, maximize).
  * Extracted to reduce duplication in WindowFrame.tsx
  */
@@ -60,7 +74,9 @@ export function TrafficLightButton({
   debugMode = false,
   ariaLabel,
 }: TrafficLightButtonProps) {
-  const styles = isForeground ? colorStyles[color] : inactiveStyles;
+  const { accent } = useThemeFlags();
+  const activeStyles = accent === "graphite" ? graphiteStyles : colorStyles[color];
+  const styles = isForeground ? activeStyles : inactiveStyles;
 
   return (
     <div className="group relative" style={{ width: "13px", height: "13px" }}>
@@ -113,7 +129,7 @@ export function TrafficLightButton({
               className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-0 group-hover/traffic:opacity-100 transition-opacity duration-150"
               style={{
                 zIndex: 1,
-                color: colorStyles[color].iconColor,
+                color: activeStyles.iconColor,
                 filter: "drop-shadow(0 0.5px 0 rgba(255,255,255,0.2))",
               }}
             >

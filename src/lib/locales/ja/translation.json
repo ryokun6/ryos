@@ -1220,6 +1220,21 @@
       }
     },
     "control-panels": {
+      "accent": "アクセントカラー",
+      "accentColors": {
+        "blue": "ブルー",
+        "default": "デフォルト",
+        "graphite": "グラファイト",
+        "green": "グリーン",
+        "orange": "オレンジ",
+        "pink": "ピンク",
+        "purple": "パープル",
+        "red": "レッド",
+        "teal": "ティール",
+        "wallpaper": "壁紙",
+        "yellow": "イエロー"
+      },
+      "accentDescription": "選択部分、メニュー、およびコントロールに色を付けます",
       "accountMenu": "Account",
       "aiModel": "AIモデル",
       "aiModelDescription": "チャット、IEなどで使用",
