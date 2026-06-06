@@ -15,7 +15,7 @@ export function SongDetailPanelInfoSection({
 
   return (
     <div className="space-y-2">
-      <div className="!text-[11px] uppercase tracking-wide text-black/50">
+      <div className="!text-[11px] uppercase tracking-wide text-os-text-secondary">
         {t("apps.admin.song.info", "Info")}
       </div>
       <div className="text-[11px] text-neutral-500 space-y-1">

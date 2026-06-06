@@ -123,7 +123,7 @@ export const handleInfiniteMacControl = async (
     switch (action) {
       case "launchSystem": {
         if (!system) {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "infiniteMacControl",
             toolCallId,
             state: "output-error",
@@ -140,7 +140,7 @@ export const handleInfiniteMacControl = async (
             year: p.year,
             description: p.description,
           }));
-          context.addToolResult({
+          context.addToolOutput({
             tool: "infiniteMacControl",
             toolCallId,
             state: "output-error",
@@ -165,13 +165,13 @@ export const handleInfiniteMacControl = async (
         const loaded = await waitForEmulatorLoaded(45000);
 
         if (loaded) {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "infiniteMacControl",
             toolCallId,
             output: `Successfully launched ${preset.name} (${preset.year}). ${preset.description}. Screen size: ${preset.screenSize.width}x${preset.screenSize.height}. Use 'readScreen' to see the current display.`,
           });
         } else {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "infiniteMacControl",
             toolCallId,
             output: `Launched ${preset.name} - the emulator is loading. It may take a few moments to fully boot. Use 'getStatus' to check when it's ready, or 'readScreen' to see the current display.`,
@@ -202,13 +202,13 @@ export const handleInfiniteMacControl = async (
         };
 
         if (!selectedPreset) {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "infiniteMacControl",
             toolCallId,
             output: `No system is currently running. Use 'launchSystem' to start a Mac OS. Available systems: ${MAC_PRESETS.map((p) => `${p.id} (${p.name}, ${p.year})`).join(", ")}`,
           });
         } else {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "infiniteMacControl",
             toolCallId,
             output: `Emulator status: ${JSON.stringify(status, null, 2)}`,
@@ -221,7 +221,7 @@ export const handleInfiniteMacControl = async (
         const { isEmulatorLoaded, selectedPreset, getScreenAsBase64 } = store;
 
         if (!selectedPreset) {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "infiniteMacControl",
             toolCallId,
             state: "output-error",
@@ -231,7 +231,7 @@ export const handleInfiniteMacControl = async (
         }
 
         if (!isEmulatorLoaded) {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "infiniteMacControl",
             toolCallId,
             state: "output-error",
@@ -243,7 +243,7 @@ export const handleInfiniteMacControl = async (
         const screenBase64 = await getScreenAsBase64();
 
         if (!screenBase64) {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "infiniteMacControl",
             toolCallId,
             state: "output-error",
@@ -268,7 +268,7 @@ export const handleInfiniteMacControl = async (
           ? `Coordinates are 1:1 with the screenshot - use pixel positions directly from the image.`
           : `This Mac OS X system uses relative coordinates only - mouse control may be limited.`;
 
-        context.addToolResult({
+        context.addToolOutput({
           tool: "infiniteMacControl",
           toolCallId,
           output: {
@@ -288,7 +288,7 @@ export const handleInfiniteMacControl = async (
 
       case "mouseMove": {
         if (x === undefined || y === undefined) {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "infiniteMacControl",
             toolCallId,
             state: "output-error",
@@ -298,7 +298,7 @@ export const handleInfiniteMacControl = async (
         }
 
         if (!store.isEmulatorLoaded || !store.selectedPreset) {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "infiniteMacControl",
             toolCallId,
             state: "output-error",
@@ -309,7 +309,7 @@ export const handleInfiniteMacControl = async (
 
         // Check if this system supports absolute coordinates
         if (!supportsAbsoluteCoordinates(store.selectedPreset.id)) {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "infiniteMacControl",
             toolCallId,
             state: "output-error",
@@ -327,13 +327,13 @@ export const handleInfiniteMacControl = async (
         });
 
         if (moveSent) {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "infiniteMacControl",
             toolCallId,
             output: `Mouse moved to (${x}, ${y})`,
           });
         } else {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "infiniteMacControl",
             toolCallId,
             state: "output-error",
@@ -345,7 +345,7 @@ export const handleInfiniteMacControl = async (
 
       case "mouseClick": {
         if (x === undefined || y === undefined) {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "infiniteMacControl",
             toolCallId,
             state: "output-error",
@@ -355,7 +355,7 @@ export const handleInfiniteMacControl = async (
         }
 
         if (!store.isEmulatorLoaded || !store.selectedPreset) {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "infiniteMacControl",
             toolCallId,
             state: "output-error",
@@ -366,7 +366,7 @@ export const handleInfiniteMacControl = async (
 
         // Check if this system supports absolute coordinates
         if (!supportsAbsoluteCoordinates(store.selectedPreset.id)) {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "infiniteMacControl",
             toolCallId,
             state: "output-error",
@@ -403,13 +403,13 @@ export const handleInfiniteMacControl = async (
         });
 
         if (upSent) {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "infiniteMacControl",
             toolCallId,
             output: `${button === "right" ? "Right-" : ""}Clicked at (${x}, ${y})`,
           });
         } else {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "infiniteMacControl",
             toolCallId,
             state: "output-error",
@@ -421,7 +421,7 @@ export const handleInfiniteMacControl = async (
 
       case "doubleClick": {
         if (x === undefined || y === undefined) {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "infiniteMacControl",
             toolCallId,
             state: "output-error",
@@ -431,7 +431,7 @@ export const handleInfiniteMacControl = async (
         }
 
         if (!store.isEmulatorLoaded || !store.selectedPreset) {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "infiniteMacControl",
             toolCallId,
             state: "output-error",
@@ -442,7 +442,7 @@ export const handleInfiniteMacControl = async (
 
         // Check if this system supports absolute coordinates
         if (!supportsAbsoluteCoordinates(store.selectedPreset.id)) {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "infiniteMacControl",
             toolCallId,
             state: "output-error",
@@ -489,13 +489,13 @@ export const handleInfiniteMacControl = async (
         });
 
         if (dblUpSent) {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "infiniteMacControl",
             toolCallId,
             output: `Double-clicked at (${x}, ${y})`,
           });
         } else {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "infiniteMacControl",
             toolCallId,
             state: "output-error",
@@ -507,7 +507,7 @@ export const handleInfiniteMacControl = async (
 
       case "keyPress": {
         if (!key) {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "infiniteMacControl",
             toolCallId,
             state: "output-error",
@@ -517,7 +517,7 @@ export const handleInfiniteMacControl = async (
         }
 
         if (!store.isEmulatorLoaded) {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "infiniteMacControl",
             toolCallId,
             state: "output-error",
@@ -542,13 +542,13 @@ export const handleInfiniteMacControl = async (
         });
 
         if (keyUpSent) {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "infiniteMacControl",
             toolCallId,
             output: `Key pressed: ${key}`,
           });
         } else {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "infiniteMacControl",
             toolCallId,
             state: "output-error",
@@ -560,7 +560,7 @@ export const handleInfiniteMacControl = async (
 
       case "pause": {
         if (!store.isEmulatorLoaded) {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "infiniteMacControl",
             toolCallId,
             state: "output-error",
@@ -573,13 +573,13 @@ export const handleInfiniteMacControl = async (
         store.setIsPaused(true);
 
         if (pauseSent) {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "infiniteMacControl",
             toolCallId,
             output: "Emulator paused.",
           });
         } else {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "infiniteMacControl",
             toolCallId,
             state: "output-error",
@@ -591,7 +591,7 @@ export const handleInfiniteMacControl = async (
 
       case "unpause": {
         if (!store.isEmulatorLoaded) {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "infiniteMacControl",
             toolCallId,
             state: "output-error",
@@ -604,13 +604,13 @@ export const handleInfiniteMacControl = async (
         store.setIsPaused(false);
 
         if (unpauseSent) {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "infiniteMacControl",
             toolCallId,
             output: "Emulator unpaused.",
           });
         } else {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "infiniteMacControl",
             toolCallId,
             state: "output-error",
@@ -621,7 +621,7 @@ export const handleInfiniteMacControl = async (
       }
 
       default:
-        context.addToolResult({
+        context.addToolOutput({
           tool: "infiniteMacControl",
           toolCallId,
           state: "output-error",
@@ -630,7 +630,7 @@ export const handleInfiniteMacControl = async (
     }
   } catch (error) {
     console.error("[infiniteMacControl] Error:", error);
-    context.addToolResult({
+    context.addToolOutput({
       tool: "infiniteMacControl",
       toolCallId,
       state: "output-error",

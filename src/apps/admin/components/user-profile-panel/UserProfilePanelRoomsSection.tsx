@@ -49,7 +49,7 @@ export function UserProfilePanelRoomsSection({
       {isRoomsOpen && roomsCount > 0 && (
         <div className="flex flex-wrap gap-1">
           {profile?.rooms?.map((room) => (
-            <span key={room.id} className="px-2 py-1 text-[10px] bg-neutral-100 rounded">
+            <span key={room.id} className="px-2 py-1 text-[10px] bg-os-panel-bg rounded">
               #{room.name}
             </span>
           ))}

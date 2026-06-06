@@ -2,7 +2,7 @@ export const RECENT_MESSAGES_LIMIT = 50;
 export const HEARTBEAT_LOOKBACK_DAYS = 7;
 
 export const SECTION_HEADER_CLASS =
-  "!text-[11px] uppercase tracking-wide text-black/50";
+  "!text-[11px] uppercase tracking-wide text-os-text-secondary";
 
 export interface UserProfile {
   username: string;

@@ -6,6 +6,12 @@ import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { abortableFetch } from "@/utils/abortableFetch";
+import {
+  adminCardClass,
+  adminCardHeaderClass,
+  adminListDividerClass,
+  adminSectionLabelClass,
+} from "../utils/adminStyles";
 
 interface VersionInfo {
   version?: string;
@@ -43,10 +49,10 @@ function InfoRow({
 }) {
   return (
     <div className="flex items-center justify-between gap-2 px-3 py-1.5">
-      <span className="text-[11px] text-neutral-500">{label}</span>
+      <span className="text-[11px] text-os-text-secondary">{label}</span>
       <div className="flex min-w-0 items-center gap-2">
         {typeof value === "string" ? (
-          <span className="truncate text-[11px] font-medium text-neutral-800 tabular-nums">
+          <span className="truncate text-[11px] font-medium text-os-text-primary tabular-nums">
             {value}
           </span>
         ) : (
@@ -131,9 +137,9 @@ export function DashboardServerCard({ reloadKey = 0 }: { reloadKey?: number }) {
   const commitUrl = ryosGitHubCommitUrl(versionInfo);
 
   return (
-    <div className="overflow-hidden rounded border border-neutral-200 bg-white">
-      <div className="border-b border-neutral-100 bg-neutral-50 px-3 py-2">
-        <span className="text-[10px] uppercase tracking-wide text-neutral-400">
+    <div className={adminCardClass}>
+      <div className={adminCardHeaderClass}>
+        <span className={adminSectionLabelClass}>
           {t("apps.admin.server.title", "Server")}
         </span>
       </div>
@@ -153,7 +159,7 @@ export function DashboardServerCard({ reloadKey = 0 }: { reloadKey?: number }) {
           </Button>
         </div>
       ) : (
-        <div className="divide-y divide-neutral-100">
+        <div className={adminListDividerClass}>
           <InfoRow
             label={t("apps.admin.server.version", "Version")}
             value={versionInfo?.version ?? "—"}

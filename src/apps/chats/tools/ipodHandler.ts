@@ -121,7 +121,7 @@ const handlePlaybackState = (
     if (stateChanges.length > 0) {
       resultParts.push(...stateChanges);
     }
-    context.addToolResult({
+    context.addToolOutput({
       tool: "ipodControl",
       toolCallId,
       output: buildResultMessage(resultParts),
@@ -164,7 +164,7 @@ const handlePlaybackState = (
   }
 
   const resultParts = [playbackState, ...stateChanges];
-  context.addToolResult({
+  context.addToolOutput({
     tool: "ipodControl",
     toolCallId,
     output: buildResultMessage(resultParts),
@@ -229,7 +229,7 @@ const handlePlayKnown = (
 
   if (finalCandidateIndices.length === 0) {
     const errorMsg = i18n.t("apps.chats.toolCalls.ipodSongNotFound");
-    context.addToolResult({
+    context.addToolOutput({
       tool: "ipodControl",
       toolCallId,
       output: errorMsg,
@@ -244,7 +244,7 @@ const handlePlayKnown = (
   const track = tracks[randomIndexFromArray];
   if (!track) {
     const errorMsg = i18n.t("apps.chats.toolCalls.ipodSongNotFound");
-    context.addToolResult({
+    context.addToolOutput({
       tool: "ipodControl",
       toolCallId,
       output: errorMsg,
@@ -269,7 +269,7 @@ const handlePlayKnown = (
     if (stateChanges.length > 0) {
       resultParts.push(...stateChanges);
     }
-    context.addToolResult({
+    context.addToolOutput({
       tool: "ipodControl",
       toolCallId,
       output: buildResultMessage(resultParts),
@@ -291,7 +291,7 @@ const handlePlayKnown = (
     : i18n.t("apps.chats.toolCalls.playing", { title: track.title });
 
   const resultParts = [trackDescForMsg, ...stateChanges];
-  context.addToolResult({
+  context.addToolOutput({
     tool: "ipodControl",
     toolCallId,
     output: buildResultMessage(resultParts),
@@ -314,7 +314,7 @@ const handleAddAndPlay = async (
   if (!id) {
     const errorMsg =
       "The 'addAndPlay' action requires the 'id' parameter (YouTube ID or URL).";
-    context.addToolResult({
+    context.addToolOutput({
       tool: "ipodControl",
       toolCallId,
       output: errorMsg,
@@ -326,7 +326,7 @@ const handleAddAndPlay = async (
   if (id.startsWith("am:")) {
     const errorMsg =
       "Apple Music tracks are already in the active library. Use playKnown with the Apple Music track ID instead of addAndPlay.";
-    context.addToolResult({
+    context.addToolOutput({
       tool: "ipodControl",
       toolCallId,
       output: errorMsg,
@@ -357,7 +357,7 @@ const handleAddAndPlay = async (
         resultParts.push(...stateChanges);
       }
 
-      context.addToolResult({
+      context.addToolOutput({
         tool: "ipodControl",
         toolCallId,
         output: buildResultMessage(resultParts),
@@ -370,7 +370,7 @@ const handleAddAndPlay = async (
       );
     } else {
       const errorMsg = i18n.t("apps.chats.toolCalls.ipodFailedToAdd", { id });
-      context.addToolResult({
+      context.addToolOutput({
         tool: "ipodControl",
         toolCallId,
         output: errorMsg,
@@ -391,7 +391,7 @@ const handleAddAndPlay = async (
       });
     }
 
-    context.addToolResult({
+    context.addToolOutput({
       tool: "ipodControl",
       toolCallId,
       output: errorMsg,
@@ -428,7 +428,7 @@ const handleNavigation = (
     if (stateChanges.length > 0) {
       resultParts.push(...stateChanges);
     }
-    context.addToolResult({
+    context.addToolOutput({
       tool: "ipodControl",
       toolCallId,
       output: buildResultMessage(resultParts),
@@ -447,7 +447,7 @@ const handleNavigation = (
   if (stateChanges.length > 0) {
     resultParts.push(...stateChanges);
   }
-  context.addToolResult({
+  context.addToolOutput({
     tool: "ipodControl",
     toolCallId,
     output: buildResultMessage(resultParts),
@@ -507,7 +507,7 @@ export const handleIpodControl = async (
   const stateChanges = applyIpodSettings(enableVideo, enableTranslation, enableFullscreen);
 
   if (stateChanges.length > 0) {
-    context.addToolResult({
+    context.addToolOutput({
       tool: "ipodControl",
       toolCallId,
       output: buildResultMessage(stateChanges),
@@ -517,7 +517,7 @@ export const handleIpodControl = async (
 
   // Always resolve the tool call to prevent hangs
   console.warn(`[ToolCall] ipodControl: Unhandled action "${normalizedAction}".`);
-  context.addToolResult({
+  context.addToolOutput({
     tool: "ipodControl",
     toolCallId,
     state: "output-error",

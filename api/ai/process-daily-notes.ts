@@ -18,7 +18,7 @@
  * - Called from frontend on chat clear (fire-and-forget)
  */
 
-import { generateObject } from "ai";
+import { generateText, Output } from "ai";
 import { google } from "@ai-sdk/google";
 import { z } from "zod";
 import type { Redis } from "../_utils/redis.js";
@@ -406,9 +406,11 @@ async function _processSingleDayBatch(
     existingStateSection = `\nEXISTING LONG-TERM MEMORIES (do NOT duplicate – update/merge if new info available):\n${existingMemoriesText}`;
   }
 
-  const { object: result } = await generateObject({
+  const { output: result } = await generateText({
     model: google("gemini-3-flash-preview"),
-    schema: dailyNotesExtractionSchema,
+    output: Output.object({
+      schema: dailyNotesExtractionSchema,
+    }),
     prompt: `${DAILY_NOTES_EXTRACTION_PROMPT}${existingStateSection}\n\n--- DAILY NOTES ---\n${dailyNotesText}\n--- END DAILY NOTES ---\n\nExtract up to ${Math.max(maxExtract, 3)} long-term memories. For existing keys, you may suggest updates via relatedKeys. Return empty array if nothing qualifies.`,
     temperature: 0.3,
   });
@@ -464,9 +466,11 @@ async function _processSingleDayBatch(
         .map(m => `Key: ${m.key}\nSummary: ${m.summary}\nContent: ${m.content}`)
         .join("\n\n");
 
-      const { object: consolidated } = await generateObject({
+      const { output: consolidated } = await generateText({
         model: google("gemini-3-flash-preview"),
-        schema: consolidationSchema,
+        output: Output.object({
+          schema: consolidationSchema,
+        }),
         prompt: `${CONSOLIDATION_PROMPT}\n\nNEW:\nSummary: ${mem.summary}\nContent: ${mem.content}\n\nEXISTING:\n${existingContentText}\n\nMerge into one clean, deduplicated entry.`,
         temperature: 0.3,
       });

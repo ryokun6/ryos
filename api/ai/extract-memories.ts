@@ -9,7 +9,7 @@
  * Then a consolidation step merges with existing long-term memories where keys overlap.
  */
 
-import { generateObject } from "ai";
+import { generateText, Output } from "ai";
 import { google } from "@ai-sdk/google";
 import type { Redis } from "../_utils/redis.js";
 import { z } from "zod";
@@ -328,9 +328,11 @@ export async function extractMemoriesFromConversation({
     maxLongTerm,
   });
 
-  const { object: result } = await generateObject({
+  const { output: result } = await generateText({
     model: google("gemini-3-flash-preview"),
-    schema: extractionSchema,
+    output: Output.object({
+      schema: extractionSchema,
+    }),
     prompt:
       `${EXTRACTION_PROMPT}${existingStateSection}\n\n--- CONVERSATION ---\n${conversationText}\n--- END CONVERSATION ---\n\n` +
       `Extract up to 8 daily notes and up to ${maxLongTerm} long-term memories. Return empty arrays if nothing qualifies.`,
@@ -412,9 +414,11 @@ export async function extractMemoriesFromConversation({
           )
           .join("\n\n");
 
-        const { object: consolidated } = await generateObject({
+        const { output: consolidated } = await generateText({
           model: google("gemini-3-flash-preview"),
-          schema: consolidationSchema,
+          output: Output.object({
+            schema: consolidationSchema,
+          }),
           prompt:
             `${CONSOLIDATION_PROMPT}\n\nNEW:\nSummary: ${mem.summary}\nContent: ${mem.content}\n\nEXISTING:\n${existingContentText}\n\n` +
             "Merge into one clean, deduplicated entry.",

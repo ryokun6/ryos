@@ -2,8 +2,8 @@ import { useEffect } from "react";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useWallpaper } from "@/hooks/useWallpaper";
 import { useCoverPaletteResult } from "@/hooks/useCoverPalette";
-import { pickPrimaryColor } from "@/apps/ipod/components/lyrics-display/colorUtils";
 import { DEFAULT_ACCENT, getAccentChrome } from "@/themes/accents";
+import { resolveWallpaperAccentFromPalette } from "@/themes/wallpaperAccentColor";
 
 /**
  * Drives the `"wallpaper"` accent: when the active theme uses it, sample a
@@ -39,6 +39,6 @@ export function useWallpaperAccent() {
     if (!isWallpaperAccent) return;
     // Only act on a palette actually extracted from the wallpaper image.
     if (source !== "cover" || !coverUrl) return;
-    setWallpaperAccentColor(pickPrimaryColor(palette));
+    setWallpaperAccentColor(resolveWallpaperAccentFromPalette(palette));
   }, [isWallpaperAccent, source, coverUrl, palette, setWallpaperAccentColor]);
 }

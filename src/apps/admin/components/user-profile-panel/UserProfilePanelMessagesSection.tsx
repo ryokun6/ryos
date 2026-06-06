@@ -7,6 +7,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { SectionHeader } from "./SectionHeader";
+import { adminTableHeadClass, adminTableRowClass } from "../../utils/adminStyles";
+import { cn } from "@/lib/utils";
 import { Skeleton } from "./Skeleton";
 import type { UserProfilePanelViewModel } from "./useUserProfilePanel";
 
@@ -64,13 +66,13 @@ export function UserProfilePanelMessagesSection({
             <Table className="table-fixed">
               <TableHeader>
                 <TableRow className="text-[10px] border-none font-normal">
-                  <TableHead className="font-normal bg-neutral-100/50 h-[24px] w-[25%]">
+                  <TableHead className={cn(adminTableHeadClass, "h-[24px] w-[25%]")}>
                     {t("apps.admin.profile.room")}
                   </TableHead>
-                  <TableHead className="font-normal bg-neutral-100/50 h-[24px]">
+                  <TableHead className={cn(adminTableHeadClass, "h-[24px]")}>
                     {t("apps.admin.tableHeaders.message")}
                   </TableHead>
-                  <TableHead className="font-normal bg-neutral-100/50 h-[24px] whitespace-nowrap w-[20%]">
+                  <TableHead className={cn(adminTableHeadClass, "h-[24px] whitespace-nowrap w-[20%]")}>
                     {t("apps.admin.tableHeaders.time")}
                   </TableHead>
                 </TableRow>
@@ -79,7 +81,7 @@ export function UserProfilePanelMessagesSection({
                 {messages.map((message) => (
                   <TableRow
                     key={message.id}
-                    className="border-none hover:bg-neutral-100/50 transition-colors cursor-default odd:bg-neutral-200/30"
+                    className={cn(adminTableRowClass, "cursor-default")}
                   >
                     <TableCell>
                       <span className="text-neutral-500">#</span>

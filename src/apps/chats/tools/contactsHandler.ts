@@ -105,7 +105,7 @@ export const handleContactsControl = (
         "c"
       );
 
-      context.addToolResult({
+      context.addToolOutput({
         tool: "contactsControl",
         toolCallId,
         output: {
@@ -124,7 +124,7 @@ export const handleContactsControl = (
 
     case "get": {
       if (!input.id) {
-        context.addToolResult({
+        context.addToolOutput({
           tool: "contactsControl",
           toolCallId,
           state: "output-error",
@@ -137,7 +137,7 @@ export const handleContactsControl = (
       const contact = store.contacts.find((item) => item.id === id);
 
       if (!contact) {
-        context.addToolResult({
+        context.addToolOutput({
           tool: "contactsControl",
           toolCallId,
           state: "output-error",
@@ -148,7 +148,7 @@ export const handleContactsControl = (
         return;
       }
 
-      context.addToolResult({
+      context.addToolOutput({
         tool: "contactsControl",
         toolCallId,
         output: {
@@ -164,7 +164,7 @@ export const handleContactsControl = (
 
     case "create": {
       if (!hasMeaningfulDraft(input)) {
-        context.addToolResult({
+        context.addToolOutput({
           tool: "contactsControl",
           toolCallId,
           state: "output-error",
@@ -179,7 +179,7 @@ export const handleContactsControl = (
         .contacts.find((item) => item.id === id);
 
       context.launchApp("contacts");
-      context.addToolResult({
+      context.addToolOutput({
         tool: "contactsControl",
         toolCallId,
         output: {
@@ -195,7 +195,7 @@ export const handleContactsControl = (
 
     case "update": {
       if (!input.id) {
-        context.addToolResult({
+        context.addToolOutput({
           tool: "contactsControl",
           toolCallId,
           state: "output-error",
@@ -207,7 +207,7 @@ export const handleContactsControl = (
       const id = resolveId(input.id, contactsIdMap);
       const existing = store.contacts.find((item) => item.id === id);
       if (!existing) {
-        context.addToolResult({
+        context.addToolOutput({
           tool: "contactsControl",
           toolCallId,
           state: "output-error",
@@ -219,7 +219,7 @@ export const handleContactsControl = (
       }
 
       if (!hasMeaningfulDraft(input)) {
-        context.addToolResult({
+        context.addToolOutput({
           tool: "contactsControl",
           toolCallId,
           state: "output-error",
@@ -234,7 +234,7 @@ export const handleContactsControl = (
         .contacts.find((item) => item.id === id);
 
       context.launchApp("contacts");
-      context.addToolResult({
+      context.addToolOutput({
         tool: "contactsControl",
         toolCallId,
         output: {
@@ -250,7 +250,7 @@ export const handleContactsControl = (
 
     case "delete": {
       if (!input.id) {
-        context.addToolResult({
+        context.addToolOutput({
           tool: "contactsControl",
           toolCallId,
           state: "output-error",
@@ -262,7 +262,7 @@ export const handleContactsControl = (
       const id = resolveId(input.id, contactsIdMap);
       const existing = store.contacts.find((item) => item.id === id);
       if (!existing) {
-        context.addToolResult({
+        context.addToolOutput({
           tool: "contactsControl",
           toolCallId,
           state: "output-error",
@@ -274,7 +274,7 @@ export const handleContactsControl = (
       }
 
       store.deleteContact(id);
-      context.addToolResult({
+      context.addToolOutput({
         tool: "contactsControl",
         toolCallId,
         output: {

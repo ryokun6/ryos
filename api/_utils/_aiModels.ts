@@ -76,3 +76,19 @@ export function getOpenAIProviderOptions(
     openai: openaiOptions,
   };
 }
+
+export function getTelegramModel(
+  log: (...args: unknown[]) => void,
+  env: NodeJS.ProcessEnv = process.env
+): SupportedModel {
+  const raw = env.TELEGRAM_BOT_MODEL as SupportedModel | undefined;
+  if (raw && SUPPORTED_AI_MODELS.includes(raw)) {
+    return raw;
+  }
+  if (raw) {
+    log(
+      `Unsupported TELEGRAM_BOT_MODEL "${raw}", falling back to ${TELEGRAM_DEFAULT_MODEL}`
+    );
+  }
+  return TELEGRAM_DEFAULT_MODEL;
+}

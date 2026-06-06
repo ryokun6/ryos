@@ -168,6 +168,7 @@ export interface PrepareRyoConversationOptions {
 
 export interface PreparedRyoConversation {
   selectedModel: LanguageModel;
+  modelId: SupportedModel;
   tools: ToolSet;
   enrichedMessages: ModelMessage[];
   loadedSections: string[];
@@ -880,6 +881,7 @@ export async function prepareRyoConversationModelInput(
 
   return {
     selectedModel: getModelInstance(model),
+    modelId: model,
     tools,
     enrichedMessages,
     loadedSections,

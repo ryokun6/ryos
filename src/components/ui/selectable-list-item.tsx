@@ -22,7 +22,7 @@ export const SelectableListItem = (
   ref={ref}
   className={cn(
     "py-1 px-5 cursor-pointer",
-    !isSelected && "hover:bg-black/5",
+    !isSelected && "hover:bg-black/5 os-mac-aqua-dark:hover:bg-white/8",
     className
   )}
   data-selected={isSelected ? "true" : undefined}
