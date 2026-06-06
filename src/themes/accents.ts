@@ -34,6 +34,14 @@ export type AccentId =
  */
 type StaticAccentId = Exclude<AccentId, "default" | "wallpaper">;
 
+/**
+ * Implicit accent for themes that have never had one chosen. We default to
+ * `"wallpaper"` so a fresh install picks up a color sampled from the desktop;
+ * the `"default"` option (labelled "System" in the UI) remains an explicit
+ * choice that restores the theme's classic selection color.
+ */
+export const DEFAULT_ACCENT: AccentId = "wallpaper";
+
 export type AccentChrome = OsMacChrome; // "aqua" | "system7"
 
 interface RGB {

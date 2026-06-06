@@ -8,6 +8,7 @@ import {
 import type { OsThemeId } from "@/themes/types";
 import {
   ACCENT_CSS_VAR_NAMES,
+  DEFAULT_ACCENT,
   getAccentChrome,
   getAccentCssVars,
   isValidAccent,
@@ -258,7 +259,7 @@ function applyRootAccent(
 ) {
   const root = document.documentElement;
   const chrome = getAccentChrome(theme);
-  const accent = chrome ? accentMap[theme] ?? "default" : "default";
+  const accent = chrome ? accentMap[theme] ?? DEFAULT_ACCENT : "default";
   const vars = chrome
     ? getAccentCssVars(chrome, accent, isDark, wallpaperColor)
     : {};
@@ -431,9 +432,9 @@ const createThemeStore = () => create<ThemeState>((set) => ({
     // Accents only apply to the classic Mac chromes (Aqua + System 7).
     if (!chrome || !isValidAccent(chrome, accent)) return;
 
-    const nextMap: AccentMap = { ...state.accentByTheme };
-    if (accent === "default") delete nextMap[target];
-    else nextMap[target] = accent;
+    // Persist the choice explicitly (including `"default"`/System) so it sticks
+    // against the implicit wallpaper fallback used for themes with no entry.
+    const nextMap: AccentMap = { ...state.accentByTheme, [target]: accent };
     writeAccentMap(nextMap);
     set({ accentByTheme: nextMap });
 
@@ -460,7 +461,7 @@ const createThemeStore = () => create<ThemeState>((set) => ({
     // Only the active "wallpaper" accent needs a live re-paint.
     const chrome = getAccentChrome(state.current);
     const activeAccent = chrome
-      ? state.accentByTheme[state.current] ?? "default"
+      ? state.accentByTheme[state.current] ?? DEFAULT_ACCENT
       : "default";
     if (activeAccent === "wallpaper") {
       applyRootAccent(state.current, state.accentByTheme, state.isDark, normalized);

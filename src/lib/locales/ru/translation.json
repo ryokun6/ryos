@@ -1223,7 +1223,7 @@
       "accent": "Акцент",
       "accentColors": {
         "blue": "Синий",
-        "default": "По умолчанию",
+        "default": "Системный",
         "graphite": "Графитовый",
         "green": "Зеленый",
         "orange": "Оранжевый",

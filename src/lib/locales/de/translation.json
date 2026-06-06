@@ -1223,7 +1223,7 @@
       "accent": "Akzentfarbe",
       "accentColors": {
         "blue": "Blau",
-        "default": "Standard",
+        "default": "System",
         "graphite": "Graphit",
         "green": "Grün",
         "orange": "Orange",

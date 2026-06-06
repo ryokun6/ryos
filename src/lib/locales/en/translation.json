@@ -2834,7 +2834,7 @@
       "accent": "Accent Color",
       "accentDescription": "Tints selections, menus, and controls",
       "accentColors": {
-        "default": "Default",
+        "default": "System",
         "wallpaper": "Wallpaper",
         "graphite": "Graphite",
         "blue": "Blue",

@@ -3,7 +3,7 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import type { DarkModePreference } from "@/stores/useThemeStore";
 import { getOsMacChrome, getOsPlatform, getThemeMetadata } from "@/themes";
 import type { OsMacChrome, OsPlatform } from "@/themes/types";
-import type { AccentId } from "@/themes/accents";
+import { DEFAULT_ACCENT, type AccentId } from "@/themes/accents";
 
 export function useThemeFlags() {
   const currentTheme = useThemeStore((state) => state.current);
@@ -12,7 +12,7 @@ export function useThemeFlags() {
     (state) => state.darkModeByTheme[state.current] ?? "system"
   );
   const accent: AccentId = useThemeStore(
-    (state) => state.accentByTheme[state.current] ?? "default"
+    (state) => state.accentByTheme[state.current] ?? DEFAULT_ACCENT
   );
   const metadata = useMemo(() => getThemeMetadata(currentTheme), [currentTheme]);
   const osPlatform: OsPlatform = getOsPlatform(currentTheme);

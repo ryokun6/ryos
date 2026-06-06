@@ -3,7 +3,7 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { useWallpaper } from "@/hooks/useWallpaper";
 import { useCoverPaletteResult } from "@/hooks/useCoverPalette";
 import { pickPrimaryColor } from "@/apps/ipod/components/lyrics-display/colorUtils";
-import { getAccentChrome } from "@/themes/accents";
+import { DEFAULT_ACCENT, getAccentChrome } from "@/themes/accents";
 
 /**
  * Drives the `"wallpaper"` accent: when the active theme uses it, sample a
@@ -17,7 +17,9 @@ import { getAccentChrome } from "@/themes/accents";
  */
 export function useWallpaperAccent() {
   const current = useThemeStore((s) => s.current);
-  const accent = useThemeStore((s) => s.accentByTheme[s.current] ?? "default");
+  const accent = useThemeStore(
+    (s) => s.accentByTheme[s.current] ?? DEFAULT_ACCENT
+  );
   const setWallpaperAccentColor = useThemeStore(
     (s) => s.setWallpaperAccentColor
   );

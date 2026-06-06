@@ -1223,7 +1223,7 @@
       "accent": "アクセントカラー",
       "accentColors": {
         "blue": "ブルー",
-        "default": "デフォルト",
+        "default": "システム",
         "graphite": "グラファイト",
         "green": "グリーン",
         "orange": "オレンジ",

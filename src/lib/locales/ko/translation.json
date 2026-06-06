@@ -1223,7 +1223,7 @@
       "accent": "강조 색상",
       "accentColors": {
         "blue": "파란색",
-        "default": "기본",
+        "default": "시스템",
         "graphite": "그라파이트",
         "green": "초록색",
         "orange": "주황색",

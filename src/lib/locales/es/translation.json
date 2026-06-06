@@ -1223,7 +1223,7 @@
       "accent": "Color de realce",
       "accentColors": {
         "blue": "Azul",
-        "default": "Por omisión",
+        "default": "Sistema",
         "graphite": "Grafito",
         "green": "Verde",
         "orange": "Naranja",
