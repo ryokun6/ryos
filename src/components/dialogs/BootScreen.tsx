@@ -190,7 +190,7 @@ export function BootScreen({
               left: 0, 
               right: 0, 
               bottom: 0,
-              backgroundColor: "#4566a0"
+              backgroundColor: "var(--os-accent-boot-bg, #4566a0)"
             }}
           />
           <DialogContent
@@ -215,8 +215,8 @@ export function BootScreen({
               <img
                 src="/icons/macosx/apple.png"
                 alt="Apple"
-                className="size-[120px] object-contain"
-                style={{ marginBottom: "-30px", filter: "grayscale(50%) brightness(1.25)" }}
+                className="boot-screen-apple-logo size-[120px] object-contain"
+                style={{ marginBottom: "-30px" }}
               />
               {/* ryOS X text */}
               <h1 

@@ -4162,6 +4162,15 @@
   filter: var(--os-accent-apple-filter, none);
 }
 
+/* Boot screen Apple logo — classic washed look; accent hue follows the menu logo
+   recipe via `--os-accent-boot-apple-filter` (falls back to the stock filter). */
+:root[data-os-theme="macosx"] img.boot-screen-apple-logo {
+  filter: var(
+    --os-accent-boot-apple-filter,
+    grayscale(50%) brightness(1.25)
+  );
+}
+
 /* --- Title bar text-shadow ------------------------------------------------ */
 /* Regular (non-brushed-metal) windows keep the light-mode dark-colored
    text-shadow on titlebar / menubar labels so dark mode looks visually

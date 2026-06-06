@@ -351,6 +351,24 @@ function appleFilter(base: RGB): string {
   return `hue-rotate(${Math.round(delta)}deg) saturate(1.05)`;
 }
 
+/** Stock macOS X boot-screen backdrop (`BootScreen` overlay). */
+const BOOT_BG_REF = "#4566a0";
+
+/** Boot overlay fill — same hue as the accent, stock saturation/lightness profile. */
+function bootScreenBg(base: RGB): string {
+  const ref = rgbToHsl(parseHex(BOOT_BG_REF));
+  const { hue, sat: accentSat } = hueSat(base);
+  const sat = accentSat < 0.12 ? Math.min(ref.s, 0.08) : ref.s;
+  return rgb(hslToRgb(hue, sat, ref.l));
+}
+
+/** Boot Apple logo — keeps the classic washed look, then applies accent hue. */
+function bootAppleFilter(base: RGB): string {
+  const bootBase = "grayscale(50%) brightness(1.25)";
+  const accentPart = appleFilter(base);
+  return `${bootBase} ${accentPart}`;
+}
+
 // ---------------------------------------------------------------------------
 // CSS variable generation
 // ---------------------------------------------------------------------------
@@ -499,6 +517,9 @@ export function getAccentCssVars(
     "--os-accent-tab-border": rgb(tabBorder),
     // Apple-logo hue (consumed via `var(--os-accent-apple-filter, none)`).
     "--os-accent-apple-filter": appleFilter(base),
+    // Boot screen overlay + logo (consumed via `var(--os-accent-boot-*, …)`).
+    "--os-accent-boot-bg": bootScreenBg(base),
+    "--os-accent-boot-apple-filter": bootAppleFilter(base),
     // Chats assistant / Ryo AI bubble hue (`.chat-bubble.bg-blue-100`).
     "--os-accent-assistant-bubble-bg": assistantBubbleBgColor,
     "--os-color-link": link,
@@ -529,6 +550,8 @@ export const ACCENT_CSS_VAR_NAMES = [
   "--os-accent-tab-text-shadow",
   "--os-accent-tab-border",
   "--os-accent-apple-filter",
+  "--os-accent-boot-bg",
+  "--os-accent-boot-apple-filter",
   "--os-accent-assistant-bubble-bg",
   "--os-color-link",
   "--os-accent-selection-text-shadow",
