@@ -59,6 +59,9 @@ import {
 import { onAppUpdate } from "@/utils/appEventBus";
 import {
   SEEK_AMOUNT_SECONDS,
+  IPOD_DEVICE_BASE_WIDTH_PX,
+  IPOD_DEVICE_BASE_HEIGHT_PX,
+  IPOD_MIN_DEVICE_SCALE,
   IPOD_NOW_PLAYING_SONG_MENU_KEY as NOW_PLAYING_SONG_MENU_KEY,
   getYouTubeVideoId,
   formatKugouImageUrl,
@@ -4715,14 +4718,14 @@ export function useIpodLogic({
         if (!containerRef.current) return;
         const containerWidth = containerRef.current.clientWidth;
         const containerHeight = containerRef.current.clientHeight;
-        const baseWidth = 250;
-        const baseHeight = 400;
+        const baseWidth = IPOD_DEVICE_BASE_WIDTH_PX;
+        const baseHeight = IPOD_DEVICE_BASE_HEIGHT_PX;
         const availableWidth = containerWidth - 50;
         const availableHeight = containerHeight - 50;
         const widthScale = availableWidth / baseWidth;
         const heightScale = availableHeight / baseHeight;
         const newScale = Math.min(widthScale, heightScale, 2);
-        const finalScale = Math.max(1, newScale);
+        const finalScale = Math.max(IPOD_MIN_DEVICE_SCALE, newScale);
 
         setScale((prevScale) => {
           if (Math.abs(prevScale - finalScale) > 0.01) return finalScale;

@@ -10,6 +10,7 @@ import type {
 } from "@/apps/base/types";
 import type { AppletViewerInitialData } from "@/apps/applet-viewer";
 import { createLazyComponent } from "./lazyAppComponent";
+import { IPOD_MIN_WINDOW_HEIGHT_PX } from "@/apps/ipod/constants";
 
 export type { AppId };
 
@@ -352,7 +353,7 @@ export const appRegistry = {
     metadata: ipodMetadata,
     windowConfig: {
       defaultSize: { width: 300, height: 480 },
-      minSize: { width: 300, height: 480 },
+      minSize: { width: 300, height: IPOD_MIN_WINDOW_HEIGHT_PX },
     } as WindowConstraints,
   } as BaseApp<IpodInitialData> & { windowConfig: WindowConstraints },
   ["karaoke"]: {

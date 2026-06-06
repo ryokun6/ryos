@@ -15,6 +15,19 @@ export {
   getTranslationBadge,
 } from "@/utils/lyricsTranslation";
 
+/** Fixed physical iPod chassis size (px) before responsive window scaling. */
+export const IPOD_DEVICE_BASE_WIDTH_PX = 250;
+export const IPOD_DEVICE_BASE_HEIGHT_PX = 400;
+
+/**
+ * Lowest scale applied when the window is shorter than the default size.
+ * Keeps the click wheel and LCD usable while allowing a shorter min height.
+ */
+export const IPOD_MIN_DEVICE_SCALE = 0.65;
+
+/** Minimum window height (px); must fit scaled chassis plus layout padding. */
+export const IPOD_MIN_WINDOW_HEIGHT_PX = 340;
+
 /** Fixed modern iPod LCD outer height (px), including `border-2` on the screen element. */
 export const IPOD_MODERN_SCREEN_HEIGHT_PX = 152;
 
