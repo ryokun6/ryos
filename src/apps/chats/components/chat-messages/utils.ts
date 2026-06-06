@@ -102,13 +102,41 @@ export const getMessageText = (message: {
   }, []).join("");
 };
 
+/** React list keys for synthetic greeting messages (not persisted server IDs). */
+export const SYNTHETIC_GREETING_KEY_PREFIX = "synthetic:greeting:";
+
+const isSyntheticGreetingId = (id: string): boolean =>
+  id === "1" || id.startsWith("proactive-");
+
+export const getSyntheticGreetingKey = (id: string): string =>
+  `${SYNTHETIC_GREETING_KEY_PREFIX}${id}`;
+
 export const getMessageKey = (message: {
   id?: string;
   role: string;
   parts?: Array<{ type: string; text?: string }>;
+  metadata?: { createdAt?: Date | number | string };
 }): string => {
+  if (message.id) {
+    if (isSyntheticGreetingId(message.id)) {
+      return getSyntheticGreetingKey(message.id);
+    }
+    return message.id;
+  }
+
   const messageText = getMessageText(message);
-  return message.id === "1" || message.id === "proactive-1"
-    ? "greeting"
-    : message.id || `${message.role}-${messageText.substring(0, 10)}`;
+  const createdAt = message.metadata?.createdAt;
+  let timestampSuffix = "";
+  if (createdAt instanceof Date) {
+    timestampSuffix = String(createdAt.getTime());
+  } else if (typeof createdAt === "number") {
+    timestampSuffix = String(createdAt);
+  } else if (typeof createdAt === "string") {
+    const parsed = new Date(createdAt).getTime();
+    if (Number.isFinite(parsed)) {
+      timestampSuffix = String(parsed);
+    }
+  }
+
+  return `${message.role}-${timestampSuffix}-${messageText.length}-${messageText.substring(0, 16)}`;
 };
