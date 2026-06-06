@@ -3,6 +3,7 @@ import { dbOperations } from "@/apps/finder/hooks/useFileSystem";
 import type { LaunchOriginRect } from "@/stores/useAppStore";
 import type { FileSystemItem } from "@/stores/useFilesStore";
 import { STORES } from "@/utils/indexedDB";
+import { readAppletContent } from "@/utils/appletVfs";
 
 export async function openDesktopAlias(
   shortcut: FileSystemItem,
@@ -99,10 +100,11 @@ export async function openDesktopAlias(
       targetFile.path.startsWith("/Applets/") &&
       (targetFile.path.endsWith(".app") || targetFile.path.endsWith(".html"))
     ) {
+      const { content, fileItem } = await readAppletContent(targetFile.path);
       launchApp("applet-viewer", {
         initialData: {
-          path: targetFile.path,
-          content: contentAsString ?? "",
+          path: fileItem.path,
+          content,
         },
         launchOrigin,
       });

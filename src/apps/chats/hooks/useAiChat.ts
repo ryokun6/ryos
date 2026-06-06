@@ -42,6 +42,12 @@ import {
   emitDocumentUpdated,
 } from "@/utils/appEventBus";
 import {
+  AppletVfsError,
+  normalizeVfsPath,
+  readAppletContent,
+  resolveVfsFileItem,
+} from "@/utils/appletVfs";
+import {
   persistChatApplet,
   persistChatDocument,
 } from "../utils/chatFilePersistence";
@@ -845,36 +851,10 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 });
                 result = "";
               } else if (path.startsWith("/Applets/")) {
-                // Open applet in viewer
-                const filesStore = useFilesStore.getState();
-                const fileItem = filesStore.items[path];
-
-                if (!fileItem || fileItem.status !== "active") {
-                  throw new Error(`Applet not found: ${path}`);
-                }
-
-                if (!fileItem.uuid) {
-                  throw new Error(`Applet missing content: ${path}`);
-                }
-
-                const contentData = await dbOperations.get<DocumentContent>(
-                  STORES.APPLETS,
-                  fileItem.uuid,
-                );
-
-                if (!contentData || !contentData.content) {
-                  throw new Error(`Failed to read applet content: ${path}`);
-                }
-
-                let content: string;
-                if (contentData.content instanceof Blob) {
-                  content = await contentData.content.text();
-                } else {
-                  content = contentData.content;
-                }
+                const { content, fileItem } = await readAppletContent(path);
 
                 launchApp("applet-viewer", {
-                  initialData: { path, content },
+                  initialData: { path: fileItem.path, content },
                 });
 
                 addToolResult({
@@ -1037,24 +1017,44 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 });
                 result = "";
               } else if (path.startsWith("/Applets/") || path.startsWith("/Documents/")) {
-                // Read local file content
                 const isApplet = path.startsWith("/Applets/");
+
+                if (isApplet) {
+                  const { content, fileItem } = await readAppletContent(path);
+                  const fileLabel = i18n.t("apps.chats.toolCalls.applet");
+                  addToolResult({
+                    tool: toolCall.toolName,
+                    toolCallId: toolCall.toolCallId,
+                    output:
+                      i18n.t("apps.chats.toolCalls.fileContent", {
+                        fileLabel,
+                        fileName: fileItem.name,
+                        charCount: content.length,
+                      }) + `\n\n${content}`,
+                  });
+                  result = "";
+                  break;
+                }
+
+                const documentPath = normalizeVfsPath(path);
                 const filesStore = useFilesStore.getState();
-                const fileItem = filesStore.items[path];
+                const fileItem = filesStore.items[documentPath];
 
                 if (!fileItem || fileItem.status !== "active") {
-                  throw new Error(`File not found: ${path}`);
+                  throw new Error(`File not found: ${documentPath}`);
                 }
 
                 if (!fileItem.uuid) {
-                  throw new Error(`File missing content: ${path}`);
+                  throw new Error(`File missing content: ${documentPath}`);
                 }
 
-                const storeName = isApplet ? STORES.APPLETS : STORES.DOCUMENTS;
-                const contentData = await dbOperations.get<DocumentContent>(storeName, fileItem.uuid);
+                const contentData = await dbOperations.get<DocumentContent>(
+                  STORES.DOCUMENTS,
+                  fileItem.uuid
+                );
 
                 if (!contentData || contentData.content == null) {
-                  throw new Error(`Failed to read file content: ${path}`);
+                  throw new Error(`Failed to read file content: ${documentPath}`);
                 }
 
                 let content: string;
@@ -1066,11 +1066,16 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   throw new Error("Unsupported content type");
                 }
 
-                const fileLabel = isApplet ? i18n.t("apps.chats.toolCalls.applet") : i18n.t("apps.chats.toolCalls.document");
+                const fileLabel = i18n.t("apps.chats.toolCalls.document");
                 addToolResult({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
-                  output: i18n.t("apps.chats.toolCalls.fileContent", { fileLabel, fileName: fileItem.name, charCount: content.length }) + `\n\n${content}`,
+                  output:
+                    i18n.t("apps.chats.toolCalls.fileContent", {
+                      fileLabel,
+                      fileName: fileItem.name,
+                      charCount: content.length,
+                    }) + `\n\n${content}`,
                 });
                 result = "";
               } else {
@@ -1349,22 +1354,22 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 });
                 result = "";
               } else if (path.startsWith("/Applets/")) {
-                // Edit applet HTML
-                const filesStore = useFilesStore.getState();
-                const fileItem = filesStore.items[path];
-
-                if (!fileItem || fileItem.status !== "active" || !fileItem.uuid) {
-                  throw new Error(`Applet not found: ${path}. Use generateHtml tool to create new applets, or list({ path: "/Applets" }) to see available files.`);
+                const fileItem = resolveVfsFileItem(path);
+                if (!fileItem || !fileItem.uuid) {
+                  throw new Error(
+                    `Applet not found: ${normalizeVfsPath(path)}. Use generateHtml tool to create new applets, or list({ path: "/Applets" }) to see available files.`
+                  );
                 }
 
-                const contentData = await dbOperations.get<DocumentContent>(STORES.APPLETS, fileItem.uuid);
-                if (!contentData?.content) {
-                  throw new Error(`Failed to read applet content: ${path}`);
+                let existingContent: string;
+                try {
+                  ({ content: existingContent } = await readAppletContent(path));
+                } catch (error) {
+                  if (error instanceof AppletVfsError) {
+                    throw new Error(error.message);
+                  }
+                  throw error;
                 }
-
-                const existingContent = typeof contentData.content === "string"
-                  ? contentData.content
-                  : await contentData.content.text();
 
                 // Normalize existing content
                 const normalizedExisting = existingContent.replace(/\r\n?/g, "\n");

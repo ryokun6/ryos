@@ -13,6 +13,7 @@ import { useAppletActions, type Applet } from "../utils/appletActions";
 import { toast } from "sonner";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { fetchAndCacheAppletContentFromShare } from "@/utils/appletVfs";
 import {
   APPLET_AUTH_BRIDGE_SCRIPT,
   APPLET_AUTH_MESSAGE_TYPE,
@@ -415,102 +416,9 @@ export function useAppletViewerLogic({
   }, [sendAuthPayload]);
 
   const fetchAndCacheAppletContent = useCallback(
-    async (
-      filePath: string,
-      metadata: FileSystemItem
-    ): Promise<
-      | {
-          content: string;
-          windowWidth?: number;
-          windowHeight?: number;
-        }
-      | null
-    > => {
-      const { shareId, uuid, name } = metadata;
-
-      if (!shareId || !uuid) {
-        console.warn(
-          `[AppletViewer] Cannot fetch shared applet for ${filePath}: missing shareId or uuid`
-        );
-        return null;
-      }
-
-      if (
-        typeof navigator !== "undefined" &&
-        "onLine" in navigator &&
-        !navigator.onLine
-      ) {
-        console.warn("[AppletViewer] Cannot fetch applet: offline");
-        return null;
-      }
-
-      try {
-        const response = await abortableFetch(
-          `/api/share-applet?id=${encodeURIComponent(shareId)}`,
-          {
-            timeout: 15000,
-            retry: { maxAttempts: 2, initialDelayMs: 500 },
-          }
-        );
-
-        const data = await response.json();
-        const content = typeof data.content === "string" ? data.content : "";
-
-        await dbOperations.put<DocumentContent>(
-          STORES.APPLETS,
-          {
-            name: name || filePath.split("/").pop() || shareId,
-            content,
-          },
-          uuid
-        );
-
-        const metadataUpdates: Partial<FileSystemItem> = {};
-
-        if (typeof data.icon === "string" && data.icon !== metadata.icon) {
-          metadataUpdates.icon = data.icon;
-        }
-        if (
-          typeof data.createdBy === "string" &&
-          data.createdBy !== metadata.createdBy
-        ) {
-          metadataUpdates.createdBy = data.createdBy;
-        }
-        if (
-          typeof data.windowWidth === "number" &&
-          typeof data.windowHeight === "number"
-        ) {
-          metadataUpdates.windowWidth = data.windowWidth;
-          metadataUpdates.windowHeight = data.windowHeight;
-        }
-        if (typeof data.createdAt === "number") {
-          metadataUpdates.storeCreatedAt = data.createdAt;
-        }
-
-        if (Object.keys(metadataUpdates).length > 0) {
-          updateFileItemMetadata(filePath, metadataUpdates);
-        }
-
-        return {
-          content,
-          windowWidth:
-            typeof data.windowWidth === "number"
-              ? data.windowWidth
-              : undefined,
-          windowHeight:
-            typeof data.windowHeight === "number"
-              ? data.windowHeight
-              : undefined,
-        };
-      } catch (error) {
-        console.error(
-          `[AppletViewer] Error fetching shared applet content for ${shareId}:`,
-          error
-        );
-        return null;
-      }
-    },
-    [updateFileItemMetadata]
+    async (filePath: string, metadata: FileSystemItem) =>
+      fetchAndCacheAppletContentFromShare(filePath, metadata),
+    []
   );
 
   const htmlContent =

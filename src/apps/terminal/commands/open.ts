@@ -6,6 +6,7 @@ import {
   DocumentContent,
 } from "@/apps/finder/hooks/useFileSystem";
 import { STORES } from "@/utils/indexedDB";
+import { AppletVfsError, readAppletContent } from "@/utils/appletVfs";
 import i18n from "@/lib/i18n";
 
 // App name aliases for convenience
@@ -244,34 +245,28 @@ async function openFile(
 
   // Handle applets
   if (path.startsWith("/Applets/") && (path.endsWith(".app") || path.endsWith(".html"))) {
-    let content = "";
-    
-    if (fileMetadata?.uuid) {
-      try {
-        const contentData = await dbOperations.get<DocumentContent>(
-          STORES.APPLETS,
-          fileMetadata.uuid
-        );
-        if (contentData?.content) {
-          if (contentData.content instanceof Blob) {
-            content = await contentData.content.text();
-          } else if (typeof contentData.content === "string") {
-            content = contentData.content;
-          }
-        }
-      } catch (error) {
-        console.error("[open] Error reading applet:", error);
-      }
+    try {
+      const { content, fileItem } = await readAppletContent(path);
+      context.launchApp("applet-viewer", {
+        initialData: { path: fileItem.path, content },
+      });
+      context.playCommandSound();
+      return {
+        output: i18n.t("apps.terminal.output.openedApplet", {
+          applet: name.replace(/\.(app|html)$/i, ""),
+        }),
+        isError: false,
+      };
+    } catch (error) {
+      const message =
+        error instanceof AppletVfsError
+          ? error.message
+          : `Failed to open applet: ${name}`;
+      return {
+        output: message,
+        isError: true,
+      };
     }
-    
-    context.launchApp("applet-viewer", {
-      initialData: { path, content },
-    });
-    context.playCommandSound();
-    return {
-      output: i18n.t("apps.terminal.output.openedApplet", { applet: name.replace(/\.(app|html)$/i, "") }),
-      isError: false,
-    };
   }
 
   // Default: try to open with Finder for unknown types

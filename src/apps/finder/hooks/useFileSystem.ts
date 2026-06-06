@@ -20,6 +20,7 @@ import {
 } from "@/stores/helpers";
 import { formatKugouImageUrl } from "@/utils/coverArt";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { fetchAndCacheAppletContentFromShare } from "@/utils/appletVfs";
 import { getStoreForFile } from "@/utils/indexedDBOperations";
 import {
   emitCloudSyncDomainChange,
@@ -602,73 +603,13 @@ export function useFileSystem(
       filePath: string,
       fileMetadata: FileSystemItem
     ): Promise<string | null> => {
-      const { shareId, uuid, name } = fileMetadata;
-      if (!shareId || !uuid) {
-        console.warn(
-          `[useFileSystem] Cannot fetch applet content for ${filePath}: missing shareId or uuid`
-        );
-        return null;
-      }
-
-      try {
-        const response = await abortableFetch(
-          `/api/share-applet?id=${encodeURIComponent(shareId)}`,
-          {
-            timeout: 15000,
-            retry: { maxAttempts: 2, initialDelayMs: 500 },
-          }
-        );
-
-        const data = await response.json();
-        const content =
-          typeof data.content === "string" ? data.content : "";
-
-        await dbOperations.put<DocumentContent>(
-          STORES.APPLETS,
-          {
-            name: name || filePath.split("/").pop() || shareId,
-            content,
-          },
-          uuid
-        );
-        emitCloudSyncDomainChange("files-applets");
-
-        const metadataUpdates: Partial<FileSystemItem> = {};
-
-        if (typeof data.icon === "string" && data.icon !== fileMetadata.icon) {
-          metadataUpdates.icon = data.icon;
-        }
-        if (
-          typeof data.createdBy === "string" &&
-          data.createdBy !== fileMetadata.createdBy
-        ) {
-          metadataUpdates.createdBy = data.createdBy;
-        }
-        if (
-          typeof data.windowWidth === "number" &&
-          typeof data.windowHeight === "number"
-        ) {
-          metadataUpdates.windowWidth = data.windowWidth;
-          metadataUpdates.windowHeight = data.windowHeight;
-        }
-        if (typeof data.createdAt === "number") {
-          metadataUpdates.storeCreatedAt = data.createdAt;
-        }
-
-        if (Object.keys(metadataUpdates).length > 0) {
-          updateItemMetadata(filePath, metadataUpdates);
-        }
-
-        return content;
-      } catch (error) {
-        console.error(
-          `[useFileSystem] Error fetching shared applet content for ${shareId}:`,
-          error
-        );
-        return null;
-      }
+      const fetched = await fetchAndCacheAppletContentFromShare(
+        filePath,
+        fileMetadata
+      );
+      return fetched?.content ?? null;
     },
-    [updateItemMetadata]
+    []
   );
 
   // --- REORDERED useCallback DEFINITIONS --- //
