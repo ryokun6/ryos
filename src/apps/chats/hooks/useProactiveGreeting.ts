@@ -3,12 +3,20 @@ import { useChatsStore } from "@/stores/useChatsStore";
 import type { AIChatMessage } from "@/types/chat";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { applyFreshProactiveGreeting } from "../utils/proactiveGreetingApply";
 
 /**
  * Minimum idle time (ms) since the last chat message before a proactive
  * greeting is triggered when re-opening / loading the chats app from state.
  */
 const STALE_CHAT_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
+
+export interface UseProactiveGreetingOptions {
+  /** Latest AI SDK messages (may be ahead of the persisted store mid-stream). */
+  getLiveMessages?: () => AIChatMessage[];
+  /** Patch the AI SDK list in-place without resetting the conversation. */
+  patchLiveMessages?: (messages: AIChatMessage[]) => void;
+}
 
 /**
  * Get the timestamp (epoch ms) of the most recent message in the AI chat.
@@ -43,7 +51,10 @@ function getLastMessageTimestamp(messages: AIChatMessage[]): number {
  * The greeting is fetched as a complete JSON response from the server and
  * displayed in the chat as a single batch update.
  */
-export function useProactiveGreeting() {
+export function useProactiveGreeting({
+  getLiveMessages,
+  patchLiveMessages,
+}: UseProactiveGreetingOptions = {}) {
   const [isLoadingGreeting, setIsLoadingGreeting] = useState(() => {
     const state = useChatsStore.getState();
     const fresh =
@@ -57,6 +68,11 @@ export function useProactiveGreeting() {
   const hasTriggeredStaleRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
   const fetchInFlightRef = useRef(false);
+  const liveMessageAccessorsRef = useRef({
+    getLiveMessages,
+    patchLiveMessages,
+  });
+  liveMessageAccessorsRef.current = { getLiveMessages, patchLiveMessages };
 
   const username = useChatsStore((s) => s.username);
   const isAuthenticated = useChatsStore((s) => s.isAuthenticated);
@@ -127,25 +143,31 @@ export function useProactiveGreeting() {
             metadata: { createdAt: new Date() },
           };
 
-          const currentMessages = useChatsStore.getState().aiMessages;
+          const storeMessages = useChatsStore.getState().aiMessages;
+          const { getLiveMessages: getLive, patchLiveMessages: patchLive } =
+            liveMessageAccessorsRef.current;
+          const liveMessages = getLive?.() ?? storeMessages;
 
           if (mode === "fresh") {
-            if (
-              currentMessages.length === 1 &&
-              currentMessages[0].id === "1" &&
-              currentMessages[0].role === "assistant"
-            ) {
-              setAiMessages([proactiveMessage]);
+            const updatedMessages = applyFreshProactiveGreeting(
+              liveMessages,
+              proactiveMessage
+            );
+            if (updatedMessages) {
+              patchLive?.(updatedMessages);
+              setAiMessages(updatedMessages);
             }
           } else {
-            const lastMsg = currentMessages[currentMessages.length - 1];
-            const lastTs = getLastMessageTimestamp(currentMessages);
+            const lastMsg = storeMessages[storeMessages.length - 1];
+            const lastTs = getLastMessageTimestamp(storeMessages);
             const stillStale =
               lastTs > 0 &&
               Date.now() - lastTs > STALE_CHAT_THRESHOLD_MS;
 
             if (stillStale && !lastMsg.id?.startsWith("proactive-")) {
-              setAiMessages([...currentMessages, proactiveMessage]);
+              const updatedMessages = [...liveMessages, proactiveMessage];
+              patchLive?.(updatedMessages);
+              setAiMessages(updatedMessages);
             }
           }
         }

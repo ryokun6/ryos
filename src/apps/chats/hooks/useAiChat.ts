@@ -2077,6 +2077,18 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     stopSpeech();
   }, [sdkStop, stopSpeech]);
 
+  const getLiveMessages = useCallback(
+    () => currentSdkMessagesRef.current,
+    []
+  );
+
+  const patchLiveMessages = useCallback(
+    (messages: AIChatMessage[]) => {
+      setSdkMessages(messages);
+    },
+    [setSdkMessages]
+  );
+
   return {
     // AI Chat State & Actions
     messages: messagesWithTimestamps, // Return messages with timestamps
@@ -2112,5 +2124,8 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     highlightSegment,
     speakAssistantMessageManually,
     stopSpeech,
+
+    getLiveMessages,
+    patchLiveMessages,
   };
 }

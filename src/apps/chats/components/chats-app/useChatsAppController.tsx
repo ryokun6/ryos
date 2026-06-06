@@ -70,6 +70,8 @@ export function useChatsAppController({
     stopSpeech,
     rateLimitError,
     needsUsername,
+    getLiveMessages,
+    patchLiveMessages,
   } = useAiChat(promptSetUsername);
 
   const {
@@ -127,7 +129,10 @@ export function useChatsAppController({
 
   const globalOnlineUsers = useGlobalPresence();
 
-  const { isLoadingGreeting, triggerGreeting } = useProactiveGreeting();
+  const { isLoadingGreeting, triggerGreeting } = useProactiveGreeting({
+    getLiveMessages,
+    patchLiveMessages,
+  });
   const [inputPrefillMessage, setInputPrefillMessage] = useState<string | null>(
     null
   );
