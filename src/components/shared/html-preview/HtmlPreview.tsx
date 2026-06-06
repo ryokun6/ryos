@@ -8,6 +8,7 @@ import {
 } from "@/stores/useDisplaySettingsStore";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { InputDialog } from "@/components/dialogs/InputDialog";
 import { getAppletSandboxAttribute } from "@/utils/appletAuthBridge";
 import { useTranslation } from "react-i18next";
@@ -49,7 +50,7 @@ export default function HtmlPreview({
   const [showCode, setShowCode] = useState(false);
   const [isSplitView, setIsSplitView] = useState(loadHtmlPreviewSplit());
   const [originalHeight, setOriginalHeight] = useState<string | null>(null);
-  const [isMobile, setIsMobile] = useState(false);
+  const isMobile = useMediaQuery("(max-width: 767px)");
   const [isDragging, setIsDragging] = useState(false);
   const [isToolbarCollapsed, setIsToolbarCollapsed] = useState(false);
   const wasDragging = useRef(false);
@@ -125,16 +126,6 @@ export default function HtmlPreview({
       setOriginalHeight(height);
     }
   }, [isFullScreen, originalHeight]);
-
-  const checkMobile = useCallback(() => {
-    setIsMobile(window.innerWidth < 768);
-  }, []);
-
-  useEffect(() => {
-    checkMobile();
-  }, [checkMobile]);
-
-  useEventListener("resize", checkMobile);
 
   // Listen for ESC key to exit fullscreen
   useEventListener(
