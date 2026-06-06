@@ -12,9 +12,9 @@ import { convertImageFileToWallpaperJpeg } from "@/utils/customWallpaperProcessi
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 import { SETTINGS_ANALYTICS, track } from "@/utils/analytics";
 
-/** Default desktop wallpaper (plants photo). */
+/** Default desktop wallpaper (nature photo). */
 export const DEFAULT_WALLPAPER_PATH =
-  "/wallpapers/photos/plants/dandelion_seeds.jpg";
+  "/wallpapers/photos/nature/mt_fuji.jpg";
 
 /**
  * Display settings store - manages wallpaper, shaders, and screen saver settings.
