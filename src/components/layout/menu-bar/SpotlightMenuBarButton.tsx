@@ -24,11 +24,13 @@ export function SpotlightMenuBarButton() {
       style={{
         marginLeft: "2px",
         marginRight: "4px",
-        color: isSpotlightOpen ? "#FFFFFF" : "inherit",
+        color: isSpotlightOpen
+          ? "var(--os-color-selection-text, #FFFFFF)"
+          : "inherit",
         background: isSpotlightOpen
           ? isMacOSTheme
-            ? "linear-gradient(180deg, #609de9 0%, #3d84e5 50%, #3170dc 100%)"
-            : "#000000"
+            ? "var(--os-accent-list-gradient, linear-gradient(180deg, #609de9 0%, #3d84e5 50%, #3170dc 100%))"
+            : "var(--os-color-selection-bg, #000000)"
           : "transparent",
         borderRadius: "50%",
         width: "20px",

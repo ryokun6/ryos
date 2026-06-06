@@ -36,7 +36,7 @@ export function SpotlightSearchInput({
         style={{
           padding: isMobile ? "7px 8px" : "6px 8px 6px 12px",
           background:
-            "linear-gradient(180deg, #609de9 0%, #3d84e5 50%, #3170dc 100%)",
+            "var(--os-accent-list-gradient, linear-gradient(180deg, #609de9 0%, #3d84e5 50%, #3170dc 100%))",
           borderBottom: "1px solid rgba(0,0,0,0.15)",
         }}
       >
@@ -47,7 +47,7 @@ export function SpotlightSearchInput({
               fontFamily,
               fontSize: "12px",
               fontWeight: 700,
-              color: "#FFFFFF",
+              color: "var(--os-color-selection-text, #FFFFFF)",
               textShadow: "0 1px 1px rgba(0,0,0,0.3)",
               whiteSpace: "nowrap",
               flexShrink: 0,
