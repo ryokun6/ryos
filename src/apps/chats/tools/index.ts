@@ -9,7 +9,7 @@
  *
  * The tool handler system follows these principles:
  * 1. Each tool handler is a pure function that receives input and context
- * 2. Handlers call addToolResult to return results to the chat
+ * 2. Handlers call addToolOutput to return results to the chat
  * 3. Shared utilities are centralized in helpers.ts
  *
  * ## Migration Path
@@ -27,7 +27,7 @@
  * import { ToolHandler } from './types';
  *
  * export const handleAquarium: ToolHandler = async (input, toolCallId, context) => {
- *   context.addToolResult({
+ *   context.addToolOutput({
  *     tool: 'aquarium',
  *     toolCallId,
  *     output: 'Aquarium displayed',

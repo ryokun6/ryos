@@ -253,7 +253,7 @@ export const handleTvControl = async (
           count: channels.length,
         });
 
-        context.addToolResult({
+        context.addToolOutput({
           tool: "tvControl",
           toolCallId,
           output: { success: true, message, channels },
@@ -277,7 +277,7 @@ export const handleTvControl = async (
         }
 
         if (!target) {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "tvControl",
             toolCallId,
             state: "output-error",
@@ -296,7 +296,7 @@ export const handleTvControl = async (
         const shortId =
           tvChannelIdMap?.fullToShort.get(target.id) ?? target.id;
 
-        context.addToolResult({
+        context.addToolOutput({
           tool: "tvControl",
           toolCallId,
           output: {
@@ -320,7 +320,7 @@ export const handleTvControl = async (
       case "createChannel": {
         const prompt = input.prompt?.trim();
         if (!prompt) {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "tvControl",
             toolCallId,
             state: "output-error",
@@ -380,7 +380,7 @@ export const handleTvControl = async (
                 i18n.t("apps.chats.toolCalls.tv.createFailed", {
                   defaultValue: "Failed to plan channel",
                 });
-            context.addToolResult({
+            context.addToolOutput({
               tool: "tvControl",
               toolCallId,
               state: "output-error",
@@ -396,7 +396,7 @@ export const handleTvControl = async (
             videos?: Video[];
           };
           if (!raw?.videos?.length || !raw?.name) {
-            context.addToolResult({
+            context.addToolOutput({
               tool: "tvControl",
               toolCallId,
               state: "output-error",
@@ -415,7 +415,7 @@ export const handleTvControl = async (
           };
         } catch (err) {
           console.error("[tvControl] create-channel API failed:", err);
-          context.addToolResult({
+          context.addToolOutput({
             tool: "tvControl",
             toolCallId,
             state: "output-error",
@@ -433,7 +433,7 @@ export const handleTvControl = async (
         // only return YouTube videos but the user's data ends up in the store).
         const safeVideos = planned.videos.filter((v) => isYouTubeUrl(v.url));
         if (safeVideos.length === 0) {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "tvControl",
             toolCallId,
             state: "output-error",
@@ -460,7 +460,7 @@ export const handleTvControl = async (
           useTvStore.getState().hiddenDefaultChannelIds
         ).find((c) => c.id === created.id);
         if (!createdListed) {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "tvControl",
             toolCallId,
             state: "output-error",
@@ -478,7 +478,7 @@ export const handleTvControl = async (
           count: safeVideos.length,
         });
 
-        context.addToolResult({
+        context.addToolOutput({
           tool: "tvControl",
           toolCallId,
           output: {
@@ -498,7 +498,7 @@ export const handleTvControl = async (
 
       case "deleteChannel": {
         if (!input.channelId) {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "tvControl",
             toolCallId,
             state: "output-error",
@@ -511,7 +511,7 @@ export const handleTvControl = async (
         const resolvedId = resolveChannelId(input.channelId);
         const targetListed = findChannel(resolvedId);
         if (!targetListed) {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "tvControl",
             toolCallId,
             state: "output-error",
@@ -522,7 +522,7 @@ export const handleTvControl = async (
           return;
         }
         useTvStore.getState().removeChannel(resolvedId);
-        context.addToolResult({
+        context.addToolOutput({
           tool: "tvControl",
           toolCallId,
           output: {
@@ -538,7 +538,7 @@ export const handleTvControl = async (
 
       case "addVideo": {
         if (!input.channelId) {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "tvControl",
             toolCallId,
             state: "output-error",
@@ -550,7 +550,7 @@ export const handleTvControl = async (
         }
         const resolvedId = resolveChannelId(input.channelId);
         if (DEFAULT_CHANNELS.some((c) => c.id === resolvedId)) {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "tvControl",
             toolCallId,
             state: "output-error",
@@ -563,7 +563,7 @@ export const handleTvControl = async (
         }
         const target = findCustomChannel(resolvedId);
         if (!target) {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "tvControl",
             toolCallId,
             state: "output-error",
@@ -581,7 +581,7 @@ export const handleTvControl = async (
           artist: input.artist,
         });
         if ("error" in resolvedVideo) {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "tvControl",
             toolCallId,
             state: "output-error",
@@ -596,7 +596,7 @@ export const handleTvControl = async (
           .addVideoToCustomChannel(resolvedId, resolvedVideo.video);
 
         if (!result.added) {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "tvControl",
             toolCallId,
             output: {
@@ -612,7 +612,7 @@ export const handleTvControl = async (
           return;
         }
 
-        context.addToolResult({
+        context.addToolOutput({
           tool: "tvControl",
           toolCallId,
           output: {
@@ -630,7 +630,7 @@ export const handleTvControl = async (
 
       case "removeVideo": {
         if (!input.channelId) {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "tvControl",
             toolCallId,
             state: "output-error",
@@ -641,7 +641,7 @@ export const handleTvControl = async (
           return;
         }
         if (!input.removeVideoId) {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "tvControl",
             toolCallId,
             state: "output-error",
@@ -653,7 +653,7 @@ export const handleTvControl = async (
         }
         const resolvedId = resolveChannelId(input.channelId);
         if (DEFAULT_CHANNELS.some((c) => c.id === resolvedId)) {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "tvControl",
             toolCallId,
             state: "output-error",
@@ -666,7 +666,7 @@ export const handleTvControl = async (
         }
         const target = findCustomChannel(resolvedId);
         if (!target) {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "tvControl",
             toolCallId,
             state: "output-error",
@@ -684,7 +684,7 @@ export const handleTvControl = async (
           .removeVideoFromCustomChannel(resolvedId, removeId);
 
         if (!result.removed) {
-          context.addToolResult({
+          context.addToolOutput({
             tool: "tvControl",
             toolCallId,
             state: "output-error",
@@ -695,7 +695,7 @@ export const handleTvControl = async (
           return;
         }
 
-        context.addToolResult({
+        context.addToolOutput({
           tool: "tvControl",
           toolCallId,
           output: {
@@ -712,7 +712,7 @@ export const handleTvControl = async (
       }
 
       default:
-        context.addToolResult({
+        context.addToolOutput({
           tool: "tvControl",
           toolCallId,
           state: "output-error",
@@ -724,7 +724,7 @@ export const handleTvControl = async (
     }
   } catch (error) {
     console.error("[tvControl] Error:", error);
-    context.addToolResult({
+    context.addToolOutput({
       tool: "tvControl",
       toolCallId,
       state: "output-error",

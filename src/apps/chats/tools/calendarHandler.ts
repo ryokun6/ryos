@@ -46,7 +46,7 @@ export const handleCalendarControl: ToolHandler<CalendarControlInput> = (
       const message = input.date
         ? tc(count === 1 ? "foundEventsForDate" : "foundEventsForDatePlural", { count, date: input.date })
         : tc(count === 1 ? "foundEventsTotal" : "foundEventsTotalPlural", { count });
-      context.addToolResult({
+      context.addToolOutput({
         tool: "calendarControl",
         toolCallId,
         output: {
@@ -60,7 +60,7 @@ export const handleCalendarControl: ToolHandler<CalendarControlInput> = (
 
     case "create": {
       if (!input.title || !input.date) {
-        context.addToolResult({
+        context.addToolOutput({
           state: "output-error",
           tool: "calendarControl",
           toolCallId,
@@ -81,7 +81,7 @@ export const handleCalendarControl: ToolHandler<CalendarControlInput> = (
       store.setSelectedDate(input.date);
       context.launchApp("calendar");
 
-      context.addToolResult({
+      context.addToolOutput({
         tool: "calendarControl",
         toolCallId,
         output: {
@@ -103,7 +103,7 @@ export const handleCalendarControl: ToolHandler<CalendarControlInput> = (
 
     case "update": {
       if (!input.id) {
-        context.addToolResult({
+        context.addToolOutput({
           state: "output-error",
           tool: "calendarControl",
           toolCallId,
@@ -114,7 +114,7 @@ export const handleCalendarControl: ToolHandler<CalendarControlInput> = (
 
       const existing = store.events.find((ev) => ev.id === input.id);
       if (!existing) {
-        context.addToolResult({
+        context.addToolOutput({
           state: "output-error",
           tool: "calendarControl",
           toolCallId,
@@ -133,7 +133,7 @@ export const handleCalendarControl: ToolHandler<CalendarControlInput> = (
 
       store.updateEvent(input.id, updates);
 
-      context.addToolResult({
+      context.addToolOutput({
         tool: "calendarControl",
         toolCallId,
         output: {
@@ -146,7 +146,7 @@ export const handleCalendarControl: ToolHandler<CalendarControlInput> = (
 
     case "delete": {
       if (!input.id) {
-        context.addToolResult({
+        context.addToolOutput({
           state: "output-error",
           tool: "calendarControl",
           toolCallId,
@@ -157,7 +157,7 @@ export const handleCalendarControl: ToolHandler<CalendarControlInput> = (
 
       const toDelete = store.events.find((ev) => ev.id === input.id);
       if (!toDelete) {
-        context.addToolResult({
+        context.addToolOutput({
           state: "output-error",
           tool: "calendarControl",
           toolCallId,
@@ -168,7 +168,7 @@ export const handleCalendarControl: ToolHandler<CalendarControlInput> = (
 
       store.deleteEvent(input.id);
 
-      context.addToolResult({
+      context.addToolOutput({
         tool: "calendarControl",
         toolCallId,
         output: {
@@ -192,7 +192,7 @@ export const handleCalendarControl: ToolHandler<CalendarControlInput> = (
         calendarId: t.calendarId,
       }));
       const count = formatted.length;
-      context.addToolResult({
+      context.addToolOutput({
         tool: "calendarControl",
         toolCallId,
         output: {
@@ -206,7 +206,7 @@ export const handleCalendarControl: ToolHandler<CalendarControlInput> = (
 
     case "createTodo": {
       if (!input.title) {
-        context.addToolResult({
+        context.addToolOutput({
           state: "output-error",
           tool: "calendarControl",
           toolCallId,
@@ -221,7 +221,7 @@ export const handleCalendarControl: ToolHandler<CalendarControlInput> = (
       store.setShowTodoSidebar(true);
       context.launchApp("calendar");
 
-      context.addToolResult({
+      context.addToolOutput({
         tool: "calendarControl",
         toolCallId,
         output: {
@@ -243,7 +243,7 @@ export const handleCalendarControl: ToolHandler<CalendarControlInput> = (
 
     case "toggleTodo": {
       if (!input.id) {
-        context.addToolResult({
+        context.addToolOutput({
           state: "output-error",
           tool: "calendarControl",
           toolCallId,
@@ -254,7 +254,7 @@ export const handleCalendarControl: ToolHandler<CalendarControlInput> = (
 
       const todoToToggle = store.todos.find((t) => t.id === input.id);
       if (!todoToToggle) {
-        context.addToolResult({
+        context.addToolOutput({
           state: "output-error",
           tool: "calendarControl",
           toolCallId,
@@ -265,7 +265,7 @@ export const handleCalendarControl: ToolHandler<CalendarControlInput> = (
 
       store.toggleTodo(input.id);
 
-      context.addToolResult({
+      context.addToolOutput({
         tool: "calendarControl",
         toolCallId,
         output: {
@@ -287,7 +287,7 @@ export const handleCalendarControl: ToolHandler<CalendarControlInput> = (
 
     case "deleteTodo": {
       if (!input.id) {
-        context.addToolResult({
+        context.addToolOutput({
           state: "output-error",
           tool: "calendarControl",
           toolCallId,
@@ -298,7 +298,7 @@ export const handleCalendarControl: ToolHandler<CalendarControlInput> = (
 
       const todoToDelete = store.todos.find((t) => t.id === input.id);
       if (!todoToDelete) {
-        context.addToolResult({
+        context.addToolOutput({
           state: "output-error",
           tool: "calendarControl",
           toolCallId,
@@ -309,7 +309,7 @@ export const handleCalendarControl: ToolHandler<CalendarControlInput> = (
 
       store.deleteTodo(input.id);
 
-      context.addToolResult({
+      context.addToolOutput({
         tool: "calendarControl",
         toolCallId,
         output: {
@@ -321,7 +321,7 @@ export const handleCalendarControl: ToolHandler<CalendarControlInput> = (
     }
 
     default:
-      context.addToolResult({
+      context.addToolOutput({
         state: "output-error",
         tool: "calendarControl",
         toolCallId,

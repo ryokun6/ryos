@@ -12,17 +12,17 @@
 export interface ToolContext {
   /** Function to launch an app by ID */
   launchApp: (appId: string, options?: { initialData?: unknown; multiWindow?: boolean }) => string;
-  /** Function to add tool result back to the chat */
-  addToolResult: (result: ToolResultPayload) => void;
+  /** Function to add tool output back to the chat */
+  addToolOutput: (result: ToolOutputPayload) => void;
   /** Detect user's operating system */
   detectUserOS: () => string;
 }
 
 /**
- * Payload for tool results
- * Matches the AI SDK's addToolResult signature
+ * Payload for tool outputs
+ * Matches the AI SDK's addToolOutput signature
  */
-export type ToolResultPayload =
+export type ToolOutputPayload =
   | {
       state?: "output-available";
       tool: string;

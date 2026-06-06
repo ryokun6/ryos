@@ -33,7 +33,7 @@ export const handleLaunchApp = (
   // Validate required parameter
   if (!id) {
     console.error("[ToolCall] launchApp: Missing required 'id' parameter");
-    context.addToolResult({
+    context.addToolOutput({
       tool: "launchApp",
       toolCallId,
       state: "output-error",
@@ -75,7 +75,7 @@ export const handleCloseApp = (
   // Validate required parameter
   if (!id) {
     console.error("[ToolCall] closeApp: Missing required 'id' parameter");
-    context.addToolResult({
+    context.addToolOutput({
       tool: "closeApp",
       toolCallId,
       state: "output-error",
