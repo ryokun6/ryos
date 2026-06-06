@@ -1,4 +1,4 @@
-import { useRef, useLayoutEffect, useEffect, useState, useMemo, useCallback } from "react";
+import { useRef, useLayoutEffect, useEffect, useState, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import type { CalendarEvent } from "@/stores/useCalendarStore";
 import {
@@ -73,10 +73,8 @@ export function DayTimeGrid({
   const allDayEvents = events.filter((ev) => !ev.startTime);
   const timedEvents = events.filter((ev) => !!ev.startTime).sort((a, b) => (a.startTime || "").localeCompare(b.startTime || ""));
 
-  const todayStr = useMemo(() => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  }, [currentMinute]);
+  const d = new Date();
+  const todayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   const isToday = date === todayStr;
 
   useLayoutEffect(() => {
