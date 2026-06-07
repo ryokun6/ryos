@@ -11,7 +11,7 @@ import {
   MusicNote,
   UserMinus,
 } from "@phosphor-icons/react";
-import { Skeleton } from "./Skeleton";
+import { Skeleton } from "../shared/Skeleton";
 import type { SongDetailPanelViewModel } from "./useSongDetailPanel";
 
 type Props = Pick<

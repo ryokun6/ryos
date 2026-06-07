@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 
 /**
  * v86 profile preset definition for Infinite PC (copy.sh/v86)
@@ -366,19 +365,10 @@ interface InfinitePcStoreState {
   setIsEmulatorLoaded: (loaded: boolean) => void;
 }
 
-export const useInfinitePcStore = create<InfinitePcStoreState>()(
-  persist(
-    (set) => ({
-      selectedPreset: null,
-      isEmulatorLoaded: false,
+export const useInfinitePcStore = create<InfinitePcStoreState>()((set) => ({
+  selectedPreset: null,
+  isEmulatorLoaded: false,
 
-      setSelectedPreset: (preset) => set({ selectedPreset: preset }),
-      setIsEmulatorLoaded: (loaded) => set({ isEmulatorLoaded: loaded }),
-    }),
-    {
-      name: "ryos:pc",
-      version: 1,
-      partialize: () => ({}),
-    }
-  )
-);
+  setSelectedPreset: (preset) => set({ selectedPreset: preset }),
+  setIsEmulatorLoaded: (loaded) => set({ isEmulatorLoaded: loaded }),
+}));

@@ -1,5 +1,5 @@
 import { Check, Ear, FileText, TextT, Translate, X } from "@phosphor-icons/react";
-import { Skeleton } from "./Skeleton";
+import { Skeleton } from "../shared/Skeleton";
 import type { SongDetail } from "./types";
 import type { SongDetailPanelViewModel } from "./useSongDetailPanel";
 

@@ -10,7 +10,7 @@ import {
 import { CaretRight } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { SectionHeader } from "./SectionHeader";
-import { Skeleton } from "./Skeleton";
+import { Skeleton } from "../shared/Skeleton";
 import {
   adminAltRowBgClass,
   adminTableHeadClass,

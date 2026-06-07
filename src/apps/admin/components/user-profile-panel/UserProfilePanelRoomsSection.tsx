@@ -1,5 +1,5 @@
 import { SectionHeader } from "./SectionHeader";
-import { Skeleton } from "./Skeleton";
+import { Skeleton } from "../shared/Skeleton";
 import type { UserProfilePanelViewModel } from "./useUserProfilePanel";
 
 type Props = Pick<

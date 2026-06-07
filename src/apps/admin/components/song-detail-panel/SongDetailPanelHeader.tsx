@@ -3,7 +3,7 @@ import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import { ArrowLeft, ArrowsClockwise, Trash } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { formatKugouImageUrl } from "./utils";
-import { Skeleton } from "./Skeleton";
+import { Skeleton } from "../shared/Skeleton";
 import type { SongDetailPanelViewModel } from "./useSongDetailPanel";
 import { adminAvatarWellClass, adminDetailHeaderClass } from "../../utils/adminStyles";
 
