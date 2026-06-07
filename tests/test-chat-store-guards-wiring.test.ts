@@ -6,11 +6,23 @@
  */
 
 import { readFileSync } from "node:fs";
+import { readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, test, expect } from "bun:test";
 
-const readStoreSource = (): string =>
-  readFileSync(resolve(process.cwd(), "src/stores/useChatsStore.ts"), "utf-8");
+const readStoreSource = (): string => {
+  const storeDir = resolve(process.cwd(), "src/stores/chats");
+  const chatFiles = readdirSync(storeDir)
+    .filter((f) => f.endsWith(".ts"))
+    .sort();
+  const parts = chatFiles.map((f) =>
+    readFileSync(resolve(storeDir, f), "utf-8")
+  );
+  parts.push(
+    readFileSync(resolve(process.cwd(), "src/stores/useChatsStore.ts"), "utf-8")
+  );
+  return parts.join("\n");
+};
 
 const countMatches = (source: string, pattern: RegExp): number =>
   source.match(new RegExp(pattern.source, pattern.flags.includes("g") ? pattern.flags : `${pattern.flags}g`))
