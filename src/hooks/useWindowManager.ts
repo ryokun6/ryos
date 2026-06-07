@@ -11,6 +11,7 @@ import { useSound, Sounds } from "./useSound";
 import { getWindowConfig, getMobileWindowSize } from "@/config/appRegistry";
 import { useWindowInsets } from "./useWindowInsets";
 import { useEventListener } from "@/hooks/useEventListener";
+import { normalizeWindowFrame } from "./windowFrameGeometry";
 
 interface UseWindowManagerProps {
   appId: AppId;
@@ -55,23 +56,22 @@ export const useWindowManager = ({
   // Use instance state if available, otherwise fall back to app state
   const stateSource = instanceStateFromStore;
 
-  const initialState = {
+  const rawInitialState = {
     position: stateSource?.position ?? computeDefaultWindowState().position,
     size: stateSource?.size ?? computeDefaultWindowState().size,
   };
-
-  const adjustedPosition = { ...initialState.position };
-
-  // Ensure window is visible within viewport
-  if (adjustedPosition.x + initialState.size.width > window.innerWidth) {
-    adjustedPosition.x = Math.max(
-      0,
-      window.innerWidth - initialState.size.width
-    );
-  }
+  const initialInsets = computeInsets();
+  const initialState = normalizeWindowFrame({
+    ...rawInitialState,
+    viewport: { width: window.innerWidth, height: window.innerHeight },
+    topInset: initialInsets.topInset,
+    bottomInset: initialInsets.bottomInset,
+    isMobile: window.innerWidth < 768,
+    mobileSize: getMobileWindowSize(appId),
+  });
 
   const [windowPosition, setWindowPosition] =
-    useState<WindowPosition>(adjustedPosition);
+    useState<WindowPosition>(initialState.position);
   const [windowSize, setWindowSize] = useState<WindowSize>(initialState.size);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -96,6 +96,35 @@ export const useWindowManager = ({
   const moveRafRef = useRef<number | null>(null);
 
   const isMobile = window.innerWidth < 768;
+
+  const normalizeCurrentWindowFrame = useCallback(() => {
+    const { topInset, bottomInset } = computeInsets();
+    const normalized = normalizeWindowFrame({
+      position: latestWindowPositionRef.current,
+      size: latestWindowSizeRef.current,
+      viewport: { width: window.innerWidth, height: window.innerHeight },
+      topInset,
+      bottomInset,
+      isMobile: window.innerWidth < 768,
+      mobileSize: getMobileWindowSize(appId),
+    });
+
+    const positionChanged =
+      normalized.position.x !== latestWindowPositionRef.current.x ||
+      normalized.position.y !== latestWindowPositionRef.current.y;
+    const sizeChanged =
+      normalized.size.width !== latestWindowSizeRef.current.width ||
+      normalized.size.height !== latestWindowSizeRef.current.height;
+
+    if (positionChanged) {
+      latestWindowPositionRef.current = normalized.position;
+      setWindowPosition(normalized.position);
+    }
+    if (sizeChanged) {
+      latestWindowSizeRef.current = normalized.size;
+      setWindowSize(normalized.size);
+    }
+  }, [appId, computeInsets]);
 
   const flushPendingWindowFrame = useCallback(() => {
     if (moveRafRef.current !== null) {
@@ -160,10 +189,22 @@ export const useWindowManager = ({
       (storeSize.width !== latestWindowSizeRef.current.width ||
         storeSize.height !== latestWindowSizeRef.current.height)
     ) {
-      setWindowSize(storeSize);
-      latestWindowSizeRef.current = storeSize;
+      const { topInset, bottomInset } = computeInsets();
+      const normalized = normalizeWindowFrame({
+        position: latestWindowPositionRef.current,
+        size: storeSize,
+        viewport: { width: window.innerWidth, height: window.innerHeight },
+        topInset,
+        bottomInset,
+        isMobile: window.innerWidth < 768,
+        mobileSize: getMobileWindowSize(appId),
+      });
+      setWindowPosition(normalized.position);
+      setWindowSize(normalized.size);
+      latestWindowPositionRef.current = normalized.position;
+      latestWindowSizeRef.current = normalized.size;
     }
-  }, [instanceStateFromStore?.size, isDragging, resizeType]);
+  }, [appId, computeInsets, instanceStateFromStore?.size, isDragging, resizeType]);
 
   useEffect(() => {
     latestWindowSizeRef.current = windowSize;
@@ -178,10 +219,28 @@ export const useWindowManager = ({
       (storePosition.x !== latestWindowPositionRef.current.x ||
         storePosition.y !== latestWindowPositionRef.current.y)
     ) {
-      setWindowPosition(storePosition);
-      latestWindowPositionRef.current = storePosition;
+      const { topInset, bottomInset } = computeInsets();
+      const normalized = normalizeWindowFrame({
+        position: storePosition,
+        size: latestWindowSizeRef.current,
+        viewport: { width: window.innerWidth, height: window.innerHeight },
+        topInset,
+        bottomInset,
+        isMobile: window.innerWidth < 768,
+        mobileSize: getMobileWindowSize(appId),
+      });
+      setWindowPosition(normalized.position);
+      setWindowSize(normalized.size);
+      latestWindowPositionRef.current = normalized.position;
+      latestWindowSizeRef.current = normalized.size;
     }
-  }, [instanceStateFromStore?.position, isDragging, resizeType]);
+  }, [
+    appId,
+    computeInsets,
+    instanceStateFromStore?.position,
+    isDragging,
+    resizeType,
+  ]);
 
   useEffect(() => {
     latestWindowPositionRef.current = windowPosition;
@@ -194,6 +253,18 @@ export const useWindowManager = ({
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (isDragging || resizeType) return;
+    normalizeCurrentWindowFrame();
+  }, [isDragging, normalizeCurrentWindowFrame, resizeType]);
+
+  const handleViewportResize = useCallback(() => {
+    if (isDragging || resizeType) return;
+    normalizeCurrentWindowFrame();
+  }, [isDragging, normalizeCurrentWindowFrame, resizeType]);
+
+  useEventListener("resize", handleViewportResize);
 
   const { play: playMoveSound, stop: stopMoveMoving } = useSound(Sounds.WINDOW_MOVE_MOVING);
   const { play: playMoveStop } = useSound(Sounds.WINDOW_MOVE_STOP);
