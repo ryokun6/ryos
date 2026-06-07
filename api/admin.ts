@@ -9,7 +9,6 @@ import type { Redis } from "./_utils/redis.js";
 import { CHAT_USERS_PREFIX } from "./rooms/_helpers/_constants.js";
 import { deleteAllUserTokens, PASSWORD_HASH_PREFIX } from "./_utils/auth/index.js";
 import { apiHandler } from "./_utils/api-handler.js";
-import { resolveRequestAuth } from "./_utils/request-auth.js";
 import { getMemoryIndex, getMemoryDetail, getRecentDailyNotes, clearAllMemories, resetDailyNotesProcessedFlag, type MemoryEntry, type DailyNote } from "./_utils/_memory.js";
 import { getRecentHeartbeatRecords, type HeartbeatRecord } from "./_utils/heartbeats.js";
 import { processDailyNotesForUser } from "./ai/process-daily-notes.js";
@@ -403,25 +402,11 @@ async function getUserMemories(redis: Redis, targetUsername: string): Promise<Us
 export default apiHandler<AdminRequest>(
   {
     methods: ["GET", "POST"],
+    auth: "admin",
     parseJsonBody: true,
   },
-  async ({ req, res, redis, logger, startTime, body }): Promise<void> => {
-    const authResolution = await resolveRequestAuth(req, redis, {
-      required: false,
-      allowExpired: false,
-    });
-
-    const username = authResolution.user?.username || null;
-    logger.info("Processing admin request", { username, hasToken: !!authResolution.user?.token });
-
-    // Keep historical contract: any non-admin state returns 403.
-    if (authResolution.error || !authResolution.user || authResolution.user.username !== "ryo") {
-      logger.warn("Admin access denied", { username, authError: authResolution.error });
-      logger.response(403, Date.now() - startTime);
-      res.status(403).json({ error: "Forbidden - Admin access required" });
-      return;
-    }
-
+  async ({ req, res, redis, logger, startTime, body, user }): Promise<void> => {
+    logger.info("Processing admin request", { username: user?.username, hasToken: !!user?.token });
     // No /api/admin rate limit: only `ryo` passes the check above.
 
     const action = req.query.action as string | undefined;
