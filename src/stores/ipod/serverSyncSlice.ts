@@ -335,7 +335,7 @@ export function createServerSyncSlice(set: IpodSet, get: IpodGet) {
         throw error;
       }
     },
-    setTrackLyricsSource: (trackId, lyricsSource) => {
+    setTrackLyricsSource: (trackId: string, lyricsSource: LyricsSource | null) => {
       set((state) => {
         const tracks = state.tracks.map((track) =>
           track.id === trackId
@@ -357,7 +357,7 @@ export function createServerSyncSlice(set: IpodSet, get: IpodGet) {
       // Save to server and clear translations/furigana
       saveLyricsSourceToServer(trackId, lyricsSource);
     },
-    clearTrackLyricsSource: (trackId) => {
+    clearTrackLyricsSource: (trackId: string) => {
       set((state) => {
         const tracks = state.tracks.map((track) =>
           track.id === trackId

@@ -18,12 +18,10 @@ import {
 import { getListenClientInstanceId } from "@/lib/listenClientInstance";
 import { LISTEN_ANALYTICS, track } from "@/utils/analytics";
 import type {
-  ListenAnonymousListener,
   ListenReactionPayload,
   ListenRemoteCommandPayload,
   ListenSession,
   ListenSessionSummary,
-  ListenSessionUser,
   ListenSyncPayload,
   ListenTrackMeta,
 } from "@ryos/shared/contracts/listen";

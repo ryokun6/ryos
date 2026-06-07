@@ -1,4 +1,4 @@
-import { APP_ANALYTICS, getTextAnalytics, track } from "@/utils/analytics";
+import { APP_ANALYTICS, track } from "@/utils/analytics";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
 import type { ChatsStoreDataSnapshot, ChatsStoreState } from "./types";

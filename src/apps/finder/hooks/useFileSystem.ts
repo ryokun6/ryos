@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { FileItem as DisplayFileItem } from "../components/FileList";
 import { ensureIndexedDBInitialized, STORES } from "@/utils/indexedDB";
 import { getNonFinderApps, AppId, getAppIconPath } from "@/config/appRegistry";
 import { useIsRyoAdmin } from "@/hooks/useIsRyoAdmin";

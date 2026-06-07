@@ -1,26 +1,24 @@
 import { getCachedSongMetadata } from "@/utils/songMetadataCache";
-import {
-  fetchSongLyrics,
-  listSongs,
-} from "@/api/songs";
+import { fetchSongLyrics } from "@/api/songs";
 import {
   fetchYouTubeOembed,
   parseYouTubeTitle,
 } from "@/utils/youtubeMetadata";
 import { parseYouTubeVideoId } from "@/utils/youtubeUrl";
-import { sortTracksLikeServerOrder } from "@/stores/ipodTrackOrder";
-import {
-  hasFetchedTrackMetadataChanges,
-  hasLibraryTrackMetadataChanges,
-  resolveSyncedCoverColor,
-  shouldUpdateTrackLyricsSource,
-} from "@/stores/ipodTrackMetadataSync";
 import {
   saveAppleMusicLibrary,
   saveAppleMusicPlaylistTracks,
   saveAppleMusicTrackCollection,
 } from "@/utils/appleMusicLibraryCache";
-import type { IpodGet, IpodSet, LyricsSource, Track } from "./types";
+import type {
+  AppleMusicKitNowPlaying,
+  AppleMusicPlaylist,
+  IpodData,
+  IpodGet,
+  IpodSet,
+  LibrarySource,
+  Track,
+} from "./types";
 import {
   isAppleMusicCollectionTrack,
   loadDefaultTracks,
@@ -29,11 +27,9 @@ import {
   resolveAppleMusicQueueTracks,
   updateTrackCoverColorList,
 } from "./shared";
-import { saveLyricsSourceToServer } from "./serverSyncSlice";
-
 export function createLibrarySlice(set: IpodSet, get: IpodGet) {
   return {
-    addTrack: (track) =>
+    addTrack: (track: Track) =>
       set((state) => ({
         tracks: [
           {
@@ -52,7 +48,7 @@ export function createLibrarySlice(set: IpodSet, get: IpodGet) {
         playbackHistory: [], // Clear playback history when adding new tracks
         historyPosition: -1,
       })),
-    setTrackCoverColor: (trackId, coverColor) => {
+    setTrackCoverColor: (trackId: string, coverColor: string) => {
       let appleMusicTracksToSave: Track[] | null = null;
       let appleMusicLoadedAt = Date.now();
       let appleMusicStorefrontId: string | null = null;
@@ -177,7 +173,7 @@ export function createLibrarySlice(set: IpodSet, get: IpodGet) {
         });
       }
     },
-    removeTrackById: (trackId) =>
+    removeTrackById: (trackId: string) =>
       set((state) => {
         const idx = state.tracks.findIndex((t) => t.id === trackId);
         if (idx < 0) return {};
@@ -441,7 +437,7 @@ export function createLibrarySlice(set: IpodSet, get: IpodGet) {
     // -----------------------------------------------------------------
     // Apple Music actions
     // -----------------------------------------------------------------
-    setLibrarySource: (source) => {
+    setLibrarySource: (source: LibrarySource) => {
       if (get().librarySource === source) return;
       // Pause and reset transient playback state so the YouTube /
       // Apple Music players don't fight for the audio element when
@@ -456,7 +452,7 @@ export function createLibrarySlice(set: IpodSet, get: IpodGet) {
         appleMusicKitNowPlaying: null,
       });
     },
-    setAppleMusicTracks: (tracks) => {
+    setAppleMusicTracks: (tracks: Track[]) => {
       const loadedAt = Date.now();
       let storefrontIdAtSave: string | null = null;
       let tracksToSave = tracks;
@@ -515,7 +511,10 @@ export function createLibrarySlice(set: IpodSet, get: IpodGet) {
         storefrontId: storefrontIdAtSave,
       });
     },
-    setAppleMusicPlaylists: (playlists, loadedAt) =>
+    setAppleMusicPlaylists: (
+      playlists: AppleMusicPlaylist[],
+      loadedAt?: number | null
+    ) =>
       set((state) => {
         const activeIds = new Set(playlists.map((playlist) => playlist.id));
         const nextPlaylistTracks: Record<string, Track[]> = {};
@@ -547,7 +546,7 @@ export function createLibrarySlice(set: IpodSet, get: IpodGet) {
           appleMusicPlaylistTracksLoading: nextPlaylistTracksLoading,
         };
       }),
-    setAppleMusicPlaylistTracks: (playlistId, tracks) =>
+    setAppleMusicPlaylistTracks: (playlistId: string, tracks: Track[]) =>
       set((state) => ({
         appleMusicPlaylistTracks: {
           ...state.appleMusicPlaylistTracks,
@@ -562,48 +561,54 @@ export function createLibrarySlice(set: IpodSet, get: IpodGet) {
           [playlistId]: false,
         },
       })),
-    setAppleMusicPlaylistTracksLoading: (playlistId, loading) =>
+    setAppleMusicPlaylistTracksLoading: (playlistId: string, loading: boolean) =>
       set((state) => ({
         appleMusicPlaylistTracksLoading: {
           ...state.appleMusicPlaylistTracksLoading,
           [playlistId]: loading,
         },
       })),
-    setAppleMusicRecentlyAddedTracks: (tracks, loadedAt) =>
+    setAppleMusicRecentlyAddedTracks: (
+      tracks: Track[],
+      loadedAt?: number | null
+    ) =>
       set({
         appleMusicRecentlyAddedTracks: tracks,
         appleMusicRecentlyAddedLoadedAt:
           loadedAt === undefined ? Date.now() : loadedAt,
         appleMusicRecentlyAddedLoading: false,
       }),
-    setAppleMusicRecentlyAddedLoading: (loading) =>
+    setAppleMusicRecentlyAddedLoading: (loading: boolean) =>
       set({ appleMusicRecentlyAddedLoading: loading }),
-    setAppleMusicFavoriteTracks: (tracks, loadedAt) =>
+    setAppleMusicFavoriteTracks: (
+      tracks: Track[],
+      loadedAt?: number | null
+    ) =>
       set({
         appleMusicFavoriteTracks: tracks,
         appleMusicFavoriteTracksLoadedAt:
           loadedAt === undefined ? Date.now() : loadedAt,
         appleMusicFavoritesLoading: false,
       }),
-    setAppleMusicFavoritesLoading: (loading) =>
+    setAppleMusicFavoritesLoading: (loading: boolean) =>
       set({ appleMusicFavoritesLoading: loading }),
-    setAppleMusicPlaylistsLoading: (loading) =>
+    setAppleMusicPlaylistsLoading: (loading: boolean) =>
       set({ appleMusicPlaylistsLoading: loading }),
-    prependAppleMusicFavoriteTrack: (track) =>
+    prependAppleMusicFavoriteTrack: (track: Track) =>
       set((state) => ({
         appleMusicFavoriteTracks: [
           track,
           ...state.appleMusicFavoriteTracks.filter((t) => t.id !== track.id),
         ],
       })),
-    setAppleMusicLibraryLoading: (loading) =>
+    setAppleMusicLibraryLoading: (loading: boolean) =>
       set({ appleMusicLibraryLoading: loading }),
-    setAppleMusicLibraryError: (error) =>
+    setAppleMusicLibraryError: (error: string | null) =>
       set({
         appleMusicLibraryError: error,
         appleMusicLibraryLoading: false,
       }),
-    setAppleMusicCurrentSongId: (songId) =>
+    setAppleMusicCurrentSongId: (songId: string | null) =>
       set((state) => {
         if (state.appleMusicCurrentSongId === songId) return {};
         // Reset transient progress + lyrics whenever the active track changes.
@@ -616,7 +621,7 @@ export function createLibrarySlice(set: IpodSet, get: IpodGet) {
           totalTime: 0,
         };
       }),
-    setAppleMusicPlaybackQueue: (queue) =>
+    setAppleMusicPlaybackQueue: (queue: string[] | null) =>
       set({
         appleMusicPlaybackQueue: normalizeAppleMusicPlaybackQueue(queue),
       }),
@@ -722,12 +727,12 @@ export function createLibrarySlice(set: IpodSet, get: IpodGet) {
           ...(isSameTrack ? {} : { elapsedTime: 0, totalTime: 0 }),
         };
       }),
-    setAppleMusicStorefrontId: (storefrontId) =>
+    setAppleMusicStorefrontId: (storefrontId: string | null) =>
       set({ appleMusicStorefrontId: storefrontId }),
-    setAppleMusicKitNowPlaying: (snapshot) =>
+    setAppleMusicKitNowPlaying: (snapshot: AppleMusicKitNowPlaying | null) =>
       set({ appleMusicKitNowPlaying: snapshot }),
-    setIpodMenuBreadcrumb: (breadcrumb) =>
+    setIpodMenuBreadcrumb: (breadcrumb: IpodData["ipodMenuBreadcrumb"]) =>
       set({ ipodMenuBreadcrumb: breadcrumb }),
-    setIpodMenuMode: (menuMode) => set({ ipodMenuMode: menuMode }),
+    setIpodMenuMode: (menuMode: boolean | null) => set({ ipodMenuMode: menuMode }),
   };
 }

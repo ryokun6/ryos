@@ -1,6 +1,7 @@
 import {
-  LyricsAlignment,
-  LyricsFont,
+  type LyricsAlignment,
+  type LyricsFont,
+  type RomanizationSettings,
   areRomanizationSettingsEqual,
 } from "@/types/lyrics";
 import type { FuriganaSegment } from "@/utils/romanization";
@@ -41,8 +42,13 @@ export function createLyricsPrefsSlice(set: IpodSet, get: IpodGet) {
         currentFuriganaMap: null,
       }));
     },
-    setCurrentFuriganaMap: (map) => set({ currentFuriganaMap: map }),
-    adjustLyricOffset: (trackIndex, deltaMs, library = "active") => {
+    setCurrentFuriganaMap: (map: Record<string, FuriganaSegment[]> | null) =>
+      set({ currentFuriganaMap: map }),
+    adjustLyricOffset: (
+      trackIndex: number,
+      deltaMs: number,
+      library: IpodLibrarySelection = "active"
+    ) => {
       // Validate before calling set() to avoid unnecessary state updates
       const state = get();
       const resolvedLibrary =
@@ -77,7 +83,11 @@ export function createLyricsPrefsSlice(set: IpodSet, get: IpodGet) {
       // and Apple Music (`am:<id>`) keys via the relaxed validator.
       debouncedSaveLyricOffset(current.id, newOffset);
     },
-    setLyricOffset: (trackIndex, offsetMs, library = "active") => {
+    setLyricOffset: (
+      trackIndex: number,
+      offsetMs: number,
+      library: IpodLibrarySelection = "active"
+    ) => {
       // Validate before calling set() to avoid unnecessary state updates
       const state = get();
       const resolvedLibrary =
@@ -109,21 +119,21 @@ export function createLyricsPrefsSlice(set: IpodSet, get: IpodGet) {
 
       debouncedSaveLyricOffset(trackId, offsetMs);
     },
-    setLyricsAlignment: (alignment) => {
+    setLyricsAlignment: (alignment: LyricsAlignment) => {
       if (get().lyricsAlignment === alignment) {
         return;
       }
       set({ lyricsAlignment: alignment });
       emitCloudSyncDomainChange("settings");
     },
-    setLyricsFont: (font) => {
+    setLyricsFont: (font: LyricsFont) => {
       if (get().lyricsFont === font) {
         return;
       }
       set({ lyricsFont: font });
       emitCloudSyncDomainChange("settings");
     },
-    setRomanization: (settings) => {
+    setRomanization: (settings: Partial<RomanizationSettings>) => {
       const nextRomanization = { ...get().romanization, ...settings };
       if (areRomanizationSettingsEqual(get().romanization, nextRomanization)) {
         return;
@@ -137,7 +147,7 @@ export function createLyricsPrefsSlice(set: IpodSet, get: IpodGet) {
       }));
       emitCloudSyncDomainChange("settings");
     },
-    setLyricsTranslationLanguage: (language) => {
+    setLyricsTranslationLanguage: (language: string | null) => {
       if (get().lyricsTranslationLanguage === language) {
         return;
       }

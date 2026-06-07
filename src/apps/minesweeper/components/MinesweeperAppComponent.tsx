@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useLongPress } from "@/hooks/useLongPress";
 import { AppProps } from "../../base/types";
 import { AppWindowShell } from "@/components/shared/AppWindowShell";

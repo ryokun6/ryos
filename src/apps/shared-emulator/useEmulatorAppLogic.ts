@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
+import type { AppId } from "@/config/appRegistry";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useThemeStore } from "@/stores/useThemeStore";
@@ -25,7 +26,7 @@ export interface EmulatorPresetBase {
 export interface UseEmulatorAppLogicOptions<TPreset extends EmulatorPresetBase> {
   instanceId?: string;
   defaultWindowSize: EmulatorScreenSize;
-  helpAppId: string;
+  helpAppId: AppId;
   helpItems: Parameters<typeof useTranslatedHelpItems>[1];
   selectedPreset: TPreset | null;
   setSelectedPreset: (preset: TPreset | null) => void;

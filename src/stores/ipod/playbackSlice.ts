@@ -1,4 +1,5 @@
-import type { IpodGet, IpodSet } from "./types";
+import type { DisplayMode } from "@/types/lyrics";
+import type { IpodBacklightTimeout, IpodGet, IpodSet } from "./types";
 import {
   getIndexFromSongId,
   getRandomTrackIdAvoidingRecent,
@@ -8,7 +9,7 @@ import {
 
 export function createPlaybackSlice(set: IpodSet, get: IpodGet) {
   return {
-    setCurrentSongId: (songId) =>
+    setCurrentSongId: (songId: string | null) =>
       set((state) => {
         // Only update playback history if we're actually changing tracks
         if (songId !== state.currentSongId) {
@@ -61,7 +62,7 @@ export function createPlaybackSlice(set: IpodSet, get: IpodGet) {
       }
       set((state) => ({ isPlaying: !state.isPlaying }));
     },
-    setIsPlaying: (playing) => {
+    setIsPlaying: (playing: boolean) => {
       // Prevent starting playback when offline
       if (playing && typeof navigator !== "undefined" && !navigator.onLine) {
         return;
@@ -75,16 +76,23 @@ export function createPlaybackSlice(set: IpodSet, get: IpodGet) {
       }
       set((state) => ({ showVideo: !state.showVideo }));
     },
-    setDisplayMode: (mode) => set({ displayMode: mode }),
+    setShowVideo: (show: boolean) => {
+      if (show && typeof navigator !== "undefined" && !navigator.onLine) {
+        return;
+      }
+      set({ showVideo: show });
+    },
+    setDisplayMode: (mode: DisplayMode) => set({ displayMode: mode }),
     toggleBacklight: () =>
       set((state) => ({ backlightOn: !state.backlightOn })),
-    setBacklightTimeout: (timeout) => set({ backlightTimeout: timeout }),
+    setBacklightTimeout: (timeout: IpodBacklightTimeout) =>
+      set({ backlightTimeout: timeout }),
     toggleLcdFilter: () =>
       set((state) => ({ lcdFilterOn: !state.lcdFilterOn })),
     toggleFullScreen: () =>
       set((state) => ({ isFullScreen: !state.isFullScreen })),
-    setTheme: (theme) => set({ theme }),
-    setUiVariant: (variant) => set({ uiVariant: variant }),
+    setTheme: (theme: "classic" | "black" | "u2") => set({ theme }),
+    setUiVariant: (variant: "classic" | "modern") => set({ uiVariant: variant }),
     nextTrack: () =>
       set((state) => {
         if (state.tracks.length === 0)
@@ -201,13 +209,13 @@ export function createPlaybackSlice(set: IpodSet, get: IpodGet) {
           ...(isSameTrack ? {} : { elapsedTime: 0, totalTime: 0 }),
         };
       }),
-    setElapsedTime: (time) =>
+    setElapsedTime: (time: number) =>
       set((state) =>
         shouldUpdatePlaybackTime(state.elapsedTime, time)
           ? { elapsedTime: time }
           : state
       ),
-    setTotalTime: (time) =>
+    setTotalTime: (time: number) =>
       set((state) =>
         shouldUpdatePlaybackTime(state.totalTime, time)
           ? { totalTime: time }

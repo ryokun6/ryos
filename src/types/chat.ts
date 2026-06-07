@@ -1,5 +1,5 @@
 import { type UIMessage } from "@ai-sdk/react";
-import type { Message, Room, User } from "@ryos/shared/contracts/chat-rooms";
+import type { Message, Room } from "@ryos/shared/contracts/chat-rooms";
 
 export type {
   RoomType,

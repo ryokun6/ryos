@@ -1,9 +1,5 @@
 import { apiRequest, apiRequestRaw, type ApiRequestOptions } from "@/api/core";
-import type {
-  LyricLine,
-  LyricsSource,
-  SongMetadata,
-} from "@ryos/shared/contracts/songs";
+import type { LyricLine, LyricsSource } from "@ryos/shared/contracts/songs";
 
 export type { LyricsSource, LyricLine, SongMetadata } from "@ryos/shared/contracts/songs";
 
