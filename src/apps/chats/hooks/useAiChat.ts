@@ -76,23 +76,12 @@ import {
   type ContactsControlInput,
   type TvControlInput,
 } from "../tools";
+import { SERVER_EXECUTED_TOOL_NAME_SET } from "@/shared/tools/serverExecuted";
 
 const recentlyCreatedTextEditInstances = new Map<
   string,
   { instanceId: string; path: string; timestamp: number }
 >();
-
-const SERVER_EXECUTED_TOOL_NAMES = new Set([
-  "generateHtml",
-  "searchSongs",
-  "memoryWrite",
-  "memoryRead",
-  "memoryDelete",
-  "webFetch",
-  "cursorCloudAgent",
-  "listCursorCloudAgentRuns",
-  "mapsSearchPlaces",
-]);
 
 // Helper to add a newly created instance to tracking
 const trackNewTextEditInstance = (instanceId: string, path: string) => {
@@ -236,7 +225,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       try {
         let result: string = "Tool executed successfully";
 
-        if (SERVER_EXECUTED_TOOL_NAMES.has(toolCall.toolName)) {
+        if (SERVER_EXECUTED_TOOL_NAME_SET.has(toolCall.toolName)) {
           console.log(`[ToolCall] ${toolCall.toolName} (server-side):`, toolCall.input);
           return;
         }
@@ -1348,7 +1337,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             part.type.startsWith("tool-") &&
             (part.state === "output-available" ||
               part.state === "output-error") &&
-            SERVER_EXECUTED_TOOL_NAMES.has((part.type as string).replace(/^tool-/, "")),
+            SERVER_EXECUTED_TOOL_NAME_SET.has((part.type as string).replace(/^tool-/, "")),
         );
         if (toolParts.length > 0) {
           console.log(

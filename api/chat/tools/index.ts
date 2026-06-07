@@ -55,13 +55,15 @@ import {
   executeMemoryWrite,
   executeMemoryRead,
   executeMemoryDelete,
-  executeCalendarControl,
   executeDocumentsControl,
-  executeStickiesControl,
-  executeContactsControl,
   executeWebFetch,
   type MemoryToolContext,
 } from "./executors.js";
+import {
+  executeCalendarControl,
+  executeContactsControl,
+  executeStickiesControl,
+} from "./app-state-executors.js";
 import { executeMapsSearchPlaces } from "./maps-executor.js";
 
 // Re-export types and schemas for external use
@@ -74,13 +76,15 @@ export {
   executeMemoryWrite,
   executeMemoryRead,
   executeMemoryDelete,
-  executeCalendarControl,
   executeDocumentsControl,
-  executeStickiesControl,
-  executeContactsControl,
   executeWebFetch,
   type MemoryToolContext,
 } from "./executors.js";
+export {
+  executeCalendarControl,
+  executeContactsControl,
+  executeStickiesControl,
+} from "./app-state-executors.js";
 export { executeMapsSearchPlaces } from "./maps-executor.js";
 
 const MEMORY_TOOL_NAMES = [
