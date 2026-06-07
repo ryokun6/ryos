@@ -251,6 +251,51 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   background-color: #ff33ff !important;
 }
 
+/* Help dialog — soft edge fade on the card scroller viewport only */
+.help-dialog-card-scroller__viewport--fade-bottom {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    #000 0,
+    #000 calc(100% - 24px),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    #000 0,
+    #000 calc(100% - 24px),
+    transparent 100%
+  );
+}
+
+.help-dialog-card-scroller__viewport--fade-top.help-dialog-card-scroller__viewport--fade-bottom {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 24px,
+    #000 calc(100% - 24px),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 24px,
+    #000 calc(100% - 24px),
+    transparent 100%
+  );
+}
+
+.help-dialog-card-scroller__viewport--fade-top:not(
+    .help-dialog-card-scroller__viewport--fade-bottom
+  ) {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 24px,
+    #000 100%
+  );
+  mask-image: linear-gradient(to bottom, transparent 0, #000 24px, #000 100%);
+}
+
 @keyframes progress-indeterminate {
   0% {
     background-position: 200% 0;
