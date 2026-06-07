@@ -28,6 +28,10 @@ import * as RateLimit from "../_utils/_rate-limit.js";
 import { getClientIp } from "../_utils/_rate-limit.js";
 import { apiHandler } from "../_utils/api-handler.js";
 import { decodeHtmlEntitiesOnce } from "../_utils/html-entities.js";
+import {
+  getYouTubeApiKeys,
+  youtubeSearch,
+} from "../_utils/youtube-client.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 45;
@@ -63,16 +67,6 @@ const ChannelPlanSchema = z.object({
     ),
 });
 
-interface YouTubeSearchItem {
-  id: { videoId?: string };
-  snippet: { title: string; channelTitle: string };
-}
-
-interface YouTubeSearchResponse {
-  items?: YouTubeSearchItem[];
-  error?: { code: number; message: string };
-}
-
 interface ChannelVideo {
   id: string;
   url: string;
@@ -94,48 +88,27 @@ async function searchOneQuery(
   apiKeys: string[],
   perQuery: number
 ): Promise<ChannelVideo[]> {
-  for (let i = 0; i < apiKeys.length; i++) {
-    const apiKey = apiKeys[i];
-    const url = new URL("https://www.googleapis.com/youtube/v3/search");
-    url.searchParams.set("part", "snippet");
-    url.searchParams.set("type", "video");
-    url.searchParams.set("videoEmbeddable", "true");
-    url.searchParams.set("safeSearch", "moderate");
-    url.searchParams.set("q", query);
-    url.searchParams.set("maxResults", String(perQuery));
-    url.searchParams.set("key", apiKey);
+  const result = await youtubeSearch(
+    {
+      query,
+      maxResults: perQuery,
+      category: "all",
+      videoEmbeddable: true,
+      safeSearch: "moderate",
+    },
+    { apiKeys }
+  );
 
-    const res = await fetch(url.toString());
-    const data = (await res.json()) as YouTubeSearchResponse;
-
-    if (!res.ok || data.error) {
-      const message = data.error?.message?.toLowerCase() ?? "";
-      const isQuota =
-        res.status === 403 && /(quota|exceeded|limit)/.test(message);
-      if (isQuota && i < apiKeys.length - 1) continue;
-      throw new Error(
-        data.error?.message || `YouTube API error (${res.status})`
-      );
-    }
-
-    return (data.items ?? []).reduce<ChannelVideo[]>(
-      (acc, item) => {
-        if (!item.id?.videoId) {
-          return acc;
-        }
-
-        acc.push({
-          id: item.id.videoId,
-          url: `https://youtu.be/${item.id.videoId}`,
-          title: decodeHtmlEntitiesOnce(item.snippet.title),
-          artist: decodeHtmlEntitiesOnce(item.snippet.channelTitle),
-        });
-        return acc;
-      },
-      []
-    );
+  if (!result.ok) {
+    throw new Error(result.message);
   }
-  return [];
+
+  return result.hits.map((hit) => ({
+    id: hit.videoId,
+    url: `https://youtu.be/${hit.videoId}`,
+    title: decodeHtmlEntitiesOnce(hit.title),
+    artist: decodeHtmlEntitiesOnce(hit.channelTitle),
+  }));
 }
 
 export default apiHandler<CreateChannelRequest>(
@@ -210,10 +183,7 @@ export default apiHandler<CreateChannelRequest>(
       return;
     }
 
-    const apiKeys = [
-      process.env.YOUTUBE_API_KEY,
-      process.env.YOUTUBE_API_KEY_2,
-    ].filter((k): k is string => Boolean(k));
+    const apiKeys = getYouTubeApiKeys(process.env);
 
     if (apiKeys.length === 0) {
       logger.error("No YOUTUBE_API_KEY configured");

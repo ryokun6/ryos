@@ -325,8 +325,11 @@ describe("song library chat tools", () => {
 
     await withMockedFetch(async (input) => {
       const url = String(input);
+      const searchUrl = new URL(url);
       expect(url).toContain("googleapis.com/youtube/v3/search");
-      expect(url).toContain("q=plastic+love");
+      expect(searchUrl.searchParams.get("q")).toBe("plastic love");
+      expect(searchUrl.searchParams.get("videoCategoryId")).toBe("10");
+      expect(searchUrl.searchParams.has("videoEmbeddable")).toBe(false);
       return new Response(
         JSON.stringify({
           items: [
@@ -361,6 +364,59 @@ describe("song library chat tools", () => {
       expect(result?.youtubeResults).toHaveLength(2);
       expect(result?.youtubeResults?.[0]?.videoId).toBe("yt_1");
       expect(result?.message).toContain("Found 2 songs");
+    });
+  });
+
+  test("rotates YouTube keys for songLibraryControl searchYoutube", async () => {
+    const redis = new FakeRedis();
+    const tools = createChatTools(
+      createContext(redis, "alice", {
+        YOUTUBE_API_KEY: "primary-key",
+        YOUTUBE_API_KEY_2: "backup-key",
+      }),
+      { profile: "telegram" }
+    );
+    const attemptedKeys: string[] = [];
+
+    await withMockedFetch(async (input) => {
+      const searchUrl = new URL(String(input));
+      const key = searchUrl.searchParams.get("key") || "";
+      attemptedKeys.push(key);
+
+      if (key === "primary-key") {
+        return new Response(
+          JSON.stringify({
+            error: { code: 403, message: "quota exceeded" },
+          }),
+          { status: 403, headers: { "Content-Type": "application/json" } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({
+          items: [
+            {
+              id: { videoId: "yt_backup" },
+              snippet: {
+                title: "Backup Result",
+                channelTitle: "Backup Artist",
+                publishedAt: "2024-02-01T00:00:00Z",
+              },
+            },
+          ],
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    }, async () => {
+      const result = await tools.songLibraryControl.execute?.({
+        action: "searchYoutube",
+        query: "backup result",
+        limit: 1,
+      });
+
+      expect(attemptedKeys).toEqual(["primary-key", "backup-key"]);
+      expect(result?.success).toBe(true);
+      expect(result?.youtubeResults?.[0]?.videoId).toBe("yt_backup");
     });
   });
 

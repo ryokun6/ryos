@@ -15,7 +15,6 @@ import type {
   GenerateHtmlOutput,
   SearchSongsInput,
   SearchSongsOutput,
-  SearchSongsResult,
   MemoryWriteInput,
   MemoryWriteOutput,
   MemoryReadInput,
@@ -45,6 +44,11 @@ import type {
 import { stateKey, writeRedisSyncDomainFromServerTool } from "../../sync/_state.js";
 import { getAppPublicOrigin } from "../../_utils/runtime-config.js";
 import { decodeHtmlEntitiesOnce } from "../../_utils/html-entities.js";
+import {
+  getYouTubeApiKeys,
+  toSearchSongsResult,
+  youtubeSearch,
+} from "../../_utils/youtube-client.js";
 import { readSongsState, writeSongsState } from "../../_utils/song-library-state.js";
 import {
   getSong,
@@ -117,11 +121,7 @@ export async function executeSearchSongs(
   
   context.log(`[searchSongs] Searching for: "${query}" (max ${maxResults} results)`);
 
-  // Collect all available API keys for rotation
-  const apiKeys = [
-    context.env.YOUTUBE_API_KEY,
-    context.env.YOUTUBE_API_KEY_2,
-  ].filter((key): key is string => !!key);
+  const apiKeys = getYouTubeApiKeys(context.env);
 
   if (apiKeys.length === 0) {
     throw new Error("No YouTube API keys configured");
@@ -129,104 +129,54 @@ export async function executeSearchSongs(
 
   context.log(`[searchSongs] Available API keys: ${apiKeys.length}`);
 
-  // Helper to check if error is a quota exceeded error
-  const isQuotaError = (status: number, errorText: string): boolean => {
-    if (status === 403) {
-      const lowerText = errorText.toLowerCase();
-      return lowerText.includes("quota") || lowerText.includes("exceeded") || lowerText.includes("limit");
+  const result = await youtubeSearch(
+    {
+      query,
+      maxResults,
+      category: "music",
+      videoEmbeddable: false,
+    },
+    {
+      apiKeys,
+      timeoutMs: 15000,
+      onKeyAttempt: ({ keyIndex, keyLabel }) => {
+        context.log(
+          `[searchSongs] Trying ${keyLabel} API key (${keyIndex + 1}/${apiKeys.length})`
+        );
+      },
     }
-    return false;
-  };
+  );
 
-  let lastError: string | null = null;
-
-  // Try each API key until one works
-  for (let keyIndex = 0; keyIndex < apiKeys.length; keyIndex++) {
-    const apiKey = apiKeys[keyIndex];
-    const keyLabel = keyIndex === 0 ? "primary" : `backup-${keyIndex}`;
-
-    try {
-      context.log(`[searchSongs] Trying ${keyLabel} API key (${keyIndex + 1}/${apiKeys.length})`);
-
-      const searchUrl = new URL("https://www.googleapis.com/youtube/v3/search");
-      searchUrl.searchParams.set("part", "snippet");
-      searchUrl.searchParams.set("type", "video");
-      searchUrl.searchParams.set("videoCategoryId", "10"); // Music category
-      searchUrl.searchParams.set("q", query);
-      searchUrl.searchParams.set("maxResults", String(maxResults));
-      searchUrl.searchParams.set("key", apiKey);
-
-      // Add timeout to prevent hanging on network stalls
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000);
-      let response: Response;
-      try {
-        response = await fetch(searchUrl.toString(), { signal: controller.signal });
-      } finally {
-        clearTimeout(timeoutId);
-      }
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        context.log(`[searchSongs] YouTube API error with ${keyLabel} key: ${response.status} - ${errorText}`);
-
-        // Check if quota exceeded and we have more keys to try
-        if (isQuotaError(response.status, errorText) && keyIndex < apiKeys.length - 1) {
-          context.log(`[searchSongs] Quota exceeded for ${keyLabel} key, rotating to next key`);
-          lastError = errorText;
-          continue; // Try next key
-        }
-
-        throw new Error(`YouTube search failed: ${response.status}`);
-      }
-
-      const data = await response.json() as { items?: Array<{
-        id: { videoId: string };
-        snippet: { title: string; channelTitle: string; publishedAt: string; thumbnails: { medium?: { url: string } } };
-      }> };
-
-      if (!data.items || data.items.length === 0) {
-        return {
-          results: [],
-          message: `No songs found for "${query}"`,
-        };
-      }
-
-      const results: SearchSongsResult[] = data.items.map((item: {
-        id: { videoId: string };
-        snippet: {
-          title: string;
-          channelTitle: string;
-          publishedAt: string;
-          thumbnails?: { medium?: { url: string } };
-        };
-      }) => ({
-        videoId: item.id.videoId,
-        title: item.snippet.title,
-        channelTitle: item.snippet.channelTitle,
-        publishedAt: item.snippet.publishedAt,
-      }));
-
-      context.log(`[searchSongs] Found ${results.length} results for "${query}" using ${keyLabel} key`);
-
-      return {
-        results,
-        message: `Found ${results.length} ${results.length === 1 ? "song" : "songs"} for "${query}"`,
-        hint: "Use ipodControl with action 'addAndPlay' and the videoId to add a song to the iPod",
-      };
-    } catch (error) {
-      context.logError(`[searchSongs] Error with ${keyLabel} key:`, error);
-      // If we have more keys, try the next one
-      if (keyIndex < apiKeys.length - 1) {
-        context.log(`[searchSongs] Retrying with next API key`);
-        continue;
-      }
-      throw new Error(`Failed to search for songs: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  if (!result.ok) {
+    context.logError("[searchSongs] YouTube search failed", result);
+    if (result.reason === "quota_exhausted") {
+      throw new Error(
+        `All YouTube API keys exhausted. Last error: ${result.message || "Unknown"}`
+      );
     }
+    if (result.status) {
+      throw new Error(`Failed to search for songs: YouTube search failed: ${result.status}`);
+    }
+    throw new Error(`Failed to search for songs: ${result.message || "Unknown error"}`);
   }
 
-  // All keys exhausted
-  throw new Error(`All YouTube API keys exhausted. Last error: ${lastError || 'Unknown'}`);
+  if (result.hits.length === 0) {
+    return {
+      results: [],
+      message: `No songs found for "${query}"`,
+    };
+  }
+
+  const results = result.hits.map(toSearchSongsResult);
+  context.log(
+    `[searchSongs] Found ${results.length} results for "${query}" using ${result.keyLabel} key`
+  );
+
+  return {
+    results,
+    message: `Found ${results.length} ${results.length === 1 ? "song" : "songs"} for "${query}"`,
+    hint: "Use ipodControl with action 'addAndPlay' and the videoId to add a song to the iPod",
+  };
 }
 
 // ============================================================================
