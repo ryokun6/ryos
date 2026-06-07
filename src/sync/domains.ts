@@ -17,20 +17,13 @@ import { useTvStore, type CustomChannel } from "@/stores/useTvStore";
 import { useDockStore } from "@/stores/useDockStore";
 import { useDashboardStore } from "@/stores/useDashboardStore";
 import { useStickiesStore, type StickyNote } from "@/stores/useStickiesStore";
-import {
-  useCalendarStore,
-  type CalendarEvent,
-  type CalendarGroup,
-  type TodoItem,
-} from "@/stores/useCalendarStore";
+import { useCalendarStore } from "@/stores/useCalendarStore";
 import { useContactsStore } from "@/stores/useContactsStore";
-import { useMapsStore, type SavedPlace } from "@/stores/useMapsStore";
+import { useMapsStore } from "@/stores/useMapsStore";
 import {
   useCloudSyncStore,
   type CloudSyncDeletionBucket,
 } from "@/stores/useCloudSyncStore";
-import type { Contact } from "@/utils/contacts";
-import { normalizeContacts } from "@/utils/contacts";
 import {
   uploadBlobWithStorageInstruction,
 } from "@/utils/storageUpload";
@@ -81,9 +74,21 @@ import {
   type StickiesSnapshotData,
 } from "@/shared/domains/stickies";
 import {
-  mergeItemsById,
-  mergeItemsByIdPreferNewer,
-} from "@/shared/sync/itemMerge";
+  mergeCalendarSnapshots,
+  normalizeCalendarSnapshotData,
+  type CalendarSnapshotData,
+} from "@/shared/domains/calendar";
+import {
+  mergeContactsSnapshots,
+  normalizeContactsSnapshotData,
+  type ContactsSnapshotData,
+} from "@/shared/domains/contacts";
+import {
+  mergeMapsSnapshots,
+  normalizeMapsSnapshotData,
+  type MapsSnapshotData,
+} from "@/shared/domains/maps";
+import { mergeItemsById } from "@/shared/sync/itemMerge";
 import {
   beginApplyingRemoteSettingsSections,
   endApplyingRemoteSettingsSections,
@@ -169,29 +174,6 @@ interface TvSnapshotData {
   deletedCustomChannelIds?: DeletionMarkerMap;
   lcdFilterOn: boolean;
   closedCaptionsOn: boolean;
-}
-
-interface CalendarSnapshotData {
-  events: CalendarEvent[];
-  calendars: CalendarGroup[];
-  todos: TodoItem[];
-  deletedEventIds?: DeletionMarkerMap;
-  deletedCalendarIds?: DeletionMarkerMap;
-  deletedTodoIds?: DeletionMarkerMap;
-}
-
-interface ContactsSnapshotData {
-  contacts: Contact[];
-  myContactId: string | null;
-  deletedContactIds?: DeletionMarkerMap;
-}
-
-interface MapsSnapshotData {
-  home: SavedPlace | null;
-  work: SavedPlace | null;
-  favorites: SavedPlace[];
-  updatedAt: number;
-  deletedFavoriteIds?: DeletionMarkerMap;
 }
 
 type AnySnapshotData =
@@ -771,48 +753,6 @@ function serializeContactsSnapshot(): ContactsSnapshotData {
   };
 }
 
-function normalizeSavedPlace(value: unknown): SavedPlace | null {
-  if (!value || typeof value !== "object") {
-    return null;
-  }
-  const candidate = value as Partial<SavedPlace>;
-  if (
-    typeof candidate.id !== "string" ||
-    typeof candidate.name !== "string" ||
-    typeof candidate.latitude !== "number" ||
-    typeof candidate.longitude !== "number"
-  ) {
-    return null;
-  }
-  return {
-    id: candidate.id,
-    name: candidate.name,
-    subtitle:
-      typeof candidate.subtitle === "string" ? candidate.subtitle : undefined,
-    latitude: candidate.latitude,
-    longitude: candidate.longitude,
-    category:
-      typeof candidate.category === "string" ? candidate.category : undefined,
-  };
-}
-
-function normalizeSavedPlaceList(value: unknown): SavedPlace[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-  const seenIds = new Set<string>();
-  const normalized: SavedPlace[] = [];
-  for (const entry of value) {
-    const place = normalizeSavedPlace(entry);
-    if (!place || seenIds.has(place.id)) {
-      continue;
-    }
-    seenIds.add(place.id);
-    normalized.push(place);
-  }
-  return normalized;
-}
-
 function serializeMapsSnapshot(): MapsSnapshotData {
   const mapsState = useMapsStore.getState();
   const deletionMarkers = useCloudSyncStore.getState().deletionMarkers;
@@ -822,19 +762,6 @@ function serializeMapsSnapshot(): MapsSnapshotData {
     favorites: mapsState.favorites,
     updatedAt: mapsState.updatedAt || 0,
     deletedFavoriteIds: deletionMarkers.mapsFavoriteIds,
-  };
-}
-
-function normalizeMapsSnapshot(data: MapsSnapshotData | null | undefined): MapsSnapshotData {
-  return {
-    home: normalizeSavedPlace(data?.home ?? null),
-    work: normalizeSavedPlace(data?.work ?? null),
-    favorites: normalizeSavedPlaceList(data?.favorites),
-    updatedAt:
-      typeof data?.updatedAt === "number" && Number.isFinite(data.updatedAt)
-        ? data.updatedAt
-        : 0,
-    deletedFavoriteIds: data?.deletedFavoriteIds,
   };
 }
 
@@ -1304,10 +1231,15 @@ function applyStickiesSnapshot(data: StickiesSnapshotData): void {
 }
 
 function applyCalendarSnapshot(data: CalendarSnapshotData): void {
-  const remoteDeletedTodoIds = normalizeDeletionMarkerMap(data.deletedTodoIds);
-  const remoteDeletedEventIds = normalizeDeletionMarkerMap(data.deletedEventIds);
+  const normalizedData = normalizeCalendarSnapshotData(data);
+  const remoteDeletedTodoIds = normalizeDeletionMarkerMap(
+    normalizedData.deletedTodoIds
+  );
+  const remoteDeletedEventIds = normalizeDeletionMarkerMap(
+    normalizedData.deletedEventIds
+  );
   const remoteDeletedCalendarIds = normalizeDeletionMarkerMap(
-    data.deletedCalendarIds
+    normalizedData.deletedCalendarIds
   );
   const cloudSyncState = useCloudSyncStore.getState();
   const effectiveDeletedTodoIds = mergeDeletionMarkerMaps(
@@ -1329,17 +1261,17 @@ function applyCalendarSnapshot(data: CalendarSnapshotData): void {
 
   useCalendarStore.setState({
     events: filterDeletedIds(
-      data.events,
+      normalizedData.events,
       effectiveDeletedEventIds,
       (event) => event.id
     ),
     calendars: filterDeletedIds(
-      data.calendars,
+      normalizedData.calendars,
       effectiveDeletedCalendarIds,
       (calendar) => calendar.id
     ),
     todos: filterDeletedIds(
-      data.todos,
+      normalizedData.todos,
       effectiveDeletedTodoIds,
       (todo) => todo.id
     ),
@@ -1347,7 +1279,7 @@ function applyCalendarSnapshot(data: CalendarSnapshotData): void {
 }
 
 function applyMapsSnapshot(data: MapsSnapshotData): void {
-  const normalized = normalizeMapsSnapshot(data);
+  const normalized = normalizeMapsSnapshotData(data);
   const remoteDeletedFavorites = normalizeDeletionMarkerMap(
     normalized.deletedFavoriteIds
   );
@@ -1374,8 +1306,9 @@ function applyMapsSnapshot(data: MapsSnapshotData): void {
 }
 
 function applyContactsSnapshot(data: ContactsSnapshotData): void {
+  const normalizedData = normalizeContactsSnapshotData(data);
   const remoteDeletedContactIds = normalizeDeletionMarkerMap(
-    data.deletedContactIds
+    normalizedData.deletedContactIds
   );
   const cloudSyncState = useCloudSyncStore.getState();
   const effectiveDeletedContactIds = mergeDeletionMarkerMaps(
@@ -1389,11 +1322,11 @@ function applyContactsSnapshot(data: ContactsSnapshotData): void {
     .getState()
     .replaceContactsFromSync(
       filterDeletedIds(
-        normalizeContacts(data?.contacts),
+        normalizedData.contacts,
         effectiveDeletedContactIds,
         (contact) => contact.id
       ),
-      data?.myContactId ?? null
+      normalizedData.myContactId
     );
 }
 
@@ -1620,100 +1553,6 @@ export async function fetchPhysicalCloudSyncMetadata(): Promise<CloudSyncMetadat
   throw new Error("Failed to fetch consolidated sync metadata");
 }
 
-function mergeCalendarSnapshots(
-  local: CalendarSnapshotData,
-  remote: CalendarSnapshotData
-): CalendarSnapshotData {
-  const mergedDeletedEvents = mergeDeletionMarkerMaps(
-    normalizeDeletionMarkerMap(local.deletedEventIds),
-    normalizeDeletionMarkerMap(remote.deletedEventIds)
-  );
-  const mergedDeletedCalendars = mergeDeletionMarkerMaps(
-    normalizeDeletionMarkerMap(local.deletedCalendarIds),
-    normalizeDeletionMarkerMap(remote.deletedCalendarIds)
-  );
-  const mergedDeletedTodos = mergeDeletionMarkerMaps(
-    normalizeDeletionMarkerMap(local.deletedTodoIds),
-    normalizeDeletionMarkerMap(remote.deletedTodoIds)
-  );
-  return {
-    events: mergeItemsByIdPreferNewer(local.events, remote.events, mergedDeletedEvents),
-    calendars: mergeItemsByIdPreferNewer(
-      local.calendars as (CalendarGroup & { updatedAt?: number })[],
-      remote.calendars as (CalendarGroup & { updatedAt?: number })[],
-      mergedDeletedCalendars
-    ) as CalendarGroup[],
-    todos: mergeItemsById(
-      filterDeletedIds(local.todos, mergedDeletedTodos, (t) => t.id),
-      filterDeletedIds(remote.todos, mergedDeletedTodos, (t) => t.id)
-    ),
-    deletedEventIds: mergedDeletedEvents,
-    deletedCalendarIds: mergedDeletedCalendars,
-    deletedTodoIds: mergedDeletedTodos,
-  };
-}
-
-function mergeMapsSnapshots(
-  local: MapsSnapshotData,
-  remote: MapsSnapshotData
-): MapsSnapshotData {
-  const localNorm = normalizeMapsSnapshot(local);
-  const remoteNorm = normalizeMapsSnapshot(remote);
-  const mergedDeletedFavorites = mergeDeletionMarkerMaps(
-    normalizeDeletionMarkerMap(localNorm.deletedFavoriteIds),
-    normalizeDeletionMarkerMap(remoteNorm.deletedFavoriteIds)
-  );
-
-  // Local wins for home/work when local is strictly newer; otherwise remote
-  // wins. Favorites are the union (minus deletions) so simultaneous edits on
-  // different devices don't drop pins. Recents are intentionally device-local.
-  const preferLocal = localNorm.updatedAt >= remoteNorm.updatedAt;
-  const home = preferLocal ? localNorm.home : remoteNorm.home;
-  const work = preferLocal ? localNorm.work : remoteNorm.work;
-
-  const favoritesById = new Map<string, SavedPlace>();
-  // Iterate in display order (newest first). Local first when preferred so
-  // local order wins on ties; otherwise remote first.
-  const favoritePass = preferLocal
-    ? [localNorm.favorites, remoteNorm.favorites]
-    : [remoteNorm.favorites, localNorm.favorites];
-  for (const list of favoritePass) {
-    for (const place of list) {
-      if (mergedDeletedFavorites[place.id]) continue;
-      if (!favoritesById.has(place.id)) {
-        favoritesById.set(place.id, place);
-      }
-    }
-  }
-
-  return {
-    home,
-    work,
-    favorites: Array.from(favoritesById.values()),
-    updatedAt: Math.max(localNorm.updatedAt, remoteNorm.updatedAt),
-    deletedFavoriteIds: mergedDeletedFavorites,
-  };
-}
-
-function mergeContactsSnapshots(
-  local: ContactsSnapshotData,
-  remote: ContactsSnapshotData
-): ContactsSnapshotData {
-  const mergedDeleted = mergeDeletionMarkerMaps(
-    normalizeDeletionMarkerMap(local.deletedContactIds),
-    normalizeDeletionMarkerMap(remote.deletedContactIds)
-  );
-  return {
-    contacts: mergeItemsByIdPreferNewer(
-      local.contacts,
-      normalizeContacts(remote.contacts),
-      mergedDeleted
-    ),
-    myContactId: local.myContactId ?? remote.myContactId,
-    deletedContactIds: mergedDeleted,
-  };
-}
-
 function mergeSongsSnapshots(
   local: SongsSnapshotData,
   remote: SongsSnapshotData
@@ -1821,18 +1660,18 @@ function mergeRedisStateConflict(
       );
     case "calendar":
       return mergeCalendarSnapshots(
-        localData as CalendarSnapshotData,
-        remoteData as CalendarSnapshotData
+        normalizeCalendarSnapshotData(localData),
+        normalizeCalendarSnapshotData(remoteData)
       );
     case "contacts":
       return mergeContactsSnapshots(
-        localData as ContactsSnapshotData,
-        remoteData as ContactsSnapshotData
+        normalizeContactsSnapshotData(localData),
+        normalizeContactsSnapshotData(remoteData)
       );
     case "maps":
       return mergeMapsSnapshots(
-        localData as MapsSnapshotData,
-        remoteData as MapsSnapshotData
+        normalizeMapsSnapshotData(localData),
+        normalizeMapsSnapshotData(remoteData)
       );
     case "songs":
       return mergeSongsSnapshots(

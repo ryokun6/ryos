@@ -5,7 +5,8 @@
  * supporting both server-side and client-side tool execution.
  */
 
-import type { Contact } from "../../../src/utils/contacts.js";
+export type { CalendarSnapshotData } from "../../../src/shared/domains/calendar.js";
+export type { ContactsSnapshotData } from "../../../src/shared/domains/contacts.js";
 export type { StickiesSnapshotData } from "../../../src/shared/domains/stickies.js";
 
 // Central list of supported theme IDs for tool validation
@@ -736,41 +737,3 @@ export interface WebFetchOutput {
 // ============================================================================
 // App State Types (for server-side calendar/stickies executors)
 // ============================================================================
-
-export interface CalendarSnapshotData {
-  events: Array<{
-    id: string;
-    title: string;
-    date: string;
-    startTime?: string;
-    endTime?: string;
-    color: string;
-    calendarId?: string;
-    notes?: string;
-    createdAt: number;
-    updatedAt: number;
-  }>;
-  calendars: Array<{
-    id: string;
-    name: string;
-    color: string;
-    visible: boolean;
-  }>;
-  todos: Array<{
-    id: string;
-    title: string;
-    completed: boolean;
-    dueDate: string | null;
-    calendarId: string;
-    createdAt: number;
-  }>;
-  deletedEventIds?: Record<string, string>;
-  deletedCalendarIds?: Record<string, string>;
-  deletedTodoIds?: Record<string, string>;
-}
-
-export interface ContactsSnapshotData {
-  contacts: Contact[];
-  myContactId?: string | null;
-  deletedContactIds?: Record<string, string>;
-}

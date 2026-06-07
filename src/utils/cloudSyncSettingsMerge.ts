@@ -1,117 +1,22 @@
 import type { LanguageCode } from "@/stores/useLanguageStore";
-import type { AIModel } from "@/types/aiModels";
-import type { DisplayMode, LyricsAlignment, LyricsFont, RomanizationSettings } from "@/types/lyrics";
-import type { DockItem } from "@/stores/useDockStore";
-import type { DashboardWidget } from "@/stores/useDashboardStore";
 import {
   SETTINGS_SYNC_SECTIONS,
   type SettingsSectionTimestampMap,
   type SettingsSyncSection,
 } from "@/sync/state";
+import {
+  normalizeSettingsSnapshotData,
+  type SettingsSnapshotData,
+} from "@/shared/domains/settings";
 
-export interface SettingsSnapshotData {
-  theme: string;
-  /**
-   * Per-theme dark-mode preferences. Optional for backward compatibility.
-   * Values may be the new preference strings (`"system" | "light" | "dark"`)
-   * or legacy booleans from older clients (`true` → dark, `false` → light).
-   */
-  themeDarkMode?: Record<string, "system" | "light" | "dark" | boolean>;
-  /**
-   * Per-theme accent-color preferences. Optional for backward compatibility;
-   * older clients simply ignore it. Keyed by theme id, value is an accent id.
-   */
-  themeAccent?: Record<string, string>;
-  language: LanguageCode;
-  languageInitialized: boolean;
-  aiModel: AIModel | null;
-  display: {
-    displayMode: string;
-    shaderEffectEnabled: boolean;
-    selectedShaderType: string;
-    currentWallpaper: string;
-    screenSaverEnabled: boolean;
-    screenSaverType: string;
-    screenSaverIdleTime: number;
-    debugMode: boolean;
-    htmlPreviewSplit: boolean;
-  };
-  audio: {
-    masterVolume: number;
-    uiVolume: number;
-    chatSynthVolume: number;
-    speechVolume: number;
-    ipodVolume: number;
-    uiSoundsEnabled: boolean;
-    terminalSoundsEnabled: boolean;
-    typingSynthEnabled: boolean;
-    speechEnabled: boolean;
-    keepTalkingEnabled: boolean;
-    ttsModel: "openai" | "elevenlabs" | null;
-    ttsVoice: string | null;
-    synthPreset: string;
-  };
-  ipod?: {
-    displayMode: DisplayMode;
-    showLyrics: boolean;
-    lyricsAlignment: LyricsAlignment;
-    lyricsFont: LyricsFont;
-    romanization: RomanizationSettings;
-    lyricsTranslationLanguage: string | null;
-    theme: "classic" | "black" | "u2";
-    lcdFilterOn: boolean;
-  };
-  dock?: {
-    pinnedItems: DockItem[];
-    scale: number;
-    hiding: boolean;
-    magnification: boolean;
-  };
-  dashboard?: {
-    widgets: DashboardWidget[];
-  };
-  customWallpapers?: Array<{
-    key: string;
-    value: Record<string, unknown>;
-  }>;
-  sectionUpdatedAt?: SettingsSectionTimestampMap;
-}
+export {
+  normalizeSettingsSnapshotData,
+  type SettingsSnapshotData,
+} from "@/shared/domains/settings";
 
 function parseTimestamp(value: string | null | undefined): number {
   const parsed = value ? new Date(value).getTime() : 0;
   return Number.isFinite(parsed) ? parsed : 0;
-}
-
-export function normalizeSettingsSnapshotData(
-  snapshot: SettingsSnapshotData,
-  fallbackUpdatedAt: string | null | undefined
-): SettingsSnapshotData {
-  const normalizedSectionUpdatedAt = {
-    ...snapshot.sectionUpdatedAt,
-  };
-
-  for (const section of SETTINGS_SYNC_SECTIONS) {
-    if (
-      typeof normalizedSectionUpdatedAt[section] !== "string" &&
-      fallbackUpdatedAt
-    ) {
-      normalizedSectionUpdatedAt[section] = fallbackUpdatedAt;
-    }
-  }
-
-  const normalizedIpod = snapshot.ipod
-    ? {
-        ...snapshot.ipod,
-        lyricsTranslationLanguage:
-          snapshot.ipod.lyricsTranslationLanguage ?? null,
-      }
-    : snapshot.ipod;
-
-  return {
-    ...snapshot,
-    ipod: normalizedIpod,
-    sectionUpdatedAt: normalizedSectionUpdatedAt,
-  };
 }
 
 function shouldUseRemoteSection(
