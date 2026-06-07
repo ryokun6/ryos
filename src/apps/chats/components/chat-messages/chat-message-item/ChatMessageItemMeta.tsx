@@ -45,7 +45,7 @@ export function ChatMessageItemMeta({ vm }: { vm: ChatMessageItemViewModel }) {
     <div
       className={`${
         isMacOSTheme ? "text-[10px]" : "text-[16px]"
-      } chat-messages-meta text-neutral-500 mb-0.5 font-['Geneva-9'] mb-[-2px] select-text flex items-center gap-2`}
+      } chat-messages-meta text-neutral-500 mb-0.5 font-['Geneva-9'] mb-[-2px] flex items-center gap-2`}
     >
       {message.role === "user" && (
         <>
@@ -59,7 +59,7 @@ export function ChatMessageItemMeta({ vm }: { vm: ChatMessageItemViewModel }) {
                       opacity: isHovered ? 1 : 0,
                       scale: 1,
                     }}
-                    className="size-3 text-neutral-400 hover:text-red-600 transition-colors"
+                    className="size-3 text-neutral-400 hover:text-red-600 transition-colors select-none"
                     onClick={() => onDeleteMessage(message)}
                     aria-label={t("apps.chats.ariaLabels.deleteMessage")}
                   >
@@ -78,7 +78,7 @@ export function ChatMessageItemMeta({ vm }: { vm: ChatMessageItemViewModel }) {
               opacity: isHovered ? 1 : 0,
               scale: 1,
             }}
-            className="size-3 text-neutral-400 hover:text-neutral-600 transition-colors"
+            className="size-3 text-neutral-400 hover:text-neutral-600 transition-colors select-none"
             onClick={() => onCopyMessage(message)}
             aria-label={t("apps.chats.ariaLabels.copyMessage")}
           >
@@ -91,7 +91,7 @@ export function ChatMessageItemMeta({ vm }: { vm: ChatMessageItemViewModel }) {
         </>
       )}
       <span
-        className="max-w-[120px] inline-block overflow-hidden text-ellipsis whitespace-nowrap"
+        className="max-w-[120px] inline-block overflow-hidden text-ellipsis whitespace-nowrap select-text"
         title={
           message.username ||
           (message.role === "user"
@@ -135,7 +135,7 @@ export function ChatMessageItemMeta({ vm }: { vm: ChatMessageItemViewModel }) {
               opacity: isHovered ? 1 : 0,
               scale: 1,
             }}
-            className="size-3 text-neutral-400 hover:text-neutral-600 transition-colors"
+            className="size-3 text-neutral-400 hover:text-neutral-600 transition-colors select-none"
             onClick={() => onCopyMessage(message)}
             aria-label={t("apps.chats.ariaLabels.copyMessage")}
           >
@@ -152,7 +152,7 @@ export function ChatMessageItemMeta({ vm }: { vm: ChatMessageItemViewModel }) {
                 opacity: isHovered ? 1 : 0,
                 scale: 1,
               }}
-              className="size-3 text-neutral-400 hover:text-neutral-600 transition-colors"
+              className="size-3 text-neutral-400 hover:text-neutral-600 transition-colors select-none"
               onClick={() => {
                 if (playingMessageId === messageKey) {
                   stopSpeech();
@@ -212,7 +212,7 @@ export function ChatMessageItemMeta({ vm }: { vm: ChatMessageItemViewModel }) {
                     opacity: isHovered ? 1 : 0,
                     scale: 1,
                   }}
-                  className="size-3 text-neutral-400 hover:text-os-link transition-colors"
+                  className="size-3 text-neutral-400 hover:text-os-link transition-colors select-none"
                   onClick={() => onSendMessage(message.username!)}
                   aria-label={t("apps.chats.ariaLabels.messageUser", {
                     username: message.username,
@@ -241,7 +241,7 @@ export function ChatMessageItemMeta({ vm }: { vm: ChatMessageItemViewModel }) {
                   opacity: isHovered ? 1 : 0,
                   scale: 1,
                 }}
-                className="size-3 text-neutral-400 hover:text-red-600 transition-colors"
+                className="size-3 text-neutral-400 hover:text-red-600 transition-colors select-none"
                 onClick={() => onDeleteMessage(message)}
                 aria-label={t("apps.chats.ariaLabels.deleteMessage")}
               >

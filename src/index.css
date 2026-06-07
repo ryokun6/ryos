@@ -652,10 +652,48 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     font-smooth: always;
   }
 
+  /* ----------------------------------------------------------------------- */
+  /* Text selection policy (deny-by-default via @layer base `*` rule)        */
+  /* Opt back in: .select-text, .ryos-chat-streamdown, form controls,      */
+  /* TextEdit ProseMirror. Chrome reinforcement: .no-select-gesture,        */
+  /* .draggable-area, .no-select-all                                        */
+  /* ----------------------------------------------------------------------- */
+
+  .select-text,
+  .select-text * {
+    user-select: text;
+    -webkit-user-select: text;
+  }
+
   .ryos-chat-streamdown,
   .ryos-chat-streamdown * {
     user-select: text;
     -webkit-user-select: text;
+  }
+
+  /* Editable form controls and contenteditable surfaces */
+  input:not(
+      [type="checkbox"]
+    ):not([type="radio"]):not([type="button"]):not([type="submit"]):not(
+      [type="reset"]
+    ):not([type="range"]):not([type="file"]):not([type="image"]):not(
+      [type="hidden"]
+    ),
+  textarea,
+  select,
+  [contenteditable="true"],
+  [contenteditable="true"] *,
+  [role="textbox"] {
+    user-select: text;
+    -webkit-user-select: text;
+  }
+
+  /* TextEdit (TipTap / ProseMirror) — cross-browser; complements Firefox block */
+  .textedit-prosemirror-root.ProseMirror,
+  .textedit-prosemirror-root.ProseMirror * {
+    user-select: text !important;
+    -webkit-user-select: text !important;
+    cursor: text;
   }
 
   .ryos-chat-streamdown {
@@ -907,6 +945,11 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     touch-action: none !important;
     -ms-touch-action: none !important;
     -webkit-touch-callout: none !important;
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+    user-select: none !important;
+    -webkit-tap-highlight-color: transparent !important;
   }
 
   /* Preview button reset - removes XP/98 theme button styling for image/canvas preview buttons */
