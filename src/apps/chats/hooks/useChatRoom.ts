@@ -22,6 +22,7 @@ import {
   getChatRoomChannelName,
   getChatsGlobalChannelName,
 } from "@/shared/constants/realtime";
+import { normalizeChatTimestamp } from "@/shared/contracts/chat";
 
 interface GlobalHandlers {
   onRoomCreated: (data: { room: ChatRoom }) => void;
@@ -264,17 +265,9 @@ export function useChatRoom(
             return;
           }
 
-          const parsedTimestamp =
-            typeof data.message.timestamp === "string" ||
-            typeof data.message.timestamp === "number"
-              ? new Date(data.message.timestamp).getTime()
-              : Date.now();
-
           const messageWithTimestamp = {
             ...data.message,
-            timestamp: Number.isFinite(parsedTimestamp)
-              ? parsedTimestamp
-              : Date.now(),
+            timestamp: normalizeChatTimestamp(data.message.timestamp),
           };
 
           addMessageToRoom(data.message.roomId, messageWithTimestamp);

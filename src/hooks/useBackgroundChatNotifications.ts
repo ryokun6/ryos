@@ -18,16 +18,7 @@ import {
   getChatRoomChannelName,
   getChatsGlobalChannelName,
 } from "@/shared/constants/realtime";
-
-const toTimestamp = (value: string | number): number =>
-  (() => {
-    if (typeof value !== "string" && typeof value !== "number") {
-      return Date.now();
-    }
-
-    const parsed = new Date(value).getTime();
-    return Number.isFinite(parsed) ? parsed : Date.now();
-  })();
+import { normalizeChatTimestamp } from "@/shared/contracts/chat";
 
 const isChatsAppOpen = (): boolean => {
   const { instances } = useAppStore.getState();
@@ -149,7 +140,7 @@ export function useBackgroundChatNotifications() {
 
       const messageWithTimestamp: ChatMessage = {
         ...data.message,
-        timestamp: toTimestamp(data.message.timestamp),
+        timestamp: normalizeChatTimestamp(data.message.timestamp),
       };
 
       addMessageToRoom(messageWithTimestamp.roomId, messageWithTimestamp);

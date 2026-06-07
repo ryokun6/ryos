@@ -1,30 +1,16 @@
 import { apiRequest } from "@/api/core";
+import type {
+  ChatMessage,
+  ChatRoom,
+  RoomType,
+} from "@/shared/contracts/chat";
 
-export interface RoomSummary {
-  id: string;
-  name: string;
-  type?: "public" | "private" | "irc";
-  createdAt: number;
-  members?: string[];
-  userCount: number;
-  ircHost?: string;
-  ircPort?: number;
-  ircTls?: boolean;
-  ircChannel?: string;
-  ircServerLabel?: string;
-}
+export type RoomSummary = ChatRoom;
 
-export interface RoomMessage {
-  id: string;
-  roomId: string;
-  username: string;
-  content: string;
-  timestamp: number;
-  clientId?: string;
-}
+export type RoomMessage = ChatMessage;
 
 export interface CreateRoomPayload {
-  type: "public" | "private" | "irc";
+  type: RoomType;
   name?: string;
   members?: string[];
   /** Registered server id from GET /api/irc/servers (required for non-admin IRC rooms). */

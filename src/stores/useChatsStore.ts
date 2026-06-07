@@ -12,6 +12,7 @@ import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { ApiRequestError } from "@/api/core";
 import { USERNAME_REGEX, PASSWORD_MIN_LENGTH } from "@/shared/validation";
+import { normalizeChatTimestamp } from "@/shared/contracts/chat";
 import {
   type CreateRoomPayload,
   createRoom as createRoomApi,
@@ -752,11 +753,7 @@ export const useChatsStore = create<ChatsStoreState>()(
                 .map((msg: ApiMessage) => ({
                   ...msg,
                   content: decodeHtmlEntities(String(msg.content || "")),
-                  timestamp:
-                    typeof msg.timestamp === "string" ||
-                    typeof msg.timestamp === "number"
-                      ? new Date(msg.timestamp).getTime()
-                      : msg.timestamp,
+                  timestamp: normalizeChatTimestamp(msg.timestamp),
                 }))
                 .sort(
                   (a: ChatMessage, b: ChatMessage) => a.timestamp - b.timestamp
@@ -885,11 +882,7 @@ export const useChatsStore = create<ChatsStoreState>()(
                       .map((msg) => ({
                         ...msg,
                         content: decodeHtmlEntities(String(msg.content || "")),
-                        timestamp:
-                          typeof msg.timestamp === "string" ||
-                          typeof msg.timestamp === "number"
-                            ? new Date(msg.timestamp).getTime()
-                            : msg.timestamp,
+                        timestamp: normalizeChatTimestamp(msg.timestamp),
                       }))
                       .sort((a, b) => a.timestamp - b.timestamp);
 

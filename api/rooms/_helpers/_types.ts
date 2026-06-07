@@ -3,41 +3,15 @@
  */
 
 // ============================================================================
-// Room Types
+// Room / Message Types
 // ============================================================================
 
-export type RoomType = "public" | "private" | "irc";
-
-export interface Room {
-  id: string;
-  name: string;
-  type: RoomType;
-  createdAt: number;
-  userCount: number;
-  members?: string[]; // Only for private rooms
-  // IRC bridging metadata. Present only when `type === "irc"`.
-  ircHost?: string;
-  ircPort?: number;
-  ircTls?: boolean;
-  ircChannel?: string; // e.g. "#pieter"
-  ircServerLabel?: string; // Friendly label shown in UI
-}
-
-export interface RoomWithUsers extends Room {
-  users: string[];
-}
-
-// ============================================================================
-// Message Types
-// ============================================================================
-
-export interface Message {
-  id: string;
-  roomId: string;
-  username: string;
-  content: string;
-  timestamp: number;
-}
+export type {
+  RoomType,
+  ApiChatRoom as Room,
+  ChatRoomWithUsers as RoomWithUsers,
+  ApiChatMessage as Message,
+} from "../../../src/shared/contracts/chat.js";
 
 export interface BulkMessagesResult {
   messagesMap: Record<string, Message[]>;
@@ -49,10 +23,7 @@ export interface BulkMessagesResult {
 // User Types
 // ============================================================================
 
-export interface User {
-  username: string;
-  lastActive: number;
-}
+export type { ChatUser as User } from "../../../src/shared/contracts/chat.js";
 
 // ============================================================================
 // Request/Response Types
