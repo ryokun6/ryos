@@ -25,10 +25,7 @@ import {
 } from "@/stores/useCalendarStore";
 import { useContactsStore } from "@/stores/useContactsStore";
 import { useMapsStore, type SavedPlace } from "@/stores/useMapsStore";
-import {
-  useCloudSyncStore,
-  type CloudSyncDeletionBucket,
-} from "@/stores/useCloudSyncStore";
+import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 import type { Contact } from "@/utils/contacts";
 import { normalizeContacts } from "@/utils/contacts";
 import {
@@ -36,6 +33,7 @@ import {
 } from "@/utils/storageUpload";
 import {
   AUTO_SYNC_SNAPSHOT_VERSION,
+  type CloudSyncDeletionBucket,
   isRedisSyncDomain,
   isBlobSyncDomain,
   isIndividualBlobSyncDomain,
