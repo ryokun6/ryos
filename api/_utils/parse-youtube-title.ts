@@ -14,7 +14,7 @@ export interface ParseYouTubeTitleOptions {
   requestId?: string;
   fallback?: ParseYouTubeTitleFallback;
   includeAlbum?: boolean;
-  timeoutMs?: number;
+  timeoutProfile?: "default" | "route";
 }
 
 const ParsedTitleSchema = z.object({
@@ -23,7 +23,10 @@ const ParsedTitleSchema = z.object({
   album: z.string().nullable().optional(),
 });
 
-const AI_TITLE_PARSE_TIMEOUT_MS = 8000;
+const AI_TITLE_PARSE_TIMEOUTS_MS = {
+  default: 8000,
+  route: 3000,
+} as const;
 
 export function sanitizeInput(str: string): string {
   if (!str) return str;
@@ -188,7 +191,7 @@ export async function parseYouTubeTitleWithAI(
   const abortController = new AbortController();
   const timeoutId = setTimeout(
     () => abortController.abort(),
-    opts.timeoutMs ?? AI_TITLE_PARSE_TIMEOUT_MS
+    AI_TITLE_PARSE_TIMEOUTS_MS[opts.timeoutProfile ?? "default"]
   );
 
   try {

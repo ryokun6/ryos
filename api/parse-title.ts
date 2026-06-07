@@ -56,7 +56,7 @@ export default apiHandler<ParseTitleRequest>(
       const result = await parseYouTubeTitleWithAI(rawTitle, author_name, {
         fallback: "raw",
         includeAlbum: true,
-        timeoutMs: 3000,
+        timeoutProfile: "route",
       });
 
       logger.info("Title parsed successfully", result);
