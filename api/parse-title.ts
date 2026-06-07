@@ -33,36 +33,20 @@ export default apiHandler<ParseTitleRequest>(
     try {
       const ip = getClientIp(req);
       const BURST_WINDOW = 60;
-      const BURST_LIMIT = 15;
       const DAILY_WINDOW = 60 * 60 * 24;
-      const DAILY_LIMIT = 500;
 
-      const burstKey = RateLimit.makeKey(["rl", "parse-title", "burst", "ip", ip]);
-      const dailyKey = RateLimit.makeKey(["rl", "parse-title", "daily", "ip", ip]);
-
-      const burst = await RateLimit.checkCounterLimit({
-        key: burstKey,
-        windowSeconds: BURST_WINDOW,
-        limit: BURST_LIMIT,
+      const rl = await RateLimit.checkBurstAndDailyLimits({
+        namespace: "parse-title",
+        identifierParts: ["ip", ip],
+        burst: { windowSeconds: BURST_WINDOW, limit: 15 },
+        daily: { windowSeconds: DAILY_WINDOW, limit: 500 },
       });
-      if (!burst.allowed) {
-        logger.warn("Rate limit exceeded (burst)", { ip });
+      if (!rl.ok) {
+        const fallbackWindow = rl.scope === "burst" ? BURST_WINDOW : DAILY_WINDOW;
+        logger.warn(`Rate limit exceeded (${rl.scope})`, { ip });
         logger.response(429, Date.now() - startTime);
-        res.setHeader("Retry-After", String(burst.resetSeconds ?? BURST_WINDOW));
-        res.status(429).json({ error: "rate_limit_exceeded", scope: "burst" });
-        return;
-      }
-
-      const daily = await RateLimit.checkCounterLimit({
-        key: dailyKey,
-        windowSeconds: DAILY_WINDOW,
-        limit: DAILY_LIMIT,
-      });
-      if (!daily.allowed) {
-        logger.warn("Rate limit exceeded (daily)", { ip });
-        logger.response(429, Date.now() - startTime);
-        res.setHeader("Retry-After", String(daily.resetSeconds ?? DAILY_WINDOW));
-        res.status(429).json({ error: "rate_limit_exceeded", scope: "daily" });
+        res.setHeader("Retry-After", String(rl.result?.resetSeconds ?? fallbackWindow));
+        res.status(429).json({ error: "rate_limit_exceeded", scope: rl.scope });
         return;
       }
     } catch (e) {

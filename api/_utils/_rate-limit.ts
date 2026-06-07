@@ -103,7 +103,7 @@ interface CounterLimitArgs {
   limit: number;
 }
 
-interface CounterLimitResult {
+export interface CounterLimitResult {
   allowed: boolean;
   count: number;
   limit: number;
@@ -157,6 +157,59 @@ export async function checkCounterLimit({
     windowSeconds,
     resetSeconds,
   };
+}
+
+export interface BurstDailyLimitTier {
+  windowSeconds: number;
+  limit: number;
+}
+
+export interface BurstDailyLimitConfig {
+  /** Endpoint namespace, e.g. "parse-title". */
+  namespace: string;
+  /**
+   * Key segments identifying the client, appended after the scope.
+   * e.g. `["ip", ip]` or `[identifier]` or `[username ? "user" : "ip", username ?? ip]`.
+   */
+  identifierParts: Array<string | null | undefined>;
+  burst: BurstDailyLimitTier;
+  daily: BurstDailyLimitTier;
+}
+
+export interface BurstDailyLimitOutcome {
+  /** Whether the request is within both the burst and daily limits. */
+  ok: boolean;
+  /** Which tier was exceeded, when `ok` is false. */
+  scope?: "burst" | "daily";
+  /** Counter result for the exceeded tier (carries limit/windowSeconds/resetSeconds). */
+  result?: CounterLimitResult;
+}
+
+/**
+ * Run the common burst + daily per-client rate-limit checks.
+ *
+ * Centralizes the duplicated key-building and the two `checkCounterLimit`
+ * calls. Callers render their own 429 response from the returned outcome so
+ * endpoint-specific headers/bodies are preserved.
+ */
+export async function checkBurstAndDailyLimits(
+  config: BurstDailyLimitConfig
+): Promise<BurstDailyLimitOutcome> {
+  const burst = await checkCounterLimit({
+    key: makeKey(["rl", config.namespace, "burst", ...config.identifierParts]),
+    windowSeconds: config.burst.windowSeconds,
+    limit: config.burst.limit,
+  });
+  if (!burst.allowed) return { ok: false, scope: "burst", result: burst };
+
+  const daily = await checkCounterLimit({
+    key: makeKey(["rl", config.namespace, "daily", ...config.identifierParts]),
+    windowSeconds: config.daily.windowSeconds,
+    limit: config.daily.limit,
+  });
+  if (!daily.allowed) return { ok: false, scope: "daily", result: daily };
+
+  return { ok: true };
 }
 
 // Helper to get header value from Node.js IncomingMessage headers
