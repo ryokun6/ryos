@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useReducer, useRef } from "react";
-import { abortableFetch } from "@/utils/abortableFetch";
-import { getApiUrl } from "@/utils/platform";
+import {
+  getCursorRunStatus,
+  sendCursorRunFollowup,
+  type CursorRunStatusResponse,
+} from "@/api/cursorAgent";
 
 export interface CursorAgentRunMeta {
   agentId?: string;
@@ -11,20 +14,6 @@ export interface CursorAgentRunMeta {
   /** When non-null, a run is in flight on this agent. */
   activeRunId?: string;
   terminalStatus?: string;
-}
-
-interface CursorRunStatusResponse {
-  events?: unknown[];
-  done?: boolean;
-  meta?: {
-    agentId?: unknown;
-    agentTitle?: unknown;
-    prUrl?: unknown;
-    nextRunId?: unknown;
-    activeRunId?: unknown;
-    terminalStatus?: unknown;
-  };
-  terminal?: { prUrl?: unknown } | null;
 }
 
 function pickMeta(raw: CursorRunStatusResponse | null): CursorAgentRunMeta {
@@ -76,7 +65,7 @@ export interface UseCursorAgentRunPollResult {
 }
 
 /**
- * Polls `/api/ai/cursor-run-status` until the run emits a terminal event.
+ * Polls Cursor agent run status until the run emits a terminal event.
  * Reads `meta.agentTitle` from Redis so the banner matches catalog even when
  * tool JSON omits it. When the meta references a follow-up run, the hook
  * automatically swaps to the new run id so the chat card keeps streaming.
@@ -163,15 +152,7 @@ export function useCursorAgentRunPoll(
 
     async function tick(force = false) {
       try {
-        const res = await abortableFetch(
-          `${getApiUrl("/api/ai/cursor-run-status")}?runId=${encodeURIComponent(activeRunId)}`,
-          {
-            credentials: "include",
-            timeout: 25000,
-            retry: { maxAttempts: 1, initialDelayMs: 250 },
-          }
-        );
-        const data = (await res.json()) as CursorRunStatusResponse;
+        const data = await getCursorRunStatus(activeRunId);
         if (cancelled) return;
 
         const newEvents = Array.isArray(data.events) ? data.events : [];
@@ -243,25 +224,10 @@ export function useCursorAgentRunPoll(
         payload: { isSendingFollowup: true, followupError: null },
       });
       try {
-        const res = await abortableFetch(
-          getApiUrl("/api/ai/cursor-run-followup"),
-          {
-            method: "POST",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ runId: activeRunId, prompt: trimmed }),
-            timeout: 30000,
-            throwOnHttpError: false,
-            retry: { maxAttempts: 1, initialDelayMs: 250 },
-          }
-        );
-        const data = (await res.json().catch(() => ({}))) as {
-          runId?: string;
-          error?: string;
-        };
-        if (!res.ok) {
-          throw new Error(data?.error || `Failed (${res.status})`);
-        }
+        const data = await sendCursorRunFollowup({
+          runId: activeRunId,
+          prompt: trimmed,
+        });
         if (typeof data.runId !== "string" || data.runId.length === 0) {
           throw new Error("Server did not return a new runId");
         }
