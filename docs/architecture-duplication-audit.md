@@ -251,6 +251,27 @@ shared/
 
 ---
 
+## Implementation Status (2026-06-07)
+
+All five migration phases are implemented on branch `cursor/architecture-duplication-audit-3a67`.
+
+| Phase | Status | Key deliverables |
+|-------|--------|------------------|
+| 0 | ✅ | Audit doc, `ryos:pc` fix, baseline tests |
+| 1 | ✅ | `@ryos/shared`, YouTube/Apple/rate-limit helpers, tool registry, admin/redis fixes |
+| 2 | ✅ | chat/listen/songs contracts, schema splits, MediaVisualLayers, playback helper, fullscreen portal |
+| 3 | ✅ | `sync/domains/*` modules, sync-snapshot contracts, shared tool-action cores |
+| 4 | ✅ | `lib/vfs/`, control panels tab hooks, `stores/chats/` slices |
+| 5 | ✅ | `stores/ipod/` slices, `useIpodLogic` sub-hooks, songs handlers, `shared-emulator/` |
+
+**Validation:** `bun run build` passes; `bun run test:unit` 269/269; `test:song` 23/23; `test:ai` 40/40; `test:admin` 11/11; `test:listen-security` 10/10; `test-cloud-sync-domains` 7/7.
+
+**Known pre-existing failures (unchanged):** `test:new-api` auth login 401; one `test-cloud-sync-utils` settings hydration mock.
+
+**Follow-up:** `useIpodNavigation.ts` remains large (~4.2k lines) — candidate for a Phase 6 navigation sub-split.
+
+---
+
 ## Risk Levels and Migration Sequence
 
 ### Phase 0 — Baseline (immediate)
@@ -259,7 +280,7 @@ shared/
 - Fix `ryos:pc` collision ✅
 - Document findings (this file) ✅
 
-### Phase 1 — Quick wins (days, low risk)
+### Phase 1 — Quick wins (days, low risk) ✅
 
 | Item | Files | Tests |
 |------|-------|-------|
@@ -272,7 +293,7 @@ shared/
 | `requireRyoAdmin` helper | admin, cursor-run-status | `bun run test:admin` |
 | Use `ctx.redis` in airdrop/presence | 4 routes | `bun run test:new-api` |
 
-### Phase 2 — Contract unification (1–2 weeks, medium risk)
+### Phase 2 — Contract unification (1–2 weeks, medium risk) ✅
 
 | Item | Risk | Tests |
 |------|------|-------|
@@ -284,7 +305,7 @@ shared/
 | `MediaVisualLayers` + playback store abstraction | Medium | `test-ipod-*`, manual playback |
 | Unified fullscreen portal | Medium | manual iPod/Karaoke/Video/TV |
 
-### Phase 3 — Sync modularization (1–2 weeks, medium–high risk)
+### Phase 3 — Sync modularization (1–2 weeks, medium–high risk) ✅
 
 | Item | Risk | Tests |
 |------|------|-------|
@@ -293,7 +314,7 @@ shared/
 | Shared tool-action core (calendar/contacts/stickies) | Medium–high | Telegram + chat tests |
 | Thin `useAutoCloudSync` | Medium | sync regression |
 
-### Phase 4 — VFS + settings (1 week each, medium risk)
+### Phase 4 — VFS + settings (1 week each, medium risk) ✅
 
 | Item | Risk | Tests |
 |------|------|-------|
@@ -301,7 +322,7 @@ shared/
 | Split `useControlPanelsLogic` by tab | Medium | `test-control-panels-*` |
 | Slice `useChatsStore` (auth/rooms/ai) | Medium | `test-chat-*` |
 
-### Phase 5 — Media god modules (2–3 weeks, high risk — do last)
+### Phase 5 — Media god modules (2–3 weeks, high risk — do last) ✅
 
 | Item | Risk | Tests |
 |------|------|-------|
@@ -318,12 +339,12 @@ shared/
 
 1. ✅ Fix `ryos:pc` storage collision
 2. ✅ Deduplicate admin `Skeleton.tsx`
-3. Shared `youtube-client.ts`, `apple-dev-token-handler.ts`, rate-limit helper
-4. Wire or delete chat tool registry
-5. Re-export AI models from single source
-6. Minesweeper → shared `useLongPress`
-7. Remove `useInfiniteMacLogic` redundant local reducer
-8. Consolidate `CHAT_USERS_PREFIX` to one export
+3. ✅ Shared `youtube-client.ts`, `apple-dev-token-handler.ts`, rate-limit helper
+4. ✅ Wire chat tool registry in `useAiChat`
+5. ✅ Re-export AI models from `@ryos/shared`
+6. ✅ Minesweeper → shared `useLongPress`
+7. ✅ Remove `useInfiniteMacLogic` redundant local reducer
+8. ✅ Consolidate `CHAT_USERS_PREFIX` to one export
 
 ### Larger refactors (weeks)
 
