@@ -51,6 +51,7 @@ import { getAssistantVisibleText } from "../utils/aiMessageText";
 import { useChatSpeechSync } from "./useChatSpeechSync";
 import { useSyncedAiMessages } from "./useSyncedAiMessages";
 import { detectUserOS, getSystemState } from "../utils/systemState";
+import { extractMemoriesFromChat } from "@/api/ai";
 import {
   executeToolHandler,
   handleLaunchApp,
@@ -1812,13 +1813,8 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     if (currentUsername && isAuthenticated && messagesToAnalyze.length > 2) {
       console.log("[clearChats] Triggering async memory extraction...");
 
-      abortableFetch(getApiUrl("/api/ai/extract-memories"), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-User-Timezone": currentTimeZone,
-        },
-        body: JSON.stringify({
+      extractMemoriesFromChat(
+        {
           timeZone: currentTimeZone,
           messages: messagesToAnalyze.map(msg => ({
             role: msg.role,
@@ -1832,11 +1828,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 }
               : undefined,
           })),
-        }),
-        timeout: 15000,
-        retry: { maxAttempts: 1, initialDelayMs: 250 },
-      })
-        .then(res => res.json())
+        },
+        { timeZoneHeader: currentTimeZone }
+      )
         .then(data => {
           if (data.extracted > 0) {
             console.log(`[clearChats] Extracted ${data.extracted} memories from conversation`);

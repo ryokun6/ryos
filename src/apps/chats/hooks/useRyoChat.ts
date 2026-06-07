@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { getApiUrl } from "@/utils/platform";
-import { abortableFetch } from "@/utils/abortableFetch";
+import { requestRyoReply } from "@/api/ai";
 import { getSystemState } from "../utils/systemState";
 import { parseRyoMention } from "../utils/ryoMention";
 
@@ -60,18 +59,14 @@ export function useRyoChat({
       setIsRyoLoading(true);
 
       try {
-        await abortableFetch(getApiUrl("/api/ai/ryo-reply"), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
+        await requestRyoReply(
+          {
             roomId: currentRoomId,
             prompt: messageContent,
             systemState: systemStateWithChat,
-          }),
-          signal: controller.signal,
-          timeout: 20000,
-          retry: { maxAttempts: 1, initialDelayMs: 250 },
-        });
+          },
+          { signal: controller.signal }
+        );
       } catch (error) {
         if (!(error instanceof DOMException && error.name === "AbortError")) {
           console.error("[RyoChat] Failed to request @ryo reply:", error);
