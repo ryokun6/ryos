@@ -320,7 +320,8 @@ export default defineConfig({
           const match = pathPart.match(/^\/embed\/([a-zA-Z0-9_-]+)$/);
           if (!match) return next();
           const name = match[1];
-          const htmlPath = path.resolve(__dirname, 'public/embed', `${name}.html`);
+          const htmlName = name === 'infinite-pc' ? 'pc' : name;
+          const htmlPath = path.resolve(__dirname, 'public/embed', `${htmlName}.html`);
           import('node:fs').then(({ promises: fs }) => {
             fs.readFile(htmlPath)
               .then((buf) => {

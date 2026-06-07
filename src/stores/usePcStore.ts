@@ -98,11 +98,6 @@ export const usePcStore = create<PcStoreState>()(
   )
 );
 
-// Helper functions mirroring old API ---------------------------------
 export const loadGames = (): Game[] => {
   return usePcStore.getState().games;
-};
-
-export const saveGames = (games: Game[]): void => {
-  usePcStore.getState().setGames(games);
 };
