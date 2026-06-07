@@ -3,8 +3,8 @@ import { appIds, AppId } from "@/config/appIds";
 import { useFilesStore } from "@/stores/useFilesStore";
 import {
   dbOperations,
-  DocumentContent,
-} from "@/apps/finder/hooks/useFileSystem";
+  type DocumentContent,
+} from "@/utils/indexedDBOperations";
 import { STORES } from "@/utils/indexedDB";
 import i18n from "@/lib/i18n";
 

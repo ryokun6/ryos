@@ -17,8 +17,8 @@ import {
 } from "../utils/richMarkdown";
 import {
   dbOperations,
-  DocumentContent,
-} from "@/apps/finder/hooks/useFileSystem";
+  type DocumentContent,
+} from "@/utils/indexedDBOperations";
 import { STORES } from "@/utils/indexedDB";
 import { getStoreForFile } from "@/utils/indexedDBOperations";
 import { TEXTEDIT_ANALYTICS, track } from "@/utils/analytics";

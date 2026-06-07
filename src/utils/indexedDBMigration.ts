@@ -1,7 +1,7 @@
 import {
   dbOperations,
-  DocumentContent,
-} from "@/apps/finder/hooks/useFileSystem";
+  type DocumentContent,
+} from "@/utils/indexedDBOperations";
 import { STORES, ensureIndexedDBInitialized } from "@/utils/indexedDB";
 import { useFilesStore } from "@/stores/useFilesStore";
 

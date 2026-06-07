@@ -20,9 +20,11 @@ import {
 } from "@/utils/appletAuthBridge";
 import {
   useFileSystem,
-  dbOperations,
-  DocumentContent,
 } from "@/apps/finder/hooks/useFileSystem";
+import {
+  dbOperations,
+  type DocumentContent,
+} from "@/utils/indexedDBOperations";
 import { useFilesStore, FileSystemItem } from "@/stores/useFilesStore";
 import { STORES } from "@/utils/indexedDB";
 import { APPLET_ANALYTICS, track } from "@/utils/analytics";

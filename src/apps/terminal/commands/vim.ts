@@ -3,8 +3,8 @@ import { useTerminalStore } from "@/stores/useTerminalStore";
 import { useFilesStore } from "@/stores/useFilesStore";
 import {
   dbOperations,
-  DocumentContent,
-} from "@/apps/finder/hooks/useFileSystem";
+  type DocumentContent,
+} from "@/utils/indexedDBOperations";
 import { STORES } from "@/utils/indexedDB";
 
 export const vimCommand: Command = {

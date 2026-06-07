@@ -4,21 +4,140 @@ import {
   type CloudSyncVersionState,
 } from "./cloudSyncVersion";
 
-export const CLOUD_SYNC_DOMAINS = [
-  "settings",
-  "files-metadata",
-  "files-images",
-  "files-trash",
-  "files-applets",
-  "songs",
-  "videos",
-  "tv",
-  "stickies",
-  "calendar",
-  "contacts",
-  "maps",
-  "custom-wallpapers",
+export const CLOUD_SYNC_DELETION_BUCKETS = [
+  "calendarTodoIds",
+  "calendarEventIds",
+  "calendarIds",
+  "stickyNoteIds",
+  "contactIds",
+  "fileMetadataPaths",
+  "fileImageKeys",
+  "fileTrashKeys",
+  "fileAppletKeys",
+  "customWallpaperKeys",
+  "songTrackIds",
+  "tvCustomChannelIds",
+  "mapsFavoriteIds",
 ] as const;
+
+export type CloudSyncDeletionBucket =
+  (typeof CLOUD_SYNC_DELETION_BUCKETS)[number];
+
+export const CLOUD_SYNC_DOMAIN_DESCRIPTORS = [
+  {
+    domain: "settings",
+    category: "settings",
+    storage: "redis",
+    uploadDebounceMs: 2500,
+    maxUploadDebounceMs: 8_000,
+  },
+  {
+    domain: "files-metadata",
+    category: "files",
+    storage: "redis",
+    uploadDebounceMs: 8000,
+    maxUploadDebounceMs: 15_000,
+    deletionBuckets: ["fileMetadataPaths"],
+  },
+  {
+    domain: "files-images",
+    category: "files",
+    storage: "blob",
+    uploadDebounceMs: 8000,
+    maxUploadDebounceMs: 15_000,
+    deletionBuckets: ["fileImageKeys"],
+  },
+  {
+    domain: "files-trash",
+    category: "files",
+    storage: "blob",
+    uploadDebounceMs: 5000,
+    maxUploadDebounceMs: 10_000,
+    deletionBuckets: ["fileTrashKeys"],
+  },
+  {
+    domain: "files-applets",
+    category: "files",
+    storage: "blob",
+    uploadDebounceMs: 8000,
+    maxUploadDebounceMs: 15_000,
+    deletionBuckets: ["fileAppletKeys"],
+  },
+  {
+    domain: "songs",
+    category: "songs",
+    storage: "redis",
+    uploadDebounceMs: 4000,
+    maxUploadDebounceMs: 10_000,
+    deletionBuckets: ["songTrackIds"],
+  },
+  {
+    domain: "videos",
+    category: "videos",
+    storage: "redis",
+    uploadDebounceMs: 4000,
+    maxUploadDebounceMs: 10_000,
+  },
+  {
+    domain: "tv",
+    category: "tv",
+    storage: "redis",
+    uploadDebounceMs: 3000,
+    maxUploadDebounceMs: 8_000,
+    deletionBuckets: ["tvCustomChannelIds"],
+  },
+  {
+    domain: "stickies",
+    category: "stickies",
+    storage: "redis",
+    uploadDebounceMs: 3000,
+    maxUploadDebounceMs: 8_000,
+    deletionBuckets: ["stickyNoteIds"],
+  },
+  {
+    domain: "calendar",
+    category: "calendar",
+    storage: "redis",
+    uploadDebounceMs: 4000,
+    maxUploadDebounceMs: 10_000,
+    deletionBuckets: ["calendarTodoIds", "calendarEventIds", "calendarIds"],
+  },
+  {
+    domain: "contacts",
+    category: "contacts",
+    storage: "redis",
+    uploadDebounceMs: 3000,
+    maxUploadDebounceMs: 8_000,
+    deletionBuckets: ["contactIds"],
+  },
+  {
+    domain: "maps",
+    category: "maps",
+    storage: "redis",
+    uploadDebounceMs: 3000,
+    maxUploadDebounceMs: 8_000,
+    deletionBuckets: ["mapsFavoriteIds"],
+  },
+  {
+    domain: "custom-wallpapers",
+    category: "files",
+    storage: "blob",
+    uploadDebounceMs: 8000,
+    maxUploadDebounceMs: 15_000,
+    deletionBuckets: ["customWallpaperKeys"],
+  },
+] as const;
+
+export type CloudSyncDomain =
+  (typeof CLOUD_SYNC_DOMAIN_DESCRIPTORS)[number]["domain"];
+export type CloudSyncCategory =
+  (typeof CLOUD_SYNC_DOMAIN_DESCRIPTORS)[number]["category"];
+export type CloudSyncStorageKind =
+  (typeof CLOUD_SYNC_DOMAIN_DESCRIPTORS)[number]["storage"];
+
+export const CLOUD_SYNC_DOMAINS = CLOUD_SYNC_DOMAIN_DESCRIPTORS.map(
+  (descriptor) => descriptor.domain
+) as readonly CloudSyncDomain[];
 
 export function getCloudSyncRemoteApplyDomains(
   domains: readonly CloudSyncDomain[] = CLOUD_SYNC_DOMAINS
@@ -43,60 +162,59 @@ export function getCloudSyncRemoteApplyDomains(
 
 export const CLOUD_SYNC_REMOTE_APPLY_DOMAINS = getCloudSyncRemoteApplyDomains();
 
-export type CloudSyncDomain = (typeof CLOUD_SYNC_DOMAINS)[number];
-export type CloudSyncCategory =
-  | "files"
+export type CloudSyncDomainDescriptor =
+  (typeof CLOUD_SYNC_DOMAIN_DESCRIPTORS)[number];
+
+export function getCloudSyncDomainDescriptor(
+  domain: CloudSyncDomain
+): CloudSyncDomainDescriptor {
+  return CLOUD_SYNC_DOMAIN_DESCRIPTORS.find(
+    (descriptor) => descriptor.domain === domain
+  ) as CloudSyncDomainDescriptor;
+}
+
+export type FileCloudSyncDomain = Extract<
+  CloudSyncDomain,
+  | "files-metadata"
+  | "files-images"
+  | "files-trash"
+  | "files-applets"
+  | "custom-wallpapers"
+>;
+
+export const FILE_SYNC_DOMAINS = CLOUD_SYNC_DOMAIN_DESCRIPTORS.filter(
+  (descriptor) => descriptor.category === "files"
+).map((descriptor) => descriptor.domain) as readonly FileCloudSyncDomain[];
+
+export type RedisSyncDomain = Extract<
+  CloudSyncDomain,
   | "settings"
+  | "files-metadata"
   | "songs"
   | "videos"
   | "tv"
   | "stickies"
   | "calendar"
   | "contacts"
-  | "maps";
+  | "maps"
+>;
 
-export const FILE_SYNC_DOMAINS = [
-  "files-metadata",
-  "files-images",
-  "files-trash",
-  "files-applets",
-  "custom-wallpapers",
-] as const;
+export const REDIS_SYNC_DOMAINS = CLOUD_SYNC_DOMAIN_DESCRIPTORS.filter(
+  (descriptor) => descriptor.storage === "redis"
+).map((descriptor) => descriptor.domain) as readonly RedisSyncDomain[];
 
-export type FileCloudSyncDomain = (typeof FILE_SYNC_DOMAINS)[number];
+export type BlobSyncDomain = Extract<
+  CloudSyncDomain,
+  "files-images" | "files-trash" | "files-applets" | "custom-wallpapers"
+>;
 
-export const REDIS_SYNC_DOMAINS = [
-  "settings",
-  "files-metadata",
-  "songs",
-  "videos",
-  "tv",
-  "stickies",
-  "calendar",
-  "contacts",
-  "maps",
-] as const;
+export const BLOB_SYNC_DOMAINS = CLOUD_SYNC_DOMAIN_DESCRIPTORS.filter(
+  (descriptor) => descriptor.storage === "blob"
+).map((descriptor) => descriptor.domain) as readonly BlobSyncDomain[];
 
-export type RedisSyncDomain = (typeof REDIS_SYNC_DOMAINS)[number];
+export const INDIVIDUAL_BLOB_SYNC_DOMAINS = BLOB_SYNC_DOMAINS;
 
-export const BLOB_SYNC_DOMAINS = [
-  "files-images",
-  "files-trash",
-  "files-applets",
-  "custom-wallpapers",
-] as const;
-
-export type BlobSyncDomain = (typeof BLOB_SYNC_DOMAINS)[number];
-
-export const INDIVIDUAL_BLOB_SYNC_DOMAINS = [
-  "files-images",
-  "files-trash",
-  "files-applets",
-  "custom-wallpapers",
-] as const;
-
-export type IndividualBlobSyncDomain =
-  (typeof INDIVIDUAL_BLOB_SYNC_DOMAINS)[number];
+export type IndividualBlobSyncDomain = BlobSyncDomain;
 
 export function isRedisSyncDomain(domain: CloudSyncDomain): domain is RedisSyncDomain {
   return (REDIS_SYNC_DOMAINS as readonly string[]).includes(domain);
@@ -182,46 +300,13 @@ export function isFileCloudSyncDomain(
 export function getCloudSyncCategory(
   domain: CloudSyncDomain
 ): CloudSyncCategory {
-  if (isFileCloudSyncDomain(domain)) {
-    return "files";
-  }
-
-  switch (domain) {
-    case "settings":
-      return "settings";
-    case "songs":
-      return "songs";
-    case "videos":
-      return "videos";
-    case "tv":
-      return "tv";
-    case "stickies":
-      return "stickies";
-    case "calendar":
-      return "calendar";
-    case "contacts":
-      return "contacts";
-    case "maps":
-      return "maps";
-  }
+  return getCloudSyncDomainDescriptor(domain).category;
 }
 
 export function createEmptyCloudSyncMetadataMap(): CloudSyncMetadataMap {
-  return {
-    settings: null,
-    "files-metadata": null,
-    "files-images": null,
-    "files-trash": null,
-    "files-applets": null,
-    songs: null,
-    videos: null,
-    tv: null,
-    stickies: null,
-    calendar: null,
-    contacts: null,
-    maps: null,
-    "custom-wallpapers": null,
-  };
+  return Object.fromEntries(
+    CLOUD_SYNC_DOMAINS.map((domain) => [domain, null])
+  ) as CloudSyncMetadataMap;
 }
 
 export function parseCloudSyncTimestamp(

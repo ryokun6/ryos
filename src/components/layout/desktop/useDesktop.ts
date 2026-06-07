@@ -15,7 +15,7 @@ import { useFilesStore, type FileSystemItem } from "@/stores/useFilesStore";
 import { useShallow } from "zustand/react/shallow";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import type { LaunchOriginRect } from "@/stores/useAppStore";
-import { dbOperations } from "@/apps/finder/hooks/useFileSystem";
+import { dbOperations } from "@/utils/indexedDBOperations";
 import { STORES } from "@/utils/indexedDB";
 import { useTranslation } from "react-i18next";
 import { useWallpaper } from "@/hooks/useWallpaper";

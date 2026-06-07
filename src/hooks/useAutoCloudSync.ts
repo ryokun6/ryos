@@ -65,6 +65,7 @@ import {
 } from "@/sync/state";
 import { isApplyingRemoteDomain } from "@/utils/cloudSyncRemoteApplyState";
 import {
+  CLOUD_SYNC_DOMAIN_DESCRIPTORS,
   CLOUD_SYNC_DOMAINS,
   getLatestCloudSyncTimestamp,
   getSyncChannelName,
@@ -90,109 +91,54 @@ const REMOTE_APPLY_SUPPRESSION_MS = 2000;
 const REALTIME_INFLIGHT_SUPPRESSION_MS = 30_000;
 const BATCH_INFLIGHT_SUPPRESSION_MS = 60_000;
 
-const UPLOAD_DEBOUNCE_MS: Record<CloudSyncDomain, number> = {
-  settings: 2500,
-  "files-metadata": 8000,
-  "files-images": 8000,
-  "files-trash": 5000,
-  "files-applets": 8000,
-  songs: 4000,
-  videos: 4000,
-  tv: 3000,
-  stickies: 3000,
-  calendar: 4000,
-  contacts: 3000,
-  maps: 3000,
-  "custom-wallpapers": 8000,
-};
+const UPLOAD_DEBOUNCE_MS = Object.fromEntries(
+  CLOUD_SYNC_DOMAIN_DESCRIPTORS.map((descriptor) => [
+    descriptor.domain,
+    descriptor.uploadDebounceMs,
+  ])
+) as Record<CloudSyncDomain, number>;
 
-const MAX_UPLOAD_DEBOUNCE_MS: Record<CloudSyncDomain, number> = {
-  settings: 8_000,
-  "files-metadata": 15_000,
-  "files-images": 15_000,
-  "files-trash": 10_000,
-  "files-applets": 15_000,
-  songs: 10_000,
-  videos: 10_000,
-  tv: 8_000,
-  stickies: 8_000,
-  calendar: 10_000,
-  contacts: 8_000,
-  maps: 8_000,
-  "custom-wallpapers": 15_000,
-};
+const MAX_UPLOAD_DEBOUNCE_MS = Object.fromEntries(
+  CLOUD_SYNC_DOMAIN_DESCRIPTORS.map((descriptor) => [
+    descriptor.domain,
+    descriptor.maxUploadDebounceMs,
+  ])
+) as Record<CloudSyncDomain, number>;
 
 const UPLOAD_RETRY_DELAYS = [3_000, 8_000, 20_000];
 
 function createDomainStringMap(initialValue: string | null): Record<CloudSyncDomain, string | null> {
-  return {
-    settings: initialValue,
-    "files-metadata": initialValue,
-    "files-images": initialValue,
-    "files-trash": initialValue,
-    "files-applets": initialValue,
-    songs: initialValue,
-    videos: initialValue,
-    tv: initialValue,
-    stickies: initialValue,
-    calendar: initialValue,
-    contacts: initialValue,
-    maps: initialValue,
-    "custom-wallpapers": initialValue,
-  };
+  return Object.fromEntries(
+    CLOUD_SYNC_DOMAINS.map((domain) => [domain, initialValue])
+  ) as Record<CloudSyncDomain, string | null>;
 }
 
 function createLogicalDomainNumberMap(
   initialValue: number
 ): Record<LogicalCloudSyncDomain, number> {
-  return {
-    files: initialValue,
-    settings: initialValue,
-    songs: initialValue,
-    videos: initialValue,
-    tv: initialValue,
-    stickies: initialValue,
-    calendar: initialValue,
-    contacts: initialValue,
-    maps: initialValue,
-  };
+  return Object.fromEntries(
+    LOGICAL_CLOUD_SYNC_DOMAINS.map((domain) => [domain, initialValue])
+  ) as Record<LogicalCloudSyncDomain, number>;
 }
 
 function createLogicalDomainBooleanMap(
   initialValue: boolean
 ): Record<LogicalCloudSyncDomain, boolean> {
-  return {
-    files: initialValue,
-    settings: initialValue,
-    songs: initialValue,
-    videos: initialValue,
-    tv: initialValue,
-    stickies: initialValue,
-    calendar: initialValue,
-    contacts: initialValue,
-    maps: initialValue,
-  };
+  return Object.fromEntries(
+    LOGICAL_CLOUD_SYNC_DOMAINS.map((domain) => [domain, initialValue])
+  ) as Record<LogicalCloudSyncDomain, boolean>;
 }
 
 function createDomainPendingRemoteUpdateMap(): Record<
   CloudSyncDomain,
   { updatedAt: string; syncVersion?: CloudSyncVersionState | null } | null
 > {
-  return {
-    settings: null,
-    "files-metadata": null,
-    "files-images": null,
-    "files-trash": null,
-    "files-applets": null,
-    songs: null,
-    videos: null,
-    tv: null,
-    stickies: null,
-    calendar: null,
-    contacts: null,
-    maps: null,
-    "custom-wallpapers": null,
-  };
+  return Object.fromEntries(
+    CLOUD_SYNC_DOMAINS.map((domain) => [domain, null])
+  ) as Record<
+    CloudSyncDomain,
+    { updatedAt: string; syncVersion?: CloudSyncVersionState | null } | null
+  >;
 }
 
 function createLogicalPendingRemoteUpdateMap(): Record<
@@ -203,17 +149,16 @@ function createLogicalPendingRemoteUpdateMap(): Record<
     syncVersion?: CloudSyncVersionState | null;
   } | null
 > {
-  return {
-    files: null,
-    settings: null,
-    songs: null,
-    videos: null,
-    tv: null,
-    stickies: null,
-    calendar: null,
-    contacts: null,
-    maps: null,
-  };
+  return Object.fromEntries(
+    LOGICAL_CLOUD_SYNC_DOMAINS.map((domain) => [domain, null])
+  ) as Record<
+    LogicalCloudSyncDomain,
+    {
+      triggerDomain: CloudSyncDomain;
+      updatedAt: string;
+      syncVersion?: CloudSyncVersionState | null;
+    } | null
+  >;
 }
 
 function shouldReplacePendingRemoteUpdate(

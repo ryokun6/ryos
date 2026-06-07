@@ -1,7 +1,9 @@
 import {
+  CLOUD_SYNC_DOMAINS,
   type CloudSyncDomain,
   type CloudSyncDomainMetadata,
   type CloudSyncMetadataMap,
+  getCloudSyncCategory,
   getLatestCloudSyncTimestamp,
   parseCloudSyncTimestamp,
 } from "@/utils/cloudSyncShared";
@@ -23,26 +25,27 @@ const LOGICAL_CLOUD_SYNC_DOMAIN_SET = new Set<string>(
 
 export type LogicalCloudSyncDomain = (typeof LOGICAL_CLOUD_SYNC_DOMAINS)[number];
 
+const FILE_LOGICAL_PART_ORDER: CloudSyncDomain[] = [
+  "files-images",
+  "files-trash",
+  "files-applets",
+  "files-metadata",
+  "custom-wallpapers",
+];
+
 export const LOGICAL_TO_PHYSICAL_CLOUD_SYNC_DOMAINS: Record<
   LogicalCloudSyncDomain,
   CloudSyncDomain[]
-> = {
-  settings: ["settings"],
-  files: [
-    "files-images",
-    "files-trash",
-    "files-applets",
-    "files-metadata",
-    "custom-wallpapers",
-  ],
-  songs: ["songs"],
-  videos: ["videos"],
-  tv: ["tv"],
-  stickies: ["stickies"],
-  calendar: ["calendar"],
-  contacts: ["contacts"],
-  maps: ["maps"],
-};
+> = Object.fromEntries(
+  LOGICAL_CLOUD_SYNC_DOMAINS.map((logicalDomain) => [
+    logicalDomain,
+    logicalDomain === "files"
+      ? FILE_LOGICAL_PART_ORDER
+      : CLOUD_SYNC_DOMAINS.filter(
+          (domain) => getCloudSyncCategory(domain) === logicalDomain
+        ),
+  ])
+) as Record<LogicalCloudSyncDomain, CloudSyncDomain[]>;
 const LOGICAL_TO_PHYSICAL_CLOUD_SYNC_DOMAIN_SETS: Record<
   LogicalCloudSyncDomain,
   Set<CloudSyncDomain>
@@ -72,17 +75,9 @@ export function isLogicalCloudSyncDomain(
 }
 
 export function createEmptyLogicalCloudSyncMetadataMap(): LogicalCloudSyncMetadataMap {
-  return {
-    files: null,
-    settings: null,
-    songs: null,
-    videos: null,
-    tv: null,
-    stickies: null,
-    calendar: null,
-    contacts: null,
-    maps: null,
-  };
+  return Object.fromEntries(
+    LOGICAL_CLOUD_SYNC_DOMAINS.map((domain) => [domain, null])
+  ) as LogicalCloudSyncMetadataMap;
 }
 
 export function getLogicalCloudSyncDomainPhysicalParts(

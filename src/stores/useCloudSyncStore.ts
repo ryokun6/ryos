@@ -1,10 +1,13 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import type {
+  CloudSyncCategory,
+  CloudSyncDeletionBucket,
   CloudSyncDomain,
   CloudSyncMetadataMap,
 } from "@/utils/cloudSyncShared";
 import {
+  CLOUD_SYNC_DELETION_BUCKETS,
   createEmptyCloudSyncMetadataMap,
   getCloudSyncCategory,
 } from "@/utils/cloudSyncShared";
@@ -25,46 +28,15 @@ interface CloudSyncDomainStatus {
 
 type CloudSyncDomainStatusMap = Record<CloudSyncDomain, CloudSyncDomainStatus>;
 
-export const CLOUD_SYNC_DELETION_BUCKETS = [
-  "calendarTodoIds",
-  "calendarEventIds",
-  "calendarIds",
-  "stickyNoteIds",
-  "contactIds",
-  "fileMetadataPaths",
-  "fileImageKeys",
-  "fileTrashKeys",
-  "fileAppletKeys",
-  "customWallpaperKeys",
-  "songTrackIds",
-  "tvCustomChannelIds",
-  "mapsFavoriteIds",
-] as const;
-
-export type CloudSyncDeletionBucket =
-  (typeof CLOUD_SYNC_DELETION_BUCKETS)[number];
-
 export type CloudSyncDeletionMarkerState = Record<
   CloudSyncDeletionBucket,
   DeletionMarkerMap
 >;
 
 function createEmptyDeletionMarkers(): CloudSyncDeletionMarkerState {
-  return {
-    calendarTodoIds: {},
-    calendarEventIds: {},
-    calendarIds: {},
-    stickyNoteIds: {},
-    contactIds: {},
-    fileMetadataPaths: {},
-    fileImageKeys: {},
-    fileTrashKeys: {},
-    fileAppletKeys: {},
-    customWallpaperKeys: {},
-    songTrackIds: {},
-    tvCustomChannelIds: {},
-    mapsFavoriteIds: {},
-  };
+  return Object.fromEntries(
+    CLOUD_SYNC_DELETION_BUCKETS.map((bucket) => [bucket, {}])
+  ) as CloudSyncDeletionMarkerState;
 }
 
 interface CloudSyncStoreState {
@@ -126,6 +98,32 @@ interface CloudSyncStoreState {
     markers: DeletionMarkerMap
   ) => void;
 }
+
+const CLOUD_SYNC_CATEGORY_FLAG_KEYS: Record<
+  CloudSyncCategory,
+  keyof Pick<
+    CloudSyncStoreState,
+    | "syncFiles"
+    | "syncSettings"
+    | "syncSongs"
+    | "syncVideos"
+    | "syncTv"
+    | "syncStickies"
+    | "syncCalendar"
+    | "syncContacts"
+    | "syncMaps"
+  >
+> = {
+  files: "syncFiles",
+  settings: "syncSettings",
+  songs: "syncSongs",
+  videos: "syncVideos",
+  tv: "syncTv",
+  stickies: "syncStickies",
+  calendar: "syncCalendar",
+  contacts: "syncContacts",
+  maps: "syncMaps",
+};
 
 function createInitialDomainStatus(): CloudSyncDomainStatusMap {
   const empty = (): CloudSyncDomainStatus => ({
@@ -217,59 +215,14 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
         set({ autoSyncEnabled: enabled }),
 
       setDomainEnabled: (domain, enabled) => {
-        switch (getCloudSyncCategory(domain)) {
-          case "files":
-            set({ syncFiles: enabled });
-            return;
-          case "settings":
-            set({ syncSettings: enabled });
-            return;
-          case "songs":
-            set({ syncSongs: enabled });
-            return;
-          case "videos":
-            set({ syncVideos: enabled });
-            return;
-          case "tv":
-            set({ syncTv: enabled });
-            return;
-          case "stickies":
-            set({ syncStickies: enabled });
-            return;
-          case "calendar":
-            set({ syncCalendar: enabled });
-            return;
-          case "contacts":
-            set({ syncContacts: enabled });
-            return;
-          case "maps":
-            set({ syncMaps: enabled });
-            return;
-        }
+        const flagKey = CLOUD_SYNC_CATEGORY_FLAG_KEYS[getCloudSyncCategory(domain)];
+        set({ [flagKey]: enabled } as Partial<CloudSyncStoreState>);
       },
 
       isDomainEnabled: (domain) => {
         const state = get();
-        switch (getCloudSyncCategory(domain)) {
-          case "files":
-            return state.syncFiles;
-          case "settings":
-            return state.syncSettings;
-          case "songs":
-            return state.syncSongs;
-          case "videos":
-            return state.syncVideos;
-          case "tv":
-            return state.syncTv;
-          case "stickies":
-            return state.syncStickies;
-          case "calendar":
-            return state.syncCalendar;
-          case "contacts":
-            return state.syncContacts;
-          case "maps":
-            return state.syncMaps;
-        }
+        const flagKey = CLOUD_SYNC_CATEGORY_FLAG_KEYS[getCloudSyncCategory(domain)];
+        return Boolean(state[flagKey]);
       },
 
       setCheckingRemote: (checking) =>

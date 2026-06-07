@@ -7,7 +7,11 @@ import type {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { ViewType, SortType } from "../components/FinderMenuBar";
-import { useFileSystem, dbOperations, DocumentContent } from "./useFileSystem";
+import { useFileSystem } from "./useFileSystem";
+import {
+  dbOperations,
+  type DocumentContent,
+} from "@/utils/indexedDBOperations";
 import { STORES } from "@/utils/indexedDB";
 import { calculateStorageSpace } from "@/stores/useFinderStore";
 import { FileItem } from "../components/FileList";

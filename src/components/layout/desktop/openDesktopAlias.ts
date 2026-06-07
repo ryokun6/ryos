@@ -1,5 +1,5 @@
 import type { AppId } from "@/config/appRegistry";
-import { dbOperations } from "@/apps/finder/hooks/useFileSystem";
+import { dbOperations } from "@/utils/indexedDBOperations";
 import type { LaunchOriginRect } from "@/stores/useAppStore";
 import type { FileSystemItem } from "@/stores/useFilesStore";
 import { STORES } from "@/utils/indexedDB";

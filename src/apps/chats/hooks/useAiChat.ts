@@ -23,9 +23,11 @@ import { appRegistry } from "@/config/appRegistry";
 import { getTranslatedAppName } from "@/utils/i18n";
 import {
   useFileSystem,
+} from "@/apps/finder/hooks/useFileSystem";
+import {
   dbOperations,
   type DocumentContent,
-} from "@/apps/finder/hooks/useFileSystem";
+} from "@/utils/indexedDBOperations";
 import { STORES } from "@/utils/indexedDB";
 import { useTextEditStore } from "@/stores/useTextEditStore";
 import { useFilesStore } from "@/stores/useFilesStore";
