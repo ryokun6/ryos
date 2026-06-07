@@ -1,3 +1,5 @@
+import type { VercelResponse } from "@vercel/node";
+import type { initLogger } from "./_logging.js";
 import { createRedis } from "./redis.js";
 
 // Set up Redis client
@@ -342,4 +344,172 @@ export function makeKey(
     }
     return acc;
   }, []).join(":");
+}
+
+type RateLimitLogger = Pick<
+  ReturnType<typeof initLogger>["logger"],
+  "info" | "warn" | "error" | "response"
+>;
+
+export type BurstDailySubjectKind = "ip" | "user" | "direct";
+
+export interface BurstDailyLimitOptions {
+  prefix: string;
+  burstLimit: number;
+  burstWindow: number;
+  dailyLimit: number;
+  dailyWindow: number;
+  logger: RateLimitLogger;
+  startTime: number;
+  /** Defaults to client IP from req. */
+  subject?: string;
+  /** How subject is encoded in Redis keys. Default "ip". */
+  subjectKind?: BurstDailySubjectKind;
+  /** Second window key segment. Default "daily". */
+  dailyKeySegment?: string;
+  /** Scope name in 429 JSON for the second window. Default "daily". */
+  dailyScope?: string;
+  /** Include limit/windowSeconds/resetSeconds/identifier in 429 body. */
+  detailed?: boolean;
+  /** Set X-RateLimit-* headers on 429 responses. */
+  rateLimitHeaders?: boolean;
+}
+
+function buildBurstDailyKeyParts(
+  prefix: string,
+  windowKind: "burst" | string,
+  subject: string,
+  subjectKind: BurstDailySubjectKind
+): string[] {
+  if (subjectKind === "direct") {
+    return ["rl", prefix, windowKind, subject];
+  }
+  return ["rl", prefix, windowKind, subjectKind, subject];
+}
+
+function sendBurstDailyLimitResponse(
+  res: VercelResponse,
+  scope: string,
+  result: CounterLimitResult,
+  fallbackWindow: number,
+  options: BurstDailyLimitOptions,
+  identifier?: string
+): void {
+  const resetSeconds = result.resetSeconds ?? fallbackWindow;
+  res.setHeader("Retry-After", String(resetSeconds));
+
+  if (options.rateLimitHeaders) {
+    res.setHeader("X-RateLimit-Limit", String(result.limit));
+    res.setHeader(
+      "X-RateLimit-Remaining",
+      String(Math.max(0, result.limit - result.count))
+    );
+    res.setHeader("X-RateLimit-Reset", String(resetSeconds));
+  }
+
+  options.logger.response(429, Date.now() - options.startTime);
+
+  const body: Record<string, unknown> = {
+    error: "rate_limit_exceeded",
+    scope,
+  };
+
+  if (options.detailed) {
+    body.limit = result.limit;
+    body.windowSeconds = result.windowSeconds;
+    body.resetSeconds = resetSeconds;
+    if (identifier) {
+      body.identifier = identifier;
+    }
+  }
+
+  res.status(429).json(body);
+}
+
+/**
+ * Enforce burst + daily (or budget) counter limits for an API route.
+ * Returns true when the request was rate-limited and a 429 was sent.
+ */
+export async function checkBurstDailyLimits(
+  req: { headers: Record<string, string | string[] | undefined> },
+  res: VercelResponse,
+  options: BurstDailyLimitOptions
+): Promise<boolean> {
+  const {
+    prefix,
+    burstLimit,
+    burstWindow,
+    dailyLimit,
+    dailyWindow,
+    logger,
+    subjectKind = "ip",
+    dailyKeySegment = "daily",
+    dailyScope = "daily",
+    detailed = false,
+    rateLimitHeaders = false,
+  } = options;
+
+  try {
+    const subject =
+      options.subject ??
+      (subjectKind === "direct" ? getClientIp(req) : getClientIp(req));
+    const identifier =
+      subjectKind === "ip"
+        ? `ip:${subject}`
+        : subjectKind === "user"
+          ? subject
+          : subject;
+
+    const burstKey = makeKey(
+      buildBurstDailyKeyParts(prefix, "burst", subject, subjectKind)
+    );
+    const dailyKey = makeKey(
+      buildBurstDailyKeyParts(prefix, dailyKeySegment, subject, subjectKind)
+    );
+
+    const burst = await checkCounterLimit({
+      key: burstKey,
+      windowSeconds: burstWindow,
+      limit: burstLimit,
+    });
+
+    if (!burst.allowed) {
+      const log = logger.warn ?? logger.info;
+      log("Rate limit exceeded (burst)", { subject, prefix });
+      sendBurstDailyLimitResponse(
+        res,
+        "burst",
+        burst,
+        burstWindow,
+        options,
+        detailed ? identifier : undefined
+      );
+      return true;
+    }
+
+    const daily = await checkCounterLimit({
+      key: dailyKey,
+      windowSeconds: dailyWindow,
+      limit: dailyLimit,
+    });
+
+    if (!daily.allowed) {
+      const log = logger.warn ?? logger.info;
+      log(`Rate limit exceeded (${dailyScope})`, { subject, prefix });
+      sendBurstDailyLimitResponse(
+        res,
+        dailyScope,
+        daily,
+        dailyWindow,
+        options,
+        detailed ? identifier : undefined
+      );
+      return true;
+    }
+
+    return false;
+  } catch (err) {
+    logger.error("Rate limit check failed", err);
+    return false;
+  }
 }

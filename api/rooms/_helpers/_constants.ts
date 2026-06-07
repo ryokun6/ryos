@@ -3,13 +3,15 @@
  * Redis key prefixes, TTLs, and configuration values
  */
 
+import { CHAT_USERS_PREFIX } from "../../_utils/auth/_constants.js";
+
 // ============================================================================
 // Redis Key Prefixes
 // ============================================================================
 
 export const CHAT_ROOM_PREFIX = "chat:room:";
 export const CHAT_MESSAGES_PREFIX = "chat:messages:";
-export const CHAT_USERS_PREFIX = "chat:users:";
+export { CHAT_USERS_PREFIX };
 export const CHAT_ROOM_USERS_PREFIX = "chat:room:users:";
 export const CHAT_ROOM_PRESENCE_PREFIX = "chat:presence:";
 export const CHAT_ROOM_PRESENCE_ZSET_PREFIX = "chat:presencez:";

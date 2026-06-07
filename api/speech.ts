@@ -48,81 +48,27 @@ export default apiHandler<SpeechRequest>(
       isAuthenticatedRyo,
     });
 
-    // ---------------------------
-    // Rate limiting (burst + daily)
-    // ---------------------------
-    try {
-      // Skip rate limiting for authenticated ryo user
-      if (!isAuthenticatedRyo) {
-        const ip = getClientIp(req);
-        const rateLimitIdentifier = isAuthenticated && identifier ? identifier : `anon:${ip}`;
+    if (!isAuthenticatedRyo) {
+      const ip = getClientIp(req);
+      const rateLimitIdentifier =
+        isAuthenticated && identifier ? identifier : `anon:${ip}`;
 
-        const BURST_WINDOW = 60;
-        const BURST_LIMIT = 10;
-        const DAILY_WINDOW = 60 * 60 * 24;
-        const DAILY_LIMIT = 50;
-
-        const burstKey = RateLimit.makeKey(["rl", "tts", "burst", rateLimitIdentifier]);
-        const dailyKey = RateLimit.makeKey(["rl", "tts", "daily", rateLimitIdentifier]);
-
-        const burst = await RateLimit.checkCounterLimit({
-          key: burstKey,
-          windowSeconds: BURST_WINDOW,
-          limit: BURST_LIMIT,
-        });
-
-        if (!burst.allowed) {
-          logger.warn("Rate limit exceeded (burst)", { rateLimitIdentifier });
-          logger.response(429, Date.now() - startTime);
-          res.setHeader("Retry-After", String(burst.resetSeconds ?? BURST_WINDOW));
-          res.setHeader("X-RateLimit-Limit", String(burst.limit));
-          res.setHeader(
-            "X-RateLimit-Remaining",
-            String(Math.max(0, burst.limit - burst.count))
-          );
-          res.setHeader("X-RateLimit-Reset", String(burst.resetSeconds ?? BURST_WINDOW));
-          res.status(429).json({
-            error: "rate_limit_exceeded",
-            scope: "burst",
-            limit: burst.limit,
-            windowSeconds: burst.windowSeconds,
-            resetSeconds: burst.resetSeconds,
-            identifier: rateLimitIdentifier,
-          });
-          return;
-        }
-
-        const daily = await RateLimit.checkCounterLimit({
-          key: dailyKey,
-          windowSeconds: DAILY_WINDOW,
-          limit: DAILY_LIMIT,
-        });
-
-        if (!daily.allowed) {
-          logger.warn("Rate limit exceeded (daily)", { rateLimitIdentifier });
-          logger.response(429, Date.now() - startTime);
-          res.setHeader("Retry-After", String(daily.resetSeconds ?? DAILY_WINDOW));
-          res.setHeader("X-RateLimit-Limit", String(daily.limit));
-          res.setHeader(
-            "X-RateLimit-Remaining",
-            String(Math.max(0, daily.limit - daily.count))
-          );
-          res.setHeader("X-RateLimit-Reset", String(daily.resetSeconds ?? DAILY_WINDOW));
-          res.status(429).json({
-            error: "rate_limit_exceeded",
-            scope: "daily",
-            limit: daily.limit,
-            windowSeconds: daily.windowSeconds,
-            resetSeconds: daily.resetSeconds,
-            identifier: rateLimitIdentifier,
-          });
-          return;
-        }
-      } else {
-        logger.info("Rate limit bypassed for authenticated ryo user");
-      }
-    } catch (e) {
-      logger.error("Rate limit check failed (tts)", e);
+      const rateLimited = await RateLimit.checkBurstDailyLimits(req, res, {
+        prefix: "tts",
+        burstLimit: 10,
+        burstWindow: 60,
+        dailyLimit: 50,
+        dailyWindow: 60 * 60 * 24,
+        logger,
+        startTime,
+        subject: rateLimitIdentifier,
+        subjectKind: "direct",
+        detailed: true,
+        rateLimitHeaders: true,
+      });
+      if (rateLimited) return;
+    } else {
+      logger.info("Rate limit bypassed for authenticated ryo user");
     }
 
     try {

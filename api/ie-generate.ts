@@ -6,7 +6,6 @@ import {
   type UIMessage,
 } from "ai";
 import * as RateLimit from "./_utils/_rate-limit.js";
-import { getClientIp } from "./_utils/_rate-limit.js";
 import {
   SupportedModel,
   DEFAULT_MODEL,
@@ -155,62 +154,19 @@ export default apiHandler<IEGenerateRequestBody>(
   },
   async ({ req, res, redis, logger, startTime, origin, body }) => {
     try {
-    // ---------------------------
-    // Rate limiting (burst + budget per IP)
-    // ---------------------------
-    try {
-      const ip = getClientIp(req);
-      const BURST_WINDOW = 60; // 1 minute
-      const BURST_LIMIT = 3;
-      const BUDGET_WINDOW = 5 * 60 * 60; // 5 hours
-      const BUDGET_LIMIT = 10;
-
-      const burstKey = RateLimit.makeKey(["rl", "ie", "burst", "ip", ip]);
-      const budgetKey = RateLimit.makeKey(["rl", "ie", "budget", "ip", ip]);
-
-      const burst = await RateLimit.checkCounterLimit({
-        key: burstKey,
-        windowSeconds: BURST_WINDOW,
-        limit: BURST_LIMIT,
-      });
-      if (!burst.allowed) {
-        logger.warn("Rate limit exceeded (burst)", { ip });
-        res.setHeader("Retry-After", String(burst.resetSeconds ?? BURST_WINDOW));
-        res.setHeader("Content-Type", "application/json");
-        logger.response(429, Date.now() - startTime);
-        return res.status(429).json({
-          error: "rate_limit_exceeded",
-          scope: "burst",
-          limit: burst.limit,
-          windowSeconds: burst.windowSeconds,
-          resetSeconds: burst.resetSeconds,
-          identifier: `ip:${ip}`,
-        });
-      }
-
-      const budget = await RateLimit.checkCounterLimit({
-        key: budgetKey,
-        windowSeconds: BUDGET_WINDOW,
-        limit: BUDGET_LIMIT,
-      });
-      if (!budget.allowed) {
-        logger.warn("Rate limit exceeded (budget)", { ip });
-        res.setHeader("Retry-After", String(budget.resetSeconds ?? BUDGET_WINDOW));
-        res.setHeader("Content-Type", "application/json");
-        logger.response(429, Date.now() - startTime);
-        return res.status(429).json({
-          error: "rate_limit_exceeded",
-          scope: "budget",
-          limit: budget.limit,
-          windowSeconds: budget.windowSeconds,
-          resetSeconds: budget.resetSeconds,
-          identifier: `ip:${ip}`,
-        });
-      }
-    } catch (e) {
-      // Fail open on limiter error to avoid blocking
-      logger.error("IE generate rate-limit error", e);
-    }
+    const rateLimited = await RateLimit.checkBurstDailyLimits(req, res, {
+      prefix: "ie",
+      burstLimit: 3,
+      burstWindow: 60,
+      dailyLimit: 10,
+      dailyWindow: 5 * 60 * 60,
+      dailyKeySegment: "budget",
+      dailyScope: "budget",
+      logger,
+      startTime,
+      detailed: true,
+    });
+    if (rateLimited) return;
 
     // Extract query parameters
     const queryModel = req.query.model as SupportedModel | undefined;

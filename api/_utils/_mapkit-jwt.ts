@@ -11,7 +11,7 @@ import { SignJWT, importPKCS8, type CryptoKey } from "jose";
  * raw base64, etc.).
  */
 
-interface PrivateKeyParseResult {
+export interface PrivateKeyParseResult {
   pem: string | null;
   reason?: string;
   rawLength?: number;
@@ -21,8 +21,9 @@ interface PrivateKeyParseResult {
   invalidCharSample?: string;
 }
 
-export function parseMapKitPrivateKey(): PrivateKeyParseResult {
-  const raw = process.env.MAPKIT_PRIVATE_KEY;
+export function parseApplePrivateKey(
+  raw: string | undefined
+): PrivateKeyParseResult {
   if (!raw || raw.trim().length === 0) {
     return { pem: null, reason: "env var empty or unset" };
   }
@@ -83,6 +84,10 @@ export function parseMapKitPrivateKey(): PrivateKeyParseResult {
 
   const wrapped = base64Body.match(/.{1,64}/g)?.join("\n") ?? base64Body;
   return { pem: `${header}\n${wrapped}\n${footer}\n` };
+}
+
+export function parseMapKitPrivateKey(): PrivateKeyParseResult {
+  return parseApplePrivateKey(process.env.MAPKIT_PRIVATE_KEY);
 }
 
 export function readMapKitPrivateKey(): string | null {

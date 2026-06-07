@@ -2,7 +2,6 @@ import { google } from "@ai-sdk/google";
 import { generateText, Output, NoObjectGeneratedError } from "ai";
 import { z } from "zod";
 import * as RateLimit from "./_utils/_rate-limit.js";
-import { getClientIp } from "./_utils/_rate-limit.js";
 import { apiHandler } from "./_utils/api-handler.js";
 
 export const runtime = "nodejs";
@@ -29,45 +28,16 @@ export default apiHandler<ParseTitleRequest>(
     const rawTitle = body?.title;
     const author_name = body?.author_name;
 
-    // Rate limits: burst 15/min/IP + daily 500/IP
-    try {
-      const ip = getClientIp(req);
-      const BURST_WINDOW = 60;
-      const BURST_LIMIT = 15;
-      const DAILY_WINDOW = 60 * 60 * 24;
-      const DAILY_LIMIT = 500;
-
-      const burstKey = RateLimit.makeKey(["rl", "parse-title", "burst", "ip", ip]);
-      const dailyKey = RateLimit.makeKey(["rl", "parse-title", "daily", "ip", ip]);
-
-      const burst = await RateLimit.checkCounterLimit({
-        key: burstKey,
-        windowSeconds: BURST_WINDOW,
-        limit: BURST_LIMIT,
-      });
-      if (!burst.allowed) {
-        logger.warn("Rate limit exceeded (burst)", { ip });
-        logger.response(429, Date.now() - startTime);
-        res.setHeader("Retry-After", String(burst.resetSeconds ?? BURST_WINDOW));
-        res.status(429).json({ error: "rate_limit_exceeded", scope: "burst" });
-        return;
-      }
-
-      const daily = await RateLimit.checkCounterLimit({
-        key: dailyKey,
-        windowSeconds: DAILY_WINDOW,
-        limit: DAILY_LIMIT,
-      });
-      if (!daily.allowed) {
-        logger.warn("Rate limit exceeded (daily)", { ip });
-        logger.response(429, Date.now() - startTime);
-        res.setHeader("Retry-After", String(daily.resetSeconds ?? DAILY_WINDOW));
-        res.status(429).json({ error: "rate_limit_exceeded", scope: "daily" });
-        return;
-      }
-    } catch (e) {
-      logger.error("Rate limit check failed", e);
-    }
+    const rateLimited = await RateLimit.checkBurstDailyLimits(req, res, {
+      prefix: "parse-title",
+      burstLimit: 15,
+      burstWindow: 60,
+      dailyLimit: 500,
+      dailyWindow: 60 * 60 * 24,
+      logger,
+      startTime,
+    });
+    if (rateLimited) return;
 
     if (!rawTitle || typeof rawTitle !== "string") {
       logger.response(400, Date.now() - startTime);

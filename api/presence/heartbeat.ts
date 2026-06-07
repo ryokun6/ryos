@@ -8,7 +8,6 @@
  */
 
 import { apiHandler } from "../_utils/api-handler.js";
-import { createRedis } from "../_utils/redis.js";
 import { triggerRealtimeEvent } from "../_utils/realtime.js";
 
 export const runtime = "nodejs";
@@ -20,8 +19,7 @@ const GLOBAL_PRESENCE_CHANNEL = "presence-global";
 
 export default apiHandler(
   { methods: ["GET", "POST"], auth: "optional" },
-  async ({ req, res, user }) => {
-    const redis = createRedis();
+  async ({ req, res, redis, user }) => {
 
     if (!user) {
       res.status(401).json({ error: "Authentication required" });

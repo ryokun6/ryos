@@ -1,5 +1,4 @@
 import { apiHandler } from "../_utils/api-handler.js";
-import { createRedis } from "../_utils/redis.js";
 import { triggerRealtimeEvent } from "../_utils/realtime.js";
 
 export const runtime = "nodejs";
@@ -11,9 +10,8 @@ const AIRDROP_LOBBY_CHANNEL = "airdrop-lobby";
 
 export default apiHandler(
   { methods: ["POST"], auth: "required" },
-  async ({ res, user }) => {
+  async ({ res, redis, user }) => {
     const username = user!.username;
-    const redis = createRedis();
 
     await redis.zadd(AIRDROP_PRESENCE_KEY, {
       score: Date.now(),

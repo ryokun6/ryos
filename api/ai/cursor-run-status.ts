@@ -4,11 +4,11 @@
  */
 
 import {
-  CURSOR_REPO_AGENT_OWNER,
   cursorSdkEventsKey,
   cursorSdkMetaKey,
 } from "../chat/tools/cursor-repo-agent.js";
 import { apiHandler } from "../_utils/api-handler.js";
+import { requireRyoAdminUser } from "../_utils/require-ryo-admin.js";
 
 export const runtime = "nodejs";
 
@@ -58,12 +58,10 @@ export default apiHandler(
     contentType: "application/json",
   },
   async ({ req, res, user, redis, logger, startTime }) => {
-    const username = user?.username ?? "";
-    if (username !== CURSOR_REPO_AGENT_OWNER) {
-      logger.response(403, Date.now() - startTime);
-      res.status(403).json({ error: "Forbidden" });
+    if (!requireRyoAdminUser(user, res, logger, startTime, { message: "Forbidden" })) {
       return;
     }
+    const username = user!.username;
 
     const runId =
       firstQueryValue(req.query?.runId).trim() ||

@@ -1,6 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import * as RateLimit from "./_utils/_rate-limit.js";
-import { getClientIp } from "./_utils/_rate-limit.js";
 import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "./_utils/_cors.js";
 import { initLogger } from "./_utils/_logging.js";
 import { transcribeAudioBuffer } from "./_utils/voice.js";
@@ -75,59 +74,17 @@ export default async function handler(
   setCorsHeaders(res, effectiveOrigin, { methods: ["POST", "OPTIONS"], headers: ["Content-Type"] });
 
   try {
-    // Rate limiting (burst + daily) before reading form data
-    try {
-      const ip = getClientIp(req);
-      const BURST_WINDOW = 60;
-      const BURST_LIMIT = 10;
-      const DAILY_WINDOW = 60 * 60 * 24;
-      const DAILY_LIMIT = 50;
-
-      const burstKey = RateLimit.makeKey(["rl", "transcribe", "burst", "ip", ip]);
-      const dailyKey = RateLimit.makeKey(["rl", "transcribe", "daily", "ip", ip]);
-
-      const burst = await RateLimit.checkCounterLimit({
-        key: burstKey,
-        windowSeconds: BURST_WINDOW,
-        limit: BURST_LIMIT,
-      });
-      if (!burst.allowed) {
-        logger.warn("Rate limit exceeded (burst)", { ip });
-        logger.response(429, Date.now() - startTime);
-        res.setHeader("Retry-After", String(burst.resetSeconds ?? BURST_WINDOW));
-        res.status(429).json({
-          error: "rate_limit_exceeded",
-          scope: "burst",
-          limit: burst.limit,
-          windowSeconds: burst.windowSeconds,
-          resetSeconds: burst.resetSeconds,
-          identifier: `ip:${ip}`,
-        });
-        return;
-      }
-
-      const daily = await RateLimit.checkCounterLimit({
-        key: dailyKey,
-        windowSeconds: DAILY_WINDOW,
-        limit: DAILY_LIMIT,
-      });
-      if (!daily.allowed) {
-        logger.warn("Rate limit exceeded (daily)", { ip });
-        logger.response(429, Date.now() - startTime);
-        res.setHeader("Retry-After", String(daily.resetSeconds ?? DAILY_WINDOW));
-        res.status(429).json({
-          error: "rate_limit_exceeded",
-          scope: "daily",
-          limit: daily.limit,
-          windowSeconds: daily.windowSeconds,
-          resetSeconds: daily.resetSeconds,
-          identifier: `ip:${ip}`,
-        });
-        return;
-      }
-    } catch (rlErr) {
-      logger.error("Rate limit check failed", rlErr);
-    }
+    const rateLimited = await RateLimit.checkBurstDailyLimits(req, res, {
+      prefix: "transcribe",
+      burstLimit: 10,
+      burstWindow: 60,
+      dailyLimit: 50,
+      dailyWindow: 60 * 60 * 24,
+      logger,
+      startTime,
+      detailed: true,
+    });
+    if (rateLimited) return;
 
     // Parse form data
     const { files } = await parseForm(req);

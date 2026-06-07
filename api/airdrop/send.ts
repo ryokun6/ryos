@@ -1,5 +1,4 @@
 import { apiHandler } from "../_utils/api-handler.js";
-import { createRedis } from "../_utils/redis.js";
 import { triggerRealtimeEvent } from "../_utils/realtime.js";
 import {
   AIRDROP_PRESENCE_KEY,
@@ -21,7 +20,7 @@ interface SendBody {
 
 export default apiHandler<SendBody>(
   { methods: ["POST"], auth: "required", parseJsonBody: true },
-  async ({ res, user, body }) => {
+  async ({ res, redis, user, body }) => {
     const senderUsername = user!.username;
 
     if (!body?.recipient || !body?.fileName || !body?.content) {
@@ -35,8 +34,6 @@ export default apiHandler<SendBody>(
       res.status(413).json({ error: "File too large (max 2MB)" });
       return;
     }
-
-    const redis = createRedis();
 
     const cutoff = Date.now() - AIRDROP_PRESENCE_TTL_SECONDS * 1000;
     await redis.zremrangebyscore(AIRDROP_PRESENCE_KEY, 0, cutoff);

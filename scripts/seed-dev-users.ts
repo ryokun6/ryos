@@ -8,12 +8,10 @@
  * This script will ONLY run when NODE_ENV or VERCEL_ENV is set to 'development'.
  */
 
+import { CHAT_USERS_PREFIX } from "../api/_utils/auth/_constants.js";
 import { createRedis, type RedisLike } from "../api/_utils/redis.js";
 
 const BASE_URL = process.env.API_URL || "http://localhost:3000";
-
-// Redis key prefixes (must match api/chat-rooms/_constants.ts and api/_utils/auth)
-const CHAT_USERS_PREFIX = "chat:users:";
 const PASSWORD_HASH_PREFIX = "chat:password:";
 const AUTH_TOKEN_PREFIX = "chat:token:";
 
