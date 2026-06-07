@@ -86,7 +86,7 @@ describe("Error Boundary Wiring Tests", () => {
 
     test("dispatches shared crash events from Control Panels logic", async () => {
       const source = readSource(
-        "src/apps/control-panels/hooks/useControlPanelsLogic.ts",
+        "src/apps/control-panels/hooks/useSystemSettings.ts",
       );
       expect(source.includes("triggerRuntimeCrashTest")).toBe(true);
       expect(/scope:\s*"app"[\s\S]*appId:\s*"control-panels"/.test(source)).toBe(true);
