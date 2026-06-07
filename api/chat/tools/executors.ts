@@ -68,16 +68,11 @@ import {
   getTodayDateString,
 } from "../../_utils/_memory.js";
 import {
-  contactMatchesQuery,
-  createContactFromDraft,
-  getContactSummary,
-  type ContactDraft,
-  sortContacts,
-  updateContactFromDraft,
-} from "../../../src/utils/contacts.js";
+  applyContactsToolAction,
+  serializeContactToolRecord,
+} from "../../../src/shared/tools/contacts.js";
 import {
   readContactsState,
-  serializeContactForTool,
   writeContactsState,
 } from "../../_utils/contacts.js";
 
@@ -2212,26 +2207,6 @@ export async function executeStickiesControl(
   }
 }
 
-function toContactsDraft(input: ContactsControlInput): ContactDraft {
-  return {
-    displayName: input.displayName,
-    firstName: input.firstName,
-    lastName: input.lastName,
-    nickname: input.nickname,
-    organization: input.organization,
-    title: input.title,
-    notes: input.notes,
-    emails: input.emails,
-    phones: input.phones,
-    urls: input.urls,
-    addresses: input.addresses,
-    birthday: input.birthday,
-    telegramUsername: input.telegramUsername,
-    telegramUserId: input.telegramUserId,
-    source: "ai",
-  };
-}
-
 export async function executeContactsControl(
   input: ContactsControlInput,
   context: AppStateToolContext
@@ -2248,112 +2223,79 @@ export async function executeContactsControl(
     context.username
   );
 
-  switch (input.action) {
-    case "list": {
-      const contacts = input.query
-        ? state.contacts.filter((contact) =>
-            contactMatchesQuery(contact, input.query || "")
-          )
-        : state.contacts;
+  const result = applyContactsToolAction(state, input, {
+    resolvedId: input.id,
+    deletedAt: new Date().toISOString(),
+  });
 
+  if (!result.ok) {
+    switch (result.error) {
+      case "missing_id":
+        return { success: false, message: "Contact id is required." };
+      case "not_found":
+        return {
+          success: false,
+          message: `Contact with id '${result.id}' not found.`,
+        };
+      case "missing_data":
+        return { success: false, message: "No contact data provided." };
+      case "no_updates":
+        return { success: false, message: "No contact updates provided." };
+      default:
+        return { success: false, message: `Unknown action: ${input.action}` };
+    }
+  }
+
+  switch (result.kind) {
+    case "list":
       return {
         success: true,
         message:
-          contacts.length === 0
+          result.contacts.length === 0
             ? "No contacts found."
-            : `Found ${contacts.length} ${
-                contacts.length === 1 ? "contact" : "contacts"
+            : `Found ${result.contacts.length} ${
+                result.contacts.length === 1 ? "contact" : "contacts"
               }.`,
-        contacts: contacts.map(serializeContactForTool),
+        contacts: result.contacts.map(serializeContactToolRecord),
       };
-    }
 
-    case "get": {
-      const contact = state.contacts.find((item) => item.id === input.id);
-      if (!contact) {
-        return {
-          success: false,
-          message: `Contact with id '${input.id}' not found.`,
-        };
-      }
-
+    case "get":
       return {
         success: true,
-        message: `Loaded contact "${contact.displayName}".`,
-        contact: serializeContactForTool(contact),
+        message: `Loaded contact "${result.contact.displayName}".`,
+        contact: serializeContactToolRecord(result.contact),
       };
-    }
 
     case "create": {
-      const contact = createContactFromDraft(toContactsDraft(input));
-      await writeContactsState(context.redis, context.username, {
-        ...state,
-        contacts: sortContacts([...state.contacts, contact]),
-      });
+      await writeContactsState(context.redis, context.username, result.state);
+      const serialized = serializeContactToolRecord(result.contact);
       context.log(
-        `[contactsControl] Created contact "${contact.displayName}" (${getContactSummary(contact)})`
+        `[contactsControl] Created contact "${result.contact.displayName}" (${serialized.summary || ""})`
       );
       return {
         success: true,
-        message: `Created contact "${contact.displayName}".`,
-        contact: serializeContactForTool(contact),
+        message: `Created contact "${result.contact.displayName}".`,
+        contact: serialized,
       };
     }
 
     case "update": {
-      const index = state.contacts.findIndex((item) => item.id === input.id);
-      if (index === -1) {
-        return {
-          success: false,
-          message: `Contact with id '${input.id}' not found.`,
-        };
-      }
-
-      const updated = updateContactFromDraft(
-        state.contacts[index],
-        toContactsDraft(input)
-      );
-      const nextContacts = [...state.contacts];
-      nextContacts[index] = updated;
-
-      await writeContactsState(context.redis, context.username, {
-        ...state,
-        contacts: sortContacts(nextContacts),
-      });
+      await writeContactsState(context.redis, context.username, result.state);
 
       return {
         success: true,
-        message: `Updated contact "${updated.displayName}".`,
-        contact: serializeContactForTool(updated),
+        message: `Updated contact "${result.contact.displayName}".`,
+        contact: serializeContactToolRecord(result.contact),
       };
     }
 
     case "delete": {
-      const contact = state.contacts.find((item) => item.id === input.id);
-      if (!contact) {
-        return {
-          success: false,
-          message: `Contact with id '${input.id}' not found.`,
-        };
-      }
-
-      await writeContactsState(context.redis, context.username, {
-        ...state,
-        contacts: state.contacts.filter((item) => item.id !== input.id),
-        myContactId: state.myContactId === input.id ? null : state.myContactId,
-        deletedContactIds: addDeletionMarkers(
-          state.deletedContactIds,
-          [input.id],
-          new Date().toISOString()
-        ),
-      });
+      await writeContactsState(context.redis, context.username, result.state);
 
       return {
         success: true,
-        message: `Deleted contact "${contact.displayName}".`,
+        message: `Deleted contact "${result.contact.displayName}".`,
       };
     }
   }
-
-  return { success: false, message: `Unknown action: ${input.action}` };
 }

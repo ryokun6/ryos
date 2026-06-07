@@ -2,90 +2,17 @@ import type { ToolContext } from "./types";
 import { createShortIdMap, resolveId, type ShortIdMap } from "./helpers";
 import i18n from "@/lib/i18n";
 import { useContactsStore } from "@/stores/useContactsStore";
+import { contactMatchesQuery } from "@/utils/contacts";
 import {
-  contactMatchesQuery,
-  getContactSummary,
-  type ContactDraft,
-} from "@/utils/contacts";
+  contactsInputToDraft,
+  hasMeaningfulContactDraft,
+  serializeContactToolRecord,
+  type ContactsControlInput,
+} from "@/shared/tools/contacts";
 
-export interface ContactsControlInput {
-  action: "list" | "get" | "create" | "update" | "delete";
-  id?: string;
-  query?: string;
-  displayName?: string;
-  firstName?: string;
-  lastName?: string;
-  nickname?: string;
-  organization?: string;
-  title?: string;
-  notes?: string;
-  emails?: string[];
-  phones?: string[];
-  urls?: string[];
-  addresses?: string[];
-  birthday?: string | null;
-  telegramUsername?: string | null;
-  telegramUserId?: string | null;
-}
+export type { ContactsControlInput } from "@/shared/tools/contacts";
 
 let contactsIdMap: ShortIdMap | undefined;
-
-function toDraft(input: ContactsControlInput): ContactDraft {
-  return {
-    displayName: input.displayName,
-    firstName: input.firstName,
-    lastName: input.lastName,
-    nickname: input.nickname,
-    organization: input.organization,
-    title: input.title,
-    notes: input.notes,
-    emails: input.emails,
-    phones: input.phones,
-    urls: input.urls,
-    addresses: input.addresses,
-    birthday: input.birthday,
-    telegramUsername: input.telegramUsername,
-    telegramUserId: input.telegramUserId,
-    source: "ai",
-  };
-}
-
-function serializeContact(contact: ReturnType<typeof useContactsStore.getState>["contacts"][number]) {
-  return {
-    id: contactsIdMap?.fullToShort.get(contact.id) || contact.id,
-    displayName: contact.displayName,
-    organization: contact.organization,
-    title: contact.title,
-    emails: contact.emails.map((item) => item.value),
-    phones: contact.phones.map((item) => item.value),
-    urls: contact.urls.map((item) => item.value),
-    addresses: contact.addresses.map((item) => item.formatted),
-    telegramUsername: contact.telegramUsername || null,
-    telegramUserId: contact.telegramUserId || null,
-    birthday: contact.birthday,
-    notes: contact.notes || null,
-    summary: getContactSummary(contact) || null,
-  };
-}
-
-function hasMeaningfulDraft(input: ContactsControlInput): boolean {
-  return Boolean(
-    input.displayName ||
-      input.firstName ||
-      input.lastName ||
-      input.nickname ||
-      input.organization ||
-      input.title ||
-      input.notes ||
-      input.telegramUsername ||
-      input.telegramUserId ||
-      input.birthday ||
-      input.emails?.length ||
-      input.phones?.length ||
-      input.urls?.length ||
-      input.addresses?.length
-  );
-}
 
 export const handleContactsControl = (
   input: ContactsControlInput,
@@ -116,7 +43,9 @@ export const handleContactsControl = (
               : i18n.t("apps.chats.toolCalls.contacts.found", {
                   count: contacts.length,
                 }),
-          contacts: contacts.map(serializeContact),
+          contacts: contacts.map((contact) =>
+            serializeContactToolRecord(contact, contactsIdMap)
+          ),
         },
       });
       return;
@@ -156,14 +85,14 @@ export const handleContactsControl = (
           message: i18n.t("apps.chats.toolCalls.contacts.loaded", {
             name: contact.displayName,
           }),
-          contact: serializeContact(contact),
+          contact: serializeContactToolRecord(contact, contactsIdMap),
         },
       });
       return;
     }
 
     case "create": {
-      if (!hasMeaningfulDraft(input)) {
+      if (!hasMeaningfulContactDraft(input)) {
         context.addToolOutput({
           tool: "contactsControl",
           toolCallId,
@@ -173,7 +102,7 @@ export const handleContactsControl = (
         return;
       }
 
-      const id = store.addContact(toDraft(input));
+      const id = store.addContact(contactsInputToDraft(input));
       const contact = useContactsStore
         .getState()
         .contacts.find((item) => item.id === id);
@@ -187,7 +116,9 @@ export const handleContactsControl = (
           message: i18n.t("apps.chats.toolCalls.contacts.created", {
             name: contact?.displayName || i18n.t("apps.contacts.title"),
           }),
-          contact: contact ? serializeContact(contact) : null,
+          contact: contact
+            ? serializeContactToolRecord(contact, contactsIdMap)
+            : null,
         },
       });
       return;
@@ -218,7 +149,7 @@ export const handleContactsControl = (
         return;
       }
 
-      if (!hasMeaningfulDraft(input)) {
+      if (!hasMeaningfulContactDraft(input)) {
         context.addToolOutput({
           tool: "contactsControl",
           toolCallId,
@@ -228,7 +159,7 @@ export const handleContactsControl = (
         return;
       }
 
-      store.updateContact(id, toDraft(input));
+      store.updateContact(id, contactsInputToDraft(input));
       const updated = useContactsStore
         .getState()
         .contacts.find((item) => item.id === id);
@@ -242,7 +173,9 @@ export const handleContactsControl = (
           message: i18n.t("apps.chats.toolCalls.contacts.updated", {
             name: updated?.displayName || existing.displayName,
           }),
-          contact: updated ? serializeContact(updated) : null,
+          contact: updated
+            ? serializeContactToolRecord(updated, contactsIdMap)
+            : null,
         },
       });
       return;

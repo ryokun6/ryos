@@ -1,8 +1,9 @@
 import type { Redis } from "./redis.js";
 import type { Contact } from "../../src/utils/contacts.js";
-import { getContactSummary, normalizeContacts } from "../../src/utils/contacts.js";
+import { normalizeContacts } from "../../src/utils/contacts.js";
 import { normalizeDeletionMarkerMap } from "../../src/utils/cloudSyncDeletionMarkers.js";
 import type { ContactsSnapshotData } from "../chat/tools/types.js";
+import { serializeContactToolRecord } from "../../src/shared/tools/contacts.js";
 import { redisStateKey } from "../sync/_keys.js";
 import { writeRedisSyncDomainFromServerTool } from "../sync/_state.js";
 
@@ -36,19 +37,5 @@ export async function writeContactsState(
 }
 
 export function serializeContactForTool(contact: Contact) {
-  return {
-    id: contact.id,
-    displayName: contact.displayName,
-    organization: contact.organization,
-    title: contact.title,
-    emails: contact.emails.map((item) => item.value),
-    phones: contact.phones.map((item) => item.value),
-    urls: contact.urls.map((item) => item.value),
-    addresses: contact.addresses.map((item) => item.formatted),
-    telegramUsername: contact.telegramUsername || null,
-    telegramUserId: contact.telegramUserId || null,
-    birthday: contact.birthday,
-    notes: contact.notes || null,
-    summary: getContactSummary(contact) || null,
-  };
+  return serializeContactToolRecord(contact);
 }

@@ -8,6 +8,13 @@
 export type { CalendarSnapshotData } from "../../../src/shared/domains/calendar.js";
 export type { ContactsSnapshotData } from "../../../src/shared/domains/contacts.js";
 export type { StickiesSnapshotData } from "../../../src/shared/domains/stickies.js";
+export {
+  CONTACT_ACTIONS,
+  type ContactToolRecord,
+  type ContactsAction,
+  type ContactsControlInput,
+  type ContactsControlOutput,
+} from "../../../src/shared/tools/contacts.js";
 
 // Central list of supported theme IDs for tool validation
 export const THEME_IDS = ["system7", "macosx", "xp", "win98"] as const;
@@ -482,56 +489,6 @@ export interface CalendarControlOutput {
     dueDate: string | null;
     calendarId: string;
   };
-}
-
-// ============================================================================
-// Contacts Control Types
-// ============================================================================
-
-export const CONTACT_ACTIONS = ["list", "get", "create", "update", "delete"] as const;
-export type ContactsAction = typeof CONTACT_ACTIONS[number];
-
-export interface ContactsControlInput {
-  action: ContactsAction;
-  id?: string;
-  query?: string;
-  displayName?: string;
-  firstName?: string;
-  lastName?: string;
-  nickname?: string;
-  organization?: string;
-  title?: string;
-  notes?: string;
-  emails?: string[];
-  phones?: string[];
-  urls?: string[];
-  addresses?: string[];
-  birthday?: string | null;
-  telegramUsername?: string | null;
-  telegramUserId?: string | null;
-}
-
-export interface ContactToolRecord {
-  id: string;
-  displayName: string;
-  organization: string;
-  title: string;
-  emails: string[];
-  phones: string[];
-  urls: string[];
-  addresses: string[];
-  telegramUsername: string | null;
-  telegramUserId: string | null;
-  birthday: string | null;
-  notes?: string | null;
-  summary?: string | null;
-}
-
-export interface ContactsControlOutput {
-  success: boolean;
-  message: string;
-  contacts?: ContactToolRecord[];
-  contact?: ContactToolRecord | null;
 }
 
 // ============================================================================
