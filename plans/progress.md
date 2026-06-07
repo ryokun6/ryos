@@ -20,6 +20,8 @@ This file tracks implementation progress for `plans/10-duplication-complexity-au
 - [x] Added `api/_utils/parse-youtube-title.ts`.
 - [x] Moved title parsing from `api/parse-title.ts`, `api/songs/_utils.ts`, `api/chat/tools/executors.ts`, and `api/_utils/og-share.ts` onto the shared parser.
 - [x] Added `tests/test-parse-youtube-title.test.ts`.
+- [x] Re-exported rooms auth TTL constants from `api/_utils/auth/_constants.ts`.
+- [x] Added `src/shared/contracts/auth.ts` and re-exported auth response DTOs from API/frontend legacy paths.
 
 ## Current test notes
 
@@ -39,6 +41,9 @@ This file tracks implementation progress for `plans/10-duplication-complexity-au
 - [x] `bun test tests/test-song-lyrics-match.test.ts`
 - [x] `bun test tests/test-og-share.test.ts`
 - [x] `bun run test:ai`
+- [x] `bun test tests/test-auth-extra.test.ts`
+- [x] `bun test tests/test-rooms-extra.test.ts`
+- [x] `bun test tests/test-new-api.test.ts --test-name-pattern "Auth|Rooms|Messages"` reached the known unrelated login fixture failure; rooms/messages covered paths passed.
 - [x] `bun run build`
 - [ ] `bun test tests/test-cloud-sync-utils.test.ts` full suite currently has an unrelated DOM mock gap in settings hydration.
 - [ ] `bun run test:new-api` full suite currently has an unrelated login fixture failure returning 401 after registration.
@@ -72,9 +77,9 @@ This file tracks implementation progress for `plans/10-duplication-complexity-au
 
 ### Phase 3: Shared contracts and constants
 
-- [ ] Re-export auth TTL constants from one source.
+- [x] Re-export auth TTL constants from one source.
 - [ ] Add shared realtime channel helpers and sanitizer.
-- [ ] Add `src/shared/contracts/auth.ts`.
+- [x] Add `src/shared/contracts/auth.ts`.
 - [ ] Add `src/shared/contracts/chat.ts` and a timestamp normalizer.
 - [ ] Add `src/shared/contracts/listen.ts`.
 - [ ] Add `src/shared/contracts/irc.ts`.
