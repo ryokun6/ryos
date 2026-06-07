@@ -71,6 +71,7 @@ import {
   applyContactsToolAction,
   serializeContactToolRecord,
 } from "../../../src/shared/tools/contacts.js";
+import { applyCalendarToolAction } from "../../../src/shared/tools/calendar.js";
 import {
   readContactsState,
   writeContactsState,
@@ -1880,21 +1881,40 @@ export async function executeCalendarControl(
     };
   }
 
-  switch (action) {
-    case "list": {
-      let events = state.events;
-      if (input.date) {
-        events = events.filter((ev) => ev.date === input.date);
+  const result = applyCalendarToolAction(state, input, {
+    generateId,
+    now: () => Date.now(),
+    deletedAt: () => new Date().toISOString(),
+  });
+
+  if (!result.ok) {
+    if (result.error === "missing_fields") {
+      if (action === "create") {
+        return { success: false, message: "Creating an event requires 'title' and 'date'." };
       }
-      const formatted = events.map((ev) => ({
-        id: ev.id,
-        title: ev.title,
-        date: ev.date,
-        startTime: ev.startTime,
-        endTime: ev.endTime,
-        color: ev.color,
-        notes: ev.notes,
-      }));
+      if (action === "createTodo") {
+        return { success: false, message: "Creating a todo requires 'title'." };
+      }
+    }
+    if (result.error === "missing_id") {
+      const messages: Partial<Record<CalendarControlInput["action"], string>> = {
+        update: "Updating an event requires 'id'.",
+        delete: "Deleting an event requires 'id'.",
+        toggleTodo: "Toggling a todo requires 'id'.",
+        deleteTodo: "Deleting a todo requires 'id'.",
+      };
+      return { success: false, message: messages[action] || "Calendar item id is required." };
+    }
+    if (result.error === "not_found") {
+      const type = action === "toggleTodo" || action === "deleteTodo" ? "Todo" : "Event";
+      return { success: false, message: `${type} with id '${result.id}' not found.` };
+    }
+    return { success: false, message: `Unknown action: ${action}` };
+  }
+
+  switch (result.kind) {
+    case "list": {
+      const formatted = result.events;
       return {
         success: true,
         message: input.date
@@ -1905,168 +1925,55 @@ export async function executeCalendarControl(
     }
 
     case "create": {
-      if (!input.title || !input.date) {
-        return { success: false, message: "Creating an event requires 'title' and 'date'." };
-      }
-      const now = Date.now();
-      const newEvent = {
-        id: generateId(),
-        title: input.title,
-        date: input.date,
-        startTime: input.startTime,
-        endTime: input.endTime,
-        color: input.color || "blue",
-        calendarId: input.calendarId,
-        notes: input.notes,
-        createdAt: now,
-        updatedAt: now,
-      };
-      state.events.push(newEvent);
-      await writeCalendarState(context.redis, context.username, state);
+      await writeCalendarState(context.redis, context.username, result.state);
       context.log(`[calendarControl] Created event "${input.title}" on ${input.date}`);
       return {
         success: true,
         message: `Created event "${input.title}" on ${input.date}.`,
-        event: {
-          id: newEvent.id,
-          title: newEvent.title,
-          date: newEvent.date,
-          startTime: newEvent.startTime,
-          endTime: newEvent.endTime,
-          color: newEvent.color,
-          notes: newEvent.notes,
-        },
+        event: result.event,
       };
     }
 
     case "update": {
-      if (!input.id) {
-        return { success: false, message: "Updating an event requires 'id'." };
-      }
-      const idx = state.events.findIndex((ev) => ev.id === input.id);
-      if (idx === -1) {
-        return { success: false, message: `Event with id '${input.id}' not found.` };
-      }
-      const ev = state.events[idx];
-      if (input.title !== undefined) ev.title = input.title;
-      if (input.date !== undefined) ev.date = input.date;
-      if (input.startTime !== undefined) ev.startTime = input.startTime;
-      if (input.endTime !== undefined) ev.endTime = input.endTime;
-      if (input.color !== undefined) ev.color = input.color;
-      if (input.notes !== undefined) ev.notes = input.notes;
-      ev.updatedAt = Date.now();
-      await writeCalendarState(context.redis, context.username, state);
-      return { success: true, message: `Updated event "${ev.title}".` };
+      await writeCalendarState(context.redis, context.username, result.state);
+      return { success: true, message: `Updated event "${result.event.title}".` };
     }
 
     case "delete": {
-      if (!input.id) {
-        return { success: false, message: "Deleting an event requires 'id'." };
-      }
-      const delIdx = state.events.findIndex((ev) => ev.id === input.id);
-      if (delIdx === -1) {
-        return { success: false, message: `Event with id '${input.id}' not found.` };
-      }
-      const deleted = state.events.splice(delIdx, 1)[0];
-      state.deletedEventIds = addDeletionMarkers(
-        state.deletedEventIds,
-        [deleted.id],
-        new Date().toISOString()
-      );
-      await writeCalendarState(context.redis, context.username, state);
-      return { success: true, message: `Deleted event "${deleted.title}".` };
+      await writeCalendarState(context.redis, context.username, result.state);
+      return { success: true, message: `Deleted event "${result.event.title}".` };
     }
 
-    case "listTodos": {
-      let todos = state.todos;
-      if (input.completed === true) {
-        todos = todos.filter((t) => t.completed);
-      }
+    case "listTodos":
       return {
         success: true,
-        message: `Found ${todos.length} ${todos.length === 1 ? "todo" : "todos"}.`,
-        todos: todos.map((t) => ({
-          id: t.id,
-          title: t.title,
-          completed: t.completed,
-          dueDate: t.dueDate,
-          calendarId: t.calendarId,
-        })),
+        message: `Found ${result.todos.length} ${result.todos.length === 1 ? "todo" : "todos"}.`,
+        todos: result.todos,
       };
-    }
 
     case "createTodo": {
-      if (!input.title) {
-        return { success: false, message: "Creating a todo requires 'title'." };
-      }
-      const calendarId = input.calendarId || state.calendars[0]?.id || "home";
-      const newTodo = {
-        id: generateId(),
-        title: input.title,
-        completed: false,
-        dueDate: input.date || null,
-        calendarId,
-        createdAt: Date.now(),
-      };
-      state.todos.push(newTodo);
-      await writeCalendarState(context.redis, context.username, state);
+      await writeCalendarState(context.redis, context.username, result.state);
       context.log(`[calendarControl] Created todo "${input.title}"`);
       return {
         success: true,
         message: `Created todo "${input.title}"${input.date ? ` due ${input.date}` : ""}.`,
-        todo: {
-          id: newTodo.id,
-          title: newTodo.title,
-          completed: false,
-          dueDate: newTodo.dueDate,
-          calendarId,
-        },
+        todo: result.todo,
       };
     }
 
     case "toggleTodo": {
-      if (!input.id) {
-        return { success: false, message: "Toggling a todo requires 'id'." };
-      }
-      const todo = state.todos.find((t) => t.id === input.id);
-      if (!todo) {
-        return { success: false, message: `Todo with id '${input.id}' not found.` };
-      }
-      todo.completed = !todo.completed;
-      await writeCalendarState(context.redis, context.username, state);
+      await writeCalendarState(context.redis, context.username, result.state);
       return {
         success: true,
-        message: `Marked todo "${todo.title}" as ${todo.completed ? "completed" : "pending"}.`,
-        todo: {
-          id: todo.id,
-          title: todo.title,
-          completed: todo.completed,
-          dueDate: todo.dueDate,
-          calendarId: todo.calendarId,
-        },
+        message: `Marked todo "${result.todo.title}" as ${result.todo.completed ? "completed" : "pending"}.`,
+        todo: result.todo,
       };
     }
 
     case "deleteTodo": {
-      if (!input.id) {
-        return { success: false, message: "Deleting a todo requires 'id'." };
-      }
-      const todoIdx = state.todos.findIndex((t) => t.id === input.id);
-      if (todoIdx === -1) {
-        return { success: false, message: `Todo with id '${input.id}' not found.` };
-      }
-      const deletedTodo = state.todos.splice(todoIdx, 1)[0];
-      state.deletedTodoIds = addDeletionMarkers(
-        state.deletedTodoIds,
-        [deletedTodo.id],
-        new Date().toISOString()
-      );
-      await writeCalendarState(context.redis, context.username, state);
-      return { success: true, message: `Deleted todo "${deletedTodo.title}".` };
+      await writeCalendarState(context.redis, context.username, result.state);
+      return { success: true, message: `Deleted todo "${result.todo.title}".` };
     }
-
-    default:
-      return { success: false, message: `Unknown action: ${action}` };
   }
 }
 

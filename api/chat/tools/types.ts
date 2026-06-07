@@ -15,6 +15,14 @@ export {
   type ContactsControlInput,
   type ContactsControlOutput,
 } from "../../../src/shared/tools/contacts.js";
+export {
+  CALENDAR_ACTIONS,
+  CALENDAR_COLORS,
+  type CalendarAction,
+  type CalendarColor,
+  type CalendarControlInput,
+  type CalendarControlOutput,
+} from "../../../src/shared/tools/calendar.js";
 
 // Central list of supported theme IDs for tool validation
 export const THEME_IDS = ["system7", "macosx", "xp", "win98"] as const;
@@ -429,66 +437,6 @@ export interface TvControlOutput {
   channel?: TvChannelToolRecord | null;
   /** For 'addVideo' / 'removeVideo'. */
   video?: TvVideoToolRecord | null;
-}
-
-// ============================================================================
-// Calendar Control Types
-// ============================================================================
-
-export const CALENDAR_ACTIONS = ["list", "create", "update", "delete", "listTodos", "createTodo", "toggleTodo", "deleteTodo"] as const;
-export type CalendarAction = typeof CALENDAR_ACTIONS[number];
-
-export const CALENDAR_COLORS = ["blue", "red", "green", "orange", "purple"] as const;
-export type CalendarColor = typeof CALENDAR_COLORS[number];
-
-export interface CalendarControlInput {
-  action: CalendarAction;
-  id?: string;
-  title?: string;
-  date?: string; // YYYY-MM-DD
-  startTime?: string; // HH:MM
-  endTime?: string; // HH:MM
-  color?: CalendarColor;
-  notes?: string;
-  completed?: boolean;
-  calendarId?: string;
-}
-
-export interface CalendarControlOutput {
-  success: boolean;
-  message: string;
-  events?: Array<{
-    id: string;
-    title: string;
-    date: string;
-    startTime?: string;
-    endTime?: string;
-    color: string;
-    notes?: string;
-  }>;
-  event?: {
-    id: string;
-    title: string;
-    date: string;
-    startTime?: string;
-    endTime?: string;
-    color: string;
-    notes?: string;
-  };
-  todos?: Array<{
-    id: string;
-    title: string;
-    completed: boolean;
-    dueDate: string | null;
-    calendarId: string;
-  }>;
-  todo?: {
-    id: string;
-    title: string;
-    completed: boolean;
-    dueDate: string | null;
-    calendarId: string;
-  };
 }
 
 // ============================================================================
