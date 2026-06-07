@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { v4 as uuidv4 } from "uuid";
 import { ensureIndexedDBInitialized, STORES } from "@/utils/indexedDB";
+import type { StoredContent } from "@/utils/indexedDBOperations";
 import type { OsThemeId } from "@/themes/types";
 import { getAppBasicInfoList } from "@/config/appRegistryData";
 import { abortableFetch } from "@/utils/abortableFetch";
@@ -46,11 +47,6 @@ interface FileSystemItemData extends Omit<FileSystemItem, "status"> {
   assetPath?: string; // For images
 }
 
-// Structure for content stored in IndexedDB
-interface StoredContent {
-  name: string;
-  content: string | Blob;
-}
 
 // Define the JSON structure
 interface FileSystemData {
