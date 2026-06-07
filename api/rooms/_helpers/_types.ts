@@ -2,86 +2,33 @@
  * TypeScript types for chat-rooms API
  */
 
-// ============================================================================
-// Room Types
-// ============================================================================
+import type {
+  BulkMessagesResult,
+  CreateRoomData,
+  JoinLeaveRoomData,
+  Message,
+  Room,
+  RoomType,
+  RoomWithUsers,
+  SwitchRoomData,
+  User,
+} from "../../../src/shared/contracts/chat.js";
 
-export type RoomType = "public" | "private" | "irc";
-
-export interface Room {
-  id: string;
-  name: string;
-  type: RoomType;
-  createdAt: number;
-  userCount: number;
-  members?: string[]; // Only for private rooms
-  // IRC bridging metadata. Present only when `type === "irc"`.
-  ircHost?: string;
-  ircPort?: number;
-  ircTls?: boolean;
-  ircChannel?: string; // e.g. "#pieter"
-  ircServerLabel?: string; // Friendly label shown in UI
-}
-
-export interface RoomWithUsers extends Room {
-  users: string[];
-}
-
-// ============================================================================
-// Message Types
-// ============================================================================
-
-export interface Message {
-  id: string;
-  roomId: string;
-  username: string;
-  content: string;
-  timestamp: number;
-}
-
-export interface BulkMessagesResult {
-  messagesMap: Record<string, Message[]>;
-  validRoomIds: string[];
-  invalidRoomIds: string[];
-}
-
-// ============================================================================
-// User Types
-// ============================================================================
-
-export interface User {
-  username: string;
-  lastActive: number;
-}
+export type {
+  BulkMessagesResult,
+  CreateRoomData,
+  JoinLeaveRoomData,
+  Message,
+  Room,
+  RoomType,
+  RoomWithUsers,
+  SwitchRoomData,
+  User,
+} from "../../../src/shared/contracts/chat.js";
 
 // ============================================================================
 // Request/Response Types
 // ============================================================================
-
-export interface CreateRoomData {
-  name?: string;
-  type?: RoomType;
-  members?: string[];
-  // IRC bridging metadata. Only used when `type === "irc"`.
-  /** Registry id from GET /api/irc/servers — required for non-admin IRC room creation. */
-  ircServerId?: string;
-  ircHost?: string;
-  ircPort?: number;
-  ircTls?: boolean;
-  ircChannel?: string;
-  ircServerLabel?: string;
-}
-
-export interface JoinLeaveRoomData {
-  roomId: string;
-  username: string;
-}
-
-export interface SwitchRoomData {
-  previousRoomId?: string;
-  nextRoomId?: string;
-  username: string;
-}
 
 export interface SendMessageData {
   roomId: string;

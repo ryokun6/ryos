@@ -17,7 +17,6 @@
  * { action: "import", songs: [...] }
  */
 
-import { z } from "zod";
 import pako from "pako";
 import * as RateLimit from "../_utils/_rate-limit.js";
 import { getClientIp } from "../_utils/_rate-limit.js";
@@ -37,6 +36,10 @@ import {
 } from "../_utils/_song-service.js";
 import { fetchCoverUrl } from "./_kugou.js";
 import { apiHandler } from "../_utils/api-handler.js";
+import {
+  BulkImportSchema,
+  CreateSongSchema,
+} from "../../src/shared/contracts/songs.js";
 
 export const runtime = "nodejs";
 
@@ -51,82 +54,6 @@ const RATE_LIMITS = {
   import: { windowSeconds: 60, limit: 15 },    // 15/min for bulk import (admin)
   delete: { windowSeconds: 60, limit: 5 },     // 5/min for delete all (admin)
 };
-
-// =============================================================================
-// Schemas
-// =============================================================================
-
-const LyricsSourceSchema = z.object({
-  hash: z.string(),
-  albumId: z.union([z.string(), z.number()]),
-  title: z.string(),
-  artist: z.string(),
-  album: z.string().optional(),
-});
-const CoverColorSchema = z.string().regex(/^#[0-9a-fA-F]{6}$/);
-
-const CreateSongSchema = z.object({
-  id: z.string().min(1),
-  title: z.string().min(1),
-  artist: z.string().optional(),
-  album: z.string().optional(),
-  cover: z.string().max(2000).optional(),
-  coverColor: CoverColorSchema.optional(),
-  lyricOffset: z.number().optional(),
-  lyricsSource: LyricsSourceSchema.optional(),
-});
-
-// Furigana/Soramimi segment schema
-const FuriganaSegmentSchema = z.object({
-  text: z.string(),
-  reading: z.string().optional(),
-});
-
-// Lyrics content schema (cover is now in metadata, but accept it here for backwards compatibility during import)
-const LyricsContentSchema = z.object({
-  lrc: z.string().optional(),
-  krc: z.string().optional(),
-  cover: z.string().optional(), // Accepted during import but stored in metadata
-});
-
-// Helper to create a schema that accepts either compressed string or raw data
-const compressedOrRaw = <T extends z.ZodTypeAny>(schema: T) => 
-  z.union([z.string().startsWith("gzip:"), schema]);
-
-const BulkImportSchema = z.object({
-  action: z.literal("import"),
-  songs: z.array(
-    z.object({
-      id: z.string().min(1),
-      url: z.string().optional(),
-      title: z.string().min(1),
-      artist: z.string().optional(),
-      album: z.string().optional(),
-      cover: z.string().max(2000).optional(),
-      coverColor: CoverColorSchema.optional(),
-      lyricOffset: z.number().optional(),
-      lyricsSource: LyricsSourceSchema.optional(),
-      // Legacy format support
-      lyricsSearch: z
-        .object({
-          query: z.string().optional(),
-          selection: LyricsSourceSchema.optional(),
-        })
-        .optional(),
-      // Content fields (v2/v3 export format) - can be compressed or raw
-      lyrics: compressedOrRaw(LyricsContentSchema).optional(),
-      translations: compressedOrRaw(z.record(z.string(), z.string())).optional(),
-      furigana: compressedOrRaw(z.array(z.array(FuriganaSegmentSchema))).optional(),
-      soramimi: compressedOrRaw(z.array(z.array(FuriganaSegmentSchema))).optional(),
-      soramimiByLang: compressedOrRaw(z.record(z.string(), z.array(z.array(FuriganaSegmentSchema)))).optional(),
-      // Timestamps for preserving original dates
-      createdBy: z.string().optional(),
-      createdAt: z.number().optional(),
-      updatedAt: z.number().optional(),
-      importOrder: z.number().optional(),
-    })
-  ),
-});
 
 // =============================================================================
 // Utility Functions

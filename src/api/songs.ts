@@ -1,4 +1,5 @@
 import { apiRequest, apiRequestRaw, type ApiRequestOptions } from "@/api/core";
+import type { SongLyricsSource as SharedSongLyricsSource } from "@/shared/contracts/songs";
 
 /** Auth context for cookie-based auth (credentials sent automatically via credentials: "include") */
 export interface SongsAuthContext {
@@ -33,13 +34,7 @@ export interface SongImportBatchResult {
   data?: Record<string, unknown>;
 }
 
-export interface SongLyricsSource {
-  hash: string;
-  albumId: string | number;
-  title: string;
-  artist: string;
-  album?: string;
-}
+export type SongLyricsSource = SharedSongLyricsSource;
 
 export interface SongMetadataPatch {
   title?: string;

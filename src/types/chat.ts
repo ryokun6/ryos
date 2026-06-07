@@ -1,4 +1,9 @@
 import { type UIMessage } from "@ai-sdk/react";
+import type {
+  ChatMessage as SharedChatMessage,
+  ChatRoom as SharedChatRoom,
+  User as SharedUser,
+} from "@/shared/contracts/chat";
 
 // Message metadata for AI chat
 export interface MessageMetadata extends Record<string, unknown> {
@@ -8,32 +13,8 @@ export interface MessageMetadata extends Record<string, unknown> {
 // AI chat message type with metadata
 export type AIChatMessage = UIMessage<MessageMetadata>;
 
-export type ChatMessage = {
-  id: string; // Server message ID
-  clientId?: string; // Stable client-side ID used for optimistic rendering
-  roomId: string;
-  username: string;
-  content: string;
-  timestamp: number;
-};
+export type ChatMessage = SharedChatMessage;
 
-export type ChatRoom = {
-  id: string;
-  name: string;
-  type?: "public" | "private" | "irc"; // optional for backward compatibility
-  createdAt: number;
-  userCount: number;
-  users?: string[];
-  members?: string[]; // for private rooms - list of usernames who can access
-  // IRC bridging metadata. Present only when `type === "irc"`.
-  ircHost?: string;
-  ircPort?: number;
-  ircTls?: boolean;
-  ircChannel?: string; // e.g. "#pieter"
-  ircServerLabel?: string; // Friendly label shown in UI
-};
+export type ChatRoom = SharedChatRoom;
 
-export type User = {
-  username: string;
-  lastActive: number;
-};
+export type User = SharedUser;
