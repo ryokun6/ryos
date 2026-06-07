@@ -51,6 +51,7 @@ import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { LyricsAlignment, LyricsFont, DisplayMode, getLyricsFontClassName } from "@/types/lyrics";
 import { IPOD_ANALYTICS } from "@/utils/analytics";
 import { saveSongMetadataFromTrack } from "@/utils/songMetadataCache";
+import { formatSecondsAsMinutesSeconds } from "@/utils/timeFormat";
 import { youtubeThumbnailUrl } from "@/utils/youtubeUrl";
 import {
   generateIpodSongShareUrl,
@@ -1500,7 +1501,7 @@ export function useIpodLogic({
           const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
           if (activePlayer) {
             activePlayer.seekTo(seekTarget);
-            showStatus(`▶ ${Math.floor(seekTarget / 60)}:${String(Math.floor(seekTarget % 60)).padStart(2, "0")}`);
+            showStatus(`▶ ${formatSecondsAsMinutesSeconds(seekTarget)}`);
           }
         }, 2000);
         trackSwitchTimeoutRef.current = timeoutId;
@@ -4693,7 +4694,7 @@ export function useIpodLogic({
           activePlayer?.seekTo(newTime);
         }
         showStatus(
-          `${direction === "clockwise" ? "⏩︎" : "⏪︎"} ${Math.floor(newTime / 60)}:${String(Math.floor(newTime % 60)).padStart(2, "0")}`
+          `${direction === "clockwise" ? "⏩︎" : "⏪︎"} ${formatSecondsAsMinutesSeconds(newTime)}`
         );
       }
     },
@@ -5110,7 +5111,9 @@ export function useIpodLogic({
         const currentTime = fullScreenPlayerRef.current.getCurrentTime() || 0;
         const newTime = Math.max(0, currentTime + delta);
         fullScreenPlayerRef.current.seekTo(newTime);
-        showStatus(`${delta > 0 ? "⏩︎" : "⏪︎"} ${Math.floor(newTime / 60)}:${String(Math.floor(newTime % 60)).padStart(2, "0")}`);
+        showStatus(
+          `${delta > 0 ? "⏩︎" : "⏪︎"} ${formatSecondsAsMinutesSeconds(newTime)}`
+        );
       }
     },
     [showStatus]
@@ -5164,7 +5167,7 @@ export function useIpodLogic({
             }
           }
         }
-        showStatus(`▶ ${Math.floor(newTime / 60)}:${String(Math.floor(newTime % 60)).padStart(2, "0")}`);
+        showStatus(`▶ ${formatSecondsAsMinutesSeconds(newTime)}`);
         
         // Clear guard after a short delay to allow seek + play to complete
         trackSwitchTimeoutRef.current = setTimeout(() => {

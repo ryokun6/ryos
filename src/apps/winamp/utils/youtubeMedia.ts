@@ -4,6 +4,7 @@
  * tracks from the iPod music library via YouTube.
  */
 import type { Band } from "webamp";
+import { parseYouTubeVideoId } from "@/utils/youtubeUrl";
 
 // ── Tiny event emitter (matches Webamp's Emitter contract) ──────────
 type Listener = (...args: unknown[]) => void;
@@ -22,25 +23,6 @@ class Emitter {
   dispose() {
     this._listeners = {};
   }
-}
-
-// ── Helpers ─────────────────────────────────────────────────────────
-function extractVideoId(url: string): string | null {
-  const trimmedUrl = url.trim();
-
-  if (/^[a-zA-Z0-9_-]{11}$/.test(trimmedUrl)) {
-    return trimmedUrl;
-  }
-
-  const prefixed = trimmedUrl.replace(/^youtube:\/\/?/i, "").replace(/^yt:/i, "");
-  if (/^[a-zA-Z0-9_-]{11}$/.test(prefixed)) {
-    return prefixed;
-  }
-
-  const m = trimmedUrl.match(
-    /(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/
-  );
-  return m ? m[1] : null;
 }
 
 let ytApiReady: Promise<void> | null = null;
@@ -164,7 +146,11 @@ export class YouTubeMedia {
   }
 
   async loadFromUrl(url: string, autoPlay: boolean): Promise<void> {
-    const videoId = extractVideoId(url);
+    const videoId = parseYouTubeVideoId(url, {
+      allowBareHost: true,
+      allowLooseHostMatch: true,
+      allowProtocolAliases: true,
+    });
 
     if (!videoId) {
       this._duration = 0;
