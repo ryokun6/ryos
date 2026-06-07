@@ -658,6 +658,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "@ryos/shared": path.resolve(__dirname, "./shared"),
     },
   },
   // esbuild options for faster dev transforms

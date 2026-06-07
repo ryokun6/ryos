@@ -82,6 +82,31 @@ import { handleCalendarControl } from "./calendarHandler";
 import { handleContactsControl } from "./contactsHandler";
 import { handleTvControl } from "./tvHandler";
 
+import { handleLaunchApp, handleCloseApp } from "./appHandlers";
+import type { LaunchAppInput, CloseAppInput } from "./appHandlers";
+
+registerToolHandler("launchApp", (input, toolCallId, context) => {
+  const result = handleLaunchApp(input as LaunchAppInput, toolCallId, context);
+  if (result) {
+    context.addToolOutput({
+      tool: "launchApp",
+      toolCallId,
+      output: result,
+    });
+  }
+});
+
+registerToolHandler("closeApp", (input, toolCallId, context) => {
+  const result = handleCloseApp(input as CloseAppInput, toolCallId, context);
+  if (result) {
+    context.addToolOutput({
+      tool: "closeApp",
+      toolCallId,
+      output: result,
+    });
+  }
+});
+
 registerToolHandler("settings", handleSettings);
 registerToolHandler("ipodControl", handleIpodControl);
 registerToolHandler("karaokeControl", handleKaraokeControl);
@@ -90,6 +115,3 @@ registerToolHandler("infiniteMacControl", handleInfiniteMacControl);
 registerToolHandler("calendarControl", handleCalendarControl);
 registerToolHandler("contactsControl", handleContactsControl);
 registerToolHandler("tvControl", handleTvControl);
-
-// Note: launchApp and closeApp handlers require additional context
-// so they are called directly from useAiChat rather than through the registry

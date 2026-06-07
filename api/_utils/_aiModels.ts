@@ -2,28 +2,16 @@ import { openai } from "@ai-sdk/openai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { google } from "@ai-sdk/google";
 import type { LanguageModel } from "ai";
+import {
+  AI_MODELS,
+  SUPPORTED_AI_MODELS,
+  DEFAULT_AI_MODEL,
+  type SupportedModel,
+} from "@ryos/shared/contracts/ai-models";
 
-// ============================================================================
-// AI Model Types and Constants (duplicated from src/types/aiModels.ts)
-// This avoids cross-directory imports that slow down vite-plugin-vercel
-// ============================================================================
+export { AI_MODELS, SUPPORTED_AI_MODELS, type SupportedModel };
 
-// Single source of truth for AI models
-export const AI_MODELS = {
-  "sonnet-4.6": { name: "sonnet-4.6", provider: "Anthropic" },
-  "gpt-5.5": { name: "gpt-5.5", provider: "OpenAI" },
-  "gemini-3-flash": { name: "gemini-3-flash", provider: "Google" },
-  "gemini-3.1-pro-preview": { name: "gemini-3.1-pro-preview", provider: "Google" },
-} as const;
-
-// Derived types
-export type SupportedModel = keyof typeof AI_MODELS;
-
-// Derived arrays - exported for validation
-export const SUPPORTED_AI_MODELS = Object.keys(AI_MODELS) as SupportedModel[];
-
-// Default model
-export const DEFAULT_MODEL: SupportedModel = "gpt-5.5";
+export const DEFAULT_MODEL: SupportedModel = DEFAULT_AI_MODEL;
 export const TELEGRAM_DEFAULT_MODEL: SupportedModel = DEFAULT_MODEL;
 
 type OpenAIReasoningEffort = "none" | "medium";

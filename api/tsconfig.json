@@ -12,7 +12,8 @@
     "strict": false,
     "baseUrl": "..",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@ryos/shared/*": ["./shared/*"]
     }
   },
   "include": ["./**/*.ts"],
