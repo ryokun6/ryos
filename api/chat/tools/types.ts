@@ -6,6 +6,7 @@
  */
 
 import type { Contact } from "../../../src/utils/contacts.js";
+export type { StickiesSnapshotData } from "../../../src/shared/domains/stickies.js";
 
 // Central list of supported theme IDs for tool validation
 export const THEME_IDS = ["system7", "macosx", "xp", "win98"] as const;
@@ -766,19 +767,6 @@ export interface CalendarSnapshotData {
   deletedEventIds?: Record<string, string>;
   deletedCalendarIds?: Record<string, string>;
   deletedTodoIds?: Record<string, string>;
-}
-
-export interface StickiesSnapshotData {
-  notes: Array<{
-    id: string;
-    content: string;
-    color: string;
-    position: { x: number; y: number };
-    size: { width: number; height: number };
-    createdAt: number;
-    updatedAt: number;
-  }>;
-  deletedNoteIds?: Record<string, string>;
 }
 
 export interface ContactsSnapshotData {

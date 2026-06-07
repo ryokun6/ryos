@@ -76,6 +76,15 @@ import {
 } from "@/utils/cloudSyncFileMerge";
 import { normalizeFilesMetadataSnapshotData } from "@/shared/domains/filesMetadata";
 import {
+  mergeStickiesSnapshots,
+  normalizeStickiesSnapshotData,
+  type StickiesSnapshotData,
+} from "@/shared/domains/stickies";
+import {
+  mergeItemsById,
+  mergeItemsByIdPreferNewer,
+} from "@/shared/sync/itemMerge";
+import {
   beginApplyingRemoteSettingsSections,
   endApplyingRemoteSettingsSections,
   getSettingsSectionTimestampMap,
@@ -160,11 +169,6 @@ interface TvSnapshotData {
   deletedCustomChannelIds?: DeletionMarkerMap;
   lcdFilterOn: boolean;
   closedCaptionsOn: boolean;
-}
-
-interface StickiesSnapshotData {
-  notes: StickyNote[];
-  deletedNoteIds?: DeletionMarkerMap;
 }
 
 interface CalendarSnapshotData {
@@ -1278,7 +1282,10 @@ function applyTvSnapshot(data: TvSnapshotData): void {
 }
 
 function applyStickiesSnapshot(data: StickiesSnapshotData): void {
-  const remoteDeletedNoteIds = normalizeDeletionMarkerMap(data.deletedNoteIds);
+  const normalizedData = normalizeStickiesSnapshotData(data);
+  const remoteDeletedNoteIds = normalizeDeletionMarkerMap(
+    normalizedData.deletedNoteIds
+  );
   const cloudSyncState = useCloudSyncStore.getState();
   const effectiveDeletedNoteIds = mergeDeletionMarkerMaps(
     cloudSyncState.deletionMarkers.stickyNoteIds,
@@ -1288,7 +1295,11 @@ function applyStickiesSnapshot(data: StickiesSnapshotData): void {
   cloudSyncState.mergeDeletedKeys("stickyNoteIds", remoteDeletedNoteIds);
 
   useStickiesStore.setState({
-    notes: filterDeletedIds(data.notes, effectiveDeletedNoteIds, (note) => note.id),
+    notes: filterDeletedIds(
+      normalizedData.notes as StickyNote[],
+      effectiveDeletedNoteIds,
+      (note) => note.id
+    ),
   });
 }
 
@@ -1609,56 +1620,6 @@ export async function fetchPhysicalCloudSyncMetadata(): Promise<CloudSyncMetadat
   throw new Error("Failed to fetch consolidated sync metadata");
 }
 
-function mergeItemsByIdPreferNewer<T extends { id: string; updatedAt?: number }>(
-  localItems: T[],
-  remoteItems: T[],
-  deletedIds: DeletionMarkerMap
-): T[] {
-  const merged = new Map<string, T>();
-  for (const item of remoteItems) {
-    if (!deletedIds[item.id]) merged.set(item.id, item);
-  }
-  for (const item of localItems) {
-    if (deletedIds[item.id]) continue;
-    const existing = merged.get(item.id);
-    if (
-      !existing ||
-      (item.updatedAt ?? 0) >= (existing.updatedAt ?? 0)
-    ) {
-      merged.set(item.id, item);
-    }
-  }
-  return Array.from(merged.values());
-}
-
-function mergeItemsById<T extends { id: string }>(
-  localItems: T[],
-  remoteItems: T[]
-): T[] {
-  const merged = new Map<string, T>();
-  for (const item of remoteItems) {
-    merged.set(item.id, item);
-  }
-  for (const item of localItems) {
-    merged.set(item.id, item);
-  }
-  return Array.from(merged.values());
-}
-
-function mergeStickiesSnapshots(
-  local: StickiesSnapshotData,
-  remote: StickiesSnapshotData
-): StickiesSnapshotData {
-  const mergedDeleted = mergeDeletionMarkerMaps(
-    normalizeDeletionMarkerMap(local.deletedNoteIds),
-    normalizeDeletionMarkerMap(remote.deletedNoteIds)
-  );
-  return {
-    notes: mergeItemsByIdPreferNewer(local.notes, remote.notes, mergedDeleted),
-    deletedNoteIds: mergedDeleted,
-  };
-}
-
 function mergeCalendarSnapshots(
   local: CalendarSnapshotData,
   remote: CalendarSnapshotData
@@ -1855,8 +1816,8 @@ function mergeRedisStateConflict(
       );
     case "stickies":
       return mergeStickiesSnapshots(
-        localData as StickiesSnapshotData,
-        remoteData as StickiesSnapshotData
+        normalizeStickiesSnapshotData(localData),
+        normalizeStickiesSnapshotData(remoteData)
       );
     case "calendar":
       return mergeCalendarSnapshots(
