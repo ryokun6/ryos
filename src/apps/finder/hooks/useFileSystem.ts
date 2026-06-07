@@ -20,7 +20,7 @@ import {
 } from "@/stores/helpers";
 import { formatKugouImageUrl } from "@/utils/coverArt";
 import { abortableFetch } from "@/utils/abortableFetch";
-import { getStoreForFile } from "@/utils/indexedDBOperations";
+import { getStoreForFile, type StoredContent } from "@/utils/indexedDBOperations";
 import {
   emitCloudSyncDomainChange,
   emitCloudSyncDomainChanges,
@@ -32,10 +32,9 @@ import {
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { FINDER_ANALYTICS, track } from "@/utils/analytics";
 
-// Interface for content stored in IndexedDB
-export interface DocumentContent {
-  name: string; // Used as the key in IndexedDB
-  content: string | Blob;
+// Interface for content stored in IndexedDB. The persisted shape is the shared
+// StoredContent ({ name, content }); contentUrl is a runtime-only Blob URL.
+export interface DocumentContent extends StoredContent {
   contentUrl?: string; // URL for Blob content (managed temporarily)
 }
 
