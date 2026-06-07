@@ -14,6 +14,9 @@ This file tracks implementation progress for `plans/10-duplication-complexity-au
 - [x] Removed the unused rooms `getClientIp()` helper from `api/rooms/_helpers/_helpers.ts`.
 - [x] Added `auth: "admin"` support to `apiHandler`.
 - [x] Moved `/api/admin` and `/api/presence/heartbeat` onto wrapper-level auth.
+- [x] Added `api/_utils/youtube-client.ts`.
+- [x] Replaced duplicated YouTube search/key-rotation logic in `api/youtube-search.ts`, `api/tv/create-channel.ts`, and `api/chat/tools/executors.ts`.
+- [x] Added `tests/test-youtube-client.test.ts`.
 
 ## Current test notes
 
@@ -23,27 +26,31 @@ This file tracks implementation progress for `plans/10-duplication-complexity-au
 - [x] `bun run test:admin`
 - [x] `bun test tests/test-new-api.test.ts --test-name-pattern "Presence"`
 - [x] `bun test tests/test-new-api.test.ts --test-name-pattern "Admin login|Presence"`
+- [x] `bun test tests/test-youtube-client.test.ts`
+- [x] `bun test tests/test-chat-tools-songs.test.ts`
+- [x] `bun run test:media`
+- [x] `bun test tests/test-tv-channels.test.ts tests/test-tv-utils.test.ts tests/test-tv-control-schema.test.ts tests/test-tv-store-default-channel-removal.test.ts`
 - [x] `bun run build`
 - [ ] `bun test tests/test-cloud-sync-utils.test.ts` full suite currently has an unrelated DOM mock gap in settings hydration.
 - [ ] `bun run test:new-api` full suite currently has an unrelated login fixture failure returning 401 after registration.
 
 ## In progress
 
-- [ ] Extract shared YouTube search client for API routes and server tools.
+- [ ] Consolidate YouTube title parsing.
 
 ## Next implementation checklist
 
 ### Phase 1: API integration cleanup
 
-- [ ] Add `api/_utils/youtube-client.ts`.
-- [ ] Add `tests/test-youtube-client.test.ts`.
-- [ ] Migrate `api/youtube-search.ts` to the shared client.
-- [ ] Migrate `api/tv/create-channel.ts` to the shared client.
-- [ ] Migrate `api/chat/tools/executors.ts` song search to the shared client.
-- [ ] Run `bun test tests/test-youtube-client.test.ts`.
-- [ ] Run `bun run test:media`.
-- [ ] Run `bun test tests/test-chat-tools-songs.test.ts`.
-- [ ] Run `bun run build`.
+- [x] Add `api/_utils/youtube-client.ts`.
+- [x] Add `tests/test-youtube-client.test.ts`.
+- [x] Migrate `api/youtube-search.ts` to the shared client.
+- [x] Migrate `api/tv/create-channel.ts` to the shared client.
+- [x] Migrate `api/chat/tools/executors.ts` song search to the shared client.
+- [x] Run `bun test tests/test-youtube-client.test.ts`.
+- [x] Run `bun run test:media`.
+- [x] Run `bun test tests/test-chat-tools-songs.test.ts`.
+- [x] Run `bun run build`.
 
 ### Phase 2: Title parsing consolidation
 
