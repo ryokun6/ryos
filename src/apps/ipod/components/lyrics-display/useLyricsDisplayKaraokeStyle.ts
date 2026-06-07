@@ -10,7 +10,11 @@ import {
   SERIF_RED_HIGHLIGHT_COLOR,
   getStyleCategory,
 } from "./constants";
-import { makeGlowFromColor } from "./colorUtils";
+import {
+  makeGlowFromColor,
+  makeOutlineFillFromGlowColor,
+  normalizeCoverColor,
+} from "./colorUtils";
 
 export function useLyricsDisplayKaraokeStyle(
   fontClassName: string,
@@ -24,15 +28,25 @@ export function useLyricsDisplayKaraokeStyle(
   );
   const isOldSchoolKaraoke =
     styleCategory === "outline-blue" || styleCategory === "outline-red";
+  const hasAdaptiveOutlineColor =
+    isOldSchoolKaraoke &&
+    (Boolean(coverUrl) || Boolean(normalizeCoverColor(coverColor)));
   const glowColor = useCoverGlowColor({
     coverUrl,
     coverColor,
-    enabled: styleCategory === "glow-gold",
+    enabled: styleCategory === "glow-gold" || hasAdaptiveOutlineColor,
     onResolved: onCoverColorResolved,
   });
   const primaryGlow = useMemo(() => {
     return makeGlowFromColor(glowColor);
   }, [glowColor]);
+  const outlineFillColor = useMemo(
+    () =>
+      hasAdaptiveOutlineColor
+        ? makeOutlineFillFromGlowColor(primaryGlow.color)
+        : undefined,
+    [hasAdaptiveOutlineColor, primaryGlow.color]
+  );
 
   const styleProps = useMemo(() => {
     const isOutline =
@@ -44,10 +58,10 @@ export function useLyricsDisplayKaraokeStyle(
     let highlight: string;
     switch (styleCategory) {
       case "outline-blue":
-        highlight = OLD_SCHOOL_HIGHLIGHT_COLOR;
+        highlight = outlineFillColor ?? OLD_SCHOOL_HIGHLIGHT_COLOR;
         break;
       case "outline-red":
-        highlight = SERIF_RED_HIGHLIGHT_COLOR;
+        highlight = outlineFillColor ?? SERIF_RED_HIGHLIGHT_COLOR;
         break;
       case "glow-gold":
         highlight = primaryGlow.color;
@@ -92,7 +106,7 @@ export function useLyricsDisplayKaraokeStyle(
       glowFilterStr: filter,
       baseColorResolved: base,
     };
-  }, [styleCategory, primaryGlow]);
+  }, [styleCategory, primaryGlow, outlineFillColor]);
 
   return {
     isOldSchoolKaraoke,

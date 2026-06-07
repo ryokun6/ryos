@@ -8,6 +8,11 @@ const MIN_GLOW_LIGHTNESS = 0.58;
 const MAX_GLOW_LIGHTNESS = 0.72;
 const MIN_GLOW_LUMINANCE = 0.34;
 const MIN_NEUTRAL_LIGHTNESS = 0.88;
+const OUTLINE_FILL_LIGHTNESS = 0.42;
+const OUTLINE_FILL_MIN_LIGHTNESS = 0.32;
+const OUTLINE_FILL_MIN_SATURATION = 0.78;
+const OUTLINE_NEUTRAL_FILL_LIGHTNESS = 0.56;
+const OUTLINE_NEUTRAL_MIN_LIGHTNESS = 0.38;
 const HEX_COLOR_RE = /^#([0-9a-f]{6})$/i;
 
 export function normalizeCoverColor(hex: string | null | undefined): string | undefined {
@@ -182,6 +187,36 @@ export function makeGlowFromColor(hex: string) {
     filter: `drop-shadow(0 0 8px rgba(${r},${g},${b},0.5))`,
     baseColor: `rgba(${r},${g},${b},0.6)`,
   };
+}
+
+/** Darken a boosted cover glow while preserving hue for outlined karaoke fills. */
+export function makeOutlineFillFromGlowColor(hex: string): string {
+  const [r, g, b] = hexToRgb(hex);
+  const hsl = rgbToHsl(r, g, b);
+
+  if (hsl.s <= NEUTRAL_SATURATION_MAX) {
+    return rgbToHex(
+      hslToRgb({
+        h: 0,
+        s: 0,
+        l: Math.max(
+          Math.min(hsl.l - 0.24, OUTLINE_NEUTRAL_FILL_LIGHTNESS),
+          OUTLINE_NEUTRAL_MIN_LIGHTNESS
+        ),
+      })
+    );
+  }
+
+  return rgbToHex(
+    hslToRgb({
+      h: hsl.h,
+      s: Math.max(hsl.s, OUTLINE_FILL_MIN_SATURATION),
+      l: Math.max(
+        Math.min(hsl.l - 0.14, OUTLINE_FILL_LIGHTNESS),
+        OUTLINE_FILL_MIN_LIGHTNESS
+      ),
+    })
+  );
 }
 
 export function resolveCoverGlowColor(palette: string[]): string {
