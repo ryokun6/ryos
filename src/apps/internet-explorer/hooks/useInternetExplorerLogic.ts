@@ -42,78 +42,16 @@ import {
   decodeData,
   normalizeUrlForHistory,
 } from "../utils/urlHelpers";
+import {
+  SuggestionItem,
+  urlBarUiReducer,
+  urlBarUiInitialState,
+} from "../utils/urlBarUiReducer";
 
 // Debug helper to identify direct passthrough URLs
 const logDirectPassthrough = (url: string) => {
   console.log(`[IE] Direct passthrough mode for: ${url}`);
 };
-
-// Define suggestion type to reuse
-type SuggestionItem = {
-  title: string;
-  url: string;
-  type: "favorite" | "history" | "search";
-  year?: string;
-  favicon?: string;
-  normalizedUrl?: string; // Optional prop for internal use
-};
-
-interface UrlBarUiState {
-  isUrlDropdownOpen: boolean;
-  filteredSuggestions: SuggestionItem[];
-  localUrl: string;
-  isSelectingText: boolean;
-  selectedSuggestionIndex: number;
-  dropdownStyle: CSSProperties;
-}
-
-const urlBarUiInitialState: UrlBarUiState = {
-  isUrlDropdownOpen: false,
-  filteredSuggestions: [],
-  localUrl: "",
-  isSelectingText: false,
-  selectedSuggestionIndex: 0,
-  dropdownStyle: {},
-};
-
-type UrlBarUiAction =
-  | { type: "setIsUrlDropdownOpen"; value: boolean }
-  | { type: "setFilteredSuggestions"; value: SuggestionItem[] }
-  | { type: "setLocalUrl"; value: string }
-  | { type: "setIsSelectingText"; value: boolean }
-  | { type: "setSelectedSuggestionIndex"; value: number }
-  | {
-      type: "setDropdownStyle";
-      value: CSSProperties | ((prev: CSSProperties) => CSSProperties);
-    };
-
-function urlBarUiReducer(
-  state: UrlBarUiState,
-  action: UrlBarUiAction
-): UrlBarUiState {
-  switch (action.type) {
-    case "setIsUrlDropdownOpen":
-      return { ...state, isUrlDropdownOpen: action.value };
-    case "setFilteredSuggestions":
-      return { ...state, filteredSuggestions: action.value };
-    case "setLocalUrl":
-      return { ...state, localUrl: action.value };
-    case "setIsSelectingText":
-      return { ...state, isSelectingText: action.value };
-    case "setSelectedSuggestionIndex":
-      return { ...state, selectedSuggestionIndex: action.value };
-    case "setDropdownStyle":
-      return {
-        ...state,
-        dropdownStyle:
-          typeof action.value === "function"
-            ? action.value(state.dropdownStyle)
-            : action.value,
-      };
-    default:
-      return state;
-  }
-}
 
 interface UseInternetExplorerLogicProps {
   isWindowOpen: boolean;
