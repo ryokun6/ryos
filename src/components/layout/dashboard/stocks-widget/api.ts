@@ -1,3 +1,4 @@
+import { getStocks } from "@/api/stocks";
 import { RANGE_TO_API, type TimeRange } from "./constants";
 import type { ApiChartPoint, ApiQuote, StockQuote } from "./types";
 
@@ -11,9 +12,7 @@ export async function fetchQuotes(symbols: string[]): Promise<StockQuote[]> {
   const cached = quotesCache.get(key);
   if (cached && Date.now() - cached.ts < CACHE_TTL_QUOTES) return cached.quotes;
 
-  const res = await fetch(`/api/stocks?symbols=${encodeURIComponent(key)}`);
-  if (!res.ok) throw new Error(`API ${res.status}`);
-  const data = await res.json();
+  const data = await getStocks({ symbols });
   const quotes: StockQuote[] = (data.quotes as ApiQuote[]).map((q) => ({
     symbol: q.symbol,
     price: q.price,
@@ -32,11 +31,11 @@ export async function fetchChart(
   if (cached && Date.now() - cached.ts < CACHE_TTL_CHART) return cached;
 
   const apiRange = RANGE_TO_API[range];
-  const res = await fetch(
-    `/api/stocks?symbols=${encodeURIComponent(symbol)}&chart=${encodeURIComponent(symbol)}&range=${apiRange}`
-  );
-  if (!res.ok) throw new Error(`API ${res.status}`);
-  const data = await res.json();
+  const data = await getStocks({
+    symbols: [symbol],
+    chart: symbol,
+    range: apiRange,
+  });
   const points = (data.chart ?? []) as ApiChartPoint[];
   const result = {
     history: points.map((p) => p.close),
