@@ -2,10 +2,7 @@ import ReactPlayer from "react-player";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
 import { ActivityIndicatorWithLabel } from "@/components/ui/activity-indicator-with-label";
-import { LandscapeVideoBackground } from "@/components/shared/LandscapeVideoBackground";
-import { AmbientBackground } from "@/components/shared/AmbientBackground";
-import { MeshGradientBackground } from "@/components/shared/MeshGradientBackground";
-import { WaterBackground } from "@/components/shared/WaterBackground";
+import { MediaVisualLayers } from "@/components/shared/MediaVisualLayers";
 import { DisplayMode } from "@/types/lyrics";
 import { LyricsDisplay } from "../lyrics-display/LyricsDisplay";
 import { getIpodSmallScreenLyricsFontClassName } from "../lyrics-display/useLyricsDisplaySettings";
@@ -213,72 +210,20 @@ export function IpodScreenMediaOverlay({
           </div>
         )}
 
-        {/* Landscape video background */}
-        {effectiveDisplayMode === DisplayMode.Landscapes && shouldAnimateVisuals && (
-          <LandscapeVideoBackground
-            isActive={shouldAnimateVisuals}
-            className="absolute inset-0 z-[5]"
-          />
-        )}
-
-        {/* Warp shader background */}
-        {effectiveDisplayMode === DisplayMode.Shader && shouldAnimateVisuals && (
-          <AmbientBackground
-            coverUrl={coverUrl}
-            variant="warp"
-            isActive={shouldAnimateVisuals}
-            className="absolute inset-0 z-[5]"
-          />
-        )}
-
-        {/* Mesh gradient background */}
-        {effectiveDisplayMode === DisplayMode.Mesh && shouldAnimateVisuals && (
-          <MeshGradientBackground
-            coverUrl={coverUrl}
-            isActive={shouldAnimateVisuals}
-            className="absolute inset-0 z-[5]"
-          />
-        )}
-
-        {/* Water shader background */}
-        {effectiveDisplayMode === DisplayMode.Water && shouldAnimateVisuals && (
-          <WaterBackground
-            coverUrl={coverUrl}
-            isActive={shouldAnimateVisuals}
-            className="absolute inset-0 z-[5]"
-          />
-        )}
+        <MediaVisualLayers
+          effectiveDisplayMode={effectiveDisplayMode}
+          isActive={shouldAnimateVisuals}
+          coverUrl={coverUrl}
+          isPlaying={isPlaying}
+          coverTitle={currentTrack?.title}
+          onCoverInteraction={handlePlay}
+          animatedCoverImage={false}
+        />
 
         {/* Dark overlay when lyrics are shown */}
         {showVideo && shouldShowLyrics && (
           <div className="absolute inset-0 bg-black/30 z-25" />
         )}
-        {/* Cover overlay: shows when paused (any mode) or in Cover mode.
-            Apple Music still gets animated visualizers in non-cover modes. */}
-        <AnimatePresence>
-          {showVideo &&
-            coverUrl &&
-            (effectiveDisplayMode === DisplayMode.Cover || !isPlaying) && (
-            <motion.div
-              className="absolute inset-0 z-15"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              onClick={(e) => {
-                e.stopPropagation();
-                handlePlay();
-              }}
-            >
-              {/* Single opacity animation (wrapper only) — nesting motion.img hid the overlay twice */}
-              <img
-                src={coverUrl}
-                alt={currentTrack?.title}
-                className="size-full object-cover brightness-50 pointer-events-none"
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
         {/* Transparent overlay to capture clicks */}
         {showVideo && (
           <div

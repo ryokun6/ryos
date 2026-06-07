@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { getIndexFromId } from "@/stores/helpers/createPlaylistStore";
 
 export interface Video {
   id: string;
@@ -201,9 +202,7 @@ export const useVideoStore = create<VideoStoreState>()(
       // Derived state helpers
       getCurrentIndex: () => {
         const state = get();
-        return state.currentVideoId
-          ? state.videos.findIndex((v) => v.id === state.currentVideoId)
-          : -1;
+        return getIndexFromId(state.videos, state.currentVideoId);
       },
       getCurrentVideo: () => {
         const state = get();
