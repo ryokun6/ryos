@@ -24,6 +24,7 @@ import {
   isFilesMetadataRedisPatchPayload,
   type FilesMetadataSyncSnapshot,
 } from "../../src/utils/cloudSyncFileMerge.js";
+import { normalizeFilesMetadataSnapshotData } from "../../src/shared/domains/filesMetadata.js";
 import {
   applySettingsRedisPatch,
   isSettingsRedisPatchPayload,
@@ -54,29 +55,6 @@ export interface PutStateBody {
   updatedAt?: string;
   version?: number;
   syncVersion?: CloudSyncWriteVersion;
-}
-
-function normalizeFilesMetadataForPatch(data: unknown): FilesMetadataSyncSnapshot {
-  if (!data || typeof data !== "object") {
-    return {
-      items: {},
-      libraryState: "uninitialized",
-      documents: [],
-      deletedPaths: {},
-    };
-  }
-  const d = data as Record<string, unknown>;
-  return {
-    items: (d.items as FilesMetadataSyncSnapshot["items"]) || {},
-    libraryState:
-      (d.libraryState as FilesMetadataSyncSnapshot["libraryState"]) ||
-      "uninitialized",
-    documents: Array.isArray(d.documents)
-      ? (d.documents as FilesMetadataSyncSnapshot["documents"])
-      : [],
-    deletedPaths:
-      (d.deletedPaths as FilesMetadataSyncSnapshot["deletedPaths"]) || {},
-  };
 }
 
 function isContactsSnapshotData(value: unknown): value is { contacts: unknown[] } {
@@ -501,7 +479,9 @@ export async function putRedisStateDomain(
       };
     }
     dataToPersist = applyFilesMetadataRedisPatch(
-      normalizeFilesMetadataForPatch(existingRedisEntry.data),
+      normalizeFilesMetadataSnapshotData(
+        existingRedisEntry.data
+      ) as FilesMetadataSyncSnapshot,
       body.data
     );
   } else if (domain === "settings" && isSettingsRedisPatchPayload(body.data)) {

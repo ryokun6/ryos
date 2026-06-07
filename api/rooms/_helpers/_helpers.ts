@@ -2,9 +2,6 @@
  * Common helper functions for chat-rooms API (Node.js runtime)
  */
 
-import type { VercelRequest } from "@vercel/node";
-import { getHeader } from "../../_utils/request-helpers.js";
-
 // ============================================================================
 // Response Helpers (used by internal helper modules)
 // ============================================================================
@@ -47,20 +44,4 @@ export function addCorsHeaders(
     statusText: response.statusText,
     headers: newHeaders,
   });
-}
-
-// ============================================================================
-// Client IP Helpers
-// ============================================================================
-
-/**
- * Extract client IP from request headers
- */
-export function getClientIp(request: VercelRequest): string {
-  const xVercel = getHeader(request, "x-vercel-forwarded-for");
-  const xForwarded = getHeader(request, "x-forwarded-for");
-  const xRealIp = getHeader(request, "x-real-ip");
-  const raw = xVercel || xForwarded || xRealIp || "";
-  const ip = raw.split(",")[0].trim();
-  return ip || "unknown-ip";
 }

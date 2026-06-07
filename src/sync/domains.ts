@@ -74,6 +74,7 @@ import {
   mergeFilesMetadataSnapshots,
   type FilesMetadataSyncSnapshot,
 } from "@/utils/cloudSyncFileMerge";
+import { normalizeFilesMetadataSnapshotData } from "@/shared/domains/filesMetadata";
 import {
   beginApplyingRemoteSettingsSections,
   endApplyingRemoteSettingsSections,
@@ -1892,30 +1893,6 @@ function mergeRedisStateConflict(
   }
 }
 
-function normalizeRemoteFilesMetadataSnapshot(
-  data: unknown
-): FilesMetadataSyncSnapshot {
-  if (!data || typeof data !== "object") {
-    return {
-      items: {},
-      libraryState: "uninitialized",
-      documents: [],
-      deletedPaths: {},
-    };
-  }
-  const d = data as Record<string, unknown>;
-  return {
-    items: (d.items as Record<string, FileSystemItem>) || {},
-    libraryState:
-      (d.libraryState as FilesMetadataSyncSnapshot["libraryState"]) ||
-      "uninitialized",
-    documents: Array.isArray(d.documents)
-      ? (d.documents as FilesMetadataSyncSnapshot["documents"])
-      : [],
-    deletedPaths: (d.deletedPaths as FilesMetadataSyncSnapshot["deletedPaths"]) || {},
-  };
-}
-
 async function prepareFilesMetadataDomainWrite(
   _auth: AuthContext,
   providedDb?: IDBDatabase
@@ -1947,7 +1924,9 @@ async function prepareFilesMetadataDomainWrite(
     };
   }
 
-  const remoteData = normalizeRemoteFilesMetadataSnapshot(remoteSnapshot.data);
+  const remoteData = normalizeFilesMetadataSnapshotData(
+    remoteSnapshot.data
+  ) as FilesMetadataSyncSnapshot;
   const localSnapshotMinimal: FilesMetadataSyncSnapshot = {
     items: filesState.items,
     libraryState: filesState.libraryState,

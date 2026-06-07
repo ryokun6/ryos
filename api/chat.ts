@@ -16,7 +16,10 @@ import {
   type SimpleConversationMessage,
 } from "./_utils/ryo-conversation.js";
 import { PROACTIVE_GREETING_INSTRUCTIONS } from "./_utils/_aiPrompts.js";
-import { checkAndIncrementAIMessageCount } from "./_utils/_rate-limit.js";
+import {
+  checkAndIncrementAIMessageCount,
+  getClientIp,
+} from "./_utils/_rate-limit.js";
 import { apiHandler } from "./_utils/api-handler.js";
 import { getHeader } from "./_utils/request-helpers.js";
 import { resolveIpGeolocation } from "./_utils/_geolocation.js";
@@ -93,23 +96,7 @@ export default apiHandler<{
     const logError = (...args: unknown[]) =>
       logger.error(`[User: ${usernameForLogs}]`, args);
 
-    // Get IP address for rate limiting anonymous users
-    // For Vercel deployments, use x-vercel-forwarded-for (won't be overwritten by proxies)
-    // For localhost/local dev, use a fixed identifier
-    const isLocalDev = validOrigin?.startsWith("http://localhost") || validOrigin?.startsWith("http://127.0.0.1") || validOrigin?.includes("100.110.251.60");
-    let ip: string;
-
-    if (isLocalDev) {
-      // For local development, use a fixed identifier
-      ip = "localhost-dev";
-    } else {
-      // For Vercel deployments, prefer x-vercel-forwarded-for which is more reliable
-      ip =
-        getHeader(req, "x-vercel-forwarded-for") ||
-        getHeader(req, "x-forwarded-for")?.split(",")[0].trim() ||
-        getHeader(req, "x-real-ip") ||
-        "unknown-ip";
-    }
+    const ip = getClientIp(req);
 
     log(`Request origin: ${validOrigin}, IP: ${ip}`);
 
