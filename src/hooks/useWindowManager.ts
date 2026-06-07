@@ -8,7 +8,10 @@ import {
 import { appIds, AppId } from "@/config/appIds";
 import { useAppStore } from "@/stores/useAppStore";
 import { useSound, Sounds } from "./useSound";
-import { getWindowConfig, getMobileWindowSize } from "@/config/appRegistry";
+import {
+  getMobileWindowSize,
+  getWindowConfig,
+} from "@/config/appWindowConfig";
 import { useWindowInsets } from "./useWindowInsets";
 import { useEventListener } from "@/hooks/useEventListener";
 

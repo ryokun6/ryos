@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useImperativeHandle, useState, useCallback } from "react";
-import { Filter } from "../PaintFiltersMenu";
+import type { Filter } from "../../types";
 import { performFloodFill } from "./paintCanvasFloodFill";
 import { extractSelectionRegion as extractSelectionRegionFromCanvas } from "./paintCanvasSelectionUtils";
 import {

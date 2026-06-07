@@ -10,28 +10,10 @@ import type {
 } from "@/apps/base/types";
 import type { AppletViewerInitialData } from "@/apps/applet-viewer";
 import { createLazyComponent } from "./lazyAppComponent";
+import type { WindowConstraints } from "./appWindowConfig";
 
 export type { AppId };
-
-export interface WindowSize {
-  width: number;
-  height: number;
-}
-
-export interface WindowConstraints {
-  minSize?: WindowSize;
-  maxSize?: WindowSize;
-  defaultSize: WindowSize;
-  mobileDefaultSize?: WindowSize;
-  /** If true, mobile height will be set to window.innerWidth (square) */
-  mobileSquare?: boolean;
-}
-
-// Default window constraints for any app not specified
-const defaultWindowConstraints: WindowConstraints = {
-  defaultSize: { width: 730, height: 475 },
-  minSize: { width: 300, height: 200 },
-};
+export type { WindowConstraints, WindowSize } from "./appWindowConfig";
 
 // ============================================================================
 // LAZY-LOADED APP COMPONENTS
@@ -595,29 +577,4 @@ export const getAppMetadata = (appId: AppId) => {
 // Helper function to get app component
 export const getAppComponent = (appId: AppId) => {
   return appRegistry[resolveRegistryAppId(appId)].component;
-};
-
-// Helper function to get window configuration
-export const getWindowConfig = (appId: AppId): WindowConstraints => {
-  const resolved = resolveRegistryAppId(appId);
-  return appRegistry[resolved].windowConfig || defaultWindowConstraints;
-};
-
-// Helper function to get mobile window size
-export const getMobileWindowSize = (appId: AppId): WindowSize => {
-  const config = getWindowConfig(appId);
-  if (config.mobileDefaultSize) {
-    return config.mobileDefaultSize;
-  }
-  // Square aspect ratio: height = width
-  if (config.mobileSquare) {
-    return {
-      width: window.innerWidth,
-      height: window.innerWidth,
-    };
-  }
-  return {
-    width: window.innerWidth,
-    height: config.defaultSize.height,
-  };
 };

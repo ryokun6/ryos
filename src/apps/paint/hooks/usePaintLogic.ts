@@ -6,7 +6,7 @@ import { dbOperations } from "@/utils/indexedDBOperations";
 import { STORES } from "@/utils/indexedDB";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { usePaintStore } from "@/stores/usePaintStore";
-import type { Filter } from "../components/PaintFiltersMenu";
+import type { Filter } from "../types";
 import { useAppStore } from "@/stores/useAppStore";
 import { toast } from "sonner";
 import { useThemeFlags } from "@/hooks/useThemeFlags";

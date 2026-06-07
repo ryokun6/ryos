@@ -1,6 +1,10 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { AppId, getWindowConfig, getMobileWindowSize } from "@/config/appRegistry";
+import { AppId } from "@/config/appRegistry";
+import {
+  getMobileWindowSize,
+  getWindowConfig,
+} from "@/config/appWindowConfig";
 import { prefetchAppChunk } from "@/config/lazyAppComponent";
 import { resolveAppId } from "@/config/appRegistryData";
 import { useAppletStore } from "@/stores/useAppletStore";

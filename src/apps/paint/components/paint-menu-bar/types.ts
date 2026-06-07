@@ -1,5 +1,5 @@
 import type React from "react";
-import type { Filter } from "../PaintFiltersMenu";
+import type { Filter } from "../../types";
 
 /** Props for the Paint app menubar shell (`paint-menu-bar/`). */
 export interface PaintMenuBarProps {

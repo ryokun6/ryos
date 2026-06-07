@@ -1,5 +1,5 @@
 import type React from "react";
-import type { Filter } from "../PaintFiltersMenu";
+import type { Filter } from "../../types";
 
 export interface PaintCanvasProps {
   selectedTool: string;

@@ -1,4 +1,4 @@
-import type { Filter } from "../PaintFiltersMenu";
+import type { Filter } from "../../types";
 
 export const PAINT_MENU_FILTERS: Filter[] = [
   // Color Adjustments

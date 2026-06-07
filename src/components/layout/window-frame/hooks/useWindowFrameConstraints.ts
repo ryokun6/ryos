@@ -1,4 +1,4 @@
-import { getWindowConfig } from "@/config/appRegistry";
+import { getWindowConfig } from "@/config/appWindowConfig";
 import type { AppId } from "@/config/appIds";
 import { useMemo } from "react";
 import type { WindowFrameProps } from "../windowFrameTypes";
