@@ -11,6 +11,7 @@ import i18n from "@/lib/i18n";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { ApiRequestError } from "@/api/core";
+import { USERNAME_REGEX, PASSWORD_MIN_LENGTH } from "@/shared/validation";
 import {
   type CreateRoomPayload,
   createRoom as createRoomApi,
@@ -1169,9 +1170,7 @@ export const useChatsStore = create<ChatsStoreState>()(
           }
 
           // Client-side validation mirroring server rules to provide instant feedback
-          const isValid = /^[a-z](?:[a-z0-9]|[-_](?=[a-z0-9])){2,29}$/i.test(
-            trimmedUsername
-          );
+          const isValid = USERNAME_REGEX.test(trimmedUsername);
           if (!isValid) {
             return {
               ok: false,
@@ -1184,7 +1183,6 @@ export const useChatsStore = create<ChatsStoreState>()(
           if (!password || password.trim().length === 0) {
             return { ok: false, error: "Password is required" };
           }
-          const PASSWORD_MIN_LENGTH = 8; // Keep in sync with server
           if (password.length < PASSWORD_MIN_LENGTH) {
             return {
               ok: false,
