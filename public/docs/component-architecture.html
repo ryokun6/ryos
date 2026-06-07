@@ -326,10 +326,9 @@
     subgraph Layer2["Layer 2: Custom UI"]
         B1[audio-bars]
         B2[dial]
-        B3[volume-bar]
-        B4[playback-bars]
-        B5[ThemedIcon]
-        B6[TrafficLightButton]
+        B3[playback-bars]
+        B4[ThemedIcon]
+        B5[TrafficLightButton]
     end
     
     subgraph Layer1["Layer 1: Base (shadcn)"]
@@ -367,7 +366,6 @@
 │   ├── tabs.tsx
 │   ├── audio-bars.tsx
 │   ├── dial.tsx
-│   ├── volume-bar.tsx
 │   └── ...
 ├── dialogs/          # Modal dialogs
 │   ├── AboutDialog.tsx
@@ -478,15 +476,6 @@
 }</code></pre>
 <strong>Features:</strong>
 <ul><li>Horizontal drag-to-adjust</li><li>Touch and mouse support</li><li>Conic gradient fill</li><li>Size variants</li></ul>
-<h4>volume-bar</h4>
-<p>Volume level indicator with animation.</p>
-<pre><code>interface VolumeBarProps {
-  level: number;
-  maxLevel?: number;
-  barCount?: number;
-  activeColor?: string;
-  inactiveColor?: string;
-}</code></pre>
 <h4>playback-bars</h4>
 <p>Animated equalizer-style bars.</p>
 <pre><code>interface PlaybackBarsProps {

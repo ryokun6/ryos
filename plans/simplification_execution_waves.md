@@ -119,7 +119,6 @@ Collapse competing frontend access layers so components and stores stop reaching
 - add missing chat room write wrappers to `src/api/rooms.ts`
 - migrate `useChatsStore` room create/delete/send flows away from local raw fetch helpers
 - unify song-related internal API access in `src/api/songs.ts`
-- migrate `useSongCover` to `src/api/songs.ts`
 - remove helper drift where frontend code mixes `apiRequest`, `abortableFetch`, and direct internal fetches
 
 **Expected payoff**

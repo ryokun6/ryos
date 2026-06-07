@@ -1675,7 +1675,7 @@ export const useIpodStore = create<IpodState>()(
       addTrackFromVideoId: async (urlOrId: string, autoPlay: boolean = true): Promise<Track | null> => {
         const videoId =
           parseRyosShareTrackId(urlOrId) ??
-          parseYouTubeVideoId(urlOrId, { allowLooseHostMatch: true });
+          parseYouTubeVideoId(urlOrId);
         if (!videoId) {
           throw new Error("Invalid YouTube URL or video ID");
         }

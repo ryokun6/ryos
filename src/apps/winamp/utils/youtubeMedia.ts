@@ -148,7 +148,6 @@ export class YouTubeMedia {
   async loadFromUrl(url: string, autoPlay: boolean): Promise<void> {
     const videoId = parseYouTubeVideoId(url, {
       allowBareHost: true,
-      allowLooseHostMatch: true,
       allowProtocolAliases: true,
     });
 

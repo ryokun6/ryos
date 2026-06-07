@@ -75,8 +75,7 @@ graph TD
         B3[audio-bars]
         B4[dial]
         B5[playback-bars]
-        B6[volume-bar]
-        B7[audio-input-button]
+        B6[audio-input-button]
     end
     
     subgraph Layer 1: Base

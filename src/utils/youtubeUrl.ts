@@ -33,11 +33,6 @@ export interface ParseYouTubeVideoIdOptions {
   allowProtocolAliases?: boolean;
   /** Accept pasted URLs without a scheme, e.g. `youtube.com/watch?v=...`. */
   allowBareHost?: boolean;
-  /**
-   * Preserve older caller behavior that matched hostnames by substring.
-   * Leave false for new code so spoof-like hosts stay rejected.
-   */
-  allowLooseHostMatch?: boolean;
 }
 
 export type YouTubeThumbnailQuality =
@@ -83,12 +78,7 @@ export function parseYouTubeVideoId(
   const parseCandidate = (candidate: string): string | null => {
     const url = new URL(candidate);
     const hostname = url.hostname.toLowerCase();
-    const isAllowedHost = options.allowLooseHostMatch
-      ? isYouTubeHostname(hostname) ||
-        hostname.includes("youtube.com") ||
-        hostname.includes("youtu.be")
-      : isYouTubeHostname(hostname);
-    if (!isAllowedHost) return null;
+    if (!isYouTubeHostname(hostname)) return null;
 
     const v = url.searchParams.get("v");
     if (v && YOUTUBE_ID_RE.test(v)) return v;

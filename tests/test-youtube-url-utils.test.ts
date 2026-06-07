@@ -16,7 +16,6 @@ describe("parseYouTubeVideoId legacy caller options", () => {
   test("supports Winamp legacy shortcuts when explicitly enabled", () => {
     const options = {
       allowBareHost: true,
-      allowLooseHostMatch: true,
       allowProtocolAliases: true,
     };
 
@@ -31,14 +30,19 @@ describe("parseYouTubeVideoId legacy caller options", () => {
     );
     expect(
       parseYouTubeVideoId(`https://notyoutube.com/watch?v=${VID}`, options)
-    ).toBe(VID);
+    ).toBeNull();
   });
 
-  test("supports iPod legacy loose host matching when explicitly enabled", () => {
+  test("rejects substring-confusable hosts for all callers", () => {
+    expect(parseYouTubeVideoId(`https://youtube.com/watch?v=${VID}`)).toBe(VID);
+    expect(
+      parseYouTubeVideoId(`https://evil-youtube.com/watch?v=${VID}`)
+    ).toBeNull();
     expect(
       parseYouTubeVideoId(`https://notyoutube.com/watch?v=${VID}`, {
-        allowLooseHostMatch: true,
+        allowBareHost: true,
+        allowProtocolAliases: true,
       })
-    ).toBe(VID);
+    ).toBeNull();
   });
 });
