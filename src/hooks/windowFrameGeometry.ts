@@ -24,6 +24,31 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
 
+function normalizeVerticalPosition(
+  y: number,
+  height: number,
+  viewport: ViewportSize,
+  topInset: number,
+  bottomInset: number
+): number {
+  const availableHeight = Math.max(
+    MIN_VISIBLE_EDGE,
+    viewport.height - topInset - bottomInset
+  );
+  const maxFullyVisibleY = Math.max(
+    topInset,
+    viewport.height - bottomInset - height
+  );
+
+  if (height > availableHeight) {
+    return topInset;
+  }
+  if (y < topInset || y > maxFullyVisibleY) {
+    return topInset;
+  }
+  return y;
+}
+
 export function normalizeWindowFrame({
   position,
   size,
@@ -34,14 +59,16 @@ export function normalizeWindowFrame({
   mobileSize,
 }: NormalizeWindowFrameInput): WindowFrameState {
   if (isMobile) {
-    const availableHeight = Math.max(
-      MIN_VISIBLE_EDGE,
-      viewport.height - bottomInset
-    );
     return {
       position: {
         x: 0,
-        y: clamp(position.y, topInset, availableHeight - MIN_VISIBLE_EDGE),
+        y: normalizeVerticalPosition(
+          position.y,
+          mobileSize.height,
+          viewport,
+          topInset,
+          bottomInset
+        ),
       },
       size: mobileSize,
     };
@@ -64,7 +91,13 @@ export function normalizeWindowFrame({
   return {
     position: {
       x: clamp(nextX, minX, maxX),
-      y: clamp(position.y, topInset, maxY),
+      y: normalizeVerticalPosition(
+        clamp(position.y, topInset, maxY),
+        nextSize.height,
+        viewport,
+        topInset,
+        bottomInset
+      ),
     },
     size: nextSize,
   };

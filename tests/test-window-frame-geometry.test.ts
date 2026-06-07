@@ -14,7 +14,7 @@ describe("normalizeWindowFrame", () => {
     });
 
     expect(result.position.x).toBe(0);
-    expect(result.position.y).toBeLessThanOrEqual(744);
+    expect(result.position.y).toBe(28);
     expect(result.size).toEqual({ width: 390, height: 400 });
   });
 
@@ -43,7 +43,7 @@ describe("normalizeWindowFrame", () => {
       mobileSize: { width: 390, height: 400 },
     });
 
-    expect(result.position).toEqual({ x: 344, y: 688 });
+    expect(result.position).toEqual({ x: 344, y: 24 });
     expect(result.size).toEqual({ width: 680, height: 400 });
   });
 
