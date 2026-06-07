@@ -323,7 +323,47 @@ green):
 - Removed `isTabletDevice()` from `src/utils/device.ts`
 - Removed the three `@deprecated *ChunkInfo` aliases from `src/utils/chunkedStream.ts`
 
-Deliberately **not** applied here (recommended as follow-ups): deleting `api/_utils/middleware.ts`
-(needs the two doc updates), removing `streamFurigana`/`getClientIpFromVercel`/`handlePreflight`,
-pruning npm deps, and all helper-consolidation/architecture work above — these belong in their own
-reviewable commits per the wave sequencing.
+Deliberately **not** applied in the first commit (followed up below): deleting
+`api/_utils/middleware.ts` (needs the two doc updates), removing
+`getClientIpFromVercel`/`handlePreflight`, pruning npm deps, and the
+helper-consolidation/architecture work — these landed in the phased commits documented next.
+
+---
+
+## Phased implementation status
+
+This PR implements the **API-side and shared-boundary phases** of the migration sequence,
+each as its own tested, behavior-preserving commit. The **large frontend/architecture rewrites**
+are intentionally deferred to dedicated, individually-reviewed PRs — consistent with both the
+audit's risk ranking and the repo's own `plans/simplification_execution_waves.md`
+("keep each wave independently reviewable and shippable").
+
+### Completed in this PR (verified)
+
+| Phase | Work | Verification |
+|-------|------|--------------|
+| **0** | Dead-code removal (`saveUtils`, `useTokenRefresh`, `middleware.ts` barrel, `constants.ts`, `isTabletDevice`, `*ChunkInfo`, `getClientIpFromVercel`, `handlePreflight`); `isTouchDevice` dedupe; presence-alias consolidation; pruned 5 unused npm deps | `bun run build`; `test:unit`; API server boot + rooms/presence tests |
+| **1** | `createAppleJwtTokenHandler` factory (MapKit/MusicKit); `checkBurstAndDailyLimits` helper (parse-title/youtube-search/audio-transcribe); single `CHAT_USERS_PREFIX` source + 4 hardcoded literals replaced | Live token endpoints (TTLs 1800s/604800s); `test-parse-title`/`test-media`; rooms/auth/listen suites |
+| **2** | `src/shared/` runtime-neutral module pattern; AI model registry single source (`src/shared/aiModels`); validation primitives single source (`src/shared/validation`) | `bun run build`; 42 AI tests; auth/rooms tests; `test:unit` |
+| **3** | `startLyricsSseResponse` shared SSE scaffolding (songs); `consolidateMemoryContent` shared memory module | Live `translate-stream` SSE round-trip; `test-song` (23); memory+AI tests (45) |
+
+All commits keep product behavior unchanged; live verification used real Redis/Pusher/AI/MapKit
+credentials present in the environment.
+
+### Deferred to dedicated, individually-reviewed PRs (with rationale)
+
+These cannot be verified to preserve behavior in a single autonomous PR without extensive
+multi-client and per-app GUI testing; shipping them blind would risk the exact regressions the
+audit warns about.
+
+| Phase | Work | Why deferred |
+|-------|------|--------------|
+| **4** | Finish IndexedDB winner-selection (Wave 6); finish internal API-client unification (Wave 7) | VFS layer feeds 15+ modules (cloud sync, trash, cross-app open); needs per-app file save/load GUI testing. API-client swaps change error/retry semantics. |
+| **5** | Split god hooks (`useIpodLogic` ~5.5k, `useFileSystem` ~2.2k, `useInternetExplorerLogic`, `useAiChat`) behind frozen return types | Behavior-preserving splits of large stateful hooks hinge on effect ordering / shared refs; only manual per-app testing (iPod playback, IE browsing, chat tools) can confirm no regression. |
+| **6** | Sync domain split (Wave 8); **songs `deletedTrackIds` tombstone alignment** | **Data-loss class.** Songs sync uses version-conflict + client-side merge; persisting tombstones server-side is a real correctness need but requires multi-device, multi-cycle verification to confirm it doesn't resurrect or wrongly delete tracks. |
+| **7** | Theme token table (`tabStyles`, `toolInlineCardShell`, menubar inline styles); collapse `*-force-font` CSS | Visual-regression risk across all 4 OS themes; requires screenshot verification per theme. The small `useThemeFlags` swaps are low value and need consumer-by-consumer equivalence checks. |
+| **2 (rest)** | Chat / room / message types, sync snapshot types, lyrics types into `src/shared/` | Type-only consolidation across dozens of files in both projects; high churn, no functional benefit, real build-breakage risk. The `src/shared/` pattern is now established for these to follow. |
+
+The shared-module pattern (`src/shared/`, importable by both the Vite frontend via `@/shared/*`
+and the Bun API via `../../src/shared/*.js`) established in Phase 2 is the vehicle for the
+remaining type consolidations.
