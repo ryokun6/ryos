@@ -55,9 +55,9 @@ This file tracks implementation progress for `plans/10-duplication-complexity-au
 - [x] `bun run test:listen-security`
 - [x] `bun test tests/test-chat-contracts.test.ts`
 - [x] `bun test tests/test-chat-notification-logic.test.ts tests/test-chat-notification-integration-wiring.test.ts tests/test-chat-broadcast-wiring.test.ts tests/test-chat-hook-channel-lifecycle-wiring.test.ts tests/test-chat-store-guards-wiring.test.ts`
-- [ ] `bun test tests/test-listen-contracts.test.ts`
-- [ ] `bun test tests/test-irc-contracts.test.ts`
-- [ ] `bun test tests/test-irc-bridge.test.ts`
+- [x] `bun test tests/test-listen-contracts.test.ts`
+- [x] `bun test tests/test-irc-contracts.test.ts`
+- [x] `bun test tests/test-irc-bridge.test.ts`
 - [x] `bun run build`
 - [ ] `bun test tests/test-cloud-sync-utils.test.ts` full suite currently has an unrelated DOM mock gap in settings hydration.
 - [ ] `bun run test:new-api` full suite currently has an unrelated login fixture failure returning 401 after registration.
