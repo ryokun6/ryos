@@ -3,7 +3,11 @@ import { persist } from "zustand/middleware";
 import { ShaderType } from "@/types/shader";
 import { DisplayMode } from "@/utils/displayMode";
 import { checkShaderPerformance } from "@/utils/performanceCheck";
-import { ensureIndexedDBInitialized } from "@/utils/indexedDB";
+import { STORES } from "@/utils/indexedDB";
+import {
+  dbOperations,
+  getIndexedDbStoreKeys,
+} from "@/utils/indexedDBOperations";
 import {
   emitCloudSyncDomainChange,
   requestCloudSyncDomainCheck,
@@ -23,7 +27,7 @@ export const DEFAULT_WALLPAPER_PATH =
 
 // IndexedDB helpers for custom wallpapers
 export const INDEXEDDB_PREFIX = "indexeddb://";
-const CUSTOM_WALLPAPERS_STORE = "custom_wallpapers";
+const CUSTOM_WALLPAPERS_STORE = STORES.CUSTOM_WALLPAPERS;
 const objectURLs: Record<string, string> = {};
 
 type StoredWallpaper = { blob?: Blob; content?: string; [k: string]: unknown };
@@ -49,9 +53,6 @@ const saveCustomWallpaper = async (file: File): Promise<string> => {
     throw new Error("Only image files allowed");
   try {
     const processedFile = await convertImageFileToWallpaperJpeg(file);
-    const db = await ensureIndexedDBInitialized();
-    const tx = db.transaction(CUSTOM_WALLPAPERS_STORE, "readwrite");
-    const store = tx.objectStore(CUSTOM_WALLPAPERS_STORE);
     const name = `custom_${Date.now()}_${processedFile.name.replace(
       /[^a-zA-Z0-9._-]/g,
       "_"
@@ -63,12 +64,7 @@ const saveCustomWallpaper = async (file: File): Promise<string> => {
       type: processedFile.type,
       dateAdded: new Date().toISOString(),
     };
-    await new Promise<void>((res, rej) => {
-      const r = store.put(rec, name);
-      r.onsuccess = () => res();
-      r.onerror = () => rej(r.error);
-    });
-    db.close();
+    await dbOperations.put(CUSTOM_WALLPAPERS_STORE, rec, name);
     return `${INDEXEDDB_PREFIX}${name}`;
   } catch (e) {
     console.error("saveCustomWallpaper", e);
@@ -196,15 +192,7 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
 
       loadCustomWallpapers: async () => {
         try {
-          const db = await ensureIndexedDBInitialized();
-          const tx = db.transaction(CUSTOM_WALLPAPERS_STORE, "readonly");
-          const store = tx.objectStore(CUSTOM_WALLPAPERS_STORE);
-          const keysReq = store.getAllKeys();
-          const keys: string[] = await new Promise((res, rej) => {
-            keysReq.onsuccess = () => res(keysReq.result as string[]);
-            keysReq.onerror = () => rej(keysReq.error);
-          });
-          db.close();
+          const keys = await getIndexedDbStoreKeys(CUSTOM_WALLPAPERS_STORE);
           return keys.map((k) => `${INDEXEDDB_PREFIX}${k}`);
         } catch (e) {
           console.error("loadCustomWallpapers", e);
@@ -218,15 +206,7 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
           : reference;
         useCloudSyncStore.getState().markDeletedKeys("customWallpaperKeys", [id]);
         try {
-          const db = await ensureIndexedDBInitialized();
-          const tx = db.transaction(CUSTOM_WALLPAPERS_STORE, "readwrite");
-          const store = tx.objectStore(CUSTOM_WALLPAPERS_STORE);
-          await new Promise<void>((res, rej) => {
-            const r = store.delete(id);
-            r.onsuccess = () => res();
-            r.onerror = () => rej(r.error);
-          });
-          db.close();
+          await dbOperations.delete(CUSTOM_WALLPAPERS_STORE, id);
           if (objectURLs[id]) {
             URL.revokeObjectURL(objectURLs[id]);
             delete objectURLs[id];
@@ -249,17 +229,10 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
         const id = reference.substring(INDEXEDDB_PREFIX.length);
         if (objectURLs[id]) return objectURLs[id];
         try {
-          const db = await ensureIndexedDBInitialized();
-          const tx = db.transaction(CUSTOM_WALLPAPERS_STORE, "readonly");
-          const store = tx.objectStore(CUSTOM_WALLPAPERS_STORE);
-          const req = store.get(id);
-          const result = await new Promise<StoredWallpaper | null>(
-            (res, rej) => {
-              req.onsuccess = () => res(req.result as StoredWallpaper);
-              req.onerror = () => rej(req.error);
-            }
+          const result = await dbOperations.get<StoredWallpaper>(
+            CUSTOM_WALLPAPERS_STORE,
+            id
           );
-          db.close();
           if (!result) return null;
           let objectURL: string | null = null;
           if (result.blob) objectURL = URL.createObjectURL(result.blob);
