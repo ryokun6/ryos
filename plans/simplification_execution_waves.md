@@ -19,6 +19,21 @@ Turn the audit into a deletion-first simplification program that:
 
 ## Current status / handoff snapshot
 
+### Latest branch update
+
+- `plans/codebase-simplification-audit.md` is the non-public audit source of truth.
+- The generated public docs page for the audit has been removed.
+- This branch completed a set of behavior-preserving consolidation phases:
+  - `apiHandler` now exposes shared response helpers and `presence/heartbeat` uses request-scoped Redis.
+  - provider-free AI model metadata, chat room/message types, and song create/import schemas live in shared contract modules.
+  - YouTube search/key rotation and Apple JWT parsing/signing have shared server utilities.
+  - cloud-sync domains now have descriptors for storage kind, category, debounce policy, and deletion buckets.
+  - generic IndexedDB `dbOperations` now live in `src/utils/indexedDBOperations.ts`, not Finder.
+  - registered chat client tools dispatch through the tool registry.
+  - Videos/Karaoke share timed status-message behavior.
+  - the obsolete Paint filters menu was deleted after moving its `Filter` type to `src/apps/paint/types.ts`.
+  - window sizing helpers moved to `src/config/appWindowConfig.ts`.
+
 ### Completed
 
 - Wave 1 is complete:
@@ -45,7 +60,7 @@ Turn the audit into a deletion-first simplification program that:
 
 - Wave 3 is only partially complete:
   - backup/restore serialization was unified
-  - `indexedDBOperations.ts` was not fully narrowed to a single winning API shape
+  - `indexedDBOperations.ts` is now the winning home for generic `dbOperations`
   - multiple direct IndexedDB transaction paths still exist
 
 - Wave 4 is only partially complete at the domain-file granularity:
@@ -60,7 +75,7 @@ Turn the audit into a deletion-first simplification program that:
 
 ## Recommended next agent order
 
-1. Finish IndexedDB unification
+1. Finish remaining direct IndexedDB transaction cleanup
 2. Finish internal API client unification
 3. Split `src/sync/domains.ts` into per-domain modules
 4. Unify style tokens between `src/index.css` and `src/styles/themes.css`
@@ -269,7 +284,7 @@ Replace repeated theme booleans and reduce styling drift before it grows further
 
 ## Remaining follow-up waves
 
-### Wave 6 - finish IndexedDB winner selection
+### Wave 6 - finish IndexedDB direct transaction cleanup
 
 **Intent**
 
@@ -277,7 +292,7 @@ Collapse the remaining competing IndexedDB entrypoints into one obvious API.
 
 **Scope**
 
-- decide whether `src/utils/indexedDBOperations.ts` or Finder-owned `dbOperations` wins
+- keep `src/utils/indexedDBOperations.ts` as the winning home for generic `dbOperations`
 - migrate `useDisplaySettingsStore`, Finder, and any remaining direct transaction code to the winner
 - reduce `ensureIndexedDBInitialized()` call sites outside the chosen shared module
 - remove dead or duplicate helpers after migration
