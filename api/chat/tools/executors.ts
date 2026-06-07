@@ -44,6 +44,7 @@ import type {
 } from "./types.js";
 import { stateKey, writeRedisSyncDomainFromServerTool } from "../../sync/_state.js";
 import { getAppPublicOrigin } from "../../_utils/runtime-config.js";
+import { decodeHtmlEntitiesOnce } from "../../_utils/html-entities.js";
 import { readSongsState, writeSongsState } from "../../_utils/song-library-state.js";
 import {
   getSong,
@@ -267,33 +268,6 @@ function stripTagsLoop(html: string, pattern: RegExp, maxPasses = 10): string {
     result = next;
   }
   return result;
-}
-
-/**
- * Decode HTML entities exactly once. We decode numeric/named entities in a
- * single pass to avoid double-unescaping (e.g. `&amp;lt;` → `&lt;` stays
- * as `&lt;`, not `<`).
- */
-function decodeHtmlEntitiesOnce(text: string): string {
-  const NAMED_ENTITIES: Record<string, string> = {
-    "&nbsp;": " ",
-    "&amp;": "&",
-    "&lt;": "<",
-    "&gt;": ">",
-    "&quot;": '"',
-    "&#39;": "'",
-    "&apos;": "'",
-  };
-
-  return text.replace(
-    /&(?:#x([0-9a-fA-F]+);|#(\d+);|[a-zA-Z]+;)/g,
-    (match, hex, dec) => {
-      if (hex) return String.fromCharCode(parseInt(hex, 16));
-      if (dec) return String.fromCharCode(parseInt(dec, 10));
-      const lower = match.toLowerCase();
-      return NAMED_ENTITIES[lower] ?? match;
-    }
-  );
 }
 
 function stripHtmlToText(html: string, selector?: string): string {

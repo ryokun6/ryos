@@ -2,8 +2,13 @@
  * Redis client and helper functions for listen-together sessions
  */
 
-import { createRedis } from "../../_utils/redis.js";
 import type { ListenSession } from "./_types.js";
+import {
+  createRedisClient,
+  generateRandomHexId,
+  getCurrentTimestamp,
+  parseJSON,
+} from "../../_utils/redis-helpers.js";
 import {
   LISTEN_SESSION_PREFIX,
   LISTEN_SESSIONS_SET,
@@ -14,39 +19,14 @@ import {
 // Redis Client Factory
 // ============================================================================
 
-function createRedisClient() {
-  return createRedis();
-}
-
-export { createRedisClient };
+export { createRedisClient, getCurrentTimestamp, parseJSON };
 
 // ============================================================================
 // Helper Functions
 // ============================================================================
 
 export function generateSessionId(): string {
-  const bytes = new Uint8Array(12);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes)
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
-
-export function getCurrentTimestamp(): number {
-  return Date.now();
-}
-
-export function parseJSON<T>(data: unknown): T | null {
-  if (!data) return null;
-  if (typeof data === "object") return data as T;
-  if (typeof data === "string") {
-    try {
-      return JSON.parse(data) as T;
-    } catch {
-      return null;
-    }
-  }
-  return null;
+  return generateRandomHexId(12);
 }
 
 export function parseSessionData(data: unknown): ListenSession | null {

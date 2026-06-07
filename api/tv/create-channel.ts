@@ -27,6 +27,7 @@ import { z } from "zod";
 import * as RateLimit from "../_utils/_rate-limit.js";
 import { getClientIp } from "../_utils/_rate-limit.js";
 import { apiHandler } from "../_utils/api-handler.js";
+import { decodeHtmlEntitiesOnce } from "../_utils/html-entities.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 45;
@@ -88,16 +89,6 @@ Rules:
 - All output strings should be in the same language as the user's description; keep proper nouns / titles in their original language.
 Respond with ONLY the structured object. No prose.`;
 
-function decodeHtml(s: string): string {
-  return s
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&apos;/g, "'");
-}
-
 async function searchOneQuery(
   query: string,
   apiKeys: string[],
@@ -136,8 +127,8 @@ async function searchOneQuery(
         acc.push({
           id: item.id.videoId,
           url: `https://youtu.be/${item.id.videoId}`,
-          title: decodeHtml(item.snippet.title),
-          artist: decodeHtml(item.snippet.channelTitle),
+          title: decodeHtmlEntitiesOnce(item.snippet.title),
+          artist: decodeHtmlEntitiesOnce(item.snippet.channelTitle),
         });
         return acc;
       },

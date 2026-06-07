@@ -3,9 +3,13 @@
  * Edge-compatible - uses Web Crypto API
  */
 
-import type { Redis } from "../../_utils/redis.js";
-import { createRedis } from "../../_utils/redis.js";
 import type { Room, User, Message } from "./_types.js";
+import {
+  createRedisClient,
+  generateRandomHexId,
+  getCurrentTimestamp,
+  parseJSON,
+} from "../../_utils/redis-helpers.js";
 import {
   CHAT_ROOM_PREFIX,
   CHAT_MESSAGES_PREFIX,
@@ -13,20 +17,8 @@ import {
   CHAT_ROOMS_SET,
 } from "./_constants.js";
 
-// ============================================================================
-// Redis Client Factory
-// ============================================================================
-
-/**
- * Create a Redis client instance
- * Each call creates a new instance to avoid Edge bundling issues
- */
-function createRedisClient(): Redis {
-  return createRedis();
-}
-
-// Export for direct usage in endpoints
-export { createRedisClient };
+// Export for direct usage in endpoints and feature helpers.
+export { createRedisClient, getCurrentTimestamp, parseJSON };
 
 // ============================================================================
 // Helper Functions
@@ -37,34 +29,7 @@ export { createRedisClient };
  * Uses Web Crypto API for Edge compatibility
  */
 export function generateId(): string {
-  const bytes = new Uint8Array(16);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes)
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
-}
-
-/**
- * Get current timestamp in milliseconds
- */
-export function getCurrentTimestamp(): number {
-  return Date.now();
-}
-
-/**
- * Parse JSON data safely
- */
-export function parseJSON<T>(data: unknown): T | null {
-  if (!data) return null;
-  if (typeof data === "object") return data as T;
-  if (typeof data === "string") {
-    try {
-      return JSON.parse(data) as T;
-    } catch {
-      return null;
-    }
-  }
-  return null;
+  return generateRandomHexId(16);
 }
 
 /**

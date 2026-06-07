@@ -4,6 +4,7 @@ import { apiHandler } from "./_utils/api-handler.js";
 import { normalizeUrlForCacheKey } from "./_utils/_url.js";
 import { safeFetchWithRedirects, validatePublicUrl, SsrfBlockedError } from "./_utils/_ssrf.js";
 import { getAppPublicOrigin } from "./_utils/runtime-config.js";
+import { decodeHtmlEntitiesOnce } from "./_utils/html-entities.js";
 
 export const runtime = "nodejs";
 
@@ -569,20 +570,7 @@ export default apiHandler(
         // Extract title (case-insensitive)
         const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
         if (titleMatch && titleMatch[1]) {
-          // Basic sanitization: decode HTML entities and trim whitespace
-          try {
-            // Use a simple approach for common entities; full decoding might need a library
-            pageTitle = titleMatch[1]
-              .replace(/&lt;/g, "<")
-              .replace(/&gt;/g, ">")
-              .replace(/&amp;/g, "&")
-              .replace(/&quot;/g, '"')
-              .replace(/&#39;/g, "'")
-              .trim();
-          } catch (e) {
-            console.error("Error decoding title:", e);
-            pageTitle = titleMatch[1].trim(); // Fallback to raw title
-          }
+          pageTitle = decodeHtmlEntitiesOnce(titleMatch[1]).trim();
         }
       }
 
@@ -722,18 +710,7 @@ export default apiHandler(
         // Extract title before modifying HTML
         const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
         if (titleMatch && titleMatch[1]) {
-          try {
-            pageTitle = titleMatch[1]
-              .replace(/&lt;/g, "<")
-              .replace(/&gt;/g, ">")
-              .replace(/&amp;/g, "&")
-              .replace(/&quot;/g, '"')
-              .replace(/&#39;/g, "'")
-              .trim();
-          } catch (e) {
-            console.error("Error decoding title in proxy:", e);
-            pageTitle = titleMatch[1].trim(); // Fallback
-          }
+          pageTitle = decodeHtmlEntitiesOnce(titleMatch[1]).trim();
         }
 
         // Inject <base> tag right after <head> (case‑insensitive)
