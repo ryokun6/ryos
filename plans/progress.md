@@ -64,6 +64,7 @@ This file tracks implementation progress for `plans/10-duplication-complexity-au
 - [x] `bun test tests/test-contacts-tool-reducer.test.ts`
 - [x] `bun test tests/test-calendar-tool-reducer.test.ts`
 - [x] `bun test tests/test-stickies-tool-reducer.test.ts`
+- [x] `bun test tests/test-server-app-state-tools.test.ts tests/test-chat-tools-contacts.test.ts`
 - [x] `bun test tests/test-maps-sync-domain.test.ts`
 - [x] `bun test tests/test-contacts-sync-domain.test.ts`
 - [x] `bun test tests/test-calendar-sync-domain.test.ts`
@@ -191,8 +192,8 @@ Implementation checklist:
 - [x] Add shared calendar tool reducer and migrate `executeCalendarControl`.
 - [x] Add shared stickies tool reducer and migrate `executeStickiesControl`.
 - [x] Add reducer tests for calendar and stickies actions.
-- [ ] Split `api/chat/tools/executors.ts` into domain modules after reducers are shared.
-- [ ] Generate or derive `SERVER_EXECUTED_TOOL_NAMES` from tool registry metadata instead of hand-maintaining it.
+- [x] Split app-state executors out of `api/chat/tools/executors.ts` into `api/chat/tools/app-state-executors.ts`.
+- [x] Derive server-executed tool names from shared execution metadata instead of owning a local set in `useAiChat`.
 
 Risks:
 

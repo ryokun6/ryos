@@ -163,6 +163,11 @@ import {
   validatePublicUrl,
   SsrfBlockedError,
 } from "../../_utils/_ssrf.js";
+export {
+  executeCalendarControl,
+  executeContactsControl,
+  executeStickiesControl,
+} from "./app-state-executors.js";
 
 const WEB_FETCH_MAX_CONTENT_LENGTH = 24_000;
 const WEB_FETCH_TIMEOUT_MS = 15_000;
