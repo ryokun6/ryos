@@ -58,6 +58,9 @@ This file tracks implementation progress for `plans/10-duplication-complexity-au
 - [x] `bun test tests/test-listen-contracts.test.ts`
 - [x] `bun test tests/test-irc-contracts.test.ts`
 - [x] `bun test tests/test-irc-bridge.test.ts`
+- [x] `bun test tests/test-stickies-sync-domain.test.ts`
+- [x] `bun test tests/test-cloud-sync-utils.test.ts --test-name-pattern "deletion|filters deleted|stickies"`
+- [x] `bun test tests/test-server-app-state-tools.test.ts tests/test-chat-tools-songs.test.ts`
 - [x] `bun run build`
 - [ ] `bun test tests/test-cloud-sync-utils.test.ts` full suite currently has an unrelated DOM mock gap in settings hydration.
 - [ ] `bun run test:new-api` full suite currently has an unrelated login fixture failure returning 401 after registration.
@@ -128,10 +131,11 @@ Primary files:
 Implementation checklist:
 
 - [ ] Add `src/shared/domains/calendar.ts` with `CalendarSnapshotData`, event/todo/group DTOs, normalizer, and merge helper.
-- [ ] Add `src/shared/domains/stickies.ts` with `StickiesSnapshotData`, normalizer, and merge helper.
+- [x] Add `src/shared/domains/stickies.ts` with `StickiesSnapshotData`, normalizer, and merge helper.
 - [ ] Add `src/shared/domains/contacts.ts` that reuses the existing contact DTOs and exports a snapshot normalizer.
 - [ ] Add `src/shared/domains/maps.ts` with saved-place snapshot normalization.
 - [ ] Move settings snapshot types/normalizer behind a shared domain export while preserving `src/utils/cloudSyncSettingsMerge.ts` compatibility exports.
+- [x] Add shared `src/shared/sync/itemMerge.ts` helper and use it from `src/sync/domains.ts`.
 - [ ] Re-export shared sync domain helpers from existing `src/utils/*` modules so API import paths can migrate gradually.
 - [ ] Replace server-side partial validators in `api/sync/_state.ts` with shared normalizers.
 - [ ] Replace local merge functions in `src/sync/domains.ts` one domain at a time.
