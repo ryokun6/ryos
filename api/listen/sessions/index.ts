@@ -21,26 +21,15 @@ import {
   runtime,
   maxDuration,
 } from "../_helpers/_constants.js";
-import type { CreateSessionRequest, ListenSession } from "../_helpers/_types.js";
+import type {
+  CreateSessionRequest,
+  ListenSession,
+  ListenSessionSummary,
+} from "../_helpers/_types.js";
 import { normalizeClientInstanceId } from "../_helpers/_client-instance.js";
 import { broadcastUserJoined } from "../_helpers/_pusher.js";
 
 export { runtime, maxDuration };
-
-interface ListenSessionSummary {
-  id: string;
-  hostUsername: string;
-  djUsername: string;
-  createdAt: number;
-  currentTrackMeta: {
-    title: string;
-    artist?: string;
-    cover?: string;
-    coverColor?: string;
-  } | null;
-  isPlaying: boolean;
-  listenerCount: number;
-}
 
 export default apiHandler(
   { methods: ["GET", "POST"] },

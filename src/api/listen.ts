@@ -1,54 +1,21 @@
 import { apiRequest } from "@/api/core";
+import type {
+  ListenAnonymousListener,
+  ListenRemoteCommandAction,
+  ListenSession,
+  ListenSessionSummary,
+  ListenSessionUser,
+  ListenTrackMeta,
+} from "@ryos/shared/contracts/listen";
 
-export interface ListenTrackMeta {
-  title: string;
-  artist?: string;
-  cover?: string;
-  coverColor?: string;
-}
-
-export interface ListenSessionUser {
-  username: string;
-  joinedAt: number;
-  isOnline: boolean;
-  clientInstanceId?: string;
-}
-
-export interface ListenAnonymousListener {
-  anonymousId: string;
-  joinedAt: number;
-}
-
-export interface ListenSession {
-  id: string;
-  hostUsername: string;
-  hostClientInstanceId?: string;
-  djUsername: string;
-  djClientInstanceId?: string;
-  createdAt: number;
-  currentTrackId: string | null;
-  currentTrackMeta: ListenTrackMeta | null;
-  isPlaying: boolean;
-  positionMs: number;
-  lastSyncAt: number;
-  users: ListenSessionUser[];
-  anonymousListeners?: ListenAnonymousListener[];
-}
-
-export interface ListenSessionSummary {
-  id: string;
-  hostUsername: string;
-  djUsername: string;
-  createdAt: number;
-  currentTrackMeta: {
-    title: string;
-    artist?: string;
-    cover?: string;
-    coverColor?: string;
-  } | null;
-  isPlaying: boolean;
-  listenerCount: number;
-}
+export type {
+  ListenTrackMeta,
+  ListenSessionUser,
+  ListenAnonymousListener,
+  ListenSession,
+  ListenSessionSummary,
+  ListenRemoteCommandAction,
+} from "@ryos/shared/contracts/listen";
 
 export async function fetchListenSessions(): Promise<{ sessions: ListenSessionSummary[] }> {
   return apiRequest<{ sessions: ListenSessionSummary[] }>({
@@ -123,14 +90,6 @@ export async function reactListenSession(
   });
 }
 
-export type ListenRemoteCommandAction =
-  | "play"
-  | "pause"
-  | "seek"
-  | "next"
-  | "previous"
-  | "playTrack";
-
 export async function transferListenSessionHost(
   sessionId: string,
   payload: {
@@ -180,4 +139,3 @@ export async function sendListenRemoteCommand(
     body: payload,
   });
 }
-

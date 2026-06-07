@@ -1,4 +1,36 @@
 import { type UIMessage } from "@ai-sdk/react";
+import type { Message, Room, User } from "@ryos/shared/contracts/chat-rooms";
+
+export type {
+  RoomType,
+  Room,
+  Message,
+  User,
+  RoomWithUsers,
+  BulkMessagesResult,
+  CreateRoomData,
+  JoinLeaveRoomData,
+  SwitchRoomData,
+  SendMessageData,
+  GenerateTokenData,
+  RefreshTokenData,
+  AuthenticateWithPasswordData,
+  SetPasswordData,
+  GenerateRyoReplyData,
+  ApiResponse,
+  RoomsResponse,
+  RoomResponse,
+  MessagesResponse,
+  UserResponse,
+  TokenResponse,
+  SuccessResponse,
+  TokenListResponse,
+  VerifyTokenResponse,
+  CheckPasswordResponse,
+  PresenceData,
+  DebugPresenceResponse,
+  CleanupPresenceResponse,
+} from "@ryos/shared/contracts/chat-rooms";
 
 // Message metadata for AI chat
 export interface MessageMetadata extends Record<string, unknown> {
@@ -8,32 +40,13 @@ export interface MessageMetadata extends Record<string, unknown> {
 // AI chat message type with metadata
 export type AIChatMessage = UIMessage<MessageMetadata>;
 
-export type ChatMessage = {
-  id: string; // Server message ID
-  clientId?: string; // Stable client-side ID used for optimistic rendering
-  roomId: string;
-  username: string;
-  content: string;
-  timestamp: number;
+/** Client-side message with optional optimistic clientId */
+export type ChatMessage = Message & {
+  clientId?: string;
 };
 
-export type ChatRoom = {
-  id: string;
-  name: string;
-  type?: "public" | "private" | "irc"; // optional for backward compatibility
-  createdAt: number;
-  userCount: number;
+/** Client-side room view — type/users optional for backward compatibility */
+export type ChatRoom = Omit<Room, "type"> & {
+  type?: Room["type"];
   users?: string[];
-  members?: string[]; // for private rooms - list of usernames who can access
-  // IRC bridging metadata. Present only when `type === "irc"`.
-  ircHost?: string;
-  ircPort?: number;
-  ircTls?: boolean;
-  ircChannel?: string; // e.g. "#pieter"
-  ircServerLabel?: string; // Friendly label shown in UI
-};
-
-export type User = {
-  username: string;
-  lastActive: number;
 };

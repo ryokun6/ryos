@@ -9,39 +9,22 @@
  */
 
 import type { Redis } from "./redis.js";
+import type {
+  LyricLine,
+  LyricsSource,
+  SongMetadata,
+  WordTiming,
+} from "@ryos/shared/contracts/songs";
 
-// =============================================================================
-// Types
-// =============================================================================
+export type {
+  LyricsSource,
+  WordTiming,
+  SongMetadata,
+  LyricLine,
+} from "@ryos/shared/contracts/songs";
 
-/**
- * Lyrics source information from Kugou
- */
-export interface LyricsSource {
-  hash: string;
-  albumId: string | number;
-  title: string;
-  artist: string;
-  album?: string;
-}
-
-/**
- * Word-level timing from KRC format
- */
-export interface WordTiming {
-  text: string;
-  startTimeMs: number;
-  durationMs: number;
-}
-
-/**
- * Parsed lyric line (filtered and normalized)
- */
-export interface ParsedLyricLine {
-  startTimeMs: string;
-  words: string;
-  wordTimings?: WordTiming[];
-}
+/** @deprecated Use LyricLine from shared contracts */
+export type ParsedLyricLine = LyricLine;
 
 /**
  * Stored lyrics content (what we save in Redis)
@@ -67,25 +50,6 @@ export interface LyricsResponse extends LyricsContent {
 export interface FuriganaSegment {
   text: string;
   reading?: string; // Hiragana reading for kanji
-}
-
-/**
- * Song metadata stored in song:meta:{id}
- * Lightweight data for listing (~300 bytes per song)
- */
-export interface SongMetadata {
-  id: string; // YouTube video ID
-  title: string;
-  artist?: string;
-  album?: string;
-  cover?: string; // Cover image URL (from Kugou)
-  coverColor?: string; // Cached boosted cover color for lyrics/title glow
-  lyricOffset?: number; // Offset in ms to adjust lyrics timing
-  lyricsSource?: LyricsSource;
-  createdBy?: string;
-  createdAt: number;
-  updatedAt: number;
-  importOrder?: number; // For stable sorting during bulk imports
 }
 
 /**

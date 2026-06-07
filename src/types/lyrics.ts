@@ -1,21 +1,12 @@
-/**
- * Word-level timing information from KRC format
- */
-export interface LyricWord {
-  /** The text content of this word/syllable */
-  text: string;
-  /** Start time offset from the line start in milliseconds */
-  startTimeMs: number;
-  /** Duration of this word in milliseconds */
-  durationMs: number;
-}
+export type {
+  LyricsSource,
+  SongMetadata,
+  WordTiming,
+  LyricLine,
+} from "@ryos/shared/contracts/songs";
 
-export interface LyricLine {
-  startTimeMs: string;
-  words: string;
-  /** Optional word-level timing data from KRC format */
-  wordTimings?: LyricWord[];
-}
+/** Alias for WordTiming — client lyrics UI naming */
+export type LyricWord = import("@ryos/shared/contracts/songs").WordTiming;
 
 export enum LyricsFont {
   SansSerif = "sans-serif",

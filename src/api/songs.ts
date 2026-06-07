@@ -1,4 +1,17 @@
 import { apiRequest, apiRequestRaw, type ApiRequestOptions } from "@/api/core";
+import type {
+  LyricLine,
+  LyricsSource,
+  SongMetadata,
+} from "@ryos/shared/contracts/songs";
+
+export type { LyricsSource, LyricLine, SongMetadata } from "@ryos/shared/contracts/songs";
+
+/** @deprecated Use LyricsSource */
+export type SongLyricsSource = LyricsSource;
+
+/** @deprecated Use LyricLine */
+export type SongParsedLyricLine = LyricLine;
 
 /** Auth context for cookie-based auth (credentials sent automatically via credentials: "include") */
 export interface SongsAuthContext {
@@ -33,14 +46,6 @@ export interface SongImportBatchResult {
   data?: Record<string, unknown>;
 }
 
-export interface SongLyricsSource {
-  hash: string;
-  albumId: string | number;
-  title: string;
-  artist: string;
-  album?: string;
-}
-
 export interface SongMetadataPatch {
   title?: string;
   artist?: string;
@@ -48,22 +53,12 @@ export interface SongMetadataPatch {
   cover?: string;
   coverColor?: string;
   lyricOffset?: number;
-  lyricsSource?: SongLyricsSource;
+  lyricsSource?: LyricsSource;
   clearTranslations?: boolean;
   clearFurigana?: boolean;
   clearSoramimi?: boolean;
   clearLyrics?: boolean;
   isShare?: boolean;
-}
-
-export interface SongParsedLyricLine {
-  startTimeMs: string;
-  words: string;
-  wordTimings?: Array<{
-    text: string;
-    startTimeMs: number;
-    durationMs: number;
-  }>;
 }
 
 export interface FetchSongLyricsParams {
@@ -74,7 +69,7 @@ export interface FetchSongLyricsParams {
   includeFurigana?: boolean;
   includeSoramimi?: boolean;
   soramimiTargetLanguage?: "zh-TW" | "en";
-  lyricsSource?: SongLyricsSource;
+  lyricsSource?: LyricsSource;
   returnMetadata?: boolean;
   signal?: AbortSignal;
   timeout?: number;
@@ -85,7 +80,7 @@ export interface FetchSongLyricsResponse {
   lyrics?: {
     lrc: string;
     krc?: string;
-    parsedLines?: SongParsedLyricLine[];
+    parsedLines?: LyricLine[];
   };
   cached?: boolean;
   translation?: unknown;
@@ -97,7 +92,7 @@ export interface FetchSongLyricsResponse {
     album?: string;
     cover?: string;
     coverColor?: string;
-    lyricsSource?: SongLyricsSource;
+    lyricsSource?: LyricsSource;
   };
 }
 

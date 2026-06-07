@@ -17,88 +17,36 @@ import {
 } from "@/api/listen";
 import { getListenClientInstanceId } from "@/lib/listenClientInstance";
 import { LISTEN_ANALYTICS, track } from "@/utils/analytics";
-export interface ListenTrackMeta {
-  title: string;
-  artist?: string;
-  cover?: string;
-  coverColor?: string;
-}
+import type {
+  ListenAnonymousListener,
+  ListenReactionPayload,
+  ListenRemoteCommandPayload,
+  ListenSession,
+  ListenSessionSummary,
+  ListenSessionUser,
+  ListenSyncPayload,
+  ListenTrackMeta,
+} from "@ryos/shared/contracts/listen";
 
-export interface ListenSessionUser {
-  username: string;
-  joinedAt: number;
-  isOnline: boolean;
-  clientInstanceId?: string;
-}
+export type {
+  ListenTrackMeta,
+  ListenSessionUser,
+  ListenAnonymousListener,
+  ListenSession,
+  ListenRemoteCommandPayload,
+  ListenSyncPayload,
+  ListenReactionPayload,
+  ListenSessionSummary,
+} from "@ryos/shared/contracts/listen";
 
-export interface ListenAnonymousListener {
-  anonymousId: string;
-  joinedAt: number;
-}
-
-export interface ListenSession {
-  id: string;
-  hostUsername: string;
-  hostClientInstanceId?: string;
-  djUsername: string;
-  djClientInstanceId?: string;
-  createdAt: number;
-  currentTrackId: string | null;
-  currentTrackMeta: ListenTrackMeta | null;
-  isPlaying: boolean;
-  positionMs: number;
-  lastSyncAt: number;
-  users: ListenSessionUser[];
-  anonymousListeners?: ListenAnonymousListener[];
-}
-
-export interface ListenRemoteCommandPayload {
-  fromUsername: string;
-  fromClientInstanceId?: string;
-  action: ListenRemoteCommandAction;
-  positionMs?: number;
-  trackId?: string;
-  trackMeta?: ListenTrackMeta;
-  timestamp: number;
-}
-
-export interface ListenSyncPayload {
-  currentTrackId: string | null;
-  currentTrackMeta: ListenTrackMeta | null;
-  isPlaying: boolean;
-  positionMs: number;
-  timestamp: number;
+/** Older Pusher sync events may omit host/source attribution */
+type IncomingListenSyncPayload = Omit<
+  ListenSyncPayload,
+  "hostUsername" | "sourceUsername"
+> & {
   hostUsername?: string;
-  hostClientInstanceId?: string;
-  djUsername: string;
-  djClientInstanceId?: string;
-  listenerCount: number; // Total listeners (users + anonymous)
-  /** Who produced this revision (omit in older payloads — treated as djUsername) */
   sourceUsername?: string;
-  sourceClientInstanceId?: string;
-}
-
-export interface ListenReactionPayload {
-  id: string;
-  username: string;
-  emoji: string;
-  timestamp: number;
-}
-
-export interface ListenSessionSummary {
-  id: string;
-  hostUsername: string;
-  djUsername: string;
-  createdAt: number;
-  currentTrackMeta: {
-    title: string;
-    artist?: string;
-    cover?: string;
-    coverColor?: string;
-  } | null;
-  isPlaying: boolean;
-  listenerCount: number;
-}
+};
 
 /** Listener (non-DJ): optimistic play/pause until Pusher shows the host agrees. */
 export type PendingRemotePlayback = { desiredIsPlaying: boolean; sinceMs: number };
@@ -299,9 +247,10 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
     channelRef.unbind("reaction");
     channelRef.unbind("session-ended");
 
-    channelRef.bind("sync", (payload: ListenSyncPayload) => {
+    channelRef.bind("sync", (payload: IncomingListenSyncPayload) => {
       const normalized: ListenSyncPayload = {
         ...payload,
+        hostUsername: payload.hostUsername ?? payload.djUsername,
         sourceUsername: payload.sourceUsername ?? payload.djUsername,
       };
       set((state) => {
