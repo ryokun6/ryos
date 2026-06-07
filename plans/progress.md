@@ -61,6 +61,9 @@ This file tracks implementation progress for `plans/10-duplication-complexity-au
 - [x] `bun test tests/test-stickies-sync-domain.test.ts`
 - [x] `bun test tests/test-cloud-sync-utils.test.ts --test-name-pattern "deletion|filters deleted|stickies"`
 - [x] `bun test tests/test-server-app-state-tools.test.ts tests/test-chat-tools-songs.test.ts`
+- [x] `bun test tests/test-contacts-tool-reducer.test.ts`
+- [x] `bun test tests/test-calendar-tool-reducer.test.ts`
+- [x] `bun test tests/test-stickies-tool-reducer.test.ts`
 - [x] `bun test tests/test-maps-sync-domain.test.ts`
 - [x] `bun test tests/test-contacts-sync-domain.test.ts`
 - [x] `bun test tests/test-calendar-sync-domain.test.ts`
@@ -182,11 +185,12 @@ Primary files:
 
 Implementation checklist:
 
-- [ ] Add `src/shared/tools/types.ts` for calendar, contacts, stickies, and documents tool inputs/outputs.
+- [x] Add shared tool type exports for contacts, calendar, and stickies.
 - [x] Add shared contacts tool reducer/helper module and migrate `contactsHandler.ts` plus `executeContactsControl`.
 - [x] Add contacts reducer tests for list/create/update/delete and tombstones.
-- [ ] Add `src/shared/tools/calendarReducer.ts`; preserve event colors, todo fields, and `location`.
-- [ ] Add `src/shared/tools/stickiesReducer.ts`; preserve sticky colors and timestamps.
+- [x] Add shared calendar tool reducer and migrate `executeCalendarControl`.
+- [x] Add shared stickies tool reducer and migrate `executeStickiesControl`.
+- [x] Add reducer tests for calendar and stickies actions.
 - [ ] Split `api/chat/tools/executors.ts` into domain modules after reducers are shared.
 - [ ] Generate or derive `SERVER_EXECUTED_TOOL_NAMES` from tool registry metadata instead of hand-maintaining it.
 
