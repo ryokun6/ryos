@@ -7,26 +7,9 @@ import {
   getContactSummary,
   type ContactDraft,
 } from "@/utils/contacts";
+import type { ContactsControlInput } from "@ryos/shared/actions/contacts";
 
-export interface ContactsControlInput {
-  action: "list" | "get" | "create" | "update" | "delete";
-  id?: string;
-  query?: string;
-  displayName?: string;
-  firstName?: string;
-  lastName?: string;
-  nickname?: string;
-  organization?: string;
-  title?: string;
-  notes?: string;
-  emails?: string[];
-  phones?: string[];
-  urls?: string[];
-  addresses?: string[];
-  birthday?: string | null;
-  telegramUsername?: string | null;
-  telegramUserId?: string | null;
-}
+export type { ContactsControlInput };
 
 let contactsIdMap: ShortIdMap | undefined;
 

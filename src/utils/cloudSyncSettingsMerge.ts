@@ -8,19 +8,9 @@ import {
   type SettingsSectionTimestampMap,
   type SettingsSyncSection,
 } from "@/sync/state";
-
 export interface SettingsSnapshotData {
   theme: string;
-  /**
-   * Per-theme dark-mode preferences. Optional for backward compatibility.
-   * Values may be the new preference strings (`"system" | "light" | "dark"`)
-   * or legacy booleans from older clients (`true` → dark, `false` → light).
-   */
   themeDarkMode?: Record<string, "system" | "light" | "dark" | boolean>;
-  /**
-   * Per-theme accent-color preferences. Optional for backward compatibility;
-   * older clients simply ignore it. Keyed by theme id, value is an accent id.
-   */
   themeAccent?: Record<string, string>;
   language: LanguageCode;
   languageInitialized: boolean;
@@ -76,6 +66,8 @@ export interface SettingsSnapshotData {
   }>;
   sectionUpdatedAt?: SettingsSectionTimestampMap;
 }
+
+export type { SettingsSnapshotData as WireSettingsSnapshotData } from "@ryos/shared/contracts/sync-snapshots";
 
 function parseTimestamp(value: string | null | undefined): number {
   const parsed = value ? new Date(value).getTime() : 0;

@@ -3,19 +3,13 @@
  */
 
 import type { ToolContext } from "./types";
-import { useStickiesStore, type StickyColor } from "@/stores/useStickiesStore";
+import { useStickiesStore } from "@/stores/useStickiesStore";
 import { useAppStore } from "@/stores/useAppStore";
+import type { StickiesControlInput } from "@ryos/shared/actions/stickies";
 import i18n from "@/lib/i18n";
 import { createShortIdMap, resolveId, type ShortIdMap } from "./helpers";
 
-export interface StickiesControlInput {
-  action: "list" | "create" | "update" | "delete" | "clear";
-  id?: string;
-  content?: string;
-  color?: StickyColor;
-  position?: { x: number; y: number };
-  size?: { width: number; height: number };
-}
+export type { StickiesControlInput };
 
 /**
  * Module-level storage for short ID mapping.

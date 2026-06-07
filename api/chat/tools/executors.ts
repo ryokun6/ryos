@@ -34,9 +34,6 @@ import type {
   StickiesControlOutput,
   ContactsControlInput,
   ContactsControlOutput,
-  CalendarSnapshotData,
-  StickiesSnapshotData,
-  ContactsSnapshotData,
   StickyColor,
   SongLibraryControlInput,
   SongLibraryControlOutput,
@@ -46,6 +43,11 @@ import type {
   WebFetchInput,
   WebFetchOutput,
 } from "./types.js";
+import type {
+  CalendarSnapshotData,
+  StickiesSnapshotData,
+  ContactsSnapshotData,
+} from "@ryos/shared/contracts/sync-snapshots";
 import { stateKey, writeRedisSyncDomainFromServerTool } from "../../sync/_state.js";
 import { getAppPublicOrigin } from "../../_utils/runtime-config.js";
 import { readSongsState, writeSongsState } from "../../_utils/song-library-state.js";

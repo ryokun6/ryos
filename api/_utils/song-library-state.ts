@@ -6,12 +6,9 @@ import {
   type CloudSyncVersionState,
 } from "../../src/utils/cloudSyncVersion.js";
 import { redisStateMetaKey } from "../sync/_keys.js";
+import type { SongsSnapshotData } from "@ryos/shared/contracts/sync-snapshots";
 
-export interface SongsSnapshotData {
-  tracks: Track[];
-  libraryState: "uninitialized" | "loaded" | "cleared";
-  lastKnownVersion: number;
-}
+export type { SongsSnapshotData };
 
 export interface SongsStateMetadata {
   updatedAt: string;

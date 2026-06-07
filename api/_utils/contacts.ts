@@ -2,7 +2,7 @@ import type { Redis } from "./redis.js";
 import type { Contact } from "../../src/utils/contacts.js";
 import { getContactSummary, normalizeContacts } from "../../src/utils/contacts.js";
 import { normalizeDeletionMarkerMap } from "../../src/utils/cloudSyncDeletionMarkers.js";
-import type { ContactsSnapshotData } from "../chat/tools/types.js";
+import type { ContactsSnapshotData } from "@ryos/shared/contracts/sync-snapshots";
 import { redisStateKey } from "../sync/_keys.js";
 import { writeRedisSyncDomainFromServerTool } from "../sync/_state.js";
 

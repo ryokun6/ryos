@@ -1,20 +1,9 @@
 import type { ToolHandler } from "./types";
 import { useCalendarStore } from "@/stores/useCalendarStore";
-import type { EventColor } from "@/stores/useCalendarStore";
+import type { CalendarControlInput } from "@ryos/shared/actions/calendar";
 import i18n from "@/lib/i18n";
 
-export interface CalendarControlInput {
-  action: "list" | "create" | "update" | "delete" | "listTodos" | "createTodo" | "toggleTodo" | "deleteTodo";
-  id?: string;
-  title?: string;
-  date?: string;
-  startTime?: string;
-  endTime?: string;
-  color?: EventColor;
-  notes?: string;
-  completed?: boolean;
-  calendarId?: string;
-}
+export type { CalendarControlInput };
 
 const tc = (key: string, opts?: Record<string, unknown>) =>
   i18n.t(`apps.chats.toolCalls.calendar.${key}`, opts);
