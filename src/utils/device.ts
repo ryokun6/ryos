@@ -43,17 +43,3 @@ export function isMobileSafari(): boolean {
     !/CriOS|FxiOS|EdgiOS/.test(userAgent)
   );
 }
-
-/**
- * Check if the device is a tablet (larger mobile device)
- */
-export function isTabletDevice(): boolean {
-  const isLargeScreen = window.innerWidth >= 768 && window.innerWidth <= 1024;
-  const userAgent =
-    navigator.userAgent ||
-    navigator.vendor ||
-    (window as unknown as { opera?: string }).opera || "";
-  const isTabletUserAgent = /ipad|tablet|playbook|silk/i.test(userAgent);
-  
-  return (isLargeScreen && isTouchDevice()) || isTabletUserAgent;
-}

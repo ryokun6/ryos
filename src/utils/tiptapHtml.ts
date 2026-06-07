@@ -50,14 +50,6 @@ function loadModules(): Promise<TipTapModules> {
 /**
  * Async version — always works, triggers lazy load on first call.
  */
-export async function generateHtmlFromJson(json: JSONContent): Promise<string> {
-  const { generateHTML, extensions } = await loadModules();
-  return generateHTML(json, extensions);
-}
-
-/**
- * Async version — always works, triggers lazy load on first call.
- */
 export async function generateJsonFromHtml(html: string): Promise<JSONContent> {
   const { generateJSON, extensions } = await loadModules();
   return generateJSON(html, extensions);

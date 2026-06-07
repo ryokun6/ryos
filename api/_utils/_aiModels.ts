@@ -6,7 +6,7 @@ export {
   type AIModel,
   type AIModelInfo,
   type SupportedModel,
-} from "../../src/shared/contracts/aiModels.js";
+} from "../../src/shared/aiModels.js";
 
 export {
   DEFAULT_MODEL,

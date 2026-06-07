@@ -8,7 +8,7 @@ import {
   DEFAULT_AI_MODEL,
   SUPPORTED_AI_MODELS,
   type SupportedModel,
-} from "../../src/shared/contracts/aiModels.js";
+} from "../../src/shared/aiModels.js";
 
 export const DEFAULT_MODEL: SupportedModel = DEFAULT_AI_MODEL;
 export const TELEGRAM_DEFAULT_MODEL: SupportedModel = DEFAULT_MODEL;

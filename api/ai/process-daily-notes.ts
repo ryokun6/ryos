@@ -23,6 +23,7 @@ import { google } from "@ai-sdk/google";
 import { z } from "zod";
 import type { Redis } from "../_utils/redis.js";
 import { apiHandler } from "../_utils/api-handler.js";
+import { consolidateMemoryContent } from "./_memory-consolidation.js";
 import {
   getMemoryIndex,
   getMemoryDetail,
@@ -56,14 +57,6 @@ const dailyNotesExtractionSchema = z.object({
     relatedKeys: z.array(z.string()).optional()
       .describe("Existing memory keys covering the same topic (for merging)"),
   })).describe("Stable, permanent facts about the USER extracted from daily notes. Do NOT duplicate existing memories."),
-});
-
-/** Schema for consolidation (same as extract-memories) */
-const consolidationSchema = z.object({
-  summary: z.string().min(1).max(180)
-    .describe("Deduplicated summary combining all info"),
-  content: z.string().min(1).max(2000)
-    .describe("Deduplicated content – no repeated info, newer wins conflicts"),
 });
 
 // ============================================================================
@@ -100,15 +93,6 @@ RULES:
 - confidence "high" = user directly stated, "medium" = strong inference from pattern across notes
 - Look for PATTERNS across multiple days — repeated topics signal importance
 - Return empty array if nothing qualifies as a permanent memory`;
-
-const CONSOLIDATION_PROMPT = `Merge NEW and EXISTING memory info into one clean entry.
-
-Rules:
-- Remove all duplicate or redundant information
-- If new info contradicts old info, keep the newer version
-- Keep it concise – no repetition, no filler
-- Organize logically
-- Summary must be under 180 chars`;
 
 type LogFn = (...args: unknown[]) => void;
 
@@ -462,18 +446,10 @@ async function _processSingleDayBatch(
         })
       );
 
-      const existingContentText = existingContents
-        .map(m => `Key: ${m.key}\nSummary: ${m.summary}\nContent: ${m.content}`)
-        .join("\n\n");
-
-      const { output: consolidated } = await generateText({
-        model: google("gemini-3-flash-preview"),
-        output: Output.object({
-          schema: consolidationSchema,
-        }),
-        prompt: `${CONSOLIDATION_PROMPT}\n\nNEW:\nSummary: ${mem.summary}\nContent: ${mem.content}\n\nEXISTING:\n${existingContentText}\n\nMerge into one clean, deduplicated entry.`,
-        temperature: 0.3,
-      });
+      const consolidated = await consolidateMemoryContent(
+        { summary: mem.summary, content: mem.content },
+        existingContents
+      );
 
       finalSummary = consolidated.summary;
       finalContent = consolidated.content;

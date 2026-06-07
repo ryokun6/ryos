@@ -1,8 +1,6 @@
 import { segmentChatMarkdownText } from "@/lib/chatMarkdown";
 
-export function isTouchDevice(): boolean {
-  return "ontouchstart" in window || navigator.maxTouchPoints > 0;
-}
+export { isTouchDevice } from "@/utils/device";
 
 export function extractUrlsFromContent(content: string): string[] {
   const urls = new Set<string>();

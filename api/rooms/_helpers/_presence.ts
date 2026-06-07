@@ -35,18 +35,6 @@ export async function setRoomPresence(
 }
 
 /**
- * Refresh user presence in a room
- */
-export async function refreshRoomPresence(
-  roomId: string,
-  username: string
-): Promise<void> {
-  const redis = getRedis();
-  const zkey = `${CHAT_ROOM_PRESENCE_ZSET_PREFIX}${roomId}`;
-  await redis.zadd(zkey, { score: Date.now(), member: username });
-}
-
-/**
  * Remove user presence from a room
  */
 export async function removeRoomPresence(
@@ -67,15 +55,6 @@ export async function getActiveUsersInRoom(roomId: string): Promise<string[]> {
   const cutoff = Date.now() - ROOM_PRESENCE_TTL_SECONDS * 1000;
   await redis.zremrangebyscore(zkey, 0, cutoff);
   return await redis.zrange(zkey, 0, -1);
-}
-
-/**
- * Get active users and prune expired presence entries
- */
-export async function getActiveUsersAndPrune(
-  roomId: string
-): Promise<string[]> {
-  return await getActiveUsersInRoom(roomId);
 }
 
 /**
