@@ -1,5 +1,6 @@
 import { Redis } from "@upstash/redis";
 import { getAppPublicOrigin } from "./runtime-config.js";
+import { parseYouTubeTitleSimple } from "./parse-youtube-title.js";
 
 // App display names for OG titles
 const APP_NAMES: Record<string, string> = {
@@ -307,43 +308,6 @@ function formatMusicCoverUrl(
   return url;
 }
 
-// Simple title parser - extracts artist and title from common YouTube formats
-function parseYouTubeTitle(rawTitle: string): {
-  title: string;
-  artist: string | null;
-} {
-  const cleaned = rawTitle
-    .replace(/\s*\(Official\s*(Music\s*)?Video\)/gi, "")
-    .replace(/\s*\[Official\s*(Music\s*)?Video\]/gi, "")
-    .replace(/\s*Official\s*(Music\s*)?Video/gi, "")
-    .replace(/\s*\(Official\s*Audio\)/gi, "")
-    .replace(/\s*\[Official\s*Audio\]/gi, "")
-    .replace(/\s*\(Lyric\s*Video\)/gi, "")
-    .replace(/\s*\[Lyric\s*Video\]/gi, "")
-    .replace(/\s*\(Lyrics\)/gi, "")
-    .replace(/\s*\[Lyrics\]/gi, "")
-    .replace(/\s*\(Audio\)/gi, "")
-    .replace(/\s*\[Audio\]/gi, "")
-    .replace(/\s*\(MV\)/gi, "")
-    .replace(/\s*\[MV\]/gi, "")
-    .replace(/\s*MV$/gi, "")
-    .replace(/\s*M\/V$/gi, "")
-    .replace(/\s*【[^】]*】\s*/g, " ")
-    .trim();
-
-  const dashMatch = cleaned.match(/^(.+?)\s*[-–—]\s*(.+)$/);
-  if (dashMatch) {
-    return { artist: dashMatch[1].trim(), title: dashMatch[2].trim() };
-  }
-
-  const byMatch = cleaned.match(/^(.+?)\s+by\s+(.+)$/i);
-  if (byMatch) {
-    return { artist: byMatch[2].trim(), title: byMatch[1].trim() };
-  }
-
-  return { title: cleaned, artist: null };
-}
-
 // Fetch YouTube video info via oEmbed
 async function getYouTubeInfo(
   videoId: string
@@ -358,8 +322,9 @@ async function getYouTubeInfo(
 
     const data = await response.json();
     const rawTitle = data.title || "";
+    const parsed = parseYouTubeTitleSimple(rawTitle);
 
-    return parseYouTubeTitle(rawTitle);
+    return { title: parsed.title, artist: parsed.artist || null };
   } catch {
     return null;
   }

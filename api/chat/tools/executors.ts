@@ -57,7 +57,7 @@ import {
   type LyricsSource,
   type SongDocument,
 } from "../../_utils/_song-service.js";
-import { parseYouTubeTitleSimple } from "../../songs/_utils.js";
+import { parseYouTubeTitleSimple } from "../../_utils/parse-youtube-title.js";
 import {
   getMemoryIndex,
   getMemoryDetail,
