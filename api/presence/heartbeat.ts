@@ -9,13 +9,13 @@
 
 import { apiHandler } from "../_utils/api-handler.js";
 import { triggerRealtimeEvent } from "../_utils/realtime.js";
+import { GLOBAL_PRESENCE_CHANNEL } from "../../src/shared/constants/realtime.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 10;
 
 const GLOBAL_PRESENCE_KEY = "ryos:presence:online";
 const GLOBAL_PRESENCE_TTL_SECONDS = 90;
-const GLOBAL_PRESENCE_CHANNEL = "presence-global";
 
 export default apiHandler(
   { methods: ["GET", "POST"], auth: "required" },

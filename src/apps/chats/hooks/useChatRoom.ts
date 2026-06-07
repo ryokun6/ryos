@@ -18,11 +18,10 @@ import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { shouldSubscribeToForegroundRoomUpdates } from "@/utils/chatRoomSubscriptions";
-
-const getGlobalChannelName = (username?: string | null): string =>
-  username
-    ? `chats-${username.toLowerCase().replace(/[^a-zA-Z0-9_\-.]/g, "_")}`
-    : "chats-public";
+import {
+  getChatRoomChannelName,
+  getChatsGlobalChannelName,
+} from "@/shared/constants/realtime";
 
 interface GlobalHandlers {
   onRoomCreated: (data: { room: ChatRoom }) => void;
@@ -163,7 +162,7 @@ export function useChatRoom(
   const subscribeToGlobalChannel = useCallback(() => {
     if (!pusherRef.current) return;
 
-    const channelName = getGlobalChannelName(username);
+    const channelName = getChatsGlobalChannelName(username);
 
     // Unsubscribe from previous channel if different
     if (
@@ -245,8 +244,9 @@ export function useChatRoom(
     (roomId: string) => {
       if (!pusherRef.current || roomChannelsRef.current[roomId]) return;
 
-      console.log(`[Pusher Hook] Subscribing to room channel: room-${roomId}`);
-      const roomChannel = subscribePusherChannel(`room-${roomId}`);
+      const roomChannelName = getChatRoomChannelName(roomId);
+      console.log(`[Pusher Hook] Subscribing to room channel: ${roomChannelName}`);
+      const roomChannel = subscribePusherChannel(roomChannelName);
 
       const handlers: RoomHandlers = {
         onRoomMessage: (data) => {
@@ -387,7 +387,7 @@ export function useChatRoom(
     }
 
     console.log(
-      `[Pusher Hook] Unsubscribing from room channel: room-${roomId}`
+      `[Pusher Hook] Unsubscribing from room channel: ${getChatRoomChannelName(roomId)}`
     );
     if (handlers) {
       channel.unbind("room-message", handlers.onRoomMessage);

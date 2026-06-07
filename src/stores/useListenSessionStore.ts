@@ -17,6 +17,7 @@ import {
 } from "@/api/listen";
 import { getListenClientInstanceId } from "@/lib/listenClientInstance";
 import { LISTEN_ANALYTICS, track } from "@/utils/analytics";
+import { getListenSessionChannelName } from "@/shared/constants/realtime";
 export interface ListenTrackMeta {
   title: string;
   artist?: string;
@@ -204,10 +205,6 @@ function ensurePusherClient(): ReturnType<typeof getPusherClient> {
   return pusherClient;
 }
 
-function getChannelName(sessionId: string): string {
-  return `listen-${sessionId}`;
-}
-
 function updateIdentityFlags(
   session: ListenSession | null,
   username: string | null,
@@ -282,13 +279,13 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
   const bindChannelEvents = (sessionId: string) => {
     const client = ensurePusherClient();
 
-    if (channelRef && channelRef.name !== getChannelName(sessionId)) {
+    if (channelRef && channelRef.name !== getListenSessionChannelName(sessionId)) {
       client.unsubscribe(channelRef.name);
       channelRef = null;
     }
 
     if (!channelRef) {
-      channelRef = client.subscribe(getChannelName(sessionId));
+      channelRef = client.subscribe(getListenSessionChannelName(sessionId));
     }
 
     channelRef.unbind("sync");

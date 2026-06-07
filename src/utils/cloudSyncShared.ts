@@ -3,6 +3,7 @@ import {
   normalizeCloudSyncVersionState,
   type CloudSyncVersionState,
 } from "./cloudSyncVersion";
+export { getSyncChannelName } from "../shared/constants/realtime";
 
 export const CLOUD_SYNC_DOMAINS = [
   "settings",
@@ -160,11 +161,6 @@ export interface ShouldApplyRemoteUpdateParams {
 }
 
 export const AUTO_SYNC_SNAPSHOT_VERSION = 1;
-
-/** Channel name for realtime sync notifications (Pusher/local). */
-export function getSyncChannelName(username: string): string {
-  return `sync-${username.toLowerCase().replace(/[^a-z0-9_\-.]/g, "_")}`;
-}
 
 export function isCloudSyncDomain(value: unknown): value is CloudSyncDomain {
   return (

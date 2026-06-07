@@ -14,11 +14,10 @@ import { shouldNotifyForRoomMessage } from "@/utils/chatNotifications";
 import { showRoomMessageNotification } from "@/utils/chatNotificationDisplay";
 import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
 import { shouldSubscribeToBackgroundRoomUpdates } from "@/utils/chatRoomSubscriptions";
-
-const getGlobalChannelName = (username?: string | null): string =>
-  username
-    ? `chats-${username.toLowerCase().replace(/[^a-zA-Z0-9_\-.]/g, "_")}`
-    : "chats-public";
+import {
+  getChatRoomChannelName,
+  getChatsGlobalChannelName,
+} from "@/shared/constants/realtime";
 
 const toTimestamp = (value: string | number): number =>
   (() => {
@@ -194,7 +193,7 @@ export function useBackgroundChatNotifications() {
   const subscribeToGlobalChannel = useCallback(() => {
     if (!pusherRef.current) return;
 
-    const channelName = getGlobalChannelName(username);
+    const channelName = getChatsGlobalChannelName(username);
     if (
       globalChannelRef.current &&
       globalChannelRef.current.name !== channelName
@@ -259,7 +258,7 @@ export function useBackgroundChatNotifications() {
         return;
       }
 
-      const channel = subscribePusherChannel(`room-${roomId}`);
+      const channel = subscribePusherChannel(getChatRoomChannelName(roomId));
       const handlers: RoomHandlers = {
         onRoomMessage: handleRoomMessage,
         onMessageDeleted: handleMessageDeleted,

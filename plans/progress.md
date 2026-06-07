@@ -22,6 +22,7 @@ This file tracks implementation progress for `plans/10-duplication-complexity-au
 - [x] Added `tests/test-parse-youtube-title.test.ts`.
 - [x] Re-exported rooms auth TTL constants from `api/_utils/auth/_constants.ts`.
 - [x] Added `src/shared/contracts/auth.ts` and re-exported auth response DTOs from API/frontend legacy paths.
+- [x] Added `src/shared/constants/realtime.ts` and migrated chat, sync, listen, and presence channel builders.
 
 ## Current test notes
 
@@ -44,6 +45,10 @@ This file tracks implementation progress for `plans/10-duplication-complexity-au
 - [x] `bun test tests/test-auth-extra.test.ts`
 - [x] `bun test tests/test-rooms-extra.test.ts`
 - [x] `bun test tests/test-new-api.test.ts --test-name-pattern "Auth|Rooms|Messages"` reached the known unrelated login fixture failure; rooms/messages covered paths passed.
+- [x] `bun test tests/test-realtime-channels.test.ts`
+- [x] `bun run test:pusher-regression`
+- [x] `bun test tests/test-chat-notification-logic.test.ts tests/test-chat-notification-integration-wiring.test.ts tests/test-chat-broadcast-wiring.test.ts tests/test-chat-hook-channel-lifecycle-wiring.test.ts tests/test-chat-store-guards-wiring.test.ts tests/test-pusher-client-refcount.test.ts tests/test-pusher-client-constructor-wiring.test.ts`
+- [x] `bun run test:listen-security`
 - [x] `bun run build`
 - [ ] `bun test tests/test-cloud-sync-utils.test.ts` full suite currently has an unrelated DOM mock gap in settings hydration.
 - [ ] `bun run test:new-api` full suite currently has an unrelated login fixture failure returning 401 after registration.
@@ -78,7 +83,7 @@ This file tracks implementation progress for `plans/10-duplication-complexity-au
 ### Phase 3: Shared contracts and constants
 
 - [x] Re-export auth TTL constants from one source.
-- [ ] Add shared realtime channel helpers and sanitizer.
+- [x] Add shared realtime channel helpers and sanitizer.
 - [x] Add `src/shared/contracts/auth.ts`.
 - [ ] Add `src/shared/contracts/chat.ts` and a timestamp normalizer.
 - [ ] Add `src/shared/contracts/listen.ts`.
