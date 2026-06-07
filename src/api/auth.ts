@@ -1,22 +1,15 @@
 import { apiRequest } from "@/api/core";
+import type {
+  LoginResponse,
+  RegisterResponse,
+  VerifyTokenResponse,
+} from "@/shared/contracts/auth";
 
-export interface LoginResponse {
-  username: string;
-}
-
-export interface VerifyTokenResponse {
-  valid: boolean;
-  username?: string;
-  expired?: boolean;
-}
-
-export interface RegisterResponse {
-  user: {
-    username: string;
-    hasPassword?: boolean;
-    createdAt?: number;
-  };
-}
+export type {
+  LoginResponse,
+  RegisterResponse,
+  VerifyTokenResponse,
+} from "@/shared/contracts/auth";
 
 export async function loginWithPassword(params: {
   username: string;

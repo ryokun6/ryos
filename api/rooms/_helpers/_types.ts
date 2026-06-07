@@ -147,10 +147,7 @@ export interface UserResponse {
   token?: string;
 }
 
-export interface TokenResponse {
-  token: string;
-  username?: string;
-}
+export type { TokenResponse } from "../../../src/shared/contracts/auth.js";
 
 export interface SuccessResponse {
   success: boolean;
@@ -167,18 +164,10 @@ export interface TokenListResponse {
   count: number;
 }
 
-export interface VerifyTokenResponse {
-  valid: boolean;
-  username: string;
-  message: string;
-  expired?: boolean;
-  expiredAt?: number;
-}
-
-export interface CheckPasswordResponse {
-  hasPassword: boolean;
-  username: string;
-}
+export type {
+  VerifyTokenResponse,
+  CheckPasswordResponse,
+} from "../../../src/shared/contracts/auth.js";
 
 // ============================================================================
 // Presence Types
