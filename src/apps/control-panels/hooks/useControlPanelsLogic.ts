@@ -291,6 +291,9 @@ export function useControlPanelsLogic({
     supportsAccent,
     accent,
     macChrome,
+    isXpTheme,
+    isMacOSTheme: isMacOSXTheme,
+    isMacTheme: isClassicMacTheme,
   } = useThemeFlags();
   const setTheme = useThemeStore((state) => state.setTheme);
   const setDarkMode = useThemeStore((state) => state.setDarkMode);
@@ -1544,10 +1547,7 @@ export function useControlPanelsLogic({
     performFormat();
   };
 
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isMacOSXTheme = currentTheme === "macosx";
-  const isSystem7Theme = currentTheme === "system7";
-  const isClassicMacTheme = isMacOSXTheme || isSystem7Theme;
+  // Theme flags come from useThemeFlags() above (single source of truth).
   const isWindowsLegacyTheme = isXpTheme;
 
   const tabStyles = getTabStyles(currentTheme);
