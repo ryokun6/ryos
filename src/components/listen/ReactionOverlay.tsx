@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import type { ListenReactionPayload } from "@/stores/useListenSessionStore";
+import type { ListenReactionPayload } from "@/shared/contracts/listen";
 import {
   REACTION_LIFETIME_MS,
   generateSessionReactionPhysics,

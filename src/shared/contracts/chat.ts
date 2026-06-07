@@ -39,6 +39,27 @@ export interface ChatUser {
   lastActive: number;
 }
 
+export interface CreateRoomIrcOptions {
+  ircServerId?: string;
+  ircHost?: string;
+  ircPort?: number;
+  ircTls?: boolean;
+  ircChannel?: string;
+  ircServerLabel?: string;
+}
+
+export interface CreateRoomRequest extends CreateRoomIrcOptions {
+  type: RoomType;
+  name?: string;
+  members?: string[];
+}
+
+export interface BulkMessagesResult {
+  messagesMap: Record<string, ChatMessage[]>;
+  validRoomIds: string[];
+  invalidRoomIds: string[];
+}
+
 export function normalizeChatTimestamp(
   value: unknown,
   fallbackMs: number = Date.now()

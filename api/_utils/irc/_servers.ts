@@ -17,19 +17,11 @@ import {
   DEFAULT_IRC_PORT,
   DEFAULT_IRC_TLS,
 } from "./_types.js";
+import type { IrcServer } from "../../../src/shared/contracts/irc.js";
+export type { IrcServer } from "../../../src/shared/contracts/irc.js";
 
 export const IRC_SERVER_PREFIX = "chat:irc:server:";
 export const IRC_SERVERS_SET = "chat:irc:servers";
-
-export interface IrcServer {
-  id: string;
-  label: string;
-  host: string;
-  port: number;
-  tls: boolean;
-  isDefault?: boolean;
-  createdAt: number;
-}
 
 const DEFAULT_SERVER_ID = "default-pieter";
 

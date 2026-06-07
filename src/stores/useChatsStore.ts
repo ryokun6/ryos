@@ -23,6 +23,7 @@ import {
   sendRoomMessage as sendRoomMessageApi,
   switchPresence as switchPresenceApi,
 } from "@/api/rooms";
+import type { CreateRoomIrcOptions } from "@/shared/contracts/chat";
 
 // Username recovery - plain text, username is public info
 const USERNAME_RECOVERY_KEY = "_usr_recovery_key_";
@@ -193,14 +194,7 @@ export interface ChatsStoreState {
     name: string,
     type?: "public" | "private" | "irc",
     members?: string[],
-    ircOptions?: {
-      ircServerId?: string;
-      ircHost?: string;
-      ircPort?: number;
-      ircTls?: boolean;
-      ircChannel?: string;
-      ircServerLabel?: string;
-    }
+    ircOptions?: CreateRoomIrcOptions
   ) => Promise<{ ok: boolean; error?: string; roomId?: string }>;
   deleteRoom: (roomId: string) => Promise<{ ok: boolean; error?: string }>;
   sendMessage: (

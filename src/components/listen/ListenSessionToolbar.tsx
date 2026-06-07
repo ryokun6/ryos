@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
-import type { ListenSession } from "@/stores/useListenSessionStore";
+import type { ListenSession } from "@/shared/contracts/listen";
 import {
   connectionLabel,
   makeConnectionKey,

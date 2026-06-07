@@ -22,7 +22,10 @@ import {
   getChatRoomChannelName,
   getChatsGlobalChannelName,
 } from "@/shared/constants/realtime";
-import { normalizeChatTimestamp } from "@/shared/contracts/chat";
+import {
+  normalizeChatTimestamp,
+  type CreateRoomIrcOptions,
+} from "@/shared/contracts/chat";
 
 interface GlobalHandlers {
   onRoomCreated: (data: { room: ChatRoom }) => void;
@@ -516,14 +519,7 @@ export function useChatRoom(
       roomName: string,
       type: "public" | "private" | "irc" = "public",
       members: string[] = [],
-      ircOptions: {
-        ircServerId?: string;
-        ircHost?: string;
-        ircPort?: number;
-        ircTls?: boolean;
-        ircChannel?: string;
-        ircServerLabel?: string;
-      } = {}
+      ircOptions: CreateRoomIrcOptions = {}
     ) => {
       if (!username) return { ok: false, error: "Set a username first." };
 

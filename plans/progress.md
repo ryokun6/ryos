@@ -24,6 +24,9 @@ This file tracks implementation progress for `plans/10-duplication-complexity-au
 - [x] Added `src/shared/contracts/auth.ts` and re-exported auth response DTOs from API/frontend legacy paths.
 - [x] Added `src/shared/constants/realtime.ts` and migrated chat, sync, listen, and presence channel builders.
 - [x] Added `src/shared/contracts/chat.ts` with shared chat room/message/user types and timestamp normalization.
+- [x] Added `src/shared/contracts/listen.ts` and migrated listen API/store/UI type paths.
+- [x] Added `src/shared/contracts/irc.ts` and migrated IRC server/channel DTOs plus create-room IRC options.
+- [x] Deleted obsolete room request/response wrapper types from `api/rooms/_helpers/_types.ts`.
 
 ## Current test notes
 
@@ -52,6 +55,9 @@ This file tracks implementation progress for `plans/10-duplication-complexity-au
 - [x] `bun run test:listen-security`
 - [x] `bun test tests/test-chat-contracts.test.ts`
 - [x] `bun test tests/test-chat-notification-logic.test.ts tests/test-chat-notification-integration-wiring.test.ts tests/test-chat-broadcast-wiring.test.ts tests/test-chat-hook-channel-lifecycle-wiring.test.ts tests/test-chat-store-guards-wiring.test.ts`
+- [ ] `bun test tests/test-listen-contracts.test.ts`
+- [ ] `bun test tests/test-irc-contracts.test.ts`
+- [ ] `bun test tests/test-irc-bridge.test.ts`
 - [x] `bun run build`
 - [ ] `bun test tests/test-cloud-sync-utils.test.ts` full suite currently has an unrelated DOM mock gap in settings hydration.
 - [ ] `bun run test:new-api` full suite currently has an unrelated login fixture failure returning 401 after registration.
@@ -89,9 +95,9 @@ This file tracks implementation progress for `plans/10-duplication-complexity-au
 - [x] Add shared realtime channel helpers and sanitizer.
 - [x] Add `src/shared/contracts/auth.ts`.
 - [x] Add `src/shared/contracts/chat.ts` and a timestamp normalizer.
-- [ ] Add `src/shared/contracts/listen.ts`.
-- [ ] Add `src/shared/contracts/irc.ts`.
-- [ ] Delete dead room request/response wrapper types after contract migration.
+- [x] Add `src/shared/contracts/listen.ts`.
+- [x] Add `src/shared/contracts/irc.ts`.
+- [x] Delete dead room request/response wrapper types after contract migration.
 
 ### Phase 4: Larger planned refactors
 

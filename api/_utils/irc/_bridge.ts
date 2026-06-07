@@ -28,6 +28,7 @@ import {
   buildIrcServerKey,
   normalizeIrcChannel,
 } from "./_types.js";
+import type { IrcChannelEntry } from "../../../src/shared/contracts/irc.js";
 import type { Room, Message } from "../../rooms/_helpers/_types.js";
 import {
   addMessage,
@@ -68,12 +69,6 @@ export interface IrcClientLike extends EventEmitter {
   quit(message?: string): void;
   list?: (...args: unknown[]) => void;
   connected?: boolean;
-}
-
-export interface IrcChannelListEntry {
-  channel: string;
-  numUsers: number;
-  topic: string;
 }
 
 interface IrcBridgeDependencies {
@@ -315,7 +310,7 @@ export class IrcBridge extends EventEmitter {
     port: number,
     tls: boolean,
     options: { timeoutMs?: number; maxChannels?: number } = {}
-  ): Promise<IrcChannelListEntry[]> {
+  ): Promise<IrcChannelEntry[]> {
     const timeoutMs = Math.max(1000, options.timeoutMs ?? 15000);
     const maxChannels = Math.max(1, options.maxChannels ?? 500);
     const normalizedHost = host.toLowerCase();
@@ -339,9 +334,9 @@ export class IrcBridge extends EventEmitter {
     client: IrcClientLike,
     timeoutMs: number,
     maxChannels: number
-  ): Promise<IrcChannelListEntry[]> {
-    return new Promise<IrcChannelListEntry[]>((resolve) => {
-      const collected: IrcChannelListEntry[] = [];
+  ): Promise<IrcChannelEntry[]> {
+    return new Promise<IrcChannelEntry[]>((resolve) => {
+      const collected: IrcChannelEntry[] = [];
       let settled = false;
 
       const finish = (): void => {
@@ -412,7 +407,7 @@ export class IrcBridge extends EventEmitter {
     tls: boolean,
     timeoutMs: number,
     maxChannels: number
-  ): Promise<IrcChannelListEntry[]> {
+  ): Promise<IrcChannelEntry[]> {
     const nick = this.buildNick();
 
     let client: IrcClientLike;
@@ -436,10 +431,10 @@ export class IrcBridge extends EventEmitter {
       return [];
     }
 
-    return await new Promise<IrcChannelListEntry[]>((resolve) => {
+    return await new Promise<IrcChannelEntry[]>((resolve) => {
       let settled = false;
 
-      const finish = (results: IrcChannelListEntry[]): void => {
+      const finish = (results: IrcChannelEntry[]): void => {
         if (settled) return;
         settled = true;
         clearTimeout(connectTimer);

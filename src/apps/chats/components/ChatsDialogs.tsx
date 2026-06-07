@@ -6,6 +6,7 @@ import { LoginDialog } from "@/components/dialogs/LoginDialog";
 import { CreateRoomDialog } from "./CreateRoomDialog";
 import { LogoutDialog } from "@/components/dialogs/LogoutDialog";
 import type { ChatRoom } from "@/types/chat";
+import type { CreateRoomIrcOptions } from "@/shared/contracts/chat";
 import { useTranslation } from "react-i18next";
 
 interface ChatsDialogsProps {
@@ -57,14 +58,7 @@ interface ChatsDialogsProps {
     roomName: string,
     type: "public" | "private" | "irc",
     members: string[],
-    ircOptions?: {
-      ircServerId?: string;
-      ircHost?: string;
-      ircPort?: number;
-      ircTls?: boolean;
-      ircChannel?: string;
-      ircServerLabel?: string;
-    }
+    ircOptions?: CreateRoomIrcOptions
   ) => Promise<{ ok: boolean; error?: string }>;
   isAdmin: boolean;
   username: string | null;

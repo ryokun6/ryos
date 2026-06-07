@@ -10,6 +10,7 @@ import {
   type IrcChannelEntry,
   type IrcServerSummary,
 } from "@/api/irc";
+import type { CreateRoomIrcOptions } from "@/shared/contracts/chat";
 import { ApiRequestError } from "@/api/core";
 import {
   initialIrcServerFormState,
@@ -336,16 +337,7 @@ export function useCreateRoomDialog({
     setError(null);
 
     try {
-      let ircOptions:
-        | {
-            ircServerId?: string;
-            ircHost?: string;
-            ircPort?: number;
-            ircTls?: boolean;
-            ircChannel?: string;
-            ircServerLabel?: string;
-          }
-        | undefined;
+      let ircOptions: CreateRoomIrcOptions | undefined;
       let resolvedRoomName = roomName;
 
       if (activeTab === "irc") {
