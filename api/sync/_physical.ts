@@ -3,8 +3,8 @@ import type {
   BlobSyncDomain,
   CloudSyncDomain,
   CloudSyncDomainMetadata,
-  RedisSyncDomain,
 } from "../../src/utils/cloudSyncShared.js";
+import { isRedisSyncDomain } from "../../src/utils/cloudSyncShared.js";
 import {
   getBlobDomainDownloadPayload,
   saveBlobDomainMetadata,
@@ -33,16 +33,8 @@ export async function getPhysicalSyncDomainPayload(
   username: string,
   domain: CloudSyncDomain
 ): Promise<PhysicalSyncDomainPayload | null> {
-  if (domain === "settings" ||
-      domain === "files-metadata" ||
-      domain === "songs" ||
-      domain === "videos" ||
-      domain === "tv" ||
-      domain === "stickies" ||
-      domain === "calendar" ||
-      domain === "contacts" ||
-      domain === "maps") {
-    return getRedisStateDomainPayload(redis, username, domain as RedisSyncDomain);
+  if (isRedisSyncDomain(domain)) {
+    return getRedisStateDomainPayload(redis, username, domain);
   }
 
   return getBlobDomainDownloadPayload(redis, username, domain as BlobSyncDomain);
@@ -55,15 +47,7 @@ export async function putPhysicalSyncDomain(
   body: PutStateBody | SaveBlobSyncMetadataBody | null,
   sourceSessionId: string | undefined
 ): Promise<PutPhysicalSyncDomainResult> {
-  if (domain === "settings" ||
-      domain === "files-metadata" ||
-      domain === "songs" ||
-      domain === "videos" ||
-      domain === "tv" ||
-      domain === "stickies" ||
-      domain === "calendar" ||
-      domain === "contacts" ||
-      domain === "maps") {
+  if (isRedisSyncDomain(domain)) {
     return putRedisStateDomain(
       redis,
       username,

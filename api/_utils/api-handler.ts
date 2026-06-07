@@ -27,6 +27,16 @@ export interface ApiHandlerContext<TBody = unknown> {
   origin: string | null;
   user: AuthenticatedRequestUser | null;
   body: TBody | null;
+  json: (
+    data: unknown,
+    status?: number,
+    headers?: Record<string, string>
+  ) => VercelResponse;
+  error: (
+    message: string,
+    status?: number,
+    details?: Record<string, unknown>
+  ) => VercelResponse;
 }
 
 type WrappedApiHandler<TBody = unknown> = (
@@ -120,6 +130,25 @@ export function apiHandler<TBody = unknown>(
 
     let finalStatus = 200;
     try {
+      const json: ApiHandlerContext<TBody>["json"] = (
+        data,
+        status = 200,
+        headers
+      ) => {
+        if (headers) {
+          for (const [key, value] of Object.entries(headers)) {
+            res.setHeader(key, value);
+          }
+        }
+        return res.status(status).json(data);
+      };
+
+      const error: ApiHandlerContext<TBody>["error"] = (
+        message,
+        status = 400,
+        details
+      ) => json(details ? { error: message, details } : { error: message }, status);
+
       await handler({
         req,
         res,
@@ -129,6 +158,8 @@ export function apiHandler<TBody = unknown>(
         origin,
         user,
         body,
+        json,
+        error,
       });
       finalStatus = res.statusCode ?? 200;
     } catch (error) {
