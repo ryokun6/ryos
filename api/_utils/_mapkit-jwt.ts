@@ -1,4 +1,11 @@
-import { SignJWT, importPKCS8, type CryptoKey } from "jose";
+import type { CryptoKey } from "jose";
+import {
+  importApplePrivateKey,
+  parseApplePrivateKey,
+  signAppleJwt,
+  type ApplePrivateKeyParseResult,
+  type AppleSignedJwt,
+} from "./apple-jwt.js";
 
 /**
  * Shared utilities for parsing the MapKit `.p8` private key and signing the
@@ -11,78 +18,8 @@ import { SignJWT, importPKCS8, type CryptoKey } from "jose";
  * raw base64, etc.).
  */
 
-interface PrivateKeyParseResult {
-  pem: string | null;
-  reason?: string;
-  rawLength?: number;
-  bodyLength?: number;
-  hasBeginMarker?: boolean;
-  hasEndMarker?: boolean;
-  invalidCharSample?: string;
-}
-
-export function parseMapKitPrivateKey(): PrivateKeyParseResult {
-  const raw = process.env.MAPKIT_PRIVATE_KEY;
-  if (!raw || raw.trim().length === 0) {
-    return { pem: null, reason: "env var empty or unset" };
-  }
-
-  const body = raw
-    .replace(/\\\\n/g, "\n")
-    .replace(/\\\\r\\\\n/g, "\n")
-    .replace(/\\r\\n/g, "\n")
-    .replace(/\\n/g, "\n")
-    .replace(/\r\n/g, "\n")
-    .replace(/\r/g, "\n")
-    .trim();
-
-  const beginMatch = body.match(/-----BEGIN [A-Z0-9 ]+-----/);
-  const endMatch = body.match(/-----END [A-Z0-9 ]+-----/);
-
-  let header = "-----BEGIN PRIVATE KEY-----";
-  let footer = "-----END PRIVATE KEY-----";
-  let base64Body: string;
-
-  if (beginMatch && endMatch) {
-    header = beginMatch[0];
-    footer = endMatch[0];
-    base64Body = body
-      .slice(beginMatch.index! + header.length, endMatch.index!)
-      .replace(/\s+/g, "")
-      .replace(/\\/g, "");
-  } else {
-    base64Body = body.replace(/\s+/g, "").replace(/\\/g, "");
-  }
-
-  if (base64Body.length === 0) {
-    return {
-      pem: null,
-      reason: "no base64 body",
-      rawLength: raw.length,
-      bodyLength: body.length,
-      hasBeginMarker: !!beginMatch,
-      hasEndMarker: !!endMatch,
-    };
-  }
-
-  const invalidChars = base64Body.match(/[^A-Za-z0-9+/=]/g);
-  if (invalidChars && invalidChars.length > 0) {
-    return {
-      pem: null,
-      reason: "base64 body contains non-base64 characters",
-      rawLength: raw.length,
-      bodyLength: base64Body.length,
-      hasBeginMarker: !!beginMatch,
-      hasEndMarker: !!endMatch,
-      invalidCharSample: Array.from(new Set(invalidChars))
-        .slice(0, 10)
-        .map((c) => `0x${c.charCodeAt(0).toString(16)}`)
-        .join(","),
-    };
-  }
-
-  const wrapped = base64Body.match(/.{1,64}/g)?.join("\n") ?? base64Body;
-  return { pem: `${header}\n${wrapped}\n${footer}\n` };
+export function parseMapKitPrivateKey(): ApplePrivateKeyParseResult {
+  return parseApplePrivateKey(process.env.MAPKIT_PRIVATE_KEY);
 }
 
 export function readMapKitPrivateKey(): string | null {
@@ -99,10 +36,7 @@ export function listMapKitMissingEnv(): string[] {
 
 export type MapKitJwtKind = "mapkit-js" | "maps-server-api";
 
-export interface MapKitSignedJwt {
-  token: string;
-  expiresAt: number; // epoch ms
-}
+export type MapKitSignedJwt = AppleSignedJwt;
 
 let cachedPrivateKey: CryptoKey | null = null;
 
@@ -110,7 +44,7 @@ async function getPrivateKey(): Promise<CryptoKey> {
   if (cachedPrivateKey) return cachedPrivateKey;
   const pem = readMapKitPrivateKey();
   if (!pem) throw new Error("MAPKIT_PRIVATE_KEY is not configured");
-  cachedPrivateKey = await importPKCS8(pem, "ES256");
+  cachedPrivateKey = await importApplePrivateKey(pem);
   return cachedPrivateKey;
 }
 
@@ -132,19 +66,15 @@ export async function signMapKitJwt(
   if (!keyId) throw new Error("MAPKIT_KEY_ID is not configured");
 
   const privateKey = await getPrivateKey();
-  const now = Math.floor(Date.now() / 1000);
-  const exp = now + ttlSeconds;
-
   const allowedOrigin = process.env.MAPKIT_ORIGIN?.trim();
   const payload =
     kind === "mapkit-js" && allowedOrigin ? { origin: allowedOrigin } : {};
 
-  const token = await new SignJWT(payload)
-    .setProtectedHeader({ alg: "ES256", kid: keyId, typ: "JWT" })
-    .setIssuer(teamId)
-    .setIssuedAt(now)
-    .setExpirationTime(exp)
-    .sign(privateKey);
-
-  return { token, expiresAt: exp * 1000 };
+  return signAppleJwt({
+    payload,
+    privateKey,
+    teamId,
+    keyId,
+    ttlSeconds,
+  });
 }
