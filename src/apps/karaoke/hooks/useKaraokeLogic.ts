@@ -29,6 +29,7 @@ import { helpItems } from "..";
 import { onAppUpdate } from "@/utils/appEventBus";
 import { MEDIA_ANALYTICS, track as trackAnalytics } from "@/utils/analytics";
 import { formatSecondsAsMinutesSeconds } from "@/utils/timeFormat";
+import { useTimedStatusMessage } from "@/hooks/useTimedStatusMessage";
 
 // User-agent sniffing is constant for the document lifetime, so compute once
 // at module load instead of re-running these regexes on every render of the
@@ -392,7 +393,6 @@ export function useKaraokeLogic({
   }, [setStoreTotalTime]);
   const playerRef = useRef<ReactPlayer | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [showControls, setShowControls] = useState(true);
   const hideControlsTimeoutRef = useRef<number | null>(null);
 
@@ -562,16 +562,7 @@ export function useKaraokeLogic({
     [t]
   );
 
-  // Status helper functions
-  const showStatus = useCallback((message: string) => {
-    setStatusMessage(message);
-    if (statusTimeoutRef.current) {
-      clearTimeout(statusTimeoutRef.current);
-    }
-    statusTimeoutRef.current = setTimeout(() => {
-      setStatusMessage(null);
-    }, 2000);
-  }, []);
+  const showStatus = useTimedStatusMessage(setStatusMessage);
 
   const showOfflineStatus = useCallback(() => {
     showStatus("🚫 Offline");
@@ -759,9 +750,6 @@ export function useKaraokeLogic({
   // Cleanup
   useEffect(() => {
     return () => {
-      if (statusTimeoutRef.current) {
-        clearTimeout(statusTimeoutRef.current);
-      }
       if (hideControlsTimeoutRef.current) {
         clearTimeout(hideControlsTimeoutRef.current);
       }

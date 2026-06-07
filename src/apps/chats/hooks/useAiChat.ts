@@ -52,27 +52,12 @@ import { useChatSpeechSync } from "./useChatSpeechSync";
 import { useSyncedAiMessages } from "./useSyncedAiMessages";
 import { detectUserOS, getSystemState } from "../utils/systemState";
 import {
+  executeToolHandler,
   handleLaunchApp,
   handleCloseApp,
-  handleSettings,
-  handleIpodControl,
-  handleKaraokeControl,
-  handleStickiesControl,
-  handleInfiniteMacControl,
-  handleCalendarControl,
-  handleContactsControl,
-  handleTvControl,
   type ToolContext,
   type LaunchAppInput,
   type CloseAppInput,
-  type SettingsInput,
-  type IpodControlInput,
-  type KaraokeControlInput,
-  type StickiesControlInput,
-  type InfiniteMacControlInput,
-  type CalendarControlInput,
-  type ContactsControlInput,
-  type TvControlInput,
 } from "../tools";
 
 const recentlyCreatedTextEditInstances = new Map<
@@ -393,6 +378,17 @@ export function useAiChat(onPromptSetUsername?: () => void) {
           return;
         }
 
+        if (
+          await executeToolHandler(
+            toolCall.toolName,
+            toolCall.input,
+            toolCall.toolCallId,
+            toolContext
+          )
+        ) {
+          return;
+        }
+
         switch (toolCall.toolName) {
           case "aquarium": {
             // Visual renders in the message bubble; nothing to do here.
@@ -413,24 +409,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               toolCall.toolCallId,
               toolContext
             );
-            break;
-          }
-          case "ipodControl": {
-            await handleIpodControl(
-              toolCall.input as IpodControlInput,
-              toolCall.toolCallId,
-              toolContext
-            );
-            result = "";
-            break;
-          }
-          case "karaokeControl": {
-            await handleKaraokeControl(
-              toolCall.input as KaraokeControlInput,
-              toolCall.toolCallId,
-              toolContext
-            );
-            result = "";
             break;
           }
           case "list": {
@@ -1374,60 +1352,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               });
               result = "";
             }
-            break;
-          }
-          case "settings": {
-            handleSettings(
-              toolCall.input as SettingsInput,
-              toolCall.toolCallId,
-              toolContext
-            );
-            result = "";
-            break;
-          }
-          case "stickiesControl": {
-            handleStickiesControl(
-              toolCall.input as StickiesControlInput,
-              toolCall.toolCallId,
-              toolContext
-            );
-            result = "";
-            break;
-          }
-          case "infiniteMacControl": {
-            await handleInfiniteMacControl(
-              toolCall.input as InfiniteMacControlInput,
-              toolCall.toolCallId,
-              toolContext
-            );
-            result = "";
-            break;
-          }
-          case "calendarControl": {
-            handleCalendarControl(
-              toolCall.input as CalendarControlInput,
-              toolCall.toolCallId,
-              toolContext
-            );
-            result = "";
-            break;
-          }
-          case "contactsControl": {
-            handleContactsControl(
-              toolCall.input as ContactsControlInput,
-              toolCall.toolCallId,
-              toolContext
-            );
-            result = "";
-            break;
-          }
-          case "tvControl": {
-            await handleTvControl(
-              toolCall.input as TvControlInput,
-              toolCall.toolCallId,
-              toolContext
-            );
-            result = "";
             break;
           }
           default:

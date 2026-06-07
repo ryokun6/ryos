@@ -15,6 +15,7 @@ import { fetchYouTubeOembed, parseYouTubeTitle } from "@/utils/youtubeMetadata";
 import { onAppUpdate } from "@/utils/appEventBus";
 import { MEDIA_ANALYTICS, track } from "@/utils/analytics";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
+import { useTimedStatusMessage } from "@/hooks/useTimedStatusMessage";
 
 interface Video {
   id: string;
@@ -237,7 +238,6 @@ export function useVideosLogic({
   // Refs
   const playerRef = useRef<ReactPlayer | null>(null);
   const fullScreenPlayerRef = useRef<ReactPlayer | null>(null);
-  const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isTrackSwitchingRef = useRef(false);
   const trackSwitchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const prevIsPlayingRef = useRef(isPlaying);
@@ -277,20 +277,7 @@ export function useVideosLogic({
     }, 2000);
   }, []);
 
-  // Function to show status message
-  const showStatus = useCallback(
-    (message: string) => {
-      setStatusMessage(message);
-      if (statusTimeoutRef.current) {
-        clearTimeout(statusTimeoutRef.current);
-        statusTimeoutRef.current = null;
-      }
-      statusTimeoutRef.current = setTimeout(() => {
-        setStatusMessage(null);
-      }, 2000);
-    },
-    []
-  );
+  const showStatus = useTimedStatusMessage(setStatusMessage);
 
   const sharedVideoToastContent = useCallback(
     () =>
@@ -970,10 +957,6 @@ export function useVideosLogic({
   // Cleanup timeouts on unmount
   useEffect(() => {
     return () => {
-      if (statusTimeoutRef.current) {
-        clearTimeout(statusTimeoutRef.current);
-        statusTimeoutRef.current = null;
-      }
       if (trackSwitchTimeoutRef.current) {
         clearTimeout(trackSwitchTimeoutRef.current);
         trackSwitchTimeoutRef.current = null;
