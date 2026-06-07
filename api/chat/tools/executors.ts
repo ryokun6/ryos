@@ -32,7 +32,6 @@ import type {
   CalendarSnapshotData,
   StickiesSnapshotData,
   ContactsSnapshotData,
-  StickyColor,
   SongLibraryControlInput,
   SongLibraryControlOutput,
   SongLibraryToolRecord,
@@ -72,6 +71,10 @@ import {
   serializeContactToolRecord,
 } from "../../../src/shared/tools/contacts.js";
 import { applyCalendarToolAction } from "../../../src/shared/tools/calendar.js";
+import {
+  applyStickiesToolAction,
+  serializeStickyToolRecord,
+} from "../../../src/shared/tools/stickies.js";
 import {
   readContactsState,
   writeContactsState,
@@ -1998,119 +2001,80 @@ export async function executeStickiesControl(
     };
   }
 
-  const notes = state?.notes ?? [];
+  const result = applyStickiesToolAction(
+    state || { notes: [], deletedNoteIds: {} },
+    input,
+    {
+      resolvedId: input.id,
+      generateId,
+      now: () => Date.now(),
+      deletedAt: () => new Date().toISOString(),
+      defaultPosition: () => ({
+        x: 100 + Math.random() * 200,
+        y: 100 + Math.random() * 200,
+      }),
+      defaultSize: () => ({ width: 200, height: 200 }),
+    }
+  );
 
-  switch (action) {
+  if (!result.ok) {
+    if (result.error === "missing_id") {
+      return {
+        success: false,
+        message:
+          action === "delete"
+            ? "Deleting a sticky requires 'id'."
+            : "Updating a sticky requires 'id'.",
+      };
+    }
+    if (result.error === "not_found") {
+      return { success: false, message: `Sticky with id '${result.id}' not found.` };
+    }
+    if (result.error === "no_updates") {
+      return { success: false, message: "No sticky updates provided." };
+    }
+    return { success: false, message: `Unknown action: ${action}` };
+  }
+
+  switch (result.kind) {
     case "list": {
-      if (notes.length === 0) {
+      if (result.notes.length === 0) {
         return { success: true, message: "No stickies found." };
       }
       return {
         success: true,
-        message: `Found ${notes.length} ${notes.length === 1 ? "sticky note" : "sticky notes"}.`,
-        notes: notes.map((n) => ({
-          id: n.id,
-          content: n.content,
-          color: n.color as StickyColor,
-          position: n.position,
-          size: n.size,
-        })),
+        message: `Found ${result.notes.length} ${result.notes.length === 1 ? "sticky note" : "sticky notes"}.`,
+        notes: result.notes.map((note) => serializeStickyToolRecord(note)),
       };
     }
 
     case "create": {
-      const now = Date.now();
-      const newNote = {
-        id: generateId(),
-        content: input.content || "",
-        color: input.color || "yellow",
-        position: input.position || { x: 100 + Math.random() * 200, y: 100 + Math.random() * 200 },
-        size: input.size || { width: 200, height: 200 },
-        createdAt: now,
-        updatedAt: now,
-      };
-      const updatedNotes = [...notes, newNote];
-      await writeStickiesState(context.redis, context.username!, {
-        ...(state || {}),
-        notes: updatedNotes,
-      });
+      await writeStickiesState(context.redis, context.username!, result.state);
       context.log(`[stickiesControl] Created sticky note (${input.color || "yellow"})`);
       return {
         success: true,
         message: `Created ${input.color || "yellow"} sticky note.`,
-        note: {
-          id: newNote.id,
-          content: newNote.content,
-          color: newNote.color as StickyColor,
-          position: newNote.position,
-          size: newNote.size,
-        },
+        note: serializeStickyToolRecord(result.note),
       };
     }
 
     case "update": {
-      if (!input.id) {
-        return { success: false, message: "Updating a sticky requires 'id'." };
-      }
-      const noteIdx = notes.findIndex((n) => n.id === input.id);
-      if (noteIdx === -1) {
-        return { success: false, message: `Sticky with id '${input.id}' not found.` };
-      }
-      const note = { ...notes[noteIdx] };
-      if (input.content !== undefined) note.content = input.content;
-      if (input.color !== undefined) note.color = input.color;
-      if (input.position !== undefined) note.position = input.position;
-      if (input.size !== undefined) note.size = input.size;
-      note.updatedAt = Date.now();
-      const updatedList = [...notes];
-      updatedList[noteIdx] = note;
-      await writeStickiesState(context.redis, context.username!, {
-        ...state,
-        notes: updatedList,
-      });
+      await writeStickiesState(context.redis, context.username!, result.state);
       return { success: true, message: "Updated sticky note." };
     }
 
     case "delete": {
-      if (!input.id) {
-        return { success: false, message: "Deleting a sticky requires 'id'." };
-      }
-      const delIdx = notes.findIndex((n) => n.id === input.id);
-      if (delIdx === -1) {
-        return { success: false, message: `Sticky with id '${input.id}' not found.` };
-      }
-      const filtered = notes.filter((n) => n.id !== input.id);
-      await writeStickiesState(context.redis, context.username!, {
-        ...state,
-        notes: filtered,
-        deletedNoteIds: addDeletionMarkers(
-          state?.deletedNoteIds,
-          [input.id],
-          new Date().toISOString()
-        ),
-      });
+      await writeStickiesState(context.redis, context.username!, result.state);
       return { success: true, message: "Deleted sticky note." };
     }
 
     case "clear": {
-      if (notes.length === 0) {
+      if (result.count === 0) {
         return { success: true, message: "No stickies to clear." };
       }
-      const count = notes.length;
-      await writeStickiesState(context.redis, context.username!, {
-        ...state,
-        notes: [],
-        deletedNoteIds: addDeletionMarkers(
-          state?.deletedNoteIds,
-          notes.map((note) => note.id),
-          new Date().toISOString()
-        ),
-      });
-      return { success: true, message: `Cleared ${count} ${count === 1 ? "sticky note" : "sticky notes"}.` };
+      await writeStickiesState(context.redis, context.username!, result.state);
+      return { success: true, message: `Cleared ${result.count} ${result.count === 1 ? "sticky note" : "sticky notes"}.` };
     }
-
-    default:
-      return { success: false, message: `Unknown action: ${action}` };
   }
 }
 
