@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
   boostGlowColor,
   getNewCoverColorToSave,
+  makeOutlineFillFromGlowColor,
   normalizeCoverColor,
   pickPrimaryColor,
   resolveCoverGlowColor,
@@ -29,6 +30,26 @@ function relativeLuminance(hex: string): number {
   };
 
   return 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b);
+}
+
+function hueOf(hex: string): number {
+  const [red, green, blue] = hexToRgb(hex);
+  const r = red / 255;
+  const g = green / 255;
+  const b = blue / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const delta = max - min;
+
+  if (delta === 0) return 0;
+  if (max === r) return (((g - b) / delta + 6) % 6) / 6;
+  if (max === g) return ((b - r) / delta + 2) / 6;
+  return ((r - g) / delta + 4) / 6;
+}
+
+function hueDistance(a: number, b: number): number {
+  const distance = Math.abs(a - b);
+  return Math.min(distance, 1 - distance);
 }
 
 describe("lyrics color extraction", () => {
@@ -78,6 +99,34 @@ describe("lyrics color extraction", () => {
 
   test("resolves the boosted cover glow color from a palette", () => {
     expect(resolveCoverGlowColor(["#1a237e"])).toBe(boostGlowColor("#1a237e"));
+  });
+
+  test("derives outlined karaoke fills as a darker version of the cover glow hue", () => {
+    const glow = boostGlowColor("#1a237e");
+    const fill = makeOutlineFillFromGlowColor(glow);
+
+    expect(relativeLuminance(fill)).toBeLessThan(relativeLuminance(glow));
+    expect(hueDistance(hueOf(fill), hueOf(glow))).toBeLessThan(0.01);
+  });
+
+  test("clamps bright outlined karaoke fills below glow brightness", () => {
+    for (const glow of ["#00d5ff", "#ffd700", "#7cff00"]) {
+      const fill = makeOutlineFillFromGlowColor(glow);
+
+      expect(relativeLuminance(fill)).toBeLessThanOrEqual(0.225);
+      expect(relativeLuminance(fill)).toBeLessThan(relativeLuminance(glow));
+      expect(hueDistance(hueOf(fill), hueOf(glow))).toBeLessThan(0.01);
+    }
+  });
+
+  test("keeps neutral outlined karaoke fills grayscale and darker than glow", () => {
+    const glow = boostGlowColor("#101010");
+    const fill = makeOutlineFillFromGlowColor(glow);
+    const [r, g, b] = hexToRgb(fill);
+
+    expect(r).toBe(g);
+    expect(g).toBe(b);
+    expect(relativeLuminance(fill)).toBeLessThan(relativeLuminance(glow));
   });
 
   test("does not extract a cover glow color when a cached color exists", () => {
