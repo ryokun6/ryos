@@ -1,17 +1,11 @@
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { abortableFetch } from "@/utils/abortableFetch";
-import { getApiUrl } from "@/utils/platform";
+import {
+  createTvChannelPlan,
+  MediaApiRequestError,
+} from "@/api/media";
 import { useTvStore, type CustomChannel } from "@/stores/useTvStore";
-import type { Video } from "@/stores/useVideoStore";
 import { getTextAnalytics, MEDIA_ANALYTICS, track } from "@/utils/analytics";
-
-interface CreateChannelResponse {
-  name: string;
-  description: string;
-  queries: string[];
-  videos: Video[];
-}
 
 export interface CreateTvChannelResult {
   /** Created and persisted channel, ready to tune in. */
@@ -22,7 +16,7 @@ export interface CreateTvChannelResult {
 
 /**
  * Sentinel error thrown when the API returns 401 (or 403) on
- * /api/tv/create-channel. Callers should catch this and surface a
+ * the channel creation API. Callers should catch this and surface a
  * "log in to continue" prompt instead of treating it as a generic
  * failure. Subclassing Error keeps `instanceof` checks reliable
  * across the bundle without depending on string-matching message
@@ -58,36 +52,10 @@ export function useCreateTvChannel() {
 
       setIsCreating(true);
       try {
-        const response = await abortableFetch(
-          getApiUrl("/api/tv/create-channel"),
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ description: trimmed }),
-            timeout: 45000,
-            throwOnHttpError: false,
-          }
-        );
-
-        if (!response.ok) {
-          const data = await response.json().catch(() => ({}));
-          if (response.status === 401 || response.status === 403) {
-            throw new TvChannelAuthRequiredError(
-              t("apps.tv.create.signInRequired")
-            );
-          }
-          const msg =
-            response.status === 429
-              ? t("apps.tv.create.errorRateLimit")
-              : data?.error || t("apps.tv.create.errorGeneric");
-          throw new Error(msg);
-        }
-
-        const data = (await response.json()) as CreateChannelResponse;
+        const data = await createTvChannelPlan({ description: trimmed });
         if (!data?.videos?.length) {
           throw new Error(t("apps.tv.create.errorNoVideos"));
         }
-
         const channel = addCustomChannel({
           name: data.name,
           description: data.description,
@@ -104,17 +72,27 @@ export function useCreateTvChannel() {
 
         return { channel, queries: data.queries ?? [] };
       } catch (error) {
+        const normalizedError =
+          error instanceof MediaApiRequestError
+            ? error.status === 401 || error.status === 403
+              ? new TvChannelAuthRequiredError(t("apps.tv.create.signInRequired"))
+              : new Error(
+                  error.status === 429
+                    ? t("apps.tv.create.errorRateLimit")
+                    : error.message || t("apps.tv.create.errorGeneric")
+                )
+            : error;
         track(MEDIA_ANALYTICS.TV_CHANNEL_CREATE, {
           ...getTextAnalytics(trimmed),
           success: false,
           errorType:
-            error instanceof TvChannelAuthRequiredError
+            normalizedError instanceof TvChannelAuthRequiredError
               ? "auth"
-              : error instanceof Error
-                ? error.name
+              : normalizedError instanceof Error
+                ? normalizedError.name
                 : "unknown",
         });
-        throw error;
+        throw normalizedError;
       } finally {
         setIsCreating(false);
       }

@@ -1,5 +1,5 @@
 import { abortableFetch } from "@/utils/abortableFetch";
-import { getApiUrl } from "@/utils/platform";
+import { parseVideoTitle } from "@/api/media";
 
 const FETCH_OPTS = {
   timeout: 15000,
@@ -47,7 +47,7 @@ export interface ParsedYouTubeTitle {
 }
 
 /**
- * Resolve a cleaned title/artist via `/api/parse-title`. Never throws: on any
+ * Resolve a cleaned title/artist via the internal title parser. Never throws: on any
  * HTTP/network failure it falls back to `{ title: rawTitle }`.
  */
 export async function parseYouTubeTitle(
@@ -55,24 +55,16 @@ export async function parseYouTubeTitle(
   authorName?: string
 ): Promise<ParsedYouTubeTitle> {
   try {
-    const res = await abortableFetch(getApiUrl("/api/parse-title"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: rawTitle, author_name: authorName }),
-      ...FETCH_OPTS,
+    const data = await parseVideoTitle({
+      title: rawTitle,
+      authorName,
+      timeout: FETCH_OPTS.timeout,
     });
-    if (res.ok) {
-      const data = (await res.json()) as {
-        title?: string;
-        artist?: string;
-        album?: string;
-      };
-      return {
-        title: data.title || rawTitle,
-        artist: data.artist,
-        album: data.album,
-      };
-    }
+    return {
+      title: data.title || rawTitle,
+      artist: data.artist,
+      album: data.album,
+    };
   } catch {
     // ignore — fall back to the raw oEmbed title
   }

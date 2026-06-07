@@ -19,9 +19,11 @@ import {
 } from "@/apps/tv/data/channels";
 import type { Video } from "@/stores/useVideoStore";
 import { isYouTubeUrl, parseYouTubeId } from "@/apps/tv/utils";
-import { abortableFetch } from "@/utils/abortableFetch";
-import { fetchYouTubeOembed } from "@/utils/youtubeMetadata";
-import { getApiUrl } from "@/utils/platform";
+import {
+  createTvChannelPlan,
+  MediaApiRequestError,
+} from "@/api/media";
+import { fetchYouTubeOembed, parseYouTubeTitle } from "@/utils/youtubeMetadata";
 import { createShortIdMap, resolveId, type ShortIdMap } from "./helpers";
 
 export interface TvControlInput {
@@ -87,32 +89,11 @@ const fetchVideoMetadata = async (
       const rawTitle = oembed.rawTitle || `Video ID: ${videoId}`;
       const authorName = oembed.authorName;
 
-      // Best-effort AI title parse for cleaner title/artist split — if it
-      // fails, we just keep the oEmbed values (still better than nothing).
-      try {
-        const parseRes = await abortableFetch(getApiUrl("/api/parse-title"), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title: rawTitle, author_name: authorName }),
-          timeout: 10000,
-          throwOnHttpError: false,
-          retry: { maxAttempts: 1, initialDelayMs: 250 },
-        });
-        if (parseRes.ok) {
-          const parsed = (await parseRes.json()) as {
-            title?: string;
-            artist?: string;
-          };
-          return {
-            title: parsed.title || rawTitle,
-            artist: parsed.artist || authorName,
-          };
-        }
-      } catch {
-        // Ignore parse errors and keep oEmbed values.
-      }
-
-      return { title: rawTitle, artist: authorName };
+      const parsed = await parseYouTubeTitle(rawTitle, authorName);
+      return {
+        title: parsed.title || rawTitle,
+        artist: parsed.artist || authorName,
+      };
     }
   } catch {
     // Network failure — fall through to default title.
@@ -332,7 +313,7 @@ export const handleTvControl = async (
           return;
         }
 
-        // Server fanout: /api/tv/create-channel runs the same AI plan +
+        // Server fanout runs the same AI plan +
         // YouTube fanout the manual TV "Create Channel" dialog uses, so
         // the AI doesn't need to call searchSongs first or ask the user
         // for a video list.
@@ -343,58 +324,10 @@ export const handleTvControl = async (
           videos: Video[];
         };
         try {
-          const response = await abortableFetch(
-            getApiUrl("/api/tv/create-channel"),
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ description: prompt }),
-              timeout: 60000,
-              throwOnHttpError: false,
-            }
+          const raw = await createTvChannelPlan(
+            { description: prompt },
+            { timeout: 60000 }
           );
-
-          if (!response.ok) {
-            const data = (await response.json().catch(() => ({}))) as {
-              error?: string;
-              scope?: string;
-            };
-            const isAuthRequired =
-              response.status === 401 || response.status === 403;
-            const isRateLimit = response.status === 429;
-            // Surface auth errors with a distinct, actionable message so
-            // the chat AI can suggest the user log in (and so the chat
-            // UI's tool-error renderer can flag it differently from a
-            // generic failure). Falls back to the generic failure text
-            // for unknown statuses.
-            const errorText = isAuthRequired
-              ? i18n.t("apps.tv.create.signInRequired", {
-                  defaultValue: "Sign in to create channels",
-                })
-              : isRateLimit
-              ? i18n.t("apps.chats.toolCalls.tv.createRateLimited", {
-                  defaultValue:
-                    "Channel creation is rate-limited right now. Try again in a bit.",
-                })
-              : data?.error ||
-                i18n.t("apps.chats.toolCalls.tv.createFailed", {
-                  defaultValue: "Failed to plan channel",
-                });
-            context.addToolOutput({
-              tool: "tvControl",
-              toolCallId,
-              state: "output-error",
-              errorText,
-            });
-            return;
-          }
-
-          const raw = (await response.json()) as {
-            name?: string;
-            description?: string;
-            queries?: string[];
-            videos?: Video[];
-          };
           if (!raw?.videos?.length || !raw?.name) {
             context.addToolOutput({
               tool: "tvControl",
@@ -414,6 +347,31 @@ export const handleTvControl = async (
             videos: raw.videos,
           };
         } catch (err) {
+          if (err instanceof MediaApiRequestError) {
+            const isAuthRequired = err.status === 401 || err.status === 403;
+            const isRateLimit = err.status === 429;
+            const errorText = isAuthRequired
+              ? i18n.t("apps.tv.create.signInRequired", {
+                  defaultValue: "Sign in to create channels",
+                })
+              : isRateLimit
+              ? i18n.t("apps.chats.toolCalls.tv.createRateLimited", {
+                  defaultValue:
+                    "Channel creation is rate-limited right now. Try again in a bit.",
+                })
+              : err.message ||
+                i18n.t("apps.chats.toolCalls.tv.createFailed", {
+                  defaultValue: "Failed to plan channel",
+                });
+            context.addToolOutput({
+              tool: "tvControl",
+              toolCallId,
+              state: "output-error",
+              errorText,
+            });
+            return;
+          }
+
           console.error("[tvControl] create-channel API failed:", err);
           context.addToolOutput({
             tool: "tvControl",
