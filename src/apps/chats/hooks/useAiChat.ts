@@ -23,10 +23,9 @@ import { appRegistry } from "@/config/appRegistry";
 import { getTranslatedAppName } from "@/utils/i18n";
 import {
   useFileSystem,
-  dbOperations,
   type DocumentContent,
 } from "@/apps/finder/hooks/useFileSystem";
-import { STORES } from "@/utils/indexedDB";
+import { STORES, dbOperations } from "@/utils/indexedDB";
 import { useTextEditStore } from "@/stores/useTextEditStore";
 import { useFilesStore } from "@/stores/useFilesStore";
 import { useChatsStoreShallow } from "@/stores/helpers";

@@ -10,8 +10,7 @@
 // The cache is keyed under a single record so we can replace the whole
 // library atomically and load it in one round-trip.
 
-import { dbOperations } from "@/apps/finder/hooks/useFileSystem";
-import { STORES } from "@/utils/indexedDB";
+import { STORES, dbOperations } from "@/utils/indexedDB";
 import type {
   AppleMusicPlaylist,
   Track,

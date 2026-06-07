@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
-import { useFileSystem, dbOperations } from "@/apps/finder/hooks/useFileSystem";
-import { STORES } from "@/utils/indexedDB";
+import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
+import { STORES, dbOperations } from "@/utils/indexedDB";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { usePaintStore } from "@/stores/usePaintStore";
 import type { Filter } from "../components/PaintFiltersMenu";
