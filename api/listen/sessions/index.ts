@@ -9,6 +9,7 @@ import {
   assertValidUsername,
 } from "../../_utils/_validation.js";
 import { resolveRequestAuth } from "../../_utils/request-auth.js";
+import { CHAT_USERS_PREFIX } from "../../_utils/auth/_constants.js";
 import {
   generateSessionId,
   getCurrentTimestamp,
@@ -142,7 +143,7 @@ export default apiHandler(
       return;
     }
 
-    const userData = await redis.get(`chat:users:${username}`);
+    const userData = await redis.get(`${CHAT_USERS_PREFIX}${username}`);
     if (!userData) {
       logger.response(404, Date.now() - startTime);
       res.status(404).json({ error: "User not found" });
