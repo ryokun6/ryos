@@ -67,6 +67,8 @@ This file tracks implementation progress for `plans/10-duplication-complexity-au
 - [x] `bun test tests/test-settings-sync-domain.test.ts`
 - [x] `bun test tests/test-cloud-sync-domains.test.ts`
 - [x] `bun test tests/test-cloud-sync-tv-upload-apply.test.ts`
+- [x] `bun test tests/test-contacts-tool-reducer.test.ts`
+- [x] `bun test tests/test-chat-tools-contacts.test.ts tests/test-server-app-state-tools.test.ts`
 - [x] `bun run build`
 - [ ] `bun test tests/test-cloud-sync-utils.test.ts` full suite currently has an unrelated DOM mock gap in settings hydration.
 - [ ] `bun run test:new-api` full suite currently has an unrelated login fixture failure returning 401 after registration.
@@ -181,8 +183,8 @@ Primary files:
 Implementation checklist:
 
 - [ ] Add `src/shared/tools/types.ts` for calendar, contacts, stickies, and documents tool inputs/outputs.
-- [ ] Add `src/shared/tools/contactsReducer.ts`; migrate `contactsHandler.ts` and `executeContactsControl` first.
-- [ ] Add parity fixtures proving client adapter and server adapter produce the same outputs for list/create/update/delete.
+- [x] Add shared contacts tool reducer/helper module and migrate `contactsHandler.ts` plus `executeContactsControl`.
+- [x] Add contacts reducer tests for list/create/update/delete and tombstones.
 - [ ] Add `src/shared/tools/calendarReducer.ts`; preserve event colors, todo fields, and `location`.
 - [ ] Add `src/shared/tools/stickiesReducer.ts`; preserve sticky colors and timestamps.
 - [ ] Split `api/chat/tools/executors.ts` into domain modules after reducers are shared.

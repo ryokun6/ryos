@@ -132,7 +132,7 @@ export function serializeContactToolRecord(
   idMap?: ShortIdMap
 ): ContactToolRecord {
   return {
-    id: idMap?.fullToShort.get(contact.id) || contact.id,
+    id: idMap ? idMap.fullToShort.get(contact.id) || contact.id : contact.id,
     displayName: contact.displayName,
     organization: contact.organization,
     title: contact.title,

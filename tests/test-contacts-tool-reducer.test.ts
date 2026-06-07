@@ -44,7 +44,7 @@ describe("contacts tool shared reducer", () => {
   test("lists and serializes contacts with short ids", () => {
     const result = applyContactsToolAction(state(), {
       action: "list",
-      query: "Contact a",
+      query: "a@example",
     });
     expect(result.ok).toBe(true);
     if (!result.ok || result.kind !== "list") return;
