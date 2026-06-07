@@ -12,13 +12,6 @@ export function isTauri(): boolean {
 }
 
 /**
- * Check if the app is running in a web browser
- */
-export function isWeb(): boolean {
-  return !isTauri();
-}
-
-/**
  * Get the API base URL.
  * In Tauri (desktop app), returns the production API URL.
  * In web browser, returns empty string for relative paths.

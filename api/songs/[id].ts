@@ -55,6 +55,8 @@ import {
   type LyricLine,
 } from "./_utils.js";
 
+import { startLyricsSseResponse } from "./_streaming.js";
+
 import {
   searchKugou,
   fetchLyricsFromKugou,
@@ -898,22 +900,11 @@ export default apiHandler<Record<string, unknown>>(
 
         // Use native SSE streaming for custom events (AI SDK's UIMessageStream expects specific types)
         // Set up SSE headers
-        res.setHeader("Content-Type", "text/event-stream");
-        res.setHeader("Cache-Control", "no-cache, no-transform");
-        res.setHeader("Connection", "keep-alive");
-        res.setHeader("X-Accel-Buffering", "no");
-        if (effectiveOrigin) {
-          res.setHeader("Access-Control-Allow-Origin", effectiveOrigin);
-        }
+        const sendEvent = startLyricsSseResponse(res, effectiveOrigin);
 
         const allTranslations: string[] = new Array(totalLines).fill("");
         let completedLines = 0;
         let currentLineBuffer = "";
-
-        // Helper to send SSE event (type must be in JSON payload for client compatibility)
-        const sendEvent = (eventType: string, data: Record<string, unknown>) => {
-          res.write(`data: ${JSON.stringify({ type: eventType, ...data })}\n\n`);
-        };
 
         try {
           // Send start event immediately
@@ -1099,23 +1090,12 @@ export default apiHandler<Record<string, unknown>>(
         const textsToProcess = linesNeedingFurigana.map((info, i) => `${i + 1}: ${info.line.words}`).join("\n");
 
         // Use native SSE streaming for custom events
-        res.setHeader("Content-Type", "text/event-stream");
-        res.setHeader("Cache-Control", "no-cache, no-transform");
-        res.setHeader("Connection", "keep-alive");
-        res.setHeader("X-Accel-Buffering", "no");
-        if (effectiveOrigin) {
-          res.setHeader("Access-Control-Allow-Origin", effectiveOrigin);
-        }
+        const sendEvent = startLyricsSseResponse(res, effectiveOrigin);
 
         const allFurigana: Array<Array<{ text: string; reading?: string }>> = 
           new Array(totalLines).fill(null).map((_, i) => [{ text: lines[i].words }]);
         let completedLines = 0;
         let currentLineBuffer = "";
-
-        // Helper to send SSE event (type must be in JSON payload for client compatibility)
-        const sendEvent = (eventType: string, data: Record<string, unknown>) => {
-          res.write(`data: ${JSON.stringify({ type: eventType, ...data })}\n\n`);
-        };
 
         try {
           // Send start event immediately
@@ -1393,23 +1373,12 @@ export default apiHandler<Record<string, unknown>>(
         }
 
         // Use native SSE streaming for custom events
-        res.setHeader("Content-Type", "text/event-stream");
-        res.setHeader("Cache-Control", "no-cache, no-transform");
-        res.setHeader("Connection", "keep-alive");
-        res.setHeader("X-Accel-Buffering", "no");
-        if (effectiveOrigin) {
-          res.setHeader("Access-Control-Allow-Origin", effectiveOrigin);
-        }
+        const sendEvent = startLyricsSseResponse(res, effectiveOrigin);
 
         const allSoramimi: Array<Array<{ text: string; reading?: string }>> =
           new Array(totalLines).fill(null).map(() => []);
         let completedLines = 0;
         let currentLineBuffer = "";
-
-        // Helper to send SSE event (type must be in JSON payload for client compatibility)
-        const sendEvent = (eventType: string, data: Record<string, unknown>) => {
-          res.write(`data: ${JSON.stringify({ type: eventType, ...data })}\n\n`);
-        };
 
         try {
           // Send start event immediately

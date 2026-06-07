@@ -5,28 +5,29 @@
 
 import leoProfanity from "leo-profanity";
 
+// Shared, runtime-neutral validation primitives (single source of truth).
+import {
+  MAX_MESSAGE_LENGTH,
+  MAX_USERNAME_LENGTH,
+  MIN_USERNAME_LENGTH,
+  USERNAME_REGEX,
+  ROOM_ID_REGEX,
+} from "../../src/shared/validation.js";
+
+// Re-exported so existing `_validation.js` importers keep working.
+export {
+  MAX_MESSAGE_LENGTH,
+  MAX_USERNAME_LENGTH,
+  MIN_USERNAME_LENGTH,
+  USERNAME_REGEX,
+  ROOM_ID_REGEX,
+};
+
 // ============================================================================
 // Types
 // ============================================================================
 
 export type LogFn = (requestId: string, message: string, data?: unknown) => void;
-
-// ============================================================================
-// Constants
-// ============================================================================
-
-// Message constraints
-export const MAX_MESSAGE_LENGTH = 1000;
-export const MAX_USERNAME_LENGTH = 30;
-export const MIN_USERNAME_LENGTH = 3;
-
-// Usernames: 3-30 chars, start with a letter, letters/numbers,
-// optional single hyphen/underscore between alphanumerics (no leading/trailing or consecutive separators)
-// Examples: ok -> "alice", "john_doe", "foo-bar"; not ok -> "_joe", "joe_", "a--b", "a__b", "a b", "a@b"
-export const USERNAME_REGEX = /^[a-z](?:[a-z0-9]|[-_](?=[a-z0-9])){2,29}$/i;
-
-// Room IDs generated internally are base-36 alphanumerics; still validate when received from client
-export const ROOM_ID_REGEX = /^[a-z0-9]+$/i;
 
 // ============================================================================
 // Profanity Filter Initialization

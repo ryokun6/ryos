@@ -70,36 +70,20 @@ export default apiHandler(
     try {
       const ip = getClientIp(req);
       const BURST_WINDOW = 60;
-      const BURST_LIMIT = 20;
       const DAILY_WINDOW = 60 * 60 * 24;
-      const DAILY_LIMIT = 200;
 
-      const burstKey = RateLimit.makeKey(["rl", "youtube-search", "burst", "ip", ip]);
-      const dailyKey = RateLimit.makeKey(["rl", "youtube-search", "daily", "ip", ip]);
-
-      const burst = await RateLimit.checkCounterLimit({
-        key: burstKey,
-        windowSeconds: BURST_WINDOW,
-        limit: BURST_LIMIT,
+      const rl = await RateLimit.checkBurstAndDailyLimits({
+        namespace: "youtube-search",
+        identifierParts: ["ip", ip],
+        burst: { windowSeconds: BURST_WINDOW, limit: 20 },
+        daily: { windowSeconds: DAILY_WINDOW, limit: 200 },
       });
-      if (!burst.allowed) {
-        logger.info("Rate limit exceeded (burst)", { ip });
+      if (!rl.ok) {
+        const fallbackWindow = rl.scope === "burst" ? BURST_WINDOW : DAILY_WINDOW;
+        logger.info(`Rate limit exceeded (${rl.scope})`, { ip });
         logger.response(429, Date.now() - startTime);
-        res.setHeader("Retry-After", String(burst.resetSeconds ?? BURST_WINDOW));
-        res.status(429).json({ error: "rate_limit_exceeded", scope: "burst" });
-        return;
-      }
-
-      const daily = await RateLimit.checkCounterLimit({
-        key: dailyKey,
-        windowSeconds: DAILY_WINDOW,
-        limit: DAILY_LIMIT,
-      });
-      if (!daily.allowed) {
-        logger.info("Rate limit exceeded (daily)", { ip });
-        logger.response(429, Date.now() - startTime);
-        res.setHeader("Retry-After", String(daily.resetSeconds ?? DAILY_WINDOW));
-        res.status(429).json({ error: "rate_limit_exceeded", scope: "daily" });
+        res.setHeader("Retry-After", String(rl.result?.resetSeconds ?? fallbackWindow));
+        res.status(429).json({ error: "rate_limit_exceeded", scope: rl.scope });
         return;
       }
     } catch (err) {

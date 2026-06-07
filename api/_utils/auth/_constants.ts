@@ -28,11 +28,11 @@ export const TOKEN_GRACE_PERIOD = 30 * 24 * 60 * 60;
 /** Password hash key prefix in Redis */
 export const PASSWORD_HASH_PREFIX = "chat:password:";
 
-/** Minimum password length */
-export const PASSWORD_MIN_LENGTH = 8;
-
-/** Maximum password length (prevents bcrypt DoS) */
-export const PASSWORD_MAX_LENGTH = 128;
+/** Password length bounds — shared with the frontend for client-side checks. */
+export {
+  PASSWORD_MIN_LENGTH,
+  PASSWORD_MAX_LENGTH,
+} from "../../../src/shared/validation.js";
 
 /** Bcrypt rounds for password hashing */
 export const PASSWORD_BCRYPT_ROUNDS = 10;

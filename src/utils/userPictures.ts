@@ -16,7 +16,7 @@ function pic(category: string, file: string, name: string): UserPicture {
   return { id: `${category}/${file}`, name, path: `${BASE}/${category}/${file}.png` };
 }
 
-export const USER_PICTURE_CATEGORIES: UserPictureCategory[] = [
+const USER_PICTURE_CATEGORIES: UserPictureCategory[] = [
   {
     id: "animals",
     label: "Animals",
