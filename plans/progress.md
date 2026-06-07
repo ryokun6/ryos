@@ -17,6 +17,9 @@ This file tracks implementation progress for `plans/10-duplication-complexity-au
 - [x] Added `api/_utils/youtube-client.ts`.
 - [x] Replaced duplicated YouTube search/key-rotation logic in `api/youtube-search.ts`, `api/tv/create-channel.ts`, and `api/chat/tools/executors.ts`.
 - [x] Added `tests/test-youtube-client.test.ts`.
+- [x] Added `api/_utils/parse-youtube-title.ts`.
+- [x] Moved title parsing from `api/parse-title.ts`, `api/songs/_utils.ts`, `api/chat/tools/executors.ts`, and `api/_utils/og-share.ts` onto the shared parser.
+- [x] Added `tests/test-parse-youtube-title.test.ts`.
 
 ## Current test notes
 
@@ -30,13 +33,19 @@ This file tracks implementation progress for `plans/10-duplication-complexity-au
 - [x] `bun test tests/test-chat-tools-songs.test.ts`
 - [x] `bun run test:media`
 - [x] `bun test tests/test-tv-channels.test.ts tests/test-tv-utils.test.ts tests/test-tv-control-schema.test.ts tests/test-tv-store-default-channel-removal.test.ts`
+- [x] `bun test tests/test-parse-youtube-title.test.ts`
+- [x] `bun run test:parse-title`
+- [x] `bun run test:song`
+- [x] `bun test tests/test-song-lyrics-match.test.ts`
+- [x] `bun test tests/test-og-share.test.ts`
+- [x] `bun run test:ai`
 - [x] `bun run build`
 - [ ] `bun test tests/test-cloud-sync-utils.test.ts` full suite currently has an unrelated DOM mock gap in settings hydration.
 - [ ] `bun run test:new-api` full suite currently has an unrelated login fixture failure returning 401 after registration.
 
 ## In progress
 
-- [ ] Consolidate YouTube title parsing.
+- [ ] Shared contracts and constants.
 
 ## Next implementation checklist
 
@@ -54,12 +63,12 @@ This file tracks implementation progress for `plans/10-duplication-complexity-au
 
 ### Phase 2: Title parsing consolidation
 
-- [ ] Add `api/_utils/parse-youtube-title.ts`.
-- [ ] Move the shared regex and AI parsing logic out of `api/songs/_utils.ts`.
-- [ ] Slim `api/parse-title.ts` into a route wrapper.
-- [ ] Update `api/chat/tools/executors.ts` and `api/_utils/og-share.ts` to use the shared parser.
-- [ ] Add unit fixtures for delimiter, channel-name, MV/audio stripping, malformed AI output, and fallback behavior.
-- [ ] Run `bun run test:parse-title`, `bun run test:song`, `bun run test:media`, and `bun test tests/test-og-share.test.ts`.
+- [x] Add `api/_utils/parse-youtube-title.ts`.
+- [x] Move the shared regex and AI parsing logic out of `api/songs/_utils.ts`.
+- [x] Slim `api/parse-title.ts` into a route wrapper.
+- [x] Update `api/chat/tools/executors.ts` and `api/_utils/og-share.ts` to use the shared parser.
+- [x] Add unit fixtures for delimiter, channel-name, MV/audio stripping, malformed AI output, and fallback behavior.
+- [x] Run `bun run test:parse-title`, `bun run test:song`, `bun run test:media`, and `bun test tests/test-og-share.test.ts`.
 
 ### Phase 3: Shared contracts and constants
 
