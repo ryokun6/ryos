@@ -314,6 +314,95 @@ describe("logical cloud sync domain API", () => {
     expect((json.error || "").toLowerCase()).toContain("maps");
   });
 
+  test("PUT/GET /api/sync/domains/songs round-trips deletion tombstones", async () => {
+    const authToken = await getAuthToken();
+
+    const songTrack = (id: string) => ({
+      id,
+      url: `https://www.youtube.com/watch?v=${id}`,
+      title: `Song ${id}`,
+    });
+
+    // Initial upload: A + B, no tombstones.
+    const firstPut = await fetchWithAuth(
+      `${BASE_URL}/api/sync/domains/songs`,
+      TEST_USERNAME,
+      authToken,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          writes: {
+            songs: {
+              domain: "songs",
+              updatedAt: "2026-05-01T10:00:00.000Z",
+              version: 1,
+              syncVersion: makeSyncVersion("songs-client", 1),
+              data: {
+                tracks: [songTrack("A"), songTrack("B")],
+                libraryState: "loaded",
+                lastKnownVersion: 1,
+                deletedTrackIds: {},
+              },
+            },
+          },
+        }),
+      }
+    );
+    expect(firstPut.status).toBe(200);
+    const firstPutJson = await firstPut.json();
+    const baseServerVersion: number =
+      firstPutJson.writes?.songs?.metadata?.syncVersion?.serverVersion ??
+      firstPutJson.metadata?.syncVersion?.serverVersion ??
+      null;
+
+    // Delete B: upload tracks=[A] with a tombstone for B, chained off the
+    // server version returned by the first write so it fast-forwards.
+    const deletedAt = "2026-05-01T10:05:00.000Z";
+    const secondPut = await fetchWithAuth(
+      `${BASE_URL}/api/sync/domains/songs`,
+      TEST_USERNAME,
+      authToken,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          writes: {
+            songs: {
+              domain: "songs",
+              updatedAt: deletedAt,
+              version: 1,
+              syncVersion: makeSyncVersion("songs-client", 2, baseServerVersion),
+              data: {
+                tracks: [songTrack("A")],
+                libraryState: "loaded",
+                lastKnownVersion: 2,
+                deletedTrackIds: { B: deletedAt },
+              },
+            },
+          },
+        }),
+      }
+    );
+    expect(secondPut.status).toBe(200);
+
+    // A fresh client download must see the tombstone for B so it cannot
+    // resurrect the deleted track during a conflict merge.
+    const getRes = await fetchWithAuth(
+      `${BASE_URL}/api/sync/domains/songs`,
+      TEST_USERNAME,
+      authToken
+    );
+    expect(getRes.status).toBe(200);
+    const getJson = await getRes.json();
+    expect(getJson.ok).toBe(true);
+    expect(getJson.domain).toBe("songs");
+    expect(getJson.parts.songs.data.tracks.map((t: { id: string }) => t.id)).toEqual([
+      "A",
+    ]);
+    expect(getJson.parts.songs.data.deletedTrackIds?.B).toBe(deletedAt);
+  });
+
   test("POST /api/sync/domains/files/attachments/prepare accepts custom wallpapers only under files", async () => {
     const authToken = await getAuthToken();
 

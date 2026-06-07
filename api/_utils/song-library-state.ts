@@ -5,12 +5,20 @@ import {
   normalizeCloudSyncVersionState,
   type CloudSyncVersionState,
 } from "../../src/utils/cloudSyncVersion.js";
+import {
+  normalizeDeletionMarkerMap,
+  type DeletionMarkerMap,
+} from "../../src/utils/cloudSyncDeletionMarkers.js";
 import { redisStateMetaKey } from "../sync/_keys.js";
 
 export interface SongsSnapshotData {
   tracks: Track[];
   libraryState: "uninitialized" | "loaded" | "cleared";
   lastKnownVersion: number;
+  // Deletion tombstones (trackId -> ISO timestamp). Persisted so multi-client
+  // conflict merges don't resurrect deleted tracks — matches how every other
+  // Redis-backed sync domain stores its deleted* markers.
+  deletedTrackIds?: DeletionMarkerMap;
 }
 
 export interface SongsStateMetadata {
@@ -24,6 +32,7 @@ interface PersistedSongsLibraryMeta extends SongsStateMetadata {
   trackOrder: string[];
   libraryState: SongsSnapshotData["libraryState"];
   lastKnownVersion: number;
+  deletedTrackIds?: DeletionMarkerMap;
 }
 
 interface PersistedSongsLegacyState extends SongsStateMetadata {
@@ -161,6 +170,8 @@ function normalizeSongsSnapshotData(value: unknown): SongsSnapshotData | null {
     return true;
   });
 
+  const deletedTrackIds = normalizeDeletionMarkerMap(candidate.deletedTrackIds);
+
   return {
     tracks: dedupedTracks,
     libraryState: isLibraryState(candidate.libraryState)
@@ -173,6 +184,7 @@ function normalizeSongsSnapshotData(value: unknown): SongsSnapshotData | null {
       Number.isFinite(candidate.lastKnownVersion)
         ? candidate.lastKnownVersion
         : 0,
+    ...(Object.keys(deletedTrackIds).length > 0 ? { deletedTrackIds } : {}),
   };
 }
 
@@ -246,6 +258,8 @@ async function readStoredSongsState(
     }
   }
 
+  const deletedTrackIds = normalizeDeletionMarkerMap(meta.deletedTrackIds);
+
   return {
     data: {
       tracks: trackOrder.reduce<Track[]>((acc, id) => {
@@ -260,6 +274,7 @@ async function readStoredSongsState(
         typeof meta.lastKnownVersion === "number" && Number.isFinite(meta.lastKnownVersion)
           ? meta.lastKnownVersion
           : 0,
+      ...(Object.keys(deletedTrackIds).length > 0 ? { deletedTrackIds } : {}),
     },
     metadata: normalizeSongsStateMetadata(meta, new Date().toISOString()),
   };
@@ -340,6 +355,30 @@ export async function writeSongsState(
     return acc;
   }, []);
 
+  // Tombstone resolution. Deletion markers (trackId -> ISO timestamp) must
+  // survive the server round-trip so multi-client conflict merges don't
+  // resurrect deleted tracks.
+  // - Full sync snapshots from the client carry `deletedTrackIds` and are
+  //   authoritative (replace) — the client owns the lifecycle and clears a
+  //   marker when a track is re-added.
+  // - Partial server-side writers (e.g. AI tools that add a song) omit the
+  //   field; preserve the existing stored markers so they aren't wiped.
+  // In both cases, a track that is present is by definition not deleted, so
+  // strip its marker (mirrors the client's clear-on-add behavior).
+  const callerProvidedTombstones =
+    data != null &&
+    typeof data === "object" &&
+    (data as SongsSnapshotData).deletedTrackIds != null;
+  const baseDeletedTrackIds = callerProvidedTombstones
+    ? normalizeDeletionMarkerMap((data as SongsSnapshotData).deletedTrackIds)
+    : normalizeDeletionMarkerMap(existingState?.data.deletedTrackIds);
+  const resolvedDeletedTrackIds: DeletionMarkerMap = {};
+  for (const [id, marker] of Object.entries(baseDeletedTrackIds)) {
+    if (!nextTrackIds.has(id)) {
+      resolvedDeletedTrackIds[id] = marker;
+    }
+  }
+
   const pipeline = redis.pipeline();
   for (const track of normalized.tracks) {
     pipeline.set(getSongLibraryTrackKey(username, track.id), JSON.stringify(track));
@@ -353,6 +392,9 @@ export async function writeSongsState(
       trackOrder,
       libraryState: normalized.libraryState,
       lastKnownVersion: normalized.lastKnownVersion,
+      ...(Object.keys(resolvedDeletedTrackIds).length > 0
+        ? { deletedTrackIds: resolvedDeletedTrackIds }
+        : {}),
       ...metadata,
     } satisfies PersistedSongsLibraryMeta)
   );
