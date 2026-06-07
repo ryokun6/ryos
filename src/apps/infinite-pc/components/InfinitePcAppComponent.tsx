@@ -1,12 +1,12 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AppProps } from "@/apps/base/types";
 import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { AppHelpAboutDialogs } from "@/components/shared/AppHelpAboutDialogs";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { appMetadata } from "../metadata";
-import { motion } from "motion/react";
 import { useInfinitePcLogic } from "../hooks/useInfinitePcLogic";
+import { EmulatorPresetGrid } from "@/apps/shared-emulator/EmulatorPresetGrid";
 import type {
   PcPreset,
   PcLoadProgress,
@@ -91,81 +91,6 @@ function PcLoadingOverlay({
 
 const FALLBACK_RGB = "169,175,190";
 
-function PresetGridCard({
-  preset,
-  onSelect,
-}: {
-  preset: PcPreset;
-  onSelect: () => void;
-}) {
-  const { t } = useTranslation();
-  const [thumbError, setThumbError] = useState(false);
-  const showThumb = !!preset.image && !thumbError;
-  const textShadow = "0 1px 3px rgba(0,0,0,0.95)";
-  const rgb =
-    INFINITE_PC_PRESET_AVERAGE_COLORS[preset.id] ?? preset.rgb ?? FALLBACK_RGB;
-  const bgColor = `rgb(${rgb})`;
-  const overlayColor = `rgba(${rgb},0.5)`;
-
-  return (
-    <motion.button
-      type="button"
-      onClick={onSelect}
-      className="group relative rounded overflow-hidden bg-neutral-800 hover:bg-neutral-700 transition-all duration-200 w-full flex flex-col shrink-0 h-[100px] [box-shadow:0_4px_12px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.05)] hover:[box-shadow:0_8px_24px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,255,255,0.12)]"
-      whileTap={{
-        scale: 0.97,
-        y: 0,
-        transition: { type: "spring", duration: 0.15 },
-      }}
-    >
-      {/*
-        Card has a fixed height; the image fills the full card via
-        `flex-1` + `object-cover`, cropping the thumbnail rather than
-        constraining the card to the OS's native aspect ratio.
-      */}
-      <div
-        className="w-full flex-1 min-h-0 relative shrink-0 overflow-hidden"
-        style={{ backgroundColor: bgColor }}
-      >
-        {showThumb ? (
-          <img
-            src={preset.image}
-            alt=""
-            className="absolute inset-0 w-full h-full object-cover object-top opacity-80 transition-all duration-[800ms] ease-out group-hover:scale-105 group-hover:opacity-100"
-            onError={() => setThumbError(true)}
-          />
-        ) : null}
-        <div
-          className="absolute inset-0 pointer-events-none opacity-0 transition-opacity duration-200 group-hover:opacity-20"
-          style={{ backgroundColor: overlayColor }}
-          aria-hidden
-        />
-      </div>
-      <div
-        className="absolute inset-0 pointer-events-none z-[1]"
-        style={{
-          background: `linear-gradient(to top, ${bgColor} 0%, transparent 55%)`,
-        }}
-        aria-hidden
-      />
-      <div className="absolute bottom-0 left-2 right-2 pt-2 pb-2 flex flex-col items-start gap-0.5 @md:flex-row @md:justify-between @md:items-baseline z-10 pointer-events-none">
-        <span
-          className="text-white font-apple-garamond !text-[18px] leading-tight truncate max-w-full"
-          style={{ textShadow }}
-        >
-          {getPcPresetName(preset, t)}
-        </span>
-        <span
-          className="text-neutral-300 text-[10px] shrink-0 opacity-100 @md:opacity-0 transition-opacity duration-200 @md:group-hover:opacity-100"
-          style={{ textShadow }}
-        >
-          {getPcPresetYear(preset, t)}
-        </span>
-      </div>
-    </motion.button>
-  );
-}
-
 export function InfinitePcAppComponent({
   isWindowOpen,
   onClose,
@@ -242,6 +167,19 @@ export function InfinitePcAppComponent({
       void handleLoadGame(game);
     },
     [handleBackToPresets, handleLoadGame, selectedPreset]
+  );
+
+  const presetCards = useMemo(
+    () =>
+      PC_PRESETS.map((preset) => ({
+        id: preset.id,
+        name: getPcPresetName(preset, t),
+        year: getPcPresetYear(preset, t),
+        image: preset.image,
+        rgb: INFINITE_PC_PRESET_AVERAGE_COLORS[preset.id] ?? preset.rgb ?? FALLBACK_RGB,
+        screenSize: preset.screenSize,
+      })),
+    [t]
   );
 
   const menuBar = (
@@ -380,15 +318,14 @@ export function InfinitePcAppComponent({
 
                 <div className="flex-1 min-h-0 overflow-y-auto flex justify-start @md:justify-center items-start w-full p-4 @container">
                   {browseTab === "os" ? (
-                    <div className="preset-grid grid grid-cols-1 @md:grid-cols-3 gap-2 content-start w-full max-w-md @md:max-w-none self-start pb-[calc(1rem+env(safe-area-inset-bottom,0px))] @md:pb-0">
-                      {PC_PRESETS.map((preset) => (
-                        <PresetGridCard
-                          key={preset.id}
-                          preset={preset}
-                          onSelect={() => onPickPreset(preset)}
-                        />
-                      ))}
-                    </div>
+                    <EmulatorPresetGrid
+                      presets={presetCards}
+                      layout="fixed-height"
+                      onSelectPreset={(presetId) => {
+                        const preset = PC_PRESETS.find((p) => p.id === presetId);
+                        if (preset) onPickPreset(preset);
+                      }}
+                    />
                   ) : (
                     <div
                       className={`games-grid grid grid-cols-1 @md:grid-cols-3 gap-2 content-start w-full max-w-4xl self-start pb-[calc(1rem+env(safe-area-inset-bottom,0px))] @md:pb-0 transition-opacity duration-300 ${

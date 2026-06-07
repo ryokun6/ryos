@@ -1,12 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
-import { useThemeFlags } from "@/hooks/useThemeFlags";
-import { useThemeStore } from "@/stores/useThemeStore";
-import { useAppStore } from "@/stores/useAppStore";
-import { 
-  useInfiniteMacStore, 
-  type ScaleOption, 
+import { useCallback, useEffect, useRef } from "react";
+import {
+  useInfiniteMacStore,
+  type ScaleOption,
   type ScreenData,
   type MacPreset,
 } from "@/stores/useInfiniteMacStore";
@@ -16,8 +11,8 @@ import {
   DEFAULT_WINDOW_SIZE_WITH_TITLEBAR,
 } from "../windowConfig";
 import { useShallow } from "zustand/react/shallow";
+import { useEmulatorAppLogic } from "@/apps/shared-emulator/useEmulatorAppLogic";
 
-// Re-export types and presets for consumers
 export type { ScaleOption, MacPreset, ScreenData } from "@/stores/useInfiniteMacStore";
 export { MAC_PRESETS } from "@/stores/useInfiniteMacStore";
 
@@ -36,15 +31,6 @@ function buildWrapperUrl(preset: MacPreset, scale: number = 1): string {
 
 export { DEFAULT_WINDOW_SIZE, DEFAULT_WINDOW_SIZE_WITH_TITLEBAR };
 
-// Titlebar height per theme so auto-resize fits content + titlebar
-// (matches WindowFrame / themes.css)
-const TITLEBAR_HEIGHT_BY_THEME: Record<string, number> = {
-  macosx: 24, // notitlebar h-6 spacer
-  system7: 24, // 1.5rem
-  xp: 30, // 1.875rem, WindowFrame minHeight 30px
-  win98: 22, // 1.375rem
-};
-
 interface UseInfiniteMacLogicProps {
   isWindowOpen: boolean;
   instanceId?: string;
@@ -54,10 +40,8 @@ export function useInfiniteMacLogic({
   isWindowOpen: _isWindowOpen,
   instanceId,
 }: UseInfiniteMacLogicProps) {
-  const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
-  const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
-  const { 
-    scale: currentScale, 
+  const {
+    scale: currentScale,
     setScale: setCurrentScale,
     setActiveIframe,
     selectedPreset,
@@ -82,53 +66,34 @@ export function useInfiniteMacLogic({
     }))
   );
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  // Store latest screen data for screenshots (from emulator_screen messages)
   const lastScreenDataRef = useRef<ScreenData | null>(null);
 
-  const { t } = useTranslation();
-  const { currentTheme, isWindowsTheme: isXpTheme } = useThemeFlags();
-  const translatedHelpItems = useTranslatedHelpItems("infinite-mac", helpItems);
+  const {
+    t,
+    translatedHelpItems,
+    currentTheme,
+    isXpTheme,
+    isHelpDialogOpen,
+    setIsHelpDialogOpen,
+    isAboutDialogOpen,
+    setIsAboutDialogOpen,
+    resizeWindow,
+    handleSelectPreset,
+    handleBackToPresets,
+  } = useEmulatorAppLogic<MacPreset>({
+    instanceId,
+    defaultWindowSize: DEFAULT_WINDOW_SIZE,
+    helpAppId: "infinite-mac",
+    helpItems,
+    selectedPreset,
+    setSelectedPreset,
+    setIsEmulatorLoaded,
+    contentScale: currentScale,
+    onSelectPreset: () => setIsPaused(false),
+    onBackToPresets: () => setIsPaused(false),
+  });
+
   const embedUrl = selectedPreset ? buildWrapperUrl(selectedPreset, currentScale) : null;
-
-  const resizeWindow = useCallback(
-    (size: { width: number; height: number }, scale: ScaleOption = currentScale) => {
-      if (!instanceId) return;
-      const { instances, updateInstanceWindowState } = useAppStore.getState();
-      const theme = useThemeStore.getState().current;
-      const instance = instances[instanceId];
-      if (instance) {
-        const titlebarHeight = TITLEBAR_HEIGHT_BY_THEME[theme] ?? 24;
-        updateInstanceWindowState(
-          instanceId,
-          instance.position ?? { x: 100, y: 100 },
-          { 
-            width: Math.round(size.width * scale), 
-            height: Math.round(size.height * scale) + titlebarHeight 
-          }
-        );
-      }
-    },
-    [instanceId, currentScale]
-  );
-
-  const handleSelectPreset = useCallback(
-    (preset: MacPreset) => {
-      setSelectedPreset(preset);
-      setIsEmulatorLoaded(false);
-      setIsPaused(false);
-      // Resize window to match emulator screen size
-      resizeWindow(preset.screenSize);
-    },
-    [resizeWindow, setSelectedPreset, setIsEmulatorLoaded, setIsPaused]
-  );
-
-  const handleBackToPresets = useCallback(() => {
-    setSelectedPreset(null);
-    setIsEmulatorLoaded(false);
-    setIsPaused(false);
-    // Resize window back to default for preset grid
-    resizeWindow(DEFAULT_WINDOW_SIZE);
-  }, [resizeWindow, setSelectedPreset, setIsEmulatorLoaded, setIsPaused]);
 
   const sendEmulatorCommand = useCallback(
     (type: string, payload?: Record<string, unknown>) => {
@@ -154,7 +119,6 @@ export function useInfiniteMacLogic({
     (scale: ScaleOption) => {
       if (scale === currentScale) return;
       setCurrentScale(scale);
-      // Changing scale reloads the emulator (new screen_scale in URL)
       setIsEmulatorLoaded(false);
       lastScreenDataRef.current = null;
       if (selectedPreset) {
@@ -168,18 +132,15 @@ export function useInfiniteMacLogic({
     if (!selectedPreset) return;
 
     const screenData = lastScreenDataRef.current;
-    
-    // If we have screen data from emulator_screen messages, use it
+
     if (screenData && screenData.data && screenData.data.length > 0) {
       try {
-        // Create canvas from the RGBA pixel data
         const canvas = document.createElement("canvas");
         canvas.width = screenData.width;
         canvas.height = screenData.height;
         const ctx = canvas.getContext("2d");
         if (!ctx) return;
 
-        // Create ImageData from the Uint8Array (RGBA format)
         const imageData = new ImageData(
           new Uint8ClampedArray(screenData.data),
           screenData.width,
@@ -187,7 +148,6 @@ export function useInfiniteMacLogic({
         );
         ctx.putImageData(imageData, 0, 0);
 
-        // Convert to blob and download
         canvas.toBlob((blob) => {
           if (blob) {
             const url = URL.createObjectURL(blob);
@@ -207,14 +167,12 @@ export function useInfiniteMacLogic({
       }
     }
 
-    // Fallback: Try to access the canvas directly
     const iframe = iframeRef.current;
     if (iframe) {
       try {
         const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
         const innerIframe = iframeDoc?.getElementById("emu") as HTMLIFrameElement | null;
         if (innerIframe) {
-          // Try to access inner iframe's canvas (may fail due to cross-origin)
           try {
             const innerDoc = innerIframe.contentDocument || innerIframe.contentWindow?.document;
             const canvas = innerDoc?.querySelector("canvas") as HTMLCanvasElement | null;
@@ -238,13 +196,15 @@ export function useInfiniteMacLogic({
       }
     }
 
-    // If all else fails, show helpful message
     console.log("Screenshot: Unable to capture. Screen data not available from emulator.");
-    alert(t("apps.infinite-mac.screenshotUnavailable", "Screenshot not available. Use your browser's screenshot tool (Cmd+Shift+4 on Mac, Win+Shift+S on Windows)."));
+    alert(
+      t(
+        "apps.infinite-mac.screenshotUnavailable",
+        "Screenshot not available. Use your browser's screenshot tool (Cmd+Shift+4 on Mac, Win+Shift+S on Windows)."
+      )
+    );
   }, [selectedPreset, t]);
 
-  // Only show emulator after iframe sends {"type": "emulator_loaded"} via postMessage
-  // Also sync the iframe window to the store for AI tool access
   const handleIframeLoad = useCallback(() => {
     const win = iframeRef.current?.contentWindow;
     if (win) {
@@ -252,7 +212,6 @@ export function useInfiniteMacLogic({
     }
   }, [setActiveIframe]);
 
-  // Clear active iframe from store when component unmounts
   useEffect(() => {
     return () => {
       setActiveIframe(null);
@@ -271,8 +230,6 @@ export function useInfiniteMacLogic({
         e.source === iframeWindow &&
         e.data?.type === "_infinite_mac_bridge";
 
-      // Bridge wrapper forwards as { type: '_infinite_mac_bridge', payload }; payload is
-      // the raw iframe message (emulator_loaded, emulator_screen, etc. per Infinite Mac embed API).
       const data = isBridgeMessage ? e.data.payload : undefined;
       if (!data || typeof data !== "object") return;
       switch (data.type) {
@@ -284,20 +241,19 @@ export function useInfiniteMacLogic({
           const h = data.height;
           if (typeof w === "number" && typeof h === "number") {
             resizeWindow({ width: w, height: h });
-            // Store screen data for screenshots (data is Uint8Array in RGBA format)
-            // After postMessage, data might be Uint8Array, ArrayBuffer, or array-like object
             const pixelData = data.data;
             if (pixelData) {
               try {
-                // Try to convert to Uint8Array regardless of the exact type
                 let uint8Data: Uint8Array;
                 if (pixelData.buffer instanceof ArrayBuffer) {
-                  // It's a TypedArray view
-                  uint8Data = new Uint8Array(pixelData.buffer, pixelData.byteOffset, pixelData.byteLength);
+                  uint8Data = new Uint8Array(
+                    pixelData.buffer,
+                    pixelData.byteOffset,
+                    pixelData.byteLength
+                  );
                 } else if (pixelData instanceof ArrayBuffer) {
                   uint8Data = new Uint8Array(pixelData);
                 } else {
-                  // Try direct conversion (works for arrays and array-like objects)
                   uint8Data = new Uint8Array(pixelData);
                 }
                 if (uint8Data.length > 0) {
@@ -307,7 +263,6 @@ export function useInfiniteMacLogic({
                     data: uint8Data,
                   };
                   lastScreenDataRef.current = screenData;
-                  // Sync to store for AI tool access
                   setLastScreenData(screenData);
                 }
               } catch {
@@ -323,7 +278,6 @@ export function useInfiniteMacLogic({
     return () => window.removeEventListener("message", handler);
   }, [resizeWindow, setLastScreenData, setIsEmulatorLoaded]);
 
-  // Listen for AI tool preset selection events
   useEffect(() => {
     const handleSelectPresetEvent = (e: Event) => {
       const customEvent = e as CustomEvent<{ preset: MacPreset }>;

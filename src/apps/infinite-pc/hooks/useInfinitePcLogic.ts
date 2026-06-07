@@ -1,9 +1,4 @@
-import { useCallback, useEffect, useReducer, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
-import { useThemeFlags } from "@/hooks/useThemeFlags";
-import { useThemeStore } from "@/stores/useThemeStore";
-import { useAppStore } from "@/stores/useAppStore";
+import { useCallback, useEffect, useReducer, useRef } from "react";
 import {
   useInfinitePcStore,
   type PcPreset,
@@ -14,6 +9,7 @@ import {
   DEFAULT_WINDOW_SIZE_WITH_TITLEBAR,
 } from "../windowConfig";
 import { useShallow } from "zustand/react/shallow";
+import { useEmulatorAppLogic } from "@/apps/shared-emulator/useEmulatorAppLogic";
 
 export type { PcPreset } from "@/stores/useInfinitePcStore";
 export { PC_PRESETS } from "@/stores/useInfinitePcStore";
@@ -27,27 +23,6 @@ function buildWrapperUrl(preset: PcPreset): string {
 
 export { DEFAULT_WINDOW_SIZE, DEFAULT_WINDOW_SIZE_WITH_TITLEBAR };
 
-// Titlebar height per theme so auto-resize fits content + titlebar
-const TITLEBAR_HEIGHT_BY_THEME: Record<string, number> = {
-  macosx: 24,
-  system7: 24,
-  xp: 30,
-  win98: 22,
-};
-
-interface UseInfinitePcLogicProps {
-  isWindowOpen: boolean;
-  instanceId?: string;
-}
-
-/**
- * Aggregated download progress reported by the v86 wrapper iframe.
- * Phases:
- *  - "starting": wrapper booted, no downloads reported yet
- *  - "downloading": at least one `download-progress` event seen
- *  - "booting": all known files at 100% but emulator not yet ready
- *  - "ready": emulator-loaded fired (overlay hidden by `isEmulatorLoaded`)
- */
 export interface PcLoadProgress {
   phase: "starting" | "downloading" | "booting";
   loaded: number;
@@ -110,12 +85,15 @@ function reducer(
   }
 }
 
+interface UseInfinitePcLogicProps {
+  isWindowOpen: boolean;
+  instanceId?: string;
+}
+
 export function useInfinitePcLogic({
   isWindowOpen: _isWindowOpen,
   instanceId,
 }: UseInfinitePcLogicProps) {
-  const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
-  const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
   const [state, dispatch] = useReducer(reducer, initialState);
   const { selectedPreset, isEmulatorLoaded, loadProgress, loadError } = state;
   const setLoadProgress = useCallback(
@@ -131,9 +109,9 @@ export function useInfinitePcLogic({
 
   const { setSelectedPreset: setSelectedPresetStore, setIsEmulatorLoaded: setIsEmulatorLoadedStore } =
     useInfinitePcStore(
-      useShallow((state) => ({
-        setSelectedPreset: state.setSelectedPreset,
-        setIsEmulatorLoaded: state.setIsEmulatorLoaded,
+      useShallow((store) => ({
+        setSelectedPreset: store.setSelectedPreset,
+        setIsEmulatorLoaded: store.setIsEmulatorLoaded,
       }))
     );
 
@@ -153,56 +131,36 @@ export function useInfinitePcLogic({
     [setIsEmulatorLoadedStore]
   );
 
-  const { t } = useTranslation();
-  const { currentTheme, isWindowsTheme: isXpTheme } = useThemeFlags();
-  const translatedHelpItems = useTranslatedHelpItems("pc", helpItems);
-  const embedUrl = selectedPreset ? buildWrapperUrl(selectedPreset) : null;
-
-  const resizeWindow = useCallback(
-    (size: { width: number; height: number }) => {
-      if (!instanceId) return;
-      const { instances, updateInstanceWindowState } = useAppStore.getState();
-      const theme = useThemeStore.getState().current;
-      const instance = instances[instanceId];
-      if (instance) {
-        const titlebarHeight = TITLEBAR_HEIGHT_BY_THEME[theme] ?? 24;
-        updateInstanceWindowState(
-          instanceId,
-          instance.position ?? { x: 100, y: 100 },
-          {
-            width: Math.round(size.width),
-            height: Math.round(size.height) + titlebarHeight,
-          }
-        );
-      }
-    },
-    [instanceId]
-  );
-
-  const handleSelectPreset = useCallback(
-    (preset: PcPreset) => {
-      setSelectedPreset(preset);
-      setIsEmulatorLoaded(false);
-      setLoadProgress(INITIAL_PROGRESS);
-      setLoadError(null);
-      resizeWindow(preset.screenSize);
-    },
-    [resizeWindow, setSelectedPreset, setIsEmulatorLoaded]
-  );
-
-  const handleBackToPresets = useCallback(() => {
-    setSelectedPreset(null);
-    setIsEmulatorLoaded(false);
+  const resetLoadState = useCallback(() => {
     setLoadProgress(INITIAL_PROGRESS);
     setLoadError(null);
-    resizeWindow(DEFAULT_WINDOW_SIZE);
-  }, [resizeWindow, setSelectedPreset, setIsEmulatorLoaded]);
+  }, [setLoadProgress, setLoadError]);
 
-  // The wrapper iframe is same-origin and we control its scripts, so the
-  // postMessage bridge is the source of truth for "ready". The native
-  // iframe.onload event fires after the wrapper HTML loads (~100ms),
-  // which is way before v86 has actually downloaded any OS image, so we
-  // intentionally don't flip `isEmulatorLoaded` here.
+  const {
+    t,
+    translatedHelpItems,
+    currentTheme,
+    isXpTheme,
+    isHelpDialogOpen,
+    setIsHelpDialogOpen,
+    isAboutDialogOpen,
+    setIsAboutDialogOpen,
+    handleSelectPreset,
+    handleBackToPresets,
+  } = useEmulatorAppLogic<PcPreset>({
+    instanceId,
+    defaultWindowSize: DEFAULT_WINDOW_SIZE,
+    helpAppId: "pc",
+    helpItems,
+    selectedPreset,
+    setSelectedPreset,
+    setIsEmulatorLoaded,
+    onSelectPreset: resetLoadState,
+    onBackToPresets: resetLoadState,
+  });
+
+  const embedUrl = selectedPreset ? buildWrapperUrl(selectedPreset) : null;
+
   const handleIframeLoad = useCallback(() => {}, []);
 
   const postEmulatorCommand = useCallback((command: "fullscreen" | "screenshot") => {
@@ -260,7 +218,6 @@ export function useInfinitePcLogic({
       );
   }, [instanceId, postEmulatorCommand, selectedPreset]);
 
-  // Reset store state on unmount so the next open starts at the preset grid
   useEffect(() => {
     return () => {
       setSelectedPresetStore(null);
@@ -289,8 +246,6 @@ export function useInfinitePcLogic({
         case "download_progress": {
           const loaded = Number(payload.loaded) || 0;
           const total = Number(payload.total) || 0;
-          // Once total > 0 and loaded === total we've finished all known
-          // downloads but the emulator isn't ready yet — call that "booting".
           const phase: PcLoadProgress["phase"] =
             total > 0 && loaded >= total ? "booting" : "downloading";
           setLoadProgress({
@@ -334,7 +289,7 @@ export function useInfinitePcLogic({
     };
     window.addEventListener("message", handler);
     return () => window.removeEventListener("message", handler);
-  }, [downloadScreenshot, setIsEmulatorLoaded, t]);
+  }, [downloadScreenshot, setIsEmulatorLoaded, t, setLoadProgress, setLoadError]);
 
   return {
     t,
