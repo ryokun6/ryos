@@ -8,10 +8,15 @@ import {
 import { APP_ANALYTICS, CHAT_ANALYTICS, getTextAnalytics, track } from "@/utils/analytics";
 import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
 import i18n from "@/lib/i18n";
-import { getApiUrl } from "@/utils/platform";
-import { abortableFetch } from "@/utils/abortableFetch";
 import { ApiRequestError } from "@/api/core";
 import { USERNAME_REGEX, PASSWORD_MIN_LENGTH } from "@/shared/validation";
+import {
+  checkUserPassword,
+  logoutUser,
+  registerUser,
+  restoreAuthSession,
+  setUserPassword,
+} from "@/api/auth";
 import {
   type CreateRoomPayload,
   createRoom as createRoomApi,
@@ -344,24 +349,9 @@ export const useChatsStore = create<ChatsStoreState>()(
           }
 
           try {
-            const response = await abortableFetch(
-              "/api/auth/password/check",
-              {
-                method: "GET",
-                timeout: 15000,
-                throwOnHttpError: false,
-                retry: { maxAttempts: 1, initialDelayMs: 250 },
-              }
-            );
-
-            if (response.ok) {
-              const data = await response.json();
-              set({ hasPassword: data.hasPassword });
-              return { ok: true };
-            } else {
-              set({ hasPassword: null });
-              return { ok: false, error: "Failed to check password status" };
-            }
+            const data = await checkUserPassword();
+            set({ hasPassword: data.hasPassword });
+            return { ok: true };
           } catch (error) {
             console.error(
               "[ChatsStore] Error checking password status:",
@@ -389,34 +379,20 @@ export const useChatsStore = create<ChatsStoreState>()(
               payload.currentPassword = currentPassword;
             }
 
-            const response = await abortableFetch(
-              getApiUrl("/api/auth/password/set"),
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify(payload),
-                timeout: 15000,
-                throwOnHttpError: false,
-                retry: { maxAttempts: 1, initialDelayMs: 250 },
-              }
-            );
-
-            if (!response.ok) {
-              const data = await response.json();
-              return {
-                ok: false,
-                error: data.error || "Failed to set password",
-              };
-            }
+            await setUserPassword(payload);
 
             // Update local state to reflect password has been set
             set({ hasPassword: true });
             return { ok: true };
           } catch (error) {
             console.error("[ChatsStore] Error setting password:", error);
-            return { ok: false, error: "Network error while setting password" };
+            return {
+              ok: false,
+              error:
+                error instanceof ApiRequestError
+                  ? error.message
+                  : "Network error while setting password",
+            };
           }
         },
         setRooms: (newRooms) => {
@@ -663,13 +639,7 @@ export const useChatsStore = create<ChatsStoreState>()(
 
           if (currentUsername) {
             try {
-              await abortableFetch(getApiUrl("/api/auth/logout"), {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                timeout: 15000,
-                throwOnHttpError: false,
-                retry: { maxAttempts: 1, initialDelayMs: 250 },
-              });
+              await logoutUser();
             } catch (err) {
               console.warn(
                 "[ChatsStore] Failed to notify server during logout:",
@@ -1191,29 +1161,10 @@ export const useChatsStore = create<ChatsStoreState>()(
           }
 
           try {
-            const response = await abortableFetch(
-              getApiUrl("/api/auth/register"),
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ username: trimmedUsername, password }),
-                timeout: 15000,
-                throwOnHttpError: false,
-                retry: { maxAttempts: 1, initialDelayMs: 250 },
-              }
-            );
-
-            if (!response.ok) {
-              const errorData = await response.json().catch(() => ({
-                error: `HTTP error! status: ${response.status}`,
-              }));
-              return {
-                ok: false,
-                error: errorData.error || "Failed to create user",
-              };
-            }
-
-            const data = await response.json();
+            const data = await registerUser({
+              username: trimmedUsername,
+              password,
+            });
             if (data.user) {
               set({ username: data.user.username, isAuthenticated: true });
 
@@ -1229,7 +1180,13 @@ export const useChatsStore = create<ChatsStoreState>()(
             return { ok: false, error: "Invalid response format" };
           } catch (error) {
             console.error("[ChatsStore] Error creating user:", error);
-            return { ok: false, error: "Network error. Please try again." };
+            return {
+              ok: false,
+              error:
+                error instanceof ApiRequestError
+                  ? error.message
+                  : "Network error. Please try again.",
+            };
           }
         },
         incrementUnread: (roomId) => {
@@ -1499,22 +1456,16 @@ async function restoreSessionFromCookie(
   legacyToken?: string | null
 ) {
   try {
-    const headers: Record<string, string> = {};
     if (legacyToken) {
       console.log(
         "[ChatsStore] Migrating legacy token to httpOnly cookie for",
         expectedUsername
       );
-      headers["Authorization"] = `Bearer ${legacyToken}`;
-      headers["X-Username"] = expectedUsername;
     }
 
-    const response = await abortableFetch("/api/auth/session", {
-      method: "GET",
-      headers,
-      timeout: 10000,
-      throwOnHttpError: false,
-      retry: { maxAttempts: 2, initialDelayMs: 500 },
+    const response = await restoreAuthSession({
+      username: expectedUsername,
+      legacyToken,
     });
 
     if (!response.ok) {

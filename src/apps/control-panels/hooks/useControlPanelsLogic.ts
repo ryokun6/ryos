@@ -40,6 +40,7 @@ import {
 } from "@/utils/cloudSyncShared";
 import { useShallow } from "zustand/react/shallow";
 import { useTelegramLink } from "@/hooks/useTelegramLink";
+import { logoutAllDevices } from "@/api/auth";
 import {
   downloadAndApplyLogicalCloudSyncDomain,
   uploadLogicalCloudSyncDomain,
@@ -486,19 +487,8 @@ export function useControlPanelsLogic({
         return;
       }
 
-      const response = await abortableFetch(getApiUrl("/api/auth/logout-all"), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        timeout: 15000,
-        throwOnHttpError: false,
-        retry: { maxAttempts: 1, initialDelayMs: 250 },
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
+      try {
+        const data = await logoutAllDevices();
         toast.success("Logged Out", {
           description: data.message || "Logged out from all devices",
         });
@@ -507,9 +497,12 @@ export function useControlPanelsLogic({
         confirmLogout();
 
         // No full page reload needed – UI will update via store reset
-      } else {
+      } catch (error) {
         toast.error("Logout Failed", {
-          description: data.error || "Failed to logout from all devices",
+          description:
+            error instanceof Error
+              ? error.message
+              : "Failed to logout from all devices",
         });
       }
     } catch (error) {

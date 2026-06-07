@@ -1,4 +1,4 @@
-import { apiRequest } from "@/api/core";
+import { apiRequest, apiRequestRaw } from "@/api/core";
 
 export interface LoginResponse {
   username: string;
@@ -67,6 +67,26 @@ export async function logoutUser(): Promise<{ success: boolean }> {
   });
 }
 
+export async function logoutAllDevices(): Promise<{
+  success: boolean;
+  message?: string;
+}> {
+  return apiRequest<{ success: boolean; message?: string }>({
+    path: "/api/auth/logout-all",
+    method: "POST",
+  });
+}
+
+export async function checkUserPassword(): Promise<{
+  hasPassword: boolean;
+  username: string;
+}> {
+  return apiRequest<{ hasPassword: boolean; username: string }>({
+    path: "/api/auth/password/check",
+    method: "GET",
+  });
+}
+
 export interface SetPasswordRequest {
   /** New password to store. */
   password: string;
@@ -84,5 +104,24 @@ export async function setUserPassword(
     path: "/api/auth/password/set",
     method: "POST",
     body: params,
+  });
+}
+
+export async function restoreAuthSession(params: {
+  username: string;
+  legacyToken?: string | null;
+}): Promise<Response> {
+  const headers: Record<string, string> = {};
+  if (params.legacyToken) {
+    headers.Authorization = `Bearer ${params.legacyToken}`;
+    headers["X-Username"] = params.username;
+  }
+
+  return apiRequestRaw({
+    path: "/api/auth/session",
+    method: "GET",
+    headers,
+    timeout: 10000,
+    retry: { maxAttempts: 2, initialDelayMs: 500 },
   });
 }

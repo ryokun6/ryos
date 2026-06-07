@@ -21,7 +21,7 @@ import { useFilesStore } from "@/stores/useFilesStore";
 import { TERMINAL_ANALYTICS } from "@/utils/analytics";
 import i18n from "@/lib/i18n";
 import { CommandHistory, CommandContext, ToolInvocationData } from "../types";
-import { abortableFetch } from "@/utils/abortableFetch";
+import { loginWithPassword } from "@/api/auth";
 
 // Maximum number of rendered command entries to keep in memory
 const MAX_RENDERED_HISTORY = 200;
@@ -865,27 +865,19 @@ export const useTerminalLogic = ({
 
               // If password provided, attempt authentication first
               if (passwordArg) {
-                const authResp = await abortableFetch("/api/auth/login", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
+                try {
+                  const data = await loginWithPassword({
                     username: targetUsername,
                     password: passwordArg,
-                  }),
-                  timeout: 15000,
-                  throwOnHttpError: false,
-                  retry: { maxAttempts: 1, initialDelayMs: 250 },
-                });
-
-                if (authResp.ok) {
-                  const data = await authResp.json();
+                  });
                   const uname = data.username || targetUsername;
                   store.setUsername(uname);
                   store.setAuthenticated(true);
                   this.updateOutput(`logged in as ${uname}`);
                   return;
+                } catch {
+                  // fallthrough if auth failed -> will attempt create
                 }
-                // fallthrough if auth failed -> will attempt create
               }
 
               // Attempt to create user; password is required by server
