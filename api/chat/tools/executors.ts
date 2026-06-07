@@ -48,8 +48,15 @@ import type {
 } from "./types.js";
 import { stateKey, writeRedisSyncDomainFromServerTool } from "../../sync/_state.js";
 import { getAppPublicOrigin } from "../../_utils/runtime-config.js";
-import { decodeHtmlEntitiesOnce } from "../../_utils/html-entities.js";
 import { readSongsState, writeSongsState } from "../../_utils/song-library-state.js";
+import {
+  WEB_FETCH_MAX_CONTENT_LENGTH,
+  WEB_FETCH_TIMEOUT_MS,
+  WEB_FETCH_BROWSER_HEADERS,
+  stripHtmlToText,
+  extractMetadata,
+} from "./helpers/web-fetch.js";
+import { filterAndLimitSongs } from "./helpers/song-scoring.js";
 import {
   getSong,
   listSongs as listCachedSongs,
@@ -80,6 +87,11 @@ import {
   serializeContactForTool,
   writeContactsState,
 } from "../../_utils/contacts.js";
+import {
+  safeFetchWithRedirects,
+  validatePublicUrl,
+  SsrfBlockedError,
+} from "../../_utils/_ssrf.js";
 
 /**
  * Execute generateHtml tool
@@ -173,166 +185,6 @@ export async function executeSearchSongs(
 // ============================================================================
 // Web Fetch Tool Executor
 // ============================================================================
-
-import {
-  safeFetchWithRedirects,
-  validatePublicUrl,
-  SsrfBlockedError,
-} from "../../_utils/_ssrf.js";
-
-const WEB_FETCH_MAX_CONTENT_LENGTH = 24_000;
-const WEB_FETCH_TIMEOUT_MS = 15_000;
-
-const WEB_FETCH_BROWSER_HEADERS: Record<string, string> = {
-  "User-Agent":
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_6_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15",
-  Accept:
-    "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-  "Accept-Language": "en-US,en;q=0.9",
-  "Sec-Fetch-Dest": "document",
-  "Sec-Fetch-Mode": "navigate",
-  "Sec-Fetch-Site": "none",
-  "Upgrade-Insecure-Requests": "1",
-};
-
-const DANGEROUS_URL_SCHEMES = /^(?:javascript|data|vbscript|blob):/i;
-
-/**
- * Repeatedly strip tag patterns until no more matches remain,
- * preventing nested-tag bypass (e.g. `<scr<script>ipt>`).
- */
-function stripTagsLoop(html: string, pattern: RegExp, maxPasses = 10): string {
-  let result = html;
-  for (let i = 0; i < maxPasses; i++) {
-    const next = result.replace(pattern, "");
-    if (next === result) break;
-    result = next;
-  }
-  return result;
-}
-
-function stripHtmlToText(html: string, selector?: string): string {
-  let working = html;
-
-  if (selector) {
-    const selectorPatterns = buildSelectorPatterns(selector);
-    const extracted = extractByPatterns(working, selectorPatterns);
-    if (extracted) {
-      working = extracted;
-    }
-  } else {
-    working = extractMainContent(working);
-  }
-
-  // Strip dangerous/non-content tags in a loop to handle nested obfuscation.
-  // Closing-tag regex uses `[^>]*>` to match malformed variants like
-  // `</script \t\n bar>` where extra chars appear before `>`.
-  working = stripTagsLoop(working, /<script\b[\s\S]*?<\/script[^>]*>/gi);
-  working = stripTagsLoop(working, /<style\b[\s\S]*?<\/style[^>]*>/gi);
-  working = stripTagsLoop(working, /<noscript\b[\s\S]*?<\/noscript[^>]*>/gi);
-  working = stripTagsLoop(working, /<nav\b[\s\S]*?<\/nav[^>]*>/gi);
-  working = stripTagsLoop(working, /<footer\b[\s\S]*?<\/footer[^>]*>/gi);
-  working = stripTagsLoop(working, /<header\b[\s\S]*?<\/header[^>]*>/gi);
-  working = stripTagsLoop(working, /<!--[\s\S]*?-->/g);
-  working = stripTagsLoop(working, /<svg\b[\s\S]*?<\/svg[^>]*>/gi);
-
-  working = working.replace(/<(h[1-6])[^>]*>([\s\S]*?)<\/\1>/gi, (_m, tag, inner) => {
-    const level = parseInt(tag.charAt(1), 10);
-    return "\n" + "#".repeat(level) + " " + inner.trim() + "\n";
-  });
-
-  working = working.replace(/<li[^>]*>/gi, "\n- ");
-  working = working.replace(/<\/li>/gi, "");
-  working = working.replace(/<br\s*\/?>/gi, "\n");
-  working = working.replace(/<\/p>/gi, "\n\n");
-  working = working.replace(/<\/div>/gi, "\n");
-  working = working.replace(/<\/tr>/gi, "\n");
-  working = working.replace(/<td[^>]*>/gi, "\t");
-
-  working = working.replace(/<a[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi, (_m, href, text) => {
-    const linkText = stripTagsLoop(text, /<[^>]+>/g).trim();
-    if (!linkText) return "";
-    if (href.startsWith("#") || DANGEROUS_URL_SCHEMES.test(href)) return linkText;
-    return `${linkText} (${href})`;
-  });
-
-  // Loop-strip remaining tags to handle any nested fragments
-  working = stripTagsLoop(working, /<[^>]+>/g);
-
-  working = decodeHtmlEntitiesOnce(working);
-
-  working = working.replace(/[ \t]+/g, " ");
-  working = working.replace(/\n[ \t]+/g, "\n");
-  working = working.replace(/\n{3,}/g, "\n\n");
-  working = working.trim();
-
-  return working;
-}
-
-function buildSelectorPatterns(selector: string): RegExp[] {
-  const patterns: RegExp[] = [];
-
-  if (selector.startsWith("#")) {
-    const id = selector.slice(1).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    patterns.push(new RegExp(`<[a-z][a-z0-9]*[^>]*\\bid=["']${id}["'][^>]*>[\\s\\S]*?(?=<\\/[a-z])`, "i"));
-  } else if (selector.startsWith(".")) {
-    const cls = selector.slice(1).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    patterns.push(new RegExp(`<[a-z][a-z0-9]*[^>]*\\bclass=["'][^"']*\\b${cls}\\b[^"']*["'][^>]*>[\\s\\S]*?(?=<\\/[a-z])`, "i"));
-  } else {
-    const tag = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    patterns.push(new RegExp(`<${tag}[^>]*>[\\s\\S]*?<\\/${tag}>`, "gi"));
-  }
-
-  return patterns;
-}
-
-function extractByPatterns(html: string, patterns: RegExp[]): string | null {
-  for (const pattern of patterns) {
-    const match = html.match(pattern);
-    if (match) return match[0];
-  }
-  return null;
-}
-
-function extractMainContent(html: string): string {
-  const mainPatterns = [
-    /<main[^>]*>([\s\S]*?)<\/main>/i,
-    /<article[^>]*>([\s\S]*?)<\/article>/i,
-    /<div[^>]*(?:id|class)=["'][^"']*(?:content|article|post|entry|main-body|main_content|page-content|post-content)[^"']*["'][^>]*>([\s\S]*?)<\/div>/i,
-    /<div[^>]*role=["']main["'][^>]*>([\s\S]*?)<\/div>/i,
-  ];
-
-  for (const pattern of mainPatterns) {
-    const match = html.match(pattern);
-    if (match) {
-      const content = match[1] || match[0];
-      if (content.length > 200) return content;
-    }
-  }
-
-  return html;
-}
-
-function extractMetadata(html: string): {
-  title?: string;
-  description?: string;
-  siteName?: string;
-} {
-  const result: { title?: string; description?: string; siteName?: string } = {};
-
-  const ogTitle = html.match(/<meta[^>]*property=["']og:title["'][^>]*content=["']([^"']+)["'][^>]*>/i);
-  const titleTag = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-  result.title = ogTitle?.[1]?.trim() || titleTag?.[1]?.trim().replace(/\s+/g, " ");
-
-  const ogDesc = html.match(/<meta[^>]*property=["']og:description["'][^>]*content=["']([^"']+)["'][^>]*>/i);
-  const metaDesc = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["'][^>]*>/i);
-  result.description = ogDesc?.[1]?.trim() || metaDesc?.[1]?.trim();
-
-  const ogSite = html.match(/<meta[^>]*property=["']og:site_name["'][^>]*content=["']([^"']+)["'][^>]*>/i);
-  result.siteName = ogSite?.[1]?.trim();
-
-  return result;
-}
 
 export async function executeWebFetch(
   input: WebFetchInput,
@@ -607,89 +459,6 @@ function combineSongRecords(
     source: "combined",
     inUserLibrary: true,
   };
-}
-
-function normalizeSongQuery(value: string): string {
-  return value.trim().toLowerCase().replace(/\s+/g, " ");
-}
-
-function scoreSongMatch(record: SongLibraryToolRecord, query: string): number {
-  const normalizedQuery = normalizeSongQuery(query);
-  if (!normalizedQuery) {
-    return 1;
-  }
-
-  const fields = [
-    record.id,
-    record.title,
-    record.artist,
-    record.album,
-    record.createdBy,
-  ]
-    .filter((value): value is string => typeof value === "string" && value.length > 0)
-    .map((value) => normalizeSongQuery(value));
-
-  let score = 0;
-
-  if (record.id.toLowerCase() === normalizedQuery) {
-    score += 2000;
-  }
-
-  for (const field of fields) {
-    if (field === normalizedQuery) {
-      score += 1200;
-    } else if (field.startsWith(normalizedQuery)) {
-      score += 700;
-    } else if (field.includes(normalizedQuery)) {
-      score += 350;
-    }
-  }
-
-  const queryTokens = normalizedQuery.split(" ").filter(Boolean);
-  if (queryTokens.length > 1) {
-    const combined = fields.join(" ");
-    const matchingTokens = queryTokens.filter((token) => combined.includes(token)).length;
-    score += matchingTokens * 120;
-  }
-
-  if (score <= 0) {
-    return 0;
-  }
-
-  if (record.source === "combined") {
-    score += 80;
-  } else if (record.inUserLibrary) {
-    score += 40;
-  }
-
-  return score;
-}
-
-function filterAndLimitSongs(
-  songs: SongLibraryToolRecord[],
-  query: string | undefined,
-  limit: number
-): SongLibraryToolRecord[] {
-  if (!query) {
-    return songs.slice(0, limit);
-  }
-
-  return songs
-    .map((song, index) => ({ song, score: scoreSongMatch(song, query), index }))
-    .filter((entry) => entry.score > 0)
-    .sort((a, b) => {
-      if (b.score !== a.score) {
-        return b.score - a.score;
-      }
-      const createdAtA = a.song.createdAt ?? 0;
-      const createdAtB = b.song.createdAt ?? 0;
-      if (createdAtB !== createdAtA) {
-        return createdAtB - createdAtA;
-      }
-      return a.index - b.index;
-    })
-    .slice(0, limit)
-    .map((entry) => entry.song);
 }
 
 function resolveSongScope(

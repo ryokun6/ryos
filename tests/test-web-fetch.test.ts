@@ -1,112 +1,18 @@
 /**
  * Unit tests for the webFetch tool's HTML-to-text extraction.
  *
- * These tests exercise the pure HTML→text logic that mirrors the executor's
- * internal helpers. No server or network access needed.
+ * These tests exercise the pure HTML→text helpers shared with the executor.
+ * No server or network access needed.
  */
 
 import { describe, test, expect } from "bun:test";
 import { decodeHtmlEntitiesOnce } from "../api/_utils/html-entities";
-
-// ---------------------------------------------------------------------------
-// Inline copy of the stripping helpers (kept in sync with executors.ts)
-// ---------------------------------------------------------------------------
-
-const DANGEROUS_URL_SCHEMES = /^(?:javascript|data|vbscript|blob):/i;
-
-function stripTagsLoop(html: string, pattern: RegExp, maxPasses = 10): string {
-  let result = html;
-  for (let i = 0; i < maxPasses; i++) {
-    const next = result.replace(pattern, "");
-    if (next === result) break;
-    result = next;
-  }
-  return result;
-}
-
-function extractMainContent(html: string): string {
-  const mainPatterns = [
-    /<main[^>]*>([\s\S]*?)<\/main>/i,
-    /<article[^>]*>([\s\S]*?)<\/article>/i,
-    /<div[^>]*(?:id|class)=["'][^"']*(?:content|article|post|entry|main-body|main_content|page-content|post-content)[^"']*["'][^>]*>([\s\S]*?)<\/div>/i,
-    /<div[^>]*role=["']main["'][^>]*>([\s\S]*?)<\/div>/i,
-  ];
-
-  for (const pattern of mainPatterns) {
-    const match = html.match(pattern);
-    if (match) {
-      const content = match[1] || match[0];
-      if (content.length > 200) return content;
-    }
-  }
-
-  return html;
-}
-
-function stripHtmlToText(html: string, selector?: string): string {
-  let working = html;
-
-  if (!selector) {
-    working = extractMainContent(working);
-  }
-
-  working = stripTagsLoop(working, /<script\b[\s\S]*?<\/script[^>]*>/gi);
-  working = stripTagsLoop(working, /<style\b[\s\S]*?<\/style[^>]*>/gi);
-  working = stripTagsLoop(working, /<noscript\b[\s\S]*?<\/noscript[^>]*>/gi);
-  working = stripTagsLoop(working, /<nav\b[\s\S]*?<\/nav[^>]*>/gi);
-  working = stripTagsLoop(working, /<footer\b[\s\S]*?<\/footer[^>]*>/gi);
-  working = stripTagsLoop(working, /<header\b[\s\S]*?<\/header[^>]*>/gi);
-  working = stripTagsLoop(working, /<!--[\s\S]*?-->/g);
-  working = stripTagsLoop(working, /<svg\b[\s\S]*?<\/svg[^>]*>/gi);
-
-  working = working.replace(/<(h[1-6])[^>]*>([\s\S]*?)<\/\1>/gi, (_m, tag, inner) => {
-    const level = parseInt(tag.charAt(1), 10);
-    return "\n" + "#".repeat(level) + " " + inner.trim() + "\n";
-  });
-
-  working = working.replace(/<li[^>]*>/gi, "\n- ");
-  working = working.replace(/<\/li>/gi, "");
-  working = working.replace(/<br\s*\/?>/gi, "\n");
-  working = working.replace(/<\/p>/gi, "\n\n");
-  working = working.replace(/<\/div>/gi, "\n");
-  working = working.replace(/<\/tr>/gi, "\n");
-  working = working.replace(/<td[^>]*>/gi, "\t");
-
-  working = working.replace(/<a[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi, (_m, href, text) => {
-    const linkText = stripTagsLoop(text, /<[^>]+>/g).trim();
-    if (!linkText) return "";
-    if (href.startsWith("#") || DANGEROUS_URL_SCHEMES.test(href)) return linkText;
-    return `${linkText} (${href})`;
-  });
-
-  working = stripTagsLoop(working, /<[^>]+>/g);
-
-  working = decodeHtmlEntitiesOnce(working);
-
-  working = working.replace(/[ \t]+/g, " ");
-  working = working.replace(/\n[ \t]+/g, "\n");
-  working = working.replace(/\n{3,}/g, "\n\n");
-  working = working.trim();
-
-  return working;
-}
-
-function extractMetadata(html: string) {
-  const result: { title?: string; description?: string; siteName?: string } = {};
-
-  const ogTitle = html.match(/<meta[^>]*property=["']og:title["'][^>]*content=["']([^"']+)["'][^>]*>/i);
-  const titleTag = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-  result.title = ogTitle?.[1]?.trim() || titleTag?.[1]?.trim().replace(/\s+/g, " ");
-
-  const ogDesc = html.match(/<meta[^>]*property=["']og:description["'][^>]*content=["']([^"']+)["'][^>]*>/i);
-  const metaDesc = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["'][^>]*>/i);
-  result.description = ogDesc?.[1]?.trim() || metaDesc?.[1]?.trim();
-
-  const ogSite = html.match(/<meta[^>]*property=["']og:site_name["'][^>]*content=["']([^"']+)["'][^>]*>/i);
-  result.siteName = ogSite?.[1]?.trim();
-
-  return result;
-}
+import {
+  DANGEROUS_URL_SCHEMES,
+  stripTagsLoop,
+  stripHtmlToText,
+  extractMetadata,
+} from "../api/chat/tools/helpers/web-fetch";
 
 // ---------------------------------------------------------------------------
 // Tests
