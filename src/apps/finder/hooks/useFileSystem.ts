@@ -31,31 +31,21 @@ import {
 } from "@/stores/useCloudSyncStore";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { FINDER_ANALYTICS, track } from "@/utils/analytics";
+import {
+  arePathArraysEqual,
+  DEFAULT_FILE_PATHS,
+  type DocumentContent,
+  getFileTypeFromExtension,
+  getParentPath,
+  joinPath,
+  normalizePath,
+  resolveOpenWithTarget,
+  type VfsDisplayFileItem,
+} from "@/lib/vfs";
 
-// Interface for content stored in IndexedDB
-export interface DocumentContent {
-  name: string; // Used as the key in IndexedDB
-  content: string | Blob;
-  contentUrl?: string; // URL for Blob content (managed temporarily)
-}
+export type { DocumentContent } from "@/lib/vfs";
 
-// Type for items displayed in the UI (might include contentUrl)
-interface ExtendedDisplayFileItem extends Omit<DisplayFileItem, "content"> {
-  content?: string | Blob; // Keep content for passing to apps
-  contentUrl?: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  data?: any; // Add optional data field for virtual files
-  originalPath?: string; // For trash items
-  deletedAt?: number; // For trash items
-  status?: "active" | "trashed"; // Include status for potential UI differences
-}
-
-const getParentPath = (path: string): string => {
-  if (path === "/") return "/";
-  const parts = path.split("/").filter(Boolean);
-  if (parts.length <= 1) return "/";
-  return `/${parts.slice(0, -1).join("/")}`;
-};
+type ExtendedDisplayFileItem = VfsDisplayFileItem;
 
 const getFinderAnalyticsPathInfo = (path: string, type?: string) => {
   const parts = path.split("/").filter(Boolean);
@@ -88,16 +78,6 @@ const trackFinderFileOperation = (
     ...extra,
   });
 };
-
-const arePathArraysEqual = (first: readonly string[], second: readonly string[]) =>
-  first.length === second.length &&
-  first.every((path, index) => path === second[index]);
-const DEFAULT_FILE_PATHS = new Set([
-  "/Documents/README.md",
-  "/Documents/Quick Tips.md",
-  "/Images/steve-jobs.png",
-  "/Images/susan-kare.png",
-]);
 
 const getCloudSyncDomainForContentStore = (
   storeName: string
@@ -281,35 +261,6 @@ export const dbOperations = {
 };
 
 // --- Helper Functions --- //
-
-// Get specific type from extension
-function getFileTypeFromExtension(fileName: string): string {
-  const ext = fileName.split(".").pop()?.toLowerCase() || "unknown";
-  switch (ext) {
-    case "app":
-      return "application";
-    case "md":
-      return "markdown";
-    case "txt":
-      return "text";
-    case "png":
-      return ext;
-    case "jpg":
-    case "jpeg":
-      return "jpg"; // Standardize to jpg for jpeg/jpg files
-    case "gif":
-      return ext;
-    case "webp":
-      return ext;
-    case "bmp":
-      return ext;
-    case "html":
-    case "htm":
-      return "html";
-    default:
-      return "unknown";
-  }
-}
 
 // Get icon based on FileSystemItem metadata
 function getFileIcon(item: FileSystemItem): string {
@@ -676,7 +627,7 @@ export function useFileSystem(
   // Define navigateToPath first
   const navigateToPath = useCallback(
     (path: string) => {
-      const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+      const normalizedPath = normalizePath(path);
       setSelectedFile(undefined);
       syncSelectionState(null, [], null);
       if (normalizedPath !== currentPath) {
@@ -1231,105 +1182,116 @@ export function useFileSystem(
           );
         }
 
-        // 3. Launch Appropriate App
+        // 3. Launch Appropriate App (routing table in lib/vfs/open-with)
         console.log(`[useFileSystem] Preparing initialData for ${file.path}:`, {
           contentAsString,
           contentUrlToUse,
         });
-        if (file.path.startsWith("/Applications/") && file.appId) {
-          launchApp(file.appId as AppId, { launchOrigin });
-        } else if (storeName === STORES.DOCUMENTS) {
-          // Check if this file is already open in a TextEdit instance
-          const textEditStore = useTextEditStore.getState();
-          const existingInstanceId = textEditStore.getInstanceIdByPath(
-            file.path
-          );
+        const openTarget = resolveOpenWithTarget({
+          file,
+          storeName,
+          contentAsString,
+          contentToUse,
+        });
 
-          if (existingInstanceId) {
-            // Verify the instance actually exists in AppStore
-            const appStore = useAppStore.getState();
-            const instanceExists = !!appStore.instances[existingInstanceId];
-
-            if (instanceExists) {
-              // File is already open - bring that window to foreground
-              console.log(
-                `[useFileSystem] File already open in TextEdit instance ${existingInstanceId}, bringing to foreground`
-              );
-              appStore.bringInstanceToForeground(existingInstanceId);
-            } else {
-              // Stale instance reference - clean it up and open new instance
-              console.log(
-                `[useFileSystem] Stale TextEdit instance ${existingInstanceId} for ${file.path}, removing and opening new instance`
-              );
-              textEditStore.removeInstance(existingInstanceId);
-              launchApp("textedit", {
-                initialData: { path: file.path, content: contentAsString ?? "" },
-                launchOrigin,
-              });
-            }
-          } else {
-            // File not open - launch new TextEdit instance
-            launchApp("textedit", {
-              initialData: { path: file.path, content: contentAsString ?? "" },
-              launchOrigin,
-            });
-          }
-        } else if (storeName === STORES.IMAGES) {
-          // Pass the Blob object itself to Paint via initialData
-          launchApp("paint", {
-            initialData: { path: file.path, content: contentToUse },
-            launchOrigin,
-          }); // Pass contentToUse (Blob)
-        } else if (
-          storeName === STORES.APPLETS &&
-          (file.path.endsWith(".app") || file.path.endsWith(".html"))
-        ) {
-          // Open HTML applets with applet-viewer
-          console.log("[useFileSystem] Opening applet:", {
-            path: file.path,
-            contentLength: contentAsString?.length || 0,
-            hasContent: !!contentAsString,
-          });
-
-          // Launch applet viewer - duplicate detection is handled by useLaunchApp
-          try {
-            launchApp("applet-viewer", {
-              initialData: {
-                path: file.path,
-                content: contentAsString ?? "",
-              },
-              launchOrigin,
-            });
-          } catch (e) {
-            console.warn(
-              "[useFileSystem] Failed opening applet:",
-              e
-            );
-          }
-        } else if (file.appId === "ipod" && file.data?.songId) {
-          // iPod uses song ID directly
-          setIpodSongId(file.data.songId);
-          setIpodPlaying(true);
-          launchApp("ipod", { launchOrigin });
-        } else if (file.appId === "videos" && file.data?.videoId) {
-          // Videos uses video ID directly
-          setVideoIndex(file.data.videoId);
-          setVideoPlaying(true);
-          launchApp("videos", { launchOrigin });
-        } else if (file.type === "site-link" && file.data?.url) {
-          // Pass url and year via initialData instead of using IE store directly
-          launchApp("internet-explorer", {
-            initialData: {
-              url: file.data.url,
-              year: file.data.year || "current",
-            },
-            launchOrigin,
-          });
-          // internetExplorerStore.setPendingNavigation(file.data.url, file.data.year || "current");
-        } else {
+        if (!openTarget) {
           console.warn(
             `[useFileSystem] No handler defined for opening file type: ${file.type} at path: ${file.path}`
           );
+          return;
+        }
+
+        switch (openTarget.kind) {
+          case "launch-app":
+            launchApp(openTarget.appId, { launchOrigin });
+            break;
+          case "textedit": {
+            const textEditStore = useTextEditStore.getState();
+            const existingInstanceId = textEditStore.getInstanceIdByPath(
+              openTarget.path
+            );
+
+            if (existingInstanceId) {
+              const appStore = useAppStore.getState();
+              const instanceExists = !!appStore.instances[existingInstanceId];
+
+              if (instanceExists) {
+                console.log(
+                  `[useFileSystem] File already open in TextEdit instance ${existingInstanceId}, bringing to foreground`
+                );
+                appStore.bringInstanceToForeground(existingInstanceId);
+              } else {
+                console.log(
+                  `[useFileSystem] Stale TextEdit instance ${existingInstanceId} for ${openTarget.path}, removing and opening new instance`
+                );
+                textEditStore.removeInstance(existingInstanceId);
+                launchApp("textedit", {
+                  initialData: {
+                    path: openTarget.path,
+                    content: openTarget.content,
+                  },
+                  launchOrigin,
+                });
+              }
+            } else {
+              launchApp("textedit", {
+                initialData: {
+                  path: openTarget.path,
+                  content: openTarget.content,
+                },
+                launchOrigin,
+              });
+            }
+            break;
+          }
+          case "paint":
+            launchApp("paint", {
+              initialData: {
+                path: openTarget.path,
+                content: openTarget.content,
+              },
+              launchOrigin,
+            });
+            break;
+          case "applet-viewer":
+            console.log("[useFileSystem] Opening applet:", {
+              path: openTarget.path,
+              contentLength: openTarget.content.length,
+              hasContent: !!openTarget.content,
+            });
+            try {
+              launchApp("applet-viewer", {
+                initialData: {
+                  path: openTarget.path,
+                  content: openTarget.content,
+                },
+                launchOrigin,
+              });
+            } catch (e) {
+              console.warn("[useFileSystem] Failed opening applet:", e);
+            }
+            break;
+          case "ipod":
+            setIpodSongId(openTarget.songId);
+            setIpodPlaying(true);
+            launchApp("ipod", { launchOrigin });
+            break;
+          case "videos":
+            setVideoIndex(openTarget.videoId);
+            setVideoPlaying(true);
+            launchApp("videos", { launchOrigin });
+            break;
+          case "internet-explorer":
+            launchApp("internet-explorer", {
+              initialData: {
+                url: openTarget.url,
+                year: openTarget.year,
+              },
+              launchOrigin,
+            });
+            break;
+          default:
+            break;
         }
       } catch (err) {
         console.error(`[useFileSystem] Error opening file ${file.path}:`, err);
@@ -1727,7 +1689,7 @@ export function useFileSystem(
       }
 
       const parentPath = getParentPath(oldPath);
-      const newPath = `${parentPath === "/" ? "" : parentPath}/${newName}`;
+      const newPath = joinPath(parentPath, newName);
 
       if (getFileItem(newPath)) {
         console.error("Error: New path already exists in FileStore");
