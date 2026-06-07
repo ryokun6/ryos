@@ -13,8 +13,6 @@ import {
   useInternetExplorerStore,
   DEFAULT_FAVORITES,
   ErrorResponse,
-  LanguageOption,
-  LocationOption,
   Favorite,
   isDirectPassthrough,
 } from "@/stores/useInternetExplorerStore";
@@ -28,124 +26,26 @@ import { IE_ANALYTICS, normalizeUrlForAnalytics, track } from "@/utils/analytics
 import { useOffline } from "@/hooks/useOffline";
 import { checkOfflineAndShowError } from "@/utils/offline";
 import { useTranslation } from "react-i18next";
-import i18n from "@/lib/i18n";
 import { toast } from "sonner";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useInternetExplorerStoreShallow } from "@/stores/helpers";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { onAppUpdate } from "@/utils/appEventBus";
 import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
-
-// Helper function to get language display name
-const getLanguageDisplayName = (lang: LanguageOption): string => {
-  const { t } = i18n;
-  const languageMap: Record<LanguageOption, string> = {
-    auto: t("apps.internet-explorer.autodetected"),
-    english: t("apps.internet-explorer.english"),
-    chinese: t("apps.internet-explorer.chineseTraditional"),
-    japanese: t("apps.internet-explorer.japanese"),
-    korean: t("apps.internet-explorer.korean"),
-    french: t("apps.internet-explorer.french"),
-    spanish: t("apps.internet-explorer.spanish"),
-    portuguese: t("apps.internet-explorer.portuguese"),
-    german: t("apps.internet-explorer.german"),
-    welsh: t("apps.internet-explorer.welsh"),
-    sanskrit: t("apps.internet-explorer.sanskrit"),
-    latin: t("apps.internet-explorer.latin"),
-    alien: t("apps.internet-explorer.alienLanguage"),
-    ai_language: t("apps.internet-explorer.aiLanguage"),
-    digital_being: t("apps.internet-explorer.digitalBeingLanguage"),
-  };
-  return languageMap[lang] || t("apps.internet-explorer.autodetected");
-};
-
-// Helper function to get location display name
-const getLocationDisplayName = (loc: LocationOption): string => {
-  const { t } = i18n;
-  const locationMap: Record<LocationOption, string> = {
-    auto: t("apps.internet-explorer.autodetected"),
-    united_states: t("apps.internet-explorer.unitedStates"),
-    china: t("apps.internet-explorer.china"),
-    japan: t("apps.internet-explorer.japan"),
-    korea: t("apps.internet-explorer.southKorea"),
-    france: t("apps.internet-explorer.france"),
-    spain: t("apps.internet-explorer.spain"),
-    portugal: t("apps.internet-explorer.portugal"),
-    germany: t("apps.internet-explorer.germany"),
-    canada: t("apps.internet-explorer.canada"),
-    uk: t("apps.internet-explorer.unitedKingdom"),
-    india: t("apps.internet-explorer.india"),
-    brazil: t("apps.internet-explorer.brazil"),
-    australia: t("apps.internet-explorer.australia"),
-    russia: t("apps.internet-explorer.russia"),
-  };
-  return locationMap[loc] || t("apps.internet-explorer.autodetected");
-};
-
-// Add this constant for title truncation
-const MAX_TITLE_LENGTH = 50;
+import {
+  getLanguageDisplayName,
+  getLocationDisplayName,
+} from "../utils/displayNames";
+import {
+  getHostnameFromUrl,
+  formatTitle,
+  decodeData,
+  normalizeUrlForHistory,
+} from "../utils/urlHelpers";
 
 // Debug helper to identify direct passthrough URLs
 const logDirectPassthrough = (url: string) => {
   console.log(`[IE] Direct passthrough mode for: ${url}`);
-};
-
-const getHostnameFromUrl = (url: string): string => {
-  try {
-    const urlToUse = url.startsWith("http") ? url : `https://${url}`;
-    return new URL(urlToUse).hostname;
-  } catch {
-    return url; // Return original if parsing fails
-  }
-};
-
-const formatTitle = (title: string): string => {
-  if (!title) return "Internet Explorer";
-  return title.length > MAX_TITLE_LENGTH
-    ? title.substring(0, MAX_TITLE_LENGTH) + "..."
-    : title;
-};
-
-// Helper function to decode Base64 data (client-side)
-function decodeData(code: string): { url: string; year: string } | null {
-  try {
-    // Replace URL-safe characters back to standard Base64
-    const base64 = code.replace(/-/g, "+").replace(/_/g, "/");
-    // Add padding if needed
-    const paddedBase64 = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
-    const decoded = atob(paddedBase64);
-
-    // Try compact format first (url|year)
-    const [url, year] = decoded.split("|");
-    if (typeof url === "string" && typeof year === "string") {
-      return { url, year };
-    }
-
-    // If compact format fails, try JSON format
-    try {
-      const data = JSON.parse(decoded);
-      if (typeof data.url === "string" && typeof data.year === "string") {
-        return { url: data.url, year: data.year };
-      }
-    } catch {
-      console.debug(
-        "[IE] Failed to parse as JSON, not a valid share code format"
-      );
-    }
-
-    console.error("[IE] Decoded data structure invalid:", { url, year });
-    return null;
-  } catch (error) {
-    console.error("[IE] Error decoding share code:", error);
-    return null;
-  }
-}
-
-// Helper function to normalize URLs for history/caching
-const normalizeUrlForHistory = (url: string): string => {
-  let normalized = url.replace(/^https?:\/\//, "");
-  normalized = normalized.replace(/\/$/, ""); // Remove trailing slash
-  return normalized;
 };
 
 // Define suggestion type to reuse
