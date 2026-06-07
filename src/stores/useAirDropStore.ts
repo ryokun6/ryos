@@ -1,6 +1,11 @@
 import { create } from "zustand";
-import { getApiUrl } from "@/utils/platform";
-import { abortableFetch } from "@/utils/abortableFetch";
+import { ApiRequestError } from "@/api/core";
+import {
+  discoverAirDropUsers,
+  respondToAirDropTransfer,
+  sendAirDropFile,
+  sendAirDropHeartbeat,
+} from "@/api/airdrop";
 import {
   subscribePusherChannel,
   unsubscribePusherChannel,
@@ -56,19 +61,6 @@ interface AirDropState {
   unsubscribeFromChannel: () => void;
 }
 
-const makeApiRequest = async (
-  url: string,
-  options: RequestInit
-): Promise<Response> => {
-  return abortableFetch(url, {
-    ...options,
-    credentials: "include",
-    timeout: 15000,
-    throwOnHttpError: false,
-    retry: { maxAttempts: 1, initialDelayMs: 250 },
-  });
-};
-
 export const useAirDropStore = create<AirDropState>((set, get) => ({
   nearbyUsers: [],
   isDiscovering: false,
@@ -88,10 +80,7 @@ export const useAirDropStore = create<AirDropState>((set, get) => ({
 
     const heartbeat = async () => {
       try {
-        await makeApiRequest(getApiUrl("/api/airdrop/heartbeat"), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-        });
+        await sendAirDropHeartbeat();
       } catch {
         // Silently fail heartbeat
       }
@@ -163,20 +152,15 @@ export const useAirDropStore = create<AirDropState>((set, get) => ({
   fetchNearbyUsers: async () => {
     try {
       set({ isDiscovering: true });
-      const res = await makeApiRequest(getApiUrl("/api/airdrop/discover"), {
-        method: "GET",
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const users: string[] = data.users || [];
-        track(AIRDROP_ANALYTICS.DISCOVER, { nearbyCount: users.length });
-        const now = Date.now();
-        const map: Record<string, number> = {};
-        for (const u of users) {
-          map[u] = now;
-        }
-        set({ nearbyUsers: users, presenceMap: map });
+      const data = await discoverAirDropUsers();
+      const users: string[] = data.users || [];
+      track(AIRDROP_ANALYTICS.DISCOVER, { nearbyCount: users.length });
+      const now = Date.now();
+      const map: Record<string, number> = {};
+      for (const u of users) {
+        map[u] = now;
       }
+      set({ nearbyUsers: users, presenceMap: map });
     } catch {
       // Silently fail
     } finally {
@@ -187,24 +171,19 @@ export const useAirDropStore = create<AirDropState>((set, get) => ({
   sendFile: async (recipient, fileName, content, fileType) => {
     set({ isSending: true });
     try {
-      const res = await makeApiRequest(getApiUrl("/api/airdrop/send"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ recipient, fileName, fileType, content }),
+      await sendAirDropFile({ recipient, fileName, fileType, content });
+      track(AIRDROP_ANALYTICS.SEND, {
+        fileType: fileType || "unknown",
+        fileNameExtension: fileName.split(".").pop()?.slice(0, 12) || "",
       });
-      if (res.ok) {
-        track(AIRDROP_ANALYTICS.SEND, {
-          fileType: fileType || "unknown",
-          fileNameExtension: fileName.split(".").pop()?.slice(0, 12) || "",
-        });
-        toast.success(`Sent "${fileName}" to @${recipient}`);
-        return true;
-      }
-      const err = await res.json().catch(() => ({ error: "Send failed" }));
-      toast.error(err.error || "Failed to send file");
-      return false;
-    } catch {
-      toast.error("Failed to send file");
+      toast.success(`Sent "${fileName}" to @${recipient}`);
+      return true;
+    } catch (error) {
+      toast.error(
+        error instanceof ApiRequestError
+          ? error.message
+          : "Failed to send file"
+      );
       return false;
     } finally {
       set({ isSending: false });
@@ -213,18 +192,10 @@ export const useAirDropStore = create<AirDropState>((set, get) => ({
 
   respondToTransfer: async (transferId, accept) => {
     try {
-      const res = await makeApiRequest(getApiUrl("/api/airdrop/respond"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transferId, accept }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        get().removeTransfer(transferId);
-        track(AIRDROP_ANALYTICS.RESPOND, { accepted: accept });
-        return { success: true, ...data };
-      }
-      return { success: false };
+      const data = await respondToAirDropTransfer({ transferId, accept });
+      get().removeTransfer(transferId);
+      track(AIRDROP_ANALYTICS.RESPOND, { accepted: accept });
+      return data;
     } catch {
       return { success: false };
     }
