@@ -109,6 +109,16 @@ describe("lyrics color extraction", () => {
     expect(hueDistance(hueOf(fill), hueOf(glow))).toBeLessThan(0.01);
   });
 
+  test("clamps bright outlined karaoke fills below glow brightness", () => {
+    for (const glow of ["#00d5ff", "#ffd700", "#7cff00"]) {
+      const fill = makeOutlineFillFromGlowColor(glow);
+
+      expect(relativeLuminance(fill)).toBeLessThanOrEqual(0.225);
+      expect(relativeLuminance(fill)).toBeLessThan(relativeLuminance(glow));
+      expect(hueDistance(hueOf(fill), hueOf(glow))).toBeLessThan(0.01);
+    }
+  });
+
   test("keeps neutral outlined karaoke fills grayscale and darker than glow", () => {
     const glow = boostGlowColor("#101010");
     const fill = makeOutlineFillFromGlowColor(glow);

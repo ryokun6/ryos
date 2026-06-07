@@ -9,8 +9,9 @@ const MAX_GLOW_LIGHTNESS = 0.72;
 const MIN_GLOW_LUMINANCE = 0.34;
 const MIN_NEUTRAL_LIGHTNESS = 0.88;
 const OUTLINE_FILL_LIGHTNESS = 0.42;
-const OUTLINE_FILL_MIN_LIGHTNESS = 0.32;
+const OUTLINE_FILL_MIN_LIGHTNESS = 0.26;
 const OUTLINE_FILL_MIN_SATURATION = 0.78;
+const OUTLINE_FILL_MAX_LUMINANCE = 0.22;
 const OUTLINE_NEUTRAL_FILL_LIGHTNESS = 0.56;
 const OUTLINE_NEUTRAL_MIN_LIGHTNESS = 0.38;
 const HEX_COLOR_RE = /^#([0-9a-f]{6})$/i;
@@ -118,6 +119,30 @@ function ensureMinimumLuminance([r, g, b]: Rgb): Rgb {
   return next;
 }
 
+function clampHslMaximumLuminance(
+  hsl: Hsl,
+  maxLuminance: number,
+  minLightness: number
+): Hsl {
+  if (relativeLuminance(...hslToRgb(hsl)) <= maxLuminance) {
+    return hsl;
+  }
+
+  let low = minLightness;
+  let high = hsl.l;
+  for (let i = 0; i < 16; i++) {
+    const mid = (low + high) / 2;
+    const luminance = relativeLuminance(...hslToRgb({ ...hsl, l: mid }));
+    if (luminance > maxLuminance) {
+      high = mid;
+    } else {
+      low = mid;
+    }
+  }
+
+  return { ...hsl, l: low };
+}
+
 /** Pick a readable glow source color from the extracted cover palette. */
 export function pickPrimaryColor(palette: string[]): string {
   const colors = palette.map((hex) => {
@@ -207,15 +232,23 @@ export function makeOutlineFillFromGlowColor(hex: string): string {
     );
   }
 
+  const fillHsl = {
+    h: hsl.h,
+    s: Math.max(hsl.s, OUTLINE_FILL_MIN_SATURATION),
+    l: Math.max(
+      Math.min(hsl.l - 0.14, OUTLINE_FILL_LIGHTNESS),
+      OUTLINE_FILL_MIN_LIGHTNESS
+    ),
+  };
+
   return rgbToHex(
-    hslToRgb({
-      h: hsl.h,
-      s: Math.max(hsl.s, OUTLINE_FILL_MIN_SATURATION),
-      l: Math.max(
-        Math.min(hsl.l - 0.14, OUTLINE_FILL_LIGHTNESS),
+    hslToRgb(
+      clampHslMaximumLuminance(
+        fillHsl,
+        OUTLINE_FILL_MAX_LUMINANCE,
         OUTLINE_FILL_MIN_LIGHTNESS
-      ),
-    })
+      )
+    )
   );
 }
 
