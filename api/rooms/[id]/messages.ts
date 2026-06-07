@@ -24,7 +24,7 @@ import {
 } from "../_helpers/_constants.js";
 import { ensureUserExists } from "../_helpers/_users.js";
 import { addMessage, generateId, getCurrentTimestamp, getLastMessage, getMessages, getRoom, setUser } from "../_helpers/_redis.js";
-import { refreshRoomPresence } from "../_helpers/_presence.js";
+import { setRoomPresence } from "../_helpers/_presence.js";
 import type { Message } from "../_helpers/_types.js";
 import { getRoomReadAccessError, getRoomWriteAccessError } from "../_helpers/_access.js";
 import { broadcastNewMessage } from "../_helpers/_pusher.js";
@@ -231,7 +231,7 @@ export default apiHandler(
       const updatedUser = { ...userData, lastActive: getCurrentTimestamp() };
       await setUser(username, updatedUser);
       await redis.expire(`chat:users:${username}`, USER_EXPIRATION_TIME);
-      await refreshRoomPresence(roomId, username);
+      await setRoomPresence(roomId, username);
 
       await broadcastNewMessage(roomId, message, roomData);
       logger.info("Pusher room-message broadcast sent", { roomId, messageId: message.id });

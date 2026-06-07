@@ -5,7 +5,7 @@
 
 import { apiHandler } from "../../_utils/api-handler.js";
 import { assertValidRoomId } from "../../_utils/_validation.js";
-import { getActiveUsersAndPrune } from "../_helpers/_presence.js";
+import { getActiveUsersInRoom } from "../_helpers/_presence.js";
 import { getRoom } from "../_helpers/_redis.js";
 import { getRoomReadAccessError } from "../_helpers/_access.js";
 
@@ -49,7 +49,7 @@ export default apiHandler(
         return;
       }
 
-      const users = await getActiveUsersAndPrune(roomId);
+      const users = await getActiveUsersInRoom(roomId);
 
       logger.info("Users retrieved", { roomId, count: users.length });
       logger.response(200, Date.now() - startTime);

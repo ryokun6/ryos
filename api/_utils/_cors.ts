@@ -204,39 +204,6 @@ export function isAllowedOrigin(origin: string | null): boolean {
 }
 
 /**
- * Handle OPTIONS preflight request for Node.js runtime.
- * Returns true if preflight was handled (response sent), false otherwise.
- */
-export function handlePreflight(
-  req: VercelRequest,
-  res: VercelResponse,
-  options: SetCorsHeadersOptions = {}
-): boolean {
-  if (req.method !== "OPTIONS") return false;
-  
-  const origin = getEffectiveOrigin(req);
-  if (!origin || !isAllowedOrigin(origin)) {
-    res.status(403).send("Unauthorized");
-    return true;
-  }
-
-  // Echo back requested headers when provided
-  const requestedHeaders = getHeader(req, "access-control-request-headers");
-  const allowHeaders =
-    requestedHeaders && requestedHeaders.trim().length > 0
-      ? requestedHeaders
-      : (options.headers || DEFAULT_CORS_HEADERS).join(", ");
-
-  res.setHeader("Access-Control-Allow-Origin", origin);
-  res.setHeader("Access-Control-Allow-Methods", (options.methods || DEFAULT_CORS_METHODS).join(", "));
-  res.setHeader("Access-Control-Allow-Headers", allowHeaders);
-  res.setHeader("Access-Control-Allow-Credentials", "true");
-  res.setHeader("Access-Control-Max-Age", String(options.maxAge || 86400));
-  res.status(204).end();
-  return true;
-}
-
-/**
  * Set CORS headers on a VercelResponse for Node.js runtime handlers.
  */
 export interface SetCorsHeadersOptions {
