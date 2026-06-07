@@ -1,6 +1,7 @@
 import { apiHandler } from "./_utils/api-handler.js";
 import * as RateLimit from "./_utils/_rate-limit.js";
 import { getClientIp } from "./_utils/_rate-limit.js";
+import { decodeHtmlEntitiesOnce } from "./_utils/html-entities.js";
 import { safeFetchWithRedirects, validatePublicUrl, SsrfBlockedError } from "./_utils/_ssrf.js";
 
 export const runtime = "nodejs";
@@ -245,28 +246,14 @@ export default apiHandler(
         metadata.siteName = new URL(finalUrl).hostname;
       }
 
-      const HTML_ENTITIES: Record<string, string> = {
-        '&amp;': '&', '&lt;': '<', '&gt;': '>',
-        '&quot;': '"', '&#39;': "'", '&apos;': "'",
-      };
-      const decodeHtml = (text: string) =>
-        text.replace(
-          /&amp;|&lt;|&gt;|&quot;|&#39;|&apos;|&#x([0-9a-fA-F]+);|&#(\d+);/g,
-          (match, hex, dec) => {
-            if (hex) return String.fromCharCode(parseInt(hex, 16));
-            if (dec) return String.fromCharCode(parseInt(dec, 10));
-            return HTML_ENTITIES[match] ?? match;
-          }
-        );
-
       if (metadata.title) {
-        metadata.title = decodeHtml(metadata.title);
+        metadata.title = decodeHtmlEntitiesOnce(metadata.title);
       }
       if (metadata.description) {
-        metadata.description = decodeHtml(metadata.description);
+        metadata.description = decodeHtmlEntitiesOnce(metadata.description);
       }
       if (metadata.siteName) {
-        metadata.siteName = decodeHtml(metadata.siteName);
+        metadata.siteName = decodeHtmlEntitiesOnce(metadata.siteName);
       }
 
       logger.info("Metadata extracted", { title: metadata.title, siteName: metadata.siteName });

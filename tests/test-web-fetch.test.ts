@@ -6,6 +6,7 @@
  */
 
 import { describe, test, expect } from "bun:test";
+import { decodeHtmlEntitiesOnce } from "../api/_utils/html-entities";
 
 // ---------------------------------------------------------------------------
 // Inline copy of the stripping helpers (kept in sync with executors.ts)
@@ -21,28 +22,6 @@ function stripTagsLoop(html: string, pattern: RegExp, maxPasses = 10): string {
     result = next;
   }
   return result;
-}
-
-function decodeHtmlEntitiesOnce(text: string): string {
-  const NAMED_ENTITIES: Record<string, string> = {
-    "&nbsp;": " ",
-    "&amp;": "&",
-    "&lt;": "<",
-    "&gt;": ">",
-    "&quot;": '"',
-    "&#39;": "'",
-    "&apos;": "'",
-  };
-
-  return text.replace(
-    /&(?:#x([0-9a-fA-F]+);|#(\d+);|[a-zA-Z]+;)/g,
-    (match, hex, dec) => {
-      if (hex) return String.fromCharCode(parseInt(hex, 16));
-      if (dec) return String.fromCharCode(parseInt(dec, 10));
-      const lower = match.toLowerCase();
-      return NAMED_ENTITIES[lower] ?? match;
-    }
-  );
 }
 
 function extractMainContent(html: string): string {

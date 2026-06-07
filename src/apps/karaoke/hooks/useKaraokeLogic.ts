@@ -28,6 +28,7 @@ import type { SongSearchResult } from "@/components/dialogs/SongSearchDialog";
 import { helpItems } from "..";
 import { onAppUpdate } from "@/utils/appEventBus";
 import { MEDIA_ANALYTICS, track as trackAnalytics } from "@/utils/analytics";
+import { formatSecondsAsMinutesSeconds } from "@/utils/timeFormat";
 
 // User-agent sniffing is constant for the document lifetime, so compute once
 // at module load instead of re-running these regexes on every render of the
@@ -731,7 +732,7 @@ export function useKaraokeLogic({
           const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
           if (activePlayer) {
             activePlayer.seekTo(seekTarget);
-            showStatus(`▶ ${Math.floor(seekTarget / 60)}:${String(Math.floor(seekTarget % 60)).padStart(2, "0")}`);
+            showStatus(`▶ ${formatSecondsAsMinutesSeconds(seekTarget)}`);
           }
         }, 2000);
         trackSwitchTimeoutRef.current = timeoutId;
@@ -950,7 +951,7 @@ export function useKaraokeLogic({
         const newTime = Math.max(0, currentTime + delta);
         activePlayer.seekTo(newTime);
         showStatus(
-          `${delta > 0 ? "⏩︎" : "⏪︎"} ${Math.floor(newTime / 60)}:${String(Math.floor(newTime % 60)).padStart(2, "0")}`
+          `${delta > 0 ? "⏩︎" : "⏪︎"} ${formatSecondsAsMinutesSeconds(newTime)}`
         );
       }
     },
@@ -1000,14 +1001,14 @@ export function useKaraokeLogic({
           if (!r.ok) toast.error(r.error ?? "Could not seek");
         });
         showStatus(
-          `▶ ${Math.floor(newTime / 60)}:${String(Math.floor(newTime % 60)).padStart(2, "0")}`
+          `▶ ${formatSecondsAsMinutesSeconds(newTime)}`
         );
         return;
       }
 
       if (seekActivePlayerToMs(playerTimeMs)) {
         showStatus(
-          `▶ ${Math.floor(newTime / 60)}:${String(Math.floor(newTime % 60)).padStart(2, "0")}`
+          `▶ ${formatSecondsAsMinutesSeconds(newTime)}`
         );
       }
     },

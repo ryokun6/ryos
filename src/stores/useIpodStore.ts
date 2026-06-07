@@ -26,6 +26,7 @@ import {
   fetchYouTubeOembed,
   parseYouTubeTitle,
 } from "@/utils/youtubeMetadata";
+import { parseYouTubeVideoId } from "@/utils/youtubeUrl";
 import { emitCloudSyncDomainChange } from "@/utils/cloudSyncEvents";
 import { sortTracksLikeServerOrder } from "@/stores/ipodTrackOrder";
 import {
@@ -58,6 +59,28 @@ export type LibrarySource = "youtube" | "appleMusic";
 
 export const IPOD_BACKLIGHT_TIMEOUT_OPTIONS = ["2s", "10s", "always-on", "off"] as const;
 export type IpodBacklightTimeout = (typeof IPOD_BACKLIGHT_TIMEOUT_OPTIONS)[number];
+
+function parseRyosShareTrackId(input: string): string | null {
+  try {
+    const url = new URL(input);
+    const publicOrigin = new URL(getAppPublicOrigin());
+    const isRyosShareHost =
+      url.hostname === "os.ryo.lu" ||
+      url.host === publicOrigin.host ||
+      (typeof window !== "undefined" && url.host === window.location.host);
+
+    if (
+      isRyosShareHost &&
+      (url.pathname.startsWith("/ipod/") ||
+        url.pathname.startsWith("/karaoke/"))
+    ) {
+      return url.pathname.split("/")[2] || null;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
 
 /** User playlist from the Apple Music library. */
 export interface AppleMusicPlaylist {
@@ -1650,59 +1673,9 @@ export const useIpodStore = create<IpodState>()(
         }
       },
       addTrackFromVideoId: async (urlOrId: string, autoPlay: boolean = true): Promise<Track | null> => {
-        // Extract video ID from various URL formats
-        const extractVideoId = (input: string): string | null => {
-          // If it's already a video ID (11 characters, alphanumeric + hyphens/underscores)
-          if (/^[a-zA-Z0-9_-]{11}$/.test(input)) {
-            return input;
-          }
-
-          try {
-            const url = new URL(input);
-            const publicOrigin = new URL(getAppPublicOrigin());
-            const isRyosShareHost =
-              url.hostname === "os.ryo.lu" ||
-              url.host === publicOrigin.host ||
-              (typeof window !== "undefined" &&
-                url.host === window.location.host);
-
-            // Handle ryOS share URLs like /ipod/:id or /karaoke/:id on any configured host
-            if (
-              isRyosShareHost &&
-              (url.pathname.startsWith("/ipod/") || url.pathname.startsWith("/karaoke/"))
-            ) {
-              return url.pathname.split("/")[2] || null;
-            }
-
-            // Handle YouTube URLs
-            if (
-              url.hostname.includes("youtube.com") ||
-              url.hostname.includes("youtu.be")
-            ) {
-              // Standard YouTube URL: youtube.com/watch?v=VIDEO_ID
-              const vParam = url.searchParams.get("v");
-              if (vParam) return vParam;
-
-              // Short YouTube URL: youtu.be/VIDEO_ID
-              if (url.hostname === "youtu.be") {
-                return url.pathname.slice(1) || null;
-              }
-
-              // Embedded, shorts, or other YouTube formats
-              const pathMatch = url.pathname.match(
-                /\/(?:embed\/|v\/|shorts\/)?([a-zA-Z0-9_-]{11})/
-              );
-              if (pathMatch) return pathMatch[1];
-            }
-
-            return null;
-          } catch {
-            // Not a valid URL, might be just a video ID
-            return /^[a-zA-Z0-9_-]{11}$/.test(input) ? input : null;
-          }
-        };
-
-        const videoId = extractVideoId(urlOrId);
+        const videoId =
+          parseRyosShareTrackId(urlOrId) ??
+          parseYouTubeVideoId(urlOrId);
         if (!videoId) {
           throw new Error("Invalid YouTube URL or video ID");
         }

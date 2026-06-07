@@ -331,7 +331,6 @@
     
     subgraph Media["Media Hooks"]
         UL[useLyrics]
-        USC[useSongCover]
         UCP[useCoverPalette]
         UF[useFurigana]
         ULE[useLyricsErrorToast]
@@ -356,7 +355,6 @@
         UBN[useBackgroundChatNotifications]
         UAC[useAutoCloudSync]
         ULS[useListenSync]
-        USF[useStreamingFetch]
         UTH[useTranslatedHelpItems]
         URCS[useRealtimeConnectionStatus]
         UTL[useTelegramLink]
@@ -541,22 +539,6 @@ const { furiganaMap, soramimiMap, furiganaProgress } = useFurigana({
 });</code></pre>
 <strong>Features:</strong>
 <ul><li>Progressive SSE streaming</li><li>Ordered loading (furigana before soramimi for Japanese)</li><li>Real-time progress updates</li></ul>
-<h3>useSongCover</h3>
-<p>Album art fetching with caching.</p>
-<pre><code>interface UseSongCoverReturn {
-  coverUrl: string | null;
-  isLoading: boolean;
-  error: string | null;
-}
-
-// Usage
-const { coverUrl, isLoading } = useSongCover({
-  title: "Song Title",
-  artist: "Artist Name",
-  fallbackUrl: "/default-cover.png",
-});</code></pre>
-<strong>Features:</strong>
-<ul><li>In-memory cache</li><li>YouTube thumbnail fallback</li><li>Error handling with fallback</li></ul>
 <h2>Utility Hooks</h2>
 <h3>useIsMobile / useIsPhone</h3>
 <p>Device detection hooks.</p>
@@ -612,24 +594,7 @@ const { handlers, swipeDirection } = useSwipeNavigation({
   onSwipeRight: () =&gt; prevApp(),
   threshold: 50,
 });</code></pre>
-<h3>useStreamingFetch</h3>
-<p>Generic SSE streaming with lifecycle management.</p>
-<pre><code>interface UseStreamingFetchReturn&lt;T&gt; {
-  data: T | null;
-  isLoading: boolean;
-  error: string | null;
-  progress: number;
-}
-
-// Usage
-const { data, progress, isLoading } = useStreamingFetch&lt;TranslationResult&gt;({
-  url: "/api/translate",
-  body: { text, targetLang },
-  onProgress: (p) =&gt; setProgress(p),
-  onComplete: (result) =&gt; handleResult(result),
-});</code></pre>
-<strong>Features:</strong>
-<ul><li>Abort controller integration</li><li>Stale request prevention</li><li>Offline detection</li><li>Progress tracking</li></ul>
+<ul><li>Stale request prevention</li></ul><ul><li>Offline detection</li><li>Progress tracking</li></ul>
 <h3>useSpotlightSearch</h3>
 <p>Spotlight query orchestration with worker-backed indexing.</p>
 <pre><code>interface SpotlightSearchState {

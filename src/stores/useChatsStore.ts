@@ -6,6 +6,7 @@ import {
   type AIChatMessage,
 } from "@/types/chat";
 import { APP_ANALYTICS, CHAT_ANALYTICS, getTextAnalytics, track } from "@/utils/analytics";
+import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
 import i18n from "@/lib/i18n";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
@@ -82,17 +83,6 @@ const consumeLegacyAuthToken = (): string | null => {
     return null;
   }
 };
-
-
-// Basic HTML entity decoder to normalize server-escaped message content
-const decodeHtmlEntities = (str: string): string =>
-  str
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&apos;/g, "'");
 
 const API_UNAVAILABLE_COOLDOWN_MS = 10_000;
 const apiUnavailableUntil: Record<string, number> = {};
