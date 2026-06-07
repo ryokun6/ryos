@@ -62,9 +62,12 @@ This file tracks implementation progress for `plans/10-duplication-complexity-au
 - [ ] `bun test tests/test-cloud-sync-utils.test.ts` full suite currently has an unrelated DOM mock gap in settings hydration.
 - [ ] `bun run test:new-api` full suite currently has an unrelated login fixture failure returning 401 after registration.
 
-## In progress
+## Phase status
 
-- [ ] Shared contracts and constants.
+- [x] Phase 1: API integration cleanup.
+- [x] Phase 2: Title parsing consolidation.
+- [x] Phase 3: Shared contracts and constants.
+- [ ] Phase 4: Larger planned refactors.
 
 ## Next implementation checklist
 
@@ -101,9 +104,215 @@ This file tracks implementation progress for `plans/10-duplication-complexity-au
 
 ### Phase 4: Larger planned refactors
 
-- [ ] Shared sync domain normalizers and merge logic beyond files metadata.
-- [ ] AI tool pure reducers with browser and server adapters.
-- [ ] Media library/playback kernel for iPod, Karaoke, TV, Videos, listen sessions, and Finder virtual media folders.
-- [ ] VFS service boundary for metadata, IndexedDB content, virtual roots, trash, aliases, and cross-app file I/O.
-- [ ] Chats auth extraction and realtime service split.
+Phase 4 should continue the same pattern: extract pure shared logic first, keep adapter boundaries thin, preserve public app/store APIs during migration, and land each subsection behind focused tests.
+
+#### 4A. Shared sync domain core
+
+Goal: reduce `src/sync/domains.ts`, `src/hooks/useAutoCloudSync.ts`, and `api/sync/*` coupling by moving pure domain contracts, normalizers, and merge helpers into shared modules.
+
+Primary files:
+
+- `src/sync/domains.ts`
+- `src/hooks/useAutoCloudSync.ts`
+- `api/sync/_state.ts`
+- `api/sync/_physical.ts`
+- `api/sync/_domains.ts`
+- `src/utils/cloudSyncShared.ts`
+- `src/utils/cloudSyncSettingsMerge.ts`
+- `src/utils/cloudSyncFileMerge.ts`
+- `src/utils/contacts.ts`
+- `src/stores/useCalendarStore.ts`
+- `src/stores/useStickiesStore.ts`
+- `src/stores/useMapsStore.ts`
+
+Implementation checklist:
+
+- [ ] Add `src/shared/domains/calendar.ts` with `CalendarSnapshotData`, event/todo/group DTOs, normalizer, and merge helper.
+- [ ] Add `src/shared/domains/stickies.ts` with `StickiesSnapshotData`, normalizer, and merge helper.
+- [ ] Add `src/shared/domains/contacts.ts` that reuses the existing contact DTOs and exports a snapshot normalizer.
+- [ ] Add `src/shared/domains/maps.ts` with saved-place snapshot normalization.
+- [ ] Move settings snapshot types/normalizer behind a shared domain export while preserving `src/utils/cloudSyncSettingsMerge.ts` compatibility exports.
+- [ ] Re-export shared sync domain helpers from existing `src/utils/*` modules so API import paths can migrate gradually.
+- [ ] Replace server-side partial validators in `api/sync/_state.ts` with shared normalizers.
+- [ ] Replace local merge functions in `src/sync/domains.ts` one domain at a time.
+- [ ] Keep file/blob transport and Redis writes in adapters; shared modules must stay IO-free.
+
+Risks:
+
+- High: merge mistakes can cause data loss, stale tombstones, or cross-device overwrite bugs.
+- Calendar `location` and contacts `myContactId` must survive round trips.
+- Settings apply still has DOM-sensitive tests; avoid coupling shared normalizers to browser APIs.
+
+Test gates:
+
+- `bun test tests/test-files-metadata-normalizer.test.ts`
+- `bun test tests/test-cloud-sync-utils.test.ts --test-name-pattern "settings|file metadata|deletion|merge"`
+- `bun test tests/test-cloud-sync-domains.test.ts` with `bun run dev:api`
+- `bun test tests/test-cloud-sync-tv-upload-apply.test.ts`
+- `bun test tests/test-contacts-vcard.test.ts`
+- `bun run build`
+
+#### 4B. AI tool pure reducers and adapters
+
+Goal: dedupe browser chat handlers and server/Telegram executors by extracting pure state-transition reducers with browser and Redis adapters.
+
+Primary files:
+
+- `api/chat/tools/executors.ts`
+- `api/chat/tools/types.ts`
+- `api/chat/tools/schemas.ts`
+- `src/apps/chats/hooks/useAiChat.ts`
+- `src/apps/chats/tools/calendarHandler.ts`
+- `src/apps/chats/tools/contactsHandler.ts`
+- `src/apps/chats/tools/stickiesHandler.ts`
+- `src/apps/chats/tools/settingsHandler.ts`
+- `api/_utils/contacts.ts`
+
+Implementation checklist:
+
+- [ ] Add `src/shared/tools/types.ts` for calendar, contacts, stickies, and documents tool inputs/outputs.
+- [ ] Add `src/shared/tools/contactsReducer.ts`; migrate `contactsHandler.ts` and `executeContactsControl` first.
+- [ ] Add parity fixtures proving client adapter and server adapter produce the same outputs for list/create/update/delete.
+- [ ] Add `src/shared/tools/calendarReducer.ts`; preserve event colors, todo fields, and `location`.
+- [ ] Add `src/shared/tools/stickiesReducer.ts`; preserve sticky colors and timestamps.
+- [ ] Split `api/chat/tools/executors.ts` into domain modules after reducers are shared.
+- [ ] Generate or derive `SERVER_EXECUTED_TOOL_NAMES` from tool registry metadata instead of hand-maintaining it.
+
+Risks:
+
+- Medium-high: AI tool outputs are user-visible and Telegram/web behavior must remain aligned.
+- Tool reducers must not import React, Zustand, Redis, IndexedDB, or Vercel types.
+- Error message changes can alter model follow-up behavior.
+
+Test gates:
+
+- `bun test tests/test-server-app-state-tools.test.ts`
+- `bun test tests/test-chat-tools-contacts.test.ts`
+- `bun test tests/test-chat-tools-songs.test.ts`
+- `bun run test:ai`
+- New `tests/test-tool-reducer-parity.test.ts`
+- Manual smoke: one Chats tool call for contacts/calendar/stickies.
+
+#### 4C. Media library and playback kernel
+
+Goal: reduce duplicated media behavior across iPod, Karaoke, TV, Videos, listen sessions, Finder virtual media folders, and chat tools.
+
+Primary files:
+
+- `src/apps/ipod/hooks/useIpodLogic.ts`
+- `src/stores/useIpodStore.ts`
+- `src/apps/karaoke/hooks/useKaraokeLogic.ts`
+- `src/apps/tv/hooks/useTvLogic.ts`
+- `src/apps/videos/hooks/useVideosLogic.ts`
+- `src/components/shared/YouTubePlayer.tsx`
+- `src/hooks/useListenSync.ts`
+- `src/apps/finder/hooks/useFileSystem.ts`
+- `api/_utils/_song-service.ts`
+- `api/_utils/song-library-state.ts`
+
+Implementation checklist:
+
+- [ ] Add shared media artwork helper for Kugou, Apple Music, and YouTube thumbnail resolution.
+- [ ] Route iPod/Karaoke/TV/Videos fullscreen players through `YouTubePlayer` where behavior matches current ReactPlayer props.
+- [ ] Extract `useIpodPlayback` from `useIpodLogic` without changing its public return shape.
+- [ ] Extract lyrics display props shared by iPod/Karaoke/TV overlays.
+- [ ] Rename or wrap `useIpodStore` media-library parts behind `useMediaLibraryStore` compatibility exports.
+- [ ] Add a shared media playback adapter used by Karaoke after iPod extraction is stable.
+- [ ] Keep listen-session synchronization as an adapter over shared playback state, not as a core dependency.
+
+Risks:
+
+- High: playback regressions are user-visible and hard to catch with unit tests alone.
+- ReactPlayer prop differences can change autoplay, mute, fullscreen, or mobile behavior.
+- Store migrations must preserve persisted library data.
+
+Test gates:
+
+- `bun test tests/test-ipod-apple-music.test.ts`
+- `bun test tests/test-ipod-track-metadata-sync.test.ts`
+- `bun run test:song`
+- `bun run test:media`
+- `bun test tests/test-tv-channels.test.ts tests/test-tv-utils.test.ts`
+- Manual smoke: iPod search/add/play, Karaoke playback, TV MTV channel, Videos playback, listen-session join/sync.
+
+#### 4D. VFS service boundary
+
+Goal: separate file metadata, content persistence, virtual trees, trash/aliases, and Finder UI behavior.
+
+Primary files:
+
+- `src/stores/useFilesStore.ts`
+- `src/apps/finder/hooks/useFileSystem.ts`
+- `src/apps/finder/hooks/useFinderLogic.ts`
+- `src/apps/textedit/hooks/useFileOperations.ts`
+- `src/apps/paint/hooks/usePaintLogic.ts`
+- `src/apps/applet-viewer/hooks/useAppletViewerLogic.ts`
+- `src/apps/chats/hooks/useAiChat.ts`
+- `src/utils/indexedDBOperations.ts`
+- `src/utils/indexedDB.ts`
+- `src/sync/domains.ts`
+
+Implementation checklist:
+
+- [ ] Add `src/services/vfs/virtualTrees.ts` and extract shared `/Music` and `/Videos` artist-folder builders.
+- [ ] Add tests for virtual music/video trees, hidden/deleted items, and artist grouping.
+- [ ] Add `src/services/vfs/FileContentRepository` wrapper for IndexedDB document/image reads and writes.
+- [ ] Add `src/services/vfs/FileMetadataService` wrapper over `useFilesStore` actions.
+- [ ] Move TextEdit save/load onto the service first.
+- [ ] Move Paint and Applet Viewer file I/O next.
+- [ ] Keep Finder UI hooks consuming compatibility methods until service coverage is complete.
+
+Risks:
+
+- High: VFS touches persisted user content, cloud sync, aliases, trash, applets, TextEdit, Paint, Finder, Terminal, and AI tools.
+- Do not change IndexedDB store names or file UUID semantics.
+- Virtual media folders must stay compatible with iPod/video store data.
+
+Test gates:
+
+- `bun test tests/test-finder-display-sort.test.ts`
+- `bun test tests/test-finder-trash-store.test.ts`
+- `bun test tests/test-cloud-sync-utils.test.ts --test-name-pattern "file metadata|document"`
+- `bun test tests/test-cloud-sync-domains.test.ts` with `bun run dev:api`
+- Manual smoke: Finder `/Music`, Finder `/Videos`, TextEdit save/load, Paint save/load, Applet Viewer open/share.
+
+#### 4E. Chats auth extraction and realtime service split
+
+Goal: reduce `useChatsStore` and `useChatRoom` coupling by moving auth/session ownership and realtime subscription lifecycle into smaller modules.
+
+Primary files:
+
+- `src/stores/useChatsStore.ts`
+- `src/hooks/useAuth.ts`
+- `src/api/auth.ts`
+- `src/api/rooms.ts`
+- `src/apps/chats/hooks/useChatRoom.ts`
+- `src/hooks/useBackgroundChatNotifications.ts`
+- `src/lib/pusherClient.ts`
+
+Implementation checklist:
+
+- [ ] Add `src/stores/useAuthStore.ts` or extend `useAuth.ts` so cookie/session restore, logout, and password checks do not live in `useChatsStore`.
+- [ ] Move legacy auth-token recovery cleanup behind a documented migration flag/removal threshold.
+- [ ] Route all auth HTTP calls through `src/api/auth.ts`.
+- [ ] Add `src/services/chat/ChatRealtimeService.ts` for global channel and room channel subscription lifecycles.
+- [ ] Make foreground and background chat hooks consume the same realtime service.
+- [ ] Keep store API compatibility for current components during migration.
+
+Risks:
+
+- Medium-high: login/logout, private room ACL, notifications, and Pusher refcount behavior can regress.
+- Existing `test:new-api` has an unrelated login fixture issue; rely on focused auth/rooms subsets until fixed.
+- Background notification behavior differs by active room and IRC room type; preserve current gating.
+
+Test gates:
+
+- `bun test tests/test-auth-extra.test.ts`
+- `bun test tests/test-rooms-extra.test.ts`
+- `bun test tests/test-new-api.test.ts --test-name-pattern "Auth|Rooms|Messages|Presence"`
+- `bun test tests/test-chat-notification-logic.test.ts`
+- `bun test tests/test-chat-notification-integration-wiring.test.ts`
+- `bun test tests/test-chat-hook-channel-lifecycle-wiring.test.ts`
+- `bun test tests/test-pusher-client-refcount.test.ts`
+- Manual smoke: login/logout, room create/join/send, private room visibility, background notification.
 
