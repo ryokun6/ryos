@@ -20,11 +20,10 @@ import {
 } from "@/utils/appletAuthBridge";
 import {
   useFileSystem,
-  dbOperations,
   DocumentContent,
 } from "@/apps/finder/hooks/useFileSystem";
 import { useFilesStore, FileSystemItem } from "@/stores/useFilesStore";
-import { STORES } from "@/utils/indexedDB";
+import { STORES, dbOperations } from "@/utils/indexedDB";
 import { APPLET_ANALYTICS, track } from "@/utils/analytics";
 import { extractMetadataFromHtml } from "@/utils/appletMetadata";
 import { exportAppletAsHtml } from "@/utils/appletImportExport";

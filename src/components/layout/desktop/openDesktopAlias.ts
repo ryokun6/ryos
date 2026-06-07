@@ -1,8 +1,7 @@
 import type { AppId } from "@/config/appRegistry";
-import { dbOperations } from "@/apps/finder/hooks/useFileSystem";
 import type { LaunchOriginRect } from "@/stores/useAppStore";
 import type { FileSystemItem } from "@/stores/useFilesStore";
-import { STORES } from "@/utils/indexedDB";
+import { STORES, dbOperations } from "@/utils/indexedDB";
 
 export async function openDesktopAlias(
   shortcut: FileSystemItem,
