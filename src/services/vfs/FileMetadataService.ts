@@ -2,6 +2,7 @@ import {
   useFilesStore,
   type FileSystemItem,
 } from "@/stores/useFilesStore";
+import { useShallow } from "zustand/react/shallow";
 
 export function getFileMetadata(path: string): FileSystemItem | undefined {
   return useFilesStore.getState().getItem(path);
@@ -19,5 +20,5 @@ export function getFileContentUuid(path: string): string | null {
 }
 
 export function useFileMetadataInPath(path: string): FileSystemItem[] {
-  return useFilesStore((state) => state.getItemsInPath(path));
+  return useFilesStore(useShallow((state) => state.getItemsInPath(path)));
 }

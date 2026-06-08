@@ -13,6 +13,10 @@ const appletSource = readFileSync(
   "src/apps/applet-viewer/hooks/useAppletViewerLogic.ts",
   "utf8"
 );
+const fileMetadataServiceSource = readFileSync(
+  "src/services/vfs/FileMetadataService.ts",
+  "utf8"
+);
 
 describe("VFS service wiring", () => {
   test("TextEdit uses VFS services for save/load", () => {
@@ -35,5 +39,17 @@ describe("VFS service wiring", () => {
     expect(appletSource).toContain("@/services/vfs/FileContentRepository");
     expect(appletSource).not.toContain("@/apps/finder/hooks/useFileSystem");
     expect(appletSource).not.toContain("dbOperations.");
+  });
+
+  test("VFS metadata path selector caches derived arrays", () => {
+    expect(fileMetadataServiceSource).toContain(
+      'import { useShallow } from "zustand/react/shallow";'
+    );
+    expect(fileMetadataServiceSource).toContain(
+      "useFilesStore(useShallow((state) => state.getItemsInPath(path)))"
+    );
+    expect(fileMetadataServiceSource).not.toContain(
+      "useFilesStore((state) => state.getItemsInPath(path))"
+    );
   });
 });
