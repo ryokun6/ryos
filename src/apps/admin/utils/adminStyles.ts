@@ -27,8 +27,7 @@ export const adminSectionHeaderClass =
   "!text-[11px] uppercase tracking-wide text-os-text-secondary";
 
 /** Theme-aware vertical list dividers. */
-export const adminListDividerClass =
-  "divide-y divide-black/10 os-mac-aqua-dark:divide-white/10";
+export const adminListDividerClass = "admin-soft-list-dividers";
 
 /** Table header cell background. */
 export const adminTableHeadClass =

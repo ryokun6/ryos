@@ -1278,6 +1278,17 @@
   line-height: 1 !important;
 }
 
+/* Admin list rows: softer separators than the default OS separator token. */
+.admin-soft-list-dividers > * + * {
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .admin-soft-list-dividers
+  > * + * {
+  border-top-color: rgba(255, 255, 255, 0.1);
+}
+
 /* Chat meta (username/timestamp) override BEFORE generic Control Panels override anchor.
  * font-family override replaces the removed `:root[data-os-theme="macosx"] *` wildcard
  * so the meta row uses Lucida Grande instead of the inline `font-['Geneva-9']` class
