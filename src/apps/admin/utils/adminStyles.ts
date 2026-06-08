@@ -1,10 +1,10 @@
 import { cn } from "@/lib/utils";
 
-/** Main content pane — tracks `--os-color-window-bg` in light and dark. */
-export const adminSurfaceClass = "bg-os-window-bg text-os-text-primary";
+/** Main content pane — mirrors Finder's white pane surface and dark remap. */
+export const adminSurfaceClass = "bg-white/90 text-os-text-primary";
 
 /** Recessed sidebar / secondary panel surface. */
-export const adminSidebarClass = "bg-os-panel-bg text-os-text-primary";
+export const adminSidebarClass = "bg-white/90 text-os-text-primary";
 
 /** Card / panel shell with theme-aware border. */
 export const adminCardClass =
