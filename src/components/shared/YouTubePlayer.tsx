@@ -17,7 +17,9 @@ export const YouTubePlayer = function YouTubePlayer(
       ref={ref}
       playsinline
       config={{
+        ...config,
         youtube: {
+          ...config?.youtube,
           playerVars: {
             modestbranding: 1,
             rel: 0,
@@ -34,7 +36,6 @@ export const YouTubePlayer = function YouTubePlayer(
             ...config?.youtube?.embedOptions,
           },
         },
-        ...config,
       }}
       {...props}
     />
