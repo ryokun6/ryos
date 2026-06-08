@@ -2,6 +2,7 @@ import type { CSSProperties } from "react";
 import {
   boostGlowColor,
   makeGlowFromColor,
+  makeOutlineFillFromGlowColor,
   pickPrimaryColor,
 } from "@/apps/ipod/components/lyrics-display/colorUtils";
 
@@ -110,14 +111,27 @@ export const TITLE_CARD_TITLE_SHADOW_BLEED_STYLE = {
   maxWidth: `calc(100% + ${TITLE_CARD_TITLE_LEFT_BLEED})`,
 } satisfies TitleCardLineStyle;
 
-export const TITLE_CARD_REGULAR_OUTLINE_STYLE: TitleCardLineStyle = {
-  ...TITLE_CARD_TITLE_SHADOW_BLEED_STYLE,
-  color: "#fff",
-  lineHeight: TITLE_CARD_TITLE_LINE_HEIGHT,
-  WebkitTextStroke: "0.12em rgba(0,0,0,0.7)",
-  paintOrder: "stroke fill",
-  textShadow: "none",
-};
+export const TITLE_CARD_ROUNDED_OUTLINE_COLOR = "#0066FF";
+export const TITLE_CARD_SERIF_OUTLINE_COLOR = "#CC0000";
+export const TITLE_CARD_COLORED_OUTLINE_STROKE = "0.12em #fff";
+
+export function makeTitleCardColoredOutlineStyle(
+  fillColor: string
+): TitleCardLineStyle {
+  return {
+    ...TITLE_CARD_TITLE_SHADOW_BLEED_STYLE,
+    color: fillColor,
+    lineHeight: TITLE_CARD_TITLE_LINE_HEIGHT,
+    WebkitTextStroke: TITLE_CARD_COLORED_OUTLINE_STROKE,
+    paintOrder: "stroke fill",
+    textShadow: "none",
+  };
+}
+
+export function makeTitleCardOutlineFillFromGlowColor(hex: string): string {
+  return makeOutlineFillFromGlowColor(hex);
+}
+
 export const TITLE_CARD_REGULAR_GRADIENT_STYLE: TitleCardLineStyle = {
   ...TITLE_CARD_TITLE_SHADOW_BLEED_STYLE,
   color: "rgba(255, 255, 255, 0.78)",

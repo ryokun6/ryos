@@ -6,7 +6,13 @@ import {
   getFirstLyricStartMs,
   shouldShowKaraokeTitleCard,
 } from "@/apps/karaoke/utils/titleCard";
-import { TITLE_CARD_TITLE_SHADOW_BLEED_STYLE } from "@/apps/karaoke/components/karaoke-lyrics-playback/title-card-styles";
+import {
+  makeTitleCardColoredOutlineStyle,
+  TITLE_CARD_COLORED_OUTLINE_STROKE,
+  TITLE_CARD_ROUNDED_OUTLINE_COLOR,
+  TITLE_CARD_SERIF_OUTLINE_COLOR,
+  TITLE_CARD_TITLE_SHADOW_BLEED_STYLE,
+} from "@/apps/karaoke/components/karaoke-lyrics-playback/title-card-styles";
 
 const readSource = (relativePath: string): string =>
   readFileSync(resolve(process.cwd(), relativePath), "utf-8");
@@ -140,5 +146,17 @@ describe("karaoke title card timing", () => {
     expect(TITLE_CARD_TITLE_SHADOW_BLEED_STYLE.marginLeft).toBe("-0.35em");
     expect(TITLE_CARD_TITLE_SHADOW_BLEED_STYLE.width).toBe("calc(100% + 0.35em)");
     expect(TITLE_CARD_TITLE_SHADOW_BLEED_STYLE.maxWidth).toBe("calc(100% + 0.35em)");
+  });
+
+  test("uses colored fills for outline title-card title styles", () => {
+    const rounded = makeTitleCardColoredOutlineStyle(TITLE_CARD_ROUNDED_OUTLINE_COLOR);
+    const serif = makeTitleCardColoredOutlineStyle(TITLE_CARD_SERIF_OUTLINE_COLOR);
+
+    expect(rounded.color).toBe("#0066FF");
+    expect(serif.color).toBe("#CC0000");
+    expect(rounded.WebkitTextStroke).toBe(TITLE_CARD_COLORED_OUTLINE_STROKE);
+    expect(serif.WebkitTextStroke).toBe(TITLE_CARD_COLORED_OUTLINE_STROKE);
+    expect(rounded.textShadow).toBe("none");
+    expect(serif.textShadow).toBe("none");
   });
 });
