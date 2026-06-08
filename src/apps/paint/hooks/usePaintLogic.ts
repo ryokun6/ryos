@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
-import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
-import { STORES, dbOperations } from "@/utils/indexedDB";
+import { useVfsFileOperations } from "@/services/vfs/useVfsFileOperations";
+import { readImageBlobContent } from "@/services/vfs/FileContentRepository";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { usePaintStore } from "@/stores/usePaintStore";
 import type { Filter } from "../components/PaintFiltersMenu";
@@ -54,7 +54,7 @@ export function usePaintLogic({ initialData, instanceId }: UsePaintLogicProps) {
   const [error, setError] = useState<string | null>(null);
 
   const canvasRef = useRef<PaintCanvasHandle | null>(null);
-  const { saveFile } = useFileSystem("/Images");
+  const { saveFile } = useVfsFileOperations("/Images");
   const launchApp = useLaunchApp();
   const contentChangeTimeoutRef = useRef<number | null>(null);
   const clearInstanceInitialData = useAppStore(
@@ -406,25 +406,15 @@ export function usePaintLogic({ initialData, instanceId }: UsePaintLogicProps) {
       if (!fileName) return;
 
       try {
-        // Import the file store to get UUID
-        const { useFilesStore } = await import("@/stores/useFilesStore");
-        const fileStore = useFilesStore.getState();
-        const fileMetadata = fileStore.getItem(currentFilePath);
-
-        if (fileMetadata && fileMetadata.uuid) {
-          const record: { content?: Blob } | undefined =
-            await dbOperations.get<{
-              content?: Blob;
-            }>(STORES.IMAGES, fileMetadata.uuid);
-          if (record && record.content instanceof Blob) {
-            const blobUrl = URL.createObjectURL(record.content);
-            console.log("[Paint] Loading persisted file", currentFilePath);
-            handleFileOpen(currentFilePath, blobUrl);
-            setInitialFileLoaded(true);
-          }
+        const blob = await readImageBlobContent(currentFilePath);
+        if (blob) {
+          const blobUrl = URL.createObjectURL(blob);
+          console.log("[Paint] Loading persisted file", currentFilePath);
+          handleFileOpen(currentFilePath, blobUrl);
+          setInitialFileLoaded(true);
         } else {
           console.warn(
-            "[Paint] File metadata or UUID not found for:",
+            "[Paint] Image content not found for:",
             currentFilePath
           );
         }

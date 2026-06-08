@@ -18,12 +18,19 @@ import {
   APPLET_AUTH_MESSAGE_TYPE,
   isTrustedAppletAuthor,
 } from "@/utils/appletAuthBridge";
+import { useVfsFileOperations } from "@/services/vfs/useVfsFileOperations";
+import type { FileSystemItem } from "@/stores/useFilesStore";
 import {
-  useFileSystem,
-  DocumentContent,
-} from "@/apps/finder/hooks/useFileSystem";
-import { useFilesStore, FileSystemItem } from "@/stores/useFilesStore";
-import { STORES, dbOperations } from "@/utils/indexedDB";
+  getFileMetadata,
+  updateFileMetadata,
+  useFileMetadataInPath,
+} from "@/services/vfs/FileMetadataService";
+import {
+  readAppletTextContent,
+  type VfsStoredContent,
+  writeContentByKey,
+} from "@/services/vfs/FileContentRepository";
+import { STORES } from "@/utils/indexedDB";
 import { APPLET_ANALYTICS, track } from "@/utils/analytics";
 import { extractMetadataFromHtml } from "@/utils/appletMetadata";
 import { exportAppletAsHtml } from "@/utils/appletImportExport";
@@ -375,10 +382,8 @@ export function useAppletViewerLogic({
   const shareCode = typedInitialData?.shareCode;
   const [loadedContent, setLoadedContent] = useState<string>("");
 
-  const getFileItem = useFilesStore((state) => state.getItem);
-  const updateFileItemMetadata = useFilesStore(
-    (state) => state.updateItemMetadata
-  );
+  const getFileItem = getFileMetadata;
+  const updateFileItemMetadata = updateFileMetadata;
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -455,7 +460,7 @@ export function useAppletViewerLogic({
         const data = await response.json();
         const content = typeof data.content === "string" ? data.content : "";
 
-        await dbOperations.put<DocumentContent>(
+        await writeContentByKey<VfsStoredContent>(
           STORES.APPLETS,
           {
             name: name || filePath.split("/").pop() || shareId,
@@ -538,25 +543,9 @@ export function useAppletViewerLogic({
         return;
       }
 
-      const fileMetadata = getFileItem(appletPath);
-      if (!fileMetadata?.uuid) {
-        return;
-      }
-
       try {
-        const contentData = await dbOperations.get<DocumentContent>(
-          STORES.APPLETS,
-          fileMetadata.uuid
-        );
-        if (!contentData?.content) {
-          return;
-        }
-
-        const refreshedContent =
-          contentData.content instanceof Blob
-            ? await contentData.content.text()
-            : contentData.content;
-        setLoadedContent(refreshedContent);
+        const refreshedContent = await readAppletTextContent(appletPath);
+        if (refreshedContent) setLoadedContent(refreshedContent);
       } catch (error) {
         console.error("[AppletViewer] Failed to refresh updated applet:", error);
       }
@@ -590,18 +579,8 @@ export function useAppletViewerLogic({
       try {
         const fileMetadata = getFileItem(appletPath);
         if (fileMetadata?.uuid) {
-          const contentData = await dbOperations.get<DocumentContent>(
-            STORES.APPLETS,
-            fileMetadata.uuid
-          );
-
-          if (contentData?.content) {
-            let contentStr: string;
-            if (contentData.content instanceof Blob) {
-              contentStr = await contentData.content.text();
-            } else {
-              contentStr = contentData.content;
-            }
+          const contentStr = await readAppletTextContent(appletPath);
+          if (contentStr) {
             setLoadedContent(contentStr);
           } else if (fileMetadata.shareId) {
             const fetched = await fetchAndCacheAppletContent(
@@ -727,18 +706,8 @@ export function useAppletViewerLogic({
 
                 const updatedFileItem = getFileItem(appletPath);
                 if (updatedFileItem?.uuid) {
-                  const contentData = await dbOperations.get<DocumentContent>(
-                    STORES.APPLETS,
-                    updatedFileItem.uuid
-                  );
-
-                  if (contentData?.content) {
-                    let contentStr: string;
-                    if (contentData.content instanceof Blob) {
-                      contentStr = await contentData.content.text();
-                    } else {
-                      contentStr = contentData.content;
-                    }
+                  const contentStr = await readAppletTextContent(appletPath);
+                  if (contentStr) {
                     setLoadedContent(contentStr);
                   }
                 }
@@ -957,7 +926,8 @@ export function useAppletViewerLogic({
   );
 
   const launchApp = useLaunchApp();
-  const { saveFile, files } = useFileSystem("/Applets");
+  const { saveFile } = useVfsFileOperations("/Applets");
+  const files = useFileMetadataInPath("/Applets");
 
   const extractEmojiIcon = (
     text: string

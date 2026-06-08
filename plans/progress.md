@@ -71,6 +71,7 @@ This file tracks implementation progress for `plans/10-duplication-complexity-au
 - [x] `bun test tests/test-vfs-virtual-trees.test.ts`
 - [x] `bun test tests/test-legacy-auth-token-migration.test.ts`
 - [x] `bun test tests/test-chat-auth-api-wiring.test.ts`
+- [x] `bun test tests/test-vfs-service-wiring.test.ts`
 - [x] `bun test tests/test-youtube-url-utils.test.ts tests/test-ipod-apple-music.test.ts tests/test-ipod-track-metadata-sync.test.ts tests/test-finder-display-sort.test.ts tests/test-finder-trash-store.test.ts`
 - [x] `bun test tests/test-server-app-state-tools.test.ts tests/test-chat-tools-contacts.test.ts`
 - [x] `bun test tests/test-maps-sync-domain.test.ts`
@@ -281,11 +282,11 @@ Implementation checklist:
 
 - [x] Add `src/services/vfs/virtualTrees.ts` and extract shared `/Music` and `/Videos` artist-folder builders.
 - [x] Add tests for virtual music/video trees and artist grouping.
-- [ ] Add `src/services/vfs/FileContentRepository` wrapper for IndexedDB document/image reads and writes.
-- [ ] Add `src/services/vfs/FileMetadataService` wrapper over `useFilesStore` actions.
-- [ ] Move TextEdit save/load onto the service first.
-- [ ] Move Paint and Applet Viewer file I/O next.
-- [ ] Keep Finder UI hooks consuming compatibility methods until service coverage is complete.
+- [x] Add `src/services/vfs/FileContentRepository` wrapper for IndexedDB document/image reads and writes.
+- [x] Add `src/services/vfs/FileMetadataService` wrapper over `useFilesStore` actions.
+- [x] Move TextEdit save/load onto the service first.
+- [x] Move Paint and Applet Viewer file I/O next.
+- [x] Keep Finder UI hooks consuming compatibility methods until service coverage is complete.
 
 Risks:
 
