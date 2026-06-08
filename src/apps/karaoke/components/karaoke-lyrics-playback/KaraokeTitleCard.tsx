@@ -1,11 +1,16 @@
 import { memo, useMemo } from "react";
 import { motion } from "motion/react";
 import { useCoverGlowColor } from "@/hooks/useCoverGlowColor";
+import { normalizeCoverColor } from "@/apps/ipod/components/lyrics-display/colorUtils";
 import { ScrollingText } from "@/apps/ipod/components/screen";
 import {
   getTitleCardStyleCategory,
+  makeTitleCardColoredOutlineStyle,
   makeTitleCardGlow,
+  makeTitleCardOutlineFillFromGlowColor,
   TITLE_CARD_BASE_SHADOW,
+  TITLE_CARD_ROUNDED_OUTLINE_COLOR,
+  TITLE_CARD_SERIF_OUTLINE_COLOR,
   TITLE_CARD_CONTENT_STYLE_FULLSCREEN,
   TITLE_CARD_CONTENT_STYLE_WINDOW,
   TITLE_CARD_COVER_IMAGE_STYLE_FULLSCREEN,
@@ -17,7 +22,6 @@ import {
   TITLE_CARD_OUTER_STYLE_FULLSCREEN,
   TITLE_CARD_OUTER_STYLE_WINDOW,
   TITLE_CARD_REGULAR_GRADIENT_STYLE,
-  TITLE_CARD_REGULAR_OUTLINE_STYLE,
   TITLE_CARD_SECONDARY_TEXT_STYLE,
   TITLE_CARD_TITLE_LINE_HEIGHT,
   TITLE_CARD_TITLE_SHADOW_BLEED_STYLE,
@@ -57,13 +61,25 @@ export const KaraokeTitleCard = memo(function KaraokeTitleCard({
   isPlaying: boolean;
 }) {
   const styleCategory = getTitleCardStyleCategory(fontClassName);
+  const isOutlineTitleStyle =
+    styleCategory === "outline-blue" || styleCategory === "outline-red";
+  const hasAdaptiveOutlineColor =
+    isOutlineTitleStyle &&
+    (Boolean(coverUrl) || Boolean(normalizeCoverColor(coverColor)));
   const glowColor = useCoverGlowColor({
     coverUrl,
     coverColor,
-    enabled: styleCategory === "glow-gold",
+    enabled: styleCategory === "glow-gold" || hasAdaptiveOutlineColor,
     onResolved: onCoverColorResolved,
   });
   const primaryGlow = makeTitleCardGlow(glowColor);
+  const outlineFillColor = useMemo(
+    () =>
+      hasAdaptiveOutlineColor
+        ? makeTitleCardOutlineFillFromGlowColor(primaryGlow.color)
+        : undefined,
+    [hasAdaptiveOutlineColor, primaryGlow.color]
+  );
 
   const titleTextSizeClass =
     variant === "fullscreen"
@@ -86,8 +102,13 @@ export const KaraokeTitleCard = memo(function KaraokeTitleCard({
   const regularTextStyle = useMemo((): TitleCardLineStyle => {
     switch (styleCategory) {
       case "outline-blue":
+        return makeTitleCardColoredOutlineStyle(
+          outlineFillColor ?? TITLE_CARD_ROUNDED_OUTLINE_COLOR
+        );
       case "outline-red":
-        return TITLE_CARD_REGULAR_OUTLINE_STYLE;
+        return makeTitleCardColoredOutlineStyle(
+          outlineFillColor ?? TITLE_CARD_SERIF_OUTLINE_COLOR
+        );
       case "glow-gold":
         return {
           ...TITLE_CARD_TITLE_SHADOW_BLEED_STYLE,
@@ -100,7 +121,7 @@ export const KaraokeTitleCard = memo(function KaraokeTitleCard({
       default:
         return TITLE_CARD_REGULAR_GRADIENT_STYLE;
     }
-  }, [primaryGlow, styleCategory]);
+  }, [outlineFillColor, primaryGlow, styleCategory]);
   const metadataLines = useMemo(() => {
     const values: string[] = [];
     for (const value of [artist, album]) {
