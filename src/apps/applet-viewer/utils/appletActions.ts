@@ -1,8 +1,13 @@
 import { useCallback, useRef } from "react";
 import { toast } from "sonner";
-import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
-import { useFilesStore } from "@/stores/useFilesStore";
+import {
+  updateFileMetadata,
+  useFileMetadataInPath,
+} from "@/services/vfs/FileMetadataService";
+import { readAppletTextContent } from "@/services/vfs/FileContentRepository";
+import { useVfsFileOperations } from "@/services/vfs/useVfsFileOperations";
+import { useFilesStore, type FileSystemItem } from "@/stores/useFilesStore";
 import { APPLET_ANALYTICS, track } from "@/utils/analytics";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
@@ -40,12 +45,11 @@ export const extractEmojiIcon = (
 };
 
 export const useAppletActions = () => {
-  const { saveFile, files, handleFileOpen } = useFileSystem("/Applets");
+  const { saveFile } = useVfsFileOperations("/Applets");
+  const files = useFileMetadataInPath("/Applets");
   const launchApp = useLaunchApp();
   const getFileItem = useFilesStore((state) => state.getItem);
-  const updateFileItemMetadata = useFilesStore(
-    (state) => state.updateItemMetadata
-  );
+  const updateFileItemMetadata = updateFileMetadata;
 
   // Check if an applet is installed
   const isAppletInstalled = useCallback((appletId: string): boolean => {
@@ -118,6 +122,19 @@ export const useAppletActions = () => {
     [getFileItem, getInstalledApplet, isAppletInstalled, scheduleStoreCreatedAtUpdate]
   );
 
+  const openInstalledApplet = useCallback(
+    async (file: FileSystemItem) => {
+      const content = await readAppletTextContent(file.path);
+      launchApp("applet-viewer", {
+        initialData: {
+          path: file.path,
+          content: content ?? "",
+        },
+      });
+    },
+    [launchApp]
+  );
+
   // Handle clicking on an applet
   const handleAppletClick = async (applet: Applet) => {
     const installed = isAppletInstalled(applet.id);
@@ -130,7 +147,7 @@ export const useAppletActions = () => {
 
       if (installedApplet) {
         try {
-          await handleFileOpen(installedApplet);
+          await openInstalledApplet(installedApplet);
         } catch (error) {
           console.error("Error launching applet from disk:", error);
           toast.error("Failed to launch applet");
