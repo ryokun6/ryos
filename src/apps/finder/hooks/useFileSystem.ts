@@ -17,6 +17,7 @@ import {
   useIpodStoreShallow,
   useVideoStoreShallow,
 } from "@/stores/helpers";
+import { formatKugouImageUrl } from "@/utils/coverArt";
 import { listVirtualMusicOrVideosPath } from "@/services/vfs/virtualTrees";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { getStoreForFile, type StoredContent } from "@/utils/indexedDBOperations";
@@ -649,6 +650,7 @@ export function useFileSystem(
           );
         }
         // --- END EDIT ---
+      }
       }
 
       // a. Music Library (Virtual)

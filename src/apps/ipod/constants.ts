@@ -2,8 +2,8 @@
 
 import { LyricsAlignment } from "@/types/lyrics";
 import type { Track } from "@/stores/useIpodStore";
-import { parseYouTubeVideoId, youtubeThumbnailUrl } from "@/utils/youtubeUrl";
-import { formatKugouImageUrl, resolveMediaCoverUrl } from "@/utils/coverArt";
+import { parseYouTubeVideoId } from "@/utils/youtubeUrl";
+import { resolveMediaCoverUrl } from "@/utils/coverArt";
 
 // Re-exported from shared utils so existing iPod-internal imports keep working
 // while the canonical implementations live under `src/utils/`.

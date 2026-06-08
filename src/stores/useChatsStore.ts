@@ -8,7 +8,6 @@ import {
 import { APP_ANALYTICS, CHAT_ANALYTICS, getTextAnalytics, track } from "@/utils/analytics";
 import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
 import i18n from "@/lib/i18n";
-import { abortableFetch } from "@/utils/abortableFetch";
 import { ApiRequestError } from "@/api/core";
 import { USERNAME_REGEX, PASSWORD_MIN_LENGTH } from "@/shared/validation";
 import { normalizeChatTimestamp } from "@/shared/contracts/chat";

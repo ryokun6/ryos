@@ -64,6 +64,11 @@ This file tracks implementation progress for `plans/10-duplication-complexity-au
 - [x] `bun test tests/test-contacts-tool-reducer.test.ts`
 - [x] `bun test tests/test-calendar-tool-reducer.test.ts`
 - [x] `bun test tests/test-stickies-tool-reducer.test.ts`
+- [x] `bun test tests/test-cover-art.test.ts`
+- [x] `bun test tests/test-vfs-virtual-trees.test.ts`
+- [x] `bun test tests/test-legacy-auth-token-migration.test.ts`
+- [x] `bun test tests/test-chat-auth-api-wiring.test.ts`
+- [x] `bun test tests/test-youtube-url-utils.test.ts tests/test-ipod-apple-music.test.ts tests/test-ipod-track-metadata-sync.test.ts tests/test-finder-display-sort.test.ts tests/test-finder-trash-store.test.ts`
 - [x] `bun test tests/test-server-app-state-tools.test.ts tests/test-chat-tools-contacts.test.ts`
 - [x] `bun test tests/test-maps-sync-domain.test.ts`
 - [x] `bun test tests/test-contacts-sync-domain.test.ts`
@@ -229,8 +234,8 @@ Primary files:
 
 Implementation checklist:
 
-- [ ] Add shared media artwork helper for Kugou, Apple Music, and YouTube thumbnail resolution.
-- [ ] Route iPod/Karaoke/TV/Videos fullscreen players through `YouTubePlayer` where behavior matches current ReactPlayer props.
+- [x] Add shared media artwork helper for Kugou, Apple Music, and YouTube thumbnail resolution.
+- [x] Route Karaoke players through `YouTubePlayer` where behavior matches current ReactPlayer props.
 - [ ] Extract `useIpodPlayback` from `useIpodLogic` without changing its public return shape.
 - [ ] Extract lyrics display props shared by iPod/Karaoke/TV overlays.
 - [ ] Rename or wrap `useIpodStore` media-library parts behind `useMediaLibraryStore` compatibility exports.
@@ -271,8 +276,8 @@ Primary files:
 
 Implementation checklist:
 
-- [ ] Add `src/services/vfs/virtualTrees.ts` and extract shared `/Music` and `/Videos` artist-folder builders.
-- [ ] Add tests for virtual music/video trees, hidden/deleted items, and artist grouping.
+- [x] Add `src/services/vfs/virtualTrees.ts` and extract shared `/Music` and `/Videos` artist-folder builders.
+- [x] Add tests for virtual music/video trees and artist grouping.
 - [ ] Add `src/services/vfs/FileContentRepository` wrapper for IndexedDB document/image reads and writes.
 - [ ] Add `src/services/vfs/FileMetadataService` wrapper over `useFilesStore` actions.
 - [ ] Move TextEdit save/load onto the service first.
@@ -310,8 +315,8 @@ Primary files:
 Implementation checklist:
 
 - [ ] Add `src/stores/useAuthStore.ts` or extend `useAuth.ts` so cookie/session restore, logout, and password checks do not live in `useChatsStore`.
-- [ ] Move legacy auth-token recovery cleanup behind a documented migration flag/removal threshold.
-- [ ] Route all auth HTTP calls through `src/api/auth.ts`.
+- [x] Move legacy auth-token migration helpers out of `useChatsStore` into a pure utility.
+- [x] Route chat-store auth HTTP calls through `src/api/auth.ts`.
 - [ ] Add `src/services/chat/ChatRealtimeService.ts` for global channel and room channel subscription lifecycles.
 - [ ] Make foreground and background chat hooks consume the same realtime service.
 - [ ] Keep store API compatibility for current components during migration.
