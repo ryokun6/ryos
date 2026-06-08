@@ -76,20 +76,3 @@ export async function readAppletTextContent(path: string): Promise<string | null
   }
   return typeof content === "string" ? content : null;
 }
-
-export async function writeAppletTextContent(
-  path: string,
-  name: string,
-  content: string
-): Promise<void> {
-  const uuid = getFileContentUuid(path);
-  if (!uuid) return;
-  await writeContentByKey(
-    STORES.APPLETS,
-    {
-      name,
-      content,
-    },
-    uuid
-  );
-}

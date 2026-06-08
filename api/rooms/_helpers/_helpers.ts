@@ -15,33 +15,3 @@ export function createErrorResponse(message: string, status: number): Response {
     headers: { "Content-Type": "application/json" },
   });
 }
-
-/**
- * Create a success JSON response
- */
-export function createSuccessResponse<T>(
-  data: T,
-  status: number = 200
-): Response {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
-}
-
-/**
- * Add CORS headers to any response
- */
-export function addCorsHeaders(
-  response: Response,
-  origin: string | null
-): Response {
-  if (!origin) return response;
-  const newHeaders = new Headers(response.headers);
-  newHeaders.set("Access-Control-Allow-Origin", origin);
-  return new Response(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers: newHeaders,
-  });
-}
