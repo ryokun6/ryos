@@ -13,8 +13,16 @@ const appletSource = readFileSync(
   "src/apps/applet-viewer/hooks/useAppletViewerLogic.ts",
   "utf8"
 );
+const appletActionsSource = readFileSync(
+  "src/apps/applet-viewer/utils/appletActions.ts",
+  "utf8"
+);
 const fileMetadataServiceSource = readFileSync(
   "src/services/vfs/FileMetadataService.ts",
+  "utf8"
+);
+const vfsFileOperationsSource = readFileSync(
+  "src/services/vfs/useVfsFileOperations.ts",
   "utf8"
 );
 
@@ -50,6 +58,16 @@ describe("VFS service wiring", () => {
     );
     expect(fileMetadataServiceSource).not.toContain(
       "useFilesStore((state) => state.getItemsInPath(path))"
+    );
+  });
+
+  test("Applet Store actions avoid Finder file-loading effects", () => {
+    expect(appletActionsSource).toContain("@/services/vfs/useVfsFileOperations");
+    expect(appletActionsSource).toContain("@/services/vfs/FileMetadataService");
+    expect(appletActionsSource).toContain("@/services/vfs/FileContentRepository");
+    expect(appletActionsSource).not.toContain("@/apps/finder/hooks/useFileSystem");
+    expect(vfsFileOperationsSource).toContain(
+      "useFileSystem(basePath, { skipLoad: true })"
     );
   });
 });
