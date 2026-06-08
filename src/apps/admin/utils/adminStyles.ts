@@ -1,22 +1,22 @@
 import { cn } from "@/lib/utils";
 
-/** Main content pane — tracks `--os-color-window-bg` in light and dark. */
-export const adminSurfaceClass = "bg-os-window-bg text-os-text-primary";
+/** Main content pane — mirrors Finder's white pane surface and dark remap. */
+export const adminSurfaceClass = "bg-white/90 text-os-text-primary";
 
 /** Recessed sidebar / secondary panel surface. */
-export const adminSidebarClass = "bg-os-panel-bg text-os-text-primary";
+export const adminSidebarClass = "bg-white/90 text-os-text-primary";
 
 /** Card / panel shell with theme-aware border. */
 export const adminCardClass =
-  "overflow-hidden rounded border border-os-separator bg-os-window-bg";
+  "overflow-hidden rounded border border-black/10 bg-white/90 os-mac-aqua-dark:border-white/10";
 
 /** Card header band (dashboard sections, server card, etc.). */
 export const adminCardHeaderClass =
-  "border-b border-os-separator bg-os-panel-bg px-3 py-2";
+  "border-b border-black/10 bg-white/90 px-3 py-2 os-mac-aqua-dark:border-white/10";
 
 /** Detail panel header (user profile, song detail). */
 export const adminDetailHeaderClass =
-  "flex items-center gap-2 border-b border-os-separator bg-os-panel-bg px-3 py-2";
+  "flex items-center gap-2 border-b border-black/10 bg-white/90 px-3 py-2 os-mac-aqua-dark:border-white/10";
 
 /** Uppercase section labels in cards and profile panels. */
 export const adminSectionLabelClass =
@@ -27,8 +27,7 @@ export const adminSectionHeaderClass =
   "!text-[11px] uppercase tracking-wide text-os-text-secondary";
 
 /** Theme-aware vertical list dividers. */
-export const adminListDividerClass =
-  "divide-y divide-[color:var(--os-color-separator)]";
+export const adminListDividerClass = "admin-soft-list-dividers";
 
 /** Table header cell background. */
 export const adminTableHeadClass =
