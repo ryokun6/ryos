@@ -1,24 +1,19 @@
 import { useCallback, useEffect, useRef } from "react";
-import {
-  type PusherChannel,
-  getPusherClient,
-  subscribePusherChannel,
-  unsubscribePusherChannel,
-} from "@/lib/pusherClient";
 import { useChatsStoreShallow } from "@/stores/helpers";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useAppStore } from "@/stores/useAppStore";
-import type { ChatMessage, ChatRoom } from "@/types/chat";
+import type { ChatMessage } from "@/types/chat";
 import { removeChatRoomById, upsertChatRoom } from "@/utils/chatRoomList";
 import { shouldNotifyForRoomMessage } from "@/utils/chatNotifications";
 import { showRoomMessageNotification } from "@/utils/chatNotificationDisplay";
 import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
 import { shouldSubscribeToBackgroundRoomUpdates } from "@/utils/chatRoomSubscriptions";
 import {
-  getChatRoomChannelName,
-  getChatsGlobalChannelName,
-} from "@/shared/constants/realtime";
-import { normalizeChatTimestamp } from "@/shared/contracts/chat";
+  ChatRealtimeService,
+  normalizeRealtimeChatMessage,
+  type MessageDeletedPayload,
+  type RoomMessagePayload,
+} from "@/services/chat/ChatRealtimeService";
 
 const isChatsAppOpen = (): boolean => {
   const { instances } = useAppStore.getState();
@@ -26,27 +21,6 @@ const isChatsAppOpen = (): boolean => {
     (instance) => instance.appId === "chats" && instance.isOpen
   );
 };
-
-interface RoomMessagePayload {
-  message: ChatMessage;
-}
-
-interface MessageDeletedPayload {
-  roomId: string;
-  messageId: string;
-}
-
-interface GlobalHandlers {
-  onRoomCreated: (data: { room: ChatRoom }) => void;
-  onRoomDeleted: (data: { roomId: string }) => void;
-  onRoomUpdated: (data: { room: ChatRoom }) => void;
-  onRoomsUpdated: (data: { rooms: ChatRoom[] }) => void;
-}
-
-interface RoomHandlers {
-  onRoomMessage: (data: RoomMessagePayload) => void;
-  onMessageDeleted: (data: MessageDeletedPayload) => void;
-}
 
 export function useBackgroundChatNotifications() {
   const {
@@ -77,54 +51,15 @@ export function useBackgroundChatNotifications() {
 
   const isBackgroundMode = Boolean(username && isAuthenticated && !hasOpenChatsInstance);
 
-  const pusherRef = useRef<ReturnType<typeof getPusherClient> | null>(null);
-  const globalChannelRef = useRef<PusherChannel | null>(null);
-  const globalHandlersRef = useRef<GlobalHandlers | null>(null);
-  const roomChannelsRef = useRef<Record<string, PusherChannel>>({});
-  const roomHandlersRef = useRef<Record<string, RoomHandlers>>({});
-
-  const unsubscribeGlobalChannel = useCallback(() => {
-    const channel = globalChannelRef.current;
-    const handlers = globalHandlersRef.current;
-
-    if (channel && handlers) {
-      channel.unbind("room-created", handlers.onRoomCreated);
-      channel.unbind("room-deleted", handlers.onRoomDeleted);
-      channel.unbind("room-updated", handlers.onRoomUpdated);
-      channel.unbind("rooms-updated", handlers.onRoomsUpdated);
-    }
-
-    if (channel) {
-      unsubscribePusherChannel(channel.name);
-    }
-
-    globalChannelRef.current = null;
-    globalHandlersRef.current = null;
-  }, []);
-
-  const unsubscribeFromRoomChannel = useCallback((roomId: string) => {
-    const channel = roomChannelsRef.current[roomId];
-    const handlers = roomHandlersRef.current[roomId];
-
-    if (channel && handlers) {
-      channel.unbind("room-message", handlers.onRoomMessage);
-      channel.unbind("message-deleted", handlers.onMessageDeleted);
-    }
-
-    if (channel) {
-      unsubscribePusherChannel(channel.name);
-    }
-
-    delete roomChannelsRef.current[roomId];
-    delete roomHandlersRef.current[roomId];
+  const realtimeRef = useRef<ChatRealtimeService | null>(null);
+  const getRealtime = useCallback(() => {
+    realtimeRef.current ??= new ChatRealtimeService();
+    return realtimeRef.current;
   }, []);
 
   const unsubscribeAllChannels = useCallback(() => {
-    unsubscribeGlobalChannel();
-    Object.keys(roomChannelsRef.current).forEach((roomId) => {
-      unsubscribeFromRoomChannel(roomId);
-    });
-  }, [unsubscribeGlobalChannel, unsubscribeFromRoomChannel]);
+    realtimeRef.current?.unsubscribeAll();
+  }, []);
 
   const handleRoomMessage = useCallback(
     (data: RoomMessagePayload) => {
@@ -138,10 +73,7 @@ export function useBackgroundChatNotifications() {
         return;
       }
 
-      const messageWithTimestamp: ChatMessage = {
-        ...data.message,
-        timestamp: normalizeChatTimestamp(data.message.timestamp),
-      };
+      const messageWithTimestamp: ChatMessage = normalizeRealtimeChatMessage(data.message);
 
       addMessageToRoom(messageWithTimestamp.roomId, messageWithTimestamp);
 
@@ -181,29 +113,19 @@ export function useBackgroundChatNotifications() {
     [removeMessageFromRoom]
   );
 
-  const subscribeToGlobalChannel = useCallback(() => {
-    if (!pusherRef.current) return;
-
-    const channelName = getChatsGlobalChannelName(username);
-    if (
-      globalChannelRef.current &&
-      globalChannelRef.current.name !== channelName
-    ) {
-      unsubscribeGlobalChannel();
-    }
-
-    if (globalChannelRef.current) {
+  useEffect(() => {
+    if (!isBackgroundMode) {
+      unsubscribeAllChannels();
       return;
     }
 
-    const channel = subscribePusherChannel(channelName);
-    const handlers: GlobalHandlers = {
+    const realtime = getRealtime();
+    realtime.subscribeGlobal(username, {
       onRoomCreated: (data) => {
         if (!data?.room?.id) {
           void fetchRooms();
           return;
         }
-
         const { rooms: currentRooms } = useChatsStore.getState();
         setRooms(upsertChatRoom(currentRooms, data.room));
       },
@@ -212,7 +134,6 @@ export function useBackgroundChatNotifications() {
           void fetchRooms();
           return;
         }
-
         const { rooms: currentRooms } = useChatsStore.getState();
         setRooms(removeChatRoomById(currentRooms, data.roomId));
       },
@@ -221,7 +142,6 @@ export function useBackgroundChatNotifications() {
           void fetchRooms();
           return;
         }
-
         const { rooms: currentRooms } = useChatsStore.getState();
         setRooms(upsertChatRoom(currentRooms, data.room));
       },
@@ -232,55 +152,13 @@ export function useBackgroundChatNotifications() {
         }
         setRooms(data.rooms);
       },
-    };
-
-    channel.bind("room-created", handlers.onRoomCreated);
-    channel.bind("room-deleted", handlers.onRoomDeleted);
-    channel.bind("room-updated", handlers.onRoomUpdated);
-    channel.bind("rooms-updated", handlers.onRoomsUpdated);
-
-    globalChannelRef.current = channel;
-    globalHandlersRef.current = handlers;
-  }, [fetchRooms, setRooms, username, unsubscribeGlobalChannel]);
-
-  const subscribeToRoomChannel = useCallback(
-    (roomId: string) => {
-      if (!roomId || !pusherRef.current || roomChannelsRef.current[roomId]) {
-        return;
-      }
-
-      const channel = subscribePusherChannel(getChatRoomChannelName(roomId));
-      const handlers: RoomHandlers = {
-        onRoomMessage: handleRoomMessage,
-        onMessageDeleted: handleMessageDeleted,
-      };
-
-      channel.bind("room-message", handlers.onRoomMessage);
-      channel.bind("message-deleted", handlers.onMessageDeleted);
-
-      roomChannelsRef.current[roomId] = channel;
-      roomHandlersRef.current[roomId] = handlers;
-    },
-    [handleMessageDeleted, handleRoomMessage]
-  );
-
-  useEffect(() => {
-    if (!isBackgroundMode) {
-      unsubscribeAllChannels();
-      return;
-    }
-
-    if (!pusherRef.current) {
-      pusherRef.current = getPusherClient();
-    }
-
-    subscribeToGlobalChannel();
+    });
     void fetchRooms();
 
     return () => {
       unsubscribeAllChannels();
     };
-  }, [fetchRooms, isBackgroundMode, subscribeToGlobalChannel, unsubscribeAllChannels]);
+  }, [fetchRooms, getRealtime, isBackgroundMode, setRooms, unsubscribeAllChannels, username]);
 
   useEffect(() => {
     if (!isBackgroundMode) {
@@ -294,13 +172,19 @@ export function useBackgroundChatNotifications() {
     );
 
     backgroundRoomsById.forEach((room) => {
-      subscribeToRoomChannel(room.id);
+      getRealtime().subscribeRoom(room.id, {
+        onRoomMessage: handleRoomMessage,
+        onMessageDeleted: handleMessageDeleted,
+      });
     });
 
-    Object.keys(roomChannelsRef.current).forEach((roomId) => {
-      if (!backgroundRoomsById.has(roomId)) {
-        unsubscribeFromRoomChannel(roomId);
-      }
-    });
-  }, [isBackgroundMode, rooms, subscribeToRoomChannel, unsubscribeFromRoomChannel]);
+    const realtime = realtimeRef.current;
+    if (!realtime) return;
+    realtime
+      .getSubscribedRoomIds()
+      .filter((roomId) => !backgroundRoomsById.has(roomId))
+      .forEach((roomId) => {
+        realtime.unsubscribeRoom(roomId);
+      });
+  }, [getRealtime, handleMessageDeleted, handleRoomMessage, isBackgroundMode, rooms]);
 }

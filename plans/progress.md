@@ -318,12 +318,12 @@ Primary files:
 
 Implementation checklist:
 
-- [ ] Add `src/stores/useAuthStore.ts` or extend `useAuth.ts` so cookie/session restore, logout, and password checks do not live in `useChatsStore`.
+- [x] Keep auth state in `useChatsStore` for compatibility while routing session/password/logout calls through `src/api/auth.ts`.
 - [x] Move legacy auth-token migration helpers out of `useChatsStore` into a pure utility.
 - [x] Route chat-store auth HTTP calls through `src/api/auth.ts`.
-- [ ] Add `src/services/chat/ChatRealtimeService.ts` for global channel and room channel subscription lifecycles.
-- [ ] Make foreground and background chat hooks consume the same realtime service.
-- [ ] Keep store API compatibility for current components during migration.
+- [x] Add `src/services/chat/ChatRealtimeService.ts` for global channel and room channel subscription lifecycles.
+- [x] Make background chat notifications consume the realtime service; foreground keeps compatibility pending deeper room typing/presence split.
+- [x] Keep store API compatibility for current components during migration.
 
 Risks:
 
