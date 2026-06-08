@@ -1,5 +1,4 @@
-import { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo, useReducer } from "react";
-import ReactPlayer from "react-player";
+import { useState, useRef, useEffect, useCallback, useMemo, useReducer } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { track } from "@/utils/analytics";
@@ -14,6 +13,7 @@ import { useLyricsErrorToast } from "@/hooks/useLyricsErrorToast";
 import { useCustomEventListener, useEventListener } from "@/hooks/useEventListener";
 import { useLibraryUpdateChecker } from "./useLibraryUpdateChecker";
 import { useIpodActiveLibrary } from "./useIpodActiveLibrary";
+import { useIpodPlayback } from "./useIpodPlayback";
 import {
   useAppleMusicLibrary,
   syncAppleMusicResource,
@@ -347,7 +347,6 @@ export function useIpodLogic({
   const backlightTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const userHasInteractedRef = useRef(false);
 
   // Dialog state
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
@@ -422,81 +421,26 @@ export function useIpodLogic({
   const [isBrickGameOpen, setIsBrickGameOpen] = useState(false);
   const wasPlayingBeforeBrickGameRef = useRef(false);
 
-  // Playback state.
-  //
-  // `elapsedTime` lives in `useIpodStore` (single source of truth so
-  // every player path — YouTube + Apple Music + listen sessions — and
-  // every consumer reads the same value). We read it back here via a
-  // selector so this hook stays reactive to time changes for the
-  // pieces that need it (lyrics, fullscreen sync). Previously we kept
-  // a duplicate `useState(0)` in parallel and updated both on every
-  // progress tick — that just churned React state twice per tick for
-  // the same value.
-  const elapsedTime = useIpodStore((s) => s.elapsedTime);
-  const [totalTime, setTotalTime] = useState(0);
-  const playerRef = useRef<ReactPlayer | null>(null);
-  const fullScreenPlayerRef = useRef<ReactPlayer | null>(null);
-  const lastTrackedSongRef = useRef<{ trackId: string; elapsedTime: number } | null>(null);
-  const skipOperationRef = useRef(false);
+  const {
+    elapsedTime,
+    totalTime,
+    setTotalTime,
+    playerRef,
+    fullScreenPlayerRef,
+    lastTrackedSongRef,
+    skipOperationRef,
+    userHasInteractedRef,
+    isTrackSwitchingRef,
+    trackSwitchTimeoutRef,
+    pauseBeforeWindowClose,
+  } = useIpodPlayback({
+    isWindowOpen,
+    isFullScreen,
+    musicKitInstanceRef,
+  });
   const coverFlowRef = useRef<CoverFlowRef | null>(null);
   const musicQuizRef = useRef<MusicQuizRef | null>(null);
   const brickGameRef = useRef<BrickGameRef | null>(null);
-
-  const pauseBeforeWindowClose = useCallback(() => {
-    const store = useIpodStore.getState();
-    const activePlayer = isFullScreen
-      ? fullScreenPlayerRef.current
-      : playerRef.current;
-    const playerTime = activePlayer?.getCurrentTime?.();
-    const internalPlayer = (
-      activePlayer as unknown as
-        | {
-            getInternalPlayer?: () => unknown;
-          }
-        | null
-        | undefined
-    )?.getInternalPlayer?.();
-    const musicKitTime =
-      typeof (internalPlayer as { currentPlaybackTime?: unknown } | null)
-        ?.currentPlaybackTime === "number"
-        ? (internalPlayer as { currentPlaybackTime: number }).currentPlaybackTime
-        : typeof musicKitInstanceRef.current?.currentPlaybackTime === "number"
-        ? musicKitInstanceRef.current.currentPlaybackTime
-        : undefined;
-    const currentTime =
-      typeof playerTime === "number" && Number.isFinite(playerTime)
-        ? playerTime
-        : musicKitTime;
-
-    if (typeof currentTime === "number" && Number.isFinite(currentTime)) {
-      store.setElapsedTime(Math.max(0, currentTime));
-    }
-
-    // Update the store before the parent closes the window so reopening
-    // never sees a stale "playing" flag while MusicKit is already paused.
-    if (store.isPlaying) {
-      store.setIsPlaying(false);
-    }
-
-    if (store.librarySource === "appleMusic") {
-      const maybeMusicKit =
-        (internalPlayer as { pause?: () => void } | null | undefined) ??
-        musicKitInstanceRef.current;
-      try {
-        maybeMusicKit?.pause?.();
-      } catch (err) {
-        console.warn("[apple music] pause before close failed", err);
-      }
-    }
-  }, [isFullScreen]);
-
-  // Fallback for close paths that bypass the WindowFrame close button and
-  // directly flip the app instance closed. By the time this runs refs may
-  // already be cleared, so `pauseBeforeWindowClose` also reads directly from
-  // the shared MusicKit instance.
-  useLayoutEffect(() => {
-    if (!isWindowOpen) pauseBeforeWindowClose();
-  }, [isWindowOpen, pauseBeforeWindowClose]);
   
   // Screen long press for CoverFlow toggle
   const screenLongPressTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -504,10 +448,6 @@ export function useIpodLogic({
   const screenLongPressStartPos = useRef<{ x: number; y: number } | null>(null);
   const SCREEN_LONG_PRESS_MOVE_THRESHOLD = 10; // pixels - cancel if moved more than this
   
-  // Track switching state to prevent race conditions
-  const isTrackSwitchingRef = useRef(false);
-  const trackSwitchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
   // Menu state
   const initialMenuMode = useMemo(() => {
     const storeState = useIpodStore.getState();

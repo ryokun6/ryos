@@ -1,4 +1,4 @@
-import type { Track } from "@/stores/useIpodStore";
+import type { Track } from "@/stores/useMediaLibraryStore";
 import type { Video } from "@/stores/useVideoStore";
 import { resolveMediaCoverUrl } from "@/utils/coverArt";
 import type { ExtendedDisplayFileItem } from "@/apps/finder/utils/fileSystemHelpers";

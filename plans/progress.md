@@ -65,6 +65,9 @@ This file tracks implementation progress for `plans/10-duplication-complexity-au
 - [x] `bun test tests/test-calendar-tool-reducer.test.ts`
 - [x] `bun test tests/test-stickies-tool-reducer.test.ts`
 - [x] `bun test tests/test-cover-art.test.ts`
+- [x] `bun test tests/test-media-library-store-facade.test.ts`
+- [x] `bun test tests/test-listen-sync-adapter.test.ts`
+- [x] `bun test tests/test-lyrics-playback-input.test.ts`
 - [x] `bun test tests/test-vfs-virtual-trees.test.ts`
 - [x] `bun test tests/test-legacy-auth-token-migration.test.ts`
 - [x] `bun test tests/test-chat-auth-api-wiring.test.ts`
@@ -236,11 +239,11 @@ Implementation checklist:
 
 - [x] Add shared media artwork helper for Kugou, Apple Music, and YouTube thumbnail resolution.
 - [x] Route Karaoke players through `YouTubePlayer` where behavior matches current ReactPlayer props.
-- [ ] Extract `useIpodPlayback` from `useIpodLogic` without changing its public return shape.
-- [ ] Extract lyrics display props shared by iPod/Karaoke/TV overlays.
-- [ ] Rename or wrap `useIpodStore` media-library parts behind `useMediaLibraryStore` compatibility exports.
-- [ ] Add a shared media playback adapter used by Karaoke after iPod extraction is stable.
-- [ ] Keep listen-session synchronization as an adapter over shared playback state, not as a core dependency.
+- [x] Extract `useIpodPlayback` from `useIpodLogic` without changing its public return shape.
+- [x] Extract shared lyrics playback input props for iPod/Karaoke/TV overlays.
+- [x] Wrap `useIpodStore` media-library parts behind `useMediaLibraryStore` compatibility exports.
+- [x] Add shared playback/listen adapter used by Karaoke.
+- [x] Keep listen-session synchronization as an adapter over shared playback state, not as a core dependency.
 
 Risks:
 
