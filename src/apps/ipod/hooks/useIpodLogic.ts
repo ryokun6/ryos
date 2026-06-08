@@ -52,7 +52,7 @@ import { LyricsAlignment, LyricsFont, DisplayMode, getLyricsFontClassName } from
 import { IPOD_ANALYTICS } from "@/utils/analytics";
 import { saveSongMetadataFromTrack } from "@/utils/songMetadataCache";
 import { formatSecondsAsMinutesSeconds } from "@/utils/timeFormat";
-import { youtubeThumbnailUrl } from "@/utils/youtubeUrl";
+import { resolveMediaCoverUrl } from "@/utils/coverArt";
 import {
   generateIpodSongShareUrl,
   shouldCacheSongMetadataForShare,
@@ -61,8 +61,6 @@ import { onAppUpdate } from "@/utils/appEventBus";
 import {
   SEEK_AMOUNT_SECONDS,
   IPOD_NOW_PLAYING_SONG_MENU_KEY as NOW_PLAYING_SONG_MENU_KEY,
-  getYouTubeVideoId,
-  formatKugouImageUrl,
   getAlbumGroupingKey,
   getArtistGroupingDisplayName,
   getArtistGroupingKey,
@@ -4807,16 +4805,7 @@ export function useIpodLogic({
 
   // Cover URL for paused state overlay in fullscreen
   const fullscreenCoverUrl = useMemo(() => {
-    if (!currentTrack) return null;
-    if (currentTrack.source === "appleMusic") {
-      // Apple Music returns a templated URL ({w}/{h} placeholders) which is
-      // already substituted to 600px when we ingest the library track. Use
-      // it as-is in fullscreen as well.
-      return currentTrack.cover ?? null;
-    }
-    const videoId = getYouTubeVideoId(currentTrack.url);
-    const youtubeThumbnail = videoId ? youtubeThumbnailUrl(videoId) : null;
-    return formatKugouImageUrl(currentTrack.cover, 800) ?? youtubeThumbnail;
+    return resolveMediaCoverUrl(currentTrack, { kugouSize: 800 });
   }, [currentTrack]);
 
   const handleRefreshLyrics = useCallback(() => {

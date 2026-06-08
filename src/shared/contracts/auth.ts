@@ -32,3 +32,9 @@ export interface RegisterResponse {
     createdAt?: number;
   };
 }
+
+export interface SessionResponse {
+  authenticated: boolean;
+  username?: string;
+  expired?: boolean;
+}

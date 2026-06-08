@@ -1,8 +1,8 @@
-import ReactPlayer from "react-player";
 import { FullScreenPortal } from "@/apps/ipod/components/FullScreenPortal";
 import { ReactionOverlay } from "@/components/listen/ReactionOverlay";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { PLAYER_PROGRESS_INTERVAL_MS } from "@/apps/ipod/constants";
+import { YouTubePlayer } from "@/components/shared/YouTubePlayer";
 import { DisplayMode } from "@/types/lyrics";
 import { KtvAmbientReactions } from "../KtvAmbientReactions";
 import { KaraokeLibraryEmptyState } from "../KaraokeLibraryEmptyState";
@@ -133,7 +133,7 @@ export function KaraokeFullscreenView({ c, isForeground }: KaraokeFullscreenView
               >
                 {currentTrack && (
                   <div className="w-full h-full pointer-events-none">
-                    <ReactPlayer
+                    <YouTubePlayer
                       ref={fullScreenPlayerRef}
                       url={currentTrack.url}
                       playing={isPlaying && isFullScreen && !isListenSessionRemoteOnly}
@@ -151,18 +151,8 @@ export function KaraokeFullscreenView({ c, isForeground }: KaraokeFullscreenView
                       config={{
                         youtube: {
                           playerVars: {
-                            modestbranding: 1,
-                            rel: 0,
-                            showinfo: 0,
-                            iv_load_policy: 3,
                             cc_load_policy: 0,
                             fs: 1,
-                            playsinline: 1,
-                            enablejsapi: 1,
-                            origin: window.location.origin,
-                          },
-                          embedOptions: {
-                            referrerPolicy: "strict-origin-when-cross-origin",
                           },
                         },
                       }}

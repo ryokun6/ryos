@@ -15,8 +15,8 @@ import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { LyricsAlignment, LyricsFont, DisplayMode } from "@/types/lyrics";
 import { useOffline } from "@/hooks/useOffline";
 import { useListenSync } from "@/hooks/useListenSync";
-import { parseYouTubeVideoId, youtubeThumbnailUrl } from "@/utils/youtubeUrl";
-import { formatKugouImageUrl } from "@/utils/coverArt";
+import { parseYouTubeVideoId } from "@/utils/youtubeUrl";
+import { resolveMediaCoverUrl } from "@/utils/coverArt";
 import { TRANSLATION_LANGUAGES } from "@/utils/lyricsTranslation";
 import { useLibraryUpdateChecker } from "@/apps/ipod/hooks/useLibraryUpdateChecker";
 import { saveSongMetadataFromTrack } from "@/utils/songMetadataCache";
@@ -545,10 +545,7 @@ export function useKaraokeLogic({
 
   // Cover URL for paused state overlay
   const coverUrl = useMemo(() => {
-    if (!currentTrack) return null;
-    const videoId = parseYouTubeVideoId(currentTrack.url);
-    const youtubeThumbnail = videoId ? youtubeThumbnailUrl(videoId) : null;
-    return formatKugouImageUrl(currentTrack.cover, 800) ?? youtubeThumbnail;
+    return resolveMediaCoverUrl(currentTrack, { kugouSize: 800 });
   }, [currentTrack]);
 
   // Translation languages with translated labels

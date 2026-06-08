@@ -1,3 +1,9 @@
+import {
+  parseYouTubeVideoId,
+  youtubeThumbnailUrl,
+  type YouTubeThumbnailQuality,
+} from "@/utils/youtubeUrl";
+
 /**
  * Replace the `{size}` placeholder in a Kugou image URL with an actual size.
  * Kugou image URLs contain `{size}` that needs to be replaced with: 100, 150,
@@ -12,4 +18,34 @@ export function formatKugouImageUrl(
   let url = imgUrl.replace("{size}", String(size));
   url = url.replace(/^http:\/\//, "https://");
   return url;
+}
+
+export interface MediaCoverInput {
+  url?: string;
+  cover?: string;
+  source?: string;
+}
+
+export interface ResolveMediaCoverUrlOptions {
+  kugouSize?: number;
+  youtubeQuality?: YouTubeThumbnailQuality;
+}
+
+export function resolveMediaCoverUrl(
+  media: MediaCoverInput | null | undefined,
+  options: ResolveMediaCoverUrlOptions = {}
+): string | null {
+  if (!media) return null;
+  if (media.source === "appleMusic") {
+    return media.cover ?? null;
+  }
+
+  const kugouSize = options.kugouSize ?? 400;
+  const youtubeQuality = options.youtubeQuality ?? "maxresdefault";
+  const videoId = parseYouTubeVideoId(media.url);
+  const youtubeThumbnail = videoId
+    ? youtubeThumbnailUrl(videoId, youtubeQuality)
+    : null;
+
+  return formatKugouImageUrl(media.cover, kugouSize) ?? youtubeThumbnail;
 }

@@ -1,13 +1,17 @@
-import { apiRequest } from "@/api/core";
+import { apiRequest, apiRequestRaw } from "@/api/core";
 import type {
+  CheckPasswordResponse,
   LoginResponse,
   RegisterResponse,
+  SessionResponse,
   VerifyTokenResponse,
 } from "@/shared/contracts/auth";
 
 export type {
+  CheckPasswordResponse,
   LoginResponse,
   RegisterResponse,
+  SessionResponse,
   VerifyTokenResponse,
 } from "@/shared/contracts/auth";
 
@@ -58,6 +62,49 @@ export async function logoutUser(): Promise<{ success: boolean }> {
     path: "/api/auth/logout",
     method: "POST",
   });
+}
+
+export async function logoutUserSafe(): Promise<void> {
+  try {
+    await logoutUser();
+  } catch {
+    // Logout should always clear local state, even if the server call fails.
+  }
+}
+
+export async function checkUserPassword(): Promise<CheckPasswordResponse> {
+  return apiRequest<CheckPasswordResponse>({
+    path: "/api/auth/password/check",
+    method: "GET",
+  });
+}
+
+export async function getAuthSession(params: {
+  username?: string;
+  legacyToken?: string | null;
+} = {}): Promise<
+  | { ok: true; data: SessionResponse }
+  | { ok: false; status: number }
+> {
+  const headers: Record<string, string> = {};
+  if (params.legacyToken && params.username) {
+    headers.Authorization = `Bearer ${params.legacyToken}`;
+    headers["X-Username"] = params.username;
+  }
+
+  const response = await apiRequestRaw({
+    path: "/api/auth/session",
+    method: "GET",
+    headers,
+    timeout: 10000,
+    retry: { maxAttempts: 2, initialDelayMs: 500 },
+  });
+
+  if (!response.ok) {
+    return { ok: false, status: response.status };
+  }
+
+  return { ok: true, data: (await response.json()) as SessionResponse };
 }
 
 export interface SetPasswordRequest {
