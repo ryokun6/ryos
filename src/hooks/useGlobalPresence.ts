@@ -6,8 +6,8 @@ import {
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { useChatsStore } from "@/stores/useChatsStore";
+import { GLOBAL_PRESENCE_CHANNEL } from "@/shared/constants/realtime";
 
-const GLOBAL_PRESENCE_CHANNEL = "presence-global";
 const HEARTBEAT_INTERVAL_MS = 60_000;
 const PRESENCE_TTL_MS = 90_000;
 const PRUNE_INTERVAL_MS = 30_000;

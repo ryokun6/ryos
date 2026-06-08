@@ -3,8 +3,8 @@ import { useShallow } from "zustand/react/shallow";
 import type ReactPlayer from "react-player";
 import {
   useListenSessionStore,
-  type ListenTrackMeta,
 } from "@/stores/useListenSessionStore";
+import type { ListenTrackMeta } from "@/shared/contracts/listen";
 import { toast } from "sonner";
 
 interface ListenSyncOptions {

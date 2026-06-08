@@ -3,20 +3,27 @@ import ReactPlayer from "react-player";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
-import { useIpodStore, Track, flushPendingLyricOffsetSave } from "@/stores/useIpodStore";
+import {
+  useMediaLibraryStore,
+  type Track,
+  flushPendingLyricOffsetSave,
+} from "@/stores/useMediaLibraryStore";
 import { useKaraokeStore } from "@/stores/useKaraokeStore";
 import { useShallow } from "zustand/react/shallow";
 import {
-  useIpodStoreShallow,
+  useMediaLibraryStoreShallow,
   useAudioSettingsStoreShallow,
   useAppStoreShallow,
 } from "@/stores/helpers";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { LyricsAlignment, LyricsFont, DisplayMode } from "@/types/lyrics";
 import { useOffline } from "@/hooks/useOffline";
-import { useListenSync } from "@/hooks/useListenSync";
-import { parseYouTubeVideoId, youtubeThumbnailUrl } from "@/utils/youtubeUrl";
-import { formatKugouImageUrl } from "@/utils/coverArt";
+import {
+  broadcastListenState,
+  usePlaybackListenSync,
+} from "@/shared/media/playbackListenSync";
+import { parseYouTubeVideoId } from "@/utils/youtubeUrl";
+import { resolveMediaCoverUrl } from "@/utils/coverArt";
 import { TRANSLATION_LANGUAGES } from "@/utils/lyricsTranslation";
 import { useLibraryUpdateChecker } from "@/apps/ipod/hooks/useLibraryUpdateChecker";
 import { saveSongMetadataFromTrack } from "@/utils/songMetadataCache";
@@ -66,7 +73,7 @@ export function useKaraokeLogic({
     japaneseFurigana,
     romanization,
     lyricsTranslationLanguage,
-  } = useIpodStore(
+  } = useMediaLibraryStore(
     useShallow((s) => ({
       tracks: s.tracks,
       showLyrics: s.showLyrics,
@@ -90,7 +97,7 @@ export function useKaraokeLogic({
     setTrackLyricsSource,
     clearTrackLyricsSource,
     addTrackFromVideoId,
-  } = useIpodStoreShallow((s) => ({
+  } = useMediaLibraryStoreShallow((s) => ({
     setLyricsAlignment: s.setLyricsAlignment,
     setLyricsFont: s.setLyricsFont,
     setRomanization: s.setRomanization,
@@ -514,13 +521,12 @@ export function useKaraokeLogic({
   );
 
   const pushListenState = useCallback(async () => {
-    const activePlayer = getActivePlayer();
-    const positionMs = Math.max(0, (activePlayer?.getCurrentTime() ?? 0) * 1000);
-    return syncListenSession({
+    return broadcastListenState({
+      getActivePlayer,
+      syncSession: syncListenSession,
       currentTrackId: currentTrack?.id ?? null,
       currentTrackMeta,
       isPlaying,
-      positionMs,
     });
   }, [
     currentTrack,
@@ -530,7 +536,7 @@ export function useKaraokeLogic({
     syncListenSession,
   ]);
 
-  useListenSync({
+  usePlaybackListenSync({
     currentTrackId: currentTrack?.id ?? null,
     currentTrackMeta,
     isPlaying,
@@ -538,17 +544,14 @@ export function useKaraokeLogic({
     setCurrentTrackId: setCurrentSongId,
     getActivePlayer,
     addTrackFromId: addTrackFromVideoId,
-    applyListenerPlayback: !listenRemoteOnly,
+    listenRemoteOnly,
     setVirtualElapsedSeconds: listenRemoteOnly ? setStoreElapsedTime : undefined,
   });
   const lyricsSourceOverride = currentTrack?.lyricsSource;
 
   // Cover URL for paused state overlay
   const coverUrl = useMemo(() => {
-    if (!currentTrack) return null;
-    const videoId = parseYouTubeVideoId(currentTrack.url);
-    const youtubeThumbnail = videoId ? youtubeThumbnailUrl(videoId) : null;
-    return formatKugouImageUrl(currentTrack.cover, 800) ?? youtubeThumbnail;
+    return resolveMediaCoverUrl(currentTrack, { kugouSize: 800 });
   }, [currentTrack]);
 
   // Translation languages with translated labels
@@ -1069,7 +1072,7 @@ export function useKaraokeLogic({
     async (url: string, autoplay = true) => {
       setIsAddingSong(true);
       try {
-        const addedTrack = await useIpodStore.getState().addTrackFromVideoId(url);
+        const addedTrack = await useMediaLibraryStore.getState().addTrackFromVideoId(url);
         if (addedTrack) {
           showStatus(t("apps.ipod.status.added"));
           // New tracks are added at the beginning, set current to the new track
@@ -1089,7 +1092,7 @@ export function useKaraokeLogic({
   // Process video ID from shared link (add if not in library, then play)
   const processVideoId = useCallback(
     async (videoId: string) => {
-      const currentTracks = useIpodStore.getState().tracks;
+      const currentTracks = useMediaLibraryStore.getState().tracks;
       const existingTrack = currentTracks.find((track) => track.id === videoId);
       // Don't autoplay on iOS/Safari due to autoplay restrictions
       const shouldAutoplay = !(isIOS || isSafari);
@@ -1283,9 +1286,9 @@ export function useKaraokeLogic({
           case "playTrack": {
             if (!cmd.trackId) break;
             startTrackSwitch();
-            const existing = useIpodStore.getState().tracks.some((t) => t.id === cmd.trackId);
+            const existing = useMediaLibraryStore.getState().tracks.some((t) => t.id === cmd.trackId);
             if (!existing) {
-              await useIpodStore
+              await useMediaLibraryStore
                 .getState()
                 .addTrackFromVideoId(cmd.trackId, false)
                 .catch(() => null);
@@ -1587,7 +1590,7 @@ export function useKaraokeLogic({
       } else if (e.key === "[" || e.key === "]") {
         // Offset adjustment: [ = lyrics earlier (negative), ] = lyrics later (positive)
         const delta = e.key === "[" ? -50 : 50;
-        useIpodStore.getState().adjustLyricOffset(currentIndex, delta, "youtube");
+        useMediaLibraryStore.getState().adjustLyricOffset(currentIndex, delta, "youtube");
         const newOffset = (currentTrack?.lyricOffset ?? 0) + delta;
         const sign = newOffset > 0 ? "+" : newOffset < 0 ? "" : "";
         showStatus(`${t("apps.ipod.status.offset")} ${sign}${(newOffset / 1000).toFixed(2)}s`);
@@ -1889,12 +1892,12 @@ export function useKaraokeLogic({
     handleCoverFlowRotation,
     clearLibrary,
     setLyricOffset: (index: number, offsetMs: number) => {
-      useIpodStore.getState().setLyricOffset(index, offsetMs, "youtube");
+      useMediaLibraryStore.getState().setLyricOffset(index, offsetMs, "youtube");
     },
     isXpTheme,
     getCurrentKaraokeTrack,
     adjustLyricOffset: (index: number, delta: number) => {
-      useIpodStore.getState().adjustLyricOffset(index, delta, "youtube");
+      useMediaLibraryStore.getState().adjustLyricOffset(index, delta, "youtube");
     },
   };
 }

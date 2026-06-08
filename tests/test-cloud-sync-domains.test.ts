@@ -157,6 +157,96 @@ describe("logical cloud sync domain API", () => {
     expect((json.error || "").toLowerCase()).toContain("contacts");
   });
 
+  test("PUT /api/sync/domains/calendar stores calendar writes with event locations", async () => {
+    const authToken = await getAuthToken();
+
+    const putRes = await fetchWithAuth(
+      `${BASE_URL}/api/sync/domains/calendar`,
+      TEST_USERNAME,
+      authToken,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          writes: {
+            calendar: {
+              domain: "calendar",
+              updatedAt: "2026-03-19T10:00:00.000Z",
+              version: 1,
+              syncVersion: makeSyncVersion("calendar-client", 1),
+              data: {
+                events: [
+                  {
+                    id: "event-1",
+                    title: "Coffee",
+                    date: "2026-06-07",
+                    color: "blue",
+                    calendarId: "home",
+                    location: "Tokyo",
+                    createdAt: 1,
+                    updatedAt: 2,
+                  },
+                ],
+                calendars: [
+                  { id: "home", name: "Home", color: "blue", visible: true },
+                ],
+                todos: [],
+                deletedEventIds: {},
+                deletedCalendarIds: {},
+                deletedTodoIds: {},
+              },
+            },
+          },
+        }),
+      }
+    );
+
+    expect(putRes.status).toBe(200);
+
+    const getRes = await fetchWithAuth(
+      `${BASE_URL}/api/sync/domains/calendar`,
+      TEST_USERNAME,
+      authToken
+    );
+
+    expect(getRes.status).toBe(200);
+    const getJson = await getRes.json();
+    expect(getJson.parts.calendar.data.events[0].location).toBe("Tokyo");
+  });
+
+  test("PUT /api/sync/domains/calendar rejects malformed calendar snapshots", async () => {
+    const authToken = await getAuthToken();
+
+    const res = await fetchWithAuth(
+      `${BASE_URL}/api/sync/domains/calendar`,
+      TEST_USERNAME,
+      authToken,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          writes: {
+            calendar: {
+              domain: "calendar",
+              updatedAt: "2026-03-19T11:00:00.000Z",
+              version: 1,
+              syncVersion: makeSyncVersion("calendar-bad", 1),
+              data: {
+                events: [{ id: "bad", title: "Missing required fields" }],
+                calendars: [],
+                todos: [],
+              },
+            },
+          },
+        }),
+      }
+    );
+
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect((json.error || "").toLowerCase()).toContain("calendar");
+  });
+
   test("PUT /api/sync/domains/files stores files metadata and custom wallpapers together", async () => {
     const authToken = await getAuthToken();
 
@@ -236,6 +326,7 @@ describe("logical cloud sync domain API", () => {
                   name: "Home",
                   latitude: 37.331,
                   longitude: -122.031,
+                  placeId: "apple-home-1",
                 },
                 work: null,
                 favorites: [
@@ -277,6 +368,7 @@ describe("logical cloud sync domain API", () => {
       name: "Home",
       latitude: 37.331,
       longitude: -122.031,
+      placeId: "apple-home-1",
     });
     expect(getJson.parts.maps.data.favorites).toHaveLength(1);
     expect(getJson.parts.maps.data.favorites[0].id).toBe("fav-1");

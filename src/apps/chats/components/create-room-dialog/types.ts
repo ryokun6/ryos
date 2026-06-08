@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import type { CreateRoomIrcOptions } from "@/shared/contracts/chat";
 
 export interface CreateRoomDialogProps {
   isOpen: boolean;
@@ -7,14 +8,7 @@ export interface CreateRoomDialogProps {
     name: string,
     type: "public" | "private" | "irc",
     members: string[],
-    ircOptions?: {
-      ircServerId?: string;
-      ircHost?: string;
-      ircPort?: number;
-      ircTls?: boolean;
-      ircChannel?: string;
-      ircServerLabel?: string;
-    }
+    ircOptions?: CreateRoomIrcOptions
   ) => Promise<{ ok: boolean; error?: string }>;
   isAdmin: boolean;
   currentUsername: string | null;

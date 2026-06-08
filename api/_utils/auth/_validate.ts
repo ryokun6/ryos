@@ -91,24 +91,6 @@ export async function validateAuth(
 }
 
 /**
- * Validate auth and check if user is admin (ryo)
- */
-export async function validateAdminAuth(
-  redis: Redis,
-  username: string | undefined | null,
-  token: string | undefined | null
-): Promise<AuthValidationResult & { isAdmin: boolean }> {
-  const result = await validateAuth(redis, username, token);
-  
-  if (!result.valid) {
-    return { ...result, isAdmin: false };
-  }
-
-  const isAdmin = username?.toLowerCase() === "ryo";
-  return { ...result, isAdmin };
-}
-
-/**
  * Quick check if token exists (no TTL refresh)
  */
 export async function tokenExists(

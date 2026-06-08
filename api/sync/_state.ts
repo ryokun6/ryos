@@ -24,13 +24,16 @@ import {
   isFilesMetadataRedisPatchPayload,
   type FilesMetadataSyncSnapshot,
 } from "../../src/utils/cloudSyncFileMerge.js";
+import { normalizeFilesMetadataSnapshotData } from "../../src/shared/domains/filesMetadata.js";
 import {
   applySettingsRedisPatch,
   isSettingsRedisPatchPayload,
   normalizeSettingsSnapshotData,
   type SettingsSnapshotData,
 } from "../../src/utils/cloudSyncSettingsMerge.js";
-import { isSerializedContact } from "../../src/utils/contacts.js";
+import { isCalendarSnapshotData } from "../../src/shared/domains/calendar.js";
+import { isContactsSnapshotData } from "../../src/shared/domains/contacts.js";
+import { isMapsSnapshotData } from "../../src/shared/domains/maps.js";
 import { triggerRealtimeEvent } from "../_utils/realtime.js";
 import {
   isSongsSnapshotData,
@@ -54,84 +57,6 @@ export interface PutStateBody {
   updatedAt?: string;
   version?: number;
   syncVersion?: CloudSyncWriteVersion;
-}
-
-function normalizeFilesMetadataForPatch(data: unknown): FilesMetadataSyncSnapshot {
-  if (!data || typeof data !== "object") {
-    return {
-      items: {},
-      libraryState: "uninitialized",
-      documents: [],
-      deletedPaths: {},
-    };
-  }
-  const d = data as Record<string, unknown>;
-  return {
-    items: (d.items as FilesMetadataSyncSnapshot["items"]) || {},
-    libraryState:
-      (d.libraryState as FilesMetadataSyncSnapshot["libraryState"]) ||
-      "uninitialized",
-    documents: Array.isArray(d.documents)
-      ? (d.documents as FilesMetadataSyncSnapshot["documents"])
-      : [],
-    deletedPaths:
-      (d.deletedPaths as FilesMetadataSyncSnapshot["deletedPaths"]) || {},
-  };
-}
-
-function isContactsSnapshotData(value: unknown): value is { contacts: unknown[] } {
-  return (
-    Boolean(value) &&
-    typeof value === "object" &&
-    Array.isArray((value as { contacts?: unknown[] }).contacts) &&
-    (value as { contacts: unknown[] }).contacts.every(isSerializedContact)
-  );
-}
-
-function isSavedPlaceLike(value: unknown): boolean {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-  const candidate = value as {
-    id?: unknown;
-    name?: unknown;
-    latitude?: unknown;
-    longitude?: unknown;
-  };
-  return (
-    typeof candidate.id === "string" &&
-    typeof candidate.name === "string" &&
-    typeof candidate.latitude === "number" &&
-    Number.isFinite(candidate.latitude) &&
-    typeof candidate.longitude === "number" &&
-    Number.isFinite(candidate.longitude)
-  );
-}
-
-function isMapsSnapshotData(value: unknown): boolean {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-  const candidate = value as {
-    home?: unknown;
-    work?: unknown;
-    favorites?: unknown;
-  };
-  if (candidate.home !== null && candidate.home !== undefined && !isSavedPlaceLike(candidate.home)) {
-    return false;
-  }
-  if (candidate.work !== null && candidate.work !== undefined && !isSavedPlaceLike(candidate.work)) {
-    return false;
-  }
-  const favorites = candidate.favorites;
-  if (favorites !== undefined) {
-    if (!Array.isArray(favorites) || !favorites.every(isSavedPlaceLike)) {
-      return false;
-    }
-  }
-  // recents are device-local and not synced; we intentionally ignore the field
-  // if a stale client still sends it.
-  return true;
 }
 
 export function stateKey(username: string, domain: RedisSyncDomain): string {
@@ -393,6 +318,13 @@ export async function putRedisStateDomain(
       error: "Invalid contacts snapshot payload",
     };
   }
+  if (domain === "calendar" && !isCalendarSnapshotData(body.data)) {
+    return {
+      ok: false,
+      status: 400,
+      error: "Invalid calendar snapshot payload",
+    };
+  }
   if (domain === "songs" && !isSongsSnapshotData(body.data)) {
     return {
       ok: false,
@@ -501,7 +433,9 @@ export async function putRedisStateDomain(
       };
     }
     dataToPersist = applyFilesMetadataRedisPatch(
-      normalizeFilesMetadataForPatch(existingRedisEntry.data),
+      normalizeFilesMetadataSnapshotData(
+        existingRedisEntry.data
+      ) as FilesMetadataSyncSnapshot,
       body.data
     );
   } else if (domain === "settings" && isSettingsRedisPatchPayload(body.data)) {

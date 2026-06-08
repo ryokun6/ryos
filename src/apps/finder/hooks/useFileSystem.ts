@@ -18,6 +18,7 @@ import {
   useVideoStoreShallow,
 } from "@/stores/helpers";
 import { formatKugouImageUrl } from "@/utils/coverArt";
+import { listVirtualMusicOrVideosPath } from "@/services/vfs/virtualTrees";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { getStoreForFile, type StoredContent } from "@/utils/indexedDBOperations";
 import {
@@ -476,112 +477,15 @@ export function useFileSystem(
           appId: app.id,
           type: "application",
         }));
-      } else if (currentPath === "/Music") {
-        // At root music directory, show artist folders
-        const artistSet = new Set<string>();
-
-        // Collect all unique artists
-        ipodTracks.forEach((track) => {
-          if (track.artist) {
-            artistSet.add(track.artist);
-          }
-        });
-
-        // Create a folder for artists with tracks
-        displayFiles = Array.from(artistSet).map((artist) => ({
-          name: artist,
-          isDirectory: true,
-          path: `/Music/${encodeURIComponent(artist)}`,
-          icon: "/icons/directory.png",
-          type: "directory-virtual",
-        }));
-
-        // Add an "Unknown Artist" folder if there are tracks without artists
-        if (ipodTracks.some((track) => !track.artist)) {
-          displayFiles.push({
-            name: "Unknown Artist",
-            isDirectory: true,
-            path: `/Music/Unknown Artist`,
-            icon: "/icons/directory.png",
-            type: "directory-virtual",
-          });
-        }
-      } else if (currentPath.startsWith("/Music/")) {
-        // Inside an artist folder
-        const artistName = decodeURIComponent(
-          currentPath.replace("/Music/", "")
+      } else {
+        const virtualMedia = listVirtualMusicOrVideosPath(
+          currentPath,
+          ipodTracks,
+          videoTracks
         );
-        const artistTracks = ipodTracks.filter((track) =>
-          artistName === "Unknown Artist"
-            ? !track.artist
-            : track.artist === artistName
-        );
-
-        // Display all tracks for this artist
-        displayFiles = artistTracks.map((track) => ({
-          name: `${track.title}.mp3`,
-          isDirectory: false,
-          path: `/Music/${track.id}`,
-          icon: "/icons/sound.png",
-          appId: "ipod",
-          type: "Music",
-          data: { songId: track.id },
-          contentUrl: formatKugouImageUrl(track.cover, 100) ?? undefined,
-        }));
-      } else if (currentPath === "/Videos") {
-        // At root videos directory, show artist folders
-        const artistSet = new Set<string>();
-
-        // Collect all unique artists
-        videoTracks.forEach((video) => {
-          if (video.artist) {
-            artistSet.add(video.artist);
-          }
-        });
-
-        // Create a folder for artists with videos
-        displayFiles = Array.from(artistSet).map((artist) => ({
-          name: artist,
-          isDirectory: true,
-          path: `/Videos/${encodeURIComponent(artist)}`,
-          icon: "/icons/directory.png",
-          type: "directory-virtual",
-        }));
-
-        // Add an "Unknown Artist" folder if there are videos without artists
-        if (videoTracks.some((video) => !video.artist)) {
-          displayFiles.push({
-            name: "Unknown Artist",
-            isDirectory: true,
-            path: `/Videos/Unknown Artist`,
-            icon: "/icons/directory.png",
-            type: "directory-virtual",
-          });
-        }
-      } else if (currentPath.startsWith("/Videos/")) {
-        // Inside a video artist folder
-        const artistName = decodeURIComponent(
-          currentPath.replace("/Videos/", "")
-        );
-        const artistVideos = videoTracks.filter((video) =>
-          artistName === "Unknown Artist"
-            ? !video.artist
-            : video.artist === artistName
-        );
-
-        // Display all videos for this artist
-        displayFiles = artistVideos.map((video) => {
-          return {
-            name: `${video.title}.mov`,
-            isDirectory: false,
-            path: `/Videos/${video.id}`,
-            icon: "/icons/video-tape.png",
-            appId: "videos",
-            type: "Video",
-            data: { videoId: video.id },
-          };
-        });
-      } else if (currentPath.startsWith("/Sites")) {
+        if (virtualMedia) {
+          displayFiles = virtualMedia.items;
+        } else if (currentPath.startsWith("/Sites")) {
         console.log(
           `[useFileSystem:loadFiles] Loading /Sites path: ${currentPath}`
         ); // Log entry
@@ -641,9 +545,8 @@ export function useFileSystem(
           `[useFileSystem:loadFiles] Mapped displayFiles for /Sites (count: ${displayFiles.length}):`,
           displayFiles
         ); // Log final result
-      }
+        } else if (currentPath === "/Trash") {
       // 2. Handle Trash Directory (Uses fileStore)
-      else if (currentPath === "/Trash") {
         // Get metadata from the store
         const itemsMetadata = getItemsInPath(currentPath);
         displayFiles = itemsMetadata.map((item) => ({
@@ -651,7 +554,7 @@ export function useFileSystem(
           icon: getFileIcon(item), // Get icon based on metadata
           modifiedAt: item.modifiedAt ? new Date(item.modifiedAt) : undefined,
         }));
-      }
+        }
       // 3. Handle Real Directories (Uses useFilesStore)
       else {
         const itemsMetadata = getItemsInPath(currentPath).filter(
@@ -747,6 +650,7 @@ export function useFileSystem(
           );
         }
         // --- END EDIT ---
+      }
       }
 
       // a. Music Library (Virtual)

@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { Editor } from "@tiptap/core";
-import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
+import { useVfsFileOperations } from "@/services/vfs/useVfsFileOperations";
+import { readDocumentTextContent } from "@/services/vfs/FileContentRepository";
 import {
   htmlToMarkdown,
   markdownToHtml,
@@ -8,16 +9,12 @@ import {
 } from "@/utils/markdown";
 import {
   removeFileExtension,
-  getContentAsString,
   generateSuggestedFilename,
 } from "../utils/textEditUtils";
 import {
   parseRichMarkdown,
   serializeRichMarkdown,
 } from "../utils/richMarkdown";
-import { DocumentContent } from "@/apps/finder/hooks/useFileSystem";
-import { STORES, dbOperations } from "@/utils/indexedDB";
-import { getStoreForFile } from "@/utils/indexedDBOperations";
 import { TEXTEDIT_ANALYTICS, track } from "@/utils/analytics";
 
 interface UseFileOperationsProps {
@@ -35,7 +32,7 @@ export function useFileOperations({
   onSaveSuccess,
   onLoadSuccess,
 }: UseFileOperationsProps) {
-  const { saveFile } = useFileSystem("/Documents");
+  const { saveFile } = useVfsFileOperations("/Documents");
 
   const handleSave = useCallback(async (): Promise<void> => {
     if (!editor) return;
@@ -237,52 +234,34 @@ export function useFileOperations({
     async (filePath: string): Promise<boolean> => {
       if (!editor) return false;
 
-      const storeName = getStoreForFile(filePath, {
-        name: filePath.split("/").pop(),
-      });
-      if (storeName !== STORES.DOCUMENTS) return false;
-
       try {
-        const { useFilesStore } = await import("@/stores/useFilesStore");
-        const fileStore = useFilesStore.getState();
-        const fileMetadata = fileStore.getItem(filePath);
+        const contentStr = await readDocumentTextContent(filePath);
+        if (contentStr) {
+          let editorContent;
 
-        if (fileMetadata && fileMetadata.uuid) {
-          const doc = await dbOperations.get<DocumentContent>(
-            storeName,
-            fileMetadata.uuid
-          );
-
-          if (doc?.content) {
-            const contentStr = await getContentAsString(doc.content);
-            let editorContent;
-
-            if (filePath.endsWith(".md")) {
-              const parsed = parseRichMarkdown(contentStr);
-              if (parsed.editorJson) {
-                editorContent = parsed.editorJson;
-              } else {
-                editorContent = markdownToHtml(parsed.markdown);
-              }
+          if (filePath.endsWith(".md")) {
+            const parsed = parseRichMarkdown(contentStr);
+            if (parsed.editorJson) {
+              editorContent = parsed.editorJson;
             } else {
-              try {
-                editorContent = JSON.parse(contentStr);
-              } catch {
-                editorContent = `<p>${contentStr}</p>`;
-              }
-            }
-
-            if (editorContent) {
-              editor.commands.setContent(editorContent, false);
-              onLoadSuccess?.(filePath);
-              console.log("Loaded content from file:", filePath);
-              return true;
+              editorContent = markdownToHtml(parsed.markdown);
             }
           } else {
-            console.warn("Document not found or empty:", filePath);
+            try {
+              editorContent = JSON.parse(contentStr);
+            } catch {
+              editorContent = `<p>${contentStr}</p>`;
+            }
+          }
+
+          if (editorContent) {
+            editor.commands.setContent(editorContent, false);
+            onLoadSuccess?.(filePath);
+            console.log("Loaded content from file:", filePath);
+            return true;
           }
         } else {
-          console.warn("File metadata or UUID not found for:", filePath);
+          console.warn("Document not found or empty:", filePath);
         }
       } catch (err) {
         console.error("Error loading file content from DB:", err);

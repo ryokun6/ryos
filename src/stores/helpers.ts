@@ -1,6 +1,7 @@
 import { useShallow } from "zustand/react/shallow";
 import { useAppStore } from "./useAppStore";
 import { useIpodStore } from "./useIpodStore";
+import { useMediaLibraryStore } from "./useMediaLibraryStore";
 import { useVideoStore } from "./useVideoStore";
 import { useAudioSettingsStore } from "./useAudioSettingsStore";
 import { useDisplaySettingsStore } from "./useDisplaySettingsStore";
@@ -31,6 +32,12 @@ export function useIpodStoreShallow<T>(
   selector: (state: ReturnType<typeof useIpodStore.getState>) => T
 ): T {
   return useStoreShallow(useIpodStore, selector);
+}
+
+export function useMediaLibraryStoreShallow<T>(
+  selector: (state: ReturnType<typeof useMediaLibraryStore.getState>) => T
+): T {
+  return useStoreShallow(useMediaLibraryStore, selector);
 }
 
 export function useVideoStoreShallow<T>(

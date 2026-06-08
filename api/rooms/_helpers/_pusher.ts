@@ -16,6 +16,12 @@ import { parseRoomData } from "./_redis.js";
 import { refreshRoomUserCount } from "./_presence.js";
 import { CHAT_ROOM_PREFIX } from "./_constants.js";
 import type { Room, Message } from "./_types.js";
+import {
+  CHATS_PUBLIC_CHANNEL,
+  CHATS_USER_CHANNEL_PREFIX,
+  getChatRoomChannelName,
+  sanitizeRealtimeChannelSegment,
+} from "../../../src/shared/constants/realtime.js";
 
 // Create Redis client
 function getRedis() {
@@ -36,7 +42,11 @@ interface BatchEvent {
  * Sanitize strings for Pusher channel names
  */
 export function sanitizeForChannel(name: string): string {
-  return name.replace(/[^a-zA-Z0-9_\-.]/g, "_");
+  return sanitizeRealtimeChannelSegment(name);
+}
+
+function getPrivateChatsChannelName(username: string): string {
+  return `${CHATS_USER_CHANNEL_PREFIX}${sanitizeForChannel(username)}`;
 }
 
 /**
@@ -80,7 +90,7 @@ export async function broadcastRoomUpdated(roomId: string): Promise<void> {
     const room: Room = { ...roomObj, userCount: count };
 
     if (!room.type || room.type === "public" || room.type === "irc") {
-      await triggerRealtimeEvent("chats-public", "room-updated", { room });
+      await triggerRealtimeEvent(CHATS_PUBLIC_CHANNEL, "room-updated", { room });
     } else if (Array.isArray(room.members)) {
       await fanOutToPrivateMembers(roomId, "room-updated", { room });
     }
@@ -96,11 +106,11 @@ export async function broadcastRoomUpdated(roomId: string): Promise<void> {
 export async function broadcastRoomCreated(room: Room): Promise<void> {
   try {
     if (!room.type || room.type === "public" || room.type === "irc") {
-      await triggerRealtimeEvent("chats-public", "room-created", { room });
+      await triggerRealtimeEvent(CHATS_PUBLIC_CHANNEL, "room-created", { room });
     } else if (Array.isArray(room.members) && room.members.length > 0) {
       // Use batch trigger for multiple members
       const events: BatchEvent[] = room.members.map((m) => ({
-        channel: `chats-${sanitizeForChannel(m)}`,
+        channel: getPrivateChatsChannelName(m),
         name: "room-created",
         data: { room },
       }));
@@ -122,11 +132,11 @@ export async function broadcastRoomDeleted(
 ): Promise<void> {
   try {
     if (!type || type === "public" || type === "irc") {
-      await triggerRealtimeEvent("chats-public", "room-deleted", { roomId });
+      await triggerRealtimeEvent(CHATS_PUBLIC_CHANNEL, "room-deleted", { roomId });
     } else if (Array.isArray(members) && members.length > 0) {
       // Use batch trigger for multiple members
       const events: BatchEvent[] = members.map((m) => ({
-        channel: `chats-${sanitizeForChannel(m)}`,
+        channel: getPrivateChatsChannelName(m),
         name: "room-deleted",
         data: { roomId },
       }));
@@ -147,7 +157,7 @@ export async function broadcastNewMessage(
   roomData?: Room | null
 ): Promise<void> {
   try {
-    const channelName = `room-${roomId}`;
+    const channelName = getChatRoomChannelName(roomId);
     const payload = { roomId, message };
     
     // Always trigger the room-specific channel (clients subscribe to this)
@@ -178,7 +188,7 @@ export async function broadcastMessageDeleted(
   roomData?: Room | null
 ): Promise<void> {
   try {
-    const channelName = `room-${roomId}`;
+    const channelName = getChatRoomChannelName(roomId);
     const payload = { roomId, messageId };
     
     await triggerRealtimeEvent(channelName, "message-deleted", payload);
@@ -208,7 +218,7 @@ async function fanOutToPrivateMembersBatched(
   if (!members || members.length === 0) return;
   
   const events: BatchEvent[] = members.map((member) => ({
-    channel: `chats-${sanitizeForChannel(member)}`,
+    channel: getPrivateChatsChannelName(member),
     name: eventName,
     data: payload,
   }));
@@ -253,7 +263,7 @@ export async function broadcastPresenceUpdate(
   payload: { username: string; action: "joined" | "left"; userCount: number }
 ): Promise<void> {
   try {
-    await triggerRealtimeEvent(`room-${roomId}`, "presence-update", payload);
+    await triggerRealtimeEvent(getChatRoomChannelName(roomId), "presence-update", payload);
   } catch (err) {
     console.error("[broadcastPresenceUpdate] Failed:", err);
   }
@@ -268,7 +278,7 @@ export async function broadcastTypingIndicator(
   payload: { username: string; isTyping: boolean }
 ): Promise<void> {
   try {
-    await triggerRealtimeEvent(`room-${roomId}`, "user-typing", payload);
+    await triggerRealtimeEvent(getChatRoomChannelName(roomId), "user-typing", payload);
   } catch (err) {
     console.error("[broadcastTypingIndicator] Failed:", err);
   }
@@ -286,10 +296,9 @@ export async function broadcastToSpecificUsers(
 
   try {
     const events: BatchEvent[] = usernames.map((username) => {
-      const safeUsername = sanitizeForChannel(username);
       const userRooms = filterRoomsForUser(rooms, username);
       return {
-        channel: `chats-${safeUsername}`,
+        channel: getPrivateChatsChannelName(username),
         name: "rooms-updated",
         data: { rooms: userRooms },
       };

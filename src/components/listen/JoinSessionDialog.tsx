@@ -12,10 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
-import {
-  useListenSessionStore,
-  type ListenSessionSummary,
-} from "@/stores/useListenSessionStore";
+import { useListenSessionStore } from "@/stores/useListenSessionStore";
+import type { ListenSessionSummary } from "@/shared/contracts/listen";
 import { cn } from "@/lib/utils";
 
 interface JoinSessionDialogProps {

@@ -72,7 +72,9 @@ describe("Chat Hook Channel Lifecycle Wiring", () => {
   describe("Background notifications hook", () => {
     test("background hook uses shared lifecycle helpers", async () => {
       const source = readSource("src/hooks/useBackgroundChatNotifications.ts");
-      assertUsesSharedLifecycleHelpers(source);
+      expect(source).toContain("ChatRealtimeService");
+      const serviceSource = readSource("src/services/chat/ChatRealtimeService.ts");
+      assertUsesSharedLifecycleHelpers(serviceSource);
     });
 
     test("background hook uses scoped unbind handlers", async () => {

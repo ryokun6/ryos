@@ -7,7 +7,7 @@ import { resolveRequestAuth, type AuthenticatedRequestUser } from "./request-aut
 import { recordAnalyticsEvent } from "./_analytics.js";
 import { getClientIp } from "./_rate-limit.js";
 
-type AuthMode = "none" | "optional" | "required";
+type AuthMode = "none" | "optional" | "required" | "admin";
 
 export interface ApiHandlerOptions {
   methods: string[];
@@ -109,13 +109,21 @@ export function apiHandler<TBody = unknown>(
         allowExpired: allowExpiredAuth,
       });
 
-      if (authResult.error) {
+      if (auth === "admin") {
+        if (authResult.error || !authResult.user || authResult.user.username !== "ryo") {
+          logger.response(403, Date.now() - startTime);
+          sendJsonError(res, 403, "Forbidden - Admin access required");
+          return;
+        }
+
+        user = authResult.user;
+      } else if (authResult.error) {
         logger.response(authResult.error.status, Date.now() - startTime);
         sendJsonError(res, authResult.error.status, authResult.error.error);
         return;
+      } else {
+        user = authResult.user;
       }
-
-      user = authResult.user;
     }
 
     let finalStatus = 200;

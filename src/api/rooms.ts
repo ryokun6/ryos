@@ -1,40 +1,16 @@
 import { apiRequest } from "@/api/core";
+import type {
+  BulkMessagesResult,
+  ChatMessage,
+  ChatRoom,
+  CreateRoomRequest,
+} from "@/shared/contracts/chat";
 
-export interface RoomSummary {
-  id: string;
-  name: string;
-  type?: "public" | "private" | "irc";
-  createdAt: number;
-  members?: string[];
-  userCount: number;
-  ircHost?: string;
-  ircPort?: number;
-  ircTls?: boolean;
-  ircChannel?: string;
-  ircServerLabel?: string;
-}
+export type RoomSummary = ChatRoom;
 
-export interface RoomMessage {
-  id: string;
-  roomId: string;
-  username: string;
-  content: string;
-  timestamp: number;
-  clientId?: string;
-}
+export type RoomMessage = ChatMessage;
 
-export interface CreateRoomPayload {
-  type: "public" | "private" | "irc";
-  name?: string;
-  members?: string[];
-  /** Registered server id from GET /api/irc/servers (required for non-admin IRC rooms). */
-  ircServerId?: string;
-  ircHost?: string;
-  ircPort?: number;
-  ircTls?: boolean;
-  ircChannel?: string;
-  ircServerLabel?: string;
-}
+export type CreateRoomPayload = CreateRoomRequest;
 
 export async function listRooms(): Promise<{ rooms: RoomSummary[] }> {
   return apiRequest<{ rooms: RoomSummary[] }>({
@@ -54,16 +30,8 @@ export async function getRoomMessages(
 
 export async function getBulkMessages(
   roomIds: string[],
-): Promise<{
-  messagesMap: Record<string, RoomMessage[]>;
-  validRoomIds: string[];
-  invalidRoomIds: string[];
-}> {
-  return apiRequest<{
-    messagesMap: Record<string, RoomMessage[]>;
-    validRoomIds: string[];
-    invalidRoomIds: string[];
-  }>({
+): Promise<BulkMessagesResult> {
+  return apiRequest<BulkMessagesResult>({
     path: "/api/messages/bulk",
     method: "GET",
     query: { roomIds: roomIds.join(",") },

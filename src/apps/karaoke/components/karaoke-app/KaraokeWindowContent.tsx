@@ -1,10 +1,10 @@
-import ReactPlayer from "react-player";
 import { AnimatePresence, motion } from "motion/react";
 import { cn } from "@/lib/utils";
 import { CoverFlow } from "@/apps/ipod/components/cover-flow/CoverFlow";
 import { ReactionOverlay } from "@/components/listen/ReactionOverlay";
 import { ListenSessionToolbar } from "@/components/listen/ListenSessionToolbar";
 import { FullscreenPlayerControls } from "@/components/shared/FullscreenPlayerControls";
+import { YouTubePlayer } from "@/components/shared/YouTubePlayer";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { PLAYER_PROGRESS_INTERVAL_MS } from "@/apps/ipod/constants";
 import { DisplayMode } from "@/types/lyrics";
@@ -157,7 +157,7 @@ export function KaraokeWindowContent({ c }: KaraokeWindowContentProps) {
           }
         >
           <div className="w-full h-[calc(100%+400px)] mt-[-200px]">
-            <ReactPlayer
+            <YouTubePlayer
               ref={playerRef}
               url={currentTrack.url}
               playing={isPlaying && !isFullScreen && !isListenSessionRemoteOnly}
@@ -176,19 +176,9 @@ export function KaraokeWindowContent({ c }: KaraokeWindowContentProps) {
               config={{
                 youtube: {
                   playerVars: {
-                    modestbranding: 1,
-                    rel: 0,
-                    showinfo: 0,
-                    iv_load_policy: 3,
                     cc_load_policy: 0,
                     fs: 0,
-                    playsinline: 1,
-                    enablejsapi: 1,
-                    origin: window.location.origin,
                     controls: 0,
-                  },
-                  embedOptions: {
-                    referrerPolicy: "strict-origin-when-cross-origin",
                   },
                 },
               }}

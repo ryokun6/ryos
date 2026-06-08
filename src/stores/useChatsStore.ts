@@ -8,10 +8,20 @@ import {
 import { APP_ANALYTICS, CHAT_ANALYTICS, getTextAnalytics, track } from "@/utils/analytics";
 import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
 import i18n from "@/lib/i18n";
-import { getApiUrl } from "@/utils/platform";
-import { abortableFetch } from "@/utils/abortableFetch";
 import { ApiRequestError } from "@/api/core";
 import { USERNAME_REGEX, PASSWORD_MIN_LENGTH } from "@/shared/validation";
+import { normalizeChatTimestamp } from "@/shared/contracts/chat";
+import {
+  checkUserPassword,
+  getAuthSession,
+  logoutUserSafe,
+  registerUser,
+  setUserPassword,
+} from "@/api/auth";
+import {
+  clearLegacyTokenRecovery,
+  consumeLegacyAuthToken,
+} from "@/utils/legacyAuthTokenMigration";
 import {
   type CreateRoomPayload,
   createRoom as createRoomApi,
@@ -22,11 +32,10 @@ import {
   sendRoomMessage as sendRoomMessageApi,
   switchPresence as switchPresenceApi,
 } from "@/api/rooms";
+import type { CreateRoomIrcOptions } from "@/shared/contracts/chat";
 
 // Username recovery - plain text, username is public info
 const USERNAME_RECOVERY_KEY = "_usr_recovery_key_";
-// Legacy key kept only so we can clean it up during migration
-const LEGACY_AUTH_TOKEN_RECOVERY_KEY = "_auth_recovery_key_";
 
 const MESSAGE_HISTORY_CAP = 500;
 
@@ -60,29 +69,6 @@ const getUsernameFromRecovery = (): string | null => {
     // Not base64 — treat as plain-text
   }
   return raw;
-};
-
-/**
- * Remove any legacy auth-token recovery data from localStorage.
- * Auth tokens are now stored exclusively in httpOnly cookies.
- */
-const clearLegacyTokenRecovery = () => {
-  localStorage.removeItem(LEGACY_AUTH_TOKEN_RECOVERY_KEY);
-};
-
-/**
- * Read (and consume) a legacy btoa-encoded auth token from localStorage.
- * Returns the plain-text token if one existed, or null.
- */
-const consumeLegacyAuthToken = (): string | null => {
-  const encoded = localStorage.getItem(LEGACY_AUTH_TOKEN_RECOVERY_KEY);
-  if (!encoded) return null;
-  localStorage.removeItem(LEGACY_AUTH_TOKEN_RECOVERY_KEY);
-  try {
-    return atob(encoded).split("").reverse().join("");
-  } catch {
-    return null;
-  }
 };
 
 const API_UNAVAILABLE_COOLDOWN_MS = 10_000;
@@ -192,14 +178,7 @@ export interface ChatsStoreState {
     name: string,
     type?: "public" | "private" | "irc",
     members?: string[],
-    ircOptions?: {
-      ircServerId?: string;
-      ircHost?: string;
-      ircPort?: number;
-      ircTls?: boolean;
-      ircChannel?: string;
-      ircServerLabel?: string;
-    }
+    ircOptions?: CreateRoomIrcOptions
   ) => Promise<{ ok: boolean; error?: string; roomId?: string }>;
   deleteRoom: (roomId: string) => Promise<{ ok: boolean; error?: string }>;
   sendMessage: (
@@ -344,24 +323,9 @@ export const useChatsStore = create<ChatsStoreState>()(
           }
 
           try {
-            const response = await abortableFetch(
-              "/api/auth/password/check",
-              {
-                method: "GET",
-                timeout: 15000,
-                throwOnHttpError: false,
-                retry: { maxAttempts: 1, initialDelayMs: 250 },
-              }
-            );
-
-            if (response.ok) {
-              const data = await response.json();
-              set({ hasPassword: data.hasPassword });
-              return { ok: true };
-            } else {
-              set({ hasPassword: null });
-              return { ok: false, error: "Failed to check password status" };
-            }
+            const data = await checkUserPassword();
+            set({ hasPassword: data.hasPassword });
+            return { ok: true };
           } catch (error) {
             console.error(
               "[ChatsStore] Error checking password status:",
@@ -389,34 +353,20 @@ export const useChatsStore = create<ChatsStoreState>()(
               payload.currentPassword = currentPassword;
             }
 
-            const response = await abortableFetch(
-              getApiUrl("/api/auth/password/set"),
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify(payload),
-                timeout: 15000,
-                throwOnHttpError: false,
-                retry: { maxAttempts: 1, initialDelayMs: 250 },
-              }
-            );
-
-            if (!response.ok) {
-              const data = await response.json();
-              return {
-                ok: false,
-                error: data.error || "Failed to set password",
-              };
-            }
+            await setUserPassword(payload);
 
             // Update local state to reflect password has been set
             set({ hasPassword: true });
             return { ok: true };
           } catch (error) {
             console.error("[ChatsStore] Error setting password:", error);
-            return { ok: false, error: "Network error while setting password" };
+            return {
+              ok: false,
+              error:
+                error instanceof ApiRequestError
+                  ? error.message
+                  : "Network error while setting password",
+            };
           }
         },
         setRooms: (newRooms) => {
@@ -663,13 +613,7 @@ export const useChatsStore = create<ChatsStoreState>()(
 
           if (currentUsername) {
             try {
-              await abortableFetch(getApiUrl("/api/auth/logout"), {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                timeout: 15000,
-                throwOnHttpError: false,
-                retry: { maxAttempts: 1, initialDelayMs: 250 },
-              });
+              await logoutUserSafe();
             } catch (err) {
               console.warn(
                 "[ChatsStore] Failed to notify server during logout:",
@@ -752,11 +696,7 @@ export const useChatsStore = create<ChatsStoreState>()(
                 .map((msg: ApiMessage) => ({
                   ...msg,
                   content: decodeHtmlEntities(String(msg.content || "")),
-                  timestamp:
-                    typeof msg.timestamp === "string" ||
-                    typeof msg.timestamp === "number"
-                      ? new Date(msg.timestamp).getTime()
-                      : msg.timestamp,
+                  timestamp: normalizeChatTimestamp(msg.timestamp),
                 }))
                 .sort(
                   (a: ChatMessage, b: ChatMessage) => a.timestamp - b.timestamp
@@ -885,11 +825,7 @@ export const useChatsStore = create<ChatsStoreState>()(
                       .map((msg) => ({
                         ...msg,
                         content: decodeHtmlEntities(String(msg.content || "")),
-                        timestamp:
-                          typeof msg.timestamp === "string" ||
-                          typeof msg.timestamp === "number"
-                            ? new Date(msg.timestamp).getTime()
-                            : msg.timestamp,
+                        timestamp: normalizeChatTimestamp(msg.timestamp),
                       }))
                       .sort((a, b) => a.timestamp - b.timestamp);
 
@@ -1191,29 +1127,10 @@ export const useChatsStore = create<ChatsStoreState>()(
           }
 
           try {
-            const response = await abortableFetch(
-              getApiUrl("/api/auth/register"),
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ username: trimmedUsername, password }),
-                timeout: 15000,
-                throwOnHttpError: false,
-                retry: { maxAttempts: 1, initialDelayMs: 250 },
-              }
-            );
-
-            if (!response.ok) {
-              const errorData = await response.json().catch(() => ({
-                error: `HTTP error! status: ${response.status}`,
-              }));
-              return {
-                ok: false,
-                error: errorData.error || "Failed to create user",
-              };
-            }
-
-            const data = await response.json();
+            const data = await registerUser({
+              username: trimmedUsername,
+              password,
+            });
             if (data.user) {
               set({ username: data.user.username, isAuthenticated: true });
 
@@ -1229,7 +1146,13 @@ export const useChatsStore = create<ChatsStoreState>()(
             return { ok: false, error: "Invalid response format" };
           } catch (error) {
             console.error("[ChatsStore] Error creating user:", error);
-            return { ok: false, error: "Network error. Please try again." };
+            return {
+              ok: false,
+              error:
+                error instanceof ApiRequestError
+                  ? error.message
+                  : "Network error. Please try again.",
+            };
           }
         },
         incrementUnread: (roomId) => {
@@ -1499,33 +1422,27 @@ async function restoreSessionFromCookie(
   legacyToken?: string | null
 ) {
   try {
-    const headers: Record<string, string> = {};
     if (legacyToken) {
       console.log(
         "[ChatsStore] Migrating legacy token to httpOnly cookie for",
         expectedUsername
       );
-      headers["Authorization"] = `Bearer ${legacyToken}`;
-      headers["X-Username"] = expectedUsername;
     }
 
-    const response = await abortableFetch("/api/auth/session", {
-      method: "GET",
-      headers,
-      timeout: 10000,
-      throwOnHttpError: false,
-      retry: { maxAttempts: 2, initialDelayMs: 500 },
+    const session = await getAuthSession({
+      username: expectedUsername,
+      legacyToken,
     });
 
-    if (!response.ok) {
-      console.log("[ChatsStore] Session restore failed:", response.status);
-      if (response.status === 401 || response.status === 403) {
+    if (!session.ok) {
+      console.log("[ChatsStore] Session restore failed:", session.status);
+      if (session.status === 401 || session.status === 403) {
         forceLogoutOnUnauthorized();
       }
       return;
     }
 
-    const data = await response.json();
+    const data = session.data;
     if (data.authenticated && data.username) {
       console.log(
         "[ChatsStore] Session restored for",

@@ -5,7 +5,32 @@
  * supporting both server-side and client-side tool execution.
  */
 
-import type { Contact } from "../../../src/utils/contacts.js";
+export type { CalendarSnapshotData } from "../../../src/shared/domains/calendar.js";
+export type { ContactsSnapshotData } from "../../../src/shared/domains/contacts.js";
+export type { StickiesSnapshotData } from "../../../src/shared/domains/stickies.js";
+export {
+  CONTACT_ACTIONS,
+  type ContactToolRecord,
+  type ContactsAction,
+  type ContactsControlInput,
+  type ContactsControlOutput,
+} from "../../../src/shared/tools/contacts.js";
+export {
+  CALENDAR_ACTIONS,
+  CALENDAR_COLORS,
+  type CalendarAction,
+  type CalendarColor,
+  type CalendarControlInput,
+  type CalendarControlOutput,
+} from "../../../src/shared/tools/calendar.js";
+export {
+  STICKIES_ACTIONS,
+  STICKY_COLORS,
+  type StickiesAction,
+  type StickiesControlInput,
+  type StickiesControlOutput,
+  type StickyColor,
+} from "../../../src/shared/tools/stickies.js";
 
 // Central list of supported theme IDs for tool validation
 export const THEME_IDS = ["system7", "macosx", "xp", "win98"] as const;
@@ -244,44 +269,6 @@ export interface SettingsInput {
   checkForUpdates?: boolean;
 }
 
-// Sticky colors
-export const STICKY_COLORS = ["yellow", "blue", "green", "pink", "purple", "orange"] as const;
-export type StickyColor = typeof STICKY_COLORS[number];
-
-// Stickies control actions
-export const STICKIES_ACTIONS = ["list", "create", "update", "delete", "clear"] as const;
-export type StickiesAction = typeof STICKIES_ACTIONS[number];
-
-// Stickies control input
-export interface StickiesControlInput {
-  action: StickiesAction;
-  id?: string;
-  content?: string;
-  color?: StickyColor;
-  position?: { x: number; y: number };
-  size?: { width: number; height: number };
-}
-
-// Stickies control output
-export interface StickiesControlOutput {
-  success: boolean;
-  message: string;
-  notes?: Array<{
-    id: string;
-    content: string;
-    color: StickyColor;
-    position: { x: number; y: number };
-    size: { width: number; height: number };
-  }>;
-  note?: {
-    id: string;
-    content: string;
-    color: StickyColor;
-    position: { x: number; y: number };
-    size: { width: number; height: number };
-  };
-}
-
 // Infinite Mac control actions
 export const INFINITE_MAC_ACTIONS = [
   "launchSystem",
@@ -420,116 +407,6 @@ export interface TvControlOutput {
   channel?: TvChannelToolRecord | null;
   /** For 'addVideo' / 'removeVideo'. */
   video?: TvVideoToolRecord | null;
-}
-
-// ============================================================================
-// Calendar Control Types
-// ============================================================================
-
-export const CALENDAR_ACTIONS = ["list", "create", "update", "delete", "listTodos", "createTodo", "toggleTodo", "deleteTodo"] as const;
-export type CalendarAction = typeof CALENDAR_ACTIONS[number];
-
-export const CALENDAR_COLORS = ["blue", "red", "green", "orange", "purple"] as const;
-export type CalendarColor = typeof CALENDAR_COLORS[number];
-
-export interface CalendarControlInput {
-  action: CalendarAction;
-  id?: string;
-  title?: string;
-  date?: string; // YYYY-MM-DD
-  startTime?: string; // HH:MM
-  endTime?: string; // HH:MM
-  color?: CalendarColor;
-  notes?: string;
-  completed?: boolean;
-  calendarId?: string;
-}
-
-export interface CalendarControlOutput {
-  success: boolean;
-  message: string;
-  events?: Array<{
-    id: string;
-    title: string;
-    date: string;
-    startTime?: string;
-    endTime?: string;
-    color: string;
-    notes?: string;
-  }>;
-  event?: {
-    id: string;
-    title: string;
-    date: string;
-    startTime?: string;
-    endTime?: string;
-    color: string;
-    notes?: string;
-  };
-  todos?: Array<{
-    id: string;
-    title: string;
-    completed: boolean;
-    dueDate: string | null;
-    calendarId: string;
-  }>;
-  todo?: {
-    id: string;
-    title: string;
-    completed: boolean;
-    dueDate: string | null;
-    calendarId: string;
-  };
-}
-
-// ============================================================================
-// Contacts Control Types
-// ============================================================================
-
-export const CONTACT_ACTIONS = ["list", "get", "create", "update", "delete"] as const;
-export type ContactsAction = typeof CONTACT_ACTIONS[number];
-
-export interface ContactsControlInput {
-  action: ContactsAction;
-  id?: string;
-  query?: string;
-  displayName?: string;
-  firstName?: string;
-  lastName?: string;
-  nickname?: string;
-  organization?: string;
-  title?: string;
-  notes?: string;
-  emails?: string[];
-  phones?: string[];
-  urls?: string[];
-  addresses?: string[];
-  birthday?: string | null;
-  telegramUsername?: string | null;
-  telegramUserId?: string | null;
-}
-
-export interface ContactToolRecord {
-  id: string;
-  displayName: string;
-  organization: string;
-  title: string;
-  emails: string[];
-  phones: string[];
-  urls: string[];
-  addresses: string[];
-  telegramUsername: string | null;
-  telegramUserId: string | null;
-  birthday: string | null;
-  notes?: string | null;
-  summary?: string | null;
-}
-
-export interface ContactsControlOutput {
-  success: boolean;
-  message: string;
-  contacts?: ContactToolRecord[];
-  contact?: ContactToolRecord | null;
 }
 
 // ============================================================================
@@ -735,54 +612,3 @@ export interface WebFetchOutput {
 // ============================================================================
 // App State Types (for server-side calendar/stickies executors)
 // ============================================================================
-
-export interface CalendarSnapshotData {
-  events: Array<{
-    id: string;
-    title: string;
-    date: string;
-    startTime?: string;
-    endTime?: string;
-    color: string;
-    calendarId?: string;
-    notes?: string;
-    createdAt: number;
-    updatedAt: number;
-  }>;
-  calendars: Array<{
-    id: string;
-    name: string;
-    color: string;
-    visible: boolean;
-  }>;
-  todos: Array<{
-    id: string;
-    title: string;
-    completed: boolean;
-    dueDate: string | null;
-    calendarId: string;
-    createdAt: number;
-  }>;
-  deletedEventIds?: Record<string, string>;
-  deletedCalendarIds?: Record<string, string>;
-  deletedTodoIds?: Record<string, string>;
-}
-
-export interface StickiesSnapshotData {
-  notes: Array<{
-    id: string;
-    content: string;
-    color: string;
-    position: { x: number; y: number };
-    size: { width: number; height: number };
-    createdAt: number;
-    updatedAt: number;
-  }>;
-  deletedNoteIds?: Record<string, string>;
-}
-
-export interface ContactsSnapshotData {
-  contacts: Contact[];
-  myContactId?: string | null;
-  deletedContactIds?: Record<string, string>;
-}
