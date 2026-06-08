@@ -8,15 +8,15 @@ export const adminSidebarClass = "bg-white/90 text-os-text-primary";
 
 /** Card / panel shell with theme-aware border. */
 export const adminCardClass =
-  "overflow-hidden rounded border border-os-separator bg-os-window-bg";
+  "overflow-hidden rounded border border-black/10 bg-white/90 os-mac-aqua-dark:border-white/10";
 
 /** Card header band (dashboard sections, server card, etc.). */
 export const adminCardHeaderClass =
-  "border-b border-os-separator bg-os-panel-bg px-3 py-2";
+  "border-b border-black/10 bg-white/90 px-3 py-2 os-mac-aqua-dark:border-white/10";
 
 /** Detail panel header (user profile, song detail). */
 export const adminDetailHeaderClass =
-  "flex items-center gap-2 border-b border-os-separator bg-os-panel-bg px-3 py-2";
+  "flex items-center gap-2 border-b border-black/10 bg-white/90 px-3 py-2 os-mac-aqua-dark:border-white/10";
 
 /** Uppercase section labels in cards and profile panels. */
 export const adminSectionLabelClass =
@@ -28,7 +28,7 @@ export const adminSectionHeaderClass =
 
 /** Theme-aware vertical list dividers. */
 export const adminListDividerClass =
-  "divide-y divide-[color:var(--os-color-separator)]";
+  "divide-y divide-black/10 os-mac-aqua-dark:divide-white/10";
 
 /** Table header cell background. */
 export const adminTableHeadClass =
