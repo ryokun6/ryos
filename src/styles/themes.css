@@ -5378,8 +5378,10 @@
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"]:not(
     [data-os-color-scheme="dark"]
   ) {
-  /* Translucent surfaces (the blur lives on the chrome elements below). */
-  --os-color-window-bg: rgba(243, 246, 251, 0.55);
+  /* Translucent surfaces (the blur lives on the chrome elements below). The
+     titlebar + body are transparent in glass, so this single `.window` fill is
+     the continuous frosted pane — keep it opaque enough to stay legible. */
+  --os-color-window-bg: rgba(243, 246, 251, 0.62);
   --os-color-panel-bg: rgba(243, 246, 251, 0.62);
   --os-color-menubar-bg: rgba(250, 251, 253, 0.55);
   --os-color-menubar-surface: rgba(250, 251, 253, 0.55);
@@ -5432,7 +5434,7 @@
 
 /* --- Dark glass tokens ---------------------------------------------------- */
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"] {
-  --os-color-window-bg: rgba(38, 40, 46, 0.55);
+  --os-color-window-bg: rgba(38, 40, 46, 0.62);
   --os-color-panel-bg: rgba(38, 40, 46, 0.62);
   --os-color-menubar-bg: rgba(26, 27, 31, 0.58);
   --os-color-menubar-surface: rgba(26, 27, 31, 0.58);

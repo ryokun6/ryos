@@ -2,6 +2,7 @@ import { useAppStoreShallow } from "@/stores/helpers";
 import { useAppStore } from "@/stores/useAppStore";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { useWindowInsets } from "@/hooks/useWindowInsets";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useIsPhone } from "@/hooks/useIsPhone";
 import { cn } from "@/lib/utils";
@@ -108,6 +109,7 @@ export function WindowFrame({
   });
 
   const { isXpTheme, isMacOSTheme, isSystem7Theme, isWinXp } = useWindowInsets();
+  const { isAquaGlass } = useThemeFlags();
 
   const isTransparent = material === "transparent" || material === "notitlebar";
   const isNoTitlebar = material === "notitlebar";
@@ -389,6 +391,7 @@ export function WindowFrame({
                       effectiveTransparentBackground
                     }
                     isBrushedMetal={isBrushedMetal}
+                    isAquaGlass={isAquaGlass}
                     isTransparent={isTransparent}
                     debugMode={debugMode}
                     appId={appId}
@@ -434,11 +437,12 @@ export function WindowFrame({
                       isXpTheme
                         ? { margin: isWinXp ? "0px 3px" : "0" }
                         : isMacOSTheme
-                          ? isTransparent
-                            ? undefined
-                            : isBrushedMetal
-                              ? undefined
-                              : isForeground
+                          ? isTransparent || isBrushedMetal || isAquaGlass
+                            ? // Aqua Glass: let the single frosted `.window`
+                              // surface show through so the titlebar + body read
+                              // as one continuous pane (like brushed metal).
+                              undefined
+                            : isForeground
                                 ? {
                                     backgroundColor: "var(--os-color-window-bg)",
                                     backgroundImage:

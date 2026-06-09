@@ -17,6 +17,7 @@ export interface WindowFrameTitleBarProps {
   disableTitlebarAutoHide: boolean;
   effectiveTransparentBackground: boolean;
   isBrushedMetal: boolean;
+  isAquaGlass: boolean;
   isTransparent: boolean;
   isTitlebarHovered: boolean;
   showTitlebarWithAutoHide: () => void;
@@ -49,6 +50,7 @@ export function WindowFrameTitleBar({
   disableTitlebarAutoHide,
   effectiveTransparentBackground,
   isBrushedMetal,
+  isAquaGlass,
   isTransparent,
   isTitlebarHovered,
   showTitlebarWithAutoHide,
@@ -228,8 +230,10 @@ export function WindowFrameTitleBar({
                   borderBottom: "none",
                   opacity: isTitlebarHovered ? 1 : 0,
                 }
-              : isBrushedMetal
-              ? {
+              : isBrushedMetal || isAquaGlass
+              ? // Aqua Glass shares the frosted `.window` surface, so the
+                // titlebar stays transparent and reads continuous with the body.
+                {
                   background: "transparent",
                 }
               : isForeground
@@ -243,8 +247,8 @@ export function WindowFrameTitleBar({
                   backgroundImage: "var(--os-pinstripe-window)",
                   opacity: "0.85",
                 }),
-            // No border for notitlebar or brushed metal
-            ...(!isNoTitlebar && !isBrushedMetal && {
+            // No border for notitlebar, brushed metal, or Aqua Glass
+            ...(!isNoTitlebar && !isBrushedMetal && !isAquaGlass && {
               borderBottom: `1px solid ${
                 isForeground
                   ? "var(--os-color-titlebar-border, rgba(0, 0, 0, 0.1))"
