@@ -72,9 +72,14 @@ const graphiteStyles = {
  */
 const ACCENT_VAR = "var(--os-accent-color, #2765ca)";
 const glassStyles = {
-  gradient: `linear-gradient(color-mix(in srgb, ${ACCENT_VAR} 66%, transparent), color-mix(in srgb, ${ACCENT_VAR} 42%, transparent))`,
+  // Slightly semi-opaque accent fill (close to the inactive light's 0.625
+  // alpha) so the orb reads as tinted glass without washing out.
+  gradient: `linear-gradient(color-mix(in srgb, ${ACCENT_VAR} 80%, transparent), color-mix(in srgb, ${ACCENT_VAR} 58%, transparent))`,
   iconColor: "rgba(255, 255, 255, 0.92)",
-  shadow: `0 1px 2px rgba(0, 0, 0, 0.22), 0 0 0 0.5px rgba(255, 255, 255, 0.35) inset, 0 1px 1px rgba(255, 255, 255, 0.5) inset, 0 -2px 3px 1px color-mix(in srgb, ${ACCENT_VAR} 45%, transparent) inset`,
+  // Mirror the inactive light's shadow stack — outer drop + a crisp 0.5px dark
+  // inset stroke for definition, tight (non-blurry) inset highlights, and an
+  // accent-tinted inner glow instead of the inactive gray.
+  shadow: `0 2px 3px rgba(0, 0, 0, 0.2), 0 1px 1px rgba(0, 0, 0, 0.3), inset 0 0 0 0.5px rgba(0, 0, 0, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.45), inset 0 2px 3px 1px color-mix(in srgb, ${ACCENT_VAR} 60%, transparent)`,
 };
 
 /**
