@@ -473,6 +473,7 @@ function serializeSettingsSnapshot(): SettingsSnapshotData {
       string
     >,
     themeAquaMaterial: useThemeStore.getState().aquaMaterial,
+    themeSystemFont: useThemeStore.getState().systemFont,
     language: useLanguageStore.getState().current,
     languageInitialized:
       localStorage.getItem("ryos:language-initialized") === "true",
@@ -964,6 +965,9 @@ async function applySettingsSnapshot(
           remoteAquaMaterial === "glass"
         ) {
           useThemeStore.getState().setAquaMaterial(remoteAquaMaterial);
+        }
+        if (normalizedData.themeSystemFont) {
+          useThemeStore.getState().setSystemFont(normalizedData.themeSystemFont);
         }
         appliedSections.push("theme");
       } catch (e) {

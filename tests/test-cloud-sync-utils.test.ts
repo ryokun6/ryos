@@ -709,6 +709,7 @@ describe("cloud sync shared helpers", () => {
     };
     const remote = {
       theme: "xp",
+      themeSystemFont: "myriad-pro" as const,
       language: "en",
       languageInitialized: true,
       aiModel: null,
@@ -755,6 +756,7 @@ describe("cloud sync shared helpers", () => {
     const local = {
       ...remote,
       theme: "aqua",
+      themeSystemFont: "theme-default" as const,
       sectionUpdatedAt: { ...sectionUpdatedAt, theme: t2 },
     };
     expect(getSettingsSectionsToPatchUpload(local, remote)).toEqual(["theme"]);
@@ -775,6 +777,7 @@ describe("cloud sync shared helpers", () => {
     };
     const remote = {
       theme: "xp",
+      themeSystemFont: "myriad-pro" as const,
       language: "en",
       languageInitialized: true,
       aiModel: null,
@@ -821,12 +824,14 @@ describe("cloud sync shared helpers", () => {
     const local = {
       ...remote,
       theme: "aqua",
+      themeSystemFont: "theme-default" as const,
       sectionUpdatedAt: { ...sectionUpdatedAt, theme: t2 },
     };
     const patch = buildSettingsRedisPatch(local, ["theme"], t1);
     expect(patch).not.toBeNull();
     const out = applySettingsRedisPatch(remote, patch!);
     expect(out.theme).toBe("aqua");
+    expect(out.themeSystemFont).toBe("theme-default");
     expect(out.sectionUpdatedAt?.theme).toBe(t2);
     expect(out.language).toBe("en");
   });

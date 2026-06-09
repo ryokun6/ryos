@@ -79,6 +79,8 @@ export function ControlPanelsAppComponent({
     accent,
     accentChrome,
     setAccent,
+    systemFont,
+    setSystemFont,
     wallpaperAccentColor,
     currentLanguage,
     setLanguage,
@@ -488,6 +490,8 @@ export function ControlPanelsAppComponent({
                 setDebugMode={setDebugMode}
                 shaderEffectEnabled={shaderEffectEnabled}
                 setShaderEffectEnabled={setShaderEffectEnabled}
+                systemFont={systemFont}
+                setSystemFont={setSystemFont}
                 AI_MODELS={AI_MODELS}
                 aiModel={aiModel}
                 setAiModel={setAiModel}

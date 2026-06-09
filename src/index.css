@@ -128,8 +128,7 @@
     background-color: #000;
     user-select: none;
     -webkit-user-select: none;
-    font-family: "ChicagoKare", "ArkPixel", "SerenityOS-Emoji", system-ui,
-      -apple-system, sans-serif;
+    font-family: var(--os-font-ui);
     -webkit-font-smoothing: none;
     font-smooth: never;
     overflow: hidden;

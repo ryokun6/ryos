@@ -19,6 +19,11 @@ import type { AIModelInfo } from "@/types/aiModels";
 import { cn } from "@/lib/utils";
 import type { TabStyleConfig } from "@/utils/tabStyles";
 import {
+  SYSTEM_FONT_OPTIONS,
+  THEME_DEFAULT_SYSTEM_FONT,
+  type SystemFontId,
+} from "@/themes/systemFonts";
+import {
   controlPanelItemIconShell,
   userAvatarInitialsTextShadow,
 } from "./constants";
@@ -56,6 +61,8 @@ export type SystemTabContentProps = {
   setDebugMode: (enabled: boolean) => void;
   shaderEffectEnabled: boolean;
   setShaderEffectEnabled: (enabled: boolean) => void;
+  systemFont: SystemFontId;
+  setSystemFont: (font: SystemFontId) => void;
   AI_MODELS: AIModelInfo[];
   aiModel: AIModel | null;
   setAiModel: (model: AIModel | null) => void;
@@ -99,6 +106,8 @@ export function SystemTabContent({
   setDebugMode,
   shaderEffectEnabled,
   setShaderEffectEnabled,
+  systemFont,
+  setSystemFont,
   AI_MODELS,
   aiModel,
   setAiModel,
@@ -110,6 +119,10 @@ export function SystemTabContent({
   handleTriggerAppCrashTest,
   handleTriggerDesktopCrashTest,
 }: SystemTabContentProps) {
+  const selectedSystemFont =
+    SYSTEM_FONT_OPTIONS.find((option) => option.id === systemFont) ??
+    SYSTEM_FONT_OPTIONS[0];
+
   return (
     <div className="space-y-4 h-full overflow-y-auto p-4">
       <div className="space-y-2 pt-1">
@@ -355,6 +368,38 @@ export function SystemTabContent({
             onCheckedChange={setShaderEffectEnabled}
             className="data-[state=checked]:bg-[#000000]"
           />
+        </div>
+      )}
+
+      {isAdmin && debugMode && (
+        <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-1">
+            <Label>{t("apps.control-panels.systemFont")}</Label>
+            <Label className="text-[11px] text-neutral-600 font-geneva-12">
+              {t("apps.control-panels.systemFontDescription")}
+            </Label>
+          </div>
+          <Select
+            value={systemFont}
+            onValueChange={(value) => setSystemFont(value as SystemFontId)}
+          >
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder={t("apps.control-panels.select")}>
+                {systemFont === THEME_DEFAULT_SYSTEM_FONT
+                  ? t("apps.control-panels.systemFontThemeDefault")
+                  : selectedSystemFont.label}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {SYSTEM_FONT_OPTIONS.map((option) => (
+                <SelectItem key={option.id} value={option.id}>
+                  {option.id === THEME_DEFAULT_SYSTEM_FONT
+                    ? t("apps.control-panels.systemFontThemeDefault")
+                    : option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       )}
 
