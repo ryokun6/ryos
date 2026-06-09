@@ -5602,3 +5602,115 @@
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55),
     inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
 }
+
+/* --- Frosted toolbar inset buttons --------------------------------------- */
+/* The brushed-metal toggle pills (`metal-inset-btn`) carry a hard two-tone
+   aluminum gradient with a sharp 49%/50% midline. In glass we swap that for a
+   single smooth, translucent gradient so the desktop blur reads through the
+   pill, matching the rest of the glass chrome. The blur lives on the group
+   (which clips its children) so the whole control shares one frosted backdrop. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]:not(
+    [data-os-color-scheme="dark"]
+  )
+  .metal-inset-btn-group {
+  background: rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]:not(
+    [data-os-color-scheme="dark"]
+  )
+  .metal-inset-btn {
+  color: #1c2330;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.55) 0%,
+    rgba(255, 255, 255, 0.26) 100%
+  );
+  border-right-color: rgba(255, 255, 255, 0.3);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]:not(
+    [data-os-color-scheme="dark"]
+  )
+  .metal-inset-btn:active,
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]:not(
+    [data-os-color-scheme="dark"]
+  )
+  .metal-inset-btn[data-state="on"] {
+  color: #0f2a52;
+  background: linear-gradient(
+    to bottom,
+    rgba(120, 168, 226, 0.6) 0%,
+    rgba(86, 138, 212, 0.45) 100%
+  );
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+/* Dark glass: translucent graphite stack instead of the white frosted pill. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .metal-inset-btn-group {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .metal-inset-btn {
+  color: rgba(255, 255, 255, 0.9);
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.16) 0%,
+    rgba(255, 255, 255, 0.05) 100%
+  );
+  border-right-color: rgba(255, 255, 255, 0.1);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .metal-inset-btn:active,
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .metal-inset-btn[data-state="on"] {
+  color: #fff;
+  background: linear-gradient(
+    to bottom,
+    rgba(90, 140, 210, 0.55) 0%,
+    rgba(60, 108, 184, 0.42) 100%
+  );
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+/* --- Frosted search field ------------------------------------------------- */
+/* `SearchInput` pins an opaque `bg-white` pill; in glass make it a semi-opaque
+   frosted well so the desktop blur shows through, like the other glass inputs. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]:not(
+    [data-os-color-scheme="dark"]
+  )
+  input[data-os-search-input="true"] {
+  background-color: rgba(255, 255, 255, 0.42) !important;
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border-color: rgba(255, 255, 255, 0.5) !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1),
+    0 1px 0 rgba(255, 255, 255, 0.4) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  input[data-os-search-input="true"] {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border-color: rgba(255, 255, 255, 0.16) !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4),
+    0 1px 0 rgba(255, 255, 255, 0.05) !important;
+}
