@@ -740,7 +740,7 @@ export function MacDock() {
           ref={dockBarRef}
           layout
           layoutRoot
-          className="inline-flex items-end"
+          className="mac-dock-surface inline-flex items-end"
           initial={false}
           animate={{
             y: isDockVisible ? 0 : scaledDockHeight + 10,

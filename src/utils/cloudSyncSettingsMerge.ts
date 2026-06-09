@@ -76,6 +76,9 @@ export function mergeSettingsSnapshotData(
         ...normalizedRemote.themeAccent,
       };
     }
+    if (normalizedRemote.themeAquaMaterial !== undefined) {
+      merged.themeAquaMaterial = normalizedRemote.themeAquaMaterial;
+    }
     merged.sectionUpdatedAt!.theme = remoteSectionUpdatedAt.theme;
   }
 
@@ -170,11 +173,17 @@ export function getSectionPayloadForSettingsPatch(
         data.themeDarkMode && Object.keys(data.themeDarkMode).length > 0;
       const hasAccent =
         data.themeAccent && Object.keys(data.themeAccent).length > 0;
-      if (hasDarkMode || hasAccent) {
+      // Only send the material when it deviates from the default so older
+      // clients keep receiving the plain-string payload they understand.
+      const hasAquaMaterial =
+        data.themeAquaMaterial !== undefined &&
+        data.themeAquaMaterial !== "classic";
+      if (hasDarkMode || hasAccent || hasAquaMaterial) {
         return {
           theme: data.theme,
           ...(hasDarkMode ? { darkMode: data.themeDarkMode } : {}),
           ...(hasAccent ? { accent: data.themeAccent } : {}),
+          ...(hasAquaMaterial ? { aquaMaterial: data.themeAquaMaterial } : {}),
         };
       }
       return data.theme;
@@ -308,6 +317,7 @@ export function applySettingsRedisPatch(
             theme?: string;
             darkMode?: Record<string, "system" | "light" | "dark" | boolean>;
             accent?: Record<string, string>;
+            aquaMaterial?: "classic" | "glass";
           };
           if (typeof v.theme === "string") next.theme = v.theme;
           // Deep-merge the per-theme maps over the remote base so the patching
@@ -318,6 +328,9 @@ export function applySettingsRedisPatch(
           }
           if (v.accent && typeof v.accent === "object") {
             next.themeAccent = { ...next.themeAccent, ...v.accent };
+          }
+          if (v.aquaMaterial === "classic" || v.aquaMaterial === "glass") {
+            next.themeAquaMaterial = v.aquaMaterial;
           }
         }
         break;

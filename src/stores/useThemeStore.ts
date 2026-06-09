@@ -106,6 +106,40 @@ function writeAccentMap(map: AccentMap) {
   }
 }
 
+/**
+ * Surface material for the Mac OS X Aqua chrome:
+ * - `"classic"` (default): the pinstriped / brushed-metal Tiger-era Aqua look.
+ * - `"glass"`: the "Aqua Glass" re-imagining — frosted translucent surfaces with
+ *   specular shine and blurred highlights (inspired by the karaoke controls).
+ *
+ * Stored as a flat string (not per-theme) because it only modifies the `macosx`
+ * chrome; other themes ignore it. Applied to `<html>` as `data-os-aqua-material`
+ * only when the active theme is `macosx` and the material is `"glass"`, so it
+ * layers on top of the existing Aqua rules via higher-specificity selectors.
+ */
+export type AquaMaterial = "classic" | "glass";
+
+function isAquaMaterial(value: unknown): value is AquaMaterial {
+  return value === "classic" || value === "glass";
+}
+
+function safeReadAquaMaterial(): AquaMaterial {
+  try {
+    const raw = localStorage.getItem(AQUA_MATERIAL_KEY);
+    return isAquaMaterial(raw) ? raw : "classic";
+  } catch {
+    return "classic";
+  }
+}
+
+function writeAquaMaterial(material: AquaMaterial) {
+  try {
+    localStorage.setItem(AQUA_MATERIAL_KEY, material);
+  } catch {
+    // ignore quota / private-mode errors
+  }
+}
+
 interface ThemeState {
   current: OsThemeId;
   /** Effective dark-mode flag for the active theme (false if the theme has no dark tokens). */
@@ -114,6 +148,8 @@ interface ThemeState {
   darkModeByTheme: DarkModeMap;
   /** Per-theme accent-color preferences (Aqua + System 7); persisted per theme. */
   accentByTheme: AccentMap;
+  /** Mac OS X Aqua surface material ("classic" pinstripe vs "glass" frosted). */
+  aquaMaterial: AquaMaterial;
   /**
    * Color sampled from the active wallpaper, driving the `"wallpaper"` accent.
    * `null` until sampled (or when the wallpaper can't be sampled).
@@ -138,6 +174,11 @@ interface ThemeState {
    * Aqua + System 7 support accents; calls for other themes are ignored.
    */
   setAccent: (accent: AccentId, theme?: OsThemeId) => void;
+  /**
+   * Switch the Aqua surface material. Only meaningful for the `macosx` theme,
+   * but the preference is persisted regardless so it sticks when toggling back.
+   */
+  setAquaMaterial: (material: AquaMaterial) => void;
   /**
    * Record the latest color sampled from the wallpaper. Re-applies the root
    * accent immediately when the current theme is using the `"wallpaper"` accent.
@@ -204,6 +245,12 @@ const DARK_MODE_KEY = "ryos:theme:dark";
  * settings-sync localStorage snapshot without a dedicated section.
  */
 const ACCENT_KEY = "ryos:theme:accent";
+/**
+ * Aqua surface material ("classic" vs "glass"). Single flat value (only the
+ * `macosx` chrome reads it). Stored as a plain string so it round-trips through
+ * the settings-sync localStorage snapshot alongside the other theme keys.
+ */
+const AQUA_MATERIAL_KEY = "ryos:theme:aqua-material";
 /**
  * Last color sampled from the active wallpaper for the `"wallpaper"` accent.
  * Cached so a non-default-accent reload paints the right color immediately
@@ -278,7 +325,8 @@ function applyRootThemeAttributes(
   theme: OsThemeId,
   isDark: boolean,
   accentMap: AccentMap,
-  wallpaperColor: string | null
+  wallpaperColor: string | null,
+  aquaMaterial: AquaMaterial
 ) {
   const root = document.documentElement;
   root.dataset.osTheme = theme;
@@ -286,6 +334,14 @@ function applyRootThemeAttributes(
   const macChrome = getOsMacChrome(theme);
   if (macChrome) root.dataset.osMacChrome = macChrome;
   else delete root.dataset.osMacChrome;
+  // Aqua "glass" material only applies to the macosx chrome. The attribute is
+  // omitted for classic Aqua (and every other theme) so the glass overrides —
+  // which key on `[data-os-aqua-material="glass"]` — stay dormant.
+  if (theme === "macosx" && aquaMaterial === "glass") {
+    root.dataset.osAquaMaterial = "glass";
+  } else {
+    delete root.dataset.osAquaMaterial;
+  }
   // Color-scheme attribute is only applied when the theme supports dark mode AND it's enabled.
   // This keeps the existing light-mode CSS the single source of truth for unsupported themes.
   // Mirror the same predicate on Tailwind's `dark` class so `dark:*` utilities match Aqua dark mode
@@ -335,7 +391,8 @@ function ensureSystemDarkListener() {
       state.current,
       nextDark,
       state.accentByTheme,
-      state.wallpaperAccentColor
+      state.wallpaperAccentColor,
+      state.aquaMaterial
     );
   };
   if (typeof systemDarkQuery.addEventListener === "function") {
@@ -351,6 +408,7 @@ const createThemeStore = () => create<ThemeState>((set) => ({
   isDark: false,
   darkModeByTheme: {},
   accentByTheme: {},
+  aquaMaterial: "classic",
   wallpaperAccentColor: null,
   setTheme: (theme) => {
     const safe = sanitizeStoredTheme(theme);
@@ -366,7 +424,8 @@ const createThemeStore = () => create<ThemeState>((set) => ({
       safe,
       nextDark,
       state.accentByTheme,
-      state.wallpaperAccentColor
+      state.wallpaperAccentColor,
+      state.aquaMaterial
     );
     ensureLegacyCss(safe);
     // Note: No need to invalidate icon cache on theme switch.
@@ -408,7 +467,8 @@ const createThemeStore = () => create<ThemeState>((set) => ({
         state.current,
         nextDark,
         state.accentByTheme,
-        state.wallpaperAccentColor
+        state.wallpaperAccentColor,
+        state.aquaMaterial
       );
       track(SETTINGS_ANALYTICS.THEME_CHANGE, {
         theme: state.current,
@@ -450,6 +510,24 @@ const createThemeStore = () => create<ThemeState>((set) => ({
         accent,
       });
     }
+  },
+  setAquaMaterial: (material) => {
+    if (!isAquaMaterial(material)) return;
+    const state = useThemeStore.getState();
+    if (material === state.aquaMaterial) return;
+    writeAquaMaterial(material);
+    set({ aquaMaterial: material });
+    applyRootThemeAttributes(
+      state.current,
+      state.isDark,
+      state.accentByTheme,
+      state.wallpaperAccentColor,
+      material
+    );
+    track(SETTINGS_ANALYTICS.THEME_CHANGE, {
+      theme: state.current,
+      aquaMaterial: material,
+    });
   },
   setWallpaperAccentColor: (hex) => {
     const normalized = normalizeAccentHex(hex);
@@ -497,15 +575,23 @@ const createThemeStore = () => create<ThemeState>((set) => ({
     }
     const accentMap = safeReadAccentMap();
     const wallpaperAccentColor = safeReadWallpaperAccentColor();
+    const aquaMaterial = safeReadAquaMaterial();
     const isDark = effectiveDarkFor(theme, map);
     set({
       current: theme,
       isDark,
       darkModeByTheme: map,
       accentByTheme: accentMap,
+      aquaMaterial,
       wallpaperAccentColor,
     });
-    applyRootThemeAttributes(theme, isDark, accentMap, wallpaperAccentColor);
+    applyRootThemeAttributes(
+      theme,
+      isDark,
+      accentMap,
+      wallpaperAccentColor,
+      aquaMaterial
+    );
     ensureLegacyCss(theme);
     ensureSystemDarkListener();
   },

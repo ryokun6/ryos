@@ -2,6 +2,7 @@ import { useAppStoreShallow } from "@/stores/helpers";
 import { useAppStore } from "@/stores/useAppStore";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { useWindowInsets } from "@/hooks/useWindowInsets";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useIsPhone } from "@/hooks/useIsPhone";
 import { cn } from "@/lib/utils";
@@ -108,10 +109,18 @@ export function WindowFrame({
   });
 
   const { isXpTheme, isMacOSTheme, isSystem7Theme, isWinXp } = useWindowInsets();
+  const { isAquaGlass } = useThemeFlags();
 
   const isTransparent = material === "transparent" || material === "notitlebar";
   const isNoTitlebar = material === "notitlebar";
   const isBrushedMetal = material === "brushedmetal";
+  // Regular (default-material) windows under Aqua Glass use the single frosted
+  // glass pane. Brushed-metal windows keep their `window-material-brushedmetal`
+  // class and are converted to glass purely via CSS overrides (so apps can
+  // still opt into the metal material). Transparent / notitlebar materials keep
+  // their own treatment.
+  const isGlassRegular =
+    isAquaGlass && !isTransparent && !isBrushedMetal;
   const effectiveTransparentBackground =
     isMacOSTheme ? true : isTransparent;
 
@@ -366,7 +375,8 @@ export function WindowFrame({
                     isForeground ? "is-foreground" : "",
                     isBrushedMetal &&
                       isMacOSTheme &&
-                      "window-material-brushedmetal"
+                      "window-material-brushedmetal",
+                    isGlassRegular && "window-material-glass"
                   )}
                   style={{
                     ...(!isXpTheme
@@ -389,6 +399,7 @@ export function WindowFrame({
                       effectiveTransparentBackground
                     }
                     isBrushedMetal={isBrushedMetal}
+                    isGlassSurface={isGlassRegular}
                     isTransparent={isTransparent}
                     debugMode={debugMode}
                     appId={appId}
@@ -434,11 +445,12 @@ export function WindowFrame({
                       isXpTheme
                         ? { margin: isWinXp ? "0px 3px" : "0" }
                         : isMacOSTheme
-                          ? isTransparent
-                            ? undefined
-                            : isBrushedMetal
-                              ? undefined
-                              : isForeground
+                          ? isTransparent || isBrushedMetal || isAquaGlass
+                            ? // Aqua Glass: let the single frosted `.window`
+                              // surface show through so the titlebar + body read
+                              // as one continuous pane (like brushed metal).
+                              undefined
+                            : isForeground
                                 ? {
                                     backgroundColor: "var(--os-color-window-bg)",
                                     backgroundImage:

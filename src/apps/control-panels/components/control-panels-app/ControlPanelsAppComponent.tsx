@@ -70,6 +70,8 @@ export function ControlPanelsAppComponent({
     setShaderEffectEnabled,
     currentTheme,
     setTheme,
+    aquaMaterial,
+    setAquaMaterial,
     supportsDarkMode,
     darkModePreference,
     setDarkMode,
@@ -355,6 +357,8 @@ export function ControlPanelsAppComponent({
                 t={t}
                 currentTheme={currentTheme}
                 setTheme={setTheme}
+                aquaMaterial={aquaMaterial}
+                setAquaMaterial={setAquaMaterial}
                 supportsDarkMode={supportsDarkMode}
                 darkModePreference={darkModePreference}
                 setDarkMode={setDarkMode}

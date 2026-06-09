@@ -84,6 +84,8 @@ export type AppearanceTabContentProps = {
   t: (key: string, opts?: Record<string, unknown>) => string;
   currentTheme: OsThemeId;
   setTheme: (theme: OsThemeId) => void;
+  aquaMaterial: "classic" | "glass";
+  setAquaMaterial: (material: "classic" | "glass") => void;
   supportsDarkMode: boolean;
   darkModePreference: "system" | "light" | "dark";
   setDarkMode: (mode: "system" | "light" | "dark") => void;
@@ -102,6 +104,8 @@ export function AppearanceTabContent({
   t,
   currentTheme,
   setTheme,
+  aquaMaterial,
+  setAquaMaterial,
   supportsDarkMode,
   darkModePreference,
   setDarkMode,
@@ -114,6 +118,33 @@ export function AppearanceTabContent({
   setLanguage,
   tabStyles,
 }: AppearanceTabContentProps) {
+  // "Aqua Glass" is a surface material variant of the macosx (Aqua) chrome, not
+  // a separate OsThemeId. Surface it as its own picker entry using a synthetic
+  // value so it sits right below classic "Aqua".
+  const GLASS_VALUE = "macosx:glass";
+  const themeOptions: { value: string; label: string }[] = [];
+  for (const [id, theme] of Object.entries(themes)) {
+    themeOptions.push({ value: id, label: theme.name });
+    if (id === "macosx") {
+      themeOptions.push({ value: GLASS_VALUE, label: `${theme.name} Glass` });
+    }
+  }
+  const selectedThemeValue =
+    currentTheme === "macosx" && aquaMaterial === "glass"
+      ? GLASS_VALUE
+      : currentTheme;
+  const selectedThemeLabel =
+    themeOptions.find((option) => option.value === selectedThemeValue)?.label ??
+    themes[currentTheme]?.name;
+  const handleThemeChange = (value: string) => {
+    if (value === GLASS_VALUE) {
+      setTheme("macosx");
+      setAquaMaterial("glass");
+    } else {
+      setTheme(value as OsThemeId);
+      setAquaMaterial("classic");
+    }
+  };
   return (
     <div className="space-y-4 h-full overflow-y-auto p-4 pt-6">
       <div className="flex items-center justify-between gap-2">
@@ -176,19 +207,16 @@ export function AppearanceTabContent({
             {t("apps.control-panels.themeDescription")}
           </Label>
         </div>
-        <Select
-          value={currentTheme}
-          onValueChange={(value) => setTheme(value as OsThemeId)}
-        >
+        <Select value={selectedThemeValue} onValueChange={handleThemeChange}>
           <SelectTrigger className="w-[120px] flex-shrink-0">
             <SelectValue placeholder={t("apps.control-panels.select")}>
-              {themes[currentTheme]?.name || t("apps.control-panels.select")}
+              {selectedThemeLabel || t("apps.control-panels.select")}
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
-            {Object.entries(themes).map(([id, theme]) => (
-              <SelectItem key={id} value={id}>
-                {theme.name}
+            {themeOptions.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
               </SelectItem>
             ))}
           </SelectContent>
