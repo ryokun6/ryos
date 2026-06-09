@@ -114,6 +114,10 @@ export function WindowFrame({
   const isTransparent = material === "transparent" || material === "notitlebar";
   const isNoTitlebar = material === "notitlebar";
   const isBrushedMetal = material === "brushedmetal";
+  // Regular (opaque-material) windows under Aqua Glass: the `.window` element
+  // becomes the single frosted pane. Transparent / brushed-metal materials keep
+  // their own treatment, so they're excluded here.
+  const isGlassRegular = isAquaGlass && !isTransparent && !isBrushedMetal;
   const effectiveTransparentBackground =
     isMacOSTheme ? true : isTransparent;
 
@@ -368,7 +372,8 @@ export function WindowFrame({
                     isForeground ? "is-foreground" : "",
                     isBrushedMetal &&
                       isMacOSTheme &&
-                      "window-material-brushedmetal"
+                      "window-material-brushedmetal",
+                    isGlassRegular && "window-material-glass"
                   )}
                   style={{
                     ...(!isXpTheme
@@ -391,7 +396,7 @@ export function WindowFrame({
                       effectiveTransparentBackground
                     }
                     isBrushedMetal={isBrushedMetal}
-                    isAquaGlass={isAquaGlass}
+                    isGlassSurface={isGlassRegular}
                     isTransparent={isTransparent}
                     debugMode={debugMode}
                     appId={appId}

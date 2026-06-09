@@ -5479,19 +5479,24 @@
 }
 
 /* --- Frosted window panes ------------------------------------------------- */
-/* Blur the desktop behind every window and add a specular inner rim so the
-   edge catches light like glass. */
-:root[data-os-theme="macosx"][data-os-aqua-material="glass"] .window {
+/* Regular windows: the titlebar + body render transparent (see WindowFrame), so
+   this single `.window` surface is the continuous frosted pane. It carries the
+   translucent tint, the desktop blur, and a specular inner rim at the top edge.
+   `effectiveTransparentBackground` keeps macOS `.window` elements free of the
+   `bg-os-window-bg` class, so the fill is applied here instead. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .window.window-material-glass {
+  background-color: var(--os-color-window-bg);
   backdrop-filter: blur(26px) saturate(185%);
   -webkit-backdrop-filter: blur(26px) saturate(185%);
   box-shadow: var(--os-window-shadow),
-    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
-  .window {
+  .window.window-material-glass {
   box-shadow: var(--os-window-shadow),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
 /* Drop the hard titlebar divider — on a single frosted pane the seam reads as
@@ -5507,6 +5512,12 @@
 
 /* The classic brushed-metal material drops its aluminum JPG and becomes the
    same frosted glass pane (used by iPod / iTunes-style windows). */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .window-material-brushedmetal {
+  backdrop-filter: blur(26px) saturate(185%);
+  -webkit-backdrop-filter: blur(26px) saturate(185%);
+}
+
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
   .window-material-brushedmetal::before {
   background: var(--os-pinstripe-window) !important;
