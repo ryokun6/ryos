@@ -373,9 +373,9 @@ export function SystemTabContent({
 
       {debugMode && (
         <div className="flex items-center justify-between">
-          <div className="flex flex-col gap-1">
+          <div className="flex min-w-0 flex-col gap-1 pr-2">
             <Label>{t("apps.control-panels.systemFont")}</Label>
-            <Label className="text-[11px] text-neutral-600 font-geneva-12">
+            <Label className="text-[11px] leading-[1.25] text-neutral-600 font-geneva-12">
               {t("apps.control-panels.systemFontDescription")}
             </Label>
           </div>
