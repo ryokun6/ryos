@@ -113,7 +113,7 @@ export const TITLE_CARD_TITLE_SHADOW_BLEED_STYLE = {
 
 export const TITLE_CARD_ROUNDED_OUTLINE_COLOR = "#0066FF";
 export const TITLE_CARD_SERIF_OUTLINE_COLOR = "#CC0000";
-export const TITLE_CARD_COLORED_OUTLINE_STROKE = "0.12em #fff";
+export const TITLE_CARD_COLORED_OUTLINE_STROKE = "0.12em rgba(255,255,255,0.6)";
 
 export function makeTitleCardColoredOutlineStyle(
   fillColor: string
