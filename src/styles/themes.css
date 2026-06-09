@@ -5758,11 +5758,7 @@
     [data-os-color-scheme="dark"]
   )
   .os-search-icon {
-  color: color-mix(
-    in srgb,
-    var(--os-accent-color, #2765ca) 88%,
-    #0b1e44
-  ) !important;
+  color: var(--os-accent-color, #2765ca) !important;
   filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.55));
 }
 
@@ -5770,7 +5766,7 @@
   .os-search-icon {
   color: color-mix(
     in srgb,
-    var(--os-accent-color, #5b9dff) 78%,
+    var(--os-accent-color, #5b9dff) 88%,
     #ffffff
   ) !important;
   filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.55));
