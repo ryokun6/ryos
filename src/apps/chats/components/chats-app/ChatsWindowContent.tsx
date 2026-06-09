@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { CaretDown } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
@@ -69,6 +70,19 @@ export function ChatsWindowContent({ c, isForeground }: ChatsWindowContentProps)
     isOffline,
     handleTypingInCurrentRoom,
   } = c;
+
+  // In Aqua Glass the toolbar is split into two floating frosted "islands"
+  // (left = room title, right = actions). The right island is only rendered
+  // when there are actions to show, so it never appears as an empty pill.
+  const hasRightActions = !currentRoom || currentRoom.type === "private";
+  const aquaGlassIslandStyle: CSSProperties = {
+    background: "rgba(255, 255, 255, 0.4)",
+    backdropFilter: "blur(20px) saturate(180%)",
+    WebkitBackdropFilter: "blur(20px) saturate(180%)",
+    border: "0.5px solid rgba(255, 255, 255, 0.5)",
+    boxShadow:
+      "0 1px 3px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.6)",
+  };
 
   return (
     <div
@@ -165,9 +179,15 @@ export function ChatsWindowContent({ c, isForeground }: ChatsWindowContentProps)
           />
         </div>
 
-        <div className="relative flex flex-col flex-1 h-full bg-white/85">
+        <div
+          className={`relative flex flex-col flex-1 h-full ${
+            isAquaGlass ? "" : "bg-white/85"
+          }`}
+        >
           <div
-            className={`sticky top-0 z-10 isolate flex items-center justify-between px-2 py-1 border-b ${
+            className={`sticky top-0 z-10 isolate flex items-center justify-between px-2 py-1 ${
+              isAquaGlass ? "" : "border-b"
+            } ${
               isMacTheme ? "" : "bg-neutral-200/90 backdrop-blur-lg"
             } ${
               isWindowsLegacyTheme
@@ -178,22 +198,24 @@ export function ChatsWindowContent({ c, isForeground }: ChatsWindowContentProps)
             }`}
             style={{
               transform: "translateZ(0)",
-              ...(isMacTheme
-                ? {
-                    backgroundImage: "var(--os-pinstripe-window)",
-                    ...(isAquaGlass
-                      ? {
-                          backdropFilter: "blur(26px) saturate(185%)",
-                          WebkitBackdropFilter: "blur(26px) saturate(185%)",
-                        }
-                      : { opacity: 0.95 }),
-                    borderBottom:
-                      "var(--os-metrics-titlebar-border-width, 1px) solid var(--os-color-titlebar-border-inactive, rgba(0, 0, 0, 0.2))",
-                  }
-                : undefined),
+              ...(isAquaGlass
+                ? { background: "transparent" }
+                : isMacTheme
+                  ? {
+                      backgroundImage: "var(--os-pinstripe-window)",
+                      opacity: 0.95,
+                      borderBottom:
+                        "var(--os-metrics-titlebar-border-width, 1px) solid var(--os-color-titlebar-border-inactive, rgba(0, 0, 0, 0.2))",
+                    }
+                  : undefined),
             }}
           >
-            <div className="flex items-center">
+            <div
+              className={`flex items-center ${
+                isAquaGlass ? "rounded-full overflow-hidden" : ""
+              }`}
+              style={isAquaGlass ? aquaGlassIslandStyle : undefined}
+            >
               <Button
                 variant="ghost"
                 onClick={toggleSidebarVisibility}
@@ -220,7 +242,14 @@ export function ChatsWindowContent({ c, isForeground }: ChatsWindowContentProps)
                   </span>
                 )}
             </div>
-            <div className="flex items-center gap-2">
+            <div
+              className={`flex items-center gap-2 ${
+                isAquaGlass && hasRightActions ? "rounded-full overflow-hidden" : ""
+              }`}
+              style={
+                isAquaGlass && hasRightActions ? aquaGlassIslandStyle : undefined
+              }
+            >
               {!currentRoom && !username && (
                 <Button
                   variant="ghost"
