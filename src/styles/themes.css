@@ -5754,6 +5754,28 @@
     0 1px 0 rgba(255, 255, 255, 0.05) !important;
 }
 
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]:not(
+    [data-os-color-scheme="dark"]
+  )
+  .os-search-icon {
+  color: color-mix(
+    in srgb,
+    var(--os-accent-color, #2765ca) 88%,
+    #0b1e44
+  ) !important;
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.55));
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .os-search-icon {
+  color: color-mix(
+    in srgb,
+    var(--os-accent-color, #5b9dff) 78%,
+    #ffffff
+  ) !important;
+  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.55));
+}
+
 /* --- Fully-rounded toolbar pills ----------------------------------------- */
 /* In glass the inset toggle group reads as a fully-rounded pill rather than the
    4px-radius brushed-metal slab. `overflow: hidden` on the group clips the
