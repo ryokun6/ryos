@@ -5564,9 +5564,12 @@
 }
 
 /* --- Frosted dock --------------------------------------------------------- */
+/* `border-radius` overrides the inline `0px` from MacDock so the pill reads as
+   a modern rounded glass tray. */
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .mac-dock-surface {
   backdrop-filter: blur(26px) saturate(185%);
   -webkit-backdrop-filter: blur(26px) saturate(185%);
+  border-radius: 20px !important;
   box-shadow: var(--os-color-dock-shadow),
     inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
 }
@@ -5585,6 +5588,8 @@
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"] [role="listbox"] {
   backdrop-filter: blur(22px) saturate(185%);
   -webkit-backdrop-filter: blur(22px) saturate(185%);
+  /* Overrides the inline `0px` radius from the dropdown/select content. */
+  border-radius: 12px !important;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25),
     inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
 }
