@@ -5714,3 +5714,40 @@
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4),
     0 1px 0 rgba(255, 255, 255, 0.05) !important;
 }
+
+/* --- Fully-rounded toolbar pills ----------------------------------------- */
+/* In glass the inset toggle group reads as a fully-rounded pill rather than the
+   4px-radius brushed-metal slab. `overflow: hidden` on the group clips the
+   child buttons to the pill, so only the group needs the radius; the first/last
+   buttons get matching ends for browsers that honor per-button rounding. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] .metal-inset-btn-group {
+  border-radius: 999px;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .metal-inset-btn-group
+  .metal-inset-btn:first-child {
+  border-top-left-radius: 999px;
+  border-bottom-left-radius: 999px;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .metal-inset-btn-group
+  .metal-inset-btn:last-child {
+  border-top-right-radius: 999px;
+  border-bottom-right-radius: 999px;
+}
+
+/* --- Squircle corners ----------------------------------------------------- */
+/* Continuous (squircle) corners on the chrome that already carries a radius —
+   windows, the toolbar pills, and Aqua glossy buttons. `corner-shape` only
+   takes effect in browsers that support it (Chromium 139+); elsewhere the
+   existing border-radius is used unchanged, so this degrades gracefully. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] .window.window-material-glass,
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] .window-material-brushedmetal,
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] .metal-inset-btn-group,
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] .metal-inset-btn,
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] .aqua-button,
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] input[data-os-search-input="true"] {
+  corner-shape: squircle;
+}
