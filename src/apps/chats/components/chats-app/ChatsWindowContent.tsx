@@ -21,6 +21,7 @@ export function ChatsWindowContent({ c, isForeground }: ChatsWindowContentProps)
     isWindowsLegacyTheme,
     isMacTheme,
     isAquaGlass,
+    isDarkMode,
     isXpTheme,
     containerRef,
     sidebarVisibleBool,
@@ -76,12 +77,14 @@ export function ChatsWindowContent({ c, isForeground }: ChatsWindowContentProps)
   // when there are actions to show, so it never appears as an empty pill.
   const hasRightActions = !currentRoom || currentRoom.type === "private";
   const aquaGlassIslandStyle: CSSProperties = {
-    background: "rgba(255, 255, 255, 0.28)",
+    background:
+      "linear-gradient(to bottom, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.34))",
     backdropFilter: "blur(20px) saturate(180%)",
     WebkitBackdropFilter: "blur(20px) saturate(180%)",
     border: "0.5px solid rgba(255, 255, 255, 0.5)",
-    boxShadow:
-      "0 1px 3px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.6)",
+    boxShadow: `0 1px 3px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, ${
+      isDarkMode ? 0.25 : 0.6
+    })`,
   };
 
   return (

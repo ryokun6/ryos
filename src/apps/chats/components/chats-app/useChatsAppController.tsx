@@ -383,6 +383,7 @@ export function useChatsAppController({
     isWindowsTheme: isXpTheme,
     isMacOSTheme: isMacTheme,
     isAquaGlass,
+    isDarkMode,
   } = useThemeFlags();
   const isWindowsLegacyTheme = isXpTheme;
   const isOffline = useOffline();
@@ -568,6 +569,7 @@ export function useChatsAppController({
     isXpTheme,
     isMacTheme,
     isAquaGlass,
+    isDarkMode,
     isWindowsLegacyTheme,
     isOffline,
     menuBar,
