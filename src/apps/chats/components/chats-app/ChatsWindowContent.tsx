@@ -19,6 +19,7 @@ export function ChatsWindowContent({ c, isForeground }: ChatsWindowContentProps)
   const {
     isWindowsLegacyTheme,
     isMacTheme,
+    isAquaGlass,
     isXpTheme,
     containerRef,
     sidebarVisibleBool,
@@ -180,7 +181,12 @@ export function ChatsWindowContent({ c, isForeground }: ChatsWindowContentProps)
               ...(isMacTheme
                 ? {
                     backgroundImage: "var(--os-pinstripe-window)",
-                    opacity: 0.95,
+                    ...(isAquaGlass
+                      ? {
+                          backdropFilter: "blur(26px) saturate(185%)",
+                          WebkitBackdropFilter: "blur(26px) saturate(185%)",
+                        }
+                      : { opacity: 0.95 }),
                     borderBottom:
                       "var(--os-metrics-titlebar-border-width, 1px) solid var(--os-color-titlebar-border-inactive, rgba(0, 0, 0, 0.2))",
                   }
