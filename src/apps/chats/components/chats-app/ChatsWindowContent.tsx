@@ -76,7 +76,7 @@ export function ChatsWindowContent({ c, isForeground }: ChatsWindowContentProps)
   // when there are actions to show, so it never appears as an empty pill.
   const hasRightActions = !currentRoom || currentRoom.type === "private";
   const aquaGlassIslandStyle: CSSProperties = {
-    background: "rgba(255, 255, 255, 0.4)",
+    background: "rgba(255, 255, 255, 0.28)",
     backdropFilter: "blur(20px) saturate(180%)",
     WebkitBackdropFilter: "blur(20px) saturate(180%)",
     border: "0.5px solid rgba(255, 255, 255, 0.5)",
