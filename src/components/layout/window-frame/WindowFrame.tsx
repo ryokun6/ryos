@@ -114,14 +114,13 @@ export function WindowFrame({
   const isTransparent = material === "transparent" || material === "notitlebar";
   const isNoTitlebar = material === "notitlebar";
   const isBrushedMetal = material === "brushedmetal";
-  // Aqua Glass window-material mapping: every opaque material (default AND
-  // brushedmetal — glass is "the new metal") maps to the single frosted glass
-  // pane. Only the genuinely see-through materials (transparent / notitlebar,
-  // e.g. iPod, Photo Booth, Videos) opt out and keep their own treatment.
-  const isGlassSurface = isAquaGlass && !isTransparent;
-  // In the glass theme the brushed-metal texture is replaced by the glass
-  // surface, so don't apply the metal chrome class.
-  const useBrushedMetalChrome = isBrushedMetal && isMacOSTheme && !isAquaGlass;
+  // Regular (default-material) windows under Aqua Glass use the single frosted
+  // glass pane. Brushed-metal windows keep their `window-material-brushedmetal`
+  // class and are converted to glass purely via CSS overrides (so apps can
+  // still opt into the metal material). Transparent / notitlebar materials keep
+  // their own treatment.
+  const isGlassRegular =
+    isAquaGlass && !isTransparent && !isBrushedMetal;
   const effectiveTransparentBackground =
     isMacOSTheme ? true : isTransparent;
 
@@ -374,8 +373,10 @@ export function WindowFrame({
                       ? "shadow-os-window"
                       : "",
                     isForeground ? "is-foreground" : "",
-                    useBrushedMetalChrome && "window-material-brushedmetal",
-                    isGlassSurface && "window-material-glass"
+                    isBrushedMetal &&
+                      isMacOSTheme &&
+                      "window-material-brushedmetal",
+                    isGlassRegular && "window-material-glass"
                   )}
                   style={{
                     ...(!isXpTheme
@@ -398,7 +399,7 @@ export function WindowFrame({
                       effectiveTransparentBackground
                     }
                     isBrushedMetal={isBrushedMetal}
-                    isGlassSurface={isGlassSurface}
+                    isGlassSurface={isGlassRegular}
                     isTransparent={isTransparent}
                     debugMode={debugMode}
                     appId={appId}
@@ -436,7 +437,8 @@ export function WindowFrame({
                   <div
                     className={cn(
                       "window-body flex flex-1 min-h-0 flex-col md:flex-row relative",
-                      useBrushedMetalChrome &&
+                      isBrushedMetal &&
+                        isMacOSTheme &&
                         "ml-[8px] mr-[8px] mb-[8px] rounded-none overflow-hidden"
                     )}
                     style={

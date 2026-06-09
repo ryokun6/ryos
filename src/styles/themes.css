@@ -5510,8 +5510,25 @@
   border-bottom: none !important;
 }
 
-/* The brushed-metal material is mapped to `window-material-glass` in the glass
-   theme (see WindowFrame), so it needs no aluminum-texture overrides here. */
+/* Brushed-metal windows keep their material/class, but in the glass theme the
+   aluminum JPG is overridden so the surface renders as the same frosted glass
+   pane (used by iPod / iTunes-style windows that opt into the metal material). */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .window-material-brushedmetal {
+  backdrop-filter: blur(26px) saturate(185%);
+  -webkit-backdrop-filter: blur(26px) saturate(185%);
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .window-material-brushedmetal::before {
+  background: var(--os-color-window-bg) !important;
+  filter: none !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .window-material-brushedmetal:not(.is-foreground)::before {
+  filter: saturate(0.9) brightness(0.98) !important;
+}
 
 /* iPod's blurred device backdrop gets the same frosted glass surface as the
    metal windows (replacing its neutral translucent gradient). */
