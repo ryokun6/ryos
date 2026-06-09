@@ -5630,15 +5630,17 @@
   .metal-inset-btn {
   color: #000;
   /* Top gloss layered over a gray→white base, matching the Aqua select
-     trigger. Both layers are backgrounds so button icons paint above them. */
+     trigger. Both layers are backgrounds so button icons paint above them.
+     Kept at a low alpha so the frosted desktop reads through the pill — the
+     group's blur does the rest. */
   background: linear-gradient(
         to bottom,
-        rgba(255, 255, 255, 0.85) 0%,
-        rgba(255, 255, 255, 0.35) 60%,
+        rgba(255, 255, 255, 0.55) 0%,
+        rgba(255, 255, 255, 0.18) 60%,
         rgba(255, 255, 255, 0) 100%
       )
       top / 100% 50% no-repeat,
-    linear-gradient(rgba(160, 160, 160, 0.625), rgba(255, 255, 255, 0.625));
+    linear-gradient(rgba(188, 188, 188, 0.34), rgba(255, 255, 255, 0.3));
   border-right: 1px solid rgba(0, 0, 0, 0.18);
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
 }
@@ -5687,14 +5689,14 @@
   color: rgba(255, 255, 255, 0.92);
   background: linear-gradient(
         to bottom,
-        rgba(255, 255, 255, 0.14),
-        rgba(255, 255, 255, 0.04)
+        rgba(255, 255, 255, 0.12),
+        rgba(255, 255, 255, 0.03)
       )
       top / 100% 50% no-repeat,
     linear-gradient(
       to bottom,
-      rgba(72, 72, 78, 0.78),
-      rgba(34, 34, 38, 0.78)
+      rgba(72, 72, 78, 0.42),
+      rgba(34, 34, 38, 0.42)
     );
   border-right: 1px solid rgba(0, 0, 0, 0.4);
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55);
