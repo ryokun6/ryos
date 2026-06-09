@@ -26,6 +26,7 @@ export function IpodAppComponent({
 
   const {
     isXpTheme,
+    isMacOSTheme,
     menuBar,
     handleClose,
     toggleFullScreen,
@@ -45,7 +46,7 @@ export function IpodAppComponent({
         isForeground,
         appId: "ipod",
         interceptClose: true,
-        material: "transparent",
+        material: isMacOSTheme ? "brushedmetal" : "default",
         skipInitialSound,
         instanceId,
         onNavigateNext,

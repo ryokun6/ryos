@@ -5179,7 +5179,7 @@ export function useIpodLogic({
     }
   );
 
-  const { isWindowsTheme: isXpTheme } = useThemeFlags();
+  const { isWindowsTheme: isXpTheme, isMacOSTheme } = useThemeFlags();
 
   return {
     // Translation
@@ -5233,6 +5233,7 @@ export function useIpodLogic({
     toggleFullScreen,
     isMinimized,
     isXpTheme,
+    isMacOSTheme,
     isOffline,
 
     // Refs
