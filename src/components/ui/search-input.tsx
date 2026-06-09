@@ -33,7 +33,7 @@ export function SearchInput({
         size={13}
         weight="bold"
         className={cn(
-          "pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 os-search-icon",
+          "pointer-events-none absolute left-2 top-1/2 z-10 -translate-y-1/2 os-search-icon",
           isMacOSTheme ? "text-black/45" : "text-black/35"
         )}
       />
