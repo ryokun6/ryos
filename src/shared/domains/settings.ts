@@ -17,6 +17,8 @@ export interface SettingsSnapshotData {
   theme: string;
   themeDarkMode?: Record<string, "system" | "light" | "dark" | boolean>;
   themeAccent?: Record<string, string>;
+  /** Mac OS X Aqua surface material ("classic" pinstripe vs "glass" frosted). */
+  themeAquaMaterial?: "classic" | "glass";
   language: LanguageCode;
   languageInitialized: boolean;
   aiModel: AIModel | null;

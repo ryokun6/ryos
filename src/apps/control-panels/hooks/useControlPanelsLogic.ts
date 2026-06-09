@@ -294,10 +294,12 @@ export function useControlPanelsLogic({
     isXpTheme,
     isMacOSTheme: isMacOSXTheme,
     isMacTheme: isClassicMacTheme,
+    aquaMaterial,
   } = useThemeFlags();
   const setTheme = useThemeStore((state) => state.setTheme);
   const setDarkMode = useThemeStore((state) => state.setDarkMode);
   const setAccent = useThemeStore((state) => state.setAccent);
+  const setAquaMaterial = useThemeStore((state) => state.setAquaMaterial);
   const wallpaperAccentColor = useThemeStore(
     (state) => state.wallpaperAccentColor
   );
@@ -1616,6 +1618,8 @@ export function useControlPanelsLogic({
     setShaderEffectEnabled,
     currentTheme,
     setTheme,
+    aquaMaterial,
+    setAquaMaterial,
     supportsDarkMode,
     isDarkMode,
     darkModePreference,

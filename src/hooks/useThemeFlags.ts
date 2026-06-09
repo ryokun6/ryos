@@ -14,6 +14,7 @@ export function useThemeFlags() {
   const accent: AccentId = useThemeStore(
     (state) => state.accentByTheme[state.current] ?? DEFAULT_ACCENT
   );
+  const aquaMaterial = useThemeStore((state) => state.aquaMaterial);
   const metadata = useMemo(() => getThemeMetadata(currentTheme), [currentTheme]);
   const osPlatform: OsPlatform = getOsPlatform(currentTheme);
   const macChrome: OsMacChrome | null = getOsMacChrome(currentTheme);
@@ -33,6 +34,8 @@ export function useThemeFlags() {
   const isDarkMode = supportsDarkMode && isDark;
   /** Only the classic Mac chromes (Aqua + System 7) expose an accent picker. */
   const supportsAccent = macChrome !== null;
+  /** True when the Aqua "glass" material is active (only meaningful for macosx). */
+  const isAquaGlass = isMacOSTheme && aquaMaterial === "glass";
 
   return {
     currentTheme,
@@ -54,5 +57,7 @@ export function useThemeFlags() {
     darkModePreference,
     supportsAccent,
     accent,
+    aquaMaterial,
+    isAquaGlass,
   };
 }

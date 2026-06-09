@@ -5350,3 +5350,225 @@
   td[style*="rgba(0,0,0,0.04)"] {
   background-color: rgba(255, 255, 255, 0.03) !important;
 }
+
+/* ============================================================================
+ * Aqua Glass — Mac OS X surface material variant
+ *
+ * Selected via Control Panels → Appearance ("Aqua Glass"). The theme id stays
+ * `macosx`, so all Aqua chrome + component behavior is reused; the difference is
+ * `data-os-aqua-material="glass"` on <html>, which this section keys off of.
+ *
+ * Goal: re-imagine Aqua with NO pinstripes and NO brushed metal. Instead, every
+ * surface becomes a blurred translucent glass pane with a specular top shine and
+ * soft, blurred highlights — the same vocabulary used by the karaoke playback
+ * controls. Supports both light and dark modes.
+ *
+ * Specificity notes (so these layer cleanly without touching the 500+ base
+ * macosx rules):
+ *   - Light tokens use `[data-os-aqua-material="glass"]:not([data-os-color-scheme="dark"])`
+ *     (3 attribute selectors) so they never leak into dark mode regardless of
+ *     source order.
+ *   - Dark tokens use `[data-os-aqua-material="glass"][data-os-color-scheme="dark"]`
+ *     (3 attribute selectors) which beats the 2-attribute base dark token block.
+ *   - Structural rules add `[data-os-aqua-material="glass"]` (2 attributes) on top
+ *     of a class/descendant, beating the 1-attribute base macosx rules.
+ * ============================================================================ */
+
+/* --- Light glass tokens --------------------------------------------------- */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]:not(
+    [data-os-color-scheme="dark"]
+  ) {
+  /* Translucent surfaces (the blur lives on the chrome elements below). */
+  --os-color-window-bg: rgba(243, 246, 251, 0.55);
+  --os-color-panel-bg: rgba(243, 246, 251, 0.62);
+  --os-color-menubar-bg: rgba(250, 251, 253, 0.55);
+  --os-color-menubar-surface: rgba(250, 251, 253, 0.55);
+  --os-color-dock-surface: rgba(250, 251, 253, 0.5);
+  --os-color-dock-shadow: 0 8px 30px rgba(0, 0, 0, 0.22);
+
+  /* Soft glassy edges + diffuse shadow. */
+  --os-color-window-border: rgba(255, 255, 255, 0.55);
+  --os-color-window-border-inactive: rgba(255, 255, 255, 0.35);
+  --os-color-menubar-border: rgba(255, 255, 255, 0.4);
+  --os-color-titlebar-border: rgba(255, 255, 255, 0.45);
+  --os-color-titlebar-border-inactive: rgba(255, 255, 255, 0.25);
+  --os-window-shadow: 0 18px 50px rgba(0, 0, 0, 0.28),
+    0 2px 10px rgba(0, 0, 0, 0.12);
+  --os-color-separator: rgba(60, 70, 90, 0.14);
+
+  /* Titlebar gradient becomes a glass pane (translucent, no pinstripe). */
+  --os-color-titlebar-active-bg: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.5) 0%,
+    rgba(244, 247, 251, 0.35) 100%
+  );
+  --os-color-titlebar-inactive-bg: linear-gradient(
+    to bottom,
+    rgba(248, 250, 252, 0.42) 0%,
+    rgba(240, 243, 247, 0.3) 100%
+  );
+
+  /* Inputs read as frosted glass wells. */
+  --os-color-input-bg: rgba(255, 255, 255, 0.55);
+  --os-color-input-border: rgba(60, 70, 90, 0.22);
+
+  /* Kill the pinstripes. `--os-pinstripe-window` doubles as the popover /
+     window-body fill, so it becomes a self-contained translucent glass pane
+     rather than `none`. The menubar pattern goes flat. */
+  --os-pinstripe-window: linear-gradient(
+    to bottom,
+    rgba(252, 253, 255, 0.62),
+    rgba(244, 247, 251, 0.55)
+  );
+  --os-pinstripe-menubar: none;
+  /* Specular top sheen on the titlebar instead of the pinstripe gloss. */
+  --os-pinstripe-titlebar: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.65) 0%,
+    rgba(255, 255, 255, 0.18) 45%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+/* --- Dark glass tokens ---------------------------------------------------- */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"] {
+  --os-color-window-bg: rgba(38, 40, 46, 0.55);
+  --os-color-panel-bg: rgba(38, 40, 46, 0.62);
+  --os-color-menubar-bg: rgba(26, 27, 31, 0.58);
+  --os-color-menubar-surface: rgba(26, 27, 31, 0.58);
+  --os-color-dock-surface: rgba(26, 27, 31, 0.5);
+  --os-color-dock-shadow: 0 8px 30px rgba(0, 0, 0, 0.55);
+
+  --os-color-window-border: rgba(255, 255, 255, 0.16);
+  --os-color-window-border-inactive: rgba(255, 255, 255, 0.08);
+  --os-color-menubar-border: rgba(255, 255, 255, 0.1);
+  --os-color-titlebar-border: rgba(255, 255, 255, 0.14);
+  --os-color-titlebar-border-inactive: rgba(255, 255, 255, 0.08);
+  --os-window-shadow: 0 18px 55px rgba(0, 0, 0, 0.6),
+    0 2px 12px rgba(0, 0, 0, 0.4);
+  --os-color-separator: rgba(255, 255, 255, 0.12);
+
+  --os-color-titlebar-active-bg: linear-gradient(
+    to bottom,
+    rgba(72, 74, 82, 0.5) 0%,
+    rgba(44, 46, 52, 0.4) 100%
+  );
+  --os-color-titlebar-inactive-bg: linear-gradient(
+    to bottom,
+    rgba(56, 58, 64, 0.42) 0%,
+    rgba(40, 42, 47, 0.34) 100%
+  );
+
+  --os-color-input-bg: rgba(255, 255, 255, 0.08);
+  --os-color-input-border: rgba(255, 255, 255, 0.16);
+
+  --os-pinstripe-window: linear-gradient(
+    to bottom,
+    rgba(52, 54, 60, 0.62),
+    rgba(40, 42, 48, 0.55)
+  );
+  --os-pinstripe-menubar: none;
+  --os-pinstripe-titlebar: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.16) 0%,
+    rgba(255, 255, 255, 0.05) 45%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+/* --- Frosted window panes ------------------------------------------------- */
+/* Blur the desktop behind every window and add a specular inner rim so the
+   edge catches light like glass. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] .window {
+  backdrop-filter: blur(26px) saturate(185%);
+  -webkit-backdrop-filter: blur(26px) saturate(185%);
+  box-shadow: var(--os-window-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .window {
+  box-shadow: var(--os-window-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* The classic brushed-metal material drops its aluminum JPG and becomes the
+   same frosted glass pane (used by iPod / iTunes-style windows). */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .window-material-brushedmetal::before {
+  background: var(--os-pinstripe-window) !important;
+  filter: none !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .window-material-brushedmetal:not(.is-foreground)::before {
+  filter: saturate(0.9) brightness(0.98) !important;
+}
+
+/* --- Frosted menu bar ----------------------------------------------------- */
+/* Beef up the menubar blur and swap the white pinstripe gloss for a soft
+   specular top highlight. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] .menubar {
+  backdrop-filter: blur(26px) saturate(185%) !important;
+  -webkit-backdrop-filter: blur(26px) saturate(185%) !important;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.4) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.08) inset;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] .menubar::before {
+  height: 60%;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.35),
+    rgba(255, 255, 255, 0)
+  );
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .menubar {
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.4) inset;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .menubar::before {
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.1),
+    rgba(255, 255, 255, 0)
+  );
+}
+
+/* --- Frosted dock --------------------------------------------------------- */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] .mac-dock-surface {
+  backdrop-filter: blur(26px) saturate(185%);
+  -webkit-backdrop-filter: blur(26px) saturate(185%);
+  box-shadow: var(--os-color-dock-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .mac-dock-surface {
+  box-shadow: var(--os-color-dock-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+}
+
+/* --- Frosted popovers (dropdowns, menubar menus, selects) ----------------- */
+/* These portal to <body> but remain under <html>, so the root attribute still
+   scopes them. They paint `var(--os-pinstripe-window)` inline, so they pick up
+   the glass fill from the tokens above; here we add the blur + specular rim. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] [role="menu"],
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] [role="listbox"] {
+  backdrop-filter: blur(22px) saturate(185%);
+  -webkit-backdrop-filter: blur(22px) saturate(185%);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  [role="menu"],
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  [role="listbox"] {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+}

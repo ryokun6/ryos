@@ -472,6 +472,7 @@ function serializeSettingsSnapshot(): SettingsSnapshotData {
       string,
       string
     >,
+    themeAquaMaterial: useThemeStore.getState().aquaMaterial,
     language: useLanguageStore.getState().current,
     languageInitialized:
       localStorage.getItem("ryos:language-initialized") === "true",
@@ -954,6 +955,15 @@ async function applySettingsSnapshot(
               .getState()
               .setAccent(value as never, themeId as never);
           }
+        }
+        // Apply the Aqua surface material. The setter is a no-op for invalid
+        // values and only repaints when the macosx chrome is active.
+        const remoteAquaMaterial = normalizedData.themeAquaMaterial;
+        if (
+          remoteAquaMaterial === "classic" ||
+          remoteAquaMaterial === "glass"
+        ) {
+          useThemeStore.getState().setAquaMaterial(remoteAquaMaterial);
         }
         appliedSections.push("theme");
       } catch (e) {
