@@ -1559,17 +1559,28 @@ describe("cloud sync shared helpers", () => {
       localStorage?: Storage;
       document?: Document;
       window?: Window & typeof globalThis;
+      navigator?: Navigator;
       fetch?: typeof fetch;
     };
     const originalLocalStorage = browserGlobals.localStorage;
     const originalDocument = browserGlobals.document;
     const originalWindow = browserGlobals.window;
+    const originalNavigator = browserGlobals.navigator;
     const originalFetch = browserGlobals.fetch;
 
     browserGlobals.localStorage = new MemoryStorage();
     browserGlobals.document = {
       documentElement: {
         dataset: {},
+        style: {
+          colorScheme: "",
+          removeProperty: () => undefined,
+          setProperty: () => undefined,
+        },
+        classList: {
+          add: () => undefined,
+          remove: () => undefined,
+        },
       },
       visibilityState: "visible",
       head: {
@@ -1589,16 +1600,35 @@ describe("cloud sync shared helpers", () => {
     browserGlobals.window = {
       AudioContext: class {} as typeof AudioContext,
       document: browserGlobals.document,
+      dispatchEvent: () => true,
+      location: {
+        pathname: "/",
+      },
+      navigator: {
+        language: "en-US",
+        languages: ["en-US"],
+      },
+      setTimeout: globalThis.setTimeout,
+      clearTimeout: globalThis.clearTimeout,
       addEventListener: () => undefined,
       removeEventListener: () => undefined,
     } as unknown as Window & typeof globalThis;
-    browserGlobals.fetch = (async () =>
-      new Response(JSON.stringify({ songs: [] }), {
+    browserGlobals.navigator = browserGlobals.window.navigator;
+    browserGlobals.fetch = (async (input: RequestInfo | URL) => {
+      const url = String(input);
+      const body = url.includes("/data/filesystem.json")
+        ? { directories: [], files: [] }
+        : url.includes("/data/applets.json")
+          ? { applets: [] }
+          : { songs: [] };
+
+      return new Response(JSON.stringify(body), {
         status: 200,
         headers: {
           "Content-Type": "application/json",
         },
-      })) as typeof fetch;
+      });
+    }) as typeof fetch;
 
     const { useThemeStore } = await import("../src/stores/useThemeStore");
     const {
@@ -1709,6 +1739,7 @@ describe("cloud sync shared helpers", () => {
       browserGlobals.localStorage = originalLocalStorage;
       browserGlobals.document = originalDocument;
       browserGlobals.window = originalWindow;
+      browserGlobals.navigator = originalNavigator;
       browserGlobals.fetch = originalFetch;
     }
   });

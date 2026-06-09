@@ -452,10 +452,30 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
 
 @layer utilities {
   .font-geneva-12 {
-    font-family: "Geneva-12", "ArkPixel", "SerenityOS-Emoji", system-ui,
-      -apple-system, sans-serif;
+    font-family: var(--font-geneva-12), -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     font-smooth: always;
+  }
+
+  :root[data-os-system-font] {
+    --font-geneva-12: var(--os-font-ui);
+  }
+
+  :root[data-os-system-font] .font-geneva-12:not(
+      .ipod-force-font .font-geneva-12
+    ):not(.karaoke-force-font .font-geneva-12):not(
+      .videos-lcd .font-geneva-12
+    ):not(.videos-player-controls .font-geneva-12):not(
+      .synth-force-font .font-geneva-12
+    ):not(.videos-status .font-geneva-12):not(
+      .tv-cc-force-font .font-geneva-12
+    ) {
+    font-family: var(--os-font-ui) !important;
+  }
+
+  .system-font-select-content {
+    animation: none !important;
+    opacity: 1 !important;
   }
 
   .file-icon-label {

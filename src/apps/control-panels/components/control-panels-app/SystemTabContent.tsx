@@ -371,7 +371,7 @@ export function SystemTabContent({
         </div>
       )}
 
-      {isAdmin && debugMode && (
+      {debugMode && (
         <div className="flex items-center justify-between">
           <div className="flex flex-col gap-1">
             <Label>{t("apps.control-panels.systemFont")}</Label>
@@ -390,7 +390,7 @@ export function SystemTabContent({
                   : selectedSystemFont.label}
               </SelectValue>
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="system-font-select-content">
               {SYSTEM_FONT_OPTIONS.map((option) => (
                 <SelectItem key={option.id} value={option.id}>
                   {option.id === THEME_DEFAULT_SYSTEM_FONT
