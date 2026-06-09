@@ -5492,6 +5492,17 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
+/* Drop the hard titlebar divider — on a single frosted pane the seam reads as
+   an ugly line, so the titlebar blends straight into the window body. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .window.is-foreground
+  .title-bar:not(.absolute),
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .window:not(.is-foreground)
+  .title-bar:not(.absolute) {
+  border-bottom: none !important;
+}
+
 /* The classic brushed-metal material drops its aluminum JPG and becomes the
    same frosted glass pane (used by iPod / iTunes-style windows). */
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"]

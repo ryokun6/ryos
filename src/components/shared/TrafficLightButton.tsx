@@ -64,6 +64,20 @@ const graphiteStyles = {
 };
 
 /**
+ * Aqua Glass: the three lights drop their red/yellow/green identity and become
+ * translucent orbs tinted with the active accent color (falling back to the
+ * classic Aqua blue when the accent is "System"/default). `color-mix` keeps the
+ * fill see-through so the frosted titlebar shows through, and the white shine /
+ * glow overlays below still read as glass. Mode-independent.
+ */
+const ACCENT_VAR = "var(--os-accent-color, #2765ca)";
+const glassStyles = {
+  gradient: `linear-gradient(color-mix(in srgb, ${ACCENT_VAR} 66%, transparent), color-mix(in srgb, ${ACCENT_VAR} 42%, transparent))`,
+  iconColor: "rgba(255, 255, 255, 0.92)",
+  shadow: `0 1px 2px rgba(0, 0, 0, 0.22), 0 0 0 0.5px rgba(255, 255, 255, 0.35) inset, 0 1px 1px rgba(255, 255, 255, 0.5) inset, 0 -2px 3px 1px color-mix(in srgb, ${ACCENT_VAR} 45%, transparent) inset`,
+};
+
+/**
  * macOS-style traffic light window control button (close, minimize, maximize).
  * Extracted to reduce duplication in WindowFrame.tsx
  */
@@ -74,8 +88,12 @@ export function TrafficLightButton({
   debugMode = false,
   ariaLabel,
 }: TrafficLightButtonProps) {
-  const { accent } = useThemeFlags();
-  const activeStyles = accent === "graphite" ? graphiteStyles : colorStyles[color];
+  const { accent, isAquaGlass } = useThemeFlags();
+  const activeStyles = isAquaGlass
+    ? glassStyles
+    : accent === "graphite"
+      ? graphiteStyles
+      : colorStyles[color];
   const styles = isForeground ? activeStyles : inactiveStyles;
 
   return (
