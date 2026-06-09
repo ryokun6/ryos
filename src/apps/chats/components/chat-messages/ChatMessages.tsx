@@ -7,7 +7,11 @@ import type { ChatMessagesProps } from "./types";
 
 // In Aqua Glass, fade the very top of the scroller once it's scrolled away
 // from the top so messages dissolve under the floating toolbar islands.
-const TOP_FADE_MASK = "linear-gradient(to bottom, transparent 0px, black 72px)";
+// Keep the band under the floating islands fully transparent, then ramp in
+// over a longer, clearly-visible distance so messages dissolve smoothly below
+// the islands rather than clipping at a hard edge.
+const TOP_FADE_MASK =
+  "linear-gradient(to bottom, transparent 0px, transparent 36px, black 104px)";
 
 function TopScrollFade() {
   const { isAquaGlass } = useThemeFlags();
