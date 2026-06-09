@@ -1,56 +1,41 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { ChatMessagesContent } from "./ChatMessagesContent";
 import { ScrollToBottomButton } from "./ScrollToBottomButton";
 import type { ChatMessagesProps } from "./types";
 
-// Self-mask of the scrim: solid under the floating islands, fading out lower so
-// messages dissolve into the frosted top band rather than clipping at a hard
-// edge. A CSS `mask` on the scroller itself does not clip the message bubbles
-// (they are composited `motion.div`s that escape the mask), so we instead paint
-// a frosted scrim above the messages and below the toolbar islands.
-const SCRIM_MASK =
-  "linear-gradient(to bottom, black 0px, black 30px, transparent 100%)";
+// In Aqua Glass, fade the very top of the scroller once it's scrolled away
+// from the top so messages dissolve under the floating toolbar islands.
+const TOP_FADE_MASK = "linear-gradient(to bottom, transparent 0px, black 52px)";
 
-// In Aqua Glass, frost + fade the top band of the message scroller once it is
-// scrolled away from the top, so messages dissolve under the toolbar islands.
 function TopScrollFade() {
   const { isAquaGlass } = useThemeFlags();
   const { scrollRef } = useStickToBottomContext();
-  const scrimRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const el = scrollRef.current;
-    const scrim = scrimRef.current;
-    if (!el || !scrim || !isAquaGlass) return;
+    if (!el) return;
+    const setMask = (mask: string) => {
+      el.style.maskImage = mask;
+      el.style.setProperty("-webkit-mask-image", mask);
+    };
+    if (!isAquaGlass) {
+      setMask("");
+      return;
+    }
     const update = () => {
-      scrim.style.opacity = el.scrollTop > 4 ? "1" : "0";
+      setMask(el.scrollTop > 4 ? TOP_FADE_MASK : "");
     };
     update();
     el.addEventListener("scroll", update, { passive: true });
-    return () => el.removeEventListener("scroll", update);
+    return () => {
+      el.removeEventListener("scroll", update);
+      setMask("");
+    };
   }, [isAquaGlass, scrollRef]);
 
-  if (!isAquaGlass) return null;
-  return (
-    <div
-      ref={scrimRef}
-      aria-hidden
-      className="pointer-events-none absolute top-0 left-0 right-0 z-[5]"
-      style={{
-        height: 96,
-        opacity: 0,
-        transition: "opacity 150ms ease",
-        backdropFilter: "blur(12px) saturate(160%)",
-        WebkitBackdropFilter: "blur(12px) saturate(160%)",
-        background:
-          "linear-gradient(to bottom, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0))",
-        maskImage: SCRIM_MASK,
-        WebkitMaskImage: SCRIM_MASK,
-      }}
-    />
-  );
+  return null;
 }
 
 export function ChatMessages({
