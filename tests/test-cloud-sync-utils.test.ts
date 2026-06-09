@@ -836,6 +836,92 @@ describe("cloud sync shared helpers", () => {
     expect(out.language).toBe("en");
   });
 
+  test("reverting Aqua Glass → classic propagates through patch upload", () => {
+    const t1 = "2026-01-01T00:00:00.000Z";
+    const t2 = "2026-01-06T00:00:00.000Z";
+    const sectionUpdatedAt = {
+      theme: t1,
+      language: t1,
+      display: t1,
+      audio: t1,
+      aiModel: t1,
+      ipod: t1,
+      dock: t1,
+      dashboard: t1,
+    };
+    const base = {
+      theme: "macosx",
+      language: "en",
+      languageInitialized: true,
+      aiModel: null,
+      display: {
+        displayMode: "color",
+        shaderEffectEnabled: false,
+        selectedShaderType: "",
+        currentWallpaper: "",
+        screenSaverEnabled: false,
+        screenSaverType: "",
+        screenSaverIdleTime: 5,
+        debugMode: false,
+        htmlPreviewSplit: false,
+      },
+      audio: {
+        masterVolume: 0.5,
+        uiVolume: 0.4,
+        chatSynthVolume: 0.3,
+        speechVolume: 0.2,
+        ipodVolume: 0.1,
+        uiSoundsEnabled: true,
+        terminalSoundsEnabled: true,
+        typingSynthEnabled: false,
+        speechEnabled: false,
+        keepTalkingEnabled: false,
+        ttsModel: null,
+        ttsVoice: null,
+        synthPreset: "",
+      },
+      ipod: {
+        displayMode: "browser" as const,
+        showLyrics: true,
+        lyricsAlignment: "center" as const,
+        lyricsFont: "default" as const,
+        romanization: {},
+        lyricsTranslationLanguage: null,
+        theme: "classic" as const,
+        lcdFilterOn: false,
+      },
+      dock: { pinnedItems: [], scale: 1, hiding: false, magnification: false },
+      dashboard: { widgets: [] },
+    };
+    // Remote still has Aqua Glass enabled at the older timestamp.
+    const remote = {
+      ...base,
+      themeAquaMaterial: "glass" as const,
+      sectionUpdatedAt: { ...sectionUpdatedAt },
+    };
+    // Local has just reverted to classic Aqua (newer timestamp).
+    const local = {
+      ...base,
+      themeAquaMaterial: "classic" as const,
+      sectionUpdatedAt: { ...sectionUpdatedAt, theme: t2 },
+    };
+
+    // The revert must be detected as a dirty section to upload.
+    expect(getSettingsSectionsToPatchUpload(local, remote)).toEqual(["theme"]);
+
+    const patch = buildSettingsRedisPatch(local, ["theme"], t1);
+    expect(patch).not.toBeNull();
+    // The classic default must be carried in the patch payload.
+    expect((patch!.sections.theme as { aquaMaterial?: string }).aquaMaterial).toBe(
+      "classic"
+    );
+
+    // Applying the patch must reset the remote back to classic (no stale glass).
+    const out = applySettingsRedisPatch(remote, patch!);
+    expect(out.themeAquaMaterial).toBe("classic");
+    expect(out.sectionUpdatedAt?.theme).toBe(t2);
+  });
+
   test("merges settings per store so newer local and remote sections both survive", () => {
     const merged = mergeSettingsSnapshotData(
       {

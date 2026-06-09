@@ -177,11 +177,13 @@ export function getSectionPayloadForSettingsPatch(
         data.themeDarkMode && Object.keys(data.themeDarkMode).length > 0;
       const hasAccent =
         data.themeAccent && Object.keys(data.themeAccent).length > 0;
-      // Only send the material when it deviates from the default so older
-      // clients keep receiving the plain-string payload they understand.
-      const hasAquaMaterial =
-        data.themeAquaMaterial !== undefined &&
-        data.themeAquaMaterial !== "classic";
+      // Always send the material when it's set (including the `"classic"`
+      // default) so reverting Aqua Glass → classic actually propagates. If we
+      // dropped the field for `"classic"`, `applySettingsRedisPatch` would
+      // never reset a remote that's still `"glass"`, and the stale glass value
+      // would keep syncing back to every device. (Mirrors `systemFont`, which
+      // also sends its default so it can be reverted.)
+      const hasAquaMaterial = data.themeAquaMaterial !== undefined;
       const hasSystemFont = data.themeSystemFont !== undefined;
       if (hasDarkMode || hasAccent || hasAquaMaterial || hasSystemFont) {
         return {
