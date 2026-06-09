@@ -12,6 +12,7 @@ import {
   SETTINGS_SYNC_SECTIONS,
   type SettingsSectionTimestampMap,
 } from "../../sync/state";
+import type { SystemFontId } from "../../themes/systemFonts";
 
 export interface SettingsSnapshotData {
   theme: string;
@@ -19,6 +20,8 @@ export interface SettingsSnapshotData {
   themeAccent?: Record<string, string>;
   /** Mac OS X Aqua surface material ("classic" pinstripe vs "glass" frosted). */
   themeAquaMaterial?: "classic" | "glass";
+  /** Debug-only override for the global UI font stack. */
+  themeSystemFont?: SystemFontId;
   language: LanguageCode;
   languageInitialized: boolean;
   aiModel: AIModel | null;

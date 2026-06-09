@@ -8,6 +8,7 @@ import {
   normalizeSettingsSnapshotData,
   type SettingsSnapshotData,
 } from "@/shared/domains/settings";
+import { isSystemFontId } from "@/themes/systemFonts";
 
 export {
   normalizeSettingsSnapshotData,
@@ -78,6 +79,9 @@ export function mergeSettingsSnapshotData(
     }
     if (normalizedRemote.themeAquaMaterial !== undefined) {
       merged.themeAquaMaterial = normalizedRemote.themeAquaMaterial;
+    }
+    if (normalizedRemote.themeSystemFont !== undefined) {
+      merged.themeSystemFont = normalizedRemote.themeSystemFont;
     }
     merged.sectionUpdatedAt!.theme = remoteSectionUpdatedAt.theme;
   }
@@ -178,12 +182,14 @@ export function getSectionPayloadForSettingsPatch(
       const hasAquaMaterial =
         data.themeAquaMaterial !== undefined &&
         data.themeAquaMaterial !== "classic";
-      if (hasDarkMode || hasAccent || hasAquaMaterial) {
+      const hasSystemFont = data.themeSystemFont !== undefined;
+      if (hasDarkMode || hasAccent || hasAquaMaterial || hasSystemFont) {
         return {
           theme: data.theme,
           ...(hasDarkMode ? { darkMode: data.themeDarkMode } : {}),
           ...(hasAccent ? { accent: data.themeAccent } : {}),
           ...(hasAquaMaterial ? { aquaMaterial: data.themeAquaMaterial } : {}),
+          ...(hasSystemFont ? { systemFont: data.themeSystemFont } : {}),
         };
       }
       return data.theme;
@@ -318,6 +324,7 @@ export function applySettingsRedisPatch(
             darkMode?: Record<string, "system" | "light" | "dark" | boolean>;
             accent?: Record<string, string>;
             aquaMaterial?: "classic" | "glass";
+            systemFont?: unknown;
           };
           if (typeof v.theme === "string") next.theme = v.theme;
           // Deep-merge the per-theme maps over the remote base so the patching
@@ -331,6 +338,9 @@ export function applySettingsRedisPatch(
           }
           if (v.aquaMaterial === "classic" || v.aquaMaterial === "glass") {
             next.themeAquaMaterial = v.aquaMaterial;
+          }
+          if (isSystemFontId(v.systemFont)) {
+            next.themeSystemFont = v.systemFont;
           }
         }
         break;

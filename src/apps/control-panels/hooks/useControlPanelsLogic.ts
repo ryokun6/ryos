@@ -300,6 +300,8 @@ export function useControlPanelsLogic({
   const setDarkMode = useThemeStore((state) => state.setDarkMode);
   const setAccent = useThemeStore((state) => state.setAccent);
   const setAquaMaterial = useThemeStore((state) => state.setAquaMaterial);
+  const systemFont = useThemeStore((state) => state.systemFont);
+  const setSystemFont = useThemeStore((state) => state.setSystemFont);
   const wallpaperAccentColor = useThemeStore(
     (state) => state.wallpaperAccentColor
   );
@@ -1628,6 +1630,8 @@ export function useControlPanelsLogic({
     accent,
     accentChrome: macChrome,
     setAccent,
+    systemFont,
+    setSystemFont,
     wallpaperAccentColor,
     currentLanguage,
     setLanguage,

@@ -15,6 +15,12 @@ import {
   normalizeAccentHex,
   type AccentId,
 } from "@/themes/accents";
+import {
+  THEME_DEFAULT_SYSTEM_FONT,
+  getSystemFontCssValue,
+  isSystemFontId,
+  type SystemFontId,
+} from "@/themes/systemFonts";
 import { SETTINGS_ANALYTICS, track } from "@/utils/analytics";
 
 function sanitizeStoredTheme(id: string | null | undefined): OsThemeId {
@@ -140,6 +146,27 @@ function writeAquaMaterial(material: AquaMaterial) {
   }
 }
 
+function safeReadSystemFont(): SystemFontId {
+  try {
+    const raw = localStorage.getItem(SYSTEM_FONT_KEY);
+    return isSystemFontId(raw) ? raw : THEME_DEFAULT_SYSTEM_FONT;
+  } catch {
+    return THEME_DEFAULT_SYSTEM_FONT;
+  }
+}
+
+function writeSystemFont(font: SystemFontId) {
+  try {
+    if (font === THEME_DEFAULT_SYSTEM_FONT) {
+      localStorage.removeItem(SYSTEM_FONT_KEY);
+    } else {
+      localStorage.setItem(SYSTEM_FONT_KEY, font);
+    }
+  } catch {
+    // ignore quota / private-mode errors
+  }
+}
+
 interface ThemeState {
   current: OsThemeId;
   /** Effective dark-mode flag for the active theme (false if the theme has no dark tokens). */
@@ -150,6 +177,8 @@ interface ThemeState {
   accentByTheme: AccentMap;
   /** Mac OS X Aqua surface material ("classic" pinstripe vs "glass" frosted). */
   aquaMaterial: AquaMaterial;
+  /** Optional debug override for the global UI font stack. */
+  systemFont: SystemFontId;
   /**
    * Color sampled from the active wallpaper, driving the `"wallpaper"` accent.
    * `null` until sampled (or when the wallpaper can't be sampled).
@@ -179,6 +208,8 @@ interface ThemeState {
    * but the preference is persisted regardless so it sticks when toggling back.
    */
   setAquaMaterial: (material: AquaMaterial) => void;
+  /** Override the theme's default UI font stack, or restore theme defaults. */
+  setSystemFont: (font: SystemFontId) => void;
   /**
    * Record the latest color sampled from the wallpaper. Re-applies the root
    * accent immediately when the current theme is using the `"wallpaper"` accent.
@@ -252,6 +283,11 @@ const ACCENT_KEY = "ryos:theme:accent";
  */
 const AQUA_MATERIAL_KEY = "ryos:theme:aqua-material";
 /**
+ * Debug-only global UI font override. The default removes the inline CSS
+ * custom property so the active theme token remains the source of truth.
+ */
+const SYSTEM_FONT_KEY = "ryos:theme:system-font";
+/**
  * Last color sampled from the active wallpaper for the `"wallpaper"` accent.
  * Cached so a non-default-accent reload paints the right color immediately
  * (the sampler re-derives it from the wallpaper shortly after, in case the
@@ -321,12 +357,25 @@ function applyRootAccent(
   else delete root.dataset.osAccent;
 }
 
+function applyRootSystemFont(systemFont: SystemFontId) {
+  const root = document.documentElement;
+  const cssValue = getSystemFontCssValue(systemFont);
+  if (cssValue) {
+    root.style.setProperty("--os-font-ui", cssValue);
+    root.dataset.osSystemFont = systemFont;
+  } else {
+    root.style.removeProperty("--os-font-ui");
+    delete root.dataset.osSystemFont;
+  }
+}
+
 function applyRootThemeAttributes(
   theme: OsThemeId,
   isDark: boolean,
   accentMap: AccentMap,
   wallpaperColor: string | null,
-  aquaMaterial: AquaMaterial
+  aquaMaterial: AquaMaterial,
+  systemFont: SystemFontId
 ) {
   const root = document.documentElement;
   root.dataset.osTheme = theme;
@@ -357,6 +406,7 @@ function applyRootThemeAttributes(
   }
 
   applyRootAccent(theme, accentMap, isDark, wallpaperColor);
+  applyRootSystemFont(systemFont);
 }
 
 function effectiveDarkFor(theme: OsThemeId, map: DarkModeMap): boolean {
@@ -392,7 +442,8 @@ function ensureSystemDarkListener() {
       nextDark,
       state.accentByTheme,
       state.wallpaperAccentColor,
-      state.aquaMaterial
+      state.aquaMaterial,
+      state.systemFont
     );
   };
   if (typeof systemDarkQuery.addEventListener === "function") {
@@ -409,6 +460,7 @@ const createThemeStore = () => create<ThemeState>((set) => ({
   darkModeByTheme: {},
   accentByTheme: {},
   aquaMaterial: "classic",
+  systemFont: THEME_DEFAULT_SYSTEM_FONT,
   wallpaperAccentColor: null,
   setTheme: (theme) => {
     const safe = sanitizeStoredTheme(theme);
@@ -425,7 +477,8 @@ const createThemeStore = () => create<ThemeState>((set) => ({
       nextDark,
       state.accentByTheme,
       state.wallpaperAccentColor,
-      state.aquaMaterial
+      state.aquaMaterial,
+      state.systemFont
     );
     ensureLegacyCss(safe);
     // Note: No need to invalidate icon cache on theme switch.
@@ -468,7 +521,8 @@ const createThemeStore = () => create<ThemeState>((set) => ({
         nextDark,
         state.accentByTheme,
         state.wallpaperAccentColor,
-        state.aquaMaterial
+        state.aquaMaterial,
+        state.systemFont
       );
       track(SETTINGS_ANALYTICS.THEME_CHANGE, {
         theme: state.current,
@@ -522,11 +576,24 @@ const createThemeStore = () => create<ThemeState>((set) => ({
       state.isDark,
       state.accentByTheme,
       state.wallpaperAccentColor,
-      material
+      material,
+      state.systemFont
     );
     track(SETTINGS_ANALYTICS.THEME_CHANGE, {
       theme: state.current,
       aquaMaterial: material,
+    });
+  },
+  setSystemFont: (font) => {
+    if (!isSystemFontId(font)) return;
+    const state = useThemeStore.getState();
+    if (font === state.systemFont) return;
+    writeSystemFont(font);
+    set({ systemFont: font });
+    applyRootSystemFont(font);
+    track(SETTINGS_ANALYTICS.THEME_CHANGE, {
+      theme: state.current,
+      systemFont: font,
     });
   },
   setWallpaperAccentColor: (hex) => {
@@ -576,6 +643,7 @@ const createThemeStore = () => create<ThemeState>((set) => ({
     const accentMap = safeReadAccentMap();
     const wallpaperAccentColor = safeReadWallpaperAccentColor();
     const aquaMaterial = safeReadAquaMaterial();
+    const systemFont = safeReadSystemFont();
     const isDark = effectiveDarkFor(theme, map);
     set({
       current: theme,
@@ -583,6 +651,7 @@ const createThemeStore = () => create<ThemeState>((set) => ({
       darkModeByTheme: map,
       accentByTheme: accentMap,
       aquaMaterial,
+      systemFont,
       wallpaperAccentColor,
     });
     applyRootThemeAttributes(
@@ -590,7 +659,8 @@ const createThemeStore = () => create<ThemeState>((set) => ({
       isDark,
       accentMap,
       wallpaperAccentColor,
-      aquaMaterial
+      aquaMaterial,
+      systemFont
     );
     ensureLegacyCss(theme);
     ensureSystemDarkListener();

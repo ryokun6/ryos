@@ -1363,9 +1363,15 @@ export function useAutoCloudSync() {
       }
     );
 
-    // OS theme id is owned by useThemeStore; subscribe so settings sync runs when it changes.
+    // OS theme settings are owned by useThemeStore; subscribe so settings sync runs when they change.
     const themeUnsubscribe = useThemeStore.subscribe((state, prevState) => {
-      if (state.current !== prevState.current) {
+      if (
+        state.current !== prevState.current ||
+        state.darkModeByTheme !== prevState.darkModeByTheme ||
+        state.accentByTheme !== prevState.accentByTheme ||
+        state.aquaMaterial !== prevState.aquaMaterial ||
+        state.systemFont !== prevState.systemFont
+      ) {
         if (isApplyingRemoteSettingsSection("theme")) return;
         markSettingsSectionChanged("theme");
         queueUpload("settings");

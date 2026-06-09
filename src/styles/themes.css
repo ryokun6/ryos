@@ -1595,8 +1595,7 @@
 
 /* System 7 specific select styling with retro borders */
 :root[data-os-theme="system7"] select {
-  font-family: "ChicagoKare", Geneva, -apple-system, BlinkMacSystemFont,
-    sans-serif !important;
+  font-family: var(--os-font-ui) !important;
   font-size: 12px !important;
   border: 2px inset #c0c0c0;
   background-color: #ffffff;
