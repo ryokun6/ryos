@@ -152,6 +152,8 @@ describe("karaoke title card timing", () => {
     const rounded = makeTitleCardColoredOutlineStyle(TITLE_CARD_ROUNDED_OUTLINE_COLOR);
     const serif = makeTitleCardColoredOutlineStyle(TITLE_CARD_SERIF_OUTLINE_COLOR);
 
+    expect(TITLE_CARD_COLORED_OUTLINE_STROKE).toContain("rgba(0, 0, 0");
+    expect(TITLE_CARD_COLORED_OUTLINE_STROKE).not.toContain("#fff");
     expect(rounded.color).toBe("#0066FF");
     expect(serif.color).toBe("#CC0000");
     expect(rounded.WebkitTextStroke).toBe(TITLE_CARD_COLORED_OUTLINE_STROKE);
