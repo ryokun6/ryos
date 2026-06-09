@@ -21,7 +21,7 @@ export function IpodDeviceBody({ c }: IpodDeviceBodyProps) {
   return (
     <div
       ref={containerRef}
-      className="ipod-device-surface ipod-force-font flex flex-col items-center justify-center w-full h-full bg-gradient-to-b from-neutral-100/20 to-neutral-300/20 backdrop-blur-lg p-4 select-none"
+      className="ipod-device-surface ipod-force-font flex flex-col items-center justify-center w-full h-full p-4 select-none"
       style={{ position: "relative", overflow: "hidden", contain: "layout style paint" }}
     >
       <div
