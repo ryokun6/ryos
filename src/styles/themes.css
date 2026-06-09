@@ -5651,24 +5651,23 @@
     [data-os-color-scheme="dark"]
   )
   .metal-inset-btn[data-state="on"] {
-  /* Selected/pressed segment tints to the active accent (semi-transparent so
-     it stays glassy), with a white top gloss and accent-aware label color. */
+  /* Selected/pressed segment follows the active accent using the same recipe
+     as `.aqua-button.primary`: the ready-made semi-transparent accent gloss
+     gradient (`--os-accent-button-bg`, already glassy at 0.625 alpha) plus an
+     accent-tinted inner glow. Label color comes from the accent-aware
+     selection-text token so it stays legible on light or dark accents. */
   color: var(--os-color-selection-text, #fff);
-  background: linear-gradient(
-        to bottom,
-        rgba(255, 255, 255, 0.4) 0%,
-        rgba(255, 255, 255, 0.12) 55%,
-        rgba(255, 255, 255, 0) 100%
-      )
-      top / 100% 50% no-repeat,
+  background: var(
+    --os-accent-button-bg,
     linear-gradient(
-      to bottom,
-      color-mix(in srgb, var(--os-accent-color, #3a73d6) 82%, transparent),
-      color-mix(in srgb, var(--os-accent-color, #3a73d6) 58%, transparent)
-    );
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2),
-    inset 0 1px 1px rgba(0, 0, 0, 0.12);
+      rgba(0, 65, 184, 0.625),
+      rgba(45, 115, 199, 0.625),
+      rgba(33, 160, 196, 0.625)
+    )
+  );
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3),
+    inset 0 2px 3px 1px var(--os-accent-button-inner, rgba(0, 78, 187, 0.6));
 }
 
 /* Dark glass: graphite translucent stack, same as the dark dropdown toggle. */
@@ -5706,20 +5705,17 @@
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
   .metal-inset-btn[data-state="on"] {
   color: var(--os-color-selection-text, #fff);
-  background: linear-gradient(
-        to bottom,
-        rgba(255, 255, 255, 0.16) 0%,
-        rgba(255, 255, 255, 0.04) 55%,
-        rgba(255, 255, 255, 0) 100%
-      )
-      top / 100% 50% no-repeat,
+  background: var(
+    --os-accent-button-bg,
     linear-gradient(
-      to bottom,
-      color-mix(in srgb, var(--os-accent-color, #3a73d6) 80%, transparent),
-      color-mix(in srgb, var(--os-accent-color, #3a73d6) 55%, transparent)
-    );
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45);
+      rgba(0, 65, 184, 0.625),
+      rgba(45, 115, 199, 0.625),
+      rgba(33, 160, 196, 0.625)
+    )
+  );
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.45);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.45),
+    inset 0 2px 3px 1px var(--os-accent-button-inner, rgba(0, 78, 187, 0.6));
 }
 
 /* --- Frosted search field ------------------------------------------------- */
@@ -5768,6 +5764,10 @@
   .metal-inset-btn:last-child {
   border-top-right-radius: 999px;
   border-bottom-right-radius: 999px;
+  /* The glass `.metal-inset-btn` rule re-adds `border-right` (it beats the base
+     `:last-child` reset on specificity), leaving a 1px line between the last
+     segment's fill and the group's outer ring. Strip it back off. */
+  border-right: none;
 }
 
 /* --- Squircle corners ----------------------------------------------------- */
