@@ -379,8 +379,12 @@ export function useChatsAppController({
     [setIsNewRoomDialogOpen]
   );
 
-  const { isWindowsTheme: isXpTheme, isMacOSTheme: isMacTheme } =
-    useThemeFlags();
+  const {
+    isWindowsTheme: isXpTheme,
+    isMacOSTheme: isMacTheme,
+    isAquaGlass,
+    isDarkMode,
+  } = useThemeFlags();
   const isWindowsLegacyTheme = isXpTheme;
   const isOffline = useOffline();
   const {
@@ -564,6 +568,8 @@ export function useChatsAppController({
     translatedHelpItems,
     isXpTheme,
     isMacTheme,
+    isAquaGlass,
+    isDarkMode,
     isWindowsLegacyTheme,
     isOffline,
     menuBar,

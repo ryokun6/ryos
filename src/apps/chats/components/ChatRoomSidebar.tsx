@@ -46,7 +46,8 @@ export const ChatRoomSidebar = React.memo(function ChatRoomSidebar({
   const unreadCounts = useChatsStore((state) => state.unreadCounts);
 
   // Theme detection for border styling
-  const { isWindowsTheme: isXpTheme, isMacOSTheme } = useThemeFlags();
+  const { isWindowsTheme: isXpTheme, isMacOSTheme, isAquaGlass } =
+    useThemeFlags();
 
   // Section headings are non-interactive; show all lists by default
 
@@ -180,7 +181,8 @@ export const ChatRoomSidebar = React.memo(function ChatRoomSidebar({
   return (
     <div
       className={cn(
-        "flex flex-col font-geneva-12 text-[12px] bg-neutral-100",
+        "flex flex-col font-geneva-12 text-[12px]",
+        isAquaGlass ? "bg-transparent" : "bg-neutral-100",
         isOverlay
           ? `w-full border-b ${
               isXpTheme

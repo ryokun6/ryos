@@ -1,7 +1,42 @@
-import { StickToBottom } from "use-stick-to-bottom";
+import { useEffect } from "react";
+import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { ChatMessagesContent } from "./ChatMessagesContent";
 import { ScrollToBottomButton } from "./ScrollToBottomButton";
 import type { ChatMessagesProps } from "./types";
+
+// In Aqua Glass, fade the very top of the scroller once it's scrolled away
+// from the top so messages dissolve under the floating toolbar islands.
+const TOP_FADE_MASK = "linear-gradient(to bottom, transparent 0px, black 52px)";
+
+function TopScrollFade() {
+  const { isAquaGlass } = useThemeFlags();
+  const { scrollRef } = useStickToBottomContext();
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const setMask = (mask: string) => {
+      el.style.maskImage = mask;
+      el.style.setProperty("-webkit-mask-image", mask);
+    };
+    if (!isAquaGlass) {
+      setMask("");
+      return;
+    }
+    const update = () => {
+      setMask(el.scrollTop > 4 ? TOP_FADE_MASK : "");
+    };
+    update();
+    el.addEventListener("scroll", update, { passive: true });
+    return () => {
+      el.removeEventListener("scroll", update);
+      setMask("");
+    };
+  }, [isAquaGlass, scrollRef]);
+
+  return null;
+}
 
 export function ChatMessages({
   messages,
@@ -54,6 +89,7 @@ export function ChatMessages({
         />
       </StickToBottom.Content>
 
+      <TopScrollFade />
       <ScrollToBottomButton />
     </StickToBottom>
   );
