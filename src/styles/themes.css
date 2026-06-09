@@ -5758,7 +5758,7 @@
     [data-os-color-scheme="dark"]
   )
   .os-search-icon {
-  color: var(--os-accent-color, #2765ca) !important;
+  color: var(--os-color-link, #2765ca) !important;
   filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.55));
 }
 
