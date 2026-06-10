@@ -1,4 +1,3 @@
-import { Redis } from "@upstash/redis";
 import { getAppPublicOrigin } from "./runtime-config.js";
 import { parseYouTubeTitleSimple } from "./parse-youtube-title.js";
 
@@ -256,22 +255,17 @@ export function getSongShareMetadataFromRaw(
 async function createSongRedisClient(): Promise<{
   get<T = unknown>(key: string): Promise<T | null>;
 } | null> {
-  if (
-    process.env.REDIS_KV_REST_API_URL?.trim() &&
-    process.env.REDIS_KV_REST_API_TOKEN?.trim()
-  ) {
-    return new Redis({
-      url: process.env.REDIS_KV_REST_API_URL,
-      token: process.env.REDIS_KV_REST_API_TOKEN,
-    });
-  }
-
-  if (process.env.REDIS_URL?.trim()) {
-    const { createRedis } = await import("./redis.js");
-    return createRedis();
-  }
-
-  return null;
+  // Delegate to the canonical Redis factory so the OG read path resolves the
+  // exact same backend (Upstash REST vs standard REDIS_URL) that the song API
+  // writes to. Picking a backend independently here used to silently diverge on
+  // non-Vercel deploys — e.g. when REDIS_URL (and/or REDIS_PROVIDER=redis-url)
+  // is set but stale Upstash vars also linger — causing reads to hit an empty
+  // store and previews to always fall back. The dynamic import keeps the
+  // standard-Redis (ioredis) dependency out of edge bundles that only use
+  // Upstash REST. `createRedis` throws when nothing is configured, which the
+  // caller treats as "no metadata".
+  const { createRedis } = await import("./redis.js");
+  return createRedis();
 }
 
 // Fetch song metadata from Redis song library
@@ -330,6 +324,49 @@ async function getYouTubeInfo(
   }
 }
 
+/**
+ * Resolve song metadata + cover image for iPod / Karaoke OG pages.
+ *
+ * Prefers the song stored in Redis (richest data: album cover, curated
+ * title/artist). When the song hasn't been persisted yet — e.g. it was shared
+ * by a logged-out user, the metadata save failed, or it simply isn't in the
+ * library — fall back to YouTube oEmbed (mirroring the `/videos/` path) so the
+ * preview still shows a real title and thumbnail instead of the generic app
+ * fallback.
+ */
+type SongShareSource = "redis" | "youtube" | "none";
+
+async function resolveSongShareInfo(
+  songId: string,
+  getSong: (songId: string) => Promise<SongShareMetadata | null>
+): Promise<{
+  songInfo: SongShareMetadata | null;
+  imageUrl: string | null;
+  source: SongShareSource;
+}> {
+  const stored = await getSong(songId);
+  if (stored) {
+    return {
+      songInfo: stored,
+      imageUrl: formatMusicCoverUrl(stored.cover, 400),
+      source: "redis",
+    };
+  }
+
+  if (YOUTUBE_VIDEO_ID_REGEX.test(songId)) {
+    const ytInfo = await getYouTubeInfo(songId);
+    if (ytInfo) {
+      return {
+        songInfo: { title: ytInfo.title, artist: ytInfo.artist, cover: null },
+        imageUrl: `https://i.ytimg.com/vi/${songId}/hqdefault.jpg`,
+        source: "youtube",
+      };
+    }
+  }
+
+  return { songInfo: null, imageUrl: null, source: "none" };
+}
+
 export async function createOgShareResponse(
   request: Request,
   options: {
@@ -353,6 +390,15 @@ export async function createOgShareResponse(
   let title = "ryOS";
   let description = "An AI OS experience, made with Cursor";
   let matched = false;
+  // Crawlers cache aggressively, so OG pages are CDN-cached for an hour by
+  // default. Song shares persist their metadata to Redis asynchronously (and
+  // skip it entirely for logged-out users), so the first crawler hit can race
+  // ahead of the save and serve an incomplete preview. When we don't have rich
+  // metadata yet, cache only briefly so the CDN re-fetches and picks up the
+  // song once it lands in Redis instead of pinning a stale fallback.
+  const RICH_CACHE_SECONDS = 3600;
+  const FALLBACK_CACHE_SECONDS = 60;
+  let cacheMaxAge = RICH_CACHE_SECONDS;
 
   const appMatch = pathname.match(/^\/([a-z-]+)$/);
   if (appMatch && APP_NAMES[appMatch[1]]) {
@@ -384,9 +430,16 @@ export async function createOgShareResponse(
     const songId = resolveSongShareId(ipodMatch[1]);
     imageUrl = getAppIconUrl(publicOrigin, "ipod");
 
-    const songInfo = await (options.getSong || getSongFromRedis)(songId);
+    const {
+      songInfo,
+      imageUrl: songImageUrl,
+      source,
+    } = await resolveSongShareInfo(songId, options.getSong || getSongFromRedis);
+    if (source !== "redis") {
+      cacheMaxAge = FALLBACK_CACHE_SECONDS;
+    }
     if (songInfo) {
-      imageUrl = formatMusicCoverUrl(songInfo.cover, 400) || imageUrl;
+      imageUrl = songImageUrl || imageUrl;
       if (songInfo.artist) {
         title = `${songInfo.title} - ${songInfo.artist}`;
         description = "Listen on ryOS iPod";
@@ -406,9 +459,16 @@ export async function createOgShareResponse(
     const songId = resolveSongShareId(karaokeMatch[1]);
     imageUrl = getAppIconUrl(publicOrigin, "karaoke");
 
-    const songInfo = await (options.getSong || getSongFromRedis)(songId);
+    const {
+      songInfo,
+      imageUrl: songImageUrl,
+      source,
+    } = await resolveSongShareInfo(songId, options.getSong || getSongFromRedis);
+    if (source !== "redis") {
+      cacheMaxAge = FALLBACK_CACHE_SECONDS;
+    }
     if (songInfo) {
-      imageUrl = formatMusicCoverUrl(songInfo.cover, 400) || imageUrl;
+      imageUrl = songImageUrl || imageUrl;
       const songDisplay = songInfo.artist
         ? `${songInfo.title} - ${songInfo.artist}`
         : songInfo.title;
@@ -501,7 +561,7 @@ export async function createOgShareResponse(
       "Content-Type": "text/html; charset=utf-8",
       // no-store prevents service worker from caching this redirect page
       // s-maxage allows CDN to cache for crawlers (they don't have SW)
-      "Cache-Control": "no-store, s-maxage=3600",
+      "Cache-Control": `no-store, s-maxage=${cacheMaxAge}`,
     },
   });
 }
