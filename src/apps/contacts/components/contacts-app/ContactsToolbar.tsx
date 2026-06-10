@@ -86,7 +86,7 @@ export function ContactsToolbar({ c }: ContactsToolbarProps) {
               <MagnifyingGlass
                 size={13}
                 weight="bold"
-                className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-black/45"
+                className="pointer-events-none absolute left-2 top-1/2 z-10 -translate-y-1/2 text-black/45 os-search-icon"
               />
               <input
                 value={searchQuery}
@@ -161,7 +161,7 @@ export function ContactsToolbar({ c }: ContactsToolbarProps) {
               <MagnifyingGlass
                 size={13}
                 weight="bold"
-                className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-black/35"
+                className="pointer-events-none absolute left-2 top-1/2 z-10 -translate-y-1/2 text-black/35 os-search-icon"
               />
               <input
                 value={searchQuery}
