@@ -340,13 +340,23 @@ async function getYouTubeInfo(
  * preview still shows a real title and thumbnail instead of the generic app
  * fallback.
  */
+type SongShareSource = "redis" | "youtube" | "none";
+
 async function resolveSongShareInfo(
   songId: string,
   getSong: (songId: string) => Promise<SongShareMetadata | null>
-): Promise<{ songInfo: SongShareMetadata | null; imageUrl: string | null }> {
+): Promise<{
+  songInfo: SongShareMetadata | null;
+  imageUrl: string | null;
+  source: SongShareSource;
+}> {
   const stored = await getSong(songId);
   if (stored) {
-    return { songInfo: stored, imageUrl: formatMusicCoverUrl(stored.cover, 400) };
+    return {
+      songInfo: stored,
+      imageUrl: formatMusicCoverUrl(stored.cover, 400),
+      source: "redis",
+    };
   }
 
   if (YOUTUBE_VIDEO_ID_REGEX.test(songId)) {
@@ -355,11 +365,12 @@ async function resolveSongShareInfo(
       return {
         songInfo: { title: ytInfo.title, artist: ytInfo.artist, cover: null },
         imageUrl: `https://i.ytimg.com/vi/${songId}/hqdefault.jpg`,
+        source: "youtube",
       };
     }
   }
 
-  return { songInfo: null, imageUrl: null };
+  return { songInfo: null, imageUrl: null, source: "none" };
 }
 
 export async function createOgShareResponse(
@@ -385,6 +396,15 @@ export async function createOgShareResponse(
   let title = "ryOS";
   let description = "An AI OS experience, made with Cursor";
   let matched = false;
+  // Crawlers cache aggressively, so OG pages are CDN-cached for an hour by
+  // default. Song shares persist their metadata to Redis asynchronously (and
+  // skip it entirely for logged-out users), so the first crawler hit can race
+  // ahead of the save and serve an incomplete preview. When we don't have rich
+  // metadata yet, cache only briefly so the CDN re-fetches and picks up the
+  // song once it lands in Redis instead of pinning a stale fallback.
+  const RICH_CACHE_SECONDS = 3600;
+  const FALLBACK_CACHE_SECONDS = 60;
+  let cacheMaxAge = RICH_CACHE_SECONDS;
 
   const appMatch = pathname.match(/^\/([a-z-]+)$/);
   if (appMatch && APP_NAMES[appMatch[1]]) {
@@ -416,10 +436,14 @@ export async function createOgShareResponse(
     const songId = resolveSongShareId(ipodMatch[1]);
     imageUrl = getAppIconUrl(publicOrigin, "ipod");
 
-    const { songInfo, imageUrl: songImageUrl } = await resolveSongShareInfo(
-      songId,
-      options.getSong || getSongFromRedis
-    );
+    const {
+      songInfo,
+      imageUrl: songImageUrl,
+      source,
+    } = await resolveSongShareInfo(songId, options.getSong || getSongFromRedis);
+    if (source !== "redis") {
+      cacheMaxAge = FALLBACK_CACHE_SECONDS;
+    }
     if (songInfo) {
       imageUrl = songImageUrl || imageUrl;
       if (songInfo.artist) {
@@ -441,10 +465,14 @@ export async function createOgShareResponse(
     const songId = resolveSongShareId(karaokeMatch[1]);
     imageUrl = getAppIconUrl(publicOrigin, "karaoke");
 
-    const { songInfo, imageUrl: songImageUrl } = await resolveSongShareInfo(
-      songId,
-      options.getSong || getSongFromRedis
-    );
+    const {
+      songInfo,
+      imageUrl: songImageUrl,
+      source,
+    } = await resolveSongShareInfo(songId, options.getSong || getSongFromRedis);
+    if (source !== "redis") {
+      cacheMaxAge = FALLBACK_CACHE_SECONDS;
+    }
     if (songInfo) {
       imageUrl = songImageUrl || imageUrl;
       const songDisplay = songInfo.artist
@@ -539,7 +567,7 @@ export async function createOgShareResponse(
       "Content-Type": "text/html; charset=utf-8",
       // no-store prevents service worker from caching this redirect page
       // s-maxage allows CDN to cache for crawlers (they don't have SW)
-      "Cache-Control": "no-store, s-maxage=3600",
+      "Cache-Control": `no-store, s-maxage=${cacheMaxAge}`,
     },
   });
 }

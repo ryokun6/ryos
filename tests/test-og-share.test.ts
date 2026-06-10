@@ -92,6 +92,10 @@ describe("og share response", () => {
       );
       expect(body).not.toContain("i.ytimg.com");
       expect(fetchMock).not.toHaveBeenCalled();
+      // Rich Redis-backed metadata is stable, so it can be CDN-cached longer.
+      expect(response?.headers.get("cache-control")).toBe(
+        "no-store, s-maxage=3600"
+      );
     } finally {
       globalThis.fetch = originalFetch;
     }
@@ -185,6 +189,11 @@ describe("og share response", () => {
       );
       expect(body).not.toContain("Sing on ryOS Karaoke");
       expect(fetchMock).toHaveBeenCalledTimes(1);
+      // YouTube fallback metadata may be superseded by a Redis save that is
+      // still in flight, so the preview must not be pinned for an hour.
+      expect(response?.headers.get("cache-control")).toBe(
+        "no-store, s-maxage=60"
+      );
     } finally {
       globalThis.fetch = originalFetch;
     }
@@ -244,6 +253,9 @@ describe("og share response", () => {
         '<meta property="og:image" content="https://os.example.com/icons/macosx/karaoke.png">'
       );
       expect(fetchMock).not.toHaveBeenCalled();
+      expect(response?.headers.get("cache-control")).toBe(
+        "no-store, s-maxage=60"
+      );
     } finally {
       globalThis.fetch = originalFetch;
     }
