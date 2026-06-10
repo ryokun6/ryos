@@ -1,4 +1,3 @@
-import { Redis } from "@upstash/redis";
 import { getAppPublicOrigin } from "./runtime-config.js";
 import { parseYouTubeTitleSimple } from "./parse-youtube-title.js";
 
@@ -256,22 +255,17 @@ export function getSongShareMetadataFromRaw(
 async function createSongRedisClient(): Promise<{
   get<T = unknown>(key: string): Promise<T | null>;
 } | null> {
-  if (
-    process.env.REDIS_KV_REST_API_URL?.trim() &&
-    process.env.REDIS_KV_REST_API_TOKEN?.trim()
-  ) {
-    return new Redis({
-      url: process.env.REDIS_KV_REST_API_URL,
-      token: process.env.REDIS_KV_REST_API_TOKEN,
-    });
-  }
-
-  if (process.env.REDIS_URL?.trim()) {
-    const { createRedis } = await import("./redis.js");
-    return createRedis();
-  }
-
-  return null;
+  // Delegate to the canonical Redis factory so the OG read path resolves the
+  // exact same backend (Upstash REST vs standard REDIS_URL) that the song API
+  // writes to. Picking a backend independently here used to silently diverge on
+  // non-Vercel deploys — e.g. when REDIS_URL (and/or REDIS_PROVIDER=redis-url)
+  // is set but stale Upstash vars also linger — causing reads to hit an empty
+  // store and previews to always fall back. The dynamic import keeps the
+  // standard-Redis (ioredis) dependency out of edge bundles that only use
+  // Upstash REST. `createRedis` throws when nothing is configured, which the
+  // caller treats as "no metadata".
+  const { createRedis } = await import("./redis.js");
+  return createRedis();
 }
 
 // Fetch song metadata from Redis song library
