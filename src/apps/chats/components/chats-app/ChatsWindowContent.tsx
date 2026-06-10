@@ -76,15 +76,19 @@ export function ChatsWindowContent({ c, isForeground }: ChatsWindowContentProps)
   // (left = room title, right = actions). The right island is only rendered
   // when there are actions to show, so it never appears as an empty pill.
   const hasRightActions = !currentRoom || currentRoom.type === "private";
+  // Glossy translucent "platter" that echoes the .aqua-button lozenge: a bright
+  // glassy shine across the top half, a near-clear body (so the desktop shows
+  // through), and a faint bottom glow. The layered gradient lives in the
+  // background so it always paints behind the button labels (no z-index fuss).
   const aquaGlassIslandStyle: CSSProperties = {
     background:
-      "linear-gradient(to bottom, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.34))",
+      "linear-gradient(to bottom, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.16) 45%, rgba(255, 255, 255, 0.05) 55%, rgba(255, 255, 255, 0.18) 100%)",
     backdropFilter: "blur(20px) saturate(180%)",
     WebkitBackdropFilter: "blur(20px) saturate(180%)",
     border: "0.5px solid rgba(255, 255, 255, 0.5)",
-    boxShadow: `0 1px 3px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, ${
-      isDarkMode ? 0.25 : 0.6
-    })`,
+    boxShadow: `0 2px 4px rgba(0, 0, 0, 0.15), 0 1px 1px rgba(0, 0, 0, 0.18), inset 0 1px 1px rgba(255, 255, 255, ${
+      isDarkMode ? 0.4 : 0.85
+    }), inset 0 -1px 2px rgba(0, 0, 0, 0.07)`,
   };
 
   return (
