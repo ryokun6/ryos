@@ -5382,28 +5382,28 @@
      the continuous frosted pane — keep it opaque enough to stay legible. */
   --os-color-window-bg: color-mix(
     in srgb,
-    var(--os-accent-color, #3a73d6) 5%,
-    rgba(243, 246, 251, 0.7)
+    var(--os-accent-color, #3a73d6) 8%,
+    rgba(243, 246, 251, 0.8)
   );
   --os-color-panel-bg: color-mix(
     in srgb,
-    var(--os-accent-color, #3a73d6) 5%,
-    rgba(243, 246, 251, 0.7)
+    var(--os-accent-color, #3a73d6) 8%,
+    rgba(243, 246, 251, 0.8)
   );
   --os-color-menubar-bg: color-mix(
     in srgb,
-    var(--os-accent-color, #3a73d6) 5%,
-    rgba(250, 251, 253, 0.64)
+    var(--os-accent-color, #3a73d6) 8%,
+    rgba(250, 251, 253, 0.74)
   );
   --os-color-menubar-surface: color-mix(
     in srgb,
-    var(--os-accent-color, #3a73d6) 5%,
-    rgba(250, 251, 253, 0.64)
+    var(--os-accent-color, #3a73d6) 8%,
+    rgba(250, 251, 253, 0.74)
   );
   --os-color-dock-surface: color-mix(
     in srgb,
-    var(--os-accent-color, #3a73d6) 5%,
-    rgba(250, 251, 253, 0.58)
+    var(--os-accent-color, #3a73d6) 8%,
+    rgba(250, 251, 253, 0.68)
   );
   --os-color-dock-shadow: 0 8px 30px rgba(0, 0, 0, 0.22);
 
@@ -5438,8 +5438,8 @@
      rather than `none`. The menubar pattern goes flat. */
   --os-pinstripe-window: linear-gradient(
     to bottom,
-    color-mix(in srgb, var(--os-accent-color, #3a73d6) 5%, rgba(252, 253, 255, 0.7)),
-    color-mix(in srgb, var(--os-accent-color, #3a73d6) 5%, rgba(244, 247, 251, 0.64))
+    color-mix(in srgb, var(--os-accent-color, #3a73d6) 8%, rgba(252, 253, 255, 0.8)),
+    color-mix(in srgb, var(--os-accent-color, #3a73d6) 8%, rgba(244, 247, 251, 0.74))
   );
   --os-pinstripe-menubar: none;
   /* Specular top sheen on the titlebar instead of the pinstripe gloss. */
@@ -5455,28 +5455,28 @@
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"] {
   --os-color-window-bg: color-mix(
     in srgb,
-    var(--os-accent-color, #3a73d6) 6%,
-    rgba(38, 40, 46, 0.7)
+    var(--os-accent-color, #3a73d6) 9%,
+    rgba(38, 40, 46, 0.8)
   );
   --os-color-panel-bg: color-mix(
     in srgb,
-    var(--os-accent-color, #3a73d6) 6%,
-    rgba(38, 40, 46, 0.7)
+    var(--os-accent-color, #3a73d6) 9%,
+    rgba(38, 40, 46, 0.8)
   );
   --os-color-menubar-bg: color-mix(
     in srgb,
-    var(--os-accent-color, #3a73d6) 6%,
-    rgba(26, 27, 31, 0.66)
+    var(--os-accent-color, #3a73d6) 9%,
+    rgba(26, 27, 31, 0.76)
   );
   --os-color-menubar-surface: color-mix(
     in srgb,
-    var(--os-accent-color, #3a73d6) 6%,
-    rgba(26, 27, 31, 0.66)
+    var(--os-accent-color, #3a73d6) 9%,
+    rgba(26, 27, 31, 0.76)
   );
   --os-color-dock-surface: color-mix(
     in srgb,
-    var(--os-accent-color, #3a73d6) 6%,
-    rgba(26, 27, 31, 0.58)
+    var(--os-accent-color, #3a73d6) 9%,
+    rgba(26, 27, 31, 0.68)
   );
   --os-color-dock-shadow: 0 8px 30px rgba(0, 0, 0, 0.55);
 
@@ -5505,8 +5505,8 @@
 
   --os-pinstripe-window: linear-gradient(
     to bottom,
-    color-mix(in srgb, var(--os-accent-color, #3a73d6) 6%, rgba(52, 54, 60, 0.7)),
-    color-mix(in srgb, var(--os-accent-color, #3a73d6) 6%, rgba(40, 42, 48, 0.64))
+    color-mix(in srgb, var(--os-accent-color, #3a73d6) 9%, rgba(52, 54, 60, 0.8)),
+    color-mix(in srgb, var(--os-accent-color, #3a73d6) 9%, rgba(40, 42, 48, 0.74))
   );
   --os-pinstripe-menubar: none;
   --os-pinstripe-titlebar: linear-gradient(
