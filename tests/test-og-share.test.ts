@@ -155,6 +155,100 @@ describe("og share response", () => {
     );
   });
 
+  test("falls back to YouTube metadata for Karaoke OG when song is not in Redis", async () => {
+    process.env.APP_PUBLIC_ORIGIN = "https://os.example.com";
+    const fetchMock = mock(async (input: RequestInfo | URL) => {
+      const requestUrl = typeof input === "string" ? input : input.toString();
+      expect(requestUrl).toContain("youtube.com/oembed");
+      expect(requestUrl).toContain("abc123DEF45");
+      return new Response(
+        JSON.stringify({ title: "Queen - Bohemian Rhapsody (Official Video)" }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    });
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    try {
+      const response = await createOgShareResponse(
+        new Request("https://os.example.com/karaoke/abc123DEF45"),
+        { getSong: async () => null }
+      );
+
+      expect(response).not.toBeNull();
+      const body = await response!.text();
+      expect(body).toContain(
+        '<meta property="og:title" content="Sing Bohemian Rhapsody - Queen on ryOS">'
+      );
+      expect(body).toContain(
+        '<meta property="og:image" content="https://i.ytimg.com/vi/abc123DEF45/hqdefault.jpg">'
+      );
+      expect(body).not.toContain("Sing on ryOS Karaoke");
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  test("falls back to YouTube metadata for iPod OG when song is not in Redis", async () => {
+    process.env.APP_PUBLIC_ORIGIN = "https://os.example.com";
+    const fetchMock = mock(async () => {
+      return new Response(
+        JSON.stringify({ title: "Queen - Bohemian Rhapsody" }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    });
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    try {
+      const response = await createOgShareResponse(
+        new Request("https://os.example.com/ipod/abc123DEF45"),
+        { getSong: async () => null }
+      );
+
+      expect(response).not.toBeNull();
+      const body = await response!.text();
+      expect(body).toContain(
+        '<meta property="og:title" content="Bohemian Rhapsody - Queen">'
+      );
+      expect(body).toContain(
+        '<meta property="og:image" content="https://i.ytimg.com/vi/abc123DEF45/hqdefault.jpg">'
+      );
+      expect(body).not.toContain("Shared Song - ryOS");
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  test("uses generic Karaoke fallback when song is missing and not a YouTube id", async () => {
+    process.env.APP_PUBLIC_ORIGIN = "https://os.example.com";
+    const fetchMock = mock(() => {
+      throw new Error("oEmbed should not be fetched for non-YouTube song ids");
+    });
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    try {
+      const response = await createOgShareResponse(
+        new Request("https://os.example.com/karaoke/am%3A1616228595"),
+        { getSong: async () => null }
+      );
+
+      expect(response).not.toBeNull();
+      const body = await response!.text();
+      expect(body).toContain(
+        '<meta property="og:title" content="Sing on ryOS Karaoke">'
+      );
+      expect(body).toContain(
+        '<meta property="og:image" content="https://os.example.com/icons/macosx/karaoke.png">'
+      );
+      expect(fetchMock).not.toHaveBeenCalled();
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
   test("normalizes supported song share route IDs", () => {
     expect(resolveSongShareId("abc123DEF45")).toBe("abc123DEF45");
     expect(resolveSongShareId("am%3A1616228595")).toBe("am:1616228595");

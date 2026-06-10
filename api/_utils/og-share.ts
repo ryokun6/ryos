@@ -330,6 +330,38 @@ async function getYouTubeInfo(
   }
 }
 
+/**
+ * Resolve song metadata + cover image for iPod / Karaoke OG pages.
+ *
+ * Prefers the song stored in Redis (richest data: album cover, curated
+ * title/artist). When the song hasn't been persisted yet — e.g. it was shared
+ * by a logged-out user, the metadata save failed, or it simply isn't in the
+ * library — fall back to YouTube oEmbed (mirroring the `/videos/` path) so the
+ * preview still shows a real title and thumbnail instead of the generic app
+ * fallback.
+ */
+async function resolveSongShareInfo(
+  songId: string,
+  getSong: (songId: string) => Promise<SongShareMetadata | null>
+): Promise<{ songInfo: SongShareMetadata | null; imageUrl: string | null }> {
+  const stored = await getSong(songId);
+  if (stored) {
+    return { songInfo: stored, imageUrl: formatMusicCoverUrl(stored.cover, 400) };
+  }
+
+  if (YOUTUBE_VIDEO_ID_REGEX.test(songId)) {
+    const ytInfo = await getYouTubeInfo(songId);
+    if (ytInfo) {
+      return {
+        songInfo: { title: ytInfo.title, artist: ytInfo.artist, cover: null },
+        imageUrl: `https://i.ytimg.com/vi/${songId}/hqdefault.jpg`,
+      };
+    }
+  }
+
+  return { songInfo: null, imageUrl: null };
+}
+
 export async function createOgShareResponse(
   request: Request,
   options: {
@@ -384,9 +416,12 @@ export async function createOgShareResponse(
     const songId = resolveSongShareId(ipodMatch[1]);
     imageUrl = getAppIconUrl(publicOrigin, "ipod");
 
-    const songInfo = await (options.getSong || getSongFromRedis)(songId);
+    const { songInfo, imageUrl: songImageUrl } = await resolveSongShareInfo(
+      songId,
+      options.getSong || getSongFromRedis
+    );
     if (songInfo) {
-      imageUrl = formatMusicCoverUrl(songInfo.cover, 400) || imageUrl;
+      imageUrl = songImageUrl || imageUrl;
       if (songInfo.artist) {
         title = `${songInfo.title} - ${songInfo.artist}`;
         description = "Listen on ryOS iPod";
@@ -406,9 +441,12 @@ export async function createOgShareResponse(
     const songId = resolveSongShareId(karaokeMatch[1]);
     imageUrl = getAppIconUrl(publicOrigin, "karaoke");
 
-    const songInfo = await (options.getSong || getSongFromRedis)(songId);
+    const { songInfo, imageUrl: songImageUrl } = await resolveSongShareInfo(
+      songId,
+      options.getSong || getSongFromRedis
+    );
     if (songInfo) {
-      imageUrl = formatMusicCoverUrl(songInfo.cover, 400) || imageUrl;
+      imageUrl = songImageUrl || imageUrl;
       const songDisplay = songInfo.artist
         ? `${songInfo.title} - ${songInfo.artist}`
         : songInfo.title;
