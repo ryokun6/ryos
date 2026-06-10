@@ -2,7 +2,9 @@ import { describe, expect, test } from "bun:test";
 import type { AIChatMessage } from "../src/types/chat";
 import {
   applyFreshProactiveGreeting,
+  isClearedToDefaultGreeting,
   isDefaultGreetingMessage,
+  resolveAiMessageSync,
   shouldApplyFreshProactiveGreeting,
 } from "../src/apps/chats/utils/proactiveGreetingApply";
 
@@ -70,5 +72,69 @@ describe("proactive greeting apply", () => {
     expect(
       applyFreshProactiveGreeting([userMessage], proactiveGreeting)
     ).toBeNull();
+  });
+});
+
+describe("cleared chat detection", () => {
+  test("recognizes a single default greeting as a cleared chat", () => {
+    expect(isClearedToDefaultGreeting([defaultGreeting])).toBe(true);
+  });
+
+  test("does not treat a proactive greeting as a cleared chat", () => {
+    expect(isClearedToDefaultGreeting([proactiveGreeting])).toBe(false);
+  });
+
+  test("does not treat a populated conversation as a cleared chat", () => {
+    expect(
+      isClearedToDefaultGreeting([defaultGreeting, userMessage, assistantStream])
+    ).toBe(false);
+  });
+});
+
+describe("resolveAiMessageSync", () => {
+  test("forces a clear to win even when the SDK stream is still longer", () => {
+    // User pressed "Clear Chat" while an assistant reply was still draining.
+    const decision = resolveAiMessageSync(
+      [defaultGreeting],
+      [defaultGreeting, userMessage, assistantStream]
+    );
+
+    expect(decision).toEqual({ action: "sync" });
+  });
+
+  test("skips overwriting a longer SDK list mid-conversation", () => {
+    const decision = resolveAiMessageSync(
+      [proactiveGreeting, userMessage],
+      [proactiveGreeting, userMessage, assistantStream]
+    );
+
+    expect(decision).toEqual({ action: "skip" });
+  });
+
+  test("patches the loading greeting once the proactive greeting arrives", () => {
+    const decision = resolveAiMessageSync(
+      [proactiveGreeting],
+      [defaultGreeting]
+    );
+
+    expect(decision).toEqual({
+      action: "patch-greeting",
+      messages: [proactiveGreeting],
+    });
+  });
+
+  test("syncs when same-length lists have a differing last message id", () => {
+    expect(resolveAiMessageSync([userMessage], [assistantStream])).toEqual({
+      action: "sync",
+    });
+  });
+
+  test("no-ops when store and SDK are already aligned", () => {
+    expect(
+      resolveAiMessageSync(
+        [proactiveGreeting, userMessage],
+        [proactiveGreeting, userMessage]
+      )
+    ).toEqual({ action: "noop" });
   });
 });

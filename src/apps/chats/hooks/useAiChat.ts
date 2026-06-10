@@ -190,6 +190,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     status,
     error,
     stop: sdkStop,
+    clearError,
     setMessages: setSdkMessages,
     sendMessage,
     regenerate,
@@ -1763,6 +1764,21 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
     }
 
+    // Stop any in-flight stream first. Otherwise the AI SDK keeps appending to
+    // its message list after we reset it below, and `useSyncedAiMessages`
+    // refuses to overwrite a longer SDK list with the cleared store snapshot —
+    // making the old conversation reappear right after "Clear Chat".
+    sdkStop();
+
+    // Clear the AI SDK error state (e.g. the inline red error / retry block).
+    // Without this, a previous failed turn's error stays visible after clearing.
+    clearError();
+
+    // Clear the non-SDK error channels surfaced below the input so the footer
+    // doesn't keep showing a stale rate-limit / login prompt after clearing.
+    setRateLimitError(null);
+    setNeedsUsername(false);
+
     // Reset speech and highlight state so the next reply starts clean.
     resetSpeechState();
 
@@ -1783,6 +1799,10 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   }, [
     setAiMessages,
     setSdkMessages,
+    sdkStop,
+    clearError,
+    setRateLimitError,
+    setNeedsUsername,
     resetSpeechState,
     markAssistantMessageProcessed,
     aiMessages,
