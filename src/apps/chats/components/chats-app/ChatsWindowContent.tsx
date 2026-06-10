@@ -76,15 +76,24 @@ export function ChatsWindowContent({ c, isForeground }: ChatsWindowContentProps)
   // (left = room title, right = actions). The right island is only rendered
   // when there are actions to show, so it never appears as an empty pill.
   const hasRightActions = !currentRoom || currentRoom.type === "private";
+  // The "platter" islands borrow the Aqua Glass frosted metal-button vocabulary
+  // (`.metal-inset-btn` group + button): a top gloss layered over a smooth
+  // gray→white base, low alpha so the frosted desktop reads through, capped by a
+  // raised dark hairline ring (light) / soft inner highlight (dark) instead of a
+  // white border. Both fills live in the background so labels paint above them.
   const aquaGlassIslandStyle: CSSProperties = {
-    background:
-      "linear-gradient(to bottom, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.34))",
-    backdropFilter: "blur(20px) saturate(180%)",
-    WebkitBackdropFilter: "blur(20px) saturate(180%)",
-    border: "0.5px solid rgba(255, 255, 255, 0.5)",
-    boxShadow: `0 1px 3px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, ${
-      isDarkMode ? 0.25 : 0.6
-    })`,
+    background: isDarkMode
+      ? "linear-gradient(to bottom, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03) 60%, rgba(255, 255, 255, 0) 100%) top / 100% 50% no-repeat, linear-gradient(to bottom, rgba(72, 72, 78, 0.42), rgba(34, 34, 38, 0.42))"
+      : "linear-gradient(to bottom, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.18) 60%, rgba(255, 255, 255, 0) 100%) top / 100% 50% no-repeat, linear-gradient(rgba(188, 188, 188, 0.34), rgba(255, 255, 255, 0.3))",
+    backdropFilter: "blur(12px) saturate(180%)",
+    WebkitBackdropFilter: "blur(12px) saturate(180%)",
+    border: "none",
+    textShadow: isDarkMode
+      ? "0 1px 0 rgba(0, 0, 0, 0.55)"
+      : "0 1px 0 rgba(255, 255, 255, 0.5)",
+    boxShadow: isDarkMode
+      ? "0 2px 4px rgba(0, 0, 0, 0.35), 0 1px 1px rgba(0, 0, 0, 0.35), inset 0 0 0 0.5px rgba(255, 255, 255, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.14)"
+      : "0 2px 3px rgba(0, 0, 0, 0.2), 0 1px 1px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(0, 0, 0, 0.3)",
   };
 
   return (
