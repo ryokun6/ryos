@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { useAppStoreShallow } from "@/stores/helpers";
+import { useAppStoreShallow } from "@/stores/useAppStore";
 
 export function VersionDisplay() {
   const { t } = useTranslation();

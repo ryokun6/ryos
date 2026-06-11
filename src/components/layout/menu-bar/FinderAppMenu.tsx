@@ -11,7 +11,7 @@ import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
-import { useAppStoreShallow } from "@/stores/helpers";
+import { useAppStoreShallow } from "@/stores/useAppStore";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { appMetadata as finderMetadata, helpItems as finderHelpItems } from "@/apps/finder/metadata";

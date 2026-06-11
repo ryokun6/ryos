@@ -5,7 +5,7 @@ import type {
   KeyboardEvent,
   SetStateAction,
 } from "react";
-import { useTerminalStoreShallow } from "@/stores/helpers";
+import { useTerminalStoreShallow } from "@/stores/useTerminalStore";
 import type {
   CommandHistory,
   SaveFileData,

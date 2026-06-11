@@ -1,4 +1,7 @@
-import WaveSurfer from "wavesurfer.js";
+// Type-only: a value import would pull wavesurfer.js (and the whole shared
+// "audio" chunk: tone, audio-buffer-utils) into every consumer of this types
+// module — including the always-mounted window frame shell.
+import type WaveSurfer from "wavesurfer.js";
 
 export interface SoundSlot {
   audioData: string | null;

@@ -6,8 +6,7 @@ import React, {
   useEffect,
 } from "react";
 import { useTranslation } from "react-i18next";
-import { useAppStore } from "@/stores/useAppStore";
-import { useAppStoreShallow } from "@/stores/helpers";
+import { useAppStore, useAppStoreShallow } from "@/stores/useAppStore";
 import { AppId, appRegistry } from "@/config/appRegistry";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useFinderStore } from "@/stores/useFinderStore";
@@ -128,6 +127,10 @@ export function MacDock() {
     }));
   const instances = useMemo(
     () => getDockInstancesSnapshot(useAppStore.getState().instances),
+    // The signature string is a deliberate cache key: it changes only when a
+    // dock-relevant instance field changes, so the snapshot (read imperatively
+    // via getState) is rebuilt exactly then — not on every focus/geometry write.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [dockInstancesSignature]
   );
   

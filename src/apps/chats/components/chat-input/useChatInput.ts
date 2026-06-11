@@ -1,10 +1,8 @@
 import { useState, useRef, useEffect, useCallback, useReducer } from "react";
 import { useChatSynth } from "@/hooks/useChatSynth";
-import {
-  useAppStoreShallow,
-  useAudioSettingsStoreShallow,
-  useDisplaySettingsStoreShallow,
-} from "@/stores/helpers";
+import { useAppStoreShallow } from "@/stores/useAppStore";
+import { useAudioSettingsStoreShallow } from "@/stores/useAudioSettingsStore";
+import { useDisplaySettingsStoreShallow } from "@/stores/useDisplaySettingsStore";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { CHAT_ANALYTICS, track } from "@/utils/analytics";
 import { AI_MODELS } from "@/types/aiModels";

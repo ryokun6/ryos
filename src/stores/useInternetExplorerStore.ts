@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { useStoreShallow } from "./helpers";
 import { persist } from "zustand/middleware";
 import { abortableFetch } from "@/utils/abortableFetch";
 
@@ -974,3 +975,14 @@ export const isDirectPassthrough = (url: string): boolean => {
     return false;
   }
 };
+
+/**
+ * Shallow-equality selector hook for this store. Co-located with the store
+ * (rather than a central helpers barrel) so importing it doesn't pull other
+ * stores into the bundle.
+ */
+export function useInternetExplorerStoreShallow<T>(
+  selector: (state: ReturnType<typeof useInternetExplorerStore.getState>) => T
+): T {
+  return useStoreShallow(useInternetExplorerStore, selector);
+}

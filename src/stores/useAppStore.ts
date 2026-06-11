@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { useStoreShallow } from "./helpers";
 import { persist } from "zustand/middleware";
 import { AppId, getWindowConfig, getMobileWindowSize } from "@/config/appRegistry";
 import { prefetchAppChunk } from "@/config/lazyAppComponent";
@@ -967,3 +968,14 @@ export const clearAllAppStates = (): void => {
     console.error("clearAllAppStates", e);
   }
 };
+
+/**
+ * Shallow-equality selector hook for this store. Co-located with the store
+ * (rather than a central helpers barrel) so importing it doesn't pull other
+ * stores into the bundle.
+ */
+export function useAppStoreShallow<T>(
+  selector: (state: ReturnType<typeof useAppStore.getState>) => T
+): T {
+  return useStoreShallow(useAppStore, selector);
+}

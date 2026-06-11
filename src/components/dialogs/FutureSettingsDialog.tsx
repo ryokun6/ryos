@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 import {
   DEFAULT_TIMELINE,
 } from "@/stores/useInternetExplorerStore";
-import { useInternetExplorerStoreShallow } from "@/stores/helpers";
+import { useInternetExplorerStoreShallow } from "@/stores/useInternetExplorerStore";
 
 interface FutureSettingsDialogProps {
   isOpen: boolean;

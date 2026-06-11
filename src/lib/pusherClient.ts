@@ -335,7 +335,8 @@ class DeferredRealtimeChannel implements RealtimeChannel {
   }
 }
 
-class DeferredPusherRealtimeClient implements RealtimeClient {
+/** Exported for unit tests (see tests/test-pusher-lazy-load.test.ts). */
+export class DeferredPusherRealtimeClient implements RealtimeClient {
   readonly connection = new DeferredRealtimeConnection();
 
   private delegate: RealtimeClient | null = null;

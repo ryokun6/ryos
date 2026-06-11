@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { useStoreShallow } from "./helpers";
 import { persist } from "zustand/middleware";
 import { ShaderType } from "@/types/shader";
 import { DisplayMode } from "@/utils/displayMode";
@@ -351,3 +352,14 @@ export const loadHtmlPreviewSplit = () =>
   useDisplaySettingsStore.getState().htmlPreviewSplit;
 export const saveHtmlPreviewSplit = (v: boolean) =>
   useDisplaySettingsStore.getState().setHtmlPreviewSplit(v);
+
+/**
+ * Shallow-equality selector hook for this store. Co-located with the store
+ * (rather than a central helpers barrel) so importing it doesn't pull other
+ * stores into the bundle.
+ */
+export function useDisplaySettingsStoreShallow<T>(
+  selector: (state: ReturnType<typeof useDisplaySettingsStore.getState>) => T
+): T {
+  return useStoreShallow(useDisplaySettingsStore, selector);
+}

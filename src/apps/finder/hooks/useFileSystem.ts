@@ -12,11 +12,9 @@ import { useTextEditStore } from "@/stores/useTextEditStore";
 import { useAppStore, type LaunchOriginRect } from "@/stores/useAppStore";
 import { migrateIndexedDBToUUIDs } from "@/utils/indexedDBMigration";
 import { useFinderStore } from "@/stores/useFinderStore";
-import {
-  useFilesStoreShallow,
-  useIpodStoreShallow,
-  useVideoStoreShallow,
-} from "@/stores/helpers";
+import { useFilesStoreShallow } from "@/stores/useFilesStore";
+import { useIpodStoreShallow } from "@/stores/useIpodStore";
+import { useVideoStoreShallow } from "@/stores/useVideoStore";
 import { formatKugouImageUrl } from "@/utils/coverArt";
 import { listVirtualMusicOrVideosPath } from "@/services/vfs/virtualTrees";
 import { abortableFetch } from "@/utils/abortableFetch";

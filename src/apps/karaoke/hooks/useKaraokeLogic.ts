@@ -10,11 +10,9 @@ import {
 } from "@/stores/useMediaLibraryStore";
 import { useKaraokeStore } from "@/stores/useKaraokeStore";
 import { useShallow } from "zustand/react/shallow";
-import {
-  useMediaLibraryStoreShallow,
-  useAudioSettingsStoreShallow,
-  useAppStoreShallow,
-} from "@/stores/helpers";
+import { useMediaLibraryStoreShallow } from "@/stores/useMediaLibraryStore";
+import { useAudioSettingsStoreShallow } from "@/stores/useAudioSettingsStore";
+import { useAppStoreShallow } from "@/stores/useAppStore";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { LyricsAlignment, LyricsFont, DisplayMode } from "@/types/lyrics";
 import { useOffline } from "@/hooks/useOffline";

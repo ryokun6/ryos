@@ -13,8 +13,11 @@ import { AppSwitcher } from "@/components/layout/AppSwitcher";
 import { AppErrorBoundary } from "@/components/errors/ErrorBoundaries";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { isTextEditInitialData } from "@/types/appInitialData";
-import { selectIsInstanceForeground, useAppStore } from "@/stores/useAppStore";
-import { useAppStoreShallow } from "@/stores/helpers";
+import {
+  selectIsInstanceForeground,
+  useAppStore,
+  useAppStoreShallow,
+} from "@/stores/useAppStore";
 import { shouldMountInstance } from "../instanceMountPolicy";
 import { getZIndexForInstance, supportsMultiWindowApp } from "./instanceHelpers";
 import type { AppProps } from "../types";
@@ -127,6 +130,21 @@ const ManagedAppInstance = memo(function ManagedAppInstance({
     getZIndexForInstance(instanceId, state.instanceOrder)
   );
 
+  // Hooks must run unconditionally — keep them above the early returns below
+  // (react-hooks/rules-of-hooks; a conditional hook crashes React with a
+  // hook-count mismatch when `isOpen`/`exposeMode` flips while mounted).
+  const handleClose = useCallback(() => {
+    requestCloseWindow(instanceId);
+  }, [instanceId]);
+
+  const handleNavigateNext = useCallback(() => {
+    navigateToNextInstance(instanceId);
+  }, [instanceId, navigateToNextInstance]);
+
+  const handleNavigatePrevious = useCallback(() => {
+    navigateToPreviousInstance(instanceId);
+  }, [instanceId, navigateToPreviousInstance]);
+
   if (!instance?.isOpen) return null;
   if (exposeMode && instance.appId === "stickies") return null;
 
@@ -140,18 +158,6 @@ const ManagedAppInstance = memo(function ManagedAppInstance({
   const shouldMount = shouldMountInstance(instance, exposeMode);
   const hideWindow = !shouldMount || instance.isLoading;
   const effectiveIsForeground = exposeMode ? false : isForeground;
-
-  const handleClose = useCallback(() => {
-    requestCloseWindow(instance.instanceId);
-  }, [instance.instanceId]);
-
-  const handleNavigateNext = useCallback(() => {
-    navigateToNextInstance(instance.instanceId);
-  }, [instance.instanceId, navigateToNextInstance]);
-
-  const handleNavigatePrevious = useCallback(() => {
-    navigateToPreviousInstance(instance.instanceId);
-  }, [instance.instanceId, navigateToPreviousInstance]);
 
   return (
     <div

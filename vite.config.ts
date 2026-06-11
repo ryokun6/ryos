@@ -115,6 +115,62 @@ function collectHeavyChunksPlugin() {
   };
 }
 
+/**
+ * Vendor package → manual chunk assignment (used by the function-form
+ * `manualChunks` below). Mirrors the previous object-form mapping:
+ *
+ * - react: loaded immediately
+ * - ui-core: Radix primitives, loaded early. ui-form was merged into ui-core
+ *   to eliminate a circular chunk dependency (ui-form -> ui-core -> ui-form)
+ *   that caused a TDZ crash in Vite 6.4.x.
+ * - audio: heavy audio libs, deferred until Soundboard/iPod/Synth opens
+ * - media-player: shared by iPod and Videos apps
+ * - hangul: Korean romanization, only needed for lyrics
+ * - ai-sdk: deferred until Chats/IE opens
+ * - tiptap: rich text editor, deferred until TextEdit opens. @tiptap/pm is
+ *   excluded because it only exports subpaths and has no main entry point.
+ * - three: 3D rendering, deferred until shader wallpapers / Synth need it
+ * - motion / zustand / pusher / webamp: see comments at their use sites
+ */
+const MANUAL_CHUNK_BY_PACKAGE: Record<string, string> = {
+  react: "react",
+  "react-dom": "react",
+  "@radix-ui/react-dialog": "ui-core",
+  "@radix-ui/react-dropdown-menu": "ui-core",
+  "@radix-ui/react-menubar": "ui-core",
+  "@radix-ui/react-scroll-area": "ui-core",
+  "@radix-ui/react-tooltip": "ui-core",
+  "@radix-ui/react-label": "ui-core",
+  "@radix-ui/react-select": "ui-core",
+  "@radix-ui/react-slider": "ui-core",
+  "@radix-ui/react-switch": "ui-core",
+  "@radix-ui/react-checkbox": "ui-core",
+  "@radix-ui/react-tabs": "ui-core",
+  tone: "audio",
+  "wavesurfer.js": "audio",
+  "audio-buffer-utils": "audio",
+  "react-player": "media-player",
+  "hangul-romanization": "hangul",
+  ai: "ai-sdk",
+  "@ai-sdk/anthropic": "ai-sdk",
+  "@ai-sdk/google": "ai-sdk",
+  "@ai-sdk/openai": "ai-sdk",
+  "@ai-sdk/react": "ai-sdk",
+  "@tiptap/core": "tiptap",
+  "@tiptap/react": "tiptap",
+  "@tiptap/starter-kit": "tiptap",
+  "@tiptap/extension-task-item": "tiptap",
+  "@tiptap/extension-task-list": "tiptap",
+  "@tiptap/extension-text-align": "tiptap",
+  "@tiptap/extension-underline": "tiptap",
+  "@tiptap/suggestion": "tiptap",
+  three: "three",
+  motion: "motion",
+  zustand: "zustand",
+  "pusher-js": "pusher",
+  webamp: "webamp",
+};
+
 // https://vite.dev/config/
 export default defineConfig({
   envPrefix: ['VITE_', 'TAURI_ENV_*'],
@@ -672,68 +728,23 @@ export default defineConfig({
     target: 'es2022',
     rollupOptions: {
       output: {
-        manualChunks: {
-          // Core React - loaded immediately
-          react: ["react", "react-dom"],
-          
-          // UI primitives - loaded early
-          // Note: ui-form was merged into ui-core to eliminate a circular chunk
-          // dependency (ui-form -> ui-core -> ui-form) that caused a TDZ crash
-          // in Vite 6.4.x: "can't access lexical declaration before initialization"
-          "ui-core": [
-            "@radix-ui/react-dialog",
-            "@radix-ui/react-dropdown-menu",
-            "@radix-ui/react-menubar",
-            "@radix-ui/react-scroll-area",
-            "@radix-ui/react-tooltip",
-            "@radix-ui/react-label",
-            "@radix-ui/react-select",
-            "@radix-ui/react-slider",
-            "@radix-ui/react-switch",
-            "@radix-ui/react-checkbox",
-            "@radix-ui/react-tabs",
-          ],
-          
-          // Heavy audio libs - deferred until Soundboard/iPod/Synth opens
-          audio: ["tone", "wavesurfer.js", "audio-buffer-utils"],
-          
-          // Media player - shared by iPod and Videos apps
-          "media-player": ["react-player"],
-
-          // Korean romanization - only needed for lyrics
-          "hangul": ["hangul-romanization"],
-          
-          // AI SDK - deferred until Chats/IE opens  
-          "ai-sdk": ["ai", "@ai-sdk/anthropic", "@ai-sdk/google", "@ai-sdk/openai", "@ai-sdk/react"],
-          
-          // Rich text editor - deferred until TextEdit opens
-          // Note: @tiptap/pm is excluded because it only exports subpaths (e.g. @tiptap/pm/state)
-          // and has no main entry point, which causes Vite to fail
-          tiptap: [
-            "@tiptap/core",
-            "@tiptap/react",
-            "@tiptap/starter-kit",
-            "@tiptap/extension-task-item",
-            "@tiptap/extension-task-list",
-            "@tiptap/extension-text-align",
-            "@tiptap/extension-underline",
-            "@tiptap/suggestion",
-          ],
-          
-          // 3D rendering - deferred until PC app opens
-          three: ["three"],
-          
-          // Animation - used by multiple apps (Motion / motion/react)
-          motion: ["motion"],
-          
-          // State management
-          zustand: ["zustand"],
-          
-          // Realtime chat
-          pusher: ["pusher-js"],
-
-          // Winamp player - deferred until Winamp app opens
-          webamp: ["webamp"],
+        // Function form (instead of the object form) so that ONLY modules of
+        // the listed packages are assigned to these chunks. With the object
+        // form, rollup hoisted shared virtual helpers (e.g. Vite's preload
+        // helper) into manual chunks like "media-player", which made the
+        // entry chunk statically import react-player & co. at boot just to
+        // reach the ~1KB helper.
+        manualChunks: (id: string) => {
+          // Pin Vite's virtual preload helper (needed by the entry and every
+          // dynamic import site) to its own tiny chunk; otherwise rollup
+          // co-locates it with an arbitrary vendor chunk, forcing that whole
+          // chunk to load at boot.
+          if (id.includes("vite/preload-helper")) return "preload-helper";
+          const match = id.match(
+            /node_modules\/(?:\.pnpm\/[^/]+\/node_modules\/)?(@[^/]+\/[^/]+|[^/]+)\//
+          );
+          if (!match) return undefined;
+          return MANUAL_CHUNK_BY_PACKAGE[match[1]];
         },
       },
     },

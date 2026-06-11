@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useIpodStoreShallow } from "@/stores/helpers";
+import { useIpodStoreShallow } from "@/stores/useIpodStore";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { LyricsAlignment, DisplayMode } from "@/types/lyrics";
 import { useTranslation } from "react-i18next";

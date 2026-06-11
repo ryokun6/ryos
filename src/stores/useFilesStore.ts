@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { useStoreShallow } from "./helpers";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { v4 as uuidv4 } from "uuid";
 import { ensureIndexedDBInitialized, STORES } from "@/utils/indexedDB";
@@ -1744,3 +1745,14 @@ export const useFilesStore = create<FilesStoreState>()(
     }
   )
 );
+
+/**
+ * Shallow-equality selector hook for this store. Co-located with the store
+ * (rather than a central helpers barrel) so importing it doesn't pull other
+ * stores into the bundle.
+ */
+export function useFilesStoreShallow<T>(
+  selector: (state: ReturnType<typeof useFilesStore.getState>) => T
+): T {
+  return useStoreShallow(useFilesStore, selector);
+}

@@ -1,5 +1,4 @@
 import {
-  useState,
   useEffect,
   useRef,
   useCallback,
@@ -14,7 +13,7 @@ import { prefetchAppChunk } from "@/config/lazyAppComponent";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { isTauri, isTauriWindows } from "@/utils/platform";
-import { onExposeToggle, onSpotlightToggle } from "@/utils/appEventBus";
+import { onExposeToggle } from "@/utils/appEventBus";
 import {
   buildGroupedResults,
   getSpotlightPrefetchAppId,
@@ -27,7 +26,6 @@ export function useSpotlightSearchController() {
   const { results, isSearching } = useSpotlightSearch(query);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
-  const proxyInputRef = useRef<HTMLInputElement>(null);
   const {
     isWindowsTheme: isXpTheme,
     isMacTheme: isMac,
@@ -58,16 +56,8 @@ export function useSpotlightSearchController() {
     };
   }, [isOpen, isXpTheme, isMobile]);
 
-  useEffect(() => {
-    const handler = () => {
-      const state = useSpotlightStore.getState();
-      if (!state.isOpen && isMobile && proxyInputRef.current) {
-        proxyInputRef.current.focus();
-      }
-      state.toggle();
-    };
-    return onSpotlightToggle(handler);
-  }, [isMobile]);
+  // The global spotlight-toggle listener (and the mobile proxy input it
+  // focuses) lives in SpotlightSearchHost, which is always mounted.
 
   useEffect(() => {
     const handler = () => {
@@ -174,11 +164,6 @@ export function useSpotlightSearchController() {
   const rowPy = isMac ? "3px" : "3px";
   const iconPx = isMac ? 20 : 18;
 
-  const [hasBeenOpen, setHasBeenOpen] = useState(isOpen);
-  useEffect(() => {
-    if (isOpen) setHasBeenOpen(true);
-  }, [isOpen]);
-
   const needsCenter = isMobile || !isMac;
   const useTwoColumn =
     isMacOSTheme && !isMobile && groupedResults.length > 0;
@@ -231,7 +216,6 @@ export function useSpotlightSearchController() {
     isSearching,
     inputRef,
     listRef,
-    proxyInputRef,
     isXpTheme,
     isMac,
     isMacOSTheme,
@@ -247,7 +231,6 @@ export function useSpotlightSearchController() {
     sectionFontSize,
     rowPy,
     iconPx,
-    hasBeenOpen,
     needsCenter,
     useTwoColumn,
     panelPositionClass,

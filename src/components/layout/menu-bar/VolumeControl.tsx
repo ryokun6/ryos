@@ -10,7 +10,7 @@ import { SpeakerSimpleLow, SpeakerSimpleHigh, SpeakerSimpleSlash, Gear } from "@
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
-import { useAudioSettingsStoreShallow } from "@/stores/helpers";
+import { useAudioSettingsStoreShallow } from "@/stores/useAudioSettingsStore";
 
 export function VolumeControl() {
   const { masterVolume, setMasterVolume } = useAudioSettingsStoreShallow((s) => ({
