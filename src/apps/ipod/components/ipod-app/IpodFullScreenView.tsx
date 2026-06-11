@@ -10,6 +10,7 @@ import { FullScreenPortal } from "../FullScreenPortal";
 import { LyricsDisplay } from "../lyrics-display/LyricsDisplay";
 import { useSaveSongCoverColor } from "@/hooks/useSaveSongCoverColor";
 import type { IpodAppController } from "./useIpodAppController";
+import { useIpodElapsedTime } from "../../hooks/useIpodElapsedTime";
 import {
   AmbientBackground,
   LandscapeVideoBackground,
@@ -55,7 +56,6 @@ export function IpodFullScreenView({ c }: IpodFullScreenViewProps) {
     handleDisplayModeSelect,
     displayModeOptions,
     fullScreenLyricsControls,
-    elapsedTime,
     totalTime,
     lyricOffset,
     furiganaMap,
@@ -84,6 +84,8 @@ export function IpodFullScreenView({ c }: IpodFullScreenViewProps) {
     seekTime,
   } = c;
   const saveCoverColor = useSaveSongCoverColor(currentTrack);
+  // Only subscribe to the ~20Hz playback clock while fullscreen is visible.
+  const elapsedTime = useIpodElapsedTime(isFullScreen);
 
   if (!isFullScreen) return null;
 

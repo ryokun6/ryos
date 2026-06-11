@@ -20,6 +20,7 @@ import {
 import { youtubeThumbnailUrl } from "@/utils/youtubeUrl";
 import { DisplayMode } from "@/types/lyrics";
 import type { IpodScreenProps } from "../../types";
+import { useIpodElapsedTime } from "../../hooks/useIpodElapsedTime";
 import { useIpodStore, isAppleMusicCollectionTrack } from "@/stores/useIpodStore";
 import {
   MENU_ITEM_HEIGHT_CLASSIC,
@@ -41,7 +42,6 @@ import { IpodScreenSplitArtPanel } from "./IpodScreenSplitArtPanel";
 export function IpodScreen({
   currentTrack,
   isPlaying,
-  elapsedTime,
   totalTime,
   menuMode,
   menuHistory,
@@ -89,6 +89,9 @@ export function IpodScreen({
   fastScrollLetter = null,
 }: IpodScreenProps) {
   const { t } = useTranslation();
+  // Subscribed here (the screen actually displays time) rather than in
+  // useIpodLogic, so ~20Hz playback ticks only re-render the screen subtree.
+  const elapsedTime = useIpodElapsedTime();
   
   const isAnyActivityActive = Boolean(
     activityState?.isLoadingLyrics ||

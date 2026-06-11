@@ -29,6 +29,7 @@ import {
 import { parseYouTubeVideoId } from "@/utils/youtubeUrl";
 import { emitCloudSyncDomainChange } from "@/utils/cloudSyncEvents";
 import { sortTracksLikeServerOrder } from "@/stores/ipodTrackOrder";
+import { shouldUpdatePlaybackTime } from "@/stores/playbackTime";
 import {
   hasFetchedTrackMetadataChanges,
   hasLibraryTrackMetadataChanges,
@@ -181,11 +182,6 @@ export function appleMusicKitIdToLyricsSongId(
 }
 
 type LibraryState = "uninitialized" | "loaded" | "cleared";
-const PLAYBACK_TIME_UPDATE_EPSILON_SECONDS = 0.05;
-
-function shouldUpdatePlaybackTime(previous: number, next: number): boolean {
-  return Math.abs(previous - next) >= PLAYBACK_TIME_UPDATE_EPSILON_SECONDS;
-}
 
 interface IpodData {
   tracks: Track[];

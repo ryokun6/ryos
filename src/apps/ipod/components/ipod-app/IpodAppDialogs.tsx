@@ -6,6 +6,7 @@ import { SongSearchDialog } from "@/components/dialogs/SongSearchDialog";
 import { LyricsSyncMode } from "@/components/shared/LyricsSyncMode";
 import { appMetadata } from "../..";
 import type { IpodAppController } from "./useIpodAppController";
+import { useIpodElapsedTime } from "../../hooks/useIpodElapsedTime";
 
 type IpodAppDialogsProps = {
   c: IpodAppController;
@@ -48,7 +49,6 @@ export function IpodAppDialogs({ c }: IpodAppDialogsProps) {
     isFullScreen,
     isSyncModeOpen,
     fullScreenLyricsControls,
-    elapsedTime,
     totalTime,
     lyricOffset,
     romanization,
@@ -58,6 +58,9 @@ export function IpodAppDialogs({ c }: IpodAppDialogsProps) {
     playerRef,
     closeSyncMode,
   } = c;
+  // The ~20Hz playback clock is only needed while the lyrics sync-mode
+  // overlay is visible; otherwise opt out of tick re-renders entirely.
+  const elapsedTime = useIpodElapsedTime(!isFullScreen && isSyncModeOpen);
 
   return (
     <>
