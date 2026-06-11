@@ -1,6 +1,5 @@
 import type PusherType from "pusher-js";
 import type { Channel } from "pusher-js";
-import * as PusherNamespace from "pusher-js";
 import {
   getPusherRuntimeConfig,
   getRealtimeProvider,
@@ -106,7 +105,7 @@ const PUSHER_APP_KEY = pusherRuntimeConfig.key;
 const PUSHER_CLUSTER = pusherRuntimeConfig.cluster;
 const PUSHER_FORCE_TLS = pusherRuntimeConfig.forceTLS;
 
-const getPusherConstructor = (): PusherConstructor => {
+const getPusherConstructor = (PusherNamespace: unknown): PusherConstructor => {
   const constructorFromModule = (
     PusherNamespace as unknown as { default?: PusherConstructor }
   ).default;
@@ -200,6 +199,190 @@ class LocalRealtimeChannel implements RealtimeChannel {
     const listeners = this.listeners.get(eventName);
     if (!listeners) return;
     listeners.forEach((listener) => listener(payload));
+  }
+}
+
+class DeferredRealtimeConnection implements RealtimeConnection {
+  private delegate: RealtimeConnection | null = null;
+  private pendingBinds: Array<{
+    eventName: string;
+    handler: ConnectionEventHandler;
+  }> = [];
+
+  state: RealtimeConnectionState = "connecting";
+
+  bind(eventName: string, handler: ConnectionEventHandler): void {
+    if (this.delegate) {
+      this.delegate.bind(eventName, handler);
+      return;
+    }
+    this.pendingBinds.push({ eventName, handler });
+  }
+
+  unbind(eventName?: string, handler?: ConnectionEventHandler): void {
+    if (this.delegate) {
+      this.delegate.unbind(eventName, handler);
+    }
+
+    if (!eventName) {
+      this.pendingBinds = [];
+      return;
+    }
+
+    if (!handler) {
+      this.pendingBinds = this.pendingBinds.filter(
+        (binding) => binding.eventName !== eventName
+      );
+      return;
+    }
+
+    this.pendingBinds = this.pendingBinds.filter(
+      (binding) =>
+        binding.eventName !== eventName || binding.handler !== handler
+    );
+  }
+
+  emit(eventName: string, payload?: unknown): void {
+    this.pendingBinds
+      .filter((binding) => binding.eventName === eventName)
+      .forEach((binding) => binding.handler(payload));
+  }
+
+  attach(connection: RealtimeConnection): void {
+    this.delegate = connection;
+
+    const updateState = (state: RealtimeConnectionState) => {
+      this.state = state;
+    };
+    connection.bind("connected", () => updateState("connected"));
+    connection.bind("connecting", () => updateState("connecting"));
+    connection.bind("disconnected", () => updateState("disconnected"));
+
+    if ("state" in connection && typeof connection.state === "string") {
+      const currentState = connection.state;
+      if (currentState === "connected") {
+        this.state = "connected";
+      } else if (
+        currentState === "connecting" ||
+        currentState === "initialized" ||
+        currentState === "unavailable"
+      ) {
+        this.state = "connecting";
+      } else {
+        this.state = "disconnected";
+      }
+    }
+
+    const pendingBinds = this.pendingBinds;
+    this.pendingBinds = [];
+    pendingBinds.forEach(({ eventName, handler }) => {
+      connection.bind(eventName, handler);
+    });
+  }
+}
+
+class DeferredRealtimeChannel implements RealtimeChannel {
+  readonly name: string;
+
+  private delegate: RealtimeChannel | null = null;
+  private pendingBinds: Array<{
+    eventName: string;
+    handler: ChannelEventHandler;
+  }> = [];
+
+  constructor(name: string) {
+    this.name = name;
+  }
+
+  bind(eventName: string, handler: ChannelEventHandler): void {
+    if (this.delegate) {
+      this.delegate.bind(eventName, handler);
+      return;
+    }
+    this.pendingBinds.push({ eventName, handler });
+  }
+
+  unbind(eventName?: string, handler?: ChannelEventHandler): void {
+    if (this.delegate) {
+      this.delegate.unbind(eventName, handler);
+    }
+
+    if (!eventName) {
+      this.pendingBinds = [];
+      return;
+    }
+
+    if (!handler) {
+      this.pendingBinds = this.pendingBinds.filter(
+        (binding) => binding.eventName !== eventName
+      );
+      return;
+    }
+
+    this.pendingBinds = this.pendingBinds.filter(
+      (binding) =>
+        binding.eventName !== eventName || binding.handler !== handler
+    );
+  }
+
+  attach(channel: RealtimeChannel): void {
+    this.delegate = channel;
+    const pendingBinds = this.pendingBinds;
+    this.pendingBinds = [];
+    pendingBinds.forEach(({ eventName, handler }) => {
+      channel.bind(eventName, handler);
+    });
+  }
+}
+
+class DeferredPusherRealtimeClient implements RealtimeClient {
+  readonly connection = new DeferredRealtimeConnection();
+
+  private delegate: RealtimeClient | null = null;
+  private channels = new Map<string, DeferredRealtimeChannel>();
+
+  constructor(clientPromise: Promise<RealtimeClient>) {
+    void clientPromise.then(
+      (client) => {
+        this.delegate = client;
+        this.connection.attach(client.connection);
+        for (const channel of this.channels.values()) {
+          channel.attach(client.subscribe(channel.name));
+        }
+      },
+      (error) => {
+        this.connection.state = "disconnected";
+        this.connection.emit(
+          "error",
+          error instanceof Error
+            ? error
+            : new Error("[pusherClient] Failed to load Pusher client")
+        );
+      }
+    );
+  }
+
+  subscribe(channelName: string): RealtimeChannel {
+    const existing = this.channels.get(channelName);
+    if (existing) {
+      return existing;
+    }
+
+    const channel = new DeferredRealtimeChannel(channelName);
+    this.channels.set(channelName, channel);
+    if (this.delegate) {
+      channel.attach(this.delegate.subscribe(channelName));
+    }
+    return channel;
+  }
+
+  unsubscribe(channelName: string): void {
+    this.channels.delete(channelName);
+    this.delegate?.unsubscribe(channelName);
+  }
+
+  channel(channelName: string): RealtimeChannel | undefined {
+    return this.channels.get(channelName);
   }
 }
 
@@ -559,12 +742,17 @@ export function getPusherClient(): RealtimeClient {
         fetchLocalRealtimeTicket
       );
     } else {
-      const Pusher = getPusherConstructor();
-      globalWithPusher.__pusherClient = new Pusher(PUSHER_APP_KEY, {
-        cluster: PUSHER_CLUSTER,
-        forceTLS: PUSHER_FORCE_TLS,
-        authorizer: createChannelAuthorizer(),
-      }) as unknown as RealtimeClient;
+      const pusherClientPromise = import("pusher-js").then((PusherNamespace) => {
+        const Pusher = getPusherConstructor(PusherNamespace);
+        return new Pusher(PUSHER_APP_KEY, {
+          cluster: PUSHER_CLUSTER,
+          forceTLS: PUSHER_FORCE_TLS,
+          authorizer: createChannelAuthorizer(),
+        }) as unknown as RealtimeClient;
+      });
+      globalWithPusher.__pusherClient = new DeferredPusherRealtimeClient(
+        pusherClientPromise
+      );
     }
   }
   return globalWithPusher.__pusherClient;
