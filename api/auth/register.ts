@@ -7,6 +7,10 @@
 import {
   generateAuthToken,
   storeToken,
+  isUserBanned,
+  isLoginLocked,
+  recordLoginFailure,
+  resetLoginFailures,
   CHAT_USERS_PREFIX,
   PASSWORD_MIN_LENGTH,
   PASSWORD_MAX_LENGTH,
@@ -111,19 +115,37 @@ export default apiHandler(
     // Check if user already exists
     const existingUser = await redis.get(userKey);
     if (existingUser) {
-      // User exists - try to log them in with provided password
+      // User exists - try to log them in with provided password. This path is
+      // subject to the SAME per-username lockout as /api/auth/login so it
+      // cannot be used to bypass login throttling for password guessing.
+      if (await isLoginLocked(redis, username)) {
+        res.status(429).json({
+          error: "This account is temporarily locked. Please try again later.",
+        });
+        return;
+      }
+
       try {
         const storedHash = await getUserPasswordHash(redis, username);
         if (storedHash) {
           const passwordValid = await verifyPassword(password, storedHash);
           if (passwordValid) {
-            // Password matches - log them in
+            // Banned accounts cannot obtain a session. Checked only after the
+            // password is verified to avoid disclosing ban status.
+            if (isUserBanned(existingUser)) {
+              res.status(403).json({ error: "This account has been banned." });
+              return;
+            }
+            // Password matches - reset failures and log them in.
+            await resetLoginFailures(redis, username);
             const token = generateAuthToken();
             await storeToken(redis, username, token);
             res.setHeader("Set-Cookie", buildSetAuthCookie(username, token));
             res.status(200).json({ user: { username } });
             return;
           }
+          // Wrong password — count it toward the shared login lockout.
+          await recordLoginFailure(redis, username);
         }
       } catch (loginError) {
         ctx.logger.error("Error attempting login for existing user", loginError);

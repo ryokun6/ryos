@@ -17,6 +17,10 @@ import {
   storeToken,
   deleteToken,
   storeLastValidToken,
+  isUserBanned,
+  isLoginLocked,
+  recordLoginFailure,
+  resetLoginFailures,
   CHAT_USERS_PREFIX,
   TOKEN_GRACE_PERIOD,
 } from "../_utils/auth/index.js";
@@ -36,10 +40,6 @@ interface LoginRequest {
 
 const PER_IP_LIMIT = 10;
 const PER_IP_WINDOW_SECONDS = 60;
-
-const PER_USER_FAIL_LIMIT = 20;
-const PER_USER_FAIL_WINDOW_SECONDS = 60 * 60;
-const PER_USER_LOCKOUT_SECONDS = 60 * 60;
 
 export default apiHandler(
   { methods: ["POST"], auth: "none", parseJsonBody: true },
@@ -76,9 +76,7 @@ export default apiHandler(
 
     // Per-username lockout: if too many failures have accumulated, refuse
     // to even attempt verification until the lockout expires.
-    const userBlockKey = `rl:block:auth:login:user:${username}`;
-    const userBlocked = await redis.get(userBlockKey);
-    if (userBlocked) {
+    if (await isLoginLocked(redis, username)) {
       res.status(429).json({
         error: "This account is temporarily locked. Please try again later.",
       });
@@ -86,20 +84,6 @@ export default apiHandler(
     }
 
     const userKey = `${CHAT_USERS_PREFIX}${username}`;
-
-    const recordFailure = async (): Promise<void> => {
-      const failKey = `rl:auth:login:user-fail:${username}`;
-      const failCount = await redis.incr(failKey);
-      if (failCount === 1) {
-        await redis.expire(failKey, PER_USER_FAIL_WINDOW_SECONDS);
-      }
-      if (failCount > PER_USER_FAIL_LIMIT) {
-        // Hard-lock the username for a cool-down period. The fail counter
-        // keeps incrementing during the lockout — that's intentional so a
-        // sustained attack keeps re-arming the lock.
-        await redis.set(userBlockKey, "1", { ex: PER_USER_LOCKOUT_SECONDS });
-      }
-    };
 
     // Check if user exists
     const userData = await redis.get(userKey);
@@ -121,17 +105,21 @@ export default apiHandler(
 
     const passwordValid = await verifyPassword(password, passwordHash);
     if (!passwordValid) {
-      await recordFailure();
+      await recordLoginFailure(redis, username);
       res.status(401).json({ error: "Invalid credentials" });
       return;
     }
 
-    // Successful login — reset the per-username failure counter.
-    try {
-      await redis.del(`rl:auth:login:user-fail:${username}`);
-    } catch {
-      // Non-fatal; counter will expire on its own.
+    // Banned accounts cannot obtain a session. Checked only after the password
+    // is verified so we don't disclose ban status (or account existence) to
+    // attackers probing with wrong credentials.
+    if (isUserBanned(userData)) {
+      res.status(403).json({ error: "This account has been banned." });
+      return;
     }
+
+    // Successful login — reset the per-username failure counter.
+    await resetLoginFailures(redis, username);
 
     // Handle old token if provided (rotation)
     if (oldToken) {

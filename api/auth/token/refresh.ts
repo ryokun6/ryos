@@ -10,6 +10,7 @@ import {
   deleteToken,
   storeLastValidToken,
   validateAuth,
+  isUserBanned,
   CHAT_USERS_PREFIX,
   TOKEN_GRACE_PERIOD,
 } from "../../_utils/auth/index.js";
@@ -84,6 +85,14 @@ export default apiHandler<RefreshRequest>(
       logger.warn("User not found", { username });
       logger.response(404, Date.now() - startTime);
       res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    // Banned accounts cannot renew a session, even via a grace-period token.
+    if (isUserBanned(userData)) {
+      logger.warn("Refresh rejected for banned user", { username });
+      logger.response(403, Date.now() - startTime);
+      res.status(403).json({ error: "This account has been banned." });
       return;
     }
 
