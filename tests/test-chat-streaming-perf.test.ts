@@ -18,6 +18,7 @@ import { resolve } from "node:path";
 import { describe, expect, test } from "bun:test";
 import type { AIChatMessage } from "../src/types/chat";
 import { buildDisplayMessages } from "../src/apps/chats/utils/messages";
+import { getStreamPreviewThrottleMs } from "../src/components/shared/html-preview/hooks/useStreamPreview";
 
 const readSource = (relPath: string): string =>
   readFileSync(resolve(process.cwd(), relPath), "utf-8");
@@ -158,7 +159,16 @@ describe("useStreamPreview throttle wiring", () => {
   test("schedules a trailing render so final chunks are never dropped", () => {
     expect(source).toContain("trailingTimerRef");
     expect(source).toMatch(/setTimeout\(/);
-    expect(source).toMatch(/STREAM_PREVIEW_THROTTLE_MS - elapsed/);
+    expect(source).toMatch(/throttleMs - elapsed/);
+  });
+
+  test("preview keeps streaming but backs off as content grows", () => {
+    // Small applets keep the original 500ms cadence (no UX change).
+    expect(getStreamPreviewThrottleMs(1_000)).toBe(500);
+    expect(getStreamPreviewThrottleMs(32_768)).toBe(500);
+    // Larger documents repaint less frequently, but still repaint.
+    expect(getStreamPreviewThrottleMs(64_000)).toBe(1000);
+    expect(getStreamPreviewThrottleMs(200_000)).toBe(2000);
   });
 
   test("skips sanitization when extracted HTML is unchanged", () => {
