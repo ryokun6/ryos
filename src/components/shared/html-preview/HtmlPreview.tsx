@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, memo } from "react";
 import { motion, AnimatePresence, useDragControls } from "motion/react";
 import { ArrowsIn, Copy, Check, DownloadSimple, Code, Export, DotsSixVertical, Plus } from "@phosphor-icons/react";
 import { createPortal } from "react-dom";
@@ -24,7 +24,7 @@ import { HtmlPreviewLoadingPulse } from "./components/HtmlPreviewLoadingPulse";
 import { HtmlPreviewAppletBanner } from "./components/HtmlPreviewAppletBanner";
 import { HtmlPreviewCornerToolbar } from "./components/HtmlPreviewCornerToolbar";
 
-export default function HtmlPreview({
+function HtmlPreview({
   htmlContent,
   appletTitle = "",
   appletIcon = "",
@@ -93,13 +93,15 @@ export default function HtmlPreview({
     propMinimizeSound
   );
 
-  const { processedHtmlContent, processedHtmlContentForSave } = useProcessedHtml(
-    htmlContent,
-    normalizedBaseUrl,
-    isTrustedApplet
-  );
+  const { processedHtmlContent, getProcessedHtmlContentForSave } =
+    useProcessedHtml(htmlContent, normalizedBaseUrl, isTrustedApplet, isStreaming);
 
   const streamPreviewHtml = useStreamPreview(htmlContent, isStreaming);
+
+  const getProcessedHtmlContent = useCallback(
+    () => finalProcessedHtmlRef.current || processedHtmlContent,
+    [processedHtmlContent]
+  );
 
   const {
     isSaveAppletDialogOpen,
@@ -112,8 +114,8 @@ export default function HtmlPreview({
   } = useHtmlPreviewSave(
     appletTitle,
     appletIcon,
-    processedHtmlContent,
-    processedHtmlContentForSave
+    getProcessedHtmlContent,
+    getProcessedHtmlContentForSave
   );
 
   useEffect(() => {
@@ -506,7 +508,9 @@ export default function HtmlPreview({
                         transition={{ duration: 0.25 }}
                       >
                         <pre className="text-[12px] font-monaco text-neutral-300 whitespace-pre-wrap break-words m-0">
-                          {finalProcessedHtmlRef.current || processedHtmlContent}
+                          {finalProcessedHtmlRef.current ||
+                            processedHtmlContent ||
+                            htmlContent}
                         </pre>
                       </motion.div>
                     ) : null}
@@ -833,3 +837,9 @@ export default function HtmlPreview({
     </>
   );
 }
+
+// Memoized: chat threads re-render ~20x/sec while a message streams, and this
+// component (motion wrappers, portals, fullscreen UI) is expensive. Props are
+// stable for previews whose content isn't changing, so memo keeps completed
+// applet previews from re-rendering on every streaming tick.
+export default memo(HtmlPreview);

@@ -14,6 +14,29 @@ interface BuildDisplayMessagesParams {
   username: string | null;
 }
 
+// Reuse display wrappers keyed by the source AI message object so that
+// unchanged messages keep referential identity across streaming ticks.
+// Without this, every token delta re-wraps the whole thread and defeats
+// React.memo on the message rows.
+const displayMessageCache = new WeakMap<
+  AIChatMessage,
+  { username: string; display: DisplayMessage }
+>();
+
+const toDisplayMessage = (
+  msg: AIChatMessage,
+  username: string | null
+): DisplayMessage => {
+  const displayUsername = msg.role === "user" ? username || "You" : "Ryo";
+  const cached = displayMessageCache.get(msg);
+  if (cached && cached.username === displayUsername) {
+    return cached.display;
+  }
+  const display: DisplayMessage = { ...msg, username: displayUsername };
+  displayMessageCache.set(msg, { username: displayUsername, display });
+  return display;
+};
+
 export const buildDisplayMessages = ({
   currentRoomId,
   currentRoomMessagesLimited,
@@ -39,10 +62,9 @@ export const buildDisplayMessages = ({
     }));
   }
 
-  return aiMessages.slice(-messageRenderLimit).map((msg) => ({
-    ...msg,
-    username: msg.role === "user" ? username || "You" : "Ryo",
-  }));
+  return aiMessages
+    .slice(-messageRenderLimit)
+    .map((msg) => toDisplayMessage(msg, username));
 };
 
 export const extractPreviousUserMessages = (

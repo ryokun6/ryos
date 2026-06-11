@@ -23,8 +23,8 @@ function extractEmojiIcon(text: string): {
 export function useHtmlPreviewSave(
   appletTitle: string,
   appletIcon: string,
-  processedHtmlContent: string,
-  processedHtmlContentForSave: string
+  getProcessedHtmlContent: () => string,
+  getProcessedHtmlContentForSave: () => string
 ) {
   const { t } = useTranslation();
   const { saveFile } = useFileSystem("/", { skipLoad: true });
@@ -58,6 +58,8 @@ export function useHtmlPreviewSave(
       const existingCreatedBy = existingFile?.createdBy;
       const windowWidth = existingFile?.windowWidth;
       const windowHeight = existingFile?.windowHeight;
+
+      const processedHtmlContentForSave = getProcessedHtmlContentForSave();
 
       await saveFile({
         path: appletPath,
@@ -125,7 +127,7 @@ export function useHtmlPreviewSave(
 
   const handleSaveToDisk = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const blob = new Blob([processedHtmlContent], { type: "text/html" });
+    const blob = new Blob([getProcessedHtmlContent()], { type: "text/html" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     const timestamp = new Date()

@@ -184,6 +184,16 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     ((message: UIMessage) => void) | null
   >(null);
 
+  // Per-id cache of timestamp-wrapped messages (see messagesWithTimestamps
+  // below). Declared before useChat so onFinish can reuse pinned createdAt
+  // values instead of minting fresh timestamps for streamed messages.
+  const timestampedMessageCacheRef = useRef(
+    new Map<
+      string,
+      { source: UIMessage; createdAt: Date; wrapped: AIChatMessage }
+    >()
+  );
+
   // --- AI Chat Hook (Vercel AI SDK v6) ---
   const {
     messages: currentSdkMessages,
@@ -1305,14 +1315,18 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     },
 
     onFinish: ({ messages, isError }) => {
-      // Ensure all messages have metadata with createdAt
+      // Ensure all messages have metadata with createdAt. Prefer the
+      // timestamp pinned while the message was streaming so it doesn't jump
+      // to the finish time.
       const finalMessages: AIChatMessage[] = (messages as UIMessage[]).map(
         (msg) =>
           ({
             ...msg,
             metadata: {
               createdAt:
-                (msg as AIChatMessage).metadata?.createdAt || new Date(),
+                (msg as AIChatMessage).metadata?.createdAt ||
+                timestampedMessageCacheRef.current.get(msg.id)?.createdAt ||
+                new Date(),
             },
           }) as AIChatMessage,
       );
@@ -1500,23 +1514,56 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     },
   });
 
-  // Ensure all messages have metadata with timestamps (runs synchronously during render)
+  // Ensure all messages have metadata with timestamps (runs synchronously during render).
+  // The per-id cache keeps referential identity stable across streaming ticks:
+  // only messages whose underlying SDK object changed get a new wrapper, so
+  // memoized message rows don't re-render ~20x/sec for the whole thread while
+  // one message (e.g. a long applet) is streaming. It also pins `createdAt`
+  // for messages that arrive without metadata instead of minting a new Date
+  // on every render.
   const messagesWithTimestamps = useMemo<AIChatMessage[]>(() => {
-    return (currentSdkMessages as UIMessage[]).map((msg) => {
-      // Check if this message already exists in the store
-      const existingMsg = aiMessages.find((m) => m.id === msg.id);
-      const currentMsg = msg as AIChatMessage;
+    const previousCache = timestampedMessageCacheRef.current;
+    const nextCache = new Map<
+      string,
+      { source: UIMessage; createdAt: Date; wrapped: AIChatMessage }
+    >();
+    const storeCreatedAtById = new Map<string, Date>();
+    for (const m of aiMessages) {
+      if (m.metadata?.createdAt) {
+        storeCreatedAtById.set(m.id, m.metadata.createdAt);
+      }
+    }
 
-      return {
-        ...msg,
-        metadata: {
-          createdAt:
-            currentMsg.metadata?.createdAt ||
-            existingMsg?.metadata?.createdAt ||
-            new Date(),
-        },
-      } as AIChatMessage;
+    const result = (currentSdkMessages as UIMessage[]).map((msg) => {
+      const currentMsg = msg as AIChatMessage;
+      const cached = previousCache.get(msg.id);
+      const createdAt =
+        currentMsg.metadata?.createdAt ||
+        cached?.createdAt ||
+        storeCreatedAtById.get(msg.id) ||
+        new Date();
+
+      if (cached && cached.source === msg && cached.createdAt === createdAt) {
+        nextCache.set(msg.id, cached);
+        return cached.wrapped;
+      }
+
+      const wrapped =
+        currentMsg.metadata?.createdAt === createdAt
+          ? currentMsg
+          : ({
+              ...msg,
+              metadata: {
+                ...currentMsg.metadata,
+                createdAt,
+              },
+            } as AIChatMessage);
+      nextCache.set(msg.id, { source: msg, createdAt, wrapped });
+      return wrapped;
     });
+
+    timestampedMessageCacheRef.current = nextCache;
+    return result;
   }, [currentSdkMessages, aiMessages]);
 
   // Ref to hold the latest SDK messages for use in callbacks
