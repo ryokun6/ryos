@@ -83,9 +83,13 @@ interface DisplaySettingsState {
 
   // Shader settings
   shaderEffectEnabled: boolean;
+  shaderPerformanceCapable: boolean | null;
+  hasExplicitShaderEffectPreference: boolean;
   selectedShaderType: ShaderType;
   setShaderEffectEnabled: (v: boolean) => void;
   setSelectedShaderType: (t: ShaderType) => void;
+  ensureShaderPerformanceChecked: () => Promise<boolean>;
+  scheduleShaderPerformanceCheck: () => void;
 
   // Wallpaper
   currentWallpaper: string;
@@ -118,7 +122,32 @@ interface DisplaySettingsState {
 }
 
 const STORE_VERSION = 1;
-const initialShaderState = checkShaderPerformance();
+let shaderPerformanceCheckPromise: Promise<boolean> | null = null;
+let shaderPerformanceIdleHandle: number | ReturnType<typeof setTimeout> | null =
+  null;
+
+const hasOwn = (obj: unknown, key: PropertyKey) =>
+  Object.prototype.hasOwnProperty.call(obj, key);
+
+const scheduleIdleShaderPerformanceCheck = (callback: () => void) => {
+  if (typeof window === "undefined" || shaderPerformanceIdleHandle !== null) {
+    return;
+  }
+
+  const run = () => {
+    shaderPerformanceIdleHandle = null;
+    callback();
+  };
+
+  if ("requestIdleCallback" in window) {
+    shaderPerformanceIdleHandle = window.requestIdleCallback(() => run(), {
+      timeout: 5000,
+    });
+    return;
+  }
+
+  shaderPerformanceIdleHandle = globalThis.setTimeout(run, 1);
+};
 
 export const useDisplaySettingsStore = create<DisplaySettingsState>()(
   persist(
@@ -134,15 +163,52 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
       },
 
       // Shader settings
-      shaderEffectEnabled: initialShaderState,
+      shaderEffectEnabled: false,
+      shaderPerformanceCapable: null,
+      hasExplicitShaderEffectPreference: false,
       selectedShaderType: ShaderType.AURORA,
       setShaderEffectEnabled: (enabled) => {
-        set({ shaderEffectEnabled: enabled });
+        if (enabled && get().shaderPerformanceCapable === null) {
+          void get().ensureShaderPerformanceChecked();
+        }
+        set({
+          shaderEffectEnabled: enabled,
+          hasExplicitShaderEffectPreference: true,
+        });
         track(SETTINGS_ANALYTICS.SHADER_TOGGLE, { enabled });
       },
       setSelectedShaderType: (t) => {
         set({ selectedShaderType: t });
         track(SETTINGS_ANALYTICS.SHADER_TYPE_CHANGE, { shaderType: t });
+      },
+      ensureShaderPerformanceChecked: async () => {
+        const cachedResult = get().shaderPerformanceCapable;
+        if (cachedResult !== null) return cachedResult;
+
+        shaderPerformanceCheckPromise ??= checkShaderPerformance().catch(
+          (error) => {
+            console.error(
+              "[DisplaySettings] Shader performance check failed",
+              error
+            );
+            return false;
+          }
+        );
+
+        const capable = await shaderPerformanceCheckPromise;
+        set((state) => ({
+          shaderPerformanceCapable: capable,
+          shaderEffectEnabled: state.hasExplicitShaderEffectPreference
+            ? state.shaderEffectEnabled
+            : capable,
+        }));
+        return capable;
+      },
+      scheduleShaderPerformanceCheck: () => {
+        if (get().shaderPerformanceCapable !== null) return;
+        scheduleIdleShaderPerformanceCheck(() => {
+          void get().ensureShaderPerformanceChecked();
+        });
       },
 
       // Wallpaper
@@ -315,6 +381,7 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
       partialize: (state) => ({
         displayMode: state.displayMode,
         shaderEffectEnabled: state.shaderEffectEnabled,
+        shaderPerformanceCapable: state.shaderPerformanceCapable,
         selectedShaderType: state.selectedShaderType,
         currentWallpaper: state.currentWallpaper,
         wallpaperSource: state.wallpaperSource,
@@ -325,10 +392,21 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
         htmlPreviewSplit: state.htmlPreviewSplit,
       }),
       merge: (persistedState, currentState) => {
+        const persistedDisplayState =
+          (persistedState as Partial<DisplaySettingsState> | undefined) ?? {};
+        const hasExplicitShaderEffectPreference = hasOwn(
+          persistedDisplayState,
+          "shaderEffectEnabled"
+        );
         const merged = {
           ...currentState,
-          ...(persistedState as Partial<DisplaySettingsState> | undefined),
+          ...persistedDisplayState,
+          hasExplicitShaderEffectPreference,
         };
+        const shaderPerformanceCapable =
+          typeof merged.shaderPerformanceCapable === "boolean"
+            ? merged.shaderPerformanceCapable
+            : null;
         const cw = merged.currentWallpaper;
         const ws = merged.wallpaperSource;
         // Persisted blob: object URLs are invalid after reload; never hydrate them as the CSS/video src.
@@ -338,9 +416,12 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
           typeof ws === "string" &&
           (ws.startsWith("blob:") || ws === cw)
         ) {
-          return { ...merged, wallpaperSource: cw };
+          return { ...merged, shaderPerformanceCapable, wallpaperSource: cw };
         }
-        return merged;
+        return { ...merged, shaderPerformanceCapable };
+      },
+      onRehydrateStorage: () => (state) => {
+        state?.scheduleShaderPerformanceCheck();
       },
     }
   )
