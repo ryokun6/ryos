@@ -74,6 +74,18 @@ const getUsernameFromRecovery = (): string | null => {
 
 const API_UNAVAILABLE_COOLDOWN_MS = 10_000;
 const apiUnavailableUntil: Record<string, number> = {};
+const ROOMS_FETCH_TTL_MS = 1_500;
+
+type FetchResult = { ok: boolean; error?: string };
+type FetchRoomsOptions = { force?: boolean };
+
+let roomsFetchPromise: Promise<FetchResult> | null = null;
+let roomsFetchFreshUntil = 0;
+
+const resetRoomsFetchCache = (): void => {
+  roomsFetchPromise = null;
+  roomsFetchFreshUntil = 0;
+};
 
 const isApiTemporarilyUnavailable = (key: string): boolean =>
   Date.now() < (apiUnavailableUntil[key] || 0);
@@ -163,7 +175,7 @@ export interface ChatsStoreState {
   setFontSize: (size: number | ((prevSize: number) => number)) => void; // Add font size action
   setMessageRenderLimit: (limit: number) => void; // Set render limit
   // Room Management Actions
-  fetchRooms: () => Promise<{ ok: boolean; error?: string }>;
+  fetchRooms: (options?: FetchRoomsOptions) => Promise<FetchResult>;
   fetchMessagesForRoom: (
     roomId: string
   ) => Promise<{ ok: boolean; error?: string }>;
@@ -282,6 +294,9 @@ export const useChatsStore = create<ChatsStoreState>()(
         // --- Actions ---
         setAiMessages: (messages) => set({ aiMessages: messages }),
         setUsername: (username) => {
+          if (get().username !== username) {
+            resetRoomsFetchCache();
+          }
           saveUsernameToRecovery(username);
           set({ username });
 
@@ -310,6 +325,9 @@ export const useChatsStore = create<ChatsStoreState>()(
           }
         },
         setAuthenticated: (authenticated) => {
+          if (get().isAuthenticated !== authenticated) {
+            resetRoomsFetchCache();
+          }
           set({ isAuthenticated: authenticated });
         },
         setHasPassword: (hasPassword) => {
@@ -605,6 +623,7 @@ export const useChatsStore = create<ChatsStoreState>()(
           if (currentUsername) {
             saveUsernameToRecovery(currentUsername);
           }
+          resetRoomsFetchCache();
           set(getInitialState());
         },
         logout: async () => {
@@ -629,6 +648,7 @@ export const useChatsStore = create<ChatsStoreState>()(
 
           localStorage.removeItem(USERNAME_RECOVERY_KEY);
           clearLegacyTokenRecovery();
+          resetRoomsFetchCache();
 
           set((state) => ({
             ...state,
@@ -643,7 +663,7 @@ export const useChatsStore = create<ChatsStoreState>()(
           }));
 
           try {
-            await get().fetchRooms();
+            await get().fetchRooms({ force: true });
           } catch (error) {
             console.error(
               "[ChatsStore] Error refreshing rooms after logout:",
@@ -653,33 +673,50 @@ export const useChatsStore = create<ChatsStoreState>()(
 
           console.log("[ChatsStore] User logged out successfully");
         },
-        fetchRooms: async () => {
+        fetchRooms: async (options = {}) => {
+          if (roomsFetchPromise) {
+            console.log("[ChatsStore] Reusing in-flight rooms fetch...");
+            return roomsFetchPromise;
+          }
+
+          if (!options.force && Date.now() < roomsFetchFreshUntil) {
+            console.log("[ChatsStore] Skipping rooms fetch; cache is fresh.");
+            return { ok: true };
+          }
+
           console.log("[ChatsStore] Fetching rooms...");
           if (isApiTemporarilyUnavailable("rooms")) {
             return { ok: false, error: "Rooms API temporarily unavailable" };
           }
 
-          try {
-            const data = await listRoomsApi();
-            if (data.rooms && Array.isArray(data.rooms)) {
-              clearApiUnavailable("rooms");
-              // Normalize ordering via setRooms to enforce alphabetical sections
-              get().setRooms(data.rooms);
-              return { ok: true };
-            }
+          roomsFetchPromise = (async (): Promise<FetchResult> => {
+            try {
+              const data = await listRoomsApi();
+              if (data.rooms && Array.isArray(data.rooms)) {
+                clearApiUnavailable("rooms");
+                // Normalize ordering via setRooms to enforce alphabetical sections
+                get().setRooms(data.rooms);
+                roomsFetchFreshUntil = Date.now() + ROOMS_FETCH_TTL_MS;
+                return { ok: true };
+              }
 
-            return { ok: false, error: "Invalid response format" };
-          } catch (error) {
-            console.error("[ChatsStore] Error fetching rooms:", error);
-            markApiTemporarilyUnavailable("rooms");
-            return {
-              ok: false,
-              error:
-                error instanceof Error
-                  ? error.message
-                  : "Network error. Please try again.",
-            };
-          }
+              return { ok: false, error: "Invalid response format" };
+            } catch (error) {
+              console.error("[ChatsStore] Error fetching rooms:", error);
+              markApiTemporarilyUnavailable("rooms");
+              return {
+                ok: false,
+                error:
+                  error instanceof Error
+                    ? error.message
+                    : "Network error. Please try again.",
+              };
+            } finally {
+              roomsFetchPromise = null;
+            }
+          })();
+
+          return roomsFetchPromise;
         },
         fetchMessagesForRoom: async (roomId: string) => {
           if (!roomId) return { ok: false, error: "Room ID required" };

@@ -625,35 +625,48 @@ export function useChatRoom(
 
     initializePusher();
     (async () => {
-      const result = await fetchRooms();
-      if (result.ok) {
-        // Get fresh rooms list to fetch messages for all visible rooms
-        const { rooms: freshRooms } = useChatsStore.getState();
-        if (freshRooms.length > 0) {
-          // Limit initial fetch to first 5 rooms to reduce load; others lazy-load via channel
-          const limitedIds = freshRooms.slice(0, 5).map((room) => room.id);
+      const getInitialRoomIds = () =>
+        useChatsStore
+          .getState()
+          .rooms.slice(0, 5)
+          .map((room) => room.id);
+
+      const fetchInitialMessages = async (roomIds: string[]) => {
+        if (roomIds.length === 0) return null;
+
+        console.log(
+          `[useChatRoom] Initial bulk fetch of messages for ${roomIds.length} rooms`
+        );
+        return fetchBulkMessages(roomIds);
+      };
+
+      const cachedRoomIds = getInitialRoomIds();
+      const roomsPromise = fetchRooms();
+      const cachedMessagesPromise = fetchInitialMessages(cachedRoomIds);
+      const [roomsResult, cachedBulkResult] = await Promise.all([
+        roomsPromise,
+        cachedMessagesPromise,
+      ]);
+
+      const bulkResult =
+        cachedBulkResult ??
+        (roomsResult.ok ? await fetchInitialMessages(getInitialRoomIds()) : null);
+
+      // For experienced users, don't recalculate unreads on reload - only track new messages going forward
+      if (bulkResult?.ok) {
+        const { hasEverUsedChats, setHasEverUsedChats } =
+          useChatsStore.getState();
+
+        if (!hasEverUsedChats) {
+          // First time user - mark all as read from this point forward
           console.log(
-            `[useChatRoom] Initial bulk fetch of messages for ${limitedIds.length} rooms`
+            `[useChatRoom] First-time user detected - skipping unread calculation and marking as experienced user`
           );
-          const bulkResult = await fetchBulkMessages(limitedIds);
-
-          // For experienced users, don't recalculate unreads on reload - only track new messages going forward
-          if (bulkResult.ok) {
-            const { hasEverUsedChats, setHasEverUsedChats } =
-              useChatsStore.getState();
-
-            if (!hasEverUsedChats) {
-              // First time user - mark all as read from this point forward
-              console.log(
-                `[useChatRoom] First-time user detected - skipping unread calculation and marking as experienced user`
-              );
-              setHasEverUsedChats(true);
-            } else {
-              console.log(
-                `[useChatRoom] Experienced user - skipping unread recalculation on reload, will track new messages only`
-              );
-            }
-          }
+          setHasEverUsedChats(true);
+        } else {
+          console.log(
+            `[useChatRoom] Experienced user - skipping unread recalculation on reload, will track new messages only`
+          );
         }
       }
     })();
