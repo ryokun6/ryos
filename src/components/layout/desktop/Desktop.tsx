@@ -61,14 +61,17 @@ export function Desktop(props: DesktopProps) {
         onAppDoubleClick={d.handleAppDoubleClick}
         onTrashDoubleClick={d.handleTrashDoubleClick}
       />
-      {d.renderedSelectionRect && d.desktopBounds ? (
+      {d.isMarqueeSelecting ? (
+        // Geometry is painted directly onto this element per pointer move
+        // (see useDesktop) so the marquee never re-renders the desktop tree.
         <div
+          ref={d.marqueeElementRef}
           className="pointer-events-none absolute z-[2] border"
           style={{
-            left: d.renderedSelectionRect.left - d.desktopBounds.left,
-            top: d.renderedSelectionRect.top - d.desktopBounds.top,
-            width: d.renderedSelectionRect.right - d.renderedSelectionRect.left,
-            height: d.renderedSelectionRect.bottom - d.renderedSelectionRect.top,
+            left: 0,
+            top: 0,
+            width: 0,
+            height: 0,
             borderColor: "rgba(128, 128, 128, 0.6)",
             backgroundColor: "rgba(128, 128, 128, 0.15)",
           }}

@@ -154,6 +154,10 @@ export function WindowFrame({
   const {
     windowPosition,
     windowSize,
+    windowLeftMotionValue,
+    windowTopMotionValue,
+    windowWidthMotionValue,
+    windowHeightMotionValue,
     isDragging,
     resizeType,
     setWindowSize,
@@ -270,6 +274,13 @@ export function WindowFrame({
                     }
             }
             style={{
+              // Drag / resize writes window geometry straight into these
+              // motion values (no per-frame React render); the `animate` prop
+              // above animates the same values for programmatic transitions.
+              left: windowLeftMotionValue,
+              top: windowTopMotionValue,
+              width: windowWidthMotionValue,
+              height: windowHeightMotionValue,
               minWidth:
                 window.innerWidth >= 768 ? mergedConstraints.minWidth : "100%",
               minHeight: mergedConstraints.minHeight,
