@@ -3,59 +3,22 @@ import { motion, AnimatePresence } from "motion/react";
 import { useSpotlightSearchController } from "./useSpotlightSearchController";
 import { SpotlightSearchPanel } from "./SpotlightSearchPanel";
 
-const proxyInputStyle = {
-  position: "fixed" as const,
-  opacity: 0,
-  pointerEvents: "none" as const,
-  top: 0,
-  left: 0,
-  width: 0,
-  height: 0,
-  fontSize: "16px",
-  border: "none",
-  padding: 0,
-  margin: 0,
-};
-
+// NOTE: this overlay is lazy-loaded by SpotlightSearchHost on first open.
+// The host owns the global toggle listener and the mobile proxy input, so
+// neither lives here anymore.
 export function SpotlightSearch() {
   const ctrl = useSpotlightSearchController();
   const {
     isOpen,
     reset,
-    hasBeenOpen,
-    isMobile,
-    proxyInputRef,
     panelPositionClass,
     panelTopStyle,
     needsCenter,
     handleKeyDown,
   } = ctrl;
 
-  if (!hasBeenOpen) {
-    if (isMobile) {
-      return createPortal(
-        <input
-          ref={proxyInputRef}
-          aria-hidden="true"
-          tabIndex={-1}
-          style={proxyInputStyle}
-        />,
-        document.body
-      );
-    }
-    return null;
-  }
-
   const overlay = (
     <>
-      {isMobile && !isOpen && (
-        <input
-          ref={proxyInputRef}
-          aria-hidden="true"
-          tabIndex={-1}
-          style={proxyInputStyle}
-        />
-      )}
       <AnimatePresence>
         {isOpen && (
           <>

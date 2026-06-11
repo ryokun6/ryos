@@ -28,7 +28,7 @@ import { checkOfflineAndShowError } from "@/utils/offline";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
-import { useInternetExplorerStoreShallow } from "@/stores/helpers";
+import { useInternetExplorerStoreShallow } from "@/stores/useInternetExplorerStore";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { onAppUpdate } from "@/utils/appEventBus";
 import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";

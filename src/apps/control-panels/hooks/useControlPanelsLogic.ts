@@ -6,11 +6,9 @@ import { helpItems } from "..";
 import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
 import { clearAllAppStates } from "@/stores/useAppStore";
 import { ensureIndexedDBInitialized } from "@/utils/indexedDB";
-import {
-  useAppStoreShallow,
-  useAudioSettingsStoreShallow,
-  useDisplaySettingsStoreShallow,
-} from "@/stores/helpers";
+import { useAppStoreShallow } from "@/stores/useAppStore";
+import { useAudioSettingsStoreShallow } from "@/stores/useAudioSettingsStore";
+import { useDisplaySettingsStoreShallow } from "@/stores/useDisplaySettingsStore";
 import { DEFAULT_WALLPAPER_PATH } from "@/stores/useDisplaySettingsStore";
 import { setNextBootMessage, clearNextBootMessage } from "@/utils/bootMessage";
 import { clearPrefetchFlag, forceRefreshCache } from "@/utils/prefetch";

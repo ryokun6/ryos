@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { useStoreShallow } from "./helpers";
 import { persist, createJSONStorage } from "zustand/middleware";
 
 export interface TerminalCommand {
@@ -187,3 +188,14 @@ export const useTerminalStore = create<TerminalStoreState>()(
     }
   )
 ); 
+
+/**
+ * Shallow-equality selector hook for this store. Co-located with the store
+ * (rather than a central helpers barrel) so importing it doesn't pull other
+ * stores into the bundle.
+ */
+export function useTerminalStoreShallow<T>(
+  selector: (state: ReturnType<typeof useTerminalStore.getState>) => T
+): T {
+  return useStoreShallow(useTerminalStore, selector);
+}

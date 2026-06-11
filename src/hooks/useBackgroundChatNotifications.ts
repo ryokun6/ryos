@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
-import { useChatsStoreShallow } from "@/stores/helpers";
+import { useChatsStoreShallow } from "@/stores/useChatsStore";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useAppStore } from "@/stores/useAppStore";
 import type { ChatMessage } from "@/types/chat";

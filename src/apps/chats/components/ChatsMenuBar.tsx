@@ -8,7 +8,7 @@ import {
   MenubarCheckboxItem,
 } from "@/components/ui/menubar";
 import { type ChatRoom } from "@/types/chat";
-import { useAudioSettingsStoreShallow } from "@/stores/helpers";
+import { useAudioSettingsStoreShallow } from "@/stores/useAudioSettingsStore";
 import { SYNTH_PRESETS } from "@/hooks/useChatSynth";
 import { getPrivateRoomDisplayName } from "@/utils/chat";
 import { LoginDialog } from "@/components/dialogs/LoginDialog";

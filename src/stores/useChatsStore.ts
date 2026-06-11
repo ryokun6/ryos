@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { useStoreShallow } from "./helpers";
 import { persist, createJSONStorage } from "zustand/middleware";
 import {
   type ChatRoom,
@@ -1464,4 +1465,15 @@ async function restoreSessionFromCookie(
     // The user may come back online and the cookie will still be valid.
     console.warn("[ChatsStore] Session restore request failed:", err);
   }
+}
+
+/**
+ * Shallow-equality selector hook for this store. Co-located with the store
+ * (rather than a central helpers barrel) so importing it doesn't pull other
+ * stores into the bundle.
+ */
+export function useChatsStoreShallow<T>(
+  selector: (state: ReturnType<typeof useChatsStore.getState>) => T
+): T {
+  return useStoreShallow(useChatsStore, selector);
 }

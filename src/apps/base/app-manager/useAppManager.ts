@@ -9,7 +9,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import type { AppId } from "@/config/appRegistry";
-import { useAppStoreShallow } from "@/stores/helpers";
+import { useAppStoreShallow } from "@/stores/useAppStore";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import type { SwitcherApp } from "@/components/layout/AppSwitcher";
 import {

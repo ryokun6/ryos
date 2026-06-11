@@ -1,6 +1,5 @@
 import type PusherType from "pusher-js";
 import type { Channel } from "pusher-js";
-import * as PusherNamespace from "pusher-js";
 import {
   getPusherRuntimeConfig,
   getRealtimeProvider,
@@ -106,10 +105,29 @@ const PUSHER_APP_KEY = pusherRuntimeConfig.key;
 const PUSHER_CLUSTER = pusherRuntimeConfig.cluster;
 const PUSHER_FORCE_TLS = pusherRuntimeConfig.forceTLS;
 
+/**
+ * pusher-js (~120KB) is loaded on demand instead of statically so that the
+ * always-mounted background-notification path doesn't pull it into the entry
+ * chunk — especially when the runtime provider is the local WebSocket client,
+ * which never needs it at all.
+ */
+let loadedPusherNamespace: { default?: PusherConstructor } | null = null;
+let pusherConstructorPromise: Promise<PusherConstructor> | null = null;
+
+const loadPusherConstructor = (): Promise<PusherConstructor> => {
+  if (!pusherConstructorPromise) {
+    pusherConstructorPromise = import("pusher-js").then((PusherNamespace) => {
+      loadedPusherNamespace = PusherNamespace as unknown as {
+        default?: PusherConstructor;
+      };
+      return getPusherConstructor();
+    });
+  }
+  return pusherConstructorPromise;
+};
+
 const getPusherConstructor = (): PusherConstructor => {
-  const constructorFromModule = (
-    PusherNamespace as unknown as { default?: PusherConstructor }
-  ).default;
+  const constructorFromModule = loadedPusherNamespace?.default;
   if (constructorFromModule) {
     return constructorFromModule;
   }
@@ -551,6 +569,161 @@ class LocalRealtimeClient implements RealtimeClient {
   }
 }
 
+/**
+ * Facade channel that queues `bind` calls until the dynamically imported
+ * pusher-js client is ready, then replays them onto the real channel.
+ * (Exported for unit tests.)
+ */
+export class DeferredRealtimeChannel implements RealtimeChannel {
+  private real: RealtimeChannel | null = null;
+  private pendingBinds: Array<{
+    eventName: string;
+    handler: ChannelEventHandler;
+  }> = [];
+
+  constructor(readonly name: string) {}
+
+  bind(eventName: string, handler: ChannelEventHandler): void {
+    if (this.real) {
+      this.real.bind(eventName, handler);
+      return;
+    }
+    this.pendingBinds.push({ eventName, handler });
+  }
+
+  unbind(eventName?: string, handler?: ChannelEventHandler): void {
+    if (this.real) {
+      this.real.unbind(eventName, handler);
+      return;
+    }
+    this.pendingBinds = this.pendingBinds.filter((entry) => {
+      if (eventName === undefined) return false;
+      if (entry.eventName !== eventName) return true;
+      if (handler === undefined) return false;
+      return entry.handler !== handler;
+    });
+  }
+
+  attach(real: RealtimeChannel): void {
+    this.real = real;
+    const binds = this.pendingBinds;
+    this.pendingBinds = [];
+    binds.forEach(({ eventName, handler }) => real.bind(eventName, handler));
+  }
+
+  detach(): void {
+    this.real = null;
+    this.pendingBinds = [];
+  }
+}
+
+/** (Exported for unit tests.) */
+export class DeferredRealtimeConnection implements RealtimeConnection {
+  private real: RealtimeConnection | null = null;
+  private pendingBinds: Array<{
+    eventName: string;
+    handler: ConnectionEventHandler;
+  }> = [];
+
+  /** Mirrors pusher's `connection.state` for getRealtimeConnectionState(). */
+  get state(): string {
+    const realState = (this.real as { state?: string } | null)?.state;
+    return typeof realState === "string" ? realState : "connecting";
+  }
+
+  bind(eventName: string, handler: ConnectionEventHandler): void {
+    if (this.real) {
+      this.real.bind(eventName, handler);
+      return;
+    }
+    this.pendingBinds.push({ eventName, handler });
+  }
+
+  unbind(eventName?: string, handler?: ConnectionEventHandler): void {
+    if (this.real) {
+      this.real.unbind(eventName, handler);
+      return;
+    }
+    this.pendingBinds = this.pendingBinds.filter((entry) => {
+      if (eventName === undefined) return false;
+      if (entry.eventName !== eventName) return true;
+      if (handler === undefined) return false;
+      return entry.handler !== handler;
+    });
+  }
+
+  attach(real: RealtimeConnection): void {
+    this.real = real;
+    const binds = this.pendingBinds;
+    this.pendingBinds = [];
+    binds.forEach(({ eventName, handler }) => real.bind(eventName, handler));
+  }
+}
+
+/**
+ * Synchronous facade over the asynchronously-loaded pusher-js client.
+ *
+ * `getPusherClient()` must stay synchronous (it is called from effects and
+ * store actions all over the app), but pusher-js itself is now a dynamic
+ * import. This facade queues subscriptions/bindings made before the module
+ * resolves and replays them once the real client is constructed. After
+ * attachment every call delegates directly.
+ */
+class DeferredPusherClient implements RealtimeClient {
+  readonly connection = new DeferredRealtimeConnection();
+  private real: RealtimeClient | null = null;
+  private channels = new Map<string, DeferredRealtimeChannel>();
+
+  constructor() {
+    loadPusherConstructor()
+      .then(() => {
+        const Pusher = getPusherConstructor();
+        const real = new Pusher(PUSHER_APP_KEY, {
+          cluster: PUSHER_CLUSTER,
+          forceTLS: PUSHER_FORCE_TLS,
+          authorizer: createChannelAuthorizer(),
+        }) as unknown as RealtimeClient;
+        this.real = real;
+        this.connection.attach(real.connection);
+        this.channels.forEach((facade, name) => {
+          facade.attach(real.subscribe(name));
+        });
+      })
+      .catch((error) => {
+        console.error("[pusherClient] Failed to load pusher-js", error);
+      });
+  }
+
+  subscribe(channelName: string): RealtimeChannel {
+    const existing = this.channels.get(channelName);
+    if (existing) {
+      if (this.real) {
+        // Re-issue subscribe like pusher does (no-op if already subscribed).
+        existing.attach(this.real.subscribe(channelName));
+      }
+      return existing;
+    }
+
+    const facade = new DeferredRealtimeChannel(channelName);
+    this.channels.set(channelName, facade);
+    if (this.real) {
+      facade.attach(this.real.subscribe(channelName));
+    }
+    return facade;
+  }
+
+  unsubscribe(channelName: string): void {
+    const facade = this.channels.get(channelName);
+    this.channels.delete(channelName);
+    facade?.detach();
+    this.real?.unsubscribe(channelName);
+  }
+
+  channel(channelName: string): RealtimeChannel | undefined {
+    return this.channels.get(channelName);
+  }
+}
+
 export function getPusherClient(): RealtimeClient {
   if (!globalWithPusher.__pusherClient) {
     if (getRealtimeProvider() === "local") {
@@ -559,12 +732,7 @@ export function getPusherClient(): RealtimeClient {
         fetchLocalRealtimeTicket
       );
     } else {
-      const Pusher = getPusherConstructor();
-      globalWithPusher.__pusherClient = new Pusher(PUSHER_APP_KEY, {
-        cluster: PUSHER_CLUSTER,
-        forceTLS: PUSHER_FORCE_TLS,
-        authorizer: createChannelAuthorizer(),
-      }) as unknown as RealtimeClient;
+      globalWithPusher.__pusherClient = new DeferredPusherClient();
     }
   }
   return globalWithPusher.__pusherClient;

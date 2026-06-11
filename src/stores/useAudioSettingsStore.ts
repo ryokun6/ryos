@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { useStoreShallow } from "./helpers";
 import { persist } from "zustand/middleware";
 
 /**
@@ -105,3 +106,14 @@ export const useAudioSettingsStore = create<AudioSettingsState>()(
 export const selectMasterVolume = (state: AudioSettingsState) => state.masterVolume;
 export const selectUiVolume = (state: AudioSettingsState) => state.uiVolume;
 export const selectUiSoundsEnabled = (state: AudioSettingsState) => state.uiSoundsEnabled;
+
+/**
+ * Shallow-equality selector hook for this store. Co-located with the store
+ * (rather than a central helpers barrel) so importing it doesn't pull other
+ * stores into the bundle.
+ */
+export function useAudioSettingsStoreShallow<T>(
+  selector: (state: ReturnType<typeof useAudioSettingsStore.getState>) => T
+): T {
+  return useStoreShallow(useAudioSettingsStore, selector);
+}
