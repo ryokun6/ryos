@@ -172,10 +172,14 @@ export function useBackgroundChatNotifications() {
     );
 
     backgroundRoomsById.forEach((room) => {
-      getRealtime().subscribeRoom(room.id, {
-        onRoomMessage: handleRoomMessage,
-        onMessageDeleted: handleMessageDeleted,
-      });
+      getRealtime().subscribeRoom(
+        room.id,
+        {
+          onRoomMessage: handleRoomMessage,
+          onMessageDeleted: handleMessageDeleted,
+        },
+        room.type
+      );
     });
 
     const realtime = realtimeRef.current;

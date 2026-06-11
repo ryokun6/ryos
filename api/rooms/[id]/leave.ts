@@ -117,7 +117,7 @@ export default apiHandler(
             await Promise.all([
               broadcastRoomUpdated(roomId),
               broadcastRoomDeleted(roomId, roomData.type, [username]),
-              broadcastPresenceUpdate(roomId, { username, action: "left", userCount }),
+              broadcastPresenceUpdate(roomId, { username, action: "left", userCount }, roomData.type),
             ]);
             logger.info("Pusher private leave broadcasts sent", {
               roomId,
@@ -128,7 +128,7 @@ export default apiHandler(
         } else {
           await Promise.all([
             broadcastRoomUpdated(roomId),
-            broadcastPresenceUpdate(roomId, { username, action: "left", userCount }),
+            broadcastPresenceUpdate(roomId, { username, action: "left", userCount }, roomData.type),
           ]);
         }
       }

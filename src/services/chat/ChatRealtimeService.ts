@@ -94,10 +94,14 @@ export class ChatRealtimeService {
     this.globalHandlers = null;
   }
 
-  subscribeRoom(roomId: string, handlers: RoomHandlers): string | null {
+  subscribeRoom(
+    roomId: string,
+    handlers: RoomHandlers,
+    roomType?: string | null
+  ): string | null {
     if (!roomId || this.roomChannels[roomId]) return this.roomChannels[roomId]?.name ?? null;
     this.ensureClient();
-    const channel = subscribePusherChannel(getChatRoomChannelName(roomId));
+    const channel = subscribePusherChannel(getChatRoomChannelName(roomId, roomType));
     channel.bind("room-message", handlers.onRoomMessage);
     channel.bind("message-deleted", handlers.onMessageDeleted);
     if (handlers.onPresenceUpdate) {

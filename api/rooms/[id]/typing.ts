@@ -51,7 +51,7 @@ export default apiHandler(
       const body = req.body || {};
       const isTyping = body.isTyping !== false;
 
-      await broadcastTypingIndicator(roomId, { username, isTyping });
+      await broadcastTypingIndicator(roomId, { username, isTyping }, roomData.type);
 
       logger.response(200, Date.now() - startTime);
       res.status(200).json({ success: true });
