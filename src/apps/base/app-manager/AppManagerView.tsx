@@ -130,6 +130,21 @@ const ManagedAppInstance = memo(function ManagedAppInstance({
     getZIndexForInstance(instanceId, state.instanceOrder)
   );
 
+  // Hooks must run unconditionally — keep them above the early returns below
+  // (react-hooks/rules-of-hooks; a conditional hook crashes React with a
+  // hook-count mismatch when `isOpen`/`exposeMode` flips while mounted).
+  const handleClose = useCallback(() => {
+    requestCloseWindow(instanceId);
+  }, [instanceId]);
+
+  const handleNavigateNext = useCallback(() => {
+    navigateToNextInstance(instanceId);
+  }, [instanceId, navigateToNextInstance]);
+
+  const handleNavigatePrevious = useCallback(() => {
+    navigateToPreviousInstance(instanceId);
+  }, [instanceId, navigateToPreviousInstance]);
+
   if (!instance?.isOpen) return null;
   if (exposeMode && instance.appId === "stickies") return null;
 
@@ -143,18 +158,6 @@ const ManagedAppInstance = memo(function ManagedAppInstance({
   const shouldMount = shouldMountInstance(instance, exposeMode);
   const hideWindow = !shouldMount || instance.isLoading;
   const effectiveIsForeground = exposeMode ? false : isForeground;
-
-  const handleClose = useCallback(() => {
-    requestCloseWindow(instance.instanceId);
-  }, [instance.instanceId]);
-
-  const handleNavigateNext = useCallback(() => {
-    navigateToNextInstance(instance.instanceId);
-  }, [instance.instanceId, navigateToNextInstance]);
-
-  const handleNavigatePrevious = useCallback(() => {
-    navigateToPreviousInstance(instance.instanceId);
-  }, [instance.instanceId, navigateToPreviousInstance]);
 
   return (
     <div
