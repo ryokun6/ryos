@@ -4,6 +4,11 @@
  */
 export function decodeHtmlEntities(text: string): string {
   if (!text) return text;
+  // Entities always start with "&" and the DOMParser path additionally
+  // strips tags (which need "<"). When neither can be present, skip the
+  // (expensive) full-document parse — this runs in streaming hot paths
+  // (per text part, per throttled delta) and on every message row render.
+  if (!text.includes("&") && !text.includes("<")) return text;
   if (typeof window !== "undefined" && typeof DOMParser !== "undefined") {
     const doc = new DOMParser().parseFromString(text, "text/html");
     return doc.documentElement.textContent ?? text;

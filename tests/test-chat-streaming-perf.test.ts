@@ -16,9 +16,10 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, test } from "bun:test";
-import type { AIChatMessage } from "../src/types/chat";
+import type { AIChatMessage, ChatMessage } from "../src/types/chat";
 import { buildDisplayMessages } from "../src/apps/chats/utils/messages";
 import { getStreamPreviewThrottleMs } from "../src/components/shared/html-preview/hooks/useStreamPreview";
+import { decodeHtmlEntities } from "../src/utils/decodeHtmlEntities";
 
 const readSource = (relPath: string): string =>
   readFileSync(resolve(process.cwd(), relPath), "utf-8");
@@ -97,6 +98,75 @@ describe("buildDisplayMessages referential stability", () => {
     expect(result[0].username).toBe("alice");
     expect(result[1].role).toBe("assistant");
     expect(result[1].username).toBe("Ryo");
+  });
+
+  test("room messages keep referential identity across recomputes", () => {
+    const roomMsg: ChatMessage = {
+      id: "srv-1",
+      clientId: "client-1",
+      roomId: "room-1",
+      username: "bob",
+      content: "hey all",
+      timestamp: 1750000000000,
+    };
+    const params = {
+      ...baseParams,
+      currentRoomId: "room-1",
+      currentRoomMessagesLimited: [roomMsg],
+      aiMessages: [] as AIChatMessage[],
+    };
+
+    const first = buildDisplayMessages(params);
+    const second = buildDisplayMessages(params);
+
+    expect(second[0]).toBe(first[0]);
+    expect(first[0].id).toBe("client-1");
+    expect(first[0].serverId).toBe("srv-1");
+    expect(first[0].role).toBe("human");
+    expect(
+      (first[0].parts?.[0] as { type: string; text?: string }).text
+    ).toBe("hey all");
+  });
+
+  test("room messages re-wrap when username changes (role depends on it)", () => {
+    const roomMsg: ChatMessage = {
+      id: "srv-2",
+      roomId: "room-1",
+      username: "alice",
+      content: "mine",
+      timestamp: 1750000000001,
+    };
+    const params = {
+      ...baseParams,
+      currentRoomId: "room-1",
+      currentRoomMessagesLimited: [roomMsg],
+      aiMessages: [] as AIChatMessage[],
+    };
+
+    const asAlice = buildDisplayMessages(params);
+    const asBob = buildDisplayMessages({ ...params, username: "bob" });
+
+    expect(asAlice[0].role).toBe("user");
+    expect(asBob[0].role).toBe("human");
+  });
+});
+
+describe("decodeHtmlEntities streaming fast path", () => {
+  test("returns the same reference for plain text (no entities, no tags)", () => {
+    const text = "just a plain streaming chat message with emoji 🎉";
+    expect(decodeHtmlEntities(text)).toBe(text);
+  });
+
+  test("still decodes entities", () => {
+    expect(decodeHtmlEntities("a &amp; b")).toBe("a & b");
+    expect(decodeHtmlEntities("&lt;hello&gt;")).toBe("<hello>");
+  });
+
+  test("does not take the fast path when tags are present", () => {
+    // The full parse path also strips tags; the fast path must not change
+    // that behavior, so tagged input must not be returned verbatim.
+    const source = readSource("src/utils/decodeHtmlEntities.ts");
+    expect(source).toMatch(/!text\.includes\("&"\) && !text\.includes\("<"\)/);
   });
 });
 

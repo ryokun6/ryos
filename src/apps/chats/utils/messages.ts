@@ -14,14 +14,48 @@ interface BuildDisplayMessagesParams {
   username: string | null;
 }
 
-// Reuse display wrappers keyed by the source AI message object so that
+// Reuse display wrappers keyed by the source message object so that
 // unchanged messages keep referential identity across streaming ticks.
-// Without this, every token delta re-wraps the whole thread and defeats
-// React.memo on the message rows.
+// Without this, every token delta re-wraps the whole thread (and room
+// recomputes rebuild fresh parts arrays) and defeats React.memo on the
+// message rows.
 const displayMessageCache = new WeakMap<
   AIChatMessage,
   { username: string; display: DisplayMessage }
 >();
+
+const roomDisplayMessageCache = new WeakMap<
+  ChatMessage,
+  { username: string | null; display: DisplayMessage }
+>();
+
+const toRoomDisplayMessage = (
+  msg: ChatMessage,
+  index: number,
+  username: string | null
+): DisplayMessage => {
+  const cached = roomDisplayMessageCache.get(msg);
+  if (cached && cached.username === username) {
+    return cached.display;
+  }
+  const display: DisplayMessage = {
+    // For room messages, use clientId (if present) for stable rendering key.
+    // Fall back to server id + timestamp so optimistic rows never share "".
+    id:
+      msg.clientId?.trim() ||
+      msg.id?.trim() ||
+      `room-msg-${msg.timestamp}-${msg.username ?? "anon"}-${index}`,
+    serverId: msg.id,
+    role: msg.username === username ? "user" : "human",
+    parts: [{ type: "text" as const, text: msg.content }],
+    metadata: {
+      createdAt: new Date(msg.timestamp),
+    },
+    username: msg.username,
+  };
+  roomDisplayMessageCache.set(msg, { username, display });
+  return display;
+};
 
 const toDisplayMessage = (
   msg: AIChatMessage,
@@ -45,21 +79,9 @@ export const buildDisplayMessages = ({
   username,
 }: BuildDisplayMessagesParams): DisplayMessage[] => {
   if (currentRoomId) {
-    return currentRoomMessagesLimited.map((msg, index) => ({
-      // For room messages, use clientId (if present) for stable rendering key.
-      // Fall back to server id + timestamp so optimistic rows never share "".
-      id:
-        msg.clientId?.trim() ||
-        msg.id?.trim() ||
-        `room-msg-${msg.timestamp}-${msg.username ?? "anon"}-${index}`,
-      serverId: msg.id,
-      role: msg.username === username ? "user" : "human",
-      parts: [{ type: "text" as const, text: msg.content }],
-      metadata: {
-        createdAt: new Date(msg.timestamp),
-      },
-      username: msg.username,
-    }));
+    return currentRoomMessagesLimited.map((msg, index) =>
+      toRoomDisplayMessage(msg, index, username)
+    );
   }
 
   return aiMessages
