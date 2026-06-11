@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { useStoreShallow } from "./helpers";
 
 export interface TerminalCommand {
   command: string;
@@ -186,4 +187,10 @@ export const useTerminalStore = create<TerminalStoreState>()(
       },
     }
   )
-); 
+);
+
+export function useTerminalStoreShallow<T>(
+  selector: (state: ReturnType<typeof useTerminalStore.getState>) => T
+): T {
+  return useStoreShallow(useTerminalStore, selector);
+} 

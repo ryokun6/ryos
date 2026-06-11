@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { Menubar } from "@/components/ui/menubar";
 import { appRegistry } from "@/config/appRegistry";
 import type { AnyApp } from "@/apps/base/types";
-import { useAppStoreShallow } from "@/stores/helpers";
+import { useAppStoreShallow } from "@/stores/useAppStore";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useFilesStore } from "@/stores/useFilesStore";
 import type { MenuBarProps } from "./menu-bar/menuBarTypes";

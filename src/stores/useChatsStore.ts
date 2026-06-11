@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { useStoreShallow } from "./helpers";
 import {
   type ChatRoom,
   type ChatMessage,
@@ -1464,4 +1465,10 @@ async function restoreSessionFromCookie(
     // The user may come back online and the cookie will still be valid.
     console.warn("[ChatsStore] Session restore request failed:", err);
   }
+}
+
+export function useChatsStoreShallow<T>(
+  selector: (state: ReturnType<typeof useChatsStore.getState>) => T
+): T {
+  return useStoreShallow(useChatsStore, selector);
 }

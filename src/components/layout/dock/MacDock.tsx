@@ -6,7 +6,7 @@ import React, {
   useEffect,
 } from "react";
 import { useTranslation } from "react-i18next";
-import { useAppStoreShallow } from "@/stores/helpers";
+import { useAppStoreShallow } from "@/stores/useAppStore";
 import { AppId, appRegistry } from "@/config/appRegistry";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useFinderStore } from "@/stores/useFinderStore";

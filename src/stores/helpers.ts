@@ -1,83 +1,20 @@
 import { useShallow } from "zustand/react/shallow";
-import { useAppStore } from "./useAppStore";
-import { useIpodStore } from "./useIpodStore";
-import { useMediaLibraryStore } from "./useMediaLibraryStore";
-import { useVideoStore } from "./useVideoStore";
-import { useAudioSettingsStore } from "./useAudioSettingsStore";
-import { useDisplaySettingsStore } from "./useDisplaySettingsStore";
-import { useChatsStore } from "./useChatsStore";
-import { useFilesStore } from "./useFilesStore";
-import { useTerminalStore } from "./useTerminalStore";
-import { useInternetExplorerStore } from "./useInternetExplorerStore";
 
 type BoundStoreHook<TState> = {
   <TSelected>(selector: (state: TState) => TSelected): TSelected;
   getState: () => TState;
 };
 
+/**
+ * Generic shallow-compare selector hook for any zustand store.
+ *
+ * Per-store convenience wrappers (e.g. `useIpodStoreShallow`) live in their
+ * respective store files so that importing one does not drag every other
+ * store into the importing chunk. Keep this file free of store imports.
+ */
 export function useStoreShallow<TState, TSelected>(
   store: BoundStoreHook<TState>,
   selector: (state: TState) => TSelected
 ): TSelected {
   return store(useShallow(selector));
-}
-
-export function useAppStoreShallow<T>(
-  selector: (state: ReturnType<typeof useAppStore.getState>) => T
-): T {
-  return useStoreShallow(useAppStore, selector);
-}
-
-export function useIpodStoreShallow<T>(
-  selector: (state: ReturnType<typeof useIpodStore.getState>) => T
-): T {
-  return useStoreShallow(useIpodStore, selector);
-}
-
-export function useMediaLibraryStoreShallow<T>(
-  selector: (state: ReturnType<typeof useMediaLibraryStore.getState>) => T
-): T {
-  return useStoreShallow(useMediaLibraryStore, selector);
-}
-
-export function useVideoStoreShallow<T>(
-  selector: (state: ReturnType<typeof useVideoStore.getState>) => T
-): T {
-  return useStoreShallow(useVideoStore, selector);
-}
-
-export function useAudioSettingsStoreShallow<T>(
-  selector: (state: ReturnType<typeof useAudioSettingsStore.getState>) => T
-): T {
-  return useStoreShallow(useAudioSettingsStore, selector);
-}
-
-export function useDisplaySettingsStoreShallow<T>(
-  selector: (state: ReturnType<typeof useDisplaySettingsStore.getState>) => T
-): T {
-  return useStoreShallow(useDisplaySettingsStore, selector);
-}
-
-export function useChatsStoreShallow<T>(
-  selector: (state: ReturnType<typeof useChatsStore.getState>) => T
-): T {
-  return useStoreShallow(useChatsStore, selector);
-}
-
-export function useFilesStoreShallow<T>(
-  selector: (state: ReturnType<typeof useFilesStore.getState>) => T
-): T {
-  return useStoreShallow(useFilesStore, selector);
-}
-
-export function useTerminalStoreShallow<T>(
-  selector: (state: ReturnType<typeof useTerminalStore.getState>) => T
-): T {
-  return useStoreShallow(useTerminalStore, selector);
-}
-
-export function useInternetExplorerStoreShallow<T>(
-  selector: (state: ReturnType<typeof useInternetExplorerStore.getState>) => T
-): T {
-  return useStoreShallow(useInternetExplorerStore, selector);
 }

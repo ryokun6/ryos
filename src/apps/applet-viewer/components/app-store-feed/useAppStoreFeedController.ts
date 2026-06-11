@@ -10,7 +10,7 @@ import { useLatestRef } from "@/hooks/useLatestRef";
 import { useAppletActions, type Applet } from "../../utils/appletActions";
 import { useTranslation } from "react-i18next";
 import { getApiUrl } from "@/utils/platform";
-import { useChatsStoreShallow } from "@/stores/helpers";
+import { useChatsStoreShallow } from "@/stores/useChatsStore";
 import { abortableFetch } from "@/utils/abortableFetch";
 import type { AppStoreFeedProps, AppStoreFeedRef } from "./types";
 import { MAX_VISIBLE_PREVIEWS } from "./constants";

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { useStoreShallow } from "./helpers";
 
 /**
  * Audio settings store - manages volume controls and audio preferences.
@@ -105,3 +106,9 @@ export const useAudioSettingsStore = create<AudioSettingsState>()(
 export const selectMasterVolume = (state: AudioSettingsState) => state.masterVolume;
 export const selectUiVolume = (state: AudioSettingsState) => state.uiVolume;
 export const selectUiSoundsEnabled = (state: AudioSettingsState) => state.uiSoundsEnabled;
+
+export function useAudioSettingsStoreShallow<T>(
+  selector: (state: ReturnType<typeof useAudioSettingsStore.getState>) => T
+): T {
+  return useStoreShallow(useAudioSettingsStore, selector);
+}

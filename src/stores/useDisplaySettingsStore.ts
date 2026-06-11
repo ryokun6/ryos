@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { useStoreShallow } from "./helpers";
 import { ShaderType } from "@/types/shader";
 import { DisplayMode } from "@/utils/displayMode";
 import { checkShaderPerformance } from "@/utils/performanceCheck";
@@ -351,3 +352,9 @@ export const loadHtmlPreviewSplit = () =>
   useDisplaySettingsStore.getState().htmlPreviewSplit;
 export const saveHtmlPreviewSplit = (v: boolean) =>
   useDisplaySettingsStore.getState().setHtmlPreviewSplit(v);
+
+export function useDisplaySettingsStoreShallow<T>(
+  selector: (state: ReturnType<typeof useDisplaySettingsStore.getState>) => T
+): T {
+  return useStoreShallow(useDisplaySettingsStore, selector);
+}

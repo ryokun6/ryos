@@ -5,6 +5,7 @@ import {
   useIpodStore,
   type Track,
 } from "@/stores/useIpodStore";
+import { useStoreShallow } from "./helpers";
 
 export type { Track } from "@/stores/useIpodStore";
 export {
@@ -19,4 +20,10 @@ export const useMediaLibraryStore = useIpodStore;
 
 export function getMediaLibraryTracks(): Track[] {
   return useIpodStore.getState().tracks;
+}
+
+export function useMediaLibraryStoreShallow<T>(
+  selector: (state: ReturnType<typeof useMediaLibraryStore.getState>) => T
+): T {
+  return useStoreShallow(useMediaLibraryStore, selector);
 }

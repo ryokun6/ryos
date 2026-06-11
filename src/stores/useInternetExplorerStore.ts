@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { useStoreShallow } from "./helpers";
 import { abortableFetch } from "@/utils/abortableFetch";
 
 // Define types
@@ -974,3 +975,9 @@ export const isDirectPassthrough = (url: string): boolean => {
     return false;
   }
 };
+
+export function useInternetExplorerStoreShallow<T>(
+  selector: (state: ReturnType<typeof useInternetExplorerStore.getState>) => T
+): T {
+  return useStoreShallow(useInternetExplorerStore, selector);
+}

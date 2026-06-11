@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { useStoreShallow } from "./helpers";
 import { v4 as uuidv4 } from "uuid";
 import { ensureIndexedDBInitialized, STORES } from "@/utils/indexedDB";
 import type { StoredContent } from "@/utils/indexedDBOperations";
@@ -1744,3 +1745,9 @@ export const useFilesStore = create<FilesStoreState>()(
     }
   )
 );
+
+export function useFilesStoreShallow<T>(
+  selector: (state: ReturnType<typeof useFilesStore.getState>) => T
+): T {
+  return useStoreShallow(useFilesStore, selector);
+}

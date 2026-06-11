@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { useStoreShallow } from "./helpers";
 import { AppId, getWindowConfig, getMobileWindowSize } from "@/config/appRegistry";
 import { prefetchAppChunk } from "@/config/lazyAppComponent";
 import { resolveAppId } from "@/config/appRegistryData";
@@ -951,3 +952,9 @@ export const clearAllAppStates = (): void => {
     console.error("clearAllAppStates", e);
   }
 };
+
+export function useAppStoreShallow<T>(
+  selector: (state: ReturnType<typeof useAppStore.getState>) => T
+): T {
+  return useStoreShallow(useAppStore, selector);
+}

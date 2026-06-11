@@ -33,7 +33,7 @@ import {
 } from "@/apps/chats/utils/fuzzySearch";
 import { useTextEditStore } from "@/stores/useTextEditStore";
 import { useFilesStore } from "@/stores/useFilesStore";
-import { useChatsStoreShallow } from "@/stores/helpers";
+import { useChatsStoreShallow } from "@/stores/useChatsStore";
 import { markdownToHtml } from "@/utils/markdown";
 import { generateJsonFromHtml } from "@/utils/tiptapHtml";
 import i18n from "@/lib/i18n";

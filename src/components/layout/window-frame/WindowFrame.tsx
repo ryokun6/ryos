@@ -1,4 +1,4 @@
-import { useAppStoreShallow } from "@/stores/helpers";
+import { useAppStoreShallow } from "@/stores/useAppStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { useWindowInsets } from "@/hooks/useWindowInsets";

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { useStoreShallow } from "./helpers";
 
 export interface Video {
   id: string;
@@ -233,3 +234,9 @@ export const useVideoStore = create<VideoStoreState>()(
     }
   )
 );
+
+export function useVideoStoreShallow<T>(
+  selector: (state: ReturnType<typeof useVideoStore.getState>) => T
+): T {
+  return useStoreShallow(useVideoStore, selector);
+}
