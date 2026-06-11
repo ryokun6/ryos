@@ -17,7 +17,7 @@ import { useIsPhone } from "@/hooks/useIsPhone";
 import { useIsRyoAdmin } from "@/hooks/useIsRyoAdmin";
 import { useLongPress } from "@/hooks/useLongPress";
 import { useSound, Sounds } from "@/hooks/useSound";
-import type { LaunchOriginRect } from "@/stores/useAppStore";
+import type { AppInstance, LaunchOriginRect } from "@/stores/useAppStore";
 import { RightClickMenu } from "@/components/ui/right-click-menu";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { AnimatePresence, motion, LayoutGroup } from "motion/react";
