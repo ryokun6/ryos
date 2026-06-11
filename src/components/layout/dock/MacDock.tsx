@@ -127,6 +127,10 @@ export function MacDock() {
     }));
   const instances = useMemo(
     () => getDockInstancesSnapshot(useAppStore.getState().instances),
+    // The signature string is a deliberate cache key: it changes only when a
+    // dock-relevant instance field changes, so the snapshot (read imperatively
+    // via getState) is rebuilt exactly then — not on every focus/geometry write.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [dockInstancesSignature]
   );
   
