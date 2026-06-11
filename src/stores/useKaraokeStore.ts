@@ -3,6 +3,7 @@ import { persist } from "zustand/middleware";
 import type { SetStateAction } from "react";
 import { DisplayMode } from "@/types/lyrics";
 import { useIpodStore, Track } from "./useIpodStore";
+import { shouldUpdatePlaybackTime } from "./playbackTime";
 
 /** Helper to get current index from song ID */
 function getIndexFromSongId(tracks: Track[], songId: string | null): number {
@@ -242,10 +243,17 @@ export const useKaraokeStore = create<KaraokeState>()(
       setKaraokeKtvRoomFx: (karaokeKtvRoomFx) => set({ karaokeKtvRoomFx }),
 
       setElapsedTime: (time) =>
-        set((state) => ({
-          elapsedTime:
-            typeof time === "function" ? (time as (prev: number) => number)(state.elapsedTime) : time,
-        })),
+        set((state) => {
+          const next =
+            typeof time === "function"
+              ? (time as (prev: number) => number)(state.elapsedTime)
+              : time;
+          // Throttle high-frequency player progress ticks (same epsilon as
+          // iPod) so subscribers don't re-render on every sub-frame update.
+          return shouldUpdatePlaybackTime(state.elapsedTime, next)
+            ? { elapsedTime: next }
+            : state;
+        }),
       setTotalTime: (time) => set({ totalTime: time }),
 
       setDisplayMode: (mode) => set({ displayMode: mode }),

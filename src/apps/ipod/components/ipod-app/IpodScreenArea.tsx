@@ -54,7 +54,6 @@ export function IpodScreenArea({ c }: IpodScreenAreaProps) {
     setSelectedMenuItem,
     menuDirection,
     handleMenuItemAction,
-    elapsedTime,
     totalTime,
     nowPlayingScope,
     statusMessage,
@@ -112,7 +111,6 @@ export function IpodScreenArea({ c }: IpodScreenAreaProps) {
       <IpodScreen
         currentTrack={tracks[currentIndex] || null}
         isPlaying={isPlaying && !isFullScreen}
-        elapsedTime={elapsedTime}
         totalTime={totalTime}
         menuMode={menuMode}
         menuHistory={menuHistory}
