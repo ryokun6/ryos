@@ -18,10 +18,11 @@ import { CHAT_ROOM_PREFIX } from "./_constants.js";
 import type { Room, Message } from "./_types.js";
 import {
   CHATS_PUBLIC_CHANNEL,
-  CHATS_USER_CHANNEL_PREFIX,
   getChatRoomChannelName,
+  getChatsUserChannelName,
   sanitizeRealtimeChannelSegment,
 } from "../../../src/shared/constants/realtime.js";
+import { getRoom } from "./_redis.js";
 
 // Create Redis client
 function getRedis() {
@@ -46,7 +47,7 @@ export function sanitizeForChannel(name: string): string {
 }
 
 function getPrivateChatsChannelName(username: string): string {
-  return `${CHATS_USER_CHANNEL_PREFIX}${sanitizeForChannel(username)}`;
+  return getChatsUserChannelName(username);
 }
 
 /**
@@ -157,21 +158,18 @@ export async function broadcastNewMessage(
   roomData?: Room | null
 ): Promise<void> {
   try {
-    const channelName = getChatRoomChannelName(roomId);
+    // Resolve room so private rooms broadcast on the authorized channel and
+    // public/IRC rooms broadcast on the open channel.
+    const room = roomData ?? (await getRoom(roomId));
     const payload = { roomId, message };
-    
-    // Always trigger the room-specific channel (clients subscribe to this)
+    const channelName = getChatRoomChannelName(roomId, room?.type);
+
     await triggerRealtimeEvent(channelName, "room-message", payload);
 
-    // Only fan-out to private members if this is a private room
-    // Pass room data if available to avoid redundant Redis lookup
-    if (roomData) {
-      if (roomData.type === "private" && Array.isArray(roomData.members)) {
-        await fanOutToPrivateMembersBatched(roomData.members, "room-message", payload);
-      }
-    } else {
-      // Fallback: check room type from Redis (only for private rooms)
-      await fanOutToPrivateMembers(roomId, "room-message", payload);
+    // Fan out to each member's authorized personal channel for private rooms
+    // (powers the sidebar / notifications when not viewing the room).
+    if (room?.type === "private" && Array.isArray(room.members)) {
+      await fanOutToPrivateMembersBatched(room.members, "room-message", payload);
     }
   } catch (err) {
     console.error("[broadcastNewMessage] Failed:", err);
@@ -188,18 +186,14 @@ export async function broadcastMessageDeleted(
   roomData?: Room | null
 ): Promise<void> {
   try {
-    const channelName = getChatRoomChannelName(roomId);
+    const room = roomData ?? (await getRoom(roomId));
     const payload = { roomId, messageId };
-    
+    const channelName = getChatRoomChannelName(roomId, room?.type);
+
     await triggerRealtimeEvent(channelName, "message-deleted", payload);
 
-    // Only fan-out to private members if this is a private room
-    if (roomData) {
-      if (roomData.type === "private" && Array.isArray(roomData.members)) {
-        await fanOutToPrivateMembersBatched(roomData.members, "message-deleted", payload);
-      }
-    } else {
-      await fanOutToPrivateMembers(roomId, "message-deleted", payload);
+    if (room?.type === "private" && Array.isArray(room.members)) {
+      await fanOutToPrivateMembersBatched(room.members, "message-deleted", payload);
     }
   } catch (err) {
     console.error("[broadcastMessageDeleted] Failed:", err);
@@ -260,10 +254,18 @@ export async function fanOutToPrivateMembers(
  */
 export async function broadcastPresenceUpdate(
   roomId: string,
-  payload: { username: string; action: "joined" | "left"; userCount: number }
+  payload: { username: string; action: "joined" | "left"; userCount: number },
+  roomType?: string | null
 ): Promise<void> {
   try {
-    await triggerRealtimeEvent(getChatRoomChannelName(roomId), "presence-update", payload);
+    // Resolve type when not provided so private-room presence stays on the
+    // authorized channel.
+    const type = roomType ?? (await getRoom(roomId))?.type;
+    await triggerRealtimeEvent(
+      getChatRoomChannelName(roomId, type),
+      "presence-update",
+      payload
+    );
   } catch (err) {
     console.error("[broadcastPresenceUpdate] Failed:", err);
   }
@@ -275,10 +277,16 @@ export async function broadcastPresenceUpdate(
  */
 export async function broadcastTypingIndicator(
   roomId: string,
-  payload: { username: string; isTyping: boolean }
+  payload: { username: string; isTyping: boolean },
+  roomType?: string | null
 ): Promise<void> {
   try {
-    await triggerRealtimeEvent(getChatRoomChannelName(roomId), "user-typing", payload);
+    const type = roomType ?? (await getRoom(roomId))?.type;
+    await triggerRealtimeEvent(
+      getChatRoomChannelName(roomId, type),
+      "user-typing",
+      payload
+    );
   } catch (err) {
     console.error("[broadcastTypingIndicator] Failed:", err);
   }

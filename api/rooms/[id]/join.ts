@@ -97,7 +97,7 @@ export default apiHandler(
       }
       await Promise.all([
         broadcastRoomUpdated(roomId),
-        broadcastPresenceUpdate(roomId, { username, action: "joined", userCount }),
+        broadcastPresenceUpdate(roomId, { username, action: "joined", userCount }, roomData.type),
       ]);
 
       logger.info("User joined room", { roomId, username, userCount });

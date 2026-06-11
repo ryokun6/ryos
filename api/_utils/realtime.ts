@@ -25,6 +25,7 @@ const globalRealtimeState = globalThis as typeof globalThis & {
   __ryosRealtimeSockets?: Set<LocalRealtimeSocket>;
   __ryosRealtimeSocketSubscriptions?: Map<LocalRealtimeSocket, Set<string>>;
   __ryosRealtimeChannelSockets?: Map<string, Set<LocalRealtimeSocket>>;
+  __ryosRealtimeSocketUsers?: Map<LocalRealtimeSocket, string>;
   __ryosRealtimePubSubStarted?: boolean;
   __ryosRealtimeProcessId?: string;
   __ryosPusherServer?: Pusher;
@@ -58,6 +59,35 @@ function getChannelSockets(): Map<string, Set<LocalRealtimeSocket>> {
   return globalRealtimeState.__ryosRealtimeChannelSockets;
 }
 
+function getSocketUsers(): Map<LocalRealtimeSocket, string> {
+  if (!globalRealtimeState.__ryosRealtimeSocketUsers) {
+    globalRealtimeState.__ryosRealtimeSocketUsers = new Map();
+  }
+  return globalRealtimeState.__ryosRealtimeSocketUsers;
+}
+
+/**
+ * Associate an authenticated username with a local realtime socket. Used to
+ * authorize subscriptions to private channels.
+ */
+export function setRealtimeSocketUser(
+  socket: LocalRealtimeSocket,
+  username: string | null | undefined
+): void {
+  const users = getSocketUsers();
+  if (username) {
+    users.set(socket, username.toLowerCase());
+  } else {
+    users.delete(socket);
+  }
+}
+
+export function getRealtimeSocketUser(
+  socket: LocalRealtimeSocket
+): string | null {
+  return getSocketUsers().get(socket) ?? null;
+}
+
 function getRealtimeProcessId(): string {
   if (!globalRealtimeState.__ryosRealtimeProcessId) {
     globalRealtimeState.__ryosRealtimeProcessId = crypto.randomUUID();
@@ -76,6 +106,26 @@ function getPusherServer(): Pusher {
     });
   }
   return globalRealtimeState.__ryosPusherServer;
+}
+
+export interface PusherPresenceData {
+  user_id: string;
+  user_info?: Record<string, unknown>;
+}
+
+/**
+ * Sign a Pusher channel subscription. The caller is responsible for having
+ * already authorized the user for the channel.
+ */
+export function authorizePusherChannel(
+  socketId: string,
+  channel: string,
+  presenceData?: PusherPresenceData
+): { auth: string; channel_data?: string; shared_secret?: string } {
+  const pusher = getPusherServer();
+  return presenceData
+    ? pusher.authorizeChannel(socketId, channel, presenceData)
+    : pusher.authorizeChannel(socketId, channel);
 }
 
 function sendEventToLocalSockets(payload: RealtimeEventPayload): void {
@@ -176,6 +226,7 @@ export function unregisterRealtimeSocket(socket: LocalRealtimeSocket): void {
   }
 
   getSocketSubscriptions().delete(socket);
+  getSocketUsers().delete(socket);
 }
 
 export function subscribeRealtimeSocket(

@@ -12,7 +12,11 @@ import { EventEmitter } from "node:events";
 import path from "node:path";
 import { Readable } from "node:stream";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { getRedisBackend } from "../api/_utils/redis.js";
+import { createRedis, getRedisBackend } from "../api/_utils/redis.js";
+import {
+  authorizeRealtimeChannel,
+  consumeRealtimeTicket,
+} from "../api/_utils/realtime-auth.js";
 import {
   buildClientRuntimeConfig,
   getConfiguredPublicOrigin,
@@ -23,7 +27,9 @@ import {
 import { createOgShareResponse } from "../api/_utils/og-share.js";
 import {
   ensureRealtimePubSubBridge,
+  getRealtimeSocketUser,
   registerRealtimeSocket,
+  setRealtimeSocketUser,
   subscribeRealtimeSocket,
   unregisterRealtimeSocket,
   unsubscribeRealtimeSocket,
@@ -309,6 +315,7 @@ const handlerCache = new Map<string, RouteHandler>();
 
 interface LocalRealtimeSocketData {
   connectedAt: number;
+  username: string | null;
 }
 
 function toUint8Array(chunk: unknown): Uint8Array | null {
@@ -780,9 +787,24 @@ async function bootstrap(): Promise<void> {
       }
 
       if (shouldEnableLocalRealtime() && pathname === realtimeWebSocketPath) {
+        // Authenticate the connection via a single-use ticket on the WS URL.
+        // The HttpOnly `/api`-scoped auth cookie cannot be used here (different
+        // path, unreadable from JS), so authenticated clients mint a ticket via
+        // `/api/realtime/ticket` and present it as `?ticket=`.
+        let socketUsername: string | null = null;
+        const ticket = url.searchParams.get("ticket");
+        if (ticket) {
+          try {
+            socketUsername = await consumeRealtimeTicket(createRedis(), ticket);
+          } catch (error) {
+            console.warn("[api-standalone] Failed to consume realtime ticket", error);
+          }
+        }
+
         const upgraded = server.upgrade(request, {
           data: {
             connectedAt: Date.now(),
+            username: socketUsername,
           },
         });
 
@@ -903,29 +925,58 @@ async function bootstrap(): Promise<void> {
     websocket: {
       open: (socket) => {
         registerRealtimeSocket(socket);
+        setRealtimeSocketUser(socket, socket.data?.username ?? null);
       },
       message: (socket, message) => {
+        let payload: { type?: string; channel?: string };
         try {
-          const payload = JSON.parse(String(message)) as {
+          payload = JSON.parse(String(message)) as {
             type?: string;
             channel?: string;
           };
-
-          if (payload.type === "ping") {
-            socket.send(JSON.stringify({ type: "pong" }));
-            return;
-          }
-
-          if (payload.type === "subscribe" && payload.channel) {
-            subscribeRealtimeSocket(socket, payload.channel);
-            return;
-          }
-
-          if (payload.type === "unsubscribe" && payload.channel) {
-            unsubscribeRealtimeSocket(socket, payload.channel);
-          }
         } catch (error) {
           console.warn("[api-standalone] Invalid websocket payload", error);
+          return;
+        }
+
+        if (payload.type === "ping") {
+          socket.send(JSON.stringify({ type: "pong" }));
+          return;
+        }
+
+        if (payload.type === "subscribe" && payload.channel) {
+          const channel = payload.channel;
+          // Authorize before subscribing. Public channels resolve immediately;
+          // authorization-requiring channels are checked against the socket's
+          // authenticated identity (and room membership for private rooms).
+          void authorizeRealtimeChannel(channel, getRealtimeSocketUser(socket))
+            .then((allowed) => {
+              if (allowed) {
+                subscribeRealtimeSocket(socket, channel);
+              } else {
+                console.warn("[api-standalone] Denied realtime subscribe", {
+                  channel,
+                });
+                try {
+                  socket.send(
+                    JSON.stringify({ type: "subscription_error", channel })
+                  );
+                } catch {
+                  // socket may have closed; ignore
+                }
+              }
+            })
+            .catch((error) => {
+              console.warn(
+                "[api-standalone] Realtime subscribe authorization failed",
+                error
+              );
+            });
+          return;
+        }
+
+        if (payload.type === "unsubscribe" && payload.channel) {
+          unsubscribeRealtimeSocket(socket, payload.channel);
         }
       },
       close: (socket) => {

@@ -6,6 +6,7 @@ import {
   getRealtimeProvider,
   getRealtimeWebSocketUrl,
 } from "@/utils/runtimeConfig";
+import { getApiUrl } from "@/utils/platform";
 
 type ChannelEventHandler = {
   bivarianceHack(data: unknown): void;
@@ -39,13 +40,66 @@ const globalWithPusher = globalThis as typeof globalThis & {
   Pusher?: PusherConstructor;
 };
 
+type ChannelAuthorizationCallback = (
+  error: Error | null,
+  authData: unknown
+) => void;
+
+type ChannelAuthorizer = (channel: { name: string }) => {
+  authorize: (socketId: string, callback: ChannelAuthorizationCallback) => void;
+};
+
 type PusherConstructor = new (
   key: string,
   options: {
     cluster: string;
     forceTLS: boolean;
+    authorizer?: ChannelAuthorizer;
   }
 ) => PusherType;
+
+/**
+ * Authorizes private/presence channel subscriptions against `/api/pusher/auth`.
+ * pusher-js only invokes this for `private-`/`presence-` channels; public
+ * channels are unaffected. Credentials are included so the HttpOnly auth cookie
+ * authenticates the request, mirroring every other authenticated API call.
+ */
+const createChannelAuthorizer = (): ChannelAuthorizer => {
+  return (channel) => ({
+    authorize: (socketId, callback) => {
+      fetch(getApiUrl("/api/pusher/auth"), {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          socket_id: socketId,
+          channel_name: channel.name,
+        }),
+      })
+        .then(async (response) => {
+          if (!response.ok) {
+            callback(
+              new Error(
+                `[pusherClient] Channel authorization failed (${response.status})`
+              ),
+              null
+            );
+            return;
+          }
+          const data = await response.json();
+          callback(null, data);
+        })
+        .catch((error) => {
+          callback(
+            error instanceof Error
+              ? error
+              : new Error("[pusherClient] Channel authorization error"),
+            null
+          );
+        });
+    },
+  });
+};
 
 const pusherRuntimeConfig = getPusherRuntimeConfig();
 const PUSHER_APP_KEY = pusherRuntimeConfig.key;
@@ -149,6 +203,24 @@ class LocalRealtimeChannel implements RealtimeChannel {
   }
 }
 
+/**
+ * Mint a single-use realtime auth ticket for the local WebSocket provider.
+ * Returns null when unauthenticated or unavailable (public channels still work).
+ */
+const fetchLocalRealtimeTicket = async (): Promise<string | null> => {
+  try {
+    const response = await fetch(getApiUrl("/api/realtime/ticket"), {
+      method: "POST",
+      credentials: "include",
+    });
+    if (!response.ok) return null;
+    const data = (await response.json()) as { ticket?: string };
+    return data?.ticket ?? null;
+  } catch {
+    return null;
+  }
+};
+
 const HEARTBEAT_INTERVAL_MS = 30_000;
 const HEARTBEAT_TIMEOUT_MS = 10_000;
 const MAX_RECONNECT_DELAY_MS = 30_000;
@@ -168,7 +240,12 @@ class LocalRealtimeClient implements RealtimeClient {
   private boundVisibilityHandler: (() => void) | null = null;
   private boundOnlineHandler: (() => void) | null = null;
 
-  constructor(private readonly websocketUrl: string) {
+  private isConnecting = false;
+
+  constructor(
+    private readonly websocketUrl: string,
+    private readonly ticketProvider?: () => Promise<string | null>
+  ) {
     this.connect();
     this.setupBrowserHandlers();
   }
@@ -327,18 +404,47 @@ class LocalRealtimeClient implements RealtimeClient {
       return;
     }
 
-    this.cancelPendingReconnect();
+    if (this.isConnecting) {
+      return;
+    }
 
-    const id = ++this.socketId;
-    const isCurrentSocket = () => id === this.socketId && !this.destroyed;
+    this.isConnecting = true;
+    this.cancelPendingReconnect();
 
     this.setConnectionState("connecting");
     this.connection.emit("connecting");
 
+    void this.openSocket();
+  }
+
+  private async openSocket(): Promise<void> {
+    const id = ++this.socketId;
+    const isCurrentSocket = () => id === this.socketId && !this.destroyed;
+
+    // Mint a single-use auth ticket so the server can authorize private-channel
+    // subscriptions. Connecting without one still works for public channels.
+    let url = this.websocketUrl;
+    try {
+      const ticket = this.ticketProvider ? await this.ticketProvider() : null;
+      if (ticket) {
+        const withTicket = new URL(this.websocketUrl);
+        withTicket.searchParams.set("ticket", ticket);
+        url = withTicket.toString();
+      }
+    } catch {
+      // Fall back to an unauthenticated (public-only) connection.
+    }
+
+    if (!isCurrentSocket()) {
+      this.isConnecting = false;
+      return;
+    }
+
     let ws: WebSocket;
     try {
-      ws = new WebSocket(this.websocketUrl);
+      ws = new WebSocket(url);
     } catch (error) {
+      this.isConnecting = false;
       this.setConnectionState("disconnected");
       this.connection.emit(
         "error",
@@ -354,6 +460,7 @@ class LocalRealtimeClient implements RealtimeClient {
 
     ws.addEventListener("open", () => {
       if (!isCurrentSocket()) return;
+      this.isConnecting = false;
       this.reconnectDelayMs = INITIAL_RECONNECT_DELAY_MS;
       this.setConnectionState("connected");
       this.connection.emit("connected");
@@ -404,6 +511,7 @@ class LocalRealtimeClient implements RealtimeClient {
 
     ws.addEventListener("close", () => {
       if (!isCurrentSocket()) return;
+      this.isConnecting = false;
       this.stopHeartbeat();
       this.socket = null;
       this.setConnectionState("disconnected");
@@ -447,13 +555,15 @@ export function getPusherClient(): RealtimeClient {
   if (!globalWithPusher.__pusherClient) {
     if (getRealtimeProvider() === "local") {
       globalWithPusher.__pusherClient = new LocalRealtimeClient(
-        getRealtimeWebSocketUrl()
+        getRealtimeWebSocketUrl(),
+        fetchLocalRealtimeTicket
       );
     } else {
       const Pusher = getPusherConstructor();
       globalWithPusher.__pusherClient = new Pusher(PUSHER_APP_KEY, {
         cluster: PUSHER_CLUSTER,
         forceTLS: PUSHER_FORCE_TLS,
+        authorizer: createChannelAuthorizer(),
       }) as unknown as RealtimeClient;
     }
   }

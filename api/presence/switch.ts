@@ -80,7 +80,7 @@ export default apiHandler(
           }
           await Promise.all([
             broadcastRoomUpdated(previousRoomId),
-            broadcastPresenceUpdate(previousRoomId, { username, action: "left", userCount: prevCount }),
+            broadcastPresenceUpdate(previousRoomId, { username, action: "left", userCount: prevCount }, roomData.type),
           ]);
         }
       }
@@ -113,7 +113,7 @@ export default apiHandler(
         }
         await Promise.all([
           broadcastRoomUpdated(nextRoomId),
-          broadcastPresenceUpdate(nextRoomId, { username, action: "joined", userCount }),
+          broadcastPresenceUpdate(nextRoomId, { username, action: "joined", userCount }, roomData.type),
         ]);
       }
 

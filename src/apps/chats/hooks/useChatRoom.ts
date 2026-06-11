@@ -245,10 +245,10 @@ export function useChatRoom(
   }, [username, fetchRooms, setRooms, unsubscribeGlobalChannel]);
 
   const subscribeToRoomChannel = useCallback(
-    (roomId: string) => {
+    (roomId: string, roomType?: string | null) => {
       if (!pusherRef.current || roomChannelsRef.current[roomId]) return;
 
-      const roomChannelName = getChatRoomChannelName(roomId);
+      const roomChannelName = getChatRoomChannelName(roomId, roomType);
       console.log(`[Pusher Hook] Subscribing to room channel: ${roomChannelName}`);
       const roomChannel = subscribePusherChannel(roomChannelName);
 
@@ -383,7 +383,7 @@ export function useChatRoom(
     }
 
     console.log(
-      `[Pusher Hook] Unsubscribing from room channel: ${getChatRoomChannelName(roomId)}`
+      `[Pusher Hook] Unsubscribing from room channel: ${channel.name}`
     );
     if (handlers) {
       channel.unbind("room-message", handlers.onRoomMessage);
@@ -466,7 +466,7 @@ export function useChatRoom(
         nextRoom &&
         shouldSubscribeToForegroundRoomUpdates(nextRoom, newRoomId)
       ) {
-        subscribeToRoomChannel(nextRoom.id);
+        subscribeToRoomChannel(nextRoom.id, nextRoom.type);
       }
 
       return { hadUnreads };
@@ -674,7 +674,7 @@ export function useChatRoom(
 
     rooms.forEach((room) => {
       if (shouldSubscribeToForegroundRoomUpdates(room, currentRoomId)) {
-        subscribeToRoomChannel(room.id);
+        subscribeToRoomChannel(room.id, room.type);
       }
     });
 

@@ -2,11 +2,13 @@ import { describe, expect, test } from "bun:test";
 import {
   CHATS_PUBLIC_CHANNEL,
   GLOBAL_PRESENCE_CHANNEL,
+  classifyRealtimeChannel,
   getChatRoomChannelName,
   getChatsGlobalChannelName,
   getChatsUserChannelName,
   getListenSessionChannelName,
   getSyncChannelName,
+  realtimeChannelRequiresAuth,
   sanitizeRealtimeChannelSegment,
   sanitizeUsernameForRealtimeChannel,
 } from "../src/shared/constants/realtime";
@@ -23,17 +25,56 @@ describe("realtime channel constants", () => {
     expect(sanitizeUsernameForRealtimeChannel("A/B@C")).toBe("a_b_c");
   });
 
-  test("builds chat list channels", () => {
+  test("builds chat list channels (public list stays open, per-user authorized)", () => {
     expect(getChatsGlobalChannelName(null)).toBe(CHATS_PUBLIC_CHANNEL);
     expect(getChatsGlobalChannelName(undefined)).toBe(CHATS_PUBLIC_CHANNEL);
-    expect(getChatsGlobalChannelName("Ryo")).toBe("chats-ryo");
-    expect(getChatsUserChannelName("User/Name")).toBe("chats-user_name");
+    expect(getChatsGlobalChannelName("Ryo")).toBe("private-chats-ryo");
+    expect(getChatsUserChannelName("User/Name")).toBe("private-chats-user_name");
   });
 
   test("builds room, sync, listen, and presence channels", () => {
-    expect(getChatRoomChannelName("room-123")).toBe("room-room-123");
-    expect(getSyncChannelName("Ryo.User")).toBe("sync-ryo.user");
+    // Public/IRC rooms use the open channel; private rooms use the authorized one.
+    expect(getChatRoomChannelName("123")).toBe("room-123");
+    expect(getChatRoomChannelName("123", "public")).toBe("room-123");
+    expect(getChatRoomChannelName("123", "irc")).toBe("room-123");
+    expect(getChatRoomChannelName("123", "private")).toBe("private-room-123");
+    expect(getSyncChannelName("Ryo.User")).toBe("private-sync-ryo.user");
     expect(getListenSessionChannelName("session-123")).toBe("listen-session-123");
     expect(GLOBAL_PRESENCE_CHANNEL).toBe("presence-global");
+  });
+
+  test("classifies channels for authorization", () => {
+    expect(classifyRealtimeChannel(CHATS_PUBLIC_CHANNEL)).toEqual({
+      kind: "public",
+    });
+    expect(classifyRealtimeChannel("room-123")).toEqual({ kind: "public" });
+    expect(classifyRealtimeChannel("listen-abc")).toEqual({ kind: "public" });
+    expect(classifyRealtimeChannel("airdrop-ryo")).toEqual({ kind: "public" });
+    expect(classifyRealtimeChannel("private-chats-ryo")).toEqual({
+      kind: "user",
+      target: "ryo",
+    });
+    expect(classifyRealtimeChannel("private-sync-ryo")).toEqual({
+      kind: "user",
+      target: "ryo",
+    });
+    expect(classifyRealtimeChannel("private-room-abc")).toEqual({
+      kind: "room",
+      target: "abc",
+    });
+    expect(classifyRealtimeChannel("presence-global")).toEqual({
+      kind: "presence-global",
+    });
+    // Unknown authorization-requiring channels are denied by default.
+    expect(classifyRealtimeChannel("private-unknown")).toEqual({ kind: "deny" });
+    expect(classifyRealtimeChannel("presence-other")).toEqual({ kind: "deny" });
+  });
+
+  test("flags channels that require authorization", () => {
+    expect(realtimeChannelRequiresAuth("room-123")).toBe(false);
+    expect(realtimeChannelRequiresAuth(CHATS_PUBLIC_CHANNEL)).toBe(false);
+    expect(realtimeChannelRequiresAuth("private-chats-ryo")).toBe(true);
+    expect(realtimeChannelRequiresAuth("private-room-abc")).toBe(true);
+    expect(realtimeChannelRequiresAuth("presence-global")).toBe(true);
   });
 });
