@@ -24,6 +24,7 @@ import {
   hasToggleModifier,
   mergeSelectionIds,
   resolveMultiSelection,
+  type SelectableRect,
   type SelectionPoint,
 } from "@/utils/selection";
 import type { MenuItem } from "@/components/ui/right-click-menu";
@@ -63,10 +64,15 @@ export function useDesktop({
   const marqueeBaseSelectionRef = useRef<DesktopItemId[]>([]);
   const marqueeAdditiveRef = useRef(false);
   const suppressClickAfterMarqueeRef = useRef(false);
-  const [selectionRect, setSelectionRect] = useState<{
-    start: SelectionPoint;
-    end: SelectionPoint;
-  } | null>(null);
+  // Marquee internals are ref-driven so pointer moves don't re-render the
+  // desktop: the rect element is painted directly, item rects are captured
+  // once on mousedown, and selection state only updates when the intersecting
+  // set actually changes.
+  const marqueeElementRef = useRef<HTMLDivElement | null>(null);
+  const marqueeOriginRef = useRef<{ left: number; top: number } | null>(null);
+  const marqueeItemRectsRef = useRef<SelectableRect<DesktopItemId>[]>([]);
+  const lastMarqueeSelectionSigRef = useRef<string | null>(null);
+  const [isMarqueeSelecting, setIsMarqueeSelecting] = useState(false);
   const [sortType, setSortType] = useState<SortType>("name");
   const [contextMenuPos, setContextMenuPos] = useState<{
     x: number;
@@ -405,25 +411,28 @@ export function useDesktop({
     return items;
   }, [isMacOSTheme, desktopShortcuts, displayedApps]);
 
+  // Paint the marquee rect element directly (no React state per pointer move).
+  const paintMarqueeRect = useCallback(
+    (start: SelectionPoint, end: SelectionPoint) => {
+      const element = marqueeElementRef.current;
+      const origin = marqueeOriginRef.current;
+      if (!element || !origin) return;
+
+      const rect = createSelectionRect(start, end);
+      element.style.left = `${rect.left - origin.left}px`;
+      element.style.top = `${rect.top - origin.top}px`;
+      element.style.width = `${rect.right - rect.left}px`;
+      element.style.height = `${rect.bottom - rect.top}px`;
+    },
+    []
+  );
+
   const updateSelectionFromMarquee = useCallback(
     (start: SelectionPoint, end: SelectionPoint) => {
-      const desktop = desktopRef.current;
-      if (!desktop) return;
-
       const intersectingIds = getIntersectingSelectionIds(
         createSelectionRect(start, end),
-        Array.from(
-          desktop.querySelectorAll<HTMLElement>("[data-desktop-item-id]")
-        ).map((element) => ({
-          id: element.dataset.desktopItemId || "",
-          rect: {
-            left: element.getBoundingClientRect().left,
-            top: element.getBoundingClientRect().top,
-            right: element.getBoundingClientRect().right,
-            bottom: element.getBoundingClientRect().bottom,
-          },
-        }))
-      ).filter(Boolean);
+        marqueeItemRectsRef.current
+      );
 
       const nextSelectedIds = marqueeAdditiveRef.current
         ? mergeSelectionIds(
@@ -432,6 +441,12 @@ export function useDesktop({
             intersectingIds
           )
         : intersectingIds;
+
+      // Only touch React state when the intersecting set actually changes.
+      const signature = nextSelectedIds.join("\u0000");
+      if (signature === lastMarqueeSelectionSigRef.current) return;
+      lastMarqueeSelectionSigRef.current = signature;
+
       const nextAnchorId = nextSelectedIds[nextSelectedIds.length - 1] ?? null;
       applySelection(nextSelectedIds, nextAnchorId);
     },
@@ -439,14 +454,17 @@ export function useDesktop({
   );
 
   useEffect(() => {
-    if (!selectionRect || !marqueeStartRef.current) return;
+    if (!isMarqueeSelecting || !marqueeStartRef.current) return;
+
+    // Position the freshly-mounted marquee element at its zero-size origin.
+    paintMarqueeRect(marqueeStartRef.current, marqueeStartRef.current);
 
     const handleMouseMove = (event: MouseEvent) => {
       const start = marqueeStartRef.current;
       if (!start) return;
 
       const end = { x: event.clientX, y: event.clientY };
-      setSelectionRect({ start, end });
+      paintMarqueeRect(start, end);
       updateSelectionFromMarquee(start, end);
     };
 
@@ -466,7 +484,7 @@ export function useDesktop({
 
       suppressClickAfterMarqueeRef.current = movedEnough;
       marqueeStartRef.current = null;
-      setSelectionRect(null);
+      setIsMarqueeSelecting(false);
     };
 
     window.addEventListener("mousemove", handleMouseMove);
@@ -476,7 +494,12 @@ export function useDesktop({
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [clearSelection, selectionRect, updateSelectionFromMarquee]);
+  }, [
+    clearSelection,
+    isMarqueeSelecting,
+    paintMarqueeRect,
+    updateSelectionFromMarquee,
+  ]);
 
   const handleDesktopItemClick = (
     itemId: DesktopItemId,
@@ -507,7 +530,36 @@ export function useDesktop({
     marqueeStartRef.current = start;
     marqueeBaseSelectionRef.current = selectedItemIds;
     marqueeAdditiveRef.current = event.shiftKey || hasToggleModifier(event);
-    setSelectionRect({ start, end: start });
+    lastMarqueeSelectionSigRef.current = null;
+
+    // Capture desktop origin + item rects once; the desktop doesn't scroll,
+    // so per-move getBoundingClientRect calls are unnecessary.
+    const desktop = desktopRef.current;
+    const bounds = desktop?.getBoundingClientRect();
+    marqueeOriginRef.current = bounds
+      ? { left: bounds.left, top: bounds.top }
+      : { left: 0, top: 0 };
+    marqueeItemRectsRef.current = desktop
+      ? Array.from(
+          desktop.querySelectorAll<HTMLElement>("[data-desktop-item-id]")
+        ).reduce<SelectableRect<DesktopItemId>[]>((acc, element) => {
+          const id = element.dataset.desktopItemId;
+          if (!id) return acc;
+          const rect = element.getBoundingClientRect();
+          acc.push({
+            id: id as DesktopItemId,
+            rect: {
+              left: rect.left,
+              top: rect.top,
+              right: rect.right,
+              bottom: rect.bottom,
+            },
+          });
+          return acc;
+        }, [])
+      : [];
+
+    setIsMarqueeSelecting(true);
   };
 
   const handleDesktopClick = () => {
@@ -610,12 +662,6 @@ export function useDesktop({
     (itemId: DesktopItemId) => selectedItemIds.includes(itemId),
     [selectedItemIds]
   );
-
-  const renderedSelectionRect =
-    selectionRect && desktopRef.current
-      ? createSelectionRect(selectionRect.start, selectionRect.end)
-      : null;
-  const desktopBounds = desktopRef.current?.getBoundingClientRect();
 
   const macintoshHdName = useMemo(
     () =>
@@ -726,8 +772,8 @@ export function useDesktop({
     contextMenuPos,
     closeContextMenu,
     getContextMenuItems,
-    renderedSelectionRect,
-    desktopBounds,
+    isMarqueeSelecting,
+    marqueeElementRef,
     isEmptyTrashDialogOpen,
     setIsEmptyTrashDialogOpen,
     confirmEmptyTrash,

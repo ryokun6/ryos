@@ -20,7 +20,7 @@ import { useSound, Sounds } from "@/hooks/useSound";
 import type { AppInstance, LaunchOriginRect } from "@/stores/useAppStore";
 import { RightClickMenu } from "@/components/ui/right-click-menu";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
-import { AnimatePresence, motion, LayoutGroup } from "motion/react";
+import { AnimatePresence, motion, LayoutGroup, useMotionValue } from "motion/react";
 import { useShallow } from "zustand/react/shallow";
 import {
   isClientYInBottomZone,
@@ -204,9 +204,12 @@ export function MacDock() {
   const { hoveredId, isSwapping, handleIconHover, handleIconLeave } =
     useDockIconHover();
 
-  // Resize dragging state
+  // Resize dragging state. While dragging, the dock is scaled with a CSS
+  // transform (motion value) instead of re-rendering every icon per frame;
+  // the real scale is committed to the store on mouseup.
   const [isResizing, setIsResizing] = useState(false);
-  const [liveDockScale, setLiveDockScale] = useState<number | null>(null);
+  const dockResizePreviewScale = useMotionValue(1);
+  const liveDockScaleRef = useRef<number | null>(null);
   const resizeStartY = useRef<number>(0);
   const resizeStartScale = useRef<number>(1);
   
@@ -223,12 +226,10 @@ export function MacDock() {
   const lastAutoHideTimeRef = useRef<number>(0); // Track when dock was last auto-hidden
   const lastTimerRestartRef = useRef<number>(0); // Throttle timer restarts
 
-  const effectiveDockScale = liveDockScale ?? dockScale;
-
-  // Computed scaled sizes
-  const scaledButtonSize = Math.round(DOCK_BASE_BUTTON_SIZE * effectiveDockScale);
-  const scaledDockHeight = Math.round(56 * effectiveDockScale); // Base dock height is 56px
-  const scaledPadding = Math.round(4 * effectiveDockScale); // Base padding is 4px (py-1, px-1)
+  // Computed scaled sizes (from the committed scale; drag preview is a transform)
+  const scaledButtonSize = Math.round(DOCK_BASE_BUTTON_SIZE * dockScale);
+  const scaledDockHeight = Math.round(56 * dockScale); // Base dock height is 56px
+  const scaledPadding = Math.round(4 * dockScale); // Base padding is 4px (py-1, px-1)
 
 
   const {
@@ -250,7 +251,7 @@ export function MacDock() {
     handleDividerDrop,
   } = useDockDragDrop({
     pinnedItems,
-    effectiveDockScale,
+    effectiveDockScale: dockScale,
     scaledPadding,
     getFileItem,
     addDockItem,
@@ -267,9 +268,9 @@ export function MacDock() {
     e.stopPropagation();
     setIsResizing(true);
     resizeStartY.current = e.clientY;
-    resizeStartScale.current = effectiveDockScale;
-    setLiveDockScale(effectiveDockScale);
-  }, [isPhone, effectiveDockScale]);
+    resizeStartScale.current = dockScale;
+    liveDockScaleRef.current = dockScale;
+  }, [isPhone, dockScale]);
 
   useEffect(() => {
     if (!isResizing) return;
@@ -280,16 +281,21 @@ export function MacDock() {
       const deltaY = resizeStartY.current - e.clientY;
       const scaleDelta = deltaY / 100; // 100px drag = 1.0 scale change
       const newScale = resizeStartScale.current + scaleDelta;
-      // Keep drag updates local and transient; persist only on mouseup.
+      // Keep drag updates transient: preview with a CSS transform (no React
+      // re-render per move); persist the real scale only on mouseup.
       const clampedScale = Math.max(0.5, Math.min(1.5, newScale));
-      setLiveDockScale(clampedScale);
+      liveDockScaleRef.current = clampedScale;
+      dockResizePreviewScale.set(clampedScale / resizeStartScale.current);
     };
 
     const handleMouseUp = () => {
       setIsResizing(false);
-      const finalScale = liveDockScale ?? resizeStartScale.current;
+      const finalScale = liveDockScaleRef.current ?? resizeStartScale.current;
+      liveDockScaleRef.current = null;
+      // Commit the real scale (re-lays-out the dock) and drop the transform
+      // preview in the same frame.
       setDockScale(finalScale);
-      setLiveDockScale(null);
+      dockResizePreviewScale.set(1);
     };
 
     document.addEventListener("mousemove", handleMouseMove);
@@ -299,13 +305,7 @@ export function MacDock() {
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [isResizing, setDockScale, liveDockScale]);
-
-  useEffect(() => {
-    if (!isResizing) {
-      setLiveDockScale(null);
-    }
-  }, [isResizing]);
+  }, [isResizing, setDockScale, dockResizePreviewScale]);
 
   // Sync visibility state when hiding setting changes
   useEffect(() => {
@@ -830,6 +830,8 @@ export function MacDock() {
           }}
           style={{
             pointerEvents: isDockVisible ? "auto" : "none",
+            // Transient divider-drag resize preview (committed on mouseup).
+            scale: dockResizePreviewScale,
             // Same tint variable as the menubar so light/dark switch in lockstep.
             background:
               "var(--os-color-dock-surface, rgba(248, 248, 248, 0.75))",

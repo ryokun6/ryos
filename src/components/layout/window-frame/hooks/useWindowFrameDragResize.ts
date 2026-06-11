@@ -23,6 +23,10 @@ export function useWindowFrameDragResize({
   const {
     windowPosition,
     windowSize,
+    windowLeftMotionValue,
+    windowTopMotionValue,
+    windowWidthMotionValue,
+    windowHeightMotionValue,
     isDragging,
     resizeType,
     handleMouseDown,
@@ -66,6 +70,10 @@ export function useWindowFrameDragResize({
   return {
     windowPosition,
     windowSize,
+    windowLeftMotionValue,
+    windowTopMotionValue,
+    windowWidthMotionValue,
+    windowHeightMotionValue,
     isDragging,
     resizeType,
     setWindowSize,
