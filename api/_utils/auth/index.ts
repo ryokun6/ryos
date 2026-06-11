@@ -75,3 +75,17 @@ export { validateAuth, tokenExists } from "./_validate.js";
 
 // Request extraction (Edge compatible)
 export { extractAuth, extractAuthNormalized } from "./_extract.js";
+
+// Stored user-record helpers (ban status, etc.)
+export type { StoredUserRecord } from "./_user-record.js";
+export { parseStoredUser, isUserBanned } from "./_user-record.js";
+
+// Per-username login lockout (shared by login + register)
+export {
+  isLoginLocked,
+  recordLoginFailure,
+  resetLoginFailures,
+  PER_USER_FAIL_LIMIT,
+  PER_USER_FAIL_WINDOW_SECONDS,
+  PER_USER_LOCKOUT_SECONDS,
+} from "./_login-lockout.js";
