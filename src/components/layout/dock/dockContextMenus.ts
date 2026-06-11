@@ -43,6 +43,7 @@ export function getAppContextMenuItems(
   deps: {
     t: TFunction;
     instances: Record<string, AppInstance>;
+    foregroundInstanceId: string | null;
     finderInstances: Record<string, FinderInstance>;
     pinnedItems: DockItem[];
     getFileItem: (path: string) => FileSystemItem | undefined;
@@ -61,6 +62,7 @@ export function getAppContextMenuItems(
   const {
     t,
     instances,
+    foregroundInstanceId,
     finderInstances,
     pinnedItems,
     getFileItem,
@@ -114,7 +116,8 @@ export function getAppContextMenuItems(
     const instance = instances[specificInstanceId];
     if (instance) {
       const { label } = getDockAppletInfo(instance, getFileItem, t);
-      const isForeground = !!(instance.isForeground && !instance.isMinimized);
+      const isForeground =
+        instance.instanceId === foregroundInstanceId && !instance.isMinimized;
       items.push({
         type: "checkbox",
         label: `${label}${instance.isMinimized ? ` ${t("common.dock.minimized")}` : ""}`,
@@ -185,7 +188,8 @@ export function getAppContextMenuItems(
         }
       }
 
-      const isForeground = !!(inst.isForeground && !inst.isMinimized);
+      const isForeground =
+        inst.instanceId === foregroundInstanceId && !inst.isMinimized;
       items.push({
         type: "checkbox",
         label: `${windowLabel}${inst.isMinimized ? ` ${t("common.dock.minimized")}` : ""}`,
