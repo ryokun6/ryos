@@ -25,7 +25,7 @@ export default apiHandler<PusherAuthRequest>(
     auth: "required",
     parseJsonBody: true,
   },
-  async ({ res, redis, logger, startTime, user, body }) => {
+  async ({ res, logger, startTime, user, body }) => {
     if (getRealtimeProvider() !== "pusher") {
       logger.response(400, Date.now() - startTime);
       res.status(400).json({ error: "Pusher realtime provider is not enabled" });
@@ -43,7 +43,7 @@ export default apiHandler<PusherAuthRequest>(
 
     const username = user!.username;
 
-    const allowed = await authorizeRealtimeChannel(channelName, username, redis);
+    const allowed = await authorizeRealtimeChannel(channelName, username);
     if (!allowed) {
       logger.warn("Denied realtime channel authorization", {
         channelName,

@@ -949,11 +949,7 @@ async function bootstrap(): Promise<void> {
           // Authorize before subscribing. Public channels resolve immediately;
           // authorization-requiring channels are checked against the socket's
           // authenticated identity (and room membership for private rooms).
-          void authorizeRealtimeChannel(
-            channel,
-            getRealtimeSocketUser(socket),
-            createRedis()
-          )
+          void authorizeRealtimeChannel(channel, getRealtimeSocketUser(socket))
             .then((allowed) => {
               if (allowed) {
                 subscribeRealtimeSocket(socket, channel);

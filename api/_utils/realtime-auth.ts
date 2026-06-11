@@ -24,8 +24,7 @@ import { isPrivateRoom, isRoomMember } from "../rooms/_helpers/_access.js";
  */
 export async function authorizeRealtimeChannel(
   channel: string,
-  username: string | null | undefined,
-  redis: Redis
+  username: string | null | undefined
 ): Promise<boolean> {
   const classification = classifyRealtimeChannel(channel);
   const normalizedUsername = username ? username.toLowerCase() : "";
