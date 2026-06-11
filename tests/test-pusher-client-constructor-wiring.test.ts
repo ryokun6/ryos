@@ -36,8 +36,19 @@ describe("Pusher Constructor Wiring Tests", () => {
 
     test("getPusherClient instantiates via constructor resolver", async () => {
       const source = readPusherClientSource();
-      expect(/const Pusher = getPusherConstructor\(\);/.test(source)).toBe(true);
+      expect(/const Pusher = getPusherConstructor\(PusherNamespace\);/.test(source)).toBe(true);
       expect(/new Pusher\(PUSHER_APP_KEY/.test(source)).toBe(true);
+    });
+
+    test("loads pusher-js only through a provider-branch dynamic import", async () => {
+      const source = readPusherClientSource();
+      expect(/import\s+(?!type)[^;]*["']pusher-js["']/.test(source)).toBe(false);
+      expect(source.includes('import("pusher-js")')).toBe(true);
+      expect(
+        /if \(getRealtimeProvider\(\) === "local"\)[\s\S]*\} else \{[\s\S]*import\("pusher-js"\)/.test(
+          source
+        )
+      ).toBe(true);
     });
   });
 });
