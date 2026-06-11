@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { ToolInvocationPart } from "@/components/shared/ToolInvocationMessage";
 import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
@@ -57,13 +57,26 @@ export function useChatMessageItem(props: ChatMessageItemProps) {
     []
   );
 
-  let messageText = getMessageText(message);
   const isStaticGreeting = message.role === "assistant" && message.id === "1";
-  if (isStaticGreeting && !messageText) {
-    messageText = t("apps.chats.messages.greeting");
-  }
   const showTypingDots = isLoadingGreeting && !isRoomView && isStaticGreeting;
-  const isUrgent = isUrgentMessage(messageText);
+
+  // Message objects are referentially stable across renders (only the
+  // streaming message gets a new reference per tick), so memoizing on
+  // `message` means the decode / markdown-tokenize passes below don't re-run
+  // on unrelated re-renders (hover state, sibling streaming, etc.).
+  const { isUrgent, decodedContent } = useMemo(() => {
+    let text = getMessageText(message);
+    if (isStaticGreeting && !text) {
+      text = t("apps.chats.messages.greeting");
+    }
+    const urgent = isUrgentMessage(text);
+    const raw = urgent ? text.slice(4).trimStart() : text;
+    return {
+      isUrgent: urgent,
+      decodedContent: decodeHtmlEntities(raw),
+    };
+  }, [message, isStaticGreeting, t]);
+
   let bgColorClass = "";
   if (isUrgent) {
     bgColorClass = "bg-transparent text-current";
@@ -74,10 +87,11 @@ export function useChatMessageItem(props: ChatMessageItemProps) {
   else if (message.role === "human")
     bgColorClass = getUserColorClass(message.username);
 
-  const rawContent = isUrgent ? messageText.slice(4).trimStart() : messageText;
-  const decodedContent = decodeHtmlEntities(rawContent);
   const hasAquariumToken = decodedContent.includes("[[AQUARIUM]]");
-  const displayContent = decodedContent.replace(/\[\[AQUARIUM\]\]/g, "").trim();
+  const displayContent = useMemo(
+    () => decodedContent.replace(/\[\[AQUARIUM\]\]/g, "").trim(),
+    [decodedContent]
+  );
   const activeHighlight =
     !isStreamingMessage &&
     message.role === "assistant" &&
@@ -85,25 +99,28 @@ export function useChatMessageItem(props: ChatMessageItemProps) {
       ? highlightSegment
       : null;
 
-  const fullAssistantSource =
-    message.role === "assistant" && message.parts
-      ? message.parts.reduce((acc, part) => {
-          if (part.type === "text") {
-            return (
-              acc +
-              decodeHtmlEntities(
-                getVisibleTextPartText(
-                  (part as { type: string; text?: string }).text ||
-                    (isStaticGreeting
-                      ? t("apps.chats.messages.greeting")
-                      : "")
+  const fullAssistantSource = useMemo(
+    () =>
+      message.role === "assistant" && message.parts
+        ? message.parts.reduce((acc, part) => {
+            if (part.type === "text") {
+              return (
+                acc +
+                decodeHtmlEntities(
+                  getVisibleTextPartText(
+                    (part as { type: string; text?: string }).text ||
+                      (isStaticGreeting
+                        ? t("apps.chats.messages.greeting")
+                        : "")
+                  )
                 )
-              )
-            );
-          }
-          return acc;
-        }, "")
-      : "";
+              );
+            }
+            return acc;
+          }, "")
+        : "",
+    [message, isStaticGreeting, t]
+  );
 
   const assistantContentRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
@@ -142,7 +159,7 @@ export function useChatMessageItem(props: ChatMessageItemProps) {
     hasAquarium = true;
   }
 
-  const linkPreviewUrls = (() => {
+  const linkPreviewUrls = useMemo(() => {
     const allUrls = new Set<string>();
     if (message.role === "assistant") {
       message.parts?.forEach(
@@ -163,7 +180,7 @@ export function useChatMessageItem(props: ChatMessageItemProps) {
       extractUrlsFromContent(displayContent).forEach((u) => allUrls.add(u));
     }
     return Array.from(allUrls);
-  })();
+  }, [message, displayContent]);
 
   return {
     ...props,
