@@ -371,7 +371,7 @@ export function useAppletViewerLogic({
 
     if (instanceId) {
       const inst = state.instances[instanceId];
-      if (!inst || !inst.isForeground) {
+      if (!inst || state.foregroundInstanceId !== instanceId) {
         state.bringInstanceToForeground(instanceId);
       }
     }

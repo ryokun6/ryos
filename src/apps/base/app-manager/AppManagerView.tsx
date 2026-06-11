@@ -1,3 +1,5 @@
+import { memo, useCallback } from "react";
+import type { ComponentType } from "react";
 import { MenuBar } from "@/components/layout/MenuBar";
 import { Desktop } from "@/components/layout/Desktop";
 import { DesktopCornerMask } from "@/components/layout/desktop/DesktopCornerMask";
@@ -11,15 +13,19 @@ import { AppSwitcher } from "@/components/layout/AppSwitcher";
 import { AppErrorBoundary } from "@/components/errors/ErrorBoundaries";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { isTextEditInitialData } from "@/types/appInitialData";
-import { useAppStore } from "@/stores/useAppStore";
+import {
+  selectIsInstanceForeground,
+  useAppStore,
+  useAppStoreShallow,
+} from "@/stores/useAppStore";
 import { shouldMountInstance } from "../instanceMountPolicy";
 import { getZIndexForInstance, supportsMultiWindowApp } from "./instanceHelpers";
+import type { AppProps } from "../types";
 import type { AppManagerViewModel } from "./useAppManager";
 
 export function AppManagerView({
   apps,
   openInstanceIds,
-  instanceOrder,
   exposeMode,
   showDesktopMenuBar,
   isInitialMount,
@@ -44,7 +50,6 @@ export function AppManagerView({
           key={instanceId}
           apps={apps}
           instanceId={instanceId}
-          instanceOrder={instanceOrder}
           exposeMode={exposeMode}
           isInitialMount={isInitialMount}
           setCrashedInstanceIds={setCrashedInstanceIds}
@@ -80,10 +85,9 @@ export function AppManagerView({
   );
 }
 
-function ManagedAppInstance({
+const ManagedAppInstance = memo(function ManagedAppInstance({
   apps,
   instanceId,
-  instanceOrder,
   exposeMode,
   isInitialMount,
   setCrashedInstanceIds,
@@ -95,7 +99,6 @@ function ManagedAppInstance({
 }: Pick<
   AppManagerViewModel,
   | "apps"
-  | "instanceOrder"
   | "exposeMode"
   | "isInitialMount"
   | "setCrashedInstanceIds"
@@ -107,14 +110,31 @@ function ManagedAppInstance({
 > & {
   instanceId: string;
 }) {
-  const instance = useAppStore((state) => state.instances[instanceId]);
+  const instance = useAppStoreShallow((state) => {
+    const inst = state.instances[instanceId];
+    if (!inst) return null;
+    return {
+      appId: inst.appId,
+      createdAt: inst.createdAt,
+      initialData: inst.initialData,
+      instanceId: inst.instanceId,
+      isLoading: inst.isLoading,
+      isOpen: inst.isOpen,
+      title: inst.title,
+    };
+  });
+  const isForeground = useAppStore((state) =>
+    selectIsInstanceForeground(state, instanceId)
+  );
+  const zIndex = useAppStore((state) =>
+    getZIndexForInstance(instanceId, state.instanceOrder)
+  );
 
   if (!instance?.isOpen) return null;
   if (exposeMode && instance.appId === "stickies") return null;
 
   const appId = instance.appId as AppId;
-  const zIndex = getZIndexForInstance(instance.instanceId, instanceOrder);
-  const AppComponent = getAppComponent(appId);
+  const AppComponent = getAppComponent(appId) as ComponentType<AppProps>;
   const app = apps.find((registeredApp) => registeredApp.id === appId);
   const translatedAppName = getTranslatedAppName(appId);
   const crashDialogAppName =
@@ -122,6 +142,19 @@ function ManagedAppInstance({
 
   const shouldMount = shouldMountInstance(instance, exposeMode);
   const hideWindow = !shouldMount || instance.isLoading;
+  const effectiveIsForeground = exposeMode ? false : isForeground;
+
+  const handleClose = useCallback(() => {
+    requestCloseWindow(instance.instanceId);
+  }, [instance.instanceId]);
+
+  const handleNavigateNext = useCallback(() => {
+    navigateToNextInstance(instance.instanceId);
+  }, [instance.instanceId, navigateToNextInstance]);
+
+  const handleNavigatePrevious = useCallback(() => {
+    navigateToPreviousInstance(instance.instanceId);
+  }, [instance.instanceId, navigateToPreviousInstance]);
 
   return (
     <div
@@ -132,12 +165,12 @@ function ManagedAppInstance({
       className="absolute inset-x-0 md:inset-x-auto w-full md:w-auto"
       role="presentation"
       onMouseDown={() => {
-        if (!instance.isForeground && !exposeMode) {
+        if (!isForeground && !exposeMode) {
           bringInstanceToForeground(instance.instanceId);
         }
       }}
       onTouchStart={() => {
-        if (!instance.isForeground && !exposeMode) {
+        if (!isForeground && !exposeMode) {
           bringInstanceToForeground(instance.instanceId);
         }
       }}
@@ -192,24 +225,33 @@ function ManagedAppInstance({
         }}
       >
         {shouldMount ? (
-          <AppComponent
+          <ManagedAppRoot
+            AppComponent={AppComponent}
             isWindowOpen={instance.isOpen}
-            isForeground={exposeMode ? false : instance.isForeground}
-            onClose={() => requestCloseWindow(instance.instanceId)}
+            isForeground={effectiveIsForeground}
+            onClose={handleClose}
             className="pointer-events-auto"
             helpItems={app?.helpItems}
             skipInitialSound={isInitialMount}
-            // @ts-expect-error - Dynamic component system with different initialData types per app
             initialData={instance.initialData}
             instanceId={instance.instanceId}
             title={instance.title}
-            onNavigateNext={() => navigateToNextInstance(instance.instanceId)}
-            onNavigatePrevious={() =>
-              navigateToPreviousInstance(instance.instanceId)
-            }
+            onNavigateNext={handleNavigateNext}
+            onNavigatePrevious={handleNavigatePrevious}
           />
         ) : null}
       </AppErrorBoundary>
     </div>
   );
-}
+});
+
+type ManagedAppRootProps = {
+  AppComponent: ComponentType<AppProps>;
+} & AppProps;
+
+const ManagedAppRoot = memo(function ManagedAppRoot({
+  AppComponent,
+  ...props
+}: ManagedAppRootProps) {
+  return <AppComponent {...props} />;
+});

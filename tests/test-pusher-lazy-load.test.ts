@@ -1,124 +1,178 @@
 /**
- * Tests for lazy pusher-js loading.
+ * Behavioral tests for the lazily-loaded pusher client facade.
  *
- * pusher-js is dynamically imported so the entry chunk doesn't pay for it at
- * boot (and the local WebSocket provider never loads it at all). Because
- * `getPusherClient()` stays synchronous, a facade queues channel/connection
- * bindings made before the module resolves and replays them once the real
- * client attaches. These tests cover that queue/replay contract plus source
- * wiring guards against reintroducing a static import.
+ * pusher-js is dynamically imported inside the pusher provider branch of
+ * `getPusherClient()` (see #1455), which stays synchronous by returning a
+ * `DeferredPusherRealtimeClient`. These tests cover the queue/replay contract:
+ * subscriptions and bindings made before the real client resolves must be
+ * replayed onto it, and calls made afterwards must delegate directly.
+ *
+ * (Source-level wiring guards against reintroducing a static pusher-js import
+ * live in tests/test-pusher-client-constructor-wiring.test.ts.)
  */
 
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import { describe, test, expect } from "bun:test";
 
 import {
-  DeferredRealtimeChannel,
-  DeferredRealtimeConnection,
+  DeferredPusherRealtimeClient,
   type RealtimeChannel,
+  type RealtimeClient,
   type RealtimeConnection,
 } from "../src/lib/pusherClient";
 
-type Call = { method: "bind" | "unbind"; eventName?: string };
+type Call =
+  | { type: "subscribe" | "unsubscribe"; channel: string }
+  | { type: "bind" | "unbind"; channel: string; eventName?: string };
 
-const createRecordingChannel = (): RealtimeChannel & { calls: Call[] } => {
+const createFakeRealClient = () => {
   const calls: Call[] = [];
-  return {
-    name: "test-channel",
-    calls,
-    bind: (eventName: string) => {
-      calls.push({ method: "bind", eventName });
-    },
-    unbind: (eventName?: string) => {
-      calls.push({ method: "unbind", eventName });
-    },
+  const channels = new Map<string, RealtimeChannel>();
+
+  const makeChannel = (name: string): RealtimeChannel => ({
+    name,
+    bind: (eventName: string) =>
+      calls.push({ type: "bind", channel: name, eventName }),
+    unbind: (eventName?: string) =>
+      calls.push({ type: "unbind", channel: name, eventName }),
+  });
+
+  const connection: RealtimeConnection & { state: string } = {
+    state: "connected",
+    bind: (eventName: string) =>
+      calls.push({ type: "bind", channel: "<connection>", eventName }),
+    unbind: (eventName?: string) =>
+      calls.push({ type: "unbind", channel: "<connection>", eventName }),
   };
+
+  const client: RealtimeClient = {
+    connection,
+    subscribe: (channelName: string) => {
+      calls.push({ type: "subscribe", channel: channelName });
+      const existing = channels.get(channelName);
+      if (existing) return existing;
+      const channel = makeChannel(channelName);
+      channels.set(channelName, channel);
+      return channel;
+    },
+    unsubscribe: (channelName: string) => {
+      calls.push({ type: "unsubscribe", channel: channelName });
+      channels.delete(channelName);
+    },
+    channel: (channelName: string) => channels.get(channelName),
+  };
+
+  return { client, calls };
 };
 
-describe("DeferredRealtimeChannel", () => {
-  test("replays queued binds on attach, then delegates directly", () => {
-    const facade = new DeferredRealtimeChannel("rooms");
-    const handlerA = () => {};
-    const handlerB = () => {};
-    facade.bind("room-message", handlerA);
-    facade.bind("rooms-updated", handlerB);
+/** Deferred promise helper so tests control when the "module load" finishes. */
+const createDeferred = <T>() => {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
+};
 
-    const real = createRecordingChannel();
-    facade.attach(real);
-    expect(real.calls).toEqual([
-      { method: "bind", eventName: "room-message" },
-      { method: "bind", eventName: "rooms-updated" },
+const flushMicrotasks = () => new Promise<void>((res) => setTimeout(res, 0));
+
+describe("DeferredPusherRealtimeClient", () => {
+  test("replays pre-load subscriptions and channel binds once the client resolves", async () => {
+    const deferred = createDeferred<RealtimeClient>();
+    const facade = new DeferredPusherRealtimeClient(deferred.promise);
+
+    const channel = facade.subscribe("rooms");
+    channel.bind("room-message", () => {});
+    channel.bind("rooms-updated", () => {});
+    expect(facade.channel("rooms")).toBe(channel);
+
+    const { client, calls } = createFakeRealClient();
+    deferred.resolve(client);
+    await flushMicrotasks();
+
+    expect(calls.filter((c) => c.type === "subscribe")).toEqual([
+      { type: "subscribe", channel: "rooms" },
     ]);
-
-    facade.bind("presence-update", () => {});
-    expect(real.calls[2]).toEqual({
-      method: "bind",
-      eventName: "presence-update",
-    });
+    expect(
+      calls.filter((c) => c.type === "bind" && c.channel === "rooms")
+    ).toEqual([
+      { type: "bind", channel: "rooms", eventName: "room-message" },
+      { type: "bind", channel: "rooms", eventName: "rooms-updated" },
+    ]);
   });
 
-  test("unbind before attach removes the queued handler", () => {
-    const facade = new DeferredRealtimeChannel("rooms");
+  test("unbinding before load removes the queued handler", async () => {
+    const deferred = createDeferred<RealtimeClient>();
+    const facade = new DeferredPusherRealtimeClient(deferred.promise);
+
     const kept = () => {};
     const removed = () => {};
-    facade.bind("room-message", kept);
-    facade.bind("room-message", removed);
-    facade.unbind("room-message", removed);
+    const channel = facade.subscribe("rooms");
+    channel.bind("room-message", kept);
+    channel.bind("room-message", removed);
+    channel.unbind("room-message", removed);
 
-    const real = createRecordingChannel();
-    facade.attach(real);
-    expect(real.calls).toEqual([
-      { method: "bind", eventName: "room-message" },
+    const { client, calls } = createFakeRealClient();
+    deferred.resolve(client);
+    await flushMicrotasks();
+
+    expect(
+      calls.filter((c) => c.type === "bind" && c.channel === "rooms")
+    ).toHaveLength(1);
+  });
+
+  test("post-load calls delegate directly to the real client", async () => {
+    const deferred = createDeferred<RealtimeClient>();
+    const facade = new DeferredPusherRealtimeClient(deferred.promise);
+    const { client, calls } = createFakeRealClient();
+    deferred.resolve(client);
+    await flushMicrotasks();
+
+    const channel = facade.subscribe("presence");
+    channel.bind("presence-update", () => {});
+    facade.unsubscribe("presence");
+
+    expect(calls.filter((c) => c.channel === "presence")).toEqual([
+      { type: "subscribe", channel: "presence" },
+      { type: "bind", channel: "presence", eventName: "presence-update" },
+      { type: "unsubscribe", channel: "presence" },
     ]);
+    expect(facade.channel("presence")).toBeUndefined();
   });
 
-  test("unbind without args clears all queued binds", () => {
-    const facade = new DeferredRealtimeChannel("rooms");
-    facade.bind("a", () => {});
-    facade.bind("b", () => {});
-    facade.unbind();
-
-    const real = createRecordingChannel();
-    facade.attach(real);
-    expect(real.calls).toEqual([]);
-  });
-});
-
-describe("DeferredRealtimeConnection", () => {
-  test("reports 'connecting' before attach and the real state after", () => {
-    const facade = new DeferredRealtimeConnection();
-    expect(facade.state).toBe("connecting");
-
-    const calls: Call[] = [];
-    const real: RealtimeConnection & { state: string } = {
-      state: "connected",
-      bind: (eventName: string) => calls.push({ method: "bind", eventName }),
-      unbind: (eventName?: string) =>
-        calls.push({ method: "unbind", eventName }),
-    };
+  test("connection reports 'connecting' before load and the real state after", async () => {
+    const deferred = createDeferred<RealtimeClient>();
+    const facade = new DeferredPusherRealtimeClient(deferred.promise);
+    expect(facade.connection.state).toBe("connecting");
 
     const handler = () => {};
-    facade.bind("connected", handler);
-    facade.attach(real);
-    expect(facade.state).toBe("connected");
-    expect(calls).toEqual([{ method: "bind", eventName: "connected" }]);
+    facade.connection.bind("connected", handler);
+
+    const { client, calls } = createFakeRealClient();
+    deferred.resolve(client);
+    await flushMicrotasks();
+
+    expect(facade.connection.state).toBe("connected");
+    // Queued consumer bind replayed onto the real connection (plus the
+    // facade's own state-tracking binds).
+    expect(
+      calls.filter(
+        (c) =>
+          c.type === "bind" &&
+          c.channel === "<connection>" &&
+          c.eventName === "connected"
+      ).length
+    ).toBeGreaterThanOrEqual(1);
   });
-});
 
-describe("source wiring", () => {
-  const source = readFileSync(
-    resolve(process.cwd(), "src/lib/pusherClient.ts"),
-    "utf-8"
-  );
+  test("load failure flips connection state to disconnected", async () => {
+    const deferred = createDeferred<RealtimeClient>();
+    const facade = new DeferredPusherRealtimeClient(deferred.promise);
 
-  test("pusher-js is only imported dynamically (or as types)", () => {
-    const staticValueImport = /^import\s+(?!type\b)[^;]*from\s+"pusher-js";/m;
-    expect(staticValueImport.test(source)).toBe(false);
-    expect(source).toContain('import("pusher-js")');
-  });
+    deferred.reject(new Error("network down"));
+    await flushMicrotasks();
 
-  test("the pusher provider path uses the deferred facade", () => {
-    expect(source).toContain("new DeferredPusherClient()");
+    expect(facade.connection.state).toBe("disconnected");
   });
 });

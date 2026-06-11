@@ -36,7 +36,6 @@ export function useAppManager({ apps }: AppManagerProps) {
 
   const {
     openInstanceIdsKey,
-    instanceOrder,
     launchApp,
     bringInstanceToForeground,
     closeAppInstance,
@@ -51,7 +50,6 @@ export function useAppManager({ apps }: AppManagerProps) {
       .filter((instance) => instance.isOpen)
       .map((instance) => instance.instanceId)
       .join("\0"),
-    instanceOrder: state.instanceOrder,
     launchApp: state.launchApp,
     bringInstanceToForeground: state.bringInstanceToForeground,
     closeAppInstance: state.closeAppInstance,
@@ -95,7 +93,7 @@ export function useAppManager({ apps }: AppManagerProps) {
   const switcherIndex = switcherState.index;
 
   const instancesRef = useRef(useAppStore.getState().instances);
-  const instanceOrderRef = useRef(instanceOrder);
+  const instanceOrderRef = useRef(useAppStore.getState().instanceOrder);
   const launchAppRef = useRef(launchApp);
   const foregroundInstanceIdRef = useRef(foregroundInstanceId);
   const minimizeInstanceRef = useRef(minimizeInstance);
@@ -115,8 +113,11 @@ export function useAppManager({ apps }: AppManagerProps) {
   }, []);
 
   useEffect(() => {
-    instanceOrderRef.current = instanceOrder;
-  }, [instanceOrder]);
+    instanceOrderRef.current = useAppStore.getState().instanceOrder;
+    return useAppStore.subscribe((state) => {
+      instanceOrderRef.current = state.instanceOrder;
+    });
+  }, []);
 
   useEffect(() => {
     launchAppRef.current = launchApp;
@@ -341,7 +342,6 @@ export function useAppManager({ apps }: AppManagerProps) {
   return {
     apps,
     openInstanceIds,
-    instanceOrder,
     exposeMode,
     showDesktopMenuBar,
     isInitialMount,

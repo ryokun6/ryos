@@ -13,7 +13,10 @@ export function useIpodPlayback(options: {
   musicKitInstanceRef: React.MutableRefObject<MusicKitLike>;
 }) {
   const { isWindowOpen, isFullScreen, musicKitInstanceRef } = options;
-  const elapsedTime = useIpodStore((state) => state.elapsedTime);
+  // NOTE: deliberately no `elapsedTime` subscription here. The playback clock
+  // updates ~20x/sec; subscribing would re-run the entire iPod logic hook on
+  // every tick. Leaf components use `useIpodElapsedTime()` instead, and logic
+  // callbacks read `useIpodStore.getState().elapsedTime` on demand.
   const [totalTime, setTotalTime] = useState(0);
   const playerRef = useRef<ReactPlayer | null>(null);
   const fullScreenPlayerRef = useRef<ReactPlayer | null>(null);
@@ -74,7 +77,6 @@ export function useIpodPlayback(options: {
   }, [isWindowOpen, pauseBeforeWindowClose]);
 
   return {
-    elapsedTime,
     totalTime,
     setTotalTime,
     playerRef,

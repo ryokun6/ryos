@@ -6,7 +6,7 @@ import React, {
   useEffect,
 } from "react";
 import { useTranslation } from "react-i18next";
-import { useAppStoreShallow } from "@/stores/useAppStore";
+import { useAppStore, useAppStoreShallow } from "@/stores/useAppStore";
 import { AppId, appRegistry } from "@/config/appRegistry";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useFinderStore } from "@/stores/useFinderStore";
@@ -16,7 +16,7 @@ import { useIsPhone } from "@/hooks/useIsPhone";
 import { useIsRyoAdmin } from "@/hooks/useIsRyoAdmin";
 import { useLongPress } from "@/hooks/useLongPress";
 import { useSound, Sounds } from "@/hooks/useSound";
-import type { LaunchOriginRect } from "@/stores/useAppStore";
+import type { AppInstance, LaunchOriginRect } from "@/stores/useAppStore";
 import { RightClickMenu } from "@/components/ui/right-click-menu";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { AnimatePresence, motion, LayoutGroup } from "motion/react";
@@ -40,20 +40,95 @@ import { DockDivider } from "./DockDivider";
 import { useDockIconHover } from "./useDockIconHover";
 import { useDockMagnification } from "./useDockMagnification";
 
+type DockInstanceSnapshot = Pick<
+  AppInstance,
+  | "appId"
+  | "createdAt"
+  | "displayTitle"
+  | "initialData"
+  | "instanceId"
+  | "isLoading"
+  | "isMinimized"
+  | "isOpen"
+  | "title"
+>;
+
+function getAppletInitialDataSignature(initialData: unknown): string {
+  if (!initialData || typeof initialData !== "object") return "";
+  const data = initialData as {
+    icon?: unknown;
+    name?: unknown;
+    path?: unknown;
+    shareCode?: unknown;
+  };
+  return [
+    data.path,
+    data.shareCode,
+    data.icon,
+    data.name,
+  ]
+    .map((value) => (typeof value === "string" ? value : ""))
+    .join("\u001f");
+}
+
+function getDockInstancesSignature(instances: Record<string, AppInstance>) {
+  return Object.values(instances)
+    .map((inst) =>
+      [
+        inst.instanceId,
+        inst.appId,
+        inst.isOpen ? "1" : "0",
+        inst.isLoading ? "1" : "0",
+        inst.isMinimized ? "1" : "0",
+        inst.createdAt,
+        inst.title ?? "",
+        inst.displayTitle ?? "",
+        inst.appId === "applet-viewer"
+          ? getAppletInitialDataSignature(inst.initialData)
+          : "",
+      ].join("\u001f")
+    )
+    .join("\u001e");
+}
+
+function getDockInstancesSnapshot(
+  instances: Record<string, AppInstance>
+): Record<string, AppInstance> {
+  return Object.fromEntries(
+    Object.entries(instances).map(([id, inst]) => {
+      const snapshot = {
+        appId: inst.appId,
+        createdAt: inst.createdAt,
+        displayTitle: inst.displayTitle,
+        initialData: inst.initialData,
+        instanceId: inst.instanceId,
+        isLoading: inst.isLoading,
+        isMinimized: inst.isMinimized,
+        isOpen: inst.isOpen,
+        title: inst.title,
+      } satisfies DockInstanceSnapshot;
+      return [id, snapshot as AppInstance];
+    })
+  );
+}
+
 export function MacDock() {
   const { t } = useTranslation();
   const isPhone = useIsPhone();
   // Match Dashboard shell guards: no bottom hover capture zone on touch-first viewports.
   const useSwipeToRevealDock = useDashboardShellInputDisabled();
-  const { instances, instanceOrder, bringInstanceToForeground, restoreInstance, minimizeInstance, closeAppInstance } =
+  const { dockInstancesSignature, bringInstanceToForeground, restoreInstance, minimizeInstance, closeAppInstance } =
     useAppStoreShallow((s) => ({
-      instances: s.instances,
-      instanceOrder: s.instanceOrder,
+      dockInstancesSignature: getDockInstancesSignature(s.instances),
       bringInstanceToForeground: s.bringInstanceToForeground,
       restoreInstance: s.restoreInstance,
       minimizeInstance: s.minimizeInstance,
       closeAppInstance: s.closeAppInstance,
     }));
+  const instances = useMemo(
+    () => getDockInstancesSnapshot(useAppStore.getState().instances),
+    [dockInstancesSignature]
+  );
   
   // Sound for hide/minimize action from dock context menu
   const { play: playZoomMinimize } = useSound(Sounds.WINDOW_ZOOM_MINIMIZE);
@@ -493,11 +568,13 @@ export function MacDock() {
     return set;
   }, [instances]);
 
-  const focusMostRecentInstanceOfApp = (appId: AppId) => {
+  const focusMostRecentInstanceOfApp = useCallback((appId: AppId) => {
+    const { instances: currentInstances, instanceOrder } =
+      useAppStore.getState();
     // First, restore all minimized instances of this app
     let hasMinimized = false;
     let lastRestoredId: string | null = null;
-    Object.values(instances).forEach((inst) => {
+    Object.values(currentInstances).forEach((inst) => {
       if (inst.appId === appId && inst.isOpen && inst.isMinimized) {
         restoreInstance(inst.instanceId);
         hasMinimized = true;
@@ -514,21 +591,23 @@ export function MacDock() {
     // Otherwise, walk instanceOrder from end to find most recent open instance for appId
     for (let i = instanceOrder.length - 1; i >= 0; i--) {
       const id = instanceOrder[i];
-      const inst = instances[id];
+      const inst = currentInstances[id];
       if (inst && inst.appId === appId && inst.isOpen) {
         bringInstanceToForeground(id);
         return;
       }
     }
     // No open instance found
-  };
+  }, [bringInstanceToForeground, restoreInstance]);
 
   const focusOrLaunchApp = useCallback(
     (appId: AppId, initialData?: unknown, launchOrigin?: LaunchOriginRect) => {
+      const { instances: currentInstances, instanceOrder } =
+        useAppStore.getState();
       // First, restore all minimized instances of this app
       let hasMinimized = false;
       let lastRestoredId: string | null = null;
-      Object.values(instances).forEach((inst) => {
+      Object.values(currentInstances).forEach((inst) => {
         if (inst.appId === appId && inst.isOpen && inst.isMinimized) {
           restoreInstance(inst.instanceId);
           hasMinimized = true;
@@ -545,7 +624,7 @@ export function MacDock() {
       // Try focusing existing instance of this app
       for (let i = instanceOrder.length - 1; i >= 0; i--) {
         const id = instanceOrder[i];
-        const inst = instances[id];
+        const inst = currentInstances[id];
         if (inst && inst.appId === appId && inst.isOpen) {
           bringInstanceToForeground(id);
           return;
@@ -554,16 +633,18 @@ export function MacDock() {
       // Launch new with launch origin for animation
       launchApp(appId, initialData !== undefined ? { initialData, launchOrigin } : { launchOrigin });
     },
-    [instanceOrder, instances, bringInstanceToForeground, restoreInstance, launchApp]
+    [bringInstanceToForeground, restoreInstance, launchApp]
   );
 
   // Finder-specific: bring existing to foreground, otherwise launch one
   const focusOrLaunchFinder = useCallback(
     (initialPath?: string, launchOrigin?: LaunchOriginRect) => {
+      const { instances: currentInstances, instanceOrder } =
+        useAppStore.getState();
       // First, restore all minimized Finder instances
       let hasMinimized = false;
       let lastRestoredId: string | null = null;
-      Object.values(instances).forEach((inst) => {
+      Object.values(currentInstances).forEach((inst) => {
         if (inst.appId === "finder" && inst.isOpen && inst.isMinimized) {
           restoreInstance(inst.instanceId);
           hasMinimized = true;
@@ -580,7 +661,7 @@ export function MacDock() {
       // Try focusing existing Finder instance
       for (let i = instanceOrder.length - 1; i >= 0; i--) {
         const id = instanceOrder[i];
-        const inst = instances[id];
+        const inst = currentInstances[id];
         if (inst && inst.appId === "finder" && inst.isOpen) {
           bringInstanceToForeground(id);
           return;
@@ -590,15 +671,17 @@ export function MacDock() {
       if (initialPath) launchApp("finder", { initialPath, launchOrigin });
       else launchApp("finder", { initialPath: "/", launchOrigin });
     },
-    [instances, instanceOrder, bringInstanceToForeground, restoreInstance, launchApp]
+    [bringInstanceToForeground, restoreInstance, launchApp]
   );
 
   // Focus a Finder window already at targetPath (or its subpath); otherwise launch new Finder at targetPath
   const focusFinderAtPathOrLaunch = useCallback(
     (targetPath: string, initialData?: unknown, launchOrigin?: LaunchOriginRect) => {
+      const { instances: currentInstances, instanceOrder } =
+        useAppStore.getState();
       for (let i = instanceOrder.length - 1; i >= 0; i--) {
         const id = instanceOrder[i];
-        const inst = instances[id];
+        const inst = currentInstances[id];
         if (inst && inst.appId === "finder" && inst.isOpen) {
           const fi = finderInstances[id];
           if (
@@ -623,8 +706,6 @@ export function MacDock() {
       });
     },
     [
-      instanceOrder,
-      instances,
       finderInstances,
       bringInstanceToForeground,
       restoreInstance,

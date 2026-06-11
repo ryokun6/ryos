@@ -302,20 +302,11 @@ export function useIpodLogic({
   );
 
 
-  const lyricOffset = useIpodStore(
-    (s) => {
-      const sourceTracks =
-        s.librarySource === "appleMusic" ? s.appleMusicTracks : s.tracks;
-      const sourceCurrentId =
-        s.librarySource === "appleMusic"
-          ? s.appleMusicCurrentSongId
-          : s.currentSongId;
-      const track = sourceCurrentId
-        ? sourceTracks.find((t) => t.id === sourceCurrentId)
-        : sourceTracks[0];
-      return track?.lyricOffset ?? 0;
-    }
-  );
+  // Derived from the active-library subscription instead of a store selector:
+  // a selector would run its O(n) track lookup on every store mutation
+  // (including each playback tick), while `tracks`/`currentIndex` only change
+  // on library or track-selection updates.
+  const lyricOffset = tracks[currentIndex]?.lyricOffset ?? 0;
 
   const prevIsForeground = useRef(isForeground);
   const {
@@ -420,7 +411,6 @@ export function useIpodLogic({
   const wasPlayingBeforeBrickGameRef = useRef(false);
 
   const {
-    elapsedTime,
     totalTime,
     setTotalTime,
     playerRef,
@@ -3963,9 +3953,9 @@ export function useIpodLogic({
   }, [loopCurrent, nextTrack, setIsPlaying, isFullScreen, startTrackSwitch]);
 
   const handleProgress = useCallback((state: { playedSeconds: number }) => {
-    // Single source of truth — zustand. The selector at the top of
-    // this hook re-subscribes us to the new value, so any code path
-    // that needs reactivity still gets it.
+    // Single source of truth — zustand. This hook intentionally does NOT
+    // subscribe to `elapsedTime` (that would re-run all of useIpodLogic on
+    // every tick); leaf components subscribe via `useIpodElapsedTime()`.
     useIpodStore.getState().setElapsedTime(state.playedSeconds);
   }, []);
 
@@ -3985,6 +3975,7 @@ export function useIpodLogic({
 
     const currentTrack = tracks[currentIndex];
     if (currentTrack) {
+      const elapsedTime = useIpodStore.getState().elapsedTime;
       const lastTracked = lastTrackedSongRef.current;
       const isNewTrack = !lastTracked || lastTracked.trackId !== currentTrack.id;
       const isStartingFromBeginning = elapsedTime < 1;
@@ -3998,7 +3989,7 @@ export function useIpodLogic({
         lastTrackedSongRef.current = { trackId: currentTrack.id, elapsedTime };
       }
     }
-  }, [setIsPlaying, showStatus, tracks, currentIndex, elapsedTime]);
+  }, [setIsPlaying, showStatus, tracks, currentIndex]);
 
   const handlePause = useCallback(() => {
     // Don't update state if we're in the middle of a track switch
@@ -4011,20 +4002,25 @@ export function useIpodLogic({
 
   const handleReady = useCallback(() => {}, []);
 
-  // Watchdog for blocked autoplay
+  // Watchdog for blocked autoplay: if the clock hasn't advanced 1.2s after
+  // entering the playing state, autoplay was likely blocked — flip back to
+  // paused. Reads the clock via getState() so this effect doesn't subscribe
+  // the whole hook to per-tick updates.
   useEffect(() => {
     if (!isPlaying || !isIOSSafari || userHasInteractedRef.current) return;
 
-    const startElapsed = elapsedTime;
+    const startElapsed = useIpodStore.getState().elapsedTime;
     const timer = setTimeout(() => {
-      if (useIpodStore.getState().isPlaying && elapsedTime === startElapsed) {
+      const { isPlaying: stillPlaying, elapsedTime: nowElapsed } =
+        useIpodStore.getState();
+      if (stillPlaying && nowElapsed === startElapsed) {
         setIsPlaying(false);
         showStatus("⏸");
       }
     }, 1200);
 
     return () => clearTimeout(timer);
-  }, [isPlaying, elapsedTime, setIsPlaying, showStatus, isIOSSafari]);
+  }, [isPlaying, setIsPlaying, showStatus, isIOSSafari]);
 
   // Menu button handler
   const handleMenuButton = useCallback(() => {
@@ -4868,7 +4864,10 @@ export function useIpodLogic({
     songId: lyricsSongId,
     title: lyricsTitle,
     artist: lyricsArtist,
-    currentTime: elapsedTime + lyricsTimingOffsetMs / 1000,
+    // Static value: passing the live clock here would re-render this entire
+    // hook ~20x/sec. Current-line tracking is driven by the store
+    // subscription effect below via `updateCurrentTimeManually`.
+    currentTime: 0,
     translateTo: effectiveTranslationLanguage,
     selectedMatch: selectedMatchForLyrics,
     includeFurigana: true, // Fetch furigana info with lyrics to reduce API calls
@@ -4881,6 +4880,34 @@ export function useIpodLogic({
     // Auth for force refresh / changing lyrics source
     auth,
   });
+
+  // Drive lyrics current-line tracking from the playback clock without
+  // subscribing this (very large) hook to `elapsedTime`. The store
+  // subscription runs outside React; `updateCurrentTimeManually` only
+  // triggers a re-render when the current lyric line index changes.
+  const updateLyricsTimeRef = useRef(
+    fullScreenLyricsControls.updateCurrentTimeManually
+  );
+  updateLyricsTimeRef.current =
+    fullScreenLyricsControls.updateCurrentTimeManually;
+  const lyricsTimingOffsetMsRef = useRef(lyricsTimingOffsetMs);
+  lyricsTimingOffsetMsRef.current = lyricsTimingOffsetMs;
+
+  useEffect(() => {
+    const syncLyricsTime = (elapsedSeconds: number) => {
+      updateLyricsTimeRef.current(
+        elapsedSeconds + lyricsTimingOffsetMsRef.current / 1000
+      );
+    };
+    // Re-sync immediately when lyrics load or the timing offset changes
+    // (deps below), then follow the clock.
+    syncLyricsTime(useIpodStore.getState().elapsedTime);
+    return useIpodStore.subscribe((state, prevState) => {
+      if (state.elapsedTime !== prevState.elapsedTime) {
+        syncLyricsTime(state.elapsedTime);
+      }
+    });
+  }, [fullScreenLyricsControls.lines, lyricsTimingOffsetMs]);
 
   // Show toast with Search button when lyrics fetch fails
   useLyricsErrorToast({
@@ -4978,7 +5005,9 @@ export function useIpodLogic({
       }
 
       if (isFullScreen) {
-        const currentTime = playerRef.current?.getCurrentTime() || elapsedTime;
+        const currentTime =
+          playerRef.current?.getCurrentTime() ||
+          useIpodStore.getState().elapsedTime;
         const wasPlaying = isPlaying;
 
         // Wait for fullscreen player to be ready before seeking
@@ -5007,7 +5036,9 @@ export function useIpodLogic({
         };
         scheduleTimeout(checkAndSync, 100);
       } else {
-        const currentTime = fullScreenPlayerRef.current?.getCurrentTime() || elapsedTime;
+        const currentTime =
+          fullScreenPlayerRef.current?.getCurrentTime() ||
+          useIpodStore.getState().elapsedTime;
         const wasPlaying = isPlaying;
 
         scheduleTimeout(() => {
@@ -5029,7 +5060,7 @@ export function useIpodLogic({
       timeoutIds.forEach((timeoutId) => clearTimeout(timeoutId));
       timeoutIds.clear();
     };
-  }, [isAppleMusic, isFullScreen, elapsedTime, isPlaying, setIsPlaying, isIOSSafari]);
+  }, [isAppleMusic, isFullScreen, isPlaying, setIsPlaying, isIOSSafari]);
 
   // Seek time for fullscreen (delta)
   const seekTime = useCallback(
@@ -5247,7 +5278,9 @@ export function useIpodLogic({
 
     // State
     statusMessage,
-    elapsedTime,
+    // NOTE: `elapsedTime` is intentionally NOT exposed here. Subscribing to
+    // the ~20Hz playback clock from this hook would re-render the whole iPod
+    // tree per tick — leaf components use `useIpodElapsedTime()` instead.
     totalTime,
     scale,
     menuMode,

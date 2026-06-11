@@ -155,7 +155,6 @@ export interface FullScreenPortalProps {
 export interface IpodScreenProps {
   currentTrack: Track | null;
   isPlaying: boolean;
-  elapsedTime: number;
   totalTime: number;
   menuMode: boolean;
   menuHistory: MenuHistoryEntry[];

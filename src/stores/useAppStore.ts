@@ -116,7 +116,45 @@ interface AppStoreState {
   clearRecentItems: () => void;
 }
 
-const CURRENT_APP_STORE_VERSION = 5; // remap legacy app ids (e.g. infinite-pc → pc)
+const CURRENT_APP_STORE_VERSION = 6; // store foreground as foregroundInstanceId, not per-instance flags
+
+function getDerivedForegroundInstanceId(state: Pick<AppStoreState, "foregroundInstanceId" | "instanceOrder" | "instances">): string | null {
+  if (
+    state.foregroundInstanceId &&
+    state.instances[state.foregroundInstanceId]?.isOpen
+  ) {
+    return state.foregroundInstanceId;
+  }
+
+  for (let i = state.instanceOrder.length - 1; i >= 0; i--) {
+    const id = state.instanceOrder[i];
+    if (state.instances[id]?.isOpen) {
+      return id;
+    }
+  }
+
+  return null;
+}
+
+function withDerivedForeground(
+  instance: AppInstance,
+  foregroundInstanceId: string | null
+): AppInstance {
+  return {
+    ...instance,
+    isForeground: instance.instanceId === foregroundInstanceId,
+  };
+}
+
+function stripInstanceForeground(instance: AppInstance): AppInstance {
+  const { isForeground: _isForeground, ...rest } = instance;
+  return rest as AppInstance;
+}
+
+export const selectIsInstanceForeground = (
+  state: { foregroundInstanceId: string | null },
+  instanceId: string
+) => state.foregroundInstanceId === instanceId;
 
 function remapLegacyAppIdsInAppStore(prev: {
   instances?: Record<string, AppInstance>;
@@ -294,7 +332,6 @@ const createUseAppStore = () =>
               instanceId: createdId,
               appId,
               isOpen: true,
-              isForeground: !isLazy, // Only foreground immediately if not lazy
               isLoading: isLazy,
               initialData,
               title,
@@ -304,13 +341,6 @@ const createUseAppStore = () =>
               launchOrigin, // Store the position of the icon that launched this instance
             },
           } as typeof state.instances;
-
-          if (!isLazy) {
-            Object.keys(instances).forEach((id) => {
-              if (id !== createdId && instances[id].isForeground)
-                instances[id] = { ...instances[id], isForeground: false };
-            });
-          }
 
           const instanceOrder = [
             ...state.instanceOrder.filter((id) => id !== createdId),
@@ -371,15 +401,10 @@ const createUseAppStore = () =>
           const inst = state.instances[instanceId];
           if (!inst || !inst.isLoading) return state;
 
-          const instances = { ...state.instances };
-          Object.keys(instances).forEach((id) => {
-            const shouldBeForeground = id === instanceId;
-            if (id === instanceId) {
-              instances[id] = { ...inst, isLoading: false, isForeground: true };
-            } else if (instances[id].isForeground !== shouldBeForeground) {
-              instances[id] = { ...instances[id], isForeground: false };
-            }
-          });
+          const instances = {
+            ...state.instances,
+            [instanceId]: { ...inst, isLoading: false },
+          };
 
           const order = [
             ...state.instanceOrder.filter((id) => id !== instanceId),
@@ -421,15 +446,6 @@ const createUseAppStore = () =>
           }
           if (!nextForeground && order.length)
             nextForeground = order[order.length - 1];
-          Object.keys(instances).forEach((id) => {
-            const shouldBeForeground = id === nextForeground;
-            if (instances[id].isForeground !== shouldBeForeground) {
-              instances[id] = {
-                ...instances[id],
-                isForeground: shouldBeForeground,
-              };
-            }
-          });
           if (nextForeground) {
             order = [
               ...order.filter((id) => id !== nextForeground),
@@ -462,25 +478,9 @@ const createUseAppStore = () =>
 
           if (instanceId === state.foregroundInstanceId) return state;
 
-          const instances = { ...state.instances };
           let order = state.instanceOrder;
           let foreground: string | null = null;
-          if (!instanceId) {
-            Object.keys(instances).forEach((id) => {
-              if (instances[id].isForeground) {
-                instances[id] = { ...instances[id], isForeground: false };
-              }
-            });
-          } else {
-            Object.keys(instances).forEach((id) => {
-              const shouldBeForeground = id === instanceId;
-              if (instances[id].isForeground !== shouldBeForeground) {
-                instances[id] = {
-                  ...instances[id],
-                  isForeground: shouldBeForeground,
-                };
-              }
-            });
+          if (instanceId) {
             order = [...order.filter((id) => id !== instanceId), instanceId];
             foreground = instanceId;
           }
@@ -488,19 +488,18 @@ const createUseAppStore = () =>
             new CustomEvent("instanceStateChange", {
               detail: {
                 instanceId,
-                isOpen: !!instances[instanceId]?.isOpen,
+                isOpen: !!state.instances[instanceId]?.isOpen,
                 isForeground: !!foreground && foreground === instanceId,
               },
             })
           );
-          if (foreground && instances[foreground]) {
+          if (foreground && state.instances[foreground]) {
             track(APP_ANALYTICS.APP_FOCUS, {
-              appId: instances[foreground].appId,
-              openWindowCount: Object.keys(instances).length,
+              appId: state.instances[foreground].appId,
+              openWindowCount: Object.keys(state.instances).length,
             });
           }
           return {
-            instances,
             instanceOrder: order,
             foregroundInstanceId: foreground,
           };
@@ -527,11 +526,18 @@ const createUseAppStore = () =>
           };
         }),
 
-      getInstancesByAppId: (appId) =>
-        Object.values(get().instances).filter((i) => i.appId === appId),
+      getInstancesByAppId: (appId) => {
+        const state = get();
+        return Object.values(state.instances)
+          .filter((i) => i.appId === appId)
+          .map((i) => withDerivedForeground(i, state.foregroundInstanceId));
+      },
       getForegroundInstance: () => {
         const id = get().foregroundInstanceId;
-        return id ? get().instances[id] || null : null;
+        const instance = id ? get().instances[id] : null;
+        return instance
+          ? withDerivedForeground(instance, get().foregroundInstanceId)
+          : null;
       },
       navigateToNextInstance: (currentId) => {
         const { instanceOrder } = get();
@@ -555,7 +561,7 @@ const createUseAppStore = () =>
           if (!inst || inst.isMinimized) return state;
 
           const instances = { ...state.instances };
-          instances[instanceId] = { ...inst, isMinimized: true, isForeground: false };
+          instances[instanceId] = { ...inst, isMinimized: true };
 
           // Find next foreground from non-minimized windows
           let nextForeground: string | null = null;
@@ -565,10 +571,6 @@ const createUseAppStore = () =>
               nextForeground = id;
               break;
             }
-          }
-
-          if (nextForeground) {
-            instances[nextForeground] = { ...instances[nextForeground], isForeground: true };
           }
 
           window.dispatchEvent(
@@ -592,14 +594,10 @@ const createUseAppStore = () =>
           const inst = state.instances[instanceId];
           if (!inst || !inst.isMinimized) return state;
 
-          const instances = { ...state.instances };
-          Object.keys(instances).forEach((id) => {
-            if (id === instanceId) {
-              instances[id] = { ...inst, isMinimized: false, isForeground: true };
-            } else if (instances[id].isForeground) {
-              instances[id] = { ...instances[id], isForeground: false };
-            }
-          });
+          const instances = {
+            ...state.instances,
+            [instanceId]: { ...inst, isMinimized: false },
+          };
 
           // Move to end of order
           const order = [
@@ -777,13 +775,17 @@ const createUseAppStore = () =>
               }
               // Exclude launchOrigin from persisted state - restored windows should
               // animate from window center, not from the original icon position
-              const { launchOrigin: _, ...instWithoutLaunchOrigin } = inst;
+              const {
+                launchOrigin: _launchOrigin,
+                isForeground: _isForeground,
+                ...instWithoutRuntimeState
+              } = inst;
               
               // For applet-viewer, exclude content from initialData to prevent localStorage storage
               if (inst.appId === "applet-viewer" && inst.initialData) {
                 const appletData = inst.initialData as { path?: string; content?: string; shareCode?: string; icon?: string; name?: string };
                 acc.push([id, {
-                  ...instWithoutLaunchOrigin,
+                  ...instWithoutRuntimeState,
                   initialData: {
                     ...appletData,
                     content: "", // Exclude content - it should be loaded from IndexedDB
@@ -791,7 +793,7 @@ const createUseAppStore = () =>
                 } as AppInstance]);
                 return acc;
               }
-              acc.push([id, instWithoutLaunchOrigin as AppInstance]);
+              acc.push([id, instWithoutRuntimeState as AppInstance]);
               return acc;
             }, [])
         ),
@@ -886,6 +888,18 @@ const createUseAppStore = () =>
           remapLegacyAppIdsInAppStore(prev);
         }
 
+        if (version < 6) {
+          let legacyForegroundId: string | null = null;
+          for (const [id, inst] of Object.entries(prev.instances)) {
+            if (inst.isForeground && inst.isOpen) {
+              legacyForegroundId = id;
+            }
+            prev.instances[id] = stripInstanceForeground(inst);
+          }
+          prev.foregroundInstanceId =
+            legacyForegroundId || getDerivedForegroundInstanceId(prev);
+        }
+
         prev.version = CURRENT_APP_STORE_VERSION;
         return prev;
         },
@@ -901,6 +915,7 @@ const createUseAppStore = () =>
             state as unknown as { instanceOrder?: string[] }
           ).instanceOrder!.filter((id: string) => state.instances[id]);
         }
+        state.foregroundInstanceId = getDerivedForegroundInstanceId(state);
         // Fix nextInstanceId
         if (state.instances && Object.keys(state.instances).length) {
           const max = Math.max(
@@ -911,7 +926,8 @@ const createUseAppStore = () =>
         }
         // Ensure positions & sizes
         Object.keys(state.instances || {}).forEach((id) => {
-          const inst = state.instances[id];
+          const inst = stripInstanceForeground(state.instances[id]);
+          state.instances[id] = inst;
           if (!inst.createdAt) {
             const numericId = parseInt(id, 10);
             inst.createdAt = !isNaN(numericId) ? numericId : Date.now();
