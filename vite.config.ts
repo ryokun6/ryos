@@ -68,6 +68,8 @@ self.addEventListener("activate", (event) => {
 //   - mermaid                         (chat diagrams)
 //   - webamp                          (Winamp app)
 //   - v86                             (Virtual PC emulator)
+//   - pusher-js                       (realtime chat; needs network anyway)
+//   - react-player                    (YouTube playback; needs network anyway)
 // `three` (3D wallpapers / Synth) and `audio` (Synth/Soundboard/iPod) are NOT
 // excluded so those keep working offline.
 //
@@ -76,7 +78,7 @@ self.addEventListener("activate", (event) => {
 // `manifestTransforms` hook below.
 // ---------------------------------------------------------------------------
 const HEAVY_PRECACHE_PACKAGES =
-  /[/\\]node_modules[/\\](?:\.pnpm[/\\][^/\\]+[/\\]node_modules[/\\])?(?:shiki|@shikijs|mermaid|webamp|v86)[/\\]/;
+  /[/\\]node_modules[/\\](?:\.pnpm[/\\][^/\\]+[/\\]node_modules[/\\])?(?:shiki|@shikijs|mermaid|webamp|v86|pusher-js|react-player)[/\\]/;
 const heavyPrecacheExclusions = new Set<string>();
 
 function collectHeavyChunksPlugin() {

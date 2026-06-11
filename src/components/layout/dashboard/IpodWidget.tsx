@@ -175,6 +175,70 @@ function ClickWheel({
   );
 }
 
+/**
+ * Subscribes to the active playback clock (~20Hz while playing) for the
+ * relevant store only. Kept in leaf components so clock ticks re-render just
+ * the progress fill / time label instead of the whole widget.
+ */
+function usePlaybackClock(isKaraoke: boolean, enabled: boolean) {
+  const ipodElapsed = useIpodStore((s) =>
+    enabled && !isKaraoke ? s.elapsedTime : 0
+  );
+  const ipodTotal = useIpodStore((s) =>
+    enabled && !isKaraoke ? s.totalTime : 0
+  );
+  const karaokeElapsed = useKaraokeStore((s) =>
+    enabled && isKaraoke ? s.elapsedTime : 0
+  );
+  const karaokeTotal = useKaraokeStore((s) =>
+    enabled && isKaraoke ? s.totalTime : 0
+  );
+  return {
+    elapsedTime: isKaraoke ? karaokeElapsed : ipodElapsed,
+    totalTime: isKaraoke ? karaokeTotal : ipodTotal,
+  };
+}
+
+function IpodWidgetProgressFill({ isKaraoke }: { isKaraoke: boolean }) {
+  const { elapsedTime, totalTime } = usePlaybackClock(isKaraoke, true);
+  return (
+    <div
+      style={{
+        height: "100%",
+        width: `${totalTime > 0 ? (elapsedTime / totalTime) * 100 : 0}%`,
+        background: "#2a4a00",
+        borderRadius: 2,
+        transition: "width 0.3s linear",
+      }}
+    />
+  );
+}
+
+function IpodWidgetTimeLabel({
+  isKaraoke,
+  hasTrack,
+}: {
+  isKaraoke: boolean;
+  hasTrack: boolean;
+}) {
+  const { elapsedTime } = usePlaybackClock(isKaraoke, hasTrack);
+  return (
+    <span
+      style={{
+        fontSize: 11,
+        fontWeight: 700,
+        fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+        color: "#2a4a00",
+        letterSpacing: "0.5px",
+      }}
+    >
+      {hasTrack
+        ? `${Math.floor(elapsedTime / 60)}:${String(Math.floor(elapsedTime % 60)).padStart(2, "0")}`
+        : "0:00"}
+    </span>
+  );
+}
+
 export function IpodWidget({ widgetId }: IpodWidgetProps) {
   const { t } = useTranslation();
   const { isWindowsTheme: isXpTheme } = useThemeFlags();
@@ -193,8 +257,6 @@ export function IpodWidget({ widgetId }: IpodWidgetProps) {
   const ipodLoopCurrent = useIpodStore((s) => s.loopCurrent);
   const ipodLoopAll = useIpodStore((s) => s.loopAll);
   const ipodToggleLoopCurrent = useIpodStore((s) => s.toggleLoopCurrent);
-  const ipodElapsedTime = useIpodStore((s) => s.elapsedTime);
-  const ipodTotalTime = useIpodStore((s) => s.totalTime);
 
   const karaokeGetCurrentTrack = useKaraokeStore((s) => s.getCurrentTrack);
   const karaokeIsPlaying = useKaraokeStore((s) => s.isPlaying);
@@ -206,8 +268,6 @@ export function IpodWidget({ widgetId }: IpodWidgetProps) {
   const karaokeLoopCurrent = useKaraokeStore((s) => s.loopCurrent);
   const karaokeLoopAll = useKaraokeStore((s) => s.loopAll);
   const karaokeToggleLoopCurrent = useKaraokeStore((s) => s.toggleLoopCurrent);
-  const karaokeElapsedTime = useKaraokeStore((s) => s.elapsedTime);
-  const karaokeTotalTime = useKaraokeStore((s) => s.totalTime);
 
   const getCurrentTrack = isKaraoke ? karaokeGetCurrentTrack : ipodGetCurrentTrack;
   const isPlaying = isKaraoke ? karaokeIsPlaying : ipodIsPlaying;
@@ -219,8 +279,6 @@ export function IpodWidget({ widgetId }: IpodWidgetProps) {
   const loopCurrent = isKaraoke ? karaokeLoopCurrent : ipodLoopCurrent;
   const loopAll = isKaraoke ? karaokeLoopAll : ipodLoopAll;
   const toggleLoopCurrent = isKaraoke ? karaokeToggleLoopCurrent : ipodToggleLoopCurrent;
-  const elapsedTime = isKaraoke ? karaokeElapsedTime : ipodElapsedTime;
-  const totalTime = isKaraoke ? karaokeTotalTime : ipodTotalTime;
 
   const targetAppId = isKaraoke ? "karaoke" : "ipod";
   const isTargetAppOpen = useAppStore(
@@ -414,15 +472,7 @@ export function IpodWidget({ widgetId }: IpodWidgetProps) {
               overflow: "hidden",
             }}
           >
-            <div
-              style={{
-                height: "100%",
-                width: `${totalTime > 0 ? (elapsedTime / totalTime) * 100 : 0}%`,
-                background: "#2a4a00",
-                borderRadius: 2,
-                transition: "width 0.3s linear",
-              }}
-            />
+            <IpodWidgetProgressFill isKaraoke={isKaraoke} />
           </div>
         )}
         {!hasTrack && (
@@ -464,19 +514,7 @@ export function IpodWidget({ widgetId }: IpodWidgetProps) {
             <Shuffle size={14} weight="bold" />
           </button>
 
-          <span
-            style={{
-              fontSize: 11,
-              fontWeight: 700,
-              fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
-              color: "#2a4a00",
-              letterSpacing: "0.5px",
-            }}
-          >
-            {hasTrack
-              ? `${Math.floor(elapsedTime / 60)}:${String(Math.floor(elapsedTime % 60)).padStart(2, "0")}`
-              : "0:00"}
-          </span>
+          <IpodWidgetTimeLabel isKaraoke={isKaraoke} hasTrack={hasTrack} />
 
           <button
             type="button"

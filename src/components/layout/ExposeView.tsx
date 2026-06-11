@@ -2,7 +2,7 @@ import { useEffect, useCallback, useMemo } from "react";
 import { useEventListener } from "@/hooks/useEventListener";
 import { usePrevious } from "@/hooks/useLatestRef";
 import { motion, AnimatePresence } from "motion/react";
-import { useAppStoreShallow } from "@/stores/useAppStore";
+import { useAppStore, useAppStoreShallow } from "@/stores/useAppStore";
 import { getAppIconPath } from "@/config/appRegistry";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
@@ -25,19 +25,24 @@ interface ExposeViewProps {
   onClose: () => void;
 }
 
+const EMPTY_INSTANCES: Record<string, AppInstance> = {};
+
 export function ExposeView({ isOpen, onClose }: ExposeViewProps) {
   const { t } = useTranslation();
   const {
-    instances,
     setExposeMode,
     bringInstanceToForeground,
     restoreInstance,
   } = useAppStoreShallow((state) => ({
-    instances: state.instances,
     setExposeMode: state.setExposeMode,
     bringInstanceToForeground: state.bringInstanceToForeground,
     restoreInstance: state.restoreInstance,
   }));
+  // Only track the instances map while the overlay is visible; when closed
+  // the selector returns a constant so instance churn never re-renders us.
+  const instances = useAppStore((state) =>
+    isOpen ? state.instances : EMPTY_INSTANCES
+  );
 
   const getFileItem = useFilesStore((s) => s.getItem);
   const { isMacOSTheme: isMacOSXTheme } = useThemeFlags();
