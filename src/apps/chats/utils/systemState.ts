@@ -114,7 +114,7 @@ export const getSystemState = () => {
     const base = {
       instanceId,
       appId: instance.appId,
-      isForeground: instance.isForeground || false,
+      isForeground: instanceId === appStore.foregroundInstanceId,
       title: instance.title,
     };
 

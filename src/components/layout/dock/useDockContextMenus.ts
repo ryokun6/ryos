@@ -7,6 +7,7 @@ import type { FinderInstance } from "@/stores/useFinderStore";
 import type { DockItem } from "@/stores/useDockStore";
 import type { FileSystemItem } from "@/stores/useFilesStore";
 import type { LaunchAppOptions } from "@/hooks/useLaunchApp";
+import { useAppStore } from "@/stores/useAppStore";
 import {
   getAppContextMenuItems as buildAppContextMenuItems,
   getDividerContextMenuItems as buildDividerContextMenuItems,
@@ -96,6 +97,7 @@ export function useDockContextMenus(params: UseDockContextMenusParams) {
         {
           t,
           instances,
+          foregroundInstanceId: useAppStore.getState().foregroundInstanceId,
           finderInstances,
           pinnedItems,
           getFileItem,
