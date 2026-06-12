@@ -5,6 +5,7 @@ import {
 } from "@/lib/pusherClient";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { createVisibilityGatedInterval } from "@/utils/backgroundTask";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { GLOBAL_PRESENCE_CHANNEL } from "@/shared/constants/realtime";
 
@@ -80,8 +81,15 @@ export function useGlobalPresence(): string[] {
       })
       .catch(() => {});
 
-    const heartbeatId = setInterval(sendHeartbeat, HEARTBEAT_INTERVAL_MS);
-    const pruneId = setInterval(deriveOnlineList, PRUNE_INTERVAL_MS);
+    // Heartbeat + prune run on intervals that pause while the tab is hidden.
+    const disposeHeartbeat = createVisibilityGatedInterval(
+      sendHeartbeat,
+      HEARTBEAT_INTERVAL_MS
+    );
+    const disposePrune = createVisibilityGatedInterval(
+      deriveOnlineList,
+      PRUNE_INTERVAL_MS
+    );
 
     // Subscribe to push updates
     const channel = subscribePusherChannel(GLOBAL_PRESENCE_CHANNEL);
@@ -96,8 +104,8 @@ export function useGlobalPresence(): string[] {
     channel.bind("user-heartbeat", handler);
 
     return () => {
-      clearInterval(heartbeatId);
-      clearInterval(pruneId);
+      disposeHeartbeat();
+      disposePrune();
       channel.unbind("user-heartbeat", handler);
       unsubscribePusherChannel(GLOBAL_PRESENCE_CHANNEL);
     };

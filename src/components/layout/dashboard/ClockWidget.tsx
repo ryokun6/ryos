@@ -268,16 +268,21 @@ export function ClockBackPanel({ widgetId, onDone }: { widgetId: string; onDone?
   const { searchQuery, searchResults, searching } = searchState;
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchAbortRef = useRef<AbortController | null>(null);
 
   const searchCities = useCallback(async (query: string) => {
+    searchAbortRef.current?.abort();
     if (query.length < 2) {
       dispatch({ type: "searchIdle" });
       return;
     }
+    const controller = new AbortController();
+    searchAbortRef.current = controller;
     dispatch({ type: "searchStart" });
     try {
       const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=6&addressdetails=1&featuretype=city`
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=6&addressdetails=1&featuretype=city`,
+        { signal: controller.signal }
       );
       if (res.ok) {
         const data = await res.json();
@@ -296,7 +301,9 @@ export function ClockBackPanel({ widgetId, onDone }: { widgetId: string; onDone?
         dispatch({ type: "searchResults", results });
         return;
       }
-    } catch {
+    } catch (err) {
+      // A newer keystroke superseded this request; let it drive the state.
+      if ((err as Error).name === "AbortError") return;
       // search failed silently
     }
     dispatch({ type: "searchResults", results: [] });
@@ -305,6 +312,7 @@ export function ClockBackPanel({ widgetId, onDone }: { widgetId: string; onDone?
   useEffect(() => {
     return () => {
       if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+      searchAbortRef.current?.abort();
     };
   }, []);
 

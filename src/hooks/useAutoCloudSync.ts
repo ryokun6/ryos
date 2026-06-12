@@ -19,9 +19,9 @@ import { useCalendarStore } from "@/stores/useCalendarStore";
 import { useContactsStore } from "@/stores/useContactsStore";
 import { useMapsStore } from "@/stores/useMapsStore";
 import {
-  getPusherClient,
   getRealtimeConnectionState,
   subscribePusherChannel,
+  subscribeRealtimeConnection,
   unsubscribePusherChannel,
 } from "@/lib/pusherClient";
 import {
@@ -80,6 +80,10 @@ import type { CloudSyncVersionState } from "@/utils/cloudSyncVersion";
 
 const POLL_INTERVAL_CONNECTED_MS = 10 * 60 * 1000;
 const POLL_INTERVAL_DISCONNECTED_MS = 2 * 60 * 1000;
+
+// Trailing debounce for the reconnect catch-up sync so connection flapping
+// (rapid disconnect/connect cycles) triggers a single sync.
+const RECONNECT_CATCHUP_DEBOUNCE_MS = 500;
 
 const VISIBILITY_CHECK_COOLDOWN_MS = 30_000;
 const REMOTE_APPLY_SUPPRESSION_MS = 2000;
@@ -1658,23 +1662,28 @@ export function useAutoCloudSync() {
 
     startPolling();
 
-    // Re-sync and adjust poll interval when realtime connection state changes
-    const client = getPusherClient();
-    const onConnected = () => {
-      console.log("[CloudSync] Realtime connected — running catch-up sync");
-      void checkRemoteUpdates().then(flushPendingUploads);
-      startPolling();
-    };
-    const onDisconnected = () => {
-      startPolling();
-    };
-    client.connection.bind("connected", onConnected);
-    client.connection.bind("disconnected", onDisconnected);
+    // Re-sync and adjust poll interval when realtime connection state
+    // changes. The catch-up sync is debounced (trailing) so reconnect
+    // flapping triggers one sync instead of one per transition.
+    let reconnectSyncTimer: ReturnType<typeof setTimeout> | null = null;
+    const unsubscribeConnectionState = subscribeRealtimeConnection((state) => {
+      if (state === "connected") {
+        if (reconnectSyncTimer) clearTimeout(reconnectSyncTimer);
+        reconnectSyncTimer = setTimeout(() => {
+          reconnectSyncTimer = null;
+          console.log("[CloudSync] Realtime connected — running catch-up sync");
+          void checkRemoteUpdates().then(flushPendingUploads);
+        }, RECONNECT_CATCHUP_DEBOUNCE_MS);
+        startPolling();
+      } else if (state === "disconnected") {
+        startPolling();
+      }
+    });
 
     return () => {
       if (intervalId) clearInterval(intervalId);
-      client.connection.unbind("connected", onConnected);
-      client.connection.unbind("disconnected", onDisconnected);
+      if (reconnectSyncTimer) clearTimeout(reconnectSyncTimer);
+      unsubscribeConnectionState();
       clearAllUploadTimers();
       filesUnsubscribe();
       syncEventsUnsubscribe();
