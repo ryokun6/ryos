@@ -55,6 +55,11 @@ export const GridItem = memo(function GridItem({
       onDrop={(e) => onDrop(e, file)}
       onDragEnd={onDragEnd}
       className="transition-all duration-75"
+      style={{
+        // Skip layout/paint for icons scrolled out of view in large folders.
+        contentVisibility: "auto",
+        containIntrinsicSize: "auto 80px",
+      }}
       onContextMenu={(e: React.MouseEvent) => {
         if (onItemContextMenu) {
           onItemContextMenu(file, e);

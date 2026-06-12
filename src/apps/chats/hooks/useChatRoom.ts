@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import type { PusherChannel } from "@/lib/pusherClient";
 import {
@@ -52,6 +52,8 @@ interface RoomHandlers {
   onUserTyping: (data: TypingPayload) => void;
 }
 
+const EMPTY_MESSAGES: ChatMessage[] = [];
+
 export function useChatRoom(
   isWindowOpen: boolean,
   onPromptSetUsername?: () => void
@@ -62,7 +64,6 @@ export function useChatRoom(
     isAuthenticated,
     rooms,
     currentRoomId,
-    roomMessages,
     isSidebarVisible,
     toggleSidebarVisibility,
     // Store methods
@@ -82,7 +83,6 @@ export function useChatRoom(
     isAuthenticated: state.isAuthenticated,
     rooms: state.rooms,
     currentRoomId: state.currentRoomId,
-    roomMessages: state.roomMessages,
     isSidebarVisible: state.isSidebarVisible,
     toggleSidebarVisibility: state.toggleSidebarVisibility,
     fetchRooms: state.fetchRooms,
@@ -118,15 +118,22 @@ export function useChatRoom(
   const [isDeleteRoomDialogOpen, setIsDeleteRoomDialogOpen] = useState(false);
   const [roomToDelete, setRoomToDelete] = useState<ChatRoom | null>(null);
 
-  // Get current room messages
-  const currentRoomMessages = currentRoomId
-    ? roomMessages[currentRoomId] || []
-    : [];
+  // Subscribe to the current room's message array only — subscribing to the
+  // whole `roomMessages` map re-rendered the open Chats window whenever a
+  // realtime message arrived in ANY room. Message arrays are replaced
+  // immutably in the store, so reference equality is the correct signal.
+  const currentRoomMessages = useChatsStore((state) =>
+    state.currentRoomId
+      ? state.roomMessages[state.currentRoomId] ?? EMPTY_MESSAGES
+      : EMPTY_MESSAGES
+  );
 
-  // Limit messages rendered initially for performance
-  const currentRoomMessagesLimited = currentRoomId
-    ? (roomMessages[currentRoomId] || []).slice(-messageRenderLimit)
-    : [];
+  // Limit messages rendered initially for performance. Memoized so downstream
+  // consumers get a stable array identity between unrelated re-renders.
+  const currentRoomMessagesLimited = useMemo(
+    () => currentRoomMessages.slice(-messageRenderLimit),
+    [currentRoomMessages, messageRenderLimit]
+  );
 
   // --- Pusher Setup ---
   const initializePusher = useCallback(() => {

@@ -39,6 +39,12 @@ export const ChatMessageItem = memo(function ChatMessageItem(
       style={{
         transformOrigin:
           message.role === "user" ? "bottom right" : "bottom left",
+        // Skip layout/paint for rows far outside the viewport so long
+        // threads stay cheap (especially while another message streams).
+        // `auto` intrinsic sizing remembers each row's rendered height, so
+        // scroll position and stick-to-bottom behavior are unaffected.
+        contentVisibility: "auto",
+        containIntrinsicSize: "auto 48px",
       }}
       onMouseEnter={() =>
         !isInteractingWithPreview &&
