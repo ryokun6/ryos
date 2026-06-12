@@ -12,7 +12,8 @@ import { MENUBAR_SEPARATOR_CLASS } from "./menubarStyles";
 export type MediaControlsMenuProps = {
   menuLabel: string;
   triggerClassName?: string;
-  tracksCount: number;
+  /** When provided, transport items are disabled while the library is empty. */
+  tracksCount?: number;
   isPlaying: boolean;
   onTogglePlay: () => void;
   onPreviousTrack: () => void;
@@ -23,13 +24,16 @@ export type MediaControlsMenuProps = {
   nextLabel: string;
   shuffleLabel: string;
   repeatAllLabel: string;
-  repeatOneLabel: string;
+  /** Omit (with isLoopCurrent/onToggleLoopCurrent) for apps with a single repeat toggle. */
+  repeatOneLabel?: string;
   isShuffled: boolean;
   onToggleShuffle: () => void;
   isLoopAll: boolean;
   onToggleLoopAll: () => void;
-  isLoopCurrent: boolean;
-  onToggleLoopCurrent: () => void;
+  isLoopCurrent?: boolean;
+  onToggleLoopCurrent?: () => void;
+  /** Extra items rendered between play/pause and previous (e.g. Winamp's Stop). */
+  afterTogglePlayItems?: ReactNode;
   /** Extra items rendered between the transport items and the shuffle/repeat block. */
   extraItems?: ReactNode;
 };
@@ -55,6 +59,7 @@ export function MediaControlsMenu({
   onToggleLoopAll,
   isLoopCurrent,
   onToggleLoopCurrent,
+  afterTogglePlayItems,
   extraItems,
 }: MediaControlsMenuProps) {
   const tracksDisabled = tracksCount === 0;
@@ -70,6 +75,7 @@ export function MediaControlsMenu({
         >
           {isPlaying ? pauseLabel : playLabel}
         </MenubarItem>
+        {afterTogglePlayItems}
         <MenubarItem
           onClick={onPreviousTrack}
           className="text-md h-6 px-3"
@@ -100,13 +106,15 @@ export function MediaControlsMenu({
         >
           {repeatAllLabel}
         </MenubarCheckboxItem>
-        <MenubarCheckboxItem
-          checked={isLoopCurrent}
-          onCheckedChange={onToggleLoopCurrent}
-          className="text-md h-6 px-3"
-        >
-          {repeatOneLabel}
-        </MenubarCheckboxItem>
+        {onToggleLoopCurrent && (
+          <MenubarCheckboxItem
+            checked={isLoopCurrent ?? false}
+            onCheckedChange={onToggleLoopCurrent}
+            className="text-md h-6 px-3"
+          >
+            {repeatOneLabel}
+          </MenubarCheckboxItem>
+        )}
       </MenubarContent>
     </MenubarMenu>
   );
