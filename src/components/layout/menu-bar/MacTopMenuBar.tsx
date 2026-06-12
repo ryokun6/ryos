@@ -135,7 +135,7 @@ export function MacTopMenuBar({ children }: MacTopMenuBarProps) {
           }}
         />
       )}
-      <div className={`${isPhone ? "flex-shrink-0 pl-1 pr-0.5" : "ml-auto"} flex items-center`}>
+      <div className={`${isPhone ? "flex-shrink-0 pl-1 pr-0.5" : "ml-auto"} flex items-center h-full`}>
         <OfflineIndicator />
         <CloudSyncIndicator />
         <ExposeButton />
