@@ -1,19 +1,8 @@
-import {
-  MenubarMenu,
-  MenubarTrigger,
-  MenubarContent,
-  MenubarItem,
-  MenubarCheckboxItem,
-  MenubarSeparator,
-  MenubarRadioGroup,
-  MenubarRadioItem,
-} from "@/components/ui/menubar";
 import { AppMenuBarShell } from "@/components/shared/menubar/AppMenuBarShell";
 import {
-  MENUBAR_ITEM_CLASS,
-  MENUBAR_SEPARATOR_CLASS,
-  MENUBAR_TRIGGER_CLASS,
-} from "@/components/shared/menubar/menubarStyles";
+  AppMenuBarMenus,
+  type MenuDescriptor,
+} from "@/components/shared/menubar/AppMenuBarMenus";
 import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
 import { useTranslation } from "react-i18next";
 import type { Channel } from "@/apps/tv/data/channels";
@@ -85,6 +74,118 @@ export function TvMenuBar({
     appName,
   } = useAppMenuBarChrome("tv");
 
+  const menus: MenuDescriptor[] = [
+    {
+      label: t("common.menu.file"),
+      items: [
+        {
+          type: "action",
+          label: t("apps.tv.menu.newChannel"),
+          onClick: onCreateChannel,
+        },
+        { type: "separator" },
+        {
+          type: "action",
+          label: t("apps.tv.menu.exportChannels"),
+          onClick: onExportChannels,
+          disabled: !hasCustomChannels,
+        },
+        {
+          type: "action",
+          label: t("apps.tv.menu.importChannels"),
+          onClick: onImportChannels,
+        },
+        { type: "separator" },
+        { type: "action", label: t("common.menu.close"), onClick: onClose },
+      ],
+    },
+    {
+      label: t("apps.tv.menu.controls"),
+      items: [
+        {
+          type: "action",
+          label: isPlaying ? t("apps.tv.menu.pause") : t("apps.tv.menu.play"),
+          onClick: onTogglePlay,
+        },
+        {
+          type: "action",
+          label: t("apps.tv.menu.previous"),
+          onClick: onPrevVideo,
+        },
+        { type: "action", label: t("apps.tv.menu.next"), onClick: onNextVideo },
+        { type: "separator" },
+        {
+          type: "action",
+          label: t("apps.tv.menu.channelDown"),
+          onClick: onPrevChannel,
+        },
+        {
+          type: "action",
+          label: t("apps.tv.menu.channelUp"),
+          onClick: onNextChannel,
+        },
+        { type: "separator" },
+        {
+          type: "checkbox",
+          label: t("apps.tv.menu.showVideos"),
+          checked: isDrawerOpen,
+          onChange: onToggleDrawer,
+        },
+        {
+          type: "checkbox",
+          label: t("apps.tv.menu.lcdFilter"),
+          checked: isLcdFilterOn,
+          onChange: onToggleLcdFilter,
+        },
+        {
+          type: "checkbox",
+          label: t("apps.tv.menu.closedCaptions"),
+          checked: closedCaptionsOn,
+          onChange: onToggleClosedCaptions,
+        },
+        { type: "separator" },
+        {
+          type: "action",
+          label: t("apps.tv.menu.fullScreen"),
+          onClick: onFullScreen,
+        },
+      ],
+    },
+    {
+      label: t("apps.tv.menu.channels"),
+      items: [
+        {
+          type: "radioGroup",
+          value: currentChannelId,
+          onValueChange: onSelectChannel,
+          options: channels.map((ch) => ({
+            value: ch.id,
+            label: `${String(ch.number).padStart(2, "0")} ${ch.name}`,
+          })),
+        },
+        { type: "separator" },
+        {
+          type: "action",
+          label: t("apps.tv.menu.newChannel"),
+          onClick: onCreateChannel,
+        },
+        {
+          type: "action",
+          label: t("apps.tv.menu.deleteChannel"),
+          onClick: () => onDeleteChannel(currentChannelId),
+          disabled: channels.length <= 1,
+        },
+        { type: "separator" },
+        {
+          type: "action",
+          label: t("apps.tv.menu.resetChannels"),
+          onClick: onResetChannels,
+          disabled: !canResetChannels,
+        },
+      ],
+    },
+  ];
+
   return (
     <AppMenuBarShell
       isXpTheme={isXpTheme}
@@ -98,121 +199,7 @@ export function TvMenuBar({
       onShowHelp={onShowHelp}
       onShowAbout={onShowAbout}
     >
-      <MenubarMenu>
-        <MenubarTrigger className={MENUBAR_TRIGGER_CLASS}>
-          {t("common.menu.file")}
-        </MenubarTrigger>
-        <MenubarContent align="start" sideOffset={1} className="px-0">
-          <MenubarItem onClick={onCreateChannel} className={MENUBAR_ITEM_CLASS}>
-            {t("apps.tv.menu.newChannel")}
-          </MenubarItem>
-          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
-          <MenubarItem
-            onClick={onExportChannels}
-            disabled={!hasCustomChannels}
-            className={MENUBAR_ITEM_CLASS}
-          >
-            {t("apps.tv.menu.exportChannels")}
-          </MenubarItem>
-          <MenubarItem onClick={onImportChannels} className={MENUBAR_ITEM_CLASS}>
-            {t("apps.tv.menu.importChannels")}
-          </MenubarItem>
-          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
-          <MenubarItem onClick={onClose} className={MENUBAR_ITEM_CLASS}>
-            {t("common.menu.close")}
-          </MenubarItem>
-        </MenubarContent>
-      </MenubarMenu>
-      <MenubarMenu>
-        <MenubarTrigger className={MENUBAR_TRIGGER_CLASS}>
-          {t("apps.tv.menu.controls")}
-        </MenubarTrigger>
-        <MenubarContent align="start" sideOffset={1} className="px-0">
-          <MenubarItem onClick={onTogglePlay} className={MENUBAR_ITEM_CLASS}>
-            {isPlaying ? t("apps.tv.menu.pause") : t("apps.tv.menu.play")}
-          </MenubarItem>
-          <MenubarItem onClick={onPrevVideo} className={MENUBAR_ITEM_CLASS}>
-            {t("apps.tv.menu.previous")}
-          </MenubarItem>
-          <MenubarItem onClick={onNextVideo} className={MENUBAR_ITEM_CLASS}>
-            {t("apps.tv.menu.next")}
-          </MenubarItem>
-          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
-          <MenubarItem onClick={onPrevChannel} className={MENUBAR_ITEM_CLASS}>
-            {t("apps.tv.menu.channelDown")}
-          </MenubarItem>
-          <MenubarItem onClick={onNextChannel} className={MENUBAR_ITEM_CLASS}>
-            {t("apps.tv.menu.channelUp")}
-          </MenubarItem>
-          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
-          <MenubarCheckboxItem
-            checked={isDrawerOpen}
-            onCheckedChange={onToggleDrawer}
-            className={MENUBAR_ITEM_CLASS}
-          >
-            {t("apps.tv.menu.showVideos")}
-          </MenubarCheckboxItem>
-          <MenubarCheckboxItem
-            checked={isLcdFilterOn}
-            onCheckedChange={onToggleLcdFilter}
-            className={MENUBAR_ITEM_CLASS}
-          >
-            {t("apps.tv.menu.lcdFilter")}
-          </MenubarCheckboxItem>
-          <MenubarCheckboxItem
-            checked={closedCaptionsOn}
-            onCheckedChange={onToggleClosedCaptions}
-            className={MENUBAR_ITEM_CLASS}
-          >
-            {t("apps.tv.menu.closedCaptions")}
-          </MenubarCheckboxItem>
-          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
-          <MenubarItem onClick={onFullScreen} className={MENUBAR_ITEM_CLASS}>
-            {t("apps.tv.menu.fullScreen")}
-          </MenubarItem>
-        </MenubarContent>
-      </MenubarMenu>
-      <MenubarMenu>
-        <MenubarTrigger className={MENUBAR_TRIGGER_CLASS}>
-          {t("apps.tv.menu.channels")}
-        </MenubarTrigger>
-        <MenubarContent align="start" sideOffset={1} className="px-0">
-          <MenubarRadioGroup
-            value={currentChannelId}
-            onValueChange={onSelectChannel}
-          >
-            {channels.map((ch) => (
-              <MenubarRadioItem
-                key={ch.id}
-                value={ch.id}
-                className={MENUBAR_ITEM_CLASS}
-              >
-                {String(ch.number).padStart(2, "0")} {ch.name}
-              </MenubarRadioItem>
-            ))}
-          </MenubarRadioGroup>
-          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
-          <MenubarItem onClick={onCreateChannel} className={MENUBAR_ITEM_CLASS}>
-            {t("apps.tv.menu.newChannel")}
-          </MenubarItem>
-          <MenubarItem
-            onClick={() => onDeleteChannel(currentChannelId)}
-            disabled={channels.length <= 1}
-            className={MENUBAR_ITEM_CLASS}
-          >
-            {t("apps.tv.menu.deleteChannel")}
-          </MenubarItem>
-          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
-          <MenubarItem
-            onClick={onResetChannels}
-            disabled={!canResetChannels}
-            className={MENUBAR_ITEM_CLASS}
-          >
-            {t("apps.tv.menu.resetChannels")}
-          </MenubarItem>
-        </MenubarContent>
-      </MenubarMenu>
-
+      <AppMenuBarMenus menus={menus} />
     </AppMenuBarShell>
   );
 }

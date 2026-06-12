@@ -8,9 +8,12 @@ import {
   MenubarSub,
   MenubarSubTrigger,
   MenubarSubContent,
-  MenubarCheckboxItem,
 } from "@/components/ui/menubar";
 import { AppMenuBarShell } from "@/components/shared/menubar/AppMenuBarShell";
+import {
+  AppMenuBarMenus,
+  type MenuDescriptor,
+} from "@/components/shared/menubar/AppMenuBarMenus";
 import { MENUBAR_SEPARATOR_CLASS } from "@/components/shared/menubar/menubarStyles";
 import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
@@ -80,6 +83,100 @@ export function AppletViewerMenuBar({
   const isAuthenticated = useChatsStore((s) => s.isAuthenticated);
   const isLoggedIn = !!(username && isAuthenticated);
 
+  const menus: MenuDescriptor[] = [
+    {
+      label: t("apps.applet-viewer.menu.store"),
+      items: [
+        {
+          type: "action",
+          label: t("apps.applet-viewer.menu.openAppletStore"),
+          onClick: () =>
+            launchApp("applet-viewer", {
+              initialData: { path: "", content: "" },
+            }),
+        },
+        {
+          type: "action",
+          label:
+            updateCount > 0
+              ? updateCount === 1
+                ? t("apps.applet-viewer.menu.updateApplets", {
+                    count: updateCount,
+                  })
+                : t("apps.applet-viewer.menu.updateAppletsPlural", {
+                    count: updateCount,
+                  })
+              : t("apps.applet-viewer.menu.checkForUpdates"),
+          onClick: async () => {
+            if (updateCount > 0 && onUpdateAll) {
+              await onUpdateAll();
+            } else if (onCheckForUpdates) {
+              await onCheckForUpdates();
+            }
+          },
+        },
+        { type: "separator" },
+        ...(username && isAuthenticated
+          ? ([
+              {
+                type: "action",
+                label: t("apps.applet-viewer.menu.logOut"),
+                onClick: () => onLogout?.(),
+              },
+            ] as const)
+          : ([
+              {
+                type: "action",
+                label: t("apps.applet-viewer.menu.createAccount"),
+                onClick: () => onSetUsername?.(),
+              },
+              {
+                type: "action",
+                label: t("apps.applet-viewer.menu.login"),
+                onClick: () => onVerifyToken?.(),
+              },
+            ] as const)),
+      ],
+    },
+    {
+      label: t("apps.applet-viewer.menu.window"),
+      items:
+        appletInstances.length > 0
+          ? appletInstances.map((inst) => {
+              const initialData = inst.initialData as
+                | { path?: string; content?: string }
+                | undefined;
+              const path = initialData?.path || "";
+              const fileName = path
+                ? path
+                    .split("/")
+                    .pop()
+                    ?.replace(/\.(html|app)$/i, "") ||
+                  t("apps.applet-viewer.menu.untitled")
+                : t("apps.applet-viewer.menu.appletStore");
+              const isActive = inst.instanceId === instanceId;
+
+              return {
+                type: "checkbox" as const,
+                label: fileName,
+                checked: isActive,
+                onChange: (checked: boolean) => {
+                  if (checked) bringInstanceToForeground(inst.instanceId);
+                },
+              };
+            })
+          : [
+              {
+                type: "action" as const,
+                label: t("apps.applet-viewer.menu.noAppletsOpen"),
+                onClick: () => {},
+                disabled: true,
+                className: "opacity-50",
+              },
+            ],
+    },
+  ];
+
   return (
     <AppMenuBarShell
       isXpTheme={isXpTheme}
@@ -100,7 +197,8 @@ export function AppletViewerMenuBar({
         accept=".html,.htm,.app,.gz"
         className="hidden"
       />
-      {/* File Menu */}
+      {/* File menu stays hand-written: the Export As sub-content renders
+          without the px-0 class that the descriptor renderer always adds. */}
       <MenubarMenu>
         <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
           {t("common.menu.file")}
@@ -158,101 +256,7 @@ export function AppletViewerMenuBar({
         </MenubarContent>
       </MenubarMenu>
 
-      {/* Store Menu */}
-      <MenubarMenu>
-        <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
-          {t("apps.applet-viewer.menu.store")}
-        </MenubarTrigger>
-        <MenubarContent align="start" sideOffset={1} className="px-0">
-          <MenubarItem
-            onClick={() => launchApp("applet-viewer", { 
-              initialData: { path: "", content: "" } 
-            })}
-            className="text-md h-6 px-3"
-          >
-            {t("apps.applet-viewer.menu.openAppletStore")}
-          </MenubarItem>
-          <MenubarItem
-            onClick={async () => {
-              if (updateCount > 0 && onUpdateAll) {
-                await onUpdateAll();
-              } else if (onCheckForUpdates) {
-                await onCheckForUpdates();
-              }
-            }}
-            className="text-md h-6 px-3"
-          >
-            {updateCount > 0
-              ? updateCount === 1
-                ? t("apps.applet-viewer.menu.updateApplets", { count: updateCount })
-                : t("apps.applet-viewer.menu.updateAppletsPlural", { count: updateCount })
-              : t("apps.applet-viewer.menu.checkForUpdates")}
-          </MenubarItem>
-          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
-          {username && isAuthenticated ? (
-            <MenubarItem
-              onClick={() => onLogout?.()}
-              className="text-md h-6 px-3"
-            >
-              {t("apps.applet-viewer.menu.logOut")}
-            </MenubarItem>
-          ) : (
-            <>
-              <MenubarItem
-                onClick={onSetUsername}
-                className="text-md h-6 px-3"
-              >
-                {t("apps.applet-viewer.menu.createAccount")}
-              </MenubarItem>
-              <MenubarItem
-                onClick={onVerifyToken}
-                className="text-md h-6 px-3"
-              >
-                {t("apps.applet-viewer.menu.login")}
-              </MenubarItem>
-            </>
-          )}
-        </MenubarContent>
-      </MenubarMenu>
-
-      {/* Window Menu */}
-      <MenubarMenu>
-        <MenubarTrigger className="px-2 py-1 text-md focus-visible:ring-0">
-          {t("apps.applet-viewer.menu.window")}
-        </MenubarTrigger>
-        <MenubarContent align="start" sideOffset={1} className="px-0">
-          {appletInstances.length > 0 ? (
-            appletInstances.map((inst) => {
-              const initialData = inst.initialData as { path?: string; content?: string } | undefined;
-              const path = initialData?.path || "";
-              const fileName = path
-                ? path
-                    .split("/")
-                    .pop()
-                    ?.replace(/\.(html|app)$/i, "") || t("apps.applet-viewer.menu.untitled")
-                : t("apps.applet-viewer.menu.appletStore");
-              const isActive = inst.instanceId === instanceId;
-
-              return (
-                <MenubarCheckboxItem
-                  key={inst.instanceId}
-                  checked={isActive}
-                  onCheckedChange={(checked) => {
-                    if (checked) bringInstanceToForeground(inst.instanceId);
-                  }}
-                  className="text-md h-6 px-3"
-                >
-                  {fileName}
-                </MenubarCheckboxItem>
-              );
-            })
-          ) : (
-            <MenubarItem disabled className="text-md h-6 px-3 opacity-50">
-              {t("apps.applet-viewer.menu.noAppletsOpen")}
-            </MenubarItem>
-          )}
-        </MenubarContent>
-      </MenubarMenu>
+      <AppMenuBarMenus menus={menus} />
     </AppMenuBarShell>
   );
 }

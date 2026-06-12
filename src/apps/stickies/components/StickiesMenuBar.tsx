@@ -1,19 +1,8 @@
-import {
-  MenubarMenu,
-  MenubarTrigger,
-  MenubarContent,
-  MenubarItem,
-  MenubarSeparator,
-  MenubarSub,
-  MenubarSubTrigger,
-  MenubarSubContent,
-} from "@/components/ui/menubar";
 import { AppMenuBarShell } from "@/components/shared/menubar/AppMenuBarShell";
 import {
-  MENUBAR_ITEM_CLASS,
-  MENUBAR_SEPARATOR_CLASS,
-  MENUBAR_TRIGGER_CLASS,
-} from "@/components/shared/menubar/menubarStyles";
+  AppMenuBarMenus,
+  type MenuDescriptor,
+} from "@/components/shared/menubar/AppMenuBarMenus";
 import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
 import { requestCloudSyncDomainCheck } from "@/utils/cloudSyncEvents";
 import { useTranslation } from "react-i18next";
@@ -59,6 +48,67 @@ export function StickiesMenuBar({
     appName,
   } = useAppMenuBarChrome("stickies");
 
+  const menus: MenuDescriptor[] = [
+    {
+      label: t("common.menu.file"),
+      items: [
+        {
+          type: "action",
+          label: t("apps.stickies.menu.newNote"),
+          onClick: () => onNewNote(),
+        },
+        { type: "separator" },
+        {
+          type: "action",
+          label: t("apps.stickies.menu.clearAll"),
+          onClick: onClearAll,
+        },
+        { type: "separator" },
+        {
+          type: "action",
+          label: t("apps.stickies.menu.syncStickies", {
+            defaultValue: "Sync Stickies",
+          }),
+          onClick: () => requestCloudSyncDomainCheck("stickies"),
+        },
+        { type: "separator" },
+        { type: "action", label: t("common.menu.close"), onClick: onClose },
+      ],
+    },
+    {
+      label: t("apps.stickies.menu.note"),
+      items: [
+        {
+          type: "submenu",
+          label: t("apps.stickies.menu.color"),
+          disabled: !selectedNoteId,
+          items: COLORS.map((color) => ({
+            type: "action" as const,
+            label: (
+              <>
+                <span
+                  className="w-4 h-3 border border-black/30 inline-block"
+                  style={{ backgroundColor: color.hex }}
+                />
+                {t(color.labelKey)}
+              </>
+            ),
+            onClick: () =>
+              selectedNoteId && onChangeColor(selectedNoteId, color.value),
+            className: "flex items-center gap-2",
+          })),
+        },
+        { type: "separator" },
+        {
+          type: "action",
+          label: t("apps.stickies.menu.deleteNote"),
+          onClick: () => selectedNoteId && onDeleteNote(selectedNoteId),
+          disabled: !selectedNoteId,
+        },
+      ],
+    },
+  ];
+
   return (
     <AppMenuBarShell
       isXpTheme={isXpTheme}
@@ -72,74 +122,7 @@ export function StickiesMenuBar({
       onShowHelp={onShowHelp}
       onShowAbout={onShowAbout}
     >
-      <MenubarMenu>
-        <MenubarTrigger className={MENUBAR_TRIGGER_CLASS}>
-          {t("common.menu.file")}
-        </MenubarTrigger>
-        <MenubarContent align="start" sideOffset={1} className="px-0">
-          <MenubarItem onClick={() => onNewNote()} className={MENUBAR_ITEM_CLASS}>
-            {t("apps.stickies.menu.newNote")}
-          </MenubarItem>
-          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
-          <MenubarItem onClick={onClearAll} className={MENUBAR_ITEM_CLASS}>
-            {t("apps.stickies.menu.clearAll")}
-          </MenubarItem>
-          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
-          <MenubarItem
-            onClick={() => requestCloudSyncDomainCheck("stickies")}
-            className={MENUBAR_ITEM_CLASS}
-          >
-            {t("apps.stickies.menu.syncStickies", {
-              defaultValue: "Sync Stickies",
-            })}
-          </MenubarItem>
-          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
-          <MenubarItem onClick={onClose} className={MENUBAR_ITEM_CLASS}>
-            {t("common.menu.close")}
-          </MenubarItem>
-        </MenubarContent>
-      </MenubarMenu>
-
-      <MenubarMenu>
-        <MenubarTrigger className={MENUBAR_TRIGGER_CLASS}>
-          {t("apps.stickies.menu.note")}
-        </MenubarTrigger>
-        <MenubarContent align="start" sideOffset={1} className="px-0">
-          <MenubarSub>
-            <MenubarSubTrigger
-              disabled={!selectedNoteId}
-              className={MENUBAR_ITEM_CLASS}
-            >
-              {t("apps.stickies.menu.color")}
-            </MenubarSubTrigger>
-            <MenubarSubContent className="px-0">
-              {COLORS.map((color) => (
-                <MenubarItem
-                  key={color.value}
-                  onClick={() =>
-                    selectedNoteId && onChangeColor(selectedNoteId, color.value)
-                  }
-                  className={`${MENUBAR_ITEM_CLASS} flex items-center gap-2`}
-                >
-                  <span
-                    className="w-4 h-3 border border-black/30 inline-block"
-                    style={{ backgroundColor: color.hex }}
-                  />
-                  {t(color.labelKey)}
-                </MenubarItem>
-              ))}
-            </MenubarSubContent>
-          </MenubarSub>
-          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
-          <MenubarItem
-            disabled={!selectedNoteId}
-            onClick={() => selectedNoteId && onDeleteNote(selectedNoteId)}
-            className={MENUBAR_ITEM_CLASS}
-          >
-            {t("apps.stickies.menu.deleteNote")}
-          </MenubarItem>
-        </MenubarContent>
-      </MenubarMenu>
+      <AppMenuBarMenus menus={menus} />
     </AppMenuBarShell>
   );
 }

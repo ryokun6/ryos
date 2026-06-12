@@ -1,20 +1,9 @@
-import {
-  MenubarMenu,
-  MenubarTrigger,
-  MenubarContent,
-  MenubarItem,
-  MenubarSeparator,
-  MenubarSub,
-  MenubarSubTrigger,
-  MenubarSubContent,
-  MenubarCheckboxItem,
-} from "@/components/ui/menubar";
 import { AppMenuBarShell } from "@/components/shared/menubar/AppMenuBarShell";
 import {
-  MENUBAR_ITEM_CLASS,
-  MENUBAR_SEPARATOR_CLASS,
-  MENUBAR_TRIGGER_CLASS,
-} from "@/components/shared/menubar/menubarStyles";
+  AppMenuBarMenus,
+  type MenuDescriptor,
+  type MenuItemDescriptor,
+} from "@/components/shared/menubar/AppMenuBarMenus";
 import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
 import { useTranslation } from "react-i18next";
 import type { ScaleOption } from "../hooks/useInfiniteMacLogic";
@@ -32,6 +21,12 @@ interface InfiniteMacMenuBarProps {
   isPaused: boolean;
   currentScale: ScaleOption;
 }
+
+const SCALE_OPTIONS: { scale: ScaleOption; label: string }[] = [
+  { scale: 1, label: "1x" },
+  { scale: 1.5, label: "1.5x" },
+  { scale: 2, label: "2x" },
+];
 
 export function InfiniteMacMenuBar({
   onClose,
@@ -56,6 +51,57 @@ export function InfiniteMacMenuBar({
     appName,
   } = useAppMenuBarChrome("infinite-mac");
 
+  const backToPresetsItems: MenuItemDescriptor[] = hasEmulator
+    ? [
+        {
+          type: "action",
+          label: t("apps.infinite-mac.menu.backToPresets"),
+          onClick: onBackToPresets,
+        },
+        { type: "separator" },
+      ]
+    : [];
+
+  const menus: MenuDescriptor[] = [
+    {
+      label: t("common.menu.file"),
+      items: [
+        ...backToPresetsItems,
+        { type: "action", label: t("common.menu.close"), onClick: onClose },
+      ],
+    },
+    {
+      label: t("common.menu.view"),
+      items: [
+        {
+          type: "submenu",
+          label: t("apps.infinite-mac.menu.scaling"),
+          items: SCALE_OPTIONS.map(({ scale, label }) => ({
+            type: "checkbox" as const,
+            label,
+            checked: currentScale === scale,
+            onChange: () => onSetScale(scale),
+          })),
+        },
+        { type: "separator" },
+        {
+          type: "action",
+          label: isPaused
+            ? t("apps.infinite-mac.menu.resume")
+            : t("apps.infinite-mac.menu.pause"),
+          onClick: isPaused ? onUnpause : onPause,
+          disabled: !hasEmulator,
+        },
+        {
+          type: "action",
+          label: t("apps.infinite-mac.menu.captureScreenshot"),
+          onClick: onCaptureScreenshot,
+          disabled: !hasEmulator,
+        },
+      ],
+    },
+  ];
+
   return (
     <AppMenuBarShell
       isXpTheme={isXpTheme}
@@ -69,77 +115,7 @@ export function InfiniteMacMenuBar({
       onShowHelp={onShowHelp}
       onShowAbout={onShowAbout}
     >
-      <MenubarMenu>
-        <MenubarTrigger className={MENUBAR_TRIGGER_CLASS}>
-          {t("common.menu.file")}
-        </MenubarTrigger>
-        <MenubarContent align="start" sideOffset={1} className="px-0">
-          {hasEmulator && (
-            <>
-              <MenubarItem onClick={onBackToPresets} className={MENUBAR_ITEM_CLASS}>
-                {t("apps.infinite-mac.menu.backToPresets")}
-              </MenubarItem>
-              <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
-            </>
-          )}
-          <MenubarItem onClick={onClose} className={MENUBAR_ITEM_CLASS}>
-            {t("common.menu.close")}
-          </MenubarItem>
-        </MenubarContent>
-      </MenubarMenu>
-
-      <MenubarMenu>
-        <MenubarTrigger className={MENUBAR_TRIGGER_CLASS}>
-          {t("common.menu.view")}
-        </MenubarTrigger>
-        <MenubarContent align="start" sideOffset={1} className="px-0">
-          <MenubarSub>
-            <MenubarSubTrigger className={MENUBAR_ITEM_CLASS}>
-              {t("apps.infinite-mac.menu.scaling")}
-            </MenubarSubTrigger>
-            <MenubarSubContent className="px-0">
-              <MenubarCheckboxItem
-                checked={currentScale === 1}
-                onCheckedChange={() => onSetScale(1)}
-                className={MENUBAR_ITEM_CLASS}
-              >
-                1x
-              </MenubarCheckboxItem>
-              <MenubarCheckboxItem
-                checked={currentScale === 1.5}
-                onCheckedChange={() => onSetScale(1.5)}
-                className={MENUBAR_ITEM_CLASS}
-              >
-                1.5x
-              </MenubarCheckboxItem>
-              <MenubarCheckboxItem
-                checked={currentScale === 2}
-                onCheckedChange={() => onSetScale(2)}
-                className={MENUBAR_ITEM_CLASS}
-              >
-                2x
-              </MenubarCheckboxItem>
-            </MenubarSubContent>
-          </MenubarSub>
-          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
-          <MenubarItem
-            onClick={isPaused ? onUnpause : onPause}
-            className={MENUBAR_ITEM_CLASS}
-            disabled={!hasEmulator}
-          >
-            {isPaused
-              ? t("apps.infinite-mac.menu.resume")
-              : t("apps.infinite-mac.menu.pause")}
-          </MenubarItem>
-          <MenubarItem
-            onClick={onCaptureScreenshot}
-            className={MENUBAR_ITEM_CLASS}
-            disabled={!hasEmulator}
-          >
-            {t("apps.infinite-mac.menu.captureScreenshot")}
-          </MenubarItem>
-        </MenubarContent>
-      </MenubarMenu>
+      <AppMenuBarMenus menus={menus} />
     </AppMenuBarShell>
   );
 }

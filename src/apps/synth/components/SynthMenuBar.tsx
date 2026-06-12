@@ -1,13 +1,8 @@
-import {
-  MenubarMenu,
-  MenubarTrigger,
-  MenubarContent,
-  MenubarItem,
-  MenubarSeparator,
-  MenubarCheckboxItem,
-} from "@/components/ui/menubar";
 import { AppMenuBarShell } from "@/components/shared/menubar/AppMenuBarShell";
-import { MENUBAR_SEPARATOR_CLASS } from "@/components/shared/menubar/menubarStyles";
+import {
+  AppMenuBarMenus,
+  type MenuDescriptor,
+} from "@/components/shared/menubar/AppMenuBarMenus";
 import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
 import type { NoteLabelType } from "@/stores/useSynthStore";
 import { useTranslation } from "react-i18next";
@@ -47,6 +42,55 @@ export function SynthMenuBar({
     appName,
   } = useAppMenuBarChrome("synth");
 
+  const labelCheckbox = (type: NoteLabelType, label: string) =>
+    ({
+      type: "checkbox",
+      label,
+      checked: labelType === type,
+      onChange: (checked: boolean) => {
+        if (checked) onLabelTypeChange(type);
+      },
+    } as const);
+
+  const menus: MenuDescriptor[] = [
+    {
+      label: t("common.menu.file"),
+      items: [
+        {
+          type: "action",
+          label: t("apps.synth.menu.newPreset"),
+          onClick: onAddPreset,
+        },
+        {
+          type: "action",
+          label: t("apps.synth.menu.resetSynth"),
+          onClick: onReset,
+        },
+        { type: "separator" },
+        { type: "action", label: t("common.menu.close"), onClick: onClose },
+      ],
+    },
+    {
+      label: t("apps.synth.menu.presets"),
+      items: presets.map((preset) => ({
+        type: "checkbox" as const,
+        label: preset.name,
+        checked: currentPresetId === preset.id,
+        onChange: (checked: boolean) => {
+          if (checked) onLoadPresetById(preset.id);
+        },
+      })),
+    },
+    {
+      label: t("common.menu.view"),
+      items: [
+        labelCheckbox("note", t("apps.synth.menu.noteLabels")),
+        labelCheckbox("key", t("apps.synth.menu.keyLabels")),
+        labelCheckbox("off", t("apps.synth.menu.noLabels")),
+      ],
+    },
+  ];
+
   return (
     <AppMenuBarShell
       isXpTheme={isXpTheme}
@@ -60,91 +104,7 @@ export function SynthMenuBar({
       onShowHelp={onShowHelp}
       onShowAbout={onShowAbout}
     >
-      {/* File Menu */}
-      <MenubarMenu>
-        <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
-          {t("common.menu.file")}
-        </MenubarTrigger>
-        <MenubarContent align="start" sideOffset={1} className="px-0">
-          <MenubarItem
-            onClick={onAddPreset}
-            className="text-md h-6 px-3"
-          >
-            {t("apps.synth.menu.newPreset")}
-          </MenubarItem>
-          <MenubarItem
-            onClick={onReset}
-            className="text-md h-6 px-3"
-          >
-            {t("apps.synth.menu.resetSynth")}
-          </MenubarItem>
-          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
-          <MenubarItem
-            onClick={onClose}
-            className="text-md h-6 px-3"
-          >
-            {t("common.menu.close")}
-          </MenubarItem>
-        </MenubarContent>
-      </MenubarMenu>
-
-      {/* Presets Menu */}
-      <MenubarMenu>
-        <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
-          {t("apps.synth.menu.presets")}
-        </MenubarTrigger>
-        <MenubarContent align="start" sideOffset={1} className="px-0">
-          {presets.map((preset) => (
-            <MenubarCheckboxItem
-              key={preset.id}
-              checked={currentPresetId === preset.id}
-              onCheckedChange={(checked) => {
-                if (checked) onLoadPresetById(preset.id);
-              }}
-              className="text-md h-6 px-3"
-            >
-              {preset.name}
-            </MenubarCheckboxItem>
-          ))}
-        </MenubarContent>
-      </MenubarMenu>
-
-      {/* View Menu */}
-      <MenubarMenu>
-        <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
-          {t("common.menu.view")}
-        </MenubarTrigger>
-        <MenubarContent align="start" sideOffset={1} className="px-0">
-          <MenubarCheckboxItem
-            checked={labelType === "note"}
-            onCheckedChange={(checked) => {
-              if (checked) onLabelTypeChange("note");
-            }}
-            className="text-md h-6 px-3"
-          >
-            {t("apps.synth.menu.noteLabels")}
-          </MenubarCheckboxItem>
-          <MenubarCheckboxItem
-            checked={labelType === "key"}
-            onCheckedChange={(checked) => {
-              if (checked) onLabelTypeChange("key");
-            }}
-            className="text-md h-6 px-3"
-          >
-            {t("apps.synth.menu.keyLabels")}
-          </MenubarCheckboxItem>
-          <MenubarCheckboxItem
-            checked={labelType === "off"}
-            onCheckedChange={(checked) => {
-              if (checked) onLabelTypeChange("off");
-            }}
-            className="text-md h-6 px-3"
-          >
-            {t("apps.synth.menu.noLabels")}
-          </MenubarCheckboxItem>
-        </MenubarContent>
-      </MenubarMenu>
-
+      <AppMenuBarMenus menus={menus} />
     </AppMenuBarShell>
   );
 }

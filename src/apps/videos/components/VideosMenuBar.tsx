@@ -7,6 +7,10 @@ import {
   MenubarSeparator,
 } from "@/components/ui/menubar";
 import { AppMenuBarShell } from "@/components/shared/menubar/AppMenuBarShell";
+import {
+  AppMenuBarMenus,
+  type MenuDescriptor,
+} from "@/components/shared/menubar/AppMenuBarMenus";
 import { MediaControlsMenu } from "@/components/shared/menubar/MediaControlsMenu";
 import { LibraryTrackBrowser } from "@/components/shared/menubar/LibraryTrackBrowser";
 import { MENUBAR_SEPARATOR_CLASS } from "@/components/shared/menubar/menubarStyles";
@@ -107,6 +111,27 @@ export function VideosMenuBar({
     }
   };
 
+  const menus: MenuDescriptor[] = [
+    {
+      label: t("common.menu.file"),
+      items: [
+        {
+          type: "action",
+          label: t("apps.videos.menu.openVideo"),
+          onClick: onOpenVideo,
+        },
+        {
+          type: "action",
+          label: t("apps.videos.menu.shareVideo"),
+          onClick: onShareVideo,
+          disabled: videos.length === 0,
+        },
+        { type: "separator" },
+        { type: "action", label: t("common.menu.close"), onClick: onClose },
+      ],
+    },
+  ];
+
   return (
     <AppMenuBarShell
       isXpTheme={isXpTheme}
@@ -121,33 +146,7 @@ export function VideosMenuBar({
       onShowAbout={onShowAbout}
     >
       {/* File Menu */}
-      <MenubarMenu>
-        <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
-          {t("common.menu.file")}
-        </MenubarTrigger>
-        <MenubarContent align="start" sideOffset={1} className="px-0">
-          <MenubarItem
-            onClick={onOpenVideo}
-            className="text-md h-6 px-3"
-          >
-            {t("apps.videos.menu.openVideo")}
-          </MenubarItem>
-          <MenubarItem
-            onClick={onShareVideo}
-            className="text-md h-6 px-3"
-            disabled={videos.length === 0}
-          >
-            {t("apps.videos.menu.shareVideo")}
-          </MenubarItem>
-          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
-          <MenubarItem
-            onClick={onClose}
-            className="text-md h-6 px-3"
-          >
-            {t("common.menu.close")}
-          </MenubarItem>
-        </MenubarContent>
-      </MenubarMenu>
+      <AppMenuBarMenus menus={menus} />
 
       {/* Controls Menu */}
       <MediaControlsMenu
