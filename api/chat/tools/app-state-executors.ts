@@ -1,5 +1,10 @@
 import type { Redis } from "../../_utils/redis.js";
-import { stateKey, writeRedisSyncDomainFromServerTool } from "../../sync/_state.js";
+import {
+  readCalendarToolState,
+  readStickiesToolState,
+  writeCalendarToolState,
+  writeStickiesToolState,
+} from "../../sync/v2/_tool-state.js";
 import type {
   AppStateToolContext,
   CalendarControlInput,
@@ -30,12 +35,10 @@ async function readCalendarState(
   redis: Redis,
   username: string
 ): Promise<CalendarSnapshotData | null> {
-  const raw = await redis.get<string | { data: CalendarSnapshotData }>(
-    stateKey(username, "calendar")
-  );
-  if (!raw) return null;
-  const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
-  return parsed?.data ?? null;
+  return (await readCalendarToolState(
+    redis,
+    username
+  )) as CalendarSnapshotData | null;
 }
 
 async function writeCalendarState(
@@ -43,19 +46,21 @@ async function writeCalendarState(
   username: string,
   data: CalendarSnapshotData
 ): Promise<void> {
-  await writeRedisSyncDomainFromServerTool(redis, username, "calendar", data);
+  await writeCalendarToolState(redis, username, {
+    events: (data.events || []) as Array<Record<string, unknown>>,
+    calendars: (data.calendars || []) as Array<Record<string, unknown>>,
+    todos: (data.todos || []) as Array<Record<string, unknown>>,
+  });
 }
 
 async function readStickiesState(
   redis: Redis,
   username: string
 ): Promise<StickiesSnapshotData | null> {
-  const raw = await redis.get<string | { data: StickiesSnapshotData }>(
-    stateKey(username, "stickies")
-  );
-  if (!raw) return null;
-  const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
-  return parsed?.data ?? null;
+  return (await readStickiesToolState(
+    redis,
+    username
+  )) as StickiesSnapshotData | null;
 }
 
 async function writeStickiesState(
@@ -63,7 +68,9 @@ async function writeStickiesState(
   username: string,
   data: StickiesSnapshotData
 ): Promise<void> {
-  await writeRedisSyncDomainFromServerTool(redis, username, "stickies", data);
+  await writeStickiesToolState(redis, username, {
+    notes: (data.notes || []) as Array<Record<string, unknown>>,
+  });
 }
 
 function generateId(): string {

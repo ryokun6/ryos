@@ -1,23 +1,28 @@
+/**
+ * Server-side reader/writer for the user's synced song library, backed by
+ * the Cloud Sync v2 key-value state (`songs/track:{id}` + `songs/lib`).
+ *
+ * Used by AI tools (songLibraryControl) and integration tests. Writes go
+ * through the v2 op pipeline so connected clients receive realtime updates.
+ */
+
 import type { Redis } from "./redis.js";
 import type { Track } from "../../src/stores/useIpodStore.js";
+import { sortTracksLikeServerOrder } from "../../src/stores/ipodTrackOrder.js";
+import { hlcFromTimestamp } from "../../src/shared/sync2/hlc.js";
+import type { SyncOp } from "../../src/shared/sync2/types.js";
+import type { DeletionMarkerMap } from "../../src/utils/cloudSyncDeletionMarkers.js";
 import {
-  createSyntheticLegacySyncVersion,
-  normalizeCloudSyncVersionState,
-  type CloudSyncVersionState,
-} from "../../src/utils/cloudSyncVersion.js";
-import {
-  normalizeDeletionMarkerMap,
-  type DeletionMarkerMap,
-} from "../../src/utils/cloudSyncDeletionMarkers.js";
-import { redisStateMetaKey } from "../sync/_keys.js";
+  readSyncDocsByPrefix,
+  SERVER_SYNC_CLIENT_ID,
+  writeSyncOpsFromServer,
+} from "../sync/v2/_core.js";
 
 export interface SongsSnapshotData {
   tracks: Track[];
   libraryState: "uninitialized" | "loaded" | "cleared";
   lastKnownVersion: number;
-  // Deletion tombstones (trackId -> ISO timestamp). Persisted so multi-client
-  // conflict merges don't resurrect deleted tracks — matches how every other
-  // Redis-backed sync domain stores its deleted* markers.
+  /** Deletion tombstones (trackId -> ISO timestamp). */
   deletedTrackIds?: DeletionMarkerMap;
 }
 
@@ -25,47 +30,10 @@ export interface SongsStateMetadata {
   updatedAt: string;
   version: number;
   createdAt: string;
-  syncVersion?: CloudSyncVersionState | null;
 }
 
-interface PersistedSongsLibraryMeta extends SongsStateMetadata {
-  trackOrder: string[];
-  libraryState: SongsSnapshotData["libraryState"];
-  lastKnownVersion: number;
-  deletedTrackIds?: DeletionMarkerMap;
-}
-
-interface PersistedSongsLegacyState extends SongsStateMetadata {
-  data?: unknown;
-}
-
-type WriteSongsStateOptions = Partial<SongsStateMetadata>;
-
-function syncMetaKey(username: string): string {
-  return redisStateMetaKey(username);
-}
-
-function legacySongsStateKey(username: string): string {
-  return `sync:state:${username}:songs`;
-}
-
-export function getSongLibraryMetaKey(username: string): string {
-  return `sync:songs:${username}:meta`;
-}
-
-export function getSongLibraryTrackKey(username: string, id: string): string {
-  return `sync:songs:${username}:track:${id}`;
-}
-
-function parseJson<T>(raw: unknown): T | null {
-  if (!raw) return null;
-
-  try {
-    return typeof raw === "string" ? (JSON.parse(raw) as T) : (raw as T);
-  } catch {
-    return null;
-  }
-}
+const TRACK_KEY_PREFIX = "songs/track:";
+const LIB_KEY = "songs/lib";
 
 function isLibraryState(
   value: unknown
@@ -89,42 +57,13 @@ function normalizeTrack(value: unknown): Track | null {
       : candidate.id;
 
   return {
+    ...(candidate as Track),
     id: candidate.id,
     url:
       typeof candidate.url === "string" && candidate.url.length > 0
         ? candidate.url
         : `https://www.youtube.com/watch?v=${candidate.id}`,
     title,
-    ...(typeof candidate.artist === "string" ? { artist: candidate.artist } : {}),
-    ...(typeof candidate.album === "string" ? { album: candidate.album } : {}),
-    ...(typeof candidate.cover === "string" ? { cover: candidate.cover } : {}),
-    ...(typeof candidate.coverColor === "string"
-      ? { coverColor: candidate.coverColor }
-      : {}),
-    ...(typeof candidate.lyricOffset === "number" &&
-    Number.isFinite(candidate.lyricOffset)
-      ? { lyricOffset: candidate.lyricOffset }
-      : {}),
-    ...(candidate.lyricsSource &&
-    typeof candidate.lyricsSource === "object" &&
-    typeof candidate.lyricsSource.hash === "string" &&
-    candidate.lyricsSource.hash.length > 0 &&
-    (typeof candidate.lyricsSource.albumId === "string" ||
-      typeof candidate.lyricsSource.albumId === "number") &&
-    typeof candidate.lyricsSource.title === "string" &&
-    typeof candidate.lyricsSource.artist === "string"
-      ? {
-          lyricsSource: {
-            hash: candidate.lyricsSource.hash,
-            albumId: candidate.lyricsSource.albumId,
-            title: candidate.lyricsSource.title,
-            artist: candidate.lyricsSource.artist,
-            ...(typeof candidate.lyricsSource.album === "string"
-              ? { album: candidate.lyricsSource.album }
-              : {}),
-          },
-        }
-      : {}),
   };
 }
 
@@ -143,265 +82,126 @@ export function isSongsSnapshotData(value: unknown): value is SongsSnapshotData 
   );
 }
 
-function normalizeSongsSnapshotData(value: unknown): SongsSnapshotData | null {
-  if (!value || typeof value !== "object") {
-    return null;
-  }
-
-  const candidate = value as Partial<SongsSnapshotData>;
-  if (!Array.isArray(candidate.tracks)) {
-    return null;
-  }
-
-  const tracks = candidate.tracks.reduce<Track[]>((acc, track) => {
-    const normalizedTrack = normalizeTrack(track);
-    if (normalizedTrack) {
-      acc.push(normalizedTrack);
-    }
-    return acc;
-  }, []);
-
-  const seenIds = new Set<string>();
-  const dedupedTracks = tracks.filter((track) => {
-    if (seenIds.has(track.id)) {
-      return false;
-    }
-    seenIds.add(track.id);
-    return true;
-  });
-
-  const deletedTrackIds = normalizeDeletionMarkerMap(candidate.deletedTrackIds);
-
-  return {
-    tracks: dedupedTracks,
-    libraryState: isLibraryState(candidate.libraryState)
-      ? candidate.libraryState
-      : dedupedTracks.length > 0
-        ? "loaded"
-        : "uninitialized",
-    lastKnownVersion:
-      typeof candidate.lastKnownVersion === "number" &&
-      Number.isFinite(candidate.lastKnownVersion)
-        ? candidate.lastKnownVersion
-        : 0,
-    ...(Object.keys(deletedTrackIds).length > 0 ? { deletedTrackIds } : {}),
-  };
-}
-
-function normalizeSongsStateMetadata(
-  value: Partial<SongsStateMetadata> | null | undefined,
-  fallbackTimestamp: string
-): SongsStateMetadata {
-  return {
-    updatedAt:
-      typeof value?.updatedAt === "string" && value.updatedAt.length > 0
-        ? value.updatedAt
-        : fallbackTimestamp,
-    version:
-      typeof value?.version === "number" && Number.isFinite(value.version)
-        ? value.version
-        : 1,
-    createdAt:
-      typeof value?.createdAt === "string" && value.createdAt.length > 0
-        ? value.createdAt
-        : fallbackTimestamp,
-    syncVersion:
-      normalizeCloudSyncVersionState(value?.syncVersion) ||
-      createSyntheticLegacySyncVersion(),
-  };
-}
-
-async function writeSyncMetaEntry(
-  redis: Redis,
-  username: string,
-  metadata: SongsStateMetadata
-): Promise<void> {
-  const rawMeta = await redis.get<string | Record<string, unknown>>(syncMetaKey(username));
-  const parsedMeta =
-    typeof rawMeta === "string" ? JSON.parse(rawMeta) : rawMeta || {};
-
-  parsedMeta.songs = metadata;
-  await redis.set(syncMetaKey(username), JSON.stringify(parsedMeta));
-}
-
-function buildTrackOrder(tracks: Track[]): string[] {
-  return tracks.map((track) => track.id);
-}
-
-async function readStoredSongsState(
-  redis: Redis,
-  username: string
-): Promise<{ data: SongsSnapshotData; metadata: SongsStateMetadata } | null> {
-  const meta = parseJson<PersistedSongsLibraryMeta>(
-    await redis.get(getSongLibraryMetaKey(username))
-  );
-
-  if (!meta) {
-    return null;
-  }
-
-  const trackOrder = Array.isArray(meta.trackOrder)
-    ? meta.trackOrder.filter((id): id is string => typeof id === "string" && id.length > 0)
-    : [];
-
-  const rawTracks =
-    trackOrder.length > 0
-      ? await redis.mget(...trackOrder.map((id) => getSongLibraryTrackKey(username, id)))
-      : [];
-
-  const trackMap = new Map<string, Track>();
-  for (let index = 0; index < trackOrder.length; index += 1) {
-    const parsedTrack = parseJson<Track>(rawTracks[index]);
-    const track = normalizeTrack(parsedTrack);
-    if (track) {
-      trackMap.set(track.id, track);
-    }
-  }
-
-  const deletedTrackIds = normalizeDeletionMarkerMap(meta.deletedTrackIds);
-
-  return {
-    data: {
-      tracks: trackOrder.reduce<Track[]>((acc, id) => {
-        const track = trackMap.get(id);
-        if (track) {
-          acc.push(track);
-        }
-        return acc;
-      }, []),
-      libraryState: isLibraryState(meta.libraryState) ? meta.libraryState : "uninitialized",
-      lastKnownVersion:
-        typeof meta.lastKnownVersion === "number" && Number.isFinite(meta.lastKnownVersion)
-          ? meta.lastKnownVersion
-          : 0,
-      ...(Object.keys(deletedTrackIds).length > 0 ? { deletedTrackIds } : {}),
-    },
-    metadata: normalizeSongsStateMetadata(meta, new Date().toISOString()),
-  };
-}
-
-async function readLegacySongsState(
-  redis: Redis,
-  username: string
-): Promise<{ data: SongsSnapshotData; metadata: SongsStateMetadata } | null> {
-  const legacy = parseJson<PersistedSongsLegacyState>(
-    await redis.get(legacySongsStateKey(username))
-  );
-
-  if (!legacy) {
-    return null;
-  }
-
-  const data = normalizeSongsSnapshotData(legacy.data);
-  if (!data) {
-    return null;
-  }
-
-  const fallbackTimestamp = new Date().toISOString();
-  return {
-    data,
-    metadata: normalizeSongsStateMetadata(legacy, fallbackTimestamp),
-  };
-}
-
 export async function readSongsState(
   redis: Redis,
   username: string
 ): Promise<{ data: SongsSnapshotData; metadata: SongsStateMetadata } | null> {
-  const stored = await readStoredSongsState(redis, username);
-  if (stored) {
-    return stored;
+  const docs = await readSyncDocsByPrefix(redis, username, "songs/");
+
+  const tracks: Track[] = [];
+  for (const [key, doc] of Object.entries(docs)) {
+    if (!key.startsWith(TRACK_KEY_PREFIX)) continue;
+    const track = normalizeTrack(doc);
+    if (track) {
+      tracks.push(track);
+    }
   }
 
-  const legacy = await readLegacySongsState(redis, username);
-  if (!legacy) {
+  const lib = (docs[LIB_KEY] || {}) as {
+    libraryState?: unknown;
+    lastKnownVersion?: unknown;
+  };
+
+  const hasLibDoc = docs[LIB_KEY] !== undefined;
+  if (tracks.length === 0 && !hasLibDoc) {
     return null;
   }
 
-  await writeSongsState(redis, username, legacy.data, legacy.metadata);
-  await redis.del(legacySongsStateKey(username));
-  return legacy;
+  const now = new Date().toISOString();
+  return {
+    data: {
+      tracks: sortTracksLikeServerOrder(tracks),
+      libraryState: isLibraryState(lib.libraryState)
+        ? lib.libraryState
+        : tracks.length > 0
+          ? "loaded"
+          : "uninitialized",
+      lastKnownVersion:
+        typeof lib.lastKnownVersion === "number" &&
+        Number.isFinite(lib.lastKnownVersion)
+          ? lib.lastKnownVersion
+          : 0,
+    },
+    metadata: { updatedAt: now, version: 1, createdAt: now },
+  };
 }
 
+/**
+ * Replace the user's song library with `data`. Tracks absent from `data`
+ * are tombstoned (matching the v1 replace semantics used by AI tools).
+ */
 export async function writeSongsState(
   redis: Redis,
   username: string,
-  data: SongsSnapshotData,
-  options: WriteSongsStateOptions = {}
+  data: SongsSnapshotData
 ): Promise<SongsStateMetadata> {
-  const normalized = normalizeSongsSnapshotData(data) ?? {
-    tracks: [],
-    libraryState: "uninitialized" as const,
-    lastKnownVersion: 0,
-  };
-  const existingState = await readStoredSongsState(redis, username);
+  const existingDocs = await readSyncDocsByPrefix(redis, username, "songs/");
   const now = new Date().toISOString();
-  const metadata = normalizeSongsStateMetadata(
-    {
-      updatedAt: options.updatedAt,
-      version: options.version,
-      createdAt: options.createdAt ?? existingState?.metadata.createdAt,
-      syncVersion: options.syncVersion ?? existingState?.metadata.syncVersion,
-    },
-    now
-  );
-  const trackOrder = buildTrackOrder(normalized.tracks);
-  const previousTrackIds = new Set(existingState?.data.tracks.map((track) => track.id) ?? []);
-  const nextTrackIds = new Set(trackOrder);
-  const trackKeysToDelete = Array.from(previousTrackIds).reduce<string[]>((acc, id) => {
-    if (!nextTrackIds.has(id)) {
-      acc.push(getSongLibraryTrackKey(username, id));
-    }
-    return acc;
-  }, []);
+  const t = hlcFromTimestamp(now, SERVER_SYNC_CLIENT_ID);
 
-  // Tombstone resolution. Deletion markers (trackId -> ISO timestamp) must
-  // survive the server round-trip so multi-client conflict merges don't
-  // resurrect deleted tracks.
-  // - Full sync snapshots from the client carry `deletedTrackIds` and are
-  //   authoritative (replace) — the client owns the lifecycle and clears a
-  //   marker when a track is re-added.
-  // - Partial server-side writers (e.g. AI tools that add a song) omit the
-  //   field; preserve the existing stored markers so they aren't wiped.
-  // In both cases, a track that is present is by definition not deleted, so
-  // strip its marker (mirrors the client's clear-on-add behavior).
-  const callerProvidedTombstones =
-    data != null &&
-    typeof data === "object" &&
-    (data as SongsSnapshotData).deletedTrackIds != null;
-  const baseDeletedTrackIds = callerProvidedTombstones
-    ? normalizeDeletionMarkerMap((data as SongsSnapshotData).deletedTrackIds)
-    : normalizeDeletionMarkerMap(existingState?.data.deletedTrackIds);
-  const resolvedDeletedTrackIds: DeletionMarkerMap = {};
-  for (const [id, marker] of Object.entries(baseDeletedTrackIds)) {
-    if (!nextTrackIds.has(id)) {
-      resolvedDeletedTrackIds[id] = marker;
+  const nextTracks: Track[] = [];
+  const seenIds = new Set<string>();
+  for (const raw of Array.isArray(data?.tracks) ? data.tracks : []) {
+    const track = normalizeTrack(raw);
+    if (track && !seenIds.has(track.id)) {
+      seenIds.add(track.id);
+      nextTracks.push(track);
     }
   }
 
-  const pipeline = redis.pipeline();
-  for (const track of normalized.tracks) {
-    pipeline.set(getSongLibraryTrackKey(username, track.id), JSON.stringify(track));
+  const ops: SyncOp[] = [];
+  for (const track of nextTracks) {
+    const key = `${TRACK_KEY_PREFIX}${track.id}`;
+    const existing = existingDocs[key];
+    if (existing && JSON.stringify(existing) === JSON.stringify(track)) {
+      continue;
+    }
+    ops.push({ k: key, v: track, t });
   }
-  if (trackKeysToDelete.length > 0) {
-    pipeline.del(...trackKeysToDelete);
+
+  for (const key of Object.keys(existingDocs)) {
+    if (!key.startsWith(TRACK_KEY_PREFIX)) continue;
+    const id = key.slice(TRACK_KEY_PREFIX.length);
+    if (!seenIds.has(id)) {
+      ops.push({ k: key, del: true, t });
+    }
   }
-  pipeline.set(
-    getSongLibraryMetaKey(username),
-    JSON.stringify({
-      trackOrder,
-      libraryState: normalized.libraryState,
-      lastKnownVersion: normalized.lastKnownVersion,
-      ...(Object.keys(resolvedDeletedTrackIds).length > 0
-        ? { deletedTrackIds: resolvedDeletedTrackIds }
-        : {}),
-      ...metadata,
-    } satisfies PersistedSongsLibraryMeta)
-  );
-  await pipeline.exec();
 
-  await writeSyncMetaEntry(redis, username, metadata);
-  await redis.del(legacySongsStateKey(username));
+  // Caller-provided tombstones (ids that must stay deleted) for ids not
+  // re-added in this write.
+  if (data?.deletedTrackIds) {
+    for (const [id, deletedAt] of Object.entries(data.deletedTrackIds)) {
+      if (!id || seenIds.has(id)) continue;
+      const key = `${TRACK_KEY_PREFIX}${id}`;
+      if (!ops.some((op) => op.k === key)) {
+        ops.push({
+          k: key,
+          del: true,
+          t: hlcFromTimestamp(deletedAt, SERVER_SYNC_CLIENT_ID),
+        });
+      }
+    }
+  }
 
-  return metadata;
+  const nextLib = {
+    libraryState: isLibraryState(data?.libraryState)
+      ? data.libraryState
+      : nextTracks.length > 0
+        ? "loaded"
+        : "uninitialized",
+    lastKnownVersion:
+      typeof data?.lastKnownVersion === "number" &&
+      Number.isFinite(data.lastKnownVersion)
+        ? data.lastKnownVersion
+        : 0,
+  };
+  if (JSON.stringify(existingDocs[LIB_KEY]) !== JSON.stringify(nextLib)) {
+    ops.push({ k: LIB_KEY, v: nextLib, t });
+  }
+
+  if (ops.length > 0) {
+    await writeSyncOpsFromServer(redis, username, ops);
+  }
+
+  return { updatedAt: now, version: 1, createdAt: now };
 }
