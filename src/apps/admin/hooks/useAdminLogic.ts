@@ -33,6 +33,7 @@ import {
   getClearedAdminDetailSelection,
   type AdminSection,
 } from "../utils/navigationState";
+import { formatAdminRelativeTime } from "../utils/adminTime";
 import { helpItems } from "..";
 
 /**
@@ -1197,18 +1198,7 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
   }, [selectedSongId, selectedUserProfile]);
 
   const formatRelativeTime = useCallback(
-    (timestamp: number) => {
-      const diff = Date.now() - timestamp;
-      const minutes = Math.floor(diff / 60000);
-      const hours = Math.floor(diff / 3600000);
-      const days = Math.floor(diff / 86400000);
-
-      if (minutes < 1) return t("apps.admin.time.now");
-      if (minutes < 60)
-        return t("apps.admin.time.minutesAgo", { count: minutes });
-      if (hours < 24) return t("apps.admin.time.hoursAgo", { count: hours });
-      return t("apps.admin.time.daysAgo", { count: days });
-    },
+    (timestamp: number) => formatAdminRelativeTime(timestamp, t),
     [t]
   );
 

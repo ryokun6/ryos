@@ -1,3 +1,8 @@
+import {
+  formatRelativeTime as formatRelativeTimeShared,
+  type RelativeTimeKeys,
+} from "@/utils/formatRelativeTime";
+
 export type SyncAuditStatus = {
   lastUploadedAt: string | null;
   lastFetchedAt?: string | null;
@@ -6,21 +11,18 @@ export type SyncAuditStatus = {
   isDownloading?: boolean;
 };
 
+const AUTO_SYNC_TIME_KEYS: RelativeTimeKeys = {
+  justNow: "apps.control-panels.autoSync.justNow",
+  minutesAgo: "apps.control-panels.autoSync.minutesAgo",
+  hoursAgo: "apps.control-panels.autoSync.hoursAgo",
+  daysAgo: "apps.control-panels.autoSync.daysAgo",
+};
+
 export function formatRelativeTime(
   timestamp: string | null,
   t: (key: string, opts?: Record<string, unknown>) => string
 ): string | null {
-  if (!timestamp) return null;
-  const diff = Date.now() - new Date(timestamp).getTime();
-  const minutes = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  const days = Math.floor(diff / 86400000);
-  if (minutes < 1) return t("apps.control-panels.autoSync.justNow");
-  if (minutes < 60)
-    return t("apps.control-panels.autoSync.minutesAgo", { count: minutes });
-  if (hours < 24)
-    return t("apps.control-panels.autoSync.hoursAgo", { count: hours });
-  return t("apps.control-panels.autoSync.daysAgo", { count: days });
+  return formatRelativeTimeShared(timestamp, t, AUTO_SYNC_TIME_KEYS);
 }
 
 function getFetchedSyncTime(status: SyncAuditStatus): string | null {
