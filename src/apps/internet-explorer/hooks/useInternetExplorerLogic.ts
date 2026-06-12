@@ -221,7 +221,13 @@ export function useInternetExplorerLogic({
   const [hasMoreToScroll] = useState(false);
   const [urlBarUiState, dispatchUrlBarUi] = useReducer(
     urlBarUiReducer,
-    urlBarUiInitialState
+    urlBarUiInitialState,
+    // Initialize the address bar from the store's persisted url so no
+    // post-mount sync effect is needed.
+    (initialState) => ({
+      ...initialState,
+      localUrl: url.replace(/^(https?:\/\/|ftp:\/\/)/i, ""),
+    })
   );
   const {
     isUrlDropdownOpen,
@@ -307,6 +313,16 @@ export function useInternetExplorerLogic({
     if (!url) return "";
     return url.replace(/^(https?:\/\/|ftp:\/\/)/i, "");
   }, []);
+
+  // Sync localUrl when the store's url changes (navigation, history, share
+  // links, post-load normalization). Derived during render instead of via an
+  // effect so user typing is only reset when the url actually changed since
+  // the last render, never by unrelated re-renders.
+  const [prevStoreUrl, setPrevStoreUrl] = useState(url);
+  if (prevStoreUrl !== url) {
+    setPrevStoreUrl(url);
+    setLocalUrl(stripProtocol(url));
+  }
 
   // Helper to validate if a URL is well-formed enough to be saved
   const isValidUrl = useCallback(
@@ -1320,10 +1336,6 @@ export function useInternetExplorerLogic({
   const initialNavigationRef = useRef(false);
   // Track the last processed initialData to avoid duplicates
   const lastProcessedInitialDataRef = useRef<unknown>(null);
-  // Sync localUrl with store's url when the component loads or url changes from outside
-  useEffect(() => {
-    setLocalUrl(stripProtocol(url));
-  }, [url, stripProtocol]);
 
   useEffect(() => {
     // Only run initial navigation logic once when the window opens
