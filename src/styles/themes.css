@@ -5943,16 +5943,7 @@
     [data-os-color-scheme="dark"]
   )
   .aqua-tab {
-  backdrop-filter: blur(12px) saturate(180%);
-  -webkit-backdrop-filter: blur(12px) saturate(180%);
-  background: linear-gradient(
-        to bottom,
-        rgba(255, 255, 255, 0.55) 0%,
-        rgba(255, 255, 255, 0.18) 60%,
-        rgba(255, 255, 255, 0) 100%
-      )
-      top / 100% 50% no-repeat,
-    linear-gradient(rgba(188, 188, 188, 0.34), rgba(255, 255, 255, 0.3));
+  background: linear-gradient(rgba(188, 188, 188, 0.34), rgba(255, 255, 255, 0.3));
   border: 1px solid rgba(0, 0, 0, 0.22);
   color: #000;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
@@ -6006,7 +5997,7 @@
   )
   .aqua-tab[data-state="active"]:after {
   background: linear-gradient(transparent, rgba(255, 255, 255, 0.45));
-  filter: blur(1px);
+  filter: none;
 }
 
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"]:not(
@@ -6032,22 +6023,20 @@
 
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
   .aqua-tab {
-  backdrop-filter: blur(12px) saturate(180%);
-  -webkit-backdrop-filter: blur(12px) saturate(180%);
   background: linear-gradient(
-        to bottom,
-        rgba(255, 255, 255, 0.12),
-        rgba(255, 255, 255, 0.03)
-      )
-      top / 100% 50% no-repeat,
-    linear-gradient(
-      to bottom,
-      rgba(72, 72, 78, 0.42),
-      rgba(34, 34, 38, 0.42)
-    );
+    to bottom,
+    rgba(72, 72, 78, 0.42),
+    rgba(34, 34, 38, 0.42)
+  );
   border: 1px solid rgba(255, 255, 255, 0.14);
   color: rgba(255, 255, 255, 0.92);
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55);
+}
+
+/* Inactive pills: reinforce the top edge with the same light rim as the sides. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .aqua-tab:not([data-state="active"]) {
+  border-top: 1px solid rgba(255, 255, 255, 0.14) !important;
 }
 
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
@@ -6066,14 +6055,14 @@
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
   .aqua-tab:before {
   background: linear-gradient(
-    rgba(255, 255, 255, 0.06),
-    rgba(255, 255, 255, 0.01)
+    rgba(255, 255, 255, 0.12),
+    rgba(255, 255, 255, 0.04)
   );
 }
 
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
   .aqua-tab:after {
-  background: linear-gradient(transparent, rgba(255, 255, 255, 0.03));
+  background: linear-gradient(transparent, rgba(255, 255, 255, 0.08));
   filter: none;
 }
 
@@ -6088,7 +6077,19 @@
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
   .aqua-tab[data-state="active"]:after {
   background: linear-gradient(transparent, rgba(255, 255, 255, 0.08));
-  filter: blur(1px);
+  filter: none;
+}
+
+/* Glass tabs: classic ::before/::after sizing (15% / 20%), flat translucent
+   base, no backdrop-filter on inactive pills, no filter blur on gloss. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] .aqua-tab:not([data-state="active"]) {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] .aqua-tab:before,
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] .aqua-tab:after {
+  filter: none !important;
 }
 
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
