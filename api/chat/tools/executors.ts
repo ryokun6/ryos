@@ -31,7 +31,10 @@ import type {
   WebFetchInput,
   WebFetchOutput,
 } from "./types.js";
-import { stateKey, writeRedisSyncDomainFromServerTool } from "../../sync/_state.js";
+import {
+  readFilesMetadataToolState,
+  writeFilesMetadataToolState,
+} from "../../sync/v2/_tool-state.js";
 import { getAppPublicOrigin } from "../../_utils/runtime-config.js";
 import { decodeHtmlEntitiesOnce } from "../../_utils/html-entities.js";
 import {
@@ -1412,20 +1415,14 @@ interface FilesMetadataSnapshotData {
   deletedPaths?: Record<string, string>;
 }
 
-function filesMetadataStateKey(username: string): string {
-  return stateKey(username, "files-metadata");
-}
-
 async function readFilesMetadataState(
   redis: Redis,
   username: string
 ): Promise<FilesMetadataSnapshotData | null> {
-  const raw = await redis.get<string | { data: FilesMetadataSnapshotData }>(
-    filesMetadataStateKey(username)
-  );
-  if (!raw) return null;
-  const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
-  return parsed?.data ?? null;
+  return (await readFilesMetadataToolState(
+    redis,
+    username
+  )) as FilesMetadataSnapshotData | null;
 }
 
 async function writeFilesMetadataState(
@@ -1433,12 +1430,13 @@ async function writeFilesMetadataState(
   username: string,
   data: FilesMetadataSnapshotData
 ): Promise<void> {
-  await writeRedisSyncDomainFromServerTool(
-    redis,
-    username,
-    "files-metadata",
-    data
-  );
+  await writeFilesMetadataToolState(redis, username, {
+    items: data.items as unknown as Record<string, Record<string, unknown>>,
+    libraryState: data.libraryState,
+    documents: (data.documents || []) as unknown as Array<
+      Record<string, unknown>
+    >,
+  });
 }
 
 function isActiveDocument(item: SyncedFileSystemItem | undefined): item is SyncedFileSystemItem {
@@ -1469,28 +1467,6 @@ function createDocumentSize(content: string): number {
 
 function createMissingFilesSyncMessage(): string {
   return "No file data synced yet. Enable cloud sync in ryOS first.";
-}
-
-function addDeletionMarkers(
-  existing: Record<string, string> | undefined,
-  keys: Iterable<string>,
-  deletedAt: string
-): Record<string, string> | undefined {
-  const next = { ...(existing || {}) };
-  let changed = false;
-
-  for (const key of keys) {
-    if (!key) {
-      continue;
-    }
-
-    if (next[key] !== deletedAt) {
-      next[key] = deletedAt;
-      changed = true;
-    }
-  }
-
-  return changed ? next : existing;
 }
 
 function clearDeletionMarkers(

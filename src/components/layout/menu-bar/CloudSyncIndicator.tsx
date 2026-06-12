@@ -17,11 +17,7 @@ import type { AppId } from "@/config/appRegistryData";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
-import {
-  getCloudSyncCategory,
-  type CloudSyncCategory,
-  type CloudSyncDomain,
-} from "@/utils/cloudSyncShared";
+import type { SyncCategory as CloudSyncCategory } from "@/shared/sync2/namespaces";
 import {
   formatRelativeTime,
   type RelativeTimeKeys,
@@ -92,29 +88,22 @@ export function CloudSyncIndicator() {
   const [menuValue, setMenuValue] = useState("");
   const isOpen = menuValue === MENU_VALUE;
 
-  const { isCheckingRemote, lastCheckedAt, lastError, domainStatus } =
+  const { isCheckingRemote, lastCheckedAt, lastError, categoryStatus } =
     useCloudSyncStore(
       useShallow((state) => ({
         isCheckingRemote: state.isCheckingRemote,
         lastCheckedAt: state.lastCheckedAt,
         lastError: state.lastError,
-        domainStatus: state.domainStatus,
+        categoryStatus: state.categoryStatus,
       }))
     );
 
   const activeCategories: SyncCategoryActivity[] = SYNC_CATEGORY_ORDER.map(
-    (category) => {
-      let isUploading = false;
-      let isDownloading = false;
-      for (const [domain, status] of Object.entries(domainStatus)) {
-        if (getCloudSyncCategory(domain as CloudSyncDomain) !== category) {
-          continue;
-        }
-        isUploading = isUploading || status.isUploading;
-        isDownloading = isDownloading || status.isDownloading;
-      }
-      return { category, isUploading, isDownloading };
-    }
+    (category) => ({
+      category,
+      isUploading: categoryStatus[category].isUploading,
+      isDownloading: categoryStatus[category].isDownloading,
+    })
   ).filter((entry) => entry.isUploading || entry.isDownloading);
 
   const isCloudSyncActive = isCheckingRemote || activeCategories.length > 0;

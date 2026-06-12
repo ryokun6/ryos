@@ -1,6 +1,17 @@
-import { describe, expect, mock, test } from "bun:test";
+import { afterAll, describe, expect, mock, test } from "bun:test";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+
+// The partial `window` stub must not leak into later test files.
+const originalWindow = Object.getOwnPropertyDescriptor(globalThis, "window");
+
+afterAll(() => {
+  if (originalWindow) {
+    Object.defineProperty(globalThis, "window", originalWindow);
+  } else {
+    delete (globalThis as { window?: unknown }).window;
+  }
+});
 
 const playerMock = mock((props: Record<string, unknown>) => {
   return React.createElement("div", { "data-testid": "player" }, JSON.stringify(props));

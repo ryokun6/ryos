@@ -73,6 +73,11 @@ export interface RedisLike {
   mget<T = unknown>(...keys: string[]): Promise<(T | null)[]>;
   hincrby(key: string, field: string, increment: number): Promise<number>;
   hgetall<T = Record<string, string>>(key: string): Promise<T | null>;
+  hset(key: string, fields: Record<string, unknown>): Promise<number>;
+  hget<T = unknown>(key: string, field: string): Promise<T | null>;
+  hmget<T = unknown>(key: string, ...fields: string[]): Promise<(T | null)[]>;
+  hdel(key: string, ...fields: string[]): Promise<number>;
+  rpush(key: string, ...values: string[]): Promise<number>;
   pfadd(key: string, ...elements: string[]): Promise<number>;
   pfcount(...keys: string[]): Promise<number>;
   zadd(key: string, entry: RedisSortedSetEntry): Promise<number>;
@@ -376,6 +381,35 @@ class StandardRedisAdapter implements RedisLike {
     const result = await this.client.hgetall(key);
     if (!result || Object.keys(result).length === 0) return null;
     return result as T;
+  }
+
+  async hset(key: string, fields: Record<string, unknown>): Promise<number> {
+    const entries = Object.entries(fields);
+    if (entries.length === 0) return 0;
+    const args: string[] = [];
+    for (const [field, value] of entries) {
+      args.push(field, serializeRedisValue(value));
+    }
+    return await this.client.hset(key, ...args);
+  }
+
+  async hget<T = unknown>(key: string, field: string): Promise<T | null> {
+    return (await this.client.hget(key, field)) as T | null;
+  }
+
+  async hmget<T = unknown>(key: string, ...fields: string[]): Promise<(T | null)[]> {
+    if (fields.length === 0) return [];
+    return (await this.client.hmget(key, ...fields)) as (T | null)[];
+  }
+
+  async hdel(key: string, ...fields: string[]): Promise<number> {
+    if (fields.length === 0) return 0;
+    return await this.client.hdel(key, ...fields);
+  }
+
+  async rpush(key: string, ...values: string[]): Promise<number> {
+    if (values.length === 0) return await this.client.llen(key);
+    return await this.client.rpush(key, ...values);
   }
 
   async pfadd(key: string, ...elements: string[]): Promise<number> {

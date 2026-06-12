@@ -1035,9 +1035,8 @@ export function useFileSystem(
     if (options.skipLoad) return;
 
     const unsubscribe = useCloudSyncStore.subscribe((state, prevState) => {
-      const nextApplied = state.domainStatus["files-images"].lastAppliedRemoteAt;
-      const prevApplied =
-        prevState.domainStatus["files-images"].lastAppliedRemoteAt;
+      const nextApplied = state.categoryStatus.files.lastAppliedRemoteAt;
+      const prevApplied = prevState.categoryStatus.files.lastAppliedRemoteAt;
 
       if (
         nextApplied &&

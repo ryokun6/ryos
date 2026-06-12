@@ -1,9 +1,21 @@
 #!/usr/bin/env bun
 
-import { beforeAll, beforeEach, describe, expect, test } from "bun:test";
+import { afterAll, beforeAll, beforeEach, describe, expect, test } from "bun:test";
 import type { useAppStore as UseAppStoreHook } from "../src/stores/useAppStore";
 
 let useAppStore: typeof UseAppStoreHook;
+
+// The partial `window` stub must not leak into later test files (e.g. code
+// guarded by `typeof window !== "undefined"` expecting addEventListener).
+const originalWindow = Object.getOwnPropertyDescriptor(globalThis, "window");
+
+afterAll(() => {
+  if (originalWindow) {
+    Object.defineProperty(globalThis, "window", originalWindow);
+  } else {
+    delete (globalThis as { window?: unknown }).window;
+  }
+});
 
 function installBrowserStubs() {
   const storage = new Map<string, string>();
