@@ -6369,8 +6369,11 @@
   --os-metrics-radius: calc(0.45rem * var(--os-glass-radius-factor));
   --os-glass-r-xs: calc(5px * var(--os-glass-radius-factor));
   --os-glass-r-sm: calc(6px * var(--os-glass-radius-factor));
-  --os-glass-r-select: calc(8px * var(--os-glass-radius-factor));
-  --os-glass-r-select-gloss: calc(7px * var(--os-glass-radius-factor));
+  /* Select triggers: classic Aqua 6px / 5px gloss when squircle is unavailable —
+     circular arcs read pill-like if we scale these with --os-glass-radius-factor. */
+  --os-glass-r-select: 6px;
+  --os-glass-r-select-gloss: 5px;
+  --os-glass-r-select-group: 6px;
   --os-glass-r-inset: calc(6px * var(--os-glass-radius-factor));
   --os-glass-r-md: calc(10px * var(--os-glass-radius-factor));
   --os-glass-r-dialog: calc(7.2px * var(--os-glass-radius-factor));
@@ -6417,27 +6420,27 @@
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
   .aqua-select-group
   .aqua-select-btn:first-child {
-  border-top-left-radius: var(--os-glass-r-sm) !important;
-  border-bottom-left-radius: var(--os-glass-r-sm) !important;
+  border-top-left-radius: var(--os-glass-r-select-group) !important;
+  border-bottom-left-radius: var(--os-glass-r-select-group) !important;
 }
 
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
   .aqua-select-group
   .aqua-select-btn:last-child {
-  border-top-right-radius: var(--os-glass-r-sm) !important;
-  border-bottom-right-radius: var(--os-glass-r-sm) !important;
+  border-top-right-radius: var(--os-glass-r-select-group) !important;
+  border-bottom-right-radius: var(--os-glass-r-select-group) !important;
 }
 
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
   .aqua-select-group
   .aqua-select-btn:first-child::before {
-  border-top-left-radius: var(--os-glass-r-sm) !important;
+  border-top-left-radius: var(--os-glass-r-select-group) !important;
 }
 
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
   .aqua-select-group
   .aqua-select-btn:last-child::before {
-  border-top-right-radius: var(--os-glass-r-sm) !important;
+  border-top-right-radius: var(--os-glass-r-select-group) !important;
 }
 
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .macosx-dialog {
@@ -6469,6 +6472,9 @@
   :root[data-os-theme="macosx"][data-os-aqua-material="glass"] {
     --os-corner-shape: squircle;
     --os-glass-radius-factor: 1.84;
+    --os-glass-r-select: calc(8px * var(--os-glass-radius-factor));
+    --os-glass-r-select-gloss: calc(7px * var(--os-glass-radius-factor));
+    --os-glass-r-select-group: calc(6px * var(--os-glass-radius-factor));
   }
 
   /* NOTE: pseudo-elements are invalid inside :is()/:where() and get silently
