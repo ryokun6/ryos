@@ -1,15 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
-import {
-  ArrowLeft,
-  ArrowsClockwise,
-  MusicNote,
-  Trash,
-} from "@phosphor-icons/react";
+import { ArrowLeft, ArrowsClockwise, Trash } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
-import { formatKugouImageUrl } from "./utils";
-import { isAppleMusicId } from "@/utils/appleMusicId";
-import { resolveAppleMusicArtworkUrl } from "@/utils/coverArt";
+import { AdminSongCover } from "../admin-app/AdminSongCover";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { SongDetailPanelViewModel } from "./useSongDetailPanel";
 import { adminAvatarWellClass, adminDetailHeaderClass } from "../../utils/adminStyles";
@@ -34,10 +27,6 @@ export function SongDetailPanelHeader({
   fetchSong,
   setIsDeleteDialogOpen,
 }: Props) {
-  const isAppleMusic = isAppleMusicId(youtubeId);
-  const appleMusicCover = isAppleMusic
-    ? resolveAppleMusicArtworkUrl(song?.cover, 150)
-    : null;
   return (
     <div className={adminDetailHeaderClass}>
       <Button variant="ghost" size="sm" onClick={onBack} className="size-6 p-0">
@@ -51,44 +40,16 @@ export function SongDetailPanelHeader({
             isLoading && "animate-pulse"
           )}
         >
-          {!isLoading &&
-            (isAppleMusic ? (
-              appleMusicCover ? (
-                <img
-                  src={appleMusicCover}
-                  alt=""
-                  className="size-full object-cover"
-                />
-              ) : (
-                <MusicNote
-                  className="size-4 text-neutral-400"
-                  weight="bold"
-                />
-              )
-            ) : (
-              <img
-                src={
-                  formatKugouImageUrl(song?.cover, 150) ||
-                  `https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg`
-                }
-                alt=""
-                className="size-full object-cover"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  try {
-                    const url = new URL(target.src);
-                    const isYouTube =
-                      url.hostname === "img.youtube.com" ||
-                      url.hostname === "i.ytimg.com";
-                    if (!isYouTube) {
-                      target.src = `https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg`;
-                    }
-                  } catch {
-                    target.src = `https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg`;
-                  }
-                }}
-              />
-            ))}
+          {!isLoading && (
+            <AdminSongCover
+              id={youtubeId}
+              cover={song?.cover}
+              pxSize={150}
+              youtubeQuality="mqdefault"
+              imgClassName="size-full object-cover"
+              placeholderClassName="size-4 text-neutral-400"
+            />
+          )}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">

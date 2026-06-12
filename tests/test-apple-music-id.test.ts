@@ -7,6 +7,7 @@ import {
   parseAppleMusicId,
 } from "@/utils/appleMusicId";
 import { resolveAppleMusicArtworkUrl } from "@/utils/coverArt";
+import { parseCatalogId, toArtworkTemplate } from "../api/apple-music-artwork";
 
 describe("isAppleMusicId", () => {
   test("detects am: prefixed ids", () => {
@@ -151,6 +152,15 @@ describe("resolveAppleMusicArtworkUrl", () => {
     ).toBe("https://example.com/art/300x300bb.jpg");
   });
 
+  test("resolves the Kugou {size} placeholder", () => {
+    expect(
+      resolveAppleMusicArtworkUrl(
+        "http://imge.kugou.com/stdmusic/{size}/abc.jpg",
+        240
+      )
+    ).toBe("https://imge.kugou.com/stdmusic/240/abc.jpg");
+  });
+
   test("upgrades http to https", () => {
     expect(
       resolveAppleMusicArtworkUrl("http://example.com/art/600x600bb.jpg")
@@ -159,5 +169,26 @@ describe("resolveAppleMusicArtworkUrl", () => {
 
   test("returns null when no cover provided", () => {
     expect(resolveAppleMusicArtworkUrl(undefined)).toBeNull();
+  });
+});
+
+describe("apple-music-artwork endpoint helpers", () => {
+  test("parseCatalogId accepts numeric catalog ids only", () => {
+    expect(parseCatalogId("am:1616228595")).toBe("1616228595");
+    expect(parseCatalogId("am:i.uUZAkT3")).toBeNull();
+    expect(parseCatalogId("am:station:ra.x")).toBeNull();
+    expect(parseCatalogId("dQw4w9WgXcQ")).toBeNull();
+    expect(parseCatalogId(undefined)).toBeNull();
+  });
+
+  test("toArtworkTemplate parameterizes the artwork size", () => {
+    expect(
+      toArtworkTemplate(
+        "https://is1-ssl.mzstatic.com/image/thumb/abc/100x100bb.jpg"
+      )
+    ).toBe("https://is1-ssl.mzstatic.com/image/thumb/abc/{w}x{h}bb.jpg");
+    expect(
+      toArtworkTemplate("https://example.com/art/600x600.png")
+    ).toBe("https://example.com/art/{w}x{h}.png");
   });
 });

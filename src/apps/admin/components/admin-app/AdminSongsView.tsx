@@ -5,7 +5,7 @@ import { AppleLogoIcon } from "@/components/icons/AppleLogoIcon";
 import type { TFunction } from "i18next";
 import type { CachedSongMetadata } from "@/utils/songMetadataCache";
 import { isAppleMusicId } from "@/utils/appleMusicId";
-import { resolveAppleMusicArtworkUrl } from "@/utils/coverArt";
+import { AdminSongCover } from "./AdminSongCover";
 import { cn } from "@/lib/utils";
 import {
   adminAvatarWellClass,
@@ -44,7 +44,6 @@ export function AdminSongsView({
   setVisibleSongsCount,
   SONGS_PER_PAGE,
   setSelectedSongId,
-  formatKugouImageUrl,
   promptDelete,
 }: AdminSongsViewProps) {
   return (
@@ -71,10 +70,6 @@ export function AdminSongsView({
           <div className={cn("w-full min-w-0", adminListDividerClass)}>
             {filteredSongs.slice(0, visibleSongsCount).map((song) => {
               const isAppleMusic = isAppleMusicId(song.youtubeId);
-              const coverUrl = isAppleMusic
-                ? resolveAppleMusicArtworkUrl(song.cover, 100)
-                : formatKugouImageUrl(song.cover, 100) ||
-                  `https://i.ytimg.com/vi/${song.youtubeId}/default.jpg`;
               return (
               <div
                 key={song.youtubeId}
@@ -85,19 +80,14 @@ export function AdminSongsView({
                 onClick={() => setSelectedSongId(song.youtubeId)}
               >
                 <div className={cn("size-10 flex-shrink-0 rounded overflow-hidden flex items-center justify-center", adminAvatarWellClass)}>
-                  {coverUrl ? (
-                    <img
-                      src={coverUrl}
-                      alt={song.title}
-                      className="size-full object-cover"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <MusicNote
-                      className="size-4 text-neutral-400"
-                      weight="bold"
-                    />
-                  )}
+                  <AdminSongCover
+                    id={song.youtubeId}
+                    cover={song.cover}
+                    pxSize={100}
+                    youtubeQuality="default"
+                    imgClassName="size-full object-cover"
+                    placeholderClassName="size-4 text-neutral-400"
+                  />
                 </div>
                 <div className="min-w-0 flex-1 overflow-hidden">
                   <div

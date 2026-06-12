@@ -21,10 +21,12 @@ export function formatKugouImageUrl(
 }
 
 /**
- * Resolve an Apple Music artwork URL. Apple's API returns artwork URLs with
- * `{w}` / `{h}` size placeholders; some stored covers are already resolved.
- * Handles both, and upgrades `http://` to `https://`. Returns null when no URL
- * is provided so callers can render a placeholder instead of a broken image.
+ * Resolve a cover URL for an Apple Music song. Apple artwork URLs use `{w}` /
+ * `{h}` size placeholders, while Kugou covers (sometimes stored on `am:` songs
+ * via the lyrics fetch path) use `{size}`. Handles all three placeholders,
+ * leaves already-resolved URLs untouched, and upgrades `http://` to `https://`.
+ * Returns null when no URL is provided so callers can render a placeholder
+ * instead of a broken image.
  */
 export function resolveAppleMusicArtworkUrl(
   cover: string | undefined,
@@ -33,7 +35,8 @@ export function resolveAppleMusicArtworkUrl(
   if (!cover) return null;
   let url = cover
     .replace(/\{w\}/g, String(size))
-    .replace(/\{h\}/g, String(size));
+    .replace(/\{h\}/g, String(size))
+    .replace(/\{size\}/g, String(size));
   url = url.replace(/^http:\/\//, "https://");
   return url;
 }
