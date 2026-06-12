@@ -1469,28 +1469,6 @@ function createMissingFilesSyncMessage(): string {
   return "No file data synced yet. Enable cloud sync in ryOS first.";
 }
 
-function addDeletionMarkers(
-  existing: Record<string, string> | undefined,
-  keys: Iterable<string>,
-  deletedAt: string
-): Record<string, string> | undefined {
-  const next = { ...(existing || {}) };
-  let changed = false;
-
-  for (const key of keys) {
-    if (!key) {
-      continue;
-    }
-
-    if (next[key] !== deletedAt) {
-      next[key] = deletedAt;
-      changed = true;
-    }
-  }
-
-  return changed ? next : existing;
-}
-
 function clearDeletionMarkers(
   existing: Record<string, string> | undefined,
   keys: Iterable<string>

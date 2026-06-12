@@ -1,25 +1,20 @@
-import { afterAll, describe, expect, test } from "bun:test";
-import { createRedis } from "../api/_utils/redis";
+import { describe, expect, test } from "bun:test";
+import type { Redis } from "../api/_utils/redis";
 import {
   writeSongsState,
   readSongsState,
-  getSongLibraryMetaKey,
-  getSongLibraryTrackKey,
-  type SongsSnapshotData,
 } from "../api/_utils/song-library-state";
+import { applySyncOps } from "../api/sync/v2/_core";
+import { formatHlc } from "../src/shared/sync2/hlc";
+import { FakeRedis } from "./fake-redis";
 
 /**
- * Server-side round-trip tests for songs sync deletion tombstones.
+ * Songs deletion tombstone semantics on the v2 sync core.
  *
- * Regression: writeSongsState used to drop `deletedTrackIds`, so a deleted
- * track could resurrect during a multi-client conflict merge (the client
- * downloaded a snapshot with no tombstones and re-added the track).
- *
- * Requires a live Redis (REDIS_KV_REST_API_URL / _TOKEN in env).
+ * Regression target: a deleted track must not resurrect when another
+ * client later uploads a stale copy. In v2 this is enforced by per-key
+ * last-writer-wins — the tombstone's HLC beats any older track write.
  */
-
-const redis = createRedis();
-const username = `tombstone-test-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
 
 function track(id: string) {
   return {
@@ -29,92 +24,97 @@ function track(id: string) {
   };
 }
 
-async function cleanup() {
-  const keys = [
-    getSongLibraryMetaKey(username),
-    getSongLibraryTrackKey(username, "A"),
-    getSongLibraryTrackKey(username, "B"),
-    getSongLibraryTrackKey(username, "C"),
-  ];
-  await redis.del(...(keys as [string, ...string[]]));
-}
+describe("songs sync deletion tombstones (v2 core)", () => {
+  test("a deleted track stays deleted across reads", async () => {
+    const redis = new FakeRedis() as unknown as Redis;
+    const username = "tombstone-user";
 
-afterAll(async () => {
-  await cleanup();
-});
-
-describe("songs sync deletion tombstones (server round-trip)", () => {
-  test("a deleted track's tombstone survives the server round-trip", async () => {
-    // Initial library: A + B, no tombstones.
     await writeSongsState(redis, username, {
       tracks: [track("A"), track("B")],
       libraryState: "loaded",
       lastKnownVersion: 1,
-      deletedTrackIds: {},
     });
 
-    // Client deletes B: uploads tracks=[A] with a tombstone for B.
-    const ts = new Date().toISOString();
     await writeSongsState(redis, username, {
       tracks: [track("A")],
       libraryState: "loaded",
       lastKnownVersion: 2,
-      deletedTrackIds: { B: ts },
     });
 
-    const read = await readSongsState(redis, username);
-    expect(read).not.toBeNull();
-    const data = read!.data as SongsSnapshotData;
-    expect(data.tracks.map((t) => t.id)).toEqual(["A"]);
-    // The fix: the tombstone is echoed back so a stale client cannot resurrect B.
-    expect(data.deletedTrackIds?.B).toBe(ts);
+    const state = await readSongsState(redis, username);
+    expect(state?.data.tracks.map((t) => t.id)).toEqual(["A"]);
   });
 
-  test("partial server-side writers (AI tools) preserve existing tombstones", async () => {
-    // Continue from previous state (tombstone for B exists). Simulate the AI
-    // "add song" tool, which calls writeSongsState WITHOUT deletedTrackIds.
-    await writeSongsState(redis, username, {
-      tracks: [track("A"), track("C")],
-      libraryState: "loaded",
-      lastKnownVersion: 3,
-    } as SongsSnapshotData);
+  test("a stale client write cannot resurrect a deleted track", async () => {
+    const redis = new FakeRedis() as unknown as Redis;
+    const username = "tombstone-user-2";
 
-    const read = await readSongsState(redis, username);
-    const data = read!.data as SongsSnapshotData;
-    expect(data.tracks.map((t) => t.id).sort()).toEqual(["A", "C"]);
-    // B's tombstone must NOT be wiped by a partial write.
-    expect(data.deletedTrackIds?.B).toBeTruthy();
+    // Library starts with A + B (written at an old timestamp).
+    const oldT = formatHlc(Date.now() - 60_000, 0, "client-old");
+    await applySyncOps(
+      redis,
+      username,
+      [
+        { k: "songs/track:A", v: track("A"), t: oldT },
+        { k: "songs/track:B", v: track("B"), t: oldT },
+      ],
+      "client-old",
+      { trusted: true }
+    );
+
+    // Another device deletes B now.
+    const deleteT = formatHlc(Date.now(), 0, "client-new");
+    const deleteResult = await applySyncOps(
+      redis,
+      username,
+      [{ k: "songs/track:B", del: true, t: deleteT }],
+      "client-new",
+      { trusted: true }
+    );
+    expect(deleteResult.results[0].accepted).toBe(true);
+
+    // The stale device re-uploads B with its old timestamp: rejected, and
+    // the winner returned inline is the tombstone.
+    const staleResult = await applySyncOps(
+      redis,
+      username,
+      [{ k: "songs/track:B", v: track("B"), t: oldT }],
+      "client-old",
+      { trusted: true }
+    );
+    expect(staleResult.results[0].accepted).toBe(false);
+    expect(staleResult.results[0].winner?.del).toBe(true);
+
+    const state = await readSongsState(redis, username);
+    expect(state?.data.tracks.map((t) => t.id)).toEqual(["A"]);
   });
 
-  test("re-adding a track clears its tombstone (present track is not deleted)", async () => {
-    // Client re-adds B and (per useAutoCloudSync) clears its tombstone:
-    // uploads tracks=[A,B,C] with an explicit deletedTrackIds that omits B.
-    await writeSongsState(redis, username, {
-      tracks: [track("A"), track("B"), track("C")],
-      libraryState: "loaded",
-      lastKnownVersion: 4,
-      deletedTrackIds: {},
-    });
+  test("re-adding a deleted track with a newer timestamp succeeds", async () => {
+    const redis = new FakeRedis() as unknown as Redis;
+    const username = "tombstone-user-3";
 
-    const read = await readSongsState(redis, username);
-    const data = read!.data as SongsSnapshotData;
-    expect(data.tracks.map((t) => t.id).sort()).toEqual(["A", "B", "C"]);
-    expect(data.deletedTrackIds?.B).toBeUndefined();
-  });
-
-  test("a present track in the snapshot strips a stale tombstone for the same id", async () => {
-    // Defensive: even if a snapshot lists B as both present AND tombstoned,
-    // the present track wins (mirrors the client's clear-on-add).
     await writeSongsState(redis, username, {
       tracks: [track("A"), track("B")],
       libraryState: "loaded",
-      lastKnownVersion: 5,
-      deletedTrackIds: { B: new Date().toISOString() },
+      lastKnownVersion: 1,
+    });
+    await writeSongsState(redis, username, {
+      tracks: [track("A")],
+      libraryState: "loaded",
+      lastKnownVersion: 2,
     });
 
-    const read = await readSongsState(redis, username);
-    const data = read!.data as SongsSnapshotData;
-    expect(data.tracks.map((t) => t.id).sort()).toEqual(["A", "B"]);
-    expect(data.deletedTrackIds?.B).toBeUndefined();
+    const newerT = formatHlc(Date.now() + 1000, 0, "client-new");
+    const result = await applySyncOps(
+      redis,
+      username,
+      [{ k: "songs/track:B", v: track("B"), t: newerT }],
+      "client-new",
+      { trusted: true }
+    );
+    expect(result.results[0].accepted).toBe(true);
+
+    const state = await readSongsState(redis, username);
+    expect(state?.data.tracks.map((t) => t.id).sort()).toEqual(["A", "B"]);
   });
 });

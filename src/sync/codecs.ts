@@ -588,13 +588,18 @@ const songsCodec: SyncCodec = {
     docs.set("songs/lib", {
       libraryState: ipodState.libraryState,
       lastKnownVersion: ipodState.lastKnownVersion,
+      order: ipodState.tracks.map((track) => track.id).filter(Boolean),
     });
     return docs;
   },
   apply(ops) {
     const upserts = new Map<string, Track>();
     const deletes = new Set<string>();
-    let lib: { libraryState?: unknown; lastKnownVersion?: unknown } | null = null;
+    let lib: {
+      libraryState?: unknown;
+      lastKnownVersion?: unknown;
+      order?: unknown;
+    } | null = null;
 
     for (const op of ops) {
       if (op.k.startsWith("songs/track:")) {
@@ -617,7 +622,22 @@ const songsCodec: SyncCodec = {
       for (const [id, track] of upserts) {
         byId.set(id, track);
       }
-      const tracks = sortTracksLikeServerOrder(Array.from(byId.values()));
+      const order = Array.isArray(lib?.order)
+        ? (lib!.order as unknown[]).filter(
+            (id): id is string => typeof id === "string"
+          )
+        : null;
+      const merged = Array.from(byId.values());
+      const tracks = order
+        ? [
+            ...merged
+              .filter((track) => order.includes(track.id))
+              .sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id)),
+            ...sortTracksLikeServerOrder(
+              merged.filter((track) => !order.includes(track.id))
+            ),
+          ]
+        : sortTracksLikeServerOrder(merged);
       return {
         tracks,
         libraryState:

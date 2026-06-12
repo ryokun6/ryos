@@ -7,6 +7,8 @@ import {
   executeStickiesControl,
   type MemoryToolContext,
 } from "../api/chat/tools/executors";
+import { readSyncSnapshot } from "../api/sync/v2/_core";
+import { FakeRedis } from "./fake-redis";
 
 const calendarData = {
   data: {
@@ -129,27 +131,24 @@ const filesMetadataData = {
   createdAt: "2026-03-06T00:00:00.000Z",
 };
 
+/**
+ * Seeds v1-format sync snapshots; the v2 core imports them on first access,
+ * which doubles as coverage for the v1 → v2 migration path.
+ */
 function createMockRedis(initialData: Record<string, unknown> = {}) {
-  const store: Record<string, string> = {};
+  const fake = new FakeRedis();
   for (const [key, value] of Object.entries(initialData)) {
-    store[key] = JSON.stringify(value);
+    fake.setSync(key, JSON.stringify(value));
   }
+  return fake;
+}
 
-  return {
-    get: mock(async (key: string) => {
-      const val = store[key];
-      return val ? JSON.parse(val) : null;
-    }),
-    set: mock(async (key: string, value: string) => {
-      store[key] = value;
-      return "OK";
-    }),
-    _store: store,
-  } as {
-    get: ReturnType<typeof mock>;
-    set: ReturnType<typeof mock>;
-    _store: Record<string, string>;
-  };
+async function getKvEntry(
+  redis: FakeRedis,
+  key: string
+): Promise<{ v?: unknown; del?: boolean } | undefined> {
+  const snapshot = await readSyncSnapshot(redis as unknown as Redis, "testuser");
+  return snapshot.entries[key];
 }
 
 function createMockContext(
@@ -233,7 +232,14 @@ describe("Server-side Documents Executor", () => {
     expect(result.success).toBe(true);
     expect(result.document?.path).toBe("/Documents/todo.md");
     expect(result.document?.content).toBe("- buy milk");
-    expect(redis.set).toHaveBeenCalled();
+
+    // Persisted: a fresh read round-trips the new document.
+    const readBack = await executeDocumentsControl(
+      { action: "read", path: "/Documents/todo.md" },
+      context
+    );
+    expect(readBack.success).toBe(true);
+    expect(readBack.document?.content).toBe("- buy milk");
   });
 
   test("write clears deleted path tombstones when recreating a document", async () => {
@@ -260,10 +266,13 @@ describe("Server-side Documents Executor", () => {
     );
 
     expect(result.success).toBe(true);
-    const persisted = JSON.parse(
-      tombstonedRedis._store["sync:state:testuser:files-metadata"]
+    // The new write's timestamp beats the imported tombstone.
+    const entry = await getKvEntry(
+      tombstonedRedis,
+      "files/item:/Documents/todo.md"
     );
-    expect(persisted.data.deletedPaths || {}).not.toHaveProperty("/Documents/todo.md");
+    expect(entry?.del).toBeFalsy();
+    expect(entry?.v).toBeTruthy();
   });
 
   test("write appends to an existing document", async () => {
@@ -387,7 +396,8 @@ describe("Server-side Calendar Executor", () => {
     expect(result.success).toBe(true);
     expect(result.event?.title).toBe("Meeting");
     expect(result.event?.id).toBeTruthy();
-    expect(redis.set).toHaveBeenCalled();
+    const entry = await getKvEntry(redis, `calendar/event:${result.event!.id}`);
+    expect(entry?.v).toMatchObject({ title: "Meeting" });
   });
 
   test("create requires title and date", async () => {
@@ -458,10 +468,8 @@ describe("Server-side Calendar Executor", () => {
       context
     );
     expect(result.success).toBe(true);
-    const persisted = JSON.parse(redis._store["sync:state:testuser:calendar"]);
-    expect(persisted.data.deletedTodoIds).toEqual({
-      "todo-1": expect.any(String),
-    });
+    const entry = await getKvEntry(redis, "calendar/todo:todo-1");
+    expect(entry?.del).toBe(true);
   });
 
   test("returns error when no sync data exists", async () => {
@@ -505,7 +513,8 @@ describe("Server-side Stickies Executor", () => {
     );
     expect(result.success).toBe(true);
     expect(result.note?.content).toBe("New note");
-    expect(redis.set).toHaveBeenCalled();
+    const entry = await getKvEntry(redis, `stickies/note:${result.note!.id}`);
+    expect(entry?.v).toMatchObject({ content: "New note" });
   });
 
   test("create works even without prior state", async () => {
@@ -533,20 +542,16 @@ describe("Server-side Stickies Executor", () => {
       context
     );
     expect(result.success).toBe(true);
-    const persisted = JSON.parse(redis._store["sync:state:testuser:stickies"]);
-    expect(persisted.data.deletedNoteIds).toEqual({
-      "note-1": expect.any(String),
-    });
+    const entry = await getKvEntry(redis, "stickies/note:note-1");
+    expect(entry?.del).toBe(true);
   });
 
   test("clear removes all notes", async () => {
     const result = await executeStickiesControl({ action: "clear" }, context);
     expect(result.success).toBe(true);
     expect(result.message).toContain("1");
-    const persisted = JSON.parse(redis._store["sync:state:testuser:stickies"]);
-    expect(persisted.data.deletedNoteIds).toEqual({
-      "note-1": expect.any(String),
-    });
+    const entry = await getKvEntry(redis, "stickies/note:note-1");
+    expect(entry?.del).toBe(true);
   });
 
   test("returns error without authentication", async () => {
@@ -603,7 +608,11 @@ describe("Server-side Contacts Executor", () => {
     );
     expect(result.success).toBe(true);
     expect(result.contact?.displayName).toBe("Maya Rivers");
-    expect(redis.set).toHaveBeenCalled();
+    const entry = await getKvEntry(
+      redis,
+      `contacts/contact:${result.contact!.id}`
+    );
+    expect(entry?.v).toMatchObject({ displayName: "Maya Rivers" });
   });
 
   test("update modifies an existing contact", async () => {
@@ -626,9 +635,7 @@ describe("Server-side Contacts Executor", () => {
     );
     expect(result.success).toBe(true);
     expect(result.message).toContain("Deleted");
-    const persisted = JSON.parse(redis._store["sync:state:testuser:contacts"]);
-    expect(persisted.data.deletedContactIds).toEqual({
-      "contact-1": expect.any(String),
-    });
+    const entry = await getKvEntry(redis, "contacts/contact:contact-1");
+    expect(entry?.del).toBe(true);
   });
 });

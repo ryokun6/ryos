@@ -100,6 +100,7 @@ export async function readSongsState(
   const lib = (docs[LIB_KEY] || {}) as {
     libraryState?: unknown;
     lastKnownVersion?: unknown;
+    order?: unknown;
   };
 
   const hasLibDoc = docs[LIB_KEY] !== undefined;
@@ -107,10 +108,27 @@ export async function readSongsState(
     return null;
   }
 
+  // Order by the persisted library order (newest-first by convention),
+  // appending tracks unknown to the order doc in server-sort order.
+  const order = Array.isArray(lib.order)
+    ? (lib.order as unknown[]).filter(
+        (id): id is string => typeof id === "string"
+      )
+    : [];
+  const position = new Map(order.map((id, index) => [id, index]));
+  const orderedTracks = [
+    ...tracks
+      .filter((track) => position.has(track.id))
+      .sort((a, b) => position.get(a.id)! - position.get(b.id)!),
+    ...sortTracksLikeServerOrder(
+      tracks.filter((track) => !position.has(track.id))
+    ),
+  ];
+
   const now = new Date().toISOString();
   return {
     data: {
-      tracks: sortTracksLikeServerOrder(tracks),
+      tracks: orderedTracks,
       libraryState: isLibraryState(lib.libraryState)
         ? lib.libraryState
         : tracks.length > 0
@@ -194,6 +212,7 @@ export async function writeSongsState(
       Number.isFinite(data.lastKnownVersion)
         ? data.lastKnownVersion
         : 0,
+    order: nextTracks.map((track) => track.id),
   };
   if (JSON.stringify(existingDocs[LIB_KEY]) !== JSON.stringify(nextLib)) {
     ops.push({ k: LIB_KEY, v: nextLib, t });
