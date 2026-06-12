@@ -6,6 +6,10 @@ import { helpItems } from "..";
 import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
 import { clearAllAppStates } from "@/stores/useAppStore";
 import { ensureIndexedDBInitialized } from "@/utils/indexedDB";
+import {
+  flushDebouncedPersistWrites,
+  haltDebouncedPersistWrites,
+} from "@/utils/debouncedPersistStorage";
 import { useAppStoreShallow } from "@/stores/useAppStore";
 import { useAudioSettingsStoreShallow } from "@/stores/useAudioSettingsStore";
 import { useDisplaySettingsStoreShallow } from "@/stores/useDisplaySettingsStore";
@@ -641,7 +645,9 @@ export function useControlPanelsLogic({
         version: 3,
       };
 
-      // Backup all localStorage data
+      // Backup all localStorage data (flush write-behind persist queues so
+      // the snapshot includes the latest store state)
+      flushDebouncedPersistWrites();
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
         if (key) {
@@ -1045,7 +1051,11 @@ export function useControlPanelsLogic({
         throw new Error("Invalid backup format");
       }
 
-      // Clear current state
+      // Clear current state. Drain write-behind persist queues first so a
+      // pending debounced write can't fire mid-restore and clobber a
+      // freshly restored key before the reload.
+      flushDebouncedPersistWrites();
+      haltDebouncedPersistWrites();
       clearAllAppStates();
       clearPrefetchFlag();
 
@@ -1226,6 +1236,10 @@ export function useControlPanelsLogic({
   };
 
   const performReset = () => {
+    // Flush write-behind persist queues so the preserved keys are current,
+    // then halt further writes until the reload.
+    flushDebouncedPersistWrites();
+    haltDebouncedPersistWrites();
     // Preserve critical recovery keys while clearing everything else
     const fileMetadataStore = localStorage.getItem("ryos:files");
     const usernameRecovery = localStorage.getItem("_usr_recovery_key_");
@@ -1268,7 +1282,9 @@ export function useControlPanelsLogic({
       version: 3, // Version 3 includes applets support
     };
 
-    // Backup all localStorage data
+    // Backup all localStorage data (flush write-behind persist queues so
+    // the snapshot includes the latest store state)
+    flushDebouncedPersistWrites();
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key) {
@@ -1433,7 +1449,11 @@ export function useControlPanelsLogic({
           compressed: file.name.endsWith(".gz"),
         });
 
-        // Clear current state
+        // Clear current state. Drain write-behind persist queues first so a
+        // pending debounced write can't fire mid-restore and clobber a
+        // freshly restored key before the reload.
+        flushDebouncedPersistWrites();
+        haltDebouncedPersistWrites();
         clearAllAppStates();
         clearPrefetchFlag(); // Force re-prefetch on next boot
 

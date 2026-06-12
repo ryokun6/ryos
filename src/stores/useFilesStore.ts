@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { useStoreShallow } from "./helpers";
-import { persist, createJSONStorage } from "zustand/middleware";
+import { persist } from "zustand/middleware";
+import { createDebouncedPersistStorage } from "@/utils/debouncedPersistStorage";
 import { v4 as uuidv4 } from "uuid";
 import { ensureIndexedDBInitialized, STORES } from "@/utils/indexedDB";
 import type { StoredContent } from "@/utils/indexedDBOperations";
@@ -1534,7 +1535,10 @@ export const useFilesStore = create<FilesStoreState>()(
     {
       name: STORE_NAME,
       version: STORE_VERSION,
-      storage: createJSONStorage(() => localStorage),
+      // Write-behind storage: the whole VFS used to be JSON.stringify'd and
+      // written synchronously on every metadata mutation (rename, move,
+      // trash). Serialization now happens once per quiet window.
+      storage: createDebouncedPersistStorage(),
       partialize: (state) => ({
         items: state.items, // Persist the entire file structure
         libraryState: state.libraryState,
