@@ -16,7 +16,7 @@ import { useIsPhone } from "@/hooks/useIsPhone";
 import { useIsRyoAdmin } from "@/hooks/useIsRyoAdmin";
 import { useLongPress } from "@/hooks/useLongPress";
 import { useSound, Sounds } from "@/hooks/useSound";
-import type { AppInstance, LaunchOriginRect } from "@/stores/useAppStore";
+import type { LaunchOriginRect } from "@/stores/useAppStore";
 import { RightClickMenu } from "@/components/ui/right-click-menu";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { AnimatePresence, motion, LayoutGroup, useMotionValue } from "motion/react";
@@ -39,78 +39,10 @@ import { createDockTrashHandlers } from "./dockTrashHandlers";
 import { DockDivider } from "./DockDivider";
 import { useDockIconHover } from "./useDockIconHover";
 import { useDockMagnification } from "./useDockMagnification";
-
-type DockInstanceSnapshot = Pick<
-  AppInstance,
-  | "appId"
-  | "createdAt"
-  | "displayTitle"
-  | "initialData"
-  | "instanceId"
-  | "isLoading"
-  | "isMinimized"
-  | "isOpen"
-  | "title"
->;
-
-function getAppletInitialDataSignature(initialData: unknown): string {
-  if (!initialData || typeof initialData !== "object") return "";
-  const data = initialData as {
-    icon?: unknown;
-    name?: unknown;
-    path?: unknown;
-    shareCode?: unknown;
-  };
-  return [
-    data.path,
-    data.shareCode,
-    data.icon,
-    data.name,
-  ]
-    .map((value) => (typeof value === "string" ? value : ""))
-    .join("\u001f");
-}
-
-function getDockInstancesSignature(instances: Record<string, AppInstance>) {
-  return Object.values(instances)
-    .map((inst) =>
-      [
-        inst.instanceId,
-        inst.appId,
-        inst.isOpen ? "1" : "0",
-        inst.isLoading ? "1" : "0",
-        inst.isMinimized ? "1" : "0",
-        inst.createdAt,
-        inst.title ?? "",
-        inst.displayTitle ?? "",
-        inst.appId === "applet-viewer"
-          ? getAppletInitialDataSignature(inst.initialData)
-          : "",
-      ].join("\u001f")
-    )
-    .join("\u001e");
-}
-
-function getDockInstancesSnapshot(
-  instances: Record<string, AppInstance>
-): Record<string, AppInstance> {
-  return Object.fromEntries(
-    Object.entries(instances).map(([id, inst]) => {
-      const snapshot = {
-        appId: inst.appId,
-        createdAt: inst.createdAt,
-        displayTitle: inst.displayTitle,
-        initialData: inst.initialData,
-        instanceId: inst.instanceId,
-        isLoading: inst.isLoading,
-        isMinimized: inst.isMinimized,
-        isOpen: inst.isOpen,
-        title: inst.title,
-      } satisfies DockInstanceSnapshot;
-      return [id, snapshot as AppInstance];
-    })
-  );
-}
+import {
+  getDockInstancesSignature,
+  getDockInstancesSnapshot,
+} from "./dockInstancesSnapshot";
 
 export function MacDock() {
   const { t } = useTranslation();

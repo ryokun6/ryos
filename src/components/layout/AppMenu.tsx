@@ -11,7 +11,7 @@ import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
-import { useAppStoreShallow } from "@/stores/useAppStore";
+import { useAppStore, useAppStoreShallow } from "@/stores/useAppStore";
 import { appRegistry, type AppId } from "@/config/appRegistry";
 import { getTranslatedAppName } from "@/utils/i18n";
 
@@ -40,16 +40,22 @@ export function AppMenu({
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
 
   const {
-    instances,
     minimizeInstance,
     restoreInstance,
     closeAppInstance,
   } = useAppStoreShallow((s) => ({
-    instances: s.instances,
     minimizeInstance: s.minimizeInstance,
     restoreInstance: s.restoreInstance,
     closeAppInstance: s.closeAppInstance,
   }));
+  // Boolean selector instead of subscribing to the whole `instances` map:
+  // the menu re-renders only when this flips, and the bulk handlers below
+  // read the map imperatively at click time.
+  const hasMinimizedInstances = useAppStore((s) =>
+    Object.values(s.instances).some(
+      (inst) => inst.appId === appId && inst.isOpen && inst.isMinimized
+    )
+  );
 
   // Get app metadata for help and about dialogs
   const app = appRegistry[appId];
@@ -65,14 +71,6 @@ export function AppMenu({
   // Check if this app supports fullscreen
   const supportsFullScreen = FULLSCREEN_APPS.includes(appId);
 
-  // Get all open instances of this app
-  const appInstances = Object.values(instances).filter(
-    (inst) => inst.appId === appId && inst.isOpen
-  );
-
-  // Check if there are any minimized instances of this app
-  const hasMinimizedInstances = appInstances.some((inst) => inst.isMinimized);
-
   // Hide this app (minimize the current instance)
   const handleHide = () => {
     minimizeInstance(instanceId);
@@ -80,7 +78,7 @@ export function AppMenu({
 
   // Hide others - minimize all other app instances
   const handleHideOthers = () => {
-    Object.values(instances).forEach((inst) => {
+    Object.values(useAppStore.getState().instances).forEach((inst) => {
       if (inst.isOpen && inst.instanceId !== instanceId && !inst.isMinimized) {
         minimizeInstance(inst.instanceId);
       }
@@ -89,8 +87,8 @@ export function AppMenu({
 
   // Show all - restore all minimized instances of this app
   const handleShowAll = () => {
-    appInstances.forEach((inst) => {
-      if (inst.isMinimized) {
+    Object.values(useAppStore.getState().instances).forEach((inst) => {
+      if (inst.appId === appId && inst.isOpen && inst.isMinimized) {
         restoreInstance(inst.instanceId);
       }
     });

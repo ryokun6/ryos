@@ -2,7 +2,11 @@ import { useMemo } from "react";
 import { Menubar } from "@/components/ui/menubar";
 import { appRegistry } from "@/config/appRegistry";
 import type { AnyApp } from "@/apps/base/types";
-import { useAppStoreShallow } from "@/stores/useAppStore";
+import { useAppStore, useAppStoreShallow } from "@/stores/useAppStore";
+import {
+  getDockInstancesSignature,
+  getDockInstancesSnapshot,
+} from "./dock/dockInstancesSnapshot";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useFilesStore } from "@/stores/useFilesStore";
 import type { MenuBarProps } from "./menu-bar/menuBarTypes";
@@ -58,16 +62,24 @@ function WindowsTaskbarWithState({
   isXpTheme: boolean;
 }) {
   const {
-    instances,
+    dockInstancesSignature,
     bringInstanceToForeground,
     restoreInstance,
     foregroundInstanceId,
   } = useAppStoreShallow((s) => ({
-    instances: s.instances,
+    dockInstancesSignature: getDockInstancesSignature(s.instances),
     bringInstanceToForeground: s.bringInstanceToForeground,
     restoreInstance: s.restoreInstance,
     foregroundInstanceId: s.foregroundInstanceId,
   }));
+  const instances = useMemo(
+    () => getDockInstancesSnapshot(useAppStore.getState().instances),
+    // The signature string is a deliberate cache key (same pattern as
+    // MacDock): the snapshot is rebuilt only when a taskbar-relevant field
+    // changes, not on every geometry/focus write to the instances map.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [dockInstancesSignature]
+  );
   const getFileItem = useFilesStore((s) => s.getItem);
 
   return (
