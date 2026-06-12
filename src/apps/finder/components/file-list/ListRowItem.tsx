@@ -91,7 +91,7 @@ export const ListRowItem = memo(function ListRowItem({
       className={`border-none cursor-default ${
         isSelected || dropTargetPath === file.path
           ? ""
-          : "odd:bg-neutral-200/50 hover:bg-neutral-100/50 transition-colors"
+          : "odd:bg-black/5 hover:bg-black/5 transition-colors"
       }`}
       data-selected={isSelected || dropTargetPath === file.path ? "true" : undefined}
       onClick={handleClick}

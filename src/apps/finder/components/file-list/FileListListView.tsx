@@ -32,7 +32,7 @@ export function FileListListView(vm: FileListViewModel) {
     t,
   } = vm;
 
-  const listHeaderTextClass = isMacOSXTheme ? "text-[12px]" : "text-[10px]";
+  const listHeaderTextClass = isMacOSXTheme ? "text-[11px]" : "text-[10px]";
   const listBodyTextClass = isMacOSXTheme ? "text-[12px]" : "text-[11px]";
 
   return (
@@ -44,16 +44,16 @@ export function FileListListView(vm: FileListViewModel) {
       <Table key={listTableKey} className="min-w-[480px]">
         <TableHeader>
           <TableRow className={`${listHeaderTextClass} border-none font-normal`}>
-            <TableHead className="font-normal bg-neutral-100/50 h-[28px]">
+            <TableHead className="font-normal h-[24px]">
               {t("apps.finder.tableHeaders.name")}
             </TableHead>
-            <TableHead className="font-normal bg-neutral-100/50 h-[28px]">
+            <TableHead className="font-normal h-[24px]">
               {t("apps.finder.tableHeaders.type")}
             </TableHead>
-            <TableHead className="font-normal bg-neutral-100/50 h-[28px] whitespace-nowrap">
+            <TableHead className="font-normal h-[24px] whitespace-nowrap">
               {t("apps.finder.tableHeaders.size")}
             </TableHead>
-            <TableHead className="font-normal bg-neutral-100/50 h-[28px] whitespace-nowrap">
+            <TableHead className="font-normal h-[24px] whitespace-nowrap">
               {t("apps.finder.tableHeaders.modified")}
             </TableHead>
           </TableRow>

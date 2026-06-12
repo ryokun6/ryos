@@ -307,7 +307,7 @@ export function CalendarAppComponent({
               isMacOSTheme ? (
                 <div className="flex flex-col shrink-0 gap-[5px]" style={{ width: 160 }}>
                   <div
-                    className="flex-1 overflow-y-auto bg-white"
+                    className="flex-1 overflow-y-auto bg-white os-inset-pane"
                     style={{
                       border: "1px solid rgba(0, 0, 0, 0.55)",
                       boxShadow: "inset 0 1px 2px rgba(0, 0, 0, 0.25), 0 1px 0 rgba(255, 255, 255, 0.4)",
@@ -322,7 +322,7 @@ export function CalendarAppComponent({
                   </div>
                   {showMiniCalendar && (
                     <div
-                      className="shrink-0 bg-white"
+                      className="shrink-0 bg-white os-inset-pane"
                       style={{
                         border: "1px solid rgba(0, 0, 0, 0.55)",
                         boxShadow: "inset 0 1px 2px rgba(0, 0, 0, 0.25), 0 1px 0 rgba(255, 255, 255, 0.4)",
@@ -378,7 +378,7 @@ export function CalendarAppComponent({
             {/* Main view area — hidden when todo is full-width on narrow screens */}
             {!showTodoFullWidth && (
               <div
-                className={cn("flex-1 flex overflow-hidden calendar-grid bg-white")}
+                className={cn("flex-1 flex overflow-hidden calendar-grid bg-white os-inset-pane")}
                 style={isMacOSTheme ? {
                   border: "1px solid rgba(0, 0, 0, 0.55)",
                   boxShadow: "inset 0 1px 2px rgba(0, 0, 0, 0.25), 0 1px 0 rgba(255, 255, 255, 0.4)",
@@ -415,7 +415,7 @@ export function CalendarAppComponent({
             {/* Todo: full-width on narrow screens, sidebar on wide */}
             {showTodoFullWidth && (
               <div
-                className="flex-1 overflow-y-auto bg-white"
+                className="flex-1 overflow-y-auto bg-white os-inset-pane"
                 style={isMacOSTheme ? {
                   border: "1px solid rgba(0, 0, 0, 0.55)",
                   boxShadow: "inset 0 1px 2px rgba(0, 0, 0, 0.25), 0 1px 0 rgba(255, 255, 255, 0.4)",
@@ -438,7 +438,7 @@ export function CalendarAppComponent({
             )}
             {showTodo && (
               <div
-                className="shrink-0 overflow-y-auto bg-white"
+                className="shrink-0 overflow-y-auto bg-white os-inset-pane"
                 style={isMacOSTheme ? {
                   border: "1px solid rgba(0, 0, 0, 0.55)",
                   boxShadow: "inset 0 1px 2px rgba(0, 0, 0, 0.25), 0 1px 0 rgba(255, 255, 255, 0.4)",
