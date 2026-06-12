@@ -1,6 +1,34 @@
-# Cloud Sync v2 — Journal-Based Sync (Design Proposal)
+# Cloud Sync v2 — Journal-Based Sync
 
-Status: **proposal** (not implemented)
+Status: **implemented** (full rewrite / direct cutover — no v1 coexistence)
+
+Implementation map:
+
+- Server core: `api/sync/v2/_core.ts` (KV + journal + LWW), `_import.ts`
+  (lazy v1 → v2 import on first access), `_tool-state.ts` (AI tool adapters)
+- Routes: `api/sync/v2/{ops,changes,snapshot,blobs}.ts`
+- Shared: `src/shared/sync2/{types,hlc,namespaces}.ts`
+- Client: `src/sync/{engine,codecs,state,blobs,transport}.ts`,
+  `src/hooks/useAutoCloudSync.ts`, `src/stores/useCloudSyncStore.ts`
+- Tests: `tests/test-sync-v2-{core,codecs,api,engine-e2e}.test.ts`
+
+Implementation notes where the final system deviates from the original
+proposal text below:
+
+- **No persistent outbox.** Pending uploads are derived as
+  `diff(local state, shadow map)` — a persisted map of key → (HLC, content
+  hash of the last synced doc). This is strictly simpler than an outbox and
+  still survives reloads.
+- **Deletions are inferred from shadow keys missing locally**, corroborated
+  by the existing deletion markers when a wipe looks suspiciously large
+  (storage-eviction guard), instead of marker-driven delete ops.
+- **The journal is a bounded Redis list** (op JSON, ascending seq) rather
+  than a zset; per-user writes are serialized by a short-TTL lock.
+- **v1 import runs lazily server-side** on a user's first v2 access (the
+  legacy per-item blob signatures are reused as content hashes, so existing
+  libraries do not re-upload).
+- **Blob GC is deferred**: superseded content-addressed blobs are not yet
+  garbage-collected (bounded per-user; can be added as a periodic sweep).
 
 This document studies the current cloud sync system (v1) and proposes a
 redesign that eliminates its main inefficiencies: full-snapshot uploads and
@@ -568,42 +596,34 @@ lines, because conflict-compensation code dominates v1.
 
 ---
 
-## 11. Migration plan
+## 11. Migration (as implemented: direct cutover)
 
-The phases are ordered so each lands independently shippable, with v1 and v2
-coexisting behind a per-user flag.
+v1 and v2 do not coexist. The cutover replaced the v1 endpoints, client
+engine, and conflict machinery in one change:
 
-**Phase 1 — server core.** Add `api/sync/v2/` (ops, changes, snapshot,
-blobs) and the `sync2:*` Redis schema. Pure addition; no v1 changes. Full
-integration test suite against the standalone Bun server (the existing
-`tests/` + `bun run dev:api` harness covers this pattern).
+**Server.** `api/sync/v2/` (ops, changes, snapshot, blobs) plus the
+`sync2:*` Redis schema replaced `api/sync/domains/*` and the
+`_state`/`_blob`/`_domains`/`_physical` modules, which were deleted.
+Server-side AI tool writers (songs, contacts, calendar, stickies, files
+metadata) were rewired onto the v2 op pipeline (`_tool-state.ts`,
+`song-library-state.ts`, `contacts.ts`), so tool writes broadcast realtime
+ops like any other client.
 
-**Phase 2 — import.** On first v2 login, a server-side import converts the
-user's existing `sync:state:{user}:*` snapshots and blob manifests into KV
-entries + an initial journal seq, translating per-section/per-item
-timestamps into HLC values and re-registering existing storage objects under
-their hashes (or keeping legacy URLs in `contentRef` with a `url` variant
-until rewritten on next content change). Idempotent and one-way per user.
+**Import.** On a user's first v2 access (any v2 endpoint),
+`ensureSync2Initialized` converts existing `sync:state:{user}:*` snapshots,
+the per-track song library, and blob manifests into KV entries —
+translating per-section/per-item timestamps into HLC values and keeping
+legacy per-item storage URLs (their v1 signatures are SHA-256 over the same
+serialization, so they seed the dedupe registry and nothing re-uploads).
+Idempotent and one-way per user; v1 keys are left to expire via their
+90-day TTLs.
 
-**Phase 3 — client engine.** New `src/sync2/` engine (outbox, cursor,
-appliers, HLC, blob cache) mounted behind the existing deferred-load pattern
-(`useDeferredAutoCloudSync`). Migrate domains in waves, lowest-risk first:
-`settings` → `stickies`/`calendar`/`contacts`/`maps`/`videos`/`tv` → `songs`
-→ `files` + blob domains. During a wave, the flagged domain stops being
-written through v1 (its v1 dirty path is disabled) and is owned by v2.
-
-**Phase 4 — cutover and deletion.** When all domains are migrated and the
-flag is default-on, delete `api/sync/domains/*`, `src/sync/`,
-`useAutoCloudSync`, and the `cloudSync*` utility constellation; repoint the
-Control Panels sync tab (status = cursor + outbox depth, force sync =
-snapshot GET / outbox flush) and the backup UI at v2 endpoints. Old
-`sync:state:*` keys expire naturally via their 90-day TTLs.
-
-Rollback story: until Phase 4, disabling the flag re-enables v1 paths; the
-import is additive so v1 data is never destroyed by v2 writes during the
-transition (v2-era changes made before a rollback would need a one-time
-export back, or are simply lost like any offline edits — acceptable during
-a staged rollout).
+**Client.** The new engine + codecs replaced `src/sync/` and the
+`cloudSync*` utility constellation (~7,000 lines down to roughly a quarter
+of that). The Control Panels sync tab and menu-bar indicator now read
+per-category status from the slimmed `useCloudSyncStore`; force upload =
+re-stamped full flush, force download = snapshot apply. The manual backup
+endpoints were kept unchanged.
 
 ---
 
