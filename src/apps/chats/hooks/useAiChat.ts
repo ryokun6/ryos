@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { useChat, type UIMessage } from "@ai-sdk/react";
+import { Chat, useChat, type UIMessage } from "@ai-sdk/react";
 import {
   DefaultChatTransport,
   lastAssistantMessageIsCompleteWithToolCalls,
+  type ChatInit,
 } from "ai";
 import { useChatsStore } from "@/stores/useChatsStore";
 import type { AIChatMessage } from "@/types/chat";
@@ -143,6 +144,78 @@ const showBackgroundedMessageNotification = (message: UIMessage) => {
   });
 };
 
+// ---------------------------------------------------------------------------
+// Shared AI chat instance
+//
+// Chats and Terminal both call useAiChat(). Each useChat() call used to spin
+// up its OWN SDK Chat (separate transport, separate message state, separate
+// tool execution) that fought over the single Zustand message store. All
+// callers now attach to ONE module-level Chat instance, so messages, status,
+// and in-flight streams are genuinely shared.
+//
+// Chat lifecycle callbacks (tool calls, finish, error) must be configured at
+// construction time, but their implementations need per-instance React scope
+// (launchApp, file saving, dialogs, toasts). The chat therefore delegates to
+// a handler registry: each mounted useAiChat registers its latest handlers,
+// and the chats app ("primary") wins over the terminal ("secondary") so
+// rate-limit / auth UI state lands in the app that renders it.
+// ---------------------------------------------------------------------------
+type SharedChatInit = ChatInit<AIChatMessage>;
+type SharedOnToolCall = NonNullable<SharedChatInit["onToolCall"]>;
+type SharedOnFinish = NonNullable<SharedChatInit["onFinish"]>;
+type SharedOnError = NonNullable<SharedChatInit["onError"]>;
+
+interface SharedAiChatHandlers {
+  onToolCall: SharedOnToolCall;
+  onFinish: SharedOnFinish;
+  onError: SharedOnError;
+}
+
+type SharedHandlerRole = "primary" | "secondary";
+
+const sharedHandlerRegistry = new Map<
+  SharedHandlerRole,
+  { readonly current: SharedAiChatHandlers }
+>();
+
+const resolveSharedHandlers = (): SharedAiChatHandlers | null =>
+  (sharedHandlerRegistry.get("primary") ?? sharedHandlerRegistry.get("secondary"))
+    ?.current ?? null;
+
+let sharedAiChat: Chat<AIChatMessage> | null = null;
+
+function getSharedAiChat(): Chat<AIChatMessage> {
+  if (!sharedAiChat) {
+    sharedAiChat = new Chat<AIChatMessage>({
+      // Initialize from the persisted store (hydrated synchronously before
+      // first mount); useSyncedAiMessages reconciles afterwards.
+      messages: useChatsStore.getState().aiMessages,
+
+      transport: new DefaultChatTransport({
+        api: getApiUrl("/api/chat"),
+        body: async () => ({
+          systemState: getSystemState(),
+          model: useAppStore.getState().aiModel,
+        }),
+      }),
+
+      // Automatically submit when all tool outputs are available
+      sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
+
+      async onToolCall(options) {
+        await resolveSharedHandlers()?.onToolCall(options);
+      },
+      onFinish(options) {
+        resolveSharedHandlers()?.onFinish(options);
+      },
+      onError(error) {
+        resolveSharedHandlers()?.onError(error);
+      },
+    });
+  }
+  return sharedAiChat;
+}
+
 export function useAiChat(onPromptSetUsername?: () => void) {
   const { aiMessages, setAiMessages, username, isAuthenticated } =
     useChatsStoreShallow((state) => ({
@@ -170,16 +243,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   } | null>(null);
   const [needsUsername, setNeedsUsername] = useState(false);
 
-  const chatTransport = useMemo(() => {
-    return new DefaultChatTransport({
-      api: getApiUrl("/api/chat"),
-      body: async () => ({
-        systemState: getSystemState(),
-        model: useAppStore.getState().aiModel,
-      }),
-    });
-  }, []);
-
   const speakFinalAssistantMessageRef = useRef<
     ((message: UIMessage) => void) | null
   >(null);
@@ -195,6 +258,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   );
 
   // --- AI Chat Hook (Vercel AI SDK v6) ---
+  // Attach to the shared module-level Chat (see getSharedAiChat above).
   const {
     messages: currentSdkMessages,
     status,
@@ -205,18 +269,16 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     sendMessage,
     regenerate,
     addToolOutput,
-  } = useChat({
-    // Initialize from store
-    messages: aiMessages,
-
+  } = useChat<AIChatMessage>({
+    chat: getSharedAiChat(),
     experimental_throttle: 50,
+  });
 
-    // Automatically submit when all tool outputs are available
-    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
-
-    transport: chatTransport,
-
-    async onToolCall({ toolCall }) {
+  // --- Shared chat lifecycle handlers -------------------------------------
+  // Defined as plain closures (not useCallback) and snapshotted into
+  // handlersRef on every render, so the shared chat always invokes the
+  // latest instance scope without giant dependency arrays.
+  const handleSharedToolCall: SharedOnToolCall = async ({ toolCall }) => {
       // Client-side tool execution requires returning output to the chat.
       // Short delay to allow the UI to render the "call" state
       await new Promise<void>((resolve) => setTimeout(resolve, 120));
@@ -1312,9 +1374,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
           errorText: err instanceof Error ? err.message : i18n.t("apps.chats.toolCalls.unknownError"),
         });
       }
-    },
+    };
 
-    onFinish: ({ messages, isError }) => {
+  const handleSharedFinish: SharedOnFinish = ({ messages, isError }) => {
       // Ensure all messages have metadata with createdAt. Prefer the
       // timestamp pinned while the message was streaming so it doesn't jump
       // to the finish time.
@@ -1391,9 +1453,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       }
 
       speakFinalAssistantMessageRef.current?.(lastMsg);
-    },
+    };
 
-    onError: (err) => {
+  const handleSharedError: SharedOnError = (err) => {
       // Workaround for AI SDK v6 bug with stopWhen and tool calls (GitHub issue #10291)
       // The finish event emits {"type":"finish","finishReason":"tool-calls"} which fails validation
       // This is a known issue and the error can be safely ignored as the chat still works
@@ -1511,8 +1573,33 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         description:
           err.message || i18n.t("apps.chats.toasts.failedToGetResponse"),
       });
-    },
+    };
+
+  // Register this instance's handlers with the shared chat. The chats app
+  // (identified by passing onPromptSetUsername) is "primary" and takes
+  // precedence over the terminal's "secondary" registration, so dialogs and
+  // rate-limit state land in the UI that displays them.
+  const sharedHandlersRef = useRef<SharedAiChatHandlers>({
+    onToolCall: handleSharedToolCall,
+    onFinish: handleSharedFinish,
+    onError: handleSharedError,
   });
+  sharedHandlersRef.current = {
+    onToolCall: handleSharedToolCall,
+    onFinish: handleSharedFinish,
+    onError: handleSharedError,
+  };
+  const sharedHandlerRole: SharedHandlerRole = onPromptSetUsername
+    ? "primary"
+    : "secondary";
+  useEffect(() => {
+    sharedHandlerRegistry.set(sharedHandlerRole, sharedHandlersRef);
+    return () => {
+      if (sharedHandlerRegistry.get(sharedHandlerRole) === sharedHandlersRef) {
+        sharedHandlerRegistry.delete(sharedHandlerRole);
+      }
+    };
+  }, [sharedHandlerRole]);
 
   // Ensure all messages have metadata with timestamps (runs synchronously during render).
   // The per-id cache keeps referential identity stable across streaming ticks:
