@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowsClockwise, Gear } from "@phosphor-icons/react";
+import { ArrowsClockwise } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "motion/react";
 import { useShallow } from "zustand/react/shallow";
 import {
@@ -232,16 +232,6 @@ export function CloudSyncIndicator() {
         onPointerEnter={cancelScheduledClose}
         onPointerLeave={handlePointerLeave}
       >
-        {isCheckingRemote && (
-          <div className={itemRowClass} style={itemRowStyle}>
-            <ArrowsClockwise
-              aria-hidden="true"
-              className="h-3.5 w-3.5 animate-spin shrink-0 opacity-70"
-              weight="bold"
-            />
-            <span>{t("apps.control-panels.autoSync.checking")}</span>
-          </div>
-        )}
         <AnimatePresence initial={false}>
           {activeCategories.map(({ category, isUploading }) => {
             const meta = SYNC_CATEGORY_META[category];
@@ -271,7 +261,7 @@ export function CloudSyncIndicator() {
             );
           })}
         </AnimatePresence>
-        {!isCheckingRemote && activeCategories.length === 0 && (
+        {activeCategories.length === 0 && (
           <div className={itemRowClass} style={itemRowStyle}>
             <span className="opacity-70">
               {lastCheckedRelative
@@ -298,7 +288,6 @@ export function CloudSyncIndicator() {
             });
           }}
         >
-          <Gear className="h-4 w-4" weight="bold" />
           {t("apps.control-panels.autoSync.openSettings")}
         </DropdownMenuItem>
       </DropdownMenuContent>
