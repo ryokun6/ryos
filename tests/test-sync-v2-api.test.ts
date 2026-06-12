@@ -189,6 +189,44 @@ describe("sync v2 API", () => {
     expect(body.downloads?.[1]).toBeNull();
   });
 
+  test("sync maintenance cron rejects missing/invalid secrets", async () => {
+    const noAuth = await fetchWithOrigin(`${BASE_URL}/api/cron/sync-maintenance`);
+    // 401 invalid secret, or 503 when the server has no CRON_SECRET configured.
+    expect([401, 503]).toContain(noAuth.status);
+
+    const badAuth = await fetchWithOrigin(`${BASE_URL}/api/cron/sync-maintenance`, {
+      headers: { Authorization: "Bearer wrong-secret" },
+    });
+    expect([401, 503]).toContain(badAuth.status);
+  });
+
+  test(
+    "sync maintenance cron runs with a valid secret",
+    async () => {
+      const secret = process.env.CRON_SECRET?.trim();
+      if (!secret) {
+        console.warn(
+          "[sync-v2-api] CRON_SECRET not set; skipping authorized cron test"
+        );
+        return;
+      }
+      const response = await fetchWithOrigin(
+        `${BASE_URL}/api/cron/sync-maintenance?maxUsers=2`,
+        { headers: { Authorization: `Bearer ${secret}` } }
+      );
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as {
+        success: boolean;
+        usersProcessed: number;
+        scanComplete: boolean;
+      };
+      expect(body.success).toBe(true);
+      expect(typeof body.usersProcessed).toBe("number");
+      expect(typeof body.scanComplete).toBe("boolean");
+    },
+    30000
+  );
+
   test("ops referencing a blob register it for dedupe", async () => {
     const sha256 = "cd".repeat(32);
     const url = `s3://bucket/sync/${USERNAME}/blobs/${sha256}.gz`;

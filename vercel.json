@@ -8,6 +8,10 @@
     {
       "path": "/api/cron/telegram-heartbeat",
       "schedule": "*/30 * * * *"
+    },
+    {
+      "path": "/api/cron/sync-maintenance",
+      "schedule": "17 4 * * *"
     }
   ],
   "headers": [

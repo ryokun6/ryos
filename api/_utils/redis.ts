@@ -54,6 +54,7 @@ export interface RedisLike {
   del(...keys: string[]): Promise<number>;
   exists(...keys: string[]): Promise<number>;
   expire(key: string, seconds: number): Promise<number>;
+  persist(key: string): Promise<number>;
   incr(key: string): Promise<number>;
   ttl(key: string): Promise<number>;
   scan(
@@ -296,6 +297,10 @@ class StandardRedisAdapter implements RedisLike {
 
   async expire(key: string, seconds: number): Promise<number> {
     return await this.client.expire(key, seconds);
+  }
+
+  async persist(key: string): Promise<number> {
+    return await this.client.persist(key);
   }
 
   async incr(key: string): Promise<number> {

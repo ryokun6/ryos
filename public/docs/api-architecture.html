@@ -358,7 +358,6 @@
 <pre><code>api/
 ├── _utils/                    # Shared API primitives
 │   ├── api-handler.ts         # Shared handler wrapper (CORS, methods, auth, errors)
-│   ├── middleware.ts          # Consolidated re-exports + request-context helpers
 │   ├── request-auth.ts        # Header parsing + auth resolution
 │   ├── redis.ts               # Redis client factory (Upstash REST + standard Redis/ioredis)
 │   ├── storage.ts             # Object storage adapter (Vercel Blob + S3-compatible)
@@ -402,29 +401,13 @@
 └── [endpoint].ts              # Individual top-level endpoints (chat, speech, ie-generate, etc.)</code></pre>
 <h2>Middleware Utilities</h2>
 <p>The API layer standardizes route behavior through <code>apiHandler</code> plus shared <code>api/_utils/*</code> modules. This keeps CORS handling, method routing, auth resolution, and error handling consistent across refactored endpoints. CORS supports wildcard subdomain patterns (e.g. <code>*.example.com</code>) via <code>API_ALLOWED_ORIGINS</code>.</p>
-<h3>Consolidated Imports</h3>
-<pre><code>import {
-  // Route wrapper
-  apiHandler,
-
-  // Redis
-  createRedis,
-
-  // CORS
-  getEffectiveOrigin,
-  isAllowedOrigin,
-  setCorsHeaders,
-
-  // Auth
-  extractAuth,
-  extractAuthNormalized,
-  isAdmin,
-
-  // Constants
-  REDIS_PREFIXES,
-  TTL,
-  RATE_LIMIT_TIERS,
-} from "../_utils/middleware.js";</code></pre>
+<h3>Imports</h3>
+<p>Routes import directly from the focused <code>api/_utils/*</code> modules (there is no barrel re-export module):</p>
+<pre><code>import { apiHandler } from "../_utils/api-handler.js";
+import { createRedis } from "../_utils/redis.js";
+import { getEffectiveOrigin, isAllowedOrigin, setCorsHeaders } from "../_utils/_cors.js";
+import { extractAuth, extractAuthNormalized } from "../_utils/auth/index.js";</code></pre>
+<p>Domain-specific constants (Redis key prefixes, TTLs) live in their owning module, e.g. <code><a href="https://github.com/ryokun6/ryos/blob/main/api/rooms/_helpers/_constants.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">api/rooms/_helpers/_constants.ts</a></code> and <code><a href="https://github.com/ryokun6/ryos/blob/main/api/_utils/auth/_constants.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">api/_utils/auth/_constants.ts</a></code>.</p>
 <h3><code>apiHandler</code> Pattern</h3>
 <p>Refactored routes use <code>apiHandler()</code> as the entry wrapper:</p>
 <pre><code>export default apiHandler&lt;RequestBody&gt;(
@@ -458,7 +441,7 @@
 <h3>Listen APIs</h3>
 <table><thead><tr><th>Endpoint</th><th>Methods</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/listen/sessions</code></td><td>GET, POST</td><td>List/create listen-together sessions</td></tr><tr><td><code>/api/listen/sessions/[id]</code></td><td>GET</td><td>Fetch session state</td></tr><tr><td><code>/api/listen/sessions/[id]/join</code></td><td>POST</td><td>Join session</td></tr><tr><td><code>/api/listen/sessions/[id]/leave</code></td><td>POST</td><td>Leave session</td></tr><tr><td><code>/api/listen/sessions/[id]/sync</code></td><td>POST</td><td>Sync DJ playback state</td></tr><tr><td><code>/api/listen/sessions/[id]/reaction</code></td><td>POST</td><td>Send emoji reaction</td></tr></tbody></table>
 <h3>Cloud Sync APIs</h3>
-<table><thead><tr><th>Endpoint</th><th>Methods</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/sync/status</code></td><td>GET</td><td>Backup availability/status metadata</td></tr><tr><td><code>/api/sync/backup</code></td><td>GET, POST, DELETE</td><td>Manual backup upload/download/delete</td></tr><tr><td><code>/api/sync/backup-token</code></td><td>POST</td><td>Generate upload token for manual backup</td></tr><tr><td><code>/api/sync/domains</code></td><td>GET</td><td>Aggregated logical sync metadata plus per-physical-domain metadata</td></tr><tr><td><code>/api/sync/domains/[domain]</code></td><td>GET, PUT</td><td>Download or update one logical sync domain across its physical parts</td></tr><tr><td><code>/api/sync/domains/[domain]/attachments/prepare</code></td><td>POST</td><td>Generate upload instructions for blob-backed logical sync parts</td></tr></tbody></table>
+<table><thead><tr><th>Endpoint</th><th>Methods</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/sync/v2/ops</code></td><td>POST</td><td>Apply a batch of sync ops (per-key last-writer-wins)</td></tr><tr><td><code>/api/sync/v2/changes</code></td><td>GET</td><td>Journal ops after the client cursor (<code>?since=</code>)</td></tr><tr><td><code>/api/sync/v2/snapshot</code></td><td>GET</td><td>Full key-value sync state + current cursor</td></tr><tr><td><code>/api/sync/v2/blobs</code></td><td>POST</td><td>Batched content-addressed blob prepare/dedupe + download signing</td></tr><tr><td><code>/api/sync/status</code></td><td>GET</td><td>Backup availability/status metadata</td></tr><tr><td><code>/api/sync/backup</code></td><td>GET, POST, DELETE</td><td>Manual backup upload/download/delete</td></tr><tr><td><code>/api/sync/backup-token</code></td><td>POST</td><td>Generate upload token for manual backup</td></tr><tr><td><code>/api/sync/auto-sync-preference</code></td><td>GET, PUT</td><td>Cross-device Auto Sync toggle</td></tr><tr><td><code>/api/cron/sync-maintenance</code></td><td>GET</td><td>Cron: v1 key retirement + content-addressed blob GC (<code>CRON_SECRET</code>)</td></tr></tbody></table>
 <h3>Telegram APIs</h3>
 <table><thead><tr><th>Endpoint</th><th>Methods</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/telegram/link/create</code></td><td>POST</td><td>Create Telegram bot link</td></tr><tr><td><code>/api/telegram/link/disconnect</code></td><td>POST</td><td>Disconnect Telegram bot</td></tr><tr><td><code>/api/telegram/link/status</code></td><td>GET</td><td>Check Telegram link status</td></tr><tr><td><code>/api/webhooks/telegram</code></td><td>POST</td><td>Telegram bot webhook handler</td></tr><tr><td><code>/api/cron/telegram-heartbeat</code></td><td>GET</td><td>Scheduled Telegram heartbeat</td></tr></tbody></table>
 <h3>Utility APIs</h3>
@@ -672,7 +655,7 @@ export async function validateAuth(
 <h3>Auth Headers</h3>
 <table><thead><tr><th>Header</th><th>Value</th><th>Purpose</th></tr></thead><tbody><tr><td><code>Authorization</code></td><td><code>Bearer &lt;token&gt;</code></td><td>Authentication token</td></tr><tr><td><code>X-Username</code></td><td>Username</td><td>User identification</td></tr></tbody></table>
 <h3>Token Configuration</h3>
-<table><thead><tr><th>Setting</th><th>Value</th></tr></thead><tbody><tr><td>Token TTL</td><td>90 days</td></tr><tr><td>Grace period</td><td>30 days</td></tr><tr><td>Admin bypass</td><td>User "ryo"</td></tr></tbody></table>
+<table><thead><tr><th>Setting</th><th>Value</th></tr></thead><tbody><tr><td>Token TTL</td><td>1 year (refreshed on each validated request)</td></tr><tr><td>Grace period</td><td>30 days</td></tr><tr><td>Admin bypass</td><td>User "ryo"</td></tr></tbody></table>
 <h2>CORS Handling</h2>
 <pre><code>// api/_utils/_cors.ts
 export function isAllowedOrigin(origin: string | null): boolean {
@@ -697,7 +680,7 @@ export function isAllowedOrigin(origin: string | null): boolean {
 }</code></pre>
 <h2>Response Patterns</h2>
 <h3>Response Helpers</h3>
-<p>The middleware provides standardized response helpers for consistent API responses:</p>
+<p>The shared <code>api/_utils/*</code> modules provide standardized response helpers for consistent API responses:</p>
 <pre><code>// JSON response with optional CORS and extra headers
 jsonResponse(data, status = 200, origin?, extraHeaders?)
 
@@ -759,7 +742,7 @@ return new Response(stream, {
 export const maxDuration = 60; // seconds (80 for AI endpoints)</code></pre>
 <ul><li>On <strong>Vercel</strong>, these exports configure serverless execution.</li></ul><ul><li>On the <strong>standalone Bun server</strong>, <code><a href="https://github.com/ryokun6/ryos/blob/main/scripts/api-standalone-server.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">scripts/api-standalone-server.ts</a></code> loads and executes the same <code>_api/*</code> handlers via a request/response adapter.</li><li>API development/runtime scripts use Bun (<code>bun run dev:api</code>, <code>bun run api:start</code>).</li></ul>
 <h2>Redis Key Patterns</h2>
-<table><thead><tr><th>Prefix</th><th>Purpose</th><th>Example</th></tr></thead><tbody><tr><td><code>rl:ai:</code></td><td>AI rate limiting</td><td><code>rl:ai:chat:user123</code></td></tr><tr><td><code>song:meta:</code></td><td>Song metadata</td><td><code>song:meta:abc123</code></td></tr><tr><td><code>song:content:</code></td><td>Song content</td><td><code>song:content:abc123</code></td></tr><tr><td><code>ie:cache:</code></td><td>IE generation cache</td><td><code>ie:cache:hash</code></td></tr><tr><td><code>applet:share:</code></td><td>Shared applets</td><td><code>applet:share:xyz</code></td></tr><tr><td><code>chat:token:user:</code></td><td>Auth tokens</td><td><code>chat:token:user:alice:tok</code></td></tr><tr><td><code>chat:room:</code></td><td>Chat room data</td><td><code>chat:room:general</code></td></tr><tr><td><code>sync:meta:</code></td><td>Backup metadata</td><td><code>sync:meta:alice</code></td></tr><tr><td><code>sync:state:{username}:{domain}</code></td><td>Redis-backed sync domain payloads</td><td><code>sync:state:alice:contacts</code></td></tr><tr><td><code>sync:state:meta:{username}</code></td><td>Redis-backed sync metadata map</td><td><code>sync:state:meta:alice</code></td></tr><tr><td><code>sync:auto:meta:</code></td><td>Blob sync metadata (historical prefix)</td><td><code>sync:auto:meta:alice</code></td></tr><tr><td><code>analytics:daily:</code></td><td>Daily API metrics</td><td><code>analytics:daily:2026-03-10</code></td></tr><tr><td><code>analytics:uv:</code></td><td>Unique visitor HLL</td><td><code>analytics:uv:2026-03-10</code></td></tr><tr><td><code>analytics:ep:</code></td><td>Endpoint breakdown</td><td><code>analytics:ep:2026-03-10</code></td></tr></tbody></table>
+<table><thead><tr><th>Prefix</th><th>Purpose</th><th>Example</th></tr></thead><tbody><tr><td><code>rl:ai:</code></td><td>AI rate limiting</td><td><code>rl:ai:chat:user123</code></td></tr><tr><td><code>song:meta:</code></td><td>Song metadata</td><td><code>song:meta:abc123</code></td></tr><tr><td><code>song:content:</code></td><td>Song content</td><td><code>song:content:abc123</code></td></tr><tr><td><code>ie:cache:</code></td><td>IE generation cache</td><td><code>ie:cache:hash</code></td></tr><tr><td><code>applet:share:</code></td><td>Shared applets</td><td><code>applet:share:xyz</code></td></tr><tr><td><code>chat:token:user:</code></td><td>Auth tokens</td><td><code>chat:token:user:alice:tok</code></td></tr><tr><td><code>chat:room:</code></td><td>Chat room data</td><td><code>chat:room:general</code></td></tr><tr><td><code>sync:meta:</code></td><td>Backup metadata</td><td><code>sync:meta:alice</code></td></tr><tr><td><code>sync2:seq:{username}</code></td><td>Sync v2 journal cursor (op counter)</td><td><code>sync2:seq:alice</code></td></tr><tr><td><code>sync2:kv:{username}</code></td><td>Sync v2 key-value state (hash: key → entry)</td><td><code>sync2:kv:alice</code></td></tr><tr><td><code>sync2:log:{username}</code></td><td>Sync v2 op journal (bounded list)</td><td><code>sync2:log:alice</code></td></tr><tr><td><code>sync2:blobs:{username}</code></td><td>Sync v2 content-hash blob registry</td><td><code>sync2:blobs:alice</code></td></tr><tr><td><code>sync2:maint:cursor</code></td><td>Sync maintenance cron scan cursor</td><td><code>sync2:maint:cursor</code></td></tr><tr><td><code>sync:state:{username}:{domain}</code></td><td>Legacy v1 sync snapshots (imported on first v2 access)</td><td><code>sync:state:alice:contacts</code></td></tr><tr><td><code>analytics:daily:</code></td><td>Daily API metrics</td><td><code>analytics:daily:2026-03-10</code></td></tr><tr><td><code>analytics:uv:</code></td><td>Unique visitor HLL</td><td><code>analytics:uv:2026-03-10</code></td></tr><tr><td><code>analytics:ep:</code></td><td>Endpoint breakdown</td><td><code>analytics:ep:2026-03-10</code></td></tr></tbody></table>
 <h2>Related Documentation</h2>
 <ul><li><a href="/docs/api-design-guide">API Design Guide</a> - Implementation patterns and best practices</li></ul><ul><li><a href="/docs/chat-api">Chat API</a> - Detailed chat API documentation</li><li><a href="/docs/song-api">Song API</a> - Song API reference</li><li><a href="/docs/ai-generation-apis">AI Generation APIs</a> - IE and Applet AI</li><li><a href="/docs/rooms-api">Rooms API</a> - Chat room management</li><li><a href="/docs/messages-api">Messages API</a> - Chat messaging</li><li><a href="/docs/utility-apis">Utility APIs</a> - Link preview, iframe check, share applet</li></ul>
       </article>

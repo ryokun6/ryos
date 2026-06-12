@@ -309,7 +309,7 @@
         <h1>Auth API</h1>
 <p>Authentication endpoints for ryOS. These endpoints handle user registration, login, token management, and password operations.</p>
 <h2>Overview</h2>
-<p>The chat rooms authentication system uses token-based authentication with 90-day expiration. Users authenticate using:</p>
+<p>The chat rooms authentication system uses token-based authentication with 1-year expiration (refreshed on each validated request). Users authenticate using:</p>
 <pre><code>Authorization: Bearer {token}
 X-Username: {username}</code></pre>
 <p>Tokens are issued by <code>/api/auth/register</code> and <code>/api/auth/login</code>.</p>

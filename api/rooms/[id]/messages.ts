@@ -20,8 +20,6 @@ import {
   CHAT_BURST_LONG_WINDOW_SECONDS,
   CHAT_BURST_LONG_LIMIT,
   CHAT_MIN_INTERVAL_SECONDS,
-  USER_EXPIRATION_TIME,
-  CHAT_USERS_PREFIX,
 } from "../_helpers/_constants.js";
 import { ensureUserExists } from "../_helpers/_users.js";
 import { addMessage, generateId, getCurrentTimestamp, getLastMessage, getMessages, getRoom, setUser } from "../_helpers/_redis.js";
@@ -229,9 +227,10 @@ export default apiHandler(
 
       await addMessage(roomId, message);
 
+      // setUser's plain SET clears any legacy TTL: user records persist
+      // forever (an old expire call here used to attach one on each send).
       const updatedUser = { ...userData, lastActive: getCurrentTimestamp() };
       await setUser(username, updatedUser);
-      await redis.expire(`${CHAT_USERS_PREFIX}${username}`, USER_EXPIRATION_TIME);
       await setRoomPresence(roomId, username);
 
       await broadcastNewMessage(roomId, message, roomData);

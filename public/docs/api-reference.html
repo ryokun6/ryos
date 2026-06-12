@@ -371,7 +371,7 @@
 <h2>Authentication</h2>
 <pre><code>Authorization: Bearer {token}
 X-Username: {username}</code></pre>
-<p>Token-based sessions use a 90-day TTL. Auth-required endpoints use the shared <code>request-auth</code> validation boundary for consistent <code>400/401</code> semantics.</p>
+<p>Token-based sessions use a 1-year TTL, refreshed on each validated request. Auth-required endpoints use the shared <code>request-auth</code> validation boundary for consistent <code>400/401</code> semantics.</p>
 <h2>AI Providers</h2>
 <table><thead><tr><th>Provider</th><th>Models</th></tr></thead><tbody><tr><td>OpenAI</td><td>gpt-5.5, gpt-4.1-mini, tts-1, whisper-1</td></tr><tr><td>Anthropic</td><td>sonnet-4.6</td></tr><tr><td>Google</td><td>gemini-3-flash, gemini-3-flash-preview, gemini-3.1-pro-preview, gemini-3.1-flash-image-preview</td></tr></tbody></table>
       </article>

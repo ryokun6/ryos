@@ -288,7 +288,8 @@ debouncer already spaces them seconds apart), and within the lock a single
 pipeline applies KV updates, journal appends, and the seq bump.
 
 Journal trimming: after append, `ZREMRANGEBYSCORE sync2:log:{user} -inf (seq - 4096)`.
-TTLs mirror v1 (`USER_TTL_SECONDS`, 90 days, refreshed on write).
+TTLs use `USER_TTL_SECONDS` (1 year), refreshed on writes and — throttled
+daily — on reads, so any device check-in retains the user's cloud data.
 
 ### 5.2 Endpoints
 
