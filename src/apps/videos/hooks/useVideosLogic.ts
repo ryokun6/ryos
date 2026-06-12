@@ -245,12 +245,7 @@ export function useVideosLogic({
   const hasAutoplayCheckedRef = useRef(false);
   const lastProcessedVideoIdRef = useRef<string | null>(null);
   const prevFullScreenRef = useRef(isFullScreen);
-  const videosRef = useRef(videos);
   const originalOrderRef = useRef(originalOrder);
-
-  useEffect(() => {
-    videosRef.current = videos;
-  }, [videos]);
 
   useEffect(() => {
     originalOrderRef.current = originalOrder;
@@ -595,13 +590,23 @@ export function useVideosLogic({
   }, [togglePlayStore, isPlaying, showStatus, t, playVideoTape]);
 
   const toggleShuffle = useCallback(() => {
-    setIsShuffled(!isShuffled);
+    const nextShuffled = !isShuffled;
+    if (nextShuffled) {
+      // Snapshot the current order so un-shuffling can restore it, then shuffle.
+      const currentVideos = useVideoStore.getState().videos;
+      setOriginalOrder(currentVideos);
+      originalOrderRef.current = currentVideos;
+      setVideos([...currentVideos].sort(() => Math.random() - 0.5));
+    } else {
+      setVideos([...originalOrderRef.current]);
+    }
+    setIsShuffled(nextShuffled);
     showStatus(
-      isShuffled
-        ? t("apps.videos.status.shuffleOff")
-        : t("apps.videos.status.shuffleOn")
+      nextShuffled
+        ? t("apps.videos.status.shuffleOn")
+        : t("apps.videos.status.shuffleOff")
     );
-  }, [isShuffled, setIsShuffled, showStatus, t]);
+  }, [isShuffled, setIsShuffled, setOriginalOrder, setVideos, showStatus, t]);
 
   const handleVideoEnd = useCallback(() => {
     if (loopCurrent) {
@@ -835,22 +840,17 @@ export function useVideosLogic({
     setElapsedTime(0);
   }, [currentVideoId]);
 
-  // Shuffle initialization
+  // Shuffle initialization: when shuffle was persisted as enabled, re-shuffle
+  // once on mount so each session gets a fresh order. Toggling shuffle on/off
+  // is handled directly in `toggleShuffle`, not reactively.
+  const hasInitializedShuffleRef = useRef(false);
   useEffect(() => {
-    if (isShuffled) {
-      const shuffled = [...videosRef.current].sort(() => Math.random() - 0.5);
-      setVideos(shuffled);
-    } else {
-      setVideos([...originalOrderRef.current]);
+    if (hasInitializedShuffleRef.current) return;
+    hasInitializedShuffleRef.current = true;
+    if (useVideoStore.getState().isShuffled) {
+      setVideos((prev) => [...prev].sort(() => Math.random() - 0.5));
     }
-  }, [isShuffled, setVideos]);
-
-  // Keep original order in sync with new additions
-  useEffect(() => {
-    if (!isShuffled) {
-      setOriginalOrder(videos);
-    }
-  }, [videos, isShuffled]);
+  }, [setVideos]);
 
   // Effect for initial data on mount
   useEffect(() => {
