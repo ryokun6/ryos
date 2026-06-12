@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   appleMusicIdKindLabel,
+  appleMusicPlayParamsFromId,
   generateAppleMusicWebUrlForId,
   isAppleMusicId,
   parseAppleMusicId,
@@ -106,6 +107,37 @@ describe("generateAppleMusicWebUrlForId", () => {
         storefrontId: "us",
       })
     ).toBe("https://music.apple.com/us/playlist/_/pl.favorites-mix");
+  });
+});
+
+describe("appleMusicPlayParamsFromId", () => {
+  test("derives catalog song play params", () => {
+    expect(appleMusicPlayParamsFromId("am:1616228595")).toEqual({
+      catalogId: "1616228595",
+      kind: "songs",
+    });
+  });
+
+  test("derives library song play params", () => {
+    expect(appleMusicPlayParamsFromId("am:i.uUZAkT3")).toEqual({
+      libraryId: "i.uUZAkT3",
+      kind: "library-songs",
+    });
+  });
+
+  test("derives station and playlist play params", () => {
+    expect(appleMusicPlayParamsFromId("am:station:ra.todays-hits")).toEqual({
+      stationId: "ra.todays-hits",
+      kind: "stations",
+    });
+    expect(appleMusicPlayParamsFromId("am:playlist:pl.favorites-mix")).toEqual({
+      playlistId: "pl.favorites-mix",
+      kind: "playlists",
+    });
+  });
+
+  test("returns null for non Apple Music ids", () => {
+    expect(appleMusicPlayParamsFromId("dQw4w9WgXcQ")).toBeNull();
   });
 });
 

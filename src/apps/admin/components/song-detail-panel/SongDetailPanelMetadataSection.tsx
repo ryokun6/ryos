@@ -2,7 +2,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import {
-  AppleLogo,
   ArrowSquareOut,
   Clock,
   Hash,
@@ -10,6 +9,7 @@ import {
   User,
   VinylRecord,
 } from "@phosphor-icons/react";
+import { AppleLogoIcon } from "@/components/icons/AppleLogoIcon";
 import { formatOffset } from "./utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { SongDetailPanelViewModel } from "./useSongDetailPanel";
@@ -328,10 +328,7 @@ export function SongDetailPanelMetadataSection({
 
         <div className="flex items-start gap-2 py-1.5">
           {isAppleMusic ? (
-            <AppleLogo
-              className="size-3.5 text-neutral-400 flex-shrink-0 mt-0.5"
-              weight="fill"
-            />
+            <AppleLogoIcon className="size-3.5 text-neutral-400 flex-shrink-0 mt-0.5" />
           ) : (
             <Hash
               className="size-3.5 text-neutral-400 flex-shrink-0 mt-0.5"

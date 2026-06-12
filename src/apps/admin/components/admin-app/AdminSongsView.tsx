@@ -1,6 +1,7 @@
 import type { Dispatch, SetStateAction } from "react";
 import { Button } from "@/components/ui/button";
-import { MusicNote, Trash, Funnel, AppleLogo } from "@phosphor-icons/react";
+import { MusicNote, Trash, Funnel } from "@phosphor-icons/react";
+import { AppleLogoIcon } from "@/components/icons/AppleLogoIcon";
 import type { TFunction } from "i18next";
 import type { CachedSongMetadata } from "@/utils/songMetadataCache";
 import { isAppleMusicId } from "@/utils/appleMusicId";
@@ -110,10 +111,7 @@ export function AdminSongsView({
                     title={song.artist}
                   >
                     {isAppleMusic && (
-                      <AppleLogo
-                        className="size-3 flex-shrink-0 text-neutral-400"
-                        weight="fill"
-                      />
+                      <AppleLogoIcon className="size-3 flex-shrink-0 text-neutral-400" />
                     )}
                     <span className="truncate">{song.artist || "-"}</span>
                   </div>

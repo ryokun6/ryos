@@ -55,6 +55,37 @@ function normalizeStorefront(storefrontId: string | null | undefined): string {
   return storefrontId?.trim().toLowerCase() || "us";
 }
 
+export interface AppleMusicPlayParamsFromId {
+  catalogId?: string;
+  libraryId?: string;
+  stationId?: string;
+  playlistId?: string;
+  kind: string;
+}
+
+/**
+ * Derive MusicKit play parameters from an `am:` id so an admin-cached song can
+ * be queued and played in the iPod's Apple Music library. Shape matches the
+ * fields `AppleMusicPlayerBridge.getQueueOptions` reads.
+ */
+export function appleMusicPlayParamsFromId(
+  id: string | undefined | null
+): AppleMusicPlayParamsFromId | null {
+  const parsed = parseAppleMusicId(id);
+  if (!parsed) return null;
+  switch (parsed.kind) {
+    case "library":
+      return { libraryId: parsed.rawId, kind: "library-songs" };
+    case "station":
+      return { stationId: parsed.rawId, kind: "stations" };
+    case "playlist":
+      return { playlistId: parsed.rawId, kind: "playlists" };
+    case "song":
+    default:
+      return { catalogId: parsed.rawId, kind: "songs" };
+  }
+}
+
 /**
  * Build the best public `music.apple.com` URL we can for a given Apple Music
  * song id. Catalog songs link straight to the song page; library songs (which

@@ -608,6 +608,13 @@ export interface IpodState extends IpodData {
   /** Update the currently selected Apple Music song. */
   setAppleMusicCurrentSongId: (songId: string | null) => void;
   /**
+   * Switch to the Apple Music library and play the given track, inserting it
+   * into the in-memory library when it isn't already present. Used by the
+   * admin panel to play a cached Apple Music song without a full library sync.
+   * The insertion is ephemeral (not persisted) so a later library sync wins.
+   */
+  playAppleMusicTrack: (track: Track) => void;
+  /**
    * Set or clear the Apple Music playback queue. Pass `null` to fall back
    * to the full library order for next/previous.
    */
@@ -2199,6 +2206,27 @@ export const useIpodStore = create<IpodState>()(
             currentFuriganaMap: null,
             elapsedTime: 0,
             totalTime: 0,
+          };
+        }),
+      playAppleMusicTrack: (track) =>
+        set((state) => {
+          const existing = state.appleMusicTracks.find(
+            (t) => t.id === track.id
+          );
+          const nextTracks = existing
+            ? state.appleMusicTracks
+            : [track, ...state.appleMusicTracks];
+          return {
+            librarySource: "appleMusic",
+            appleMusicTracks: nextTracks,
+            appleMusicPlaybackQueue: null,
+            appleMusicCurrentSongId: track.id,
+            appleMusicKitNowPlaying: null,
+            currentLyrics: null,
+            currentFuriganaMap: null,
+            elapsedTime: 0,
+            totalTime: 0,
+            isPlaying: true,
           };
         }),
       setAppleMusicPlaybackQueue: (queue) =>
