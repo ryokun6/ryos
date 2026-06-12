@@ -1268,6 +1268,7 @@
         "neverFetched": "가져온 적 없음",
         "neverSynced": "아직 동기화되지 않음",
         "neverUploaded": "업로드한 적 없음",
+        "openSettings": "동기화 설정…",
         "settings": "설정",
         "songs": "음악",
         "stickies": "스티커",
