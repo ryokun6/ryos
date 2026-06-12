@@ -5748,8 +5748,17 @@
     [data-radix-popover-content],
     [data-radix-select-content]
   ) {
-  backdrop-filter: blur(22px) saturate(185%);
-  -webkit-backdrop-filter: blur(22px) saturate(185%);
+  backdrop-filter: blur(36px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(36px) saturate(200%) !important;
+  /* Replace the inline pinstripe-window fill (0.74–0.8 alpha — opaque enough
+     to bury the blur) with a lighter wash so the backdrop blur reads through,
+     and kill the inline `opacity: 0.92` which washes out labels. */
+  background: color-mix(
+    in srgb,
+    var(--os-accent-color, #3a73d6) 6%,
+    rgba(248, 250, 253, 0.62)
+  ) !important;
+  opacity: 1 !important;
   /* Overrides the inline `0px` radius from the dropdown/select content. */
   border-radius: 7px !important;
   border: var(--os-metrics-border-width) solid var(--os-color-window-border) !important;
@@ -5766,8 +5775,57 @@
     [data-radix-popover-content],
     [data-radix-select-content]
   ) {
+  background: color-mix(
+    in srgb,
+    var(--os-accent-color, #3a73d6) 7%,
+    rgba(36, 38, 44, 0.62)
+  ) !important;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55),
     inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Modern macOS menu layout: the panel gets a uniform inner gutter and each
+   item carries a rounded highlight inset from the panel edge (the classic
+   edge-to-edge selection bar is a non-glass Aqua trait). The `!important`s
+   beat the inline `padding` / `borderRadius: 0px` from dropdown-menu.tsx. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  [data-radix-popper-content-wrapper]
+  :where(
+    [role="menu"],
+    [role="listbox"],
+    [data-radix-menu-content],
+    [data-radix-select-content]
+  ) {
+  padding: 4px 5px !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  [data-radix-popper-content-wrapper]
+  :where(
+    [role="menuitem"],
+    [role="menuitemcheckbox"],
+    [role="menuitemradio"],
+    [role="option"]
+  ) {
+  border-radius: 5px !important;
+  /* Tighter than the classic Aqua `6px 20px 6px 16px` — the inset rounded
+     highlight already provides breathing room via the panel gutter. */
+  padding: 4px 8px 4px 10px !important;
+}
+
+/* Checkbox / radio rows keep the wide left gutter — their indicators are
+   absolutely positioned (left 8–12px) and would overlap the label otherwise. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  [data-radix-popper-content-wrapper]
+  :where([role="menuitemcheckbox"], [role="menuitemradio"]) {
+  padding-left: 30px !important;
+}
+
+/* Select options carry their check on the right (`right-2` + 14px icon). */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  [data-radix-popper-content-wrapper]
+  [role="option"] {
+  padding-right: 28px !important;
 }
 
 /* --- Frosted toolbar inset buttons --------------------------------------- */
@@ -6258,6 +6316,19 @@
       [data-radix-select-content]
     ) {
     border-radius: var(--os-squircle-r-md) !important;
+  }
+
+  /* Menu item highlights follow the panel's squircle vocabulary. */
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+    [data-radix-popper-content-wrapper]
+    :where(
+      [role="menuitem"],
+      [role="menuitemcheckbox"],
+      [role="menuitemradio"],
+      [role="option"]
+    ) {
+    corner-shape: var(--os-corner-shape);
+    border-radius: var(--os-squircle-r-xs) !important;
   }
 
   :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
