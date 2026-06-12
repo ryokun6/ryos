@@ -23,6 +23,7 @@ import * as RateLimit from "../_utils/_rate-limit.js";
 import { getClientIp } from "../_utils/_rate-limit.js";
 import {
   listSongs,
+  getSongsVersionInfo,
   saveSong,
   canModifySong,
   getSong,
@@ -232,6 +233,18 @@ export default apiHandler<Record<string, unknown>>(
       const ids = idsParam ? idsParam.split(",").map((s) => s.trim()).filter(Boolean) : undefined;
       const includeParam = (req.query.include as string) || "metadata";
       const includes = includeParam.split(",").map((s) => s.trim());
+
+      // Lightweight version probe: lets clients poll for catalog changes
+      // without downloading the full metadata list every interval.
+      if (includes.includes("version")) {
+        const versionInfo = await getSongsVersionInfo(redis, { createdBy });
+        logger.info("Returning songs version", {
+          ...versionInfo,
+          createdBy,
+          duration: `${Date.now() - startTime}ms`,
+        });
+        return jsonResponse(versionInfo);
+      }
 
       logger.info("Listing songs", { createdBy, idsCount: ids?.length, includes });
 

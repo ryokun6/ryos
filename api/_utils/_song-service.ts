@@ -400,6 +400,46 @@ export async function deleteAllSongs(redis: Redis): Promise<number> {
   return songIds.length;
 }
 
+export interface SongsVersionInfo {
+  /** Highest updatedAt (falling back to createdAt) across matching songs. */
+  version: number;
+  /** Number of matching songs. */
+  count: number;
+}
+
+/**
+ * Lightweight version summary of the song catalog, so clients can poll for
+ * changes (~50 byte response) instead of downloading the full metadata list
+ * every interval.
+ */
+export async function getSongsVersionInfo(
+  redis: Redis,
+  options: { createdBy?: string } = {}
+): Promise<SongsVersionInfo> {
+  const { createdBy } = options;
+  const songIds = await redis.smembers(SONG_SET_KEY);
+  if (!songIds || songIds.length === 0) {
+    return { version: 0, count: 0 };
+  }
+
+  const metaKeys = songIds.map((id) => getSongMetaKey(id));
+  const rawMetas = await redis.mget(...metaKeys);
+
+  let version = 0;
+  let count = 0;
+  for (const rawMeta of rawMetas) {
+    if (!rawMeta) continue;
+    const meta = parseJson<SongMetadata>(rawMeta);
+    if (!meta) continue;
+    if (createdBy && meta.createdBy !== createdBy) continue;
+    count++;
+    const stamp = meta.updatedAt || meta.createdAt || 0;
+    if (stamp > version) version = stamp;
+  }
+
+  return { version, count };
+}
+
 /**
  * List songs with optional filtering
  * Only fetches metadata by default (lightweight), fetches content only when requested

@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { listAllCachedSongMetadata } from "@/utils/songMetadataCache";
 import { hasLibraryTrackMetadataChanges } from "@/stores/ipodTrackMetadataSync";
 import { mapCatalogSongToTrack } from "@/stores/ipodCatalogTrackMapping";
+import { fetchSongsVersion, type SongsVersionInfo } from "@/api/songs";
 
 const CHECK_INTERVAL = 5 * 60 * 1000; // Check every 5 minutes
 
@@ -15,6 +16,14 @@ export function useLibraryUpdateChecker(isActive: boolean) {
   const debugMode = useDisplaySettingsStore((state) => state.debugMode);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastCheckedRef = useRef<number>(0);
+  /**
+   * Server version observed by the last full check that ended in-sync.
+   * While the server still reports this version+count, the poller skips the
+   * full catalog download (which used to run every 5 minutes regardless).
+   * Only set after a check confirms there is nothing to apply, so a failed
+   * or partial sync never suppresses the next full comparison.
+   */
+  const lastInSyncVersionRef = useRef<SongsVersionInfo | null>(null);
 
   useEffect(() => {
     // Skip all auto-update logic when debug mode is enabled
@@ -33,11 +42,34 @@ export function useLibraryUpdateChecker(isActive: boolean) {
 
     const checkForUpdates = async () => {
       try {
-        // Do track-based comparison like manual sync, not version-based
-        // This avoids timing issues where version might already be updated
         const currentTracks = useIpodStore.getState().tracks;
         const wasEmpty = currentTracks.length === 0;
 
+        // Cheap version probe first: skip the full catalog download when the
+        // server reports the same version+count we already confirmed as
+        // in-sync. Probe failures fall through to the full check.
+        let versionInfo: SongsVersionInfo | null = null;
+        try {
+          versionInfo = await fetchSongsVersion("ryo");
+        } catch (error) {
+          console.warn(
+            "[iPod] Songs version probe failed; falling back to full check",
+            error
+          );
+        }
+        const lastInSync = lastInSyncVersionRef.current;
+        if (
+          versionInfo &&
+          lastInSync &&
+          versionInfo.version === lastInSync.version &&
+          versionInfo.count === lastInSync.count
+        ) {
+          console.log("[iPod] Catalog version unchanged, skipping full check", versionInfo);
+          return;
+        }
+
+        // Do track-based comparison like manual sync, not version-based
+        // This avoids timing issues where version might already be updated
         // Get server tracks from Redis cache (only songs by ryo)
         const cachedSongs = await listAllCachedSongMetadata("ryo");
         
@@ -78,10 +110,23 @@ export function useLibraryUpdateChecker(isActive: boolean) {
           currentLastKnownVersion: useIpodStore.getState().lastKnownVersion,
         });
 
+        if (newTracksCount === 0 && tracksUpdated === 0) {
+          // Fully in sync — remember the server version so the next polls
+          // can stop at the cheap probe.
+          if (versionInfo) {
+            lastInSyncVersionRef.current = versionInfo;
+          }
+        }
+
         if (newTracksCount > 0 || tracksUpdated > 0) {
           // Auto-update: directly sync without asking user
           try {
             const result = await syncLibrary();
+            if (versionInfo) {
+              // Sync applied (or confirmed no-op) — record the version we
+              // just reconciled against.
+              lastInSyncVersionRef.current = versionInfo;
+            }
             if (result.newTracksAdded === 0 && result.tracksUpdated === 0) {
               console.log("[iPod] Auto update check resolved with no applied changes");
               return;

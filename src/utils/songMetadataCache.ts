@@ -202,6 +202,22 @@ function unifiedToMetadata(doc: UnifiedSongDocument): CachedSongMetadata {
   };
 }
 
+// In-memory layer in front of the HTTP "cache": dedupes concurrent lookups
+// for the same id and remembers hits for a short window so repeated
+// add-track / navigation flows don't refetch identical metadata.
+const METADATA_MEMO_TTL_MS = 5 * 60 * 1000;
+const metadataMemo = new Map<string, { at: number; data: CachedSongMetadata }>();
+const metadataInFlight = new Map<string, Promise<CachedSongMetadata | null>>();
+
+/** Drop the in-memory copy for one id (or all when omitted). */
+export function invalidateCachedSongMetadata(youtubeId?: string): void {
+  if (youtubeId === undefined) {
+    metadataMemo.clear();
+    return;
+  }
+  metadataMemo.delete(youtubeId);
+}
+
 /**
  * Retrieve cached song metadata from Redis
  * 
@@ -211,20 +227,41 @@ function unifiedToMetadata(doc: UnifiedSongDocument): CachedSongMetadata {
 export async function getCachedSongMetadata(
   youtubeId: string
 ): Promise<CachedSongMetadata | null> {
-  try {
-    const data = await getSongById<UnifiedSongDocument>(youtubeId, {
-      include: "metadata",
-    });
-    console.log(`[SongMetadataCache] Cache HIT for ${youtubeId}`);
-    return unifiedToMetadata(data);
-  } catch (error) {
-    if (error instanceof ApiRequestError && error.status === 404) {
-      console.log(`[SongMetadataCache] Cache MISS for ${youtubeId}`);
-      return null;
-    }
-    console.error(`[SongMetadataCache] Error fetching metadata for ${youtubeId}:`, error);
-    return null;
+  const memo = metadataMemo.get(youtubeId);
+  if (memo && Date.now() - memo.at < METADATA_MEMO_TTL_MS) {
+    return memo.data;
   }
+
+  const inFlight = metadataInFlight.get(youtubeId);
+  if (inFlight) {
+    return inFlight;
+  }
+
+  const requestPromise = (async (): Promise<CachedSongMetadata | null> => {
+    try {
+      const data = await getSongById<UnifiedSongDocument>(youtubeId, {
+        include: "metadata",
+      });
+      console.log(`[SongMetadataCache] Cache HIT for ${youtubeId}`);
+      const metadata = unifiedToMetadata(data);
+      // Only memoize hits — a miss (song not imported yet) should be
+      // re-checked next time, e.g. right after an import completes.
+      metadataMemo.set(youtubeId, { at: Date.now(), data: metadata });
+      return metadata;
+    } catch (error) {
+      if (error instanceof ApiRequestError && error.status === 404) {
+        console.log(`[SongMetadataCache] Cache MISS for ${youtubeId}`);
+        return null;
+      }
+      console.error(`[SongMetadataCache] Error fetching metadata for ${youtubeId}:`, error);
+      return null;
+    } finally {
+      metadataInFlight.delete(youtubeId);
+    }
+  })();
+
+  metadataInFlight.set(youtubeId, requestPromise);
+  return requestPromise;
 }
 
 /**
@@ -260,6 +297,7 @@ export async function deleteSongMetadata(
   youtubeId: string,
   auth: SongMetadataAuthCredentials
 ): Promise<boolean> {
+  invalidateCachedSongMetadata(youtubeId);
   try {
     await deleteSongById(youtubeId, {
       username: auth.username,
@@ -346,6 +384,7 @@ export async function saveSongMetadata(
   auth: SongMetadataAuthCredentials,
   options?: { isShare?: boolean }
 ): Promise<boolean> {
+  invalidateCachedSongMetadata(metadata.youtubeId);
   try {
     const data = await updateSongById(
       metadata.youtubeId,
