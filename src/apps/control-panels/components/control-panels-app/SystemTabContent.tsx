@@ -1,4 +1,3 @@
-import type { RefObject } from "react";
 import { PaperPlaneRight } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -53,9 +52,6 @@ export type SystemTabContentProps = {
   openTelegramDialog: () => void;
   isTelegramStatusLoading: boolean;
   handleCheckForUpdates: () => void;
-  handleBackup: () => void;
-  fileInputRef: RefObject<HTMLInputElement | null>;
-  handleRestore: (event: React.ChangeEvent<HTMLInputElement>) => void;
   handleResetAll: () => void;
   setIsConfirmFormatOpen: (open: boolean) => void;
   setDebugMode: (enabled: boolean) => void;
@@ -98,9 +94,6 @@ export function SystemTabContent({
   openTelegramDialog,
   isTelegramStatusLoading,
   handleCheckForUpdates,
-  handleBackup,
-  fileInputRef,
-  handleRestore,
   handleResetAll,
   setIsConfirmFormatOpen,
   setDebugMode,
@@ -287,31 +280,6 @@ export function SystemTabContent({
           {t("apps.control-panels.checkForUpdates")}
         </Button>
         <VersionDisplay />
-      </div>
-
-      <div className="space-y-2">
-        <div className="flex gap-2">
-          <Button variant="retro" onClick={handleBackup} className="flex-1">
-            {t("apps.control-panels.backup")}
-          </Button>
-          <Button
-            variant="retro"
-            onClick={() => fileInputRef.current?.click()}
-            className="flex-1"
-          >
-            {t("apps.control-panels.restore")}
-          </Button>
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleRestore}
-            accept=".json,.gz"
-            className="hidden"
-          />
-        </div>
-        <p className="text-[11px] text-neutral-600 font-geneva-12">
-          {t("apps.control-panels.backupRestoreDescription")}
-        </p>
       </div>
 
       <div className="space-y-2">

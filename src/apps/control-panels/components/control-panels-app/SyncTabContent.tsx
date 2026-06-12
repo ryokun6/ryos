@@ -1,3 +1,4 @@
+import type { RefObject } from "react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
@@ -59,6 +60,9 @@ export type SyncTabContentProps = {
   cloudProgress: { phase: string; percent: number } | null;
   isCloudStatusLoading: boolean;
   CLOUD_BACKUP_MAX_SIZE: number;
+  handleBackup: () => void;
+  fileInputRef: RefObject<HTMLInputElement | null>;
+  handleRestore: (event: React.ChangeEvent<HTMLInputElement>) => void;
 };
 
 export function SyncTabContent({
@@ -104,6 +108,9 @@ export function SyncTabContent({
   cloudProgress,
   isCloudStatusLoading,
   CLOUD_BACKUP_MAX_SIZE,
+  handleBackup,
+  fileInputRef,
+  handleRestore,
 }: SyncTabContentProps) {
   return (
     <div className="space-y-4 h-full overflow-y-auto p-4">
@@ -350,6 +357,33 @@ export function SyncTabContent({
                     })}
           </p>
         )}
+      </div>
+
+      <hr className="my-4 border-t" style={tabStyles.separatorStyle} />
+
+      <div className="space-y-2">
+        <div className="flex gap-2">
+          <Button variant="retro" onClick={handleBackup} className="flex-1">
+            {t("apps.control-panels.backup")}
+          </Button>
+          <Button
+            variant="retro"
+            onClick={() => fileInputRef.current?.click()}
+            className="flex-1"
+          >
+            {t("apps.control-panels.restore")}
+          </Button>
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleRestore}
+            accept=".json,.gz"
+            className="hidden"
+          />
+        </div>
+        <p className="text-[11px] text-neutral-600 font-geneva-12">
+          {t("apps.control-panels.backupRestoreDescription")}
+        </p>
       </div>
     </div>
   );

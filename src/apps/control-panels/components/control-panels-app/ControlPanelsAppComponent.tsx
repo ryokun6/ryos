@@ -455,6 +455,9 @@ export function ControlPanelsAppComponent({
                 cloudProgress={cloudProgress}
                 isCloudStatusLoading={isCloudStatusLoading}
                 CLOUD_BACKUP_MAX_SIZE={CLOUD_BACKUP_MAX_SIZE}
+                handleBackup={handleBackup}
+                fileInputRef={fileInputRef}
+                handleRestore={handleRestore}
               />
             </ThemedTabsContent>
 
@@ -482,9 +485,6 @@ export function ControlPanelsAppComponent({
                 openTelegramDialog={openTelegramDialog}
                 isTelegramStatusLoading={isTelegramStatusLoading}
                 handleCheckForUpdates={handleCheckForUpdates}
-                handleBackup={handleBackup}
-                fileInputRef={fileInputRef}
-                handleRestore={handleRestore}
                 handleResetAll={handleResetAll}
                 setIsConfirmFormatOpen={setIsConfirmFormatOpen}
                 setDebugMode={setDebugMode}
