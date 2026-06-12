@@ -39,6 +39,19 @@ export const ChatMessageItem = memo(function ChatMessageItem(
       style={{
         transformOrigin:
           message.role === "user" ? "bottom right" : "bottom left",
+        // Skip layout/paint for rows far outside the viewport so long
+        // threads stay cheap (especially while another message streams).
+        // `auto` intrinsic sizing remembers each row's rendered height, so
+        // scroll position and stick-to-bottom behavior are unaffected.
+        contentVisibility: "auto",
+        containIntrinsicSize: "auto 48px",
+        // content-visibility implies contain:paint, which clips ink overflow
+        // (the Aqua bubble drop shadows) at the row box. Grow the containment
+        // box by the shadow extent and cancel it with negative margins +
+        // width so layout and bubble spacing are unchanged.
+        width: "calc(100% + 16px)",
+        padding: "4px 8px 10px",
+        margin: "-4px -8px -10px",
       }}
       onMouseEnter={() =>
         !isInteractingWithPreview &&

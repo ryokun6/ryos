@@ -29,6 +29,113 @@ interface ChatRoomSidebarProps {
   onlineUsers?: string[];
 }
 
+const ChatRoomSidebarItem = React.memo(function ChatRoomSidebarItem({
+  room,
+  isSelected,
+  isPrivateOnline,
+  isAdmin,
+  username,
+  onRoomSelect,
+  onDeleteRoom,
+  playButtonClick,
+}: {
+  room: ChatRoom;
+  isSelected: boolean;
+  isPrivateOnline: boolean;
+  isAdmin: boolean;
+  username?: string | null;
+  onRoomSelect: (room: ChatRoom | null) => void;
+  onDeleteRoom?: (room: ChatRoom) => void;
+  playButtonClick: () => void;
+}) {
+  const { t } = useTranslation();
+  // Per-room subscription: an unread-count bump re-renders only this row.
+  const unreadCount = useChatsStore((s) => s.unreadCounts[room.id] || 0);
+  const hasUnread = unreadCount > 0;
+
+  return (
+    <div
+      className={cn(
+        "group relative py-1 px-5",
+        isSelected ? "" : "hover:bg-black/5"
+      )}
+      data-selected={isSelected ? "true" : undefined}
+      onClick={() => {
+        playButtonClick();
+        onRoomSelect(room);
+      }}
+    >
+      <div className="flex items-center">
+        {isPrivateOnline && (
+          <span
+            className="inline-block size-1.5 rounded-full bg-green-500 mr-1.5 flex-shrink-0"
+            title="Online"
+          />
+        )}
+        <span>
+          {room.type === "private"
+            ? getPrivateRoomDisplayName(room, username ?? null)
+            : `#${room.name}`}
+        </span>
+        {room.type === "irc" && (
+          <span
+            className={cn(
+              "ml-1 text-[9px] font-bold uppercase tracking-wider",
+              isSelected ? "text-white/40" : "text-black/40"
+            )}
+            title={`IRC ${room.ircHost || "irc.pieter.com"}`}
+          >
+            irc
+          </span>
+        )}
+        {(hasUnread || room.type !== "private") && (
+          <span
+            className={cn(
+              "text-[10px] ml-1.5 transition-opacity",
+              hasUnread
+                ? "text-orange-600"
+                : isSelected
+                ? "text-white/40"
+                : "text-black/40",
+              hasUnread || room.userCount > 0
+                ? "opacity-100"
+                : isSelected
+                ? "opacity-100"
+                : "opacity-0 group-hover:opacity-100"
+            )}
+          >
+            {hasUnread
+              ? `${unreadCount >= 20 ? "20+" : unreadCount} ${t("apps.chats.sidebar.new")}`
+              : `${room.userCount} ${t("apps.chats.sidebar.online")}`}
+          </span>
+        )}
+      </div>
+      {((isAdmin && room.type !== "private") || room.type === "private") &&
+        onDeleteRoom && (
+          <button
+            className={cn(
+              "absolute right-1 top-1/2 transform -translate-y-1/2 transition-opacity text-neutral-500 hover:text-red-500 p-1 rounded hover:bg-black/5",
+              isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+            )}
+            onClick={(e) => {
+              e.stopPropagation();
+              playButtonClick();
+              onDeleteRoom(room);
+            }}
+            aria-label={
+              room.type === "private" ? t("apps.chats.ariaLabels.leaveConversation") : t("apps.chats.ariaLabels.deleteRoom")
+            }
+            title={
+              room.type === "private" ? t("apps.chats.ariaLabels.leaveConversation") : t("apps.chats.ariaLabels.deleteRoom")
+            }
+          >
+            <Trash className="size-3 text-black/30" weight="bold" />
+          </button>
+        )}
+    </div>
+  );
+});
+
 export const ChatRoomSidebar = React.memo(function ChatRoomSidebar({
   rooms,
   currentRoom,
@@ -43,7 +150,9 @@ export const ChatRoomSidebar = React.memo(function ChatRoomSidebar({
 }: ChatRoomSidebarProps) {
   const { t } = useTranslation();
   const { play: playButtonClick } = useSound(Sounds.BUTTON_CLICK);
-  const unreadCounts = useChatsStore((state) => state.unreadCounts);
+  // NOTE: unread counts are deliberately NOT subscribed here — each
+  // ChatRoomSidebarItem subscribes to its own room's count so a badge update
+  // re-renders one row instead of the whole sidebar.
 
   // Theme detection for border styling
   const { isWindowsTheme: isXpTheme, isMacOSTheme, isAquaGlass } =
@@ -81,100 +190,26 @@ export const ChatRoomSidebar = React.memo(function ChatRoomSidebar({
   }
 
   const renderRoomItem = (room: ChatRoom) => {
-    const unreadCount = unreadCounts[room.id] || 0;
-    const hasUnread = unreadCount > 0;
-    const isSelected = currentRoom?.id === room.id;
-
     // For private rooms, check if the other member(s) are online
-    const isPrivateOnline =
+    const isPrivateOnline = Boolean(
       room.type === "private" &&
-      room.members?.some(
-        (m) => m !== username?.toLowerCase() && onlineUsersSet.has(m)
-      );
+        room.members?.some(
+          (m) => m !== username?.toLowerCase() && onlineUsersSet.has(m)
+        )
+    );
 
     return (
-      <div
+      <ChatRoomSidebarItem
         key={room.id}
-        className={cn(
-          "group relative py-1 px-5",
-          isSelected ? "" : "hover:bg-black/5"
-        )}
-        data-selected={isSelected ? "true" : undefined}
-        onClick={() => {
-          playButtonClick();
-          onRoomSelect(room);
-        }}
-      >
-        <div className="flex items-center">
-          {isPrivateOnline && (
-            <span
-              className="inline-block size-1.5 rounded-full bg-green-500 mr-1.5 flex-shrink-0"
-              title="Online"
-            />
-          )}
-          <span>
-            {room.type === "private"
-              ? getPrivateRoomDisplayName(room, username ?? null)
-              : `#${room.name}`}
-          </span>
-          {room.type === "irc" && (
-            <span
-              className={cn(
-                "ml-1 text-[9px] font-bold uppercase tracking-wider",
-                isSelected ? "text-white/40" : "text-black/40"
-              )}
-              title={`IRC ${room.ircHost || "irc.pieter.com"}`}
-            >
-              irc
-            </span>
-          )}
-          {(hasUnread || room.type !== "private") && (
-            <span
-              className={cn(
-                "text-[10px] ml-1.5 transition-opacity",
-                hasUnread
-                  ? "text-orange-600"
-                  : currentRoom?.id === room.id
-                  ? "text-white/40"
-                  : "text-black/40",
-                hasUnread || room.userCount > 0
-                  ? "opacity-100"
-                  : currentRoom?.id === room.id
-                  ? "opacity-100"
-                  : "opacity-0 group-hover:opacity-100"
-              )}
-            >
-              {hasUnread
-                ? `${unreadCount >= 20 ? "20+" : unreadCount} ${t("apps.chats.sidebar.new")}`
-                : `${room.userCount} ${t("apps.chats.sidebar.online")}`}
-            </span>
-          )}
-        </div>
-        {((isAdmin && room.type !== "private") || room.type === "private") &&
-          onDeleteRoom && (
-            <button
-              className={cn(
-                "absolute right-1 top-1/2 transform -translate-y-1/2 transition-opacity text-neutral-500 hover:text-red-500 p-1 rounded hover:bg-black/5",
-                currentRoom?.id === room.id
-                  ? "opacity-100"
-                  : "opacity-0 group-hover:opacity-100"
-              )}
-              onClick={(e) => {
-                e.stopPropagation();
-                playButtonClick();
-                onDeleteRoom(room);
-              }}
-              aria-label={
-                room.type === "private" ? t("apps.chats.ariaLabels.leaveConversation") : t("apps.chats.ariaLabels.deleteRoom")
-              }
-              title={
-                room.type === "private" ? t("apps.chats.ariaLabels.leaveConversation") : t("apps.chats.ariaLabels.deleteRoom")
-              }
-            >
-              <Trash className="size-3 text-black/30" weight="bold" />
-            </button>
-          )}
-      </div>
+        room={room}
+        isSelected={currentRoom?.id === room.id}
+        isPrivateOnline={isPrivateOnline}
+        isAdmin={isAdmin}
+        username={username}
+        onRoomSelect={onRoomSelect}
+        onDeleteRoom={onDeleteRoom}
+        playButtonClick={playButtonClick}
+      />
     );
   };
 
