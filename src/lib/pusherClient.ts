@@ -36,6 +36,7 @@ const globalWithPusher = globalThis as typeof globalThis & {
   __pusherClient?: RealtimeClient;
   __pusherChannelRefCounts?: Record<string, number>;
   __pusherChannelRecoveryWarnings?: Record<string, true>;
+  __pusherConnectionObservable?: RealtimeConnectionObservable;
   Pusher?: PusherConstructor;
 };
 
@@ -775,6 +776,93 @@ export function getRealtimeConnectionState(): RealtimeConnectionState {
   }
 
   return "disconnected";
+}
+
+// --- Shared connection-state observable -----------------------------------
+//
+// Several features (status indicator, cloud-sync catch-up, chat logging) need
+// to react to realtime connection-state changes. Instead of each consumer
+// binding its own `connected`/`connecting`/`disconnected` handlers on the
+// client, they share a single observable that binds the three events once.
+
+export type RealtimeConnectionListener = (
+  state: RealtimeConnectionState
+) => void;
+
+type RealtimeConnectionObservable = {
+  snapshot: RealtimeConnectionState;
+  listeners: Set<RealtimeConnectionListener>;
+  bound: boolean;
+};
+
+// Stored on globalThis (like the client itself) so HMR re-imports reuse the
+// same listener set and never double-bind the connection events.
+const getRealtimeConnectionObservable = (): RealtimeConnectionObservable => {
+  if (!globalWithPusher.__pusherConnectionObservable) {
+    globalWithPusher.__pusherConnectionObservable = {
+      snapshot: "disconnected",
+      listeners: new Set(),
+      bound: false,
+    };
+  }
+  return globalWithPusher.__pusherConnectionObservable;
+};
+
+const setRealtimeConnectionSnapshot = (
+  state: RealtimeConnectionState
+): void => {
+  const observable = getRealtimeConnectionObservable();
+  if (observable.snapshot === state) return;
+  observable.snapshot = state;
+  observable.listeners.forEach((listener) => listener(state));
+};
+
+const ensureRealtimeConnectionEventsBound = (): void => {
+  const observable = getRealtimeConnectionObservable();
+  if (observable.bound) return;
+  observable.bound = true;
+
+  // Binding early is safe: DeferredPusherRealtimeClient queues binds made
+  // before pusher-js loads and replays them onto the real client.
+  const client = getPusherClient();
+  client.connection.bind("connected", () =>
+    setRealtimeConnectionSnapshot("connected")
+  );
+  client.connection.bind("connecting", () =>
+    setRealtimeConnectionSnapshot("connecting")
+  );
+  client.connection.bind("disconnected", () =>
+    setRealtimeConnectionSnapshot("disconnected")
+  );
+
+  observable.snapshot = getRealtimeConnectionState();
+};
+
+/**
+ * Current realtime connection state. Stable snapshot suitable for
+ * `useSyncExternalStore`.
+ */
+export function getRealtimeConnectionSnapshot(): RealtimeConnectionState {
+  const observable = getRealtimeConnectionObservable();
+  // Until the events are bound (first subscriber), derive the state directly
+  // from the client so read-only callers still see fresh data.
+  return observable.bound ? observable.snapshot : getRealtimeConnectionState();
+}
+
+/**
+ * Subscribe to realtime connection-state changes. The listener receives the
+ * new state ("connected" | "connecting" | "disconnected") on every
+ * transition. Returns an unsubscribe function.
+ */
+export function subscribeRealtimeConnection(
+  listener: RealtimeConnectionListener
+): () => void {
+  ensureRealtimeConnectionEventsBound();
+  const observable = getRealtimeConnectionObservable();
+  observable.listeners.add(listener);
+  return () => {
+    observable.listeners.delete(listener);
+  };
 }
 
 export type PusherChannel = Channel | RealtimeChannel;

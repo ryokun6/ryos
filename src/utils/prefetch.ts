@@ -27,6 +27,7 @@ import {
 } from "@/utils/reloadGuard";
 import { shouldPrefetchNow } from "@/utils/network";
 import { track, SYSTEM_ANALYTICS } from "@/utils/analytics";
+import { createVisibilityGatedInterval } from "@/utils/backgroundTask";
 
 // Storage key for manifest timestamp (for cache invalidation)
 const MANIFEST_KEY = 'ryos:manifest-timestamp';
@@ -34,14 +35,14 @@ const LEGACY_MANIFEST_KEY = 'ryos-manifest-timestamp';
 
 // Periodic update check interval (5 minutes)
 const UPDATE_CHECK_INTERVAL = 5 * 60 * 1000;
-let updateCheckIntervalId: ReturnType<typeof setInterval> | null = null;
+let disposeUpdateCheckInterval: (() => void) | null = null;
 
 // HMR cleanup - clear interval when module is replaced
 if (import.meta.hot) {
   import.meta.hot.dispose(() => {
-    if (updateCheckIntervalId) {
-      clearInterval(updateCheckIntervalId);
-      updateCheckIntervalId = null;
+    if (disposeUpdateCheckInterval) {
+      disposeUpdateCheckInterval();
+      disposeUpdateCheckInterval = null;
       console.log('[Prefetch] HMR cleanup: cleared update check interval');
     }
   });
@@ -818,15 +819,19 @@ function createToastContent(props: {
  * Start periodic update checking (every 5 minutes)
  */
 function startPeriodicUpdateCheck(): void {
-  if (updateCheckIntervalId) return; // Already running
+  if (disposeUpdateCheckInterval) return; // Already running
   
   console.log(`[Prefetch] Starting periodic update checks every ${UPDATE_CHECK_INTERVAL / 1000}s`);
   
-  updateCheckIntervalId = setInterval(async () => {
+  // Paused while the tab is hidden; catches up immediately on return when a
+  // check is overdue.
+  disposeUpdateCheckInterval = createVisibilityGatedInterval(() => {
     console.log('[Prefetch] Periodic update check...');
-    await checkAndUpdate(false);
-    // Also check for desktop updates during periodic checks
-    await checkAndNotifyDesktopUpdate();
+    void (async () => {
+      await checkAndUpdate(false);
+      // Also check for desktop updates during periodic checks
+      await checkAndNotifyDesktopUpdate();
+    })();
   }, UPDATE_CHECK_INTERVAL);
 }
 
@@ -834,9 +839,9 @@ function startPeriodicUpdateCheck(): void {
  * Stop periodic update checking
  */
 export function stopPeriodicUpdateCheck(): void {
-  if (updateCheckIntervalId) {
-    clearInterval(updateCheckIntervalId);
-    updateCheckIntervalId = null;
+  if (disposeUpdateCheckInterval) {
+    disposeUpdateCheckInterval();
+    disposeUpdateCheckInterval = null;
     console.log('[Prefetch] Stopped periodic update checks');
   }
 }

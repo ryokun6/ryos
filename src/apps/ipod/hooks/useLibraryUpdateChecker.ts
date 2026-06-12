@@ -7,6 +7,7 @@ import { listAllCachedSongMetadata } from "@/utils/songMetadataCache";
 import { hasLibraryTrackMetadataChanges } from "@/stores/ipodTrackMetadataSync";
 import { mapCatalogSongToTrack } from "@/stores/ipodCatalogTrackMapping";
 import { fetchSongsVersion, type SongsVersionInfo } from "@/api/songs";
+import { createVisibilityGatedInterval } from "@/utils/backgroundTask";
 
 const CHECK_INTERVAL = 5 * 60 * 1000; // Check every 5 minutes
 
@@ -14,7 +15,7 @@ export function useLibraryUpdateChecker(isActive: boolean) {
   const { t } = useTranslation();
   const syncLibrary = useIpodStore((state) => state.syncLibrary);
   const debugMode = useDisplaySettingsStore((state) => state.debugMode);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const disposeIntervalRef = useRef<(() => void) | null>(null);
   const lastCheckedRef = useRef<number>(0);
   /**
    * Server version observed by the last full check that ended in-sync.
@@ -33,9 +34,9 @@ export function useLibraryUpdateChecker(isActive: boolean) {
 
     if (!isActive) {
       // Clear interval when app is not active
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
+      if (disposeIntervalRef.current) {
+        disposeIntervalRef.current();
+        disposeIntervalRef.current = null;
       }
       return;
     }
@@ -194,8 +195,9 @@ export function useLibraryUpdateChecker(isActive: boolean) {
       );
     }
 
-    // Set up periodic checking
-    intervalRef.current = setInterval(() => {
+    // Set up periodic checking (paused while the tab is hidden; catches up
+    // immediately on return when a check is overdue)
+    disposeIntervalRef.current = createVisibilityGatedInterval(() => {
       checkForUpdates();
       lastCheckedRef.current = Date.now();
     }, CHECK_INTERVAL);
@@ -204,9 +206,9 @@ export function useLibraryUpdateChecker(isActive: boolean) {
       if (immediateCheckTimeout) {
         clearTimeout(immediateCheckTimeout);
       }
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
+      if (disposeIntervalRef.current) {
+        disposeIntervalRef.current();
+        disposeIntervalRef.current = null;
       }
     };
   }, [isActive, syncLibrary, debugMode, t]);
