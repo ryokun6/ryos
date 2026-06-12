@@ -5591,7 +5591,7 @@
   background-color: var(--os-color-window-bg);
   backdrop-filter: blur(26px) saturate(185%);
   -webkit-backdrop-filter: blur(26px) saturate(185%);
-  border-radius: 12px !important;
+  border-radius: var(--os-glass-r-lg) !important;
   box-shadow: var(--os-window-shadow),
     inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
@@ -5622,7 +5622,7 @@
   -webkit-backdrop-filter: blur(26px) saturate(185%);
   /* Classic brushed-metal proportion (Finder, iTunes, etc.) — not the 12px
      glass pane radius used by default-material windows. */
-  border-radius: 0.6rem !important;
+  border-radius: var(--os-glass-r-metal) !important;
 }
 
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
@@ -5719,7 +5719,7 @@
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .mac-dock-surface {
   backdrop-filter: blur(26px) saturate(185%);
   -webkit-backdrop-filter: blur(26px) saturate(185%);
-  border-radius: 13px !important;
+  border-radius: var(--os-glass-r-dock) !important;
   border: var(--os-metrics-border-width) solid var(--os-color-window-border) !important;
   /* Lift the glass pill off the screen edge — classic dock sits flush. */
   margin-bottom: 12px;
@@ -5760,7 +5760,7 @@
   ) !important;
   opacity: 1 !important;
   /* Overrides the inline `0px` radius from the dropdown/select content. */
-  border-radius: 7px !important;
+  border-radius: var(--os-glass-r-md) !important;
   border: var(--os-metrics-border-width) solid var(--os-color-window-border) !important;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25),
     inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
@@ -5807,7 +5807,7 @@
     [role="menuitemradio"],
     [role="option"]
   ) {
-  border-radius: 5px !important;
+  border-radius: var(--os-glass-r-xs) !important;
   /* Tighter than the classic Aqua `6px 20px 6px 16px` — the inset rounded
      highlight already provides breathing room via the panel gutter. */
   padding: 4px 8px 4px 10px !important;
@@ -6184,28 +6184,115 @@
     inset 0 -1px 0 rgba(0, 0, 0, 0.45);
 }
 
+/* --- Glass corner radii (all browsers) ------------------------------------ */
+/* Fallback browsers (no corner-shape): a modest ~1.25× bump — circular arcs
+   need some extra px but 1.84× reads too round/blobby without squircle.
+   Squircle-capable browsers override the factor to 1.84× in @supports below. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] {
+  --os-glass-radius-factor: 1.25;
+  --os-metrics-radius: calc(0.45rem * var(--os-glass-radius-factor));
+  --os-glass-r-xs: calc(5px * var(--os-glass-radius-factor));
+  --os-glass-r-sm: calc(6px * var(--os-glass-radius-factor));
+  --os-glass-r-select: calc(8px * var(--os-glass-radius-factor));
+  --os-glass-r-select-gloss: calc(7px * var(--os-glass-radius-factor));
+  --os-glass-r-inset: calc(6px * var(--os-glass-radius-factor));
+  --os-glass-r-md: calc(10px * var(--os-glass-radius-factor));
+  --os-glass-r-dialog: calc(7.2px * var(--os-glass-radius-factor));
+  --os-glass-r-lg: calc(12px * var(--os-glass-radius-factor));
+  --os-glass-r-metal: calc(0.6rem * var(--os-glass-radius-factor));
+  --os-glass-r-dock: calc(13px * var(--os-glass-radius-factor));
+  --os-glass-r-bubble: calc(16px * var(--os-glass-radius-factor));
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .metal-inset-btn-group {
+  border-radius: var(--os-glass-r-inset) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .metal-inset-btn-group
+  .metal-inset-btn:first-child {
+  border-top-left-radius: var(--os-glass-r-inset) !important;
+  border-bottom-left-radius: var(--os-glass-r-inset) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .metal-inset-btn-group
+  .metal-inset-btn:last-child {
+  border-top-right-radius: var(--os-glass-r-inset) !important;
+  border-bottom-right-radius: var(--os-glass-r-inset) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  :is(
+    .macos-select-trigger,
+    .os-select-trigger-macos,
+    .os-btn-aqua-select,
+    .aqua-select-btn
+  ) {
+  border-radius: var(--os-glass-r-select) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  :is(.macos-select-trigger::before, .aqua-select-btn::before) {
+  border-radius: var(--os-glass-r-select-gloss) var(--os-glass-r-select-gloss) 0 0 !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .aqua-select-group
+  .aqua-select-btn:first-child {
+  border-top-left-radius: var(--os-glass-r-sm) !important;
+  border-bottom-left-radius: var(--os-glass-r-sm) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .aqua-select-group
+  .aqua-select-btn:last-child {
+  border-top-right-radius: var(--os-glass-r-sm) !important;
+  border-bottom-right-radius: var(--os-glass-r-sm) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .aqua-select-group
+  .aqua-select-btn:first-child::before {
+  border-top-left-radius: var(--os-glass-r-sm) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .aqua-select-group
+  .aqua-select-btn:last-child::before {
+  border-top-right-radius: var(--os-glass-r-sm) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] .macosx-dialog {
+  border-radius: var(--os-glass-r-dialog) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] .macosx-dialog-header {
+  border-radius: var(--os-glass-r-dialog) var(--os-glass-r-dialog) 0 0 !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] .aqua-tab {
+  border-radius: var(--os-glass-r-sm) var(--os-glass-r-sm) 0 0;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] .chat-bubble {
+  border-radius: var(--os-glass-r-bubble) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] .chat-bubble::before {
+  border-radius: var(--os-glass-r-bubble) var(--os-glass-r-bubble)
+    calc(4px * var(--os-glass-radius-factor))
+    calc(4px * var(--os-glass-radius-factor));
+}
+
 /* --- Squircle corners (progressive enhancement) --------------------------- */
-/* `corner-shape: squircle` ≈ superellipse(2). At the same px radius, squircles
-   curve tighter than circular arcs and read as "more square" — so we scale
-   radius up by (1 - 2^-0.5) / (1 - 2^-0.25) ≈ 1.84 to match classic Aqua
-   softness. Unsupported browsers keep the original radii + circular arcs. */
+/* Bump the shared radius factor to 1.84× and add corner-shape — squircles
+   curve tighter so they need the full compensation; round arcs use 1.25×. */
 @supports (corner-shape: squircle) {
   :root[data-os-theme="macosx"][data-os-aqua-material="glass"] {
     --os-corner-shape: squircle;
-    /* (1 - 2^-0.5) / (1 - 2^-0.25) ≈ 1.84 for squircle / superellipse(2) */
-    --os-squircle-radius-factor: 1.84;
-    --os-metrics-radius: calc(0.45rem * var(--os-squircle-radius-factor));
-    --os-squircle-r-xs: calc(5px * var(--os-squircle-radius-factor));
-    --os-squircle-r-sm: calc(6px * var(--os-squircle-radius-factor));
-    --os-squircle-r-select: calc(8px * var(--os-squircle-radius-factor));
-    --os-squircle-r-select-gloss: calc(7px * var(--os-squircle-radius-factor));
-    --os-squircle-r-inset: calc(6px * var(--os-squircle-radius-factor));
-    --os-squircle-r-md: calc(10px * var(--os-squircle-radius-factor));
-    --os-squircle-r-dialog: calc(7.2px * var(--os-squircle-radius-factor));
-    --os-squircle-r-lg: calc(12px * var(--os-squircle-radius-factor));
-    --os-squircle-r-metal: calc(0.6rem * var(--os-squircle-radius-factor));
-    --os-squircle-r-dock: calc(13px * var(--os-squircle-radius-factor));
-    --os-squircle-r-bubble: calc(16px * var(--os-squircle-radius-factor));
+    --os-glass-radius-factor: 1.84;
   }
 
   /* NOTE: pseudo-elements are invalid inside :is()/:where() and get silently
@@ -6261,20 +6348,8 @@
     corner-shape: round;
   }
 
-  /* Compensated radii — only inside @supports so other browsers are unchanged. */
-  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
-    .window.window-material-glass {
-    border-radius: var(--os-squircle-r-lg) !important;
-  }
-
-  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
-    .window.window-material-brushedmetal {
-    border-radius: var(--os-squircle-r-metal) !important;
-  }
-
   :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
     .metal-inset-btn-group {
-    border-radius: var(--os-squircle-r-inset) !important;
     corner-shape: var(--os-corner-shape);
   }
 
@@ -6287,37 +6362,6 @@
     corner-shape: var(--os-corner-shape);
   }
 
-  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
-    .metal-inset-btn-group
-    .metal-inset-btn:first-child {
-    border-top-left-radius: var(--os-squircle-r-inset) !important;
-    border-bottom-left-radius: var(--os-squircle-r-inset) !important;
-  }
-
-  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
-    .metal-inset-btn-group
-    .metal-inset-btn:last-child {
-    border-top-right-radius: var(--os-squircle-r-inset) !important;
-    border-bottom-right-radius: var(--os-squircle-r-inset) !important;
-    border-right: none;
-  }
-
-  :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .mac-dock-surface {
-    border-radius: var(--os-squircle-r-dock) !important;
-  }
-
-  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
-    [data-radix-popper-content-wrapper]
-    :where(
-      [role="menu"],
-      [role="listbox"],
-      [data-radix-menu-content],
-      [data-radix-popover-content],
-      [data-radix-select-content]
-    ) {
-    border-radius: var(--os-squircle-r-md) !important;
-  }
-
   /* Menu item highlights follow the panel's squircle vocabulary. */
   :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
     [data-radix-popper-content-wrapper]
@@ -6328,48 +6372,6 @@
       [role="option"]
     ) {
     corner-shape: var(--os-corner-shape);
-    border-radius: var(--os-squircle-r-xs) !important;
-  }
-
-  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
-    :is(
-      .macos-select-trigger,
-      .os-select-trigger-macos,
-      .os-btn-aqua-select,
-      .aqua-select-btn
-    ) {
-    border-radius: var(--os-squircle-r-select) !important;
-  }
-
-  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
-    :is(.macos-select-trigger::before, .aqua-select-btn::before) {
-    border-radius: var(--os-squircle-r-select-gloss) var(--os-squircle-r-select-gloss) 0 0 !important;
-  }
-
-  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
-    .aqua-select-group
-    .aqua-select-btn:first-child {
-    border-top-left-radius: var(--os-squircle-r-sm) !important;
-    border-bottom-left-radius: var(--os-squircle-r-sm) !important;
-  }
-
-  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
-    .aqua-select-group
-    .aqua-select-btn:last-child {
-    border-top-right-radius: var(--os-squircle-r-sm) !important;
-    border-bottom-right-radius: var(--os-squircle-r-sm) !important;
-  }
-
-  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
-    .aqua-select-group
-    .aqua-select-btn:first-child::before {
-    border-top-left-radius: var(--os-squircle-r-sm) !important;
-  }
-
-  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
-    .aqua-select-group
-    .aqua-select-btn:last-child::before {
-    border-top-right-radius: var(--os-squircle-r-sm) !important;
   }
 
   /* `.aqua-button` is a 28px capsule (14px radius = fully round) — it keeps
@@ -6377,28 +6379,6 @@
   :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .aqua-button,
   :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .aqua-button::before {
     corner-shape: round;
-  }
-
-  :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .macosx-dialog {
-    border-radius: var(--os-squircle-r-dialog) !important;
-  }
-
-  :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .macosx-dialog-header {
-    border-radius: var(--os-squircle-r-dialog) var(--os-squircle-r-dialog) 0 0 !important;
-  }
-
-  :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .aqua-tab {
-    border-radius: var(--os-squircle-r-sm) var(--os-squircle-r-sm) 0 0;
-  }
-
-  :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .chat-bubble {
-    border-radius: var(--os-squircle-r-bubble) !important;
-  }
-
-  :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .chat-bubble::before {
-    border-radius: var(--os-squircle-r-bubble) var(--os-squircle-r-bubble)
-      calc(4px * var(--os-squircle-radius-factor))
-      calc(4px * var(--os-squircle-radius-factor));
   }
 }
 
