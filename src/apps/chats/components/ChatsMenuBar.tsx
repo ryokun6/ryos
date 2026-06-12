@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/menubar";
 import { type ChatRoom } from "@/types/chat";
 import { useAudioSettingsStoreShallow } from "@/stores/useAudioSettingsStore";
-import { SYNTH_PRESETS } from "@/hooks/useChatSynth";
+import { SYNTH_PRESETS } from "@/hooks/chatSynthPresets";
 import { getPrivateRoomDisplayName } from "@/utils/chat";
 import { LoginDialog } from "@/components/dialogs/LoginDialog";
 import { AppMenuBarShell } from "@/components/shared/menubar/AppMenuBarShell";
