@@ -655,7 +655,7 @@ export async function validateAuth(
 <h3>Auth Headers</h3>
 <table><thead><tr><th>Header</th><th>Value</th><th>Purpose</th></tr></thead><tbody><tr><td><code>Authorization</code></td><td><code>Bearer &lt;token&gt;</code></td><td>Authentication token</td></tr><tr><td><code>X-Username</code></td><td>Username</td><td>User identification</td></tr></tbody></table>
 <h3>Token Configuration</h3>
-<table><thead><tr><th>Setting</th><th>Value</th></tr></thead><tbody><tr><td>Token TTL</td><td>90 days</td></tr><tr><td>Grace period</td><td>30 days</td></tr><tr><td>Admin bypass</td><td>User "ryo"</td></tr></tbody></table>
+<table><thead><tr><th>Setting</th><th>Value</th></tr></thead><tbody><tr><td>Token TTL</td><td>1 year (refreshed on each validated request)</td></tr><tr><td>Grace period</td><td>30 days</td></tr><tr><td>Admin bypass</td><td>User "ryo"</td></tr></tbody></table>
 <h2>CORS Handling</h2>
 <pre><code>// api/_utils/_cors.ts
 export function isAllowedOrigin(origin: string | null): boolean {

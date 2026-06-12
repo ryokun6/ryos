@@ -12,8 +12,8 @@ export const AUTH_TOKEN_PREFIX = "chat:token:";
 /** Token length in bytes (32 bytes = 256 bits = 64 hex chars) */
 export const TOKEN_LENGTH = 32;
 
-/** User/token TTL in seconds (90 days) */
-export const USER_TTL_SECONDS = 90 * 24 * 60 * 60;
+/** User/token TTL in seconds (1 year, refreshed on each validated request) */
+export const USER_TTL_SECONDS = 365 * 24 * 60 * 60;
 
 /** User expiration time for Redis SET command */
 export const USER_EXPIRATION_TIME = USER_TTL_SECONDS;

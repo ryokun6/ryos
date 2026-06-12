@@ -18,7 +18,6 @@
  */
 
 import type { Redis } from "../../_utils/redis.js";
-import { USER_TTL_SECONDS } from "../../_utils/auth/index.js";
 import { deleteStoredObject } from "../../_utils/storage.js";
 import { getSyncBlobRef } from "../../../src/shared/sync2/types.js";
 import {
@@ -27,8 +26,11 @@ import {
   sync2KvKey,
 } from "./_core.js";
 
-/** Retirement TTL for frozen v1 keys (matches the user-record TTL). */
-export const V1_RETIREMENT_TTL_SECONDS = USER_TTL_SECONDS;
+/**
+ * Retirement TTL for frozen v1 keys. These are dead copies of data already
+ * imported into v2, so they expire on a shorter clock than live sync data.
+ */
+export const V1_RETIREMENT_TTL_SECONDS = 90 * 24 * 60 * 60;
 
 /** Unreferenced blobs must stay marked this long before deletion. */
 export const BLOB_GC_GRACE_MS = 24 * 60 * 60 * 1000;

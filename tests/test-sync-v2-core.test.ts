@@ -345,6 +345,30 @@ describe("sync v2 v1-import", () => {
     expect(changes.ops).toEqual([]);
   });
 
+  test("reads refresh sync data TTLs (throttled once per day)", async () => {
+    const r = redis();
+    const fake = r as unknown as FakeRedis;
+    await applySyncOps(
+      r,
+      "user1",
+      [{ k: "settings/theme", v: { current: "macosx" }, t: t(0) }],
+      "client-a"
+    );
+
+    // Simulate TTLs decaying (e.g. an idle device only ever reads).
+    fake.ttls.delete("sync2:kv:user1");
+    fake.ttls.delete("sync2:log:user1");
+
+    await readSyncChanges(r, "user1", 0);
+    expect(fake.ttls.get("sync2:kv:user1")).toBeGreaterThan(0);
+    expect(fake.ttls.get("sync2:log:user1")).toBeGreaterThan(0);
+
+    // Throttle marker prevents refreshing again within the same day.
+    fake.ttls.delete("sync2:kv:user1");
+    await readSyncChanges(r, "user1", 0);
+    expect(fake.ttls.get("sync2:kv:user1")).toBeUndefined();
+  });
+
   test("import is skipped once initialized and writes proceed normally", async () => {
     const r = redis();
     await ensureSync2Initialized(r, "user1");

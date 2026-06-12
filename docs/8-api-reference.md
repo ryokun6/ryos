@@ -161,7 +161,7 @@ Authorization: Bearer {token}
 X-Username: {username}
 ```
 
-Token-based sessions use a 90-day TTL. Auth-required endpoints use the shared `request-auth` validation boundary for consistent `400/401` semantics.
+Token-based sessions use a 1-year TTL, refreshed on each validated request. Auth-required endpoints use the shared `request-auth` validation boundary for consistent `400/401` semantics.
 
 ## AI Providers
 

@@ -143,6 +143,28 @@ async function touchTtls(redis: Redis, username: string): Promise<void> {
   await pipeline.exec();
 }
 
+const TTL_TOUCH_THROTTLE_SECONDS = 24 * 60 * 60;
+
+/**
+ * Refresh sync data TTLs on reads too (throttled to once per day per user
+ * via an NX marker), so any device that merely checks for changes keeps the
+ * user's cloud data alive — writes are not required for retention.
+ */
+async function touchTtlsThrottled(redis: Redis, username: string): Promise<void> {
+  try {
+    const marker = await redis.set(
+      `sync2:ttl-touched:${username.toLowerCase()}`,
+      "1",
+      { nx: true, ex: TTL_TOUCH_THROTTLE_SECONDS }
+    );
+    if (marker === "OK" || marker === 1) {
+      await touchTtls(redis, username);
+    }
+  } catch (error) {
+    console.warn("[sync2] Failed to refresh TTLs on read:", error);
+  }
+}
+
 /**
  * Initialize the user's v2 state, importing v1 sync data on first access.
  * Existence of the seq key marks an initialized user.
@@ -392,6 +414,7 @@ export async function readSyncChanges(
   since: number
 ): Promise<SyncChangesResult> {
   await ensureSync2Initialized(redis, username);
+  await touchTtlsThrottled(redis, username);
 
   const seq = (await readSeq(redis, username)) ?? 0;
   if (since >= seq) {
@@ -437,6 +460,7 @@ export async function readSyncSnapshot(
   prefix?: string
 ): Promise<SyncSnapshotResult> {
   await ensureSync2Initialized(redis, username);
+  await touchTtlsThrottled(redis, username);
 
   // Read seq AFTER the KV hash so the cursor can only undercount (clients
   // re-fetch ops they already have, which LWW makes harmless), never skip.

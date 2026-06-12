@@ -30,8 +30,8 @@ export class FakeRedisPipeline {
     return this;
   }
 
-  expire(_key: string, _seconds: number): this {
-    this.operations.push(() => 1);
+  expire(key: string, seconds: number): this {
+    this.operations.push(() => this.redis.expireSync(key, seconds));
     return this;
   }
 
@@ -174,10 +174,14 @@ export class FakeRedis {
       : 0;
   }
 
-  async expire(key: string, seconds: number): Promise<number> {
+  expireSync(key: string, seconds: number): number {
     if (!this.hasKey(key)) return 0;
     this.ttls.set(key, seconds);
     return 1;
+  }
+
+  async expire(key: string, seconds: number): Promise<number> {
+    return this.expireSync(key, seconds);
   }
 
   async ttl(key: string): Promise<number> {
