@@ -6,6 +6,8 @@ A summary of changes and updates to ryOS, organized by month.
 
 ## June 2026
 
+- **Cloud Sync v2**: full rewrite to journal-based delta sync. State is a per-user `key → document` map; changes travel as ops with hybrid-logical-clock timestamps through `/api/sync/v2/*`, conflicts resolve per key (last-writer-wins, no 409s), small remote changes apply straight from realtime events with zero HTTP requests, and binary content is content-addressed with batched dedupe. Legacy v1 data imports lazily on first sync.
+- **Sync maintenance cron** (`/api/cron/sync-maintenance`): retires frozen v1 sync keys with 90-day TTLs and garbage-collects unreferenced content-addressed blobs (mark-and-sweep with a 24h grace window), walking users in bounded batches.
 - Add **selectable accent colors** for Aqua and System 7 (Control Panels → Appearance): named swatches, a wallpaper-sampled default, and a **System** option that restores each theme's classic selection color.
 - **iPod / Karaoke lyrics glow**: cache cover-derived glow color in song metadata for stable cross-device sync; default fullscreen lyrics to glow; improve palette extraction and karaoke timing/alignment fixes.
 - **Control Panels**: consolidate account actions (login, change password, logout, logout all devices) into a unified **Account** ⋯ menu on the Account tab.

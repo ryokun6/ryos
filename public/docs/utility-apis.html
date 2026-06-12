@@ -555,10 +555,55 @@ const { applets } = await fetch('/api/share-applet?list=true').then(r =&gt; r.js
 <pre><code>const response = await fetch('/api/stocks?symbols=AAPL,GOOGL,MSFT&amp;chart=AAPL&amp;range=1mo');
 const { quotes, chart } = await response.json();</code></pre>
 <hr>
-<h2>Sync APIs (Cloud Backup Metadata)</h2>
-<p>The sync endpoints manage full backup metadata and logical domain sync around client-side object storage uploads.</p>
+<h2>Sync APIs</h2>
+<p>Cloud sync uses a journal-based delta protocol (v2): all synced state is a per-user map of <code>key → document</code>, changes travel as ops with hybrid-logical- clock timestamps, and a single integer cursor (<code>seq</code>) answers "am I up to date?". Conflicts resolve per key via last-writer-wins; losing writes receive the winning entry inline (no 409s, no retry loops). See <code><a href="https://github.com/ryokun6/ryos/blob/main/docs/proposals/cloud-sync-v2.md" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">docs/proposals/cloud-sync-v2.md</a></code> for the full design.</p>
 <h3>Endpoint Summary</h3>
-<table><thead><tr><th>Method</th><th>Path</th><th>Description</th><th>Auth</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/sync/backup-token</code></td><td>Generate backup upload instructions</td><td>Required</td></tr><tr><td>GET</td><td><code>/api/sync/status</code></td><td>Check whether cloud backup metadata exists</td><td>Required</td></tr><tr><td>POST</td><td><code>/api/sync/backup</code></td><td>Save backup metadata after upload</td><td>Required</td></tr><tr><td>GET</td><td><code>/api/sync/backup</code></td><td>Download backup payload (base64) + metadata</td><td>Required</td></tr><tr><td>DELETE</td><td><code>/api/sync/backup</code></td><td>Delete backup blob + metadata</td><td>Required</td></tr><tr><td>GET</td><td><code>/api/sync/domains</code></td><td>Read logical and physical cloud sync metadata</td><td>Required</td></tr><tr><td>GET</td><td><code>/api/sync/domains/[domain]</code></td><td>Download a logical cloud sync domain payload</td><td>Required</td></tr><tr><td>PUT</td><td><code>/api/sync/domains/[domain]</code></td><td>Apply writes for one logical cloud sync domain</td><td>Required</td></tr><tr><td>POST</td><td><code>/api/sync/domains/[domain]/attachments/prepare</code></td><td>Generate upload instructions for blob-backed sync parts</td><td>Required</td></tr></tbody></table>
+<table><thead><tr><th>Method</th><th>Path</th><th>Description</th><th>Auth</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/sync/v2/ops</code></td><td>Apply a batch of ops (per-key LWW)</td><td>Required</td></tr><tr><td>GET</td><td><code>/api/sync/v2/changes?since={seq}</code></td><td>Ops after the cursor, or <code>snapshotRequired</code></td><td>Required</td></tr><tr><td>GET</td><td><code>/api/sync/v2/snapshot</code></td><td>Full key-value state + current <code>seq</code></td><td>Required</td></tr><tr><td>POST</td><td><code>/api/sync/v2/blobs</code></td><td>Batch blob upload prepare (sha256 dedupe) + download URL signing</td><td>Required</td></tr><tr><td>GET</td><td><code>/api/cron/sync-maintenance</code></td><td>Maintenance cron: v1 key retirement + blob GC</td><td><code>CRON_SECRET</code></td></tr><tr><td>POST</td><td><code>/api/sync/backup-token</code></td><td>Generate backup upload instructions</td><td>Required</td></tr><tr><td>GET</td><td><code>/api/sync/status</code></td><td>Check whether cloud backup metadata exists</td><td>Required</td></tr><tr><td>POST</td><td><code>/api/sync/backup</code></td><td>Save backup metadata after upload</td><td>Required</td></tr><tr><td>GET</td><td><code>/api/sync/backup</code></td><td>Download backup payload (base64) + metadata</td><td>Required</td></tr><tr><td>DELETE</td><td><code>/api/sync/backup</code></td><td>Delete backup blob + metadata</td><td>Required</td></tr><tr><td>GET/PUT</td><td><code>/api/sync/auto-sync-preference</code></td><td>Cross-device Auto Sync toggle</td><td>Required</td></tr></tbody></table>
+<h3>POST /api/sync/v2/ops</h3>
+<p>Request:</p>
+<pre><code>{
+  "clientId": "c4f2a9d1e8b30067",
+  "ops": [
+    { "k": "settings/theme", "v": { "current": "macosx" }, "t": "01718180000000-0000-c4f2a9d1e8b30067" },
+    { "k": "stickies/note:abc", "del": true, "t": "01718180000200-0001-c4f2a9d1e8b30067" }
+  ]
+}</code></pre>
+<p>Response (<code>200</code> even when individual ops lose):</p>
+<pre><code>{
+  "ok": true,
+  "seq": 1042,
+  "results": [
+    { "k": "settings/theme", "accepted": true, "seq": 1042 },
+    { "k": "stickies/note:abc", "accepted": false,
+      "winner": { "v": { "...": "..." }, "t": "01718180000500-0000-other", "seq": 1040 } }
+  ]
+}</code></pre>
+<p>Accepted ops are appended to the user's journal and broadcast on the <code>private-sync-{username}</code> channel as a <code>sync-ops</code> event with the ops inlined when small (receivers apply them with zero HTTP requests). Client HLC timestamps are clamped to <code>serverNow + 5min</code>.</p>
+<h3>GET /api/sync/v2/changes?since={seq}</h3>
+<p>Returns <code>{ ok, seq, ops: [...] }</code> with the ops after <code>since</code>, <code>{ ops: [] }</code> when up to date, or <code>{ seq, snapshotRequired: true }</code> when the journal no longer covers the cursor (bounded retention; fall back to the snapshot).</p>
+<h3>GET /api/sync/v2/snapshot</h3>
+<p>Returns <code>{ ok, seq, entries }</code> where <code>entries</code> maps every key to <code>{ v?, del?, t, seq }</code>. Used for new-device bootstrap, journal-gap recovery, and force download. Supports <code>?prefix=</code> for partial reads. On a user's first v2 access the server imports their legacy v1 sync state into the key-value model automatically.</p>
+<h3>POST /api/sync/v2/blobs</h3>
+<p>Binary content (images, trash, applets, wallpapers) is content-addressed at <code>sync/{username}/blobs/{sha256}.gz</code>. One batched request prepares any number of uploads — blobs the server already knows are skipped entirely — and signs download URLs for the user's own objects:</p>
+<pre><code>{
+  "upload": [{ "sha256": "ab12…", "size": 48211 }],
+  "download": ["s3://bucket/sync/alice/blobs/cd34….gz"]
+}</code></pre>
+<p>Response: per-digest <code>{ exists: true, url }</code> (skip upload) or <code>{ exists: false, upload: { …storage instruction… } }</code>, plus signed <code>downloads</code> aligned with the request array (null for foreign URLs).</p>
+<h3>GET /api/cron/sync-maintenance</h3>
+<p>Scheduled maintenance (daily via <code>vercel.json</code> crons; authenticated with <code>Authorization: Bearer ${CRON_SECRET}</code>, like the Telegram heartbeat cron). Each run processes a bounded batch of users, walking the whole user base across runs via a scan cursor persisted at <code>sync2:maint:cursor</code>: <ol><li><strong>v1 key retirement</strong> — frozen legacy sync keys (<code>sync:state:*</code>,</li></ol>    <code>sync:auto:meta:*</code>, <code>sync:songs:*</code>) were written without TTLs; once a    user is imported into v2 they get a 90-day retirement TTL. <ol><li><strong>Blob garbage collection</strong> — content-addressed blobs whose digest is no</li></ol>    longer referenced by any KV document are deleted via mark-and-sweep: a    blob must stay unreferenced across runs spanning a 24h grace window    before its storage object is removed (re-referencing clears the mark). <ol><li><strong>Legacy object sweep</strong> — v1 per-item and monolithic storage objects</li></ol>    listed in the frozen <code>sync:auto:meta</code> manifests are deleted once no    current document references them, and the manifest is pruned so deletes    are never retried.</p>
+<p>Response:</p>
+<pre><code>{
+  "success": true,
+  "usersProcessed": 25,
+  "scanComplete": false,
+  "v1KeysExpired": 120,
+  "blobsMarked": 4,
+  "blobsUnmarked": 0,
+  "blobsDeleted": 2,
+  "legacyObjectsDeleted": 7,
+  "errors": 0
+}</code></pre>
 <h3>POST /api/sync/backup-token</h3>
 <p>Generates direct-upload instructions for <code>backups/{username}/backup.gz</code>. The route is rate-limited to 10 requests per hour per user.</p>
 <p>Response:</p>
@@ -616,14 +661,6 @@ const { quotes, chart } = await response.json();</code></pre>
 <pre><code>{
   "ok": true
 }</code></pre>
-<h3>GET /api/sync/domains</h3>
-<p>Returns two metadata maps for the authenticated user: <ul><li><code>metadata</code>: logical domains such as <code>settings</code>, <code>files</code>, and <code>contacts</code></li></ul><ul><li><code>physicalMetadata</code>: physical sync parts such as <code>settings</code>, <code>custom-wallpapers</code>, and <code>files-images</code></li></ul></p>
-<h3>GET /api/sync/domains/[domain]</h3>
-<p>Downloads a logical sync domain. The response includes aggregated logical metadata plus a <code>parts</code> object keyed by physical domain so Redis-backed and blob-backed data travel together.</p>
-<h3>PUT /api/sync/domains/[domain]</h3>
-<p>Applies grouped writes for a single logical sync domain. The request body contains a <code>writes</code> object keyed by physical domain, and clients may include <code>X-Sync-Session-Id</code> to help suppress self-triggered realtime updates.</p>
-<h3>POST /api/sync/domains/[domain]/attachments/prepare</h3>
-<p>Generates upload instructions for blob-backed logical sync parts. The request body includes a required <code>partDomain</code> and an optional <code>itemKey</code> for per-item blob domains such as <code>custom-wallpapers</code> or <code>files-images</code>.</p>
 <hr>
 <h2>Admin API</h2>
 <p>Administrative endpoints for user and memory management in the chat system. All operations require admin authentication (user <code>ryo</code> with valid token).</p>

@@ -528,15 +528,16 @@ fileStore.createAlias(
 );</code></pre>
 <p>Desktop shortcuts support: <ul><li>App shortcuts (launches the app)</li><li>File shortcuts (opens the target file)</li><li>Theme-specific visibility (<code>hiddenOnThemes</code>)</li></ul></p>
 <h2>Cloud Sync</h2>
-<p>The cloud sync system (<code>/api/sync/*</code>) persists file metadata and content (documents, images, applets, trash) across devices. It also syncs <strong>calendar</strong> events, <strong>contacts</strong>, <strong>stickies</strong>, <strong>songs</strong>, <strong>videos</strong>, <strong>custom wallpapers</strong>, and <strong>settings</strong> from their respective stores, enabling backup and real-time sync via Pusher or local WebSocket.</p>
-<h3>Deletion Markers</h3>
-<p>When items are deleted (trash, empty trash, etc.), deletion markers (path/id → timestamp) are stored and synced. This enables correct handling of deletes across devices and safe recreation of items after deletion, using marker timestamps to resolve conflicts.</p>
-<h3>Merge-on-Conflict</h3>
-<p>Redis sync domains use merge-on-conflict instead of last-write-wins. On upload or 409 Conflict, <code>mergeRedisStateConflict()</code> merges local and remote snapshots per domain, reducing destructive overwrites. Domain-specific mergers handle files-metadata, stickies, calendar, contacts, songs, and videos.</p>
-<h3>Domain-Based Change Tracking</h3>
-<p>File operations emit domain-specific change events via <code>emitCloudSyncDomainChange()</code> and <code>emitCloudSyncDomainChanges()</code> so the sync system knows which data stores have been modified:</p>
-<table><thead><tr><th>Domain</th><th>Triggers</th></tr></thead><tbody><tr><td><code>files-metadata</code></td><td>Document save, format filesystem</td></tr><tr><td><code>files-images</code></td><td>Image save, move, trash/restore</td></tr><tr><td><code>files-trash</code></td><td>Move to trash, restore, empty trash</td></tr><tr><td><code>files-applets</code></td><td>Applet save, fetch from share</td></tr></tbody></table>
-<p>Individual file operations (save, rename, move, trash, restore) emit the appropriate domain events to enable incremental sync rather than full-store uploads.</p>
+<p>The cloud sync system (Cloud Sync v2, <code>/api/sync/v2/*</code>) persists file metadata and content (documents, images, applets, trash) across devices as a per-user key → document map. It also syncs <strong>calendar</strong> events, <strong>contacts</strong>, <strong>stickies</strong>, <strong>songs</strong>, <strong>videos</strong>, <strong>custom wallpapers</strong>, and <strong>settings</strong> from their respective stores, enabling backup and real-time sync via Pusher or local WebSocket.</p>
+<h3>Per-Key Documents</h3>
+<p>The files codec (<code><a href="https://github.com/ryokun6/ryos/blob/main/src/sync/codecs.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/sync/codecs.ts</a></code>) decomposes file state into per-key documents:</p>
+<table><thead><tr><th>Key</th><th>Contents</th></tr></thead><tbody><tr><td><code>files/item:{path}</code></td><td>File/folder metadata (<code>FileSystemItem</code>)</td></tr><tr><td><code>files/doc:{uuid}</code></td><td>TextEdit document contents (from IndexedDB <code>documents</code>)</td></tr><tr><td><code>images/item:{key}</code>, <code>trash/item:{key}</code>, <code>applets/item:{key}</code>, <code>wallpapers/item:{key}</code></td><td>Binary content references; the bytes are content-addressed blobs in object storage (<code>sync/{username}/blobs/{sha256}.gz</code>), uploaded and deduped by sha256 via a batched <code>POST /api/sync/v2/blobs</code></td></tr></tbody></table>
+<h3>Deletions</h3>
+<p>When items are deleted (trash, empty trash, etc.), the sync engine uploads tombstone ops for the affected keys. Deletions are inferred from shadow-map keys that are missing locally, corroborated by deletion markers (path/id → timestamp) kept in <code>useCloudSyncStore</code>. This enables correct handling of deletes across devices and safe recreation of items after deletion.</p>
+<h3>Conflict Resolution</h3>
+<p>Conflict resolution is per-key last-writer-wins using hybrid-logical-clock (HLC) timestamps. There are no snapshot merges or 409 conflicts; the newest write for each key wins.</p>
+<h3>Shadow-Diff Change Tracking</h3>
+<p>The sync engine (<code><a href="https://github.com/ryokun6/ryos/blob/main/src/sync/engine.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/sync/engine.ts</a></code>) subscribes to the file stores and keeps a persisted shadow map (key → HLC timestamp + content hash). Pending uploads are derived as diff(local state, shadow) and flushed with a ~1s debounce, so individual file operations (save, rename, move, trash, restore) sync incrementally as per-key ops rather than full-store uploads.</p>
 <h2>Migration System</h2>
 <p>Store version migrations handle schema changes:</p>
 <pre><code>// Version history

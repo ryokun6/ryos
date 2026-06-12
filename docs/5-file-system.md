@@ -338,28 +338,29 @@ Desktop shortcuts support:
 
 ## Cloud Sync
 
-The cloud sync system (`/api/sync/*`) persists file metadata and content (documents, images, applets, trash) across devices. It also syncs **calendar** events, **contacts**, **stickies**, **songs**, **videos**, **custom wallpapers**, and **settings** from their respective stores, enabling backup and real-time sync via Pusher or local WebSocket.
+The cloud sync system (Cloud Sync v2, `/api/sync/v2/*`) persists file metadata and content (documents, images, applets, trash) across devices as a per-user key → document map. It also syncs **calendar** events, **contacts**, **stickies**, **songs**, **videos**, **custom wallpapers**, and **settings** from their respective stores, enabling backup and real-time sync via Pusher or local WebSocket.
 
-### Deletion Markers
+### Per-Key Documents
 
-When items are deleted (trash, empty trash, etc.), deletion markers (path/id → timestamp) are stored and synced. This enables correct handling of deletes across devices and safe recreation of items after deletion, using marker timestamps to resolve conflicts.
+The files codec (`src/sync/codecs.ts`) decomposes file state into per-key documents:
 
-### Merge-on-Conflict
+| Key | Contents |
+|-----|----------|
+| `files/item:{path}` | File/folder metadata (`FileSystemItem`) |
+| `files/doc:{uuid}` | TextEdit document contents (from IndexedDB `documents`) |
+| `images/item:{key}`, `trash/item:{key}`, `applets/item:{key}`, `wallpapers/item:{key}` | Binary content references; the bytes are content-addressed blobs in object storage (`sync/{username}/blobs/{sha256}.gz`), uploaded and deduped by sha256 via a batched `POST /api/sync/v2/blobs` |
 
-Redis sync domains use merge-on-conflict instead of last-write-wins. On upload or 409 Conflict, `mergeRedisStateConflict()` merges local and remote snapshots per domain, reducing destructive overwrites. Domain-specific mergers handle files-metadata, stickies, calendar, contacts, songs, and videos.
+### Deletions
 
-### Domain-Based Change Tracking
+When items are deleted (trash, empty trash, etc.), the sync engine uploads tombstone ops for the affected keys. Deletions are inferred from shadow-map keys that are missing locally, corroborated by deletion markers (path/id → timestamp) kept in `useCloudSyncStore`. This enables correct handling of deletes across devices and safe recreation of items after deletion.
 
-File operations emit domain-specific change events via `emitCloudSyncDomainChange()` and `emitCloudSyncDomainChanges()` so the sync system knows which data stores have been modified:
+### Conflict Resolution
 
-| Domain | Triggers |
-|--------|----------|
-| `files-metadata` | Document save, format filesystem |
-| `files-images` | Image save, move, trash/restore |
-| `files-trash` | Move to trash, restore, empty trash |
-| `files-applets` | Applet save, fetch from share |
+Conflict resolution is per-key last-writer-wins using hybrid-logical-clock (HLC) timestamps. There are no snapshot merges or 409 conflicts; the newest write for each key wins.
 
-Individual file operations (save, rename, move, trash, restore) emit the appropriate domain events to enable incremental sync rather than full-store uploads.
+### Shadow-Diff Change Tracking
+
+The sync engine (`src/sync/engine.ts`) subscribes to the file stores and keeps a persisted shadow map (key → HLC timestamp + content hash). Pending uploads are derived as diff(local state, shadow) and flushed with a ~1s debounce, so individual file operations (save, rename, move, trash, restore) sync incrementally as per-key ops rather than full-store uploads.
 
 ## Migration System
 

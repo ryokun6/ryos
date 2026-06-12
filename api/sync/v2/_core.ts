@@ -170,10 +170,13 @@ export async function ensureSync2Initialized(
     for (const [key, entry] of Object.entries(entries)) {
       kvFields[key] = JSON.stringify(entry);
       const blobRef = entry.del ? null : getSyncBlobRef(entry.v);
-      if (blobRef?.sha256) {
-        blobRegistry[blobRef.sha256] = JSON.stringify({
-          url: blobRef.url,
-          size: blobRef.size,
+      // Legacy v1 signatures are SHA-256 over the same serialization, so
+      // imported refs participate in dedupe and GC like native ones.
+      const digest = blobRef?.sha256 || blobRef?.sig;
+      if (digest) {
+        blobRegistry[digest] = JSON.stringify({
+          url: blobRef!.url,
+          size: blobRef!.size,
         });
       }
     }

@@ -60,6 +60,28 @@ export class FakeRedis {
   readonly sets = new Map<string, Set<string>>();
   readonly hashes = new Map<string, Map<string, string>>();
   readonly lists = new Map<string, string[]>();
+  /** Recorded TTLs (seconds); FakeRedis never actually expires keys. */
+  readonly ttls = new Map<string, number>();
+
+  allKeys(): string[] {
+    return [
+      ...new Set([
+        ...this.kv.keys(),
+        ...this.sets.keys(),
+        ...this.hashes.keys(),
+        ...this.lists.keys(),
+      ]),
+    ];
+  }
+
+  private hasKey(key: string): boolean {
+    return (
+      this.kv.has(key) ||
+      this.sets.has(key) ||
+      this.hashes.has(key) ||
+      this.lists.has(key)
+    );
+  }
 
   // --- sync helpers ---------------------------------------------------------
 
@@ -68,6 +90,11 @@ export class FakeRedis {
       return null;
     }
     this.kv.set(key, serialize(value));
+    if (options?.ex) {
+      this.ttls.set(key, options.ex);
+    } else {
+      this.ttls.delete(key);
+    }
     return "OK";
   }
 
@@ -78,6 +105,7 @@ export class FakeRedis {
       if (this.sets.delete(key)) deleted += 1;
       if (this.hashes.delete(key)) deleted += 1;
       if (this.lists.delete(key)) deleted += 1;
+      this.ttls.delete(key);
     }
     return deleted;
   }
@@ -146,12 +174,33 @@ export class FakeRedis {
       : 0;
   }
 
-  async expire(_key: string, _seconds: number): Promise<number> {
+  async expire(key: string, seconds: number): Promise<number> {
+    if (!this.hasKey(key)) return 0;
+    this.ttls.set(key, seconds);
     return 1;
   }
 
-  async ttl(_key: string): Promise<number> {
-    return -1;
+  async ttl(key: string): Promise<number> {
+    if (!this.hasKey(key)) return -2;
+    return this.ttls.get(key) ?? -1;
+  }
+
+  async scan(
+    cursor: number | string,
+    options?: { match?: string; count?: number }
+  ): Promise<[string, string[]]> {
+    const all = this.allKeys().sort();
+    const pattern = options?.match
+      ? new RegExp(
+          `^${options.match.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*")}$`
+        )
+      : null;
+    const start = Number.parseInt(String(cursor), 10) || 0;
+    const count = options?.count ?? 10;
+    const window = all.slice(start, start + count);
+    const matched = pattern ? window.filter((key) => pattern.test(key)) : window;
+    const next = start + count >= all.length ? "0" : String(start + count);
+    return [next, matched];
   }
 
   async incr(key: string): Promise<number> {
