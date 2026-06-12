@@ -1,17 +1,46 @@
-import type { CloudSyncDomain } from "@/utils/cloudSyncShared";
+import {
+  isSyncNamespace,
+  type SyncNamespace,
+} from "@/shared/sync2/namespaces";
 
-type CloudSyncDomainListener = (domain: CloudSyncDomain) => void;
+/**
+ * Lightweight event bus connecting app code to the cloud sync engine:
+ * - domain change events mark a namespace dirty (upload path)
+ * - check requests trigger a cursor pull (download path)
+ */
+
+/** Legacy v1 domain names still used by a few call sites. */
+const LEGACY_DOMAIN_ALIASES: Record<string, SyncNamespace> = {
+  "files-metadata": "files",
+  "files-images": "images",
+  "files-trash": "trash",
+  "files-applets": "applets",
+  "custom-wallpapers": "wallpapers",
+};
+
+export type CloudSyncChangeSource =
+  | SyncNamespace
+  | keyof typeof LEGACY_DOMAIN_ALIASES;
+
+export function normalizeSyncNamespace(
+  value: CloudSyncChangeSource
+): SyncNamespace | null {
+  if (isSyncNamespace(value)) return value;
+  return LEGACY_DOMAIN_ALIASES[value] || null;
+}
+
+type NamespaceListener = (namespace: SyncNamespace) => void;
 type SyncCheckRequestListener = () => void;
-type DomainSyncCheckRequestListener = (domain: CloudSyncDomain) => void;
 
-const listeners = new Set<CloudSyncDomainListener>();
+const changeListeners = new Set<NamespaceListener>();
 const syncCheckListeners = new Set<SyncCheckRequestListener>();
-const domainSyncCheckListeners = new Set<DomainSyncCheckRequestListener>();
 
-export function emitCloudSyncDomainChange(domain: CloudSyncDomain): void {
-  listeners.forEach((listener) => {
+export function emitCloudSyncDomainChange(domain: CloudSyncChangeSource): void {
+  const namespace = normalizeSyncNamespace(domain);
+  if (!namespace) return;
+  changeListeners.forEach((listener) => {
     try {
-      listener(domain);
+      listener(namespace);
     } catch (error) {
       console.error("[CloudSyncEvents] Listener failed:", error);
     }
@@ -19,20 +48,30 @@ export function emitCloudSyncDomainChange(domain: CloudSyncDomain): void {
 }
 
 export function emitCloudSyncDomainChanges(
-  domains: Iterable<CloudSyncDomain>
+  domains: Iterable<CloudSyncChangeSource>
 ): void {
-  const uniqueDomains = new Set(domains);
-  uniqueDomains.forEach((domain) => {
-    emitCloudSyncDomainChange(domain);
+  const namespaces = new Set<SyncNamespace>();
+  for (const domain of domains) {
+    const namespace = normalizeSyncNamespace(domain);
+    if (namespace) namespaces.add(namespace);
+  }
+  namespaces.forEach((namespace) => {
+    changeListeners.forEach((listener) => {
+      try {
+        listener(namespace);
+      } catch (error) {
+        console.error("[CloudSyncEvents] Listener failed:", error);
+      }
+    });
   });
 }
 
 export function subscribeToCloudSyncDomainChanges(
-  listener: CloudSyncDomainListener
+  listener: NamespaceListener
 ): () => void {
-  listeners.add(listener);
+  changeListeners.add(listener);
   return () => {
-    listeners.delete(listener);
+    changeListeners.delete(listener);
   };
 }
 
@@ -55,21 +94,10 @@ export function subscribeToCloudSyncCheckRequests(
   };
 }
 
-export function requestCloudSyncDomainCheck(domain: CloudSyncDomain): void {
-  domainSyncCheckListeners.forEach((listener) => {
-    try {
-      listener(domain);
-    } catch (error) {
-      console.error("[CloudSyncEvents] Domain sync check listener failed:", error);
-    }
-  });
-}
-
-export function subscribeToCloudSyncDomainCheckRequests(
-  listener: DomainSyncCheckRequestListener
-): () => void {
-  domainSyncCheckListeners.add(listener);
-  return () => {
-    domainSyncCheckListeners.delete(listener);
-  };
+/**
+ * With a single cursor there is no cheaper per-domain check; a domain check
+ * is just a global check. Kept as a named API for call-site clarity.
+ */
+export function requestCloudSyncDomainCheck(_domain?: CloudSyncChangeSource): void {
+  requestCloudSyncCheck();
 }

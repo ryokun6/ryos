@@ -1,29 +1,27 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import type {
-  CloudSyncDomain,
-  CloudSyncMetadataMap,
-} from "@/utils/cloudSyncShared";
 import {
-  createEmptyCloudSyncMetadataMap,
-  getCloudSyncCategory,
-} from "@/utils/cloudSyncShared";
+  SYNC_CATEGORIES,
+  type SyncCategory,
+} from "@/shared/sync2/namespaces";
 import {
   mergeDeletionMarkerMaps,
   type DeletionMarkerMap,
 } from "@/utils/cloudSyncDeletionMarkers";
 import { persistAutoSyncPreferenceToServer } from "@/utils/autoSyncPreference";
 
-interface CloudSyncDomainStatus {
+export interface CloudSyncCategoryStatus {
   lastUploadedAt: string | null;
   lastFetchedAt: string | null;
   lastAppliedRemoteAt: string | null;
-  lastKnownServerVersion: number | null;
   isUploading: boolean;
   isDownloading: boolean;
 }
 
-type CloudSyncDomainStatusMap = Record<CloudSyncDomain, CloudSyncDomainStatus>;
+export type CloudSyncCategoryStatusMap = Record<
+  SyncCategory,
+  CloudSyncCategoryStatus
+>;
 
 export const CLOUD_SYNC_DELETION_BUCKETS = [
   "calendarTodoIds",
@@ -67,6 +65,47 @@ function createEmptyDeletionMarkers(): CloudSyncDeletionMarkerState {
   };
 }
 
+function createInitialCategoryStatus(): CloudSyncCategoryStatusMap {
+  const empty = (): CloudSyncCategoryStatus => ({
+    lastUploadedAt: null,
+    lastFetchedAt: null,
+    lastAppliedRemoteAt: null,
+    isUploading: false,
+    isDownloading: false,
+  });
+  return {
+    files: empty(),
+    settings: empty(),
+    songs: empty(),
+    videos: empty(),
+    tv: empty(),
+    stickies: empty(),
+    calendar: empty(),
+    contacts: empty(),
+    maps: empty(),
+  };
+}
+
+export function mergePersistedCloudSyncCategoryStatus(
+  partial: Partial<CloudSyncCategoryStatusMap> | undefined
+): CloudSyncCategoryStatusMap {
+  const next = createInitialCategoryStatus();
+  if (!partial) return next;
+  for (const category of SYNC_CATEGORIES) {
+    const row = partial[category];
+    if (row && typeof row === "object") {
+      next[category] = {
+        lastUploadedAt: row.lastUploadedAt ?? null,
+        lastFetchedAt: row.lastFetchedAt ?? null,
+        lastAppliedRemoteAt: row.lastAppliedRemoteAt ?? null,
+        isUploading: false,
+        isDownloading: false,
+      };
+    }
+  }
+  return next;
+}
+
 interface CloudSyncStoreState {
   autoSyncEnabled: boolean;
   syncFiles: boolean;
@@ -81,37 +120,22 @@ interface CloudSyncStoreState {
   isCheckingRemote: boolean;
   lastCheckedAt: string | null;
   lastError: string | null;
-  remoteMetadata: CloudSyncMetadataMap;
-  domainStatus: CloudSyncDomainStatusMap;
+  categoryStatus: CloudSyncCategoryStatusMap;
   deletionMarkers: CloudSyncDeletionMarkerState;
   setAutoSyncEnabled: (enabled: boolean) => void;
   /** Apply server preference without writing back (login / new device). */
   applyServerAutoSyncPreference: (enabled: boolean) => void;
-  setDomainEnabled: (domain: CloudSyncDomain, enabled: boolean) => void;
-  isDomainEnabled: (domain: CloudSyncDomain) => boolean;
+  setCategoryEnabled: (category: SyncCategory, enabled: boolean) => void;
+  isCategoryEnabled: (category: SyncCategory) => boolean;
   setCheckingRemote: (checking: boolean) => void;
   setLastError: (error: string | null) => void;
-  setRemoteMetadata: (metadata: CloudSyncMetadataMap) => void;
-  updateRemoteMetadataForDomain: (
-    domain: CloudSyncDomain,
-    metadata: CloudSyncMetadataMap[CloudSyncDomain]
+  markCategorySyncing: (
+    category: SyncCategory,
+    direction: "upload" | "download",
+    active: boolean
   ) => void;
-  markUploadStart: (domain: CloudSyncDomain) => void;
-  markUploadSuccess: (
-    domain: CloudSyncDomain,
-    metadata: NonNullable<CloudSyncMetadataMap[CloudSyncDomain]> | string
-  ) => void;
-  markUploadFailure: (domain: CloudSyncDomain, error: string) => void;
-  markDownloadStart: (domain: CloudSyncDomain) => void;
-  markDownloadSuccess: (
-    domain: CloudSyncDomain,
-    metadata: NonNullable<CloudSyncMetadataMap[CloudSyncDomain]> | string
-  ) => void;
-  markDownloadFailure: (domain: CloudSyncDomain, error: string) => void;
-  markRemoteApplied: (
-    domain: CloudSyncDomain,
-    metadata: NonNullable<CloudSyncMetadataMap[CloudSyncDomain]> | string
-  ) => void;
+  markCategoryUploaded: (category: SyncCategory, uploadedAt: string) => void;
+  markCategoryApplied: (category: SyncCategory, appliedAt: string) => void;
   markDeletedKeys: (
     bucket: CloudSyncDeletionBucket,
     keys: Iterable<string>,
@@ -127,64 +151,20 @@ interface CloudSyncStoreState {
   ) => void;
 }
 
-function createInitialDomainStatus(): CloudSyncDomainStatusMap {
-  const empty = (): CloudSyncDomainStatus => ({
-    lastUploadedAt: null,
-    lastFetchedAt: null,
-    lastAppliedRemoteAt: null,
-    lastKnownServerVersion: null,
-    isUploading: false,
-    isDownloading: false,
-  });
-
-  return {
-    settings: empty(),
-    "files-metadata": empty(),
-    "files-images": empty(),
-    "files-trash": empty(),
-    "files-applets": empty(),
-    songs: empty(),
-    videos: empty(),
-    tv: empty(),
-    stickies: empty(),
-    calendar: empty(),
-    contacts: empty(),
-    maps: empty(),
-    "custom-wallpapers": empty(),
-  };
-}
-
-/**
- * Zustand persist merge is shallow: a persisted `domainStatus` object with fewer
- * keys than the current schema replaces the entire map and drops new domains
- * (e.g. custom-wallpapers), causing crashes when UI iterates FILE_SYNC_DOMAINS.
- * @see tests/test-cloud-sync-persist-domain-status.test.ts
- */
-export function mergePersistedCloudSyncDomainStatus(
-  partial: Partial<CloudSyncDomainStatusMap> | undefined
-): CloudSyncDomainStatusMap {
-  const next = createInitialDomainStatus();
-  if (!partial) {
-    return next;
-  }
-  for (const domain of Object.keys(next) as CloudSyncDomain[]) {
-    const row = partial[domain];
-    if (row && typeof row === "object") {
-      next[domain] = {
-        lastUploadedAt: row.lastUploadedAt ?? null,
-        lastFetchedAt: row.lastFetchedAt ?? null,
-        lastAppliedRemoteAt: row.lastAppliedRemoteAt ?? null,
-        lastKnownServerVersion: row.lastKnownServerVersion ?? null,
-        isUploading: false,
-        isDownloading: false,
-      };
-    }
-  }
-  return next;
-}
-
 const STORE_NAME = "ryos:cloud-sync";
-const STORE_VERSION = 13;
+const STORE_VERSION = 14;
+
+const CATEGORY_TOGGLE_FIELDS: Record<SyncCategory, keyof CloudSyncStoreState> = {
+  files: "syncFiles",
+  settings: "syncSettings",
+  songs: "syncSongs",
+  videos: "syncVideos",
+  tv: "syncTv",
+  stickies: "syncStickies",
+  calendar: "syncCalendar",
+  contacts: "syncContacts",
+  maps: "syncMaps",
+};
 
 export const useCloudSyncStore = create<CloudSyncStoreState>()(
   persist(
@@ -202,8 +182,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
       isCheckingRemote: false,
       lastCheckedAt: null,
       lastError: null,
-      remoteMetadata: createEmptyCloudSyncMetadataMap(),
-      domainStatus: createInitialDomainStatus(),
+      categoryStatus: createInitialCategoryStatus(),
       deletionMarkers: createEmptyDeletionMarkers(),
 
       setAutoSyncEnabled: (enabled) => {
@@ -216,61 +195,11 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
       applyServerAutoSyncPreference: (enabled) =>
         set({ autoSyncEnabled: enabled }),
 
-      setDomainEnabled: (domain, enabled) => {
-        switch (getCloudSyncCategory(domain)) {
-          case "files":
-            set({ syncFiles: enabled });
-            return;
-          case "settings":
-            set({ syncSettings: enabled });
-            return;
-          case "songs":
-            set({ syncSongs: enabled });
-            return;
-          case "videos":
-            set({ syncVideos: enabled });
-            return;
-          case "tv":
-            set({ syncTv: enabled });
-            return;
-          case "stickies":
-            set({ syncStickies: enabled });
-            return;
-          case "calendar":
-            set({ syncCalendar: enabled });
-            return;
-          case "contacts":
-            set({ syncContacts: enabled });
-            return;
-          case "maps":
-            set({ syncMaps: enabled });
-            return;
-        }
-      },
+      setCategoryEnabled: (category, enabled) =>
+        set({ [CATEGORY_TOGGLE_FIELDS[category]]: enabled } as Partial<CloudSyncStoreState>),
 
-      isDomainEnabled: (domain) => {
-        const state = get();
-        switch (getCloudSyncCategory(domain)) {
-          case "files":
-            return state.syncFiles;
-          case "settings":
-            return state.syncSettings;
-          case "songs":
-            return state.syncSongs;
-          case "videos":
-            return state.syncVideos;
-          case "tv":
-            return state.syncTv;
-          case "stickies":
-            return state.syncStickies;
-          case "calendar":
-            return state.syncCalendar;
-          case "contacts":
-            return state.syncContacts;
-          case "maps":
-            return state.syncMaps;
-        }
-      },
+      isCategoryEnabled: (category) =>
+        Boolean(get()[CATEGORY_TOGGLE_FIELDS[category]]),
 
       setCheckingRemote: (checking) =>
         set({
@@ -280,113 +209,39 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
 
       setLastError: (error) => set({ lastError: error }),
 
-      setRemoteMetadata: (metadata) => set({ remoteMetadata: metadata }),
-
-      updateRemoteMetadataForDomain: (domain, metadata) =>
+      markCategorySyncing: (category, direction, active) =>
         set((state) => ({
-          remoteMetadata: {
-            ...state.remoteMetadata,
-            [domain]: metadata,
-          },
-        })),
-
-      markUploadStart: (domain) =>
-        set((state) => ({
-          domainStatus: {
-            ...state.domainStatus,
-            [domain]: {
-              ...state.domainStatus[domain],
-              isUploading: true,
+          categoryStatus: {
+            ...state.categoryStatus,
+            [category]: {
+              ...state.categoryStatus[category],
+              ...(direction === "upload"
+                ? { isUploading: active }
+                : { isDownloading: active }),
             },
           },
         })),
 
-      markUploadSuccess: (domain, metadata) =>
+      markCategoryUploaded: (category, uploadedAt) =>
         set((state) => ({
-          domainStatus: {
-            ...state.domainStatus,
-            [domain]: {
-              ...state.domainStatus[domain],
-              isUploading: false,
-              lastUploadedAt:
-                typeof metadata === "string" ? metadata : metadata.updatedAt,
-              lastKnownServerVersion:
-                (typeof metadata === "string"
-                  ? null
-                  : metadata.syncVersion?.serverVersion) ||
-                state.domainStatus[domain].lastKnownServerVersion,
+          categoryStatus: {
+            ...state.categoryStatus,
+            [category]: {
+              ...state.categoryStatus[category],
+              lastUploadedAt: uploadedAt,
             },
           },
           lastError: null,
         })),
 
-      markUploadFailure: (domain, error) =>
+      markCategoryApplied: (category, appliedAt) =>
         set((state) => ({
-          domainStatus: {
-            ...state.domainStatus,
-            [domain]: {
-              ...state.domainStatus[domain],
-              isUploading: false,
-            },
-          },
-          lastError: error,
-        })),
-
-      markDownloadStart: (domain) =>
-        set((state) => ({
-          domainStatus: {
-            ...state.domainStatus,
-            [domain]: {
-              ...state.domainStatus[domain],
-              isDownloading: true,
-            },
-          },
-        })),
-
-      markDownloadSuccess: (domain, metadata) =>
-        set((state) => ({
-          domainStatus: {
-            ...state.domainStatus,
-            [domain]: {
-              ...state.domainStatus[domain],
-              isDownloading: false,
-              lastFetchedAt:
-                typeof metadata === "string" ? metadata : metadata.updatedAt,
-              lastKnownServerVersion:
-                (typeof metadata === "string"
-                  ? null
-                  : metadata.syncVersion?.serverVersion) ||
-                state.domainStatus[domain].lastKnownServerVersion,
-            },
-          },
-          lastError: null,
-        })),
-
-      markDownloadFailure: (domain, error) =>
-        set((state) => ({
-          domainStatus: {
-            ...state.domainStatus,
-            [domain]: {
-              ...state.domainStatus[domain],
-              isDownloading: false,
-            },
-          },
-          lastError: error,
-        })),
-
-      markRemoteApplied: (domain, metadata) =>
-        set((state) => ({
-          domainStatus: {
-            ...state.domainStatus,
-            [domain]: {
-              ...state.domainStatus[domain],
-              lastAppliedRemoteAt:
-                typeof metadata === "string" ? metadata : metadata.updatedAt,
-              lastKnownServerVersion:
-                (typeof metadata === "string"
-                  ? null
-                  : metadata.syncVersion?.serverVersion) ||
-                state.domainStatus[domain].lastKnownServerVersion,
+          categoryStatus: {
+            ...state.categoryStatus,
+            [category]: {
+              ...state.categoryStatus[category],
+              lastFetchedAt: appliedAt,
+              lastAppliedRemoteAt: appliedAt,
             },
           },
           lastError: null,
@@ -396,22 +251,14 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
         set((state) => {
           const nextBucket = { ...state.deletionMarkers[bucket] };
           let changed = false;
-
           for (const key of keys) {
-            if (!key) {
-              continue;
-            }
-
+            if (!key) continue;
             if (nextBucket[key] !== deletedAt) {
               nextBucket[key] = deletedAt;
               changed = true;
             }
           }
-
-          if (!changed) {
-            return state;
-          }
-
+          if (!changed) return state;
           return {
             deletionMarkers: {
               ...state.deletionMarkers,
@@ -424,18 +271,13 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
         set((state) => {
           const nextBucket = { ...state.deletionMarkers[bucket] };
           let changed = false;
-
           for (const key of keys) {
             if (key && key in nextBucket) {
               delete nextBucket[key];
               changed = true;
             }
           }
-
-          if (!changed) {
-            return state;
-          }
-
+          if (!changed) return state;
           return {
             deletionMarkers: {
               ...state.deletionMarkers,
@@ -456,11 +298,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
             Object.entries(nextBucket).some(
               ([key, value]) => currentBucket[key] !== value
             );
-
-          if (!changed) {
-            return state;
-          }
-
+          if (!changed) return state;
           return {
             deletionMarkers: {
               ...state.deletionMarkers,
@@ -481,7 +319,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
         return {
           ...currentState,
           ...p,
-          domainStatus: mergePersistedCloudSyncDomainStatus(p.domainStatus),
+          categoryStatus: mergePersistedCloudSyncCategoryStatus(p.categoryStatus),
         };
       },
       partialize: (state) => ({
@@ -497,79 +335,93 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
         syncMaps: state.syncMaps,
         lastCheckedAt: state.lastCheckedAt,
         deletionMarkers: state.deletionMarkers,
-        domainStatus: Object.fromEntries(
-          Object.entries(state.domainStatus).map(([domain, status]) => [
-            domain,
+        categoryStatus: Object.fromEntries(
+          Object.entries(state.categoryStatus).map(([category, status]) => [
+            category,
             {
               lastUploadedAt: status.lastUploadedAt,
               lastFetchedAt: status.lastFetchedAt,
               lastAppliedRemoteAt: status.lastAppliedRemoteAt,
-              lastKnownServerVersion: status.lastKnownServerVersion,
               isUploading: false,
               isDownloading: false,
             },
           ])
-        ) as CloudSyncDomainStatusMap,
+        ) as CloudSyncCategoryStatusMap,
       }),
       migrate: (persistedState) => {
-        const candidate = persistedState as Partial<CloudSyncStoreState>;
-        const domainStatus = createInitialDomainStatus();
+        const candidate = persistedState as Partial<CloudSyncStoreState> & {
+          domainStatus?: Record<string, Partial<CloudSyncCategoryStatus>>;
+        };
+        const categoryStatus = createInitialCategoryStatus();
         const deletionMarkers = createEmptyDeletionMarkers();
 
+        // v13 and earlier persisted per-physical-domain status; collapse to
+        // categories, preferring the newest timestamps.
+        const legacyDomainToCategory: Record<string, SyncCategory> = {
+          settings: "settings",
+          "files-metadata": "files",
+          "files-images": "files",
+          "files-trash": "files",
+          "files-applets": "files",
+          "custom-wallpapers": "files",
+          songs: "songs",
+          videos: "videos",
+          tv: "tv",
+          stickies: "stickies",
+          calendar: "calendar",
+          contacts: "contacts",
+          maps: "maps",
+        };
+        const newest = (a: string | null, b: string | null | undefined): string | null => {
+          if (!b) return a;
+          if (!a) return b;
+          return new Date(b).getTime() > new Date(a).getTime() ? b : a;
+        };
         if (candidate?.domainStatus) {
-          for (const domain of Object.keys(domainStatus) as CloudSyncDomain[]) {
-            const saved = candidate.domainStatus[domain];
-            if (saved) {
-              domainStatus[domain] = {
-                lastUploadedAt: saved.lastUploadedAt ?? null,
-                lastFetchedAt: saved.lastFetchedAt ?? null,
-                lastAppliedRemoteAt: saved.lastAppliedRemoteAt ?? null,
-                lastKnownServerVersion: saved.lastKnownServerVersion ?? null,
+          for (const [domain, status] of Object.entries(candidate.domainStatus)) {
+            const category = legacyDomainToCategory[domain];
+            if (!category || !status) continue;
+            categoryStatus[category] = {
+              lastUploadedAt: newest(
+                categoryStatus[category].lastUploadedAt,
+                status.lastUploadedAt
+              ),
+              lastFetchedAt: newest(
+                categoryStatus[category].lastFetchedAt,
+                status.lastFetchedAt
+              ),
+              lastAppliedRemoteAt: newest(
+                categoryStatus[category].lastAppliedRemoteAt,
+                status.lastAppliedRemoteAt
+              ),
+              isUploading: false,
+              isDownloading: false,
+            };
+          }
+        } else if (candidate?.categoryStatus) {
+          for (const category of SYNC_CATEGORIES) {
+            const row = candidate.categoryStatus[category];
+            if (row) {
+              categoryStatus[category] = {
+                lastUploadedAt: row.lastUploadedAt ?? null,
+                lastFetchedAt: row.lastFetchedAt ?? null,
+                lastAppliedRemoteAt: row.lastAppliedRemoteAt ?? null,
                 isUploading: false,
                 isDownloading: false,
               };
             }
           }
-
-          const legacyFilesStatus = (
-            candidate.domainStatus as Partial<Record<string, CloudSyncDomainStatus>>
-          ).files;
-          if (legacyFilesStatus) {
-            for (const domain of [
-              "files-metadata",
-              "files-images",
-              "files-trash",
-              "files-applets",
-            ] as CloudSyncDomain[]) {
-              if (!domainStatus[domain].lastUploadedAt) {
-                domainStatus[domain] = {
-                  lastUploadedAt: legacyFilesStatus.lastUploadedAt ?? null,
-                  lastFetchedAt: null,
-                  lastAppliedRemoteAt:
-                    legacyFilesStatus.lastAppliedRemoteAt ?? null,
-                  lastKnownServerVersion:
-                    legacyFilesStatus.lastKnownServerVersion ?? null,
-                  isUploading: false,
-                  isDownloading: false,
-                };
-              }
-            }
-          }
         }
 
-        const candidateDeletionMarkers = (
-          candidate as Partial<{ deletionMarkers: Partial<CloudSyncDeletionMarkerState> }>
-        )?.deletionMarkers;
+        const candidateDeletionMarkers = candidate?.deletionMarkers;
         if (candidateDeletionMarkers) {
           for (const bucket of CLOUD_SYNC_DELETION_BUCKETS) {
             const persistedBucket = candidateDeletionMarkers[bucket];
-            if (!persistedBucket || typeof persistedBucket !== "object") {
-              continue;
-            }
-
+            if (!persistedBucket || typeof persistedBucket !== "object") continue;
             deletionMarkers[bucket] = Object.fromEntries(
               Object.entries(persistedBucket).filter(
-                ([key, value]) => typeof key === "string" && key.length > 0 && typeof value === "string"
+                ([key, value]) =>
+                  typeof key === "string" && key.length > 0 && typeof value === "string"
               )
             );
           }
@@ -580,15 +432,15 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
           syncFiles: candidate.syncFiles ?? true,
           syncSettings: candidate.syncSettings ?? true,
           syncSongs: candidate.syncSongs ?? true,
-          syncVideos: (candidate as Record<string, unknown>).syncVideos as boolean ?? true,
-          syncTv: (candidate as Record<string, unknown>).syncTv as boolean ?? true,
-          syncStickies: (candidate as Record<string, unknown>).syncStickies as boolean ?? true,
+          syncVideos: candidate.syncVideos ?? true,
+          syncTv: candidate.syncTv ?? true,
+          syncStickies: candidate.syncStickies ?? true,
           syncCalendar: candidate.syncCalendar ?? true,
-          syncContacts: (candidate as Record<string, unknown>).syncContacts as boolean ?? true,
-          syncMaps: (candidate as Record<string, unknown>).syncMaps as boolean ?? true,
+          syncContacts: candidate.syncContacts ?? true,
+          syncMaps: candidate.syncMaps ?? true,
           lastCheckedAt: candidate.lastCheckedAt ?? null,
           deletionMarkers,
-          domainStatus,
+          categoryStatus,
         };
       },
     }

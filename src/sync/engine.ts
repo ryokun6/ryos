@@ -1,270 +1,687 @@
-import { abortableFetch } from "@/utils/abortableFetch";
-import { getApiUrl } from "@/utils/platform";
-import {
-  applyDownloadedCloudSyncDomainPayload,
-  invalidateRedisStateSnapshotForUpload,
-  prepareCloudSyncDomainWrite,
-  type CloudSyncRedisUploadOptions,
-} from "@/sync/domains";
-import type {
-  BlobIndividualDomainDownloadPayload,
-  BlobMonolithicDomainDownloadPayload,
-  PreparedCloudSyncDomainWrite,
-  RedisStateDomainDownloadPayload,
-} from "@/sync/types";
-import { getSyncSessionId } from "@/utils/syncSession";
-import {
-  aggregateLogicalCloudSyncMetadata,
-  getLogicalCloudSyncDomainPhysicalParts,
-  type LogicalCloudSyncDomain,
-  type LogicalCloudSyncDomainMetadata,
-} from "@/utils/syncLogicalDomains";
-import {
-  createEmptyCloudSyncMetadataMap,
-  isBlobSyncDomain,
-  isRedisSyncDomain,
-  type CloudSyncDomain,
-  type CloudSyncDomainMetadata,
-} from "@/utils/cloudSyncShared";
+/**
+ * Cloud Sync v2 client engine.
+ *
+ * One singleton per session orchestrates:
+ * - dirty-namespace tracking fed by codec store subscriptions and explicit
+ *   change events (markDirty), flushed as batched ops with a short debounce
+ * - pulls via cursor (`GET /changes?since=`), snapshot bootstrap, and inline
+ *   realtime ops (zero HTTP requests for small remote changes)
+ * - per-key last-writer-wins convergence against the local shadow map
+ *
+ * Pending uploads are derived as `diff(local state, shadow)`, so they
+ * survive reloads without an outbox. Deletions are inferred from shadow
+ * keys missing locally, corroborated by the explicit deletion markers in
+ * useCloudSyncStore when a wipe looks suspiciously large.
+ */
+
 import { ensureIndexedDBInitialized } from "@/utils/indexedDB";
+import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
+import {
+  getSyncKeyNamespace,
+  getSyncNamespaceCategory,
+  isSyncBlobNamespace,
+  SYNC_NAMESPACES,
+  type SyncNamespace,
+} from "@/shared/sync2/namespaces";
+import {
+  getSyncBlobRef,
+  type SyncKvEntry,
+  type SyncOp,
+  type SyncOpsRealtimeEvent,
+} from "@/shared/sync2/types";
+import {
+  getSyncClientId,
+  hashDoc,
+  SyncClientState,
+} from "@/sync/state";
+import {
+  getSyncChanges,
+  getSyncSnapshot,
+  postSyncOps,
+} from "@/sync/transport";
+import {
+  resolveBlobDownloadUrls,
+  downloadBlobItem,
+  sha256Json,
+  uploadBlobItems,
+  type BlobUploadItem,
+} from "@/sync/blobs";
+import {
+  clearDeletionMarkerForKey,
+  getDeletionMarkerForKey,
+  isBlobCodec,
+  NAMESPACE_APPLY_ORDER,
+  SYNC_CODECS,
+  type AppliedSyncOp,
+  type CodecContext,
+} from "@/sync/codecs";
+import type { IndexedDBStoreItemWithKey as StoreItemWithKey } from "@/utils/indexedDBBackup";
 
-type AuthContext = {
-  username: string;
-  isAuthenticated: boolean;
-};
+const FLUSH_DEBOUNCE_MS = 1000;
+const FLUSH_MAX_DEBOUNCE_MS = 3000;
+const OPS_BATCH_SIZE = 400;
 
-export interface LogicalCloudSyncTransferResult {
-  metadata: LogicalCloudSyncDomainMetadata | null;
-  partMetadata: Partial<Record<CloudSyncDomain, CloudSyncDomainMetadata>>;
-  applied: boolean;
+// Suppress inferred mass-deletions unless corroborated by explicit markers:
+// more than this many uncorroborated deletes covering most of a namespace
+// looks like local storage loss, not user intent.
+const SUSPICIOUS_DELETE_COUNT = 10;
+const SUSPICIOUS_DELETE_RATIO = 0.8;
+
+interface EngineStatusCallbacks {
+  onError?: (error: string | null) => void;
 }
 
-export interface LogicalCloudSyncDownloadOptions {
-  shouldApplyPart?: (
-    domain: CloudSyncDomain,
-    metadata: CloudSyncDomainMetadata
-  ) => boolean;
-}
+export class CloudSyncEngine {
+  private readonly state: SyncClientState;
+  private readonly callbacks: EngineStatusCallbacks;
+  private readonly applyingNamespaces = new Set<SyncNamespace>();
+  private unsubscribers: Array<() => void> = [];
+  private flushTimer: ReturnType<typeof setTimeout> | null = null;
+  private firstDirtyAt = 0;
+  private flushInFlight = false;
+  private flushQueued = false;
+  private pullInFlight: Promise<void> | null = null;
+  private stopped = false;
+  private started = false;
 
-function aggregatePartMetadata(
-  domain: LogicalCloudSyncDomain,
-  partMetadata: Partial<Record<CloudSyncDomain, CloudSyncDomainMetadata>>
-): LogicalCloudSyncDomainMetadata | null {
-  const metadataMap = createEmptyCloudSyncMetadataMap();
-  for (const [partDomain, metadata] of Object.entries(partMetadata) as Array<
-    [CloudSyncDomain, CloudSyncDomainMetadata]
-  >) {
-    metadataMap[partDomain] = metadata;
+  constructor(username: string, callbacks: EngineStatusCallbacks = {}) {
+    this.state = new SyncClientState(username);
+    this.callbacks = callbacks;
   }
 
-  return aggregateLogicalCloudSyncMetadata(metadataMap)[domain];
-}
+  get cursor(): number | null {
+    return this.state.cursor;
+  }
 
-function logicalPartUsesIndexedDb(domain: CloudSyncDomain): boolean {
-  return domain === "files-metadata" || isBlobSyncDomain(domain);
-}
+  isApplyingNamespace(namespace: SyncNamespace): boolean {
+    return this.applyingNamespaces.has(namespace);
+  }
 
-export async function uploadLogicalCloudSyncDomain(
-  domain: LogicalCloudSyncDomain,
-  auth: AuthContext,
-  partDomains: CloudSyncDomain[] = getLogicalCloudSyncDomainPhysicalParts(domain),
-  uploadOptions?: CloudSyncRedisUploadOptions
-): Promise<LogicalCloudSyncTransferResult> {
-  const requestedPartDomains = new Set(partDomains);
-  const preparedWrites: Partial<Record<CloudSyncDomain, PreparedCloudSyncDomainWrite>> = {};
-  const writes: Partial<Record<CloudSyncDomain, Record<string, unknown>>> = {};
-  const sharedDb = partDomains.some(logicalPartUsesIndexedDb)
-    ? await ensureIndexedDBInitialized()
-    : undefined;
+  // -------------------------------------------------------------------------
+  // Lifecycle
+  // -------------------------------------------------------------------------
 
-  try {
-    const partMetadata: Partial<
-      Record<CloudSyncDomain, CloudSyncDomainMetadata>
-    > = {};
+  async start(): Promise<void> {
+    if (this.started) return;
+    this.started = true;
 
-    for (const partDomain of getLogicalCloudSyncDomainPhysicalParts(domain)) {
-      if (!requestedPartDomains.has(partDomain)) {
-        continue;
-      }
-      const preparedWrite = await prepareCloudSyncDomainWrite(
-        partDomain,
-        auth,
-        sharedDb,
-        uploadOptions
-      );
-      preparedWrites[partDomain] = preparedWrite;
+    for (const namespace of SYNC_NAMESPACES) {
+      const codec = SYNC_CODECS[namespace];
+      const unsubscribe = codec.subscribe(() => {
+        if (this.applyingNamespaces.has(namespace)) return;
+        this.markDirty(namespace);
+      });
+      this.unsubscribers.push(unsubscribe);
+    }
 
-      if (
-        preparedWrite.skipRemoteWrite &&
-        preparedWrite.committedMetadataFallback
-      ) {
-        partMetadata[partDomain] = preparedWrite.committedMetadataFallback;
-        await preparedWrite.onCommitted?.(
-          preparedWrite.committedMetadataFallback
-        );
+    try {
+      if (this.state.cursor === null) {
+        await this.bootstrap();
       } else {
-        writes[partDomain] = preparedWrite.payload;
+        await this.pull();
       }
+    } catch (error) {
+      this.reportError(error, "initial sync");
     }
 
-    if (Object.keys(writes).length === 0) {
-      return {
-        metadata: aggregatePartMetadata(domain, partMetadata),
-        partMetadata,
-        applied: false,
-      };
+    // Upload anything that changed while sync was off / offline.
+    for (const namespace of SYNC_NAMESPACES) {
+      this.state.markDirty(namespace);
     }
+    this.scheduleFlush();
+  }
 
-    const response = await abortableFetch(
-      getApiUrl(`/api/sync/domains/${encodeURIComponent(domain)}`),
-      {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Sync-Session-Id": getSyncSessionId(),
-        },
-        body: JSON.stringify({ writes }),
-        timeout: 15000,
-        throwOnHttpError: false,
-        retry: { maxAttempts: 1, initialDelayMs: 250 },
-      }
+  stop(): void {
+    this.stopped = true;
+    for (const unsubscribe of this.unsubscribers) {
+      unsubscribe();
+    }
+    this.unsubscribers = [];
+    if (this.flushTimer) {
+      clearTimeout(this.flushTimer);
+      this.flushTimer = null;
+    }
+    this.state.persistNow();
+  }
+
+  /** Wipe cursor + shadow so the next start performs a fresh bootstrap. */
+  reset(): void {
+    this.state.reset();
+  }
+
+  // -------------------------------------------------------------------------
+  // Dirty tracking + flush
+  // -------------------------------------------------------------------------
+
+  markDirty(namespace: SyncNamespace): void {
+    if (this.stopped) return;
+    this.state.markDirty(namespace);
+    this.scheduleFlush();
+  }
+
+  private scheduleFlush(): void {
+    if (this.stopped) return;
+    const now = Date.now();
+    if (!this.firstDirtyAt) {
+      this.firstDirtyAt = now;
+    }
+    if (this.flushTimer) {
+      // Respect the max debounce so a steady edit stream still flushes.
+      if (now - this.firstDirtyAt >= FLUSH_MAX_DEBOUNCE_MS) return;
+      clearTimeout(this.flushTimer);
+    }
+    this.flushTimer = setTimeout(() => {
+      this.flushTimer = null;
+      this.firstDirtyAt = 0;
+      void this.flush();
+    }, FLUSH_DEBOUNCE_MS);
+  }
+
+  private isNamespaceEnabled(namespace: SyncNamespace): boolean {
+    const syncStore = useCloudSyncStore.getState();
+    return (
+      syncStore.autoSyncEnabled &&
+      syncStore.isCategoryEnabled(getSyncNamespaceCategory(namespace))
     );
+  }
 
-    if (!response.ok) {
-      if (response.status === 409) {
-        for (const partDomain of Object.keys(writes) as CloudSyncDomain[]) {
-          if (isRedisSyncDomain(partDomain)) {
-            invalidateRedisStateSnapshotForUpload(auth.username, partDomain);
+  async flush(options: { force?: boolean } = {}): Promise<void> {
+    if (this.stopped) return;
+    if (this.flushInFlight) {
+      this.flushQueued = true;
+      return;
+    }
+    this.flushInFlight = true;
+
+    try {
+      const namespaces = (
+        options.force ? [...SYNC_NAMESPACES] : this.state.dirtyNamespaces
+      ).filter((namespace) => this.isNamespaceEnabled(namespace));
+      if (namespaces.length === 0) return;
+
+      const syncStore = useCloudSyncStore.getState();
+      const needsDb = namespaces.some((ns) => SYNC_CODECS[ns].usesIndexedDb);
+      const db = needsDb ? await ensureIndexedDBInitialized() : undefined;
+      const ctx: CodecContext = { db };
+
+      try {
+        const ops: SyncOp[] = [];
+        const shadowUpdates = new Map<string, { t: string; h: string }>();
+        const flushedNamespaces: SyncNamespace[] = [];
+
+        for (const namespace of namespaces) {
+          const codec = SYNC_CODECS[namespace];
+          if (codec.isReady && !codec.isReady()) {
+            continue; // stays dirty; retried on next flush
+          }
+
+          let collected: Map<string, unknown>;
+          try {
+            collected = await codec.collect(ctx);
+          } catch (error) {
+            console.error(`[sync2] collect failed for ${namespace}:`, error);
+            continue;
+          }
+          flushedNamespaces.push(namespace);
+
+          // Upserts: keys whose content hash differs from the shadow.
+          if (isSyncBlobNamespace(namespace)) {
+            const pendingUploads: BlobUploadItem[] = [];
+            const pendingTimestamps = new Map<string, string>();
+            for (const [key, item] of collected) {
+              const sha256 = await sha256Json(item);
+              const shadow = this.state.getShadow(key);
+              if (!options.force && shadow?.h === sha256) continue;
+              pendingUploads.push({ key, sha256, item });
+              pendingTimestamps.set(key, this.state.nextTimestamp());
+            }
+            if (pendingUploads.length > 0) {
+              const refs = await uploadBlobItems(pendingUploads);
+              for (const upload of pendingUploads) {
+                const ref = refs.get(upload.key);
+                if (!ref) continue;
+                const t = pendingTimestamps.get(upload.key)!;
+                ops.push({ k: upload.key, v: { blob: ref }, t });
+                shadowUpdates.set(upload.key, { t, h: upload.sha256 });
+              }
+            }
+          } else {
+            for (const [key, doc] of collected) {
+              const h = hashDoc(doc);
+              const shadow = this.state.getShadow(key);
+              if (!options.force && shadow?.h === h) continue;
+              const t = this.state.nextTimestamp();
+              ops.push({ k: key, v: doc, t });
+              shadowUpdates.set(key, { t, h });
+            }
+          }
+
+          // Deletions: shadow keys that vanished locally.
+          const collectedKeys = new Set(collected.keys());
+          const shadowKeys = this.state.shadowKeysForNamespace(namespace);
+          const missing = shadowKeys.filter((key) => !collectedKeys.has(key));
+          if (missing.length > 0) {
+            const corroborated = missing.filter((key) =>
+              Boolean(getDeletionMarkerForKey(key))
+            );
+            const suspicious =
+              missing.length > SUSPICIOUS_DELETE_COUNT &&
+              missing.length >= shadowKeys.length * SUSPICIOUS_DELETE_RATIO &&
+              corroborated.length < missing.length;
+            const deletions = suspicious ? corroborated : missing;
+            if (suspicious && corroborated.length < missing.length) {
+              console.warn(
+                `[sync2] Suppressing ${missing.length - deletions.length} uncorroborated deletions in ${namespace} (possible local data loss)`
+              );
+            }
+            for (const key of deletions) {
+              const t = this.state.nextTimestamp();
+              ops.push({ k: key, del: true, t });
+              shadowUpdates.set(key, { t, h: "__del__" });
+            }
           }
         }
+
+        // Clear dirty before the network call; failures re-mark below.
+        this.state.clearDirty(flushedNamespaces);
+
+        if (ops.length === 0) {
+          return;
+        }
+
+        const categories = new Set(
+          flushedNamespaces.map(getSyncNamespaceCategory)
+        );
+        for (const category of categories) {
+          syncStore.markCategorySyncing(category, "upload", true);
+        }
+
+        try {
+          await this.sendOps(ops, shadowUpdates);
+          const uploadedAt = new Date().toISOString();
+          for (const category of categories) {
+            syncStore.markCategoryUploaded(category, uploadedAt);
+          }
+          this.reportError(null);
+        } catch (error) {
+          for (const namespace of flushedNamespaces) {
+            this.state.markDirty(namespace);
+          }
+          throw error;
+        } finally {
+          for (const category of categories) {
+            syncStore.markCategorySyncing(category, "upload", false);
+          }
+        }
+      } finally {
+        db?.close();
       }
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        (errorData as { error?: string }).error ||
-          `Failed to upload logical sync domain ${domain}`
-      );
+    } catch (error) {
+      this.reportError(error, "upload");
+    } finally {
+      this.flushInFlight = false;
+      if (this.flushQueued) {
+        this.flushQueued = false;
+        this.scheduleFlush();
+      }
+    }
+  }
+
+  private async sendOps(
+    ops: SyncOp[],
+    shadowUpdates: Map<string, { t: string; h: string }>
+  ): Promise<void> {
+    const clientId = getSyncClientId();
+
+    for (let offset = 0; offset < ops.length; offset += OPS_BATCH_SIZE) {
+      const batch = ops.slice(offset, offset + OPS_BATCH_SIZE);
+      const cursorBefore = this.state.cursor ?? 0;
+      const response = await postSyncOps(clientId, batch);
+
+      let acceptedCount = 0;
+      const superseded: AppliedSyncOp[] = [];
+
+      for (const result of response.results) {
+        if (result.accepted) {
+          acceptedCount += 1;
+          const update = shadowUpdates.get(result.k);
+          if (update) {
+            if (update.h === "__del__") {
+              this.state.deleteShadow(result.k);
+              clearDeletionMarkerForKey(result.k);
+            } else {
+              this.state.setShadow(result.k, update);
+            }
+          }
+        } else if (result.winner) {
+          // Another writer won this key; converge to the winning entry.
+          superseded.push({
+            k: result.k,
+            v: result.winner.v,
+            del: result.winner.del,
+            t: result.winner.t,
+          });
+          this.state.observeTimestamp(result.winner.t);
+        }
+      }
+
+      if (superseded.length > 0) {
+        await this.applyRemoteOps(superseded);
+      }
+
+      // Advance the cursor only when our accepted ops are provably the only
+      // writes since our last known seq; otherwise pull the gap.
+      if (response.seq - cursorBefore === acceptedCount) {
+        this.state.setCursor(response.seq);
+      } else {
+        void this.pull();
+      }
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Pull / bootstrap / realtime
+  // -------------------------------------------------------------------------
+
+  async pull(): Promise<void> {
+    if (this.stopped) return;
+    if (this.pullInFlight) return this.pullInFlight;
+
+    const run = (async () => {
+      const syncStore = useCloudSyncStore.getState();
+      syncStore.setCheckingRemote(true);
+      try {
+        const since = this.state.cursor ?? 0;
+        const response = await getSyncChanges(since);
+        if (response.snapshotRequired) {
+          await this.applySnapshot(false);
+          return;
+        }
+        if (response.ops && response.ops.length > 0) {
+          await this.applyRemoteOps(response.ops);
+        }
+        this.state.setCursor(response.seq);
+        this.reportError(null);
+      } catch (error) {
+        this.reportError(error, "download");
+      } finally {
+        syncStore.setCheckingRemote(false);
+        this.pullInFlight = null;
+      }
+    })();
+
+    this.pullInFlight = run;
+    return run;
+  }
+
+  private async bootstrap(): Promise<void> {
+    await this.applySnapshot(false);
+  }
+
+  /**
+   * Fetch the full snapshot and apply entries. With `force`, every entry is
+   * applied regardless of the shadow (cloud wins); otherwise entries whose
+   * timestamp matches the shadow are skipped.
+   */
+  async applySnapshot(force: boolean): Promise<void> {
+    const snapshot = await getSyncSnapshot();
+    const ops: SyncOp[] = [];
+
+    for (const [key, entry] of Object.entries(snapshot.entries)) {
+      if (!getSyncKeyNamespace(key)) continue;
+      const shadow = this.state.getShadow(key);
+      if (!force && shadow && shadow.t === entry.t) continue;
+      ops.push(this.entryToOp(key, entry));
     }
 
-    const result = (await response.json()) as {
-      metadata?: LogicalCloudSyncDomainMetadata | null;
-      writes?: Partial<
-        Record<
-          CloudSyncDomain,
-          { metadata?: CloudSyncDomainMetadata | null }
-        >
-      >;
-    };
-
-    for (const partDomain of partDomains) {
-      const prep = preparedWrites[partDomain];
-      if (!prep || prep.skipRemoteWrite) {
-        continue;
-      }
-      const metadata = result.writes?.[partDomain]?.metadata;
-      if (!metadata) {
-        continue;
-      }
-      partMetadata[partDomain] = metadata;
-      await prep.onCommitted?.(metadata);
+    if (ops.length > 0) {
+      await this.applyRemoteOps(ops);
     }
+    this.state.setCursor(snapshot.seq);
+  }
 
+  private entryToOp(key: string, entry: SyncKvEntry): SyncOp {
     return {
-      metadata: result.metadata || aggregatePartMetadata(domain, partMetadata),
-      partMetadata,
-      applied: false,
+      k: key,
+      ...(entry.del ? { del: true } : { v: entry.v }),
+      t: entry.t,
+      seq: entry.seq,
     };
-  } finally {
-    sharedDb?.close();
+  }
+
+  handleRealtimeEvent(event: SyncOpsRealtimeEvent): void {
+    if (this.stopped) return;
+    const cursor = this.state.cursor ?? 0;
+    if (event.seq <= cursor) return;
+
+    if (event.c === getSyncClientId()) {
+      // Our own write echoed back. The shadow already reflects it, but only
+      // fast-forward when nothing happened in between.
+      if (event.ops && cursor + event.ops.length === event.seq) {
+        this.state.setCursor(event.seq);
+      } else {
+        void this.pull();
+      }
+      return;
+    }
+
+    if (event.ops && cursor + event.ops.length === event.seq) {
+      void (async () => {
+        try {
+          await this.applyRemoteOps(event.ops!);
+          this.state.setCursor(event.seq);
+        } catch (error) {
+          this.reportError(error, "realtime apply");
+          void this.pull();
+        }
+      })();
+    } else {
+      void this.pull();
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Remote op application
+  // -------------------------------------------------------------------------
+
+  async applyRemoteOps(ops: SyncOp[]): Promise<void> {
+    const clientId = getSyncClientId();
+    const byNamespace = new Map<SyncNamespace, AppliedSyncOp[]>();
+
+    for (const op of ops) {
+      this.state.observeTimestamp(op.t);
+      const namespace = getSyncKeyNamespace(op.k);
+      if (!namespace) continue;
+
+      if (op.c === clientId) {
+        continue; // own op; shadow already updated on POST
+      }
+
+      const shadow = this.state.getShadow(op.k);
+      if (shadow && shadow.t === op.t) {
+        continue; // already applied
+      }
+
+      if (!byNamespace.has(namespace)) {
+        byNamespace.set(namespace, []);
+      }
+      byNamespace.get(namespace)!.push({
+        k: op.k,
+        v: op.v,
+        del: op.del,
+        t: op.t,
+      });
+    }
+
+    if (byNamespace.size === 0) return;
+
+    const orderedNamespaces = NAMESPACE_APPLY_ORDER.filter((ns) =>
+      byNamespace.has(ns)
+    );
+    const needsDb = orderedNamespaces.some(
+      (ns) => SYNC_CODECS[ns].usesIndexedDb
+    );
+    const db = needsDb ? await ensureIndexedDBInitialized() : undefined;
+    const ctx: CodecContext = { db };
+    const syncStore = useCloudSyncStore.getState();
+
+    try {
+      for (const namespace of orderedNamespaces) {
+        if (!this.isNamespaceEnabled(namespace)) continue;
+        const namespaceOps = byNamespace.get(namespace)!;
+        const category = getSyncNamespaceCategory(namespace);
+        syncStore.markCategorySyncing(category, "download", true);
+        this.applyingNamespaces.add(namespace);
+        try {
+          if (isSyncBlobNamespace(namespace)) {
+            await this.applyBlobOps(namespace, namespaceOps, ctx);
+          } else {
+            await SYNC_CODECS[namespace].apply(namespaceOps, ctx);
+            for (const op of namespaceOps) {
+              if (op.del) {
+                this.state.deleteShadow(op.k);
+              } else {
+                this.state.setShadow(op.k, { t: op.t, h: hashDoc(op.v) });
+              }
+            }
+          }
+          syncStore.markCategoryApplied(category, new Date().toISOString());
+        } catch (error) {
+          console.error(`[sync2] Failed to apply ops for ${namespace}:`, error);
+        } finally {
+          this.applyingNamespaces.delete(namespace);
+          syncStore.markCategorySyncing(category, "download", false);
+        }
+      }
+    } finally {
+      db?.close();
+    }
+  }
+
+  private async applyBlobOps(
+    namespace: SyncNamespace,
+    ops: AppliedSyncOp[],
+    ctx: CodecContext
+  ): Promise<void> {
+    const codec = SYNC_CODECS[namespace];
+    if (!isBlobCodec(codec)) return;
+
+    const prefix = `${namespace}/item:`;
+    const deletes: string[] = [];
+    const downloads: Array<{ op: AppliedSyncOp; contentHash: string; url: string }> =
+      [];
+
+    for (const op of ops) {
+      if (!op.k.startsWith(prefix)) continue;
+      if (op.del) {
+        deletes.push(op.k.slice(prefix.length));
+        this.state.deleteShadow(op.k);
+        continue;
+      }
+      const ref = getSyncBlobRef(op.v);
+      if (!ref) continue;
+      const contentHash = ref.sha256 || ref.sig || "";
+      const shadow = this.state.getShadow(op.k);
+      if (contentHash && shadow?.h === contentHash) {
+        // Content already local; record the new timestamp.
+        this.state.setShadow(op.k, { t: op.t, h: contentHash });
+        continue;
+      }
+      downloads.push({ op, contentHash, url: ref.url });
+    }
+
+    if (deletes.length > 0) {
+      await codec.deleteItems(deletes, ctx);
+    }
+
+    if (downloads.length > 0) {
+      const urls = await resolveBlobDownloadUrls(
+        downloads.map((d) => ({ url: d.url, size: 0 }))
+      );
+      const items: StoreItemWithKey[] = [];
+      for (let index = 0; index < downloads.length; index += 1) {
+        const { op, contentHash } = downloads[index];
+        const downloadUrl = urls[index];
+        if (!downloadUrl) {
+          console.warn(`[sync2] No download URL for ${op.k}`);
+          continue;
+        }
+        try {
+          const item = (await downloadBlobItem(downloadUrl)) as StoreItemWithKey;
+          if (item && typeof item === "object" && typeof item.key === "string") {
+            items.push(item);
+            this.state.setShadow(op.k, {
+              t: op.t,
+              h: contentHash || (await sha256Json(item)),
+            });
+          }
+        } catch (error) {
+          console.error(`[sync2] Failed to download blob for ${op.k}:`, error);
+        }
+      }
+      if (items.length > 0) {
+        await codec.putItems(items, ctx);
+      }
+    }
+
+    if ((deletes.length > 0 || downloads.length > 0) && codec.afterApply) {
+      await codec.afterApply(ctx);
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Force sync (Control Panels)
+  // -------------------------------------------------------------------------
+
+  async forceUpload(): Promise<void> {
+    await this.flush({ force: true });
+  }
+
+  async forceDownload(): Promise<void> {
+    const syncStore = useCloudSyncStore.getState();
+    syncStore.setCheckingRemote(true);
+    try {
+      await this.applySnapshot(true);
+      this.reportError(null);
+    } finally {
+      syncStore.setCheckingRemote(false);
+    }
+  }
+
+  // -------------------------------------------------------------------------
+
+  private reportError(error: unknown, context?: string): void {
+    if (error === null) {
+      this.callbacks.onError?.(null);
+      return;
+    }
+    const message =
+      error instanceof Error ? error.message : `Sync ${context || "operation"} failed`;
+    console.error(`[sync2] ${context || "sync"} error:`, error);
+    this.callbacks.onError?.(message);
   }
 }
 
-export async function downloadAndApplyLogicalCloudSyncDomain(
-  domain: LogicalCloudSyncDomain,
-  options?: LogicalCloudSyncDownloadOptions
-): Promise<LogicalCloudSyncTransferResult> {
-  const response = await abortableFetch(
-    getApiUrl(`/api/sync/domains/${encodeURIComponent(domain)}`),
-    {
-      method: "GET",
-      timeout: 15000,
-      throwOnHttpError: false,
-      retry: { maxAttempts: 1, initialDelayMs: 250 },
-    }
-  );
+// ---------------------------------------------------------------------------
+// Singleton accessor
+// ---------------------------------------------------------------------------
 
-  if (response.status === 404) {
-    throw new Error(`No ${domain} sync data found`);
-  }
+let activeEngine: CloudSyncEngine | null = null;
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      (errorData as { error?: string }).error ||
-        `Failed to download logical sync domain ${domain}`
-    );
-  }
+export function getActiveCloudSyncEngine(): CloudSyncEngine | null {
+  return activeEngine;
+}
 
-  const payload = (await response.json()) as {
-    parts?: Partial<
-      Record<
-        CloudSyncDomain,
-        | RedisStateDomainDownloadPayload
-        | BlobMonolithicDomainDownloadPayload
-        | BlobIndividualDomainDownloadPayload
-      >
-    >;
-  };
+export function createCloudSyncEngine(
+  username: string,
+  callbacks?: EngineStatusCallbacks
+): CloudSyncEngine {
+  activeEngine?.stop();
+  activeEngine = new CloudSyncEngine(username, callbacks);
+  return activeEngine;
+}
 
-  if (!payload.parts) {
-    throw new Error("Logical sync domain response was invalid.");
-  }
-
-  const partMetadata: Partial<Record<CloudSyncDomain, CloudSyncDomainMetadata>> = {};
-  let applied = false;
-  const parts = Object.entries(payload.parts) as Array<
-    [
-      CloudSyncDomain,
-      | RedisStateDomainDownloadPayload
-      | BlobMonolithicDomainDownloadPayload
-      | BlobIndividualDomainDownloadPayload
-    ]
-  >;
-  const willApplyIndexedDbPart = parts.some(
-    ([partDomain, partPayload]) =>
-      logicalPartUsesIndexedDb(partDomain) &&
-      (!options?.shouldApplyPart ||
-        options.shouldApplyPart(partDomain, partPayload.metadata))
-  );
-  const sharedDb = willApplyIndexedDbPart
-    ? await ensureIndexedDBInitialized()
-    : undefined;
-
-  try {
-    for (const [partDomain, partPayload] of parts) {
-      partMetadata[partDomain] = partPayload.metadata;
-      if (
-        options?.shouldApplyPart &&
-        !options.shouldApplyPart(partDomain, partPayload.metadata)
-      ) {
-        continue;
-      }
-
-      const result = await applyDownloadedCloudSyncDomainPayload(
-        partDomain,
-        partPayload,
-        {
-          db: sharedDb,
-        }
-      );
-      applied = applied || result.applied;
-    }
-
-    return {
-      metadata: aggregatePartMetadata(domain, partMetadata),
-      partMetadata,
-      applied,
-    };
-  } finally {
-    sharedDb?.close();
-  }
+export function destroyCloudSyncEngine(): void {
+  activeEngine?.stop();
+  activeEngine = null;
 }

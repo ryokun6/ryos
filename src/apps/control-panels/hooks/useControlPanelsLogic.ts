@@ -36,23 +36,10 @@ import { abortableFetch } from "@/utils/abortableFetch";
 import { triggerRuntimeCrashTest } from "@/utils/errorReporting";
 import { SETTINGS_ANALYTICS, track } from "@/utils/analytics";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
-import {
-  FILE_SYNC_DOMAINS,
-  type CloudSyncDomain,
-  getLatestCloudSyncTimestamp,
-} from "@/utils/cloudSyncShared";
 import { useShallow } from "zustand/react/shallow";
 import { useTelegramLink } from "@/hooks/useTelegramLink";
-import {
-  downloadAndApplyLogicalCloudSyncDomain,
-  uploadLogicalCloudSyncDomain,
-} from "@/sync/engine";
-import {
-  LOGICAL_CLOUD_SYNC_DOMAINS,
-  getLogicalCloudSyncDomainPhysicalParts,
-  isLogicalCloudSyncDomainEnabled,
-  type LogicalCloudSyncDomain,
-} from "@/utils/syncLogicalDomains";
+import { getActiveCloudSyncEngine } from "@/sync/engine";
+import { SYNC_CATEGORIES } from "@/shared/sync2/namespaces";
 import {
   readStoreItems,
   restoreStoreItems,
@@ -363,9 +350,9 @@ export function useControlPanelsLogic({
     isCheckingRemote: isAutoSyncChecking,
     lastCheckedAt: autoSyncLastCheckedAt,
     lastError: autoSyncLastError,
-    domainStatus: internalAutoSyncDomainStatus,
+    categoryStatus: autoSyncDomainStatus,
     setAutoSyncEnabled,
-    setDomainEnabled,
+    setCategoryEnabled,
   } = useCloudSyncStore(
     useShallow((state) => ({
       autoSyncEnabled: state.autoSyncEnabled,
@@ -381,50 +368,11 @@ export function useControlPanelsLogic({
       isCheckingRemote: state.isCheckingRemote,
       lastCheckedAt: state.lastCheckedAt,
       lastError: state.lastError,
-      domainStatus: state.domainStatus,
+      categoryStatus: state.categoryStatus,
       setAutoSyncEnabled: state.setAutoSyncEnabled,
-      setDomainEnabled: state.setDomainEnabled,
+      setCategoryEnabled: state.setCategoryEnabled,
     }))
   );
-
-  const autoSyncDomainStatus = {
-    files: {
-      lastUploadedAt: getLatestCloudSyncTimestamp(
-        FILE_SYNC_DOMAINS.map(
-          (domain) =>
-            internalAutoSyncDomainStatus[domain]?.lastUploadedAt ?? null
-        )
-      ),
-      lastFetchedAt: getLatestCloudSyncTimestamp(
-        FILE_SYNC_DOMAINS.map(
-          (domain) =>
-            internalAutoSyncDomainStatus[domain]?.lastFetchedAt ||
-            internalAutoSyncDomainStatus[domain]?.lastAppliedRemoteAt ||
-            null
-        )
-      ),
-      lastAppliedRemoteAt: getLatestCloudSyncTimestamp(
-        FILE_SYNC_DOMAINS.map(
-          (domain) =>
-            internalAutoSyncDomainStatus[domain]?.lastAppliedRemoteAt ?? null
-        )
-      ),
-      isUploading: FILE_SYNC_DOMAINS.some(
-        (domain) => internalAutoSyncDomainStatus[domain]?.isUploading ?? false
-      ),
-      isDownloading: FILE_SYNC_DOMAINS.some(
-        (domain) => internalAutoSyncDomainStatus[domain]?.isDownloading ?? false
-      ),
-    },
-    settings: internalAutoSyncDomainStatus.settings,
-    songs: internalAutoSyncDomainStatus.songs,
-    videos: internalAutoSyncDomainStatus.videos,
-    tv: internalAutoSyncDomainStatus.tv,
-    stickies: internalAutoSyncDomainStatus.stickies,
-    calendar: internalAutoSyncDomainStatus.calendar,
-    contacts: internalAutoSyncDomainStatus.contacts,
-    maps: internalAutoSyncDomainStatus.maps,
-  };
 
   // Password dialog states
   // `isPasswordDialogOpen` drives both the legacy "set password" and the new
@@ -800,7 +748,7 @@ export function useControlPanelsLogic({
     }
   }, [username, isAuthenticated, t, fetchCloudSyncStatus]);
 
-  /** Force-upload enabled auto sync domains so local state wins. */
+  /** Force-upload all enabled sync categories so local state wins. */
   const handleCloudForceUpload = useCallback(async () => {
     if (!username || !isAuthenticated) {
       toast.error(t("apps.control-panels.cloudSync.loginRequired"));
@@ -808,74 +756,30 @@ export function useControlPanelsLogic({
     }
 
     const syncStore = useCloudSyncStore.getState();
-    const enabledDomains = LOGICAL_CLOUD_SYNC_DOMAINS.filter((domain) =>
-      isLogicalCloudSyncDomainEnabled(syncStore.isDomainEnabled, domain)
-    );
-
-    if (enabledDomains.length === 0) {
+    const engine = getActiveCloudSyncEngine();
+    if (!engine || !SYNC_CATEGORIES.some(syncStore.isCategoryEnabled)) {
       toast.error(t("apps.control-panels.cloudSync.forceSyncNoDomains"));
       return;
     }
 
     setIsCloudForceUploading(true);
-
-    const failures: string[] = [];
-    const markLogicalUploadFailure = (
-      domain: LogicalCloudSyncDomain,
-      message: string
-    ) => {
-      for (const partDomain of getLogicalCloudSyncDomainPhysicalParts(domain)) {
-        syncStore.markUploadFailure(partDomain, message);
-      }
-    };
-
     try {
-      for (const domain of enabledDomains) {
-        for (const partDomain of getLogicalCloudSyncDomainPhysicalParts(domain)) {
-          syncStore.markUploadStart(partDomain);
-        }
-
-        try {
-          const result = await uploadLogicalCloudSyncDomain(
-            domain,
-            {
-              username,
-              isAuthenticated,
-            },
-            undefined,
-            { forceFullSettingsUpload: true }
-          );
-
-          for (const [partDomain, metadata] of Object.entries(
-            result.partMetadata
-          ) as Array<[CloudSyncDomain, NonNullable<(typeof result.partMetadata)[CloudSyncDomain]>]>) {
-            syncStore.markUploadSuccess(partDomain, metadata);
-            syncStore.updateRemoteMetadataForDomain(partDomain, metadata);
-          }
-        } catch (error) {
-          const message =
-            error instanceof Error
-              ? error.message
-              : t("apps.control-panels.cloudSync.forceUploadFailed");
-          failures.push(message);
-          markLogicalUploadFailure(domain, message);
-        }
-      }
-
-      if (failures.length > 0) {
-        toast.error(t("apps.control-panels.cloudSync.forceUploadFailed"), {
-          description: failures[0],
-        });
-        return;
-      }
-
+      await engine.forceUpload();
       toast.success(t("apps.control-panels.cloudSync.forceUploadSuccess"));
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : t("apps.control-panels.cloudSync.forceUploadFailed");
+      toast.error(t("apps.control-panels.cloudSync.forceUploadFailed"), {
+        description: message,
+      });
     } finally {
       setIsCloudForceUploading(false);
     }
   }, [isAuthenticated, t, username]);
 
-  /** Force-download enabled auto sync domains so cloud state wins. */
+  /** Force-download all enabled sync categories so cloud state wins. */
   const handleCloudForceDownload = useCallback(async () => {
     if (!username || !isAuthenticated) {
       toast.error(t("apps.control-panels.cloudSync.loginRequired"));
@@ -883,87 +787,24 @@ export function useControlPanelsLogic({
     }
 
     const syncStore = useCloudSyncStore.getState();
-    const enabledDomains = LOGICAL_CLOUD_SYNC_DOMAINS.filter((domain) =>
-      isLogicalCloudSyncDomainEnabled(syncStore.isDomainEnabled, domain)
-    );
-
-    if (enabledDomains.length === 0) {
+    const engine = getActiveCloudSyncEngine();
+    if (!engine || !SYNC_CATEGORIES.some(syncStore.isCategoryEnabled)) {
       toast.error(t("apps.control-panels.cloudSync.forceSyncNoDomains"));
       return;
     }
 
     setIsCloudForceDownloading(true);
-
-    const failures: string[] = [];
-    let appliedCount = 0;
-    const markLogicalDownloadFailure = (
-      domain: LogicalCloudSyncDomain,
-      message: string
-    ) => {
-      for (const partDomain of getLogicalCloudSyncDomainPhysicalParts(domain)) {
-        syncStore.markDownloadFailure(partDomain, message);
-      }
-    };
-
-    const isNoDataError = (msg: string) =>
-      /no \w+ state found/i.test(msg) ||
-      msg === "Sync download response was invalid." ||
-      msg === "State download response was invalid.";
-
     try {
-      for (const domain of enabledDomains) {
-        for (const partDomain of getLogicalCloudSyncDomainPhysicalParts(domain)) {
-          syncStore.markDownloadStart(partDomain);
-        }
-
-        try {
-          const result = await downloadAndApplyLogicalCloudSyncDomain(domain);
-
-          for (const [partDomain, metadata] of Object.entries(
-            result.partMetadata
-          ) as Array<[CloudSyncDomain, NonNullable<(typeof result.partMetadata)[CloudSyncDomain]>]>) {
-            syncStore.updateRemoteMetadataForDomain(partDomain, metadata);
-            syncStore.markDownloadSuccess(partDomain, metadata);
-            if (result.applied) {
-              syncStore.markRemoteApplied(partDomain, metadata);
-            }
-          }
-
-          if (result.applied) {
-            appliedCount++;
-          }
-        } catch (error) {
-          const message =
-            error instanceof Error
-              ? error.message
-              : t("apps.control-panels.cloudSync.forceDownloadFailed");
-          if (isNoDataError(message)) {
-            for (const partDomain of getLogicalCloudSyncDomainPhysicalParts(domain)) {
-              syncStore.markDownloadSuccess(
-                partDomain,
-                new Date().toISOString()
-              );
-            }
-          } else {
-            markLogicalDownloadFailure(domain, message);
-            failures.push(message);
-          }
-        }
-      }
-
-      if (failures.length > 0) {
-        toast.error(t("apps.control-panels.cloudSync.forceDownloadFailed"), {
-          description: failures[0],
-        });
-        return;
-      }
-
-      if (appliedCount === 0) {
-        toast.info(t("apps.control-panels.cloudSync.forceDownloadNoData"));
-        return;
-      }
-
+      await engine.forceDownload();
       toast.success(t("apps.control-panels.cloudSync.forceDownloadSuccess"));
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : t("apps.control-panels.cloudSync.forceDownloadFailed");
+      toast.error(t("apps.control-panels.cloudSync.forceDownloadFailed"), {
+        description: message,
+      });
     } finally {
       setIsCloudForceDownloading(false);
     }
@@ -1745,20 +1586,19 @@ export function useControlPanelsLogic({
     syncCalendar,
     syncContacts,
     syncMaps,
-    setSyncFiles: (enabled: boolean) =>
-      setDomainEnabled("files-metadata", enabled),
+    setSyncFiles: (enabled: boolean) => setCategoryEnabled("files", enabled),
     setSyncSettings: (enabled: boolean) =>
-      setDomainEnabled("settings", enabled),
-    setSyncSongs: (enabled: boolean) => setDomainEnabled("songs", enabled),
-    setSyncVideos: (enabled: boolean) => setDomainEnabled("videos", enabled),
-    setSyncTv: (enabled: boolean) => setDomainEnabled("tv", enabled),
+      setCategoryEnabled("settings", enabled),
+    setSyncSongs: (enabled: boolean) => setCategoryEnabled("songs", enabled),
+    setSyncVideos: (enabled: boolean) => setCategoryEnabled("videos", enabled),
+    setSyncTv: (enabled: boolean) => setCategoryEnabled("tv", enabled),
     setSyncStickies: (enabled: boolean) =>
-      setDomainEnabled("stickies", enabled),
+      setCategoryEnabled("stickies", enabled),
     setSyncCalendar: (enabled: boolean) =>
-      setDomainEnabled("calendar", enabled),
+      setCategoryEnabled("calendar", enabled),
     setSyncContacts: (enabled: boolean) =>
-      setDomainEnabled("contacts", enabled),
-    setSyncMaps: (enabled: boolean) => setDomainEnabled("maps", enabled),
+      setCategoryEnabled("contacts", enabled),
+    setSyncMaps: (enabled: boolean) => setCategoryEnabled("maps", enabled),
     isAutoSyncChecking,
     autoSyncLastCheckedAt,
     autoSyncLastError,
