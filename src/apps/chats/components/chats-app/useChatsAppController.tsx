@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
+import { useAppHelpAboutDialogs } from "@/hooks/useAppHelpAboutDialogs";
 import { AppProps } from "../../../base/types";
 import type { ChatsInitialData } from "../../../base/types";
 import { ChatsMenuBar } from "../ChatsMenuBar";
@@ -151,8 +152,12 @@ export function useChatsAppController({
   const messageRenderLimit = useChatsStore((state) => state.messageRenderLimit);
 
   const [isShaking, setIsShaking] = useState(false);
-  const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
-  const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
+  const {
+    isHelpDialogOpen,
+    setIsHelpDialogOpen,
+    isAboutDialogOpen,
+    setIsAboutDialogOpen,
+  } = useAppHelpAboutDialogs();
   const [scrollToBottomTrigger, setScrollToBottomTrigger] = useState(0);
 
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);

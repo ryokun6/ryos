@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useAppHelpAboutDialogs } from "@/hooks/useAppHelpAboutDialogs";
 import ReactPlayer from "react-player";
 import { useTranslation } from "react-i18next";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
@@ -64,8 +65,12 @@ export function useTvLogic({ isWindowOpen, isForeground }: UseTvLogicOptions) {
   const { isWindowsTheme: isXpTheme, isMacOSTheme } = useThemeFlags();
   const masterVolume = useAudioSettingsStore((state) => state.masterVolume);
 
-  const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
-  const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
+  const {
+    isHelpDialogOpen,
+    setIsHelpDialogOpen,
+    isAboutDialogOpen,
+    setIsAboutDialogOpen,
+  } = useAppHelpAboutDialogs();
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [duration, setDuration] = useState(0);

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useAppHelpAboutDialogs } from "@/hooks/useAppHelpAboutDialogs";
 import { useTranslation } from "react-i18next";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
@@ -33,8 +34,12 @@ export function useMapsLogic() {
     isDarkMode,
   } = useThemeFlags();
 
-  const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
-  const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
+  const {
+    isHelpDialogOpen,
+    setIsHelpDialogOpen,
+    isAboutDialogOpen,
+    setIsAboutDialogOpen,
+  } = useAppHelpAboutDialogs();
   const [mapType, setMapType] = useState<MapsMapType>("mutedStandard");
 
   const mapKitLanguage = ryOSLocaleToMapKitLanguage(i18n.language);

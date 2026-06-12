@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useAppHelpAboutDialogs } from "@/hooks/useAppHelpAboutDialogs";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import {
   useFileSystem,
@@ -52,8 +53,12 @@ export const useTerminalLogic = ({
     "terminal",
     helpItems || []
   );
-  const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
-  const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
+  const {
+    isHelpDialogOpen,
+    setIsHelpDialogOpen,
+    isAboutDialogOpen,
+    setIsAboutDialogOpen,
+  } = useAppHelpAboutDialogs();
   const [currentCommand, setCurrentCommand] = useState("");
   const [commandHistory, setCommandHistory] = useState<CommandHistory[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);

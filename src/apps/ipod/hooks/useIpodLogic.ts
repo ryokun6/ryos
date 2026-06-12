@@ -10,6 +10,7 @@ import { useLyrics } from "@/hooks/useLyrics";
 import { useFurigana } from "@/hooks/useFurigana";
 import { useActivityState } from "@/hooks/useActivityState";
 import { useLyricsErrorToast } from "@/hooks/useLyricsErrorToast";
+import { useMediaAppDialogs } from "@/hooks/useMediaAppDialogs";
 import { useCustomEventListener, useEventListener } from "@/hooks/useEventListener";
 import { useLibraryUpdateChecker } from "./useLibraryUpdateChecker";
 import { useIpodActiveLibrary } from "./useIpodActiveLibrary";
@@ -338,14 +339,24 @@ export function useIpodLogic({
   const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Dialog state
-  const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
-  const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
-  const [isConfirmClearOpen, setIsConfirmClearOpen] = useState(false);
-  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
-  const [isLyricsSearchDialogOpen, setIsLyricsSearchDialogOpen] = useState(false);
-  const [isSongSearchDialogOpen, setIsSongSearchDialogOpen] = useState(false);
-  const [isSyncModeOpen, setIsSyncModeOpen] = useState(false);
-  const [isAddingSong, setIsAddingSong] = useState(false);
+  const {
+    isHelpDialogOpen,
+    setIsHelpDialogOpen,
+    isAboutDialogOpen,
+    setIsAboutDialogOpen,
+    isConfirmClearOpen,
+    setIsConfirmClearOpen,
+    isShareDialogOpen,
+    setIsShareDialogOpen,
+    isLyricsSearchDialogOpen,
+    setIsLyricsSearchDialogOpen,
+    isSongSearchDialogOpen,
+    setIsSongSearchDialogOpen,
+    isSyncModeOpen,
+    setIsSyncModeOpen,
+    isAddingSong,
+    setIsAddingSong,
+  } = useMediaAppDialogs();
   // Recently Added + Favorites moved into the global iPod store (mirrored
   // from IndexedDB on iPod open) so the opportunistic refresh path in
   // `useAppleMusicLibrary` can update the same source the menu reads

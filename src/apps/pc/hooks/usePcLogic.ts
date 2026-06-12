@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useAppHelpAboutDialogs } from "@/hooks/useAppHelpAboutDialogs";
 import { useTranslation } from "react-i18next";
 import { helpItems } from "@/apps/infinite-pc/metadata";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
@@ -12,8 +13,12 @@ interface UsePcLogicProps {
 }
 
 export function usePcLogic({ isWindowOpen, instanceId }: UsePcLogicProps) {
-  const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
-  const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
+  const {
+    isHelpDialogOpen,
+    setIsHelpDialogOpen,
+    isAboutDialogOpen,
+    setIsAboutDialogOpen,
+  } = useAppHelpAboutDialogs();
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { isScriptLoaded } = useJsDos();
