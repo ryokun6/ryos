@@ -35,6 +35,9 @@ export function SongDetailPanelView(vm: SongDetailPanelViewModel) {
             isLoading={vm.isLoading}
             isForceRefreshing={vm.isForceRefreshing}
             isUnsharing={vm.isUnsharing}
+            isAppleMusic={vm.isAppleMusic}
+            appleMusicWebUrl={vm.appleMusicWebUrl}
+            handleOpenInAppleMusic={vm.handleOpenInAppleMusic}
             handlePlayInIpod={vm.handlePlayInIpod}
             handlePlayInKaraoke={vm.handlePlayInKaraoke}
             setIsLyricsSearchDialogOpen={vm.setIsLyricsSearchDialogOpen}
@@ -57,6 +60,9 @@ export function SongDetailPanelView(vm: SongDetailPanelViewModel) {
             isSaving={vm.isSaving}
             dispatchSongEdit={vm.dispatchSongEdit}
             saveField={vm.saveField}
+            isAppleMusic={vm.isAppleMusic}
+            appleMusicKindLabel={vm.appleMusicKindLabel}
+            appleMusicWebUrl={vm.appleMusicWebUrl}
             youtubeOembedTitle={vm.youtubeOembedTitle}
             isYoutubeOembedLoading={vm.isYoutubeOembedLoading}
           />

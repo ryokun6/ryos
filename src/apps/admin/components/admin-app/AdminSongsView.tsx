@@ -1,8 +1,10 @@
 import type { Dispatch, SetStateAction } from "react";
 import { Button } from "@/components/ui/button";
-import { MusicNote, Trash, Funnel } from "@phosphor-icons/react";
+import { MusicNote, Trash, Funnel, AppleLogo } from "@phosphor-icons/react";
 import type { TFunction } from "i18next";
 import type { CachedSongMetadata } from "@/utils/songMetadataCache";
+import { isAppleMusicId } from "@/utils/appleMusicId";
+import { resolveAppleMusicArtworkUrl } from "@/utils/coverArt";
 import { cn } from "@/lib/utils";
 import {
   adminAvatarWellClass,
@@ -66,7 +68,13 @@ export function AdminSongsView({
       ) : (
         <>
           <div className={cn("w-full min-w-0", adminListDividerClass)}>
-            {filteredSongs.slice(0, visibleSongsCount).map((song) => (
+            {filteredSongs.slice(0, visibleSongsCount).map((song) => {
+              const isAppleMusic = isAppleMusicId(song.youtubeId);
+              const coverUrl = isAppleMusic
+                ? resolveAppleMusicArtworkUrl(song.cover, 100)
+                : formatKugouImageUrl(song.cover, 100) ||
+                  `https://i.ytimg.com/vi/${song.youtubeId}/default.jpg`;
+              return (
               <div
                 key={song.youtubeId}
                 className={cn(
@@ -75,16 +83,20 @@ export function AdminSongsView({
                 )}
                 onClick={() => setSelectedSongId(song.youtubeId)}
               >
-                <div className={cn("size-10 flex-shrink-0 rounded overflow-hidden", adminAvatarWellClass)}>
-                  <img
-                    src={
-                      formatKugouImageUrl(song.cover, 100) ||
-                      `https://i.ytimg.com/vi/${song.youtubeId}/default.jpg`
-                    }
-                    alt={song.title}
-                    className="size-full object-cover"
-                    loading="lazy"
-                  />
+                <div className={cn("size-10 flex-shrink-0 rounded overflow-hidden flex items-center justify-center", adminAvatarWellClass)}>
+                  {coverUrl ? (
+                    <img
+                      src={coverUrl}
+                      alt={song.title}
+                      className="size-full object-cover"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <MusicNote
+                      className="size-4 text-neutral-400"
+                      weight="bold"
+                    />
+                  )}
                 </div>
                 <div className="min-w-0 flex-1 overflow-hidden">
                   <div
@@ -94,10 +106,16 @@ export function AdminSongsView({
                     {song.title}
                   </div>
                   <div
-                    className="block w-full min-w-0 truncate text-[11px] text-neutral-500"
+                    className="flex w-full min-w-0 items-center gap-1 text-[11px] text-neutral-500"
                     title={song.artist}
                   >
-                    {song.artist || "-"}
+                    {isAppleMusic && (
+                      <AppleLogo
+                        className="size-3 flex-shrink-0 text-neutral-400"
+                        weight="fill"
+                      />
+                    )}
+                    <span className="truncate">{song.artist || "-"}</span>
                   </div>
                 </div>
                 {song.createdBy && (
@@ -117,7 +135,8 @@ export function AdminSongsView({
                   <Trash size={14} weight="bold" />
                 </Button>
               </div>
-            ))}
+              );
+            })}
           </div>
           {filteredSongs.length > visibleSongsCount && (
             <div className="pt-2 pb-1 flex justify-center">

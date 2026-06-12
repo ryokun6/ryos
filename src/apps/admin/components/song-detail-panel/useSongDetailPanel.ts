@@ -10,6 +10,12 @@ import {
 } from "@/utils/songMetadataCache";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
+import {
+  appleMusicIdKindLabel,
+  generateAppleMusicWebUrlForId,
+  isAppleMusicId,
+  parseAppleMusicId,
+} from "@/utils/appleMusicId";
 import { useAppStore } from "@/stores/useAppStore";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useKaraokeStore } from "@/stores/useKaraokeStore";
@@ -29,6 +35,9 @@ export function useSongDetailPanel({
   const { t } = useTranslation();
   const { username, isAuthenticated } = useAuth();
   const launchApp = useLaunchApp();
+
+  const isAppleMusic = isAppleMusicId(youtubeId);
+  const appleMusicIdKind = parseAppleMusicId(youtubeId)?.kind ?? null;
 
   const [editState, dispatchEdit] = useReducer(songEditReducer, initialEditState);
   const {
@@ -349,11 +358,34 @@ export function useSongDetailPanel({
     );
   }, [youtubeId, launchApp, t]);
 
+  const appleMusicWebUrl = isAppleMusic
+    ? generateAppleMusicWebUrlForId({
+        id: youtubeId,
+        title: song?.title,
+        artist: song?.artist,
+        storefrontId: useIpodStore.getState().appleMusicStorefrontId,
+      })
+    : null;
+
+  const appleMusicKindLabel = appleMusicIdKind
+    ? appleMusicIdKindLabel(appleMusicIdKind)
+    : null;
+
+  const handleOpenInAppleMusic = useCallback(() => {
+    if (!appleMusicWebUrl) return;
+    window.open(appleMusicWebUrl, "_blank", "noopener,noreferrer");
+  }, [appleMusicWebUrl]);
+
   useEffect(() => {
     fetchSong();
   }, [fetchSong]);
 
   useEffect(() => {
+    if (isAppleMusic) {
+      setYoutubeOembedTitle(null);
+      setIsYoutubeOembedLoading(false);
+      return;
+    }
     let isCancelled = false;
     const fetchOembedTitle = async () => {
       setIsYoutubeOembedLoading(true);
@@ -383,7 +415,7 @@ export function useSongDetailPanel({
     return () => {
       isCancelled = true;
     };
-  }, [youtubeId]);
+  }, [youtubeId, isAppleMusic]);
 
   const handleDelete = async () => {
     if (!username || !isAuthenticated) return;
@@ -505,6 +537,10 @@ export function useSongDetailPanel({
     onBack,
     song,
     isLoading,
+    isAppleMusic,
+    appleMusicKindLabel,
+    appleMusicWebUrl,
+    handleOpenInAppleMusic,
     youtubeOembedTitle,
     isYoutubeOembedLoading,
     isDeleteDialogOpen,

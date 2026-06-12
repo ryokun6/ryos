@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import {
+  AppleLogo,
   ArrowSquareOut,
   Clock,
   Hash,
@@ -29,6 +30,9 @@ type Props = Pick<
   | "isSaving"
   | "dispatchSongEdit"
   | "saveField"
+  | "isAppleMusic"
+  | "appleMusicKindLabel"
+  | "appleMusicWebUrl"
   | "youtubeOembedTitle"
   | "isYoutubeOembedLoading"
 >;
@@ -48,6 +52,9 @@ export function SongDetailPanelMetadataSection({
   isSaving,
   dispatchSongEdit,
   saveField,
+  isAppleMusic,
+  appleMusicKindLabel,
+  appleMusicWebUrl,
   youtubeOembedTitle,
   isYoutubeOembedLoading,
 }: Props) {
@@ -320,19 +327,63 @@ export function SongDetailPanelMetadataSection({
         </div>
 
         <div className="flex items-start gap-2 py-1.5">
-          <Hash
-            className="size-3.5 text-neutral-400 flex-shrink-0 mt-0.5"
-            weight="bold"
-          />
+          {isAppleMusic ? (
+            <AppleLogo
+              className="size-3.5 text-neutral-400 flex-shrink-0 mt-0.5"
+              weight="fill"
+            />
+          ) : (
+            <Hash
+              className="size-3.5 text-neutral-400 flex-shrink-0 mt-0.5"
+              weight="bold"
+            />
+          )}
           <div className="flex-1 min-w-0">
             <div className="text-[10px] text-neutral-500">
-              {t("apps.admin.song.youtubeId", "YouTube ID")}
+              {isAppleMusic
+                ? t("apps.admin.song.appleMusicId", "Apple Music ID")
+                : t("apps.admin.song.youtubeId", "YouTube ID")}
             </div>
             {isLoading ? (
               <div className="space-y-1 mt-1">
                 <Skeleton className="h-4 w-48" />
                 <Skeleton className="h-4 w-28" />
               </div>
+            ) : isAppleMusic ? (
+              <>
+                {appleMusicKindLabel ? (
+                  <div className="text-[11px] mt-0.5 text-neutral-500">
+                    {appleMusicKindLabel}
+                  </div>
+                ) : null}
+                <div className="flex items-center gap-1 mt-0.5">
+                  <span className="text-[11px] font-mono break-all">
+                    {song?.id}
+                  </span>
+                  {appleMusicWebUrl ? (
+                    <a
+                      href={appleMusicWebUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-os-link hover:opacity-90 flex-shrink-0"
+                      title={appleMusicWebUrl}
+                    >
+                      <ArrowSquareOut className="size-3" weight="bold" />
+                    </a>
+                  ) : null}
+                </div>
+                {appleMusicWebUrl ? (
+                  <a
+                    href={appleMusicWebUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[10px] text-os-link hover:opacity-90 mt-0.5 block truncate"
+                    title={appleMusicWebUrl}
+                  >
+                    {appleMusicWebUrl}
+                  </a>
+                ) : null}
+              </>
             ) : (
               <>
                 {isYoutubeOembedLoading ? (
