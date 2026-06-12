@@ -3699,6 +3699,18 @@
   caret-color: var(--os-color-text-primary);
 }
 
+/* The Spotlight search field pill is hardcoded white inline (the light-mode
+   Aqua look). In dark mode that bright pill clashes with the dark panel and
+   buries the light input text — swap it for a dark translucent well. Covers
+   both classic dark Aqua and dark Aqua Glass (both set the dark scheme attr). */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .spotlight-panel
+  .spotlight-input-well {
+  background: var(--os-color-input-bg) !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.12) !important;
+}
+
 /* Aqua select triggers, the Radix `.os-select-trigger-macos` / `.os-btn-aqua-select`
    variants, and `.aqua-button.secondary` all bake light gradients
    (`rgba(160,160,160) → rgba(255,255,255)`) into CSS. In dark mode those
