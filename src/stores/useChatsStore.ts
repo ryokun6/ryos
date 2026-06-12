@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { useStoreShallow } from "./helpers";
-import { persist, createJSONStorage } from "zustand/middleware";
+import { persist } from "zustand/middleware";
+import { createDebouncedPersistStorage } from "@/utils/debouncedPersistStorage";
 import {
   type ChatRoom,
   type ChatMessage,
@@ -1215,7 +1216,10 @@ export const useChatsStore = create<ChatsStoreState>()(
     {
       name: STORE_NAME,
       version: STORE_VERSION,
-      storage: createJSONStorage(() => localStorage), // Use localStorage
+      // Write-behind storage: chat history (aiMessages + capped roomMessages)
+      // used to be JSON.stringify'd and written synchronously on every
+      // appended message. Serialization now happens once per quiet window.
+      storage: createDebouncedPersistStorage(),
       partialize: (state) => ({
         aiMessages: state.aiMessages,
         username: state.username,
