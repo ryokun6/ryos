@@ -22,8 +22,12 @@ export function menubarTextForTone(tone: MenubarTextTone): string {
 /**
  * Average luminance of the wallpaper strip behind the menubar (top ~15% of the
  * image). Reuses the same canvas sampling approach as `useCoverPalette`.
+ * Returns `null` when sampling fails (no 2d context, empty image, or fully
+ * transparent strip) so callers don't cache a placeholder value.
  */
-export function sampleWallpaperTopLuminance(img: HTMLImageElement): number {
+export function sampleWallpaperTopLuminance(
+  img: HTMLImageElement
+): number | null {
   const canvas = document.createElement("canvas");
   const width = 64;
   const height = 8;
@@ -31,7 +35,7 @@ export function sampleWallpaperTopLuminance(img: HTMLImageElement): number {
   canvas.height = height;
   const ctx = canvas.getContext("2d");
   if (!ctx || img.naturalWidth === 0 || img.naturalHeight === 0) {
-    return 0.5;
+    return null;
   }
 
   const sourceHeight = Math.max(1, img.naturalHeight * 0.15);
@@ -52,6 +56,6 @@ export function sampleWallpaperTopLuminance(img: HTMLImageElement): number {
     count++;
   }
 
-  if (count === 0) return 0.5;
+  if (count === 0) return null;
   return wallpaperLuminance(rSum / count, gSum / count, bSum / count);
 }

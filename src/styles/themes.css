@@ -5620,7 +5620,9 @@
   .window-material-brushedmetal {
   backdrop-filter: blur(26px) saturate(185%);
   -webkit-backdrop-filter: blur(26px) saturate(185%);
-  border-radius: 12px !important;
+  /* Classic brushed-metal proportion (Finder, iTunes, etc.) — not the 12px
+     glass pane radius used by default-material windows. */
+  border-radius: 0.6rem !important;
 }
 
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
@@ -5920,30 +5922,13 @@
     0 1px 0 rgba(255, 255, 255, 0.05) !important;
 }
 
-/* --- Fully-rounded toolbar pills ----------------------------------------- */
-/* In glass the inset toggle group reads as a fully-rounded pill rather than the
-   4px-radius brushed-metal slab. `overflow: hidden` on the group clips the
-   child buttons to the pill, so only the group needs the radius; the first/last
-   buttons get matching ends for browsers that honor per-button rounding. */
-:root[data-os-theme="macosx"][data-os-aqua-material="glass"] .metal-inset-btn-group {
-  border-radius: 999px;
-}
-
-:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
-  .metal-inset-btn-group
-  .metal-inset-btn:first-child {
-  border-top-left-radius: 999px;
-  border-bottom-left-radius: 999px;
-}
-
+/* Finder / metal-toolbar inset groups keep the classic 4px grouped slab in glass
+   (squircle-enhanced in the @supports block below). Capsule shapes — menubar
+   selection, search field — stay fully round via their own rules. */
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
   .metal-inset-btn-group
   .metal-inset-btn:last-child {
-  border-top-right-radius: 999px;
-  border-bottom-right-radius: 999px;
-  /* The glass `.metal-inset-btn` rule re-adds `border-right` (it beats the base
-     `:last-child` reset on specificity), leaving a 1px line between the last
-     segment's fill and the group's outer ring. Strip it back off. */
+  /* Glass `.metal-inset-btn` re-adds `border-right`; strip the outer seam. */
   border-right: none;
 }
 
@@ -6139,5 +6124,210 @@
   );
   box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.45),
     inset 0 -1px 0 rgba(0, 0, 0, 0.45);
+}
+
+/* --- Squircle corners (progressive enhancement) --------------------------- */
+/* `corner-shape: squircle` ≈ superellipse(2). At the same px radius, squircles
+   curve tighter than circular arcs and read as "more square" — so we scale
+   radius up by (1 - 2^-0.5) / (1 - 2^-0.25) ≈ 1.84 to match classic Aqua
+   softness. Unsupported browsers keep the original radii + circular arcs. */
+@supports (corner-shape: squircle) {
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"] {
+    --os-corner-shape: squircle;
+    /* (1 - 2^-0.5) / (1 - 2^-0.25) ≈ 1.84 for squircle / superellipse(2) */
+    --os-squircle-radius-factor: 1.84;
+    --os-metrics-radius: calc(0.45rem * var(--os-squircle-radius-factor));
+    --os-squircle-r-xs: calc(5px * var(--os-squircle-radius-factor));
+    --os-squircle-r-sm: calc(6px * var(--os-squircle-radius-factor));
+    --os-squircle-r-select: calc(8px * var(--os-squircle-radius-factor));
+    --os-squircle-r-select-gloss: calc(7px * var(--os-squircle-radius-factor));
+    --os-squircle-r-inset: calc(6px * var(--os-squircle-radius-factor));
+    --os-squircle-r-md: calc(10px * var(--os-squircle-radius-factor));
+    --os-squircle-r-dialog: calc(7.2px * var(--os-squircle-radius-factor));
+    --os-squircle-r-lg: calc(12px * var(--os-squircle-radius-factor));
+    --os-squircle-r-metal: calc(0.6rem * var(--os-squircle-radius-factor));
+    --os-squircle-r-dock: calc(13px * var(--os-squircle-radius-factor));
+    --os-squircle-r-bubble: calc(16px * var(--os-squircle-radius-factor));
+  }
+
+  /* NOTE: pseudo-elements are invalid inside :is()/:where() and get silently
+     dropped, so the ::before / ::after layers are listed as standalone
+     selectors below — do not fold them back into the :is() list. */
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+    :is(
+      .window.window-material-glass,
+      .window.window-material-brushedmetal,
+      .mac-dock-surface,
+      .metal-inset-btn-group,
+      .aqua-select-btn,
+      .macos-select-trigger,
+      .os-select-trigger-macos,
+      .os-btn-aqua-select,
+      .macosx-dialog,
+      .rounded-os,
+      .chat-bubble,
+      [data-radix-popper-content-wrapper]
+        :where(
+          [role="menu"],
+          [role="listbox"],
+          [data-radix-menu-content],
+          [data-radix-popover-content],
+          [data-radix-select-content]
+        )
+    ),
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+    .window-material-brushedmetal::before,
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+    .window-material-brushedmetal::after,
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+    .macos-select-trigger::before,
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+    .aqua-select-btn::before,
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+    .chat-bubble::before {
+    corner-shape: var(--os-corner-shape);
+  }
+
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+    :is(.aqua-tab, .macosx-dialog-header) {
+    corner-shape: squircle squircle round round;
+  }
+
+  /* Capsules stay circular — menubar selection, search field, other pills. */
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+    :is(
+      .rounded-full,
+      input[data-os-search-input="true"],
+      [role="menubar"] [role="menuitem"][data-state="open"]
+    ) {
+    corner-shape: round;
+  }
+
+  /* Compensated radii — only inside @supports so other browsers are unchanged. */
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+    .window.window-material-glass {
+    border-radius: var(--os-squircle-r-lg) !important;
+  }
+
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+    .window.window-material-brushedmetal {
+    border-radius: var(--os-squircle-r-metal) !important;
+  }
+
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+    .metal-inset-btn-group {
+    border-radius: var(--os-squircle-r-inset) !important;
+    corner-shape: var(--os-corner-shape);
+  }
+
+  /* Child pills must share the group's corner geometry, otherwise their
+     background rounds off with circular arcs inside the squircle clip and
+     leaves unfilled corner slivers (visible on the selected segment). */
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+    .metal-inset-btn-group
+    .metal-inset-btn {
+    corner-shape: var(--os-corner-shape);
+  }
+
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+    .metal-inset-btn-group
+    .metal-inset-btn:first-child {
+    border-top-left-radius: var(--os-squircle-r-inset) !important;
+    border-bottom-left-radius: var(--os-squircle-r-inset) !important;
+  }
+
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+    .metal-inset-btn-group
+    .metal-inset-btn:last-child {
+    border-top-right-radius: var(--os-squircle-r-inset) !important;
+    border-bottom-right-radius: var(--os-squircle-r-inset) !important;
+    border-right: none;
+  }
+
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .mac-dock-surface {
+    border-radius: var(--os-squircle-r-dock) !important;
+  }
+
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+    [data-radix-popper-content-wrapper]
+    :where(
+      [role="menu"],
+      [role="listbox"],
+      [data-radix-menu-content],
+      [data-radix-popover-content],
+      [data-radix-select-content]
+    ) {
+    border-radius: var(--os-squircle-r-md) !important;
+  }
+
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+    :is(
+      .macos-select-trigger,
+      .os-select-trigger-macos,
+      .os-btn-aqua-select,
+      .aqua-select-btn
+    ) {
+    border-radius: var(--os-squircle-r-select) !important;
+  }
+
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+    :is(.macos-select-trigger::before, .aqua-select-btn::before) {
+    border-radius: var(--os-squircle-r-select-gloss) var(--os-squircle-r-select-gloss) 0 0 !important;
+  }
+
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+    .aqua-select-group
+    .aqua-select-btn:first-child {
+    border-top-left-radius: var(--os-squircle-r-sm) !important;
+    border-bottom-left-radius: var(--os-squircle-r-sm) !important;
+  }
+
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+    .aqua-select-group
+    .aqua-select-btn:last-child {
+    border-top-right-radius: var(--os-squircle-r-sm) !important;
+    border-bottom-right-radius: var(--os-squircle-r-sm) !important;
+  }
+
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+    .aqua-select-group
+    .aqua-select-btn:first-child::before {
+    border-top-left-radius: var(--os-squircle-r-sm) !important;
+  }
+
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+    .aqua-select-group
+    .aqua-select-btn:last-child::before {
+    border-top-right-radius: var(--os-squircle-r-sm) !important;
+  }
+
+  /* `.aqua-button` is a 28px capsule (14px radius = fully round) — it keeps
+     its classic round pill shape; squircling it would distort the capsule. */
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .aqua-button,
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .aqua-button::before {
+    corner-shape: round;
+  }
+
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .macosx-dialog {
+    border-radius: var(--os-squircle-r-dialog) !important;
+  }
+
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .macosx-dialog-header {
+    border-radius: var(--os-squircle-r-dialog) var(--os-squircle-r-dialog) 0 0 !important;
+  }
+
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .aqua-tab {
+    border-radius: var(--os-squircle-r-sm) var(--os-squircle-r-sm) 0 0;
+  }
+
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .chat-bubble {
+    border-radius: var(--os-squircle-r-bubble) !important;
+  }
+
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .chat-bubble::before {
+    border-radius: var(--os-squircle-r-bubble) var(--os-squircle-r-bubble)
+      calc(4px * var(--os-squircle-radius-factor))
+      calc(4px * var(--os-squircle-radius-factor));
+  }
 }
 
