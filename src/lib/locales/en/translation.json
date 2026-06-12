@@ -2928,7 +2928,8 @@
         "minutesAgo": "{{count}}m ago",
         "hoursAgo": "{{count}}h ago",
         "daysAgo": "{{count}}d ago",
-        "error": "Sync issue: {{error}}"
+        "error": "Sync issue: {{error}}",
+        "openSettings": "Sync Settings…"
       },
       "cloudSync": {
         "description": "Backup or restore all settings and files to the cloud. Max {{limit}}MB.",
