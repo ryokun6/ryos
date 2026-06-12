@@ -75,7 +75,7 @@ const glassStyles = {
   // Slightly semi-opaque accent fill (close to the inactive light's 0.625
   // alpha) so the orb reads as tinted glass without washing out.
   gradient: `linear-gradient(color-mix(in srgb, ${ACCENT_VAR} 80%, transparent), color-mix(in srgb, ${ACCENT_VAR} 58%, transparent))`,
-  iconColor: "rgba(255, 255, 255, 0.92)",
+  iconColor: "rgba(0, 0, 0, 0.55)",
   // Mirror the inactive light's shadow stack — outer drop + a crisp 0.5px dark
   // inset stroke for definition, tight (non-blurry) inset highlights, and an
   // accent-tinted inner glow instead of the inactive gray.

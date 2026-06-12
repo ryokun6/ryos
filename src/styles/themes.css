@@ -5407,12 +5407,12 @@
   );
   --os-color-dock-shadow: 0 8px 30px rgba(0, 0, 0, 0.22);
 
-  /* Soft glassy edges + diffuse shadow. */
-  --os-color-window-border: rgba(255, 255, 255, 0.55);
-  --os-color-window-border-inactive: rgba(255, 255, 255, 0.35);
+  /* Hairline dark rim — matches glass toolbar pills, not a white frost edge. */
+  --os-color-window-border: rgba(0, 0, 0, 0.22);
+  --os-color-window-border-inactive: rgba(0, 0, 0, 0.15);
   --os-color-menubar-border: rgba(255, 255, 255, 0.4);
-  --os-color-titlebar-border: rgba(255, 255, 255, 0.45);
-  --os-color-titlebar-border-inactive: rgba(255, 255, 255, 0.25);
+  --os-color-titlebar-border: rgba(0, 0, 0, 0.22);
+  --os-color-titlebar-border-inactive: rgba(0, 0, 0, 0.15);
   --os-window-shadow: 0 18px 50px rgba(0, 0, 0, 0.28),
     0 2px 10px rgba(0, 0, 0, 0.12);
   --os-color-separator: rgba(60, 70, 90, 0.14);
@@ -5480,8 +5480,8 @@
   );
   --os-color-dock-shadow: 0 8px 30px rgba(0, 0, 0, 0.55);
 
-  --os-color-window-border: rgba(255, 255, 255, 0.16);
-  --os-color-window-border-inactive: rgba(255, 255, 255, 0.08);
+  --os-color-window-border: rgba(0, 0, 0, 0.45);
+  --os-color-window-border-inactive: rgba(0, 0, 0, 0.32);
   --os-color-menubar-border: rgba(255, 255, 255, 0.1);
   --os-color-titlebar-border: rgba(255, 255, 255, 0.14);
   --os-color-titlebar-border-inactive: rgba(255, 255, 255, 0.08);
@@ -5612,6 +5612,9 @@
   backdrop-filter: blur(26px) saturate(185%);
   -webkit-backdrop-filter: blur(26px) saturate(185%);
   border-radius: 13px !important;
+  border: var(--os-metrics-border-width) solid var(--os-color-window-border) !important;
+  /* Lift the glass pill off the screen edge — classic dock sits flush. */
+  margin-bottom: 12px;
   box-shadow: var(--os-color-dock-shadow),
     inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
 }
@@ -5625,21 +5628,36 @@
 /* --- Frosted popovers (dropdowns, menubar menus, selects) ----------------- */
 /* These portal to <body> but remain under <html>, so the root attribute still
    scopes them. They paint `var(--os-pinstripe-window)` inline, so they pick up
-   the glass fill from the tokens above; here we add the blur + specular rim. */
-:root[data-os-theme="macosx"][data-os-aqua-material="glass"] [role="menu"],
-:root[data-os-theme="macosx"][data-os-aqua-material="glass"] [role="listbox"] {
+   the glass fill from the tokens above; here we add the blur + hairline rim.
+   The popper-wrapper selector beats the generic dark-scheme white border-color
+   rule further up in this file. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  [data-radix-popper-content-wrapper]
+  :where(
+    [role="menu"],
+    [role="listbox"],
+    [data-radix-menu-content],
+    [data-radix-popover-content],
+    [data-radix-select-content]
+  ) {
   backdrop-filter: blur(22px) saturate(185%);
   -webkit-backdrop-filter: blur(22px) saturate(185%);
   /* Overrides the inline `0px` radius from the dropdown/select content. */
   border-radius: 7px !important;
+  border: var(--os-metrics-border-width) solid var(--os-color-window-border) !important;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25),
     inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
 }
 
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
-  [role="menu"],
-:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
-  [role="listbox"] {
+  [data-radix-popper-content-wrapper]
+  :where(
+    [role="menu"],
+    [role="listbox"],
+    [data-radix-menu-content],
+    [data-radix-popover-content],
+    [data-radix-select-content]
+  ) {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55),
     inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
 }
@@ -5771,6 +5789,82 @@
   box-shadow: none;
 }
 
+/* --- Frosted select triggers (dark glass) --------------------------------- */
+/* Frosted translucent base with soft top + bottom shines (layered backgrounds;
+   ::after stays the chevron). Suppress ::before so we don't double-stack gloss. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .macos-select-trigger,
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .os-select-trigger-macos,
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .os-btn-aqua-select {
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.22) 0%,
+        rgba(255, 255, 255, 0.06) 58%,
+        rgba(255, 255, 255, 0) 100%
+      )
+      top / 100% 50% no-repeat,
+    linear-gradient(
+        to top,
+        rgba(255, 255, 255, 0.12) 0%,
+        rgba(255, 255, 255, 0.04) 52%,
+        rgba(255, 255, 255, 0) 100%
+      )
+      bottom / 100% 42% no-repeat,
+    linear-gradient(
+      to bottom,
+      rgba(72, 72, 78, 0.42),
+      rgba(34, 34, 38, 0.42)
+    ) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55) !important;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2), 0 1px 1px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(0, 0, 0, 0.3) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .macos-select-trigger:before,
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .os-select-trigger-macos:before,
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .os-btn-aqua-select:before,
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .aqua-select-btn:before {
+  background: none !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .macos-select-trigger:active,
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .os-select-trigger-macos:active,
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .os-btn-aqua-select:active {
+  background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.1) 0%,
+        rgba(255, 255, 255, 0.03) 58%,
+        rgba(255, 255, 255, 0) 100%
+      )
+      top / 100% 50% no-repeat,
+    linear-gradient(
+        to top,
+        rgba(255, 255, 255, 0.06) 0%,
+        rgba(255, 255, 255, 0.02) 52%,
+        rgba(255, 255, 255, 0) 100%
+      )
+      bottom / 100% 42% no-repeat,
+    linear-gradient(
+      to bottom,
+      rgba(48, 48, 52, 0.52),
+      rgba(22, 22, 26, 0.52)
+    ) !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35),
+    inset 0 1px 1px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.28) !important;
+}
+
 /* --- Frosted search field ------------------------------------------------- */
 /* `SearchInput` pins an opaque `bg-white` pill; in glass make it a semi-opaque
    frosted well so the desktop blur shows through, like the other glass inputs. */
@@ -5821,5 +5915,198 @@
      `:last-child` reset on specificity), leaving a 1px line between the last
      segment's fill and the group's outer ring. Strip it back off. */
   border-right: none;
+}
+
+/* --- Aqua tab shadows (classic + glass) ----------------------------------- */
+/* `shadow-none!` on `ThemedTabsTrigger` suppresses shadcn's active shadow; also
+   neutralize the baked-in `.aqua-tab` inset stack. Classic Aqua keeps gradient
+   + pseudo-gloss only; Aqua Glass keeps translucent fills with no shadows. */
+:root[data-os-theme="macosx"]:not([data-os-aqua-material="glass"]) .aqua-tab,
+:root[data-os-theme="macosx"]:not([data-os-aqua-material="glass"])
+  .aqua-tab[data-state="active"],
+:root[data-os-theme="macosx"]:not([data-os-aqua-material="glass"])
+  .aqua-tab:hover:not([data-state="active"]),
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] .aqua-tab,
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .aqua-tab[data-state="active"],
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .aqua-tab:hover:not([data-state="active"]) {
+  box-shadow: none !important;
+}
+
+/* --- Frosted aqua tabs ---------------------------------------------------- */
+/* System Preferences / other `ThemedTabs` strips use `.aqua-tab`. In glass the
+   inactive pills borrow the same semi-transparent gray→white stack as
+   `.metal-inset-btn` / `.os-select-trigger-macos`; the active tab layers a
+   translucent accent wash on top so the frosted window still reads through. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]:not(
+    [data-os-color-scheme="dark"]
+  )
+  .aqua-tab {
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.55) 0%,
+        rgba(255, 255, 255, 0.18) 60%,
+        rgba(255, 255, 255, 0) 100%
+      )
+      top / 100% 50% no-repeat,
+    linear-gradient(rgba(188, 188, 188, 0.34), rgba(255, 255, 255, 0.3));
+  border: 1px solid rgba(0, 0, 0, 0.22);
+  color: #000;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]:not(
+    [data-os-color-scheme="dark"]
+  )
+  .aqua-tab[data-state="active"] {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: var(
+    --os-accent-tab-active-bg,
+    linear-gradient(rgb(48 123 201), rgb(152 189 228), rgb(210 255 255))
+  );
+  border-bottom: 1px solid var(--os-accent-tab-border, rgb(210 255 255)) !important;
+  color: #000;
+  text-shadow: 0 2px 2px var(--os-accent-tab-text-shadow, rgba(30, 77, 161, 0.5));
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]:not(
+    [data-os-color-scheme="dark"]
+  )
+  .aqua-tab:before {
+  background: linear-gradient(
+    rgba(255, 255, 255, 0.22),
+    rgba(255, 255, 255, 0.04)
+  );
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]:not(
+    [data-os-color-scheme="dark"]
+  )
+  .aqua-tab:after {
+  background: linear-gradient(transparent, rgba(255, 255, 255, 0.06));
+  filter: none;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]:not(
+    [data-os-color-scheme="dark"]
+  )
+  .aqua-tab[data-state="active"]:before {
+  background: linear-gradient(
+    rgba(255, 255, 255, 0.8),
+    rgba(255, 255, 255, 0.35)
+  );
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]:not(
+    [data-os-color-scheme="dark"]
+  )
+  .aqua-tab[data-state="active"]:after {
+  background: linear-gradient(transparent, rgba(255, 255, 255, 0.45));
+  filter: blur(1px);
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]:not(
+    [data-os-color-scheme="dark"]
+  )
+  .aqua-tab-bar:after {
+  background: var(
+    --os-accent-tab-bar-line,
+    linear-gradient(
+      to bottom,
+      #2260a4 0%,
+      #e2fbfd 8%,
+      #aecef3 25%,
+      #7aafee 40%,
+      #98ceff 60%,
+      #9dcfff 80%,
+      #74deff 100%
+    )
+  );
+  box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.3),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .aqua-tab {
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.12),
+        rgba(255, 255, 255, 0.03)
+      )
+      top / 100% 50% no-repeat,
+    linear-gradient(
+      to bottom,
+      rgba(72, 72, 78, 0.42),
+      rgba(34, 34, 38, 0.42)
+    );
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55);
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .aqua-tab[data-state="active"] {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: var(
+    --os-accent-tab-active-bg,
+    linear-gradient(rgb(28, 76, 130), rgb(70, 117, 168), rgb(132, 178, 224))
+  );
+  border-bottom: 1px solid var(--os-accent-tab-border, rgb(132, 178, 224)) !important;
+  color: var(--os-color-text-primary);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .aqua-tab:before {
+  background: linear-gradient(
+    rgba(255, 255, 255, 0.06),
+    rgba(255, 255, 255, 0.01)
+  );
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .aqua-tab:after {
+  background: linear-gradient(transparent, rgba(255, 255, 255, 0.03));
+  filter: none;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .aqua-tab[data-state="active"]:before {
+  background: linear-gradient(
+    rgba(255, 255, 255, 0.24),
+    rgba(255, 255, 255, 0.06)
+  );
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .aqua-tab[data-state="active"]:after {
+  background: linear-gradient(transparent, rgba(255, 255, 255, 0.08));
+  filter: blur(1px);
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .aqua-tab-bar:after {
+  background: var(
+    --os-accent-tab-bar-line,
+    linear-gradient(
+      to bottom,
+      #16345c 0%,
+      #cfe4f8 8%,
+      #5a82b0 25%,
+      #426591 40%,
+      #4f76a3 60%,
+      #4f73a0 80%,
+      #436690 100%
+    )
+  );
+  box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.45),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.45);
 }
 
