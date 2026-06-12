@@ -11,6 +11,9 @@
  * 3. **Legacy blob sweep** — v1 per-item/monolithic objects listed in the
  *    frozen `sync:auto:meta` manifests are deleted once no current KV doc
  *    references them (v1 has no writers anymore, so this cannot race).
+ * 4. **User record healing** — `chat:users:*` records are meant to persist
+ *    forever, but an old room-message code path attached a TTL on each
+ *    send; any such stale TTL is removed (PERSIST).
  *
  * Work is bounded per invocation: users are discovered by scanning
  * `sync2:kv:*` with a cursor persisted in Redis, so successive cron runs
@@ -72,6 +75,7 @@ export interface SyncMaintenanceStats {
   blobsUnmarked: number;
   blobsDeleted: number;
   legacyObjectsDeleted: number;
+  userRecordsPersisted: number;
   errors: number;
 }
 
@@ -209,6 +213,27 @@ async function expireV1Keys(
       stats.errors += 1;
       console.warn(`[sync2:maint] Failed to expire ${key}:`, error);
     }
+  }
+}
+
+/**
+ * User records are meant to persist forever; remove TTLs left behind by the
+ * removed expire-on-room-message code path.
+ */
+async function healUserRecord(
+  redis: Redis,
+  username: string,
+  stats: SyncMaintenanceStats
+): Promise<void> {
+  const key = `chat:users:${username}`;
+  try {
+    if ((await redis.ttl(key)) > 0) {
+      await redis.persist(key);
+      stats.userRecordsPersisted += 1;
+    }
+  } catch (error) {
+    stats.errors += 1;
+    console.warn(`[sync2:maint] Failed to persist user record ${key}:`, error);
   }
 }
 
@@ -388,6 +413,7 @@ export async function runSyncMaintenance(
     blobsUnmarked: 0,
     blobsDeleted: 0,
     legacyObjectsDeleted: 0,
+    userRecordsPersisted: 0,
     errors: 0,
   };
 
@@ -401,6 +427,7 @@ export async function runSyncMaintenance(
   for (const username of usernames) {
     try {
       const referenced = await collectReferencedBlobs(redis, username);
+      await healUserRecord(redis, username, stats);
       await expireV1Keys(redis, username, stats);
       await sweepBlobRegistry(redis, username, referenced, budget, stats, {
         graceMs,

@@ -68,6 +68,27 @@ describe("sync maintenance: v1 key retirement", () => {
     );
   });
 
+  test("removes stale TTLs from user records (persist forever)", async () => {
+    const fake = new FakeRedis();
+    const redis = fake as unknown as Redis;
+
+    // Legacy expire-on-room-message left a TTL on the user record.
+    fake.setSync("chat:users:alice", JSON.stringify({ username: "alice" }), {
+      ex: 90 * 24 * 60 * 60,
+    });
+    await seedUser(redis, "alice");
+
+    const { deleteObject } = createDeleteSpy();
+    const stats = await runSyncMaintenance(redis, { deleteObject, now: NOW });
+
+    expect(stats.userRecordsPersisted).toBe(1);
+    expect(fake.ttls.has("chat:users:alice")).toBe(false);
+
+    // Already-persistent records are untouched on subsequent runs.
+    const again = await runSyncMaintenance(redis, { deleteObject, now: NOW + 1 });
+    expect(again.userRecordsPersisted).toBe(0);
+  });
+
   test("does not reset TTLs that already exist", async () => {
     const fake = new FakeRedis();
     const redis = fake as unknown as Redis;

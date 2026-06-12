@@ -184,6 +184,12 @@ export class FakeRedis {
     return this.expireSync(key, seconds);
   }
 
+  async persist(key: string): Promise<number> {
+    if (!this.ttls.has(key)) return 0;
+    this.ttls.delete(key);
+    return 1;
+  }
+
   async ttl(key: string): Promise<number> {
     if (!this.hasKey(key)) return -2;
     return this.ttls.get(key) ?? -1;
