@@ -116,6 +116,28 @@ export async function listSongs<TSong = Record<string, unknown>>(
   });
 }
 
+export interface SongsVersionInfo {
+  /** Highest updatedAt/createdAt across matching songs. */
+  version: number;
+  /** Number of matching songs. */
+  count: number;
+}
+
+/**
+ * Lightweight catalog version probe (`include=version`) — ~50 bytes instead
+ * of the full metadata list. Used by pollers to decide whether a full fetch
+ * is needed.
+ */
+export async function fetchSongsVersion(
+  createdBy?: string
+): Promise<SongsVersionInfo> {
+  return apiRequest<SongsVersionInfo>({
+    path: "/api/songs",
+    method: "GET",
+    query: { include: "version", createdBy },
+  });
+}
+
 export async function getSongById<TSong = Record<string, unknown>>(
   songId: string,
   options: { include?: string; signal?: AbortSignal } = {}
@@ -133,6 +155,8 @@ export async function updateSongById<TPayload extends object>(
   payload: TPayload,
   _auth?: SongsAuthContext
 ): Promise<SongSaveResponse> {
+  // Any song mutation may change lyrics/timings — drop cached responses.
+  invalidateLyricsCacheForSong(songId);
   return apiRequest<SongSaveResponse, TPayload>({
     path: `/api/songs/${encodeURIComponent(songId)}`,
     method: "POST",
@@ -148,6 +172,62 @@ export async function patchSongMetadata(
   return updateSongById(songId, payload, auth);
 }
 
+// ---------------------------------------------------------------------------
+// fetch-lyrics dedup cache
+//
+// The same song's lyrics are requested from several places (track import,
+// playback, fullscreen, StrictMode double-effects). Identical requests within
+// a short window share one in-flight promise and a small TTL response cache.
+// `force: true` bypasses and invalidates all entries for that song.
+// ---------------------------------------------------------------------------
+const LYRICS_CACHE_TTL_MS = 5 * 60 * 1000;
+const LYRICS_CACHE_MAX_ENTRIES = 12;
+
+const lyricsResponseCache = new Map<
+  string,
+  { at: number; data: FetchSongLyricsResponse }
+>();
+const lyricsInFlight = new Map<string, Promise<FetchSongLyricsResponse>>();
+
+function lyricsCacheKey(songId: string, body: Record<string, unknown>): string {
+  // Sort keys so logically-identical param objects produce the same key.
+  const stable = Object.keys(body)
+    .sort()
+    .map((k) => `${k}:${JSON.stringify(body[k])}`)
+    .join("|");
+  return `${songId}\u001f${stable}`;
+}
+
+function invalidateLyricsCacheForSong(songId: string): void {
+  const prefix = `${songId}\u001f`;
+  for (const key of lyricsResponseCache.keys()) {
+    if (key.startsWith(prefix)) lyricsResponseCache.delete(key);
+  }
+}
+
+/** Wait for `promise` but reject early if the caller's signal aborts. */
+function raceWithSignal<T>(promise: Promise<T>, signal?: AbortSignal): Promise<T> {
+  if (!signal) return promise;
+  if (signal.aborted) {
+    return Promise.reject(new DOMException("Aborted", "AbortError"));
+  }
+  return new Promise<T>((resolve, reject) => {
+    const onAbort = () =>
+      reject(new DOMException("Aborted", "AbortError"));
+    signal.addEventListener("abort", onAbort, { once: true });
+    promise.then(
+      (value) => {
+        signal.removeEventListener("abort", onAbort);
+        resolve(value);
+      },
+      (error) => {
+        signal.removeEventListener("abort", onAbort);
+        reject(error);
+      }
+    );
+  });
+}
+
 export async function fetchSongLyrics(
   songId: string,
   params: FetchSongLyricsParams = {}
@@ -159,17 +239,63 @@ export async function fetchSongLyrics(
     ...body
   } = params;
 
-  return apiRequest<FetchSongLyricsResponse>({
+  const key = lyricsCacheKey(songId, body);
+
+  if (body.force) {
+    // Forced refetch (e.g. changing lyrics source): drop every cached
+    // variant for this song so subsequent reads see the new content.
+    invalidateLyricsCacheForSong(songId);
+  } else {
+    const cached = lyricsResponseCache.get(key);
+    if (cached && Date.now() - cached.at < LYRICS_CACHE_TTL_MS) {
+      return cached.data;
+    }
+    const inFlight = lyricsInFlight.get(key);
+    if (inFlight) {
+      // Share the request, but honor this caller's own abort signal without
+      // cancelling the request for other awaiters.
+      return raceWithSignal(inFlight, signal);
+    }
+  }
+
+  // The shared request deliberately runs without the caller's signal —
+  // aborting one awaiter must not cancel it for the others. Callers race
+  // against their own signal instead.
+  const requestPromise = apiRequest<FetchSongLyricsResponse>({
     path: `/api/songs/${encodeURIComponent(songId)}`,
     method: "POST",
     body: {
       action: "fetch-lyrics",
       ...body,
     },
-    signal,
     timeout,
     retry,
-  });
+  })
+    .then((data) => {
+      lyricsResponseCache.set(key, { at: Date.now(), data });
+      // Simple LRU-ish cap: drop the oldest insertion order entries.
+      while (lyricsResponseCache.size > LYRICS_CACHE_MAX_ENTRIES) {
+        const oldest = lyricsResponseCache.keys().next().value;
+        if (oldest === undefined) break;
+        lyricsResponseCache.delete(oldest);
+      }
+      return data;
+    })
+    .finally(() => {
+      lyricsInFlight.delete(key);
+    });
+
+  if (!body.force) {
+    lyricsInFlight.set(key, requestPromise);
+  }
+
+  return raceWithSignal(requestPromise, signal);
+}
+
+/** Test-only helper: reset the fetch-lyrics dedup caches. */
+export function __clearLyricsCachesForTests(): void {
+  lyricsResponseCache.clear();
+  lyricsInFlight.clear();
 }
 
 export async function clearSongCachedData(
@@ -180,6 +306,7 @@ export async function clearSongCachedData(
     clearSoramimi?: boolean;
   } = {}
 ): Promise<Record<string, unknown>> {
+  invalidateLyricsCacheForSong(songId);
   return apiRequest<Record<string, unknown>>({
     path: `/api/songs/${encodeURIComponent(songId)}`,
     method: "POST",
