@@ -20,6 +20,7 @@ import {
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { isMobileSafari } from "@/utils/device";
 import { MEDIA_ANALYTICS, track } from "@/utils/analytics";
+import { formatSecondsMmSs } from "@/utils/formatDuration";
 
 export const MTV_CHANNEL_ID = "mtv";
 export const RYO_TV_CHANNEL_ID = "ryos-picks";
@@ -368,14 +369,6 @@ export function useTvLogic({ isWindowOpen, isForeground }: UseTvLogicOptions) {
     ]
   );
 
-  const formatTime = useCallback((seconds: number): string => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = Math.floor(seconds % 60);
-    return `${String(minutes).padStart(2, "0")}:${String(
-      remainingSeconds
-    ).padStart(2, "0")}`;
-  }, []);
-
   const handleProgress = useCallback(
     (state: { playedSeconds: number }) => {
       setPlayedSeconds(state.playedSeconds);
@@ -595,7 +588,7 @@ export function useTvLogic({ isWindowOpen, isForeground }: UseTvLogicOptions) {
     channels,
     animationDirection,
     videoIndex,
-    formatTime,
+    formatTime: formatSecondsMmSs,
     isDraggingSeek,
     setIsDraggingSeek,
     dragSeekTime,

@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useRef } from "react";
+import { memo, useEffect, useMemo, useRef, type Ref } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { getChannelLogo, type Channel } from "@/apps/tv/data/channels";
@@ -142,6 +142,96 @@ const TvChannelLogoStrip = memo(function TvChannelLogoStrip({
   );
 });
 
+// ── Video list item ───────────────────────────────────────────────────────────
+
+interface TvVideoDrawerItemProps {
+  video: Channel["videos"][number];
+  index: number;
+  isActive: boolean;
+  showTrashAlways: boolean;
+  removeLabel: string;
+  onSelectVideo: (index: number) => void;
+  onRemoveVideo?: (videoId: string) => void;
+  itemRef?: Ref<HTMLLIElement>;
+  isMacOSTheme: boolean;
+  isSystem7: boolean;
+  isXpTheme: boolean;
+  isWin98: boolean;
+}
+
+const TvVideoDrawerItem = memo(function TvVideoDrawerItem({
+  video,
+  index,
+  isActive,
+  showTrashAlways,
+  removeLabel,
+  onSelectVideo,
+  onRemoveVideo,
+  itemRef,
+  isMacOSTheme,
+  isSystem7,
+  isXpTheme,
+  isWin98,
+}: TvVideoDrawerItemProps) {
+  return (
+    <li ref={itemRef} className="group relative min-w-0">
+      <button
+        type="button"
+        onClick={() => onSelectVideo(index)}
+        className={cn(
+          "w-full text-left px-3 py-1.5 flex items-center gap-2 focus:outline-none transition-colors duration-100",
+          isMacOSTheme && "font-lucida-grande text-[11px] text-black/90 hover:bg-[#3875D7]/12",
+          isMacOSTheme && isActive && "tv-drawer-mac-row-active",
+          isSystem7 && "font-chicago text-[12px] hover:bg-black hover:text-white",
+          isSystem7 && isActive && "bg-black text-white hover:bg-black hover:text-white",
+          isXpTheme && "font-tahoma text-[11px] hover:bg-[#316AC5]/15",
+          isXpTheme && isActive && "bg-[#316AC5] text-white hover:bg-[#316AC5]"
+        )}
+      >
+        <span className={cn("shrink-0 w-5 text-right tabular-nums opacity-70", isActive && "opacity-100")}>
+          {String(index + 1).padStart(2, "0")}
+        </span>
+        <span className="flex-1 min-w-0 truncate">{video.title}</span>
+      </button>
+      {onRemoveVideo && (
+        <button
+          type="button"
+          aria-label={removeLabel}
+          title={removeLabel}
+          className={cn(
+            "tv-drawer-remove-btn absolute right-1 top-1/2 z-[1] flex -translate-y-1/2 items-center justify-center p-1 transition-opacity duration-150",
+            "focus:outline-none focus-visible:pointer-events-auto focus-visible:opacity-100 focus-visible:ring-2",
+            isMacOSTheme ? "rounded-[4px] focus-visible:ring-[#3875D7]/60" : "focus-visible:ring-offset-1",
+            showTrashAlways
+              ? "pointer-events-auto opacity-100"
+              : "pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100",
+            isMacOSTheme && cn(
+              "text-black/45 hover:bg-red-600/14 hover:text-red-700",
+              isActive && "text-white/75 hover:text-white hover:bg-white/18"
+            ),
+            isSystem7 && cn(
+              "rounded-none border border-transparent",
+              isActive
+                ? "text-white/75 hover:text-white hover:bg-white/15 hover:border-white/25 focus-visible:ring-white/60"
+                : "text-black/55 hover:text-red-700 hover:bg-black/[0.06] hover:border-black/15"
+            ),
+            isXpTheme && !isWin98 && cn(
+              "rounded-sm",
+              isActive
+                ? "text-white/85 hover:text-white hover:bg-white/18 focus-visible:ring-white/70"
+                : "text-black/50 hover:text-red-700 hover:bg-red-500/12 focus-visible:ring-[#316AC5]/50"
+            ),
+            isWin98 && "rounded-none border border-transparent text-[#303030] hover:text-[#c00000] hover:bg-[#c0c0c0] hover:border-[#808080] focus-visible:ring-[#000080]/40"
+          )}
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onRemoveVideo(video.id); }}
+        >
+          <Trash size={14} weight="regular" className="pointer-events-none shrink-0" />
+        </button>
+      )}
+    </li>
+  );
+});
+
 // ── Main drawer component ─────────────────────────────────────────────────────
 
 interface TvVideoDrawerProps {
@@ -229,121 +319,45 @@ export const TvVideoDrawer = memo(function TvVideoDrawer({
 
   const listUlClass = cn("flex-1 min-h-0 overflow-y-auto", !isMacOSTheme && "bg-white");
 
-  // ── Shared video list renderer ─────────────────────────────────────────────
-  const renderMacVideoItems = () =>
-    videos.length === 0 ? (
-      <li className="px-3 py-2 font-lucida-grande text-[11px] opacity-60">
-        {t("apps.tv.drawer.empty")}
-      </li>
-    ) : (
-      videos.map((video, index) => {
-        const isActive = index === currentVideoIndex;
-        return (
-          <li key={video.id} ref={isActive ? activeItemRef : undefined} className="group relative min-w-0">
-            <button
-              type="button"
-              onClick={() => onSelectVideo(index)}
-              className={cn(
-                "w-full text-left px-3 py-1.5 flex items-center gap-2 focus:outline-none transition-colors duration-100",
-                "font-lucida-grande text-[11px] text-black/90 hover:bg-[#3875D7]/12",
-                isActive && "tv-drawer-mac-row-active"
-              )}
-            >
-              <span className={cn("shrink-0 w-5 text-right tabular-nums opacity-70", isActive && "opacity-100")}>
-                {String(index + 1).padStart(2, "0")}
-              </span>
-              <span className="flex-1 min-w-0 truncate">{video.title}</span>
-            </button>
-            {onRemoveVideo && (
-              <button
-                type="button"
-                aria-label={t("apps.tv.drawer.removeVideo")}
-                title={t("apps.tv.drawer.removeVideo")}
-                className={cn(
-                  "tv-drawer-remove-btn absolute right-1 top-1/2 z-[1] flex -translate-y-1/2 items-center justify-center rounded-[4px] p-1 transition-opacity duration-150",
-                  "focus:outline-none focus-visible:pointer-events-auto focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-[#3875D7]/60",
-                  showTrashAlways
-                    ? "pointer-events-auto opacity-100"
-                    : "pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100",
-                  "text-black/45 hover:bg-red-600/14 hover:text-red-700",
-                  isActive && "text-white/75 hover:text-white hover:bg-white/18"
-                )}
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onRemoveVideo(video.id); }}
-              >
-                <Trash size={14} weight="regular" className="pointer-events-none shrink-0" />
-              </button>
-            )}
-          </li>
-        );
-      })
-    );
-
-  const renderOtherVideoItems = () =>
-    videos.length === 0 ? (
-      <li className={cn("px-3 py-2 text-[11px] opacity-60", isSystem7 && "font-chicago", isXpTheme && "font-tahoma")}>
-        {t("apps.tv.drawer.empty")}
-      </li>
-    ) : (
-      videos.map((video, index) => {
-        const isActive = index === currentVideoIndex;
-        return (
-          <li key={video.id} ref={isActive ? activeItemRef : undefined} className="group relative min-w-0">
-            <button
-              type="button"
-              onClick={() => onSelectVideo(index)}
-              className={cn(
-                "w-full text-left px-3 py-1.5 flex items-center gap-2 focus:outline-none transition-colors duration-100",
-                isSystem7 && "font-chicago text-[12px] hover:bg-black hover:text-white",
-                isXpTheme && "font-tahoma text-[11px] hover:bg-[#316AC5]/15",
-                isActive && isSystem7 && "bg-black text-white hover:bg-black hover:text-white",
-                isActive && isXpTheme && "bg-[#316AC5] text-white hover:bg-[#316AC5]"
-              )}
-            >
-              <span className={cn("shrink-0 w-5 text-right tabular-nums opacity-70", isActive && "opacity-100")}>
-                {String(index + 1).padStart(2, "0")}
-              </span>
-              <span className="flex-1 min-w-0 truncate">{video.title}</span>
-            </button>
-            {onRemoveVideo && (
-              <button
-                type="button"
-                aria-label={t("apps.tv.drawer.removeVideo")}
-                title={t("apps.tv.drawer.removeVideo")}
-                className={cn(
-                  "tv-drawer-remove-btn absolute right-1 top-1/2 z-[1] flex -translate-y-1/2 items-center justify-center p-1 transition-opacity duration-150",
-                  "focus:outline-none focus-visible:pointer-events-auto focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-1",
-                  showTrashAlways
-                    ? "pointer-events-auto opacity-100"
-                    : "pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100",
-                  isSystem7 && cn(
-                    "rounded-none border border-transparent",
-                    isActive
-                      ? "text-white/75 hover:text-white hover:bg-white/15 hover:border-white/25 focus-visible:ring-white/60"
-                      : "text-black/55 hover:text-red-700 hover:bg-black/[0.06] hover:border-black/15"
-                  ),
-                  isXpTheme && !isWin98 && cn(
-                    "rounded-sm",
-                    isActive
-                      ? "text-white/85 hover:text-white hover:bg-white/18 focus-visible:ring-white/70"
-                      : "text-black/50 hover:text-red-700 hover:bg-red-500/12 focus-visible:ring-[#316AC5]/50"
-                  ),
-                  isWin98 && "rounded-none border border-transparent text-[#303030] hover:text-[#c00000] hover:bg-[#c0c0c0] hover:border-[#808080] focus-visible:ring-[#000080]/40"
-                )}
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onRemoveVideo(video.id); }}
-              >
-                <Trash size={14} weight="regular" className="pointer-events-none shrink-0" />
-              </button>
-            )}
-          </li>
-        );
-      })
-    );
+  const removeLabel = t("apps.tv.drawer.removeVideo");
 
   return (
     <AppDrawer isOpen={isOpen} data-tv-drawer>
       {channelLogoStrip}
       <ul ref={listRef} className={listUlClass} aria-label={listAriaLabel}>
-        {isMacOSTheme ? renderMacVideoItems() : renderOtherVideoItems()}
+        {videos.length === 0 ? (
+          <li
+            className={cn(
+              "px-3 py-2 text-[11px] opacity-60",
+              isMacOSTheme && "font-lucida-grande",
+              isSystem7 && "font-chicago",
+              isXpTheme && "font-tahoma"
+            )}
+          >
+            {t("apps.tv.drawer.empty")}
+          </li>
+        ) : (
+          videos.map((video, index) => {
+            const isActive = index === currentVideoIndex;
+            return (
+              <TvVideoDrawerItem
+                key={video.id}
+                video={video}
+                index={index}
+                isActive={isActive}
+                showTrashAlways={showTrashAlways}
+                removeLabel={removeLabel}
+                onSelectVideo={onSelectVideo}
+                onRemoveVideo={onRemoveVideo}
+                itemRef={isActive ? activeItemRef : undefined}
+                isMacOSTheme={isMacOSTheme}
+                isSystem7={isSystem7}
+                isXpTheme={isXpTheme}
+                isWin98={isWin98}
+              />
+            );
+          })
+        )}
       </ul>
     </AppDrawer>
   );

@@ -10,7 +10,7 @@ import {
   VinylRecord,
 } from "@phosphor-icons/react";
 import { formatOffset } from "./utils";
-import { Skeleton } from "./Skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { SongDetailPanelViewModel } from "./useSongDetailPanel";
 
 type Props = Pick<

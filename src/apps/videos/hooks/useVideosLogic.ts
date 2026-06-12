@@ -14,6 +14,7 @@ import { parseYouTubeVideoId } from "@/utils/youtubeUrl";
 import { fetchYouTubeOembed, parseYouTubeTitle } from "@/utils/youtubeMetadata";
 import { onAppUpdate } from "@/utils/appEventBus";
 import { MEDIA_ANALYTICS, track } from "@/utils/analytics";
+import { formatSecondsMmSs } from "@/utils/formatDuration";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 
 interface Video {
@@ -309,14 +310,6 @@ export function useVideosLogic({
     },
     [safeSetCurrentVideoId]
   );
-
-  const formatTime = useCallback((seconds: number): string => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${String(minutes).padStart(2, "0")}:${String(
-      remainingSeconds
-    ).padStart(2, "0")}`;
-  }, []);
 
   const extractVideoId = useCallback(
     (url: string): string | null => parseYouTubeVideoId(url),
@@ -1129,7 +1122,7 @@ export function useVideosLogic({
     addVideo,
     processVideoId,
     showStatus,
-    formatTime,
+    formatTime: formatSecondsMmSs,
 
     // Overlay handlers
     handleOverlayPointerDown,

@@ -23,15 +23,7 @@ import { InfinitePcGameGridCard } from "./InfinitePcGameGridCard";
 import { INFINITE_PC_PRESET_AVERAGE_COLORS } from "../presetAverageColors.generated";
 import { getPcPresetName, getPcPresetYear } from "../presetI18n";
 import { SquaresFour } from "@phosphor-icons/react";
-
-function formatBytes(bytes: number): string {
-  if (!bytes || bytes < 0) return "0 MB";
-  const mb = bytes / (1024 * 1024);
-  if (mb >= 1024) return `${(mb / 1024).toFixed(2)} GB`;
-  if (mb >= 100) return `${Math.round(mb)} MB`;
-  if (mb >= 10) return `${mb.toFixed(1)} MB`;
-  return `${mb.toFixed(2)} MB`;
-}
+import { formatBytes } from "@/utils/formatBytes";
 
 function PcLoadingOverlay({
   presetName,

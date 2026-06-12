@@ -28,6 +28,7 @@ import {
   initialUiState,
   profileUiReducer,
 } from "./profile-ui-reducer";
+import { formatAdminRelativeTime } from "../../utils/adminTime";
 
 export function useUserProfilePanel({
   username,
@@ -307,17 +308,8 @@ export function useUserProfilePanel({
     }
   };
 
-  const formatRelativeTime = (timestamp: number) => {
-    const diff = Date.now() - timestamp;
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(diff / 3600000);
-    const days = Math.floor(diff / 86400000);
-
-    if (minutes < 1) return t("apps.admin.time.now");
-    if (minutes < 60) return t("apps.admin.time.minutesAgo", { count: minutes });
-    if (hours < 24) return t("apps.admin.time.hoursAgo", { count: hours });
-    return t("apps.admin.time.daysAgo", { count: days });
-  };
+  const formatRelativeTime = (timestamp: number) =>
+    formatAdminRelativeTime(timestamp, t);
 
   const formatDate = (timestamp: number) => {
     return new Date(timestamp).toLocaleString();

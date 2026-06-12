@@ -1,4 +1,4 @@
-import React, { useReducer, useRef, useEffect } from "react";
+import React, { useReducer, useRef, useEffect, Suspense } from "react";
 import {
   Dialog,
   DialogContent,
@@ -12,8 +12,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { QRCodeSVG } from "qrcode.react";
 import { useTranslation } from "react-i18next";
+
+// Lazy-load qrcode.react so it isn't bundled with always-mounted menus;
+// it's only fetched while the share dialog is actually open.
+const QRCodeSVG = React.lazy(() =>
+  import("qrcode.react").then((m) => ({ default: m.QRCodeSVG }))
+);
 
 interface ShareItemDialogProps {
   isOpen: boolean;
@@ -169,13 +174,15 @@ export function ShareItemDialog({
           </div>
         ) : shareUrl ? (
           <div className="bg-white p-1.5 size-32 flex items-center justify-center">
-            <QRCodeSVG
-              value={shareUrl}
-              size={112}
-              level="M"
-              includeMargin={false}
-              className="size-28"
-            />
+            <Suspense fallback={null}>
+              <QRCodeSVG
+                value={shareUrl}
+                size={112}
+                level="M"
+                includeMargin={false}
+                className="size-28"
+              />
+            </Suspense>
           </div>
         ) : (
           <div className="size-32 flex items-center justify-center bg-neutral-100 rounded">

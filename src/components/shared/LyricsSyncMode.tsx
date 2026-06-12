@@ -16,6 +16,7 @@ import {
   FuriganaSegment,
 } from "@/utils/romanization";
 import { parseLyricTimestamps, findCurrentLineIndex } from "@/utils/lyricsSearch";
+import { formatMsMmSs } from "@/utils/formatDuration";
 
 // Memoized lyric line component to prevent unnecessary re-renders.
 //
@@ -109,16 +110,6 @@ export interface LyricsSyncModeProps {
 function formatOffset(ms: number): string {
   const sign = ms >= 0 ? "+" : "";
   return `${sign}${(ms / 1000).toFixed(2)}s`;
-}
-
-/**
- * Format time in milliseconds to mm:ss
- */
-function formatTime(ms: number): string {
-  const totalSeconds = Math.floor(ms / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
 /**
@@ -414,7 +405,7 @@ export function LyricsSyncMode({
 
         {/* Seekbar */}
         <div className="flex items-center gap-2 text-white text-xs">
-          <span className="w-10 text-right opacity-70">{formatTime(currentTimeMs)}</span>
+          <span className="w-10 text-right opacity-70">{formatMsMmSs(currentTimeMs)}</span>
           <input
             type="range"
             min={0}
@@ -427,7 +418,7 @@ export function LyricsSyncMode({
                        [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:bg-white 
                        [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:cursor-pointer"
           />
-          <span className="w-10 opacity-70">{formatTime(durationMs)}</span>
+          <span className="w-10 opacity-70">{formatMsMmSs(durationMs)}</span>
         </div>
 
         {/* Instructions */}

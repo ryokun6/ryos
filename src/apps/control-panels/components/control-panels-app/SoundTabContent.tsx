@@ -7,7 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { SYNTH_PRESETS } from "@/hooks/useChatSynth";
+import { SYNTH_PRESETS } from "@/hooks/chatSynthPresets";
 import { VolumeMixer } from "../VolumeMixer";
 import type { TabStyleConfig } from "@/utils/tabStyles";
 

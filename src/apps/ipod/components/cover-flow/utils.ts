@@ -2,7 +2,7 @@ import {
   getYouTubeVideoId,
   formatKugouImageUrl,
 } from "../../constants";
-import { formatSecondsAsMinutesSeconds } from "@/utils/timeFormat";
+import { formatMsMmSs } from "@/utils/formatDuration";
 import { youtubeThumbnailUrl } from "@/utils/youtubeUrl";
 import type { Track } from "@/stores/useIpodStore";
 import type { CoverFlowItem } from "./types";
@@ -13,7 +13,7 @@ import type { CoverFlowItem } from "./types";
 // their length yet (mostly a YouTube-only edge case).
 export function formatTrackDuration(durationMs?: number): string {
   if (!durationMs || durationMs <= 0) return "";
-  return formatSecondsAsMinutesSeconds(durationMs / 1000);
+  return formatMsMmSs(durationMs);
 }
 
 // Resolve the best cover URL for a track. Apple Music supplies a
