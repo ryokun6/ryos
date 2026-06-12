@@ -1,8 +1,7 @@
 import type { ChangeEvent, Dispatch, RefObject, SetStateAction } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
 import {
-  MagnifyingGlass,
   Trash,
   ArrowsClockwise,
   Funnel,
@@ -96,37 +95,27 @@ export function AdminToolbar({
       }
     >
       {activeSection === "users" && !selectedRoomId && (
-        <div className="relative flex-1">
-          <MagnifyingGlass
-            className="absolute left-2 top-1/2 -translate-y-1/2 size-3.5 text-neutral-400"
-            weight="bold"
-          />
-          <Input
-            placeholder={t("apps.admin.search.placeholder")}
-            value={userSearch}
-            onChange={(e) => setUserSearch(e.target.value)}
-            className="pl-7 h-7 text-[12px]"
-          />
-        </div>
+        <SearchInput
+          placeholder={t("apps.admin.search.placeholder")}
+          value={userSearch}
+          onChange={setUserSearch}
+          className="flex-1"
+          inputClassName="h-7 text-[12px]"
+        />
       )}
 
       {activeSection === "songs" && !selectedRoomId && (
         <>
-          <div className="relative flex-1">
-            <MagnifyingGlass
-              className="absolute left-2 top-1/2 -translate-y-1/2 size-3.5 text-neutral-400"
-              weight="bold"
-            />
-            <Input
-              placeholder={t(
-                "apps.admin.search.songsPlaceholder",
-                "Search songs...",
-              )}
-              value={songSearch}
-              onChange={(e) => setSongSearch(e.target.value)}
-              className="pl-7 h-7 text-[12px]"
-            />
-          </div>
+          <SearchInput
+            placeholder={t(
+              "apps.admin.search.songsPlaceholder",
+              "Search songs...",
+            )}
+            value={songSearch}
+            onChange={setSongSearch}
+            className="flex-1"
+            inputClassName="h-7 text-[12px]"
+          />
           <Button
             variant="ghost"
             size="sm"

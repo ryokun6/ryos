@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
 import { Sparkle } from "@phosphor-icons/react";
 import type { AppStoreViewModel } from "./useAppStore";
 import { AppStoreAppletItem } from "./AppStoreAppletItem";
@@ -44,21 +44,17 @@ export function AppStoreListView({ vm }: AppStoreListViewProps) {
             : undefined,
         }}
       >
-        <Input
-          type="text"
+        <SearchInput
           placeholder={t("apps.applet-viewer.labels.searchApplets")}
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className={`flex-1 pl-2 ${
-            isXpTheme ? "!text-[11px]" : isMacChrome ? "!text-[12px] h-[26px]" : "!text-[16px]"
-          }`}
-          style={
-            isMacChrome
-              ? {
-                  paddingTop: "2px",
-                  paddingBottom: "2px",
-                }
-              : undefined
+          onChange={setSearchQuery}
+          className="flex-1"
+          inputClassName={
+            isXpTheme
+              ? "!text-[11px]"
+              : isMacChrome
+                ? "!text-[12px] h-[26px] py-[2px]"
+                : "!text-[16px]"
           }
         />
         <Button
