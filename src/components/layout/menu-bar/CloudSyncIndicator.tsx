@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowsClockwise } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "motion/react";
@@ -16,7 +16,6 @@ import { getAppIconPath } from "@/config/appRegistry";
 import type { AppId } from "@/config/appRegistryData";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
-import { useSound, Sounds } from "@/hooks/useSound";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 import {
   getCloudSyncCategory,
@@ -74,8 +73,6 @@ const SYNC_CATEGORY_ORDER: CloudSyncCategory[] = [
   "stickies",
 ];
 
-const HOVER_CLOSE_DELAY_MS = 200;
-
 const MENU_VALUE = "cloud-sync";
 
 interface SyncCategoryActivity {
@@ -92,11 +89,8 @@ export function CloudSyncIndicator() {
     isSystem7Theme,
   } = useThemeFlags();
   const launchApp = useLaunchApp();
-  const { play: playMenuOpen } = useSound(Sounds.MENU_OPEN);
-  const { play: playMenuClose } = useSound(Sounds.MENU_CLOSE);
   const [menuValue, setMenuValue] = useState("");
   const isOpen = menuValue === MENU_VALUE;
-  const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { isCheckingRemote, lastCheckedAt, lastError, domainStatus } =
     useCloudSyncStore(
@@ -127,50 +121,6 @@ export function CloudSyncIndicator() {
 
   const syncLabel = t("apps.control-panels.autoSync.title");
 
-  const cancelScheduledClose = useCallback(() => {
-    if (closeTimeoutRef.current) {
-      clearTimeout(closeTimeoutRef.current);
-      closeTimeoutRef.current = null;
-    }
-  }, []);
-
-  useEffect(() => cancelScheduledClose, [cancelScheduledClose]);
-
-  const openMenu = useCallback(() => {
-    cancelScheduledClose();
-    setMenuValue((wasValue) => {
-      if (wasValue !== MENU_VALUE) playMenuOpen();
-      return MENU_VALUE;
-    });
-  }, [cancelScheduledClose, playMenuOpen]);
-
-  const scheduleClose = useCallback(() => {
-    cancelScheduledClose();
-    closeTimeoutRef.current = setTimeout(() => {
-      closeTimeoutRef.current = null;
-      setMenuValue((wasValue) => {
-        if (wasValue === MENU_VALUE) playMenuClose();
-        return "";
-      });
-    }, HOVER_CLOSE_DELAY_MS);
-  }, [cancelScheduledClose, playMenuClose]);
-
-  const handlePointerEnter = useCallback(
-    (event: React.PointerEvent) => {
-      if (event.pointerType !== "mouse") return;
-      openMenu();
-    },
-    [openMenu]
-  );
-
-  const handlePointerLeave = useCallback(
-    (event: React.PointerEvent) => {
-      if (event.pointerType !== "mouse") return;
-      scheduleClose();
-    },
-    [scheduleClose]
-  );
-
   // Keep the indicator mounted while the menu is open so the menu does
   // not vanish mid-read when the last sync operation finishes.
   if (isXpTheme || (!isCloudSyncActive && !isOpen)) return null;
@@ -181,34 +131,17 @@ export function CloudSyncIndicator() {
     AUTO_SYNC_TIME_KEYS
   );
 
-  const itemRowClass = "flex items-center gap-2 px-2 py-1 text-sm";
-  const itemRowStyle: React.CSSProperties = {
-    fontFamily: isMacOSTheme ? "var(--os-font-ui)" : undefined,
-    fontSize: isMacOSTheme ? "var(--os-menu-item-font-size)" : undefined,
-    ...(isMacOSTheme && {
-      padding: "4px 16px",
-      WebkitFontSmoothing: "antialiased" as const,
-      textShadow: "0 2px 3px rgba(0, 0, 0, 0.25)",
-    }),
-  };
-
   return (
     <Menubar
       value={menuValue}
-      onValueChange={(value) => {
-        cancelScheduledClose();
-        setMenuValue(value);
-      }}
-      className="flex items-center border-none bg-transparent p-0 space-x-0 rounded-none h-full"
+      onValueChange={setMenuValue}
+      className="flex items-stretch self-stretch border-none bg-transparent p-0 space-x-0 rounded-none h-full"
     >
       <MenubarMenu value={MENU_VALUE}>
         <MenubarTrigger
-          className="flex items-center justify-center px-1 border-none focus-visible:ring-0"
-          style={{ marginRight: "2px" }}
+          className="flex items-center justify-center px-2 border-none focus-visible:ring-0"
           title={syncLabel}
           aria-label={syncLabel}
-          onPointerEnter={handlePointerEnter}
-          onPointerLeave={handlePointerLeave}
         >
           <motion.span
             initial={{ opacity: 0, scale: 0.85 }}
@@ -233,9 +166,6 @@ export function CloudSyncIndicator() {
           align="end"
           sideOffset={1}
           className="min-w-[200px]"
-          onCloseAutoFocus={(event) => event.preventDefault()}
-          onPointerEnter={cancelScheduledClose}
-          onPointerLeave={handlePointerLeave}
         >
           <AnimatePresence initial={false}>
             {activeCategories.map(({ category, isUploading }) => {
@@ -249,7 +179,10 @@ export function CloudSyncIndicator() {
                   transition={{ duration: 0.15, ease: "easeOut" }}
                   className="overflow-hidden"
                 >
-                  <div className={itemRowClass} style={itemRowStyle}>
+                  <MenubarItem
+                    className="text-md h-6 px-3 flex items-center gap-2"
+                    onSelect={(event) => event.preventDefault()}
+                  >
                     <ThemedIcon
                       name={getAppIconPath(meta.appId)}
                       alt=""
@@ -261,31 +194,31 @@ export function CloudSyncIndicator() {
                         ? t("apps.control-panels.autoSync.uploading")
                         : t("apps.control-panels.autoSync.fetching")}
                     </span>
-                  </div>
+                  </MenubarItem>
                 </motion.div>
               );
             })}
           </AnimatePresence>
           {activeCategories.length === 0 && (
-            <div className={itemRowClass} style={itemRowStyle}>
-              <span className="opacity-70">
-                {lastCheckedRelative
-                  ? t("apps.control-panels.autoSync.lastChecked", {
-                      date: lastCheckedRelative,
-                    })
-                  : t("apps.control-panels.autoSync.waiting")}
-              </span>
-            </div>
+            <MenubarItem disabled className="text-md h-6 px-3 opacity-70">
+              {lastCheckedRelative
+                ? t("apps.control-panels.autoSync.lastChecked", {
+                    date: lastCheckedRelative,
+                  })
+                : t("apps.control-panels.autoSync.waiting")}
+            </MenubarItem>
           )}
           {lastError && (
-            <div className={itemRowClass} style={itemRowStyle}>
-              <span className="text-red-600 break-words">
-                {t("apps.control-panels.autoSync.error", { error: lastError })}
-              </span>
-            </div>
+            <MenubarItem
+              disabled
+              className="text-md min-h-6 px-3 text-red-600 break-words whitespace-normal"
+            >
+              {t("apps.control-panels.autoSync.error", { error: lastError })}
+            </MenubarItem>
           )}
           <MenubarSeparator />
           <MenubarItem
+            className="text-md h-6 px-3"
             onSelect={() => {
               setMenuValue("");
               launchApp("control-panels", {
