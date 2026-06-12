@@ -68,6 +68,44 @@ function normalizeClientFuriganaSegments(segments: FuriganaSegment[]): FuriganaS
 }
 
 /**
+ * Batches snapshots of a progressively-built Map into React state at most once
+ * per animation frame. Streaming endpoints deliver one lyric line per SSE
+ * event; cloning the whole Map and re-rendering for every line is O(n²) in
+ * allocations. Callers must invoke `flushNow()` (or commit their own final
+ * state update) when the stream completes or errors, and `cancel()` on
+ * cleanup so a pending flush can't clobber a newer request's state.
+ */
+function createBatchedMapFlusher<K, V>(
+  source: Map<K, V>,
+  commit: (snapshot: Map<K, V>) => void,
+  shouldCommit: () => boolean
+) {
+  let rafId: number | null = null;
+  const cancel = () => {
+    if (rafId !== null) {
+      cancelAnimationFrame(rafId);
+      rafId = null;
+    }
+  };
+  return {
+    schedule() {
+      if (rafId !== null) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        if (!shouldCommit()) return;
+        commit(new Map(source));
+      });
+    },
+    flushNow() {
+      cancel();
+      if (!shouldCommit()) return;
+      commit(new Map(source));
+    },
+    cancel,
+  };
+}
+
+/**
  * Hook for fetching and managing Japanese furigana annotations and other romanization
  * 
  * Handles:
@@ -348,9 +386,16 @@ export function useFurigana({
     // Track this request so we can detect duplicates
     furiganaForceRequestRef.current = { controller, requestId };
 
-    // Use line-by-line streaming for furigana
+    // Use line-by-line streaming for furigana. State flushes are batched to
+    // one Map clone per animation frame instead of one per streamed line.
     const progressiveMap = new Map<string, FuriganaSegment[]>();
-    
+    const progressiveFlusher = createBatchedMapFlusher(
+      progressiveMap,
+      setFuriganaMap,
+      () =>
+        !controller.signal.aborted && effectSongId === currentSongIdRef.current
+    );
+
     processFuriganaSSE(effectSongId, {
       force: isFuriganaForceRequest,
       signal: controller.signal,
@@ -374,11 +419,14 @@ export function useFurigana({
             currentLines[lineIndex].startTimeMs,
             normalizeClientFuriganaSegments(segments)
           );
-          setFuriganaMap(new Map(progressiveMap));
+          progressiveFlusher.schedule();
         }
       },
     })
       .then((result: FuriganaResult) => {
+        // Cancel any pending progressive flush so it can't overwrite the
+        // complete map committed below.
+        progressiveFlusher.cancel();
         if (controller.signal.aborted) return;
         // Check for stale request
         if (effectSongId !== currentSongIdRef.current) return;
@@ -400,6 +448,9 @@ export function useFurigana({
         markFuriganaHandled();
       })
       .catch((err) => {
+        // Guarantee lines received before the error are committed (no-op when
+        // aborted or stale thanks to the flusher's internal guard).
+        progressiveFlusher.flushNow();
         if (controller.signal.aborted) return;
         // Check for stale request
         if (effectSongId !== currentSongIdRef.current) return;
@@ -427,6 +478,7 @@ export function useFurigana({
     return () => {
       // Always abort this request on cleanup - this controller is scoped to this effect run
       controller.abort();
+      progressiveFlusher.cancel();
       // Only clear the ref if this is still the current request
       const isThisRequest = furiganaForceRequestRef.current?.requestId === requestId;
       if (isThisRequest) {
@@ -548,8 +600,15 @@ export function useFurigana({
     // Track this request so we can detect duplicates
     soramimiForceRequestRef.current = { controller, requestId };
 
-    // Use line-by-line streaming for soramimi
+    // Use line-by-line streaming for soramimi. State flushes are batched to
+    // one Map clone per animation frame instead of one per streamed line.
     const progressiveMap = new Map<string, FuriganaSegment[]>();
+    const progressiveFlusher = createBatchedMapFlusher(
+      progressiveMap,
+      setSoramimiMap,
+      () =>
+        !controller.signal.aborted && effectSongId === currentSongIdRef.current
+    );
     
     // For Japanese songs, convert furigana map to array format for the API
     // Computed here (not in useMemo) to avoid re-running this effect during furigana streaming
@@ -593,11 +652,14 @@ export function useFurigana({
         if (lineIndex < currentLines.length && segments) {
           console.log(`[Soramimi] Line ${lineIndex} received:`, segments.length, 'segments');
           progressiveMap.set(currentLines[lineIndex].startTimeMs, segments);
-          setSoramimiMap(new Map(progressiveMap));
+          progressiveFlusher.schedule();
         }
       },
     })
       .then((result: SoramimiResult) => {
+        // Cancel any pending progressive flush so it can't overwrite the
+        // complete map committed below.
+        progressiveFlusher.cancel();
         if (controller.signal.aborted) return;
         // Check for stale request
         if (effectSongId !== currentSongIdRef.current) return;
@@ -616,6 +678,9 @@ export function useFurigana({
         markSoramimiHandled();
       })
       .catch((err) => {
+        // Guarantee lines received before the error are committed (no-op when
+        // aborted or stale thanks to the flusher's internal guard).
+        progressiveFlusher.flushNow();
         if (controller.signal.aborted) return;
         // Check for stale request
         if (effectSongId !== currentSongIdRef.current) return;
@@ -643,6 +708,7 @@ export function useFurigana({
     return () => {
       // Always abort this request on cleanup - this controller is scoped to this effect run
       controller.abort();
+      progressiveFlusher.cancel();
       // Only clear the ref if this is still the current request
       const isThisRequest = soramimiForceRequestRef.current?.requestId === requestId;
       if (isThisRequest) {

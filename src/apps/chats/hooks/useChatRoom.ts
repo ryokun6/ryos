@@ -4,6 +4,7 @@ import type { PusherChannel } from "@/lib/pusherClient";
 import {
   getPusherClient,
   subscribePusherChannel,
+  subscribeRealtimeConnection,
   unsubscribePusherChannel,
 } from "@/lib/pusherClient";
 import { useChatsStore } from "@/stores/useChatsStore";
@@ -106,6 +107,7 @@ export function useChatRoom(
   const globalHandlersRef = useRef<GlobalHandlers | null>(null);
   const roomChannelsRef = useRef<Record<string, PusherChannel>>({});
   const roomHandlersRef = useRef<Record<string, RoomHandlers>>({});
+  const connectionStateUnsubscribeRef = useRef<(() => void) | null>(null);
   const hasInitialized = useRef(false);
 
   // Typing indicator state: map of roomId → Set<username> currently typing
@@ -142,9 +144,15 @@ export function useChatRoom(
     console.log("[Pusher Hook] Getting singleton Pusher client...");
     pusherRef.current = getPusherClient();
 
-    pusherRef.current.connection.bind("connected", () => {
-      console.log("[Pusher Hook] Connected to Pusher");
-    });
+    // Reconnect handling (channel resubscription) lives in the realtime
+    // client itself; here we only observe state via the shared observable.
+    connectionStateUnsubscribeRef.current = subscribeRealtimeConnection(
+      (state) => {
+        if (state === "connected") {
+          console.log("[Pusher Hook] Connected to Pusher");
+        }
+      }
+    );
 
     pusherRef.current.connection.bind("error", (error: Error) => {
       console.error("[Pusher Hook] Connection error:", error);
@@ -725,6 +733,10 @@ export function useChatRoom(
 
       // Unsubscribe from global channel
       unsubscribeGlobalChannel();
+
+      // Stop observing connection-state changes
+      connectionStateUnsubscribeRef.current?.();
+      connectionStateUnsubscribeRef.current = null;
 
       // NOTE: We intentionally do NOT disconnect the global Pusher singleton here.
       // We only unsubscribe from channels we've created. The underlying WebSocket

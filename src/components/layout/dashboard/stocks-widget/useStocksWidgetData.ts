@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useDashboardStore, type StocksWidgetConfig } from "@/stores/useDashboardStore";
+import { createVisibilityGatedInterval } from "@/utils/backgroundTask";
 import { DEFAULT_SYMBOLS } from "./constants";
 import type { TimeRange } from "./constants";
 import { fetchChart, fetchQuotes } from "./api";
@@ -18,7 +19,6 @@ export function useStocksWidgetData(widgetId: string) {
   const [selectedRange, setSelectedRange] = useState<TimeRange>("6m");
   const [loading, setLoading] = useState(true);
   const [, setError] = useState(false);
-  const refreshTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const loadQuotes = useCallback(async () => {
     try {
@@ -45,11 +45,10 @@ export function useStocksWidgetData(widgetId: string) {
 
   useEffect(() => {
     loadQuotes();
-    if (refreshTimer.current) clearInterval(refreshTimer.current);
-    refreshTimer.current = setInterval(loadQuotes, 60_000);
-    return () => {
-      if (refreshTimer.current) clearInterval(refreshTimer.current);
-    };
+    // Refresh quotes every 60s, paused while the tab is hidden.
+    return createVisibilityGatedInterval(() => {
+      void loadQuotes();
+    }, 60_000);
   }, [loadQuotes]);
 
   useEffect(() => {

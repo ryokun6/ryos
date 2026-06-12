@@ -97,12 +97,37 @@ function getSkyGradient(code: number, isDay: boolean): string {
   return "linear-gradient(180deg, #4A90C4 0%, #7AB4D8 40%, #A8CBE0 100%)";
 }
 
-const weatherCache = new Map<string, WeatherData>();
-const weatherCacheListeners = new Set<() => void>();
+// Cache entries are reused across widget remounts (e.g. closing/reopening the
+// dashboard) for up to 15 minutes, skipping the refetch entirely.
+const WEATHER_CACHE_TTL_MS = 15 * 60 * 1000;
 
-function setWeatherCacheEntry(key: string, data: WeatherData) {
-  weatherCache.set(key, data);
+interface WeatherCacheEntry {
+  data: WeatherData;
+  fetchedAt: number;
+  /** Locale + coordinates fingerprint; the entry is only valid for it. */
+  locationKey: string;
+}
+
+const weatherCache = new Map<string, WeatherCacheEntry>();
+const weatherCacheListeners = new Set<() => void>();
+// Reverse-geocoded city names (geolocation widgets only), kept separately so
+// out-of-order resolution of the weather/name fetches can't drop either one.
+const weatherGeoNameCache = new Map<string, string>();
+
+function setWeatherCacheEntry(key: string, data: WeatherData, locationKey: string) {
+  weatherCache.set(key, { data, fetchedAt: Date.now(), locationKey });
   weatherCacheListeners.forEach((cb) => cb());
+}
+
+function getFreshWeatherCacheEntry(
+  key: string,
+  locationKey: string
+): WeatherCacheEntry | null {
+  const entry = weatherCache.get(key);
+  if (!entry) return null;
+  if (entry.locationKey !== locationKey) return null;
+  if (Date.now() - entry.fetchedAt > WEATHER_CACHE_TTL_MS) return null;
+  return entry;
 }
 
 function useWeatherCache(widgetId: string): WeatherData | null {
@@ -113,7 +138,10 @@ function useWeatherCache(widgetId: string): WeatherData | null {
     },
     []
   );
-  return useSyncExternalStore(subscribe, () => weatherCache.get(widgetId) ?? null);
+  return useSyncExternalStore(
+    subscribe,
+    () => weatherCache.get(widgetId)?.data ?? null
+  );
 }
 
 function formatCityLabel(city: CityResult): string {
@@ -143,6 +171,7 @@ export function WeatherWidget({ widgetId }: WeatherWidgetProps) {
   };
   type WeatherWidgetAction =
     | { type: "reset" }
+    | { type: "hydrate"; weather: WeatherData; geoLocationName: string }
     | { type: "setGeoLocationName"; geoLocationName: string }
     | { type: "fetchSuccess"; weather: WeatherData }
     | { type: "fetchError"; error: string };
@@ -159,6 +188,13 @@ export function WeatherWidget({ widgetId }: WeatherWidgetProps) {
     switch (action.type) {
       case "reset":
         return initialState;
+      case "hydrate":
+        return {
+          weather: action.weather,
+          geoLocationName: action.geoLocationName,
+          loading: false,
+          error: null,
+        };
       case "setGeoLocationName":
         return { ...state, geoLocationName: action.geoLocationName };
       case "fetchSuccess":
@@ -169,7 +205,26 @@ export function WeatherWidget({ widgetId }: WeatherWidgetProps) {
         return state;
     }
   };
-  const [state, dispatch] = useReducer(reducer, initialState);
+
+  // Fingerprint of what the widget currently displays; cached data is only
+  // reused when it was fetched for the same coordinates and locale.
+  const locationKey =
+    cityConfig?.lat != null && cityConfig?.lon != null
+      ? `${locale}|${cityConfig.lat},${cityConfig.lon}`
+      : `${locale}|geo`;
+
+  const [state, dispatch] = useReducer(reducer, undefined, () => {
+    const cached = getFreshWeatherCacheEntry(widgetId, locationKey);
+    if (cached) {
+      return {
+        weather: cached.data,
+        geoLocationName: weatherGeoNameCache.get(widgetId) ?? "",
+        error: null,
+        loading: false,
+      };
+    }
+    return initialState;
+  });
   const { weather, geoLocationName, error, loading } = state;
 
   const locationName = useMemo(() => {
@@ -178,7 +233,7 @@ export function WeatherWidget({ widgetId }: WeatherWidgetProps) {
     return geoLocationName;
   }, [cityConfig?.cityKey, cityConfig?.cityName, geoLocationName, t]);
 
-  const fetchWeather = useCallback(async (lat: number, lon: number) => {
+  const fetchWeather = useCallback(async (lat: number, lon: number, cacheLocationKey: string) => {
     try {
       const res = await fetch(
         `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,wind_speed_10m,relative_humidity_2m,is_day&daily=temperature_2m_max,temperature_2m_min,weather_code&timezone=auto&forecast_days=7`
@@ -208,7 +263,7 @@ export function WeatherWidget({ widgetId }: WeatherWidgetProps) {
         forecast,
       };
       dispatch({ type: "fetchSuccess", weather: weatherData });
-      setWeatherCacheEntry(widgetId, weatherData);
+      setWeatherCacheEntry(widgetId, weatherData, cacheLocationKey);
     } catch {
       dispatch({
         type: "fetchError",
@@ -231,28 +286,40 @@ export function WeatherWidget({ widgetId }: WeatherWidgetProps) {
           geoData.address?.county ||
           "";
         dispatch({ type: "setGeoLocationName", geoLocationName: city });
+        weatherGeoNameCache.set(widgetId, city);
       }
     } catch {
       // Location name optional
     }
-  }, []);
+  }, [widgetId]);
 
   useEffect(() => {
+    // Reuse fresh cached data (e.g. after a quick close/reopen of the
+    // dashboard) instead of starting a new fetch.
+    const cached = getFreshWeatherCacheEntry(widgetId, locationKey);
+    if (cached) {
+      dispatch({
+        type: "hydrate",
+        weather: cached.data,
+        geoLocationName: weatherGeoNameCache.get(widgetId) ?? "",
+      });
+      return;
+    }
+
     dispatch({ type: "reset" });
 
     const SF_LAT = 37.7749;
     const SF_LON = -122.4194;
 
     const fallbackToSF = () => {
-      dispatch({
-        type: "setGeoLocationName",
-        geoLocationName: t("apps.dashboard.cities.sanFrancisco"),
-      });
-      fetchWeather(SF_LAT, SF_LON);
+      const sfName = t("apps.dashboard.cities.sanFrancisco");
+      dispatch({ type: "setGeoLocationName", geoLocationName: sfName });
+      weatherGeoNameCache.set(widgetId, sfName);
+      fetchWeather(SF_LAT, SF_LON, locationKey);
     };
 
     if (cityConfig?.lat != null && cityConfig?.lon != null) {
-      fetchWeather(cityConfig.lat, cityConfig.lon);
+      fetchWeather(cityConfig.lat, cityConfig.lon, locationKey);
       return;
     }
 
@@ -263,7 +330,7 @@ export function WeatherWidget({ widgetId }: WeatherWidgetProps) {
 
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        fetchWeather(pos.coords.latitude, pos.coords.longitude);
+        fetchWeather(pos.coords.latitude, pos.coords.longitude, locationKey);
         fetchLocationName(pos.coords.latitude, pos.coords.longitude);
       },
       () => {
@@ -271,7 +338,7 @@ export function WeatherWidget({ widgetId }: WeatherWidgetProps) {
       },
       { timeout: 10000 }
     );
-  }, [cityConfig?.lat, cityConfig?.lon, cityConfig?.cityName, fetchWeather, fetchLocationName, t]);
+  }, [cityConfig?.lat, cityConfig?.lon, cityConfig?.cityName, fetchWeather, fetchLocationName, t, widgetId, locationKey]);
 
   const needsCitySelection = !loading && error && !weather;
 
@@ -510,16 +577,21 @@ export function WeatherBackPanel({ widgetId, onDone }: { widgetId: string; onDon
   const { searchQuery, searchResults, searching } = searchState;
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchAbortRef = useRef<AbortController | null>(null);
 
   const searchCities = useCallback(async (query: string) => {
+    searchAbortRef.current?.abort();
     if (query.length < 2) {
       dispatchSearch({ type: "searchIdle" });
       return;
     }
+    const controller = new AbortController();
+    searchAbortRef.current = controller;
     dispatchSearch({ type: "searchStart" });
     try {
       const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=6&addressdetails=1&featuretype=city`
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=6&addressdetails=1&featuretype=city`,
+        { signal: controller.signal }
       );
       if (res.ok) {
         const data = await res.json();
@@ -538,7 +610,9 @@ export function WeatherBackPanel({ widgetId, onDone }: { widgetId: string; onDon
         dispatchSearch({ type: "searchResults", results });
         return;
       }
-    } catch {
+    } catch (err) {
+      // A newer keystroke superseded this request; let it drive the state.
+      if ((err as Error).name === "AbortError") return;
       // search failed silently
     }
     dispatchSearch({ type: "searchResults", results: [] });
@@ -547,6 +621,7 @@ export function WeatherBackPanel({ widgetId, onDone }: { widgetId: string; onDon
   useEffect(() => {
     return () => {
       if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+      searchAbortRef.current?.abort();
     };
   }, []);
 
