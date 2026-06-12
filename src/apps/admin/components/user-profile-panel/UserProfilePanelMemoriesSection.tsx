@@ -14,7 +14,7 @@ import {
   AQUA_ICON_BUTTON_ICON_CLASS_SM,
 } from "@/lib/aquaIconButton";
 import { SectionHeader } from "./SectionHeader";
-import { Skeleton } from "./Skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   adminAltRowBgClass,
   adminRowHoverClass,

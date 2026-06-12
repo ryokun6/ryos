@@ -9,7 +9,7 @@ import {
 import { SectionHeader } from "./SectionHeader";
 import { adminTableHeadClass, adminTableRowClass } from "../../utils/adminStyles";
 import { cn } from "@/lib/utils";
-import { Skeleton } from "./Skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { UserProfilePanelViewModel } from "./useUserProfilePanel";
 
 type Props = Pick<

@@ -1,6 +1,6 @@
 import { Prohibit } from "@phosphor-icons/react";
 import { SectionHeader } from "./SectionHeader";
-import { Skeleton } from "./Skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { UserProfilePanelViewModel } from "./useUserProfilePanel";
 
 type Props = Pick<UserProfilePanelViewModel, "t" | "profile" | "isLoading" | "formatDate">;

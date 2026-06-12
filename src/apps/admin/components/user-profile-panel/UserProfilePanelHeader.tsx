@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
-import { Skeleton } from "./Skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { UserProfilePanelViewModel } from "./useUserProfilePanel";
 import { adminAvatarWellClass, adminDetailHeaderClass } from "../../utils/adminStyles";
 

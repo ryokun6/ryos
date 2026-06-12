@@ -2,7 +2,7 @@ import { Input } from "@/components/ui/input";
 import { Check, Prohibit, Trash } from "@phosphor-icons/react";
 import { adminAquaIconButtonClass, AQUA_ICON_BUTTON_ICON_CLASS } from "@/lib/aquaIconButton";
 import { SectionHeader } from "./SectionHeader";
-import { Skeleton } from "./Skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { UserProfilePanelViewModel } from "./useUserProfilePanel";
 
 type Props = Pick<
