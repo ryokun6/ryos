@@ -1,13 +1,9 @@
-import {
-  MenubarMenu,
-  MenubarTrigger,
-  MenubarContent,
-  MenubarItem,
-  MenubarSeparator,
-  MenubarCheckboxItem,
-} from "@/components/ui/menubar";
 import { AppMenuBarShell } from "@/components/shared/menubar/AppMenuBarShell";
-import { MENUBAR_SEPARATOR_CLASS } from "@/components/shared/menubar/menubarStyles";
+import {
+  AppMenuBarMenus,
+  type MenuDescriptor,
+  type MenuItemDescriptor,
+} from "@/components/shared/menubar/AppMenuBarMenus";
 import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
 import { useTranslation } from "react-i18next";
 
@@ -44,6 +40,70 @@ export function TerminalMenuBar({
     appName,
   } = useAppMenuBarChrome("terminal");
 
+  const muteItems: MenuItemDescriptor[] = onToggleMute
+    ? [
+        { type: "separator" },
+        {
+          type: "checkbox",
+          label: t("apps.terminal.menu.muteSounds"),
+          checked: isMuted,
+          onChange: (checked) => {
+            if (checked !== isMuted) onToggleMute();
+          },
+        },
+      ]
+    : [];
+
+  const menus: MenuDescriptor[] = [
+    {
+      label: t("common.menu.file"),
+      items: [
+        {
+          type: "action",
+          label: t("apps.terminal.menu.clearTerminal"),
+          onClick: onClear,
+        },
+        { type: "separator" },
+        { type: "action", label: t("common.menu.close"), onClick: onClose },
+      ],
+    },
+    {
+      label: t("common.menu.edit"),
+      items: [
+        { type: "action", label: t("common.menu.copy"), onClick: () => {} },
+        { type: "action", label: t("common.menu.paste"), onClick: () => {} },
+        { type: "separator" },
+        {
+          type: "action",
+          label: t("common.menu.selectAll"),
+          onClick: () => {},
+        },
+      ],
+    },
+    {
+      label: t("common.menu.view"),
+      items: [
+        {
+          type: "action",
+          label: t("apps.terminal.menu.increaseFontSize"),
+          onClick: onIncreaseFontSize,
+        },
+        {
+          type: "action",
+          label: t("apps.terminal.menu.decreaseFontSize"),
+          onClick: onDecreaseFontSize,
+        },
+        { type: "separator" },
+        {
+          type: "action",
+          label: t("apps.terminal.menu.resetFontSize"),
+          onClick: onResetFontSize,
+        },
+        ...muteItems,
+      ],
+    },
+  ];
+
   return (
     <AppMenuBarShell
       isXpTheme={isXpTheme}
@@ -57,89 +117,7 @@ export function TerminalMenuBar({
       onShowHelp={onShowHelp}
       onShowAbout={onShowAbout}
     >
-      {/* File Menu */}
-      <MenubarMenu>
-        <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
-          {t("common.menu.file")}
-        </MenubarTrigger>
-        <MenubarContent align="start" sideOffset={1} className="px-0">
-          <MenubarItem
-            onClick={onClear}
-            className="text-md h-6 px-3"
-          >
-            {t("apps.terminal.menu.clearTerminal")}
-          </MenubarItem>
-          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
-          <MenubarItem
-            onClick={onClose}
-            className="text-md h-6 px-3"
-          >
-            {t("common.menu.close")}
-          </MenubarItem>
-        </MenubarContent>
-      </MenubarMenu>
-
-      {/* Edit Menu */}
-      <MenubarMenu>
-        <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
-          {t("common.menu.edit")}
-        </MenubarTrigger>
-        <MenubarContent align="start" sideOffset={1} className="px-0">
-          <MenubarItem className="text-md h-6 px-3">
-            {t("common.menu.copy")}
-          </MenubarItem>
-          <MenubarItem className="text-md h-6 px-3">
-            {t("common.menu.paste")}
-          </MenubarItem>
-          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
-          <MenubarItem className="text-md h-6 px-3">
-            {t("common.menu.selectAll")}
-          </MenubarItem>
-        </MenubarContent>
-      </MenubarMenu>
-
-      {/* View Menu */}
-      <MenubarMenu>
-        <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
-          {t("common.menu.view")}
-        </MenubarTrigger>
-        <MenubarContent align="start" sideOffset={1} className="px-0">
-          <MenubarItem
-            onClick={onIncreaseFontSize}
-            className="text-md h-6 px-3"
-          >
-            {t("apps.terminal.menu.increaseFontSize")}
-          </MenubarItem>
-          <MenubarItem
-            onClick={onDecreaseFontSize}
-            className="text-md h-6 px-3"
-          >
-            {t("apps.terminal.menu.decreaseFontSize")}
-          </MenubarItem>
-          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
-          <MenubarItem
-            onClick={onResetFontSize}
-            className="text-md h-6 px-3"
-          >
-            {t("apps.terminal.menu.resetFontSize")}
-          </MenubarItem>
-          {onToggleMute && (
-            <>
-              <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
-              <MenubarCheckboxItem
-                checked={isMuted}
-                onCheckedChange={(checked) => {
-                  if (checked !== isMuted) onToggleMute();
-                }}
-                className="text-md h-6 px-3"
-              >
-                {t("apps.terminal.menu.muteSounds")}
-              </MenubarCheckboxItem>
-            </>
-          )}
-        </MenubarContent>
-      </MenubarMenu>
-
+      <AppMenuBarMenus menus={menus} />
     </AppMenuBarShell>
   );
 }

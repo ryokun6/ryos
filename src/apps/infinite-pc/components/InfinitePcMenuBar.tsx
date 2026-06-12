@@ -1,15 +1,9 @@
-import {
-  MenubarMenu,
-  MenubarTrigger,
-  MenubarContent,
-  MenubarItem,
-  MenubarSeparator,
-  MenubarSub,
-  MenubarSubTrigger,
-  MenubarSubContent,
-} from "@/components/ui/menubar";
 import { AppMenuBarShell } from "@/components/shared/menubar/AppMenuBarShell";
-import { MENUBAR_SEPARATOR_CLASS } from "@/components/shared/menubar/menubarStyles";
+import {
+  AppMenuBarMenus,
+  type MenuDescriptor,
+  type MenuItemDescriptor,
+} from "@/components/shared/menubar/AppMenuBarMenus";
 import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
 import { useTranslation } from "react-i18next";
 import { Game, loadGames } from "@/stores/usePcStore";
@@ -76,6 +70,90 @@ export function InfinitePcMenuBar({
   const sensitivityOptions = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
 
   if (isGameRunning && selectedGame && onLoadGame && onReset) {
+    const gameMenus: MenuDescriptor[] = [
+      {
+        label: t("common.menu.file"),
+        items: [
+          {
+            type: "action",
+            label: t("apps.pc.menu.backToBrowse"),
+            onClick: onBackToBrowse,
+          },
+          { type: "separator" },
+          {
+            type: "submenu",
+            label: t("apps.pc.menu.loadGame"),
+            items: availableGames.map((game) => ({
+              type: "action" as const,
+              label: game.name,
+              onClick: () => onLoadGame(game),
+              className: selectedGame.id === game.id ? "bg-neutral-100" : "",
+            })),
+          },
+          { type: "separator" },
+          {
+            type: "action",
+            label: t("apps.pc.menu.saveState"),
+            onClick: () => onSaveState?.(),
+          },
+          {
+            type: "action",
+            label: t("apps.pc.menu.loadState"),
+            onClick: () => onLoadState?.(),
+          },
+          { type: "separator" },
+          {
+            type: "action",
+            label: t("apps.pc.menu.reset"),
+            onClick: onReset,
+          },
+          { type: "separator" },
+          { type: "action", label: t("common.menu.close"), onClick: onClose },
+        ],
+      },
+      {
+        label: t("apps.pc.menu.controls"),
+        items: [
+          {
+            type: "action",
+            label: t("apps.pc.menu.fullScreen"),
+            onClick: () => onSetDosFullScreen?.(!isDosFullScreen),
+          },
+          { type: "separator" },
+          {
+            type: "action",
+            label: t("apps.pc.menu.toggleMouseCapture"),
+            onClick: () => onSetMouseCapture?.(!isMouseCaptured),
+          },
+          {
+            type: "submenu",
+            label: t("apps.pc.menu.mouseSensitivity"),
+            items: sensitivityOptions.map((sensitivity) => ({
+              type: "action" as const,
+              label: `${sensitivity}x`,
+              onClick: () => onSetMouseSensitivity?.(sensitivity),
+              className:
+                mouseSensitivity === sensitivity ? "bg-neutral-100" : "",
+            })),
+          },
+          { type: "separator" },
+          {
+            type: "submenu",
+            label: t("apps.pc.menu.aspectRatio"),
+            items: renderAspects.map((aspect) => ({
+              type: "action" as const,
+              label: t(`apps.pc.aspectRatios.${aspect}`, {
+                defaultValue: aspect,
+              }),
+              onClick: () => onSetRenderAspect?.(aspect),
+              className:
+                currentRenderAspect === aspect ? "bg-neutral-100" : "",
+            })),
+          },
+        ],
+      },
+    ];
+
     return (
       <AppMenuBarShell
         isXpTheme={isXpTheme}
@@ -89,114 +167,48 @@ export function InfinitePcMenuBar({
         onShowHelp={onShowHelp}
         onShowAbout={onShowAbout}
       >
-        <MenubarMenu>
-          <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
-            {t("common.menu.file")}
-          </MenubarTrigger>
-          <MenubarContent align="start" sideOffset={1} className="px-0">
-            <MenubarItem
-              onClick={onBackToBrowse}
-              className="text-md h-6 px-3"
-            >
-              {t("apps.pc.menu.backToBrowse")}
-            </MenubarItem>
-            <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
-            <MenubarSub>
-              <MenubarSubTrigger className="text-md h-6 px-3">
-                {t("apps.pc.menu.loadGame")}
-              </MenubarSubTrigger>
-              <MenubarSubContent className="px-0">
-                {availableGames.map((game) => (
-                  <MenubarItem
-                    key={game.id}
-                    onClick={() => onLoadGame(game)}
-                    className={`text-md h-6 px-3 ${
-                      selectedGame.id === game.id ? "bg-neutral-100" : ""
-                    }`}
-                  >
-                    {game.name}
-                  </MenubarItem>
-                ))}
-              </MenubarSubContent>
-            </MenubarSub>
-            <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
-            <MenubarItem onClick={onSaveState} className="text-md h-6 px-3">
-              {t("apps.pc.menu.saveState")}
-            </MenubarItem>
-            <MenubarItem onClick={onLoadState} className="text-md h-6 px-3">
-              {t("apps.pc.menu.loadState")}
-            </MenubarItem>
-            <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
-            <MenubarItem onClick={onReset} className="text-md h-6 px-3">
-              {t("apps.pc.menu.reset")}
-            </MenubarItem>
-            <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
-            <MenubarItem onClick={onClose} className="text-md h-6 px-3">
-              {t("common.menu.close")}
-            </MenubarItem>
-          </MenubarContent>
-        </MenubarMenu>
-
-        <MenubarMenu>
-          <MenubarTrigger className="px-2 py-1 text-md focus-visible:ring-0">
-            {t("apps.pc.menu.controls")}
-          </MenubarTrigger>
-          <MenubarContent align="start" sideOffset={1} className="px-0">
-            <MenubarItem
-              onClick={() => onSetDosFullScreen?.(!isDosFullScreen)}
-              className="text-md h-6 px-3"
-            >
-              {t("apps.pc.menu.fullScreen")}
-            </MenubarItem>
-            <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
-            <MenubarItem
-              onClick={() => onSetMouseCapture?.(!isMouseCaptured)}
-              className="text-md h-6 px-3"
-            >
-              {t("apps.pc.menu.toggleMouseCapture")}
-            </MenubarItem>
-            <MenubarSub>
-              <MenubarSubTrigger className="text-md h-6 px-3">
-                {t("apps.pc.menu.mouseSensitivity")}
-              </MenubarSubTrigger>
-              <MenubarSubContent className="px-0">
-                {sensitivityOptions.map((sensitivity) => (
-                  <MenubarItem
-                    key={sensitivity}
-                    onClick={() => onSetMouseSensitivity?.(sensitivity)}
-                    className={`text-md h-6 px-3 ${
-                      mouseSensitivity === sensitivity ? "bg-neutral-100" : ""
-                    }`}
-                  >
-                    {sensitivity}x
-                  </MenubarItem>
-                ))}
-              </MenubarSubContent>
-            </MenubarSub>
-            <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
-            <MenubarSub>
-              <MenubarSubTrigger className="text-md h-6 px-3">
-                {t("apps.pc.menu.aspectRatio")}
-              </MenubarSubTrigger>
-              <MenubarSubContent className="px-0">
-                {renderAspects.map((aspect) => (
-                  <MenubarItem
-                    key={aspect}
-                    onClick={() => onSetRenderAspect?.(aspect)}
-                    className={`text-md h-6 px-3 ${
-                      currentRenderAspect === aspect ? "bg-neutral-100" : ""
-                    }`}
-                  >
-                    {t(`apps.pc.aspectRatios.${aspect}`, { defaultValue: aspect })}
-                  </MenubarItem>
-                ))}
-              </MenubarSubContent>
-            </MenubarSub>
-          </MenubarContent>
-        </MenubarMenu>
+        <AppMenuBarMenus menus={gameMenus} />
       </AppMenuBarShell>
     );
   }
+
+  const backToBrowseItems: MenuItemDescriptor[] = hasV86Session
+    ? [
+        {
+          type: "action",
+          label: t("apps.pc.menu.backToBrowse"),
+          onClick: onBackToBrowse,
+        },
+        { type: "separator" },
+      ]
+    : [];
+
+  const menus: MenuDescriptor[] = [
+    {
+      label: t("common.menu.file"),
+      items: [
+        ...backToBrowseItems,
+        { type: "action", label: t("common.menu.close"), onClick: onClose },
+      ],
+    },
+    {
+      label: t("common.menu.view"),
+      items: [
+        {
+          type: "action",
+          label: t("apps.pc.menu.fullScreen"),
+          onClick: onFullScreen,
+          disabled: !hasV86Session,
+        },
+        {
+          type: "action",
+          label: t("apps.pc.menu.captureScreenshot"),
+          onClick: onCaptureScreenshot,
+          disabled: !hasV86Session,
+        },
+      ],
+    },
+  ];
 
   return (
     <AppMenuBarShell
@@ -211,49 +223,7 @@ export function InfinitePcMenuBar({
       onShowHelp={onShowHelp}
       onShowAbout={onShowAbout}
     >
-      <MenubarMenu>
-        <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
-          {t("common.menu.file")}
-        </MenubarTrigger>
-        <MenubarContent align="start" sideOffset={1} className="px-0">
-          {hasV86Session && (
-            <>
-              <MenubarItem
-                onClick={onBackToBrowse}
-                className="text-md h-6 px-3"
-              >
-                {t("apps.pc.menu.backToBrowse")}
-              </MenubarItem>
-              <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
-            </>
-          )}
-          <MenubarItem onClick={onClose} className="text-md h-6 px-3">
-            {t("common.menu.close")}
-          </MenubarItem>
-        </MenubarContent>
-      </MenubarMenu>
-
-      <MenubarMenu>
-        <MenubarTrigger className="px-2 py-1 text-md focus-visible:ring-0">
-          {t("common.menu.view")}
-        </MenubarTrigger>
-        <MenubarContent align="start" sideOffset={1} className="px-0">
-          <MenubarItem
-            onClick={onFullScreen}
-            className="text-md h-6 px-3"
-            disabled={!hasV86Session}
-          >
-            {t("apps.pc.menu.fullScreen")}
-          </MenubarItem>
-          <MenubarItem
-            onClick={onCaptureScreenshot}
-            className="text-md h-6 px-3"
-            disabled={!hasV86Session}
-          >
-            {t("apps.pc.menu.captureScreenshot")}
-          </MenubarItem>
-        </MenubarContent>
-      </MenubarMenu>
+      <AppMenuBarMenus menus={menus} />
     </AppMenuBarShell>
   );
 }

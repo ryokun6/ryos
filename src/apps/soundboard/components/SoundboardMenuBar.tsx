@@ -1,15 +1,11 @@
-import {
-  MenubarMenu,
-  MenubarTrigger,
-  MenubarContent,
-  MenubarItem,
-  MenubarSeparator,
-  MenubarCheckboxItem,
-} from "@/components/ui/menubar";
 import { AppProps } from "../../base/types";
 import { useState, useEffect } from "react";
 import { AppMenuBarShell } from "@/components/shared/menubar/AppMenuBarShell";
-import { MENUBAR_SEPARATOR_CLASS } from "@/components/shared/menubar/menubarStyles";
+import {
+  AppMenuBarMenus,
+  type MenuDescriptor,
+  type MenuItemDescriptor,
+} from "@/components/shared/menubar/AppMenuBarMenus";
 import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
 import { useTranslation } from "react-i18next";
 
@@ -80,6 +76,82 @@ export function SoundboardMenuBar({
     };
   }, []);
 
+  const specialSoundboardsItems: MenuItemDescriptor[] = isOptionPressed
+    ? [
+        {
+          type: "action",
+          label: t("apps.soundboard.menu.loadSpecialSoundboards"),
+          onClick: () => onReloadAllSounds?.(),
+        },
+      ]
+    : [];
+
+  const menus: MenuDescriptor[] = [
+    {
+      label: t("common.menu.file"),
+      items: [
+        {
+          type: "action",
+          label: t("apps.soundboard.menu.newSoundboard"),
+          onClick: () => onNewBoard?.(),
+        },
+        { type: "separator" },
+        {
+          type: "action",
+          label: t("apps.soundboard.menu.importSoundboards"),
+          onClick: () => onImportBoard?.(),
+        },
+        {
+          type: "action",
+          label: t("apps.soundboard.menu.exportSoundboards"),
+          onClick: () => onExportBoard?.(),
+        },
+        {
+          type: "action",
+          label: t("apps.soundboard.menu.resetSoundboards"),
+          onClick: () => onReloadBoard?.(),
+        },
+        ...specialSoundboardsItems,
+        { type: "separator" },
+        { type: "action", label: t("common.menu.close"), onClick: onClose },
+      ],
+    },
+    {
+      label: t("common.menu.edit"),
+      items: [
+        {
+          type: "action",
+          label: t("apps.soundboard.menu.renameSoundboard"),
+          onClick: () => onRenameBoard?.(),
+        },
+        {
+          type: "action",
+          label: t("apps.soundboard.menu.deleteSoundboard"),
+          onClick: () => onDeleteBoard?.(),
+          disabled: !canDeleteBoard,
+          className: !canDeleteBoard ? "text-neutral-400" : undefined,
+        },
+      ],
+    },
+    {
+      label: t("common.menu.view"),
+      items: [
+        {
+          type: "checkbox",
+          label: t("apps.soundboard.menu.waveforms"),
+          checked: showWaveforms ?? false,
+          onChange: (checked) => onToggleWaveforms?.(checked),
+        },
+        {
+          type: "checkbox",
+          label: t("apps.soundboard.menu.emojis"),
+          checked: showEmojis ?? false,
+          onChange: (checked) => onToggleEmojis?.(checked),
+        },
+      ],
+    },
+  ];
+
   return (
     <AppMenuBarShell
       isXpTheme={isXpTheme}
@@ -93,103 +165,7 @@ export function SoundboardMenuBar({
       onShowHelp={onShowHelp}
       onShowAbout={onShowAbout}
     >
-      {/* File Menu */}
-      <MenubarMenu>
-        <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
-          {t("common.menu.file")}
-        </MenubarTrigger>
-        <MenubarContent align="start" sideOffset={1} className="px-0">
-          <MenubarItem
-            onClick={onNewBoard}
-            className="text-md h-6 px-3"
-          >
-            {t("apps.soundboard.menu.newSoundboard")}
-          </MenubarItem>
-          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
-          <MenubarItem
-            onClick={onImportBoard}
-            className="text-md h-6 px-3"
-          >
-            {t("apps.soundboard.menu.importSoundboards")}
-          </MenubarItem>
-          <MenubarItem
-            onClick={onExportBoard}
-            className="text-md h-6 px-3"
-          >
-            {t("apps.soundboard.menu.exportSoundboards")}
-          </MenubarItem>
-          <MenubarItem
-            onClick={onReloadBoard}
-            className="text-md h-6 px-3"
-          >
-            {t("apps.soundboard.menu.resetSoundboards")}
-          </MenubarItem>
-          {isOptionPressed && (
-            <MenubarItem
-              onClick={onReloadAllSounds}
-              className="text-md h-6 px-3"
-            >
-              {t("apps.soundboard.menu.loadSpecialSoundboards")}
-            </MenubarItem>
-          )}
-          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
-          <MenubarItem
-            onClick={onClose}
-            className="text-md h-6 px-3"
-          >
-            {t("common.menu.close")}
-          </MenubarItem>
-        </MenubarContent>
-      </MenubarMenu>
-
-      {/* Edit Menu */}
-      <MenubarMenu>
-        <MenubarTrigger className="px-2 py-1 text-md focus-visible:ring-0">
-          {t("common.menu.edit")}
-        </MenubarTrigger>
-        <MenubarContent align="start" sideOffset={1} className="px-0">
-          <MenubarItem
-            onClick={onRenameBoard}
-            className="text-md h-6 px-3"
-          >
-            {t("apps.soundboard.menu.renameSoundboard")}
-          </MenubarItem>
-          <MenubarItem
-            onClick={onDeleteBoard}
-            disabled={!canDeleteBoard}
-            className={
-              !canDeleteBoard
-                ? "text-neutral-400 text-md h-6 px-3"
-                : "text-md h-6 px-3"
-            }
-          >
-            {t("apps.soundboard.menu.deleteSoundboard")}
-          </MenubarItem>
-        </MenubarContent>
-      </MenubarMenu>
-
-      {/* View Menu */}
-      <MenubarMenu>
-        <MenubarTrigger className="px-2 py-1 text-md focus-visible:ring-0">
-          {t("common.menu.view")}
-        </MenubarTrigger>
-        <MenubarContent align="start" sideOffset={1} className="px-0">
-          <MenubarCheckboxItem
-            checked={showWaveforms ?? false}
-            onCheckedChange={(checked) => onToggleWaveforms?.(checked)}
-            className="text-md h-6 px-3"
-          >
-            {t("apps.soundboard.menu.waveforms")}
-          </MenubarCheckboxItem>
-          <MenubarCheckboxItem
-            checked={showEmojis ?? false}
-            onCheckedChange={(checked) => onToggleEmojis?.(checked)}
-            className="text-md h-6 px-3"
-          >
-            {t("apps.soundboard.menu.emojis")}
-          </MenubarCheckboxItem>
-        </MenubarContent>
-      </MenubarMenu>
+      <AppMenuBarMenus menus={menus} />
     </AppMenuBarShell>
   );
 }
