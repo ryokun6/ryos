@@ -11,6 +11,7 @@ import {
   MusicNote,
   UserMinus,
 } from "@phosphor-icons/react";
+import { AppleLogoIcon } from "@/components/icons/AppleLogoIcon";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { SongDetailPanelViewModel } from "./useSongDetailPanel";
 
@@ -21,6 +22,9 @@ type Props = Pick<
   | "isLoading"
   | "isForceRefreshing"
   | "isUnsharing"
+  | "isAppleMusic"
+  | "appleMusicWebUrl"
+  | "handleOpenInAppleMusic"
   | "handlePlayInIpod"
   | "handlePlayInKaraoke"
   | "setIsLyricsSearchDialogOpen"
@@ -34,6 +38,9 @@ export function SongDetailPanelActions({
   isLoading,
   isForceRefreshing,
   isUnsharing,
+  isAppleMusic,
+  appleMusicWebUrl,
+  handleOpenInAppleMusic,
   handlePlayInIpod,
   handlePlayInKaraoke,
   setIsLyricsSearchDialogOpen,
@@ -60,13 +67,27 @@ export function SongDetailPanelActions({
         <MusicNote className={AQUA_ICON_BUTTON_ICON_CLASS} weight="bold" />
         <span>{t("apps.admin.song.playInIpod", "Play in iPod")}</span>
       </button>
-      <button
-        onClick={handlePlayInKaraoke}
-        className={adminAquaIconButtonClass("secondary")}
-      >
-        <Microphone className={AQUA_ICON_BUTTON_ICON_CLASS} weight="bold" />
-        <span>{t("apps.admin.song.playInKaraoke", "Play in Karaoke")}</span>
-      </button>
+      {/* Karaoke only supports the YouTube library. */}
+      {!isAppleMusic && (
+        <button
+          onClick={handlePlayInKaraoke}
+          className={adminAquaIconButtonClass("secondary")}
+        >
+          <Microphone className={AQUA_ICON_BUTTON_ICON_CLASS} weight="bold" />
+          <span>{t("apps.admin.song.playInKaraoke", "Play in Karaoke")}</span>
+        </button>
+      )}
+      {isAppleMusic && appleMusicWebUrl && (
+        <button
+          onClick={handleOpenInAppleMusic}
+          className={adminAquaIconButtonClass("secondary")}
+        >
+          <AppleLogoIcon className={AQUA_ICON_BUTTON_ICON_CLASS} />
+          <span>
+            {t("apps.admin.song.openInAppleMusic", "Open in Apple Music")}
+          </span>
+        </button>
+      )}
       <button
         onClick={() => setIsLyricsSearchDialogOpen(true)}
         className={adminAquaIconButtonClass("secondary")}

@@ -387,6 +387,45 @@ describe("useIpodStore Apple Music slice", () => {
     });
   });
 
+  test("playAppleMusicTrack switches to Apple Music, inserts, and plays", () => {
+    const track: Track = {
+      id: "am:1616228595",
+      url: "https://music.apple.com/us/song/1616228595",
+      title: "Bohemian Rhapsody",
+      artist: "Queen",
+      source: "appleMusic",
+      appleMusicPlayParams: { catalogId: "1616228595", kind: "songs" },
+    };
+    useIpodStore.getState().playAppleMusicTrack(track);
+    const state = useIpodStore.getState();
+    expect(state.librarySource).toBe("appleMusic");
+    expect(state.appleMusicCurrentSongId).toBe("am:1616228595");
+    expect(state.isPlaying).toBe(true);
+    expect(state.appleMusicTracks.map((t) => t.id)).toContain("am:1616228595");
+    expect(getActiveIpodCurrentTrack(state)?.id).toBe("am:1616228595");
+  });
+
+  test("playAppleMusicTrack does not duplicate an existing library track", () => {
+    const existing: Track = {
+      id: "am:1616228595",
+      url: "https://music.apple.com/us/song/1616228595",
+      title: "Bohemian Rhapsody",
+      artist: "Queen",
+      source: "appleMusic",
+      appleMusicPlayParams: { catalogId: "1616228595", kind: "songs" },
+    };
+    useIpodStore.setState({ appleMusicTracks: [existing] });
+    useIpodStore.getState().playAppleMusicTrack({ ...existing, title: "Other" });
+    const state = useIpodStore.getState();
+    expect(
+      state.appleMusicTracks.filter((t) => t.id === "am:1616228595").length
+    ).toBe(1);
+    // The pre-existing track is preserved (not overwritten by the new copy).
+    expect(state.appleMusicTracks[0]?.title).toBe("Bohemian Rhapsody");
+    expect(state.appleMusicCurrentSongId).toBe("am:1616228595");
+    expect(state.isPlaying).toBe(true);
+  });
+
   test("setLibrarySource clears transient playback state", () => {
     useIpodStore.setState({
       isPlaying: true,

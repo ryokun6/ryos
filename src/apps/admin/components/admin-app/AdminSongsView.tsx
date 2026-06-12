@@ -1,8 +1,11 @@
 import type { Dispatch, SetStateAction } from "react";
 import { Button } from "@/components/ui/button";
 import { MusicNote, Trash, Funnel } from "@phosphor-icons/react";
+import { AppleLogoIcon } from "@/components/icons/AppleLogoIcon";
 import type { TFunction } from "i18next";
 import type { CachedSongMetadata } from "@/utils/songMetadataCache";
+import { isAppleMusicId } from "@/utils/appleMusicId";
+import { AdminSongCover } from "./AdminSongCover";
 import { cn } from "@/lib/utils";
 import {
   adminAvatarWellClass,
@@ -41,7 +44,6 @@ export function AdminSongsView({
   setVisibleSongsCount,
   SONGS_PER_PAGE,
   setSelectedSongId,
-  formatKugouImageUrl,
   promptDelete,
 }: AdminSongsViewProps) {
   return (
@@ -66,7 +68,9 @@ export function AdminSongsView({
       ) : (
         <>
           <div className={cn("w-full min-w-0", adminListDividerClass)}>
-            {filteredSongs.slice(0, visibleSongsCount).map((song) => (
+            {filteredSongs.slice(0, visibleSongsCount).map((song) => {
+              const isAppleMusic = isAppleMusicId(song.youtubeId);
+              return (
               <div
                 key={song.youtubeId}
                 className={cn(
@@ -75,15 +79,14 @@ export function AdminSongsView({
                 )}
                 onClick={() => setSelectedSongId(song.youtubeId)}
               >
-                <div className={cn("size-10 flex-shrink-0 rounded overflow-hidden", adminAvatarWellClass)}>
-                  <img
-                    src={
-                      formatKugouImageUrl(song.cover, 100) ||
-                      `https://i.ytimg.com/vi/${song.youtubeId}/default.jpg`
-                    }
-                    alt={song.title}
-                    className="size-full object-cover"
-                    loading="lazy"
+                <div className={cn("size-10 flex-shrink-0 rounded overflow-hidden flex items-center justify-center", adminAvatarWellClass)}>
+                  <AdminSongCover
+                    id={song.youtubeId}
+                    cover={song.cover}
+                    pxSize={100}
+                    youtubeQuality="default"
+                    imgClassName="size-full object-cover"
+                    placeholderClassName="size-4 text-neutral-400"
                   />
                 </div>
                 <div className="min-w-0 flex-1 overflow-hidden">
@@ -94,10 +97,13 @@ export function AdminSongsView({
                     {song.title}
                   </div>
                   <div
-                    className="block w-full min-w-0 truncate text-[11px] text-neutral-500"
+                    className="flex w-full min-w-0 items-center gap-1 text-[11px] text-neutral-500"
                     title={song.artist}
                   >
-                    {song.artist || "-"}
+                    {isAppleMusic && (
+                      <AppleLogoIcon className="size-3 flex-shrink-0 text-neutral-400" />
+                    )}
+                    <span className="truncate">{song.artist || "-"}</span>
                   </div>
                 </div>
                 {song.createdBy && (
@@ -117,7 +123,8 @@ export function AdminSongsView({
                   <Trash size={14} weight="bold" />
                 </Button>
               </div>
-            ))}
+              );
+            })}
           </div>
           {filteredSongs.length > visibleSongsCount && (
             <div className="pt-2 pb-1 flex justify-center">

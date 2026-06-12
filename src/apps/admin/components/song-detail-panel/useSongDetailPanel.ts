@@ -10,8 +10,15 @@ import {
 } from "@/utils/songMetadataCache";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
+import {
+  appleMusicIdKindLabel,
+  appleMusicPlayParamsFromId,
+  generateAppleMusicWebUrlForId,
+  isAppleMusicId,
+  parseAppleMusicId,
+} from "@/utils/appleMusicId";
 import { useAppStore } from "@/stores/useAppStore";
-import { useIpodStore } from "@/stores/useIpodStore";
+import { useIpodStore, type Track } from "@/stores/useIpodStore";
 import { useKaraokeStore } from "@/stores/useKaraokeStore";
 import type { SongDetail, SongDetailPanelProps } from "./types";
 import {
@@ -29,6 +36,9 @@ export function useSongDetailPanel({
   const { t } = useTranslation();
   const { username, isAuthenticated } = useAuth();
   const launchApp = useLaunchApp();
+
+  const isAppleMusic = isAppleMusicId(youtubeId);
+  const appleMusicIdKind = parseAppleMusicId(youtubeId)?.kind ?? null;
 
   const [editState, dispatchEdit] = useReducer(songEditReducer, initialEditState);
   const {
@@ -290,6 +300,44 @@ export function useSongDetailPanel({
     }
 
     const ipodStore = useIpodStore.getState();
+
+    // Apple Music songs play via MusicKit in the iPod's Apple Music library
+    // rather than the YouTube library. Build a playable track from the cached
+    // metadata and hand it to the store.
+    if (isAppleMusic) {
+      const playParams = appleMusicPlayParamsFromId(youtubeId);
+      if (!playParams) {
+        toast.error(
+          t(
+            "apps.admin.errors.failedToAddToLibrary",
+            "Failed to add to library"
+          )
+        );
+        return;
+      }
+      const track: Track = {
+        id: youtubeId,
+        url:
+          generateAppleMusicWebUrlForId({
+            id: youtubeId,
+            title: song?.title,
+            artist: song?.artist,
+            storefrontId: ipodStore.appleMusicStorefrontId,
+          }) || youtubeId,
+        title: song?.title || youtubeId,
+        artist: song?.artist,
+        album: song?.album,
+        cover: song?.cover,
+        coverColor: song?.coverColor,
+        lyricOffset: song?.lyricOffset,
+        source: "appleMusic",
+        appleMusicPlayParams: playParams,
+      };
+      ipodStore.playAppleMusicTrack(track);
+      toast.success(t("apps.admin.messages.playingInIpod", "Playing in iPod"));
+      return;
+    }
+
     const trackExists = ipodStore.tracks.some((tr) => tr.id === youtubeId);
 
     if (trackExists) {
@@ -312,7 +360,18 @@ export function useSongDetailPanel({
         );
       }
     }
-  }, [youtubeId, launchApp, t]);
+  }, [
+    youtubeId,
+    isAppleMusic,
+    song?.title,
+    song?.artist,
+    song?.album,
+    song?.cover,
+    song?.coverColor,
+    song?.lyricOffset,
+    launchApp,
+    t,
+  ]);
 
   const handlePlayInKaraoke = useCallback(async () => {
     const appState = useAppStore.getState();
@@ -349,11 +408,34 @@ export function useSongDetailPanel({
     );
   }, [youtubeId, launchApp, t]);
 
+  const appleMusicWebUrl = isAppleMusic
+    ? generateAppleMusicWebUrlForId({
+        id: youtubeId,
+        title: song?.title,
+        artist: song?.artist,
+        storefrontId: useIpodStore.getState().appleMusicStorefrontId,
+      })
+    : null;
+
+  const appleMusicKindLabel = appleMusicIdKind
+    ? appleMusicIdKindLabel(appleMusicIdKind)
+    : null;
+
+  const handleOpenInAppleMusic = useCallback(() => {
+    if (!appleMusicWebUrl) return;
+    window.open(appleMusicWebUrl, "_blank", "noopener,noreferrer");
+  }, [appleMusicWebUrl]);
+
   useEffect(() => {
     fetchSong();
   }, [fetchSong]);
 
   useEffect(() => {
+    if (isAppleMusic) {
+      setYoutubeOembedTitle(null);
+      setIsYoutubeOembedLoading(false);
+      return;
+    }
     let isCancelled = false;
     const fetchOembedTitle = async () => {
       setIsYoutubeOembedLoading(true);
@@ -383,7 +465,7 @@ export function useSongDetailPanel({
     return () => {
       isCancelled = true;
     };
-  }, [youtubeId]);
+  }, [youtubeId, isAppleMusic]);
 
   const handleDelete = async () => {
     if (!username || !isAuthenticated) return;
@@ -505,6 +587,10 @@ export function useSongDetailPanel({
     onBack,
     song,
     isLoading,
+    isAppleMusic,
+    appleMusicKindLabel,
+    appleMusicWebUrl,
+    handleOpenInAppleMusic,
     youtubeOembedTitle,
     isYoutubeOembedLoading,
     isDeleteDialogOpen,
