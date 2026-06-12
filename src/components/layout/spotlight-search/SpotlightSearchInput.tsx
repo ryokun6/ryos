@@ -62,7 +62,7 @@ export function SpotlightSearchInput({
           </span>
         )}
         <div
-          className="flex items-center flex-1"
+          className="flex items-center flex-1 spotlight-input-well"
           style={{
             background: "#FFFFFF",
             borderRadius: isMobile ? "24px" : "12px",

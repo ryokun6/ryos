@@ -3699,6 +3699,31 @@
   caret-color: var(--os-color-text-primary);
 }
 
+/* The Spotlight search field pill is hardcoded white inline (the light-mode
+   Aqua look). In dark mode that bright pill clashes with the dark panel and
+   buries the light input text — swap it for a dark well. Classic dark Aqua gets
+   the opaque input token; dark Aqua Glass gets a dark translucent frosted well
+   (a near-transparent fill would let the bright wallpaper read as a light pill). */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]:not(
+    [data-os-aqua-material="glass"]
+  )
+  .spotlight-panel
+  .spotlight-input-well {
+  background: var(--os-color-input-bg) !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.12) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .spotlight-panel
+  .spotlight-input-well {
+  background: rgba(28, 30, 36, 0.5) !important;
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(255, 255, 255, 0.14) !important;
+}
+
 /* Aqua select triggers, the Radix `.os-select-trigger-macos` / `.os-btn-aqua-select`
    variants, and `.aqua-button.secondary` all bake light gradients
    (`rgba(160,160,160) → rgba(255,255,255)`) into CSS. In dark mode those
@@ -5895,6 +5920,37 @@
     [data-radix-popover-content],
     [data-radix-select-content]
   ) {
+  background: color-mix(
+    in srgb,
+    var(--os-accent-color, #3a73d6) 7%,
+    rgba(36, 38, 44, 0.62)
+  ) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+}
+
+/* --- Frosted Spotlight panel --------------------------------------------- */
+/* Spotlight is not a Radix popper, so it misses the popover rules above. It
+   paints `var(--os-pinstripe-window)` inline (0.74–0.8 alpha — opaque enough
+   to bury the blur); swap in a lighter wash + add the same backdrop blur,
+   rounded glass radius and hairline rim the dropdowns/menus use. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] .spotlight-panel {
+  backdrop-filter: blur(36px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(36px) saturate(200%) !important;
+  background: color-mix(
+    in srgb,
+    var(--os-accent-color, #3a73d6) 6%,
+    rgba(248, 250, 253, 0.62)
+  ) !important;
+  background-attachment: scroll !important;
+  border-radius: var(--os-glass-r-md) !important;
+  border: var(--os-metrics-border-width) solid var(--os-color-window-border) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .spotlight-panel {
   background: color-mix(
     in srgb,
     var(--os-accent-color, #3a73d6) 7%,
