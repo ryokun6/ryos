@@ -876,7 +876,7 @@
   background: linear-gradient(rgba(255, 255, 255, 0), rgb(255, 255, 255, 0.5));
   width: calc(100% - 8px);
   border-radius: 4px;
-  bottom: 2px;
+  bottom: 1px;
   filter: blur(1px);
   pointer-events: none;
 }
@@ -3713,7 +3713,32 @@
    the `.aqua-button.primary` rule below). */
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .macos-select-trigger,
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .os-select-trigger-macos,
-:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .os-btn-aqua-select,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .os-btn-aqua-select {
+  background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.22) 0%,
+        rgba(255, 255, 255, 0.06) 58%,
+        rgba(255, 255, 255, 0) 100%
+      )
+      top / 100% 50% no-repeat,
+    linear-gradient(
+        to top,
+        rgba(255, 255, 255, 0.12) 0%,
+        rgba(255, 255, 255, 0.04) 52%,
+        rgba(255, 255, 255, 0) 100%
+      )
+      bottom / 100% 42% no-repeat,
+    linear-gradient(
+      to bottom,
+      rgba(72, 72, 78, 0.42),
+      rgba(34, 34, 38, 0.42)
+    ) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55) !important;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2), 0 1px 1px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(0, 0, 0, 0.3) !important;
+}
+
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .aqua-button.secondary,
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"]
   select:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *)) {
@@ -3773,10 +3798,18 @@
   background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg width='8' height='10' viewBox='0 0 8 10' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 3.5L4 1L7 3.5M1 6.5L4 9L7 6.5' stroke='%23e5e7eb' stroke-width='1' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
 
+/* Select toggles paint top/bottom shine in `background` layers — suppress
+   the light-mode ::before gloss so it doesn't double-stack. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .macos-select-trigger:before,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .os-select-trigger-macos:before,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .os-btn-aqua-select:before,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .aqua-select-btn:before {
+  background: none !important;
+}
+
 /* Dim the bright top gloss strip baked into the light-mode `::before` so
    the dark gradient isn't capped with a glaring white smear. Mirrors the
    recipe `.aqua-tab:before` already uses in dark mode. */
-:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .macos-select-trigger:before,
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"]
   select:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *)):before,
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .aqua-button.secondary:before {
@@ -3804,11 +3837,34 @@
 
 /* Pressed / focus state — push the gradient one shade darker so the
    "pushed in" affordance still reads in dark mode. */
-:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .aqua-button.secondary:focus,
-:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .aqua-button.secondary:active,
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .macos-select-trigger:active,
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .os-select-trigger-macos:active,
-:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .os-btn-aqua-select:active,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .os-btn-aqua-select:active {
+  background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.1) 0%,
+        rgba(255, 255, 255, 0.03) 58%,
+        rgba(255, 255, 255, 0) 100%
+      )
+      top / 100% 50% no-repeat,
+    linear-gradient(
+        to top,
+        rgba(255, 255, 255, 0.06) 0%,
+        rgba(255, 255, 255, 0.02) 52%,
+        rgba(255, 255, 255, 0) 100%
+      )
+      bottom / 100% 42% no-repeat,
+    linear-gradient(
+      to bottom,
+      rgba(48, 48, 52, 0.52),
+      rgba(22, 22, 26, 0.52)
+    ) !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35),
+    inset 0 1px 1px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.28) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .aqua-button.secondary:focus,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .aqua-button.secondary:active,
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"]
   select:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *)):active {
   background: linear-gradient(
@@ -5483,8 +5539,8 @@
   --os-color-window-border: rgba(0, 0, 0, 0.45);
   --os-color-window-border-inactive: rgba(0, 0, 0, 0.32);
   --os-color-menubar-border: rgba(255, 255, 255, 0.1);
-  --os-color-titlebar-border: rgba(255, 255, 255, 0.14);
-  --os-color-titlebar-border-inactive: rgba(255, 255, 255, 0.08);
+  --os-color-titlebar-border: rgba(255, 255, 255, 0.08);
+  --os-color-titlebar-border-inactive: rgba(255, 255, 255, 0.05);
   --os-window-shadow: 0 18px 55px rgba(0, 0, 0, 0.6),
     0 2px 12px rgba(0, 0, 0, 0.4);
   --os-color-separator: rgba(255, 255, 255, 0.12);
@@ -5511,10 +5567,17 @@
   --os-pinstripe-menubar: none;
   --os-pinstripe-titlebar: linear-gradient(
     to bottom,
-    rgba(255, 255, 255, 0.16) 0%,
-    rgba(255, 255, 255, 0.05) 45%,
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(255, 255, 255, 0.03) 45%,
     rgba(255, 255, 255, 0) 100%
   );
+}
+
+/* Portaled dialogs pick up the global `border-border` wash — pin the shell and
+   header seam to the dark glass hairline tokens instead. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .macosx-dialog {
+  border-color: var(--os-color-window-border) !important;
 }
 
 /* --- Frosted window panes ------------------------------------------------- */
@@ -5603,6 +5666,49 @@
     rgba(255, 255, 255, 0.1),
     rgba(255, 255, 255, 0)
   );
+}
+
+/* Rounded pill when a menubar item is open (glass only). */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  [role="menubar"]
+  [role="menuitem"][data-state="open"] {
+  border-radius: 9999px !important;
+  margin-block: 2px;
+  height: calc(100% - 4px);
+  align-self: center;
+}
+
+/* Glass menubar: wallpaper shows through — no frosted strip. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] .mac-top-menubar {
+  background: transparent !important;
+  background-image: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+  border-bottom-color: transparent !important;
+}
+
+/* Dark labels on a light wallpaper: drop the macOS text halo. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .mac-top-menubar[data-menubar-text-tone="dark"]
+  [role="menubar"]
+  [role="menuitem"] {
+  text-shadow: none !important;
+}
+
+/* Only invert the Apple logo when labels are light (dark wallpaper). */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .mac-top-menubar[data-menubar-text-tone="light"]
+  [data-state="open"]
+  img[alt="Apple Menu"] {
+  filter: brightness(0) invert(1) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .mac-top-menubar[data-menubar-text-tone="dark"]
+  [data-state="open"]
+  img[alt="Apple Menu"] {
+  filter: var(--os-accent-apple-filter, none) !important;
 }
 
 /* --- Frosted dock --------------------------------------------------------- */
@@ -5787,82 +5893,6 @@
     );
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
   box-shadow: none;
-}
-
-/* --- Frosted select triggers (dark glass) --------------------------------- */
-/* Frosted translucent base with soft top + bottom shines (layered backgrounds;
-   ::after stays the chevron). Suppress ::before so we don't double-stack gloss. */
-:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
-  .macos-select-trigger,
-:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
-  .os-select-trigger-macos,
-:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
-  .os-btn-aqua-select {
-  backdrop-filter: blur(12px) saturate(180%);
-  -webkit-backdrop-filter: blur(12px) saturate(180%);
-  background: linear-gradient(
-        to bottom,
-        rgba(255, 255, 255, 0.22) 0%,
-        rgba(255, 255, 255, 0.06) 58%,
-        rgba(255, 255, 255, 0) 100%
-      )
-      top / 100% 50% no-repeat,
-    linear-gradient(
-        to top,
-        rgba(255, 255, 255, 0.12) 0%,
-        rgba(255, 255, 255, 0.04) 52%,
-        rgba(255, 255, 255, 0) 100%
-      )
-      bottom / 100% 42% no-repeat,
-    linear-gradient(
-      to bottom,
-      rgba(72, 72, 78, 0.42),
-      rgba(34, 34, 38, 0.42)
-    ) !important;
-  color: rgba(255, 255, 255, 0.92) !important;
-  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55) !important;
-  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2), 0 1px 1px rgba(0, 0, 0, 0.3),
-    0 0 0 1px rgba(0, 0, 0, 0.3) !important;
-}
-
-:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
-  .macos-select-trigger:before,
-:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
-  .os-select-trigger-macos:before,
-:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
-  .os-btn-aqua-select:before,
-:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
-  .aqua-select-btn:before {
-  background: none !important;
-}
-
-:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
-  .macos-select-trigger:active,
-:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
-  .os-select-trigger-macos:active,
-:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
-  .os-btn-aqua-select:active {
-  background: linear-gradient(
-        to bottom,
-        rgba(255, 255, 255, 0.1) 0%,
-        rgba(255, 255, 255, 0.03) 58%,
-        rgba(255, 255, 255, 0) 100%
-      )
-      top / 100% 50% no-repeat,
-    linear-gradient(
-        to top,
-        rgba(255, 255, 255, 0.06) 0%,
-        rgba(255, 255, 255, 0.02) 52%,
-        rgba(255, 255, 255, 0) 100%
-      )
-      bottom / 100% 42% no-repeat,
-    linear-gradient(
-      to bottom,
-      rgba(48, 48, 52, 0.52),
-      rgba(22, 22, 26, 0.52)
-    ) !important;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35),
-    inset 0 1px 1px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.28) !important;
 }
 
 /* --- Frosted search field ------------------------------------------------- */

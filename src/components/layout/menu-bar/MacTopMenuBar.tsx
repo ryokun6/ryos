@@ -5,6 +5,7 @@ import { AppMenu } from "../AppMenu";
 import { useAppStoreShallow } from "@/stores/useAppStore";
 import { useDisplaySettingsStoreShallow } from "@/stores/useDisplaySettingsStore";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
+import { useWallpaperMenubarText } from "@/hooks/useWallpaperMenubarText";
 import { useIsPhone } from "@/hooks/useIsPhone";
 import { isTauri, isTauriWindows } from "@/utils/platform";
 import { getTranslatedAppName } from "@/utils/i18n";
@@ -33,7 +34,9 @@ export function MacTopMenuBar({ children }: MacTopMenuBarProps) {
   const foregroundInstance = getForegroundInstance();
   const hasActiveApp = !!foregroundInstance;
 
-  const { isMacOSTheme, isMacTheme } = useThemeFlags();
+  const { isMacOSTheme, isMacTheme, isAquaGlass } = useThemeFlags();
+  const { textColor: glassMenubarText, tone: glassMenubarTone } =
+    useWallpaperMenubarText(isAquaGlass);
   const isPhone = useIsPhone();
   const isTauriApp = isTauri();
   const isFullscreen = useTauriFullscreen();
@@ -50,23 +53,38 @@ export function MacTopMenuBar({ children }: MacTopMenuBarProps) {
 
   return (
     <div
-      className={`fixed top-0 left-0 right-0 flex border-b-[length:var(--os-metrics-border-width)] border-os-menubar items-center font-os-ui ${exposeMode ? "z-[9997]" : "z-[10002]"}`}
+      className={`mac-top-menubar fixed top-0 left-0 right-0 flex items-center font-os-ui ${isAquaGlass ? "border-transparent" : "border-b-[length:var(--os-metrics-border-width)] border-os-menubar"} ${exposeMode ? "z-[9997]" : "z-[10002]"}`}
+      data-menubar-text-tone={isAquaGlass ? glassMenubarTone : undefined}
       style={{
-        background: isMacOSTheme
-          ? "var(--os-color-menubar-surface, rgba(248, 248, 248, 0.85))"
-          : "var(--os-color-menubar-bg)",
+        background: isAquaGlass
+          ? "transparent"
+          : isMacOSTheme
+            ? "var(--os-color-menubar-surface, rgba(248, 248, 248, 0.85))"
+            : "var(--os-color-menubar-bg)",
         backgroundImage:
-          isMacOSTheme ? "var(--os-pinstripe-menubar)" : undefined,
-        backdropFilter: isMacOSTheme ? "blur(20px)" : undefined,
+          isAquaGlass
+            ? undefined
+            : isMacOSTheme
+              ? "var(--os-pinstripe-menubar)"
+              : undefined,
+        backdropFilter:
+          isAquaGlass ? undefined : isMacOSTheme ? "blur(20px)" : undefined,
         WebkitBackdropFilter:
-          isMacOSTheme ? "blur(20px)" : undefined,
+          isAquaGlass ? undefined : isMacOSTheme ? "blur(20px)" : undefined,
         boxShadow:
-          isMacOSTheme
-            ? "0 2px 8px rgba(0, 0, 0, 0.15)"
-            : undefined,
+          isAquaGlass
+            ? undefined
+            : isMacOSTheme
+              ? "0 2px 8px rgba(0, 0, 0, 0.15)"
+              : undefined,
         fontFamily: "var(--os-font-ui)",
         fontSize: isMacOSTheme ? "var(--os-typography-button)" : undefined,
-        color: "var(--os-color-menubar-text)",
+        ...(isAquaGlass
+          ? {
+              ["--os-color-menubar-text" as string]: glassMenubarText,
+              color: glassMenubarText,
+            }
+          : { color: "var(--os-color-menubar-text)" }),
         paddingLeft: needsTrafficLightClearance
           ? "calc(78px + env(safe-area-inset-left, 0px))"
           : "calc(0.5rem + env(safe-area-inset-left, 0px))",
