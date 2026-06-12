@@ -43,7 +43,10 @@ export function BottomToolbar({
     <div
       className={cn(
         "py-1.5 border-t flex items-center gap-2",
-        isMacOSTheme ? "px-1" : "px-2"
+        // macOS: on desktop, match bottom padding to the horizontal padding so
+        // the buttons sit evenly inside the 8px metal margin (window-body adds
+        // mb-[8px]); keep the roomier py-1.5 bottom on mobile.
+        isMacOSTheme ? "px-1 md:pb-1" : "px-2"
       )}
       style={{
         borderColor: isXpTheme ? "#ACA899" : isMacOSTheme ? "rgba(0,0,0,0.25)" : "rgba(0,0,0,0.1)",
