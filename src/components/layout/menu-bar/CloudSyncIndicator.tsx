@@ -4,12 +4,13 @@ import { ArrowsClockwise } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "motion/react";
 import { useShallow } from "zustand/react/shallow";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Menubar,
+  MenubarMenu,
+  MenubarTrigger,
+  MenubarContent,
+  MenubarItem,
+  MenubarSeparator,
+} from "@/components/ui/menubar";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { getAppIconPath } from "@/config/appRegistry";
 import type { AppId } from "@/config/appRegistryData";
@@ -75,6 +76,8 @@ const SYNC_CATEGORY_ORDER: CloudSyncCategory[] = [
 
 const HOVER_CLOSE_DELAY_MS = 200;
 
+const MENU_VALUE = "cloud-sync";
+
 interface SyncCategoryActivity {
   category: CloudSyncCategory;
   isUploading: boolean;
@@ -91,7 +94,8 @@ export function CloudSyncIndicator() {
   const launchApp = useLaunchApp();
   const { play: playMenuOpen } = useSound(Sounds.MENU_OPEN);
   const { play: playMenuClose } = useSound(Sounds.MENU_CLOSE);
-  const [isOpen, setIsOpen] = useState(false);
+  const [menuValue, setMenuValue] = useState("");
+  const isOpen = menuValue === MENU_VALUE;
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { isCheckingRemote, lastCheckedAt, lastError, domainStatus } =
@@ -134,9 +138,9 @@ export function CloudSyncIndicator() {
 
   const openMenu = useCallback(() => {
     cancelScheduledClose();
-    setIsOpen((wasOpen) => {
-      if (!wasOpen) playMenuOpen();
-      return true;
+    setMenuValue((wasValue) => {
+      if (wasValue !== MENU_VALUE) playMenuOpen();
+      return MENU_VALUE;
     });
   }, [cancelScheduledClose, playMenuOpen]);
 
@@ -144,9 +148,9 @@ export function CloudSyncIndicator() {
     cancelScheduledClose();
     closeTimeoutRef.current = setTimeout(() => {
       closeTimeoutRef.current = null;
-      setIsOpen((wasOpen) => {
-        if (wasOpen) playMenuClose();
-        return false;
+      setMenuValue((wasValue) => {
+        if (wasValue === MENU_VALUE) playMenuClose();
+        return "";
       });
     }, HOVER_CLOSE_DELAY_MS);
   }, [cancelScheduledClose, playMenuClose]);
@@ -167,7 +171,7 @@ export function CloudSyncIndicator() {
     [scheduleClose]
   );
 
-  // Keep the indicator mounted while the menu is open so the dropdown does
+  // Keep the indicator mounted while the menu is open so the menu does
   // not vanish mid-read when the last sync operation finishes.
   if (isXpTheme || (!isCloudSyncActive && !isOpen)) return null;
 
@@ -189,108 +193,110 @@ export function CloudSyncIndicator() {
   };
 
   return (
-    <DropdownMenu
-      open={isOpen}
-      onOpenChange={(open) => {
+    <Menubar
+      value={menuValue}
+      onValueChange={(value) => {
         cancelScheduledClose();
-        setIsOpen(open);
+        setMenuValue(value);
       }}
-      modal={false}
+      className="flex items-center border-none bg-transparent p-0 space-x-0 rounded-none h-full"
     >
-      <DropdownMenuTrigger asChild>
-        <motion.button
-          type="button"
-          initial={{ opacity: 0, scale: 0.85 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.85 }}
-          transition={{ duration: 0.15, ease: "easeOut" }}
-          className="relative flex items-center justify-center px-1 py-0.5 rounded-sm hover:bg-black/10 active:bg-black/20 border-none focus-visible:ring-0 outline-none"
+      <MenubarMenu value={MENU_VALUE}>
+        <MenubarTrigger
+          className="flex items-center justify-center px-1 border-none focus-visible:ring-0"
           style={{ marginRight: "2px" }}
           title={syncLabel}
           aria-label={syncLabel}
           onPointerEnter={handlePointerEnter}
           onPointerLeave={handlePointerLeave}
         >
-          <ArrowsClockwise
-            aria-hidden="true"
-            className={`h-3.5 w-3.5 ${isCloudSyncActive ? "animate-spin" : ""}`}
-            weight="bold"
-            style={{
-              opacity: isSystem7Theme ? 1 : 0.82,
-              textShadow: isMacOSTheme
-                ? "0 2px 3px rgba(0, 0, 0, 0.25)"
-                : undefined,
-            }}
-          />
-        </motion.button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="end"
-        sideOffset={1}
-        className="min-w-[200px]"
-        onCloseAutoFocus={(event) => event.preventDefault()}
-        onPointerEnter={cancelScheduledClose}
-        onPointerLeave={handlePointerLeave}
-      >
-        <AnimatePresence initial={false}>
-          {activeCategories.map(({ category, isUploading }) => {
-            const meta = SYNC_CATEGORY_META[category];
-            return (
-              <motion.div
-                key={category}
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.15, ease: "easeOut" }}
-                className="overflow-hidden"
-              >
-                <div className={itemRowClass} style={itemRowStyle}>
-                  <ThemedIcon
-                    name={getAppIconPath(meta.appId)}
-                    alt=""
-                    className="size-4 shrink-0 object-contain"
-                  />
-                  <span>{t(meta.labelKey)}</span>
-                  <span className="ml-auto pl-3 text-xs opacity-60">
-                    {isUploading
-                      ? t("apps.control-panels.autoSync.uploading")
-                      : t("apps.control-panels.autoSync.fetching")}
-                  </span>
-                </div>
-              </motion.div>
-            );
-          })}
-        </AnimatePresence>
-        {activeCategories.length === 0 && (
-          <div className={itemRowClass} style={itemRowStyle}>
-            <span className="opacity-70">
-              {lastCheckedRelative
-                ? t("apps.control-panels.autoSync.lastChecked", {
-                    date: lastCheckedRelative,
-                  })
-                : t("apps.control-panels.autoSync.waiting")}
-            </span>
-          </div>
-        )}
-        {lastError && (
-          <div className={itemRowClass} style={itemRowStyle}>
-            <span className="text-red-600 break-words">
-              {t("apps.control-panels.autoSync.error", { error: lastError })}
-            </span>
-          </div>
-        )}
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onSelect={() => {
-            setIsOpen(false);
-            launchApp("control-panels", {
-              initialData: { defaultTab: "sync" },
-            });
-          }}
+          <motion.span
+            initial={{ opacity: 0, scale: 0.85 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+            className="flex items-center justify-center"
+          >
+            <ArrowsClockwise
+              aria-hidden="true"
+              className={`h-3.5 w-3.5 ${isCloudSyncActive ? "animate-spin" : ""}`}
+              weight="bold"
+              style={{
+                opacity: isSystem7Theme ? 1 : 0.82,
+                textShadow: isMacOSTheme
+                  ? "0 2px 3px rgba(0, 0, 0, 0.25)"
+                  : undefined,
+              }}
+            />
+          </motion.span>
+        </MenubarTrigger>
+        <MenubarContent
+          align="end"
+          sideOffset={1}
+          className="min-w-[200px]"
+          onCloseAutoFocus={(event) => event.preventDefault()}
+          onPointerEnter={cancelScheduledClose}
+          onPointerLeave={handlePointerLeave}
         >
-          {t("apps.control-panels.autoSync.openSettings")}
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+          <AnimatePresence initial={false}>
+            {activeCategories.map(({ category, isUploading }) => {
+              const meta = SYNC_CATEGORY_META[category];
+              return (
+                <motion.div
+                  key={category}
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.15, ease: "easeOut" }}
+                  className="overflow-hidden"
+                >
+                  <div className={itemRowClass} style={itemRowStyle}>
+                    <ThemedIcon
+                      name={getAppIconPath(meta.appId)}
+                      alt=""
+                      className="size-4 shrink-0 object-contain"
+                    />
+                    <span>{t(meta.labelKey)}</span>
+                    <span className="ml-auto pl-3 text-xs opacity-60">
+                      {isUploading
+                        ? t("apps.control-panels.autoSync.uploading")
+                        : t("apps.control-panels.autoSync.fetching")}
+                    </span>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
+          {activeCategories.length === 0 && (
+            <div className={itemRowClass} style={itemRowStyle}>
+              <span className="opacity-70">
+                {lastCheckedRelative
+                  ? t("apps.control-panels.autoSync.lastChecked", {
+                      date: lastCheckedRelative,
+                    })
+                  : t("apps.control-panels.autoSync.waiting")}
+              </span>
+            </div>
+          )}
+          {lastError && (
+            <div className={itemRowClass} style={itemRowStyle}>
+              <span className="text-red-600 break-words">
+                {t("apps.control-panels.autoSync.error", { error: lastError })}
+              </span>
+            </div>
+          )}
+          <MenubarSeparator />
+          <MenubarItem
+            onSelect={() => {
+              setMenuValue("");
+              launchApp("control-panels", {
+                initialData: { defaultTab: "sync" },
+              });
+            }}
+          >
+            {t("apps.control-panels.autoSync.openSettings")}
+          </MenubarItem>
+        </MenubarContent>
+      </MenubarMenu>
+    </Menubar>
   );
 }
