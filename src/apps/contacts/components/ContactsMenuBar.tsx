@@ -1,17 +1,5 @@
-import {
-  MenubarCheckboxItem,
-  MenubarContent,
-  MenubarItem,
-  MenubarMenu,
-  MenubarSeparator,
-  MenubarTrigger,
-} from "@/components/ui/menubar";
 import { AppMenuBarShell } from "@/components/shared/menubar/AppMenuBarShell";
-import {
-  MENUBAR_ITEM_CLASS,
-  MENUBAR_SEPARATOR_CLASS,
-  MENUBAR_TRIGGER_CLASS,
-} from "@/components/shared/menubar/menubarStyles";
+import { AppMenuBarMenus } from "@/components/shared/menubar/AppMenuBarMenus";
 import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
 import { requestCloudSyncDomainCheck } from "@/utils/cloudSyncEvents";
 import { useTranslation } from "react-i18next";
@@ -62,56 +50,60 @@ export function ContactsMenuBar({
       onShowHelp={onShowHelp}
       onShowAbout={onShowAbout}
     >
-      <MenubarMenu>
-        <MenubarTrigger className={MENUBAR_TRIGGER_CLASS}>
-          {t("common.menu.file")}
-        </MenubarTrigger>
-        <MenubarContent align="start" sideOffset={1} className="px-0">
-          <MenubarItem onClick={onNewContact} className={MENUBAR_ITEM_CLASS}>
-            {t("apps.contacts.menu.newContact")}
-          </MenubarItem>
-          <MenubarItem onClick={onImport} className={MENUBAR_ITEM_CLASS}>
-            {t("apps.contacts.menu.importVCard")}
-          </MenubarItem>
-          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
-          <MenubarItem
-            onClick={() => requestCloudSyncDomainCheck("contacts")}
-            className={MENUBAR_ITEM_CLASS}
-          >
-            {t("apps.contacts.menu.syncContacts", {
-              defaultValue: "Sync Contacts",
-            })}
-          </MenubarItem>
-          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
-          <MenubarItem onClick={onClose} className={MENUBAR_ITEM_CLASS}>
-            {t("common.menu.close")}
-          </MenubarItem>
-        </MenubarContent>
-      </MenubarMenu>
-
-      <MenubarMenu>
-        <MenubarTrigger className={MENUBAR_TRIGGER_CLASS}>
-          {t("common.menu.edit")}
-        </MenubarTrigger>
-        <MenubarContent align="start" sideOffset={1} className="px-0">
-          <MenubarCheckboxItem
-            checked={isSelectedMine}
-            onClick={onMarkAsMine}
-            disabled={!hasSelectedContact}
-            className={MENUBAR_ITEM_CLASS}
-          >
-            {t("apps.contacts.menu.markAsMine", { defaultValue: "Mark as Mine" })}
-          </MenubarCheckboxItem>
-          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
-          <MenubarItem
-            onClick={onDeleteContact}
-            disabled={!hasSelectedContact}
-            className={MENUBAR_ITEM_CLASS}
-          >
-            {t("apps.contacts.menu.deleteContact")}
-          </MenubarItem>
-        </MenubarContent>
-      </MenubarMenu>
+      <AppMenuBarMenus
+        menus={[
+          {
+            label: t("common.menu.file"),
+            items: [
+              {
+                type: "action",
+                label: t("apps.contacts.menu.newContact"),
+                onClick: onNewContact,
+              },
+              {
+                type: "action",
+                label: t("apps.contacts.menu.importVCard"),
+                onClick: onImport,
+              },
+              { type: "separator" },
+              {
+                type: "action",
+                label: t("apps.contacts.menu.syncContacts", {
+                  defaultValue: "Sync Contacts",
+                }),
+                onClick: () => requestCloudSyncDomainCheck("contacts"),
+              },
+              { type: "separator" },
+              {
+                type: "action",
+                label: t("common.menu.close"),
+                onClick: onClose,
+              },
+            ],
+          },
+          {
+            label: t("common.menu.edit"),
+            items: [
+              {
+                type: "checkbox",
+                label: t("apps.contacts.menu.markAsMine", {
+                  defaultValue: "Mark as Mine",
+                }),
+                checked: isSelectedMine,
+                onChange: onMarkAsMine,
+                disabled: !hasSelectedContact,
+              },
+              { type: "separator" },
+              {
+                type: "action",
+                label: t("apps.contacts.menu.deleteContact"),
+                onClick: onDeleteContact,
+                disabled: !hasSelectedContact,
+              },
+            ],
+          },
+        ]}
+      />
     </AppMenuBarShell>
   );
 }

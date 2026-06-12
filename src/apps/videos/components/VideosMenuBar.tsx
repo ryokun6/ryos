@@ -1,18 +1,20 @@
+import { useMemo } from "react";
 import {
   MenubarMenu,
   MenubarTrigger,
   MenubarContent,
   MenubarItem,
   MenubarSeparator,
-  MenubarSub,
-  MenubarSubTrigger,
-  MenubarSubContent,
 } from "@/components/ui/menubar";
 import { AppMenuBarShell } from "@/components/shared/menubar/AppMenuBarShell";
 import { MediaControlsMenu } from "@/components/shared/menubar/MediaControlsMenu";
+import { LibraryTrackBrowser } from "@/components/shared/menubar/LibraryTrackBrowser";
 import { MENUBAR_SEPARATOR_CLASS } from "@/components/shared/menubar/menubarStyles";
 import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
-import { cn } from "@/lib/utils";
+import {
+  getSortedArtistNames,
+  groupTracksByArtist,
+} from "@/utils/groupTracksByArtist";
 import { useTranslation } from "react-i18next";
 
 interface Video {
@@ -81,21 +83,29 @@ export function VideosMenuBar({
     appName,
   } = useAppMenuBarChrome("videos");
 
-  // Group videos by artist
-  const videosByArtist = videos.reduce<Record<string, Video[]>>(
-    (acc, video) => {
-      const artist = video.artist || t("apps.videos.menu.unknownArtist");
-      if (!acc[artist]) {
-        acc[artist] = [];
-      }
-      acc[artist].push(video);
-      return acc;
-    },
-    {}
+  // Group videos by artist. Memoized because the menubar re-renders on
+  // every player tick and the reduce/sort is wasted work otherwise.
+  const unknownArtistLabel = t("apps.videos.menu.unknownArtist");
+  const videosByArtist = useMemo(
+    () => groupTracksByArtist(videos, unknownArtistLabel),
+    [videos, unknownArtistLabel]
+  );
+  const artists = useMemo(
+    () => getSortedArtistNames(videosByArtist),
+    [videosByArtist]
   );
 
-  // Get sorted list of artists
-  const artists = Object.keys(videosByArtist).sort();
+  const currentIndex = useMemo(
+    () => videos.findIndex((video) => video.id === currentVideoId),
+    [videos, currentVideoId]
+  );
+
+  const handlePlayVideo = (index: number) => {
+    const video = videos[index];
+    if (video) {
+      onPlayVideo(video.id);
+    }
+  };
 
   return (
     <AppMenuBarShell
@@ -187,75 +197,19 @@ export function VideosMenuBar({
           {videos.length > 0 && (
             <>
               <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
-              
-              {/* All Videos section */}
-              <MenubarSub>
-                <MenubarSubTrigger className="text-md h-6 px-3">
-                  <div className="flex justify-between w-full items-center overflow-hidden">
-                    <span className="truncate min-w-0">{t("apps.videos.menu.allVideos")}</span>
-                  </div>
-                </MenubarSubTrigger>
-                <MenubarSubContent className="px-0 max-w-[180px] sm:max-w-[220px]">
-                  {videos.map((video) => (
-                    <MenubarItem
-                      key={`all-${video.id}`}
-                      onClick={() => onPlayVideo(video.id)}
-                      className={cn(
-                        "text-md h-6 px-3 max-w-[220px] truncate",
-                        video.id === currentVideoId && "bg-neutral-200"
-                      )}
-                    >
-                      <div className="flex items-center w-full">
-                        <span
-                          className={cn(
-                            "flex-none whitespace-nowrap",
-                            video.id === currentVideoId ? "mr-1" : "pl-5"
-                          )}
-                        >
-                          {video.id === currentVideoId ? "♪ " : ""}
-                        </span>
-                        <span className="truncate min-w-0">{video.title}</span>
-                      </div>
-                    </MenubarItem>
-                  ))}
-                </MenubarSubContent>
-              </MenubarSub>
-              
-              {/* Individual Artist submenus */}
-              {artists.map((artist) => (
-                <MenubarSub key={artist}>
-                  <MenubarSubTrigger className="text-md h-6 px-3">
-                    <div className="flex justify-between w-full items-center overflow-hidden">
-                      <span className="truncate min-w-0">{artist}</span>
-                    </div>
-                  </MenubarSubTrigger>
-                  <MenubarSubContent className="px-0 max-w-[180px] sm:max-w-[220px]">
-                    {videosByArtist[artist].map((video) => (
-                      <MenubarItem
-                        key={`${artist}-${video.id}`}
-                        onClick={() => onPlayVideo(video.id)}
-                        className={cn(
-                          "text-md h-6 px-3 max-w-[160px] sm:max-w-[200px] truncate",
-                          video.id === currentVideoId && "bg-neutral-200"
-                        )}
-                      >
-                        <div className="flex items-center w-full">
-                          <span
-                            className={cn(
-                              "flex-none whitespace-nowrap",
-                              video.id === currentVideoId ? "mr-1" : "pl-5"
-                            )}
-                          >
-                            {video.id === currentVideoId ? "♪ " : ""}
-                          </span>
-                          <span className="truncate min-w-0">{video.title}</span>
-                        </div>
-                      </MenubarItem>
-                    ))}
-                  </MenubarSubContent>
-                </MenubarSub>
-              ))}
-              
+
+              <LibraryTrackBrowser
+                tracks={videos}
+                currentIndex={currentIndex}
+                tracksByArtist={videosByArtist}
+                artists={artists}
+                onPlayTrack={handlePlayVideo}
+                t={t}
+                allItemsLabel={t("apps.videos.menu.allVideos")}
+                itemVariant="nowPlaying"
+                limitLargeLibraries={false}
+              />
+
               <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
             </>
           )}

@@ -4,11 +4,11 @@ import {
   MenubarContent,
   MenubarItem,
   MenubarSeparator,
-  MenubarCheckboxItem,
   MenubarRadioGroup,
   MenubarRadioItem,
 } from "@/components/ui/menubar";
 import { AppMenuBarShell } from "@/components/shared/menubar/AppMenuBarShell";
+import { MediaControlsMenu } from "@/components/shared/menubar/MediaControlsMenu";
 import {
   MENUBAR_ITEM_CLASS,
   MENUBAR_SEPARATOR_CLASS,
@@ -111,42 +111,29 @@ export function WinampMenuBar({
           </MenubarRadioGroup>
         </MenubarContent>
       </MenubarMenu>
-      <MenubarMenu>
-        <MenubarTrigger className={MENUBAR_TRIGGER_CLASS}>
-          {t("apps.winamp.menu.controls")}
-        </MenubarTrigger>
-        <MenubarContent align="start" sideOffset={1} className="px-0">
-          <MenubarItem onClick={onTogglePlay} className={MENUBAR_ITEM_CLASS}>
-            {isPlaying
-              ? t("apps.winamp.menu.pause")
-              : t("apps.winamp.menu.play")}
-          </MenubarItem>
+      <MediaControlsMenu
+        menuLabel={t("apps.winamp.menu.controls")}
+        triggerClassName={MENUBAR_TRIGGER_CLASS}
+        isPlaying={isPlaying}
+        onTogglePlay={onTogglePlay}
+        onPreviousTrack={onPreviousTrack}
+        onNextTrack={onNextTrack}
+        playLabel={t("apps.winamp.menu.play")}
+        pauseLabel={t("apps.winamp.menu.pause")}
+        previousLabel={t("apps.winamp.menu.previous")}
+        nextLabel={t("apps.winamp.menu.next")}
+        shuffleLabel={t("apps.winamp.menu.shuffle")}
+        repeatAllLabel={t("apps.winamp.menu.repeat")}
+        isShuffled={isShuffleEnabled}
+        onToggleShuffle={onToggleShuffle}
+        isLoopAll={isRepeatEnabled}
+        onToggleLoopAll={onToggleRepeat}
+        afterTogglePlayItems={
           <MenubarItem onClick={onStopPlayback} className={MENUBAR_ITEM_CLASS}>
             {t("apps.winamp.menu.stop")}
           </MenubarItem>
-          <MenubarItem onClick={onPreviousTrack} className={MENUBAR_ITEM_CLASS}>
-            {t("apps.winamp.menu.previous")}
-          </MenubarItem>
-          <MenubarItem onClick={onNextTrack} className={MENUBAR_ITEM_CLASS}>
-            {t("apps.winamp.menu.next")}
-          </MenubarItem>
-          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
-          <MenubarCheckboxItem
-            checked={isShuffleEnabled}
-            onCheckedChange={() => onToggleShuffle()}
-            className={MENUBAR_ITEM_CLASS}
-          >
-            {t("apps.winamp.menu.shuffle")}
-          </MenubarCheckboxItem>
-          <MenubarCheckboxItem
-            checked={isRepeatEnabled}
-            onCheckedChange={() => onToggleRepeat()}
-            className={MENUBAR_ITEM_CLASS}
-          >
-            {t("apps.winamp.menu.repeat")}
-          </MenubarCheckboxItem>
-        </MenubarContent>
-      </MenubarMenu>
+        }
+      />
 
     </AppMenuBarShell>
   );
