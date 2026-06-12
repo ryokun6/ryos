@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import { useAppHelpAboutDialogs } from "@/hooks/useAppHelpAboutDialogs";
 import { useTranslation } from "react-i18next";
 import { helpItems } from "..";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
@@ -58,8 +59,12 @@ export function useMinesweeperLogic() {
     "minesweeper",
     helpItems || []
   );
-  const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
-  const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
+  const {
+    isHelpDialogOpen,
+    setIsHelpDialogOpen,
+    isAboutDialogOpen,
+    setIsAboutDialogOpen,
+  } = useAppHelpAboutDialogs();
   const [isNewGameDialogOpen, setIsNewGameDialogOpen] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [gameWon, setGameWon] = useState(false);

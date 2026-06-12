@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
+import { useAppHelpAboutDialogs } from "@/hooks/useAppHelpAboutDialogs";
 import { useTranslation } from "react-i18next";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { helpItems } from "..";
@@ -207,8 +208,12 @@ export function useControlPanelsLogic({
     "control-panels",
     helpItems
   );
-  const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
-  const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
+  const {
+    isHelpDialogOpen,
+    setIsHelpDialogOpen,
+    isAboutDialogOpen,
+    setIsAboutDialogOpen,
+  } = useAppHelpAboutDialogs();
   const [isConfirmResetOpen, setIsConfirmResetOpen] = useState(false);
   const [isConfirmFormatOpen, setIsConfirmFormatOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);

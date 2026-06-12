@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
+import { useAppHelpAboutDialogs } from "@/hooks/useAppHelpAboutDialogs";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useVfsFileOperations } from "@/services/vfs/useVfsFileOperations";
 import { readImageBlobContent } from "@/services/vfs/FileContentRepository";
@@ -40,8 +41,12 @@ export function usePaintLogic({ initialData, instanceId }: UsePaintLogicProps) {
   const [strokeWidth, setStrokeWidth] = useState<number>(1);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
-  const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
-  const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
+  const {
+    isHelpDialogOpen,
+    setIsHelpDialogOpen,
+    isAboutDialogOpen,
+    setIsAboutDialogOpen,
+  } = useAppHelpAboutDialogs();
   const [isConfirmNewDialogOpen, setIsConfirmNewDialogOpen] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const currentFilePath = usePaintStore((state) => state.lastFilePath);

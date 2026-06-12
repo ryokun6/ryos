@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useAppHelpAboutDialogs } from "@/hooks/useAppHelpAboutDialogs";
 import { useTranslation } from "react-i18next";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { helpItems } from "..";
@@ -9,8 +9,12 @@ export function useWinampLogic() {
   const translatedHelpItems = useTranslatedHelpItems("winamp", helpItems);
   const { isWindowsTheme: isXpTheme } = useThemeFlags();
 
-  const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
-  const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
+  const {
+    isHelpDialogOpen,
+    setIsHelpDialogOpen,
+    isAboutDialogOpen,
+    setIsAboutDialogOpen,
+  } = useAppHelpAboutDialogs();
 
   return {
     t,

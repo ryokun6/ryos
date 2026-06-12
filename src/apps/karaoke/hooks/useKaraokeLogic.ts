@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect, useCallback, useMemo, useReducer } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useMediaAppDialogs } from "@/hooks/useMediaAppDialogs";
 import ReactPlayer from "react-player";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
@@ -238,146 +239,38 @@ export function useKaraokeLogic({
     return listenRemoteOnly ? -1 : (tracks.length > 0 ? 0 : -1);
   }, [activeTrackId, listenRemoteOnly, tracks]);
 
-  const [uiState, dispatchUi] = useReducer(
-    (
-      state: {
-        isHelpDialogOpen: boolean;
-        isAboutDialogOpen: boolean;
-        isLangMenuOpen: boolean;
-        isPronunciationMenuOpen: boolean;
-        isConfirmClearOpen: boolean;
-        isShareDialogOpen: boolean;
-        isLyricsSearchDialogOpen: boolean;
-        isSongSearchDialogOpen: boolean;
-        isSyncModeOpen: boolean;
-        isAddingSong: boolean;
-        isListenInviteOpen: boolean;
-        isJoinListenDialogOpen: boolean;
-        isCoverFlowOpen: boolean;
-      },
-      action: {
-        type: "set";
-        key: keyof typeof state;
-        value: boolean | ((prev: boolean) => boolean);
-      }
-    ) => ({
-      ...state,
-      [action.key]:
-        typeof action.value === "function"
-          ? action.value(state[action.key])
-          : action.value,
-    }),
-    {
-      isHelpDialogOpen: false,
-      isAboutDialogOpen: false,
-      isLangMenuOpen: false,
-      isPronunciationMenuOpen: false,
-      isConfirmClearOpen: false,
-      isShareDialogOpen: false,
-      isLyricsSearchDialogOpen: false,
-      isSongSearchDialogOpen: false,
-      isSyncModeOpen: false,
-      isAddingSong: false,
-      isListenInviteOpen: false,
-      isJoinListenDialogOpen: false,
-      isCoverFlowOpen: false,
-    }
-  );
+  // Dialog/menu/overlay open state (shared reducer-based hook)
   const {
     isHelpDialogOpen,
+    setIsHelpDialogOpen,
     isAboutDialogOpen,
+    setIsAboutDialogOpen,
     isLangMenuOpen,
+    setIsLangMenuOpen,
     isPronunciationMenuOpen,
+    setIsPronunciationMenuOpen,
     isConfirmClearOpen,
+    setIsConfirmClearOpen,
     isShareDialogOpen,
+    setIsShareDialogOpen,
     isLyricsSearchDialogOpen,
+    setIsLyricsSearchDialogOpen,
     isSongSearchDialogOpen,
+    setIsSongSearchDialogOpen,
     isSyncModeOpen,
+    setIsSyncModeOpen,
     isAddingSong,
+    setIsAddingSong,
     isListenInviteOpen,
+    setIsListenInviteOpen,
     isJoinListenDialogOpen,
+    setIsJoinListenDialogOpen,
     isCoverFlowOpen,
-  } = uiState;
-  const setBool = useCallback(
-    (
-      key: keyof typeof uiState,
-      value: boolean | ((prev: boolean) => boolean)
-    ) => {
-      dispatchUi({ type: "set", key, value });
-    },
-    []
-  );
-  // Dialog state
-  const setIsHelpDialogOpen = useCallback(
-    (value: boolean | ((prev: boolean) => boolean)) =>
-      setBool("isHelpDialogOpen", value),
-    [setBool]
-  );
-  const setIsAboutDialogOpen = useCallback(
-    (value: boolean | ((prev: boolean) => boolean)) =>
-      setBool("isAboutDialogOpen", value),
-    [setBool]
-  );
-  const setIsLangMenuOpen = useCallback(
-    (value: boolean | ((prev: boolean) => boolean)) =>
-      setBool("isLangMenuOpen", value),
-    [setBool]
-  );
-  const setIsPronunciationMenuOpen = useCallback(
-    (value: boolean | ((prev: boolean) => boolean)) =>
-      setBool("isPronunciationMenuOpen", value),
-    [setBool]
-  );
+    setIsCoverFlowOpen,
+  } = useMediaAppDialogs();
   const anyMenuOpen = isLangMenuOpen || isPronunciationMenuOpen;
-  
-  // New dialogs for iPod menu features
-  const setIsConfirmClearOpen = useCallback(
-    (value: boolean | ((prev: boolean) => boolean)) =>
-      setBool("isConfirmClearOpen", value),
-    [setBool]
-  );
-  const setIsShareDialogOpen = useCallback(
-    (value: boolean | ((prev: boolean) => boolean)) =>
-      setBool("isShareDialogOpen", value),
-    [setBool]
-  );
-  const setIsLyricsSearchDialogOpen = useCallback(
-    (value: boolean | ((prev: boolean) => boolean)) =>
-      setBool("isLyricsSearchDialogOpen", value),
-    [setBool]
-  );
-  const setIsSongSearchDialogOpen = useCallback(
-    (value: boolean | ((prev: boolean) => boolean)) =>
-      setBool("isSongSearchDialogOpen", value),
-    [setBool]
-  );
-  const setIsSyncModeOpen = useCallback(
-    (value: boolean | ((prev: boolean) => boolean)) =>
-      setBool("isSyncModeOpen", value),
-    [setBool]
-  );
-  const setIsAddingSong = useCallback(
-    (value: boolean | ((prev: boolean) => boolean)) =>
-      setBool("isAddingSong", value),
-    [setBool]
-  );
-  const setIsListenInviteOpen = useCallback(
-    (value: boolean | ((prev: boolean) => boolean)) =>
-      setBool("isListenInviteOpen", value),
-    [setBool]
-  );
-  const setIsJoinListenDialogOpen = useCallback(
-    (value: boolean | ((prev: boolean) => boolean)) =>
-      setBool("isJoinListenDialogOpen", value),
-    [setBool]
-  );
-  
+
   // CoverFlow state
-  const setIsCoverFlowOpen = useCallback(
-    (value: boolean | ((prev: boolean) => boolean)) =>
-      setBool("isCoverFlowOpen", value),
-    [setBool]
-  );
   const coverFlowRef = useRef<CoverFlowRef>(null);
   
   // Long press refs for CoverFlow toggle
