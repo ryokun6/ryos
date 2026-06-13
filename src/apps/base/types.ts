@@ -122,6 +122,7 @@ export interface TerminalInitialData {
 export interface ChatsInitialData {
   prefillMessage?: string;
   autoSend?: boolean;
+  prefillRequestId?: string;
 }
 
 // Union type for all possible app configurations

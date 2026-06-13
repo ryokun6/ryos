@@ -169,24 +169,29 @@ export function useChatsAppController({
 
   const prefillAppliedRef = useRef<string | null>(null);
   useEffect(() => {
+    const prefillMessage = initialData?.prefillMessage;
+    const prefillRequestKey = initialData?.prefillRequestId ?? prefillMessage;
+
     if (
-      initialData?.prefillMessage &&
-      initialData.prefillMessage !== prefillAppliedRef.current
+      prefillMessage &&
+      prefillRequestKey &&
+      prefillRequestKey !== prefillAppliedRef.current
     ) {
-      prefillAppliedRef.current = initialData.prefillMessage;
+      prefillAppliedRef.current = prefillRequestKey;
 
       if (currentRoomId) {
         handleRoomSelect(null);
       }
 
       if (initialData.autoSend) {
-        handleDirectMessageSubmit(initialData.prefillMessage);
+        handleDirectMessageSubmit(prefillMessage);
       } else {
-        setInputPrefillMessage(initialData.prefillMessage);
+        setInputPrefillMessage(prefillMessage);
       }
     }
   }, [
     initialData?.prefillMessage,
+    initialData?.prefillRequestId,
     initialData?.autoSend,
     handleDirectMessageSubmit,
     currentRoomId,

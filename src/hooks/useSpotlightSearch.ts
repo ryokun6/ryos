@@ -591,7 +591,14 @@ export function useSpotlightSearch(query: string): SpotlightSearchState {
       type: "ai" as const,
       title: `${t("spotlight.askRyo")} \u201C${trimmed}\u201D`,
       icon: getAppIconPath("chats"),
-      action: () => launchApp("chats", { initialData: { prefillMessage: trimmed, autoSend: true } }),
+      action: () =>
+        launchApp("chats", {
+          initialData: {
+            prefillMessage: trimmed,
+            autoSend: true,
+            prefillRequestId: `${Date.now()}`,
+          },
+        }),
     });
 
     // Cap total
