@@ -13,6 +13,7 @@ import { useFinderStore } from "@/stores/useFinderStore";
 import { useFilesStore } from "@/stores/useFilesStore";
 import { useDockStore } from "@/stores/useDockStore";
 import { useIsPhone } from "@/hooks/useIsPhone";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useIsRyoAdmin } from "@/hooks/useIsRyoAdmin";
 import { useLongPress } from "@/hooks/useLongPress";
 import { useSound, Sounds } from "@/hooks/useSound";
@@ -47,6 +48,7 @@ import {
 export function MacDock() {
   const { t } = useTranslation();
   const isPhone = useIsPhone();
+  const { isAquaGlass } = useThemeFlags();
   // Match Dashboard shell guards: no bottom hover capture zone on touch-first viewports.
   const useSwipeToRevealDock = useDashboardShellInputDisabled();
   const { dockInstancesSignature, bringInstanceToForeground, restoreInstance, minimizeInstance, closeAppInstance } =
@@ -163,8 +165,11 @@ export function MacDock() {
 
   // Computed scaled sizes (from the committed scale; drag preview is a transform)
   const scaledButtonSize = Math.round(DOCK_BASE_BUTTON_SIZE * dockScale);
-  const scaledDockHeight = Math.round(56 * dockScale); // Base dock height is 56px
-  const scaledPadding = Math.round(4 * dockScale); // Base padding is 4px (py-1, px-1)
+  const scaledPadding = Math.round(4 * dockScale); // Base horizontal padding is 4px (px-1)
+  // Aqua glass gets extra breathing room above/below the icons.
+  const scaledVerticalPadding = Math.round((isAquaGlass ? 8 : 4) * dockScale);
+  // Dock height tracks the icon size plus the vertical padding on both sides.
+  const scaledDockHeight = scaledButtonSize + scaledVerticalPadding * 2;
 
 
   const {
@@ -775,12 +780,12 @@ export function MacDock() {
             boxShadow:
               "var(--os-color-dock-shadow, 0 2px 8px rgba(0, 0, 0, 0.15))",
             height: scaledDockHeight,
-            padding: scaledPadding,
+            padding: `${scaledVerticalPadding}px ${scaledPadding}px`,
             maxWidth: "min(92vw, 980px)",
             transformOrigin: "center bottom",
             borderRadius: "0px",
             overflowX: isPhone ? "auto" : "visible",
-            overflowY: "visible",
+            overflowY: isPhone ? "hidden" : "visible",
             WebkitOverflowScrolling: isPhone ? "touch" : undefined,
             overscrollBehaviorX: isPhone ? "contain" : undefined,
           }}

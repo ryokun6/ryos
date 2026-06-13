@@ -17,7 +17,7 @@ import { fileURLToPath } from 'url';
 // ============================================================================
 const MAJOR_VERSION = 10;
 const MINOR_VERSION = 3;
-const DESKTOP_VERSION = '1.0.1';
+const DESKTOP_VERSION = '1.0.2';
 // ============================================================================
 
 const __dirname = dirname(fileURLToPath(import.meta.url));

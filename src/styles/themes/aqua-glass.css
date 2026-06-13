@@ -165,6 +165,15 @@
   );
 }
 
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] .os-status-bar {
+  border-top-color: rgba(0, 0, 0, 0.05);
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .os-status-bar {
+  border-top-color: rgba(255, 255, 255, 0.06);
+}
+
 /* Portaled dialogs pick up the global `border-border` wash — pin the shell and
    header seam to the dark glass hairline tokens instead. */
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
@@ -181,8 +190,8 @@
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
   .window.window-material-glass {
   background-color: var(--os-color-window-bg);
-  backdrop-filter: blur(26px) saturate(185%);
   -webkit-backdrop-filter: blur(26px) saturate(185%);
+  backdrop-filter: blur(26px) saturate(185%);
   border-radius: var(--os-glass-r-lg) !important;
   box-shadow: var(--os-window-shadow),
     inset 0 1px 0 rgba(255, 255, 255, 0.4);
@@ -204,8 +213,8 @@
     var(--os-color-window-bg) 75%,
     transparent
   );
-  backdrop-filter: blur(26px) saturate(80%);
   -webkit-backdrop-filter: blur(26px) saturate(80%);
+  backdrop-filter: blur(26px) saturate(80%);
 }
 
 /* Drop the hard titlebar divider — on a single frosted pane the seam reads as
@@ -224,8 +233,8 @@
    pane (used by iPod / iTunes-style windows that opt into the metal material). */
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
   .window-material-brushedmetal {
-  backdrop-filter: blur(26px) saturate(185%);
   -webkit-backdrop-filter: blur(26px) saturate(185%);
+  backdrop-filter: blur(26px) saturate(185%);
   /* Classic brushed-metal proportion (Finder, iTunes, etc.) — not the 12px
      glass pane radius used by default-material windows. */
   border-radius: var(--os-glass-r-metal) !important;
@@ -241,8 +250,8 @@
    regular glass panes. */
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
   .window-material-brushedmetal:not(.is-foreground) {
-  backdrop-filter: blur(26px) saturate(80%);
   -webkit-backdrop-filter: blur(26px) saturate(80%);
+  backdrop-filter: blur(26px) saturate(80%);
 }
 
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
@@ -295,7 +304,7 @@
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
   .window-body
   .os-sidebar
-  .bg-white\/90:not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *):not(.synth-force-font *):not(.dashboard-overlay *) {
+  .bg-white\/90:not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *):not(.synth-force-font *):not(.dashboard-overlay *):not(.admin-card):not(.admin-card-header):not(.admin-detail-header) {
   background-color: transparent !important;
 }
 
@@ -350,8 +359,8 @@
 /* Beef up the menubar blur and swap the white pinstripe gloss for a soft
    specular top highlight. */
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .menubar {
-  backdrop-filter: blur(26px) saturate(185%) !important;
   -webkit-backdrop-filter: blur(26px) saturate(185%) !important;
+  backdrop-filter: blur(26px) saturate(185%) !important;
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.4) inset,
     0 -1px 0 rgba(0, 0, 0, 0.08) inset;
 }
@@ -394,8 +403,8 @@
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .mac-top-menubar {
   background: transparent !important;
   background-image: none !important;
-  backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
   box-shadow: none !important;
   border-bottom-color: transparent !important;
 }
@@ -427,8 +436,8 @@
 /* `border-radius` overrides the inline `0px` from MacDock so the pill reads as
    a modern rounded glass tray. */
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .mac-dock-surface {
-  backdrop-filter: blur(26px) saturate(185%);
   -webkit-backdrop-filter: blur(26px) saturate(185%);
+  backdrop-filter: blur(26px) saturate(185%);
   border-radius: var(--os-glass-r-dock) !important;
   border: var(--os-metrics-border-width) solid var(--os-color-window-border) !important;
   /* Lift the glass pill off the screen edge — classic dock sits flush. */
@@ -458,8 +467,8 @@
     [data-radix-popover-content],
     [data-radix-select-content]
   ) {
-  backdrop-filter: blur(36px) saturate(200%) !important;
   -webkit-backdrop-filter: blur(36px) saturate(200%) !important;
+  backdrop-filter: blur(36px) saturate(200%) !important;
   /* Replace the inline pinstripe-window fill (0.74–0.8 alpha — opaque enough
      to bury the blur) with a lighter wash so the backdrop blur reads through.
      No `opacity` override here: the components skip their inline `0.92` when
@@ -501,8 +510,8 @@
    to bury the blur); swap in a lighter wash + add the same backdrop blur,
    rounded glass radius and hairline rim the dropdowns/menus use. */
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .spotlight-panel {
-  backdrop-filter: blur(36px) saturate(200%) !important;
   -webkit-backdrop-filter: blur(36px) saturate(200%) !important;
+  backdrop-filter: blur(36px) saturate(200%) !important;
   background: color-mix(
     in srgb,
     var(--os-accent-color, #3a73d6) 6%,
@@ -584,8 +593,8 @@
   )
   .metal-inset-btn-group {
   background: transparent;
-  backdrop-filter: blur(12px) saturate(180%);
   -webkit-backdrop-filter: blur(12px) saturate(180%);
+  backdrop-filter: blur(12px) saturate(180%);
   border: none;
   box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2), 0 1px 1px rgba(0, 0, 0, 0.3),
     0 0 0 1px rgba(0, 0, 0, 0.3);
@@ -645,8 +654,8 @@
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
   .metal-inset-btn-group {
   background: transparent;
-  backdrop-filter: blur(12px) saturate(180%);
   -webkit-backdrop-filter: blur(12px) saturate(180%);
+  backdrop-filter: blur(12px) saturate(180%);
   border: none;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35), 0 1px 1px rgba(0, 0, 0, 0.35),
     inset 0 0 0 0.5px rgba(255, 255, 255, 0.08),
@@ -704,26 +713,208 @@
     [data-os-color-scheme="dark"]
   )
   input[data-os-search-input="true"] {
-  background-color: rgba(255, 255, 255, 0.42) !important;
-  backdrop-filter: blur(12px) saturate(180%);
+  background-color: rgba(255, 255, 255, 0.26) !important;
   -webkit-backdrop-filter: blur(12px) saturate(180%);
-  border-color: rgba(0, 0, 0, 0.28) !important;
+  backdrop-filter: blur(12px) saturate(180%);
+  border-color: rgba(0, 0, 0, 0.24) !important;
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12),
     0 1px 0 rgba(255, 255, 255, 0.45) !important;
 }
 
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
   input[data-os-search-input="true"] {
-  background-color: rgba(255, 255, 255, 0.1) !important;
-  backdrop-filter: blur(12px) saturate(180%);
+  background-color: rgba(255, 255, 255, 0.06) !important;
   -webkit-backdrop-filter: blur(12px) saturate(180%);
+  backdrop-filter: blur(12px) saturate(180%);
   border-color: rgba(255, 255, 255, 0.16) !important;
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4),
     0 1px 0 rgba(255, 255, 255, 0.05) !important;
 }
 
+/* --- App sidebar (glass) -------------------------------------------------- */
+/* Shared inset list + fading divider for Chats, Admin, Soundboard, etc. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .os-app-sidebar:not(.os-app-sidebar--overlay):not(.os-app-sidebar--stacked) {
+  position: relative;
+  border-right: none !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .os-app-sidebar:not(.os-app-sidebar--overlay):not(.os-app-sidebar--stacked)::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 1px;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    transparent 4%,
+    rgba(0, 0, 0, 0.05) 10%,
+    rgba(0, 0, 0, 0.05) 100%
+  );
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .os-app-sidebar:not(.os-app-sidebar--overlay):not(.os-app-sidebar--stacked)::after {
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    transparent 4%,
+    rgba(255, 255, 255, 0.06) 10%,
+    rgba(255, 255, 255, 0.06) 100%
+  );
+}
+
+/* Inset rounded rows — mirrors glass dropdown menu gutter + item radii. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] .os-app-sidebar-list {
+  padding: 0 5px;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] .os-app-sidebar-header {
+  padding-left: 10px !important;
+  padding-right: 10px !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] .os-app-sidebar-section {
+  padding-left: 10px !important;
+  padding-right: 10px !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] .os-app-sidebar-item {
+  padding: 4px 10px !important;
+  border-radius: var(--os-glass-r-xs);
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .os-app-sidebar-item:hover:not([data-selected="true"]) {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .os-app-sidebar-item:hover:not([data-selected="true"]) {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* --- Admin main pane (glass) ---------------------------------------------- */
+/* Mirror Finder: frosted `os-sidebar` pane, transparent toolbars, translucent
+   dashboard cards, etched header bands — no pinstripe or opaque white slabs. */
+:root[data-os-theme="macosx"] .admin-toolbar {
+  background-image: none !important;
+  background-color: transparent !important;
+}
+
+/* Toolbar segment selection — same tokens as menubar open items. */
+:root[data-os-theme="macosx"] .admin-toolbar .admin-toolbar-segment {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+:root[data-os-theme="macosx"]
+  .admin-toolbar
+  .admin-toolbar-segment[data-state="off"]:is(:hover, :active, :focus, :focus-visible) {
+  background: transparent !important;
+  color: inherit !important;
+  box-shadow: none !important;
+}
+
+:root[data-os-theme="macosx"] .admin-toolbar .admin-toolbar-segment[data-state="on"] {
+  background-color: var(--os-color-selection-bg) !important;
+  color: var(--os-color-selection-text) !important;
+  text-shadow: var(--os-color-selection-text-shadow);
+}
+
+:root[data-os-theme="macosx"]
+  .admin-toolbar
+  .admin-toolbar-segment[data-state="on"]:is(:hover, :active, :focus, :focus-visible) {
+  background-color: var(--os-color-selection-bg) !important;
+  color: var(--os-color-selection-text) !important;
+  box-shadow: none !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .admin-toolbar
+  .admin-toolbar-segment[data-state="on"] {
+  border-radius: 9999px !important;
+}
+
+:root[data-os-theme="macosx"] .admin-main-pane.os-sidebar {
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+:root[data-os-theme="macosx"]:not([data-os-aqua-material="glass"]) .admin-card {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+}
+
+:root[data-os-theme="macosx"]:not([data-os-aqua-material="glass"])[data-os-color-scheme="dark"]
+  .admin-card {
+  background-color: rgba(31, 31, 34, 0.92) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]:not(
+    [data-os-color-scheme="dark"]
+  )
+  .admin-card {
+  background-color: rgba(255, 255, 255, 0.32) !important;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  border-color: rgba(0, 0, 0, 0.18) !important;
+  border-radius: var(--os-glass-r-admin-card) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .admin-card {
+  background-color: rgba(28, 28, 32, 0.52) !important;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  border-radius: var(--os-glass-r-admin-card) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+}
+
+:root[data-os-theme="macosx"] .admin-card-header {
+  background-color: transparent !important;
+}
+
+:root[data-os-theme="macosx"]:not([data-os-aqua-material="glass"]) .admin-card-header {
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.45),
+    rgba(0, 0, 0, 0.03)
+  ) !important;
+  border-bottom-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]:not(
+    [data-os-color-scheme="dark"]
+  )
+  :is(.admin-card-header, .admin-detail-header) {
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.14),
+    rgba(0, 0, 0, 0.02)
+  ) !important;
+  border-bottom-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  :is(.admin-card-header, .admin-detail-header) {
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.04),
+    rgba(0, 0, 0, 0.06)
+  ) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
 /* Finder / metal-toolbar inset groups keep the classic 4px grouped slab in glass
-   (rounded-rect, scaled by --os-glass-radius-factor). Capsule shapes — menubar
+   (squircle-enhanced in the @supports block below). Capsule shapes — menubar
    selection, search field — stay fully round via their own rules. */
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
   .metal-inset-btn-group
@@ -768,8 +959,8 @@
     [data-os-color-scheme="dark"]
   )
   .aqua-tab[data-state="active"] {
-  backdrop-filter: none;
   -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   background: var(
     --os-accent-tab-active-bg,
     linear-gradient(rgb(48 123 201), rgb(152 189 228), rgb(210 255 255))
@@ -856,8 +1047,8 @@
 
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
   .aqua-tab[data-state="active"] {
-  backdrop-filter: none;
   -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   background: var(
     --os-accent-tab-active-bg,
     linear-gradient(rgb(28, 76, 130), rgb(70, 117, 168), rgb(132, 178, 224))
@@ -898,8 +1089,8 @@
 /* Glass tabs: classic ::before/::after sizing (15% / 20%), flat translucent
    base, no backdrop-filter on inactive pills, no filter blur on gloss. */
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .aqua-tab:not([data-state="active"]) {
-  backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
 }
 
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .aqua-tab:before,
@@ -926,12 +1117,12 @@
     inset 0 -1px 0 rgba(0, 0, 0, 0.45);
 }
 
-/* --- Glass corner radii ---------------------------------------------------- */
-/* Aqua Glass uses plain rounded-rect corners — no `corner-shape`/squircles
-   (Chrome's GPU compositor drops `backdrop-filter` when its clip bounds are a
-   non-rectangular squircle path, which blanked the frosted blur). A moderate
-   1.3× bump keeps the radii slightly enlarged for a softer modern look while
-   reading less blobby than the old squircle-compensating 1.84× scale. */
+/* --- Glass corner radii (fallback) ----------------------------------------- */
+/* Fallback browsers (no `corner-shape`): a moderate 1.3× bump keeps the radii
+   slightly enlarged for a softer modern look while reading less blobby than the
+   squircle-compensating 1.84× scale. Squircle-capable browsers override the
+   factor to 1.84× and switch to `corner-shape: squircle` in the @supports block
+   below. */
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"] {
   --os-glass-radius-factor: 1.3;
   --os-metrics-radius: calc(0.45rem * var(--os-glass-radius-factor));
@@ -948,7 +1139,8 @@
   --os-glass-r-lg: calc(12px * var(--os-glass-radius-factor));
   --os-glass-r-metal: calc(0.6rem * var(--os-glass-radius-factor));
   --os-glass-r-dock: calc(13px * var(--os-glass-radius-factor));
-  --os-glass-r-bubble: calc(16px * var(--os-glass-radius-factor));
+  --os-glass-r-bubble: 16px;
+  --os-glass-r-admin-card: calc(12px * var(--os-glass-radius-factor));
 }
 
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
@@ -1028,7 +1220,119 @@
 }
 
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .chat-bubble::before {
-  border-radius: var(--os-glass-r-bubble) var(--os-glass-r-bubble)
-    calc(4px * var(--os-glass-radius-factor))
-    calc(4px * var(--os-glass-radius-factor));
+  border-radius: var(--os-glass-r-bubble) var(--os-glass-r-bubble) 4px 4px;
+}
+
+/* --- Squircle corners (progressive enhancement) --------------------------- */
+/* Bump the shared radius factor to 1.84× and add corner-shape — squircles
+   curve tighter so they need the full compensation; round arcs use the 1.3×
+   fallback above. */
+@supports (corner-shape: squircle) {
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"] {
+    --os-corner-shape: squircle;
+    --os-glass-radius-factor: 1.84;
+    --os-glass-r-select: calc(8px * var(--os-glass-radius-factor));
+    --os-glass-r-select-gloss: calc(7px * var(--os-glass-radius-factor));
+    --os-glass-r-select-group: calc(6px * var(--os-glass-radius-factor));
+  }
+
+  /* NOTE: pseudo-elements are invalid inside :is()/:where() and get silently
+     dropped, so the ::before / ::after layers are listed as standalone
+     selectors below — do not fold them back into the :is() list. */
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+    :is(
+      .window.window-material-glass,
+      .window.window-material-brushedmetal,
+      .mac-dock-surface,
+      .metal-inset-btn-group,
+      .aqua-select-btn,
+      .macos-select-trigger,
+      .os-select-trigger-macos,
+      .os-btn-aqua-select,
+      .macosx-dialog,
+      .rounded-os,
+      .admin-card,
+      [data-radix-popper-content-wrapper]
+        :where(
+          [role="menu"],
+          [role="listbox"],
+          [data-radix-menu-content],
+          [data-radix-popover-content],
+          [data-radix-select-content]
+        )
+    ),
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+    .window-material-brushedmetal::before,
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+    .window-material-brushedmetal::after,
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+    .macos-select-trigger::before,
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+    .aqua-select-btn::before {
+    corner-shape: var(--os-corner-shape);
+  }
+
+  /* Chat bubbles keep circular arcs — squircling distorts the compact pill. */
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .chat-bubble {
+    --os-glass-r-bubble: 16px;
+    border-radius: var(--os-glass-r-bubble) !important;
+    corner-shape: round;
+  }
+
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .chat-bubble::before {
+    corner-shape: round;
+    border-radius: var(--os-glass-r-bubble) var(--os-glass-r-bubble) 4px 4px !important;
+  }
+
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+    :is(.aqua-tab, .macosx-dialog-header) {
+    corner-shape: squircle squircle round round;
+  }
+
+  /* Capsules stay circular — menubar selection, search field, other pills. */
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+    :is(
+      .rounded-full,
+      input[data-os-search-input="true"],
+      [role="menubar"] [role="menuitem"][data-state="open"]
+    ) {
+    corner-shape: round;
+  }
+
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+    .metal-inset-btn-group {
+    corner-shape: var(--os-corner-shape);
+  }
+
+  /* Child pills must share the group's corner geometry, otherwise their
+     background rounds off with circular arcs inside the squircle clip and
+     leaves unfilled corner slivers (visible on the selected segment). */
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+    .metal-inset-btn-group
+    .metal-inset-btn {
+    corner-shape: var(--os-corner-shape);
+  }
+
+  /* Menu item highlights follow the panel's squircle vocabulary. */
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+    [data-radix-popper-content-wrapper]
+    :where(
+      [role="menuitem"],
+      [role="menuitemcheckbox"],
+      [role="menuitemradio"],
+      [role="option"]
+    ) {
+    corner-shape: var(--os-corner-shape);
+  }
+
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .os-app-sidebar-item {
+    corner-shape: var(--os-corner-shape);
+  }
+
+  /* `.aqua-button` is a 28px capsule (14px radius = fully round) — it keeps
+     its classic round pill shape; squircling it would distort the capsule. */
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .aqua-button,
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .aqua-button::before {
+    corner-shape: round;
+  }
 }

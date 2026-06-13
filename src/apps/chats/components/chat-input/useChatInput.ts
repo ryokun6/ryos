@@ -77,8 +77,11 @@ export function useChatInput({
     }));
   const debugMode = useDisplaySettingsStoreShallow((s) => s.debugMode);
   const aiModel = useAppStoreShallow((s) => s.aiModel);
-  const { isMacOSTheme: isMacTheme, isWindowsTheme: isXpTheme } =
-    useThemeFlags();
+  const {
+    isMacOSTheme: isMacTheme,
+    isWindowsTheme: isXpTheme,
+    isAquaGlass,
+  } = useThemeFlags();
 
   const modelDisplayName = aiModel ? AI_MODELS[aiModel]?.name : null;
 
@@ -380,6 +383,7 @@ export function useChatInput({
     imageInputRef,
     isMacTheme,
     isXpTheme,
+    isAquaGlass,
     debugMode,
     modelDisplayName,
     isTypingRyoMention,

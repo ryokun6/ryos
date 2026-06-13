@@ -28,6 +28,7 @@ import {
   type SelectionPoint,
 } from "@/utils/selection";
 import type { MenuItem } from "@/components/ui/right-click-menu";
+import { isDesktop } from "@/utils/platform";
 import { getWallpaperStyles } from "./desktopWallpaperUtils";
 import { openDesktopAlias } from "./openDesktopAlias";
 import {
@@ -91,8 +92,7 @@ export function useDesktop({
     isSystem7Theme,
   } = useThemeFlags();
 
-  const isTauriApp =
-    typeof window !== "undefined" && "__TAURI__" in window;
+  const isDesktopApp = isDesktop();
 
   const launchApp = useLaunchApp();
 
@@ -749,7 +749,7 @@ export function useDesktop({
       setContextMenuShortcutPath(null);
       clearSelection();
     },
-    isTauriApp,
+    isDesktopApp,
     isXpTheme,
     isMacOSTheme,
     currentTheme,

@@ -17,7 +17,7 @@ import type { DesktopItemId } from "./desktopTypes";
 export interface DesktopIconGridProps {
   isXpTheme: boolean;
   isMacOSTheme: boolean;
-  isTauriApp: boolean;
+  isDesktopApp: boolean;
   currentTheme: string;
   macintoshHdName: string;
   trashName: string;
@@ -46,7 +46,7 @@ export interface DesktopIconGridProps {
 export function DesktopIconGrid({
   isXpTheme,
   isMacOSTheme,
-  isTauriApp,
+  isDesktopApp,
   currentTheme,
   macintoshHdName,
   trashName,
@@ -78,10 +78,10 @@ export function DesktopIconGrid({
         isXpTheme
           ? {
               // Exclude menubar, safe area, and an extra visual buffer to prevent clipping
-              // Add extra top padding for Tauri traffic lights on Windows themes
+              // Add extra top padding for desktop traffic lights on Windows themes
               height:
                 "calc(100% - (30px + var(--sat-safe-area-bottom) + 48px))",
-              paddingTop: isTauriApp ? 36 : undefined,
+              paddingTop: isDesktopApp ? 36 : undefined,
               paddingLeft: "calc(0.25rem + env(safe-area-inset-left, 0px))",
               paddingRight: "calc(0.5rem + env(safe-area-inset-right, 0px))",
               paddingBottom: "env(safe-area-inset-bottom, 0px)",

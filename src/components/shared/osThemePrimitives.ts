@@ -4,10 +4,13 @@ type ThemeSurfaceFlags = {
   isMacOSTheme: boolean;
   isSystem7Theme: boolean;
   isXpTheme: boolean;
+  isWindowsTheme?: boolean;
   isWin98?: boolean;
+  isAquaGlass?: boolean;
 };
 
 type DrawerPlacement = "right" | "left" | "bottom" | "top";
+type AppSidebarLayout = "side" | "overlay" | "responsive";
 
 export function osCardClassName(
   flags: ThemeSurfaceFlags,
@@ -132,6 +135,48 @@ export function osToolbarSurfaceClassName(
     !isMacOSTheme &&
       isWin98 &&
       "bg-os-window-bg border-os-separator text-os-text-primary",
+    className
+  );
+}
+
+export function osAppSidebarSurfaceClassName(
+  flags: Pick<
+    ThemeSurfaceFlags,
+    "isMacOSTheme" | "isXpTheme" | "isWindowsTheme" | "isAquaGlass"
+  >,
+  options: {
+    layout?: AppSidebarLayout;
+    surfaceClassName?: string;
+    className?: string;
+  } = {}
+): string {
+  const {
+    isMacOSTheme,
+    isXpTheme,
+    isWindowsTheme = isXpTheme,
+    isAquaGlass = false,
+  } = flags;
+  const {
+    layout = "side",
+    surfaceClassName = "bg-neutral-100 text-os-text-primary",
+    className,
+  } = options;
+
+  const borderColorClass = isWindowsTheme
+    ? "border-[#919b9c]"
+    : isMacOSTheme
+      ? isAquaGlass
+        ? ""
+        : "border-black/10"
+      : "border-black";
+
+  return cn(
+    "os-app-sidebar flex flex-col font-geneva-12 text-[12px]",
+    isMacOSTheme && isAquaGlass ? "bg-transparent" : surfaceClassName,
+    layout === "overlay" && "os-app-sidebar--overlay w-full border-b",
+    layout === "side" && "w-56 border-r h-full overflow-hidden",
+    layout === "responsive" && "w-full border-b md:border-r md:border-b-0",
+    borderColorClass,
     className
   );
 }

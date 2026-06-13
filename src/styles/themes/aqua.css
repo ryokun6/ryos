@@ -2344,6 +2344,11 @@
   font-family: inherit !important;
 }
 
+/* Status bar top edge — match app sidebar divider tones. */
+:root[data-os-theme="macosx"] .os-status-bar {
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
 /* -------------------------------------------------- */
 /* macOS Aqua Switch & Slider overrides                */
 /* Make thumbs visually identical to .aqua-button primary/secondary */
@@ -2846,8 +2851,8 @@
   background-image: var(--os-pinstripe-menubar);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   border: none;
-  backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
 }
 :root[data-os-theme="macosx"] .maps-place-card-aqua {
   color: rgba(0, 0, 0, 0.9);
@@ -2879,8 +2884,8 @@
   box-shadow: 0 6px 22px rgb(0 0 0 / 0.45);
   border: 1px solid var(--os-color-sidebar-border);
   color: var(--os-color-text-primary);
-  backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
 }
 
 /* Same as light: keep gradient badge glyphs white on dark glass */
@@ -2918,8 +2923,8 @@
   background-image: var(--os-pinstripe-menubar) !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
   border: none !important;
-  backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
 }
 
 /* Ensure toast text is readable on semi-transparent background */

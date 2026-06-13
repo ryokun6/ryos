@@ -32,6 +32,16 @@
    Those stylesheets handle the button icons via background-image.
    No override needed here - CSS specificity handles it. */
 
+/* Status bar top edges use the same divider tones as each platform's sidebars. */
+:root[data-os-theme="xp"] .os-status-bar,
+:root[data-os-theme="win98"] .os-status-bar {
+  border-top: 1px solid #919b9c;
+}
+
+:root[data-os-theme="system7"] .os-status-bar {
+  border-top: 1px solid #000;
+}
+
 /* Reset Windows button styles for iPod/Karaoke fullscreen toolbar buttons */
 :root[data-os-platform="windows"] .ipod-force-font button,
 :root[data-os-platform="windows"] .karaoke-force-font button {

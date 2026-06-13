@@ -3,6 +3,30 @@ import { MagnifyingGlass, XCircle } from "@phosphor-icons/react";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { cn } from "@/lib/utils";
 
+interface OsPillInputPadding {
+  /** Room for a left search glyph (`pl-7`). */
+  withSearchIcon?: boolean;
+  /** Room for a right clear button (`pr-7`). */
+  withClearButton?: boolean;
+}
+
+function osPillInputClasses(
+  isMacOSTheme: boolean,
+  { withSearchIcon = false, withClearButton = false }: OsPillInputPadding = {},
+  inputClassName?: string,
+) {
+  const pl = withSearchIcon ? "pl-7" : "pl-3";
+  const pr = withClearButton ? "pr-7" : "pr-3";
+
+  return cn(
+    "w-full outline-none min-w-0",
+    isMacOSTheme
+      ? `rounded-full border border-black/40 bg-white ${pl} ${pr} py-[3px] text-[11px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.3),inset_0_0_1px_rgba(0,0,0,0.15),0_1px_0_rgba(255,255,255,0.45)] font-geneva-12`
+      : `rounded-full border border-black/20 bg-white ${pl} ${pr} py-1 text-[11px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.12)]`,
+    inputClassName,
+  );
+}
+
 interface SearchInputProps {
   value: string;
   onChange: (value: string) => void;
@@ -11,11 +35,19 @@ interface SearchInputProps {
   /** Extra classes for the inner input element (e.g. size overrides). */
   inputClassName?: string;
   width?: string;
+  id?: string;
+  inputRef?: React.RefObject<HTMLInputElement | null>;
   ariaLabel?: string;
+  ariaBusy?: boolean;
   title?: string;
   /** Accessible label (and tooltip) for the clear button. */
   clearAriaLabel?: string;
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  disabled?: boolean;
+  /** Show the magnifying glass on the left (default true). */
+  showSearchIcon?: boolean;
+  /** Show the clear button when there is text (default true). */
+  showClear?: boolean;
 }
 
 export function SearchInput({
@@ -25,44 +57,58 @@ export function SearchInput({
   className,
   inputClassName,
   width,
+  id,
+  inputRef,
   ariaLabel,
+  ariaBusy,
   title,
   clearAriaLabel,
   onKeyDown,
+  disabled,
+  showSearchIcon = true,
+  showClear = true,
 }: SearchInputProps) {
   const { isMacOSTheme } = useThemeFlags();
+  const canClear = showClear && value.length > 0 && !disabled;
 
   return (
     <div
       className={cn("relative min-w-0", className)}
       style={width ? { width } : undefined}
     >
-      <MagnifyingGlass
-        size={13}
-        weight="bold"
-        className={cn(
-          "pointer-events-none absolute left-2 top-1/2 z-10 -translate-y-1/2 os-search-icon",
-          isMacOSTheme ? "text-black/45" : "text-black/35"
-        )}
-      />
+      {showSearchIcon ? (
+        <MagnifyingGlass
+          size={13}
+          weight="bold"
+          className={cn(
+            "pointer-events-none absolute left-2 top-1/2 z-10 -translate-y-1/2 os-search-icon",
+            isMacOSTheme ? "text-black/45" : "text-black/35",
+          )}
+        />
+      ) : null}
       <input
+        id={id}
+        ref={inputRef}
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={onKeyDown}
         aria-label={ariaLabel}
+        aria-busy={ariaBusy || undefined}
         title={title}
         placeholder={placeholder}
+        disabled={disabled}
         data-os-search-input="true"
-        className={cn(
-          "w-full outline-none min-w-0",
-          isMacOSTheme
-            ? "rounded-full border border-black/40 bg-white pl-7 pr-7 py-[3px] text-[11px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.3),inset_0_0_1px_rgba(0,0,0,0.15),0_1px_0_rgba(255,255,255,0.45)] font-geneva-12"
-            : "rounded-full border border-black/20 bg-white pl-7 pr-7 py-1 text-[11px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.12)]",
-          inputClassName
+        className={osPillInputClasses(
+          isMacOSTheme,
+          {
+            withSearchIcon: showSearchIcon,
+            withClearButton: canClear,
+          },
+          inputClassName,
         )}
       />
-      {value && (
+      {canClear && (
         <button
           type="button"
           onMouseDown={(e) => e.preventDefault()}

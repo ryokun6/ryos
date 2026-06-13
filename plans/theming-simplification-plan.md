@@ -17,6 +17,7 @@ Simplify ryOS theming by consolidating around the existing root attribute + CSS 
 | 4. Split and normalize CSS layers | Complete | 5 / 5 | `themes.css` now imports focused layer files under `src/styles/themes/`. |
 | 5. Normalize theme data sources | Complete | 5 / 5 | Removed unused TS visual fields and added first-paint config parity tests. |
 | 6. Regression pass and docs | Complete | 5 / 5 | Docs, skill guidance, tests, build, and visual checks completed. |
+| 7. Refactor new `main` styling changes | Complete | 4 / 4 | Latest Aqua Glass/Admin/sidebar styling from `main` is routed through split CSS layers and shared primitives. |
 
 ## Update protocol
 
@@ -192,6 +193,28 @@ Validation:
 - Run `bun run build` before merging broad CSS or shared component changes.
 - Capture screenshots/video only when visual verification is explicitly requested or a UI change requires it.
 
+## Phase 7. Refactor new `main` styling changes
+
+Acceptance criteria:
+
+- Latest upstream Aqua Glass styling lands in the split CSS layer files instead of reintroducing a monolithic `themes.css`.
+- New Admin, Chats, and Soundboard sidebar styling uses shared primitives for wrapper surfaces.
+- Admin toolbar and icon-button styling reuses existing theme helpers.
+- Focused tests cover the new shared primitive contract.
+
+Tasks:
+
+- [x] Merge latest `origin/main` and identify new styling changes.
+- [x] Move upstream status-bar, Admin, app-sidebar, search input, and squircle CSS into `aqua.css`, `platform.css`, `dark-aqua.css`, and `aqua-glass.css`.
+- [x] Add `osAppSidebarSurfaceClassName` and migrate Admin, Chats, and Soundboard sidebars.
+- [x] Reuse `osToolbarSurfaceClassName` / `osSubtleIconButtonClassName` for Admin styling and update docs/tests.
+
+Validation:
+
+- Run relevant Bun tests.
+- Run `bun run build`.
+- Run the preview-build visual regression pass after the merge/refactor.
+
 ## Risk register
 
 | Risk | Mitigation |
@@ -216,4 +239,5 @@ Validation:
 - 2026-06-13: Phase 5 validation completed. `bun test tests/test-os-theme-primitives.test.ts tests/test-theme-bootstrap-config.test.ts` and `bun run build` passed; Playwright preview-build screenshot comparison against baseline commit `7bf4823c9dd2e632ba769aff21817e6e555daccf` passed for `macosx`, `macosx` dark, `system7`, `xp`, and `win98`.
 - 2026-06-13: Phase 6 completed in PR #1484. Updated implementer/user docs and the UI styling skill for split CSS layers, metadata-only theme definitions, first-paint bootstrap config, shared primitives, and the CSS-vs-React branch boundary.
 - 2026-06-13: Final validation completed. `bun test tests/test-os-theme-primitives.test.ts tests/test-theme-bootstrap-config.test.ts` and `bun run build` passed; final Playwright preview-build screenshot comparison against baseline commit `7bf4823c9dd2e632ba769aff21817e6e555daccf` passed for `macosx`, `macosx` dark, `system7`, `xp`, and `win98`.
+- 2026-06-13: Phase 7 completed in PR #1484 after merging `origin/main`. Routed new Aqua Glass status-bar/Admin/sidebar/search/squircle CSS through split theme layers, added `osAppSidebarSurfaceClassName`, migrated Admin/Chats/Soundboard sidebars, and reused existing Admin toolbar/icon-button primitives.
 - 2026-06-13: Created the initial plan after auditing the store, root attributes, CSS token architecture, Tailwind variants, and representative component consumers.

@@ -1,22 +1,34 @@
 import { cn } from "@/lib/utils";
+import { osSubtleIconButtonClassName } from "@/components/shared/osThemePrimitives";
 
-/** Main content pane — mirrors Finder's white pane surface and dark remap. */
-export const adminSurfaceClass = "bg-white/90 text-os-text-primary";
+/** Main content pane — transparent; window frost shows through (see themes.css). */
+export const adminMainPaneClass =
+  "admin-main-pane os-sidebar bg-transparent text-os-text-primary";
+
+/** Nested split pane / fallback surface on the right. */
+export const adminSurfaceClass = "bg-transparent text-os-text-primary";
 
 /** Recessed sidebar / secondary panel surface. */
 export const adminSidebarClass = "bg-white/90 text-os-text-primary";
 
+/** Toolbar band above list views — transparent on macOS (see themes.css). */
+export const adminToolbarClass = "admin-toolbar";
+
+/** Compact toolbar segment (range toggles, filters) — interaction states in themes.css. */
+export const adminToolbarSegmentClass =
+  "admin-toolbar-segment h-7 px-2 text-[12px] rounded-none transition-none focus-visible:outline-none focus-visible:ring-0";
+
 /** Card / panel shell with theme-aware border. */
 export const adminCardClass =
-  "overflow-hidden rounded border border-black/10 bg-white/90 os-mac-aqua-dark:border-white/10";
+  "admin-card overflow-hidden rounded border border-black/10 bg-transparent os-mac-aqua-dark:border-white/10";
 
 /** Card header band (dashboard sections, server card, etc.). */
 export const adminCardHeaderClass =
-  "border-b border-black/10 bg-white/90 px-3 py-2 os-mac-aqua-dark:border-white/10";
+  "admin-card-header border-b border-black/10 bg-transparent px-3 py-1 text-[11px] leading-tight os-mac-aqua-dark:border-white/10";
 
 /** Detail panel header (user profile, song detail). */
 export const adminDetailHeaderClass =
-  "flex items-center gap-2 border-b border-black/10 bg-white/90 px-3 py-2 os-mac-aqua-dark:border-white/10";
+  "admin-detail-header flex items-center gap-2 border-b border-black/10 bg-transparent px-3 py-1.5 text-[11px] leading-tight os-mac-aqua-dark:border-white/10";
 
 /** Uppercase section labels in cards and profile panels. */
 export const adminSectionLabelClass =
@@ -29,30 +41,25 @@ export const adminSectionHeaderClass =
 /** Theme-aware vertical list dividers. */
 export const adminListDividerClass = "admin-soft-list-dividers";
 
-/** Table header cell background. */
+/** Table header cell — transparent like Finder list columns (dark remap in themes.css). */
 export const adminTableHeadClass =
-  "font-normal bg-os-panel-bg/80 text-os-text-secondary";
+  "font-normal text-os-text-secondary";
 
 /** Subtle row hover — remapped in dark `.window-body`, explicit for Aqua dark. */
 export const adminRowHoverClass =
   "hover:bg-neutral-100/50 os-mac-aqua-dark:hover:bg-white/8 transition-colors";
 
-/** Alternating row tint (manual index-based striping). */
-export const adminAltRowBgClass =
-  "bg-[color:var(--os-color-list-row-alt-bg)]";
+/** Manual alternating row tint (profile sub-tables). */
+export const adminAltRowBgClass = "bg-black/5";
 
-/** Zebra-striped data table row. */
+/** Zebra-striped data table row — `odd:bg-black/5` matches Finder list view. */
 export const adminTableRowClass = cn(
   "border-none group",
-  "odd:bg-[color:var(--os-color-list-row-alt-bg)]",
-  adminRowHoverClass,
+  "odd:bg-black/5 hover:bg-black/5 transition-colors",
 );
 
 /** Ghost icon button in admin tables / lists. */
-export const adminGhostIconBtnClass = cn(
-  "text-os-text-secondary hover:text-os-text-primary",
-  "os-mac-aqua-dark:hover:bg-white/8",
-);
+export const adminGhostIconBtnClass = cn(osSubtleIconButtonClassName());
 
 /** Load-more / secondary action text button. */
 export const adminLoadMoreBtnClass =

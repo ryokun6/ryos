@@ -175,7 +175,7 @@ const MANUAL_CHUNK_BY_PACKAGE: Record<string, string> = {
 
 // https://vite.dev/config/
 export default defineConfig({
-  envPrefix: ['VITE_', 'TAURI_ENV_*'],
+  envPrefix: ['VITE_'],
   define: {
     'import.meta.env.VITE_BUILD_NUMBER': JSON.stringify(ryosBuildNumber),
     // Expose VERCEL_ENV to the client for environment detection
@@ -220,7 +220,8 @@ export default defineConfig({
         "**/.terminals/**",
         "**/dist/**",
         "**/.vercel/**",
-        "**/src-tauri/**",
+        "**/dist-electron/**",
+        "**/electron/**",
         "**/api/**",
         "**/public/**", // 500+ static files don't need HMR watching
         "**/node_modules/**",
@@ -400,9 +401,9 @@ export default defineConfig({
     },
     react(),
     tailwindcss(),
-    // Only include PWA plugin in production builds (not Tauri, not dev)
+    // Only include PWA plugin in production builds (not dev)
     // Skip PWA plugin entirely in dev mode to save ~50MB memory (Workbox config is heavy)
-    ...(process.env.TAURI_ENV || isDev ? [] : [
+    ...(isDev ? [] : [
       collectHeavyChunksPlugin(),
       VitePWA({
       registerType: "autoUpdate",

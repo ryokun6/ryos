@@ -27,7 +27,7 @@ export function UserProfilePanelStatsSection({ t, profile, isLoading, formatDate
         </div>
       </div>
       {!isLoading && profile?.banned && (
-        <div className="p-2 bg-red-50 rounded border border-red-200">
+        <div className="p-2 bg-red-500/10 rounded border border-red-500/20 os-mac-aqua-dark:border-red-400/25">
           <SectionHeader
             className="flex items-start gap-1.5 text-red-600 mb-1"
             icon={<Prohibit className="size-3 mt-px" weight="bold" />}

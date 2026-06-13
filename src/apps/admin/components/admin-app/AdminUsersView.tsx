@@ -83,7 +83,7 @@ export function AdminUsersView({
                   className={cn(
                     adminTableRowClass,
                     "cursor-pointer",
-                    user.banned && "bg-red-50/50 odd:bg-red-50/70",
+                    user.banned && "bg-red-500/10 odd:bg-red-500/15",
                   )}
                   onClick={() => setSelectedUserProfile(user.username)}
                 >
@@ -92,7 +92,7 @@ export function AdminUsersView({
                       className={cn(
                         "size-4 rounded-full flex items-center justify-center text-[9px] font-medium",
                         user.banned
-                          ? "bg-red-200 text-red-700"
+                          ? "bg-red-500/25 text-red-700 os-mac-aqua-dark:text-red-300"
                           : adminAvatarWellClass,
                       )}
                     >
@@ -102,7 +102,7 @@ export function AdminUsersView({
                   </TableCell>
                   <TableCell>
                     {user.banned ? (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] bg-red-100 text-red-700 rounded">
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] bg-red-500/15 text-red-700 os-mac-aqua-dark:text-red-300 rounded">
                         <Prohibit className="size-2.5" weight="bold" />
                         {t("apps.admin.user.banned")}
                       </span>

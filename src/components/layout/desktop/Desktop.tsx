@@ -3,7 +3,7 @@ import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import type { DesktopProps } from "./desktopTypes";
 import { useDesktop } from "./useDesktop";
 import { DesktopIconGrid } from "./DesktopIconGrid";
-import { DesktopTauriDragRegion } from "./DesktopTauriDragRegion";
+import { DesktopDragRegion } from "./DesktopDragRegion";
 
 export function Desktop(props: DesktopProps) {
   const d = useDesktop(props);
@@ -35,14 +35,14 @@ export function Desktop(props: DesktopProps) {
           display: d.isVideoWallpaper ? "block" : "none",
         }}
       />
-      <DesktopTauriDragRegion
-        isTauriApp={d.isTauriApp}
+      <DesktopDragRegion
+        isDesktopApp={d.isDesktopApp}
         isXpTheme={d.isXpTheme}
       />
       <DesktopIconGrid
         isXpTheme={d.isXpTheme}
         isMacOSTheme={d.isMacOSTheme}
-        isTauriApp={d.isTauriApp}
+        isDesktopApp={d.isDesktopApp}
         currentTheme={d.currentTheme}
         macintoshHdName={d.macintoshHdName}
         trashName={d.trashName}

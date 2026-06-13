@@ -1,3 +1,4 @@
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -12,6 +13,10 @@ import { Soundboard } from "@/types/types";
 
 import { useTranslation } from "react-i18next";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
+import {
+  osAppSidebarSurfaceClassName,
+  osSeparatorBorderClassName,
+} from "@/components/shared/osThemePrimitives";
 
 interface BoardListProps {
   boards: Soundboard[];
@@ -34,25 +39,27 @@ export function BoardList({
   audioDevices,
   micPermissionGranted,
 }: BoardListProps) {
-  const {
-    isWindowsTheme: isXpTheme,
-    isMacOSTheme,
-  } = useThemeFlags();
-  const isWindowsLegacyTheme = isXpTheme;
+  const { isWindowsTheme, isMacOSTheme, isAquaGlass } = useThemeFlags();
   const { t } = useTranslation();
 
   return (
     <div
-      className={`w-full bg-neutral-100 flex flex-col max-h-44 overflow-hidden md:w-56 md:max-h-full font-geneva-12 text-[12px] ${
-        isWindowsLegacyTheme
-          ? "border-b border-[#919b9c] md:border-r md:border-b-0"
-          : isMacOSTheme
-          ? "border-b border-black/10 md:border-r md:border-b-0"
-          : "border-b border-black md:border-r md:border-b-0"
-      }`}
+      className={osAppSidebarSurfaceClassName(
+        {
+          isMacOSTheme,
+          isXpTheme: isWindowsTheme,
+          isWindowsTheme,
+          isAquaGlass,
+        },
+        {
+          layout: "responsive",
+          className:
+            "max-md:os-app-sidebar--stacked max-h-44 overflow-hidden md:w-56 md:max-h-full",
+        }
+      )}
     >
       <div className="py-3 flex flex-col flex-1 overflow-hidden">
-        <div className="flex justify-between items-center mb-2 flex-shrink-0 px-3">
+        <div className="os-app-sidebar-header flex justify-between items-center mb-2 flex-shrink-0 px-3">
           <h2 className="text-[14px] pl-1">{t("apps.soundboard.soundboards")}</h2>
           <Button
             variant="ghost"
@@ -64,7 +71,7 @@ export function BoardList({
           </Button>
         </div>
         <div
-          className="space-y-1 overscroll-contain w-full flex-1 overflow-y-auto min-h-0"
+          className="os-app-sidebar-list space-y-1 overscroll-contain w-full flex-1 overflow-y-auto min-h-0"
           style={{ WebkitOverflowScrolling: "touch" }}
         >
           {boards.map((board) => (
@@ -81,9 +88,7 @@ export function BoardList({
 
         {micPermissionGranted && (
           <div
-            className={`mt-auto pt-2 border-t px-3 pb-3 ${
-              isWindowsLegacyTheme ? "border-[#919b9c]" : "border-neutral-300"
-            }`}
+            className={cn("mt-auto pt-2 border-t px-3 pb-3", osSeparatorBorderClassName())}
           >
             <Select value={selectedDeviceId} onValueChange={onDeviceSelect}>
               <SelectTrigger className="w-full h-7 text-xs">

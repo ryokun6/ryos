@@ -246,8 +246,8 @@
   .spotlight-panel
   .spotlight-input-well {
   background: rgba(28, 30, 36, 0.5) !important;
-  backdrop-filter: blur(12px) saturate(180%);
   -webkit-backdrop-filter: blur(12px) saturate(180%);
+  backdrop-filter: blur(12px) saturate(180%);
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45),
     0 0 0 1px rgba(255, 255, 255, 0.14) !important;
 }
@@ -548,7 +548,7 @@
     .bg-white\/30,
     .bg-white\/20,
     .bg-white\/10
-  ):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *):not(.synth-force-font *):not(.dashboard-overlay *):not(button.piano-key) {
+  ):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *):not(.synth-force-font *):not(.dashboard-overlay *):not(button.piano-key):not(.admin-card) {
   background-color: rgba(31, 31, 34, 0.92) !important;
 }
 
@@ -698,7 +698,7 @@
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .os-status-bar {
   color: var(--os-color-text-secondary) !important;
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5) !important;
-  border-top-color: rgba(255, 255, 255, 0.12);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 /* -----------------------------------------------------------------------

@@ -90,7 +90,7 @@ const MenubarTrigger = (
 
   // Theme-specific classes
   const themeClasses = cn(
-    // Base styles - h-full + self-stretch ensures trigger fills parent height (works with both CSS var and Tauri's 32px)
+    // Base styles - h-full + self-stretch ensures trigger fills parent height (works with both CSS var and the desktop shell's 32px)
     "flex cursor-default select-none items-center h-full self-stretch px-2 text-md font-medium outline-none",
     // Windows themes: plain text style, no background changes, add menubar-trigger class for CSS override
     isWindowsTheme && "rounded-none menubar-trigger",

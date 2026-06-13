@@ -57,7 +57,7 @@ export const DockIconButton = memo(function DockIconButton({
   const maxButtonSize = Math.round(baseButtonSize * DOCK_MAX_SCALE);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const isPresent = useIsPresent();
-  const { isDarkMode } = useThemeFlags();
+  const { isDarkMode, isAquaGlass } = useThemeFlags();
 
   const targetSize = useMotionValue(baseButtonSize);
 
@@ -287,20 +287,36 @@ export const DockIconButton = memo(function DockIconButton({
           )}
         </motion.div>
         {showIndicator ? (
-          <span
-            aria-hidden
-            className="absolute"
-            style={{
-              bottom: -3,
-              width: 0,
-              height: 0,
-              borderLeft: "4px solid transparent",
-              borderRight: "4px solid transparent",
-              borderTop: "0",
-              borderBottom: `4px solid ${isDarkMode ? "#fff" : "#000"}`,
-              filter: "none",
-            }}
-          />
+          isAquaGlass ? (
+            <span
+              aria-hidden
+              className="absolute rounded-full"
+              style={{
+                bottom: -5,
+                width: 4,
+                height: 4,
+                backgroundColor: isDarkMode
+                  ? "rgba(255, 255, 255, 0.6)"
+                  : "rgba(0, 0, 0, 0.6)",
+                filter: "none",
+              }}
+            />
+          ) : (
+            <span
+              aria-hidden
+              className="absolute"
+              style={{
+                bottom: -3,
+                width: 0,
+                height: 0,
+                borderLeft: "4px solid transparent",
+                borderRight: "4px solid transparent",
+                borderTop: "0",
+                borderBottom: `4px solid ${isDarkMode ? "#fff" : "#000"}`,
+                filter: "none",
+              }}
+            />
+          )
         ) : null}
       </button>
     </motion.div>

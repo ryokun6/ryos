@@ -94,6 +94,7 @@ export function ChatInputView(vm: ChatInputViewModel) {
                 imageInputRef={vm.imageInputRef}
                 audioButtonRef={vm.audioButtonRef}
                 isMacTheme={vm.isMacTheme}
+                isAquaGlass={vm.isAquaGlass}
                 isLoading={vm.isLoading}
                 isTranscribing={vm.isTranscribing}
                 needsUsername={vm.needsUsername}

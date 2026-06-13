@@ -10,6 +10,8 @@ import {
 } from "@phosphor-icons/react";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import { cn } from "@/lib/utils";
+import { adminToolbarClass } from "../../utils/adminStyles";
+import { osToolbarSurfaceClassName } from "@/components/shared/osThemePrimitives";
 import type { AdminSection } from "../../utils/navigationState";
 import type { TFunction } from "i18next";
 import type { AdminImportStatus } from "./adminImportStatus";
@@ -78,22 +80,21 @@ export function AdminToolbar({
   isLoading,
   promptDelete,
 }: AdminToolbarProps) {
+  const toolbarClassName = osToolbarSurfaceClassName(
+    {
+      isMacOSTheme: currentTheme === "macosx",
+      isSystem7Theme: currentTheme === "system7",
+      isXpTheme,
+      isWin98: currentTheme === "win98",
+    },
+    {
+      border: "bottom",
+      className: cn(adminToolbarClass, "flex items-center gap-2 px-2 py-1.5"),
+    }
+  );
+
   return (
-    <div
-      className={cn(
-        "flex items-center gap-2 px-2 py-1.5 border-b",
-        isXpTheme
-          ? "border-[#919b9c]"
-          : currentTheme === "macosx"
-            ? "border-black/10"
-            : "border-black/20",
-      )}
-      style={
-        currentTheme === "macosx"
-          ? { backgroundImage: "var(--os-pinstripe-window)" }
-          : undefined
-      }
-    >
+    <div className={toolbarClassName}>
       {activeSection === "users" && !selectedRoomId && (
         <SearchInput
           placeholder={t("apps.admin.search.placeholder")}
@@ -101,6 +102,7 @@ export function AdminToolbar({
           onChange={setUserSearch}
           className="flex-1"
           inputClassName="h-7 text-[12px]"
+          clearAriaLabel={t("apps.admin.search.clear", "Clear search")}
         />
       )}
 
@@ -115,6 +117,7 @@ export function AdminToolbar({
             onChange={setSongSearch}
             className="flex-1"
             inputClassName="h-7 text-[12px]"
+            clearAriaLabel={t("apps.admin.search.clear", "Clear search")}
           />
           <Button
             variant="ghost"

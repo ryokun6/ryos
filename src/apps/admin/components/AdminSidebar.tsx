@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { SelectableListItem } from "@/components/ui/selectable-list-item";
+import { osAppSidebarSurfaceClassName } from "@/components/shared/osThemePrimitives";
 import { useTranslation } from "react-i18next";
 import type { AdminSection } from "../utils/navigationState";
 import { adminSidebarClass } from "../utils/adminStyles";
@@ -46,8 +47,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
 }) => {
   const { t } = useTranslation();
   const { play: playButtonClick } = useSound(Sounds.BUTTON_CLICK);
-  const { isWindowsTheme: isWindowsLegacyTheme, isMacOSTheme } =
-    useThemeFlags();
+  const { isWindowsTheme, isMacOSTheme, isAquaGlass } = useThemeFlags();
 
   const publicRooms = rooms.filter((r) => r.type !== "private");
 
@@ -57,23 +57,23 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
   return (
     <div
-      className={cn(
-        "flex flex-col font-geneva-12 text-[12px] w-56 border-r h-full overflow-hidden",
-        adminSidebarClass,
-        isWindowsLegacyTheme
-          ? "border-[#919b9c]"
-          : isMacOSTheme
-          ? "border-black/10"
-          : "border-black"
+      className={osAppSidebarSurfaceClassName(
+        {
+          isMacOSTheme,
+          isXpTheme: isWindowsTheme,
+          isWindowsTheme,
+          isAquaGlass,
+        },
+        { surfaceClassName: adminSidebarClass }
       )}
     >
       <div className="pt-3 flex flex-col flex-1 overflow-hidden">
-        <div className="flex justify-between items-center mb-2 flex-shrink-0 px-3">
+        <div className="os-app-sidebar-header flex justify-between items-center mb-2 flex-shrink-0 px-3">
           <h2 className="text-[14px] pl-1">{t("apps.admin.title")}</h2>
         </div>
 
         <div
-          className="space-y-1 flex-1 overflow-y-auto min-h-0"
+          className="os-app-sidebar-list space-y-1 flex-1 overflow-y-auto min-h-0"
           style={{ WebkitOverflowScrolling: "touch" }}
         >
           <SelectableListItem
@@ -129,7 +129,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           {/* Rooms Section Header */}
           <div
             className={cn(
-              "mt-2 px-4 pt-2 pb-1 w-full flex items-center group cursor-pointer",
+              "os-app-sidebar-section mt-2 px-4 pt-2 pb-1 w-full flex items-center group cursor-pointer",
               "!text-[11px] uppercase tracking-wide text-os-text-secondary"
             )}
             onClick={() => {

@@ -203,6 +203,7 @@ import {
   osCardClassName,
   osDrawerSurfaceClassName,
   osToolbarSurfaceClassName,
+  osAppSidebarSurfaceClassName,
   osSubtleIconButtonClassName,
   windowsBevelClassName,
 } from "@/components/shared/osThemePrimitives";

@@ -7,6 +7,7 @@ import { useSound, Sounds } from "@/hooks/useSound";
 import { getPrivateRoomDisplayName } from "@/utils/chat";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
+import { osAppSidebarSurfaceClassName } from "@/components/shared/osThemePrimitives";
 import {
   Tooltip,
   TooltipContent,
@@ -56,7 +57,7 @@ const ChatRoomSidebarItem = React.memo(function ChatRoomSidebarItem({
   return (
     <div
       className={cn(
-        "group relative py-1 px-5",
+        "os-app-sidebar-item group relative py-1 px-5",
         isSelected ? "" : "hover:bg-black/5"
       )}
       data-selected={isSelected ? "true" : undefined}
@@ -65,14 +66,14 @@ const ChatRoomSidebarItem = React.memo(function ChatRoomSidebarItem({
         onRoomSelect(room);
       }}
     >
-      <div className="flex items-center">
+      <div className="flex items-center min-w-0">
         {isPrivateOnline && (
           <span
             className="inline-block size-1.5 rounded-full bg-green-500 mr-1.5 flex-shrink-0"
             title="Online"
           />
         )}
-        <span>
+        <span className="truncate min-w-0">
           {room.type === "private"
             ? getPrivateRoomDisplayName(room, username ?? null)
             : `#${room.name}`}
@@ -80,7 +81,7 @@ const ChatRoomSidebarItem = React.memo(function ChatRoomSidebarItem({
         {room.type === "irc" && (
           <span
             className={cn(
-              "ml-1 text-[9px] font-bold uppercase tracking-wider",
+              "ml-1 text-[9px] font-bold uppercase tracking-wider flex-shrink-0",
               isSelected ? "text-white/40" : "text-black/40"
             )}
             title={`IRC ${room.ircHost || "irc.pieter.com"}`}
@@ -91,7 +92,7 @@ const ChatRoomSidebarItem = React.memo(function ChatRoomSidebarItem({
         {(hasUnread || room.type !== "private") && (
           <span
             className={cn(
-              "text-[10px] ml-1.5 transition-opacity",
+              "text-[10px] ml-1.5 transition-opacity flex-shrink-0 whitespace-nowrap",
               hasUnread
                 ? "text-orange-600"
                 : isSelected
@@ -155,8 +156,7 @@ export const ChatRoomSidebar = React.memo(function ChatRoomSidebar({
   // re-renders one row instead of the whole sidebar.
 
   // Theme detection for border styling
-  const { isWindowsTheme: isXpTheme, isMacOSTheme, isAquaGlass } =
-    useThemeFlags();
+  const { isWindowsTheme, isMacOSTheme, isAquaGlass } = useThemeFlags();
 
   // Section headings are non-interactive; show all lists by default
 
@@ -215,24 +215,14 @@ export const ChatRoomSidebar = React.memo(function ChatRoomSidebar({
 
   return (
     <div
-      className={cn(
-        "flex flex-col font-geneva-12 text-[12px]",
-        isAquaGlass ? "bg-transparent" : "bg-neutral-100",
-        isOverlay
-          ? `w-full border-b ${
-              isXpTheme
-                ? "border-[#919b9c]"
-                : isMacOSTheme
-                ? "border-black/10"
-                : "border-black"
-            }`
-          : `w-56 border-r h-full overflow-hidden ${
-              isXpTheme
-                ? "border-[#919b9c]"
-                : isMacOSTheme
-                ? "border-black/10"
-                : "border-black"
-            }`
+      className={osAppSidebarSurfaceClassName(
+        {
+          isMacOSTheme,
+          isXpTheme: isWindowsTheme,
+          isWindowsTheme,
+          isAquaGlass,
+        },
+        { layout: isOverlay ? "overlay" : "side" }
       )}
     >
       <div
@@ -241,7 +231,7 @@ export const ChatRoomSidebar = React.memo(function ChatRoomSidebar({
           isOverlay ? "pb-3" : "flex-1 overflow-hidden"
         )}
       >
-        <div className="flex justify-between items-center mb-2 flex-shrink-0 px-3">
+        <div className="os-app-sidebar-header flex justify-between items-center mb-2 flex-shrink-0 px-3">
           <div className="flex items-baseline gap-1.5">
             <h2 className="text-[14px] pl-1">{t("apps.chats.sidebar.chats")}</h2>
           </div>
@@ -267,7 +257,7 @@ export const ChatRoomSidebar = React.memo(function ChatRoomSidebar({
         </div>
         <div
           className={cn(
-            "space-y-1 overscroll-contain w-full",
+            "os-app-sidebar-list space-y-1 overscroll-contain w-full",
             isOverlay
               ? "flex-1 overflow-y-auto min-h-0"
               : "flex-1 overflow-y-auto min-h-0"
@@ -277,7 +267,7 @@ export const ChatRoomSidebar = React.memo(function ChatRoomSidebar({
           {/* Ryo (@ryo) Chat Selection */}
           <div
             className={cn(
-              "py-1 px-5",
+              "os-app-sidebar-item py-1 px-5",
               currentRoom === null ? "" : "hover:bg-black/5"
             )}
             data-selected={currentRoom === null ? "true" : undefined}
@@ -304,7 +294,7 @@ export const ChatRoomSidebar = React.memo(function ChatRoomSidebar({
                         {publicRooms.length > 0 && (
                           <div
                             className={cn(
-                              "mt-2 px-4 pt-2 pb-1 w-full flex items-center group",
+                              "os-app-sidebar-section mt-2 px-4 pt-2 pb-1 w-full flex items-center group",
                               "!text-[11px] uppercase tracking-wide text-black/50"
                             )}
                             onClick={() => {
@@ -334,7 +324,7 @@ export const ChatRoomSidebar = React.memo(function ChatRoomSidebar({
                         {privateRooms.length > 0 && (
                           <div
                             className={cn(
-                              "mt-2 px-4 pt-2 pb-1 w-full flex items-center group",
+                              "os-app-sidebar-section mt-2 px-4 pt-2 pb-1 w-full flex items-center group",
                               "!text-[11px] uppercase tracking-wide text-black/50"
                             )}
                             onClick={() => {

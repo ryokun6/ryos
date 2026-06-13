@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
+import { adminToolbarClass } from "../utils/adminStyles";
 
 export function AdminPanelHeader({
   title,
@@ -15,6 +16,7 @@ export function AdminPanelHeader({
   return (
     <div
       className={cn(
+        adminToolbarClass,
         "flex flex-shrink-0 items-center gap-2 border-b px-2 py-1.5",
         isXpTheme
           ? "border-[#919b9c]"
@@ -22,11 +24,6 @@ export function AdminPanelHeader({
             ? "border-black/10"
             : "border-black/20"
       )}
-      style={
-        isMacOSXTheme
-          ? { backgroundImage: "var(--os-pinstripe-window)" }
-          : undefined
-      }
     >
       <span className="shrink-0 text-[12px] font-medium">{title}</span>
       {actions ? (

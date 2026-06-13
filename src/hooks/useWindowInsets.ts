@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { useDockStore } from "@/stores/useDockStore";
 import type { ThemeMetadata } from "@/themes";
 import { useThemeFlags } from "./useThemeFlags";
+import { isDesktop } from "@/utils/platform";
 
 export interface WindowInsets {
   menuBarHeight: number;
@@ -47,11 +48,11 @@ export function useWindowInsets() {
 
   const computeInsets = useCallback((): WindowInsets => {
     const safeAreaBottom = getSafeAreaBottomInset();
-    const isTauriApp = typeof window !== "undefined" && "__TAURI__" in window;
+    const isDesktopApp = isDesktop();
 
-    // In Tauri, menubar is 32px for mac themes; otherwise use theme defaults
-    const needsTauriMenubar = isTauriApp && isMacTheme;
-    const menuBarHeight = needsTauriMenubar
+    // In the desktop shell, menubar is 32px for mac themes; otherwise use theme defaults
+    const needsDesktopMenubar = isDesktopApp && isMacTheme;
+    const menuBarHeight = needsDesktopMenubar
       ? 32
       : themeMetaTyped.menuBarHeight;
 

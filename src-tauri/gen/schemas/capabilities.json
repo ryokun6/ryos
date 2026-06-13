@@ -1,1 +1,0 @@
-{"default":{"identifier":"default","description":"Capabilities for the default window","remote":{"urls":["https://os.ryo.lu","https://ryo.lu","http://localhost:*"]},"local":true,"windows":["main"],"permissions":["core:default","shell:allow-open","core:window:allow-start-dragging","core:window:allow-toggle-maximize"]}}

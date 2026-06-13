@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  osAppSidebarSurfaceClassName,
   osCardClassName,
   osDrawerSurfaceClassName,
   osSeparatorBorderClassName,
@@ -61,6 +62,30 @@ describe("os theme primitives", () => {
     expect(toolbar).toContain("border-t");
     expect(toolbar).toContain("bg-os-window-bg");
     expect(toolbar).toContain("border-os-separator");
+  });
+
+  test("centralizes app sidebar surfaces and Aqua Glass border handoff", () => {
+    const glassSidebar = osAppSidebarSurfaceClassName(
+      {
+        isMacOSTheme: true,
+        isXpTheme: false,
+        isAquaGlass: true,
+      },
+      { surfaceClassName: "bg-white/90", className: "custom-sidebar" }
+    );
+    const responsiveWindowsSidebar = osAppSidebarSurfaceClassName(
+      {
+        isMacOSTheme: false,
+        isXpTheme: true,
+      },
+      { layout: "responsive" }
+    );
+
+    expect(glassSidebar).toContain("bg-transparent");
+    expect(glassSidebar).not.toContain("border-black/10");
+    expect(glassSidebar).toContain("custom-sidebar");
+    expect(responsiveWindowsSidebar).toContain("border-[#919b9c]");
+    expect(responsiveWindowsSidebar).toContain("md:border-r");
   });
 
   test("exposes reusable Windows bevel classes", () => {

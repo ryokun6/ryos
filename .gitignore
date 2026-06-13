@@ -33,9 +33,10 @@ version.json
 .env*.local
 package-lock.json
 
-# Tauri
-src-tauri/target
-src-tauri/apple.p8
-
+# Electron
+dist-electron/
+release/
+build/apple.p8
+build/github-secrets-paste.txt
 
 core
