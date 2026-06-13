@@ -4076,7 +4076,8 @@
     "menuBar": {
       "missionControl": "任務控制 (F3)",
       "offline": "您目前離線",
-      "showAllWindows": "按一下來顯示所有視窗 (F3)"
+      "showAllWindows": "按一下來顯示所有視窗 (F3)",
+      "volume": "音量"
     },
     "startMenu": {
       "aboutThisComputer": "關於這部電腦",

@@ -4076,7 +4076,8 @@
     "menuBar": {
       "missionControl": "Mission Control (F3)",
       "offline": "Vous êtes actuellement hors ligne",
-      "showAllWindows": "Cliquer pour afficher toutes les fenêtres (F3)"
+      "showAllWindows": "Cliquer pour afficher toutes les fenêtres (F3)",
+      "volume": "Volume"
     },
     "startMenu": {
       "aboutThisComputer": "À propos de cet ordinateur",

@@ -4076,7 +4076,8 @@
     "menuBar": {
       "missionControl": "ミッションコントロール (F3)",
       "offline": "現在オフラインです",
-      "showAllWindows": "すべてのウィンドウを表示 (F3) をクリックしてください"
+      "showAllWindows": "すべてのウィンドウを表示 (F3) をクリックしてください",
+      "volume": "音量"
     },
     "startMenu": {
       "aboutThisComputer": "このコンピュータについて",

@@ -4061,7 +4061,8 @@
     "menuBar": {
       "missionControl": "Mission Control (F3)",
       "offline": "Вы сейчас не в сети",
-      "showAllWindows": "Нажмите, чтобы показать все окна (F3)"
+      "showAllWindows": "Нажмите, чтобы показать все окна (F3)",
+      "volume": "Громкость"
     },
     "startMenu": {
       "aboutThisComputer": "Об этом компьютере",

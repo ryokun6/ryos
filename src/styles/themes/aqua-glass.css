@@ -419,7 +419,10 @@
   [role="menuitem"],
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
   .mac-top-menubar[data-menubar-text-tone="light"]
-  .menubar-clock {
+  .menubar-status-controls,
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .mac-top-menubar[data-menubar-text-tone="light"]
+  .menubar-status-controls * {
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6), 0 0 2px rgba(0, 0, 0, 0.45) !important;
 }
 
@@ -429,9 +432,64 @@
   [role="menuitem"],
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
   .mac-top-menubar[data-menubar-text-tone="dark"]
-  .menubar-clock {
+  .menubar-status-controls,
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .mac-top-menubar[data-menubar-text-tone="dark"]
+  .menubar-status-controls * {
   text-shadow: 0 0 4px rgba(255, 255, 255, 0.22),
     0 0 3px rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Icon buttons (Expose, Volume, Spotlight, sync/offline) are SVGs, so they need
+   a matching drop-shadow filter. Chain the same offsets/alphas as the left-side
+   menu-item text-shadow above so both sides read identically. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .mac-top-menubar[data-menubar-text-tone="light"]
+  .menubar-status-controls
+  svg {
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.6))
+    drop-shadow(0 0 2px rgba(0, 0, 0, 0.45));
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .mac-top-menubar[data-menubar-text-tone="dark"]
+  .menubar-status-controls
+  svg {
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.22))
+    drop-shadow(0 0 3px rgba(255, 255, 255, 0.12));
+}
+
+/* An open (selected) menu trigger sits on the solid selection fill, so the
+   legibility shadow/glow is unnecessary and muddies the highlighted label.
+   `[data-state="open"]` bumps specificity above the tone rules above. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .mac-top-menubar[data-menubar-text-tone="light"]
+  [role="menubar"]
+  [role="menuitem"][data-state="open"],
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .mac-top-menubar[data-menubar-text-tone="dark"]
+  [role="menubar"]
+  [role="menuitem"][data-state="open"] {
+  text-shadow: none !important;
+}
+
+/* Apple logo is an <img>, so it needs the same tone-aware drop-shadow as the
+   status-control icons. The open-state rules below are more specific and win
+   (color inversion, no shadow) when the Apple menu is selected. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .mac-top-menubar[data-menubar-text-tone="light"]
+  img[alt="Apple Menu"] {
+  filter: var(--os-accent-apple-filter, none)
+    drop-shadow(0 1px 3px rgba(0, 0, 0, 0.35))
+    drop-shadow(0 0 2px rgba(0, 0, 0, 0.25));
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .mac-top-menubar[data-menubar-text-tone="dark"]
+  img[alt="Apple Menu"] {
+  filter: var(--os-accent-apple-filter, none)
+    drop-shadow(0 0 4px rgba(255, 255, 255, 0.22))
+    drop-shadow(0 0 3px rgba(255, 255, 255, 0.12));
 }
 
 /* Only invert the Apple logo when labels are light (dark wallpaper). */

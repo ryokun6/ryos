@@ -4061,7 +4061,8 @@
     "menuBar": {
       "missionControl": "Mission Control (F3)",
       "offline": "Você está offline",
-      "showAllWindows": "Clique para mostrar todas as janelas (F3)"
+      "showAllWindows": "Clique para mostrar todas as janelas (F3)",
+      "volume": "Volume"
     },
     "startMenu": {
       "aboutThisComputer": "Sobre Este Computador",

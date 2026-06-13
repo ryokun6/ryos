@@ -4076,7 +4076,8 @@
     "menuBar": {
       "missionControl": "Mission Control (F3)",
       "offline": "현재 오프라인입니다.",
-      "showAllWindows": "모든 윈도우 표시 (F3) 클릭"
+      "showAllWindows": "모든 윈도우 표시 (F3) 클릭",
+      "volume": "볼륨"
     },
     "startMenu": {
       "aboutThisComputer": "이 컴퓨터에 관하여",

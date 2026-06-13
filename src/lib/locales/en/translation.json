@@ -57,7 +57,8 @@
     "menuBar": {
       "showAllWindows": "Click to show all windows (F3)",
       "offline": "You are currently offline",
-      "missionControl": "Mission Control (F3)"
+      "missionControl": "Mission Control (F3)",
+      "volume": "Volume"
     },
     "dialog": {
       "save": "Save",
