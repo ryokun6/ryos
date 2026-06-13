@@ -22,7 +22,6 @@ import { DesktopErrorBoundary } from "@/components/errors/ErrorBoundaries";
 import { DeferredAutoCloudSync } from "@/hooks/useDeferredAutoCloudSync";
 import { AirDropListener } from "@/components/AirDropListener";
 import { useFilesStore } from "@/stores/useFilesStore";
-import { ReactScanDebug } from "@/components/ReactScanDebug";
 import { WallpaperAccentRunner } from "@/hooks/WallpaperAccentRunner";
 
 // Convert registry to array
@@ -236,7 +235,6 @@ export function App() {
 
   return (
     <>
-      <ReactScanDebug />
       <DesktopErrorBoundary>
         <AppManager apps={apps} />
       </DesktopErrorBoundary>

@@ -73,7 +73,7 @@ A summary of changes and updates to ryOS, organized by month.
 - Control Panels: retro Login button on System 7; Tauri fullscreen menubar flicker fix.
 - Files: sparse default desktop shortcuts on System 7 and Windows themes; guard optional `aliasTarget` in System 7 desktop migration.
 - IRC: use `crypto.randomInt` for bridge IRC nick suffix.
-- Tests: cover `cursor-agent` PR URL extraction and follow-up pre-checks; enable react-scan when display debug mode is on.
+- Tests: cover `cursor-agent` PR URL extraction and follow-up pre-checks.
 
 </details>
 
