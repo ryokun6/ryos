@@ -5,6 +5,7 @@ import { SongDetailPanel } from "../SongDetailPanel";
 import { AdminUsersView } from "./AdminUsersView";
 import { AdminSongsView } from "./AdminSongsView";
 import { AdminRoomMessagesView } from "./AdminRoomMessagesView";
+import { AdminRedisBrowserView } from "./AdminRedisBrowserView";
 import type { AdminSection } from "../../utils/navigationState";
 import type { TFunction } from "i18next";
 import type { CachedSongMetadata } from "@/utils/songMetadataCache";
@@ -152,6 +153,11 @@ export function AdminScrollContent({
             promptDelete={promptDelete}
           />
         )}
+
+      {activeSection === "redis" &&
+        !selectedRoomId &&
+        !selectedUserProfile &&
+        !selectedSongId && <AdminRedisBrowserView t={t} />}
 
       {selectedRoomId && !selectedUserProfile && (
         <AdminRoomMessagesView

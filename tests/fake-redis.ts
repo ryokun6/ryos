@@ -195,6 +195,14 @@ export class FakeRedis {
     return this.ttls.get(key) ?? -1;
   }
 
+  async type(key: string): Promise<string> {
+    if (this.kv.has(key)) return "string";
+    if (this.sets.has(key)) return "set";
+    if (this.hashes.has(key)) return "hash";
+    if (this.lists.has(key)) return "list";
+    return "none";
+  }
+
   async scan(
     cursor: number | string,
     options?: { match?: string; count?: number }

@@ -193,7 +193,8 @@ export function AdminMainPane({
         {!selectedUserProfile &&
           !selectedSongId &&
           activeSection !== "dashboard" &&
-          activeSection !== "cursorAgents" && (
+          activeSection !== "cursorAgents" &&
+          activeSection !== "redis" && (
             <AdminToolbar
               t={t}
               currentTheme={currentTheme}

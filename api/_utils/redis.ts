@@ -57,6 +57,7 @@ export interface RedisLike {
   persist(key: string): Promise<number>;
   incr(key: string): Promise<number>;
   ttl(key: string): Promise<number>;
+  type(key: string): Promise<string>;
   scan(
     cursor: number | string,
     options?: RedisScanOptions
@@ -309,6 +310,10 @@ class StandardRedisAdapter implements RedisLike {
 
   async ttl(key: string): Promise<number> {
     return await this.client.ttl(key);
+  }
+
+  async type(key: string): Promise<string> {
+    return await this.client.type(key);
   }
 
   async scan(

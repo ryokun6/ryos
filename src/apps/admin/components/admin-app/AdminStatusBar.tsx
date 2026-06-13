@@ -42,6 +42,8 @@ export function AdminStatusBar({
                 count: stats.totalCursorAgents ?? 0,
                 defaultValue: `${stats.totalCursorAgents ?? 0} Cursor agents`,
               })
+            : activeSection === "redis"
+              ? t("apps.admin.statusBar.redis", "Redis Browser")
             : activeSection === "users" && !selectedRoomId
               ? t("apps.admin.statusBar.usersCount", {
                   count: users.length,

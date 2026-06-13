@@ -222,6 +222,97 @@ describe("admin", () => {
       expect(typeof adminUser.lastActive).toBe("number");
     });
 
+    test("GET listRedisKeys - with admin token", async () => {
+      if (!adminToken) {
+        console.log("  ⚠️  Skipped (no admin token available)");
+        return;
+      }
+
+      const res = await fetchWithAuth(
+        `${BASE_URL}/api/admin?action=listRedisKeys&pattern=chat:users:${ADMIN_USERNAME}&count=10`,
+        ADMIN_USERNAME,
+        adminToken,
+        { method: "GET" }
+      );
+
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(Array.isArray(data.keys)).toBe(true);
+      expect(data.keys.some((key: { key: string }) => key.key === `chat:users:${ADMIN_USERNAME}`)).toBe(true);
+      const adminKey = data.keys.find((key: { key: string }) => key.key === `chat:users:${ADMIN_USERNAME}`);
+      expect(adminKey.type).toBe("string");
+      expect(typeof adminKey.ttl).toBe("number");
+    });
+
+    test("GET getRedisKey - with admin token", async () => {
+      if (!adminToken) {
+        console.log("  ⚠️  Skipped (no admin token available)");
+        return;
+      }
+
+      const redisKey = `chat:users:${ADMIN_USERNAME}`;
+      const res = await fetchWithAuth(
+        `${BASE_URL}/api/admin?action=getRedisKey&key=${encodeURIComponent(redisKey)}`,
+        ADMIN_USERNAME,
+        adminToken,
+        { method: "GET" }
+      );
+
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data.key).toBe(redisKey);
+      expect(data.type).toBe("string");
+      expect(typeof data.value).toBe("string");
+      expect(data.value).toContain(ADMIN_USERNAME);
+    });
+
+    test("GET backupRedisKeys - with admin token", async () => {
+      if (!adminToken) {
+        console.log("  ⚠️  Skipped (no admin token available)");
+        return;
+      }
+
+      const res = await fetchWithAuth(
+        `${BASE_URL}/api/admin?action=backupRedisKeys&pattern=chat:users:${ADMIN_USERNAME}&limit=10`,
+        ADMIN_USERNAME,
+        adminToken,
+        { method: "GET" }
+      );
+
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data.pattern).toBe(`chat:users:${ADMIN_USERNAME}`);
+      expect(data.keyCount).toBeGreaterThanOrEqual(1);
+      expect(Array.isArray(data.keys)).toBe(true);
+      expect(data.keys.some((key: { key: string }) => key.key === `chat:users:${ADMIN_USERNAME}`)).toBe(true);
+    });
+
+    test("POST deleteRedisKey - requires exact confirmation", async () => {
+      if (!adminToken) {
+        console.log("  ⚠️  Skipped (no admin token available)");
+        return;
+      }
+
+      const res = await fetchWithAuth(
+        `${BASE_URL}/api/admin`,
+        ADMIN_USERNAME,
+        adminToken,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "deleteRedisKey",
+            key: `chat:users:${ADMIN_USERNAME}`,
+            confirmKey: "wrong-key",
+          }),
+        }
+      );
+
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.error).toContain("Confirmation");
+    });
+
     test("POST deleteUser - missing target username", async () => {
       if (!adminToken) {
         console.log("  ⚠️  Skipped (no admin token available)");

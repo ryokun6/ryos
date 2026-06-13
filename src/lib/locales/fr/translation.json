@@ -242,6 +242,39 @@
         "today": "aujourd'hui",
         "unban": "Débannir l'utilisateur"
       },
+      "redis": {
+        "backup": "[TODO] Backup",
+        "delete": "[TODO] Delete Redis key",
+        "deleteDescription": "[TODO] Delete Redis key \"{{key}}\"? This cannot be undone.",
+        "deleteTitle": "[TODO] Delete Redis key?",
+        "detail": "[TODO] Key Detail",
+        "errors": {
+          "backup": "[TODO] Failed to back up Redis keys",
+          "delete": "[TODO] Failed to delete Redis key",
+          "loadKey": "[TODO] Failed to load Redis key",
+          "loadKeys": "[TODO] Failed to load Redis keys"
+        },
+        "key": "[TODO] Key",
+        "keyUnavailable": "[TODO] Redis key is unavailable",
+        "keys": "[TODO] Keys",
+        "length": "[TODO] Length",
+        "loadMore": "[TODO] Load more",
+        "loading": "[TODO] Loading...",
+        "messages": {
+          "alreadyDeleted": "[TODO] Redis key was already gone",
+          "backupReady": "[TODO] Backed up {{count}} Redis keys",
+          "backupTruncated": "[TODO] Backup reached the key limit; narrow the pattern for a full export",
+          "deleted": "[TODO] Redis key deleted"
+        },
+        "noKeys": "[TODO] No Redis keys match this pattern",
+        "patternPlaceholder": "[TODO] Redis pattern, e.g. chat:*",
+        "previewTruncated": "[TODO] Preview is truncated; use Backup for the full value.",
+        "refresh": "[TODO] Refresh Redis keys",
+        "scan": "[TODO] Scan",
+        "selectKey": "[TODO] Select a Redis key to inspect its value",
+        "ttl": "[TODO] TTL",
+        "type": "[TODO] Type"
+      },
       "room": {
         "messagesCount": "{{count}} messages",
         "noMessages": "Aucun message"
@@ -282,6 +315,7 @@
         "messagesCount": "{{count}} messages",
         "online": "en ligne",
         "private": "Privé",
+        "redis": "[TODO] Redis",
         "rooms": "Salons",
         "server": "Serveur",
         "songs": "Morceaux",
@@ -333,6 +367,7 @@
         "loggedInAs": "Connecté en tant que {{username}}",
         "messagesCount": "{{count}} message",
         "messagesCount_plural": "{{count}} messages",
+        "redis": "[TODO] Redis Browser",
         "roomsCount": "{{count}} pièce",
         "roomsCount_plural": "{{count}} pièces",
         "songsCount": "{{count}} morceaux",
