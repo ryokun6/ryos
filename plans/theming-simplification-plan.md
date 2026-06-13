@@ -14,7 +14,7 @@ Simplify ryOS theming by consolidating around the existing root attribute + CSS 
 | 1. Fix small API/documentation drift | Complete | 4 / 4 | Constants/docs fixed; legacy aliases preserved with clearer names. |
 | 2. Consolidate reusable surfaces | Complete | 6 / 6 | Added shared card, drawer, toolbar, and Windows bevel primitives. |
 | 3. Reduce static React theme branches | Complete | 5 / 5 | Tokenized separators and moved repeated Aqua dark states to variants/helpers. |
-| 4. Split and normalize CSS layers | Not started | 0 / 5 | Keep behavior unchanged while reducing file complexity. |
+| 4. Split and normalize CSS layers | Complete | 5 / 5 | `themes.css` now imports focused layer files under `src/styles/themes/`. |
 | 5. Normalize theme data sources | Not started | 0 / 5 | Make TS metadata and CSS tokens harder to drift. |
 | 6. Regression pass and docs | Not started | 0 / 5 | Validate all themes and update guidance. |
 
@@ -132,16 +132,17 @@ Proposed files:
 - `src/styles/themes/aqua.css`
 - `src/styles/themes/windows.css`
 - `src/styles/themes/dark-aqua.css`
+- `src/styles/themes/aqua-glass.css`
 - `src/styles/themes/containment.css`
 - `src/styles/themes.css` as the import orchestrator
 
 Tasks:
 
-- [ ] Move default and per-theme `--os-*` token blocks into `tokens.css`.
-- [ ] Move `data-os-platform` shared rules into `platform.css`.
-- [ ] Move Aqua structural chrome into `aqua.css`.
-- [ ] Move Windows structural chrome and legacy overrides into `windows.css`.
-- [ ] Move third-party/app escape hatches into `containment.css`.
+- [x] Move default and per-theme `--os-*` token blocks into `tokens.css`.
+- [x] Move `data-os-platform` shared rules into `platform.css`.
+- [x] Move Aqua structural chrome into `aqua.css`.
+- [x] Move Windows structural chrome and legacy overrides into `windows.css`.
+- [x] Move third-party/app escape hatches into `containment.css`.
 
 Validation:
 
@@ -209,4 +210,5 @@ Validation:
 - 2026-06-13: Phase 2 validation completed. `bun test tests/test-os-theme-primitives.test.ts` and `bun run build` passed; Playwright screenshot comparison against baseline commit `7bf4823c9dd2e632ba769aff21817e6e555daccf` passed for `macosx`, `macosx` dark, `system7`, `xp`, and `win98` using preview builds.
 - 2026-06-13: Phase 3 completed in PR #1484. Replaced repeated dark-Aqua hover/focus branches with `os-mac-aqua-dark:` helper classes, added reusable subtle icon and separator helpers, tokenized Calendar/AppDrawer separators, and documented when to use CSS branches versus React branches.
 - 2026-06-13: Phase 3 validation completed. `bun test tests/test-os-theme-primitives.test.ts` and `bun run build` passed; Playwright preview-build screenshot comparison against baseline commit `7bf4823c9dd2e632ba769aff21817e6e555daccf` passed for `macosx`, `macosx` dark, `system7`, `xp`, and `win98`.
+- 2026-06-13: Phase 4 completed in PR #1484. Split `src/styles/themes.css` into focused CSS layers under `src/styles/themes/`, keeping `themes.css` as the import orchestrator. Added `aqua-glass.css` as a separate post-dark layer so glass overrides preserve the original cascade.
 - 2026-06-13: Created the initial plan after auditing the store, root attributes, CSS token architecture, Tailwind variants, and representative component consumers.

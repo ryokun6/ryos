@@ -1,0 +1,1034 @@
+/* ============================================================================
+ * Aqua Glass — Mac OS X surface material variant
+ *
+ * Selected via Control Panels → Appearance ("Aqua Glass"). The theme id stays
+ * `macosx`, so all Aqua chrome + component behavior is reused; the difference is
+ * `data-os-aqua-material="glass"` on <html>, which this section keys off of.
+ *
+ * Goal: re-imagine Aqua with NO pinstripes and NO brushed metal. Instead, every
+ * surface becomes a blurred translucent glass pane with a specular top shine and
+ * soft, blurred highlights — the same vocabulary used by the karaoke playback
+ * controls. Supports both light and dark modes.
+ *
+ * Specificity notes (so these layer cleanly without touching the 500+ base
+ * macosx rules):
+ *   - Light tokens use `[data-os-aqua-material="glass"]:not([data-os-color-scheme="dark"])`
+ *     (3 attribute selectors) so they never leak into dark mode regardless of
+ *     source order.
+ *   - Dark tokens use `[data-os-aqua-material="glass"][data-os-color-scheme="dark"]`
+ *     (3 attribute selectors) which beats the 2-attribute base dark token block.
+ *   - Structural rules add `[data-os-aqua-material="glass"]` (2 attributes) on top
+ *     of a class/descendant, beating the 1-attribute base macosx rules.
+ * ============================================================================ */
+
+/* --- Light glass tokens --------------------------------------------------- */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]:not(
+    [data-os-color-scheme="dark"]
+  ) {
+  /* Translucent surfaces (the blur lives on the chrome elements below). The
+     titlebar + body are transparent in glass, so this single `.window` fill is
+     the continuous frosted pane — keep it opaque enough to stay legible. */
+  --os-color-window-bg: color-mix(
+    in srgb,
+    var(--os-accent-color, #3a73d6) 8%,
+    rgba(243, 246, 251, 0.8)
+  );
+  --os-color-panel-bg: color-mix(
+    in srgb,
+    var(--os-accent-color, #3a73d6) 8%,
+    rgba(243, 246, 251, 0.8)
+  );
+  --os-color-menubar-bg: color-mix(
+    in srgb,
+    var(--os-accent-color, #3a73d6) 8%,
+    rgba(250, 251, 253, 0.74)
+  );
+  --os-color-menubar-surface: color-mix(
+    in srgb,
+    var(--os-accent-color, #3a73d6) 8%,
+    rgba(250, 251, 253, 0.74)
+  );
+  --os-color-dock-surface: color-mix(
+    in srgb,
+    var(--os-accent-color, #3a73d6) 8%,
+    rgba(250, 251, 253, 0.68)
+  );
+  --os-color-dock-shadow: 0 8px 30px rgba(0, 0, 0, 0.22);
+
+  /* Hairline dark rim — matches glass toolbar pills, not a white frost edge. */
+  --os-color-window-border: rgba(0, 0, 0, 0.22);
+  --os-color-window-border-inactive: rgba(0, 0, 0, 0.15);
+  --os-color-menubar-border: rgba(255, 255, 255, 0.4);
+  --os-color-titlebar-border: rgba(0, 0, 0, 0.22);
+  --os-color-titlebar-border-inactive: rgba(0, 0, 0, 0.15);
+  --os-window-shadow: 0 18px 50px rgba(0, 0, 0, 0.28),
+    0 2px 10px rgba(0, 0, 0, 0.12);
+  --os-color-separator: rgba(60, 70, 90, 0.14);
+
+  /* Titlebar gradient becomes a glass pane (translucent, no pinstripe). */
+  --os-color-titlebar-active-bg: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.5) 0%,
+    rgba(244, 247, 251, 0.35) 100%
+  );
+  --os-color-titlebar-inactive-bg: linear-gradient(
+    to bottom,
+    rgba(248, 250, 252, 0.42) 0%,
+    rgba(240, 243, 247, 0.3) 100%
+  );
+
+  /* Inputs read as frosted glass wells. */
+  --os-color-input-bg: rgba(255, 255, 255, 0.55);
+  --os-color-input-border: rgba(60, 70, 90, 0.22);
+
+  /* Kill the pinstripes. `--os-pinstripe-window` doubles as the popover /
+     window-body fill, so it becomes a self-contained translucent glass pane
+     rather than `none`. The menubar pattern goes flat. */
+  --os-pinstripe-window: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--os-accent-color, #3a73d6) 8%, rgba(252, 253, 255, 0.8)),
+    color-mix(in srgb, var(--os-accent-color, #3a73d6) 8%, rgba(244, 247, 251, 0.74))
+  );
+  --os-pinstripe-menubar: none;
+  /* Specular top sheen on the titlebar instead of the pinstripe gloss. */
+  --os-pinstripe-titlebar: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.65) 0%,
+    rgba(255, 255, 255, 0.18) 45%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+/* --- Dark glass tokens ---------------------------------------------------- */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"] {
+  --os-color-window-bg: color-mix(
+    in srgb,
+    var(--os-accent-color, #3a73d6) 9%,
+    rgba(38, 40, 46, 0.8)
+  );
+  --os-color-panel-bg: color-mix(
+    in srgb,
+    var(--os-accent-color, #3a73d6) 9%,
+    rgba(38, 40, 46, 0.8)
+  );
+  --os-color-menubar-bg: color-mix(
+    in srgb,
+    var(--os-accent-color, #3a73d6) 9%,
+    rgba(26, 27, 31, 0.76)
+  );
+  --os-color-menubar-surface: color-mix(
+    in srgb,
+    var(--os-accent-color, #3a73d6) 9%,
+    rgba(26, 27, 31, 0.76)
+  );
+  --os-color-dock-surface: color-mix(
+    in srgb,
+    var(--os-accent-color, #3a73d6) 9%,
+    rgba(26, 27, 31, 0.68)
+  );
+  --os-color-dock-shadow: 0 8px 30px rgba(0, 0, 0, 0.55);
+
+  --os-color-window-border: rgba(0, 0, 0, 0.45);
+  --os-color-window-border-inactive: rgba(0, 0, 0, 0.32);
+  --os-color-menubar-border: rgba(255, 255, 255, 0.1);
+  --os-color-titlebar-border: rgba(255, 255, 255, 0.08);
+  --os-color-titlebar-border-inactive: rgba(255, 255, 255, 0.05);
+  --os-window-shadow: 0 18px 55px rgba(0, 0, 0, 0.6),
+    0 2px 12px rgba(0, 0, 0, 0.4);
+  --os-color-separator: rgba(255, 255, 255, 0.12);
+
+  --os-color-titlebar-active-bg: linear-gradient(
+    to bottom,
+    rgba(72, 74, 82, 0.5) 0%,
+    rgba(44, 46, 52, 0.4) 100%
+  );
+  --os-color-titlebar-inactive-bg: linear-gradient(
+    to bottom,
+    rgba(56, 58, 64, 0.42) 0%,
+    rgba(40, 42, 47, 0.34) 100%
+  );
+
+  --os-color-input-bg: rgba(255, 255, 255, 0.08);
+  --os-color-input-border: rgba(255, 255, 255, 0.16);
+
+  --os-pinstripe-window: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--os-accent-color, #3a73d6) 9%, rgba(52, 54, 60, 0.8)),
+    color-mix(in srgb, var(--os-accent-color, #3a73d6) 9%, rgba(40, 42, 48, 0.74))
+  );
+  --os-pinstripe-menubar: none;
+  --os-pinstripe-titlebar: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(255, 255, 255, 0.03) 45%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+/* Portaled dialogs pick up the global `border-border` wash — pin the shell and
+   header seam to the dark glass hairline tokens instead. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .macosx-dialog {
+  border-color: var(--os-color-window-border) !important;
+}
+
+/* --- Frosted window panes ------------------------------------------------- */
+/* Regular windows: the titlebar + body render transparent (see WindowFrame), so
+   this single `.window` surface is the continuous frosted pane. It carries the
+   translucent tint, the desktop blur, and a specular inner rim at the top edge.
+   `effectiveTransparentBackground` keeps macOS `.window` elements free of the
+   `bg-os-window-bg` class, so the fill is applied here instead. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .window.window-material-glass {
+  background-color: var(--os-color-window-bg);
+  backdrop-filter: blur(26px) saturate(185%);
+  -webkit-backdrop-filter: blur(26px) saturate(185%);
+  border-radius: var(--os-glass-r-lg) !important;
+  box-shadow: var(--os-window-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .window.window-material-glass {
+  box-shadow: var(--os-window-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+/* Inactive windows recede: thin the frosted tint so more of the desktop reads
+   through, and swap the vibrancy boost (185%) for a mild desaturation (80%)
+   so the pane reads muted instead of vivid. The blur stays — it's still glass. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .window.window-material-glass:not(.is-foreground) {
+  background-color: color-mix(
+    in srgb,
+    var(--os-color-window-bg) 75%,
+    transparent
+  );
+  backdrop-filter: blur(26px) saturate(80%);
+  -webkit-backdrop-filter: blur(26px) saturate(80%);
+}
+
+/* Drop the hard titlebar divider — on a single frosted pane the seam reads as
+   an ugly line, so the titlebar blends straight into the window body. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .window.is-foreground
+  .title-bar:not(.absolute),
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .window:not(.is-foreground)
+  .title-bar:not(.absolute) {
+  border-bottom: none !important;
+}
+
+/* Brushed-metal windows keep their material/class, but in the glass theme the
+   aluminum JPG is overridden so the surface renders as the same frosted glass
+   pane (used by iPod / iTunes-style windows that opt into the metal material). */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .window-material-brushedmetal {
+  backdrop-filter: blur(26px) saturate(185%);
+  -webkit-backdrop-filter: blur(26px) saturate(185%);
+  /* Classic brushed-metal proportion (Finder, iTunes, etc.) — not the 12px
+     glass pane radius used by default-material windows. */
+  border-radius: var(--os-glass-r-metal) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .window-material-brushedmetal::before {
+  background: var(--os-color-window-bg) !important;
+  filter: none !important;
+}
+
+/* Inactive metal-as-glass windows: same thinned tint + muted vibrancy as
+   regular glass panes. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .window-material-brushedmetal:not(.is-foreground) {
+  backdrop-filter: blur(26px) saturate(80%);
+  -webkit-backdrop-filter: blur(26px) saturate(80%);
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .window-material-brushedmetal:not(.is-foreground)::before {
+  background: color-mix(
+    in srgb,
+    var(--os-color-window-bg) 75%,
+    transparent
+  ) !important;
+  filter: saturate(0.9) brightness(0.98) !important;
+}
+
+/* --- Frosted sidebar / list panes ------------------------------------------ */
+/* `AppSidebarPanel` (Finder sidebar, file list) pins a near-opaque
+   `bg-white/90`, and the Calendar app's inset panes (`.os-inset-pane`) pin
+   solid `bg-white` — both bury the frosted window pane. In glass, thin those
+   fills so the window's blur reads through (no extra backdrop-filter here —
+   the window pane already carries it), and let nested `bg-white/90` list
+   surfaces go transparent so the two layers don't stack back to opaque. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]:not(
+    [data-os-color-scheme="dark"]
+  )
+  .window-body
+  :is(.os-sidebar.bg-white\/90, .os-inset-pane.bg-white) {
+  background-color: rgba(255, 255, 255, 0.4) !important;
+  /* Soften the inline pane chrome (border rgba(0,0,0,0.55) + hard inset
+     shadow) — on frosted glass the recessed-well look reads too heavy. */
+  border-color: rgba(0, 0, 0, 0.25) !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08),
+    0 1px 0 rgba(255, 255, 255, 0.25) !important;
+}
+
+/* Dark glass: graphite wash instead of the opaque dark slab remap above. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .window-body
+  :is(
+    .os-sidebar.bg-white\/90,
+    .os-inset-pane.bg-white
+  ):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *):not(.synth-force-font *):not(.dashboard-overlay *) {
+  background-color: rgba(30, 30, 34, 0.45) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3),
+    0 1px 0 rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Nested list surface inside the panel (e.g. Finder's file list) — the panel
+   already carries the frosted tint, so this layer goes fully transparent.
+   The `:not()` chain matches the dark-scheme `.bg-white\/90` remap so this
+   later rule wins in both schemes. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .window-body
+  .os-sidebar
+  .bg-white\/90:not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *):not(.synth-force-font *):not(.dashboard-overlay *) {
+  background-color: transparent !important;
+}
+
+/* Panel headers ("Calendars" / "Group" / "Name") pin an inline opaque
+   aluminum gradient (`#e6e5e5 → #aeadad`). Swap it for a white/black-alpha
+   gradient so the header stays etched but lets the frost read through.
+   Selector pattern mirrors the dark-scheme header remap further up. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]:not(
+    [data-os-color-scheme="dark"]
+  )
+  .os-sidebar
+  > .text-\[11px\].text-center,
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]:not(
+    [data-os-color-scheme="dark"]
+  )
+  .os-sidebar
+  .text-\[11px\].text-center.font-regular,
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]:not(
+    [data-os-color-scheme="dark"]
+  )
+  .os-sidebar
+  .relative.text-\[11px\].text-center {
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.55),
+    rgba(0, 0, 0, 0.08)
+  ) !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45) !important;
+  border-top-color: rgba(255, 255, 255, 0.5) !important;
+  border-bottom-color: rgba(0, 0, 0, 0.35) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .os-sidebar
+  > .text-\[11px\].text-center,
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .os-sidebar
+  .text-\[11px\].text-center.font-regular,
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .os-sidebar
+  .relative.text-\[11px\].text-center {
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.1),
+    rgba(0, 0, 0, 0.3)
+  ) !important;
+  border-top-color: rgba(255, 255, 255, 0.08) !important;
+  border-bottom-color: rgba(0, 0, 0, 0.6) !important;
+}
+
+/* --- Frosted menu bar ----------------------------------------------------- */
+/* Beef up the menubar blur and swap the white pinstripe gloss for a soft
+   specular top highlight. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] .menubar {
+  backdrop-filter: blur(26px) saturate(185%) !important;
+  -webkit-backdrop-filter: blur(26px) saturate(185%) !important;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.4) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.08) inset;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] .menubar::before {
+  height: 60%;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.35),
+    rgba(255, 255, 255, 0)
+  );
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .menubar {
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.4) inset;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .menubar::before {
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.1),
+    rgba(255, 255, 255, 0)
+  );
+}
+
+/* Rounded pill when a menubar item is open (glass only). */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  [role="menubar"]
+  [role="menuitem"][data-state="open"] {
+  border-radius: 9999px !important;
+  margin-block: 2px;
+  height: calc(100% - 4px);
+  align-self: center;
+}
+
+/* Glass menubar: wallpaper shows through — no frosted strip. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] .mac-top-menubar {
+  background: transparent !important;
+  background-image: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+  border-bottom-color: transparent !important;
+}
+
+/* Dark labels on a light wallpaper: drop the macOS text halo. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .mac-top-menubar[data-menubar-text-tone="dark"]
+  [role="menubar"]
+  [role="menuitem"] {
+  text-shadow: none !important;
+}
+
+/* Only invert the Apple logo when labels are light (dark wallpaper). */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .mac-top-menubar[data-menubar-text-tone="light"]
+  [data-state="open"]
+  img[alt="Apple Menu"] {
+  filter: brightness(0) invert(1) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .mac-top-menubar[data-menubar-text-tone="dark"]
+  [data-state="open"]
+  img[alt="Apple Menu"] {
+  filter: var(--os-accent-apple-filter, none) !important;
+}
+
+/* --- Frosted dock --------------------------------------------------------- */
+/* `border-radius` overrides the inline `0px` from MacDock so the pill reads as
+   a modern rounded glass tray. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] .mac-dock-surface {
+  backdrop-filter: blur(26px) saturate(185%);
+  -webkit-backdrop-filter: blur(26px) saturate(185%);
+  border-radius: var(--os-glass-r-dock) !important;
+  border: var(--os-metrics-border-width) solid var(--os-color-window-border) !important;
+  /* Lift the glass pill off the screen edge — classic dock sits flush. */
+  margin-bottom: 12px;
+  box-shadow: var(--os-color-dock-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .mac-dock-surface {
+  box-shadow: var(--os-color-dock-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+}
+
+/* --- Frosted popovers (dropdowns, menubar menus, selects) ----------------- */
+/* These portal to <body> but remain under <html>, so the root attribute still
+   scopes them. They paint `var(--os-pinstripe-window)` inline, so they pick up
+   the glass fill from the tokens above; here we add the blur + hairline rim.
+   The popper-wrapper selector beats the generic dark-scheme white border-color
+   rule further up in this file. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  [data-radix-popper-content-wrapper]
+  :where(
+    [role="menu"],
+    [role="listbox"],
+    [data-radix-menu-content],
+    [data-radix-popover-content],
+    [data-radix-select-content]
+  ) {
+  backdrop-filter: blur(36px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(36px) saturate(200%) !important;
+  /* Replace the inline pinstripe-window fill (0.74–0.8 alpha — opaque enough
+     to bury the blur) with a lighter wash so the backdrop blur reads through.
+     No `opacity` override here: the components skip their inline `0.92` when
+     Aqua Glass is active, and an `!important` opacity would beat the
+     animate-in/out keyframes and kill the open/close fade entirely. */
+  background: color-mix(
+    in srgb,
+    var(--os-accent-color, #3a73d6) 6%,
+    rgba(248, 250, 253, 0.62)
+  ) !important;
+  /* Overrides the inline `0px` radius from the dropdown/select content. */
+  border-radius: var(--os-glass-r-md) !important;
+  border: var(--os-metrics-border-width) solid var(--os-color-window-border) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  [data-radix-popper-content-wrapper]
+  :where(
+    [role="menu"],
+    [role="listbox"],
+    [data-radix-menu-content],
+    [data-radix-popover-content],
+    [data-radix-select-content]
+  ) {
+  background: color-mix(
+    in srgb,
+    var(--os-accent-color, #3a73d6) 7%,
+    rgba(36, 38, 44, 0.62)
+  ) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+}
+
+/* --- Frosted Spotlight panel --------------------------------------------- */
+/* Spotlight is not a Radix popper, so it misses the popover rules above. It
+   paints `var(--os-pinstripe-window)` inline (0.74–0.8 alpha — opaque enough
+   to bury the blur); swap in a lighter wash + add the same backdrop blur,
+   rounded glass radius and hairline rim the dropdowns/menus use. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] .spotlight-panel {
+  backdrop-filter: blur(36px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(36px) saturate(200%) !important;
+  background: color-mix(
+    in srgb,
+    var(--os-accent-color, #3a73d6) 6%,
+    rgba(248, 250, 253, 0.62)
+  ) !important;
+  background-attachment: scroll !important;
+  border-radius: var(--os-glass-r-md) !important;
+  border: var(--os-metrics-border-width) solid var(--os-color-window-border) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .spotlight-panel {
+  background: color-mix(
+    in srgb,
+    var(--os-accent-color, #3a73d6) 7%,
+    rgba(36, 38, 44, 0.62)
+  ) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Modern macOS menu layout: the panel gets a uniform inner gutter and each
+   item carries a rounded highlight inset from the panel edge (the classic
+   edge-to-edge selection bar is a non-glass Aqua trait). The `!important`s
+   beat the inline `padding` / `borderRadius: 0px` from dropdown-menu.tsx. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  [data-radix-popper-content-wrapper]
+  :where(
+    [role="menu"],
+    [role="listbox"],
+    [data-radix-menu-content],
+    [data-radix-select-content]
+  ) {
+  padding: 4px 5px !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  [data-radix-popper-content-wrapper]
+  :where(
+    [role="menuitem"],
+    [role="menuitemcheckbox"],
+    [role="menuitemradio"],
+    [role="option"]
+  ) {
+  border-radius: var(--os-glass-r-xs) !important;
+  /* Tighter than the classic Aqua `6px 20px 6px 16px` — the inset rounded
+     highlight already provides breathing room via the panel gutter. */
+  padding: 4px 10px !important;
+}
+
+/* Checkbox / radio rows keep the wide left gutter — their indicators are
+   absolutely positioned (left 8–12px) and would overlap the label otherwise. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  [data-radix-popper-content-wrapper]
+  :where([role="menuitemcheckbox"], [role="menuitemradio"]) {
+  padding-left: 30px !important;
+}
+
+/* Select options carry their check on the right (`right-2` + 14px icon). */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  [data-radix-popper-content-wrapper]
+  [role="option"] {
+  padding-right: 28px !important;
+}
+
+/* --- Frosted toolbar inset buttons --------------------------------------- */
+/* The brushed-metal toggle pills (`metal-inset-btn`) carry a hard two-tone
+   aluminum gradient with a sharp 49%/50% midline and a recessed dark well. In
+   glass we instead borrow the Aqua dropdown-toggle vocabulary
+   (`.os-select-trigger-macos` / `.aqua-select-btn`): a single smooth, semi-
+   transparent gray→white gradient capped with a top gloss, and a raised dark
+   hairline ring (`0 0 0 1px rgba(0,0,0,0.3)`) instead of a white border. The
+   0.625 alpha lets the desktop read through; the blur on the group keeps it
+   frosted. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]:not(
+    [data-os-color-scheme="dark"]
+  )
+  .metal-inset-btn-group {
+  background: transparent;
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border: none;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2), 0 1px 1px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(0, 0, 0, 0.3);
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]:not(
+    [data-os-color-scheme="dark"]
+  )
+  .metal-inset-btn {
+  color: #000;
+  /* Top gloss layered over a gray→white base, matching the Aqua select
+     trigger. Both layers are backgrounds so button icons paint above them.
+     Kept at a low alpha so the frosted desktop reads through the pill — the
+     group's blur does the rest. */
+  background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.55) 0%,
+        rgba(255, 255, 255, 0.18) 60%,
+        rgba(255, 255, 255, 0) 100%
+      )
+      top / 100% 50% no-repeat,
+    linear-gradient(rgba(188, 188, 188, 0.34), rgba(255, 255, 255, 0.3));
+  border-right: 1px solid rgba(0, 0, 0, 0.18);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]:not(
+    [data-os-color-scheme="dark"]
+  )
+  .metal-inset-btn:active,
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]:not(
+    [data-os-color-scheme="dark"]
+  )
+  .metal-inset-btn[data-state="on"] {
+  /* Selected segment keeps the glassy gloss/base but gets a light accent wash
+     layered between the top gloss and the gray base — a gentle tint rather
+     than a pressed/inset look. */
+  color: #000;
+  background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.55) 0%,
+        rgba(255, 255, 255, 0.18) 60%,
+        rgba(255, 255, 255, 0) 100%
+      )
+      top / 100% 50% no-repeat,
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--os-accent-color, #3a73d6) 42%, transparent),
+      color-mix(in srgb, var(--os-accent-color, #3a73d6) 32%, transparent)
+    ),
+    linear-gradient(rgba(188, 188, 188, 0.34), rgba(255, 255, 255, 0.3));
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+  box-shadow: none;
+}
+
+/* Dark glass: graphite translucent stack, same as the dark dropdown toggle. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .metal-inset-btn-group {
+  background: transparent;
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35), 0 1px 1px rgba(0, 0, 0, 0.35),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .metal-inset-btn {
+  color: rgba(255, 255, 255, 0.92);
+  background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.12),
+        rgba(255, 255, 255, 0.03)
+      )
+      top / 100% 50% no-repeat,
+    linear-gradient(
+      to bottom,
+      rgba(72, 72, 78, 0.42),
+      rgba(34, 34, 38, 0.42)
+    );
+  border-right: 1px solid rgba(0, 0, 0, 0.4);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55);
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .metal-inset-btn:active,
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .metal-inset-btn[data-state="on"] {
+  color: rgba(255, 255, 255, 0.95);
+  background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.12) 0%,
+        rgba(255, 255, 255, 0.03) 60%,
+        rgba(255, 255, 255, 0) 100%
+      )
+      top / 100% 50% no-repeat,
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--os-accent-color, #3a73d6) 55%, transparent),
+      color-mix(in srgb, var(--os-accent-color, #3a73d6) 42%, transparent)
+    ),
+    linear-gradient(
+      to bottom,
+      rgba(72, 72, 78, 0.42),
+      rgba(34, 34, 38, 0.42)
+    );
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
+  box-shadow: none;
+}
+
+/* --- Frosted search field ------------------------------------------------- */
+/* `SearchInput` pins an opaque `bg-white` pill; in glass make it a semi-opaque
+   frosted well so the desktop blur shows through, like the other glass inputs. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]:not(
+    [data-os-color-scheme="dark"]
+  )
+  input[data-os-search-input="true"] {
+  background-color: rgba(255, 255, 255, 0.42) !important;
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border-color: rgba(0, 0, 0, 0.28) !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12),
+    0 1px 0 rgba(255, 255, 255, 0.45) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  input[data-os-search-input="true"] {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border-color: rgba(255, 255, 255, 0.16) !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4),
+    0 1px 0 rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Finder / metal-toolbar inset groups keep the classic 4px grouped slab in glass
+   (rounded-rect, scaled by --os-glass-radius-factor). Capsule shapes — menubar
+   selection, search field — stay fully round via their own rules. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .metal-inset-btn-group
+  .metal-inset-btn:last-child {
+  /* Glass `.metal-inset-btn` re-adds `border-right`; strip the outer seam. */
+  border-right: none;
+}
+
+/* --- Aqua tab shadows (classic + glass) ----------------------------------- */
+/* `shadow-none!` on `ThemedTabsTrigger` suppresses shadcn's active shadow; also
+   neutralize the baked-in `.aqua-tab` inset stack. Classic Aqua keeps gradient
+   + pseudo-gloss only; Aqua Glass keeps translucent fills with no shadows. */
+:root[data-os-theme="macosx"]:not([data-os-aqua-material="glass"]) .aqua-tab,
+:root[data-os-theme="macosx"]:not([data-os-aqua-material="glass"])
+  .aqua-tab[data-state="active"],
+:root[data-os-theme="macosx"]:not([data-os-aqua-material="glass"])
+  .aqua-tab:hover:not([data-state="active"]),
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] .aqua-tab,
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .aqua-tab[data-state="active"],
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .aqua-tab:hover:not([data-state="active"]) {
+  box-shadow: none !important;
+}
+
+/* --- Frosted aqua tabs ---------------------------------------------------- */
+/* System Preferences / other `ThemedTabs` strips use `.aqua-tab`. In glass the
+   inactive pills borrow the same semi-transparent gray→white stack as
+   `.metal-inset-btn` / `.os-select-trigger-macos`; the active tab layers a
+   translucent accent wash on top so the frosted window still reads through. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]:not(
+    [data-os-color-scheme="dark"]
+  )
+  .aqua-tab {
+  background: linear-gradient(rgba(188, 188, 188, 0.34), rgba(255, 255, 255, 0.3));
+  border: 1px solid rgba(0, 0, 0, 0.22);
+  color: #000;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]:not(
+    [data-os-color-scheme="dark"]
+  )
+  .aqua-tab[data-state="active"] {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: var(
+    --os-accent-tab-active-bg,
+    linear-gradient(rgb(48 123 201), rgb(152 189 228), rgb(210 255 255))
+  );
+  border-bottom: 1px solid var(--os-accent-tab-border, rgb(210 255 255)) !important;
+  color: #000;
+  text-shadow: 0 2px 2px var(--os-accent-tab-text-shadow, rgba(30, 77, 161, 0.5));
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]:not(
+    [data-os-color-scheme="dark"]
+  )
+  .aqua-tab:before {
+  background: linear-gradient(
+    rgba(255, 255, 255, 0.22),
+    rgba(255, 255, 255, 0.04)
+  );
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]:not(
+    [data-os-color-scheme="dark"]
+  )
+  .aqua-tab:after {
+  background: linear-gradient(transparent, rgba(255, 255, 255, 0.06));
+  filter: none;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]:not(
+    [data-os-color-scheme="dark"]
+  )
+  .aqua-tab[data-state="active"]:before {
+  background: linear-gradient(
+    rgba(255, 255, 255, 0.8),
+    rgba(255, 255, 255, 0.35)
+  );
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]:not(
+    [data-os-color-scheme="dark"]
+  )
+  .aqua-tab[data-state="active"]:after {
+  background: linear-gradient(transparent, rgba(255, 255, 255, 0.45));
+  filter: none;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]:not(
+    [data-os-color-scheme="dark"]
+  )
+  .aqua-tab-bar:after {
+  background: var(
+    --os-accent-tab-bar-line,
+    linear-gradient(
+      to bottom,
+      #2260a4 0%,
+      #e2fbfd 8%,
+      #aecef3 25%,
+      #7aafee 40%,
+      #98ceff 60%,
+      #9dcfff 80%,
+      #74deff 100%
+    )
+  );
+  box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.3),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .aqua-tab {
+  background: linear-gradient(
+    to bottom,
+    rgba(72, 72, 78, 0.42),
+    rgba(34, 34, 38, 0.42)
+  );
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55);
+}
+
+/* Inactive pills: reinforce the top edge with the same light rim as the sides. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .aqua-tab:not([data-state="active"]) {
+  border-top: 1px solid rgba(255, 255, 255, 0.14) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .aqua-tab[data-state="active"] {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: var(
+    --os-accent-tab-active-bg,
+    linear-gradient(rgb(28, 76, 130), rgb(70, 117, 168), rgb(132, 178, 224))
+  );
+  border-bottom: 1px solid var(--os-accent-tab-border, rgb(132, 178, 224)) !important;
+  color: var(--os-color-text-primary);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .aqua-tab:before {
+  background: linear-gradient(
+    rgba(255, 255, 255, 0.12),
+    rgba(255, 255, 255, 0.04)
+  );
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .aqua-tab:after {
+  background: linear-gradient(transparent, rgba(255, 255, 255, 0.08));
+  filter: none;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .aqua-tab[data-state="active"]:before {
+  background: linear-gradient(
+    rgba(255, 255, 255, 0.24),
+    rgba(255, 255, 255, 0.06)
+  );
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .aqua-tab[data-state="active"]:after {
+  background: linear-gradient(transparent, rgba(255, 255, 255, 0.08));
+  filter: none;
+}
+
+/* Glass tabs: classic ::before/::after sizing (15% / 20%), flat translucent
+   base, no backdrop-filter on inactive pills, no filter blur on gloss. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] .aqua-tab:not([data-state="active"]) {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] .aqua-tab:before,
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] .aqua-tab:after {
+  filter: none !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .aqua-tab-bar:after {
+  background: var(
+    --os-accent-tab-bar-line,
+    linear-gradient(
+      to bottom,
+      #16345c 0%,
+      #cfe4f8 8%,
+      #5a82b0 25%,
+      #426591 40%,
+      #4f76a3 60%,
+      #4f73a0 80%,
+      #436690 100%
+    )
+  );
+  box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.45),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.45);
+}
+
+/* --- Glass corner radii ---------------------------------------------------- */
+/* Aqua Glass uses plain rounded-rect corners — no `corner-shape`/squircles
+   (Chrome's GPU compositor drops `backdrop-filter` when its clip bounds are a
+   non-rectangular squircle path, which blanked the frosted blur). A moderate
+   1.3× bump keeps the radii slightly enlarged for a softer modern look while
+   reading less blobby than the old squircle-compensating 1.84× scale. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] {
+  --os-glass-radius-factor: 1.3;
+  --os-metrics-radius: calc(0.45rem * var(--os-glass-radius-factor));
+  --os-glass-r-xs: calc(5px * var(--os-glass-radius-factor));
+  --os-glass-r-sm: calc(6px * var(--os-glass-radius-factor));
+  /* Select triggers: classic Aqua 6px / 5px gloss — circular arcs read
+     pill-like if we scale these with --os-glass-radius-factor. */
+  --os-glass-r-select: 6px;
+  --os-glass-r-select-gloss: 5px;
+  --os-glass-r-select-group: 6px;
+  --os-glass-r-inset: calc(6px * var(--os-glass-radius-factor));
+  --os-glass-r-md: calc(10px * var(--os-glass-radius-factor));
+  --os-glass-r-dialog: calc(7.2px * var(--os-glass-radius-factor));
+  --os-glass-r-lg: calc(12px * var(--os-glass-radius-factor));
+  --os-glass-r-metal: calc(0.6rem * var(--os-glass-radius-factor));
+  --os-glass-r-dock: calc(13px * var(--os-glass-radius-factor));
+  --os-glass-r-bubble: calc(16px * var(--os-glass-radius-factor));
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .metal-inset-btn-group {
+  border-radius: var(--os-glass-r-inset) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .metal-inset-btn-group
+  .metal-inset-btn:first-child {
+  border-top-left-radius: var(--os-glass-r-inset) !important;
+  border-bottom-left-radius: var(--os-glass-r-inset) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .metal-inset-btn-group
+  .metal-inset-btn:last-child {
+  border-top-right-radius: var(--os-glass-r-inset) !important;
+  border-bottom-right-radius: var(--os-glass-r-inset) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  :is(
+    .macos-select-trigger,
+    .os-select-trigger-macos,
+    .os-btn-aqua-select,
+    .aqua-select-btn
+  ) {
+  border-radius: var(--os-glass-r-select) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  :is(.macos-select-trigger::before, .aqua-select-btn::before) {
+  border-radius: var(--os-glass-r-select-gloss) var(--os-glass-r-select-gloss) 0 0 !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .aqua-select-group
+  .aqua-select-btn:first-child {
+  border-top-left-radius: var(--os-glass-r-select-group) !important;
+  border-bottom-left-radius: var(--os-glass-r-select-group) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .aqua-select-group
+  .aqua-select-btn:last-child {
+  border-top-right-radius: var(--os-glass-r-select-group) !important;
+  border-bottom-right-radius: var(--os-glass-r-select-group) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .aqua-select-group
+  .aqua-select-btn:first-child::before {
+  border-top-left-radius: var(--os-glass-r-select-group) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .aqua-select-group
+  .aqua-select-btn:last-child::before {
+  border-top-right-radius: var(--os-glass-r-select-group) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] .macosx-dialog {
+  border-radius: var(--os-glass-r-dialog) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] .macosx-dialog-header {
+  border-radius: var(--os-glass-r-dialog) var(--os-glass-r-dialog) 0 0 !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] .aqua-tab {
+  border-radius: var(--os-glass-r-sm) var(--os-glass-r-sm) 0 0;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] .chat-bubble {
+  border-radius: var(--os-glass-r-bubble) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] .chat-bubble::before {
+  border-radius: var(--os-glass-r-bubble) var(--os-glass-r-bubble)
+    calc(4px * var(--os-glass-radius-factor))
+    calc(4px * var(--os-glass-radius-factor));
+}

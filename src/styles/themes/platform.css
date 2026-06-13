@@ -1,0 +1,63 @@
+/* Shared platform rules. */
+
+/* Windows — native widget font (Luna + Classic; --os-font-ui is per-theme above) */
+:root[data-os-platform="windows"] button,
+:root[data-os-platform="windows"] input,
+:root[data-os-platform="windows"] label,
+:root[data-os-platform="windows"] select,
+:root[data-os-platform="windows"] textarea,
+:root[data-os-platform="windows"] [role="menuitem"],
+:root[data-os-platform="windows"] [role="menuitemcheckbox"],
+:root[data-os-platform="windows"] [role="menuitemradio"],
+:root[data-os-platform="windows"] [role="option"] {
+  font-family: var(--os-font-ui) !important;
+  font-smooth: antialiased !important;
+  -webkit-font-smoothing: antialiased !important;
+}
+
+/* Reset Windows button styles for menubar triggers - they should look like plain text */
+:root[data-os-platform="windows"] .menubar-trigger {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
+:root[data-os-platform="windows"] .menubar-trigger:active {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* XP/Win98 title bar controls get their styles from xp-custom.css and 98-custom.css.
+   Those stylesheets handle the button icons via background-image.
+   No override needed here - CSS specificity handles it. */
+
+/* Reset Windows button styles for iPod/Karaoke fullscreen toolbar buttons */
+:root[data-os-platform="windows"] .ipod-force-font button,
+:root[data-os-platform="windows"] .karaoke-force-font button {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 9999px !important;
+}
+
+:root[data-os-platform="windows"] .ipod-force-font button:active,
+:root[data-os-platform="windows"] .karaoke-force-font button:active {
+  background: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: none !important;
+}
+
+/* Reset Windows button styles for ghost variant buttons (toolbar buttons, etc.)
+   These buttons want to be fully transparent - no background at all */
+:root[data-os-platform="windows"] button.\!bg-transparent {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+:root[data-os-platform="windows"] button.\!bg-transparent:hover,
+:root[data-os-platform="windows"] button.\!bg-transparent:active {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
