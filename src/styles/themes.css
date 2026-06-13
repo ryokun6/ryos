@@ -5910,6 +5910,11 @@
      panel centre. Radix publishes the anchor point on the popper wrapper as
      `--radix-popper-transform-origin`, which this content inherits. */
   transform-origin: var(--radix-popper-transform-origin) !important;
+  /* Slow the open/close keyframes down from tailwindcss-animate's snappy 150ms
+     default and ease them, so the frosted panel visibly fades + scales from the
+     trigger instead of snapping (the abrupt 150ms cut reads as exit jitter). */
+  animation-duration: 220ms !important;
+  animation-timing-function: cubic-bezier(0.22, 0.61, 0.36, 1) !important;
   /* Overrides the inline `0px` radius from the dropdown/select content. */
   border-radius: var(--os-glass-r-md) !important;
   border: var(--os-metrics-border-width) solid var(--os-color-window-border) !important;
