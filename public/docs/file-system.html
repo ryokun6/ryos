@@ -307,13 +307,14 @@
     <main class="content">
       <article>
         <h1>File System</h1>
-<p>Browser-based hierarchical virtual file system with two-layer architecture for metadata and content separation.</p>
+<p>Browser-based hierarchical virtual file system with metadata/content separation and a VFS service facade for cross-app access.</p>
 <h2>Two-Layer Architecture</h2>
-<ul><li><strong>Metadata Layer</strong> (Zustand + localStorage): File paths, names, types, UUIDs, timestamps, and status</li></ul><ul><li><strong>Content Layer</strong> (IndexedDB): Actual file content indexed by UUID for efficient storage</li></ul>
+<ul><li><strong>Metadata Layer</strong> (Zustand + localStorage): File paths, names, types, UUIDs, timestamps, and status</li></ul><ul><li><strong>Content Layer</strong> (IndexedDB): Actual file content indexed by UUID for efficient storage</li><li><strong>VFS Service Layer</strong> (<code>src/services/vfs/</code>): Metadata/content repositories, virtual trees, and cross-app file operations</li></ul>
 <pre class="mermaid">graph TB
     subgraph Application["Application Layer"]
         App[React Components]
-        Hook[useFileSystem Hook]
+        Hook[useFileSystem<br/>Finder hook]
+        Service[src/services/vfs]
     end
     
     subgraph Metadata["Metadata Layer"]
@@ -334,14 +335,18 @@
     end
     
     App --> Hook
-    Hook --> FilesStore
+    Hook --> Service
+    Service --> FilesStore
     Hook --> FinderStore
     FilesStore <--> LocalStorage
     FinderStore <--> LocalStorage
-    Hook -->|"UUID lookup"| IDB
+    Service -->|"UUID lookup"| IDB
     IDB --> Stores</pre>
 <h2>Key Stores</h2>
 <table><thead><tr><th>Store</th><th>Purpose</th><th>Persistence</th></tr></thead><tbody><tr><td><code>useFilesStore</code></td><td>File/folder metadata, paths, UUIDs, status</td><td>localStorage</td></tr><tr><td><code>useFinderStore</code></td><td>Finder window instances, navigation history, view preferences</td><td>localStorage</td></tr><tr><td>IndexedDB</td><td>File content (text, images, applets)</td><td>Browser storage</td></tr></tbody></table>
+<h2>VFS Service Layer</h2>
+<code>src/services/vfs/</code> provides cross-app access to Finder-backed file data:
+<table><thead><tr><th>Module</th><th>Purpose</th></tr></thead><tbody><tr><td><code>FileMetadataService</code></td><td>Metadata lookups backed by <code>useFilesStore</code></td></tr><tr><td><code>FileContentRepository</code></td><td>IndexedDB read/write by path or UUID</td></tr><tr><td><code>virtualTrees</code></td><td>Virtual <code>/Music</code> and <code>/Videos</code> directory builders</td></tr><tr><td><code>useVfsFileOperations</code></td><td>Thin cross-app wrapper for file writes</td></tr></tbody></table>
 <h2>Directory Structure</h2>
 <table><thead><tr><th>Path</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>/</code></td><td>Root</td><td>Root directory</td></tr><tr><td><code>/Applications</code></td><td>Virtual</td><td>Apps from registry (non-Finder apps)</td></tr><tr><td><code>/Documents</code></td><td>Physical</td><td>User text documents (.txt, .md)</td></tr><tr><td><code>/Images</code></td><td>Physical</td><td>User images (PNG, JPG, GIF, WebP, BMP)</td></tr><tr><td><code>/Music</code></td><td>Virtual</td><td>iPod library (organized by artist)</td></tr><tr><td><code>/Videos</code></td><td>Virtual</td><td>Video library (organized by artist)</td></tr><tr><td><code>/Sites</code></td><td>Virtual</td><td>Internet Explorer favorites</td></tr><tr><td><code>/Applets</code></td><td>Physical</td><td>HTML applets (.app, .html files)</td></tr><tr><td><code>/Trash</code></td><td>Special</td><td>Deleted items (restorable)</td></tr><tr><td><code>/Downloads</code></td><td>Physical</td><td>User downloads (AirDrop and similar)</td></tr><tr><td><code>/Desktop</code></td><td>Physical</td><td>Shortcuts and aliases</td></tr></tbody></table>
 <pre class="mermaid">graph TD
@@ -357,7 +362,7 @@
     Root --> Desktop["/Desktop<br/>Physical"]
     
     Apps -.->|"from appRegistry"| AppReg[(App Registry)]
-    Music -.->|"from useIpodStore"| iPod[(iPod Library)]
+    Music -.->|"from useIpodStore / useMediaLibraryStore"| iPod[(iPod Library)]
     Videos -.->|"from useVideoStore"| VidLib[(Video Library)]
     Sites -.->|"from useInternetExplorerStore"| IEFav[(IE Favorites)]
     
@@ -402,15 +407,16 @@
   hiddenOnThemes?: OsThemeId[];  // Hide on specific OS themes
 }</code></pre>
 <h2>IndexedDB Storage</h2>
-<p>Database: <code>ryOS</code> (version 7)</p>
-<table><thead><tr><th>Object Store</th><th>Content Type</th><th>Key</th></tr></thead><tbody><tr><td><code>documents</code></td><td>Text files (strings)</td><td>UUID</td></tr><tr><td><code>images</code></td><td>Binary images (Blobs)</td><td>UUID</td></tr><tr><td><code>applets</code></td><td>HTML applet content</td><td>UUID</td></tr><tr><td><code>trash</code></td><td>Deleted file content</td><td>UUID</td></tr><tr><td><code>custom_wallpapers</code></td><td>User wallpapers</td><td>UUID</td></tr></tbody></table>
+<p>Database: <code>ryOS</code> (version 10)</p>
+<table><thead><tr><th>Object Store</th><th>Content Type</th><th>Key</th></tr></thead><tbody><tr><td><code>documents</code></td><td>Text files (strings)</td><td>UUID</td></tr><tr><td><code>images</code></td><td>Binary images (Blobs)</td><td>UUID</td></tr><tr><td><code>applets</code></td><td>HTML applet content</td><td>UUID</td></tr><tr><td><code>trash</code></td><td>Deleted file content</td><td>UUID</td></tr><tr><td><code>custom_wallpapers</code></td><td>User wallpapers</td><td>UUID</td></tr><tr><td><code>apple_music_library</code></td><td>Apple Music library cache</td><td>Apple Music ID</td></tr><tr><td><code>apple_music_playlists</code></td><td>Apple Music playlist cache</td><td>Playlist ID</td></tr><tr><td><code>apple_music_playlist_tracks</code></td><td>Apple Music playlist track cache</td><td>Playlist ID</td></tr></tbody></table>
 <p>Content structure stored in IndexedDB: <pre><code>interface StoredContent {
   name: string;               // Original filename
   content: string | Blob;     // File content
 }</code></pre></p>
 <h2>CRUD Operations</h2>
 <h3>File Operations</h3>
-<pre><code>// useFileSystem hook provides these operations
+<pre><code>// Finder's useFileSystem hook provides these operations.
+// Other apps use src/services/vfs/useVfsFileOperations or store APIs directly.
 const {
   // Navigation
   currentPath,
@@ -476,6 +482,7 @@ await ensureFileContentLoaded(filePath, uuid);</code></pre>
   navigationIndex: number;
   viewType: ViewType;        // "small" | "large" | "list"
   sortType: SortType;        // "name" | "date" | "size" | "kind"
+  selectedFile: string | null; // Legacy single-select field
   selectedFiles: string[];   // Multi-select support
   selectionAnchorPath: string | null;  // Anchor for range selection
 }</code></pre>
@@ -492,17 +499,10 @@ await ensureFileContentLoaded(filePath, uuid);</code></pre>
 <p>Finder sorts items using locale-aware comparison via <code>compareFinderItemsByDisplayName()</code> and <code>compareFinderSortText()</code> from <code><a href="https://github.com/ryokun6/ryos/blob/main/src/utils/finderDisplay.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/utils/finderDisplay.ts</a></code>. These utilities use <code>Intl.Collator</code> with the current UI language so that translated folder names (e.g., Japanese, Korean) sort correctly alongside Latin names.</p>
 <h3>View Type Preferences</h3>
 <p>Per-path view type preferences persist across sessions:</p>
-<pre><code>// Default view types by path
-getDefaultViewTypeForPath(path) {
-  if (path === "/" || path.startsWith("/Images") || 
-      path.startsWith("/Videos") || path.startsWith("/Applications") ||
-      path.startsWith("/Applets") || path.startsWith("/Trash") ||
-      path.startsWith("/Music"))
-    return "large";
-  if (path.startsWith("/Documents"))
-    return "list";
-  return "list";
-}</code></pre>
+<pre><code>// useFinderStore.getDefaultViewTypeForPath(path)
+//   Returns default path-specific view types.
+// useFinderStore.getViewTypeForPath(path)
+//   Returns a persisted per-path preference or the default.</code></pre>
 <h3>File Type Detection</h3>
 <pre><code>function getFileTypeFromExtension(fileName: string): string {
   const ext = fileName.split(".").pop()?.toLowerCase();
@@ -511,6 +511,7 @@ getDefaultViewTypeForPath(path) {
     case "txt": return "text";
     case "png": case "gif": case "webp": case "bmp": return ext;
     case "jpg": case "jpeg": return "jpg";
+    case "html": case "htm": return "html";
     case "app": return "application";
     default: return "unknown";
   }
@@ -540,12 +541,14 @@ fileStore.createAlias(
 <p>The sync engine (<code><a href="https://github.com/ryokun6/ryos/blob/main/src/sync/engine.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/sync/engine.ts</a></code>) subscribes to the file stores and keeps a persisted shadow map (key → HLC timestamp + content hash). Pending uploads are derived as diff(local state, shadow) and flushed with a ~1s debounce, so individual file operations (save, rename, move, trash, restore) sync incrementally as per-key ops rather than full-store uploads.</p>
 <h2>Migration System</h2>
 <p>Store version migrations handle schema changes:</p>
-<pre><code>// Version history
+<pre><code>// useFilesStore persist version history (current: 13)
 // v5: Added UUID-based content keys
 // v6: Added timestamps (createdAt, modifiedAt)
 // v7: Added file size tracking
-// v8: One-time sync for existing file sizes/timestamps
-// v10: Updated Applets folder icon</code></pre>
+// v8: No shape change; cloud sync on rehydrate
+// v11: Expand legacy macosx-only hiddenOnThemes desktop shortcuts
+// v12: Migrate default desktop shortcuts
+// v13: Add prominent System 7 desktop app shortcuts</code></pre>
 <h2>Events</h2>
 <p>File system changes emit custom events:</p>
 <pre><code>// File saved/updated

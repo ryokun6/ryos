@@ -27,8 +27,18 @@ proposal text below:
 - **v1 import runs lazily server-side** on a user's first v2 access (the
   legacy per-item blob signatures are reused as content hashes, so existing
   libraries do not re-upload).
-- **Blob GC is deferred**: superseded content-addressed blobs are not yet
-  garbage-collected (bounded per-user; can be added as a periodic sweep).
+- **Blob GC is implemented** via `/api/cron/sync-maintenance`: unreferenced
+  content-addressed blobs are swept with a grace window, and legacy v1 keys are
+  retired in bounded batches.
+
+Shipped-system errata for the historical proposal body below:
+
+- Redis journals use bounded **LIST** keys, not sorted sets.
+- The client uses a persisted shadow-map diff, not an IndexedDB outbox.
+- Binary document references use a `blob` reference shape in shared types.
+- Realtime sync events are named `sync-ops`, with an 8 KiB inline payload cap.
+- Visibility/background checks use a slow heartbeat when connected and a faster
+  fallback when realtime is disconnected.
 
 This document studies the current cloud sync system (v1) and proposes a
 redesign that eliminates its main inefficiencies: full-snapshot uploads and

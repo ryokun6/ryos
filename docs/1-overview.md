@@ -53,7 +53,7 @@ graph TB
 
 ## Key Features
 
-- **[Multi-Theme Support](/docs/theme-system):** System 7, Mac OS X (Aqua), Windows XP, Windows 98
+- **[Multi-Theme Support](/docs/theme-system):** system7/System 7, macosx/Aqua, xp/XP, win98/98
 - **[Built-in Apps](/docs/apps):** Finder, TextEdit, Paint, iPod, Infinite Mac, Winamp, Calendar, Dashboard, Contacts, and more
 - **[AI Assistant (Ryo)](/docs/ai-system):** Chat, tool calling, app control, code generation
 - **[Virtual File System](/docs/file-system):** IndexedDB-backed with lazy loading and cloud sync
@@ -69,7 +69,7 @@ graph TB
 
 | Category | Technologies |
 |----------|-------------|
-| Frontend | React 19, TypeScript, Tailwind CSS v4, shadcn/ui, Framer Motion |
+| Frontend | React 19, TypeScript, Tailwind CSS v4, shadcn/ui, Motion |
 | State | Zustand with localStorage/IndexedDB persistence |
 | Audio | Tone.js, WaveSurfer.js, Web Audio API |
 | 3D | Three.js (shaders) |
@@ -78,29 +78,35 @@ graph TB
 | API Runtime | Vercel Node.js handlers + standalone Bun server |
 | AI | OpenAI, Anthropic, Google via Vercel AI SDK |
 | Real-time | Pusher or local WebSocket (with Redis pub/sub fanout) |
-| Package Manager | Bun (`bun@1.3.5`) |
+| Package Manager | Bun (`bun@1.3.5` in `package.json`; CI/Docker currently use Bun 1.3.9) |
 | Build | Vite, Bun |
-| Desktop | Tauri (macOS, Windows, Linux) |
-| Deployment | Vercel (web), standalone Bun API (self-hosted), Docker / Coolify |
+| Desktop | Electron + electron-builder (macOS and Windows release builds; Linux AppImage target configured) |
+| Deployment | Vercel (web), standalone Bun API (self-hosted), Docker / Coolify, Electron releases |
 
 ## Project Structure
 
 ```
 ├── api/              # Node-style API endpoints (Vercel + standalone Bun server)
 │   └── _utils/       # Shared API utilities (api-handler, middleware, auth, redis, storage, realtime, analytics, etc.)
+├── electron/         # Electron main/preload/menu/updater
 ├── public/           # Static assets
+├── tests/            # bun:test suites
 ├── src/
-│   ├── api/          # Frontend API clients (auth, rooms, admin, songs, listen, core, telegram)
+│   ├── api/          # Frontend API clients (auth, rooms, admin, songs, listen, core, telegram, irc)
 │   ├── apps/         # 25 app modules
 │   ├── components/   # Shared React components
 │   ├── config/       # App registry
-│   ├── hooks/        # 45 custom hooks
+│   ├── hooks/        # ~60 custom hooks
 │   ├── lib/          # Libraries
-│   ├── stores/       # 34 Zustand stores
+│   ├── services/     # VFS and realtime service facades
+│   ├── shared/       # Contracts, sync helpers, domain types
+│   ├── stores/       # 36 Zustand store modules
 │   ├── styles/       # CSS
+│   ├── sync/         # Cloud Sync v2 client engine
 │   ├── themes/       # 4 theme definitions
 │   ├── types/        # TypeScript types
-│   └── utils/        # Utility functions
-├── src-tauri/        # Desktop app config
+│   ├── utils/        # Utility functions
+│   └── workers/      # Web workers
+├── Dockerfile        # Coolify / GHCR image
 └── scripts/          # Build scripts
 ```

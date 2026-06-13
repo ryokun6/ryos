@@ -60,6 +60,10 @@ graph LR
 | `/api/applet-ai` | Applet text + image generation |
 | `/api/ie-generate` | Time-travel page generation |
 | `/api/parse-title` | Music metadata extraction |
+| `/api/ai/extract-memories` | Daily-note and long-term memory extraction |
+| `/api/ai/process-daily-notes` | Background daily-note processing |
+| `/api/ai/cursor-run-status` | Cursor Cloud agent run polling |
+| `/api/ai/cursor-run-followup` | Follow-up prompt for an existing Cursor run |
 
 ### Media Endpoints
 
@@ -70,6 +74,7 @@ graph LR
 | `/api/speech` | Text-to-speech |
 | `/api/audio-transcribe` | Speech-to-text |
 | `/api/youtube-search` | YouTube music search |
+| `/api/apple-music-artwork` | Apple Music artwork proxy |
 
 ### Communication Endpoints
 
@@ -93,7 +98,15 @@ graph LR
 | `/api/listen/sessions/[id]/join` | Join listen session |
 | `/api/listen/sessions/[id]/leave` | Leave listen session |
 | `/api/listen/sessions/[id]/sync` | Sync playback state (DJ only) |
+| `/api/listen/sessions/[id]/assign-dj` | Assign the session DJ |
+| `/api/listen/sessions/[id]/transfer-host` | Transfer session host |
+| `/api/listen/sessions/[id]/remote-command` | Submit remote playback command |
 | `/api/listen/sessions/[id]/reaction` | Send emoji reaction |
+| `/api/irc/servers` | List/create IRC server configs |
+| `/api/irc/servers/[id]` | Read/update/delete IRC server config |
+| `/api/irc/servers/[id]/channels` | Browse IRC channels |
+| `/api/pusher/auth` | Authorize private/presence Pusher channels |
+| `/api/realtime/ticket` | Mint local WebSocket realtime tickets |
 | `/api/telegram/link/create` | Create Telegram account link |
 | `/api/telegram/link/status` | Check Telegram link status |
 | `/api/telegram/link/disconnect` | Disconnect Telegram account |
@@ -106,12 +119,20 @@ graph LR
 | `/api/iframe-check` | Embeddability checking |
 | `/api/share-applet` | Applet sharing |
 | `/api/stocks` | Real-time stock quotes |
+| `/api/currency-rate` | Currency conversion rates |
+| `/api/mapkit-token` | MapKit JS token |
+| `/api/musickit-token` | MusicKit JS token |
+| `/api/tv/create-channel` | AI-assisted TV channel creation |
 | `/api/sync/backup-token` | Generate cloud backup upload descriptor |
 | `/api/sync/backup` | Save/list/delete cloud backup metadata |
 | `/api/sync/status` | Cloud backup status summary |
-| `/api/sync/domains` | Read logical and physical cloud sync metadata |
-| `/api/sync/domains/[domain]` | Download or update one logical sync domain |
-| `/api/sync/domains/[domain]/attachments/prepare` | Generate blob upload instructions for logical sync parts |
+| `/api/sync/auto-sync-preference` | Read/update the cross-device Auto Sync toggle |
+| `/api/sync/v2/ops` | Apply batched journal ops |
+| `/api/sync/v2/changes` | Read journal ops after a cursor |
+| `/api/sync/v2/snapshot` | Read full key-value sync snapshot |
+| `/api/sync/v2/blobs` | Prepare/dedupe content-addressed blob uploads |
+| `/api/cron/sync-maintenance` | Retire legacy v1 keys and garbage-collect sync blobs |
+| `/api/analytics/events` | Record lightweight client analytics events |
 | `/api/admin` | Admin operations |
 | `/api/airdrop/heartbeat` | AirDrop presence heartbeat |
 | `/api/airdrop/discover` | Discover nearby AirDrop users |
@@ -150,7 +171,7 @@ graph TD
     Util --> iframe["/iframe-check"]
     Util --> share["/share-applet"]
     Util --> stocks["/stocks"]
-    Util --> sync["/sync/*"]
+    Util --> sync["/sync/v2/* + backup"]
     Util --> admin["/admin"]
 ```
 
@@ -167,6 +188,6 @@ Token-based sessions use a 1-year TTL, refreshed on each validated request. Auth
 
 | Provider | Models |
 |----------|--------|
-| OpenAI | gpt-5.5, gpt-4.1-mini, tts-1, whisper-1 |
+| OpenAI | gpt-5.5, tts-1, whisper-1 |
 | Anthropic | sonnet-4.6 |
 | Google | gemini-3-flash, gemini-3-flash-preview, gemini-3.1-pro-preview, gemini-3.1-flash-image-preview |

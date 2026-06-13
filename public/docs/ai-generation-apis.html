@@ -468,7 +468,7 @@
 <h3>Rate Limits</h3>
 <table><thead><tr><th>Scope</th><th>Limit</th><th>Window</th></tr></thead><tbody><tr><td>Burst</td><td>15 requests</td><td>1 minute</td></tr><tr><td>Daily</td><td>500 requests</td><td>24 hours</td></tr></tbody></table>
 <h3>Model</h3>
-<p>Uses <code>gpt-4.1-mini</code> for efficient metadata parsing.</p>
+<p>Uses <code>gemini-3-flash-preview</code> for efficient metadata parsing.</p>
 <h3>Language Handling</h3>
 <p>The parser prefers original language names over romanized/translated versions:</p>
 <table><thead><tr><th>Input</th><th>Output</th></tr></thead><tbody><tr><td><code>"Jay Chou - Sunny Day (周杰倫 - 晴天)"</code></td><td><code>{"title": "晴天", "artist": "周杰倫"}</code></td></tr><tr><td><code>"NewJeans (뉴진스) 'How Sweet' Official MV"</code></td><td><code>{"title": "How Sweet", "artist": "뉴진스"}</code></td></tr></tbody></table>

@@ -52,17 +52,17 @@ graph TD
 | `infiniteMacControl` | Control Infinite Mac emulator (launch system, screen read, mouse/keyboard actions, pause state) |
 | `calendarControl` | Create, update, delete, and list calendar events; create, toggle, delete, and list todos |
 | `contactsControl` | Search, create, update, and delete contacts (with Telegram field support) |
-| `documentsControl` | List, read, write, and edit cloud-synced markdown documents |
+| `documentsControl` | Telegram/server-side tool for cloud-synced markdown documents; web chat uses client VFS `read`/`write`/`edit` tools |
 | `memoryWrite` | Unified memory writer (`long_term` or `daily`) |
 | `memoryRead` | Unified memory reader (`long_term` by key or `daily` by date) |
 | `memoryDelete` | Delete long-term memory by key |
-| `songLibraryControl` | Search ryOS song libraries and cached metadata from server (list/search/get/searchYoutube/add; scopes: user/global/any; Telegram/server-side) |
+| `songLibraryControl` | Telegram/server-side song library search and cached metadata access |
 | `web_search` | OpenAI provider web search (GPT-5.5 only, authenticated users, with geolocation context) |
 | `google_search` | Google provider web search (Gemini 3 Flash only, authenticated users) |
 | `webFetch` | Server-side URL fetch with HTML-to-text extraction for Ryo (sanitized) |
 | `tvControl` | TV lineup and playback: list/tune channels, AI `createChannel` fanout, add/remove videos on custom channels |
-| `cursorCloudAgent` | Async Cursor Cloud repo-agent runs against `ryokun6/ryos` (owner-only): live stream card, PR link, follow-up turns |
-| `listCursorCloudAgentRuns` | List recent Cursor Cloud agent runs with dashboard URLs (owner-only) |
+| `cursorCloudAgent` | Async Cursor Cloud repo-agent runs against `ryokun6/ryos` (owner account + `CURSOR_API_KEY`): live stream card, PR link, follow-up turns |
+| `listCursorCloudAgentRuns` | List recent Cursor Cloud agent runs with dashboard URLs (owner account + `CURSOR_API_KEY`) |
 
 ## API Endpoints
 
@@ -72,8 +72,12 @@ graph TD
 | [`/api/ai/extract-memories`](/docs/chat-api) | Single-pass extraction of daily notes + long-term memories from chat history |
 | [`/api/ai/process-daily-notes`](/docs/chat-api) | Background processing of past daily notes into long-term memories |
 | [`/api/ai/ryo-reply`](/docs/chat-api) | Auto-reply generation for chat rooms |
+| `/api/ai/cursor-run-status` | Poll Cursor Cloud agent run events for live cards |
+| `/api/ai/cursor-run-followup` | Send follow-up prompts to an existing Cursor Cloud agent run |
 | [`/api/applet-ai`](/docs/ai-generation-apis) | Applet AI assistant (text + image mode, multimodal input) |
 | [`/api/ie-generate`](/docs/ai-generation-apis) | Internet Explorer time-travel page generation |
+| `/api/mapkit-token` | MapKit JS token used by Maps and `mapsSearchPlaces` |
+| `/api/tv/create-channel` | Server-side TV channel creation flow used by TV tooling |
 | [`/api/speech`](/docs/media-api) | Text-to-speech synthesis |
 | [`/api/audio-transcribe`](/docs/media-api) | Audio transcription |
 | [`/api/webhooks/telegram`](/docs/chat-api) | Telegram bot webhook for DM chat (image support, web search, AI tool execution) |
@@ -112,12 +116,13 @@ Backend tool registry lives in `api/chat/tools/`:
 
 - `api/chat/tools/types.ts` - Tool constants and TypeScript contracts
 - `api/chat/tools/schemas.ts` - Zod input schemas and action-specific validation
-- `api/chat/tools/executors.ts` - Server-side executors (`generateHtml`, `searchSongs`, memory tools, calendar, stickies, contacts, documents)
+- `api/chat/tools/executors.ts` - Server-side executors (`generateHtml`, `searchSongs`, memory, documents, webFetch, song library)
+- `api/chat/tools/app-state-executors.ts` - Server-side calendar, stickies, and contacts executors used by Telegram/app-state tool paths
 - `api/chat/tools/index.ts` - `createChatTools()` registry with profile-based filtering (`all`, `memory`, `telegram`)
 
 Tool profiles control which tools are available per channel:
-- `all` (web chat): Full tool set — all client-side and server-side tools
-- `telegram`: Server-side subset — memory, calendar, stickies, contacts, documents, songLibraryControl (all execute server-side via Redis)
+- `all` (web chat): Client app/VFS/media tools plus server tools registered for the web channel; search and cursor tools are merged dynamically when model/user/env gates pass
+- `telegram`: Server-side subset — `webFetch`, `mapsSearchPlaces`, memory, documents, calendar, stickies, contacts, and `songLibraryControl` via Redis/sync state; cursor tools are owner-only when configured
 - `memory`: Memory tools only
 
 Client execution handlers remain in `src/apps/chats/tools/`:

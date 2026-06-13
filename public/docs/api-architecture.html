@@ -316,7 +316,7 @@
     end
     
     subgraph API["API Runtime (Vercel Node.js + standalone Bun server)"]
-        Handler[apiHandler + _api/_utils]
+        Handler[apiHandler + api/_utils]
         ChatAPI[chat]
         SongAPI[songs]
         SpeechAPI[speech]
@@ -525,7 +525,7 @@ export const getModelInstance = (model: SupportedModel): LanguageModel =&gt; {
   // ... more tools
 }</code></pre>
 <h3>System Prompts</h3>
-<pre><code>// _api/_utils/_aiPrompts.ts
+<pre><code>// api/_utils/_aiPrompts.ts
 export const CORE_PRIORITY_INSTRUCTIONS = `
   You are Ryo, an AI assistant in ryOS...
 `;
@@ -562,7 +562,7 @@ export const TOOL_USAGE_INSTRUCTIONS = `
 <table><thead><tr><th>Route</th><th>Action</th><th>Description</th></tr></thead><tbody><tr><td><code>GET /api/songs</code></td><td>List</td><td>Songs with filters</td></tr><tr><td><code>POST /api/songs</code></td><td>Create/Import</td><td>New songs or bulk import</td></tr><tr><td><code>GET /api/songs/[id]</code></td><td>Read</td><td>Song with lyrics, translations</td></tr><tr><td><code>POST /api/songs/[id]</code></td><td>Fetch</td><td>Body: <code>{ action: "fetch-lyrics" }</code></td></tr><tr><td><code>POST /api/songs/[id]</code></td><td>Translate</td><td>Body: <code>{ action: "translate-stream" }</code></td></tr><tr><td><code>POST /api/songs/[id]</code></td><td>Furigana</td><td>Body: <code>{ action: "furigana-stream" }</code></td></tr><tr><td><code>DELETE /api/songs/[id]</code></td><td>Delete</td><td>Remove song</td></tr></tbody></table>
 <h2>Speech APIs</h2>
 <h3>Text-to-Speech</h3>
-<pre><code>// _api/speech.ts
+<pre><code>// api/speech.ts
 const providers = {
   openai: {
     models: ["tts-1", "tts-1-hd"],
@@ -585,14 +585,14 @@ if (model === "elevenlabs") {
   });
 }</code></pre>
 <h3>Audio Transcription</h3>
-<pre><code>// _api/audio-transcribe.ts
+<pre><code>// api/audio-transcribe.ts
 const transcription = await openai.audio.transcriptions.create({
   file: audioFile,
   model: "whisper-1",
 });</code></pre>
 <h2>Rate Limiting</h2>
 <h3>Counter-Based Limiting</h3>
-<pre><code>// _api/_utils/_rate-limit.ts
+<pre><code>// api/_utils/_rate-limit.ts
 export async function checkCounterLimit({
   key,
   windowSeconds,
@@ -623,10 +623,10 @@ export async function checkCounterLimit({
   };
 }</code></pre>
 <h3>Rate Limit Configurations</h3>
-<table><thead><tr><th>Endpoint</th><th>Burst Limit</th><th>Daily/Budget</th><th>Window</th></tr></thead><tbody><tr><td>Chat AI (auth)</td><td>15</td><td>per 5 hours</td><td>Sliding</td></tr><tr><td>Chat AI (anon)</td><td>3</td><td>per 24 hours</td><td>Sliding</td></tr><tr><td>Speech TTS</td><td>10/min</td><td>50/day</td><td>Fixed</td></tr><tr><td>IE Generate</td><td>3/min</td><td>10/5hr</td><td>Fixed</td></tr><tr><td>Applet AI (auth text)</td><td>50</td><td>per hour</td><td>Fixed</td></tr><tr><td>Applet AI (anon text)</td><td>15</td><td>per hour</td><td>Fixed</td></tr><tr><td>Applet AI (auth image)</td><td>12</td><td>per hour</td><td>Fixed</td></tr><tr><td>Applet AI (anon image)</td><td>1</td><td>per hour</td><td>Fixed</td></tr><tr><td>Transcribe</td><td>10/min</td><td>50/day</td><td>Fixed</td></tr><tr><td>Parse Title</td><td>15/min</td><td>500/day</td><td>Fixed</td></tr><tr><td>YouTube Search</td><td>20/min</td><td>200/day</td><td>Fixed</td></tr></tbody></table>
+<table><thead><tr><th>Endpoint</th><th>Burst Limit</th><th>Daily/Budget</th><th>Window</th></tr></thead><tbody><tr><td>Chat AI (auth)</td><td>15</td><td>per 5 hours</td><td>Fixed window</td></tr><tr><td>Chat AI (anon)</td><td>3</td><td>per 24 hours</td><td>Fixed window</td></tr><tr><td>Speech TTS</td><td>10/min</td><td>50/day</td><td>Fixed</td></tr><tr><td>IE Generate</td><td>3/min</td><td>10/5hr</td><td>Fixed</td></tr><tr><td>Applet AI (auth text)</td><td>50</td><td>per hour</td><td>Fixed</td></tr><tr><td>Applet AI (anon text)</td><td>15</td><td>per hour</td><td>Fixed</td></tr><tr><td>Applet AI (auth image)</td><td>12</td><td>per hour</td><td>Fixed</td></tr><tr><td>Applet AI (anon image)</td><td>1</td><td>per hour</td><td>Fixed</td></tr><tr><td>Transcribe</td><td>10/min</td><td>50/day</td><td>Fixed</td></tr><tr><td>Parse Title</td><td>15/min</td><td>500/day</td><td>Fixed</td></tr><tr><td>YouTube Search</td><td>20/min</td><td>200/day</td><td>Fixed</td></tr></tbody></table>
 <h2>Authentication</h2>
 <h3>Token Validation</h3>
-<pre><code>// _api/_utils/auth/_validate.ts
+<pre><code>// api/_utils/auth/_validate.ts
 export async function validateAuth(
   redis: RedisLike,
   username: string,
@@ -740,7 +740,11 @@ return new Response(stream, {
 <p>Route modules export Vercel-compatible runtime metadata:</p>
 <pre><code>export const runtime = "nodejs";
 export const maxDuration = 60; // seconds (80 for AI endpoints)</code></pre>
-<ul><li>On <strong>Vercel</strong>, these exports configure serverless execution.</li></ul><ul><li>On the <strong>standalone Bun server</strong>, <code><a href="https://github.com/ryokun6/ryos/blob/main/scripts/api-standalone-server.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">scripts/api-standalone-server.ts</a></code> loads and executes the same <code>_api/*</code> handlers via a request/response adapter.</li><li>API development/runtime scripts use Bun (<code>bun run dev:api</code>, <code>bun run api:start</code>).</li></ul>
+<ul><li>On <strong>Vercel</strong>, these exports configure serverless execution.</li></ul><ul><li>On the <strong>standalone Bun server</strong>, <code><a href="https://github.com/ryokun6/ryos/blob/main/scripts/api-standalone-server.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">scripts/api-standalone-server.ts</a></code> loads and executes the same <code>api/*</code> handlers via a request/response adapter.</li><li>API development/runtime scripts use Bun (<code>bun run dev:api</code>, <code>bun run api:start</code>).</li></ul>
+<h3>Realtime Provider Modes</h3>
+<p>Realtime delivery is selected at runtime:</p>
+<table><thead><tr><th>Provider</th><th>Auth route</th><th>Transport</th><th>Notes</th></tr></thead><tbody><tr><td><code>pusher</code> (default)</td><td><code>POST /api/pusher/auth</code></td><td>Pusher private/presence channels</td><td>Used by production web deployments</td></tr><tr><td><code>local</code></td><td><code>POST /api/realtime/ticket</code></td><td>Standalone Bun WebSocket + Redis pub/sub bridge</td><td>Enabled by <code>REALTIME_PROVIDER=local</code> and <code>REALTIME_WS_PATH</code></td></tr></tbody></table>
+<p>Cloud Sync v2 publishes <code>sync-ops</code> events on per-user sync channels; small remote changes can be applied directly from the realtime payload without an extra HTTP fetch.</p>
 <h2>Redis Key Patterns</h2>
 <table><thead><tr><th>Prefix</th><th>Purpose</th><th>Example</th></tr></thead><tbody><tr><td><code>rl:ai:</code></td><td>AI rate limiting</td><td><code>rl:ai:chat:user123</code></td></tr><tr><td><code>song:meta:</code></td><td>Song metadata</td><td><code>song:meta:abc123</code></td></tr><tr><td><code>song:content:</code></td><td>Song content</td><td><code>song:content:abc123</code></td></tr><tr><td><code>ie:cache:</code></td><td>IE generation cache</td><td><code>ie:cache:hash</code></td></tr><tr><td><code>applet:share:</code></td><td>Shared applets</td><td><code>applet:share:xyz</code></td></tr><tr><td><code>chat:token:user:</code></td><td>Auth tokens</td><td><code>chat:token:user:alice:tok</code></td></tr><tr><td><code>chat:room:</code></td><td>Chat room data</td><td><code>chat:room:general</code></td></tr><tr><td><code>sync:meta:</code></td><td>Backup metadata</td><td><code>sync:meta:alice</code></td></tr><tr><td><code>sync2:seq:{username}</code></td><td>Sync v2 journal cursor (op counter)</td><td><code>sync2:seq:alice</code></td></tr><tr><td><code>sync2:kv:{username}</code></td><td>Sync v2 key-value state (hash: key → entry)</td><td><code>sync2:kv:alice</code></td></tr><tr><td><code>sync2:log:{username}</code></td><td>Sync v2 op journal (bounded list)</td><td><code>sync2:log:alice</code></td></tr><tr><td><code>sync2:blobs:{username}</code></td><td>Sync v2 content-hash blob registry</td><td><code>sync2:blobs:alice</code></td></tr><tr><td><code>sync2:maint:cursor</code></td><td>Sync maintenance cron scan cursor</td><td><code>sync2:maint:cursor</code></td></tr><tr><td><code>sync:state:{username}:{domain}</code></td><td>Legacy v1 sync snapshots (imported on first v2 access)</td><td><code>sync:state:alice:contacts</code></td></tr><tr><td><code>analytics:daily:</code></td><td>Daily API metrics</td><td><code>analytics:daily:2026-03-10</code></td></tr><tr><td><code>analytics:uv:</code></td><td>Unique visitor HLL</td><td><code>analytics:uv:2026-03-10</code></td></tr><tr><td><code>analytics:ep:</code></td><td>Endpoint breakdown</td><td><code>analytics:ep:2026-03-10</code></td></tr></tbody></table>
 <h2>Related Documentation</h2>

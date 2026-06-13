@@ -38,6 +38,14 @@ A modern web-based desktop environment inspired by classic macOS and Windows, bu
 - **Infinite Mac** — Classic Mac OS emulators (System 1.0 to Mac OS X 10.4) via Infinite Mac
 - **Terminal** — Unix-like CLI with AI integration (`ryo <prompt>`)
 - **iPod** — 1st-gen iPod music player with YouTube import, lyrics, and translation
+- **Karaoke** — Synced lyrics player with fullscreen display modes
+- **Ryo TV** — CRT-style channel surfing with AI-generated channels
+- **Winamp** — Classic Winamp media player
+- **Calendar** — iCal-style events, todos, and sync
+- **Contacts** — Address book with vCard import and sync
+- **Dashboard** — Tiger-style widgets for weather, stocks, translation, dictionary, aquarium, and more
+- **Maps** — Apple MapKit place search with chat integration
+- **Admin** — Restricted analytics and system administration
 - **Applet Store** — Browse, install, and share community-created HTML applets
 - **Stickies** — Sticky notes for quick reminders
 
@@ -53,32 +61,42 @@ A modern web-based desktop environment inspired by classic macOS and Windows, bu
 
 ```
 ├── api/              # API route handlers (Vercel-compatible serverless functions)
+├── electron/         # Electron shell, menu, preload, and updater
 ├── public/           # Static assets (icons, wallpapers, sounds, fonts)
 ├── scripts/          # Build + maintenance + standalone API runner
+├── tests/            # Bun test suites
 ├── src/
+│   ├── api/          # Frontend API clients
 │   ├── apps/         # Individual app modules
 │   ├── components/   # Shared React components (ui, dialogs, layout)
 │   ├── config/       # Configuration files
-│   ├── contexts/     # React context providers
 │   ├── hooks/        # Custom React hooks
 │   ├── lib/          # Libraries and utilities
+│   ├── services/     # VFS and realtime service facades
+│   ├── shared/       # Shared contracts and domain types
 │   ├── stores/       # Zustand state management
 │   ├── styles/       # CSS and styling
-│   └── types/        # TypeScript definitions
+│   ├── sync/         # Cloud Sync v2 client engine
+│   ├── themes/       # OS theme definitions
+│   ├── types/        # TypeScript definitions
+│   ├── utils/        # Utilities
+│   └── workers/      # Web workers
 ```
 
 ## Tech Stack
 
-- **Frontend:** React 19, TypeScript, Tailwind CSS, shadcn/ui, Framer Motion
+- **Frontend:** React 19, TypeScript, Tailwind CSS v4, shadcn/ui, Motion
 - **Audio:** Tone.js, WaveSurfer.js
 - **3D:** Three.js (shaders)
 - **Text Editor:** TipTap
 - **State:** Zustand
-- **Storage:** IndexedDB, LocalStorage, Redis (Upstash)
+- **Storage:** IndexedDB, LocalStorage, Redis (Upstash REST or `REDIS_URL`)
 - **AI:** OpenAI, Anthropic, Google via Vercel AI SDK
-- **Real-time:** Pusher
+- **Real-time:** Pusher or local WebSocket
+- **API Runtime:** Vercel Node handlers + standalone Bun server
 - **Build:** Vite, Bun
-- **Deployment:** Vercel
+- **Desktop:** Electron + electron-updater
+- **Deployment:** Vercel, Docker/GHCR + Coolify, Electron desktop releases
 
 ## Scripts
 
@@ -86,12 +104,13 @@ A modern web-based desktop environment inspired by classic macOS and Windows, bu
 bun run dev          # Start full stack (API + Vite with proxy) — the default
 bun run dev:vite     # Start Vite dev server only (frontend-only, no API)
 bun run dev:api      # Start standalone Bun API server only (port 3000)
-bun run dev:vercel   # Optional: Vercel dev server (parity/debugging only)
 bun run build        # Build for production
 bun run start        # Start the self-host/Coolify production server
 bun run lint         # Run ESLint
 bun run preview      # Preview production build
 bun run api:start    # Run standalone API server in production mode
+bun run electron:dev # Bundle and launch the Electron shell for local Vite
+bun run electron:build # Build desktop artifacts with electron-builder
 ```
 
 For local development, `bun run dev` starts both the standalone Bun API server and the Vite dev server with an `/api` proxy — no Vercel CLI required.
@@ -117,6 +136,13 @@ You can run API tests directly against it:
 
 ```bash
 API_URL=http://localhost:3000 bun run test:new-api
+```
+
+Unit and integration suites use Bun's native runner:
+
+```bash
+bun run test:unit    # Unit/wiring suites without a server
+bun run test:api     # API integration suites; requires bun run dev:api
 ```
 
 ## VPS / self-hosting path
@@ -178,6 +204,12 @@ REALTIME_WS_PATH="/ws"
 ```
 
 Detailed runbook: [`docs/1.3-self-hosting-vps.md`](docs/1.3-self-hosting-vps.md)
+
+### CI and releases
+
+- Pull requests run `bun run test:unit` and `bun run build`.
+- Pushes to `main` build and publish the GHCR image for Coolify deploys.
+- `v*` tags build signed Electron releases for macOS and Windows with update feeds.
 
 ## License
 

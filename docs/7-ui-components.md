@@ -6,7 +6,7 @@ Overview of shared UI components and system-wide utilities that power the ryOS d
 
 The ryOS component architecture is organized into distinct categories, each serving specific purposes across the desktop environment. Components are built with React and TypeScript, leveraging Tailwind CSS for styling and shadcn/ui as the foundation for consistent, accessible UI elements. The system emphasizes reusability, theme-aware components, and cross-app compatibility.
 
-The component library is structured hierarchically: base UI components provide fundamental building blocks, layout components handle window management and desktop structure, dialog components manage modal interactions, shared components offer cross-application utilities, and error components provide crash recovery surfaces. This organization ensures consistent behavior and appearance across all 20 built-in applications while maintaining flexibility for app-specific customizations.
+The component library is structured hierarchically: base UI components provide fundamental building blocks, layout components handle window management and desktop structure, dialog components manage modal interactions, shared components offer cross-application utilities, and error components provide crash recovery surfaces. This organization ensures consistent behavior and appearance across all 25 built-in applications while maintaining flexibility for app-specific customizations.
 
 ## Component Categories
 
@@ -17,6 +17,10 @@ The component library is structured hierarchically: base UI components provide f
 | Dialog Components | Modal dialogs, alerts, and system dialogs | `src/components/dialogs/` |
 | Shared Components | Cross-app utilities and themed components | `src/components/shared/` |
 | Error Components | App/desktop error boundaries with crash dialogs | `src/components/errors/` |
+| Dashboard Widgets | Dashboard widget surfaces and controls | `src/components/layout/dashboard/` |
+| Screensavers | Desktop screen saver overlays | `src/components/screensavers/` |
+| Listen Components | Listen Together session UI | `src/components/listen/` |
+| Icons | Shared icon components | `src/components/icons/` |
 
 ```mermaid
 graph LR
@@ -43,14 +47,14 @@ graph LR
 - **React 19** with TypeScript for type-safe component development
 - **Tailwind CSS** for utility-first styling and theme support
 - **shadcn/ui** component library for accessible, customizable UI primitives
-- **Framer Motion** for animations and transitions
+- **Motion** for animations and transitions
 
 ## Component Architecture
 
 The UI system follows a layered approach:
 
-1. **Base Layer**: shadcn/ui components (19 components: button, dialog, input, select, etc.) provide accessible, themeable primitives
-2. **Custom Layer**: Specialized components (10 components: activity-indicator, aqua-checkbox, audio-bars, dial, playback-bars, etc.) extend functionality for app-specific needs
+1. **Base Layer**: shadcn/ui components (24 components: button, dialog, input, select, etc.) provide accessible, themeable primitives
+2. **Custom Layer**: Specialized components (8 components: activity-indicator, aqua-checkbox, audio-bars, dial, playback-bars, etc.) extend functionality for app-specific needs
 3. **Layout Layer**: WindowFrame, MenuBar, Desktop, and Dock components manage the desktop environment structure
 4. **Application Layer**: Dialog, shared, and error components provide common patterns used across multiple apps (including runtime crash recovery)
 
@@ -83,14 +87,14 @@ graph TD
         A2[button, dialog, input, select, ...]
     end
     
-    A1 --> B1 & B2 & B3 & B4 & B5 & B6 & B7
-    B1 & B2 & B3 & B4 & B5 & B6 & B7 --> C1 & C2 & C3 & C4
+    A1 --> B1 & B2 & B3 & B4 & B5 & B6
+    B1 & B2 & B3 & B4 & B5 & B6 --> C1 & C2 & C3 & C4
     C1 & C2 & C3 & C4 --> D1 & D2 & D3
 ```
 
-All components are theme-aware, automatically adapting to the active system theme (System 7, Mac OS X, Windows XP, Windows 98) through the theme system.
+All components are theme-aware, automatically adapting to the active system theme (IDs: `system7`/System 7, `macosx`/Aqua, `xp`/XP, `win98`/98) through the theme system.
 
 ## Subsections
 
-- [Component Library](/docs/component-library) - Core UI component library including 19 shadcn components, 10 custom primitives, 16 shared components, and crash boundary components
+- [Component Library](/docs/component-library) - Core UI component library including 24 shadcn-style components, 8 custom primitives, 65+ shared components, and crash boundary components
 - [Internationalization](/docs/i18n) - i18n hooks and translation system supporting 10 languages
