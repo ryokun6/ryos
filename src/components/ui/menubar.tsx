@@ -182,7 +182,7 @@ const MenubarSubContent = (
     ref?: React.Ref<React.ElementRef<typeof MenubarPrimitive.SubContent>>;
   }
 ) => {
-  const { isMacOSTheme } = useThemeFlags()
+  const { isMacOSTheme, isAquaGlass } = useThemeFlags()
   const isMobile = useMediaQuery("(max-width: 768px)")
 
   return (
@@ -191,7 +191,10 @@ const MenubarSubContent = (
         ref={ref}
         className={cn(
           // Use z-[10004] to ensure submenu content appears above menu content (z-[10003])
-          "z-[10004] min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+          // origin-[…]: scale from the trigger side instead of the element center.
+          // fill-mode-forwards: hold the exit end-state until Radix unmounts —
+          // without it Safari can paint one unanimated frame (visible jitter).
+          "z-[10004] min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-lg origin-[var(--radix-menubar-content-transform-origin)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fill-mode-forwards data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
           className
         )}
         style={{
@@ -199,7 +202,9 @@ const MenubarSubContent = (
             border: "none",
             borderRadius: "0px",
             background: "var(--os-pinstripe-window)",
-            opacity: "0.92",
+            // Aqua Glass gets its translucency from the frosted background in
+            // themes.css; an inline opacity would block the open/close fade.
+            ...(isAquaGlass ? {} : { opacity: "0.92" }),
             boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
             padding: "4px 0px",
             ...(isMobile ? {} : { minWidth: "180px" }),
@@ -227,7 +232,7 @@ const MenubarContent = (
     ref?: React.Ref<React.ElementRef<typeof MenubarPrimitive.Content>>;
   }
 ) => {
-  const { isMacOSTheme } = useThemeFlags()
+  const { isMacOSTheme, isAquaGlass } = useThemeFlags()
   const isMobile = useMediaQuery("(max-width: 768px)")
   const isSwitching = React.use(MenubarSwitchingContext)
 
@@ -242,8 +247,17 @@ const MenubarContent = (
           // Use z-[10003] to ensure menu content appears above the menubar (z-[10002])
           // This is critical for Safari where backdrop-filter creates new stacking contexts
           "z-[10003] min-w-[12rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md",
-          // Only animate when not switching between menus
-          !isSwitching && "data-[state=open]:animate-in data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+          // origin-[…]: scale from the trigger side instead of the element center.
+          "origin-[var(--radix-menubar-content-transform-origin)]",
+          // Only animate when not switching between menus. Zoom + fade only —
+          // the origin anchors the panel to the trigger, so a slide-in would
+          // add positional drift that reads as a shift when it settles.
+          // NOTE: no `data-[state=closed]:animate-out` here on purpose. Radix
+          // reports value changes from a useEffect, so the `isSwitching` gate
+          // lands one commit after `data-state` flips to closed — an exit
+          // animation would already be running and hover-switching between
+          // menubar menus would lag instead of swapping instantly.
+          !isSwitching && "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
           className
         )}
         style={{
@@ -251,7 +265,9 @@ const MenubarContent = (
             border: "none",
             borderRadius: "0px",
             background: "var(--os-pinstripe-window)",
-            opacity: "0.92",
+            // Aqua Glass gets its translucency from the frosted background in
+            // themes.css; an inline opacity would block the open/close fade.
+            ...(isAquaGlass ? {} : { opacity: "0.92" }),
             boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
             padding: "4px 0px",
             ...(isMobile ? {} : { minWidth: style?.minWidth ?? "180px" }),

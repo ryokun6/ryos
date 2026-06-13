@@ -129,7 +129,7 @@ const DropdownMenuSubContent = (
     ref?: React.Ref<React.ElementRef<typeof DropdownMenuPrimitive.SubContent>>;
   }
 ) => {
-  const { isMacOSTheme } = useThemeFlags();
+  const { isMacOSTheme, isAquaGlass } = useThemeFlags();
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   return (
@@ -138,7 +138,10 @@ const DropdownMenuSubContent = (
         ref={ref}
         className={cn(
           // Use z-[10004] to ensure dropdown submenu content appears above menu content
-          "z-[10004] min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+          // origin-[…]: scale from the trigger side instead of the element center.
+          // fill-mode-forwards: hold the exit end-state until Radix unmounts —
+          // without it Safari can paint one unanimated frame (visible jitter).
+          "z-[10004] min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-lg origin-[var(--radix-dropdown-menu-content-transform-origin)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fill-mode-forwards data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
           className
         )}
         style={{
@@ -146,7 +149,9 @@ const DropdownMenuSubContent = (
             border: "none",
             borderRadius: "0px",
             background: "var(--os-pinstripe-window)",
-            opacity: "0.92",
+            // Aqua Glass gets its translucency from the frosted background in
+            // themes.css; an inline opacity would block the open/close fade.
+            ...(isAquaGlass ? {} : { opacity: "0.92" }),
             boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
             padding: "4px 0px",
             ...(isMobile ? {} : { minWidth: "180px" }),
@@ -175,7 +180,7 @@ const DropdownMenuContent = (
     ref?: React.Ref<React.ElementRef<typeof DropdownMenuPrimitive.Content>>;
   }
 ) => {
-  const { isMacOSTheme } = useThemeFlags();
+  const { isMacOSTheme, isAquaGlass } = useThemeFlags();
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   return (
@@ -187,7 +192,10 @@ const DropdownMenuContent = (
           // Use z-[10003] to ensure dropdown content appears above the menubar (z-[10002])
           // This is critical for Safari where backdrop-filter creates new stacking contexts
           "z-[10003] min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md",
-          "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+          // origin-[…]: scale from the trigger side instead of the element center.
+          // fill-mode-forwards: hold the exit end-state until Radix unmounts —
+          // without it Safari can paint one unanimated frame (visible jitter).
+          "origin-[var(--radix-dropdown-menu-content-transform-origin)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fill-mode-forwards data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
           className
         )}
         style={{
@@ -195,7 +203,9 @@ const DropdownMenuContent = (
             border: "none",
             borderRadius: "0px",
             background: "var(--os-pinstripe-window)",
-            opacity: "0.92",
+            // Aqua Glass gets its translucency from the frosted background in
+            // themes.css; an inline opacity would block the open/close fade.
+            ...(isAquaGlass ? {} : { opacity: "0.92" }),
             boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
             padding: "4px 0px",
             ...(isMobile ? {} : { minWidth: style?.minWidth ?? "180px" }),
