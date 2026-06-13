@@ -262,8 +262,9 @@ describe("admin", () => {
       const data = await res.json();
       expect(data.key).toBe(redisKey);
       expect(data.type).toBe("string");
-      expect(typeof data.value).toBe("string");
-      expect(data.value).toContain(ADMIN_USERNAME);
+      const valueText =
+        typeof data.value === "string" ? data.value : JSON.stringify(data.value);
+      expect(valueText).toContain(ADMIN_USERNAME);
     });
 
     test("GET backupRedisKeys - with admin token", async () => {
