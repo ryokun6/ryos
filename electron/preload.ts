@@ -15,4 +15,21 @@ contextBridge.exposeInMainWorld("ryosDesktop", {
   },
   toggleMaximize: () =>
     ipcRenderer.invoke("ryos-desktop:toggle-maximize") as Promise<void>,
+  getVersion: () =>
+    ipcRenderer.invoke("ryos-desktop:get-app-version") as Promise<string>,
+  checkForUpdates: () =>
+    ipcRenderer.invoke("ryos-desktop:check-for-updates") as Promise<
+      string | null
+    >,
+  quitAndInstall: () =>
+    ipcRenderer.invoke("ryos-desktop:quit-and-install") as Promise<void>,
+  onUpdateStatus: (callback: (status: unknown) => void) => {
+    const listener = (_event: IpcRendererEvent, status: unknown) => {
+      callback(status);
+    };
+    ipcRenderer.on("ryos-desktop:update-status", listener);
+    return () => {
+      ipcRenderer.removeListener("ryos-desktop:update-status", listener);
+    };
+  },
 });

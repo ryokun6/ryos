@@ -77,8 +77,13 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: electron-mac
-          # Only installers — do not use release/* (upload-artifact globs recurse into .app / unpacked dirs).
-          path: release/*.dmg
+          # Installer (dmg) + auto-update feed (zip, blockmap, latest-mac.yml).
+          # Do not use release/* — upload-artifact globs recurse into .app / unpacked dirs.
+          path: |
+            release/*.dmg
+            release/*.zip
+            release/*.zip.blockmap
+            release/latest-mac.yml
           if-no-files-found: error
 
   build-windows:
@@ -127,10 +132,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: electron-windows
-          # NSIS installer + blockmap only (never release/* — globs recurse into win-unpacked).
+          # NSIS installer + blockmap + auto-update feed (latest.yml).
+          # Never release/* — globs recurse into win-unpacked.
           path: |
             release/ryOS_*.exe
             release/ryOS_*.exe.blockmap
+            release/latest.yml
           if-no-files-found: error
 
   release:
@@ -159,7 +166,12 @@ jobs:
           name: ryOS ${{ github.ref_name }}
           generate_release_notes: true
           # Explicit globs only — release/** flattens win-unpacked into hundreds of junk assets.
+          # latest-mac.yml / latest.yml + mac zip + blockmaps power electron-updater.
           files: |
             release/mac/*.dmg
+            release/mac/*.zip
+            release/mac/*.zip.blockmap
+            release/mac/latest-mac.yml
             release/windows/ryOS_*.exe
             release/windows/ryOS_*.exe.blockmap
+            release/windows/latest.yml

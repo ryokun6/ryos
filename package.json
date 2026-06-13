@@ -119,6 +119,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "dompurify": "^3.4.2",
+    "electron-updater": "^6.8.9",
     "formidable": "^3.5.4",
     "hangul-romanization": "^1.0.1",
     "i18next": "^25.7.3",

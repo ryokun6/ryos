@@ -14,8 +14,10 @@ mac:
   category: public.app-category.utilities
   target:
     - dmg
+    # zip target is required for Squirrel.Mac auto-update (electron-updater).
+    - zip
   icon: build/icon.icns
-  artifactName: ryOS_${version}_aarch64.dmg
+  artifactName: ryOS_${version}_aarch64.${ext}
   minimumSystemVersion: "10.13"
   hardenedRuntime: true
   entitlements: build/entitlements.mac.plist
@@ -36,3 +38,5 @@ linux:
   artifactName: ryOS_${version}_${arch}.${ext}
 publish:
   - provider: github
+    owner: ryokun6
+    repo: ryos

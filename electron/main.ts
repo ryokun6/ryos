@@ -1,5 +1,6 @@
 import { app, BrowserWindow, ipcMain, session, shell } from "electron";
 import path from "node:path";
+import { setupAutoUpdater } from "./updater";
 
 const DEFAULT_APP_URL = "https://os.ryo.lu";
 const APP_URL = process.env.RYOS_ELECTRON_URL?.trim() || DEFAULT_APP_URL;
@@ -94,6 +95,10 @@ function createMainWindow(): BrowserWindow {
 }
 
 function registerIpcHandlers(): void {
+  ipcMain.handle("ryos-desktop:get-app-version", () => {
+    return app.getVersion();
+  });
+
   ipcMain.handle("ryos-desktop:is-fullscreen", () => {
     return mainWindow?.isFullScreen() ?? false;
   });
@@ -121,6 +126,8 @@ app.whenReady().then(() => {
   );
 
   createMainWindow();
+
+  setupAutoUpdater(() => mainWindow);
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
