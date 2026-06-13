@@ -21,10 +21,6 @@ import {
   setUserPassword,
 } from "@/api/auth";
 import {
-  clearLegacyTokenRecovery,
-  consumeLegacyAuthToken,
-} from "@/utils/legacyAuthTokenMigration";
-import {
   type CreateRoomPayload,
   createRoom as createRoomApi,
   deleteRoom as deleteRoomApi,
@@ -205,7 +201,6 @@ function forceLogoutOnUnauthorized() {
   if (!store.username) return;
   console.log("[ChatsStore] Unauthorized — clearing auth state for", store.username);
   localStorage.removeItem(USERNAME_RECOVERY_KEY);
-  clearLegacyTokenRecovery();
   useChatsStore.setState({
     username: null,
     isAuthenticated: false,
@@ -215,9 +210,6 @@ function forceLogoutOnUnauthorized() {
 }
 
 // Ensure username recovery key is set if username exists but recovery key doesn't.
-// NOTE: Do NOT call clearLegacyTokenRecovery() here — this runs during store
-// initialization (before rehydration) and would destroy the legacy token before
-// onRehydrateStorage can consume it for migration.
 const ensureUsernameRecovery = (username: string | null) => {
   if (username && !localStorage.getItem(USERNAME_RECOVERY_KEY)) {
     console.log(
@@ -381,7 +373,7 @@ export const useChatsStore = create<ChatsStoreState>()(
     (set, get) => {
       // Get initial state
       const initialState = getInitialState();
-      // Ensure username recovery key is set; clean up legacy token storage
+      // Ensure username recovery key is set.
       ensureUsernameRecovery(initialState.username);
 
       return {
@@ -743,7 +735,6 @@ export const useChatsStore = create<ChatsStoreState>()(
           }
 
           localStorage.removeItem(USERNAME_RECOVERY_KEY);
-          clearLegacyTokenRecovery();
           resetRoomsFetchCache();
 
           set((state) => ({
@@ -1381,17 +1372,11 @@ export const useChatsStore = create<ChatsStoreState>()(
               }
             }
 
-            // Consume any legacy token from localStorage for one-time migration
-            // to httpOnly cookie. Self-cleaning: key is removed after read.
-            const legacyToken = consumeLegacyAuthToken() || null;
-            clearLegacyTokenRecovery();
             ensureUsernameRecovery(state.username);
 
-            // Restore session from httpOnly cookie — or, on the very first
-            // load after the upgrade, use the legacy token one last time so
-            // the server can set the cookie for future loads.
+            // Restore session from the httpOnly cookie.
             if (state.username) {
-              restoreSessionFromCookie(state.username, legacyToken);
+              restoreSessionFromCookie(state.username);
             }
           }
         };
@@ -1403,28 +1388,11 @@ export const useChatsStore = create<ChatsStoreState>()(
 /**
  * Verify the current session with the server.
  *
- * On repeat visits the httpOnly cookie authenticates the request
- * automatically.  On the **first** visit after the upgrade from
- * localStorage-based tokens, `legacyToken` is sent via the
- * Authorization header so the server can validate it and set the
- * httpOnly cookie for all future loads.
+ * The httpOnly cookie authenticates the request automatically.
  */
-async function restoreSessionFromCookie(
-  expectedUsername: string,
-  legacyToken?: string | null
-) {
+async function restoreSessionFromCookie(expectedUsername: string) {
   try {
-    if (legacyToken) {
-      console.log(
-        "[ChatsStore] Migrating legacy token to httpOnly cookie for",
-        expectedUsername
-      );
-    }
-
-    const session = await getAuthSession({
-      username: expectedUsername,
-      legacyToken,
-    });
+    const session = await getAuthSession();
 
     if (!session.ok) {
       console.log("[ChatsStore] Session restore failed:", session.status);
@@ -1439,7 +1407,7 @@ async function restoreSessionFromCookie(
       console.log(
         "[ChatsStore] Session restored for",
         data.username,
-        legacyToken ? "(migrated from localStorage)" : "(from cookie)"
+        "(from cookie)"
       );
       const store = useChatsStore.getState();
 

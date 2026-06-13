@@ -31,7 +31,6 @@ import { createVisibilityGatedInterval } from "@/utils/backgroundTask";
 
 // Storage key for manifest timestamp (for cache invalidation)
 const MANIFEST_KEY = 'ryos:manifest-timestamp';
-const LEGACY_MANIFEST_KEY = 'ryos-manifest-timestamp';
 
 // Periodic update check interval (5 minutes)
 const UPDATE_CHECK_INTERVAL = 5 * 60 * 1000;
@@ -129,7 +128,6 @@ async function reloadPage(version?: string, buildNumber?: string): Promise<void>
 export function clearPrefetchFlag(): void {
   try {
     localStorage.removeItem(MANIFEST_KEY);
-    localStorage.removeItem(LEGACY_MANIFEST_KEY);
     console.log('[Prefetch] Flag cleared, will re-prefetch on next boot');
   } catch {
     // localStorage might not be available
@@ -138,10 +136,7 @@ export function clearPrefetchFlag(): void {
 
 export function hasStoredPrefetchManifestTimestamp(): boolean {
   try {
-    return Boolean(
-      localStorage.getItem(MANIFEST_KEY) ||
-        localStorage.getItem(LEGACY_MANIFEST_KEY)
-    );
+    return Boolean(localStorage.getItem(MANIFEST_KEY));
   } catch {
     // Avoid repeatedly running background warmup in storage-restricted contexts.
     return true;

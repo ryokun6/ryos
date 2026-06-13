@@ -10,7 +10,6 @@ import {
 import { useFilesStore, FileSystemItem, ensureFileContentLoaded } from "@/stores/useFilesStore";
 import { useTextEditStore } from "@/stores/useTextEditStore";
 import { useAppStore, type LaunchOriginRect } from "@/stores/useAppStore";
-import { migrateIndexedDBToUUIDs } from "@/utils/indexedDBMigration";
 import { useFinderStore } from "@/stores/useFinderStore";
 import { useFilesStoreShallow } from "@/stores/useFilesStore";
 import { useIpodStoreShallow } from "@/stores/useIpodStore";
@@ -36,8 +35,6 @@ import {
   getCloudSyncDomainForContentStore,
   getCloudSyncDeletionBucketForContentStore,
   getFileTypeFromExtension,
-  UUID_MIGRATION_KEY,
-  isUUIDMigrationDone,
 } from "../utils/fileSystemHelpers";
 
 // Interface for content stored in IndexedDB. The persisted shape is the shared
@@ -1677,8 +1674,6 @@ export function useFileSystem(
         "custom-wallpapers",
       ]);
 
-      // Clear the migration flag so UUID migration will run again after reset
-      localStorage.removeItem(UUID_MIGRATION_KEY);
       // Clear the size/timestamp sync flag so it will run again after reset
       localStorage.removeItem("ryos:file-size-timestamp-sync-v1");
 
@@ -1817,52 +1812,6 @@ export function useFileSystem(
     const timer = setTimeout(syncFileSizesAndTimestamps, 500);
     return () => clearTimeout(timer);
   }, []); // Run once on mount
-
-  // --- UUID Migration Effect (Runs ONLY ONCE globally) --- //
-  useEffect(() => {
-    if (isUUIDMigrationDone()) {
-      return;
-    }
-
-    // Check if the file store has been loaded/migrated
-    const checkAndRunMigration = async () => {
-      const fileStoreState = useFilesStore.getState();
-
-      // Wait for the store to be loaded
-      if (fileStoreState.libraryState === "uninitialized") {
-        console.log(
-          "[useFileSystem] Waiting for file store to initialize before UUID migration..."
-        );
-        return;
-      }
-
-      // Mark as done to prevent multiple runs
-      localStorage.setItem(UUID_MIGRATION_KEY, "completed");
-
-      console.log(
-        "[useFileSystem] File store is ready, running UUID migration..."
-      );
-
-      // Run migration asynchronously
-      try {
-        await migrateIndexedDBToUUIDs();
-      } catch (err) {
-        console.error("[useFileSystem] UUID migration failed:", err);
-      }
-    };
-
-    // Check immediately
-    checkAndRunMigration();
-
-    // Also subscribe to store changes in case it's not ready yet
-    const unsubscribe = useFilesStore.subscribe((state) => {
-      if (!isUUIDMigrationDone() && state.libraryState !== "uninitialized") {
-        checkAndRunMigration();
-      }
-    });
-
-    return () => unsubscribe();
-  }, []);
 
   return {
     currentPath,

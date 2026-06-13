@@ -4,9 +4,6 @@
  * Verify a token and set the httpOnly auth cookie on success.
  * Accepts { username, token } in the request body (cookie-only clients
  * cannot send arbitrary tokens via headers).
- *
- * Also supports the legacy Authorization-header path so the
- * middleware-based extraction still works during migration.
  */
 
 import { isProfaneUsername } from "../../_utils/_validation.js";

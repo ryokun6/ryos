@@ -117,10 +117,3 @@ export function getFileTypeFromExtension(fileName: string): string {
   }
 }
 
-// --- Global flags for cross-instance coordination --- //
-// Use localStorage to persist initialization state across page refreshes
-export const UUID_MIGRATION_KEY = "ryos:indexeddb-uuid-migration-v1";
-
-// Check localStorage for completion status
-export const isUUIDMigrationDone = () =>
-  localStorage.getItem(UUID_MIGRATION_KEY) === "completed";
