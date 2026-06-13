@@ -15,7 +15,7 @@ Simplify ryOS theming by consolidating around the existing root attribute + CSS 
 | 2. Consolidate reusable surfaces | Complete | 6 / 6 | Added shared card, drawer, toolbar, and Windows bevel primitives. |
 | 3. Reduce static React theme branches | Complete | 5 / 5 | Tokenized separators and moved repeated Aqua dark states to variants/helpers. |
 | 4. Split and normalize CSS layers | Complete | 5 / 5 | `themes.css` now imports focused layer files under `src/styles/themes/`. |
-| 5. Normalize theme data sources | Not started | 0 / 5 | Make TS metadata and CSS tokens harder to drift. |
+| 5. Normalize theme data sources | Complete | 5 / 5 | Removed unused TS visual fields and added first-paint config parity tests. |
 | 6. Regression pass and docs | Not started | 0 / 5 | Validate all themes and update guidance. |
 
 ## Update protocol
@@ -159,11 +159,11 @@ Acceptance criteria:
 
 Tasks:
 
-- [ ] Decide whether TS theme `colors`/`metrics` should be removed, marked documentation-only, or generated from a manifest.
-- [ ] If retained, add a drift check comparing TS theme values against CSS token definitions for key values.
-- [ ] Move allowed theme IDs and dark-support metadata used by the boot script into a shared generated/static artifact.
-- [ ] Document the supported path for adding a new theme.
-- [ ] Keep cloud sync payload shape stable while refactoring theme internals.
+- [x] Decide whether TS theme `colors`/`metrics` should be removed, marked documentation-only, or generated from a manifest.
+- [x] Remove the need for visual drift checks by deleting unused TS visual fields; add tests that prevent those fields from returning.
+- [x] Move allowed theme IDs and dark-support metadata used by the boot script into a shared generated/static artifact.
+- [x] Document the supported path for adding a new theme.
+- [x] Keep cloud sync payload shape stable while refactoring theme internals.
 
 Validation:
 
@@ -212,4 +212,5 @@ Validation:
 - 2026-06-13: Phase 3 validation completed. `bun test tests/test-os-theme-primitives.test.ts` and `bun run build` passed; Playwright preview-build screenshot comparison against baseline commit `7bf4823c9dd2e632ba769aff21817e6e555daccf` passed for `macosx`, `macosx` dark, `system7`, `xp`, and `win98`.
 - 2026-06-13: Phase 4 completed in PR #1484. Split `src/styles/themes.css` into focused CSS layers under `src/styles/themes/`, keeping `themes.css` as the import orchestrator. Added `aqua-glass.css` as a separate post-dark layer so glass overrides preserve the original cascade.
 - 2026-06-13: Phase 4 validation completed. `bun run build` passed; Playwright preview-build screenshot comparison against baseline commit `7bf4823c9dd2e632ba769aff21817e6e555daccf` passed for `macosx`, `macosx` dark, `system7`, `xp`, and `win98`.
+- 2026-06-13: Phase 5 completed in PR #1484. Removed unused TS visual token fields from theme definitions, added a registry-derived bootstrap config helper, moved first-paint allowed theme/platform/dark-support data into `public/theme-bootstrap-config.js`, and added tests to keep the public config aligned with the TS registry.
 - 2026-06-13: Created the initial plan after auditing the store, root attributes, CSS token architecture, Tailwind variants, and representative component consumers.

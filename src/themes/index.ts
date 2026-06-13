@@ -17,6 +17,8 @@ export const themes: Record<OsThemeId, OsTheme> = {
   win98,
 };
 
+export const DEFAULT_OS_THEME_ID: OsThemeId = "macosx";
+
 export function getTheme(id: OsThemeId): OsTheme {
   return themes[id];
 }
