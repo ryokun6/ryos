@@ -5,7 +5,10 @@ import { ReactionOverlay } from "@/components/listen/ReactionOverlay";
 import { ListenSessionToolbar } from "@/components/listen/ListenSessionToolbar";
 import { FullscreenPlayerControls } from "@/components/shared/FullscreenPlayerControls";
 import { YouTubePlayer } from "@/components/shared/YouTubePlayer";
-import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
+import {
+  selectEffectiveIpodVolume,
+  useAudioSettingsStore,
+} from "@/stores/useAudioSettingsStore";
 import { PLAYER_PROGRESS_INTERVAL_MS } from "@/apps/ipod/constants";
 import { DisplayMode } from "@/types/lyrics";
 import { KaraokeIosAutoplayWatchdog } from "../KaraokeIosAutoplayWatchdog";
@@ -22,6 +25,7 @@ import type { KaraokeAppController } from "./useKaraokeAppController";
 type KaraokeWindowContentProps = { c: KaraokeAppController };
 
 export function KaraokeWindowContent({ c }: KaraokeWindowContentProps) {
+  const effectiveIpodVolume = useAudioSettingsStore(selectEffectiveIpodVolume);
   const {
     t, tracks, currentIndex, loopCurrent, isPlaying, isFullScreen, showLyrics,
     lyricsAlignment, lyricsFont, koreanDisplay, japaneseFurigana, romanization,
@@ -30,7 +34,7 @@ export function KaraokeWindowContent({ c }: KaraokeWindowContentProps) {
     setIsLangMenuOpen, isPronunciationMenuOpen, setIsPronunciationMenuOpen, anyMenuOpen,
     isSyncModeOpen, isCoverFlowOpen, setIsCoverFlowOpen, coverFlowRef,
     screenLongPressTimerRef, screenLongPressFiredRef, longPressStartPos, LONG_PRESS_MOVE_THRESHOLD,
-    playerRef, lyricsPlaybackSyncRef, duration, statusMessage, showControls, ipodVolume,
+    playerRef, lyricsPlaybackSyncRef, duration, statusMessage, showControls,
     userHasInteractedRef, currentTrack, lyricsSourceOverride, coverUrl, translationLanguages,
     listenSession, listenSessionUsername, listenSessionClientInstanceId, listenListenerCount,
     isListenSessionHost, isListenSessionDj, isListenSessionAnonymous, showEmptyLibrary,
@@ -163,7 +167,7 @@ export function KaraokeWindowContent({ c }: KaraokeWindowContentProps) {
               playing={isPlaying && !isFullScreen && !isListenSessionRemoteOnly}
               width="100%"
               height="100%"
-              volume={ipodVolume * useAudioSettingsStore.getState().masterVolume}
+              volume={effectiveIpodVolume}
               loop={loopCurrent}
               onEnded={handleTrackEnd}
               onProgress={handleProgress}

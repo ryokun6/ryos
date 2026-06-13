@@ -1,6 +1,9 @@
 import { FullScreenPortal } from "@/apps/ipod/components/FullScreenPortal";
 import { ReactionOverlay } from "@/components/listen/ReactionOverlay";
-import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
+import {
+  selectEffectiveIpodVolume,
+  useAudioSettingsStore,
+} from "@/stores/useAudioSettingsStore";
 import { PLAYER_PROGRESS_INTERVAL_MS } from "@/apps/ipod/constants";
 import { YouTubePlayer } from "@/components/shared/YouTubePlayer";
 import { DisplayMode } from "@/types/lyrics";
@@ -17,6 +20,7 @@ import type { KaraokeAppController } from "./useKaraokeAppController";
 type KaraokeFullscreenViewProps = { c: KaraokeAppController; isForeground: boolean | undefined };
 
 export function KaraokeFullscreenView({ c, isForeground }: KaraokeFullscreenViewProps) {
+  const effectiveIpodVolume = useAudioSettingsStore(selectEffectiveIpodVolume);
   const {
     isFullScreen, toggleFullScreen, handlePlayPause, handleNext, handlePrevious,
     isListenSessionRemoteOnly, getCurrentKaraokeTrack, showStatus, showOfflineStatus,
@@ -27,7 +31,7 @@ export function KaraokeFullscreenView({ c, isForeground }: KaraokeFullscreenView
     toggleKaraokeKtvRoomFx, currentTrack, currentIndex, duration, setLyricOffset,
     adjustLyricOffset, fullScreenPlayerRef, playerRef, closeSyncMode, handleRefreshLyrics,
     t, seekTime, loopCurrent, handleTrackEnd, handleProgress, handlePlay, handlePause,
-    handleReady, ipodVolume, effectiveDisplayMode, visualBackgroundActive, coverUrl,
+    handleReady, effectiveDisplayMode, visualBackgroundActive, coverUrl,
     showEmptyLibrary, handleAddSong, listenSession, showLyrics, isOffline, seekToTime,
     koreanDisplay, japaneseFurigana, handleFullscreenLyricsSwipeUp, handleFullscreenLyricsSwipeDown,
     lyricsSourceOverride, isAddingSong, setIsLyricsSearchDialogOpen, auth, lyricsPlaybackSyncRef,
@@ -140,7 +144,7 @@ export function KaraokeFullscreenView({ c, isForeground }: KaraokeFullscreenView
                       controls
                       width="100%"
                       height="100%"
-                      volume={ipodVolume * useAudioSettingsStore.getState().masterVolume}
+                      volume={effectiveIpodVolume}
                       loop={loopCurrent}
                       onEnded={handleTrackEnd}
                       onProgress={handleProgress}
