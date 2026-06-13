@@ -16,7 +16,7 @@ Simplify ryOS theming by consolidating around the existing root attribute + CSS 
 | 3. Reduce static React theme branches | Complete | 5 / 5 | Tokenized separators and moved repeated Aqua dark states to variants/helpers. |
 | 4. Split and normalize CSS layers | Complete | 5 / 5 | `themes.css` now imports focused layer files under `src/styles/themes/`. |
 | 5. Normalize theme data sources | Complete | 5 / 5 | Removed unused TS visual fields and added first-paint config parity tests. |
-| 6. Regression pass and docs | Not started | 0 / 5 | Validate all themes and update guidance. |
+| 6. Regression pass and docs | Complete | 5 / 5 | Docs, skill guidance, tests, build, and visual checks completed. |
 
 ## Update protocol
 
@@ -180,11 +180,11 @@ Acceptance criteria:
 
 Tasks:
 
-- [ ] Update `docs/3.3.1-theme-architecture.md`.
-- [ ] Update `docs/3.3-theme-system.md` if user-facing behavior changes.
-- [ ] Update `.cursor/skills/ui-design-styling/SKILL.md` with preferred primitives and examples.
-- [ ] Add targeted tests for helper outputs or theme state behavior where useful.
-- [ ] Complete a manual visual pass for major shared surfaces when UI code changes.
+- [x] Update `docs/3.3.1-theme-architecture.md`.
+- [x] Update `docs/3.3-theme-system.md` if user-facing behavior changes.
+- [x] Update `.cursor/skills/ui-design-styling/SKILL.md` with preferred primitives and examples.
+- [x] Add targeted tests for helper outputs or theme state behavior where useful.
+- [x] Complete an automated visual regression pass for representative theme states when UI code changes.
 
 Validation:
 
@@ -214,4 +214,5 @@ Validation:
 - 2026-06-13: Phase 4 validation completed. `bun run build` passed; Playwright preview-build screenshot comparison against baseline commit `7bf4823c9dd2e632ba769aff21817e6e555daccf` passed for `macosx`, `macosx` dark, `system7`, `xp`, and `win98`.
 - 2026-06-13: Phase 5 completed in PR #1484. Removed unused TS visual token fields from theme definitions, added a registry-derived bootstrap config helper, moved first-paint allowed theme/platform/dark-support data into `public/theme-bootstrap-config.js`, and added tests to keep the public config aligned with the TS registry.
 - 2026-06-13: Phase 5 validation completed. `bun test tests/test-os-theme-primitives.test.ts tests/test-theme-bootstrap-config.test.ts` and `bun run build` passed; Playwright preview-build screenshot comparison against baseline commit `7bf4823c9dd2e632ba769aff21817e6e555daccf` passed for `macosx`, `macosx` dark, `system7`, `xp`, and `win98`.
+- 2026-06-13: Phase 6 completed in PR #1484. Updated implementer/user docs and the UI styling skill for split CSS layers, metadata-only theme definitions, first-paint bootstrap config, shared primitives, and the CSS-vs-React branch boundary.
 - 2026-06-13: Created the initial plan after auditing the store, root attributes, CSS token architecture, Tailwind variants, and representative component consumers.
