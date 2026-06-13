@@ -48,7 +48,7 @@ export function UserProfilePanelHeader({
               <>
                 <span className="text-[12px] font-medium">{profile?.username || username}</span>
                 {profile?.banned && (
-                  <span className="px-1.5 py-0.5 text-[9px] bg-red-100 text-red-700 rounded">
+                  <span className="px-1.5 py-0.5 text-[9px] bg-red-500/15 text-red-700 os-mac-aqua-dark:text-red-300 rounded">
                     {t("apps.admin.profile.banned")}
                   </span>
                 )}

@@ -6,15 +6,16 @@ import {
   postAdminStartCursorAgent,
 } from "@/api/admin";
 import { ApiRequestError } from "@/api/core";
-import { ArrowsClockwise, Robot } from "@phosphor-icons/react";
+import { ArrowsClockwise } from "@phosphor-icons/react";
+import { CursorBrandMark } from "@/components/shared/CursorBrandMark";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { CursorRepoAgentChatCard } from "@/components/shared/CursorRepoAgentChatCard";
-import { adminSurfaceClass, adminTableRowClass } from "../utils/adminStyles";
+import { adminSurfaceClass, adminTableRowClass, adminToolbarClass } from "../utils/adminStyles";
 
 export interface AdminCursorAgentRunRow {
   runId: string;
@@ -93,6 +94,7 @@ function CursorAgentsToolbar({
     <div className="shrink-0">
       <form
         className={cn(
+          adminToolbarClass,
           "flex items-center gap-2 border-b px-2 py-1.5",
           isXpTheme
             ? "border-[#919b9c]"
@@ -100,27 +102,24 @@ function CursorAgentsToolbar({
               ? "border-black/10"
               : "border-black/20"
         )}
-        style={
-          isMacOSXTheme
-            ? { backgroundImage: "var(--os-pinstripe-window)" }
-            : undefined
-        }
         onSubmit={handleFormSubmit}
       >
-        <Input
-          type="text"
+        <SearchInput
           value={prompt}
-          onChange={(e) => onPromptChange(e.target.value)}
+          onChange={onPromptChange}
           placeholder={t(
             "apps.admin.cursorAgents.newAgentPlaceholder",
             "Send to Cursor"
           )}
           disabled={isSubmitting}
-          className="h-7 min-w-0 flex-1 text-[12px]"
-          aria-label={t(
+          className="min-w-0 flex-1"
+          inputClassName="h-7 text-[12px]"
+          ariaLabel={t(
             "apps.admin.cursorAgents.newAgentAria",
             "New Cursor agent prompt"
           )}
+          showSearchIcon={false}
+          showClear={false}
         />
         <Button
           type="button"
@@ -298,17 +297,11 @@ export function CursorAgentsPanel({
     return (
       <div className={panelShellClass}>
         {toolbar}
-        <div className="flex flex-col items-center justify-center py-16 text-neutral-400 px-6 text-center gap-2">
-          <Robot className="size-9 opacity-50" weight="bold" />
-          <p className="text-[12px] font-medium text-neutral-500">
+        <div className="flex flex-col items-center justify-center py-16 gap-3">
+          <CursorBrandMark size={6} className="opacity-50" />
+          <span className="text-[11px] text-neutral-500">
             {t("apps.admin.cursorAgents.emptyTitle", "No Cursor agent runs in Redis")}
-          </p>
-          <p className="text-[11px] max-w-sm text-neutral-400">
-            {t(
-              "apps.admin.cursorAgents.emptyHint",
-              "Runs appear here when the repo agent tool starts a Cursor Cloud job (async mode with Redis). Data expires after about 24 hours."
-            )}
-          </p>
+          </span>
         </div>
       </div>
     );
