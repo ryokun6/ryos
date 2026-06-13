@@ -221,7 +221,7 @@ const DropdownMenuItem = (
     ref?: React.Ref<React.ElementRef<typeof DropdownMenuPrimitive.Item>>;
   }
 ) => {
-  const { isWindowsTheme, isMacOSTheme } = useThemeFlags();
+  const { isWindowsTheme, isMacOSTheme, isAquaGlass } = useThemeFlags();
 
   return (
     <DropdownMenuPrimitive.Item
@@ -243,7 +243,7 @@ const DropdownMenuItem = (
             : undefined,
         ...(isMacOSTheme && {
           borderRadius: "0px",
-          padding: "6px 20px 6px 16px",
+          padding: isAquaGlass ? "4px 10px" : "6px 20px 6px 16px",
           margin: "1px 0",
           WebkitFontSmoothing: "antialiased",
           textShadow: "0 2px 3px rgba(0, 0, 0, 0.25)",

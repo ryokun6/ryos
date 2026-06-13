@@ -5986,7 +5986,7 @@
   border-radius: var(--os-glass-r-xs) !important;
   /* Tighter than the classic Aqua `6px 20px 6px 16px` — the inset rounded
      highlight already provides breathing room via the panel gutter. */
-  padding: 4px 8px 4px 10px !important;
+  padding: 4px 10px !important;
 }
 
 /* Checkbox / radio rows keep the wide left gutter — their indicators are
