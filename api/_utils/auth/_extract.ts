@@ -3,7 +3,7 @@
  *
  * Checks (in order):
  *   1. httpOnly `ryos_auth` cookie                (primary — all browser clients)
- *   2. Authorization header + X-Username header   (legacy migration & programmatic)
+ *   2. Authorization header + X-Username header   (programmatic API clients)
  */
 
 import type { VercelRequest } from "@vercel/node";
@@ -15,8 +15,7 @@ import { getHeader } from "../request-helpers.js";
  * Extract authentication credentials from request.
  *
  * Primary: httpOnly `ryos_auth` cookie (all browser clients).
- * Fallback: Authorization header (legacy token-to-cookie migration &
- * programmatic API clients).
+ * Fallback: Authorization header for programmatic API clients.
  */
 export function extractAuth(request: VercelRequest): ExtractedAuth {
   const cookieAuth = parseAuthCookie(request.headers.cookie);

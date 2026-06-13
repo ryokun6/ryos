@@ -18,8 +18,6 @@ export const DEFAULT_LANGUAGE: SupportedLanguage = "en";
 // Storage keys
 const LANGUAGE_KEY = "ryos:language";
 const LANGUAGE_INITIALIZED_KEY = "ryos:language-initialized";
-const LEGACY_LANGUAGE_KEY = "ryos_language";
-const LEGACY_LANGUAGE_INITIALIZED_KEY = "ryos_language_initialized";
 
 export const isSupportedLanguage = (
   language: string | null | undefined
@@ -123,39 +121,9 @@ const writeStorageValue = (key: string, value: string): void => {
   }
 };
 
-const removeStorageValue = (key: string): void => {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  try {
-    window.localStorage.removeItem(key);
-  } catch {
-    // Ignore storage failures.
-  }
-};
-
 const readPersistedLanguageState = (): PersistedLanguageState => {
-  let savedRaw = readStorageValue(LANGUAGE_KEY);
-  let initializedRaw = readStorageValue(LANGUAGE_INITIALIZED_KEY);
-
-  if (!savedRaw) {
-    const legacySaved = readStorageValue(LEGACY_LANGUAGE_KEY);
-    if (legacySaved) {
-      savedRaw = legacySaved;
-      writeStorageValue(LANGUAGE_KEY, legacySaved);
-      removeStorageValue(LEGACY_LANGUAGE_KEY);
-    }
-  }
-
-  if (!initializedRaw) {
-    const legacyInitialized = readStorageValue(LEGACY_LANGUAGE_INITIALIZED_KEY);
-    if (legacyInitialized) {
-      initializedRaw = legacyInitialized;
-      writeStorageValue(LANGUAGE_INITIALIZED_KEY, legacyInitialized);
-      removeStorageValue(LEGACY_LANGUAGE_INITIALIZED_KEY);
-    }
-  }
+  const savedRaw = readStorageValue(LANGUAGE_KEY);
+  const initializedRaw = readStorageValue(LANGUAGE_INITIALIZED_KEY);
 
   return {
     saved: isSupportedLanguage(savedRaw) ? savedRaw : null,
@@ -166,8 +134,6 @@ const readPersistedLanguageState = (): PersistedLanguageState => {
 export const persistLanguageSelection = (language: SupportedLanguage): void => {
   writeStorageValue(LANGUAGE_KEY, language);
   writeStorageValue(LANGUAGE_INITIALIZED_KEY, "true");
-  removeStorageValue(LEGACY_LANGUAGE_KEY);
-  removeStorageValue(LEGACY_LANGUAGE_INITIALIZED_KEY);
 };
 
 /**

@@ -24,9 +24,10 @@ describe("chat auth API wiring", () => {
     expect(storeSource).not.toContain("/api/auth/session");
   });
 
-  test("keeps legacy token helpers outside the store", () => {
-    expect(storeSource).toContain("@/utils/legacyAuthTokenMigration");
+  test("keeps legacy token migration helpers out of the store", () => {
+    expect(storeSource).not.toContain("@/utils/legacyAuthTokenMigration");
     expect(storeSource).not.toContain("LEGACY_AUTH_TOKEN_RECOVERY_KEY");
+    expect(storeSource).not.toContain("legacyToken");
   });
 
   test("auth API exports session and password helpers", () => {

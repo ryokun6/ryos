@@ -1,9 +1,7 @@
 /**
  * GET /api/auth/session
  *
- * Return the current session from the httpOnly auth cookie (or
- * Authorization header). Also refreshes the cookie if it came from the
- * header so that browser-based clients can migrate seamlessly.
+ * Return the current session and refresh the httpOnly auth cookie.
  */
 
 import { buildSetAuthCookie } from "../_utils/_cookie.js";
@@ -26,8 +24,6 @@ export default apiHandler(
     }
 
     // Always refresh the cookie so the Max-Age stays current.
-    // On migration (first load after upgrade), this converts the legacy
-    // Authorization-header token into the httpOnly cookie.
     res.setHeader("Set-Cookie", buildSetAuthCookie(user.username, user.token));
 
     logger.info("Session restored", { username: user.username });

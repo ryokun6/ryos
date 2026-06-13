@@ -79,23 +79,13 @@ export async function checkUserPassword(): Promise<CheckPasswordResponse> {
   });
 }
 
-export async function getAuthSession(params: {
-  username?: string;
-  legacyToken?: string | null;
-} = {}): Promise<
+export async function getAuthSession(): Promise<
   | { ok: true; data: SessionResponse }
   | { ok: false; status: number }
 > {
-  const headers: Record<string, string> = {};
-  if (params.legacyToken && params.username) {
-    headers.Authorization = `Bearer ${params.legacyToken}`;
-    headers["X-Username"] = params.username;
-  }
-
   const response = await apiRequestRaw({
     path: "/api/auth/session",
     method: "GET",
-    headers,
     timeout: 10000,
     retry: { maxAttempts: 2, initialDelayMs: 500 },
   });

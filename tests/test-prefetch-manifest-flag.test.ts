@@ -46,15 +46,8 @@ describe("prefetch manifest warmup flag", () => {
     expect(hasStoredPrefetchManifestTimestamp()).toBe(true);
   });
 
-  test("detects the legacy prefetch manifest timestamp", () => {
-    localStorage.setItem("ryos-manifest-timestamp", "2026-06-02T00:00:00Z");
-
-    expect(hasStoredPrefetchManifestTimestamp()).toBe(true);
-  });
-
-  test("clearPrefetchFlag clears both current and legacy keys", () => {
+  test("clearPrefetchFlag clears the current key", () => {
     localStorage.setItem("ryos:manifest-timestamp", "current");
-    localStorage.setItem("ryos-manifest-timestamp", "legacy");
 
     clearPrefetchFlag();
 
