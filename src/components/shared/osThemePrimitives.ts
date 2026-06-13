@@ -136,6 +136,17 @@ export function osToolbarSurfaceClassName(
   );
 }
 
+export function osSeparatorBorderClassName(): string {
+  return "border-[color:var(--os-color-separator)]";
+}
+
+export function osSubtleIconButtonClassName(): string {
+  return cn(
+    "text-os-text-secondary hover:bg-black/10 hover:text-os-text-primary focus-visible:ring-black/30",
+    "os-mac-aqua-dark:hover:bg-white/12 os-mac-aqua-dark:focus-visible:ring-white/35"
+  );
+}
+
 export function windowsBevelClassName(
   variant: "raised" | "sunken" = "raised"
 ): string {

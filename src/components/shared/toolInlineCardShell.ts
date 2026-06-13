@@ -43,32 +43,25 @@ export function cursorAgentCardHeaderClassName(flags: {
   );
 }
 
-export function toolInlineCardListClassName(flags: {
-  isMacOSTheme: boolean;
-  isDarkMode: boolean;
+export function toolInlineCardListClassName(_flags: {
+  isMacOSTheme?: boolean;
+  isDarkMode?: boolean;
 }): string {
-  const { isMacOSTheme, isDarkMode } = flags;
   return cn(
-    "divide-y",
-    isMacOSTheme && isDarkMode
-      ? "divide-[color:var(--os-color-separator)]"
-      : "divide-black/10"
+    "divide-y divide-black/10",
+    "os-mac-aqua-dark:divide-[color:var(--os-color-separator)]"
   );
 }
 
-export function toolInlineCardListRowClassName(flags: {
-  isMacOSTheme: boolean;
-  isDarkMode: boolean;
+export function toolInlineCardListRowClassName(_flags: {
+  isMacOSTheme?: boolean;
+  isDarkMode?: boolean;
 }): string {
-  const { isMacOSTheme, isDarkMode } = flags;
   return cn(
     "flex w-full items-center gap-2.5 px-2.5 py-2 text-left",
-    isMacOSTheme && isDarkMode
-      ? "hover:bg-white/10 active:bg-white/14"
-      : "hover:bg-black/5 active:bg-black/10",
-    "focus:outline-none focus-visible:ring-1",
-    isMacOSTheme && isDarkMode
-      ? "focus-visible:ring-white/35"
-      : "focus-visible:ring-black/30"
+    "hover:bg-black/5 active:bg-black/10",
+    "os-mac-aqua-dark:hover:bg-white/10 os-mac-aqua-dark:active:bg-white/14",
+    "focus:outline-none focus-visible:ring-1 focus-visible:ring-black/30",
+    "os-mac-aqua-dark:focus-visible:ring-white/35"
   );
 }

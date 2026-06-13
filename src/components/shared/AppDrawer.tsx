@@ -29,7 +29,10 @@ import {
   resolveDrawerLayout,
   type DrawerPlacement,
 } from "@/components/shared/appDrawerLayout";
-import { osDrawerSurfaceClassName } from "@/components/shared/osThemePrimitives";
+import {
+  osDrawerSurfaceClassName,
+  osSeparatorBorderClassName,
+} from "@/components/shared/osThemePrimitives";
 
 // ── Shared constants (also re-exported for TvVideoDrawer) ────────────────────
 
@@ -220,8 +223,8 @@ export function AppDrawer({
     isMacOSTheme && "px-2 py-0.5 min-h-[20px]",
     !isMacOSTheme && "px-2 pt-1.5 pb-1",
     isSystem7 && "border-b border-black",
-    isXpTheme && !isWin98 && "border-b border-[#ACA899]",
-    isWin98 && "border-b border-[#808080]"
+    isXpTheme && !isWin98 && cn("border-b", osSeparatorBorderClassName()),
+    isWin98 && cn("border-b", osSeparatorBorderClassName())
   );
 
   const titleClass = cn(

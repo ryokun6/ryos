@@ -13,7 +13,7 @@ Simplify ryOS theming by consolidating around the existing root attribute + CSS 
 | 0. Plan and inventory | Complete | 4 / 4 | Initial architecture audit completed; this plan created in PR #1484. |
 | 1. Fix small API/documentation drift | Complete | 4 / 4 | Constants/docs fixed; legacy aliases preserved with clearer names. |
 | 2. Consolidate reusable surfaces | Complete | 6 / 6 | Added shared card, drawer, toolbar, and Windows bevel primitives. |
-| 3. Reduce static React theme branches | Not started | 0 / 5 | Prefer tokens, variants, and shared helpers. |
+| 3. Reduce static React theme branches | Complete | 5 / 5 | Tokenized separators and moved repeated Aqua dark states to variants/helpers. |
 | 4. Split and normalize CSS layers | Not started | 0 / 5 | Keep behavior unchanged while reducing file complexity. |
 | 5. Normalize theme data sources | Not started | 0 / 5 | Make TS metadata and CSS tokens harder to drift. |
 | 6. Regression pass and docs | Not started | 0 / 5 | Validate all themes and update guidance. |
@@ -106,11 +106,11 @@ Acceptance criteria:
 
 Tasks:
 
-- [ ] Replace hardcoded XP and Win98 colors with `--os-*` tokens or new semantic tokens where appropriate.
-- [ ] Use `os-windows:`, `os-mac-aqua:`, `os-mac-system7:`, and `os-mac-aqua-dark:` variants for simple static class differences.
-- [ ] Keep JS branches only for structural differences, event behavior, asset choice, or layout logic.
-- [ ] Convert repeated dark Aqua hover/focus branches to `os-mac-aqua-dark:` utilities or CSS classes.
-- [ ] Document examples of "CSS branch" versus "React branch" in the theme architecture doc.
+- [x] Replace hardcoded XP and Win98 colors with `--os-*` tokens or new semantic tokens where appropriate.
+- [x] Use `os-windows:`, `os-mac-aqua:`, `os-mac-system7:`, and `os-mac-aqua-dark:` variants for simple static class differences.
+- [x] Keep JS branches only for structural differences, event behavior, asset choice, or layout logic.
+- [x] Convert repeated dark Aqua hover/focus branches to `os-mac-aqua-dark:` utilities or CSS classes.
+- [x] Document examples of "CSS branch" versus "React branch" in the theme architecture doc.
 
 Validation:
 
@@ -207,4 +207,5 @@ Validation:
 - 2026-06-13: Phase 1 completed in PR #1484. Exported the native chrome skip class, switched Paint to the shared constant, corrected skill docs to use `useThemeFlags()`, and added clearer Windows/Aqua names in wrapper hooks while retaining legacy aliases for compatibility.
 - 2026-06-13: Phase 2 completed in PR #1484. Added `osThemePrimitives`, routed inline tool cards and Maps cards through the shared card helper, moved `AppDrawer` placement styling into a drawer helper, centralized Calendar/Contacts/TV toolbar surfaces, and added unit coverage for the primitive outputs.
 - 2026-06-13: Phase 2 validation completed. `bun test tests/test-os-theme-primitives.test.ts` and `bun run build` passed; Playwright screenshot comparison against baseline commit `7bf4823c9dd2e632ba769aff21817e6e555daccf` passed for `macosx`, `macosx` dark, `system7`, `xp`, and `win98` using preview builds.
+- 2026-06-13: Phase 3 completed in PR #1484. Replaced repeated dark-Aqua hover/focus branches with `os-mac-aqua-dark:` helper classes, added reusable subtle icon and separator helpers, tokenized Calendar/AppDrawer separators, and documented when to use CSS branches versus React branches.
 - 2026-06-13: Created the initial plan after auditing the store, root attributes, CSS token architecture, Tailwind variants, and representative component consumers.

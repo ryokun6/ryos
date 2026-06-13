@@ -1,6 +1,7 @@
 import { useRef, useCallback } from "react";
 import type { CalendarEvent } from "@/stores/useCalendarStore";
 import type { CalendarDayCell } from "../../hooks/useCalendarLogic";
+import { osSeparatorBorderClassName } from "@/components/shared/osThemePrimitives";
 import {
   EVENT_COLOR_LIGHT,
   EVENT_COLOR_MAP,
@@ -46,7 +47,7 @@ export function MonthGrid({
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
-      <div className="grid grid-cols-7 border-b" style={{ borderColor: isXpTheme ? "#ACA899" : "rgba(0,0,0,0.08)" }}>
+      <div className={`grid grid-cols-7 border-b ${osSeparatorBorderClassName()}`}>
         {WEEKDAY_KEYS.map((dayKey) => {
           const dayLabel = narrowDayNames[WEEKDAY_KEYS.indexOf(dayKey)] ?? "";
           return (

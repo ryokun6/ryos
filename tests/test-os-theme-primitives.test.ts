@@ -2,6 +2,8 @@ import { describe, expect, test } from "bun:test";
 import {
   osCardClassName,
   osDrawerSurfaceClassName,
+  osSeparatorBorderClassName,
+  osSubtleIconButtonClassName,
   osToolbarSurfaceClassName,
   windowsBevelClassName,
 } from "../src/components/shared/osThemePrimitives";
@@ -64,5 +66,11 @@ describe("os theme primitives", () => {
   test("exposes reusable Windows bevel classes", () => {
     expect(windowsBevelClassName("raised")).toContain("border-t-white");
     expect(windowsBevelClassName("sunken")).toContain("border-t-os-separator");
+  });
+
+  test("exposes tokenized separator and dark-aware subtle icon button classes", () => {
+    expect(osSeparatorBorderClassName()).toContain("--os-color-separator");
+    expect(osSubtleIconButtonClassName()).toContain("hover:bg-black/10");
+    expect(osSubtleIconButtonClassName()).toContain("os-mac-aqua-dark:hover:bg-white/12");
   });
 });

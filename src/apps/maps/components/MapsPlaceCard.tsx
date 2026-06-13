@@ -15,7 +15,10 @@ import {
   AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT_ACTIVE,
 } from "@/lib/aquaIconButton";
 import { Button } from "@/components/ui/button";
-import { osCardClassName } from "@/components/shared/osThemePrimitives";
+import {
+  osCardClassName,
+  osSubtleIconButtonClassName,
+} from "@/components/shared/osThemePrimitives";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import {
   getPoiVisual,
@@ -98,8 +101,7 @@ export function MapsPlaceCard({
   onClose,
 }: MapsPlaceCardProps) {
   const { t } = useTranslation();
-  const { isMacOSTheme, isXpTheme, isSystem7Theme, isDarkMode } = useThemeFlags();
-  const aquaDarkCard = isMacOSTheme && isDarkMode;
+  const { isMacOSTheme, isXpTheme, isSystem7Theme } = useThemeFlags();
 
   return (
     <AnimatePresence>
@@ -132,7 +134,6 @@ export function MapsPlaceCard({
               isWork={isWork}
               onClose={onClose}
               t={t}
-              aquaDarkCard={aquaDarkCard}
             />
             <PlaceCardActions
               place={place}
@@ -160,7 +161,6 @@ interface PlaceCardHeaderProps {
   isWork: boolean;
   onClose: () => void;
   t: ReturnType<typeof useTranslation>["t"];
-  aquaDarkCard: boolean;
 }
 
 function PlaceCardHeader({
@@ -169,7 +169,6 @@ function PlaceCardHeader({
   isWork,
   onClose,
   t,
-  aquaDarkCard,
 }: PlaceCardHeaderProps) {
   const homeTitle = t("apps.maps.places.home", { defaultValue: "Home" });
   const workTitle = t("apps.maps.places.work", { defaultValue: "Work" });
@@ -226,9 +225,7 @@ function PlaceCardHeader({
         className={cn(
           "shrink-0 -mr-0.5 -mt-0.5 flex size-6 items-center justify-center rounded-full",
           "focus:outline-none focus-visible:ring-1",
-          aquaDarkCard
-            ? "text-os-text-secondary hover:bg-white/12 hover:text-os-text-primary focus-visible:ring-white/35"
-            : "text-os-text-secondary hover:bg-black/10 hover:text-os-text-primary focus-visible:ring-black/30"
+          osSubtleIconButtonClassName()
         )}
         aria-label={t("apps.maps.placeCard.close", {
           defaultValue: "Close place card",

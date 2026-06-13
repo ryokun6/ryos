@@ -1,5 +1,6 @@
 import { useRef, useLayoutEffect, useEffect, useState, useCallback, useMemo } from "react";
 import { cn } from "@/lib/utils";
+import { osSeparatorBorderClassName } from "@/components/shared/osThemePrimitives";
 import type { CalendarEvent } from "@/stores/useCalendarStore";
 import {
   DEFAULT_TIME_GRID_HOUR_HEIGHT,
@@ -116,7 +117,7 @@ export function DayTimeGrid({
   return (
     <div className="flex-1 flex flex-col overflow-hidden min-w-0">
       {allDayEvents.length > 0 && (
-        <div className="px-2 py-1 border-b flex flex-col gap-0.5" style={{ borderColor: isXpTheme ? "#ACA899" : "rgba(0,0,0,0.08)" }}>
+        <div className={cn("px-2 py-1 border-b flex flex-col gap-0.5", osSeparatorBorderClassName())}>
           {allDayEvents.map((ev) => (
             <button
               key={ev.id} type="button"
