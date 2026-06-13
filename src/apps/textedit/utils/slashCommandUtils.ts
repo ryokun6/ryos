@@ -13,6 +13,19 @@ export interface SlashCommandRange {
   to: number;
 }
 
+export interface SlashMenuClientRect {
+  top: number;
+  left: number;
+  height: number;
+}
+
+export interface SlashMenuPositionOptions {
+  menuWidth?: number;
+  gap?: number;
+  viewportWidth?: number;
+  viewportPadding?: number;
+}
+
 export const slashCommands: SlashCommandItem[] = [
   {
     key: "text",
@@ -112,4 +125,27 @@ export const executeSlashCommand = (
 ): void => {
   editor.chain().focus().deleteRange(range).run();
   item.command(editor);
+};
+
+export const getSlashMenuPosition = (
+  rect: SlashMenuClientRect,
+  {
+    menuWidth = 288,
+    gap = 4,
+    viewportWidth =
+      typeof window === "undefined" ? Number.POSITIVE_INFINITY : window.innerWidth,
+    viewportPadding = 8,
+  }: SlashMenuPositionOptions = {}
+): { top: number; left: number } => {
+  const maxLeft = viewportWidth - menuWidth - viewportPadding;
+  const minLeft = viewportPadding;
+  const left =
+    maxLeft < minLeft
+      ? minLeft
+      : Math.min(Math.max(rect.left, minLeft), maxLeft);
+
+  return {
+    top: rect.top + rect.height + gap,
+    left,
+  };
 };

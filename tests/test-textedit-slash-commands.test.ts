@@ -5,6 +5,7 @@ import type { Editor } from "@tiptap/core";
 import {
   executeSlashCommand,
   getNextSlashCommandIndex,
+  getSlashMenuPosition,
   getSlashCommandItems,
   type SlashCommandItem,
 } from "../src/apps/textedit/utils/slashCommandUtils";
@@ -26,6 +27,24 @@ describe("TextEdit slash commands", () => {
     expect(getSlashCommandItems("definitely-not-a-command")).toEqual([]);
     expect(getNextSlashCommandIndex(0, 0, 1)).toBe(0);
     expect(getNextSlashCommandIndex(0, 0, -1)).toBe(0);
+  });
+
+  test("positions the menu directly under the cursor rect", () => {
+    expect(
+      getSlashMenuPosition(
+        { top: 120, left: 240, height: 18 },
+        { viewportWidth: 1000 }
+      )
+    ).toEqual({ top: 142, left: 240 });
+  });
+
+  test("clamps menu position inside narrow viewports", () => {
+    expect(
+      getSlashMenuPosition(
+        { top: 20, left: 450, height: 16 },
+        { viewportWidth: 500, menuWidth: 288 }
+      )
+    ).toEqual({ top: 40, left: 204 });
   });
 
   test("deletes slash query before applying the selected command", () => {

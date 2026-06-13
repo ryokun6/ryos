@@ -8,6 +8,10 @@ const TEXTEDIT_APP_COMPONENT = readFileSync(
   join(import.meta.dir, "../src/apps/textedit/components/TextEditAppComponent.tsx"),
   "utf8"
 );
+const SLASH_COMMANDS_EXTENSION = readFileSync(
+  join(import.meta.dir, "../src/apps/textedit/extensions/SlashCommands.tsx"),
+  "utf8"
+);
 const FILE_OPERATIONS = readFileSync(
   join(import.meta.dir, "../src/apps/textedit/hooks/useFileOperations.ts"),
   "utf8"
@@ -39,5 +43,11 @@ describe("TextEdit programmatic editor updates", () => {
     expect(FILE_OPERATIONS).toContain(
       "editor.commands.setContent(editorContent, false);"
     );
+  });
+
+  test("slash menu uses cursor fixed positioning instead of triggerless popper", () => {
+    expect(SLASH_COMMANDS_EXTENSION).not.toContain("DropdownMenu");
+    expect(SLASH_COMMANDS_EXTENSION).toContain("getSlashMenuPosition(rect)");
+    expect(SLASH_COMMANDS_EXTENSION).toContain('position: "fixed"');
   });
 });

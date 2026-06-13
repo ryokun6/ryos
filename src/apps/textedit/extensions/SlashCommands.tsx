@@ -4,16 +4,13 @@ import Suggestion, {
   SuggestionProps,
 } from "@tiptap/suggestion";
 import { Editor } from "@tiptap/react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-} from "@/components/ui/dropdown-menu";
 import { createRoot } from "react-dom/client";
 import { Check } from "@phosphor-icons/react";
 import { useTranslation } from "react-i18next";
 import {
   executeSlashCommand,
   getNextSlashCommandIndex,
+  getSlashMenuPosition,
   getSlashCommandItems,
   type SlashCommandItem,
 } from "../utils/slashCommandUtils";
@@ -120,6 +117,7 @@ const suggestion: Partial<SuggestionOptions> = {
     const renderMenu = (props: SuggestionProps) => {
       const rect = props.clientRect?.();
       if (!rect || !root) return;
+      const position = getSlashMenuPosition(rect);
 
       const itemCount = props.items.length;
       if (itemCount === 0) {
@@ -129,31 +127,30 @@ const suggestion: Partial<SuggestionOptions> = {
       }
 
       root.render(
-        <DropdownMenu open modal={false}>
-          <DropdownMenuContent
-            onCloseAutoFocus={(event) => event.preventDefault()}
-            style={{
-              position: "fixed",
-              top: `${rect.top + rect.height}px`,
-              left: `${rect.left}px`,
+        <div
+          role="menu"
+          style={{
+            position: "fixed",
+            top: position.top,
+            left: position.left,
+            zIndex: 10003,
+          }}
+          className="w-72 max-h-[330px] overflow-y-auto rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
+        >
+          <SlashMenuContent
+            items={props.items as SlashCommandItem[]}
+            selectedIndex={selectedIndex}
+            editor={props.editor}
+            onSelectIndex={(index) => {
+              selectedIndex = index;
+              renderMenu(props);
             }}
-            className="w-72"
-          >
-            <SlashMenuContent
-              items={props.items as SlashCommandItem[]}
-              selectedIndex={selectedIndex}
-              editor={props.editor}
-              onSelectIndex={(index) => {
-                selectedIndex = index;
-                renderMenu(props);
-              }}
-              onCommand={(command: SlashCommandItem) => {
-                props.command({ command });
-                cleanup();
-              }}
-            />
-          </DropdownMenuContent>
-        </DropdownMenu>
+            onCommand={(command: SlashCommandItem) => {
+              props.command({ command });
+              cleanup();
+            }}
+          />
+        </div>
       );
     };
 
@@ -165,8 +162,6 @@ const suggestion: Partial<SuggestionOptions> = {
         container = document.createElement("div");
         if (!container) return;
 
-        container.style.position = "absolute";
-        container.style.zIndex = "50";
         document.body.appendChild(container);
 
         root = createRoot(container);
@@ -180,8 +175,6 @@ const suggestion: Partial<SuggestionOptions> = {
 
         latestProps = props;
         selectedIndex = 0;
-        container.style.position = "absolute";
-        container.style.zIndex = "50";
 
         renderMenu(props);
       },
