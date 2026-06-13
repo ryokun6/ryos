@@ -3,7 +3,6 @@ import {
   ArrowsClockwise,
   Database,
   DownloadSimple,
-  MagnifyingGlass,
   Trash,
 } from "@phosphor-icons/react";
 import type { TFunction } from "i18next";
@@ -242,16 +241,6 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
           inputClassName="h-7 text-[12px] font-os-mono"
           clearAriaLabel={t("apps.admin.search.clear", "Clear search")}
         />
-        <Button
-          type="submit"
-          variant="ghost"
-          size="sm"
-          className="size-7 p-0"
-          title={t("apps.admin.redis.scan", "Scan")}
-          aria-label={t("apps.admin.redis.scan", "Scan")}
-        >
-          <MagnifyingGlass size={14} weight="bold" />
-        </Button>
         <Button
           type="button"
           variant="ghost"

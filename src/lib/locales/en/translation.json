@@ -3707,7 +3707,7 @@
         "loadFailed": "Could not load runs",
         "retry": "Retry",
         "refresh": "Refresh",
-        "emptyTitle": "No Cursor agent runs in Redis",
+        "emptyTitle": "No Cursor agents",
         "emptyHint": "Runs appear here when the repo agent tool starts a Cursor Cloud job (async mode with Redis). Keys expire after about 24 hours.",
         "truncatedHint": "List may be truncated (row limit or scan cap).",
         "scanIncompleteHint": "Redis key scan stopped early; try again or contact ops if this persists.",

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
+import { useAdminDashboardStore } from "@/stores/useAdminDashboardStore";
 import { getAdminAnalytics } from "@/api/admin";
 import type {
   AnalyticsDetail,
@@ -17,7 +18,8 @@ export function useDashboardPanel({ onRefresh }: DashboardPanelProps) {
   const [data, setData] = useState<AnalyticsDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [rangeDays, setRangeDays] = useState(1);
+  const rangeDays = useAdminDashboardStore((s) => s.rangeDays);
+  const setRangeDays = useAdminDashboardStore((s) => s.setRangeDays);
   const [serverReloadKey, setServerReloadKey] = useState(0);
 
   const isToday = rangeDays === 1;

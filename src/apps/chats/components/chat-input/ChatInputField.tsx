@@ -81,7 +81,7 @@ export function ChatInputField({
                   ? t("apps.chats.status.typeMessage")
                   : t("apps.chats.status.typeOrPushSpace")
         }
-        className={`w-full border-1 border-neutral-800 text-xs font-geneva-12 h-9 ${
+        className={`chat-glass-input w-full border-1 border-neutral-800 text-xs font-geneva-12 h-9 ${
           isMacTheme ? "pl-3 pr-[88px] rounded-full" : "pl-2 pr-[88px]"
         } backdrop-blur-lg ${
           isAquaGlass ? "bg-white/40" : "bg-white/80"

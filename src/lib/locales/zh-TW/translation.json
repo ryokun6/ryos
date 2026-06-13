@@ -14,7 +14,7 @@
         "colTask": "任務",
         "colUpdated": "已更新",
         "emptyHint": "當儲存庫 Agent 工具啟動 Cursor Cloud 工作（搭配 Redis 的非同步模式）時，執行記錄會顯示在此處。金鑰將在大約 24 小時後過期。",
-        "emptyTitle": "Redis 中沒有 Cursor Agent 執行記錄",
+        "emptyTitle": "沒有 Cursor 智能體",
         "followupFrom": "來自 {{id}} 的後續",
         "loadFailed": "無法載入執行記錄",
         "loading": "正在載入 Cursor Agent 執行記錄…",
@@ -149,7 +149,7 @@
           "title": "歌曲庫"
         },
         "statistics": {
-          "description": "即時使用指標，包含 Cursor 代理程式執行遙測卡片",
+          "description": "即時使用指標，包含 Cursor 智能體執行遙測卡片",
           "title": "系統統計"
         },
         "userManagement": {
@@ -243,37 +243,37 @@
         "unban": "解除使用者封鎖"
       },
       "redis": {
-        "backup": "[TODO] Backup",
-        "delete": "[TODO] Delete Redis key",
-        "deleteDescription": "[TODO] Delete Redis key \"{{key}}\"? This cannot be undone.",
-        "deleteTitle": "[TODO] Delete Redis key?",
-        "detail": "[TODO] Key Detail",
+        "backup": "備份",
+        "delete": "刪除 Redis 鍵",
+        "deleteDescription": "確定要刪除 Redis 鍵「{{key}}」嗎？此操作無法復原。",
+        "deleteTitle": "確定要刪除 Redis 鍵嗎？",
+        "detail": "鍵詳細資訊",
         "errors": {
-          "backup": "[TODO] Failed to back up Redis keys",
-          "delete": "[TODO] Failed to delete Redis key",
-          "loadKey": "[TODO] Failed to load Redis key",
-          "loadKeys": "[TODO] Failed to load Redis keys"
+          "backup": "備份 Redis 鍵失敗",
+          "delete": "刪除 Redis 鍵失敗",
+          "loadKey": "載入 Redis 鍵失敗",
+          "loadKeys": "載入 Redis 鍵失敗"
         },
-        "key": "[TODO] Key",
-        "keyUnavailable": "[TODO] Redis key is unavailable",
-        "keys": "[TODO] Keys",
-        "length": "[TODO] Length",
-        "loadMore": "[TODO] Load more",
-        "loading": "[TODO] Loading...",
+        "key": "鍵",
+        "keyUnavailable": "Redis 鍵不可用",
+        "keys": "鍵",
+        "length": "長度",
+        "loadMore": "載入更多",
+        "loading": "載入中...",
         "messages": {
-          "alreadyDeleted": "[TODO] Redis key was already gone",
-          "backupReady": "[TODO] Backed up {{count}} Redis keys",
-          "backupTruncated": "[TODO] Backup reached the key limit; narrow the pattern for a full export",
-          "deleted": "[TODO] Redis key deleted"
+          "alreadyDeleted": "Redis 鍵已不存在",
+          "backupReady": "已備份 {{count}} 個 Redis 鍵",
+          "backupTruncated": "備份已達鍵數量限制；請縮小模式範圍以進行完整匯出",
+          "deleted": "Redis 鍵已刪除"
         },
-        "noKeys": "[TODO] No Redis keys match this pattern",
-        "patternPlaceholder": "[TODO] Redis pattern, e.g. chat:*",
-        "previewTruncated": "[TODO] Preview is truncated; use Backup for the full value.",
-        "refresh": "[TODO] Refresh Redis keys",
-        "scan": "[TODO] Scan",
-        "selectKey": "[TODO] Select a Redis key to inspect its value",
-        "ttl": "[TODO] TTL",
-        "type": "[TODO] Type"
+        "noKeys": "沒有符合此模式的 Redis 鍵",
+        "patternPlaceholder": "Redis 模式，例如 chat:*",
+        "previewTruncated": "預覽已截斷；請使用「備份」查看完整值。",
+        "refresh": "重新整理 Redis 鍵值",
+        "scan": "掃描",
+        "selectKey": "選擇一個 Redis 鍵以查看其值",
+        "ttl": "TTL",
+        "type": "類型"
       },
       "room": {
         "messagesCount": "{{count}} 則訊息",
@@ -310,12 +310,12 @@
         "websocket": "WebSocket (Pusher)"
       },
       "sidebar": {
-        "cursorAgents": "Cursor 代理程式",
+        "cursorAgents": "Cursor 智能體",
         "dashboard": "儀表板",
         "messagesCount": "{{count}} 則訊息",
         "online": "線上",
         "private": "私人",
-        "redis": "[TODO] Redis",
+        "redis": "Redis",
         "rooms": "聊天室",
         "server": "伺服器",
         "songs": "歌曲",
@@ -362,17 +362,17 @@
         "noSongsToExport": "沒有歌曲可供匯出"
       },
       "statusBar": {
-        "cursorAgentsCount": "{{count}} 個 Cursor 代理程式",
-        "cursorAgentsCount_plural": "{{count}} 個 Cursor 代理程式",
+        "cursorAgentsCount": "{{count}} 個 Cursor 智能體",
+        "cursorAgentsCount_plural": "{{count}} 個 Cursor 智能體",
         "loggedInAs": "已登入為 {{username}}",
         "messagesCount": "{{count}} 則訊息",
         "messagesCount_plural": "{{count}} 則訊息",
-        "redis": "[TODO] Redis Browser",
-        "roomsCount": "{{count}} 房間",
-        "roomsCount_plural": "{{count}} 房間",
+        "redis": "Redis 瀏覽器",
+        "roomsCount": "{{count}} 個房間",
+        "roomsCount_plural": "{{count}} 個房間",
         "songsCount": "{{count}} 首歌曲",
-        "usersCount": "{{count}} 使用者",
-        "usersCount_plural": "{{count}} 使用者"
+        "usersCount": "{{count}} 個使用者",
+        "usersCount_plural": "{{count}} 個使用者"
       },
       "tableHeaders": {
         "added": "新增",
@@ -1881,8 +1881,8 @@
       },
       "statusBar": {
         "available": "可用",
-        "item": "項目",
-        "items": "項目"
+        "item": "個項目",
+        "items": "個項目"
       },
       "tableHeaders": {
         "modified": "修改日期",

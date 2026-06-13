@@ -300,7 +300,7 @@ export function CursorAgentsPanel({
         <div className="flex flex-col items-center justify-center py-16 gap-3">
           <CursorBrandMark size={6} className="opacity-50" />
           <span className="text-[11px] text-neutral-500">
-            {t("apps.admin.cursorAgents.emptyTitle", "No Cursor agent runs in Redis")}
+            {t("apps.admin.cursorAgents.emptyTitle", "No Cursor agents")}
           </span>
         </div>
       </div>

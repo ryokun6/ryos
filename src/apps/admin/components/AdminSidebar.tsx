@@ -108,6 +108,13 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           </SelectableListItem>
 
           <SelectableListItem
+            isSelected={activeSection === "redis"}
+            onClick={() => { playButtonClick(); onSectionChange("redis"); onRoomSelect(null); }}
+          >
+            {t("apps.admin.sidebar.redis", "Redis")}
+          </SelectableListItem>
+
+          <SelectableListItem
             isSelected={activeSection === "cursorAgents"}
             onClick={() => { playButtonClick(); onSectionChange("cursorAgents"); onRoomSelect(null); }}
           >
@@ -124,13 +131,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                 {stats.totalCursorAgents ?? 0}
               </span>
             </div>
-          </SelectableListItem>
-
-          <SelectableListItem
-            isSelected={activeSection === "redis"}
-            onClick={() => { playButtonClick(); onSectionChange("redis"); onRoomSelect(null); }}
-          >
-            {t("apps.admin.sidebar.redis", "Redis")}
           </SelectableListItem>
 
           {/* Rooms Section Header */}

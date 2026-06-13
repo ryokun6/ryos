@@ -835,16 +835,31 @@
   box-shadow: none !important;
 }
 
-:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+:root[data-os-theme="macosx"]
   .admin-toolbar
   .admin-toolbar-segment[data-state="on"] {
   border-radius: 9999px !important;
 }
 
-:root[data-os-theme="macosx"] .admin-main-pane.os-sidebar {
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .admin-main-pane.os-sidebar {
   background-color: transparent !important;
   background-image: none !important;
   box-shadow: none !important;
+}
+
+/* Regular Aqua: translucent white slab over the window pinstripe, mirroring the
+   Chats content pane (`bg-white/85`) instead of letting the stripe show raw. */
+:root[data-os-theme="macosx"]:not([data-os-aqua-material="glass"])
+  .admin-main-pane.os-sidebar {
+  background-color: rgba(255, 255, 255, 0.85) !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+:root[data-os-theme="macosx"]:not([data-os-aqua-material="glass"])[data-os-color-scheme="dark"]
+  .admin-main-pane.os-sidebar {
+  background-color: rgba(31, 31, 34, 0.85) !important;
 }
 
 :root[data-os-theme="macosx"]:not([data-os-aqua-material="glass"]) .admin-card {
@@ -1245,6 +1260,27 @@
 
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .chat-bubble::before {
   border-radius: var(--os-glass-r-bubble) var(--os-glass-r-bubble) 4px 4px;
+}
+
+/* Chat input reads as a frosted glass pill — keep it more translucent than the
+   default input well so the content/wallpaper shows through (the unlayered
+   `.os-themed-input` background otherwise wins over the component's bg-white/40). */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .chat-glass-input.os-themed-input,
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .chat-glass-input.os-themed-input:hover:not(:focus),
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .chat-glass-input.os-themed-input:focus {
+  background-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .chat-glass-input.os-themed-input,
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .chat-glass-input.os-themed-input:hover:not(:focus),
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .chat-glass-input.os-themed-input:focus {
+  background-color: rgba(255, 255, 255, 0.08) !important;
 }
 
 /* --- Squircle corners (progressive enhancement) --------------------------- */

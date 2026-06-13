@@ -1,4 +1,5 @@
 import { memo, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import {
   TableCell,
@@ -30,6 +31,8 @@ export const ListRowItem = memo(function ListRowItem({
   shouldShowThumbnail,
   isImageFile,
 }: ListRowItemProps) {
+  const { i18n } = useTranslation();
+  const dateLocale = i18n.resolvedLanguage || i18n.language || undefined;
   const { play: playClick } = useSound(Sounds.BUTTON_CLICK, 0.3);
   const lastClickSoundRef = useRef(0);
   const CLICK_SOUND_COOLDOWN_MS = 400;
@@ -164,7 +167,7 @@ export const ListRowItem = memo(function ListRowItem({
       </TableCell>
       <TableCell className="whitespace-nowrap">
         {file.modifiedAt
-          ? new Date(file.modifiedAt).toLocaleDateString()
+          ? new Date(file.modifiedAt).toLocaleDateString(dateLocale)
           : "--"}
       </TableCell>
     </TableRow>
