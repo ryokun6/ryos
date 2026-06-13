@@ -10,6 +10,11 @@ concurrency:
   group: build-electron-${{ github.ref }}
   cancel-in-progress: false
 
+# actions/checkout@v4, cache, setup-node, upload/download-artifact run on Node 24
+# (Node 20 deprecated on GitHub-hosted runners — see GitHub changelog 2025-09-19).
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 # macOS job secrets (Settings → Secrets → Actions), mirroring .env.local:
 #   APPLE_CERTIFICATE, APPLE_CERTIFICATE_PASSWORD, APPLE_SIGNING_IDENTITY,
 #   APPLE_API_ISSUER, APPLE_API_KEY (Key ID), APPLE_API_KEY_P8 (.p8 file contents)
@@ -32,7 +37,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "24"
 
       - name: Cache Bun install
         uses: actions/cache@v4
@@ -94,7 +99,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "24"
 
       - name: Cache Bun install
         uses: actions/cache@v4
