@@ -14,7 +14,15 @@ const NON_SCROLLING_CONTEXT_VALUE = {
   preventInteraction: () => false,
 };
 
-export function ScrollableMenuWrapper({ children }: { children: React.ReactNode }) {
+export function ScrollableMenuWrapper({
+  children,
+  style,
+  className,
+}: {
+  children: React.ReactNode;
+  style?: React.CSSProperties;
+  className?: string;
+}) {
   const isPhone = useIsPhone();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [scrollLeft, setScrollLeft] = useState(0);
@@ -168,7 +176,7 @@ export function ScrollableMenuWrapper({ children }: { children: React.ReactNode 
   if (!isPhone) {
     return (
       <ScrollingContext.Provider value={NON_SCROLLING_CONTEXT_VALUE}>
-        <div className="flex items-stretch h-full">
+        <div className={`flex items-stretch h-full${className ? ` ${className}` : ""}`} style={style}>
           {children}
         </div>
       </ScrollingContext.Provider>
@@ -180,7 +188,7 @@ export function ScrollableMenuWrapper({ children }: { children: React.ReactNode 
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex-1 h-full overflow-x-auto overflow-y-hidden"
+        className={`flex-1 h-full overflow-x-auto overflow-y-hidden${className ? ` ${className}` : ""}`}
         style={{
           WebkitOverflowScrolling: "touch",
           overscrollBehaviorX: "contain",
@@ -189,6 +197,7 @@ export function ScrollableMenuWrapper({ children }: { children: React.ReactNode 
           maskImage,
           WebkitMaskImage: maskImage,
           touchAction: "pan-x",
+          ...style,
         }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}

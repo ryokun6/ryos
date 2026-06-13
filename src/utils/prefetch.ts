@@ -18,7 +18,7 @@ import { PrefetchToast, PrefetchCompleteToast } from "@/components/shared/Prefet
 import { useAppStore } from "@/stores/useAppStore";
 import { setNextBootMessage } from "@/utils/bootMessage";
 import i18n from "@/lib/i18n";
-import { getApiUrl, isTauri } from "@/utils/platform";
+import { getApiUrl, isDesktop } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
 import {
   isInReloadLoop,
@@ -158,14 +158,14 @@ export interface ServerVersion {
 /**
  * Fetch version info from version.json
  * This is the single source of truth for version checking
- * @param forceRemote - If true, always fetch from production server (used for desktop update checks in Tauri)
+ * @param forceRemote - If true, always fetch from production server (used for desktop update checks)
  */
 async function fetchServerVersion(forceRemote: boolean = false): Promise<ServerVersion | null> {
   try {
-    // In Tauri, /version.json would fetch from the bundled app, not the live server.
+    // In the desktop shell, /version.json would fetch from the bundled app, not the live server.
     // For desktop update checks, we need to fetch from the production server.
-    // Use getApiUrl() which returns the production URL in Tauri.
-    const url = forceRemote || isTauri() ? getApiUrl('/version.json') : '/version.json';
+    // Use getApiUrl() which returns the production URL in the desktop shell.
+    const url = forceRemote || isDesktop() ? getApiUrl('/version.json') : '/version.json';
     
     const response = await abortableFetch(url, { 
       cache: 'no-store',
@@ -247,7 +247,7 @@ export function onDesktopUpdate(callback: (result: DesktopUpdateResult) => void)
  * Called during periodic checks and manual "Check for Updates"
  */
 async function checkAndNotifyDesktopUpdate(): Promise<void> {
-  // Check for macOS users (both web and Tauri)
+  // Check for macOS users (both web and desktop shell)
   const isMacOS = typeof navigator !== 'undefined' && navigator.platform.toLowerCase().includes('mac');
   
   if (!isMacOS) {

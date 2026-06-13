@@ -120,7 +120,7 @@ export function Clock({ enableExposeToggle = false, enableCalendarOpen = false }
   }
 
   return (
-    // biome-ignore lint/a11y/noStaticElementInteractions: Window drag handle for Tauri
+    // biome-ignore lint/a11y/noStaticElementInteractions: Window drag handle for desktop shell
     <div
       role="presentation"
       className={`${isXpTheme ? "" : "ml-auto mr-1 sm:mr-2"} whitespace-nowrap`}

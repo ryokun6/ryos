@@ -1,0 +1,38 @@
+appId: lu.ryo.os
+productName: ryOS
+copyright: Copyright Ryo Lu
+directories:
+  output: release
+  buildResources: build
+files:
+  - dist-electron/**/*
+  - package.json
+asar: true
+extraMetadata:
+  main: dist-electron/main.cjs
+mac:
+  category: public.app-category.utilities
+  target:
+    - dmg
+  icon: build/icon.icns
+  artifactName: ryOS_${version}_aarch64.dmg
+  minimumSystemVersion: "10.13"
+  hardenedRuntime: true
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  gatekeeperAssess: false
+  extendInfo:
+    NSMicrophoneUsageDescription: ryOS needs microphone access for voice chat and recording features.
+    NSCameraUsageDescription: ryOS needs camera access for Photo Booth and video chat features.
+win:
+  target:
+    - nsis
+  icon: build/icon.ico
+  artifactName: ryOS_${version}_${arch}.${ext}
+linux:
+  target:
+    - AppImage
+  icon: build/icon.png
+  artifactName: ryOS_${version}_${arch}.${ext}
+publish:
+  - provider: github

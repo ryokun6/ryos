@@ -406,8 +406,8 @@ export function track(
     source:
       typeof properties?.source === "string"
         ? properties.source
-        : canUseBrowserApis() && "__TAURI__" in window
-          ? "tauri"
+        : canUseBrowserApis() && "ryosDesktop" in window
+          ? "electron"
           : "web",
     properties: sanitizeProperties(properties),
   };

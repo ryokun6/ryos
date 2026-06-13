@@ -13,7 +13,7 @@ import { useThemeFlags } from "./hooks/useThemeFlags";
 import { useIsMobile } from "./hooks/useIsMobile";
 import { useOffline } from "./hooks/useOffline";
 import { useTranslation } from "react-i18next";
-import { isTauri } from "./utils/platform";
+import { isDesktop } from "./utils/platform";
 import { checkDesktopUpdate, onDesktopUpdate, DesktopUpdateResult } from "./utils/prefetch";
 import { DownloadSimple } from "@phosphor-icons/react";
 import { ScreenSaverOverlay } from "./components/screensavers/ScreenSaverOverlay";
@@ -154,10 +154,10 @@ export function App() {
 
   // Show download toast for macOS users when new desktop version is available
   // For web: show on first visit and updates
-  // For Tauri: only show on updates (not first time)
+  // For desktop shell: only show on updates (not first time)
   useEffect(() => {
     const isMacOS = navigator.platform.toLowerCase().includes("mac");
-    const isInTauri = isTauri();
+    const isInDesktop = isDesktop();
 
     if (!isMacOS) {
       return;
@@ -168,7 +168,7 @@ export function App() {
       if (result.type === 'update' && result.version) {
         // Mark as seen immediately so dismissing the toast won't show it again
         setLastSeenDesktopVersion(result.version);
-        // New version available - show update toast (both web and Tauri)
+        // New version available - show update toast (both web and desktop shell)
         toast(`ryOS ${result.version} for Mac is available`, {
           id: 'desktop-update',
           icon: <DownloadSimple className="size-4" weight="bold" />,
@@ -183,10 +183,10 @@ export function App() {
             },
           },
         });
-      } else if (result.type === 'first-time' && result.version && !isInTauri) {
+      } else if (result.type === 'first-time' && result.version && !isInDesktop) {
         // Mark as seen immediately so dismissing the toast won't show it again
         setLastSeenDesktopVersion(result.version);
-        // First time user on web - show initial download toast (not in Tauri)
+        // First time user on web - show initial download toast (not in desktop shell)
         toast("ryOS is available as a Mac app", {
           id: 'desktop-update',
           icon: <DownloadSimple className="size-4" weight="bold" />,
@@ -201,8 +201,8 @@ export function App() {
             },
           },
         });
-      } else if (result.type === 'first-time' && result.version && isInTauri) {
-        // First time in Tauri - just store the version without showing toast
+      } else if (result.type === 'first-time' && result.version && isInDesktop) {
+        // First time in desktop shell - just store the version without showing toast
         setLastSeenDesktopVersion(result.version);
       }
     };

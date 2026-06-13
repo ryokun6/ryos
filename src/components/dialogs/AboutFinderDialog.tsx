@@ -66,14 +66,14 @@ export function AboutFinderDialog({
 
         if (!isActive || abortController.signal.aborted) return;
         setDesktopVersion(
-          typeof data?.desktopVersion === "string" ? data.desktopVersion : "1.0.1"
+          typeof data?.desktopVersion === "string" ? data.desktopVersion : "1.0.2"
         );
       } catch (error) {
         if (error instanceof Error && error.name === "AbortError") {
           return;
         }
         if (!isActive || abortController.signal.aborted) return;
-        setDesktopVersion("1.0.1"); // fallback
+        setDesktopVersion("1.0.2"); // fallback
       }
     };
 

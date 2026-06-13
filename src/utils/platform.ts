@@ -5,19 +5,22 @@
 import { getAppPublicOrigin } from "@/utils/runtimeConfig";
 
 /**
- * Check if the app is running in Tauri (desktop app)
+ * Check if the app is running in the Electron desktop shell.
  */
-export function isTauri(): boolean {
-  return typeof window !== "undefined" && "__TAURI__" in window;
+export function isDesktop(): boolean {
+  return typeof window !== "undefined" && "ryosDesktop" in window;
 }
+
+/** @deprecated Use {@link isDesktop}. */
+export const isTauri = isDesktop;
 
 /**
  * Get the API base URL.
- * In Tauri (desktop app), returns the production API URL.
+ * In the desktop shell, returns the production API URL.
  * In web browser, returns empty string for relative paths.
  */
 export function getApiBaseUrl(): string {
-  if (isTauri()) {
+  if (isDesktop()) {
     return getAppPublicOrigin();
   }
   return "";
@@ -25,37 +28,26 @@ export function getApiBaseUrl(): string {
 
 /**
  * Get the full API URL for a given path.
- * Automatically handles Tauri vs web differences.
+ * Automatically handles desktop vs web differences.
  * @param path - API path (e.g., "/api/chat")
- * @returns Full URL (e.g., "https://os.ryo.lu/api/chat" in Tauri, "/api/chat" in web)
+ * @returns Full URL (e.g., "https://os.ryo.lu/api/chat" in desktop, "/api/chat" in web)
  */
 export function getApiUrl(path: string): string {
   const baseUrl = getApiBaseUrl();
-  // Ensure path starts with /
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   return `${baseUrl}${normalizedPath}`;
 }
 
 /**
- * Check if Tauri is running on Windows (Chromium) or Mac (WebKit)
- * @returns true if Windows (Chromium), false if Mac (WebKit) or not Tauri
+ * Check if the desktop shell is running on Windows.
  */
-export function isTauriWindows(): boolean {
-  if (!isTauri()) {
+export function isDesktopWindows(): boolean {
+  if (!isDesktop()) {
     return false;
   }
-  
-  if (typeof window === "undefined") {
-    return false;
-  }
-  
-  // Chromium detection: check for window.chrome object
-  // On Windows, Tauri uses Chromium which has window.chrome
-  // On Mac, Tauri uses WebKit which doesn't have window.chrome
-  const hasChrome = "chrome" in window && (window as { chrome?: unknown }).chrome !== undefined;
-  
-  // If Chromium (has window.chrome), it's Windows
-  // If WebKit (no window.chrome), it's Mac
-  return hasChrome;
+
+  return window.ryosDesktop?.platform === "win32";
 }
 
+/** @deprecated Use {@link isDesktopWindows}. */
+export const isTauriWindows = isDesktopWindows;
