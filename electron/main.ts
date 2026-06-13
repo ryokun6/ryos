@@ -136,14 +136,6 @@ function createMainWindow(): BrowserWindow {
     win.show();
   });
 
-  // Frameless Windows/Linux windows hide the native menu bar by default; show it
-  // so "Check for Updates…" (and standard roles) are reachable there too. macOS
-  // always renders the menu in the global menu bar.
-  if (!isMac) {
-    win.setAutoHideMenuBar(false);
-    win.setMenuBarVisibility(true);
-  }
-
   void win.loadURL(APP_URL);
 
   applyNavigationPolicy(win.webContents);
