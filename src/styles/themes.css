@@ -6475,7 +6475,18 @@
 
 /* --- Squircle corners (progressive enhancement) --------------------------- */
 /* Bump the shared radius factor to 1.84× and add corner-shape — squircles
-   curve tighter so they need the full compensation; round arcs use 1.25×. */
+   curve tighter so they need the full compensation; round arcs use 1.25×.
+ *
+ * IMPORTANT — backdrop-filter surfaces are deliberately excluded from the
+ * squircle enhancement. Chrome's GPU compositor drops `backdrop-filter` when
+ * the element's clip bounds are a non-rectangular `corner-shape` (squircle)
+ * path, which blanks the frosted blur (the desktop reads through sharp instead
+ * of blurred). Safari/Firefox don't implement `corner-shape` at all, so they
+ * already render these surfaces as plain rounded-rects. To keep the blur
+ * reliable everywhere, the frosted surfaces (windows, dock, popover menus,
+ * the segmented toolbar group) stay as rounded-rects at the round-tuned 1.25×
+ * radii, and only the non-frosted decorative elements (selects, dialogs, tabs,
+ * chat bubbles, menu-item highlights) opt into squircle corners. */
 @supports (corner-shape: squircle) {
   :root[data-os-theme="macosx"][data-os-aqua-material="glass"] {
     --os-corner-shape: squircle;
@@ -6483,37 +6494,35 @@
     --os-glass-r-select: calc(8px * var(--os-glass-radius-factor));
     --os-glass-r-select-gloss: calc(7px * var(--os-glass-radius-factor));
     --os-glass-r-select-group: calc(6px * var(--os-glass-radius-factor));
+    /* Frosted (backdrop-filter) surfaces opt OUT of the 1.84× squircle bump and
+       stay rounded-rect at the round-tuned 1.25× radii (identical to the
+       no-corner-shape fallback) so Chrome keeps clipping — and rendering —
+       their backdrop blur. */
+    --os-glass-r-lg: calc(12px * 1.25);
+    --os-glass-r-metal: calc(0.6rem * 1.25);
+    --os-glass-r-dock: calc(13px * 1.25);
+    --os-glass-r-md: calc(10px * 1.25);
+    --os-glass-r-inset: calc(6px * 1.25);
   }
 
   /* NOTE: pseudo-elements are invalid inside :is()/:where() and get silently
      dropped, so the ::before / ::after layers are listed as standalone
-     selectors below — do not fold them back into the :is() list. */
+     selectors below — do not fold them back into the :is() list.
+     Frosted/blur surfaces (windows, dock, popover menus/listboxes, the
+     segmented toolbar group) are intentionally NOT in this list — see the
+     block comment above. */
+  /* `.rounded-os` is intentionally excluded: it is applied to every window
+     shell (which carries the frosted backdrop blur), so squircling it would
+     reintroduce the Chrome blur-dropping bug. */
   :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
     :is(
-      .window.window-material-glass,
-      .window.window-material-brushedmetal,
-      .mac-dock-surface,
-      .metal-inset-btn-group,
       .aqua-select-btn,
       .macos-select-trigger,
       .os-select-trigger-macos,
       .os-btn-aqua-select,
       .macosx-dialog,
-      .rounded-os,
-      .chat-bubble,
-      [data-radix-popper-content-wrapper]
-        :where(
-          [role="menu"],
-          [role="listbox"],
-          [data-radix-menu-content],
-          [data-radix-popover-content],
-          [data-radix-select-content]
-        )
+      .chat-bubble
     ),
-  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
-    .window-material-brushedmetal::before,
-  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
-    .window-material-brushedmetal::after,
   :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
     .macos-select-trigger::before,
   :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
@@ -6538,21 +6547,8 @@
     corner-shape: round;
   }
 
-  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
-    .metal-inset-btn-group {
-    corner-shape: var(--os-corner-shape);
-  }
-
-  /* Child pills must share the group's corner geometry, otherwise their
-     background rounds off with circular arcs inside the squircle clip and
-     leaves unfilled corner slivers (visible on the selected segment). */
-  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
-    .metal-inset-btn-group
-    .metal-inset-btn {
-    corner-shape: var(--os-corner-shape);
-  }
-
-  /* Menu item highlights follow the panel's squircle vocabulary. */
+  /* Menu item highlights follow the squircle vocabulary (these are inset
+     selection backgrounds, not backdrop-filter surfaces, so they are safe). */
   :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
     [data-radix-popper-content-wrapper]
     :where(
