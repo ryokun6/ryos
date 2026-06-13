@@ -182,7 +182,7 @@ const MenubarSubContent = (
     ref?: React.Ref<React.ElementRef<typeof MenubarPrimitive.SubContent>>;
   }
 ) => {
-  const { isMacOSTheme } = useThemeFlags()
+  const { isMacOSTheme, isAquaGlass } = useThemeFlags()
   const isMobile = useMediaQuery("(max-width: 768px)")
 
   return (
@@ -199,11 +199,11 @@ const MenubarSubContent = (
             border: "none",
             borderRadius: "0px",
             background: "var(--os-pinstripe-window)",
-            opacity: "0.92",
             boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
             padding: "4px 0px",
             ...(isMobile ? {} : { minWidth: "180px" }),
           }),
+          ...(isMacOSTheme && !isAquaGlass && { opacity: "0.92" }),
           ...(isMobile && { minWidth: "unset" }),
           ...style,
         }}
@@ -227,7 +227,7 @@ const MenubarContent = (
     ref?: React.Ref<React.ElementRef<typeof MenubarPrimitive.Content>>;
   }
 ) => {
-  const { isMacOSTheme } = useThemeFlags()
+  const { isMacOSTheme, isAquaGlass } = useThemeFlags()
   const isMobile = useMediaQuery("(max-width: 768px)")
   const isSwitching = React.use(MenubarSwitchingContext)
 
@@ -244,6 +244,9 @@ const MenubarContent = (
           "z-[10003] min-w-[12rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md",
           // Only animate when not switching between menus
           !isSwitching && "data-[state=open]:animate-in data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+          // Aqua Glass: also run the exit keyframe so the panel fades + scales
+          // back toward the trigger instead of cutting out abruptly (jitter).
+          !isSwitching && isAquaGlass && "data-[state=closed]:animate-out",
           className
         )}
         style={{
@@ -251,11 +254,13 @@ const MenubarContent = (
             border: "none",
             borderRadius: "0px",
             background: "var(--os-pinstripe-window)",
-            opacity: "0.92",
             boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
             padding: "4px 0px",
             ...(isMobile ? {} : { minWidth: style?.minWidth ?? "180px" }),
           }),
+          // Classic Aqua washes the panel to 0.92; glass stays fully opaque so
+          // the fade keyframe can drive opacity from 0 → 1 (and back) cleanly.
+          ...(isMacOSTheme && !isAquaGlass && { opacity: "0.92" }),
           ...(isMobile && { minWidth: "unset" }),
           ...style,
         }}

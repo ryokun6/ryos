@@ -129,7 +129,7 @@ const DropdownMenuSubContent = (
     ref?: React.Ref<React.ElementRef<typeof DropdownMenuPrimitive.SubContent>>;
   }
 ) => {
-  const { isMacOSTheme } = useThemeFlags();
+  const { isMacOSTheme, isAquaGlass } = useThemeFlags();
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   return (
@@ -146,11 +146,11 @@ const DropdownMenuSubContent = (
             border: "none",
             borderRadius: "0px",
             background: "var(--os-pinstripe-window)",
-            opacity: "0.92",
             boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
             padding: "4px 0px",
             ...(isMobile ? {} : { minWidth: "180px" }),
           }),
+          ...(isMacOSTheme && !isAquaGlass && { opacity: "0.92" }),
           ...(isMobile && { minWidth: "unset" }),
           ...style,
         }}
@@ -175,7 +175,7 @@ const DropdownMenuContent = (
     ref?: React.Ref<React.ElementRef<typeof DropdownMenuPrimitive.Content>>;
   }
 ) => {
-  const { isMacOSTheme } = useThemeFlags();
+  const { isMacOSTheme, isAquaGlass } = useThemeFlags();
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   return (
@@ -195,11 +195,11 @@ const DropdownMenuContent = (
             border: "none",
             borderRadius: "0px",
             background: "var(--os-pinstripe-window)",
-            opacity: "0.92",
             boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
             padding: "4px 0px",
             ...(isMobile ? {} : { minWidth: style?.minWidth ?? "180px" }),
           }),
+          ...(isMacOSTheme && !isAquaGlass && { opacity: "0.92" }),
           ...(isMobile && { minWidth: "unset" }),
           ...style,
         }}

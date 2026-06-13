@@ -5896,14 +5896,20 @@
   backdrop-filter: blur(36px) saturate(200%) !important;
   -webkit-backdrop-filter: blur(36px) saturate(200%) !important;
   /* Replace the inline pinstripe-window fill (0.74–0.8 alpha — opaque enough
-     to bury the blur) with a lighter wash so the backdrop blur reads through,
-     and kill the inline `opacity: 0.92` which washes out labels. */
+     to bury the blur) with a lighter wash so the backdrop blur reads through.
+     The inline `opacity: 0.92` (which washed out labels) is now skipped in
+     glass mode by the React components, so the element rests at full opacity
+     WITHOUT an `!important` override — that lets the open/close fade keyframes
+     actually animate opacity (an `!important` here would beat the animation). */
   background: color-mix(
     in srgb,
     var(--os-accent-color, #3a73d6) 6%,
     rgba(248, 250, 253, 0.62)
   ) !important;
-  opacity: 1 !important;
+  /* Grow/shrink the panel from the menubar/select trigger rather than the
+     panel centre. Radix publishes the anchor point on the popper wrapper as
+     `--radix-popper-transform-origin`, which this content inherits. */
+  transform-origin: var(--radix-popper-transform-origin) !important;
   /* Overrides the inline `0px` radius from the dropdown/select content. */
   border-radius: var(--os-glass-r-md) !important;
   border: var(--os-metrics-border-width) solid var(--os-color-window-border) !important;

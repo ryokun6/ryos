@@ -125,7 +125,7 @@ const SelectContent = (
     ref?: React.Ref<React.ElementRef<typeof SelectPrimitive.Content>>;
   }
 ) => {
-  const { isMacOSTheme } = useThemeFlags();
+  const { isMacOSTheme, isAquaGlass } = useThemeFlags();
 
   return (
     <SelectPrimitive.Portal>
@@ -142,10 +142,10 @@ const SelectContent = (
             border: "none",
             borderRadius: "0px",
             background: "var(--os-pinstripe-window)",
-            opacity: "0.92",
             boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
             padding: "4px 0px",
           }),
+          ...(isMacOSTheme && !isAquaGlass && { opacity: "0.92" }),
         }}
         position={position}
         {...props}
