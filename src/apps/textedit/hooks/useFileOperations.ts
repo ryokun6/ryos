@@ -122,7 +122,7 @@ export function useFileOperations({
       }
 
       if (editorContent) {
-        editor.commands.setContent(editorContent);
+        editor.commands.setContent(editorContent, false);
       }
 
       // Always save in markdown format with rich metadata

@@ -9,35 +9,31 @@ import {
   DropdownMenuContent,
 } from "@/components/ui/dropdown-menu";
 import { createRoot } from "react-dom/client";
-import { useState, useEffect } from "react";
 import { Check } from "@phosphor-icons/react";
 import { useTranslation } from "react-i18next";
-
-interface CommandItem {
-  key: string;
-  title: string;
-  description: string;
-  command: (editor: Editor) => void;
-}
+import {
+  executeSlashCommand,
+  getNextSlashCommandIndex,
+  getSlashCommandItems,
+  type SlashCommandItem,
+} from "../utils/slashCommandUtils";
 
 const SlashMenuContent = ({
   items,
   onCommand,
   editor,
+  selectedIndex,
+  onSelectIndex,
 }: {
-  items: CommandItem[];
-  onCommand: (command: CommandItem) => void;
+  items: SlashCommandItem[];
+  onCommand: (command: SlashCommandItem) => void;
   editor: Editor;
+  selectedIndex: number;
+  onSelectIndex: (index: number) => void;
 }) => {
   const { t } = useTranslation();
-  const [selectedIndex, setSelectedIndex] = useState(0);
 
-  // Reset selection when items change (when filtering)
-  useEffect(() => {
-    setSelectedIndex(0);
-  }, [items]);
-
-  const isActive = (item: CommandItem) => {
+  const isActive = (item: SlashCommandItem) => {
     switch (item.key) {
       case "text":
         return editor.isActive("paragraph");
@@ -56,37 +52,9 @@ const SlashMenuContent = ({
     }
   };
 
-  const getTranslatedTitle = (item: CommandItem) => {
+  const getTranslatedTitle = (item: SlashCommandItem) => {
     return t(`apps.textedit.slashCommands.${item.key}.title`);
   };
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Only handle navigation keys
-      switch (e.key) {
-        case "ArrowDown":
-          e.preventDefault();
-          setSelectedIndex((prev) => (prev + 1) % items.length);
-          break;
-        case "ArrowUp":
-          e.preventDefault();
-          setSelectedIndex((prev) => (prev - 1 + items.length) % items.length);
-          break;
-        case "Enter":
-          e.preventDefault();
-          if (items.length > 0) {
-            onCommand(items[selectedIndex]);
-          }
-          break;
-        // Let other keys pass through to the editor
-        default:
-          return;
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [items, selectedIndex, onCommand]);
 
   return (
     <div>
@@ -95,7 +63,8 @@ const SlashMenuContent = ({
           key={item.key}
           role="menuitem"
           onClick={() => onCommand(item)}
-          onMouseEnter={() => setSelectedIndex(index)}
+          onMouseDown={(event) => event.preventDefault()}
+          onMouseEnter={() => onSelectIndex(index)}
           className={`relative flex w-full items-center h-8 px-2 text-sm ${
             index === selectedIndex ? "bg-muted" : ""
           }`}
@@ -112,65 +81,6 @@ const SlashMenuContent = ({
   );
 };
 
-const commands: CommandItem[] = [
-  {
-    key: "text",
-    title: "Text",
-    description: "Just start typing with plain text",
-    command: (editor: Editor) => {
-      editor.chain().focus().setParagraph().run();
-    },
-  },
-  {
-    key: "heading1",
-    title: "Heading 1",
-    description: "Large section heading",
-    command: (editor: Editor) => {
-      editor.chain().focus().toggleHeading({ level: 1 }).run();
-    },
-  },
-  {
-    key: "heading2",
-    title: "Heading 2",
-    description: "Medium section heading",
-    command: (editor: Editor) => {
-      editor.chain().focus().toggleHeading({ level: 2 }).run();
-    },
-  },
-  {
-    key: "heading3",
-    title: "Heading 3",
-    description: "Small section heading",
-    command: (editor: Editor) => {
-      editor.chain().focus().toggleHeading({ level: 3 }).run();
-    },
-  },
-  {
-    key: "bulletList",
-    title: "Bullet List",
-    description: "Create a simple bullet list",
-    command: (editor: Editor) => {
-      editor.chain().focus().toggleBulletList().run();
-    },
-  },
-  {
-    key: "numberedList",
-    title: "Numbered List",
-    description: "Create a numbered list",
-    command: (editor: Editor) => {
-      editor.chain().focus().toggleOrderedList().run();
-    },
-  },
-  {
-    key: "taskList",
-    title: "Task List",
-    description: "Create a checklist with checkboxes",
-    command: (editor: Editor) => {
-      editor.chain().focus().toggleTaskList().run();
-    },
-  },
-];
-
 const suggestion: Partial<SuggestionOptions> = {
   char: "/",
   startOfLine: false,
@@ -181,20 +91,18 @@ const suggestion: Partial<SuggestionOptions> = {
   }: {
     editor: Editor;
     range: { from: number; to: number };
-    props: { command: CommandItem };
+    props: { command: SlashCommandItem };
   }) => {
-    props.command.command(editor);
-    editor.commands.deleteRange(range);
+    executeSlashCommand(editor, range, props.command);
   },
   items: ({ query }: { query: string }) => {
-    // Filter by English title for search, but display will be translated
-    return commands
-      .filter((item) => item.title.toLowerCase().includes(query.toLowerCase()))
-      .slice(0, 10);
+    return getSlashCommandItems(query);
   },
   render: () => {
     let root: ReturnType<typeof createRoot> | null = null;
     let container: HTMLElement | null = null;
+    let latestProps: SuggestionProps | null = null;
+    let selectedIndex = 0;
 
     const cleanup = () => {
       if (root) {
@@ -203,12 +111,57 @@ const suggestion: Partial<SuggestionOptions> = {
       if (container) {
         container.remove();
       }
+      root = null;
+      container = null;
+      latestProps = null;
+      selectedIndex = 0;
+    };
+
+    const renderMenu = (props: SuggestionProps) => {
+      const rect = props.clientRect?.();
+      if (!rect || !root) return;
+
+      const itemCount = props.items.length;
+      if (itemCount === 0) {
+        selectedIndex = 0;
+      } else if (selectedIndex >= itemCount) {
+        selectedIndex = itemCount - 1;
+      }
+
+      root.render(
+        <DropdownMenu open modal={false}>
+          <DropdownMenuContent
+            onOpenAutoFocus={(event) => event.preventDefault()}
+            onCloseAutoFocus={(event) => event.preventDefault()}
+            style={{
+              position: "fixed",
+              top: `${rect.top + rect.height}px`,
+              left: `${rect.left}px`,
+            }}
+            className="w-72"
+          >
+            <SlashMenuContent
+              items={props.items as SlashCommandItem[]}
+              selectedIndex={selectedIndex}
+              editor={props.editor}
+              onSelectIndex={(index) => {
+                selectedIndex = index;
+                renderMenu(props);
+              }}
+              onCommand={(command: SlashCommandItem) => {
+                props.command({ command });
+                cleanup();
+              }}
+            />
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
     };
 
     return {
       onStart: (props: SuggestionProps) => {
-        const rect = props.clientRect?.();
-        if (!rect) return;
+        latestProps = props;
+        selectedIndex = 0;
 
         container = document.createElement("div");
         if (!container) return;
@@ -220,57 +173,18 @@ const suggestion: Partial<SuggestionOptions> = {
         root = createRoot(container);
         if (!root) return;
 
-        root.render(
-          <DropdownMenu open>
-            <DropdownMenuContent
-              style={{
-                position: "fixed",
-                top: `${rect.top + rect.height}px`,
-                left: `${rect.left}px`,
-              }}
-              className="w-72"
-            >
-              <SlashMenuContent
-                items={props.items}
-                editor={props.editor}
-                onCommand={(command: CommandItem) => {
-                  props.command({ command });
-                  cleanup();
-                }}
-              />
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
+        renderMenu(props);
       },
 
       onUpdate: (props: SuggestionProps) => {
-        const rect = props.clientRect?.();
-        if (!rect || !root || !container) return;
+        if (!root || !container) return;
 
+        latestProps = props;
+        selectedIndex = 0;
         container.style.position = "absolute";
         container.style.zIndex = "50";
 
-        root.render(
-          <DropdownMenu open>
-            <DropdownMenuContent
-              style={{
-                position: "fixed",
-                top: `${rect.top + rect.height}px`,
-                left: `${rect.left}px`,
-              }}
-              className="w-72"
-            >
-              <SlashMenuContent
-                items={props.items}
-                editor={props.editor}
-                onCommand={(command: CommandItem) => {
-                  props.command({ command });
-                  cleanup();
-                }}
-              />
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
+        renderMenu(props);
       },
 
       onKeyDown: (props: { event: KeyboardEvent }) => {
@@ -280,6 +194,43 @@ const suggestion: Partial<SuggestionOptions> = {
           props.event.preventDefault();
           return true;
         }
+
+        if (!latestProps) return false;
+
+        if (props.event.key === "ArrowDown") {
+          props.event.preventDefault();
+          selectedIndex = getNextSlashCommandIndex(
+            selectedIndex,
+            latestProps.items.length,
+            1
+          );
+          renderMenu(latestProps);
+          return true;
+        }
+
+        if (props.event.key === "ArrowUp") {
+          props.event.preventDefault();
+          selectedIndex = getNextSlashCommandIndex(
+            selectedIndex,
+            latestProps.items.length,
+            -1
+          );
+          renderMenu(latestProps);
+          return true;
+        }
+
+        if (props.event.key === "Enter") {
+          props.event.preventDefault();
+          const item = latestProps.items[selectedIndex] as
+            | SlashCommandItem
+            | undefined;
+          if (item) {
+            latestProps.command({ command: item });
+            cleanup();
+          }
+          return true;
+        }
+
         return false;
       },
 
