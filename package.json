@@ -2,6 +2,9 @@
   "name": "ryos",
   "private": true,
   "version": "1.0.3",
+  "description": "A web-based desktop operating system, reimagining classic Mac OS, Windows, and more.",
+  "author": "Ryo Lu <me@ryo.lu> (https://ryo.lu)",
+  "homepage": "https://os.ryo.lu",
   "type": "module",
   "main": "dist-electron/main.cjs",
   "scripts": {
