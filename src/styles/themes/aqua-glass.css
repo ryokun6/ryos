@@ -189,7 +189,15 @@
    `bg-os-window-bg` class, so the fill is applied here instead. */
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
   .window.window-material-glass {
-  background-color: var(--os-color-window-bg);
+  /* Slight vertical gradient: more transparent at the top so the blurred desktop
+     reads through, settling to the full tint at the bottom. No solid
+     background-color behind it, or the top transparency would be masked. */
+  background-color: transparent;
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--os-color-window-bg) 78%, transparent),
+    var(--os-color-window-bg)
+  );
   -webkit-backdrop-filter: blur(26px) saturate(185%);
   backdrop-filter: blur(26px) saturate(185%);
   border-radius: var(--os-glass-r-lg) !important;
@@ -208,10 +216,11 @@
    so the pane reads muted instead of vivid. The blur stays — it's still glass. */
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
   .window.window-material-glass:not(.is-foreground) {
-  background-color: color-mix(
-    in srgb,
-    var(--os-color-window-bg) 75%,
-    transparent
+  background-color: transparent;
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--os-color-window-bg) 58%, transparent),
+    color-mix(in srgb, var(--os-color-window-bg) 75%, transparent)
   );
   -webkit-backdrop-filter: blur(26px) saturate(80%);
   backdrop-filter: blur(26px) saturate(80%);
@@ -447,8 +456,8 @@
   .mac-top-menubar[data-menubar-text-tone="light"]
   .menubar-status-controls
   svg {
-  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.6))
-    drop-shadow(0 0 2px rgba(0, 0, 0, 0.45));
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.35))
+    drop-shadow(0 0 2px rgba(0, 0, 0, 0.25));
 }
 
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
