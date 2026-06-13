@@ -8,6 +8,7 @@ import {
   toolInlineCardListRowClassName,
   toolInlineCardShellClassName,
 } from "@/components/shared/toolInlineCardShell";
+import { osSubtleIconButtonClassName } from "@/components/shared/osThemePrimitives";
 
 export interface CursorCloudAgentRunListRow {
   runId: string;
@@ -67,7 +68,7 @@ export function CursorCloudAgentRunsListCard({
   runs,
 }: CursorCloudAgentRunsListCardProps) {
   const { t } = useTranslation();
-  const { isMacOSTheme, isXpTheme, isSystem7Theme, isDarkMode } = useThemeFlags();
+  const { isMacOSTheme, isXpTheme, isSystem7Theme, isWin98 } = useThemeFlags();
 
   if (!runs.length) return null;
 
@@ -75,12 +76,13 @@ export function CursorCloudAgentRunsListCard({
     isMacOSTheme,
     isSystem7Theme,
     isXpTheme,
+    isWin98,
   });
 
   return (
     <div className={shell}>
       <ul
-        className={toolInlineCardListClassName({ isMacOSTheme, isDarkMode })}
+        className={toolInlineCardListClassName({ isMacOSTheme })}
       >
         {runs.map((run) => {
           const { primary, secondary } = rowPrimarySecondary(run);
@@ -95,16 +97,13 @@ export function CursorCloudAgentRunsListCard({
               <div
                 className={toolInlineCardListRowClassName({
                   isMacOSTheme,
-                  isDarkMode,
                 })}
               >
                 <CursorBrandMark
                   className={cn(
-                    isMacOSTheme && isDarkMode
-                      ? "bg-white/10"
-                      : isMacOSTheme
-                        ? "bg-black/[0.06]"
-                        : "bg-neutral-200 dark:bg-neutral-800"
+                    isMacOSTheme
+                      ? "bg-black/[0.06] os-mac-aqua-dark:bg-white/10"
+                      : "bg-neutral-200 dark:bg-neutral-800"
                   )}
                 />
                 <div className="min-w-0 flex-1">
@@ -135,9 +134,7 @@ export function CursorCloudAgentRunsListCard({
                     className={cn(
                       "shrink-0 -mr-0.5 flex size-7 items-center justify-center rounded-full",
                       "focus:outline-none focus-visible:ring-1",
-                      isMacOSTheme && isDarkMode
-                        ? "text-os-text-secondary hover:bg-white/12 hover:text-os-text-primary focus-visible:ring-white/35"
-                        : "text-os-text-secondary hover:bg-black/10 hover:text-os-text-primary focus-visible:ring-black/30"
+                      osSubtleIconButtonClassName()
                     )}
                     aria-label={t(
                       "apps.chats.toolCalls.listCursorCloudAgentRuns.openDashboard",

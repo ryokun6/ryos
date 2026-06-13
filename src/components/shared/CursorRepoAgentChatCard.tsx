@@ -50,7 +50,8 @@ export function CursorRepoAgentChatCard({
 }: CursorRepoAgentChatCardProps) {
   const isPanel = variant === "panel";
   const { t } = useTranslation();
-  const { isMacOSTheme, isXpTheme, isSystem7Theme, isDarkMode } = useThemeFlags();
+  const { isMacOSTheme, isXpTheme, isSystem7Theme, isWin98, isDarkMode } =
+    useThemeFlags();
   const {
     events,
     done,
@@ -126,6 +127,7 @@ export function CursorRepoAgentChatCard({
             isMacOSTheme,
             isSystem7Theme,
             isXpTheme,
+            isWin98,
             embed: isPanel ? "panel" : "chat",
           }),
           isPanel && "h-full min-h-0"

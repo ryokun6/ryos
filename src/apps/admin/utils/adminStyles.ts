@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { osSubtleIconButtonClassName } from "@/components/shared/osThemePrimitives";
 
 /** Main content pane — transparent; window frost shows through (see themes.css). */
 export const adminMainPaneClass =
@@ -58,10 +59,7 @@ export const adminTableRowClass = cn(
 );
 
 /** Ghost icon button in admin tables / lists. */
-export const adminGhostIconBtnClass = cn(
-  "text-os-text-secondary hover:text-os-text-primary",
-  "os-mac-aqua-dark:hover:bg-white/8",
-);
+export const adminGhostIconBtnClass = cn(osSubtleIconButtonClassName());
 
 /** Load-more / secondary action text button. */
 export const adminLoadMoreBtnClass =

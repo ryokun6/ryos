@@ -13,6 +13,10 @@ import { Soundboard } from "@/types/types";
 
 import { useTranslation } from "react-i18next";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
+import {
+  osAppSidebarSurfaceClassName,
+  osSeparatorBorderClassName,
+} from "@/components/shared/osThemePrimitives";
 
 interface BoardListProps {
   boards: Soundboard[];
@@ -35,26 +39,23 @@ export function BoardList({
   audioDevices,
   micPermissionGranted,
 }: BoardListProps) {
-  const {
-    isWindowsTheme: isXpTheme,
-    isMacOSTheme,
-    isAquaGlass,
-  } = useThemeFlags();
-  const isWindowsLegacyTheme = isXpTheme;
+  const { isWindowsTheme, isMacOSTheme, isAquaGlass } = useThemeFlags();
   const { t } = useTranslation();
-
-  const macSidebarBorderClass = isAquaGlass ? "" : "border-black/10";
 
   return (
     <div
-      className={cn(
-        "os-app-sidebar max-md:os-app-sidebar--stacked w-full flex flex-col max-h-44 overflow-hidden md:w-56 md:max-h-full font-geneva-12 text-[12px]",
-        isAquaGlass ? "bg-transparent" : "bg-neutral-100",
-        isWindowsLegacyTheme
-          ? "border-b border-[#919b9c] md:border-r md:border-b-0"
-          : isMacOSTheme
-          ? cn("border-b md:border-r md:border-b-0", macSidebarBorderClass)
-          : "border-b border-black md:border-r md:border-b-0"
+      className={osAppSidebarSurfaceClassName(
+        {
+          isMacOSTheme,
+          isXpTheme: isWindowsTheme,
+          isWindowsTheme,
+          isAquaGlass,
+        },
+        {
+          layout: "responsive",
+          className:
+            "max-md:os-app-sidebar--stacked max-h-44 overflow-hidden md:w-56 md:max-h-full",
+        }
       )}
     >
       <div className="py-3 flex flex-col flex-1 overflow-hidden">
@@ -87,9 +88,7 @@ export function BoardList({
 
         {micPermissionGranted && (
           <div
-            className={`mt-auto pt-2 border-t px-3 pb-3 ${
-              isWindowsLegacyTheme ? "border-[#919b9c]" : "border-neutral-300"
-            }`}
+            className={cn("mt-auto pt-2 border-t px-3 pb-3", osSeparatorBorderClassName())}
           >
             <Select value={selectedDeviceId} onValueChange={onDeviceSelect}>
               <SelectTrigger className="w-full h-7 text-xs">

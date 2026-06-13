@@ -6,6 +6,10 @@ import { useIsMobile } from "@/hooks/useIsMobile";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { Trash } from "@phosphor-icons/react";
 import { AppDrawer, DRAWER_WIDTH, DRAWER_TRANSITION } from "@/components/shared/AppDrawer";
+import {
+  osToolbarSurfaceClassName,
+  windowsBevelClassName,
+} from "@/components/shared/osThemePrimitives";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 
 // Re-export so callers that previously imported from this module still work.
@@ -59,11 +63,13 @@ const TvChannelLogoStrip = memo(function TvChannelLogoStrip({
   return (
     <div
       className={cn(
-        "sticky top-0 z-10 shrink-0 border-b",
+        "sticky top-0 z-10 shrink-0",
+        osToolbarSurfaceClassName(
+          { isMacOSTheme, isSystem7Theme: isSystem7, isXpTheme, isWin98 },
+          { border: "bottom" }
+        ),
         isMacOSTheme && "bg-[#f7f7f7]/95 border-black/15",
-        isSystem7 && "bg-white border-black",
-        isXpTheme && !isWin98 && "bg-[#ECE9D8] border-[#ACA899]",
-        isWin98 && "bg-[#C0C0C0] border-[#808080]"
+        isSystem7 && "bg-white border-black"
       )}
     >
       <div
@@ -106,12 +112,12 @@ const TvChannelLogoStrip = memo(function TvChannelLogoStrip({
                 isXpTheme &&
                   !isWin98 &&
                   isActive &&
-                  "border-[#0054E3] bg-[#dce9ff] ring-2 ring-[#316AC5]/50",
+                  "border-os-window bg-[#dce9ff] ring-2 ring-[color:var(--os-color-selection-bg)]/50",
                 isWin98 &&
-                  "rounded-none border-2 border-t-white border-l-white border-b-[#808080] border-r-[#808080] bg-[#C0C0C0]",
+                  cn("rounded-none bg-os-window-bg", windowsBevelClassName("raised")),
                 isWin98 &&
                   isActive &&
-                  "border-t-[#808080] border-l-[#808080] border-b-white border-r-white bg-[#d8d8d8]"
+                  cn(windowsBevelClassName("sunken"), "bg-[#d8d8d8]")
               )}
             >
               {logo ? (

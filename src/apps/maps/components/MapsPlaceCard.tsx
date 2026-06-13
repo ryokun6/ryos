@@ -15,6 +15,10 @@ import {
   AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT_ACTIVE,
 } from "@/lib/aquaIconButton";
 import { Button } from "@/components/ui/button";
+import {
+  osCardClassName,
+  osSubtleIconButtonClassName,
+} from "@/components/shared/osThemePrimitives";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import {
   getPoiVisual,
@@ -97,8 +101,7 @@ export function MapsPlaceCard({
   onClose,
 }: MapsPlaceCardProps) {
   const { t } = useTranslation();
-  const { isMacOSTheme, isXpTheme, isSystem7Theme, isDarkMode } = useThemeFlags();
-  const aquaDarkCard = isMacOSTheme && isDarkMode;
+  const { isMacOSTheme, isXpTheme, isSystem7Theme, isWin98 } = useThemeFlags();
 
   return (
     <AnimatePresence>
@@ -117,22 +120,12 @@ export function MapsPlaceCard({
         >
           <div
             className={cn(
-              "flex flex-col gap-2.5 p-3",
-              // Theme shells — macOS matches the toast/dock pinstripe glass;
-              // other themes mirror their drawer panels so the surfaces look
-              // like siblings.
-              isMacOSTheme &&
-                "maps-place-card-aqua rounded-[0.5rem] border-transparent text-os-text-primary",
-              !isMacOSTheme &&
-                isSystem7Theme &&
-                "rounded border-2 border-black bg-white text-black shadow-[2px_2px_0_0_rgba(0,0,0,0.5)]",
-              !isMacOSTheme &&
-                !isSystem7Theme &&
-                isXpTheme &&
-                "rounded-[0.4rem] border-2 border-[#0054E3] bg-[#ECE9D8] text-black shadow-md",
-              // Fallback (any future theme): neutral light card.
-              !isMacOSTheme && !isSystem7Theme && !isXpTheme &&
-                "rounded border border-black/30 bg-white text-black shadow-md"
+              osCardClassName(
+                { isMacOSTheme, isSystem7Theme, isXpTheme, isWin98 },
+                { embed: "panel" }
+              ),
+              "gap-2.5 p-3",
+              isXpTheme && "shadow-md"
             )}
           >
             <PlaceCardHeader
@@ -141,7 +134,6 @@ export function MapsPlaceCard({
               isWork={isWork}
               onClose={onClose}
               t={t}
-              aquaDarkCard={aquaDarkCard}
             />
             <PlaceCardActions
               place={place}
@@ -169,7 +161,6 @@ interface PlaceCardHeaderProps {
   isWork: boolean;
   onClose: () => void;
   t: ReturnType<typeof useTranslation>["t"];
-  aquaDarkCard: boolean;
 }
 
 function PlaceCardHeader({
@@ -178,7 +169,6 @@ function PlaceCardHeader({
   isWork,
   onClose,
   t,
-  aquaDarkCard,
 }: PlaceCardHeaderProps) {
   const homeTitle = t("apps.maps.places.home", { defaultValue: "Home" });
   const workTitle = t("apps.maps.places.work", { defaultValue: "Work" });
@@ -235,9 +225,7 @@ function PlaceCardHeader({
         className={cn(
           "shrink-0 -mr-0.5 -mt-0.5 flex size-6 items-center justify-center rounded-full",
           "focus:outline-none focus-visible:ring-1",
-          aquaDarkCard
-            ? "text-os-text-secondary hover:bg-white/12 hover:text-os-text-primary focus-visible:ring-white/35"
-            : "text-os-text-secondary hover:bg-black/10 hover:text-os-text-primary focus-visible:ring-black/30"
+          osSubtleIconButtonClassName()
         )}
         aria-label={t("apps.maps.placeCard.close", {
           defaultValue: "Close place card",

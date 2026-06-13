@@ -7,6 +7,7 @@ import { useSound, Sounds } from "@/hooks/useSound";
 import { getPrivateRoomDisplayName } from "@/utils/chat";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
+import { osAppSidebarSurfaceClassName } from "@/components/shared/osThemePrimitives";
 import {
   Tooltip,
   TooltipContent,
@@ -155,10 +156,7 @@ export const ChatRoomSidebar = React.memo(function ChatRoomSidebar({
   // re-renders one row instead of the whole sidebar.
 
   // Theme detection for border styling
-  const { isWindowsTheme: isXpTheme, isMacOSTheme, isAquaGlass } =
-    useThemeFlags();
-
-  const macSidebarBorderClass = isAquaGlass ? "" : "border-black/10";
+  const { isWindowsTheme, isMacOSTheme, isAquaGlass } = useThemeFlags();
 
   // Section headings are non-interactive; show all lists by default
 
@@ -217,25 +215,14 @@ export const ChatRoomSidebar = React.memo(function ChatRoomSidebar({
 
   return (
     <div
-      className={cn(
-        "os-app-sidebar flex flex-col font-geneva-12 text-[12px]",
-        isOverlay && "os-app-sidebar--overlay",
-        isAquaGlass ? "bg-transparent" : "bg-neutral-100",
-        isOverlay
-          ? `w-full border-b ${
-              isXpTheme
-                ? "border-[#919b9c]"
-                : isMacOSTheme
-                ? macSidebarBorderClass
-                : "border-black"
-            }`
-          : `w-56 border-r h-full overflow-hidden ${
-              isXpTheme
-                ? "border-[#919b9c]"
-                : isMacOSTheme
-                ? macSidebarBorderClass
-                : "border-black"
-            }`
+      className={osAppSidebarSurfaceClassName(
+        {
+          isMacOSTheme,
+          isXpTheme: isWindowsTheme,
+          isWindowsTheme,
+          isAquaGlass,
+        },
+        { layout: isOverlay ? "overlay" : "side" }
       )}
     >
       <div

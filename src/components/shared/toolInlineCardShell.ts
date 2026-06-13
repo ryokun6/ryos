@@ -1,40 +1,17 @@
 import { cn } from "@/lib/utils";
+import { osCardClassName } from "./osThemePrimitives";
 
 /** Outer shell for inline chat tool cards (Maps places, Cursor agents, …). */
 export function toolInlineCardShellClassName(flags: {
   isMacOSTheme: boolean;
   isSystem7Theme: boolean;
   isXpTheme: boolean;
+  isWin98?: boolean;
   /** Chat embed; panel fills parent without outer margin/shadow. */
   embed?: "chat" | "panel";
 }): string {
-  const { isMacOSTheme, isSystem7Theme, isXpTheme, embed = "chat" } = flags;
-  return cn(
-    "flex flex-col overflow-hidden font-geneva-12",
-    embed === "chat" && "my-1",
-    isMacOSTheme &&
-      "maps-place-card-aqua rounded-[0.5rem] border-transparent text-os-text-primary",
-    !isMacOSTheme &&
-      isSystem7Theme &&
-      cn(
-        embed === "chat" && "rounded",
-        "border-2 border-black bg-white text-black shadow-[2px_2px_0_0_rgba(0,0,0,0.5)]"
-      ),
-    !isMacOSTheme &&
-      !isSystem7Theme &&
-      isXpTheme &&
-      cn(
-        embed === "chat" && "rounded-[0.4rem]",
-        "border-2 border-[#0054E3] bg-[#ECE9D8] text-black"
-      ),
-    !isMacOSTheme &&
-      !isSystem7Theme &&
-      !isXpTheme &&
-      cn(
-        embed === "chat" && "rounded",
-        "border border-black/30 bg-white text-black shadow-md"
-      )
-  );
+  const { embed = "chat", ...themeFlags } = flags;
+  return osCardClassName(themeFlags, { embed });
 }
 
 /** Header band for Cursor agent stream card (pinstripe on macOS via CSS). */
@@ -66,32 +43,25 @@ export function cursorAgentCardHeaderClassName(flags: {
   );
 }
 
-export function toolInlineCardListClassName(flags: {
-  isMacOSTheme: boolean;
-  isDarkMode: boolean;
+export function toolInlineCardListClassName(_flags: {
+  isMacOSTheme?: boolean;
+  isDarkMode?: boolean;
 }): string {
-  const { isMacOSTheme, isDarkMode } = flags;
   return cn(
-    "divide-y",
-    isMacOSTheme && isDarkMode
-      ? "divide-[color:var(--os-color-separator)]"
-      : "divide-black/10"
+    "divide-y divide-black/10",
+    "os-mac-aqua-dark:divide-[color:var(--os-color-separator)]"
   );
 }
 
-export function toolInlineCardListRowClassName(flags: {
-  isMacOSTheme: boolean;
-  isDarkMode: boolean;
+export function toolInlineCardListRowClassName(_flags: {
+  isMacOSTheme?: boolean;
+  isDarkMode?: boolean;
 }): string {
-  const { isMacOSTheme, isDarkMode } = flags;
   return cn(
     "flex w-full items-center gap-2.5 px-2.5 py-2 text-left",
-    isMacOSTheme && isDarkMode
-      ? "hover:bg-white/10 active:bg-white/14"
-      : "hover:bg-black/5 active:bg-black/10",
-    "focus:outline-none focus-visible:ring-1",
-    isMacOSTheme && isDarkMode
-      ? "focus-visible:ring-white/35"
-      : "focus-visible:ring-black/30"
+    "hover:bg-black/5 active:bg-black/10",
+    "os-mac-aqua-dark:hover:bg-white/10 os-mac-aqua-dark:active:bg-white/14",
+    "focus:outline-none focus-visible:ring-1 focus-visible:ring-black/30",
+    "os-mac-aqua-dark:focus-visible:ring-white/35"
   );
 }

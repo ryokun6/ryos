@@ -29,6 +29,10 @@ import {
   resolveDrawerLayout,
   type DrawerPlacement,
 } from "@/components/shared/appDrawerLayout";
+import {
+  osDrawerSurfaceClassName,
+  osSeparatorBorderClassName,
+} from "@/components/shared/osThemePrimitives";
 
 // ── Shared constants (also re-exported for TvVideoDrawer) ────────────────────
 
@@ -198,43 +202,9 @@ export function AppDrawer({
   // ── Panel outer ───────────────────────────────────────────────────────────
   // Side (desktop): rounded on the outward edge.
   // Compact (mobile): rounded on the edge that sticks out of the window.
-  const panelOuterClass = cn(
-    "flex flex-1 flex-col overflow-hidden min-h-0",
-    isMacOSTheme &&
-      cn(
-        "os-drawer-metal",
-        placement === "right" && "rounded-r-[0.45rem]",
-        placement === "left" && "rounded-l-[0.45rem]",
-        placement === "bottom" && "rounded-b-[0.45rem]",
-        placement === "top" && "rounded-t-[0.45rem]"
-      ),
-    !isMacOSTheme && isSystem7 && (
-      placement === "right"
-        ? "bg-white border-2 border-black border-l-0 shadow-[2px_2px_0_0_rgba(0,0,0,0.5)]"
-        : placement === "left"
-        ? "bg-white border-2 border-black border-r-0 rounded-l shadow-[-2px_2px_0_0_rgba(0,0,0,0.5)]"
-        : placement === "bottom"
-        ? "bg-white border-2 border-black border-t-0 rounded-b shadow-[2px_4px_0_0_rgba(0,0,0,0.45)]"
-        : "bg-white border-2 border-black border-b-0 rounded-t shadow-[2px_-4px_0_0_rgba(0,0,0,0.45)]"
-    ),
-    !isMacOSTheme && isXpTheme && !isWin98 && (
-      placement === "right"
-        ? "bg-[#ECE9D8] border-[3px] border-l-0 border-[#0054E3] rounded-r-[0.5rem]"
-        : placement === "left"
-        ? "bg-[#ECE9D8] border-[3px] border-r-0 border-[#0054E3] rounded-l-[0.5rem]"
-        : placement === "bottom"
-        ? "bg-[#ECE9D8] border-[3px] border-t-0 border-[#0054E3] rounded-b-[0.5rem]"
-        : "bg-[#ECE9D8] border-[3px] border-b-0 border-[#0054E3] rounded-t-[0.5rem]"
-    ),
-    !isMacOSTheme && isWin98 && (
-      placement === "right"
-        ? "bg-[#C0C0C0] border-2 border-l-0 border-t-white border-r-[#808080] border-b-[#808080]"
-        : placement === "left"
-        ? "bg-[#C0C0C0] border-2 border-r-0 border-t-white border-l-white border-b-[#808080]"
-        : placement === "bottom"
-        ? "bg-[#C0C0C0] border-2 border-t-0 border-l-white border-r-[#808080] border-b-[#808080]"
-        : "bg-[#C0C0C0] border-2 border-b-0 border-l-white border-r-[#808080] border-t-white"
-    )
+  const panelOuterClass = osDrawerSurfaceClassName(
+    { isMacOSTheme, isSystem7Theme: isSystem7, isXpTheme, isWin98 },
+    placement
   );
 
   // ── Header ────────────────────────────────────────────────────────────────
@@ -253,8 +223,8 @@ export function AppDrawer({
     isMacOSTheme && "px-2 py-0.5 min-h-[20px]",
     !isMacOSTheme && "px-2 pt-1.5 pb-1",
     isSystem7 && "border-b border-black",
-    isXpTheme && !isWin98 && "border-b border-[#ACA899]",
-    isWin98 && "border-b border-[#808080]"
+    isXpTheme && !isWin98 && cn("border-b", osSeparatorBorderClassName()),
+    isWin98 && cn("border-b", osSeparatorBorderClassName())
   );
 
   const titleClass = cn(

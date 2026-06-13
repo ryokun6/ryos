@@ -2,6 +2,7 @@ import { CaretLeft, CaretRight, Plus, ListChecks, SidebarSimple, CalendarBlank }
 import { SearchInput } from "@/components/ui/search-input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { osToolbarSurfaceClassName } from "@/components/shared/osThemePrimitives";
 
 export function BottomToolbar({
   view, onSetView, onGoToToday, onNewEvent, onPrev, onNext,
@@ -46,12 +47,12 @@ export function BottomToolbar({
         // macOS: on desktop, match bottom padding to the horizontal padding so
         // the buttons sit evenly inside the 8px metal margin (window-body adds
         // mb-[8px]); keep the roomier py-1.5 bottom on mobile.
-        isMacOSTheme ? "px-1 md:pb-1" : "px-2"
+        isMacOSTheme ? "px-1 md:pb-1" : "px-2",
+        osToolbarSurfaceClassName(
+          { isMacOSTheme, isSystem7Theme, isXpTheme },
+          { border: "top" }
+        )
       )}
-      style={{
-        borderColor: isXpTheme ? "#ACA899" : isMacOSTheme ? "rgba(0,0,0,0.25)" : "rgba(0,0,0,0.1)",
-        background: isXpTheme ? "#ECE9D8" : isMacOSTheme ? "transparent" : "#e0e0e0",
-      }}
     >
       {isMacOSTheme ? (
         <>

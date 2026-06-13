@@ -208,26 +208,36 @@
     </script>
   </head>
   <body style="background-color: #000; margin: 0">
+    <script src="/theme-bootstrap-config.js"></script>
     <script>
       (function () {
         try {
           var rawTheme = localStorage.getItem("ryos:theme") || localStorage.getItem("os_theme");
-          var allowed = { system7: 1, macosx: 1, xp: 1, win98: 1 };
-          var theme = rawTheme && allowed[rawTheme] ? rawTheme : "macosx";
+          var config = window.__RYOS_THEME_BOOTSTRAP__ || {
+            defaultTheme: "macosx",
+            themes: {
+              system7: { platform: "mac", macChrome: "system7", supportsDarkMode: false },
+              macosx: { platform: "mac", macChrome: "aqua", supportsDarkMode: true },
+              xp: { platform: "windows", macChrome: null, supportsDarkMode: false },
+              win98: { platform: "windows", macChrome: null, supportsDarkMode: false },
+            },
+          };
+          var themeConfig = rawTheme && config.themes && config.themes[rawTheme];
+          var theme = themeConfig ? rawTheme : config.defaultTheme || "macosx";
+          themeConfig = config.themes && config.themes[theme];
           var root = document.documentElement;
           root.dataset.osTheme = theme;
           // Mirror the platform/chrome attributes the React store will set later so first paint matches.
-          var isWindows = theme === "xp" || theme === "win98";
-          root.dataset.osPlatform = isWindows ? "windows" : "mac";
-          if (!isWindows) {
-            root.dataset.osMacChrome = theme === "macosx" ? "aqua" : "system7";
+          var platform = themeConfig && themeConfig.platform ? themeConfig.platform : "mac";
+          root.dataset.osPlatform = platform;
+          if (themeConfig && themeConfig.macChrome) {
+            root.dataset.osMacChrome = themeConfig.macChrome;
           } else {
             delete root.dataset.osMacChrome;
           }
           // Dark mode is per-theme, only honored when the theme advertises support.
-          // Today only macosx has dark tokens — see src/styles/themes.css.
           // Match useThemeStore#effectiveDarkFor (string prefs + legacy booleans + system).
-          var supportsDark = theme === "macosx";
+          var supportsDark = !!(themeConfig && themeConfig.supportsDarkMode);
           var systemDark = false;
           try {
             systemDark =

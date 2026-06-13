@@ -2,6 +2,7 @@ import { create } from "zustand";
 import {
   getOsMacChrome,
   getOsPlatform,
+  DEFAULT_OS_THEME_ID,
   themes,
   themeSupportsDarkMode,
 } from "@/themes";
@@ -27,7 +28,7 @@ function sanitizeStoredTheme(id: string | null | undefined): OsThemeId {
   if (id && id in themes) {
     return id as OsThemeId;
   }
-  return "macosx";
+  return DEFAULT_OS_THEME_ID;
 }
 
 /**
@@ -455,7 +456,7 @@ function ensureSystemDarkListener() {
 }
 
 const createThemeStore = () => create<ThemeState>((set) => ({
-  current: "macosx",
+  current: DEFAULT_OS_THEME_ID,
   isDark: false,
   darkModeByTheme: {},
   accentByTheme: {},

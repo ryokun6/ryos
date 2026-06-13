@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { SelectableListItem } from "@/components/ui/selectable-list-item";
+import { osAppSidebarSurfaceClassName } from "@/components/shared/osThemePrimitives";
 import { useTranslation } from "react-i18next";
 import type { AdminSection } from "../utils/navigationState";
 import { adminSidebarClass } from "../utils/adminStyles";
@@ -46,10 +47,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
 }) => {
   const { t } = useTranslation();
   const { play: playButtonClick } = useSound(Sounds.BUTTON_CLICK);
-  const { isWindowsTheme: isWindowsLegacyTheme, isMacOSTheme, isAquaGlass } =
-    useThemeFlags();
-
-  const macSidebarBorderClass = isAquaGlass ? "" : "border-black/10";
+  const { isWindowsTheme, isMacOSTheme, isAquaGlass } = useThemeFlags();
 
   const publicRooms = rooms.filter((r) => r.type !== "private");
 
@@ -59,14 +57,14 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
   return (
     <div
-      className={cn(
-        "os-app-sidebar flex flex-col font-geneva-12 text-[12px] w-56 border-r h-full overflow-hidden",
-        isAquaGlass ? "bg-transparent" : adminSidebarClass,
-        isWindowsLegacyTheme
-          ? "border-[#919b9c]"
-          : isMacOSTheme
-          ? macSidebarBorderClass
-          : "border-black"
+      className={osAppSidebarSurfaceClassName(
+        {
+          isMacOSTheme,
+          isXpTheme: isWindowsTheme,
+          isWindowsTheme,
+          isAquaGlass,
+        },
+        { surfaceClassName: adminSidebarClass }
       )}
     >
       <div className="pt-3 flex flex-col flex-1 overflow-hidden">

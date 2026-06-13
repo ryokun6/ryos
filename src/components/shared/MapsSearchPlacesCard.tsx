@@ -15,6 +15,7 @@ import {
   toolInlineCardListRowClassName,
   toolInlineCardShellClassName,
 } from "@/components/shared/toolInlineCardShell";
+import { osSubtleIconButtonClassName } from "@/components/shared/osThemePrimitives";
 
 /**
  * Result returned by the `mapsSearchPlaces` server tool. Mirrors
@@ -54,7 +55,7 @@ export function MapsSearchPlacesCard({
   results,
 }: MapsSearchPlacesCardProps) {
   const { t } = useTranslation();
-  const { isMacOSTheme, isXpTheme, isSystem7Theme, isDarkMode } = useThemeFlags();
+  const { isMacOSTheme, isXpTheme, isSystem7Theme, isWin98 } = useThemeFlags();
   const launchApp = useLaunchApp();
 
   const handleOpenInMaps = useCallback(
@@ -81,6 +82,7 @@ export function MapsSearchPlacesCard({
       isMacOSTheme,
       isSystem7Theme,
       isXpTheme,
+      isWin98,
     }),
     "px-2.5 py-2 text-[12px]",
     isMacOSTheme && "text-os-text-secondary"
@@ -105,10 +107,11 @@ export function MapsSearchPlacesCard({
         isMacOSTheme,
         isSystem7Theme,
         isXpTheme,
+        isWin98,
       })}
     >
       <ul
-        className={toolInlineCardListClassName({ isMacOSTheme, isDarkMode })}
+        className={toolInlineCardListClassName({ isMacOSTheme })}
       >
         {results.map((place) => {
           const visual = getPoiVisual(place.category);
@@ -120,7 +123,6 @@ export function MapsSearchPlacesCard({
                 onClick={() => handleOpenInMaps(place)}
                 className={toolInlineCardListRowClassName({
                   isMacOSTheme,
-                  isDarkMode,
                 })}
                 aria-label={t("apps.chats.toolCalls.maps.openInMaps", {
                   defaultValue: "Open {{name}} in Maps",
@@ -152,9 +154,7 @@ export function MapsSearchPlacesCard({
                   className={cn(
                     "shrink-0 -mr-0.5 flex size-7 items-center justify-center rounded-full",
                     "focus:outline-none focus-visible:ring-1",
-                    isMacOSTheme && isDarkMode
-                      ? "text-os-text-secondary hover:bg-white/12 hover:text-os-text-primary focus-visible:ring-white/35"
-                      : "text-os-text-secondary hover:bg-black/10 hover:text-os-text-primary focus-visible:ring-black/30"
+                    osSubtleIconButtonClassName()
                   )}
                   aria-label={t("apps.chats.toolCalls.maps.openInAppleMaps", {
                     defaultValue: "Open in Apple Maps",

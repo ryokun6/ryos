@@ -1,6 +1,7 @@
 import { useRef, useLayoutEffect, useEffect, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
+import { osSeparatorBorderClassName } from "@/components/shared/osThemePrimitives";
 import type { CalendarEvent } from "@/stores/useCalendarStore";
 import type { WeekDay } from "../../hooks/useCalendarLogic";
 import {
@@ -115,8 +116,7 @@ export function WeekTimeGrid({
     <div ref={horizontalScrollRef} className="flex-1 overflow-x-auto overflow-y-hidden">
       <div className="flex flex-col h-full" style={{ minWidth: MIN_WEEK_WIDTH }}>
         <div
-          className="flex border-b shrink-0"
-          style={{ borderColor: isXpTheme ? "#ACA899" : "rgba(0,0,0,0.1)" }}
+          className={cn("flex border-b shrink-0", osSeparatorBorderClassName())}
         >
           <div style={{ width: 48, minWidth: 48, flexShrink: 0 }} />
           {weekDates.map((day) => (
@@ -146,8 +146,8 @@ export function WeekTimeGrid({
 
         {hasAllDayEvents && (
           <div
-            className="flex border-b shrink-0"
-            style={{ borderColor: isXpTheme ? "#ACA899" : "rgba(0,0,0,0.08)", minHeight: 24 }}
+            className={cn("flex border-b shrink-0", osSeparatorBorderClassName())}
+            style={{ minHeight: 24 }}
           >
             <div
               className={cn("flex items-center justify-end px-1 text-[9px] opacity-40", useGeneva && "font-geneva-12")}

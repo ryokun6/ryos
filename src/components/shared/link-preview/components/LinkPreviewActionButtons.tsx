@@ -1,23 +1,17 @@
 import type { MouseEvent, TouchEvent } from "react";
 import { ArrowSquareOut, Microphone, MusicNote } from "@phosphor-icons/react";
 import { useTranslation } from "react-i18next";
-import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { cn } from "@/lib/utils";
 import { isYouTubeUrl } from "../utils";
 
 type LayoutVariant = "fullWidth" | "sideBySide";
 
 /** Border above link-preview action rows — OS tokens on macOS Aqua, Tailwind elsewhere. */
-function linkPreviewActionsDividerClass(
-  isMacOSTheme: boolean,
-  isDarkMode: boolean
-) {
+function linkPreviewActionsDividerClass(isMacOSTheme: boolean) {
   return cn(
     "link-preview-actions-divider border-t",
     isMacOSTheme
-      ? isDarkMode
-        ? "border-[color:var(--os-color-separator)]"
-        : "border-black/10"
+      ? "border-black/10 os-mac-aqua-dark:border-[color:var(--os-color-separator)]"
       : "border-neutral-200 dark:border-neutral-700"
   );
 }
@@ -56,8 +50,7 @@ export function LinkPreviewActionButtons({
   handleOpenExternally: (e: MouseEvent | TouchEvent) => void;
 }) {
   const { t } = useTranslation();
-  const { isDarkMode } = useThemeFlags();
-  const dividerClass = linkPreviewActionsDividerClass(isMacOSTheme, isDarkMode);
+  const dividerClass = linkPreviewActionsDividerClass(isMacOSTheme);
   const stopTouch = (e: TouchEvent) => e.stopPropagation();
 
   const flexRow = (
