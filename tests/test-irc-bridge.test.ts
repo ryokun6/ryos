@@ -441,9 +441,9 @@ describe("IRC Bridge wiring", () => {
     const fs = await import("node:fs/promises");
     const src = await fs.readFile("api/rooms/index.ts", "utf-8");
     expect(/notifyRoomBindingChange\s*\(\s*"bind"/.test(src)).toBe(false);
-    // The create route must honour the opt-out flag so IRC_BRIDGE_DISABLED=1
-    // never accidentally validates against a disabled bridge.
-    expect(src).toContain("isIrcBridgeEnabled");
+    // IRC room creation is admin-only; the registry is trusted without
+    // re-validating channels against the live bridge at create time.
+    expect(src).toContain("Only admin can create IRC rooms");
     expect(src).toContain("getIrcServer");
     expect(src).toContain("ircServerId");
   });

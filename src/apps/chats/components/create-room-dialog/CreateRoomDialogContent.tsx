@@ -45,7 +45,7 @@ export function CreateRoomDialogContent({ vm }: Props) {
         <ThemedTabsList
           className={cn(
             "grid w-full",
-            isAdmin ? "grid-cols-3" : "grid-cols-2"
+            isAdmin ? "grid-cols-3" : "grid-cols-1"
           )}
         >
           <ThemedTabsTrigger value="private">
@@ -56,7 +56,7 @@ export function CreateRoomDialogContent({ vm }: Props) {
               {t("apps.chats.dialogs.public")}
             </ThemedTabsTrigger>
           )}
-          <ThemedTabsTrigger value="irc">IRC</ThemedTabsTrigger>
+          {isAdmin && <ThemedTabsTrigger value="irc">IRC</ThemedTabsTrigger>}
         </ThemedTabsList>
         {isAdmin && (
           <CreateRoomDialogPublicTab
@@ -67,7 +67,7 @@ export function CreateRoomDialogContent({ vm }: Props) {
             isLoading={vm.isLoading}
           />
         )}
-        <CreateRoomDialogIrcTab {...vm} />
+        {isAdmin && <CreateRoomDialogIrcTab {...vm} />}
         <CreateRoomDialogPrivateTab
           t={vm.t}
           theme={vm.theme}
