@@ -13,9 +13,13 @@ export const adminSidebarClass = "bg-white/90 text-os-text-primary";
 /** Toolbar band above list views — transparent on macOS (see themes.css). */
 export const adminToolbarClass = "admin-toolbar";
 
+/** Compact toolbar segment (range toggles, filters) — interaction states in themes.css. */
+export const adminToolbarSegmentClass =
+  "admin-toolbar-segment h-7 px-2 text-[12px] rounded-none transition-none focus-visible:outline-none focus-visible:ring-0";
+
 /** Card / panel shell with theme-aware border. */
 export const adminCardClass =
-  "admin-card overflow-hidden rounded border border-black/10 bg-white/90 os-mac-aqua-dark:border-white/10";
+  "admin-card overflow-hidden rounded border border-black/10 bg-transparent os-mac-aqua-dark:border-white/10";
 
 /** Card header band (dashboard sections, server card, etc.). */
 export const adminCardHeaderClass =

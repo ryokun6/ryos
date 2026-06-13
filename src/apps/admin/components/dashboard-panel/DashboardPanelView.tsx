@@ -17,6 +17,7 @@ import {
   adminCardHeaderClass,
   adminListDividerClass,
   adminSectionLabelClass,
+  adminToolbarSegmentClass,
   adminTrackBgClass,
 } from "../../utils/adminStyles";
 
@@ -168,10 +169,8 @@ export function DashboardPanelView(props: DashboardPanelViewModel) {
                 variant="ghost"
                 size="sm"
                 onClick={() => setRangeDays(d)}
-                className={cn(
-                  "h-7 px-2 text-[12px]",
-                  rangeDays === d && "bg-neutral-200"
-                )}
+                data-state={rangeDays === d ? "on" : "off"}
+                className={adminToolbarSegmentClass}
               >
                 {getRangeLabel(d)}
               </Button>
