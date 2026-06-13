@@ -30,7 +30,7 @@ export function osCardClassName(
     !isMacOSTheme &&
       isSystem7Theme &&
       cn(
-        "rounded",
+        embed === "chat" && "rounded",
         "border-2 border-black bg-white text-black shadow-[2px_2px_0_0_rgba(0,0,0,0.5)]"
       ),
     !isMacOSTheme &&
@@ -38,7 +38,7 @@ export function osCardClassName(
       isXpTheme &&
       !isWin98 &&
       cn(
-        "rounded-[0.4rem]",
+        embed === "chat" && "rounded-[0.4rem]",
         "border-2 border-os-window bg-os-window-bg text-os-text-primary"
       ),
     !isMacOSTheme &&
@@ -54,7 +54,7 @@ export function osCardClassName(
       !isXpTheme &&
       !isWin98 &&
       cn(
-        "rounded",
+        embed === "chat" && "rounded",
         "border border-black/30 bg-white text-black shadow-md"
       ),
     className

@@ -16,6 +16,14 @@ describe("theme bootstrap config", () => {
     );
   });
 
+  test("inline first-paint fallback covers every shipped theme", () => {
+    const source = readFileSync("index.html", "utf8");
+
+    for (const id of Object.keys(getThemeBootstrapConfig().themes)) {
+      expect(source).toContain(`${id}: {`);
+    }
+  });
+
   test("theme registry keeps runtime visuals in CSS tokens only", () => {
     for (const theme of Object.values(themes)) {
       expect("colors" in theme).toBe(false);

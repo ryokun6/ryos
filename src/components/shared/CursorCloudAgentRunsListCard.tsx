@@ -68,7 +68,7 @@ export function CursorCloudAgentRunsListCard({
   runs,
 }: CursorCloudAgentRunsListCardProps) {
   const { t } = useTranslation();
-  const { isMacOSTheme, isXpTheme, isSystem7Theme } = useThemeFlags();
+  const { isMacOSTheme, isXpTheme, isSystem7Theme, isWin98 } = useThemeFlags();
 
   if (!runs.length) return null;
 
@@ -76,6 +76,7 @@ export function CursorCloudAgentRunsListCard({
     isMacOSTheme,
     isSystem7Theme,
     isXpTheme,
+    isWin98,
   });
 
   return (

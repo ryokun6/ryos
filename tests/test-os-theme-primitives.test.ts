@@ -23,6 +23,35 @@ describe("os theme primitives", () => {
     expect(className).toContain("text-os-text-primary");
   });
 
+  test("uses Win98 bevels when Windows card callers pass the exact theme", () => {
+    const className = osCardClassName({
+      isMacOSTheme: false,
+      isSystem7Theme: false,
+      isXpTheme: true,
+      isWin98: true,
+    });
+
+    expect(className).toContain("rounded-none");
+    expect(className).toContain("border-t-white");
+    expect(className).toContain("border-b-os-separator");
+    expect(className).not.toContain("rounded-[0.4rem]");
+  });
+
+  test("suppresses non-Mac rounded corners for panel card embeds", () => {
+    const className = osCardClassName(
+      {
+        isMacOSTheme: false,
+        isSystem7Theme: false,
+        isXpTheme: true,
+      },
+      { embed: "panel" }
+    );
+
+    expect(className).toContain("border-os-window");
+    expect(className).not.toContain("my-1");
+    expect(className).not.toContain("rounded-[0.4rem]");
+  });
+
   test("keeps app drawer placement-specific borders centralized", () => {
     const rightXp = osDrawerSurfaceClassName(
       {
