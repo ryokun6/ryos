@@ -15,6 +15,7 @@ import {
   AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT_ACTIVE,
 } from "@/lib/aquaIconButton";
 import { Button } from "@/components/ui/button";
+import { osCardClassName } from "@/components/shared/osThemePrimitives";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import {
   getPoiVisual,
@@ -117,22 +118,12 @@ export function MapsPlaceCard({
         >
           <div
             className={cn(
-              "flex flex-col gap-2.5 p-3",
-              // Theme shells — macOS matches the toast/dock pinstripe glass;
-              // other themes mirror their drawer panels so the surfaces look
-              // like siblings.
-              isMacOSTheme &&
-                "maps-place-card-aqua rounded-[0.5rem] border-transparent text-os-text-primary",
-              !isMacOSTheme &&
-                isSystem7Theme &&
-                "rounded border-2 border-black bg-white text-black shadow-[2px_2px_0_0_rgba(0,0,0,0.5)]",
-              !isMacOSTheme &&
-                !isSystem7Theme &&
-                isXpTheme &&
-                "rounded-[0.4rem] border-2 border-[#0054E3] bg-[#ECE9D8] text-black shadow-md",
-              // Fallback (any future theme): neutral light card.
-              !isMacOSTheme && !isSystem7Theme && !isXpTheme &&
-                "rounded border border-black/30 bg-white text-black shadow-md"
+              osCardClassName(
+                { isMacOSTheme, isSystem7Theme, isXpTheme },
+                { embed: "panel" }
+              ),
+              "gap-2.5 p-3",
+              isXpTheme && "shadow-md"
             )}
           >
             <PlaceCardHeader

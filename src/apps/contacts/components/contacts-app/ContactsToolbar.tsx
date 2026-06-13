@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/ui/search-input";
 import { cn } from "@/lib/utils";
+import { osToolbarSurfaceClassName } from "@/components/shared/osThemePrimitives";
 import { Plus, DownloadSimple, SidebarSimple, IdentificationCard } from "@phosphor-icons/react";
 import type { ContactsAppController } from "./useContactsAppController";
 
@@ -29,11 +30,13 @@ export function ContactsToolbar({ c }: ContactsToolbarProps) {
     <div
       className={cn(
         "flex items-center justify-between py-1.5 gap-2",
-        isMacOsxTheme ? "px-1" : "px-2"
+        isMacOsxTheme ? "px-1" : "px-2",
+        osToolbarSurfaceClassName({
+          isMacOSTheme: isMacOsxTheme,
+          isSystem7Theme,
+          isXpTheme,
+        })
       )}
-      style={{
-        background: isXpTheme ? "#ECE9D8" : isMacOsxTheme ? "transparent" : "#e0e0e0",
-      }}
     >
       {isMacOsxTheme ? (
         <>

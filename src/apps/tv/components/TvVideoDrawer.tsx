@@ -6,6 +6,7 @@ import { useIsMobile } from "@/hooks/useIsMobile";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { Trash } from "@phosphor-icons/react";
 import { AppDrawer, DRAWER_WIDTH, DRAWER_TRANSITION } from "@/components/shared/AppDrawer";
+import { osToolbarSurfaceClassName } from "@/components/shared/osThemePrimitives";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 
 // Re-export so callers that previously imported from this module still work.
@@ -59,11 +60,13 @@ const TvChannelLogoStrip = memo(function TvChannelLogoStrip({
   return (
     <div
       className={cn(
-        "sticky top-0 z-10 shrink-0 border-b",
+        "sticky top-0 z-10 shrink-0",
+        osToolbarSurfaceClassName(
+          { isMacOSTheme, isSystem7Theme: isSystem7, isXpTheme, isWin98 },
+          { border: "bottom" }
+        ),
         isMacOSTheme && "bg-[#f7f7f7]/95 border-black/15",
-        isSystem7 && "bg-white border-black",
-        isXpTheme && !isWin98 && "bg-[#ECE9D8] border-[#ACA899]",
-        isWin98 && "bg-[#C0C0C0] border-[#808080]"
+        isSystem7 && "bg-white border-black"
       )}
     >
       <div

@@ -12,7 +12,7 @@ Simplify ryOS theming by consolidating around the existing root attribute + CSS 
 | --- | --- | ---: | --- |
 | 0. Plan and inventory | Complete | 4 / 4 | Initial architecture audit completed; this plan created in PR #1484. |
 | 1. Fix small API/documentation drift | Complete | 4 / 4 | Constants/docs fixed; legacy aliases preserved with clearer names. |
-| 2. Consolidate reusable surfaces | Not started | 0 / 6 | Card, panel, drawer, toolbar, and menu primitives. |
+| 2. Consolidate reusable surfaces | Complete | 6 / 6 | Added shared card, drawer, toolbar, and Windows bevel primitives. |
 | 3. Reduce static React theme branches | Not started | 0 / 5 | Prefer tokens, variants, and shared helpers. |
 | 4. Split and normalize CSS layers | Not started | 0 / 5 | Keep behavior unchanged while reducing file complexity. |
 | 5. Normalize theme data sources | Not started | 0 / 5 | Make TS metadata and CSS tokens harder to drift. |
@@ -84,12 +84,12 @@ Acceptance criteria:
 
 Tasks:
 
-- [ ] Replace `MapsPlaceCard` shell classes with `toolInlineCardShellClassName()` or a more general replacement.
-- [ ] Promote `toolInlineCardShellClassName()` into a generic `OsCard`/`osCardClassName` helper if it is no longer chat-specific.
-- [ ] Add shared panel/drawer classes for `AppDrawer`, Maps cards, chat cards, and drawer-like surfaces.
-- [ ] Extract shared toolbar surface styling for Calendar, Contacts, TV, and similar toolbars.
-- [ ] Add a small shared Windows bevel helper/class for raised/sunken Win98 surfaces.
-- [ ] Migrate at least two duplicated consumers before expanding the pattern further.
+- [x] Replace `MapsPlaceCard` shell classes with `toolInlineCardShellClassName()` or a more general replacement.
+- [x] Promote `toolInlineCardShellClassName()` into a generic `OsCard`/`osCardClassName` helper if it is no longer chat-specific.
+- [x] Add shared panel/drawer classes for `AppDrawer`, Maps cards, chat cards, and drawer-like surfaces.
+- [x] Extract shared toolbar surface styling for Calendar, Contacts, TV, and similar toolbars.
+- [x] Add a small shared Windows bevel helper/class for raised/sunken Win98 surfaces.
+- [x] Migrate at least two duplicated consumers before expanding the pattern further.
 
 Validation:
 
@@ -205,4 +205,5 @@ Validation:
 ## Progress log
 
 - 2026-06-13: Phase 1 completed in PR #1484. Exported the native chrome skip class, switched Paint to the shared constant, corrected skill docs to use `useThemeFlags()`, and added clearer Windows/Aqua names in wrapper hooks while retaining legacy aliases for compatibility.
+- 2026-06-13: Phase 2 completed in PR #1484. Added `osThemePrimitives`, routed inline tool cards and Maps cards through the shared card helper, moved `AppDrawer` placement styling into a drawer helper, centralized Calendar/Contacts/TV toolbar surfaces, and added unit coverage for the primitive outputs.
 - 2026-06-13: Created the initial plan after auditing the store, root attributes, CSS token architecture, Tailwind variants, and representative component consumers.
