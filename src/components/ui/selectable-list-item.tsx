@@ -21,7 +21,7 @@ export const SelectableListItem = (
 ) => (<div
   ref={ref}
   className={cn(
-    "py-1 px-5 cursor-pointer",
+    "os-app-sidebar-item py-1 px-5 cursor-pointer",
     !isSelected && "hover:bg-black/5 os-mac-aqua-dark:hover:bg-white/8",
     className
   )}

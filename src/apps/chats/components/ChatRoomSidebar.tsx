@@ -56,7 +56,7 @@ const ChatRoomSidebarItem = React.memo(function ChatRoomSidebarItem({
   return (
     <div
       className={cn(
-        "group relative py-1 px-5",
+        "os-app-sidebar-item group relative py-1 px-5",
         isSelected ? "" : "hover:bg-black/5"
       )}
       data-selected={isSelected ? "true" : undefined}
@@ -158,6 +158,8 @@ export const ChatRoomSidebar = React.memo(function ChatRoomSidebar({
   const { isWindowsTheme: isXpTheme, isMacOSTheme, isAquaGlass } =
     useThemeFlags();
 
+  const macSidebarBorderClass = isAquaGlass ? "" : "border-black/10";
+
   // Section headings are non-interactive; show all lists by default
 
   // Read collapse state from store BEFORE any early returns to preserve hook order
@@ -216,21 +218,22 @@ export const ChatRoomSidebar = React.memo(function ChatRoomSidebar({
   return (
     <div
       className={cn(
-        "flex flex-col font-geneva-12 text-[12px]",
+        "os-app-sidebar flex flex-col font-geneva-12 text-[12px]",
+        isOverlay && "os-app-sidebar--overlay",
         isAquaGlass ? "bg-transparent" : "bg-neutral-100",
         isOverlay
           ? `w-full border-b ${
               isXpTheme
                 ? "border-[#919b9c]"
                 : isMacOSTheme
-                ? "border-black/10"
+                ? macSidebarBorderClass
                 : "border-black"
             }`
           : `w-56 border-r h-full overflow-hidden ${
               isXpTheme
                 ? "border-[#919b9c]"
                 : isMacOSTheme
-                ? "border-black/10"
+                ? macSidebarBorderClass
                 : "border-black"
             }`
       )}
@@ -241,7 +244,7 @@ export const ChatRoomSidebar = React.memo(function ChatRoomSidebar({
           isOverlay ? "pb-3" : "flex-1 overflow-hidden"
         )}
       >
-        <div className="flex justify-between items-center mb-2 flex-shrink-0 px-3">
+        <div className="os-app-sidebar-header flex justify-between items-center mb-2 flex-shrink-0 px-3">
           <div className="flex items-baseline gap-1.5">
             <h2 className="text-[14px] pl-1">{t("apps.chats.sidebar.chats")}</h2>
           </div>
@@ -267,7 +270,7 @@ export const ChatRoomSidebar = React.memo(function ChatRoomSidebar({
         </div>
         <div
           className={cn(
-            "space-y-1 overscroll-contain w-full",
+            "os-app-sidebar-list space-y-1 overscroll-contain w-full",
             isOverlay
               ? "flex-1 overflow-y-auto min-h-0"
               : "flex-1 overflow-y-auto min-h-0"
@@ -277,7 +280,7 @@ export const ChatRoomSidebar = React.memo(function ChatRoomSidebar({
           {/* Ryo (@ryo) Chat Selection */}
           <div
             className={cn(
-              "py-1 px-5",
+              "os-app-sidebar-item py-1 px-5",
               currentRoom === null ? "" : "hover:bg-black/5"
             )}
             data-selected={currentRoom === null ? "true" : undefined}
@@ -304,7 +307,7 @@ export const ChatRoomSidebar = React.memo(function ChatRoomSidebar({
                         {publicRooms.length > 0 && (
                           <div
                             className={cn(
-                              "mt-2 px-4 pt-2 pb-1 w-full flex items-center group",
+                              "os-app-sidebar-section mt-2 px-4 pt-2 pb-1 w-full flex items-center group",
                               "!text-[11px] uppercase tracking-wide text-black/50"
                             )}
                             onClick={() => {
@@ -334,7 +337,7 @@ export const ChatRoomSidebar = React.memo(function ChatRoomSidebar({
                         {privateRooms.length > 0 && (
                           <div
                             className={cn(
-                              "mt-2 px-4 pt-2 pb-1 w-full flex items-center group",
+                              "os-app-sidebar-section mt-2 px-4 pt-2 pb-1 w-full flex items-center group",
                               "!text-[11px] uppercase tracking-wide text-black/50"
                             )}
                             onClick={() => {

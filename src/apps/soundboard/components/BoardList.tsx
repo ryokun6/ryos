@@ -1,3 +1,4 @@
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -37,22 +38,27 @@ export function BoardList({
   const {
     isWindowsTheme: isXpTheme,
     isMacOSTheme,
+    isAquaGlass,
   } = useThemeFlags();
   const isWindowsLegacyTheme = isXpTheme;
   const { t } = useTranslation();
 
+  const macSidebarBorderClass = isAquaGlass ? "" : "border-black/10";
+
   return (
     <div
-      className={`w-full bg-neutral-100 flex flex-col max-h-44 overflow-hidden md:w-56 md:max-h-full font-geneva-12 text-[12px] ${
+      className={cn(
+        "os-app-sidebar max-md:os-app-sidebar--stacked w-full flex flex-col max-h-44 overflow-hidden md:w-56 md:max-h-full font-geneva-12 text-[12px]",
+        isAquaGlass ? "bg-transparent" : "bg-neutral-100",
         isWindowsLegacyTheme
           ? "border-b border-[#919b9c] md:border-r md:border-b-0"
           : isMacOSTheme
-          ? "border-b border-black/10 md:border-r md:border-b-0"
+          ? cn("border-b md:border-r md:border-b-0", macSidebarBorderClass)
           : "border-b border-black md:border-r md:border-b-0"
-      }`}
+      )}
     >
       <div className="py-3 flex flex-col flex-1 overflow-hidden">
-        <div className="flex justify-between items-center mb-2 flex-shrink-0 px-3">
+        <div className="os-app-sidebar-header flex justify-between items-center mb-2 flex-shrink-0 px-3">
           <h2 className="text-[14px] pl-1">{t("apps.soundboard.soundboards")}</h2>
           <Button
             variant="ghost"
@@ -64,7 +70,7 @@ export function BoardList({
           </Button>
         </div>
         <div
-          className="space-y-1 overscroll-contain w-full flex-1 overflow-y-auto min-h-0"
+          className="os-app-sidebar-list space-y-1 overscroll-contain w-full flex-1 overflow-y-auto min-h-0"
           style={{ WebkitOverflowScrolling: "touch" }}
         >
           {boards.map((board) => (

@@ -6164,6 +6164,73 @@
     0 1px 0 rgba(255, 255, 255, 0.05) !important;
 }
 
+/* --- App sidebar (glass) -------------------------------------------------- */
+/* Shared inset list + fading divider for Chats, Admin, Soundboard, etc. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .os-app-sidebar:not(.os-app-sidebar--overlay):not(.os-app-sidebar--stacked) {
+  position: relative;
+  border-right: none !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .os-app-sidebar:not(.os-app-sidebar--overlay):not(.os-app-sidebar--stacked)::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 1px;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    transparent 4%,
+    rgba(0, 0, 0, 0.05) 10%,
+    rgba(0, 0, 0, 0.05) 100%
+  );
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .os-app-sidebar:not(.os-app-sidebar--overlay):not(.os-app-sidebar--stacked)::after {
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    transparent 4%,
+    rgba(255, 255, 255, 0.06) 10%,
+    rgba(255, 255, 255, 0.06) 100%
+  );
+}
+
+/* Inset rounded rows — mirrors glass dropdown menu gutter + item radii. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] .os-app-sidebar-list {
+  padding: 0 5px;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] .os-app-sidebar-header {
+  padding-left: 10px !important;
+  padding-right: 10px !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] .os-app-sidebar-section {
+  padding-left: 10px !important;
+  padding-right: 10px !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] .os-app-sidebar-item {
+  padding: 4px 10px !important;
+  border-radius: var(--os-glass-r-xs);
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .os-app-sidebar-item:hover:not([data-selected="true"]) {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .os-app-sidebar-item:hover:not([data-selected="true"]) {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
 /* Finder / metal-toolbar inset groups keep the classic 4px grouped slab in glass
    (squircle-enhanced in the @supports block below). Capsule shapes — menubar
    selection, search field — stay fully round via their own rules. */
@@ -6571,6 +6638,10 @@
       [role="menuitemradio"],
       [role="option"]
     ) {
+    corner-shape: var(--os-corner-shape);
+  }
+
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .os-app-sidebar-item {
     corner-shape: var(--os-corner-shape);
   }
 
