@@ -3307,8 +3307,8 @@
   background-image: var(--os-pinstripe-menubar);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   border: none;
-  backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
 }
 :root[data-os-theme="macosx"] .maps-place-card-aqua {
   color: rgba(0, 0, 0, 0.9);
@@ -3340,8 +3340,8 @@
   box-shadow: 0 6px 22px rgb(0 0 0 / 0.45);
   border: 1px solid var(--os-color-sidebar-border);
   color: var(--os-color-text-primary);
-  backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
 }
 
 /* Same as light: keep gradient badge glyphs white on dark glass */
@@ -3379,8 +3379,8 @@
   background-image: var(--os-pinstripe-menubar) !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
   border: none !important;
-  backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
 }
 
 /* Ensure toast text is readable on semi-transparent background */
@@ -3725,8 +3725,8 @@
   .spotlight-panel
   .spotlight-input-well {
   background: rgba(28, 30, 36, 0.5) !important;
-  backdrop-filter: blur(12px) saturate(180%);
   -webkit-backdrop-filter: blur(12px) saturate(180%);
+  backdrop-filter: blur(12px) saturate(180%);
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45),
     0 0 0 1px rgba(255, 255, 255, 0.14) !important;
 }
@@ -5623,8 +5623,8 @@
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
   .window.window-material-glass {
   background-color: var(--os-color-window-bg);
-  backdrop-filter: blur(26px) saturate(185%);
   -webkit-backdrop-filter: blur(26px) saturate(185%);
+  backdrop-filter: blur(26px) saturate(185%);
   border-radius: var(--os-glass-r-lg) !important;
   box-shadow: var(--os-window-shadow),
     inset 0 1px 0 rgba(255, 255, 255, 0.4);
@@ -5646,8 +5646,8 @@
     var(--os-color-window-bg) 75%,
     transparent
   );
-  backdrop-filter: blur(26px) saturate(80%);
   -webkit-backdrop-filter: blur(26px) saturate(80%);
+  backdrop-filter: blur(26px) saturate(80%);
 }
 
 /* Drop the hard titlebar divider — on a single frosted pane the seam reads as
@@ -5666,8 +5666,8 @@
    pane (used by iPod / iTunes-style windows that opt into the metal material). */
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
   .window-material-brushedmetal {
-  backdrop-filter: blur(26px) saturate(185%);
   -webkit-backdrop-filter: blur(26px) saturate(185%);
+  backdrop-filter: blur(26px) saturate(185%);
   /* Classic brushed-metal proportion (Finder, iTunes, etc.) — not the 12px
      glass pane radius used by default-material windows. */
   border-radius: var(--os-glass-r-metal) !important;
@@ -5683,8 +5683,8 @@
    regular glass panes. */
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
   .window-material-brushedmetal:not(.is-foreground) {
-  backdrop-filter: blur(26px) saturate(80%);
   -webkit-backdrop-filter: blur(26px) saturate(80%);
+  backdrop-filter: blur(26px) saturate(80%);
 }
 
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
@@ -5792,8 +5792,8 @@
 /* Beef up the menubar blur and swap the white pinstripe gloss for a soft
    specular top highlight. */
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .menubar {
-  backdrop-filter: blur(26px) saturate(185%) !important;
   -webkit-backdrop-filter: blur(26px) saturate(185%) !important;
+  backdrop-filter: blur(26px) saturate(185%) !important;
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.4) inset,
     0 -1px 0 rgba(0, 0, 0, 0.08) inset;
 }
@@ -5836,8 +5836,8 @@
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .mac-top-menubar {
   background: transparent !important;
   background-image: none !important;
-  backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
   box-shadow: none !important;
   border-bottom-color: transparent !important;
 }
@@ -5869,8 +5869,8 @@
 /* `border-radius` overrides the inline `0px` from MacDock so the pill reads as
    a modern rounded glass tray. */
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .mac-dock-surface {
-  backdrop-filter: blur(26px) saturate(185%);
   -webkit-backdrop-filter: blur(26px) saturate(185%);
+  backdrop-filter: blur(26px) saturate(185%);
   border-radius: var(--os-glass-r-dock) !important;
   border: var(--os-metrics-border-width) solid var(--os-color-window-border) !important;
   /* Lift the glass pill off the screen edge — classic dock sits flush. */
@@ -5900,8 +5900,8 @@
     [data-radix-popover-content],
     [data-radix-select-content]
   ) {
-  backdrop-filter: blur(36px) saturate(200%) !important;
   -webkit-backdrop-filter: blur(36px) saturate(200%) !important;
+  backdrop-filter: blur(36px) saturate(200%) !important;
   /* Replace the inline pinstripe-window fill (0.74–0.8 alpha — opaque enough
      to bury the blur) with a lighter wash so the backdrop blur reads through.
      No `opacity` override here: the components skip their inline `0.92` when
@@ -5943,8 +5943,8 @@
    to bury the blur); swap in a lighter wash + add the same backdrop blur,
    rounded glass radius and hairline rim the dropdowns/menus use. */
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .spotlight-panel {
-  backdrop-filter: blur(36px) saturate(200%) !important;
   -webkit-backdrop-filter: blur(36px) saturate(200%) !important;
+  backdrop-filter: blur(36px) saturate(200%) !important;
   background: color-mix(
     in srgb,
     var(--os-accent-color, #3a73d6) 6%,
@@ -6026,8 +6026,8 @@
   )
   .metal-inset-btn-group {
   background: transparent;
-  backdrop-filter: blur(12px) saturate(180%);
   -webkit-backdrop-filter: blur(12px) saturate(180%);
+  backdrop-filter: blur(12px) saturate(180%);
   border: none;
   box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2), 0 1px 1px rgba(0, 0, 0, 0.3),
     0 0 0 1px rgba(0, 0, 0, 0.3);
@@ -6087,8 +6087,8 @@
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
   .metal-inset-btn-group {
   background: transparent;
-  backdrop-filter: blur(12px) saturate(180%);
   -webkit-backdrop-filter: blur(12px) saturate(180%);
+  backdrop-filter: blur(12px) saturate(180%);
   border: none;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35), 0 1px 1px rgba(0, 0, 0, 0.35),
     inset 0 0 0 0.5px rgba(255, 255, 255, 0.08),
@@ -6147,8 +6147,8 @@
   )
   input[data-os-search-input="true"] {
   background-color: rgba(255, 255, 255, 0.42) !important;
-  backdrop-filter: blur(12px) saturate(180%);
   -webkit-backdrop-filter: blur(12px) saturate(180%);
+  backdrop-filter: blur(12px) saturate(180%);
   border-color: rgba(0, 0, 0, 0.28) !important;
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12),
     0 1px 0 rgba(255, 255, 255, 0.45) !important;
@@ -6157,8 +6157,8 @@
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
   input[data-os-search-input="true"] {
   background-color: rgba(255, 255, 255, 0.1) !important;
-  backdrop-filter: blur(12px) saturate(180%);
   -webkit-backdrop-filter: blur(12px) saturate(180%);
+  backdrop-filter: blur(12px) saturate(180%);
   border-color: rgba(255, 255, 255, 0.16) !important;
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4),
     0 1px 0 rgba(255, 255, 255, 0.05) !important;
@@ -6210,8 +6210,8 @@
     [data-os-color-scheme="dark"]
   )
   .aqua-tab[data-state="active"] {
-  backdrop-filter: none;
   -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   background: var(
     --os-accent-tab-active-bg,
     linear-gradient(rgb(48 123 201), rgb(152 189 228), rgb(210 255 255))
@@ -6298,8 +6298,8 @@
 
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
   .aqua-tab[data-state="active"] {
-  backdrop-filter: none;
   -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   background: var(
     --os-accent-tab-active-bg,
     linear-gradient(rgb(28, 76, 130), rgb(70, 117, 168), rgb(132, 178, 224))
@@ -6340,8 +6340,8 @@
 /* Glass tabs: classic ::before/::after sizing (15% / 20%), flat translucent
    base, no backdrop-filter on inactive pills, no filter blur on gloss. */
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .aqua-tab:not([data-state="active"]) {
-  backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
 }
 
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .aqua-tab:before,
