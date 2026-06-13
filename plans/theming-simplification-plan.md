@@ -206,4 +206,5 @@ Validation:
 
 - 2026-06-13: Phase 1 completed in PR #1484. Exported the native chrome skip class, switched Paint to the shared constant, corrected skill docs to use `useThemeFlags()`, and added clearer Windows/Aqua names in wrapper hooks while retaining legacy aliases for compatibility.
 - 2026-06-13: Phase 2 completed in PR #1484. Added `osThemePrimitives`, routed inline tool cards and Maps cards through the shared card helper, moved `AppDrawer` placement styling into a drawer helper, centralized Calendar/Contacts/TV toolbar surfaces, and added unit coverage for the primitive outputs.
+- 2026-06-13: Phase 2 validation completed. `bun test tests/test-os-theme-primitives.test.ts` and `bun run build` passed; Playwright screenshot comparison against baseline commit `7bf4823c9dd2e632ba769aff21817e6e555daccf` passed for `macosx`, `macosx` dark, `system7`, `xp`, and `win98` using preview builds.
 - 2026-06-13: Created the initial plan after auditing the store, root attributes, CSS token architecture, Tailwind variants, and representative component consumers.
