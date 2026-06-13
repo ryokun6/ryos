@@ -6372,10 +6372,10 @@
 /* Aqua Glass uses plain rounded-rect corners — no `corner-shape`/squircles
    (Chrome's GPU compositor drops `backdrop-filter` when its clip bounds are a
    non-rectangular squircle path, which blanked the frosted blur). A moderate
-   1.5× bump keeps the radii enlarged for a softer modern look while reading
-   less blobby than the old squircle-compensating 1.84× scale. */
+   1.3× bump keeps the radii slightly enlarged for a softer modern look while
+   reading less blobby than the old squircle-compensating 1.84× scale. */
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"] {
-  --os-glass-radius-factor: 1.5;
+  --os-glass-radius-factor: 1.3;
   --os-metrics-radius: calc(0.45rem * var(--os-glass-radius-factor));
   --os-glass-r-xs: calc(5px * var(--os-glass-radius-factor));
   --os-glass-r-sm: calc(6px * var(--os-glass-radius-factor));
