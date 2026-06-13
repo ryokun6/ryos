@@ -8,6 +8,7 @@ import { AdminToolbar } from "./AdminToolbar";
 import { AdminImportStatusBar } from "./AdminImportStatusBar";
 import { AdminScrollContent } from "./AdminScrollContent";
 import { AdminStatusBar } from "./AdminStatusBar";
+import { AdminRedisBrowserView } from "./AdminRedisBrowserView";
 import type { AdminSection } from "../../utils/navigationState";
 import type { TFunction } from "i18next";
 import type { CachedSongMetadata } from "@/utils/songMetadataCache";
@@ -175,6 +176,12 @@ export function AdminMainPane({
   deleteMessage,
   username,
 }: AdminMainPaneProps) {
+  const showRedisPanel =
+    activeSection === "redis" &&
+    !selectedRoomId &&
+    !selectedUserProfile &&
+    !selectedSongId;
+
   return (
     <div ref={containerRef} className="flex size-full admin-force-font">
       <AdminSidebar
@@ -241,11 +248,17 @@ export function AdminMainPane({
           </div>
         ) : null}
 
+        {showRedisPanel ? (
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <AdminRedisBrowserView t={t} />
+          </div>
+        ) : null}
+
         <ScrollArea
           ref={scrollAreaRef}
           className={cn(
             "min-h-0 min-w-0 flex-1",
-            showCursorAgentsPanel && "hidden",
+            (showCursorAgentsPanel || showRedisPanel) && "hidden",
           )}
         >
           <AdminScrollContent

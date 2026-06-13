@@ -28,13 +28,14 @@ import {
 } from "@/api/admin";
 import { cn } from "@/lib/utils";
 import {
-  adminCardClass,
-  adminCardHeaderClass,
   adminGhostIconBtnClass,
   adminLoadMoreBtnClass,
+  adminDetailHeaderClass,
   adminSectionLabelClass,
+  adminSurfaceClass,
   adminTableHeadClass,
   adminTableRowClass,
+  adminToolbarClass,
 } from "../../utils/adminStyles";
 
 interface RedisKeySummary {
@@ -225,10 +226,13 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
   };
 
   return (
-    <div className="flex min-h-[360px] flex-col gap-3 p-3 font-geneva-12">
+    <div className="flex h-full min-h-0 flex-col font-geneva-12">
       <form
         onSubmit={handlePatternSubmit}
-        className="flex flex-wrap items-center gap-2"
+        className={cn(
+          adminToolbarClass,
+          "flex shrink-0 flex-wrap items-center gap-2 border-b border-os-separator px-2 py-1.5",
+        )}
       >
         <SearchInput
           placeholder={t("apps.admin.redis.patternPlaceholder", "Redis pattern, e.g. chat:*")}
@@ -274,12 +278,15 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
         </Button>
       </form>
 
-      <div className="grid min-h-[300px] gap-3 md:grid-cols-[minmax(220px,0.42fr)_minmax(0,1fr)]">
-        <section className={cn(adminCardClass, "min-w-0")}>
-          <div className={cn(adminCardHeaderClass, "flex items-center justify-between")}>
-            <span>{t("apps.admin.redis.keys", "Keys")}</span>
-            <span className="text-os-text-disabled">{keys.length}</span>
-          </div>
+      <div
+        className={cn(
+          "grid min-h-0 flex-1 gap-0",
+          selectedKey
+            ? "md:grid-cols-[minmax(0,1fr)_minmax(280px,42%)]"
+            : "grid-cols-1",
+        )}
+      >
+        <div className="min-h-0 min-w-0 overflow-auto">
           {keys.length === 0 && !isLoadingKeys ? (
             <div className="flex flex-col items-center justify-center px-3 py-12 text-os-text-disabled">
               <Database className="mb-2 size-8 opacity-50" weight="bold" />
@@ -288,7 +295,7 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
               </span>
             </div>
           ) : (
-            <div className="max-h-[520px] overflow-auto">
+            <>
               <Table>
                 <TableHeader>
                   <TableRow className="border-none text-[10px] font-normal">
@@ -356,71 +363,70 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
                   </Button>
                 </div>
               )}
-            </div>
+            </>
           )}
-        </section>
+        </div>
 
-        <section className={cn(adminCardClass, "min-w-0")}>
-          <div className={cn(adminCardHeaderClass, "flex items-center justify-between gap-2")}>
-            <span>{t("apps.admin.redis.detail", "Key Detail")}</span>
-            {selectedDocument && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setDeleteCandidate(selectedDocument.key)}
-                disabled={isDeleting}
-                className={cn("size-6 p-0", adminGhostIconBtnClass)}
-                title={t("apps.admin.redis.delete", "Delete Redis key")}
-              >
-                {isDeleting ? <ActivityIndicator size={13} /> : <Trash size={13} weight="bold" />}
-              </Button>
-            )}
-          </div>
-          {!selectedKey ? (
-            <div className="flex h-full min-h-[220px] items-center justify-center px-3 text-center text-[11px] text-os-text-disabled">
-              {t("apps.admin.redis.selectKey", "Select a Redis key to inspect its value")}
-            </div>
-          ) : isLoadingDocument ? (
-            <div className="flex h-full min-h-[220px] items-center justify-center">
-              <ActivityIndicator size={18} />
-            </div>
-          ) : selectedDocument ? (
-            <div className="space-y-3 p-3">
-              <div className="min-w-0 space-y-1">
-                <div className={adminSectionLabelClass}>
-                  {t("apps.admin.redis.key", "Key")}
-                </div>
-                <div className="break-all font-os-mono text-[12px]">{selectedDocument.key}</div>
-              </div>
-              <div className="grid grid-cols-3 gap-2 text-[11px]">
-                <div>
-                  <div className={adminSectionLabelClass}>{t("apps.admin.redis.type", "Type")}</div>
-                  <div className="font-os-mono">{selectedDocument.type}</div>
-                </div>
-                <div>
-                  <div className={adminSectionLabelClass}>{t("apps.admin.redis.ttl", "TTL")}</div>
-                  <div>{formatRedisTtl(selectedDocument.ttl)}</div>
-                </div>
-                <div>
-                  <div className={adminSectionLabelClass}>{t("apps.admin.redis.length", "Length")}</div>
-                  <div>{selectedDocument.length ?? "-"}</div>
-                </div>
-              </div>
-              {selectedDocument.truncated && (
-                <div className="rounded border border-yellow-500/30 bg-yellow-500/10 px-2 py-1 text-[11px] text-yellow-800 os-mac-aqua-dark:text-yellow-200">
-                  {t("apps.admin.redis.previewTruncated", "Preview is truncated; use Backup for the full value.")}
-                </div>
+        {selectedKey ? (
+          <aside className={cn("flex h-full min-h-0 min-w-0 flex-col overflow-hidden border-l border-os-separator", adminSurfaceClass)}>
+            <div className={cn(adminDetailHeaderClass, "justify-between gap-2")}>
+              <span>{t("apps.admin.redis.detail", "Key Detail")}</span>
+              {selectedDocument && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setDeleteCandidate(selectedDocument.key)}
+                  disabled={isDeleting}
+                  className={cn("size-6 p-0", adminGhostIconBtnClass)}
+                  title={t("apps.admin.redis.delete", "Delete Redis key")}
+                  aria-label={t("apps.admin.redis.delete", "Delete Redis key")}
+                >
+                  {isDeleting ? <ActivityIndicator size={13} /> : <Trash size={13} weight="bold" />}
+                </Button>
               )}
-              <pre className="max-h-[420px] overflow-auto rounded bg-black/5 p-2 font-os-mono text-[11px] leading-relaxed os-mac-aqua-dark:bg-white/10">
-                {formatRedisValue(selectedDocument.value)}
-              </pre>
             </div>
-          ) : (
-            <div className="flex h-full min-h-[220px] items-center justify-center px-3 text-center text-[11px] text-os-text-disabled">
-              {t("apps.admin.redis.keyUnavailable", "Redis key is unavailable")}
-            </div>
-          )}
-        </section>
+            {isLoadingDocument ? (
+              <div className="flex h-full min-h-[220px] items-center justify-center">
+                <ActivityIndicator size={18} />
+              </div>
+            ) : selectedDocument ? (
+              <div className="min-h-0 flex-1 space-y-3 overflow-auto p-3">
+                <div className="min-w-0 space-y-1">
+                  <div className={adminSectionLabelClass}>
+                    {t("apps.admin.redis.key", "Key")}
+                  </div>
+                  <div className="break-all font-os-mono text-[12px]">{selectedDocument.key}</div>
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-[11px]">
+                  <div>
+                    <div className={adminSectionLabelClass}>{t("apps.admin.redis.type", "Type")}</div>
+                    <div className="font-os-mono">{selectedDocument.type}</div>
+                  </div>
+                  <div>
+                    <div className={adminSectionLabelClass}>{t("apps.admin.redis.ttl", "TTL")}</div>
+                    <div>{formatRedisTtl(selectedDocument.ttl)}</div>
+                  </div>
+                  <div>
+                    <div className={adminSectionLabelClass}>{t("apps.admin.redis.length", "Length")}</div>
+                    <div>{selectedDocument.length ?? "-"}</div>
+                  </div>
+                </div>
+                {selectedDocument.truncated && (
+                  <div className="rounded border border-yellow-500/30 bg-yellow-500/10 px-2 py-1 text-[11px] text-yellow-800 os-mac-aqua-dark:text-yellow-200">
+                    {t("apps.admin.redis.previewTruncated", "Preview is truncated; use Backup for the full value.")}
+                  </div>
+                )}
+                <pre className="max-h-[420px] overflow-auto rounded bg-black/5 p-2 font-os-mono text-[11px] leading-relaxed os-mac-aqua-dark:bg-white/10">
+                  {formatRedisValue(selectedDocument.value)}
+                </pre>
+              </div>
+            ) : (
+              <div className="flex h-full min-h-[220px] items-center justify-center px-3 text-center text-[11px] text-os-text-disabled">
+                {t("apps.admin.redis.keyUnavailable", "Redis key is unavailable")}
+              </div>
+            )}
+          </aside>
+        ) : null}
       </div>
 
       <ConfirmDialog
