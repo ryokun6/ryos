@@ -6165,7 +6165,7 @@
 }
 
 /* Finder / metal-toolbar inset groups keep the classic 4px grouped slab in glass
-   (squircle-enhanced in the @supports block below). Capsule shapes — menubar
+   (rounded-rect, scaled by --os-glass-radius-factor). Capsule shapes — menubar
    selection, search field — stay fully round via their own rules. */
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
   .metal-inset-btn-group
@@ -6368,17 +6368,19 @@
     inset 0 -1px 0 rgba(0, 0, 0, 0.45);
 }
 
-/* --- Glass corner radii (all browsers) ------------------------------------ */
-/* Fallback browsers (no corner-shape): a modest ~1.25× bump — circular arcs
-   need some extra px but 1.84× reads too round/blobby without squircle.
-   Squircle-capable browsers override the factor to 1.84× in @supports below. */
+/* --- Glass corner radii ---------------------------------------------------- */
+/* Aqua Glass uses plain rounded-rect corners — no `corner-shape`/squircles
+   (Chrome's GPU compositor drops `backdrop-filter` when its clip bounds are a
+   non-rectangular squircle path, which blanked the frosted blur). A moderate
+   1.5× bump keeps the radii enlarged for a softer modern look while reading
+   less blobby than the old squircle-compensating 1.84× scale. */
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"] {
-  --os-glass-radius-factor: 1.25;
+  --os-glass-radius-factor: 1.5;
   --os-metrics-radius: calc(0.45rem * var(--os-glass-radius-factor));
   --os-glass-r-xs: calc(5px * var(--os-glass-radius-factor));
   --os-glass-r-sm: calc(6px * var(--os-glass-radius-factor));
-  /* Select triggers: classic Aqua 6px / 5px gloss when squircle is unavailable —
-     circular arcs read pill-like if we scale these with --os-glass-radius-factor. */
+  /* Select triggers: classic Aqua 6px / 5px gloss — circular arcs read
+     pill-like if we scale these with --os-glass-radius-factor. */
   --os-glass-r-select: 6px;
   --os-glass-r-select-gloss: 5px;
   --os-glass-r-select-group: 6px;
@@ -6472,99 +6474,3 @@
     calc(4px * var(--os-glass-radius-factor))
     calc(4px * var(--os-glass-radius-factor));
 }
-
-/* --- Squircle corners (progressive enhancement) --------------------------- */
-/* Bump the shared radius factor to 1.84× and add corner-shape — squircles
-   curve tighter so they need the full compensation; round arcs use 1.25×.
- *
- * IMPORTANT — backdrop-filter surfaces are deliberately excluded from the
- * squircle enhancement. Chrome's GPU compositor drops `backdrop-filter` when
- * the element's clip bounds are a non-rectangular `corner-shape` (squircle)
- * path, which blanks the frosted blur (the desktop reads through sharp instead
- * of blurred). Safari/Firefox don't implement `corner-shape` at all, so they
- * already render these surfaces as plain rounded-rects. To keep the blur
- * reliable everywhere, the frosted surfaces (windows, dock, popover menus,
- * the segmented toolbar group) stay as rounded-rects at the round-tuned 1.25×
- * radii, and only the non-frosted decorative elements (selects, dialogs, tabs,
- * chat bubbles, menu-item highlights) opt into squircle corners. */
-@supports (corner-shape: squircle) {
-  :root[data-os-theme="macosx"][data-os-aqua-material="glass"] {
-    --os-corner-shape: squircle;
-    --os-glass-radius-factor: 1.84;
-    --os-glass-r-select: calc(8px * var(--os-glass-radius-factor));
-    --os-glass-r-select-gloss: calc(7px * var(--os-glass-radius-factor));
-    --os-glass-r-select-group: calc(6px * var(--os-glass-radius-factor));
-    /* Frosted (backdrop-filter) surfaces opt OUT of the 1.84× squircle bump and
-       stay rounded-rect at the round-tuned 1.25× radii (identical to the
-       no-corner-shape fallback) so Chrome keeps clipping — and rendering —
-       their backdrop blur. */
-    --os-glass-r-lg: calc(12px * 1.25);
-    --os-glass-r-metal: calc(0.6rem * 1.25);
-    --os-glass-r-dock: calc(13px * 1.25);
-    --os-glass-r-md: calc(10px * 1.25);
-    --os-glass-r-inset: calc(6px * 1.25);
-  }
-
-  /* NOTE: pseudo-elements are invalid inside :is()/:where() and get silently
-     dropped, so the ::before / ::after layers are listed as standalone
-     selectors below — do not fold them back into the :is() list.
-     Frosted/blur surfaces (windows, dock, popover menus/listboxes, the
-     segmented toolbar group) are intentionally NOT in this list — see the
-     block comment above. */
-  /* `.rounded-os` is intentionally excluded: it is applied to every window
-     shell (which carries the frosted backdrop blur), so squircling it would
-     reintroduce the Chrome blur-dropping bug. */
-  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
-    :is(
-      .aqua-select-btn,
-      .macos-select-trigger,
-      .os-select-trigger-macos,
-      .os-btn-aqua-select,
-      .macosx-dialog,
-      .chat-bubble
-    ),
-  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
-    .macos-select-trigger::before,
-  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
-    .aqua-select-btn::before,
-  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
-    .chat-bubble::before {
-    corner-shape: var(--os-corner-shape);
-  }
-
-  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
-    :is(.aqua-tab, .macosx-dialog-header) {
-    corner-shape: squircle squircle round round;
-  }
-
-  /* Capsules stay circular — menubar selection, search field, other pills. */
-  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
-    :is(
-      .rounded-full,
-      input[data-os-search-input="true"],
-      [role="menubar"] [role="menuitem"][data-state="open"]
-    ) {
-    corner-shape: round;
-  }
-
-  /* Menu item highlights follow the squircle vocabulary (these are inset
-     selection backgrounds, not backdrop-filter surfaces, so they are safe). */
-  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
-    [data-radix-popper-content-wrapper]
-    :where(
-      [role="menuitem"],
-      [role="menuitemcheckbox"],
-      [role="menuitemradio"],
-      [role="option"]
-    ) {
-    corner-shape: var(--os-corner-shape);
-  }
-
-  /* `.aqua-button` is a 28px capsule (14px radius = fully round) — it keeps
-     its classic round pill shape; squircling it would distort the capsule. */
-  :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .aqua-button,
-  :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .aqua-button::before {
-    corner-shape: round;
-  }
-}
-
