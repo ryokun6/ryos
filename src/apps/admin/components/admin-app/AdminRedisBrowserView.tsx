@@ -1,11 +1,25 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
-import { ArrowsClockwise, Database, DownloadSimple, Trash } from "@phosphor-icons/react";
+import {
+  ArrowsClockwise,
+  Database,
+  DownloadSimple,
+  MagnifyingGlass,
+  Trash,
+} from "@phosphor-icons/react";
 import type { TFunction } from "i18next";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/ui/search-input";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   deleteAdminRedisKey,
   getAdminRedisBackup,
@@ -17,10 +31,10 @@ import {
   adminCardClass,
   adminCardHeaderClass,
   adminGhostIconBtnClass,
-  adminListDividerClass,
   adminLoadMoreBtnClass,
-  adminRowHoverClass,
   adminSectionLabelClass,
+  adminTableHeadClass,
+  adminTableRowClass,
 } from "../../utils/adminStyles";
 
 interface RedisKeySummary {
@@ -224,8 +238,15 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
           inputClassName="h-7 text-[12px] font-os-mono"
           clearAriaLabel={t("apps.admin.search.clear", "Clear search")}
         />
-        <Button type="submit" variant="ghost" size="sm" className="h-7 text-[11px]">
-          {t("apps.admin.redis.scan", "Scan")}
+        <Button
+          type="submit"
+          variant="ghost"
+          size="sm"
+          className="size-7 p-0"
+          title={t("apps.admin.redis.scan", "Scan")}
+          aria-label={t("apps.admin.redis.scan", "Scan")}
+        >
+          <MagnifyingGlass size={14} weight="bold" />
         </Button>
         <Button
           type="button"
@@ -233,10 +254,11 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
           size="sm"
           onClick={handleBackup}
           disabled={isBackingUp || isLoadingKeys || keys.length === 0}
-          className="h-7 gap-1 text-[11px]"
+          className="size-7 p-0"
+          title={t("apps.admin.redis.backup", "Backup")}
+          aria-label={t("apps.admin.redis.backup", "Backup")}
         >
           {isBackingUp ? <ActivityIndicator size={13} /> : <DownloadSimple size={13} weight="bold" />}
-          {t("apps.admin.redis.backup", "Backup")}
         </Button>
         <Button
           type="button"
@@ -246,6 +268,7 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
           disabled={isLoadingKeys}
           className="size-7 p-0"
           title={t("apps.admin.redis.refresh", "Refresh Redis keys")}
+          aria-label={t("apps.admin.redis.refresh", "Refresh Redis keys")}
         >
           {isLoadingKeys ? <ActivityIndicator size={14} /> : <ArrowsClockwise size={14} weight="bold" />}
         </Button>
@@ -265,29 +288,59 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
               </span>
             </div>
           ) : (
-            <div className={cn("max-h-[520px] overflow-auto", adminListDividerClass)}>
-              {keys.map((item) => (
-                <button
-                  key={item.key}
-                  type="button"
-                  onClick={() => void loadKeyDocument(item.key)}
-                  className={cn(
-                    "flex w-full min-w-0 items-center gap-2 px-3 py-2 text-left",
-                    adminRowHoverClass,
-                    selectedKey === item.key && "bg-os-selection-bg text-os-selection-text hover:bg-os-selection-bg",
-                  )}
-                >
-                  <span className="rounded bg-black/10 px-1.5 py-0.5 font-os-mono text-[9px] uppercase os-mac-aqua-dark:bg-white/10">
-                    {item.type}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate font-os-mono text-[11px]" title={item.key}>
-                    {item.key}
-                  </span>
-                  <span className="shrink-0 text-[10px] opacity-70">
-                    {formatRedisTtl(item.ttl)}
-                  </span>
-                </button>
-              ))}
+            <div className="max-h-[520px] overflow-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-none text-[10px] font-normal">
+                    <TableHead className={cn(adminTableHeadClass, "h-[28px]")}>
+                      {t("apps.admin.redis.key", "Key")}
+                    </TableHead>
+                    <TableHead className={cn(adminTableHeadClass, "h-[28px] w-16")}>
+                      {t("apps.admin.redis.type", "Type")}
+                    </TableHead>
+                    <TableHead className={cn(adminTableHeadClass, "h-[28px] w-20")}>
+                      {t("apps.admin.redis.ttl", "TTL")}
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="text-[11px]">
+                  {keys.map((item) => (
+                    <TableRow
+                      key={item.key}
+                      data-state={selectedKey === item.key ? "selected" : undefined}
+                      className={cn(
+                        adminTableRowClass,
+                        "cursor-pointer",
+                        selectedKey === item.key &&
+                          "bg-os-selection-bg text-os-selection-text hover:bg-os-selection-bg",
+                      )}
+                      onClick={() => void loadKeyDocument(item.key)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          void loadKeyDocument(item.key);
+                        }
+                      }}
+                      role="button"
+                      tabIndex={0}
+                    >
+                      <TableCell className="max-w-0 py-2">
+                        <span className="block truncate font-os-mono" title={item.key}>
+                          {item.key}
+                        </span>
+                      </TableCell>
+                      <TableCell className="py-2">
+                        <span className="rounded bg-black/10 px-1.5 py-0.5 font-os-mono text-[9px] uppercase os-mac-aqua-dark:bg-white/10">
+                          {item.type}
+                        </span>
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap py-2 text-[10px] opacity-75">
+                        {formatRedisTtl(item.ttl)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
               {cursor !== "0" && (
                 <div className="flex justify-center py-2">
                   <Button
