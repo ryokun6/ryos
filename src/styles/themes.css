@@ -6165,7 +6165,7 @@
 }
 
 /* Finder / metal-toolbar inset groups keep the classic 4px grouped slab in glass
-   (rounded-rect, scaled by --os-glass-radius-factor). Capsule shapes — menubar
+   (squircle-enhanced in the @supports block below). Capsule shapes — menubar
    selection, search field — stay fully round via their own rules. */
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
   .metal-inset-btn-group
@@ -6368,12 +6368,12 @@
     inset 0 -1px 0 rgba(0, 0, 0, 0.45);
 }
 
-/* --- Glass corner radii ---------------------------------------------------- */
-/* Aqua Glass uses plain rounded-rect corners — no `corner-shape`/squircles
-   (Chrome's GPU compositor drops `backdrop-filter` when its clip bounds are a
-   non-rectangular squircle path, which blanked the frosted blur). A moderate
-   1.3× bump keeps the radii slightly enlarged for a softer modern look while
-   reading less blobby than the old squircle-compensating 1.84× scale. */
+/* --- Glass corner radii (fallback) ----------------------------------------- */
+/* Fallback browsers (no `corner-shape`): a moderate 1.3× bump keeps the radii
+   slightly enlarged for a softer modern look while reading less blobby than the
+   squircle-compensating 1.84× scale. Squircle-capable browsers override the
+   factor to 1.84× and switch to `corner-shape: squircle` in the @supports block
+   below. */
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"] {
   --os-glass-radius-factor: 1.3;
   --os-metrics-radius: calc(0.45rem * var(--os-glass-radius-factor));
@@ -6473,4 +6473,104 @@
   border-radius: var(--os-glass-r-bubble) var(--os-glass-r-bubble)
     calc(4px * var(--os-glass-radius-factor))
     calc(4px * var(--os-glass-radius-factor));
+}
+
+/* --- Squircle corners (progressive enhancement) --------------------------- */
+/* Bump the shared radius factor to 1.84× and add corner-shape — squircles
+   curve tighter so they need the full compensation; round arcs use the 1.3×
+   fallback above. */
+@supports (corner-shape: squircle) {
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"] {
+    --os-corner-shape: squircle;
+    --os-glass-radius-factor: 1.84;
+    --os-glass-r-select: calc(8px * var(--os-glass-radius-factor));
+    --os-glass-r-select-gloss: calc(7px * var(--os-glass-radius-factor));
+    --os-glass-r-select-group: calc(6px * var(--os-glass-radius-factor));
+  }
+
+  /* NOTE: pseudo-elements are invalid inside :is()/:where() and get silently
+     dropped, so the ::before / ::after layers are listed as standalone
+     selectors below — do not fold them back into the :is() list. */
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+    :is(
+      .window.window-material-glass,
+      .window.window-material-brushedmetal,
+      .mac-dock-surface,
+      .metal-inset-btn-group,
+      .aqua-select-btn,
+      .macos-select-trigger,
+      .os-select-trigger-macos,
+      .os-btn-aqua-select,
+      .macosx-dialog,
+      .rounded-os,
+      .chat-bubble,
+      [data-radix-popper-content-wrapper]
+        :where(
+          [role="menu"],
+          [role="listbox"],
+          [data-radix-menu-content],
+          [data-radix-popover-content],
+          [data-radix-select-content]
+        )
+    ),
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+    .window-material-brushedmetal::before,
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+    .window-material-brushedmetal::after,
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+    .macos-select-trigger::before,
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+    .aqua-select-btn::before,
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+    .chat-bubble::before {
+    corner-shape: var(--os-corner-shape);
+  }
+
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+    :is(.aqua-tab, .macosx-dialog-header) {
+    corner-shape: squircle squircle round round;
+  }
+
+  /* Capsules stay circular — menubar selection, search field, other pills. */
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+    :is(
+      .rounded-full,
+      input[data-os-search-input="true"],
+      [role="menubar"] [role="menuitem"][data-state="open"]
+    ) {
+    corner-shape: round;
+  }
+
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+    .metal-inset-btn-group {
+    corner-shape: var(--os-corner-shape);
+  }
+
+  /* Child pills must share the group's corner geometry, otherwise their
+     background rounds off with circular arcs inside the squircle clip and
+     leaves unfilled corner slivers (visible on the selected segment). */
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+    .metal-inset-btn-group
+    .metal-inset-btn {
+    corner-shape: var(--os-corner-shape);
+  }
+
+  /* Menu item highlights follow the panel's squircle vocabulary. */
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+    [data-radix-popper-content-wrapper]
+    :where(
+      [role="menuitem"],
+      [role="menuitemcheckbox"],
+      [role="menuitemradio"],
+      [role="option"]
+    ) {
+    corner-shape: var(--os-corner-shape);
+  }
+
+  /* `.aqua-button` is a 28px capsule (14px radius = fully round) — it keeps
+     its classic round pill shape; squircling it would distort the capsule. */
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .aqua-button,
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .aqua-button::before {
+    corner-shape: round;
+  }
 }
