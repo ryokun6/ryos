@@ -123,7 +123,7 @@ export function Clock({ enableExposeToggle = false, enableCalendarOpen = false }
     // biome-ignore lint/a11y/noStaticElementInteractions: Window drag handle for desktop shell
     <div
       role="presentation"
-      className={`${isXpTheme ? "" : "ml-auto mr-1 sm:mr-2"} whitespace-nowrap`}
+      className={`menubar-clock ${isXpTheme ? "" : "ml-auto mr-1 sm:mr-2"} whitespace-nowrap`}
       style={{
         textShadow: isMacOSTheme
           ? "0 2px 3px rgba(0, 0, 0, 0.25)"

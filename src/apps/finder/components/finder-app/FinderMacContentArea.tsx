@@ -82,7 +82,7 @@ export function FinderMacContentArea({
         )}
         <FinderPanel bordered className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
           {isAirDropView ? (
-            <div className="flex-1 bg-gradient-to-b from-[#e8ecf0] to-[#d1d5db]">
+            <div className="finder-airdrop-surface flex-1 bg-gradient-to-b from-[#e8ecf0] to-[#d1d5db]">
               <AirDropView
                 onSendFile={handleAirDropSendFile}
                 onRequestLogin={promptVerifyToken}

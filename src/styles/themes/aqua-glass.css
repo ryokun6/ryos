@@ -409,12 +409,29 @@
   border-bottom-color: transparent !important;
 }
 
-/* Dark labels on a light wallpaper: drop the macOS text halo. */
+/* No frosted strip behind the labels, so both tones need a stronger legibility
+   shadow than the base menubar to stay readable over a busy wallpaper. Light
+   labels (dark wallpaper) get a deeper dark drop; dark labels (light wallpaper)
+   get a soft white halo instead of the macOS dark shadow. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .mac-top-menubar[data-menubar-text-tone="light"]
+  [role="menubar"]
+  [role="menuitem"],
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .mac-top-menubar[data-menubar-text-tone="light"]
+  .menubar-clock {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6), 0 0 2px rgba(0, 0, 0, 0.45) !important;
+}
+
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
   .mac-top-menubar[data-menubar-text-tone="dark"]
   [role="menubar"]
-  [role="menuitem"] {
-  text-shadow: none !important;
+  [role="menuitem"],
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .mac-top-menubar[data-menubar-text-tone="dark"]
+  .menubar-clock {
+  text-shadow: 0 0 4px rgba(255, 255, 255, 0.22),
+    0 0 3px rgba(255, 255, 255, 0.12) !important;
 }
 
 /* Only invert the Apple logo when labels are light (dark wallpaper). */
@@ -1281,6 +1298,26 @@
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
   .chat-glass-input.os-themed-input:focus {
   background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* AirDrop radar surface — translucent gradient so the frosted window pane shows
+   through instead of the opaque classic-Aqua silver gradient. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .finder-airdrop-surface {
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.22),
+    rgba(255, 255, 255, 0.06)
+  ) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .finder-airdrop-surface {
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.06),
+    rgba(255, 255, 255, 0.02)
+  ) !important;
 }
 
 /* --- Squircle corners (progressive enhancement) --------------------------- */
