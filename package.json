@@ -172,7 +172,7 @@
     "@types/react-dom": "^19.0.0",
     "@types/youtube": "^0.1.2",
     "@vitejs/plugin-react-swc": "^4.2.2",
-    "electron": "^35.7.5",
+    "electron": "^42.4.0",
     "electron-builder": "^25.1.8",
     "esbuild": "0.28.1",
     "eslint": "^9.39.2",
