@@ -20,10 +20,6 @@ import {
   normalizeIrcChannel,
 } from "../_utils/irc/_types.js";
 import { getIrcServer } from "../_utils/irc/_servers.js";
-import {
-  isIrcBridgeEnabled,
-  getIrcBridge,
-} from "../_utils/irc/_bridge.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -103,6 +99,13 @@ export default apiHandler(
     }
 
     if (type === "irc") {
+      if (username !== "ryo") {
+        logger.response(403, Date.now() - startTime);
+        res
+          .status(403)
+          .json({ error: "Forbidden - Only admin can create IRC rooms" });
+        return;
+      }
       if (isProfaneUsername(originalName || "")) {
         logger.response(400, Date.now() - startTime);
         res.status(400).json({ error: "Room name contains inappropriate language" });
@@ -151,88 +154,32 @@ export default apiHandler(
       const serverIdRaw =
         typeof ircServerIdBody === "string" ? ircServerIdBody.trim() : "";
 
-      if (username === "ryo") {
-        const serverFromRegistry = serverIdRaw
-          ? await getIrcServer(serverIdRaw)
-          : null;
-        if (serverIdRaw && !serverFromRegistry) {
-          logger.response(400, Date.now() - startTime);
-          res.status(400).json({ error: "Unknown IRC server id" });
-          return;
-        }
-        if (serverFromRegistry) {
-          ircResolved = {
-            host: serverFromRegistry.host,
-            port: serverFromRegistry.port,
-            tls: serverFromRegistry.tls,
-            channel: derivedChannel,
-            ircServerLabel: serverFromRegistry.label,
-          };
-        } else {
-          ircResolved = {
-            host: (ircHostBody || DEFAULT_IRC_HOST).toString().toLowerCase(),
-            port: Number(ircPortBody) || DEFAULT_IRC_PORT,
-            tls: typeof ircTlsBody === "boolean" ? ircTlsBody : DEFAULT_IRC_TLS,
-            channel: derivedChannel,
-            ircServerLabel:
-              typeof ircServerLabelBody === "string" &&
-              ircServerLabelBody.trim()
-                ? ircServerLabelBody.trim()
-                : undefined,
-          };
-        }
-      } else {
-        if (!serverIdRaw) {
-          logger.response(403, Date.now() - startTime);
-          res.status(403).json({
-            error:
-              "Forbidden — pick a registered IRC server to create a bridged room",
-          });
-          return;
-        }
-        const serverFromRegistry = await getIrcServer(serverIdRaw);
-        if (!serverFromRegistry) {
-          logger.response(400, Date.now() - startTime);
-          res.status(400).json({ error: "Unknown IRC server id" });
-          return;
-        }
-        if (!isIrcBridgeEnabled()) {
-          logger.response(503, Date.now() - startTime);
-          res.status(503).json({
-            error: "IRC bridge is disabled in this environment",
-          });
-          return;
-        }
-        try {
-          const advertised = await getIrcBridge().listChannels(
-            serverFromRegistry.host,
-            serverFromRegistry.port,
-            serverFromRegistry.tls,
-            { maxChannels: 2000, timeoutMs: 15000 }
-          );
-          const channelOk = advertised.some(
-            (c) => c.channel.toLowerCase() === derivedChannel.toLowerCase()
-          );
-          if (!channelOk) {
-            logger.response(403, Date.now() - startTime);
-            res.status(403).json({
-              error:
-                "Channel must appear in that server’s public channel list (refresh the list and pick a channel)",
-            });
-            return;
-          }
-        } catch (err) {
-          logger.error("IRC channel validation failed", err);
-          logger.response(503, Date.now() - startTime);
-          res.status(503).json({ error: "Failed to validate IRC channel" });
-          return;
-        }
+      const serverFromRegistry = serverIdRaw
+        ? await getIrcServer(serverIdRaw)
+        : null;
+      if (serverIdRaw && !serverFromRegistry) {
+        logger.response(400, Date.now() - startTime);
+        res.status(400).json({ error: "Unknown IRC server id" });
+        return;
+      }
+      if (serverFromRegistry) {
         ircResolved = {
           host: serverFromRegistry.host,
           port: serverFromRegistry.port,
           tls: serverFromRegistry.tls,
           channel: derivedChannel,
           ircServerLabel: serverFromRegistry.label,
+        };
+      } else {
+        ircResolved = {
+          host: (ircHostBody || DEFAULT_IRC_HOST).toString().toLowerCase(),
+          port: Number(ircPortBody) || DEFAULT_IRC_PORT,
+          tls: typeof ircTlsBody === "boolean" ? ircTlsBody : DEFAULT_IRC_TLS,
+          channel: derivedChannel,
+          ircServerLabel:
+            typeof ircServerLabelBody === "string" && ircServerLabelBody.trim()
+              ? ircServerLabelBody.trim()
+              : undefined,
         };
       }
 
