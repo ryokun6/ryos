@@ -77,9 +77,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: electron-mac
-          path: |
-            release/*.dmg
-            release/*.zip
+          # Only installers — do not use release/* (upload-artifact globs recurse into .app / unpacked dirs).
+          path: release/*.dmg
           if-no-files-found: error
 
   build-windows:
@@ -117,11 +116,21 @@ jobs:
       - name: Build Windows artifacts
         run: bun run electron:build:windows
 
+      - name: Prune unpacked Windows output
+        shell: pwsh
+        run: |
+          if (Test-Path release/win-unpacked) {
+            Remove-Item -Recurse -Force release/win-unpacked
+          }
+
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
         with:
           name: electron-windows
-          path: release/*
+          # NSIS installer + blockmap only (never release/* — globs recurse into win-unpacked).
+          path: |
+            release/ryOS_*.exe
+            release/ryOS_*.exe.blockmap
           if-no-files-found: error
 
   release:
@@ -149,6 +158,8 @@ jobs:
           tag_name: ${{ github.ref_name }}
           name: ryOS ${{ github.ref_name }}
           generate_release_notes: true
+          # Explicit globs only — release/** flattens win-unpacked into hundreds of junk assets.
           files: |
-            release/mac/**
-            release/windows/**
+            release/mac/*.dmg
+            release/windows/ryOS_*.exe
+            release/windows/ryOS_*.exe.blockmap
