@@ -131,7 +131,6 @@ const suggestion: Partial<SuggestionOptions> = {
       root.render(
         <DropdownMenu open modal={false}>
           <DropdownMenuContent
-            onOpenAutoFocus={(event) => event.preventDefault()}
             onCloseAutoFocus={(event) => event.preventDefault()}
             style={{
               position: "fixed",
