@@ -65,14 +65,14 @@ const ChatRoomSidebarItem = React.memo(function ChatRoomSidebarItem({
         onRoomSelect(room);
       }}
     >
-      <div className="flex items-center">
+      <div className="flex items-center min-w-0">
         {isPrivateOnline && (
           <span
             className="inline-block size-1.5 rounded-full bg-green-500 mr-1.5 flex-shrink-0"
             title="Online"
           />
         )}
-        <span>
+        <span className="truncate min-w-0">
           {room.type === "private"
             ? getPrivateRoomDisplayName(room, username ?? null)
             : `#${room.name}`}
@@ -80,7 +80,7 @@ const ChatRoomSidebarItem = React.memo(function ChatRoomSidebarItem({
         {room.type === "irc" && (
           <span
             className={cn(
-              "ml-1 text-[9px] font-bold uppercase tracking-wider",
+              "ml-1 text-[9px] font-bold uppercase tracking-wider flex-shrink-0",
               isSelected ? "text-white/40" : "text-black/40"
             )}
             title={`IRC ${room.ircHost || "irc.pieter.com"}`}
@@ -91,7 +91,7 @@ const ChatRoomSidebarItem = React.memo(function ChatRoomSidebarItem({
         {(hasUnread || room.type !== "private") && (
           <span
             className={cn(
-              "text-[10px] ml-1.5 transition-opacity",
+              "text-[10px] ml-1.5 transition-opacity flex-shrink-0 whitespace-nowrap",
               hasUnread
                 ? "text-orange-600"
                 : isSelected

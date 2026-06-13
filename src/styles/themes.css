@@ -6146,17 +6146,17 @@
     [data-os-color-scheme="dark"]
   )
   input[data-os-search-input="true"] {
-  background-color: rgba(255, 255, 255, 0.42) !important;
+  background-color: rgba(255, 255, 255, 0.26) !important;
   -webkit-backdrop-filter: blur(12px) saturate(180%);
   backdrop-filter: blur(12px) saturate(180%);
-  border-color: rgba(0, 0, 0, 0.28) !important;
+  border-color: rgba(0, 0, 0, 0.24) !important;
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12),
     0 1px 0 rgba(255, 255, 255, 0.45) !important;
 }
 
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
   input[data-os-search-input="true"] {
-  background-color: rgba(255, 255, 255, 0.1) !important;
+  background-color: rgba(255, 255, 255, 0.06) !important;
   -webkit-backdrop-filter: blur(12px) saturate(180%);
   backdrop-filter: blur(12px) saturate(180%);
   border-color: rgba(255, 255, 255, 0.16) !important;
@@ -6390,7 +6390,7 @@
   --os-glass-r-lg: calc(12px * var(--os-glass-radius-factor));
   --os-glass-r-metal: calc(0.6rem * var(--os-glass-radius-factor));
   --os-glass-r-dock: calc(13px * var(--os-glass-radius-factor));
-  --os-glass-r-bubble: calc(16px * var(--os-glass-radius-factor));
+  --os-glass-r-bubble: 16px;
 }
 
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
@@ -6470,9 +6470,7 @@
 }
 
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .chat-bubble::before {
-  border-radius: var(--os-glass-r-bubble) var(--os-glass-r-bubble)
-    calc(4px * var(--os-glass-radius-factor))
-    calc(4px * var(--os-glass-radius-factor));
+  border-radius: var(--os-glass-r-bubble) var(--os-glass-r-bubble) 4px 4px;
 }
 
 /* --- Squircle corners (progressive enhancement) --------------------------- */
@@ -6503,7 +6501,6 @@
       .os-btn-aqua-select,
       .macosx-dialog,
       .rounded-os,
-      .chat-bubble,
       [data-radix-popper-content-wrapper]
         :where(
           [role="menu"],
@@ -6520,10 +6517,20 @@
   :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
     .macos-select-trigger::before,
   :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
-    .aqua-select-btn::before,
-  :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
-    .chat-bubble::before {
+    .aqua-select-btn::before {
     corner-shape: var(--os-corner-shape);
+  }
+
+  /* Chat bubbles keep circular arcs — squircling distorts the compact pill. */
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .chat-bubble {
+    --os-glass-r-bubble: 16px;
+    border-radius: var(--os-glass-r-bubble) !important;
+    corner-shape: round;
+  }
+
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .chat-bubble::before {
+    corner-shape: round;
+    border-radius: var(--os-glass-r-bubble) var(--os-glass-r-bubble) 4px 4px !important;
   }
 
   :root[data-os-theme="macosx"][data-os-aqua-material="glass"]

@@ -18,6 +18,7 @@ type Props = Pick<
   | "imageInputRef"
   | "audioButtonRef"
   | "isMacTheme"
+  | "isAquaGlass"
   | "isLoading"
   | "isTranscribing"
   | "needsUsername"
@@ -41,6 +42,7 @@ export function ChatInputField({
   imageInputRef,
   audioButtonRef,
   isMacTheme,
+  isAquaGlass,
   isLoading,
   isTranscribing,
   needsUsername,
@@ -81,7 +83,9 @@ export function ChatInputField({
         }
         className={`w-full border-1 border-neutral-800 text-xs font-geneva-12 h-9 ${
           isMacTheme ? "pl-3 pr-[88px] rounded-full" : "pl-2 pr-[88px]"
-        } backdrop-blur-lg bg-white/80 ${isFocused ? "input--focused" : ""} ${
+        } backdrop-blur-lg ${
+          isAquaGlass ? "bg-white/40" : "bg-white/80"
+        } ${isFocused ? "input--focused" : ""} ${
           isTypingRyoMention ? "border-blue-600 bg-blue-50" : ""
         } ${
           needsUsername && !isInChatRoom
