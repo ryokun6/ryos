@@ -36,6 +36,7 @@
     "electron:build": "bun run scripts/build-electron.ts",
     "electron:build:mac": "bun run scripts/build-electron.ts --mac",
     "electron:build:windows": "bun run scripts/build-electron.ts --win",
+    "electron:github-secrets": "bun run scripts/generate-github-electron-secrets.ts",
     "seed:dev": "bun run scripts/seed-dev-users.ts",
     "telegram:webhook": "bun run scripts/setup-telegram-webhook.ts",
     "test": "bun test",

@@ -37,5 +37,6 @@ package-lock.json
 dist-electron/
 release/
 build/apple.p8
+build/github-secrets-paste.txt
 
 core
