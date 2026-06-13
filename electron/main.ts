@@ -1,6 +1,14 @@
-import { app, BrowserWindow, ipcMain, session, shell } from "electron";
+import {
+  app,
+  BrowserWindow,
+  ipcMain,
+  session,
+  shell,
+  type WebContents,
+} from "electron";
 import path from "node:path";
 import { setupAutoUpdater } from "./updater";
+import { buildApplicationMenu } from "./menu";
 
 const DEFAULT_APP_URL = "https://os.ryo.lu";
 const APP_URL = process.env.RYOS_ELECTRON_URL?.trim() || DEFAULT_APP_URL;
@@ -30,6 +38,70 @@ function isInAppNavigation(url: string): boolean {
   } catch {
     return false;
   }
+}
+
+/**
+ * Apple sign-in domains used by MusicKit JS `authorize()` (Apple Music) and
+ * Apple ID. These must open as real in-app popup windows — sending them to the
+ * system browser via shell.openExternal severs the popup↔opener handshake and
+ * leaves `authorize()` hanging. Covers nested redirects (auth → idmsa →
+ * appleid) and 2FA child popups.
+ */
+function isAppleAuthUrl(url: string): boolean {
+  try {
+    const { hostname } = new URL(url);
+    return hostname === "apple.com" || hostname.endsWith(".apple.com");
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Blank popups (`window.open("")` / about:blank) are opened by some auth flows
+ * before they set the real location. Allow them in-app — any subsequent
+ * navigation is still governed by this same policy via did-create-window.
+ */
+function isBlankUrl(url: string): boolean {
+  return url === "" || url === "about:blank" || url.startsWith("about:blank#");
+}
+
+/**
+ * Centralized navigation policy applied to the main window and any child
+ * windows it spawns (e.g. the Apple Music auth popup, which may itself open
+ * further Apple ID / 2FA popups). In-app and Apple-auth URLs open in-app;
+ * everything else is handed off to the system browser.
+ */
+function applyNavigationPolicy(contents: WebContents): void {
+  contents.setWindowOpenHandler(({ url }) => {
+    if (isInAppNavigation(url) || isAppleAuthUrl(url) || isBlankUrl(url)) {
+      return {
+        action: "allow",
+        overrideBrowserWindowOptions: {
+          autoHideMenuBar: true,
+          webPreferences: {
+            contextIsolation: true,
+            nodeIntegration: false,
+            sandbox: true,
+          },
+        },
+      };
+    }
+    void shell.openExternal(url);
+    return { action: "deny" };
+  });
+
+  contents.on("will-navigate", (event, url) => {
+    if (!isInAppNavigation(url) && !isAppleAuthUrl(url) && !isBlankUrl(url)) {
+      event.preventDefault();
+      void shell.openExternal(url);
+    }
+  });
+
+  // Apply the same policy to auth popups (and their nested popups) so the
+  // entire Apple sign-in chain stays in-app and external links still escape.
+  contents.on("did-create-window", (childWindow) => {
+    applyNavigationPolicy(childWindow.webContents);
+  });
 }
 
 function sendFullscreenState(win: BrowserWindow): void {
@@ -64,22 +136,17 @@ function createMainWindow(): BrowserWindow {
     win.show();
   });
 
+  // Frameless Windows/Linux windows hide the native menu bar by default; show it
+  // so "Check for Updates…" (and standard roles) are reachable there too. macOS
+  // always renders the menu in the global menu bar.
+  if (!isMac) {
+    win.setAutoHideMenuBar(false);
+    win.setMenuBarVisibility(true);
+  }
+
   void win.loadURL(APP_URL);
 
-  win.webContents.setWindowOpenHandler(({ url }) => {
-    if (!isInAppNavigation(url)) {
-      void shell.openExternal(url);
-      return { action: "deny" };
-    }
-    return { action: "allow" };
-  });
-
-  win.webContents.on("will-navigate", (event, url) => {
-    if (!isInAppNavigation(url)) {
-      event.preventDefault();
-      void shell.openExternal(url);
-    }
-  });
+  applyNavigationPolicy(win.webContents);
 
   win.on("enter-full-screen", () => sendFullscreenState(win));
   win.on("leave-full-screen", () => sendFullscreenState(win));
@@ -128,6 +195,7 @@ app.whenReady().then(() => {
   createMainWindow();
 
   setupAutoUpdater(() => mainWindow);
+  buildApplicationMenu();
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {

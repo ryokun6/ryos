@@ -24,42 +24,78 @@ let getWindow: () => BrowserWindow | null = () => null;
 let pendingVersion: string | null = null;
 let updateDownloaded = false;
 let restartPromptShownFor: string | null = null;
+// When a check is user-initiated (menu / About box), surface the result in a
+// dialog. Background checks stay silent unless an update is actually ready.
+let interactiveCheck = false;
 
 function broadcast(status: UpdateStatus): void {
   getWindow()?.webContents.send("ryos-desktop:update-status", status);
 }
 
-function showRestartPrompt(version: string): void {
+function showMessage(
+  options: Electron.MessageBoxOptions
+): Promise<Electron.MessageBoxReturnValue> {
   const win = getWindow();
-  if (!win || restartPromptShownFor === version) {
+  return win
+    ? dialog.showMessageBox(win, options)
+    : dialog.showMessageBox(options);
+}
+
+function showRestartPrompt(version: string): void {
+  if (restartPromptShownFor === version) {
     return;
   }
   restartPromptShownFor = version;
-  void dialog
-    .showMessageBox(win, {
-      type: "info",
-      buttons: ["Restart Now", "Later"],
-      defaultId: 0,
-      cancelId: 1,
-      title: "Update Ready",
-      message: `ryOS ${version} is ready to install.`,
-      detail: "Restart ryOS to apply the latest update.",
-    })
-    .then(({ response }) => {
-      if (response === 0) {
-        autoUpdater.quitAndInstall();
-      }
-    });
+  void showMessage({
+    type: "info",
+    buttons: ["Restart Now", "Later"],
+    defaultId: 0,
+    cancelId: 1,
+    title: "Update Ready",
+    message: `ryOS ${version} is ready to install.`,
+    detail: "Restart ryOS to apply the latest update.",
+  }).then(({ response }) => {
+    if (response === 0) {
+      autoUpdater.quitAndInstall();
+    }
+  });
 }
 
-function check(): void {
-  autoUpdater.checkForUpdates().catch((err) => {
-    // Surface via the "error" event handler below; swallow the rejection.
-    broadcast({
-      state: "error",
-      message: err instanceof Error ? err.message : String(err),
-    });
-  });
+/**
+ * Check the GitHub Releases feed for a newer shell version.
+ *
+ * @param interactive When true (user clicked "Check for Updates…"), the result
+ *   — up to date, downloading, or error — is shown in a native dialog. Silent
+ *   background checks pass `false`.
+ */
+export async function checkForUpdates(interactive = false): Promise<void> {
+  if (!app.isPackaged) {
+    if (interactive) {
+      void showMessage({
+        type: "info",
+        buttons: ["OK"],
+        title: "Software Update",
+        message: "Updates are only available in the installed app.",
+        detail: `Current version: ${app.getVersion()}`,
+      });
+    }
+    return;
+  }
+
+  // An update is already staged — just re-offer the restart.
+  if (updateDownloaded) {
+    if (interactive) {
+      showRestartPrompt(pendingVersion ?? app.getVersion());
+    }
+    return;
+  }
+
+  interactiveCheck = interactive;
+  try {
+    await autoUpdater.checkForUpdates();
+  } catch {
+    // Surfaced via the "error" event handler.
+  }
 }
 
 /**
@@ -71,6 +107,18 @@ export function setupAutoUpdater(
   getMainWindow: () => BrowserWindow | null
 ): void {
   getWindow = getMainWindow;
+
+  // Renderer-initiated check (in-app menu / About box). Always interactive.
+  ipcMain.handle("ryos-desktop:check-for-updates", async () => {
+    await checkForUpdates(true);
+    return pendingVersion;
+  });
+
+  ipcMain.handle("ryos-desktop:quit-and-install", () => {
+    if (updateDownloaded) {
+      autoUpdater.quitAndInstall();
+    }
+  });
 
   if (!app.isPackaged) {
     return;
@@ -85,9 +133,29 @@ export function setupAutoUpdater(
   autoUpdater.on("update-available", (info: UpdateInfo) => {
     pendingVersion = info.version;
     broadcast({ state: "available", version: info.version });
+    if (interactiveCheck) {
+      interactiveCheck = false;
+      void showMessage({
+        type: "info",
+        buttons: ["OK"],
+        title: "Update Available",
+        message: `ryOS ${info.version} is available.`,
+        detail:
+          "It's downloading in the background — you'll be prompted to restart when it's ready.",
+      });
+    }
   });
   autoUpdater.on("update-not-available", (info: UpdateInfo) => {
     broadcast({ state: "not-available", version: info.version });
+    if (interactiveCheck) {
+      interactiveCheck = false;
+      void showMessage({
+        type: "info",
+        buttons: ["OK"],
+        title: "You're Up to Date",
+        message: `ryOS ${info.version} is the latest version.`,
+      });
+    }
   });
   autoUpdater.on("download-progress", (progress) => {
     broadcast({
@@ -102,32 +170,20 @@ export function setupAutoUpdater(
     showRestartPrompt(info.version);
   });
   autoUpdater.on("error", (err) => {
-    broadcast({
-      state: "error",
-      message: err instanceof Error ? err.message : String(err),
-    });
-  });
-
-  // Renderer-initiated actions (menu item, About box, etc.).
-  ipcMain.handle("ryos-desktop:check-for-updates", async () => {
-    try {
-      const result = await autoUpdater.checkForUpdates();
-      return result?.updateInfo?.version ?? null;
-    } catch (err) {
-      broadcast({
-        state: "error",
-        message: err instanceof Error ? err.message : String(err),
+    const message = err instanceof Error ? err.message : String(err);
+    broadcast({ state: "error", message });
+    if (interactiveCheck) {
+      interactiveCheck = false;
+      void showMessage({
+        type: "error",
+        buttons: ["OK"],
+        title: "Update Error",
+        message: "Couldn't check for updates.",
+        detail: message,
       });
-      return null;
     }
   });
 
-  ipcMain.handle("ryos-desktop:quit-and-install", () => {
-    if (updateDownloaded) {
-      autoUpdater.quitAndInstall();
-    }
-  });
-
-  setTimeout(check, INITIAL_CHECK_DELAY_MS);
-  setInterval(check, CHECK_INTERVAL_MS);
+  setTimeout(() => void checkForUpdates(false), INITIAL_CHECK_DELAY_MS);
+  setInterval(() => void checkForUpdates(false), CHECK_INTERVAL_MS);
 }
