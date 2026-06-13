@@ -8,8 +8,7 @@ export function useAppMenuBarChrome(
   appNameOverride?: string,
 ) {
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
-  const { isWindowsTheme: isXpTheme, isMacOSTheme: isMacOsxTheme } =
-    useThemeFlags();
+  const { isWindowsTheme, isMacOSTheme } = useThemeFlags();
   const appName =
     appNameOverride ??
     appRegistry[appId as keyof typeof appRegistry]?.name ??
@@ -18,8 +17,11 @@ export function useAppMenuBarChrome(
   return {
     isShareDialogOpen,
     setIsShareDialogOpen,
-    isXpTheme,
-    isMacOsxTheme,
+    isWindowsTheme,
+    isMacOSTheme,
+    // Legacy aliases retained for existing app menubar props.
+    isXpTheme: isWindowsTheme,
+    isMacOsxTheme: isMacOSTheme,
     appId,
     appName,
   };

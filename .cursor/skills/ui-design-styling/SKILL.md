@@ -22,15 +22,15 @@ Dark mode today: only macOS Aqua (`macosx`) ships dark tokens; the toggle is hid
 
 ```tsx
 import { cn } from "@/lib/utils";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 
-const { osTheme } = useTheme();
+const { currentTheme } = useThemeFlags();
 
 // Theme-conditional classes
 className={cn(
   "base-classes",
-  osTheme === "macosx" && "aqua-specific",
-  osTheme === "system7" && "system7-specific"
+  currentTheme === "macosx" && "aqua-specific",
+  currentTheme === "system7" && "system7-specific"
 )}
 ```
 
@@ -231,7 +231,7 @@ import { Dial } from "@/components/ui/dial";
 1. **Always search for existing patterns** before creating new styles or components
 2. **Always use `cn()`** for conditional class merging
 3. **Use OS-aware classes** (`bg-os-*`, `border-os-*`) when available
-4. **Check theme with `useTheme()`** for complex conditional rendering
+4. **Check theme with `useThemeFlags()`** for complex conditional rendering
 5. **Prefer CSS variables** over hardcoded colors
 6. **Test all 4 themes** when adding styled components
 x

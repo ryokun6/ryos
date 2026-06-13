@@ -12,6 +12,7 @@ import { InputDialog } from "@/components/dialogs/InputDialog";
 import { appMetadata } from "..";
 import { usePaintLogic } from "../hooks/usePaintLogic";
 import { useRegisterUndoRedo } from "@/hooks/useUndoRedo";
+import { OS_NATIVE_CHROME_SKIP_CLASS } from "@/lib/themeChrome";
 
 export const PaintAppComponent: React.FC<AppProps<PaintInitialData>> = ({
   isWindowOpen,
@@ -156,7 +157,7 @@ export const PaintAppComponent: React.FC<AppProps<PaintInitialData>> = ({
           // every theme — opt out of the macOS Aqua dark coverage layer so
           // toolbars, the canvas chrome, and the pattern palette keep their
           // light surfaces in dark mode too.
-          className="flex flex-col h-full w-full min-h-0 p-2 os-native-chrome-skip"
+          className={`flex flex-col h-full w-full min-h-0 p-2 ${OS_NATIVE_CHROME_SKIP_CLASS}`}
           style={{
             backgroundImage: 'url("/patterns/Property 1=7.svg")',
             backgroundRepeat: "repeat",

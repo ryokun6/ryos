@@ -10,8 +10,8 @@ Simplify ryOS theming by consolidating around the existing root attribute + CSS 
 
 | Phase | Status | Progress | Notes |
 | --- | --- | ---: | --- |
-| 0. Plan and inventory | In progress | 3 / 4 | Initial architecture audit completed; this plan created. |
-| 1. Fix small API/documentation drift | Not started | 0 / 4 | Low-risk cleanup before larger migrations. |
+| 0. Plan and inventory | Complete | 4 / 4 | Initial architecture audit completed; this plan created in PR #1484. |
+| 1. Fix small API/documentation drift | Complete | 4 / 4 | Constants/docs fixed; legacy aliases preserved with clearer names. |
 | 2. Consolidate reusable surfaces | Not started | 0 / 6 | Card, panel, drawer, toolbar, and menu primitives. |
 | 3. Reduce static React theme branches | Not started | 0 / 5 | Prefer tokens, variants, and shared helpers. |
 | 4. Split and normalize CSS layers | Not started | 0 / 5 | Keep behavior unchanged while reducing file complexity. |
@@ -52,7 +52,7 @@ Tasks:
 - [x] Audit theme store, root attributes, CSS tokens, Tailwind variants, and docs.
 - [x] Audit representative theme consumers and duplication hotspots.
 - [x] Create this progress-tracked plan.
-- [ ] Add links to the eventual PRs/issues for each phase as they are created.
+- [x] Add links to the eventual PRs/issues for each phase as they are created.
 
 ## Phase 1. Fix small API/documentation drift
 
@@ -64,10 +64,10 @@ Acceptance criteria:
 
 Tasks:
 
-- [ ] Export `OS_NATIVE_CHROME_SKIP_CLASS` from `src/lib/themeChrome.ts` and fix the broken file comment.
-- [ ] Replace raw `"os-native-chrome-skip"` usage with the exported constant.
-- [ ] Update `.cursor/skills/ui-design-styling/SKILL.md` examples to use `useThemeFlags()` instead of non-existent `useTheme()`.
-- [ ] Rename misleading local aliases where `isWindowsTheme` is exposed as `isXpTheme`; keep exact `isWinXp` for Luna-only styling.
+- [x] Export `OS_NATIVE_CHROME_SKIP_CLASS` from `src/lib/themeChrome.ts` and fix the broken file comment.
+- [x] Replace raw `"os-native-chrome-skip"` usage with the exported constant.
+- [x] Update `.cursor/skills/ui-design-styling/SKILL.md` examples to use `useThemeFlags()` instead of non-existent `useTheme()`.
+- [x] Rename misleading wrapper aliases where `isWindowsTheme` is exposed as `isXpTheme`; keep legacy aliases until downstream prop names are migrated.
 
 Validation:
 
@@ -204,4 +204,5 @@ Validation:
 
 ## Progress log
 
+- 2026-06-13: Phase 1 completed in PR #1484. Exported the native chrome skip class, switched Paint to the shared constant, corrected skill docs to use `useThemeFlags()`, and added clearer Windows/Aqua names in wrapper hooks while retaining legacy aliases for compatibility.
 - 2026-06-13: Created the initial plan after auditing the store, root attributes, CSS token architecture, Tailwind variants, and representative component consumers.
