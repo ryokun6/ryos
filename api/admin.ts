@@ -421,7 +421,7 @@ async function getRedisKeyType(redis: Redis, key: string): Promise<RedisKeyType>
     }
     return "unknown";
   } catch (error) {
-    console.error(`Error reading Redis type for ${key}:`, error);
+    console.error("Error reading Redis type", { key, error });
     return "unknown";
   }
 }
@@ -543,7 +543,7 @@ async function getRedisKeyDocument(
       }
     }
   } catch (error) {
-    console.error(`Error reading Redis key ${key}:`, error);
+    console.error("Error reading Redis key", { key, error });
     return {
       ...summary,
       value: null,
