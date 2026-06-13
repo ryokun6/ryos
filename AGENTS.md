@@ -19,7 +19,6 @@ This project uses **Bun** as the package manager and runtime. Local API testing 
 bun run dev            # Start full stack (API + Vite with proxy) — the default
 bun run dev:vite       # Start Vite dev server only (frontend-only, no API)
 bun run dev:api        # Start standalone Bun API server only (port 3000)
-bun run dev:vercel     # Optional: Vercel dev server (parity/debugging only)
 
 # Build & Production
 bun run build      # TypeScript compile + Vite build

@@ -2,6 +2,8 @@
 
 ryOS includes 25 built-in applications, each designed to replicate classic desktop experiences while adding modern functionality.
 
+Registry IDs and docs slugs mostly match, with a few intentional aliases: Applet Store is registered as `applet-viewer`, Virtual PC is registered as `pc`, and legacy `infinite-pc` IDs resolve to `pc` for persisted shortcuts.
+
 ## App Overview
 
 | App | Description | Category |
@@ -54,10 +56,10 @@ Each app defines window constraints:
 - `mobileSquare`: Square aspect ratio for mobile
 
 ### Lazy Loading
-Most apps are lazy-loaded for performance:
-- Finder loads eagerly (critical path)
-- Other apps load on-demand when opened
-- Reduces initial bundle size
+App components are lazy-loaded through `appRegistry` for performance:
+- Lightweight metadata and help content can be imported eagerly
+- UI components load on demand when opened
+- Reduces initial bundle size while preserving fast launcher/search metadata
 
 ## Key Features by Category
 

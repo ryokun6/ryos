@@ -312,7 +312,7 @@
 <pre class="mermaid">graph TB
     subgraph Client["Client Layer"]
         Browser[Browser / PWA]
-        Desktop[Tauri Desktop App]
+        Desktop[Electron Desktop App]
     end
     
     subgraph Presentation["Presentation Layer"]
@@ -323,7 +323,7 @@
     end
     
     subgraph State["State Layer"]
-        Zustand[34 Zustand Stores]
+        Zustand[36 Zustand Stores]
         Contexts[React Contexts]
     end
     
@@ -360,7 +360,7 @@
     API --> External
     State --> API</pre>
 <h2>Deployment Targets</h2>
-<table><thead><tr><th>Target</th><th>Technology</th><th>Description</th></tr></thead><tbody><tr><td><strong>Web (PWA)</strong></td><td>Vercel</td><td>Primary deployment with CDN, serverless functions</td></tr><tr><td><strong>Desktop</strong></td><td>Tauri</td><td>Native app for macOS, Windows, Linux</td></tr><tr><td><strong>Development</strong></td><td>Vite + Bun</td><td>Local frontend with HMR and optional standalone API proxy</td></tr><tr><td><strong>Self-hosted API</strong></td><td>Bun (<code>Bun.serve</code>)</td><td>Run <code>api/*</code> routes without Vercel via <code><a href="https://github.com/ryokun6/ryos/blob/main/scripts/api-standalone-server.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">scripts/api-standalone-server.ts</a></code></td></tr><tr><td><strong>Docker / Coolify</strong></td><td>Dockerfile + Bun</td><td>Container deployment with health checks at <code>/health</code></td></tr></tbody></table>
+<table><thead><tr><th>Target</th><th>Technology</th><th>Description</th></tr></thead><tbody><tr><td><strong>Web (PWA)</strong></td><td>Vercel</td><td>Primary deployment with CDN, serverless functions</td></tr><tr><td><strong>Desktop</strong></td><td>Electron + electron-builder</td><td>Native installers for macOS and Windows; Linux AppImage target configured</td></tr><tr><td><strong>Development</strong></td><td>Vite + Bun</td><td>Local frontend with HMR and optional standalone API proxy</td></tr><tr><td><strong>Self-hosted API</strong></td><td>Bun (<code>Bun.serve</code>)</td><td>Run <code>api/*</code> routes without Vercel via <code><a href="https://github.com/ryokun6/ryos/blob/main/scripts/api-standalone-server.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">scripts/api-standalone-server.ts</a></code></td></tr><tr><td><strong>Docker / Coolify</strong></td><td>Dockerfile + Bun</td><td>Container deployment with health checks at <code>/health</code></td></tr></tbody></table>
 <pre class="mermaid">graph LR
     subgraph Source
         A[Source Code]
@@ -382,20 +382,20 @@
     B --> E
     
     C --> F[Vercel CDN]
-    D --> G[Tauri - macOS/Windows/Linux]
+    D --> G[Electron - macOS/Windows]
     E --> H[localhost + HMR]</pre>
 <h2>API Runtime Modes</h2>
 <p>The API layer is shared across two execution environments: <ul><li><strong>Vercel serverless functions:</strong> <code>api/*</code> handlers run as Node.js functions for primary web deployment.</li></ul><ul><li><strong>Standalone Bun server:</strong> <code><a href="https://github.com/ryokun6/ryos/blob/main/scripts/api-standalone-server.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">scripts/api-standalone-server.ts</a></code> uses <code>Bun.serve</code> and adapts requests/responses to the Vercel handler shape for non-Vercel environments.</li></ul></p>
 <p>Shared utilities under <code>api/_utils/</code> (including <code>api-handler.ts</code>, <code>middleware.ts</code>, <code>request-auth.ts</code>, <code>redis.ts</code>, <code>storage.ts</code>, <code>realtime.ts</code>, <code>runtime-config.ts</code>, <code>constants.ts</code>, <code>_cors.ts</code>, <code>_ssrf.ts</code>, <code>_rate-limit.ts</code>, <code>_validation.ts</code>, <code>_logging.ts</code>, <code>_analytics.ts</code>, <code>_sse.ts</code>, and <code>_memory.ts</code>) provide consistent API patterns across routes.</p>
-<p>Frontend clients under <code>src/api/</code> (<code>auth</code>, <code>rooms</code>, <code>admin</code>, <code>songs</code>, and <code>listen</code>) centralize request logic for app modules; the Cloud Sync v2 client engine lives in <code>src/sync/</code>.</p>
+<p>Frontend clients under <code>src/api/</code> (<code>auth</code>, <code>rooms</code>, <code>admin</code>, <code>songs</code>, <code>listen</code>, <code>core</code>, <code>telegram</code>, and <code>irc</code>) centralize request logic for app modules; the Cloud Sync v2 client engine lives in <code>src/sync/</code>.</p>
 <h2>Chunk Splitting Strategy</h2>
 <p>The build system uses intelligent chunk splitting to optimize initial load time while enabling on-demand loading of heavy dependencies.</p>
 <h3>Core Chunks (Immediate Load)</h3>
 <p>These chunks are loaded on initial page load:</p>
-<table><thead><tr><th>Chunk</th><th>Packages</th><th>Size</th></tr></thead><tbody><tr><td><code>react</code></td><td>react, react-dom</td><td>~150KB</td></tr><tr><td><code>ui-core</code></td><td>@radix-ui/<em> (dialog, dropdown, select, etc.)</td><td>~80KB</td></tr><tr><td><code>zustand</code></td><td>zustand, persist middleware</td><td>~10KB</td></tr><tr><td><code>motion</code></td><td>framer-motion</td><td>~100KB</td></tr></tbody></table>
+<table><thead><tr><th>Chunk</th><th>Packages</th><th>Size</th></tr></thead><tbody><tr><td><code>react</code></td><td>react, react-dom</td><td>~150KB</td></tr><tr><td><code>ui-core</code></td><td>@radix-ui/<em> (dialog, dropdown, select, etc.)</td><td>~80KB</td></tr><tr><td><code>zustand</code></td><td>zustand, persist middleware</td><td>~10KB</td></tr><tr><td><code>motion</code></td><td>motion</td><td>~100KB</td></tr></tbody></table>
 <h3>Deferred Chunks (Lazy Load)</h3>
 <p>These chunks are loaded when their corresponding apps are opened:</p>
-<table><thead><tr><th>Chunk</th><th>Contents</th><th>Trigger Apps</th></tr></thead><tbody><tr><td><code>audio</code></td><td>tone.js, wavesurfer.js</td><td>Soundboard, iPod, Synth</td></tr><tr><td><code>tiptap</code></td><td>@tiptap/</em> (editor framework)</td><td>TextEdit</td></tr><tr><td><code>three</code></td><td>three.js (3D rendering)</td><td>Virtual PC</td></tr><tr><td><code>ai-sdk</code></td><td>ai, @ai-sdk/*</td><td>Chats, Internet Explorer</td></tr></tbody></table>
+<table><thead><tr><th>Chunk</th><th>Contents</th><th>Trigger Apps</th></tr></thead><tbody><tr><td><code>audio</code></td><td>tone.js, wavesurfer.js, audio-buffer-utils</td><td>Soundboard, iPod, Synth</td></tr><tr><td><code>media-player</code></td><td>react-player</td><td>iPod, Videos</td></tr><tr><td><code>tiptap</code></td><td>@tiptap/</em> (editor framework)</td><td>TextEdit</td></tr><tr><td><code>three</code></td><td>three.js (3D rendering)</td><td>Synth and shader wallpapers</td></tr><tr><td><code>ai-sdk</code></td><td>ai, @ai-sdk/*</td><td>Chats, Internet Explorer</td></tr><tr><td><code>hangul</code></td><td>hangul-romanization</td><td>Karaoke and iPod lyrics</td></tr><tr><td><code>pusher</code></td><td>pusher-js</td><td>Chats realtime</td></tr><tr><td><code>webamp</code></td><td>webamp</td><td>Winamp</td></tr><tr><td><code>v86</code></td><td>v86 emulator runtime</td><td>Virtual PC</td></tr></tbody></table>
 <pre class="mermaid">graph TD
     subgraph Core["Core Chunks (Immediate)"]
         R[react]
@@ -406,9 +406,14 @@
     
     subgraph Deferred["Deferred Chunks (Lazy)"]
         AU[audio]
+        MP[media-player]
         TT[tiptap]
         TH[three]
         AI[ai-sdk]
+        H[hangul]
+        P[pusher]
+        W[webamp]
+        V[v86]
     end
     
     subgraph Apps
@@ -419,15 +424,25 @@
         PC[Virtual PC]
         CH[Chats]
         IE[Internet Explorer]
+        KA[Karaoke]
+        VI[Videos]
+        WA[Winamp]
     end
     
     SB -.->|"on open"| AU
     IP -.->|"on open"| AU
+    IP -.->|"on open"| MP
+    IP -.->|"lyrics"| H
     SY -.->|"on open"| AU
+    SY -.->|"shader views"| TH
     TE -.->|"on open"| TT
-    PC -.->|"on open"| TH
+    PC -.->|"on open"| V
     CH -.->|"on open"| AI
-    IE -.->|"on open"| AI</pre>
+    CH -.->|"realtime"| P
+    IE -.->|"on open"| AI
+    KA -.->|"lyrics"| H
+    VI -.->|"on open"| MP
+    WA -.->|"on open"| W</pre>
 <h3>Lazy Component Pattern</h3>
 <p>Apps use React's lazy loading with a custom wrapper for HMR compatibility:</p>
 <pre><code>// Lazy loading with caching for HMR
@@ -493,14 +508,15 @@ function createLazyComponent&lt;T = unknown&gt;(
 <pre><code># Local development with HMR
 bun run dev           # Full stack (API + Vite with proxy) — the default
 bun run dev:vite      # Vite dev server only (frontend-only, no API)
-bun run dev:api       # Standalone Bun API server only (port 3000)
-bun run dev:vercel    # Optional: Vercel dev server (parity/debugging only)</code></pre>
+bun run dev:api       # Standalone Bun API server only (port 3000)</code></pre>
 <h3>Production Build</h3>
 <pre><code>bun run build         # Production build
 bun run preview       # Preview production build</code></pre>
-<h3>Desktop (Tauri)</h3>
-<pre><code>bun run tauri:dev     # Development with native shell
-bun run tauri:build   # Build native applications</code></pre>
+<h3>Desktop (Electron)</h3>
+<pre><code>bun run electron:dev            # Bundle and launch Electron against local Vite
+bun run electron:build          # Build all configured desktop artifacts
+bun run electron:build:mac      # Build macOS DMG/ZIP artifacts
+bun run electron:build:windows  # Build Windows NSIS installer</code></pre>
 <h2>Performance Optimizations</h2>
 <h3>Runtime Stability & App Coordination</h3>
 <ol><li><strong>Error Boundaries:</strong> Desktop-level and app-level boundaries isolate crashes and allow targeted recovery flows.</li></ol><ol><li><strong>Typed App Event Bus:</strong> <code><a href="https://github.com/ryokun6/ryos/blob/main/src/utils/appEventBus.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/utils/appEventBus.ts</a></code> defines typed primitives for app launch/update, window focus, Spotlight/Expose toggles, and file/document events.</li></ol>

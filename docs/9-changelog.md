@@ -70,7 +70,7 @@ A summary of changes and updates to ryOS, organized by month.
 - Chats: localize toasts, Applet Viewer flows, and Finder list icons; 400px new-chat dialog max width; IRC channel list aligned with lyrics search dialog; dialog/tab truncation constraints; stabilize IRC tab; delegate embedded `StartGrindPlanning` to parent.
 - Karaoke / iPod: react to locale changes for lyrics translation `auto` mode; open Karaoke cover flow from title art.
 - macOSX: include CJK and emoji pixel fonts in LCD font stack.
-- Control Panels: retro Login button on System 7; Tauri fullscreen menubar flicker fix.
+- Control Panels: retro Login button on System 7; desktop-shell fullscreen menubar flicker fix.
 - Files: sparse default desktop shortcuts on System 7 and Windows themes; guard optional `aliasTarget` in System 7 desktop migration.
 - IRC: use `crypto.randomInt` for bridge IRC nick suffix.
 - Tests: cover `cursor-agent` PR URL extraction and follow-up pre-checks.
