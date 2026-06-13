@@ -70,6 +70,7 @@ export function AdminMenuBar({
         ),
         sectionCheckbox("users", t("apps.admin.sidebar.users")),
         sectionCheckbox("songs", t("apps.admin.sidebar.songs")),
+        sectionCheckbox("redis", t("apps.admin.sidebar.redis", "Redis")),
         sectionCheckbox(
           "cursorAgents",
           t("apps.admin.sidebar.cursorAgents", "Cursor Agents")

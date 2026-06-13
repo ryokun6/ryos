@@ -32,6 +32,8 @@ interface AdminRequest {
   reason?: string;
   prompt?: string;
   modelId?: string;
+  key?: string;
+  confirmKey?: string;
 }
 
 interface UserProfile {
@@ -358,6 +360,261 @@ async function getStats(redis: Redis): Promise<{ totalUsers: number; totalRooms:
   }
 }
 
+type RedisKeyType = "string" | "list" | "set" | "hash" | "zset" | "none" | "stream" | "unknown";
+
+interface RedisKeySummary {
+  key: string;
+  type: RedisKeyType;
+  ttl: number | null;
+}
+
+interface RedisKeyDocument extends RedisKeySummary {
+  value: unknown;
+  length: number | null;
+  truncated: boolean;
+}
+
+const REDIS_BROWSER_SCAN_COUNT_DEFAULT = 100;
+const REDIS_BROWSER_SCAN_COUNT_MAX = 250;
+const REDIS_BROWSER_VALUE_PREVIEW_LIMIT = 200;
+const REDIS_BROWSER_BACKUP_KEY_LIMIT_DEFAULT = 500;
+const REDIS_BROWSER_BACKUP_KEY_LIMIT_MAX = 1000;
+
+function normalizeRedisPattern(pattern: unknown): string {
+  if (typeof pattern !== "string") return "*";
+  const trimmed = pattern.trim();
+  return trimmed.length > 0 ? trimmed : "*";
+}
+
+function clampInteger(value: unknown, fallback: number, min: number, max: number): number {
+  const parsed =
+    typeof value === "number"
+      ? value
+      : typeof value === "string"
+        ? Number.parseInt(value, 10)
+        : NaN;
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.min(Math.max(parsed, min), max);
+}
+
+function normalizeRedisCursor(cursor: unknown): string | number {
+  if (typeof cursor === "number") return cursor;
+  if (typeof cursor === "string" && cursor.trim()) return cursor.trim();
+  return 0;
+}
+
+async function getRedisKeyType(redis: Redis, key: string): Promise<RedisKeyType> {
+  try {
+    const typedRedis = redis as Redis & { type?: (key: string) => Promise<string> };
+    const rawType = await typedRedis.type?.(key);
+    if (!rawType) return "unknown";
+    if (
+      rawType === "string" ||
+      rawType === "list" ||
+      rawType === "set" ||
+      rawType === "hash" ||
+      rawType === "zset" ||
+      rawType === "none" ||
+      rawType === "stream"
+    ) {
+      return rawType;
+    }
+    return "unknown";
+  } catch (error) {
+    console.error("Error reading Redis type", { key, error });
+    return "unknown";
+  }
+}
+
+async function getRedisTtl(redis: Redis, key: string): Promise<number | null> {
+  try {
+    return await redis.ttl(key);
+  } catch {
+    return null;
+  }
+}
+
+async function getRedisKeySummary(redis: Redis, key: string): Promise<RedisKeySummary> {
+  const [type, ttl] = await Promise.all([
+    getRedisKeyType(redis, key),
+    getRedisTtl(redis, key),
+  ]);
+  return { key, type, ttl };
+}
+
+function truncateObjectEntries(
+  value: Record<string, unknown>,
+  limit: number
+): { value: Record<string, unknown>; truncated: boolean; length: number } {
+  const entries = Object.entries(value);
+  if (entries.length <= limit) {
+    return { value, truncated: false, length: entries.length };
+  }
+  return {
+    value: Object.fromEntries(entries.slice(0, limit)),
+    truncated: true,
+    length: entries.length,
+  };
+}
+
+async function getRedisKeyDocument(
+  redis: Redis,
+  key: string,
+  options: { full?: boolean } = {}
+): Promise<RedisKeyDocument | null> {
+  const exists = await redis.exists(key);
+  if (exists === 0) return null;
+
+  const summary = await getRedisKeySummary(redis, key);
+  const previewLimit = options.full ? Number.POSITIVE_INFINITY : REDIS_BROWSER_VALUE_PREVIEW_LIMIT;
+
+  try {
+    switch (summary.type) {
+      case "string": {
+        const value = await redis.get(key);
+        const stringValue =
+          typeof value === "string" ? value : JSON.stringify(value ?? null);
+        return {
+          ...summary,
+          value,
+          length: stringValue.length,
+          truncated: false,
+        };
+      }
+      case "list": {
+        const length = await redis.llen(key);
+        const value = await redis.lrange(
+          key,
+          0,
+          options.full ? -1 : REDIS_BROWSER_VALUE_PREVIEW_LIMIT - 1
+        );
+        return {
+          ...summary,
+          value,
+          length,
+          truncated: !options.full && length > previewLimit,
+        };
+      }
+      case "set": {
+        const members = await redis.smembers<string[]>(key);
+        return {
+          ...summary,
+          value: options.full ? members : members.slice(0, REDIS_BROWSER_VALUE_PREVIEW_LIMIT),
+          length: members.length,
+          truncated: !options.full && members.length > previewLimit,
+        };
+      }
+      case "hash": {
+        const hash = (await redis.hgetall<Record<string, unknown>>(key)) ?? {};
+        const limited = options.full
+          ? { value: hash, truncated: false, length: Object.keys(hash).length }
+          : truncateObjectEntries(hash, REDIS_BROWSER_VALUE_PREVIEW_LIMIT);
+        return {
+          ...summary,
+          value: limited.value,
+          length: limited.length,
+          truncated: limited.truncated,
+        };
+      }
+      case "zset": {
+        const length = await redis.zcard(key);
+        const value = await redis.zrange(
+          key,
+          0,
+          options.full ? -1 : REDIS_BROWSER_VALUE_PREVIEW_LIMIT - 1
+        );
+        return {
+          ...summary,
+          value,
+          length,
+          truncated: !options.full && length > previewLimit,
+        };
+      }
+      case "none":
+        return null;
+      default: {
+        const value = await redis.get(key).catch(() => null);
+        return {
+          ...summary,
+          value,
+          length: null,
+          truncated: false,
+        };
+      }
+    }
+  } catch (error) {
+    console.error("Error reading Redis key", { key, error });
+    return {
+      ...summary,
+      value: null,
+      length: null,
+      truncated: false,
+    };
+  }
+}
+
+async function listRedisKeys(
+  redis: Redis,
+  input: { pattern: string; cursor: string | number; count: number }
+): Promise<{ keys: RedisKeySummary[]; cursor: string; pattern: string; count: number }> {
+  const [nextCursor, keys] = await redis.scan(input.cursor, {
+    match: input.pattern,
+    count: input.count,
+  });
+  const summaries = await Promise.all(keys.sort().map((key) => getRedisKeySummary(redis, key)));
+  return {
+    keys: summaries,
+    cursor: String(nextCursor),
+    pattern: input.pattern,
+    count: summaries.length,
+  };
+}
+
+async function backupRedisKeys(
+  redis: Redis,
+  input: { pattern: string; limit: number }
+): Promise<{
+  exportedAt: string;
+  pattern: string;
+  keyCount: number;
+  truncated: boolean;
+  keys: RedisKeyDocument[];
+}> {
+  const keys: string[] = [];
+  let cursor: string | number = 0;
+  let iterations = 0;
+
+  do {
+    const [nextCursor, batch] = await redis.scan(cursor, {
+      match: input.pattern,
+      count: REDIS_BROWSER_SCAN_COUNT_MAX,
+    });
+    cursor = nextCursor;
+    keys.push(...batch);
+    iterations++;
+  } while (
+    cursor !== 0 &&
+    cursor !== "0" &&
+    keys.length < input.limit &&
+    iterations < 200
+  );
+
+  const limitedKeys = Array.from(new Set(keys)).sort().slice(0, input.limit);
+  const documents = (
+    await Promise.all(
+      limitedKeys.map((key) => getRedisKeyDocument(redis, key, { full: true }))
+    )
+  ).filter((document): document is RedisKeyDocument => document !== null);
+
+  return {
+    exportedAt: new Date().toISOString(),
+    pattern: input.pattern,
+    keyCount: documents.length,
+    truncated: keys.length > input.limit || (cursor !== 0 && cursor !== "0"),
+    keys: documents,
+  };
+}
+
 interface UserMemory {
   key: string;
   summary: string;
@@ -548,6 +805,61 @@ export default apiHandler<AdminRequest>(
             truncated: sliceTruncated || scanIncomplete,
             scanIncomplete,
           });
+          return;
+        }
+        case "listRedisKeys": {
+          const pattern = normalizeRedisPattern(req.query.pattern);
+          const cursor = normalizeRedisCursor(req.query.cursor);
+          const count = clampInteger(
+            req.query.count,
+            REDIS_BROWSER_SCAN_COUNT_DEFAULT,
+            1,
+            REDIS_BROWSER_SCAN_COUNT_MAX
+          );
+          const data = await listRedisKeys(redis, { pattern, cursor, count });
+          logger.info("Redis keys listed", {
+            pattern,
+            cursor: data.cursor,
+            count: data.count,
+          });
+          logger.response(200, Date.now() - startTime);
+          res.status(200).json(data);
+          return;
+        }
+        case "getRedisKey": {
+          const key = typeof req.query.key === "string" ? req.query.key : "";
+          if (!key) {
+            logger.response(400, Date.now() - startTime);
+            res.status(400).json({ error: "Redis key is required" });
+            return;
+          }
+          const data = await getRedisKeyDocument(redis, key);
+          if (!data) {
+            logger.response(404, Date.now() - startTime);
+            res.status(404).json({ error: "Redis key not found" });
+            return;
+          }
+          logger.info("Redis key retrieved", { key, type: data.type });
+          logger.response(200, Date.now() - startTime);
+          res.status(200).json(data);
+          return;
+        }
+        case "backupRedisKeys": {
+          const pattern = normalizeRedisPattern(req.query.pattern);
+          const limit = clampInteger(
+            req.query.limit,
+            REDIS_BROWSER_BACKUP_KEY_LIMIT_DEFAULT,
+            1,
+            REDIS_BROWSER_BACKUP_KEY_LIMIT_MAX
+          );
+          const data = await backupRedisKeys(redis, { pattern, limit });
+          logger.info("Redis backup generated", {
+            pattern,
+            keyCount: data.keyCount,
+            truncated: data.truncated,
+          });
+          logger.response(200, Date.now() - startTime);
+          res.status(200).json(data);
           return;
         }
         default:
@@ -756,6 +1068,29 @@ export default apiHandler<AdminRequest>(
             res.status(500).json({ error: "Failed to process daily notes" });
             return;
           }
+        }
+        case "deleteRedisKey": {
+          const key = typeof body?.key === "string" ? body.key : "";
+          const confirmKey =
+            typeof body?.confirmKey === "string" ? body.confirmKey : "";
+          if (!key) {
+            logger.response(400, Date.now() - startTime);
+            res.status(400).json({ error: "Redis key is required" });
+            return;
+          }
+          if (confirmKey !== key) {
+            logger.response(400, Date.now() - startTime);
+            res.status(400).json({ error: "Confirmation does not match Redis key" });
+            return;
+          }
+          const deletedCount = await redis.del(key);
+          logger.info("Redis key delete requested", { key, deletedCount });
+          logger.response(200, Date.now() - startTime);
+          res.status(200).json({
+            success: deletedCount > 0,
+            deletedCount,
+          });
+          return;
         }
         default:
           logger.response(400, Date.now() - startTime);

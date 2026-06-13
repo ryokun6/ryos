@@ -54,7 +54,7 @@ export const adminAltRowBgClass = "bg-black/5";
 
 /** Zebra-striped data table row — `odd:bg-black/5` matches Finder list view. */
 export const adminTableRowClass = cn(
-  "border-none group",
+  "admin-zebra-row border-none group",
   "odd:bg-black/5 hover:bg-black/5 transition-colors",
 );
 

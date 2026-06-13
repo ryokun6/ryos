@@ -124,6 +124,37 @@ export async function getAdminCursorAgentRuns<TResponse>(
   return adminGet<TResponse>("getCursorAgentRuns", { limit });
 }
 
+export async function getAdminRedisKeys<TResponse>(input: {
+  pattern?: string;
+  cursor?: string;
+  count?: number;
+} = {}): Promise<TResponse> {
+  return adminGet<TResponse>("listRedisKeys", input);
+}
+
+export async function getAdminRedisKey<TResponse>(
+  key: string
+): Promise<TResponse> {
+  return adminGet<TResponse>("getRedisKey", { key });
+}
+
+export async function getAdminRedisBackup<TResponse>(input: {
+  pattern?: string;
+  limit?: number;
+} = {}): Promise<TResponse> {
+  return adminGet<TResponse>("backupRedisKeys", input);
+}
+
+export async function deleteAdminRedisKey<TResponse>(
+  key: string
+): Promise<TResponse> {
+  return adminPost<TResponse, { action: string; key: string; confirmKey: string }>({
+    action: "deleteRedisKey",
+    key,
+    confirmKey: key,
+  });
+}
+
 export async function postAdminStartCursorAgent<TResponse>(input: {
   prompt: string;
   modelId?: string;

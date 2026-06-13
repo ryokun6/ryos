@@ -3695,6 +3695,7 @@
         "users": "Users",
         "rooms": "Rooms",
         "songs": "Songs",
+        "redis": "Redis",
         "server": "Server",
         "cursorAgents": "Cursor Agents",
         "private": "Private",
@@ -3749,6 +3750,39 @@
         "unhealthy": "Unhealthy",
         "configured": "Configured",
         "notConfigured": "Not configured"
+      },
+      "redis": {
+        "patternPlaceholder": "Redis pattern, e.g. chat:*",
+        "scan": "Scan",
+        "backup": "Backup",
+        "refresh": "Refresh Redis keys",
+        "keys": "Keys",
+        "noKeys": "No Redis keys match this pattern",
+        "loading": "Loading...",
+        "loadMore": "Load more",
+        "detail": "Key Detail",
+        "delete": "Delete Redis key",
+        "selectKey": "Select a Redis key to inspect its value",
+        "key": "Key",
+        "type": "Type",
+        "ttl": "TTL",
+        "length": "Length",
+        "previewTruncated": "Preview is truncated; use Backup for the full value.",
+        "keyUnavailable": "Redis key is unavailable",
+        "deleteTitle": "Delete Redis key?",
+        "deleteDescription": "Delete Redis key \"{{key}}\"? This cannot be undone.",
+        "messages": {
+          "backupReady": "Backed up {{count}} Redis keys",
+          "backupTruncated": "Backup reached the key limit; narrow the pattern for a full export",
+          "deleted": "Redis key deleted",
+          "alreadyDeleted": "Redis key was already gone"
+        },
+        "errors": {
+          "loadKeys": "Failed to load Redis keys",
+          "loadKey": "Failed to load Redis key",
+          "backup": "Failed to back up Redis keys",
+          "delete": "Failed to delete Redis key"
+        }
       },
       "search": {
         "placeholder": "Search users...",
@@ -3898,6 +3932,7 @@
         "songsCount": "{{count}} songs",
         "cursorAgentsCount": "{{count}} Cursor agent",
         "cursorAgentsCount_plural": "{{count}} Cursor agents",
+        "redis": "Redis Browser",
         "loggedInAs": "Logged in as {{username}}"
       },
       "accessDenied": {
