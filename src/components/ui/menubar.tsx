@@ -67,7 +67,6 @@ const Menubar = (
 ) => {
   const { play: playMenuOpen } = useSound(Sounds.MENU_OPEN)
   const { play: playMenuClose } = useSound(Sounds.MENU_CLOSE)
-  const [previousValue, setPreviousValue] = React.useState<string | undefined>(undefined)
   const [isSwitching, setIsSwitching] = React.useState(false)
   const currentValueRef = React.useRef<string | undefined>(undefined)
 
@@ -89,7 +88,6 @@ const Menubar = (
       setIsSwitching(true)
     }
     currentValueRef.current = value
-    setPreviousValue(value)
     onValueChange?.(value ?? "")
   }
 
