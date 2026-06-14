@@ -1288,7 +1288,7 @@
   border: none !important;
 }
 
-/* macOS Aqua Radix select items — replaces inline font/layout styles in select.tsx */
+/* macOS Aqua Base UI select items — replaces inline font/layout styles in select.tsx */
 :root[data-os-theme="macosx"] .os-select-item {
   -webkit-font-smoothing: antialiased;
   font-smooth: auto;
@@ -1342,7 +1342,7 @@
   border: none !important;
 }
 
-/* macOS Aqua Radix select trigger — replaces inline styles in select.tsx */
+/* macOS Aqua Base UI select trigger — replaces inline styles in select.tsx */
 .os-select-trigger-macos {
   height: 24px;
   line-height: 1.5;
@@ -2259,12 +2259,12 @@
   background: transparent !important;
 }
 
-:root[data-os-theme="macosx"] [data-radix-tabs-root] {
+:root[data-os-theme="macosx"] [data-ryos-tabs-root] {
   background: transparent !important;
 }
 
 /* Remove any white backgrounds from Tabs component */
-:root[data-os-theme="macosx"] [data-radix-tabs-root] > * {
+:root[data-os-theme="macosx"] [data-ryos-tabs-root] > * {
   background: transparent !important;
 }
 

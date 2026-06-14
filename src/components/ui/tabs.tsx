@@ -15,7 +15,7 @@ const Tabs = (
   <TabsPrimitive.Root
     ref={ref}
     render={(rootProps) => (
-      <div {...rootProps} data-radix-tabs-root="" />
+      <div {...rootProps} data-ryos-tabs-root="" />
     )}
     {...props}
   />

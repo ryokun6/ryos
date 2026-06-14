@@ -252,7 +252,7 @@
     0 0 0 1px rgba(255, 255, 255, 0.14) !important;
 }
 
-/* Aqua select triggers, the Radix `.os-select-trigger-macos` / `.os-btn-aqua-select`
+/* Aqua select triggers, the `.os-select-trigger-macos` / `.os-btn-aqua-select`
    variants, and `.aqua-button.secondary` all bake light gradients
    (`rgba(160,160,160) → rgba(255,255,255)`) into CSS. In dark mode those
    render as bright pills sitting on top of the dark window chrome. Swap
@@ -449,10 +449,10 @@
   color: var(--os-color-text-primary);
 }
 
-/* Dialogs / cards rendered through Radix portals don't inherit window-body tokens.
+/* Dialogs / cards rendered through portals don't inherit window-body tokens.
    Provide a minimal default surface so portaled popovers don't blast white. */
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"]
-  [data-radix-popper-content-wrapper] {
+  [data-ryos-popper-content-wrapper] {
   color: var(--os-color-text-primary);
 }
 
@@ -702,40 +702,39 @@
 }
 
 /* -----------------------------------------------------------------------
- * Menu / dropdown popovers (Radix portaled). They render outside any
+ * Menu / dropdown popovers (portaled). They render outside any
  * `.window-body`, so the rules above don't reach them. Repaint the surface,
  * separators, items, and hover/highlight states. The selection rule keeps
  * using the existing Aqua blue token so highlights remain branded.
  * ----------------------------------------------------------------------- */
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"]
-  [data-radix-popper-content-wrapper]
+  [data-ryos-popper-content-wrapper]
   :where(
     [role="menu"],
     [role="listbox"]:not([data-ryos-select-list]),
-    [data-radix-menu-content],
-    [data-radix-popover-content],
-    [data-radix-select-content]
+    [data-ryos-menu-content],
+    [data-ryos-popover-content],
+    [data-ryos-select-content]
   ) {
   background-color: #2f2f33 !important;
   color: var(--os-color-text-primary) !important;
   border-color: rgba(255, 255, 255, 0.12) !important;
 }
 
-/* Menubar (top bar) dropdown items — Radix exposes
-   `[data-radix-collection-item]` for menu items. Default items inherit dark
-   surface; only repaint disabled items. */
+/* Menubar (top bar) dropdown items inherit the dark surface; only repaint
+   disabled items. */
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"]
-  [data-radix-popper-content-wrapper]
+  [data-ryos-popper-content-wrapper]
   [data-disabled] {
   color: var(--os-color-text-disabled) !important;
 }
 
 /* Separator strokes inside dropdowns. */
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"]
-  [data-radix-popper-content-wrapper]
+  [data-ryos-popper-content-wrapper]
   [role="separator"],
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"]
-  [data-radix-popper-content-wrapper]
+  [data-ryos-popper-content-wrapper]
   hr {
   background-color: rgba(255, 255, 255, 0.12) !important;
   border-color: rgba(255, 255, 255, 0.12) !important;
@@ -755,7 +754,7 @@
 }
 
 /* Tabs — the active tab indicator uses light gradients. Soften so it reads
-   on the dark window surface. (Affects ThemedTabsTrigger + Radix Tabs.) */
+   on the dark window surface. (Affects ThemedTabsTrigger + Base UI Tabs.) */
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"]
   .window-body
   [role="tab"] {

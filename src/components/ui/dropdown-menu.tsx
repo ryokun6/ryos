@@ -160,12 +160,12 @@ const DropdownMenuSubContent = (
     <DropdownMenuPrimitive.Portal>
       <DropdownMenuPrimitive.Positioner
         className="z-[10004]"
-        data-radix-popper-content-wrapper=""
+        data-ryos-popper-content-wrapper=""
       >
         <DropdownMenuPrimitive.Popup
           ref={ref}
           data-ryos-popper-content=""
-          data-radix-menu-content=""
+          data-ryos-menu-content=""
           className={cn(
             // Use z-[10004] to ensure dropdown submenu content appears above menu content
             // origin-[…]: scale from the trigger side instead of the element center.
@@ -256,12 +256,12 @@ const DropdownMenuContent = (
         collisionAvoidance={collisionAvoidance}
         collisionBoundary={collisionBoundary}
         collisionPadding={collisionPadding}
-        data-radix-popper-content-wrapper=""
+        data-ryos-popper-content-wrapper=""
       >
         <DropdownMenuPrimitive.Popup
           ref={ref}
           data-ryos-popper-content=""
-          data-radix-menu-content=""
+          data-ryos-menu-content=""
           className={cn(
             // Use z-[10003] to ensure dropdown content appears above the menubar (z-[10002])
             // This is critical for Safari where backdrop-filter creates new stacking contexts

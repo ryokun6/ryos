@@ -1194,7 +1194,7 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
   useEffect(() => {
     if (selectedSongId || selectedUserProfile) {
       const viewport = scrollAreaRef.current?.querySelector(
-        '[data-radix-scroll-area-viewport]'
+        '[data-ryos-scroll-area-viewport]'
       );
       if (viewport) {
         viewport.scrollTo({ top: 0 });

@@ -137,7 +137,7 @@ function renderItems(items: MenuItemDescriptor[]) {
 }
 
 /**
- * Declarative renderer for app menubars. Each descriptor becomes a Radix
+ * Declarative renderer for app menubars. Each descriptor becomes a Base UI
  * MenubarMenu styled with the shared `menubarStyles` constants so all OS
  * themes render identically to the hand-written JSX it replaces.
  *

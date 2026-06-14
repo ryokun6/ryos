@@ -273,12 +273,12 @@ const MenubarSubContent = (
     <MenubarMenuPrimitive.Portal>
       <MenubarMenuPrimitive.Positioner
         className="z-[10004]"
-        data-radix-popper-content-wrapper=""
+        data-ryos-popper-content-wrapper=""
       >
         <MenubarMenuPrimitive.Popup
           ref={ref}
           data-ryos-popper-content=""
-          data-radix-menu-content=""
+          data-ryos-menu-content=""
           className={cn(
             // Use z-[10004] to ensure submenu content appears above menu content (z-[10003])
             // origin-[…]: scale from the trigger side instead of the element center.
@@ -352,12 +352,12 @@ const MenubarContent = (
         sideOffset={sideOffset}
         side={side}
         collisionPadding={collisionPadding}
-        data-radix-popper-content-wrapper=""
+        data-ryos-popper-content-wrapper=""
       >
         <MenubarMenuPrimitive.Popup
           ref={ref}
           data-ryos-popper-content=""
-          data-radix-menu-content=""
+          data-ryos-menu-content=""
           className={cn(
             // Use z-[10003] to ensure menu content appears above the menubar (z-[10002])
             // This is critical for Safari where backdrop-filter creates new stacking contexts

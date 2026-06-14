@@ -543,13 +543,13 @@
    The popper-wrapper selector beats the generic dark-scheme white border-color
    rule further up in this file. */
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
-  [data-radix-popper-content-wrapper]
+  [data-ryos-popper-content-wrapper]
   :where(
     [role="menu"],
     [role="listbox"]:not([data-ryos-select-list]),
-    [data-radix-menu-content],
-    [data-radix-popover-content],
-    [data-radix-select-content]
+    [data-ryos-menu-content],
+    [data-ryos-popover-content],
+    [data-ryos-select-content]
   ) {
   -webkit-backdrop-filter: blur(36px) saturate(200%) !important;
   backdrop-filter: blur(36px) saturate(200%) !important;
@@ -571,13 +571,13 @@
 }
 
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
-  [data-radix-popper-content-wrapper]
+  [data-ryos-popper-content-wrapper]
   :where(
     [role="menu"],
     [role="listbox"]:not([data-ryos-select-list]),
-    [data-radix-menu-content],
-    [data-radix-popover-content],
-    [data-radix-select-content]
+    [data-ryos-menu-content],
+    [data-ryos-popover-content],
+    [data-ryos-select-content]
   ) {
   background: color-mix(
     in srgb,
@@ -589,7 +589,7 @@
 }
 
 /* --- Frosted Spotlight panel --------------------------------------------- */
-/* Spotlight is not a Radix popper, so it misses the popover rules above. It
+/* Spotlight is not a Base UI popper, so it misses the popover rules above. It
    paints `var(--os-pinstripe-window)` inline (0.74–0.8 alpha — opaque enough
    to bury the blur); swap in a lighter wash + add the same backdrop blur,
    rounded glass radius and hairline rim the dropdowns/menus use. */
@@ -624,12 +624,12 @@
    edge-to-edge selection bar is a non-glass Aqua trait). The `!important`s
    beat the inline `padding` / `borderRadius: 0px` from dropdown-menu.tsx. */
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
-  [data-radix-popper-content-wrapper]
+  [data-ryos-popper-content-wrapper]
   :where(
     [role="menu"],
     [role="listbox"]:not([data-ryos-select-list]),
-    [data-radix-menu-content],
-    [data-radix-select-content]
+    [data-ryos-menu-content],
+    [data-ryos-select-content]
   ) {
   padding: 4px 5px !important;
 }
@@ -647,7 +647,7 @@
 }
 
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
-  [data-radix-popper-content-wrapper]
+  [data-ryos-popper-content-wrapper]
   :where(
     [role="menuitem"],
     [role="menuitemcheckbox"],
@@ -663,14 +663,14 @@
 /* Checkbox / radio rows keep the wide left gutter — their indicators are
    absolutely positioned (left 8–12px) and would overlap the label otherwise. */
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
-  [data-radix-popper-content-wrapper]
+  [data-ryos-popper-content-wrapper]
   :where([role="menuitemcheckbox"], [role="menuitemradio"]) {
   padding-left: 30px !important;
 }
 
 /* Select options carry their check on the right (`right-2` + 14px icon). */
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
-  [data-radix-popper-content-wrapper]
+  [data-ryos-popper-content-wrapper]
   [role="option"] {
   padding-right: 28px !important;
 }
@@ -1428,13 +1428,13 @@
       .macosx-dialog,
       .rounded-os,
       .admin-card,
-      [data-radix-popper-content-wrapper]
+      [data-ryos-popper-content-wrapper]
         :where(
           [role="menu"],
           [role="listbox"]:not([data-ryos-select-list]),
-          [data-radix-menu-content],
-          [data-radix-popover-content],
-          [data-radix-select-content]
+          [data-ryos-menu-content],
+          [data-ryos-popover-content],
+          [data-ryos-select-content]
         )
     ),
   :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
@@ -1491,7 +1491,7 @@
 
   /* Menu item highlights follow the panel's squircle vocabulary. */
   :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
-    [data-radix-popper-content-wrapper]
+    [data-ryos-popper-content-wrapper]
     :where(
       [role="menuitem"],
       [role="menuitemcheckbox"],

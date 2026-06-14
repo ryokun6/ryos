@@ -18,7 +18,7 @@ const ScrollArea = (
   {...props}
 >
   <ScrollAreaPrimitive.Viewport
-    data-radix-scroll-area-viewport=""
+    data-ryos-scroll-area-viewport=""
     className="h-full w-full min-w-0 max-w-full rounded-[inherit] [&>div]:!block [&>div]:min-w-full"
   >
     <ScrollAreaPrimitive.Content>

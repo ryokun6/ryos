@@ -1,4 +1,4 @@
-/** Shared Radix menubar chrome classes used across app menu splits. */
+/** Shared Base UI menubar chrome classes used across app menu splits. */
 export const MENUBAR_TRIGGER_CLASS =
   "text-md px-2 py-1 border-none focus-visible:ring-0";
 
