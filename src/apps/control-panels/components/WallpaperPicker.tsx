@@ -195,7 +195,7 @@ function SpecialTile({
         backgroundColor: "#2a2a32",
         ...backgroundStyle,
         boxShadow: isSelected
-          ? "0 0 0 1px var(--os-color-selection-ring-gap), 0 0 0 3px var(--os-color-selection-bg)"
+          ? "0 0 0 1px transparent, 0 0 0 3px var(--os-color-selection-bg)"
           : undefined,
       }}
       onClick={handleClick}
