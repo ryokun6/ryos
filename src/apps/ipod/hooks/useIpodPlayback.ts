@@ -1,6 +1,6 @@
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
-import type ReactPlayer from "react-player";
 import { useIpodStore } from "@/stores/useIpodStore";
+import { useMediaPlayerRefs } from "@/shared/media/useMediaPlayback";
 
 type MusicKitLike = {
   currentPlaybackTime?: number;
@@ -18,13 +18,18 @@ export function useIpodPlayback(options: {
   // every tick. Leaf components use `useIpodElapsedTime()` instead, and logic
   // callbacks read `useIpodStore.getState().elapsedTime` on demand.
   const [totalTime, setTotalTime] = useState(0);
-  const playerRef = useRef<ReactPlayer | null>(null);
-  const fullScreenPlayerRef = useRef<ReactPlayer | null>(null);
+  // Shared player refs + track-switch guard (also used by Karaoke).
+  const {
+    playerRef,
+    fullScreenPlayerRef,
+    isTrackSwitchingRef,
+    trackSwitchTimeoutRef,
+    userHasInteractedRef,
+    startTrackSwitch,
+  } = useMediaPlayerRefs();
+  // iPod-only refs for analytics dedupe + skip-driven status suppression.
   const lastTrackedSongRef = useRef<{ trackId: string; elapsedTime: number } | null>(null);
   const skipOperationRef = useRef(false);
-  const userHasInteractedRef = useRef(false);
-  const isTrackSwitchingRef = useRef(false);
-  const trackSwitchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const pauseBeforeWindowClose = useCallback(() => {
     const store = useIpodStore.getState();
@@ -86,6 +91,7 @@ export function useIpodPlayback(options: {
     userHasInteractedRef,
     isTrackSwitchingRef,
     trackSwitchTimeoutRef,
+    startTrackSwitch,
     pauseBeforeWindowClose,
   };
 }

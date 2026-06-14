@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useMediaAppDialogs } from "@/hooks/useMediaAppDialogs";
-import ReactPlayer from "react-player";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
@@ -21,6 +20,11 @@ import {
   broadcastListenState,
   usePlaybackListenSync,
 } from "@/shared/media/playbackListenSync";
+import {
+  useMediaPlayerRefs,
+  useMediaTrackChangeReset,
+  useMediaFullscreenSync,
+} from "@/shared/media/useMediaPlayback";
 import { parseYouTubeVideoId } from "@/utils/youtubeUrl";
 import { resolveMediaCoverUrl } from "@/utils/coverArt";
 import { TRANSLATION_LANGUAGES } from "@/utils/lyricsTranslation";
@@ -279,8 +283,15 @@ export function useKaraokeLogic({
   const longPressStartPos = useRef<{ x: number; y: number } | null>(null);
   const LONG_PRESS_MOVE_THRESHOLD = 10; // pixels - cancel if moved more than this
 
-  // Full screen additional state
-  const fullScreenPlayerRef = useRef<ReactPlayer | null>(null);
+  // Shared player refs + track-switch guard (also used by iPod).
+  const {
+    playerRef,
+    fullScreenPlayerRef,
+    isTrackSwitchingRef,
+    trackSwitchTimeoutRef,
+    userHasInteractedRef,
+    startTrackSwitch,
+  } = useMediaPlayerRefs();
 
   // Playback position lives in karaoke store (high-frequency updates) so the main hook does not re-render every tick
   const [duration, setDurationLocal] = useState(0);
@@ -288,15 +299,10 @@ export function useKaraokeLogic({
     setDurationLocal(d);
     setStoreTotalTime(d);
   }, [setStoreTotalTime]);
-  const playerRef = useRef<ReactPlayer | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [showControls, setShowControls] = useState(true);
   const hideControlsTimeoutRef = useRef<number | null>(null);
-
-  // Track switching state to prevent race conditions
-  const isTrackSwitchingRef = useRef(false);
-  const trackSwitchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Volume from audio settings store
   const { ipodVolume } = useAudioSettingsStoreShallow((state) => ({ ipodVolume: state.ipodVolume }));
@@ -304,8 +310,6 @@ export function useKaraokeLogic({
   // iOS/Safari detection for autoplay restrictions (cached at module scope).
   const isIOS = IS_IOS;
   const isSafari = IS_SAFARI;
-  // Track user interaction for autoplay guard (iOS Safari blocks autoplay until user interacts)
-  const userHasInteractedRef = useRef(false);
 
   // Current track
   const currentTrack = useMemo<Track | null>(() => {
@@ -491,18 +495,6 @@ export function useKaraokeLogic({
     userHasInteractedRef.current = true;
   }, [restartAutoHideTimer]);
 
-  // Helper to mark track switch start and schedule end
-  const startTrackSwitch = useCallback(() => {
-    isTrackSwitchingRef.current = true;
-    if (trackSwitchTimeoutRef.current) {
-      clearTimeout(trackSwitchTimeoutRef.current);
-    }
-    // Allow 2 seconds for YouTube to load before accepting play/pause events
-    trackSwitchTimeoutRef.current = setTimeout(() => {
-      isTrackSwitchingRef.current = false;
-    }, 2000);
-  }, []);
-
   // Wrapped handlers for fullscreen controls (with offline check)
   const handlePrevious = useCallback(() => {
     if (isOffline) {
@@ -593,62 +585,23 @@ export function useKaraokeLogic({
     };
   }, [isPlaying, anyMenuOpen, isSyncModeOpen, restartAutoHideTimer]);
 
-  // Reset elapsed time on track change and set track switching guard
-  // This catches track changes from any source (AI tools, shared URLs, menu selections, etc.)
-  // Using null as initial value ensures first render triggers the auto-skip check
-  const prevCurrentIndexRef = useRef<number | null>(null);
-  useEffect(() => {
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
-
-    // Check if track changed or this is initial render (prevCurrentIndexRef.current is null)
-    if (prevCurrentIndexRef.current !== currentIndex) {
-      isTrackSwitchingRef.current = true;
-      if (trackSwitchTimeoutRef.current) {
-        clearTimeout(trackSwitchTimeoutRef.current);
-      }
-      
-      // Get the new track's offset
-      const newTrack = tracks[currentIndex];
-      const newLyricOffset = newTrack?.lyricOffset ?? 0;
-      
-      // For negative offset, auto-skip to where lyrics time = 0
-      // Formula: lyricsTime = playerTime + (lyricOffset / 1000)
-      // When lyricsTime = 0: playerTime = -lyricOffset / 1000
-      // Only seek if offset is negative (produces positive seek target)
-      // and the seek target is reasonable (at least 1 second)
-      const seekTarget = -newLyricOffset / 1000;
-      
-      if (newLyricOffset < 0 && seekTarget >= 1) {
-        setStoreElapsedTime(seekTarget);
-        
-        timeoutId = setTimeout(() => {
-          isTrackSwitchingRef.current = false;
-          const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
-          if (activePlayer) {
-            activePlayer.seekTo(seekTarget);
-            showStatus(`▶ ${formatSecondsAsMinutesSeconds(seekTarget)}`);
-          }
-        }, 2000);
-        trackSwitchTimeoutRef.current = timeoutId;
-      } else {
-        // Start from beginning for positive/zero offset or small negative offset
-        setStoreElapsedTime(0);
-        timeoutId = setTimeout(() => {
-          isTrackSwitchingRef.current = false;
-        }, 2000);
-        trackSwitchTimeoutRef.current = timeoutId;
-      }
-    }
-    prevCurrentIndexRef.current = currentIndex;
-    return () => {
-      if (timeoutId !== null) {
-        clearTimeout(timeoutId);
-        if (trackSwitchTimeoutRef.current === timeoutId) {
-          trackSwitchTimeoutRef.current = null;
-        }
-      }
-    };
-  }, [currentIndex, tracks, isFullScreen, showStatus, setStoreElapsedTime]);
+  // Reset elapsed time on track change + arm the track-switch guard (shared).
+  const handleResetSeekStatus = useCallback(
+    (seconds: number) =>
+      showStatus(`▶ ${formatSecondsAsMinutesSeconds(seconds)}`),
+    [showStatus]
+  );
+  useMediaTrackChangeReset({
+    currentIndex,
+    tracks,
+    isFullScreen,
+    playerRef,
+    fullScreenPlayerRef,
+    isTrackSwitchingRef,
+    trackSwitchTimeoutRef,
+    setElapsedTime: setStoreElapsedTime,
+    onSeekStatus: handleResetSeekStatus,
+  });
 
   // Cleanup
   useEffect(() => {
@@ -689,81 +642,25 @@ export function useKaraokeLogic({
     return () => window.removeEventListener("toggleAppFullScreen", handleAppMenuFullScreen as EventListener);
   }, [instanceId, toggleFullScreen]);
 
-  // Sync playback position between main and fullscreen player
-  const prevFullScreenRef = useRef(isFullScreen);
-
-  useEffect(() => {
-    const timeoutIds = new Set<ReturnType<typeof setTimeout>>();
-    const scheduleTimeout = (callback: () => void, delay: number) => {
-      const timeoutId = setTimeout(() => {
-        timeoutIds.delete(timeoutId);
-        callback();
-      }, delay);
-      timeoutIds.add(timeoutId);
-      return timeoutId;
-    };
-
-    if (isFullScreen !== prevFullScreenRef.current) {
-      // Mark as track switching to prevent spurious play/pause events during sync
-      isTrackSwitchingRef.current = true;
-      if (trackSwitchTimeoutRef.current) {
-        clearTimeout(trackSwitchTimeoutRef.current);
-      }
-      
-      if (isFullScreen) {
-        trackAnalytics(MEDIA_ANALYTICS.FULLSCREEN, { appId: "karaoke", isOpen: true });
-        // Entering fullscreen - sync position from main player to fullscreen player
-        const currentTime = playerRef.current?.getCurrentTime() ?? useKaraokeStore.getState().elapsedTime;
-        const wasPlaying = isPlaying;
-
-        // Wait for fullscreen player to be ready before seeking
-        const checkAndSync = () => {
-          const internalPlayer = fullScreenPlayerRef.current?.getInternalPlayer?.();
-          if (internalPlayer && typeof internalPlayer.getPlayerState === "function") {
-            const playerState = internalPlayer.getPlayerState();
-            // -1 = unstarted, 3 = buffering, 5 = cued are "not ready" states
-            if (playerState !== -1) {
-              fullScreenPlayerRef.current?.seekTo(currentTime);
-              if (wasPlaying && typeof internalPlayer.playVideo === "function") {
-                internalPlayer.playVideo();
-              }
-              // End track switch after sync complete
-              trackSwitchTimeoutRef.current = scheduleTimeout(() => {
-                isTrackSwitchingRef.current = false;
-              }, 500);
-              return;
-            }
-          }
-          // Player not ready, retry
-          scheduleTimeout(checkAndSync, 100);
-        };
-        scheduleTimeout(checkAndSync, 100);
-      } else {
-        trackAnalytics(MEDIA_ANALYTICS.FULLSCREEN, { appId: "karaoke", isOpen: false });
-        // Exiting fullscreen - sync position from fullscreen player to main player
-        const currentTime = fullScreenPlayerRef.current?.getCurrentTime() ?? useKaraokeStore.getState().elapsedTime;
-        const wasPlaying = isPlaying;
-
-        scheduleTimeout(() => {
-          if (playerRef.current) {
-            playerRef.current.seekTo(currentTime);
-            if (wasPlaying) {
-              setIsPlaying(true);
-            }
-          }
-          // End track switch after sync complete
-          trackSwitchTimeoutRef.current = scheduleTimeout(() => {
-            isTrackSwitchingRef.current = false;
-          }, 500);
-        }, 200);
-      }
-      prevFullScreenRef.current = isFullScreen;
-    }
-    return () => {
-      timeoutIds.forEach((timeoutId) => clearTimeout(timeoutId));
-      timeoutIds.clear();
-    };
-  }, [isFullScreen, isPlaying, setIsPlaying]);
+  // Sync playback position between main and fullscreen player (shared).
+  const getElapsedForFullscreenSync = useCallback(
+    () => useKaraokeStore.getState().elapsedTime,
+    []
+  );
+  const handleFullscreenToggleAnalytics = useCallback((isOpen: boolean) => {
+    trackAnalytics(MEDIA_ANALYTICS.FULLSCREEN, { appId: "karaoke", isOpen });
+  }, []);
+  useMediaFullscreenSync({
+    isFullScreen,
+    isPlaying,
+    setIsPlaying,
+    playerRef,
+    fullScreenPlayerRef,
+    isTrackSwitchingRef,
+    trackSwitchTimeoutRef,
+    getElapsedTime: getElapsedForFullscreenSync,
+    onToggle: handleFullscreenToggleAnalytics,
+  });
 
   // Handle closing sync mode - flush pending offset saves
   const closeSyncMode = useCallback(async () => {

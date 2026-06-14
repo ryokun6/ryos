@@ -7,6 +7,10 @@ import { useVibration } from "@/hooks/useVibration";
 import { useOffline } from "@/hooks/useOffline";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useMediaLyricsPlayback } from "@/shared/media/useMediaLyricsPlayback";
+import {
+  useMediaTrackChangeReset,
+  useMediaFullscreenSync,
+} from "@/shared/media/useMediaPlayback";
 import { useMediaAppDialogs } from "@/hooks/useMediaAppDialogs";
 import { useCustomEventListener, useEventListener } from "@/hooks/useEventListener";
 import { useLibraryUpdateChecker } from "./useLibraryUpdateChecker";
@@ -427,6 +431,7 @@ export function useIpodLogic({
     userHasInteractedRef,
     isTrackSwitchingRef,
     trackSwitchTimeoutRef,
+    startTrackSwitch,
     pauseBeforeWindowClose,
   } = useIpodPlayback({
     isWindowOpen,
@@ -1401,62 +1406,27 @@ export function useIpodLogic({
     prevIsForeground.current = isForeground;
   }, [isForeground, toggleBacklight, registerActivity]);
 
-  // Reset elapsed time on track change and set track switching guard
-  // This catches track changes from any source (AI tools, shared URLs, menu selections, etc.)
-  // Using null as initial value ensures first render triggers the auto-skip check
-  const prevCurrentIndexRef = useRef<number | null>(null);
-  useEffect(() => {
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
-
-    // Check if track changed or this is initial render (prevCurrentIndexRef.current is null)
-    if (prevCurrentIndexRef.current !== currentIndex) {
-      isTrackSwitchingRef.current = true;
-      if (trackSwitchTimeoutRef.current) {
-        clearTimeout(trackSwitchTimeoutRef.current);
-      }
-      
-      // Get the new track's offset
-      const newTrack = tracks[currentIndex];
-      const newLyricOffset = newTrack?.lyricOffset ?? 0;
-      
-      // For negative offset, auto-skip to where lyrics time = 0
-      // Formula: lyricsTime = playerTime + (lyricOffset / 1000)
-      // When lyricsTime = 0: playerTime = -lyricOffset / 1000
-      // Only seek if offset is negative (produces positive seek target)
-      // and the seek target is reasonable (less than track duration, at least 1 second)
-      const seekTarget = -newLyricOffset / 1000;
-      
-      if (newLyricOffset < 0 && seekTarget >= 1) {
-        useIpodStore.getState().setElapsedTime(seekTarget);
-        
-        timeoutId = setTimeout(() => {
-          isTrackSwitchingRef.current = false;
-          const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
-          if (activePlayer) {
-            activePlayer.seekTo(seekTarget);
-            showStatus(`▶ ${formatSecondsAsMinutesSeconds(seekTarget)}`);
-          }
-        }, 2000);
-        trackSwitchTimeoutRef.current = timeoutId;
-      } else {
-        // Start from beginning for positive/zero offset or small negative offset
-        useIpodStore.getState().setElapsedTime(0);
-        timeoutId = setTimeout(() => {
-          isTrackSwitchingRef.current = false;
-        }, 2000);
-        trackSwitchTimeoutRef.current = timeoutId;
-      }
-    }
-    prevCurrentIndexRef.current = currentIndex;
-    return () => {
-      if (timeoutId !== null) {
-        clearTimeout(timeoutId);
-        if (trackSwitchTimeoutRef.current === timeoutId) {
-          trackSwitchTimeoutRef.current = null;
-        }
-      }
-    };
-  }, [currentIndex, tracks, isFullScreen, showStatus]);
+  // Reset elapsed time on track change + arm the track-switch guard (shared).
+  const setElapsedTimeOnReset = useCallback(
+    (time: number) => useIpodStore.getState().setElapsedTime(time),
+    []
+  );
+  const handleResetSeekStatus = useCallback(
+    (seconds: number) =>
+      showStatus(`▶ ${formatSecondsAsMinutesSeconds(seconds)}`),
+    [showStatus]
+  );
+  useMediaTrackChangeReset({
+    currentIndex,
+    tracks,
+    isFullScreen,
+    playerRef,
+    fullScreenPlayerRef,
+    isTrackSwitchingRef,
+    trackSwitchTimeoutRef,
+    setElapsedTime: setElapsedTimeOnReset,
+    onSeekStatus: handleResetSeekStatus,
+  });
 
   // Cleanup status timeout
   useEffect(() => {
@@ -3658,18 +3628,6 @@ export function useIpodLogic({
     }
   }, [menuMode]);
 
-  // Helper to mark track switch start and schedule end
-  const startTrackSwitch = useCallback(() => {
-    isTrackSwitchingRef.current = true;
-    if (trackSwitchTimeoutRef.current) {
-      clearTimeout(trackSwitchTimeoutRef.current);
-    }
-    // Allow 2 seconds for YouTube to load before accepting play/pause events
-    trackSwitchTimeoutRef.current = setTimeout(() => {
-      isTrackSwitchingRef.current = false;
-    }, 2000);
-  }, []);
-
   const getCurrentAppleMusicCollectionShellTrack = useCallback(() => {
     const state = useIpodStore.getState();
     if (state.librarySource !== "appleMusic" || !state.appleMusicCurrentSongId) {
@@ -4926,92 +4884,35 @@ export function useIpodLogic({
     setCurrentFuriganaMap(furiganaRecord);
   }, [furiganaRecord, setCurrentFuriganaMap]);
 
-  // Fullscreen sync
-  const prevFullScreenRef = useRef(isFullScreen);
-
-  useEffect(() => {
-    const timeoutIds = new Set<ReturnType<typeof setTimeout>>();
-    const scheduleTimeout = (callback: () => void, delay: number) => {
-      const timeoutId = setTimeout(() => {
-        timeoutIds.delete(timeoutId);
-        callback();
-      }, delay);
-      timeoutIds.add(timeoutId);
-      return timeoutId;
-    };
-
-    if (isFullScreen !== prevFullScreenRef.current) {
-      // Apple Music plays through a single shared MusicKit instance, so
-      // toggling fullscreen never needs the YouTube-style seek-and-resume
-      // dance between two iframes. Skip the sync entirely.
-      if (isAppleMusic) {
-        prevFullScreenRef.current = isFullScreen;
-        return;
-      }
-
-      // Mark as track switching to prevent spurious play/pause events during sync
-      isTrackSwitchingRef.current = true;
-      if (trackSwitchTimeoutRef.current) {
-        clearTimeout(trackSwitchTimeoutRef.current);
-      }
-
-      if (isFullScreen) {
-        const currentTime =
-          playerRef.current?.getCurrentTime() ||
-          useIpodStore.getState().elapsedTime;
-        const wasPlaying = isPlaying;
-
-        // Wait for fullscreen player to be ready before seeking
-        const checkAndSync = () => {
-          const internalPlayer = fullScreenPlayerRef.current?.getInternalPlayer?.();
-          if (internalPlayer && typeof internalPlayer.getPlayerState === "function") {
-            const playerState = internalPlayer.getPlayerState();
-            // -1 = unstarted, wait for player to be ready
-            if (playerState !== -1) {
-              fullScreenPlayerRef.current?.seekTo(currentTime);
-              if (wasPlaying && typeof internalPlayer.playVideo === "function") {
-                // On iOS Safari, only play if user has interacted
-                if (!isIOSSafari || userHasInteractedRef.current) {
-                  internalPlayer.playVideo();
-                }
-              }
-              // End track switch after sync complete
-              trackSwitchTimeoutRef.current = scheduleTimeout(() => {
-                isTrackSwitchingRef.current = false;
-              }, 500);
-              return;
-            }
-          }
-          // Player not ready, retry
-          scheduleTimeout(checkAndSync, 100);
-        };
-        scheduleTimeout(checkAndSync, 100);
-      } else {
-        const currentTime =
-          fullScreenPlayerRef.current?.getCurrentTime() ||
-          useIpodStore.getState().elapsedTime;
-        const wasPlaying = isPlaying;
-
-        scheduleTimeout(() => {
-          if (playerRef.current) {
-            playerRef.current.seekTo(currentTime);
-            if (wasPlaying && !useIpodStore.getState().isPlaying) {
-              setIsPlaying(true);
-            }
-          }
-          // End track switch after sync complete
-          trackSwitchTimeoutRef.current = scheduleTimeout(() => {
-            isTrackSwitchingRef.current = false;
-          }, 500);
-        }, 200);
-      }
-      prevFullScreenRef.current = isFullScreen;
-    }
-    return () => {
-      timeoutIds.forEach((timeoutId) => clearTimeout(timeoutId));
-      timeoutIds.clear();
-    };
-  }, [isAppleMusic, isFullScreen, isPlaying, setIsPlaying, isIOSSafari]);
+  // Fullscreen position sync (shared). Apple Music plays through a single
+  // shared MusicKit instance, so toggling fullscreen never needs the
+  // YouTube-style seek-and-resume dance between two iframes — skip it. On iOS
+  // Safari, only autoplay after a user interaction.
+  const getElapsedForFullscreenSync = useCallback(
+    () => useIpodStore.getState().elapsedTime,
+    []
+  );
+  const canAutoplayInFullscreen = useCallback(
+    () => !isIOSSafari || userHasInteractedRef.current,
+    [isIOSSafari, userHasInteractedRef]
+  );
+  const isStorePlayingNow = useCallback(
+    () => useIpodStore.getState().isPlaying,
+    []
+  );
+  useMediaFullscreenSync({
+    isFullScreen,
+    isPlaying,
+    setIsPlaying,
+    playerRef,
+    fullScreenPlayerRef,
+    isTrackSwitchingRef,
+    trackSwitchTimeoutRef,
+    getElapsedTime: getElapsedForFullscreenSync,
+    skip: isAppleMusic,
+    canAutoplay: canAutoplayInFullscreen,
+    guardRedundantResumeOnExit: isStorePlayingNow,
+  });
 
   // Seek time for fullscreen (delta)
   const seekTime = useCallback(
