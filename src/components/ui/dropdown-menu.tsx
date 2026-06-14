@@ -147,10 +147,28 @@ const DropdownMenuSubContent = (
     className,
     style,
     children,
+    align,
+    alignOffset,
+    collisionAvoidance,
+    collisionBoundary,
+    collisionPadding,
+    side = "inline-end",
+    sideOffset = 4,
+    positionMethod,
     ...props
   }: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Popup> & {
     ref?: React.Ref<React.ElementRef<typeof DropdownMenuPrimitive.Popup>>;
-  }
+  } & Pick<
+    React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Positioner>,
+    | "align"
+    | "alignOffset"
+    | "collisionAvoidance"
+    | "collisionBoundary"
+    | "collisionPadding"
+    | "positionMethod"
+    | "side"
+    | "sideOffset"
+  >
 ) => {
   const { isMacOSTheme, isAquaGlass } = useThemeFlags();
   const isMobile = useMediaQuery("(max-width: 768px)");
@@ -160,6 +178,20 @@ const DropdownMenuSubContent = (
     <DropdownMenuPrimitive.Portal>
       <DropdownMenuPrimitive.Positioner
         className="z-[10004]"
+        align={align}
+        alignOffset={alignOffset}
+        side={side}
+        sideOffset={sideOffset}
+        positionMethod={positionMethod}
+        collisionAvoidance={
+          collisionAvoidance ?? {
+            side: "flip",
+            align: "shift",
+            fallbackAxisSide: "none",
+          }
+        }
+        collisionBoundary={collisionBoundary}
+        collisionPadding={collisionPadding ?? 8}
         data-ryos-popper-content-wrapper=""
       >
         <DropdownMenuPrimitive.Popup

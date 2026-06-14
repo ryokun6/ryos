@@ -260,11 +260,29 @@ const MenubarSubContent = (
     ref,
     className,
     children,
+    align,
+    alignOffset,
+    collisionAvoidance,
+    collisionBoundary,
+    collisionPadding,
+    positionMethod,
+    side = "inline-end",
+    sideOffset = 4,
     style,
     ...props
   }: React.ComponentPropsWithoutRef<typeof MenubarMenuPrimitive.Popup> & {
     ref?: React.Ref<React.ElementRef<typeof MenubarMenuPrimitive.Popup>>;
-  }
+  } & Pick<
+    React.ComponentPropsWithoutRef<typeof MenubarMenuPrimitive.Positioner>,
+    | "align"
+    | "alignOffset"
+    | "collisionAvoidance"
+    | "collisionBoundary"
+    | "collisionPadding"
+    | "positionMethod"
+    | "side"
+    | "sideOffset"
+  >
 ) => {
   const { isMacOSTheme, isAquaGlass } = useThemeFlags()
   const isMobile = useMediaQuery("(max-width: 768px)")
@@ -273,6 +291,20 @@ const MenubarSubContent = (
     <MenubarMenuPrimitive.Portal>
       <MenubarMenuPrimitive.Positioner
         className="z-[10004]"
+        align={align}
+        alignOffset={alignOffset}
+        side={side}
+        sideOffset={sideOffset}
+        positionMethod={positionMethod}
+        collisionAvoidance={
+          collisionAvoidance ?? {
+            side: "flip",
+            align: "shift",
+            fallbackAxisSide: "none",
+          }
+        }
+        collisionBoundary={collisionBoundary}
+        collisionPadding={collisionPadding ?? 8}
         data-ryos-popper-content-wrapper=""
       >
         <MenubarMenuPrimitive.Popup
