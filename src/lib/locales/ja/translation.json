@@ -1386,6 +1386,11 @@
       "displayMode": "表示モード",
       "downloadMacApp": "Macアプリをダウンロード",
       "dream": "ドリーム",
+      "dynamicWallpapers": {
+        "dayNight": "デイ＆ナイト",
+        "nowPlaying": "再生中",
+        "shuffle": "シャッフル"
+      },
       "elevenlabs": "ElevenLabs",
       "elevenlabsVoiceId": "ElevenLabs 音声ID",
       "errorBoundaries": "エラー境界",
@@ -1551,6 +1556,7 @@
         "aqua": "アクア",
         "black_and_white": "白黒",
         "convergency": "コンバージェンス",
+        "dynamic": "ダイナミック",
         "foliage": "フォリッジ",
         "graphics": "グラフィックス",
         "landscapes": "風景",
