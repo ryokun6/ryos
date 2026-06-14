@@ -146,6 +146,7 @@ const DropdownMenuSubContent = (
     ref,
     className,
     style,
+    children,
     ...props
   }: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Popup> & {
     ref?: React.Ref<React.ElementRef<typeof DropdownMenuPrimitive.Popup>>;
@@ -193,7 +194,11 @@ const DropdownMenuSubContent = (
             />
           )}
           {...props}
-        />
+        >
+          <DropdownMenuPrimitive.Viewport className="max-h-[inherit] overflow-y-auto">
+            {children}
+          </DropdownMenuPrimitive.Viewport>
+        </DropdownMenuPrimitive.Popup>
       </DropdownMenuPrimitive.Positioner>
     </DropdownMenuPrimitive.Portal>
   );
@@ -210,6 +215,7 @@ const DropdownMenuContent = (
     alignOffset,
     side,
     collisionPadding,
+    children,
     style,
     container,
     onCloseAutoFocus: _onCloseAutoFocus,
@@ -273,7 +279,11 @@ const DropdownMenuContent = (
             />
           )}
           {...props}
-        />
+        >
+          <DropdownMenuPrimitive.Viewport className="max-h-[inherit] overflow-y-auto">
+            {children}
+          </DropdownMenuPrimitive.Viewport>
+        </DropdownMenuPrimitive.Popup>
       </DropdownMenuPrimitive.Positioner>
     </DropdownMenuPrimitive.Portal>
   );

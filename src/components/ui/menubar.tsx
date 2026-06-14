@@ -259,6 +259,7 @@ const MenubarSubContent = (
   {
     ref,
     className,
+    children,
     style,
     ...props
   }: React.ComponentPropsWithoutRef<typeof MenubarMenuPrimitive.Popup> & {
@@ -306,7 +307,11 @@ const MenubarSubContent = (
             />
           )}
           {...props}
-        />
+        >
+          <MenubarMenuPrimitive.Viewport className="max-h-[inherit] overflow-y-auto">
+            {children}
+          </MenubarMenuPrimitive.Viewport>
+        </MenubarMenuPrimitive.Popup>
       </MenubarMenuPrimitive.Positioner>
     </MenubarMenuPrimitive.Portal>
   )
@@ -322,6 +327,7 @@ const MenubarContent = (
     sideOffset = 8,
     side,
     collisionPadding,
+    children,
     style,
     ...props
   }: React.ComponentPropsWithoutRef<typeof MenubarMenuPrimitive.Popup> &
@@ -384,7 +390,11 @@ const MenubarContent = (
             />
           )}
           {...props}
-        />
+        >
+          <MenubarMenuPrimitive.Viewport className="max-h-[inherit] overflow-y-auto">
+            {children}
+          </MenubarMenuPrimitive.Viewport>
+        </MenubarMenuPrimitive.Popup>
       </MenubarMenuPrimitive.Positioner>
     </MenubarMenuPrimitive.Portal>
   )
