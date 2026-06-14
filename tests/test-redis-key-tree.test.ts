@@ -9,7 +9,10 @@ import {
   buildRedisBreadcrumbs,
   buildRedisKeyTree,
   filterRedisKeys,
+  mergeFoldersWithKnownPrefixes,
+  KNOWN_REDIS_PREFIXES,
   type RedisKeyNode,
+  type RedisTreeFolder,
 } from "../src/apps/admin/utils/redisKeyTree";
 
 const KEYS: RedisKeyNode[] = [
@@ -80,6 +83,39 @@ describe("buildRedisBreadcrumbs", () => {
       { label: "chat", prefix: "chat:" },
       { label: "room", prefix: "chat:room:" },
     ]);
+  });
+});
+
+describe("mergeFoldersWithKnownPrefixes", () => {
+  test("keeps discovered folders (with counts) and adds missing known prefixes without a count", () => {
+    const discovered: RedisTreeFolder[] = [
+      { segment: "chat", prefix: "chat:", count: 12 },
+    ];
+    const merged = mergeFoldersWithKnownPrefixes(discovered, ["chat", "sync", "memory"]);
+
+    const chat = merged.find((f) => f.segment === "chat");
+    const sync = merged.find((f) => f.segment === "sync");
+    expect(chat).toMatchObject({ prefix: "chat:", count: 12 });
+    expect(sync).toMatchObject({ prefix: "sync:" });
+    expect(sync?.count).toBeUndefined();
+    // Alphabetically sorted, deduped.
+    expect(merged.map((f) => f.segment)).toEqual(["chat", "memory", "sync"]);
+  });
+
+  test("does not override a discovered count with a known-prefix placeholder", () => {
+    const discovered: RedisTreeFolder[] = [
+      { segment: "sync", prefix: "sync:", count: 3 },
+    ];
+    const merged = mergeFoldersWithKnownPrefixes(discovered, ["sync"]);
+    expect(merged).toHaveLength(1);
+    expect(merged[0].count).toBe(3);
+  });
+
+  test("defaults to the curated known prefix list", () => {
+    const merged = mergeFoldersWithKnownPrefixes([]);
+    expect(merged.length).toBe(KNOWN_REDIS_PREFIXES.length);
+    expect(merged.every((f) => f.count === undefined)).toBe(true);
+    expect(merged.map((f) => f.prefix)).toContain("chat:");
   });
 });
 

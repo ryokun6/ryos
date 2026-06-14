@@ -9,6 +9,32 @@
 
 export const REDIS_KEY_SEPARATOR = ":";
 
+/**
+ * Top-level Redis namespaces ryOS is known to use, surfaced as instant
+ * entry-point folders at the root of the browser so the admin can drill into a
+ * scoped SCAN without first paging through a global `*` scan. Kept in sync with
+ * the key builders across `api/` (chat/sync/analytics/memory/etc.).
+ */
+export const KNOWN_REDIS_PREFIXES: string[] = [
+  "chat",
+  "sync",
+  "sync2",
+  "analytics",
+  "memory",
+  "system",
+  "airdrop",
+  "song",
+  "listen",
+  "applet",
+  "apple",
+  "ie",
+  "wayback",
+  "cursor-sdk-run",
+  "cursor-sdk-agent",
+  "ryos",
+  "rl",
+];
+
 export interface RedisKeyNode {
   key: string;
   type: string;
@@ -21,8 +47,11 @@ export interface RedisTreeFolder {
   segment: string;
   /** Full prefix including trailing separator (e.g. `chat:room:`). */
   prefix: string;
-  /** Number of loaded keys that live under this folder. */
-  count: number;
+  /**
+   * Number of loaded keys under this folder. `undefined` for a known prefix
+   * that has not been scanned yet (rendered without a count badge).
+   */
+  count?: number;
 }
 
 /** A concrete key at the current level. */
@@ -116,6 +145,31 @@ export function buildRedisBreadcrumbs(
     crumbs.push({ label: segment, prefix: accumulated });
   }
   return crumbs;
+}
+
+/**
+ * Merge discovered folders with the curated known prefixes so every known
+ * namespace is shown at the root level even before its keys are scanned.
+ * Discovered counts win; known-only entries get an `undefined` count.
+ */
+export function mergeFoldersWithKnownPrefixes(
+  discovered: RedisTreeFolder[],
+  knownSegments: string[] = KNOWN_REDIS_PREFIXES,
+  separator: string = REDIS_KEY_SEPARATOR
+): RedisTreeFolder[] {
+  const byPrefix = new Map<string, RedisTreeFolder>();
+  for (const folder of discovered) {
+    byPrefix.set(folder.prefix, folder);
+  }
+  for (const segment of knownSegments) {
+    const prefix = `${segment}${separator}`;
+    if (!byPrefix.has(prefix)) {
+      byPrefix.set(prefix, { segment, prefix, count: undefined });
+    }
+  }
+  return Array.from(byPrefix.values()).sort((a, b) =>
+    a.segment.localeCompare(b.segment)
+  );
 }
 
 /**
