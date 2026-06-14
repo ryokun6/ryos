@@ -1,18 +1,29 @@
 import { useEffect, useState } from "react";
 import { useWallpaper } from "@/hooks/useWallpaper";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
+import { useNowPlayingCover } from "@/hooks/useNowPlayingCover";
 import {
   menubarTextColorForLuminance,
   menubarTextForTone,
   menubarTextToneForLuminance,
   sampleWallpaperTopLuminance,
+  wallpaperLuminance,
   type MenubarTextTone,
 } from "@/themes/wallpaperMenubarText";
+import {
+  getDayNightGradientColors,
+  isCoverWallpaper,
+  isDayNightGradientWallpaper,
+} from "@/utils/dynamicWallpaper";
 
 export interface WallpaperMenubarText {
   textColor: string;
   tone: MenubarTextTone;
 }
+
+// The gradient drifts with wall-clock time, so re-derive its tone on a slow
+// interval to keep the menubar tracking the day → night shift.
+const GRADIENT_MENUBAR_REFRESH_MS = 60 * 1000;
 
 function fallbackMenubarText(isDarkMode: boolean): WallpaperMenubarText {
   const tone: MenubarTextTone = isDarkMode ? "light" : "dark";
@@ -74,28 +85,50 @@ function cacheLuminance(source: string, luminance: number) {
  * color. Only meaningful for Aqua Glass (transparent menubar); callers should
  * pass `enabled: isAquaGlass`.
  */
+function gradientMenubarText(): WallpaperMenubarText {
+  // The top gradient color is the strip directly behind the menubar.
+  const [top] = getDayNightGradientColors(new Date());
+  return menubarTextForLuminance(wallpaperLuminance(top[0], top[1], top[2]));
+}
+
 export function useWallpaperMenubarText(enabled: boolean): WallpaperMenubarText {
-  const { wallpaperSource, isVideoWallpaper } = useWallpaper();
+  const { currentWallpaper, wallpaperSource, isVideoWallpaper } =
+    useWallpaper();
   const { isDarkMode } = useThemeFlags();
+
+  const isGradient = isDayNightGradientWallpaper(currentWallpaper);
+  const isCover = isCoverWallpaper(currentWallpaper);
+  const { coverUrl: nowPlayingCoverUrl } = useNowPlayingCover();
+
+  // Image URL sampled for the menubar tone. The gradient has no loadable image
+  // (handled live below); the cover wallpaper samples its album art; videos and
+  // the inactive state sample nothing.
+  let sampleSource: string | null = null;
+  if (!isGradient) {
+    if (isCover) sampleSource = nowPlayingCoverUrl;
+    else if (!isVideoWallpaper) sampleSource = wallpaperSource || null;
+  }
+
   const [result, setResult] = useState<WallpaperMenubarText>(() => {
-    if (enabled && wallpaperSource && !isVideoWallpaper) {
+    if (enabled && isGradient) return gradientMenubarText();
+    if (enabled && sampleSource) {
       ensurePersistedLoaded();
-      const cached = luminanceCache.get(wallpaperSource);
+      const cached = luminanceCache.get(sampleSource);
       if (cached !== undefined) return menubarTextForLuminance(cached);
     }
     return fallbackMenubarText(isDarkMode);
   });
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || isGradient) return;
 
-    if (isVideoWallpaper || !wallpaperSource) {
+    if (!sampleSource) {
       setResult(fallbackMenubarText(isDarkMode));
       return;
     }
 
     ensurePersistedLoaded();
-    const cached = luminanceCache.get(wallpaperSource);
+    const cached = luminanceCache.get(sampleSource);
     if (cached !== undefined) {
       setResult(menubarTextForLuminance(cached));
       return;
@@ -115,7 +148,7 @@ export function useWallpaperMenubarText(enabled: boolean): WallpaperMenubarText 
           setResult(fallbackMenubarText(isDarkMode));
           return;
         }
-        cacheLuminance(wallpaperSource, luminance);
+        cacheLuminance(sampleSource, luminance);
         setResult(menubarTextForLuminance(luminance));
       } catch {
         setResult(fallbackMenubarText(isDarkMode));
@@ -126,11 +159,23 @@ export function useWallpaperMenubarText(enabled: boolean): WallpaperMenubarText 
       if (!cancelled) setResult(fallbackMenubarText(isDarkMode));
     };
 
-    img.src = wallpaperSource;
+    img.src = sampleSource;
     return () => {
       cancelled = true;
     };
-  }, [enabled, wallpaperSource, isVideoWallpaper, isDarkMode]);
+  }, [enabled, isGradient, sampleSource, isDarkMode]);
+
+  // Day/night gradient: derive the tone from the live top gradient color and
+  // refresh on an interval so the menubar tracks the day → night transition.
+  useEffect(() => {
+    if (!enabled || !isGradient) return;
+
+    const apply = () => setResult(gradientMenubarText());
+
+    apply();
+    const id = window.setInterval(apply, GRADIENT_MENUBAR_REFRESH_MS);
+    return () => window.clearInterval(id);
+  }, [enabled, isGradient]);
 
   return result;
 }

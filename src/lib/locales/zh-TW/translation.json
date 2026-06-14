@@ -1386,6 +1386,11 @@
       "displayMode": "顯示模式",
       "downloadMacApp": "下載 Mac 應用程式",
       "dream": "夢幻",
+      "dynamicWallpapers": {
+        "dayNight": "日與夜",
+        "nowPlaying": "播放中",
+        "shuffle": "隨機播放"
+      },
       "elevenlabs": "ElevenLabs",
       "elevenlabsVoiceId": "ElevenLabs 語音 ID",
       "errorBoundaries": "錯誤邊界",
@@ -1551,6 +1556,7 @@
         "aqua": "水藍",
         "black_and_white": "黑白",
         "convergency": "匯聚",
+        "dynamic": "動態",
         "foliage": "綠葉",
         "graphics": "圖形",
         "landscapes": "風景",

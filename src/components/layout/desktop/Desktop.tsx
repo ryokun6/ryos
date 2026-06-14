@@ -4,6 +4,7 @@ import type { DesktopProps } from "./desktopTypes";
 import { useDesktop } from "./useDesktop";
 import { DesktopIconGrid } from "./DesktopIconGrid";
 import { DesktopDragRegion } from "./DesktopDragRegion";
+import { DesktopDynamicWallpaper } from "./DesktopDynamicWallpaper";
 
 export function Desktop(props: DesktopProps) {
   const d = useDesktop(props);
@@ -35,6 +36,7 @@ export function Desktop(props: DesktopProps) {
           display: d.isVideoWallpaper ? "block" : "none",
         }}
       />
+      <DesktopDynamicWallpaper />
       <DesktopDragRegion
         isDesktopApp={d.isDesktopApp}
         isXpTheme={d.isXpTheme}

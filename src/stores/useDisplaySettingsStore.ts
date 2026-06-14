@@ -93,6 +93,13 @@ interface DisplaySettingsState {
   wallpaperSource: string;
   setCurrentWallpaper: (p: string) => void;
   setWallpaper: (p: string | File) => Promise<void>;
+  /**
+   * Update only the *rendered* wallpaper source without changing the persisted
+   * `currentWallpaper` selection. Used by dynamic wallpapers (e.g. shuffle) that
+   * resolve a concrete asset to display while keeping the user's chosen
+   * descriptor intact.
+   */
+  setRuntimeWallpaperSource: (src: string) => void;
   loadCustomWallpapers: () => Promise<string[]>;
   deleteCustomWallpaper: (reference: string) => Promise<void>;
   getWallpaperData: (reference: string) => Promise<string | null>;
@@ -154,6 +161,11 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
         track(SETTINGS_ANALYTICS.WALLPAPER_CHANGE, {
           wallpaperKind: p.startsWith(INDEXEDDB_PREFIX) ? "custom" : "built-in",
         });
+      },
+
+      setRuntimeWallpaperSource: (src) => {
+        if (get().wallpaperSource === src) return;
+        set({ wallpaperSource: src });
       },
 
       setWallpaper: async (path) => {

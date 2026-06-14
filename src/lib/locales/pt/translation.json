@@ -1386,6 +1386,11 @@
       "displayMode": "Modo de Exibição",
       "downloadMacApp": "Baixar App para Mac",
       "dream": "Sonho",
+      "dynamicWallpapers": {
+        "dayNight": "Dia e Noite",
+        "nowPlaying": "Reproduzindo agora",
+        "shuffle": "Aleatório"
+      },
       "elevenlabs": "ElevenLabs",
       "elevenlabsVoiceId": "ID de Voz ElevenLabs",
       "errorBoundaries": "Limites de Erro",
@@ -1551,6 +1556,7 @@
         "aqua": "Aqua",
         "black_and_white": "Preto e branco",
         "convergency": "Convergência",
+        "dynamic": "Dinâmico",
         "foliage": "Folhagem",
         "graphics": "Gráficos",
         "landscapes": "Paisagens",

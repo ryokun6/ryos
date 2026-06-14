@@ -1386,6 +1386,11 @@
       "displayMode": "Режим отображения",
       "downloadMacApp": "Скачать приложение Mac",
       "dream": "Мечта",
+      "dynamicWallpapers": {
+        "dayNight": "День и ночь",
+        "nowPlaying": "Сейчас играет",
+        "shuffle": "Перемешать"
+      },
       "elevenlabs": "ElevenLabs",
       "elevenlabsVoiceId": "ID голоса ElevenLabs",
       "errorBoundaries": "Границы ошибок",
@@ -1551,6 +1556,7 @@
         "aqua": "Аква",
         "black_and_white": "Чёрно-белое",
         "convergency": "Конвергенция",
+        "dynamic": "Динамический",
         "foliage": "Листва",
         "graphics": "Графика",
         "landscapes": "Пейзажи",

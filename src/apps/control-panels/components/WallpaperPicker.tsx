@@ -10,10 +10,27 @@ import {
 import { useWallpaper } from "@/hooks/useWallpaper";
 import { useSound, Sounds } from "@/hooks/useSound";
 import type { DisplayMode } from "@/utils/displayMode";
-import { Plus, Trash } from "@phosphor-icons/react";
+import {
+  Plus,
+  Trash,
+  Shuffle,
+  MusicNotes,
+  Sun,
+} from "@phosphor-icons/react";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { loadWallpaperManifest } from "@/utils/wallpapers";
 import type { WallpaperManifest as WallpaperManifestType } from "@/utils/wallpapers";
+import { useNowPlayingCover } from "@/hooks/useNowPlayingCover";
+import {
+  COVER_WALLPAPER,
+  DAY_NIGHT_GRADIENT_WALLPAPER,
+  buildShuffleDescriptor,
+  getDayNightGradientCss,
+  isCoverWallpaper,
+  isDayNightGradientWallpaper,
+  isShuffleWallpaper,
+  parseShuffleDescriptor,
+} from "@/utils/dynamicWallpaper";
 import { useTranslation } from "react-i18next";
 
 // Remove unused constants
@@ -144,6 +161,118 @@ function WallpaperItem({
   );
 }
 
+interface SpecialTileProps {
+  label: string;
+  isSelected: boolean;
+  onClick: () => void;
+  isTile?: boolean;
+  /** Inline style for the tile background (gradient / cover / random art). */
+  backgroundStyle?: React.CSSProperties;
+  /** Optional muted looping video rendered as the tile background. */
+  backgroundVideoUrl?: string;
+  /** Optional icon element rendered centered in the tile. */
+  icon?: React.ReactNode;
+  /**
+   * Render a plain dark scrim (no blur) under the icon + label. Used for tiles
+   * whose preview can be an arbitrary bright/busy photo (the Shuffle tiles) so
+   * the white glyphs always stay legible.
+   */
+  scrim?: boolean;
+}
+
+/** Tile used for dynamic & shuffle wallpaper options (carries a text label). */
+function SpecialTile({
+  label,
+  isSelected,
+  onClick,
+  isTile = false,
+  backgroundStyle,
+  backgroundVideoUrl,
+  icon,
+  scrim = false,
+}: SpecialTileProps) {
+  const { play: playClick } = useSound(Sounds.BUTTON_CLICK, 0.3);
+  const handleClick = () => {
+    playClick();
+    onClick();
+  };
+  return (
+    <button
+      type="button"
+      className={`preview-button relative w-full ${
+        isTile ? "aspect-square" : "aspect-video"
+      } cursor-pointer hover:opacity-90 flex items-center justify-center overflow-hidden text-white`}
+      style={{
+        backgroundColor: "#2a2a32",
+        ...backgroundStyle,
+        boxShadow: isSelected
+          ? "0 0 0 1px transparent, 0 0 0 3px var(--os-color-selection-bg)"
+          : undefined,
+      }}
+      onClick={handleClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          handleClick();
+        }
+      }}
+    >
+      {backgroundVideoUrl && (
+        <video
+          className="absolute inset-0 size-full object-cover"
+          src={backgroundVideoUrl}
+          autoPlay
+          loop
+          muted
+          playsInline
+        />
+      )}
+      {scrim && (
+        <>
+          {/* Flat dark wash so the centered icon stays readable over any art. */}
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-0 bg-black/30"
+          />
+          {/* Stronger bottom-up gradient anchoring the label. No blur. */}
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3"
+            style={{
+              background:
+                "linear-gradient(to top, rgba(0,0,0,0.6), transparent)",
+            }}
+          />
+        </>
+      )}
+      {icon && (
+        <span
+          className="relative flex items-center justify-center text-white opacity-[0.85]"
+          style={{
+            // Uniform element opacity (not color alpha) so the tile art shows
+            // through the glyph consistently. A simple drop-shadow keeps it
+            // legible on dark gradients, bright covers and busy patterns alike.
+            filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.6))",
+          }}
+        >
+          {icon}
+        </span>
+      )}
+      {/* White label dimmed via element opacity (matching the icon) with a
+          single soft dark text-shadow. Crisp and readable on dark gradients,
+          bright covers and busy patterns without any blend modes. */}
+      <span
+        className="absolute inset-x-0 bottom-0 px-1 pt-1 pb-0.5 text-[10px] leading-tight text-center font-medium truncate text-white opacity-[0.85]"
+        style={{
+          textShadow: "0 1px 2px rgba(0,0,0,0.6)",
+        }}
+      >
+        {label}
+      </span>
+    </button>
+  );
+}
+
 type PhotoCategory = string;
 
 // Wallpaper data will be loaded from the generated manifest at runtime.
@@ -154,6 +283,7 @@ interface WallpaperPickerProps {
 export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
   const {
     currentWallpaper,
+    wallpaperSource,
     setWallpaper,
     INDEXEDDB_PREFIX,
     loadCustomWallpapers,
@@ -170,9 +300,20 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
   const displayMode = useDisplaySettingsStore((s) => s.displayMode);
   const setDisplayMode = useDisplaySettingsStore((s) => s.setDisplayMode);
   const { t } = useTranslation();
+  const nowPlaying = useNowPlayingCover();
+  // Preview the gradient for the current time of day (static within a session).
+  const dayNightPreview = useMemo(() => getDayNightGradientCss(), []);
   const deriveCategoryFromWallpaper = (
     wallpaper: string
   ): "tiles" | PhotoCategory => {
+    if (isDayNightGradientWallpaper(wallpaper) || isCoverWallpaper(wallpaper))
+      return "dynamic";
+    const shuffleTarget = parseShuffleDescriptor(wallpaper);
+    if (shuffleTarget) {
+      if (shuffleTarget.kind === "tiles") return "tiles";
+      if (shuffleTarget.kind === "videos") return "videos";
+      return shuffleTarget.category;
+    }
     if (wallpaper.includes("/wallpapers/tiles/")) return "tiles";
     if (wallpaper.startsWith(INDEXEDDB_PREFIX)) return "custom";
     if (wallpaper.includes("/wallpapers/videos/")) return "videos";
@@ -259,6 +400,32 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
     }
     return r;
   }, [manifest]);
+
+  // Pick a stable random preview per category so the Shuffle tile hints at the
+  // art it will cycle through. Keyed on the source arrays so it only re-rolls
+  // when the manifest (or selected category) changes — not on every render.
+  const pickRandom = (arr: string[]): string | undefined =>
+    arr.length ? arr[Math.floor(Math.random() * arr.length)] : undefined;
+  const randomTileShuffleArt = useMemo(
+    () => pickRandom(tileWallpapers),
+    [tileWallpapers]
+  );
+  const randomVideoShuffleArt = useMemo(
+    () => pickRandom(videoWallpapers),
+    [videoWallpapers]
+  );
+  const randomPhotoShuffleArt = useMemo(
+    () => pickRandom(photoWallpapers[selectedCategory] ?? []),
+    [photoWallpapers, selectedCategory]
+  );
+
+  // When a category's shuffle is the *active* wallpaper, mirror the concrete
+  // asset the desktop currently shows (and rotates every 2 min) so the tile
+  // stays in sync. `wallpaperSource` is the live resolved asset; ignore it
+  // while it's still an unresolved shuffle:// descriptor.
+  const liveShuffleSource = isShuffleWallpaper(wallpaperSource)
+    ? undefined
+    : wallpaperSource;
 
   /** Leopard-era photo groups shown together, followed by Patterns and the remaining categories. */
   const MACOS9_PHOTO_ORDER = [
@@ -436,6 +603,9 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="custom">{t("apps.control-panels.custom")}</SelectItem>
+              <SelectItem value="dynamic">
+                {t("apps.control-panels.wallpaperCategories.dynamic")}
+              </SelectItem>
               <SelectSeparator
                 className="-mx-1 my-1 h-px"
                 style={{
@@ -506,26 +676,100 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
             selectedCategory === "tiles" ? "grid-cols-8" : "grid-cols-3"
           }`}
         >
-          {selectedCategory === "tiles" ? (
-            tileWallpapers.map((path) => (
-              <WallpaperItem
-                key={path}
-                path={path}
-                isSelected={currentWallpaper === path}
-                onClick={() => handleWallpaperSelect(path)}
+          {selectedCategory === "dynamic" ? (
+            <>
+              <SpecialTile
+                label={t("apps.control-panels.dynamicWallpapers.dayNight")}
+                isSelected={isDayNightGradientWallpaper(currentWallpaper)}
+                onClick={() =>
+                  handleWallpaperSelect(DAY_NIGHT_GRADIENT_WALLPAPER)
+                }
+                backgroundStyle={{ backgroundImage: dayNightPreview }}
+                icon={<Sun className="size-6 text-white" weight="fill" />}
+              />
+              <SpecialTile
+                label={t("apps.control-panels.dynamicWallpapers.nowPlaying")}
+                isSelected={isCoverWallpaper(currentWallpaper)}
+                onClick={() => handleWallpaperSelect(COVER_WALLPAPER)}
+                backgroundStyle={
+                  nowPlaying.coverUrl
+                    ? {
+                        backgroundImage: `url("${nowPlaying.coverUrl}")`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                      }
+                    : undefined
+                }
+                icon={
+                  nowPlaying.coverUrl ? null : (
+                    <MusicNotes className="size-6 text-white" weight="fill" />
+                  )
+                }
+              />
+            </>
+          ) : selectedCategory === "tiles" ? (
+            <>
+              <SpecialTile
+                label={t("apps.control-panels.dynamicWallpapers.shuffle")}
+                isSelected={currentWallpaper === buildShuffleDescriptor("tiles")}
+                onClick={() =>
+                  handleWallpaperSelect(buildShuffleDescriptor("tiles"))
+                }
                 isTile
+                scrim
+                backgroundStyle={(() => {
+                  const active =
+                    currentWallpaper === buildShuffleDescriptor("tiles");
+                  const art =
+                    (active && liveShuffleSource) || randomTileShuffleArt;
+                  return art
+                    ? {
+                        backgroundImage: `url("${art}")`,
+                        backgroundSize: "64px 64px",
+                        backgroundRepeat: "repeat",
+                      }
+                    : undefined;
+                })()}
+                icon={<Shuffle className="size-5 text-white" weight="bold" />}
               />
-            ))
+              {tileWallpapers.map((path) => (
+                <WallpaperItem
+                  key={path}
+                  path={path}
+                  isSelected={currentWallpaper === path}
+                  onClick={() => handleWallpaperSelect(path)}
+                  isTile
+                />
+              ))}
+            </>
           ) : selectedCategory === "videos" ? (
-            videoWallpapers.map((path) => (
-              <WallpaperItem
-                key={path}
-                path={path}
-                isSelected={currentWallpaper === path}
-                onClick={() => handleWallpaperSelect(path)}
-                isVideo
+            <>
+              <SpecialTile
+                label={t("apps.control-panels.dynamicWallpapers.shuffle")}
+                isSelected={
+                  currentWallpaper === buildShuffleDescriptor("videos")
+                }
+                onClick={() =>
+                  handleWallpaperSelect(buildShuffleDescriptor("videos"))
+                }
+                scrim
+                backgroundVideoUrl={
+                  (currentWallpaper === buildShuffleDescriptor("videos") &&
+                    liveShuffleSource) ||
+                  randomVideoShuffleArt
+                }
+                icon={<Shuffle className="size-6 text-white" weight="bold" />}
               />
-            ))
+              {videoWallpapers.map((path) => (
+                <WallpaperItem
+                  key={path}
+                  path={path}
+                  isSelected={currentWallpaper === path}
+                  onClick={() => handleWallpaperSelect(path)}
+                  isVideo
+                />
+              ))}
+            </>
           )           : selectedCategory === "custom" ? (
             <>
               <button
@@ -568,14 +812,44 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
               )}
             </>
           ) : photoWallpapers[selectedCategory] ? (
-            photoWallpapers[selectedCategory].map((path) => (
-              <WallpaperItem
-                key={path}
-                path={path}
-                isSelected={currentWallpaper === path}
-                onClick={() => handleWallpaperSelect(path)}
+            <>
+              <SpecialTile
+                label={t("apps.control-panels.dynamicWallpapers.shuffle")}
+                isSelected={
+                  currentWallpaper ===
+                  buildShuffleDescriptor(selectedCategory)
+                }
+                onClick={() =>
+                  handleWallpaperSelect(
+                    buildShuffleDescriptor(selectedCategory)
+                  )
+                }
+                scrim
+                backgroundStyle={(() => {
+                  const active =
+                    currentWallpaper ===
+                    buildShuffleDescriptor(selectedCategory);
+                  const art =
+                    (active && liveShuffleSource) || randomPhotoShuffleArt;
+                  return art
+                    ? {
+                        backgroundImage: `url("${art}")`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                      }
+                    : undefined;
+                })()}
+                icon={<Shuffle className="size-6 text-white" weight="bold" />}
               />
-            ))
+              {photoWallpapers[selectedCategory].map((path) => (
+                <WallpaperItem
+                  key={path}
+                  path={path}
+                  isSelected={currentWallpaper === path}
+                  onClick={() => handleWallpaperSelect(path)}
+                />
+              ))}
+            </>
           ) : (
             <div className="col-span-4 text-center py-8 text-neutral-500">
               {t("apps.control-panels.noWallpapers")}
