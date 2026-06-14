@@ -37,8 +37,12 @@ import {
   isShuffleWallpaper,
   isWeatherWallpaper,
   parseShuffleDescriptor,
+  pickDeterministicCandidate,
+  shuffleBucket,
+  SHUFFLE_INTERVAL_MS,
 } from "@/utils/dynamicWallpaper";
 import { DEFAULT_COVER_PALETTE } from "@/hooks/useCoverPalette";
+import { useChatsStore } from "@/stores/useChatsStore";
 import { useTranslation } from "react-i18next";
 
 // Remove unused constants
@@ -210,6 +214,7 @@ function SpecialTile({
   return (
     <button
       type="button"
+      aria-label={label}
       className={`preview-button relative w-full ${
         isTile ? "aspect-square" : "aspect-video"
       } cursor-pointer hover:opacity-90 flex items-center justify-center overflow-hidden text-white`}
@@ -245,23 +250,28 @@ function SpecialTile({
             aria-hidden
             className="pointer-events-none absolute inset-0 bg-black/30"
           />
-          {/* Stronger bottom-up gradient anchoring the label. No blur. */}
-          <span
-            aria-hidden
-            className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3"
-            style={{
-              background:
-                "linear-gradient(to top, rgba(0,0,0,0.6), transparent)",
-            }}
-          />
+          {/* Stronger bottom-up gradient anchoring the label. No blur. Skipped
+              on small tiles where the label is hidden. */}
+          {!isTile && (
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3"
+              style={{
+                background:
+                  "linear-gradient(to top, rgba(0,0,0,0.6), transparent)",
+              }}
+            />
+          )}
         </>
       )}
-      {/* Icon is centered in the tile, then nudged up by roughly half the
-          label height so it reads as centered in the space above the label
-          without floating too high. */}
+      {/* Icon is centered in the tile. When a label is shown it is nudged up by
+          roughly half the label height so it reads as centered in the space
+          above the label; on small tiles (no label) it stays truly centered. */}
       {icon && (
         <span
-          className="relative flex -translate-y-[5px] items-center justify-center text-white opacity-[0.85]"
+          className={`relative flex items-center justify-center text-white opacity-[0.85] ${
+            isTile ? "" : "-translate-y-[5px]"
+          }`}
           style={{
             // Uniform element opacity (not color alpha) so the tile art shows
             // through the glyph consistently. A simple drop-shadow keeps it
@@ -273,16 +283,18 @@ function SpecialTile({
         </span>
       )}
       {/* White label dimmed via element opacity (matching the icon) with a
-          single soft dark text-shadow. Crisp and readable on dark gradients,
-          bright covers and busy patterns without any blend modes. */}
-      <span
-        className="absolute inset-x-0 bottom-1 px-1 pt-1 pb-0.5 text-[10px] leading-tight text-center font-medium truncate text-white opacity-[0.85]"
-        style={{
-          textShadow: "0 1px 2px rgba(0,0,0,0.6)",
-        }}
-      >
-        {label}
-      </span>
+          single soft dark text-shadow. Hidden on small tiles (e.g. Patterns)
+          where there isn't room for legible text. */}
+      {!isTile && (
+        <span
+          className="absolute inset-x-0 bottom-1 px-1 pt-1 pb-0.5 text-[10px] leading-tight text-center font-medium truncate text-white opacity-[0.85]"
+          style={{
+            textShadow: "0 1px 2px rgba(0,0,0,0.6)",
+          }}
+        >
+          {label}
+        </span>
+      )}
     </button>
   );
 }
@@ -313,6 +325,28 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
   const { play: playClick } = useSound(Sounds.BUTTON_CLICK, 0.3);
   const displayMode = useDisplaySettingsStore((s) => s.displayMode);
   const setDisplayMode = useDisplaySettingsStore((s) => s.setDisplayMode);
+  // Same per-user seed component used by `useShuffleWallpaper`, so the preview
+  // resolves to the exact asset the desktop would (and other devices do) show.
+  const username = useChatsStore((s) => s.username);
+  // Advance a tick at each wall-clock bucket boundary so inactive shuffle tile
+  // previews rotate in lockstep with what shuffle would actually display.
+  const [shuffleTick, setShuffleTick] = useState(() => shuffleBucket());
+  useEffect(() => {
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+    const msToNextBoundary =
+      SHUFFLE_INTERVAL_MS - (Date.now() % SHUFFLE_INTERVAL_MS);
+    const timeoutId = setTimeout(() => {
+      setShuffleTick(shuffleBucket());
+      intervalId = setInterval(
+        () => setShuffleTick(shuffleBucket()),
+        SHUFFLE_INTERVAL_MS
+      );
+    }, msToNextBoundary);
+    return () => {
+      clearTimeout(timeoutId);
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, []);
   const { t } = useTranslation();
   const nowPlaying = useNowPlayingCover();
   // Preview the gradient for the current time of day (static within a session).
@@ -429,22 +463,32 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
     return r;
   }, [manifest]);
 
-  // Pick a stable random preview per category so the Shuffle tile hints at the
-  // art it will cycle through. Keyed on the source arrays so it only re-rolls
-  // when the manifest (or selected category) changes — not on every render.
-  const pickRandom = (arr: string[]): string | undefined =>
-    arr.length ? arr[Math.floor(Math.random() * arr.length)] : undefined;
-  const randomTileShuffleArt = useMemo(
-    () => pickRandom(tileWallpapers),
-    [tileWallpapers]
+  // Shuffle picks are deterministic per (user, descriptor, wall-clock bucket),
+  // so the Shuffle tile can preview the *exact* asset shuffle would resolve to
+  // right now — matching the desktop and the user's other devices — instead of
+  // an arbitrary random hint. `shuffleTick` keeps it rotating in lockstep.
+  const pickShuffleArt = (
+    arr: string[],
+    category: "tiles" | "videos" | string
+  ): string | undefined =>
+    pickDeterministicCandidate(
+      arr,
+      `${username ?? "anon"}|${buildShuffleDescriptor(category)}`
+    ) ?? undefined;
+  const tileShuffleArt = useMemo(
+    () => pickShuffleArt(tileWallpapers, "tiles"),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [tileWallpapers, username, shuffleTick]
   );
-  const randomVideoShuffleArt = useMemo(
-    () => pickRandom(videoWallpapers),
-    [videoWallpapers]
+  const videoShuffleArt = useMemo(
+    () => pickShuffleArt(videoWallpapers, "videos"),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [videoWallpapers, username, shuffleTick]
   );
-  const randomPhotoShuffleArt = useMemo(
-    () => pickRandom(photoWallpapers[selectedCategory] ?? []),
-    [photoWallpapers, selectedCategory]
+  const photoShuffleArt = useMemo(
+    () => pickShuffleArt(photoWallpapers[selectedCategory] ?? [], selectedCategory),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [photoWallpapers, selectedCategory, username, shuffleTick]
   );
 
   // When a category's shuffle is the *active* wallpaper, mirror the concrete
@@ -772,7 +816,7 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
                   const active =
                     currentWallpaper === buildShuffleDescriptor("tiles");
                   const art =
-                    (active && liveShuffleSource) || randomTileShuffleArt;
+                    (active && liveShuffleSource) || tileShuffleArt;
                   return art
                     ? {
                         backgroundImage: `url("${art}")`,
@@ -807,7 +851,7 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
                 backgroundVideoUrl={
                   (currentWallpaper === buildShuffleDescriptor("videos") &&
                     liveShuffleSource) ||
-                  randomVideoShuffleArt
+                  videoShuffleArt
                 }
                 icon={<Shuffle className="size-6 text-white" weight="bold" />}
               />
@@ -881,7 +925,7 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
                     currentWallpaper ===
                     buildShuffleDescriptor(selectedCategory);
                   const art =
-                    (active && liveShuffleSource) || randomPhotoShuffleArt;
+                    (active && liveShuffleSource) || photoShuffleArt;
                   return art
                     ? {
                         backgroundImage: `url("${art}")`,
