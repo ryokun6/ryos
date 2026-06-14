@@ -43,6 +43,7 @@ import {
   type IndexedDBStoreItemWithKey as StoreItemWithKey,
 } from "@/utils/indexedDBBackup";
 import type { SyncNamespace } from "@/shared/sync2/namespaces";
+import { emitDocumentContentSynced } from "@/utils/appEventBus";
 
 export interface AppliedSyncOp {
   k: string;
@@ -727,6 +728,29 @@ const filesCodec: SyncCodec = {
       const db = requireDb(ctx, "files");
       await deleteStoreItemsByKey(db, STORES.DOCUMENTS, docDeletes);
       await upsertStoreItems(db, STORES.DOCUMENTS, docUpserts);
+
+      // Notify open editors (e.g. TextEdit) that document content changed in
+      // storage so they can reactively merge the update without losing the
+      // user's caret. Map the upserted content keys (file UUIDs) back to paths.
+      if (docUpserts.length > 0) {
+        const items = useFilesStore.getState().items;
+        const uuidToPath = new Map<string, string>();
+        for (const [path, item] of Object.entries(items)) {
+          if (item?.uuid) {
+            uuidToPath.set(item.uuid, path);
+          }
+        }
+        const changedPaths: string[] = [];
+        for (const doc of docUpserts) {
+          const path = doc.key ? uuidToPath.get(doc.key) : undefined;
+          if (path) {
+            changedPaths.push(path);
+          }
+        }
+        if (changedPaths.length > 0) {
+          emitDocumentContentSynced({ paths: changedPaths });
+        }
+      }
     }
   },
   subscribe(onChange) {

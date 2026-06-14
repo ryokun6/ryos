@@ -45,6 +45,15 @@ export interface DocumentUpdatedEventDetail {
   content: string;
 }
 
+export interface DocumentContentSyncedEventDetail {
+  /**
+   * Document paths whose persisted content changed in storage (e.g. via cloud
+   * sync or another writer). Listeners should re-read the content from the
+   * source of truth (IndexedDB) rather than trusting an inline payload.
+   */
+  paths: string[];
+}
+
 export interface AppletUpdatedEventDetail {
   path?: string;
   content?: string;
@@ -61,6 +70,7 @@ const APP_EVENT_NAMES = {
   fileUpdated: "fileUpdated",
   fileRenamed: "fileRenamed",
   documentUpdated: "documentUpdated",
+  documentContentSynced: "documentContentSynced",
   appletUpdated: "appletUpdated",
 } as const;
 
@@ -77,6 +87,7 @@ type AppEventDetailMap = {
   fileUpdated: FileUpdatedEventDetail;
   fileRenamed: FileRenamedEventDetail;
   documentUpdated: DocumentUpdatedEventDetail;
+  documentContentSynced: DocumentContentSyncedEventDetail;
   appletUpdated: AppletUpdatedEventDetail;
 };
 
@@ -254,6 +265,23 @@ export function onDocumentUpdated(
   target?: AppEventTarget | null,
 ): () => void {
   return subscribeToEvent("documentUpdated", handler, target);
+}
+
+export function emitDocumentContentSynced(
+  detail: DocumentContentSyncedEventDetail,
+  target?: AppEventTarget | null,
+): void {
+  if (!detail.paths || detail.paths.length === 0) {
+    return;
+  }
+  emitEvent("documentContentSynced", detail, target);
+}
+
+export function onDocumentContentSynced(
+  handler: (event: CustomEvent<DocumentContentSyncedEventDetail>) => void,
+  target?: AppEventTarget | null,
+): () => void {
+  return subscribeToEvent("documentContentSynced", handler, target);
 }
 
 export function emitAppletUpdated(

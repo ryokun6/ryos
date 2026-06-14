@@ -20,7 +20,16 @@ import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { markdownToHtml } from "@/utils/markdown";
 import { useTranslation } from "react-i18next";
-import { onDocumentUpdated } from "@/utils/appEventBus";
+import {
+  onDocumentUpdated,
+  onDocumentContentSynced,
+} from "@/utils/appEventBus";
+import {
+  mergeEditorContent,
+  type MergeableContent,
+} from "../utils/mergeEditorContent";
+import { persistedContentToEditorContent } from "../utils/documentContent";
+import { readDocumentTextContent } from "@/services/vfs/FileContentRepository";
 import { useRegisterUndoRedo } from "@/hooks/useUndoRedo";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { getTextAnalytics, TEXTEDIT_ANALYTICS, track } from "@/utils/analytics";
@@ -121,7 +130,15 @@ function TextEditContent({
   useEffect(() => {
     if (!editor) return;
 
-    const handleUpdate = () => {
+    const handleUpdate = ({
+      transaction,
+    }: {
+      transaction?: { getMeta: (key: string) => unknown };
+    } = {}) => {
+      // Reactive external updates are applied as transactions tagged with the
+      // "external" meta. Ignore them here so merging cloud/sync/AI updates does
+      // not mark the document dirty or fight the user's edits.
+      if (transaction?.getMeta("external")) return;
       // Only mark changes and store latest content/JSON in onUpdate
       const currentJson = editor.getJSON();
       setContentJson(currentJson); // Update store JSON for recovery
@@ -213,28 +230,30 @@ function TextEditContent({
     handleLoadFromDatabase,
   ]);
 
+  // Reactively merge externally-sourced content (cloud sync, file sync, or AI
+  // edits) into the editor while preserving the user's caret, selection, focus
+  // and scroll position. Returns true if the document changed.
+  const applyExternalUpdate = useCallback(
+    (content: MergeableContent): boolean => {
+      if (!editor) return false;
+      const changed = mergeEditorContent(editor, content);
+      // Keep the per-instance store mirror in sync and treat external updates as
+      // a clean baseline so they don't surface as unsaved changes.
+      setContentJson(editor.getJSON());
+      setHasUnsavedChanges(false);
+      return changed;
+    },
+    [editor, setContentJson, setHasUnsavedChanges]
+  );
+
   // Add listeners for external document updates
   useEffect(() => {
     const handleUpdateEditorContent = (e: CustomEvent) => {
       if (editor && e.detail?.path === currentFilePath && e.detail?.content) {
         try {
           const jsonContent = JSON.parse(e.detail.content);
-          const { from, to } = editor.state.selection;
-
-          editor.commands.setContent(jsonContent, false);
-
-          if (from && to && from === to) {
-            try {
-              editor.commands.setTextSelection(
-                Math.min(from, editor.state.doc.content.size)
-              );
-            } catch (e) {
-              console.log("Could not restore cursor position", e);
-            }
-          }
-
-          setHasUnsavedChanges(false);
-          console.log("Editor content updated from external source");
+          applyExternalUpdate(jsonContent);
+          console.log("Editor content merged from external source");
         } catch (error) {
           console.error("Failed to update editor content:", error);
         }
@@ -245,9 +264,8 @@ function TextEditContent({
       if (editor && e.detail?.path === currentFilePath && e.detail?.content) {
         try {
           const jsonContent = JSON.parse(e.detail.content);
-          editor.commands.setContent(jsonContent, false);
-          setHasUnsavedChanges(false);
-          console.log("Editor content updated after document updated event");
+          applyExternalUpdate(jsonContent);
+          console.log("Editor content merged after document updated event");
         } catch (error) {
           console.error(
             t("apps.textedit.failedToUpdateEditorWithDocumentUpdatedEvent"),
@@ -257,11 +275,45 @@ function TextEditContent({
       }
     };
 
+    // Cloud / multi-device sync writes document content straight to storage.
+    // Re-read the source of truth and merge it so open documents stay live.
+    const handleDocumentContentSynced = (e: CustomEvent) => {
+      if (!editor || !currentFilePath) return;
+      const paths = e.detail?.paths;
+      if (!Array.isArray(paths) || !paths.includes(currentFilePath)) return;
+
+      void (async () => {
+        try {
+          const contentStr = await readDocumentTextContent(currentFilePath);
+          if (contentStr == null) return;
+          const editorContent = persistedContentToEditorContent(
+            currentFilePath,
+            contentStr
+          );
+          const changed = applyExternalUpdate(editorContent);
+          if (changed) {
+            console.log(
+              "[TextEdit] Editor content merged from cloud/file sync:",
+              currentFilePath
+            );
+          }
+        } catch (error) {
+          console.error(
+            "[TextEdit] Failed to merge synced document content:",
+            error
+          );
+        }
+      })();
+    };
+
     window.addEventListener(
       "updateEditorContent",
       handleUpdateEditorContent as EventListener
     );
     const unsubscribeDocumentUpdated = onDocumentUpdated(handleDocumentUpdated);
+    const unsubscribeDocumentContentSynced = onDocumentContentSynced(
+      handleDocumentContentSynced
+    );
 
     return () => {
       window.removeEventListener(
@@ -269,10 +321,11 @@ function TextEditContent({
         handleUpdateEditorContent as EventListener
       );
       unsubscribeDocumentUpdated();
+      unsubscribeDocumentContentSynced();
     };
-  }, [editor, currentFilePath, setHasUnsavedChanges, t]);
+  }, [editor, currentFilePath, applyExternalUpdate, t]);
 
-  // Sync editor when contentJson is externally updated
+  // Sync editor when contentJson is externally updated (e.g. AI edit tool)
   useEffect(() => {
     if (!editor || !contentJson) return;
 
@@ -280,9 +333,9 @@ function TextEditContent({
     if (JSON.stringify(currentJson) === JSON.stringify(contentJson)) return;
 
     try {
-      editor.commands.setContent(contentJson, false);
+      mergeEditorContent(editor, contentJson);
       setHasUnsavedChanges(false);
-      console.log("[TextEdit] Editor content synced from store change");
+      console.log("[TextEdit] Editor content merged from store change");
     } catch (err) {
       console.error("[TextEdit] Failed to sync editor content:", err);
     }
