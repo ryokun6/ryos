@@ -325,6 +325,25 @@ export async function markTelegramUpdateProcessed(
   });
 }
 
+/**
+ * Atomically claim an update for processing. Returns true only for the caller
+ * that wins the claim; concurrent or retried deliveries of the same update_id
+ * get false so they can be skipped. This guards the expensive AI/tool pipeline
+ * against Telegram's automatic webhook retries (which fire whenever a slow turn
+ * exceeds Telegram's delivery timeout) re-running the same message in parallel.
+ */
+export async function claimTelegramUpdate(
+  redis: RedisLike,
+  updateId: number,
+  ttlSeconds: number = TELEGRAM_UPDATE_TTL_SECONDS
+): Promise<boolean> {
+  const result = await redis.set(buildTelegramProcessedUpdateKey(updateId), "1", {
+    nx: true,
+    ex: ttlSeconds,
+  });
+  return result === "OK" || result === true;
+}
+
 export async function loadTelegramConversationHistory(
   redis: RedisLike,
   chatId: string,

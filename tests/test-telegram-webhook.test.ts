@@ -4,6 +4,7 @@ import { parseAuthCookie } from "../api/_utils/_cookie";
 import { createRedis } from "../api/_utils/redis";
 import {
   appendTelegramConversationMessage,
+  claimTelegramUpdate,
   createTelegramLinkCode,
   linkTelegramAccount,
   loadTelegramConversationHistory,
@@ -536,6 +537,60 @@ describe("telegram webhook", () => {
     );
 
     expect(await loadTelegramConversationHistory(redis, chatId, 10)).toEqual([]);
+  });
+
+  test("skips the AI pipeline for an already-claimed (retried) update", async () => {
+    const redis = createRedis();
+    const claimUsername = `tg_claim_${Date.now()}`;
+    const telegramUserId = String(RUN_ID + 7007);
+    const chatId = telegramUserId;
+    const updateId = UPDATE_ID_BASE + 7;
+
+    const linkSession = await createTelegramLinkCode(redis, claimUsername, 60);
+    const linkedAccount = await linkTelegramAccount(redis, {
+      code: linkSession.code,
+      telegramUserId,
+      chatId,
+      firstName: "Claim",
+    });
+    expect(linkedAccount?.username).toBe(claimUsername);
+
+    // Simulate Telegram re-delivering an update whose first delivery is already
+    // being processed (the slow document/tool turn that caused the loop). The
+    // update is claimed, so this retry must short-circuit before any AI work or
+    // Telegram API calls happen.
+    expect(await claimTelegramUpdate(redis, updateId)).toBe(true);
+
+    mockRequests.length = 0;
+
+    const retryRes = await fetch(`${TEST_BASE_URL}/api/webhooks/telegram`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Telegram-Bot-Api-Secret-Token": WEBHOOK_SECRET,
+      },
+      body: JSON.stringify({
+        update_id: updateId,
+        message: {
+          message_id: 17,
+          from: {
+            id: Number(telegramUserId),
+            first_name: "Claim",
+          },
+          chat: {
+            id: Number(chatId),
+            type: "private",
+          },
+          text: "create a document called notes",
+        },
+      }),
+    });
+
+    expect(retryRes.status).toBe(202);
+    const retryData = await retryRes.json();
+    expect(retryData.reason).toBe("duplicate-update");
+    // No AI work ran, so the bot made no Telegram API calls for this retry.
+    expect(mockRequests).toHaveLength(0);
   });
 
   test("sends a Telegram rate limit message when the burst limit is reached", async () => {

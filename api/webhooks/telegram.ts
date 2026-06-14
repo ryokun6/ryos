@@ -5,6 +5,7 @@ import createRedis from "../_utils/redis.js";
 import * as RateLimit from "../_utils/_rate-limit.js";
 import {
   appendTelegramConversationMessage,
+  claimTelegramUpdate,
   clearTelegramConversationHistory,
   getLinkedTelegramAccountByTelegramUserId,
   hasProcessedTelegramUpdate,
@@ -262,6 +263,26 @@ type TelegramStatusStreamChunk =
       providerExecuted?: boolean;
     };
 
+export function extractTelegramToolResultMessage(
+  output: unknown
+): { message: string; success: boolean } | null {
+  if (!output || typeof output !== "object" || !("message" in output)) {
+    return null;
+  }
+
+  const message = (output as { message?: unknown }).message;
+  if (typeof message !== "string" || message.trim().length === 0) {
+    return null;
+  }
+
+  const success = (output as { success?: unknown }).success;
+  return {
+    message: message.trim(),
+    // Treat missing success as truthy so tools that don't report it still count.
+    success: success !== false,
+  };
+}
+
 export function getTelegramProviderStatusToolCall(
   chunk: TelegramStatusStreamChunk
 ): { toolCallId: string; toolName: string; input: unknown } | null {
@@ -462,6 +483,21 @@ export default async function handler(
     return;
   }
 
+  // Claim the update before any rate-limit accounting or the expensive AI/tool
+  // pipeline. Telegram re-delivers any update it doesn't get a timely 2xx for,
+  // and a multi-step tool turn (e.g. creating a document) can easily outlast that
+  // window. Without an atomic claim, each retry re-enters processing in parallel,
+  // which the user sees as the bot looping on the same status (e.g. "Reading
+  // document...") and can even double-apply tool side effects.
+  if (!(await claimTelegramUpdate(redis, parsedUpdate.updateId))) {
+    logger.info("Skipping in-flight or already-processed Telegram update", {
+      updateId: parsedUpdate.updateId,
+    });
+    logger.response(202, Date.now() - startTime);
+    sendJson(res, 202, { ignored: true, reason: "duplicate-update" });
+    return;
+  }
+
   const isExemptUser = linkedAccount.username === "ryo";
 
   if (!isExemptUser) {
@@ -644,6 +680,11 @@ export default async function handler(
   });
   const reportedProviderToolCalls = new Set<string>();
   const shouldSendVoiceOnlyReply = Boolean(parsedUpdate.voiceFileId);
+  // Track the latest tool result messages so we can still reply with something
+  // useful (e.g. "Created document 'todo.md'.") when the model ends a turn on a
+  // tool call without emitting any assistant text.
+  let lastToolSuccessMessage = "";
+  let lastToolMessage = "";
 
   try {
     await statusReporter.start();
@@ -679,6 +720,19 @@ export default async function handler(
     const textStream = textStreamFromFullStream(
       result.fullStream,
       async (chunk) => {
+        if (chunk.type === "tool-result") {
+          const toolMessage = extractTelegramToolResultMessage(
+            (chunk as { output?: unknown }).output
+          );
+          if (toolMessage) {
+            lastToolMessage = toolMessage.message;
+            if (toolMessage.success) {
+              lastToolSuccessMessage = toolMessage.message;
+            }
+          }
+          return;
+        }
+
         if (chunk.type !== "tool-input-start" && chunk.type !== "tool-call") {
           return;
         }
@@ -730,14 +784,42 @@ export default async function handler(
           logWarn: (message, details) => logger.warn(message, details),
         });
 
-    if (!replyText) {
-      logger.warn("Generated empty Telegram reply", {
-        username: linkedAccount.username,
-        updateId: parsedUpdate.updateId,
-      });
-      logger.response(500, Date.now() - startTime);
-      sendJson(res, 500, { error: "Generated empty reply" });
-      return;
+    // When the model finishes a turn on a tool call without emitting assistant
+    // text (common after a successful documentsControl write), fall back to the
+    // tool's own confirmation message so the user still gets a reply and Telegram
+    // does not keep retrying the update.
+    let outboundText = replyText;
+    if (!outboundText) {
+      const fallback = lastToolSuccessMessage || lastToolMessage;
+      outboundText = fallback
+        ? normalizeTelegramReplyText(fallback, {
+            formatText: simplifyTelegramCitationDisplay,
+          })
+        : "";
+      if (outboundText) {
+        logger.info("Falling back to tool result message for empty reply", {
+          username: linkedAccount.username,
+          updateId: parsedUpdate.updateId,
+        });
+      } else {
+        logger.warn("Generated empty Telegram reply", {
+          username: linkedAccount.username,
+          updateId: parsedUpdate.updateId,
+        });
+        outboundText = "done.";
+      }
+
+      // The streaming helper sent nothing because the model produced no text, so
+      // deliver the fallback ourselves (voice path handles its own send below).
+      if (!shouldSendVoiceOnlyReply) {
+        await statusReporter.dispose();
+        await sendTelegramMessage({
+          botToken,
+          chatId: parsedUpdate.chatId,
+          text: outboundText,
+          replyToMessageId: parsedUpdate.messageId,
+        });
+      }
     }
 
     let voiceReplyMessageId: number | null = null;
@@ -750,7 +832,7 @@ export default async function handler(
           action: "upload_voice",
         });
         const voiceReplyAudio = await generateElevenLabsSpeech({
-          text: replyText,
+          text: outboundText,
         });
         voiceReplyMessageId = await sendTelegramVoice({
           botToken,
@@ -783,7 +865,7 @@ export default async function handler(
     });
     await appendTelegramConversationMessage(redis, parsedUpdate.chatId, {
       role: "assistant",
-      content: replyText,
+      content: outboundText,
       createdAt: timestamp,
     });
     await markTelegramUpdateProcessed(redis, parsedUpdate.updateId);
@@ -794,16 +876,45 @@ export default async function handler(
       updateId: parsedUpdate.updateId,
       hasImage: !!imageData,
       hasVoiceInput: !!parsedUpdate.voiceFileId,
-      replyLength: replyText.length,
+      replyLength: outboundText.length,
       previewMode,
       voiceReplyMessageId,
     });
     logger.response(200, Date.now() - startTime);
     sendJson(res, 200, {
       success: true,
-      reply: replyText,
+      reply: outboundText,
       voiceReplySent: voiceReplyMessageId !== null,
     });
+  } catch (error) {
+    // The update is already claimed, so retries would be skipped anyway. Ack the
+    // webhook (200) instead of letting a 500 trigger Telegram's retry storm, and
+    // let the user know something went wrong so the chat isn't left silent.
+    logger.error("Failed to handle Telegram message", {
+      username: linkedAccount.username,
+      updateId: parsedUpdate.updateId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    if (!res.headersSent) {
+      try {
+        await statusReporter.dispose();
+        await sendTelegramInfoMessage(
+          botToken,
+          parsedUpdate.chatId,
+          "something went wrong on my end. try again in a moment.",
+          parsedUpdate.messageId
+        );
+      } catch (notifyError) {
+        logger.warn("Failed to notify Telegram user about processing error", {
+          error:
+            notifyError instanceof Error
+              ? notifyError.message
+              : String(notifyError),
+        });
+      }
+      logger.response(200, Date.now() - startTime);
+      sendJson(res, 200, { success: false, reason: "processing-error" });
+    }
   } finally {
     await statusReporter.dispose();
   }
