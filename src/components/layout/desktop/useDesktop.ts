@@ -18,6 +18,7 @@ import type { LaunchOriginRect } from "@/stores/useAppStore";
 import { STORES, dbOperations } from "@/utils/indexedDB";
 import { useTranslation } from "react-i18next";
 import { useWallpaper } from "@/hooks/useWallpaper";
+import { useShuffleWallpaper } from "@/hooks/useShuffleWallpaper";
 import {
   createSelectionRect,
   getIntersectingSelectionIds,
@@ -59,6 +60,8 @@ export function useDesktop({
   const [selectionAnchorId, setSelectionAnchorId] =
     useState<DesktopItemId | null>(null);
   const { wallpaperSource, isVideoWallpaper } = useWallpaper();
+  // Resolve shuffle wallpapers into a concrete rotating asset source.
+  useShuffleWallpaper();
   const { videoRef } = useDesktopVideoWallpaper(isVideoWallpaper);
   const desktopRef = useRef<HTMLDivElement>(null);
   const marqueeStartRef = useRef<SelectionPoint | null>(null);

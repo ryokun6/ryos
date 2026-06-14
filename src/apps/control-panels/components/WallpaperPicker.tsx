@@ -10,10 +10,26 @@ import {
 import { useWallpaper } from "@/hooks/useWallpaper";
 import { useSound, Sounds } from "@/hooks/useSound";
 import type { DisplayMode } from "@/utils/displayMode";
-import { Plus, Trash } from "@phosphor-icons/react";
+import {
+  Plus,
+  Trash,
+  Shuffle,
+  MusicNotes,
+  Sun,
+} from "@phosphor-icons/react";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { loadWallpaperManifest } from "@/utils/wallpapers";
 import type { WallpaperManifest as WallpaperManifestType } from "@/utils/wallpapers";
+import { useNowPlayingCover } from "@/hooks/useNowPlayingCover";
+import {
+  COVER_WALLPAPER,
+  DAY_NIGHT_GRADIENT_WALLPAPER,
+  buildShuffleDescriptor,
+  getDayNightGradientCss,
+  isCoverWallpaper,
+  isDayNightGradientWallpaper,
+  parseShuffleDescriptor,
+} from "@/utils/dynamicWallpaper";
 import { useTranslation } from "react-i18next";
 
 // Remove unused constants
@@ -144,6 +160,66 @@ function WallpaperItem({
   );
 }
 
+interface SpecialTileProps {
+  label: string;
+  isSelected: boolean;
+  onClick: () => void;
+  isTile?: boolean;
+  /** Inline style for the tile background (gradient / cover preview). */
+  backgroundStyle?: React.CSSProperties;
+  /** Optional icon element rendered centered in the tile. */
+  icon?: React.ReactNode;
+}
+
+/** Tile used for dynamic & shuffle wallpaper options (carries a text label). */
+function SpecialTile({
+  label,
+  isSelected,
+  onClick,
+  isTile = false,
+  backgroundStyle,
+  icon,
+}: SpecialTileProps) {
+  const { play: playClick } = useSound(Sounds.BUTTON_CLICK, 0.3);
+  const handleClick = () => {
+    playClick();
+    onClick();
+  };
+  return (
+    <button
+      type="button"
+      className={`preview-button relative w-full ${
+        isTile ? "aspect-square" : "aspect-video"
+      } cursor-pointer hover:opacity-90 flex items-center justify-center overflow-hidden text-white`}
+      style={{
+        backgroundColor: "#2a2a32",
+        ...backgroundStyle,
+        boxShadow: isSelected
+          ? "0 0 0 1px var(--os-color-selection-ring-gap), 0 0 0 3px var(--os-color-selection-bg)"
+          : undefined,
+      }}
+      onClick={handleClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          handleClick();
+        }
+      }}
+    >
+      {icon}
+      <span
+        className="absolute inset-x-0 bottom-0 px-1 py-0.5 text-[10px] leading-tight text-center font-medium truncate"
+        style={{
+          background: "linear-gradient(to top, rgba(0,0,0,0.55), transparent)",
+          textShadow: "0 1px 2px rgba(0,0,0,0.6)",
+        }}
+      >
+        {label}
+      </span>
+    </button>
+  );
+}
+
 type PhotoCategory = string;
 
 // Wallpaper data will be loaded from the generated manifest at runtime.
@@ -170,9 +246,20 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
   const displayMode = useDisplaySettingsStore((s) => s.displayMode);
   const setDisplayMode = useDisplaySettingsStore((s) => s.setDisplayMode);
   const { t } = useTranslation();
+  const nowPlaying = useNowPlayingCover();
+  // Preview the gradient for the current time of day (static within a session).
+  const dayNightPreview = useMemo(() => getDayNightGradientCss(), []);
   const deriveCategoryFromWallpaper = (
     wallpaper: string
   ): "tiles" | PhotoCategory => {
+    if (isDayNightGradientWallpaper(wallpaper) || isCoverWallpaper(wallpaper))
+      return "dynamic";
+    const shuffleTarget = parseShuffleDescriptor(wallpaper);
+    if (shuffleTarget) {
+      if (shuffleTarget.kind === "tiles") return "tiles";
+      if (shuffleTarget.kind === "videos") return "videos";
+      return shuffleTarget.category;
+    }
     if (wallpaper.includes("/wallpapers/tiles/")) return "tiles";
     if (wallpaper.startsWith(INDEXEDDB_PREFIX)) return "custom";
     if (wallpaper.includes("/wallpapers/videos/")) return "videos";
@@ -436,6 +523,9 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="custom">{t("apps.control-panels.custom")}</SelectItem>
+              <SelectItem value="dynamic">
+                {t("apps.control-panels.wallpaperCategories.dynamic")}
+              </SelectItem>
               <SelectSeparator
                 className="-mx-1 my-1 h-px"
                 style={{
@@ -506,26 +596,89 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
             selectedCategory === "tiles" ? "grid-cols-8" : "grid-cols-3"
           }`}
         >
-          {selectedCategory === "tiles" ? (
-            tileWallpapers.map((path) => (
-              <WallpaperItem
-                key={path}
-                path={path}
-                isSelected={currentWallpaper === path}
-                onClick={() => handleWallpaperSelect(path)}
+          {selectedCategory === "dynamic" ? (
+            <>
+              <SpecialTile
+                label={t("apps.control-panels.dynamicWallpapers.dayNight")}
+                isSelected={isDayNightGradientWallpaper(currentWallpaper)}
+                onClick={() =>
+                  handleWallpaperSelect(DAY_NIGHT_GRADIENT_WALLPAPER)
+                }
+                backgroundStyle={{ backgroundImage: dayNightPreview }}
+                icon={
+                  <Sun className="size-6 text-white/90" weight="fill" />
+                }
+              />
+              <SpecialTile
+                label={t("apps.control-panels.dynamicWallpapers.nowPlaying")}
+                isSelected={isCoverWallpaper(currentWallpaper)}
+                onClick={() => handleWallpaperSelect(COVER_WALLPAPER)}
+                backgroundStyle={
+                  nowPlaying.coverUrl
+                    ? {
+                        backgroundImage: `url("${nowPlaying.coverUrl}")`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                      }
+                    : undefined
+                }
+                icon={
+                  nowPlaying.coverUrl ? null : (
+                    <MusicNotes
+                      className="size-6 text-white/90"
+                      weight="fill"
+                    />
+                  )
+                }
+              />
+            </>
+          ) : selectedCategory === "tiles" ? (
+            <>
+              <SpecialTile
+                label={t("apps.control-panels.dynamicWallpapers.shuffle")}
+                isSelected={currentWallpaper === buildShuffleDescriptor("tiles")}
+                onClick={() =>
+                  handleWallpaperSelect(buildShuffleDescriptor("tiles"))
+                }
                 isTile
+                icon={
+                  <Shuffle className="size-5 text-white/90" weight="bold" />
+                }
               />
-            ))
+              {tileWallpapers.map((path) => (
+                <WallpaperItem
+                  key={path}
+                  path={path}
+                  isSelected={currentWallpaper === path}
+                  onClick={() => handleWallpaperSelect(path)}
+                  isTile
+                />
+              ))}
+            </>
           ) : selectedCategory === "videos" ? (
-            videoWallpapers.map((path) => (
-              <WallpaperItem
-                key={path}
-                path={path}
-                isSelected={currentWallpaper === path}
-                onClick={() => handleWallpaperSelect(path)}
-                isVideo
+            <>
+              <SpecialTile
+                label={t("apps.control-panels.dynamicWallpapers.shuffle")}
+                isSelected={
+                  currentWallpaper === buildShuffleDescriptor("videos")
+                }
+                onClick={() =>
+                  handleWallpaperSelect(buildShuffleDescriptor("videos"))
+                }
+                icon={
+                  <Shuffle className="size-6 text-white/90" weight="bold" />
+                }
               />
-            ))
+              {videoWallpapers.map((path) => (
+                <WallpaperItem
+                  key={path}
+                  path={path}
+                  isSelected={currentWallpaper === path}
+                  onClick={() => handleWallpaperSelect(path)}
+                  isVideo
+                />
+              ))}
+            </>
           )           : selectedCategory === "custom" ? (
             <>
               <button
@@ -568,14 +721,31 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
               )}
             </>
           ) : photoWallpapers[selectedCategory] ? (
-            photoWallpapers[selectedCategory].map((path) => (
-              <WallpaperItem
-                key={path}
-                path={path}
-                isSelected={currentWallpaper === path}
-                onClick={() => handleWallpaperSelect(path)}
+            <>
+              <SpecialTile
+                label={t("apps.control-panels.dynamicWallpapers.shuffle")}
+                isSelected={
+                  currentWallpaper ===
+                  buildShuffleDescriptor(selectedCategory)
+                }
+                onClick={() =>
+                  handleWallpaperSelect(
+                    buildShuffleDescriptor(selectedCategory)
+                  )
+                }
+                icon={
+                  <Shuffle className="size-6 text-white/90" weight="bold" />
+                }
               />
-            ))
+              {photoWallpapers[selectedCategory].map((path) => (
+                <WallpaperItem
+                  key={path}
+                  path={path}
+                  isSelected={currentWallpaper === path}
+                  onClick={() => handleWallpaperSelect(path)}
+                />
+              ))}
+            </>
           ) : (
             <div className="col-span-4 text-center py-8 text-neutral-500">
               {t("apps.control-panels.noWallpapers")}

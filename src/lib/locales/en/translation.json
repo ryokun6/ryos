@@ -3072,6 +3072,7 @@
       "noWallpapers": "No wallpapers",
       "iosVolumeHint": "On iOS, use hardware buttons to control media volume",
       "wallpaperCategories": {
+        "dynamic": "Dynamic",
         "landscapes": "Landscapes",
         "structures": "Structures",
         "objects": "Objects",
@@ -3083,6 +3084,11 @@
         "nature": "Nature",
         "plants": "Plants",
         "black_and_white": "Black & White"
+      },
+      "dynamicWallpapers": {
+        "dayNight": "Day & Night",
+        "nowPlaying": "Now Playing",
+        "shuffle": "Shuffle"
       },
       "alerts": {
         "selectImageFile": "Please select an image file. Videos are not supported.",
