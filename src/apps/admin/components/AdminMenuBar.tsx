@@ -7,6 +7,13 @@ import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
 import { useTranslation } from "react-i18next";
 import type { AdminSection } from "../utils/navigationState";
 
+interface AdminMenuBarRoom {
+  id: string;
+  name: string;
+  type: "public" | "private" | "irc";
+  userCount: number;
+}
+
 interface AdminMenuBarProps {
   onClose: () => void;
   onShowHelp: () => void;
@@ -16,6 +23,9 @@ interface AdminMenuBarProps {
   isSidebarVisible: boolean;
   activeSection: AdminSection;
   onSectionChange: (section: AdminSection) => void;
+  rooms: AdminMenuBarRoom[];
+  selectedRoomId: string | null;
+  onRoomSelect: (roomId: string | null) => void;
 }
 
 export function AdminMenuBar({
@@ -27,6 +37,9 @@ export function AdminMenuBar({
   isSidebarVisible,
   activeSection,
   onSectionChange,
+  rooms,
+  selectedRoomId,
+  onRoomSelect,
 }: AdminMenuBarProps) {
   const { t } = useTranslation();
   const {
@@ -47,6 +60,20 @@ export function AdminMenuBar({
         if (checked) onSectionChange(section);
       },
     } as const);
+
+  const publicRooms = rooms.filter((r) => r.type !== "private");
+
+  const roomItems: MenuDescriptor["items"] = publicRooms.map((room) => ({
+    type: "checkbox",
+    label: `#${room.name}`,
+    checked: activeSection === "rooms" && selectedRoomId === room.id,
+    onChange: (checked) => {
+      if (checked) {
+        onSectionChange("rooms");
+        onRoomSelect(room.id);
+      }
+    },
+  }));
 
   const menus: MenuDescriptor[] = [
     {
@@ -75,8 +102,9 @@ export function AdminMenuBar({
           "cursorAgents",
           t("apps.admin.sidebar.cursorAgents", "Cursor Agents")
         ),
-        { type: "separator" },
-        sectionCheckbox("rooms", t("apps.admin.sidebar.rooms")),
+        ...(roomItems.length > 0
+          ? ([{ type: "separator" }, ...roomItems] as MenuDescriptor["items"])
+          : []),
         { type: "separator" },
         {
           type: "checkbox",
