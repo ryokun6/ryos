@@ -255,7 +255,6 @@
           "loadKey": "Laden des Redis-Schlüssels fehlgeschlagen",
           "loadKeys": "Laden der Redis-Schlüssel fehlgeschlagen"
         },
-        "filterPlaceholder": "Geladene Schlüssel filtern",
         "key": "Schlüssel",
         "keyUnavailable": "Redis-Schlüssel ist nicht verfügbar",
         "keys": "Schlüssel",
@@ -268,7 +267,6 @@
           "backupTruncated": "Backup hat das Schlüssellimit erreicht; schränken Sie das Muster für einen vollständigen Export ein",
           "deleted": "Redis-Schlüssel gelöscht"
         },
-        "noFilterMatch": "Keine geladenen Schlüssel entsprechen diesem Filter",
         "noKeys": "Keine Redis-Schlüssel entsprechen diesem Muster",
         "patternPlaceholder": "Redis-Muster, z. B. chat:*",
         "previewTruncated": "Vorschau ist gekürzt; verwenden Sie Backup für den vollständigen Wert.",

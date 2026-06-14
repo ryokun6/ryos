@@ -255,7 +255,6 @@
           "loadKey": "Redis 키를 불러오지 못했습니다",
           "loadKeys": "Redis 키 목록을 불러오지 못했습니다"
         },
-        "filterPlaceholder": "불러온 키 필터링",
         "key": "키",
         "keyUnavailable": "Redis 키를 사용할 수 없습니다",
         "keys": "키",
@@ -268,7 +267,6 @@
           "backupTruncated": "백업이 키 제한에 도달했습니다. 전체를 내보내려면 패턴 범위를 좁히세요.",
           "deleted": "Redis 키가 삭제되었습니다"
         },
-        "noFilterMatch": "이 필터와 일치하는 불러온 키가 없습니다",
         "noKeys": "이 패턴과 일치하는 Redis 키가 없습니다",
         "patternPlaceholder": "Redis 패턴 (예: chat:*)",
         "previewTruncated": "미리보기가 잘렸습니다. 전체 값을 확인하려면 백업을 사용하세요.",

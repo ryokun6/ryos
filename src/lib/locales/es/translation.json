@@ -255,7 +255,6 @@
           "loadKey": "Error al cargar la clave de Redis",
           "loadKeys": "Error al cargar las claves de Redis"
         },
-        "filterPlaceholder": "Filtrar claves cargadas",
         "key": "Clave",
         "keyUnavailable": "La clave de Redis no está disponible",
         "keys": "Claves",
@@ -268,7 +267,6 @@
           "backupTruncated": "La copia de seguridad alcanzó el límite de claves; ajuste el patrón para una exportación completa",
           "deleted": "Clave de Redis eliminada"
         },
-        "noFilterMatch": "Ninguna clave cargada coincide con este filtro",
         "noKeys": "Ninguna clave de Redis coincide con este patrón",
         "patternPlaceholder": "Patrón de Redis, p. ej. chat:*",
         "previewTruncated": "La vista previa está truncada; use Backup para el valor completo.",

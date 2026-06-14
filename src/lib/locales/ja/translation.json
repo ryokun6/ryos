@@ -255,7 +255,6 @@
           "loadKey": "Redisキーの読み込みに失敗しました",
           "loadKeys": "Redisキーの読み込みに失敗しました"
         },
-        "filterPlaceholder": "読み込んだキーを絞り込む",
         "key": "キー",
         "keyUnavailable": "Redisキーを利用できません",
         "keys": "キー",
@@ -268,7 +267,6 @@
           "backupTruncated": "バックアップがキー数の制限に達しました。完全にエクスポートするにはパターンを絞り込んでください。",
           "deleted": "Redisキーを削除しました"
         },
-        "noFilterMatch": "このフィルターに一致する読み込み済みのキーはありません",
         "noKeys": "このパターンに一致するRedisキーは見つかりませんでした",
         "patternPlaceholder": "Redisパターン（例: chat:*）",
         "previewTruncated": "プレビューは省略されています。完全な値を確認するにはバックアップを使用してください。",

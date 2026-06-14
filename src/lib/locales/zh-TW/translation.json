@@ -255,7 +255,6 @@
           "loadKey": "載入 Redis 鍵失敗",
           "loadKeys": "載入 Redis 鍵失敗"
         },
-        "filterPlaceholder": "篩選已載入的鍵",
         "key": "鍵",
         "keyUnavailable": "Redis 鍵不可用",
         "keys": "鍵",
@@ -268,7 +267,6 @@
           "backupTruncated": "備份已達鍵數量限制；請縮小模式範圍以進行完整匯出",
           "deleted": "Redis 鍵已刪除"
         },
-        "noFilterMatch": "沒有已載入的鍵符合此篩選條件",
         "noKeys": "沒有符合此模式的 Redis 鍵",
         "patternPlaceholder": "Redis 模式，例如 chat:*",
         "previewTruncated": "預覽已截斷；請使用「備份」查看完整值。",

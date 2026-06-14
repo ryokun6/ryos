@@ -42,7 +42,6 @@ import {
 import {
   buildRedisBreadcrumbs,
   buildRedisKeyTree,
-  filterRedisKeys,
   mergeFoldersWithKnownPrefixes,
 } from "../../utils/redisKeyTree";
 
@@ -116,6 +115,10 @@ function downloadJson(filename: string, data: unknown): void {
   URL.revokeObjectURL(url);
 }
 
+// How many keys each SCAN page requests. SCAN COUNT is a hint, so the actual
+// returned batch varies, but a larger value pulls noticeably more per request.
+const REDIS_BROWSER_PAGE_COUNT = 500;
+
 export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
   const [pattern, setPattern] = useState("*");
   const [appliedPattern, setAppliedPattern] = useState("*");
@@ -128,9 +131,8 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
   const [isLoadingDocument, setIsLoadingDocument] = useState(false);
   const [deleteCandidate, setDeleteCandidate] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  // Namespace drill-down prefix (e.g. "chat:room:") and in-memory filter query.
+  // Namespace drill-down prefix (e.g. "chat:room:").
   const [prefix, setPrefix] = useState("");
-  const [filter, setFilter] = useState("");
   // Cache fetched key documents so reopening a key (or returning to it after
   // navigating) does not re-hit Redis. Cleared on fresh scans / refresh.
   const documentCacheRef = useRef<Map<string, RedisKeyDocument>>(new Map());
@@ -147,7 +149,7 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
         const data = await getAdminRedisKeys<RedisKeysResponse>({
           pattern: targetPattern,
           cursor: nextCursor,
-          count: 100,
+          count: REDIS_BROWSER_PAGE_COUNT,
         });
         setCursor(data.cursor);
         setKeys((prev) => (nextCursor === "0" ? data.keys : [...prev, ...data.keys]));
@@ -163,8 +165,10 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
 
   // Run a fresh scoped scan whenever the effective pattern changes (root
   // pattern submit or drilling in/out of a prefix). The document cache is
-  // intentionally preserved across navigation (keyed by full key name).
+  // intentionally preserved across navigation (keyed by full key name). We also
+  // mirror the effective pattern back into the input so it tracks drill-down.
   useEffect(() => {
+    setPattern(scanPattern);
     setKeys([]);
     setCursor("0");
     setSelectedKey(null);
@@ -182,7 +186,6 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
   }, [scanPattern, loadKeys]);
 
   const goToPrefix = useCallback((nextPrefix: string) => {
-    setFilter("");
     setPrefix(nextPrefix);
   }, []);
 
@@ -211,12 +214,7 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
     [t]
   );
 
-  const isFiltering = filter.trim().length > 0;
   const isRoot = prefix === "";
-  const filteredLeaves = useMemo(
-    () => (isFiltering ? filterRedisKeys(keys, filter) : []),
-    [keys, filter, isFiltering]
-  );
   const treeLevel = useMemo(() => buildRedisKeyTree(keys, prefix), [keys, prefix]);
   // At root, surface the curated known namespaces even before their keys load.
   const rootFolders = useMemo(
@@ -224,17 +222,12 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
     [treeLevel.folders]
   );
   const breadcrumbs = useMemo(() => buildRedisBreadcrumbs(prefix), [prefix]);
-  const visibleLeaves = isFiltering ? filteredLeaves : treeLevel.leaves;
-  const visibleFolders = isFiltering
-    ? []
-    : isRoot
-      ? rootFolders
-      : treeLevel.folders;
+  const visibleLeaves = treeLevel.leaves;
+  const visibleFolders = isRoot ? rootFolders : treeLevel.folders;
   const hasVisibleRows = visibleFolders.length > 0 || visibleLeaves.length > 0;
 
   const handlePatternSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setFilter("");
     setPrefix("");
     setAppliedPattern(pattern.trim() || "*");
   };
@@ -344,10 +337,7 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
         >
           <nav
             aria-label={t("apps.admin.redis.breadcrumbs", "Key path")}
-            className={cn(
-              "flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto text-[11px]",
-              isFiltering && "opacity-40",
-            )}
+            className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto text-[11px]"
           >
             {breadcrumbs.map((crumb, index) => {
               const isLast = index === breadcrumbs.length - 1;
@@ -359,7 +349,6 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
                   <button
                     type="button"
                     onClick={() => goToPrefix(crumb.prefix)}
-                    disabled={isFiltering}
                     className={cn(
                       "flex items-center gap-1 rounded px-1 py-0.5 font-os-mono",
                       isLast
@@ -378,14 +367,6 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
               );
             })}
           </nav>
-          <SearchInput
-            placeholder={t("apps.admin.redis.filterPlaceholder", "Filter loaded keys")}
-            value={filter}
-            onChange={setFilter}
-            className="w-[180px] shrink-0"
-            inputClassName="h-6 text-[11px] font-os-mono"
-            clearAriaLabel={t("apps.admin.search.clear", "Clear search")}
-          />
         </div>
       )}
 
@@ -402,9 +383,7 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
             <div className="flex flex-col items-center justify-center px-3 py-12 text-os-text-disabled">
               <Database className="mb-2 size-8 opacity-50" weight="bold" />
               <span className="text-[11px]">
-                {isFiltering
-                  ? t("apps.admin.redis.noFilterMatch", "No loaded keys match this filter")
-                  : t("apps.admin.redis.noKeys", "No Redis keys match this pattern")}
+                {t("apps.admin.redis.noKeys", "No Redis keys match this pattern")}
               </span>
             </div>
           ) : (

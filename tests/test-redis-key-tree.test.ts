@@ -8,7 +8,6 @@ import { describe, test, expect } from "bun:test";
 import {
   buildRedisBreadcrumbs,
   buildRedisKeyTree,
-  filterRedisKeys,
   mergeFoldersWithKnownPrefixes,
   KNOWN_REDIS_PREFIXES,
   type RedisKeyNode,
@@ -116,22 +115,5 @@ describe("mergeFoldersWithKnownPrefixes", () => {
     expect(merged.length).toBe(KNOWN_REDIS_PREFIXES.length);
     expect(merged.every((f) => f.count === undefined)).toBe(true);
     expect(merged.map((f) => f.prefix)).toContain("chat:");
-  });
-});
-
-describe("filterRedisKeys", () => {
-  test("returns empty for a blank query", () => {
-    expect(filterRedisKeys(KEYS, "   ")).toEqual([]);
-  });
-
-  test("matches case-insensitively across the full key and sorts results", () => {
-    const results = filterRedisKeys(KEYS, "ROOM");
-    expect(results.map((r) => r.key)).toEqual(["chat:room:abc", "chat:room:def"]);
-    expect(results[0].label).toBe("chat:room:abc");
-  });
-
-  test("matches substrings anywhere in the key", () => {
-    const results = filterRedisKeys(KEYS, "ryo");
-    expect(results.map((r) => r.key)).toEqual(["chat:users:ryo"]);
   });
 });

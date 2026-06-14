@@ -1,7 +1,7 @@
 /**
  * Pure helpers that turn a flat list of Redis keys into a navigable,
  * prefix-grouped tree (folders + leaves), breadcrumb segments, and a
- * client-side flat filter. Kept free of React/UI so it can be unit tested.
+ * breadcrumb segments. Kept free of React/UI so it can be unit tested.
  *
  * Redis keys in ryOS are namespaced with `:` (e.g. `chat:room:abc`), so we
  * group keys by that separator and let the UI drill into one level at a time.
@@ -170,25 +170,4 @@ export function mergeFoldersWithKnownPrefixes(
   return Array.from(byPrefix.values()).sort((a, b) =>
     a.segment.localeCompare(b.segment)
   );
-}
-
-/**
- * Flat, case-insensitive substring search across all loaded keys. Used when the
- * user types in the filter box (search wins over prefix navigation).
- */
-export function filterRedisKeys(
-  keys: RedisKeyNode[],
-  query: string
-): RedisTreeLeaf[] {
-  const trimmed = query.trim().toLowerCase();
-  if (!trimmed) return [];
-  return keys
-    .filter((node) => node.key.toLowerCase().includes(trimmed))
-    .map((node) => ({
-      key: node.key,
-      label: node.key,
-      type: node.type,
-      ttl: node.ttl,
-    }))
-    .sort((a, b) => a.label.localeCompare(b.label));
 }
