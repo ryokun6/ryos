@@ -26,8 +26,11 @@ const TabsList = (
   {
     ref,
     className,
+    asChild = false,
+    children,
     ...props
   }: React.ComponentPropsWithoutRef<typeof TabsPrimitive.List> & {
+    asChild?: boolean;
     ref?: React.Ref<React.ElementRef<typeof TabsPrimitive.List>>;
   }
 ) => (<TabsPrimitive.List
@@ -36,8 +39,11 @@ const TabsList = (
     "inline-flex h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground",
     className
   )}
+  render={asChild && React.isValidElement(children) ? children : undefined}
   {...props}
-/>);
+>
+  {asChild ? null : children}
+</TabsPrimitive.List>);
 TabsList.displayName = TabsPrimitive.List.displayName;
 
 const TabsTrigger = (
@@ -52,7 +58,9 @@ const TabsTrigger = (
 ) => {
   const { play: playClick } = useSound(Sounds.BUTTON_CLICK, 0.3);
 
-  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+  const handleClick: React.ComponentPropsWithoutRef<
+    typeof TabsPrimitive.Tab
+  >["onClick"] = (event) => {
     playClick();
     onClick?.(event);
   };

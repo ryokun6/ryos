@@ -24,18 +24,19 @@ const Slot = React.forwardRef<HTMLElement, SlotProps>(
     }
 
     const child = children as React.ReactElement<SlotProps>;
+    const childProps = child.props;
 
-    return React.cloneElement(child, {
+    return React.cloneElement(child as React.ReactElement<Record<string, unknown>>, {
       ...props,
-      ...child.props,
+      ...childProps,
       ref,
-      className: cn(className, child.props.className),
-      style: { ...style, ...child.props.style },
+      className: cn(className, childProps.className),
+      style: { ...style, ...childProps.style },
       onClick: composeEventHandlers(
         onClick as React.MouseEventHandler<HTMLElement>,
-        child.props.onClick as React.MouseEventHandler<HTMLElement>
+        childProps.onClick as React.MouseEventHandler<HTMLElement>
       ),
-    });
+    } as Record<string, unknown>);
   }
 );
 Slot.displayName = "Slot";

@@ -21,10 +21,12 @@ const Switch = (
     props.checked || props.defaultChecked || false
   );
 
-  const handleCheckedChange = (checked: boolean) => {
+  const handleCheckedChange: React.ComponentPropsWithoutRef<
+    typeof SwitchPrimitives.Root
+  >["onCheckedChange"] = (checked, eventDetails) => {
     playClick();
     setIsChecked(checked);
-    onCheckedChange?.(checked);
+    onCheckedChange?.(checked, eventDetails);
   };
 
   // For legacy / non-mac themes we provide minimal inline fallback styles.

@@ -3,10 +3,17 @@ import { Slider as SliderPrimitive } from "@base-ui/react/slider";
 
 import { cn } from "@/lib/utils";
 
-type SliderProps = React.ComponentPropsWithoutRef<typeof SliderPrimitive.Root> & {
-  onValueCommit?: React.ComponentPropsWithoutRef<
-    typeof SliderPrimitive.Root
-  >["onValueCommitted"];
+type BaseSliderProps = Omit<
+  React.ComponentPropsWithoutRef<typeof SliderPrimitive.Root>,
+  "value" | "defaultValue" | "onValueChange" | "onValueCommitted"
+>;
+
+type SliderProps = BaseSliderProps & {
+  value?: number[];
+  defaultValue?: number[];
+  onValueChange?: (value: number[]) => void;
+  onValueCommit?: (value: number[]) => void;
+  onValueCommitted?: (value: number[]) => void;
 };
 
 const Slider = (
@@ -15,6 +22,9 @@ const Slider = (
     className,
     onValueCommit,
     onValueCommitted,
+    onValueChange,
+    value,
+    defaultValue,
     ...props
   }: SliderProps & {
     ref?: React.Ref<React.ElementRef<typeof SliderPrimitive.Root>>;
@@ -28,9 +38,15 @@ const Slider = (
       : "w-full",
     className
   )}
-  onValueCommitted={(value, eventDetails) => {
-    onValueCommitted?.(value, eventDetails);
-    onValueCommit?.(value, eventDetails);
+  value={value}
+  defaultValue={defaultValue}
+  onValueChange={(nextValue) => {
+    onValueChange?.(Array.isArray(nextValue) ? [...nextValue] : [nextValue]);
+  }}
+  onValueCommitted={(nextValue) => {
+    const valueArray = Array.isArray(nextValue) ? [...nextValue] : [nextValue];
+    onValueCommitted?.(valueArray);
+    onValueCommit?.(valueArray);
   }}
   {...props}
 >
@@ -58,6 +74,6 @@ const Slider = (
     <SliderPrimitive.Thumb className="os-slider-thumb block size-4 border-2 border-primary bg-background shadow-[1px_1px_0px_0px_rgba(0,0,0,0.3)] transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring data-[disabled]:pointer-events-none data-[disabled]:opacity-50" />
   </SliderPrimitive.Control>
 </SliderPrimitive.Root>);
-Slider.displayName = SliderPrimitive.Root.displayName;
+Slider.displayName = "Slider";
 
 export { Slider };

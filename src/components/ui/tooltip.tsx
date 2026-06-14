@@ -3,11 +3,37 @@ import { Tooltip as TooltipPrimitive } from "@base-ui/react/tooltip";
 
 import { cn } from "@/lib/utils";
 
-const TooltipProvider = TooltipPrimitive.Provider;
+const TooltipProvider = ({
+  delayDuration,
+  skipDelayDuration,
+  ...props
+}: React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Provider> & {
+  delayDuration?: number;
+  skipDelayDuration?: number;
+}) => (
+  <TooltipPrimitive.Provider
+    delay={delayDuration ?? props.delay}
+    timeout={skipDelayDuration ?? props.timeout}
+    {...props}
+  />
+);
 
 const Tooltip = TooltipPrimitive.Root;
 
-const TooltipTrigger = TooltipPrimitive.Trigger;
+const TooltipTrigger = ({
+  asChild = false,
+  children,
+  ...props
+}: React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Trigger> & {
+  asChild?: boolean;
+}) => (
+  <TooltipPrimitive.Trigger
+    render={asChild && React.isValidElement(children) ? children : undefined}
+    {...props}
+  >
+    {asChild ? null : children}
+  </TooltipPrimitive.Trigger>
+);
 
 const TooltipContent = (
   {
