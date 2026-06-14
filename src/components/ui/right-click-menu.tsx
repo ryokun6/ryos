@@ -50,7 +50,7 @@ interface RightClickMenuProps {
   position: { x: number; y: number } | null;
   onClose: () => void;
   items: MenuItem[];
-  /** Optional alignment, defaults to "start" */
+  /** Optional alignment; otherwise adapts to the pointer's viewport half. */
   align?: "start" | "center" | "end";
 }
 
@@ -180,9 +180,13 @@ export function RightClickMenu({
   position,
   onClose,
   items,
-  align = "start",
+  align,
 }: RightClickMenuProps) {
   const { play: playMenuOpen } = useSound(Sounds.MENU_OPEN);
+  const viewportWidth =
+    typeof window === "undefined"
+      ? 0
+      : window.visualViewport?.width ?? window.innerWidth;
   const collisionBoundary =
     typeof window === "undefined"
       ? undefined
@@ -192,6 +196,8 @@ export function RightClickMenu({
           width: window.visualViewport?.width ?? window.innerWidth,
           height: window.visualViewport?.height ?? window.innerHeight,
         };
+  const effectiveAlign =
+    align ?? (position && position.x > viewportWidth / 2 ? "end" : "start");
 
   // Play open sound when menu appears
   useEffect(() => {
@@ -216,7 +222,7 @@ export function RightClickMenu({
         />
       </DropdownMenuTrigger>
       <DropdownMenuContent
-        align={align}
+        align={effectiveAlign}
         side="top"
         sideOffset={4}
         alignOffset={4}
