@@ -4,6 +4,11 @@ import Suggestion, {
   SuggestionProps,
 } from "@tiptap/suggestion";
 import { Editor } from "@tiptap/react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { createRoot } from "react-dom/client";
 import { Check } from "@phosphor-icons/react";
 import { useTranslation } from "react-i18next";
@@ -127,30 +132,43 @@ const suggestion: Partial<SuggestionOptions> = {
       }
 
       root.render(
-        <div
-          role="menu"
-          style={{
-            position: "fixed",
-            top: position.top,
-            left: position.left,
-            zIndex: 10003,
-          }}
-          className="w-72 max-h-[330px] overflow-y-auto rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
-        >
-          <SlashMenuContent
-            items={props.items as SlashCommandItem[]}
-            selectedIndex={selectedIndex}
-            editor={props.editor}
-            onSelectIndex={(index) => {
-              selectedIndex = index;
-              renderMenu(props);
-            }}
-            onCommand={(command: SlashCommandItem) => {
-              props.command({ command });
-              cleanup();
-            }}
-          />
-        </div>
+        <DropdownMenu open modal={false}>
+          <DropdownMenuTrigger asChild>
+            <div
+              aria-hidden="true"
+              style={{
+                position: "fixed",
+                top: position.top,
+                left: position.left,
+                width: 0,
+                height: 0,
+                pointerEvents: "none",
+              }}
+            />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="start"
+            side="bottom"
+            sideOffset={0}
+            alignOffset={0}
+            onCloseAutoFocus={(event) => event.preventDefault()}
+            className="w-72 max-h-[330px] overflow-y-auto px-0"
+          >
+            <SlashMenuContent
+              items={props.items as SlashCommandItem[]}
+              selectedIndex={selectedIndex}
+              editor={props.editor}
+              onSelectIndex={(index) => {
+                selectedIndex = index;
+                renderMenu(props);
+              }}
+              onCommand={(command: SlashCommandItem) => {
+                props.command({ command });
+                cleanup();
+              }}
+            />
+          </DropdownMenuContent>
+        </DropdownMenu>
       );
     };
 

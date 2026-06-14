@@ -45,8 +45,10 @@ describe("TextEdit programmatic editor updates", () => {
     );
   });
 
-  test("slash menu uses cursor fixed positioning instead of triggerless popper", () => {
-    expect(SLASH_COMMANDS_EXTENSION).not.toContain("DropdownMenu");
+  test("slash menu anchors DropdownMenu to the cursor instead of using triggerless popper", () => {
+    expect(SLASH_COMMANDS_EXTENSION).toContain("<DropdownMenu open modal={false}>");
+    expect(SLASH_COMMANDS_EXTENSION).toContain("<DropdownMenuTrigger asChild>");
+    expect(SLASH_COMMANDS_EXTENSION).toContain("<DropdownMenuContent");
     expect(SLASH_COMMANDS_EXTENSION).toContain("getSlashMenuPosition(rect)");
     expect(SLASH_COMMANDS_EXTENSION).toContain('position: "fixed"');
   });
