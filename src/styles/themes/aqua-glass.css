@@ -546,7 +546,7 @@
   [data-radix-popper-content-wrapper]
   :where(
     [role="menu"],
-    [role="listbox"],
+    [role="listbox"]:not([data-ryos-select-list]),
     [data-radix-menu-content],
     [data-radix-popover-content],
     [data-radix-select-content]
@@ -574,7 +574,7 @@
   [data-radix-popper-content-wrapper]
   :where(
     [role="menu"],
-    [role="listbox"],
+    [role="listbox"]:not([data-ryos-select-list]),
     [data-radix-menu-content],
     [data-radix-popover-content],
     [data-radix-select-content]
@@ -627,11 +627,23 @@
   [data-radix-popper-content-wrapper]
   :where(
     [role="menu"],
-    [role="listbox"],
+    [role="listbox"]:not([data-ryos-select-list]),
     [data-radix-menu-content],
     [data-radix-select-content]
   ) {
   padding: 4px 5px !important;
+}
+
+/* Base UI renders a separate select list inside the popup. The glass panel
+   belongs on the outer popup only, otherwise select menus look double boxed. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  [data-ryos-select-list] {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
 }
 
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
@@ -1419,7 +1431,7 @@
       [data-radix-popper-content-wrapper]
         :where(
           [role="menu"],
-          [role="listbox"],
+          [role="listbox"]:not([data-ryos-select-list]),
           [data-radix-menu-content],
           [data-radix-popover-content],
           [data-radix-select-content]

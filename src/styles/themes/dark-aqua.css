@@ -711,7 +711,7 @@
   [data-radix-popper-content-wrapper]
   :where(
     [role="menu"],
-    [role="listbox"],
+    [role="listbox"]:not([data-ryos-select-list]),
     [data-radix-menu-content],
     [data-radix-popover-content],
     [data-radix-select-content]
