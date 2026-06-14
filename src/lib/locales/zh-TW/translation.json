@@ -244,6 +244,7 @@
       },
       "redis": {
         "backup": "備份",
+        "breadcrumbs": "鍵路徑",
         "delete": "刪除 Redis 鍵",
         "deleteDescription": "確定要刪除 Redis 鍵「{{key}}」嗎？此操作無法復原。",
         "deleteTitle": "確定要刪除 Redis 鍵嗎？",
@@ -270,6 +271,7 @@
         "patternPlaceholder": "Redis 模式，例如 chat:*",
         "previewTruncated": "預覽已截斷；請使用「備份」查看完整值。",
         "refresh": "重新整理 Redis 鍵值",
+        "root": "根目錄",
         "scan": "掃描",
         "selectKey": "選擇一個 Redis 鍵以查看其值",
         "ttl": "TTL",

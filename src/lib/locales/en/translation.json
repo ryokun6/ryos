@@ -3760,6 +3760,8 @@
       },
       "redis": {
         "patternPlaceholder": "Redis pattern, e.g. chat:*",
+        "breadcrumbs": "Key path",
+        "root": "root",
         "scan": "Scan",
         "backup": "Backup",
         "refresh": "Refresh Redis keys",

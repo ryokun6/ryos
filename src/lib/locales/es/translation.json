@@ -244,6 +244,7 @@
       },
       "redis": {
         "backup": "Copia de seguridad",
+        "breadcrumbs": "Ruta de la clave",
         "delete": "Eliminar clave de Redis",
         "deleteDescription": "¿Eliminar la clave de Redis \"{{key}}\"? Esta acción no se puede deshacer.",
         "deleteTitle": "¿Eliminar clave de Redis?",
@@ -270,6 +271,7 @@
         "patternPlaceholder": "Patrón de Redis, p. ej. chat:*",
         "previewTruncated": "La vista previa está truncada; use Backup para el valor completo.",
         "refresh": "Actualizar claves de Redis",
+        "root": "raíz",
         "scan": "Escanear",
         "selectKey": "Seleccione una clave de Redis para inspeccionar su valor",
         "ttl": "TTL",

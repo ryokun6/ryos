@@ -244,6 +244,7 @@
       },
       "redis": {
         "backup": "Резервное копирование",
+        "breadcrumbs": "Путь ключа",
         "delete": "Удалить ключ Redis",
         "deleteDescription": "Удалить ключ Redis «{{key}}»? Это действие нельзя отменить.",
         "deleteTitle": "Удалить ключ Redis?",
@@ -270,6 +271,7 @@
         "patternPlaceholder": "Шаблон Redis, например chat:*",
         "previewTruncated": "Предпросмотр обрезан; используйте Backup для получения полного значения.",
         "refresh": "Обновить ключи Redis",
+        "root": "корень",
         "scan": "Сканировать",
         "selectKey": "Выберите ключ Redis, чтобы просмотреть его значение",
         "ttl": "TTL",

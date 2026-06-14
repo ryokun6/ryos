@@ -244,6 +244,7 @@
       },
       "redis": {
         "backup": "Backup",
+        "breadcrumbs": "Caminho da chave",
         "delete": "Excluir chave Redis",
         "deleteDescription": "Excluir chave Redis \"{{key}}\"? Isso não pode ser desfeito.",
         "deleteTitle": "Excluir chave Redis?",
@@ -270,6 +271,7 @@
         "patternPlaceholder": "Padrão Redis, ex: chat:*",
         "previewTruncated": "A visualização está truncada; use o Backup para o valor completo.",
         "refresh": "Atualizar chaves do Redis",
+        "root": "raiz",
         "scan": "Escanear",
         "selectKey": "Selecione uma chave Redis para inspecionar seu valor",
         "ttl": "TTL",

@@ -1,8 +1,11 @@
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowsClockwise,
+  CaretRight,
   Database,
   DownloadSimple,
+  FolderSimple,
+  House,
   Trash,
 } from "@phosphor-icons/react";
 import type { TFunction } from "i18next";
@@ -36,6 +39,12 @@ import {
   adminTableRowClass,
   adminToolbarClass,
 } from "../../utils/adminStyles";
+import {
+  buildRedisBreadcrumbs,
+  buildRedisKeyTree,
+  deriveRedisPrefix,
+  mergeFoldersWithKnownPrefixes,
+} from "../../utils/redisKeyTree";
 
 interface RedisKeySummary {
   key: string;
@@ -107,6 +116,10 @@ function downloadJson(filename: string, data: unknown): void {
   URL.revokeObjectURL(url);
 }
 
+// How many keys each SCAN page requests. SCAN COUNT is a hint, so the actual
+// returned batch varies, but a larger value pulls noticeably more per request.
+const REDIS_BROWSER_PAGE_COUNT = 500;
+
 export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
   const [pattern, setPattern] = useState("*");
   const [appliedPattern, setAppliedPattern] = useState("*");
@@ -119,22 +132,37 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
   const [isLoadingDocument, setIsLoadingDocument] = useState(false);
   const [deleteCandidate, setDeleteCandidate] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  // Cache fetched key documents so reopening a key (or returning to it after
+  // navigating) does not re-hit Redis. Cleared on fresh scans / refresh.
+  const documentCacheRef = useRef<Map<string, RedisKeyDocument>>(new Map());
+  // Cache the loaded key summaries (+ continuation cursor) per scan scope so
+  // re-entering a prefix you've already browsed is instant and never re-scans
+  // the keyspace. Cleared on Refresh and after a delete.
+  const keysCacheRef = useRef<Map<string, { keys: RedisKeySummary[]; cursor: string }>>(
+    new Map()
+  );
+
+  // The applied glob is the single source of truth for the server SCAN. The
+  // drill-down prefix (tree position + breadcrumbs) is derived from it so that
+  // applying e.g. `chat:users:*` lands inside the `chat:users:` folder.
+  const scanPattern = appliedPattern;
+  const prefix = useMemo(() => deriveRedisPrefix(appliedPattern), [appliedPattern]);
 
   const loadKeys = useCallback(
-    async (nextCursor: string = "0") => {
+    async (targetPattern: string, nextCursor: string = "0") => {
       setIsLoadingKeys(true);
       try {
         const data = await getAdminRedisKeys<RedisKeysResponse>({
-          pattern: appliedPattern,
+          pattern: targetPattern,
           cursor: nextCursor,
-          count: 100,
+          count: REDIS_BROWSER_PAGE_COUNT,
         });
         setCursor(data.cursor);
-        setKeys((prev) => (nextCursor === "0" ? data.keys : [...prev, ...data.keys]));
-        if (nextCursor === "0") {
-          setSelectedKey(null);
-          setSelectedDocument(null);
-        }
+        setKeys((prev) => {
+          const next = nextCursor === "0" ? data.keys : [...prev, ...data.keys];
+          keysCacheRef.current.set(targetPattern, { keys: next, cursor: data.cursor });
+          return next;
+        });
       } catch (error) {
         console.error("Failed to load Redis keys:", error);
         toast.error(t("apps.admin.redis.errors.loadKeys", "Failed to load Redis keys"));
@@ -142,15 +170,55 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
         setIsLoadingKeys(false);
       }
     },
-    [appliedPattern, t]
+    [t]
   );
+
+  // Run a fresh scoped scan whenever the effective pattern changes (root
+  // pattern submit or drilling in/out of a prefix). The document cache is
+  // intentionally preserved across navigation (keyed by full key name). We also
+  // mirror the effective pattern back into the input so it tracks drill-down.
+  useEffect(() => {
+    setPattern(scanPattern);
+    setSelectedKey(null);
+    setSelectedDocument(null);
+    const cached = keysCacheRef.current.get(scanPattern);
+    if (cached) {
+      setKeys(cached.keys);
+      setCursor(cached.cursor);
+      return;
+    }
+    setKeys([]);
+    setCursor("0");
+    void loadKeys(scanPattern, "0");
+  }, [scanPattern, loadKeys]);
+
+  const refreshScope = useCallback(() => {
+    documentCacheRef.current.clear();
+    keysCacheRef.current.clear();
+    setKeys([]);
+    setCursor("0");
+    setSelectedKey(null);
+    setSelectedDocument(null);
+    void loadKeys(scanPattern, "0");
+  }, [scanPattern, loadKeys]);
+
+  const goToPrefix = useCallback((nextPrefix: string) => {
+    setAppliedPattern(nextPrefix ? `${nextPrefix}*` : "*");
+  }, []);
 
   const loadKeyDocument = useCallback(
     async (key: string) => {
       setSelectedKey(key);
+      const cached = documentCacheRef.current.get(key);
+      if (cached) {
+        setSelectedDocument(cached);
+        setIsLoadingDocument(false);
+        return;
+      }
       setIsLoadingDocument(true);
       try {
         const data = await getAdminRedisKey<RedisKeyDocument>(key);
+        documentCacheRef.current.set(key, data);
         setSelectedDocument(data);
       } catch (error) {
         console.error("Failed to load Redis key:", error);
@@ -163,9 +231,17 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
     [t]
   );
 
-  useEffect(() => {
-    void loadKeys("0");
-  }, [loadKeys]);
+  const isRoot = prefix === "";
+  const treeLevel = useMemo(() => buildRedisKeyTree(keys, prefix), [keys, prefix]);
+  // At root, surface the curated known namespaces even before their keys load.
+  const rootFolders = useMemo(
+    () => mergeFoldersWithKnownPrefixes(treeLevel.folders),
+    [treeLevel.folders]
+  );
+  const breadcrumbs = useMemo(() => buildRedisBreadcrumbs(prefix), [prefix]);
+  const visibleLeaves = treeLevel.leaves;
+  const visibleFolders = isRoot ? rootFolders : treeLevel.folders;
+  const hasVisibleRows = visibleFolders.length > 0 || visibleLeaves.length > 0;
 
   const handlePatternSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -176,7 +252,7 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
     setIsBackingUp(true);
     try {
       const backup = await getAdminRedisBackup<RedisBackupDocument>({
-        pattern: appliedPattern,
+        pattern: scanPattern,
       });
       const date = new Date().toISOString().slice(0, 10);
       downloadJson(`ryos-redis-backup-${date}.json`, backup);
@@ -207,6 +283,10 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
     setIsDeleting(true);
     try {
       const result = await deleteAdminRedisKey<DeleteRedisKeyResponse>(deleteCandidate);
+      documentCacheRef.current.delete(deleteCandidate);
+      // A deleted key may live in other cached scopes; drop the list cache so
+      // navigation reflects the removal everywhere (scope reloads below).
+      keysCacheRef.current.clear();
       if (result.deletedCount > 0) {
         toast.success(t("apps.admin.redis.messages.deleted", "Redis key deleted"));
       } else {
@@ -215,7 +295,7 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
       setDeleteCandidate(null);
       setSelectedKey(null);
       setSelectedDocument(null);
-      await loadKeys("0");
+      await loadKeys(scanPattern, "0");
     } catch (error) {
       console.error("Failed to delete Redis key:", error);
       toast.error(t("apps.admin.redis.errors.delete", "Failed to delete Redis key"));
@@ -257,7 +337,7 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
           type="button"
           variant="ghost"
           size="sm"
-          onClick={() => void loadKeys("0")}
+          onClick={refreshScope}
           disabled={isLoadingKeys}
           className="size-7 p-0"
           title={t("apps.admin.redis.refresh", "Refresh Redis keys")}
@@ -269,6 +349,46 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
 
       <div
         className={cn(
+          adminToolbarClass,
+          "flex h-8 shrink-0 items-center gap-2 border-b border-os-separator px-2",
+        )}
+      >
+        <nav
+          aria-label={t("apps.admin.redis.breadcrumbs", "Key path")}
+          className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto text-[11px]"
+        >
+            {breadcrumbs.map((crumb, index) => {
+              const isLast = index === breadcrumbs.length - 1;
+              return (
+                <span key={crumb.prefix} className="flex shrink-0 items-center gap-0.5">
+                  {index > 0 && (
+                    <CaretRight size={10} weight="bold" className="opacity-40" />
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => goToPrefix(crumb.prefix)}
+                    className={cn(
+                      "flex items-center gap-1 rounded px-1 py-0.5 font-os-mono",
+                      isLast
+                        ? "text-os-text-primary"
+                        : "text-os-text-secondary hover:text-os-text-primary hover:underline",
+                    )}
+                    title={crumb.prefix || t("apps.admin.redis.root", "root")}
+                  >
+                    {index === 0 ? (
+                      <House size={11} weight="bold" />
+                    ) : (
+                      crumb.label
+                    )}
+                  </button>
+                </span>
+              );
+            })}
+        </nav>
+      </div>
+
+      <div
+        className={cn(
           "grid min-h-0 flex-1 gap-0",
           selectedKey
             ? "md:grid-cols-[minmax(0,1fr)_minmax(280px,42%)]"
@@ -276,7 +396,7 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
         )}
       >
         <div className="min-h-0 min-w-0 overflow-auto">
-          {keys.length === 0 && !isLoadingKeys ? (
+          {!hasVisibleRows && !isLoadingKeys ? (
             <div className="flex flex-col items-center justify-center px-3 py-12 text-os-text-disabled">
               <Database className="mb-2 size-8 opacity-50" weight="bold" />
               <span className="text-[11px]">
@@ -300,15 +420,53 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
                   </TableRow>
                 </TableHeader>
                 <TableBody className="text-[11px]">
-                  {keys.map((item) => (
+                  {visibleFolders.map((folder) => (
+                    <TableRow
+                      key={`dir:${folder.prefix}`}
+                      className={cn(adminTableRowClass, "cursor-pointer")}
+                      onClick={() => goToPrefix(folder.prefix)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          goToPrefix(folder.prefix);
+                        }
+                      }}
+                      role="button"
+                      tabIndex={0}
+                    >
+                      <TableCell colSpan={3} className="py-2">
+                        <div className="flex items-center gap-2">
+                          <FolderSimple size={14} weight="regular" className="shrink-0 opacity-70" />
+                          <span className="min-w-0 flex-1 truncate font-os-mono" title={folder.prefix}>
+                            {folder.segment}
+                          </span>
+                          {/* Always reserve the badge box so the row height
+                              stays constant once counts load in. */}
+                          <span
+                            className={cn(
+                              "shrink-0 rounded bg-black/10 px-1.5 py-0.5 font-os-mono text-[9px] os-mac-aqua-dark:bg-white/10",
+                              typeof folder.count !== "number" && "invisible",
+                            )}
+                          >
+                            {typeof folder.count === "number" ? folder.count : "0"}
+                          </span>
+                          <CaretRight size={11} weight="bold" className="shrink-0 opacity-40" />
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {visibleLeaves.map((item) => (
                     <TableRow
                       key={item.key}
                       data-state={selectedKey === item.key ? "selected" : undefined}
                       className={cn(
                         adminTableRowClass,
                         "cursor-pointer",
+                        // Selected row uses the solid accent swatch
+                        // (`--os-accent-color`), falling back to the theme's
+                        // selection color when no accent is set ("System").
                         selectedKey === item.key &&
-                          "bg-os-selection-bg text-os-selection-text hover:bg-os-selection-bg",
+                          "bg-[var(--os-accent-color,var(--os-color-selection-bg))] text-os-selection-text hover:bg-[var(--os-accent-color,var(--os-color-selection-bg))]",
                       )}
                       onClick={() => void loadKeyDocument(item.key)}
                       onKeyDown={(event) => {
@@ -322,7 +480,7 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
                     >
                       <TableCell className="max-w-0 py-2">
                         <span className="block truncate font-os-mono" title={item.key}>
-                          {item.key}
+                          {item.label}
                         </span>
                       </TableCell>
                       <TableCell className="py-2">
@@ -342,7 +500,7 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => void loadKeys(cursor)}
+                    onClick={() => void loadKeys(scanPattern, cursor)}
                     disabled={isLoadingKeys}
                     className={adminLoadMoreBtnClass}
                   >

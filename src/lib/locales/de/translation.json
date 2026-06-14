@@ -244,6 +244,7 @@
       },
       "redis": {
         "backup": "Backup",
+        "breadcrumbs": "Schlüsselpfad",
         "delete": "Redis-Schlüssel löschen",
         "deleteDescription": "Redis-Schlüssel „{{key}}“ löschen? Dies kann nicht rückgängig gemacht werden.",
         "deleteTitle": "Redis-Schlüssel löschen?",
@@ -270,6 +271,7 @@
         "patternPlaceholder": "Redis-Muster, z. B. chat:*",
         "previewTruncated": "Vorschau ist gekürzt; verwenden Sie Backup für den vollständigen Wert.",
         "refresh": "Redis-Schlüssel aktualisieren",
+        "root": "Stamm",
         "scan": "Scannen",
         "selectKey": "Wählen Sie einen Redis-Schlüssel aus, um dessen Wert zu untersuchen",
         "ttl": "TTL",

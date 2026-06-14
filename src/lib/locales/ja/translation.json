@@ -244,6 +244,7 @@
       },
       "redis": {
         "backup": "バックアップ",
+        "breadcrumbs": "キーのパス",
         "delete": "Redisキーを削除",
         "deleteDescription": "Redisキー「{{key}}」を削除しますか？この操作は取り消せません。",
         "deleteTitle": "Redisキーを削除しますか？",
@@ -270,6 +271,7 @@
         "patternPlaceholder": "Redisパターン（例: chat:*）",
         "previewTruncated": "プレビューは省略されています。完全な値を確認するにはバックアップを使用してください。",
         "refresh": "Redisキーを更新",
+        "root": "ルート",
         "scan": "スキャン",
         "selectKey": "Redisキーを選択して値を確認してください",
         "ttl": "TTL",

@@ -244,6 +244,7 @@
       },
       "redis": {
         "backup": "Sauvegarde",
+        "breadcrumbs": "Chemin de la clé",
         "delete": "Supprimer la clé Redis",
         "deleteDescription": "Supprimer la clé Redis « {{key}} » ? Cette action est irréversible.",
         "deleteTitle": "Supprimer la clé Redis ?",
@@ -270,6 +271,7 @@
         "patternPlaceholder": "Motif Redis, par ex. chat:*",
         "previewTruncated": "L'aperçu est tronqué ; utilisez Sauvegarde pour la valeur complète.",
         "refresh": "Actualiser les clés Redis",
+        "root": "racine",
         "scan": "Scanner",
         "selectKey": "Sélectionnez une clé Redis pour inspecter sa valeur",
         "ttl": "TTL",
