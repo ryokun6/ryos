@@ -79,19 +79,11 @@ const SelectTrigger = (
         ...(isXpTheme && { color: "black" }),
       }}
       onClick={() => playClick()}
-      render={(triggerProps, state) => (
-        <button
-          {...triggerProps}
-          data-state={state.open ? "open" : "closed"}
-        />
-      )}
       {...props}
     >
       {children}
       {!isMacOSTheme && (
-        <SelectPrimitive.Icon
-          render={<span />}
-        >
+        <SelectPrimitive.Icon>
           <CaretDown size={12} className="opacity-50" weight="bold" />
         </SelectPrimitive.Icon>
       )}
