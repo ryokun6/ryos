@@ -268,7 +268,7 @@ function SpecialTile({
           single soft dark text-shadow. Crisp and readable on dark gradients,
           bright covers and busy patterns without any blend modes. */}
       <span
-        className="absolute inset-x-0 bottom-0 px-1 pt-1 pb-0.5 text-[10px] leading-tight text-center font-medium truncate text-white opacity-[0.85]"
+        className="absolute inset-x-0 bottom-1 px-1 pt-1 pb-0.5 text-[10px] leading-tight text-center font-medium truncate text-white opacity-[0.85]"
         style={{
           textShadow: "0 1px 2px rgba(0,0,0,0.6)",
         }}
