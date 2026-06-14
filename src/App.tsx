@@ -67,7 +67,8 @@ export function App() {
     })
   );
   const displayMode = useDisplaySettingsStoreShallow((state) => state.displayMode);
-  const { isWindowsTheme, isMacOSTheme, isSystem7Theme } = useThemeFlags();
+  const { isWindowsTheme, isMacOSTheme, isSystem7Theme, isAquaGlass } =
+    useThemeFlags();
   const isMobile = useIsMobile();
   // Initialize offline detection
   useOffline();
@@ -75,7 +76,9 @@ export function App() {
 
   // Determine toast position and offset based on theme and device
   const toastConfig = useMemo(() => {
-    const dockHeight = isMacOSTheme ? 56 : 0;
+    // The Aqua glass dock sits ~20px higher than the classic dock (12px lift +
+    // 8px taller bar), so add extra clearance to keep the same gap above it.
+    const dockHeight = isMacOSTheme ? (isAquaGlass ? 76 : 56) : 0;
     const taskbarHeight = isWindowsTheme ? 30 : 0;
 
     // Mobile: always show at bottom-center with dock/taskbar and safe area clearance
@@ -101,7 +104,7 @@ export function App() {
         offset: `${menuBarHeight + 12}px`,
       };
     }
-  }, [isWindowsTheme, isMacOSTheme, isSystem7Theme, isMobile]);
+  }, [isWindowsTheme, isMacOSTheme, isSystem7Theme, isAquaGlass, isMobile]);
 
   const [bootUiState, dispatchBootUi] = useReducer(
     bootUiReducer,

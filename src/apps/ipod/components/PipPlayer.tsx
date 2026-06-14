@@ -23,14 +23,18 @@ export function PipPlayer({
   const {
     isWindowsTheme: isWinFamily,
     isMacOSTheme: isMacOSX,
+    isAquaGlass,
   } = useThemeFlags();
   const isPhone = useIsPhone();
 
-  // Calculate bottom offset based on theme (similar to Sonner positioning)
+  // Calculate bottom offset based on theme (similar to Sonner positioning).
+  // The Aqua glass dock sits ~20px higher than the classic dock (12px lift +
+  // 8px taller bar), so add extra clearance to keep the same gap above it.
+  const macOSBottom = isAquaGlass ? "92px" : "72px";
   const bottomOffset = isWinFamily
     ? "calc(env(safe-area-inset-bottom, 0px) + 42px)"
     : isMacOSX
-      ? "calc(env(safe-area-inset-bottom, 0px) + 72px)"
+      ? `calc(env(safe-area-inset-bottom, 0px) + ${macOSBottom})`
       : "calc(env(safe-area-inset-bottom, 0px) + 16px)";
 
   // Use track's cover (from Kugou, fetched during library sync), fallback to YouTube thumbnail
