@@ -4,9 +4,15 @@
  * Per-user state in Redis:
  * - `sync2:seq:{user}`   STRING  monotonically increasing op counter
  * - `sync2:kv:{user}`    HASH    key → JSON SyncKvEntry (latest doc per key)
- * - `sync2:log:{user}`   LIST    accepted ops (ascending seq), bounded
+ * - `sync2:jrnl:{user}`  ZSET    score = seq, member = JSON op (ascending), bounded
  * - `sync2:blobs:{user}` HASH    sha256 → JSON { url, size } dedupe registry
  * - `sync2:lock:{user}`  STRING  short-TTL write lock
+ *
+ * The journal is a sorted set keyed by `seq` so catch-up reads an exact
+ * range by rank and trimming drops the lowest scores — no list-tail
+ * heuristics. (Pre-v2.1 deployments kept it as a `sync2:log:{user}` LIST;
+ * that key is abandoned and expires via its TTL. Clients mid-catch-up fall
+ * back to a snapshot once, then resume on the sorted-set journal.)
  *
  * Writes are ops resolved per key with last-writer-wins on the HLC
  * timestamp. There are no conflicts surfaced to clients: losing ops return
@@ -50,8 +56,8 @@ export function sync2KvKey(username: string): string {
   return `sync2:kv:${username.toLowerCase()}`;
 }
 
-export function sync2LogKey(username: string): string {
-  return `sync2:log:${username.toLowerCase()}`;
+export function sync2JournalKey(username: string): string {
+  return `sync2:jrnl:${username.toLowerCase()}`;
 }
 
 export function sync2BlobsKey(username: string): string {
@@ -138,7 +144,7 @@ async function touchTtls(redis: Redis, username: string): Promise<void> {
   const pipeline = redis.pipeline();
   pipeline.expire(sync2SeqKey(username), USER_TTL_SECONDS);
   pipeline.expire(sync2KvKey(username), USER_TTL_SECONDS);
-  pipeline.expire(sync2LogKey(username), USER_TTL_SECONDS);
+  pipeline.expire(sync2JournalKey(username), USER_TTL_SECONDS);
   pipeline.expire(sync2BlobsKey(username), USER_TTL_SECONDS);
   await pipeline.exec();
 }
@@ -310,7 +316,7 @@ export async function applySyncOps(
     const results: SyncOpResult[] = [];
     const accepted: SyncOp[] = [];
     const kvWrites: Record<string, string> = {};
-    const logEntries: string[] = [];
+    const journalEntries: Array<{ seq: number; member: string }> = [];
     const blobRegistry: Record<string, string> = {};
     const nowMs = Date.now();
 
@@ -345,7 +351,7 @@ export async function applySyncOps(
       };
 
       kvWrites[key] = JSON.stringify(entry);
-      logEntries.push(JSON.stringify(acceptedOp));
+      journalEntries.push({ seq: nextSeq, member: JSON.stringify(acceptedOp) });
       accepted.push(acceptedOp);
       results.push({ k: key, accepted: true, seq: nextSeq });
 
@@ -360,13 +366,21 @@ export async function applySyncOps(
 
     if (accepted.length > 0) {
       await redis.hset(sync2KvKey(username), kvWrites);
-      await redis.rpush(sync2LogKey(username), ...logEntries);
+      const journalKey = sync2JournalKey(username);
+      for (const { seq, member } of journalEntries) {
+        await redis.zadd(journalKey, { score: seq, member });
+      }
       const pipeline = redis.pipeline();
       pipeline.set(sync2SeqKey(username), String(nextSeq), {
         ex: USER_TTL_SECONDS,
       });
       await pipeline.exec();
-      await redis.ltrim(sync2LogKey(username), -JOURNAL_MAX_LENGTH, -1);
+      // Trim to the last JOURNAL_MAX_LENGTH ops by dropping the lowest seqs.
+      await redis.zremrangebyscore(
+        journalKey,
+        "-inf",
+        nextSeq - JOURNAL_MAX_LENGTH
+      );
       if (Object.keys(blobRegistry).length > 0) {
         await redis.hset(sync2BlobsKey(username), blobRegistry);
       }
@@ -408,6 +422,22 @@ export interface SyncChangesResult {
   snapshotRequired?: boolean;
 }
 
+/**
+ * Collapse a seq-ordered op list to the newest op per key. Catch-up only
+ * needs each key's latest value to converge under LWW, so replaying a key's
+ * intermediate states is wasted bandwidth — and on bootstrap they're already
+ * compacted in the KV state. Input must be ascending by seq; the returned
+ * list preserves that order. The cursor still advances to the server seq, so
+ * dropping superseded ops never desyncs the client.
+ */
+function coalesceSyncOpsByKey(ops: SyncOp[]): SyncOp[] {
+  const latest = new Map<string, SyncOp>();
+  for (const op of ops) {
+    latest.set(op.k, op); // ascending seq → last write per key wins
+  }
+  return Array.from(latest.values()).sort((a, b) => (a.seq ?? 0) - (b.seq ?? 0));
+}
+
 export async function readSyncChanges(
   redis: Redis,
   username: string,
@@ -421,17 +451,19 @@ export async function readSyncChanges(
     return { seq, ops: [] };
   }
 
-  const logKey = sync2LogKey(username);
-  const length = await redis.llen(logKey);
+  const journalKey = sync2JournalKey(username);
+  const count = await redis.zcard(journalKey);
   const missing = seq - since;
-  if (missing > length) {
+  if (missing > count) {
     return { seq, snapshotRequired: true };
   }
 
-  // Fetch a small safety margin to absorb writes between the seq and llen
-  // reads, then filter precisely by each op's embedded seq.
-  const fetchCount = Math.min(length, missing + 16);
-  const raw = await redis.lrange<string | SyncOp>(logKey, -fetchCount, -1);
+  // The journal is contiguous in seq (each accept increments by one; trimming
+  // only removes a low-seq prefix), so the op with seq = since+1 sits at rank
+  // `count - missing`. Read from a small margin before it to absorb writes
+  // racing between the zcard and zrange, then filter precisely by seq.
+  const startIndex = Math.max(0, count - missing - 16);
+  const raw = await redis.zrange(journalKey, startIndex, -1);
   const ops: SyncOp[] = [];
   for (const value of raw) {
     const op = parseRedisJson<SyncOp>(value);
@@ -446,7 +478,8 @@ export async function readSyncChanges(
     return { seq, snapshotRequired: true };
   }
 
-  return { seq: Math.max(seq, ops[ops.length - 1].seq ?? seq), ops };
+  const maxSeq = Math.max(seq, ops[ops.length - 1].seq ?? seq);
+  return { seq: maxSeq, ops: coalesceSyncOpsByKey(ops) };
 }
 
 export interface SyncSnapshotResult {

@@ -228,10 +228,77 @@ describe("sync v2 changes feed", () => {
       [{ k: "settings/theme", v: { current: "macosx" }, t: t(0) }],
       "client-a"
     );
-    // Simulate journal trimming by clearing the log list.
-    (r as unknown as FakeRedis).lists.clear();
+    // Simulate journal trimming by clearing the sorted-set journal.
+    (r as unknown as FakeRedis).zsets.clear();
     const result = await readSyncChanges(r, "user1", 0);
     expect(result.snapshotRequired).toBe(true);
+  });
+
+  test("coalesces repeated writes to the same key to the latest op", async () => {
+    const r = redis();
+    // Three writes to one key + one write to another, ascending seq.
+    await applySyncOps(
+      r,
+      "user1",
+      [{ k: "settings/theme/current", v: { value: "system7" }, t: t(0) }],
+      "client-a"
+    );
+    await applySyncOps(
+      r,
+      "user1",
+      [{ k: "settings/theme/current", v: { value: "macosx" }, t: t(1000) }],
+      "client-a"
+    );
+    await applySyncOps(
+      r,
+      "user1",
+      [{ k: "settings/theme/current", v: { value: "win98" }, t: t(2000) }],
+      "client-a"
+    );
+    await applySyncOps(
+      r,
+      "user1",
+      [{ k: "settings/audio/masterVolume", v: 1, t: t(3000) }],
+      "client-a"
+    );
+
+    const changes = await readSyncChanges(r, "user1", 0);
+    // Four accepted ops, but catch-up collapses the theme key to its latest.
+    expect(changes.seq).toBe(4);
+    expect(changes.ops).toHaveLength(2);
+    const theme = changes.ops?.find((op) => op.k === "settings/theme/current");
+    expect(theme?.v).toEqual({ value: "win98" });
+    expect(theme?.seq).toBe(3);
+    // Ops remain ordered ascending by seq after coalescing.
+    expect(changes.ops?.map((op) => op.seq)).toEqual([3, 4]);
+  });
+
+  test("coalescing from a mid-journal cursor keeps only newer per-key ops", async () => {
+    const r = redis();
+    await applySyncOps(
+      r,
+      "user1",
+      [{ k: "settings/theme/current", v: { value: "a" }, t: t(0) }],
+      "client-a"
+    );
+    const afterFirst = (await readSyncChanges(r, "user1", 0)).seq; // 1
+    await applySyncOps(
+      r,
+      "user1",
+      [{ k: "settings/theme/current", v: { value: "b" }, t: t(1000) }],
+      "client-a"
+    );
+    await applySyncOps(
+      r,
+      "user1",
+      [{ k: "settings/theme/current", v: { value: "c" }, t: t(2000) }],
+      "client-a"
+    );
+
+    const changes = await readSyncChanges(r, "user1", afterFirst);
+    expect(changes.seq).toBe(3);
+    expect(changes.ops).toHaveLength(1);
+    expect(changes.ops?.[0].v).toEqual({ value: "c" });
   });
 });
 
@@ -357,11 +424,11 @@ describe("sync v2 v1-import", () => {
 
     // Simulate TTLs decaying (e.g. an idle device only ever reads).
     fake.ttls.delete("sync2:kv:user1");
-    fake.ttls.delete("sync2:log:user1");
+    fake.ttls.delete("sync2:jrnl:user1");
 
     await readSyncChanges(r, "user1", 0);
     expect(fake.ttls.get("sync2:kv:user1")).toBeGreaterThan(0);
-    expect(fake.ttls.get("sync2:log:user1")).toBeGreaterThan(0);
+    expect(fake.ttls.get("sync2:jrnl:user1")).toBeGreaterThan(0);
 
     // Throttle marker prevents refreshing again within the same day.
     fake.ttls.delete("sync2:kv:user1");
