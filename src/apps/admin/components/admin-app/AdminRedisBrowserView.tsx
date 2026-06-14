@@ -420,11 +420,16 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
                           <span className="min-w-0 flex-1 truncate font-os-mono" title={folder.prefix}>
                             {folder.segment}
                           </span>
-                          {typeof folder.count === "number" && (
-                            <span className="shrink-0 rounded bg-black/10 px-1.5 py-0.5 font-os-mono text-[9px] os-mac-aqua-dark:bg-white/10">
-                              {folder.count}
-                            </span>
-                          )}
+                          {/* Always reserve the badge box so the row height
+                              stays constant once counts load in. */}
+                          <span
+                            className={cn(
+                              "shrink-0 rounded bg-black/10 px-1.5 py-0.5 font-os-mono text-[9px] os-mac-aqua-dark:bg-white/10",
+                              typeof folder.count !== "number" && "invisible",
+                            )}
+                          >
+                            {typeof folder.count === "number" ? folder.count : "0"}
+                          </span>
                           <CaretRight size={11} weight="bold" className="shrink-0 opacity-40" />
                         </div>
                       </TableCell>
