@@ -8,8 +8,8 @@
 //
 //   - `dynamic://gradient/day-night` — a gradient that shifts with wall-clock
 //     time of day.
-//   - `dynamic://weather`            — the day/night gradient, re-tinted to match
-//     the live local weather condition (clear, cloudy, rain, snow, fog, storm).
+//   - `dynamic://weather`            — a dedicated time-of-day gradient per live
+//     local weather condition (clear, cloudy, rain, snow, fog, storm).
 //   - `dynamic://cover`              — the now-playing cover art of the iPod or
 //     Karaoke (falls back to the paused cover).
 //   - `dynamic://lyrics`            — the now-playing synced lyrics over the same
@@ -174,11 +174,17 @@ const lerpRgb = (a: RGB, b: RGB, t: number): RGB => [
 
 const rgbToCss = ([r, g, b]: RGB) => `rgb(${r}, ${g}, ${b})`;
 
-/** Compute the interpolated [top, mid, bottom] colors for a given time. */
-export function getDayNightGradientColors(date: Date = new Date()): [RGB, RGB, RGB] {
+/**
+ * Interpolate a [top, mid, bottom] gradient from a set of time-of-day keyframes.
+ * Keyframes are ordered by hour; the renderer wraps around so the last frame
+ * (e.g. dusk) blends smoothly back into the first (deep night).
+ */
+function interpolateGradientKeyframes(
+  frames: GradientKeyframe[],
+  date: Date
+): [RGB, RGB, RGB] {
   const hour = date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
 
-  const frames = DAY_NIGHT_KEYFRAMES;
   // Find the surrounding keyframes (with wraparound past the last one).
   let start = frames[frames.length - 1];
   let end = frames[0];
@@ -209,6 +215,11 @@ export function getDayNightGradientColors(date: Date = new Date()): [RGB, RGB, R
   ];
 }
 
+/** Compute the interpolated [top, mid, bottom] colors for a given time. */
+export function getDayNightGradientColors(date: Date = new Date()): [RGB, RGB, RGB] {
+  return interpolateGradientKeyframes(DAY_NIGHT_KEYFRAMES, date);
+}
+
 /** Build a CSS `linear-gradient(...)` string for the current time of day. */
 export function getDayNightGradientCss(date: Date = new Date()): string {
   const [top, mid, bottom] = getDayNightGradientColors(date);
@@ -220,45 +231,91 @@ export function getDayNightGradientCss(date: Date = new Date()): string {
 // ---------------------------------------------------------------------------
 // Weather gradient
 //
-// The weather wallpaper reuses the time-of-day gradient as a base "sky" and
-// then re-tints it to match the current weather condition. This keeps the
-// gradient shifting through dawn/day/dusk/night while a storm reads darker, a
-// clear sky reads vivid, fog reads washed-out, snow reads bright & cool, etc.
+// Each weather condition has its *own* set of time-of-day gradient keyframes
+// (not a tint applied over the day/night sky). Every family still shifts
+// through night → dawn → day → dusk, but with bespoke palettes: clear reads
+// vivid blue, an overcast sky reads soft & hazy, fog washes out to pale grey,
+// rain/drizzle go moody blue-grey, snow stays bright & cool, and storms turn
+// dark and ominous.
 // ---------------------------------------------------------------------------
 
-const relativeLuminance = ([r, g, b]: RGB): number =>
-  0.299 * r + 0.587 * g + 0.114 * b;
+type WeatherFamily =
+  | "clear"
+  | "partlyCloudy"
+  | "fog"
+  | "drizzle"
+  | "rain"
+  | "snow"
+  | "thunderstorm";
 
-const desaturate = (rgb: RGB, amount: number): RGB => {
-  const l = relativeLuminance(rgb);
-  return lerpRgb(rgb, [l, l, l], amount);
+const WEATHER_KEYFRAMES: Record<WeatherFamily, GradientKeyframe[]> = {
+  // Vivid clear sky: deep starry night → warm sunrise → bright blue → dusk.
+  clear: [
+    k(0, "#06091f", "#0d1336", "#18204c"),
+    k(6.5, "#4a5a92", "#d49a86", "#f6b46a"),
+    k(9, "#2a86dd", "#6cc3f3", "#d3efff"),
+    k(16, "#2f8ed8", "#79c6f7", "#e0f3ff"),
+    k(18.5, "#46518e", "#ef946b", "#ffc25d"),
+    k(21, "#11103a", "#281f4e", "#41305f"),
+  ],
+  // Soft, hazy partly-cloudy / overcast sky — muted blues and warm greys.
+  partlyCloudy: [
+    k(0, "#12162e", "#1d2340", "#2c3253"),
+    k(6.5, "#6b7390", "#c3a4a6", "#e6c29b"),
+    k(9, "#6191c0", "#a3c7dd", "#dde9f0"),
+    k(16, "#6a97c0", "#aacbe0", "#e3eef3"),
+    k(18.5, "#5e6489", "#d4a18d", "#eec196"),
+    k(21, "#1c1f3e", "#33304e", "#4a4560"),
+  ],
+  // Fog: low-contrast, washed-out pale grey.
+  fog: [
+    k(0, "#1f222a", "#2a2e37", "#393e47"),
+    k(6.5, "#888891", "#aaa6a4", "#c9c3bd"),
+    k(9, "#9ba4ac", "#c3c9cd", "#e4e7e9"),
+    k(16, "#a0a8af", "#c8cdd0", "#e8eaec"),
+    k(18.5, "#85848d", "#b1a49e", "#d3c7be"),
+    k(21, "#2d2e37", "#44444e", "#5a5862"),
+  ],
+  // Drizzle: cool, slightly subdued blue-grey.
+  drizzle: [
+    k(0, "#111720", "#1a222d", "#27313d"),
+    k(6.5, "#50616c", "#7b858e", "#9ca5aa"),
+    k(9, "#5d7282", "#8da2ae", "#c4cfd4"),
+    k(16, "#607585", "#91a4b0", "#cbd5d9"),
+    k(18.5, "#4b5661", "#707782", "#94979d"),
+    k(21, "#171e27", "#26303b", "#38424e"),
+  ],
+  // Rain: darker, moody deep blue-grey.
+  rain: [
+    k(0, "#0b1017", "#131a23", "#1e2731"),
+    k(6.5, "#3b4752", "#596775", "#75818b"),
+    k(9, "#45555f", "#6d7e89", "#98a5ac"),
+    k(16, "#485963", "#71828d", "#9ca9b0"),
+    k(18.5, "#394350", "#535d67", "#6f767e"),
+    k(21, "#10161e", "#1e262f", "#2b343f"),
+  ],
+  // Snow: bright, cool, pale blue-white.
+  snow: [
+    k(0, "#1d2634", "#2e3949", "#44505e"),
+    k(6.5, "#8b94a4", "#babfc9", "#dee1e7"),
+    k(9, "#a1b2c4", "#cfd9e3", "#eff4f8"),
+    k(16, "#a6b6c7", "#d3dce5", "#f2f6f9"),
+    k(18.5, "#828a9b", "#aeb4c2", "#d6dae1"),
+    k(21, "#222937", "#37404e", "#505a69"),
+  ],
+  // Thunderstorm: dark and ominous, purple-grey.
+  thunderstorm: [
+    k(0, "#07090f", "#0d0f17", "#161924"),
+    k(6.5, "#2a2b3a", "#3a394b", "#4c495d"),
+    k(9, "#313246", "#45424f", "#58535f"),
+    k(16, "#33344a", "#474450", "#5a5560"),
+    k(18.5, "#29283a", "#3b3548", "#4e4257"),
+    k(21, "#0b0c15", "#15141e", "#211e2b"),
+  ],
 };
 
-const darken = (rgb: RGB, amount: number): RGB =>
-  rgb.map((c) => Math.round(c * (1 - amount))) as RGB;
-
-const lighten = (rgb: RGB, amount: number): RGB =>
-  lerpRgb(rgb, [255, 255, 255], amount);
-
-const tint = (rgb: RGB, color: RGB, amount: number): RGB =>
-  lerpRgb(rgb, color, amount);
-
-/** Weather treatments keyed by WMO weather-code "family". */
-type WeatherTreatment = (rgb: RGB) => RGB;
-
-const WEATHER_TREATMENTS: Record<string, WeatherTreatment> = {
-  clear: (rgb) => rgb,
-  partlyCloudy: (rgb) => lighten(desaturate(rgb, 0.28), 0.04),
-  fog: (rgb) => lighten(desaturate(rgb, 0.72), 0.16),
-  drizzle: (rgb) => tint(darken(desaturate(rgb, 0.42), 0.12), [92, 104, 120], 0.16),
-  rain: (rgb) => tint(darken(desaturate(rgb, 0.46), 0.2), [78, 92, 110], 0.24),
-  snow: (rgb) => tint(lighten(desaturate(rgb, 0.55), 0.2), [220, 228, 236], 0.12),
-  thunderstorm: (rgb) =>
-    tint(darken(desaturate(rgb, 0.5), 0.4), [58, 54, 80], 0.22),
-};
-
-/** Map a WMO weather code to a treatment family. */
-function weatherCodeToFamily(code: number | null | undefined): string {
+/** Map a WMO weather code to a gradient family. */
+function weatherCodeToFamily(code: number | null | undefined): WeatherFamily {
   if (code == null) return "clear";
   if (code === 0) return "clear";
   if (code <= 3) return "partlyCloudy";
@@ -273,18 +330,17 @@ function weatherCodeToFamily(code: number | null | undefined): string {
 }
 
 /**
- * Compute the [top, mid, bottom] gradient colors for the current time of day,
- * re-tinted to match the supplied weather code. A `null`/`undefined` code (e.g.
- * while the live weather is still loading) falls back to the plain day/night
- * gradient.
+ * Compute the [top, mid, bottom] gradient colors for the supplied weather code
+ * at the given time of day, using that condition's dedicated palette. A
+ * `null`/`undefined` code (e.g. while the live weather is still loading) falls
+ * back to the clear-sky gradient.
  */
 export function getWeatherGradientColors(
   code: number | null | undefined,
   date: Date = new Date()
 ): [RGB, RGB, RGB] {
-  const base = getDayNightGradientColors(date);
-  const treat = WEATHER_TREATMENTS[weatherCodeToFamily(code)] ?? ((c: RGB) => c);
-  return [treat(base[0]), treat(base[1]), treat(base[2])];
+  const frames = WEATHER_KEYFRAMES[weatherCodeToFamily(code)];
+  return interpolateGradientKeyframes(frames, date);
 }
 
 /** Build a CSS `linear-gradient(...)` string for the current time + weather. */
