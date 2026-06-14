@@ -28,6 +28,7 @@ export function useWindowInsets() {
     isSystem7Theme,
     isWinXp,
     isWin98,
+    isAquaGlass,
   } = useThemeFlags();
   const dockScale = useDockStore((state) => state.scale);
   const dockHiding = useDockStore((state) => state.hiding);
@@ -59,10 +60,21 @@ export function useWindowInsets() {
     const taskbarHeight = themeMetaTyped.taskbarHeight;
 
     // Use scaled dock height for accurate constraints (0 if dock hiding is enabled)
-    const dockHeight =
+    let dockHeight =
       themeMetaTyped.hasDock && !dockHiding
         ? Math.round(themeMetaTyped.baseDockHeight * dockScale)
         : 0;
+
+    // The Aqua glass dock is taller than the classic dock (8px vertical padding
+    // per side vs 4px, see MacDock.tsx) and is lifted 12px off the screen edge
+    // (margin-bottom in aqua-glass.css). Reserve that extra space so maximized
+    // / resized windows don't overlap the glass dock.
+    if (dockHeight > 0 && isAquaGlass) {
+      const GLASS_DOCK_LIFT = 12;
+      const glassExtraBarHeight =
+        (Math.round(8 * dockScale) - Math.round(4 * dockScale)) * 2;
+      dockHeight += glassExtraBarHeight + GLASS_DOCK_LIFT;
+    }
 
     const topInset = menuBarHeight;
     // bottomInset includes dock for resize/maximize constraints
@@ -79,6 +91,7 @@ export function useWindowInsets() {
   }, [
     themeMetaTyped,
     isMacTheme,
+    isAquaGlass,
     getSafeAreaBottomInset,
     dockScale,
     dockHiding,
