@@ -48,23 +48,12 @@ function CoverWallpaperLayer() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.6 }}
           >
-            {/* Blurred, scaled fill so any aspect ratio covers the desktop. */}
+            {/* Full-bleed cover: fills the entire desktop, cropping as needed. */}
             <div
               className="absolute inset-0 w-full h-full"
               style={{
                 backgroundImage: `url("${coverUrl}")`,
                 backgroundSize: "cover",
-                backgroundPosition: "center",
-                filter: "blur(48px) saturate(1.2)",
-                transform: "scale(1.2)",
-              }}
-            />
-            {/* Sharp, centered cover floating on top of the blur. */}
-            <div
-              className="absolute inset-0 w-full h-full"
-              style={{
-                backgroundImage: `url("${coverUrl}")`,
-                backgroundSize: "contain",
                 backgroundPosition: "center",
                 backgroundRepeat: "no-repeat",
               }}
