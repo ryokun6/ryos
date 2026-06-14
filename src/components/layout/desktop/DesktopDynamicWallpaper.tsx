@@ -6,6 +6,7 @@ import { useWeatherWallpaper } from "@/hooks/useWeatherWallpaper";
 import { useNowPlayingLyrics } from "@/hooks/useNowPlayingLyrics";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useIpodPipActive } from "@/apps/ipod/hooks/useIpodPipActive";
+import { useSaveSongCoverColor } from "@/hooks/useSaveSongCoverColor";
 import { MeshGradientBackground } from "@/components/shared/MeshGradientBackground";
 import { LyricsDisplay } from "@/apps/ipod/components/lyrics-display/LyricsDisplay";
 import {
@@ -90,6 +91,9 @@ function LyricsWallpaperLayer() {
   const np = useNowPlayingLyrics();
   const { isMacOSTheme, isAquaGlass, isWinXp, isWin98 } = useThemeFlags();
   const pipActive = useIpodPipActive();
+  // Persist the resolved cover color back to the song (and store) so the lyric
+  // highlight color matches the song palette — exactly like the Karaoke overlay.
+  const saveCoverColor = useSaveSongCoverColor(np.track);
 
   // Reserve enough bottom space for the lyrics to clear the dock / taskbar, plus
   // the iPod pop player (PiP) when it's active. The offset differs for Aqua vs
@@ -143,6 +147,9 @@ function LyricsWallpaperLayer() {
           textSizeClass="fullscreen-lyrics-text"
           gapClass="gap-0"
           containerStyle={containerStyle}
+          coverUrl={np.coverUrl}
+          coverColor={np.track?.coverColor}
+          onCoverColorResolved={saveCoverColor}
           showInterludeEllipsis
         />
       )}
