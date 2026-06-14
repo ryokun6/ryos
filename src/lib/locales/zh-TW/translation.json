@@ -1390,8 +1390,10 @@
       "dream": "夢幻",
       "dynamicWallpapers": {
         "dayNight": "日與夜",
+        "lyrics": "歌詞",
         "nowPlaying": "播放中",
-        "shuffle": "隨機播放"
+        "shuffle": "隨機播放",
+        "weather": "天氣"
       },
       "elevenlabs": "ElevenLabs",
       "elevenlabsVoiceId": "ElevenLabs 語音 ID",

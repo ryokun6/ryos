@@ -1390,8 +1390,10 @@
       "dream": "꿈",
       "dynamicWallpapers": {
         "dayNight": "주간 및 야간",
+        "lyrics": "가사",
         "nowPlaying": "지금 재생 중",
-        "shuffle": "임의 재생"
+        "shuffle": "임의 재생",
+        "weather": "날씨"
       },
       "elevenlabs": "일레븐랩스",
       "elevenlabsVoiceId": "일레븐랩스 음성 ID",
