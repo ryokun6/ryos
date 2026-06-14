@@ -66,11 +66,11 @@ export function useWindowInsets() {
         : 0;
 
     // The Aqua glass dock is taller than the classic dock (8px vertical padding
-    // per side vs 4px, see MacDock.tsx) and is lifted 12px off the screen edge
+    // per side vs 4px, see MacDock.tsx) and is lifted 6px off the screen edge
     // (margin-bottom in aqua-glass.css). Reserve that extra space so maximized
     // / resized windows don't overlap the glass dock.
     if (dockHeight > 0 && isAquaGlass) {
-      const GLASS_DOCK_LIFT = 12;
+      const GLASS_DOCK_LIFT = 6;
       const glassExtraBarHeight =
         (Math.round(8 * dockScale) - Math.round(4 * dockScale)) * 2;
       dockHeight += glassExtraBarHeight + GLASS_DOCK_LIFT;

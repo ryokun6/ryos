@@ -76,14 +76,16 @@ export function App() {
 
   // Determine toast position and offset based on theme and device
   const toastConfig = useMemo(() => {
-    // The Aqua glass dock sits ~20px higher than the classic dock (12px lift +
-    // 8px taller bar), so add extra clearance to keep the same gap above it.
-    const dockHeight = isMacOSTheme ? (isAquaGlass ? 76 : 56) : 0;
+    // The Aqua glass dock sits a bit higher than the classic dock (6px lift +
+    // 8px taller bar = 70px tall), so add a little extra clearance to clear it.
+    const dockHeight = isMacOSTheme ? (isAquaGlass ? 70 : 56) : 0;
     const taskbarHeight = isWindowsTheme ? 30 : 0;
 
     // Mobile: always show at bottom-center with dock/taskbar and safe area clearance
     if (isMobile) {
-      const bottomOffset = dockHeight + taskbarHeight + 16;
+      // Tighten the gap above the (taller) glass dock so toasts don't float too high.
+      const gap = isAquaGlass ? 12 : 16;
+      const bottomOffset = dockHeight + taskbarHeight + gap;
       return {
         position: "bottom-center" as const,
         offset: `calc(env(safe-area-inset-bottom, 0px) + ${bottomOffset}px)`,
