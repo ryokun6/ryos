@@ -56,6 +56,8 @@ interface RightClickMenuProps {
 
 export const menuItemClass =
   "text-md h-6 px-3 active:bg-neutral-900 active:text-white min-w-[140px] flex items-center gap-2";
+const MIN_CONTEXT_MENU_VIEWPORT_GAP = 8;
+const ESTIMATED_CONTEXT_MENU_WIDTH = 140 + MIN_CONTEXT_MENU_VIEWPORT_GAP;
 
 const menuItemKeyCache = new WeakMap<object, string>();
 let menuItemKeySeed = 0;
@@ -198,6 +200,13 @@ export function RightClickMenu({
         };
   const effectiveAlign =
     align ?? (position && position.x > viewportWidth / 2 ? "end" : "start");
+  const anchorX =
+    position && viewportWidth > 0
+      ? Math.min(
+          position.x,
+          viewportWidth - ESTIMATED_CONTEXT_MENU_WIDTH
+        )
+      : position?.x;
 
   // Play open sound when menu appears
   useEffect(() => {
@@ -215,7 +224,7 @@ export function RightClickMenu({
           style={{
             position: "fixed",
             top: position.y,
-            left: position.x,
+            left: anchorX,
             width: 0,
             height: 0,
           }}
