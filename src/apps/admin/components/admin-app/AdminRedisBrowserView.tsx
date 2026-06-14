@@ -135,6 +135,12 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
   // Cache fetched key documents so reopening a key (or returning to it after
   // navigating) does not re-hit Redis. Cleared on fresh scans / refresh.
   const documentCacheRef = useRef<Map<string, RedisKeyDocument>>(new Map());
+  // Cache the loaded key summaries (+ continuation cursor) per scan scope so
+  // re-entering a prefix you've already browsed is instant and never re-scans
+  // the keyspace. Cleared on Refresh and after a delete.
+  const keysCacheRef = useRef<Map<string, { keys: RedisKeySummary[]; cursor: string }>>(
+    new Map()
+  );
 
   // The applied glob is the single source of truth for the server SCAN. The
   // drill-down prefix (tree position + breadcrumbs) is derived from it so that
@@ -152,7 +158,11 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
           count: REDIS_BROWSER_PAGE_COUNT,
         });
         setCursor(data.cursor);
-        setKeys((prev) => (nextCursor === "0" ? data.keys : [...prev, ...data.keys]));
+        setKeys((prev) => {
+          const next = nextCursor === "0" ? data.keys : [...prev, ...data.keys];
+          keysCacheRef.current.set(targetPattern, { keys: next, cursor: data.cursor });
+          return next;
+        });
       } catch (error) {
         console.error("Failed to load Redis keys:", error);
         toast.error(t("apps.admin.redis.errors.loadKeys", "Failed to load Redis keys"));
@@ -169,15 +179,22 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
   // mirror the effective pattern back into the input so it tracks drill-down.
   useEffect(() => {
     setPattern(scanPattern);
-    setKeys([]);
-    setCursor("0");
     setSelectedKey(null);
     setSelectedDocument(null);
+    const cached = keysCacheRef.current.get(scanPattern);
+    if (cached) {
+      setKeys(cached.keys);
+      setCursor(cached.cursor);
+      return;
+    }
+    setKeys([]);
+    setCursor("0");
     void loadKeys(scanPattern, "0");
   }, [scanPattern, loadKeys]);
 
   const refreshScope = useCallback(() => {
     documentCacheRef.current.clear();
+    keysCacheRef.current.clear();
     setKeys([]);
     setCursor("0");
     setSelectedKey(null);
@@ -267,6 +284,9 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
     try {
       const result = await deleteAdminRedisKey<DeleteRedisKeyResponse>(deleteCandidate);
       documentCacheRef.current.delete(deleteCandidate);
+      // A deleted key may live in other cached scopes; drop the list cache so
+      // navigation reflects the removal everywhere (scope reloads below).
+      keysCacheRef.current.clear();
       if (result.deletedCount > 0) {
         toast.success(t("apps.admin.redis.messages.deleted", "Redis key deleted"));
       } else {

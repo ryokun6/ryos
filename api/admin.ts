@@ -376,6 +376,12 @@ interface RedisKeyDocument extends RedisKeySummary {
 
 const REDIS_BROWSER_SCAN_COUNT_DEFAULT = 100;
 const REDIS_BROWSER_SCAN_COUNT_MAX = 1000;
+// SCAN MATCH filters server-side but still walks the entire keyspace, so a
+// single SCAN call returns few/zero matches for a sparse prefix while leaving a
+// non-zero cursor. We loop internally (bounded by this cap) to gather a useful
+// page per request instead of forcing many client round-trips. If the cap is
+// hit before the page fills, we hand the cursor back so "Load more" continues.
+const REDIS_BROWSER_SCAN_MAX_ITERATIONS = 50;
 const REDIS_BROWSER_VALUE_PREVIEW_LIMIT = 200;
 const REDIS_BROWSER_BACKUP_KEY_LIMIT_DEFAULT = 500;
 const REDIS_BROWSER_BACKUP_KEY_LIMIT_MAX = 1000;
@@ -601,14 +607,43 @@ async function listRedisKeys(
   redis: Redis,
   input: { pattern: string; cursor: string | number; count: number }
 ): Promise<{ keys: RedisKeySummary[]; cursor: string; pattern: string; count: number }> {
-  const [nextCursor, keys] = await redis.scan(input.cursor, {
-    match: input.pattern,
-    count: input.count,
-  });
-  const summaries = await getRedisKeySummaries(redis, keys.sort());
+  const targetCount = input.count;
+  // SCAN COUNT is only a hint; use a generous per-iteration hint so we walk the
+  // keyspace quickly when matches are sparse, but never below the requested page.
+  const perIterationCount = Math.min(
+    Math.max(targetCount, REDIS_BROWSER_SCAN_COUNT_DEFAULT),
+    REDIS_BROWSER_SCAN_COUNT_MAX
+  );
+
+  const collected: string[] = [];
+  const seen = new Set<string>();
+  let cursor: string | number = input.cursor;
+  let iterations = 0;
+
+  do {
+    const [nextCursor, batch] = await redis.scan(cursor, {
+      match: input.pattern,
+      count: perIterationCount,
+    });
+    cursor = nextCursor;
+    for (const key of batch) {
+      if (!seen.has(key)) {
+        seen.add(key);
+        collected.push(key);
+      }
+    }
+    iterations++;
+  } while (
+    cursor !== 0 &&
+    cursor !== "0" &&
+    collected.length < targetCount &&
+    iterations < REDIS_BROWSER_SCAN_MAX_ITERATIONS
+  );
+
+  const summaries = await getRedisKeySummaries(redis, collected.sort());
   return {
     keys: summaries,
-    cursor: String(nextCursor),
+    cursor: String(cursor),
     pattern: input.pattern,
     count: summaries.length,
   };
