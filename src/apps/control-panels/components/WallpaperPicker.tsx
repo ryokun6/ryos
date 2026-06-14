@@ -247,9 +247,10 @@ function SpecialTile({
       )}
       {icon && (
         <span
-          className="relative flex items-center justify-center text-white/85"
+          className="relative flex items-center justify-center text-white opacity-[0.85]"
           style={{
-            // Semi-transparent white glyph with a simple drop-shadow keeps it
+            // Uniform element opacity (not color alpha) so the tile art shows
+            // through the glyph consistently. A simple drop-shadow keeps it
             // legible on dark gradients, bright covers and busy patterns alike.
             filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.6))",
           }}
@@ -257,11 +258,11 @@ function SpecialTile({
           {icon}
         </span>
       )}
-      {/* Semi-transparent white label with a single soft dark text-shadow.
-          Crisp and readable on dark gradients, bright covers and busy patterns
-          without any blend modes. */}
+      {/* White label dimmed via element opacity (matching the icon) with a
+          single soft dark text-shadow. Crisp and readable on dark gradients,
+          bright covers and busy patterns without any blend modes. */}
       <span
-        className="absolute inset-x-0 bottom-0 px-1 pt-1 pb-0.5 text-[10px] leading-tight text-center font-medium truncate text-white/85"
+        className="absolute inset-x-0 bottom-0 px-1 pt-1 pb-0.5 text-[10px] leading-tight text-center font-medium truncate text-white opacity-[0.85]"
         style={{
           textShadow: "0 1px 2px rgba(0,0,0,0.6)",
         }}
@@ -684,7 +685,7 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
                   handleWallpaperSelect(DAY_NIGHT_GRADIENT_WALLPAPER)
                 }
                 backgroundStyle={{ backgroundImage: dayNightPreview }}
-                icon={<Sun className="size-6 text-white/85" weight="fill" />}
+                icon={<Sun className="size-6 text-white" weight="fill" />}
               />
               <SpecialTile
                 label={t("apps.control-panels.dynamicWallpapers.nowPlaying")}
@@ -701,7 +702,7 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
                 }
                 icon={
                   nowPlaying.coverUrl ? null : (
-                    <MusicNotes className="size-6 text-white/85" weight="fill" />
+                    <MusicNotes className="size-6 text-white" weight="fill" />
                   )
                 }
               />
@@ -729,7 +730,7 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
                       }
                     : undefined;
                 })()}
-                icon={<Shuffle className="size-5 text-white/85" weight="bold" />}
+                icon={<Shuffle className="size-5 text-white" weight="bold" />}
               />
               {tileWallpapers.map((path) => (
                 <WallpaperItem
@@ -757,7 +758,7 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
                     liveShuffleSource) ||
                   randomVideoShuffleArt
                 }
-                icon={<Shuffle className="size-6 text-white/85" weight="bold" />}
+                icon={<Shuffle className="size-6 text-white" weight="bold" />}
               />
               {videoWallpapers.map((path) => (
                 <WallpaperItem
@@ -838,7 +839,7 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
                       }
                     : undefined;
                 })()}
-                icon={<Shuffle className="size-6 text-white/85" weight="bold" />}
+                icon={<Shuffle className="size-6 text-white" weight="bold" />}
               />
               {photoWallpapers[selectedCategory].map((path) => (
                 <WallpaperItem
