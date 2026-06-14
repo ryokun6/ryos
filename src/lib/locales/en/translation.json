@@ -3754,6 +3754,10 @@
       },
       "redis": {
         "patternPlaceholder": "Redis pattern, e.g. chat:*",
+        "filterPlaceholder": "Filter loaded keys",
+        "breadcrumbs": "Key path",
+        "root": "root",
+        "noFilterMatch": "No loaded keys match this filter",
         "scan": "Scan",
         "backup": "Backup",
         "refresh": "Refresh Redis keys",

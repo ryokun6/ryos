@@ -244,6 +244,7 @@
       },
       "redis": {
         "backup": "Backup",
+        "breadcrumbs": "Percorso della chiave",
         "delete": "Elimina chiave Redis",
         "deleteDescription": "Eliminare la chiave Redis \"{{key}}\"? L'azione è irreversibile.",
         "deleteTitle": "Eliminare la chiave Redis?",
@@ -254,6 +255,7 @@
           "loadKey": "Impossibile caricare la chiave Redis",
           "loadKeys": "Impossibile caricare le chiavi Redis"
         },
+        "filterPlaceholder": "Filtra le chiavi caricate",
         "key": "Chiave",
         "keyUnavailable": "La chiave Redis non è disponibile",
         "keys": "Chiavi",
@@ -266,10 +268,12 @@
           "backupTruncated": "Il backup ha raggiunto il limite di chiavi; restringi il pattern per un'esportazione completa",
           "deleted": "Chiave Redis eliminata"
         },
+        "noFilterMatch": "Nessuna chiave caricata corrisponde a questo filtro",
         "noKeys": "Nessuna chiave Redis corrisponde a questo pattern",
         "patternPlaceholder": "Pattern Redis, es. chat:*",
         "previewTruncated": "L'anteprima è troncata; usa Backup per il valore completo.",
         "refresh": "Aggiorna chiavi Redis",
+        "root": "radice",
         "scan": "Scansiona",
         "selectKey": "Seleziona una chiave Redis per ispezionarne il valore",
         "ttl": "TTL",

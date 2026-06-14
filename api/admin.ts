@@ -403,23 +403,36 @@ function normalizeRedisCursor(cursor: unknown): string | number {
   return 0;
 }
 
+function coerceRedisType(rawType: unknown): RedisKeyType {
+  if (typeof rawType !== "string" || rawType.length === 0) return "unknown";
+  if (
+    rawType === "string" ||
+    rawType === "list" ||
+    rawType === "set" ||
+    rawType === "hash" ||
+    rawType === "zset" ||
+    rawType === "none" ||
+    rawType === "stream"
+  ) {
+    return rawType;
+  }
+  return "unknown";
+}
+
+function coerceRedisTtl(rawTtl: unknown): number | null {
+  if (typeof rawTtl === "number" && Number.isFinite(rawTtl)) return rawTtl;
+  if (typeof rawTtl === "string") {
+    const parsed = Number.parseInt(rawTtl, 10);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
 async function getRedisKeyType(redis: Redis, key: string): Promise<RedisKeyType> {
   try {
     const typedRedis = redis as Redis & { type?: (key: string) => Promise<string> };
     const rawType = await typedRedis.type?.(key);
-    if (!rawType) return "unknown";
-    if (
-      rawType === "string" ||
-      rawType === "list" ||
-      rawType === "set" ||
-      rawType === "hash" ||
-      rawType === "zset" ||
-      rawType === "none" ||
-      rawType === "stream"
-    ) {
-      return rawType;
-    }
-    return "unknown";
+    return coerceRedisType(rawType);
   } catch (error) {
     console.error("Error reading Redis type", { key, error });
     return "unknown";
@@ -440,6 +453,37 @@ async function getRedisKeySummary(redis: Redis, key: string): Promise<RedisKeySu
     getRedisTtl(redis, key),
   ]);
   return { key, type, ttl };
+}
+
+/**
+ * Fetch type + TTL for many keys in a single pipelined round-trip instead of
+ * 2 round-trips per key. Falls back to the per-key path if the pipeline fails.
+ */
+async function getRedisKeySummaries(
+  redis: Redis,
+  keys: string[]
+): Promise<RedisKeySummary[]> {
+  if (keys.length === 0) return [];
+  try {
+    const pipeline = redis.pipeline();
+    for (const key of keys) {
+      pipeline.type(key);
+    }
+    for (const key of keys) {
+      pipeline.ttl(key);
+    }
+    const results = (await pipeline.exec()) as unknown[];
+    return keys.map((key, index) => ({
+      key,
+      type: coerceRedisType(results[index]),
+      ttl: coerceRedisTtl(results[keys.length + index]),
+    }));
+  } catch (error) {
+    console.error("Error pipelining Redis key summaries; falling back to per-key reads", {
+      error,
+    });
+    return Promise.all(keys.map((key) => getRedisKeySummary(redis, key)));
+  }
 }
 
 function truncateObjectEntries(
@@ -561,7 +605,7 @@ async function listRedisKeys(
     match: input.pattern,
     count: input.count,
   });
-  const summaries = await Promise.all(keys.sort().map((key) => getRedisKeySummary(redis, key)));
+  const summaries = await getRedisKeySummaries(redis, keys.sort());
   return {
     keys: summaries,
     cursor: String(nextCursor),

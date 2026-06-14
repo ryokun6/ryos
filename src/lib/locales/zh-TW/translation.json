@@ -244,6 +244,7 @@
       },
       "redis": {
         "backup": "備份",
+        "breadcrumbs": "鍵路徑",
         "delete": "刪除 Redis 鍵",
         "deleteDescription": "確定要刪除 Redis 鍵「{{key}}」嗎？此操作無法復原。",
         "deleteTitle": "確定要刪除 Redis 鍵嗎？",
@@ -254,6 +255,7 @@
           "loadKey": "載入 Redis 鍵失敗",
           "loadKeys": "載入 Redis 鍵失敗"
         },
+        "filterPlaceholder": "篩選已載入的鍵",
         "key": "鍵",
         "keyUnavailable": "Redis 鍵不可用",
         "keys": "鍵",
@@ -266,10 +268,12 @@
           "backupTruncated": "備份已達鍵數量限制；請縮小模式範圍以進行完整匯出",
           "deleted": "Redis 鍵已刪除"
         },
+        "noFilterMatch": "沒有已載入的鍵符合此篩選條件",
         "noKeys": "沒有符合此模式的 Redis 鍵",
         "patternPlaceholder": "Redis 模式，例如 chat:*",
         "previewTruncated": "預覽已截斷；請使用「備份」查看完整值。",
         "refresh": "重新整理 Redis 鍵值",
+        "root": "根目錄",
         "scan": "掃描",
         "selectKey": "選擇一個 Redis 鍵以查看其值",
         "ttl": "TTL",

@@ -1,8 +1,11 @@
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowsClockwise,
+  CaretRight,
   Database,
   DownloadSimple,
+  FolderSimple,
+  House,
   Trash,
 } from "@phosphor-icons/react";
 import type { TFunction } from "i18next";
@@ -36,6 +39,11 @@ import {
   adminTableRowClass,
   adminToolbarClass,
 } from "../../utils/adminStyles";
+import {
+  buildRedisBreadcrumbs,
+  buildRedisKeyTree,
+  filterRedisKeys,
+} from "../../utils/redisKeyTree";
 
 interface RedisKeySummary {
   key: string;
@@ -119,6 +127,12 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
   const [isLoadingDocument, setIsLoadingDocument] = useState(false);
   const [deleteCandidate, setDeleteCandidate] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  // Namespace drill-down prefix (e.g. "chat:room:") and in-memory filter query.
+  const [prefix, setPrefix] = useState("");
+  const [filter, setFilter] = useState("");
+  // Cache fetched key documents so reopening a key (or returning to it after
+  // navigating) does not re-hit Redis. Cleared on fresh scans / refresh.
+  const documentCacheRef = useRef<Map<string, RedisKeyDocument>>(new Map());
 
   const loadKeys = useCallback(
     async (nextCursor: string = "0") => {
@@ -132,8 +146,11 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
         setCursor(data.cursor);
         setKeys((prev) => (nextCursor === "0" ? data.keys : [...prev, ...data.keys]));
         if (nextCursor === "0") {
+          documentCacheRef.current.clear();
           setSelectedKey(null);
           setSelectedDocument(null);
+          setPrefix("");
+          setFilter("");
         }
       } catch (error) {
         console.error("Failed to load Redis keys:", error);
@@ -148,9 +165,16 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
   const loadKeyDocument = useCallback(
     async (key: string) => {
       setSelectedKey(key);
+      const cached = documentCacheRef.current.get(key);
+      if (cached) {
+        setSelectedDocument(cached);
+        setIsLoadingDocument(false);
+        return;
+      }
       setIsLoadingDocument(true);
       try {
         const data = await getAdminRedisKey<RedisKeyDocument>(key);
+        documentCacheRef.current.set(key, data);
         setSelectedDocument(data);
       } catch (error) {
         console.error("Failed to load Redis key:", error);
@@ -162,6 +186,17 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
     },
     [t]
   );
+
+  const isFiltering = filter.trim().length > 0;
+  const filteredLeaves = useMemo(
+    () => (isFiltering ? filterRedisKeys(keys, filter) : []),
+    [keys, filter, isFiltering]
+  );
+  const treeLevel = useMemo(() => buildRedisKeyTree(keys, prefix), [keys, prefix]);
+  const breadcrumbs = useMemo(() => buildRedisBreadcrumbs(prefix), [prefix]);
+  const visibleLeaves = isFiltering ? filteredLeaves : treeLevel.leaves;
+  const visibleFolders = isFiltering ? [] : treeLevel.folders;
+  const hasVisibleRows = visibleFolders.length > 0 || visibleLeaves.length > 0;
 
   useEffect(() => {
     void loadKeys("0");
@@ -207,6 +242,7 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
     setIsDeleting(true);
     try {
       const result = await deleteAdminRedisKey<DeleteRedisKeyResponse>(deleteCandidate);
+      documentCacheRef.current.delete(deleteCandidate);
       if (result.deletedCount > 0) {
         toast.success(t("apps.admin.redis.messages.deleted", "Redis key deleted"));
       } else {
@@ -267,6 +303,63 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
         </Button>
       </form>
 
+      {keys.length > 0 && (
+        <div
+          className={cn(
+            adminToolbarClass,
+            "flex shrink-0 flex-wrap items-center gap-2 border-b border-os-separator px-2 py-1",
+          )}
+        >
+          <nav
+            aria-label={t("apps.admin.redis.breadcrumbs", "Key path")}
+            className={cn(
+              "flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto text-[11px]",
+              isFiltering && "opacity-40",
+            )}
+          >
+            {breadcrumbs.map((crumb, index) => {
+              const isLast = index === breadcrumbs.length - 1;
+              return (
+                <span key={crumb.prefix} className="flex shrink-0 items-center gap-0.5">
+                  {index > 0 && (
+                    <CaretRight size={10} weight="bold" className="opacity-40" />
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFilter("");
+                      setPrefix(crumb.prefix);
+                    }}
+                    disabled={isFiltering}
+                    className={cn(
+                      "flex items-center gap-1 rounded px-1 py-0.5 font-os-mono",
+                      isLast
+                        ? "text-os-text-primary"
+                        : "text-os-text-secondary hover:text-os-text-primary hover:underline",
+                    )}
+                    title={crumb.prefix || t("apps.admin.redis.root", "root")}
+                  >
+                    {index === 0 ? (
+                      <House size={11} weight="bold" />
+                    ) : (
+                      crumb.label
+                    )}
+                  </button>
+                </span>
+              );
+            })}
+          </nav>
+          <SearchInput
+            placeholder={t("apps.admin.redis.filterPlaceholder", "Filter loaded keys")}
+            value={filter}
+            onChange={setFilter}
+            className="w-[180px] shrink-0"
+            inputClassName="h-6 text-[11px] font-os-mono"
+            clearAriaLabel={t("apps.admin.search.clear", "Clear search")}
+          />
+        </div>
+      )}
+
       <div
         className={cn(
           "grid min-h-0 flex-1 gap-0",
@@ -300,7 +393,39 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
                   </TableRow>
                 </TableHeader>
                 <TableBody className="text-[11px]">
-                  {keys.map((item) => (
+                  {visibleFolders.map((folder) => (
+                    <TableRow
+                      key={`dir:${folder.prefix}`}
+                      className={cn(adminTableRowClass, "cursor-pointer")}
+                      onClick={() => {
+                        setFilter("");
+                        setPrefix(folder.prefix);
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          setFilter("");
+                          setPrefix(folder.prefix);
+                        }
+                      }}
+                      role="button"
+                      tabIndex={0}
+                    >
+                      <TableCell colSpan={3} className="py-2">
+                        <div className="flex items-center gap-2">
+                          <FolderSimple size={14} weight="fill" className="shrink-0 opacity-70" />
+                          <span className="min-w-0 flex-1 truncate font-os-mono" title={folder.prefix}>
+                            {folder.segment}
+                          </span>
+                          <span className="shrink-0 rounded bg-black/10 px-1.5 py-0.5 font-os-mono text-[9px] os-mac-aqua-dark:bg-white/10">
+                            {folder.count}
+                          </span>
+                          <CaretRight size={11} weight="bold" className="shrink-0 opacity-40" />
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {visibleLeaves.map((item) => (
                     <TableRow
                       key={item.key}
                       data-state={selectedKey === item.key ? "selected" : undefined}
@@ -322,7 +447,7 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
                     >
                       <TableCell className="max-w-0 py-2">
                         <span className="block truncate font-os-mono" title={item.key}>
-                          {item.key}
+                          {item.label}
                         </span>
                       </TableCell>
                       <TableCell className="py-2">
@@ -335,6 +460,15 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
                       </TableCell>
                     </TableRow>
                   ))}
+                  {!hasVisibleRows && (
+                    <TableRow className="border-none">
+                      <TableCell colSpan={3} className="py-8 text-center text-[11px] text-os-text-disabled">
+                        {isFiltering
+                          ? t("apps.admin.redis.noFilterMatch", "No loaded keys match this filter")
+                          : t("apps.admin.redis.noKeys", "No Redis keys match this pattern")}
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
               {cursor !== "0" && (

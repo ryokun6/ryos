@@ -35,6 +35,8 @@ export interface RedisPipelineLike {
   get(key: string): this;
   set(key: string, value: unknown, options?: RedisSetOptions): this;
   del(...keys: string[]): this;
+  type(key: string): this;
+  ttl(key: string): this;
   sadd(key: string, ...members: string[]): this;
   srem(key: string, ...members: string[]): this;
   zremrangebyscore(key: string, min: number | string, max: number | string): this;
@@ -190,6 +192,16 @@ class StandardRedisPipelineAdapter implements RedisPipelineLike {
     if (keys.length > 0) {
       this.pipelineClient.del(...keys);
     }
+    return this;
+  }
+
+  type(key: string): this {
+    this.pipelineClient.type(key);
+    return this;
+  }
+
+  ttl(key: string): this {
+    this.pipelineClient.ttl(key);
     return this;
   }
 

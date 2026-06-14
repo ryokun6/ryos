@@ -244,6 +244,7 @@
       },
       "redis": {
         "backup": "Backup",
+        "breadcrumbs": "Caminho da chave",
         "delete": "Excluir chave Redis",
         "deleteDescription": "Excluir chave Redis \"{{key}}\"? Isso não pode ser desfeito.",
         "deleteTitle": "Excluir chave Redis?",
@@ -254,6 +255,7 @@
           "loadKey": "Falha ao carregar a chave Redis",
           "loadKeys": "Falha ao carregar as chaves Redis"
         },
+        "filterPlaceholder": "Filtrar chaves carregadas",
         "key": "Chave",
         "keyUnavailable": "A chave Redis está indisponível",
         "keys": "Chaves",
@@ -266,10 +268,12 @@
           "backupTruncated": "O backup atingiu o limite de chaves; restrinja o padrão para uma exportação completa",
           "deleted": "Chave Redis excluída"
         },
+        "noFilterMatch": "Nenhuma chave carregada corresponde a este filtro",
         "noKeys": "Nenhuma chave Redis corresponde a este padrão",
         "patternPlaceholder": "Padrão Redis, ex: chat:*",
         "previewTruncated": "A visualização está truncada; use o Backup para o valor completo.",
         "refresh": "Atualizar chaves do Redis",
+        "root": "raiz",
         "scan": "Escanear",
         "selectKey": "Selecione uma chave Redis para inspecionar seu valor",
         "ttl": "TTL",
