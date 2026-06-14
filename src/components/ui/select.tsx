@@ -157,6 +157,8 @@ const SelectContent = (
   return (
     <SelectPrimitive.Portal>
       <SelectPrimitive.Positioner
+        className="z-[10003]"
+        data-radix-popper-content-wrapper=""
         sideOffset={position === "popper" ? sideOffset ?? 4 : sideOffset}
         side={side}
         align={align}

@@ -147,7 +147,10 @@ const DropdownMenuSubContent = (
 
   return (
     <DropdownMenuPrimitive.Portal>
-      <DropdownMenuPrimitive.Positioner data-radix-popper-content-wrapper="">
+      <DropdownMenuPrimitive.Positioner
+        className="z-[10004]"
+        data-radix-popper-content-wrapper=""
+      >
         <DropdownMenuPrimitive.Popup
           ref={ref}
           data-ryos-popper-content=""
@@ -218,6 +221,7 @@ const DropdownMenuContent = (
   return (
     <DropdownMenuPrimitive.Portal container={container}>
       <DropdownMenuPrimitive.Positioner
+        className="z-[10003]"
         sideOffset={sideOffset}
         align={align}
         alignOffset={alignOffset}

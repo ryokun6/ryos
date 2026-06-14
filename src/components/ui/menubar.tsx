@@ -230,7 +230,10 @@ const MenubarSubContent = (
 
   return (
     <MenubarMenuPrimitive.Portal>
-      <MenubarMenuPrimitive.Positioner data-radix-popper-content-wrapper="">
+      <MenubarMenuPrimitive.Positioner
+        className="z-[10004]"
+        data-radix-popper-content-wrapper=""
+      >
         <MenubarMenuPrimitive.Popup
           ref={ref}
           data-ryos-popper-content=""
@@ -297,6 +300,7 @@ const MenubarContent = (
   return (
     <MenubarMenuPrimitive.Portal>
       <MenubarMenuPrimitive.Positioner
+        className="z-[10003]"
         align={align}
         alignOffset={alignOffset}
         sideOffset={sideOffset}
