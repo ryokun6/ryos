@@ -215,6 +215,9 @@ const DropdownMenuContent = (
     alignOffset,
     side,
     collisionPadding,
+    collisionBoundary,
+    collisionAvoidance,
+    positionMethod,
     children,
     style,
     container,
@@ -223,7 +226,14 @@ const DropdownMenuContent = (
   }: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Popup> &
     Pick<
       React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Positioner>,
-      "align" | "alignOffset" | "collisionPadding" | "side" | "sideOffset"
+      | "align"
+      | "alignOffset"
+      | "collisionAvoidance"
+      | "collisionBoundary"
+      | "collisionPadding"
+      | "positionMethod"
+      | "side"
+      | "sideOffset"
     > & {
     container?: HTMLElement | null;
     onCloseAutoFocus?: (event: { preventDefault: () => void }) => void;
@@ -242,6 +252,9 @@ const DropdownMenuContent = (
         align={align}
         alignOffset={alignOffset}
         side={side}
+        positionMethod={positionMethod}
+        collisionAvoidance={collisionAvoidance}
+        collisionBoundary={collisionBoundary}
         collisionPadding={collisionPadding}
         data-radix-popper-content-wrapper=""
       >

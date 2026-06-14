@@ -206,6 +206,13 @@ export function LyricsControlsIsland({
           side="top"
           align="center"
           sideOffset={8}
+          collisionAvoidance={{
+            side: "shift",
+            align: "shift",
+            fallbackAxisSide: "none",
+          }}
+          collisionBoundary={portalContainer ?? undefined}
+          collisionPadding={8}
           className={cn(
             "px-0 max-h-[50vh] overflow-y-auto",
             variant === "compact" ? "w-40" : "w-44"
@@ -275,6 +282,13 @@ export function LyricsControlsIsland({
               side="top"
               align="center"
               sideOffset={8}
+              collisionAvoidance={{
+                side: "shift",
+                align: "shift",
+                fallbackAxisSide: "none",
+              }}
+              collisionBoundary={portalContainer ?? undefined}
+              collisionPadding={8}
               className="px-0 w-max min-w-40 max-w-none"
               onClick={(e) => e.stopPropagation()}
             >

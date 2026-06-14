@@ -198,7 +198,7 @@ export function RightClickMenu({
       <DropdownMenuTrigger asChild>
         <div
           style={{
-            position: "absolute",
+            position: "fixed",
             top: position.y,
             left: position.x,
             width: 0,
@@ -208,8 +208,17 @@ export function RightClickMenu({
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align={align}
+        side="top"
         sideOffset={4}
         alignOffset={4}
+        collisionAvoidance={{
+          side: "shift",
+          align: "shift",
+          fallbackAxisSide: "none",
+        }}
+        collisionBoundary={document.documentElement}
+        collisionPadding={8}
+        positionMethod="fixed"
         className="px-0"
       >
         {renderItems(items)}

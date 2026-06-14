@@ -429,17 +429,8 @@ export function MacDock() {
   const handleDividerContextMenu = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    const containerRect = dockContainerRef.current?.getBoundingClientRect();
-    if (!containerRect) {
-      setDividerContextMenuPos({ x: e.clientX, y: e.clientY });
-      return;
-    }
-    
-    setDividerContextMenuPos({
-      x: e.clientX - containerRect.left,
-      y: e.clientY - containerRect.top,
-    });
+
+    setDividerContextMenuPos({ x: e.clientX, y: e.clientY });
   }, []);
 
   // Long press handler for divider on mobile (opens context menu)
@@ -448,16 +439,7 @@ export function MacDock() {
     const touch = e.touches[0] || e.changedTouches[0];
     if (!touch) return;
     
-    const containerRect = dockContainerRef.current?.getBoundingClientRect();
-    if (!containerRect) {
-      setDividerContextMenuPos({ x: touch.clientX, y: touch.clientY });
-      return;
-    }
-    
-    setDividerContextMenuPos({
-      x: touch.clientX - containerRect.left,
-      y: touch.clientY - containerRect.top,
-    });
+    setDividerContextMenuPos({ x: touch.clientX, y: touch.clientY });
   }, []);
 
   // Use long press hook for divider
@@ -693,15 +675,9 @@ export function MacDock() {
       e.preventDefault();
       e.stopPropagation();
       
-      const containerRect = dockContainerRef.current?.getBoundingClientRect();
-      if (!containerRect) {
-        setAppContextMenu({ x: e.clientX, y: e.clientY, appId, instanceId });
-        return;
-      }
-      
       setAppContextMenu({
-        x: e.clientX - containerRect.left,
-        y: e.clientY - containerRect.top,
+        x: e.clientX,
+        y: e.clientY,
         appId,
         instanceId,
       });
@@ -926,7 +902,6 @@ export function MacDock() {
 
               <DockApplicationsButton
                 key="__applications__"
-                dockContainerRef={dockContainerRef}
                 setApplicationsContextMenuPos={setApplicationsContextMenuPos}
                 focusFinderAtPathOrLaunch={focusFinderAtPathOrLaunch}
                 mouseX={mouseX}
@@ -943,7 +918,6 @@ export function MacDock() {
 
               <DockTrashButton
                 key="__trash__"
-                dockContainerRef={dockContainerRef}
                 setTrashContextMenuPos={setTrashContextMenuPos}
                 focusFinderAtPathOrLaunch={focusFinderAtPathOrLaunch}
                 trashIcon={trashIcon}

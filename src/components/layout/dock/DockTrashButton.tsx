@@ -4,7 +4,6 @@ import type { LaunchOriginRect } from "@/stores/useAppStore";
 import { DockIconButton } from "./DockIconButton";
 
 export interface DockTrashButtonProps {
-  dockContainerRef: React.RefObject<HTMLDivElement | null>;
   setTrashContextMenuPos: React.Dispatch<
     React.SetStateAction<{ x: number; y: number } | null>
   >;
@@ -31,7 +30,6 @@ export interface DockTrashButtonProps {
 }
 
 export function DockTrashButton({
-  dockContainerRef,
   setTrashContextMenuPos,
   focusFinderAtPathOrLaunch,
   trashIcon,
@@ -54,16 +52,7 @@ export function DockTrashButton({
     e.preventDefault();
     e.stopPropagation();
 
-    const containerRect = dockContainerRef.current?.getBoundingClientRect();
-    if (!containerRect) {
-      setTrashContextMenuPos({ x: e.clientX, y: e.clientY });
-      return;
-    }
-
-    setTrashContextMenuPos({
-      x: e.clientX - containerRect.left,
-      y: e.clientY - containerRect.top,
-    });
+    setTrashContextMenuPos({ x: e.clientX, y: e.clientY });
   };
 
   return (

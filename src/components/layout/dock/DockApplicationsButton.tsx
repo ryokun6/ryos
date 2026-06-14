@@ -4,7 +4,6 @@ import type { LaunchOriginRect } from "@/stores/useAppStore";
 import { DockIconButton } from "./DockIconButton";
 
 export interface DockApplicationsButtonProps {
-  dockContainerRef: React.RefObject<HTMLDivElement | null>;
   setApplicationsContextMenuPos: React.Dispatch<
     React.SetStateAction<{ x: number; y: number } | null>
   >;
@@ -26,7 +25,6 @@ export interface DockApplicationsButtonProps {
 }
 
 export function DockApplicationsButton({
-  dockContainerRef,
   setApplicationsContextMenuPos,
   focusFinderAtPathOrLaunch,
   mouseX,
@@ -46,16 +44,7 @@ export function DockApplicationsButton({
     e.preventDefault();
     e.stopPropagation();
 
-    const containerRect = dockContainerRef.current?.getBoundingClientRect();
-    if (!containerRect) {
-      setApplicationsContextMenuPos({ x: e.clientX, y: e.clientY });
-      return;
-    }
-
-    setApplicationsContextMenuPos({
-      x: e.clientX - containerRect.left,
-      y: e.clientY - containerRect.top,
-    });
+    setApplicationsContextMenuPos({ x: e.clientX, y: e.clientY });
   };
 
   return (
