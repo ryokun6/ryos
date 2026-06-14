@@ -35,6 +35,7 @@ import { helpItems } from "..";
 import { onAppUpdate } from "@/utils/appEventBus";
 import { MEDIA_ANALYTICS, track as trackAnalytics } from "@/utils/analytics";
 import { formatSecondsAsMinutesSeconds } from "@/utils/timeFormat";
+import { shouldRestartTrackOnPrevious } from "@/shared/media/previousTrackBehavior";
 
 // User-agent sniffing is constant for the document lifetime, so compute once
 // at module load instead of re-running these regexes on every render of the
@@ -503,6 +504,23 @@ export function useKaraokeLogic({
     }, 2000);
   }, []);
 
+  // Classic click-wheel iPod behavior: restart the current track when the
+  // back button is pressed after the song is already underway, instead of
+  // skipping to the previous track. Seeks to 0 and snaps the shared clock so
+  // lyrics/progress follow; a second press (now near 0s) skips for real.
+  const restartCurrentTrack = useCallback(() => {
+    const activePlayer = getActivePlayer();
+    isTrackSwitchingRef.current = true;
+    if (trackSwitchTimeoutRef.current) {
+      clearTimeout(trackSwitchTimeoutRef.current);
+    }
+    activePlayer?.seekTo(0);
+    setStoreElapsedTime(0);
+    trackSwitchTimeoutRef.current = setTimeout(() => {
+      isTrackSwitchingRef.current = false;
+    }, 500);
+  }, [getActivePlayer, setStoreElapsedTime]);
+
   // Wrapped handlers for fullscreen controls (with offline check)
   const handlePrevious = useCallback(() => {
     if (isOffline) {
@@ -513,18 +531,28 @@ export function useKaraokeLogic({
       });
       showStatus("⏮");
     } else {
+      const elapsed = useKaraokeStore.getState().elapsedTime;
+      const hasCurrentTrack = currentIndex >= 0 && Boolean(tracks[currentIndex]);
+      if (shouldRestartTrackOnPrevious(elapsed, hasCurrentTrack)) {
+        restartCurrentTrack();
+        showStatus("⏮");
+        return;
+      }
       startTrackSwitch();
       previousTrack();
       showStatus("⏮");
     }
   }, [
+    currentIndex,
     isOffline,
     listenRemoteOnly,
     previousTrack,
+    restartCurrentTrack,
     sendRemotePlaybackCommand,
     showOfflineStatus,
     showStatus,
     startTrackSwitch,
+    tracks,
   ]);
 
   const handlePlayPause = useCallback(() => {
@@ -1466,11 +1494,10 @@ export function useKaraokeLogic({
         seekTime(5);
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
-        if (listenRemoteOnly) handlePrevious();
-        else {
-          previousTrack();
-          showStatus("⏮");
-        }
+        // Route through handlePrevious so keyboard back matches the on-screen
+        // transport (restart-current-track when the song is underway, offline
+        // guard, and remote-session handling).
+        handlePrevious();
       } else if (e.key === "ArrowDown") {
         e.preventDefault();
         if (listenRemoteOnly) handleNext();

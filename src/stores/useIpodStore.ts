@@ -300,6 +300,13 @@ interface IpodData {
    * `null` falls back to the full library order.
    */
   appleMusicPlaybackQueue: string[] | null;
+  /**
+   * Recently-played Apple Music track ids (oldest → newest), scoped to the
+   * current shuffle run. Drives shuffle's "avoid recent" picks and lets
+   * `appleMusicPreviousTrack` step back through the actual shuffle order
+   * (parity with the YouTube `playbackHistory`). Transient — not persisted.
+   */
+  appleMusicPlaybackHistory: string[];
   /** Last time the Apple Music library was synced (epoch ms). */
   appleMusicLibraryLoadedAt: number | null;
   /** True while a library refresh is in flight. */
@@ -415,6 +422,7 @@ const initialIpodData: IpodData = {
   appleMusicFavoritesLoading: false,
   appleMusicCurrentSongId: null,
   appleMusicPlaybackQueue: null,
+  appleMusicPlaybackHistory: [],
   appleMusicLibraryLoadedAt: null,
   appleMusicLibraryLoading: false,
   appleMusicLibraryError: null,
@@ -1075,6 +1083,9 @@ export const useIpodStore = create<IpodState>()(
             // Clear playback history when turning shuffle on to start fresh
             playbackHistory: newShuffleState ? [] : state.playbackHistory,
             historyPosition: newShuffleState ? -1 : state.historyPosition,
+            appleMusicPlaybackHistory: newShuffleState
+              ? []
+              : state.appleMusicPlaybackHistory,
           };
         }),
       togglePlay: () => {
@@ -2046,6 +2057,7 @@ export const useIpodStore = create<IpodState>()(
           currentLyrics: null,
           currentFuriganaMap: null,
           appleMusicKitNowPlaying: null,
+          appleMusicPlaybackHistory: [],
         });
       },
       setAppleMusicTracks: (tracks) => {
@@ -2199,9 +2211,12 @@ export const useIpodStore = create<IpodState>()(
         set((state) => {
           if (state.appleMusicCurrentSongId === songId) return {};
           // Reset transient progress + lyrics whenever the active track changes.
+          // Manually picking a track also starts a fresh shuffle run, so drop
+          // the shuffle history (next/previous rebuild it from here).
           return {
             appleMusicCurrentSongId: songId,
             appleMusicKitNowPlaying: null,
+            appleMusicPlaybackHistory: [],
             currentLyrics: null,
             currentFuriganaMap: null,
             elapsedTime: 0,
@@ -2220,6 +2235,7 @@ export const useIpodStore = create<IpodState>()(
             librarySource: "appleMusic",
             appleMusicTracks: nextTracks,
             appleMusicPlaybackQueue: null,
+            appleMusicPlaybackHistory: [],
             appleMusicCurrentSongId: track.id,
             appleMusicKitNowPlaying: null,
             currentLyrics: null,
@@ -2250,16 +2266,26 @@ export const useIpodStore = create<IpodState>()(
           }
 
           let nextSongId: string | null;
+          let newPlaybackHistory = state.appleMusicPlaybackHistory;
 
           if (state.loopCurrent) {
             nextSongId = state.appleMusicCurrentSongId;
           } else if (state.isShuffled) {
-            // Lightweight shuffle — avoid the current track when possible.
-            const others = queueTracks.filter(
-              (t) => t.id !== state.appleMusicCurrentSongId
+            // Shuffle: record the current track, then pick avoiding recently
+            // played songs (parity with the YouTube shuffle algorithm) so we
+            // exhaust the queue before repeating instead of picking purely at
+            // random.
+            if (state.appleMusicCurrentSongId) {
+              newPlaybackHistory = updatePlaybackHistory(
+                state.appleMusicPlaybackHistory,
+                state.appleMusicCurrentSongId
+              );
+            }
+            nextSongId = getRandomTrackIdAvoidingRecent(
+              queueTracks,
+              newPlaybackHistory,
+              state.appleMusicCurrentSongId
             );
-            const pool = others.length > 0 ? others : queueTracks;
-            nextSongId = pool[Math.floor(Math.random() * pool.length)]?.id ?? null;
           } else {
             const currentIndex = queueTracks.findIndex(
               (t) => t.id === state.appleMusicCurrentSongId
@@ -2284,6 +2310,7 @@ export const useIpodStore = create<IpodState>()(
           const isSameTrack = nextSongId === state.appleMusicCurrentSongId;
           return {
             appleMusicCurrentSongId: nextSongId,
+            appleMusicPlaybackHistory: newPlaybackHistory,
             currentLyrics: isSameTrack ? state.currentLyrics : null,
             currentFuriganaMap: isSameTrack ? state.currentFuriganaMap : null,
             isPlaying: true,
@@ -2308,13 +2335,36 @@ export const useIpodStore = create<IpodState>()(
           }
 
           let prevSongId: string | null;
+          let newPlaybackHistory = state.appleMusicPlaybackHistory;
 
-          if (state.isShuffled) {
-            const others = queueTracks.filter(
-              (t) => t.id !== state.appleMusicCurrentSongId
+          if (state.isShuffled && state.appleMusicPlaybackHistory.length > 0) {
+            // Shuffle: step back to the actually-played previous track from
+            // history (parity with YouTube) instead of jumping to another
+            // random song — pressing "previous" should retrace your steps.
+            const lastTrackId =
+              state.appleMusicPlaybackHistory[
+                state.appleMusicPlaybackHistory.length - 1
+              ];
+            const lastTrackExists = queueTracks.some(
+              (track) => track.id === lastTrackId
             );
-            const pool = others.length > 0 ? others : queueTracks;
-            prevSongId = pool[Math.floor(Math.random() * pool.length)]?.id ?? null;
+            if (lastTrackExists && lastTrackId !== state.appleMusicCurrentSongId) {
+              prevSongId = lastTrackId;
+              newPlaybackHistory = state.appleMusicPlaybackHistory.slice(0, -1);
+            } else {
+              prevSongId = getRandomTrackIdAvoidingRecent(
+                queueTracks,
+                state.appleMusicPlaybackHistory,
+                state.appleMusicCurrentSongId
+              );
+            }
+          } else if (state.isShuffled) {
+            // No history yet — fall back to an avoid-recent random pick.
+            prevSongId = getRandomTrackIdAvoidingRecent(
+              queueTracks,
+              state.appleMusicPlaybackHistory,
+              state.appleMusicCurrentSongId
+            );
           } else {
             const currentIndex = queueTracks.findIndex(
               (t) => t.id === state.appleMusicCurrentSongId
@@ -2327,6 +2377,7 @@ export const useIpodStore = create<IpodState>()(
           const isSameTrack = prevSongId === state.appleMusicCurrentSongId;
           return {
             appleMusicCurrentSongId: prevSongId,
+            appleMusicPlaybackHistory: newPlaybackHistory,
             currentLyrics: isSameTrack ? state.currentLyrics : null,
             currentFuriganaMap: isSameTrack ? state.currentFuriganaMap : null,
             isPlaying: true,
@@ -2587,6 +2638,7 @@ if (import.meta.hot) {
       appleMusicFavoritesLoading: false,
       appleMusicCurrentSongId: s.appleMusicCurrentSongId,
       appleMusicPlaybackQueue: s.appleMusicPlaybackQueue,
+      appleMusicPlaybackHistory: s.appleMusicPlaybackHistory,
       appleMusicLibraryLoadedAt: s.appleMusicLibraryLoadedAt,
       appleMusicLibraryError: s.appleMusicLibraryError,
       appleMusicStorefrontId: s.appleMusicStorefrontId,
