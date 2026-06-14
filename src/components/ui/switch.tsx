@@ -1,5 +1,5 @@
 import * as React from "react";
-import * as SwitchPrimitives from "@radix-ui/react-switch";
+import { Switch as SwitchPrimitives } from "@base-ui/react/switch";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 
@@ -50,6 +50,12 @@ const Switch = (
       )}
       style={switchStyle}
       onCheckedChange={handleCheckedChange}
+      render={(rootProps, state) => (
+        <span
+          {...rootProps}
+          data-state={state.checked ? "checked" : "unchecked"}
+        />
+      )}
       {...props}
       ref={ref}
     >
@@ -57,9 +63,15 @@ const Switch = (
         className={cn(
           "os-switch-thumb pointer-events-none block h-[14px] w-[14px] rounded-full bg-white transition-transform will-change-transform",
           // macOSX needs a slight negative offset when unchecked to appear visually centered inside bordered track
-          isMacOSTheme && "data-[state=unchecked]:translate-x-[-2px]",
+          isMacOSTheme && "data-[unchecked]:translate-x-[-2px] data-[state=unchecked]:translate-x-[-2px]",
           // Translate by fixed distance when checked (Tailwind requires static class name)
-          "data-[state=checked]:translate-x-[10px]"
+          "data-[checked]:translate-x-[10px] data-[state=checked]:translate-x-[10px]"
+        )}
+        render={(thumbProps, state) => (
+          <span
+            {...thumbProps}
+            data-state={state.checked ? "checked" : "unchecked"}
+          />
         )}
       />
     </SwitchPrimitives.Root>
