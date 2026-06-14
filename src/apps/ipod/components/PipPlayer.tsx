@@ -28,9 +28,9 @@ export function PipPlayer({
   const isPhone = useIsPhone();
 
   // Calculate bottom offset based on theme (similar to Sonner positioning).
-  // The Aqua glass dock sits ~20px higher than the classic dock (12px lift +
-  // 8px taller bar), so add extra clearance to keep the same gap above it.
-  const macOSBottom = isAquaGlass ? "92px" : "72px";
+  // The Aqua glass dock sits a bit higher than the classic dock (6px lift +
+  // 8px taller bar), so add a little extra clearance to clear it.
+  const macOSBottom = isAquaGlass ? "82px" : "72px";
   const bottomOffset = isWinFamily
     ? "calc(env(safe-area-inset-bottom, 0px) + 42px)"
     : isMacOSX
