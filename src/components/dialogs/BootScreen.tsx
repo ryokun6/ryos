@@ -1,10 +1,13 @@
 import { useEffect, useReducer } from "react";
+import type { ReactNode } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useTranslation } from "react-i18next";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
+
+const VisuallyHidden = ({ children }: { children: ReactNode }) => (
+  <span className="sr-only">{children}</span>
+);
 
 interface BootScreenProps {
   isOpen: boolean;
@@ -122,35 +125,24 @@ export function BootScreen({
   if (isWindowsTheme) {
     return (
       <Dialog open={isOpen} onOpenChange={() => {}} modal>
-        <DialogPrimitive.Portal>
-          <DialogPrimitive.Overlay
-            className="fixed inset-0 z-[75] bg-black data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
-            style={{ 
-              position: "fixed", 
-              top: 0, 
-              left: 0, 
-              right: 0, 
-              bottom: 0,
-              backgroundColor: "#000000"
-            }}
-          />
-          <DialogPrimitive.Content
-            className="fixed inset-0 z-[80] bg-black p-0 size-full max-w-none border-none shadow-none outline-none rounded-none m-0"
-            style={{ 
-              position: "fixed",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: "#000000",
-              zIndex: 80,
-              margin: 0,
-              padding: 0,
-              border: "none",
-              boxShadow: "none",
-              borderRadius: 0
-            }}
-          >
+        <DialogContent
+          overlayClassName="fixed inset-0 z-[75] bg-black"
+          className="fixed inset-0 z-[80] bg-black p-0 size-full max-w-none border-none shadow-none outline-none rounded-none m-0 translate-x-0 translate-y-0 left-0 top-0"
+          style={{ 
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "#000000",
+            zIndex: 80,
+            margin: 0,
+            padding: 0,
+            border: "none",
+            boxShadow: "none",
+            borderRadius: 0
+          }}
+        >
             <VisuallyHidden>
               <DialogTitle>{localizedTitle}</DialogTitle>
             </VisuallyHidden>
@@ -171,8 +163,7 @@ export function BootScreen({
                 style={{ display: "block" }}
               />
             </div>
-          </DialogPrimitive.Content>
-        </DialogPrimitive.Portal>
+        </DialogContent>
       </Dialog>
     );
   }
@@ -181,19 +172,8 @@ export function BootScreen({
   if (isMacOSX) {
     return (
       <Dialog open={isOpen} onOpenChange={() => {}} modal>
-        <DialogPrimitive.Portal>
-          <DialogPrimitive.Overlay
-            className="fixed inset-0 z-[75] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
-            style={{ 
-              position: "fixed", 
-              top: 0, 
-              left: 0, 
-              right: 0, 
-              bottom: 0,
-              backgroundColor: "var(--os-accent-boot-bg, #4566a0)"
-            }}
-          />
           <DialogContent
+            overlayClassName="fixed inset-0 z-[75] bg-[var(--os-accent-boot-bg,#4566a0)]"
             className="p-0 w-[calc(100%-24px)] border-none shadow-xl max-w-lg z-[80] outline-none macosx-dialog rounded-none"
             style={{ 
               position: "fixed", 
@@ -251,7 +231,6 @@ export function BootScreen({
               </p>
             </div>
           </DialogContent>
-        </DialogPrimitive.Portal>
       </Dialog>
     );
   }
@@ -259,12 +238,8 @@ export function BootScreen({
   // System 7 boot screen
   return (
     <Dialog open={isOpen} onOpenChange={() => {}} modal>
-      <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay
-          className="fixed inset-0 z-[75] bg-neutral-500/90 backdrop-blur-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
-          style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0 }}
-        />
         <DialogContent
+          overlayClassName="fixed inset-0 z-[75] bg-neutral-500/90 backdrop-blur-lg"
           className="bg-neutral-100 p-0 w-[calc(100%-24px)] border-none shadow-xl max-w-lg z-[80] outline-none rounded-none"
           style={{ position: "fixed", zIndex: 80 }}
         >
@@ -298,7 +273,6 @@ export function BootScreen({
             </div>
           </div>
         </DialogContent>
-      </DialogPrimitive.Portal>
     </Dialog>
   );
 }

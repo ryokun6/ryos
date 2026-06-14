@@ -1,5 +1,5 @@
 import * as React from "react";
-import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
+import { Menu as DropdownMenuPrimitive } from "@base-ui/react/menu";
 import { Check, CaretRight, Circle } from "@phosphor-icons/react";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
@@ -11,20 +11,20 @@ const DropdownMenu = ({
   children,
   onOpenChange,
   ...props
-}: DropdownMenuPrimitive.DropdownMenuProps) => {
+}: React.ComponentProps<typeof DropdownMenuPrimitive.Root>) => {
   const { play: playMenuOpen } = useSound(Sounds.MENU_OPEN);
   const { play: playMenuClose } = useSound(Sounds.MENU_CLOSE);
 
   return (
     <DropdownMenuPrimitive.Root
       {...props}
-      onOpenChange={(open) => {
+      onOpenChange={(open, eventDetails) => {
         if (open) {
           playMenuOpen();
         } else {
           playMenuClose();
         }
-        onOpenChange?.(open);
+        onOpenChange?.(open, eventDetails);
       }}
     >
       {children}
@@ -38,8 +38,11 @@ const DropdownMenuTrigger = (
     ref,
     className,
     style,
+    asChild = false,
+    children,
     ...props
   }: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Trigger> & {
+    asChild?: boolean;
     ref?: React.Ref<React.ElementRef<typeof DropdownMenuPrimitive.Trigger>>;
   }
 ) => {
@@ -56,8 +59,11 @@ const DropdownMenuTrigger = (
       ref={ref}
       className={className}
       style={{ ...macosTextShadow, ...style }}
+      render={asChild && React.isValidElement(children) ? children : undefined}
       {...props}
-    />
+    >
+      {asChild ? null : children}
+    </DropdownMenuPrimitive.Trigger>
   );
 };
 DropdownMenuTrigger.displayName = DropdownMenuPrimitive.Trigger.displayName;
@@ -66,7 +72,7 @@ const DropdownMenuGroup = DropdownMenuPrimitive.Group;
 
 const DropdownMenuPortal = DropdownMenuPrimitive.Portal;
 
-const DropdownMenuSub = DropdownMenuPrimitive.Sub;
+const DropdownMenuSub = DropdownMenuPrimitive.SubmenuRoot;
 
 const DropdownMenuRadioGroup = DropdownMenuPrimitive.RadioGroup;
 
@@ -77,18 +83,18 @@ const DropdownMenuSubTrigger = (
     inset,
     children,
     ...props
-  }: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubTrigger> & {
+  }: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubmenuTrigger> & {
     inset?: boolean;
-    ref?: React.Ref<React.ElementRef<typeof DropdownMenuPrimitive.SubTrigger>>;
+    ref?: React.Ref<React.ElementRef<typeof DropdownMenuPrimitive.SubmenuTrigger>>;
   }
 ) => {
   const { isWindowsTheme, isMacOSTheme } = useThemeFlags();
 
   return (
-    <DropdownMenuPrimitive.SubTrigger
+    <DropdownMenuPrimitive.SubmenuTrigger
       ref={ref}
       className={cn(
-        "flex cursor-default gap-2 select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent data-[state=open]:bg-accent [&_svg]:pointer-events-none [&_svg]:shrink-0",
+        "flex cursor-default gap-2 select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent data-[open]:bg-accent data-[state=open]:bg-accent [&_svg]:pointer-events-none [&_svg]:shrink-0",
         inset && "pl-8",
         className
       )}
@@ -109,15 +115,21 @@ const DropdownMenuSubTrigger = (
           textShadow: "0 2px 3px rgba(0, 0, 0, 0.25)",
         }),
       }}
+      render={(triggerProps, state) => (
+        <div
+          {...triggerProps}
+          data-state={state.open ? "open" : "closed"}
+        />
+      )}
       {...props}
     >
       {children}
       <CaretRight className="ml-auto" size={12} weight="bold" />
-    </DropdownMenuPrimitive.SubTrigger>
+    </DropdownMenuPrimitive.SubmenuTrigger>
   );
 };
 DropdownMenuSubTrigger.displayName =
-  DropdownMenuPrimitive.SubTrigger.displayName;
+  DropdownMenuPrimitive.SubmenuTrigger.displayName;
 
 const DropdownMenuSubContent = (
   {
@@ -125,8 +137,8 @@ const DropdownMenuSubContent = (
     className,
     style,
     ...props
-  }: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubContent> & {
-    ref?: React.Ref<React.ElementRef<typeof DropdownMenuPrimitive.SubContent>>;
+  }: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Popup> & {
+    ref?: React.Ref<React.ElementRef<typeof DropdownMenuPrimitive.Popup>>;
   }
 ) => {
   const { isMacOSTheme, isAquaGlass } = useThemeFlags();
@@ -134,50 +146,68 @@ const DropdownMenuSubContent = (
 
   return (
     <DropdownMenuPrimitive.Portal>
-      <DropdownMenuPrimitive.SubContent
-        ref={ref}
-        className={cn(
-          // Use z-[10004] to ensure dropdown submenu content appears above menu content
-          // origin-[…]: scale from the trigger side instead of the element center.
-          // fill-mode-forwards: hold the exit end-state until Radix unmounts —
-          // without it Safari can paint one unanimated frame (visible jitter).
-          "z-[10004] min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-lg origin-[var(--radix-dropdown-menu-content-transform-origin)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fill-mode-forwards data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
-          className
-        )}
-        style={{
-          ...(isMacOSTheme && {
-            border: "none",
-            borderRadius: "0px",
-            background: "var(--os-pinstripe-window)",
-            // Aqua Glass gets its translucency from the frosted background in
-            // themes.css; an inline opacity would block the open/close fade.
-            ...(isAquaGlass ? {} : { opacity: "0.92" }),
-            boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
-            padding: "4px 0px",
-            ...(isMobile ? {} : { minWidth: "180px" }),
-          }),
-          ...(isMobile && { minWidth: "unset" }),
-          ...style,
-        }}
-        {...props}
-      />
+      <DropdownMenuPrimitive.Positioner data-radix-popper-content-wrapper="">
+        <DropdownMenuPrimitive.Popup
+          ref={ref}
+          data-ryos-popper-content=""
+          data-radix-menu-content=""
+          className={cn(
+            // Use z-[10004] to ensure dropdown submenu content appears above menu content
+            // origin-[…]: scale from the trigger side instead of the element center.
+            "z-[10004] min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-lg origin-[var(--transform-origin)] data-[open]:animate-in data-[closed]:animate-out data-[closed]:fill-mode-forwards data-[closed]:fade-out-0 data-[open]:fade-in-0 data-[closed]:zoom-out-95 data-[open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fill-mode-forwards data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+            className
+          )}
+          style={{
+            ...(isMacOSTheme && {
+              border: "none",
+              borderRadius: "0px",
+              background: "var(--os-pinstripe-window)",
+              // Aqua Glass gets its translucency from the frosted background in
+              // themes.css; an inline opacity would block the open/close fade.
+              ...(isAquaGlass ? {} : { opacity: "0.92" }),
+              boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
+              padding: "4px 0px",
+              ...(isMobile ? {} : { minWidth: "180px" }),
+            }),
+            ...(isMobile && { minWidth: "unset" }),
+            ...style,
+          }}
+          render={(popupProps, state) => (
+            <div
+              {...popupProps}
+              data-state={state.open ? "open" : "closed"}
+            />
+          )}
+          {...props}
+        />
+      </DropdownMenuPrimitive.Positioner>
     </DropdownMenuPrimitive.Portal>
   );
 };
 DropdownMenuSubContent.displayName =
-  DropdownMenuPrimitive.SubContent.displayName;
+  DropdownMenuPrimitive.Popup.displayName;
 
 const DropdownMenuContent = (
   {
     ref,
     className,
     sideOffset = 4,
+    align,
+    alignOffset,
+    side,
+    collisionPadding,
     style,
     container,
+    onCloseAutoFocus: _onCloseAutoFocus,
     ...props
-  }: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content> & {
+  }: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Popup> &
+    Pick<
+      React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Positioner>,
+      "align" | "alignOffset" | "collisionPadding" | "side" | "sideOffset"
+    > & {
     container?: HTMLElement | null;
-    ref?: React.Ref<React.ElementRef<typeof DropdownMenuPrimitive.Content>>;
+    onCloseAutoFocus?: (event: { preventDefault: () => void }) => void;
+    ref?: React.Ref<React.ElementRef<typeof DropdownMenuPrimitive.Popup>>;
   }
 ) => {
   const { isMacOSTheme, isAquaGlass } = useThemeFlags();
@@ -185,49 +215,66 @@ const DropdownMenuContent = (
 
   return (
     <DropdownMenuPrimitive.Portal container={container}>
-      <DropdownMenuPrimitive.Content
-        ref={ref}
+      <DropdownMenuPrimitive.Positioner
         sideOffset={sideOffset}
-        className={cn(
-          // Use z-[10003] to ensure dropdown content appears above the menubar (z-[10002])
-          // This is critical for Safari where backdrop-filter creates new stacking contexts
-          "z-[10003] min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md",
-          // origin-[…]: scale from the trigger side instead of the element center.
-          // fill-mode-forwards: hold the exit end-state until Radix unmounts —
-          // without it Safari can paint one unanimated frame (visible jitter).
-          "origin-[var(--radix-dropdown-menu-content-transform-origin)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fill-mode-forwards data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
-          className
-        )}
-        style={{
-          ...(isMacOSTheme && {
-            border: "none",
-            borderRadius: "0px",
-            background: "var(--os-pinstripe-window)",
-            // Aqua Glass gets its translucency from the frosted background in
-            // themes.css; an inline opacity would block the open/close fade.
-            ...(isAquaGlass ? {} : { opacity: "0.92" }),
-            boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
-            padding: "4px 0px",
-            ...(isMobile ? {} : { minWidth: style?.minWidth ?? "180px" }),
-          }),
-          ...(isMobile && { minWidth: "unset" }),
-          ...style,
-        }}
-        {...props}
-      />
+        align={align}
+        alignOffset={alignOffset}
+        side={side}
+        collisionPadding={collisionPadding}
+        data-radix-popper-content-wrapper=""
+      >
+        <DropdownMenuPrimitive.Popup
+          ref={ref}
+          data-ryos-popper-content=""
+          data-radix-menu-content=""
+          className={cn(
+            // Use z-[10003] to ensure dropdown content appears above the menubar (z-[10002])
+            // This is critical for Safari where backdrop-filter creates new stacking contexts
+            "z-[10003] min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md",
+            // origin-[…]: scale from the trigger side instead of the element center.
+            "origin-[var(--transform-origin)] data-[open]:animate-in data-[closed]:animate-out data-[closed]:fill-mode-forwards data-[closed]:fade-out-0 data-[open]:fade-in-0 data-[closed]:zoom-out-95 data-[open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fill-mode-forwards data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+            className
+          )}
+          style={{
+            ...(isMacOSTheme && {
+              border: "none",
+              borderRadius: "0px",
+              background: "var(--os-pinstripe-window)",
+              // Aqua Glass gets its translucency from the frosted background in
+              // themes.css; an inline opacity would block the open/close fade.
+              ...(isAquaGlass ? {} : { opacity: "0.92" }),
+              boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
+              padding: "4px 0px",
+              ...(isMobile ? {} : { minWidth: style?.minWidth ?? "180px" }),
+            }),
+            ...(isMobile && { minWidth: "unset" }),
+            ...style,
+          }}
+          render={(popupProps, state) => (
+            <div
+              {...popupProps}
+              data-state={state.open ? "open" : "closed"}
+            />
+          )}
+          {...props}
+        />
+      </DropdownMenuPrimitive.Positioner>
     </DropdownMenuPrimitive.Portal>
   );
 };
-DropdownMenuContent.displayName = DropdownMenuPrimitive.Content.displayName;
+DropdownMenuContent.displayName = DropdownMenuPrimitive.Popup.displayName;
 
 const DropdownMenuItem = (
   {
     ref,
     className,
     inset,
+    onSelect,
+    onClick,
     ...props
   }: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item> & {
     inset?: boolean;
+    onSelect?: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item>["onClick"];
     ref?: React.Ref<React.ElementRef<typeof DropdownMenuPrimitive.Item>>;
   }
 ) => {
@@ -259,6 +306,10 @@ const DropdownMenuItem = (
           textShadow: "0 2px 3px rgba(0, 0, 0, 0.25)",
         }),
       }}
+      onClick={(event) => {
+        onSelect?.(event);
+        onClick?.(event);
+      }}
       {...props}
     />
   );
@@ -271,8 +322,11 @@ const DropdownMenuCheckboxItem = (
     className,
     children,
     checked,
+    onSelect,
+    onClick,
     ...props
   }: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.CheckboxItem> & {
+    onSelect?: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.CheckboxItem>["onClick"];
     ref?: React.Ref<React.ElementRef<typeof DropdownMenuPrimitive.CheckboxItem>>;
   }
 ) => {
@@ -317,12 +371,22 @@ const DropdownMenuCheckboxItem = (
         }),
       }}
       checked={checked}
+      onClick={(event) => {
+        onSelect?.(event);
+        onClick?.(event);
+      }}
+      render={(itemProps, state) => (
+        <div
+          {...itemProps}
+          data-state={state.checked ? "checked" : "unchecked"}
+        />
+      )}
       {...props}
     >
       <span className="absolute left-3 flex size-3.5 items-center justify-center">
-        <DropdownMenuPrimitive.ItemIndicator>
+        <DropdownMenuPrimitive.CheckboxItemIndicator>
           <Check size={12} weight="bold" />
-        </DropdownMenuPrimitive.ItemIndicator>
+        </DropdownMenuPrimitive.CheckboxItemIndicator>
       </span>
       {children}
     </DropdownMenuPrimitive.CheckboxItem>
@@ -336,8 +400,11 @@ const DropdownMenuRadioItem = (
     ref,
     className,
     children,
+    onSelect,
+    onClick,
     ...props
   }: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.RadioItem> & {
+    onSelect?: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.RadioItem>["onClick"];
     ref?: React.Ref<React.ElementRef<typeof DropdownMenuPrimitive.RadioItem>>;
   }
 ) => {
@@ -355,12 +422,22 @@ const DropdownMenuRadioItem = (
           isWindowsTheme || isMacOSTheme ? "var(--os-font-ui)" : undefined,
         fontSize: isWindowsTheme ? "var(--os-menu-item-font-size)" : undefined,
       }}
+      onClick={(event) => {
+        onSelect?.(event);
+        onClick?.(event);
+      }}
+      render={(itemProps, state) => (
+        <div
+          {...itemProps}
+          data-state={state.checked ? "checked" : "unchecked"}
+        />
+      )}
       {...props}
     >
       <span className="absolute left-2 flex size-3.5 items-center justify-center">
-        <DropdownMenuPrimitive.ItemIndicator>
+        <DropdownMenuPrimitive.RadioItemIndicator>
           <Circle size={8} weight="fill" />
-        </DropdownMenuPrimitive.ItemIndicator>
+        </DropdownMenuPrimitive.RadioItemIndicator>
       </span>
       {children}
     </DropdownMenuPrimitive.RadioItem>
@@ -374,15 +451,15 @@ const DropdownMenuLabel = (
     className,
     inset,
     ...props
-  }: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Label> & {
+  }: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.GroupLabel> & {
     inset?: boolean;
-    ref?: React.Ref<React.ElementRef<typeof DropdownMenuPrimitive.Label>>;
+    ref?: React.Ref<React.ElementRef<typeof DropdownMenuPrimitive.GroupLabel>>;
   }
 ) => {
   const { isWindowsTheme, isMacOSTheme } = useThemeFlags();
 
   return (
-    <DropdownMenuPrimitive.Label
+    <DropdownMenuPrimitive.GroupLabel
       ref={ref}
       className={cn(
         "px-2 py-1.5 text-sm font-semibold",
@@ -398,7 +475,7 @@ const DropdownMenuLabel = (
     />
   );
 };
-DropdownMenuLabel.displayName = DropdownMenuPrimitive.Label.displayName;
+DropdownMenuLabel.displayName = DropdownMenuPrimitive.GroupLabel.displayName;
 
 const DropdownMenuSeparator = (
   {

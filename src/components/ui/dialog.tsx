@@ -1,5 +1,5 @@
 import * as React from "react";
-import * as DialogPrimitive from "@radix-ui/react-dialog";
+import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { OS_SHELL_TEXT_SCALE_CLASS } from "@/lib/themeChrome";
@@ -8,14 +8,39 @@ import { useVibration } from "@/hooks/useVibration";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { TrafficLightButton } from "@/components/shared/TrafficLightButton";
 
+type PreventableCompatibilityEvent = {
+  preventDefault: () => void;
+  defaultPrevented: boolean;
+};
+
+const createPreventableCompatibilityEvent = (): PreventableCompatibilityEvent => {
+  const event = {
+    defaultPrevented: false,
+    preventDefault: () => {
+      event.defaultPrevented = true;
+    },
+  };
+  return event;
+};
+
+type DialogCompatibilityHandlers = {
+  onEscapeKeyDown?: (event: PreventableCompatibilityEvent) => void;
+  onPointerDownOutside?: (event: PreventableCompatibilityEvent) => void;
+};
+
+const DialogCompatibilityContext = React.createContext<{
+  handlersRef: React.MutableRefObject<DialogCompatibilityHandlers>;
+} | null>(null);
+
 const Dialog = ({
   children,
   onOpenChange,
   ...props
-}: DialogPrimitive.DialogProps) => {
+}: React.ComponentProps<typeof DialogPrimitive.Root>) => {
   const { play: playWindowOpen } = useSound(Sounds.WINDOW_OPEN);
   const { play: playWindowClose } = useSound(Sounds.WINDOW_CLOSE);
   const vibrateClose = useVibration(50, 50);
+  const handlersRef = React.useRef<DialogCompatibilityHandlers>({});
 
   // Flag to prevent double-playing the open sound when `onOpenChange`
   // also triggers after programmatically opening the dialog
@@ -32,32 +57,82 @@ const Dialog = ({
   }, [props.open, playWindowOpen]);
 
   return (
-    <DialogPrimitive.Root
-      {...props}
-      onOpenChange={(open) => {
-        if (open) {
-          playWindowOpen();
-          // Prevent the effect from replaying the sound for this change
-          skipOpenEffectRef.current = true;
-        } else {
-          vibrateClose();
-          playWindowClose();
-        }
-        onOpenChange?.(open);
-      }}
-    >
-      {children}
-    </DialogPrimitive.Root>
+    <DialogCompatibilityContext.Provider value={{ handlersRef }}>
+      <DialogPrimitive.Root
+        {...props}
+        onOpenChange={(open, eventDetails) => {
+          if (!open) {
+            const handler =
+              eventDetails.reason === "escape-key"
+                ? handlersRef.current.onEscapeKeyDown
+                : eventDetails.reason === "outside-press"
+                ? handlersRef.current.onPointerDownOutside
+                : undefined;
+
+            if (handler) {
+              const compatibilityEvent = createPreventableCompatibilityEvent();
+              handler(compatibilityEvent);
+              if (compatibilityEvent.defaultPrevented) {
+                eventDetails.cancel();
+                return;
+              }
+            }
+          }
+
+          if (open) {
+            playWindowOpen();
+            // Prevent the effect from replaying the sound for this change
+            skipOpenEffectRef.current = true;
+          } else {
+            vibrateClose();
+            playWindowClose();
+          }
+          onOpenChange?.(open, eventDetails);
+        }}
+      >
+        {children}
+      </DialogPrimitive.Root>
+    </DialogCompatibilityContext.Provider>
   );
 };
 Dialog.displayName = DialogPrimitive.Root.displayName;
-const DialogTrigger = DialogPrimitive.Trigger;
+const DialogTrigger = ({
+  asChild = false,
+  children,
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Trigger> & {
+  asChild?: boolean;
+}) => (
+  <DialogPrimitive.Trigger
+    render={asChild && React.isValidElement(children) ? children : undefined}
+    {...props}
+  >
+    {asChild ? null : children}
+  </DialogPrimitive.Trigger>
+);
 const DialogPortal = DialogPrimitive.Portal;
-const DialogClose = DialogPrimitive.Close;
+const DialogClose = ({
+  asChild = false,
+  children,
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Close> & {
+  asChild?: boolean;
+}) => (
+  <DialogPrimitive.Close
+    render={asChild && React.isValidElement(children) ? children : undefined}
+    {...props}
+  >
+    {asChild ? null : children}
+  </DialogPrimitive.Close>
+);
 
 interface DialogContentProps
-  extends React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> {
+  extends React.ComponentPropsWithoutRef<typeof DialogPrimitive.Popup> {
   overlayClassName?: string;
+  onOpenAutoFocus?: (event: PreventableCompatibilityEvent) => void;
+  onCloseAutoFocus?: (event: PreventableCompatibilityEvent) => void;
+  onEscapeKeyDown?: (event: PreventableCompatibilityEvent) => void;
+  onPointerDownOutside?: (event: PreventableCompatibilityEvent) => void;
 }
 
 const DialogContent = (
@@ -66,12 +141,17 @@ const DialogContent = (
     className,
     children,
     overlayClassName,
+    onOpenAutoFocus,
+    onCloseAutoFocus,
+    onEscapeKeyDown,
+    onPointerDownOutside,
     ...props
   }: DialogContentProps & {
-    ref?: React.Ref<React.ElementRef<typeof DialogPrimitive.Content>>;
+    ref?: React.Ref<React.ElementRef<typeof DialogPrimitive.Popup>>;
   }
 ) => {
   const { isXpTheme, isMacOSTheme, isSystem7Theme } = useThemeFlags();
+  const compatibilityContext = React.use(DialogCompatibilityContext);
 
   // Function to clean up pointer-events
   const cleanupPointerEvents = React.useCallback(() => {
@@ -85,6 +165,19 @@ const DialogContent = (
   React.useEffect(() => {
     return () => cleanupPointerEvents();
   }, [cleanupPointerEvents]);
+
+  React.useEffect(() => {
+    if (!compatibilityContext) return;
+
+    compatibilityContext.handlersRef.current.onEscapeKeyDown = onEscapeKeyDown;
+    compatibilityContext.handlersRef.current.onPointerDownOutside =
+      onPointerDownOutside;
+
+    return () => {
+      compatibilityContext.handlersRef.current.onEscapeKeyDown = undefined;
+      compatibilityContext.handlersRef.current.onPointerDownOutside = undefined;
+    };
+  }, [compatibilityContext, onEscapeKeyDown, onPointerDownOutside]);
 
   const getDialogContentClasses = () => {
     if (isXpTheme) {
@@ -114,13 +207,42 @@ const DialogContent = (
 
   return (
     <DialogPortal>
-      <DialogPrimitive.Overlay className={cn("fixed inset-0 z-50 bg-black/30 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0", overlayClassName)} />
-      <DialogPrimitive.Content
+      <DialogPrimitive.Backdrop
+        className={cn(
+          "fixed inset-0 z-50 bg-black/30 data-[open]:animate-in data-[closed]:animate-out data-[closed]:fade-out-0 data-[open]:fade-in-0 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+          overlayClassName
+        )}
+        render={(backdropProps, state) => (
+          <div
+            {...backdropProps}
+            data-state={state.open ? "open" : "closed"}
+          />
+        )}
+      />
+      <DialogPrimitive.Popup
         ref={ref}
         className={getDialogContentClasses()}
-        onEscapeKeyDown={cleanupPointerEvents}
-        onPointerDownOutside={cleanupPointerEvents}
-        onCloseAutoFocus={cleanupPointerEvents}
+        initialFocus={() => {
+          if (!onOpenAutoFocus) return true;
+
+          const event = createPreventableCompatibilityEvent();
+          onOpenAutoFocus(event);
+          return event.defaultPrevented ? false : true;
+        }}
+        finalFocus={() => {
+          cleanupPointerEvents();
+          if (!onCloseAutoFocus) return true;
+
+          const event = createPreventableCompatibilityEvent();
+          onCloseAutoFocus(event);
+          return event.defaultPrevented ? false : true;
+        }}
+        render={(popupProps, state) => (
+          <div
+            {...popupProps}
+            data-state={state.open ? "open" : "closed"}
+          />
+        )}
         {...props}
       >
         <div
@@ -141,11 +263,11 @@ const DialogContent = (
         >
           {children}
         </div>
-      </DialogPrimitive.Content>
+      </DialogPrimitive.Popup>
     </DialogPortal>
   );
 };
-DialogContent.displayName = DialogPrimitive.Content.displayName;
+DialogContent.displayName = DialogPrimitive.Popup.displayName;
 
 const DialogHeader = ({
   className,

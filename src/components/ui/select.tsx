@@ -1,25 +1,29 @@
 import * as React from "react";
-import * as SelectPrimitive from "@radix-ui/react-select";
+import { Select as SelectPrimitive } from "@base-ui/react/select";
 import { Check, CaretDown, CaretUp } from "@phosphor-icons/react";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 
 import { cn } from "@/lib/utils";
 
-const Select = ({ children, onOpenChange, ...props }: SelectPrimitive.SelectProps) => {
+const Select = ({
+  children,
+  onOpenChange,
+  ...props
+}: React.ComponentProps<typeof SelectPrimitive.Root>) => {
   const { play: playMenuOpen } = useSound(Sounds.MENU_OPEN);
   const { play: playMenuClose } = useSound(Sounds.MENU_CLOSE);
 
   return (
     <SelectPrimitive.Root
       {...props}
-      onOpenChange={(open) => {
+      onOpenChange={(open, eventDetails) => {
         if (open) {
           playMenuOpen();
         } else {
           playMenuClose();
         }
-        onOpenChange?.(open);
+        onOpenChange?.(open, eventDetails);
       }}
     >
       {children}
@@ -60,11 +64,19 @@ const SelectTrigger = (
         ...(isXpTheme && { color: "black" }),
       }}
       onClick={() => playClick()}
+      render={(triggerProps, state) => (
+        <button
+          {...triggerProps}
+          data-state={state.open ? "open" : "closed"}
+        />
+      )}
       {...props}
     >
       {children}
       {!isMacOSTheme && (
-        <SelectPrimitive.Icon asChild>
+        <SelectPrimitive.Icon
+          render={<span />}
+        >
           <CaretDown size={12} className="opacity-50" weight="bold" />
         </SelectPrimitive.Icon>
       )}
@@ -78,10 +90,10 @@ const SelectScrollUpButton = (
     ref,
     className,
     ...props
-  }: React.ComponentPropsWithoutRef<typeof SelectPrimitive.ScrollUpButton> & {
-    ref?: React.Ref<React.ElementRef<typeof SelectPrimitive.ScrollUpButton>>;
+  }: React.ComponentPropsWithoutRef<typeof SelectPrimitive.ScrollUpArrow> & {
+    ref?: React.Ref<React.ElementRef<typeof SelectPrimitive.ScrollUpArrow>>;
   }
-) => (<SelectPrimitive.ScrollUpButton
+) => (<SelectPrimitive.ScrollUpArrow
   ref={ref}
   className={cn(
     "flex cursor-default items-center justify-center py-1",
@@ -90,18 +102,18 @@ const SelectScrollUpButton = (
   {...props}
 >
   <CaretUp size={12} weight="bold" />
-</SelectPrimitive.ScrollUpButton>);
-SelectScrollUpButton.displayName = SelectPrimitive.ScrollUpButton.displayName;
+</SelectPrimitive.ScrollUpArrow>);
+SelectScrollUpButton.displayName = SelectPrimitive.ScrollUpArrow.displayName;
 
 const SelectScrollDownButton = (
   {
     ref,
     className,
     ...props
-  }: React.ComponentPropsWithoutRef<typeof SelectPrimitive.ScrollDownButton> & {
-    ref?: React.Ref<React.ElementRef<typeof SelectPrimitive.ScrollDownButton>>;
+  }: React.ComponentPropsWithoutRef<typeof SelectPrimitive.ScrollDownArrow> & {
+    ref?: React.Ref<React.ElementRef<typeof SelectPrimitive.ScrollDownArrow>>;
   }
-) => (<SelectPrimitive.ScrollDownButton
+) => (<SelectPrimitive.ScrollDownArrow
   ref={ref}
   className={cn(
     "flex cursor-default items-center justify-center py-1",
@@ -110,9 +122,9 @@ const SelectScrollDownButton = (
   {...props}
 >
   <CaretDown size={12} weight="bold" />
-</SelectPrimitive.ScrollDownButton>);
+</SelectPrimitive.ScrollDownArrow>);
 SelectScrollDownButton.displayName =
-  SelectPrimitive.ScrollDownButton.displayName;
+  SelectPrimitive.ScrollDownArrow.displayName;
 
 const SelectContent = (
   {
@@ -120,81 +132,113 @@ const SelectContent = (
     className,
     children,
     position = "popper",
+    align,
+    alignOffset,
+    collisionPadding,
+    side,
+    sideOffset,
     ...props
-  }: React.ComponentPropsWithoutRef<typeof SelectPrimitive.Content> & {
-    ref?: React.Ref<React.ElementRef<typeof SelectPrimitive.Content>>;
+  }: React.ComponentPropsWithoutRef<typeof SelectPrimitive.Popup> &
+    Pick<
+      React.ComponentPropsWithoutRef<typeof SelectPrimitive.Positioner>,
+      "align" | "alignOffset" | "collisionPadding" | "side" | "sideOffset"
+    > & {
+    position?: "popper" | "item-aligned";
+    ref?: React.Ref<React.ElementRef<typeof SelectPrimitive.Popup>>;
   }
 ) => {
   const { isMacOSTheme, isAquaGlass } = useThemeFlags();
 
   return (
     <SelectPrimitive.Portal>
-      <SelectPrimitive.Content
-        ref={ref}
-        className={cn(
-          // origin-[…]: scale from the trigger side instead of the element center.
-          // fill-mode-forwards: hold the exit end-state until Radix unmounts —
-          // without it Safari can paint one unanimated frame (visible jitter).
-          "relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md origin-[var(--radix-select-content-transform-origin)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fill-mode-forwards data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
-          position === "popper" &&
-            "data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1",
-          className
-        )}
-        style={{
-          ...(isMacOSTheme && {
-            border: "none",
-            borderRadius: "0px",
-            background: "var(--os-pinstripe-window)",
-            // Aqua Glass gets its translucency from the frosted background in
-            // themes.css; an inline opacity would block the open/close fade.
-            ...(isAquaGlass ? {} : { opacity: "0.92" }),
-            boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
-            padding: "4px 0px",
-          }),
-        }}
-        position={position}
-        {...props}
+      <SelectPrimitive.Positioner
+        sideOffset={position === "popper" ? sideOffset ?? 4 : sideOffset}
+        side={side}
+        align={align}
+        alignOffset={alignOffset}
+        collisionPadding={collisionPadding}
+        alignItemWithTrigger={position !== "popper"}
       >
-        <SelectScrollUpButton />
-        <SelectPrimitive.Viewport
+        <SelectPrimitive.Popup
+          ref={ref}
+          data-ryos-popper-content=""
+          data-radix-select-content=""
           className={cn(
-            "p-1",
+            // origin-[…]: scale from the trigger side instead of the element center.
+            "relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md origin-[var(--transform-origin)] data-[open]:animate-in data-[closed]:animate-out data-[closed]:fill-mode-forwards data-[closed]:fade-out-0 data-[open]:fade-in-0 data-[closed]:zoom-out-95 data-[open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fill-mode-forwards data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
             position === "popper" &&
-              "h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]",
-            isMacOSTheme && "p-0"
+              "data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1",
+            className
           )}
+          style={{
+            ...(isMacOSTheme && {
+              border: "none",
+              borderRadius: "0px",
+              background: "var(--os-pinstripe-window)",
+              // Aqua Glass gets its translucency from the frosted background in
+              // themes.css; an inline opacity would block the open/close fade.
+              ...(isAquaGlass ? {} : { opacity: "0.92" }),
+              boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
+              padding: "4px 0px",
+            }),
+          }}
+          render={(popupProps, state) => (
+            <div
+              {...popupProps}
+              data-state={state.open ? "open" : "closed"}
+            />
+          )}
+          {...props}
         >
-          {children}
-        </SelectPrimitive.Viewport>
-        <SelectScrollDownButton />
-      </SelectPrimitive.Content>
+          <SelectScrollUpButton />
+          <SelectPrimitive.List
+            className={cn(
+              "p-1",
+              position === "popper" &&
+                "w-full min-w-[var(--anchor-width)]",
+              isMacOSTheme && "p-0"
+            )}
+          >
+            {children}
+          </SelectPrimitive.List>
+          <SelectScrollDownButton />
+        </SelectPrimitive.Popup>
+      </SelectPrimitive.Positioner>
     </SelectPrimitive.Portal>
   );
 };
-SelectContent.displayName = SelectPrimitive.Content.displayName;
+SelectContent.displayName = SelectPrimitive.Popup.displayName;
 
 const SelectLabel = (
   {
     ref,
     className,
     ...props
-  }: React.ComponentPropsWithoutRef<typeof SelectPrimitive.Label> & {
-    ref?: React.Ref<React.ElementRef<typeof SelectPrimitive.Label>>;
+  }: React.ComponentPropsWithoutRef<typeof SelectPrimitive.GroupLabel> & {
+    ref?: React.Ref<React.ElementRef<typeof SelectPrimitive.GroupLabel>>;
   }
-) => (<SelectPrimitive.Label
+) => (<SelectPrimitive.GroupLabel
   ref={ref}
   className={cn("px-2 py-1.5 text-sm font-semibold", className)}
   {...props}
 />);
-SelectLabel.displayName = SelectPrimitive.Label.displayName;
+SelectLabel.displayName = SelectPrimitive.GroupLabel.displayName;
+
+type SelectItemProps = React.ComponentPropsWithoutRef<
+  typeof SelectPrimitive.Item
+> & {
+  onSelect?: React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item>["onClick"];
+};
 
 const SelectItem = (
   {
     ref,
     className,
     children,
+    onSelect,
+    onClick,
     ...props
-  }: React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item> & {
+  }: SelectItemProps & {
     ref?: React.Ref<React.ElementRef<typeof SelectPrimitive.Item>>;
   }
 ) => {
@@ -207,10 +251,17 @@ const SelectItem = (
         "os-select-item relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-2 pr-8 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
         className
       )}
-      onSelect={(event) => {
+      onClick={(event) => {
         playClick();
-        props.onSelect?.(event);
+        onSelect?.(event);
+        onClick?.(event);
       }}
+      render={(itemProps, state) => (
+        <div
+          {...itemProps}
+          data-state={state.selected ? "checked" : "unchecked"}
+        />
+      )}
       {...props}
     >
       <span className="absolute right-2 flex size-3.5 items-center justify-center">
@@ -227,6 +278,7 @@ SelectItem.displayName = SelectPrimitive.Item.displayName;
 interface SelectItemWithDescriptionProps
   extends React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item> {
   description?: string;
+  onSelect?: React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item>["onClick"];
 }
 
 const SelectItemWithDescription = (
@@ -235,6 +287,8 @@ const SelectItemWithDescription = (
     className,
     children,
     description,
+    onSelect,
+    onClick,
     ...props
   }: SelectItemWithDescriptionProps & {
     ref?: React.Ref<React.ElementRef<typeof SelectPrimitive.Item>>;
@@ -249,10 +303,17 @@ const SelectItemWithDescription = (
         "os-select-item-with-description group relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-2 pr-8 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
         className
       )}
-      onSelect={(event) => {
+      onClick={(event) => {
         playClick();
-        props.onSelect?.(event);
+        onSelect?.(event);
+        onClick?.(event);
       }}
+      render={(itemProps, state) => (
+        <div
+          {...itemProps}
+          data-state={state.selected ? "checked" : "unchecked"}
+        />
+      )}
       {...props}
     >
       <span className="absolute right-2 top-2 flex size-3.5 items-center justify-center">

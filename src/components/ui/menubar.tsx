@@ -1,5 +1,6 @@
 import * as React from "react"
-import * as MenubarPrimitive from "@radix-ui/react-menubar"
+import { Menubar as MenubarPrimitive } from "@base-ui/react/menubar"
+import { Menu as MenubarMenuPrimitive } from "@base-ui/react/menu"
 import { Check, CaretRight, Circle } from "@phosphor-icons/react"
 import { useSound, Sounds } from "@/hooks/useSound"
 import { useThemeFlags } from "@/hooks/useThemeFlags"
@@ -9,16 +10,40 @@ import { cn } from "@/lib/utils"
 
 // Context to track if we're switching between menus (to skip animations)
 const MenubarSwitchingContext = React.createContext<boolean>(false)
+const MenubarOpenContext = React.createContext<{
+  openValue: string | undefined;
+  setOpenValue: (value: string | undefined) => void;
+} | null>(null)
 
-const MenubarMenu = MenubarPrimitive.Menu
+const MenubarMenu = ({
+  value,
+  onOpenChange,
+  ...props
+}: React.ComponentProps<typeof MenubarMenuPrimitive.Root> & {
+  value?: string;
+}) => {
+  const generatedValue = React.useId()
+  const menuValue = value ?? generatedValue
+  const context = React.use(MenubarOpenContext)
 
-const MenubarGroup = MenubarPrimitive.Group
+  return (
+    <MenubarMenuPrimitive.Root
+      {...props}
+      onOpenChange={(open, eventDetails) => {
+        context?.setOpenValue(open ? menuValue : undefined)
+        onOpenChange?.(open, eventDetails)
+      }}
+    />
+  )
+}
 
-const MenubarPortal = MenubarPrimitive.Portal
+const MenubarGroup = MenubarMenuPrimitive.Group
 
-const MenubarSub = MenubarPrimitive.Sub
+const MenubarPortal = MenubarMenuPrimitive.Portal
 
-const MenubarRadioGroup = MenubarPrimitive.RadioGroup
+const MenubarSub = MenubarMenuPrimitive.SubmenuRoot
+
+const MenubarRadioGroup = MenubarMenuPrimitive.RadioGroup
 
 const Menubar = (
   {
@@ -26,8 +51,9 @@ const Menubar = (
     className,
     onValueChange,
     ...props
-  }: React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Root> & {
-    ref?: React.Ref<React.ElementRef<typeof MenubarPrimitive.Root>>;
+  }: React.ComponentPropsWithoutRef<typeof MenubarPrimitive> & {
+    onValueChange?: (value: string | undefined) => void;
+    ref?: React.Ref<React.ElementRef<typeof MenubarPrimitive>>;
   }
 ) => {
   const { play: playMenuOpen } = useSound(Sounds.MENU_OPEN)
@@ -35,7 +61,7 @@ const Menubar = (
   const [previousValue, setPreviousValue] = React.useState<string | undefined>(undefined)
   const [isSwitching, setIsSwitching] = React.useState(false)
 
-  const handleValueChange = (value: string) => {
+  const handleValueChange = (value: string | undefined) => {
     // Play sound based on menu state change
     if (value && !previousValue) {
       // Opening a menu from closed state
@@ -54,20 +80,23 @@ const Menubar = (
   }
 
   return (
-    <MenubarSwitchingContext.Provider value={isSwitching}>
-      <MenubarPrimitive.Root
-        ref={ref}
-        className={cn(
-          "flex items-center space-x-1 rounded-md p-1",
-          className
-        )}
-        onValueChange={handleValueChange}
-        {...props}
-      />
-    </MenubarSwitchingContext.Provider>
+    <MenubarOpenContext.Provider
+      value={{ openValue: previousValue, setOpenValue: handleValueChange }}
+    >
+      <MenubarSwitchingContext.Provider value={isSwitching}>
+        <MenubarPrimitive
+          ref={ref}
+          className={cn(
+            "flex items-center space-x-1 rounded-md p-1",
+            className
+          )}
+          {...props}
+        />
+      </MenubarSwitchingContext.Provider>
+    </MenubarOpenContext.Provider>
   )
 }
-Menubar.displayName = MenubarPrimitive.Root.displayName
+Menubar.displayName = MenubarPrimitive.displayName
 
 const MenubarTrigger = (
   {
@@ -75,8 +104,8 @@ const MenubarTrigger = (
     className,
     style,
     ...props
-  }: React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Trigger> & {
-    ref?: React.Ref<React.ElementRef<typeof MenubarPrimitive.Trigger>>;
+  }: React.ComponentPropsWithoutRef<typeof MenubarMenuPrimitive.Trigger> & {
+    ref?: React.Ref<React.ElementRef<typeof MenubarMenuPrimitive.Trigger>>;
   }
 ) => {
   const { isWindowsTheme, isSystem7Theme, isMacOSTheme } = useThemeFlags()
@@ -106,15 +135,21 @@ const MenubarTrigger = (
   )
 
   return (
-    <MenubarPrimitive.Trigger
+    <MenubarMenuPrimitive.Trigger
       ref={ref}
       className={themeClasses}
       style={{ ...themeStyles, ...style }}
+      render={(triggerProps, state) => (
+        <button
+          {...triggerProps}
+          data-state={state.open ? "open" : "closed"}
+        />
+      )}
       {...props}
     />
   )
 }
-MenubarTrigger.displayName = MenubarPrimitive.Trigger.displayName
+MenubarTrigger.displayName = MenubarMenuPrimitive.Trigger.displayName
 
 const MenubarSubTrigger = (
   {
@@ -123,22 +158,22 @@ const MenubarSubTrigger = (
     inset,
     children,
     ...props
-  }: React.ComponentPropsWithoutRef<typeof MenubarPrimitive.SubTrigger> & {
+  }: React.ComponentPropsWithoutRef<typeof MenubarMenuPrimitive.SubmenuTrigger> & {
     inset?: boolean
-    ref?: React.Ref<React.ElementRef<typeof MenubarPrimitive.SubTrigger>>
+    ref?: React.Ref<React.ElementRef<typeof MenubarMenuPrimitive.SubmenuTrigger>>
   }
 ) => {
   const { isWindowsTheme, isMacOSTheme, isSystem7Theme, isAquaGlass } = useThemeFlags()
 
   return (
-    <MenubarPrimitive.SubTrigger
+    <MenubarMenuPrimitive.SubmenuTrigger
       ref={ref}
       className={cn(
         "flex cursor-default gap-2 select-none items-center px-2 py-1.5 text-sm outline-none [&_svg]:pointer-events-none [&_svg]:shrink-0",
         // Theme-specific hover/focus styles
-        isSystem7Theme && "rounded-none focus:bg-[var(--os-color-selection-bg)] focus:text-[var(--os-color-selection-text)] data-[state=open]:bg-[var(--os-color-selection-bg)] data-[state=open]:text-[var(--os-color-selection-text)] mx-0",
-        isMacOSTheme && "rounded-none focus:bg-[var(--os-color-selection-bg)] focus:text-[var(--os-color-selection-text)] data-[state=open]:bg-[var(--os-color-selection-bg)] data-[state=open]:text-[var(--os-color-selection-text)]",
-        !isSystem7Theme && !isMacOSTheme && "rounded-sm focus:bg-accent data-[state=open]:bg-accent",
+        isSystem7Theme && "rounded-none focus:bg-[var(--os-color-selection-bg)] focus:text-[var(--os-color-selection-text)] data-[open]:bg-[var(--os-color-selection-bg)] data-[open]:text-[var(--os-color-selection-text)] data-[state=open]:bg-[var(--os-color-selection-bg)] data-[state=open]:text-[var(--os-color-selection-text)] mx-0",
+        isMacOSTheme && "rounded-none focus:bg-[var(--os-color-selection-bg)] focus:text-[var(--os-color-selection-text)] data-[open]:bg-[var(--os-color-selection-bg)] data-[open]:text-[var(--os-color-selection-text)] data-[state=open]:bg-[var(--os-color-selection-bg)] data-[state=open]:text-[var(--os-color-selection-text)]",
+        !isSystem7Theme && !isMacOSTheme && "rounded-sm focus:bg-accent data-[open]:bg-accent data-[state=open]:bg-accent",
         inset && "pl-8",
         className
       )}
@@ -163,14 +198,20 @@ const MenubarSubTrigger = (
           textShadow: "0 2px 3px rgba(0, 0, 0, 0.25)",
         }),
       }}
+      render={(triggerProps, state) => (
+        <div
+          {...triggerProps}
+          data-state={state.open ? "open" : "closed"}
+        />
+      )}
       {...props}
     >
       {children}
       <CaretRight className="ml-auto" size={12} weight="bold" />
-    </MenubarPrimitive.SubTrigger>
+    </MenubarMenuPrimitive.SubmenuTrigger>
   )
 }
-MenubarSubTrigger.displayName = MenubarPrimitive.SubTrigger.displayName
+MenubarSubTrigger.displayName = MenubarMenuPrimitive.SubmenuTrigger.displayName
 
 const MenubarSubContent = (
   {
@@ -178,46 +219,54 @@ const MenubarSubContent = (
     className,
     style,
     ...props
-  }: React.ComponentPropsWithoutRef<typeof MenubarPrimitive.SubContent> & {
-    ref?: React.Ref<React.ElementRef<typeof MenubarPrimitive.SubContent>>;
+  }: React.ComponentPropsWithoutRef<typeof MenubarMenuPrimitive.Popup> & {
+    ref?: React.Ref<React.ElementRef<typeof MenubarMenuPrimitive.Popup>>;
   }
 ) => {
   const { isMacOSTheme, isAquaGlass } = useThemeFlags()
   const isMobile = useMediaQuery("(max-width: 768px)")
 
   return (
-    <MenubarPrimitive.Portal>
-      <MenubarPrimitive.SubContent
-        ref={ref}
-        className={cn(
-          // Use z-[10004] to ensure submenu content appears above menu content (z-[10003])
-          // origin-[…]: scale from the trigger side instead of the element center.
-          // fill-mode-forwards: hold the exit end-state until Radix unmounts —
-          // without it Safari can paint one unanimated frame (visible jitter).
-          "z-[10004] min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-lg origin-[var(--radix-menubar-content-transform-origin)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fill-mode-forwards data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
-          className
-        )}
-        style={{
-          ...(isMacOSTheme && {
-            border: "none",
-            borderRadius: "0px",
-            background: "var(--os-pinstripe-window)",
-            // Aqua Glass gets its translucency from the frosted background in
-            // themes.css; an inline opacity would block the open/close fade.
-            ...(isAquaGlass ? {} : { opacity: "0.92" }),
-            boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
-            padding: "4px 0px",
-            ...(isMobile ? {} : { minWidth: "180px" }),
-          }),
-          ...(isMobile && { minWidth: "unset" }),
-          ...style,
-        }}
-        {...props}
-      />
-    </MenubarPrimitive.Portal>
+    <MenubarMenuPrimitive.Portal>
+      <MenubarMenuPrimitive.Positioner data-radix-popper-content-wrapper="">
+        <MenubarMenuPrimitive.Popup
+          ref={ref}
+          data-ryos-popper-content=""
+          data-radix-menu-content=""
+          className={cn(
+            // Use z-[10004] to ensure submenu content appears above menu content (z-[10003])
+            // origin-[…]: scale from the trigger side instead of the element center.
+            "z-[10004] min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-lg origin-[var(--transform-origin)] data-[open]:animate-in data-[closed]:animate-out data-[closed]:fill-mode-forwards data-[closed]:fade-out-0 data-[open]:fade-in-0 data-[closed]:zoom-out-95 data-[open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fill-mode-forwards data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+            className
+          )}
+          style={{
+            ...(isMacOSTheme && {
+              border: "none",
+              borderRadius: "0px",
+              background: "var(--os-pinstripe-window)",
+              // Aqua Glass gets its translucency from the frosted background in
+              // themes.css; an inline opacity would block the open/close fade.
+              ...(isAquaGlass ? {} : { opacity: "0.92" }),
+              boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
+              padding: "4px 0px",
+              ...(isMobile ? {} : { minWidth: "180px" }),
+            }),
+            ...(isMobile && { minWidth: "unset" }),
+            ...style,
+          }}
+          render={(popupProps, state) => (
+            <div
+              {...popupProps}
+              data-state={state.open ? "open" : "closed"}
+            />
+          )}
+          {...props}
+        />
+      </MenubarMenuPrimitive.Positioner>
+    </MenubarMenuPrimitive.Portal>
   )
 }
-MenubarSubContent.displayName = MenubarPrimitive.SubContent.displayName
+MenubarSubContent.displayName = MenubarMenuPrimitive.Popup.displayName
 
 const MenubarContent = (
   {
@@ -226,10 +275,16 @@ const MenubarContent = (
     align = "start",
     alignOffset = 0,
     sideOffset = 8,
+    side,
+    collisionPadding,
     style,
     ...props
-  }: React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Content> & {
-    ref?: React.Ref<React.ElementRef<typeof MenubarPrimitive.Content>>;
+  }: React.ComponentPropsWithoutRef<typeof MenubarMenuPrimitive.Popup> &
+    Pick<
+      React.ComponentPropsWithoutRef<typeof MenubarMenuPrimitive.Positioner>,
+      "align" | "alignOffset" | "collisionPadding" | "side" | "sideOffset"
+    > & {
+    ref?: React.Ref<React.ElementRef<typeof MenubarMenuPrimitive.Popup>>;
   }
 ) => {
   const { isMacOSTheme, isAquaGlass } = useThemeFlags()
@@ -237,66 +292,76 @@ const MenubarContent = (
   const isSwitching = React.use(MenubarSwitchingContext)
 
   return (
-    <MenubarPrimitive.Portal>
-      <MenubarPrimitive.Content
-        ref={ref}
+    <MenubarMenuPrimitive.Portal>
+      <MenubarMenuPrimitive.Positioner
         align={align}
         alignOffset={alignOffset}
         sideOffset={sideOffset}
-        className={cn(
-          // Use z-[10003] to ensure menu content appears above the menubar (z-[10002])
-          // This is critical for Safari where backdrop-filter creates new stacking contexts
-          "z-[10003] min-w-[12rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md",
-          // origin-[…]: scale from the trigger side instead of the element center.
-          "origin-[var(--radix-menubar-content-transform-origin)]",
-          // Only animate when not switching between menus. Zoom + fade only —
-          // the origin anchors the panel to the trigger, so a slide-in would
-          // add positional drift that reads as a shift when it settles.
-          // NOTE: no `data-[state=closed]:animate-out` here on purpose. Radix
-          // reports value changes from a useEffect, so the `isSwitching` gate
-          // lands one commit after `data-state` flips to closed — an exit
-          // animation would already be running and hover-switching between
-          // menubar menus would lag instead of swapping instantly.
-          !isSwitching && "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
-          className
-        )}
-        style={{
-          ...(isMacOSTheme && {
-            border: "none",
-            borderRadius: "0px",
-            background: "var(--os-pinstripe-window)",
-            // Aqua Glass gets its translucency from the frosted background in
-            // themes.css; an inline opacity would block the open/close fade.
-            ...(isAquaGlass ? {} : { opacity: "0.92" }),
-            boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
-            padding: "4px 0px",
-            ...(isMobile ? {} : { minWidth: style?.minWidth ?? "180px" }),
-          }),
-          ...(isMobile && { minWidth: "unset" }),
-          ...style,
-        }}
-        {...props}
-      />
-    </MenubarPrimitive.Portal>
+        side={side}
+        collisionPadding={collisionPadding}
+        data-radix-popper-content-wrapper=""
+      >
+        <MenubarMenuPrimitive.Popup
+          ref={ref}
+          data-ryos-popper-content=""
+          data-radix-menu-content=""
+          className={cn(
+            // Use z-[10003] to ensure menu content appears above the menubar (z-[10002])
+            // This is critical for Safari where backdrop-filter creates new stacking contexts
+            "z-[10003] min-w-[12rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md",
+            // origin-[…]: scale from the trigger side instead of the element center.
+            "origin-[var(--transform-origin)]",
+            // Only animate when not switching between menus. Zoom + fade only.
+            !isSwitching && "data-[open]:animate-in data-[open]:fade-in-0 data-[open]:zoom-in-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
+            className
+          )}
+          style={{
+            ...(isMacOSTheme && {
+              border: "none",
+              borderRadius: "0px",
+              background: "var(--os-pinstripe-window)",
+              // Aqua Glass gets its translucency from the frosted background in
+              // themes.css; an inline opacity would block the open/close fade.
+              ...(isAquaGlass ? {} : { opacity: "0.92" }),
+              boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
+              padding: "4px 0px",
+              ...(isMobile ? {} : { minWidth: style?.minWidth ?? "180px" }),
+            }),
+            ...(isMobile && { minWidth: "unset" }),
+            ...style,
+          }}
+          render={(popupProps, state) => (
+            <div
+              {...popupProps}
+              data-state={state.open ? "open" : "closed"}
+            />
+          )}
+          {...props}
+        />
+      </MenubarMenuPrimitive.Positioner>
+    </MenubarMenuPrimitive.Portal>
   )
 }
-MenubarContent.displayName = MenubarPrimitive.Content.displayName
+MenubarContent.displayName = MenubarMenuPrimitive.Popup.displayName
 
 const MenubarItem = (
   {
     ref,
     className,
     inset,
+    onSelect,
+    onClick,
     ...props
-  }: React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Item> & {
+  }: React.ComponentPropsWithoutRef<typeof MenubarMenuPrimitive.Item> & {
     inset?: boolean
-    ref?: React.Ref<React.ElementRef<typeof MenubarPrimitive.Item>>
+    onSelect?: React.ComponentPropsWithoutRef<typeof MenubarMenuPrimitive.Item>["onClick"]
+    ref?: React.Ref<React.ElementRef<typeof MenubarMenuPrimitive.Item>>
   }
 ) => {
   const { isWindowsTheme, isMacOSTheme, isSystem7Theme, isAquaGlass } = useThemeFlags()
 
   return (
-    <MenubarPrimitive.Item
+    <MenubarMenuPrimitive.Item
       ref={ref}
       className={cn(
         "relative flex cursor-default select-none items-center gap-2 px-2 py-1.5 text-sm outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0",
@@ -329,11 +394,15 @@ const MenubarItem = (
           textShadow: "0 2px 3px rgba(0, 0, 0, 0.25)",
         }),
       }}
+      onClick={(event) => {
+        onSelect?.(event)
+        onClick?.(event)
+      }}
       {...props}
     />
   )
 }
-MenubarItem.displayName = MenubarPrimitive.Item.displayName
+MenubarItem.displayName = MenubarMenuPrimitive.Item.displayName
 
 const MenubarCheckboxItem = (
   {
@@ -341,9 +410,12 @@ const MenubarCheckboxItem = (
     className,
     children,
     checked,
+    onSelect,
+    onClick,
     ...props
-  }: React.ComponentPropsWithoutRef<typeof MenubarPrimitive.CheckboxItem> & {
-    ref?: React.Ref<React.ElementRef<typeof MenubarPrimitive.CheckboxItem>>;
+  }: React.ComponentPropsWithoutRef<typeof MenubarMenuPrimitive.CheckboxItem> & {
+    onSelect?: React.ComponentPropsWithoutRef<typeof MenubarMenuPrimitive.CheckboxItem>["onClick"]
+    ref?: React.Ref<React.ElementRef<typeof MenubarMenuPrimitive.CheckboxItem>>;
   }
 ) => {
   const {
@@ -354,7 +426,7 @@ const MenubarCheckboxItem = (
   } = useThemeFlags()
 
   return (
-    <MenubarPrimitive.CheckboxItem
+    <MenubarMenuPrimitive.CheckboxItem
       ref={ref}
       className={cn(
         "relative flex cursor-default select-none items-center py-1.5 pl-8 pr-2 text-sm outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
@@ -387,27 +459,40 @@ const MenubarCheckboxItem = (
         }),
       }}
       checked={checked}
+      onClick={(event) => {
+        onSelect?.(event)
+        onClick?.(event)
+      }}
+      render={(itemProps, state) => (
+        <div
+          {...itemProps}
+          data-state={state.checked ? "checked" : "unchecked"}
+        />
+      )}
       {...props}
     >
       <span className="absolute left-3 flex size-3.5 items-center justify-center">
-        <MenubarPrimitive.ItemIndicator>
+        <MenubarMenuPrimitive.CheckboxItemIndicator>
           <Check size={12} weight="bold" />
-        </MenubarPrimitive.ItemIndicator>
+        </MenubarMenuPrimitive.CheckboxItemIndicator>
       </span>
       {children}
-    </MenubarPrimitive.CheckboxItem>
+    </MenubarMenuPrimitive.CheckboxItem>
   )
 }
-MenubarCheckboxItem.displayName = MenubarPrimitive.CheckboxItem.displayName
+MenubarCheckboxItem.displayName = MenubarMenuPrimitive.CheckboxItem.displayName
 
 const MenubarRadioItem = (
   {
     ref,
     className,
     children,
+    onSelect,
+    onClick,
     ...props
-  }: React.ComponentPropsWithoutRef<typeof MenubarPrimitive.RadioItem> & {
-    ref?: React.Ref<React.ElementRef<typeof MenubarPrimitive.RadioItem>>;
+  }: React.ComponentPropsWithoutRef<typeof MenubarMenuPrimitive.RadioItem> & {
+    onSelect?: React.ComponentPropsWithoutRef<typeof MenubarMenuPrimitive.RadioItem>["onClick"]
+    ref?: React.Ref<React.ElementRef<typeof MenubarMenuPrimitive.RadioItem>>;
   }
 ) => {
   const {
@@ -418,7 +503,7 @@ const MenubarRadioItem = (
   } = useThemeFlags()
 
   return (
-    <MenubarPrimitive.RadioItem
+    <MenubarMenuPrimitive.RadioItem
       ref={ref}
       className={cn(
         "relative flex cursor-default select-none items-center py-1.5 pl-8 pr-2 text-sm outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
@@ -450,18 +535,28 @@ const MenubarRadioItem = (
           textShadow: "0 2px 3px rgba(0, 0, 0, 0.25)",
         }),
       }}
+      onClick={(event) => {
+        onSelect?.(event)
+        onClick?.(event)
+      }}
+      render={(itemProps, state) => (
+        <div
+          {...itemProps}
+          data-state={state.checked ? "checked" : "unchecked"}
+        />
+      )}
       {...props}
     >
       <span className="absolute left-3 flex size-3.5 items-center justify-center">
-        <MenubarPrimitive.ItemIndicator>
+        <MenubarMenuPrimitive.RadioItemIndicator>
           <Circle size={6} weight="fill" />
-        </MenubarPrimitive.ItemIndicator>
+        </MenubarMenuPrimitive.RadioItemIndicator>
       </span>
       {children}
-    </MenubarPrimitive.RadioItem>
+    </MenubarMenuPrimitive.RadioItem>
   )
 }
-MenubarRadioItem.displayName = MenubarPrimitive.RadioItem.displayName
+MenubarRadioItem.displayName = MenubarMenuPrimitive.RadioItem.displayName
 
 const MenubarLabel = (
   {
@@ -469,15 +564,15 @@ const MenubarLabel = (
     className,
     inset,
     ...props
-  }: React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Label> & {
+  }: React.ComponentPropsWithoutRef<typeof MenubarMenuPrimitive.GroupLabel> & {
     inset?: boolean
-    ref?: React.Ref<React.ElementRef<typeof MenubarPrimitive.Label>>
+    ref?: React.Ref<React.ElementRef<typeof MenubarMenuPrimitive.GroupLabel>>
   }
 ) => {
   const { isWindowsTheme, isMacOSTheme } = useThemeFlags()
 
   return (
-    <MenubarPrimitive.Label
+    <MenubarMenuPrimitive.GroupLabel
       ref={ref}
       className={cn(
         "px-2 py-1.5 text-sm font-semibold",
@@ -493,21 +588,21 @@ const MenubarLabel = (
     />
   )
 }
-MenubarLabel.displayName = MenubarPrimitive.Label.displayName
+MenubarLabel.displayName = MenubarMenuPrimitive.GroupLabel.displayName
 
 const MenubarSeparator = (
   {
     ref,
     className,
     ...props
-  }: React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Separator> & {
-    ref?: React.Ref<React.ElementRef<typeof MenubarPrimitive.Separator>>;
+  }: React.ComponentPropsWithoutRef<typeof MenubarMenuPrimitive.Separator> & {
+    ref?: React.Ref<React.ElementRef<typeof MenubarMenuPrimitive.Separator>>;
   }
 ) => {
   const { isSystem7Theme, isMacOSTheme } = useThemeFlags()
 
   return (
-    <MenubarPrimitive.Separator
+    <MenubarMenuPrimitive.Separator
       ref={ref}
       className={cn(
         className,
@@ -528,7 +623,7 @@ const MenubarSeparator = (
     />
   )
 }
-MenubarSeparator.displayName = MenubarPrimitive.Separator.displayName
+MenubarSeparator.displayName = MenubarMenuPrimitive.Separator.displayName
 
 const MenubarShortcut = ({
   className,
