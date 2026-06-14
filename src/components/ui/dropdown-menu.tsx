@@ -13,6 +13,7 @@ type DropdownSubmenuSide = React.ComponentPropsWithoutRef<
 
 const SUBMENU_COLLISION_PADDING = 8;
 const ESTIMATED_SUBMENU_WIDTH = 180;
+const SUBMENU_CLOSE_DELAY_MS = 150;
 
 const DropdownSubmenuSideContext = React.createContext<{
   side: DropdownSubmenuSide;
@@ -141,6 +142,7 @@ const DropdownMenuSubTrigger = (
     className,
     inset,
     children,
+    closeDelay,
     onFocus,
     onPointerEnter,
     ...props
@@ -162,6 +164,7 @@ const DropdownMenuSubTrigger = (
   return (
     <DropdownMenuPrimitive.SubmenuTrigger
       ref={ref}
+      closeDelay={closeDelay ?? SUBMENU_CLOSE_DELAY_MS}
       onFocus={(event) => {
         updateSubmenuSide(event.currentTarget);
         onFocus?.(event);
@@ -220,7 +223,7 @@ const DropdownMenuSubContent = (
     collisionBoundary,
     collisionPadding,
     side,
-    sideOffset = 4,
+    sideOffset = 0,
     positionMethod,
     ...props
   }: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Popup> & {

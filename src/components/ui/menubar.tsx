@@ -14,6 +14,7 @@ type MenubarSubmenuSide = React.ComponentPropsWithoutRef<
 
 const SUBMENU_COLLISION_PADDING = 8
 const ESTIMATED_SUBMENU_WIDTH = 180
+const SUBMENU_CLOSE_DELAY_MS = 150
 
 const MenubarSubmenuSideContext = React.createContext<{
   side: MenubarSubmenuSide
@@ -248,6 +249,7 @@ const MenubarSubTrigger = (
     className,
     inset,
     children,
+    closeDelay,
     onFocus,
     onPointerEnter,
     ...props
@@ -268,6 +270,7 @@ const MenubarSubTrigger = (
   return (
     <MenubarMenuPrimitive.SubmenuTrigger
       ref={ref}
+      closeDelay={closeDelay ?? SUBMENU_CLOSE_DELAY_MS}
       onFocus={(event) => {
         updateSubmenuSide(event.currentTarget)
         onFocus?.(event)
@@ -333,7 +336,7 @@ const MenubarSubContent = (
     collisionPadding,
     positionMethod,
     side,
-    sideOffset = 4,
+    sideOffset = 0,
     style,
     ...props
   }: React.ComponentPropsWithoutRef<typeof MenubarMenuPrimitive.Popup> & {
