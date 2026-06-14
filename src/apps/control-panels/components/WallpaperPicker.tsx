@@ -170,7 +170,10 @@ interface SpecialTileProps {
   backgroundStyle?: React.CSSProperties;
   /** Optional muted looping video rendered as the tile background. */
   backgroundVideoUrl?: string;
-  /** Optional icon element rendered centered in the tile. */
+  /**
+   * Optional icon element centered in the space above the label. Rendered in
+   * its own flex-grow row so the bottom label never shifts it off-center.
+   */
   icon?: React.ReactNode;
   /**
    * Render a plain dark scrim (no blur) under the icon + label. Used for tiles
@@ -201,12 +204,12 @@ function SpecialTile({
       type="button"
       className={`preview-button relative w-full ${
         isTile ? "aspect-square" : "aspect-video"
-      } cursor-pointer hover:opacity-90 flex items-center justify-center overflow-hidden text-white`}
+      } cursor-pointer hover:opacity-90 flex flex-col overflow-hidden text-white`}
       style={{
         backgroundColor: "#2a2a32",
         ...backgroundStyle,
         boxShadow: isSelected
-          ? "0 0 0 1px transparent, 0 0 0 3px var(--os-color-selection-bg)"
+          ? "0 0 0 1px var(--os-color-selection-ring-gap), 0 0 0 3px var(--os-color-selection-bg)"
           : undefined,
       }}
       onClick={handleClick}
@@ -245,24 +248,26 @@ function SpecialTile({
           />
         </>
       )}
-      {icon && (
-        <span
-          className="relative flex items-center justify-center text-white opacity-[0.85]"
-          style={{
-            // Uniform element opacity (not color alpha) so the tile art shows
-            // through the glyph consistently. A simple drop-shadow keeps it
-            // legible on dark gradients, bright covers and busy patterns alike.
-            filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.6))",
-          }}
-        >
-          {icon}
-        </span>
-      )}
+      {/* Icon occupies its own flex-grow row so it stays centered within the
+          space that remains above the label (rather than the full tile). The
+          row is always rendered — even when there's no icon — so the label
+          keeps its position. */}
+      <span
+        className="relative flex min-h-0 flex-1 items-center justify-center text-white opacity-[0.85]"
+        style={{
+          // Uniform element opacity (not color alpha) so the tile art shows
+          // through the glyph consistently. A simple drop-shadow keeps it
+          // legible on dark gradients, bright covers and busy patterns alike.
+          filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.6))",
+        }}
+      >
+        {icon}
+      </span>
       {/* White label dimmed via element opacity (matching the icon) with a
           single soft dark text-shadow. Crisp and readable on dark gradients,
           bright covers and busy patterns without any blend modes. */}
       <span
-        className="absolute inset-x-0 bottom-0 px-1 pt-1 pb-0.5 text-[10px] leading-tight text-center font-medium truncate text-white opacity-[0.85]"
+        className="relative w-full px-1 pt-1 pb-0.5 text-[10px] leading-tight text-center font-medium truncate text-white opacity-[0.85]"
         style={{
           textShadow: "0 1px 2px rgba(0,0,0,0.6)",
         }}
