@@ -90,6 +90,11 @@ export function LyricsControlsIsland({
     variant === "responsive"
       ? `md:w-[${svgSizeMd}px] md:h-[${svgSizeMd}px]`
       : undefined;
+  const isCompact = variant === "compact";
+  const lyricsMenuContainer = isCompact ? undefined : portalContainer;
+  const lyricsMenuBoundary = isCompact ? undefined : portalContainer ?? undefined;
+  const lyricsMenuSide = isCompact ? "left" : "top";
+  const lyricsMenuAlign = isCompact ? "end" : "center";
 
   return (
     <div className={segmentClasses} style={aquaSegmentStyle}>
@@ -202,24 +207,23 @@ export function LyricsControlsIsland({
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
-          container={portalContainer}
-          side="top"
-          align={variant === "compact" ? "end" : "center"}
+          container={lyricsMenuContainer}
+          side={lyricsMenuSide}
+          align={lyricsMenuAlign}
           sideOffset={8}
           collisionAvoidance={{
-            side: "shift",
+            side: "flip",
             align: "shift",
             fallbackAxisSide: "none",
           }}
-          collisionBoundary={portalContainer ?? undefined}
+          collisionBoundary={lyricsMenuBoundary}
           collisionPadding={8}
           className={cn(
             "px-0 max-h-[50vh] overflow-y-auto",
-            variant === "compact"
+            isCompact
               ? "w-40 max-w-[calc(100vw-1rem)]"
               : "w-44"
           )}
-          style={variant === "compact" ? { marginLeft: "-10rem" } : undefined}
           onClick={(e) => e.stopPropagation()}
         >
           <DropdownMenuRadioGroup
@@ -281,24 +285,23 @@ export function LyricsControlsIsland({
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
-              container={portalContainer}
-              side="top"
-              align={variant === "compact" ? "end" : "center"}
+              container={lyricsMenuContainer}
+              side={lyricsMenuSide}
+              align={lyricsMenuAlign}
               sideOffset={8}
               collisionAvoidance={{
-                side: "shift",
+                side: "flip",
                 align: "shift",
                 fallbackAxisSide: "none",
               }}
-              collisionBoundary={portalContainer ?? undefined}
+              collisionBoundary={lyricsMenuBoundary}
               collisionPadding={8}
               className={cn(
                 "px-0",
-                variant === "compact"
+                isCompact
                   ? "w-44 max-w-[calc(100vw-1rem)]"
                   : "w-max min-w-40 max-w-none"
               )}
-              style={variant === "compact" ? { marginLeft: "-11rem" } : undefined}
               onClick={(e) => e.stopPropagation()}
             >
               <DropdownMenuCheckboxItem
