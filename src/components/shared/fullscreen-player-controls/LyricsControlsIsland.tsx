@@ -204,7 +204,7 @@ export function LyricsControlsIsland({
         <DropdownMenuContent
           container={portalContainer}
           side="top"
-          align="center"
+          align={variant === "compact" ? "end" : "center"}
           sideOffset={8}
           collisionAvoidance={{
             side: "shift",
@@ -215,7 +215,9 @@ export function LyricsControlsIsland({
           collisionPadding={8}
           className={cn(
             "px-0 max-h-[50vh] overflow-y-auto",
-            variant === "compact" ? "w-40" : "w-44"
+            variant === "compact"
+              ? "w-40 max-w-[calc(100vw-1rem)]"
+              : "w-44"
           )}
           onClick={(e) => e.stopPropagation()}
         >
@@ -280,7 +282,7 @@ export function LyricsControlsIsland({
             <DropdownMenuContent
               container={portalContainer}
               side="top"
-              align="center"
+              align={variant === "compact" ? "end" : "center"}
               sideOffset={8}
               collisionAvoidance={{
                 side: "shift",
@@ -289,7 +291,12 @@ export function LyricsControlsIsland({
               }}
               collisionBoundary={portalContainer ?? undefined}
               collisionPadding={8}
-              className="px-0 w-max min-w-40 max-w-none"
+              className={cn(
+                "px-0",
+                variant === "compact"
+                  ? "w-44 max-w-[calc(100vw-1rem)]"
+                  : "w-max min-w-40 max-w-none"
+              )}
               onClick={(e) => e.stopPropagation()}
             >
               <DropdownMenuCheckboxItem

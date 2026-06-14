@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { cn } from "@/lib/utils";
 import { CoverFlow } from "@/apps/ipod/components/cover-flow/CoverFlow";
@@ -22,6 +23,9 @@ import type { KaraokeAppController } from "./useKaraokeAppController";
 type KaraokeWindowContentProps = { c: KaraokeAppController };
 
 export function KaraokeWindowContent({ c }: KaraokeWindowContentProps) {
+  const [portalContainer, setPortalContainer] = useState<HTMLDivElement | null>(
+    null
+  );
   const {
     t, tracks, currentIndex, loopCurrent, isPlaying, isFullScreen, showLyrics,
     lyricsAlignment, lyricsFont, koreanDisplay, japaneseFurigana, romanization,
@@ -47,6 +51,7 @@ export function KaraokeWindowContent({ c }: KaraokeWindowContentProps) {
 
   return (
     <div
+      ref={setPortalContainer}
       className="relative w-full h-full bg-black select-none overflow-hidden @container"
       onMouseMove={(e) => {
         restartAutoHideTimer();
@@ -381,6 +386,7 @@ export function KaraokeWindowContent({ c }: KaraokeWindowContentProps) {
           variant="compact"
           bgOpacity="60"
           onInteraction={restartAutoHideTimer}
+          portalContainer={portalContainer}
         />
       </div>
     </div>
