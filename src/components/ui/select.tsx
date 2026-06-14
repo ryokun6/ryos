@@ -12,7 +12,7 @@ type SelectProps = Omit<
 > & {
   value?: string | null;
   defaultValue?: string | null;
-  onValueChange?: (value: string) => void;
+  onValueChange?: (value: any) => void;
 };
 
 const Select = ({

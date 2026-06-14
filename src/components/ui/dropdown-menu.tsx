@@ -171,7 +171,7 @@ const DropdownMenuSubContent = (
               ...(isMobile ? {} : { minWidth: "180px" }),
             }),
             ...(isMobile && { minWidth: "unset" }),
-            ...style,
+            ...styleObject,
           }}
           render={(popupProps, state) => (
             <div
@@ -213,6 +213,7 @@ const DropdownMenuContent = (
 ) => {
   const { isMacOSTheme, isAquaGlass } = useThemeFlags();
   const isMobile = useMediaQuery("(max-width: 768px)");
+  const styleObject = typeof style === "function" ? undefined : style;
 
   return (
     <DropdownMenuPrimitive.Portal container={container}>
