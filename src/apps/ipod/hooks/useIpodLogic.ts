@@ -42,6 +42,7 @@ import {
 } from "../utils/lyricsTrackMetadata";
 import { useShallow } from "zustand/react/shallow";
 import { useIpodStoreShallow } from "@/stores/useIpodStore";
+import { shouldRestartTrackOnPrevious } from "@/shared/media/previousTrackBehavior";
 import { useAppStoreShallow } from "@/stores/useAppStore";
 import { useAudioSettingsStoreShallow } from "@/stores/useAudioSettingsStore";
 import { useChatsStore } from "@/stores/useChatsStore";
@@ -3751,16 +3752,37 @@ export function useIpodLogic({
     skipAppleMusicCollectionShell,
   ]);
 
+  // Classic click-wheel iPod behavior: restart the current track when the
+  // back button is pressed after the song is already well underway. Seeks the
+  // active player to 0 and snaps the shared clock back to 0 so lyrics and the
+  // progress bar follow. A second press (now near 0s) skips for real.
+  const restartCurrentTrack = useCallback(() => {
+    const activePlayer = isFullScreen
+      ? fullScreenPlayerRef.current
+      : playerRef.current;
+    activePlayer?.seekTo(0);
+    useIpodStore.getState().setElapsedTime(0);
+  }, [isFullScreen, fullScreenPlayerRef, playerRef]);
+
   const previousTrack = useCallback(() => {
     if (getCurrentAppleMusicCollectionShellTrack()) {
       void skipAppleMusicCollectionShell("previous");
+      return;
+    }
+    const { elapsedTime } = useIpodStore.getState();
+    const hasCurrentTrack = Boolean(tracks[currentIndex]);
+    if (shouldRestartTrackOnPrevious(elapsedTime, hasCurrentTrack)) {
+      restartCurrentTrack();
       return;
     }
     rawPreviousTrack();
   }, [
     getCurrentAppleMusicCollectionShellTrack,
     rawPreviousTrack,
+    restartCurrentTrack,
     skipAppleMusicCollectionShell,
+    tracks,
+    currentIndex,
   ]);
 
   // Track handling
