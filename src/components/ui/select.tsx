@@ -6,10 +6,10 @@ import { useThemeFlags } from "@/hooks/useThemeFlags";
 
 import { cn } from "@/lib/utils";
 
-const SelectLabelContext = React.createContext<{
-  labels: Map<string, React.ReactNode>;
-  registerLabel: (value: string, label: React.ReactNode | null) => void;
-} | null>(null);
+type SelectItemLabel = {
+  label: React.ReactNode;
+  value: unknown;
+};
 
 function getTextLabel(node: React.ReactNode): React.ReactNode | null {
   if (typeof node === "string" || typeof node === "number") {
@@ -25,7 +25,41 @@ function getTextLabel(node: React.ReactNode): React.ReactNode | null {
     return parts.length > 0 ? parts.join("") : null;
   }
 
+  if (React.isValidElement(node)) {
+    return getTextLabel(
+      (node.props as { children?: React.ReactNode }).children
+    );
+  }
+
   return null;
+}
+
+function collectSelectItemLabels(
+  node: React.ReactNode,
+  labels: SelectItemLabel[] = []
+) {
+  React.Children.forEach(node, (child) => {
+    if (!React.isValidElement(child)) return;
+
+    const props = child.props as {
+      children?: React.ReactNode;
+      label?: string;
+      value?: unknown;
+    };
+
+    if (Object.prototype.hasOwnProperty.call(props, "value")) {
+      const label = getTextLabel(props.children) ?? props.label;
+      if (props.value != null && label != null) {
+        labels.push({ value: props.value, label });
+      }
+    }
+
+    if (props.children) {
+      collectSelectItemLabels(props.children, labels);
+    }
+  });
+
+  return labels;
 }
 
 type SelectProps = Omit<
@@ -39,6 +73,7 @@ type SelectProps = Omit<
 
 const Select = ({
   children,
+  items,
   onOpenChange,
   onValueChange,
   ...props
@@ -46,8 +81,9 @@ const Select = ({
   const { play: playMenuOpen } = useSound(Sounds.MENU_OPEN);
   const { play: playMenuClose } = useSound(Sounds.MENU_CLOSE);
   const openRef = React.useRef(Boolean(props.open ?? props.defaultOpen));
-  const [labels, setLabels] = React.useState<Map<string, React.ReactNode>>(
-    () => new Map()
+  const derivedItems = React.useMemo(
+    () => collectSelectItemLabels(children),
+    [children]
   );
 
   React.useEffect(() => {
@@ -56,51 +92,29 @@ const Select = ({
     }
   }, [props.open]);
 
-  const registerLabel = React.useCallback(
-    (value: string, label: React.ReactNode | null) => {
-      setLabels((currentLabels) => {
-        const currentLabel = currentLabels.get(value);
-        if (label == null) {
-          if (!currentLabels.has(value)) return currentLabels;
-          const nextLabels = new Map(currentLabels);
-          nextLabels.delete(value);
-          return nextLabels;
-        }
-
-        if (Object.is(currentLabel, label)) return currentLabels;
-
-        const nextLabels = new Map(currentLabels);
-        nextLabels.set(value, label);
-        return nextLabels;
-      });
-    },
-    []
-  );
-
   return (
-    <SelectLabelContext.Provider value={{ labels, registerLabel }}>
-      <SelectPrimitive.Root
-        {...props}
-        onOpenChange={(open, eventDetails) => {
-          if (open !== openRef.current) {
-            openRef.current = open;
-            if (open) {
-              playMenuOpen();
-            } else {
-              playMenuClose();
-            }
+    <SelectPrimitive.Root
+      {...props}
+      items={items ?? (derivedItems.length > 0 ? derivedItems : undefined)}
+      onOpenChange={(open, eventDetails) => {
+        if (open !== openRef.current) {
+          openRef.current = open;
+          if (open) {
+            playMenuOpen();
+          } else {
+            playMenuClose();
           }
-          onOpenChange?.(open, eventDetails);
-        }}
-        onValueChange={(value) => {
-          if (value != null) {
-            onValueChange?.(value);
-          }
-        }}
-      >
-        {children}
-      </SelectPrimitive.Root>
-    </SelectLabelContext.Provider>
+        }
+        onOpenChange?.(open, eventDetails);
+      }}
+      onValueChange={(value) => {
+        if (value != null) {
+          onValueChange?.(value);
+        }
+      }}
+    >
+      {children}
+    </SelectPrimitive.Root>
   );
 };
 
@@ -111,15 +125,9 @@ const SelectValue = ({
   placeholder,
   ...props
 }: React.ComponentPropsWithoutRef<typeof SelectPrimitive.Value>) => {
-  const labelContext = React.use(SelectLabelContext);
-
   return (
     <SelectPrimitive.Value placeholder={placeholder} {...props}>
-      {children ?? ((value) => (
-        value == null
-          ? placeholder ?? null
-          : labelContext?.labels.get(String(value)) ?? String(value)
-      ))}
+      {children}
     </SelectPrimitive.Value>
   );
 };
@@ -326,16 +334,6 @@ const SelectItem = (
   }
 ) => {
   const { play: playClick } = useSound(Sounds.BUTTON_CLICK, 0.3);
-  const labelContext = React.use(SelectLabelContext);
-  const registerLabel = labelContext?.registerLabel;
-  const valueKey = props.value == null ? null : String(props.value);
-  const label = getTextLabel(children);
-
-  React.useEffect(() => {
-    if (valueKey == null) return;
-    registerLabel?.(valueKey, label);
-    return () => registerLabel?.(valueKey, null);
-  }, [label, registerLabel, valueKey]);
 
   return (
     <SelectPrimitive.Item
@@ -391,16 +389,6 @@ const SelectItemWithDescription = (
   }
 ) => {
   const { play: playClick } = useSound(Sounds.BUTTON_CLICK, 0.3);
-  const labelContext = React.use(SelectLabelContext);
-  const registerLabel = labelContext?.registerLabel;
-  const valueKey = props.value == null ? null : String(props.value);
-  const label = getTextLabel(children);
-
-  React.useEffect(() => {
-    if (valueKey == null) return;
-    registerLabel?.(valueKey, label);
-    return () => registerLabel?.(valueKey, null);
-  }, [label, registerLabel, valueKey]);
 
   return (
     <SelectPrimitive.Item
