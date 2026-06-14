@@ -16,6 +16,8 @@ import {
   Shuffle,
   MusicNotes,
   Sun,
+  CloudSun,
+  Microphone,
 } from "@phosphor-icons/react";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { loadWallpaperManifest } from "@/utils/wallpapers";
@@ -24,13 +26,19 @@ import { useNowPlayingCover } from "@/hooks/useNowPlayingCover";
 import {
   COVER_WALLPAPER,
   DAY_NIGHT_GRADIENT_WALLPAPER,
+  LYRICS_WALLPAPER,
+  WEATHER_WALLPAPER,
   buildShuffleDescriptor,
   getDayNightGradientCss,
+  getWeatherGradientCss,
   isCoverWallpaper,
   isDayNightGradientWallpaper,
+  isLyricsWallpaper,
   isShuffleWallpaper,
+  isWeatherWallpaper,
   parseShuffleDescriptor,
 } from "@/utils/dynamicWallpaper";
+import { DEFAULT_COVER_PALETTE } from "@/hooks/useCoverPalette";
 import { useTranslation } from "react-i18next";
 
 // Remove unused constants
@@ -303,10 +311,24 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
   const nowPlaying = useNowPlayingCover();
   // Preview the gradient for the current time of day (static within a session).
   const dayNightPreview = useMemo(() => getDayNightGradientCss(), []);
+  // Weather preview uses an overcast/partly-cloudy treatment so it reads as a
+  // distinct "weather" tile while still tracking the current time of day.
+  const weatherPreview = useMemo(() => getWeatherGradientCss(3), []);
+  // Static fallback preview for the lyrics tile when nothing is playing.
+  const lyricsPreview = useMemo(
+    () =>
+      `linear-gradient(135deg, ${DEFAULT_COVER_PALETTE[0]} 0%, ${DEFAULT_COVER_PALETTE[2]} 50%, ${DEFAULT_COVER_PALETTE[4]} 100%)`,
+    []
+  );
   const deriveCategoryFromWallpaper = (
     wallpaper: string
   ): "tiles" | PhotoCategory => {
-    if (isDayNightGradientWallpaper(wallpaper) || isCoverWallpaper(wallpaper))
+    if (
+      isDayNightGradientWallpaper(wallpaper) ||
+      isWeatherWallpaper(wallpaper) ||
+      isCoverWallpaper(wallpaper) ||
+      isLyricsWallpaper(wallpaper)
+    )
       return "dynamic";
     const shuffleTarget = parseShuffleDescriptor(wallpaper);
     if (shuffleTarget) {
@@ -688,6 +710,13 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
                 icon={<Sun className="size-6 text-white" weight="fill" />}
               />
               <SpecialTile
+                label={t("apps.control-panels.dynamicWallpapers.weather")}
+                isSelected={isWeatherWallpaper(currentWallpaper)}
+                onClick={() => handleWallpaperSelect(WEATHER_WALLPAPER)}
+                backgroundStyle={{ backgroundImage: weatherPreview }}
+                icon={<CloudSun className="size-6 text-white" weight="fill" />}
+              />
+              <SpecialTile
                 label={t("apps.control-panels.dynamicWallpapers.nowPlaying")}
                 isSelected={isCoverWallpaper(currentWallpaper)}
                 onClick={() => handleWallpaperSelect(COVER_WALLPAPER)}
@@ -705,6 +734,22 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
                     <MusicNotes className="size-6 text-white" weight="fill" />
                   )
                 }
+              />
+              <SpecialTile
+                label={t("apps.control-panels.dynamicWallpapers.lyrics")}
+                isSelected={isLyricsWallpaper(currentWallpaper)}
+                onClick={() => handleWallpaperSelect(LYRICS_WALLPAPER)}
+                scrim={Boolean(nowPlaying.coverUrl)}
+                backgroundStyle={
+                  nowPlaying.coverUrl
+                    ? {
+                        backgroundImage: `url("${nowPlaying.coverUrl}")`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                      }
+                    : { backgroundImage: lyricsPreview }
+                }
+                icon={<Microphone className="size-6 text-white" weight="fill" />}
               />
             </>
           ) : selectedCategory === "tiles" ? (

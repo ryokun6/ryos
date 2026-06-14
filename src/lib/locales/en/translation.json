@@ -3087,7 +3087,9 @@
       },
       "dynamicWallpapers": {
         "dayNight": "Day & Night",
+        "weather": "Weather",
         "nowPlaying": "Now Playing",
+        "lyrics": "Lyrics",
         "shuffle": "Shuffle"
       },
       "alerts": {

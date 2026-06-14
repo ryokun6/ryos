@@ -8,8 +8,12 @@
 //
 //   - `dynamic://gradient/day-night` — a gradient that shifts with wall-clock
 //     time of day.
+//   - `dynamic://weather`            — the day/night gradient, re-tinted to match
+//     the live local weather condition (clear, cloudy, rain, snow, fog, storm).
 //   - `dynamic://cover`              — the now-playing cover art of the iPod or
 //     Karaoke (falls back to the paused cover).
+//   - `dynamic://lyrics`            — the now-playing synced lyrics over the same
+//     animated mesh-gradient ("gradient paper") shader used by the music apps.
 //   - `shuffle://photos/<category>`  — a random photo from a picker category,
 //     swapped every {@link SHUFFLE_INTERVAL_MS}.
 //   - `shuffle://tiles`              — a random tiled pattern, rotated likewise.
@@ -21,7 +25,9 @@ export const DYNAMIC_PREFIX = "dynamic://";
 export const SHUFFLE_PREFIX = "shuffle://";
 
 export const DAY_NIGHT_GRADIENT_WALLPAPER = "dynamic://gradient/day-night";
+export const WEATHER_WALLPAPER = "dynamic://weather";
 export const COVER_WALLPAPER = "dynamic://cover";
+export const LYRICS_WALLPAPER = "dynamic://lyrics";
 
 /** How often shuffle wallpapers swap to a new random pick. */
 export const SHUFFLE_INTERVAL_MS = 2 * 60 * 1000;
@@ -39,8 +45,20 @@ export function isDayNightGradientWallpaper(
   return wallpaper === DAY_NIGHT_GRADIENT_WALLPAPER;
 }
 
+export function isWeatherWallpaper(
+  wallpaper: string | undefined | null
+): boolean {
+  return wallpaper === WEATHER_WALLPAPER;
+}
+
 export function isCoverWallpaper(wallpaper: string | undefined | null): boolean {
   return wallpaper === COVER_WALLPAPER;
+}
+
+export function isLyricsWallpaper(
+  wallpaper: string | undefined | null
+): boolean {
+  return wallpaper === LYRICS_WALLPAPER;
 }
 
 export function isShuffleWallpaper(
@@ -194,6 +212,87 @@ export function getDayNightGradientColors(date: Date = new Date()): [RGB, RGB, R
 /** Build a CSS `linear-gradient(...)` string for the current time of day. */
 export function getDayNightGradientCss(date: Date = new Date()): string {
   const [top, mid, bottom] = getDayNightGradientColors(date);
+  return `linear-gradient(to bottom, ${rgbToCss(top)} 0%, ${rgbToCss(
+    mid
+  )} 55%, ${rgbToCss(bottom)} 100%)`;
+}
+
+// ---------------------------------------------------------------------------
+// Weather gradient
+//
+// The weather wallpaper reuses the time-of-day gradient as a base "sky" and
+// then re-tints it to match the current weather condition. This keeps the
+// gradient shifting through dawn/day/dusk/night while a storm reads darker, a
+// clear sky reads vivid, fog reads washed-out, snow reads bright & cool, etc.
+// ---------------------------------------------------------------------------
+
+const relativeLuminance = ([r, g, b]: RGB): number =>
+  0.299 * r + 0.587 * g + 0.114 * b;
+
+const desaturate = (rgb: RGB, amount: number): RGB => {
+  const l = relativeLuminance(rgb);
+  return lerpRgb(rgb, [l, l, l], amount);
+};
+
+const darken = (rgb: RGB, amount: number): RGB =>
+  rgb.map((c) => Math.round(c * (1 - amount))) as RGB;
+
+const lighten = (rgb: RGB, amount: number): RGB =>
+  lerpRgb(rgb, [255, 255, 255], amount);
+
+const tint = (rgb: RGB, color: RGB, amount: number): RGB =>
+  lerpRgb(rgb, color, amount);
+
+/** Weather treatments keyed by WMO weather-code "family". */
+type WeatherTreatment = (rgb: RGB) => RGB;
+
+const WEATHER_TREATMENTS: Record<string, WeatherTreatment> = {
+  clear: (rgb) => rgb,
+  partlyCloudy: (rgb) => lighten(desaturate(rgb, 0.28), 0.04),
+  fog: (rgb) => lighten(desaturate(rgb, 0.72), 0.16),
+  drizzle: (rgb) => tint(darken(desaturate(rgb, 0.42), 0.12), [92, 104, 120], 0.16),
+  rain: (rgb) => tint(darken(desaturate(rgb, 0.46), 0.2), [78, 92, 110], 0.24),
+  snow: (rgb) => tint(lighten(desaturate(rgb, 0.55), 0.2), [220, 228, 236], 0.12),
+  thunderstorm: (rgb) =>
+    tint(darken(desaturate(rgb, 0.5), 0.4), [58, 54, 80], 0.22),
+};
+
+/** Map a WMO weather code to a treatment family. */
+function weatherCodeToFamily(code: number | null | undefined): string {
+  if (code == null) return "clear";
+  if (code === 0) return "clear";
+  if (code <= 3) return "partlyCloudy";
+  if (code <= 48) return "fog";
+  if (code <= 57) return "drizzle";
+  if (code <= 67) return "rain";
+  if (code <= 77) return "snow";
+  if (code <= 82) return "rain"; // rain showers
+  if (code <= 86) return "snow"; // snow showers
+  if (code <= 99) return "thunderstorm";
+  return "clear";
+}
+
+/**
+ * Compute the [top, mid, bottom] gradient colors for the current time of day,
+ * re-tinted to match the supplied weather code. A `null`/`undefined` code (e.g.
+ * while the live weather is still loading) falls back to the plain day/night
+ * gradient.
+ */
+export function getWeatherGradientColors(
+  code: number | null | undefined,
+  date: Date = new Date()
+): [RGB, RGB, RGB] {
+  const base = getDayNightGradientColors(date);
+  const treat = WEATHER_TREATMENTS[weatherCodeToFamily(code)] ?? ((c: RGB) => c);
+  return [treat(base[0]), treat(base[1]), treat(base[2])];
+}
+
+/** Build a CSS `linear-gradient(...)` string for the current time + weather. */
+export function getWeatherGradientCss(
+  code: number | null | undefined,
+  date: Date = new Date()
+): string {
+  const [top, mid, bottom] = getWeatherGradientColors(code, date);
   return `linear-gradient(to bottom, ${rgbToCss(top)} 0%, ${rgbToCss(
     mid
   )} 55%, ${rgbToCss(bottom)} 100%)`;

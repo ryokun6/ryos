@@ -1390,8 +1390,10 @@
       "dream": "Мечта",
       "dynamicWallpapers": {
         "dayNight": "День и ночь",
+        "lyrics": "Текст",
         "nowPlaying": "Сейчас играет",
-        "shuffle": "Перемешать"
+        "shuffle": "Перемешать",
+        "weather": "Погода"
       },
       "elevenlabs": "ElevenLabs",
       "elevenlabsVoiceId": "ID голоса ElevenLabs",

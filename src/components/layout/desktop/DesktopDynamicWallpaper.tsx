@@ -2,10 +2,17 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { useWallpaper } from "@/hooks/useWallpaper";
 import { useNowPlayingCover } from "@/hooks/useNowPlayingCover";
+import { useWeatherWallpaper } from "@/hooks/useWeatherWallpaper";
+import { useNowPlayingLyrics } from "@/hooks/useNowPlayingLyrics";
+import { MeshGradientBackground } from "@/components/shared/MeshGradientBackground";
+import { LyricsDisplay } from "@/apps/ipod/components/lyrics-display/LyricsDisplay";
 import {
   getDayNightGradientCss,
+  getWeatherGradientCss,
   isCoverWallpaper,
   isDayNightGradientWallpaper,
+  isLyricsWallpaper,
+  isWeatherWallpaper,
 } from "@/utils/dynamicWallpaper";
 
 /** Recompute the day/night gradient roughly once a minute. */
@@ -30,6 +37,67 @@ function DayNightGradientLayer() {
         transition: "background-image 3s linear",
       }}
     />
+  );
+}
+
+function WeatherGradientLayer() {
+  const { weatherCode } = useWeatherWallpaper();
+  const [gradient, setGradient] = useState(() =>
+    getWeatherGradientCss(weatherCode)
+  );
+
+  // Recompute on the minute timer (time-of-day) and whenever the live weather
+  // code changes. The gradient reads the wall clock internally.
+  useEffect(() => {
+    const update = () => setGradient(getWeatherGradientCss(weatherCode));
+    update();
+    const id = setInterval(update, GRADIENT_REFRESH_MS);
+    return () => clearInterval(id);
+  }, [weatherCode]);
+
+  return (
+    <div
+      className="absolute inset-0 w-full h-full z-[-10]"
+      style={{
+        backgroundImage: gradient,
+        transition: "background-image 3s linear",
+      }}
+    />
+  );
+}
+
+function LyricsWallpaperLayer() {
+  const np = useNowPlayingLyrics();
+
+  return (
+    <div className="absolute inset-0 w-full h-full z-[-10] overflow-hidden bg-neutral-950">
+      {/* "Gradient paper" — the same animated Paper mesh-gradient shader the
+          iPod / Karaoke use, tinted by the now-playing cover art. */}
+      <MeshGradientBackground
+        coverUrl={np.coverUrl}
+        isActive
+        className="absolute inset-0 w-full h-full"
+      />
+      {/* Soft darkening keeps the lyrics and desktop icons readable. */}
+      <div className="absolute inset-0 w-full h-full bg-black/30" />
+      {np.hasLyrics && (
+        <LyricsDisplay
+          lines={np.lyricsControls.lines}
+          originalLines={np.lyricsControls.originalLines}
+          currentLine={np.lyricsControls.currentLine}
+          isLoading={np.lyricsControls.isLoading}
+          error={np.lyricsControls.error}
+          visible
+          videoVisible
+          fontClassName={np.lyricsFontClassName}
+          isTranslating={np.lyricsControls.isTranslating}
+          furiganaMap={np.furiganaMap}
+          soramimiMap={np.soramimiMap}
+          currentTimeMs={np.currentTimeMs}
+          showInterludeEllipsis
+        />
+      )}
+    </div>
   );
 }
 
@@ -92,8 +160,14 @@ export function DesktopDynamicWallpaper() {
   if (isDayNightGradientWallpaper(currentWallpaper)) {
     return <DayNightGradientLayer />;
   }
+  if (isWeatherWallpaper(currentWallpaper)) {
+    return <WeatherGradientLayer />;
+  }
   if (isCoverWallpaper(currentWallpaper)) {
     return <CoverWallpaperLayer />;
+  }
+  if (isLyricsWallpaper(currentWallpaper)) {
+    return <LyricsWallpaperLayer />;
   }
   return null;
 }

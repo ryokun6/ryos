@@ -1390,8 +1390,10 @@
       "dream": "Sonho",
       "dynamicWallpapers": {
         "dayNight": "Dia e Noite",
+        "lyrics": "Letras",
         "nowPlaying": "Reproduzindo agora",
-        "shuffle": "Aleatório"
+        "shuffle": "Aleatório",
+        "weather": "Clima"
       },
       "elevenlabs": "ElevenLabs",
       "elevenlabsVoiceId": "ID de Voz ElevenLabs",

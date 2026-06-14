@@ -1390,8 +1390,10 @@
       "dream": "ドリーム",
       "dynamicWallpapers": {
         "dayNight": "デイ＆ナイト",
+        "lyrics": "歌詞",
         "nowPlaying": "再生中",
-        "shuffle": "シャッフル"
+        "shuffle": "シャッフル",
+        "weather": "天気"
       },
       "elevenlabs": "ElevenLabs",
       "elevenlabsVoiceId": "ElevenLabs 音声ID",
