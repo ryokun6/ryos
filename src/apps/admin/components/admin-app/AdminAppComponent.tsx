@@ -100,6 +100,9 @@ export function AdminAppComponent({
       isSidebarVisible={isSidebarVisible}
       activeSection={activeSection}
       onSectionChange={setActiveSection}
+      rooms={rooms}
+      selectedRoomId={selectedRoomId}
+      onRoomSelect={setSelectedRoomId}
     />
   );
 

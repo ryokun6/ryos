@@ -3689,7 +3689,9 @@
         "refreshData": "Refresh Data",
         "showSidebar": "Show Sidebar",
         "adminHelp": "Admin Help",
-        "aboutAdmin": "About Admin"
+        "aboutAdmin": "About Admin",
+        "allRooms": "All Rooms",
+        "noRooms": "No rooms"
       },
       "sidebar": {
         "dashboard": "Dashboard",
