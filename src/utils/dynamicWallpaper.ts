@@ -14,10 +14,15 @@
 //     Karaoke (falls back to the paused cover).
 //   - `dynamic://lyrics`            — the now-playing synced lyrics over the same
 //     animated mesh-gradient ("gradient paper") shader used by the music apps.
-//   - `shuffle://photos/<category>`  — a random photo from a picker category,
-//     swapped every {@link SHUFFLE_INTERVAL_MS}.
-//   - `shuffle://tiles`              — a random tiled pattern, rotated likewise.
-//   - `shuffle://videos`             — a random video wallpaper, rotated likewise.
+//   - `shuffle://photos/<category>`  — a photo from a picker category, swapped
+//     every {@link SHUFFLE_INTERVAL_MS}.
+//   - `shuffle://tiles`              — a tiled pattern, rotated likewise.
+//   - `shuffle://videos`             — a video wallpaper, rotated likewise.
+//
+// Shuffle picks are *deterministic* for a given (user, descriptor, wall-clock
+// bucket): every device signed into the same account resolves the same concrete
+// asset at the same time, so the desktop stays in sync across a user's devices
+// (see `pickDeterministicCandidate` and `useShuffleWallpaper`).
 
 import type { WallpaperManifest } from "@/utils/wallpapers";
 
@@ -125,6 +130,65 @@ export function pickRandomCandidate(
     : candidates;
   const list = pool.length > 0 ? pool : candidates;
   return list[Math.floor(Math.random() * list.length)];
+}
+
+/**
+ * Wall-clock bucket index for shuffle rotation. The bucket advances once every
+ * {@link SHUFFLE_INTERVAL_MS} and is aligned to the Unix epoch, so it is the
+ * same value on every device at the same instant — the key to keeping a user's
+ * devices in sync.
+ */
+export function shuffleBucket(now: number = Date.now()): number {
+  return Math.floor(now / SHUFFLE_INTERVAL_MS);
+}
+
+/** Stable 32-bit FNV-1a hash of a string (order-independent of platform). */
+function hashString(str: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return h >>> 0;
+}
+
+const gcd = (a: number, b: number): number => {
+  while (b !== 0) [a, b] = [b, a % b];
+  return a;
+};
+
+/**
+ * Deterministically pick a candidate for the current wall-clock bucket.
+ *
+ * The choice is a pure function of (`seed`, time bucket, candidate list), so
+ * every device that shares the same `seed` — i.e. the same signed-in user and
+ * shuffle descriptor — lands on the *same* wallpaper at the same time, and
+ * rotates in lockstep when the bucket advances. The candidate list comes from
+ * the build-time manifest, so its ordering is stable across devices too.
+ *
+ * To pick an order, the seed derives a starting offset and a stride that is
+ * coprime to the candidate count. Walking by that stride each bucket visits
+ * every wallpaper exactly once before repeating and never shows the same asset
+ * in two consecutive buckets — all while staying deterministic, so a user's
+ * devices agree on the full sequence, not just the current frame.
+ */
+export function pickDeterministicCandidate(
+  candidates: string[],
+  seed: string,
+  now: number = Date.now()
+): string | null {
+  const len = candidates.length;
+  if (len === 0) return null;
+  if (len === 1) return candidates[0];
+  const bucket = shuffleBucket(now);
+  const base = hashString(`${seed}#base`) % len;
+  // Stride in [1, len-1], then bumped to the next value coprime to `len` so the
+  // walk is a full-cycle permutation (visits all before repeating).
+  let stride = 1 + (hashString(`${seed}#stride`) % (len - 1));
+  while (gcd(stride, len) !== 1) stride = (stride % (len - 1)) + 1;
+  // Reduce factors before multiplying to keep the arithmetic small and exact.
+  const idx = (base + ((bucket % len) * (stride % len)) % len) % len;
+  return candidates[idx];
 }
 
 // ---------------------------------------------------------------------------

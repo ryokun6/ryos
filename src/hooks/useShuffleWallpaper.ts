@@ -1,28 +1,37 @@
 import { useEffect, useRef } from "react";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
+import { useChatsStore } from "@/stores/useChatsStore";
 import { loadWallpaperManifest } from "@/utils/wallpapers";
 import {
   SHUFFLE_INTERVAL_MS,
   getShuffleCandidatePaths,
   isShuffleWallpaper,
   parseShuffleDescriptor,
-  pickRandomCandidate,
+  pickDeterministicCandidate,
+  shuffleBucket,
 } from "@/utils/dynamicWallpaper";
 
 /**
  * Drives shuffle wallpapers: when `currentWallpaper` is a `shuffle://…`
- * descriptor, resolve a random asset from that category and rotate to a new
- * random one every {@link SHUFFLE_INTERVAL_MS}. The concrete asset is written
- * to the store's runtime `wallpaperSource` so the desktop, menubar tint, and
- * accent sampling all see a real image while the persisted selection stays the
- * shuffle descriptor.
+ * descriptor, resolve a concrete asset from that category and rotate to a new
+ * one every {@link SHUFFLE_INTERVAL_MS}. The concrete asset is written to the
+ * store's runtime `wallpaperSource` so the desktop, menubar tint, and accent
+ * sampling all see a real image while the persisted selection stays the shuffle
+ * descriptor.
+ *
+ * The pick is **deterministic** for a given (signed-in user, descriptor,
+ * wall-clock bucket) — see {@link pickDeterministicCandidate}. This keeps every
+ * device signed into the same account showing the same wallpaper at the same
+ * time, and rotating in lockstep when the bucket advances. Anonymous (logged
+ * out) sessions fall back to a shared `anon` seed so a single device still stays
+ * consistent across reloads.
  *
  * Rotation is wall-clock based rather than relying solely on `setInterval`:
- * browsers throttle (and during device sleep fully suspend) background-tab
- * timers, so a plain interval would silently stall while the tab is hidden.
- * We additionally rotate when the tab becomes visible/focused again if more
- * than {@link SHUFFLE_INTERVAL_MS} has elapsed since the last swap — so coming
- * back after being away always lands on a fresh wallpaper.
+ * - swaps are aligned to bucket boundaries (a timeout to the next boundary, then
+ *   an interval), so all of a user's devices flip at the same instant;
+ * - we additionally re-resolve when the tab regains visibility/focus if the
+ *   bucket has advanced, guarding against background-tab timer throttling and
+ *   device sleep.
  */
 export function useShuffleWallpaper() {
   const currentWallpaper = useDisplaySettingsStore((s) => s.currentWallpaper);
@@ -30,9 +39,10 @@ export function useShuffleWallpaper() {
   const setRuntimeWallpaperSource = useDisplaySettingsStore(
     (s) => s.setRuntimeWallpaperSource
   );
+  const username = useChatsStore((s) => s.username);
 
-  // Keep the latest resolved source in a ref so the rotation can avoid
-  // immediately repeating the current pick without re-subscribing.
+  // Keep the latest resolved source in a ref so resolution can skip redundant
+  // updates without re-subscribing.
   const currentSourceRef = useRef(wallpaperSource);
   currentSourceRef.current = wallpaperSource;
 
@@ -43,23 +53,42 @@ export function useShuffleWallpaper() {
 
     let cancelled = false;
     let intervalId: ReturnType<typeof setInterval> | null = null;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
     let candidates: string[] = [];
-    // Wall-clock timestamp of the last swap, used to catch up after the tab
-    // (or the whole machine) was suspended and timers stopped firing.
-    let lastRotateAt = Date.now();
+    // Seed combines a stable per-user id and the descriptor so every device of
+    // the same user resolves the same wallpaper for a given wall-clock bucket.
+    const seed = `${username ?? "anon"}|${currentWallpaper}`;
+    // Bucket of the last resolution, used to detect when we're overdue after the
+    // tab (or the whole machine) was suspended and timers stopped firing.
+    let lastBucket = shuffleBucket();
 
-    const rotate = () => {
+    const resolve = () => {
       if (candidates.length === 0) return;
-      const next = pickRandomCandidate(candidates, currentSourceRef.current);
-      if (next) setRuntimeWallpaperSource(next);
-      lastRotateAt = Date.now();
+      const next = pickDeterministicCandidate(candidates, seed);
+      if (next && next !== currentSourceRef.current) {
+        setRuntimeWallpaperSource(next);
+      }
+      lastBucket = shuffleBucket();
     };
 
-    // On regaining visibility/focus, rotate if we're overdue. Guards against
-    // background timers being throttled or suspended while the tab was hidden.
-    const rotateIfOverdue = () => {
+    // Align rotation to wall-clock bucket boundaries: wait out the remainder of
+    // the current bucket, swap, then swap once per interval thereafter. Every
+    // device crosses the same boundary at the same time.
+    const scheduleNextBoundary = () => {
+      const msToNextBoundary =
+        SHUFFLE_INTERVAL_MS - (Date.now() % SHUFFLE_INTERVAL_MS);
+      timeoutId = setTimeout(() => {
+        resolve();
+        intervalId = setInterval(resolve, SHUFFLE_INTERVAL_MS);
+      }, msToNextBoundary);
+    };
+
+    // On regaining visibility/focus, re-resolve if the bucket has advanced.
+    // Guards against background timers being throttled or suspended while the
+    // tab was hidden.
+    const resolveIfOverdue = () => {
       if (document.visibilityState !== "visible") return;
-      if (Date.now() - lastRotateAt >= SHUFFLE_INTERVAL_MS) rotate();
+      if (shuffleBucket() !== lastBucket) resolve();
     };
 
     loadWallpaperManifest()
@@ -68,31 +97,26 @@ export function useShuffleWallpaper() {
         candidates = getShuffleCandidatePaths(manifest, target);
         if (candidates.length === 0) return;
 
-        // Resolve immediately if the runtime source isn't already one of the
-        // category's assets (e.g. fresh selection or stale descriptor).
-        if (!candidates.includes(currentSourceRef.current)) {
-          rotate();
-        } else {
-          // Already showing a category asset (e.g. restored from persistence):
-          // treat it as freshly shown so the next swap is a full interval away.
-          lastRotateAt = Date.now();
-        }
-
-        intervalId = setInterval(rotate, SHUFFLE_INTERVAL_MS);
+        // Resolve the deterministic pick for the current bucket immediately. If
+        // the restored source already matches, `resolve` is a no-op; otherwise
+        // we snap to the wallpaper this user's other devices are showing.
+        resolve();
+        scheduleNextBoundary();
       })
       .catch((err) =>
         console.error("Failed to load manifest for shuffle wallpaper", err)
       );
 
-    document.addEventListener("visibilitychange", rotateIfOverdue);
-    window.addEventListener("focus", rotateIfOverdue);
+    document.addEventListener("visibilitychange", resolveIfOverdue);
+    window.addEventListener("focus", resolveIfOverdue);
 
     return () => {
       cancelled = true;
       if (intervalId) clearInterval(intervalId);
-      document.removeEventListener("visibilitychange", rotateIfOverdue);
-      window.removeEventListener("focus", rotateIfOverdue);
+      if (timeoutId) clearTimeout(timeoutId);
+      document.removeEventListener("visibilitychange", resolveIfOverdue);
+      window.removeEventListener("focus", resolveIfOverdue);
     };
-    // Re-run when the descriptor changes (category switch / disable).
-  }, [currentWallpaper, setRuntimeWallpaperSource]);
+    // Re-run when the descriptor or signed-in user changes.
+  }, [currentWallpaper, username, setRuntimeWallpaperSource]);
 }

@@ -448,9 +448,9 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
   );
 
   // When a category's shuffle is the *active* wallpaper, mirror the concrete
-  // asset the desktop currently shows (and rotates every 2 min) so the tile
-  // stays in sync. `wallpaperSource` is the live resolved asset; ignore it
-  // while it's still an unresolved shuffle:// descriptor.
+  // asset the desktop currently shows (rotated deterministically per wall-clock
+  // bucket) so the tile stays in sync. `wallpaperSource` is the live resolved
+  // asset; ignore it while it's still an unresolved shuffle:// descriptor.
   const liveShuffleSource = isShuffleWallpaper(wallpaperSource)
     ? undefined
     : wallpaperSource;
