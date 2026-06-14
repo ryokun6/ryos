@@ -37,8 +37,12 @@ import {
   isShuffleWallpaper,
   isWeatherWallpaper,
   parseShuffleDescriptor,
+  pickDeterministicCandidate,
+  shuffleBucket,
+  SHUFFLE_INTERVAL_MS,
 } from "@/utils/dynamicWallpaper";
 import { DEFAULT_COVER_PALETTE } from "@/hooks/useCoverPalette";
+import { useChatsStore } from "@/stores/useChatsStore";
 import { useTranslation } from "react-i18next";
 
 // Remove unused constants
@@ -313,6 +317,28 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
   const { play: playClick } = useSound(Sounds.BUTTON_CLICK, 0.3);
   const displayMode = useDisplaySettingsStore((s) => s.displayMode);
   const setDisplayMode = useDisplaySettingsStore((s) => s.setDisplayMode);
+  // Same per-user seed component used by `useShuffleWallpaper`, so the preview
+  // resolves to the exact asset the desktop would (and other devices do) show.
+  const username = useChatsStore((s) => s.username);
+  // Advance a tick at each wall-clock bucket boundary so inactive shuffle tile
+  // previews rotate in lockstep with what shuffle would actually display.
+  const [shuffleTick, setShuffleTick] = useState(() => shuffleBucket());
+  useEffect(() => {
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+    const msToNextBoundary =
+      SHUFFLE_INTERVAL_MS - (Date.now() % SHUFFLE_INTERVAL_MS);
+    const timeoutId = setTimeout(() => {
+      setShuffleTick(shuffleBucket());
+      intervalId = setInterval(
+        () => setShuffleTick(shuffleBucket()),
+        SHUFFLE_INTERVAL_MS
+      );
+    }, msToNextBoundary);
+    return () => {
+      clearTimeout(timeoutId);
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, []);
   const { t } = useTranslation();
   const nowPlaying = useNowPlayingCover();
   // Preview the gradient for the current time of day (static within a session).
@@ -429,22 +455,32 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
     return r;
   }, [manifest]);
 
-  // Pick a stable random preview per category so the Shuffle tile hints at the
-  // art it will cycle through. Keyed on the source arrays so it only re-rolls
-  // when the manifest (or selected category) changes — not on every render.
-  const pickRandom = (arr: string[]): string | undefined =>
-    arr.length ? arr[Math.floor(Math.random() * arr.length)] : undefined;
-  const randomTileShuffleArt = useMemo(
-    () => pickRandom(tileWallpapers),
-    [tileWallpapers]
+  // Shuffle picks are deterministic per (user, descriptor, wall-clock bucket),
+  // so the Shuffle tile can preview the *exact* asset shuffle would resolve to
+  // right now — matching the desktop and the user's other devices — instead of
+  // an arbitrary random hint. `shuffleTick` keeps it rotating in lockstep.
+  const pickShuffleArt = (
+    arr: string[],
+    category: "tiles" | "videos" | string
+  ): string | undefined =>
+    pickDeterministicCandidate(
+      arr,
+      `${username ?? "anon"}|${buildShuffleDescriptor(category)}`
+    ) ?? undefined;
+  const tileShuffleArt = useMemo(
+    () => pickShuffleArt(tileWallpapers, "tiles"),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [tileWallpapers, username, shuffleTick]
   );
-  const randomVideoShuffleArt = useMemo(
-    () => pickRandom(videoWallpapers),
-    [videoWallpapers]
+  const videoShuffleArt = useMemo(
+    () => pickShuffleArt(videoWallpapers, "videos"),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [videoWallpapers, username, shuffleTick]
   );
-  const randomPhotoShuffleArt = useMemo(
-    () => pickRandom(photoWallpapers[selectedCategory] ?? []),
-    [photoWallpapers, selectedCategory]
+  const photoShuffleArt = useMemo(
+    () => pickShuffleArt(photoWallpapers[selectedCategory] ?? [], selectedCategory),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [photoWallpapers, selectedCategory, username, shuffleTick]
   );
 
   // When a category's shuffle is the *active* wallpaper, mirror the concrete
@@ -772,7 +808,7 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
                   const active =
                     currentWallpaper === buildShuffleDescriptor("tiles");
                   const art =
-                    (active && liveShuffleSource) || randomTileShuffleArt;
+                    (active && liveShuffleSource) || tileShuffleArt;
                   return art
                     ? {
                         backgroundImage: `url("${art}")`,
@@ -807,7 +843,7 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
                 backgroundVideoUrl={
                   (currentWallpaper === buildShuffleDescriptor("videos") &&
                     liveShuffleSource) ||
-                  randomVideoShuffleArt
+                  videoShuffleArt
                 }
                 icon={<Shuffle className="size-6 text-white" weight="bold" />}
               />
@@ -881,7 +917,7 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
                     currentWallpaper ===
                     buildShuffleDescriptor(selectedCategory);
                   const art =
-                    (active && liveShuffleSource) || randomPhotoShuffleArt;
+                    (active && liveShuffleSource) || photoShuffleArt;
                   return art
                     ? {
                         backgroundImage: `url("${art}")`,
