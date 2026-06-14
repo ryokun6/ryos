@@ -69,26 +69,56 @@ const Menubar = (
   const { play: playMenuClose } = useSound(Sounds.MENU_CLOSE)
   const [isSwitching, setIsSwitching] = React.useState(false)
   const currentValueRef = React.useRef<string | undefined>(undefined)
+  const closeTimerRef = React.useRef<number | undefined>(undefined)
+
+  React.useEffect(() => {
+    return () => {
+      if (closeTimerRef.current !== undefined) {
+        window.clearTimeout(closeTimerRef.current)
+      }
+    }
+  }, [])
 
   const handleValueChange = (value: string | undefined) => {
-    const currentValue = currentValueRef.current
-    if (value === currentValue) return
+    if (value) {
+      if (closeTimerRef.current !== undefined) {
+        window.clearTimeout(closeTimerRef.current)
+        closeTimerRef.current = undefined
+      }
 
-    // Play sound based on menu state change
-    if (value && !currentValue) {
-      // Opening a menu from closed state
-      playMenuOpen()
-      setIsSwitching(false)
-    } else if (!value && currentValue) {
-      // Closing a menu completely
+      const currentValue = currentValueRef.current
+      if (value === currentValue) return
+
+      if (!currentValue) {
+        // Opening a menu from closed state
+        playMenuOpen()
+        setIsSwitching(false)
+      } else {
+        // Switching between menus - skip sound and animation for instant swap
+        setIsSwitching(true)
+      }
+
+      currentValueRef.current = value
+      onValueChange?.(value)
+      return
+    }
+
+    const currentValue = currentValueRef.current
+    if (!currentValue) return
+
+    if (closeTimerRef.current !== undefined) {
+      window.clearTimeout(closeTimerRef.current)
+    }
+
+    closeTimerRef.current = window.setTimeout(() => {
+      if (currentValueRef.current !== currentValue) return
+
+      currentValueRef.current = undefined
       playMenuClose()
       setIsSwitching(false)
-    } else if (value && currentValue && value !== currentValue) {
-      // Switching between menus - skip sound and animation for instant swap
-      setIsSwitching(true)
-    }
-    currentValueRef.current = value
-    onValueChange?.(value ?? "")
+      onValueChange?.("")
+      closeTimerRef.current = undefined
+    }, 80)
   }
 
   return (
