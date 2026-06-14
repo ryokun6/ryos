@@ -60,7 +60,6 @@ const SelectTrigger = (
     ref?: React.Ref<React.ElementRef<typeof SelectPrimitive.Trigger>>;
   }
 ) => {
-  const { play: playClick } = useSound(Sounds.BUTTON_CLICK, 0.3);
   const { isMacOSTheme, isWindowsTheme: isXpTheme } = useThemeFlags();
 
   return (
@@ -78,7 +77,6 @@ const SelectTrigger = (
         fontSize: isXpTheme ? "var(--os-menu-item-font-size)" : undefined,
         ...(isXpTheme && { color: "black" }),
       }}
-      onClick={() => playClick()}
       {...props}
     >
       {children}
