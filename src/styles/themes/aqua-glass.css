@@ -524,8 +524,8 @@
   backdrop-filter: blur(26px) saturate(185%);
   border-radius: var(--os-glass-r-dock) !important;
   border: var(--os-metrics-border-width) solid var(--os-color-window-border) !important;
-  /* Lift the glass pill off the screen edge — classic dock sits flush. */
-  margin-bottom: 12px;
+  /* Lift the glass pill slightly off the screen edge — classic dock sits flush. */
+  margin-bottom: 6px;
   box-shadow: var(--os-color-dock-shadow),
     inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
 }
