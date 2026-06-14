@@ -63,7 +63,7 @@ export function AdminMenuBar({
 
   const publicRooms = rooms.filter((r) => r.type !== "private");
 
-  const roomsSubmenuItems: MenuDescriptor["items"] = publicRooms.map((room) => ({
+  const roomItems: MenuDescriptor["items"] = publicRooms.map((room) => ({
     type: "checkbox",
     label: `#${room.name}`,
     checked: activeSection === "rooms" && selectedRoomId === room.id,
@@ -102,13 +102,9 @@ export function AdminMenuBar({
           "cursorAgents",
           t("apps.admin.sidebar.cursorAgents", "Cursor Agents")
         ),
-        { type: "separator" },
-        {
-          type: "submenu",
-          label: t("apps.admin.sidebar.rooms"),
-          items: roomsSubmenuItems,
-          disabled: roomsSubmenuItems.length === 0,
-        },
+        ...(roomItems.length > 0
+          ? ([{ type: "separator" }, ...roomItems] as MenuDescriptor["items"])
+          : []),
         { type: "separator" },
         {
           type: "checkbox",
