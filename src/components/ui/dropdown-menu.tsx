@@ -7,6 +7,33 @@ import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 import { cn } from "@/lib/utils";
 
+type DropdownSubmenuSide = React.ComponentPropsWithoutRef<
+  typeof DropdownMenuPrimitive.Positioner
+>["side"];
+
+const SUBMENU_COLLISION_PADDING = 8;
+const ESTIMATED_SUBMENU_WIDTH = 180;
+
+const DropdownSubmenuSideContext = React.createContext<{
+  side: DropdownSubmenuSide;
+  updateFromTrigger: (trigger: HTMLElement) => void;
+} | null>(null);
+
+function getStableSubmenuSide(trigger: HTMLElement): DropdownSubmenuSide {
+  if (typeof window === "undefined") return "inline-end";
+
+  const rect = trigger.getBoundingClientRect();
+  const viewportLeft = window.visualViewport?.offsetLeft ?? 0;
+  const viewportWidth = window.visualViewport?.width ?? window.innerWidth;
+  const viewportRight = viewportLeft + viewportWidth;
+  const rightSpace = viewportRight - rect.right - SUBMENU_COLLISION_PADDING;
+  const leftSpace = rect.left - viewportLeft - SUBMENU_COLLISION_PADDING;
+
+  return rightSpace < ESTIMATED_SUBMENU_WIDTH && leftSpace > rightSpace
+    ? "inline-start"
+    : "inline-end";
+}
+
 const DropdownMenu = ({
   children,
   onOpenChange,
@@ -82,7 +109,29 @@ const DropdownMenuGroup = DropdownMenuPrimitive.Group;
 
 const DropdownMenuPortal = DropdownMenuPrimitive.Portal;
 
-const DropdownMenuSub = DropdownMenuPrimitive.SubmenuRoot;
+const DropdownMenuSub = ({
+  children,
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.SubmenuRoot>) => {
+  const [side, setSide] = React.useState<DropdownSubmenuSide>("inline-end");
+  const value = React.useMemo(
+    () => ({
+      side,
+      updateFromTrigger: (trigger: HTMLElement) => {
+        setSide(getStableSubmenuSide(trigger));
+      },
+    }),
+    [side]
+  );
+
+  return (
+    <DropdownSubmenuSideContext.Provider value={value}>
+      <DropdownMenuPrimitive.SubmenuRoot {...props}>
+        {children}
+      </DropdownMenuPrimitive.SubmenuRoot>
+    </DropdownSubmenuSideContext.Provider>
+  );
+};
 
 const DropdownMenuRadioGroup = DropdownMenuPrimitive.RadioGroup;
 
@@ -92,6 +141,8 @@ const DropdownMenuSubTrigger = (
     className,
     inset,
     children,
+    onFocus,
+    onPointerEnter,
     ...props
   }: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubmenuTrigger> & {
     inset?: boolean;
@@ -99,10 +150,26 @@ const DropdownMenuSubTrigger = (
   }
 ) => {
   const { isWindowsTheme, isMacOSTheme } = useThemeFlags();
+  const submenuSide = React.use(DropdownSubmenuSideContext);
+
+  const updateSubmenuSide = React.useCallback(
+    (trigger: HTMLElement) => {
+      submenuSide?.updateFromTrigger(trigger);
+    },
+    [submenuSide]
+  );
 
   return (
     <DropdownMenuPrimitive.SubmenuTrigger
       ref={ref}
+      onFocus={(event) => {
+        updateSubmenuSide(event.currentTarget);
+        onFocus?.(event);
+      }}
+      onPointerEnter={(event) => {
+        updateSubmenuSide(event.currentTarget);
+        onPointerEnter?.(event);
+      }}
       className={cn(
         "flex cursor-default gap-2 select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent data-[open]:bg-accent data-[state=open]:bg-accent [&_svg]:pointer-events-none [&_svg]:shrink-0",
         inset && "pl-8",
@@ -152,7 +219,7 @@ const DropdownMenuSubContent = (
     collisionAvoidance,
     collisionBoundary,
     collisionPadding,
-    side = "inline-end",
+    side,
     sideOffset = 4,
     positionMethod,
     ...props
@@ -173,6 +240,8 @@ const DropdownMenuSubContent = (
   const { isMacOSTheme, isAquaGlass } = useThemeFlags();
   const isMobile = useMediaQuery("(max-width: 768px)");
   const styleObject = typeof style === "function" ? undefined : style;
+  const submenuSide = React.use(DropdownSubmenuSideContext);
+  const resolvedSide = side ?? submenuSide?.side ?? "inline-end";
 
   return (
     <DropdownMenuPrimitive.Portal>
@@ -180,12 +249,12 @@ const DropdownMenuSubContent = (
         className="z-[10004]"
         align={align}
         alignOffset={alignOffset}
-        side={side}
+        side={resolvedSide}
         sideOffset={sideOffset}
         positionMethod={positionMethod}
         collisionAvoidance={
           collisionAvoidance ?? {
-            side: "flip",
+            side: "none",
             align: "shift",
             fallbackAxisSide: "none",
           }

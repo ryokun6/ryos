@@ -8,6 +8,33 @@ import { useMediaQuery } from "@/hooks/useMediaQuery"
 
 import { cn } from "@/lib/utils"
 
+type MenubarSubmenuSide = React.ComponentPropsWithoutRef<
+  typeof MenubarMenuPrimitive.Positioner
+>["side"]
+
+const SUBMENU_COLLISION_PADDING = 8
+const ESTIMATED_SUBMENU_WIDTH = 180
+
+const MenubarSubmenuSideContext = React.createContext<{
+  side: MenubarSubmenuSide
+  updateFromTrigger: (trigger: HTMLElement) => void
+} | null>(null)
+
+function getStableSubmenuSide(trigger: HTMLElement): MenubarSubmenuSide {
+  if (typeof window === "undefined") return "inline-end"
+
+  const rect = trigger.getBoundingClientRect()
+  const viewportLeft = window.visualViewport?.offsetLeft ?? 0
+  const viewportWidth = window.visualViewport?.width ?? window.innerWidth
+  const viewportRight = viewportLeft + viewportWidth
+  const rightSpace = viewportRight - rect.right - SUBMENU_COLLISION_PADDING
+  const leftSpace = rect.left - viewportLeft - SUBMENU_COLLISION_PADDING
+
+  return rightSpace < ESTIMATED_SUBMENU_WIDTH && leftSpace > rightSpace
+    ? "inline-start"
+    : "inline-end"
+}
+
 // Context to track if we're switching between menus (to skip animations)
 const MenubarSwitchingContext = React.createContext<boolean>(false)
 const MenubarOpenContext = React.createContext<{
@@ -48,7 +75,29 @@ const MenubarGroup = MenubarMenuPrimitive.Group
 
 const MenubarPortal = MenubarMenuPrimitive.Portal
 
-const MenubarSub = MenubarMenuPrimitive.SubmenuRoot
+const MenubarSub = ({
+  children,
+  ...props
+}: React.ComponentProps<typeof MenubarMenuPrimitive.SubmenuRoot>) => {
+  const [side, setSide] = React.useState<MenubarSubmenuSide>("inline-end")
+  const value = React.useMemo(
+    () => ({
+      side,
+      updateFromTrigger: (trigger: HTMLElement) => {
+        setSide(getStableSubmenuSide(trigger))
+      },
+    }),
+    [side]
+  )
+
+  return (
+    <MenubarSubmenuSideContext.Provider value={value}>
+      <MenubarMenuPrimitive.SubmenuRoot {...props}>
+        {children}
+      </MenubarMenuPrimitive.SubmenuRoot>
+    </MenubarSubmenuSideContext.Provider>
+  )
+}
 
 const MenubarRadioGroup = MenubarMenuPrimitive.RadioGroup
 
@@ -199,6 +248,8 @@ const MenubarSubTrigger = (
     className,
     inset,
     children,
+    onFocus,
+    onPointerEnter,
     ...props
   }: React.ComponentPropsWithoutRef<typeof MenubarMenuPrimitive.SubmenuTrigger> & {
     inset?: boolean
@@ -206,10 +257,25 @@ const MenubarSubTrigger = (
   }
 ) => {
   const { isWindowsTheme, isMacOSTheme, isSystem7Theme, isAquaGlass } = useThemeFlags()
+  const submenuSide = React.use(MenubarSubmenuSideContext)
+  const updateSubmenuSide = React.useCallback(
+    (trigger: HTMLElement) => {
+      submenuSide?.updateFromTrigger(trigger)
+    },
+    [submenuSide]
+  )
 
   return (
     <MenubarMenuPrimitive.SubmenuTrigger
       ref={ref}
+      onFocus={(event) => {
+        updateSubmenuSide(event.currentTarget)
+        onFocus?.(event)
+      }}
+      onPointerEnter={(event) => {
+        updateSubmenuSide(event.currentTarget)
+        onPointerEnter?.(event)
+      }}
       className={cn(
         "flex cursor-default gap-2 select-none items-center px-2 py-1.5 text-sm outline-none [&_svg]:pointer-events-none [&_svg]:shrink-0",
         // Theme-specific hover/focus styles
@@ -266,7 +332,7 @@ const MenubarSubContent = (
     collisionBoundary,
     collisionPadding,
     positionMethod,
-    side = "inline-end",
+    side,
     sideOffset = 4,
     style,
     ...props
@@ -286,6 +352,8 @@ const MenubarSubContent = (
 ) => {
   const { isMacOSTheme, isAquaGlass } = useThemeFlags()
   const isMobile = useMediaQuery("(max-width: 768px)")
+  const submenuSide = React.use(MenubarSubmenuSideContext)
+  const resolvedSide = side ?? submenuSide?.side ?? "inline-end"
 
   return (
     <MenubarMenuPrimitive.Portal>
@@ -293,12 +361,12 @@ const MenubarSubContent = (
         className="z-[10004]"
         align={align}
         alignOffset={alignOffset}
-        side={side}
+        side={resolvedSide}
         sideOffset={sideOffset}
         positionMethod={positionMethod}
         collisionAvoidance={
           collisionAvoidance ?? {
-            side: "flip",
+            side: "none",
             align: "shift",
             fallbackAxisSide: "none",
           }
