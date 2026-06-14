@@ -183,6 +183,15 @@ export function RightClickMenu({
   align = "start",
 }: RightClickMenuProps) {
   const { play: playMenuOpen } = useSound(Sounds.MENU_OPEN);
+  const collisionBoundary =
+    typeof window === "undefined"
+      ? undefined
+      : {
+          x: window.visualViewport?.offsetLeft ?? 0,
+          y: window.visualViewport?.offsetTop ?? 0,
+          width: window.visualViewport?.width ?? window.innerWidth,
+          height: window.visualViewport?.height ?? window.innerHeight,
+        };
 
   // Play open sound when menu appears
   useEffect(() => {
@@ -216,7 +225,7 @@ export function RightClickMenu({
           align: "shift",
           fallbackAxisSide: "none",
         }}
-        collisionBoundary={document.documentElement}
+        collisionBoundary={collisionBoundary}
         collisionPadding={8}
         positionMethod="fixed"
         className="px-0"
