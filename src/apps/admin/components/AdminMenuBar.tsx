@@ -63,43 +63,17 @@ export function AdminMenuBar({
 
   const publicRooms = rooms.filter((r) => r.type !== "private");
 
-  const roomsSubmenuItems: MenuDescriptor["items"] = [
-    {
-      type: "checkbox",
-      label: t("apps.admin.menu.allRooms", "All Rooms"),
-      checked: activeSection === "rooms" && selectedRoomId === null,
-      onChange: (checked) => {
-        if (checked) {
-          onSectionChange("rooms");
-          onRoomSelect(null);
-        }
-      },
+  const roomsSubmenuItems: MenuDescriptor["items"] = publicRooms.map((room) => ({
+    type: "checkbox",
+    label: `#${room.name}`,
+    checked: activeSection === "rooms" && selectedRoomId === room.id,
+    onChange: (checked) => {
+      if (checked) {
+        onSectionChange("rooms");
+        onRoomSelect(room.id);
+      }
     },
-  ];
-
-  if (publicRooms.length > 0) {
-    roomsSubmenuItems.push({ type: "separator" });
-    for (const room of publicRooms) {
-      roomsSubmenuItems.push({
-        type: "checkbox",
-        label: `#${room.name}`,
-        checked: activeSection === "rooms" && selectedRoomId === room.id,
-        onChange: (checked) => {
-          if (checked) {
-            onSectionChange("rooms");
-            onRoomSelect(room.id);
-          }
-        },
-      });
-    }
-  } else {
-    roomsSubmenuItems.push({
-      type: "action",
-      label: t("apps.admin.menu.noRooms", "No rooms"),
-      onClick: () => {},
-      disabled: true,
-    });
-  }
+  }));
 
   const menus: MenuDescriptor[] = [
     {
@@ -133,6 +107,7 @@ export function AdminMenuBar({
           type: "submenu",
           label: t("apps.admin.sidebar.rooms"),
           items: roomsSubmenuItems,
+          disabled: roomsSubmenuItems.length === 0,
         },
         { type: "separator" },
         {
