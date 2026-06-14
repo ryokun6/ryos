@@ -18,6 +18,16 @@ import {
 /** Recompute the day/night gradient roughly once a minute. */
 const GRADIENT_REFRESH_MS = 60 * 1000;
 
+// Mirror the Karaoke fullscreen lyric sizing so the wallpaper renders large,
+// viewport-relative lyrics (rather than the small in-app default). Hoisted to
+// module scope so LyricsDisplay doesn't get a freshly-allocated object prop on
+// every render.
+const LYRICS_WALLPAPER_CONTAINER_STYLE = {
+  gap: "clamp(0.2rem, calc(min(10vw, 10vh) * 0.08), 1rem)",
+  paddingLeft: "env(safe-area-inset-left, 0px)",
+  paddingRight: "env(safe-area-inset-right, 0px)",
+} as const;
+
 function DayNightGradientLayer() {
   const [gradient, setGradient] = useState(() => getDayNightGradientCss());
 
@@ -94,6 +104,10 @@ function LyricsWallpaperLayer() {
           furiganaMap={np.furiganaMap}
           soramimiMap={np.soramimiMap}
           currentTimeMs={np.currentTimeMs}
+          textSizeClass="fullscreen-lyrics-text"
+          gapClass="gap-0"
+          containerStyle={LYRICS_WALLPAPER_CONTAINER_STYLE}
+          bottomPaddingClass="pb-16"
           showInterludeEllipsis
         />
       )}
