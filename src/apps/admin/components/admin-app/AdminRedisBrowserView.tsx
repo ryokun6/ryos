@@ -298,7 +298,7 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
           value={pattern}
           onChange={setPattern}
           className="min-w-[220px] flex-1"
-          inputClassName="h-7 text-[12px] font-mono"
+          inputClassName="h-7 text-[12px] font-os-mono"
           clearAriaLabel={t("apps.admin.search.clear", "Clear search")}
         />
         <Button
@@ -348,7 +348,7 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
                     type="button"
                     onClick={() => goToPrefix(crumb.prefix)}
                     className={cn(
-                      "flex items-center gap-1 rounded px-1 py-0.5 font-mono",
+                      "flex items-center gap-1 rounded px-1 py-0.5 font-os-mono",
                       isLast
                         ? "text-os-text-primary"
                         : "text-os-text-secondary hover:text-os-text-primary hover:underline",
@@ -417,11 +417,11 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
                       <TableCell colSpan={3} className="py-2">
                         <div className="flex items-center gap-2">
                           <FolderSimple size={14} weight="regular" className="shrink-0 opacity-70" />
-                          <span className="min-w-0 flex-1 truncate font-mono" title={folder.prefix}>
+                          <span className="min-w-0 flex-1 truncate font-os-mono" title={folder.prefix}>
                             {folder.segment}
                           </span>
                           {typeof folder.count === "number" && (
-                            <span className="shrink-0 rounded bg-black/10 px-1.5 py-0.5 font-mono text-[9px] os-mac-aqua-dark:bg-white/10">
+                            <span className="shrink-0 rounded bg-black/10 px-1.5 py-0.5 font-os-mono text-[9px] os-mac-aqua-dark:bg-white/10">
                               {folder.count}
                             </span>
                           )}
@@ -451,12 +451,12 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
                       tabIndex={0}
                     >
                       <TableCell className="max-w-0 py-2">
-                        <span className="block truncate font-mono" title={item.key}>
+                        <span className="block truncate font-os-mono" title={item.key}>
                           {item.label}
                         </span>
                       </TableCell>
                       <TableCell className="py-2">
-                        <span className="rounded bg-black/10 px-1.5 py-0.5 font-mono text-[9px] uppercase os-mac-aqua-dark:bg-white/10">
+                        <span className="rounded bg-black/10 px-1.5 py-0.5 font-os-mono text-[9px] uppercase os-mac-aqua-dark:bg-white/10">
                           {item.type}
                         </span>
                       </TableCell>
@@ -514,12 +514,12 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
                   <div className={adminSectionLabelClass}>
                     {t("apps.admin.redis.key", "Key")}
                   </div>
-                  <div className="break-all font-mono text-[12px]">{selectedDocument.key}</div>
+                  <div className="break-all font-os-mono text-[12px]">{selectedDocument.key}</div>
                 </div>
                 <div className="grid grid-cols-3 gap-2 text-[11px]">
                   <div>
                     <div className={adminSectionLabelClass}>{t("apps.admin.redis.type", "Type")}</div>
-                    <div className="font-mono">{selectedDocument.type}</div>
+                    <div className="font-os-mono">{selectedDocument.type}</div>
                   </div>
                   <div>
                     <div className={adminSectionLabelClass}>{t("apps.admin.redis.ttl", "TTL")}</div>
@@ -535,7 +535,7 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
                     {t("apps.admin.redis.previewTruncated", "Preview is truncated; use Backup for the full value.")}
                   </div>
                 )}
-                <pre className="max-h-[420px] overflow-auto rounded bg-black/5 p-2 font-mono text-[11px] leading-relaxed os-mac-aqua-dark:bg-white/10">
+                <pre className="max-h-[420px] overflow-auto rounded bg-black/5 p-2 font-os-mono text-[11px] leading-relaxed os-mac-aqua-dark:bg-white/10">
                   {formatRedisValue(selectedDocument.value)}
                 </pre>
               </div>

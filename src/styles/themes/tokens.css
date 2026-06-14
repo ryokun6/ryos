@@ -143,7 +143,8 @@
   --os-font-ui: "LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans",
     "Hiragino Sans GB", "Heiti SC", ui-sans-serif, system-ui, -apple-system,
     BlinkMacSystemFont, sans-serif;
-  --os-font-mono: Monaco, Menlo, monospace;
+  --os-font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", "Courier New", monospace;
   --os-color-window-bg: #ececec;
   --os-color-menubar-bg: linear-gradient(to bottom, #f8f8f8, #d4d4d4);
   --os-color-menubar-border: rgba(0, 0, 0, 0.44);
