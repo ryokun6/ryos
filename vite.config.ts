@@ -122,7 +122,7 @@ function collectHeavyChunksPlugin() {
  * `manualChunks` below). Mirrors the previous object-form mapping:
  *
  * - react: loaded immediately
- * - ui-core: Radix primitives, loaded early. ui-form was merged into ui-core
+ * - ui-core: Base UI primitives, loaded early. ui-form was merged into ui-core
  *   to eliminate a circular chunk dependency (ui-form -> ui-core -> ui-form)
  *   that caused a TDZ crash in Vite 6.4.x.
  * - audio: heavy audio libs, deferred until Soundboard/iPod/Synth opens
@@ -137,17 +137,7 @@ function collectHeavyChunksPlugin() {
 const MANUAL_CHUNK_BY_PACKAGE: Record<string, string> = {
   react: "react",
   "react-dom": "react",
-  "@radix-ui/react-dialog": "ui-core",
-  "@radix-ui/react-dropdown-menu": "ui-core",
-  "@radix-ui/react-menubar": "ui-core",
-  "@radix-ui/react-scroll-area": "ui-core",
-  "@radix-ui/react-tooltip": "ui-core",
-  "@radix-ui/react-label": "ui-core",
-  "@radix-ui/react-select": "ui-core",
-  "@radix-ui/react-slider": "ui-core",
-  "@radix-ui/react-switch": "ui-core",
-  "@radix-ui/react-checkbox": "ui-core",
-  "@radix-ui/react-tabs": "ui-core",
+  "@base-ui/react": "ui-core",
   tone: "audio",
   "wavesurfer.js": "audio",
   "audio-buffer-utils": "audio",
