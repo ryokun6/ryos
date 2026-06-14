@@ -93,7 +93,7 @@ export function LyricsControlsIsland({
   const isCompact = variant === "compact";
   const lyricsMenuContainer = isCompact ? undefined : portalContainer;
   const lyricsMenuBoundary = isCompact ? undefined : portalContainer ?? undefined;
-  const lyricsMenuSide = isCompact ? "left" : "top";
+  const lyricsMenuSide = "top";
   const lyricsMenuAlign = isCompact ? "end" : "center";
 
   return (
@@ -212,7 +212,7 @@ export function LyricsControlsIsland({
           align={lyricsMenuAlign}
           sideOffset={8}
           collisionAvoidance={{
-            side: "flip",
+            side: "shift",
             align: "shift",
             fallbackAxisSide: "none",
           }}
@@ -224,6 +224,7 @@ export function LyricsControlsIsland({
               ? "w-40 max-w-[calc(100vw-1rem)]"
               : "w-44"
           )}
+          style={isCompact ? { marginLeft: "-10rem" } : undefined}
           onClick={(e) => e.stopPropagation()}
         >
           <DropdownMenuRadioGroup
@@ -290,7 +291,7 @@ export function LyricsControlsIsland({
               align={lyricsMenuAlign}
               sideOffset={8}
               collisionAvoidance={{
-                side: "flip",
+                side: "shift",
                 align: "shift",
                 fallbackAxisSide: "none",
               }}
@@ -302,6 +303,7 @@ export function LyricsControlsIsland({
                   ? "w-44 max-w-[calc(100vw-1rem)]"
                   : "w-max min-w-40 max-w-none"
               )}
+              style={isCompact ? { marginLeft: "-11rem" } : undefined}
               onClick={(e) => e.stopPropagation()}
             >
               <DropdownMenuCheckboxItem
