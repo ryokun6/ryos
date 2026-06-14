@@ -42,6 +42,7 @@ import {
 import {
   buildRedisBreadcrumbs,
   buildRedisKeyTree,
+  deriveRedisPrefix,
   mergeFoldersWithKnownPrefixes,
 } from "../../utils/redisKeyTree";
 
@@ -131,16 +132,15 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
   const [isLoadingDocument, setIsLoadingDocument] = useState(false);
   const [deleteCandidate, setDeleteCandidate] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  // Namespace drill-down prefix (e.g. "chat:room:").
-  const [prefix, setPrefix] = useState("");
   // Cache fetched key documents so reopening a key (or returning to it after
   // navigating) does not re-hit Redis. Cleared on fresh scans / refresh.
   const documentCacheRef = useRef<Map<string, RedisKeyDocument>>(new Map());
 
-  // Effective server SCAN pattern: drilling into a prefix scopes the scan to
-  // `<prefix>*` so "Load more" pages within that namespace instead of the
-  // global `*`. At root we use the user-supplied glob (default `*`).
-  const scanPattern = prefix ? `${prefix}*` : appliedPattern;
+  // The applied glob is the single source of truth for the server SCAN. The
+  // drill-down prefix (tree position + breadcrumbs) is derived from it so that
+  // applying e.g. `chat:users:*` lands inside the `chat:users:` folder.
+  const scanPattern = appliedPattern;
+  const prefix = useMemo(() => deriveRedisPrefix(appliedPattern), [appliedPattern]);
 
   const loadKeys = useCallback(
     async (targetPattern: string, nextCursor: string = "0") => {
@@ -186,7 +186,7 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
   }, [scanPattern, loadKeys]);
 
   const goToPrefix = useCallback((nextPrefix: string) => {
-    setPrefix(nextPrefix);
+    setAppliedPattern(nextPrefix ? `${nextPrefix}*` : "*");
   }, []);
 
   const loadKeyDocument = useCallback(
@@ -228,7 +228,6 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
 
   const handlePatternSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setPrefix("");
     setAppliedPattern(pattern.trim() || "*");
   };
 
@@ -328,17 +327,16 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
         </Button>
       </form>
 
-      {(hasVisibleRows || !isRoot) && (
-        <div
-          className={cn(
-            adminToolbarClass,
-            "flex shrink-0 flex-wrap items-center gap-2 border-b border-os-separator px-2 py-1",
-          )}
+      <div
+        className={cn(
+          adminToolbarClass,
+          "flex h-8 shrink-0 items-center gap-2 border-b border-os-separator px-2",
+        )}
+      >
+        <nav
+          aria-label={t("apps.admin.redis.breadcrumbs", "Key path")}
+          className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto text-[11px]"
         >
-          <nav
-            aria-label={t("apps.admin.redis.breadcrumbs", "Key path")}
-            className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto text-[11px]"
-          >
             {breadcrumbs.map((crumb, index) => {
               const isLast = index === breadcrumbs.length - 1;
               return (
@@ -366,9 +364,8 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
                 </span>
               );
             })}
-          </nav>
-        </div>
-      )}
+        </nav>
+      </div>
 
       <div
         className={cn(
@@ -419,7 +416,7 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
                     >
                       <TableCell colSpan={3} className="py-2">
                         <div className="flex items-center gap-2">
-                          <FolderSimple size={14} weight="fill" className="shrink-0 opacity-70" />
+                          <FolderSimple size={14} weight="regular" className="shrink-0 opacity-70" />
                           <span className="min-w-0 flex-1 truncate font-os-mono" title={folder.prefix}>
                             {folder.segment}
                           </span>

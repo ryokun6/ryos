@@ -128,6 +128,34 @@ export function buildRedisKeyTree(
 }
 
 /**
+ * Derive the namespace folder a SCAN pattern lives in, so typing (or applying)
+ * a pattern like `chat:users:*` lands inside the `chat:users:` folder rather
+ * than at the root. The prefix is the run of leading literal (glob-free)
+ * segments, excluding the final/leaf segment and stopping at the first segment
+ * that contains a glob character.
+ *
+ * Examples: `chat:users:*` → `chat:users:`, `chat:*` → `chat:`,
+ * `chat:users:ry*` → `chat:users:`, `chat:users:ryo` → `chat:users:`,
+ * `*` / `chat` / `chat*` → ``.
+ */
+export function deriveRedisPrefix(
+  pattern: string,
+  separator: string = REDIS_KEY_SEPARATOR
+): string {
+  if (!pattern || pattern === "*") return "";
+  const hasGlob = (segment: string) => /[*?[\]]/.test(segment);
+  const segments = pattern.split(separator);
+  const prefixSegments: string[] = [];
+  for (let i = 0; i < segments.length; i++) {
+    const isLast = i === segments.length - 1;
+    if (hasGlob(segments[i]) || isLast) break;
+    prefixSegments.push(segments[i]);
+  }
+  if (prefixSegments.length === 0) return "";
+  return prefixSegments.join(separator) + separator;
+}
+
+/**
  * Build breadcrumb segments for the current `prefix`, always starting with a
  * root crumb (empty prefix).
  */

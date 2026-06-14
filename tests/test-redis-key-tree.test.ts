@@ -8,6 +8,7 @@ import { describe, test, expect } from "bun:test";
 import {
   buildRedisBreadcrumbs,
   buildRedisKeyTree,
+  deriveRedisPrefix,
   mergeFoldersWithKnownPrefixes,
   KNOWN_REDIS_PREFIXES,
   type RedisKeyNode,
@@ -82,6 +83,35 @@ describe("buildRedisBreadcrumbs", () => {
       { label: "chat", prefix: "chat:" },
       { label: "room", prefix: "chat:room:" },
     ]);
+  });
+});
+
+describe("deriveRedisPrefix", () => {
+  test("lands inside the namespace folder for a scoped glob", () => {
+    expect(deriveRedisPrefix("chat:users:*")).toBe("chat:users:");
+    expect(deriveRedisPrefix("chat:*")).toBe("chat:");
+  });
+
+  test("treats a partial trailing segment as a leaf within its parent", () => {
+    expect(deriveRedisPrefix("chat:users:ry*")).toBe("chat:users:");
+    expect(deriveRedisPrefix("chat:users:ryo")).toBe("chat:users:");
+  });
+
+  test("stops at the first glob segment", () => {
+    expect(deriveRedisPrefix("chat:*:meta")).toBe("chat:");
+  });
+
+  test("returns root for top-level or globless single segments", () => {
+    expect(deriveRedisPrefix("*")).toBe("");
+    expect(deriveRedisPrefix("chat")).toBe("");
+    expect(deriveRedisPrefix("chat*")).toBe("");
+    expect(deriveRedisPrefix("")).toBe("");
+  });
+
+  test("round-trips a folder prefix through its glob form", () => {
+    for (const folder of ["chat:", "chat:users:", "sync2:kv:"]) {
+      expect(deriveRedisPrefix(`${folder}*`)).toBe(folder);
+    }
   });
 });
 
