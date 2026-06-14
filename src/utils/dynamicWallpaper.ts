@@ -29,7 +29,7 @@ export const COVER_WALLPAPER = "dynamic://cover";
  * a fresh pick when the tab regains visibility/focus after being away longer
  * than this, since browsers throttle/suspend background-tab timers.
  */
-export const SHUFFLE_INTERVAL_MS = 60 * 1000;
+export const SHUFFLE_INTERVAL_MS = 5 * 60 * 1000;
 
 export function isDynamicWallpaper(wallpaper: string | undefined | null): boolean {
   return (
