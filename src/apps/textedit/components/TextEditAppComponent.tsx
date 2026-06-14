@@ -220,7 +220,7 @@ function TextEditContent({
           const jsonContent = JSON.parse(e.detail.content);
           const { from, to } = editor.state.selection;
 
-          editor.commands.setContent(jsonContent);
+          editor.commands.setContent(jsonContent, false);
 
           if (from && to && from === to) {
             try {
@@ -244,7 +244,7 @@ function TextEditContent({
       if (editor && e.detail?.path === currentFilePath && e.detail?.content) {
         try {
           const jsonContent = JSON.parse(e.detail.content);
-          editor.commands.setContent(jsonContent);
+          editor.commands.setContent(jsonContent, false);
           setHasUnsavedChanges(false);
           console.log("Editor content updated after document updated event");
         } catch (error) {
@@ -316,7 +316,7 @@ function TextEditContent({
 
   const createNewFile = () => {
     if (editor) {
-      editor.commands.clearContent();
+      editor.commands.clearContent(false);
       setContentJson(null);
       setCurrentFilePath(null);
       setHasUnsavedChanges(false);
@@ -334,7 +334,7 @@ function TextEditContent({
             const processedContent = path.endsWith(".md")
               ? markdownToHtml(content)
               : content;
-            editor.commands.setContent(processedContent);
+            editor.commands.setContent(processedContent, false);
             setCurrentFilePath(path);
             setHasUnsavedChanges(false);
             setContentJson(editor.getJSON());
