@@ -1960,6 +1960,11 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   :root[data-os-theme="macosx"] [data-sonner-toaster][data-y-position="bottom"] {
     bottom: calc(env(safe-area-inset-bottom, 0px) + 72px) !important;
   }
+
+  /* macOS X Aqua glass: dock sits ~20px higher (12px lift + 8px taller bar) */
+  :root[data-os-theme="macosx"][data-os-aqua-material="glass"] [data-sonner-toaster][data-y-position="bottom"] {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 92px) !important;
+  }
   
   /* Windows XP theme: add taskbar height (30px) */
   :root[data-os-theme="xp"] [data-sonner-toaster][data-y-position="bottom"] {
