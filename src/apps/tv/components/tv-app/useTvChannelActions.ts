@@ -14,6 +14,7 @@ import { useTvStore } from "@/stores/useTvStore";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useVideoStore } from "@/stores/useVideoStore";
 import { MTV_CHANNEL_ID, RYO_TV_CHANNEL_ID } from "../../hooks/useTvLogic";
+import { openNativeFile, saveBlobToDevice } from "@/utils/nativeFileDialogs";
 
 export function useTvChannelActions({
   t,
@@ -191,18 +192,29 @@ export function useTvChannelActions({
   const hasResettableChannelChanges =
     customChannels.length > 0 || hiddenDefaultChannelIds.length > 0;
 
-  const handleExportChannels = () => {
+  const importChannelJson = (json: string) => {
+    const result = importChannels(json);
+    if (result.added === 0) {
+      toast.error(t("apps.tv.toasts.importEmpty"));
+      return;
+    }
+    toast.success(
+      t("apps.tv.toasts.importSuccess", {
+        count: result.added,
+        skipped: result.skipped,
+      })
+    );
+  };
+
+  const handleExportChannels = async () => {
     try {
       const json = exportChannels();
       const blob = new Blob([json], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `tv-channels-${new Date().toISOString().slice(0, 10)}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      await saveBlobToDevice(
+        blob,
+        `tv-channels-${new Date().toISOString().slice(0, 10)}.json`,
+        { filters: [{ name: "JSON", extensions: ["json"] }] }
+      );
       toast.success(t("apps.tv.toasts.exportSuccess"));
     } catch (error) {
       console.error("Failed to export channels:", error);
@@ -210,7 +222,21 @@ export function useTvChannelActions({
     }
   };
 
-  const handleImportChannels = () => {
+  const handleImportChannels = async () => {
+    try {
+      const file = await openNativeFile({
+        title: "Import TV Channels",
+        filters: [{ name: "JSON", extensions: ["json"] }],
+        mimeType: "application/json",
+      });
+      if (file) {
+        importChannelJson(await file.text());
+        return;
+      }
+    } catch (error) {
+      console.error("Native TV channel import failed:", error);
+    }
+
     const input = document.createElement("input");
     input.type = "file";
     input.accept = "application/json,.json";
@@ -222,17 +248,7 @@ export function useTvChannelActions({
         try {
           const json = event.target?.result;
           if (typeof json !== "string") throw new Error("empty file");
-          const result = importChannels(json);
-          if (result.added === 0) {
-            toast.error(t("apps.tv.toasts.importEmpty"));
-            return;
-          }
-          toast.success(
-            t("apps.tv.toasts.importSuccess", {
-              count: result.added,
-              skipped: result.skipped,
-            })
-          );
+          importChannelJson(json);
         } catch (error) {
           console.error("Failed to import channels:", error);
           toast.error(t("apps.tv.toasts.importFailed"));

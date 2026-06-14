@@ -7,6 +7,7 @@ import { extractMetadataFromHtml, injectMetadataIntoHtml, type AppletMetadata } 
 import { extractEmojiIcon } from "@/apps/applet-viewer/utils/appletActions";
 import { useFilesStore } from "@/stores/useFilesStore";
 import { toast } from "sonner";
+import { saveBlobToDevice } from "@/utils/nativeFileDialogs";
 
 export interface ImportedAppletData {
   content: string;
@@ -245,15 +246,9 @@ export async function exportAppletAsApp(
     // Combine chunks into a single blob
     const compressedBlob = new Blob(chunks as BlobPart[], { type: "application/gzip" });
 
-    // Create download link
-    const url = URL.createObjectURL(compressedBlob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${finalFilename}.app`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    await saveBlobToDevice(compressedBlob, `${finalFilename}.app`, {
+      filters: [{ name: "ryOS Applet", extensions: ["app"] }],
+    });
 
     toast.success("Applet exported!", {
       description: `${finalFilename}.app exported successfully.`,
@@ -305,14 +300,9 @@ export function exportAppletAsHtml(
   const htmlWithMetadata = injectMetadataIntoHtml(htmlContent, metadata);
 
   const blob = new Blob([htmlWithMetadata], { type: "text/html" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `${baseFilename}.html`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  void saveBlobToDevice(blob, `${baseFilename}.html`, {
+    filters: [{ name: "HTML", extensions: ["html"] }],
+  });
 
   toast.success("HTML exported!", {
     description: `${baseFilename}.html exported successfully.`,

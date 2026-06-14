@@ -10,6 +10,39 @@ export type RyosDesktopUpdateStatus =
   | { state: "downloaded"; version: string }
   | { state: "error"; message: string };
 
+export interface RyosDesktopFileFilter {
+  name: string;
+  extensions: string[];
+}
+
+export interface RyosDesktopOpenFileOptions {
+  title?: string;
+  filters?: RyosDesktopFileFilter[];
+  multiSelections?: boolean;
+}
+
+export interface RyosDesktopOpenedFile {
+  name: string;
+  size: number;
+  lastModified: number;
+  data: ArrayBuffer;
+}
+
+export type RyosDesktopOpenFileResult =
+  | { canceled: true }
+  | { canceled: false; files: RyosDesktopOpenedFile[] };
+
+export interface RyosDesktopSaveFileOptions {
+  title?: string;
+  defaultPath?: string;
+  filters?: RyosDesktopFileFilter[];
+  data: ArrayBuffer;
+}
+
+export type RyosDesktopSaveFileResult =
+  | { canceled: true }
+  | { canceled: false; filePath: string };
+
 /**
  * Desktop shell API exposed by Electron preload (window.ryosDesktop).
  */
@@ -18,6 +51,14 @@ export interface RyosDesktopApi {
   isFullscreen: () => Promise<boolean>;
   onFullscreenChange: (callback: (fullscreen: boolean) => void) => () => void;
   toggleMaximize: () => Promise<void>;
+  /** Open one or more native files and return their contents to the sandboxed renderer. */
+  openFile: (
+    options?: RyosDesktopOpenFileOptions
+  ) => Promise<RyosDesktopOpenFileResult>;
+  /** Save bytes through a native save dialog without exposing Node APIs. */
+  saveFile: (
+    options: RyosDesktopSaveFileOptions
+  ) => Promise<RyosDesktopSaveFileResult>;
   /** Native shell version (app.getVersion()). */
   getVersion: () => Promise<string>;
   /** Manually trigger an update check; resolves with the available version, if any. */

@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import type { TFunction } from "i18next";
 import { toast } from "sonner";
+import { openNativeFile, saveBlobToDevice } from "@/utils/nativeFileDialogs";
 
 const LIBRARY_FILENAME = "ipod-library.json";
 
@@ -10,18 +11,13 @@ export function useIpodLibraryJsonImportExport(
   importLibrary: (json: string) => void,
   t: TFunction,
 ) {
-  const handleExportLibrary = useCallback(() => {
+  const handleExportLibrary = useCallback(async () => {
     try {
       const json = exportLibrary();
       const blob = new Blob([json], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = LIBRARY_FILENAME;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      await saveBlobToDevice(blob, LIBRARY_FILENAME, {
+        filters: [{ name: "JSON", extensions: ["json"] }],
+      });
       toast.success(t("apps.ipod.dialogs.libraryExportedSuccessfully"));
     } catch (error) {
       console.error("Failed to export library:", error);
@@ -29,7 +25,29 @@ export function useIpodLibraryJsonImportExport(
     }
   }, [exportLibrary, t]);
 
-  const handleImportLibrary = useCallback(() => {
+  const importJson = useCallback(
+    (json: string) => {
+      importLibrary(json);
+      toast.success(t("apps.ipod.dialogs.libraryImportedSuccessfully"));
+    },
+    [importLibrary, t]
+  );
+
+  const handleImportLibrary = useCallback(async () => {
+    try {
+      const file = await openNativeFile({
+        title: "Import iPod Library",
+        filters: [{ name: "JSON", extensions: ["json"] }],
+        mimeType: "application/json",
+      });
+      if (file) {
+        importJson(await file.text());
+        return;
+      }
+    } catch (error) {
+      console.error("Native library import failed:", error);
+    }
+
     const input = document.createElement("input");
     input.type = "file";
     input.accept = ".json";
@@ -41,8 +59,7 @@ export function useIpodLibraryJsonImportExport(
       reader.onload = (event) => {
         try {
           const json = event.target?.result as string;
-          importLibrary(json);
-          toast.success(t("apps.ipod.dialogs.libraryImportedSuccessfully"));
+          importJson(json);
         } catch (error) {
           console.error("Failed to import library:", error);
           toast.error(t("apps.ipod.dialogs.failedToImportLibrary"));
@@ -51,7 +68,7 @@ export function useIpodLibraryJsonImportExport(
       reader.readAsText(file);
     };
     input.click();
-  }, [importLibrary, t]);
+  }, [importJson, t]);
 
   return { handleExportLibrary, handleImportLibrary };
 }

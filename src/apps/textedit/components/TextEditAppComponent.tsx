@@ -24,6 +24,7 @@ import { onDocumentUpdated } from "@/utils/appEventBus";
 import { useRegisterUndoRedo } from "@/hooks/useUndoRedo";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { getTextAnalytics, TEXTEDIT_ANALYTICS, track } from "@/utils/analytics";
+import { openNativeFile } from "@/utils/nativeFileDialogs";
 
 // Inner component that has access to editor context
 function TextEditContent({
@@ -389,6 +390,31 @@ function TextEditContent({
     }
   };
 
+  const handleImportFromDevice = async () => {
+    try {
+      const file = await openNativeFile({
+        title: "Import Text Document",
+        filters: [
+          {
+            name: "Text Documents",
+            extensions: ["txt", "html", "md", "rtf", "doc", "docx"],
+          },
+        ],
+      });
+      if (file) {
+        await handleImportFile(file);
+        return;
+      }
+    } catch (error) {
+      console.error("Native import failed:", error);
+    }
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+      fileInputRef.current.click();
+    }
+  };
+
   const handleImportFileClick = () => {
     launchApp("finder", { initialPath: "/Documents" });
   };
@@ -465,11 +491,11 @@ function TextEditContent({
       onShowAbout={() => dialogControls?.openAboutDialog()}
       onNewFile={handleNewFile}
       onImportFile={handleImportFileClick}
+      onImportFromDevice={handleImportFromDevice}
       onExportFile={handleExportFile}
       onSave={handleSaveClick}
       hasUnsavedChanges={hasUnsavedChanges}
       currentFilePath={currentFilePath}
-      handleFileSelect={handleFileSelect}
       instanceId={instanceId}
     />
   );

@@ -341,7 +341,7 @@ export function InfinitePcAppComponent({
                 <iframe
                   ref={iframeRef}
                   src={embedUrl}
-                  allow="cross-origin-isolated; gamepad; clipboard-read; clipboard-write"
+                  allow="cross-origin-isolated; fullscreen; gamepad; geolocation; clipboard-read; clipboard-write"
                   sandbox="allow-scripts allow-same-origin allow-pointer-lock allow-popups allowfullscreen"
                   className="border-0 block absolute inset-0 z-[1]"
                   style={{

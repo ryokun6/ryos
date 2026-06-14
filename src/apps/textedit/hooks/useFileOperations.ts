@@ -16,6 +16,7 @@ import {
   serializeRichMarkdown,
 } from "../utils/richMarkdown";
 import { TEXTEDIT_ANALYTICS, track } from "@/utils/analytics";
+import { saveBlobToDevice } from "@/utils/nativeFileDialogs";
 
 interface UseFileOperationsProps {
   editor: Editor | null;
@@ -157,7 +158,7 @@ export function useFileOperations({
   );
 
   const handleExportFile = useCallback(
-    (format: "html" | "md" | "txt") => {
+    async (format: "html" | "md" | "txt") => {
       if (!editor) return;
 
       const html = editor.getHTML();
@@ -189,14 +190,9 @@ export function useFileOperations({
         : "Untitled";
 
       const blob = new Blob([content], { type: mimeType });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${filename}.${extension}`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      await saveBlobToDevice(blob, `${filename}.${extension}`, {
+        filters: [{ name: extension.toUpperCase(), extensions: [extension] }],
+      });
       track(TEXTEDIT_ANALYTICS.EXPORT, { appId: "textedit", format });
     },
     [editor, currentFilePath]

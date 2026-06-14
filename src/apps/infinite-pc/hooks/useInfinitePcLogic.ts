@@ -15,6 +15,7 @@ import {
   DEFAULT_WINDOW_SIZE_WITH_TITLEBAR,
 } from "../windowConfig";
 import { useShallow } from "zustand/react/shallow";
+import { saveBlobToDevice } from "@/utils/nativeFileDialogs";
 
 export type { PcPreset } from "@/stores/useInfinitePcStore";
 export { PC_PRESETS } from "@/stores/useInfinitePcStore";
@@ -225,18 +226,18 @@ export function useInfinitePcLogic({
   }, [postEmulatorCommand, selectedPreset]);
 
   const downloadScreenshot = useCallback(
-    (dataUrl: string) => {
+    async (dataUrl: string) => {
       if (!selectedPreset) return;
       const timestamp = new Date()
         .toISOString()
         .replace(/[:.]/g, "-")
         .slice(0, 19);
-      const a = document.createElement("a");
-      a.href = dataUrl;
-      a.download = `${selectedPreset.name.replace(/\s+/g, "-")}-${timestamp}.png`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      const blob = await fetch(dataUrl).then((res) => res.blob());
+      await saveBlobToDevice(
+        blob,
+        `${selectedPreset.name.replace(/\s+/g, "-")}-${timestamp}.png`,
+        { filters: [{ name: "PNG", extensions: ["png"] }] }
+      );
     },
     [selectedPreset]
   );
@@ -323,7 +324,7 @@ export function useInfinitePcLogic({
         }
         case "screenshot_ready": {
           if (typeof payload.dataUrl === "string") {
-            downloadScreenshot(payload.dataUrl);
+            void downloadScreenshot(payload.dataUrl);
           }
           break;
         }

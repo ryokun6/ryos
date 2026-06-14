@@ -12,6 +12,7 @@ import { useShallow } from "zustand/react/shallow";
 import { parseIcalString, toIcalString } from "../utils/parseIcal";
 import { toast } from "sonner";
 import { CALENDAR_ANALYTICS, track } from "@/utils/analytics";
+import { openNativeFile, saveBlobToDevice } from "@/utils/nativeFileDialogs";
 
 type CalendarUndoAction =
   | { type: "addEvent"; event: CalendarEvent }
@@ -509,44 +510,60 @@ export function useCalendarLogic() {
   // iCal import
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const handleImport = useCallback(() => {
+  const importIcalText = useCallback(
+    (text: string) => {
+      const parsed = parseIcalString(text);
+      const importedEvents: CalendarEvent[] = [];
+      for (const ev of parsed) {
+        const id = addEvent(ev);
+        importedEvents.push({ ...ev, id, createdAt: Date.now(), updatedAt: Date.now() } as CalendarEvent);
+      }
+      if (importedEvents.length > 0) {
+        pushUndo({ type: "importEvents", events: importedEvents });
+        setSelectedDate(parsed[0].date);
+        track(CALENDAR_ANALYTICS.IMPORT, { count: importedEvents.length });
+        toast.success(
+          parsed.length === 1
+            ? t("apps.calendar.import.success", { count: parsed.length })
+            : t("apps.calendar.import.successPlural", { count: parsed.length })
+        );
+      }
+    },
+    [addEvent, setSelectedDate, t, pushUndo]
+  );
+
+  const handleImport = useCallback(async () => {
+    try {
+      const file = await openNativeFile({
+        title: "Import Calendar Events",
+        filters: [{ name: "Calendar Files", extensions: ["ics"] }],
+        mimeType: "text/calendar",
+      });
+      if (file) {
+        importIcalText(await file.text());
+        return;
+      }
+    } catch (error) {
+      console.error("Native calendar import failed:", error);
+    }
+
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
       fileInputRef.current.click();
     }
-  }, []);
+  }, [importIcalText]);
 
   const handleFileSelected = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
 
-      const reader = new FileReader();
-      reader.onload = () => {
-        const text = reader.result as string;
-        const parsed = parseIcalString(text);
-        const importedEvents: CalendarEvent[] = [];
-        for (const ev of parsed) {
-          const id = addEvent(ev);
-          importedEvents.push({ ...ev, id, createdAt: Date.now(), updatedAt: Date.now() } as CalendarEvent);
-        }
-        if (importedEvents.length > 0) {
-          pushUndo({ type: "importEvents", events: importedEvents });
-          setSelectedDate(parsed[0].date);
-          track(CALENDAR_ANALYTICS.IMPORT, { count: importedEvents.length });
-          toast.success(
-            parsed.length === 1
-              ? t("apps.calendar.import.success", { count: parsed.length })
-              : t("apps.calendar.import.successPlural", { count: parsed.length })
-          );
-        }
-      };
-      reader.readAsText(file);
+      void file.text().then(importIcalText);
     },
-    [addEvent, setSelectedDate, t, pushUndo]
+    [importIcalText]
   );
 
-  const handleExport = useCallback(() => {
+  const handleExport = useCallback(async () => {
     if (events.length === 0) {
       toast(t("apps.calendar.export.noEvents"));
       return;
@@ -555,14 +572,9 @@ export function useCalendarLogic() {
     const icsContent = toIcalString(events);
     track(CALENDAR_ANALYTICS.EXPORT, { count: events.length });
     const blob = new Blob([icsContent], { type: "text/calendar" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "calendar-events.ics";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    await saveBlobToDevice(blob, "calendar-events.ics", {
+      filters: [{ name: "Calendar Files", extensions: ["ics"] }],
+    });
     toast.success(
       events.length === 1
         ? t("apps.calendar.export.success", { count: events.length })

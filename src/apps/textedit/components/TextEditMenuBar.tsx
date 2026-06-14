@@ -13,7 +13,6 @@ import {
 import { AppMenuBarShell } from "@/components/shared/menubar/AppMenuBarShell";
 import { MENUBAR_SEPARATOR_CLASS } from "@/components/shared/menubar/menubarStyles";
 import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
-import React from "react";
 import { useTranslation } from "react-i18next";
 import { useInstanceUndoRedo } from "@/hooks/useUndoRedo";
 
@@ -25,11 +24,11 @@ interface TextEditMenuBarProps {
   isWindowOpen: boolean;
   onNewFile: () => void;
   onImportFile: () => void;
-  onExportFile: (format: "html" | "md" | "txt") => void;
+  onImportFromDevice: () => void;
+  onExportFile: (format: "html" | "md" | "txt") => void | Promise<void>;
   onSave: () => void;
   hasUnsavedChanges: boolean;
   currentFilePath: string | null;
-  handleFileSelect: (event: React.ChangeEvent<HTMLInputElement>) => void;
   instanceId?: string;
 }
 
@@ -40,10 +39,10 @@ export function TextEditMenuBar({
   onShowAbout,
   onNewFile,
   onImportFile,
+  onImportFromDevice,
   onExportFile,
   onSave,
   currentFilePath,
-  handleFileSelect,
   instanceId,
 }: TextEditMenuBarProps) {
   const { t } = useTranslation();
@@ -56,8 +55,6 @@ export function TextEditMenuBar({
     appName,
   } = useAppMenuBarChrome("textedit");
   const { canUndo, canRedo, undo, redo } = useInstanceUndoRedo(instanceId || "");
-
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   return (
     <AppMenuBarShell
@@ -72,13 +69,6 @@ export function TextEditMenuBar({
       onShowHelp={onShowHelp}
       onShowAbout={onShowAbout}
     >
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleFileSelect}
-        accept=".txt,.html,.md"
-        className="hidden"
-      />
       <MenubarMenu>
         <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
           {t("common.menu.file")}
@@ -105,7 +95,7 @@ export function TextEditMenuBar({
           </MenubarItem>
           <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <MenubarItem
-            onClick={() => fileInputRef.current?.click()}
+            onClick={onImportFromDevice}
             className="text-md h-6 px-3"
           >
             {t("apps.textedit.menu.importFromDevice")}

@@ -17,6 +17,7 @@ import {
   DEFAULT_WINDOW_SIZE_WITH_TITLEBAR,
 } from "../windowConfig";
 import { useShallow } from "zustand/react/shallow";
+import { saveBlobToDevice } from "@/utils/nativeFileDialogs";
 
 // Re-export types and presets for consumers
 export type { ScaleOption, MacPreset, ScreenData } from "@/stores/useInfiniteMacStore";
@@ -220,6 +221,15 @@ export function useInfiniteMacLogic({
   const handleCaptureScreenshot = useCallback(() => {
     if (!selectedPreset) return;
 
+    const saveScreenshotBlob = (blob: Blob) => {
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+      void saveBlobToDevice(
+        blob,
+        `${selectedPreset.name.replace(/\s+/g, "-")}-${timestamp}.png`,
+        { filters: [{ name: "PNG", extensions: ["png"] }] }
+      );
+    };
+
     const screenData = lastScreenDataRef.current;
     
     // If we have screen data from emulator_screen messages, use it
@@ -243,15 +253,7 @@ export function useInfiniteMacLogic({
         // Convert to blob and download
         canvas.toBlob((blob) => {
           if (blob) {
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
-            a.download = `${selectedPreset.name.replace(/\s+/g, "-")}-${timestamp}.png`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            saveScreenshotBlob(blob);
           }
         }, "image/png");
         return;
@@ -273,13 +275,9 @@ export function useInfiniteMacLogic({
             const canvas = innerDoc?.querySelector("canvas") as HTMLCanvasElement | null;
             if (canvas) {
               const dataUrl = canvas.toDataURL("image/png");
-              const a = document.createElement("a");
-              a.href = dataUrl;
-              const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
-              a.download = `${selectedPreset.name.replace(/\s+/g, "-")}-${timestamp}.png`;
-              document.body.appendChild(a);
-              a.click();
-              document.body.removeChild(a);
+              void fetch(dataUrl)
+                .then((res) => res.blob())
+                .then(saveScreenshotBlob);
               return;
             }
           } catch {

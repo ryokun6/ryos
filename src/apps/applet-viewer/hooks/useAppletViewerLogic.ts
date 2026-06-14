@@ -34,6 +34,7 @@ import { STORES } from "@/utils/indexedDB";
 import { APPLET_ANALYTICS, track } from "@/utils/analytics";
 import { extractMetadataFromHtml } from "@/utils/appletMetadata";
 import { exportAppletAsHtml } from "@/utils/appletImportExport";
+import { saveBlobToDevice } from "@/utils/nativeFileDialogs";
 import {
   emitFileSaved,
   onAppletUpdated,
@@ -1199,14 +1200,9 @@ export function useAppletViewerLogic({
         type: "application/gzip",
       });
 
-      const url = URL.createObjectURL(compressedBlob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${filename}.app`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      await saveBlobToDevice(compressedBlob, `${filename}.app`, {
+        filters: [{ name: "ryOS Applet", extensions: ["app"] }],
+      });
 
       toast.success(t("apps.applet-viewer.dialogs.appletExported"), {
         description: t("apps.applet-viewer.dialogs.appletExportedDescription", {

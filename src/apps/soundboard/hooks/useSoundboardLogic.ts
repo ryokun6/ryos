@@ -10,6 +10,7 @@ import { helpItems as sharedHelpItems } from "..";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { track } from "@/utils/analytics";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
+import { saveBlobToDevice } from "@/utils/nativeFileDialogs";
 
 interface ImportedSlot {
   audioData: string | null;
@@ -250,7 +251,7 @@ export function useSoundboardLogic({
     reader.readAsText(file);
   };
 
-  const exportBoard = () => {
+  const exportBoard = async () => {
     if (!activeBoard) return;
     const boardToExport =
       boards.find((b) => b.id === activeBoardId) || activeBoard;
@@ -270,14 +271,13 @@ export function useSoundboardLogic({
     const blob = new Blob([JSON.stringify(exportData)], {
       type: "application/json",
     });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = `${boardToExport.name
-      .replace(/[^a-z0-9]/gi, "_")
-      .toLowerCase()}_soundboard.json`;
-    anchor.click();
-    URL.revokeObjectURL(url);
+    await saveBlobToDevice(
+      blob,
+      `${boardToExport.name
+        .replace(/[^a-z0-9]/gi, "_")
+        .toLowerCase()}_soundboard.json`,
+      { filters: [{ name: "JSON", extensions: ["json"] }] }
+    );
     track("soundboard:export", { appId: "soundboard", slotCount: boardToExport.slots.length });
   };
 

@@ -1,19 +1,50 @@
 import {
   app,
   BrowserWindow,
+  dialog,
   ipcMain,
   session,
   shell,
   type WebContents,
 } from "electron";
+import { promises as fs } from "node:fs";
 import path from "node:path";
 import { setupAutoUpdater } from "./updater";
 import { buildApplicationMenu } from "./menu";
 
 const DEFAULT_APP_URL = "https://os.ryo.lu";
 const APP_URL = process.env.RYOS_ELECTRON_URL?.trim() || DEFAULT_APP_URL;
+const MAX_NATIVE_OPEN_BYTES = 100 * 1024 * 1024;
 
 let mainWindow: BrowserWindow | null = null;
+
+type NativeFileFilter = {
+  name: string;
+  extensions: string[];
+};
+
+type NativeOpenFileOptions = {
+  title?: string;
+  filters?: NativeFileFilter[];
+  multiSelections?: boolean;
+};
+
+type NativeSaveFileOptions = {
+  title?: string;
+  defaultPath?: string;
+  filters?: NativeFileFilter[];
+  data: ArrayBuffer | ArrayBufferView;
+};
+
+const ALLOWED_WEB_PERMISSIONS = new Set([
+  "clipboard-read",
+  "clipboard-sanitized-write",
+  "fullscreen",
+  "geolocation",
+  "keyboardLock",
+  "media",
+  "pointerLock",
+]);
 
 function getAppOrigin(): string {
   try {
@@ -38,6 +69,67 @@ function isInAppNavigation(url: string): boolean {
   } catch {
     return false;
   }
+}
+
+function isTrustedWebContents(contents: WebContents | null | undefined): boolean {
+  if (!contents || contents.isDestroyed()) {
+    return false;
+  }
+  return isInAppNavigation(contents.getURL()) || isBlankUrl(contents.getURL());
+}
+
+function sanitizeDialogFilters(filters: unknown): NativeFileFilter[] | undefined {
+  if (!Array.isArray(filters)) {
+    return undefined;
+  }
+
+  const sanitized = filters
+    .map((filter) => {
+      if (!filter || typeof filter !== "object") {
+        return null;
+      }
+
+      const { name, extensions } = filter as Partial<NativeFileFilter>;
+      if (typeof name !== "string" || !Array.isArray(extensions)) {
+        return null;
+      }
+
+      const safeExtensions = extensions
+        .filter((extension): extension is string => typeof extension === "string")
+        .map((extension) => extension.replace(/^\./, "").trim())
+        .filter((extension) => /^[a-z0-9*]+$/i.test(extension));
+
+      if (!name.trim() || safeExtensions.length === 0) {
+        return null;
+      }
+
+      return {
+        name: name.trim(),
+        extensions: safeExtensions,
+      };
+    })
+    .filter((filter): filter is NativeFileFilter => filter !== null);
+
+  return sanitized.length > 0 ? sanitized : undefined;
+}
+
+function sanitizeDefaultPath(defaultPath: unknown): string | undefined {
+  if (typeof defaultPath !== "string") {
+    return undefined;
+  }
+
+  const filename = path.basename(defaultPath.trim());
+  return filename || undefined;
+}
+
+function bufferFromIpcData(data: unknown): Buffer {
+  if (data instanceof ArrayBuffer) {
+    return Buffer.from(data);
+  }
+  if (ArrayBuffer.isView(data)) {
+    return Buffer.from(data.buffer, data.byteOffset, data.byteLength);
+  }
+  throw new Error("Invalid file payload");
 }
 
 /**
@@ -173,15 +265,100 @@ function registerIpcHandlers(): void {
       win.maximize();
     }
   });
+
+  ipcMain.handle(
+    "ryos-desktop:open-file",
+    async (event, options: NativeOpenFileOptions = {}) => {
+      if (!isTrustedWebContents(event.sender)) {
+        return { canceled: true };
+      }
+
+      const win = BrowserWindow.fromWebContents(event.sender) ?? mainWindow;
+      const openOptions = {
+        title: typeof options.title === "string" ? options.title : undefined,
+        filters: sanitizeDialogFilters(options.filters),
+        properties: options.multiSelections
+          ? ["openFile", "multiSelections"]
+          : ["openFile"],
+      } satisfies Electron.OpenDialogOptions;
+      const result = win
+        ? await dialog.showOpenDialog(win, openOptions)
+        : await dialog.showOpenDialog(openOptions);
+
+      if (result.canceled || result.filePaths.length === 0) {
+        return { canceled: true };
+      }
+
+      const files = await Promise.all(
+        result.filePaths.map(async (filePath) => {
+          const stat = await fs.stat(filePath);
+          if (!stat.isFile()) {
+            throw new Error("Selected path is not a file");
+          }
+          if (stat.size > MAX_NATIVE_OPEN_BYTES) {
+            throw new Error("Selected file is too large");
+          }
+          const data = await fs.readFile(filePath);
+          return {
+            name: path.basename(filePath),
+            size: stat.size,
+            lastModified: stat.mtimeMs,
+            data: data.buffer.slice(
+              data.byteOffset,
+              data.byteOffset + data.byteLength
+            ),
+          };
+        })
+      );
+
+      return { canceled: false, files };
+    }
+  );
+
+  ipcMain.handle(
+    "ryos-desktop:save-file",
+    async (event, options: NativeSaveFileOptions) => {
+      if (!isTrustedWebContents(event.sender)) {
+        return { canceled: true };
+      }
+
+      const data = bufferFromIpcData(options?.data);
+      const win = BrowserWindow.fromWebContents(event.sender) ?? mainWindow;
+      const saveOptions = {
+        title: typeof options.title === "string" ? options.title : undefined,
+        defaultPath: sanitizeDefaultPath(options?.defaultPath),
+        filters: sanitizeDialogFilters(options?.filters),
+      } satisfies Electron.SaveDialogOptions;
+      const result = win
+        ? await dialog.showSaveDialog(win, saveOptions)
+        : await dialog.showSaveDialog(saveOptions);
+
+      if (result.canceled || !result.filePath) {
+        return { canceled: true };
+      }
+
+      await fs.writeFile(result.filePath, data);
+      return { canceled: false, filePath: result.filePath };
+    }
+  );
 }
 
 app.whenReady().then(() => {
   registerIpcHandlers();
 
   session.defaultSession.setPermissionRequestHandler(
-    (_webContents, permission, callback) => {
-      callback(permission === "media");
+    (webContents, permission, callback) => {
+      callback(
+        isTrustedWebContents(webContents) &&
+          ALLOWED_WEB_PERMISSIONS.has(permission)
+      );
     }
+  );
+
+  session.defaultSession.setPermissionCheckHandler(
+    (webContents, permission) =>
+      isTrustedWebContents(webContents) &&
+      ALLOWED_WEB_PERMISSIONS.has(permission)
   );
 
   createMainWindow();

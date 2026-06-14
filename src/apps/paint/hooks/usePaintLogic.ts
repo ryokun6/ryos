@@ -15,6 +15,7 @@ import { helpItems } from "..";
 import type { PaintInitialData } from "../../base/types";
 import { emitFileSaved } from "@/utils/appEventBus";
 import { PAINT_ANALYTICS, track } from "@/utils/analytics";
+import { saveBlobToDevice } from "@/utils/nativeFileDialogs";
 
 interface PaintCanvasHandle {
   undo: () => void;
@@ -303,18 +304,12 @@ export function usePaintLogic({ initialData, instanceId }: UsePaintLogicProps) {
 
     try {
       const blob = await canvasRef.current.exportCanvas();
-      const blobUrl = URL.createObjectURL(blob);
       const fileName =
         currentFilePath?.split("/").pop() || `${t("apps.paint.untitled")}.png`;
 
-      const link = document.createElement("a");
-      link.download = fileName;
-      link.href = blobUrl;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+      await saveBlobToDevice(blob, fileName, {
+        filters: [{ name: "PNG", extensions: ["png"] }],
+      });
       track(PAINT_ANALYTICS.EXPORT, { appId: "paint" });
     } catch (err) {
       console.error("Error exporting file:", err);

@@ -6,6 +6,7 @@ import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { emitFileUpdated } from "@/utils/appEventBus";
+import { saveBlobToDevice } from "@/utils/nativeFileDialogs";
 
 function extractEmojiIcon(text: string): {
   emoji: string | null;
@@ -128,18 +129,13 @@ export function useHtmlPreviewSave(
   const handleSaveToDisk = (e: React.MouseEvent) => {
     e.stopPropagation();
     const blob = new Blob([getProcessedHtmlContent()], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
     const timestamp = new Date()
       .toISOString()
       .replace(/[:.]/g, "-")
       .substring(0, 19);
-    a.href = url;
-    a.download = `ryOS-generated-${timestamp}.html`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    void saveBlobToDevice(blob, `ryOS-generated-${timestamp}.html`, {
+      filters: [{ name: "HTML", extensions: ["html"] }],
+    });
   };
 
   return {

@@ -15,6 +15,10 @@ contextBridge.exposeInMainWorld("ryosDesktop", {
   },
   toggleMaximize: () =>
     ipcRenderer.invoke("ryos-desktop:toggle-maximize") as Promise<void>,
+  openFile: (options?: unknown) =>
+    ipcRenderer.invoke("ryos-desktop:open-file", options) as Promise<unknown>,
+  saveFile: (options: unknown) =>
+    ipcRenderer.invoke("ryos-desktop:save-file", options) as Promise<unknown>,
   getVersion: () =>
     ipcRenderer.invoke("ryos-desktop:get-app-version") as Promise<string>,
   checkForUpdates: () =>

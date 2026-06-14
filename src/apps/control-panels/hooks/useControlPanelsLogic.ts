@@ -29,6 +29,7 @@ import {
   uploadBlobWithStorageInstruction,
   type StorageUploadInstruction,
 } from "@/utils/storageUpload";
+import { saveBlobToDevice } from "@/utils/nativeFileDialogs";
 import { getTabStyles } from "@/utils/tabStyles";
 import { useLanguageStore } from "@/stores/useLanguageStore";
 import type { ControlPanelsInitialData } from "@/apps/base/types";
@@ -1197,21 +1198,15 @@ export function useControlPanelsLogic({
         type: "application/gzip",
       });
 
-      // Create download link
-      const url = URL.createObjectURL(compressedBlob);
-      const a = document.createElement("a");
-      a.href = url;
       const timestamp = new Date()
         .toISOString()
         .replace(/[:.]/g, "-")
         .split("T")
         .join("-")
         .slice(0, -5);
-      a.download = `ryOS-backup-${timestamp}.gz`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      await saveBlobToDevice(compressedBlob, `ryOS-backup-${timestamp}.gz`, {
+        filters: [{ name: "Gzip Archive", extensions: ["gz"] }],
+      });
     } catch (compressionError) {
       console.error("Compression failed:", compressionError);
       alert(t("apps.control-panels.alerts.failedToCreateBackup", {
