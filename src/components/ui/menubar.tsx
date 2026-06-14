@@ -11,6 +11,10 @@ import { cn } from "@/lib/utils"
 type MenubarSubmenuSide = React.ComponentPropsWithoutRef<
   typeof MenubarMenuPrimitive.Positioner
 >["side"]
+type SubmenuBridgeRect = Pick<
+  DOMRect,
+  "left" | "right" | "top" | "bottom" | "width" | "height"
+>
 
 const SUBMENU_COLLISION_PADDING = 8
 const ESTIMATED_SUBMENU_WIDTH = 180
@@ -18,11 +22,37 @@ const SUBMENU_CLOSE_DELAY_MS = 500
 
 const MenubarSubmenuSideContext = React.createContext<{
   side: MenubarSubmenuSide
+  triggerRect: SubmenuBridgeRect | null
+  setPointerGraceActive: (active: boolean) => void
   updateFromTrigger: (trigger: HTMLElement) => void
 } | null>(null)
 
+function toSubmenuBridgeRect(rect: DOMRect): SubmenuBridgeRect {
+  return {
+    left: rect.left,
+    right: rect.right,
+    top: rect.top,
+    bottom: rect.bottom,
+    width: rect.width,
+    height: rect.height,
+  }
+}
+
+function getPhysicalInlineSide(
+  trigger: HTMLElement,
+  inlineStart: boolean
+): MenubarSubmenuSide {
+  const isRtl = window.getComputedStyle(trigger).direction === "rtl"
+
+  if (inlineStart) {
+    return isRtl ? "right" : "left"
+  }
+
+  return isRtl ? "left" : "right"
+}
+
 function getStableSubmenuSide(trigger: HTMLElement): MenubarSubmenuSide {
-  if (typeof window === "undefined") return "inline-end"
+  if (typeof window === "undefined") return "right"
 
   const rect = trigger.getBoundingClientRect()
   const viewportLeft = window.visualViewport?.offsetLeft ?? 0
@@ -30,10 +60,63 @@ function getStableSubmenuSide(trigger: HTMLElement): MenubarSubmenuSide {
   const viewportRight = viewportLeft + viewportWidth
   const rightSpace = viewportRight - rect.right - SUBMENU_COLLISION_PADDING
   const leftSpace = rect.left - viewportLeft - SUBMENU_COLLISION_PADDING
+  const shouldOpenInlineStart =
+    rightSpace < ESTIMATED_SUBMENU_WIDTH && leftSpace > rightSpace
 
-  return rightSpace < ESTIMATED_SUBMENU_WIDTH && leftSpace > rightSpace
-    ? "inline-start"
-    : "inline-end"
+  // Base UI's safePolygon hover corridor branches on physical sides.
+  return getPhysicalInlineSide(trigger, shouldOpenInlineStart)
+}
+
+function getSubmenuPointerBridgeStyle(
+  side: MenubarSubmenuSide,
+  triggerRect: SubmenuBridgeRect,
+  popupRect: SubmenuBridgeRect
+): React.CSSProperties | null {
+  const opensLeft = side === "left" || side === "inline-start"
+  const opensRight = side === "right" || side === "inline-end"
+
+  if (!opensLeft && !opensRight) return null
+
+  const left = opensLeft
+    ? Math.min(popupRect.right, triggerRect.right)
+    : Math.min(triggerRect.left, popupRect.left)
+  const right = opensLeft
+    ? Math.max(triggerRect.right, popupRect.right)
+    : Math.max(popupRect.left, triggerRect.left)
+  const top = Math.min(triggerRect.top, popupRect.top)
+  const bottom = Math.max(triggerRect.bottom, popupRect.bottom)
+  const width = right - left
+  const height = bottom - top
+
+  if (width <= 0 || height <= 0) return null
+
+  const toPoint = (x: number, y: number) =>
+    `${((x - left) / width) * 100}% ${((y - top) / height) * 100}%`
+  const points = opensLeft
+    ? [
+        toPoint(triggerRect.right, triggerRect.top),
+        toPoint(triggerRect.right, triggerRect.bottom),
+        toPoint(popupRect.right, popupRect.bottom),
+        toPoint(popupRect.right, popupRect.top),
+      ]
+    : [
+        toPoint(triggerRect.left, triggerRect.top),
+        toPoint(popupRect.left, popupRect.top),
+        toPoint(popupRect.left, popupRect.bottom),
+        toPoint(triggerRect.left, triggerRect.bottom),
+      ]
+
+  return {
+    position: "fixed",
+    left,
+    top,
+    width,
+    height,
+    clipPath: `polygon(${points.join(", ")})`,
+    pointerEvents: "auto",
+    background: "transparent",
+    zIndex: 0,
+  }
 }
 
 // Context to track if we're switching between menus (to skip animations)
@@ -78,22 +161,47 @@ const MenubarPortal = MenubarMenuPrimitive.Portal
 
 const MenubarSub = ({
   children,
+  onOpenChange,
   ...props
 }: React.ComponentProps<typeof MenubarMenuPrimitive.SubmenuRoot>) => {
-  const [side, setSide] = React.useState<MenubarSubmenuSide>("inline-end")
+  const [side, setSide] = React.useState<MenubarSubmenuSide>("right")
+  const [triggerRect, setTriggerRect] =
+    React.useState<SubmenuBridgeRect | null>(null)
+  const pointerGraceActiveRef = React.useRef(false)
+  const setPointerGraceActive = React.useCallback((active: boolean) => {
+    pointerGraceActiveRef.current = active
+  }, [])
   const value = React.useMemo(
     () => ({
       side,
+      triggerRect,
+      setPointerGraceActive,
       updateFromTrigger: (trigger: HTMLElement) => {
+        setTriggerRect(toSubmenuBridgeRect(trigger.getBoundingClientRect()))
         setSide(getStableSubmenuSide(trigger))
       },
     }),
-    [side]
+    [setPointerGraceActive, side, triggerRect]
   )
 
   return (
     <MenubarSubmenuSideContext.Provider value={value}>
-      <MenubarMenuPrimitive.SubmenuRoot {...props}>
+      <MenubarMenuPrimitive.SubmenuRoot
+        {...props}
+        onOpenChange={(open, eventDetails) => {
+          if (
+            !open &&
+            pointerGraceActiveRef.current &&
+            (eventDetails.reason === "trigger-hover" ||
+              eventDetails.reason === "sibling-open")
+          ) {
+            eventDetails.cancel()
+            return
+          }
+
+          onOpenChange?.(open, eventDetails)
+        }}
+      >
         {children}
       </MenubarMenuPrimitive.SubmenuRoot>
     </MenubarSubmenuSideContext.Provider>
@@ -324,6 +432,56 @@ const MenubarSubTrigger = (
 }
 MenubarSubTrigger.displayName = MenubarMenuPrimitive.SubmenuTrigger.displayName
 
+function MenubarSubmenuPointerBridge({
+  popupElement,
+  side,
+  setPointerGraceActive,
+  triggerRect,
+}: {
+  popupElement: HTMLElement | null
+  side: MenubarSubmenuSide
+  setPointerGraceActive?: (active: boolean) => void
+  triggerRect: SubmenuBridgeRect | null
+}) {
+  const [style, setStyle] = React.useState<React.CSSProperties | null>(null)
+
+  React.useLayoutEffect(() => {
+    if (!popupElement || !triggerRect) {
+      setStyle(null)
+      return
+    }
+
+    const update = () => {
+      const popupRect = toSubmenuBridgeRect(popupElement.getBoundingClientRect())
+      setStyle(getSubmenuPointerBridgeStyle(side, triggerRect, popupRect))
+    }
+
+    update()
+    const frame = window.requestAnimationFrame(update)
+    window.addEventListener("resize", update)
+    window.addEventListener("scroll", update, true)
+
+    return () => {
+      window.cancelAnimationFrame(frame)
+      window.removeEventListener("resize", update)
+      window.removeEventListener("scroll", update, true)
+    }
+  }, [popupElement, side, triggerRect])
+
+  if (!style) return null
+
+  return (
+    <div
+      aria-hidden="true"
+      data-ryos-submenu-pointer-bridge=""
+      onPointerEnter={() => setPointerGraceActive?.(true)}
+      onPointerLeave={() => setPointerGraceActive?.(false)}
+      onPointerMove={() => setPointerGraceActive?.(true)}
+      style={style}
+    />
+  )
+}
+
 const MenubarSubContent = (
   {
     ref,
@@ -338,6 +496,8 @@ const MenubarSubContent = (
     side,
     sideOffset = 0,
     style,
+    onPointerEnter,
+    onPointerLeave,
     ...props
   }: React.ComponentPropsWithoutRef<typeof MenubarMenuPrimitive.Popup> & {
     ref?: React.Ref<React.ElementRef<typeof MenubarMenuPrimitive.Popup>>;
@@ -356,7 +516,21 @@ const MenubarSubContent = (
   const { isMacOSTheme, isAquaGlass } = useThemeFlags()
   const isMobile = useMediaQuery("(max-width: 768px)")
   const submenuSide = React.use(MenubarSubmenuSideContext)
-  const resolvedSide = side ?? submenuSide?.side ?? "inline-end"
+  const resolvedSide = side ?? submenuSide?.side ?? "right"
+  const [popupElement, setPopupElement] = React.useState<HTMLElement | null>(
+    null
+  )
+  const setPopupRefs = React.useCallback(
+    (node: HTMLDivElement | null) => {
+      setPopupElement(node)
+      if (typeof ref === "function") {
+        ref(node)
+      } else if (ref) {
+        ref.current = node
+      }
+    },
+    [ref]
+  )
 
   return (
     <MenubarMenuPrimitive.Portal>
@@ -379,13 +553,13 @@ const MenubarSubContent = (
         data-ryos-popper-content-wrapper=""
       >
         <MenubarMenuPrimitive.Popup
-          ref={ref}
+          ref={setPopupRefs}
           data-ryos-popper-content=""
           data-ryos-menu-content=""
           className={cn(
             // Use z-[10004] to ensure submenu content appears above menu content (z-[10003])
             // origin-[…]: scale from the trigger side instead of the element center.
-            "z-[10004] min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-lg origin-[var(--transform-origin)] data-[open]:animate-in data-[closed]:animate-out data-[closed]:fill-mode-forwards data-[closed]:fade-out-0 data-[open]:fade-in-0 data-[closed]:zoom-out-95 data-[open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fill-mode-forwards data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+            "z-[10004] min-w-[8rem] overflow-visible rounded-md border bg-popover p-1 text-popover-foreground shadow-lg origin-[var(--transform-origin)] data-[open]:animate-in data-[closed]:animate-out data-[closed]:fill-mode-forwards data-[closed]:fade-out-0 data-[open]:fade-in-0 data-[closed]:zoom-out-95 data-[open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fill-mode-forwards data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
             className
           )}
           style={{
@@ -409,9 +583,23 @@ const MenubarSubContent = (
               data-state={state.open ? "open" : "closed"}
             />
           )}
+          onPointerEnter={(event) => {
+            submenuSide?.setPointerGraceActive(true)
+            onPointerEnter?.(event)
+          }}
+          onPointerLeave={(event) => {
+            submenuSide?.setPointerGraceActive(false)
+            onPointerLeave?.(event)
+          }}
           {...props}
         >
-          <MenubarMenuPrimitive.Viewport className="max-h-[inherit] overflow-y-auto">
+          <MenubarSubmenuPointerBridge
+            popupElement={popupElement}
+            side={resolvedSide}
+            setPointerGraceActive={submenuSide?.setPointerGraceActive}
+            triggerRect={submenuSide?.triggerRect ?? null}
+          />
+          <MenubarMenuPrimitive.Viewport className="relative z-[1] max-h-[inherit] overflow-y-auto">
             {children}
           </MenubarMenuPrimitive.Viewport>
         </MenubarMenuPrimitive.Popup>
