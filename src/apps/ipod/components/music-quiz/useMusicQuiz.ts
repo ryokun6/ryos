@@ -8,7 +8,10 @@ import {
 } from "react";
 import ReactPlayer from "react-player";
 import { useTranslation } from "react-i18next";
-import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
+import {
+  selectEffectiveIpodVolume,
+  useAudioSettingsStore,
+} from "@/stores/useAudioSettingsStore";
 import { useIpodStore } from "@/stores/useIpodStore";
 import type { AppleMusicPlayerBridgeHandle } from "../AppleMusicPlayerBridge";
 import {
@@ -43,9 +46,7 @@ export function useMusicQuiz(
   const uiVariant = useIpodStore((s) => s.uiVariant ?? "modern");
   const isModernUi = uiVariant === "modern";
   const bodyTopOffsetPx = isModernUi ? 17 : 26;
-  const masterVolume = useAudioSettingsStore((s) => s.masterVolume);
-  const ipodVolume = useAudioSettingsStore((s) => s.ipodVolume);
-  const finalVolume = ipodVolume * masterVolume;
+  const finalVolume = useAudioSettingsStore(selectEffectiveIpodVolume);
 
   const [state, dispatch] = useReducer(quizUiReducer, initialQuizUiState);
   const {

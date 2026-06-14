@@ -1,5 +1,11 @@
 import { useRef, useEffect, useCallback, useReducer } from "react";
 import { useLatestRef } from "@/hooks/useLatestRef";
+import {
+  startTtsDucking,
+  stopTtsDucking,
+  updateTtsDucking,
+  type TtsDuckingToken,
+} from "@/lib/audioDucking";
 import { getAudioContext, resumeAudioContext } from "@/lib/audioContext";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useIpodStore } from "@/stores/useIpodStore";
@@ -72,8 +78,6 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
   const masterVolume = useAudioSettingsStore((s) => s.masterVolume);
   const speechVolumeRef = useLatestRef(speechVolume);
   const masterVolumeRef = useLatestRef(masterVolume);
-  const setIpodVolumeGlobal = useAudioSettingsStore((s) => s.setIpodVolume);
-  const setChatSynthVolumeGlobal = useAudioSettingsStore((s) => s.setChatSynthVolume);
 
   // Get TTS settings from audio settings store
   const ttsModel = useAudioSettingsStore((s) => s.ttsModel);
@@ -81,9 +85,7 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
   const ttsModelRef = useLatestRef(ttsModel);
   const ttsVoiceRef = useLatestRef(ttsVoice);
 
-  // Keep track of iPod and chat synth volumes for duck/restore
-  const originalIpodVolumeRef = useRef<number | null>(null);
-  const originalChatSynthVolumeRef = useRef<number | null>(null);
+  const duckingTokenRef = useRef<TtsDuckingToken | null>(null);
 
   // Subscribe to iPod/Karaoke playing state so ducking reacts when playback starts/stops
   const ipodIsPlaying = useIpodStore((s) => s.isPlaying);
@@ -305,7 +307,7 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
         }
       });
     },
-    [queuedFetch, ensureContext]
+    [queuedFetch, ensureContext, speechVolumeRef, masterVolumeRef]
   );
 
   /** Cancel all in-flight requests and reset the queue so the next call starts immediately. */
@@ -390,50 +392,31 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
   }, [speechVolume, masterVolume]);
 
   /**
-   * Duck iPod and chat synth volumes while TTS is speaking.
-   * We only duck when audio is actively playing and we have not already
-   * done so for the current speech session. When speech ends, we restore the
-   * previous volumes.
+   * Duck music and chat synth output while TTS is speaking.
+   * Ducking is coordinated globally so overlapping TTS queues do not overwrite
+   * or restore the user's saved volume sliders.
    */
   useEffect(() => {
-    if (isSpeaking) {
-      // Activate ducking only once at the start of speech
-      if (originalIpodVolumeRef.current === null && musicIsPlaying && !isIOS) {
-        originalIpodVolumeRef.current = useAudioSettingsStore.getState().ipodVolume;
-        const duckedIpod = Math.max(0, originalIpodVolumeRef.current * 0.35);
-        setIpodVolumeGlobal(duckedIpod);
-      }
-
-      // Duck chat synth volume
-      if (originalChatSynthVolumeRef.current === null) {
-        originalChatSynthVolumeRef.current =
-          useAudioSettingsStore.getState().chatSynthVolume;
-        const duckedChatSynth = Math.max(
-          0,
-          originalChatSynthVolumeRef.current * 0.6
-        );
-        setChatSynthVolumeGlobal(duckedChatSynth);
-      }
-    } else {
-      // Restore iPod volume if it was ducked
-      if (originalIpodVolumeRef.current !== null) {
-        setIpodVolumeGlobal(originalIpodVolumeRef.current);
-        originalIpodVolumeRef.current = null;
-      }
-
-      // Restore chat synth volume if it was ducked
-      if (originalChatSynthVolumeRef.current !== null) {
-        setChatSynthVolumeGlobal(originalChatSynthVolumeRef.current);
-        originalChatSynthVolumeRef.current = null;
-      }
+    if (!isSpeaking) {
+      stopTtsDucking(duckingTokenRef.current);
+      duckingTokenRef.current = null;
+      return;
     }
-  }, [
-    isSpeaking,
-    musicIsPlaying,
-    setIpodVolumeGlobal,
-    setChatSynthVolumeGlobal,
-    isIOS,
-  ]);
+
+    const options = { duckMusic: musicIsPlaying && !isIOS };
+    if (duckingTokenRef.current) {
+      updateTtsDucking(duckingTokenRef.current, options);
+    } else {
+      duckingTokenRef.current = startTtsDucking(options);
+    }
+  }, [isSpeaking, musicIsPlaying, isIOS]);
+
+  useEffect(() => {
+    return () => {
+      stopTtsDucking(duckingTokenRef.current);
+      duckingTokenRef.current = null;
+    };
+  }, []);
 
   return { speak, stop, isSpeaking };
 }

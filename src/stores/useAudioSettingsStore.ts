@@ -14,6 +14,8 @@ interface AudioSettingsState {
   chatSynthVolume: number;
   speechVolume: number;
   ipodVolume: number;
+  ttsMusicDuckingFactor: number;
+  ttsChatSynthDuckingFactor: number;
 
   // Audio feature toggles
   uiSoundsEnabled: boolean;
@@ -33,6 +35,10 @@ interface AudioSettingsState {
   setChatSynthVolume: (v: number) => void;
   setSpeechVolume: (v: number) => void;
   setIpodVolume: (v: number) => void;
+  setTtsDuckingFactors: (factors: {
+    music: number;
+    chatSynth: number;
+  }) => void;
   setUiSoundsEnabled: (v: boolean) => void;
   setTerminalSoundsEnabled: (v: boolean) => void;
   setTypingSynthEnabled: (v: boolean) => void;
@@ -54,6 +60,8 @@ export const useAudioSettingsStore = create<AudioSettingsState>()(
       chatSynthVolume: 2,
       speechVolume: 2,
       ipodVolume: 1,
+      ttsMusicDuckingFactor: 1,
+      ttsChatSynthDuckingFactor: 1,
 
       uiSoundsEnabled: true,
       terminalSoundsEnabled: true,
@@ -71,6 +79,11 @@ export const useAudioSettingsStore = create<AudioSettingsState>()(
       setChatSynthVolume: (v) => set({ chatSynthVolume: v }),
       setSpeechVolume: (v) => set({ speechVolume: v }),
       setIpodVolume: (v) => set({ ipodVolume: v }),
+      setTtsDuckingFactors: ({ music, chatSynth }) =>
+        set({
+          ttsMusicDuckingFactor: music,
+          ttsChatSynthDuckingFactor: chatSynth,
+        }),
       setUiSoundsEnabled: (v) => set({ uiSoundsEnabled: v }),
       setTerminalSoundsEnabled: (v) => set({ terminalSoundsEnabled: v }),
       setTypingSynthEnabled: (v) => set({ typingSynthEnabled: v }),
@@ -106,6 +119,10 @@ export const useAudioSettingsStore = create<AudioSettingsState>()(
 export const selectMasterVolume = (state: AudioSettingsState) => state.masterVolume;
 export const selectUiVolume = (state: AudioSettingsState) => state.uiVolume;
 export const selectUiSoundsEnabled = (state: AudioSettingsState) => state.uiSoundsEnabled;
+export const selectEffectiveIpodVolume = (state: AudioSettingsState) =>
+  state.ipodVolume * state.masterVolume * state.ttsMusicDuckingFactor;
+export const selectEffectiveChatSynthVolume = (state: AudioSettingsState) =>
+  state.chatSynthVolume * state.masterVolume * state.ttsChatSynthDuckingFactor;
 
 /**
  * Shallow-equality selector hook for this store. Co-located with the store

@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import * as Tone from "tone";
-import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
+import {
+  selectEffectiveChatSynthVolume,
+  useAudioSettingsStore,
+} from "@/stores/useAudioSettingsStore";
 import { useVibration } from "./useVibration";
 import { resumeAudioContext } from "@/lib/audioContext";
 import { useEventListener } from "@/hooks/useEventListener";
@@ -50,9 +53,9 @@ function createSynthInstance(presetKey: string) {
   }).connect(tremolo);
 
   // Apply global chat synth volume (linear 0-1) as decibel offset
-  const masterVol = useAudioSettingsStore.getState().chatSynthVolume ?? 1;
-  const globalMasterVolume = useAudioSettingsStore.getState().masterVolume ?? 1;
-  const combinedVolume = masterVol * globalMasterVolume; // Combine volumes
+  const combinedVolume = selectEffectiveChatSynthVolume(
+    useAudioSettingsStore.getState()
+  );
   const volumeDb =
     presetKey === "off"
       ? -Infinity
@@ -391,22 +394,21 @@ export function useChatSynth() {
   }, [isAudioReady, vibrate, initializeAudio, currentPresetKey]); // Add initializeAudio dependency
 
   // ---------------------------------------------------------------
-  // Reactively update synth volume when the global chatSynthVolume
-  // slider changes, without requiring a re-creation of the synth.
+  // Reactively update synth volume when user volume or temporary ducking changes.
   // ---------------------------------------------------------------
-  const chatSynthVolume = useAudioSettingsStore((s) => s.chatSynthVolume);
-  const masterVolume = useAudioSettingsStore((s) => s.masterVolume);
+  const effectiveChatSynthVolume = useAudioSettingsStore(
+    selectEffectiveChatSynthVolume
+  );
 
   useEffect(() => {
     if (synthRef.current) {
-      const combinedVolume = chatSynthVolume * masterVolume; // Combine volumes
       const volDb =
-        combinedVolume === 0
+        effectiveChatSynthVolume === 0
           ? -Infinity
-          : DEFAULT_SYNTH_VOLUME + 20 * Math.log10(combinedVolume);
+          : DEFAULT_SYNTH_VOLUME + 20 * Math.log10(effectiveChatSynthVolume);
       synthRef.current.synth.volume.value = volDb;
     }
-  }, [chatSynthVolume, masterVolume]); // Add masterVolume to dependencies
+  }, [effectiveChatSynthVolume]);
 
   return {
     playNote,

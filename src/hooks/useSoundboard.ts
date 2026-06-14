@@ -1,4 +1,5 @@
-import { useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback } from "react";
+import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useSoundboardStore } from "@/stores/useSoundboardStore";
 import { createAudioFromBase64 } from "@/utils/audio";
 // WaveSurfer import will be removed as it's moving to SoundGrid
@@ -22,8 +23,15 @@ export const useSoundboard = () => {
   const setSlotPlaybackStateAction = useSoundboardStore(
     (state) => state.setSlotPlaybackState
   );
+  const masterVolume = useAudioSettingsStore((state) => state.masterVolume);
 
   const audioRefs = useRef<(HTMLAudioElement | null)[]>(Array(9).fill(null));
+
+  useEffect(() => {
+    audioRefs.current.forEach((audio) => {
+      if (audio) audio.volume = masterVolume;
+    });
+  }, [masterVolume]);
 
   // Removed automatic initialization - now handled by the app component
 
@@ -92,6 +100,7 @@ export const useSoundboard = () => {
 
       // Pass the stored format for cross-browser compatibility
       const audio = createAudioFromBase64(slot.audioData, slot.audioFormat);
+      audio.volume = masterVolume;
       audioRefs.current[index] = audio;
       updateSlotState(index, true, false); // isPlaying: true, isRecording: false
 
@@ -105,7 +114,7 @@ export const useSoundboard = () => {
         audioRefs.current[index] = null;
       };
     },
-    [activeBoard, updateSlotState]
+    [activeBoard, masterVolume, updateSlotState]
   );
 
   const stopSound = useCallback(

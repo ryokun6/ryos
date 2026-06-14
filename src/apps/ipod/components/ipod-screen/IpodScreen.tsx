@@ -8,7 +8,10 @@ import {
   useCallback,
 } from "react";
 import { cn } from "@/lib/utils";
-import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
+import {
+  selectEffectiveIpodVolume,
+  useAudioSettingsStore,
+} from "@/stores/useAudioSettingsStore";
 import { useTranslation } from "react-i18next";
 import {
   getYouTubeVideoId,
@@ -67,7 +70,6 @@ export function IpodScreen({
   statusMessage,
   onToggleVideo,
   lcdFilterOn,
-  ipodVolume,
   showStatusCallback,
   showLyrics,
   lyricsAlignment,
@@ -132,8 +134,7 @@ export function IpodScreen({
     if (el) menuScrollRef.current = el;
   }, []);
 
-  const masterVolume = useAudioSettingsStore((s) => s.masterVolume);
-  const finalIpodVolume = ipodVolume * masterVolume;
+  const finalIpodVolume = useAudioSettingsStore(selectEffectiveIpodVolume);
   const isAppleMusicTrack = currentTrack?.source === "appleMusic";
   const isAppleMusicCollectionShell =
     isAppleMusicCollectionTrack(currentTrack);

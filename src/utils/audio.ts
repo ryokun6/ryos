@@ -2,6 +2,8 @@
 
 import { resumeAudioContext } from "@/lib/audioContext";
 
+const BASE64_CHUNK_SIZE = 0x8000;
+
 export const createWaveform = async (
   container: HTMLElement,
   base64Data: string,
@@ -81,9 +83,17 @@ export const getSupportedMimeType = (): string => {
 
 export const base64FromBlob = async (blob: Blob): Promise<string> => {
   const buffer = await blob.arrayBuffer();
-  return btoa(String.fromCharCode(...Array.from(new Uint8Array(buffer))));
+  return bufferToBase64(buffer);
 };
 
 export function bufferToBase64(buffer: ArrayBuffer): string {
-  return btoa(String.fromCharCode(...Array.from(new Uint8Array(buffer))));
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+
+  for (let offset = 0; offset < bytes.length; offset += BASE64_CHUNK_SIZE) {
+    const chunk = bytes.subarray(offset, offset + BASE64_CHUNK_SIZE);
+    binary += String.fromCharCode(...chunk);
+  }
+
+  return btoa(binary);
 }

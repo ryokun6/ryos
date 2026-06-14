@@ -1,6 +1,9 @@
 import { useCallback } from "react";
 import type { AppProps, IpodInitialData } from "@/apps/base/types";
-import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
+import {
+  selectEffectiveIpodVolume,
+  useAudioSettingsStore,
+} from "@/stores/useAudioSettingsStore";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { DisplayMode } from "@/types/lyrics";
 import {
@@ -25,7 +28,6 @@ export function useIpodAppController({
 
   const {
     t,
-    ipodVolume,
     displayMode,
     isAppleMusic,
     showStatus,
@@ -57,8 +59,7 @@ export function useIpodAppController({
   );
   const uiVariant = useIpodStore((s) => s.uiVariant);
   const isModernIpodUi = uiVariant === "modern";
-  const masterVolume = useAudioSettingsStore((s) => s.masterVolume);
-  const finalIpodVolume = ipodVolume * masterVolume;
+  const finalIpodVolume = useAudioSettingsStore(selectEffectiveIpodVolume);
 
   const handleClose = useCallback(() => {
     pauseBeforeWindowClose();
