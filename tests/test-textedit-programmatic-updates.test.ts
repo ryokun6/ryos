@@ -46,10 +46,14 @@ describe("TextEdit programmatic editor updates", () => {
   });
 
   test("slash menu anchors DropdownMenu to the cursor instead of using triggerless popper", () => {
-    expect(SLASH_COMMANDS_EXTENSION).toContain("<DropdownMenu open modal={false}>");
+    expect(SLASH_COMMANDS_EXTENSION).toContain("<DropdownMenu");
+    expect(SLASH_COMMANDS_EXTENSION).toContain("open");
+    expect(SLASH_COMMANDS_EXTENSION).toContain("modal={false}");
     expect(SLASH_COMMANDS_EXTENSION).toContain("<DropdownMenuTrigger asChild>");
     expect(SLASH_COMMANDS_EXTENSION).toContain("<DropdownMenuContent");
     expect(SLASH_COMMANDS_EXTENSION).toContain("getSlashMenuPosition(rect)");
     expect(SLASH_COMMANDS_EXTENSION).toContain('position: "fixed"');
+    expect(SLASH_COMMANDS_EXTENSION).toContain("onOpenChange={(open)");
+    expect(SLASH_COMMANDS_EXTENSION).toContain("cleanup();");
   });
 });

@@ -132,7 +132,15 @@ const suggestion: Partial<SuggestionOptions> = {
       }
 
       root.render(
-        <DropdownMenu open modal={false}>
+        <DropdownMenu
+          open
+          modal={false}
+          onOpenChange={(open) => {
+            if (!open) {
+              cleanup();
+            }
+          }}
+        >
           <DropdownMenuTrigger asChild>
             <div
               aria-hidden="true"
