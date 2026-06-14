@@ -214,6 +214,7 @@ function SpecialTile({
   return (
     <button
       type="button"
+      aria-label={label}
       className={`preview-button relative w-full ${
         isTile ? "aspect-square" : "aspect-video"
       } cursor-pointer hover:opacity-90 flex items-center justify-center overflow-hidden text-white`}
@@ -249,23 +250,28 @@ function SpecialTile({
             aria-hidden
             className="pointer-events-none absolute inset-0 bg-black/30"
           />
-          {/* Stronger bottom-up gradient anchoring the label. No blur. */}
-          <span
-            aria-hidden
-            className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3"
-            style={{
-              background:
-                "linear-gradient(to top, rgba(0,0,0,0.6), transparent)",
-            }}
-          />
+          {/* Stronger bottom-up gradient anchoring the label. No blur. Skipped
+              on small tiles where the label is hidden. */}
+          {!isTile && (
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3"
+              style={{
+                background:
+                  "linear-gradient(to top, rgba(0,0,0,0.6), transparent)",
+              }}
+            />
+          )}
         </>
       )}
-      {/* Icon is centered in the tile, then nudged up by roughly half the
-          label height so it reads as centered in the space above the label
-          without floating too high. */}
+      {/* Icon is centered in the tile. When a label is shown it is nudged up by
+          roughly half the label height so it reads as centered in the space
+          above the label; on small tiles (no label) it stays truly centered. */}
       {icon && (
         <span
-          className="relative flex -translate-y-[5px] items-center justify-center text-white opacity-[0.85]"
+          className={`relative flex items-center justify-center text-white opacity-[0.85] ${
+            isTile ? "" : "-translate-y-[5px]"
+          }`}
           style={{
             // Uniform element opacity (not color alpha) so the tile art shows
             // through the glyph consistently. A simple drop-shadow keeps it
@@ -277,16 +283,18 @@ function SpecialTile({
         </span>
       )}
       {/* White label dimmed via element opacity (matching the icon) with a
-          single soft dark text-shadow. Crisp and readable on dark gradients,
-          bright covers and busy patterns without any blend modes. */}
-      <span
-        className="absolute inset-x-0 bottom-1 px-1 pt-1 pb-0.5 text-[10px] leading-tight text-center font-medium truncate text-white opacity-[0.85]"
-        style={{
-          textShadow: "0 1px 2px rgba(0,0,0,0.6)",
-        }}
-      >
-        {label}
-      </span>
+          single soft dark text-shadow. Hidden on small tiles (e.g. Patterns)
+          where there isn't room for legible text. */}
+      {!isTile && (
+        <span
+          className="absolute inset-x-0 bottom-1 px-1 pt-1 pb-0.5 text-[10px] leading-tight text-center font-medium truncate text-white opacity-[0.85]"
+          style={{
+            textShadow: "0 1px 2px rgba(0,0,0,0.6)",
+          }}
+        >
+          {label}
+        </span>
+      )}
     </button>
   );
 }
