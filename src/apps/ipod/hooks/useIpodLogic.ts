@@ -6,10 +6,7 @@ import { useSound, Sounds } from "@/hooks/useSound";
 import { useVibration } from "@/hooks/useVibration";
 import { useOffline } from "@/hooks/useOffline";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
-import { useLyrics } from "@/hooks/useLyrics";
-import { useFurigana } from "@/hooks/useFurigana";
-import { useActivityState } from "@/hooks/useActivityState";
-import { useLyricsErrorToast } from "@/hooks/useLyricsErrorToast";
+import { useMediaLyricsPlayback } from "@/shared/media/useMediaLyricsPlayback";
 import { useMediaAppDialogs } from "@/hooks/useMediaAppDialogs";
 import { useCustomEventListener, useEventListener } from "@/hooks/useEventListener";
 import { useLibraryUpdateChecker } from "./useLibraryUpdateChecker";
@@ -32,7 +29,6 @@ import {
   useIpodStore,
   Track,
   IpodBacklightTimeout,
-  getEffectiveTranslationLanguage,
   flushPendingLyricOffsetSave,
   isAppleMusicCollectionTrack,
 } from "@/stores/useIpodStore";
@@ -4830,24 +4826,10 @@ export function useIpodLogic({
   // Volume from audio settings store
   const { ipodVolume } = useAudioSettingsStoreShallow((state) => ({ ipodVolume: state.ipodVolume }));
 
-  // Lyrics hook
-  const selectedMatchForLyrics = useMemo(() => {
-    if (!lyricsSourceOverride) return undefined;
-    return {
-      hash: lyricsSourceOverride.hash,
-      albumId: lyricsSourceOverride.albumId,
-      title: lyricsSourceOverride.title,
-      artist: lyricsSourceOverride.artist,
-      album: lyricsSourceOverride.album,
-    };
-  }, [lyricsSourceOverride]);
-
-  // Resolve "auto" translation language to actual ryOS locale (must track i18n so UI updates when system language changes)
-  const appLanguage = i18n.resolvedLanguage ?? i18n.language;
-  const effectiveTranslationLanguage = useMemo(
-    () => getEffectiveTranslationLanguage(lyricsTranslationLanguage),
-    [lyricsTranslationLanguage, appLanguage]
-  );
+  // Lyrics hook. The shared `selectedMatch` / effective-translation-language
+  // composition lives in `useMediaLyricsPlayback` (shared with Karaoke); the
+  // Apple Music metadata resolution + out-of-React clock sync below stay
+  // iPod-specific.
   // For Apple Music stations / playlists the iPod's `currentTrack` is
   // a *shell* — its title / artist describe the station or playlist
   // itself ("Today's Hits" / "Apple Music"), NOT the song that's
@@ -4871,7 +4853,13 @@ export function useIpodLogic({
     return currentTrack?.lyricOffset ?? 0;
   }, [currentTrack, appleMusicKitNowPlaying?.id]);
 
-  const fullScreenLyricsControls = useLyrics({
+  const {
+    lyricsControls: fullScreenLyricsControls,
+    furiganaMap,
+    soramimiMap,
+    activityState,
+    effectiveTranslationLanguage,
+  } = useMediaLyricsPlayback({
     songId: lyricsSongId,
     title: lyricsTitle,
     artist: lyricsArtist,
@@ -4879,17 +4867,14 @@ export function useIpodLogic({
     // hook ~20x/sec. Current-line tracking is driven by the store
     // subscription effect below via `updateCurrentTimeManually`.
     currentTime: 0,
-    translateTo: effectiveTranslationLanguage,
-    selectedMatch: selectedMatchForLyrics,
-    includeFurigana: true, // Fetch furigana info with lyrics to reduce API calls
-    // Always include soramimi in request to avoid hydration timing issues
-    // (default setting is false, but user's saved setting might be true after hydration)
-    // The server only returns cached soramimi data, doesn't generate anything here
-    includeSoramimi: true,
-    // Pass target language so server returns correct cached soramimi data
-    soramimiTargetLanguage: romanization.soramamiTargetLanguage ?? "zh-TW",
-    // Auth for force refresh / changing lyrics source
+    lyricsTranslationLanguage,
+    romanization,
+    lyricsSourceOverride,
+    isAddingSong,
+    onSearchLyrics: () => setIsLyricsSearchDialogOpen(true),
+    appId: "ipod",
     auth,
+    t,
   });
 
   // Drive lyrics current-line tracking from the playback clock without
@@ -4919,51 +4904,6 @@ export function useIpodLogic({
       }
     });
   }, [fullScreenLyricsControls.lines, lyricsTimingOffsetMs]);
-
-  // Show toast with Search button when lyrics fetch fails
-  useLyricsErrorToast({
-    error: fullScreenLyricsControls.error,
-    songId: lyricsSongId || undefined,
-    onSearchClick: () => setIsLyricsSearchDialogOpen(true),
-    t,
-    appId: "ipod",
-  });
-
-  // Fetch furigana for lyrics and store in shared state
-  // Use pre-fetched info from lyrics request to skip extra API call
-  const { 
-    furiganaMap, 
-    soramimiMap, 
-    isFetchingFurigana,
-    isFetchingSoramimi,
-    furiganaProgress,
-    soramimiProgress,
-  } = useFurigana({
-    songId: lyricsSongId,
-    lines: fullScreenLyricsControls.originalLines,
-    isShowingOriginal: true,
-    romanization,
-    prefetchedInfo: fullScreenLyricsControls.furiganaInfo,
-    prefetchedSoramimiInfo: fullScreenLyricsControls.soramimiInfo,
-    auth,
-  });
-
-  // Consolidated activity state for loading indicators
-  const activityState = useActivityState({
-    lyricsState: {
-      isLoading: fullScreenLyricsControls.isLoading,
-      isTranslating: fullScreenLyricsControls.isTranslating,
-      translationProgress: fullScreenLyricsControls.translationProgress,
-    },
-    furiganaState: {
-      isFetchingFurigana,
-      furiganaProgress,
-      isFetchingSoramimi,
-      soramimiProgress,
-    },
-    translationLanguage: effectiveTranslationLanguage,
-    isAddingSong,
-  });
 
   // Convert furiganaMap to Record for storage - only when content actually changes
   const furiganaRecord = useMemo(() => {

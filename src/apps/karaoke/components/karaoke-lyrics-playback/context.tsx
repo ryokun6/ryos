@@ -7,14 +7,13 @@ import {
   type ReactNode,
 } from "react";
 import type { TFunction } from "i18next";
-import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
-import { useLyrics } from "@/hooks/useLyrics";
-import { useFurigana } from "@/hooks/useFurigana";
-import { useActivityState, isAnyActivityActive } from "@/hooks/useActivityState";
-import { useLyricsErrorToast } from "@/hooks/useLyricsErrorToast";
 import { useKaraokeStore } from "@/stores/useKaraokeStore";
-import { getEffectiveTranslationLanguage, type Track } from "@/stores/useIpodStore";
+import { type Track } from "@/stores/useIpodStore";
+import {
+  useMediaLyricsPlayback,
+  type UseMediaLyricsPlaybackResult,
+} from "@/shared/media/useMediaLyricsPlayback";
 import {
   getLyricsFontClassName,
   LyricsFont as LyricsFontEnum,
@@ -23,10 +22,10 @@ import {
 } from "@/types/lyrics";
 
 export interface KaraokeLyricsPlaybackContextValue {
-  lyricsControls: ReturnType<typeof useLyrics>;
-  furiganaMap: ReturnType<typeof useFurigana>["furiganaMap"];
-  soramimiMap: ReturnType<typeof useFurigana>["soramimiMap"];
-  activityState: ReturnType<typeof useActivityState>;
+  lyricsControls: UseMediaLyricsPlaybackResult["lyricsControls"];
+  furiganaMap: UseMediaLyricsPlaybackResult["furiganaMap"];
+  soramimiMap: UseMediaLyricsPlaybackResult["soramimiMap"];
+  activityState: UseMediaLyricsPlaybackResult["activityState"];
   hasActiveActivity: boolean;
   elapsedTime: number;
   lyricsFontClassName: string;
@@ -73,83 +72,32 @@ export function KaraokeLyricsPlaybackProvider({
   auth,
   lyricsPlaybackSyncRef,
 }: ProviderProps) {
-  const { i18n } = useTranslation();
-  const appLanguage = i18n.resolvedLanguage ?? i18n.language;
   const elapsedTime = useKaraokeStore(useShallow((s) => s.elapsedTime));
 
   const lyricsFontClassName = getLyricsFontClassName(lyricsFont ?? LyricsFontEnum.GoldGlow);
 
-  const selectedMatchForLyrics = useMemo(() => {
-    if (!lyricsSourceOverride) return undefined;
-    return {
-      hash: lyricsSourceOverride.hash,
-      albumId: lyricsSourceOverride.albumId,
-      title: lyricsSourceOverride.title,
-      artist: lyricsSourceOverride.artist,
-      album: lyricsSourceOverride.album,
-    };
-  }, [lyricsSourceOverride]);
-
-  const effectiveTranslationLanguage = useMemo(
-    () => getEffectiveTranslationLanguage(lyricsTranslationLanguage),
-    [lyricsTranslationLanguage, appLanguage]
-  );
-
-  const lyricsControls = useLyrics({
+  const {
+    lyricsControls,
+    furiganaMap,
+    soramimiMap,
+    activityState,
+    hasActiveActivity,
+  } = useMediaLyricsPlayback({
     songId: currentTrack?.id ?? "",
     title: currentTrack?.title ?? "",
     artist: currentTrack?.artist ?? "",
+    // Karaoke drives line tracking reactively from the playback clock; this
+    // small provider re-rendering each tick is acceptable.
     currentTime: elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000,
-    translateTo: effectiveTranslationLanguage,
-    selectedMatch: selectedMatchForLyrics,
-    includeFurigana: true,
-    includeSoramimi: true,
-    soramimiTargetLanguage: romanization.soramamiTargetLanguage ?? "zh-TW",
-    auth,
-  });
-
-  useLyricsErrorToast({
-    error: lyricsControls.error,
-    songId: currentTrack?.id,
-    onSearchClick: () => setIsLyricsSearchDialogOpen(true),
-    t,
-    appId: "karaoke",
-  });
-
-  const {
-    furiganaMap,
-    soramimiMap,
-    isFetchingFurigana: isFetchingFuriganaFromHook,
-    isFetchingSoramimi,
-    furiganaProgress,
-    soramimiProgress,
-  } = useFurigana({
-    songId: currentTrack?.id ?? "",
-    lines: lyricsControls.originalLines,
-    isShowingOriginal: true,
+    lyricsTranslationLanguage,
     romanization,
-    prefetchedInfo: lyricsControls.furiganaInfo,
-    prefetchedSoramimiInfo: lyricsControls.soramimiInfo,
-    auth,
-  });
-
-  const activityState = useActivityState({
-    lyricsState: {
-      isLoading: lyricsControls.isLoading,
-      isTranslating: lyricsControls.isTranslating,
-      translationProgress: lyricsControls.translationProgress,
-    },
-    furiganaState: {
-      isFetchingFurigana: isFetchingFuriganaFromHook,
-      furiganaProgress,
-      isFetchingSoramimi,
-      soramimiProgress,
-    },
-    translationLanguage: effectiveTranslationLanguage,
+    lyricsSourceOverride,
     isAddingSong,
+    onSearchLyrics: () => setIsLyricsSearchDialogOpen(true),
+    appId: "karaoke",
+    auth,
+    t,
   });
-
-  const hasActiveActivity = isAnyActivityActive(activityState);
 
   useEffect(() => {
     lyricsPlaybackSyncRef.current = (timeInLyricsSeconds: number) => {
