@@ -23,8 +23,13 @@ export const SHUFFLE_PREFIX = "shuffle://";
 export const DAY_NIGHT_GRADIENT_WALLPAPER = "dynamic://gradient/day-night";
 export const COVER_WALLPAPER = "dynamic://cover";
 
-/** How often shuffle wallpapers swap to a new random pick. */
-export const SHUFFLE_INTERVAL_MS = 2 * 60 * 1000;
+/**
+ * How often shuffle wallpapers swap to a new random pick. Rotation is
+ * wall-clock based (see `useShuffleWallpaper`): the desktop also catches up to
+ * a fresh pick when the tab regains visibility/focus after being away longer
+ * than this, since browsers throttle/suspend background-tab timers.
+ */
+export const SHUFFLE_INTERVAL_MS = 5 * 60 * 1000;
 
 export function isDynamicWallpaper(wallpaper: string | undefined | null): boolean {
   return (
