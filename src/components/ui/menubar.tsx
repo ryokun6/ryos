@@ -50,9 +50,11 @@ const Menubar = (
     ref,
     className,
     onValueChange,
+    value: _value,
     ...props
   }: React.ComponentPropsWithoutRef<typeof MenubarPrimitive> & {
-    onValueChange?: (value: string | undefined) => void;
+    value?: string;
+    onValueChange?: (value: string) => void;
     ref?: React.Ref<React.ElementRef<typeof MenubarPrimitive>>;
   }
 ) => {
@@ -76,7 +78,7 @@ const Menubar = (
       setIsSwitching(true)
     }
     setPreviousValue(value)
-    onValueChange?.(value)
+    onValueChange?.(value ?? "")
   }
 
   return (
@@ -96,7 +98,7 @@ const Menubar = (
     </MenubarOpenContext.Provider>
   )
 }
-Menubar.displayName = MenubarPrimitive.displayName
+Menubar.displayName = "Menubar"
 
 const MenubarTrigger = (
   {
@@ -136,7 +138,7 @@ const MenubarTrigger = (
 
   return (
     <MenubarMenuPrimitive.Trigger
-      ref={ref}
+      ref={ref as React.Ref<HTMLButtonElement>}
       className={themeClasses}
       style={{ ...themeStyles, ...style }}
       render={(triggerProps, state) => (
@@ -149,7 +151,7 @@ const MenubarTrigger = (
     />
   )
 }
-MenubarTrigger.displayName = MenubarMenuPrimitive.Trigger.displayName
+MenubarTrigger.displayName = "MenubarTrigger"
 
 const MenubarSubTrigger = (
   {
@@ -290,6 +292,7 @@ const MenubarContent = (
   const { isMacOSTheme, isAquaGlass } = useThemeFlags()
   const isMobile = useMediaQuery("(max-width: 768px)")
   const isSwitching = React.use(MenubarSwitchingContext)
+  const styleObject = typeof style === "function" ? undefined : style
 
   return (
     <MenubarMenuPrimitive.Portal>
@@ -325,10 +328,10 @@ const MenubarContent = (
               ...(isAquaGlass ? {} : { opacity: "0.92" }),
               boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
               padding: "4px 0px",
-              ...(isMobile ? {} : { minWidth: style?.minWidth ?? "180px" }),
+              ...(isMobile ? {} : { minWidth: styleObject?.minWidth ?? "180px" }),
             }),
             ...(isMobile && { minWidth: "unset" }),
-            ...style,
+            ...styleObject,
           }}
           render={(popupProps, state) => (
             <div

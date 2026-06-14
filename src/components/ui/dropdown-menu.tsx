@@ -31,7 +31,7 @@ const DropdownMenu = ({
     </DropdownMenuPrimitive.Root>
   );
 };
-DropdownMenu.displayName = DropdownMenuPrimitive.Root.displayName;
+DropdownMenu.displayName = "DropdownMenu";
 
 const DropdownMenuTrigger = (
   {
@@ -56,7 +56,7 @@ const DropdownMenuTrigger = (
 
   return (
     <DropdownMenuPrimitive.Trigger
-      ref={ref}
+      ref={ref as React.Ref<HTMLButtonElement>}
       className={className}
       style={{ ...macosTextShadow, ...style }}
       render={asChild && React.isValidElement(children) ? children : undefined}
@@ -66,7 +66,7 @@ const DropdownMenuTrigger = (
     </DropdownMenuPrimitive.Trigger>
   );
 };
-DropdownMenuTrigger.displayName = DropdownMenuPrimitive.Trigger.displayName;
+DropdownMenuTrigger.displayName = "DropdownMenuTrigger";
 
 const DropdownMenuGroup = DropdownMenuPrimitive.Group;
 
@@ -143,6 +143,7 @@ const DropdownMenuSubContent = (
 ) => {
   const { isMacOSTheme, isAquaGlass } = useThemeFlags();
   const isMobile = useMediaQuery("(max-width: 768px)");
+  const styleObject = typeof style === "function" ? undefined : style;
 
   return (
     <DropdownMenuPrimitive.Portal>
@@ -245,10 +246,10 @@ const DropdownMenuContent = (
               ...(isAquaGlass ? {} : { opacity: "0.92" }),
               boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
               padding: "4px 0px",
-              ...(isMobile ? {} : { minWidth: style?.minWidth ?? "180px" }),
+              ...(isMobile ? {} : { minWidth: styleObject?.minWidth ?? "180px" }),
             }),
             ...(isMobile && { minWidth: "unset" }),
-            ...style,
+            ...styleObject,
           }}
           render={(popupProps, state) => (
             <div

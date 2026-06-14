@@ -95,15 +95,18 @@ const Dialog = ({
     </DialogCompatibilityContext.Provider>
   );
 };
-Dialog.displayName = DialogPrimitive.Root.displayName;
+Dialog.displayName = "Dialog";
 const DialogTrigger = ({
+  ref,
   asChild = false,
   children,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Trigger> & {
   asChild?: boolean;
+  ref?: React.Ref<React.ElementRef<typeof DialogPrimitive.Trigger>>;
 }) => (
   <DialogPrimitive.Trigger
+    ref={ref}
     render={asChild && React.isValidElement(children) ? children : undefined}
     {...props}
   >
@@ -112,13 +115,16 @@ const DialogTrigger = ({
 );
 const DialogPortal = DialogPrimitive.Portal;
 const DialogClose = ({
+  ref,
   asChild = false,
   children,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Close> & {
   asChild?: boolean;
+  ref?: React.Ref<React.ElementRef<typeof DialogPrimitive.Close>>;
 }) => (
   <DialogPrimitive.Close
+    ref={ref}
     render={asChild && React.isValidElement(children) ? children : undefined}
     {...props}
   >
@@ -267,7 +273,7 @@ const DialogContent = (
     </DialogPortal>
   );
 };
-DialogContent.displayName = DialogPrimitive.Popup.displayName;
+DialogContent.displayName = "DialogContent";
 
 const DialogHeader = ({
   className,
@@ -287,9 +293,9 @@ const DialogHeader = ({
       >
         <div className="title-bar-text">{children}</div>
         <div className="title-bar-controls">
-          <DialogPrimitive.Close asChild>
+          <DialogClose asChild>
             <button aria-label={t("common.dialog.close")} data-action="close" />
-          </DialogPrimitive.Close>
+          </DialogClose>
         </div>
       </div>
     );
@@ -310,7 +316,7 @@ const DialogHeader = ({
         {...props}
       >
         {/* Traffic Light Buttons */}
-        <DialogPrimitive.Close ref={closeRef} className="hidden" />
+        <DialogClose ref={closeRef} className="hidden" />
         <div className="group/traffic flex items-center gap-2 ml-1.5">
           <TrafficLightButton
             color="red"
@@ -361,12 +367,12 @@ const DialogHeader = ({
       }}
       {...props}
     >
-      <DialogPrimitive.Close asChild>
+      <DialogClose asChild>
         <div className="relative ml-2 size-4 cursor-default select-none">
           <div className="absolute inset-0 -m-2" />
           <div className="size-4 bg-os-button-face shadow-[0_0_0_1px_var(--os-color-button-face)] border-2 border-os-window hover:bg-neutral-200 active:bg-neutral-300 flex items-center justify-center" />
         </div>
-      </DialogPrimitive.Close>
+      </DialogClose>
       <div className="select-none mx-auto bg-os-button-face px-2 py-0 h-full flex items-center justify-center text-os-titlebar-active-text">
         {children}
       </div>

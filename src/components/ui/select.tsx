@@ -6,11 +6,21 @@ import { useThemeFlags } from "@/hooks/useThemeFlags";
 
 import { cn } from "@/lib/utils";
 
+type SelectProps = Omit<
+  React.ComponentProps<typeof SelectPrimitive.Root<string>>,
+  "value" | "defaultValue" | "onValueChange"
+> & {
+  value?: string | null;
+  defaultValue?: string | null;
+  onValueChange?: (value: string) => void;
+};
+
 const Select = ({
   children,
   onOpenChange,
+  onValueChange,
   ...props
-}: React.ComponentProps<typeof SelectPrimitive.Root>) => {
+}: SelectProps) => {
   const { play: playMenuOpen } = useSound(Sounds.MENU_OPEN);
   const { play: playMenuClose } = useSound(Sounds.MENU_CLOSE);
 
@@ -24,6 +34,11 @@ const Select = ({
           playMenuClose();
         }
         onOpenChange?.(open, eventDetails);
+      }}
+      onValueChange={(value) => {
+        if (value != null) {
+          onValueChange?.(value);
+        }
       }}
     >
       {children}
@@ -276,7 +291,10 @@ const SelectItem = (
 SelectItem.displayName = SelectPrimitive.Item.displayName;
 
 interface SelectItemWithDescriptionProps
-  extends React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item> {
+  extends Omit<
+    React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item>,
+    "onSelect"
+  > {
   description?: string;
   onSelect?: React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item>["onClick"];
 }
