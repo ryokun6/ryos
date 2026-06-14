@@ -175,7 +175,7 @@ interface SpecialTileProps {
   /**
    * Render a plain dark scrim (no blur) under the icon + label. Used for tiles
    * whose preview can be an arbitrary bright/busy photo (the Shuffle tiles) so
-   * the glassy glyphs always stay legible.
+   * the white glyphs always stay legible.
    */
   scrim?: boolean;
 }
@@ -247,32 +247,23 @@ function SpecialTile({
       )}
       {icon && (
         <span
-          className="relative flex items-center justify-center"
+          className="relative flex items-center justify-center text-white/85"
           style={{
-            // Glassy/knockout look: the white glyph tints with whatever is
-            // behind it (day/night gradient, random pattern, cover art) so it
-            // reads as semi-transparent. A tight drop-shadow plus a soft dark
-            // halo keep it legible on both dark and bright backgrounds.
-            mixBlendMode: "overlay",
-            filter:
-              "drop-shadow(0 1px 2px rgba(0,0,0,0.65)) drop-shadow(0 0 5px rgba(0,0,0,0.45))",
+            // Semi-transparent white glyph with a simple drop-shadow keeps it
+            // legible on dark gradients, bright covers and busy patterns alike.
+            filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.6))",
           }}
         >
           {icon}
         </span>
       )}
-      {/* Glassy/transparent label: white text blended into the art with no
-          background panel. A tight multi-layer dark text-shadow acts as an
-          outline so it stays legible on dark gradients, bright covers and
-          busy patterns alike. */}
+      {/* Semi-transparent white label with a single soft dark text-shadow.
+          Crisp and readable on dark gradients, bright covers and busy patterns
+          without any blend modes. */}
       <span
-        className="absolute inset-x-0 bottom-0 px-1 pt-1 pb-0.5 text-[10px] leading-tight text-center font-medium truncate text-white"
+        className="absolute inset-x-0 bottom-0 px-1 pt-1 pb-0.5 text-[10px] leading-tight text-center font-medium truncate text-white/85"
         style={{
-          mixBlendMode: "overlay",
-          // Tight dark outline (rather than a soft blur) keeps the blended text
-          // crisp and readable even over bright cover photos / busy patterns.
-          textShadow:
-            "0 1px 1px rgba(0,0,0,0.95), 0 -1px 1px rgba(0,0,0,0.8), 1px 0 1px rgba(0,0,0,0.8), -1px 0 1px rgba(0,0,0,0.8), 0 0 4px rgba(0,0,0,0.5)",
+          textShadow: "0 1px 2px rgba(0,0,0,0.6)",
         }}
       >
         {label}
@@ -693,7 +684,7 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
                   handleWallpaperSelect(DAY_NIGHT_GRADIENT_WALLPAPER)
                 }
                 backgroundStyle={{ backgroundImage: dayNightPreview }}
-                icon={<Sun className="size-6 text-white" weight="fill" />}
+                icon={<Sun className="size-6 text-white/85" weight="fill" />}
               />
               <SpecialTile
                 label={t("apps.control-panels.dynamicWallpapers.nowPlaying")}
@@ -710,7 +701,7 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
                 }
                 icon={
                   nowPlaying.coverUrl ? null : (
-                    <MusicNotes className="size-6 text-white" weight="fill" />
+                    <MusicNotes className="size-6 text-white/85" weight="fill" />
                   )
                 }
               />
@@ -738,7 +729,7 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
                       }
                     : undefined;
                 })()}
-                icon={<Shuffle className="size-5 text-white" weight="bold" />}
+                icon={<Shuffle className="size-5 text-white/85" weight="bold" />}
               />
               {tileWallpapers.map((path) => (
                 <WallpaperItem
@@ -766,7 +757,7 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
                     liveShuffleSource) ||
                   randomVideoShuffleArt
                 }
-                icon={<Shuffle className="size-6 text-white" weight="bold" />}
+                icon={<Shuffle className="size-6 text-white/85" weight="bold" />}
               />
               {videoWallpapers.map((path) => (
                 <WallpaperItem
@@ -847,7 +838,7 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
                       }
                     : undefined;
                 })()}
-                icon={<Shuffle className="size-6 text-white" weight="bold" />}
+                icon={<Shuffle className="size-6 text-white/85" weight="bold" />}
               />
               {photoWallpapers[selectedCategory].map((path) => (
                 <WallpaperItem
