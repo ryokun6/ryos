@@ -4,13 +4,7 @@ import type { SetStateAction } from "react";
 import { DisplayMode } from "@/types/lyrics";
 import { useIpodStore, Track } from "./useIpodStore";
 import { shouldUpdatePlaybackTime } from "./playbackTime";
-
-/** Helper to get current index from song ID */
-function getIndexFromSongId(tracks: Track[], songId: string | null): number {
-  if (!songId || tracks.length === 0) return -1;
-  const index = tracks.findIndex((t) => t.id === songId);
-  return index >= 0 ? index : -1;
-}
+import { getIndexFromSongId } from "@/shared/media/mediaQueue";
 
 /** Get a random song ID avoiding the current song */
 function getRandomSongId(tracks: Track[], currentSongId: string | null): string | null {

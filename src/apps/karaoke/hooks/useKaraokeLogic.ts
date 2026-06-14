@@ -36,7 +36,7 @@ import type { KaraokeInitialData } from "../../base/types";
 import type { CoverFlowRef } from "@/apps/ipod/components/cover-flow/types";
 import type { SongSearchResult } from "@/components/dialogs/SongSearchDialog";
 import { helpItems } from "..";
-import { onAppUpdate } from "@/utils/appEventBus";
+import { useMediaDeepLinks } from "@/shared/media/useMediaDeepLinks";
 import { MEDIA_ANALYTICS, track as trackAnalytics } from "@/utils/analytics";
 import { formatSecondsAsMinutesSeconds } from "@/utils/timeFormat";
 
@@ -125,9 +125,8 @@ export function useKaraokeLogic({
       bringInstanceToForeground: state.bringInstanceToForeground,
     }));
 
-  // Ref to track processed initial data
-  const lastProcessedInitialDataRef = useRef<typeof initialData | null>(null);
-  const lastProcessedListenSessionRef = useRef<string | null>(null);
+  // Ref to track pending remote-track hydration (deep-link dedupe refs now
+  // live inside useMediaDeepLinks).
   const pendingRemoteTrackHydrationRef = useRef<string | null>(null);
 
   // Independent playback + display state from Karaoke store (not shared with iPod)
@@ -1409,137 +1408,46 @@ export function useKaraokeLogic({
     t,
   ]);
 
-  // Handle initial data (shared track) - process video ID to add/play
-  useEffect(() => {
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
-
-    if (isWindowOpen && initialData?.videoId && typeof initialData.videoId === "string") {
-      if (lastProcessedInitialDataRef.current === initialData) return;
-
-      const videoIdToProcess = initialData.videoId;
-      timeoutId = setTimeout(() => {
-        processVideoId(videoIdToProcess)
-          .then(() => {
-            if (instanceId) clearInstanceInitialData(instanceId);
-          })
-          .catch((error) => {
-            console.error(`[Karaoke] Error processing initial videoId ${videoIdToProcess}:`, error);
-          });
-      }, 100);
-      lastProcessedInitialDataRef.current = initialData;
-    } else if (
-      isWindowOpen &&
+  // Initial data / shared-URL / onAppUpdate handling (shared scaffolding).
+  const handleListenJoinError = useCallback(
+    (result: { ok: boolean; error?: string }) => {
+      toast.error("Failed to join session", {
+        description: result.error || "Please try again.",
+      });
+    },
+    []
+  );
+  const handleSharedVideoError = useCallback((videoId: string) => {
+    toast.error("Failed to load shared track", {
+      description: `Video ID: ${videoId}`,
+    });
+  }, []);
+  // Reset to the first track when there's no shared track and the current song
+  // no longer exists in the library (Karaoke-only).
+  const handleNoInitialVideoId = useCallback(() => {
+    if (
       !listenRemoteOnly &&
       tracks.length > 0 &&
       currentSongId &&
       !tracks.some((t) => t.id === currentSongId)
     ) {
-      // Reset to first track if current song no longer exists in library
       setCurrentSongId(tracks[0]?.id ?? null);
     }
-    return () => {
-      if (timeoutId !== null) {
-        clearTimeout(timeoutId);
-      }
-    };
-  }, [
+  }, [listenRemoteOnly, tracks, currentSongId, setCurrentSongId]);
+  useMediaDeepLinks({
+    appId: "karaoke",
     isWindowOpen,
     initialData,
-    listenRemoteOnly,
-    processVideoId,
-    clearInstanceInitialData,
     instanceId,
-    tracks,
-    currentSongId,
-    setCurrentSongId,
-  ]);
-
-  useEffect(() => {
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
-
-    if (
-      isWindowOpen &&
-      initialData?.listenSessionId &&
-      typeof initialData.listenSessionId === "string"
-    ) {
-      if (lastProcessedListenSessionRef.current === initialData.listenSessionId) return;
-
-      const sessionIdToProcess = initialData.listenSessionId;
-      timeoutId = setTimeout(() => {
-        joinListenSession(sessionIdToProcess, username || undefined)
-          .then((result) => {
-            if (!result.ok) {
-              toast.error("Failed to join session", {
-                description: result.error || "Please try again.",
-              });
-            }
-            if (instanceId) clearInstanceInitialData(instanceId);
-          })
-          .catch((error) => {
-            console.error(`[Karaoke] Error joining listen session ${sessionIdToProcess}:`, error);
-          });
-      }, 100);
-      lastProcessedListenSessionRef.current = initialData.listenSessionId;
-    }
-    return () => {
-      if (timeoutId !== null) {
-        clearTimeout(timeoutId);
-      }
-    };
-  }, [isWindowOpen, initialData, joinListenSession, username, clearInstanceInitialData, instanceId]);
-
-  // Handle updateApp event for when app is already open and receives new video
-  useEffect(() => {
-    const handleUpdateApp = (event: CustomEvent<{ appId: string; instanceId?: string; initialData?: unknown }>) => {
-      const updateInitialData = event.detail.initialData as
-        | { videoId?: string; listenSessionId?: string }
-        | undefined;
-
-      if (
-        event.detail.appId === "karaoke" &&
-        updateInitialData?.videoId &&
-        (!event.detail.instanceId || event.detail.instanceId === instanceId)
-      ) {
-        if (lastProcessedInitialDataRef.current === updateInitialData) return;
-
-        const videoId = updateInitialData.videoId;
-        if (instanceId) {
-          bringInstanceToForeground(instanceId);
-        }
-        processVideoId(videoId).catch((error) => {
-          console.error(`[Karaoke] Error processing videoId ${videoId}:`, error);
-          toast.error("Failed to load shared track", { description: `Video ID: ${videoId}` });
-        });
-        lastProcessedInitialDataRef.current = updateInitialData;
-      }
-
-      if (
-        event.detail.appId === "karaoke" &&
-        updateInitialData?.listenSessionId &&
-        (!event.detail.instanceId || event.detail.instanceId === instanceId)
-      ) {
-        const sessionId = updateInitialData.listenSessionId;
-        if (lastProcessedListenSessionRef.current === sessionId) return;
-        if (instanceId) {
-          bringInstanceToForeground(instanceId);
-        }
-        joinListenSession(sessionId, username || undefined)
-          .then((result) => {
-            if (!result.ok) {
-              toast.error("Failed to join session", {
-                description: result.error || "Please try again.",
-              });
-            }
-          })
-          .catch((error) => {
-            console.error(`[Karaoke] Error joining listen session ${sessionId}:`, error);
-          });
-        lastProcessedListenSessionRef.current = sessionId;
-      }
-    };
-
-    return onAppUpdate(handleUpdateApp);
-  }, [processVideoId, bringInstanceToForeground, joinListenSession, username, instanceId]);
+    username,
+    clearInitialData: clearInstanceInitialData,
+    bringInstanceToForeground,
+    processVideoId,
+    joinListenSession,
+    onJoinError: handleListenJoinError,
+    onVideoIdUpdateError: handleSharedVideoError,
+    onNoInitialVideoId: handleNoInitialVideoId,
+  });
 
   const { isWindowsTheme: isXpTheme } = useThemeFlags();
 

@@ -13,6 +13,7 @@ import {
 import { LyricLine } from "@/types/lyrics";
 import type { FuriganaSegment } from "@/utils/romanization";
 import { getAppPublicOrigin } from "@/utils/runtimeConfig";
+import { getIndexFromSongId } from "@/shared/media/mediaQueue";
 import { getCachedSongMetadata } from "@/utils/songMetadataCache";
 import { ApiRequestError } from "@/api/core";
 import {
@@ -457,13 +458,6 @@ export function isAppleMusicCollectionTrack(
     track?.appleMusicPlayParams?.stationId ||
       track?.appleMusicPlayParams?.playlistId
   );
-}
-
-/** Helper to get current index from song ID */
-function getIndexFromSongId(tracks: Track[], songId: string | null): number {
-  if (!songId || tracks.length === 0) return -1;
-  const index = tracks.findIndex((t) => t.id === songId);
-  return index >= 0 ? index : -1;
 }
 
 export interface IpodState extends IpodData {

@@ -11,6 +11,7 @@ import {
   useMediaTrackChangeReset,
   useMediaFullscreenSync,
 } from "@/shared/media/useMediaPlayback";
+import { useMediaDeepLinks } from "@/shared/media/useMediaDeepLinks";
 import { useMediaAppDialogs } from "@/hooks/useMediaAppDialogs";
 import { useCustomEventListener, useEventListener } from "@/hooks/useEventListener";
 import { useLibraryUpdateChecker } from "./useLibraryUpdateChecker";
@@ -56,7 +57,6 @@ import {
   generateIpodSongShareUrl,
   shouldCacheSongMetadataForShare,
 } from "@/utils/sharedUrl";
-import { onAppUpdate } from "@/utils/appEventBus";
 import {
   SEEK_AMOUNT_SECONDS,
   IPOD_NOW_PLAYING_SONG_MENU_KEY as NOW_PLAYING_SONG_MENU_KEY,
@@ -325,8 +325,6 @@ export function useIpodLogic({
   const isMinimized = instanceId
     ? instances[instanceId]?.isMinimized ?? false
     : false;
-  const lastProcessedInitialDataRef = useRef<unknown>(null);
-  const lastProcessedListenSessionRef = useRef<string | null>(null);
 
   const joinListenSession = useListenSessionStore((s) => s.joinSession);
 
@@ -3773,127 +3771,36 @@ export function useIpodLogic({
     [setLibrarySource, setYoutubeCurrentSongId, setIsPlaying, handleAddTrack, isOffline, showOfflineStatus, t, isIOS, isSafari, startTrackSwitch]
   );
 
-  // Initial data handling
-  useEffect(() => {
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
-
-    if (isWindowOpen && initialData?.videoId && typeof initialData.videoId === "string") {
-      if (lastProcessedInitialDataRef.current === initialData) return;
-
-      const videoIdToProcess = initialData.videoId;
-      timeoutId = setTimeout(() => {
-        processVideoId(videoIdToProcess)
-          .then(() => {
-            if (instanceId) clearIpodInitialData(instanceId);
-          })
-          .catch((error) => {
-            console.error(`Error processing initial videoId ${videoIdToProcess}:`, error);
-          });
-      }, 100);
-      lastProcessedInitialDataRef.current = initialData;
-    }
-    return () => {
-      if (timeoutId !== null) {
-        clearTimeout(timeoutId);
-      }
-    };
-  }, [isWindowOpen, initialData, processVideoId, clearIpodInitialData, instanceId]);
-
-  useEffect(() => {
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
-
-    if (
-      isWindowOpen &&
-      initialData?.listenSessionId &&
-      typeof initialData.listenSessionId === "string"
-    ) {
-      if (lastProcessedListenSessionRef.current === initialData.listenSessionId) return;
-
-      const sessionIdToProcess = initialData.listenSessionId;
-      timeoutId = setTimeout(() => {
-        joinListenSession(sessionIdToProcess, username || undefined)
-          .then((result) => {
-            if (!result.ok) {
-              toast.error(t("apps.ipod.dialogs.listenSessionJoinFailed"), {
-                description:
-                  result.error || t("apps.ipod.dialogs.pleaseTryAgain"),
-              });
-            }
-            if (instanceId) clearIpodInitialData(instanceId);
-          })
-          .catch((error) => {
-            console.error(`[iPod] Error joining listen session ${sessionIdToProcess}:`, error);
-          });
-      }, 100);
-      lastProcessedListenSessionRef.current = initialData.listenSessionId;
-    }
-    return () => {
-      if (timeoutId !== null) {
-        clearTimeout(timeoutId);
-      }
-    };
-  }, [
+  // Initial data / shared-URL / onAppUpdate handling (shared scaffolding).
+  const handleListenJoinError = useCallback(
+    (result: { ok: boolean; error?: string }) => {
+      toast.error(t("apps.ipod.dialogs.listenSessionJoinFailed"), {
+        description: result.error || t("apps.ipod.dialogs.pleaseTryAgain"),
+      });
+    },
+    [t]
+  );
+  const handleSharedVideoError = useCallback(
+    (videoId: string) => {
+      toast.error(t("apps.ipod.dialogs.failedToLoadSharedTrack"), {
+        description: t("apps.ipod.dialogs.sharedTrackVideoId", { videoId }),
+      });
+    },
+    [t]
+  );
+  useMediaDeepLinks({
+    appId: "ipod",
     isWindowOpen,
     initialData,
-    joinListenSession,
-    username,
-    clearIpodInitialData,
     instanceId,
-  ]);
-
-  // Update app event handling
-  useEffect(() => {
-    return onAppUpdate((event) => {
-      const updateInitialData = event.detail.initialData as
-        | { videoId?: string; listenSessionId?: string }
-        | undefined;
-
-      if (
-        event.detail.appId === "ipod" &&
-        updateInitialData?.videoId &&
-        (!event.detail.instanceId || event.detail.instanceId === instanceId)
-      ) {
-        if (lastProcessedInitialDataRef.current === updateInitialData) return;
-
-        const videoId = updateInitialData.videoId;
-        if (instanceId) {
-          bringInstanceToForeground(instanceId);
-        }
-        processVideoId(videoId).catch((error) => {
-          console.error(`Error processing videoId ${videoId}:`, error);
-          toast.error(t("apps.ipod.dialogs.failedToLoadSharedTrack"), {
-            description: t("apps.ipod.dialogs.sharedTrackVideoId", { videoId }),
-          });
-        });
-        lastProcessedInitialDataRef.current = updateInitialData;
-      }
-
-      if (
-        event.detail.appId === "ipod" &&
-        updateInitialData?.listenSessionId &&
-        (!event.detail.instanceId || event.detail.instanceId === instanceId)
-      ) {
-        const sessionId = updateInitialData.listenSessionId;
-        if (lastProcessedListenSessionRef.current === sessionId) return;
-        if (instanceId) {
-          bringInstanceToForeground(instanceId);
-        }
-        joinListenSession(sessionId, username || undefined)
-          .then((result) => {
-            if (!result.ok) {
-              toast.error(t("apps.ipod.dialogs.listenSessionJoinFailed"), {
-                description:
-                  result.error || t("apps.ipod.dialogs.pleaseTryAgain"),
-              });
-            }
-          })
-          .catch((error) => {
-            console.error(`[iPod] Error joining listen session ${sessionId}:`, error);
-          });
-        lastProcessedListenSessionRef.current = sessionId;
-      }
-    });
-  }, [bringInstanceToForeground, instanceId, joinListenSession, processVideoId, username]);
+    username,
+    clearInitialData: clearIpodInitialData,
+    bringInstanceToForeground,
+    processVideoId,
+    joinListenSession,
+    onJoinError: handleListenJoinError,
+    onVideoIdUpdateError: handleSharedVideoError,
+  });
 
   // Handle closing sync mode - flush pending offset saves
   const closeSyncMode = useCallback(async () => {
