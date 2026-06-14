@@ -16,15 +16,34 @@ const FILE_OPERATIONS = readFileSync(
   join(import.meta.dir, "../src/apps/textedit/hooks/useFileOperations.ts"),
   "utf8"
 );
+const MERGE_EDITOR_CONTENT = readFileSync(
+  join(import.meta.dir, "../src/apps/textedit/utils/mergeEditorContent.ts"),
+  "utf8"
+);
 
 describe("TextEdit programmatic editor updates", () => {
-  test("external document updates do not emit dirty-state editor updates", () => {
+  test("external document updates merge through the cursor-preserving helper", () => {
+    // External updates must not directly replace content (which would reset the
+    // caret); they go through mergeEditorContent instead.
     expect(TEXTEDIT_APP_COMPONENT).not.toContain(
       "editor.commands.setContent(jsonContent);"
     );
-    expect(TEXTEDIT_APP_COMPONENT).toContain(
+    expect(TEXTEDIT_APP_COMPONENT).not.toContain(
       "editor.commands.setContent(jsonContent, false);"
     );
+    expect(TEXTEDIT_APP_COMPONENT).toContain("mergeEditorContent(editor");
+    expect(TEXTEDIT_APP_COMPONENT).toContain("applyExternalUpdate(jsonContent)");
+  });
+
+  test("external merge transactions are ignored by the dirty-state tracker", () => {
+    expect(TEXTEDIT_APP_COMPONENT).toContain('transaction?.getMeta("external")');
+  });
+
+  test("merge helper tags external, non-undoable transactions", () => {
+    expect(MERGE_EDITOR_CONTENT).toContain('tr.setMeta("external", true)');
+    expect(MERGE_EDITOR_CONTENT).toContain('tr.setMeta("addToHistory", false)');
+    expect(MERGE_EDITOR_CONTENT).toContain("findDiffStart");
+    expect(MERGE_EDITOR_CONTENT).toContain("findDiffEnd");
   });
 
   test("new-file and pending-file loads are silent editor updates", () => {
