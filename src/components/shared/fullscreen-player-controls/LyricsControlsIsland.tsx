@@ -205,11 +205,6 @@ export function LyricsControlsIsland({
           container={portalContainer}
           side="top"
           align={variant === "compact" ? "end" : "center"}
-          alignOffset={
-            variant === "compact"
-              ? ({ positioner }) => -positioner.width
-              : undefined
-          }
           sideOffset={8}
           collisionAvoidance={{
             side: "shift",
@@ -224,6 +219,7 @@ export function LyricsControlsIsland({
               ? "w-40 max-w-[calc(100vw-1rem)]"
               : "w-44"
           )}
+          style={variant === "compact" ? { marginLeft: "-10rem" } : undefined}
           onClick={(e) => e.stopPropagation()}
         >
           <DropdownMenuRadioGroup
@@ -288,11 +284,6 @@ export function LyricsControlsIsland({
               container={portalContainer}
               side="top"
               align={variant === "compact" ? "end" : "center"}
-              alignOffset={
-                variant === "compact"
-                  ? ({ positioner }) => -positioner.width
-                  : undefined
-              }
               sideOffset={8}
               collisionAvoidance={{
                 side: "shift",
@@ -307,6 +298,7 @@ export function LyricsControlsIsland({
                   ? "w-44 max-w-[calc(100vw-1rem)]"
                   : "w-max min-w-40 max-w-none"
               )}
+              style={variant === "compact" ? { marginLeft: "-11rem" } : undefined}
               onClick={(e) => e.stopPropagation()}
             >
               <DropdownMenuCheckboxItem
