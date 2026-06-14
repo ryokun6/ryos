@@ -13,7 +13,7 @@ type DropdownSubmenuSide = React.ComponentPropsWithoutRef<
 
 const SUBMENU_COLLISION_PADDING = 8;
 const ESTIMATED_SUBMENU_WIDTH = 180;
-const SUBMENU_CLOSE_DELAY_MS = 150;
+const SUBMENU_CLOSE_DELAY_MS = 500;
 
 const DropdownSubmenuSideContext = React.createContext<{
   side: DropdownSubmenuSide;
