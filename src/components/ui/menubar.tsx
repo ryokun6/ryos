@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils"
 // Context to track if we're switching between menus (to skip animations)
 const MenubarSwitchingContext = React.createContext<boolean>(false)
 const MenubarOpenContext = React.createContext<{
-  openValue: string | undefined;
+  currentValueRef: React.MutableRefObject<string | undefined>;
   setOpenValue: (value: string | undefined) => void;
 } | null>(null)
 
@@ -30,8 +30,13 @@ const MenubarMenu = ({
     <MenubarMenuPrimitive.Root
       {...props}
       onOpenChange={(open, eventDetails) => {
-        if (open || eventDetails.reason !== "sibling-open") {
+        if (open) {
           context?.setOpenValue(open ? menuValue : undefined)
+        } else if (
+          eventDetails.reason !== "sibling-open" &&
+          context?.currentValueRef.current === menuValue
+        ) {
+          context.setOpenValue(undefined)
         }
         onOpenChange?.(open, eventDetails)
       }}
@@ -64,28 +69,33 @@ const Menubar = (
   const { play: playMenuClose } = useSound(Sounds.MENU_CLOSE)
   const [previousValue, setPreviousValue] = React.useState<string | undefined>(undefined)
   const [isSwitching, setIsSwitching] = React.useState(false)
+  const currentValueRef = React.useRef<string | undefined>(undefined)
 
   const handleValueChange = (value: string | undefined) => {
+    const currentValue = currentValueRef.current
+    if (value === currentValue) return
+
     // Play sound based on menu state change
-    if (value && !previousValue) {
+    if (value && !currentValue) {
       // Opening a menu from closed state
       playMenuOpen()
       setIsSwitching(false)
-    } else if (!value && previousValue) {
+    } else if (!value && currentValue) {
       // Closing a menu completely
       playMenuClose()
       setIsSwitching(false)
-    } else if (value && previousValue && value !== previousValue) {
+    } else if (value && currentValue && value !== currentValue) {
       // Switching between menus - skip sound and animation for instant swap
       setIsSwitching(true)
     }
+    currentValueRef.current = value
     setPreviousValue(value)
     onValueChange?.(value ?? "")
   }
 
   return (
     <MenubarOpenContext.Provider
-      value={{ openValue: previousValue, setOpenValue: handleValueChange }}
+      value={{ currentValueRef, setOpenValue: handleValueChange }}
     >
       <MenubarSwitchingContext.Provider value={isSwitching}>
         <MenubarPrimitive

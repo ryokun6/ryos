@@ -45,9 +45,16 @@ const Select = ({
 }: SelectProps) => {
   const { play: playMenuOpen } = useSound(Sounds.MENU_OPEN);
   const { play: playMenuClose } = useSound(Sounds.MENU_CLOSE);
+  const openRef = React.useRef(Boolean(props.open ?? props.defaultOpen));
   const [labels, setLabels] = React.useState<Map<string, React.ReactNode>>(
     () => new Map()
   );
+
+  React.useEffect(() => {
+    if (props.open !== undefined) {
+      openRef.current = props.open;
+    }
+  }, [props.open]);
 
   const registerLabel = React.useCallback(
     (value: string, label: React.ReactNode | null) => {
@@ -75,10 +82,13 @@ const Select = ({
       <SelectPrimitive.Root
         {...props}
         onOpenChange={(open, eventDetails) => {
-          if (open) {
-            playMenuOpen();
-          } else {
-            playMenuClose();
+          if (open !== openRef.current) {
+            openRef.current = open;
+            if (open) {
+              playMenuOpen();
+            } else {
+              playMenuClose();
+            }
           }
           onOpenChange?.(open, eventDetails);
         }}

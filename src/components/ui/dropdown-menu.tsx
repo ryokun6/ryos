@@ -14,15 +14,25 @@ const DropdownMenu = ({
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Root>) => {
   const { play: playMenuOpen } = useSound(Sounds.MENU_OPEN);
   const { play: playMenuClose } = useSound(Sounds.MENU_CLOSE);
+  const openRef = React.useRef(Boolean(props.open ?? props.defaultOpen));
+
+  React.useEffect(() => {
+    if (props.open !== undefined) {
+      openRef.current = props.open;
+    }
+  }, [props.open]);
 
   return (
     <DropdownMenuPrimitive.Root
       {...props}
       onOpenChange={(open, eventDetails) => {
-        if (open) {
-          playMenuOpen();
-        } else {
-          playMenuClose();
+        if (open !== openRef.current) {
+          openRef.current = open;
+          if (open) {
+            playMenuOpen();
+          } else {
+            playMenuClose();
+          }
         }
         onOpenChange?.(open, eventDetails);
       }}
