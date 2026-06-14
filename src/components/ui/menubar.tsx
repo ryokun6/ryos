@@ -30,7 +30,9 @@ const MenubarMenu = ({
     <MenubarMenuPrimitive.Root
       {...props}
       onOpenChange={(open, eventDetails) => {
-        context?.setOpenValue(open ? menuValue : undefined)
+        if (open || eventDetails.reason !== "sibling-open") {
+          context?.setOpenValue(open ? menuValue : undefined)
+        }
         onOpenChange?.(open, eventDetails)
       }}
     />
