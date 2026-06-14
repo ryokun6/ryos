@@ -209,9 +209,10 @@ Every syncable piece of state becomes a **key → document** pair, where keys
 are namespaced strings and documents are small JSON values:
 
 ```
-settings/theme                 → { current: "macosx", wallpaper: {...} }
-settings/audio                 → { uiSoundsEnabled: true, ... }
-settings/dock                  → { pinned: [...], magnify: ... }
+settings/theme/current         → "macosx"
+settings/theme/accent          → { macosx: "blue", ... }
+settings/audio/uiSoundsEnabled → true
+settings/dock/pinnedItems      → [...]
 files/doc:/Documents/notes.md  → { name, type, size, contentRef? , ... }
 files/trash:uuid               → { originalPath, deletedAt, contentRef }
 songs/track:dQw4w9WgXcQ        → { title, artist, url, ... }
@@ -227,9 +228,15 @@ wallpapers/item:uuid           → { name, contentRef: { sha256, size } }
 ```
 
 The granularity rule: **a key is the unit of conflict resolution**. v1
-already merges at exactly these granularities (settings sections, file
+already merges at roughly these granularities (settings sections, file
 paths, track ids, per-item signatures) — v2 makes that granularity the
-protocol's native unit instead of reconstructing it from snapshots.
+protocol's native unit instead of reconstructing it from snapshots, and goes
+one finer for settings: each settings *field* is its own key
+(`settings/<section>/<field>`), so two devices editing different fields of
+the same section no longer clobber each other. Legacy bundled
+`settings/<section>` docs (pre-per-field clients, v1 import) are still read
+on apply — their fields are fanned out to the per-field keys, and the
+migrating client retires the bundled key.
 
 Binary content never lives in a document. Documents reference blobs by
 content hash (`contentRef`, §6).
@@ -286,7 +293,7 @@ bootstrap/gap: GET full KV state + current seq  (1 request)
 ```
 sync2:seq:{user}       STRING   monotonically increasing op counter (INCR)
 sync2:kv:{user}        HASH     field = key, value = JSON { v, t, del?, seq }
-sync2:log:{user}       ZSET     score = seq, member = JSON-encoded op
+sync2:jrnl:{user}      ZSET     score = seq, member = JSON-encoded op
 sync2:lock:{user}      STRING   short-TTL write lock (SET NX PX 2000)
 ```
 
@@ -297,7 +304,10 @@ lightweight lock (sync writes for one user are low-frequency — the v1
 debouncer already spaces them seconds apart), and within the lock a single
 pipeline applies KV updates, journal appends, and the seq bump.
 
-Journal trimming: after append, `ZREMRANGEBYSCORE sync2:log:{user} -inf (seq - 4096)`.
+Journal trimming: after append, `ZREMRANGEBYSCORE sync2:jrnl:{user} -inf (seq - 4096)`.
+(Pre-v2.1 deployments stored this as a `sync2:log:{user}` LIST; that key is
+abandoned on upgrade and expires via its TTL — clients mid-catch-up take one
+snapshot, then resume on the sorted-set journal.)
 TTLs use `USER_TTL_SECONDS` (1 year), refreshed on writes and — throttled
 daily — on reads, so any device check-in retains the user's cloud data.
 
@@ -358,13 +368,19 @@ After the write, the server publishes to Pusher on the existing
 
 ```jsonc
 // response (since is within journal retention)
-{ "ok": true, "seq": 1042, "ops": [ /* ops with seq > since, ordered */ ] }
+{ "ok": true, "seq": 1042, "ops": [ /* latest op per key with seq > since */ ] }
 
 // response (since too old / never synced)
 { "ok": true, "seq": 1042, "snapshotRequired": true }
 ```
 
-One `ZRANGEBYSCORE`. No metadata aggregation, no per-domain anything.
+One ranged read of the sorted set. No metadata aggregation, no per-domain
+anything. The returned ops are **coalesced per key**: only the newest op for
+each key in the `(since, seq]` window is sent, since LWW means a catching-up
+client only needs each key's latest value to converge (the journal's
+intermediate states are redundant — the KV state already compacts them). The
+cursor still advances to the server `seq`, so dropping superseded ops never
+desyncs the client.
 
 #### `GET /api/sync/v2/snapshot`
 
@@ -531,7 +547,7 @@ v1 — it is what v1 already converges to, expressed directly:
 
 | State | v1 mechanism | v2 equivalent |
 |---|---|---|
-| Settings | per-section `sectionUpdatedAt`, newer section wins | key per section, LWW |
+| Settings | per-section `sectionUpdatedAt`, newer section wins | key per field (`settings/<section>/<field>`), LWW |
 | Files metadata | per-path merge by timestamp | key per path, LWW |
 | Songs / videos / contacts / calendar / stickies / maps | client-side merge of snapshots by item timestamp + deletion markers | key per item, LWW |
 | Blob items | per-item signature comparison | key per item, LWW + content hash |

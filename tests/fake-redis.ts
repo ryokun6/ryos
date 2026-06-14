@@ -60,6 +60,8 @@ export class FakeRedis {
   readonly sets = new Map<string, Set<string>>();
   readonly hashes = new Map<string, Map<string, string>>();
   readonly lists = new Map<string, string[]>();
+  /** Sorted sets: key → (member → score). */
+  readonly zsets = new Map<string, Map<string, number>>();
   /** Recorded TTLs (seconds); FakeRedis never actually expires keys. */
   readonly ttls = new Map<string, number>();
 
@@ -70,6 +72,7 @@ export class FakeRedis {
         ...this.sets.keys(),
         ...this.hashes.keys(),
         ...this.lists.keys(),
+        ...this.zsets.keys(),
       ]),
     ];
   }
@@ -79,7 +82,8 @@ export class FakeRedis {
       this.kv.has(key) ||
       this.sets.has(key) ||
       this.hashes.has(key) ||
-      this.lists.has(key)
+      this.lists.has(key) ||
+      this.zsets.has(key)
     );
   }
 
@@ -105,6 +109,7 @@ export class FakeRedis {
       if (this.sets.delete(key)) deleted += 1;
       if (this.hashes.delete(key)) deleted += 1;
       if (this.lists.delete(key)) deleted += 1;
+      if (this.zsets.delete(key)) deleted += 1;
       this.ttls.delete(key);
     }
     return deleted;
@@ -200,6 +205,7 @@ export class FakeRedis {
     if (this.sets.has(key)) return "set";
     if (this.hashes.has(key)) return "hash";
     if (this.lists.has(key)) return "list";
+    if (this.zsets.has(key)) return "zset";
     return "none";
   }
 
@@ -317,6 +323,67 @@ export class FakeRedis {
 
   async llen(key: string): Promise<number> {
     return (this.lists.get(key) || []).length;
+  }
+
+  // --- sorted sets ----------------------------------------------------------
+
+  /** Members ordered by score ascending, ties broken lexicographically. */
+  private zsorted(key: string): string[] {
+    const zset = this.zsets.get(key);
+    if (!zset) return [];
+    return [...zset.entries()]
+      .sort((a, b) => (a[1] - b[1]) || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))
+      .map(([member]) => member);
+  }
+
+  async zadd(
+    key: string,
+    entry: { score: number; member: string }
+  ): Promise<number> {
+    const zset = this.zsets.get(key) || new Map<string, number>();
+    const isNew = !zset.has(entry.member);
+    zset.set(entry.member, entry.score);
+    this.zsets.set(key, zset);
+    return isNew ? 1 : 0;
+  }
+
+  async zrem(key: string, member: string): Promise<number> {
+    const zset = this.zsets.get(key);
+    if (!zset) return 0;
+    const removed = zset.delete(member) ? 1 : 0;
+    if (zset.size === 0) this.zsets.delete(key);
+    return removed;
+  }
+
+  async zcard(key: string): Promise<number> {
+    return this.zsets.get(key)?.size ?? 0;
+  }
+
+  async zrange(key: string, start: number, stop: number): Promise<string[]> {
+    const ordered = this.zsorted(key);
+    const normalizedStart = start < 0 ? Math.max(0, ordered.length + start) : start;
+    const normalizedStop = stop < 0 ? ordered.length + stop : stop;
+    return ordered.slice(normalizedStart, normalizedStop + 1);
+  }
+
+  async zremrangebyscore(
+    key: string,
+    min: number | string,
+    max: number | string
+  ): Promise<number> {
+    const zset = this.zsets.get(key);
+    if (!zset) return 0;
+    const lo = min === "-inf" ? -Infinity : Number(min);
+    const hi = max === "+inf" ? Infinity : Number(max);
+    let removed = 0;
+    for (const [member, score] of [...zset.entries()]) {
+      if (score >= lo && score <= hi) {
+        zset.delete(member);
+        removed += 1;
+      }
+    }
+    if (zset.size === 0) this.zsets.delete(key);
+    return removed;
   }
 
   pipeline(): FakeRedisPipeline {

@@ -7,6 +7,7 @@ import { useVideoStore } from "../src/stores/useVideoStore";
 import { useTvStore } from "../src/stores/useTvStore";
 import { useIpodStore } from "../src/stores/useIpodStore";
 import { useMapsStore } from "../src/stores/useMapsStore";
+import { useAudioSettingsStore } from "../src/stores/useAudioSettingsStore";
 import {
   mergePersistedCloudSyncCategoryStatus,
   useCloudSyncStore,
@@ -213,6 +214,67 @@ describe("maps codec", () => {
     const state = useMapsStore.getState();
     expect(state.home).toMatchObject({ name: "Home" });
     expect(state.favorites.map((favorite) => favorite.id)).toEqual(["f1"]);
+  });
+});
+
+describe("settings codec", () => {
+  test("collect emits one key per settings field (no bundled sections)", () => {
+    const docs = SYNC_CODECS.settings.collect(ctx) as Map<string, unknown>;
+    const keys = [...docs.keys()];
+    expect(keys).toContain("settings/audio/masterVolume");
+    expect(keys).toContain("settings/theme/current");
+    expect(keys).toContain("settings/dashboard/widgets");
+    expect(
+      keys.some((k) => k === "settings/audio" || k === "settings/theme")
+    ).toBe(false);
+  });
+
+  test("apply writes a per-field op onto the store", async () => {
+    useAudioSettingsStore.setState({ masterVolume: 1 } as never);
+    await SYNC_CODECS.settings.apply(
+      [{ k: "settings/audio/masterVolume", v: 0.25, t }],
+      ctx
+    );
+    expect(useAudioSettingsStore.getState().masterVolume).toBe(0.25);
+  });
+
+  test("apply fans a legacy bundled section doc out to its fields", async () => {
+    useAudioSettingsStore.setState({ masterVolume: 1, uiVolume: 1 } as never);
+    await SYNC_CODECS.settings.apply(
+      [{ k: "settings/audio", v: { masterVolume: 0.5, uiVolume: 0.1 }, t }],
+      ctx
+    );
+    const state = useAudioSettingsStore.getState();
+    expect(state.masterVolume).toBe(0.5);
+    expect(state.uiVolume).toBe(0.1);
+  });
+
+  test("a newer per-field op wins over an older bundled doc in one batch", async () => {
+    useAudioSettingsStore.setState({ masterVolume: 1 } as never);
+    const older = "01718180000000-0000-test";
+    const newer = "01718190000000-0000-test";
+    await SYNC_CODECS.settings.apply(
+      [
+        { k: "settings/audio/masterVolume", v: 0.9, t: newer },
+        { k: "settings/audio", v: { masterVolume: 0.1 }, t: older },
+      ],
+      ctx
+    );
+    expect(useAudioSettingsStore.getState().masterVolume).toBe(0.9);
+  });
+
+  test("concurrent edits to different fields both survive", async () => {
+    useAudioSettingsStore.setState({ masterVolume: 1, uiVolume: 1 } as never);
+    await SYNC_CODECS.settings.apply(
+      [
+        { k: "settings/audio/masterVolume", v: 0.3, t },
+        { k: "settings/audio/uiVolume", v: 0.7, t },
+      ],
+      ctx
+    );
+    const state = useAudioSettingsStore.getState();
+    expect(state.masterVolume).toBe(0.3);
+    expect(state.uiVolume).toBe(0.7);
   });
 });
 

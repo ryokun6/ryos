@@ -184,198 +184,368 @@ function asRecord(value: unknown): Record<string, unknown> | null {
 
 // ---------------------------------------------------------------------------
 // Settings codec
+//
+// Each settings field is its own sync key (`settings/<section>/<field>`) so
+// concurrent edits to different fields of the same section merge under
+// per-key LWW instead of one section-level write clobbering the other.
+//
+// Legacy bundled section docs (`settings/<section>`, written by pre-per-field
+// clients and the v1 import) are still understood on apply: their fields are
+// fanned out to the per-field writers. A migrating client re-uploads the
+// fields as per-field keys and tombstones the now-redundant bundled key, so
+// the old shape self-retires.
 // ---------------------------------------------------------------------------
+
+interface SettingsField {
+  /** Field name; also the property key inside a legacy bundled section doc. */
+  field: string;
+  /** Current value from the store (always defined; absent → null). */
+  read(): unknown;
+  /**
+   * Apply a remote value onto the backing store. The return value is always
+   * discarded (callers `await` it), so it is typed loosely to accommodate the
+   * varied `setState`/setter return types across stores.
+   */
+  write(value: unknown): unknown;
+}
+
+interface SettingsSection {
+  section: string;
+  fields: SettingsField[];
+}
+
+const SETTINGS_KEY_PREFIX = "settings/";
+
+const SETTINGS_SCHEMA: SettingsSection[] = [
+  {
+    section: "theme",
+    fields: [
+      {
+        field: "current",
+        read: () => useThemeStore.getState().current,
+        write: (v) => {
+          if (typeof v === "string") useThemeStore.getState().setTheme(v as never);
+        },
+      },
+      {
+        field: "darkMode",
+        read: () => useThemeStore.getState().darkModeByTheme,
+        write: (v) => {
+          const map = asRecord(v);
+          if (!map) return;
+          for (const [themeId, value] of Object.entries(map)) {
+            useThemeStore.getState().setDarkMode(value as never, themeId as never);
+          }
+        },
+      },
+      {
+        field: "accent",
+        read: () => useThemeStore.getState().accentByTheme,
+        write: (v) => {
+          const map = asRecord(v);
+          if (!map) return;
+          for (const [themeId, value] of Object.entries(map)) {
+            useThemeStore.getState().setAccent(value as never, themeId as never);
+          }
+        },
+      },
+      {
+        field: "aquaMaterial",
+        read: () => useThemeStore.getState().aquaMaterial,
+        write: (v) => {
+          if (v === "classic" || v === "glass") {
+            useThemeStore.getState().setAquaMaterial(v);
+          }
+        },
+      },
+      {
+        field: "systemFont",
+        read: () => useThemeStore.getState().systemFont,
+        write: (v) => {
+          if (typeof v === "string" && v) {
+            useThemeStore.getState().setSystemFont(v as never);
+          }
+        },
+      },
+    ],
+  },
+  {
+    section: "language",
+    fields: [
+      {
+        field: "current",
+        read: () => useLanguageStore.getState().current,
+        write: async (v) => {
+          if (typeof v === "string") {
+            await useLanguageStore.getState().setLanguage(v as never);
+          }
+        },
+      },
+      {
+        field: "initialized",
+        read: () =>
+          typeof localStorage !== "undefined" &&
+          localStorage.getItem("ryos:language-initialized") === "true",
+        write: (v) => {
+          if (typeof localStorage !== "undefined") {
+            localStorage.setItem(
+              "ryos:language-initialized",
+              v === true ? "true" : "false"
+            );
+          }
+        },
+      },
+    ],
+  },
+  {
+    section: "display",
+    fields: [
+      {
+        field: "displayMode",
+        read: () => useDisplaySettingsStore.getState().displayMode,
+        write: (v) => useDisplaySettingsStore.setState({ displayMode: v as never }),
+      },
+      {
+        field: "shaderEffectEnabled",
+        read: () => useDisplaySettingsStore.getState().shaderEffectEnabled,
+        write: (v) =>
+          useDisplaySettingsStore.setState({ shaderEffectEnabled: Boolean(v) }),
+      },
+      {
+        field: "selectedShaderType",
+        read: () => useDisplaySettingsStore.getState().selectedShaderType,
+        write: (v) =>
+          useDisplaySettingsStore.setState({ selectedShaderType: v as never }),
+      },
+      {
+        field: "currentWallpaper",
+        read: () => useDisplaySettingsStore.getState().currentWallpaper,
+        write: async (v) => {
+          if (typeof v === "string" && v) {
+            await useDisplaySettingsStore.getState().setWallpaper(v);
+          }
+        },
+      },
+      {
+        field: "screenSaverEnabled",
+        read: () => useDisplaySettingsStore.getState().screenSaverEnabled,
+        write: (v) =>
+          useDisplaySettingsStore.setState({ screenSaverEnabled: Boolean(v) }),
+      },
+      {
+        field: "screenSaverType",
+        read: () => useDisplaySettingsStore.getState().screenSaverType,
+        write: (v) =>
+          useDisplaySettingsStore.setState({ screenSaverType: v as never }),
+      },
+      {
+        field: "screenSaverIdleTime",
+        read: () => useDisplaySettingsStore.getState().screenSaverIdleTime,
+        write: (v) =>
+          useDisplaySettingsStore.setState({ screenSaverIdleTime: v as never }),
+      },
+      {
+        field: "debugMode",
+        read: () => useDisplaySettingsStore.getState().debugMode,
+        write: (v) => useDisplaySettingsStore.setState({ debugMode: Boolean(v) }),
+      },
+      {
+        field: "htmlPreviewSplit",
+        read: () => useDisplaySettingsStore.getState().htmlPreviewSplit,
+        write: (v) =>
+          useDisplaySettingsStore.setState({ htmlPreviewSplit: Boolean(v) }),
+      },
+    ],
+  },
+  {
+    section: "audio",
+    fields: [
+      ...(
+        [
+          "masterVolume",
+          "uiVolume",
+          "chatSynthVolume",
+          "speechVolume",
+          "ipodVolume",
+          "ttsModel",
+          "ttsVoice",
+          "synthPreset",
+        ] as const
+      ).map((field) => ({
+        field,
+        read: () => useAudioSettingsStore.getState()[field],
+        write: (v: unknown) =>
+          useAudioSettingsStore.setState({ [field]: v } as never),
+      })),
+      ...(
+        [
+          "uiSoundsEnabled",
+          "terminalSoundsEnabled",
+          "typingSynthEnabled",
+          "speechEnabled",
+          "keepTalkingEnabled",
+        ] as const
+      ).map((field) => ({
+        field,
+        read: () => useAudioSettingsStore.getState()[field],
+        write: (v: unknown) =>
+          useAudioSettingsStore.setState({ [field]: Boolean(v) } as never),
+      })),
+    ],
+  },
+  {
+    section: "ai",
+    fields: [
+      {
+        field: "model",
+        read: () => useAppStore.getState().aiModel ?? null,
+        write: (v) => useAppStore.getState().setAiModel(v as never),
+      },
+    ],
+  },
+  {
+    section: "ipod",
+    fields: [
+      {
+        field: "displayMode",
+        read: () => useIpodStore.getState().displayMode,
+        write: (v) => useIpodStore.setState({ displayMode: v as never }),
+      },
+      {
+        field: "showLyrics",
+        read: () => useIpodStore.getState().showLyrics,
+        write: (v) => useIpodStore.setState({ showLyrics: Boolean(v) }),
+      },
+      {
+        field: "lyricsAlignment",
+        read: () => useIpodStore.getState().lyricsAlignment,
+        write: (v) => useIpodStore.setState({ lyricsAlignment: v as never }),
+      },
+      {
+        field: "lyricsFont",
+        read: () => useIpodStore.getState().lyricsFont,
+        write: (v) => useIpodStore.setState({ lyricsFont: v as never }),
+      },
+      {
+        field: "romanization",
+        read: () => useIpodStore.getState().romanization,
+        write: (v) => useIpodStore.setState({ romanization: v as never }),
+      },
+      {
+        field: "lyricsTranslationLanguage",
+        read: () => useIpodStore.getState().lyricsTranslationLanguage ?? null,
+        write: (v) =>
+          useIpodStore.setState({
+            lyricsTranslationLanguage: (v ?? null) as never,
+          }),
+      },
+      {
+        field: "theme",
+        read: () => useIpodStore.getState().theme,
+        write: (v) => useIpodStore.setState({ theme: v as never }),
+      },
+      {
+        field: "lcdFilterOn",
+        read: () => useIpodStore.getState().lcdFilterOn,
+        write: (v) => useIpodStore.setState({ lcdFilterOn: Boolean(v) }),
+      },
+    ],
+  },
+  {
+    section: "dock",
+    fields: (["pinnedItems", "scale", "hiding", "magnification"] as const).map(
+      (field) => ({
+        field,
+        read: () => useDockStore.getState()[field],
+        write: (v: unknown) => useDockStore.setState({ [field]: v } as never),
+      })
+    ),
+  },
+  {
+    section: "dashboard",
+    fields: [
+      {
+        field: "widgets",
+        read: () => useDashboardStore.getState().widgets,
+        write: (v) => {
+          if (Array.isArray(v)) useDashboardStore.setState({ widgets: v as never });
+        },
+      },
+    ],
+  },
+];
+
+const SETTINGS_SECTIONS_BY_NAME = new Map(
+  SETTINGS_SCHEMA.map((section) => [
+    section.section,
+    {
+      section,
+      fieldsByName: new Map(section.fields.map((f) => [f.field, f])),
+    },
+  ])
+);
+
+function settingsFieldKey(section: string, field: string): string {
+  return `${SETTINGS_KEY_PREFIX}${section}/${field}`;
+}
+
+function parseSettingsKey(
+  key: string
+): { section: string; field?: string } | null {
+  if (!key.startsWith(SETTINGS_KEY_PREFIX)) return null;
+  const rest = key.slice(SETTINGS_KEY_PREFIX.length);
+  if (!rest) return null;
+  const slash = rest.indexOf("/");
+  if (slash === -1) return { section: rest }; // legacy bundled section doc
+  return { section: rest.slice(0, slash), field: rest.slice(slash + 1) };
+}
 
 function collectSettings(): Map<string, unknown> {
   const docs = new Map<string, unknown>();
-  const themeState = useThemeStore.getState();
-  const displayState = useDisplaySettingsStore.getState();
-  const audioState = useAudioSettingsStore.getState();
-  const ipodState = useIpodStore.getState();
-  const dockState = useDockStore.getState();
-  const dashboardState = useDashboardStore.getState();
-
-  docs.set("settings/theme", {
-    current: themeState.current,
-    darkMode: themeState.darkModeByTheme,
-    accent: themeState.accentByTheme,
-    aquaMaterial: themeState.aquaMaterial,
-    systemFont: themeState.systemFont,
-  });
-  docs.set("settings/language", {
-    current: useLanguageStore.getState().current,
-    initialized:
-      typeof localStorage !== "undefined" &&
-      localStorage.getItem("ryos:language-initialized") === "true",
-  });
-  docs.set("settings/display", {
-    displayMode: displayState.displayMode,
-    shaderEffectEnabled: displayState.shaderEffectEnabled,
-    selectedShaderType: displayState.selectedShaderType,
-    currentWallpaper: displayState.currentWallpaper,
-    screenSaverEnabled: displayState.screenSaverEnabled,
-    screenSaverType: displayState.screenSaverType,
-    screenSaverIdleTime: displayState.screenSaverIdleTime,
-    debugMode: displayState.debugMode,
-    htmlPreviewSplit: displayState.htmlPreviewSplit,
-  });
-  docs.set("settings/audio", {
-    masterVolume: audioState.masterVolume,
-    uiVolume: audioState.uiVolume,
-    chatSynthVolume: audioState.chatSynthVolume,
-    speechVolume: audioState.speechVolume,
-    ipodVolume: audioState.ipodVolume,
-    uiSoundsEnabled: audioState.uiSoundsEnabled,
-    terminalSoundsEnabled: audioState.terminalSoundsEnabled,
-    typingSynthEnabled: audioState.typingSynthEnabled,
-    speechEnabled: audioState.speechEnabled,
-    keepTalkingEnabled: audioState.keepTalkingEnabled,
-    ttsModel: audioState.ttsModel,
-    ttsVoice: audioState.ttsVoice,
-    synthPreset: audioState.synthPreset,
-  });
-  docs.set("settings/ai", { model: useAppStore.getState().aiModel ?? null });
-  docs.set("settings/ipod", {
-    displayMode: ipodState.displayMode,
-    showLyrics: ipodState.showLyrics,
-    lyricsAlignment: ipodState.lyricsAlignment,
-    lyricsFont: ipodState.lyricsFont,
-    romanization: ipodState.romanization,
-    lyricsTranslationLanguage: ipodState.lyricsTranslationLanguage ?? null,
-    theme: ipodState.theme,
-    lcdFilterOn: ipodState.lcdFilterOn,
-  });
-  docs.set("settings/dock", {
-    pinnedItems: dockState.pinnedItems,
-    scale: dockState.scale,
-    hiding: dockState.hiding,
-    magnification: dockState.magnification,
-  });
-  docs.set("settings/dashboard", {
-    widgets: dashboardState.widgets,
-  });
+  for (const section of SETTINGS_SCHEMA) {
+    for (const f of section.fields) {
+      docs.set(settingsFieldKey(section.section, f.field), f.read());
+    }
+  }
   return docs;
 }
 
 async function applySettingsOp(op: AppliedSyncOp): Promise<void> {
-  if (op.del) return; // settings sections are never deleted
-  const doc = asRecord(op.v);
-  if (!doc) return;
+  const parsed = parseSettingsKey(op.k);
+  if (!parsed) return;
+  const entry = SETTINGS_SECTIONS_BY_NAME.get(parsed.section);
+  if (!entry) return;
 
-  switch (op.k) {
-    case "settings/theme": {
-      const themeStore = useThemeStore.getState();
-      if (typeof doc.current === "string") {
-        themeStore.setTheme(doc.current as never);
+  if (parsed.field === undefined) {
+    // Legacy bundled section doc: fan its fields out to the per-field writers.
+    // A bundled tombstone is ignored — the data now lives in per-field keys.
+    if (op.del) return;
+    const doc = asRecord(op.v);
+    if (!doc) return;
+    for (const f of entry.section.fields) {
+      if (f.field in doc && doc[f.field] !== undefined) {
+        await f.write(doc[f.field]);
       }
-      const darkMap = asRecord(doc.darkMode);
-      if (darkMap) {
-        for (const [themeId, value] of Object.entries(darkMap)) {
-          useThemeStore.getState().setDarkMode(value as never, themeId as never);
-        }
-      }
-      const accentMap = asRecord(doc.accent);
-      if (accentMap) {
-        for (const [themeId, value] of Object.entries(accentMap)) {
-          useThemeStore.getState().setAccent(value as never, themeId as never);
-        }
-      }
-      if (doc.aquaMaterial === "classic" || doc.aquaMaterial === "glass") {
-        useThemeStore.getState().setAquaMaterial(doc.aquaMaterial);
-      }
-      if (typeof doc.systemFont === "string" && doc.systemFont) {
-        useThemeStore.getState().setSystemFont(doc.systemFont as never);
-      }
-      return;
     }
-    case "settings/language": {
-      if (typeof doc.current === "string") {
-        if (typeof localStorage !== "undefined") {
-          localStorage.setItem(
-            "ryos:language-initialized",
-            doc.initialized === true ? "true" : "false"
-          );
-        }
-        await useLanguageStore.getState().setLanguage(doc.current as never);
-      }
-      return;
-    }
-    case "settings/display": {
-      useDisplaySettingsStore.setState({
-        displayMode: doc.displayMode as never,
-        shaderEffectEnabled: Boolean(doc.shaderEffectEnabled),
-        selectedShaderType: doc.selectedShaderType as never,
-        screenSaverEnabled: Boolean(doc.screenSaverEnabled),
-        screenSaverType: doc.screenSaverType as never,
-        screenSaverIdleTime: doc.screenSaverIdleTime as never,
-        debugMode: Boolean(doc.debugMode),
-        htmlPreviewSplit: Boolean(doc.htmlPreviewSplit),
-      });
-      if (typeof doc.currentWallpaper === "string" && doc.currentWallpaper) {
-        await useDisplaySettingsStore
-          .getState()
-          .setWallpaper(doc.currentWallpaper);
-      }
-      return;
-    }
-    case "settings/audio": {
-      useAudioSettingsStore.setState({
-        masterVolume: doc.masterVolume as never,
-        uiVolume: doc.uiVolume as never,
-        chatSynthVolume: doc.chatSynthVolume as never,
-        speechVolume: doc.speechVolume as never,
-        ipodVolume: doc.ipodVolume as never,
-        uiSoundsEnabled: Boolean(doc.uiSoundsEnabled),
-        terminalSoundsEnabled: Boolean(doc.terminalSoundsEnabled),
-        typingSynthEnabled: Boolean(doc.typingSynthEnabled),
-        speechEnabled: Boolean(doc.speechEnabled),
-        keepTalkingEnabled: Boolean(doc.keepTalkingEnabled),
-        ttsModel: doc.ttsModel as never,
-        ttsVoice: doc.ttsVoice as never,
-        synthPreset: doc.synthPreset as never,
-      });
-      return;
-    }
-    case "settings/ai": {
-      useAppStore.getState().setAiModel(doc.model as never);
-      return;
-    }
-    case "settings/ipod": {
-      useIpodStore.setState({
-        displayMode: doc.displayMode as never,
-        showLyrics: Boolean(doc.showLyrics),
-        lyricsAlignment: doc.lyricsAlignment as never,
-        lyricsFont: doc.lyricsFont as never,
-        romanization: doc.romanization as never,
-        lyricsTranslationLanguage: (doc.lyricsTranslationLanguage ?? null) as never,
-        theme: doc.theme as never,
-        lcdFilterOn: Boolean(doc.lcdFilterOn),
-      });
-      return;
-    }
-    case "settings/dock": {
-      useDockStore.setState({
-        pinnedItems: doc.pinnedItems as never,
-        scale: doc.scale as never,
-        hiding: doc.hiding as never,
-        magnification: doc.magnification as never,
-      });
-      return;
-    }
-    case "settings/dashboard": {
-      if (Array.isArray(doc.widgets)) {
-        useDashboardStore.setState({ widgets: doc.widgets as never });
-      }
-      return;
-    }
+    return;
   }
+
+  if (op.del) return; // settings fields are never deleted
+  const field = entry.fieldsByName.get(parsed.field);
+  if (!field) return;
+  await field.write(op.v);
 }
 
 const settingsCodec: SyncCodec = {
   namespace: "settings",
   collect: collectSettings,
   async apply(ops) {
-    for (const op of ops) {
+    // Apply oldest-first so a legacy bundled doc and a newer per-field op in
+    // the same batch converge to the newer value regardless of input order.
+    const sorted = [...ops].sort((a, b) =>
+      a.t < b.t ? -1 : a.t > b.t ? 1 : 0
+    );
+    for (const op of sorted) {
       try {
         await applySettingsOp(op);
       } catch (error) {
