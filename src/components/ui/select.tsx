@@ -6,6 +6,28 @@ import { useThemeFlags } from "@/hooks/useThemeFlags";
 
 import { cn } from "@/lib/utils";
 
+const SelectLabelContext = React.createContext<{
+  labels: Map<string, React.ReactNode>;
+  registerLabel: (value: string, label: React.ReactNode | null) => void;
+} | null>(null);
+
+function getTextLabel(node: React.ReactNode): React.ReactNode | null {
+  if (typeof node === "string" || typeof node === "number") {
+    return node;
+  }
+
+  if (Array.isArray(node)) {
+    const parts = node
+      .map(getTextLabel)
+      .filter((part): part is string | number => (
+        typeof part === "string" || typeof part === "number"
+      ));
+    return parts.length > 0 ? parts.join("") : null;
+  }
+
+  return null;
+}
+
 type SelectProps = Omit<
   React.ComponentProps<typeof SelectPrimitive.Root<string>>,
   "value" | "defaultValue" | "onValueChange"
@@ -23,32 +45,75 @@ const Select = ({
 }: SelectProps) => {
   const { play: playMenuOpen } = useSound(Sounds.MENU_OPEN);
   const { play: playMenuClose } = useSound(Sounds.MENU_CLOSE);
+  const [labels, setLabels] = React.useState<Map<string, React.ReactNode>>(
+    () => new Map()
+  );
+
+  const registerLabel = React.useCallback(
+    (value: string, label: React.ReactNode | null) => {
+      setLabels((currentLabels) => {
+        const currentLabel = currentLabels.get(value);
+        if (label == null) {
+          if (!currentLabels.has(value)) return currentLabels;
+          const nextLabels = new Map(currentLabels);
+          nextLabels.delete(value);
+          return nextLabels;
+        }
+
+        if (Object.is(currentLabel, label)) return currentLabels;
+
+        const nextLabels = new Map(currentLabels);
+        nextLabels.set(value, label);
+        return nextLabels;
+      });
+    },
+    []
+  );
 
   return (
-    <SelectPrimitive.Root
-      {...props}
-      onOpenChange={(open, eventDetails) => {
-        if (open) {
-          playMenuOpen();
-        } else {
-          playMenuClose();
-        }
-        onOpenChange?.(open, eventDetails);
-      }}
-      onValueChange={(value) => {
-        if (value != null) {
-          onValueChange?.(value);
-        }
-      }}
-    >
-      {children}
-    </SelectPrimitive.Root>
+    <SelectLabelContext.Provider value={{ labels, registerLabel }}>
+      <SelectPrimitive.Root
+        {...props}
+        onOpenChange={(open, eventDetails) => {
+          if (open) {
+            playMenuOpen();
+          } else {
+            playMenuClose();
+          }
+          onOpenChange?.(open, eventDetails);
+        }}
+        onValueChange={(value) => {
+          if (value != null) {
+            onValueChange?.(value);
+          }
+        }}
+      >
+        {children}
+      </SelectPrimitive.Root>
+    </SelectLabelContext.Provider>
   );
 };
 
 const SelectGroup = SelectPrimitive.Group;
 
-const SelectValue = SelectPrimitive.Value;
+const SelectValue = ({
+  children,
+  placeholder,
+  ...props
+}: React.ComponentPropsWithoutRef<typeof SelectPrimitive.Value>) => {
+  const labelContext = React.use(SelectLabelContext);
+
+  return (
+    <SelectPrimitive.Value placeholder={placeholder} {...props}>
+      {children ?? ((value) => (
+        value == null
+          ? placeholder ?? null
+          : labelContext?.labels.get(String(value)) ?? String(value)
+      ))}
+    </SelectPrimitive.Value>
+  );
+};
+SelectValue.displayName = "SelectValue";
 
 const SelectTrigger = (
   {
@@ -251,6 +316,16 @@ const SelectItem = (
   }
 ) => {
   const { play: playClick } = useSound(Sounds.BUTTON_CLICK, 0.3);
+  const labelContext = React.use(SelectLabelContext);
+  const registerLabel = labelContext?.registerLabel;
+  const valueKey = props.value == null ? null : String(props.value);
+  const label = getTextLabel(children);
+
+  React.useEffect(() => {
+    if (valueKey == null) return;
+    registerLabel?.(valueKey, label);
+    return () => registerLabel?.(valueKey, null);
+  }, [label, registerLabel, valueKey]);
 
   return (
     <SelectPrimitive.Item
@@ -306,6 +381,16 @@ const SelectItemWithDescription = (
   }
 ) => {
   const { play: playClick } = useSound(Sounds.BUTTON_CLICK, 0.3);
+  const labelContext = React.use(SelectLabelContext);
+  const registerLabel = labelContext?.registerLabel;
+  const valueKey = props.value == null ? null : String(props.value);
+  const label = getTextLabel(children);
+
+  React.useEffect(() => {
+    if (valueKey == null) return;
+    registerLabel?.(valueKey, label);
+    return () => registerLabel?.(valueKey, null);
+  }, [label, registerLabel, valueKey]);
 
   return (
     <SelectPrimitive.Item
