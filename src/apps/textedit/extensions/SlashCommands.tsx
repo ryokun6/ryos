@@ -137,7 +137,7 @@ const suggestion: Partial<SuggestionOptions> = {
           modal={false}
           onOpenChange={(open) => {
             if (!open) {
-              cleanup();
+              window.setTimeout(cleanup, 0);
             }
           }}
         >

@@ -54,6 +54,7 @@ describe("TextEdit programmatic editor updates", () => {
     expect(SLASH_COMMANDS_EXTENSION).toContain("getSlashMenuPosition(rect)");
     expect(SLASH_COMMANDS_EXTENSION).toContain('position: "fixed"');
     expect(SLASH_COMMANDS_EXTENSION).toContain("onOpenChange={(open)");
+    expect(SLASH_COMMANDS_EXTENSION).toContain("window.setTimeout(cleanup, 0);");
     expect(SLASH_COMMANDS_EXTENSION).toContain("cleanup();");
   });
 });
