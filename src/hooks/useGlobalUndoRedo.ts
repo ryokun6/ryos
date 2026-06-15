@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useUndoRedoStore } from "@/stores/useUndoRedoStore";
 import { useAppStore } from "@/stores/useAppStore";
+import { getShortcutPlatform } from "@/utils/shortcuts";
 
 /**
  * Global keyboard listener that dispatches Cmd/Ctrl+Z and Cmd/Ctrl+Shift+Z
@@ -11,8 +12,10 @@ import { useAppStore } from "@/stores/useAppStore";
 export function useGlobalUndoRedo() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
-      const cmdKey = isMac ? e.metaKey : e.ctrlKey;
+      // Host-platform aware so the desktop shell on Windows uses Ctrl even when
+      // navigator.platform is ambiguous.
+      const cmdKey =
+        getShortcutPlatform() === "mac" ? e.metaKey : e.ctrlKey;
 
       if (!cmdKey || e.altKey) return;
       if (e.key.toLowerCase() !== "z" && e.key.toLowerCase() !== "y") return;
