@@ -11,6 +11,7 @@ import {
   MenubarCheckboxItem,
 } from "@/components/ui/menubar";
 import { AppMenuBarShell } from "@/components/shared/menubar/AppMenuBarShell";
+import { ShortcutHint } from "@/components/shared/menubar/ShortcutHint";
 import { MENUBAR_SEPARATOR_CLASS } from "@/components/shared/menubar/menubarStyles";
 import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
 import { useTranslation } from "react-i18next";
@@ -79,6 +80,7 @@ export function TextEditMenuBar({
             className="text-md h-6 px-3"
           >
             {t("apps.textedit.menu.newFile")}
+            <ShortcutHint id="newFile" />
           </MenubarItem>
           <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <MenubarItem
@@ -86,12 +88,14 @@ export function TextEditMenuBar({
             className="text-md h-6 px-3"
           >
             {t("apps.textedit.menu.open")}
+            <ShortcutHint id="open" />
           </MenubarItem>
           <MenubarItem
             onClick={onSave}
             className="text-md h-6 px-3"
           >
             {currentFilePath ? t("apps.textedit.menu.save") : t("apps.textedit.menu.saveEllipsis")}
+            <ShortcutHint id="save" />
           </MenubarItem>
           <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <MenubarItem
@@ -131,6 +135,7 @@ export function TextEditMenuBar({
             className="text-md h-6 px-3"
           >
             {t("common.menu.close")}
+            <ShortcutHint id="close" />
           </MenubarItem>
         </MenubarContent>
       </MenubarMenu>
@@ -146,6 +151,7 @@ export function TextEditMenuBar({
             className="text-md h-6 px-3 disabled:text-os-text-disabled"
           >
             {t("common.menu.undo")}
+            <ShortcutHint id="undo" />
           </MenubarItem>
           <MenubarItem
             onClick={redo}
@@ -153,6 +159,7 @@ export function TextEditMenuBar({
             className="text-md h-6 px-3 disabled:text-os-text-disabled"
           >
             {t("common.menu.redo")}
+            <ShortcutHint id="redo" />
           </MenubarItem>
           <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <MenubarItem
@@ -164,6 +171,7 @@ export function TextEditMenuBar({
             className="text-md h-6 px-3"
           >
             {t("common.menu.copy")}
+            <ShortcutHint id="copy" />
           </MenubarItem>
           <MenubarItem
             onClick={() => {
@@ -174,12 +182,14 @@ export function TextEditMenuBar({
             className="text-md h-6 px-3"
           >
             {t("common.menu.cut")}
+            <ShortcutHint id="cut" />
           </MenubarItem>
           <MenubarItem
             onClick={() => document.execCommand("paste")}
             className="text-md h-6 px-3"
           >
             {t("common.menu.paste")}
+            <ShortcutHint id="paste" />
           </MenubarItem>
           <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <MenubarItem
@@ -187,6 +197,7 @@ export function TextEditMenuBar({
             className="text-md h-6 px-3"
           >
             {t("common.menu.selectAll")}
+            <ShortcutHint id="selectAll" />
           </MenubarItem>
         </MenubarContent>
       </MenubarMenu>
@@ -202,6 +213,7 @@ export function TextEditMenuBar({
             className="text-md h-6 px-3"
           >
             {t("apps.textedit.menu.bold")}
+            <ShortcutHint id="bold" />
           </MenubarCheckboxItem>
           <MenubarCheckboxItem
             checked={editor?.isActive("italic") ?? false}
@@ -209,6 +221,7 @@ export function TextEditMenuBar({
             className="text-md h-6 px-3"
           >
             {t("apps.textedit.menu.italic")}
+            <ShortcutHint id="italic" />
           </MenubarCheckboxItem>
           <MenubarCheckboxItem
             checked={editor?.isActive("underline") ?? false}
@@ -216,6 +229,7 @@ export function TextEditMenuBar({
             className="text-md h-6 px-3"
           >
             {t("apps.textedit.menu.underline")}
+            <ShortcutHint id="underline" />
           </MenubarCheckboxItem>
           <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <MenubarCheckboxItem

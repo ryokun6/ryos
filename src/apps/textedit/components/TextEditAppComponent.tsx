@@ -31,6 +31,7 @@ import {
 import { persistedContentToEditorContent } from "../utils/documentContent";
 import { readDocumentTextContent } from "@/services/vfs/FileContentRepository";
 import { useRegisterUndoRedo } from "@/hooks/useUndoRedo";
+import { useMenuShortcuts } from "@/hooks/useMenuShortcuts";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { getTextAnalytics, TEXTEDIT_ANALYTICS, track } from "@/utils/analytics";
 import { openNativeFile } from "@/utils/nativeFileDialogs";
@@ -526,6 +527,15 @@ function TextEditContent({
       console.error("Save before close failed:", error);
     }
   };
+
+  // Menu-action keyboard shortcuts (foreground instance only). ⌘S/Ctrl+S Save
+  // works on web and desktop; ⌘N/⌘O are browser-reserved so they fire in the
+  // Electron shell (and ⌘O is intercepted on the web too).
+  useMenuShortcuts(instanceId, {
+    save: handleSaveClick,
+    newFile: handleNewFile,
+    open: handleImportFileClick,
+  });
 
   const showUnsavedIndicator =
     hasUnsavedChanges ||

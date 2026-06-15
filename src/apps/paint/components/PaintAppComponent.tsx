@@ -12,6 +12,7 @@ import { InputDialog } from "@/components/dialogs/InputDialog";
 import { appMetadata } from "..";
 import { usePaintLogic } from "../hooks/usePaintLogic";
 import { useRegisterUndoRedo } from "@/hooks/useUndoRedo";
+import { useMenuShortcuts } from "@/hooks/useMenuShortcuts";
 import { OS_NATIVE_CHROME_SKIP_CLASS } from "@/lib/themeChrome";
 
 export const PaintAppComponent: React.FC<AppProps<PaintInitialData>> = ({
@@ -77,6 +78,14 @@ export const PaintAppComponent: React.FC<AppProps<PaintInitialData>> = ({
     redo: handleRedo,
     canUndo,
     canRedo,
+  });
+
+  // ⌘S/Ctrl+S Save (web + desktop). New/Open use browser-reserved combos so
+  // they fire in the Electron shell (Open is also intercepted on the web).
+  useMenuShortcuts(instanceId, {
+    save: handleSave,
+    newFile: handleNewFile,
+    open: handleImportFile,
   });
 
   const menuBar = (

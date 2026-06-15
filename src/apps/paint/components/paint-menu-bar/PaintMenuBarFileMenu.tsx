@@ -5,6 +5,7 @@ import {
   MenubarItem,
   MenubarSeparator,
 } from "@/components/ui/menubar";
+import { ShortcutHint } from "@/components/shared/menubar/ShortcutHint";
 import type { PaintMenuBarViewModel } from "./usePaintMenuBar";
 
 export function PaintMenuBarFileMenu({ vm }: { vm: PaintMenuBarViewModel }) {
@@ -28,15 +29,18 @@ export function PaintMenuBarFileMenu({ vm }: { vm: PaintMenuBarViewModel }) {
       <MenubarContent align="start" sideOffset={1} className="px-0">
         <MenubarItem onClick={onNewFile} className="text-md h-6 px-3">
           {t("apps.paint.menu.newFile")}
+          <ShortcutHint id="newFile" />
         </MenubarItem>
         <MenubarSeparator className="h-[2px] bg-black my-1" />
         <MenubarItem onClick={onImportFile} className="text-md h-6 px-3">
           {t("apps.paint.menu.open")}
+          <ShortcutHint id="open" />
         </MenubarItem>
         <MenubarItem onClick={onSave} className="text-md h-6 px-3">
           {currentFilePath
             ? t("apps.paint.menu.save")
             : t("apps.paint.menu.saveEllipsis")}
+          <ShortcutHint id="save" />
         </MenubarItem>
         <MenubarSeparator className="h-[2px] bg-black my-1" />
         <input
@@ -58,6 +62,7 @@ export function PaintMenuBarFileMenu({ vm }: { vm: PaintMenuBarViewModel }) {
         <MenubarSeparator className="h-[2px] bg-black my-1" />
         <MenubarItem onClick={onClose} className="text-md h-6 px-3">
           {t("common.menu.close")}
+          <ShortcutHint id="close" />
         </MenubarItem>
       </MenubarContent>
     </MenubarMenu>

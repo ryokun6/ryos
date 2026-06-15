@@ -5,6 +5,7 @@ import {
   MenubarItem,
   MenubarSeparator,
 } from "@/components/ui/menubar";
+import { ShortcutHint } from "@/components/shared/menubar/ShortcutHint";
 import type { PaintMenuBarViewModel } from "./usePaintMenuBar";
 
 export function PaintMenuBarEditMenu({ vm }: { vm: PaintMenuBarViewModel }) {
@@ -32,6 +33,7 @@ export function PaintMenuBarEditMenu({ vm }: { vm: PaintMenuBarViewModel }) {
           className={`text-md h-6 px-3 ${!canUndo ? "text-neutral-500" : ""}`}
         >
           {t("common.menu.undo")}
+          <ShortcutHint id="undo" />
         </MenubarItem>
         <MenubarItem
           onClick={onRedo}
@@ -39,16 +41,20 @@ export function PaintMenuBarEditMenu({ vm }: { vm: PaintMenuBarViewModel }) {
           className={`text-md h-6 px-3 ${!canRedo ? "text-neutral-500" : ""}`}
         >
           {t("common.menu.redo")}
+          <ShortcutHint id="redo" />
         </MenubarItem>
         <MenubarSeparator className="h-[2px] bg-black my-1" />
         <MenubarItem onClick={onCut} className="text-md h-6 px-3">
           {t("common.menu.cut")}
+          <ShortcutHint id="cut" />
         </MenubarItem>
         <MenubarItem onClick={onCopy} className="text-md h-6 px-3">
           {t("common.menu.copy")}
+          <ShortcutHint id="copy" />
         </MenubarItem>
         <MenubarItem onClick={onPaste} className="text-md h-6 px-3">
           {t("common.menu.paste")}
+          <ShortcutHint id="paste" />
         </MenubarItem>
         <MenubarSeparator className="h-[2px] bg-black my-1" />
         <MenubarItem onClick={onClear} className="text-md h-6 px-3">
