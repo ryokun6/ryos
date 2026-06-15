@@ -4,7 +4,8 @@
  * 
  * Commit SHA from: VERCEL_GIT_COMMIT_SHA (Vercel), SOURCE_COMMIT (Coolify), GIT_COMMIT_SHA (generic CI), or git rev-parse; falls back to 'dev' if none available.
  * Run manually with `bun run version:bump` to increment MAJOR/MINOR.
- * Update DESKTOP_VERSION constant when releasing new desktop builds.
+ * Desktop app version is read from package.json so generated download links
+ * match electron-builder artifact names.
  */
 
 import { readFileSync, writeFileSync, existsSync } from 'fs';
@@ -13,16 +14,16 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 // ============================================================================
-// VERSION CONSTANTS - Manually increment these for releases
+// WEB VERSION CONSTANTS - Manually increment these for web releases
 // ============================================================================
 const MAJOR_VERSION = 10;
 const MINOR_VERSION = 3;
-const DESKTOP_VERSION = '1.0.4';
 // ============================================================================
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const versionPath = join(__dirname, '../.version');
 const publicVersionPath = join(__dirname, '../public/version.json');
+const packageJsonPath = join(__dirname, '../package.json');
 
 // Check if this is a manual version bump (called directly via version:bump)
 const isManualBump = process.argv.includes('--bump');
@@ -68,8 +69,20 @@ const buildTime = new Date().toISOString();
 // Version format: MAJOR.MINOR
 const version = `${majorVersion}.${minorVersion}`;
 
-// Desktop version from constant (update DESKTOP_VERSION when releasing new desktop builds)
-const desktopVersion = DESKTOP_VERSION;
+function readDesktopVersion(): string {
+  const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8')) as {
+    version?: unknown;
+  };
+
+  if (typeof packageJson.version !== 'string' || !packageJson.version.trim()) {
+    throw new Error('package.json must contain a version for desktop releases');
+  }
+
+  return packageJson.version.trim();
+}
+
+// Desktop version follows package.json, which electron-builder also uses.
+const desktopVersion = readDesktopVersion();
 
 // Write version.json to public folder for runtime version fetching
 const versionJson = {

@@ -15,6 +15,10 @@ import { useOffline } from "./hooks/useOffline";
 import { useTranslation } from "react-i18next";
 import { isDesktop } from "./utils/platform";
 import { checkDesktopUpdate, onDesktopUpdate, DesktopUpdateResult } from "./utils/prefetch";
+import {
+  getDesktopDownloadUrl,
+  getSupportedDesktopDownloadTarget,
+} from "./utils/desktopDownload";
 import { DownloadSimple } from "@phosphor-icons/react";
 import { ScreenSaverOverlay } from "./components/screensavers/ScreenSaverOverlay";
 import { useBackgroundChatNotifications } from "./hooks/useBackgroundChatNotifications";
@@ -156,52 +160,54 @@ export function App() {
     setShowBootScreen,
   ]);
 
-  // Show download toast for macOS users when new desktop version is available
+  // Show download toast for supported desktop platforms when a new shell is available
   // For web: show on first visit and updates
   // For desktop shell: only show on updates (not first time)
   useEffect(() => {
-    const isMacOS = navigator.platform.toLowerCase().includes("mac");
+    const desktopDownloadTarget = getSupportedDesktopDownloadTarget();
     const isInDesktop = isDesktop();
 
-    if (!isMacOS) {
+    if (!desktopDownloadTarget) {
       return;
     }
 
     // Handler for showing the desktop update toast
     const showDesktopUpdateToast = (result: DesktopUpdateResult) => {
       if (result.type === 'update' && result.version) {
+        const downloadUrl = getDesktopDownloadUrl(result.version, desktopDownloadTarget);
+        if (!downloadUrl) {
+          return;
+        }
         // Mark as seen immediately so dismissing the toast won't show it again
         setLastSeenDesktopVersion(result.version);
         // New version available - show update toast (both web and desktop shell)
-        toast(`ryOS ${result.version} for Mac is available`, {
+        toast(`ryOS ${result.version} for ${desktopDownloadTarget.platformLabel} is available`, {
           id: 'desktop-update',
           icon: <DownloadSimple className="size-4" weight="bold" />,
           duration: Infinity,
           action: {
             label: "Download",
             onClick: () => {
-              window.open(
-                `https://github.com/ryokun6/ryos/releases/download/v${result.version}/ryOS_${result.version}_aarch64.dmg`,
-                "_blank"
-              );
+              window.open(downloadUrl, "_blank");
             },
           },
         });
       } else if (result.type === 'first-time' && result.version && !isInDesktop) {
+        const downloadUrl = getDesktopDownloadUrl(result.version, desktopDownloadTarget);
+        if (!downloadUrl) {
+          return;
+        }
         // Mark as seen immediately so dismissing the toast won't show it again
         setLastSeenDesktopVersion(result.version);
         // First time user on web - show initial download toast (not in desktop shell)
-        toast("ryOS is available as a Mac app", {
+        toast(`ryOS is available as a ${desktopDownloadTarget.platformLabel} app`, {
           id: 'desktop-update',
           icon: <DownloadSimple className="size-4" weight="bold" />,
           duration: Infinity,
           action: {
             label: "Download",
             onClick: () => {
-              window.open(
-                `https://github.com/ryokun6/ryos/releases/download/v${result.version}/ryOS_${result.version}_aarch64.dmg`,
-                "_blank"
-              );
+              window.open(downloadUrl, "_blank");
             },
           },
         });

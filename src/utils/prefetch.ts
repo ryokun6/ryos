@@ -28,6 +28,7 @@ import {
 import { shouldPrefetchNow } from "@/utils/network";
 import { track, SYSTEM_ANALYTICS } from "@/utils/analytics";
 import { createVisibilityGatedInterval } from "@/utils/backgroundTask";
+import { getSupportedDesktopDownloadTarget } from "@/utils/desktopDownload";
 
 // Storage key for manifest timestamp (for cache invalidation)
 const MANIFEST_KEY = 'ryos:manifest-timestamp';
@@ -242,10 +243,8 @@ export function onDesktopUpdate(callback: (result: DesktopUpdateResult) => void)
  * Called during periodic checks and manual "Check for Updates"
  */
 async function checkAndNotifyDesktopUpdate(): Promise<void> {
-  // Check for macOS users (both web and desktop shell)
-  const isMacOS = typeof navigator !== 'undefined' && navigator.platform.toLowerCase().includes('mac');
-  
-  if (!isMacOS) {
+  // Check supported desktop download targets (both web and desktop shell).
+  if (!getSupportedDesktopDownloadTarget()) {
     return;
   }
   

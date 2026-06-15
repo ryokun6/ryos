@@ -16,6 +16,7 @@ import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { getTranslatedAppName } from "@/utils/i18n";
 import type { AppId } from "@/config/appRegistry";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { getDesktopDownloadUrl } from "@/utils/desktopDownload";
 
 interface AboutFinderDialogProps {
   isOpen: boolean;
@@ -45,6 +46,16 @@ export function AboutFinderDialog({
     typeof navigator !== 'undefined' && navigator.platform.toLowerCase().includes('mac'), 
     []
   );
+  const desktopDownloadUrl = useMemo(
+    () =>
+      desktopVersion
+        ? getDesktopDownloadUrl(desktopVersion, {
+            platform: "mac",
+            arch: "aarch64",
+          })
+        : null,
+    [desktopVersion]
+  );
 
   // Fetch desktop version for download link
   useEffect(() => {
@@ -66,14 +77,14 @@ export function AboutFinderDialog({
 
         if (!isActive || abortController.signal.aborted) return;
         setDesktopVersion(
-          typeof data?.desktopVersion === "string" ? data.desktopVersion : "1.0.2"
+          typeof data?.desktopVersion === "string" ? data.desktopVersion : null
         );
       } catch (error) {
         if (error instanceof Error && error.name === "AbortError") {
           return;
         }
         if (!isActive || abortController.signal.aborted) return;
-        setDesktopVersion("1.0.2"); // fallback
+        setDesktopVersion(null);
       }
     };
 
@@ -225,10 +236,10 @@ export function AboutFinderDialog({
                 }
               >
                 <p>© Ryo Lu. 1992-{new Date().getFullYear()}</p>
-                {isMac && desktopVersion && (
+                {isMac && desktopDownloadUrl && (
                   <p>
                     <a
-                      href={`https://github.com/ryokun6/ryos/releases/download/v${desktopVersion}/ryOS_${desktopVersion}_aarch64.dmg`}
+                      href={desktopDownloadUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-os-link hover:underline"
