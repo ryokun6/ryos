@@ -1,4 +1,4 @@
-export const RYOS_DESKTOP_RELEASE_TAG = "main";
+export const RYOS_DESKTOP_RELEASE_TAG = "desktop";
 export const RYOS_DESKTOP_RELEASE_BASE_URL =
   "https://github.com/ryokun6/ryos/releases/download";
 

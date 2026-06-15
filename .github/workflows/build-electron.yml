@@ -159,11 +159,30 @@ jobs:
           name: electron-windows
           path: release/windows
 
+      - name: Resolve release tag
+        id: release
+        run: |
+          # workflow_dispatch runs on refs/heads/main; never use the branch name as a tag
+          # (it collides with refs/heads/main and breaks `git pull origin main`).
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            echo "tag=${GITHUB_REF_NAME}" >> "${GITHUB_OUTPUT}"
+            echo "name=ryOS ${GITHUB_REF_NAME}" >> "${GITHUB_OUTPUT}"
+            echo "make_latest=true" >> "${GITHUB_OUTPUT}"
+            echo "overwrite_assets=false" >> "${GITHUB_OUTPUT}"
+          else
+            echo "tag=desktop" >> "${GITHUB_OUTPUT}"
+            echo "name=ryOS desktop" >> "${GITHUB_OUTPUT}"
+            echo "make_latest=true" >> "${GITHUB_OUTPUT}"
+            echo "overwrite_assets=true" >> "${GITHUB_OUTPUT}"
+          fi
+
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
-          name: ryOS ${{ github.ref_name }}
+          tag_name: ${{ steps.release.outputs.tag }}
+          name: ${{ steps.release.outputs.name }}
+          make_latest: ${{ steps.release.outputs.make_latest }}
+          overwrite_assets: ${{ steps.release.outputs.overwrite_assets }}
           generate_release_notes: true
           # Explicit globs only — release/** flattens win-unpacked into hundreds of junk assets.
           # latest-mac.yml / latest.yml + mac zip + blockmaps power electron-updater.
