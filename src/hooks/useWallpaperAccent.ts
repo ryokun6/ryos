@@ -3,6 +3,8 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { useWallpaper } from "@/hooks/useWallpaper";
 import { useCoverPaletteResult } from "@/hooks/useCoverPalette";
 import { useNowPlayingCover } from "@/hooks/useNowPlayingCover";
+import { useWeatherWallpaper } from "@/hooks/useWeatherWallpaper";
+import { useWeatherSimulationStore } from "@/stores/useWeatherSimulationStore";
 import { DEFAULT_ACCENT, getAccentChrome } from "@/themes/accents";
 import {
   normalizeWallpaperAccentColor,
@@ -10,8 +12,11 @@ import {
 } from "@/themes/wallpaperAccentColor";
 import {
   getDayNightGradientColors,
+  getWeatherGradientColors,
   isCoverWallpaper,
   isDayNightGradientWallpaper,
+  isLyricsWallpaper,
+  isWeatherWallpaper,
 } from "@/utils/dynamicWallpaper";
 
 // The gradient drifts with wall-clock time, so re-derive its accent on a slow
@@ -32,13 +37,18 @@ const rgbToHex = ([r, g, b]: [number, number, number]): string =>
  * representative color from the current wallpaper and feed it to the theme
  * store, which repaints the accent CSS vars.
  *
- * Image wallpapers (including shuffle photos) and the now-playing cover sample
- * a color via the same canvas palette-extraction the iPod cover-art glow uses.
- * The day/night gradient — which has no loadable image — derives its accent
- * directly from the live gradient colors. Video wallpapers and load/CORS
- * failures fall back to the theme's classic look.
+ * Image wallpapers (including shuffle photos) and the now-playing cover/lyrics
+ * wallpapers sample a color via the same canvas palette-extraction the iPod
+ * cover-art glow uses. The day/night and weather gradients — which have no
+ * loadable image — derive their accent directly from the live gradient's main
+ * (mid) color. Video wallpapers and load/CORS failures fall back to the theme's
+ * classic look.
+ *
+ * Returns `weatherAccentActive` so the runner can mount the weather sub-runner
+ * (which pulls in live weather, and therefore geolocation) only while the
+ * weather wallpaper is actually driving the accent.
  */
-export function useWallpaperAccent() {
+export function useWallpaperAccent(): { weatherAccentActive: boolean } {
   const current = useThemeStore((s) => s.current);
   const accent = useThemeStore(
     (s) => s.accentByTheme[s.current] ?? DEFAULT_ACCENT
@@ -53,17 +63,22 @@ export function useWallpaperAccent() {
     getAccentChrome(current) !== null && accent === "wallpaper";
 
   const isGradient = isDayNightGradientWallpaper(currentWallpaper);
+  const isWeather = isWeatherWallpaper(currentWallpaper);
   const isCover = isCoverWallpaper(currentWallpaper);
+  const isLyrics = isLyricsWallpaper(currentWallpaper);
+  // Cover + lyrics wallpapers both tint from the now-playing album art, exactly
+  // like the Karaoke/lyrics cover-color path.
+  const isCoverBased = isCover || isLyrics;
 
   const { coverUrl: nowPlayingCoverUrl } = useNowPlayingCover();
 
   // Pick the image URL fed to the canvas palette extractor:
-  //  - cover wallpaper → the now-playing album art
+  //  - cover / lyrics wallpaper → the now-playing album art
   //  - image wallpapers (incl. shuffle photos) → the resolved wallpaper source
-  //  - gradient / video / inactive → none (handled separately or skipped)
+  //  - gradient / weather / video / inactive → none (handled elsewhere/skipped)
   let sampleUrl: string | null = null;
-  if (isWallpaperAccent && !isGradient) {
-    if (isCover) {
+  if (isWallpaperAccent && !isGradient && !isWeather) {
+    if (isCoverBased) {
       sampleUrl = nowPlayingCoverUrl;
     } else if (!isVideoWallpaper) {
       sampleUrl = wallpaperSource || null;
@@ -73,13 +88,14 @@ export function useWallpaperAccent() {
   const { palette, source, coverUrl } = useCoverPaletteResult(sampleUrl);
 
   useEffect(() => {
-    if (!isWallpaperAccent || isGradient) return;
+    if (!isWallpaperAccent || isGradient || isWeather) return;
     // Only act on a palette actually extracted from an image.
     if (source !== "cover" || !coverUrl) return;
     setWallpaperAccentColor(resolveWallpaperAccentFromPalette(palette));
   }, [
     isWallpaperAccent,
     isGradient,
+    isWeather,
     source,
     coverUrl,
     palette,
@@ -100,4 +116,37 @@ export function useWallpaperAccent() {
     const id = window.setInterval(apply, GRADIENT_ACCENT_REFRESH_MS);
     return () => window.clearInterval(id);
   }, [isWallpaperAccent, isGradient, setWallpaperAccentColor]);
+
+  return { weatherAccentActive: isWallpaperAccent && isWeather };
+}
+
+/**
+ * Weather wallpaper accent: derive the accent from the live weather gradient's
+ * mid color, refreshed on the minute timer and whenever the live weather code
+ * changes (so it tracks both the day → night drift and condition changes).
+ *
+ * Split into its own hook so the runner only subscribes to {@link
+ * useWeatherWallpaper} — which triggers geolocation / a weather fetch — while
+ * the weather wallpaper is actually driving the accent.
+ */
+export function useWeatherWallpaperAccent() {
+  const setWallpaperAccentColor = useThemeStore(
+    (s) => s.setWallpaperAccentColor
+  );
+  const { weatherCode } = useWeatherWallpaper();
+  const simulatedWeatherCode = useWeatherSimulationStore(
+    (s) => s.simulatedWeatherCode
+  );
+  const effectiveCode = simulatedWeatherCode ?? weatherCode;
+
+  useEffect(() => {
+    const apply = () => {
+      const [, mid] = getWeatherGradientColors(effectiveCode, new Date());
+      setWallpaperAccentColor(normalizeWallpaperAccentColor(rgbToHex(mid)));
+    };
+
+    apply();
+    const id = window.setInterval(apply, GRADIENT_ACCENT_REFRESH_MS);
+    return () => window.clearInterval(id);
+  }, [effectiveCode, setWallpaperAccentColor]);
 }

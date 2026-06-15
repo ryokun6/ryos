@@ -308,7 +308,7 @@ export function getDayNightGradientCss(date: Date = new Date()): string {
 // dark and ominous.
 // ---------------------------------------------------------------------------
 
-type WeatherFamily =
+export type WeatherFamily =
   | "clear"
   | "partlyCloudy"
   | "fog"
@@ -384,7 +384,9 @@ const WEATHER_KEYFRAMES: Record<WeatherFamily, GradientKeyframe[]> = {
 };
 
 /** Map a WMO weather code to a gradient family. */
-function weatherCodeToFamily(code: number | null | undefined): WeatherFamily {
+export function weatherCodeToFamily(
+  code: number | null | undefined
+): WeatherFamily {
   if (code == null) return "clear";
   if (code === 0) return "clear";
   if (code <= 3) return "partlyCloudy";

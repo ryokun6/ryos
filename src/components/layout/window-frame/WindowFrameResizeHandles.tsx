@@ -4,7 +4,7 @@ import type { MouseEvent, TouchEvent } from "react";
 
 export interface WindowFrameResizeHandlesProps {
   resizerZIndexClass: string;
-  debugMode: boolean;
+  showResizers: boolean;
   isMobile: boolean;
   isXpTheme: boolean;
   isMacOSTheme: boolean;
@@ -18,7 +18,7 @@ export interface WindowFrameResizeHandlesProps {
 
 export function WindowFrameResizeHandles({
   resizerZIndexClass,
-  debugMode,
+  showResizers,
   isMobile,
   isXpTheme,
   isMacOSTheme,
@@ -38,7 +38,7 @@ export function WindowFrameResizeHandles({
         className={cn(
           "absolute cursor-n-resize pointer-events-auto transition-[top,height] select-none resize-handle",
           "left-1 right-0", // Full width for all cases
-          debugMode && "bg-red-500/50",
+          showResizers && "bg-red-500/50",
           resizeType?.includes("n")
             ? "top-[-100px] h-[200px]"
             : isMobile
@@ -62,7 +62,7 @@ export function WindowFrameResizeHandles({
       <div
         className={cn(
           "absolute left-1 right-1 cursor-s-resize pointer-events-auto transition-[bottom,height] select-none resize-handle",
-          debugMode && "bg-red-500/50",
+          showResizers && "bg-red-500/50",
           resizeType?.includes("s")
             ? "bottom-[-100px] h-[200px]"
             : isMobile
@@ -82,7 +82,7 @@ export function WindowFrameResizeHandles({
       <div
         className={cn(
           "absolute top-3 cursor-w-resize pointer-events-auto transition-[left,width] select-none resize-handle",
-          debugMode && "bg-red-500/50",
+          showResizers && "bg-red-500/50",
           resizeType?.includes("w")
             ? "left-[-100px] w-[200px]"
             : "left-1 w-2"
@@ -100,7 +100,7 @@ export function WindowFrameResizeHandles({
       <div
         className={cn(
           "absolute top-6 cursor-e-resize pointer-events-auto transition-[right,width] select-none resize-handle",
-          debugMode && "bg-red-500/50",
+          showResizers && "bg-red-500/50",
           resizeType?.includes("e")
             ? "right-[-100px] w-[200px]"
             : "right-1 w-2"
@@ -118,7 +118,7 @@ export function WindowFrameResizeHandles({
       <div
         className={cn(
           "absolute cursor-ne-resize pointer-events-auto transition-all select-none resize-handle",
-          debugMode && "bg-red-500/50",
+          showResizers && "bg-red-500/50",
           isMobile && "hidden",
           resizeType === "ne"
             ? "top-[-100px] right-[-100px] size-[200px]"
@@ -135,7 +135,7 @@ export function WindowFrameResizeHandles({
       <div
         className={cn(
           "absolute cursor-sw-resize pointer-events-auto transition-all select-none resize-handle",
-          debugMode && "bg-red-500/50",
+          showResizers && "bg-red-500/50",
           isMobile && "hidden",
           resizeType === "sw"
             ? "bottom-[-100px] left-[-100px] size-[200px]"
@@ -152,7 +152,7 @@ export function WindowFrameResizeHandles({
       <div
         className={cn(
           "absolute cursor-se-resize pointer-events-auto transition-all select-none resize-handle",
-          debugMode && "bg-red-500/50",
+          showResizers && "bg-red-500/50",
           isMobile && "hidden",
           resizeType === "se"
             ? "bottom-[-100px] right-[-100px] size-[200px]"

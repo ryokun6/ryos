@@ -1508,6 +1508,8 @@
       "shaderEffect": "Effet Shader",
       "shaderEffectDescription": "Effet d'arrière-plan gourmand en performances",
       "show": "Afficher",
+      "showResizers": "Afficher les poignées de redimensionnement",
+      "showResizersDescription": "Mettre en évidence les poignées de redimensionnement des fenêtres",
       "sound": "Son",
       "speech": "Parole",
       "speechVolume": "Volume de la parole",
@@ -1517,7 +1519,7 @@
       "system": "Système",
       "systemFont": "Police système",
       "systemFontDescription": "Remplace la pile de polices de l'interface OS",
-      "systemFontThemeDefault": "Par défaut du thème",
+      "systemFontThemeDefault": "Thème",
       "telegram": {
         "checking": "Vérification du lien Telegram…",
         "codeCopied": "Code du lien Telegram copié",
@@ -1709,6 +1711,15 @@
       },
       "weather": {
         "changeCity": "Changer de ville",
+        "conditions": {
+          "clear": "Dégagé",
+          "drizzle": "Bruine",
+          "fog": "Brouillard",
+          "partlyCloudy": "Partiellement nuageux",
+          "rain": "Pluie",
+          "snow": "Neige",
+          "thunderstorm": "Orage"
+        },
         "enableLocation": "Activer la localisation pour la météo",
         "feelsLike": "Ressenti",
         "high": "Max:",
@@ -3909,6 +3920,7 @@
       "signupDescription": "Créez un compte pour accéder aux salons de discussion et enregistrer vos paramètres",
       "username": "Nom d'utilisateur"
     },
+    "auto": "Auto",
     "colors": {
       "blue": "bleu",
       "green": "vert",

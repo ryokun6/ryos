@@ -1508,6 +1508,8 @@
       "shaderEffect": "Efeito Shader",
       "shaderEffectDescription": "Efeito de fundo que exige muito desempenho",
       "show": "Mostrar",
+      "showResizers": "Mostrar redimensionadores",
+      "showResizersDescription": "Destacar alças de redimensionamento de janelas",
       "sound": "Som",
       "speech": "Fala",
       "speechVolume": "Volume da Fala",
@@ -1517,7 +1519,7 @@
       "system": "Sistema",
       "systemFont": "Fonte do Sistema",
       "systemFontDescription": "Substitui a pilha de fontes da interface do OS",
-      "systemFontThemeDefault": "Padrão do Tema",
+      "systemFontThemeDefault": "Tema",
       "telegram": {
         "checking": "Verificando link do Telegram...",
         "codeCopied": "Código do link do Telegram copiado",
@@ -1709,6 +1711,15 @@
       },
       "weather": {
         "changeCity": "Alterar cidade",
+        "conditions": {
+          "clear": "Limpo",
+          "drizzle": "Chuvisco",
+          "fog": "Nevoeiro",
+          "partlyCloudy": "Parcialmente nublado",
+          "rain": "Chuva",
+          "snow": "Neve",
+          "thunderstorm": "Trovoada"
+        },
         "enableLocation": "Ativar localização para o tempo",
         "feelsLike": "Sensação térmica",
         "high": "Máx:",
@@ -3909,6 +3920,7 @@
       "signupDescription": "Crie uma conta para aceder às salas de chat e guardar as suas definições",
       "username": "Nome de usuário"
     },
+    "auto": "Automático",
     "colors": {
       "blue": "azul",
       "green": "verde",

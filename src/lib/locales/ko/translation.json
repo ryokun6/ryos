@@ -1508,6 +1508,8 @@
       "shaderEffect": "셰이더 효과",
       "shaderEffectDescription": "성능 집약적인 배경 효과",
       "show": "표시",
+      "showResizers": "크기 조절기 표시",
+      "showResizersDescription": "윈도우 크기 조절 핸들 강조 표시",
       "sound": "사운드",
       "speech": "음성",
       "speechVolume": "음성 음량",
@@ -1517,7 +1519,7 @@
       "system": "시스템",
       "systemFont": "시스템 글꼴",
       "systemFontDescription": "OS UI 글꼴 스택을 재정의합니다.",
-      "systemFontThemeDefault": "테마 기본값",
+      "systemFontThemeDefault": "테마",
       "telegram": {
         "checking": "텔레그램 링크 확인 중...",
         "codeCopied": "텔레그램 링크 코드가 복사되었습니다.",
@@ -1709,6 +1711,15 @@
       },
       "weather": {
         "changeCity": "도시 변경",
+        "conditions": {
+          "clear": "맑음",
+          "drizzle": "이슬비",
+          "fog": "안개",
+          "partlyCloudy": "구름 조금",
+          "rain": "비",
+          "snow": "눈",
+          "thunderstorm": "뇌우"
+        },
         "enableLocation": "날씨를 위해 위치 활성화",
         "feelsLike": "체감",
         "high": "높음:",
@@ -3909,6 +3920,7 @@
       "signupDescription": "채팅방에 접속하고 설정을 저장하려면 계정을 만드세요.",
       "username": "사용자 이름"
     },
+    "auto": "자동",
     "colors": {
       "blue": "파란색",
       "green": "초록색",

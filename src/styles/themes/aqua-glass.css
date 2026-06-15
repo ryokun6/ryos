@@ -797,9 +797,9 @@
     [data-os-color-scheme="dark"]
   )
   .os-switch {
-  --os-glass-switch-track-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.35),
-    inset 0 -1px 1px rgba(0, 0, 0, 0.08),
-    0 1px 0 rgba(255, 255, 255, 0.45);
+  --os-glass-switch-track-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2),
+    inset 0 -1px 1px rgba(255, 255, 255, 0.35),
+    0 1px 0 rgba(255, 255, 255, 0.5);
   background: linear-gradient(
         to bottom,
         rgba(255, 255, 255, 0.55) 0%,
@@ -848,10 +848,41 @@
     0 0 3px var(--os-color-selection-glow);
 }
 
+/* Glass knob: a raised glossy bead seated in the recessed groove. Shrunk to
+   12px so the track shows an even inset on all sides of the 16px tall / 28px
+   wide pill. Travel is driven via the `translate` property (Tailwind v4 emits
+   `translate-x` as `translate:`, so a `transform` here would stack instead of
+   override) and lands the bead centered in each rounded cap: -1px off / 11px on
+   => the same small, even end gap in both states without touching the edge. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] .os-switch-thumb {
+  height: 12px;
+  width: 12px;
+  translate: -1px 0;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .os-switch[data-state="checked"]
+  .os-switch-thumb {
+  translate: 11px 0;
+}
+
+/* Off-state bead lift: in light glass the neutral thumb otherwise melts into the
+   frosted track, so give it a drop shadow + faint contact ring for separation. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]:not(
+    [data-os-color-scheme="dark"]
+  )
+  .os-switch:not([data-state="checked"])
+  .os-switch-thumb {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3),
+    0 0 0 0.5px rgba(0, 0, 0, 0.2),
+    inset 0 1px 1px rgba(255, 255, 255, 0.85),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.12);
+}
+
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
   .os-switch {
-  --os-glass-switch-track-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.08),
-    inset 0 -1px 1px rgba(0, 0, 0, 0.45),
+  --os-glass-switch-track-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5),
+    inset 0 -1px 1px rgba(255, 255, 255, 0.06),
     0 1px 0 rgba(255, 255, 255, 0.05);
   background: linear-gradient(
         to bottom,
@@ -861,8 +892,8 @@
       top / 100% 50% no-repeat,
     linear-gradient(
       to bottom,
-      rgba(72, 72, 78, 0.42),
-      rgba(34, 34, 38, 0.42)
+      rgba(34, 34, 38, 0.42),
+      rgba(72, 72, 78, 0.42)
     );
   border-color: rgba(255, 255, 255, 0.14);
   box-shadow: var(--os-glass-switch-track-shadow);
@@ -885,8 +916,8 @@
     ),
     linear-gradient(
       to bottom,
-      rgba(72, 72, 78, 0.42),
-      rgba(34, 34, 38, 0.42)
+      rgba(34, 34, 38, 0.42),
+      rgba(72, 72, 78, 0.42)
     );
   box-shadow: var(--os-glass-switch-track-shadow);
 }

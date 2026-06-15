@@ -1508,6 +1508,8 @@
       "shaderEffect": "Shader-Effekt",
       "shaderEffectDescription": "Leistungsintensiver Hintergrundeffekt",
       "show": "Anzeigen",
+      "showResizers": "Größenänderungsgriffe anzeigen",
+      "showResizersDescription": "Fenster-Größenänderungsgriffe hervorheben",
       "sound": "Ton",
       "speech": "Sprache",
       "speechVolume": "Sprachlautstärke",
@@ -1517,7 +1519,7 @@
       "system": "System",
       "systemFont": "Systemschrift",
       "systemFontDescription": "Überschreibt den OS-UI-Schriftstapel",
-      "systemFontThemeDefault": "Theme-Standard",
+      "systemFontThemeDefault": "Design",
       "telegram": {
         "checking": "Telegram-Link wird überprüft...",
         "codeCopied": "Telegram-Link-Code kopiert",
@@ -1709,6 +1711,15 @@
       },
       "weather": {
         "changeCity": "Stadt ändern",
+        "conditions": {
+          "clear": "Klar",
+          "drizzle": "Nieselregen",
+          "fog": "Nebel",
+          "partlyCloudy": "Teilweise bewölkt",
+          "rain": "Regen",
+          "snow": "Schnee",
+          "thunderstorm": "Gewitter"
+        },
         "enableLocation": "Standort für Wetter aktivieren",
         "feelsLike": "Gefühlt wie",
         "high": "H:",
@@ -3909,6 +3920,7 @@
       "signupDescription": "Erstellen Sie ein Konto, um auf Chaträume zuzugreifen und Ihre Einstellungen zu speichern",
       "username": "Benutzername"
     },
+    "auto": "Automatisch",
     "colors": {
       "blue": "blau",
       "green": "grün",

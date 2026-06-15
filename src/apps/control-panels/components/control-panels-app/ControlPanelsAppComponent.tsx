@@ -66,6 +66,8 @@ export function ControlPanelsAppComponent({
     setAiModel,
     debugMode,
     setDebugMode,
+    showResizers,
+    setShowResizers,
     shaderEffectEnabled,
     setShaderEffectEnabled,
     currentTheme,
@@ -488,6 +490,8 @@ export function ControlPanelsAppComponent({
                 handleResetAll={handleResetAll}
                 setIsConfirmFormatOpen={setIsConfirmFormatOpen}
                 setDebugMode={setDebugMode}
+                showResizers={showResizers}
+                setShowResizers={setShowResizers}
                 shaderEffectEnabled={shaderEffectEnabled}
                 setShaderEffectEnabled={setShaderEffectEnabled}
                 systemFont={systemFont}

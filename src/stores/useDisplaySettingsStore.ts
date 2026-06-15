@@ -116,6 +116,10 @@ interface DisplaySettingsState {
   debugMode: boolean;
   setDebugMode: (v: boolean) => void;
 
+  // Show resizers (debug sub-setting)
+  showResizers: boolean;
+  setShowResizers: (v: boolean) => void;
+
   // HTML preview
   htmlPreviewSplit: boolean;
   setHtmlPreviewSplit: (v: boolean) => void;
@@ -314,6 +318,10 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
       debugMode: false,
       setDebugMode: (enabled) => set({ debugMode: enabled }),
 
+      // Show resizers (debug sub-setting)
+      showResizers: false,
+      setShowResizers: (enabled) => set({ showResizers: enabled }),
+
       // HTML preview
       htmlPreviewSplit: true,
       setHtmlPreviewSplit: (v) => set({ htmlPreviewSplit: v }),
@@ -335,6 +343,7 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
         screenSaverType: state.screenSaverType,
         screenSaverIdleTime: state.screenSaverIdleTime,
         debugMode: state.debugMode,
+        showResizers: state.showResizers,
         htmlPreviewSplit: state.htmlPreviewSplit,
       }),
       merge: (persistedState, currentState) => {

@@ -1508,6 +1508,8 @@
       "shaderEffect": "著色器效果",
       "shaderEffectDescription": "效能密集型背景效果",
       "show": "顯示",
+      "showResizers": "顯示調整大小控點",
+      "showResizersDescription": "醒目提示視窗調整大小控點",
       "sound": "音效",
       "speech": "語音",
       "speechVolume": "語音音量",
@@ -1517,7 +1519,7 @@
       "system": "系統",
       "systemFont": "系統字型",
       "systemFontDescription": "覆寫 OS UI 字型堆疊",
-      "systemFontThemeDefault": "主題預設",
+      "systemFontThemeDefault": "主題",
       "telegram": {
         "checking": "正在檢查 Telegram 連結...",
         "codeCopied": "Telegram 連結代碼已複製",
@@ -1709,6 +1711,15 @@
       },
       "weather": {
         "changeCity": "更改城市",
+        "conditions": {
+          "clear": "晴朗",
+          "drizzle": "毛毛雨",
+          "fog": "霧",
+          "partlyCloudy": "局部多雲",
+          "rain": "雨",
+          "snow": "雪",
+          "thunderstorm": "雷雨"
+        },
         "enableLocation": "啟用定位以取得天氣",
         "feelsLike": "體感溫度",
         "high": "高:",
@@ -3909,6 +3920,7 @@
       "signupDescription": "建立帳戶以存取聊天室並儲存您的設定",
       "username": "使用者名稱"
     },
+    "auto": "自動",
     "colors": {
       "blue": "藍色",
       "green": "綠色",

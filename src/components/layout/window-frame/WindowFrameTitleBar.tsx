@@ -36,7 +36,7 @@ export interface WindowFrameTitleBarProps {
   onCoverFlowToggle?: () => void;
   isCoverFlowActive?: boolean;
   onFullscreenToggle?: () => void;
-  debugMode: boolean;
+  showResizers: boolean;
   handleClose: () => void;
   handleMinimize: () => void;
 }
@@ -67,7 +67,7 @@ export function WindowFrameTitleBar({
   onCoverFlowToggle,
   isCoverFlowActive = false,
   onFullscreenToggle,
-  debugMode,
+  showResizers,
   handleClose,
   handleMinimize,
 }: WindowFrameTitleBarProps) {
@@ -296,21 +296,21 @@ export function WindowFrameTitleBar({
               color="red"
               onClick={handleClose}
               isForeground={isForeground}
-              debugMode={debugMode}
+              showResizers={showResizers}
               ariaLabel={t("common.window.close")}
             />
             <TrafficLightButton
               color="yellow"
               onClick={handleMinimize}
               isForeground={isForeground}
-              debugMode={debugMode}
+              showResizers={showResizers}
               ariaLabel={t("common.window.minimize")}
             />
             <TrafficLightButton
               color="green"
               onClick={handleFullMaximize}
               isForeground={isForeground}
-              debugMode={debugMode}
+              showResizers={showResizers}
               ariaLabel={t("common.window.maximize")}
             />
           </div>

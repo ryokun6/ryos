@@ -351,6 +351,12 @@ const SETTINGS_SCHEMA: SettingsSection[] = [
         write: (v) => useDisplaySettingsStore.setState({ debugMode: Boolean(v) }),
       },
       {
+        field: "showResizers",
+        read: () => useDisplaySettingsStore.getState().showResizers,
+        write: (v) =>
+          useDisplaySettingsStore.setState({ showResizers: Boolean(v) }),
+      },
+      {
         field: "htmlPreviewSplit",
         read: () => useDisplaySettingsStore.getState().htmlPreviewSplit,
         write: (v) =>
@@ -580,6 +586,7 @@ const settingsCodec: SyncCodec = {
           state.screenSaverType !== prev.screenSaverType ||
           state.screenSaverIdleTime !== prev.screenSaverIdleTime ||
           state.debugMode !== prev.debugMode ||
+          state.showResizers !== prev.showResizers ||
           state.htmlPreviewSplit !== prev.htmlPreviewSplit
         ) {
           onChange();

@@ -59,6 +59,8 @@ export type SystemTabContentProps = {
   handleResetAll: () => void;
   setIsConfirmFormatOpen: (open: boolean) => void;
   setDebugMode: (enabled: boolean) => void;
+  showResizers: boolean;
+  setShowResizers: (enabled: boolean) => void;
   shaderEffectEnabled: boolean;
   setShaderEffectEnabled: (enabled: boolean) => void;
   systemFont: SystemFontId;
@@ -104,6 +106,8 @@ export function SystemTabContent({
   handleResetAll,
   setIsConfirmFormatOpen,
   setDebugMode,
+  showResizers,
+  setShowResizers,
   shaderEffectEnabled,
   setShaderEffectEnabled,
   systemFont,
@@ -358,6 +362,22 @@ export function SystemTabContent({
       {isAdmin && debugMode && (
         <div className="flex items-center justify-between">
           <div className="flex flex-col gap-1">
+            <Label>{t("apps.control-panels.showResizers")}</Label>
+            <Label className="text-[11px] text-neutral-600 font-geneva-12">
+              {t("apps.control-panels.showResizersDescription")}
+            </Label>
+          </div>
+          <Switch
+            checked={showResizers}
+            onCheckedChange={setShowResizers}
+            className="data-[state=checked]:bg-[#000000]"
+          />
+        </div>
+      )}
+
+      {isAdmin && debugMode && (
+        <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-1">
             <Label>{t("apps.control-panels.shaderEffect")}</Label>
             <Label className="text-[11px] text-neutral-600 font-geneva-12">
               {t("apps.control-panels.shaderEffectDescription")}
@@ -383,7 +403,7 @@ export function SystemTabContent({
             value={systemFont}
             onValueChange={(value) => setSystemFont(value as SystemFontId)}
           >
-            <SelectTrigger className="w-[160px]">
+            <SelectTrigger className="w-[120px]">
               <SelectValue placeholder={t("apps.control-panels.select")}>
                 {systemFont === THEME_DEFAULT_SYSTEM_FONT
                   ? t("apps.control-panels.systemFontThemeDefault")

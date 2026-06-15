@@ -81,7 +81,7 @@ export function WindowFrame({
       : 0,
   }));
 
-  const debugMode = useDisplaySettingsStore((s) => s.debugMode);
+  const showResizers = useDisplaySettingsStore((s) => s.showResizers);
   const isMinimized = useAppStore((state) =>
     instanceId ? state.instances[instanceId]?.isMinimized ?? false : false
   );
@@ -358,7 +358,7 @@ export function WindowFrame({
 
                 <WindowFrameResizeHandles
                   resizerZIndexClass={resizerZIndexClass}
-                  debugMode={debugMode}
+                  showResizers={showResizers}
                   resizeType={resizeType}
                   isMobile={isMobile}
                   isXpTheme={isXpTheme}
@@ -412,7 +412,7 @@ export function WindowFrame({
                     isBrushedMetal={isBrushedMetal}
                     isGlassSurface={isGlassRegular}
                     isTransparent={isTransparent}
-                    debugMode={debugMode}
+                    showResizers={showResizers}
                     appId={appId}
                     title={title}
                     isPhone={isPhone}

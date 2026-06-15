@@ -1,5 +1,6 @@
 {
   "common": {
+    "auto": "Auto",
     "loading": {
       "default": "Loading...",
       "openingAppletStore": "Opening Applet Store...",
@@ -2979,9 +2980,11 @@
       "formatFileSystemDescription": "This will clear all files (except sample docs), images, and custom wallpapers. ryOS will restart after format.",
       "debugMode": "Debug Mode",
       "debugModeDescription": "Enable debugging settings",
+      "showResizers": "Show Resizers",
+      "showResizersDescription": "Highlight window resize handles",
       "systemFont": "System Font",
       "systemFontDescription": "Override the OS UI font stack",
-      "systemFontThemeDefault": "Theme Default",
+      "systemFontThemeDefault": "Theme",
       "shaderEffect": "Shader Effect",
       "shaderEffectDescription": "Performance intensive background effect",
       "aiModel": "AI Model",
@@ -3574,7 +3577,16 @@
         "selectCity": "Choose a city",
         "unavailable": "Weather unavailable",
         "high": "H:",
-        "low": "L:"
+        "low": "L:",
+        "conditions": {
+          "clear": "Clear",
+          "partlyCloudy": "Partly Cloudy",
+          "fog": "Fog",
+          "drizzle": "Drizzle",
+          "rain": "Rain",
+          "snow": "Snow",
+          "thunderstorm": "Thunderstorm"
+        }
       },
       "cities": {
         "newYork": "New York",

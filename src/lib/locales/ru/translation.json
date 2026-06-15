@@ -1508,6 +1508,8 @@
       "shaderEffect": "Эффект шейдера",
       "shaderEffectDescription": "Фоновый эффект, требовательный к производительности",
       "show": "Показать",
+      "showResizers": "Показать манипуляторы размера",
+      "showResizersDescription": "Подсвечивать манипуляторы изменения размера окна",
       "sound": "Звук",
       "speech": "Речь",
       "speechVolume": "Громкость речи",
@@ -1517,7 +1519,7 @@
       "system": "Система",
       "systemFont": "Системный шрифт",
       "systemFontDescription": "Переопределяет стек шрифтов интерфейса OS",
-      "systemFontThemeDefault": "По умолчанию для темы",
+      "systemFontThemeDefault": "Тема",
       "telegram": {
         "checking": "Проверка ссылки Telegram…",
         "codeCopied": "Код ссылки Telegram скопирован",
@@ -1709,6 +1711,15 @@
       },
       "weather": {
         "changeCity": "Изменить город",
+        "conditions": {
+          "clear": "Ясно",
+          "drizzle": "Морось",
+          "fog": "Туман",
+          "partlyCloudy": "Переменная облачность",
+          "rain": "Дождь",
+          "snow": "Снег",
+          "thunderstorm": "Гроза"
+        },
         "enableLocation": "Включить определение местоположения для погоды",
         "feelsLike": "Ощущается как",
         "high": "В:",
@@ -3909,6 +3920,7 @@
       "signupDescription": "Создайте аккаунт, чтобы получить доступ к чатам и сохранить свои настройки",
       "username": "Имя пользователя"
     },
+    "auto": "Авто",
     "colors": {
       "blue": "синий",
       "green": "зелёный",

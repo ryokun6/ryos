@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useWallpaper } from "@/hooks/useWallpaper";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useNowPlayingCover } from "@/hooks/useNowPlayingCover";
+import { useWeatherWallpaper } from "@/hooks/useWeatherWallpaper";
+import { useWeatherSimulationStore } from "@/stores/useWeatherSimulationStore";
 import {
   menubarTextColorForLuminance,
   menubarTextForTone,
@@ -12,8 +14,11 @@ import {
 } from "@/themes/wallpaperMenubarText";
 import {
   getDayNightGradientColors,
+  getWeatherGradientColors,
   isCoverWallpaper,
   isDayNightGradientWallpaper,
+  isLyricsWallpaper,
+  isWeatherWallpaper,
 } from "@/utils/dynamicWallpaper";
 
 export interface WallpaperMenubarText {
@@ -91,26 +96,48 @@ function gradientMenubarText(): WallpaperMenubarText {
   return menubarTextForLuminance(wallpaperLuminance(top[0], top[1], top[2]));
 }
 
+function weatherMenubarText(weatherCode: number | null): WallpaperMenubarText {
+  // Mirror the day/night gradient: the weather sky's top color is the strip
+  // directly behind the menubar, and it shifts with both time of day and the
+  // live condition.
+  const [top] = getWeatherGradientColors(weatherCode, new Date());
+  return menubarTextForLuminance(wallpaperLuminance(top[0], top[1], top[2]));
+}
+
 export function useWallpaperMenubarText(enabled: boolean): WallpaperMenubarText {
   const { currentWallpaper, wallpaperSource, isVideoWallpaper } =
     useWallpaper();
   const { isDarkMode } = useThemeFlags();
 
   const isGradient = isDayNightGradientWallpaper(currentWallpaper);
+  const isWeather = isWeatherWallpaper(currentWallpaper);
   const isCover = isCoverWallpaper(currentWallpaper);
+  const isLyrics = isLyricsWallpaper(currentWallpaper);
+  // Cover + lyrics wallpapers both tint from the now-playing album art, exactly
+  // like the wallpaper accent's cover-based path.
+  const isCoverBased = isCover || isLyrics;
   const { coverUrl: nowPlayingCoverUrl } = useNowPlayingCover();
+  // Only subscribe to live weather (and its geolocation/fetch) while the weather
+  // wallpaper is actually driving the menubar tone.
+  const { weatherCode } = useWeatherWallpaper(enabled && isWeather);
+  const simulatedWeatherCode = useWeatherSimulationStore(
+    (s) => s.simulatedWeatherCode
+  );
+  const effectiveCode = simulatedWeatherCode ?? weatherCode;
 
-  // Image URL sampled for the menubar tone. The gradient has no loadable image
-  // (handled live below); the cover wallpaper samples its album art; videos and
-  // the inactive state sample nothing.
+  // Image URL sampled for the menubar tone. The day/night and weather gradients
+  // have no loadable image (handled live below); the cover / lyrics wallpapers
+  // sample the now-playing album art; videos and the inactive state sample
+  // nothing.
   let sampleSource: string | null = null;
-  if (!isGradient) {
-    if (isCover) sampleSource = nowPlayingCoverUrl;
+  if (!isGradient && !isWeather) {
+    if (isCoverBased) sampleSource = nowPlayingCoverUrl;
     else if (!isVideoWallpaper) sampleSource = wallpaperSource || null;
   }
 
   const [result, setResult] = useState<WallpaperMenubarText>(() => {
     if (enabled && isGradient) return gradientMenubarText();
+    if (enabled && isWeather) return weatherMenubarText(effectiveCode);
     if (enabled && sampleSource) {
       ensurePersistedLoaded();
       const cached = luminanceCache.get(sampleSource);
@@ -120,7 +147,7 @@ export function useWallpaperMenubarText(enabled: boolean): WallpaperMenubarText 
   });
 
   useEffect(() => {
-    if (!enabled || isGradient) return;
+    if (!enabled || isGradient || isWeather) return;
 
     if (!sampleSource) {
       setResult(fallbackMenubarText(isDarkMode));
@@ -163,7 +190,7 @@ export function useWallpaperMenubarText(enabled: boolean): WallpaperMenubarText 
     return () => {
       cancelled = true;
     };
-  }, [enabled, isGradient, sampleSource, isDarkMode]);
+  }, [enabled, isGradient, isWeather, sampleSource, isDarkMode]);
 
   // Day/night gradient: derive the tone from the live top gradient color and
   // refresh on an interval so the menubar tracks the day → night transition.
@@ -176,6 +203,19 @@ export function useWallpaperMenubarText(enabled: boolean): WallpaperMenubarText 
     const id = window.setInterval(apply, GRADIENT_MENUBAR_REFRESH_MS);
     return () => window.clearInterval(id);
   }, [enabled, isGradient]);
+
+  // Weather gradient: derive the tone from the live weather sky's top color,
+  // refreshed on the minute timer (time-of-day drift) and whenever the live
+  // weather code changes (condition shifts) — mirroring the weather accent.
+  useEffect(() => {
+    if (!enabled || !isWeather) return;
+
+    const apply = () => setResult(weatherMenubarText(effectiveCode));
+
+    apply();
+    const id = window.setInterval(apply, GRADIENT_MENUBAR_REFRESH_MS);
+    return () => window.clearInterval(id);
+  }, [enabled, isWeather, effectiveCode]);
 
   return result;
 }

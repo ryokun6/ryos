@@ -9,7 +9,7 @@ interface TrafficLightButtonProps {
   color: TrafficLightColor;
   onClick: (e: React.MouseEvent) => void;
   isForeground: boolean;
-  debugMode?: boolean;
+  showResizers?: boolean;
   ariaLabel: string;
 }
 
@@ -90,7 +90,7 @@ export function TrafficLightButton({
   color,
   onClick,
   isForeground,
-  debugMode = false,
+  showResizers = false,
   ariaLabel,
 }: TrafficLightButtonProps) {
   const { accent, isAquaGlass } = useThemeFlags();
@@ -167,7 +167,7 @@ export function TrafficLightButton({
         aria-label={ariaLabel}
         className={cn(
           "absolute -inset-2 z-10 rounded-none outline-none cursor-default",
-          debugMode ? "bg-red-500/50" : "opacity-0"
+          showResizers ? "bg-red-500/50" : "opacity-0"
         )}
         onClick={(e) => {
           e.stopPropagation();
