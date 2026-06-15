@@ -32,9 +32,9 @@ const LYRICS_DOCK_CLEARANCE_GLASS = 82;
 const LYRICS_DOCK_CLEARANCE_AQUA = 72;
 const LYRICS_DOCK_CLEARANCE_WINDOWS = 42;
 const LYRICS_DOCK_CLEARANCE_DEFAULT = 16;
-// Lift the lyrics further off the dock so the bottom line has room to breathe
-// rather than hugging the dock/taskbar.
-const LYRICS_EXTRA_LIFT = 96;
+// Lift the lyrics slightly off the dock/taskbar without pushing the block too
+// high on the desktop.
+const LYRICS_EXTRA_LIFT = 48;
 // Extra clearance (px) when the iPod "pop player" (PiP) is showing: the floating
 // player is ~64px tall and sits just above the dock, so lift the lyrics past it.
 const LYRICS_PIP_CLEARANCE = 76;

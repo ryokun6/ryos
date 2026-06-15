@@ -17,7 +17,6 @@ import {
   MusicNotes,
   Sun,
   CloudSun,
-  Microphone,
 } from "@phosphor-icons/react";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { loadWallpaperManifest } from "@/utils/wallpapers";
@@ -187,6 +186,8 @@ interface SpecialTileProps {
    * it reads as centered in the space above the label.
    */
   icon?: React.ReactNode;
+  /** Optional custom decorative preview content layered over the background. */
+  children?: React.ReactNode;
   /**
    * Render a plain dark scrim (no blur) under the icon + label. Used for tiles
    * whose preview can be an arbitrary bright/busy photo (the Shuffle tiles) so
@@ -204,6 +205,7 @@ function SpecialTile({
   backgroundStyle,
   backgroundVideoUrl,
   icon,
+  children,
   scrim = false,
 }: SpecialTileProps) {
   const { play: playClick } = useSound(Sounds.BUTTON_CLICK, 0.3);
@@ -264,6 +266,7 @@ function SpecialTile({
           )}
         </>
       )}
+      {children}
       {/* Icon is centered in the tile. When a label is shown it is nudged up by
           roughly half the label height so it reads as centered in the space
           above the label; on small tiles (no label) it stays truly centered. */}
@@ -296,6 +299,40 @@ function SpecialTile({
         </span>
       )}
     </button>
+  );
+}
+
+function LyricsPreviewOverlay() {
+  return (
+    <>
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-black/20 backdrop-blur-md"
+      />
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-x-3 top-4 space-y-2"
+      >
+        {[
+          { align: "justify-start", width: "w-[70%]" },
+          { align: "justify-end", width: "w-[56%]" },
+        ].map(({ align, width }) => (
+          <span
+            key={align}
+            className={`flex w-full ${align}`}
+          >
+            <span
+              className={`block h-1.5 rounded-full ${width} bg-gradient-to-r from-white/18 via-white/55 to-white/18`}
+              style={{
+                backgroundSize: "200% 100%",
+                animation: "shimmer 2.8s infinite ease-in-out",
+                boxShadow: "0 1px 2px rgba(0,0,0,0.35)",
+              }}
+            />
+          </span>
+        ))}
+      </span>
+    </>
   );
 }
 
@@ -357,7 +394,7 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
   // Static fallback preview for the lyrics tile when nothing is playing.
   const lyricsPreview = useMemo(
     () =>
-      `linear-gradient(135deg, ${DEFAULT_COVER_PALETTE[0]} 0%, ${DEFAULT_COVER_PALETTE[2]} 50%, ${DEFAULT_COVER_PALETTE[4]} 100%)`,
+      `radial-gradient(circle at 18% 20%, rgba(255,255,255,0.28), transparent 28%), radial-gradient(circle at 78% 35%, ${DEFAULT_COVER_PALETTE[2]} 0%, transparent 38%), linear-gradient(135deg, ${DEFAULT_COVER_PALETTE[0]} 0%, ${DEFAULT_COVER_PALETTE[3]} 52%, ${DEFAULT_COVER_PALETTE[4]} 100%)`,
     []
   );
   const deriveCategoryFromWallpaper = (
@@ -789,7 +826,6 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
                 label={t("apps.control-panels.dynamicWallpapers.lyrics")}
                 isSelected={isLyricsWallpaper(currentWallpaper)}
                 onClick={() => handleWallpaperSelect(LYRICS_WALLPAPER)}
-                scrim={Boolean(nowPlaying.coverUrl)}
                 backgroundStyle={
                   nowPlaying.coverUrl
                     ? {
@@ -799,8 +835,9 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
                       }
                     : { backgroundImage: lyricsPreview }
                 }
-                icon={<Microphone className="size-6 text-white" weight="fill" />}
-              />
+              >
+                <LyricsPreviewOverlay />
+              </SpecialTile>
             </>
           ) : selectedCategory === "tiles" ? (
             <>
