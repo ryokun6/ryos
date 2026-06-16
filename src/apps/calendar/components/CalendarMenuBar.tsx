@@ -92,7 +92,12 @@ export function CalendarMenuBar({
           onClick: () => requestCloudSyncDomainCheck("calendar"),
         },
         { type: "separator" },
-        { type: "action", label: t("common.menu.close"), onClick: onClose },
+        {
+          type: "action",
+          label: t("common.menu.close"),
+          onClick: onClose,
+          shortcutId: "close",
+        },
       ],
     },
     {
@@ -104,6 +109,7 @@ export function CalendarMenuBar({
           onClick: undo,
           disabled: !canUndo,
           className: !canUndo ? "text-neutral-500" : "",
+          shortcutId: "undo",
         },
         {
           type: "action",
@@ -111,6 +117,7 @@ export function CalendarMenuBar({
           onClick: redo,
           disabled: !canRedo,
           className: !canRedo ? "text-neutral-500" : "",
+          shortcutId: "redo",
         },
         { type: "separator" },
         {

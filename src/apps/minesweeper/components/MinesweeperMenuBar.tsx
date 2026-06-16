@@ -54,6 +54,7 @@ export function MinesweeperMenuBar({
                 type: "action",
                 label: t("common.menu.close"),
                 onClick: onClose,
+                shortcutId: "close",
               },
             ],
           },

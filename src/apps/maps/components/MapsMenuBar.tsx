@@ -55,7 +55,12 @@ export function MapsMenuBar({
           className: !canUseMap ? "text-neutral-500" : undefined,
         },
         { type: "separator" },
-        { type: "action", label: t("common.menu.close"), onClick: onClose },
+        {
+          type: "action",
+          label: t("common.menu.close"),
+          onClick: onClose,
+          shortcutId: "close",
+        },
       ],
     },
     {

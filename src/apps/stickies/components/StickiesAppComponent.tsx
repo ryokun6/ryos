@@ -9,6 +9,7 @@ import { useStickiesLogic } from "../hooks/useStickiesLogic";
 import { AppHelpAboutDialogs } from "@/components/shared/AppHelpAboutDialogs";
 import { appMetadata } from "..";
 import { useAppStore } from "@/stores/useAppStore";
+import { useMenuShortcuts } from "@/hooks/useMenuShortcuts";
 import { requestCloudSyncDomainCheck } from "@/utils/cloudSyncEvents";
 
 export function StickiesAppComponent({
@@ -68,6 +69,11 @@ export function StickiesAppComponent({
       );
     };
   }, [instanceId, handleClose]);
+
+  // ⌘N New Note fires in the Electron shell (browser reserves ⌘N on the web).
+  useMenuShortcuts(instanceId, {
+    newFile: () => handleCreateNote(),
+  });
 
   // Create a new note when app is opened and no notes exist
   useEffect(() => {
