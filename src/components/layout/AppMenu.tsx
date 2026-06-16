@@ -7,6 +7,7 @@ import {
   MenubarItem,
   MenubarSeparator,
 } from "@/components/ui/menubar";
+import { ShortcutHint } from "@/components/shared/menubar/ShortcutHint";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
@@ -149,6 +150,7 @@ export function AppMenu({
             className="text-md h-6 px-3"
           >
             {t("common.appMenu.hideApp", { appName: translatedAppName })}
+            <ShortcutHint id="hide" />
           </MenubarItem>
 
           {/* Hide Others */}
@@ -157,6 +159,7 @@ export function AppMenu({
             className="text-md h-6 px-3"
           >
             {t("common.appMenu.hideOthers")}
+            <ShortcutHint id="hideOthers" />
           </MenubarItem>
 
           {/* Show All - only for multi-instance apps with minimized windows */}

@@ -14,6 +14,8 @@ import {
   MenubarRadioItem,
 } from "@/components/ui/menubar";
 import { cn } from "@/lib/utils";
+import { ShortcutHint } from "./ShortcutHint";
+import type { ShortcutId } from "@/utils/shortcuts";
 import {
   MENUBAR_ITEM_CLASS,
   MENUBAR_SEPARATOR_CLASS,
@@ -34,7 +36,10 @@ export type MenuItemDescriptor =
       label: ReactNode;
       onClick: () => void;
       disabled?: boolean;
+      /** Raw shortcut label (rendered as-is). */
       shortcut?: string;
+      /** Platform-aware shortcut id; formatted/hidden per host + environment. */
+      shortcutId?: ShortcutId;
       /** Extra classes merged onto the shared item class. */
       className?: string;
     }
@@ -82,9 +87,11 @@ function renderItems(items: MenuItemDescriptor[]) {
             className={cn(MENUBAR_ITEM_CLASS, item.className)}
           >
             {item.label}
-            {item.shortcut && (
+            {item.shortcutId ? (
+              <ShortcutHint id={item.shortcutId} />
+            ) : item.shortcut ? (
               <MenubarShortcut>{item.shortcut}</MenubarShortcut>
-            )}
+            ) : null}
           </MenubarItem>
         );
       case "checkbox":

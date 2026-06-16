@@ -69,7 +69,9 @@ export type ShortcutId =
   | "bold"
   | "italic"
   | "underline"
-  | "minimize";
+  | "minimize"
+  | "hide"
+  | "hideOthers";
 
 export const SHORTCUTS: Record<ShortcutId, ShortcutDef> = {
   newFile: { primary: { cmd: true, key: "n" }, browserReserved: true },
@@ -105,6 +107,11 @@ export const SHORTCUTS: Record<ShortcutId, ShortcutDef> = {
     browserReserved: true,
     webFallback: { alt: true, key: "m" },
   },
+  // Window/app management handled by the app-manager shell. These use Option/Alt
+  // universally (the ⌘ equivalents are reserved by the browser/OS), so model them
+  // as plain Alt combos that work on web and desktop alike.
+  hide: { primary: { alt: true, key: "h" } },
+  hideOthers: { primary: { alt: true, shift: true, key: "h" } },
 };
 
 /**

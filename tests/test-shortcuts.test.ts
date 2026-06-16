@@ -57,6 +57,14 @@ describe("formatShortcut", () => {
     expect(formatShortcut("newFolder", macApp)).toBe("⇧⌘N");
     expect(formatShortcut("newFolder", winApp)).toBe("Ctrl+Shift+N");
   });
+
+  test("global hide/hideOthers use Option/Alt on every platform + env", () => {
+    expect(formatShortcut("hide", mac)).toBe("⌥H");
+    expect(formatShortcut("hide", win)).toBe("Alt+H");
+    expect(formatShortcut("hide", macApp)).toBe("⌥H");
+    expect(formatShortcut("hideOthers", mac)).toBe("⌥⇧H");
+    expect(formatShortcut("hideOthers", win)).toBe("Alt+Shift+H");
+  });
 });
 
 describe("matchesShortcut", () => {
