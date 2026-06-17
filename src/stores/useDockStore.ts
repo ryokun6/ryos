@@ -1,3 +1,4 @@
+import { STORE_STORAGE_KEYS } from "@/config/storageKeys";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { resolveAppId, type AppId } from "@/config/appRegistryData";
@@ -183,7 +184,7 @@ export const useDockStore = create<DockStoreState>()(
       },
     }),
     {
-      name: "dock-storage",
+      name: STORE_STORAGE_KEYS.dock,
       version: DOCK_STORE_VERSION,
       storage: createJSONStorage(() => localStorage),
       migrate: (persistedState) => {

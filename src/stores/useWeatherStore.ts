@@ -1,3 +1,4 @@
+import { STORE_STORAGE_KEYS } from "@/config/storageKeys";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import {
@@ -165,7 +166,7 @@ export const useWeatherStore = create<WeatherStoreState>()(
       },
     }),
     {
-      name: "ryos:weather",
+      name: STORE_STORAGE_KEYS.weather,
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => {
         const entries = Object.entries(state.entries)

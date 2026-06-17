@@ -1,3 +1,4 @@
+import { STORE_STORAGE_KEYS } from "@/config/storageKeys";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
@@ -139,7 +140,7 @@ interface SynthStoreState {
 }
 
 const STORE_VERSION = 1;
-const STORE_NAME = "ryos:synth";
+const STORE_NAME = STORE_STORAGE_KEYS.synth;
 
 // Helper to get values from old localStorage keys
 const getOldPresets = (): SynthPreset[] => {

@@ -1,3 +1,4 @@
+import { LEGACY_LOCAL_STORAGE_KEYS, LOCAL_STORAGE_KEYS } from "@/config/storageKeys";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { AppProps } from "@/apps/base/types";
 import { AppWindowShell } from "@/components/shared/AppWindowShell";
@@ -376,8 +377,8 @@ function TextEditContent({
       setHasUnsavedChanges(false);
 
       // Check both new and legacy keys
-      const pendingFileOpen = localStorage.getItem("ryos:pending-file-open") || 
-                              localStorage.getItem("pending_file_open");
+      const pendingFileOpen = localStorage.getItem(LOCAL_STORAGE_KEYS.handoff.pendingFileOpen) ||
+                              localStorage.getItem(LEGACY_LOCAL_STORAGE_KEYS.textEdit.pendingFileOpen);
       if (pendingFileOpen) {
         try {
           const { path, content } = JSON.parse(pendingFileOpen);
@@ -396,8 +397,8 @@ function TextEditContent({
         } catch (e) {
           console.error("Failed to parse pending file open data:", e);
         } finally {
-          localStorage.removeItem("ryos:pending-file-open");
-          localStorage.removeItem("pending_file_open");
+          localStorage.removeItem(LOCAL_STORAGE_KEYS.handoff.pendingFileOpen);
+          localStorage.removeItem(LEGACY_LOCAL_STORAGE_KEYS.textEdit.pendingFileOpen);
         }
       }
     }

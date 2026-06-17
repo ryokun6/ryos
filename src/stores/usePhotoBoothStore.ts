@@ -1,3 +1,4 @@
+import { STORE_STORAGE_KEYS } from "@/config/storageKeys";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
@@ -16,7 +17,7 @@ interface PhotoBoothStoreState {
 }
 
 const STORE_VERSION = 1;
-const STORE_NAME = "ryos:photo-booth";
+const STORE_NAME = STORE_STORAGE_KEYS.photoBooth;
 
 export const usePhotoBoothStore = create<PhotoBoothStoreState>()(
   persist(

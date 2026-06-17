@@ -1,3 +1,4 @@
+import { STORE_STORAGE_KEYS } from "@/config/storageKeys";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
@@ -312,7 +313,7 @@ export const useCalendarStore = create<CalendarStoreState>()(
       };
     },
     {
-      name: "calendar-storage",
+      name: STORE_STORAGE_KEYS.calendar,
       // Do not persist viewport — opening Calendar should show today, not last session.
       partialize: (state) => ({
         events: state.events,

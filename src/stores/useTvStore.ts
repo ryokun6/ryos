@@ -1,3 +1,4 @@
+import { STORE_STORAGE_KEYS } from "@/config/storageKeys";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import {
@@ -349,7 +350,7 @@ export const useTvStore = create<TvStoreState>()(
       },
     }),
     {
-      name: "ryos:tv",
+      name: STORE_STORAGE_KEYS.tv,
       version: 5,
       migrate: (persisted, version) => {
         if (!persisted || typeof persisted !== "object") {

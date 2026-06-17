@@ -1,3 +1,4 @@
+import { STORE_STORAGE_KEYS } from "@/config/storageKeys";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
@@ -376,7 +377,7 @@ export const useInfinitePcStore = create<InfinitePcStoreState>()(
       setIsEmulatorLoaded: (loaded) => set({ isEmulatorLoaded: loaded }),
     }),
     {
-      name: "ryos:pc",
+      name: STORE_STORAGE_KEYS.infinitePc,
       version: 1,
       partialize: () => ({}),
     }

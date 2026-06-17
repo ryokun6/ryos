@@ -1,3 +1,4 @@
+import { STORE_STORAGE_KEYS } from "@/config/storageKeys";
 import { create } from "zustand";
 import { useStoreShallow } from "./helpers";
 import { persist } from "zustand/middleware";
@@ -2395,7 +2396,7 @@ export const useIpodStore = create<IpodState>()(
       setIpodMenuMode: (menuMode) => set({ ipodMenuMode: menuMode }),
     }),
     {
-      name: "ryos:ipod", // Unique name for localStorage persistence
+      name: STORE_STORAGE_KEYS.ipod, // Unique name for localStorage persistence
       version: CURRENT_IPOD_STORE_VERSION, // Set the current version
       // Write-behind storage: the YouTube track library used to be
       // JSON.stringify'd and written synchronously on every persisted

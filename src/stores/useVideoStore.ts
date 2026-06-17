@@ -1,3 +1,4 @@
+import { STORE_STORAGE_KEYS } from "@/config/storageKeys";
 import { create } from "zustand";
 import { useStoreShallow } from "./helpers";
 import { persist } from "zustand/middleware";
@@ -214,7 +215,7 @@ export const useVideoStore = create<VideoStoreState>()(
       },
     }),
     {
-      name: "ryos:videos",
+      name: STORE_STORAGE_KEYS.videos,
       version: CURRENT_VIDEO_STORE_VERSION,
       migrate: () => {
         console.log(

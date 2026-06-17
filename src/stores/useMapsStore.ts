@@ -1,3 +1,4 @@
+import { STORE_STORAGE_KEYS } from "@/config/storageKeys";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import type { SavedPlace } from "@/apps/maps/utils/types";
@@ -5,7 +6,7 @@ import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 
 export type { SavedPlace } from "@/apps/maps/utils/types";
 
-const STORE_NAME = "ryos:maps:v1";
+const STORE_NAME = STORE_STORAGE_KEYS.maps;
 const STORE_VERSION = 2;
 const RECENTS_LIMIT = 10;
 

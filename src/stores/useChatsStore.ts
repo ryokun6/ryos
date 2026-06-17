@@ -1,3 +1,4 @@
+import { LOCAL_STORAGE_KEYS, STORE_STORAGE_KEYS } from "@/config/storageKeys";
 import { create } from "zustand";
 import { useStoreShallow } from "./helpers";
 import { persist } from "zustand/middleware";
@@ -33,7 +34,7 @@ import {
 import type { CreateRoomIrcOptions } from "@/shared/contracts/chat";
 
 // Username recovery - plain text, username is public info
-const USERNAME_RECOVERY_KEY = "_usr_recovery_key_";
+const USERNAME_RECOVERY_KEY = LOCAL_STORAGE_KEYS.auth.usernameRecovery;
 
 const MESSAGE_HISTORY_CAP = 500;
 
@@ -366,7 +367,7 @@ const getInitialState = (): Omit<
 };
 
 const STORE_VERSION = 3;
-const STORE_NAME = "ryos:chats";
+const STORE_NAME = STORE_STORAGE_KEYS.chats;
 
 export const useChatsStore = create<ChatsStoreState>()(
   persist(

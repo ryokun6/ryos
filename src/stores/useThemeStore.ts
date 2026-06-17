@@ -1,3 +1,4 @@
+import { LEGACY_LOCAL_STORAGE_KEYS, LOCAL_STORAGE_KEYS } from "@/config/storageKeys";
 import { create } from "zustand";
 import {
   getOsMacChrome,
@@ -260,8 +261,8 @@ async function ensureLegacyCss(theme: OsThemeId) {
 }
 
 // Storage keys
-const THEME_KEY = "ryos:theme";
-const LEGACY_THEME_KEY = "os_theme";
+const THEME_KEY = LOCAL_STORAGE_KEYS.theme.current;
+const LEGACY_THEME_KEY = LEGACY_LOCAL_STORAGE_KEYS.theme.current;
 /**
  * Per-theme dark-mode preferences, keyed by theme id.
  * Stored as a single JSON blob so settings sync (which round-trips localStorage)
@@ -270,31 +271,31 @@ const LEGACY_THEME_KEY = "os_theme";
  * Values are `DarkModePreference` strings. Older builds wrote booleans; the
  * reader coerces those to `"dark"` / `"light"` so upgrades are seamless.
  */
-const DARK_MODE_KEY = "ryos:theme:dark";
+const DARK_MODE_KEY = LOCAL_STORAGE_KEYS.theme.darkMode;
 /**
  * Per-theme accent-color preferences, keyed by theme id. Stored as a single
  * JSON blob (same rationale as `DARK_MODE_KEY`) so it round-trips through the
  * settings-sync localStorage snapshot without a dedicated section.
  */
-const ACCENT_KEY = "ryos:theme:accent";
+const ACCENT_KEY = LOCAL_STORAGE_KEYS.theme.accent;
 /**
  * Aqua surface material ("classic" vs "glass"). Single flat value (only the
  * `macosx` chrome reads it). Stored as a plain string so it round-trips through
  * the settings-sync localStorage snapshot alongside the other theme keys.
  */
-const AQUA_MATERIAL_KEY = "ryos:theme:aqua-material";
+const AQUA_MATERIAL_KEY = LOCAL_STORAGE_KEYS.theme.aquaMaterial;
 /**
  * Debug-only global UI font override. The default removes the inline CSS
  * custom property so the active theme token remains the source of truth.
  */
-const SYSTEM_FONT_KEY = "ryos:theme:system-font";
+const SYSTEM_FONT_KEY = LOCAL_STORAGE_KEYS.theme.systemFont;
 /**
  * Last color sampled from the active wallpaper for the `"wallpaper"` accent.
  * Cached so a non-default-accent reload paints the right color immediately
  * (the sampler re-derives it from the wallpaper shortly after, in case the
  * wallpaper changed while away). Device-local — not part of settings sync.
  */
-const WALLPAPER_ACCENT_COLOR_KEY = "ryos:theme:accent:wallpaper-color";
+const WALLPAPER_ACCENT_COLOR_KEY = LOCAL_STORAGE_KEYS.theme.wallpaperAccentColor;
 
 function safeReadWallpaperAccentColor(): string | null {
   try {

@@ -1,3 +1,4 @@
+import { STORE_STORAGE_KEYS } from "@/config/storageKeys";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { Soundboard, SoundSlot, PlaybackState } from "@/types/types";
@@ -45,7 +46,7 @@ export interface SoundboardStoreState {
 }
 
 const SOUNDBOARD_STORE_VERSION = 1;
-const SOUNDBOARD_STORE_NAME = "ryos:soundboard";
+const SOUNDBOARD_STORE_NAME = STORE_STORAGE_KEYS.soundboard;
 
 export const useSoundboardStore = create<SoundboardStoreState>()(
   persist(

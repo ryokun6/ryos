@@ -1,3 +1,4 @@
+import { STORE_STORAGE_KEYS } from "@/config/storageKeys";
 import { create } from "zustand";
 import { useStoreShallow } from "./helpers";
 import { persist } from "zustand/middleware";
@@ -899,7 +900,7 @@ export const useInternetExplorerStore = create<InternetExplorerStore>()(
       updateBrowserState: () => {},
     }),
     {
-      name: "ryos:internet-explorer",
+      name: STORE_STORAGE_KEYS.internetExplorer,
       version: CURRENT_IE_STORE_VERSION,
       partialize: (state) => ({
         url: state.url,

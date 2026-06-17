@@ -1,3 +1,4 @@
+import { LEGACY_LOCAL_STORAGE_KEYS, LOCAL_STORAGE_KEYS } from "@/config/storageKeys";
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useAppHelpAboutDialogs } from "@/hooks/useAppHelpAboutDialogs";
 import type {
@@ -215,8 +216,8 @@ export function useFinderLogic({
     const typedInitialData = initialData as FinderInitialData | undefined;
     // Try new key first, fall back to legacy
     const storedPath =
-      localStorage.getItem("ryos:app:finder:initial-path") ||
-      localStorage.getItem("app_finder_initialPath");
+      localStorage.getItem(LOCAL_STORAGE_KEYS.handoff.finderInitialPath) ||
+      localStorage.getItem(LEGACY_LOCAL_STORAGE_KEYS.finder.initialPath);
     const initialPath = typedInitialData?.path || storedPath || "/";
     createFinderInstance(instanceId, initialPath);
 
@@ -230,8 +231,8 @@ export function useFinderLogic({
 
     // Clear the localStorage if we used it
     if (storedPath) {
-      localStorage.removeItem("ryos:app:finder:initial-path");
-      localStorage.removeItem("app_finder_initialPath");
+      localStorage.removeItem(LOCAL_STORAGE_KEYS.handoff.finderInitialPath);
+      localStorage.removeItem(LEGACY_LOCAL_STORAGE_KEYS.finder.initialPath);
     }
   }, [
     instanceId,

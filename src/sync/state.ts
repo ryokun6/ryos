@@ -8,11 +8,12 @@
  * is needed and unsynced changes survive reloads for free.
  */
 
+import { LOCAL_STORAGE_KEYS } from "@/config/storageKeys";
 import { nextHlc } from "@/shared/sync2/hlc";
 import type { SyncNamespace } from "@/shared/sync2/namespaces";
 import { getSyncKeyNamespace } from "@/shared/sync2/namespaces";
 
-const CLIENT_ID_KEY = "ryos:sync2:client-id";
+const CLIENT_ID_KEY = LOCAL_STORAGE_KEYS.sync.clientId;
 
 let inMemoryClientId: string | null = null;
 
@@ -55,7 +56,7 @@ interface PersistedSyncState {
 }
 
 function storageKey(username: string): string {
-  return `ryos:sync2:state:${username.toLowerCase()}`;
+  return LOCAL_STORAGE_KEYS.sync.stateForUser(username);
 }
 
 export class SyncClientState {

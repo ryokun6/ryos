@@ -1,3 +1,4 @@
+import { STORE_STORAGE_KEYS } from "@/config/storageKeys";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { SetStateAction } from "react";
@@ -88,7 +89,7 @@ const CURRENT_KARAOKE_STORE_VERSION = 3; // Independent displayMode from iPod st
 
 function readLegacyIpodDisplayMode(): DisplayMode {
   try {
-    const ipodRaw = localStorage.getItem("ryos:ipod");
+    const ipodRaw = localStorage.getItem(STORE_STORAGE_KEYS.ipod);
     if (!ipodRaw) return DisplayMode.Video;
     const parsed = JSON.parse(ipodRaw) as {
       state?: { displayMode?: string };
@@ -259,7 +260,7 @@ export const useKaraokeStore = create<KaraokeState>()(
       setDisplayMode: (mode) => set({ displayMode: mode }),
     }),
     {
-      name: "ryos:karaoke",
+      name: STORE_STORAGE_KEYS.karaoke,
       version: CURRENT_KARAOKE_STORE_VERSION,
       partialize: (state) => ({
         currentSongId: state.currentSongId,

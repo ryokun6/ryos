@@ -1,5 +1,6 @@
-export const BOOT_MESSAGE_KEY = "ryos:nextBootMessage";
-export const BOOT_DEBUG_KEY = "ryos:bootDebugMode";
+import { SESSION_STORAGE_KEYS } from "@/config/storageKeys";
+export const BOOT_MESSAGE_KEY = SESSION_STORAGE_KEYS.boot.nextMessage;
+export const BOOT_DEBUG_KEY = SESSION_STORAGE_KEYS.boot.debugMode;
 
 export const setNextBootMessage = (message: string, debugMode = false): void => {
   try {

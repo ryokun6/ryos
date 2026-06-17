@@ -8,9 +8,10 @@
  * stay in sync; the inline index.html script mirrors the same keys/limits.
  */
 
-export const RELOAD_COUNT_KEY = "ryos:reload-count";
-export const RELOAD_WINDOW_KEY = "ryos:reload-window-start";
-export const STALE_RELOAD_KEY = "ryos-stale-reload";
+import { SESSION_STORAGE_KEYS } from "@/config/storageKeys";
+export const RELOAD_COUNT_KEY = SESSION_STORAGE_KEYS.reload.count;
+export const RELOAD_WINDOW_KEY = SESSION_STORAGE_KEYS.reload.windowStart;
+export const STALE_RELOAD_KEY = SESSION_STORAGE_KEYS.reload.staleCooldown;
 
 export const MAX_RELOADS_PER_WINDOW = 3;
 export const RELOAD_WINDOW_MS = 60_000; // 1 minute

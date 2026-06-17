@@ -1,3 +1,4 @@
+import { STORE_STORAGE_KEYS } from "@/config/storageKeys";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { JSONContent } from "@tiptap/core";
@@ -98,7 +99,7 @@ export const useTextEditStore = create<TextEditStoreState>()(
       },
     }),
     {
-      name: "ryos:textedit",
+      name: STORE_STORAGE_KEYS.textEdit,
       partialize: (state) => ({
         instances: Object.fromEntries(
           Object.entries(state.instances).map(([id, inst]) => {

@@ -1,3 +1,4 @@
+import { STORE_STORAGE_KEYS } from "@/config/storageKeys";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
@@ -87,7 +88,7 @@ export const usePcStore = create<PcStoreState>()(
       setGames: (games) => set({ games }),
     }),
     {
-      name: "ryos:pc",
+      name: STORE_STORAGE_KEYS.pc,
       version: 6,
       partialize: (state) => ({ games: state.games }),
       migrate: () => {

@@ -1,3 +1,4 @@
+import { STORE_STORAGE_KEYS } from "@/config/storageKeys";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
@@ -40,7 +41,7 @@ export const useAppletStore = create<AppletStoreState>()(
       },
     }),
     {
-      name: "applet-storage",
+      name: STORE_STORAGE_KEYS.applet,
       storage: createJSONStorage(() => localStorage),
     }
   )

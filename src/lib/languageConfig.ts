@@ -1,3 +1,4 @@
+import { LOCAL_STORAGE_KEYS } from "@/config/storageKeys";
 export const SUPPORTED_LANGUAGES = [
   "en",
   "zh-TW",
@@ -16,8 +17,8 @@ export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 export const DEFAULT_LANGUAGE: SupportedLanguage = "en";
 
 // Storage keys
-const LANGUAGE_KEY = "ryos:language";
-const LANGUAGE_INITIALIZED_KEY = "ryos:language-initialized";
+const LANGUAGE_KEY = LOCAL_STORAGE_KEYS.language.current;
+const LANGUAGE_INITIALIZED_KEY = LOCAL_STORAGE_KEYS.language.initialized;
 
 export const isSupportedLanguage = (
   language: string | null | undefined

@@ -1,3 +1,4 @@
+import { LOCAL_STORAGE_KEYS } from "@/config/storageKeys";
 import { useEffect, useState } from "react";
 import { useWallpaper } from "@/hooks/useWallpaper";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
@@ -47,7 +48,7 @@ function menubarTextForLuminance(luminance: number): WallpaperMenubarText {
  * synchronously on remount (app switches) and on reload (localStorage) instead
  * of flashing the fallback color while the wallpaper image decodes.
  */
-const STORAGE_KEY = "ryos:wallpaper-menubar-luminance";
+const STORAGE_KEY = LOCAL_STORAGE_KEYS.cache.wallpaperMenubarLuminance;
 const MAX_PERSISTED_ENTRIES = 20;
 
 const luminanceCache = new Map<string, number>();

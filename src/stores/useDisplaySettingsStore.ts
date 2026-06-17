@@ -1,3 +1,4 @@
+import { STORE_STORAGE_KEYS } from "@/config/storageKeys";
 import { create } from "zustand";
 import { useStoreShallow } from "./helpers";
 import { persist } from "zustand/middleware";
@@ -331,7 +332,7 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
         set((s) => ({ customWallpapersRevision: s.customWallpapersRevision + 1 })),
     }),
     {
-      name: "ryos:display-settings",
+      name: STORE_STORAGE_KEYS.displaySettings,
       version: STORE_VERSION,
       partialize: (state) => ({
         displayMode: state.displayMode,

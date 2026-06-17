@@ -1,3 +1,4 @@
+import { ANALYTICS_LOCAL_STORAGE_KEYS, SESSION_STORAGE_KEYS } from "@/config/storageKeys";
 import { getApiUrl } from "@/utils/platform";
 
 /**
@@ -222,8 +223,8 @@ interface QueuedAnalyticsEvent {
 }
 
 const ANALYTICS_ENDPOINT = "/api/analytics/events";
-const SESSION_KEY = "ryos:analytics:session-id";
-const CLIENT_KEY = "ryos:analytics:client-id";
+const SESSION_KEY = SESSION_STORAGE_KEYS.analytics.sessionId;
+const CLIENT_KEY = ANALYTICS_LOCAL_STORAGE_KEYS.clientId;
 const MAX_QUEUE_SIZE = 200;
 const MAX_BATCH_SIZE = 20;
 const FLUSH_DELAY_MS = 1500;

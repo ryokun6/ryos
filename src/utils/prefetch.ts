@@ -12,6 +12,7 @@
  * 3. Periodic checks (every 5 min) - same as #2
  */
 
+import { LOCAL_STORAGE_KEYS } from "@/config/storageKeys";
 import { toast } from "sonner";
 import { createElement } from "react";
 import { PrefetchToast, PrefetchCompleteToast } from "@/components/shared/PrefetchToast";
@@ -31,7 +32,7 @@ import { createVisibilityGatedInterval } from "@/utils/backgroundTask";
 import { getSupportedDesktopDownloadTarget } from "@/utils/desktopDownload";
 
 // Storage key for manifest timestamp (for cache invalidation)
-const MANIFEST_KEY = 'ryos:manifest-timestamp';
+const MANIFEST_KEY = LOCAL_STORAGE_KEYS.cache.prefetchManifestTimestamp;
 
 // Periodic update check interval (5 minutes)
 const UPDATE_CHECK_INTERVAL = 5 * 60 * 1000;

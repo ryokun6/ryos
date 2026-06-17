@@ -1,3 +1,4 @@
+import { STORE_STORAGE_KEYS } from "@/config/storageKeys";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import {
@@ -164,7 +165,7 @@ export const useContactsStore = create<ContactsStoreState>()(
       },
     }),
     {
-      name: "contacts-storage",
+      name: STORE_STORAGE_KEYS.contacts,
       merge: (persistedState, currentState) => {
         const persisted = persistedState as Partial<ContactsStoreState> | undefined;
         const contacts = seedDefaultContacts(

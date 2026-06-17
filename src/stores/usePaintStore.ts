@@ -1,3 +1,4 @@
+import { STORE_STORAGE_KEYS } from "@/config/storageKeys";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
@@ -8,7 +9,7 @@ interface PaintStoreState {
 }
 
 const STORE_VERSION = 1;
-const STORE_NAME = "ryos:paint";
+const STORE_NAME = STORE_STORAGE_KEYS.paint;
 
 export const usePaintStore = create<PaintStoreState>()(
   persist(

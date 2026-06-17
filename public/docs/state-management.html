@@ -364,7 +364,7 @@
 <h3>Core System Stores</h3>
 <table><thead><tr><th>Store</th><th>Persistence Key</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useAppStore</code></td><td><code>ryos:app-store</code></td><td>Instance-based window management, boot state, AI model selection, recent apps/documents, expose mode</td></tr><tr><td><code>useFilesStore</code></td><td><code>ryos:files</code></td><td>Virtual filesystem metadata</td></tr><tr><td><code>useThemeStore</code></td><td><code>ryos:theme</code> (manual, with <code>os_theme</code> legacy fallback)</td><td>OS theme selection + legacy Windows CSS loading</td></tr><tr><td><code>useDisplaySettingsStore</code></td><td><code>ryos:display-settings</code></td><td>Wallpaper, shaders, screen saver</td></tr><tr><td><code>useDockStore</code></td><td><code>dock-storage</code></td><td>Dock pinned items, scale, visibility</td></tr><tr><td><code>useAudioSettingsStore</code></td><td><code>ryos:audio-settings</code></td><td>Volume controls, audio feature toggles</td></tr><tr><td><code>useLanguageStore</code></td><td><code>ryos:language</code> + <code>ryos:language-initialized</code> (manual)</td><td>UI language preference and first-run detection</td></tr><tr><td><code>useSpotlightStore</code></td><td>None (ephemeral UI state)</td><td>Spotlight open/query/selection UI state</td></tr><tr><td><code>useCloudSyncStore</code></td><td><code>ryos:cloud-sync</code></td><td>Cloud sync preferences, per-category status, deletion markers</td></tr><tr><td><code>useUndoRedoStore</code></td><td>None (ephemeral)</td><td>Per-instance undo/redo handler registry for foreground dispatch</td></tr></tbody></table>
 <h3>App-Specific Stores</h3>
-<table><thead><tr><th>Store</th><th>Persistence Key</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useChatsStore</code></td><td><code>ryos:chats</code></td><td>Chat rooms, messages, authentication</td></tr><tr><td><code>useIpodStore</code></td><td><code>ryos:ipod</code></td><td>Music library, playback state, lyrics</td></tr><tr><td><code>useVideoStore</code></td><td><code>ryos:videos</code></td><td>Video library, playback</td></tr><tr><td><code>useKaraokeStore</code></td><td><code>ryos:karaoke</code></td><td>Karaoke session state</td></tr><tr><td><code>useTerminalStore</code></td><td><code>ryos:terminal</code></td><td>Command history, vim state</td></tr><tr><td><code>useSynthStore</code></td><td><code>ryos:synth</code></td><td>Synthesizer presets</td></tr><tr><td><code>useSoundboardStore</code></td><td><code>ryos:soundboard</code></td><td>Soundboard slots and recordings</td></tr><tr><td><code>useAppletStore</code></td><td><code>applet-storage</code></td><td>Applet window dimensions</td></tr><tr><td><code>useFinderStore</code></td><td><code>ryos:finder</code></td><td>Finder instances, view preferences</td></tr><tr><td><code>useTextEditStore</code></td><td><code>ryos:textedit</code></td><td>Recent documents</td></tr><tr><td><code>useInternetExplorerStore</code></td><td><code>ryos:internet-explorer</code></td><td>Favorites, history</td></tr><tr><td><code>usePaintStore</code></td><td><code>ryos:paint</code></td><td>Tool settings</td></tr><tr><td><code>usePhotoBoothStore</code></td><td><code>ryos:photobooth</code></td><td>Recent photos</td></tr><tr><td><code>usePcStore</code></td><td><code>ryos:pc</code></td><td>Virtual PC state</td></tr><tr><td><code>useStickiesStore</code></td><td><code>stickies-storage</code></td><td>Sticky notes and note layout</td></tr><tr><td><code>useCalendarStore</code></td><td><code>calendar-storage</code></td><td>Calendar events, todo items, groups</td></tr><tr><td><code>useContactsStore</code></td><td><code>contacts-storage</code></td><td>Address book contacts, vCard import/export</td></tr><tr><td><code>useDashboardStore</code></td><td><code>dashboard-storage</code></td><td>Dashboard widget layout and configuration</td></tr><tr><td><code>useListenSessionStore</code></td><td>None (ephemeral)</td><td>Listen Together session state and Pusher sync</td></tr><tr><td><code>useInfiniteMacStore</code></td><td><code>ryos:infinite-mac</code></td><td>Infinite Mac runtime preferences</td></tr></tbody></table>
+<table><thead><tr><th>Store</th><th>Persistence Key</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useChatsStore</code></td><td><code>ryos:chats</code></td><td>Chat rooms, messages, authentication</td></tr><tr><td><code>useIpodStore</code></td><td><code>ryos:ipod</code></td><td>Music library, playback state, lyrics</td></tr><tr><td><code>useVideoStore</code></td><td><code>ryos:videos</code></td><td>Video library, playback</td></tr><tr><td><code>useKaraokeStore</code></td><td><code>ryos:karaoke</code></td><td>Karaoke session state</td></tr><tr><td><code>useTerminalStore</code></td><td><code>ryos:terminal</code></td><td>Command history, vim state</td></tr><tr><td><code>useSynthStore</code></td><td><code>ryos:synth</code></td><td>Synthesizer presets</td></tr><tr><td><code>useSoundboardStore</code></td><td><code>ryos:soundboard</code></td><td>Soundboard slots and recordings</td></tr><tr><td><code>useAppletStore</code></td><td><code>applet-storage</code></td><td>Applet window dimensions</td></tr><tr><td><code>useFinderStore</code></td><td><code>ryos:finder</code></td><td>Finder instances, view preferences</td></tr><tr><td><code>useTextEditStore</code></td><td><code>ryos:textedit</code></td><td>Recent documents</td></tr><tr><td><code>useInternetExplorerStore</code></td><td><code>ryos:internet-explorer</code></td><td>Favorites, history</td></tr><tr><td><code>usePaintStore</code></td><td><code>ryos:paint</code></td><td>Tool settings</td></tr><tr><td><code>usePhotoBoothStore</code></td><td><code>ryos:photo-booth</code></td><td>Recent photos</td></tr><tr><td><code>usePcStore</code></td><td><code>ryos:pc</code></td><td>DOS game catalog</td></tr><tr><td><code>useStickiesStore</code></td><td><code>stickies-storage</code></td><td>Sticky notes and note layout</td></tr><tr><td><code>useCalendarStore</code></td><td><code>calendar-storage</code></td><td>Calendar events, todo items, groups</td></tr><tr><td><code>useContactsStore</code></td><td><code>contacts-storage</code></td><td>Address book contacts, vCard import/export</td></tr><tr><td><code>useDashboardStore</code></td><td><code>dashboard-storage</code></td><td>Dashboard widget layout and configuration</td></tr><tr><td><code>useListenSessionStore</code></td><td>None (ephemeral)</td><td>Listen Together session state and Pusher sync</td></tr><tr><td><code>useInfiniteMacStore</code></td><td><code>ryos:infinite-mac</code></td><td>Infinite Mac runtime preferences</td></tr><tr><td><code>useInfinitePcStore</code></td><td><code>ryos:store:infinite-pc</code></td><td>Virtual PC runtime state</td></tr><tr><td><code>useMapsStore</code></td><td><code>ryos:maps:v1</code></td><td>Maps favorites and home/work settings</td></tr><tr><td><code>useWeatherStore</code></td><td><code>ryos:weather</code></td><td>Weather lookup preferences</td></tr></tbody></table>
 <h3>Store Architecture Diagram</h3>
 <pre class="mermaid">graph TD
     subgraph Core["Core System"]
@@ -471,10 +471,12 @@ export const useExampleStore = create&lt;ExampleState&gt;()(
 <h2>Persistence Strategies</h2>
 <h3>localStorage Persistence (via Zustand <code>persist</code>)</h3>
 <p>Used for settings, preferences, and lightweight metadata:</p>
-<pre><code>persist(
+<pre><code>import { STORE_STORAGE_KEYS } from "@/config/storageKeys";
+
+persist(
   (set) =&gt; ({ /* state and actions */ }),
   {
-    name: "ryos:audio-settings",
+    name: STORE_STORAGE_KEYS.audioSettings,
     version: STORE_VERSION,
     partialize: (state) =&gt; ({
       masterVolume: state.masterVolume,
@@ -483,6 +485,11 @@ export const useExampleStore = create&lt;ExampleState&gt;()(
     }),
   }
 )</code></pre>
+<h3>Browser Storage Key Registry</h3>
+<p>All production TypeScript callers should import storage keys from <code><a href="https://github.com/ryokun6/ryos/blob/main/src/config/storageKeys.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/config/storageKeys.ts</a></code>. The registry groups active keys by owner, separates legacy aliases, and exposes dynamic builders for per-app handoff keys and per-user sync state keys.</p>
+<p>Current audit findings:</p>
+<table><thead><tr><th>Bucket</th><th>Current shape</th><th>Notes</th></tr></thead><tbody><tr><td>Zustand stores</td><td><code>STORE_STORAGE_KEYS</code></td><td>Shipped names remain stable to preserve local user data. New store keys should use <code>ryos:store:&lt;owner&gt;</code> unless migrating an existing key.</td></tr><tr><td>Preferences</td><td><code>LOCAL_STORAGE_KEYS.theme</code>, <code>LOCAL_STORAGE_KEYS.language</code></td><td>Scalar settings should use <code>ryos:prefs:&lt;domain&gt;:&lt;name&gt;</code> for new domains; current theme/language names are preserved for compatibility.</td></tr><tr><td>Caches</td><td><code>LOCAL_STORAGE_KEYS.cache</code></td><td>New cache keys should use <code>ryos:cache:&lt;owner&gt;:&lt;name&gt;:vN</code> and be safe to delete.</td></tr><tr><td>Handoffs</td><td><code>LOCAL_STORAGE_KEYS.handoff</code></td><td>New one-shot app handoffs should use <code>ryos:handoff:&lt;target&gt;:&lt;name&gt;</code>; existing Finder/TextEdit keys dual-read legacy aliases.</td></tr><tr><td>Migrations</td><td><code>LOCAL_STORAGE_KEYS.migrations</code></td><td>Migration flags should use <code>ryos:migration:&lt;domain&gt;:&lt;name&gt;:vN</code> for new migrations.</td></tr><tr><td>Session-only</td><td><code>SESSION_STORAGE_KEYS</code></td><td>New per-tab keys should use <code>ryos:session:&lt;owner&gt;:&lt;name&gt;</code>.</td></tr><tr><td>Legacy aliases</td><td><code>LEGACY_LOCAL_STORAGE_KEYS</code></td><td>Do not introduce new unprefixed keys; dual-read old keys, write the active key, then remove the old key.</td></tr></tbody></table>
+<p>The registry also prevents active-key collisions. <code>usePcStore</code> keeps the shipped <code>ryos:pc</code> DOS game key, while <code>useInfinitePcStore</code> now uses <code>ryos:store:infinite-pc</code> because it had no meaningful persisted payload and was previously colliding with <code>usePcStore</code>.</p>
 <h3>IndexedDB Integration</h3>
 <p>Used for large binary data (images, documents, applets):</p>
 <pre><code>// IndexedDB stores
@@ -530,18 +537,23 @@ interface StoredContent {
     CACHE -.->|cached JSON| FS</pre>
 <h3>Manual localStorage (Theme Store)</h3>
 <p>Some stores use manual persistence for more control:</p>
-<pre><code>setTheme: (theme) =&gt; {
+<pre><code>import {
+  LEGACY_LOCAL_STORAGE_KEYS,
+  LOCAL_STORAGE_KEYS,
+} from "@/config/storageKeys";
+
+setTheme: (theme) =&gt; {
   set({ current: theme });
-  localStorage.setItem("ryos:theme", theme);   // Current key
-  localStorage.removeItem("os_theme");         // Cleanup legacy key
+  localStorage.setItem(LOCAL_STORAGE_KEYS.theme.current, theme);
+  localStorage.removeItem(LEGACY_LOCAL_STORAGE_KEYS.theme.current);
   document.documentElement.dataset.osTheme = theme;
   ensureLegacyCss(theme);
 },
 
 hydrate: () =&gt; {
   const saved =
-    localStorage.getItem("ryos:theme") ??
-    localStorage.getItem("os_theme");          // Legacy fallback
+    localStorage.getItem(LOCAL_STORAGE_KEYS.theme.current) ??
+    localStorage.getItem(LEGACY_LOCAL_STORAGE_KEYS.theme.current);
   const theme = saved || "macosx";
   set({ current: theme });
   document.documentElement.dataset.osTheme = theme;
@@ -578,7 +590,7 @@ hydrate: () =&gt; {
 },</code></pre>
 <h3>Recovery Mechanisms</h3>
 <p>Username recovery uses a plain-text localStorage key to survive store resets. Auth tokens are <strong>not</strong> stored in localStorage — they live exclusively in an <code>httpOnly</code> cookie (<code>ryos_auth</code>) set by the server. On page reload the client calls <code>GET /api/auth/session</code> (the cookie is sent automatically via <code>credentials: "include"</code>) to verify the session.</p>
-<pre><code>const USERNAME_RECOVERY_KEY = "_usr_recovery_key_";
+<pre><code>const USERNAME_RECOVERY_KEY = LOCAL_STORAGE_KEYS.auth.usernameRecovery;
 
 // Recovery on rehydrate
 onRehydrateStorage: () =&gt; (state, error) =&gt; {

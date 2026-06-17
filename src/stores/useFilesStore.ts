@@ -1,3 +1,4 @@
+import { STORE_STORAGE_KEYS } from "@/config/storageKeys";
 import { create } from "zustand";
 import { useStoreShallow } from "./helpers";
 import { persist } from "zustand/middleware";
@@ -521,7 +522,7 @@ async function saveDefaultContents(
 const getEmptyFileSystemState = (): Record<string, FileSystemItem> => ({});
 
 const STORE_VERSION = 13; // System 7: show Chats, IE, Karaoke on desktop after iPod
-const STORE_NAME = "ryos:files";
+const STORE_NAME = STORE_STORAGE_KEYS.files;
 
 const DEFAULT_APPLICATIONS_FOLDER_ALIAS_NAME = "Applications";
 

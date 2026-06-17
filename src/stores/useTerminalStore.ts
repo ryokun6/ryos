@@ -1,3 +1,4 @@
+import { STORE_STORAGE_KEYS } from "@/config/storageKeys";
 import { create } from "zustand";
 import { useStoreShallow } from "./helpers";
 import { persist, createJSONStorage } from "zustand/middleware";
@@ -55,7 +56,7 @@ interface TerminalStoreState {
 }
 
 const STORE_VERSION = 1;
-const STORE_NAME = "ryos:terminal";
+const STORE_NAME = STORE_STORAGE_KEYS.terminal;
 
 export const useTerminalStore = create<TerminalStoreState>()(
   persist(

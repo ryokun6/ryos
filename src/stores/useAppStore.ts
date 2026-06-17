@@ -1,3 +1,4 @@
+import { STORE_STORAGE_KEYS } from "@/config/storageKeys";
 import { create } from "zustand";
 import { useStoreShallow } from "./helpers";
 import { persist } from "zustand/middleware";
@@ -740,7 +741,7 @@ const createUseAppStore = () =>
       },
       }),
       {
-        name: "ryos:app-store",
+        name: STORE_STORAGE_KEYS.app,
         version: CURRENT_APP_STORE_VERSION,
         partialize: (state): Partial<AppStoreState> => ({
         version: state.version,

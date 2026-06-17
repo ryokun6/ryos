@@ -1,3 +1,4 @@
+import { LOCAL_STORAGE_KEYS } from "@/config/storageKeys";
 import { useState, useCallback } from "react";
 import { markdownToHtml } from "@/utils/markdown";
 
@@ -69,7 +70,7 @@ export function useDragAndDrop({
     if (hasUnsavedChanges) {
       // Store the dropped file temporarily
       localStorage.setItem(
-        "ryos:pending-file-open",
+        LOCAL_STORAGE_KEYS.handoff.pendingFileOpen,
         JSON.stringify({
           path: filePath,
           content: content,

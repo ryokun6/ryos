@@ -1,3 +1,4 @@
+import { STORE_STORAGE_KEYS } from "@/config/storageKeys";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { useAppStore } from "@/stores/useAppStore";
@@ -39,7 +40,7 @@ interface FinderStoreState {
   getForegroundInstance: () => FinderInstance | null;
 }
 
-const STORE_NAME = "ryos:finder";
+const STORE_NAME = STORE_STORAGE_KEYS.finder;
 
 export const useFinderStore = create<FinderStoreState>()(
   persist(

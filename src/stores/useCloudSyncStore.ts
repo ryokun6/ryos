@@ -1,3 +1,4 @@
+import { STORE_STORAGE_KEYS } from "@/config/storageKeys";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import {
@@ -151,7 +152,7 @@ interface CloudSyncStoreState {
   ) => void;
 }
 
-const STORE_NAME = "ryos:cloud-sync";
+const STORE_NAME = STORE_STORAGE_KEYS.cloudSync;
 const STORE_VERSION = 14;
 
 const CATEGORY_TOGGLE_FIELDS: Record<SyncCategory, keyof CloudSyncStoreState> = {

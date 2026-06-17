@@ -1,3 +1,4 @@
+import { STORE_STORAGE_KEYS } from "@/config/storageKeys";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
@@ -115,7 +116,7 @@ export const useStickiesStore = create<StickiesState>()(
       },
     }),
     {
-      name: "stickies-storage",
+      name: STORE_STORAGE_KEYS.stickies,
     }
   )
 );

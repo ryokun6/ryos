@@ -1,3 +1,4 @@
+import { STORE_STORAGE_KEYS } from "@/config/storageKeys";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { EventColor } from "./useCalendarStore";
@@ -194,7 +195,7 @@ export const useDashboardStore = create<DashboardStoreState>()(
       },
     }),
     {
-      name: "dashboard-storage",
+      name: STORE_STORAGE_KEYS.dashboard,
       version: DASHBOARD_STORE_VERSION,
       migrate: (persistedState, version) => {
         const state = (persistedState ?? {}) as Partial<DashboardStoreState>;

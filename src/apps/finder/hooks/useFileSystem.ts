@@ -1,3 +1,4 @@
+import { LOCAL_STORAGE_KEYS } from "@/config/storageKeys";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { ensureIndexedDBInitialized, STORES, dbOperations } from "@/utils/indexedDB";
 import { getNonFinderApps, AppId, getAppIconPath } from "@/config/appRegistry";
@@ -1675,7 +1676,7 @@ export function useFileSystem(
       ]);
 
       // Clear the size/timestamp sync flag so it will run again after reset
-      localStorage.removeItem("ryos:file-size-timestamp-sync-v1");
+      localStorage.removeItem(LOCAL_STORAGE_KEYS.migrations.fileSizeTimestampSync);
 
       // Reset metadata store (this will trigger re-initialization with new UUIDs)
       resetFilesStore();
@@ -1708,7 +1709,7 @@ export function useFileSystem(
   useEffect(() => {
     const syncFileSizesAndTimestamps = async () => {
       // Check if we've already done this sync
-      const syncKey = "ryos:file-size-timestamp-sync-v1";
+      const syncKey = LOCAL_STORAGE_KEYS.migrations.fileSizeTimestampSync;
       if (localStorage.getItem(syncKey)) {
         return;
       }

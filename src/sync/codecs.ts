@@ -11,6 +11,7 @@
  * of the snapshot merge machinery.
  */
 
+import { LOCAL_STORAGE_KEYS } from "@/config/storageKeys";
 import { STORES } from "@/utils/indexedDB";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useLanguageStore } from "@/stores/useLanguageStore";
@@ -286,11 +287,11 @@ const SETTINGS_SCHEMA: SettingsSection[] = [
         field: "initialized",
         read: () =>
           typeof localStorage !== "undefined" &&
-          localStorage.getItem("ryos:language-initialized") === "true",
+          localStorage.getItem(LOCAL_STORAGE_KEYS.language.initialized) === "true",
         write: (v) => {
           if (typeof localStorage !== "undefined") {
             localStorage.setItem(
-              "ryos:language-initialized",
+              LOCAL_STORAGE_KEYS.language.initialized,
               v === true ? "true" : "false"
             );
           }

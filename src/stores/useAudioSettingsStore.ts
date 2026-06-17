@@ -1,3 +1,4 @@
+import { STORE_STORAGE_KEYS } from "@/config/storageKeys";
 import { create } from "zustand";
 import { useStoreShallow } from "./helpers";
 import { persist } from "zustand/middleware";
@@ -94,7 +95,7 @@ export const useAudioSettingsStore = create<AudioSettingsState>()(
       setSynthPreset: (v) => set({ synthPreset: v }),
     }),
     {
-      name: "ryos:audio-settings",
+      name: STORE_STORAGE_KEYS.audioSettings,
       version: STORE_VERSION,
       partialize: (state) => ({
         masterVolume: state.masterVolume,

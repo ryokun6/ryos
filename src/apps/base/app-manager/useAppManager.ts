@@ -1,3 +1,4 @@
+import { LOCAL_STORAGE_KEYS } from "@/config/storageKeys";
 import {
   useCallback,
   useEffect,
@@ -260,7 +261,7 @@ export function useAppManager({ apps }: AppManagerProps) {
       const instanceId = launchAppRef.current(appId, initialData);
 
       if (initialPath) {
-        localStorage.setItem(`ryos:app:${appId}:initial-path`, initialPath);
+        localStorage.setItem(LOCAL_STORAGE_KEYS.handoff.appInitialPath(appId), initialPath);
       }
 
       if (

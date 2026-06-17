@@ -1,3 +1,4 @@
+import { LEGACY_LOCAL_STORAGE_KEYS, LOCAL_STORAGE_KEYS, STORE_STORAGE_KEYS } from "@/config/storageKeys";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import { useAppHelpAboutDialogs } from "@/hooks/useAppHelpAboutDialogs";
@@ -947,8 +948,8 @@ export function useControlPanelsLogic({
       setCloudProgress({ phase: t("apps.control-panels.cloudSync.progress.finishing"), percent: 90 });
 
       // Handle wallpaper restore
-      if (backup.localStorage["ryos:app:settings:wallpaper"]) {
-        const wallpaper = backup.localStorage["ryos:app:settings:wallpaper"];
+      if (backup.localStorage[LEGACY_LOCAL_STORAGE_KEYS.settings.wallpaper]) {
+        const wallpaper = backup.localStorage[LEGACY_LOCAL_STORAGE_KEYS.settings.wallpaper];
         if (wallpaper) {
           setCurrentWallpaper(wallpaper);
         }
@@ -958,7 +959,7 @@ export function useControlPanelsLogic({
       // Preserve the version from the backup so Zustand doesn't
       // re-run migrations on already-current data.
       try {
-        const persistedKey = "ryos:files";
+        const persistedKey = STORE_STORAGE_KEYS.files;
         const persistedState = localStorage.getItem(persistedKey);
         if (persistedState) {
           const parsed = JSON.parse(persistedState);
@@ -1092,17 +1093,17 @@ export function useControlPanelsLogic({
     flushDebouncedPersistWrites();
     haltDebouncedPersistWrites();
     // Preserve critical recovery keys while clearing everything else
-    const fileMetadataStore = localStorage.getItem("ryos:files");
-    const usernameRecovery = localStorage.getItem("_usr_recovery_key_");
+    const fileMetadataStore = localStorage.getItem(STORE_STORAGE_KEYS.files);
+    const usernameRecovery = localStorage.getItem(LOCAL_STORAGE_KEYS.auth.usernameRecovery);
 
     clearAllAppStates();
     clearPrefetchFlag(); // Force re-prefetch on next boot
 
     if (fileMetadataStore) {
-      localStorage.setItem("ryos:files", fileMetadataStore);
+      localStorage.setItem(STORE_STORAGE_KEYS.files, fileMetadataStore);
     }
     if (usernameRecovery) {
-      localStorage.setItem("_usr_recovery_key_", usernameRecovery);
+      localStorage.setItem(LOCAL_STORAGE_KEYS.auth.usernameRecovery, usernameRecovery);
     }
 
     window.location.reload();
@@ -1334,8 +1335,8 @@ export function useControlPanelsLogic({
         }
 
         // Update wallpaper after restore
-        if (backup.localStorage["ryos:app:settings:wallpaper"]) {
-          const wallpaper = backup.localStorage["ryos:app:settings:wallpaper"];
+        if (backup.localStorage[LEGACY_LOCAL_STORAGE_KEYS.settings.wallpaper]) {
+          const wallpaper = backup.localStorage[LEGACY_LOCAL_STORAGE_KEYS.settings.wallpaper];
           if (wallpaper) {
             setCurrentWallpaper(wallpaper);
           }
@@ -1345,7 +1346,7 @@ export function useControlPanelsLogic({
           // Ensure the files store is in a safe state after restore.
           // Preserve the version from the backup so Zustand doesn't
           // re-run migrations on already-current data.
-          const persistedKey = "ryos:files";
+          const persistedKey = STORE_STORAGE_KEYS.files;
           const persistedState = localStorage.getItem(persistedKey);
 
           if (persistedState) {

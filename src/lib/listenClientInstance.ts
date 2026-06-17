@@ -1,4 +1,5 @@
-const STORAGE_KEY = "ryos:listen-client-instance";
+import { SESSION_STORAGE_KEYS } from "@/config/storageKeys";
+const STORAGE_KEY = SESSION_STORAGE_KEYS.listen.clientInstanceId;
 
 function randomId(): string {
   const bytes = new Uint8Array(12);
