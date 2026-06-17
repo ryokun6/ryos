@@ -323,7 +323,7 @@ const MenubarItem = (
         }),
         ...(isMacOSTheme && {
           borderRadius: "0px",
-          padding: isAquaGlass ? "4px 10px" : "6px 20px 6px 16px",
+          padding: isAquaGlass ? "4px 10px" : "6px 12px 6px 16px",
           margin: "1px 0",
           WebkitFontSmoothing: "antialiased",
           textShadow: "0 2px 3px rgba(0, 0, 0, 0.25)",
@@ -380,7 +380,7 @@ const MenubarCheckboxItem = (
         }),
         ...(isMacOSTheme && {
           borderRadius: "0px",
-          padding: "6px 20px 6px 32px",
+          padding: "6px 12px 6px 32px",
           margin: "1px 0",
           WebkitFontSmoothing: "antialiased",
           textShadow: "0 2px 3px rgba(0, 0, 0, 0.25)",
@@ -444,7 +444,7 @@ const MenubarRadioItem = (
         }),
         ...(isMacOSTheme && {
           borderRadius: "0px",
-          padding: "6px 20px 6px 32px",
+          padding: "6px 12px 6px 32px",
           margin: "1px 0",
           WebkitFontSmoothing: "antialiased",
           textShadow: "0 2px 3px rgba(0, 0, 0, 0.25)",
@@ -537,7 +537,9 @@ const MenubarShortcut = ({
   return (
     <span
       className={cn(
-        "ml-auto text-xs tracking-widest text-muted-foreground",
+        // Inherit the item's current text color (dimmed) so the hint flips
+        // along with the label on hover/focus instead of staying muted.
+        "ml-auto text-xs tracking-widest opacity-60",
         className
       )}
       {...props}
