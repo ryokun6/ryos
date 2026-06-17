@@ -1,5 +1,5 @@
 /**
- * Helpers for reading and updating the stored user record (`chat:users:{username}`).
+ * Helpers for reading and updating the stored user record.
  *
  * The record is persisted as a JSON string (or, on some Redis backends, an
  * already-parsed object), so callers must tolerate both shapes.
@@ -7,6 +7,7 @@
 
 import type { Redis } from "../redis.js";
 import { CHAT_USERS_PREFIX } from "./_constants.js";
+import { redisKeys } from "../../../src/shared/redisKeys.js";
 
 export interface StoredUserRecord {
   username?: string;
@@ -41,6 +42,10 @@ export function isUserBanned(userData: unknown): boolean {
   return parseStoredUser(userData)?.banned === true;
 }
 
+export function getLegacyStoredUserKey(username: string): string {
+  return `${CHAT_USERS_PREFIX}${username.toLowerCase()}`;
+}
+
 /**
  * Validate a browser-provided IANA timezone. Returns null for unknown/invalid
  * values so we never persist misleading prompt context.
@@ -67,7 +72,22 @@ export async function getStoredUserRecord(
   redis: Redis,
   username: string
 ): Promise<StoredUserRecord | null> {
-  return parseStoredUser(await redis.get(`${CHAT_USERS_PREFIX}${username.toLowerCase()}`));
+  const normalizedUsername = username.toLowerCase();
+  return parseStoredUser(
+    (await redis.get(redisKeys.auth.userProfile(normalizedUsername))) ??
+      (await redis.get(getLegacyStoredUserKey(normalizedUsername)))
+  );
+}
+
+export async function setStoredUserRecord(
+  redis: Redis,
+  username: string,
+  record: StoredUserRecord
+): Promise<void> {
+  await redis.set(
+    redisKeys.auth.userProfile(username.toLowerCase()),
+    JSON.stringify(record)
+  );
 }
 
 export async function getStoredUserTimeZone(
@@ -93,8 +113,8 @@ export async function updateStoredUserTimeZone(
     return null;
   }
 
-  const key = `${CHAT_USERS_PREFIX}${username.toLowerCase()}`;
-  const existingRecord = parseStoredUser(await redis.get(key));
+  const key = redisKeys.auth.userProfile(username.toLowerCase());
+  const existingRecord = await getStoredUserRecord(redis, username);
   if (!existingRecord) {
     return null;
   }

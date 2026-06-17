@@ -11,13 +11,13 @@ import {
   storeLastValidToken,
   validateAuth,
   isUserBanned,
-  CHAT_USERS_PREFIX,
   TOKEN_GRACE_PERIOD,
 } from "../../_utils/auth/index.js";
 import * as RateLimit from "../../_utils/_rate-limit.js";
 import { getClientIp } from "../../_utils/_rate-limit.js";
 import { apiHandler } from "../../_utils/api-handler.js";
 import { buildSetAuthCookie, parseAuthCookie } from "../../_utils/_cookie.js";
+import { getStoredUserRecord } from "../../_utils/auth/_user-record.js";
 
 export const runtime = "nodejs";
 
@@ -79,8 +79,7 @@ export default apiHandler<RefreshRequest>(
     const username = rawUsername.toLowerCase();
 
     // Check if user exists
-    const userKey = `${CHAT_USERS_PREFIX}${username}`;
-    const userData = await redis.get(userKey);
+    const userData = await getStoredUserRecord(redis, username);
     if (!userData) {
       logger.warn("User not found", { username });
       logger.response(404, Date.now() - startTime);

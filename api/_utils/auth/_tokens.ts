@@ -13,6 +13,7 @@ import {
   USER_EXPIRATION_TIME,
   TOKEN_GRACE_PERIOD,
 } from "./_constants.js";
+import { redisKeys, sha256RedisIdentifier } from "../../../src/shared/redisKeys.js";
 
 // ============================================================================
 // Key Helpers
@@ -26,6 +27,14 @@ export function getUserTokenKey(username: string, token: string): string {
   return `${AUTH_TOKEN_PREFIX}user:${username.toLowerCase()}:${token}`;
 }
 
+export async function getCanonicalSessionKey(token: string): Promise<string> {
+  return redisKeys.auth.session(await sha256RedisIdentifier(token));
+}
+
+export async function getCanonicalUserSessionsKey(username: string): Promise<string> {
+  return redisKeys.auth.userSessions(username);
+}
+
 /**
  * Get pattern for scanning all tokens for a user
  */
@@ -37,6 +46,10 @@ export function getUserTokenPattern(username: string): string {
  * Build the Redis key for grace-period token storage
  */
 export function getLastTokenKey(username: string): string {
+  return redisKeys.auth.lastSession(username);
+}
+
+export function getLegacyLastTokenKey(username: string): string {
   return `${AUTH_TOKEN_PREFIX}last:${username.toLowerCase()}`;
 }
 
@@ -71,9 +84,12 @@ export async function storeToken(
   if (!token) return;
   
   const normalizedUsername = username.toLowerCase();
-  const key = getUserTokenKey(normalizedUsername, token);
+  const tokenHash = await sha256RedisIdentifier(token);
+  const key = redisKeys.auth.session(tokenHash);
   
   await redis.set(key, Date.now(), { ex: USER_EXPIRATION_TIME });
+  await redis.sadd(redisKeys.auth.userSessions(normalizedUsername), tokenHash);
+  await redis.expire(redisKeys.auth.userSessions(normalizedUsername), USER_EXPIRATION_TIME);
 }
 
 /**
@@ -84,6 +100,20 @@ export async function deleteToken(
   token: string
 ): Promise<void> {
   if (!token) return;
+  const tokenHash = await sha256RedisIdentifier(token);
+  await redis.del(redisKeys.auth.session(tokenHash));
+
+  let canonicalCursor = 0;
+  do {
+    const [newCursor, foundKeys] = await redis.scan(canonicalCursor, {
+      match: "auth:user:*:sessions",
+      count: 100,
+    });
+    canonicalCursor = parseInt(String(newCursor));
+    for (const key of foundKeys) {
+      await redis.srem(key, tokenHash);
+    }
+  } while (canonicalCursor !== 0);
 
   // Find and delete the token key by scanning
   const pattern = `${AUTH_TOKEN_PREFIX}user:*:${token}`;
@@ -119,6 +149,15 @@ export async function deleteAllUserTokens(
   const userTokenKeys: string[] = [];
   let cursor = 0;
 
+  const canonicalSessionSetKey = redisKeys.auth.userSessions(normalizedUsername);
+  const tokenHashes = await redis.smembers<string[]>(canonicalSessionSetKey);
+  if (tokenHashes.length > 0) {
+    deletedCount += await redis.del(
+      ...tokenHashes.map((tokenHash) => redisKeys.auth.session(tokenHash))
+    );
+  }
+  deletedCount += await redis.del(canonicalSessionSetKey);
+
   do {
     const [newCursor, foundKeys] = await redis.scan(cursor, {
       match: pattern,
@@ -137,6 +176,7 @@ export async function deleteAllUserTokens(
   const lastTokenKey = getLastTokenKey(normalizedUsername);
   const lastDeleted = await redis.del(lastTokenKey);
   deletedCount += lastDeleted;
+  deletedCount += await redis.del(getLegacyLastTokenKey(normalizedUsername));
 
   return deletedCount;
 }
@@ -148,7 +188,15 @@ export async function getUserTokens(
   redis: Redis,
   username: string
 ): Promise<TokenInfo[]> {
-  const pattern = getUserTokenPattern(username);
+  const normalizedUsername = username.toLowerCase();
+  const tokenHashes = await redis.smembers<string[]>(redisKeys.auth.userSessions(normalizedUsername));
+  const canonicalTokens = await Promise.all(
+    tokenHashes.map(async (tokenHash) => ({
+      token: tokenHash,
+      createdAt: await redis.get<number | string>(redisKeys.auth.session(tokenHash)),
+    }))
+  );
+  const pattern = getUserTokenPattern(normalizedUsername);
   const tokens: TokenInfo[] = [];
   let cursor = 0;
 
@@ -167,7 +215,7 @@ export async function getUserTokens(
     }
   } while (cursor !== 0);
 
-  return tokens;
+  return [...canonicalTokens, ...tokens];
 }
 
 /**
@@ -196,6 +244,9 @@ export async function refreshTokenTTL(
   username: string,
   token: string
 ): Promise<void> {
-  const key = getUserTokenKey(username.toLowerCase(), token);
-  await redis.expire(key, USER_TTL_SECONDS);
+  const normalizedUsername = username.toLowerCase();
+  const tokenHash = await sha256RedisIdentifier(token);
+  await redis.expire(redisKeys.auth.session(tokenHash), USER_TTL_SECONDS);
+  await redis.expire(redisKeys.auth.userSessions(normalizedUsername), USER_TTL_SECONDS);
+  await redis.expire(getUserTokenKey(normalizedUsername, token), USER_TTL_SECONDS);
 }
