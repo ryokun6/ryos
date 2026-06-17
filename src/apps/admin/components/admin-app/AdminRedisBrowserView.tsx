@@ -389,8 +389,19 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
     if (activeMigrationRun) return;
     migrationStopRequestedRef.current = false;
     setActiveMigrationRun(kind);
+    const totals = {
+      batches: 0,
+      copied: 0,
+      deleted: 0,
+      planned: 0,
+      scanned: 0,
+      skipped: 0,
+      warnings: 0,
+    };
+    const runLabel =
+      kind === "delete" ? "Delete" : kind === "backfill" ? "Backfill" : "Dry run";
     appendMigrationLog(
-      `${kind === "delete" ? "Delete" : kind === "backfill" ? "Backfill" : "Dry run"} started for all legacy patterns`,
+      `${runLabel} started for all legacy patterns`,
       "info"
     );
     try {
@@ -408,6 +419,9 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
               dryRun: false,
               cursor: "0",
             });
+            totals.batches += 1;
+            totals.scanned += result.scanned;
+            totals.deleted += result.deleted;
             appendMigrationLog(
               `${legacyPattern} delete batch ${batchNumber}: scanned ${result.scanned}, deleted ${result.deleted}${result.truncated ? ", more pending" : ""}`,
               result.deleted > 0 ? "success" : "info"
@@ -424,6 +438,12 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
             dryRun: kind === "dry-run",
             cursor,
           });
+          totals.batches += 1;
+          totals.scanned += result.scanned;
+          totals.planned += result.planned;
+          totals.copied += result.copied;
+          totals.skipped += result.skipped;
+          totals.warnings += result.warnings.length;
           appendMigrationLog(
             `${legacyPattern} ${kind === "dry-run" ? "dry-run" : "backfill"} batch ${batchNumber}: scanned ${result.scanned}, planned ${result.planned}, copied ${result.copied}, skipped ${result.skipped}, cursor ${result.cursor}`,
             result.warnings.length > 0 ? "warning" : result.copied > 0 ? "success" : "info"
@@ -438,11 +458,14 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
       if (migrationStopRequestedRef.current) {
         appendMigrationLog("Stopped by user request", "warning");
       } else {
-        appendMigrationLog(
-          `${kind === "delete" ? "Delete" : kind === "backfill" ? "Backfill" : "Dry run"} completed for all legacy patterns`,
-          "success"
-        );
+        appendMigrationLog(`${runLabel} completed for all legacy patterns`, "success");
       }
+      appendMigrationLog(
+        kind === "delete"
+          ? `${runLabel} totals: ${totals.batches} batches, ${totals.scanned} scanned, ${totals.deleted} deleted`
+          : `${runLabel} totals: ${totals.batches} batches, ${totals.scanned} scanned, ${totals.planned} planned, ${totals.copied} copied, ${totals.skipped} skipped, ${totals.warnings} warnings`,
+        migrationStopRequestedRef.current ? "warning" : "success"
+      );
       await handleLoadMigrationStatus(false);
       refreshScope();
     } catch (error) {
