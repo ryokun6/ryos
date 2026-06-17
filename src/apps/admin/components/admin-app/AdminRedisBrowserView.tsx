@@ -597,17 +597,16 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
             ? t("apps.admin.redis.loading", "Loading...")
             : t("apps.admin.redis.migration.deleteLegacy", "Delete all legacy")}
         </Button>
-        {isMigrationRunning ? (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={handleStopMigration}
-            className="h-7 px-2 text-[11px]"
-          >
-            {t("apps.admin.redis.migration.stop", "Stop")}
-          </Button>
-        ) : null}
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={handleStopMigration}
+          disabled={!isMigrationRunning}
+          className="h-7 px-2 text-[11px]"
+        >
+          {t("apps.admin.redis.migration.stop", "Stop")}
+        </Button>
         {migrationStatus ? (
           <span className="font-os-mono text-[10px] text-os-text-secondary">
             {migrationStatus.totalLegacyKeys}
