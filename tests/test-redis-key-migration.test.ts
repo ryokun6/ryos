@@ -87,6 +87,39 @@ describe("Redis key scheme migration helpers", () => {
     expect(await redis.get(redisKeys.media.songMeta("abc"))).toBeNull();
   });
 
+  test("backfill returns cursors so the UI can continue through all batches", async () => {
+    const fake = new FakeRedis();
+    const redis = fake as unknown as Redis;
+    fake.setSync("chat:users:alice", JSON.stringify({ username: "alice" }));
+    fake.setSync("chat:users:bob", JSON.stringify({ username: "bob" }));
+
+    const first = await backfillRedisKeyScheme(redis, {
+      pattern: "chat:users:*",
+      limit: 1,
+      dryRun: false,
+      cursor: "0",
+    });
+    expect(first.scanned).toBe(1);
+    expect(first.cursor).not.toBe("0");
+
+    let cursor = first.cursor;
+    let scanned = first.scanned;
+    for (let i = 0; i < 10 && cursor !== "0"; i += 1) {
+      const next = await backfillRedisKeyScheme(redis, {
+        pattern: "chat:users:*",
+        limit: 1,
+        dryRun: false,
+        cursor,
+      });
+      scanned += next.scanned;
+      cursor = next.cursor;
+    }
+    expect(cursor).toBe("0");
+    expect(scanned).toBeGreaterThanOrEqual(2);
+    expect(await redis.get(redisKeys.auth.userProfile("alice"))).not.toBeNull();
+    expect(await redis.get(redisKeys.auth.userProfile("bob"))).not.toBeNull();
+  });
+
   test("reports legacy status and deletes legacy batches only when not dry-run", async () => {
     const fake = new FakeRedis();
     const redis = fake as unknown as Redis;

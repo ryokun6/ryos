@@ -44,6 +44,7 @@ interface AdminRequest {
   confirmPattern?: string;
   limit?: number;
   dryRun?: boolean;
+  cursor?: string;
 }
 
 interface UserProfile {
@@ -1210,9 +1211,11 @@ export default apiHandler<AdminRequest>(
           }
           const limit = clampInteger(body?.limit, 100, 1, 500);
           const dryRun = body?.dryRun !== false;
-          const data = await backfillRedisKeyScheme(redis, { pattern, limit, dryRun });
+          const cursor = normalizeRedisCursor(body?.cursor);
+          const data = await backfillRedisKeyScheme(redis, { pattern, limit, dryRun, cursor });
           logger.info("Redis key scheme backfill requested", {
             pattern,
+            cursor: data.cursor,
             dryRun,
             scanned: data.scanned,
             copied: data.copied,
@@ -1241,9 +1244,11 @@ export default apiHandler<AdminRequest>(
           }
           const limit = clampInteger(body?.limit, 100, 1, 500);
           const dryRun = body?.dryRun !== false;
-          const data = await deleteLegacyRedisKeys(redis, { pattern, limit, dryRun });
+          const cursor = normalizeRedisCursor(body?.cursor);
+          const data = await deleteLegacyRedisKeys(redis, { pattern, limit, dryRun, cursor });
           logger.info("Legacy Redis key delete requested", {
             pattern,
+            cursor: data.cursor,
             dryRun,
             scanned: data.scanned,
             deleted: data.deleted,

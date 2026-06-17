@@ -96,6 +96,7 @@ interface RedisMigrationStatusResponse {
 
 interface RedisBackfillResponse {
   pattern: string;
+  cursor: string;
   dryRun: boolean;
   scanned: number;
   planned: number;
@@ -107,10 +108,19 @@ interface RedisBackfillResponse {
 
 interface DeleteLegacyRedisKeysResponse {
   pattern: string;
+  cursor: string;
   dryRun: boolean;
   scanned: number;
   deleted: number;
   truncated: boolean;
+}
+
+type RedisMigrationRunKind = "dry-run" | "backfill" | "delete";
+
+interface RedisMigrationLogEntry {
+  id: number;
+  message: string;
+  tone: "info" | "success" | "warning" | "error";
 }
 
 export interface AdminRedisBrowserViewProps {
@@ -168,14 +178,13 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
   const [isLoadingDocument, setIsLoadingDocument] = useState(false);
   const [deleteCandidate, setDeleteCandidate] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [migrationPattern, setMigrationPattern] = useState<string>(
-    LEGACY_REDIS_SCAN_PATTERNS[0]
-  );
   const [migrationStatus, setMigrationStatus] = useState<RedisMigrationStatusResponse | null>(null);
   const [isLoadingMigrationStatus, setIsLoadingMigrationStatus] = useState(false);
-  const [isBackfillingMigration, setIsBackfillingMigration] = useState(false);
-  const [deleteLegacyCandidate, setDeleteLegacyCandidate] = useState<string | null>(null);
-  const [isDeletingLegacy, setIsDeletingLegacy] = useState(false);
+  const [activeMigrationRun, setActiveMigrationRun] = useState<RedisMigrationRunKind | null>(null);
+  const [deleteLegacyCandidate, setDeleteLegacyCandidate] = useState(false);
+  const [migrationLog, setMigrationLog] = useState<RedisMigrationLogEntry[]>([]);
+  const migrationStopRequestedRef = useRef(false);
+  const migrationLogIdRef = useRef(0);
   // Cache fetched key documents so reopening a key (or returning to it after
   // navigating) does not re-hit Redis. Cleared on fresh scans / refresh.
   const documentCacheRef = useRef<Map<string, RedisKeyDocument>>(new Map());
@@ -286,8 +295,22 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
   const visibleLeaves = treeLevel.leaves;
   const visibleFolders = isRoot ? rootFolders : treeLevel.folders;
   const hasVisibleRows = visibleFolders.length > 0 || visibleLeaves.length > 0;
-  const selectedMigrationStatus = migrationStatus?.patterns.find(
-    (item) => item.pattern === migrationPattern
+  const isMigrationRunning = activeMigrationRun !== null;
+
+  const appendMigrationLog = useCallback(
+    (message: string, tone: RedisMigrationLogEntry["tone"] = "info") => {
+      migrationLogIdRef.current += 1;
+      const timestamp = new Date().toLocaleTimeString();
+      setMigrationLog((entries) => [
+        ...entries.slice(-199),
+        {
+          id: migrationLogIdRef.current,
+          message: `[${timestamp}] ${message}`,
+          tone,
+        },
+      ]);
+    },
+    []
   );
 
   const handlePatternSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -325,18 +348,24 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
     }
   };
 
-  const handleLoadMigrationStatus = async () => {
+  const handleLoadMigrationStatus = async (showToast: boolean = true) => {
     setIsLoadingMigrationStatus(true);
     try {
       const status =
         await getAdminRedisKeyMigrationStatus<RedisMigrationStatusResponse>({ limit: 100 });
       setMigrationStatus(status);
-      toast.success(
-        t("apps.admin.redis.migration.statusReady", {
-          count: status.totalLegacyKeys,
-          defaultValue: `Found ${status.totalLegacyKeys} sampled legacy Redis keys`,
-        })
+      appendMigrationLog(
+        `Status scan found ${status.totalLegacyKeys}${status.truncated ? "+" : ""} sampled legacy keys across ${status.patterns.length} patterns`,
+        status.totalLegacyKeys > 0 ? "info" : "success"
       );
+      if (showToast) {
+        toast.success(
+          t("apps.admin.redis.migration.statusReady", {
+            count: status.totalLegacyKeys,
+            defaultValue: `Found ${status.totalLegacyKeys} sampled legacy Redis keys`,
+          })
+        );
+      }
       if (status.truncated) {
         toast.info(
           t(
@@ -355,48 +384,84 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
     }
   };
 
-  const handleBackfillMigration = async (dryRun: boolean) => {
-    setIsBackfillingMigration(true);
+  const runContinuousMigration = async (kind: RedisMigrationRunKind) => {
+    if (activeMigrationRun) return;
+    migrationStopRequestedRef.current = false;
+    setActiveMigrationRun(kind);
+    appendMigrationLog(
+      `${kind === "delete" ? "Delete" : kind === "backfill" ? "Backfill" : "Dry run"} started for all legacy patterns`,
+      "info"
+    );
     try {
-      const result = await backfillAdminRedisKeyScheme<RedisBackfillResponse>({
-        pattern: migrationPattern,
-        limit: 100,
-        dryRun,
-      });
-      toast.success(
-        dryRun
-          ? t("apps.admin.redis.migration.dryRunComplete", {
-              scanned: result.scanned,
-              planned: result.planned,
-              defaultValue: `Dry run scanned ${result.scanned}; ${result.planned} keys can be copied`,
-            })
-          : t("apps.admin.redis.migration.backfillComplete", {
-              copied: result.copied,
-              skipped: result.skipped,
-              defaultValue: `Backfilled ${result.copied}; skipped ${result.skipped}`,
-            })
-      );
-      if (result.warnings.length > 0) {
-        toast.info(result.warnings.slice(0, 2).join("\n"));
+      for (const legacyPattern of LEGACY_REDIS_SCAN_PATTERNS) {
+        if (migrationStopRequestedRef.current) break;
+        let cursor = "0";
+        let batchNumber = 0;
+        let continuePattern = true;
+        while (continuePattern && !migrationStopRequestedRef.current) {
+          batchNumber += 1;
+          if (kind === "delete") {
+            const result = await deleteAdminLegacyRedisKeys<DeleteLegacyRedisKeysResponse>({
+              pattern: legacyPattern,
+              limit: 100,
+              dryRun: false,
+              cursor: "0",
+            });
+            appendMigrationLog(
+              `${legacyPattern} delete batch ${batchNumber}: scanned ${result.scanned}, deleted ${result.deleted}${result.truncated ? ", more pending" : ""}`,
+              result.deleted > 0 ? "success" : "info"
+            );
+            if (result.scanned === 0 || result.deleted === 0) {
+              continuePattern = false;
+            }
+            continue;
+          }
+
+          const result = await backfillAdminRedisKeyScheme<RedisBackfillResponse>({
+            pattern: legacyPattern,
+            limit: 100,
+            dryRun: kind === "dry-run",
+            cursor,
+          });
+          appendMigrationLog(
+            `${legacyPattern} ${kind === "dry-run" ? "dry-run" : "backfill"} batch ${batchNumber}: scanned ${result.scanned}, planned ${result.planned}, copied ${result.copied}, skipped ${result.skipped}, cursor ${result.cursor}`,
+            result.warnings.length > 0 ? "warning" : result.copied > 0 ? "success" : "info"
+          );
+          for (const warning of result.warnings.slice(0, 3)) {
+            appendMigrationLog(`${legacyPattern}: ${warning}`, "warning");
+          }
+          cursor = result.cursor;
+          continuePattern = cursor !== "0";
+        }
       }
-      if (result.truncated) {
-        toast.info(
-          t(
-            "apps.admin.redis.migration.batchTruncated",
-            "Batch limit reached; run the action again for the next batch.",
-          )
+      if (migrationStopRequestedRef.current) {
+        appendMigrationLog("Stopped by user request", "warning");
+      } else {
+        appendMigrationLog(
+          `${kind === "delete" ? "Delete" : kind === "backfill" ? "Backfill" : "Dry run"} completed for all legacy patterns`,
+          "success"
         );
       }
-      await handleLoadMigrationStatus();
+      await handleLoadMigrationStatus(false);
       refreshScope();
     } catch (error) {
-      console.error("Failed to backfill Redis key scheme:", error);
+      console.error("Redis migration run failed:", error);
+      appendMigrationLog(
+        error instanceof Error ? error.message : "Redis migration run failed",
+        "error"
+      );
       toast.error(
-        t("apps.admin.redis.migration.errors.backfill", "Failed to backfill Redis keys")
+        t("apps.admin.redis.migration.errors.run", "Redis migration run failed")
       );
     } finally {
-      setIsBackfillingMigration(false);
+      setActiveMigrationRun(null);
+      migrationStopRequestedRef.current = false;
     }
+  };
+
+  const handleStopMigration = () => {
+    migrationStopRequestedRef.current = true;
+    appendMigrationLog("Stop requested; waiting for current batch to finish", "warning");
   };
 
   const handleDeleteConfirm = async () => {
@@ -427,38 +492,8 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
 
   const handleDeleteLegacyConfirm = async () => {
     if (!deleteLegacyCandidate) return;
-    setIsDeletingLegacy(true);
-    try {
-      const result = await deleteAdminLegacyRedisKeys<DeleteLegacyRedisKeysResponse>({
-        pattern: deleteLegacyCandidate,
-        limit: 100,
-        dryRun: false,
-      });
-      toast.success(
-        t("apps.admin.redis.migration.deleteComplete", {
-          deleted: result.deleted,
-          defaultValue: `Deleted ${result.deleted} legacy Redis keys`,
-        })
-      );
-      if (result.truncated) {
-        toast.info(
-          t(
-            "apps.admin.redis.migration.deleteTruncated",
-            "Batch limit reached; run delete again after reviewing the next batch.",
-          )
-        );
-      }
-      setDeleteLegacyCandidate(null);
-      await handleLoadMigrationStatus();
-      refreshScope();
-    } catch (error) {
-      console.error("Failed to delete legacy Redis keys:", error);
-      toast.error(
-        t("apps.admin.redis.migration.errors.delete", "Failed to delete legacy Redis keys")
-      );
-    } finally {
-      setIsDeletingLegacy(false);
-    }
+    setDeleteLegacyCandidate(false);
+    await runContinuousMigration("delete");
   };
 
   return (
@@ -513,24 +548,15 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
         <span className={cn(adminSectionLabelClass, "mr-1")}>
           {t("apps.admin.redis.migration.label", "Migration")}
         </span>
-        <select
-          value={migrationPattern}
-          onChange={(event) => setMigrationPattern(event.target.value)}
-          className="h-7 min-w-[190px] rounded border border-os-separator bg-os-window px-2 font-os-mono text-[11px] text-os-text-primary"
-          aria-label={t("apps.admin.redis.migration.pattern", "Legacy Redis pattern")}
-        >
-          {LEGACY_REDIS_SCAN_PATTERNS.map((legacyPattern) => (
-            <option key={legacyPattern} value={legacyPattern}>
-              {legacyPattern}
-            </option>
-          ))}
-        </select>
+        <span className="font-os-mono text-[10px] text-os-text-secondary">
+          {LEGACY_REDIS_SCAN_PATTERNS.length} legacy patterns
+        </span>
         <Button
           type="button"
           variant="ghost"
           size="sm"
           onClick={() => void handleLoadMigrationStatus()}
-          disabled={isLoadingMigrationStatus}
+          disabled={isLoadingMigrationStatus || isMigrationRunning}
           className="h-7 px-2 text-[11px]"
         >
           {isLoadingMigrationStatus
@@ -541,8 +567,8 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
           type="button"
           variant="ghost"
           size="sm"
-          onClick={() => void handleBackfillMigration(true)}
-          disabled={isBackfillingMigration}
+          onClick={() => void runContinuousMigration("dry-run")}
+          disabled={isMigrationRunning}
           className="h-7 px-2 text-[11px]"
         >
           {t("apps.admin.redis.migration.dryRun", "Dry run")}
@@ -551,34 +577,76 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
           type="button"
           variant="ghost"
           size="sm"
-          onClick={() => void handleBackfillMigration(false)}
-          disabled={isBackfillingMigration}
+          onClick={() => void runContinuousMigration("backfill")}
+          disabled={isMigrationRunning}
           className="h-7 px-2 text-[11px]"
         >
-          {isBackfillingMigration
+          {activeMigrationRun === "backfill"
             ? t("apps.admin.redis.loading", "Loading...")
-            : t("apps.admin.redis.migration.backfill", "Backfill batch")}
+            : t("apps.admin.redis.migration.backfill", "Backfill all")}
         </Button>
         <Button
           type="button"
           variant="ghost"
           size="sm"
-          onClick={() => setDeleteLegacyCandidate(migrationPattern)}
-          disabled={isDeletingLegacy}
+          onClick={() => setDeleteLegacyCandidate(true)}
+          disabled={isMigrationRunning}
           className="h-7 px-2 text-[11px] text-red-600 hover:text-red-700 os-mac-aqua-dark:text-red-300"
         >
-          {isDeletingLegacy
+          {activeMigrationRun === "delete"
             ? t("apps.admin.redis.loading", "Loading...")
-            : t("apps.admin.redis.migration.deleteLegacy", "Delete legacy batch")}
+            : t("apps.admin.redis.migration.deleteLegacy", "Delete all legacy")}
         </Button>
-        {selectedMigrationStatus ? (
+        {isMigrationRunning ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={handleStopMigration}
+            className="h-7 px-2 text-[11px]"
+          >
+            {t("apps.admin.redis.migration.stop", "Stop")}
+          </Button>
+        ) : null}
+        {migrationStatus ? (
           <span className="font-os-mono text-[10px] text-os-text-secondary">
-            {selectedMigrationStatus.count}
-            {selectedMigrationStatus.truncated ? "+" : ""}{" "}
-            {t("apps.admin.redis.migration.keysSampled", "sampled")}
+            {migrationStatus.totalLegacyKeys}
+            {migrationStatus.truncated ? "+" : ""}{" "}
+            {t("apps.admin.redis.migration.keysSampled", "legacy sampled")}
           </span>
         ) : null}
       </div>
+
+      {migrationLog.length > 0 ? (
+        <div className="max-h-28 shrink-0 overflow-auto border-b border-os-separator bg-black/5 px-2 py-1 font-os-mono text-[10px] leading-relaxed os-mac-aqua-dark:bg-white/10">
+          <div className="mb-1 flex items-center justify-between gap-2">
+            <span className={adminSectionLabelClass}>
+              {t("apps.admin.redis.migration.log", "Migration log")}
+            </span>
+            {!isMigrationRunning ? (
+              <button
+                type="button"
+                onClick={() => setMigrationLog([])}
+                className="text-os-text-secondary hover:text-os-text-primary hover:underline"
+              >
+                {t("apps.admin.redis.migration.clearLog", "Clear")}
+              </button>
+            ) : null}
+          </div>
+          {migrationLog.map((entry) => (
+            <div
+              key={entry.id}
+              className={cn(
+                entry.tone === "success" && "text-green-700 os-mac-aqua-dark:text-green-300",
+                entry.tone === "warning" && "text-yellow-700 os-mac-aqua-dark:text-yellow-300",
+                entry.tone === "error" && "text-red-700 os-mac-aqua-dark:text-red-300",
+              )}
+            >
+              {entry.message}
+            </div>
+          ))}
+        </div>
+      ) : null}
 
       <div
         className={cn(
@@ -822,15 +890,15 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
         })}
       />
       <ConfirmDialog
-        isOpen={deleteLegacyCandidate !== null}
+        isOpen={deleteLegacyCandidate}
         onOpenChange={(open) => {
-          if (!open) setDeleteLegacyCandidate(null);
+          if (!open) setDeleteLegacyCandidate(false);
         }}
         onConfirm={handleDeleteLegacyConfirm}
         title={t("apps.admin.redis.migration.deleteTitle", "Delete legacy Redis keys?")}
         description={t("apps.admin.redis.migration.deleteDescription", {
-          pattern: deleteLegacyCandidate,
-          defaultValue: `Delete up to 100 Redis keys matching "${deleteLegacyCandidate}"? Backfill first and repeat until the scan is clear.`,
+          defaultValue:
+            "Delete all registered legacy Redis keys in continuous batches? Backfill first; this keeps going until every legacy pattern is clear or Stop is clicked.",
         })}
       />
     </div>

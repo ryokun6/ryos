@@ -31,6 +31,7 @@ export interface RedisKeyMigrationPlan {
 
 export interface RedisBackfillResult {
   pattern: string;
+  cursor: string;
   dryRun: boolean;
   scanned: number;
   planned: number;
@@ -43,6 +44,7 @@ export interface RedisBackfillResult {
 
 export interface RedisDeleteLegacyResult {
   pattern: string;
+  cursor: string;
   dryRun: boolean;
   scanned: number;
   deleted: number;
@@ -83,17 +85,18 @@ function safeDecode(value: string): string {
 async function scanKeys(
   redis: Redis,
   pattern: string,
-  limit: number
-): Promise<{ keys: string[]; truncated: boolean }> {
+  limit: number,
+  startCursor: string | number = 0
+): Promise<{ keys: string[]; cursor: string; truncated: boolean }> {
   const keys: string[] = [];
   const seen = new Set<string>();
-  let cursor: string | number = 0;
+  let cursor: string | number = startCursor;
   let iterations = 0;
 
   do {
     const [nextCursor, batch] = await redis.scan(cursor, {
       match: pattern,
-      count: STATUS_SCAN_COUNT,
+      count: Math.max(1, Math.min(limit, STATUS_SCAN_COUNT)),
     });
     cursor = nextCursor;
     iterations += 1;
@@ -101,7 +104,6 @@ async function scanKeys(
       if (!seen.has(key)) {
         seen.add(key);
         keys.push(key);
-        if (keys.length >= limit) break;
       }
     }
   } while (
@@ -113,7 +115,8 @@ async function scanKeys(
 
   return {
     keys: keys.sort(),
-    truncated: keys.length >= limit || (cursor !== 0 && cursor !== "0"),
+    cursor: String(cursor),
+    truncated: cursor !== 0 && cursor !== "0",
   };
 }
 
@@ -500,10 +503,15 @@ async function applyAdditionalMigrationSideEffects(
 
 export async function backfillRedisKeyScheme(
   redis: Redis,
-  input: { pattern: string; limit: number; dryRun: boolean }
+  input: { pattern: string; limit: number; dryRun: boolean; cursor?: string | number }
 ): Promise<RedisBackfillResult> {
   assertKnownLegacyRedisPattern(input.pattern);
-  const { keys, truncated } = await scanKeys(redis, input.pattern, input.limit);
+  const { keys, cursor, truncated } = await scanKeys(
+    redis,
+    input.pattern,
+    input.limit,
+    input.cursor ?? 0
+  );
   const plans = await Promise.all(keys.map((key) => planRedisKeyMigration(key)));
   const warnings: string[] = [];
   let copied = 0;
@@ -530,6 +538,7 @@ export async function backfillRedisKeyScheme(
 
   return {
     pattern: input.pattern,
+    cursor,
     dryRun: input.dryRun,
     scanned: keys.length,
     planned: plans.filter((plan) => plan.action === "copy" && plan.targetKey).length,
@@ -543,13 +552,19 @@ export async function backfillRedisKeyScheme(
 
 export async function deleteLegacyRedisKeys(
   redis: Redis,
-  input: { pattern: string; limit: number; dryRun: boolean }
+  input: { pattern: string; limit: number; dryRun: boolean; cursor?: string | number }
 ): Promise<RedisDeleteLegacyResult> {
   assertKnownLegacyRedisPattern(input.pattern);
-  const { keys, truncated } = await scanKeys(redis, input.pattern, input.limit);
+  const { keys, cursor, truncated } = await scanKeys(
+    redis,
+    input.pattern,
+    input.limit,
+    input.cursor ?? 0
+  );
   const deleted = input.dryRun || keys.length === 0 ? 0 : await redis.del(...keys);
   return {
     pattern: input.pattern,
+    cursor,
     dryRun: input.dryRun,
     scanned: keys.length,
     deleted,

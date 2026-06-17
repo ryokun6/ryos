@@ -165,6 +165,7 @@ export async function backfillAdminRedisKeyScheme<TResponse>(input: {
   pattern: string;
   limit?: number;
   dryRun?: boolean;
+  cursor?: string;
 }): Promise<TResponse> {
   return adminPost<
     TResponse,
@@ -174,6 +175,7 @@ export async function backfillAdminRedisKeyScheme<TResponse>(input: {
       confirmPattern: string;
       limit?: number;
       dryRun?: boolean;
+      cursor?: string;
     }
   >({
     action: "backfillRedisKeyScheme",
@@ -181,6 +183,7 @@ export async function backfillAdminRedisKeyScheme<TResponse>(input: {
     confirmPattern: input.pattern,
     ...(input.limit ? { limit: input.limit } : {}),
     ...(input.dryRun !== undefined ? { dryRun: input.dryRun } : {}),
+    ...(input.cursor ? { cursor: input.cursor } : {}),
   });
 }
 
@@ -188,6 +191,7 @@ export async function deleteAdminLegacyRedisKeys<TResponse>(input: {
   pattern: string;
   limit?: number;
   dryRun?: boolean;
+  cursor?: string;
 }): Promise<TResponse> {
   return adminPost<
     TResponse,
@@ -197,6 +201,7 @@ export async function deleteAdminLegacyRedisKeys<TResponse>(input: {
       confirmPattern: string;
       limit?: number;
       dryRun?: boolean;
+      cursor?: string;
     }
   >({
     action: "deleteLegacyRedisKeys",
@@ -204,6 +209,7 @@ export async function deleteAdminLegacyRedisKeys<TResponse>(input: {
     confirmPattern: input.pattern,
     ...(input.limit ? { limit: input.limit } : {}),
     ...(input.dryRun !== undefined ? { dryRun: input.dryRun } : {}),
+    ...(input.cursor ? { cursor: input.cursor } : {}),
   });
 }
 
