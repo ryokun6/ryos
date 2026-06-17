@@ -155,6 +155,58 @@ export async function deleteAdminRedisKey<TResponse>(
   });
 }
 
+export async function getAdminRedisKeyMigrationStatus<TResponse>(input: {
+  limit?: number;
+} = {}): Promise<TResponse> {
+  return adminGet<TResponse>("getRedisKeyMigrationStatus", input);
+}
+
+export async function backfillAdminRedisKeyScheme<TResponse>(input: {
+  pattern: string;
+  limit?: number;
+  dryRun?: boolean;
+}): Promise<TResponse> {
+  return adminPost<
+    TResponse,
+    {
+      action: string;
+      pattern: string;
+      confirmPattern: string;
+      limit?: number;
+      dryRun?: boolean;
+    }
+  >({
+    action: "backfillRedisKeyScheme",
+    pattern: input.pattern,
+    confirmPattern: input.pattern,
+    ...(input.limit ? { limit: input.limit } : {}),
+    ...(input.dryRun !== undefined ? { dryRun: input.dryRun } : {}),
+  });
+}
+
+export async function deleteAdminLegacyRedisKeys<TResponse>(input: {
+  pattern: string;
+  limit?: number;
+  dryRun?: boolean;
+}): Promise<TResponse> {
+  return adminPost<
+    TResponse,
+    {
+      action: string;
+      pattern: string;
+      confirmPattern: string;
+      limit?: number;
+      dryRun?: boolean;
+    }
+  >({
+    action: "deleteLegacyRedisKeys",
+    pattern: input.pattern,
+    confirmPattern: input.pattern,
+    ...(input.limit ? { limit: input.limit } : {}),
+    ...(input.dryRun !== undefined ? { dryRun: input.dryRun } : {}),
+  });
+}
+
 export async function postAdminStartCursorAgent<TResponse>(input: {
   prompt: string;
   modelId?: string;

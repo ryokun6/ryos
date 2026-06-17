@@ -39,6 +39,8 @@ describe("canonical Redis key registry", () => {
   test("keeps precise legacy scan patterns for final cleanup", () => {
     expect(LEGACY_REDIS_SCAN_PATTERNS).toContain("chat:users:*");
     expect(LEGACY_REDIS_SCAN_PATTERNS).toContain("chat:token:*");
+    expect(LEGACY_REDIS_SCAN_PATTERNS).toContain("analytics:daily:*");
+    expect(LEGACY_REDIS_SCAN_PATTERNS).toContain("memory:user:*:processing_lock");
     expect(LEGACY_REDIS_SCAN_PATTERNS).toContain("sync2:*");
     expect(LEGACY_REDIS_SCAN_PATTERNS).toContain("rl:*");
     expect(LEGACY_REDIS_SCAN_PATTERNS).toContain("cursor-sdk-run:*");

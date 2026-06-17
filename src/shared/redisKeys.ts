@@ -34,6 +34,11 @@ export type CanonicalRedisPrefix = (typeof CANONICAL_REDIS_PREFIXES)[number];
  */
 export const LEGACY_REDIS_SCAN_PATTERNS = [
   "airdrop:*",
+  "analytics:aiu:*",
+  "analytics:daily:*",
+  "analytics:ep:*",
+  "analytics:st:*",
+  "analytics:uv:*",
   "apple:*",
   "applet:*",
   "chat:irc:*",
@@ -50,6 +55,7 @@ export const LEGACY_REDIS_SCAN_PATTERNS = [
   "geoip:*",
   "ie:*",
   "listen:*",
+  "memory:user:*:processing_lock",
   "rl:*",
   "rt:*",
   "song:*",
@@ -159,6 +165,8 @@ export const redisKeys = {
       redisKey("rate", "block", feature, scope, identifierHash),
   },
   media: {
+    appletShare: (shareId: string) =>
+      redisKeyCaseSensitive("media", "applet", "share", shareId),
     songIds: () => redisKey("media", "song", "ids"),
     songMeta: (songId: string) =>
       redisKeyCaseSensitive("media", "song", songId, "meta"),
