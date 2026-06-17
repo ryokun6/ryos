@@ -1,4 +1,4 @@
-import type { Redis } from "./redis.js";
+import type { Redis, RedisSortedSetEntry } from "./redis.js";
 import { ensureSync2Initialized } from "../sync/v2/_core.js";
 import {
   LEGACY_REDIS_SCAN_PATTERNS,
@@ -359,6 +359,14 @@ export async function planRedisKeyMigration(
     if (builder && username) {
       return { legacyKey, targetKey: builder(username), action: "copy" };
     }
+    if (family === "log" && username) {
+      return {
+        legacyKey,
+        targetKey: null,
+        action: "skip",
+        reason: undefined,
+      };
+    }
     if (legacyKey === "sync2:maint:cursor") {
       return { legacyKey, targetKey: redisKeys.sync.maintenanceCursor(), action: "copy" };
     }
@@ -465,6 +473,91 @@ export async function planRedisKeyMigration(
   };
 }
 
+function parseZrangeWithScores(
+  raw: unknown,
+  expectedCount: number
+): RedisSortedSetEntry[] | null {
+  if (!Array.isArray(raw)) return null;
+  if (raw.length === 0) return expectedCount === 0 ? [] : null;
+
+  if (raw.every((entry) => Array.isArray(entry) && entry.length >= 2)) {
+    const parsed = raw
+      .map((entry) => {
+        const [member, score] = entry as [unknown, unknown];
+        return {
+          member: typeof member === "string" ? member : String(member),
+          score: Number(score),
+        };
+      })
+      .filter((entry) => Number.isFinite(entry.score));
+    return parsed.length === expectedCount ? parsed : null;
+  }
+
+  if (
+    raw.every(
+      (entry) =>
+        entry &&
+        typeof entry === "object" &&
+        "member" in entry &&
+        "score" in entry
+    )
+  ) {
+    const parsed = raw
+      .map((entry) => {
+        const candidate = entry as { member: unknown; score: unknown };
+        return {
+          member:
+            typeof candidate.member === "string"
+              ? candidate.member
+              : String(candidate.member),
+          score: Number(candidate.score),
+        };
+      })
+      .filter((entry) => Number.isFinite(entry.score));
+    return parsed.length === expectedCount ? parsed : null;
+  }
+
+  if (raw.length !== expectedCount * 2) return null;
+  const parsed: RedisSortedSetEntry[] = [];
+  for (let index = 0; index < raw.length; index += 2) {
+    const member = raw[index];
+    const score = Number(raw[index + 1]);
+    if (!Number.isFinite(score)) return null;
+    parsed.push({
+      member: typeof member === "string" ? member : String(member),
+      score,
+    });
+  }
+  return parsed.length === expectedCount ? parsed : null;
+}
+
+async function zrangeWithScores(
+  redis: Redis,
+  key: string
+): Promise<RedisSortedSetEntry[] | null> {
+  const redisWithScores = redis as Redis & {
+    zrangeWithScores?: (
+      key: string,
+      start: number,
+      stop: number
+    ) => Promise<RedisSortedSetEntry[]>;
+  };
+  if (typeof redisWithScores.zrangeWithScores === "function") {
+    return await redisWithScores.zrangeWithScores(key, 0, -1);
+  }
+
+  const redisWithExtendedZrange = redis as Redis & {
+    zrange: (key: string, start: number, stop: number, options: unknown) => Promise<unknown>;
+  };
+  try {
+    const expectedCount = await redis.zcard(key);
+    const raw = await redisWithExtendedZrange.zrange(key, 0, -1, { withScores: true });
+    return parseZrangeWithScores(raw, expectedCount);
+  } catch {
+    return null;
+  }
+}
+
 async function copyRedisValue(
   redis: Redis,
   sourceKey: string,
@@ -500,7 +593,18 @@ async function copyRedisValue(
       return null;
     }
     case "zset":
-      return `Skipped ${sourceKey}: score-preserving zset copy is not supported by RedisLike`;
+      {
+        const entries = await zrangeWithScores(redis, sourceKey);
+        if (!entries) {
+          return `Skipped ${sourceKey}: score-preserving zset copy is not supported by this Redis client`;
+        }
+        await redis.del(targetKey);
+        for (const entry of entries) {
+          await redis.zadd(targetKey, entry);
+        }
+        if (ttl > 0) await redis.expire(targetKey, ttl);
+        return null;
+      }
     case "none":
       return `Skipped ${sourceKey}: key no longer exists`;
     default:

@@ -153,6 +153,49 @@ describe("Redis key scheme migration helpers", () => {
     expect(Object.keys(kv || {})).toContain("settings/display");
   });
 
+  test("backfills sync2 journals as zsets while preserving scores", async () => {
+    const fake = new FakeRedis();
+    const redis = fake as unknown as Redis;
+    await fake.zadd("sync2:jrnl:ryo", { score: 2, member: JSON.stringify({ seq: 2 }) });
+    await fake.zadd("sync2:jrnl:ryo", { score: 1, member: JSON.stringify({ seq: 1 }) });
+
+    const result = await backfillRedisKeyScheme(redis, {
+      pattern: "sync2:*",
+      limit: 10,
+      dryRun: false,
+    });
+
+    expect(result.scanned).toBe(1);
+    expect(result.copied).toBe(1);
+    expect(result.warnings).toEqual([]);
+    expect(await fake.zrangeWithScores(redisKeys.sync.v2Journal("ryo"), 0, -1)).toEqual([
+      { score: 1, member: JSON.stringify({ seq: 1 }) },
+      { score: 2, member: JSON.stringify({ seq: 2 }) },
+    ]);
+  });
+
+  test("treats abandoned sync2 log keys as a silent backfill skip", async () => {
+    const fake = new FakeRedis();
+    const redis = fake as unknown as Redis;
+    await fake.rpush("sync2:log:ryo", JSON.stringify({ seq: 1 }));
+
+    await expect(planRedisKeyMigration("sync2:log:ryo")).resolves.toMatchObject({
+      targetKey: null,
+      action: "skip",
+    });
+
+    const result = await backfillRedisKeyScheme(redis, {
+      pattern: "sync2:*",
+      limit: 10,
+      dryRun: false,
+    });
+
+    expect(result.scanned).toBe(1);
+    expect(result.copied).toBe(0);
+    expect(result.skipped).toBe(1);
+    expect(result.warnings).toEqual([]);
+  });
+
   test("reports legacy status and deletes legacy batches only when not dry-run", async () => {
     const fake = new FakeRedis();
     const redis = fake as unknown as Redis;

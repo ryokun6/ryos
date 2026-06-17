@@ -366,6 +366,21 @@ export class FakeRedis {
     return ordered.slice(normalizedStart, normalizedStop + 1);
   }
 
+  async zrangeWithScores(
+    key: string,
+    start: number,
+    stop: number
+  ): Promise<Array<{ member: string; score: number }>> {
+    const ordered = this.zsorted(key);
+    const normalizedStart = start < 0 ? Math.max(0, ordered.length + start) : start;
+    const normalizedStop = stop < 0 ? ordered.length + stop : stop;
+    const scores = this.zsets.get(key) || new Map<string, number>();
+    return ordered.slice(normalizedStart, normalizedStop + 1).map((member) => ({
+      member,
+      score: scores.get(member) ?? 0,
+    }));
+  }
+
   async zremrangebyscore(
     key: string,
     min: number | string,
