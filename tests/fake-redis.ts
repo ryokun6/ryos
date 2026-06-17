@@ -40,8 +40,18 @@ export class FakeRedisPipeline {
     return this;
   }
 
+  pfadd(key: string, ...elements: string[]): this {
+    this.operations.push(() => this.redis.pfaddSync(key, ...elements));
+    return this;
+  }
+
   srem(key: string, ...members: string[]): this {
     this.operations.push(() => this.redis.sremSync(key, ...members));
+    return this;
+  }
+
+  hincrby(key: string, field: string, increment: number): this {
+    this.operations.push(() => this.redis.hincrbySync(key, field, increment));
     return this;
   }
 
@@ -126,6 +136,10 @@ export class FakeRedis {
     }
     this.sets.set(key, set);
     return added;
+  }
+
+  pfaddSync(key: string, ...elements: string[]): number {
+    return this.saddSync(key, ...elements);
   }
 
   sremSync(key: string, ...members: string[]): number {
@@ -285,11 +299,29 @@ export class FakeRedis {
   }
 
   async hincrby(key: string, field: string, increment: number): Promise<number> {
+    return this.hincrbySync(key, field, increment);
+  }
+
+  hincrbySync(key: string, field: string, increment: number): number {
     const hash = this.hashes.get(key) || new Map<string, string>();
     const next = (Number.parseInt(hash.get(field) || "0", 10) || 0) + increment;
     hash.set(field, String(next));
     this.hashes.set(key, hash);
     return next;
+  }
+
+  async pfadd(key: string, ...elements: string[]): Promise<number> {
+    return this.pfaddSync(key, ...elements);
+  }
+
+  async pfcount(...keys: string[]): Promise<number> {
+    const unique = new Set<string>();
+    for (const key of keys) {
+      for (const member of this.sets.get(key) || []) {
+        unique.add(member);
+      }
+    }
+    return unique.size;
   }
 
   async rpush(key: string, ...values: string[]): Promise<number> {
