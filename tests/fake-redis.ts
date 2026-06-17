@@ -25,6 +25,11 @@ export class FakeRedisPipeline {
     return this;
   }
 
+  get(key: string): this {
+    this.operations.push(() => this.redis.getSync(key));
+    return this;
+  }
+
   del(...keys: string[]): this {
     this.operations.push(() => this.redis.delSync(...keys));
     return this;
@@ -42,6 +47,11 @@ export class FakeRedisPipeline {
 
   pfadd(key: string, ...elements: string[]): this {
     this.operations.push(() => this.redis.pfaddSync(key, ...elements));
+    return this;
+  }
+
+  pfcount(...keys: string[]): this {
+    this.operations.push(() => this.redis.pfcountSync(...keys));
     return this;
   }
 
@@ -112,6 +122,10 @@ export class FakeRedis {
     return "OK";
   }
 
+  getSync<T = unknown>(key: string): T | null {
+    return (this.kv.get(key) as T | undefined) ?? null;
+  }
+
   delSync(...keys: string[]): number {
     let deleted = 0;
     for (const key of keys) {
@@ -162,7 +176,7 @@ export class FakeRedis {
   // --- async API ------------------------------------------------------------
 
   async get<T = unknown>(key: string): Promise<T | null> {
-    return (this.kv.get(key) as T | undefined) ?? null;
+    return this.getSync<T>(key);
   }
 
   async set(
@@ -316,6 +330,10 @@ export class FakeRedis {
   }
 
   async pfcount(...keys: string[]): Promise<number> {
+    return this.pfcountSync(...keys);
+  }
+
+  pfcountSync(...keys: string[]): number {
     const unique = new Set<string>();
     for (const key of keys) {
       for (const member of this.sets.get(key) || []) {

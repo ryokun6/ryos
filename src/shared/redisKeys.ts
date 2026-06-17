@@ -58,6 +58,7 @@ export const LEGACY_REDIS_SCAN_PATTERNS = [
   "memory:user:*:processing_lock",
   "rl:*",
   "rt:*",
+  "ryos:presence:*",
   "song:*",
   "sync:auto:*",
   "sync:meta:*",

@@ -170,6 +170,9 @@ export async function planRedisKeyMigration(
   if (legacyKey === "airdrop:presence") {
     return { legacyKey, targetKey: redisKeys.presence.airdropLobby(), action: "copy" };
   }
+  if (legacyKey === "ryos:presence:online") {
+    return { legacyKey, targetKey: redisKeys.presence.globalOnline(), action: "copy" };
+  }
   if (legacyKey.startsWith("airdrop:transfer:")) {
     return {
       legacyKey,
