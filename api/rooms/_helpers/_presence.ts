@@ -4,9 +4,10 @@
  */
 
 import { createRedis } from "../../_utils/redis.js";
-import { parseRoomData, setRoom } from "./_redis.js";
+import { parseMessageData, parseRoomData, setRoom } from "./_redis.js";
 import {
   CHAT_ROOM_PREFIX,
+  CHAT_MESSAGES_PREFIX,
   CHAT_ROOM_PRESENCE_ZSET_PREFIX,
   CHAT_ROOMS_SET,
   ROOM_PRESENCE_TTL_SECONDS,
@@ -16,6 +17,46 @@ import type { Room, RoomWithUsers } from "./_types.js";
 // Create Redis client for presence operations
 function getRedis() {
   return createRedis();
+}
+
+function getMessageTimestamp(value: unknown): number | undefined {
+  const message = parseMessageData(value);
+  if (!message) return undefined;
+
+  const rawTimestamp = (message as { timestamp?: unknown }).timestamp;
+  const timestamp =
+    typeof rawTimestamp === "number"
+      ? rawTimestamp
+      : new Date(String(rawTimestamp)).getTime();
+
+  return Number.isFinite(timestamp) ? timestamp : undefined;
+}
+
+async function attachPrivateRoomLastMessageAt<T extends Room>(
+  rooms: T[]
+): Promise<T[]> {
+  const privateRooms = rooms.filter((room) => room.type === "private");
+  if (privateRooms.length === 0) return rooms;
+
+  const redis = getRedis();
+  const lastMessages = await Promise.all(
+    privateRooms.map((room) =>
+      redis.lindex(`${CHAT_MESSAGES_PREFIX}${room.id}`, 0)
+    )
+  );
+  const lastMessageAtByRoomId = new Map<string, number>();
+
+  privateRooms.forEach((room, index) => {
+    const lastMessageAt = getMessageTimestamp(lastMessages[index]);
+    if (lastMessageAt !== undefined) {
+      lastMessageAtByRoomId.set(room.id, lastMessageAt);
+    }
+  });
+
+  return rooms.map((room) => {
+    const lastMessageAt = lastMessageAtByRoomId.get(room.id);
+    return lastMessageAt === undefined ? room : { ...room, lastMessageAt };
+  });
 }
 
 // ============================================================================
@@ -161,7 +202,7 @@ export async function getDetailedRooms(): Promise<RoomWithUsers[]> {
       users: activeUsers,
     });
   }
-  return rooms;
+  return attachPrivateRoomLastMessageAt(rooms);
 }
 
 /**
@@ -222,5 +263,5 @@ export async function getRoomsWithCountsFast(): Promise<Room[]> {
     resIdx += 1;
     rooms.push({ ...roomObj, userCount });
   }
-  return rooms;
+  return attachPrivateRoomLastMessageAt(rooms);
 }
