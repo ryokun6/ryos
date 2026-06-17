@@ -20,7 +20,7 @@ describe("Redis key scheme migration helpers", () => {
       action: "copy",
     });
     await expect(planRedisKeyMigration("song:meta:am:123")).resolves.toMatchObject({
-      targetKey: "media:song:am%3A123:meta",
+      targetKey: "media:song:am:123:meta",
       action: "copy",
     });
     await expect(planRedisKeyMigration("rl:ai:anon:127.0.0.1")).resolves.toMatchObject({

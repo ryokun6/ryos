@@ -103,6 +103,13 @@ export function redisKeyCaseSensitive(
     .join(REDIS_KEY_SEPARATOR);
 }
 
+function songKey(songId: string, facet: "meta" | "content"): string {
+  if (songId.startsWith("am:")) {
+    return redisKeyCaseSensitive("media", "song", "am", songId.slice(3), facet);
+  }
+  return redisKeyCaseSensitive("media", "song", songId, facet);
+}
+
 export async function sha256RedisIdentifier(value: string): Promise<string> {
   const digest = await globalThis.crypto.subtle.digest(
     "SHA-256",
@@ -168,10 +175,8 @@ export const redisKeys = {
     appletShare: (shareId: string) =>
       redisKeyCaseSensitive("media", "applet", "share", shareId),
     songIds: () => redisKey("media", "song", "ids"),
-    songMeta: (songId: string) =>
-      redisKeyCaseSensitive("media", "song", songId, "meta"),
-    songContent: (songId: string) =>
-      redisKeyCaseSensitive("media", "song", songId, "content"),
+    songMeta: (songId: string) => songKey(songId, "meta"),
+    songContent: (songId: string) => songKey(songId, "content"),
   },
   cache: {
     appleArtwork: (catalogId: string) =>

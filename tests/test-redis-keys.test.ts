@@ -65,7 +65,10 @@ describe("canonical Redis key registry", () => {
 
   test("preserves case-sensitive IDs where existing IDs may be mixed-case", () => {
     expect(redisKeys.chat.roomMeta("RoomABC")).toBe("chat:rooms:RoomABC:meta");
-    expect(redisKeys.media.songMeta("am:12345")).toBe("media:song:am%3A12345:meta");
+    expect(redisKeys.media.songMeta("am:12345")).toBe("media:song:am:12345:meta");
+    expect(redisKeys.media.songContent("am:12345")).toBe(
+      "media:song:am:12345:content"
+    );
     expect(redisKeys.agent.cursorRunMeta("bc_AbC")).toBe(
       "agent:cursor:run:bc_AbC:meta"
     );

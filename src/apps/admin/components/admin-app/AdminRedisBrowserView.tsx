@@ -1,4 +1,5 @@
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { StickToBottom } from "use-stick-to-bottom";
 import {
   ArrowsClockwise,
   CaretRight,
@@ -617,34 +618,40 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
       </div>
 
       {migrationLog.length > 0 ? (
-        <div className="max-h-28 shrink-0 overflow-auto border-b border-os-separator bg-black/5 px-2 py-1 font-os-mono text-[10px] leading-relaxed os-mac-aqua-dark:bg-white/10">
-          <div className="mb-1 flex items-center justify-between gap-2">
-            <span className={adminSectionLabelClass}>
-              {t("apps.admin.redis.migration.log", "Migration log")}
-            </span>
-            {!isMigrationRunning ? (
-              <button
-                type="button"
-                onClick={() => setMigrationLog([])}
-                className="text-os-text-secondary hover:text-os-text-primary hover:underline"
-              >
-                {t("apps.admin.redis.migration.clearLog", "Clear")}
-              </button>
-            ) : null}
-          </div>
-          {migrationLog.map((entry) => (
-            <div
-              key={entry.id}
-              className={cn(
-                entry.tone === "success" && "text-green-700 os-mac-aqua-dark:text-green-300",
-                entry.tone === "warning" && "text-yellow-700 os-mac-aqua-dark:text-yellow-300",
-                entry.tone === "error" && "text-red-700 os-mac-aqua-dark:text-red-300",
-              )}
-            >
-              {entry.message}
+        <StickToBottom
+          className="max-h-28 shrink-0 overflow-hidden border-b border-os-separator bg-black/5 font-os-mono text-[10px] leading-relaxed os-mac-aqua-dark:bg-white/10"
+          resize="smooth"
+          initial="instant"
+        >
+          <StickToBottom.Content className="px-2 py-1">
+            <div className="mb-1 flex items-center justify-between gap-2">
+              <span className={adminSectionLabelClass}>
+                {t("apps.admin.redis.migration.log", "Migration log")}
+              </span>
+              {!isMigrationRunning ? (
+                <button
+                  type="button"
+                  onClick={() => setMigrationLog([])}
+                  className="text-os-text-secondary hover:text-os-text-primary hover:underline"
+                >
+                  {t("apps.admin.redis.migration.clearLog", "Clear")}
+                </button>
+              ) : null}
             </div>
-          ))}
-        </div>
+            {migrationLog.map((entry) => (
+              <div
+                key={entry.id}
+                className={cn(
+                  entry.tone === "success" && "text-green-700 os-mac-aqua-dark:text-green-300",
+                  entry.tone === "warning" && "text-yellow-700 os-mac-aqua-dark:text-yellow-300",
+                  entry.tone === "error" && "text-red-700 os-mac-aqua-dark:text-red-300",
+                )}
+              >
+                {entry.message}
+              </div>
+            ))}
+          </StickToBottom.Content>
+        </StickToBottom>
       ) : null}
 
       <div
