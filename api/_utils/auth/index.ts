@@ -78,7 +78,14 @@ export { extractAuth, extractAuthNormalized } from "./_extract.js";
 
 // Stored user-record helpers (ban status, etc.)
 export type { StoredUserRecord } from "./_user-record.js";
-export { parseStoredUser, isUserBanned } from "./_user-record.js";
+export {
+  parseStoredUser,
+  isUserBanned,
+  normalizeUserTimeZone,
+  getStoredUserRecord,
+  getStoredUserTimeZone,
+  updateStoredUserTimeZone,
+} from "./_user-record.js";
 
 // Per-username login lockout (shared by login + register)
 export {

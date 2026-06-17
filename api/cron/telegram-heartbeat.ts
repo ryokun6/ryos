@@ -42,6 +42,7 @@ import {
 } from "../_utils/_aiModels.js";
 import { getHeader } from "../_utils/request-helpers.js";
 import { createRyoToolLoopAgent } from "../_utils/ryo-agent.js";
+import { getStoredUserTimeZone } from "../_utils/auth/_user-record.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 80;
@@ -76,6 +77,7 @@ async function appendHeartbeatLog(
     message?: string | null;
     skipReason?: string | null;
     stateSummary: string;
+    timeZone: string;
   },
   logger: ReturnType<typeof initLogger>["logger"]
 ): Promise<void> {
@@ -86,7 +88,7 @@ async function appendHeartbeatLog(
       message: payload.message,
       skipReason: payload.skipReason,
       stateSummary: payload.stateSummary,
-      timeZone: TELEGRAM_HEARTBEAT_TIME_ZONE,
+      timeZone: payload.timeZone,
     });
   } catch (error) {
     logger.warn("Failed to append telegram heartbeat record", {
@@ -145,6 +147,8 @@ export default async function handler(
 
   const redis = createRedis();
   const username = TELEGRAM_HEARTBEAT_TARGET_USERNAME;
+  const userTimeZone =
+    (await getStoredUserTimeZone(redis, username)) || TELEGRAM_HEARTBEAT_TIME_ZONE;
   const linkedAccount = await getLinkedTelegramAccountByUsername(redis, username);
 
   if (!linkedAccount) {
@@ -155,6 +159,7 @@ export default async function handler(
         shouldSend: false,
         skipReason: "not-linked",
         stateSummary: "decision=not-linked; linked_account=false",
+        timeZone: userTimeZone,
       },
       logger
     );
@@ -173,6 +178,7 @@ export default async function handler(
         shouldSend: false,
         skipReason: "already-sent",
         stateSummary: `decision=already-sent; slot_key=${slotKey}`,
+        timeZone: userTimeZone,
       },
       logger
     );
@@ -196,7 +202,7 @@ export default async function handler(
       username,
       (...args: unknown[]) => logger.info("[TelegramHeartbeatDailyNotes]", args),
       (...args: unknown[]) => logger.error("[TelegramHeartbeatDailyNotes]", args),
-      TELEGRAM_HEARTBEAT_TIME_ZONE
+      userTimeZone
     );
     if (processedNotes.processed > 0 || processedNotes.skippedDates.length > 0) {
       logger.info("Telegram heartbeat processed past daily notes", {
@@ -220,7 +226,7 @@ export default async function handler(
     redis,
     username,
     TELEGRAM_HEARTBEAT_HISTORY_LOOKBACK_DAYS,
-    TELEGRAM_HEARTBEAT_TIME_ZONE,
+    userTimeZone,
     TELEGRAM_HEARTBEAT_TOPIC
   );
   const heartbeatHistoryContext = buildTelegramHeartbeatHistoryContext(
@@ -244,7 +250,7 @@ export default async function handler(
             createdAt: message.createdAt,
           },
         })),
-        timeZone: TELEGRAM_HEARTBEAT_TIME_ZONE,
+        timeZone: userTimeZone,
         storeLongTermMemories: false,
         markTodayProcessed: false,
         log: (...args: unknown[]) => logger.info("[TelegramHeartbeatChatDelta]", args),
@@ -267,7 +273,7 @@ export default async function handler(
     }
   }
 
-  const briefingType = getCurrentBriefingType(new Date(), TELEGRAM_HEARTBEAT_TIME_ZONE);
+  const briefingType = getCurrentBriefingType(new Date(), userTimeZone);
   if (briefingType) {
     logger.info("Telegram heartbeat detected scheduled briefing window", {
       username,
@@ -275,7 +281,7 @@ export default async function handler(
     });
   }
 
-  const today = getTodayDateString(TELEGRAM_HEARTBEAT_TIME_ZONE);
+  const today = getTodayDateString(userTimeZone);
   const todaysDailyNote = await getDailyNote(redis, username, today);
   const noteContext = buildTelegramHeartbeatNoteContext(todaysDailyNote);
   const conversationContext = buildTelegramHeartbeatConversationContext(history);
@@ -299,6 +305,7 @@ export default async function handler(
           conversationContext,
           decisionCode: gateDecision.code,
         }),
+        timeZone: userTimeZone,
       },
       logger
     );
@@ -364,14 +371,14 @@ export default async function handler(
     username,
     redis,
     model: telegramModel,
-    timeZone: TELEGRAM_HEARTBEAT_TIME_ZONE,
+    timeZone: userTimeZone,
     log: (...args: unknown[]) => logger.info(`[TelegramHeartbeat:${username}]`, args),
     logError: (...args: unknown[]) =>
       logger.error(`[TelegramHeartbeat:${username}]`, args),
     preloadedMemoryContext: {
       userMemories,
       dailyNotesText: null,
-      userTimeZone: TELEGRAM_HEARTBEAT_TIME_ZONE,
+      userTimeZone,
     },
   });
   const { enrichedMessages, loadedSections, staticSystemPrompt } =
@@ -417,6 +424,7 @@ export default async function handler(
           conversationContext,
           decisionCode: "model-no-heartbeat",
         }),
+        timeZone: userTimeZone,
       },
       logger
     );
@@ -485,6 +493,7 @@ export default async function handler(
         conversationContext,
         decisionCode: "sent",
       })}; reply_length=${replyText.length}`,
+      timeZone: userTimeZone,
     },
     logger
   );

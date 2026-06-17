@@ -27,6 +27,7 @@ import {
   markDailyNoteProcessed,
   MAX_MEMORIES_PER_USER,
 } from "../_utils/_memory.js";
+import { getStoredUserTimeZone } from "../_utils/auth/_user-record.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -480,7 +481,10 @@ export default apiHandler<{ messages?: ChatMessage[]; timeZone?: string }>(
     const headerTimeZone = Array.isArray(headerTimeZoneRaw)
       ? headerTimeZoneRaw[0]
       : headerTimeZoneRaw;
-    const userTimeZone = normalizeTimeZone(bodyTimeZone || headerTimeZone);
+    const storedTimeZone = await getStoredUserTimeZone(redis, username);
+    const userTimeZone = normalizeTimeZone(
+      bodyTimeZone || headerTimeZone || storedTimeZone
+    );
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       logger.warn("No messages provided");

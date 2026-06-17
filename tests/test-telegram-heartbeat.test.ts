@@ -35,6 +35,7 @@ import {
   getTelegramModel,
 } from "../api/_utils/_aiModels.js";
 import { prepareRyoConversationModelInput } from "../api/_utils/ryo-conversation";
+import { CHAT_USERS_PREFIX } from "../api/_utils/auth/_constants";
 
 class FakeRedis {
   private readonly store = new Map<string, unknown>();
@@ -459,6 +460,36 @@ describe("telegram heartbeat helpers", () => {
     expect("calendarControl" in prepared.tools).toBe(true);
     expect("stickiesControl" in prepared.tools).toBe(true);
     expect("web_search" in prepared.tools).toBe(true);
+  });
+
+  test("telegram prompts hydrate user local time from the stored user timezone", async () => {
+    const redis = makeRedis();
+    await redis.set(
+      `${CHAT_USERS_PREFIX}${TELEGRAM_HEARTBEAT_TARGET_USERNAME}`,
+      JSON.stringify({
+        username: TELEGRAM_HEARTBEAT_TARGET_USERNAME,
+        timeZone: "Asia/Tokyo",
+        timeZoneUpdatedAt: 123,
+      })
+    );
+
+    const prepared = await prepareRyoConversationModelInput({
+      channel: "telegram",
+      username: TELEGRAM_HEARTBEAT_TARGET_USERNAME,
+      redis,
+      model: "gpt-5.5",
+      messages: [
+        {
+          id: "telegram-timezone",
+          role: "user",
+          content: "what should i do now?",
+        },
+      ],
+    });
+
+    expect(prepared.userTimeZone).toBe("Asia/Tokyo");
+    expect(prepared.volatileStatePrompt).toContain("User Time:");
+    expect(prepared.volatileStatePrompt).toContain("(Asia/Tokyo)");
   });
 
   test("heartbeat conversations enable Google search grounding on gemini flash", async () => {

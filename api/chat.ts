@@ -24,6 +24,11 @@ import { apiHandler } from "./_utils/api-handler.js";
 import { getHeader } from "./_utils/request-helpers.js";
 import { resolveIpGeolocation } from "./_utils/_geolocation.js";
 import { createRyoToolLoopAgent } from "./_utils/ryo-agent.js";
+import {
+  getStoredUserTimeZone,
+  updateStoredUserTimeZone,
+} from "./_utils/auth/_user-record.js";
+import { buildUserLocalTimeContext } from "./_utils/user-time-context.js";
 type SystemState = RyoConversationSystemState;
 
 const CHAT_MODEL_ALIASES: Record<string, SupportedModel> = {
@@ -179,10 +184,20 @@ export default apiHandler<{
       ? { ...incomingSystemState, requestGeo: resolvedGeo }
       : ({ requestGeo: resolvedGeo } as SystemState);
     const userTimeZone = systemState?.userLocalTime?.timeZone;
+    if (isAuthenticated && username && userTimeZone) {
+      await updateStoredUserTimeZone(redis, username, userTimeZone).catch((error) => {
+        logError("Failed to update user timezone from chat system state", error);
+      });
+    }
+    const storedUserTimeZone =
+      !userTimeZone && isAuthenticated && username
+        ? await getStoredUserTimeZone(redis, username)
+        : null;
+    const effectiveUserTimeZone = userTimeZone || storedUserTimeZone || undefined;
     const loadedMemoryContext = await loadRyoMemoryContext({
       redis: isAuthenticated ? redis : undefined,
       username: isAuthenticated ? username : null,
-      timeZone: userTimeZone,
+      timeZone: effectiveUserTimeZone,
       log,
       logError,
     });
@@ -198,11 +213,11 @@ export default apiHandler<{
       // Only triggered on proactive greetings (once per session) to avoid
       // redundant checks on every chat message.
       try {
-        getUnprocessedDailyNotesExcludingToday(redis, username, 7, userTimeZone).then(async (unprocessedNotes) => {
+        getUnprocessedDailyNotesExcludingToday(redis, username, 7, effectiveUserTimeZone).then(async (unprocessedNotes) => {
           if (unprocessedNotes.length > 0) {
             log(`[DailyNotes] Found ${unprocessedNotes.length} unprocessed past daily notes for ${username}, triggering background processing`);
             const { processDailyNotesForUser } = await import("./ai/process-daily-notes.js");
-            processDailyNotesForUser(redis, username, log, logError, userTimeZone).catch((err: unknown) => {
+            processDailyNotesForUser(redis, username, log, logError, effectiveUserTimeZone).catch((err: unknown) => {
               logError("[DailyNotes] Background processing failed (non-blocking):", err);
             });
           }
@@ -231,21 +246,16 @@ export default apiHandler<{
         return;
       }
 
-      // Time context
       const now = new Date();
-      const sfTime = now.toLocaleTimeString("en-US", {
-        timeZone: "America/Los_Angeles",
-        hour: "numeric",
-        minute: "2-digit",
-        hour12: true,
-      });
-      const dayOfWeek = now.toLocaleDateString("en-US", {
-        timeZone: "America/Los_Angeles",
-        weekday: "long",
-      });
+      const localTimeContext =
+        buildUserLocalTimeContext(effectiveUserTimeZone, now) ||
+        buildUserLocalTimeContext("America/Los_Angeles", now);
+      const timeContext = localTimeContext
+        ? `${localTimeContext.dateString} ${localTimeContext.timeString} (${localTimeContext.timeZone})`
+        : now.toISOString();
 
       try {
-        const greetingDynamicContext = `It's ${dayOfWeek} ${sfTime}. The user's name is "${username}".
+        const greetingDynamicContext = `It's ${timeContext}. The user's name is "${username}".
 
 ${greetingMemoryContext}
 

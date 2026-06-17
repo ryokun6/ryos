@@ -33,6 +33,24 @@ export interface ApiRequestOptions<TBody = unknown> {
   retry?: AbortableFetchOptions["retry"];
 }
 
+export function getBrowserTimeZone(): string | null {
+  if (typeof Intl === "undefined") {
+    return null;
+  }
+
+  try {
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return timeZone && timeZone !== "Unknown" ? timeZone : null;
+  } catch {
+    return null;
+  }
+}
+
+export function getBrowserTimeZoneHeaders(): Record<string, string> {
+  const timeZone = getBrowserTimeZone();
+  return timeZone ? { "X-User-Timezone": timeZone } : {};
+}
+
 function buildUrl(
   path: string,
   query?: Record<string, string | number | boolean | null | undefined>
@@ -55,6 +73,10 @@ function buildHeaders(
   hasBody: boolean
 ): Headers {
   const merged = new Headers(headers);
+  const timeZone = getBrowserTimeZone();
+  if (timeZone && !merged.has("X-User-Timezone")) {
+    merged.set("X-User-Timezone", timeZone);
+  }
   if (hasBody && !merged.has("Content-Type")) {
     merged.set("Content-Type", "application/json");
   }
