@@ -7,6 +7,8 @@
  * group keys by that separator and let the UI drill into one level at a time.
  */
 
+import { CANONICAL_REDIS_PREFIXES } from "../../../shared/redisKeys";
+
 export const REDIS_KEY_SEPARATOR = ":";
 
 /**
@@ -15,25 +17,7 @@ export const REDIS_KEY_SEPARATOR = ":";
  * scoped SCAN without first paging through a global `*` scan. Kept in sync with
  * the key builders across `api/` (chat/sync/analytics/memory/etc.).
  */
-export const KNOWN_REDIS_PREFIXES: string[] = [
-  "chat",
-  "sync",
-  "sync2",
-  "analytics",
-  "memory",
-  "system",
-  "airdrop",
-  "song",
-  "listen",
-  "applet",
-  "apple",
-  "ie",
-  "wayback",
-  "cursor-sdk-run",
-  "cursor-sdk-agent",
-  "ryos",
-  "rl",
-];
+export const KNOWN_REDIS_PREFIXES: string[] = [...CANONICAL_REDIS_PREFIXES];
 
 export interface RedisKeyNode {
   key: string;
