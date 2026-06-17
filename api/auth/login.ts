@@ -12,6 +12,7 @@
  *   attacker rotates IPs or uses a botnet.
  */
 
+import { geolocation } from "@vercel/functions";
 import {
   generateAuthToken,
   storeToken,
@@ -29,7 +30,10 @@ import { apiHandler } from "../_utils/api-handler.js";
 import { buildSetAuthCookie } from "../_utils/_cookie.js";
 import { getClientIp } from "../_utils/_rate-limit.js";
 import { getHeader } from "../_utils/request-helpers.js";
-import { updateStoredUserTimeZone } from "../_utils/auth/_user-record.js";
+import {
+  updateStoredUserGeo,
+  updateStoredUserTimeZone,
+} from "../_utils/auth/_user-record.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
@@ -123,6 +127,11 @@ export default apiHandler(
     // Successful login — reset the per-username failure counter.
     await resetLoginFailures(redis, username);
     await updateStoredUserTimeZone(redis, username, getHeader(req, "x-user-timezone"));
+    try {
+      await updateStoredUserGeo(redis, username, geolocation(req as unknown as Request));
+    } catch {
+      // Vercel geolocation is unavailable in local/self-hosted runtimes.
+    }
 
     // Handle old token if provided (rotation)
     if (oldToken) {

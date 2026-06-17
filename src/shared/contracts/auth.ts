@@ -21,9 +21,18 @@ export interface CheckPasswordResponse {
   username: string;
 }
 
+export interface AuthGeoResponse {
+  city?: string;
+  region?: string;
+  country?: string;
+  latitude?: string;
+  longitude?: string;
+}
+
 export interface LoginResponse {
   username: string;
   timeZone?: string;
+  geo?: AuthGeoResponse;
 }
 
 export interface RegisterResponse {
@@ -32,6 +41,7 @@ export interface RegisterResponse {
     hasPassword?: boolean;
     createdAt?: number;
     timeZone?: string;
+    geo?: AuthGeoResponse;
   };
 }
 
@@ -40,4 +50,5 @@ export interface SessionResponse {
   username?: string;
   expired?: boolean;
   timeZone?: string;
+  geo?: AuthGeoResponse;
 }

@@ -44,6 +44,10 @@ import {
   type CursorRepoAgentTelegramNotify,
 } from "../chat/tools/cursor-repo-agent.js";
 import { getStoredUserLocalTimeContext } from "./user-time-context.js";
+import {
+  getStoredUserGeo,
+  normalizeUserGeo,
+} from "./auth/_user-record.js";
 
 export interface RyoConversationSystemState {
   username?: string | null;
@@ -279,6 +283,10 @@ function createOpenAIWebSearchTool(
   );
 }
 
+function hasUsefulGeo(geo?: RyoConversationSystemState["requestGeo"]): boolean {
+  return !!normalizeUserGeo(geo);
+}
+
 function createGoogleSearchTool(): ReturnType<typeof google.tools.googleSearch> {
   return google.tools.googleSearch({});
 }
@@ -484,13 +492,19 @@ User Locale: ${effectiveState.locale}`;
   if (effectiveState.requestGeo) {
     const location = [
       effectiveState.requestGeo.city,
+      effectiveState.requestGeo.region,
       effectiveState.requestGeo.country,
     ]
       .filter(Boolean)
       .join(", ");
-    if (location) {
+    const coordinates =
+      effectiveState.requestGeo.latitude && effectiveState.requestGeo.longitude
+        ? `${effectiveState.requestGeo.latitude}, ${effectiveState.requestGeo.longitude}`
+        : "";
+    const locationText = location || coordinates;
+    if (locationText) {
       prompt += `
-User Location: ${location} (inferred from IP, may be inaccurate)`;
+User Location: ${locationText} (inferred from IP, may be inaccurate)`;
     }
   }
 
@@ -734,11 +748,15 @@ export async function prepareRyoConversationModelInput(
         username,
         fallbackTimeZone: providedTimeZone,
       });
-  const effectiveSystemState = storedUserLocalTime
+  const storedUserGeo = hasUsefulGeo(systemState?.requestGeo)
+    ? null
+    : await getStoredUserGeo(redis, username);
+  const effectiveSystemState = storedUserLocalTime || storedUserGeo
     ? ({
         ...(systemState ?? {}),
         username: systemState?.username ?? username ?? undefined,
-        userLocalTime: storedUserLocalTime,
+        ...(storedUserLocalTime ? { userLocalTime: storedUserLocalTime } : {}),
+        ...(storedUserGeo ? { requestGeo: storedUserGeo } : {}),
       } as RyoConversationSystemState)
     : systemState;
   const userTimeZone = effectiveSystemState?.userLocalTime?.timeZone || providedTimeZone;

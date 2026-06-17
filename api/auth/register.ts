@@ -4,6 +4,7 @@
  * Create a new user account with password (Node.js runtime for bcrypt)
  */
 
+import { geolocation } from "@vercel/functions";
 import {
   generateAuthToken,
   storeToken,
@@ -29,7 +30,9 @@ import { buildSetAuthCookie } from "../_utils/_cookie.js";
 import { getClientIp } from "../_utils/_rate-limit.js";
 import { getHeader } from "../_utils/request-helpers.js";
 import {
+  normalizeUserGeo,
   normalizeUserTimeZone,
+  updateStoredUserGeo,
   updateStoredUserTimeZone,
 } from "../_utils/auth/_user-record.js";
 
@@ -148,6 +151,15 @@ export default apiHandler(
               username,
               getHeader(req, "x-user-timezone")
             );
+            try {
+              await updateStoredUserGeo(
+                redis,
+                username,
+                geolocation(req as unknown as Request)
+              );
+            } catch {
+              // Vercel geolocation is unavailable in local/self-hosted runtimes.
+            }
             const token = generateAuthToken();
             await storeToken(redis, username, token);
             res.setHeader("Set-Cookie", buildSetAuthCookie(username, token));
@@ -168,6 +180,12 @@ export default apiHandler(
     // Create user
     const now = Date.now();
     const requestTimeZone = normalizeUserTimeZone(getHeader(req, "x-user-timezone"));
+    let requestGeo: ReturnType<typeof normalizeUserGeo> = null;
+    try {
+      requestGeo = normalizeUserGeo(geolocation(req as unknown as Request));
+    } catch {
+      requestGeo = null;
+    }
     const userData = {
       username,
       createdAt: now,
@@ -175,6 +193,7 @@ export default apiHandler(
       ...(requestTimeZone
         ? { timeZone: requestTimeZone, timeZoneUpdatedAt: now }
         : {}),
+      ...(requestGeo ? { geo: requestGeo, geoUpdatedAt: now } : {}),
     };
     await redis.set(userKey, JSON.stringify(userData));
 

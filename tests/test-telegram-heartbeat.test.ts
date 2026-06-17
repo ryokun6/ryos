@@ -462,7 +462,7 @@ describe("telegram heartbeat helpers", () => {
     expect("web_search" in prepared.tools).toBe(true);
   });
 
-  test("telegram prompts hydrate user local time from the stored user timezone", async () => {
+  test("telegram prompts hydrate local time and location from the stored user record", async () => {
     const redis = makeRedis();
     await redis.set(
       `${CHAT_USERS_PREFIX}${TELEGRAM_HEARTBEAT_TARGET_USERNAME}`,
@@ -470,6 +470,14 @@ describe("telegram heartbeat helpers", () => {
         username: TELEGRAM_HEARTBEAT_TARGET_USERNAME,
         timeZone: "Asia/Tokyo",
         timeZoneUpdatedAt: 123,
+        geo: {
+          city: "Tokyo",
+          region: "Tokyo",
+          country: "JP",
+          latitude: "35.6762",
+          longitude: "139.6503",
+        },
+        geoUpdatedAt: 456,
       })
     );
 
@@ -490,6 +498,7 @@ describe("telegram heartbeat helpers", () => {
     expect(prepared.userTimeZone).toBe("Asia/Tokyo");
     expect(prepared.volatileStatePrompt).toContain("User Time:");
     expect(prepared.volatileStatePrompt).toContain("(Asia/Tokyo)");
+    expect(prepared.volatileStatePrompt).toContain("User Location: Tokyo, Tokyo, JP");
   });
 
   test("heartbeat conversations enable Google search grounding on gemini flash", async () => {

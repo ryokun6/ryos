@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { geolocation } from "@vercel/functions";
 import type { Redis } from "./redis.js";
 import { initLogger } from "./_logging.js";
 import { getEffectiveOrigin, isAllowedOrigin, setCorsHeaders } from "./_cors.js";
@@ -7,7 +8,10 @@ import { resolveRequestAuth, type AuthenticatedRequestUser } from "./request-aut
 import { recordAnalyticsEvent } from "./_analytics.js";
 import { getClientIp } from "./_rate-limit.js";
 import { getHeader } from "./request-helpers.js";
-import { updateStoredUserTimeZone } from "./auth/_user-record.js";
+import {
+  updateStoredUserGeo,
+  updateStoredUserTimeZone,
+} from "./auth/_user-record.js";
 
 type AuthMode = "none" | "optional" | "required" | "admin";
 
@@ -138,6 +142,15 @@ export function apiHandler<TBody = unknown>(
               });
             }
           );
+        }
+        try {
+          await updateStoredUserGeo(
+            redis,
+            user.username,
+            geolocation(req as unknown as Request)
+          );
+        } catch {
+          // Vercel geolocation is unavailable in some local/self-hosted runtimes.
         }
       }
     }
