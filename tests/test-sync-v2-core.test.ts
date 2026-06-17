@@ -10,6 +10,7 @@ import {
   lookupSyncBlobs,
   validateSyncOps,
   sync2KvKey,
+  sync2JournalKey,
 } from "../api/sync/v2/_core";
 import {
   clampHlc,
@@ -423,17 +424,17 @@ describe("sync v2 v1-import", () => {
     );
 
     // Simulate TTLs decaying (e.g. an idle device only ever reads).
-    fake.ttls.delete("sync2:kv:user1");
-    fake.ttls.delete("sync2:jrnl:user1");
+    fake.ttls.delete(sync2KvKey("user1"));
+    fake.ttls.delete(sync2JournalKey("user1"));
 
     await readSyncChanges(r, "user1", 0);
-    expect(fake.ttls.get("sync2:kv:user1")).toBeGreaterThan(0);
-    expect(fake.ttls.get("sync2:jrnl:user1")).toBeGreaterThan(0);
+    expect(fake.ttls.get(sync2KvKey("user1"))).toBeGreaterThan(0);
+    expect(fake.ttls.get(sync2JournalKey("user1"))).toBeGreaterThan(0);
 
     // Throttle marker prevents refreshing again within the same day.
-    fake.ttls.delete("sync2:kv:user1");
+    fake.ttls.delete(sync2KvKey("user1"));
     await readSyncChanges(r, "user1", 0);
-    expect(fake.ttls.get("sync2:kv:user1")).toBeUndefined();
+    expect(fake.ttls.get(sync2KvKey("user1"))).toBeUndefined();
   });
 
   test("import is skipped once initialized and writes proceed normally", async () => {

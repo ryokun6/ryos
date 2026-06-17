@@ -148,8 +148,8 @@ describe("Redis key scheme migration helpers", () => {
     expect(result.planned).toBe(1);
     expect(result.copied).toBe(1);
     expect(result.warnings).toEqual([]);
-    expect(await redis.get("sync2:seq:alice")).toBe("0");
-    const kv = await redis.hgetall("sync2:kv:alice");
+    expect(await redis.get(redisKeys.sync.v2Seq("alice"))).toBe("0");
+    const kv = await redis.hgetall(redisKeys.sync.v2Kv("alice"));
     expect(Object.keys(kv || {})).toContain("settings/display");
   });
 

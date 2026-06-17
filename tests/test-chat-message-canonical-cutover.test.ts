@@ -4,8 +4,22 @@ import { FakeRedis } from "./fake-redis";
 
 let fake: FakeRedis;
 
-mock.module("../api/_utils/redis.js", () => ({
-  createRedis: () => fake,
+mock.module("../api/_utils/redis-helpers.js", () => ({
+  createRedisClient: () => fake,
+  generateRandomHexId: (byteLength: number) => "a".repeat(byteLength * 2),
+  getCurrentTimestamp: () => 1_718_180_000_000,
+  parseJSON: <T>(data: unknown): T | null => {
+    if (!data) return null;
+    if (typeof data === "object") return data as T;
+    if (typeof data === "string") {
+      try {
+        return JSON.parse(data) as T;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  },
 }));
 
 let chatRedis: typeof import("../api/rooms/_helpers/_redis");
