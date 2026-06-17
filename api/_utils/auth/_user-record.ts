@@ -6,7 +6,10 @@
  */
 
 import type { Redis } from "../redis.js";
+import type { IpGeolocation } from "../_geolocation.js";
 import { CHAT_USERS_PREFIX } from "./_constants.js";
+
+export type StoredUserGeo = IpGeolocation;
 
 export interface StoredUserRecord {
   username?: string;
@@ -14,6 +17,8 @@ export interface StoredUserRecord {
   lastActive?: number;
   timeZone?: string;
   timeZoneUpdatedAt?: number;
+  geo?: StoredUserGeo;
+  geoUpdatedAt?: number;
   banned?: boolean;
   banReason?: string;
   bannedAt?: number;
@@ -63,11 +68,75 @@ export function normalizeUserTimeZone(timeZone?: string | null): string | null {
   }
 }
 
+function normalizeGeoString(value: unknown, maxLength: number): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  return trimmed.slice(0, maxLength);
+}
+
+function normalizeGeoCoordinate(
+  value: unknown,
+  min: number,
+  max: number
+): string | undefined {
+  const raw =
+    typeof value === "number"
+      ? String(value)
+      : typeof value === "string"
+        ? value.trim()
+        : "";
+  if (!raw) return undefined;
+
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed) || parsed < min || parsed > max) {
+    return undefined;
+  }
+
+  return raw;
+}
+
+export function normalizeUserGeo(geo?: unknown): StoredUserGeo | null {
+  if (!geo || typeof geo !== "object") {
+    return null;
+  }
+
+  const raw = geo as Record<string, unknown>;
+  const normalized: StoredUserGeo = {};
+  const city = normalizeGeoString(raw.city, 100);
+  const region = normalizeGeoString(raw.region, 100);
+  const country = normalizeGeoString(raw.country, 100);
+  const latitude = normalizeGeoCoordinate(raw.latitude, -90, 90);
+  const longitude = normalizeGeoCoordinate(raw.longitude, -180, 180);
+
+  if (city) normalized.city = city;
+  if (region) normalized.region = region;
+  if (country) normalized.country = country;
+  if (latitude) normalized.latitude = latitude;
+  if (longitude) normalized.longitude = longitude;
+
+  if (
+    !normalized.city &&
+    !normalized.country &&
+    !(normalized.latitude && normalized.longitude)
+  ) {
+    return null;
+  }
+
+  return normalized;
+}
+
+function geoMatches(a: StoredUserGeo | null, b: StoredUserGeo | null): boolean {
+  return JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+}
+
 export async function getStoredUserRecord(
   redis: Redis,
   username: string
 ): Promise<StoredUserRecord | null> {
-  return parseStoredUser(await redis.get(`${CHAT_USERS_PREFIX}${username.toLowerCase()}`));
+  return parseStoredUser(
+    await redis.get(`${CHAT_USERS_PREFIX}${username.toLowerCase()}`)
+  );
 }
 
 export async function getStoredUserTimeZone(
@@ -80,6 +149,18 @@ export async function getStoredUserTimeZone(
 
   const record = await getStoredUserRecord(redis, username);
   return normalizeUserTimeZone(record?.timeZone);
+}
+
+export async function getStoredUserGeo(
+  redis: Redis | undefined,
+  username?: string | null
+): Promise<StoredUserGeo | null> {
+  if (!redis || !username) {
+    return null;
+  }
+
+  const record = await getStoredUserRecord(redis, username);
+  return normalizeUserGeo(record?.geo);
 }
 
 export async function updateStoredUserTimeZone(
@@ -107,6 +188,37 @@ export async function updateStoredUserTimeZone(
     ...existingRecord,
     timeZone: normalizedTimeZone,
     timeZoneUpdatedAt: now,
+  };
+  await redis.set(key, JSON.stringify(updatedRecord));
+  return updatedRecord;
+}
+
+export async function updateStoredUserGeo(
+  redis: Redis,
+  username: string,
+  geo?: unknown,
+  now: number = Date.now()
+): Promise<StoredUserRecord | null> {
+  const normalizedGeo = normalizeUserGeo(geo);
+  if (!normalizedGeo) {
+    return null;
+  }
+
+  const key = `${CHAT_USERS_PREFIX}${username.toLowerCase()}`;
+  const existingRecord = parseStoredUser(await redis.get(key));
+  if (!existingRecord) {
+    return null;
+  }
+
+  const existingGeo = normalizeUserGeo(existingRecord.geo);
+  if (geoMatches(existingGeo, normalizedGeo)) {
+    return existingRecord;
+  }
+
+  const updatedRecord: StoredUserRecord = {
+    ...existingRecord,
+    geo: normalizedGeo,
+    geoUpdatedAt: now,
   };
   await redis.set(key, JSON.stringify(updatedRecord));
   return updatedRecord;

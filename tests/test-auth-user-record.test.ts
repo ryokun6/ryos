@@ -1,10 +1,13 @@
 import { describe, expect, test } from "bun:test";
 import type { Redis } from "../api/_utils/redis";
 import {
+  getStoredUserGeo,
   getStoredUserTimeZone,
   isUserBanned,
+  normalizeUserGeo,
   normalizeUserTimeZone,
   parseStoredUser,
+  updateStoredUserGeo,
   updateStoredUserTimeZone,
 } from "../api/_utils/auth/_user-record";
 import { CHAT_USERS_PREFIX } from "../api/_utils/auth/_constants";
@@ -76,6 +79,55 @@ describe("stored user record helpers", () => {
     const ignored = await updateStoredUserTimeZone(redis, username, "not/a-zone", 456);
     expect(ignored).toBeNull();
     expect(await getStoredUserTimeZone(redis, username)).toBe("Europe/Berlin");
+  });
+
+  test("validates and persists useful approximate GeoIP context", async () => {
+    const redis = makeRedis();
+    const username = "geo_user";
+    await redis.set(`${CHAT_USERS_PREFIX}${username}`, JSON.stringify({ username }));
+
+    expect(
+      normalizeUserGeo({
+        city: "  San Francisco  ",
+        region: "California",
+        country: "US",
+        latitude: "37.7749",
+        longitude: -122.4194,
+      })
+    ).toEqual({
+      city: "San Francisco",
+      region: "California",
+      country: "US",
+      latitude: "37.7749",
+      longitude: "-122.4194",
+    });
+    expect(normalizeUserGeo({ region: "California" })).toBeNull();
+    expect(normalizeUserGeo({ latitude: "999", longitude: "0" })).toBeNull();
+
+    const updated = await updateStoredUserGeo(
+      redis,
+      username,
+      {
+        city: "Berlin",
+        country: "DE",
+        latitude: "52.52",
+        longitude: "13.405",
+      },
+      456
+    );
+
+    expect(updated?.geo).toEqual({
+      city: "Berlin",
+      country: "DE",
+      latitude: "52.52",
+      longitude: "13.405",
+    });
+    expect(updated?.geoUpdatedAt).toBe(456);
+    expect(await getStoredUserGeo(redis, username)).toEqual(updated?.geo);
+
+    const ignored = await updateStoredUserGeo(redis, username, { region: "Only" }, 789);
+    expect(ignored).toBeNull();
+    expect(await getStoredUserGeo(redis, username)).toEqual(updated?.geo);
   });
 
   test("builds stable user-local prompt time context", () => {

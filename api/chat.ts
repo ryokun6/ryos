@@ -25,7 +25,9 @@ import { getHeader } from "./_utils/request-helpers.js";
 import { resolveIpGeolocation } from "./_utils/_geolocation.js";
 import { createRyoToolLoopAgent } from "./_utils/ryo-agent.js";
 import {
+  getStoredUserGeo,
   getStoredUserTimeZone,
+  updateStoredUserGeo,
   updateStoredUserTimeZone,
 } from "./_utils/auth/_user-record.js";
 import { buildUserLocalTimeContext } from "./_utils/user-time-context.js";
@@ -39,6 +41,9 @@ function normalizeChatModel(model: string): string {
   return CHAT_MODEL_ALIASES[model] ?? model;
 }
 
+function hasUsefulGeo(geo?: SystemState["requestGeo"] | null): boolean {
+  return Boolean(geo && (geo.city || geo.country || (geo.latitude && geo.longitude)));
+}
 
 // Node.js runtime configuration
 export const runtime = "nodejs";
@@ -178,11 +183,26 @@ export default apiHandler<{
         log,
         logError,
       })) ?? geo;
+    if (isAuthenticated && username && hasUsefulGeo(resolvedGeo)) {
+      await updateStoredUserGeo(redis, username, resolvedGeo).catch((error) => {
+        logError("Failed to update user geo from chat request", error);
+      });
+    }
+    const storedUserGeo =
+      !hasUsefulGeo(resolvedGeo) && isAuthenticated && username
+        ? await getStoredUserGeo(redis, username)
+        : null;
+    const effectiveGeo = hasUsefulGeo(resolvedGeo) ? resolvedGeo : storedUserGeo;
 
     // Attach geolocation info to system state that will be sent to the prompt
     const systemState: SystemState | undefined = incomingSystemState
-      ? { ...incomingSystemState, requestGeo: resolvedGeo }
-      : ({ requestGeo: resolvedGeo } as SystemState);
+      ? {
+          ...incomingSystemState,
+          ...(effectiveGeo ? { requestGeo: effectiveGeo } : {}),
+        }
+      : effectiveGeo
+        ? ({ requestGeo: effectiveGeo } as SystemState)
+        : undefined;
     const userTimeZone = systemState?.userLocalTime?.timeZone;
     if (isAuthenticated && username && userTimeZone) {
       await updateStoredUserTimeZone(redis, username, userTimeZone).catch((error) => {

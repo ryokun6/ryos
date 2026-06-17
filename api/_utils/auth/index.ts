@@ -82,9 +82,12 @@ export {
   parseStoredUser,
   isUserBanned,
   normalizeUserTimeZone,
+  normalizeUserGeo,
   getStoredUserRecord,
   getStoredUserTimeZone,
+  getStoredUserGeo,
   updateStoredUserTimeZone,
+  updateStoredUserGeo,
 } from "./_user-record.js";
 
 // Per-username login lockout (shared by login + register)
