@@ -1,6 +1,7 @@
 import type { DailyNote, DailyNoteEntry } from "./_memory.js";
 import type { HeartbeatRecord } from "./heartbeats.js";
 import type { TelegramConversationMessage } from "./telegram-link.js";
+import { redisKeys } from "../../src/shared/redisKeys.js";
 
 export const TELEGRAM_HEARTBEAT_TARGET_USERNAME = "ryo";
 export const TELEGRAM_HEARTBEAT_INTERVAL_MINUTES = 30;
@@ -56,6 +57,16 @@ export function getTelegramHeartbeatSlot(date: Date = new Date()): number {
 }
 
 export function buildTelegramHeartbeatRedisKey(
+  username: string,
+  date: Date = new Date()
+): string {
+  return redisKeys.integration.telegramHeartbeat(
+    username,
+    String(getTelegramHeartbeatSlot(date))
+  );
+}
+
+export function buildLegacyTelegramHeartbeatRedisKey(
   username: string,
   date: Date = new Date()
 ): string {

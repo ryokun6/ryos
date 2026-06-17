@@ -14,6 +14,7 @@ import {
   getOpenAIProviderOptions,
 } from "./_utils/_aiModels.js";
 import { normalizeUrlForCacheKey } from "./_utils/_url.js";
+import { redisKeys, sha256RedisIdentifier } from "../src/shared/redisKeys.js";
 import {
   CORE_PRIORITY_INSTRUCTIONS,
   RYO_PERSONA_INSTRUCTIONS,
@@ -247,6 +248,13 @@ export default apiHandler<IEGenerateRequestBody>(
     // Use normalized URL for the cache key
     const cacheKey =
       normalizedUrlForKey && effectiveYearStr
+        ? redisKeys.cache.ieVersions(
+            await sha256RedisIdentifier(normalizedUrlForKey),
+            effectiveYearStr
+          )
+        : null;
+    const legacyCacheKey =
+      normalizedUrlForKey && effectiveYearStr
         ? `${IE_CACHE_PREFIX}${encodeURIComponent(
             normalizedUrlForKey
           )}:${effectiveYearStr}`
@@ -341,6 +349,10 @@ export default apiHandler<IEGenerateRequestBody>(
           }
           await redis.lpush(cacheKey, cleaned);
           await redis.ltrim(cacheKey, 0, 4);
+          if (legacyCacheKey) {
+            await redis.lpush(legacyCacheKey, cleaned);
+            await redis.ltrim(legacyCacheKey, 0, 4);
+          }
           const duration = Date.now() - startTime;
           logger.info(`Cached result for ${cacheKey} (length=${cleaned.length}, duration=${duration.toFixed(2)}ms)`);
         } catch (cacheErr) {

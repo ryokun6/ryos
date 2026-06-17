@@ -5,13 +5,15 @@
 
 import { apiHandler } from "../../_utils/api-handler.js";
 import { isProfaneUsername, assertValidRoomId, assertValidUsername } from "../../_utils/_validation.js";
-import { getRoom, setRoom } from "../_helpers/_redis.js";
-import { getRoomWriteAccessError } from "../_helpers/_access.js";
 import {
-  CHAT_ROOM_PREFIX,
-  CHAT_ROOM_USERS_PREFIX,
-  CHAT_ROOMS_SET,
-} from "../_helpers/_constants.js";
+  deleteAllMessages,
+  deleteRoom,
+  getRoom,
+  setRoom,
+  unregisterRoom,
+} from "../_helpers/_redis.js";
+import { getRoomWriteAccessError } from "../_helpers/_access.js";
+import { CHAT_ROOM_USERS_PREFIX } from "../_helpers/_constants.js";
 import {
   deleteRoomPresence,
   removeRoomPresence,
@@ -98,12 +100,10 @@ export default apiHandler(
           const updatedMembers = roomData.members ? roomData.members.filter((m) => m !== username) : [];
 
           if (updatedMembers.length <= 1) {
-            const pipeline = redis.pipeline();
-            pipeline.del(`${CHAT_ROOM_PREFIX}${roomId}`);
-            pipeline.del(`chat:messages:${roomId}`);
-            pipeline.del(`${CHAT_ROOM_USERS_PREFIX}${roomId}`);
-            pipeline.srem(CHAT_ROOMS_SET, roomId);
-            await pipeline.exec();
+            await deleteRoom(roomId);
+            await deleteAllMessages(roomId);
+            await unregisterRoom(roomId);
+            await redis.del(`${CHAT_ROOM_USERS_PREFIX}${roomId}`);
             await deleteRoomPresence(roomId);
 
             await broadcastRoomDeleted(roomId, roomData.type, roomData.members || []);

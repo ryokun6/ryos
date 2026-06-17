@@ -1,6 +1,7 @@
 import { apiHandler } from "./_utils/api-handler.js";
 import * as RateLimit from "./_utils/_rate-limit.js";
 import { getClientIp } from "./_utils/_rate-limit.js";
+import { redisKeys } from "../src/shared/redisKeys.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
@@ -88,11 +89,12 @@ export default apiHandler(
       logger.error("Rate limit check failed", e);
     }
 
-    const cacheKey = `${CACHE_PREFIX}${catalogId}`;
+    const cacheKey = redisKeys.cache.appleArtwork(catalogId);
+    const legacyCacheKey = `${CACHE_PREFIX}${catalogId}`;
 
     // Serve from cache when available.
     try {
-      const cached = await redis.get(cacheKey);
+      const cached = (await redis.get(cacheKey)) ?? (await redis.get(legacyCacheKey));
       if (cached) {
         const parsed: ArtworkResult =
           typeof cached === "string" ? JSON.parse(cached) : (cached as ArtworkResult);
@@ -140,6 +142,9 @@ export default apiHandler(
     // Cache the result (positive longer than negative).
     try {
       await redis.set(cacheKey, JSON.stringify(result), {
+        ex: result.cover ? CACHE_TTL_SECONDS : NEGATIVE_TTL_SECONDS,
+      });
+      await redis.set(legacyCacheKey, JSON.stringify(result), {
         ex: result.cover ? CACHE_TTL_SECONDS : NEGATIVE_TTL_SECONDS,
       });
     } catch (e) {

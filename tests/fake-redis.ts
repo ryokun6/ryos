@@ -187,7 +187,8 @@ export class FakeRedis {
         this.kv.has(key) ||
         this.sets.has(key) ||
         this.hashes.has(key) ||
-        this.lists.has(key)
+        this.lists.has(key) ||
+        this.zsets.has(key)
     )
       ? 1
       : 0;

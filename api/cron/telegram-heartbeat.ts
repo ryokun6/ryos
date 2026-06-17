@@ -17,6 +17,7 @@ import {
   buildTelegramHeartbeatNoteContext,
   buildTelegramHeartbeatConversationContext,
   buildTelegramHeartbeatPrompt,
+  buildLegacyTelegramHeartbeatRedisKey,
   buildTelegramHeartbeatRedisKey,
   buildTelegramHeartbeatStateSummary,
   formatTelegramConversationEntries,
@@ -62,9 +63,13 @@ function sendJson(
 async function markHeartbeatSlot(
   redis: ReturnType<typeof createRedis>,
   slotKey: string,
+  legacySlotKey: string,
   payload: Record<string, unknown>
 ): Promise<void> {
   await redis.set(slotKey, JSON.stringify(payload), {
+    ex: TELEGRAM_HEARTBEAT_SLOT_TTL_SECONDS,
+  });
+  await redis.set(legacySlotKey, JSON.stringify(payload), {
     ex: TELEGRAM_HEARTBEAT_SLOT_TTL_SECONDS,
   });
 }
@@ -170,7 +175,8 @@ export default async function handler(
   }
 
   const slotKey = buildTelegramHeartbeatRedisKey(username);
-  if ((await redis.exists(slotKey)) > 0) {
+  const legacySlotKey = buildLegacyTelegramHeartbeatRedisKey(username);
+  if ((await redis.exists(slotKey, legacySlotKey)) > 0) {
     await appendHeartbeatLog(
       redis,
       username,
@@ -309,7 +315,7 @@ export default async function handler(
       },
       logger
     );
-    await markHeartbeatSlot(redis, slotKey, {
+    await markHeartbeatSlot(redis, slotKey, legacySlotKey, {
       username,
       chatId: linkedAccount.chatId,
       sent: false,
@@ -428,7 +434,7 @@ export default async function handler(
       },
       logger
     );
-    await markHeartbeatSlot(redis, slotKey, {
+    await markHeartbeatSlot(redis, slotKey, legacySlotKey, {
       username,
       chatId: linkedAccount.chatId,
       sent: false,
@@ -468,6 +474,7 @@ export default async function handler(
   await markHeartbeatSlot(
     redis,
     slotKey,
+    legacySlotKey,
     {
       username,
       chatId: linkedAccount.chatId,

@@ -1,4 +1,5 @@
 import { createRedis } from "./redis.js";
+import { validateAuth } from "./auth/index.js";
 
 // Set up Redis client
 const redis = createRedis();
@@ -46,9 +47,8 @@ export async function checkAndIncrementAIMessageCount(
   // If authenticated, validate the token
   if (isAuthenticated && authToken) {
     const lower = identifier.toLowerCase();
-    const userScopedKey = `chat:token:user:${lower}:${authToken}`;
-    const exists = await redis.exists(userScopedKey);
-    if (!exists) {
+    const validation = await validateAuth(redis, lower, authToken);
+    if (!validation.valid) {
       // Invalid token for this user – treat as unauthenticated (use anon limit)
       return {
         allowed: false,

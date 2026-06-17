@@ -24,10 +24,13 @@ import type { Redis } from "../../_utils/redis.js";
 import { deleteStoredObject } from "../../_utils/storage.js";
 import { getSyncBlobRef } from "../../../src/shared/sync2/types.js";
 import {
+  legacySync2BlobsKey,
+  legacySync2KvKey,
   parseRedisJson,
   sync2BlobsKey,
   sync2KvKey,
 } from "./_core.js";
+import { redisKeys } from "../../../src/shared/redisKeys.js";
 
 /**
  * Retirement TTL for frozen v1 keys. These are dead copies of data already
@@ -38,7 +41,7 @@ export const V1_RETIREMENT_TTL_SECONDS = 90 * 24 * 60 * 60;
 /** Unreferenced blobs must stay marked this long before deletion. */
 export const BLOB_GC_GRACE_MS = 24 * 60 * 60 * 1000;
 
-const MAINTENANCE_CURSOR_KEY = "sync2:maint:cursor";
+const LEGACY_MAINTENANCE_CURSOR_KEY = "sync2:maint:cursor";
 
 const V1_REDIS_DOMAINS = [
   "settings",
@@ -101,9 +104,11 @@ interface V1ManifestEntry {
 
 function getUsernameFromKvKey(key: string): string | null {
   const prefix = "sync2:kv:";
-  return key.startsWith(prefix) && key.length > prefix.length
-    ? key.slice(prefix.length)
-    : null;
+  if (key.startsWith(prefix) && key.length > prefix.length) {
+    return key.slice(prefix.length);
+  }
+  const canonicalMatch = /^sync:v2:user:([^:]+):kv$/.exec(key);
+  return canonicalMatch?.[1] ? decodeURIComponent(canonicalMatch[1]) : null;
 }
 
 /**
@@ -118,37 +123,46 @@ async function scanUserBatch(
   scanCount: number
 ): Promise<{ usernames: string[]; scanComplete: boolean }> {
   const startCursor =
-    (await redis.get<string | number>(MAINTENANCE_CURSOR_KEY)) ?? "0";
+    (await redis.get<string | number>(redisKeys.sync.maintenanceCursor())) ??
+    (await redis.get<string | number>(LEGACY_MAINTENANCE_CURSOR_KEY)) ??
+    "0";
   let cursor: string | number = String(startCursor);
   const usernames: string[] = [];
   let scanComplete = false;
 
   // SCAN counts are hints; loop until the batch is full or the scan wraps.
-  for (let iterations = 0; iterations < 50; iterations += 1) {
-    const [nextCursor, keys] = await redis.scan(cursor, {
-      match: "sync2:kv:*",
-      count: scanCount,
-    });
-    for (const key of keys) {
-      const username = getUsernameFromKvKey(key);
-      if (username && !usernames.includes(username)) {
-        usernames.push(username);
+  for (const pattern of ["sync:v2:user:*:kv", "sync2:kv:*"]) {
+    for (let iterations = 0; iterations < 50; iterations += 1) {
+      const [nextCursor, keys] = await redis.scan(cursor, {
+        match: pattern,
+        count: scanCount,
+      });
+      for (const key of keys) {
+        const username = getUsernameFromKvKey(key);
+        if (username && !usernames.includes(username)) {
+          usernames.push(username);
+        }
+      }
+      cursor = String(nextCursor);
+      if (cursor === "0") {
+        scanComplete = true;
+        break;
+      }
+      if (usernames.length >= maxUsers) {
+        break;
       }
     }
-    cursor = String(nextCursor);
-    if (cursor === "0") {
-      scanComplete = true;
-      break;
-    }
-    if (usernames.length >= maxUsers) {
-      break;
-    }
+    if (usernames.length >= maxUsers) break;
+    cursor = "0";
   }
 
   if (scanComplete) {
-    await redis.del(MAINTENANCE_CURSOR_KEY);
+    await redis.del(redisKeys.sync.maintenanceCursor(), LEGACY_MAINTENANCE_CURSOR_KEY);
   } else {
-    await redis.set(MAINTENANCE_CURSOR_KEY, String(cursor), {
+    await redis.set(redisKeys.sync.maintenanceCursor(), String(cursor), {
+      ex: 7 * 24 * 60 * 60,
+    });
+    await redis.set(LEGACY_MAINTENANCE_CURSOR_KEY, String(cursor), {
       ex: 7 * 24 * 60 * 60,
     });
   }
@@ -163,7 +177,9 @@ async function collectReferencedBlobs(
 ): Promise<{ hashes: Set<string>; urls: Set<string> }> {
   const hashes = new Set<string>();
   const urls = new Set<string>();
-  const raw = await redis.hgetall<Record<string, unknown>>(sync2KvKey(username));
+  const legacyRaw = await redis.hgetall<Record<string, unknown>>(legacySync2KvKey(username));
+  const canonicalRaw = await redis.hgetall<Record<string, unknown>>(sync2KvKey(username));
+  const raw = { ...(legacyRaw || {}), ...(canonicalRaw || {}) };
   if (!raw) return { hashes, urls };
 
   for (const value of Object.values(raw)) {
@@ -225,15 +241,17 @@ async function healUserRecord(
   username: string,
   stats: SyncMaintenanceStats
 ): Promise<void> {
-  const key = `chat:users:${username}`;
-  try {
-    if ((await redis.ttl(key)) > 0) {
-      await redis.persist(key);
-      stats.userRecordsPersisted += 1;
+  const keys = [redisKeys.auth.userProfile(username), `chat:users:${username}`];
+  for (const key of keys) {
+    try {
+      if ((await redis.ttl(key)) > 0) {
+        await redis.persist(key);
+        stats.userRecordsPersisted += 1;
+      }
+    } catch (error) {
+      stats.errors += 1;
+      console.warn(`[sync2:maint] Failed to persist user record ${key}:`, error);
     }
-  } catch (error) {
-    stats.errors += 1;
-    console.warn(`[sync2:maint] Failed to persist user record ${key}:`, error);
   }
 }
 
@@ -250,7 +268,10 @@ async function sweepBlobRegistry(
   options: Required<Pick<SyncMaintenanceOptions, "graceMs" | "now" | "deleteObject">>
 ): Promise<void> {
   const registryKey = sync2BlobsKey(username);
-  const raw = await redis.hgetall<Record<string, unknown>>(registryKey);
+  const legacyRegistryKey = legacySync2BlobsKey(username);
+  const legacyRaw = await redis.hgetall<Record<string, unknown>>(legacyRegistryKey);
+  const canonicalRaw = await redis.hgetall<Record<string, unknown>>(registryKey);
+  const raw = { ...(legacyRaw || {}), ...(canonicalRaw || {}) };
   if (!raw) return;
 
   for (const [digest, value] of Object.entries(raw)) {
@@ -265,6 +286,7 @@ async function sweepBlobRegistry(
         // Re-referenced while marked: clear the mark.
         const { gc: _gc, ...unmarked } = entry;
         await redis.hset(registryKey, { [digest]: JSON.stringify(unmarked) });
+        await redis.hset(legacyRegistryKey, { [digest]: JSON.stringify(unmarked) });
         stats.blobsUnmarked += 1;
       }
       continue;
@@ -272,6 +294,9 @@ async function sweepBlobRegistry(
 
     if (!entry.gc) {
       await redis.hset(registryKey, {
+        [digest]: JSON.stringify({ ...entry, gc: options.now }),
+      });
+      await redis.hset(legacyRegistryKey, {
         [digest]: JSON.stringify({ ...entry, gc: options.now }),
       });
       stats.blobsMarked += 1;
@@ -285,6 +310,7 @@ async function sweepBlobRegistry(
       budget.remaining -= 1;
       await options.deleteObject(entry.url);
       await redis.hdel(registryKey, digest);
+      await redis.hdel(legacyRegistryKey, digest);
       stats.blobsDeleted += 1;
     } catch (error) {
       stats.errors += 1;

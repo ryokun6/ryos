@@ -7,6 +7,8 @@ import {
   CURSOR_REPO_AGENT_OWNER,
   cursorSdkEventsKey,
   cursorSdkMetaKey,
+  legacyCursorSdkEventsKey,
+  legacyCursorSdkMetaKey,
 } from "../chat/tools/cursor-repo-agent.js";
 import { apiHandler } from "../_utils/api-handler.js";
 
@@ -77,7 +79,9 @@ export default apiHandler(
     }
 
     const metaKey = cursorSdkMetaKey(runId);
-    const rawMeta = await redis.get(metaKey);
+    const rawMeta =
+      (await redis.get(metaKey)) ??
+      (await redis.get(legacyCursorSdkMetaKey(runId)));
     const meta = parseStoredJson<{ username?: string }>(rawMeta);
     if (!meta) {
       logger.response(404, Date.now() - startTime);
@@ -92,7 +96,11 @@ export default apiHandler(
     }
 
     const eventsKey = cursorSdkEventsKey(runId);
-    const rawLinesUnknown = await redis.lrange(eventsKey, 0, -1);
+    const canonicalLines = await redis.lrange(eventsKey, 0, -1);
+    const rawLinesUnknown =
+      canonicalLines.length > 0
+        ? canonicalLines
+        : await redis.lrange(legacyCursorSdkEventsKey(runId), 0, -1);
     const rawLines = Array.isArray(rawLinesUnknown)
       ? rawLinesUnknown
       : [];

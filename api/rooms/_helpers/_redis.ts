@@ -16,6 +16,11 @@ import {
   CHAT_USERS_PREFIX,
   CHAT_ROOMS_SET,
 } from "./_constants.js";
+import { redisKeys } from "../../../src/shared/redisKeys.js";
+import {
+  getStoredUserRecord,
+  setStoredUserRecord,
+} from "../../_utils/auth/_user-record.js";
 
 // Export for direct usage in endpoints and feature helpers.
 export { createRedisClient, getCurrentTimestamp, parseJSON };
@@ -62,7 +67,9 @@ export function parseMessageData(data: unknown): Message | null {
  */
 export async function getRoom(roomId: string): Promise<Room | null> {
   const client = createRedisClient();
-  const data = await client.get(`${CHAT_ROOM_PREFIX}${roomId}`);
+  const data =
+    (await client.get(redisKeys.chat.roomMeta(roomId))) ??
+    (await client.get(`${CHAT_ROOM_PREFIX}${roomId}`));
   return parseRoomData(data);
 }
 
@@ -71,6 +78,7 @@ export async function getRoom(roomId: string): Promise<Room | null> {
  */
 export async function setRoom(roomId: string, room: Room): Promise<void> {
   const client = createRedisClient();
+  await client.set(redisKeys.chat.roomMeta(roomId), room);
   await client.set(`${CHAT_ROOM_PREFIX}${roomId}`, room);
 }
 
@@ -79,7 +87,7 @@ export async function setRoom(roomId: string, room: Room): Promise<void> {
  */
 export async function deleteRoom(roomId: string): Promise<void> {
   const client = createRedisClient();
-  await client.del(`${CHAT_ROOM_PREFIX}${roomId}`);
+  await client.del(redisKeys.chat.roomMeta(roomId), `${CHAT_ROOM_PREFIX}${roomId}`);
 }
 
 /**
@@ -87,8 +95,11 @@ export async function deleteRoom(roomId: string): Promise<void> {
  */
 export async function roomExists(roomId: string): Promise<boolean> {
   const client = createRedisClient();
-  const exists = await client.exists(`${CHAT_ROOM_PREFIX}${roomId}`);
-  return exists === 1;
+  const exists = await client.exists(
+    redisKeys.chat.roomMeta(roomId),
+    `${CHAT_ROOM_PREFIX}${roomId}`
+  );
+  return exists > 0;
 }
 
 /**
@@ -96,7 +107,9 @@ export async function roomExists(roomId: string): Promise<boolean> {
  */
 export async function getAllRoomIds(): Promise<string[]> {
   const client = createRedisClient();
-  let roomIds = await client.smembers<string[]>(CHAT_ROOMS_SET);
+  const canonicalRoomIds = await client.smembers<string[]>(redisKeys.chat.roomIds());
+  const legacyRoomIds = await client.smembers<string[]>(CHAT_ROOMS_SET);
+  let roomIds = [...new Set([...(canonicalRoomIds || []), ...(legacyRoomIds || [])])];
 
   if (!roomIds || roomIds.length === 0) {
     const discovered: string[] = [];
@@ -112,6 +125,7 @@ export async function getAllRoomIds(): Promise<string[]> {
     } while (cursor !== 0);
 
     if (discovered.length) {
+      await client.sadd(redisKeys.chat.roomIds(), ...(discovered as [string, ...string[]]));
       await client.sadd(CHAT_ROOMS_SET, ...(discovered as [string, ...string[]]));
       roomIds = discovered;
     }
@@ -125,6 +139,7 @@ export async function getAllRoomIds(): Promise<string[]> {
  */
 export async function registerRoom(roomId: string): Promise<void> {
   const client = createRedisClient();
+  await client.sadd(redisKeys.chat.roomIds(), roomId);
   await client.sadd(CHAT_ROOMS_SET, roomId);
 }
 
@@ -133,6 +148,7 @@ export async function registerRoom(roomId: string): Promise<void> {
  */
 export async function unregisterRoom(roomId: string): Promise<void> {
   const client = createRedisClient();
+  await client.srem(redisKeys.chat.roomIds(), roomId);
   await client.srem(CHAT_ROOMS_SET, roomId);
 }
 
@@ -145,8 +161,8 @@ export async function unregisterRoom(roomId: string): Promise<void> {
  */
 export async function getUser(username: string): Promise<User | null> {
   const client = createRedisClient();
-  const data = await client.get(`${CHAT_USERS_PREFIX}${username}`);
-  return parseUserData(data);
+  const record = await getStoredUserRecord(client, username);
+  return parseUserData(record);
 }
 
 /**
@@ -154,6 +170,7 @@ export async function getUser(username: string): Promise<User | null> {
  */
 export async function setUser(username: string, user: User): Promise<void> {
   const client = createRedisClient();
+  await setStoredUserRecord(client, username, user);
   await client.set(`${CHAT_USERS_PREFIX}${username}`, JSON.stringify(user));
 }
 
@@ -166,6 +183,9 @@ export async function createUserIfNotExists(
   user: User
 ): Promise<boolean> {
   const client = createRedisClient();
+  const existing = await getStoredUserRecord(client, username);
+  if (existing) return false;
+  await setStoredUserRecord(client, username, user);
   const created = await client.setnx(
     `${CHAT_USERS_PREFIX}${username}`,
     JSON.stringify(user)
@@ -178,8 +198,11 @@ export async function createUserIfNotExists(
  */
 export async function userExists(username: string): Promise<boolean> {
   const client = createRedisClient();
-  const exists = await client.exists(`${CHAT_USERS_PREFIX}${username}`);
-  return exists === 1;
+  const exists = await client.exists(
+    redisKeys.auth.userProfile(username),
+    `${CHAT_USERS_PREFIX}${username}`
+  );
+  return exists > 0;
 }
 
 // ============================================================================
@@ -194,10 +217,15 @@ export async function getMessages(
   limit: number = 20
 ): Promise<Message[]> {
   const client = createRedisClient();
-  const messagesKey = `${CHAT_MESSAGES_PREFIX}${roomId}`;
+  const messagesKey = redisKeys.chat.roomMessages(roomId);
+  const legacyMessagesKey = `${CHAT_MESSAGES_PREFIX}${roomId}`;
   const rawMessages = await client.lrange<(Message | string)[]>(messagesKey, 0, limit - 1);
+  const sourceMessages =
+    rawMessages.length > 0
+      ? rawMessages
+      : await client.lrange<(Message | string)[]>(legacyMessagesKey, 0, limit - 1);
 
-  return (rawMessages || []).reduce<Message[]>((acc, item) => {
+  return (sourceMessages || []).reduce<Message[]>((acc, item) => {
     const message = parseMessageData(item);
     if (message !== null) {
       acc.push(message);
@@ -214,9 +242,13 @@ export async function addMessage(
   message: Message
 ): Promise<void> {
   const client = createRedisClient();
-  const messagesKey = `${CHAT_MESSAGES_PREFIX}${roomId}`;
-  await client.lpush(messagesKey, JSON.stringify(message));
+  const serialized = JSON.stringify(message);
+  const messagesKey = redisKeys.chat.roomMessages(roomId);
+  const legacyMessagesKey = `${CHAT_MESSAGES_PREFIX}${roomId}`;
+  await client.lpush(messagesKey, serialized);
   await client.ltrim(messagesKey, 0, 99);
+  await client.lpush(legacyMessagesKey, serialized);
+  await client.ltrim(legacyMessagesKey, 0, 99);
 }
 
 /**
@@ -227,8 +259,14 @@ export async function deleteMessage(
   messageId: string
 ): Promise<boolean> {
   const client = createRedisClient();
-  const listKey = `${CHAT_MESSAGES_PREFIX}${roomId}`;
-  const messagesRaw = await client.lrange<(Message | string)[]>(listKey, 0, -1);
+  const listKey = redisKeys.chat.roomMessages(roomId);
+  const legacyListKey = `${CHAT_MESSAGES_PREFIX}${roomId}`;
+  let messagesRaw = await client.lrange<(Message | string)[]>(listKey, 0, -1);
+  let sourceKey = listKey;
+  if (messagesRaw.length === 0) {
+    messagesRaw = await client.lrange<(Message | string)[]>(legacyListKey, 0, -1);
+    sourceKey = legacyListKey;
+  }
 
   let targetRaw: string | null = null;
   for (const raw of messagesRaw || []) {
@@ -241,7 +279,8 @@ export async function deleteMessage(
 
   if (!targetRaw) return false;
 
-  await client.lrem(listKey, 1, targetRaw);
+  await client.lrem(sourceKey, 1, targetRaw);
+  await client.lrem(sourceKey === listKey ? legacyListKey : listKey, 1, targetRaw);
   return true;
 }
 
@@ -250,7 +289,7 @@ export async function deleteMessage(
  */
 export async function deleteAllMessages(roomId: string): Promise<void> {
   const client = createRedisClient();
-  await client.del(`${CHAT_MESSAGES_PREFIX}${roomId}`);
+  await client.del(redisKeys.chat.roomMessages(roomId), `${CHAT_MESSAGES_PREFIX}${roomId}`);
 }
 
 /**
