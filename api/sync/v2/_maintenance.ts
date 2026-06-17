@@ -102,6 +102,26 @@ interface V1ManifestEntry {
   [key: string]: unknown;
 }
 
+function mergeBlobRegistries(
+  legacyRaw: Record<string, unknown> | null,
+  canonicalRaw: Record<string, unknown> | null
+): Record<string, string> {
+  const merged: Record<string, string> = {};
+  const digests = new Set([
+    ...Object.keys(legacyRaw || {}),
+    ...Object.keys(canonicalRaw || {}),
+  ]);
+  for (const digest of digests) {
+    const legacyEntry = parseRedisJson<BlobRegistryEntry>(legacyRaw?.[digest]);
+    const canonicalEntry = parseRedisJson<BlobRegistryEntry>(canonicalRaw?.[digest]);
+    const entry = canonicalEntry || legacyEntry;
+    if (!entry) continue;
+    const gc = canonicalEntry?.gc ?? legacyEntry?.gc;
+    merged[digest] = JSON.stringify(gc ? { ...entry, gc } : entry);
+  }
+  return merged;
+}
+
 function getUsernameFromKvKey(key: string): string | null {
   const prefix = "sync2:kv:";
   if (key.startsWith(prefix) && key.length > prefix.length) {
@@ -271,8 +291,8 @@ async function sweepBlobRegistry(
   const legacyRegistryKey = legacySync2BlobsKey(username);
   const legacyRaw = await redis.hgetall<Record<string, unknown>>(legacyRegistryKey);
   const canonicalRaw = await redis.hgetall<Record<string, unknown>>(registryKey);
-  const raw = { ...(legacyRaw || {}), ...(canonicalRaw || {}) };
-  if (!raw) return;
+  const raw = mergeBlobRegistries(legacyRaw, canonicalRaw);
+  if (Object.keys(raw).length === 0) return;
 
   for (const [digest, value] of Object.entries(raw)) {
     const entry = parseRedisJson<BlobRegistryEntry>(value);
