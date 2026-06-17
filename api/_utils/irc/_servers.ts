@@ -67,9 +67,7 @@ function parseServerData(raw: unknown): IrcServer | null {
 export async function setIrcServer(server: IrcServer): Promise<void> {
   const redis = getRedis();
   await redis.set(redisKeys.integration.ircServer(server.id), JSON.stringify(server));
-  await redis.set(`${IRC_SERVER_PREFIX}${server.id}`, JSON.stringify(server));
   await redis.sadd(redisKeys.integration.ircServerIds(), server.id);
-  await redis.sadd(IRC_SERVERS_SET, server.id);
 }
 
 export async function getIrcServer(id: string): Promise<IrcServer | null> {

@@ -228,7 +228,6 @@ export default apiHandler<Record<string, unknown>>(
       }
 
       const key = appletShareKey(id);
-      const legacyKey = legacyAppletShareKey(id);
       const appletData = {
         content,
         title: title || undefined,
@@ -242,7 +241,6 @@ export default apiHandler<Record<string, unknown>>(
       };
 
       await redis.set(key, JSON.stringify(appletData));
-      await redis.set(legacyKey, JSON.stringify(appletData));
       const shareUrl = `${getAppPublicOrigin(origin)}/applet-viewer/${id}`;
 
       logger.info("Saved applet", { id, isUpdate });
@@ -349,7 +347,6 @@ export default apiHandler<Record<string, unknown>>(
       const parsed = typeof appletData === "string" ? JSON.parse(appletData) : appletData;
       parsed.featured = featured;
       await redis.set(key, JSON.stringify(parsed));
-      await redis.set(legacyKey, JSON.stringify(parsed));
 
       logger.info("Updated applet", { id, featured });
       logger.response(200, Date.now() - startTime);

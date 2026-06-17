@@ -157,7 +157,6 @@ async function acquireUserLock(redis: Redis, username: string): Promise<boolean>
       ex: LOCK_TTL_SECONDS,
     });
     if (result === "OK" || result === 1) {
-      await redis.set(legacyKey, token, { ex: LOCK_TTL_SECONDS });
       return true;
     }
     if (attempt < LOCK_RETRY_DELAYS_MS.length) {
@@ -187,13 +186,9 @@ async function readSeq(redis: Redis, username: string): Promise<number | null> {
 async function touchTtls(redis: Redis, username: string): Promise<void> {
   const pipeline = redis.pipeline();
   pipeline.expire(sync2SeqKey(username), USER_TTL_SECONDS);
-  pipeline.expire(legacySync2SeqKey(username), USER_TTL_SECONDS);
   pipeline.expire(sync2KvKey(username), USER_TTL_SECONDS);
-  pipeline.expire(legacySync2KvKey(username), USER_TTL_SECONDS);
   pipeline.expire(sync2JournalKey(username), USER_TTL_SECONDS);
-  pipeline.expire(legacySync2JournalKey(username), USER_TTL_SECONDS);
   pipeline.expire(sync2BlobsKey(username), USER_TTL_SECONDS);
-  pipeline.expire(legacySync2BlobsKey(username), USER_TTL_SECONDS);
   await pipeline.exec();
 }
 
@@ -212,9 +207,6 @@ async function touchTtlsThrottled(redis: Redis, username: string): Promise<void>
       { nx: true, ex: TTL_TOUCH_THROTTLE_SECONDS }
     );
     if (marker === "OK" || marker === 1) {
-      await redis.set(`sync2:ttl-touched:${username.toLowerCase()}`, "1", {
-        ex: TTL_TOUCH_THROTTLE_SECONDS,
-      });
       await touchTtls(redis, username);
     }
   } catch (error) {
@@ -262,16 +254,13 @@ export async function ensureSync2Initialized(
 
     if (Object.keys(kvFields).length > 0) {
       await redis.hset(sync2KvKey(username), kvFields);
-      await redis.hset(legacySync2KvKey(username), kvFields);
     }
     if (Object.keys(blobRegistry).length > 0) {
       await redis.hset(sync2BlobsKey(username), blobRegistry);
-      await redis.hset(legacySync2BlobsKey(username), blobRegistry);
     }
     // The import is a baseline snapshot, not journal history: clients that
     // have never synced v2 bootstrap from the snapshot anyway.
     await redis.set(sync2SeqKey(username), "0", { ex: USER_TTL_SECONDS });
-    await redis.set(legacySync2SeqKey(username), "0", { ex: USER_TTL_SECONDS });
     await touchTtls(redis, username);
     console.log(
       `[sync2] Initialized ${username} (${Object.keys(kvFields).length} keys imported from v1)`
@@ -421,18 +410,12 @@ export async function applySyncOps(
 
     if (accepted.length > 0) {
       await redis.hset(sync2KvKey(username), kvWrites);
-      await redis.hset(legacySync2KvKey(username), kvWrites);
       const journalKey = sync2JournalKey(username);
-      const legacyJournalKey = legacySync2JournalKey(username);
       for (const { seq, member } of journalEntries) {
         await redis.zadd(journalKey, { score: seq, member });
-        await redis.zadd(legacyJournalKey, { score: seq, member });
       }
       const pipeline = redis.pipeline();
       pipeline.set(sync2SeqKey(username), String(nextSeq), {
-        ex: USER_TTL_SECONDS,
-      });
-      pipeline.set(legacySync2SeqKey(username), String(nextSeq), {
         ex: USER_TTL_SECONDS,
       });
       await pipeline.exec();
@@ -442,14 +425,8 @@ export async function applySyncOps(
         "-inf",
         nextSeq - JOURNAL_MAX_LENGTH
       );
-      await redis.zremrangebyscore(
-        legacyJournalKey,
-        "-inf",
-        nextSeq - JOURNAL_MAX_LENGTH
-      );
       if (Object.keys(blobRegistry).length > 0) {
         await redis.hset(sync2BlobsKey(username), blobRegistry);
-        await redis.hset(legacySync2BlobsKey(username), blobRegistry);
       }
       await touchTtls(redis, username);
     }

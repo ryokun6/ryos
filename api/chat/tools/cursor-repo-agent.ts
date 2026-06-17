@@ -542,7 +542,6 @@ export async function executeListCursorCloudAgentRuns(
 async function safePushEvent(
   redis: Redis,
   eventsKey: string,
-  legacyEventsKey: string | null,
   payload: unknown
 ): Promise<void> {
   let line: string;
@@ -557,10 +556,6 @@ async function safePushEvent(
   }
   await redis.lpush(eventsKey, line);
   await redis.expire(eventsKey, CURSOR_SDK_RUN_TTL_SEC);
-  if (legacyEventsKey) {
-    await redis.lpush(legacyEventsKey, line);
-    await redis.expire(legacyEventsKey, CURSOR_SDK_RUN_TTL_SEC);
-  }
 }
 
 async function executeBlockingPrompt(
@@ -603,7 +598,6 @@ interface BackgroundCursorRunInput {
   username: string;
   eventsKey: string;
   metaKey: string;
-  legacyEventsKey?: string;
   legacyMetaKey?: string;
   repoUrl?: string;
   startingRef?: string;
@@ -654,9 +648,6 @@ async function writeMergedMeta(
   const existing = await readRunMeta(redis, metaKey, legacyMetaKey);
   const merged: Record<string, unknown> = { ...(existing ?? {}), ...patch };
   await redis.set(metaKey, JSON.stringify(merged), { ex: CURSOR_SDK_RUN_TTL_SEC });
-  if (legacyMetaKey) {
-    await redis.set(legacyMetaKey, JSON.stringify(merged), { ex: CURSOR_SDK_RUN_TTL_SEC });
-  }
   log("[cursorCloudAgent] meta updated", {
     metaKey,
     keys: Object.keys(merged),
@@ -668,7 +659,6 @@ function spawnBackgroundCursorRun(input: BackgroundCursorRunInput): void {
     redis,
     eventsKey,
     metaKey,
-    legacyEventsKey,
     legacyMetaKey,
     runId,
     agentId,
@@ -691,7 +681,7 @@ function spawnBackgroundCursorRun(input: BackgroundCursorRunInput): void {
     let prUrlMaybe: string | undefined = inheritedPrUrl;
     try {
       for await (const ev of run.stream()) {
-        await safePushEvent(redis, eventsKey, legacyEventsKey ?? null, { ts: Date.now(), ev });
+        await safePushEvent(redis, eventsKey, { ts: Date.now(), ev });
       }
 
       let summary = "";
@@ -707,7 +697,7 @@ function spawnBackgroundCursorRun(input: BackgroundCursorRunInput): void {
       prUrlMaybe = pickPrUrlFromRunGit(run.git) ?? inheritedPrUrl;
       const prUrl = prUrlMaybe;
 
-      await safePushEvent(redis, eventsKey, legacyEventsKey ?? null, {
+      await safePushEvent(redis, eventsKey, {
         ts: Date.now(),
         type: "terminal",
         status,
@@ -754,7 +744,7 @@ function spawnBackgroundCursorRun(input: BackgroundCursorRunInput): void {
     } catch (e) {
       logError("[cursorCloudAgent] background run failed", e);
       const errorText = e instanceof Error ? e.message : String(e);
-      await safePushEvent(redis, eventsKey, legacyEventsKey ?? null, {
+      await safePushEvent(redis, eventsKey, {
         ts: Date.now(),
         type: "terminal",
         status: "error",
@@ -892,8 +882,6 @@ export async function executeCursorCloudAgent(
 
     const eventsKey = cursorSdkEventsKey(runId);
     const metaKey = cursorSdkMetaKey(runId);
-    const legacyEventsKey = legacyCursorSdkEventsKey(runId);
-    const legacyMetaKey = legacyCursorSdkMetaKey(runId);
     const initialMeta = JSON.stringify({
       username: context.username,
       runId,
@@ -914,11 +902,6 @@ export async function executeCursorCloudAgent(
       initialMeta,
       { ex: CURSOR_SDK_RUN_TTL_SEC }
     );
-    await context.redis.set(
-      legacyMetaKey,
-      initialMeta,
-      { ex: CURSOR_SDK_RUN_TTL_SEC }
-    );
 
     const latestRunPayload = JSON.stringify({
       username: context.username,
@@ -927,11 +910,6 @@ export async function executeCursorCloudAgent(
     });
     await context.redis.set(
       cursorSdkAgentLatestRunKey(agentId),
-      latestRunPayload,
-      { ex: CURSOR_SDK_RUN_TTL_SEC }
-    );
-    await context.redis.set(
-      legacyCursorSdkAgentLatestRunKey(agentId),
       latestRunPayload,
       { ex: CURSOR_SDK_RUN_TTL_SEC }
     );
@@ -948,8 +926,6 @@ export async function executeCursorCloudAgent(
       username: context.username!,
       eventsKey,
       metaKey,
-      legacyEventsKey,
-      legacyMetaKey,
       log: context.log,
       logError: context.logError,
       agent,
@@ -1131,8 +1107,6 @@ export async function sendCursorAgentFollowup(input: {
   const newRunId = run.id;
   const newEventsKey = cursorSdkEventsKey(newRunId);
   const newMetaKey = cursorSdkMetaKey(newRunId);
-  const legacyNewEventsKey = legacyCursorSdkEventsKey(newRunId);
-  const legacyNewMetaKey = legacyCursorSdkMetaKey(newRunId);
   const followupMeta = JSON.stringify({
     username,
     runId: newRunId,
@@ -1158,11 +1132,6 @@ export async function sendCursorAgentFollowup(input: {
     followupMeta,
     { ex: CURSOR_SDK_RUN_TTL_SEC }
   );
-  await redis.set(
-    legacyNewMetaKey,
-    followupMeta,
-    { ex: CURSOR_SDK_RUN_TTL_SEC }
-  );
 
   await writeMergedMeta(
     redis,
@@ -1182,11 +1151,6 @@ export async function sendCursorAgentFollowup(input: {
     latestRunPayload,
     { ex: CURSOR_SDK_RUN_TTL_SEC }
   );
-  await redis.set(
-    legacyCursorSdkAgentLatestRunKey(agentId),
-    latestRunPayload,
-    { ex: CURSOR_SDK_RUN_TTL_SEC }
-  );
 
   spawnBackgroundCursorRun({
     redis,
@@ -1196,8 +1160,6 @@ export async function sendCursorAgentFollowup(input: {
     username,
     eventsKey: newEventsKey,
     metaKey: newMetaKey,
-    legacyEventsKey: legacyNewEventsKey,
-    legacyMetaKey: legacyNewMetaKey,
     ...(repoUrl ? { repoUrl } : {}),
     ...(startingRef ? { startingRef } : {}),
     ...(modelId ? { modelId } : {}),

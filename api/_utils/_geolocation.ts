@@ -154,9 +154,6 @@ async function writeCache(
     await redis.set(redisKeys.cache.geoip(await sha256RedisIdentifier(ip)), JSON.stringify(entry), {
       ex: ttlSeconds,
     });
-    await redis.set(`${REDIS_KEY_PREFIX}${ip}`, JSON.stringify(entry), {
-      ex: ttlSeconds,
-    });
   } catch {
     // Caching is best-effort.
   }

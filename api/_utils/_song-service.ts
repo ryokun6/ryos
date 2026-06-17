@@ -367,19 +367,16 @@ export async function saveSong(
 
   // Save metadata to Redis
   await redis.set(getSongMetaKey(song.id), JSON.stringify(meta));
-  await redis.set(getLegacySongMetaKey(song.id), JSON.stringify(meta));
 
   // Save content to Redis (only if there's any content)
   const hasContent = content.lyrics || content.translations || content.furigana || 
                      content.soramimi || content.soramimiByLang;
   if (hasContent) {
     await redis.set(getSongContentKey(song.id), JSON.stringify(content));
-    await redis.set(getLegacySongContentKey(song.id), JSON.stringify(content));
   }
 
   // Add to the set of all song IDs
   await redis.sadd(redisKeys.media.songIds(), song.id);
-  await redis.sadd(SONG_SET_KEY, song.id);
 
   // Return combined document
   return { ...meta, ...content };
@@ -610,8 +607,6 @@ export async function saveLyrics(
 ): Promise<SongDocument> {
   const metaKey = getSongMetaKey(id);
   const contentKey = getSongContentKey(id);
-  const legacyMetaKey = getLegacySongMetaKey(id);
-  const legacyContentKey = getLegacySongContentKey(id);
   const now = Date.now();
 
   // Get existing metadata
@@ -657,13 +652,10 @@ export async function saveLyrics(
     soramimiByLang: shouldClearAnnotations ? undefined : existingContent?.soramimiByLang,
   };
 
-  // Save both keys
+  // Save canonical keys
   await redis.set(metaKey, JSON.stringify(meta));
-  await redis.set(legacyMetaKey, JSON.stringify(meta));
   await redis.set(contentKey, JSON.stringify(content));
-  await redis.set(legacyContentKey, JSON.stringify(content));
   await redis.sadd(redisKeys.media.songIds(), id);
-  await redis.sadd(SONG_SET_KEY, id);
 
   return { ...meta, ...content };
 }
@@ -679,7 +671,6 @@ export async function saveTranslation(
   translatedLrc: string
 ): Promise<SongDocument | null> {
   const contentKey = getSongContentKey(id);
-  const legacyContentKey = getLegacySongContentKey(id);
 
   // Verify song exists
   const existingMeta = parseJson<SongMetadata>(await getSongMetaRaw(redis, id));
@@ -696,7 +687,6 @@ export async function saveTranslation(
 
   // Save content key only
   await redis.set(contentKey, JSON.stringify(content));
-  await redis.set(legacyContentKey, JSON.stringify(content));
 
   return { ...existingMeta, ...content };
 }
@@ -711,7 +701,6 @@ export async function saveFurigana(
   furigana: FuriganaSegment[][]
 ): Promise<SongDocument | null> {
   const contentKey = getSongContentKey(id);
-  const legacyContentKey = getLegacySongContentKey(id);
 
   // Verify song exists
   const existingMeta = parseJson<SongMetadata>(await getSongMetaRaw(redis, id));
@@ -728,7 +717,6 @@ export async function saveFurigana(
 
   // Save content key only
   await redis.set(contentKey, JSON.stringify(content));
-  await redis.set(legacyContentKey, JSON.stringify(content));
 
   return { ...existingMeta, ...content };
 }
@@ -745,7 +733,6 @@ export async function saveSoramimi(
   language?: "zh-TW" | "en"
 ): Promise<SongDocument | null> {
   const contentKey = getSongContentKey(id);
-  const legacyContentKey = getLegacySongContentKey(id);
 
   // Verify song exists
   const existingMeta = parseJson<SongMetadata>(await getSongMetaRaw(redis, id));
@@ -764,7 +751,6 @@ export async function saveSoramimi(
 
   // Save content key only
   await redis.set(contentKey, JSON.stringify(content));
-  await redis.set(legacyContentKey, JSON.stringify(content));
 
   return { ...existingMeta, ...content };
 }

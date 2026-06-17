@@ -225,24 +225,7 @@ export async function createTelegramLinkCode(
     { ex: ttlSeconds }
   );
   await redis.set(
-    buildLegacyTelegramLinkCodeKey(code),
-    JSON.stringify({
-      username: normalizedUsername,
-      createdAt,
-    } satisfies TelegramLinkCodeRecord),
-    { ex: ttlSeconds }
-  );
-  await redis.set(
     buildTelegramPendingLinkKey(normalizedUsername),
-    JSON.stringify({
-      username: normalizedUsername,
-      code,
-      createdAt,
-    } satisfies TelegramPendingLinkSessionRecord),
-    { ex: ttlSeconds }
-  );
-  await redis.set(
-    buildLegacyTelegramPendingLinkKey(normalizedUsername),
     JSON.stringify({
       username: normalizedUsername,
       code,
@@ -368,9 +351,7 @@ export async function linkTelegramAccount(
 
   const serialized = JSON.stringify(linkRecord);
   await redis.set(buildTelegramUsernameKey(username), serialized);
-  await redis.set(buildLegacyTelegramUsernameKey(username), serialized);
   await redis.set(buildTelegramUserKey(options.telegramUserId), serialized);
-  await redis.set(buildLegacyTelegramUserKey(options.telegramUserId), serialized);
 
   return linkRecord;
 }
@@ -394,9 +375,6 @@ export async function markTelegramUpdateProcessed(
   await redis.set(buildTelegramProcessedUpdateKey(updateId), "1", {
     ex: ttlSeconds,
   });
-  await redis.set(buildLegacyTelegramProcessedUpdateKey(updateId), "1", {
-    ex: ttlSeconds,
-  });
 }
 
 /**
@@ -418,9 +396,6 @@ export async function claimTelegramUpdate(
     nx: true,
     ex: ttlSeconds,
   });
-  if (result === "OK" || result === true) {
-    await redis.set(legacyKey, "1", { ex: ttlSeconds });
-  }
   return result === "OK" || result === true;
 }
 
@@ -429,10 +404,15 @@ export async function loadTelegramConversationHistory(
   chatId: string,
   limit: number = TELEGRAM_HISTORY_LIMIT
 ): Promise<TelegramConversationMessage[]> {
+  const seen = new Set<string>();
   const values = [
     ...((await redis.lrange<string>(buildTelegramHistoryKey(chatId), 0, limit - 1)) || []),
     ...((await redis.lrange<string>(buildLegacyTelegramHistoryKey(chatId), 0, limit - 1)) || []),
-  ].slice(0, limit);
+  ].filter((value) => {
+    if (seen.has(value)) return false;
+    seen.add(value);
+    return true;
+  }).slice(0, limit);
   const parsedMessages = (values || []).reduce<TelegramConversationMessage[]>(
     (acc, value) => {
       const parsed = parseTelegramConversationMessage(value);
@@ -458,14 +438,10 @@ export async function appendTelegramConversationMessage(
   const limit = options.limit ?? TELEGRAM_HISTORY_LIMIT;
   const ttlSeconds = options.ttlSeconds ?? TELEGRAM_HISTORY_TTL_SECONDS;
   const key = buildTelegramHistoryKey(chatId);
-  const legacyKey = buildLegacyTelegramHistoryKey(chatId);
 
   await redis.lpush(key, JSON.stringify(message));
   await redis.ltrim(key, 0, limit - 1);
   await redis.expire(key, ttlSeconds);
-  await redis.lpush(legacyKey, JSON.stringify(message));
-  await redis.ltrim(legacyKey, 0, limit - 1);
-  await redis.expire(legacyKey, ttlSeconds);
 }
 
 export async function clearTelegramConversationHistory(

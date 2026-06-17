@@ -138,7 +138,6 @@ export async function processDailyNotesForUser(
     log("[processDailyNotes] Skipping — another run already in progress", { username });
     return EMPTY;
   }
-  await redis.set(legacyLockKey, "1", { ex: 120 });
 
   try {
     return await _processDailyNotesForUserInner(redis, username, log, logError, timeZone);

@@ -47,7 +47,6 @@ export default apiHandler<PrefBody>(
       updatedAt: new Date().toISOString(),
     });
     await redis.set(key, serialized);
-    await redis.set(legacyKey, serialized);
     res.status(200).json({ ok: true, enabled });
   }
 );

@@ -91,9 +91,6 @@ export async function issueRealtimeTicket(
   await redis.set(redisKeys.realtime.ticket(await sha256RedisIdentifier(ticket)), username.toLowerCase(), {
     ex: REALTIME_TICKET_TTL_SECONDS,
   });
-  await redis.set(`${REALTIME_TICKET_PREFIX}${ticket}`, username.toLowerCase(), {
-    ex: REALTIME_TICKET_TTL_SECONDS,
-  });
   return ticket;
 }
 

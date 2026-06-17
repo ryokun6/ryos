@@ -57,7 +57,6 @@ export default apiHandler<SendBody>(
 
     const transferId = crypto.randomUUID();
     const transferKey = redisKeys.session.airdropTransfer(transferId);
-    const legacyTransferKey = `airdrop:transfer:${transferId}`;
     const transferData = {
       id: transferId,
       sender: senderUsername,
@@ -69,9 +68,6 @@ export default apiHandler<SendBody>(
     };
 
     await redis.set(transferKey, JSON.stringify(transferData), {
-      ex: TRANSFER_TTL_SECONDS,
-    });
-    await redis.set(legacyTransferKey, JSON.stringify(transferData), {
       ex: TRANSFER_TTL_SECONDS,
     });
 

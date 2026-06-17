@@ -413,8 +413,8 @@ export default apiHandler(
         for (const key of keys) {
           const parts = key.split(":");
           const yearPart = parts[3] ? decodeURIComponent(parts[3]) : "";
-          if (yearPart && /^(\d{1,4}( BC)?|\d+ CE)$/.test(yearPart)) {
-            uniqueYears.add(yearPart);
+          if (yearPart && /^(\d{1,4}( BC)?|\d+ CE)$/i.test(yearPart)) {
+            uniqueYears.add(yearPart.replace(/\b(bc|ce)\b/gi, (era) => era.toUpperCase()));
           }
         }
       } while (canonicalAiCursor !== 0);
@@ -1117,14 +1117,13 @@ export default apiHandler(
             logger.info(`Attempting to cache Wayback content for ${normalizedUrl} (${waybackYear}/${waybackMonth})`);
             const normalizedUrlForKey = normalizeUrlForCacheKey(normalizedUrl);
             if (normalizedUrlForKey) {
-              const { canonical: cacheKey, legacy: legacyCacheKey } = await getWaybackCacheKeys(
+              const { canonical: cacheKey } = await getWaybackCacheKeys(
                 normalizedUrlForKey,
                 `${waybackYear}${waybackMonth}`
               );
               logger.info(`Writing to Wayback cache key: ${cacheKey} (content length: ${html.length})`);
               // Use SET with expiration for Wayback cache (e.g., 30 days)
               await redis.set(cacheKey, html, { ex: 60 * 60 * 24 * 30 });
-              await redis.set(legacyCacheKey, html, { ex: 60 * 60 * 24 * 30 });
               logger.info(`Successfully cached Wayback content for ${cacheKey}`);
             } else {
               logger.info(`Skipped Wayback caching - URL normalization failed: ${normalizedUrl}`);

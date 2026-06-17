@@ -358,6 +358,35 @@ export class FakeRedis {
     return (this.lists.get(key) || []).length;
   }
 
+  async lrem(key: string, count: number, value: string): Promise<number> {
+    const list = this.lists.get(key) || [];
+    if (list.length === 0 || count === 0) return 0;
+    let removed = 0;
+    const shouldRemove = (item: string) => item === value;
+    if (count > 0) {
+      const next: string[] = [];
+      for (const item of list) {
+        if (removed < count && shouldRemove(item)) {
+          removed += 1;
+          continue;
+        }
+        next.push(item);
+      }
+      this.lists.set(key, next);
+      return removed;
+    }
+
+    const next = [...list];
+    for (let index = next.length - 1; index >= 0 && removed < Math.abs(count); index -= 1) {
+      if (shouldRemove(next[index])) {
+        next.splice(index, 1);
+        removed += 1;
+      }
+    }
+    this.lists.set(key, next);
+    return removed;
+  }
+
   // --- sorted sets ----------------------------------------------------------
 
   /** Members ordered by score ascending, ties broken lexicographically. */

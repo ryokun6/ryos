@@ -9,7 +9,6 @@ import type { Redis } from "./_utils/redis.js";
 import { CHAT_USERS_PREFIX } from "./rooms/_helpers/_constants.js";
 import { deleteAllUserTokens, PASSWORD_HASH_PREFIX } from "./_utils/auth/index.js";
 import {
-  getLegacyStoredUserKey,
   getStoredUserRecord,
   setStoredUserRecord,
 } from "./_utils/auth/_user-record.js";
@@ -251,7 +250,6 @@ async function banUser(redis: Redis, targetUsername: string, reason?: string): P
 
     const updatedUser = { ...userData, banned: true, banReason: reason || "No reason provided", bannedAt: Date.now() };
     await setStoredUserRecord(redis, normalizedUsername, updatedUser);
-    await redis.set(getLegacyStoredUserKey(normalizedUsername), JSON.stringify(updatedUser));
     await deleteAllUserTokens(redis, normalizedUsername);
     return { success: true };
   } catch (error) {
@@ -269,7 +267,6 @@ async function unbanUser(redis: Redis, targetUsername: string): Promise<{ succes
 
     const updatedUser = { ...userData, banned: false, banReason: undefined, bannedAt: undefined };
     await setStoredUserRecord(redis, normalizedUsername, updatedUser);
-    await redis.set(getLegacyStoredUserKey(normalizedUsername), JSON.stringify(updatedUser));
     return { success: true };
   } catch (error) {
     console.error(`Error unbanning user ${normalizedUsername}:`, error);

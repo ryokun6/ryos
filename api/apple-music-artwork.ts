@@ -144,9 +144,6 @@ export default apiHandler(
       await redis.set(cacheKey, JSON.stringify(result), {
         ex: result.cover ? CACHE_TTL_SECONDS : NEGATIVE_TTL_SECONDS,
       });
-      await redis.set(legacyCacheKey, JSON.stringify(result), {
-        ex: result.cover ? CACHE_TTL_SECONDS : NEGATIVE_TTL_SECONDS,
-      });
     } catch (e) {
       logger.warn("Artwork cache write failed", e);
     }

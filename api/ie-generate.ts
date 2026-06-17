@@ -30,8 +30,6 @@ export const maxDuration = 80;
 // Constants and Types
 // ============================================================================
 
-const IE_CACHE_PREFIX = "ie:cache:"; // Key prefix for stored generated pages
-
 type IncomingUIMessage = Omit<UIMessage, "id">;
 type SimpleMessage = {
   id?: string;
@@ -253,12 +251,6 @@ export default apiHandler<IEGenerateRequestBody>(
             effectiveYearStr
           )
         : null;
-    const legacyCacheKey =
-      normalizedUrlForKey && effectiveYearStr
-        ? `${IE_CACHE_PREFIX}${encodeURIComponent(
-            normalizedUrlForKey
-          )}:${effectiveYearStr}`
-        : null;
 
     // Removed cache read to avoid duplicate generation; cache handled through iframe-check AI mode
 
@@ -349,10 +341,6 @@ export default apiHandler<IEGenerateRequestBody>(
           }
           await redis.lpush(cacheKey, cleaned);
           await redis.ltrim(cacheKey, 0, 4);
-          if (legacyCacheKey) {
-            await redis.lpush(legacyCacheKey, cleaned);
-            await redis.ltrim(legacyCacheKey, 0, 4);
-          }
           const duration = Date.now() - startTime;
           logger.info(`Cached result for ${cacheKey} (length=${cleaned.length}, duration=${duration.toFixed(2)}ms)`);
         } catch (cacheErr) {

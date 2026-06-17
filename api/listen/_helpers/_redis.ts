@@ -54,11 +54,7 @@ export async function setSession(
   await client.set(redisKeys.session.listen(sessionId), JSON.stringify(session), {
     ex: LISTEN_SESSION_TTL_SECONDS,
   });
-  await client.set(`${LISTEN_SESSION_PREFIX}${sessionId}`, JSON.stringify(session), {
-    ex: LISTEN_SESSION_TTL_SECONDS,
-  });
   await client.sadd(redisKeys.session.listenIds(), sessionId);
-  await client.sadd(LISTEN_SESSIONS_SET, sessionId);
 }
 
 export async function deleteSession(sessionId: string): Promise<void> {
@@ -75,10 +71,6 @@ export async function touchSession(sessionId: string): Promise<void> {
   const client = createRedisClient();
   await client.expire(
     redisKeys.session.listen(sessionId),
-    LISTEN_SESSION_TTL_SECONDS
-  );
-  await client.expire(
-    `${LISTEN_SESSION_PREFIX}${sessionId}`,
     LISTEN_SESSION_TTL_SECONDS
   );
 }

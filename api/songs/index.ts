@@ -30,9 +30,6 @@ import {
   deleteAllSongs,
   getSongMetaKey,
   getSongContentKey,
-  getLegacySongMetaKey,
-  getLegacySongContentKey,
-  SONG_SET_KEY,
   type SongMetadata,
   type SongContent,
   type GetSongOptions,
@@ -456,13 +453,10 @@ export default apiHandler<Record<string, unknown>>(
         const pipeline = redis.pipeline();
         for (const { meta, content } of songDocs) {
           pipeline.set(getSongMetaKey(meta.id), JSON.stringify(meta));
-          pipeline.set(getLegacySongMetaKey(meta.id), JSON.stringify(meta));
           pipeline.sadd(redisKeys.media.songIds(), meta.id);
-          pipeline.sadd(SONG_SET_KEY, meta.id);
           // Save content if present
           if (content) {
             pipeline.set(getSongContentKey(meta.id), JSON.stringify(content));
-            pipeline.set(getLegacySongContentKey(meta.id), JSON.stringify(content));
           }
         }
         await pipeline.exec();

@@ -33,7 +33,6 @@ export async function setRoomPresence(
   const redis = getRedis();
   const entry = { score: Date.now(), member: username };
   await redis.zadd(redisKeys.chat.roomPresence(roomId), entry);
-  await redis.zadd(`${CHAT_ROOM_PRESENCE_ZSET_PREFIX}${roomId}`, entry);
 }
 
 /**
@@ -166,7 +165,6 @@ export async function getDetailedRooms(): Promise<RoomWithUsers[]> {
     } while (cursor !== 0);
     if (discovered.length) {
       await redis.sadd(redisKeys.chat.roomIds(), ...(discovered as [string, ...string[]]));
-      await redis.sadd(CHAT_ROOMS_SET, ...(discovered as [string, ...string[]]));
       roomIds = discovered;
     } else {
       return [];
@@ -217,7 +215,6 @@ export async function getRoomsWithCountsFast(): Promise<Room[]> {
     } while (cursor !== 0);
     if (discovered.length) {
       await redis.sadd(redisKeys.chat.roomIds(), ...(discovered as [string, ...string[]]));
-      await redis.sadd(CHAT_ROOMS_SET, ...(discovered as [string, ...string[]]));
       roomIds = discovered;
     } else {
       return [];

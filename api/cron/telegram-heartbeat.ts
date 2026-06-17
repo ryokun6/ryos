@@ -63,13 +63,9 @@ function sendJson(
 async function markHeartbeatSlot(
   redis: ReturnType<typeof createRedis>,
   slotKey: string,
-  legacySlotKey: string,
   payload: Record<string, unknown>
 ): Promise<void> {
   await redis.set(slotKey, JSON.stringify(payload), {
-    ex: TELEGRAM_HEARTBEAT_SLOT_TTL_SECONDS,
-  });
-  await redis.set(legacySlotKey, JSON.stringify(payload), {
     ex: TELEGRAM_HEARTBEAT_SLOT_TTL_SECONDS,
   });
 }
@@ -315,7 +311,7 @@ export default async function handler(
       },
       logger
     );
-    await markHeartbeatSlot(redis, slotKey, legacySlotKey, {
+    await markHeartbeatSlot(redis, slotKey, {
       username,
       chatId: linkedAccount.chatId,
       sent: false,
@@ -434,7 +430,7 @@ export default async function handler(
       },
       logger
     );
-    await markHeartbeatSlot(redis, slotKey, legacySlotKey, {
+    await markHeartbeatSlot(redis, slotKey, {
       username,
       chatId: linkedAccount.chatId,
       sent: false,
@@ -474,7 +470,6 @@ export default async function handler(
   await markHeartbeatSlot(
     redis,
     slotKey,
-    legacySlotKey,
     {
       username,
       chatId: linkedAccount.chatId,

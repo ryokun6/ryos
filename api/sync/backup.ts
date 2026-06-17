@@ -125,9 +125,6 @@ async function handleSaveMetadata(
     await redis.set(backupMetaKey(username), JSON.stringify(meta), {
       ex: META_TTL,
     });
-    await redis.set(legacyBackupMetaKey(username), JSON.stringify(meta), {
-      ex: META_TTL,
-    });
 
     res.status(200).json({
       ok: true,

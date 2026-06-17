@@ -79,8 +79,9 @@ export async function validateAuth(
   const exists = await redis.exists(userScopedKey);
   
   if (exists) {
-    // Refresh TTL on successful validation
-    await redis.expire(userScopedKey, USER_TTL_SECONDS);
+    await redis.set(canonicalSessionKey, Date.now(), { ex: USER_TTL_SECONDS });
+    await redis.sadd(redisKeys.auth.userSessions(normalizedUsername), tokenHash);
+    await redis.expire(redisKeys.auth.userSessions(normalizedUsername), USER_TTL_SECONDS);
     return { valid: true, expired: false };
   }
 

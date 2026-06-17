@@ -21,7 +21,6 @@ export default apiHandler(
       member: username,
     };
     await redis.zadd(redisKeys.presence.airdropLobby(), entry);
-    await redis.zadd(AIRDROP_PRESENCE_KEY, entry);
 
     // Broadcast presence to the shared lobby so other clients update instantly
     await triggerRealtimeEvent(AIRDROP_LOBBY_CHANNEL, "airdrop-presence", {
