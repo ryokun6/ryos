@@ -222,13 +222,18 @@ export const ChatRoomSidebar = React.memo(function ChatRoomSidebar({
           isWindowsTheme,
           isAquaGlass,
         },
-        { layout: isOverlay ? "overlay" : "side" }
+        {
+          layout: isOverlay ? "overlay" : "side",
+          className: isOverlay ? "min-h-0 overflow-hidden" : undefined,
+        }
       )}
     >
       <div
         className={cn(
           "pt-3 flex flex-col",
-          isOverlay ? "pb-3" : "flex-1 overflow-hidden"
+          isOverlay
+            ? "min-h-0 flex-1 overflow-hidden pb-3"
+            : "flex-1 overflow-hidden"
         )}
       >
         <div className="os-app-sidebar-header flex justify-between items-center mb-2 flex-shrink-0 px-3">

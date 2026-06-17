@@ -149,7 +149,7 @@ export function ChatsWindowContent({ c, isForeground }: ChatsWindowContentProps)
                 stiffness: 300,
                 mass: 1,
               }}
-              className="relative w-full bg-neutral-100 z-10"
+              className="relative z-10 flex w-full flex-col overflow-hidden bg-neutral-100"
               style={{
                 transformPerspective: "2000px",
                 backfaceVisibility: "hidden",
