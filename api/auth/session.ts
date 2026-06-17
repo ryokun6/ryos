@@ -6,6 +6,7 @@
 
 import { buildSetAuthCookie } from "../_utils/_cookie.js";
 import { apiHandler } from "../_utils/api-handler.js";
+import { getStoredUserTimeZone } from "../_utils/auth/_user-record.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 10;
@@ -16,7 +17,7 @@ export default apiHandler(
     auth: "optional",
     allowExpiredAuth: true,
   },
-  async ({ req: _req, res, logger, startTime, user }) => {
+  async ({ req: _req, res, logger, startTime, user, redis }) => {
     if (!user) {
       logger.response(200, Date.now() - startTime);
       res.status(200).json({ authenticated: false });
@@ -27,11 +28,13 @@ export default apiHandler(
     res.setHeader("Set-Cookie", buildSetAuthCookie(user.username, user.token));
 
     logger.info("Session restored", { username: user.username });
+    const timeZone = await getStoredUserTimeZone(redis, user.username);
     logger.response(200, Date.now() - startTime);
     res.status(200).json({
       authenticated: true,
       username: user.username,
       expired: user.expired,
+      ...(timeZone ? { timeZone } : {}),
     });
   }
 );

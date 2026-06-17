@@ -6,6 +6,8 @@ import { createRedis } from "./redis.js";
 import { resolveRequestAuth, type AuthenticatedRequestUser } from "./request-auth.js";
 import { recordAnalyticsEvent } from "./_analytics.js";
 import { getClientIp } from "./_rate-limit.js";
+import { getHeader } from "./request-helpers.js";
+import { updateStoredUserTimeZone } from "./auth/_user-record.js";
 
 type AuthMode = "none" | "optional" | "required" | "admin";
 
@@ -123,6 +125,20 @@ export function apiHandler<TBody = unknown>(
         return;
       } else {
         user = authResult.user;
+      }
+
+      if (user) {
+        const timeZoneHeader = getHeader(req, "x-user-timezone");
+        if (timeZoneHeader) {
+          await updateStoredUserTimeZone(redis, user.username, timeZoneHeader).catch(
+            (error) => {
+              logger.warn("Failed to update user timezone from request header", {
+                username: user?.username,
+                error: error instanceof Error ? error.message : String(error),
+              });
+            }
+          );
+        }
       }
     }
 

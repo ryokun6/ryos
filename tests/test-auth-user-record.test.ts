@@ -1,8 +1,31 @@
 import { describe, expect, test } from "bun:test";
+import type { Redis } from "../api/_utils/redis";
 import {
+  getStoredUserTimeZone,
   isUserBanned,
+  normalizeUserTimeZone,
   parseStoredUser,
+  updateStoredUserTimeZone,
 } from "../api/_utils/auth/_user-record";
+import { CHAT_USERS_PREFIX } from "../api/_utils/auth/_constants";
+import { buildUserLocalTimeContext } from "../api/_utils/user-time-context";
+
+class FakeRedis {
+  private readonly store = new Map<string, unknown>();
+
+  async get<T = unknown>(key: string): Promise<T | null> {
+    return (this.store.has(key) ? this.store.get(key) : null) as T | null;
+  }
+
+  async set(key: string, value: unknown): Promise<"OK"> {
+    this.store.set(key, value);
+    return "OK";
+  }
+}
+
+function makeRedis(): Redis {
+  return new FakeRedis() as unknown as Redis;
+}
 
 describe("stored user record helpers", () => {
   test("parses JSON-string and object records", () => {
@@ -29,5 +52,43 @@ describe("stored user record helpers", () => {
     expect(isUserBanned({ username: "u" })).toBe(false);
     expect(isUserBanned(null)).toBe(false);
     expect(isUserBanned("garbage")).toBe(false);
+  });
+
+  test("validates and persists IANA timezones without accepting placeholders", async () => {
+    const redis = makeRedis();
+    const username = "timezone_user";
+    await redis.set(`${CHAT_USERS_PREFIX}${username}`, JSON.stringify({ username }));
+
+    expect(normalizeUserTimeZone("Asia/Tokyo")).toBe("Asia/Tokyo");
+    expect(normalizeUserTimeZone("Unknown")).toBeNull();
+    expect(normalizeUserTimeZone("not/a-zone")).toBeNull();
+
+    const updated = await updateStoredUserTimeZone(
+      redis,
+      username,
+      "Europe/Berlin",
+      123
+    );
+    expect(updated?.timeZone).toBe("Europe/Berlin");
+    expect(updated?.timeZoneUpdatedAt).toBe(123);
+    expect(await getStoredUserTimeZone(redis, username)).toBe("Europe/Berlin");
+
+    const ignored = await updateStoredUserTimeZone(redis, username, "not/a-zone", 456);
+    expect(ignored).toBeNull();
+    expect(await getStoredUserTimeZone(redis, username)).toBe("Europe/Berlin");
+  });
+
+  test("builds stable user-local prompt time context", () => {
+    const context = buildUserLocalTimeContext(
+      "Asia/Tokyo",
+      new Date("2026-01-15T06:30:00.000Z")
+    );
+
+    expect(context).toEqual({
+      timeString: "3:30 PM",
+      dateString: "Thursday, January 15, 2026",
+      timeZone: "Asia/Tokyo",
+    });
+    expect(buildUserLocalTimeContext("bad-zone")).toBeNull();
   });
 });

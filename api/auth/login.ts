@@ -28,6 +28,8 @@ import { verifyPassword, getUserPasswordHash } from "../_utils/auth/_password.js
 import { apiHandler } from "../_utils/api-handler.js";
 import { buildSetAuthCookie } from "../_utils/_cookie.js";
 import { getClientIp } from "../_utils/_rate-limit.js";
+import { getHeader } from "../_utils/request-helpers.js";
+import { updateStoredUserTimeZone } from "../_utils/auth/_user-record.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
@@ -120,6 +122,7 @@ export default apiHandler(
 
     // Successful login — reset the per-username failure counter.
     await resetLoginFailures(redis, username);
+    await updateStoredUserTimeZone(redis, username, getHeader(req, "x-user-timezone"));
 
     // Handle old token if provided (rotation)
     if (oldToken) {

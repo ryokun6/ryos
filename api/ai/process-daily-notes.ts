@@ -35,6 +35,7 @@ import {
   MAX_MEMORIES_PER_USER,
   CANONICAL_MEMORY_KEYS,
 } from "../_utils/_memory.js";
+import { getStoredUserTimeZone } from "../_utils/auth/_user-record.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -505,6 +506,7 @@ export default apiHandler<{ timeZone?: string }>(
     const headerTimeZone = Array.isArray(headerTimeZoneRaw)
       ? headerTimeZoneRaw[0]
       : headerTimeZoneRaw;
+    const storedTimeZone = await getStoredUserTimeZone(redis, username);
 
     try {
       const result = await processDailyNotesForUser(
@@ -512,7 +514,7 @@ export default apiHandler<{ timeZone?: string }>(
         username,
         (...args: unknown[]) => logger.info(String(args[0]), args[1]),
         (...args: unknown[]) => logger.error(String(args[0]), args[1]),
-        requestTimeZone || headerTimeZone,
+        requestTimeZone || headerTimeZone || storedTimeZone,
       );
 
       const totalExtracted = result.created + result.updated;

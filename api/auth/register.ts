@@ -27,6 +27,11 @@ import { buildSetAuthCookie } from "../_utils/_cookie.js";
 // Use the shared trust-aware IP resolver so self-hosted deployments cannot
 // bypass per-IP rate limits via spoofed X-Forwarded-For headers.
 import { getClientIp } from "../_utils/_rate-limit.js";
+import { getHeader } from "../_utils/request-helpers.js";
+import {
+  normalizeUserTimeZone,
+  updateStoredUserTimeZone,
+} from "../_utils/auth/_user-record.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
@@ -138,6 +143,11 @@ export default apiHandler(
             }
             // Password matches - reset failures and log them in.
             await resetLoginFailures(redis, username);
+            await updateStoredUserTimeZone(
+              redis,
+              username,
+              getHeader(req, "x-user-timezone")
+            );
             const token = generateAuthToken();
             await storeToken(redis, username, token);
             res.setHeader("Set-Cookie", buildSetAuthCookie(username, token));
@@ -156,10 +166,15 @@ export default apiHandler(
     }
 
     // Create user
+    const now = Date.now();
+    const requestTimeZone = normalizeUserTimeZone(getHeader(req, "x-user-timezone"));
     const userData = {
       username,
-      createdAt: Date.now(),
-      lastActive: Date.now(),
+      createdAt: now,
+      lastActive: now,
+      ...(requestTimeZone
+        ? { timeZone: requestTimeZone, timeZoneUpdatedAt: now }
+        : {}),
     };
     await redis.set(userKey, JSON.stringify(userData));
 

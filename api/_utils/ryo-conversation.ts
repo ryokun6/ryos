@@ -43,6 +43,7 @@ import {
   type CursorCloudAgentInput,
   type CursorRepoAgentTelegramNotify,
 } from "../chat/tools/cursor-repo-agent.js";
+import { getStoredUserLocalTimeContext } from "./user-time-context.js";
 
 export interface RyoConversationSystemState {
   username?: string | null;
@@ -725,7 +726,22 @@ export async function prepareRyoConversationModelInput(
     cursorRepoAgentNotifyTelegram,
   } = options;
 
-  const userTimeZone = systemState?.userLocalTime?.timeZone || timeZone;
+  const providedTimeZone = timeZone ?? preloadedMemoryContext?.userTimeZone;
+  const storedUserLocalTime = systemState?.userLocalTime
+    ? null
+    : await getStoredUserLocalTimeContext({
+        redis,
+        username,
+        fallbackTimeZone: providedTimeZone,
+      });
+  const effectiveSystemState = storedUserLocalTime
+    ? ({
+        ...(systemState ?? {}),
+        username: systemState?.username ?? username ?? undefined,
+        userLocalTime: storedUserLocalTime,
+      } as RyoConversationSystemState)
+    : systemState;
+  const userTimeZone = effectiveSystemState?.userLocalTime?.timeZone || providedTimeZone;
   const memoryContext =
     preloadedMemoryContext ||
     (await loadRyoMemoryContext({
@@ -759,7 +775,7 @@ export async function prepareRyoConversationModelInput(
 
   const volatileStatePrompt = buildVolatileStatePrompt({
     channel,
-    systemState,
+    systemState: effectiveSystemState,
     username,
   });
 
@@ -779,8 +795,8 @@ export async function prepareRyoConversationModelInput(
       username: username ?? null,
       redis,
       timeZone: userTimeZone,
-      ...(systemState?.requestGeo
-        ? { requestGeo: systemState.requestGeo }
+      ...(effectiveSystemState?.requestGeo
+        ? { requestGeo: effectiveSystemState.requestGeo }
         : {}),
       ...toolContextOverrides,
     },
@@ -839,7 +855,7 @@ export async function prepareRyoConversationModelInput(
     ...cursorRepoTools,
     ...(shouldEnableOpenAIWebSearch({ model, username })
       ? {
-          web_search: createOpenAIWebSearchTool(systemState),
+          web_search: createOpenAIWebSearchTool(effectiveSystemState),
         }
       : {}),
     ...(shouldEnableGoogleSearch({ model, username })

@@ -9,6 +9,7 @@ import { useChatsStore } from "@/stores/useChatsStore";
 import type { AIChatMessage } from "@/types/chat";
 import { useAppStore } from "@/stores/useAppStore";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
+import { getBrowserTimeZoneHeaders } from "@/api/core";
 import { getApiUrl } from "@/utils/platform";
 import {
   getActiveIpodTracks,
@@ -193,6 +194,7 @@ function getSharedAiChat(): Chat<AIChatMessage> {
 
       transport: new DefaultChatTransport({
         api: getApiUrl("/api/chat"),
+        headers: getBrowserTimeZoneHeaders,
         body: async () => ({
           systemState: getSystemState(),
           model: useAppStore.getState().aiModel,

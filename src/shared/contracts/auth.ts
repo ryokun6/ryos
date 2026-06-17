@@ -23,6 +23,7 @@ export interface CheckPasswordResponse {
 
 export interface LoginResponse {
   username: string;
+  timeZone?: string;
 }
 
 export interface RegisterResponse {
@@ -30,6 +31,7 @@ export interface RegisterResponse {
     username: string;
     hasPassword?: boolean;
     createdAt?: number;
+    timeZone?: string;
   };
 }
 
@@ -37,4 +39,5 @@ export interface SessionResponse {
   authenticated: boolean;
   username?: string;
   expired?: boolean;
+  timeZone?: string;
 }
