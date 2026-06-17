@@ -114,6 +114,7 @@ interface DeleteLegacyRedisKeysResponse {
   scanned: number;
   deleted: number;
   truncated: boolean;
+  keys: string[];
 }
 
 type RedisMigrationRunKind = "dry-run" | "backfill" | "delete";
@@ -127,6 +128,9 @@ interface RedisMigrationLogEntry {
 export interface AdminRedisBrowserViewProps {
   t: TFunction;
 }
+
+const MIGRATION_BATCH_LIMIT = 100;
+const DELETE_LEGACY_BATCH_LIMIT = 1000;
 
 function formatRedisTtl(ttl: number | null): string {
   if (ttl === null) return "TTL unknown";
@@ -161,6 +165,12 @@ function downloadJson(filename: string, data: unknown): void {
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
+}
+
+function formatDeletedKeySample(keys: string[]): string {
+  if (keys.length === 0) return "no keys";
+  if (keys.length === 1) return `key ${keys[0]}`;
+  return `keys ${keys[0]} ... ${keys[keys.length - 1]}`;
 }
 
 // How many keys each SCAN page requests. SCAN COUNT is a hint, so the actual
@@ -415,7 +425,7 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
           if (kind === "delete") {
             const result = await deleteAdminLegacyRedisKeys<DeleteLegacyRedisKeysResponse>({
               pattern: legacyPattern,
-              limit: 100,
+              limit: DELETE_LEGACY_BATCH_LIMIT,
               dryRun: false,
               cursor: "0",
             });
@@ -423,7 +433,7 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
             totals.scanned += result.scanned;
             totals.deleted += result.deleted;
             appendMigrationLog(
-              `${legacyPattern} delete batch ${batchNumber}: scanned ${result.scanned}, deleted ${result.deleted}${result.truncated ? ", more pending" : ""}`,
+              `pattern ${legacyPattern} delete batch ${batchNumber}: scanned ${result.scanned}, deleted ${result.deleted} (${formatDeletedKeySample(result.keys)})${result.truncated ? ", more pending" : ""}`,
               result.deleted > 0 ? "success" : "info"
             );
             if (result.scanned === 0 || result.deleted === 0) {
@@ -434,7 +444,7 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
 
           const result = await backfillAdminRedisKeyScheme<RedisBackfillResponse>({
             pattern: legacyPattern,
-            limit: 100,
+            limit: MIGRATION_BATCH_LIMIT,
             dryRun: kind === "dry-run",
             cursor,
           });
