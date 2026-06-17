@@ -154,7 +154,7 @@ export function ChatsWindowContent({ c, isForeground }: ChatsWindowContentProps)
                 transformPerspective: "2000px",
                 backfaceVisibility: "hidden",
                 willChange: "transform",
-                maxHeight: "70%",
+                maxHeight: "calc(100% - 44px)",
               }}
             >
               <ChatRoomSidebar
