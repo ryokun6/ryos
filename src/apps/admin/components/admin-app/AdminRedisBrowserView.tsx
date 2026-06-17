@@ -420,6 +420,8 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
         let cursor = "0";
         let batchNumber = 0;
         let continuePattern = true;
+        let lastDeleteSignature: string | null = null;
+        let repeatedDeleteSignatureCount = 0;
         while (continuePattern && !migrationStopRequestedRef.current) {
           batchNumber += 1;
           if (kind === "delete") {
@@ -436,6 +438,22 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
               `pattern ${legacyPattern} delete batch ${batchNumber}: scanned ${result.scanned}, deleted ${result.deleted} (${formatDeletedKeySample(result.keys)})${result.truncated ? ", more pending" : ""}`,
               result.deleted > 0 ? "success" : "info"
             );
+            const deleteSignature = result.keys.join("\u001f");
+            if (result.deleted > 0 && deleteSignature) {
+              if (deleteSignature === lastDeleteSignature) {
+                repeatedDeleteSignatureCount += 1;
+              } else {
+                lastDeleteSignature = deleteSignature;
+                repeatedDeleteSignatureCount = 1;
+              }
+              if (repeatedDeleteSignatureCount >= 2) {
+                appendMigrationLog(
+                  `pattern ${legacyPattern} stopped after the same deleted batch reappeared (${formatDeletedKeySample(result.keys)}); a running service may be recreating it`,
+                  "warning"
+                );
+                continuePattern = false;
+              }
+            }
             if (result.scanned === 0 || result.deleted === 0) {
               continuePattern = false;
             }
