@@ -12,6 +12,10 @@
     {
       "path": "/api/cron/sync-maintenance",
       "schedule": "17 4 * * *"
+    },
+    {
+      "path": "/api/cron/redis-backup",
+      "schedule": "42 3 * * *"
     }
   ],
   "headers": [

@@ -11,7 +11,7 @@ import {
   ResponseChecksumValidation,
 } from "@aws-sdk/middleware-flexible-checksums";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { del as deleteBlob, head as headBlob } from "@vercel/blob";
+import { del as deleteBlob, head as headBlob, put as putBlob } from "@vercel/blob";
 import { generateClientTokenFromReadWriteToken } from "@vercel/blob/client";
 
 export type StorageBackend = "vercel-blob" | "s3";
@@ -27,6 +27,20 @@ export interface StorageUploadOptions {
   maximumSizeInBytes: number;
   allowedContentTypes?: string[];
   allowOverwrite?: boolean;
+}
+
+export interface StoragePutOptions {
+  pathname: string;
+  contentType: string;
+  body: Uint8Array | Buffer | string;
+  allowOverwrite?: boolean;
+}
+
+export interface StoragePutResult {
+  provider: StorageBackend;
+  pathname: string;
+  storageUrl: string;
+  size: number;
 }
 
 interface BaseStorageUploadDescriptor {
@@ -185,7 +199,7 @@ function createS3Client(endpoint: string, forcePathStyle: boolean): S3Client {
   const config = getS3Config();
   if (!config) {
     throw new Error(
-      "Missing S3-compatible storage configuration. Set S3_BUCKET, S3_REGION, S3_ENDPOINT, S3_ACCESS_KEY_ID, and S3_SECRET_ACCESS_KEY."
+      "Missing object storage configuration. Set S3_BUCKET, S3_REGION, S3_ENDPOINT, S3_ACCESS_KEY_ID, and S3_SECRET_ACCESS_KEY."
     );
   }
 
@@ -213,7 +227,7 @@ function getS3ClientCacheKey(endpoint: string, forcePathStyle: boolean): string 
   const config = getS3Config();
   if (!config) {
     throw new Error(
-      "Missing S3-compatible storage configuration. Set S3_BUCKET, S3_REGION, S3_ENDPOINT, S3_ACCESS_KEY_ID, and S3_SECRET_ACCESS_KEY."
+      "Missing object storage configuration. Set S3_BUCKET, S3_REGION, S3_ENDPOINT, S3_ACCESS_KEY_ID, and S3_SECRET_ACCESS_KEY."
     );
   }
 
@@ -469,6 +483,59 @@ export async function createStorageUploadDescriptor(
     headers: {
       "Content-Type": options.contentType,
     },
+  };
+}
+
+export async function uploadStoredObject(
+  options: StoragePutOptions
+): Promise<StoragePutResult> {
+  const pathname = normalizePathname(options.pathname);
+  const body =
+    typeof options.body === "string"
+      ? options.body
+      : Buffer.from(options.body);
+  const size =
+    typeof options.body === "string"
+      ? Buffer.byteLength(options.body)
+      : options.body.byteLength;
+
+  if (getStorageBackend() === "vercel-blob") {
+    const result = await putBlob(pathname, body, {
+      access: "public",
+      allowOverwrite: options.allowOverwrite ?? true,
+      contentType: options.contentType,
+      multipart: size >= 4 * 1024 * 1024,
+    });
+
+    return {
+      provider: "vercel-blob",
+      pathname,
+      storageUrl: result.url,
+      size,
+    };
+  }
+
+  const config = getS3Config();
+  if (!config) {
+    throw new Error(
+      "Missing object storage configuration. Set S3_BUCKET, S3_REGION, S3_ENDPOINT, S3_ACCESS_KEY_ID, and S3_SECRET_ACCESS_KEY."
+    );
+  }
+
+  await getS3Client().send(
+    new PutObjectCommand({
+      Bucket: config.bucket,
+      Key: pathname,
+      Body: body,
+      ContentType: options.contentType,
+    })
+  );
+
+  return {
+    provider: "s3",
+    pathname,
+    storageUrl: toS3StorageUrl(pathname),
+    size,
   };
 }
 
