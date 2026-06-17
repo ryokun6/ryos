@@ -44,6 +44,10 @@ describe("canonical Redis key registry", () => {
     expect(LEGACY_REDIS_SCAN_PATTERNS).toContain("cursor-sdk-run:*");
     expect(LEGACY_REDIS_SCAN_PATTERNS).not.toContain("chat:*");
     expect(LEGACY_REDIS_SCAN_PATTERNS).not.toContain("sync:*");
+    expect(redisKeys.chat.roomMeta("abc").startsWith("chat:room:")).toBe(false);
+    expect(redisKeys.integration.ircServer("libera").startsWith("chat:irc:")).toBe(
+      false
+    );
   });
 
   test("normalizes dynamic segments consistently", () => {
@@ -58,7 +62,7 @@ describe("canonical Redis key registry", () => {
   });
 
   test("preserves case-sensitive IDs where existing IDs may be mixed-case", () => {
-    expect(redisKeys.chat.roomMeta("RoomABC")).toBe("chat:room:RoomABC:meta");
+    expect(redisKeys.chat.roomMeta("RoomABC")).toBe("chat:rooms:RoomABC:meta");
     expect(redisKeys.media.songMeta("am:12345")).toBe("media:song:am%3A12345:meta");
     expect(redisKeys.agent.cursorRunMeta("bc_AbC")).toBe(
       "agent:cursor:run:bc_AbC:meta"
@@ -73,6 +77,9 @@ describe("canonical Redis key registry", () => {
     );
     expect(redisKeys.integration.telegramPendingLink("Ryo")).toBe(
       "integration:telegram:link:user:ryo"
+    );
+    expect(redisKeys.integration.ircServer("libera")).toBe(
+      "integration:irc:server:libera"
     );
     expect(redisKeys.realtime.ticket("tickethash")).toBe("realtime:ticket:tickethash");
     expect(redisKeys.presence.globalOnline()).toBe("presence:global:online");
