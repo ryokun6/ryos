@@ -1,4 +1,5 @@
 import type { Redis } from "./redis.js";
+import { ensureSync2Initialized } from "../sync/v2/_core.js";
 import {
   LEGACY_REDIS_SCAN_PATTERNS,
   redisKeys,
@@ -25,7 +26,8 @@ export interface RedisKeyMigrationPlan {
   legacyKey: string;
   targetKey: string | null;
   additionalKeys?: string[];
-  action: "copy" | "skip";
+  action: "copy" | "import-v1-sync" | "skip";
+  username?: string;
   reason?: string;
 }
 
@@ -80,6 +82,24 @@ function safeDecode(value: string): string {
   } catch {
     return value;
   }
+}
+
+function syncV1Username(legacyKey: string): string | null {
+  if (legacyKey.startsWith("sync:state:meta:")) {
+    return suffixAfter(legacyKey, "sync:state:meta:");
+  }
+  if (legacyKey.startsWith("sync:state:")) {
+    const parts = splitSuffix(legacyKey, "sync:state:");
+    return parts.length >= 2 ? parts[0] : null;
+  }
+  if (legacyKey.startsWith("sync:auto:meta:")) {
+    return suffixAfter(legacyKey, "sync:auto:meta:");
+  }
+  if (legacyKey.startsWith("sync:songs:")) {
+    const parts = splitSuffix(legacyKey, "sync:songs:");
+    return parts.length >= 2 ? parts[0] : null;
+  }
+  return null;
 }
 
 async function scanKeys(
@@ -362,11 +382,15 @@ export async function planRedisKeyMigration(
     legacyKey.startsWith("sync:auto:") ||
     legacyKey.startsWith("sync:songs:")
   ) {
+    const username = syncV1Username(legacyKey);
     return {
       legacyKey,
-      targetKey: null,
-      action: "skip",
-      reason: "Legacy sync v1 data must be imported into sync v2 before deletion",
+      targetKey: username ? redisKeys.sync.v2Kv(username) : null,
+      action: username ? "import-v1-sync" : "skip",
+      username: username ?? undefined,
+      reason: username
+        ? "Will initialize sync v2 from legacy v1 data"
+        : "Malformed legacy sync v1 key",
     };
   }
   if (legacyKey.startsWith("telegram:link:code:")) {
@@ -514,6 +538,7 @@ export async function backfillRedisKeyScheme(
   );
   const plans = await Promise.all(keys.map((key) => planRedisKeyMigration(key)));
   const warnings: string[] = [];
+  const importedSyncUsers = new Set<string>();
   let copied = 0;
   let skipped = 0;
 
@@ -521,6 +546,14 @@ export async function backfillRedisKeyScheme(
     if (plan.action === "skip" || !plan.targetKey) {
       skipped += 1;
       if (plan.reason) warnings.push(`${plan.legacyKey}: ${plan.reason}`);
+      continue;
+    }
+    if (plan.action === "import-v1-sync") {
+      if (!input.dryRun && plan.username && !importedSyncUsers.has(plan.username)) {
+        await ensureSync2Initialized(redis, plan.username);
+        importedSyncUsers.add(plan.username);
+      }
+      copied += input.dryRun ? 0 : 1;
       continue;
     }
     if (input.dryRun) {
@@ -541,7 +574,11 @@ export async function backfillRedisKeyScheme(
     cursor,
     dryRun: input.dryRun,
     scanned: keys.length,
-    planned: plans.filter((plan) => plan.action === "copy" && plan.targetKey).length,
+    planned: plans.filter(
+      (plan) =>
+        (plan.action === "copy" || plan.action === "import-v1-sync") &&
+        plan.targetKey
+    ).length,
     copied,
     skipped,
     warnings,
