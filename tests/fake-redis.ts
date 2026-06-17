@@ -359,21 +359,11 @@ export class FakeRedis {
     return this.zsets.get(key)?.size ?? 0;
   }
 
-  async zrange(
-    key: string,
-    start: number,
-    stop: number,
-    options?: { withScores?: boolean }
-  ): Promise<string[]> {
+  async zrange(key: string, start: number, stop: number): Promise<string[]> {
     const ordered = this.zsorted(key);
     const normalizedStart = start < 0 ? Math.max(0, ordered.length + start) : start;
     const normalizedStop = stop < 0 ? ordered.length + stop : stop;
-    const members = ordered.slice(normalizedStart, normalizedStop + 1);
-    if (!options?.withScores) {
-      return members;
-    }
-    const zset = this.zsets.get(key) || new Map<string, number>();
-    return members.flatMap((member) => [member, String(zset.get(member) ?? 0)]);
+    return ordered.slice(normalizedStart, normalizedStop + 1);
   }
 
   async zremrangebyscore(

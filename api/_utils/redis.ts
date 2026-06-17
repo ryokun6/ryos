@@ -31,10 +31,6 @@ export interface RedisSortedSetEntry {
   member: string;
 }
 
-export interface RedisZRangeOptions {
-  withScores?: boolean;
-}
-
 export interface RedisPipelineLike {
   get(key: string): this;
   set(key: string, value: unknown, options?: RedisSetOptions): this;
@@ -95,12 +91,7 @@ export interface RedisLike {
     min: number | string,
     max: number | string
   ): Promise<number>;
-  zrange(
-    key: string,
-    start: number,
-    stop: number,
-    options?: RedisZRangeOptions
-  ): Promise<string[]>;
+  zrange(key: string, start: number, stop: number): Promise<string[]>;
   zcard(key: string): Promise<number>;
 }
 
@@ -469,15 +460,7 @@ class StandardRedisAdapter implements RedisLike {
     return await this.client.zremrangebyscore(key, min, max);
   }
 
-  async zrange(
-    key: string,
-    start: number,
-    stop: number,
-    options?: RedisZRangeOptions
-  ): Promise<string[]> {
-    if (options?.withScores) {
-      return await this.client.zrange(key, start, stop, "WITHSCORES");
-    }
+  async zrange(key: string, start: number, stop: number): Promise<string[]> {
     return await this.client.zrange(key, start, stop);
   }
 
