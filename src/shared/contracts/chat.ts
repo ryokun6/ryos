@@ -5,6 +5,7 @@ export interface ChatRoom {
   name: string;
   type?: RoomType;
   createdAt: number;
+  lastMessageAt?: number;
   userCount: number;
   users?: string[];
   members?: string[];

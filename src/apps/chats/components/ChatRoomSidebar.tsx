@@ -9,6 +9,10 @@ import { useChatsStore } from "@/stores/useChatsStore";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { osAppSidebarSurfaceClassName } from "@/components/shared/osThemePrimitives";
 import {
+  isPrivateRoomOnline,
+  sortPrivateRoomsForSidebar,
+} from "../utils/privateRoomOrdering";
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -151,6 +155,7 @@ export const ChatRoomSidebar = React.memo(function ChatRoomSidebar({
 }: ChatRoomSidebarProps) {
   const { t } = useTranslation();
   const { play: playButtonClick } = useSound(Sounds.BUTTON_CLICK);
+  const roomMessages = useChatsStore((s) => s.roomMessages);
   // NOTE: unread counts are deliberately NOT subscribed here — each
   // ChatRoomSidebarItem subscribes to its own room's count so a badge update
   // re-renders one row instead of the whole sidebar.
@@ -166,7 +171,6 @@ export const ChatRoomSidebar = React.memo(function ChatRoomSidebar({
   const toggleChannelsOpen = useChatsStore((s) => s.toggleChannelsOpen);
   const togglePrivateOpen = useChatsStore((s) => s.togglePrivateOpen);
 
-  const onlineUsersSet = useMemo(() => new Set(onlineUsers), [onlineUsers]);
   const { publicRooms, privateRooms } = useMemo(() => {
     const nextPublicRooms: ChatRoom[] = [];
     const nextPrivateRooms: ChatRoom[] = [];
@@ -181,9 +185,13 @@ export const ChatRoomSidebar = React.memo(function ChatRoomSidebar({
 
     return {
       publicRooms: nextPublicRooms,
-      privateRooms: nextPrivateRooms,
+      privateRooms: sortPrivateRoomsForSidebar(nextPrivateRooms, {
+        username,
+        onlineUsers,
+        roomMessages,
+      }),
     };
-  }, [rooms]);
+  }, [onlineUsers, roomMessages, rooms, username]);
 
   if (!isVisible) {
     return null;
@@ -193,9 +201,7 @@ export const ChatRoomSidebar = React.memo(function ChatRoomSidebar({
     // For private rooms, check if the other member(s) are online
     const isPrivateOnline = Boolean(
       room.type === "private" &&
-        room.members?.some(
-          (m) => m !== username?.toLowerCase() && onlineUsersSet.has(m)
-        )
+        isPrivateRoomOnline(room, username, onlineUsers)
     );
 
     return (
