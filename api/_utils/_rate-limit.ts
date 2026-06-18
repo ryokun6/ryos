@@ -47,7 +47,7 @@ function makeCanonicalRateKey(parts: string[]): string {
 }
 
 // Helper function to get rate limit key for a user
-const getAIRateLimitKey = (identifier: string): string => {
+export const getAIRateLimitKey = (identifier: string): string => {
   const scope = identifier.startsWith("anon:") ? "anon" : "user";
   return makeCanonicalRateKey(["ai", scope, identifier]);
 };

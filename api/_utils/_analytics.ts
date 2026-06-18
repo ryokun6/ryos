@@ -19,6 +19,7 @@
 
 import type { Redis } from "./redis.js";
 import { redisKeys } from "../../src/shared/redisKeys.js";
+import { getAIRateLimitKey } from "./_rate-limit.js";
 
 const ANALYTICS_TTL_SECONDS = 90 * 24 * 60 * 60; // 90 days
 
@@ -816,7 +817,7 @@ export async function getAnalyticsDetail(
   if (nonAnonUsers.length > 0) {
     const rlPipe = redis.pipeline();
     for (const { username } of nonAnonUsers) {
-      rlPipe.get(`rl:ai:${username}`);
+      rlPipe.get(getAIRateLimitKey(username));
     }
     const rlResults = await rlPipe.exec();
     for (let i = 0; i < nonAnonUsers.length; i++) {
