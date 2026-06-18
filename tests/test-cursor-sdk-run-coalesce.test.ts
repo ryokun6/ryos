@@ -227,6 +227,118 @@ describe("coalesceCursorRunRows tool calls", () => {
     }
   });
 
+  test("drops terminal summary that repeats the final assistant message", () => {
+    const finalText = "Done! Added a dark mode toggle to Settings.";
+    const rows = [
+      {
+        ts: 1,
+        ev: {
+          type: "assistant",
+          message: { content: [{ type: "text", text: finalText }] },
+        },
+      },
+      {
+        ts: 2,
+        type: "terminal",
+        status: "finished",
+        summary: finalText,
+      },
+    ];
+
+    const out = coalesceCursorRunRows(rows);
+    expect(out).toHaveLength(2);
+    expect(out[0]?.kind).toBe("merged_assistant");
+    expect(out[1]?.kind).toBe("single");
+    if (out[1]?.kind === "single") {
+      const terminal = out[1].row as Record<string, unknown>;
+      expect(terminal.type).toBe("terminal");
+      expect(terminal.status).toBe("finished");
+      expect("summary" in terminal).toBe(false);
+    }
+  });
+
+  test("ignores whitespace differences when de-duping terminal summary", () => {
+    const rows = [
+      {
+        ts: 1,
+        ev: {
+          type: "assistant",
+          message: {
+            content: [{ type: "text", text: "Line one\n\nLine two" }],
+          },
+        },
+      },
+      {
+        ts: 2,
+        type: "terminal",
+        status: "finished",
+        summary: "Line one Line two",
+      },
+    ];
+
+    const out = coalesceCursorRunRows(rows);
+    const terminal =
+      out[1]?.kind === "single"
+        ? (out[1].row as Record<string, unknown>)
+        : null;
+    expect(terminal && "summary" in terminal).toBe(false);
+  });
+
+  test("keeps terminal summary when it differs from the final assistant message", () => {
+    const rows = [
+      {
+        ts: 1,
+        ev: {
+          type: "assistant",
+          message: {
+            content: [{ type: "text", text: "Working on it…" }],
+          },
+        },
+      },
+      {
+        ts: 2,
+        type: "terminal",
+        status: "finished",
+        summary: "All tests pass and the PR is open.",
+      },
+    ];
+
+    const out = coalesceCursorRunRows(rows);
+    const terminal =
+      out[1]?.kind === "single"
+        ? (out[1].row as Record<string, unknown>)
+        : null;
+    expect(terminal?.summary).toBe("All tests pass and the PR is open.");
+  });
+
+  test("keeps terminal summary when no assistant message streamed", () => {
+    const rows = [
+      {
+        ts: 1,
+        ev: {
+          type: "tool_call",
+          id: "call-1",
+          name: "edit_file",
+          status: "completed",
+          args: { target_file: "/workspace/a.ts" },
+        },
+      },
+      {
+        ts: 2,
+        type: "terminal",
+        status: "finished",
+        summary: "Edited a.ts.",
+      },
+    ];
+
+    const out = coalesceCursorRunRows(rows);
+    const terminal =
+      out[out.length - 1]?.kind === "single"
+        ? (out[out.length - 1] as { row: Record<string, unknown> }).row
+        : null;
+    expect(terminal?.summary).toBe("Edited a.ts.");
+  });
+
   test("does not duplicate when same id appears across non-adjacent tool batches", () => {
     const rows = [
       {
