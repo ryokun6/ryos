@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import type { WeatherFamily } from "@/utils/dynamicWallpaper";
-import { useIsPhone } from "@/hooks/useIsPhone";
+import { useReducedGraphics } from "@/hooks/useReducedGraphics";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 /**
@@ -11,20 +11,21 @@ import { useMediaQuery } from "@/hooks/useMediaQuery";
  */
 const RENDER_SCALE = 1.0;
 /**
- * Phones pay a much steeper per-pixel cost for this fragment shader (5-octave
- * FBM clouds + fog + 3 parallax precipitation layers) and the desktop is mostly
- * occluded by windows anyway, so render the backing buffer at a lower internal
- * resolution there. Mirrors the low-res approach in {@link AmbientBackground}.
+ * Reduced tier (phones + low-power desktops) pays a much steeper per-pixel cost
+ * for this fragment shader (5-octave FBM clouds + fog + 3 parallax precipitation
+ * layers) and the desktop is mostly occluded by windows anyway, so render the
+ * backing buffer at a lower internal resolution there. Mirrors the low-res
+ * approach in {@link AmbientBackground}.
  */
-const PHONE_RENDER_SCALE = 0.7;
+const LOW_RENDER_SCALE = 0.7;
 /** Upper bound on the device-pixel-ratio multiplier applied to the buffer. */
 const MAX_PIXEL_RATIO = 1.5;
-/** Don't multiply the (already heavy) buffer by hi-dpi on phones. */
-const PHONE_MAX_PIXEL_RATIO = 1.0;
+/** Don't multiply the (already heavy) buffer by hi-dpi in the reduced tier. */
+const LOW_MAX_PIXEL_RATIO = 1.0;
 /** Cap the shader loop to reduce steady-state GPU usage. */
 const TARGET_FPS = 30;
-/** Cloud/precip motion is slow, so a lower cap is imperceptible on phones. */
-const PHONE_TARGET_FPS = 20;
+/** Cloud/precip motion is slow, so a lower cap is imperceptible. */
+const LOW_TARGET_FPS = 20;
 
 type RGB = [number, number, number];
 
@@ -331,7 +332,7 @@ export function WeatherShaderBackground({
   className = "",
 }: WeatherShaderBackgroundProps) {
   const mountRef = useRef<HTMLDivElement>(null);
-  const isPhone = useIsPhone();
+  const reducedQuality = useReducedGraphics();
   const prefersReducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
 
   // When the user prefers reduced motion we skip the animated shader entirely
@@ -348,9 +349,10 @@ export function WeatherShaderBackground({
   useEffect(() => {
     if (!shouldRender || !mountRef.current) return;
 
-    const renderScale = isPhone ? PHONE_RENDER_SCALE : RENDER_SCALE;
-    const maxPixelRatio = isPhone ? PHONE_MAX_PIXEL_RATIO : MAX_PIXEL_RATIO;
-    const frameIntervalMs = 1000 / (isPhone ? PHONE_TARGET_FPS : TARGET_FPS);
+    const renderScale = reducedQuality ? LOW_RENDER_SCALE : RENDER_SCALE;
+    const maxPixelRatio = reducedQuality ? LOW_MAX_PIXEL_RATIO : MAX_PIXEL_RATIO;
+    const frameIntervalMs =
+      1000 / (reducedQuality ? LOW_TARGET_FPS : TARGET_FPS);
 
     const el = mountRef.current;
     const scene = new THREE.Scene();
@@ -471,7 +473,7 @@ export function WeatherShaderBackground({
       shaderMaterial.dispose();
       renderer.dispose();
     };
-  }, [shouldRender, isPhone]);
+  }, [shouldRender, reducedQuality]);
 
   if (!shouldRender) return null;
 

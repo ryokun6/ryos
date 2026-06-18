@@ -1,6 +1,6 @@
 import { MeshGradient } from "@paper-design/shaders-react";
 import { useCoverPalette } from "@/hooks/useCoverPalette";
-import { useIsPhone } from "@/hooks/useIsPhone";
+import { useReducedGraphics } from "@/hooks/useReducedGraphics";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 interface MeshGradientBackgroundProps {
@@ -12,21 +12,21 @@ interface MeshGradientBackgroundProps {
 }
 
 /**
- * Cap the backing buffer on phones so the mesh-gradient fragment shader isn't
- * paying for a full hi-dpi 4K-class surface (the library default is
- * 1920×1080×2dpi ≈ 8.3M px). ~720p with a 1× floor is plenty for a soft,
- * blurry gradient that mostly sits behind windows.
+ * Cap the backing buffer in the reduced tier (phones + low-power desktops) so
+ * the mesh-gradient fragment shader isn't paying for a full hi-dpi 4K-class
+ * surface (the library default is 1920×1080×2dpi ≈ 8.3M px). ~720p with a 1×
+ * floor is plenty for a soft, blurry gradient that mostly sits behind windows.
  */
-const PHONE_MAX_PIXEL_COUNT = 1280 * 720;
-const PHONE_MIN_PIXEL_RATIO = 1;
+const LOW_MAX_PIXEL_COUNT = 1280 * 720;
+const LOW_MIN_PIXEL_RATIO = 1;
 /**
- * Cap the backing buffer on desktop too: the Paper default is ~8.3M px
+ * Cap the backing buffer on capable desktops too: the Paper default is ~8.3M px
  * (1920×1080 × 2dpi per side), which is wasteful for a soft, blurry gradient
  * on hi-dpi / 4K displays. QHD is plenty crisp here.
  */
 const DESKTOP_MAX_PIXEL_COUNT = 2560 * 1440;
-/** Slightly calmer motion on phones; reduces steady-state GPU churn. */
-const PHONE_SPEED = 0.7;
+/** Slightly calmer motion in the reduced tier; reduces steady-state GPU churn. */
+const LOW_SPEED = 0.7;
 const DESKTOP_SPEED = 1;
 
 /**
@@ -46,13 +46,17 @@ export function MeshGradientBackground({
   className = "",
 }: MeshGradientBackgroundProps) {
   const colors = useCoverPalette(isActive ? coverUrl ?? null : null);
-  const isPhone = useIsPhone();
+  const reducedQuality = useReducedGraphics();
   const prefersReducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
 
   if (!isActive) return null;
 
   // speed 0 => ShaderMount halts its rAF loop, leaving a static gradient.
-  const speed = prefersReducedMotion ? 0 : isPhone ? PHONE_SPEED : DESKTOP_SPEED;
+  const speed = prefersReducedMotion
+    ? 0
+    : reducedQuality
+      ? LOW_SPEED
+      : DESKTOP_SPEED;
 
   return (
     <div className={className} style={{ width: "100%", height: "100%" }}>
@@ -67,8 +71,10 @@ export function MeshGradientBackground({
         speed={speed}
         scale={1.16}
         rotation={90}
-        maxPixelCount={isPhone ? PHONE_MAX_PIXEL_COUNT : DESKTOP_MAX_PIXEL_COUNT}
-        {...(isPhone ? { minPixelRatio: PHONE_MIN_PIXEL_RATIO } : {})}
+        maxPixelCount={
+          reducedQuality ? LOW_MAX_PIXEL_COUNT : DESKTOP_MAX_PIXEL_COUNT
+        }
+        {...(reducedQuality ? { minPixelRatio: LOW_MIN_PIXEL_RATIO } : {})}
       />
     </div>
   );

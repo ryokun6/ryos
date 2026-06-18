@@ -1,18 +1,21 @@
 import { useRef, useEffect, useCallback } from "react";
 import * as THREE from "three";
-import { useIsPhone } from "@/hooks/useIsPhone";
+import { useReducedGraphics } from "@/hooks/useReducedGraphics";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 /** Duration of crossfade between cover textures (seconds) */
 const CROSSFADE_SECONDS = 1.5;
 /** Render at a lower internal resolution to reduce shader cost. */
 const RENDER_SCALE = 0.4;
-/** Phones render the (texture-sampling, multi-tap) shader even smaller. */
-const PHONE_RENDER_SCALE = 0.3;
+/**
+ * Reduced tier (phones + low-power desktops) renders the (texture-sampling,
+ * multi-tap) shader even smaller.
+ */
+const LOW_RENDER_SCALE = 0.3;
 /** Cap the shader loop to reduce steady-state GPU usage. */
 const TARGET_FPS = 30;
-/** Lower cap on phones; the warp/liquid motion is slow enough to hide it. */
-const PHONE_TARGET_FPS = 20;
+/** Lower cap in the reduced tier; the warp/liquid motion hides it. */
+const LOW_TARGET_FPS = 20;
 
 export type AmbientVariant = "liquid" | "warp";
 
@@ -191,7 +194,7 @@ export function AmbientBackground({
   className = "",
 }: AmbientBackgroundProps) {
   const mountRef = useRef<HTMLDivElement>(null);
-  const isPhone = useIsPhone();
+  const reducedQuality = useReducedGraphics();
   const prefersReducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
 
   const currentUrlRef = useRef<string | null>(null);
@@ -275,8 +278,9 @@ export function AmbientBackground({
       powerPreference: "high-performance",
     });
     renderer.setPixelRatio(1);
-    const scale = isPhone ? PHONE_RENDER_SCALE : RENDER_SCALE;
-    const frameIntervalMs = 1000 / (isPhone ? PHONE_TARGET_FPS : TARGET_FPS);
+    const scale = reducedQuality ? LOW_RENDER_SCALE : RENDER_SCALE;
+    const frameIntervalMs =
+      1000 / (reducedQuality ? LOW_TARGET_FPS : TARGET_FPS);
     renderer.setSize(
       Math.floor(el.clientWidth * scale),
       Math.floor(el.clientHeight * scale),
@@ -436,7 +440,7 @@ export function AmbientBackground({
       materialsRef.current = { material: null, textureA: null, textureB: null };
       renderer.dispose();
     };
-  }, [isActive, variant, loadTexture, isPhone, prefersReducedMotion]);
+  }, [isActive, variant, loadTexture, reducedQuality, prefersReducedMotion]);
 
   if (!isActive) return null;
 

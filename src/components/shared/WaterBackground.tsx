@@ -1,5 +1,5 @@
 import { Water } from "@paper-design/shaders-react";
-import { useIsPhone } from "@/hooks/useIsPhone";
+import { useReducedGraphics } from "@/hooks/useReducedGraphics";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 interface WaterBackgroundProps {
@@ -11,20 +11,21 @@ interface WaterBackgroundProps {
 }
 
 /**
- * Cap the backing buffer on phones so the Water fragment shader isn't paying
- * for a full hi-dpi 4K-class surface (the library default is
- * 1920×1080×2dpi ≈ 8.3M px). ~720p with a 1× floor is plenty here.
+ * Cap the backing buffer in the reduced tier (phones + low-power desktops) so
+ * the Water fragment shader isn't paying for a full hi-dpi 4K-class surface
+ * (the library default is 1920×1080×2dpi ≈ 8.3M px). ~720p with a 1× floor is
+ * plenty here.
  */
-const PHONE_MAX_PIXEL_COUNT = 1280 * 720;
-const PHONE_MIN_PIXEL_RATIO = 1;
+const LOW_MAX_PIXEL_COUNT = 1280 * 720;
+const LOW_MIN_PIXEL_RATIO = 1;
 /**
- * Cap the backing buffer on desktop too: the Paper default is ~8.3M px
+ * Cap the backing buffer on capable desktops too: the Paper default is ~8.3M px
  * (1920×1080 × 2dpi per side), which is wasteful on hi-dpi / 4K displays. QHD
  * keeps the caustics crisp at a fraction of the cost.
  */
 const DESKTOP_MAX_PIXEL_COUNT = 2560 * 1440;
-/** Calmer caustics on phones; reduces steady-state GPU churn. */
-const PHONE_SPEED = 0.35;
+/** Calmer caustics in the reduced tier; reduces steady-state GPU churn. */
+const LOW_SPEED = 0.35;
 const DESKTOP_SPEED = 0.5;
 
 /**
@@ -41,13 +42,17 @@ export function WaterBackground({
   isActive = true,
   className = "",
 }: WaterBackgroundProps) {
-  const isPhone = useIsPhone();
+  const reducedQuality = useReducedGraphics();
   const prefersReducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
 
   if (!isActive || !coverUrl) return null;
 
   // speed 0 => ShaderMount halts its rAF loop, leaving a static water image.
-  const speed = prefersReducedMotion ? 0 : isPhone ? PHONE_SPEED : DESKTOP_SPEED;
+  const speed = prefersReducedMotion
+    ? 0
+    : reducedQuality
+      ? LOW_SPEED
+      : DESKTOP_SPEED;
 
   return (
     <div className={className} style={{ width: "100%", height: "100%" }}>
@@ -66,8 +71,10 @@ export function WaterBackground({
         speed={speed}
         scale={1}
         fit="cover"
-        maxPixelCount={isPhone ? PHONE_MAX_PIXEL_COUNT : DESKTOP_MAX_PIXEL_COUNT}
-        {...(isPhone ? { minPixelRatio: PHONE_MIN_PIXEL_RATIO } : {})}
+        maxPixelCount={
+          reducedQuality ? LOW_MAX_PIXEL_COUNT : DESKTOP_MAX_PIXEL_COUNT
+        }
+        {...(reducedQuality ? { minPixelRatio: LOW_MIN_PIXEL_RATIO } : {})}
       />
     </div>
   );
