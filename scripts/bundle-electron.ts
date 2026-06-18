@@ -40,7 +40,7 @@ function bundleElectron(): void {
     outdir: distElectron,
     outExtension: { ".js": ".cjs" },
     platform: "node",
-    target: "node20",
+    target: "node24",
     format: "cjs",
     bundle: true,
     external: ["electron"],
