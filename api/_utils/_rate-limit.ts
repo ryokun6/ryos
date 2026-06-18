@@ -1,7 +1,10 @@
-import { createHash } from "node:crypto";
 import { createRedis } from "./redis.js";
 import { validateAuth } from "./auth/index.js";
-import { redisKeys } from "../../src/shared/redisKeys.js";
+import { makeKey, makeCanonicalRateKey } from "./_rate-limit-key.js";
+
+// Re-export the pure key builders so existing callers (and tests) can keep
+// importing them from this module.
+export { makeKey, makeCanonicalRateKey } from "./_rate-limit-key.js";
 
 // Set up Redis client
 const redis = createRedis();
@@ -11,40 +14,6 @@ export const AI_LIMIT_PER_5_HOURS = 15;
 export const AI_LIMIT_ANON_PER_DAY = 3;
 export const AI_WINDOW_AUTHENTICATED = 5 * 60 * 60; // 5 hours in seconds
 export const AI_WINDOW_ANONYMOUS = 24 * 60 * 60; // 24 hours in seconds
-
-const RATE_LIMIT_PREFIX = "rate";
-
-function normalizeRateKeyPart(part: string): string {
-  return encodeURIComponent(part.trim().toLowerCase());
-}
-
-function hashRateLimitIdentifier(identifier: string): string {
-  return createHash("sha256").update(identifier).digest("hex");
-}
-
-const RATE_LIMIT_SCOPE_LABELS = new Set(["anon", "host", "ip", "user"]);
-
-function deriveRateLimitScope(parts: string[]): string {
-  const labels = parts
-    .map((part) => part.trim().toLowerCase())
-    .filter((part) => RATE_LIMIT_SCOPE_LABELS.has(part));
-  return labels.length > 0 ? labels.join("-") : "global";
-}
-
-function makeCanonicalRateKey(parts: string[]): string {
-  if (parts.length === 0) return RATE_LIMIT_PREFIX;
-  const [feature = "global", window = "counter", ...identityParts] = parts;
-  const normalizedFeature = normalizeRateKeyPart(feature);
-  const normalizedWindow = normalizeRateKeyPart(window);
-  const scope = deriveRateLimitScope(identityParts);
-  const identifier = parts.join("\0");
-  return redisKeys.rate.counter(
-    normalizedFeature,
-    normalizedWindow,
-    scope,
-    hashRateLimitIdentifier(identifier)
-  );
-}
 
 // Helper function to get rate limit key for a user
 export const getAIRateLimitKey = (identifier: string): string => {
@@ -411,24 +380,4 @@ export function getClientIp(
   } catch {
     return "untrusted-shared-ip";
   }
-}
-
-/**
- * Build a stable key string from key parts.
- */
-export function makeKey(
-  parts: Array<string | null | undefined>
-): string {
-  const filteredParts = parts.reduce<string[]>((acc, part) => {
-    if (part !== undefined && part !== null && part !== "") {
-      acc.push(String(part));
-    }
-    return acc;
-  }, []);
-
-  if (filteredParts[0] === "rl") {
-    return makeCanonicalRateKey(filteredParts.slice(1));
-  }
-
-  return filteredParts.map((part) => encodeURIComponent(part)).join(":");
 }

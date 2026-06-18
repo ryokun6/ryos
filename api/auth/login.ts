@@ -26,7 +26,7 @@ import {
 import { verifyPassword, getUserPasswordHash } from "../_utils/auth/_password.js";
 import { apiHandler } from "../_utils/api-handler.js";
 import { buildSetAuthCookie } from "../_utils/_cookie.js";
-import { getClientIp } from "../_utils/_rate-limit.js";
+import { getClientIp, makeKey } from "../_utils/_rate-limit.js";
 import { getHeader } from "../_utils/request-helpers.js";
 import {
   getStoredUserRecord,
@@ -54,7 +54,7 @@ export default apiHandler(
 
     // Per-IP rate limit (uses trust-aware getClientIp).
     const ip = getClientIp(req);
-    const ipKey = `rl:auth:login:ip:${ip}`;
+    const ipKey = makeKey(["rl", "auth:login", "ip", ip]);
     const ipCurrent = await redis.incr(ipKey);
     if (ipCurrent === 1) {
       await redis.expire(ipKey, PER_IP_WINDOW_SECONDS);

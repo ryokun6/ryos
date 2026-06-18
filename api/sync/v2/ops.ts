@@ -5,6 +5,7 @@ import {
   broadcastSyncOps,
   validateSyncOps,
 } from "./_core.js";
+import { makeKey } from "../../_utils/_rate-limit-key.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
@@ -42,7 +43,7 @@ export default apiHandler<PostOpsBody>(
       return;
     }
 
-    const rateLimitKey = `rl:sync2:ops:${username}`;
+    const rateLimitKey = makeKey(["rl", "sync2", "ops", "user", username]);
     const current = await redis.incr(rateLimitKey);
     if (current === 1) {
       await redis.expire(rateLimitKey, RATE_LIMIT_WINDOW);

@@ -25,7 +25,7 @@ import { apiHandler } from "../_utils/api-handler.js";
 import { buildSetAuthCookie } from "../_utils/_cookie.js";
 // Use the shared trust-aware IP resolver so self-hosted deployments cannot
 // bypass per-IP rate limits via spoofed X-Forwarded-For headers.
-import { getClientIp } from "../_utils/_rate-limit.js";
+import { getClientIp, makeKey } from "../_utils/_rate-limit.js";
 import { getHeader } from "../_utils/request-helpers.js";
 import {
   getStoredUserRecord,
@@ -51,7 +51,7 @@ export default apiHandler(
 
     // Rate limiting: 5/min per IP with 24h block on exceed
     const ip = getClientIp(req);
-    const blockKey = `rl:block:register:ip:${ip}`;
+    const blockKey = makeKey(["rl", "block", "auth:register", "ip", ip]);
     const blocked = await redis.get(blockKey);
     if (blocked) {
       res.status(429).json({
@@ -60,7 +60,7 @@ export default apiHandler(
       return;
     }
 
-    const rlKey = `rl:auth:register:ip:${ip}`;
+    const rlKey = makeKey(["rl", "auth:register", "ip", ip]);
     const current = await redis.incr(rlKey);
     if (current === 1) {
       await redis.expire(rlKey, 60);

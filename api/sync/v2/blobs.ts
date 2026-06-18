@@ -5,6 +5,7 @@ import {
   getStorageBackend,
 } from "../../_utils/storage.js";
 import type { BlobUploadResultItem } from "../../../src/shared/sync2/types.js";
+import { makeKey } from "../../_utils/_rate-limit-key.js";
 import { lookupSyncBlobs } from "./_core.js";
 
 export const runtime = "nodejs";
@@ -75,7 +76,7 @@ export default apiHandler<PostBlobsBody>(
       return;
     }
 
-    const rateLimitKey = `rl:sync2:blobs:${username}`;
+    const rateLimitKey = makeKey(["rl", "sync2", "blobs", "user", username]);
     const current = await redis.incr(rateLimitKey);
     if (current === 1) {
       await redis.expire(rateLimitKey, RATE_LIMIT_WINDOW);

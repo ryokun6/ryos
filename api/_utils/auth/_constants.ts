@@ -41,12 +41,6 @@ export const PASSWORD_BCRYPT_ROUNDS = 10;
 // Rate Limiting Constants
 // ============================================================================
 
-/** Rate limit key prefix */
-export const RATE_LIMIT_PREFIX = "rl:";
-
-/** Rate limit block key prefix */
-export const RATE_LIMIT_BLOCK_PREFIX = "rl:block:";
-
 /** Rate limit window in seconds (1 minute) */
 export const RATE_LIMIT_WINDOW_SECONDS = 60;
 

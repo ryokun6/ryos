@@ -20,7 +20,10 @@ import {
   getTokenFromAuthCookie,
 } from "./test-utils";
 import { createRedis } from "../api/_utils/redis";
-import { CHAT_USERS_PREFIX } from "../api/_utils/auth/_constants";
+import {
+  getStoredUserRecord,
+  setStoredUserRecord,
+} from "../api/_utils/auth/_user-record";
 
 const PASSWORD = "testpassword123";
 
@@ -49,12 +52,15 @@ async function login(username: string, password = PASSWORD): Promise<Response> {
 
 async function setBanned(username: string, banned: boolean): Promise<void> {
   const redis = createRedis();
-  const key = `${CHAT_USERS_PREFIX}${username.toLowerCase()}`;
-  const raw = await redis.get<string | Record<string, unknown>>(key);
-  const parsed =
-    typeof raw === "string" ? JSON.parse(raw) : (raw as Record<string, unknown>) || {};
-  const updated = { ...parsed, username: username.toLowerCase(), banned };
-  await redis.set(key, JSON.stringify(updated));
+  // Read and write via the same canonical-first path the server uses
+  // (`auth:user:<username>:profile`, falling back to the legacy
+  // `chat:users:<username>`) so the ban flag lands in the record that
+  // login / register / token-refresh actually read.
+  const existing =
+    (await getStoredUserRecord(redis, username)) ?? {
+      username: username.toLowerCase(),
+    };
+  await setStoredUserRecord(redis, username, { ...existing, banned });
 }
 
 describe("banned-user enforcement", () => {
