@@ -15,7 +15,14 @@ import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { CursorRepoAgentChatCard } from "@/components/shared/CursorRepoAgentChatCard";
-import { adminSurfaceClass, adminTableRowClass, adminToolbarClass } from "../utils/adminStyles";
+import {
+  adminCursorAgentBannerClass,
+  adminCursorAgentRunningRowClass,
+  adminCursorAgentsPanelClass,
+  adminSurfaceClass,
+  adminTableRowClass,
+  adminToolbarClass,
+} from "../utils/adminStyles";
 
 export interface AdminCursorAgentRunRow {
   runId: string;
@@ -256,8 +263,10 @@ export function CursorAgentsPanel({
     />
   );
 
-  const panelShellClass =
-    "font-geneva-12 flex h-full min-h-0 flex-1 flex-col overflow-hidden";
+  const panelShellClass = cn(
+    adminCursorAgentsPanelClass,
+    "font-geneva-12 flex h-full min-h-0 flex-1 flex-col overflow-hidden"
+  );
 
   if (isLoading) {
     return (
@@ -311,7 +320,7 @@ export function CursorAgentsPanel({
     <div className={panelShellClass}>
       {toolbar}
       {(truncated || scanIncomplete) && (
-        <p className="text-[10px] text-amber-700 bg-amber-50 px-3 py-1 border-b border-amber-100 shrink-0 os-mac-aqua-dark:text-amber-200 os-mac-aqua-dark:bg-amber-950/40 os-mac-aqua-dark:border-amber-900/50">
+        <p className={adminCursorAgentBannerClass}>
           {scanIncomplete && !truncated
             ? t(
                 "apps.admin.cursorAgents.scanIncompleteHint",
@@ -364,7 +373,7 @@ export function CursorAgentsPanel({
                 className={cn(
                   adminTableRowClass,
                   "cursor-pointer",
-                  run.status === "running" && "bg-amber-50/60 odd:bg-amber-50/70",
+                  run.status === "running" && adminCursorAgentRunningRowClass,
                 )}
                 data-selected={selectedRunId === run.runId ? "true" : undefined}
               >

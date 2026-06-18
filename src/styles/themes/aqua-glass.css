@@ -1153,6 +1153,43 @@
   background-color: rgba(255, 255, 255, 0.11) !important;
 }
 
+/* Admin → Cursor Agents: semi-transparent amber for running rows (overrides zebra) */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .admin-cursor-agents-panel
+  .admin-cursor-agent-running-row {
+  background-color: rgba(251, 191, 36, 0.12) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .admin-cursor-agents-panel
+  .admin-cursor-agent-running-row:nth-child(odd) {
+  background-color: rgba(251, 191, 36, 0.18) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .admin-cursor-agents-panel
+  .admin-cursor-agent-running-row:hover {
+  background-color: rgba(251, 191, 36, 0.22) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .admin-cursor-agents-panel
+  .admin-cursor-agent-running-row {
+  background-color: rgba(251, 191, 36, 0.1) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .admin-cursor-agents-panel
+  .admin-cursor-agent-running-row:nth-child(odd) {
+  background-color: rgba(251, 191, 36, 0.14) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .admin-cursor-agents-panel
+  .admin-cursor-agent-running-row:hover {
+  background-color: rgba(251, 191, 36, 0.18) !important;
+}
+
 :root[data-os-theme="macosx"] .admin-card-header {
   background-color: transparent !important;
 }
