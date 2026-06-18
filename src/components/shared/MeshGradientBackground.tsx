@@ -19,6 +19,12 @@ interface MeshGradientBackgroundProps {
  */
 const PHONE_MAX_PIXEL_COUNT = 1280 * 720;
 const PHONE_MIN_PIXEL_RATIO = 1;
+/**
+ * Cap the backing buffer on desktop too: the Paper default is ~8.3M px
+ * (1920×1080 × 2dpi per side), which is wasteful for a soft, blurry gradient
+ * on hi-dpi / 4K displays. QHD is plenty crisp here.
+ */
+const DESKTOP_MAX_PIXEL_COUNT = 2560 * 1440;
 /** Slightly calmer motion on phones; reduces steady-state GPU churn. */
 const PHONE_SPEED = 0.7;
 const DESKTOP_SPEED = 1;
@@ -61,12 +67,8 @@ export function MeshGradientBackground({
         speed={speed}
         scale={1.16}
         rotation={90}
-        {...(isPhone
-          ? {
-              maxPixelCount: PHONE_MAX_PIXEL_COUNT,
-              minPixelRatio: PHONE_MIN_PIXEL_RATIO,
-            }
-          : {})}
+        maxPixelCount={isPhone ? PHONE_MAX_PIXEL_COUNT : DESKTOP_MAX_PIXEL_COUNT}
+        {...(isPhone ? { minPixelRatio: PHONE_MIN_PIXEL_RATIO } : {})}
       />
     </div>
   );
