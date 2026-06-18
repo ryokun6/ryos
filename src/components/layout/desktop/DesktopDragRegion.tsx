@@ -29,6 +29,3 @@ export function DesktopDragRegion({
     />
   );
 }
-
-/** @deprecated Use {@link DesktopDragRegion}. */
-export const DesktopTauriDragRegion = DesktopDragRegion;

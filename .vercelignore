@@ -6,9 +6,6 @@ dist/
 # Dependencies
 node_modules/
 
-# Tauri build artifacts
-src-tauri/
-
 # Test results
 tests/
 test-results/

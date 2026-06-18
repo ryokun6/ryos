@@ -11,9 +11,6 @@ export function isDesktop(): boolean {
   return typeof window !== "undefined" && "ryosDesktop" in window;
 }
 
-/** @deprecated Use {@link isDesktop}. */
-export const isTauri = isDesktop;
-
 /**
  * Get the API base URL.
  * In the desktop shell, returns the production API URL.
@@ -48,6 +45,3 @@ export function isDesktopWindows(): boolean {
 
   return window.ryosDesktop?.platform === "win32";
 }
-
-/** @deprecated Use {@link isDesktopWindows}. */
-export const isTauriWindows = isDesktopWindows;
