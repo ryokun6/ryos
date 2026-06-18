@@ -84,6 +84,7 @@ export interface RedisLike {
   rpush(key: string, ...values: string[]): Promise<number>;
   pfadd(key: string, ...elements: string[]): Promise<number>;
   pfcount(...keys: string[]): Promise<number>;
+  pfmerge(destinationKey: string, ...sourceKeys: string[]): Promise<"OK">;
   zadd(key: string, entry: RedisSortedSetEntry): Promise<number>;
   zrem(key: string, member: string): Promise<number>;
   zremrangebyscore(
@@ -447,6 +448,10 @@ class StandardRedisAdapter implements RedisLike {
   async pfcount(...keys: string[]): Promise<number> {
     if (keys.length === 0) return 0;
     return await this.client.pfcount(...keys);
+  }
+
+  async pfmerge(destinationKey: string, ...sourceKeys: string[]): Promise<"OK"> {
+    return await this.client.pfmerge(destinationKey, ...sourceKeys);
   }
 
   async zadd(key: string, entry: RedisSortedSetEntry): Promise<number> {

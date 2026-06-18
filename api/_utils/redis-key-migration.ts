@@ -561,11 +561,22 @@ async function zrangeWithScores(
   }
 }
 
+function isAnalyticsVisitorHllKey(key: string): boolean {
+  return key.startsWith("analytics:uv:");
+}
+
 async function copyRedisValue(
   redis: Redis,
   sourceKey: string,
   targetKey: string
 ): Promise<string | null> {
+  if (isAnalyticsVisitorHllKey(sourceKey)) {
+    const ttl = await redis.ttl(sourceKey);
+    await redis.pfmerge(targetKey, targetKey, sourceKey);
+    if (ttl > 0) await redis.expire(targetKey, ttl);
+    return null;
+  }
+
   const type = await redis.type(sourceKey);
   const ttl = await redis.ttl(sourceKey);
   switch (type) {

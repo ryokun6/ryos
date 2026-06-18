@@ -64,6 +64,30 @@ describe("Redis key scheme migration helpers", () => {
     expect(fake.ttls.get(redisKeys.auth.userProfile("alice"))).toBe(3600);
   });
 
+  test("backfills analytics visitor HyperLogLogs with a readable canonical count", async () => {
+    const fake = new FakeRedis();
+    const redis = fake as unknown as Redis;
+    const today = new Date().toISOString().slice(0, 10);
+    const legacyKey = `analytics:uv:${today}`;
+    const canonicalKey = redisKeys.analytics.apiMetric("uv", today);
+
+    await redis.pfadd(legacyKey, "ip:203.0.113.10");
+    await redis.pfadd(canonicalKey, "ip:203.0.113.11");
+    await redis.expire(legacyKey, 3600);
+
+    const result = await backfillRedisKeyScheme(redis, {
+      pattern: "analytics:uv:*",
+      limit: 10,
+      dryRun: false,
+    });
+
+    expect(result.scanned).toBe(1);
+    expect(result.copied).toBe(1);
+    expect(await redis.pfcount(canonicalKey)).toBe(2);
+    expect(fake.ttls.get(canonicalKey)).toBe(3600);
+    expect(await redis.pfcount(legacyKey)).toBe(1);
+  });
+
   test("backfills auth sessions with hashed token keys and user session index", async () => {
     const fake = new FakeRedis();
     const redis = fake as unknown as Redis;

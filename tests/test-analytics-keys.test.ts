@@ -28,6 +28,8 @@ describe("analytics Redis keys", () => {
       latsum: "42",
       latcnt: "1",
     });
+    const summary = await getAnalyticsSummary(redis, 1);
+    expect(summary.totals.uniqueVisitors).toBe(1);
     expect(await redis.hgetall(`analytics:daily:${today}`)).toBeNull();
     expect(fake.allKeys().some((key) => key.startsWith("analytics:daily:"))).toBe(false);
   });
