@@ -593,15 +593,22 @@ function mergeHashCounts(
   }
 }
 
-function hasHashEntries(raw: Record<string, string> | null | undefined): raw is Record<string, string> {
-  return Boolean(raw && Object.keys(raw).length > 0);
-}
-
-function canonicalOrLegacyHash(
+function mergeNumericHashes(
   canonical: Record<string, string> | null,
   legacy: Record<string, string> | null
 ): Record<string, string> | null {
-  return hasHashEntries(canonical) ? canonical : legacy;
+  if (!canonical && !legacy) return null;
+  const merged = new Map<string, number>();
+  for (const raw of [legacy, canonical]) {
+    if (!raw) continue;
+    for (const [key, value] of Object.entries(raw)) {
+      const count = parseInt(String(value), 10) || 0;
+      merged.set(key, (merged.get(key) || 0) + count);
+    }
+  }
+  return Object.fromEntries(
+    [...merged.entries()].map(([key, value]) => [key, String(value)])
+  );
 }
 
 /**
@@ -636,7 +643,7 @@ export async function getAnalyticsSummary(
   const dailyMetrics: DailyMetrics[] = dates.map((date, i) => {
     const base = i * 3;
     const d = parseDailyHash(
-      canonicalOrLegacyHash(
+      mergeNumericHashes(
         (results[base] as Record<string, string> | null) || null,
         (results[base + 1] as Record<string, string> | null) || null
       )
@@ -726,7 +733,7 @@ export async function getAnalyticsDetail(
   const dailyMetrics: DailyMetrics[] = dates.map((date, i) => {
     const base = i * CMDS_PER_DAY;
     const d = parseDailyHash(
-      canonicalOrLegacyHash(
+      mergeNumericHashes(
         (results[base] as Record<string, string> | null) || null,
         (results[base + 1] as Record<string, string> | null) || null
       )
@@ -742,21 +749,21 @@ export async function getAnalyticsDetail(
 
     mergeHashCounts(
       epMap,
-      canonicalOrLegacyHash(
+      mergeNumericHashes(
         (results[base + 3] as Record<string, string> | null) || null,
         (results[base + 4] as Record<string, string> | null) || null
       )
     );
     mergeHashCounts(
       stMap,
-      canonicalOrLegacyHash(
+      mergeNumericHashes(
         (results[base + 5] as Record<string, string> | null) || null,
         (results[base + 6] as Record<string, string> | null) || null
       )
     );
     mergeHashCounts(
       aiuMap,
-      canonicalOrLegacyHash(
+      mergeNumericHashes(
         (results[base + 7] as Record<string, string> | null) || null,
         (results[base + 8] as Record<string, string> | null) || null
       )

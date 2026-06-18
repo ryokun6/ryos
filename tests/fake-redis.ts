@@ -78,6 +78,7 @@ export class FakeRedisPipeline {
 export class FakeRedis {
   readonly kv = new Map<string, string>();
   readonly sets = new Map<string, Set<string>>();
+  readonly hllKeys = new Set<string>();
   readonly hashes = new Map<string, Map<string, string>>();
   readonly lists = new Map<string, string[]>();
   /** Sorted sets: key → (member → score). */
@@ -131,6 +132,7 @@ export class FakeRedis {
     for (const key of keys) {
       if (this.kv.delete(key)) deleted += 1;
       if (this.sets.delete(key)) deleted += 1;
+      this.hllKeys.delete(key);
       if (this.hashes.delete(key)) deleted += 1;
       if (this.lists.delete(key)) deleted += 1;
       if (this.zsets.delete(key)) deleted += 1;
@@ -153,7 +155,9 @@ export class FakeRedis {
   }
 
   pfaddSync(key: string, ...elements: string[]): number {
-    return this.saddSync(key, ...elements);
+    const added = this.saddSync(key, ...elements);
+    this.hllKeys.add(key);
+    return added;
   }
 
   sremSync(key: string, ...members: string[]): number {
@@ -163,7 +167,10 @@ export class FakeRedis {
     for (const member of members) {
       if (set.delete(member)) removed += 1;
     }
-    if (set.size === 0) this.sets.delete(key);
+    if (set.size === 0) {
+      this.sets.delete(key);
+      this.hllKeys.delete(key);
+    }
     return removed;
   }
 
@@ -231,6 +238,7 @@ export class FakeRedis {
 
   async type(key: string): Promise<string> {
     if (this.kv.has(key)) return "string";
+    if (this.hllKeys.has(key)) return "string";
     if (this.sets.has(key)) return "set";
     if (this.hashes.has(key)) return "hash";
     if (this.lists.has(key)) return "list";
@@ -341,6 +349,18 @@ export class FakeRedis {
       }
     }
     return unique.size;
+  }
+
+  async pfmerge(destinationKey: string, ...sourceKeys: string[]): Promise<"OK"> {
+    const merged = new Set<string>();
+    for (const key of sourceKeys) {
+      for (const member of this.sets.get(key) || []) {
+        merged.add(member);
+      }
+    }
+    this.sets.set(destinationKey, merged);
+    this.hllKeys.add(destinationKey);
+    return "OK";
   }
 
   async rpush(key: string, ...values: string[]): Promise<number> {
