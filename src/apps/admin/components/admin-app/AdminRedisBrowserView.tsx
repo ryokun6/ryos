@@ -37,6 +37,10 @@ import {
   getAdminRedisKeys,
 } from "@/api/admin";
 import { cn } from "@/lib/utils";
+import {
+  adminAquaIconButtonClass,
+  AQUA_ICON_BUTTON_ICON_CLASS,
+} from "@/lib/aquaIconButton";
 import { LEGACY_REDIS_SCAN_PATTERNS } from "@/shared/redisKeys";
 import {
   adminGhostIconBtnClass,
@@ -181,6 +185,8 @@ function formatDeletedKeySample(keys: string[]): string {
 // How many keys each SCAN page requests. SCAN COUNT is a hint, so the actual
 // returned batch varies, but a larger value pulls noticeably more per request.
 const REDIS_BROWSER_PAGE_COUNT = 500;
+
+const DELETE_LEGACY_BUTTON_STYLE = { color: "#000", textShadow: "none" } as const;
 
 export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
   const [pattern, setPattern] = useState("*");
@@ -655,87 +661,88 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
         {isMigrationExpanded ? (
           <div className="space-y-2 border-t border-os-separator/60 px-2 py-2">
             <div className="flex flex-wrap items-center gap-2">
-              <Button
+              <button
                 type="button"
-                variant="outline"
-                size="sm"
                 onClick={() => void handleLoadMigrationStatus()}
                 disabled={isLoadingMigrationStatus || isMigrationRunning}
-                className="h-7 gap-1.5 px-2.5 text-[11px]"
+                className={adminAquaIconButtonClass("secondary")}
               >
                 {isLoadingMigrationStatus ? (
                   <ActivityIndicator size={12} />
                 ) : (
-                  <MagnifyingGlass size={12} weight="bold" />
+                  <MagnifyingGlass className={AQUA_ICON_BUTTON_ICON_CLASS} weight="bold" />
                 )}
-                {isLoadingMigrationStatus
-                  ? t("apps.admin.redis.loading", "Loading...")
-                  : t("apps.admin.redis.migration.scan", "Scan legacy")}
-              </Button>
+                <span>
+                  {isLoadingMigrationStatus
+                    ? t("apps.admin.redis.loading", "Loading...")
+                    : t("apps.admin.redis.migration.scan", "Scan legacy")}
+                </span>
+              </button>
               <span
                 className="hidden h-5 w-px shrink-0 bg-os-separator sm:block"
                 aria-hidden
               />
-              <Button
+              <button
                 type="button"
-                variant="outline"
-                size="sm"
                 onClick={() => void runContinuousMigration("dry-run")}
                 disabled={isMigrationRunning}
-                className="h-7 gap-1.5 px-2.5 text-[11px]"
+                className={adminAquaIconButtonClass("secondary")}
               >
                 {activeMigrationRun === "dry-run" ? (
                   <ActivityIndicator size={12} />
                 ) : (
-                  <Eye size={12} weight="bold" />
+                  <Eye className={AQUA_ICON_BUTTON_ICON_CLASS} weight="bold" />
                 )}
-                {t("apps.admin.redis.migration.dryRun", "Dry run")}
-              </Button>
-              <Button
+                <span>{t("apps.admin.redis.migration.dryRun", "Dry run")}</span>
+              </button>
+              <button
                 type="button"
-                variant="secondary"
-                size="sm"
                 onClick={() => void runContinuousMigration("backfill")}
                 disabled={isMigrationRunning}
-                className="h-7 gap-1.5 px-2.5 text-[11px]"
+                className={adminAquaIconButtonClass("secondary")}
               >
                 {activeMigrationRun === "backfill" ? (
                   <ActivityIndicator size={12} />
                 ) : (
-                  <ArrowsLeftRight size={12} weight="bold" />
+                  <ArrowsLeftRight className={AQUA_ICON_BUTTON_ICON_CLASS} weight="bold" />
                 )}
-                {activeMigrationRun === "backfill"
-                  ? t("apps.admin.redis.loading", "Loading...")
-                  : t("apps.admin.redis.migration.backfill", "Backfill all")}
-              </Button>
-              <Button
+                <span>
+                  {activeMigrationRun === "backfill"
+                    ? t("apps.admin.redis.loading", "Loading...")
+                    : t("apps.admin.redis.migration.backfill", "Backfill all")}
+                </span>
+              </button>
+              <button
                 type="button"
-                variant="destructive"
-                size="sm"
                 onClick={() => setDeleteLegacyCandidate(true)}
                 disabled={isMigrationRunning}
-                className="h-7 gap-1.5 px-2.5 text-[11px]"
+                className={adminAquaIconButtonClass("orange")}
+                style={DELETE_LEGACY_BUTTON_STYLE}
               >
                 {activeMigrationRun === "delete" ? (
                   <ActivityIndicator size={12} />
                 ) : (
-                  <Trash size={12} weight="bold" />
+                  <Trash
+                    className={AQUA_ICON_BUTTON_ICON_CLASS}
+                    style={DELETE_LEGACY_BUTTON_STYLE}
+                    weight="bold"
+                  />
                 )}
-                {activeMigrationRun === "delete"
-                  ? t("apps.admin.redis.loading", "Loading...")
-                  : t("apps.admin.redis.migration.deleteLegacy", "Delete all legacy")}
-              </Button>
-              <Button
+                <span style={DELETE_LEGACY_BUTTON_STYLE}>
+                  {activeMigrationRun === "delete"
+                    ? t("apps.admin.redis.loading", "Loading...")
+                    : t("apps.admin.redis.migration.deleteLegacy", "Delete all legacy")}
+                </span>
+              </button>
+              <button
                 type="button"
-                variant="outline"
-                size="sm"
                 onClick={handleStopMigration}
                 disabled={!isMigrationRunning}
-                className="h-7 gap-1.5 px-2.5 text-[11px]"
+                className={adminAquaIconButtonClass("secondary")}
               >
-                <Stop size={12} weight="bold" />
-                {t("apps.admin.redis.migration.stop", "Stop")}
-              </Button>
+                <Stop className={AQUA_ICON_BUTTON_ICON_CLASS} weight="bold" />
+                <span>{t("apps.admin.redis.migration.stop", "Stop")}</span>
+              </button>
             </div>
 
             {migrationLog.length > 0 ? (
@@ -750,15 +757,13 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
                       {t("apps.admin.redis.migration.log", "Migration log")}
                     </span>
                     {!isMigrationRunning ? (
-                      <Button
+                      <button
                         type="button"
-                        variant="ghost"
-                        size="sm"
                         onClick={() => setMigrationLog([])}
-                        className="h-6 px-2 text-[10px]"
+                        className={adminAquaIconButtonClass("secondary", "sm")}
                       >
-                        {t("apps.admin.redis.migration.clearLog", "Clear")}
-                      </Button>
+                        <span>{t("apps.admin.redis.migration.clearLog", "Clear")}</span>
+                      </button>
                     ) : null}
                   </div>
                   {migrationLog.map((entry) => (
