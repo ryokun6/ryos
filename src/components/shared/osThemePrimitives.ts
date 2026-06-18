@@ -173,7 +173,7 @@ export function osAppSidebarSurfaceClassName(
   return cn(
     "os-app-sidebar flex flex-col font-geneva-12 text-[12px]",
     isMacOSTheme && isAquaGlass ? "bg-transparent" : surfaceClassName,
-    layout === "overlay" && "os-app-sidebar--overlay w-full border-b",
+    layout === "overlay" && "os-app-sidebar--overlay w-full",
     layout === "side" && "w-56 border-r h-full overflow-hidden",
     layout === "responsive" && "w-full border-b md:border-r md:border-b-0",
     borderColorClass,
