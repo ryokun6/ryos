@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { createRedis } from "./redis.js";
 import { validateAuth } from "./auth/index.js";
 
@@ -5,18 +6,36 @@ import { validateAuth } from "./auth/index.js";
 const redis = createRedis();
 
 // Constants for rate limiting
-const AI_RATE_LIMIT_PREFIX = "rl:ai:";
 export const AI_LIMIT_PER_5_HOURS = 15;
 export const AI_LIMIT_ANON_PER_DAY = 3;
 export const AI_WINDOW_AUTHENTICATED = 5 * 60 * 60; // 5 hours in seconds
 export const AI_WINDOW_ANONYMOUS = 24 * 60 * 60; // 24 hours in seconds
 
+const RATE_LIMIT_PREFIX = "rate";
+
+function normalizeRateKeyPart(part: string): string {
+  return encodeURIComponent(part.trim().toLowerCase());
+}
+
+function hashRateLimitIdentifier(identifier: string): string {
+  return createHash("sha256").update(identifier).digest("hex");
+}
+
+function makeCanonicalRateKey(parts: string[]): string {
+  if (parts.length === 0) return RATE_LIMIT_PREFIX;
+  const identifier = parts[parts.length - 1] || "global";
+  const prefixParts = parts.slice(0, -1).map(normalizeRateKeyPart);
+  return [
+    RATE_LIMIT_PREFIX,
+    ...prefixParts,
+    hashRateLimitIdentifier(identifier),
+  ].join(":");
+}
+
 // Helper function to get rate limit key for a user
 const getAIRateLimitKey = (identifier: string): string => {
-  // Simple key format: rl:ai:{identifier}
-  // For authenticated users: rl:ai:username
-  // For anonymous users: rl:ai:anon:123.45.67.89
-  return `${AI_RATE_LIMIT_PREFIX}${identifier}`;
+  const scope = identifier.startsWith("anon:") ? "anon" : "user";
+  return makeCanonicalRateKey(["ai", scope, identifier]);
 };
 
 interface AIRateLimitResult {
@@ -386,10 +405,16 @@ export function getClientIp(
 export function makeKey(
   parts: Array<string | null | undefined>
 ): string {
-  return parts.reduce<string[]>((acc, part) => {
+  const filteredParts = parts.reduce<string[]>((acc, part) => {
     if (part !== undefined && part !== null && part !== "") {
-      acc.push(encodeURIComponent(String(part)));
+      acc.push(String(part));
     }
     return acc;
-  }, []).join(":");
+  }, []);
+
+  if (filteredParts[0] === "rl") {
+    return makeCanonicalRateKey(filteredParts.slice(1));
+  }
+
+  return filteredParts.map((part) => encodeURIComponent(part)).join(":");
 }
