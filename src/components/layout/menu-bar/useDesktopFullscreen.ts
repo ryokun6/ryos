@@ -39,6 +39,3 @@ export function useDesktopFullscreen(): boolean {
 
   return isFullscreen;
 }
-
-/** @deprecated Use {@link useDesktopFullscreen}. */
-export const useTauriFullscreen = useDesktopFullscreen;

@@ -4,7 +4,6 @@
 .vercel
 node_modules
 dist
-src-tauri/target
 coverage
 *.log
 .env
