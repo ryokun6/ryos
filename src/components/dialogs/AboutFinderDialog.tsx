@@ -16,7 +16,10 @@ import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { getTranslatedAppName } from "@/utils/i18n";
 import type { AppId } from "@/config/appRegistry";
 import { abortableFetch } from "@/utils/abortableFetch";
-import { getDesktopDownloadUrl } from "@/utils/desktopDownload";
+import {
+  getDesktopDownloadUrl,
+  getSupportedDesktopDownloadTarget,
+} from "@/utils/desktopDownload";
 
 interface AboutFinderDialogProps {
   isOpen: boolean;
@@ -42,19 +45,21 @@ export function AboutFinderDialog({
   const buildTime = useAppStore((state) => state.ryOSBuildTime);
   const [versionDisplayMode, setVersionDisplayMode] = useState(0); // 0: version, 1: commit, 2: date
   const [desktopVersion, setDesktopVersion] = useState<string | null>(null);
-  const isMac = useMemo(() => 
-    typeof navigator !== 'undefined' && navigator.platform.toLowerCase().includes('mac'), 
+  // Only offer the Mac desktop download on actual Mac browsers. This relies on
+  // the shared detector so mobile devices (iPad/iPhone) are excluded too.
+  const isMac = useMemo(
+    () => getSupportedDesktopDownloadTarget()?.platform === "mac",
     []
   );
   const desktopDownloadUrl = useMemo(
     () =>
-      desktopVersion
+      desktopVersion && isMac
         ? getDesktopDownloadUrl(desktopVersion, {
             platform: "mac",
             arch: "aarch64",
           })
         : null,
-    [desktopVersion]
+    [desktopVersion, isMac]
   );
 
   // Fetch desktop version for download link

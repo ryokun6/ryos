@@ -13,6 +13,7 @@ export interface DesktopDownloadRuntimeInfo {
   platform?: string | null;
   userAgent?: string | null;
   desktopPlatform?: string | null;
+  maxTouchPoints?: number | null;
 }
 
 export interface SupportedDesktopDownloadTarget extends DesktopDownloadOptions {
@@ -31,6 +32,7 @@ function getDesktopDownloadRuntimeInfo(): DesktopDownloadRuntimeInfo {
       typeof window === "undefined"
         ? null
         : window.ryosDesktop?.platform ?? null,
+    maxTouchPoints: nav?.maxTouchPoints ?? null,
   };
 }
 
@@ -42,9 +44,44 @@ function hasMacSignal(values: Array<string | null | undefined>): boolean {
   return values.some((value) => /darwin|mac/i.test(value ?? ""));
 }
 
+// Phones/tablets can't run the Mac/Windows desktop build, yet their browsers
+// still trip the Mac signal (iPhone UA contains "like Mac OS X", iPadOS reports
+// as "Macintosh"). Treat those as mobile so we never offer a desktop download.
+function isMobileRuntime(runtimeInfo: DesktopDownloadRuntimeInfo): boolean {
+  // Running inside the native desktop shell is never mobile.
+  if (runtimeInfo.desktopPlatform) {
+    return false;
+  }
+
+  const values = [runtimeInfo.platform, runtimeInfo.userAgent];
+
+  if (
+    values.some((value) =>
+      /iphone|ipad|ipod|android|blackberry|iemobile|opera mini|mobile|windows phone|kindle|silk/i.test(
+        value ?? ""
+      )
+    )
+  ) {
+    return true;
+  }
+
+  // iPadOS 13+ presents a desktop ("Macintosh") UA but still exposes touch
+  // points, which a real Mac does not.
+  const maxTouchPoints = runtimeInfo.maxTouchPoints ?? 0;
+  if (maxTouchPoints > 1 && hasMacSignal(values)) {
+    return true;
+  }
+
+  return false;
+}
+
 export function getSupportedDesktopDownloadTarget(
   runtimeInfo: DesktopDownloadRuntimeInfo = getDesktopDownloadRuntimeInfo()
 ): SupportedDesktopDownloadTarget | null {
+  if (isMobileRuntime(runtimeInfo)) {
+    return null;
+  }
+
   const values = [
     runtimeInfo.desktopPlatform,
     runtimeInfo.platform,
