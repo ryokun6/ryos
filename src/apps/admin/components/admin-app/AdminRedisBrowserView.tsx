@@ -1,5 +1,5 @@
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { StickToBottom } from "use-stick-to-bottom";
+import { useStickToBottom } from "use-stick-to-bottom";
 import {
   ArrowsClockwise,
   ArrowsLeftRight,
@@ -206,6 +206,14 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
   const [deleteLegacyCandidate, setDeleteLegacyCandidate] = useState(false);
   const [migrationLog, setMigrationLog] = useState<RedisMigrationLogEntry[]>([]);
   const [isMigrationExpanded, setIsMigrationExpanded] = useState(false);
+  // Drive the migration-log auto-scroll via the hook so the cap (max-h-28) and
+  // overflow live directly on the scroll element. The <StickToBottom> component
+  // scrolls an inner height:100% div, which can't resolve against a parent that
+  // only has a max-height, so it never pinned to the bottom in this layout.
+  const {
+    scrollRef: migrationLogScrollRef,
+    contentRef: migrationLogContentRef,
+  } = useStickToBottom({ resize: "smooth", initial: "instant" });
   const migrationStopRequestedRef = useRef(false);
   const migrationLogIdRef = useRef(0);
   // Cache fetched key documents so reopening a key (or returning to it after
@@ -975,12 +983,11 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
             </div>
 
             {migrationLog.length > 0 ? (
-              <StickToBottom
-                className="max-h-28 overflow-hidden rounded border border-os-separator bg-black/5 font-os-mono text-[10px] leading-relaxed os-mac-aqua-dark:bg-white/10"
-                resize="smooth"
-                initial="instant"
+              <div
+                ref={migrationLogScrollRef}
+                className="max-h-28 overflow-y-auto rounded border border-os-separator bg-black/5 font-os-mono text-[10px] leading-relaxed os-mac-aqua-dark:bg-white/10"
               >
-                <StickToBottom.Content className="px-2 py-1.5">
+                <div ref={migrationLogContentRef} className="px-2 py-1.5">
                   <div className="mb-1 flex items-center justify-between gap-2">
                     <span className={adminSectionLabelClass}>
                       {t("apps.admin.redis.migration.log", "Migration log")}
@@ -1010,8 +1017,8 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
                       {entry.message}
                     </div>
                   ))}
-                </StickToBottom.Content>
-              </StickToBottom>
+                </div>
+              </div>
             ) : null}
           </div>
         ) : null}

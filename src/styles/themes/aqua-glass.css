@@ -1000,6 +1000,15 @@
   padding: 0 5px;
 }
 
+/* Tighten the vertical gap between sidebar rows to 1px. Tailwind v4's space-y-*
+   utility sets margin-block-end on `> :not(:last-child)` (wrapped in a
+   zero-specificity :where()), so we match the same element + property to win. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .os-app-sidebar-list
+  > :not(:last-child) {
+  margin-block-end: 1px !important;
+}
+
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .os-app-sidebar-header {
   padding-left: 10px !important;
   padding-right: 10px !important;
