@@ -78,6 +78,7 @@ export function ContactsMenuBar({
                 type: "action",
                 label: t("common.menu.close"),
                 onClick: onClose,
+                shortcutId: "close",
               },
             ],
           },

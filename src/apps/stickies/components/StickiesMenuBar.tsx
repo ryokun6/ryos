@@ -56,6 +56,7 @@ export function StickiesMenuBar({
           type: "action",
           label: t("apps.stickies.menu.newNote"),
           onClick: () => onNewNote(),
+          shortcutId: "newFile",
         },
         { type: "separator" },
         {
@@ -72,7 +73,12 @@ export function StickiesMenuBar({
           onClick: () => requestCloudSyncDomainCheck("stickies"),
         },
         { type: "separator" },
-        { type: "action", label: t("common.menu.close"), onClick: onClose },
+        {
+          type: "action",
+          label: t("common.menu.close"),
+          onClick: onClose,
+          shortcutId: "close",
+        },
       ],
     },
     {

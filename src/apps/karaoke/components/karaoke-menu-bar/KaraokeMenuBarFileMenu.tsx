@@ -6,6 +6,7 @@ import {
   MenubarSeparator,
 } from "@/components/ui/menubar";
 import { MENUBAR_SEPARATOR_CLASS } from "@/components/shared/menubar/menubarStyles";
+import { ShortcutHint } from "@/components/shared/menubar/ShortcutHint";
 import type { KaraokeMenuBarViewModel } from "./useKaraokeMenuBar";
 
 export function KaraokeMenuBarFileMenu({ vm }: { vm: KaraokeMenuBarViewModel }) {
@@ -93,6 +94,7 @@ export function KaraokeMenuBarFileMenu({ vm }: { vm: KaraokeMenuBarViewModel }) 
         <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
         <MenubarItem onClick={onClose} className="text-md h-6 px-3">
           {t("common.menu.close")}
+          <ShortcutHint id="close" />
         </MenubarItem>
       </MenubarContent>
     </MenubarMenu>

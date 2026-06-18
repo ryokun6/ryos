@@ -13,6 +13,7 @@ import { SYNTH_PRESETS } from "@/hooks/chatSynthPresets";
 import { getPrivateRoomDisplayName } from "@/utils/chat";
 import { LoginDialog } from "@/components/dialogs/LoginDialog";
 import { AppMenuBarShell } from "@/components/shared/menubar/AppMenuBarShell";
+import { ShortcutHint } from "@/components/shared/menubar/ShortcutHint";
 import { MENUBAR_SEPARATOR_CLASS } from "@/components/shared/menubar/menubarStyles";
 import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
 import { useTranslation } from "react-i18next";
@@ -254,6 +255,7 @@ export const ChatsMenuBar = memo(function ChatsMenuBar({
               className="text-md h-6 px-3"
             >
               {t("common.menu.close")}
+              <ShortcutHint id="close" />
             </MenubarItem>
           </MenubarContent>
         </MenubarMenu>

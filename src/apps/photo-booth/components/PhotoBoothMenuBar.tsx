@@ -65,7 +65,12 @@ export function PhotoBoothMenuBar({
           onClick: onClearPhotos,
         },
         { type: "separator" },
-        { type: "action", label: t("common.menu.close"), onClick: onClose },
+        {
+          type: "action",
+          label: t("common.menu.close"),
+          onClick: onClose,
+          shortcutId: "close",
+        },
       ],
     },
     {

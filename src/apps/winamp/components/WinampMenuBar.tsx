@@ -69,7 +69,12 @@ export function WinampMenuBar({
     {
       label: t("common.menu.file"),
       items: [
-        { type: "action", label: t("common.menu.close"), onClick: onClose },
+        {
+          type: "action",
+          label: t("common.menu.close"),
+          onClick: onClose,
+          shortcutId: "close",
+        },
       ],
     },
   ];

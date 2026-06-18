@@ -7,6 +7,7 @@ import {
   MenubarCheckboxItem,
 } from "@/components/ui/menubar";
 import { AppMenuBarShell } from "@/components/shared/menubar/AppMenuBarShell";
+import { ShortcutHint } from "@/components/shared/menubar/ShortcutHint";
 import { MENUBAR_SEPARATOR_CLASS } from "@/components/shared/menubar/menubarStyles";
 import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
 import { FileItem } from "./FileList";
@@ -128,6 +129,7 @@ export function FinderMenuBar({
             className="text-md h-6 px-3"
           >
             {t("apps.finder.menu.newFinderWindow")}
+            <ShortcutHint id="newWindow" />
           </MenubarItem>
           <MenubarItem
             onClick={onNewFolder}
@@ -135,6 +137,7 @@ export function FinderMenuBar({
             className="text-md h-6 px-3 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {t("apps.finder.menu.newFolder")}
+            <ShortcutHint id="newFolder" />
           </MenubarItem>
           <MenubarItem
             onClick={onImportFile}
@@ -187,6 +190,7 @@ export function FinderMenuBar({
             className="text-md h-6 px-3"
           >
             {t("common.menu.close")}
+            <ShortcutHint id="close" />
           </MenubarItem>
         </MenubarContent>
       </MenubarMenu>
@@ -203,6 +207,7 @@ export function FinderMenuBar({
             className={`text-md h-6 px-3 ${!canUndo ? "text-neutral-500" : ""}`}
           >
             {t("common.menu.undo")}
+            <ShortcutHint id="undo" />
           </MenubarItem>
           <MenubarItem
             onClick={redo}
@@ -210,6 +215,7 @@ export function FinderMenuBar({
             className={`text-md h-6 px-3 ${!canRedo ? "text-neutral-500" : ""}`}
           >
             {t("common.menu.redo")}
+            <ShortcutHint id="redo" />
           </MenubarItem>
           <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <MenubarItem className="text-md h-6 px-3">

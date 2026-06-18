@@ -67,7 +67,12 @@ export function InfiniteMacMenuBar({
       label: t("common.menu.file"),
       items: [
         ...backToPresetsItems,
-        { type: "action", label: t("common.menu.close"), onClick: onClose },
+        {
+          type: "action",
+          label: t("common.menu.close"),
+          onClick: onClose,
+          shortcutId: "close",
+        },
       ],
     },
     {

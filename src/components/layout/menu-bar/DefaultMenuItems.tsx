@@ -8,6 +8,7 @@ import {
   MenubarSeparator,
   MenubarCheckboxItem,
 } from "@/components/ui/menubar";
+import { ShortcutHint } from "@/components/shared/menubar/ShortcutHint";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
@@ -72,6 +73,7 @@ export function DefaultMenuItems() {
             className="text-md h-6 px-3"
           >
             {t("common.menu.close")}
+            <ShortcutHint id="close" />
           </MenubarItem>
         </MenubarContent>
       </MenubarMenu>
@@ -88,6 +90,7 @@ export function DefaultMenuItems() {
             className={`text-md h-6 px-3 ${!undoRedoEntry?.canUndo ? "text-neutral-500" : ""}`}
           >
             {t("common.menu.undo")}
+            <ShortcutHint id="undo" />
           </MenubarItem>
           <MenubarItem
             onClick={() => undoRedoEntry?.redo()}
@@ -95,6 +98,7 @@ export function DefaultMenuItems() {
             className={`text-md h-6 px-3 ${!undoRedoEntry?.canRedo ? "text-neutral-500" : ""}`}
           >
             {t("common.menu.redo")}
+            <ShortcutHint id="redo" />
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem
@@ -102,18 +106,21 @@ export function DefaultMenuItems() {
             className="text-md h-6 px-3"
           >
             {t("common.menu.cut")}
+            <ShortcutHint id="cut" />
           </MenubarItem>
           <MenubarItem
             disabled
             className="text-md h-6 px-3"
           >
             {t("common.menu.copy")}
+            <ShortcutHint id="copy" />
           </MenubarItem>
           <MenubarItem
             disabled
             className="text-md h-6 px-3"
           >
             {t("common.menu.paste")}
+            <ShortcutHint id="paste" />
           </MenubarItem>
           <MenubarItem
             disabled
@@ -127,6 +134,7 @@ export function DefaultMenuItems() {
             className="text-md h-6 px-3"
           >
             {t("common.menu.selectAll")}
+            <ShortcutHint id="selectAll" />
           </MenubarItem>
         </MenubarContent>
       </MenubarMenu>

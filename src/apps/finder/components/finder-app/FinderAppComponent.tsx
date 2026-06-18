@@ -7,6 +7,7 @@ import {
   type FinderInitialData,
 } from "../../hooks/useFinderLogic";
 import { useRegisterUndoRedo } from "@/hooks/useUndoRedo";
+import { useMenuShortcuts } from "@/hooks/useMenuShortcuts";
 import { useAuth } from "@/hooks/useAuth";
 import { FinderHiddenFileInput } from "./FinderHiddenFileInput";
 import { FinderWindowBody } from "./FinderWindowBody";
@@ -132,6 +133,16 @@ export function FinderAppComponent({
     redo: redoFileOp,
     canUndo: canUndoFileOp,
     canRedo: canRedoFileOp,
+  });
+
+  // ⌘N New Window / ⇧⌘N New Folder fire in the Electron shell (browser reserves
+  // these on the web, where the menu hints are hidden). New Folder is gated to
+  // match the disabled menu item.
+  useMenuShortcuts(instanceId, {
+    newWindow: handleNewWindow,
+    newFolder: () => {
+      if (canCreateFolder) handleNewFolder();
+    },
   });
 
   const containerRef = useRef<HTMLDivElement>(null);
