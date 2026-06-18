@@ -1,7 +1,7 @@
 import { useRef, useEffect, useCallback } from "react";
 import * as THREE from "three";
 import { useReducedGraphics } from "@/hooks/useReducedGraphics";
-import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { useShaderAnimationDisabled } from "@/hooks/useShaderAnimationDisabled";
 
 /** Duration of crossfade between cover textures (seconds) */
 const CROSSFADE_SECONDS = 1.5;
@@ -195,7 +195,7 @@ export function AmbientBackground({
 }: AmbientBackgroundProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const reducedQuality = useReducedGraphics();
-  const prefersReducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
+  const animationDisabled = useShaderAnimationDisabled();
 
   const currentUrlRef = useRef<string | null>(null);
   const showingBRef = useRef(false);
@@ -334,9 +334,9 @@ export function AmbientBackground({
         .catch(() => {});
     }
 
-    // Reduced motion: render a single static frame (crossfade snapped to its
-    // target) instead of animating. Exposed via a ref so cover-art changes and
-    // resizes can repaint without a continuous loop.
+    // Reduced motion / battery-saver: render a single static frame (crossfade
+    // snapped to its target) instead of animating. Exposed via a ref so
+    // cover-art changes and resizes can repaint without a continuous loop.
     const renderStatic = () => {
       const blend = blendRef.current;
       blend.current = blend.target;
@@ -350,13 +350,13 @@ export function AmbientBackground({
       if (w === 0 || h === 0) return;
       renderer.setSize(w, h, false);
       shaderMaterial.uniforms.resolution.value.set(w, h);
-      if (prefersReducedMotion) renderStatic();
+      if (animationDisabled) renderStatic();
     };
     const resizeObserver = new ResizeObserver(handleResize);
     resizeObserver.observe(el);
 
-    // ----- Reduced motion: no rAF loop, just a static frame on demand -----
-    if (prefersReducedMotion) {
+    // ----- Animation off: no rAF loop, just a static frame on demand -----
+    if (animationDisabled) {
       staticRenderRef.current = renderStatic;
       renderStatic();
       return () => {
@@ -440,7 +440,7 @@ export function AmbientBackground({
       materialsRef.current = { material: null, textureA: null, textureB: null };
       renderer.dispose();
     };
-  }, [isActive, variant, loadTexture, reducedQuality, prefersReducedMotion]);
+  }, [isActive, variant, loadTexture, reducedQuality, animationDisabled]);
 
   if (!isActive) return null;
 
