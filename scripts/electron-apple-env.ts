@@ -8,6 +8,7 @@
  *   APPLE_API_KEY                -> Key ID when APPLE_API_KEY_PATH is set
  *   APPLE_API_KEY_PATH           -> path to .p8 (electron-builder APPLE_API_KEY)
  *   APPLE_API_ISSUER             -> issuer UUID
+ *   EVS_ACCOUNT_NAME, EVS_PASSWD  -> Castlabs EVS (production Widevine VMP signing)
  *
  * electron-builder also accepts APPLE_API_KEY_ID directly.
  */

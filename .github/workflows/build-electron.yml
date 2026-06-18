@@ -18,6 +18,7 @@ env:
 # macOS job secrets (Settings → Secrets → Actions), mirroring .env.local:
 #   APPLE_CERTIFICATE, APPLE_CERTIFICATE_PASSWORD, APPLE_SIGNING_IDENTITY,
 #   APPLE_API_ISSUER, APPLE_API_KEY (Key ID), APPLE_API_KEY_P8 (.p8 file contents)
+#   EVS_ACCOUNT_NAME, EVS_PASSWD (Castlabs EVS — production Widevine VMP signing)
 
 jobs:
   build-mac:
@@ -52,6 +53,9 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Install Castlabs EVS client
+        run: python3 -m pip install --upgrade castlabs-evs
+
       - name: Write App Store Connect API key
         env:
           APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
@@ -71,6 +75,8 @@ jobs:
           APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
           APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
           APPLE_API_KEY_PATH: build/apple.p8
+          EVS_ACCOUNT_NAME: ${{ secrets.EVS_ACCOUNT_NAME }}
+          EVS_PASSWD: ${{ secrets.EVS_PASSWD }}
         run: bun run electron:build:mac
 
       - name: Upload macOS artifacts
@@ -118,7 +124,14 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Install Castlabs EVS client
+        shell: pwsh
+        run: python -m pip install --upgrade castlabs-evs
+
       - name: Build Windows artifacts
+        env:
+          EVS_ACCOUNT_NAME: ${{ secrets.EVS_ACCOUNT_NAME }}
+          EVS_PASSWD: ${{ secrets.EVS_PASSWD }}
         run: bun run electron:build:windows
 
       - name: Prune unpacked Windows output

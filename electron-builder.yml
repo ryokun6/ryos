@@ -8,6 +8,12 @@ files:
   - dist-electron/**/*
   - package.json
 asar: true
+# Castlabs Electron for Content Security (Widevine CDM for Apple Music DRM).
+electronDownload:
+  mirror: https://github.com/castlabs/electron-releases/releases/download/v
+# macOS: VMP-sign before code signing. Windows: VMP-sign after code signing.
+afterPack: scripts/electron-vmp-after-pack.cjs
+afterSign: scripts/electron-vmp-after-sign.cjs
 extraMetadata:
   main: dist-electron/main.cjs
 mac:

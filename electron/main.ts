@@ -1,6 +1,7 @@
 import {
   app,
   BrowserWindow,
+  components,
   dialog,
   ipcMain,
   session,
@@ -343,7 +344,21 @@ function registerIpcHandlers(): void {
   );
 }
 
-app.whenReady().then(() => {
+async function ensureWidevineCdmReady(): Promise<void> {
+  try {
+    await components.whenReady();
+    console.log("[electron] Widevine CDM ready:", components.status());
+  } catch (err) {
+    console.error(
+      "[electron] Widevine CDM installation failed — Apple Music DRM playback may not work:",
+      err
+    );
+  }
+}
+
+app.whenReady().then(async () => {
+  await ensureWidevineCdmReady();
+
   registerIpcHandlers();
 
   session.defaultSession.setPermissionRequestHandler(

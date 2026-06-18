@@ -33,10 +33,7 @@ if (args.includes("--mac")) {
 const shouldPublish = process.env.ELECTRON_PUBLISH === "always";
 builderArgs.push("--publish", shouldPublish ? "always" : "never");
 
-const buildEnv =
-  args.includes("--mac") || args.includes("--linux")
-    ? buildElectronAppleEnv(root)
-    : { ...process.env };
+const buildEnv = buildElectronAppleEnv(root);
 
 execSync("bun run scripts/bundle-electron.ts", {
   stdio: "inherit",

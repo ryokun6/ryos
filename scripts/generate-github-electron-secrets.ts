@@ -86,10 +86,17 @@ const secrets: Record<string, string> = {
   APPLE_API_ISSUER: env.APPLE_API_ISSUER ?? "",
   APPLE_API_KEY: env.APPLE_API_KEY ?? "",
   APPLE_API_KEY_P8: p8Contents,
+  EVS_ACCOUNT_NAME: env.EVS_ACCOUNT_NAME ?? "",
+  EVS_PASSWD: env.EVS_PASSWD ?? "",
 };
 
 const missing = Object.entries(secrets)
-  .filter(([, value]) => !value)
+  .filter(([key, value]) => {
+    if (key === "EVS_ACCOUNT_NAME" || key === "EVS_PASSWD") {
+      return false;
+    }
+    return !value;
+  })
   .map(([key]) => key);
 if (missing.length > 0) {
   throw new Error(`Missing values in .env.local for: ${missing.join(", ")}`);
