@@ -100,8 +100,6 @@ export function useWindowInsets() {
   return {
     computeInsets,
     getSafeAreaBottomInset,
-    /** @deprecated Prefer {@link isWindowsTheme}; legacy name used by window chrome. */
-    isXpTheme: isWindowsTheme,
     isMacTheme,
     currentTheme,
     themeMetadata: themeMetaTyped,

@@ -108,7 +108,12 @@ export function WindowFrame({
     isMinimized,
   });
 
-  const { isXpTheme, isMacOSTheme, isSystem7Theme, isWinXp } = useWindowInsets();
+  const {
+    isWindowsTheme: isXpTheme,
+    isMacOSTheme,
+    isSystem7Theme,
+    isWinXp,
+  } = useWindowInsets();
   const { isAquaGlass } = useThemeFlags();
 
   const isTransparent = material === "transparent" || material === "notitlebar";
