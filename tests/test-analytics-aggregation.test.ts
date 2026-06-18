@@ -109,7 +109,7 @@ describe("product analytics aggregation", () => {
 
   test("records product events into daily breakdowns", async () => {
     const redis = new FakeRedis();
-    recordProductAnalyticsEvents(
+    await recordProductAnalyticsEvents(
       redis as unknown as Redis,
       {
         events: [
@@ -121,8 +121,6 @@ describe("product analytics aggregation", () => {
       },
       { ip: "127.0.0.1" }
     );
-
-    await Promise.resolve();
 
     const detail = await getProductAnalyticsDetail(redis as unknown as Redis, 1);
     expect(detail.summary.totals.events).toBe(4);
@@ -139,7 +137,7 @@ describe("product analytics aggregation", () => {
 
   test("aggregates top songs, sites and countries", async () => {
     const redis = new FakeRedis();
-    recordProductAnalyticsEvents(
+    await recordProductAnalyticsEvents(
       redis as unknown as Redis,
       {
         events: [
@@ -178,8 +176,6 @@ describe("product analytics aggregation", () => {
       { ip: "8.8.8.8", country: "us" }
     );
 
-    await Promise.resolve();
-
     const detail = await getProductAnalyticsDetail(redis as unknown as Redis, 1);
     expect(detail.topSongs.find((e) => e.name === "The Beatles — Yesterday")?.count).toBe(2);
     expect(detail.topSongs.find((e) => e.name === "John Lennon — Imagine")?.count).toBe(1);
@@ -192,7 +188,7 @@ describe("product analytics aggregation", () => {
 
   test("ignores client-supplied country and skips when geo unresolved", async () => {
     const redis = new FakeRedis();
-    recordProductAnalyticsEvents(
+    await recordProductAnalyticsEvents(
       redis as unknown as Redis,
       {
         events: [
@@ -207,8 +203,6 @@ describe("product analytics aggregation", () => {
       },
       { ip: "8.8.8.8" }
     );
-
-    await Promise.resolve();
 
     const detail = await getProductAnalyticsDetail(redis as unknown as Redis, 1);
     expect(detail.topCountries).toEqual([]);

@@ -74,10 +74,10 @@ export interface AnalyticsEvent {
   username?: string | null;
 }
 
-export function recordAnalyticsEvent(
+export async function recordAnalyticsEvent(
   redis: Redis,
   event: AnalyticsEvent
-): void {
+): Promise<void> {
   const date = todayUTC();
   const endpoint = normaliseEndpoint(event.path);
   const isAI = isAIEndpoint(event.path);
@@ -112,7 +112,7 @@ export function recordAnalyticsEvent(
     pipe.expire(k("aiu", date), ANALYTICS_TTL_SECONDS);
   }
 
-  pipe.exec().catch((err) => {
+  await pipe.exec().then(() => undefined).catch((err) => {
     console.warn("[analytics] pipeline error (non-fatal):", err);
   });
 }
@@ -421,11 +421,11 @@ function breakdownFromMap(map: Map<string, number>, limit: number): ProductEvent
     .slice(0, limit);
 }
 
-export function recordProductAnalyticsEvents(
+export async function recordProductAnalyticsEvents(
   redis: Redis,
   batch: ProductAnalyticsBatch,
   context: ProductAnalyticsRequestContext
-): void {
+): Promise<void> {
   const events = Array.isArray(batch?.events)
     ? batch.events.slice(0, MAX_PRODUCT_EVENTS_PER_BATCH)
     : [];
@@ -492,7 +492,7 @@ export function recordProductAnalyticsEvents(
     pipe.expire(pk("country", date), ANALYTICS_TTL_SECONDS);
   }
 
-  pipe.exec().catch((err) => {
+  await pipe.exec().then(() => undefined).catch((err) => {
     console.warn("[analytics] product pipeline error (non-fatal):", err);
   });
 }

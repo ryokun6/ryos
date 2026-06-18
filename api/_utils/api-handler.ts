@@ -163,7 +163,7 @@ export function apiHandler<TBody = unknown>(
     }
 
     if (analytics) {
-      recordAnalyticsEvent(redis, {
+      await recordAnalyticsEvent(redis, {
         path: req.url || "/api/unknown",
         method,
         status: finalStatus,

@@ -13,7 +13,7 @@ describe("analytics Redis keys", () => {
     const redis = fake as unknown as Redis;
     const today = new Date().toISOString().slice(0, 10);
 
-    recordAnalyticsEvent(redis, {
+    await recordAnalyticsEvent(redis, {
       path: "/api/chat",
       method: "POST",
       status: 200,

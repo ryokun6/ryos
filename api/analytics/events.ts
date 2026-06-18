@@ -48,7 +48,7 @@ export default apiHandler<ProductAnalyticsBatch>(
       country = null;
     }
 
-    recordProductAnalyticsEvents(redis, body, {
+    await recordProductAnalyticsEvents(redis, body, {
       ip,
       username: user?.username,
       userAgent: getHeader(req, "user-agent"),
