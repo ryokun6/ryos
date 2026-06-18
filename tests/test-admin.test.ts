@@ -314,6 +314,80 @@ describe("admin", () => {
       expect(data.error).toContain("Confirmation");
     });
 
+    test("GET getRedisKeyMigrationStatus - with admin token", async () => {
+      if (!adminToken) {
+        console.log("  ⚠️  Skipped (no admin token available)");
+        return;
+      }
+
+      const res = await fetchWithAuth(
+        `${BASE_URL}/api/admin?action=getRedisKeyMigrationStatus&limit=5`,
+        ADMIN_USERNAME,
+        adminToken,
+        { method: "GET" }
+      );
+
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(typeof data.totalLegacyKeys).toBe("number");
+      expect(Array.isArray(data.patterns)).toBe(true);
+      expect(data.patterns.some((item: { pattern: string }) => item.pattern === "chat:users:*")).toBe(true);
+    });
+
+    test("POST backfillRedisKeyScheme - requires exact pattern confirmation", async () => {
+      if (!adminToken) {
+        console.log("  ⚠️  Skipped (no admin token available)");
+        return;
+      }
+
+      const res = await fetchWithAuth(
+        `${BASE_URL}/api/admin`,
+        ADMIN_USERNAME,
+        adminToken,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "backfillRedisKeyScheme",
+            pattern: "chat:users:*",
+            confirmPattern: "wrong-pattern",
+            dryRun: true,
+          }),
+        }
+      );
+
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.error).toContain("Confirmation");
+    });
+
+    test("POST deleteLegacyRedisKeys - requires exact pattern confirmation", async () => {
+      if (!adminToken) {
+        console.log("  ⚠️  Skipped (no admin token available)");
+        return;
+      }
+
+      const res = await fetchWithAuth(
+        `${BASE_URL}/api/admin`,
+        ADMIN_USERNAME,
+        adminToken,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "deleteLegacyRedisKeys",
+            pattern: "chat:users:*",
+            confirmPattern: "wrong-pattern",
+            dryRun: true,
+          }),
+        }
+      );
+
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.error).toContain("Confirmation");
+    });
+
     test("POST deleteUser - missing target username", async () => {
       if (!adminToken) {
         console.log("  ⚠️  Skipped (no admin token available)");

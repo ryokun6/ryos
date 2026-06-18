@@ -11,7 +11,13 @@ import {
   USER_TTL_SECONDS,
   TOKEN_GRACE_PERIOD,
 } from "./_constants.js";
-import { getUserTokenKey, getLastTokenKey } from "./_tokens.js";
+import {
+  getCanonicalSessionKey,
+  getLegacyLastTokenKey,
+  getUserTokenKey,
+  getLastTokenKey,
+} from "./_tokens.js";
+import { redisKeys, sha256RedisIdentifier } from "../../../src/shared/redisKeys.js";
 
 // ============================================================================
 // Validation Options
@@ -52,7 +58,23 @@ export async function validateAuth(
 
   const normalizedUsername = username.toLowerCase();
 
-  // 1. Check active token: chat:token:user:{username}:{token}
+  // 1. Check canonical active token:
+  // auth:session:{sha256(token)} + auth:user:{username}:sessions membership.
+  const tokenHash = await sha256RedisIdentifier(token);
+  const canonicalSessionKey = await getCanonicalSessionKey(token);
+  const canonicalSessionExists = await redis.exists(canonicalSessionKey);
+  if (canonicalSessionExists) {
+    const sessionHashes = await redis.smembers<string[]>(
+      redisKeys.auth.userSessions(normalizedUsername)
+    );
+    if (sessionHashes.includes(tokenHash)) {
+      await redis.expire(canonicalSessionKey, USER_TTL_SECONDS);
+      await redis.expire(redisKeys.auth.userSessions(normalizedUsername), USER_TTL_SECONDS);
+      return { valid: true, expired: false };
+    }
+  }
+
+  // 2. Check legacy active token: chat:token:user:{username}:{token}
   const userScopedKey = getUserTokenKey(normalizedUsername, token);
   const exists = await redis.exists(userScopedKey);
   
@@ -62,10 +84,12 @@ export async function validateAuth(
     return { valid: true, expired: false };
   }
 
-  // 2. Check grace period for recently expired tokens (if allowed)
+  // 3. Check grace period for recently expired tokens (if allowed)
   if (allowExpired) {
     const lastTokenKey = getLastTokenKey(normalizedUsername);
-    const lastTokenData = await redis.get<string>(lastTokenKey);
+    const lastTokenData =
+      (await redis.get<string>(lastTokenKey)) ??
+      (await redis.get<string>(getLegacyLastTokenKey(normalizedUsername)));
 
     if (lastTokenData) {
       try {
@@ -98,6 +122,13 @@ export async function tokenExists(
   username: string,
   token: string
 ): Promise<boolean> {
+  const tokenHash = await sha256RedisIdentifier(token);
+  if (await redis.exists(redisKeys.auth.session(tokenHash))) {
+    const sessionHashes = await redis.smembers<string[]>(
+      redisKeys.auth.userSessions(username.toLowerCase())
+    );
+    if (sessionHashes.includes(tokenHash)) return true;
+  }
   const key = getUserTokenKey(username.toLowerCase(), token);
   const exists = await redis.exists(key);
   return exists > 0;

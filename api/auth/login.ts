@@ -21,7 +21,6 @@ import {
   isLoginLocked,
   recordLoginFailure,
   resetLoginFailures,
-  CHAT_USERS_PREFIX,
   TOKEN_GRACE_PERIOD,
 } from "../_utils/auth/index.js";
 import { verifyPassword, getUserPasswordHash } from "../_utils/auth/_password.js";
@@ -29,7 +28,10 @@ import { apiHandler } from "../_utils/api-handler.js";
 import { buildSetAuthCookie } from "../_utils/_cookie.js";
 import { getClientIp } from "../_utils/_rate-limit.js";
 import { getHeader } from "../_utils/request-helpers.js";
-import { updateStoredUserTimeZone } from "../_utils/auth/_user-record.js";
+import {
+  getStoredUserRecord,
+  updateStoredUserTimeZone,
+} from "../_utils/auth/_user-record.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
@@ -85,10 +87,8 @@ export default apiHandler(
       return;
     }
 
-    const userKey = `${CHAT_USERS_PREFIX}${username}`;
-
     // Check if user exists
-    const userData = await redis.get(userKey);
+    const userData = await getStoredUserRecord(redis, username);
     if (!userData) {
       // Same generic error as wrong-password to avoid username enumeration.
       // We DO NOT increment the per-user fail counter because this username

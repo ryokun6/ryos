@@ -92,6 +92,11 @@ export interface RedisLike {
     max: number | string
   ): Promise<number>;
   zrange(key: string, start: number, stop: number): Promise<string[]>;
+  zrangeWithScores(
+    key: string,
+    start: number,
+    stop: number
+  ): Promise<RedisSortedSetEntry[]>;
   zcard(key: string): Promise<number>;
 }
 
@@ -462,6 +467,23 @@ class StandardRedisAdapter implements RedisLike {
 
   async zrange(key: string, start: number, stop: number): Promise<string[]> {
     return await this.client.zrange(key, start, stop);
+  }
+
+  async zrangeWithScores(
+    key: string,
+    start: number,
+    stop: number
+  ): Promise<RedisSortedSetEntry[]> {
+    const raw = await this.client.zrange(key, start, stop, "WITHSCORES");
+    const entries: RedisSortedSetEntry[] = [];
+    for (let index = 0; index < raw.length; index += 2) {
+      const member = raw[index];
+      const score = Number(raw[index + 1]);
+      if (member !== undefined && Number.isFinite(score)) {
+        entries.push({ member, score });
+      }
+    }
+    return entries;
   }
 
   async zcard(key: string): Promise<number> {

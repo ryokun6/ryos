@@ -5,11 +5,11 @@
  * All writes are fire-and-forget to avoid impacting request latency.
  *
  * Redis key schema:
- *   analytics:daily:{YYYY-MM-DD}    hash  { calls, ai, errors, latsum, latcnt }
- *   analytics:uv:{YYYY-MM-DD}       HyperLogLog  (unique visitor IPs)
- *   analytics:ep:{YYYY-MM-DD}       hash  { endpoint: count }
- *   analytics:st:{YYYY-MM-DD}       hash  { statusCode: count }
- *   analytics:aiu:{YYYY-MM-DD}      hash  { username|"anon": count }
+ *   analytics:api:daily:{YYYY-MM-DD}    hash  { calls, ai, errors, latsum, latcnt }
+ *   analytics:api:uv:{YYYY-MM-DD}       HyperLogLog  (unique visitor IPs)
+ *   analytics:api:ep:{YYYY-MM-DD}       hash  { endpoint: count }
+ *   analytics:api:st:{YYYY-MM-DD}       hash  { statusCode: count }
+ *   analytics:api:aiu:{YYYY-MM-DD}      hash  { username|"anon": count }
  *
  * Performance:
  *   Write path: 5–8 Redis commands per request in 1 pipeline (fire-and-forget).
@@ -18,6 +18,7 @@
  */
 
 import type { Redis } from "./redis.js";
+import { redisKeys } from "../../src/shared/redisKeys.js";
 
 const ANALYTICS_TTL_SECONDS = 90 * 24 * 60 * 60; // 90 days
 
@@ -29,7 +30,7 @@ function todayUTC(): string {
 }
 
 function k(suffix: string, date: string): string {
-  return `analytics:${suffix}:${date}`;
+  return redisKeys.analytics.apiMetric(suffix, date);
 }
 
 function pk(suffix: string, date: string): string {

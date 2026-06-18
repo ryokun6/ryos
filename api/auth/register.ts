@@ -11,7 +11,6 @@ import {
   isLoginLocked,
   recordLoginFailure,
   resetLoginFailures,
-  CHAT_USERS_PREFIX,
   PASSWORD_MIN_LENGTH,
   PASSWORD_MAX_LENGTH,
 } from "../_utils/auth/index.js";
@@ -29,7 +28,9 @@ import { buildSetAuthCookie } from "../_utils/_cookie.js";
 import { getClientIp } from "../_utils/_rate-limit.js";
 import { getHeader } from "../_utils/request-helpers.js";
 import {
+  getStoredUserRecord,
   normalizeUserTimeZone,
+  setStoredUserRecord,
   updateStoredUserTimeZone,
 } from "../_utils/auth/_user-record.js";
 
@@ -115,10 +116,9 @@ export default apiHandler(
     }
 
     const username = rawUsername.toLowerCase();
-    const userKey = `${CHAT_USERS_PREFIX}${username}`;
 
     // Check if user already exists
-    const existingUser = await redis.get(userKey);
+    const existingUser = await getStoredUserRecord(redis, username);
     if (existingUser) {
       // User exists - try to log them in with provided password. This path is
       // subject to the SAME per-username lockout as /api/auth/login so it
@@ -176,7 +176,7 @@ export default apiHandler(
         ? { timeZone: requestTimeZone, timeZoneUpdatedAt: now }
         : {}),
     };
-    await redis.set(userKey, JSON.stringify(userData));
+    await setStoredUserRecord(redis, username, userData);
 
     // Hash and store password
     const passwordHash = await hashPassword(password);
