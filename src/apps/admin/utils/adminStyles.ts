@@ -71,3 +71,14 @@ export const adminAvatarWellClass =
 
 /** Progress / chart track background. */
 export const adminTrackBgClass = "bg-os-panel-bg";
+
+/** Root shell for Admin → Cursor Agents (scopes semi-transparent amber overrides). */
+export const adminCursorAgentsPanelClass = "admin-cursor-agents-panel";
+
+/** Truncation / scan-cap hint banner in the Cursor Agents panel. */
+export const adminCursorAgentBannerClass =
+  "admin-cursor-agent-banner shrink-0 border-b border-amber-400/20 bg-amber-400/12 px-3 py-1 text-[10px] text-amber-800 os-mac-aqua-dark:border-amber-400/15 os-mac-aqua-dark:bg-amber-400/10 os-mac-aqua-dark:text-amber-200";
+
+/** Running agent row — amber wash; glass theme overrides in aqua-glass.css. */
+export const adminCursorAgentRunningRowClass =
+  "admin-cursor-agent-running-row !bg-amber-400/12 odd:!bg-amber-400/18 hover:!bg-amber-400/22 os-mac-aqua-dark:!bg-amber-400/10 os-mac-aqua-dark:odd:!bg-amber-400/14 os-mac-aqua-dark:hover:!bg-amber-400/18";
