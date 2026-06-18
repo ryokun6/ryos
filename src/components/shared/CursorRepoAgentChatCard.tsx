@@ -77,6 +77,11 @@ export function CursorRepoAgentChatCard({
   }, [events]);
 
   const prUrl = meta.prUrl;
+  const failed =
+    done &&
+    typeof meta.terminalStatus === "string" &&
+    meta.terminalStatus.trim().length > 0 &&
+    meta.terminalStatus !== "finished";
   const canFollowup = done && !isSendingFollowup;
   const items = useMemo(
     () =>
@@ -190,6 +195,18 @@ export function CursorRepoAgentChatCard({
               >
                 <span className="size-1.5 rounded-full bg-amber-500" aria-hidden />
                 {t("apps.chats.toolCalls.cursorCloudAgent.running")}
+              </span>
+            ) : failed ? (
+              <span
+                className={cn(
+                  "inline-flex shrink-0 items-center gap-1 text-[10px] font-medium",
+                  isWindowsTheme && !isMacOSTheme
+                    ? "text-red-100"
+                    : "text-red-900 dark:text-red-200"
+                )}
+              >
+                <span className="size-1.5 rounded-full bg-red-500" aria-hidden />
+                {t("apps.chats.toolCalls.cursorCloudAgent.failed")}
               </span>
             ) : (
               <span

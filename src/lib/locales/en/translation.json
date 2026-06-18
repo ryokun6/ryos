@@ -1018,6 +1018,7 @@
           "panelTitle": "Cursor Cloud agent",
           "running": "Running",
           "finished": "Finished",
+          "failed": "Failed",
           "noEventsYet": "Waiting for stream events…",
           "openPr": "Open PR",
           "followupPlaceholder": "Reply to the agent…",

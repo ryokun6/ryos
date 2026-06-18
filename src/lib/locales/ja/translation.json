@@ -897,6 +897,7 @@
         "controllingPlayback": "再生を制御中…",
         "createdDocument": "ドキュメントを作成しました: {{path}}",
         "cursorCloudAgent": {
+          "failed": "失敗",
           "finished": "完了",
           "followupAriaLabel": "Cursorエージェントへのフォローアップメッセージ",
           "followupBusy": "エージェントが実行中…",
