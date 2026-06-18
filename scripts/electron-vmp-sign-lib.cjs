@@ -35,7 +35,8 @@ function vmpSignPkg(appOutDir) {
   }
 
   const python = pythonCommand();
-  const cmd = `${python} -m castlabs_evs.vmp sign-pkg --no-ask "${appOutDir}"`;
+  // --no-ask is a top-level vmp flag (-n), not a sign-pkg argument.
+  const cmd = `${python} -m castlabs_evs.vmp -n sign-pkg "${appOutDir}"`;
   console.log("[electron] VMP signing package:", appOutDir);
   execSync(cmd, {
     stdio: "inherit",
