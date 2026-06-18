@@ -5,6 +5,7 @@ import {
   getAnalyticsSummary,
   recordAnalyticsEvent,
 } from "../api/_utils/_analytics";
+import { getAIRateLimitKey } from "../api/_utils/_rate-limit";
 import { FakeRedis } from "./fake-redis";
 
 describe("analytics Redis keys", () => {
@@ -119,5 +120,24 @@ describe("analytics Redis keys", () => {
       { username: "ryo", count: 3 },
       { username: "anonymous", count: 1 },
     ]);
+  });
+
+  test("reads AI rate-limit counts from the canonical key the writer uses", async () => {
+    const fake = new FakeRedis();
+    const redis = fake as unknown as Redis;
+    const today = new Date().toISOString().slice(0, 10);
+
+    // Activity attributed to "alice" in the AI-by-user breakdown.
+    await redis.hset(`analytics:api:aiu:${today}`, { alice: "4" });
+    // The runtime counter lives under the canonical `rate:` key, NOT `rl:ai:*`.
+    const counterKey = getAIRateLimitKey("alice");
+    expect(counterKey.startsWith("rate:")).toBe(true);
+    await redis.set(counterKey, "9");
+    // A stale legacy key must NOT be what the reader picks up.
+    await redis.set("rl:ai:alice", "999");
+
+    const detail = await getAnalyticsDetail(redis, 1);
+    const alice = detail.aiRateLimits.find((r) => r.identifier === "alice");
+    expect(alice).toMatchObject({ currentCount: 9, limit: 15, windowLabel: "5h" });
   });
 });

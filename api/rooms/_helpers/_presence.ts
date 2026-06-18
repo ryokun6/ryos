@@ -41,9 +41,17 @@ async function attachPrivateRoomLastMessageAt<T extends Room>(
 
   const redis = getRedis();
   const lastMessages = await Promise.all(
-    privateRooms.map((room) =>
-      redis.lindex(`${CHAT_MESSAGES_PREFIX}${room.id}`, 0)
-    )
+    privateRooms.map(async (room) => {
+      // Newest message is at index 0 (messages are LPUSH-ed). Read the
+      // canonical key first, falling back to the legacy key for rooms whose
+      // messages were written before the canonical cutover.
+      const canonical = await redis.lindex(
+        redisKeys.chat.roomMessages(room.id),
+        0
+      );
+      if (canonical !== null && canonical !== undefined) return canonical;
+      return redis.lindex(`${CHAT_MESSAGES_PREFIX}${room.id}`, 0);
+    })
   );
   const lastMessageAtByRoomId = new Map<string, number>();
 

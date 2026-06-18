@@ -396,6 +396,13 @@ export class FakeRedis {
     return (this.lists.get(key) || []).length;
   }
 
+  async lindex<T = unknown>(key: string, index: number): Promise<T | null> {
+    const list = this.lists.get(key) || [];
+    const normalizedIndex = index < 0 ? list.length + index : index;
+    if (normalizedIndex < 0 || normalizedIndex >= list.length) return null;
+    return list[normalizedIndex] as T;
+  }
+
   async lrem(key: string, count: number, value: string): Promise<number> {
     const list = this.lists.get(key) || [];
     if (list.length === 0 || count === 0) return 0;
