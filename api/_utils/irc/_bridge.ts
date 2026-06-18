@@ -36,13 +36,11 @@ import {
   getAllRoomIds,
   getCurrentTimestamp,
   getRoom,
-  parseRoomData,
   setRoom,
 } from "../../rooms/_helpers/_redis.js";
 import { refreshRoomUserCount } from "../../rooms/_helpers/_presence.js";
 import { createRedis } from "../redis.js";
 import { broadcastNewMessage } from "../../rooms/_helpers/_pusher.js";
-import { CHAT_ROOM_PREFIX } from "../../rooms/_helpers/_constants.js";
 import { escapeHTML, filterProfanityPreservingUrls } from "../_validation.js";
 
 // Use createRequire so we can load the CommonJS-only `irc-framework` module
@@ -145,16 +143,8 @@ export class IrcBridge extends EventEmitter {
       const roomIds = await getAllRoomIds();
       if (roomIds.length === 0) return;
 
-      const redis = createRedis();
-      const keys = roomIds.map((id) => `${CHAT_ROOM_PREFIX}${id}`);
-      const raws = await redis.mget<(Room | string | null)[]>(
-        ...(keys as [string, ...string[]])
-      );
-
-      for (let i = 0; i < raws.length; i++) {
-        const raw = raws[i];
-        if (!raw) continue;
-        const room = parseRoomData(raw);
+      for (const roomId of roomIds) {
+        const room = await getRoom(roomId);
         if (!room) continue;
         if (room.type !== "irc") continue;
         if (!room.ircChannel) continue;

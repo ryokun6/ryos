@@ -6,7 +6,6 @@
 import { apiHandler } from "../../_utils/api-handler.js";
 import { isProfaneUsername, assertValidRoomId, assertValidUsername } from "../../_utils/_validation.js";
 import { getRoom, setRoom } from "../_helpers/_redis.js";
-import { CHAT_USERS_PREFIX } from "../_helpers/_constants.js";
 import { getRoomWriteAccessError } from "../_helpers/_access.js";
 import { setRoomPresence, refreshRoomUserCount } from "../_helpers/_presence.js";
 import { broadcastRoomUpdated, broadcastPresenceUpdate } from "../_helpers/_pusher.js";
@@ -15,6 +14,7 @@ import {
   isIrcBridgeEnabled,
   syncRoomBindingForPresence,
 } from "../../_utils/irc/_bridge.js";
+import { getStoredUserRecord } from "../../_utils/auth/_user-record.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
@@ -62,7 +62,7 @@ export default apiHandler(
     try {
       const [roomData, userData] = await Promise.all([
         getRoom(roomId),
-        redis.get(`${CHAT_USERS_PREFIX}${username}`),
+        getStoredUserRecord(redis, username),
       ]);
 
       if (!roomData) {

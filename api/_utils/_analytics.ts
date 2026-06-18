@@ -33,8 +33,12 @@ function k(suffix: string, date: string): string {
   return redisKeys.analytics.apiMetric(suffix, date);
 }
 
+function legacyK(suffix: string, date: string): string {
+  return `analytics:${suffix}:${date}`;
+}
+
 function pk(suffix: string, date: string): string {
-  return `analytics:product:${suffix}:${date}`;
+  return redisKeys.analytics.productMetric(suffix, date);
 }
 
 const AI_PATH_PREFIXES = [
@@ -589,6 +593,17 @@ function mergeHashCounts(
   }
 }
 
+function hasHashEntries(raw: Record<string, string> | null | undefined): raw is Record<string, string> {
+  return Boolean(raw && Object.keys(raw).length > 0);
+}
+
+function canonicalOrLegacyHash(
+  canonical: Record<string, string> | null,
+  legacy: Record<string, string> | null
+): Record<string, string> | null {
+  return hasHashEntries(canonical) ? canonical : legacy;
+}
+
 /**
  * Summary-only view.
  * 1 pipeline: 2 commands per day + 1 PFCOUNT across all UV keys for
@@ -600,14 +615,16 @@ export async function getAnalyticsSummary(
 ): Promise<AnalyticsSummary> {
   const dates = dateRange(days);
   const uvKeys = dates.map((d) => k("uv", d));
+  const legacyUvKeys = dates.map((d) => legacyK("uv", d));
 
   const pipe = redis.pipeline();
   for (const date of dates) {
     pipe.hgetall(k("daily", date));
-    pipe.pfcount(k("uv", date));
+    pipe.hgetall(legacyK("daily", date));
+    pipe.pfcount(k("uv", date), legacyK("uv", date));
   }
   // Cross-day unique visitors via HLL union (single PFCOUNT with N keys)
-  if (uvKeys.length > 0) pipe.pfcount(...uvKeys);
+  if (uvKeys.length > 0) pipe.pfcount(...uvKeys, ...legacyUvKeys);
   const results = await pipe.exec();
 
   let totalCalls = 0;
@@ -617,10 +634,14 @@ export async function getAnalyticsSummary(
   let totalLatCnt = 0;
 
   const dailyMetrics: DailyMetrics[] = dates.map((date, i) => {
+    const base = i * 3;
     const d = parseDailyHash(
-      (results[i * 2] as Record<string, string> | null) || null
+      canonicalOrLegacyHash(
+        (results[base] as Record<string, string> | null) || null,
+        (results[base + 1] as Record<string, string> | null) || null
+      )
     );
-    const uv = (results[i * 2 + 1] as number) || 0;
+    const uv = (results[base + 2] as number) || 0;
     const avgLatencyMs = d.latcnt > 0 ? Math.round(d.latsum / d.latcnt) : 0;
 
     totalCalls += d.calls;
@@ -642,7 +663,7 @@ export async function getAnalyticsSummary(
   // Last result in the pipeline is the cross-day PFCOUNT union
   const totalUV =
     uvKeys.length > 0
-      ? ((results[dates.length * 2] as number) || 0)
+      ? ((results[dates.length * 3] as number) || 0)
       : 0;
 
   return {
@@ -663,8 +684,10 @@ export async function getAnalyticsSummary(
  * plus 1 optional small pipeline for AI rate-limit lookups.
  *
  * Per-day slot layout in the single pipeline:
- *   [hgetall(daily), pfcount(uv), hgetall(ep), hgetall(st), hgetall(aiu)]
- *   = 5 commands per day, + 1 cross-day PFCOUNT at the end.
+ *   [hgetall(daily), hgetall(legacyDaily), pfcount(uv, legacyUv),
+ *    hgetall(ep), hgetall(legacyEp), hgetall(st), hgetall(legacySt),
+ *    hgetall(aiu), hgetall(legacyAiu)]
+ *   = 9 commands per day, + 1 cross-day PFCOUNT at the end.
  */
 export async function getAnalyticsDetail(
   redis: Redis,
@@ -672,17 +695,22 @@ export async function getAnalyticsDetail(
 ): Promise<AnalyticsDetail> {
   const dates = dateRange(days);
   const uvKeys = dates.map((d) => k("uv", d));
-  const CMDS_PER_DAY = 5;
+  const legacyUvKeys = dates.map((d) => legacyK("uv", d));
+  const CMDS_PER_DAY = 9;
 
   const pipe = redis.pipeline();
   for (const date of dates) {
     pipe.hgetall(k("daily", date));
-    pipe.pfcount(k("uv", date));
+    pipe.hgetall(legacyK("daily", date));
+    pipe.pfcount(k("uv", date), legacyK("uv", date));
     pipe.hgetall(k("ep", date));
+    pipe.hgetall(legacyK("ep", date));
     pipe.hgetall(k("st", date));
+    pipe.hgetall(legacyK("st", date));
     pipe.hgetall(k("aiu", date));
+    pipe.hgetall(legacyK("aiu", date));
   }
-  if (uvKeys.length > 0) pipe.pfcount(...uvKeys);
+  if (uvKeys.length > 0) pipe.pfcount(...uvKeys, ...legacyUvKeys);
   const results = await pipe.exec();
 
   let totalCalls = 0;
@@ -698,9 +726,12 @@ export async function getAnalyticsDetail(
   const dailyMetrics: DailyMetrics[] = dates.map((date, i) => {
     const base = i * CMDS_PER_DAY;
     const d = parseDailyHash(
-      (results[base] as Record<string, string> | null) || null
+      canonicalOrLegacyHash(
+        (results[base] as Record<string, string> | null) || null,
+        (results[base + 1] as Record<string, string> | null) || null
+      )
     );
-    const uv = (results[base + 1] as number) || 0;
+    const uv = (results[base + 2] as number) || 0;
     const avgLatencyMs = d.latcnt > 0 ? Math.round(d.latsum / d.latcnt) : 0;
 
     totalCalls += d.calls;
@@ -709,9 +740,27 @@ export async function getAnalyticsDetail(
     totalLatSum += d.latsum;
     totalLatCnt += d.latcnt;
 
-    mergeHashCounts(epMap, (results[base + 2] as Record<string, string> | null) || null);
-    mergeHashCounts(stMap, (results[base + 3] as Record<string, string> | null) || null);
-    mergeHashCounts(aiuMap, (results[base + 4] as Record<string, string> | null) || null);
+    mergeHashCounts(
+      epMap,
+      canonicalOrLegacyHash(
+        (results[base + 3] as Record<string, string> | null) || null,
+        (results[base + 4] as Record<string, string> | null) || null
+      )
+    );
+    mergeHashCounts(
+      stMap,
+      canonicalOrLegacyHash(
+        (results[base + 5] as Record<string, string> | null) || null,
+        (results[base + 6] as Record<string, string> | null) || null
+      )
+    );
+    mergeHashCounts(
+      aiuMap,
+      canonicalOrLegacyHash(
+        (results[base + 7] as Record<string, string> | null) || null,
+        (results[base + 8] as Record<string, string> | null) || null
+      )
+    );
 
     return {
       date,

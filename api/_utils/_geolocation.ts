@@ -1,5 +1,6 @@
 import type { Redis } from "./redis.js";
 import { isPrivateOrReservedIp } from "./_ip.js";
+import { redisKeys, sha256RedisIdentifier } from "../../src/shared/redisKeys.js";
 
 /**
  * IP-based geolocation fallback for non-Vercel deployments (Coolify, Docker,
@@ -129,9 +130,11 @@ async function readCache(
 ): Promise<CachedGeoEntry | null> {
   if (!redis) return null;
   try {
-    const raw = await redis.get<string | CachedGeoEntry>(
-      `${REDIS_KEY_PREFIX}${ip}`
-    );
+    const raw =
+      (await redis.get<string | CachedGeoEntry>(
+        redisKeys.cache.geoip(await sha256RedisIdentifier(ip))
+      )) ??
+      (await redis.get<string | CachedGeoEntry>(`${REDIS_KEY_PREFIX}${ip}`));
     if (!raw) return null;
     if (typeof raw === "string") return JSON.parse(raw) as CachedGeoEntry;
     return raw as CachedGeoEntry;
@@ -148,7 +151,7 @@ async function writeCache(
 ): Promise<void> {
   if (!redis) return;
   try {
-    await redis.set(`${REDIS_KEY_PREFIX}${ip}`, JSON.stringify(entry), {
+    await redis.set(redisKeys.cache.geoip(await sha256RedisIdentifier(ip)), JSON.stringify(entry), {
       ex: ttlSeconds,
     });
   } catch {

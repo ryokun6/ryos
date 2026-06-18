@@ -8,6 +8,10 @@
 import type { Redis } from "./_utils/redis.js";
 import { CHAT_USERS_PREFIX } from "./rooms/_helpers/_constants.js";
 import { deleteAllUserTokens, PASSWORD_HASH_PREFIX } from "./_utils/auth/index.js";
+import {
+  getStoredUserRecord,
+  setStoredUserRecord,
+} from "./_utils/auth/_user-record.js";
 import { apiHandler } from "./_utils/api-handler.js";
 import { getMemoryIndex, getMemoryDetail, getRecentDailyNotes, clearAllMemories, resetDailyNotesProcessedFlag, type MemoryEntry, type DailyNote } from "./_utils/_memory.js";
 import { getRecentHeartbeatRecords, type HeartbeatRecord } from "./_utils/heartbeats.js";
@@ -28,6 +32,7 @@ import {
   getRedisMigrationStatus,
   assertKnownLegacyRedisPattern,
 } from "./_utils/redis-key-migration.js";
+import { redisKeys } from "../src/shared/redisKeys.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -62,8 +67,12 @@ async function deleteUser(redis: Redis, targetUsername: string): Promise<{ succe
   if (normalizedUsername === "ryo") return { success: false, error: "Cannot delete admin user" };
 
   try {
-    await redis.del(`${CHAT_USERS_PREFIX}${normalizedUsername}`);
-    await redis.del(`${PASSWORD_HASH_PREFIX}${normalizedUsername}`);
+    await redis.del(
+      redisKeys.auth.userProfile(normalizedUsername),
+      `${CHAT_USERS_PREFIX}${normalizedUsername}`,
+      redisKeys.auth.userPassword(normalizedUsername),
+      `${PASSWORD_HASH_PREFIX}${normalizedUsername}`
+    );
     await deleteAllUserTokens(redis, normalizedUsername);
     return { success: true };
   } catch (error) {
@@ -72,30 +81,61 @@ async function deleteUser(redis: Redis, targetUsername: string): Promise<{ succe
   }
 }
 
-async function getAllUsers(redis: Redis): Promise<{ username: string; lastActive: number; banned?: boolean }[]> {
-  const users: { username: string; lastActive: number; banned?: boolean }[] = [];
+async function scanRedisKeys(redis: Redis, pattern: string): Promise<string[]> {
+  const keys: string[] = [];
   let cursor: string | number = 0;
   let iterations = 0;
+  do {
+    const [newCursor, foundKeys] = await redis.scan(cursor, { match: pattern, count: 1000 });
+    cursor = newCursor;
+    iterations++;
+    keys.push(...foundKeys);
+  } while (cursor !== 0 && cursor !== "0" && iterations < 100);
+  return keys;
+}
 
+async function getAdminRoomIds(redis: Redis): Promise<string[]> {
+  const canonicalIds = await redis.smembers<string[]>(redisKeys.chat.roomIds());
+  const legacyIds = await redis.smembers<string[]>("chat:rooms");
+  return [...new Set([...(canonicalIds || []), ...(legacyIds || [])])];
+}
+
+async function getAdminRoomData(redis: Redis, roomId: string): Promise<{ name?: string } | null> {
+  const roomData =
+    (await redis.get<{ name: string } | string>(redisKeys.chat.roomMeta(roomId))) ??
+    (await redis.get<{ name: string } | string>(`chat:room:${roomId}`));
+  if (!roomData) return null;
+  return typeof roomData === "string" ? JSON.parse(roomData) : roomData;
+}
+
+async function getAdminRoomMessages(redis: Redis, roomId: string): Promise<unknown[]> {
+  const canonicalMessages = await redis.lrange<unknown>(redisKeys.chat.roomMessages(roomId), 0, -1);
+  const legacyMessages = await redis.lrange<unknown>(`chat:messages:${roomId}`, 0, -1);
+  return canonicalMessages.length > 0 ? canonicalMessages : legacyMessages;
+}
+
+async function getAllUsers(redis: Redis): Promise<{ username: string; lastActive: number; banned?: boolean }[]> {
   try {
-    do {
-      const [newCursor, keys] = await redis.scan(cursor, { match: `${CHAT_USERS_PREFIX}*`, count: 1000 });
-      cursor = newCursor;
-      iterations++;
-
-      if (keys.length > 0) {
-        const userData = await redis.mget<(string | { username: string; lastActive: number; banned?: boolean } | null)[]>(...keys);
-        for (const data of userData) {
-          if (!data) continue;
-          const parsed = typeof data === "string" ? JSON.parse(data) : data;
-          if (parsed?.username) {
-            users.push({ username: parsed.username, lastActive: parsed.lastActive || 0, banned: parsed.banned || false });
-          }
+    const canonicalKeys = await scanRedisKeys(redis, "auth:user:*:profile");
+    const legacyKeys = await scanRedisKeys(redis, `${CHAT_USERS_PREFIX}*`);
+    const keys = [...new Set([...canonicalKeys, ...legacyKeys])];
+    const byUsername = new Map<string, { username: string; lastActive: number; banned?: boolean }>();
+    if (keys.length > 0) {
+      const userData = await redis.mget<(string | { username: string; lastActive: number; banned?: boolean } | null)[]>(...keys);
+      for (const data of userData) {
+        if (!data) continue;
+        const parsed = typeof data === "string" ? JSON.parse(data) : data;
+        if (parsed?.username) {
+          byUsername.set(parsed.username.toLowerCase(), {
+            username: parsed.username,
+            lastActive: parsed.lastActive || 0,
+            banned: parsed.banned || false,
+          });
         }
       }
-    } while (cursor !== 0 && cursor !== "0" && iterations < 100);
+    }
 
-    return users;
+    return [...byUsername.values()];
   } catch (error) {
     console.error("Error fetching all users:", error);
     return [];
@@ -106,22 +146,21 @@ async function getUserProfile(redis: Redis, targetUsername: string): Promise<Use
   const normalizedUsername = targetUsername.toLowerCase();
 
   try {
-    const userData = await redis.get<{ username: string; lastActive: number; banned?: boolean; banReason?: string; bannedAt?: number } | string>(`${CHAT_USERS_PREFIX}${normalizedUsername}`);
+    const userData = await getStoredUserRecord(redis, normalizedUsername);
     if (!userData) return null;
 
-    const parsed = typeof userData === "string" ? JSON.parse(userData) : userData;
+    const parsed = userData;
     let messageCount = 0;
     const userRooms: { id: string; name: string }[] = [];
     
-    const roomIds = await redis.smembers("chat:rooms");
+    const roomIds = await getAdminRoomIds(redis);
     const roomNameMap: Record<string, string> = {};
     
     for (const roomId of roomIds || []) {
       try {
-        const roomData = await redis.get<{ name: string } | string>(`chat:room:${roomId}`);
+        const roomData = await getAdminRoomData(redis, roomId);
         if (roomData) {
-          const p = typeof roomData === "string" ? JSON.parse(roomData) : roomData;
-          roomNameMap[roomId] = p.name || roomId;
+          roomNameMap[roomId] = roomData.name || roomId;
         } else {
           roomNameMap[roomId] = roomId;
         }
@@ -131,7 +170,7 @@ async function getUserProfile(redis: Redis, targetUsername: string): Promise<Use
     }
     
     for (const roomId of roomIds || []) {
-      const messages = await redis.lrange(`chat:messages:${roomId}`, 0, -1);
+      const messages = await getAdminRoomMessages(redis, roomId);
       let roomMessageCount = 0;
       
       for (const msg of messages || []) {
@@ -167,15 +206,14 @@ async function getUserMessages(redis: Redis, targetUsername: string, limit = 50)
   const messages: { id: string; roomId: string; roomName: string; content: string; timestamp: number }[] = [];
 
   try {
-    const roomIds = await redis.smembers("chat:rooms");
+    const roomIds = await getAdminRoomIds(redis);
     const roomNameMap: Record<string, string> = {};
     
     for (const roomId of roomIds || []) {
       try {
-        const roomData = await redis.get<{ name: string } | string>(`chat:room:${roomId}`);
+        const roomData = await getAdminRoomData(redis, roomId);
         if (roomData) {
-          const p = typeof roomData === "string" ? JSON.parse(roomData) : roomData;
-          roomNameMap[roomId] = p.name || roomId;
+          roomNameMap[roomId] = roomData.name || roomId;
         } else {
           roomNameMap[roomId] = roomId;
         }
@@ -185,7 +223,7 @@ async function getUserMessages(redis: Redis, targetUsername: string, limit = 50)
     }
     
     for (const roomId of roomIds || []) {
-      const roomMessages = await redis.lrange(`chat:messages:${roomId}`, 0, -1);
+      const roomMessages = await getAdminRoomMessages(redis, roomId);
       for (const msg of roomMessages || []) {
         const msgData = typeof msg === "string" ? JSON.parse(msg) : msg;
         if (msgData?.username?.toLowerCase() === normalizedUsername) {
@@ -207,13 +245,11 @@ async function banUser(redis: Redis, targetUsername: string, reason?: string): P
   if (normalizedUsername === "ryo") return { success: false, error: "Cannot ban admin user" };
 
   try {
-    const userKey = `${CHAT_USERS_PREFIX}${normalizedUsername}`;
-    const userData = await redis.get<{ username: string; lastActive: number; banned?: boolean } | string>(userKey);
+    const userData = await getStoredUserRecord(redis, normalizedUsername);
     if (!userData) return { success: false, error: "User not found" };
 
-    const parsed = typeof userData === "string" ? JSON.parse(userData) : userData;
-    const updatedUser = { ...parsed, banned: true, banReason: reason || "No reason provided", bannedAt: Date.now() };
-    await redis.set(userKey, JSON.stringify(updatedUser));
+    const updatedUser = { ...userData, banned: true, banReason: reason || "No reason provided", bannedAt: Date.now() };
+    await setStoredUserRecord(redis, normalizedUsername, updatedUser);
     await deleteAllUserTokens(redis, normalizedUsername);
     return { success: true };
   } catch (error) {
@@ -226,13 +262,11 @@ async function unbanUser(redis: Redis, targetUsername: string): Promise<{ succes
   const normalizedUsername = targetUsername.toLowerCase();
 
   try {
-    const userKey = `${CHAT_USERS_PREFIX}${normalizedUsername}`;
-    const userData = await redis.get<{ username: string; lastActive: number; banned?: boolean } | string>(userKey);
+    const userData = await getStoredUserRecord(redis, normalizedUsername);
     if (!userData) return { success: false, error: "User not found" };
 
-    const parsed = typeof userData === "string" ? JSON.parse(userData) : userData;
-    const updatedUser = { ...parsed, banned: false, banReason: undefined, bannedAt: undefined };
-    await redis.set(userKey, JSON.stringify(updatedUser));
+    const updatedUser = { ...userData, banned: false, banReason: undefined, bannedAt: undefined };
+    await setStoredUserRecord(redis, normalizedUsername, updatedUser);
     return { success: true };
   } catch (error) {
     console.error(`Error unbanning user ${normalizedUsername}:`, error);
@@ -337,32 +371,14 @@ async function listCursorSdkRunsForAdmin(
 
 async function getStats(redis: Redis): Promise<{ totalUsers: number; totalRooms: number; totalMessages: number }> {
   try {
-    let userCount = 0;
-    let cursor: string | number = 0;
-    let iterations = 0;
-    
-    do {
-      const [newCursor, keys] = await redis.scan(cursor, { match: `${CHAT_USERS_PREFIX}*`, count: 1000 });
-      cursor = newCursor;
-      userCount += keys.length;
-      iterations++;
-    } while (cursor !== 0 && cursor !== "0" && iterations < 100);
-
-    const roomIds = await redis.smembers("chat:rooms");
+    const userCount = (await getAllUsers(redis)).length;
+    const roomIds = await getAdminRoomIds(redis);
     const roomCount = roomIds?.length || 0;
 
     let messageCount = 0;
-    cursor = 0;
-    iterations = 0;
-    do {
-      const [newCursor, keys] = await redis.scan(cursor, { match: "chat:messages:*", count: 1000 });
-      cursor = newCursor;
-      iterations++;
-      for (const key of keys) {
-        const len = await redis.llen(key);
-        messageCount += len;
-      }
-    } while (cursor !== 0 && cursor !== "0" && iterations < 100);
+    for (const roomId of roomIds) {
+      messageCount += (await getAdminRoomMessages(redis, roomId)).length;
+    }
 
     return { totalUsers: userCount, totalRooms: roomCount, totalMessages: messageCount };
   } catch (error) {

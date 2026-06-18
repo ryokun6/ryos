@@ -30,7 +30,6 @@ import {
   deleteAllSongs,
   getSongMetaKey,
   getSongContentKey,
-  SONG_SET_KEY,
   type SongMetadata,
   type SongContent,
   type GetSongOptions,
@@ -38,6 +37,7 @@ import {
 } from "../_utils/_song-service.js";
 import { fetchCoverUrl } from "./_kugou.js";
 import { apiHandler } from "../_utils/api-handler.js";
+import { redisKeys } from "../../src/shared/redisKeys.js";
 
 export const runtime = "nodejs";
 
@@ -453,7 +453,7 @@ export default apiHandler<Record<string, unknown>>(
         const pipeline = redis.pipeline();
         for (const { meta, content } of songDocs) {
           pipeline.set(getSongMetaKey(meta.id), JSON.stringify(meta));
-          pipeline.sadd(SONG_SET_KEY, meta.id);
+          pipeline.sadd(redisKeys.media.songIds(), meta.id);
           // Save content if present
           if (content) {
             pipeline.set(getSongContentKey(meta.id), JSON.stringify(content));

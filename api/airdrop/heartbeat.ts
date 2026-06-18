@@ -1,6 +1,7 @@
 import { apiHandler } from "../_utils/api-handler.js";
 import { createRedis } from "../_utils/redis.js";
 import { triggerRealtimeEvent } from "../_utils/realtime.js";
+import { redisKeys } from "../../src/shared/redisKeys.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 10;
@@ -15,10 +16,11 @@ export default apiHandler(
     const username = user!.username;
     const redis = createRedis();
 
-    await redis.zadd(AIRDROP_PRESENCE_KEY, {
+    const entry = {
       score: Date.now(),
       member: username,
-    });
+    };
+    await redis.zadd(redisKeys.presence.airdropLobby(), entry);
 
     // Broadcast presence to the shared lobby so other clients update instantly
     await triggerRealtimeEvent(AIRDROP_LOBBY_CHANNEL, "airdrop-presence", {

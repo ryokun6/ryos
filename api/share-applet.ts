@@ -5,6 +5,7 @@ import { getClientIp } from "./_utils/_rate-limit.js";
 import { apiHandler } from "./_utils/api-handler.js";
 import { resolveRequestAuth } from "./_utils/request-auth.js";
 import { getAppPublicOrigin } from "./_utils/runtime-config.js";
+import { redisKeys } from "../src/shared/redisKeys.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -20,6 +21,9 @@ const RATE_LIMITS = {
 
 // Applet sharing key prefix
 const APPLET_SHARE_PREFIX = "applet:share:";
+
+const appletShareKey = (id: string): string => redisKeys.media.appletShare(id);
+const legacyAppletShareKey = (id: string): string => `${APPLET_SHARE_PREFIX}${id}`;
 
 // Generate unique ID for applets
 const generateId = (): string => generateAuthToken().substring(0, 32);
@@ -79,20 +83,30 @@ export default apiHandler<Record<string, unknown>>(
             if (id) appletIds.push(id);
           }
         } while (cursor !== 0);
+        cursor = 0;
+        do {
+          const [newCursor, keys] = await redis.scan(cursor, { match: "media:applet:share:*", count: 100 });
+          cursor = parseInt(newCursor as unknown as string, 10);
+          for (const key of keys) {
+            const id = key.slice("media:applet:share:".length);
+            if (id) appletIds.push(decodeURIComponent(id));
+          }
+        } while (cursor !== 0);
         
         const applets: { id: string; title?: string; name?: string; icon?: string; createdAt: number; featured: boolean; createdBy?: string }[] = [];
         
         if (appletIds.length > 0) {
-          const appletKeys = appletIds.map((id) => `${APPLET_SHARE_PREFIX}${id}`);
-          const appletsData = await redis.mget(...appletKeys);
+          const uniqueAppletIds = [...new Set(appletIds)];
           
-          for (let i = 0; i < appletsData.length; i++) {
-            const appletData = appletsData[i];
+          for (const appletId of uniqueAppletIds) {
+            const appletData =
+              (await redis.get(appletShareKey(appletId))) ??
+              (await redis.get(legacyAppletShareKey(appletId)));
             if (!appletData) continue;
             try {
               const parsed = typeof appletData === "string" ? JSON.parse(appletData) : appletData;
               applets.push({
-                id: appletIds[i],
+                id: appletId,
                 title: parsed.title,
                 name: parsed.name,
                 icon: parsed.icon,
@@ -125,8 +139,9 @@ export default apiHandler<Record<string, unknown>>(
         return;
       }
 
-      const key = `${APPLET_SHARE_PREFIX}${id}`;
-      const appletData = await redis.get(key);
+      const key = appletShareKey(id);
+      const legacyKey = legacyAppletShareKey(id);
+      const appletData = (await redis.get(key)) ?? (await redis.get(legacyKey));
 
       if (!appletData) {
         logger.response(404, Date.now() - startTime);
@@ -188,8 +203,9 @@ export default apiHandler<Record<string, unknown>>(
       let existingAppletData: { createdAt?: number; createdBy?: string; featured?: boolean } | null = null;
 
       if (shareId) {
-        const existingKey = `${APPLET_SHARE_PREFIX}${shareId}`;
-        const existingData = await redis.get(existingKey);
+        const existingData =
+          (await redis.get(appletShareKey(shareId))) ??
+          (await redis.get(legacyAppletShareKey(shareId)));
 
         if (existingData) {
           try {
@@ -211,7 +227,7 @@ export default apiHandler<Record<string, unknown>>(
         id = generateId();
       }
 
-      const key = `${APPLET_SHARE_PREFIX}${id}`;
+      const key = appletShareKey(id);
       const appletData = {
         content,
         title: title || undefined,
@@ -264,8 +280,9 @@ export default apiHandler<Record<string, unknown>>(
         return;
       }
 
-      const key = `${APPLET_SHARE_PREFIX}${id}`;
-      const deleted = await redis.del(key);
+      const key = appletShareKey(id);
+      const legacyKey = legacyAppletShareKey(id);
+      const deleted = await redis.del(key, legacyKey);
 
       if (deleted === 0) {
         logger.response(404, Date.now() - startTime);
@@ -317,8 +334,9 @@ export default apiHandler<Record<string, unknown>>(
         return;
       }
 
-      const key = `${APPLET_SHARE_PREFIX}${id}`;
-      const appletData = await redis.get(key);
+      const key = appletShareKey(id);
+      const legacyKey = legacyAppletShareKey(id);
+      const appletData = (await redis.get(key)) ?? (await redis.get(legacyKey));
 
       if (!appletData) {
         logger.response(404, Date.now() - startTime);

@@ -13,7 +13,7 @@ import {
   isProfaneUsername,
 } from "../../../_utils/_validation.js";
 import { resolveRequestAuth } from "../../../_utils/request-auth.js";
-import { CHAT_USERS_PREFIX } from "../../../_utils/auth/_constants.js";
+import { getStoredUserRecord } from "../../../_utils/auth/_user-record.js";
 import {
   getCurrentTimestamp,
   getSession,
@@ -104,7 +104,7 @@ export default apiHandler(
       if (username) {
         const [session, userData] = await Promise.all([
           getSession(sessionId),
-          redis.get(`${CHAT_USERS_PREFIX}${username}`),
+          getStoredUserRecord(redis, username),
         ]);
 
         if (!session) {

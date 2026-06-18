@@ -23,6 +23,14 @@ describe("Redis key scheme migration helpers", () => {
       targetKey: "media:song:am:123:meta",
       action: "copy",
     });
+    await expect(planRedisKeyMigration("airdrop:presence")).resolves.toMatchObject({
+      targetKey: "presence:airdrop:lobby",
+      action: "copy",
+    });
+    await expect(planRedisKeyMigration("ryos:presence:online")).resolves.toMatchObject({
+      targetKey: "presence:global:online",
+      action: "copy",
+    });
     await expect(planRedisKeyMigration("rl:ai:anon:127.0.0.1")).resolves.toMatchObject({
       targetKey: null,
       action: "skip",
@@ -148,8 +156,8 @@ describe("Redis key scheme migration helpers", () => {
     expect(result.planned).toBe(1);
     expect(result.copied).toBe(1);
     expect(result.warnings).toEqual([]);
-    expect(await redis.get("sync2:seq:alice")).toBe("0");
-    const kv = await redis.hgetall("sync2:kv:alice");
+    expect(await redis.get(redisKeys.sync.v2Seq("alice"))).toBe("0");
+    const kv = await redis.hgetall(redisKeys.sync.v2Kv("alice"));
     expect(Object.keys(kv || {})).toContain("settings/display");
   });
 

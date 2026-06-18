@@ -14,6 +14,7 @@ import {
   getOpenAIProviderOptions,
 } from "./_utils/_aiModels.js";
 import { normalizeUrlForCacheKey } from "./_utils/_url.js";
+import { redisKeys, sha256RedisIdentifier } from "../src/shared/redisKeys.js";
 import {
   CORE_PRIORITY_INSTRUCTIONS,
   RYO_PERSONA_INSTRUCTIONS,
@@ -28,8 +29,6 @@ export const maxDuration = 80;
 // ============================================================================
 // Constants and Types
 // ============================================================================
-
-const IE_CACHE_PREFIX = "ie:cache:"; // Key prefix for stored generated pages
 
 type IncomingUIMessage = Omit<UIMessage, "id">;
 type SimpleMessage = {
@@ -247,9 +246,10 @@ export default apiHandler<IEGenerateRequestBody>(
     // Use normalized URL for the cache key
     const cacheKey =
       normalizedUrlForKey && effectiveYearStr
-        ? `${IE_CACHE_PREFIX}${encodeURIComponent(
-            normalizedUrlForKey
-          )}:${effectiveYearStr}`
+        ? redisKeys.cache.ieVersions(
+            await sha256RedisIdentifier(normalizedUrlForKey),
+            effectiveYearStr
+          )
         : null;
 
     // Removed cache read to avoid duplicate generation; cache handled through iframe-check AI mode

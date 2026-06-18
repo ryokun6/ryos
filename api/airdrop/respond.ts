@@ -1,6 +1,7 @@
 import { apiHandler } from "../_utils/api-handler.js";
 import { createRedis } from "../_utils/redis.js";
 import { triggerRealtimeEvent } from "../_utils/realtime.js";
+import { redisKeys } from "../../src/shared/redisKeys.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
@@ -24,9 +25,12 @@ export default apiHandler<RespondBody>(
 
     const { transferId, accept } = body;
     const redis = createRedis();
-    const transferKey = `airdrop:transfer:${transferId}`;
+    const transferKey = redisKeys.session.airdropTransfer(transferId);
+    const legacyTransferKey = `airdrop:transfer:${transferId}`;
 
-    const raw = await redis.get<string>(transferKey);
+    const raw =
+      (await redis.get<string>(transferKey)) ??
+      (await redis.get<string>(legacyTransferKey));
     if (!raw) {
       res.status(404).json({ error: "Transfer expired or not found" });
       return;
@@ -53,7 +57,7 @@ export default apiHandler<RespondBody>(
     }
 
     if (accept) {
-      await redis.del(transferKey);
+      await redis.del(transferKey, legacyTransferKey);
 
       await triggerRealtimeEvent(
         `airdrop-${transfer.sender}`,
@@ -73,7 +77,7 @@ export default apiHandler<RespondBody>(
         sender: transfer.sender,
       });
     } else {
-      await redis.del(transferKey);
+      await redis.del(transferKey, legacyTransferKey);
 
       await triggerRealtimeEvent(
         `airdrop-${transfer.sender}`,

@@ -7,14 +7,11 @@
  * - Caches room data to avoid repeated Redis lookups
  */
 
-import { createRedis } from "../../_utils/redis.js";
 import {
   triggerRealtimeBatch,
   triggerRealtimeEvent,
 } from "../../_utils/realtime.js";
-import { parseRoomData } from "./_redis.js";
 import { refreshRoomUserCount } from "./_presence.js";
-import { CHAT_ROOM_PREFIX } from "./_constants.js";
 import type { Room, Message } from "./_types.js";
 import {
   CHATS_PUBLIC_CHANNEL,
@@ -23,11 +20,6 @@ import {
   sanitizeRealtimeChannelSegment,
 } from "../../../src/shared/constants/realtime.js";
 import { getRoom } from "./_redis.js";
-
-// Create Redis client
-function getRedis() {
-  return createRedis();
-}
 
 interface BatchEvent {
   channel: string;
@@ -81,10 +73,7 @@ export function filterRoomsForUser(
  */
 export async function broadcastRoomUpdated(roomId: string): Promise<void> {
   try {
-    const roomRaw = await getRedis().get(`${CHAT_ROOM_PREFIX}${roomId}`);
-    if (!roomRaw) return;
-
-    const roomObj = parseRoomData(roomRaw);
+    const roomObj = await getRoom(roomId);
     if (!roomObj) return;
 
     const count = await refreshRoomUserCount(roomId);
@@ -230,10 +219,7 @@ export async function fanOutToPrivateMembers(
   payload: unknown
 ): Promise<void> {
   try {
-    const roomRaw = await getRedis().get(`${CHAT_ROOM_PREFIX}${roomId}`);
-    if (!roomRaw) return;
-
-    const roomObj = parseRoomData(roomRaw);
+    const roomObj = await getRoom(roomId);
     if (!roomObj) return;
     if (roomObj.type !== "private" || !Array.isArray(roomObj.members)) return;
 

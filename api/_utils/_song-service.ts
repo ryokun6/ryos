@@ -9,6 +9,7 @@
  */
 
 import type { Redis } from "./redis.js";
+import { redisKeys } from "../../src/shared/redisKeys.js";
 
 // =============================================================================
 // Types
@@ -152,6 +153,10 @@ export const SONG_SET_KEY = "song:all";
  * Get the Redis key for song metadata
  */
 export function getSongMetaKey(id: string): string {
+  return redisKeys.media.songMeta(id);
+}
+
+export function getLegacySongMetaKey(id: string): string {
   return `${SONG_META_PREFIX}${id}`;
 }
 
@@ -159,7 +164,28 @@ export function getSongMetaKey(id: string): string {
  * Get the Redis key for song content
  */
 export function getSongContentKey(id: string): string {
+  return redisKeys.media.songContent(id);
+}
+
+export function getLegacySongContentKey(id: string): string {
   return `${SONG_CONTENT_PREFIX}${id}`;
+}
+
+async function getSongIds(redis: Redis): Promise<string[]> {
+  return [
+    ...new Set([
+      ...((await redis.smembers<string[]>(redisKeys.media.songIds())) || []),
+      ...((await redis.smembers<string[]>(SONG_SET_KEY)) || []),
+    ]),
+  ];
+}
+
+async function getSongMetaRaw(redis: Redis, id: string): Promise<unknown> {
+  return (await redis.get(getSongMetaKey(id))) ?? (await redis.get(getLegacySongMetaKey(id)));
+}
+
+async function getSongContentRaw(redis: Redis, id: string): Promise<unknown> {
+  return (await redis.get(getSongContentKey(id))) ?? (await redis.get(getLegacySongContentKey(id)));
 }
 
 /**
@@ -199,8 +225,7 @@ export async function getSong(
   const needsContent = includeLyrics || includeTranslations || includeFurigana || includeSoramimi;
 
   // Fetch metadata (always needed)
-  const metaKey = getSongMetaKey(id);
-  const metaRaw = await redis.get(metaKey);
+  const metaRaw = await getSongMetaRaw(redis, id);
   const meta = parseJson<SongMetadata>(metaRaw);
 
   if (!meta) return null;
@@ -226,8 +251,7 @@ export async function getSong(
 
   // Fetch content if needed
   if (needsContent) {
-    const contentKey = getSongContentKey(id);
-    const contentRaw = await redis.get(contentKey);
+    const contentRaw = await getSongContentRaw(redis, id);
     const content = parseJson<SongContent>(contentRaw);
 
     if (content) {
@@ -352,7 +376,7 @@ export async function saveSong(
   }
 
   // Add to the set of all song IDs
-  await redis.sadd(SONG_SET_KEY, song.id);
+  await redis.sadd(redisKeys.media.songIds(), song.id);
 
   // Return combined document
   return { ...meta, ...content };
@@ -363,15 +387,22 @@ export async function saveSong(
  */
 export async function deleteSong(redis: Redis, id: string): Promise<boolean> {
   const metaKey = getSongMetaKey(id);
+  const legacyMetaKey = getLegacySongMetaKey(id);
 
   // Check if exists
-  const exists = await redis.exists(metaKey);
+  const exists = await redis.exists(metaKey, legacyMetaKey);
   if (!exists) return false;
 
   // Delete both metadata and content keys
-  await redis.del(metaKey, getSongContentKey(id));
+  await redis.del(
+    metaKey,
+    legacyMetaKey,
+    getSongContentKey(id),
+    getLegacySongContentKey(id)
+  );
 
   // Remove from the set
+  await redis.srem(redisKeys.media.songIds(), id);
   await redis.srem(SONG_SET_KEY, id);
 
   return true;
@@ -383,18 +414,19 @@ export async function deleteSong(redis: Redis, id: string): Promise<boolean> {
  */
 export async function deleteAllSongs(redis: Redis): Promise<number> {
   // Get all song IDs
-  const songIds = await redis.smembers(SONG_SET_KEY);
+  const songIds = await getSongIds(redis);
   
   if (!songIds || songIds.length === 0) {
     return 0;
   }
 
   // Delete all metadata and content keys
-  const metaKeys = songIds.map((id) => getSongMetaKey(id));
-  const contentKeys = songIds.map((id) => getSongContentKey(id));
+  const metaKeys = songIds.flatMap((id) => [getSongMetaKey(id), getLegacySongMetaKey(id)]);
+  const contentKeys = songIds.flatMap((id) => [getSongContentKey(id), getLegacySongContentKey(id)]);
   await redis.del(...metaKeys, ...contentKeys);
 
   // Clear the set
+  await redis.del(redisKeys.media.songIds());
   await redis.del(SONG_SET_KEY);
 
   return songIds.length;
@@ -417,17 +449,15 @@ export async function getSongsVersionInfo(
   options: { createdBy?: string } = {}
 ): Promise<SongsVersionInfo> {
   const { createdBy } = options;
-  const songIds = await redis.smembers(SONG_SET_KEY);
+  const songIds = await getSongIds(redis);
   if (!songIds || songIds.length === 0) {
     return { version: 0, count: 0 };
   }
 
-  const metaKeys = songIds.map((id) => getSongMetaKey(id));
-  const rawMetas = await redis.mget(...metaKeys);
-
   let version = 0;
   let count = 0;
-  for (const rawMeta of rawMetas) {
+  for (const songId of songIds) {
+    const rawMeta = await getSongMetaRaw(redis, songId);
     if (!rawMeta) continue;
     const meta = parseJson<SongMetadata>(rawMeta);
     if (!meta) continue;
@@ -459,7 +489,7 @@ export async function listSongs(
   if (ids && ids.length > 0) {
     songIds = ids;
   } else {
-    songIds = await redis.smembers(SONG_SET_KEY);
+    songIds = await getSongIds(redis);
   }
 
   if (!songIds || songIds.length === 0) {
@@ -470,20 +500,9 @@ export async function listSongs(
   const needsContent = getOptions.includeLyrics || getOptions.includeTranslations || 
                        getOptions.includeFurigana || getOptions.includeSoramimi;
 
-  // Fetch all metadata (lightweight, ~300 bytes per song)
-  const metaKeys = songIds.map((id) => getSongMetaKey(id));
-  const rawMetas = await redis.mget(...metaKeys);
-
-  // Fetch content only if needed (heavy data)
-  let rawContents: (string | null)[] | null = null;
-  if (needsContent) {
-    const contentKeys = songIds.map((id) => getSongContentKey(id));
-    rawContents = await redis.mget(...contentKeys) as (string | null)[];
-  }
-
   const songs: SongDocument[] = [];
-  for (let i = 0; i < rawMetas.length; i++) {
-    const rawMeta = rawMetas[i];
+  for (const songId of songIds) {
+    const rawMeta = await getSongMetaRaw(redis, songId);
     if (!rawMeta) continue;
 
     const meta = parseJson<SongMetadata>(rawMeta);
@@ -513,8 +532,8 @@ export async function listSongs(
     }
 
     // Add content if fetched
-    if (needsContent && rawContents) {
-      const rawContent = rawContents[i];
+    if (needsContent) {
+      const rawContent = await getSongContentRaw(redis, songId);
       if (rawContent) {
         const content = parseJson<SongContent>(rawContent);
         if (content) {
@@ -591,10 +610,10 @@ export async function saveLyrics(
   const now = Date.now();
 
   // Get existing metadata
-  const existingMeta = parseJson<SongMetadata>(await redis.get(metaKey));
+  const existingMeta = parseJson<SongMetadata>(await getSongMetaRaw(redis, id));
   
   // Get existing content to preserve other fields
-  const existingContent = parseJson<SongContent>(await redis.get(contentKey));
+  const existingContent = parseJson<SongContent>(await getSongContentRaw(redis, id));
 
   // Check if lyrics source changed (compare by hash)
   // If changed, we need to clear cached annotations since they're tied to the old lyrics
@@ -633,10 +652,10 @@ export async function saveLyrics(
     soramimiByLang: shouldClearAnnotations ? undefined : existingContent?.soramimiByLang,
   };
 
-  // Save both keys
+  // Save canonical keys
   await redis.set(metaKey, JSON.stringify(meta));
   await redis.set(contentKey, JSON.stringify(content));
-  await redis.sadd(SONG_SET_KEY, id);
+  await redis.sadd(redisKeys.media.songIds(), id);
 
   return { ...meta, ...content };
 }
@@ -651,15 +670,14 @@ export async function saveTranslation(
   language: string,
   translatedLrc: string
 ): Promise<SongDocument | null> {
-  const metaKey = getSongMetaKey(id);
   const contentKey = getSongContentKey(id);
 
   // Verify song exists
-  const existingMeta = parseJson<SongMetadata>(await redis.get(metaKey));
+  const existingMeta = parseJson<SongMetadata>(await getSongMetaRaw(redis, id));
   if (!existingMeta) return null;
 
   // Get existing content
-  const existingContent = parseJson<SongContent>(await redis.get(contentKey)) ?? {};
+  const existingContent = parseJson<SongContent>(await getSongContentRaw(redis, id)) ?? {};
 
   // Update translations
   const content: SongContent = {
@@ -682,15 +700,14 @@ export async function saveFurigana(
   id: string,
   furigana: FuriganaSegment[][]
 ): Promise<SongDocument | null> {
-  const metaKey = getSongMetaKey(id);
   const contentKey = getSongContentKey(id);
 
   // Verify song exists
-  const existingMeta = parseJson<SongMetadata>(await redis.get(metaKey));
+  const existingMeta = parseJson<SongMetadata>(await getSongMetaRaw(redis, id));
   if (!existingMeta) return null;
 
   // Get existing content
-  const existingContent = parseJson<SongContent>(await redis.get(contentKey)) ?? {};
+  const existingContent = parseJson<SongContent>(await getSongContentRaw(redis, id)) ?? {};
 
   // Update furigana
   const content: SongContent = {
@@ -715,15 +732,14 @@ export async function saveSoramimi(
   soramimi: FuriganaSegment[][],
   language?: "zh-TW" | "en"
 ): Promise<SongDocument | null> {
-  const metaKey = getSongMetaKey(id);
   const contentKey = getSongContentKey(id);
 
   // Verify song exists
-  const existingMeta = parseJson<SongMetadata>(await redis.get(metaKey));
+  const existingMeta = parseJson<SongMetadata>(await getSongMetaRaw(redis, id));
   if (!existingMeta) return null;
 
   // Get existing content
-  const existingContent = parseJson<SongContent>(await redis.get(contentKey)) ?? {};
+  const existingContent = parseJson<SongContent>(await getSongContentRaw(redis, id)) ?? {};
 
   // Update soramimi (use language-specific field if language provided)
   const content: SongContent = {

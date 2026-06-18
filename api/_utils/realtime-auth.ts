@@ -15,6 +15,7 @@ import {
   classifyRealtimeChannel,
   sanitizeUsernameForRealtimeChannel,
 } from "../../src/shared/constants/realtime.js";
+import { redisKeys, sha256RedisIdentifier } from "../../src/shared/redisKeys.js";
 import { getRoom } from "../rooms/_helpers/_redis.js";
 import { isPrivateRoom, isRoomMember } from "../rooms/_helpers/_access.js";
 
@@ -87,7 +88,7 @@ export async function issueRealtimeTicket(
   username: string
 ): Promise<string> {
   const ticket = generateTicket();
-  await redis.set(`${REALTIME_TICKET_PREFIX}${ticket}`, username.toLowerCase(), {
+  await redis.set(redisKeys.realtime.ticket(await sha256RedisIdentifier(ticket)), username.toLowerCase(), {
     ex: REALTIME_TICKET_TTL_SECONDS,
   });
   return ticket;
@@ -102,9 +103,10 @@ export async function consumeRealtimeTicket(
   ticket: string | null | undefined
 ): Promise<string | null> {
   if (!ticket) return null;
-  const key = `${REALTIME_TICKET_PREFIX}${ticket}`;
-  const username = await redis.get<string>(key);
+  const key = redisKeys.realtime.ticket(await sha256RedisIdentifier(ticket));
+  const legacyKey = `${REALTIME_TICKET_PREFIX}${ticket}`;
+  const username = (await redis.get<string>(key)) ?? (await redis.get<string>(legacyKey));
   if (!username) return null;
-  await redis.del(key);
+  await redis.del(key, legacyKey);
   return typeof username === "string" ? username : String(username);
 }

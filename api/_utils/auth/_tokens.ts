@@ -248,5 +248,4 @@ export async function refreshTokenTTL(
   const tokenHash = await sha256RedisIdentifier(token);
   await redis.expire(redisKeys.auth.session(tokenHash), USER_TTL_SECONDS);
   await redis.expire(redisKeys.auth.userSessions(normalizedUsername), USER_TTL_SECONDS);
-  await redis.expire(getUserTokenKey(normalizedUsername, token), USER_TTL_SECONDS);
 }

@@ -10,6 +10,7 @@
 import { apiHandler } from "../_utils/api-handler.js";
 import { triggerRealtimeEvent } from "../_utils/realtime.js";
 import { GLOBAL_PRESENCE_CHANNEL } from "../../src/shared/constants/realtime.js";
+import { redisKeys } from "../../src/shared/redisKeys.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 10;
@@ -24,7 +25,10 @@ export default apiHandler(
       const username = user!.username;
       const now = Date.now();
 
-      await redis.zadd(GLOBAL_PRESENCE_KEY, { score: now, member: username });
+      await redis.zadd(redisKeys.presence.globalOnline(), {
+        score: now,
+        member: username,
+      });
 
       // Broadcast to the global presence channel
       await triggerRealtimeEvent(GLOBAL_PRESENCE_CHANNEL, "user-heartbeat", {
@@ -38,8 +42,15 @@ export default apiHandler(
 
     // GET: return online users (authenticated)
     const cutoff = Date.now() - GLOBAL_PRESENCE_TTL_SECONDS * 1000;
+    const canonicalPresenceKey = redisKeys.presence.globalOnline();
+    await redis.zremrangebyscore(canonicalPresenceKey, 0, cutoff);
     await redis.zremrangebyscore(GLOBAL_PRESENCE_KEY, 0, cutoff);
-    const onlineUsers: string[] = await redis.zrange(GLOBAL_PRESENCE_KEY, 0, -1);
+    const onlineUsers: string[] = [
+      ...new Set([
+        ...(await redis.zrange(canonicalPresenceKey, 0, -1)),
+        ...(await redis.zrange(GLOBAL_PRESENCE_KEY, 0, -1)),
+      ]),
+    ];
 
     res.status(200).json({ users: onlineUsers });
   }

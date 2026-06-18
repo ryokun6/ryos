@@ -67,8 +67,7 @@ describe("Chat Broadcast Wiring Tests", () => {
 
     test("room delete route removes room from registry and presence", async () => {
       const source = readRoute("api/rooms/[id].ts");
-      expect(source.includes("CHAT_ROOMS_SET")).toBe(true);
-      expect(/srem\s*\(\s*CHAT_ROOMS_SET/.test(source)).toBe(true);
+      assertHasCall(source, "unregisterRoom");
       assertHasCall(source, "deleteRoomPresence");
     });
 
@@ -80,8 +79,7 @@ describe("Chat Broadcast Wiring Tests", () => {
 
     test("leave route removes deleted private room from registry", async () => {
       const source = readRoute("api/rooms/[id]/leave.ts");
-      expect(source.includes("CHAT_ROOMS_SET")).toBe(true);
-      expect(/srem\s*\(\s*CHAT_ROOMS_SET/.test(source)).toBe(true);
+      assertHasCall(source, "unregisterRoom");
     });
 
     test("leave route clears room presence for deleted private room", async () => {

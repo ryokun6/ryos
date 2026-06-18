@@ -25,6 +25,11 @@ export class FakeRedisPipeline {
     return this;
   }
 
+  get(key: string): this {
+    this.operations.push(() => this.redis.getSync(key));
+    return this;
+  }
+
   del(...keys: string[]): this {
     this.operations.push(() => this.redis.delSync(...keys));
     return this;
@@ -42,6 +47,11 @@ export class FakeRedisPipeline {
 
   pfadd(key: string, ...elements: string[]): this {
     this.operations.push(() => this.redis.pfaddSync(key, ...elements));
+    return this;
+  }
+
+  pfcount(...keys: string[]): this {
+    this.operations.push(() => this.redis.pfcountSync(...keys));
     return this;
   }
 
@@ -112,6 +122,10 @@ export class FakeRedis {
     return "OK";
   }
 
+  getSync<T = unknown>(key: string): T | null {
+    return (this.kv.get(key) as T | undefined) ?? null;
+  }
+
   delSync(...keys: string[]): number {
     let deleted = 0;
     for (const key of keys) {
@@ -162,7 +176,7 @@ export class FakeRedis {
   // --- async API ------------------------------------------------------------
 
   async get<T = unknown>(key: string): Promise<T | null> {
-    return (this.kv.get(key) as T | undefined) ?? null;
+    return this.getSync<T>(key);
   }
 
   async set(
@@ -187,7 +201,8 @@ export class FakeRedis {
         this.kv.has(key) ||
         this.sets.has(key) ||
         this.hashes.has(key) ||
-        this.lists.has(key)
+        this.lists.has(key) ||
+        this.zsets.has(key)
     )
       ? 1
       : 0;
@@ -315,6 +330,10 @@ export class FakeRedis {
   }
 
   async pfcount(...keys: string[]): Promise<number> {
+    return this.pfcountSync(...keys);
+  }
+
+  pfcountSync(...keys: string[]): number {
     const unique = new Set<string>();
     for (const key of keys) {
       for (const member of this.sets.get(key) || []) {
@@ -355,6 +374,35 @@ export class FakeRedis {
 
   async llen(key: string): Promise<number> {
     return (this.lists.get(key) || []).length;
+  }
+
+  async lrem(key: string, count: number, value: string): Promise<number> {
+    const list = this.lists.get(key) || [];
+    if (list.length === 0 || count === 0) return 0;
+    let removed = 0;
+    const shouldRemove = (item: string) => item === value;
+    if (count > 0) {
+      const next: string[] = [];
+      for (const item of list) {
+        if (removed < count && shouldRemove(item)) {
+          removed += 1;
+          continue;
+        }
+        next.push(item);
+      }
+      this.lists.set(key, next);
+      return removed;
+    }
+
+    const next = [...list];
+    for (let index = next.length - 1; index >= 0 && removed < Math.abs(count); index -= 1) {
+      if (shouldRemove(next[index])) {
+        next.splice(index, 1);
+        removed += 1;
+      }
+    }
+    this.lists.set(key, next);
+    return removed;
   }
 
   // --- sorted sets ----------------------------------------------------------

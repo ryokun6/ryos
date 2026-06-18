@@ -136,41 +136,46 @@ export async function handleGetUsers(
       });
     }
 
-    const users: User[] = [];
+    const users = new Map<string, User>();
     let cursor = 0;
     const maxResults = 20;
-    const pattern = `${CHAT_USERS_PREFIX}*${searchQuery.toLowerCase()}*`;
+    const patterns = [
+      `auth:user:*${searchQuery.toLowerCase()}*:profile`,
+      `${CHAT_USERS_PREFIX}*${searchQuery.toLowerCase()}*`,
+    ];
 
-    do {
-      const [newCursor, keys] = await redis.scan(cursor, {
-        match: pattern,
-        count: 100,
-      });
+    for (const pattern of patterns) {
+      cursor = 0;
+      do {
+        const [newCursor, keys] = await redis.scan(cursor, {
+          match: pattern,
+          count: 100,
+        });
 
-      cursor = parseInt(String(newCursor));
+        cursor = parseInt(String(newCursor));
 
-      if (keys.length > 0) {
-        const usersData = await redis.mget<(User | string | null)[]>(...keys);
-        const foundUsers = usersData.reduce<User[]>((acc, user) => {
-          try {
-            if (!user) return acc;
-            const parsedUser = typeof user === "string" ? JSON.parse(user) : user;
-            acc.push(parsedUser);
-          } catch {
-            return acc;
+        if (keys.length > 0) {
+          const usersData = await redis.mget<(User | string | null)[]>(...keys);
+          for (const user of usersData) {
+            try {
+              if (!user) continue;
+              const parsedUser = typeof user === "string" ? JSON.parse(user) : user;
+              if (parsedUser?.username) {
+                users.set(parsedUser.username.toLowerCase(), parsedUser);
+              }
+            } catch {
+              continue;
+            }
           }
-          return acc;
-        }, []);
 
-        users.push(...foundUsers);
-
-        if (users.length >= maxResults) {
-          break;
+          if (users.size >= maxResults) {
+            break;
+          }
         }
-      }
-    } while (cursor !== 0 && users.length < maxResults);
+      } while (cursor !== 0 && users.size < maxResults);
+    }
 
-    const limitedUsers = users.slice(0, maxResults);
+    const limitedUsers = [...users.values()].slice(0, maxResults);
 
     logInfo(
       requestId,

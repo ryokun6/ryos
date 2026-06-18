@@ -5,6 +5,7 @@ import { normalizeUrlForCacheKey } from "./_utils/_url.js";
 import { safeFetchWithRedirects, validatePublicUrl, SsrfBlockedError } from "./_utils/_ssrf.js";
 import { getAppPublicOrigin } from "./_utils/runtime-config.js";
 import { decodeHtmlEntitiesOnce } from "./_utils/html-entities.js";
+import { redisKeys, sha256RedisIdentifier } from "../src/shared/redisKeys.js";
 
 export const runtime = "nodejs";
 
@@ -135,6 +136,32 @@ const generateRandomBrowserHeaders = (): Record<string, string> => {
 const IE_CACHE_PREFIX = "ie:cache:";
 const WAYBACK_CACHE_PREFIX = "wayback:cache:";
 // --- End Constants ---
+
+async function getIeCacheKeys(normalizedUrlForKey: string, year: string): Promise<{
+  canonical: string;
+  legacy: string;
+}> {
+  return {
+    canonical: redisKeys.cache.ieVersions(
+      await sha256RedisIdentifier(normalizedUrlForKey),
+      year
+    ),
+    legacy: `${IE_CACHE_PREFIX}${encodeURIComponent(normalizedUrlForKey)}:${year}`,
+  };
+}
+
+async function getWaybackCacheKeys(normalizedUrlForKey: string, yearMonth: string): Promise<{
+  canonical: string;
+  legacy: string;
+}> {
+  return {
+    canonical: redisKeys.cache.wayback(
+      await sha256RedisIdentifier(normalizedUrlForKey),
+      yearMonth
+    ),
+    legacy: `${WAYBACK_CACHE_PREFIX}${encodeURIComponent(normalizedUrlForKey)}:${yearMonth}`,
+  };
+}
 
 /**
  * Edge function that checks if a remote website allows itself to be embedded in an iframe.
@@ -322,11 +349,14 @@ export default apiHandler(
     }
 
     try {
-      const key = `${IE_CACHE_PREFIX}${encodeURIComponent(
-        normalizedUrlForKey
-      )}:${year}`;
+      const { canonical: key, legacy: legacyKey } = await getIeCacheKeys(
+        normalizedUrlForKey,
+        year
+      );
       logger.info(`Checking AI cache with key: ${key}`);
-      const html = (await redis.lindex(key, 0)) as string | null;
+      const html =
+        ((await redis.lindex(key, 0)) as string | null) ??
+        ((await redis.lindex(legacyKey, 0)) as string | null);
       if (html) {
         logger.info(`AI Cache HIT for key: ${key}`);
         res.setHeader("Content-Type", "text/html; charset=utf-8");
@@ -362,8 +392,10 @@ export default apiHandler(
 
     try {
       const uniqueYears = new Set<string>();
+      const urlHash = await sha256RedisIdentifier(normalizedUrlForKey);
 
       // Scan for AI Cache keys (ie:cache:...)
+      const canonicalAiPattern = `cache:ie:${urlHash}:*:versions`;
       const aiPattern = `${IE_CACHE_PREFIX}${encodeURIComponent(
         normalizedUrlForKey
       )}:*`;
@@ -371,6 +403,21 @@ export default apiHandler(
         normalizedUrlForKey
       )}:`.length;
       logger.info(`Scanning Redis for AI cache with pattern: ${aiPattern}`);
+      let canonicalAiCursor = 0;
+      do {
+        const [nextCursor, keys] = await redis.scan(canonicalAiCursor, {
+          match: canonicalAiPattern,
+          count: 100,
+        });
+        canonicalAiCursor = parseInt(nextCursor as unknown as string, 10);
+        for (const key of keys) {
+          const parts = key.split(":");
+          const yearPart = parts[3] ? decodeURIComponent(parts[3]) : "";
+          if (yearPart && /^(\d{1,4}( BC)?|\d+ CE)$/i.test(yearPart)) {
+            uniqueYears.add(yearPart.replace(/\b(bc|ce)\b/gi, (era) => era.toUpperCase()));
+          }
+        }
+      } while (canonicalAiCursor !== 0);
       let aiCursor = 0;
       do {
         const [nextCursor, keys] = await redis.scan(aiCursor, {
@@ -390,6 +437,7 @@ export default apiHandler(
       } while (aiCursor !== 0);
 
       // Scan for Wayback Cache keys (wayback:cache:...)
+      const canonicalWaybackPattern = `cache:wayback:${urlHash}:*`;
       const waybackPattern = `${WAYBACK_CACHE_PREFIX}${encodeURIComponent(
         normalizedUrlForKey
       )}:*`;
@@ -397,6 +445,20 @@ export default apiHandler(
         `${WAYBACK_CACHE_PREFIX}${encodeURIComponent(normalizedUrlForKey)}:`
           .length;
       logger.info(`Scanning Redis for Wayback cache with pattern: ${waybackPattern}`);
+      let canonicalWaybackCursor = 0;
+      do {
+        const [nextCursor, keys] = await redis.scan(canonicalWaybackCursor, {
+          match: canonicalWaybackPattern,
+          count: 100,
+        });
+        canonicalWaybackCursor = parseInt(nextCursor as unknown as string, 10);
+        for (const key of keys) {
+          const yearMonthPart = key.split(":")[3];
+          if (yearMonthPart && /^\d{6}$/.test(yearMonthPart)) {
+            uniqueYears.add(yearMonthPart.substring(0, 4));
+          }
+        }
+      } while (canonicalWaybackCursor !== 0);
       let waybackCursor = 0;
       do {
         const [nextCursor, keys] = await redis.scan(waybackCursor, {
@@ -502,11 +564,14 @@ export default apiHandler(
       logger.info(`Initializing Wayback cache check for ${normalizedUrl} (${waybackYear}/${waybackMonth})`);
       const normalizedUrlForKey = normalizeUrlForCacheKey(normalizedUrl);
       if (normalizedUrlForKey) {
-        const cacheKey = `${WAYBACK_CACHE_PREFIX}${encodeURIComponent(
-          normalizedUrlForKey
-        )}:${waybackYear}${waybackMonth}`;
+        const { canonical: cacheKey, legacy: legacyCacheKey } = await getWaybackCacheKeys(
+          normalizedUrlForKey,
+          `${waybackYear}${waybackMonth}`
+        );
         logger.info(`Generated Wayback cache key: ${cacheKey}`);
-        const cachedContent = (await redis.get(cacheKey)) as string | null;
+        const cachedContent =
+          ((await redis.get(cacheKey)) as string | null) ??
+          ((await redis.get(legacyCacheKey)) as string | null);
         if (cachedContent) {
           logger.info(`Wayback Cache HIT for ${cacheKey} (content length: ${cachedContent.length})`);
           res.setHeader("Content-Type", "text/html; charset=utf-8");
@@ -1052,9 +1117,10 @@ export default apiHandler(
             logger.info(`Attempting to cache Wayback content for ${normalizedUrl} (${waybackYear}/${waybackMonth})`);
             const normalizedUrlForKey = normalizeUrlForCacheKey(normalizedUrl);
             if (normalizedUrlForKey) {
-              const cacheKey = `${WAYBACK_CACHE_PREFIX}${encodeURIComponent(
-                normalizedUrlForKey
-              )}:${waybackYear}${waybackMonth}`;
+              const { canonical: cacheKey } = await getWaybackCacheKeys(
+                normalizedUrlForKey,
+                `${waybackYear}${waybackMonth}`
+              );
               logger.info(`Writing to Wayback cache key: ${cacheKey} (content length: ${html.length})`);
               // Use SET with expiration for Wayback cache (e.g., 30 days)
               await redis.set(cacheKey, html, { ex: 60 * 60 * 24 * 30 });

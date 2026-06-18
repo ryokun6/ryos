@@ -9,6 +9,7 @@ import { z } from "zod";
 import type { MemoryToolContext } from "./executors.js";
 import { simplifyTelegramCitationDisplay } from "../../_utils/telegram-format.js";
 import { sendTelegramMessage } from "../../_utils/telegram.js";
+import { redisKeys } from "../../../src/shared/redisKeys.js";
 
 export const CURSOR_REPO_AGENT_OWNER = "ryo";
 
@@ -16,22 +17,36 @@ export const CURSOR_SDK_RUN_TTL_SEC = 90 * 86_400;
 
 /** Redis key prefixes — keep in sync with api/ai/cursor-run-status.ts */
 export function cursorSdkEventsKey(runId: string): string {
+  return redisKeys.agent.cursorRunEvents(runId);
+}
+
+export function legacyCursorSdkEventsKey(runId: string): string {
   return `cursor-sdk-run:${runId}:events`;
 }
 
 export function cursorSdkMetaKey(runId: string): string {
+  return redisKeys.agent.cursorRunMeta(runId);
+}
+
+export function legacyCursorSdkMetaKey(runId: string): string {
   return `cursor-sdk-run:${runId}:meta`;
 }
 
 /** Tracks the latest run for a given Cursor agent so follow-ups can resume it. */
 export function cursorSdkAgentLatestRunKey(agentId: string): string {
+  return redisKeys.agent.cursorLatestRun(agentId);
+}
+
+export function legacyCursorSdkAgentLatestRunKey(agentId: string): string {
   return `cursor-sdk-agent:${agentId}:latestRun`;
 }
 
 /** Redis SCAN pattern for run metadata keys — keep in sync with api/admin.ts */
-export const CURSOR_SDK_META_KEY_PATTERN = "cursor-sdk-run:*:meta";
+export const CURSOR_SDK_META_KEY_PATTERN = "agent:cursor:run:*:meta";
+export const LEGACY_CURSOR_SDK_META_KEY_PATTERN = "cursor-sdk-run:*:meta";
 
-const META_RUN_ID_REGEX = /^cursor-sdk-run:([^:]+):meta$/;
+const META_RUN_ID_REGEX = /^agent:cursor:run:([^:]+):meta$/;
+const LEGACY_META_RUN_ID_REGEX = /^cursor-sdk-run:([^:]+):meta$/;
 
 const TOOL_LOG_PREFIX = "[cursorCloudAgent]";
 
@@ -357,17 +372,20 @@ export async function listCursorSdkRunsFromRedis(
   const maxIterations = 200;
 
   try {
-    do {
-      const [nextCursor, keys] = await redis.scan(cursor, {
-        match: CURSOR_SDK_META_KEY_PATTERN,
-        count: 500,
-      });
-      cursor = nextCursor;
-      iterations++;
-      for (const k of keys) {
-        if (typeof k === "string") metaKeys.add(k);
-      }
-    } while (cursor !== 0 && cursor !== "0" && iterations < maxIterations);
+    for (const pattern of [CURSOR_SDK_META_KEY_PATTERN, LEGACY_CURSOR_SDK_META_KEY_PATTERN]) {
+      cursor = 0;
+      do {
+        const [nextCursor, keys] = await redis.scan(cursor, {
+          match: pattern,
+          count: 500,
+        });
+        cursor = nextCursor;
+        iterations++;
+        for (const k of keys) {
+          if (typeof k === "string") metaKeys.add(k);
+        }
+      } while (cursor !== 0 && cursor !== "0" && iterations < maxIterations);
+    }
   } catch (e) {
     console.error(`${TOOL_LOG_PREFIX} listCursorSdkRunsFromRedis scan failed`, e);
     return { runs: [], totalCount: 0, scanIncomplete: false };
@@ -395,7 +413,9 @@ export async function listCursorSdkRunsFromRedis(
       const rec = parseStoredRecordForRunList(values[j]);
       if (!rec) continue;
 
-      const fromKey = META_RUN_ID_REGEX.exec(key)?.[1];
+      const fromKey =
+        META_RUN_ID_REGEX.exec(key)?.[1] ??
+        LEGACY_META_RUN_ID_REGEX.exec(key)?.[1];
       const runId = strFieldRunList(rec, "runId") ?? fromKey;
       if (!runId) continue;
 
@@ -578,6 +598,7 @@ interface BackgroundCursorRunInput {
   username: string;
   eventsKey: string;
   metaKey: string;
+  legacyMetaKey?: string;
   repoUrl?: string;
   startingRef?: string;
   modelId?: string;
@@ -596,9 +617,12 @@ interface BackgroundCursorRunInput {
 /** Read the run's existing meta (if any) so background updates merge instead of overwriting. */
 async function readRunMeta(
   redis: Redis,
-  metaKey: string
+  metaKey: string,
+  legacyMetaKey?: string
 ): Promise<Record<string, unknown> | null> {
-  const raw = await redis.get(metaKey);
+  const raw =
+    (await redis.get(metaKey)) ??
+    (legacyMetaKey ? await redis.get(legacyMetaKey) : null);
   if (raw === null || raw === undefined) return null;
   if (typeof raw === "object") return raw as Record<string, unknown>;
   if (typeof raw === "string") {
@@ -617,10 +641,11 @@ async function readRunMeta(
 async function writeMergedMeta(
   redis: Redis,
   metaKey: string,
+  legacyMetaKey: string | undefined,
   patch: Record<string, unknown>,
   log: (...args: unknown[]) => void
 ): Promise<void> {
-  const existing = await readRunMeta(redis, metaKey);
+  const existing = await readRunMeta(redis, metaKey, legacyMetaKey);
   const merged: Record<string, unknown> = { ...(existing ?? {}), ...patch };
   await redis.set(metaKey, JSON.stringify(merged), { ex: CURSOR_SDK_RUN_TTL_SEC });
   log("[cursorCloudAgent] meta updated", {
@@ -634,6 +659,7 @@ function spawnBackgroundCursorRun(input: BackgroundCursorRunInput): void {
     redis,
     eventsKey,
     metaKey,
+    legacyMetaKey,
     runId,
     agentId,
     agentTitle,
@@ -684,6 +710,7 @@ function spawnBackgroundCursorRun(input: BackgroundCursorRunInput): void {
       await writeMergedMeta(
         redis,
         metaKey,
+        legacyMetaKey,
         {
           username,
           runId,
@@ -726,6 +753,7 @@ function spawnBackgroundCursorRun(input: BackgroundCursorRunInput): void {
       await writeMergedMeta(
         redis,
         metaKey,
+        legacyMetaKey,
         {
           username,
           runId,
@@ -854,33 +882,35 @@ export async function executeCursorCloudAgent(
 
     const eventsKey = cursorSdkEventsKey(runId);
     const metaKey = cursorSdkMetaKey(runId);
+    const initialMeta = JSON.stringify({
+      username: context.username,
+      runId,
+      agentId,
+      ...(agentTitle ? { agentTitle } : {}),
+      repoUrl,
+      startingRef,
+      modelId,
+      ...(model.params?.length ? { modelParams: model.params } : {}),
+      autoCreatePR,
+      createdAt: Date.now(),
+      promptPreview: input.prompt.slice(0, 280),
+      activeRunId: runId,
+    });
 
     await context.redis.set(
       metaKey,
-      JSON.stringify({
-        username: context.username,
-        runId,
-        agentId,
-        ...(agentTitle ? { agentTitle } : {}),
-        repoUrl,
-        startingRef,
-        modelId,
-        ...(model.params?.length ? { modelParams: model.params } : {}),
-        autoCreatePR,
-        createdAt: Date.now(),
-        promptPreview: input.prompt.slice(0, 280),
-        activeRunId: runId,
-      }),
+      initialMeta,
       { ex: CURSOR_SDK_RUN_TTL_SEC }
     );
 
+    const latestRunPayload = JSON.stringify({
+      username: context.username,
+      runId,
+      ...(agentTitle ? { agentTitle } : {}),
+    });
     await context.redis.set(
       cursorSdkAgentLatestRunKey(agentId),
-      JSON.stringify({
-        username: context.username,
-        runId,
-        ...(agentTitle ? { agentTitle } : {}),
-      }),
+      latestRunPayload,
       { ex: CURSOR_SDK_RUN_TTL_SEC }
     );
 
@@ -972,7 +1002,8 @@ export async function sendCursorAgentFollowup(input: {
   }
 
   const prevMetaKey = cursorSdkMetaKey(previousRunId);
-  const prevMeta = await readRunMeta(redis, prevMetaKey);
+  const legacyPrevMetaKey = legacyCursorSdkMetaKey(previousRunId);
+  const prevMeta = await readRunMeta(redis, prevMetaKey, legacyPrevMetaKey);
   if (!prevMeta) {
     return { ok: false, status: 404, error: "Run not found" };
   }
@@ -1076,45 +1107,48 @@ export async function sendCursorAgentFollowup(input: {
   const newRunId = run.id;
   const newEventsKey = cursorSdkEventsKey(newRunId);
   const newMetaKey = cursorSdkMetaKey(newRunId);
+  const followupMeta = JSON.stringify({
+    username,
+    runId: newRunId,
+    agentId,
+    ...(agentTitle ? { agentTitle } : {}),
+    ...(repoUrl ? { repoUrl } : {}),
+    ...(startingRef ? { startingRef } : {}),
+    ...(modelId ? { modelId } : {}),
+    ...(modelFromMeta?.params?.length
+      ? { modelParams: modelFromMeta.params }
+      : {}),
+    ...(typeof autoCreatePR === "boolean" ? { autoCreatePR } : {}),
+    ...(inheritedPrUrl ? { prUrl: inheritedPrUrl } : {}),
+    createdAt: Date.now(),
+    promptPreview: prompt.slice(0, 280),
+    activeRunId: newRunId,
+    previousRunId,
+    isFollowup: true,
+  });
 
   await redis.set(
     newMetaKey,
-    JSON.stringify({
-      username,
-      runId: newRunId,
-      agentId,
-      ...(agentTitle ? { agentTitle } : {}),
-      ...(repoUrl ? { repoUrl } : {}),
-      ...(startingRef ? { startingRef } : {}),
-      ...(modelId ? { modelId } : {}),
-      ...(modelFromMeta?.params?.length
-        ? { modelParams: modelFromMeta.params }
-        : {}),
-      ...(typeof autoCreatePR === "boolean" ? { autoCreatePR } : {}),
-      ...(inheritedPrUrl ? { prUrl: inheritedPrUrl } : {}),
-      createdAt: Date.now(),
-      promptPreview: prompt.slice(0, 280),
-      activeRunId: newRunId,
-      previousRunId,
-      isFollowup: true,
-    }),
+    followupMeta,
     { ex: CURSOR_SDK_RUN_TTL_SEC }
   );
 
   await writeMergedMeta(
     redis,
     prevMetaKey,
+    legacyPrevMetaKey,
     { nextRunId: newRunId },
     log
   );
 
+  const latestRunPayload = JSON.stringify({
+    username,
+    runId: newRunId,
+    ...(agentTitle ? { agentTitle } : {}),
+  });
   await redis.set(
     cursorSdkAgentLatestRunKey(agentId),
-    JSON.stringify({
-      username,
-      runId: newRunId,
-      ...(agentTitle ? { agentTitle } : {}),
-    }),
+    latestRunPayload,
     { ex: CURSOR_SDK_RUN_TTL_SEC }
   );
 

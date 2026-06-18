@@ -1,10 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import type { Redis } from "../api/_utils/redis";
-import { applySyncOps, ensureSync2Initialized } from "../api/sync/v2/_core";
+import { applySyncOps, ensureSync2Initialized, sync2BlobsKey } from "../api/sync/v2/_core";
 import {
   runSyncMaintenance,
   V1_RETIREMENT_TTL_SECONDS,
 } from "../api/sync/v2/_maintenance";
+import { redisKeys } from "../src/shared/redisKeys";
 import { formatHlc } from "../src/shared/sync2/hlc";
 import { FakeRedis } from "./fake-redis";
 
@@ -72,7 +73,10 @@ describe("sync maintenance: v1 key retirement", () => {
     const fake = new FakeRedis();
     const redis = fake as unknown as Redis;
 
-    // Legacy expire-on-room-message left a TTL on the user record.
+    const canonicalUserKey = redisKeys.auth.userProfile("alice");
+    fake.setSync(canonicalUserKey, JSON.stringify({ username: "alice" }), {
+      ex: 90 * 24 * 60 * 60,
+    });
     fake.setSync("chat:users:alice", JSON.stringify({ username: "alice" }), {
       ex: 90 * 24 * 60 * 60,
     });
@@ -82,7 +86,8 @@ describe("sync maintenance: v1 key retirement", () => {
     const stats = await runSyncMaintenance(redis, { deleteObject, now: NOW });
 
     expect(stats.userRecordsPersisted).toBe(1);
-    expect(fake.ttls.has("chat:users:alice")).toBe(false);
+    expect(fake.ttls.has(canonicalUserKey)).toBe(false);
+    expect(fake.ttls.has("chat:users:alice")).toBe(true);
 
     // Already-persistent records are untouched on subsequent runs.
     const again = await runSyncMaintenance(redis, { deleteObject, now: NOW + 1 });
@@ -170,7 +175,7 @@ describe("sync maintenance: blob GC mark-and-sweep", () => {
     expect(spy.deleted).toEqual([`s3://bucket/sync/alice/blobs/${sha("b")}.gz`]);
 
     // Referenced blobs are untouched.
-    const registry = await fake.hgetall("sync2:blobs:alice");
+    const registry = await fake.hgetall(sync2BlobsKey("alice"));
     expect(Object.keys(registry || {})).toContain(sha("a"));
     expect(Object.keys(registry || {})).toContain(sha("c"));
     expect(Object.keys(registry || {})).not.toContain(sha("b"));
@@ -199,7 +204,7 @@ describe("sync maintenance: blob GC mark-and-sweep", () => {
     });
     expect(sweep.blobsDeleted).toBe(0);
     expect(spy.deleted).toEqual([]);
-    const registry = await fake.hgetall("sync2:blobs:alice");
+    const registry = await fake.hgetall(sync2BlobsKey("alice"));
     expect(Object.keys(registry || {})).toContain(sha("b"));
   });
 
@@ -209,7 +214,7 @@ describe("sync maintenance: blob GC mark-and-sweep", () => {
     await seedBlobUser(redis);
 
     // Simulate a leftover mark on a referenced blob (e.g. interrupted run).
-    const registryKey = "sync2:blobs:alice";
+    const registryKey = sync2BlobsKey("alice");
     const marked = JSON.parse(
       (await fake.hget<string>(registryKey, sha("a")))!
     );
