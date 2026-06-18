@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { createRedis } from "./redis.js";
 import { validateAuth } from "./auth/index.js";
+import { redisKeys } from "../../src/shared/redisKeys.js";
 
 // Set up Redis client
 const redis = createRedis();
@@ -21,15 +22,28 @@ function hashRateLimitIdentifier(identifier: string): string {
   return createHash("sha256").update(identifier).digest("hex");
 }
 
+const RATE_LIMIT_SCOPE_LABELS = new Set(["anon", "host", "ip", "user"]);
+
+function deriveRateLimitScope(parts: string[]): string {
+  const labels = parts
+    .map((part) => part.trim().toLowerCase())
+    .filter((part) => RATE_LIMIT_SCOPE_LABELS.has(part));
+  return labels.length > 0 ? labels.join("-") : "global";
+}
+
 function makeCanonicalRateKey(parts: string[]): string {
   if (parts.length === 0) return RATE_LIMIT_PREFIX;
-  const identifier = parts[parts.length - 1] || "global";
-  const prefixParts = parts.slice(0, -1).map(normalizeRateKeyPart);
-  return [
-    RATE_LIMIT_PREFIX,
-    ...prefixParts,
-    hashRateLimitIdentifier(identifier),
-  ].join(":");
+  const [feature = "global", window = "counter", ...identityParts] = parts;
+  const normalizedFeature = normalizeRateKeyPart(feature);
+  const normalizedWindow = normalizeRateKeyPart(window);
+  const scope = deriveRateLimitScope(identityParts);
+  const identifier = parts.join("\0");
+  return redisKeys.rate.counter(
+    normalizedFeature,
+    normalizedWindow,
+    scope,
+    hashRateLimitIdentifier(identifier)
+  );
 }
 
 // Helper function to get rate limit key for a user
