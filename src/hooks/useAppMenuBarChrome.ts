@@ -19,9 +19,6 @@ export function useAppMenuBarChrome(
     setIsShareDialogOpen,
     isWindowsTheme,
     isMacOSTheme,
-    // Legacy aliases retained for existing app menubar props.
-    isXpTheme: isWindowsTheme,
-    isMacOsxTheme: isMacOSTheme,
     appId,
     appName,
   };

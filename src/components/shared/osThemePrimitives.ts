@@ -3,8 +3,7 @@ import { cn } from "@/lib/utils";
 type ThemeSurfaceFlags = {
   isMacOSTheme: boolean;
   isSystem7Theme: boolean;
-  isXpTheme: boolean;
-  isWindowsTheme?: boolean;
+  isWindowsTheme: boolean;
   isWin98?: boolean;
   isAquaGlass?: boolean;
 };
@@ -19,7 +18,7 @@ export function osCardClassName(
     className?: string;
   } = {}
 ): string {
-  const { isMacOSTheme, isSystem7Theme, isXpTheme, isWin98 = false } = flags;
+  const { isMacOSTheme, isSystem7Theme, isWindowsTheme, isWin98 = false } = flags;
   const { embed = "chat", className } = options;
 
   return cn(
@@ -35,7 +34,7 @@ export function osCardClassName(
       ),
     !isMacOSTheme &&
       !isSystem7Theme &&
-      isXpTheme &&
+      isWindowsTheme &&
       !isWin98 &&
       cn(
         embed === "chat" && "rounded-[0.4rem]",
@@ -51,7 +50,7 @@ export function osCardClassName(
       ),
     !isMacOSTheme &&
       !isSystem7Theme &&
-      !isXpTheme &&
+      !isWindowsTheme &&
       !isWin98 &&
       cn(
         embed === "chat" && "rounded",
@@ -65,7 +64,7 @@ export function osDrawerSurfaceClassName(
   flags: ThemeSurfaceFlags,
   placement: DrawerPlacement
 ): string {
-  const { isMacOSTheme, isSystem7Theme, isXpTheme, isWin98 = false } = flags;
+  const { isMacOSTheme, isSystem7Theme, isWindowsTheme, isWin98 = false } = flags;
 
   return cn(
     "flex flex-1 flex-col overflow-hidden min-h-0",
@@ -87,7 +86,7 @@ export function osDrawerSurfaceClassName(
             ? "bg-white border-2 border-black border-t-0 rounded-b shadow-[2px_4px_0_0_rgba(0,0,0,0.45)]"
             : "bg-white border-2 border-black border-b-0 rounded-t shadow-[2px_-4px_0_0_rgba(0,0,0,0.45)]"),
     !isMacOSTheme &&
-      isXpTheme &&
+      isWindowsTheme &&
       !isWin98 &&
       (placement === "right"
         ? "bg-os-window-bg border-[3px] border-l-0 border-os-window rounded-r-[0.5rem]"
@@ -111,14 +110,14 @@ export function osDrawerSurfaceClassName(
 export function osToolbarSurfaceClassName(
   flags: Pick<
     ThemeSurfaceFlags,
-    "isMacOSTheme" | "isSystem7Theme" | "isXpTheme"
+    "isMacOSTheme" | "isSystem7Theme" | "isWindowsTheme"
   > & { isWin98?: boolean },
   options: {
     border?: "none" | "top" | "bottom";
     className?: string;
   } = {}
 ): string {
-  const { isMacOSTheme, isSystem7Theme, isXpTheme, isWin98 = false } = flags;
+  const { isMacOSTheme, isSystem7Theme, isWindowsTheme, isWin98 = false } = flags;
   const { border = "none", className } = options;
 
   return cn(
@@ -129,7 +128,7 @@ export function osToolbarSurfaceClassName(
       isSystem7Theme &&
       "bg-[#e0e0e0] border-black/10 text-black",
     !isMacOSTheme &&
-      isXpTheme &&
+      isWindowsTheme &&
       !isWin98 &&
       "bg-os-window-bg border-os-separator text-os-text-primary",
     !isMacOSTheme &&
@@ -142,7 +141,7 @@ export function osToolbarSurfaceClassName(
 export function osAppSidebarSurfaceClassName(
   flags: Pick<
     ThemeSurfaceFlags,
-    "isMacOSTheme" | "isXpTheme" | "isWindowsTheme" | "isAquaGlass"
+    "isMacOSTheme" | "isWindowsTheme" | "isAquaGlass"
   >,
   options: {
     layout?: AppSidebarLayout;
@@ -152,8 +151,7 @@ export function osAppSidebarSurfaceClassName(
 ): string {
   const {
     isMacOSTheme,
-    isXpTheme,
-    isWindowsTheme = isXpTheme,
+    isWindowsTheme,
     isAquaGlass = false,
   } = flags;
   const {
