@@ -2,6 +2,14 @@ import { apiRequest } from "@/api/core";
 
 type QueryValue = string | number | boolean | null | undefined;
 
+/**
+ * Client timeout for the Redis key-scheme migration endpoints only. Kept above
+ * the server's `maxDuration` (30s) so a long-running pipelined batch is allowed
+ * to finish on the server instead of the client aborting it mid-flight. Other
+ * admin calls keep the global 15s default.
+ */
+const MIGRATION_CLIENT_TIMEOUT_MS = 35000;
+
 async function adminGet<TResponse>(
   action: string,
   query: Record<string, QueryValue> = {}
@@ -14,12 +22,14 @@ async function adminGet<TResponse>(
 }
 
 async function adminPost<TResponse, TBody extends Record<string, unknown>>(
-  body: TBody
+  body: TBody,
+  options?: { timeout?: number }
 ): Promise<TResponse> {
   return apiRequest<TResponse, TBody>({
     path: "/api/admin",
     method: "POST",
     body,
+    ...(options?.timeout !== undefined ? { timeout: options.timeout } : {}),
   });
 }
 
@@ -184,7 +194,7 @@ export async function backfillAdminRedisKeyScheme<TResponse>(input: {
     ...(input.limit ? { limit: input.limit } : {}),
     ...(input.dryRun !== undefined ? { dryRun: input.dryRun } : {}),
     ...(input.cursor ? { cursor: input.cursor } : {}),
-  });
+  }, { timeout: MIGRATION_CLIENT_TIMEOUT_MS });
 }
 
 export async function deleteAdminLegacyRedisKeys<TResponse>(input: {
@@ -210,7 +220,7 @@ export async function deleteAdminLegacyRedisKeys<TResponse>(input: {
     ...(input.limit ? { limit: input.limit } : {}),
     ...(input.dryRun !== undefined ? { dryRun: input.dryRun } : {}),
     ...(input.cursor ? { cursor: input.cursor } : {}),
-  });
+  }, { timeout: MIGRATION_CLIENT_TIMEOUT_MS });
 }
 
 export async function postAdminStartCursorAgent<TResponse>(input: {

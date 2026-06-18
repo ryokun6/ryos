@@ -3956,6 +3956,8 @@
         "cursorAgentsCount": "{{count}} Cursor agent",
         "cursorAgentsCount_plural": "{{count}} Cursor agents",
         "redis": "Redis Browser",
+        "redisKeysCount_one": "{{count}} key",
+        "redisKeysCount_other": "{{count}} keys",
         "loggedInAs": "Logged in as {{username}}"
       },
       "accessDenied": {

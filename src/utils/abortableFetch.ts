@@ -45,7 +45,13 @@ export async function abortableFetch(
   while (attempt <= maxAttempts) {
     // Create abort controller for this attempt
     const controller = new AbortController();
+    // Deterministic flag so the catch block can distinguish a timeout-triggered
+    // abort from an intentional external-signal cancellation. We do NOT rely on
+    // `fetch` forwarding `controller.abort(reason)` to the rejection because
+    // that is not guaranteed across runtimes (e.g. Bun/Vite).
+    let timedOut = false;
     const timeoutId = setTimeout(() => {
+      timedOut = true;
       controller.abort();
     }, timeout);
 
@@ -83,7 +89,20 @@ export async function abortableFetch(
         externalSignal.removeEventListener("abort", abortHandler);
       }
 
-      // Don't retry on abort errors
+      // Timeout path: surface an explicit, non-retryable TimeoutError. Checked
+      // before the AbortError branch because the timeout fires via
+      // `controller.abort()`, which makes `fetch` reject with an AbortError.
+      if (timedOut) {
+        const timeoutError = new Error(
+          `Request timed out after ${timeout}ms`
+        );
+        timeoutError.name = "TimeoutError";
+        throw timeoutError;
+      }
+
+      // Don't retry on intentional cancellations. An external-signal / unmount
+      // abort stays an AbortError so callers keep treating it as a silent,
+      // expected cancellation rather than a real failure.
       if (err instanceof Error && err.name === "AbortError") {
         throw err;
       }

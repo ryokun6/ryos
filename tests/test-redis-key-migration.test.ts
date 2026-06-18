@@ -127,6 +127,66 @@ describe("Redis key scheme migration helpers", () => {
     expect(fake.ttls.get(canonicalKey)).toBe(3600);
   });
 
+  test("re-running an analytics hash backfill is idempotent (no double count)", async () => {
+    const fake = new FakeRedis();
+    const redis = fake as unknown as Redis;
+    const today = new Date().toISOString().slice(0, 10);
+    const legacyKey = `analytics:daily:${today}`;
+    const canonicalKey = redisKeys.analytics.apiMetric("daily", today);
+
+    await redis.hset(legacyKey, { calls: "3", ai: "2" });
+    await redis.expire(legacyKey, 3600);
+
+    const first = await backfillRedisKeyScheme(redis, {
+      pattern: "analytics:daily:*",
+      limit: 10,
+      dryRun: false,
+    });
+    expect(first.copied).toBe(1);
+    expect(first.skipped).toBe(0);
+    expect(await redis.hgetall(canonicalKey)).toMatchObject({ calls: "3", ai: "2" });
+
+    // A retried batch (e.g. after a partial/timed-out run) must skip the already
+    // migrated key via its idempotency marker rather than incrementing again.
+    const second = await backfillRedisKeyScheme(redis, {
+      pattern: "analytics:daily:*",
+      limit: 10,
+      dryRun: false,
+    });
+    expect(second.copied).toBe(0);
+    expect(second.skipped).toBe(1);
+    expect(second.warnings).toEqual([]);
+    expect(await redis.hgetall(canonicalKey)).toMatchObject({ calls: "3", ai: "2" });
+  });
+
+  test("re-running an analytics visitor HLL backfill does not re-merge", async () => {
+    const fake = new FakeRedis();
+    const redis = fake as unknown as Redis;
+    const today = new Date().toISOString().slice(0, 10);
+    const legacyKey = `analytics:uv:${today}`;
+    const canonicalKey = redisKeys.analytics.apiMetric("uv", today);
+
+    await redis.pfadd(legacyKey, "ip:203.0.113.10");
+    await redis.pfadd(canonicalKey, "ip:203.0.113.11");
+
+    const first = await backfillRedisKeyScheme(redis, {
+      pattern: "analytics:uv:*",
+      limit: 10,
+      dryRun: false,
+    });
+    expect(first.copied).toBe(1);
+    expect(await redis.pfcount(canonicalKey)).toBe(2);
+
+    const second = await backfillRedisKeyScheme(redis, {
+      pattern: "analytics:uv:*",
+      limit: 10,
+      dryRun: false,
+    });
+    expect(second.copied).toBe(0);
+    expect(second.skipped).toBe(1);
+    expect(await redis.pfcount(canonicalKey)).toBe(2);
+  });
+
   test("backfills auth sessions with hashed token keys and user session index", async () => {
     const fake = new FakeRedis();
     const redis = fake as unknown as Redis;

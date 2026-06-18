@@ -370,6 +370,8 @@
         "messagesCount": "{{count}} mensaje",
         "messagesCount_plural": "{{count}} mensajes",
         "redis": "Explorador de Redis",
+        "redisKeysCount_one": "{{count}} clave",
+        "redisKeysCount_other": "{{count}} claves",
         "roomsCount": "{{count}} habitación",
         "roomsCount_plural": "{{count}} habitaciones",
         "songsCount": "{{count}} canciones",

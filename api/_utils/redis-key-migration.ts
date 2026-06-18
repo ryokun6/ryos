@@ -56,6 +56,16 @@ export interface RedisDeleteLegacyResult {
 
 const LEGACY_PATTERN_SET = new Set<string>(LEGACY_REDIS_SCAN_PATTERNS);
 const STATUS_SCAN_COUNT = 1000;
+/**
+ * Lifetime of the per-legacy-key "already migrated" marker. Must comfortably
+ * outlive a full migration window (legacy analytics keys retain ~90 days) so a
+ * retried batch reliably skips additive copies it already applied.
+ */
+const MIGRATION_MARKER_TTL_SECONDS = 60 * 60 * 24 * 120;
+
+type CopyOutcome =
+  | { status: "copied" }
+  | { status: "skipped"; warning?: string };
 
 function isKnownLegacyPattern(pattern: string): pattern is LegacyRedisScanPattern {
   return LEGACY_PATTERN_SET.has(pattern);
@@ -574,23 +584,43 @@ async function copyRedisValue(
   redis: Redis,
   sourceKey: string,
   targetKey: string
-): Promise<string | null> {
+): Promise<CopyOutcome> {
+  // Additive copies (HLL pfmerge, hash hincrby) and the zset rebuild fan out
+  // into one Redis op per member/field. We collapse that into a single
+  // pipelined round-trip per source key so large analytics batches stay within
+  // the server function budget. Additive paths additionally skip when their
+  // idempotency marker already exists and write that marker in the same
+  // pipeline, so a retried/timed-out batch can never double-count.
   if (isAnalyticsVisitorHllKey(sourceKey)) {
+    const markerKey = redisKeys.system.migrationCopied(sourceKey);
+    if ((await redis.exists(markerKey)) > 0) {
+      return { status: "skipped" };
+    }
     const ttl = await redis.ttl(sourceKey);
-    await redis.pfmerge(targetKey, targetKey, sourceKey);
-    if (ttl > 0) await redis.expire(targetKey, ttl);
-    return null;
+    const pipeline = redis.pipeline();
+    pipeline.pfmerge(targetKey, targetKey, sourceKey);
+    if (ttl > 0) pipeline.expire(targetKey, ttl);
+    pipeline.set(markerKey, "1", { ex: MIGRATION_MARKER_TTL_SECONDS });
+    await pipeline.exec();
+    return { status: "copied" };
   }
 
   if (isAnalyticsHashMetricKey(sourceKey)) {
+    const markerKey = redisKeys.system.migrationCopied(sourceKey);
+    if ((await redis.exists(markerKey)) > 0) {
+      return { status: "skipped" };
+    }
     const ttl = await redis.ttl(sourceKey);
     const hash = (await redis.hgetall<Record<string, string>>(sourceKey)) ?? {};
+    const pipeline = redis.pipeline();
     for (const [field, value] of Object.entries(hash)) {
       const increment = parseInt(String(value), 10) || 0;
-      if (increment !== 0) await redis.hincrby(targetKey, field, increment);
+      if (increment !== 0) pipeline.hincrby(targetKey, field, increment);
     }
-    if (ttl > 0) await redis.expire(targetKey, ttl);
-    return null;
+    if (ttl > 0) pipeline.expire(targetKey, ttl);
+    pipeline.set(markerKey, "1", { ex: MIGRATION_MARKER_TTL_SECONDS });
+    await pipeline.exec();
+    return { status: "copied" };
   }
 
   const type = await redis.type(sourceKey);
@@ -599,46 +629,57 @@ async function copyRedisValue(
     case "string": {
       const value = await redis.get(sourceKey);
       await redis.set(targetKey, value, ttl > 0 ? { ex: ttl } : undefined);
-      return null;
+      return { status: "copied" };
     }
     case "list": {
       const values = await redis.lrange<string>(sourceKey, 0, -1);
       await redis.del(targetKey);
       if (values.length > 0) await redis.rpush(targetKey, ...values);
       if (ttl > 0) await redis.expire(targetKey, ttl);
-      return null;
+      return { status: "copied" };
     }
     case "set": {
       const members = await redis.smembers<string[]>(sourceKey);
       await redis.del(targetKey);
       if (members.length > 0) await redis.sadd(targetKey, ...members);
       if (ttl > 0) await redis.expire(targetKey, ttl);
-      return null;
+      return { status: "copied" };
     }
     case "hash": {
       const hash = (await redis.hgetall<Record<string, unknown>>(sourceKey)) ?? {};
       await redis.del(targetKey);
       if (Object.keys(hash).length > 0) await redis.hset(targetKey, hash);
       if (ttl > 0) await redis.expire(targetKey, ttl);
-      return null;
+      return { status: "copied" };
     }
     case "zset":
       {
         const entries = await zrangeWithScores(redis, sourceKey);
         if (!entries) {
-          return `Skipped ${sourceKey}: score-preserving zset copy is not supported by this Redis client`;
+          return {
+            status: "skipped",
+            warning: `Skipped ${sourceKey}: score-preserving zset copy is not supported by this Redis client`,
+          };
         }
-        await redis.del(targetKey);
+        // del + per-member zadd + expire collapsed into one round-trip. The
+        // leading del keeps this an overwrite (idempotent) even on partial
+        // retries, so no marker is required here.
+        const pipeline = redis.pipeline();
+        pipeline.del(targetKey);
         for (const entry of entries) {
-          await redis.zadd(targetKey, entry);
+          pipeline.zadd(targetKey, entry);
         }
-        if (ttl > 0) await redis.expire(targetKey, ttl);
-        return null;
+        if (ttl > 0) pipeline.expire(targetKey, ttl);
+        await pipeline.exec();
+        return { status: "copied" };
       }
     case "none":
-      return `Skipped ${sourceKey}: key no longer exists`;
+      return { status: "skipped", warning: `Skipped ${sourceKey}: key no longer exists` };
     default:
-      return `Skipped ${sourceKey}: unsupported Redis type ${type}`;
+      return {
+        status: "skipped",
+        warning: `Skipped ${sourceKey}: unsupported Redis type ${type}`,
+      };
   }
 }
 
@@ -693,10 +734,10 @@ export async function backfillRedisKeyScheme(
     if (input.dryRun) {
       continue;
     }
-    const warning = await copyRedisValue(redis, plan.legacyKey, plan.targetKey);
-    if (warning) {
+    const outcome = await copyRedisValue(redis, plan.legacyKey, plan.targetKey);
+    if (outcome.status === "skipped") {
       skipped += 1;
-      warnings.push(warning);
+      if (outcome.warning) warnings.push(outcome.warning);
       continue;
     }
     await applyAdditionalMigrationSideEffects(redis, plan);

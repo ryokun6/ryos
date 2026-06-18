@@ -250,5 +250,14 @@ export const redisKeys = {
       redisKey("system", "user", username, "heartbeats", date),
     migrationRun: (runId: string) =>
       redisKeyCaseSensitive("system", "migration", "redis-key-scheme", runId),
+    /**
+     * Idempotency marker recording that a legacy key's additive backfill
+     * (HLL pfmerge / hash hincrby / zset rebuild) already ran. Keyed by the raw
+     * legacy key name so a retried batch can skip keys it already copied and
+     * never double-counts. Not part of `LEGACY_REDIS_SCAN_PATTERNS`, so it is
+     * never itself scanned, migrated, or deleted by the migration tooling.
+     */
+    migrationCopied: (legacyKey: string) =>
+      redisKeyCaseSensitive("system", "migration", "copied", legacyKey),
   },
 } as const;

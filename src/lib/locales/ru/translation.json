@@ -370,6 +370,8 @@
         "messagesCount": "{{count}} сообщение",
         "messagesCount_plural": "{{count}} сообщений",
         "redis": "Браузер Redis",
+        "redisKeysCount_one": "{{count}} ключ",
+        "redisKeysCount_other": "{{count}} ключей",
         "roomsCount": "{{count}} комната",
         "roomsCount_plural": "{{count}} комнат",
         "songsCount": "{{count}} песен",

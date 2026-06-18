@@ -55,6 +55,16 @@ export class FakeRedisPipeline {
     return this;
   }
 
+  pfmerge(destinationKey: string, ...sourceKeys: string[]): this {
+    this.operations.push(() => this.redis.pfmergeSync(destinationKey, ...sourceKeys));
+    return this;
+  }
+
+  zadd(key: string, entry: { score: number; member: string }): this {
+    this.operations.push(() => this.redis.zaddSync(key, entry));
+    return this;
+  }
+
   srem(key: string, ...members: string[]): this {
     this.operations.push(() => this.redis.sremSync(key, ...members));
     return this;
@@ -352,7 +362,11 @@ export class FakeRedis {
   }
 
   async pfmerge(destinationKey: string, ...sourceKeys: string[]): Promise<"OK"> {
-    const merged = new Set<string>();
+    return this.pfmergeSync(destinationKey, ...sourceKeys);
+  }
+
+  pfmergeSync(destinationKey: string, ...sourceKeys: string[]): "OK" {
+    const merged = new Set<string>(this.sets.get(destinationKey) || []);
     for (const key of sourceKeys) {
       for (const member of this.sets.get(key) || []) {
         merged.add(member);
@@ -447,6 +461,10 @@ export class FakeRedis {
     key: string,
     entry: { score: number; member: string }
   ): Promise<number> {
+    return this.zaddSync(key, entry);
+  }
+
+  zaddSync(key: string, entry: { score: number; member: string }): number {
     const zset = this.zsets.get(key) || new Map<string, number>();
     const isNew = !zset.has(entry.member);
     zset.set(entry.member, entry.score);

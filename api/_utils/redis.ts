@@ -40,11 +40,13 @@ export interface RedisPipelineLike {
   sadd(key: string, ...members: string[]): this;
   srem(key: string, ...members: string[]): this;
   zremrangebyscore(key: string, min: number | string, max: number | string): this;
+  zadd(key: string, entry: RedisSortedSetEntry): this;
   zcard(key: string): this;
   hincrby(key: string, field: string, increment: number): this;
   hgetall(key: string): this;
   pfadd(key: string, ...elements: string[]): this;
   pfcount(...keys: string[]): this;
+  pfmerge(destinationKey: string, ...sourceKeys: string[]): this;
   expire(key: string, seconds: number): this;
   exec(): Promise<unknown[]>;
 }
@@ -234,6 +236,11 @@ class StandardRedisPipelineAdapter implements RedisPipelineLike {
     return this;
   }
 
+  zadd(key: string, entry: RedisSortedSetEntry): this {
+    this.pipelineClient.zadd(key, entry.score, entry.member);
+    return this;
+  }
+
   zcard(key: string): this {
     this.pipelineClient.zcard(key);
     return this;
@@ -260,6 +267,11 @@ class StandardRedisPipelineAdapter implements RedisPipelineLike {
     if (keys.length > 0) {
       this.pipelineClient.pfcount(...keys);
     }
+    return this;
+  }
+
+  pfmerge(destinationKey: string, ...sourceKeys: string[]): this {
+    this.pipelineClient.pfmerge(destinationKey, ...sourceKeys);
     return this;
   }
 

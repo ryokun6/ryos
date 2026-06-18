@@ -370,6 +370,8 @@
         "messagesCount": "{{count}}개 메시지",
         "messagesCount_plural": "{{count}}개 메시지",
         "redis": "Redis 브라우저",
+        "redisKeysCount_one": "{{count}}개 키",
+        "redisKeysCount_other": "{{count}}개 키",
         "roomsCount": "{{count}}개",
         "roomsCount_plural": "{{count}}개",
         "songsCount": "{{count}}곡",

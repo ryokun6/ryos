@@ -68,6 +68,7 @@ export function AdminStatusBar({
 }: AdminStatusBarProps) {
   const { i18n } = useTranslation();
   const dashboardRangeDays = useAdminDashboardStore((s) => s.rangeDays);
+  const redisKeyCount = useAdminDashboardStore((s) => s.redisKeyCount);
   const locale = i18n.resolvedLanguage || i18n.language || "en";
 
   return (
@@ -81,7 +82,9 @@ export function AdminStatusBar({
                 defaultValue: `${stats.totalCursorAgents ?? 0} Cursor agents`,
               })
             : activeSection === "redis"
-              ? t("apps.admin.statusBar.redis", "Redis Browser")
+              ? t("apps.admin.statusBar.redisKeysCount", {
+                  count: redisKeyCount ?? 0,
+                })
             : activeSection === "users" && !selectedRoomId
               ? t("apps.admin.statusBar.usersCount", {
                   count: users.length,

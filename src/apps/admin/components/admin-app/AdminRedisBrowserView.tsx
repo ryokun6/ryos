@@ -41,6 +41,7 @@ import {
   adminAquaIconButtonClass,
   AQUA_ICON_BUTTON_ICON_CLASS,
 } from "@/lib/aquaIconButton";
+import { useAdminDashboardStore } from "@/stores/useAdminDashboardStore";
 import { LEGACY_REDIS_SCAN_PATTERNS } from "@/shared/redisKeys";
 import {
   adminGhostIconBtnClass,
@@ -140,6 +141,23 @@ export interface AdminRedisBrowserViewProps {
 
 const MIGRATION_BATCH_LIMIT = 100;
 const DELETE_LEGACY_BATCH_LIMIT = 1000;
+// Analytics hash metrics fan out into many hincrby ops per key, so even with
+// server-side pipelining a large page is the heaviest backfill work. Use a
+// smaller page for these patterns so each batch comfortably fits the server's
+// maxDuration; the cursor-resumable loop still walks the whole keyspace.
+const ANALYTICS_HASH_BATCH_LIMIT = 25;
+const ANALYTICS_HASH_PATTERNS = new Set<string>([
+  "analytics:aiu:*",
+  "analytics:daily:*",
+  "analytics:ep:*",
+  "analytics:st:*",
+]);
+
+function migrationBatchLimitFor(pattern: string): number {
+  return ANALYTICS_HASH_PATTERNS.has(pattern)
+    ? ANALYTICS_HASH_BATCH_LIMIT
+    : MIGRATION_BATCH_LIMIT;
+}
 
 function formatRedisTtl(ttl: number | null): string {
   if (ttl === null) return "TTL unknown";
@@ -328,6 +346,17 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
   const hasVisibleRows = visibleFolders.length > 0 || visibleLeaves.length > 0;
   const isMigrationRunning = activeMigrationRun !== null;
 
+  // Surface the number of loaded keys to the shared admin store so the status
+  // bar can show "Redis Browser — N keys" without prop-drilling. Reset on
+  // unmount so the count doesn't linger after leaving the Redis section.
+  const setRedisKeyCount = useAdminDashboardStore((s) => s.setRedisKeyCount);
+  useEffect(() => {
+    setRedisKeyCount(keys.length);
+  }, [keys.length, setRedisKeyCount]);
+  useEffect(() => {
+    return () => setRedisKeyCount(null);
+  }, [setRedisKeyCount]);
+
   useEffect(() => {
     if (isMigrationRunning) {
       setIsMigrationExpanded(true);
@@ -488,7 +517,7 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
 
           const result = await backfillAdminRedisKeyScheme<RedisBackfillResponse>({
             pattern: legacyPattern,
-            limit: MIGRATION_BATCH_LIMIT,
+            limit: migrationBatchLimitFor(legacyPattern),
             dryRun: kind === "dry-run",
             cursor,
           });
@@ -871,10 +900,6 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
           />
           <span className={cn(adminSectionHeaderClass, "shrink-0")}>
             {t("apps.admin.redis.migration.label", "Migration")}
-          </span>
-          <span className="font-os-mono text-[10px] text-os-text-secondary">
-            {LEGACY_REDIS_SCAN_PATTERNS.length}{" "}
-            {t("apps.admin.redis.migration.legacyPatterns", "legacy patterns")}
           </span>
           {migrationStatus ? (
             <span className="font-os-mono text-[10px] text-os-text-secondary">

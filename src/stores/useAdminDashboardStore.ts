@@ -11,9 +11,18 @@ import { create } from "zustand";
 interface AdminDashboardState {
   rangeDays: number;
   setRangeDays: (days: number) => void;
+  /**
+   * Number of Redis keys currently loaded in the Redis Browser scope, surfaced
+   * here so the status bar can show the count without prop-drilling through the
+   * main pane. `null` means the browser is inactive / hasn't loaded any keys.
+   */
+  redisKeyCount: number | null;
+  setRedisKeyCount: (count: number | null) => void;
 }
 
 export const useAdminDashboardStore = create<AdminDashboardState>((set) => ({
   rangeDays: 1,
   setRangeDays: (days) => set({ rangeDays: days }),
+  redisKeyCount: null,
+  setRedisKeyCount: (count) => set({ redisKeyCount: count }),
 }));

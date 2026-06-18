@@ -370,6 +370,8 @@
         "messagesCount": "{{count}} 則訊息",
         "messagesCount_plural": "{{count}} 則訊息",
         "redis": "Redis 瀏覽器",
+        "redisKeysCount_one": "{{count}} 個鍵",
+        "redisKeysCount_other": "{{count}} 個鍵",
         "roomsCount": "{{count}} 個房間",
         "roomsCount_plural": "{{count}} 個房間",
         "songsCount": "{{count}} 首歌曲",
