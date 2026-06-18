@@ -1,5 +1,6 @@
 window.__RYOS_THEME_BOOTSTRAP__ = {
   defaultTheme: "macosx",
+  defaultAquaMaterial: "glass",
   themes: {
     system7: {
       platform: "mac",

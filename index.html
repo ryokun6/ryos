@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-os-theme="macosx" data-os-platform="mac" data-os-mac-chrome="aqua" style="background-color: #000">
+<html lang="en" data-os-theme="macosx" data-os-platform="mac" data-os-mac-chrome="aqua" data-os-aqua-material="glass" style="background-color: #000">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
@@ -215,6 +215,7 @@
           var rawTheme = localStorage.getItem("ryos:theme") || localStorage.getItem("os_theme");
           var config = window.__RYOS_THEME_BOOTSTRAP__ || {
             defaultTheme: "macosx",
+            defaultAquaMaterial: "glass",
             themes: {
               system7: { platform: "mac", macChrome: "system7", supportsDarkMode: false },
               macosx: { platform: "mac", macChrome: "aqua", supportsDarkMode: true },
@@ -234,6 +235,18 @@
             root.dataset.osMacChrome = themeConfig.macChrome;
           } else {
             delete root.dataset.osMacChrome;
+          }
+          // Aqua material is a separate preference from the OS theme. Preserve
+          // explicit saved choices; default missing/invalid storage to Glass.
+          var rawAquaMaterial = localStorage.getItem("ryos:theme:aqua-material");
+          var aquaMaterial =
+            rawAquaMaterial === "classic" || rawAquaMaterial === "glass"
+              ? rawAquaMaterial
+              : config.defaultAquaMaterial || "glass";
+          if (theme === "macosx" && aquaMaterial === "glass") {
+            root.dataset.osAquaMaterial = "glass";
+          } else {
+            delete root.dataset.osAquaMaterial;
           }
           // Dark mode is per-theme, only honored when the theme advertises support.
           // Match useThemeStore#effectiveDarkFor (string prefs + legacy booleans + system).

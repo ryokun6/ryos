@@ -14,6 +14,7 @@ describe("theme bootstrap config", () => {
     expect(context.window.__RYOS_THEME_BOOTSTRAP__).toEqual(
       getThemeBootstrapConfig()
     );
+    expect(getThemeBootstrapConfig().defaultAquaMaterial).toBe("glass");
   });
 
   test("inline first-paint fallback covers every shipped theme", () => {

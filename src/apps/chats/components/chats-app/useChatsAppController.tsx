@@ -28,12 +28,14 @@ import { useProactiveGreeting } from "../../hooks/useProactiveGreeting";
 import { useTelegramLink } from "@/hooks/useTelegramLink";
 import { useGlobalPresence } from "@/hooks/useGlobalPresence";
 import { useChatsStore } from "@/stores/useChatsStore";
+import { useMenuShortcuts } from "@/hooks/useMenuShortcuts";
 
 export type UseChatsAppControllerArgs = AppProps;
 
 export function useChatsAppController({
   isWindowOpen,
   onClose,
+  instanceId,
   initialData: rawInitialData,
 }: UseChatsAppControllerArgs) {
   const initialData = rawInitialData as ChatsInitialData | undefined;
@@ -74,6 +76,10 @@ export function useChatsAppController({
     getLiveMessages,
     patchLiveMessages,
   } = useAiChat(promptSetUsername);
+
+  useMenuShortcuts(instanceId, {
+    save: handleSaveTranscript,
+  });
 
   const {
     username,

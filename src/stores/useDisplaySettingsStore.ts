@@ -12,10 +12,10 @@ import {
 import { convertImageFileToWallpaperJpeg } from "@/utils/customWallpaperProcessing";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 import { SETTINGS_ANALYTICS, track } from "@/utils/analytics";
+import { buildShuffleDescriptor } from "@/utils/dynamicWallpaper";
 
-/** Default desktop wallpaper (nature photo). */
-export const DEFAULT_WALLPAPER_PATH =
-  "/wallpapers/photos/nature/earth_moon_horizon.jpg";
+/** Default desktop wallpaper selection. */
+export const DEFAULT_WALLPAPER_PATH = buildShuffleDescriptor("nature");
 
 /**
  * Display settings store - manages wallpaper, shaders, and screen saver settings.

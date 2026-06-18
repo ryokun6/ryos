@@ -3,6 +3,7 @@ import { macosx } from "./macosx";
 import { xp } from "./xp";
 import { win98 } from "./win98";
 import {
+  AquaMaterial,
   OsMacChrome,
   OsPlatform,
   OsTheme,
@@ -18,6 +19,7 @@ export const themes: Record<OsThemeId, OsTheme> = {
 };
 
 export const DEFAULT_OS_THEME_ID: OsThemeId = "macosx";
+export const DEFAULT_AQUA_MATERIAL: AquaMaterial = "glass";
 
 export function getTheme(id: OsThemeId): OsTheme {
   return themes[id];
@@ -86,6 +88,7 @@ export function themeSupportsDarkMode(id: OsThemeId): boolean {
 }
 
 export type {
+  AquaMaterial,
   OsColorScheme,
   OsMacChrome,
   OsPlatform,

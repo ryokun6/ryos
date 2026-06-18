@@ -205,6 +205,7 @@ export const ChatsMenuBar = memo(function ChatsMenuBar({
               className="text-md h-6 px-3"
             >
               {t("apps.chats.menu.saveTranscript")}
+              <ShortcutHint id="save" />
             </MenubarItem>
             <MenubarItem
               onClick={onClearChats}

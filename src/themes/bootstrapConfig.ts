@@ -1,10 +1,11 @@
 import {
+  DEFAULT_AQUA_MATERIAL,
   DEFAULT_OS_THEME_ID,
   getOsMacChrome,
   getOsPlatform,
   themes,
 } from "@/themes";
-import type { OsThemeId } from "@/themes/types";
+import type { AquaMaterial, OsThemeId } from "@/themes/types";
 
 export interface ThemeBootstrapEntry {
   platform: "mac" | "windows";
@@ -14,6 +15,7 @@ export interface ThemeBootstrapEntry {
 
 export interface ThemeBootstrapConfig {
   defaultTheme: OsThemeId;
+  defaultAquaMaterial: AquaMaterial;
   themes: Record<OsThemeId, ThemeBootstrapEntry>;
 }
 
@@ -32,6 +34,7 @@ export function getThemeBootstrapConfig(): ThemeBootstrapConfig {
 
   return {
     defaultTheme: DEFAULT_OS_THEME_ID,
+    defaultAquaMaterial: DEFAULT_AQUA_MATERIAL,
     themes: Object.fromEntries(entries) as Record<OsThemeId, ThemeBootstrapEntry>,
   };
 }

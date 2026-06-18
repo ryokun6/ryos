@@ -220,12 +220,15 @@ export function FinderMenuBar({
           <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <MenubarItem className="text-md h-6 px-3">
             {t("common.menu.cut")}
+            <ShortcutHint id="cut" />
           </MenubarItem>
           <MenubarItem className="text-md h-6 px-3">
             {t("common.menu.copy")}
+            <ShortcutHint id="copy" />
           </MenubarItem>
           <MenubarItem className="text-md h-6 px-3">
             {t("common.menu.paste")}
+            <ShortcutHint id="paste" />
           </MenubarItem>
           <MenubarItem className="text-md h-6 px-3">
             {t("common.menu.clear")}
@@ -233,6 +236,7 @@ export function FinderMenuBar({
           <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
           <MenubarItem className="text-md h-6 px-3">
             {t("common.menu.selectAll")}
+            <ShortcutHint id="selectAll" />
           </MenubarItem>
         </MenubarContent>
       </MenubarMenu>

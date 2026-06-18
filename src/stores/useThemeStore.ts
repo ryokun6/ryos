@@ -1,12 +1,13 @@
 import { create } from "zustand";
 import {
+  DEFAULT_AQUA_MATERIAL,
   getOsMacChrome,
   getOsPlatform,
   DEFAULT_OS_THEME_ID,
   themes,
   themeSupportsDarkMode,
 } from "@/themes";
-import type { OsThemeId } from "@/themes/types";
+import type { AquaMaterial, OsThemeId } from "@/themes/types";
 import {
   ACCENT_CSS_VAR_NAMES,
   DEFAULT_ACCENT,
@@ -124,8 +125,6 @@ function writeAccentMap(map: AccentMap) {
  * only when the active theme is `macosx` and the material is `"glass"`, so it
  * layers on top of the existing Aqua rules via higher-specificity selectors.
  */
-export type AquaMaterial = "classic" | "glass";
-
 function isAquaMaterial(value: unknown): value is AquaMaterial {
   return value === "classic" || value === "glass";
 }
@@ -133,9 +132,9 @@ function isAquaMaterial(value: unknown): value is AquaMaterial {
 function safeReadAquaMaterial(): AquaMaterial {
   try {
     const raw = localStorage.getItem(AQUA_MATERIAL_KEY);
-    return isAquaMaterial(raw) ? raw : "classic";
+    return isAquaMaterial(raw) ? raw : DEFAULT_AQUA_MATERIAL;
   } catch {
-    return "classic";
+    return DEFAULT_AQUA_MATERIAL;
   }
 }
 
@@ -460,7 +459,7 @@ const createThemeStore = () => create<ThemeState>((set) => ({
   isDark: false,
   darkModeByTheme: {},
   accentByTheme: {},
-  aquaMaterial: "classic",
+  aquaMaterial: DEFAULT_AQUA_MATERIAL,
   systemFont: THEME_DEFAULT_SYSTEM_FONT,
   wallpaperAccentColor: null,
   setTheme: (theme) => {
