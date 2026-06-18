@@ -1,13 +1,18 @@
 import { useRef, useEffect, useCallback } from "react";
 import * as THREE from "three";
+import { useIsPhone } from "@/hooks/useIsPhone";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 /** Duration of crossfade between cover textures (seconds) */
 const CROSSFADE_SECONDS = 1.5;
 /** Render at a lower internal resolution to reduce shader cost. */
 const RENDER_SCALE = 0.4;
+/** Phones render the (texture-sampling, multi-tap) shader even smaller. */
+const PHONE_RENDER_SCALE = 0.3;
 /** Cap the shader loop to reduce steady-state GPU usage. */
 const TARGET_FPS = 30;
-const FRAME_INTERVAL_MS = 1000 / TARGET_FPS;
+/** Lower cap on phones; the warp/liquid motion is slow enough to hide it. */
+const PHONE_TARGET_FPS = 20;
 
 export type AmbientVariant = "liquid" | "warp";
 
@@ -186,6 +191,8 @@ export function AmbientBackground({
   className = "",
 }: AmbientBackgroundProps) {
   const mountRef = useRef<HTMLDivElement>(null);
+  const isPhone = useIsPhone();
+  const prefersReducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
 
   const currentUrlRef = useRef<string | null>(null);
   const showingBRef = useRef(false);
@@ -195,6 +202,10 @@ export function AmbientBackground({
     textureA: THREE.Texture | null;
     textureB: THREE.Texture | null;
   }>({ material: null, textureA: null, textureB: null });
+  // Set by the animation effect when running in reduced-motion mode: snaps the
+  // crossfade to its target and renders a single static frame on demand (e.g.
+  // when the cover art changes) instead of running a continuous rAF loop.
+  const staticRenderRef = useRef<(() => void) | null>(null);
 
   // ---------- texture helpers ----------
 
@@ -243,6 +254,8 @@ export function AmbientBackground({
           blendRef.current.target = 1;
         }
         showingBRef.current = !showingBRef.current;
+        // Reduced motion runs no rAF loop, so paint the new cover once here.
+        staticRenderRef.current?.();
       })
       .catch(() => {});
   }, [coverUrl, isActive, loadTexture]);
@@ -262,7 +275,8 @@ export function AmbientBackground({
       powerPreference: "high-performance",
     });
     renderer.setPixelRatio(1);
-    const scale = RENDER_SCALE;
+    const scale = isPhone ? PHONE_RENDER_SCALE : RENDER_SCALE;
+    const frameIntervalMs = 1000 / (isPhone ? PHONE_TARGET_FPS : TARGET_FPS);
     renderer.setSize(
       Math.floor(el.clientWidth * scale),
       Math.floor(el.clientHeight * scale),
@@ -310,9 +324,21 @@ export function AmbientBackground({
         .then((tex) => {
           materialsRef.current.textureA = tex;
           shaderMaterial.uniforms.coverTextureA.value = tex;
+          // Reduced motion: no loop runs, so paint the initial cover once.
+          staticRenderRef.current?.();
         })
         .catch(() => {});
     }
+
+    // Reduced motion: render a single static frame (crossfade snapped to its
+    // target) instead of animating. Exposed via a ref so cover-art changes and
+    // resizes can repaint without a continuous loop.
+    const renderStatic = () => {
+      const blend = blendRef.current;
+      blend.current = blend.target;
+      shaderMaterial.uniforms.blendFactor.value = blend.current;
+      renderer.render(scene, camera);
+    };
 
     const handleResize = () => {
       const w = Math.floor(el.clientWidth * scale);
@@ -320,15 +346,41 @@ export function AmbientBackground({
       if (w === 0 || h === 0) return;
       renderer.setSize(w, h, false);
       shaderMaterial.uniforms.resolution.value.set(w, h);
+      if (prefersReducedMotion) renderStatic();
     };
     const resizeObserver = new ResizeObserver(handleResize);
     resizeObserver.observe(el);
 
-    let frameId: number;
+    // ----- Reduced motion: no rAF loop, just a static frame on demand -----
+    if (prefersReducedMotion) {
+      staticRenderRef.current = renderStatic;
+      renderStatic();
+      return () => {
+        staticRenderRef.current = null;
+        resizeObserver.disconnect();
+        if (el && renderer.domElement.parentNode === el) {
+          el.removeChild(renderer.domElement);
+        }
+        scene.remove(quad);
+        geometry.dispose();
+        shaderMaterial.dispose();
+        defaultTex.dispose();
+        materialsRef.current.textureA?.dispose();
+        materialsRef.current.textureB?.dispose();
+        materialsRef.current = {
+          material: null,
+          textureA: null,
+          textureB: null,
+        };
+        renderer.dispose();
+      };
+    }
+
+    let frameId = 0;
     let lastRenderAt = 0;
     const animate = (now: number) => {
       frameId = requestAnimationFrame(animate);
-      if (lastRenderAt !== 0 && now - lastRenderAt < FRAME_INTERVAL_MS) {
+      if (lastRenderAt !== 0 && now - lastRenderAt < frameIntervalMs) {
         return;
       }
 
@@ -347,10 +399,30 @@ export function AmbientBackground({
 
       renderer.render(scene, camera);
     };
-    frameId = requestAnimationFrame(animate);
+
+    // Pause the GPU loop while the tab/PWA is hidden (saves battery on mobile),
+    // and resume on return. Reset the frame clock so the first resumed frame
+    // renders immediately instead of being skipped by the interval gate.
+    const startLoop = () => {
+      if (frameId !== 0) return;
+      lastRenderAt = 0;
+      frameId = requestAnimationFrame(animate);
+    };
+    const stopLoop = () => {
+      if (frameId === 0) return;
+      cancelAnimationFrame(frameId);
+      frameId = 0;
+    };
+    const handleVisibility = () => {
+      if (document.hidden) stopLoop();
+      else startLoop();
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    if (!document.hidden) startLoop();
 
     return () => {
-      cancelAnimationFrame(frameId);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      stopLoop();
       resizeObserver.disconnect();
       if (el && renderer.domElement.parentNode === el) {
         el.removeChild(renderer.domElement);
@@ -364,7 +436,7 @@ export function AmbientBackground({
       materialsRef.current = { material: null, textureA: null, textureB: null };
       renderer.dispose();
     };
-  }, [isActive, variant, loadTexture]);
+  }, [isActive, variant, loadTexture, isPhone, prefersReducedMotion]);
 
   if (!isActive) return null;
 
