@@ -685,28 +685,6 @@ Mentioned Message: "${effectiveState.chatRoomContext.mentionedMessage}"
   return prompt;
 }
 
-/**
- * @deprecated Use buildMemoryContextPrompt + buildVolatileStatePrompt instead.
- * Kept for backward compatibility during migration.
- */
-export function buildDynamicSystemPrompt({
-  channel,
-  systemState,
-  username,
-  userMemories,
-  dailyNotesText,
-}: {
-  channel: RyoConversationChannel;
-  systemState?: RyoConversationSystemState;
-  username?: string | null;
-  userMemories?: MemoryIndex | null;
-  dailyNotesText?: string | null;
-}): string {
-  const memory = buildMemoryContextPrompt({ username, userMemories, dailyNotesText });
-  const volatile = buildVolatileStatePrompt({ channel, systemState, username });
-  return [memory, volatile].filter(Boolean).join("\n\n");
-}
-
 export async function prepareRyoConversationModelInput(
   options: PrepareRyoConversationOptions
 ): Promise<PreparedRyoConversation> {

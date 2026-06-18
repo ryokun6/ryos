@@ -3,7 +3,6 @@ import {
   buildStaticSystemPrompt,
   buildMemoryContextPrompt,
   buildVolatileStatePrompt,
-  buildDynamicSystemPrompt,
   prepareRyoConversationModelInput,
   type RyoConversationSystemState,
 } from "../api/_utils/ryo-conversation.js";
@@ -152,30 +151,6 @@ describe("prompt caching structure", () => {
     expect(prompt).toContain("Ryo Time:");
     expect(prompt).not.toContain("RUNNING APPLICATIONS");
     expect(prompt).not.toContain("MEDIA PLAYBACK");
-  });
-
-  test("buildDynamicSystemPrompt backward compat combines memory + volatile", () => {
-    const combined = buildDynamicSystemPrompt({
-      channel: "chat",
-      systemState: baseSystemState,
-      username: "ryo",
-      userMemories: testMemories,
-      dailyNotesText: "Test notes",
-    });
-
-    const memory = buildMemoryContextPrompt({
-      username: "ryo",
-      userMemories: testMemories,
-      dailyNotesText: "Test notes",
-    });
-    const volatile = buildVolatileStatePrompt({
-      channel: "chat",
-      systemState: baseSystemState,
-      username: "ryo",
-    });
-
-    expect(combined).toContain(memory);
-    expect(combined).toContain(volatile);
   });
 
   test("prepareRyoConversationModelInput emits three system messages with cache control", async () => {
