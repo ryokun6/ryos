@@ -565,6 +565,11 @@ function isAnalyticsVisitorHllKey(key: string): boolean {
   return key.startsWith("analytics:uv:");
 }
 
+function isAnalyticsHashMetricKey(key: string): boolean {
+  const [metric, ...rest] = splitSuffix(key, "analytics:");
+  return ["aiu", "daily", "ep", "st"].includes(metric) && rest.length > 0;
+}
+
 async function copyRedisValue(
   redis: Redis,
   sourceKey: string,
@@ -573,6 +578,17 @@ async function copyRedisValue(
   if (isAnalyticsVisitorHllKey(sourceKey)) {
     const ttl = await redis.ttl(sourceKey);
     await redis.pfmerge(targetKey, targetKey, sourceKey);
+    if (ttl > 0) await redis.expire(targetKey, ttl);
+    return null;
+  }
+
+  if (isAnalyticsHashMetricKey(sourceKey)) {
+    const ttl = await redis.ttl(sourceKey);
+    const hash = (await redis.hgetall<Record<string, string>>(sourceKey)) ?? {};
+    for (const [field, value] of Object.entries(hash)) {
+      const increment = parseInt(String(value), 10) || 0;
+      if (increment !== 0) await redis.hincrby(targetKey, field, increment);
+    }
     if (ttl > 0) await redis.expire(targetKey, ttl);
     return null;
   }
