@@ -34,7 +34,6 @@ export {
 // Chat Rate Limiting
 // ============================================================================
 
-export const CHAT_BURST_PREFIX = "rl:chat:b:";
 export const CHAT_BURST_SHORT_WINDOW_SECONDS = 10;
 export const CHAT_BURST_SHORT_LIMIT = 3;
 export const CHAT_BURST_LONG_WINDOW_SECONDS = 60;

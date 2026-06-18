@@ -14,13 +14,13 @@ import {
   MAX_MESSAGE_LENGTH,
 } from "../../_utils/_validation.js";
 import {
-  CHAT_BURST_PREFIX,
   CHAT_BURST_SHORT_WINDOW_SECONDS,
   CHAT_BURST_SHORT_LIMIT,
   CHAT_BURST_LONG_WINDOW_SECONDS,
   CHAT_BURST_LONG_LIMIT,
   CHAT_MIN_INTERVAL_SECONDS,
 } from "../_helpers/_constants.js";
+import { makeKey } from "../../_utils/_rate-limit-key.js";
 import { ensureUserExists } from "../_helpers/_users.js";
 import { addMessage, generateId, getCurrentTimestamp, getLastMessage, getMessages, getRoom, setUser } from "../_helpers/_redis.js";
 import { setRoomPresence } from "../_helpers/_presence.js";
@@ -140,9 +140,9 @@ export default apiHandler(
 
     if (isPublicRoom) {
       try {
-        const shortKey = `${CHAT_BURST_PREFIX}s:${roomId}:${username}`;
-        const longKey = `${CHAT_BURST_PREFIX}l:${roomId}:${username}`;
-        const lastKey = `${CHAT_BURST_PREFIX}last:${roomId}:${username}`;
+        const shortKey = makeKey(["rl", "chat:burst", "short", roomId, "user", username]);
+        const longKey = makeKey(["rl", "chat:burst", "long", roomId, "user", username]);
+        const lastKey = makeKey(["rl", "chat:burst", "last", roomId, "user", username]);
 
         const shortCount = await redis.incr(shortKey);
         if (shortCount === 1) await redis.expire(shortKey, CHAT_BURST_SHORT_WINDOW_SECONDS);

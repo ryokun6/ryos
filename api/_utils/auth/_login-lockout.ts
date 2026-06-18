@@ -14,17 +14,21 @@
  */
 
 import type { Redis } from "../redis.js";
+// Imported from the dependency-free key module (not `_rate-limit.ts`) to avoid
+// an import cycle: `_rate-limit.ts` imports the auth barrel, which re-exports
+// this file.
+import { makeKey } from "../_rate-limit-key.js";
 
 export const PER_USER_FAIL_LIMIT = 20;
 export const PER_USER_FAIL_WINDOW_SECONDS = 60 * 60;
 export const PER_USER_LOCKOUT_SECONDS = 60 * 60;
 
 function loginBlockKey(username: string): string {
-  return `rl:block:auth:login:user:${username.toLowerCase()}`;
+  return makeKey(["rl", "block", "auth:login", "user", username.toLowerCase()]);
 }
 
 function loginFailKey(username: string): string {
-  return `rl:auth:login:user-fail:${username.toLowerCase()}`;
+  return makeKey(["rl", "auth:login", "user-fail", "user", username.toLowerCase()]);
 }
 
 /**

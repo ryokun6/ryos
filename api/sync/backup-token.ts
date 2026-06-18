@@ -11,6 +11,7 @@ import {
   getStorageUploadDebugInfo,
   logStorageDebug,
 } from "../_utils/storage.js";
+import { makeKey } from "../_utils/_rate-limit-key.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 10;
@@ -35,7 +36,7 @@ export default apiHandler(
     const username = user?.username || "";
 
     // Rate limiting
-    const rlKey = `rl:sync:backup:${username}`;
+    const rlKey = makeKey(["rl", "sync", "backup", "user", username]);
     const current = await redis.incr(rlKey);
     if (current === 1) {
       await redis.expire(rlKey, RATE_LIMIT_WINDOW);
