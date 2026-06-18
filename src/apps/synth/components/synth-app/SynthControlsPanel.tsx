@@ -26,7 +26,7 @@ type SynthControlsPanelProps = Pick<
   | "isMacOSTheme"
   | "isSystem7Theme"
   | "isClassicTheme"
-  | "isXpTheme"
+  | "isWindowsTheme"
 >;
 
 export function SynthControlsPanel({
@@ -41,7 +41,7 @@ export function SynthControlsPanel({
   isMacOSTheme,
   isSystem7Theme,
   isClassicTheme,
-  isXpTheme,
+  isWindowsTheme,
 }: SynthControlsPanelProps) {
   return (
     <div className="relative w-full">
@@ -81,7 +81,7 @@ export function SynthControlsPanel({
                       onClick={addPreset}
                       className={cn(
                         "h-[22px] px-2 text-[9px] select-none",
-                        isXpTheme && "text-black"
+                        isWindowsTheme && "text-black"
                       )}
                     >
                       {t("apps.synth.addPreset")}

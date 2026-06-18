@@ -17,7 +17,7 @@ export function useContactsAppController({
   const logic = useContactsLogic();
   const {
     t,
-    isMacOsxTheme,
+    isMacOSTheme,
     isSystem7Theme,
     setIsHelpDialogOpen,
     setIsAboutDialogOpen,
@@ -30,7 +30,7 @@ export function useContactsAppController({
     handleImport,
   } = logic;
 
-  const useGeneva = isMacOsxTheme || isSystem7Theme;
+  const useGeneva = isMacOSTheme || isSystem7Theme;
   const mineLabel = t("apps.contacts.badges.mine", { defaultValue: "My Card" });
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(820);

@@ -5,7 +5,7 @@ import { osCardClassName } from "./osThemePrimitives";
 export function toolInlineCardShellClassName(flags: {
   isMacOSTheme: boolean;
   isSystem7Theme: boolean;
-  isXpTheme: boolean;
+  isWindowsTheme: boolean;
   isWin98?: boolean;
   /** Chat embed; panel fills parent without outer margin/shadow. */
   embed?: "chat" | "panel";
@@ -18,10 +18,10 @@ export function toolInlineCardShellClassName(flags: {
 export function cursorAgentCardHeaderClassName(flags: {
   isMacOSTheme: boolean;
   isSystem7Theme: boolean;
-  isXpTheme: boolean;
+  isWindowsTheme: boolean;
   isDarkMode: boolean;
 }): string {
-  const { isMacOSTheme, isSystem7Theme, isXpTheme, isDarkMode } = flags;
+  const { isMacOSTheme, isSystem7Theme, isWindowsTheme, isDarkMode } = flags;
   return cn(
     "flex flex-shrink-0 items-center gap-3 border-b px-3 py-2",
     isMacOSTheme && "cursor-agent-card-header-aqua",
@@ -34,11 +34,11 @@ export function cursorAgentCardHeaderClassName(flags: {
       "border-black bg-[#DDDDDD]",
     !isMacOSTheme &&
       !isSystem7Theme &&
-      isXpTheme &&
+      isWindowsTheme &&
       "border-[#919b9c] bg-gradient-to-b from-[#3A6EA5] to-[#1E4A8C] text-white",
     !isMacOSTheme &&
       !isSystem7Theme &&
-      !isXpTheme &&
+      !isWindowsTheme &&
       "border-black/20 bg-neutral-100 dark:border-neutral-600 dark:bg-neutral-800/90"
   );
 }

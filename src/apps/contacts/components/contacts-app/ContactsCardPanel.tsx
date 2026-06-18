@@ -15,7 +15,7 @@ type ContactsCardPanelProps = {
 export function ContactsCardPanel({ c }: ContactsCardPanelProps) {
   const {
     t,
-    isMacOsxTheme,
+    isMacOSTheme,
     selectedContact,
     contacts,
     isEditing,
@@ -31,7 +31,7 @@ export function ContactsCardPanel({ c }: ContactsCardPanelProps) {
 
   return (
     <Panel
-      bordered={isMacOsxTheme}
+      bordered={isMacOSTheme}
       className={cn(
         "flex-1 min-w-0 flex flex-col",
         isMobileLayout && "w-full max-w-none self-stretch basis-auto"

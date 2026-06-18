@@ -50,7 +50,7 @@ export function CursorRepoAgentChatCard({
 }: CursorRepoAgentChatCardProps) {
   const isPanel = variant === "panel";
   const { t } = useTranslation();
-  const { isMacOSTheme, isXpTheme, isSystem7Theme, isWin98, isDarkMode } =
+  const { isMacOSTheme, isWindowsTheme, isSystem7Theme, isWin98, isDarkMode } =
     useThemeFlags();
   const {
     events,
@@ -126,7 +126,7 @@ export function CursorRepoAgentChatCard({
           toolInlineCardShellClassName({
             isMacOSTheme,
             isSystem7Theme,
-            isXpTheme,
+            isWindowsTheme,
             isWin98,
             embed: isPanel ? "panel" : "chat",
           }),
@@ -137,7 +137,7 @@ export function CursorRepoAgentChatCard({
           className={cursorAgentCardHeaderClassName({
             isMacOSTheme,
             isSystem7Theme,
-            isXpTheme,
+            isWindowsTheme,
             isDarkMode,
           })}
         >
@@ -146,7 +146,7 @@ export function CursorRepoAgentChatCard({
             <div
               className={cn(
                 "min-w-0 flex-1 truncate text-sm font-medium",
-                isXpTheme && !isMacOSTheme
+                isWindowsTheme && !isMacOSTheme
                   ? "text-white"
                   : "text-os-text-primary"
               )}
@@ -164,10 +164,10 @@ export function CursorRepoAgentChatCard({
                   isMacOSTheme &&
                     "border-black/20 bg-white/70 hover:bg-white/90 dark:border-white/15 dark:bg-white/10 dark:hover:bg-white/16",
                   !isMacOSTheme &&
-                    isXpTheme &&
+                    isWindowsTheme &&
                     "border-white/40 bg-white/20 text-white hover:bg-white/30",
                   !isMacOSTheme &&
-                    !isXpTheme &&
+                    !isWindowsTheme &&
                     "border-neutral-300 bg-white/85 text-neutral-700 hover:bg-neutral-100 dark:border-neutral-600 dark:bg-neutral-900/70 dark:text-neutral-200 dark:hover:bg-neutral-800"
                 )}
                 title={prUrl}
@@ -183,7 +183,7 @@ export function CursorRepoAgentChatCard({
               <span
                 className={cn(
                   "inline-flex shrink-0 items-center gap-1 text-[10px] font-medium",
-                  isXpTheme && !isMacOSTheme
+                  isWindowsTheme && !isMacOSTheme
                     ? "text-amber-100"
                     : "text-amber-900 dark:text-amber-200"
                 )}
@@ -195,7 +195,7 @@ export function CursorRepoAgentChatCard({
               <span
                 className={cn(
                   "inline-flex shrink-0 items-center gap-1 text-[10px] font-medium",
-                  isXpTheme && !isMacOSTheme
+                  isWindowsTheme && !isMacOSTheme
                     ? "text-emerald-100"
                     : "text-emerald-900 dark:text-emerald-200"
                 )}

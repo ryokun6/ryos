@@ -27,7 +27,7 @@ export function useSpotlightSearchController() {
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const {
-    isWindowsTheme: isXpTheme,
+    isWindowsTheme,
     isMacTheme: isMac,
     isMacOSTheme,
     isSystem7Theme: isSystem7,
@@ -42,10 +42,10 @@ export function useSpotlightSearchController() {
       requestAnimationFrame(focusInput);
       return;
     }
-    const delay = isXpTheme ? 150 : 0;
+    const delay = isWindowsTheme ? 150 : 0;
     const id = setTimeout(() => {
       requestAnimationFrame(focusInput);
-      if (isXpTheme) {
+      if (isWindowsTheme) {
         reclaimId = setTimeout(() => requestAnimationFrame(focusInput), 100);
       }
     }, delay);
@@ -54,7 +54,7 @@ export function useSpotlightSearchController() {
       clearTimeout(id);
       if (reclaimId) clearTimeout(reclaimId);
     };
-  }, [isOpen, isXpTheme, isMobile]);
+  }, [isOpen, isWindowsTheme, isMobile]);
 
   // The global spotlight-toggle listener (and the mobile proxy input it
   // focuses) lives in SpotlightSearchHost, which is always mounted.
@@ -151,7 +151,7 @@ export function useSpotlightSearchController() {
     };
   }, [isMacOSTheme, isSystem7, isWinXp, isMobile]);
 
-  const fontFamily = isXpTheme
+  const fontFamily = isWindowsTheme
     ? "var(--font-ms-sans)"
     : isSystem7
       ? "'Geneva-12', 'ArkPixel', system-ui, sans-serif"
@@ -216,7 +216,7 @@ export function useSpotlightSearchController() {
     isSearching,
     inputRef,
     listRef,
-    isXpTheme,
+    isWindowsTheme,
     isMac,
     isMacOSTheme,
     isSystem7,

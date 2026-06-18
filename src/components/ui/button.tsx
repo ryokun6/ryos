@@ -62,7 +62,7 @@ const Button = (
 ) => {
   const { play: playButtonClick } = useSound(Sounds.BUTTON_CLICK);
   const Comp = asChild ? Slot : "button";
-  const { isXpTheme, isMacOSTheme } = useThemeFlags();
+  const { isWindowsTheme, isMacOSTheme } = useThemeFlags();
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     playButtonClick();
@@ -88,10 +88,10 @@ const Button = (
     }
 
     // XP/Win98: default/aqua_select → xp.css button class
-    if (isXpTheme && (variant === "default" || variant === "aqua_select")) return cn("button", className);
+    if (isWindowsTheme && (variant === "default" || variant === "aqua_select")) return cn("button", className);
 
     // XP/Win98 + macOS: ghost → transparent reset to fight global button styles
-    if ((isXpTheme || isMacOSTheme) && variant === "ghost") {
+    if ((isWindowsTheme || isMacOSTheme) && variant === "ghost") {
       return cn(buttonVariants({ variant, size }), "os-btn-ghost-reset", className);
     }
 

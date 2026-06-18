@@ -66,7 +66,7 @@ export function useAppManager({ apps }: AppManagerProps) {
     [openInstanceIdsKey]
   );
 
-  const { isWindowsTheme: isXpTheme } = useThemeFlags();
+  const { isWindowsTheme } = useThemeFlags();
 
   const [crashedInstanceIds, setCrashedInstanceIds] = useState<Set<string>>(
     () => new Set()
@@ -77,7 +77,7 @@ export function useAppManager({ apps }: AppManagerProps) {
     ? crashedInstanceIds.has(foregroundInstanceId)
     : false;
   const showDesktopMenuBar =
-    isXpTheme || !hasForegroundApp || exposeMode || isForegroundAppCrashed;
+    isWindowsTheme || !hasForegroundApp || exposeMode || isForegroundAppCrashed;
 
   const [isInitialMount, setIsInitialMount] = useState(true);
   const [isExposeViewOpen, setIsExposeViewOpen] = useState(false);

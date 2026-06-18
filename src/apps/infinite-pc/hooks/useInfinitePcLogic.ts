@@ -160,7 +160,7 @@ export function useInfinitePcLogic({
   );
 
   const { t } = useTranslation();
-  const { currentTheme, isWindowsTheme: isXpTheme } = useThemeFlags();
+  const { currentTheme, isWindowsTheme } = useThemeFlags();
   const translatedHelpItems = useTranslatedHelpItems("pc", helpItems);
   const embedUrl = selectedPreset ? buildWrapperUrl(selectedPreset) : null;
 
@@ -346,7 +346,7 @@ export function useInfinitePcLogic({
     t,
     translatedHelpItems,
     currentTheme,
-    isXpTheme,
+    isWindowsTheme,
     isHelpDialogOpen,
     setIsHelpDialogOpen,
     isAboutDialogOpen,

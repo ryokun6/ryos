@@ -67,7 +67,7 @@ export const FileIcon = memo(function FileIcon({
 }: FileIconProps) {
   const { t } = useTranslation();
   const { play: playClick } = useSound(Sounds.BUTTON_CLICK, 0.3);
-  const { isWinXp: isXpTheme, isWin98: isWin98Theme, isMacOSTheme: isMacOSXTheme } =
+  const { isWinXp: isWindowsTheme, isWin98: isWin98Theme, isMacOSTheme: isMacOSXTheme } =
     useThemeFlags();
   const isFinderContext = context === "finder";
   const initialState: PreviewState = {
@@ -350,7 +350,7 @@ export const FileIcon = memo(function FileIcon({
               ? ""
               : isWin98Theme
               ? "bg-white text-black"
-              : (isXpTheme || isMacOSXTheme) && !isFinderContext
+              : (isWindowsTheme || isMacOSXTheme) && !isFinderContext
               ? "bg-transparent text-white"
               : isMacOSXTheme && isFinderContext
               ? // Finder file labels (Mac OS X): transparent so the label
@@ -362,7 +362,7 @@ export const FileIcon = memo(function FileIcon({
           }`}
           data-selected={isSelected ? "true" : undefined}
           style={{
-            ...(!isSelected && (isXpTheme || isMacOSXTheme) && !isFinderContext
+            ...(!isSelected && (isWindowsTheme || isMacOSXTheme) && !isFinderContext
               ? isMacOSXTheme
                 ? {
                     textShadow:

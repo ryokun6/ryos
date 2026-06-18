@@ -142,7 +142,7 @@ export function TerminalAppComponent({
     playDingSound,
     bringInstanceToForeground,
     handleClearTerminal,
-    isXpTheme,
+    isWindowsTheme,
     shouldApplyMarkdown,
   } = useTerminalLogic({ isForeground, initialData });
 
@@ -553,7 +553,7 @@ export function TerminalAppComponent({
   return (
     <AppWindowShell
       isWindowOpen={isWindowOpen}
-      isXpTheme={isXpTheme}
+      isWindowsTheme={isWindowsTheme}
       isForeground={isForeground}
       menuBar={menuBar}
       windowFrameProps={{

@@ -40,7 +40,7 @@ export function AboutDialog({
   appId,
 }: AboutDialogProps) {
   const { t } = useTranslation();
-  const { isWindowsTheme: isXpTheme, isMacOSTheme, isSystem7Theme } = useThemeFlags();
+  const { isWindowsTheme, isMacOSTheme, isSystem7Theme } = useThemeFlags();
   const launchApp = useAppStore((state) => state.launchApp);
   
   // Use translated app name if appId is provided, otherwise fall back to metadata.name
@@ -64,23 +64,23 @@ export function AboutDialog({
       <div
         className={cn(
           "space-y-0 text-center",
-          isXpTheme
+          isWindowsTheme
             ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
             : isSystem7Theme
             ? "font-geneva-12 text-[10px]"
             : "font-os-ui text-[12px]"
         )}
         style={{
-          fontFamily: isXpTheme
+          fontFamily: isWindowsTheme
             ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
             : undefined,
-          fontSize: isXpTheme ? "11px" : undefined,
+          fontSize: isWindowsTheme ? "11px" : undefined,
         }}
       >
         <div
           className={cn(
             "!text-3xl font-medium",
-            isXpTheme
+            isWindowsTheme
               ? "font-['Trebuchet MS'] !text-[17px]"
               : "font-apple-garamond"
           )}
@@ -128,13 +128,13 @@ export function AboutDialog({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
-        className={cn("w-fit min-w-[280px] max-w-[400px]", isXpTheme && "p-0 overflow-hidden")}
-        style={isXpTheme ? { fontSize: "11px" } : undefined}
+        className={cn("w-fit min-w-[280px] max-w-[400px]", isWindowsTheme && "p-0 overflow-hidden")}
+        style={isWindowsTheme ? { fontSize: "11px" } : undefined}
       >
-        {isXpTheme ? (
+        {isWindowsTheme ? (
           <>
             <DialogHeader>{t("common.dialog.aboutApp", { appName: displayName })}</DialogHeader>
-            <div className={`window-body ${isXpTheme ? "p-2 px-4" : "p-4"}`}>
+            <div className={`window-body ${isWindowsTheme ? "p-2 px-4" : "p-4"}`}>
               {dialogContent}
             </div>
           </>

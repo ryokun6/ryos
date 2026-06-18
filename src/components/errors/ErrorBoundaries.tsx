@@ -148,7 +148,7 @@ function CrashDialog({
   error,
 }: CrashDialogProps) {
   const {
-    isWindowsTheme: isXpTheme,
+    isWindowsTheme,
     isMacOSTheme: isMacTheme,
   } = useThemeFlags();
   const { t } = useTranslation();
@@ -159,7 +159,7 @@ function CrashDialog({
 
   const bodyTextClasses = cn(
     "leading-[1.45] text-black",
-    isXpTheme
+    isWindowsTheme
       ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
       : isMacTheme
         ? "text-[13px]"
@@ -172,7 +172,7 @@ function CrashDialog({
 
   const dialogBody = (
     <div
-      className={cn(isXpTheme ? "p-2 px-4" : "p-5")}
+      className={cn(isWindowsTheme ? "p-2 px-4" : "p-5")}
     >
       <div className="flex items-start gap-3">
         <ThemedIcon
@@ -187,7 +187,7 @@ function CrashDialog({
             id={headingId}
             className={cn(
               "text-black",
-              isXpTheme
+              isWindowsTheme
                 ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px] font-bold"
                 : isMacTheme
                   ? "text-[13px] font-semibold"
@@ -205,7 +205,7 @@ function CrashDialog({
             <div
               className={cn(
                 "rounded border border-black/15 bg-black/5 px-2 py-1.5 text-black/80",
-                isXpTheme
+                isWindowsTheme
                   ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[10px]"
                   : "font-os-mono text-[10px]",
               )}
@@ -222,7 +222,7 @@ function CrashDialog({
                 onClick={onSecondaryAction}
                 className={cn(
                   !isMacTheme && "h-7",
-                  isXpTheme
+                  isWindowsTheme
                     ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
                     : isMacTheme
                       ? "text-[13px]"
@@ -238,7 +238,7 @@ function CrashDialog({
               onClick={onPrimaryAction}
               className={cn(
                 !isMacTheme && "h-7",
-                isXpTheme
+                isWindowsTheme
                   ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
                   : isMacTheme
                     ? "text-[13px]"
@@ -276,8 +276,8 @@ function CrashDialog({
             ? "bg-black/20 pointer-events-none"
             : "bg-black/25"
         }
-        className={cn("max-w-[420px]", isXpTheme && "p-0 overflow-hidden")}
-        style={isXpTheme ? { fontSize: "11px" } : undefined}
+        className={cn("max-w-[420px]", isWindowsTheme && "p-0 overflow-hidden")}
+        style={isWindowsTheme ? { fontSize: "11px" } : undefined}
         onOpenAutoFocus={(event) => {
           event.preventDefault();
           primaryActionButtonRef.current?.focus();
@@ -289,7 +289,7 @@ function CrashDialog({
           event.preventDefault();
         }}
       >
-        {isXpTheme ? (
+        {isWindowsTheme ? (
           <>
             <DialogHeader>{titleBarLabel}</DialogHeader>
             <div className="window-body">{dialogBody}</div>

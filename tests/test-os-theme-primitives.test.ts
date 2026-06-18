@@ -14,7 +14,7 @@ describe("os theme primitives", () => {
     const className = osCardClassName({
       isMacOSTheme: false,
       isSystem7Theme: false,
-      isXpTheme: true,
+      isWindowsTheme: true,
     });
 
     expect(className).toContain("rounded-[0.4rem]");
@@ -27,7 +27,7 @@ describe("os theme primitives", () => {
     const className = osCardClassName({
       isMacOSTheme: false,
       isSystem7Theme: false,
-      isXpTheme: true,
+      isWindowsTheme: true,
       isWin98: true,
     });
 
@@ -42,7 +42,7 @@ describe("os theme primitives", () => {
       {
         isMacOSTheme: false,
         isSystem7Theme: false,
-        isXpTheme: true,
+        isWindowsTheme: true,
       },
       { embed: "panel" }
     );
@@ -57,7 +57,7 @@ describe("os theme primitives", () => {
       {
         isMacOSTheme: false,
         isSystem7Theme: false,
-        isXpTheme: true,
+        isWindowsTheme: true,
         isWin98: false,
       },
       "right"
@@ -66,7 +66,7 @@ describe("os theme primitives", () => {
       {
         isMacOSTheme: false,
         isSystem7Theme: false,
-        isXpTheme: true,
+        isWindowsTheme: true,
         isWin98: true,
       },
       "bottom"
@@ -83,7 +83,7 @@ describe("os theme primitives", () => {
       {
         isMacOSTheme: false,
         isSystem7Theme: false,
-        isXpTheme: true,
+        isWindowsTheme: true,
       },
       { border: "top" }
     );
@@ -97,7 +97,7 @@ describe("os theme primitives", () => {
     const glassSidebar = osAppSidebarSurfaceClassName(
       {
         isMacOSTheme: true,
-        isXpTheme: false,
+        isWindowsTheme: false,
         isAquaGlass: true,
       },
       { surfaceClassName: "bg-white/90", className: "custom-sidebar" }
@@ -105,7 +105,7 @@ describe("os theme primitives", () => {
     const responsiveWindowsSidebar = osAppSidebarSurfaceClassName(
       {
         isMacOSTheme: false,
-        isXpTheme: true,
+        isWindowsTheme: true,
       },
       { layout: "responsive" }
     );

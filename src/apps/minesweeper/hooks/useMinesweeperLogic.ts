@@ -318,7 +318,7 @@ export function useMinesweeperLogic() {
     });
   }, [initializeBoard]);
 
-  const { isWindowsTheme: isXpTheme, isMacOSTheme: isMacTheme } =
+  const { isWindowsTheme, isMacOSTheme: isMacTheme } =
     useThemeFlags();
 
   return {
@@ -336,7 +336,7 @@ export function useMinesweeperLogic() {
     remainingMines,
     totalMines: MINES_COUNT,
     minesweeperStyles,
-    isXpTheme,
+    isWindowsTheme,
     isMacTheme,
     handleCellClick,
     handleCellRightClick,

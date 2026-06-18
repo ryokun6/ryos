@@ -24,7 +24,7 @@ interface ContactGroup {
 export function useContactsLogic() {
   const { t } = useTranslation();
   const translatedHelpItems = useTranslatedHelpItems("contacts", helpItems);
-  const { isXpTheme, isMacOSTheme, isSystem7Theme } = useThemeFlags();
+  const { isWindowsTheme, isMacOSTheme, isSystem7Theme } = useThemeFlags();
 
   const {
     isHelpDialogOpen,
@@ -244,8 +244,8 @@ export function useContactsLogic() {
   return {
     t,
     translatedHelpItems,
-    isXpTheme,
-      isMacOsxTheme: isMacOSTheme,
+    isWindowsTheme,
+      isMacOSTheme,
     isSystem7Theme,
     isHelpDialogOpen,
     setIsHelpDialogOpen,

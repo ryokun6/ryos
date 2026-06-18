@@ -72,7 +72,7 @@ export function AppleMenu() {
   const { t } = useTranslation();
   const [aboutFinderOpen, setAboutFinderOpen] = useState(false);
   const launchApp = useLaunchApp();
-  const { isMacOSTheme: isMacOsxTheme } = useThemeFlags();
+  const { isMacOSTheme } = useThemeFlags();
   const { isFullscreen, supported: fullscreenSupported, toggle: toggleFullscreen } =
     useRyosFullscreen();
 
@@ -152,10 +152,10 @@ export function AppleMenu() {
         <MenubarTrigger
           className={cn(
             "border-none focus-visible:ring-0 flex items-center justify-center",
-            isMacOsxTheme ? "px-1" : "px-3"
+            isMacOSTheme ? "px-1" : "px-3"
           )}
         >
-          {isMacOsxTheme ? (
+          {isMacOSTheme ? (
             <ThemedIcon
               name="apple.png"
               alt="Apple Menu"
@@ -193,7 +193,7 @@ export function AppleMenu() {
             onClick={handleSystemPreferences}
             className="text-md h-6 px-3"
           >
-            {isMacOsxTheme ? t("common.appleMenu.systemPreferences") : t("common.appleMenu.controlPanels")}
+            {isMacOSTheme ? t("common.appleMenu.systemPreferences") : t("common.appleMenu.controlPanels")}
           </MenubarItem>
 
           {/* Applet Store */}

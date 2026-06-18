@@ -32,7 +32,7 @@ export function SoundboardAppComponent({
     updateSlot,
     deleteSlot,
     hasInitialized,
-    isXpTheme,
+    isWindowsTheme,
     isEditingTitle,
     setIsEditingTitle,
     dialogState,
@@ -109,7 +109,7 @@ export function SoundboardAppComponent({
   return (
     <AppWindowShell
       isWindowOpen={isWindowOpen}
-      isXpTheme={isXpTheme}
+      isWindowsTheme={isWindowsTheme}
       isForeground={isForeground}
       menuBar={menuBar}
       windowFrameProps={windowFrameProps}
@@ -124,7 +124,7 @@ export function SoundboardAppComponent({
         <>
         <div
           className={`h-full w-full flex flex-col md:flex-row ${
-            isXpTheme ? "border-t border-[#919b9c]" : ""
+            isWindowsTheme ? "border-t border-[#919b9c]" : ""
           }`}
         >
           <input

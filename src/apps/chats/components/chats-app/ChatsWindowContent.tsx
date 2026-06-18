@@ -22,7 +22,7 @@ export function ChatsWindowContent({ c, isForeground }: ChatsWindowContentProps)
     isMacTheme,
     isAquaGlass,
     isDarkMode,
-    isXpTheme,
+    isWindowsTheme,
     containerRef,
     sidebarVisibleBool,
     isFrameNarrow,
@@ -353,7 +353,7 @@ export function ChatsWindowContent({ c, isForeground }: ChatsWindowContentProps)
                   <Button
                     onClick={promptSetUsername}
                     className={`w-full h-9 font-geneva-12 text-[12px] ${
-                      isXpTheme
+                      isWindowsTheme
                         ? "text-black"
                         : "bg-orange-600 text-white hover:bg-orange-700 transition-all duration-200"
                     }`}

@@ -12,8 +12,8 @@ type ContactsToolbarProps = {
 export function ContactsToolbar({ c }: ContactsToolbarProps) {
   const {
     t,
-    isMacOsxTheme,
-    isXpTheme,
+    isMacOSTheme,
+    isWindowsTheme,
     isSystem7Theme,
     isMobileLayout,
     showGroupSidebar,
@@ -30,15 +30,15 @@ export function ContactsToolbar({ c }: ContactsToolbarProps) {
     <div
       className={cn(
         "flex items-center justify-between py-1.5 gap-2",
-        isMacOsxTheme ? "px-1" : "px-2",
+        isMacOSTheme ? "px-1" : "px-2",
         osToolbarSurfaceClassName({
-          isMacOSTheme: isMacOsxTheme,
+          isMacOSTheme,
           isSystem7Theme,
-          isXpTheme,
+          isWindowsTheme,
         })
       )}
     >
-      {isMacOsxTheme ? (
+      {isMacOSTheme ? (
         <>
           <div className="flex items-center gap-1.5">
             <div className="metal-inset-btn-group">
@@ -105,7 +105,7 @@ export function ContactsToolbar({ c }: ContactsToolbarProps) {
                 variant={isSystem7Theme ? "player" : "ghost"}
                 onClick={() => setShowGroupSidebar((current) => !current)}
                 data-state={showGroupSidebar && !isCardOnlyView ? "on" : "off"}
-                className={cn("size-6 px-0", isXpTheme && "text-black")}
+                className={cn("size-6 px-0", isWindowsTheme && "text-black")}
                 title={t("apps.contacts.views.toggleGroups", { defaultValue: "Toggle Groups" })}
               >
                 <SidebarSimple size={14} />
@@ -116,7 +116,7 @@ export function ContactsToolbar({ c }: ContactsToolbarProps) {
               variant={isSystem7Theme ? "player" : "ghost"}
               onClick={() => setIsCardOnlyView((current) => !current)}
               data-state={isCardOnlyView ? "on" : "off"}
-              className={cn("size-6 px-0", isXpTheme && "text-black")}
+              className={cn("size-6 px-0", isWindowsTheme && "text-black")}
               title={t("apps.contacts.views.cardOnly", { defaultValue: "Card Only" })}
             >
               <IdentificationCard size={14} />
@@ -125,7 +125,7 @@ export function ContactsToolbar({ c }: ContactsToolbarProps) {
               type="button"
               variant={isSystem7Theme ? "player" : "ghost"}
               onClick={handleCreateContactAndEdit}
-              className={cn("size-6 px-0", isXpTheme && "text-black")}
+              className={cn("size-6 px-0", isWindowsTheme && "text-black")}
               title={t("apps.contacts.menu.newContact")}
             >
               <Plus size={12} weight="bold" />
@@ -134,7 +134,7 @@ export function ContactsToolbar({ c }: ContactsToolbarProps) {
               type="button"
               variant={isSystem7Theme ? "player" : "ghost"}
               onClick={handleImport}
-              className={cn("size-6 px-0", isXpTheme && "text-black")}
+              className={cn("size-6 px-0", isWindowsTheme && "text-black")}
               title={t("apps.contacts.menu.importVCard")}
             >
               <DownloadSimple size={12} weight="bold" />

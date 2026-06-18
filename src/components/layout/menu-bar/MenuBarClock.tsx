@@ -9,7 +9,7 @@ import type { ClockProps } from "./menuBarTypes";
 export function Clock({ enableExposeToggle = false, enableCalendarOpen = false }: ClockProps) {
   const [time, setTime] = useState(() => new Date());
   const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
-  const { isWindowsTheme: isXpTheme, isMacOSTheme } = useThemeFlags();
+  const { isWindowsTheme, isMacOSTheme } = useThemeFlags();
   const { t, i18n: i18nInstance } = useTranslation();
   
   // Get current locale from i18n (reactive to language changes)
@@ -48,7 +48,7 @@ export function Clock({ enableExposeToggle = false, enableCalendarOpen = false }
   
   let displayTime: string;
 
-  if (isXpTheme) {
+  if (isWindowsTheme) {
     // For XP/98 themes: use 24h for locales that prefer it, otherwise 12h
     if (prefers24Hour) {
       displayTime = formatTime24h(time);
@@ -123,7 +123,7 @@ export function Clock({ enableExposeToggle = false, enableCalendarOpen = false }
     // biome-ignore lint/a11y/noStaticElementInteractions: Window drag handle for desktop shell
     <div
       role="presentation"
-      className={`${isXpTheme ? "" : "ml-auto mr-1 sm:mr-2"} whitespace-nowrap`}
+      className={`${isWindowsTheme ? "" : "ml-auto mr-1 sm:mr-2"} whitespace-nowrap`}
       style={{
         textShadow: isMacOSTheme
           ? "0 2px 3px rgba(0, 0, 0, 0.25)"

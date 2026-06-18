@@ -68,7 +68,7 @@ export function LoginDialog({
   signUpError,
 }: LoginDialogProps) {
   const [activeTab, setActiveTab] = useState<"login" | "signup">(initialTab);
-  const { isWindowsTheme: isXpTheme, isMacOSTheme } = useThemeFlags();
+  const { isWindowsTheme, isMacOSTheme } = useThemeFlags();
   const { t } = useTranslation();
   const dialogTitle = t("common.auth.dialogTitle");
 
@@ -93,11 +93,11 @@ export function LoginDialog({
     }
   };
 
-  const themeFont = isXpTheme
+  const themeFont = isWindowsTheme
     ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
     : "font-geneva-12 text-[12px]";
 
-  const themeFontStyle: React.CSSProperties | undefined = isXpTheme
+  const themeFontStyle: React.CSSProperties | undefined = isWindowsTheme
     ? {
         fontFamily: '"Pixelated MS Sans Serif", "ArkPixel", Arial',
         fontSize: "11px",
@@ -282,11 +282,11 @@ export function LoginDialog({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
-        className={cn("max-w-[400px]", isXpTheme && "p-0 overflow-hidden")}
-        style={isXpTheme ? { fontSize: "11px" } : undefined}
+        className={cn("max-w-[400px]", isWindowsTheme && "p-0 overflow-hidden")}
+        style={isWindowsTheme ? { fontSize: "11px" } : undefined}
         onKeyDown={(e: React.KeyboardEvent) => e.stopPropagation()}
       >
-        {isXpTheme ? (
+        {isWindowsTheme ? (
           <>
             <DialogHeader>{dialogTitle}</DialogHeader>
             <div className="window-body">{dialogContent}</div>

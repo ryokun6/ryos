@@ -30,7 +30,7 @@ export function VolumeControl() {
   const { play: playVolumeChangeSound } = useSound(Sounds.VOLUME_CHANGE);
   const launchApp = useLaunchApp();
   const [menuValue, setMenuValue] = useState("");
-  const { isWindowsTheme: isXpTheme, isWin98 } = useThemeFlags();
+  const { isWindowsTheme, isWin98 } = useThemeFlags();
 
   const volumeLabel = t("common.menuBar.volume", "Volume");
 
@@ -49,7 +49,7 @@ export function VolumeControl() {
       value={menuValue}
       onValueChange={setMenuValue}
       className={`hidden sm:flex items-stretch self-stretch border-none bg-transparent p-0 space-x-0 rounded-none h-full ${
-        isXpTheme ? "" : "mr-2"
+        isWindowsTheme ? "" : "mr-2"
       }`}
     >
       <MenubarMenu value={MENU_VALUE}>
@@ -57,14 +57,14 @@ export function VolumeControl() {
           className="flex items-center justify-center px-2 border-none focus-visible:ring-0"
           title={volumeLabel}
           aria-label={volumeLabel}
-          style={{ color: isXpTheme && isWin98 ? "#000000" : undefined }}
+          style={{ color: isWindowsTheme && isWin98 ? "#000000" : undefined }}
         >
           {getVolumeIcon()}
         </MenubarTrigger>
         <MenubarContent
           align="center"
-          side={isXpTheme ? "top" : "bottom"}
-          sideOffset={isXpTheme ? 8 : 1}
+          side={isWindowsTheme ? "top" : "bottom"}
+          sideOffset={isWindowsTheme ? 8 : 1}
           className="w-auto min-w-4 h-40 flex flex-col items-center justify-center"
           style={{ minWidth: "auto" }}
         >

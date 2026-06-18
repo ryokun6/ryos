@@ -56,8 +56,8 @@ export function useKaraokeMenuBar(props: KaraokeMenuBarProps) {
   const {
     isShareDialogOpen,
     setIsShareDialogOpen,
-    isXpTheme,
-    isMacOsxTheme,
+    isWindowsTheme,
+    isMacOSTheme,
     appId,
     appName,
   } = useAppMenuBarChrome("karaoke", t("apps.karaoke.name"));
@@ -118,8 +118,8 @@ export function useKaraokeMenuBar(props: KaraokeMenuBarProps) {
     setIsShareDialogOpen,
     appId,
     appName,
-    isXpTheme,
-    isMacOsxTheme,
+    isWindowsTheme,
+    isMacOSTheme,
     debugMode,
     isAdmin,
     lyricsAlignment,

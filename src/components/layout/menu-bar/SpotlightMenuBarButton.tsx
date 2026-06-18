@@ -6,11 +6,11 @@ import { toggleSpotlightSearch } from "@/utils/appEventBus";
 
 export function SpotlightMenuBarButton() {
   const { t } = useTranslation();
-  const { isWindowsTheme: isXpTheme, isMacOSTheme } = useThemeFlags();
+  const { isWindowsTheme, isMacOSTheme } = useThemeFlags();
   const isSpotlightOpen = useSpotlightStore((state) => state.isOpen);
 
   // Only show on Mac themes — Windows themes use Start Menu "Run..."
-  if (isXpTheme) return null;
+  if (isWindowsTheme) return null;
 
   const handleClick = () => {
     toggleSpotlightSearch();

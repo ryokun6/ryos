@@ -47,8 +47,8 @@ export function TelegramLinkDialog({
 }: TelegramLinkDialogProps) {
   const { t } = useTranslation();
   const {
-    isWindowsTheme: isXpTheme,
-    isMacOSTheme: isMacOsxTheme,
+    isWindowsTheme,
+    isMacOSTheme,
     isWinXp,
   } = useThemeFlags();
 
@@ -90,15 +90,15 @@ export function TelegramLinkDialog({
       <p
         className={cn(
           "text-neutral-500",
-          isXpTheme
+          isWindowsTheme
             ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[10px]"
             : "font-geneva-12 text-[10px]"
         )}
         style={{
-          fontFamily: isXpTheme
+          fontFamily: isWindowsTheme
             ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
             : undefined,
-          fontSize: isXpTheme ? "10px" : undefined,
+          fontSize: isWindowsTheme ? "10px" : undefined,
         }}
       >
         {t("common.dialog.share.generating")}
@@ -113,15 +113,15 @@ export function TelegramLinkDialog({
         <p
           className={cn(
             "mt-0 mb-2 w-[80%] break-words text-center text-neutral-500",
-            isXpTheme
+            isWindowsTheme
               ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[10px]"
               : "font-geneva-12 text-xs"
           )}
           style={{
-            fontFamily: isXpTheme
+            fontFamily: isWindowsTheme
               ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
               : undefined,
-            fontSize: isXpTheme ? "10px" : undefined,
+            fontSize: isWindowsTheme ? "10px" : undefined,
           }}
         >
           {descriptionText}
@@ -136,15 +136,15 @@ export function TelegramLinkDialog({
             variant="retro"
             className={cn(
               "h-7 w-full",
-              isXpTheme
+              isWindowsTheme
                 ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
                 : "font-geneva-12 text-[12px]"
             )}
             style={{
-              fontFamily: isXpTheme
+              fontFamily: isWindowsTheme
                 ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
                 : undefined,
-              fontSize: isXpTheme ? "11px" : undefined,
+              fontSize: isWindowsTheme ? "11px" : undefined,
             }}
           >
             {isDisconnectingLink
@@ -159,15 +159,15 @@ export function TelegramLinkDialog({
                 variant="retro"
                 className={cn(
                   stackedActionButtonClass,
-                  isXpTheme
+                  isWindowsTheme
                     ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
                     : "font-geneva-12 text-[12px]"
                 )}
                 style={{
-                  fontFamily: isXpTheme
+                  fontFamily: isWindowsTheme
                     ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
                     : undefined,
-                  fontSize: isXpTheme ? "11px" : undefined,
+                  fontSize: isWindowsTheme ? "11px" : undefined,
                 }}
               >
                 {t("apps.control-panels.telegram.openTelegram")}
@@ -178,15 +178,15 @@ export function TelegramLinkDialog({
               variant="retro"
               className={cn(
                 hasDeepLink ? stackedActionButtonClass : "h-7 w-full",
-                isXpTheme
+                isWindowsTheme
                   ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
                   : "font-geneva-12 text-[12px]"
               )}
               style={{
-                fontFamily: isXpTheme
+                fontFamily: isWindowsTheme
                   ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
                   : undefined,
-                fontSize: isXpTheme ? "11px" : undefined,
+                fontSize: isWindowsTheme ? "11px" : undefined,
               }}
             >
               {t("apps.control-panels.telegram.copyCode")}
@@ -199,15 +199,15 @@ export function TelegramLinkDialog({
             variant="retro"
             className={cn(
               "h-7 w-full",
-              isXpTheme
+              isWindowsTheme
                 ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
                 : "font-geneva-12 text-[12px]"
             )}
             style={{
-              fontFamily: isXpTheme
+              fontFamily: isWindowsTheme
                 ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
                 : undefined,
-              fontSize: isXpTheme ? "11px" : undefined,
+              fontSize: isWindowsTheme ? "11px" : undefined,
             }}
           >
             {isCreatingLink
@@ -219,7 +219,7 @@ export function TelegramLinkDialog({
     </div>
   );
 
-  if (isXpTheme) {
+  if (isWindowsTheme) {
     return (
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
         <DialogContent
@@ -254,7 +254,7 @@ export function TelegramLinkDialog({
         className="max-w-xs rounded-os border-[length:var(--os-metrics-border-width)] border-os-window bg-os-window-bg shadow-os-window"
         onKeyDown={(e: React.KeyboardEvent) => e.stopPropagation()}
       >
-        {isMacOsxTheme ? (
+        {isMacOSTheme ? (
           <>
             <DialogHeader>{t("apps.control-panels.telegram.title")}</DialogHeader>
             <DialogDescription className="sr-only">

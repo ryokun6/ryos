@@ -233,23 +233,23 @@ export function EmojiDialog({
   onEmojiSelect,
 }: EmojiDialogProps) {
   const { t } = useTranslation();
-  const { isWindowsTheme: isXpTheme, isMacOSTheme } = useThemeFlags();
+  const { isWindowsTheme, isMacOSTheme } = useThemeFlags();
 
   const dialogContent = (
-    <div className={isXpTheme ? "p-2 px-4 pt-0" : "p-4 py-6"}>
+    <div className={isWindowsTheme ? "p-2 px-4 pt-0" : "p-4 py-6"}>
       <p
         id="dialog-description"
         className={cn(
           "mb-2 text-neutral-500",
-          isXpTheme
+          isWindowsTheme
             ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
             : "font-geneva-12 text-[12px]"
         )}
         style={{
-          fontFamily: isXpTheme
+          fontFamily: isWindowsTheme
             ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
             : undefined,
-          fontSize: isXpTheme ? "11px" : undefined,
+          fontSize: isWindowsTheme ? "11px" : undefined,
         }}
       >
         {t("common.dialog.emoji.chooseEmoji")}
@@ -274,10 +274,10 @@ export function EmojiDialog({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
-        className={cn("max-w-[500px]", isXpTheme && "p-0 overflow-hidden")}
-        style={isXpTheme ? { fontSize: "11px" } : undefined}
+        className={cn("max-w-[500px]", isWindowsTheme && "p-0 overflow-hidden")}
+        style={isWindowsTheme ? { fontSize: "11px" } : undefined}
       >
-        {isXpTheme ? (
+        {isWindowsTheme ? (
           <>
             <DialogHeader>{t("common.dialog.emoji.setEmoji")}</DialogHeader>
             <div className="window-body">{dialogContent}</div>

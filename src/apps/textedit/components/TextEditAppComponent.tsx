@@ -57,7 +57,7 @@ function TextEditContent({
     (state) => state.clearInstanceInitialData
   );
   const launchAppInstance = useAppStore((state) => state.launchApp);
-  const { isWindowsTheme: isXpTheme, currentTheme } = useThemeFlags();
+  const { isWindowsTheme, currentTheme } = useThemeFlags();
   const speechEnabled = useAudioSettingsStore((state) => state.speechEnabled);
   // Local UI-only state for Save dialog filename
   const [saveFileName, setSaveFileName] = useState("");
@@ -566,7 +566,7 @@ function TextEditContent({
   return (
     <AppWindowShell
       isWindowOpen={isWindowOpen}
-      isXpTheme={isXpTheme}
+      isWindowsTheme={isWindowsTheme}
       isForeground={isForeground}
       menuBar={menuBar}
       leading={

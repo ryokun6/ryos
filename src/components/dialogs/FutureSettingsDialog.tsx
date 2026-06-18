@@ -34,7 +34,7 @@ const FutureSettingsDialog = ({
 }: FutureSettingsDialogProps) => {
   const { t } = useTranslation();
   const {
-    isWindowsTheme: isXpTheme,
+    isWindowsTheme,
     isMacOSTheme: isMacTheme,
   } = useThemeFlags();
   const [selectedYear, setSelectedYear] = useState<string>("2030");
@@ -99,21 +99,21 @@ const FutureSettingsDialog = ({
   };
 
   const dialogContent = (
-    <div className={isXpTheme ? "p-2 px-4" : "p-4 px-6"}>
+    <div className={isWindowsTheme ? "p-2 px-4" : "p-4 px-6"}>
       <div className="flex flex-col gap-4">
         <div className="flex items-center gap-2">
           <span
             className={cn(
               "text-neutral-900",
-              isXpTheme
+              isWindowsTheme
                 ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
                 : "font-geneva-12 text-[12px]"
             )}
             style={{
-              fontFamily: isXpTheme
+              fontFamily: isWindowsTheme
                 ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
                 : undefined,
-              fontSize: isXpTheme ? "11px" : undefined,
+              fontSize: isWindowsTheme ? "11px" : undefined,
             }}
           >
             {t("apps.internet-explorer.year")}:
@@ -148,15 +148,15 @@ const FutureSettingsDialog = ({
           placeholder={getDefaultTimelineText(selectedYear)}
           className={cn(
             "min-h-[200px]",
-            isXpTheme
+            isWindowsTheme
               ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
               : "font-geneva-12 text-[12px]"
           )}
           style={{
-            fontFamily: isXpTheme
+            fontFamily: isWindowsTheme
               ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
               : undefined,
-            fontSize: isXpTheme ? "11px" : undefined,
+            fontSize: isWindowsTheme ? "11px" : undefined,
           }}
         />
         <div className="flex justify-end gap-1">
@@ -165,15 +165,15 @@ const FutureSettingsDialog = ({
             onClick={handleReset}
             className={cn(
               "h-7",
-              isXpTheme
+              isWindowsTheme
                 ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
                 : "font-geneva-12 text-[12px]"
             )}
             style={{
-              fontFamily: isXpTheme
+              fontFamily: isWindowsTheme
                 ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
                 : undefined,
-              fontSize: isXpTheme ? "11px" : undefined,
+              fontSize: isWindowsTheme ? "11px" : undefined,
             }}
           >
             {t("apps.internet-explorer.futureTimeline.reset")}
@@ -184,15 +184,15 @@ const FutureSettingsDialog = ({
             ref={saveButtonRef}
             className={cn(
               !isMacTheme && "h-7",
-              isXpTheme
+              isWindowsTheme
                 ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
                 : "font-geneva-12 text-[12px]"
             )}
             style={{
-              fontFamily: isXpTheme
+              fontFamily: isWindowsTheme
                 ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
                 : undefined,
-              fontSize: isXpTheme ? "11px" : undefined,
+              fontSize: isWindowsTheme ? "11px" : undefined,
             }}
           >
             {t("common.dialog.close")}
@@ -207,15 +207,15 @@ const FutureSettingsDialog = ({
       <DialogContent
         className={cn(
           "bg-os-window-bg border-[length:var(--os-metrics-border-width)] border-os-window rounded-os shadow-os-window",
-          isXpTheme && "p-0 overflow-hidden"
+          isWindowsTheme && "p-0 overflow-hidden"
         )}
-        style={isXpTheme ? { fontSize: "11px" } : undefined}
+        style={isWindowsTheme ? { fontSize: "11px" } : undefined}
         onOpenAutoFocus={(e) => {
           e.preventDefault();
           saveButtonRef.current?.focus();
         }}
       >
-        {isXpTheme ? (
+        {isWindowsTheme ? (
           <>
             <DialogHeader>
               {t("apps.internet-explorer.futureTimeline.title")}

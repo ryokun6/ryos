@@ -23,7 +23,7 @@ export function useSongSearchDialog({
 }: SongSearchDialogProps) {
   const { t } = useTranslation();
   const {
-    isWindowsTheme: isXpTheme,
+    isWindowsTheme,
     isMacOSTheme: isMacTheme,
   } = useThemeFlags();
 
@@ -256,14 +256,14 @@ export function useSongSearchDialog({
     ]
   );
 
-  const fontStyle = isXpTheme
+  const fontStyle = isWindowsTheme
     ? {
         fontFamily: '"Pixelated MS Sans Serif", "ArkPixel", Arial',
         fontSize: "11px",
       }
     : undefined;
 
-  const fontClass = isXpTheme
+  const fontClass = isWindowsTheme
     ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
     : "font-geneva-12 text-[12px]";
 
@@ -272,7 +272,7 @@ export function useSongSearchDialog({
 
   return {
     t,
-    isXpTheme,
+    isWindowsTheme,
     isMacTheme,
     dispatch,
     query,

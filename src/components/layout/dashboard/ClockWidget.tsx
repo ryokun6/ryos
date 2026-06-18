@@ -72,7 +72,7 @@ interface ClockWidgetProps {
 export function ClockWidget({ widgetId, isFlipped }: ClockWidgetProps) {
   const { t } = useTranslation();
   const [time, setTime] = useState(() => new Date());
-  const { isWindowsTheme: isXpTheme } = useThemeFlags();
+  const { isWindowsTheme } = useThemeFlags();
   const widget = useDashboardStore((s) => widgetId ? s.widgets.find((w) => w.id === widgetId) : undefined);
   const config = widget?.config as ClockWidgetConfig | undefined;
   const gradId = useMemo(() => widgetId?.replace(/[^a-zA-Z0-9]/g, "") ?? "default", [widgetId]);
@@ -101,7 +101,7 @@ export function ClockWidget({ widgetId, isFlipped }: ClockWidgetProps) {
   }, [time, config?.timezone]);
 
   const hours = displayTime.getHours();
-  const isDark = !isXpTheme && (hours >= 19 || hours < 6);
+  const isDark = !isWindowsTheme && (hours >= 19 || hours < 6);
   const minutes = displayTime.getMinutes();
   const seconds = displayTime.getSeconds();
 
@@ -115,7 +115,7 @@ export function ClockWidget({ widgetId, isFlipped }: ClockWidgetProps) {
   const clockCenterY = svgSize / 2;
   const topLabelY = 15;
   const bottomLabelY = svgSize - 10;
-  const faceRadius = isXpTheme ? 52 : 55;
+  const faceRadius = isWindowsTheme ? 52 : 55;
 
   return (
     <svg
@@ -125,7 +125,7 @@ export function ClockWidget({ widgetId, isFlipped }: ClockWidgetProps) {
       style={{ display: "block" }}
     >
       <defs>
-        {!isXpTheme && (
+        {!isWindowsTheme && (
           <>
             <radialGradient id={`faceGrad-${gradId}`} cx="50%" cy="38%" r="58%">
               <stop offset="0%" stopColor={isDark ? "#3a3a3a" : "#f8f8f8"} />
@@ -144,7 +144,7 @@ export function ClockWidget({ widgetId, isFlipped }: ClockWidgetProps) {
         textAnchor="middle"
         fontSize={11}
         fontWeight="700"
-        fill={isXpTheme ? "#000" : "rgba(255,255,255,0.7)"}
+        fill={isWindowsTheme ? "#000" : "rgba(255,255,255,0.7)"}
         style={{ fontFamily: "Helvetica Neue, Helvetica, Arial, sans-serif" }}
       >
         {digitalTime}
@@ -154,10 +154,10 @@ export function ClockWidget({ widgetId, isFlipped }: ClockWidgetProps) {
         cx={clockCenterX}
         cy={clockCenterY}
         r={faceRadius}
-        fill={isXpTheme ? "#FFFFFF" : `url(#faceGrad-${gradId})`}
-        stroke={isXpTheme ? "#808080" : "none"}
-        strokeWidth={isXpTheme ? 1.5 : 0}
-        filter={isXpTheme ? undefined : `url(#clockShadow-${gradId})`}
+        fill={isWindowsTheme ? "#FFFFFF" : `url(#faceGrad-${gradId})`}
+        stroke={isWindowsTheme ? "#808080" : "none"}
+        strokeWidth={isWindowsTheme ? 1.5 : 0}
+        filter={isWindowsTheme ? undefined : `url(#clockShadow-${gradId})`}
       />
 
       {Array.from({ length: 12 }, (_, i) => {
@@ -173,7 +173,7 @@ export function ClockWidget({ widgetId, isFlipped }: ClockWidgetProps) {
             dominantBaseline="central"
             fontSize={14}
             fontWeight="700"
-            fill={!isXpTheme && isDark ? "rgba(255,255,255,0.9)" : "#333"}
+            fill={!isWindowsTheme && isDark ? "rgba(255,255,255,0.9)" : "#333"}
             style={{ fontFamily: "Helvetica Neue, Helvetica, Arial, sans-serif" }}
           >
             {num}
@@ -183,12 +183,12 @@ export function ClockWidget({ widgetId, isFlipped }: ClockWidgetProps) {
 
       <polygon
         points={handPolygon(clockCenterX, clockCenterY, hourAngle, 28, 3.5, 5)}
-        fill={!isXpTheme && isDark ? "#DDD" : "#222"}
+        fill={!isWindowsTheme && isDark ? "#DDD" : "#222"}
       />
 
       <polygon
         points={handPolygon(clockCenterX, clockCenterY, minuteAngle, 40, 2.5, 5)}
-        fill={!isXpTheme && isDark ? "#DDD" : "#222"}
+        fill={!isWindowsTheme && isDark ? "#DDD" : "#222"}
       />
 
       <line
@@ -201,7 +201,7 @@ export function ClockWidget({ widgetId, isFlipped }: ClockWidgetProps) {
         strokeLinecap="round"
       />
 
-      <circle cx={clockCenterX} cy={clockCenterY} r={6} fill={!isXpTheme && isDark ? "#DDD" : "#D95030"} />
+      <circle cx={clockCenterX} cy={clockCenterY} r={6} fill={!isWindowsTheme && isDark ? "#DDD" : "#D95030"} />
       <circle cx={clockCenterX} cy={clockCenterY} r={2.5} fill="#FFF" />
 
       <text
@@ -210,7 +210,7 @@ export function ClockWidget({ widgetId, isFlipped }: ClockWidgetProps) {
         textAnchor="middle"
         fontSize={12}
         fontWeight="700"
-        fill={isXpTheme ? "#000" : "rgba(255,255,255,0.8)"}
+        fill={isWindowsTheme ? "#000" : "rgba(255,255,255,0.8)"}
         style={{ fontFamily: "Helvetica Neue, Helvetica, Arial, sans-serif" }}
       >
         {cityName}
@@ -229,7 +229,7 @@ function formatCityLabel(city: CityResult): string {
 export function ClockBackPanel({ widgetId, onDone }: { widgetId: string; onDone?: () => void }) {
   const { t } = useTranslation();
   const popularCities = useMemo(() => getPopularCities(t), [t]);
-  const { isWindowsTheme: isXpTheme } = useThemeFlags();
+  const { isWindowsTheme } = useThemeFlags();
   const updateWidgetConfig = useDashboardStore((s) => s.updateWidgetConfig);
 
   type ClockSearchState = {
@@ -353,15 +353,15 @@ export function ClockBackPanel({ widgetId, onDone }: { widgetId: string; onDone?
   }, [widgetId, updateWidgetConfig, onDone]);
 
   const citiesToShow = searchQuery.length >= 2 ? searchResults : popularCities;
-  const textColor = isXpTheme ? "#000" : "rgba(255,255,255,0.8)";
+  const textColor = isWindowsTheme ? "#000" : "rgba(255,255,255,0.8)";
 
   return (
     <div onPointerDown={(e) => e.stopPropagation()}>
       <div
         className="flex items-center gap-1.5 px-3 py-1.5"
-        style={{ borderBottom: isXpTheme ? "1px solid #D5D2CA" : "1px solid rgba(255,255,255,0.08)" }}
+        style={{ borderBottom: isWindowsTheme ? "1px solid #D5D2CA" : "1px solid rgba(255,255,255,0.08)" }}
       >
-        <MagnifyingGlass size={12} weight="bold" style={{ color: isXpTheme ? "#888" : "rgba(255,255,255,0.35)", flexShrink: 0 }} />
+        <MagnifyingGlass size={12} weight="bold" style={{ color: isWindowsTheme ? "#888" : "rgba(255,255,255,0.35)", flexShrink: 0 }} />
         <input
           ref={searchInputRef}
           type="text"
@@ -369,7 +369,7 @@ export function ClockBackPanel({ widgetId, onDone }: { widgetId: string; onDone?
           onChange={(e) => handleSearchInput(e.target.value)}
           placeholder={t("apps.dashboard.weather.searchCity")}
           className="flex-1 bg-transparent outline-none text-[11px]"
-          style={{ color: textColor, caretColor: isXpTheme ? "#000" : "rgba(255,255,255,0.7)" }}
+          style={{ color: textColor, caretColor: isWindowsTheme ? "#000" : "rgba(255,255,255,0.7)" }}
         />
       </div>
 
@@ -379,10 +379,10 @@ export function ClockBackPanel({ widgetId, onDone }: { widgetId: string; onDone?
           onClick={useMyLocation}
           className="w-full flex items-center gap-1.5 px-3 py-1.5 text-left transition-colors"
           style={{
-            borderBottom: isXpTheme ? "1px solid #EAE8E1" : "1px solid rgba(255,255,255,0.05)",
-            color: isXpTheme ? "#0066CC" : "rgba(130,180,255,0.9)",
+            borderBottom: isWindowsTheme ? "1px solid #EAE8E1" : "1px solid rgba(255,255,255,0.05)",
+            color: isWindowsTheme ? "#0066CC" : "rgba(130,180,255,0.9)",
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = isXpTheme ? "rgba(0,102,204,0.08)" : "rgba(255,255,255,0.06)")}
+          onMouseEnter={(e) => (e.currentTarget.style.background = isWindowsTheme ? "rgba(0,102,204,0.08)" : "rgba(255,255,255,0.06)")}
           onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
         >
           <NavigationArrow size={11} weight="fill" style={{ flexShrink: 0 }} />
@@ -390,11 +390,11 @@ export function ClockBackPanel({ widgetId, onDone }: { widgetId: string; onDone?
         </button>
 
         {searching ? (
-          <div className="px-3 py-3 text-center text-[10px]" style={{ color: isXpTheme ? "#888" : "rgba(255,255,255,0.3)" }}>
+          <div className="px-3 py-3 text-center text-[10px]" style={{ color: isWindowsTheme ? "#888" : "rgba(255,255,255,0.3)" }}>
             {t("apps.dashboard.weather.searching")}
           </div>
         ) : searchQuery.length >= 2 && citiesToShow.length === 0 ? (
-          <div className="px-3 py-3 text-center text-[10px]" style={{ color: isXpTheme ? "#888" : "rgba(255,255,255,0.3)" }}>
+          <div className="px-3 py-3 text-center text-[10px]" style={{ color: isWindowsTheme ? "#888" : "rgba(255,255,255,0.3)" }}>
             {t("apps.dashboard.weather.noResults")}
           </div>
         ) : (
@@ -404,10 +404,10 @@ export function ClockBackPanel({ widgetId, onDone }: { widgetId: string; onDone?
               type="button"
               onClick={() => selectCity(city)}
               className="w-full flex items-center gap-1.5 px-3 py-1.5 text-left transition-colors"
-              onMouseEnter={(e) => (e.currentTarget.style.background = isXpTheme ? "rgba(0,102,204,0.08)" : "rgba(255,255,255,0.06)")}
+              onMouseEnter={(e) => (e.currentTarget.style.background = isWindowsTheme ? "rgba(0,102,204,0.08)" : "rgba(255,255,255,0.06)")}
               onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
             >
-              <MapPin size={10} weight="fill" style={{ color: isXpTheme ? "#999" : "rgba(255,255,255,0.25)", flexShrink: 0 }} />
+              <MapPin size={10} weight="fill" style={{ color: isWindowsTheme ? "#999" : "rgba(255,255,255,0.25)", flexShrink: 0 }} />
               <span className="text-[11px] truncate" style={{ color: textColor }}>{formatCityLabel(city)}</span>
             </button>
           ))

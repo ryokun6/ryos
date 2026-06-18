@@ -10,7 +10,7 @@ type ContactsWindowContentProps = {
 };
 
 export function ContactsWindowContent({ c }: ContactsWindowContentProps) {
-  const { isMacOsxTheme, isSystem7Theme, containerRef, showGroupPanel, showListPanel, showCardPanel, isMobileLayout } =
+  const { isMacOSTheme, isSystem7Theme, containerRef, showGroupPanel, showListPanel, showCardPanel, isMobileLayout } =
     c;
 
   return (
@@ -18,7 +18,7 @@ export function ContactsWindowContent({ c }: ContactsWindowContentProps) {
       ref={containerRef}
       className={cn(
         "size-full flex flex-col font-os-ui overflow-hidden",
-        isMacOsxTheme ? "bg-transparent" : isSystem7Theme ? "bg-white" : "bg-[#efede4]"
+        isMacOSTheme ? "bg-transparent" : isSystem7Theme ? "bg-white" : "bg-[#efede4]"
       )}
     >
       <ContactsToolbar c={c} />
@@ -27,7 +27,7 @@ export function ContactsWindowContent({ c }: ContactsWindowContentProps) {
         className={cn(
           "flex-1 overflow-hidden",
           isMobileLayout ? "flex flex-col" : "flex",
-          !isMobileLayout && isMacOsxTheme && "gap-[5px]"
+          !isMobileLayout && isMacOSTheme && "gap-[5px]"
         )}
       >
         {showGroupPanel && <ContactsGroupPanel c={c} />}

@@ -46,7 +46,7 @@ export function AppStoreFeed(props: UseAppStoreFeedControllerArgs) {
         cardProps={{
           isMacTheme: c.isMacTheme,
           isSystem7Theme: c.isSystem7Theme,
-          isXpTheme: c.isXpTheme,
+          isWindowsTheme: c.isWindowsTheme,
           actions: c.actions,
           t: c.t,
           scrollToIndex: c.scrollToIndex,

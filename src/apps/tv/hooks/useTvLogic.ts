@@ -63,7 +63,7 @@ export function useTvLogic({ isWindowOpen, isForeground }: UseTvLogicOptions) {
     [customChannels, hiddenDefaultChannelIds]
   );
 
-  const { isWindowsTheme: isXpTheme, isMacOSTheme } = useThemeFlags();
+  const { isWindowsTheme, isMacOSTheme } = useThemeFlags();
   const masterVolume = useAudioSettingsStore((state) => state.masterVolume);
 
   const {
@@ -547,7 +547,7 @@ export function useTvLogic({ isWindowOpen, isForeground }: UseTvLogicOptions) {
   return {
     t,
     translatedHelpItems,
-    isXpTheme,
+    isWindowsTheme,
     isMacOSTheme,
     isHelpDialogOpen,
     setIsHelpDialogOpen,

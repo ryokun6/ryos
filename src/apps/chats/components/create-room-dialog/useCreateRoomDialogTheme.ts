@@ -17,8 +17,6 @@ export function useCreateRoomDialogTheme(): CreateRoomDialogTheme {
 
   return {
     isWindowsTheme,
-    // Legacy alias retained for existing dialog props.
-    isXpTheme: isWindowsTheme,
     isMacOSTheme,
     themeFont,
     themeFontStyle,

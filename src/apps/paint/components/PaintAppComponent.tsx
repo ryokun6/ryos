@@ -54,7 +54,7 @@ export const PaintAppComponent: React.FC<AppProps<PaintInitialData>> = ({
     canvasHeight,
     error,
     windowTitle,
-    isXpTheme,
+    isWindowsTheme,
     handleUndo,
     handleRedo,
     handleClear,
@@ -117,7 +117,7 @@ export const PaintAppComponent: React.FC<AppProps<PaintInitialData>> = ({
   return (
     <AppWindowShell
       isWindowOpen={isWindowOpen}
-      isXpTheme={isXpTheme}
+      isWindowsTheme={isWindowsTheme}
       isForeground={isForeground}
       menuBar={menuBar}
       windowFrameProps={{

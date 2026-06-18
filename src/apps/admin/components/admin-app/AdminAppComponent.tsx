@@ -28,7 +28,7 @@ export function AdminAppComponent({
     isAdmin,
     isOffline,
     currentTheme,
-    isXpTheme,
+    isWindowsTheme,
     isHelpDialogOpen,
     setIsHelpDialogOpen,
     isAboutDialogOpen,
@@ -143,7 +143,7 @@ export function AdminAppComponent({
         t={t}
         username={username}
         isWindowOpen={isWindowOpen}
-        isXpTheme={isXpTheme}
+        isWindowsTheme={isWindowsTheme}
         menuBar={menuBar}
         onClose={onClose}
         isForeground={isForeground}
@@ -162,7 +162,7 @@ export function AdminAppComponent({
         t={t}
         username={username}
         isWindowOpen={isWindowOpen}
-        isXpTheme={isXpTheme}
+        isWindowsTheme={isWindowsTheme}
         menuBar={menuBar}
         onClose={onClose}
         isForeground={isForeground}
@@ -183,7 +183,7 @@ export function AdminAppComponent({
   return (
     <AppWindowShell
       isWindowOpen={isWindowOpen}
-      isXpTheme={isXpTheme}
+      isWindowsTheme={isWindowsTheme}
       isForeground={isForeground}
       menuBar={menuBar}
       windowFrameProps={{
@@ -212,7 +212,7 @@ export function AdminAppComponent({
           selectedUserProfile={selectedUserProfile}
           selectedSongId={selectedSongId}
           currentTheme={currentTheme}
-          isXpTheme={isXpTheme}
+          isWindowsTheme={isWindowsTheme}
           t={t}
           userSearch={userSearch}
           setUserSearch={setUserSearch}

@@ -14,10 +14,10 @@ interface ThemedTabsListProps {
 }
 
 export function ThemedTabsList({ children, className }: ThemedTabsListProps) {
-  const { currentTheme, isXpTheme } = useThemeFlags();
+  const { currentTheme, isWindowsTheme } = useThemeFlags();
   const tabStyles = getTabStyles(currentTheme);
 
-  if (isXpTheme) {
+  if (isWindowsTheme) {
     return (
       <TabsList asChild>
         <menu
@@ -55,10 +55,10 @@ export function ThemedTabsTrigger({
   children,
   className,
 }: ThemedTabsTriggerProps) {
-  const { currentTheme, isXpTheme } = useThemeFlags();
+  const { currentTheme, isWindowsTheme } = useThemeFlags();
   const tabStyles = getTabStyles(currentTheme);
 
-  if (isXpTheme) {
+  if (isWindowsTheme) {
     return (
       <TabsTrigger
         value={value}

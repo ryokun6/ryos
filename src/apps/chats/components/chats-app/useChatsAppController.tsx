@@ -396,12 +396,12 @@ export function useChatsAppController({
   );
 
   const {
-    isWindowsTheme: isXpTheme,
+    isWindowsTheme,
     isMacOSTheme: isMacTheme,
     isAquaGlass,
     isDarkMode,
   } = useThemeFlags();
-  const isWindowsLegacyTheme = isXpTheme;
+  const isWindowsLegacyTheme = isWindowsTheme;
   const isOffline = useOffline();
   const {
     telegramLinkedAccount,
@@ -582,7 +582,7 @@ export function useChatsAppController({
 
   return {
     translatedHelpItems,
-    isXpTheme,
+    isWindowsTheme,
     isMacTheme,
     isAquaGlass,
     isDarkMode,

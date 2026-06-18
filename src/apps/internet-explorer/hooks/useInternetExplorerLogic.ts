@@ -367,7 +367,7 @@ export function useInternetExplorerLogic({
   const { playElevatorMusic, stopElevatorMusic, playDingSound } =
     useTerminalSounds();
 
-  const { currentTheme, isWindowsTheme: isXpTheme } = useThemeFlags();
+  const { currentTheme, isWindowsTheme } = useThemeFlags();
 
   const currentYear = new Date().getFullYear();
   const pastYears = [
@@ -1938,7 +1938,7 @@ export function useInternetExplorerLogic({
 
     // Theme and settings
     currentTheme,
-    isXpTheme,
+    isWindowsTheme,
     debugMode,
     terminalSoundsEnabled,
     isOffline,

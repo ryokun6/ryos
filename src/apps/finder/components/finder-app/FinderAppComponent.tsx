@@ -103,7 +103,7 @@ export function FinderAppComponent({
     canCreateFolder,
     rootFolders,
     windowTitle,
-    isXpTheme,
+    isWindowsTheme,
     isMacOSXTheme,
     currentTheme,
     showSidebar,
@@ -208,7 +208,7 @@ export function FinderAppComponent({
   return (
     <AppWindowShell
       isWindowOpen={isWindowOpen}
-      isXpTheme={isXpTheme}
+      isWindowsTheme={isWindowsTheme}
       isForeground={isForeground}
       menuBar={menuBar}
       leading={
@@ -311,7 +311,7 @@ export function FinderAppComponent({
           }}
           legacyToolbarProps={{
             t,
-            isXpTheme,
+            isWindowsTheme,
             currentTheme,
             isAirDropView,
             currentPath,

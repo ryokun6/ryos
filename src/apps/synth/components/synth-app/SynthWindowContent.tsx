@@ -37,7 +37,7 @@ export function SynthWindowContent({ c }: SynthWindowContentProps) {
           isMacOSTheme={c.isMacOSTheme}
           isSystem7Theme={c.isSystem7Theme}
           isClassicTheme={c.isClassicTheme}
-          isXpTheme={c.isXpTheme}
+          isWindowsTheme={c.isWindowsTheme}
         />
 
         <SynthControlsPanel
@@ -52,7 +52,7 @@ export function SynthWindowContent({ c }: SynthWindowContentProps) {
           isMacOSTheme={c.isMacOSTheme}
           isSystem7Theme={c.isSystem7Theme}
           isClassicTheme={c.isClassicTheme}
-          isXpTheme={c.isXpTheme}
+          isWindowsTheme={c.isWindowsTheme}
         />
 
         <SynthKeyboard

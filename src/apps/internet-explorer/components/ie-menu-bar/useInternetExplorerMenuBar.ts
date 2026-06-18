@@ -44,8 +44,8 @@ export function useInternetExplorerMenuBar(props: InternetExplorerMenuBarProps) 
   const {
     isShareDialogOpen,
     setIsShareDialogOpen,
-    isXpTheme,
-    isMacOsxTheme,
+    isWindowsTheme,
+    isMacOSTheme,
     appId,
     appName,
   } = useAppMenuBarChrome("internet-explorer");
@@ -59,8 +59,8 @@ export function useInternetExplorerMenuBar(props: InternetExplorerMenuBarProps) 
     setIsShareDialogOpen,
     appId,
     appName,
-    isXpTheme,
-    isMacOsxTheme,
+    isWindowsTheme,
+    isMacOSTheme,
     futureYears,
     pastYears,
     onRefresh,

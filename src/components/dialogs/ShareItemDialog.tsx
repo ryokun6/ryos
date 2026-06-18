@@ -66,8 +66,8 @@ export function ShareItemDialog({
   const { isLoading, shareUrl } = state;
   const inputRef = useRef<HTMLInputElement>(null);
   const {
-    isWindowsTheme: isXpTheme,
-    isMacOSTheme: isMacOsxTheme,
+    isWindowsTheme,
+    isMacOSTheme,
     isWinXp,
   } = useThemeFlags();
 
@@ -158,15 +158,15 @@ export function ShareItemDialog({
             <p
               className={cn(
                 "text-neutral-500",
-                isXpTheme
+                isWindowsTheme
                   ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[10px]"
                   : "font-geneva-12 text-[10px]"
               )}
               style={{
-                fontFamily: isXpTheme
+                fontFamily: isWindowsTheme
                   ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
                   : undefined,
-                fontSize: isXpTheme ? "10px" : undefined,
+                fontSize: isWindowsTheme ? "10px" : undefined,
               }}
             >
               {t("common.dialog.share.generating")}
@@ -189,15 +189,15 @@ export function ShareItemDialog({
             <p
               className={cn(
                 "text-neutral-500",
-                isXpTheme
+                isWindowsTheme
                   ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[10px]"
                   : "font-geneva-12 text-[10px]"
               )}
               style={{
-                fontFamily: isXpTheme
+                fontFamily: isWindowsTheme
                   ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
                   : undefined,
-                fontSize: isXpTheme ? "10px" : undefined,
+                fontSize: isWindowsTheme ? "10px" : undefined,
               }}
             >
               {t("common.dialog.share.qrCode")}
@@ -208,15 +208,15 @@ export function ShareItemDialog({
         <p
           className={cn(
             "text-neutral-500 text-center mt-0 mb-4 break-words w-[80%]",
-            isXpTheme
+            isWindowsTheme
               ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[10px]"
               : "font-geneva-12 text-xs"
           )}
           style={{
-            fontFamily: isXpTheme
+            fontFamily: isWindowsTheme
               ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
               : undefined,
-            fontSize: isXpTheme ? "10px" : undefined,
+            fontSize: isWindowsTheme ? "10px" : undefined,
           }}
         >
           {descriptionText()}
@@ -229,15 +229,15 @@ export function ShareItemDialog({
           readOnly
           className={cn(
             "shadow-none h-8 w-full",
-            isXpTheme
+            isWindowsTheme
               ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
               : "text-sm"
           )}
           style={{
-            fontFamily: isXpTheme
+            fontFamily: isWindowsTheme
               ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
               : undefined,
-            fontSize: isXpTheme ? "11px" : undefined,
+            fontSize: isWindowsTheme ? "11px" : undefined,
           }}
           placeholder={
             isLoading
@@ -254,15 +254,15 @@ export function ShareItemDialog({
           variant="retro"
           className={cn(
             "w-full h-7",
-            isXpTheme
+            isWindowsTheme
               ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
               : "font-geneva-12 text-[12px]"
           )}
           style={{
-            fontFamily: isXpTheme
+            fontFamily: isWindowsTheme
               ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
               : undefined,
-            fontSize: isXpTheme ? "11px" : undefined,
+            fontSize: isWindowsTheme ? "11px" : undefined,
           }}
         >
           {t("common.dialog.share.copyLink")}
@@ -271,7 +271,7 @@ export function ShareItemDialog({
     </div>
   );
 
-  if (isXpTheme) {
+  if (isWindowsTheme) {
     return (
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
         <DialogContent
@@ -311,7 +311,7 @@ export function ShareItemDialog({
         overlayClassName={overlayClassName}
         onKeyDown={(e: React.KeyboardEvent) => e.stopPropagation()}
       >
-        {isMacOsxTheme ? (
+        {isMacOSTheme ? (
           <>
             <DialogHeader>{t("common.dialog.share.shareItem", { itemType: translatedItemType })}</DialogHeader>
             <DialogDescription className="sr-only">

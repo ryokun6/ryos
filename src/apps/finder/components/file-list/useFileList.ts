@@ -48,7 +48,7 @@ export function useFileList({
     end: SelectionPoint;
   } | null>(null);
   const {
-    isWindowsTheme: isXpTheme,
+    isWindowsTheme,
     isMacOSTheme: isMacOSXTheme,
   } = useThemeFlags();
 
@@ -279,12 +279,12 @@ export function useFileList({
         labelElement.style.background = "transparent";
         labelElement.style.backgroundColor = "transparent";
 
-        if (isMacOSXTheme || isXpTheme) {
+        if (isMacOSXTheme || isWindowsTheme) {
           labelElement.style.color = "white";
           if (isMacOSXTheme) {
             labelElement.style.textShadow =
               "rgba(0, 0, 0, 0.9) 0px 1px 0px, rgba(0, 0, 0, 0.85) 0px 1px 3px, rgba(0, 0, 0, 0.45) 0px 2px 3px";
-          } else if (isXpTheme) {
+          } else if (isWindowsTheme) {
             labelElement.style.textShadow = "1px 1px 2px rgba(0, 0, 0, 0.8)";
           }
         }
@@ -361,7 +361,7 @@ export function useFileList({
         document.body.removeChild(dragImage);
       }
     }, 0);
-  }, [isMacOSXTheme, isXpTheme, viewType]);
+  }, [isMacOSXTheme, isWindowsTheme, viewType]);
 
   const handleDragOver = useCallback((e: React.DragEvent<HTMLElement>, file: FileItem) => {
     if (

@@ -10,7 +10,7 @@ export function AdminPanelHeader({
   title: string;
   actions?: ReactNode;
 }) {
-  const { isMacOSTheme: isMacOSXTheme, isWindowsTheme: isXpTheme } =
+  const { isMacOSTheme: isMacOSXTheme, isWindowsTheme } =
     useThemeFlags();
 
   return (
@@ -18,7 +18,7 @@ export function AdminPanelHeader({
       className={cn(
         adminToolbarClass,
         "flex flex-shrink-0 items-center gap-2 border-b px-2 py-1.5",
-        isXpTheme
+        isWindowsTheme
           ? "border-[#919b9c]"
           : isMacOSXTheme
             ? "border-black/10"

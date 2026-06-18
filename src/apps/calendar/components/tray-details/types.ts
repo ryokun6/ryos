@@ -10,7 +10,7 @@ export interface TrayDetailsProps {
   calendars: CalendarGroup[];
   isMacOSTheme: boolean;
   isSystem7Theme: boolean;
-  isXpTheme: boolean;
+  isWindowsTheme: boolean;
   onUpdateEvent: (id: string, updates: Partial<CalendarEvent>) => void;
   onDeleteEvent: (id: string) => void;
   onUpdateTodo: (
@@ -25,5 +25,5 @@ export interface TrayThemeProps {
   useGeneva: boolean;
   isMacOSTheme: boolean;
   isSystem7Theme: boolean;
-  isXpTheme: boolean;
+  isWindowsTheme: boolean;
 }

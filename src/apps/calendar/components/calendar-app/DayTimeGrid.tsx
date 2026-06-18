@@ -24,7 +24,7 @@ export function DayTimeGrid({
   onTimeSlotClick,
   onEventClick,
   onEventDoubleClick,
-  isXpTheme,
+  isWindowsTheme,
   isMacOSTheme,
   isSystem7Theme,
   searchQuery,
@@ -39,7 +39,7 @@ export function DayTimeGrid({
   onTimeSlotClick: (date: string, hour: number) => void;
   onEventClick: (event: CalendarEvent) => void;
   onEventDoubleClick: (event: CalendarEvent) => void;
-  isXpTheme: boolean;
+  isWindowsTheme: boolean;
   isMacOSTheme: boolean;
   isSystem7Theme: boolean;
   searchQuery: string;
@@ -159,7 +159,7 @@ export function DayTimeGrid({
                 style={{
                   top: (hour - HOUR_START) * hourHeight,
                   height: hourHeight,
-                  borderColor: isXpTheme ? "rgba(0,0,0,0.08)" : "rgba(0,0,0,0.06)",
+                  borderColor: isWindowsTheme ? "rgba(0,0,0,0.08)" : "rgba(0,0,0,0.06)",
                 }}
               />
             ))}
@@ -190,8 +190,8 @@ export function DayTimeGrid({
               return (
                 <div className="absolute left-0 right-0 pointer-events-none" style={{ top: topPos, zIndex: 5 }}>
                   <div className="flex items-center">
-                    <div className="size-2 rounded-full -ml-1 shrink-0" style={{ backgroundColor: isXpTheme ? TODAY_RED_XP : TODAY_RED }} />
-                    <div className="flex-1 h-px min-w-0" style={{ backgroundColor: isXpTheme ? TODAY_RED_XP : TODAY_RED }} />
+                    <div className="size-2 rounded-full -ml-1 shrink-0" style={{ backgroundColor: isWindowsTheme ? TODAY_RED_XP : TODAY_RED }} />
+                    <div className="flex-1 h-px min-w-0" style={{ backgroundColor: isWindowsTheme ? TODAY_RED_XP : TODAY_RED }} />
                   </div>
                 </div>
               );

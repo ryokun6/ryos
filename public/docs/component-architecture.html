@@ -486,7 +486,7 @@
 <pre><code>const Button = React.forwardRef&lt;HTMLButtonElement, ButtonProps&gt;(
   ({ className, variant, ...props }, ref) =&gt; {
     const currentTheme = useThemeStore((state) =&gt; state.current);
-    const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+    const isWindowsTheme = currentTheme === "xp" || currentTheme === "win98";
     const isMacTheme = currentTheme === "macosx";
 
     // macOS Aqua styling
@@ -495,7 +495,7 @@
     }
     
     // Windows styling
-    if (isXpTheme &amp;&amp; variant === "default") {
+    if (isWindowsTheme &amp;&amp; variant === "default") {
       return &lt;Comp className={cn("button", className)} {...props} /&gt;;
     }
     
@@ -606,14 +606,14 @@
 <h3>Standard Pattern</h3>
 <pre><code>function MyComponent() {
   const currentTheme = useThemeStore((state) =&gt; state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isWindowsTheme = currentTheme === "xp" || currentTheme === "win98";
   const isMacTheme = currentTheme === "macosx";
 
   return (
     &lt;div className={cn(
       "base-styles",
       isMacTheme &amp;&amp; "mac-specific-styles",
-      isXpTheme &amp;&amp; "windows-specific-styles",
+      isWindowsTheme &amp;&amp; "windows-specific-styles",
     )}&gt;
       {/* content */}
     &lt;/div&gt;
@@ -670,7 +670,7 @@ function InteractiveButton({ onClick, children }) {
     &lt;DialogHeader&gt;
       {title}
     &lt;/DialogHeader&gt;
-    &lt;div className={isXpTheme ? "window-body" : "p-6"}&gt;
+    &lt;div className={isWindowsTheme ? "window-body" : "p-6"}&gt;
       {content}
     &lt;/div&gt;
     &lt;DialogFooter&gt;

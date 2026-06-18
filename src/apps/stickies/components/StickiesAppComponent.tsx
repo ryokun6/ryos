@@ -28,7 +28,7 @@ export function StickiesAppComponent({
     setIsHelpDialogOpen,
     isAboutDialogOpen,
     setIsAboutDialogOpen,
-    isXpTheme,
+    isWindowsTheme,
     notes,
     selectedNoteId,
     handleCreateNote,
@@ -117,7 +117,7 @@ export function StickiesAppComponent({
     <AppWindowShell
       frameless
       isWindowOpen={isWindowOpen}
-      isXpTheme={isXpTheme}
+      isWindowsTheme={isWindowsTheme}
       isForeground={isForeground}
       menuBar={menuBar}
       trailing={

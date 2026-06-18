@@ -23,16 +23,16 @@ export function ListenSessionBadge({
   className,
 }: ListenSessionBadgeProps) {
   const { t } = useTranslation();
-  const { isWindowsTheme: isXpTheme } = useThemeFlags();
+  const { isWindowsTheme } = useThemeFlags();
 
   const buttonClassName = cn(
     "h-6 px-2 text-[11px]",
-    isXpTheme
+    isWindowsTheme
       ? "font-['Pixelated_MS_Sans_Serif',Arial]"
       : "font-geneva-12"
   );
 
-  const buttonStyle = isXpTheme
+  const buttonStyle = isWindowsTheme
     ? { fontFamily: '"Pixelated MS Sans Serif", "ArkPixel", Arial' }
     : undefined;
 

@@ -256,11 +256,11 @@ const WIDGET_ICONS: Record<WidgetType, string> = {
 
 function WidgetStrip({
   onAdd,
-  isXpTheme,
+  isWindowsTheme,
   onHeightMeasured,
 }: {
   onAdd: (type: WidgetType) => void;
-  isXpTheme: boolean;
+  isWindowsTheme: boolean;
   onHeightMeasured?: (height: number) => void;
 }) {
   const { t } = useTranslation();
@@ -307,20 +307,20 @@ function WidgetStrip({
       <div
         ref={stripRef}
         style={{
-          background: isXpTheme
+          background: isWindowsTheme
             ? "linear-gradient(to bottom, rgba(200,200,200,0.95), rgba(180,180,180,0.98))"
             : "linear-gradient(180deg, #404040 0%, #353535 30%, #2a2a2a 100%)",
-          borderTop: isXpTheme
+          borderTop: isWindowsTheme
             ? "1px solid rgba(255,255,255,0.8)"
             : "1px solid rgba(255,255,255,0.15)",
-          borderBottom: isXpTheme ? undefined : "1px solid #000",
+          borderBottom: isWindowsTheme ? undefined : "1px solid #000",
           paddingBottom: "env(safe-area-inset-bottom, 0px)",
           position: "relative",
           overflow: "hidden",
         }}
       >
         {/* Perforated metal dot pattern */}
-        {!isXpTheme && (
+        {!isWindowsTheme && (
           <div
             style={{
               position: "absolute",
@@ -334,7 +334,7 @@ function WidgetStrip({
           />
         )}
         {/* Top inner highlight */}
-        {!isXpTheme && (
+        {!isWindowsTheme && (
           <div
             style={{
               position: "absolute",
@@ -378,8 +378,8 @@ function WidgetStrip({
               <span
                 className="text-[10px] font-bold text-center leading-tight max-w-[72px] truncate"
                 style={{
-                  color: isXpTheme ? "rgba(0,0,0,0.75)" : "rgba(255,255,255,0.7)",
-                  textShadow: isXpTheme ? "none" : "0 1px 3px rgba(0,0,0,0.5)",
+                  color: isWindowsTheme ? "rgba(0,0,0,0.75)" : "rgba(255,255,255,0.7)",
+                  textShadow: isWindowsTheme ? "none" : "0 1px 3px rgba(0,0,0,0.5)",
                 }}
               >
                 {w.label}
@@ -413,7 +413,7 @@ export function DashboardAppComponent({
     setIsHelpDialogOpen,
     isAboutDialogOpen,
     setIsAboutDialogOpen,
-    isXpTheme,
+    isWindowsTheme,
     widgets,
     handleAddWidget,
     removeWidget,
@@ -532,7 +532,7 @@ export function DashboardAppComponent({
       frameless
       alwaysRenderWhenClosed
       isWindowOpen={isWindowOpen}
-      isXpTheme={isXpTheme}
+      isWindowsTheme={isWindowsTheme}
       isForeground={isForeground}
       menuBar={menuBar}
       trailing={
@@ -580,7 +580,7 @@ export function DashboardAppComponent({
                 data-dashboard-scrim
                 className="absolute inset-0"
                 style={{
-                  background: isXpTheme
+                  background: isWindowsTheme
                     ? "rgba(0,0,0,0.6)"
                     : "rgba(0,0,0,0.55)",
                 }}
@@ -705,7 +705,7 @@ export function DashboardAppComponent({
                   <div data-dashboard-strip>
                     <WidgetStrip
                       onAdd={handleAddWidget}
-                      isXpTheme={isXpTheme}
+                      isWindowsTheme={isWindowsTheme}
                       onHeightMeasured={setStripHeight}
                     />
                   </div>
@@ -735,16 +735,16 @@ export function DashboardAppComponent({
                   width: 36,
                   height: 36,
                   borderRadius: "50%",
-                  background: isXpTheme
+                  background: isWindowsTheme
                     ? "rgba(255,255,255,0.85)"
                     : "linear-gradient(to bottom, rgba(60,60,60,0.7), rgba(30,30,30,0.6))",
-                  border: isXpTheme
+                  border: isWindowsTheme
                     ? "1px solid #ACA899"
                     : "1px solid rgba(255,255,255,0.12)",
-                  boxShadow: isXpTheme
+                  boxShadow: isWindowsTheme
                     ? "1px 1px 4px rgba(0,0,0,0.3)"
                     : "0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)",
-                  color: isXpTheme ? "#000" : "rgba(255,255,255,0.7)",
+                  color: isWindowsTheme ? "#000" : "rgba(255,255,255,0.7)",
                   zIndex: 12,
                   transition: "bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
                 }}

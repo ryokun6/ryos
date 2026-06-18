@@ -59,7 +59,7 @@ export interface AdminMainPaneProps {
   selectedUserProfile: string | null;
   selectedSongId: string | null;
   currentTheme: string;
-  isXpTheme: boolean;
+  isWindowsTheme: boolean;
   t: TFunction;
   userSearch: string;
   setUserSearch: (v: string) => void;
@@ -129,7 +129,7 @@ export function AdminMainPane({
   selectedUserProfile,
   selectedSongId,
   currentTheme,
-  isXpTheme,
+  isWindowsTheme,
   t,
   userSearch,
   setUserSearch,
@@ -205,7 +205,7 @@ export function AdminMainPane({
             <AdminToolbar
               t={t}
               currentTheme={currentTheme}
-              isXpTheme={isXpTheme}
+              isWindowsTheme={isWindowsTheme}
               activeSection={activeSection}
               selectedRoomId={selectedRoomId}
               selectedRoom={selectedRoom}

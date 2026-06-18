@@ -18,7 +18,7 @@ export function AppStoreDetailView({ vm }: AppStoreDetailViewProps) {
     focusWindow,
     selectedApplet,
     selectedAppletContent,
-    isXpTheme,
+    isWindowsTheme,
     isMacChrome,
     isSystem7Chrome,
     isMacTheme,
@@ -43,7 +43,7 @@ export function AppStoreDetailView({ vm }: AppStoreDetailViewProps) {
       <div className="size-full flex flex-col">
         <div
           className={`flex items-center gap-3 px-3 py-2 ${
-            isXpTheme
+            isWindowsTheme
               ? "border-b border-[#919b9c]"
               : isMacChrome
                 ? ""
@@ -52,7 +52,7 @@ export function AppStoreDetailView({ vm }: AppStoreDetailViewProps) {
                   : "bg-neutral-100 border-b border-neutral-200"
           }`}
           style={{
-            background: isXpTheme ? "transparent" : undefined,
+            background: isWindowsTheme ? "transparent" : undefined,
             backgroundImage: isMacChrome ? "var(--os-pinstripe-window)" : undefined,
             borderBottom: isMacChrome
               ? `var(--os-metrics-titlebar-border-width, 1px) solid var(--os-color-titlebar-border-inactive, rgba(0, 0, 0, 0.2))`

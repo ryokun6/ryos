@@ -46,7 +46,7 @@ export function CalendarAppComponent({
   const {
     t, translatedHelpItems,
     isHelpDialogOpen, setIsHelpDialogOpen, isAboutDialogOpen, setIsAboutDialogOpen,
-    isXpTheme, isMacOSTheme, isSystem7Theme,
+    isWindowsTheme, isMacOSTheme, isSystem7Theme,
     searchQuery, setSearchQuery,
     selectedDate, view, monthYearLabel, selectedDateLabel, calendarGrid, selectedDateEvents,
     narrowDayNames, hourLabels, weekDates, weekLabel,
@@ -243,7 +243,7 @@ export function CalendarAppComponent({
   return (
     <AppWindowShell
       isWindowOpen={isWindowOpen}
-      isXpTheme={isXpTheme}
+      isWindowsTheme={isWindowsTheme}
       isForeground={isForeground}
       menuBar={menuBar}
       windowFrameProps={{
@@ -265,7 +265,7 @@ export function CalendarAppComponent({
               calendars={calendars}
               isMacOSTheme={isMacOSTheme}
               isSystem7Theme={isSystem7Theme}
-              isXpTheme={isXpTheme}
+              isWindowsTheme={isWindowsTheme}
               onUpdateEvent={handleUpdateEvent}
               onDeleteEvent={handleDeleteEventFromTray}
               onUpdateTodo={updateTodo}
@@ -333,7 +333,7 @@ export function CalendarAppComponent({
                         selectedDate={selectedDate}
                         todayStr={logic.todayStr}
                         onDateClick={handleDateClick}
-                        isXpTheme={isXpTheme}
+                        isWindowsTheme={isWindowsTheme}
                         isMacOSTheme={isMacOSTheme}
                         isSystem7Theme={isSystem7Theme}
                         monthYearLabel={monthYearLabel}
@@ -362,7 +362,7 @@ export function CalendarAppComponent({
                       selectedDate={selectedDate}
                       todayStr={logic.todayStr}
                       onDateClick={handleDateClick}
-                      isXpTheme={isXpTheme}
+                      isWindowsTheme={isWindowsTheme}
                       isMacOSTheme={isMacOSTheme}
                       isSystem7Theme={isSystem7Theme}
                       monthYearLabel={monthYearLabel}
@@ -389,7 +389,7 @@ export function CalendarAppComponent({
                     onDateClick={handleDateClick} onTimeSlotClick={onNewEventAtTime}
                     onEventClick={(ev) => handleSelectEvent(ev.id)}
                     onEventDoubleClick={(ev) => handleSelectEvent(ev.id, { toggle: false })}
-                    isXpTheme={isXpTheme} isMacOSTheme={isMacOSTheme} isSystem7Theme={isSystem7Theme} searchQuery={normalizedSearchQuery} hourLabels={hourLabels}
+                    isWindowsTheme={isWindowsTheme} isMacOSTheme={isMacOSTheme} isSystem7Theme={isSystem7Theme} searchQuery={normalizedSearchQuery} hourLabels={hourLabels}
                     hourHeight={weekTimeGridHourHeight} setHourHeight={setWeekTimeGridHourHeight}
                     onUpdateEvent={handleUpdateEvent} />
                 )}
@@ -398,7 +398,7 @@ export function CalendarAppComponent({
                     onTimeSlotClick={onNewEventAtTime}
                     onEventClick={(ev) => handleSelectEvent(ev.id)}
                     onEventDoubleClick={(ev) => handleSelectEvent(ev.id, { toggle: false })}
-                    isXpTheme={isXpTheme} isMacOSTheme={isMacOSTheme} isSystem7Theme={isSystem7Theme} searchQuery={normalizedSearchQuery} hourLabels={hourLabels}
+                    isWindowsTheme={isWindowsTheme} isMacOSTheme={isMacOSTheme} isSystem7Theme={isSystem7Theme} searchQuery={normalizedSearchQuery} hourLabels={hourLabels}
                     hourHeight={dayTimeGridHourHeight} setHourHeight={setDayTimeGridHourHeight}
                     onUpdateEvent={handleUpdateEvent} />
                 )}
@@ -407,7 +407,7 @@ export function CalendarAppComponent({
                     onDateClick={handleDateClick} onDateDoubleClick={onDateDoubleClick}
                     onEventClick={(ev) => handleSelectEvent(ev.id)}
                     onEventDoubleClick={(ev) => handleSelectEvent(ev.id, { toggle: false })}
-                    isXpTheme={isXpTheme} searchQuery={normalizedSearchQuery} narrowDayNames={narrowDayNames} />
+                    isWindowsTheme={isWindowsTheme} searchQuery={normalizedSearchQuery} narrowDayNames={narrowDayNames} />
                 )}
               </div>
             )}
@@ -469,7 +469,7 @@ export function CalendarAppComponent({
             showTodoSidebar={showTodoSidebar} onToggleTodoSidebar={() => setShowTodoSidebar(!showTodoSidebar)}
             searchQuery={safeSearchQuery} onSearchQueryChange={setSearchQuery} showSearch={!isNarrow}
             isNarrow={isNarrow}
-            isXpTheme={isXpTheme} isMacOSTheme={isMacOSTheme} isSystem7Theme={isSystem7Theme} t={t}
+            isWindowsTheme={isWindowsTheme} isMacOSTheme={isMacOSTheme} isSystem7Theme={isSystem7Theme} t={t}
           />
         </div>
     </AppWindowShell>

@@ -17,7 +17,7 @@ export interface AppStoreFeedCardProps {
   appletsCount: number;
   isMacTheme: boolean;
   isSystem7Theme: boolean;
-  isXpTheme: boolean;
+  isWindowsTheme: boolean;
   actions: AppletActions;
   content: string | undefined;
   isLoadingContent: boolean;
@@ -35,7 +35,7 @@ export function AppStoreFeedCard({
   appletsCount,
   isMacTheme,
   isSystem7Theme,
-  isXpTheme,
+  isWindowsTheme,
   actions,
   content,
   isLoadingContent,
@@ -157,7 +157,7 @@ export function AppStoreFeedCard({
 
       <div
         className={`absolute top-0 left-0 right-0 z-10 flex items-center gap-3 px-3 py-2 ${
-          isXpTheme
+          isWindowsTheme
             ? "border-b border-[#919b9c]"
             : isMacTheme
               ? ""
@@ -167,7 +167,7 @@ export function AppStoreFeedCard({
         }`}
         style={{
           flexWrap: "nowrap",
-          background: isXpTheme ? "transparent" : undefined,
+          background: isWindowsTheme ? "transparent" : undefined,
           backgroundImage: isMacTheme
             ? "var(--os-pinstripe-window)"
             : undefined,

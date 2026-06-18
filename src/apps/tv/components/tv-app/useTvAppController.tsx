@@ -27,7 +27,7 @@ export function useTvAppController({
   const {
     t,
     translatedHelpItems,
-    isXpTheme,
+    isWindowsTheme,
     isMacOSTheme,
     isHelpDialogOpen,
     setIsHelpDialogOpen,
@@ -261,7 +261,7 @@ export function useTvAppController({
     skipInitialSound,
     t,
     translatedHelpItems,
-    isXpTheme,
+    isWindowsTheme,
     isMacOSTheme,
     isHelpDialogOpen,
     setIsHelpDialogOpen,

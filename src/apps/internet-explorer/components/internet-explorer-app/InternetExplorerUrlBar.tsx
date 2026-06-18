@@ -16,7 +16,7 @@ export interface InternetExplorerUrlBarProps {
   localUrl: string;
   url: string;
   isOffline: boolean;
-  isXpTheme: boolean;
+  isWindowsTheme: boolean;
   currentTheme: string;
   isUrlDropdownOpen: boolean;
   filteredSuggestions: InternetExplorerSuggestionItem[];
@@ -44,7 +44,7 @@ export function InternetExplorerUrlBar({
   localUrl,
   url,
   isOffline,
-  isXpTheme,
+  isWindowsTheme,
   currentTheme,
   isUrlDropdownOpen,
   filteredSuggestions,
@@ -158,7 +158,7 @@ export function InternetExplorerUrlBar({
           setIsUrlDropdownOpen(true);
         }}
         className={`flex-1 pl-2 pr-8 ${
-          isXpTheme
+          isWindowsTheme
             ? "!text-[11px]"
             : currentTheme === "macosx"
               ? "!text-[12px] h-[26px]"

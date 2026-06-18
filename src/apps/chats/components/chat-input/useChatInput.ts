@@ -79,7 +79,7 @@ export function useChatInput({
   const aiModel = useAppStoreShallow((s) => s.aiModel);
   const {
     isMacOSTheme: isMacTheme,
-    isWindowsTheme: isXpTheme,
+    isWindowsTheme,
     isAquaGlass,
   } = useThemeFlags();
 
@@ -382,7 +382,7 @@ export function useChatInput({
     audioButtonRef,
     imageInputRef,
     isMacTheme,
-    isXpTheme,
+    isWindowsTheme,
     isAquaGlass,
     debugMode,
     modelDisplayName,

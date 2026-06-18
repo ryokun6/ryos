@@ -26,7 +26,7 @@ export function WeekTimeGrid({
   onTimeSlotClick,
   onEventClick,
   onEventDoubleClick,
-  isXpTheme,
+  isWindowsTheme,
   isMacOSTheme,
   isSystem7Theme,
   searchQuery,
@@ -41,7 +41,7 @@ export function WeekTimeGrid({
   onTimeSlotClick: (date: string, hour: number) => void;
   onEventClick: (event: CalendarEvent) => void;
   onEventDoubleClick: (event: CalendarEvent) => void;
-  isXpTheme: boolean;
+  isWindowsTheme: boolean;
   isMacOSTheme: boolean;
   isSystem7Theme: boolean;
   searchQuery: string;
@@ -135,7 +135,7 @@ export function WeekTimeGrid({
                 )}
                 style={{
                   width: 22, height: 22, lineHeight: "22px",
-                  ...(day.isToday ? { backgroundColor: isXpTheme ? TODAY_RED_XP : TODAY_RED } : {}),
+                  ...(day.isToday ? { backgroundColor: isWindowsTheme ? TODAY_RED_XP : TODAY_RED } : {}),
                 }}
               >
                 {day.dayOfMonth}
@@ -204,7 +204,7 @@ export function WeekTimeGrid({
                   dayColRefs.current[di] = el;
                 }}
                 className="flex-1 relative min-w-0"
-                style={{ borderLeft: isXpTheme ? "1px solid rgba(0,0,0,0.06)" : "1px solid rgba(0,0,0,0.04)" }}
+                style={{ borderLeft: isWindowsTheme ? "1px solid rgba(0,0,0,0.06)" : "1px solid rgba(0,0,0,0.04)" }}
               >
                 {Array.from({ length: totalHours }, (_, hourOffset) => HOUR_START + hourOffset).map((hour) => (
                   <button
@@ -215,7 +215,7 @@ export function WeekTimeGrid({
                     style={{
                       top: (hour - HOUR_START) * hourHeight,
                       height: hourHeight,
-                      borderColor: isXpTheme ? "rgba(0,0,0,0.08)" : "rgba(0,0,0,0.06)",
+                      borderColor: isWindowsTheme ? "rgba(0,0,0,0.08)" : "rgba(0,0,0,0.06)",
                     }}
                   />
                 ))}
@@ -247,8 +247,8 @@ export function WeekTimeGrid({
                   return (
                     <div className="absolute left-0 right-0 pointer-events-none" style={{ top: topPos, zIndex: 5 }}>
                       <div className="flex items-center">
-                        <div className="size-2 rounded-full -ml-1" style={{ backgroundColor: isXpTheme ? TODAY_RED_XP : TODAY_RED }} />
-                        <div className="flex-1 h-px" style={{ backgroundColor: isXpTheme ? TODAY_RED_XP : TODAY_RED }} />
+                        <div className="size-2 rounded-full -ml-1" style={{ backgroundColor: isWindowsTheme ? TODAY_RED_XP : TODAY_RED }} />
+                        <div className="flex-1 h-px" style={{ backgroundColor: isWindowsTheme ? TODAY_RED_XP : TODAY_RED }} />
                       </div>
                     </div>
                   );

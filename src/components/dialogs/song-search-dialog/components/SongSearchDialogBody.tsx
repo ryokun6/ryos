@@ -10,7 +10,7 @@ type SongSearchDialogBodyProps = SongSearchDialogViewModel;
 export function SongSearchDialogBody(vm: SongSearchDialogBodyProps) {
   const {
     t,
-    isXpTheme,
+    isWindowsTheme,
     isMacTheme,
     dispatch,
     results,
@@ -32,7 +32,7 @@ export function SongSearchDialogBody(vm: SongSearchDialogBodyProps) {
   return (
     <div
       className={cn(
-        isXpTheme ? "p-2 px-4" : "p-4 px-6",
+        isWindowsTheme ? "p-2 px-4" : "p-4 px-6",
         "overflow-hidden w-full box-border"
       )}
     >

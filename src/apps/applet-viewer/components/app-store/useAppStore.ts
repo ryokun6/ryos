@@ -50,7 +50,7 @@ export function useAppStore({ theme, sharedAppletId, focusWindow }: AppStoreProp
   const {
     isMacOSTheme: osIsMac,
     isSystem7Theme: osIsSystem7,
-    isWindowsTheme: isXpTheme,
+    isWindowsTheme,
   } = useThemeFlags();
   const isMacChrome = theme === "macosx" || osIsMac;
   const isSystem7Chrome = theme === "system7" || osIsSystem7;
@@ -456,7 +456,7 @@ export function useAppStore({ theme, sharedAppletId, focusWindow }: AppStoreProp
     setShowListView,
     isBulkUpdating,
     isAdmin,
-    isXpTheme,
+    isWindowsTheme,
     isMacChrome,
     isSystem7Chrome,
     isMacTheme,

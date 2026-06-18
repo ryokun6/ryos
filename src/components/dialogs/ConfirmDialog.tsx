@@ -33,7 +33,7 @@ export function ConfirmDialog({
   const confirmButtonRef = useRef<HTMLButtonElement>(null);
   const { play: playAlertSound } = useSound(Sounds.ALERT_SOSUMI);
   const {
-    isWindowsTheme: isXpTheme,
+    isWindowsTheme,
     isMacOSTheme: isMacTheme,
   } = useThemeFlags();
 
@@ -45,7 +45,7 @@ export function ConfirmDialog({
   }, [isOpen, playAlertSound]);
 
   const dialogContent = (
-    <div className={isXpTheme ? "p-2 px-4" : "p-6"}>
+    <div className={isWindowsTheme ? "p-2 px-4" : "p-6"}>
       <div className="flex gap-3 items-start">
         <ThemedIcon
           name="warn.png"
@@ -57,15 +57,15 @@ export function ConfirmDialog({
         <p
           className={cn(
             "text-neutral-900 mb-2 leading-tight",
-            isXpTheme
+            isWindowsTheme
               ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
               : "font-geneva-12 text-[12px]"
           )}
           style={{
-            fontFamily: isXpTheme
+            fontFamily: isWindowsTheme
               ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
               : undefined,
-            fontSize: isXpTheme ? "11px" : undefined,
+            fontSize: isWindowsTheme ? "11px" : undefined,
           }}
         >
           {description}
@@ -77,15 +77,15 @@ export function ConfirmDialog({
           onClick={() => onOpenChange(false)}
           className={cn(
             "h-7",
-            isXpTheme
+            isWindowsTheme
               ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
               : "font-geneva-12 text-[12px]"
           )}
           style={{
-            fontFamily: isXpTheme
+            fontFamily: isWindowsTheme
               ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
               : undefined,
-            fontSize: isXpTheme ? "11px" : undefined,
+            fontSize: isWindowsTheme ? "11px" : undefined,
           }}
         >
           {t("common.dialog.cancel")}
@@ -96,15 +96,15 @@ export function ConfirmDialog({
           ref={confirmButtonRef}
           className={cn(
             !isMacTheme && "h-7",
-            isXpTheme
+            isWindowsTheme
               ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
               : "font-geneva-12 text-[12px]"
           )}
           style={{
-            fontFamily: isXpTheme
+            fontFamily: isWindowsTheme
               ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
               : undefined,
-            fontSize: isXpTheme ? "11px" : undefined,
+            fontSize: isWindowsTheme ? "11px" : undefined,
           }}
         >
           {t("common.dialog.confirm")}
@@ -116,14 +116,14 @@ export function ConfirmDialog({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
-        className={cn("max-w-[400px]", isXpTheme && "p-0 overflow-hidden")}
-        style={isXpTheme ? { fontSize: "11px" } : undefined}
+        className={cn("max-w-[400px]", isWindowsTheme && "p-0 overflow-hidden")}
+        style={isWindowsTheme ? { fontSize: "11px" } : undefined}
         onOpenAutoFocus={(e) => {
           e.preventDefault();
           confirmButtonRef.current?.focus();
         }}
       >
-        {isXpTheme ? (
+        {isWindowsTheme ? (
           <>
             <DialogHeader>{title}</DialogHeader>
             <div className="window-body">{dialogContent}</div>

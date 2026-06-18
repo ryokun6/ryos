@@ -13,7 +13,7 @@ type ContactsListPanelProps = {
 export function ContactsListPanel({ c }: ContactsListPanelProps) {
   const {
     t,
-    isMacOsxTheme,
+    isMacOSTheme,
     useGeneva,
     contacts,
     selectedContact,
@@ -26,7 +26,7 @@ export function ContactsListPanel({ c }: ContactsListPanelProps) {
 
   return (
     <Panel
-      bordered={isMacOsxTheme}
+      bordered={isMacOSTheme}
       className={cn(
         "flex flex-col min-h-0",
         isMobileLayout
@@ -38,7 +38,7 @@ export function ContactsListPanel({ c }: ContactsListPanelProps) {
             : "flex-1 min-w-0"
       )}
       style={
-        !isMacOsxTheme
+        !isMacOSTheme
           ? showCardPanel && isMobileLayout
             ? { borderBottom: "1px solid rgba(0,0,0,0.08)" }
             : showCardPanel
@@ -52,7 +52,7 @@ export function ContactsListPanel({ c }: ContactsListPanelProps) {
           defaultValue: "Name",
         })}
         useGeneva={useGeneva}
-        bordered={isMacOsxTheme}
+        bordered={isMacOSTheme}
       />
       <div className={cn("flex-1 overflow-y-auto", useGeneva && "font-geneva-12")}>
         {contacts.length === 0

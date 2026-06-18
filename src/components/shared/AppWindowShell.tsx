@@ -8,7 +8,7 @@ type WindowFramePassthrough = Omit<
 
 type AppWindowShellBaseProps = {
   isWindowOpen: boolean | undefined;
-  isXpTheme: boolean;
+  isWindowsTheme: boolean;
   isForeground: boolean | undefined;
   menuBar: ReactNode;
   children: ReactNode;
@@ -42,7 +42,7 @@ export type AppWindowShellProps = AppWindowShellBaseProps &
  */
 export function AppWindowShell({
   isWindowOpen,
-  isXpTheme,
+  isWindowsTheme,
   isForeground,
   menuBar,
   windowFrameProps,
@@ -55,7 +55,7 @@ export function AppWindowShell({
   if (!isWindowOpen && !alwaysRenderWhenClosed) return null;
 
   const showMacMenuBar =
-    !isXpTheme &&
+    !isWindowsTheme &&
     isForeground &&
     (alwaysRenderWhenClosed ? !!isWindowOpen : true);
 
@@ -76,7 +76,7 @@ export function AppWindowShell({
       {showMacMenuBar && menuBar}
       <WindowFrame
         {...windowFrameProps!}
-        menuBar={isXpTheme ? menuBar : undefined}
+        menuBar={isWindowsTheme ? menuBar : undefined}
       >
         {children}
       </WindowFrame>

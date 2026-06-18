@@ -59,7 +59,7 @@ export function useAppStoreFeedController({
 
   const isMacTheme = theme === "macosx" || osIsMac;
   const isSystem7Theme = theme === "system7" || osIsSystem7;
-  const isXpTheme = osIsXp;
+  const isWindowsTheme = osIsXp;
 
   const actions = useAppletActions();
 
@@ -281,7 +281,7 @@ export function useAppStoreFeedController({
     loadingContents,
     isMacTheme,
     isSystem7Theme,
-    isXpTheme,
+    isWindowsTheme,
     actions,
     scrollToIndex,
     handleInstall,

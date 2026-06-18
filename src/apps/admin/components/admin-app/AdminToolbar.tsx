@@ -24,7 +24,7 @@ interface RoomLite {
 interface AdminToolbarProps {
   t: TFunction;
   currentTheme: string;
-  isXpTheme: boolean;
+  isWindowsTheme: boolean;
   activeSection: AdminSection;
   selectedRoomId: string | null;
   selectedRoom: RoomLite | null;
@@ -56,7 +56,7 @@ interface AdminToolbarProps {
 export function AdminToolbar({
   t,
   currentTheme,
-  isXpTheme,
+  isWindowsTheme,
   activeSection,
   selectedRoomId,
   selectedRoom,
@@ -84,7 +84,7 @@ export function AdminToolbar({
     {
       isMacOSTheme: currentTheme === "macosx",
       isSystem7Theme: currentTheme === "system7",
-      isXpTheme,
+      isWindowsTheme,
       isWin98: currentTheme === "win98",
     },
     {

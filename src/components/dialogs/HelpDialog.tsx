@@ -33,7 +33,7 @@ interface HelpCardProps {
 }
 
 function HelpCard({ icon, title, description }: HelpCardProps) {
-  const { isWindowsTheme: isXpTheme, isMacOSTheme: isMacTheme } =
+  const { isWindowsTheme, isMacOSTheme: isMacTheme } =
     useThemeFlags();
 
   return (
@@ -48,14 +48,14 @@ function HelpCard({ icon, title, description }: HelpCardProps) {
         <h3
           className={cn(
             "font-medium leading-snug",
-            isXpTheme && "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]",
+            isWindowsTheme && "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]",
             isMacTheme && "font-bold"
           )}
           style={{
-            fontFamily: isXpTheme
+            fontFamily: isWindowsTheme
               ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
               : undefined,
-            fontSize: isXpTheme ? "11px" : undefined,
+            fontSize: isWindowsTheme ? "11px" : undefined,
           }}
         >
           {title}
@@ -63,15 +63,15 @@ function HelpCard({ icon, title, description }: HelpCardProps) {
         <p
           className={cn(
             "mt-0.5 text-neutral-700 leading-snug",
-            isXpTheme
+            isWindowsTheme
               ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[10px]"
               : "font-geneva-12 text-[10px]"
           )}
           style={{
-            fontFamily: isXpTheme
+            fontFamily: isWindowsTheme
               ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
               : undefined,
-            fontSize: isXpTheme ? "10px" : undefined,
+            fontSize: isWindowsTheme ? "10px" : undefined,
           }}
         >
           {description}
@@ -155,7 +155,7 @@ export function HelpDialog({
   appId,
 }: HelpDialogProps) {
   const { t } = useTranslation();
-  const { isWindowsTheme: isXpTheme, isMacOSTheme: isMacTheme } =
+  const { isWindowsTheme, isMacOSTheme: isMacTheme } =
     useThemeFlags();
   const launchApp = useAppStore((state) => state.launchApp);
 
@@ -180,20 +180,20 @@ export function HelpDialog({
   };
 
   const dialogContent = (
-    <div className={isXpTheme ? "p-2 px-4" : "p-6 pt-4"}>
+    <div className={isWindowsTheme ? "p-2 px-4" : "p-6 pt-4"}>
       <div className="mb-4 flex items-center justify-between">
         <p
           className={cn(
             "text-2xl",
-            isXpTheme
+            isWindowsTheme
               ? "font-['Pixelated_MS_Sans_Serif',Arial]"
               : "font-apple-garamond"
           )}
           style={{
-            fontFamily: isXpTheme
+            fontFamily: isWindowsTheme
               ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
               : undefined,
-            fontSize: isXpTheme ? "18px" : undefined,
+            fontSize: isWindowsTheme ? "18px" : undefined,
           }}
         >
           {t("common.dialog.welcomeTo", { appName: displayAppName })}
@@ -205,7 +205,7 @@ export function HelpDialog({
           >
             {t("common.dialog.viewDocs")}
           </button>
-        ) : isXpTheme ? (
+        ) : isWindowsTheme ? (
           <button className="button" onClick={handleViewDocs}>
             {t("common.dialog.viewDocs")}
           </button>
@@ -241,11 +241,11 @@ export function HelpDialog({
       <DialogContent
         className={cn(
           "max-w-[min(600px,calc(100vw-1.5rem))] overflow-hidden",
-          isXpTheme && "p-0"
+          isWindowsTheme && "p-0"
         )}
-        style={isXpTheme ? { fontSize: "11px" } : undefined}
+        style={isWindowsTheme ? { fontSize: "11px" } : undefined}
       >
-        {isXpTheme ? (
+        {isWindowsTheme ? (
           <>
             <DialogHeader>{t("common.dialog.help")}</DialogHeader>
             <div className="window-body overflow-hidden">{dialogContent}</div>

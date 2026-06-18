@@ -32,7 +32,7 @@ export function ListenSessionInvite({
   const { t } = useTranslation();
   const [shareUrl, setShareUrl] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
-  const { isWindowsTheme: isXpTheme, isMacOSTheme: isMacOsxTheme, isWinXp } =
+  const { isWindowsTheme, isMacOSTheme, isWinXp } =
     useThemeFlags();
 
   const baseUrl = useMemo(() => {
@@ -80,7 +80,7 @@ export function ListenSessionInvite({
   };
 
   const dialogContent = (
-    <div className={isXpTheme ? "p-2 px-4" : "p-3"}>
+    <div className={isWindowsTheme ? "p-2 px-4" : "p-3"}>
       <div className="flex flex-col items-center space-y-3 w-full">
         <div className="bg-white p-1.5 size-32 flex items-center justify-center">
           <QRCodeSVG
@@ -94,15 +94,15 @@ export function ListenSessionInvite({
         <p
           className={cn(
             "text-neutral-500 text-center",
-            isXpTheme
+            isWindowsTheme
               ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[10px]"
               : "font-geneva-12 text-xs"
           )}
           style={{
-            fontFamily: isXpTheme
+            fontFamily: isWindowsTheme
               ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
               : undefined,
-            fontSize: isXpTheme ? "10px" : undefined,
+            fontSize: isWindowsTheme ? "10px" : undefined,
           }}
         >
           {t("apps.karaoke.liveListen.shareLinkInvite")}
@@ -114,15 +114,15 @@ export function ListenSessionInvite({
           readOnly
           className={cn(
             "shadow-none h-8 w-full",
-            isXpTheme
+            isWindowsTheme
               ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
               : "text-sm"
           )}
           style={{
-            fontFamily: isXpTheme
+            fontFamily: isWindowsTheme
               ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
               : undefined,
-            fontSize: isXpTheme ? "11px" : undefined,
+            fontSize: isWindowsTheme ? "11px" : undefined,
           }}
         />
       </div>
@@ -133,15 +133,15 @@ export function ListenSessionInvite({
           onClick={handleCopy}
           className={cn(
             "h-7 w-full",
-            isXpTheme
+            isWindowsTheme
               ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
               : "font-geneva-12 text-[12px]"
           )}
           style={{
-            fontFamily: isXpTheme
+            fontFamily: isWindowsTheme
               ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
               : undefined,
-            fontSize: isXpTheme ? "11px" : undefined,
+            fontSize: isWindowsTheme ? "11px" : undefined,
           }}
         >
           {t("apps.karaoke.liveListen.copyLink")}
@@ -150,7 +150,7 @@ export function ListenSessionInvite({
     </div>
   );
 
-  if (isXpTheme) {
+  if (isWindowsTheme) {
     return (
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
         <DialogContent
@@ -179,7 +179,7 @@ export function ListenSessionInvite({
         className="bg-os-window-bg border-[length:var(--os-metrics-border-width)] border-os-window rounded-os shadow-os-window max-w-xs"
         onKeyDown={(e: React.KeyboardEvent) => e.stopPropagation()}
       >
-        {isMacOsxTheme ? (
+        {isMacOSTheme ? (
           <>
             <DialogHeader>{t("apps.karaoke.liveListen.inviteToListen")}</DialogHeader>
             <DialogDescription className="sr-only">

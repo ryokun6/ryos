@@ -92,7 +92,7 @@ export function StocksWidgetXpView({
           <MiniChart
             history={chartHistory}
             xLabels={xLabels}
-            isXpTheme
+            isWindowsTheme
             widgetId={widgetId}
           />
         </div>

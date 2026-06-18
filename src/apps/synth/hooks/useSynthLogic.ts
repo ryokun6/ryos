@@ -196,11 +196,11 @@ export const useSynthLogic = ({
   const { t } = useTranslation();
   const translatedHelpItems = useTranslatedHelpItems("synth", helpItems);
   const {
-    isWindowsTheme: isXpTheme,
+    isWindowsTheme,
     isSystem7Theme,
     isMacOSTheme,
   } = useThemeFlags();
-  const isClassicTheme = isMacOSTheme || isXpTheme;
+  const isClassicTheme = isMacOSTheme || isWindowsTheme;
 
   // Define keyboard layout with extended range
   const allWhiteKeys = [
@@ -1242,7 +1242,7 @@ export const useSynthLogic = ({
     analyzerRef,
     appContainerRef,
     keyboardContainerRef,
-    isXpTheme,
+    isWindowsTheme,
     isSystem7Theme,
     isClassicTheme,
     isMacOSTheme,

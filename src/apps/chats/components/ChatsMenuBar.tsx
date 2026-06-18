@@ -118,8 +118,8 @@ export const ChatsMenuBar = memo(function ChatsMenuBar({
   const {
     isShareDialogOpen,
     setIsShareDialogOpen,
-    isXpTheme,
-    isMacOsxTheme,
+    isWindowsTheme,
+    isMacOSTheme,
     appId,
     appName,
   } = useAppMenuBarChrome("chats");
@@ -183,8 +183,8 @@ export const ChatsMenuBar = memo(function ChatsMenuBar({
   return (
     <>
       <AppMenuBarShell
-        isXpTheme={isXpTheme}
-        isMacOsxTheme={isMacOsxTheme}
+        isWindowsTheme={isWindowsTheme}
+        isMacOSTheme={isMacOSTheme}
         appId={appId}
         appName={appName}
         isShareDialogOpen={isShareDialogOpen}

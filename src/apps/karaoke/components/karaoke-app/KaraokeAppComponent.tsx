@@ -25,7 +25,7 @@ export function KaraokeAppComponent({
   });
 
   const {
-    isXpTheme,
+    isWindowsTheme,
     menuBar,
     currentTrack,
     toggleFullScreen,
@@ -40,7 +40,7 @@ export function KaraokeAppComponent({
   return (
     <AppWindowShell
       isWindowOpen={isWindowOpen}
-      isXpTheme={isXpTheme}
+      isWindowsTheme={isWindowsTheme}
       isForeground={isForeground}
       menuBar={menuBar}
       windowFrameProps={{

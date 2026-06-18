@@ -1671,7 +1671,7 @@ export function useKaraokeLogic({
     return onAppUpdate(handleUpdateApp);
   }, [processVideoId, bringInstanceToForeground, joinListenSession, username, instanceId]);
 
-  const { isWindowsTheme: isXpTheme } = useThemeFlags();
+  const { isWindowsTheme } = useThemeFlags();
 
   const getCurrentKaraokeTrack = useCallback(() => {
     return useKaraokeStore.getState().getCurrentTrack();
@@ -1812,7 +1812,7 @@ export function useKaraokeLogic({
     setLyricOffset: (index: number, offsetMs: number) => {
       useMediaLibraryStore.getState().setLyricOffset(index, offsetMs, "youtube");
     },
-    isXpTheme,
+    isWindowsTheme,
     getCurrentKaraokeTrack,
     adjustLyricOffset: (index: number, delta: number) => {
       useMediaLibraryStore.getState().adjustLyricOffset(index, delta, "youtube");

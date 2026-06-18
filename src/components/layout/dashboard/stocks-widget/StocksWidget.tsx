@@ -9,7 +9,7 @@ import { StocksWidgetXpView } from "./StocksWidgetXpView";
 
 export function StocksWidget({ widgetId }: StocksWidgetProps) {
   const { t } = useTranslation();
-  const { isWindowsTheme: isXpTheme } = useThemeFlags();
+  const { isWindowsTheme } = useThemeFlags();
 
   const {
     stocks,
@@ -29,7 +29,7 @@ export function StocksWidget({ widgetId }: StocksWidgetProps) {
         className="flex items-center justify-center"
         style={{
           minHeight: 200,
-          color: isXpTheme ? "#888" : "rgba(255,255,255,0.4)",
+          color: isWindowsTheme ? "#888" : "rgba(255,255,255,0.4)",
           fontSize: 13,
           fontFamily: STOCKS_FONT,
         }}
@@ -45,7 +45,7 @@ export function StocksWidget({ widgetId }: StocksWidgetProps) {
         className="flex flex-col items-center justify-center gap-2 p-4"
         style={{
           minHeight: 200,
-          color: isXpTheme ? "#888" : "rgba(255,255,255,0.4)",
+          color: isWindowsTheme ? "#888" : "rgba(255,255,255,0.4)",
           fontSize: 13,
           fontFamily: STOCKS_FONT,
         }}
@@ -57,7 +57,7 @@ export function StocksWidget({ widgetId }: StocksWidgetProps) {
           onClick={loadQuotes}
           className="flex items-center gap-1 hover:opacity-80"
           style={{
-            color: isXpTheme ? "#0066CC" : "rgba(130,180,255,0.9)",
+            color: isWindowsTheme ? "#0066CC" : "rgba(130,180,255,0.9)",
             fontSize: 12,
             cursor: "pointer",
             border: "none",
@@ -82,7 +82,7 @@ export function StocksWidget({ widgetId }: StocksWidgetProps) {
     onSelectRange: setSelectedRange,
   };
 
-  if (isXpTheme) {
+  if (isWindowsTheme) {
     return <StocksWidgetXpView {...viewProps} />;
   }
 

@@ -56,7 +56,7 @@ export function WinampAppComponent({
     setIsHelpDialogOpen,
     isAboutDialogOpen,
     setIsAboutDialogOpen,
-    isXpTheme,
+    isWindowsTheme,
   } = useWinampLogic();
 
   const handleSkinChange = useCallback((url: string | null) => {
@@ -325,7 +325,7 @@ export function WinampAppComponent({
     <AppWindowShell
       frameless
       isWindowOpen={isWindowOpen}
-      isXpTheme={isXpTheme}
+      isWindowsTheme={isWindowsTheme}
       isForeground={isForeground}
       menuBar={menuBar}
       trailing={

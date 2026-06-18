@@ -16,7 +16,7 @@ interface AppMenuBarHelpMenuProps {
   helpItemLabel: string;
   aboutItemLabel: string;
   shareItemLabel?: string;
-  isMacOsxTheme: boolean;
+  isMacOSTheme: boolean;
   onShowHelp?: () => void;
   onShowAbout?: () => void;
   onOpenShareDialog: () => void;
@@ -26,7 +26,7 @@ export function AppMenuBarHelpMenu({
   helpItemLabel,
   aboutItemLabel,
   shareItemLabel,
-  isMacOsxTheme,
+  isMacOSTheme,
   onShowHelp,
   onShowAbout,
   onOpenShareDialog,
@@ -46,7 +46,7 @@ export function AppMenuBarHelpMenu({
         >
           {helpItemLabel}
         </MenubarItem>
-        {!isMacOsxTheme && (
+        {!isMacOSTheme && (
           <>
             <MenubarItem
               onSelect={onOpenShareDialog}

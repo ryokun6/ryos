@@ -7,7 +7,7 @@ import { useThemeFlags } from "@/hooks/useThemeFlags";
 export function useWinampLogic() {
   const { t } = useTranslation();
   const translatedHelpItems = useTranslatedHelpItems("winamp", helpItems);
-  const { isWindowsTheme: isXpTheme } = useThemeFlags();
+  const { isWindowsTheme } = useThemeFlags();
 
   const {
     isHelpDialogOpen,
@@ -19,7 +19,7 @@ export function useWinampLogic() {
   return {
     t,
     translatedHelpItems,
-    isXpTheme,
+    isWindowsTheme,
     isHelpDialogOpen,
     setIsHelpDialogOpen,
     isAboutDialogOpen,

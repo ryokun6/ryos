@@ -19,7 +19,7 @@ import { InternetExplorerFavoritesBar } from "./InternetExplorerFavoritesBar";
 import type { InternetExplorerSuggestionItem } from "./types";
 
 export interface InternetExplorerToolbarProps {
-  isXpTheme: boolean;
+  isWindowsTheme: boolean;
   currentTheme: string;
   isOffline: boolean;
   historyIndex: number;
@@ -60,7 +60,7 @@ export interface InternetExplorerToolbarProps {
 }
 
 export function InternetExplorerToolbar({
-  isXpTheme,
+  isWindowsTheme,
   currentTheme,
   isOffline,
   historyIndex,
@@ -102,7 +102,7 @@ export function InternetExplorerToolbar({
   return (
     <div
       className={`flex flex-col gap-1 p-1 ${
-        isXpTheme
+        isWindowsTheme
           ? "bg-transparent border-b border-[#919b9c]"
           : currentTheme === "macosx"
             ? "bg-transparent"
@@ -159,7 +159,7 @@ export function InternetExplorerToolbar({
           localUrl={localUrl}
           url={url}
           isOffline={isOffline}
-          isXpTheme={isXpTheme}
+          isWindowsTheme={isWindowsTheme}
           currentTheme={currentTheme}
           isUrlDropdownOpen={isUrlDropdownOpen}
           filteredSuggestions={filteredSuggestions}
@@ -185,7 +185,7 @@ export function InternetExplorerToolbar({
           <Select value={year} onValueChange={(newYear) => handleNavigate(url, newYear)}>
             <SelectTrigger
               className={
-                isXpTheme
+                isWindowsTheme
                   ? "!text-[11px]"
                   : currentTheme === "macosx"
                     ? "!text-[12px]"

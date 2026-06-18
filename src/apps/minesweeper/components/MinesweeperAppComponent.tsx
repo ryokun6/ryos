@@ -180,7 +180,7 @@ export function MinesweeperAppComponent({
     remainingMines,
     totalMines,
     minesweeperStyles,
-    isXpTheme,
+    isWindowsTheme,
     isMacTheme,
     handleCellClick,
     handleCellRightClick,
@@ -207,7 +207,7 @@ export function MinesweeperAppComponent({
   return (
     <AppWindowShell
       isWindowOpen={isWindowOpen}
-      isXpTheme={isXpTheme}
+      isWindowsTheme={isWindowsTheme}
       isForeground={isForeground}
       menuBar={menuBar}
       leading={<style>{minesweeperStyles}</style>}

@@ -90,7 +90,7 @@ export function LyricsSearchDialog({
 }: LyricsSearchDialogProps) {
   const { t } = useTranslation();
   const {
-    isWindowsTheme: isXpTheme,
+    isWindowsTheme,
     isMacOSTheme: isMacTheme,
   } = useThemeFlags();
 
@@ -235,19 +235,19 @@ export function LyricsSearchDialog({
   }, []);
 
   const dialogContent = (
-    <div className={isXpTheme ? "p-2 px-4" : "p-4 px-6"}>
+    <div className={isWindowsTheme ? "p-2 px-4" : "p-4 px-6"}>
       <p
         className={cn(
           "text-neutral-500 mb-2",
-          isXpTheme
+          isWindowsTheme
             ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
             : "font-geneva-12 text-[12px]"
         )}
         style={{
-          fontFamily: isXpTheme
+          fontFamily: isWindowsTheme
             ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
             : undefined,
-          fontSize: isXpTheme ? "11px" : undefined,
+          fontSize: isWindowsTheme ? "11px" : undefined,
         }}
         id="dialog-description"
       >
@@ -273,15 +273,15 @@ export function LyricsSearchDialog({
           placeholder={t("apps.ipod.dialogs.lyricsSearchPlaceholder")}
           className={cn(
             "shadow-none flex-1",
-            isXpTheme
+            isWindowsTheme
               ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
               : "font-geneva-12 text-[12px]"
           )}
           style={{
-            fontFamily: isXpTheme
+            fontFamily: isWindowsTheme
               ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
               : undefined,
-            fontSize: isXpTheme ? "11px" : undefined,
+            fontSize: isWindowsTheme ? "11px" : undefined,
           }}
           disabled={isSearching}
         />
@@ -292,15 +292,15 @@ export function LyricsSearchDialog({
           className={cn(
             "flex-shrink-0",
             !isMacTheme && "h-7",
-            isXpTheme
+            isWindowsTheme
               ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
               : "font-geneva-12 text-[12px]"
           )}
           style={{
-            fontFamily: isXpTheme
+            fontFamily: isWindowsTheme
               ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
               : undefined,
-            fontSize: isXpTheme ? "11px" : undefined,
+            fontSize: isWindowsTheme ? "11px" : undefined,
           }}
         >
           {isSearching
@@ -315,15 +315,15 @@ export function LyricsSearchDialog({
           <p
             className={cn(
               "text-neutral-500 mb-2",
-              isXpTheme
+              isWindowsTheme
                 ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
                 : "font-geneva-12 text-[12px]"
             )}
             style={{
-              fontFamily: isXpTheme
+              fontFamily: isWindowsTheme
                 ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
                 : undefined,
-              fontSize: isXpTheme ? "11px" : undefined,
+              fontSize: isWindowsTheme ? "11px" : undefined,
             }}
           >
             {t("apps.ipod.dialogs.lyricsSearchCurrentSelection")}
@@ -332,16 +332,16 @@ export function LyricsSearchDialog({
             <div
               className={cn(
                 "w-full",
-                isXpTheme
+                isWindowsTheme
                   ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
                   : "font-geneva-12 text-[12px]"
               )}
               data-selected="true"
               style={lyricsSearchRowStyle(0, true, {
-                fontFamily: isXpTheme
+                fontFamily: isWindowsTheme
                   ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
                   : undefined,
-                fontSize: isXpTheme ? "11px" : undefined,
+                fontSize: isWindowsTheme ? "11px" : undefined,
               })}
             >
               {(() => {
@@ -350,7 +350,7 @@ export function LyricsSearchDialog({
                   <div
                     className={cn(
                       "flex-shrink-0 w-9 h-9 overflow-hidden",
-                      isXpTheme ? "border border-neutral-400" : "rounded-sm"
+                      isWindowsTheme ? "border border-neutral-400" : "rounded-sm"
                     )}
                     style={{ backgroundColor: "var(--os-color-list-row-alt-bg)" }}
                     aria-hidden="true"
@@ -386,15 +386,15 @@ export function LyricsSearchDialog({
         <p
           className={cn(
             "text-red-600 mb-2",
-            isXpTheme
+            isWindowsTheme
               ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
               : "font-geneva-12 text-[12px]"
           )}
           style={{
-            fontFamily: isXpTheme
+            fontFamily: isWindowsTheme
               ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
               : undefined,
-            fontSize: isXpTheme ? "11px" : undefined,
+            fontSize: isWindowsTheme ? "11px" : undefined,
           }}
         >
           {error}
@@ -406,15 +406,15 @@ export function LyricsSearchDialog({
           <p
             className={cn(
               "text-neutral-500 mb-2",
-              isXpTheme
+              isWindowsTheme
                 ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
                 : "font-geneva-12 text-[12px]"
             )}
             style={{
-              fontFamily: isXpTheme
+              fontFamily: isWindowsTheme
                 ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
                 : undefined,
-              fontSize: isXpTheme ? "11px" : undefined,
+              fontSize: isWindowsTheme ? "11px" : undefined,
             }}
           >
             {t("apps.ipod.dialogs.lyricsSearchSelectResult")}
@@ -445,22 +445,22 @@ export function LyricsSearchDialog({
                     role="button"
                     className={cn(
                       "w-full",
-                      isXpTheme
+                      isWindowsTheme
                         ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
                         : "font-geneva-12 text-[12px]"
                     )}
                     data-selected={rowSelected ? "true" : undefined}
                     style={lyricsSearchRowStyle(index, rowSelected, {
-                      fontFamily: isXpTheme
+                      fontFamily: isWindowsTheme
                         ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
                         : undefined,
-                      fontSize: isXpTheme ? "11px" : undefined,
+                      fontSize: isWindowsTheme ? "11px" : undefined,
                     })}
                   >
                     <div
                       className={cn(
                         "flex-shrink-0 w-9 h-9 overflow-hidden",
-                        isXpTheme ? "border border-neutral-400" : "rounded-sm"
+                        isWindowsTheme ? "border border-neutral-400" : "rounded-sm"
                       )}
                       style={{ backgroundColor: "var(--os-color-list-row-alt-bg)" }}
                       aria-hidden="true"
@@ -509,15 +509,15 @@ export function LyricsSearchDialog({
               disabled={isSearching}
               className={cn(
                 "w-full sm:w-auto h-7",
-                isXpTheme
+                isWindowsTheme
                   ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
                   : "font-geneva-12 text-[12px]"
               )}
               style={{
-                fontFamily: isXpTheme
+                fontFamily: isWindowsTheme
                   ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
                   : undefined,
-                fontSize: isXpTheme ? "11px" : undefined,
+                fontSize: isWindowsTheme ? "11px" : undefined,
               }}
             >
               {t("apps.ipod.dialogs.lyricsSearchReset")}
@@ -534,15 +534,15 @@ export function LyricsSearchDialog({
               className={cn(
                 "w-full sm:w-auto",
                 !isMacTheme && "h-7",
-                isXpTheme
+                isWindowsTheme
                   ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
                   : "font-geneva-12 text-[12px]"
               )}
               style={{
-                fontFamily: isXpTheme
+                fontFamily: isWindowsTheme
                   ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
                   : undefined,
-                fontSize: isXpTheme ? "11px" : undefined,
+                fontSize: isWindowsTheme ? "11px" : undefined,
               }}
             >
               {t("common.dialog.cancel")}
@@ -554,15 +554,15 @@ export function LyricsSearchDialog({
               className={cn(
                 "w-full sm:w-auto",
                 !isMacTheme && "h-7",
-                isXpTheme
+                isWindowsTheme
                   ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
                   : "font-geneva-12 text-[12px]"
               )}
               style={{
-                fontFamily: isXpTheme
+                fontFamily: isWindowsTheme
                   ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
                   : undefined,
-                fontSize: isXpTheme ? "11px" : undefined,
+                fontSize: isWindowsTheme ? "11px" : undefined,
               }}
             >
               {t("apps.ipod.dialogs.lyricsSearchUseSelected")}
@@ -576,11 +576,11 @@ export function LyricsSearchDialog({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
-        className={cn("max-w-[600px]", isXpTheme && "p-0 overflow-hidden")}
-        style={isXpTheme ? { fontSize: "11px" } : undefined}
+        className={cn("max-w-[600px]", isWindowsTheme && "p-0 overflow-hidden")}
+        style={isWindowsTheme ? { fontSize: "11px" } : undefined}
         onKeyDown={handleDialogKeyDown}
       >
-        {isXpTheme ? (
+        {isWindowsTheme ? (
           <>
             <DialogHeader>
               {t("apps.ipod.dialogs.lyricsSearchTitle")}

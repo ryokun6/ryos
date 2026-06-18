@@ -30,7 +30,7 @@ export function AppletViewerAppComponent({
     setShareId,
     iframeRef,
     currentTheme,
-    isXpTheme,
+    isWindowsTheme,
     isMacTheme,
     hasAppletContent,
     htmlContent,
@@ -95,7 +95,7 @@ export function AppletViewerAppComponent({
   return (
     <AppWindowShell
       isWindowOpen={isWindowOpen}
-      isXpTheme={isXpTheme}
+      isWindowsTheme={isWindowsTheme}
       isForeground={isForeground}
       menuBar={menuBar}
       windowFrameProps={{

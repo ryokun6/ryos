@@ -33,7 +33,7 @@ export function CreateRoomDialogContent({ vm }: Props) {
   return (
 <div
       className={cn(
-        theme.isXpTheme ? "pt-2 pb-6 px-4" : "pt-3 pb-6 px-6",
+        theme.isWindowsTheme ? "pt-2 pb-6 px-4" : "pt-3 pb-6 px-6",
         "min-w-0 w-full max-w-full"
       )}
     >

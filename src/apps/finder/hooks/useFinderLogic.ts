@@ -145,7 +145,7 @@ export function useFinderLogic({
   const translatedHelpItems = useTranslatedHelpItems("finder", helpItems);
   const {
     currentTheme,
-    isWindowsTheme: isXpTheme,
+    isWindowsTheme,
     isMacOSTheme: isMacOSXTheme,
   } = useThemeFlags();
 
@@ -1619,7 +1619,7 @@ export function useFinderLogic({
     canCreateFolder,
     rootFolders,
     windowTitle,
-    isXpTheme,
+    isWindowsTheme,
     isMacOSXTheme,
     currentTheme,
 

@@ -24,7 +24,7 @@ interface DictionaryWidgetProps {
 
 export function DictionaryWidget({ widgetId }: DictionaryWidgetProps) {
   const { t } = useTranslation();
-  const { isWindowsTheme: isXpTheme } = useThemeFlags();
+  const { isWindowsTheme } = useThemeFlags();
 
   const widget = useDashboardStore((s) =>
     s.widgets.find((w) => w.id === widgetId)
@@ -125,7 +125,7 @@ export function DictionaryWidget({ widgetId }: DictionaryWidgetProps) {
   const font = "'Helvetica Neue', Helvetica, Arial, sans-serif";
   const serifFont = "Georgia, 'Times New Roman', Times, serif";
 
-  if (isXpTheme) {
+  if (isWindowsTheme) {
     return (
       <div style={{ fontFamily: font, display: "flex", flexDirection: "column", minHeight: "inherit" }}>
         {/* XP header */}
@@ -423,9 +423,9 @@ export function DictionaryBackPanel({
   onDone?: () => void;
 }) {
   const { t } = useTranslation();
-  const { isWindowsTheme: isXpTheme } = useThemeFlags();
-  const textColor = isXpTheme ? "#000" : "rgba(255,255,255,0.8)";
-  const mutedColor = isXpTheme ? "#888" : "rgba(255,255,255,0.4)";
+  const { isWindowsTheme } = useThemeFlags();
+  const textColor = isWindowsTheme ? "#000" : "rgba(255,255,255,0.8)";
+  const mutedColor = isWindowsTheme ? "#888" : "rgba(255,255,255,0.4)";
 
   return (
     <div className="px-4 py-3" onPointerDown={(e) => e.stopPropagation()}>
@@ -443,7 +443,7 @@ export function DictionaryBackPanel({
           onClick={onDone}
           className="mt-3 text-[10px] font-medium hover:opacity-80 transition-opacity"
           style={{
-            color: isXpTheme ? "#0066CC" : "rgba(130,180,255,0.9)",
+            color: isWindowsTheme ? "#0066CC" : "rgba(130,180,255,0.9)",
             cursor: "pointer",
             border: "none",
             background: "none",

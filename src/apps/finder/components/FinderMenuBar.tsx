@@ -85,8 +85,8 @@ export function FinderMenuBar({
   const {
     isShareDialogOpen,
     setIsShareDialogOpen,
-    isXpTheme,
-    isMacOsxTheme,
+    isWindowsTheme,
+    isMacOSTheme,
     appId,
     appName,
   } = useAppMenuBarChrome("finder");
@@ -107,8 +107,8 @@ export function FinderMenuBar({
 
   return (
     <AppMenuBarShell
-      isXpTheme={isXpTheme}
-      isMacOsxTheme={isMacOsxTheme}
+      isWindowsTheme={isWindowsTheme}
+      isMacOSTheme={isMacOSTheme}
       appId={appId}
       appName={appName}
       isShareDialogOpen={isShareDialogOpen}
@@ -247,7 +247,7 @@ export function FinderMenuBar({
           {t("common.menu.view")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
-          {isMacOsxTheme && onToggleSidebar && (
+          {isMacOSTheme && onToggleSidebar && (
             <>
               <MenubarCheckboxItem
                 checked={showSidebar}

@@ -68,14 +68,14 @@ export function CursorCloudAgentRunsListCard({
   runs,
 }: CursorCloudAgentRunsListCardProps) {
   const { t } = useTranslation();
-  const { isMacOSTheme, isXpTheme, isSystem7Theme, isWin98 } = useThemeFlags();
+  const { isMacOSTheme, isWindowsTheme, isSystem7Theme, isWin98 } = useThemeFlags();
 
   if (!runs.length) return null;
 
   const shell = toolInlineCardShellClassName({
     isMacOSTheme,
     isSystem7Theme,
-    isXpTheme,
+    isWindowsTheme,
     isWin98,
   });
 

@@ -23,7 +23,7 @@ export function useDashboardLogic() {
     helpItemsWithEmojiIcons
   );
 
-  const { currentTheme, isXpTheme } = useThemeFlags();
+  const { currentTheme, isWindowsTheme } = useThemeFlags();
 
   const {
     isHelpDialogOpen,
@@ -124,7 +124,7 @@ export function useDashboardLogic() {
     t,
     translatedHelpItems,
     currentTheme,
-    isXpTheme,
+    isWindowsTheme,
     isHelpDialogOpen,
     setIsHelpDialogOpen,
     isAboutDialogOpen,

@@ -8,7 +8,7 @@ export function MiniCalendar({
   selectedDate,
   todayStr,
   onDateClick,
-  isXpTheme,
+  isWindowsTheme,
   isMacOSTheme,
   isSystem7Theme,
   monthYearLabel,
@@ -20,7 +20,7 @@ export function MiniCalendar({
   selectedDate: string;
   todayStr: string;
   onDateClick: (date: string) => void;
-  isXpTheme: boolean;
+  isWindowsTheme: boolean;
   isMacOSTheme: boolean;
   isSystem7Theme: boolean;
   monthYearLabel: string;
@@ -74,9 +74,9 @@ export function MiniCalendar({
                   borderRadius: "50%",
                   backgroundColor:
                     cell.date === todayStr
-                      ? isXpTheme ? TODAY_RED_XP : TODAY_RED
+                      ? isWindowsTheme ? TODAY_RED_XP : TODAY_RED
                       : cell.date === selectedDate
-                        ? isXpTheme ? "rgba(0,0,0,0.15)" : "rgba(0,0,0,0.08)"
+                        ? isWindowsTheme ? "rgba(0,0,0,0.15)" : "rgba(0,0,0,0.08)"
                         : "transparent",
                   color:
                     cell.date === todayStr

@@ -224,7 +224,6 @@ export const ChatRoomSidebar = React.memo(function ChatRoomSidebar({
       className={osAppSidebarSurfaceClassName(
         {
           isMacOSTheme,
-          isXpTheme: isWindowsTheme,
           isWindowsTheme,
           isAquaGlass,
         },

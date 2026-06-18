@@ -9,7 +9,7 @@ import type { StocksBackPanelProps } from "./types";
 
 export function StocksBackPanel({ widgetId, onDone }: StocksBackPanelProps) {
   const { t } = useTranslation();
-  const { isWindowsTheme: isXpTheme } = useThemeFlags();
+  const { isWindowsTheme } = useThemeFlags();
   const updateWidgetConfig = useDashboardStore((s) => s.updateWidgetConfig);
 
   const widget = useDashboardStore((s) => s.widgets.find((w) => w.id === widgetId));
@@ -91,20 +91,20 @@ export function StocksBackPanel({ widgetId, onDone }: StocksBackPanelProps) {
   }, [widgetId, updateWidgetConfig, onDone]);
 
   const symbolsToShow = searchQuery ? searchResults.filter((s) => !currentSymbols.includes(s)) : availablePopular;
-  const textColor = isXpTheme ? "#000" : "rgba(255,255,255,0.8)";
+  const textColor = isWindowsTheme ? "#000" : "rgba(255,255,255,0.8)";
 
   return (
     <div onPointerDown={(e) => e.stopPropagation()}>
       <div
         className="flex items-center gap-1.5 px-3 py-1.5"
         style={{
-          borderBottom: isXpTheme ? "1px solid #D5D2CA" : "1px solid rgba(255,255,255,0.08)",
+          borderBottom: isWindowsTheme ? "1px solid #D5D2CA" : "1px solid rgba(255,255,255,0.08)",
         }}
       >
         <MagnifyingGlass
           size={12}
           weight="bold"
-          style={{ color: isXpTheme ? "#888" : "rgba(255,255,255,0.35)", flexShrink: 0 }}
+          style={{ color: isWindowsTheme ? "#888" : "rgba(255,255,255,0.35)", flexShrink: 0 }}
         />
         <input
           type="text"
@@ -112,19 +112,19 @@ export function StocksBackPanel({ widgetId, onDone }: StocksBackPanelProps) {
           onChange={(e) => handleSearchInput(e.target.value)}
           placeholder={t("apps.dashboard.stocks.searchSymbol")}
           className="flex-1 bg-transparent outline-none text-[11px]"
-          style={{ color: textColor, caretColor: isXpTheme ? "#000" : "rgba(255,255,255,0.7)" }}
+          style={{ color: textColor, caretColor: isWindowsTheme ? "#000" : "rgba(255,255,255,0.7)" }}
         />
       </div>
 
       <div
         className="px-3 py-1.5"
         style={{
-          borderBottom: isXpTheme ? "1px solid #D5D2CA" : "1px solid rgba(255,255,255,0.08)",
+          borderBottom: isWindowsTheme ? "1px solid #D5D2CA" : "1px solid rgba(255,255,255,0.08)",
         }}
       >
         <div
           className="text-[9px] font-bold uppercase tracking-wider mb-1"
-          style={{ color: isXpTheme ? "#888" : "rgba(255,255,255,0.35)" }}
+          style={{ color: isWindowsTheme ? "#888" : "rgba(255,255,255,0.35)" }}
         >
           {t("apps.dashboard.stocks.currentSymbols")}
         </div>
@@ -134,7 +134,7 @@ export function StocksBackPanel({ widgetId, onDone }: StocksBackPanelProps) {
               key={sym}
               className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium"
               style={{
-                background: isXpTheme ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.1)",
+                background: isWindowsTheme ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.1)",
                 color: textColor,
               }}
             >
@@ -149,7 +149,7 @@ export function StocksBackPanel({ widgetId, onDone }: StocksBackPanelProps) {
                   <X
                     size={8}
                     weight="bold"
-                    style={{ color: isXpTheme ? "#888" : "rgba(255,255,255,0.4)" }}
+                    style={{ color: isWindowsTheme ? "#888" : "rgba(255,255,255,0.4)" }}
                   />
                 </button>
               )}
@@ -162,7 +162,7 @@ export function StocksBackPanel({ widgetId, onDone }: StocksBackPanelProps) {
         {searching ? (
           <div
             className="px-3 py-3 text-center text-[10px]"
-            style={{ color: isXpTheme ? "#888" : "rgba(255,255,255,0.3)" }}
+            style={{ color: isWindowsTheme ? "#888" : "rgba(255,255,255,0.3)" }}
           >
             {t("apps.dashboard.stocks.searching")}
           </div>
@@ -174,7 +174,7 @@ export function StocksBackPanel({ widgetId, onDone }: StocksBackPanelProps) {
               onClick={() => addSymbol(sym)}
               className="w-full flex items-center gap-1.5 px-3 py-1 text-left transition-colors"
               onMouseEnter={(e) =>
-                (e.currentTarget.style.background = isXpTheme
+                (e.currentTarget.style.background = isWindowsTheme
                   ? "rgba(0,102,204,0.08)"
                   : "rgba(255,255,255,0.06)")
               }
@@ -183,14 +183,14 @@ export function StocksBackPanel({ widgetId, onDone }: StocksBackPanelProps) {
               <Plus
                 size={10}
                 weight="bold"
-                style={{ color: isXpTheme ? "#0066CC" : "rgba(130,180,255,0.7)", flexShrink: 0 }}
+                style={{ color: isWindowsTheme ? "#0066CC" : "rgba(130,180,255,0.7)", flexShrink: 0 }}
               />
               <span className="text-[11px]" style={{ color: textColor }}>
                 {displaySymbol(sym)}
               </span>
               <span
                 className="text-[9px] ml-auto"
-                style={{ color: isXpTheme ? "#888" : "rgba(255,255,255,0.3)" }}
+                style={{ color: isWindowsTheme ? "#888" : "rgba(255,255,255,0.3)" }}
               >
                 {sym}
               </span>
@@ -200,7 +200,7 @@ export function StocksBackPanel({ widgetId, onDone }: StocksBackPanelProps) {
         {!searching && symbolsToShow.length === 0 && (
           <div
             className="px-3 py-2 text-center text-[10px]"
-            style={{ color: isXpTheme ? "#888" : "rgba(255,255,255,0.3)" }}
+            style={{ color: isWindowsTheme ? "#888" : "rgba(255,255,255,0.3)" }}
           >
             {searchQuery ? t("apps.dashboard.stocks.noResults") : t("apps.dashboard.stocks.allAdded")}
           </div>
@@ -210,7 +210,7 @@ export function StocksBackPanel({ widgetId, onDone }: StocksBackPanelProps) {
       <div
         className="px-3 py-1.5"
         style={{
-          borderTop: isXpTheme ? "1px solid #D5D2CA" : "1px solid rgba(255,255,255,0.08)",
+          borderTop: isWindowsTheme ? "1px solid #D5D2CA" : "1px solid rgba(255,255,255,0.08)",
         }}
       >
         <button
@@ -218,7 +218,7 @@ export function StocksBackPanel({ widgetId, onDone }: StocksBackPanelProps) {
           onClick={resetToDefault}
           className="text-[10px] font-medium hover:opacity-80 transition-opacity"
           style={{
-            color: isXpTheme ? "#0066CC" : "rgba(130,180,255,0.9)",
+            color: isWindowsTheme ? "#0066CC" : "rgba(130,180,255,0.9)",
             cursor: "pointer",
             border: "none",
             background: "none",

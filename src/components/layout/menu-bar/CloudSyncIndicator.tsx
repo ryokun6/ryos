@@ -80,7 +80,7 @@ interface SyncCategoryActivity {
 export function CloudSyncIndicator() {
   const { t } = useTranslation();
   const {
-    isWindowsTheme: isXpTheme,
+    isWindowsTheme,
     isMacOSTheme,
     isSystem7Theme,
   } = useThemeFlags();
@@ -112,7 +112,7 @@ export function CloudSyncIndicator() {
 
   // Keep the indicator mounted while the menu is open so the menu does
   // not vanish mid-read when the last sync operation finishes.
-  if (isXpTheme || (!isCloudSyncActive && !isOpen)) return null;
+  if (isWindowsTheme || (!isCloudSyncActive && !isOpen)) return null;
 
   const lastCheckedRelative = formatRelativeTime(
     lastCheckedAt,

@@ -35,7 +35,7 @@ interface TvChannelLogoStripProps {
   onSelectChannel: (channelId: string) => void;
   isMacOSTheme: boolean;
   isSystem7: boolean;
-  isXpTheme: boolean;
+  isWindowsTheme: boolean;
   isWin98: boolean;
 }
 
@@ -46,7 +46,7 @@ const TvChannelLogoStrip = memo(function TvChannelLogoStrip({
   onSelectChannel,
   isMacOSTheme,
   isSystem7,
-  isXpTheme,
+  isWindowsTheme,
   isWin98,
 }: TvChannelLogoStripProps) {
   const { t } = useTranslation();
@@ -65,7 +65,7 @@ const TvChannelLogoStrip = memo(function TvChannelLogoStrip({
       className={cn(
         "sticky top-0 z-10 shrink-0",
         osToolbarSurfaceClassName(
-          { isMacOSTheme, isSystem7Theme: isSystem7, isXpTheme, isWin98 },
+          { isMacOSTheme, isSystem7Theme: isSystem7, isWindowsTheme, isWin98 },
           { border: "bottom" }
         ),
         isMacOSTheme && "bg-[#f7f7f7]/95 border-black/15",
@@ -106,10 +106,10 @@ const TvChannelLogoStrip = memo(function TvChannelLogoStrip({
                 isSystem7 &&
                   "rounded-none border border-black bg-white hover:bg-black hover:text-white",
                 isSystem7 && isActive && "outline outline-2 outline-black outline-offset-[-4px]",
-                isXpTheme &&
+                isWindowsTheme &&
                   !isWin98 &&
                   "rounded-[4px] border border-[#7f9db9] bg-white shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] hover:bg-[#f4f8ff]",
-                isXpTheme &&
+                isWindowsTheme &&
                   !isWin98 &&
                   isActive &&
                   "border-os-window bg-[#dce9ff] ring-2 ring-[color:var(--os-color-selection-bg)]/50",
@@ -133,7 +133,7 @@ const TvChannelLogoStrip = memo(function TvChannelLogoStrip({
                     "font-geneva-12 text-[10px] font-bold leading-none",
                     isMacOSTheme && "text-black/70",
                     isSystem7 && "font-chicago text-black",
-                    isXpTheme && "font-tahoma text-[#1f3f77]",
+                    isWindowsTheme && "font-tahoma text-[#1f3f77]",
                     isWin98 && "text-[#202020]"
                   )}
                 >
@@ -161,7 +161,7 @@ interface TvVideoDrawerItemProps {
   itemRef?: Ref<HTMLLIElement>;
   isMacOSTheme: boolean;
   isSystem7: boolean;
-  isXpTheme: boolean;
+  isWindowsTheme: boolean;
   isWin98: boolean;
 }
 
@@ -176,7 +176,7 @@ const TvVideoDrawerItem = memo(function TvVideoDrawerItem({
   itemRef,
   isMacOSTheme,
   isSystem7,
-  isXpTheme,
+  isWindowsTheme,
   isWin98,
 }: TvVideoDrawerItemProps) {
   return (
@@ -190,8 +190,8 @@ const TvVideoDrawerItem = memo(function TvVideoDrawerItem({
           isMacOSTheme && isActive && "tv-drawer-mac-row-active",
           isSystem7 && "font-chicago text-[12px] hover:bg-black hover:text-white",
           isSystem7 && isActive && "bg-black text-white hover:bg-black hover:text-white",
-          isXpTheme && "font-tahoma text-[11px] hover:bg-[#316AC5]/15",
-          isXpTheme && isActive && "bg-[#316AC5] text-white hover:bg-[#316AC5]"
+          isWindowsTheme && "font-tahoma text-[11px] hover:bg-[#316AC5]/15",
+          isWindowsTheme && isActive && "bg-[#316AC5] text-white hover:bg-[#316AC5]"
         )}
       >
         <span className={cn("shrink-0 w-5 text-right tabular-nums opacity-70", isActive && "opacity-100")}>
@@ -221,7 +221,7 @@ const TvVideoDrawerItem = memo(function TvVideoDrawerItem({
                 ? "text-white/75 hover:text-white hover:bg-white/15 hover:border-white/25 focus-visible:ring-white/60"
                 : "text-black/55 hover:text-red-700 hover:bg-black/[0.06] hover:border-black/15"
             ),
-            isXpTheme && !isWin98 && cn(
+            isWindowsTheme && !isWin98 && cn(
               "rounded-sm",
               isActive
                 ? "text-white/85 hover:text-white hover:bg-white/18 focus-visible:ring-white/70"
@@ -277,7 +277,7 @@ export const TvVideoDrawer = memo(function TvVideoDrawer({
   const {
     isMacOSTheme,
     isSystem7Theme: isSystem7,
-    isWindowsTheme: isXpTheme,
+    isWindowsTheme,
     isWin98,
   } = useThemeFlags();
 
@@ -318,7 +318,7 @@ export const TvVideoDrawer = memo(function TvVideoDrawer({
       onSelectChannel={onSelectChannel}
       isMacOSTheme={isMacOSTheme}
       isSystem7={isSystem7}
-      isXpTheme={isXpTheme}
+      isWindowsTheme={isWindowsTheme}
       isWin98={isWin98}
     />
   );
@@ -337,7 +337,7 @@ export const TvVideoDrawer = memo(function TvVideoDrawer({
               "px-3 py-2 text-[11px] opacity-60",
               isMacOSTheme && "font-lucida-grande",
               isSystem7 && "font-chicago",
-              isXpTheme && "font-tahoma"
+              isWindowsTheme && "font-tahoma"
             )}
           >
             {t("apps.tv.drawer.empty")}
@@ -358,7 +358,7 @@ export const TvVideoDrawer = memo(function TvVideoDrawer({
                 itemRef={isActive ? activeItemRef : undefined}
                 isMacOSTheme={isMacOSTheme}
                 isSystem7={isSystem7}
-                isXpTheme={isXpTheme}
+                isWindowsTheme={isWindowsTheme}
                 isWin98={isWin98}
               />
             );
