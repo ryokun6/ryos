@@ -5,10 +5,10 @@ import type { CurrencyWidgetProps } from "./types";
 import { useCurrencyWidget } from "./useCurrencyWidget";
 
 export function CurrencyWidget({ widgetId }: CurrencyWidgetProps) {
-  const { isWindowsTheme: isXpTheme } = useThemeFlags();
+  const { isWindowsTheme } = useThemeFlags();
   const viewProps = useCurrencyWidget(widgetId);
 
-  if (isXpTheme) {
+  if (isWindowsTheme) {
     return (
       <CurrencyWidgetXpView
         t={viewProps.t}

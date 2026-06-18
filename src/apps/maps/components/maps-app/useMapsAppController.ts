@@ -56,7 +56,7 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
   const {
     t,
     translatedHelpItems,
-    isXpTheme,
+    isWindowsTheme,
     isMacOSTheme,
     isDarkMode,
     isHelpDialogOpen,
@@ -1154,7 +1154,7 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
   return {
     t,
     translatedHelpItems,
-    isXpTheme,
+    isWindowsTheme,
     isMacOSTheme,
     isDarkMode,
     isHelpDialogOpen,

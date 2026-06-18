@@ -109,7 +109,7 @@ export function WindowFrame({
   });
 
   const {
-    isWindowsTheme: isXpTheme,
+    isWindowsTheme,
     isMacOSTheme,
     isSystem7Theme,
     isWinXp,
@@ -178,7 +178,7 @@ export function WindowFrame({
     instanceId,
     isForeground,
     isMacOSTheme,
-    isXpTheme,
+    isWindowsTheme,
     bringInstanceToForeground,
   });
 
@@ -366,7 +366,7 @@ export function WindowFrame({
                   showResizers={showResizers}
                   resizeType={resizeType}
                   isMobile={isMobile}
-                  isXpTheme={isXpTheme}
+                  isWindowsTheme={isWindowsTheme}
                   isMacOSTheme={isMacOSTheme}
                   handleResizeStartWithForeground={
                     handleResizeStartWithForeground
@@ -376,15 +376,15 @@ export function WindowFrame({
 
                 <div
                   className={cn(
-                    isXpTheme
+                    isWindowsTheme
                       ? "window flex flex-col h-full"
                       : isNoTitlebar && isMacOSTheme
                         ? "window size-full flex flex-col rounded-os overflow-hidden relative"
                         : "window size-full flex flex-col border-[length:var(--os-metrics-border-width)] border-os-window rounded-os overflow-hidden relative",
                     !effectiveTransparentBackground &&
-                      !isXpTheme &&
+                      !isWindowsTheme &&
                       "bg-os-window-bg",
-                    !isXpTheme &&
+                    !isWindowsTheme &&
                       (!isSystem7Theme || isForeground)
                       ? "shadow-os-window"
                       : "",
@@ -395,7 +395,7 @@ export function WindowFrame({
                     isGlassRegular && "window-material-glass"
                   )}
                   style={{
-                    ...(!isXpTheme
+                    ...(!isWindowsTheme
                       ? getSwipeStyle(isPhone, isSwiping, swipeDirection)
                       : undefined),
                   }}
@@ -404,7 +404,7 @@ export function WindowFrame({
                   onMouseLeave={noTitlebarMouseHandlers.onMouseLeave}
                 >
                   <WindowFrameTitleBar
-                    isXpTheme={isXpTheme}
+                    isWindowsTheme={isWindowsTheme}
                     isMacOSTheme={isMacOSTheme}
                     isWinXp={isWinXp}
                     isForeground={isForeground}
@@ -438,7 +438,7 @@ export function WindowFrame({
                     showTitlebarWithAutoHide={showTitlebarWithAutoHide}
                   />
 
-                  {isXpTheme && menuBar && (
+                  {isWindowsTheme && menuBar && (
                     <div
                       className="menubar-container"
                       style={{
@@ -458,7 +458,7 @@ export function WindowFrame({
                         "ml-[8px] mr-[8px] mb-[8px] rounded-none overflow-hidden"
                     )}
                     style={
-                      isXpTheme
+                      isWindowsTheme
                         ? { margin: isWinXp ? "0px 3px" : "0" }
                         : isMacOSTheme
                           ? isTransparent || isBrushedMetal || isAquaGlass

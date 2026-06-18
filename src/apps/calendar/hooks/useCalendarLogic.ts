@@ -52,7 +52,7 @@ export function useCalendarLogic() {
   // Theme
   const {
     currentTheme,
-    isXpTheme,
+    isWindowsTheme,
     isMacTheme,
     isMacOSTheme,
     isSystem7Theme,
@@ -589,7 +589,7 @@ export function useCalendarLogic() {
 
     // Theme
     currentTheme,
-    isXpTheme,
+    isWindowsTheme,
     isMacTheme,
     isMacOSTheme,
     isSystem7Theme,

@@ -15,7 +15,7 @@ import {
 import type { DesktopItemId } from "./desktopTypes";
 
 export interface DesktopIconGridProps {
-  isXpTheme: boolean;
+  isWindowsTheme: boolean;
   isMacOSTheme: boolean;
   isDesktopApp: boolean;
   currentTheme: string;
@@ -44,7 +44,7 @@ export interface DesktopIconGridProps {
 }
 
 export function DesktopIconGrid({
-  isXpTheme,
+  isWindowsTheme,
   isMacOSTheme,
   isDesktopApp,
   currentTheme,
@@ -70,12 +70,12 @@ export function DesktopIconGrid({
       className={cn(
         "flex flex-col relative z-[1]",
         isMacOSTheme && OS_SHELL_TEXT_SCALE_CLASS,
-        isXpTheme
+        isWindowsTheme
           ? "items-start pt-2" // Reserve space via height, not padding, to avoid clipping
           : "items-end pt-8" // Account for top menubar - keep right alignment for other themes
       )}
       style={
-        isXpTheme
+        isWindowsTheme
           ? {
               // Exclude menubar, safe area, and an extra visual buffer to prevent clipping
               // Add extra top padding for desktop traffic lights on Windows themes
@@ -98,7 +98,7 @@ export function DesktopIconGrid({
     >
       <div
         className={
-          isXpTheme
+          isWindowsTheme
             ? "flex flex-col flex-wrap justify-start content-start h-full gap-x-3 gap-y-3"
             : "flex flex-col flex-wrap-reverse justify-start content-start h-full gap-x-3 gap-y-3"
         }
@@ -108,7 +108,7 @@ export function DesktopIconGrid({
             name={macintoshHdName}
             isDirectory={true}
             icon={
-              isXpTheme ? "/icons/default/pc.png" : "/icons/default/disk.png"
+              isWindowsTheme ? "/icons/default/pc.png" : "/icons/default/disk.png"
             }
             onClick={(e) =>
               onDesktopItemClick(getDesktopAppItemId("macintosh-hd"), e)
@@ -189,7 +189,7 @@ export function DesktopIconGrid({
                 name={getTranslatedAppName(app.id as AppId)}
                 isDirectory={false}
                 icon={
-                  isXpTheme && app.id === "pc"
+                  isWindowsTheme && app.id === "pc"
                     ? `/icons/${currentTheme}/games.png`
                     : getAppIconPath(app.id)
                 }

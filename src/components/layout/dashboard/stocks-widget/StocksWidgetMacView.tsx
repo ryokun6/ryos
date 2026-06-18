@@ -127,7 +127,7 @@ export function StocksWidgetMacView({
             <MiniChart
               history={chartHistory}
               xLabels={xLabels}
-              isXpTheme={false}
+              isWindowsTheme={false}
               widgetId={widgetId}
             />
           </div>

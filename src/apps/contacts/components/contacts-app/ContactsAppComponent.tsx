@@ -19,12 +19,12 @@ export function ContactsAppComponent({
     instanceId,
   });
 
-  const { t, isXpTheme, isMacOsxTheme, menuBar } = c;
+  const { t, isWindowsTheme, isMacOSTheme, menuBar } = c;
 
   return (
     <AppWindowShell
       isWindowOpen={isWindowOpen}
-      isXpTheme={isXpTheme}
+      isWindowsTheme={isWindowsTheme}
       isForeground={isForeground}
       menuBar={menuBar}
       windowFrameProps={{
@@ -32,7 +32,7 @@ export function ContactsAppComponent({
         onClose,
         isForeground,
         appId: "contacts",
-        material: isMacOsxTheme ? "brushedmetal" : "default",
+        material: isMacOSTheme ? "brushedmetal" : "default",
         skipInitialSound,
         instanceId,
       }}

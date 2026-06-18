@@ -27,7 +27,7 @@ export function useMapsLogic() {
   const translatedHelpItems = useTranslatedHelpItems("maps", helpItems);
   const {
     currentTheme,
-    isXpTheme,
+    isWindowsTheme,
     isMacOSTheme,
     isSystem7Theme,
     isClassicTheme,
@@ -48,7 +48,7 @@ export function useMapsLogic() {
     t,
     translatedHelpItems,
     currentTheme,
-    isXpTheme,
+    isWindowsTheme,
     isMacOSTheme,
     isSystem7Theme,
     isClassicTheme,

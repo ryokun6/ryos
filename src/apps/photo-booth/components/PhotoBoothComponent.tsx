@@ -69,7 +69,7 @@ export function PhotoBoothComponent({
     validPhotos,
     getPhotoPreviewSrc,
     isInitialLoad,
-    isXpTheme,
+    isWindowsTheme,
     isMacTheme,
     windowTitle,
     handleClearPhotos,
@@ -103,7 +103,7 @@ export function PhotoBoothComponent({
   return (
     <AppWindowShell
       isWindowOpen={isWindowOpen}
-      isXpTheme={isXpTheme}
+      isWindowsTheme={isWindowsTheme}
       isForeground={isForeground}
       menuBar={menuBar}
       windowFrameProps={{
@@ -413,19 +413,19 @@ export function PhotoBoothComponent({
                     validPhotos.length === 0 && "opacity-50 cursor-not-allowed"
                   )}
                   style={{
-                    background: isXpTheme
+                    background: isWindowsTheme
                       ? "rgba(255, 255, 255, 0.1)"
                       : undefined,
-                    border: isXpTheme ? "none" : undefined,
+                    border: isWindowsTheme ? "none" : undefined,
                   }}
                   onMouseEnter={(e) => {
-                    if (isXpTheme) {
+                    if (isWindowsTheme) {
                       e.currentTarget.style.background =
                         "rgba(255, 255, 255, 0.2)";
                     }
                   }}
                   onMouseLeave={(e) => {
-                    if (isXpTheme) {
+                    if (isWindowsTheme) {
                       e.currentTarget.style.background =
                         "rgba(255, 255, 255, 0.1)";
                     }
@@ -449,19 +449,19 @@ export function PhotoBoothComponent({
                     isMacTheme ? "z-10" : "bg-white/10 hover:bg-white/20"
                   )}
                   style={{
-                    background: isXpTheme
+                    background: isWindowsTheme
                       ? "rgba(255, 255, 255, 0.1)"
                       : undefined,
-                    border: isXpTheme ? "none" : undefined,
+                    border: isWindowsTheme ? "none" : undefined,
                   }}
                   onMouseEnter={(e) => {
-                    if (isXpTheme) {
+                    if (isWindowsTheme) {
                       e.currentTarget.style.background =
                         "rgba(255, 255, 255, 0.2)";
                     }
                   }}
                   onMouseLeave={(e) => {
-                    if (isXpTheme) {
+                    if (isWindowsTheme) {
                       e.currentTarget.style.background =
                         "rgba(255, 255, 255, 0.1)";
                     }
@@ -504,7 +504,7 @@ export function PhotoBoothComponent({
                         : "0 2px 3px rgba(0,0,0,0.2), 0 1px 1px rgba(0,0,0,0.3), inset 0 0 0 0.5px rgba(0,0,0,0.3), inset 0 1px 2px rgba(0,0,0,0.4), inset 0 2px 3px 1px rgba(254, 150, 150, 0.5)",
                       cursor: isMultiPhotoMode ? "not-allowed" : "pointer",
                     }
-                  : isXpTheme
+                  : isWindowsTheme
                   ? {
                       background: isMultiPhotoMode ? "#6b7280" : "#dc2626",
                       border: "none",
@@ -515,12 +515,12 @@ export function PhotoBoothComponent({
                     }
               }
               onMouseEnter={(e) => {
-                if (isXpTheme && !isMultiPhotoMode) {
+                if (isWindowsTheme && !isMultiPhotoMode) {
                   e.currentTarget.style.background = "#b91c1c";
                 }
               }}
               onMouseLeave={(e) => {
-                if (isXpTheme && !isMultiPhotoMode) {
+                if (isWindowsTheme && !isMultiPhotoMode) {
                   e.currentTarget.style.background = "#dc2626";
                 }
               }}
@@ -592,19 +592,19 @@ export function PhotoBoothComponent({
                     : "bg-white/10 hover:bg-white/20"
                 )}
                 style={{
-                  background: isXpTheme
+                  background: isWindowsTheme
                     ? "rgba(255, 255, 255, 0.1)"
                     : undefined,
-                  border: isXpTheme ? "none" : undefined,
+                  border: isWindowsTheme ? "none" : undefined,
                 }}
                 onMouseEnter={(e) => {
-                  if (isXpTheme) {
+                  if (isWindowsTheme) {
                     e.currentTarget.style.background =
                       "rgba(255, 255, 255, 0.2)";
                   }
                 }}
                 onMouseLeave={(e) => {
-                  if (isXpTheme) {
+                  if (isWindowsTheme) {
                     e.currentTarget.style.background =
                       "rgba(255, 255, 255, 0.1)";
                   }

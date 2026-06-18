@@ -192,7 +192,7 @@ export function usePhotoBoothLogic({
   const recentPhotoPreviewsRef = useRef<Map<string, string>>(new Map());
 
   const {
-    isWindowsTheme: isXpTheme,
+    isWindowsTheme,
     isMacOSTheme: isMacTheme,
   } = useThemeFlags();
 
@@ -1067,7 +1067,7 @@ export function usePhotoBoothLogic({
     validPhotos,
     getPhotoPreviewSrc,
     isInitialLoad,
-    isXpTheme,
+    isWindowsTheme,
     isMacTheme,
     windowTitle,
     handleClearPhotos,

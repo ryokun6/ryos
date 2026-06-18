@@ -78,7 +78,7 @@ export function [AppName]AppComponent({
     setIsHelpDialogOpen,
     isAboutDialogOpen,
     setIsAboutDialogOpen,
-    isXpTheme,
+    isWindowsTheme,
   } = use[AppName]Logic({ isWindowOpen, isForeground, instanceId });
 
   const menuBar = (
@@ -93,7 +93,7 @@ export function [AppName]AppComponent({
 
   return (
     <>
-      {!isXpTheme && isForeground && menuBar}
+      {!isWindowsTheme && isForeground && menuBar}
       <WindowFrame
         title={t("apps.[app-name].title")}
         onClose={onClose}
@@ -101,7 +101,7 @@ export function [AppName]AppComponent({
         appId="[app-name]"
         skipInitialSound={skipInitialSound}
         instanceId={instanceId}
-        menuBar={isXpTheme ? menuBar : undefined}
+        menuBar={isWindowsTheme ? menuBar : undefined}
       >
         <div className="flex flex-col h-full bg-os-window-bg font-os-ui">
           {/* App content */}
@@ -137,7 +137,7 @@ export function use[AppName]Logic({ instanceId }: { instanceId: string }) {
   const { t } = useTranslation();
   const translatedHelpItems = useTranslatedHelpItems("[app-name]", helpItems);
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isWindowsTheme = currentTheme === "xp" || currentTheme === "win98";
 
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
@@ -145,7 +145,7 @@ export function use[AppName]Logic({ instanceId }: { instanceId: string }) {
   return {
     t,
     translatedHelpItems,
-    isXpTheme,
+    isWindowsTheme,
     isHelpDialogOpen,
     setIsHelpDialogOpen,
     isAboutDialogOpen,
@@ -158,7 +158,7 @@ export function use[AppName]Logic({ instanceId }: { instanceId: string }) {
 
 Match existing app menubars: structure, classes, and spacing.
 
-- **Wrapper**: `<MenuBar inWindowFrame={isXpTheme}>` — no extra gap between menus (layout uses `space-x-0`).
+- **Wrapper**: `<MenuBar inWindowFrame={isWindowsTheme}>` — no extra gap between menus (layout uses `space-x-0`).
 - **Trigger**: `MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0"`.
 - **Content**: `MenubarContent align="start" sideOffset={1} className="px-0"`.
 - **Items**: `MenubarItem className="text-md h-6 px-3"`.
@@ -185,11 +185,11 @@ interface [AppName]MenuBarProps {
 export function [AppName]MenuBar({ onClose, onShowHelp, onShowAbout }: [AppName]MenuBarProps) {
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isMacOsxTheme = currentTheme === "macosx";
+  const isWindowsTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isMacOSTheme = currentTheme === "macosx";
 
   return (
-    <MenuBar inWindowFrame={isXpTheme}>
+    <MenuBar inWindowFrame={isWindowsTheme}>
       <MenubarMenu>
         <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
           {t("common.menu.file")}
@@ -209,7 +209,7 @@ export function [AppName]MenuBar({ onClose, onShowHelp, onShowAbout }: [AppName]
           <MenubarItem onClick={onShowHelp} className="text-md h-6 px-3">
             {t("apps.[app-name].menu.help")}
           </MenubarItem>
-          {!isMacOsxTheme && (
+          {!isMacOSTheme && (
             <>
               <MenubarSeparator className="h-[2px] bg-black my-1" />
               <MenubarItem onClick={onShowAbout} className="text-md h-6 px-3">
@@ -270,11 +270,11 @@ const Lazy[AppName]App = createLazyComponent<unknown>(
 - **XP/Win98**: Pass via `menuBar` prop to WindowFrame
 
 ```tsx
-const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+const isWindowsTheme = currentTheme === "xp" || currentTheme === "win98";
 return (
   <>
-    {!isXpTheme && isForeground && menuBar}
-    <WindowFrame menuBar={isXpTheme ? menuBar : undefined}>
+    {!isWindowsTheme && isForeground && menuBar}
+    <WindowFrame menuBar={isWindowsTheme ? menuBar : undefined}>
 ```
 
 ## WindowFrame Options

@@ -48,8 +48,8 @@ export function CalendarMenuBar({
   const {
     isShareDialogOpen,
     setIsShareDialogOpen,
-    isXpTheme,
-    isMacOsxTheme,
+    isWindowsTheme,
+    isMacOSTheme,
     appId,
     appName,
   } = useAppMenuBarChrome("calendar");
@@ -159,8 +159,8 @@ export function CalendarMenuBar({
 
   return (
     <AppMenuBarShell
-      isXpTheme={isXpTheme}
-      isMacOsxTheme={isMacOsxTheme}
+      isWindowsTheme={isWindowsTheme}
+      isMacOSTheme={isMacOSTheme}
       appId={appId}
       appName={appName}
       isShareDialogOpen={isShareDialogOpen}

@@ -55,7 +55,7 @@ export function MapsSearchPlacesCard({
   results,
 }: MapsSearchPlacesCardProps) {
   const { t } = useTranslation();
-  const { isMacOSTheme, isXpTheme, isSystem7Theme, isWin98 } = useThemeFlags();
+  const { isMacOSTheme, isWindowsTheme, isSystem7Theme, isWin98 } = useThemeFlags();
   const launchApp = useLaunchApp();
 
   const handleOpenInMaps = useCallback(
@@ -81,7 +81,7 @@ export function MapsSearchPlacesCard({
     toolInlineCardShellClassName({
       isMacOSTheme,
       isSystem7Theme,
-      isXpTheme,
+      isWindowsTheme,
       isWin98,
     }),
     "px-2.5 py-2 text-[12px]",
@@ -106,7 +106,7 @@ export function MapsSearchPlacesCard({
       className={toolInlineCardShellClassName({
         isMacOSTheme,
         isSystem7Theme,
-        isXpTheme,
+        isWindowsTheme,
         isWin98,
       })}
     >

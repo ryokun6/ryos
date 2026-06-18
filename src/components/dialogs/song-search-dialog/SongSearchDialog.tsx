@@ -12,7 +12,7 @@ import { SongSearchDialogBody } from "./components/SongSearchDialogBody";
 
 export function SongSearchDialog(props: SongSearchDialogProps) {
   const vm = useSongSearchDialog(props);
-  const { t, isXpTheme, isMacTheme } = vm;
+  const { t, isWindowsTheme, isMacTheme } = vm;
   const { isOpen, onOpenChange } = props;
 
   const dialogContent = <SongSearchDialogBody {...vm} />;
@@ -20,10 +20,10 @@ export function SongSearchDialog(props: SongSearchDialogProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
-        className={cn(isXpTheme && "p-0")}
+        className={cn(isWindowsTheme && "p-0")}
         onKeyDown={(e) => e.stopPropagation()}
       >
-        {isXpTheme ? (
+        {isWindowsTheme ? (
           <>
             <DialogHeader>{t("apps.ipod.dialogs.addSongTitle")}</DialogHeader>
             <div className="window-body">{dialogContent}</div>

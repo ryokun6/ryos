@@ -23,7 +23,7 @@ type SynthPresetsToolbarProps = Pick<
   | "isMacOSTheme"
   | "isSystem7Theme"
   | "isClassicTheme"
-  | "isXpTheme"
+  | "isWindowsTheme"
 >;
 
 export function SynthPresetsToolbar({
@@ -38,7 +38,7 @@ export function SynthPresetsToolbar({
   isMacOSTheme,
   isSystem7Theme,
   isClassicTheme,
-  isXpTheme,
+  isWindowsTheme,
 }: SynthPresetsToolbarProps) {
   return (
     <div
@@ -119,7 +119,7 @@ export function SynthPresetsToolbar({
                     onClick={() => loadPreset(preset)}
                     className={cn(
                       "h-[22px] px-2 whitespace-nowrap uppercase select-none",
-                      isXpTheme && "text-black"
+                      isWindowsTheme && "text-black"
                     )}
                   >
                     {preset.name}
@@ -162,21 +162,21 @@ export function SynthPresetsToolbar({
             <Button
               variant={isSystem7Theme ? "player" : "default"}
               onClick={handleOctaveDown}
-              className={cn("h-[22px] px-2 select-none", isXpTheme && "text-black")}
+              className={cn("h-[22px] px-2 select-none", isWindowsTheme && "text-black")}
             >
               <CaretLeft weight="bold" className="size-3" />
             </Button>
             <Button
               variant={isSystem7Theme ? "player" : "default"}
               onClick={handleOctaveUp}
-              className={cn("h-[22px] px-2 select-none", isXpTheme && "text-black")}
+              className={cn("h-[22px] px-2 select-none", isWindowsTheme && "text-black")}
             >
               <CaretRight weight="bold" className="size-3" />
             </Button>
             <Button
               variant={isSystem7Theme ? "player" : "default"}
               onClick={toggleControls}
-              className={cn("h-[22px] px-2 select-none", isXpTheme && "text-black")}
+              className={cn("h-[22px] px-2 select-none", isWindowsTheme && "text-black")}
             >
               {t("apps.synth.controls")}
             </Button>

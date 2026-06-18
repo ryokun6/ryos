@@ -199,7 +199,7 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
   const translatedHelpItems = useTranslatedHelpItems("admin", helpItems);
   const { username, isAuthenticated } = useAuth();
   const isOffline = useOffline();
-  const { currentTheme, isWindowsTheme: isXpTheme } = useThemeFlags();
+  const { currentTheme, isWindowsTheme } = useThemeFlags();
 
   const {
     isHelpDialogOpen,
@@ -1214,7 +1214,7 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
     isAdmin,
     isOffline,
     currentTheme,
-    isXpTheme,
+    isWindowsTheme,
     isHelpDialogOpen,
     setIsHelpDialogOpen,
     isAboutDialogOpen,

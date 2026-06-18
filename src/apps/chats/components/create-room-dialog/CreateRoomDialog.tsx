@@ -14,18 +14,18 @@ export function CreateRoomDialog(props: CreateRoomDialogProps) {
   const { isOpen, onOpenChange, isAdmin } = props;
   const vm = useCreateRoomDialog(props);
   const { t, theme } = vm;
-  const { isXpTheme, isMacOSTheme } = theme;
+  const { isWindowsTheme, isMacOSTheme } = theme;
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
         className={cn(
           "max-w-[400px] min-w-0 w-full",
-          isXpTheme && "p-0 overflow-hidden"
+          isWindowsTheme && "p-0 overflow-hidden"
         )}
-        style={isXpTheme ? { fontSize: "11px" } : undefined}
+        style={isWindowsTheme ? { fontSize: "11px" } : undefined}
       >
-        {isXpTheme ? (
+        {isWindowsTheme ? (
           <>
             <DialogHeader>
               {t("apps.chats.dialogs.newChatTitle")}

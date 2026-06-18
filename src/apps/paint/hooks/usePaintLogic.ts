@@ -434,7 +434,7 @@ export function usePaintLogic({ initialData, instanceId }: UsePaintLogicProps) {
     });
   }, []);
 
-  const { currentTheme, isWindowsTheme: isXpTheme } = useThemeFlags();
+  const { currentTheme, isWindowsTheme } = useThemeFlags();
 
   const windowTitle = currentFilePath
     ? currentFilePath.split("/").pop() || t("apps.paint.untitled")
@@ -470,7 +470,7 @@ export function usePaintLogic({ initialData, instanceId }: UsePaintLogicProps) {
     error,
     windowTitle,
     currentTheme,
-    isXpTheme,
+    isWindowsTheme,
     handleUndo,
     handleRedo,
     handleClear,

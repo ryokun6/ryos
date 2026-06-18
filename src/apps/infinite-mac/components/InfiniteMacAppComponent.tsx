@@ -95,7 +95,7 @@ export function InfiniteMacAppComponent({
     t,
     translatedHelpItems,
     currentTheme,
-    isXpTheme,
+    isWindowsTheme,
     isHelpDialogOpen,
     setIsHelpDialogOpen,
     isAboutDialogOpen,
@@ -169,7 +169,7 @@ export function InfiniteMacAppComponent({
   return (
     <AppWindowShell
       isWindowOpen={isWindowOpen}
-      isXpTheme={isXpTheme}
+      isWindowsTheme={isWindowsTheme}
       isForeground={isForeground}
       menuBar={menuBar}
       windowFrameProps={{

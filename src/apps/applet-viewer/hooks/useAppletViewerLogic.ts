@@ -160,7 +160,7 @@ export function useAppletViewerLogic({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const {
     currentTheme,
-    isWindowsTheme: isXpTheme,
+    isWindowsTheme,
     isMacOSTheme: isMacTheme,
   } = useThemeFlags();
   const username = useChatsStore((state) => state.username);
@@ -1579,7 +1579,7 @@ export function useAppletViewerLogic({
     setShareId,
     iframeRef,
     currentTheme,
-    isXpTheme,
+    isWindowsTheme,
     isMacTheme,
     hasAppletContent,
     htmlContent,

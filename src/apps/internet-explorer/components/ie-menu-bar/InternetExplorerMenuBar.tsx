@@ -11,8 +11,8 @@ export function InternetExplorerMenuBar(props: InternetExplorerMenuBarProps) {
 
   return (
     <AppMenuBarShell
-      isXpTheme={vm.isXpTheme}
-      isMacOsxTheme={vm.isMacOsxTheme}
+      isWindowsTheme={vm.isWindowsTheme}
+      isMacOSTheme={vm.isMacOSTheme}
       appId={vm.appId}
       appName={vm.appName}
       isShareDialogOpen={vm.isShareDialogOpen}

@@ -34,7 +34,7 @@ export function ChatInputView(vm: ChatInputViewModel) {
           selectedImage={vm.selectedImage}
           isInChatRoom={vm.isInChatRoom}
           isMacTheme={vm.isMacTheme}
-          isXpTheme={vm.isXpTheme}
+          isWindowsTheme={vm.isWindowsTheme}
           handleImageClear={vm.handleImageClear}
         />
 
@@ -81,7 +81,7 @@ export function ChatInputView(vm: ChatInputViewModel) {
                 key="recording-ui"
                 t={vm.t}
                 isMacTheme={vm.isMacTheme}
-                isXpTheme={vm.isXpTheme}
+                isWindowsTheme={vm.isWindowsTheme}
                 waveformBars={vm.waveformBars}
                 waveformIsSilent={vm.waveformIsSilent}
               />
@@ -116,7 +116,7 @@ export function ChatInputView(vm: ChatInputViewModel) {
               input={vm.input}
               selectedImage={vm.selectedImage}
               isMacTheme={vm.isMacTheme}
-              isXpTheme={vm.isXpTheme}
+              isWindowsTheme={vm.isWindowsTheme}
               isLoading={vm.isLoading}
               isOffline={vm.isOffline}
               isRecording={vm.isRecording}

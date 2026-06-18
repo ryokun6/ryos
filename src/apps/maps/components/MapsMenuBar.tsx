@@ -37,8 +37,8 @@ export function MapsMenuBar({
   const {
     isShareDialogOpen,
     setIsShareDialogOpen,
-    isXpTheme,
-    isMacOsxTheme,
+    isWindowsTheme,
+    isMacOSTheme,
     appId,
     appName,
   } = useAppMenuBarChrome("maps");
@@ -77,8 +77,8 @@ export function MapsMenuBar({
 
   return (
     <AppMenuBarShell
-      isXpTheme={isXpTheme}
-      isMacOsxTheme={isMacOsxTheme}
+      isWindowsTheme={isWindowsTheme}
+      isMacOSTheme={isMacOSTheme}
       appId={appId}
       appName={appName}
       isShareDialogOpen={isShareDialogOpen}

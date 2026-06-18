@@ -28,7 +28,7 @@ export function ChatsAppComponent({
   });
 
   const {
-    isXpTheme,
+    isWindowsTheme,
     menuBar,
     windowTitle,
     isShaking,
@@ -38,7 +38,7 @@ export function ChatsAppComponent({
   return (
     <AppWindowShell
       isWindowOpen={isWindowOpen}
-      isXpTheme={isXpTheme}
+      isWindowsTheme={isWindowsTheme}
       isForeground={isForeground}
       menuBar={menuBar}
       windowFrameProps={{

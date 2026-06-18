@@ -4,12 +4,12 @@ import type { ChartPoint } from "./types";
 export function MiniChart({
   history,
   xLabels,
-  isXpTheme,
+  isWindowsTheme,
   widgetId,
 }: {
   history: number[];
   xLabels: string[];
-  isXpTheme: boolean;
+  isWindowsTheme: boolean;
   widgetId: string;
 }) {
   const width = 220;
@@ -62,20 +62,20 @@ export function MiniChart({
     <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="block">
       <defs>
         <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={isXpTheme ? "#4A90D9" : "#FFFFFF"} stopOpacity={0.3} />
-          <stop offset="20%" stopColor={isXpTheme ? "#4A90D9" : "#FFFFFF"} stopOpacity={0.15} />
-          <stop offset="50%" stopColor={isXpTheme ? "#4A90D9" : "#FFFFFF"} stopOpacity={0.05} />
-          <stop offset="100%" stopColor={isXpTheme ? "#4A90D9" : "#FFFFFF"} stopOpacity={0} />
+          <stop offset="0%" stopColor={isWindowsTheme ? "#4A90D9" : "#FFFFFF"} stopOpacity={0.3} />
+          <stop offset="20%" stopColor={isWindowsTheme ? "#4A90D9" : "#FFFFFF"} stopOpacity={0.15} />
+          <stop offset="50%" stopColor={isWindowsTheme ? "#4A90D9" : "#FFFFFF"} stopOpacity={0.05} />
+          <stop offset="100%" stopColor={isWindowsTheme ? "#4A90D9" : "#FFFFFF"} stopOpacity={0} />
         </linearGradient>
       </defs>
       <path d={area} fill={`url(#${gradientId})`} />
-      <path d={linePath} fill="none" stroke={isXpTheme ? "#2060A0" : "#FFFFFF"} strokeWidth={1.5} />
+      <path d={linePath} fill="none" stroke={isWindowsTheme ? "#2060A0" : "#FFFFFF"} strokeWidth={1.5} />
       {yLabels.map((label) => (
         <text
           key={label.value}
           x={width - rightPad + 4}
           y={label.y + 3}
-          fill={isXpTheme ? "#666" : "rgba(255,255,255,0.4)"}
+          fill={isWindowsTheme ? "#666" : "rgba(255,255,255,0.4)"}
           fontSize={9}
           fontFamily="'Helvetica Neue', Helvetica, Arial, sans-serif"
         >
@@ -89,7 +89,7 @@ export function MiniChart({
             key={`${label}-${Math.round(xPos)}`}
             x={xPos}
             y={height - 2}
-            fill={isXpTheme ? "#666" : "rgba(255,255,255,0.4)"}
+            fill={isWindowsTheme ? "#666" : "rgba(255,255,255,0.4)"}
             fontSize={9}
             fontFamily="'Helvetica Neue', Helvetica, Arial, sans-serif"
             textAnchor="middle"

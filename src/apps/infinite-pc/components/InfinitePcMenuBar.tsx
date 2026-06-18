@@ -61,8 +61,8 @@ export function InfinitePcMenuBar({
   const {
     isShareDialogOpen,
     setIsShareDialogOpen,
-    isXpTheme,
-    isMacOsxTheme,
+    isWindowsTheme,
+    isMacOSTheme,
     appId,
   } = useAppMenuBarChrome("pc", appName);
   const availableGames = loadGames();
@@ -161,8 +161,8 @@ export function InfinitePcMenuBar({
 
     return (
       <AppMenuBarShell
-        isXpTheme={isXpTheme}
-        isMacOsxTheme={isMacOsxTheme}
+        isWindowsTheme={isWindowsTheme}
+        isMacOSTheme={isMacOSTheme}
         appId={appId}
         appName={appName}
         isShareDialogOpen={isShareDialogOpen}
@@ -222,8 +222,8 @@ export function InfinitePcMenuBar({
 
   return (
     <AppMenuBarShell
-      isXpTheme={isXpTheme}
-      isMacOsxTheme={isMacOsxTheme}
+      isWindowsTheme={isWindowsTheme}
+      isMacOSTheme={isMacOSTheme}
       appId={appId}
       appName={appName}
       isShareDialogOpen={isShareDialogOpen}

@@ -81,7 +81,7 @@ function CursorAgentsToolbar({
   refreshDisabled?: boolean;
 }) {
   const { t } = useTranslation();
-  const { isMacOSTheme: isMacOSXTheme, isWindowsTheme: isXpTheme } =
+  const { isMacOSTheme: isMacOSXTheme, isWindowsTheme } =
     useThemeFlags();
 
   const handleFormSubmit = (e: FormEvent) => {
@@ -96,7 +96,7 @@ function CursorAgentsToolbar({
         className={cn(
           adminToolbarClass,
           "flex items-center gap-2 border-b px-2 py-1.5",
-          isXpTheme
+          isWindowsTheme
             ? "border-[#919b9c]"
             : isMacOSXTheme
               ? "border-black/10"

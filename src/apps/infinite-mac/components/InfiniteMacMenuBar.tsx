@@ -45,8 +45,8 @@ export function InfiniteMacMenuBar({
   const {
     isShareDialogOpen,
     setIsShareDialogOpen,
-    isXpTheme,
-    isMacOsxTheme,
+    isWindowsTheme,
+    isMacOSTheme,
     appId,
     appName,
   } = useAppMenuBarChrome("infinite-mac");
@@ -109,8 +109,8 @@ export function InfiniteMacMenuBar({
 
   return (
     <AppMenuBarShell
-      isXpTheme={isXpTheme}
-      isMacOsxTheme={isMacOsxTheme}
+      isWindowsTheme={isWindowsTheme}
+      isMacOSTheme={isMacOSTheme}
       appId={appId}
       appName={appName}
       isShareDialogOpen={isShareDialogOpen}

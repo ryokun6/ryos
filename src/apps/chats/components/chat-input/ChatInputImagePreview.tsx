@@ -4,7 +4,7 @@ import type { ChatInputViewModel } from "./useChatInput";
 
 type Props = Pick<
   ChatInputViewModel,
-  "t" | "selectedImage" | "isInChatRoom" | "isMacTheme" | "isXpTheme" | "handleImageClear"
+  "t" | "selectedImage" | "isInChatRoom" | "isMacTheme" | "isWindowsTheme" | "handleImageClear"
 >;
 
 export function ChatInputImagePreview({
@@ -12,7 +12,7 @@ export function ChatInputImagePreview({
   selectedImage,
   isInChatRoom,
   isMacTheme,
-  isXpTheme,
+  isWindowsTheme,
   handleImageClear,
 }: Props) {
   return (
@@ -31,7 +31,7 @@ export function ChatInputImagePreview({
               className={`relative overflow-hidden ${
                 isMacTheme
                   ? "chat-bubble macosx-link-preview rounded-[16px] bg-neutral-100"
-                  : isXpTheme
+                  : isWindowsTheme
                     ? "rounded-none border border-[#7f9db9] bg-white"
                     : "rounded-md border border-neutral-200 bg-white"
               }`}

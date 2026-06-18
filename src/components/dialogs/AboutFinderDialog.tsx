@@ -36,7 +36,7 @@ export function AboutFinderDialog({
   const { t } = useTranslation();
   const instances = useAppStore((state) => state.instances);
   const launchApp = useAppStore((state) => state.launchApp);
-  const { isWindowsTheme: isXpTheme, currentTheme } = useThemeFlags();
+  const { isWindowsTheme, currentTheme } = useThemeFlags();
   const version = useAppStore((state) => state.ryOSVersion);
   const buildNumber = useAppStore((state) => state.ryOSBuildNumber);
   const buildTime = useAppStore((state) => state.ryOSBuildTime);
@@ -140,7 +140,7 @@ export function AboutFinderDialog({
 
   const aboutFinderSmallClass = cn(
     "about-finder-small",
-    isXpTheme
+    isWindowsTheme
       ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[10px]"
       : currentTheme === "macosx"
       ? "font-os-ui text-[13px]"
@@ -151,7 +151,7 @@ export function AboutFinderDialog({
     <div
       className={cn(
         "about-finder-dialog",
-        isXpTheme ? "p-2 px-4" : "p-4"
+        isWindowsTheme ? "p-2 px-4" : "p-4"
       )}
     >
       <div className="flex">
@@ -166,7 +166,7 @@ export function AboutFinderDialog({
               />
               <div
                 className={cn(
-                  isXpTheme
+                  isWindowsTheme
                     ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[16px]"
                     : currentTheme === "macosx"
                     ? "font-apple-garamond text-2xl"
@@ -190,7 +190,7 @@ export function AboutFinderDialog({
                   "cursor-pointer select-none transition-opacity hover:opacity-70 text-neutral-500"
                 )}
                 style={
-                  isXpTheme
+                  isWindowsTheme
                     ? {
                         fontFamily:
                           '"Pixelated MS Sans Serif", "ArkPixel", Arial',
@@ -220,14 +220,14 @@ export function AboutFinderDialog({
               <div
                 className={cn(
                   "text-neutral-500",
-                  isXpTheme
+                  isWindowsTheme
                     ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[10px]"
                     : currentTheme === "macosx"
                     ? "font-os-ui text-[11px]"
                     : "font-os-ui text-[10px]"
                 )}
                 style={
-                  isXpTheme
+                  isWindowsTheme
                     ? {
                         fontFamily:
                           '"Pixelated MS Sans Serif", "ArkPixel", Arial',
@@ -308,10 +308,10 @@ export function AboutFinderDialog({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
-        className={cn("max-w-[400px]", isXpTheme && "p-0 overflow-hidden")}
-        style={isXpTheme ? { fontSize: "11px" } : undefined}
+        className={cn("max-w-[400px]", isWindowsTheme && "p-0 overflow-hidden")}
+        style={isWindowsTheme ? { fontSize: "11px" } : undefined}
       >
-        {isXpTheme ? (
+        {isWindowsTheme ? (
           <>
             <DialogHeader>{t("common.aboutThisMac.title")}</DialogHeader>
             <div className="window-body">{dialogContent}</div>

@@ -35,7 +35,7 @@ interface CalendarWidgetProps {
 export function CalendarWidget({ widgetId }: CalendarWidgetProps) {
   const { i18n } = useTranslation();
   const locale = i18n.language || "en";
-  const { isWindowsTheme: isXpTheme } = useThemeFlags();
+  const { isWindowsTheme } = useThemeFlags();
 
   const widget = useDashboardStore((s) => widgetId ? s.widgets.find((w) => w.id === widgetId) : undefined);
   const calConfig = widget?.config as CalendarWidgetConfig | undefined;
@@ -125,7 +125,7 @@ export function CalendarWidget({ widgetId }: CalendarWidgetProps) {
     requestAppLaunch({ appId: "calendar" });
   };
 
-  if (isXpTheme) {
+  if (isWindowsTheme) {
     // Simple XP-style calendar
     return (
       <div className="p-2 cursor-pointer" onClick={handleClick} style={{ color: "#000" }}>
@@ -285,7 +285,7 @@ const ALL_COLORS: { id: EventColor; hex: string }[] = [
 
 export function CalendarBackPanel({ widgetId }: { widgetId: string }) {
   const { t } = useTranslation();
-  const { isWindowsTheme: isXpTheme } = useThemeFlags();
+  const { isWindowsTheme } = useThemeFlags();
   const widget = useDashboardStore((s) => s.widgets.find((w) => w.id === widgetId));
   const updateWidgetConfig = useDashboardStore((s) => s.updateWidgetConfig);
   const calConfig = widget?.config as CalendarWidgetConfig | undefined;
@@ -301,7 +301,7 @@ export function CalendarBackPanel({ widgetId }: { widgetId: string }) {
     [hiddenColors, widgetId, updateWidgetConfig]
   );
 
-  const textColor = isXpTheme ? "#000" : "rgba(255,255,255,0.8)";
+  const textColor = isWindowsTheme ? "#000" : "rgba(255,255,255,0.8)";
 
   return (
     <div className="px-3 pb-3" onPointerDown={(e) => e.stopPropagation()}>
@@ -309,7 +309,7 @@ export function CalendarBackPanel({ widgetId }: { widgetId: string }) {
         className="font-bold mb-2"
         style={{
           fontSize: 11,
-          color: isXpTheme ? "#333" : "rgba(255,255,255,0.5)",
+          color: isWindowsTheme ? "#333" : "rgba(255,255,255,0.5)",
           fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
         }}
       >
@@ -327,12 +327,12 @@ export function CalendarBackPanel({ widgetId }: { widgetId: string }) {
               style={{
                 opacity: visible ? 1 : 0.4,
                 background: visible
-                  ? isXpTheme ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.06)"
+                  ? isWindowsTheme ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.06)"
                   : "transparent",
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = isXpTheme ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.1)")}
+              onMouseEnter={(e) => (e.currentTarget.style.background = isWindowsTheme ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.1)")}
               onMouseLeave={(e) => (e.currentTarget.style.background = visible
-                ? isXpTheme ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.06)"
+                ? isWindowsTheme ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.06)"
                 : "transparent"
               )}
             >
@@ -348,7 +348,7 @@ export function CalendarBackPanel({ widgetId }: { widgetId: string }) {
               <span className="text-[11px]" style={{ color: textColor, fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}>
                 {t(`apps.dashboard.calendar.colors.${c.id}`, c.id)}
               </span>
-              <span className="ml-auto text-[11px]" style={{ color: isXpTheme ? "#888" : "rgba(255,255,255,0.4)" }}>
+              <span className="ml-auto text-[11px]" style={{ color: isWindowsTheme ? "#888" : "rgba(255,255,255,0.4)" }}>
                 {visible ? "✓" : ""}
               </span>
             </button>

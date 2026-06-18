@@ -8,7 +8,7 @@ type Props = Pick<
   | "input"
   | "selectedImage"
   | "isMacTheme"
-  | "isXpTheme"
+  | "isWindowsTheme"
   | "isLoading"
   | "isOffline"
   | "isRecording"
@@ -18,9 +18,9 @@ type Props = Pick<
 
 export function ChatInputStopButton({
   isMacTheme,
-  isXpTheme,
+  isWindowsTheme,
   handleStopClick,
-}: Pick<Props, "isMacTheme" | "isXpTheme" | "handleStopClick">) {
+}: Pick<Props, "isMacTheme" | "isWindowsTheme" | "handleStopClick">) {
   return (
     <motion.div
       key="stop"
@@ -37,7 +37,7 @@ export function ChatInputStopButton({
         } ${
           isMacTheme
             ? "relative overflow-hidden transition-transform hover:scale-105"
-            : isXpTheme
+            : isWindowsTheme
               ? "text-black"
               : "bg-black hover:bg-black/80 text-white border-2 border-neutral-800"
         }`}
@@ -87,7 +87,7 @@ export function ChatInputStopButton({
           className={`chat-stop-glyph size-4 ${
             isMacTheme
               ? "text-black/70 relative z-10"
-              : isXpTheme
+              : isWindowsTheme
                 ? "text-black"
                 : ""
           }`}
@@ -100,10 +100,10 @@ export function ChatInputStopButton({
 
 export function ChatInputSendButton({
   isMacTheme,
-  isXpTheme,
+  isWindowsTheme,
   isLoading,
   isOffline,
-}: Pick<Props, "isMacTheme" | "isXpTheme" | "isLoading" | "isOffline">) {
+}: Pick<Props, "isMacTheme" | "isWindowsTheme" | "isLoading" | "isOffline">) {
   return (
     <motion.div
       key="send"
@@ -119,7 +119,7 @@ export function ChatInputSendButton({
         } ${
           isMacTheme
             ? "relative overflow-hidden transition-transform hover:scale-105"
-            : isXpTheme
+            : isWindowsTheme
               ? "text-black"
               : "bg-black hover:bg-black/80 text-white border-2 border-neutral-800"
         }`}
@@ -170,7 +170,7 @@ export function ChatInputSendButton({
           className={`chat-submit-glyph size-4 ${
             isMacTheme
               ? "text-black/70 relative z-10"
-              : isXpTheme
+              : isWindowsTheme
                 ? "text-black"
                 : ""
           }`}
@@ -190,7 +190,7 @@ export function ChatInputActionButtons(props: Props) {
     isRecording,
     isOffline,
     isMacTheme,
-    isXpTheme,
+    isWindowsTheme,
     handleStopClick,
   } = props;
 
@@ -198,7 +198,7 @@ export function ChatInputActionButtons(props: Props) {
     return (
       <ChatInputStopButton
         isMacTheme={isMacTheme}
-        isXpTheme={isXpTheme}
+        isWindowsTheme={isWindowsTheme}
         handleStopClick={handleStopClick}
       />
     );
@@ -208,7 +208,7 @@ export function ChatInputActionButtons(props: Props) {
     return (
       <ChatInputSendButton
         isMacTheme={isMacTheme}
-        isXpTheme={isXpTheme}
+        isWindowsTheme={isWindowsTheme}
         isLoading={isLoading}
         isOffline={isOffline}
       />

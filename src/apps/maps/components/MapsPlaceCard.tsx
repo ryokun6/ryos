@@ -101,7 +101,7 @@ export function MapsPlaceCard({
   onClose,
 }: MapsPlaceCardProps) {
   const { t } = useTranslation();
-  const { isMacOSTheme, isXpTheme, isSystem7Theme, isWin98 } = useThemeFlags();
+  const { isMacOSTheme, isWindowsTheme, isSystem7Theme, isWin98 } = useThemeFlags();
 
   return (
     <AnimatePresence>
@@ -121,11 +121,11 @@ export function MapsPlaceCard({
           <div
             className={cn(
               osCardClassName(
-                { isMacOSTheme, isSystem7Theme, isXpTheme, isWin98 },
+                { isMacOSTheme, isSystem7Theme, isWindowsTheme, isWin98 },
                 { embed: "panel" }
               ),
               "gap-2.5 p-3",
-              isXpTheme && "shadow-md"
+              isWindowsTheme && "shadow-md"
             )}
           >
             <PlaceCardHeader

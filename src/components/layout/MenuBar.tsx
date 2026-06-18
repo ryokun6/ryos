@@ -18,14 +18,14 @@ export type { MenuBarProps } from "./menu-bar/menuBarTypes";
 export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
   const apps: AnyApp[] = useMemo(() => Object.values(appRegistry), []);
 
-  const { currentTheme, isWindowsTheme: isXpTheme } = useThemeFlags();
+  const { currentTheme, isWindowsTheme } = useThemeFlags();
 
-  if (inWindowFrame && isXpTheme) {
+  if (inWindowFrame && isWindowsTheme) {
     return (
       <Menubar
         className="flex items-center border-none bg-transparent space-x-0 rounded-none"
         style={{
-          fontFamily: isXpTheme ? "var(--font-ms-sans)" : "var(--os-font-ui)",
+          fontFamily: isWindowsTheme ? "var(--font-ms-sans)" : "var(--os-font-ui)",
           fontSize: "11px",
           paddingLeft: "6px",
           paddingRight: "2px",
@@ -39,12 +39,12 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
     );
   }
 
-  if (isXpTheme && !inWindowFrame) {
+  if (isWindowsTheme && !inWindowFrame) {
     return (
       <WindowsTaskbarWithState
         apps={apps}
         currentTheme={currentTheme}
-        isXpTheme={isXpTheme}
+        isWindowsTheme={isWindowsTheme}
       />
     );
   }
@@ -55,11 +55,11 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
 function WindowsTaskbarWithState({
   apps,
   currentTheme,
-  isXpTheme,
+  isWindowsTheme,
 }: {
   apps: AnyApp[];
   currentTheme: string;
-  isXpTheme: boolean;
+  isWindowsTheme: boolean;
 }) {
   const {
     dockInstancesSignature,
@@ -91,7 +91,7 @@ function WindowsTaskbarWithState({
       restoreInstance={restoreInstance}
       getFileItem={getFileItem}
       currentTheme={currentTheme}
-      isXpTheme={isXpTheme}
+      isWindowsTheme={isWindowsTheme}
     />
   );
 }

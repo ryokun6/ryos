@@ -49,8 +49,8 @@ export function DashboardMenuBar({
   const {
     isShareDialogOpen,
     setIsShareDialogOpen,
-    isXpTheme,
-    isMacOsxTheme,
+    isWindowsTheme,
+    isMacOSTheme,
     appId,
     appName,
   } = useAppMenuBarChrome("dashboard");
@@ -142,8 +142,8 @@ export function DashboardMenuBar({
 
   return (
     <AppMenuBarShell
-      isXpTheme={isXpTheme}
-      isMacOsxTheme={isMacOsxTheme}
+      isWindowsTheme={isWindowsTheme}
+      isMacOSTheme={isMacOSTheme}
       appId={appId}
       appName={appName}
       isShareDialogOpen={isShareDialogOpen}

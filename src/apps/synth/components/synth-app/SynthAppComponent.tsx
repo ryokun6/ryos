@@ -20,12 +20,12 @@ export function SynthAppComponent({
     onClose,
   });
 
-  const { isXpTheme, isMacOSTheme, menuBar } = c;
+  const { isWindowsTheme, isMacOSTheme, menuBar } = c;
 
   return (
     <AppWindowShell
       isWindowOpen={isWindowOpen}
-      isXpTheme={isXpTheme}
+      isWindowsTheme={isWindowsTheme}
       isForeground={isForeground}
       menuBar={menuBar}
       windowFrameProps={{

@@ -44,7 +44,7 @@ export function WidgetChrome({
 }: WidgetChromeProps) {
   const isStacked = layout === "stacked";
   const { t } = useTranslation();
-  const { isWindowsTheme: isXpTheme } = useThemeFlags();
+  const { isWindowsTheme } = useThemeFlags();
   const [isHovered, setIsHovered] = useState(false);
   const [isTouchActive, setIsTouchActive] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -154,19 +154,19 @@ export function WidgetChrome({
   const resolvedBackContent = typeof backContent === "function" ? backContent(flipBack) : backContent;
   const hasBack = !!backContent;
 
-  const borderRadius = borderRadiusProp ?? (isXpTheme ? "4px" : "20px");
+  const borderRadius = borderRadiusProp ?? (isWindowsTheme ? "4px" : "20px");
 
   const cardStyle = {
     width,
     minHeight: height,
     borderRadius,
-    background: isXpTheme
+    background: isWindowsTheme
       ? "rgba(255,255,255,0.92)"
       : "linear-gradient(to bottom, rgba(50,50,50,0.8), rgba(25,25,25,0.85))",
-    border: isXpTheme
+    border: isWindowsTheme
       ? "1px solid #ACA899"
       : "1px solid rgba(255,255,255,0.1)",
-    boxShadow: isXpTheme
+    boxShadow: isWindowsTheme
       ? "1px 1px 4px rgba(0,0,0,0.3)"
       : "0 8px 32px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08)",
   };
@@ -216,9 +216,9 @@ export function WidgetChrome({
             top: -6, left: -6, width: 20, height: 20,
             borderRadius: "50%", zIndex: 20,
             pointerEvents: showControls ? "auto" : "none",
-            background: isXpTheme ? "#CC0000" : "linear-gradient(180deg, #5a5a5a 0%, #333333 100%)",
-            border: isXpTheme ? "1px solid #990000" : "1.5px solid rgba(255,255,255,0.3)",
-            boxShadow: isXpTheme ? "0 1px 3px rgba(0,0,0,0.4)" : "0 2px 6px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.2)",
+            background: isWindowsTheme ? "#CC0000" : "linear-gradient(180deg, #5a5a5a 0%, #333333 100%)",
+            border: isWindowsTheme ? "1px solid #990000" : "1.5px solid rgba(255,255,255,0.3)",
+            boxShadow: isWindowsTheme ? "0 1px 3px rgba(0,0,0,0.4)" : "0 2px 6px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.2)",
             color: "#FFF",
           }}
         >
@@ -287,7 +287,7 @@ export function WidgetChrome({
             <div className="flex flex-col" style={{ minHeight: "inherit" }}>
               {resolvedChildren}
             </div>
-            {!isXpTheme && (
+            {!isWindowsTheme && (
               <>
                 <div className="absolute pointer-events-none" style={{ top: 2, left: "50%", transform: "translateX(-50%)", width: "calc(100% - 6px)", height: "35%", maxHeight: 50, borderRadius: "18px 18px 50% 50%", background: "linear-gradient(rgba(255,255,255,0.3), rgba(255,255,255,0))", zIndex: 10 }} />
                 <div className="absolute pointer-events-none" style={{ bottom: 2, left: "50%", transform: "translateX(-50%)", width: "calc(100% - 10px)", height: "20%", maxHeight: 30, borderRadius: "50% 50% 16px 16px", background: "linear-gradient(rgba(255,255,255,0), rgba(255,255,255,0.08))", filter: "blur(1px)", zIndex: 10 }} />
@@ -319,7 +319,7 @@ export function WidgetChrome({
                       whileHover={{ opacity: 0.8 }}
                       style={{
                         fontSize: 12, padding: "4px 10px", cursor: "pointer",
-                        color: isXpTheme ? "#0066CC" : "rgba(130,180,255,0.9)",
+                        color: isWindowsTheme ? "#0066CC" : "rgba(130,180,255,0.9)",
                         fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
                       }}
                     >

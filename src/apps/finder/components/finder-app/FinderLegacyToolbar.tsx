@@ -7,7 +7,7 @@ import type { TFunction } from "i18next";
 
 export interface FinderLegacyToolbarProps {
   t: TFunction;
-  isXpTheme: boolean;
+  isWindowsTheme: boolean;
   currentTheme: string;
   isAirDropView: boolean;
   currentPath: string;
@@ -28,7 +28,7 @@ export interface FinderLegacyToolbarProps {
 
 export function FinderLegacyToolbar({
   t,
-  isXpTheme,
+  isWindowsTheme,
   currentTheme,
   isAirDropView,
   currentPath,
@@ -50,14 +50,14 @@ export function FinderLegacyToolbar({
     <div
       className={cn(
         "flex flex-col gap-1 p-1",
-        isXpTheme
+        isWindowsTheme
           ? "border-b border-[#919b9c]"
           : currentTheme === "system7"
             ? "bg-neutral-100 border-b border-black"
             : "bg-neutral-100 border-b border-neutral-300"
       )}
       style={{
-        background: isXpTheme ? "transparent" : undefined,
+        background: isWindowsTheme ? "transparent" : undefined,
       }}
     >
       <div className="flex gap-2 items-center">
@@ -104,7 +104,7 @@ export function FinderLegacyToolbar({
           value={displayPath}
           onChange={handlePathInputChange}
           onKeyDown={handlePathInputKeyDown}
-          className={cn("flex-1 pl-2", isXpTheme ? "!text-[11px]" : "!text-[16px]")}
+          className={cn("flex-1 pl-2", isWindowsTheme ? "!text-[11px]" : "!text-[16px]")}
           placeholder={t("apps.finder.placeholders.enterPath")}
         />
       </div>

@@ -55,7 +55,7 @@ export function useSoundboardLogic({
   const hasInitialized = useSoundboardStore((state) => state.hasInitialized);
 
   // Get current theme
-  const { currentTheme, isWindowsTheme: isXpTheme } = useThemeFlags();
+  const { currentTheme, isWindowsTheme } = useThemeFlags();
 
   useEffect(() => {
     if (!hasInitialized) {
@@ -390,7 +390,7 @@ export function useSoundboardLogic({
     stopSound,
     hasInitialized,
     currentTheme,
-    isXpTheme,
+    isWindowsTheme,
     isEditingTitle,
     setIsEditingTitle,
     dialogState,

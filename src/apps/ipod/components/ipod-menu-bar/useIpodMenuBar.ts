@@ -39,8 +39,8 @@ export function useIpodMenuBar(props: IpodMenuBarProps) {
   const {
     isShareDialogOpen,
     setIsShareDialogOpen,
-    isXpTheme,
-    isMacOsxTheme,
+    isWindowsTheme,
+    isMacOSTheme,
     appId,
     appName,
   } = useAppMenuBarChrome("ipod");
@@ -208,8 +208,8 @@ export function useIpodMenuBar(props: IpodMenuBarProps) {
     appId,
     appName,
     translationLanguages,
-    isXpTheme,
-    isMacOsxTheme,
+    isWindowsTheme,
+    isMacOSTheme,
     debugMode,
     isAdmin,
     isAppleMusic,

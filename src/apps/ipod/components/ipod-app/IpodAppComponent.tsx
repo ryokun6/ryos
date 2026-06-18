@@ -25,7 +25,7 @@ export function IpodAppComponent({
   });
 
   const {
-    isXpTheme,
+    isWindowsTheme,
     isMacOSTheme,
     menuBar,
     handleClose,
@@ -37,7 +37,7 @@ export function IpodAppComponent({
   return (
     <AppWindowShell
       isWindowOpen={isWindowOpen}
-      isXpTheme={isXpTheme}
+      isWindowsTheme={isWindowsTheme}
       isForeground={isForeground}
       menuBar={menuBar}
       windowFrameProps={{

@@ -14,7 +14,7 @@ export function AppStoreListView({ vm }: AppStoreListViewProps) {
     searchQuery,
     setSearchQuery,
     setShowListView,
-    isXpTheme,
+    isWindowsTheme,
     isMacChrome,
     isSystem7Chrome,
     filteredApplets,
@@ -28,7 +28,7 @@ export function AppStoreListView({ vm }: AppStoreListViewProps) {
     <>
       <div
         className={`px-3 py-2 flex items-center gap-1 ${
-          isXpTheme
+          isWindowsTheme
             ? "border-b border-[#919b9c]"
             : isMacChrome
               ? ""
@@ -37,7 +37,7 @@ export function AppStoreListView({ vm }: AppStoreListViewProps) {
                 : "bg-neutral-100 border-b border-neutral-200"
         }`}
         style={{
-          background: isXpTheme ? "transparent" : undefined,
+          background: isWindowsTheme ? "transparent" : undefined,
           backgroundImage: isMacChrome ? "var(--os-pinstripe-window)" : undefined,
           borderBottom: isMacChrome
             ? `var(--os-metrics-titlebar-border-width, 1px) solid var(--os-color-titlebar-border-inactive, rgba(0, 0, 0, 0.2))`
@@ -50,7 +50,7 @@ export function AppStoreListView({ vm }: AppStoreListViewProps) {
           onChange={setSearchQuery}
           className="flex-1"
           inputClassName={
-            isXpTheme
+            isWindowsTheme
               ? "!text-[11px]"
               : isMacChrome
                 ? "!text-[12px] h-[26px] py-[2px]"

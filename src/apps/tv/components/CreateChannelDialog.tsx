@@ -78,7 +78,7 @@ export function CreateChannelDialog({
 }: CreateChannelDialogProps) {
   const { t } = useTranslation();
   const {
-    isWindowsTheme: isXpTheme,
+    isWindowsTheme,
     isMacOSTheme: isMacTheme,
     isSystem7Theme,
   } = useThemeFlags();
@@ -150,17 +150,17 @@ export function CreateChannelDialog({
     }
   };
 
-  const fontStyle = isXpTheme
+  const fontStyle = isWindowsTheme
     ? { fontFamily: '"Pixelated MS Sans Serif", "ArkPixel", Arial' as const, fontSize: "11px" }
     : undefined;
-  const fontClass = isXpTheme
+  const fontClass = isWindowsTheme
     ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
     : isSystem7Theme
       ? "font-geneva-12 text-[12px]"
       : "font-os-ui text-[12px]";
 
   const dialogContent = (
-    <div className={cn(isXpTheme ? "p-2 px-4" : "p-4 px-6")}>
+    <div className={cn(isWindowsTheme ? "p-2 px-4" : "p-4 px-6")}>
       <p className={cn("text-neutral-500 mb-2", fontClass)} style={fontStyle}>
         {t("apps.tv.create.description")}
       </p>
@@ -242,11 +242,11 @@ export function CreateChannelDialog({
   return (
     <Dialog open={isOpen} onOpenChange={isLoading ? undefined : onOpenChange}>
       <DialogContent
-        className={cn("max-w-[500px]", isXpTheme && "p-0 overflow-hidden")}
-        style={isXpTheme ? { fontSize: "11px" } : undefined}
+        className={cn("max-w-[500px]", isWindowsTheme && "p-0 overflow-hidden")}
+        style={isWindowsTheme ? { fontSize: "11px" } : undefined}
         onKeyDown={(e) => e.stopPropagation()}
       >
-        {isXpTheme ? (
+        {isWindowsTheme ? (
           <>
             <DialogHeader>{t("apps.tv.create.title")}</DialogHeader>
             <div className="window-body">{dialogContent}</div>

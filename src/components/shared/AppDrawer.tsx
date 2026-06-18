@@ -100,7 +100,7 @@ export function AppDrawer({
   const {
     isMacOSTheme,
     isSystem7Theme: isSystem7,
-    isWindowsTheme: isXpTheme,
+    isWindowsTheme,
     isWin98,
   } = useThemeFlags();
   const useGeneva = isMacOSTheme || isSystem7;
@@ -203,7 +203,7 @@ export function AppDrawer({
   // Side (desktop): rounded on the outward edge.
   // Compact (mobile): rounded on the edge that sticks out of the window.
   const panelOuterClass = osDrawerSurfaceClassName(
-    { isMacOSTheme, isSystem7Theme: isSystem7, isXpTheme, isWin98 },
+    { isMacOSTheme, isSystem7Theme: isSystem7, isWindowsTheme, isWin98 },
     placement
   );
 
@@ -223,7 +223,7 @@ export function AppDrawer({
     isMacOSTheme && "px-2 py-0.5 min-h-[20px]",
     !isMacOSTheme && "px-2 pt-1.5 pb-1",
     isSystem7 && "border-b border-black",
-    isXpTheme && !isWin98 && cn("border-b", osSeparatorBorderClassName()),
+    isWindowsTheme && !isWin98 && cn("border-b", osSeparatorBorderClassName()),
     isWin98 && cn("border-b", osSeparatorBorderClassName())
   );
 
@@ -231,7 +231,7 @@ export function AppDrawer({
     // Regular weight — not bold (matches OS label conventions)
     "text-[11px] font-normal truncate flex-1",
     useGeneva && "font-geneva-12",
-    isXpTheme && "font-tahoma",
+    isWindowsTheme && "font-tahoma",
     isMacOSTheme
       ? "text-[#222]"
       : "opacity-60 text-[9px] uppercase tracking-wide"
@@ -241,7 +241,7 @@ export function AppDrawer({
     "shrink-0 ml-1 flex items-center justify-center rounded p-0.5",
     "focus:outline-none focus-visible:ring-1",
     isMacOSTheme && "text-black/50 hover:bg-black/10 hover:text-black/80 focus-visible:ring-black/30",
-    (isSystem7 || isXpTheme || isWin98) && "text-black/50 hover:bg-black/10 hover:text-black/80"
+    (isSystem7 || isWindowsTheme || isWin98) && "text-black/50 hover:bg-black/10 hover:text-black/80"
   );
 
   // ── Inner content wrapper (handles macOS layering) ────────────────────────

@@ -10,7 +10,7 @@ export function TrayDetails({
   calendars,
   isMacOSTheme,
   isSystem7Theme,
-  isXpTheme,
+  isWindowsTheme,
   onUpdateEvent,
   onDeleteEvent,
   onUpdateTodo,
@@ -30,7 +30,7 @@ export function TrayDetails({
           useGeneva={useGeneva}
           isMacOSTheme={isMacOSTheme}
           isSystem7Theme={isSystem7Theme}
-          isXpTheme={isXpTheme}
+          isWindowsTheme={isWindowsTheme}
           locale={i18n.language}
           t={t}
           onUpdate={onUpdateEvent}
@@ -49,7 +49,7 @@ export function TrayDetails({
           useGeneva={useGeneva}
           isMacOSTheme={isMacOSTheme}
           isSystem7Theme={isSystem7Theme}
-          isXpTheme={isXpTheme}
+          isWindowsTheme={isWindowsTheme}
           locale={i18n.language}
           t={t}
           onToggle={onToggleTodo}

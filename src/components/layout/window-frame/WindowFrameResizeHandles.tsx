@@ -6,7 +6,7 @@ export interface WindowFrameResizeHandlesProps {
   resizerZIndexClass: string;
   showResizers: boolean;
   isMobile: boolean;
-  isXpTheme: boolean;
+  isWindowsTheme: boolean;
   isMacOSTheme: boolean;
   resizeType: ResizeType | null;
   handleResizeStartWithForeground: (
@@ -20,7 +20,7 @@ export function WindowFrameResizeHandles({
   resizerZIndexClass,
   showResizers,
   isMobile,
-  isXpTheme,
+  isWindowsTheme,
   isMacOSTheme,
   resizeType,
   handleResizeStartWithForeground,
@@ -42,7 +42,7 @@ export function WindowFrameResizeHandles({
           resizeType?.includes("n")
             ? "top-[-100px] h-[200px]"
             : isMobile
-            ? isXpTheme
+            ? isWindowsTheme
               ? "top-0 h-4" // Start from top but be shorter for XP/98 themes
               : isMacOSTheme
               ? "top-1 h-2" // Extend above window for macOS to avoid traffic lights

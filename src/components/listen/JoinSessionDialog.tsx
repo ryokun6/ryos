@@ -100,7 +100,7 @@ export function JoinSessionDialog({
   const [state, dispatch] = useReducer(reducer, initialState);
   const { value, sessions, selectedIndex, isLoading, error } = state;
 
-  const { isWindowsTheme: isXpTheme, isMacOSTheme: isMacTheme } =
+  const { isWindowsTheme, isMacOSTheme: isMacTheme } =
     useThemeFlags();
   const fetchSessions = useListenSessionStore((state) => state.fetchSessions);
 
@@ -160,7 +160,7 @@ export function JoinSessionDialog({
   );
 
   const dialogContent = (
-    <div className={isXpTheme ? "p-2 px-4" : "p-4 px-6"}>
+    <div className={isWindowsTheme ? "p-2 px-4" : "p-4 px-6"}>
       {/* Session List - Primary view */}
       <div className="mb-3">
         <ScrollArea className="h-[160px] border border-neutral-300 rounded-md overflow-hidden bg-white">
@@ -169,15 +169,15 @@ export function JoinSessionDialog({
               <div
                 className={cn(
                   "flex items-center justify-center h-[140px] text-neutral-500",
-                  isXpTheme
+                  isWindowsTheme
                     ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
                     : "font-geneva-12 text-[12px]"
                 )}
                 style={{
-                  fontFamily: isXpTheme
+                  fontFamily: isWindowsTheme
                     ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
                     : undefined,
-                  fontSize: isXpTheme ? "11px" : undefined,
+                  fontSize: isWindowsTheme ? "11px" : undefined,
                 }}
               >
                 {t("apps.karaoke.liveListen.loadingSessions")}
@@ -186,15 +186,15 @@ export function JoinSessionDialog({
               <div
                 className={cn(
                   "flex items-center justify-center h-[140px] text-red-600",
-                  isXpTheme
+                  isWindowsTheme
                     ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
                     : "font-geneva-12 text-[12px]"
                 )}
                 style={{
-                  fontFamily: isXpTheme
+                  fontFamily: isWindowsTheme
                     ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
                     : undefined,
-                  fontSize: isXpTheme ? "11px" : undefined,
+                  fontSize: isWindowsTheme ? "11px" : undefined,
                 }}
               >
                 {error}
@@ -203,15 +203,15 @@ export function JoinSessionDialog({
               <div
                 className={cn(
                   "flex items-center justify-center h-[140px] text-neutral-500",
-                  isXpTheme
+                  isWindowsTheme
                     ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
                     : "font-geneva-12 text-[12px]"
                 )}
                 style={{
-                  fontFamily: isXpTheme
+                  fontFamily: isWindowsTheme
                     ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
                     : undefined,
-                  fontSize: isXpTheme ? "11px" : undefined,
+                  fontSize: isWindowsTheme ? "11px" : undefined,
                 }}
               >
                 {t("apps.karaoke.liveListen.noActiveSessions")}
@@ -237,16 +237,16 @@ export function JoinSessionDialog({
                       : index % 2 === 1
                         ? "bg-neutral-100"
                         : "bg-white",
-                    isXpTheme
+                    isWindowsTheme
                       ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
                       : "font-geneva-12 text-[12px]"
                   )}
                   data-selected={selectedIndex === index ? "true" : undefined}
                   style={{
-                    fontFamily: isXpTheme
+                    fontFamily: isWindowsTheme
                       ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
                       : undefined,
-                    fontSize: isXpTheme ? "11px" : undefined,
+                    fontSize: isWindowsTheme ? "11px" : undefined,
                   }}
                 >
                   <div className="font-semibold">
@@ -289,15 +289,15 @@ export function JoinSessionDialog({
       <p
         className={cn(
           "text-neutral-500 mb-2",
-          isXpTheme
+          isWindowsTheme
             ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
             : "font-geneva-12 text-[12px]"
         )}
         style={{
-          fontFamily: isXpTheme
+          fontFamily: isWindowsTheme
             ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
             : undefined,
-          fontSize: isXpTheme ? "11px" : undefined,
+          fontSize: isWindowsTheme ? "11px" : undefined,
         }}
       >
         {t("apps.karaoke.liveListen.orEnterSessionId")}
@@ -317,15 +317,15 @@ export function JoinSessionDialog({
           placeholder={t("apps.karaoke.liveListen.sessionLinkPlaceholder")}
           className={cn(
             "shadow-none flex-1",
-            isXpTheme
+            isWindowsTheme
               ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
               : "font-geneva-12 text-[12px]"
           )}
           style={{
-            fontFamily: isXpTheme
+            fontFamily: isWindowsTheme
               ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
               : undefined,
-            fontSize: isXpTheme ? "11px" : undefined,
+            fontSize: isWindowsTheme ? "11px" : undefined,
           }}
         />
         <Button
@@ -335,15 +335,15 @@ export function JoinSessionDialog({
           className={cn(
             "flex-shrink-0",
             !isMacTheme && "h-7",
-            isXpTheme
+            isWindowsTheme
               ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
               : "font-geneva-12 text-[12px]"
           )}
           style={{
-            fontFamily: isXpTheme
+            fontFamily: isWindowsTheme
               ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
               : undefined,
-            fontSize: isXpTheme ? "11px" : undefined,
+            fontSize: isWindowsTheme ? "11px" : undefined,
           }}
         >
           {t("apps.karaoke.liveListen.joinButton")}
@@ -360,15 +360,15 @@ export function JoinSessionDialog({
               className={cn(
                 "w-full sm:w-auto",
                 !isMacTheme && "h-7",
-                isXpTheme
+                isWindowsTheme
                   ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
                   : "font-geneva-12 text-[12px]"
               )}
               style={{
-                fontFamily: isXpTheme
+                fontFamily: isWindowsTheme
                   ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
                   : undefined,
-                fontSize: isXpTheme ? "11px" : undefined,
+                fontSize: isWindowsTheme ? "11px" : undefined,
               }}
             >
               {t("apps.karaoke.liveListen.cancel")}
@@ -380,15 +380,15 @@ export function JoinSessionDialog({
               className={cn(
                 "w-full sm:w-auto",
                 !isMacTheme && "h-7",
-                isXpTheme
+                isWindowsTheme
                   ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
                   : "font-geneva-12 text-[12px]"
               )}
               style={{
-                fontFamily: isXpTheme
+                fontFamily: isWindowsTheme
                   ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
                   : undefined,
-                fontSize: isXpTheme ? "11px" : undefined,
+                fontSize: isWindowsTheme ? "11px" : undefined,
               }}
             >
               {t("apps.karaoke.liveListen.joinButton")}
@@ -402,11 +402,11 @@ export function JoinSessionDialog({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
-        className={cn("max-w-[420px]", isXpTheme && "p-0 overflow-hidden")}
-        style={isXpTheme ? { fontSize: "11px" } : undefined}
+        className={cn("max-w-[420px]", isWindowsTheme && "p-0 overflow-hidden")}
+        style={isWindowsTheme ? { fontSize: "11px" } : undefined}
         onKeyDown={handleDialogKeyDown}
       >
-        {isXpTheme ? (
+        {isWindowsTheme ? (
           <>
             <DialogHeader>
               {t("apps.karaoke.liveListen.joinSession")}

@@ -6,7 +6,7 @@ import { useThemeFlags } from "@/hooks/useThemeFlags";
 export function OfflineIndicator() {
   const { t } = useTranslation();
   const isOffline = useOffline();
-  const { isWindowsTheme: isXpTheme, isWin98 } = useThemeFlags();
+  const { isWindowsTheme, isWin98 } = useThemeFlags();
 
   if (!isOffline) return null;
 
@@ -14,18 +14,18 @@ export function OfflineIndicator() {
     <div
       className="flex items-center"
       style={{
-        marginRight: isXpTheme ? "4px" : "8px",
+        marginRight: isWindowsTheme ? "4px" : "8px",
         color:
           isWin98
             ? "#000000"
-            : isXpTheme
+            : isWindowsTheme
             ? "#ffffff"
             : "var(--os-color-menubar-text)",
       }}
       title={t("common.menuBar.offline")}
     >
       <WifiSlash
-        className={isXpTheme ? "h-3 w-3" : "h-4 w-4"}
+        className={isWindowsTheme ? "h-3 w-3" : "h-4 w-4"}
         weight="bold"
         style={{
           opacity: 0.7,

@@ -18,7 +18,7 @@ export function EventTrayEditor({
   useGeneva,
   isMacOSTheme,
   isSystem7Theme,
-  isXpTheme,
+  isWindowsTheme,
   locale,
   t,
   onUpdate,
@@ -123,7 +123,7 @@ export function EventTrayEditor({
   const fieldInputClass = cn(
     "w-full rounded-sm border bg-white px-1 py-0.5 text-[11px] outline-none",
     useGeneva ? "font-geneva-12 border-black/25" : "border-black/20",
-    isXpTheme && "text-black"
+    isWindowsTheme && "text-black"
   );
 
   const smallTimeClass = cn(

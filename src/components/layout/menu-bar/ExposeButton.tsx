@@ -5,10 +5,10 @@ import { toggleExposeView } from "@/utils/appEventBus";
 
 export function ExposeButton() {
   const { t } = useTranslation();
-  const { isWindowsTheme: isXpTheme } = useThemeFlags();
+  const { isWindowsTheme } = useThemeFlags();
 
   // Don't show on Windows themes (they have their own taskbar)
-  if (isXpTheme) return null;
+  if (isWindowsTheme) return null;
 
   const handleClick = () => {
     toggleExposeView();

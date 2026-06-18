@@ -10,8 +10,8 @@ export function IpodMenuBar(props: IpodMenuBarProps) {
   const vm = useIpodMenuBar(props);
   return (
     <AppMenuBarShell
-      isXpTheme={vm.isXpTheme}
-      isMacOsxTheme={vm.isMacOsxTheme}
+      isWindowsTheme={vm.isWindowsTheme}
+      isMacOSTheme={vm.isMacOSTheme}
       appId={vm.appId}
       appName={vm.appName}
       isShareDialogOpen={vm.isShareDialogOpen}

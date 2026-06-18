@@ -47,7 +47,6 @@ export function BoardList({
       className={osAppSidebarSurfaceClassName(
         {
           isMacOSTheme,
-          isXpTheme: isWindowsTheme,
           isWindowsTheme,
           isAquaGlass,
         },

@@ -27,7 +27,7 @@ export interface WindowsTaskbarProps {
   restoreInstance: (instanceId: string) => void;
   getFileItem: (path: string) => FileSystemItem | undefined;
   currentTheme: string;
-  isXpTheme: boolean;
+  isWindowsTheme: boolean;
 }
 
 export function WindowsTaskbar({
@@ -38,7 +38,7 @@ export function WindowsTaskbar({
   restoreInstance,
   getFileItem,
   currentTheme,
-  isXpTheme,
+  isWindowsTheme,
 }: WindowsTaskbarProps) {
   const {
     runningAreaRef,
@@ -281,7 +281,7 @@ export function WindowsTaskbar({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   align="end"
-                  side={isXpTheme ? "top" : "bottom"}
+                  side={isWindowsTheme ? "top" : "bottom"}
                   sideOffset={4}
                   className="px-0"
                 >
@@ -369,14 +369,14 @@ export function WindowsTaskbar({
               <VolumeControl />
             </div>
             <div
-              className={`text-xs ${isXpTheme ? "font-bold" : "font-normal"} ${
-                isXpTheme ? "" : "px-2"
+              className={`text-xs ${isWindowsTheme ? "font-bold" : "font-normal"} ${
+                isWindowsTheme ? "" : "px-2"
               }`}
               style={{
                 color:
                   isWin98
                     ? "#000000"
-                    : isXpTheme
+                    : isWindowsTheme
                     ? "#ffffff"
                     : "#000000",
                 textShadow: isWinXp

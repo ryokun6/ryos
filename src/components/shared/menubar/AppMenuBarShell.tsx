@@ -7,8 +7,8 @@ import type { AppId } from "@/config/appRegistry";
 interface AppMenuBarShellProps {
   /** App-specific menus (File, Controls, View, Library, ...). */
   children: ReactNode;
-  isXpTheme: boolean;
-  isMacOsxTheme: boolean;
+  isWindowsTheme: boolean;
+  isMacOSTheme: boolean;
   appId: AppId;
   appName: string;
   isShareDialogOpen: boolean;
@@ -28,8 +28,8 @@ interface AppMenuBarShellProps {
  */
 export function AppMenuBarShell({
   children,
-  isXpTheme,
-  isMacOsxTheme,
+  isWindowsTheme,
+  isMacOSTheme,
   appId,
   appName,
   isShareDialogOpen,
@@ -41,13 +41,13 @@ export function AppMenuBarShell({
   onShowAbout,
 }: AppMenuBarShellProps) {
   return (
-    <MenuBar inWindowFrame={isXpTheme}>
+    <MenuBar inWindowFrame={isWindowsTheme}>
       {children}
       <AppMenuBarHelpMenu
         helpItemLabel={helpItemLabel}
         aboutItemLabel={aboutItemLabel}
         shareItemLabel={shareItemLabel}
-        isMacOsxTheme={isMacOsxTheme}
+        isMacOSTheme={isMacOSTheme}
         onShowHelp={onShowHelp}
         onShowAbout={onShowAbout}
         onOpenShareDialog={() => setIsShareDialogOpen(true)}

@@ -241,7 +241,7 @@ function IpodWidgetTimeLabel({
 
 export function IpodWidget({ widgetId }: IpodWidgetProps) {
   const { t } = useTranslation();
-  const { isWindowsTheme: isXpTheme } = useThemeFlags();
+  const { isWindowsTheme } = useThemeFlags();
 
   const widget = useDashboardStore((s) => widgetId ? s.widgets.find((w) => w.id === widgetId) : undefined);
   const controlMode = (widget?.config as IpodWidgetConfig | undefined)?.controlMode ?? "ipod";
@@ -327,7 +327,7 @@ export function IpodWidget({ widgetId }: IpodWidgetProps) {
         width: "100%",
         height: "100%",
         minHeight: 125,
-        background: isXpTheme
+        background: isWindowsTheme
           ? "linear-gradient(180deg, #e4e4e4 0%, #d4d4d4 30%, #c8c8c8 60%, #d4d4d4 100%)"
           : "linear-gradient(180deg, #e2e2e2 0%, #d6d6d6 12%, #cccccc 28%, #c0c0c0 45%, #b8b8b8 55%, #c0c0c0 68%, #cccccc 82%, #d6d6d6 100%)",
         borderRadius: "inherit",
@@ -557,8 +557,8 @@ export function IpodBackPanel({
   onDone?: () => void;
 }) {
   const { t } = useTranslation();
-  const { isWindowsTheme: isXpTheme } = useThemeFlags();
-  const textColor = isXpTheme ? "#000" : "rgba(255,255,255,0.8)";
+  const { isWindowsTheme } = useThemeFlags();
+  const textColor = isWindowsTheme ? "#000" : "rgba(255,255,255,0.8)";
   const updateWidgetConfig = useDashboardStore((s) => s.updateWidgetConfig);
   const widget = useDashboardStore((s) => s.widgets.find((w) => w.id === widgetId));
   const config = widget?.config as IpodWidgetConfig | undefined;
@@ -577,7 +577,7 @@ export function IpodBackPanel({
     onDone?.();
   }, [onDone, controlMode]);
 
-  const linkColor = isXpTheme ? "#0066CC" : "rgba(130,180,255,0.9)";
+  const linkColor = isWindowsTheme ? "#0066CC" : "rgba(130,180,255,0.9)";
 
   return (
     <div
@@ -599,9 +599,9 @@ export function IpodBackPanel({
             fontWeight: 500,
             fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
             padding: "2px 4px",
-            borderRadius: isXpTheme ? 2 : 6,
-            border: isXpTheme ? "1px solid #ACA899" : "1px solid rgba(255,255,255,0.2)",
-            background: isXpTheme ? "#fff" : "rgba(255,255,255,0.1)",
+            borderRadius: isWindowsTheme ? 2 : 6,
+            border: isWindowsTheme ? "1px solid #ACA899" : "1px solid rgba(255,255,255,0.2)",
+            background: isWindowsTheme ? "#fff" : "rgba(255,255,255,0.1)",
             color: textColor,
             cursor: "pointer",
             outline: "none",

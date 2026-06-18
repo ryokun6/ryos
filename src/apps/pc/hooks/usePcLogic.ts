@@ -34,7 +34,7 @@ export function usePcLogic({ isWindowOpen, instanceId }: UsePcLogicProps) {
   const dosPropsRef = useRef<DosProps | null>(null);
 
   const { t } = useTranslation();
-  const { currentTheme, isWindowsTheme: isXpTheme } = useThemeFlags();
+  const { currentTheme, isWindowsTheme } = useThemeFlags();
   const translatedHelpItems = useTranslatedHelpItems("pc", helpItems);
 
   const handleLoadGame = useCallback(
@@ -265,7 +265,7 @@ export function usePcLogic({ isWindowOpen, instanceId }: UsePcLogicProps) {
     t,
     translatedHelpItems,
     currentTheme,
-    isXpTheme,
+    isWindowsTheme,
     isHelpDialogOpen,
     setIsHelpDialogOpen,
     isAboutDialogOpen,

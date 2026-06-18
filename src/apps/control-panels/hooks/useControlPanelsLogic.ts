@@ -290,7 +290,7 @@ export function useControlPanelsLogic({
     supportsAccent,
     accent,
     macChrome,
-    isXpTheme,
+    isWindowsTheme,
     isMacOSTheme: isMacOSXTheme,
     isMacTheme: isClassicMacTheme,
     aquaMaterial,
@@ -1415,7 +1415,7 @@ export function useControlPanelsLogic({
   };
 
   // Theme flags come from useThemeFlags() above (single source of truth).
-  const isWindowsLegacyTheme = isXpTheme;
+  const isWindowsLegacyTheme = isWindowsTheme;
 
   const tabStyles = getTabStyles(currentTheme);
   const defaultTab = initialData?.defaultTab || "appearance";
@@ -1501,7 +1501,7 @@ export function useControlPanelsLogic({
     currentLanguage,
     setLanguage,
     tabStyles,
-    isXpTheme,
+    isWindowsTheme,
     isMacOSXTheme,
     isClassicMacTheme,
     isWindowsLegacyTheme,

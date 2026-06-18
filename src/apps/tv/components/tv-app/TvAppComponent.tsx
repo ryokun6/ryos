@@ -56,7 +56,7 @@ export function TvAppComponent(props: AppProps) {
   return (
     <AppWindowShell
       isWindowOpen={c.isWindowOpen}
-      isXpTheme={c.isXpTheme}
+      isWindowsTheme={c.isWindowsTheme}
       isForeground={c.isForeground}
       menuBar={c.menuBar}
       windowFrameProps={{

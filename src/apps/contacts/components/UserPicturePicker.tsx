@@ -29,15 +29,15 @@ export function UserPicturePicker({
 }: UserPicturePickerProps) {
   const { t } = useTranslation();
   const {
-    isWindowsTheme: isXpTheme,
+    isWindowsTheme,
     isMacOSTheme: isMacTheme,
   } = useThemeFlags();
 
-  const fontClassName = isXpTheme
+  const fontClassName = isWindowsTheme
     ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
     : "font-geneva-12 text-[12px]";
 
-  const fontStyle = isXpTheme
+  const fontStyle = isWindowsTheme
     ? { fontFamily: '"Pixelated MS Sans Serif", "ArkPixel", Arial', fontSize: "11px" }
     : undefined;
 
@@ -69,7 +69,7 @@ export function UserPicturePicker({
   const title = t("apps.contacts.picturePicker.title");
 
   const dialogContent = (
-    <div className={isXpTheme ? "p-2 px-4" : "p-4 px-6"}>
+    <div className={isWindowsTheme ? "p-2 px-4" : "p-4 px-6"}>
       <div
         className="grid grid-cols-4 gap-2 overflow-y-auto pr-1"
         style={{ maxHeight: "320px" }}
@@ -142,11 +142,11 @@ export function UserPicturePicker({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
-        className={cn("max-w-[380px]", isXpTheme && "p-0 overflow-hidden")}
-        style={isXpTheme ? { fontSize: "11px" } : undefined}
+        className={cn("max-w-[380px]", isWindowsTheme && "p-0 overflow-hidden")}
+        style={isWindowsTheme ? { fontSize: "11px" } : undefined}
         onKeyDown={(e: React.KeyboardEvent) => e.stopPropagation()}
       >
-        {isXpTheme ? (
+        {isWindowsTheme ? (
           <>
             <DialogHeader>{title}</DialogHeader>
             <div className="window-body">{dialogContent}</div>

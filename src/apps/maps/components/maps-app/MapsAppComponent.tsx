@@ -23,7 +23,7 @@ export function MapsAppComponent({
   const {
     t,
     translatedHelpItems,
-    isXpTheme,
+    isWindowsTheme,
     isMacOSTheme,
     isDarkMode,
     isHelpDialogOpen,
@@ -78,7 +78,7 @@ export function MapsAppComponent({
   return (
     <AppWindowShell
       isWindowOpen={isWindowOpen}
-      isXpTheme={isXpTheme}
+      isWindowsTheme={isWindowsTheme}
       isForeground={isForeground}
       menuBar={menuBar}
       windowFrameProps={{

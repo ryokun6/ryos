@@ -42,7 +42,7 @@ const SelectTrigger = (
   }
 ) => {
   const { play: playClick } = useSound(Sounds.BUTTON_CLICK, 0.3);
-  const { isMacOSTheme, isWindowsTheme: isXpTheme } = useThemeFlags();
+  const { isMacOSTheme, isWindowsTheme } = useThemeFlags();
 
   return (
     <SelectPrimitive.Trigger
@@ -55,9 +55,9 @@ const SelectTrigger = (
         className
       )}
       style={{
-        fontFamily: isXpTheme ? "var(--os-font-ui)" : undefined,
-        fontSize: isXpTheme ? "var(--os-menu-item-font-size)" : undefined,
-        ...(isXpTheme && { color: "black" }),
+        fontFamily: isWindowsTheme ? "var(--os-font-ui)" : undefined,
+        fontSize: isWindowsTheme ? "var(--os-menu-item-font-size)" : undefined,
+        ...(isWindowsTheme && { color: "black" }),
       }}
       onClick={() => playClick()}
       {...props}

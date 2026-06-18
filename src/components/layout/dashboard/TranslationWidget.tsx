@@ -27,7 +27,7 @@ interface TranslationWidgetProps {
 export function TranslationWidget({ widgetId }: TranslationWidgetProps) {
   const { t, i18n } = useTranslation();
   const LANGUAGES = useLocalizedLanguages(i18n.language);
-  const { isWindowsTheme: isXpTheme } = useThemeFlags();
+  const { isWindowsTheme } = useThemeFlags();
 
   const widget = useDashboardStore((s) =>
     widgetId ? s.widgets.find((w) => w.id === widgetId) : undefined
@@ -158,7 +158,7 @@ export function TranslationWidget({ widgetId }: TranslationWidgetProps) {
 
   const font = "'Helvetica Neue', Helvetica, Arial, sans-serif";
 
-  if (isXpTheme) {
+  if (isWindowsTheme) {
     return (
       <div
       className="flex flex-col"
@@ -522,7 +522,7 @@ export function TranslationBackPanel({
 }) {
   const { t, i18n } = useTranslation();
   const LANGUAGES = useLocalizedLanguages(i18n.language);
-  const { isWindowsTheme: isXpTheme } = useThemeFlags();
+  const { isWindowsTheme } = useThemeFlags();
   const updateWidgetConfig = useDashboardStore((s) => s.updateWidgetConfig);
   const widget = useDashboardStore((s) => s.widgets.find((w) => w.id === widgetId));
   const config = widget?.config as TranslationWidgetConfig | undefined;
@@ -530,7 +530,7 @@ export function TranslationBackPanel({
   const [fromLang, setFromLang] = useState(config?.fromLang ?? "en");
   const [toLang, setToLang] = useState(config?.toLang ?? "fr");
 
-  const textColor = isXpTheme ? "#000" : "rgba(255,255,255,0.8)";
+  const textColor = isWindowsTheme ? "#000" : "rgba(255,255,255,0.8)";
   const font = "'Helvetica Neue', Helvetica, Arial, sans-serif";
 
   const handleSave = useCallback(() => {
@@ -546,7 +546,7 @@ export function TranslationBackPanel({
     >
       <div
         className="text-[10px] font-bold uppercase tracking-wider"
-        style={{ color: isXpTheme ? "#888" : "rgba(255,255,255,0.4)" }}
+        style={{ color: isWindowsTheme ? "#888" : "rgba(255,255,255,0.4)" }}
       >
         {t("apps.dashboard.translation.defaultLanguages", "Default Languages")}
       </div>
@@ -561,8 +561,8 @@ export function TranslationBackPanel({
             onChange={(e) => setFromLang(e.target.value)}
             className="flex-1 text-[11px] rounded px-1.5 py-0.5 outline-none"
             style={{
-              background: isXpTheme ? "#FFF" : "rgba(255,255,255,0.1)",
-              border: isXpTheme ? "1px solid #ACA899" : "1px solid rgba(255,255,255,0.15)",
+              background: isWindowsTheme ? "#FFF" : "rgba(255,255,255,0.1)",
+              border: isWindowsTheme ? "1px solid #ACA899" : "1px solid rgba(255,255,255,0.15)",
               color: textColor,
               cursor: "pointer",
             }}
@@ -583,8 +583,8 @@ export function TranslationBackPanel({
             onChange={(e) => setToLang(e.target.value)}
             className="flex-1 text-[11px] rounded px-1.5 py-0.5 outline-none"
             style={{
-              background: isXpTheme ? "#FFF" : "rgba(255,255,255,0.1)",
-              border: isXpTheme ? "1px solid #ACA899" : "1px solid rgba(255,255,255,0.15)",
+              background: isWindowsTheme ? "#FFF" : "rgba(255,255,255,0.1)",
+              border: isWindowsTheme ? "1px solid #ACA899" : "1px solid rgba(255,255,255,0.15)",
               color: textColor,
               cursor: "pointer",
             }}
@@ -603,7 +603,7 @@ export function TranslationBackPanel({
         onClick={handleSave}
         className="text-[11px] font-medium hover:opacity-80 transition-opacity self-end"
         style={{
-          color: isXpTheme ? "#0066CC" : "rgba(130,180,255,0.9)",
+          color: isWindowsTheme ? "#0066CC" : "rgba(130,180,255,0.9)",
           cursor: "pointer",
           border: "none",
           background: "none",

@@ -60,7 +60,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       className={osAppSidebarSurfaceClassName(
         {
           isMacOSTheme,
-          isXpTheme: isWindowsTheme,
           isWindowsTheme,
           isAquaGlass,
         },

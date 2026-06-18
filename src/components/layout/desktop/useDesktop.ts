@@ -90,7 +90,7 @@ export function useDesktop({
 
   const {
     currentTheme,
-    isWindowsTheme: isXpTheme,
+    isWindowsTheme,
     isMacOSTheme,
     isSystem7Theme,
   } = useThemeFlags();
@@ -668,10 +668,10 @@ export function useDesktop({
 
   const macintoshHdName = useMemo(
     () =>
-      isXpTheme
+      isWindowsTheme
         ? t("common.desktop.myComputer")
         : t("apps.finder.window.macintoshHd"),
-    [isXpTheme, t]
+    [isWindowsTheme, t]
   );
 
   const handleShortcutDoubleClick = useCallback(
@@ -753,7 +753,7 @@ export function useDesktop({
       clearSelection();
     },
     isDesktopApp,
-    isXpTheme,
+    isWindowsTheme,
     isMacOSTheme,
     currentTheme,
     macintoshHdName,

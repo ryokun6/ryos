@@ -50,7 +50,7 @@ export function InputDialog({
 }: InputDialogProps) {
   const { t } = useTranslation();
   const {
-    isWindowsTheme: isXpTheme,
+    isWindowsTheme,
     isMacOSTheme: isMacTheme,
   } = useThemeFlags();
   const defaultSubmitLabel = submitLabel || t("common.dialog.save");
@@ -75,19 +75,19 @@ export function InputDialog({
   };
 
   const dialogContent = (
-    <div className={isXpTheme ? "p-2 px-4" : "p-4 px-6"}>
+    <div className={isWindowsTheme ? "p-2 px-4" : "p-4 px-6"}>
       <p
         className={cn(
           "text-neutral-500 mb-2",
-          isXpTheme
+          isWindowsTheme
             ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
             : "font-geneva-12 text-[12px]"
         )}
         style={{
-          fontFamily: isXpTheme
+          fontFamily: isWindowsTheme
             ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
             : undefined,
-          fontSize: isXpTheme ? "11px" : undefined,
+          fontSize: isWindowsTheme ? "11px" : undefined,
         }}
         id="dialog-description"
       >
@@ -105,15 +105,15 @@ export function InputDialog({
         }}
         className={cn(
           "shadow-none",
-          isXpTheme
+          isWindowsTheme
             ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
             : "font-geneva-12 text-[12px]"
         )}
         style={{
-          fontFamily: isXpTheme
+          fontFamily: isWindowsTheme
             ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
             : undefined,
-          fontSize: isXpTheme ? "11px" : undefined,
+          fontSize: isWindowsTheme ? "11px" : undefined,
         }}
         disabled={isLoading}
       />
@@ -130,15 +130,15 @@ export function InputDialog({
                 disabled={isLoading}
                 className={cn(
                   "w-full sm:w-auto h-7",
-                  isXpTheme
+                  isWindowsTheme
                     ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
                     : "font-geneva-12 text-[12px]"
                 )}
                 style={{
-                  fontFamily: isXpTheme
+                  fontFamily: isWindowsTheme
                     ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
                     : undefined,
-                  fontSize: isXpTheme ? "11px" : undefined,
+                  fontSize: isWindowsTheme ? "11px" : undefined,
                 }}
               >
                 {action.label}
@@ -154,15 +154,15 @@ export function InputDialog({
                 disabled={isLoading}
                 className={cn(
                   "w-full sm:w-auto h-7",
-                  isXpTheme
+                  isWindowsTheme
                     ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
                     : "font-geneva-12 text-[12px]"
                 )}
                 style={{
-                  fontFamily: isXpTheme
+                  fontFamily: isWindowsTheme
                     ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
                     : undefined,
-                  fontSize: isXpTheme ? "11px" : undefined,
+                  fontSize: isWindowsTheme ? "11px" : undefined,
                 }}
               >
                 {action.label}
@@ -176,15 +176,15 @@ export function InputDialog({
               className={cn(
                 "w-full sm:w-auto",
                 !isMacTheme && "h-7",
-                isXpTheme
+                isWindowsTheme
                   ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
                   : "font-geneva-12 text-[12px]"
               )}
               style={{
-                fontFamily: isXpTheme
+                fontFamily: isWindowsTheme
                   ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
                   : undefined,
-                fontSize: isXpTheme ? "11px" : undefined,
+                fontSize: isWindowsTheme ? "11px" : undefined,
               }}
             >
               {t("common.dialog.cancel")}
@@ -197,15 +197,15 @@ export function InputDialog({
             className={cn(
               "w-full sm:w-auto",
               !isMacTheme && "h-7",
-              isXpTheme
+              isWindowsTheme
                 ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
                 : "font-geneva-12 text-[12px]"
             )}
             style={{
-              fontFamily: isXpTheme
+              fontFamily: isWindowsTheme
                 ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
                 : undefined,
-              fontSize: isXpTheme ? "11px" : undefined,
+              fontSize: isWindowsTheme ? "11px" : undefined,
             }}
           >
             {isLoading ? t("common.dialog.adding") : defaultSubmitLabel}
@@ -218,11 +218,11 @@ export function InputDialog({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
-        className={cn("max-w-[500px]", isXpTheme && "p-0 overflow-hidden")}
-        style={isXpTheme ? { fontSize: "11px" } : undefined}
+        className={cn("max-w-[500px]", isWindowsTheme && "p-0 overflow-hidden")}
+        style={isWindowsTheme ? { fontSize: "11px" } : undefined}
         onKeyDown={(e: React.KeyboardEvent) => e.stopPropagation()}
       >
-        {isXpTheme ? (
+        {isWindowsTheme ? (
           <>
             <DialogHeader>{title}</DialogHeader>
             <div className="window-body">{dialogContent}</div>

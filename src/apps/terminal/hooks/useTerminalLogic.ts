@@ -166,7 +166,7 @@ export const useTerminalLogic = ({
   } = useTerminalSounds();
 
   const username = useChatsStore((state) => state.username);
-  const { isWindowsTheme: isXpTheme } = useThemeFlags();
+  const { isWindowsTheme } = useThemeFlags();
 
   // Load command history from store
   useEffect(() => {
@@ -1433,7 +1433,7 @@ export const useTerminalLogic = ({
     playDingSound,
     bringInstanceToForeground,
     handleClearTerminal,
-    isXpTheme,
+    isWindowsTheme,
     shouldApplyMarkdown,
   };
 };

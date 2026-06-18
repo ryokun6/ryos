@@ -32,8 +32,8 @@ export function usePaintMenuBar(props: PaintMenuBarProps) {
   const {
     isShareDialogOpen,
     setIsShareDialogOpen,
-    isXpTheme,
-    isMacOsxTheme,
+    isWindowsTheme,
+    isMacOSTheme,
     appId,
     appName,
   } = useAppMenuBarChrome("paint");
@@ -44,8 +44,8 @@ export function usePaintMenuBar(props: PaintMenuBarProps) {
     isWindowOpen,
     isShareDialogOpen,
     setIsShareDialogOpen,
-    isXpTheme,
-    isMacOsxTheme,
+    isWindowsTheme,
+    isMacOSTheme,
     fileInputRef,
     appId,
     appName,

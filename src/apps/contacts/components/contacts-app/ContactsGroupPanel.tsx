@@ -13,7 +13,7 @@ type ContactsGroupPanelProps = {
 export function ContactsGroupPanel({ c }: ContactsGroupPanelProps) {
   const {
     t,
-    isMacOsxTheme,
+    isMacOSTheme,
     useGeneva,
     contactGroups,
     selectedGroupId,
@@ -22,16 +22,16 @@ export function ContactsGroupPanel({ c }: ContactsGroupPanelProps) {
 
   return (
     <Panel
-      bordered={isMacOsxTheme}
+      bordered={isMacOSTheme}
       className="w-[170px] shrink-0 flex flex-col min-h-0"
-      style={!isMacOsxTheme ? { borderRight: "1px solid rgba(0,0,0,0.08)" } : undefined}
+      style={!isMacOSTheme ? { borderRight: "1px solid rgba(0,0,0,0.08)" } : undefined}
     >
       <PanelHeader
         title={t("apps.contacts.groupHeaders.groups", {
           defaultValue: "Group",
         })}
         useGeneva={useGeneva}
-        bordered={isMacOsxTheme}
+        bordered={isMacOSTheme}
       />
       <div className={cn("flex-1 overflow-y-auto", useGeneva && "font-geneva-12")}>
         {contactGroups.map((group) => (

@@ -69,7 +69,7 @@ export function useVideosLogic({
   // Theme and audio settings
   const {
     currentTheme,
-    isWindowsTheme: isXpTheme,
+    isWindowsTheme,
     isMacOSTheme,
   } = useThemeFlags();
   const masterVolume = useAudioSettingsStore((state) => state.masterVolume);
@@ -1097,7 +1097,7 @@ export function useVideosLogic({
 
     // Theme and audio
     currentTheme,
-    isXpTheme,
+    isWindowsTheme,
     isMacOSTheme,
     masterVolume,
 

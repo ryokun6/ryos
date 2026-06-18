@@ -29,7 +29,7 @@ export function VideosAppComponent({
   });
 
   const {
-    isXpTheme,
+    isWindowsTheme,
     isMacOSTheme,
     menuBar,
     shouldShowWhiteNoise,
@@ -60,7 +60,7 @@ export function VideosAppComponent({
   return (
     <AppWindowShell
       isWindowOpen={isWindowOpen}
-      isXpTheme={isXpTheme}
+      isWindowsTheme={isWindowsTheme}
       isForeground={isForeground}
       menuBar={menuBar}
       windowFrameProps={{

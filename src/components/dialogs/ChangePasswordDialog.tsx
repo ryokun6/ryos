@@ -57,7 +57,7 @@ export function ChangePasswordDialog({
 }: ChangePasswordDialogProps) {
   const { t } = useTranslation();
   const {
-    isWindowsTheme: isXpTheme,
+    isWindowsTheme,
     isMacOSTheme: isMacTheme,
   } = useThemeFlags();
 
@@ -109,10 +109,10 @@ export function ChangePasswordDialog({
     }
   }, [isOpen]);
 
-  const themeFont = isXpTheme
+  const themeFont = isWindowsTheme
     ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
     : "font-geneva-12 text-[12px]";
-  const themeFontStyle: React.CSSProperties | undefined = isXpTheme
+  const themeFontStyle: React.CSSProperties | undefined = isWindowsTheme
     ? {
         fontFamily: '"Pixelated MS Sans Serif", "ArkPixel", Arial',
         fontSize: "11px",
@@ -294,7 +294,7 @@ export function ChangePasswordDialog({
   );
 
   const dialogBody = (
-    <div className={isXpTheme ? "p-2 px-4" : "p-4 px-6"}>
+    <div className={isWindowsTheme ? "p-2 px-4" : "p-4 px-6"}>
       <p
         className={cn("text-neutral-500 mb-3", themeFont)}
         style={themeFontStyle}
@@ -309,11 +309,11 @@ export function ChangePasswordDialog({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
-        className={cn("max-w-[420px]", isXpTheme && "p-0 overflow-hidden")}
-        style={isXpTheme ? { fontSize: "11px" } : undefined}
+        className={cn("max-w-[420px]", isWindowsTheme && "p-0 overflow-hidden")}
+        style={isWindowsTheme ? { fontSize: "11px" } : undefined}
         onKeyDown={(e: React.KeyboardEvent) => e.stopPropagation()}
       >
-        {isXpTheme ? (
+        {isWindowsTheme ? (
           <>
             <DialogHeader>{dialogTitle}</DialogHeader>
             <div className="window-body">{dialogBody}</div>

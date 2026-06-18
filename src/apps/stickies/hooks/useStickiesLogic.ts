@@ -12,7 +12,7 @@ export function useStickiesLogic() {
   const translatedHelpItems = useTranslatedHelpItems("stickies", helpItems);
 
   // Theme state
-  const { currentTheme, isXpTheme } = useThemeFlags();
+  const { currentTheme, isWindowsTheme } = useThemeFlags();
 
   // Dialog state
   const {
@@ -72,7 +72,7 @@ export function useStickiesLogic() {
 
     // Theme
     currentTheme,
-    isXpTheme,
+    isWindowsTheme,
 
     // Dialogs
     isHelpDialogOpen,

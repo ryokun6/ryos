@@ -501,14 +501,14 @@ export const useThemeStore = create&lt;ThemeState&gt;((set) =&gt; ({
 
 function MyComponent() {
   const currentTheme = useThemeStore((state) =&gt; state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isWindowsTheme = currentTheme === "xp" || currentTheme === "win98";
   const isMacTheme = currentTheme === "macosx";
 
   if (isMacTheme) {
     return &lt;AquaButton&gt;Click me&lt;/AquaButton&gt;;
   }
   
-  if (isXpTheme) {
+  if (isWindowsTheme) {
     return &lt;button className="button"&gt;Click me&lt;/button&gt;;
   }
   

@@ -74,7 +74,7 @@ export function InternetExplorerAppComponent({
     stopElevatorMusic,
     playDingSound,
     currentTheme,
-    isXpTheme,
+    isWindowsTheme,
     isOffline,
     pastYears,
     futureYears,
@@ -167,7 +167,7 @@ export function InternetExplorerAppComponent({
   return (
     <AppWindowShell
       isWindowOpen={isWindowOpen}
-      isXpTheme={isXpTheme}
+      isWindowsTheme={isWindowsTheme}
       isForeground={isForeground}
       menuBar={menuBar}
       windowFrameProps={{
@@ -195,7 +195,7 @@ export function InternetExplorerAppComponent({
       <TooltipProvider>
         <div className="flex flex-col size-full relative">
             <InternetExplorerToolbar
-              isXpTheme={isXpTheme}
+              isWindowsTheme={isWindowsTheme}
               currentTheme={currentTheme}
               isOffline={isOffline}
               historyIndex={historyIndex}

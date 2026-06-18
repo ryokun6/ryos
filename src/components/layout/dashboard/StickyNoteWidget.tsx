@@ -39,7 +39,7 @@ function textColorForBg(hex: string): string {
 
 export function StickyNoteWidget({ widgetId }: StickyNoteWidgetProps) {
   const { t } = useTranslation();
-  const { isWindowsTheme: isXpTheme } = useThemeFlags();
+  const { isWindowsTheme } = useThemeFlags();
 
   const widget = useDashboardStore((s) =>
     widgetId ? s.widgets.find((w) => w.id === widgetId) : undefined
@@ -85,7 +85,7 @@ export function StickyNoteWidget({ widgetId }: StickyNoteWidgetProps) {
   return (
     <div
       style={{
-        background: isXpTheme
+        background: isWindowsTheme
           ? noteColor
           : `linear-gradient(135deg, ${noteColor} 0%, ${gradientEnd} 100%)`,
         borderRadius: "inherit",
@@ -97,7 +97,7 @@ export function StickyNoteWidget({ widgetId }: StickyNoteWidgetProps) {
       }}
     >
       {/* Ruled lines (subtle, Mac theme only) */}
-      {!isXpTheme && (
+      {!isWindowsTheme && (
         <div
           style={{
             position: "absolute",
@@ -117,7 +117,7 @@ export function StickyNoteWidget({ widgetId }: StickyNoteWidgetProps) {
       )}
 
       {/* Paper texture grain (Mac only) */}
-      {!isXpTheme && (
+      {!isWindowsTheme && (
         <div
           style={{
             position: "absolute",
@@ -132,7 +132,7 @@ export function StickyNoteWidget({ widgetId }: StickyNoteWidgetProps) {
 
 
       {/* Drop shadow at bottom for floating effect (Mac only) */}
-      {!isXpTheme && (
+      {!isWindowsTheme && (
         <div
           style={{
             position: "absolute",
@@ -175,9 +175,9 @@ export function StickyNoteWidget({ widgetId }: StickyNoteWidgetProps) {
           border: "none",
           outline: "none",
           resize: "none",
-          fontFamily: isXpTheme ? "Tahoma, sans-serif" : FONT_STACK,
-          fontSize: isXpTheme ? 12 : 14,
-          lineHeight: isXpTheme ? "1.5" : "24px",
+          fontFamily: isWindowsTheme ? "Tahoma, sans-serif" : FONT_STACK,
+          fontSize: isWindowsTheme ? 12 : 14,
+          lineHeight: isWindowsTheme ? "1.5" : "24px",
           color: textColor,
           caretColor: textColor,
           position: "relative",
@@ -196,7 +196,7 @@ export function StickyNoteBackPanel({
   onDone?: () => void;
 }) {
   const { t } = useTranslation();
-  const { isWindowsTheme: isXpTheme } = useThemeFlags();
+  const { isWindowsTheme } = useThemeFlags();
 
   const widget = useDashboardStore((s) =>
     s.widgets.find((w) => w.id === widgetId)
@@ -216,7 +216,7 @@ export function StickyNoteBackPanel({
     [widgetId, updateWidgetConfig, config, onDone]
   );
 
-  const labelColor = isXpTheme ? "#444" : "rgba(255,255,255,0.5)";
+  const labelColor = isWindowsTheme ? "#444" : "rgba(255,255,255,0.5)";
 
   return (
     <div
@@ -244,10 +244,10 @@ export function StickyNoteBackPanel({
               background: c.value,
               border:
                 currentColor === c.value
-                  ? isXpTheme
+                  ? isWindowsTheme
                     ? "2px solid #333"
                     : "2px solid rgba(255,255,255,0.9)"
-                  : isXpTheme
+                  : isWindowsTheme
                     ? "2px solid #CCC"
                     : "2px solid rgba(255,255,255,0.2)",
               boxShadow:

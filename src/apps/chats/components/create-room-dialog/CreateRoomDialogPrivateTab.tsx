@@ -33,7 +33,7 @@ export function CreateRoomDialogPrivateTab(props: Props) {
     users,
     toggleUserSelection,
   } = props;
-  const { themeFont, themeFontStyle, isXpTheme } = theme;
+  const { themeFont, themeFontStyle, isWindowsTheme } = theme;
 
   return (
     <ThemedTabsContent value="private">
@@ -76,12 +76,12 @@ export function CreateRoomDialogPrivateTab(props: Props) {
                         variant="secondary"
                         className={cn(
                           "py-0.5 pl-2 pr-1 bg-neutral-100 hover:bg-neutral-200 border-neutral-300",
-                          isXpTheme
+                          isWindowsTheme
                             ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[10px]"
                             : "font-geneva-12 text-[11px]"
                         )}
                         style={
-                          isXpTheme
+                          isWindowsTheme
                             ? {
                                 fontFamily:
                                   '"Pixelated MS Sans Serif", "ArkPixel", Arial',

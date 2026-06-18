@@ -140,7 +140,7 @@ export function useInfiniteMacLogic({
   }, [setIsPausedStore]);
 
   const { t } = useTranslation();
-  const { currentTheme, isWindowsTheme: isXpTheme } = useThemeFlags();
+  const { currentTheme, isWindowsTheme } = useThemeFlags();
   const translatedHelpItems = useTranslatedHelpItems("infinite-mac", helpItems);
   const embedUrl = selectedPreset ? buildWrapperUrl(selectedPreset, currentScale) : null;
 
@@ -393,7 +393,7 @@ export function useInfiniteMacLogic({
     t,
     translatedHelpItems,
     currentTheme,
-    isXpTheme,
+    isWindowsTheme,
     isHelpDialogOpen,
     setIsHelpDialogOpen,
     isAboutDialogOpen,

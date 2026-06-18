@@ -9,7 +9,7 @@ import { isFromTitlebarControls } from "./windowFrameUtils";
 import { WindowFrameTrailingTitlebarControls } from "./WindowFrameTrailingTitlebarControls";
 
 export interface WindowFrameTitleBarProps {
-  isXpTheme: boolean;
+  isWindowsTheme: boolean;
   isWinXp: boolean;
   isMacOSTheme: boolean;
   isForeground: boolean;
@@ -42,7 +42,7 @@ export interface WindowFrameTitleBarProps {
 }
 
 export function WindowFrameTitleBar({
-  isXpTheme,
+  isWindowsTheme,
   isWinXp,
   isMacOSTheme,
   isForeground,
@@ -75,7 +75,7 @@ export function WindowFrameTitleBar({
   const coverFlowLabel = t("apps.ipod.menu.coverFlow");
 
   return (
-    isXpTheme ? (
+    isWindowsTheme ? (
         // XP/98 theme title bar structure
         <div
           className={cn(

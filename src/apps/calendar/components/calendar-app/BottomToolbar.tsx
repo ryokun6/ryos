@@ -11,7 +11,7 @@ export function BottomToolbar({
   showTodoSidebar, onToggleTodoSidebar,
   searchQuery, onSearchQueryChange, showSearch,
   isNarrow,
-  isXpTheme, isMacOSTheme, isSystem7Theme, t,
+  isWindowsTheme, isMacOSTheme, isSystem7Theme, t,
 }: {
   view: string; onSetView: (v: "day" | "week" | "month") => void; onGoToToday: () => void; onNewEvent: () => void;
   onPrev: () => void; onNext: () => void;
@@ -20,7 +20,7 @@ export function BottomToolbar({
   showTodoSidebar: boolean; onToggleTodoSidebar: () => void;
   searchQuery: string; onSearchQueryChange: (value: string) => void; showSearch: boolean;
   isNarrow: boolean;
-  isXpTheme: boolean; isMacOSTheme: boolean; isSystem7Theme: boolean; t: (key: string) => string;
+  isWindowsTheme: boolean; isMacOSTheme: boolean; isSystem7Theme: boolean; t: (key: string) => string;
 }) {
   const views: { id: "day" | "week" | "month"; label: string }[] = [
     { id: "day", label: t("apps.calendar.views.day") },
@@ -49,7 +49,7 @@ export function BottomToolbar({
         // mb-[8px]); keep the roomier py-1.5 bottom on mobile.
         isMacOSTheme ? "px-1 md:pb-1" : "px-2",
         osToolbarSurfaceClassName(
-          { isMacOSTheme, isSystem7Theme, isXpTheme },
+          { isMacOSTheme, isSystem7Theme, isWindowsTheme },
           { border: "top" }
         )
       )}
@@ -139,7 +139,7 @@ export function BottomToolbar({
                   variant={isSystem7Theme ? "player" : "ghost"}
                   onClick={onToggleCalendarSidebar}
                   data-state={showCalendarSidebar ? "on" : "off"}
-                  className={cn("size-6", isXpTheme && "text-black")}
+                  className={cn("size-6", isWindowsTheme && "text-black")}
                   title={t("apps.calendar.sidebar.calendars")}
                 >
                   <SidebarSimple size={14} />
@@ -148,30 +148,30 @@ export function BottomToolbar({
                   variant={isSystem7Theme ? "player" : "ghost"}
                   onClick={onToggleMiniCalendar}
                   data-state={showMiniCalendar ? "on" : "off"}
-                  className={cn("size-6", isXpTheme && "text-black")}
+                  className={cn("size-6", isWindowsTheme && "text-black")}
                 >
                   <CalendarBlank size={14} />
                 </Button>
               </div>
             )}
             <Button variant={isSystem7Theme ? "player" : "ghost"} onClick={onGoToToday}
-              className={cn("h-6 w-[48px] text-[11px] px-0", isSystem7Theme && "font-geneva-12", isXpTheme && "text-black")}>
+              className={cn("h-6 w-[48px] text-[11px] px-0", isSystem7Theme && "font-geneva-12", isWindowsTheme && "text-black")}>
               {t("apps.calendar.today")}
             </Button>
             <div className="flex items-center gap-0">
               <Button variant={isSystem7Theme ? "player" : "default"} size="icon"
-                className={cn("h-[22px] w-6", isXpTheme && "text-black")} onClick={onPrev}>
+                className={cn("h-[22px] w-6", isWindowsTheme && "text-black")} onClick={onPrev}>
                 <CaretLeft size={12} weight="bold" />
               </Button>
               {views.map((v) => (
                 <Button key={v.id} variant={isSystem7Theme ? "player" : "default"}
                   data-state={view === v.id ? "on" : "off"} onClick={() => onSetView(v.id)}
-                  className={cn("h-[22px] w-[48px] px-0 text-[11px]", isSystem7Theme && "font-geneva-12", isXpTheme && "text-black")}>
+                  className={cn("h-[22px] w-[48px] px-0 text-[11px]", isSystem7Theme && "font-geneva-12", isWindowsTheme && "text-black")}>
                   {v.label}
                 </Button>
               ))}
               <Button variant={isSystem7Theme ? "player" : "default"} size="icon"
-                className={cn("h-[22px] w-6", isXpTheme && "text-black")} onClick={onNext}>
+                className={cn("h-[22px] w-6", isWindowsTheme && "text-black")} onClick={onNext}>
                 <CaretRight size={12} weight="bold" />
               </Button>
             </div>
@@ -185,12 +185,12 @@ export function BottomToolbar({
           )}
           <div className="flex items-center gap-0 shrink-0">
             <Button variant={isSystem7Theme ? "player" : "ghost"} onClick={onNewEvent}
-              className={cn("size-6", isXpTheme && "text-black")} title={t("apps.calendar.menu.newEvent")}>
+              className={cn("size-6", isWindowsTheme && "text-black")} title={t("apps.calendar.menu.newEvent")}>
               <Plus size={12} weight="bold" />
             </Button>
             <Button variant={isSystem7Theme ? "player" : "ghost"}
               onClick={onToggleTodoSidebar} data-state={showTodoSidebar ? "on" : "off"}
-              className={cn("size-6", isXpTheme && "text-black")} title={t("apps.calendar.sidebar.toDoItems")}>
+              className={cn("size-6", isWindowsTheme && "text-black")} title={t("apps.calendar.sidebar.toDoItems")}>
               <ListChecks size={12} weight="bold" />
             </Button>
           </div>

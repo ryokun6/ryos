@@ -8,7 +8,7 @@ type DragResizeParams = {
   instanceId?: string;
   isForeground: boolean;
   isMacOSTheme: boolean;
-  isXpTheme: boolean;
+  isWindowsTheme: boolean;
   bringInstanceToForeground: (instanceId: string) => void;
 };
 
@@ -17,7 +17,7 @@ export function useWindowFrameDragResize({
   instanceId,
   isForeground,
   isMacOSTheme,
-  isXpTheme,
+  isWindowsTheme,
   bringInstanceToForeground,
 }: DragResizeParams) {
   const {
@@ -41,7 +41,7 @@ export function useWindowFrameDragResize({
 
   const resizerZIndexClass = isMacOSTheme
     ? "z-[60]"
-    : isXpTheme
+    : isWindowsTheme
       ? "z-40"
       : "z-50";
 

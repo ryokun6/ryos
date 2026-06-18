@@ -12,10 +12,10 @@ import {
 } from "./calendarAppConstants";
 
 export function MonthGrid({
-  calendarGrid, selectedEventId, onDateClick, onDateDoubleClick, onEventClick, onEventDoubleClick, isXpTheme, searchQuery, narrowDayNames,
+  calendarGrid, selectedEventId, onDateClick, onDateDoubleClick, onEventClick, onEventDoubleClick, isWindowsTheme, searchQuery, narrowDayNames,
 }: {
   calendarGrid: CalendarDayCell[][]; selectedEventId: string | null; onDateClick: (date: string) => void; onDateDoubleClick: (date: string) => void;
-  onEventClick: (event: CalendarEvent) => void; onEventDoubleClick: (event: CalendarEvent) => void; isXpTheme: boolean; searchQuery: string; narrowDayNames: string[];
+  onEventClick: (event: CalendarEvent) => void; onEventDoubleClick: (event: CalendarEvent) => void; isWindowsTheme: boolean; searchQuery: string; narrowDayNames: string[];
 }) {
   const lastEventTapRef = useRef<{ id: string; time: number } | null>(null);
   const lastDateTapRef = useRef<{ id: string; time: number } | null>(null);
@@ -67,11 +67,11 @@ export function MonthGrid({
             {week.map((cell) => (
               <button key={cell.date} type="button" onClick={() => handleDateTap(cell.date)}
                 className="flex flex-col items-start p-0.5 min-h-[40px] relative transition-colors select-none overflow-hidden"
-                style={{ opacity: cell.isCurrentMonth ? 1 : 0.3, backgroundColor: cell.isSelected ? (isXpTheme ? "rgba(0,0,0,0.08)" : "rgba(0,0,0,0.06)") : "transparent" }}
+                style={{ opacity: cell.isCurrentMonth ? 1 : 0.3, backgroundColor: cell.isSelected ? (isWindowsTheme ? "rgba(0,0,0,0.08)" : "rgba(0,0,0,0.06)") : "transparent" }}
               >
                 <span className="text-[10px] font-medium self-end mr-0.5"
                   style={{ width: 18, height: 18, lineHeight: "18px", textAlign: "center", borderRadius: "50%", display: "inline-block",
-                    backgroundColor: cell.isToday ? (isXpTheme ? TODAY_RED_XP : TODAY_RED) : "transparent", color: cell.isToday ? "#FFF" : undefined }}
+                    backgroundColor: cell.isToday ? (isWindowsTheme ? TODAY_RED_XP : TODAY_RED) : "transparent", color: cell.isToday ? "#FFF" : undefined }}
                 >{cell.day}</span>
                 <div className="flex flex-col gap-px mt-px w-full">
                   {cell.events.slice(0, 2).map((ev) => (

@@ -17,7 +17,6 @@ export interface CreateRoomDialogProps {
 
 export interface CreateRoomDialogTheme {
   isWindowsTheme: boolean;
-  isXpTheme: boolean;
   isMacOSTheme: boolean;
   themeFont: string;
   themeFontStyle: CSSProperties | undefined;

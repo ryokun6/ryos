@@ -87,7 +87,7 @@ export function ControlPanelsAppComponent({
     currentLanguage,
     setLanguage,
     tabStyles,
-    isXpTheme,
+    isWindowsTheme,
     isMacOSXTheme,
     isClassicMacTheme,
     isWindowsLegacyTheme,
@@ -249,7 +249,7 @@ export function ControlPanelsAppComponent({
   return (
     <AppWindowShell
       isWindowOpen={isWindowOpen}
-      isXpTheme={isXpTheme}
+      isWindowsTheme={isWindowsTheme}
       isForeground={isForeground}
       menuBar={menuBar}
       windowFrameProps={{

@@ -22,7 +22,7 @@ export interface AdminRestrictedViewProps
   variant: AdminRestrictedVariant;
   t: TFunction;
   username: string | null | undefined;
-  isXpTheme: boolean;
+  isWindowsTheme: boolean;
   menuBar: ReactNode;
 }
 
@@ -31,7 +31,7 @@ export function AdminRestrictedView({
   t,
   username,
   isWindowOpen,
-  isXpTheme,
+  isWindowsTheme,
   menuBar,
   onClose,
   isForeground,
@@ -43,7 +43,7 @@ export function AdminRestrictedView({
   return (
     <AppWindowShell
       isWindowOpen={isWindowOpen}
-      isXpTheme={isXpTheme}
+      isWindowsTheme={isWindowsTheme}
       isForeground={isForeground}
       menuBar={menuBar}
       windowFrameProps={{

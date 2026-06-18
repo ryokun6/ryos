@@ -5,7 +5,7 @@ type Props = Pick<
   ChatInputViewModel,
   | "t"
   | "isMacTheme"
-  | "isXpTheme"
+  | "isWindowsTheme"
   | "waveformBars"
   | "waveformIsSilent"
 >;
@@ -13,7 +13,7 @@ type Props = Pick<
 export function ChatInputRecordingUI({
   t,
   isMacTheme,
-  isXpTheme,
+  isWindowsTheme,
   waveformBars,
   waveformIsSilent,
 }: Props) {
@@ -24,7 +24,7 @@ export function ChatInputRecordingUI({
       exit={{ opacity: 0, scale: 0.98 }}
       transition={{ duration: 0.15 }}
       className={`flex-1 relative h-9 flex items-center px-3 gap-2 ${
-        isMacTheme ? "rounded-full" : isXpTheme ? "rounded-none" : "rounded-md"
+        isMacTheme ? "rounded-full" : isWindowsTheme ? "rounded-none" : "rounded-md"
       }`}
       style={
         isMacTheme
@@ -33,7 +33,7 @@ export function ChatInputRecordingUI({
               backgroundColor: "rgba(255, 255, 255, 1)",
               boxShadow: "inset 0 1px 2px rgba(0, 0, 0, 0.1)",
             }
-          : isXpTheme
+          : isWindowsTheme
             ? {
                 border: "1px solid #7f9db9",
                 backgroundColor: "white",
