@@ -1,5 +1,6 @@
 import { getAppPublicOrigin } from "./runtime-config.js";
 import { parseYouTubeTitleSimple } from "./parse-youtube-title.js";
+import { redisKeys } from "../../src/shared/redisKeys.js";
 
 // App display names for OG titles
 const APP_NAMES: Record<string, string> = {
@@ -276,9 +277,12 @@ async function getSongFromRedis(
     const redis = await createSongRedisClient();
     if (!redis) return null;
 
-    // Fetch from song:meta:{id} (split storage format)
-    const metaKey = `song:meta:${songId}`;
-    const raw = await redis.get(metaKey);
+    // Fetch song metadata (split storage format). Read the canonical
+    // `media:song:…:meta` key first, falling back to the legacy `song:meta:{id}`
+    // key for songs persisted before the canonical Redis-key cutover.
+    const raw =
+      (await redis.get(redisKeys.media.songMeta(songId))) ??
+      (await redis.get(`song:meta:${songId}`));
     return getSongShareMetadataFromRaw(raw);
   } catch {
     return null;
