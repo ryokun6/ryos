@@ -1,7 +1,7 @@
 {
   "name": "ryos",
   "private": true,
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "A web-based desktop operating system, reimagining classic Mac OS, Windows, and more.",
   "author": "Ryo Lu <me@ryo.lu> (https://ryo.lu)",
   "homepage": "https://os.ryo.lu",
