@@ -59,7 +59,7 @@ describe("cursorAgentToolDisplay", () => {
     expect(read.secondary).toBe("/workspace/src/foo.ts");
   });
 
-  test("shouldRenderTerminalMarkerInPlainStream hides success end banner", () => {
+  test("shouldRenderTerminalMarkerInPlainStream only renders failures", () => {
     expect(
       shouldRenderTerminalMarkerInPlainStream({
         status: "finished",
@@ -72,12 +72,14 @@ describe("cursorAgentToolDisplay", () => {
         error: "boom",
       })
     ).toBe(true);
+    // Success: summary is omitted because the final assistant message already
+    // carries the closing text (avoids the duplicate end message).
     expect(
       shouldRenderTerminalMarkerInPlainStream({
         status: "finished",
         summary: "Shipped the fix.",
       })
-    ).toBe(true);
+    ).toBe(false);
   });
 });
 

@@ -223,46 +223,6 @@ function isTerminalMarkerRow(row: unknown): row is Record<string, unknown> {
   return isRecord(row) && row.type === "terminal";
 }
 
-function normalizeSummaryText(text: string): string {
-  return text.replace(/\s+/g, " ").trim();
-}
-
-/** Combined markdown text of the most recent assistant block already emitted. */
-function lastAssistantMarkdownText(out: CoalescedCursorRow[]): string {
-  for (let k = out.length - 1; k >= 0; k--) {
-    const item = out[k];
-    if (item.kind === "merged_assistant") {
-      return item.segments
-        .reduce<string>(
-          (acc, seg) => (seg.type === "markdown" ? acc + seg.text : acc),
-          ""
-        );
-    }
-  }
-  return "";
-}
-
-/**
- * The terminal marker's `summary` is the run's final assistant result, which the
- * stream already emitted as the last assistant message. When they match, drop the
- * summary so the chat card renders the closing message once instead of twice.
- */
-function dropDuplicateTerminalSummary(
-  terminalRow: Record<string, unknown>,
-  out: CoalescedCursorRow[]
-): Record<string, unknown> {
-  const summary =
-    typeof terminalRow.summary === "string" ? terminalRow.summary : "";
-  if (normalizeSummaryText(summary).length === 0) return terminalRow;
-  const assistantText = lastAssistantMarkdownText(out);
-  if (normalizeSummaryText(assistantText).length === 0) return terminalRow;
-  if (normalizeSummaryText(summary) === normalizeSummaryText(assistantText)) {
-    const { summary: _omitted, ...rest } = terminalRow;
-    return rest;
-  }
-  return terminalRow;
-}
-
 function stableJson(value: unknown): string {
   try {
     return JSON.stringify(value, (_key, v) =>
@@ -522,10 +482,7 @@ export function coalesceCursorRunRows(events: unknown[]): CoalescedCursorRow[] {
     }
 
     if (isTerminalMarkerRow(row)) {
-      const terminalRow = dropDuplicateTerminalSummary(
-        row as Record<string, unknown>,
-        out
-      );
+      const terminalRow = row as Record<string, unknown>;
       const last = out[out.length - 1];
       if (last?.kind === "single" && isTerminalMarkerRow(last.row)) {
         const prev = last.row as Record<string, unknown>;

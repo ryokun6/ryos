@@ -242,9 +242,9 @@ export function shouldRenderTerminalMarkerInPlainStream(
       : row.error !== undefined
         ? String(row.error)
         : "";
-  const summary = typeof row.summary === "string" ? row.summary.trim() : "";
   const bad = status === "error" || err.length > 0;
-  if (bad) return true;
-  // Success completion: omit generic end banner; keep body only when there is a non-empty summary.
-  return summary.length > 0;
+  // Only surface failures. On success the run's final assistant message
+  // already carries the closing text, so rendering the terminal summary
+  // would duplicate it.
+  return bad;
 }

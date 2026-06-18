@@ -897,7 +897,6 @@
         "controllingPlayback": "Controllo riproduzione…",
         "createdDocument": "Documento creato: {{path}}",
         "cursorCloudAgent": {
-          "failed": "Non riuscito",
           "finished": "Completato",
           "followupAriaLabel": "Messaggio di follow-up per l'agente Cursor",
           "followupBusy": "L'agente è ancora in esecuzione…",
