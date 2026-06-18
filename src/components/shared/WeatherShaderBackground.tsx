@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import type { WeatherFamily } from "@/utils/dynamicWallpaper";
+import { useReducedGraphics } from "@/hooks/useReducedGraphics";
+import { useShaderAnimationDisabled } from "@/hooks/useShaderAnimationDisabled";
 
 /**
  * Render at full CSS-pixel resolution so the thin rain streaks stay crisp.
@@ -8,11 +10,22 @@ import type { WeatherFamily } from "@/utils/dynamicWallpaper";
  * precipitation sharp without paying for the native DPR on hi-dpi displays.
  */
 const RENDER_SCALE = 1.0;
+/**
+ * Reduced tier (phones + low-power desktops) pays a much steeper per-pixel cost
+ * for this fragment shader (5-octave FBM clouds + fog + 3 parallax precipitation
+ * layers) and the desktop is mostly occluded by windows anyway, so render the
+ * backing buffer at a lower internal resolution there. Mirrors the low-res
+ * approach in {@link AmbientBackground}.
+ */
+const LOW_RENDER_SCALE = 0.7;
 /** Upper bound on the device-pixel-ratio multiplier applied to the buffer. */
 const MAX_PIXEL_RATIO = 1.5;
+/** Don't multiply the (already heavy) buffer by hi-dpi in the reduced tier. */
+const LOW_MAX_PIXEL_RATIO = 1.0;
 /** Cap the shader loop to reduce steady-state GPU usage. */
 const TARGET_FPS = 30;
-const FRAME_INTERVAL_MS = 1000 / TARGET_FPS;
+/** Cloud/precip motion is slow, so a lower cap is imperceptible. */
+const LOW_TARGET_FPS = 20;
 
 type RGB = [number, number, number];
 
@@ -319,6 +332,12 @@ export function WeatherShaderBackground({
   className = "",
 }: WeatherShaderBackgroundProps) {
   const mountRef = useRef<HTMLDivElement>(null);
+  const reducedQuality = useReducedGraphics();
+  const animationDisabled = useShaderAnimationDisabled();
+
+  // Under reduced motion / battery-saver we skip the animated shader entirely
+  // and let the caller's static CSS gradient show through.
+  const shouldRender = isActive && !animationDisabled;
 
   // Latest weather props, read by the render loop each frame. Using a ref (not
   // an effect) means the shader always reflects the current props regardless of
@@ -328,7 +347,12 @@ export function WeatherShaderBackground({
   propsRef.current = { family, isDay, topColor, midColor, bottomColor };
 
   useEffect(() => {
-    if (!isActive || !mountRef.current) return;
+    if (!shouldRender || !mountRef.current) return;
+
+    const renderScale = reducedQuality ? LOW_RENDER_SCALE : RENDER_SCALE;
+    const maxPixelRatio = reducedQuality ? LOW_MAX_PIXEL_RATIO : MAX_PIXEL_RATIO;
+    const frameIntervalMs =
+      1000 / (reducedQuality ? LOW_TARGET_FPS : TARGET_FPS);
 
     const el = mountRef.current;
     const scene = new THREE.Scene();
@@ -351,8 +375,8 @@ export function WeatherShaderBackground({
     // 0-size first paint can't leave the renderer stuck at a 1×1 buffer. The
     // effective scale folds in a capped DPR so streaks are crisp on hi-dpi.
     const measure = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, MAX_PIXEL_RATIO);
-      const eff = RENDER_SCALE * dpr;
+      const dpr = Math.min(window.devicePixelRatio || 1, maxPixelRatio);
+      const eff = renderScale * dpr;
       const w = el.clientWidth || window.innerWidth;
       const h = el.clientHeight || window.innerHeight;
       return {
@@ -400,7 +424,7 @@ export function WeatherShaderBackground({
     let lastRenderAt = 0;
     const animate = (now: number) => {
       frameId = requestAnimationFrame(animate);
-      if (lastRenderAt !== 0 && now - lastRenderAt < FRAME_INTERVAL_MS) return;
+      if (lastRenderAt !== 0 && now - lastRenderAt < frameIntervalMs) return;
       lastRenderAt = now;
       const p = propsRef.current;
       const u = shaderMaterial.uniforms;
@@ -416,10 +440,30 @@ export function WeatherShaderBackground({
       );
       renderer.render(scene, camera);
     };
-    frameId = requestAnimationFrame(animate);
+
+    // Pause the GPU loop while the tab/PWA is hidden (saves battery on mobile),
+    // and resume on return. Reset the frame clock so the first resumed frame
+    // renders immediately instead of being skipped by the interval gate.
+    const startLoop = () => {
+      if (frameId !== 0) return;
+      lastRenderAt = 0;
+      frameId = requestAnimationFrame(animate);
+    };
+    const stopLoop = () => {
+      if (frameId === 0) return;
+      cancelAnimationFrame(frameId);
+      frameId = 0;
+    };
+    const handleVisibility = () => {
+      if (document.hidden) stopLoop();
+      else startLoop();
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    if (!document.hidden) startLoop();
 
     return () => {
-      cancelAnimationFrame(frameId);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      stopLoop();
       resizeObserver.disconnect();
       if (renderer.domElement.parentNode === el) {
         el.removeChild(renderer.domElement);
@@ -429,9 +473,9 @@ export function WeatherShaderBackground({
       shaderMaterial.dispose();
       renderer.dispose();
     };
-  }, [isActive]);
+  }, [shouldRender, reducedQuality]);
 
-  if (!isActive) return null;
+  if (!shouldRender) return null;
 
   return (
     <div

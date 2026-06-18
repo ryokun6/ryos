@@ -1,3 +1,40 @@
+/** Desktops/laptops at or below this core count are treated as low-power. */
+const LOW_POWER_MAX_CORES = 4;
+/** Devices reporting at or below this much RAM (GB) are treated as low-power. */
+const LOW_POWER_MAX_MEMORY_GB = 4;
+
+let cachedLowPowerHardware: boolean | null = null;
+
+/**
+ * Lightweight, cached heuristic for weak hardware based on CPU core count and
+ * (where exposed) device memory — the same core-count signal probed by
+ * {@link checkShaderPerformance} at boot, but WITHOUT creating a WebGL context,
+ * so it's cheap enough to call from component render.
+ *
+ * Used to drop animated shader backgrounds into their reduced-quality tier
+ * (lower internal resolution / frame rate / buffer size) on weak machines —
+ * including low-core desktops, not just phones.
+ *
+ * @returns {boolean} True if the device looks low-power.
+ */
+export function isLowPowerHardware(): boolean {
+  if (cachedLowPowerHardware !== null) return cachedLowPowerHardware;
+  if (typeof navigator === "undefined") return false; // SSR: decide on client
+
+  const cores = navigator.hardwareConcurrency || 0;
+  const memory = (navigator as Navigator & { deviceMemory?: number })
+    .deviceMemory;
+
+  const lowCores = cores > 0 && cores <= LOW_POWER_MAX_CORES;
+  const lowMemory =
+    typeof memory === "number" &&
+    memory > 0 &&
+    memory <= LOW_POWER_MAX_MEMORY_GB;
+
+  cachedLowPowerHardware = lowCores || lowMemory;
+  return cachedLowPowerHardware;
+}
+
 /**
  * Checks for basic performance indicators to estimate if the device
  * is likely capable of handling intensive shader effects smoothly.
