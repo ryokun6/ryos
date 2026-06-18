@@ -8,6 +8,7 @@ import type {
   DashboardPanelProps,
   TrendInfo,
 } from "./types";
+import { withDisplayVisitorMetrics } from "./deriveDashboardAnalytics";
 import { RANGE_DAYS } from "./types";
 import { formatNumber } from "./utils";
 
@@ -82,8 +83,8 @@ export function useDashboardPanel({ onRefresh }: DashboardPanelProps) {
   const analytics = useMemo(() => {
     if (!data) return null;
 
-    const { summary, topEndpoints, statusCodes, aiByUser, aiRateLimits } =
-      data;
+    const { topEndpoints, statusCodes, aiByUser, aiRateLimits } = data;
+    const summary = withDisplayVisitorMetrics(data);
     const { totals, days } = summary;
 
     const latestDay = days.length > 0 ? days[days.length - 1] : null;
