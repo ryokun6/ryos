@@ -2,11 +2,15 @@ import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "re
 import { StickToBottom } from "use-stick-to-bottom";
 import {
   ArrowsClockwise,
+  ArrowsLeftRight,
   CaretRight,
   Database,
   DownloadSimple,
+  Eye,
   FolderSimple,
   House,
+  MagnifyingGlass,
+  Stop,
   Trash,
 } from "@phosphor-icons/react";
 import type { TFunction } from "i18next";
@@ -33,11 +37,16 @@ import {
   getAdminRedisKeys,
 } from "@/api/admin";
 import { cn } from "@/lib/utils";
+import {
+  adminAquaIconButtonClass,
+  AQUA_ICON_BUTTON_ICON_CLASS,
+} from "@/lib/aquaIconButton";
 import { LEGACY_REDIS_SCAN_PATTERNS } from "@/shared/redisKeys";
 import {
   adminGhostIconBtnClass,
   adminLoadMoreBtnClass,
   adminDetailHeaderClass,
+  adminSectionHeaderClass,
   adminSectionLabelClass,
   adminSurfaceClass,
   adminTableHeadClass,
@@ -177,6 +186,8 @@ function formatDeletedKeySample(keys: string[]): string {
 // returned batch varies, but a larger value pulls noticeably more per request.
 const REDIS_BROWSER_PAGE_COUNT = 500;
 
+const DELETE_LEGACY_BUTTON_STYLE = { color: "#000", textShadow: "none" } as const;
+
 export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
   const [pattern, setPattern] = useState("*");
   const [appliedPattern, setAppliedPattern] = useState("*");
@@ -194,6 +205,7 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
   const [activeMigrationRun, setActiveMigrationRun] = useState<RedisMigrationRunKind | null>(null);
   const [deleteLegacyCandidate, setDeleteLegacyCandidate] = useState(false);
   const [migrationLog, setMigrationLog] = useState<RedisMigrationLogEntry[]>([]);
+  const [isMigrationExpanded, setIsMigrationExpanded] = useState(false);
   const migrationStopRequestedRef = useRef(false);
   const migrationLogIdRef = useRef(0);
   // Cache fetched key documents so reopening a key (or returning to it after
@@ -307,6 +319,12 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
   const visibleFolders = isRoot ? rootFolders : treeLevel.folders;
   const hasVisibleRows = visibleFolders.length > 0 || visibleLeaves.length > 0;
   const isMigrationRunning = activeMigrationRun !== null;
+
+  useEffect(() => {
+    if (isMigrationRunning) {
+      setIsMigrationExpanded(true);
+    }
+  }, [isMigrationRunning]);
 
   const appendMigrationLog = useCallback(
     (message: string, tone: RedisMigrationLogEntry["tone"] = "info") => {
@@ -594,116 +612,181 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
       <div
         className={cn(
           adminToolbarClass,
-          "flex shrink-0 flex-wrap items-center gap-2 border-b border-os-separator px-2 py-1.5 text-[11px]",
+          "shrink-0 border-b border-os-separator text-[11px]",
         )}
       >
-        <span className={cn(adminSectionLabelClass, "mr-1")}>
-          {t("apps.admin.redis.migration.label", "Migration")}
-        </span>
-        <span className="font-os-mono text-[10px] text-os-text-secondary">
-          {LEGACY_REDIS_SCAN_PATTERNS.length} legacy patterns
-        </span>
-        <Button
+        <button
           type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => void handleLoadMigrationStatus()}
-          disabled={isLoadingMigrationStatus || isMigrationRunning}
-          className="h-7 px-2 text-[11px]"
+          onClick={() => setIsMigrationExpanded((expanded) => !expanded)}
+          aria-expanded={isMigrationExpanded}
+          className={cn(
+            "flex w-full items-center gap-2 px-2 py-1.5 text-left transition-colors",
+            "hover:bg-black/5 os-mac-aqua-dark:hover:bg-white/8",
+          )}
         >
-          {isLoadingMigrationStatus
-            ? t("apps.admin.redis.loading", "Loading...")
-            : t("apps.admin.redis.migration.scan", "Scan legacy")}
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => void runContinuousMigration("dry-run")}
-          disabled={isMigrationRunning}
-          className="h-7 px-2 text-[11px]"
-        >
-          {t("apps.admin.redis.migration.dryRun", "Dry run")}
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => void runContinuousMigration("backfill")}
-          disabled={isMigrationRunning}
-          className="h-7 px-2 text-[11px]"
-        >
-          {activeMigrationRun === "backfill"
-            ? t("apps.admin.redis.loading", "Loading...")
-            : t("apps.admin.redis.migration.backfill", "Backfill all")}
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => setDeleteLegacyCandidate(true)}
-          disabled={isMigrationRunning}
-          className="h-7 px-2 text-[11px] text-red-600 hover:text-red-700 os-mac-aqua-dark:text-red-300"
-        >
-          {activeMigrationRun === "delete"
-            ? t("apps.admin.redis.loading", "Loading...")
-            : t("apps.admin.redis.migration.deleteLegacy", "Delete all legacy")}
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={handleStopMigration}
-          disabled={!isMigrationRunning}
-          className="h-7 px-2 text-[11px]"
-        >
-          {t("apps.admin.redis.migration.stop", "Stop")}
-        </Button>
-        {migrationStatus ? (
-          <span className="font-os-mono text-[10px] text-os-text-secondary">
-            {migrationStatus.totalLegacyKeys}
-            {migrationStatus.truncated ? "+" : ""}{" "}
-            {t("apps.admin.redis.migration.keysSampled", "legacy sampled")}
+          <CaretRight
+            size={12}
+            weight="bold"
+            className={cn(
+              "shrink-0 opacity-60 transition-transform",
+              isMigrationExpanded && "rotate-90",
+            )}
+          />
+          <span className={cn(adminSectionHeaderClass, "shrink-0")}>
+            {t("apps.admin.redis.migration.label", "Migration")}
           </span>
+          <span className="font-os-mono text-[10px] text-os-text-secondary">
+            {LEGACY_REDIS_SCAN_PATTERNS.length}{" "}
+            {t("apps.admin.redis.migration.legacyPatterns", "legacy patterns")}
+          </span>
+          {migrationStatus ? (
+            <span className="font-os-mono text-[10px] text-os-text-secondary">
+              · {migrationStatus.totalLegacyKeys}
+              {migrationStatus.truncated ? "+" : ""}{" "}
+              {t("apps.admin.redis.migration.keysSampled", "legacy sampled")}
+            </span>
+          ) : null}
+          {isMigrationRunning ? (
+            <span className="ml-auto flex items-center gap-1.5 text-[10px] text-os-text-secondary">
+              <ActivityIndicator size={12} />
+              {activeMigrationRun === "delete"
+                ? t("apps.admin.redis.migration.runningDelete", "Deleting…")
+                : activeMigrationRun === "backfill"
+                  ? t("apps.admin.redis.migration.runningBackfill", "Backfilling…")
+                  : t("apps.admin.redis.migration.runningDryRun", "Dry run…")}
+            </span>
+          ) : null}
+        </button>
+
+        {isMigrationExpanded ? (
+          <div className="space-y-2 border-t border-os-separator/60 px-2 py-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => void handleLoadMigrationStatus()}
+                disabled={isLoadingMigrationStatus || isMigrationRunning}
+                className={adminAquaIconButtonClass("secondary")}
+              >
+                {isLoadingMigrationStatus ? (
+                  <ActivityIndicator size={12} />
+                ) : (
+                  <MagnifyingGlass className={AQUA_ICON_BUTTON_ICON_CLASS} weight="bold" />
+                )}
+                <span>
+                  {isLoadingMigrationStatus
+                    ? t("apps.admin.redis.loading", "Loading...")
+                    : t("apps.admin.redis.migration.scan", "Scan legacy")}
+                </span>
+              </button>
+              <span
+                className="hidden h-5 w-px shrink-0 bg-os-separator sm:block"
+                aria-hidden
+              />
+              <button
+                type="button"
+                onClick={() => void runContinuousMigration("dry-run")}
+                disabled={isMigrationRunning}
+                className={adminAquaIconButtonClass("secondary")}
+              >
+                {activeMigrationRun === "dry-run" ? (
+                  <ActivityIndicator size={12} />
+                ) : (
+                  <Eye className={AQUA_ICON_BUTTON_ICON_CLASS} weight="bold" />
+                )}
+                <span>{t("apps.admin.redis.migration.dryRun", "Dry run")}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => void runContinuousMigration("backfill")}
+                disabled={isMigrationRunning}
+                className={adminAquaIconButtonClass("secondary")}
+              >
+                {activeMigrationRun === "backfill" ? (
+                  <ActivityIndicator size={12} />
+                ) : (
+                  <ArrowsLeftRight className={AQUA_ICON_BUTTON_ICON_CLASS} weight="bold" />
+                )}
+                <span>
+                  {activeMigrationRun === "backfill"
+                    ? t("apps.admin.redis.loading", "Loading...")
+                    : t("apps.admin.redis.migration.backfill", "Backfill all")}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setDeleteLegacyCandidate(true)}
+                disabled={isMigrationRunning}
+                className={adminAquaIconButtonClass("orange")}
+                style={DELETE_LEGACY_BUTTON_STYLE}
+              >
+                {activeMigrationRun === "delete" ? (
+                  <ActivityIndicator size={12} />
+                ) : (
+                  <Trash
+                    className={AQUA_ICON_BUTTON_ICON_CLASS}
+                    style={DELETE_LEGACY_BUTTON_STYLE}
+                    weight="bold"
+                  />
+                )}
+                <span style={DELETE_LEGACY_BUTTON_STYLE}>
+                  {activeMigrationRun === "delete"
+                    ? t("apps.admin.redis.loading", "Loading...")
+                    : t("apps.admin.redis.migration.deleteLegacy", "Delete all legacy")}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={handleStopMigration}
+                disabled={!isMigrationRunning}
+                className={adminAquaIconButtonClass("secondary")}
+              >
+                <Stop className={AQUA_ICON_BUTTON_ICON_CLASS} weight="bold" />
+                <span>{t("apps.admin.redis.migration.stop", "Stop")}</span>
+              </button>
+            </div>
+
+            {migrationLog.length > 0 ? (
+              <StickToBottom
+                className="max-h-28 overflow-hidden rounded border border-os-separator bg-black/5 font-os-mono text-[10px] leading-relaxed os-mac-aqua-dark:bg-white/10"
+                resize="smooth"
+                initial="instant"
+              >
+                <StickToBottom.Content className="px-2 py-1.5">
+                  <div className="mb-1 flex items-center justify-between gap-2">
+                    <span className={adminSectionLabelClass}>
+                      {t("apps.admin.redis.migration.log", "Migration log")}
+                    </span>
+                    {!isMigrationRunning ? (
+                      <button
+                        type="button"
+                        onClick={() => setMigrationLog([])}
+                        className={adminAquaIconButtonClass("secondary", "sm")}
+                      >
+                        <span>{t("apps.admin.redis.migration.clearLog", "Clear")}</span>
+                      </button>
+                    ) : null}
+                  </div>
+                  {migrationLog.map((entry) => (
+                    <div
+                      key={entry.id}
+                      className={cn(
+                        entry.tone === "success" &&
+                          "text-green-700 os-mac-aqua-dark:text-green-300",
+                        entry.tone === "warning" &&
+                          "text-yellow-700 os-mac-aqua-dark:text-yellow-300",
+                        entry.tone === "error" &&
+                          "text-red-700 os-mac-aqua-dark:text-red-300",
+                      )}
+                    >
+                      {entry.message}
+                    </div>
+                  ))}
+                </StickToBottom.Content>
+              </StickToBottom>
+            ) : null}
+          </div>
         ) : null}
       </div>
-
-      {migrationLog.length > 0 ? (
-        <StickToBottom
-          className="max-h-28 shrink-0 overflow-hidden border-b border-os-separator bg-black/5 font-os-mono text-[10px] leading-relaxed os-mac-aqua-dark:bg-white/10"
-          resize="smooth"
-          initial="instant"
-        >
-          <StickToBottom.Content className="px-2 py-1">
-            <div className="mb-1 flex items-center justify-between gap-2">
-              <span className={adminSectionLabelClass}>
-                {t("apps.admin.redis.migration.log", "Migration log")}
-              </span>
-              {!isMigrationRunning ? (
-                <button
-                  type="button"
-                  onClick={() => setMigrationLog([])}
-                  className="text-os-text-secondary hover:text-os-text-primary hover:underline"
-                >
-                  {t("apps.admin.redis.migration.clearLog", "Clear")}
-                </button>
-              ) : null}
-            </div>
-            {migrationLog.map((entry) => (
-              <div
-                key={entry.id}
-                className={cn(
-                  entry.tone === "success" && "text-green-700 os-mac-aqua-dark:text-green-300",
-                  entry.tone === "warning" && "text-yellow-700 os-mac-aqua-dark:text-yellow-300",
-                  entry.tone === "error" && "text-red-700 os-mac-aqua-dark:text-red-300",
-                )}
-              >
-                {entry.message}
-              </div>
-            ))}
-          </StickToBottom.Content>
-        </StickToBottom>
-      ) : null}
 
       <div
         className={cn(
