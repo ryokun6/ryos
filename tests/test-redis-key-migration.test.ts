@@ -5,7 +5,7 @@ import {
   deleteLegacyRedisKeys,
   getRedisMigrationStatus,
   planRedisKeyMigration,
-} from "../api/_utils/redis-key-migration";
+} from "../scripts/lib/redis-key-migration";
 import { redisKeys, sha256RedisIdentifier } from "../src/shared/redisKeys";
 import { FakeRedis } from "./fake-redis";
 

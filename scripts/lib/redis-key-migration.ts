@@ -1,5 +1,5 @@
-import type { Redis, RedisSortedSetEntry } from "./redis.js";
-import { ensureSync2Initialized } from "../sync/v2/_core.js";
+import type { Redis, RedisSortedSetEntry } from "../../api/_utils/redis.js";
+import { ensureSync2Initialized } from "../../api/sync/v2/_core.js";
 import {
   LEGACY_REDIS_SCAN_PATTERNS,
   redisKeys,

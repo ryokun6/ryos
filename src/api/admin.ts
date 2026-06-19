@@ -2,14 +2,6 @@ import { apiRequest } from "@/api/core";
 
 type QueryValue = string | number | boolean | null | undefined;
 
-/**
- * Client timeout for the Redis key-scheme migration endpoints only. Kept above
- * the server's `maxDuration` (30s) so a long-running pipelined batch is allowed
- * to finish on the server instead of the client aborting it mid-flight. Other
- * admin calls keep the global 15s default.
- */
-const MIGRATION_CLIENT_TIMEOUT_MS = 35000;
-
 async function adminGet<TResponse>(
   action: string,
   query: Record<string, QueryValue> = {}
@@ -163,64 +155,6 @@ export async function deleteAdminRedisKey<TResponse>(
     key,
     confirmKey: key,
   });
-}
-
-export async function getAdminRedisKeyMigrationStatus<TResponse>(input: {
-  limit?: number;
-} = {}): Promise<TResponse> {
-  return adminGet<TResponse>("getRedisKeyMigrationStatus", input);
-}
-
-export async function backfillAdminRedisKeyScheme<TResponse>(input: {
-  pattern: string;
-  limit?: number;
-  dryRun?: boolean;
-  cursor?: string;
-}): Promise<TResponse> {
-  return adminPost<
-    TResponse,
-    {
-      action: string;
-      pattern: string;
-      confirmPattern: string;
-      limit?: number;
-      dryRun?: boolean;
-      cursor?: string;
-    }
-  >({
-    action: "backfillRedisKeyScheme",
-    pattern: input.pattern,
-    confirmPattern: input.pattern,
-    ...(input.limit ? { limit: input.limit } : {}),
-    ...(input.dryRun !== undefined ? { dryRun: input.dryRun } : {}),
-    ...(input.cursor ? { cursor: input.cursor } : {}),
-  }, { timeout: MIGRATION_CLIENT_TIMEOUT_MS });
-}
-
-export async function deleteAdminLegacyRedisKeys<TResponse>(input: {
-  pattern: string;
-  limit?: number;
-  dryRun?: boolean;
-  cursor?: string;
-}): Promise<TResponse> {
-  return adminPost<
-    TResponse,
-    {
-      action: string;
-      pattern: string;
-      confirmPattern: string;
-      limit?: number;
-      dryRun?: boolean;
-      cursor?: string;
-    }
-  >({
-    action: "deleteLegacyRedisKeys",
-    pattern: input.pattern,
-    confirmPattern: input.pattern,
-    ...(input.limit ? { limit: input.limit } : {}),
-    ...(input.dryRun !== undefined ? { dryRun: input.dryRun } : {}),
-    ...(input.cursor ? { cursor: input.cursor } : {}),
-  }, { timeout: MIGRATION_CLIENT_TIMEOUT_MS });
 }
 
 export async function postAdminStartCursorAgent<TResponse>(input: {

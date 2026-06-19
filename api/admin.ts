@@ -26,12 +26,6 @@ import {
   executeCursorCloudAgent,
   listCursorSdkRunsFromRedis,
 } from "./chat/tools/cursor-repo-agent.js";
-import {
-  backfillRedisKeyScheme,
-  deleteLegacyRedisKeys,
-  getRedisMigrationStatus,
-  assertKnownLegacyRedisPattern,
-} from "./_utils/redis-key-migration.js";
 import { redisKeys } from "../src/shared/redisKeys.js";
 
 export const runtime = "nodejs";
@@ -968,17 +962,6 @@ export default apiHandler<AdminRequest>(
           res.status(200).json(data);
           return;
         }
-        case "getRedisKeyMigrationStatus": {
-          const limit = clampInteger(req.query.limit, 50, 1, 500);
-          const data = await getRedisMigrationStatus(redis, limit);
-          logger.info("Redis key migration status retrieved", {
-            totalLegacyKeys: data.totalLegacyKeys,
-            truncated: data.truncated,
-          });
-          logger.response(200, Date.now() - startTime);
-          res.status(200).json(data);
-          return;
-        }
         default:
           logger.response(400, Date.now() - startTime);
           res.status(400).json({ error: "Invalid action" });
@@ -1207,71 +1190,6 @@ export default apiHandler<AdminRequest>(
             success: deletedCount > 0,
             deletedCount,
           });
-          return;
-        }
-        case "backfillRedisKeyScheme": {
-          const pattern = normalizeRedisPattern(body?.pattern);
-          const confirmPattern =
-            typeof body?.confirmPattern === "string" ? body.confirmPattern : "";
-          if (confirmPattern !== pattern) {
-            logger.response(400, Date.now() - startTime);
-            res.status(400).json({ error: "Confirmation does not match Redis pattern" });
-            return;
-          }
-          try {
-            assertKnownLegacyRedisPattern(pattern);
-          } catch (error) {
-            logger.response(400, Date.now() - startTime);
-            res.status(400).json({ error: error instanceof Error ? error.message : "Invalid pattern" });
-            return;
-          }
-          const limit = clampInteger(body?.limit, 100, 1, 500);
-          const dryRun = body?.dryRun !== false;
-          const cursor = normalizeRedisCursor(body?.cursor);
-          const data = await backfillRedisKeyScheme(redis, { pattern, limit, dryRun, cursor });
-          logger.info("Redis key scheme backfill requested", {
-            pattern,
-            cursor: data.cursor,
-            dryRun,
-            scanned: data.scanned,
-            copied: data.copied,
-            skipped: data.skipped,
-            truncated: data.truncated,
-          });
-          logger.response(200, Date.now() - startTime);
-          res.status(200).json(data);
-          return;
-        }
-        case "deleteLegacyRedisKeys": {
-          const pattern = normalizeRedisPattern(body?.pattern);
-          const confirmPattern =
-            typeof body?.confirmPattern === "string" ? body.confirmPattern : "";
-          if (confirmPattern !== pattern) {
-            logger.response(400, Date.now() - startTime);
-            res.status(400).json({ error: "Confirmation does not match Redis pattern" });
-            return;
-          }
-          try {
-            assertKnownLegacyRedisPattern(pattern);
-          } catch (error) {
-            logger.response(400, Date.now() - startTime);
-            res.status(400).json({ error: error instanceof Error ? error.message : "Invalid pattern" });
-            return;
-          }
-          const limit = clampInteger(body?.limit, 100, 1, 500);
-          const dryRun = body?.dryRun !== false;
-          const cursor = normalizeRedisCursor(body?.cursor);
-          const data = await deleteLegacyRedisKeys(redis, { pattern, limit, dryRun, cursor });
-          logger.info("Legacy Redis key delete requested", {
-            pattern,
-            cursor: data.cursor,
-            dryRun,
-            scanned: data.scanned,
-            deleted: data.deleted,
-            truncated: data.truncated,
-          });
-          logger.response(200, Date.now() - startTime);
-          res.status(200).json(data);
           return;
         }
         default:
