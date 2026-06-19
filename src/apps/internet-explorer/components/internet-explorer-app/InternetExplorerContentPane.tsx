@@ -153,7 +153,7 @@ export function InternetExplorerContentPane({
             isAiLoading ||
             isFetchingWebsiteContent) && (
             <motion.div
-              className="absolute top-0 left-0 right-0 bg-white/75 backdrop-blur-sm overflow-hidden z-40"
+              className="absolute top-0 left-0 right-0 bg-white/75 dark:bg-neutral-900/75 backdrop-blur-sm overflow-hidden z-40"
               variants={loadingBarVariants}
               initial="hidden"
               animate="visible"
@@ -188,10 +188,10 @@ export function InternetExplorerContentPane({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
             transition={{ duration: 0.15 }}
-            className={`os-status-bar os-status-bar-text font-geneva-12 absolute bottom-0 left-0 right-0 bg-neutral-100 text-[10px] px-2 py-1 flex items-center z-50 ${
+            className={`os-status-bar os-status-bar-text font-geneva-12 absolute bottom-0 left-0 right-0 bg-neutral-100 dark:bg-neutral-900 text-[10px] px-2 py-1 flex items-center z-50 ${
               currentTheme === "system7"
                 ? "border-t border-black"
-                : "border-t border-neutral-300"
+                : "border-t border-neutral-300 dark:border-white/10"
             }`}
           >
             <div className="flex-1 truncate">{getDebugStatusMessage()}</div>

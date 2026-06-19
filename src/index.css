@@ -385,6 +385,38 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   width: 100%;
 }
 
+/* Dark-mode (Aqua) IE loading bar — lift the moving band so it reads against
+   the dark progress track (.dark lives on <html> only when Aqua dark is on). */
+.dark .animate-progress-indeterminate,
+.dark .animate-progress-indeterminate-reverse {
+  background: linear-gradient(
+    90deg,
+    transparent 20%,
+    #60a5fa 50%,
+    transparent 80%
+  );
+}
+
+.dark .animate-progress-indeterminate-green,
+.dark .animate-progress-indeterminate-green-reverse {
+  background: linear-gradient(
+    90deg,
+    transparent 20%,
+    #4ade80 50%,
+    transparent 80%
+  );
+}
+
+.dark .animate-progress-indeterminate-orange,
+.dark .animate-progress-indeterminate-orange-reverse {
+  background: linear-gradient(
+    90deg,
+    transparent 20%,
+    #fb923c 50%,
+    transparent 80%
+  );
+}
+
 .animate-progress-indeterminate-yellow {
   animation: progress-indeterminate 2.5s linear infinite;
   background: linear-gradient(
