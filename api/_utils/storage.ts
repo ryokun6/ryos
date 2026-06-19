@@ -50,9 +50,26 @@ export interface S3UploadDescriptor extends BaseStorageUploadDescriptor {
   headers: Record<string, string>;
 }
 
+/**
+ * Same-origin proxy upload: the browser PUTs blob bytes to our own API,
+ * which forwards them to object storage server-side. Avoids depending on the
+ * bucket's CORS allowlist for direct browser uploads. Enabled via
+ * `S3_PROXY_BLOBS` for self-hosted S3 deployments where bucket CORS cannot be
+ * configured for every origin the app is served from.
+ */
+export interface S3ProxyUploadDescriptor extends BaseStorageUploadDescriptor {
+  provider: "s3";
+  uploadMethod: "proxy-put";
+  /** Same-origin API path the client uploads to (resolved via getApiUrl). */
+  uploadUrl: string;
+  storageUrl: string;
+  headers: Record<string, string>;
+}
+
 export type StorageUploadDescriptor =
   | VercelBlobUploadDescriptor
-  | S3UploadDescriptor;
+  | S3UploadDescriptor
+  | S3ProxyUploadDescriptor;
 
 export interface StorageUploadDebugInfo {
   provider: StorageBackend;
@@ -171,6 +188,26 @@ function getS3Config(): S3Config | null {
 
 export function shouldEnableStorageDebugLogs(): boolean {
   return isTruthy(process.env.STORAGE_DEBUG);
+}
+
+/**
+ * Whether S3 blob/backup uploads + downloads should be proxied through the
+ * same-origin API instead of going directly browser→bucket. Only meaningful
+ * for the S3 backend; the Vercel Blob backend already serves CORS-enabled
+ * URLs. Intended for self-hosted deployments (Bun/Coolify/VPS) where the
+ * bucket CORS allowlist can't be configured for every app origin.
+ *
+ * NOTE: Do not enable on platforms with small request-body limits (e.g.
+ * Vercel Serverless Functions cap request bodies at ~4.5MB) — proxied uploads
+ * stream the full blob through the function.
+ */
+export function shouldProxyS3Blobs(): boolean {
+  return isTruthy(process.env.S3_PROXY_BLOBS);
+}
+
+/** Path to API path the client proxies a given storage key through. */
+export function getBlobProxyPath(key: string): string {
+  return `/api/sync/blob-proxy?key=${encodeURIComponent(normalizePathname(key))}`;
 }
 
 export function logStorageDebug(message: string, details?: unknown): void {
@@ -448,6 +485,23 @@ export async function createStorageUploadDescriptor(
     };
   }
 
+  // Route uploads through the same-origin API when proxying is enabled so the
+  // browser never has to satisfy the bucket's CORS allowlist directly.
+  if (shouldProxyS3Blobs()) {
+    return {
+      provider: "s3",
+      uploadMethod: "proxy-put",
+      pathname,
+      contentType: options.contentType,
+      maximumSizeInBytes: options.maximumSizeInBytes,
+      uploadUrl: getBlobProxyPath(pathname),
+      storageUrl: toS3StorageUrl(pathname),
+      headers: {
+        "Content-Type": options.contentType,
+      },
+    };
+  }
+
   const uploadUrl = await getSignedUrl(
     getS3PresignClient(),
     new PutObjectCommand({
@@ -470,6 +524,32 @@ export async function createStorageUploadDescriptor(
       "Content-Type": options.contentType,
     },
   };
+}
+
+/** Resolve the `s3://bucket/key` location for a storage key. */
+export function getS3StorageUrlForKey(key: string): string {
+  return toS3StorageUrl(key);
+}
+
+/** Write bytes to an `s3://` location server-side (used by the upload proxy). */
+export async function putStoredObject(
+  storageUrl: string,
+  data: Uint8Array,
+  contentType: string
+): Promise<void> {
+  if (!storageUrl.startsWith("s3://")) {
+    throw new Error("putStoredObject only supports s3:// storage URLs");
+  }
+
+  const { bucket, key } = parseS3StorageUrl(storageUrl);
+  await getS3Client().send(
+    new PutObjectCommand({
+      Bucket: bucket,
+      Key: key,
+      Body: data,
+      ContentType: contentType,
+    })
+  );
 }
 
 export function getStorageUploadDebugInfo(
@@ -593,6 +673,13 @@ export async function createSignedDownloadUrl(
   }
 
   const { bucket, key } = parseS3StorageUrl(storageUrl);
+
+  // When proxying is enabled, hand back a same-origin API path so downloads
+  // also avoid the bucket CORS allowlist.
+  if (shouldProxyS3Blobs()) {
+    return getBlobProxyPath(key);
+  }
+
   return await getSignedUrl(
     getS3PresignClient(),
     new GetObjectCommand({

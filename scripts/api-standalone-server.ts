@@ -498,7 +498,14 @@ async function parseBody(request: Request): Promise<ParsedBody> {
     return { bodyValue: body, bodyError: null, rawBody: null };
   }
 
-  return { bodyValue: undefined, bodyError: null, rawBody: null };
+  // Preserve raw bytes for binary uploads (e.g. the blob upload proxy) so
+  // handlers can read the request body off the stream like on Vercel.
+  const rawBody = new Uint8Array(await request.arrayBuffer());
+  return {
+    bodyValue: undefined,
+    bodyError: null,
+    rawBody: rawBody.length > 0 ? rawBody : null,
+  };
 }
 
 function matchRoute(

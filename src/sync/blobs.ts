@@ -8,6 +8,7 @@ import { uploadBlobWithStorageInstruction } from "@/utils/storageUpload";
 import type { StorageUploadInstruction } from "@/utils/storageUpload";
 import type { SyncBlobRef } from "@/shared/sync2/types";
 import { postSyncBlobs } from "@/sync/transport";
+import { getApiUrl } from "@/utils/platform";
 
 function assertCompressionSupport(): void {
   if (
@@ -148,7 +149,14 @@ export async function resolveBlobDownloadUrls(
 
 /** Download and decode one blob item (v2 bare item or v1 envelope). */
 export async function downloadBlobItem(downloadUrl: string): Promise<unknown> {
-  const response = await fetch(downloadUrl);
+  // Same-origin proxy paths (`/api/sync/blob-proxy?...`) are returned when
+  // `S3_PROXY_BLOBS` is enabled; resolve them and send the auth cookie.
+  const isApiProxy = downloadUrl.startsWith("/api/");
+  const resolvedUrl = isApiProxy ? getApiUrl(downloadUrl) : downloadUrl;
+  const response = await fetch(
+    resolvedUrl,
+    isApiProxy ? { credentials: "include" } : undefined
+  );
   if (!response.ok) {
     throw new Error(`Failed to fetch sync blob: ${response.status}`);
   }

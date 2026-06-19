@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import {
+  createSignedDownloadUrl,
   createStorageUploadDescriptor,
   getStorageBackend,
 } from "../api/_utils/storage";
@@ -113,6 +114,70 @@ describe("self-host storage backend selection", () => {
     expect(upload.uploadUrl.startsWith("https://bucket.storage.example.com/")).toBe(
       true
     );
+  });
+
+  test("proxies S3 uploads through the API when S3_PROXY_BLOBS is set", async () => {
+    process.env.STORAGE_PROVIDER = "s3";
+    process.env.S3_BUCKET = "bucket";
+    process.env.S3_REGION = "us-east-1";
+    process.env.S3_ENDPOINT = "https://storage.example.com";
+    process.env.S3_ACCESS_KEY_ID = "key";
+    process.env.S3_SECRET_ACCESS_KEY = "secret";
+    process.env.S3_PROXY_BLOBS = "1";
+    delete process.env.BLOB_READ_WRITE_TOKEN;
+
+    const upload = await createStorageUploadDescriptor({
+      pathname: "sync/alice/blobs/abc.gz",
+      contentType: "application/gzip",
+      maximumSizeInBytes: 1024,
+    });
+
+    expect(upload.provider).toBe("s3");
+    expect(upload.uploadMethod).toBe("proxy-put");
+    if (upload.uploadMethod !== "proxy-put") {
+      throw new Error("Expected a proxy upload descriptor");
+    }
+    // Relative, same-origin API path — no presigned bucket URL.
+    expect(upload.uploadUrl).toBe(
+      "/api/sync/blob-proxy?key=sync%2Falice%2Fblobs%2Fabc.gz"
+    );
+    expect(upload.uploadUrl.includes("X-Amz-Signature")).toBe(false);
+    expect(upload.storageUrl).toBe("s3://bucket/sync/alice/blobs/abc.gz");
+  });
+
+  test("proxies S3 downloads through the API when S3_PROXY_BLOBS is set", async () => {
+    process.env.STORAGE_PROVIDER = "s3";
+    process.env.S3_BUCKET = "bucket";
+    process.env.S3_REGION = "us-east-1";
+    process.env.S3_ENDPOINT = "https://storage.example.com";
+    process.env.S3_ACCESS_KEY_ID = "key";
+    process.env.S3_SECRET_ACCESS_KEY = "secret";
+    process.env.S3_PROXY_BLOBS = "1";
+    delete process.env.BLOB_READ_WRITE_TOKEN;
+
+    const signed = await createSignedDownloadUrl(
+      "s3://bucket/sync/alice/blobs/abc.gz"
+    );
+    expect(signed).toBe(
+      "/api/sync/blob-proxy?key=sync%2Falice%2Fblobs%2Fabc.gz"
+    );
+  });
+
+  test("uses presigned URLs when S3_PROXY_BLOBS is disabled", async () => {
+    process.env.STORAGE_PROVIDER = "s3";
+    process.env.S3_BUCKET = "bucket";
+    process.env.S3_REGION = "auto";
+    process.env.S3_ENDPOINT = "https://example-account.r2.cloudflarestorage.com";
+    process.env.S3_ACCESS_KEY_ID = "key";
+    process.env.S3_SECRET_ACCESS_KEY = "secret";
+    delete process.env.S3_PROXY_BLOBS;
+
+    const upload = await createStorageUploadDescriptor({
+      pathname: "sync/alice/blobs/abc.gz",
+      contentType: "application/gzip",
+      maximumSizeInBytes: 1024,
+    });
+    expect(upload.uploadMethod).toBe("presigned-put");
   });
 
   test("supports explicitly forcing path-style uploads", async () => {
