@@ -129,9 +129,13 @@ interface DisplaySettingsState {
   bumpCustomWallpapersRevision: () => void;
 }
 
-const STORE_VERSION = 1;
+// Bumped to 2 to re-evaluate the shader default for existing users: the old
+// strict heuristic auto-disabled shaders on phones / mid-range devices, and
+// that `false` was persisted. The migration below re-enables them on any device
+// that now classifies above the "off" tier.
+const STORE_VERSION = 2;
 // Default the master shader toggle on for every device except the "off" tier
-// (extremely low-end / low-power). Reduced-tier devices still default on and
+// (genuinely incapable hardware). Reduced-tier devices still default on and
 // simply render at lower quality (see useReducedGraphics).
 const initialShaderState = getPerformanceTier() !== "off";
 
@@ -336,6 +340,26 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
     {
       name: "ryos:display-settings",
       version: STORE_VERSION,
+      migrate: (persistedState, fromVersion) => {
+        const state = persistedState as
+          | Partial<DisplaySettingsState>
+          | undefined;
+        if (!state) return persistedState as DisplaySettingsState;
+        // v1 → v2: the old heuristic disabled shaders on phones / mid devices.
+        // Re-enable them wherever the device now classifies above "off"; leave
+        // truly low-end ("off") devices and any other choices untouched.
+        if (
+          fromVersion < 2 &&
+          state.shaderEffectEnabled === false &&
+          getPerformanceTier() !== "off"
+        ) {
+          return {
+            ...state,
+            shaderEffectEnabled: true,
+          } as unknown as DisplaySettingsState;
+        }
+        return state as unknown as DisplaySettingsState;
+      },
       partialize: (state) => ({
         displayMode: state.displayMode,
         shaderEffectEnabled: state.shaderEffectEnabled,

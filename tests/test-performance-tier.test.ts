@@ -117,29 +117,19 @@ afterEach(() => {
   __resetPerformanceTierCacheForTests();
 });
 
-describe("getPerformanceTier — off tier (extremely low-end / low-power)", () => {
+describe("getPerformanceTier — off tier (only really-bad devices)", () => {
   test("no WebGL support → off", () => {
     applyEnv({ webgl: false, cores: 8 });
     expect(getPerformanceTier()).toBe("off");
   });
 
-  test("no high-precision floats → off", () => {
-    applyEnv({ highp: false, cores: 8 });
+  test("single CPU core → off", () => {
+    applyEnv({ cores: 1 });
     expect(getPerformanceTier()).toBe("off");
   });
 
-  test("tiny max texture size → off", () => {
-    applyEnv({ textureSize: 2048, cores: 8 });
-    expect(getPerformanceTier()).toBe("off");
-  });
-
-  test("very low core count → off", () => {
-    applyEnv({ cores: 2 });
-    expect(getPerformanceTier()).toBe("off");
-  });
-
-  test("very low device memory → off", () => {
-    applyEnv({ cores: 8, memory: 1 });
+  test("extremely low device memory (≤512MB) → off", () => {
+    applyEnv({ cores: 8, memory: 0.5 });
     expect(getPerformanceTier()).toBe("off");
   });
 });
@@ -167,6 +157,33 @@ describe("getPerformanceTier — reduced tier (phones, tablets, mid PCs)", () =>
     expect(getPerformanceTier()).toBe("reduced");
   });
 
+  test("phone without fragment highp is still reduced, not off", () => {
+    applyEnv({
+      cores: 6,
+      maxTouchPoints: 5,
+      coarsePointer: true,
+      highp: false,
+      anisotropy: 16,
+      textureSize: 8192,
+    });
+    expect(getPerformanceTier()).toBe("reduced");
+  });
+
+  test("budget phone reporting 2GB memory → reduced, not off", () => {
+    applyEnv({
+      cores: 4,
+      memory: 2,
+      maxTouchPoints: 5,
+      coarsePointer: true,
+    });
+    expect(getPerformanceTier()).toBe("reduced");
+  });
+
+  test("low core count (2) is reduced, not off", () => {
+    applyEnv({ cores: 2, anisotropy: 16, textureSize: 16384 });
+    expect(getPerformanceTier()).toBe("reduced");
+  });
+
   test("mid desktop with too few cores for full → reduced", () => {
     applyEnv({ cores: 4, anisotropy: 16, textureSize: 16384 });
     expect(getPerformanceTier()).toBe("reduced");
@@ -174,6 +191,18 @@ describe("getPerformanceTier — reduced tier (phones, tablets, mid PCs)", () =>
 
   test("desktop with weak GPU anisotropy → reduced", () => {
     applyEnv({ cores: 8, anisotropy: 2, textureSize: 16384 });
+    expect(getPerformanceTier()).toBe("reduced");
+  });
+
+  test("desktop without high-precision floats → reduced, not full", () => {
+    applyEnv({
+      cores: 12,
+      highp: false,
+      anisotropy: 16,
+      textureSize: 16384,
+      coarsePointer: false,
+      maxTouchPoints: 0,
+    });
     expect(getPerformanceTier()).toBe("reduced");
   });
 });
