@@ -1,9 +1,9 @@
 /**
- * Canonical Redis key registry for the next key-scheme migration.
+ * Canonical Redis key registry — the runtime reads and writes only these key shapes.
  *
- * This file intentionally does not change runtime storage behavior by itself.
- * Stage-one migration work can import these builders for new code, tests, admin
- * discovery, and backfill jobs before individual feature modules cut over.
+ * {@link LEGACY_REDIS_SCAN_PATTERNS} lists residual legacy key patterns for the
+ * standalone migration CLI (`scripts/redis-key-migration.ts`), which can inspect,
+ * backfill, and delete historical keys. The app API does not expose migration.
  */
 
 export const REDIS_KEY_SEPARATOR = ":";
