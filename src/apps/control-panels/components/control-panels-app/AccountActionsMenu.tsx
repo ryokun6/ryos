@@ -9,6 +9,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { RecoveryEmailDialog } from "@/components/dialogs/RecoveryEmailDialog";
+import { DeleteAccountDialog } from "@/components/dialogs/DeleteAccountDialog";
 
 const menuItemClassName =
   "text-md min-h-9 px-3 py-2 touch-manipulation cursor-pointer font-geneva-12";
@@ -39,6 +41,8 @@ export function AccountActionsMenu({
   promptVerifyToken,
 }: AccountActionsMenuProps) {
   const [open, setOpen] = useState(false);
+  const [isRecoveryEmailOpen, setIsRecoveryEmailOpen] = useState(false);
+  const [isDeleteAccountOpen, setIsDeleteAccountOpen] = useState(false);
 
   useEffect(() => {
     setOpen(false);
@@ -53,6 +57,7 @@ export function AccountActionsMenu({
   const showChangePasswordActions = hasPassword !== false;
 
   return (
+    <>
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <Button
@@ -98,6 +103,19 @@ export function AccountActionsMenu({
             {t("apps.control-panels.setPassword")}
           </DropdownMenuItem>
         )}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          className={menuItemClassName}
+          onSelect={() => setIsRecoveryEmailOpen(true)}
+        >
+          {t("apps.control-panels.recoveryEmailMenu")}
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          className={cn(menuItemClassName, "text-red-600")}
+          onSelect={() => setIsDeleteAccountOpen(true)}
+        >
+          {t("apps.control-panels.deleteAccountMenu")}
+        </DropdownMenuItem>
         {debugMode ? (
           <>
             <DropdownMenuSeparator />
@@ -118,5 +136,15 @@ export function AccountActionsMenu({
         ) : null}
       </DropdownMenuContent>
     </DropdownMenu>
+      <RecoveryEmailDialog
+        isOpen={isRecoveryEmailOpen}
+        onOpenChange={setIsRecoveryEmailOpen}
+      />
+      <DeleteAccountDialog
+        isOpen={isDeleteAccountOpen}
+        onOpenChange={setIsDeleteAccountOpen}
+        hasPassword={hasPassword}
+      />
+    </>
   );
 }

@@ -76,9 +76,19 @@ export {
   isUserBanned,
   normalizeUserTimeZone,
   getStoredUserRecord,
+  setStoredUserRecord,
   getStoredUserTimeZone,
   updateStoredUserTimeZone,
+  normalizeEmail,
+  isValidEmail,
+  getUsernameByEmail,
+  setUserEmailIndex,
+  deleteUserEmailIndex,
 } from "./_user-record.js";
+
+// Account deletion (shared by self-service + admin)
+export { purgeUserAccount } from "./_purge.js";
+export type { PurgeAccountResult } from "./_purge.js";
 
 // Per-username login lockout (shared by login + register)
 export {

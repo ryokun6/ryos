@@ -6,7 +6,10 @@
  */
 
 import type { Redis } from "../redis.js";
-import { redisKeys } from "../../../src/shared/redisKeys.js";
+import {
+  redisKeys,
+  sha256RedisIdentifier,
+} from "../../../src/shared/redisKeys.js";
 
 export interface StoredUserRecord {
   username?: string;
@@ -17,6 +20,26 @@ export interface StoredUserRecord {
   banned?: boolean;
   banReason?: string;
   bannedAt?: number;
+  /** Recovery email (normalized, lowercase) once the user has added one. */
+  email?: string;
+  /** Whether the recovery email has been verified via a code. */
+  emailVerified?: boolean;
+  /** When the recovery email was last set/changed. */
+  emailUpdatedAt?: number;
+}
+
+/** Basic email shape check. Intentionally permissive (server is not an MX validator). */
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export function normalizeEmail(email: string | null | undefined): string | null {
+  if (!email || typeof email !== "string") return null;
+  const trimmed = email.trim().toLowerCase();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+export function isValidEmail(email: string | null | undefined): boolean {
+  const normalized = normalizeEmail(email);
+  return !!normalized && normalized.length <= 254 && EMAIL_REGEX.test(normalized);
 }
 
 /**
@@ -124,4 +147,50 @@ export async function updateStoredUserTimeZone(
   };
   await redis.set(key, JSON.stringify(updatedRecord));
   return updatedRecord;
+}
+
+/**
+ * Resolve a username from a (verified) recovery email via the reverse index.
+ * Returns null when no account claims the email.
+ */
+export async function getUsernameByEmail(
+  redis: Redis,
+  email: string
+): Promise<string | null> {
+  const normalized = normalizeEmail(email);
+  if (!normalized) return null;
+  const emailHash = await sha256RedisIdentifier(normalized);
+  const username = await redis.get<string>(redisKeys.auth.emailIndex(emailHash));
+  return typeof username === "string" && username.length > 0
+    ? username.toLowerCase()
+    : null;
+}
+
+/**
+ * Point the email reverse-index at a username. The email is hashed so raw
+ * addresses are never used as Redis key material.
+ */
+export async function setUserEmailIndex(
+  redis: Redis,
+  email: string,
+  username: string
+): Promise<void> {
+  const normalized = normalizeEmail(email);
+  if (!normalized) return;
+  const emailHash = await sha256RedisIdentifier(normalized);
+  await redis.set(redisKeys.auth.emailIndex(emailHash), username.toLowerCase());
+}
+
+/**
+ * Remove the email reverse-index entry (used when changing/removing an email
+ * or deleting an account).
+ */
+export async function deleteUserEmailIndex(
+  redis: Redis,
+  email: string
+): Promise<void> {
+  const normalized = normalizeEmail(email);
+  if (!normalized) return;
+  const emailHash = await sha256RedisIdentifier(normalized);
+  await redis.del(redisKeys.auth.emailIndex(emailHash));
 }

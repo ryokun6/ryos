@@ -19,6 +19,7 @@ import {
   ThemedTabsTrigger,
   ThemedTabsContent,
 } from "@/components/shared/ThemedTabs";
+import { ResetPasswordDialog } from "@/components/dialogs/ResetPasswordDialog";
 
 interface LoginDialogProps {
   /* Common */
@@ -68,6 +69,7 @@ export function LoginDialog({
   signUpError,
 }: LoginDialogProps) {
   const [activeTab, setActiveTab] = useState<"login" | "signup">(initialTab);
+  const [isResetOpen, setIsResetOpen] = useState(false);
   const { isWindowsTheme, isMacOSTheme } = useThemeFlags();
   const { t } = useTranslation();
   const dialogTitle = t("common.auth.dialogTitle");
@@ -137,6 +139,20 @@ export function LoginDialog({
           style={themeFontStyle}
           disabled={isLoginLoading}
         />
+      </div>
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={() => setIsResetOpen(true)}
+          className={cn(
+            "text-neutral-500 underline underline-offset-2 hover:text-neutral-700",
+            themeFont
+          )}
+          style={themeFontStyle}
+          disabled={isLoginLoading}
+        >
+          {t("common.auth.forgotPassword")}
+        </button>
       </div>
     </div>
   );
@@ -280,6 +296,7 @@ export function LoginDialog({
   );
 
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
         className={cn("max-w-[400px]", isWindowsTheme && "p-0 overflow-hidden")}
@@ -313,5 +330,12 @@ export function LoginDialog({
         )}
       </DialogContent>
     </Dialog>
+      <ResetPasswordDialog
+        isOpen={isResetOpen}
+        onOpenChange={setIsResetOpen}
+        defaultIdentifier={usernameInput}
+        onSuccess={() => onOpenChange(false)}
+      />
+    </>
   );
 }
