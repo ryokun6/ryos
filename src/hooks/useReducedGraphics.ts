@@ -1,16 +1,14 @@
-import { useIsPhone } from "@/hooks/useIsPhone";
-import { isLowPowerHardware } from "@/utils/performanceCheck";
+import { usePerformanceTier } from "@/hooks/usePerformanceTier";
 
 /**
  * True when animated shader backgrounds should run in their reduced-quality
  * tier (lower internal resolution / frame rate / backing-buffer size).
  *
- * This covers phones AND low-power desktops (few CPU cores / little memory),
- * reusing the same hardware signal we probe at boot via
- * {@link isLowPowerHardware}. The phone check is reactive (it re-evaluates on
- * resize); the hardware check is a stable, cached per-session value.
+ * This is the case for every device that isn't classified as a full-performance
+ * machine — i.e. the `"reduced"` tier (phones, tablets, low-/mid-perf PCs) and
+ * the `"off"` tier (when shaders are force-enabled on a weak device anyway).
+ * See {@link usePerformanceTier}.
  */
 export function useReducedGraphics(): boolean {
-  const isPhone = useIsPhone();
-  return isPhone || isLowPowerHardware();
+  return usePerformanceTier() !== "full";
 }
