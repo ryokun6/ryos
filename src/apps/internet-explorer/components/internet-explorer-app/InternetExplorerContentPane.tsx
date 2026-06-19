@@ -153,7 +153,7 @@ export function InternetExplorerContentPane({
             isAiLoading ||
             isFetchingWebsiteContent) && (
             <motion.div
-              className="absolute top-0 left-0 right-0 bg-white/75 dark:bg-neutral-900/75 backdrop-blur-sm overflow-hidden z-40"
+              className="absolute top-0 left-0 right-0 bg-transparent backdrop-blur-sm overflow-hidden z-40"
               variants={loadingBarVariants}
               initial="hidden"
               animate="visible"

@@ -28,8 +28,12 @@ function extractRuleBlock(css: string, selector: string): string {
 }
 
 describe("internet explorer loading bar dark mode", () => {
-  test("loading bar track has a dark-mode surface instead of a fixed white bar", () => {
-    expect(contentPaneSource).toContain("bg-white/75 dark:bg-neutral-900/75");
+  test("loading bar track is transparent so it works in light and dark", () => {
+    expect(contentPaneSource).toContain(
+      "bg-transparent backdrop-blur-sm"
+    );
+    // No fixed white track that would look wrong in dark mode.
+    expect(contentPaneSource).not.toContain("bg-white/75");
   });
 
   test("loading status bar gets a dark surface and divider", () => {
@@ -39,30 +43,12 @@ describe("internet explorer loading bar dark mode", () => {
     );
   });
 
-  test("dark progress sweep lifts the blue band for the dark track", () => {
-    const block = extractRuleBlock(
-      indexCss,
-      ".dark .animate-progress-indeterminate,"
-    );
-    expect(block.length).toBeGreaterThan(0);
-    expect(block).toContain("#60a5fa");
-  });
-
-  test("dark progress sweep tunes the green (content fetch) band", () => {
-    const block = extractRuleBlock(
-      indexCss,
-      ".dark .animate-progress-indeterminate-green,"
-    );
-    expect(block.length).toBeGreaterThan(0);
-    expect(block).toContain("#4ade80");
-  });
-
-  test("dark progress sweep tunes the orange (AI) band", () => {
-    const block = extractRuleBlock(
-      indexCss,
-      ".dark .animate-progress-indeterminate-orange,"
-    );
-    expect(block.length).toBeGreaterThan(0);
-    expect(block).toContain("#fb923c");
+  test("indeterminate sweep keeps the background-size needed to animate", () => {
+    // Regression guard: the sweep animates background-position over a
+    // 200% 100% gradient; a `background:` shorthand override would reset
+    // background-size and stop the animation.
+    const block = extractRuleBlock(indexCss, ".animate-progress-indeterminate {");
+    expect(block).toContain("background-size: 200% 100%");
+    expect(block).toContain("progress-indeterminate 2.5s linear infinite");
   });
 });
