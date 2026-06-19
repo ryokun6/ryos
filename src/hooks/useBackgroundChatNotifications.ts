@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useChatsStoreShallow } from "@/stores/useChatsStore";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useAppStore } from "@/stores/useAppStore";
@@ -8,6 +8,23 @@ import { shouldNotifyForRoomMessage } from "@/utils/chatNotifications";
 import { showRoomMessageNotification } from "@/utils/chatNotificationDisplay";
 import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
 import { shouldSubscribeToBackgroundRoomUpdates } from "@/utils/chatRoomSubscriptions";
+import { openChatRoomFromNotification } from "@/utils/openChatRoomFromNotification";
+import {
+  getAppPublicOrigin,
+  getPusherRuntimeConfig,
+  getRealtimeProvider,
+  getRealtimeWebSocketUrl,
+} from "@/utils/runtimeConfig";
+import type {
+  DesktopChatNotificationConfig,
+  DesktopChatNotificationRendererMode,
+  DesktopChatNotificationState,
+} from "@/utils/desktopChatNotificationPolicy";
+import {
+  getDesktopChatNotificationRendererMode,
+  shouldUseRendererChatNotificationFallback,
+} from "@/utils/desktopChatNotificationPolicy";
+import type { RyosDesktopChatNotificationEvent } from "@/types/ryos-desktop";
 import {
   ChatRealtimeService,
   normalizeRealtimeChatMessage,
@@ -22,11 +39,34 @@ const isChatsAppOpen = (): boolean => {
   );
 };
 
+const getDesktopChatNotificationApi = () => {
+  if (typeof window === "undefined") {
+    return null;
+  }
+  const desktop = window.ryosDesktop;
+  if (!desktop?.configureChatNotifications) {
+    return null;
+  }
+  return desktop;
+};
+
+const buildDesktopChatNotificationConfig =
+  (): DesktopChatNotificationConfig => {
+    const realtimeProvider = getRealtimeProvider();
+    return {
+      appPublicOrigin: getAppPublicOrigin(),
+      realtimeProvider,
+      websocketUrl: realtimeProvider === "local" ? getRealtimeWebSocketUrl() : null,
+      pusher: realtimeProvider === "pusher" ? getPusherRuntimeConfig() : null,
+    };
+  };
+
 export function useBackgroundChatNotifications() {
   const {
     username,
     isAuthenticated,
     rooms,
+    currentRoomId,
     fetchRooms,
     setRooms,
     addMessageToRoom,
@@ -36,6 +76,7 @@ export function useBackgroundChatNotifications() {
     username: state.username,
     isAuthenticated: state.isAuthenticated,
     rooms: state.rooms,
+    currentRoomId: state.currentRoomId,
     fetchRooms: state.fetchRooms,
     setRooms: state.setRooms,
     addMessageToRoom: state.addMessageToRoom,
@@ -50,6 +91,13 @@ export function useBackgroundChatNotifications() {
   );
 
   const isBackgroundMode = Boolean(username && isAuthenticated && !hasOpenChatsInstance);
+  const [desktopNotificationMode, setDesktopNotificationMode] = useState<
+    DesktopChatNotificationRendererMode
+  >("unknown");
+  const isRendererBackgroundMode = shouldUseRendererChatNotificationFallback({
+    isBackgroundMode,
+    desktopNotificationMode,
+  });
 
   const realtimeRef = useRef<ChatRealtimeService | null>(null);
   const getRealtime = useCallback(() => {
@@ -113,8 +161,199 @@ export function useBackgroundChatNotifications() {
     [removeMessageFromRoom]
   );
 
+  const desktopState = useMemo<DesktopChatNotificationState>(
+    () => ({
+      username,
+      isAuthenticated,
+      chatsOpen: hasOpenChatsInstance,
+      currentRoomId,
+      rooms: rooms.map((room) => ({
+        id: room.id,
+        type: room.type,
+      })),
+    }),
+    [currentRoomId, hasOpenChatsInstance, isAuthenticated, rooms, username]
+  );
+  const latestDesktopStateRef =
+    useRef<DesktopChatNotificationState>(desktopState);
+
   useEffect(() => {
-    if (!isBackgroundMode) {
+    latestDesktopStateRef.current = desktopState;
+  }, [desktopState]);
+
+  const handleDesktopNotificationEvent = useCallback(
+    (event: RyosDesktopChatNotificationEvent) => {
+      switch (event.type) {
+        case "room-created": {
+          const { rooms: currentRooms } = useChatsStore.getState();
+          setRooms(upsertChatRoom(currentRooms, event.room));
+          break;
+        }
+        case "room-deleted": {
+          const { rooms: currentRooms } = useChatsStore.getState();
+          setRooms(removeChatRoomById(currentRooms, event.roomId));
+          break;
+        }
+        case "room-updated": {
+          const { rooms: currentRooms } = useChatsStore.getState();
+          setRooms(upsertChatRoom(currentRooms, event.room));
+          break;
+        }
+        case "rooms-updated": {
+          setRooms(event.rooms);
+          break;
+        }
+        case "room-message": {
+          const { roomMessages: roomMessagesMap } = useChatsStore.getState();
+          const existingMessages =
+            roomMessagesMap[event.message.roomId] || [];
+          if (
+            existingMessages.some((message) => message.id === event.message.id)
+          ) {
+            break;
+          }
+
+          const messageWithTimestamp: ChatMessage = normalizeRealtimeChatMessage(
+            event.message
+          );
+          addMessageToRoom(messageWithTimestamp.roomId, messageWithTimestamp);
+
+          const { currentRoomId: activeRoomId } = useChatsStore.getState();
+          const shouldNotifyInRyOs = shouldNotifyForRoomMessage({
+            chatsOpen: isChatsAppOpen(),
+            currentRoomId: activeRoomId,
+            messageRoomId: messageWithTimestamp.roomId,
+          });
+
+          if (event.incrementUnread || shouldNotifyInRyOs) {
+            incrementUnread(messageWithTimestamp.roomId);
+          }
+
+          if (
+            event.showInRenderer ||
+            (shouldNotifyInRyOs && !event.showInMain)
+          ) {
+            const decoded = decodeHtmlEntities(
+              String(messageWithTimestamp.content || "")
+            );
+            showRoomMessageNotification({
+              username: messageWithTimestamp.username,
+              content: decoded,
+              roomId: messageWithTimestamp.roomId,
+              messageId: messageWithTimestamp.id,
+            });
+          }
+          break;
+        }
+        case "message-deleted": {
+          removeMessageFromRoom(event.roomId, event.messageId);
+          break;
+        }
+      }
+    },
+    [addMessageToRoom, incrementUnread, removeMessageFromRoom, setRooms]
+  );
+
+  useEffect(() => {
+    const desktop = getDesktopChatNotificationApi();
+    if (!desktop?.onOpenChatRoomFromNotification) {
+      return;
+    }
+
+    return desktop.onOpenChatRoomFromNotification((roomId) => {
+      openChatRoomFromNotification(roomId);
+    });
+  }, []);
+
+  useEffect(() => {
+    const desktop = getDesktopChatNotificationApi();
+    if (!desktop?.onChatNotificationStatus) {
+      return;
+    }
+
+    return desktop.onChatNotificationStatus((status) => {
+      const mode = getDesktopChatNotificationRendererMode(status);
+      if (mode) {
+        setDesktopNotificationMode(mode);
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    const desktop = getDesktopChatNotificationApi();
+    if (!desktop?.onChatNotificationEvent) {
+      return;
+    }
+
+    return desktop.onChatNotificationEvent(handleDesktopNotificationEvent);
+  }, [handleDesktopNotificationEvent]);
+
+  useEffect(() => {
+    const desktop = getDesktopChatNotificationApi();
+    if (!desktop?.configureChatNotifications) {
+      setDesktopNotificationMode("renderer");
+      return;
+    }
+
+    if (!username || !isAuthenticated) {
+      setDesktopNotificationMode("renderer");
+      void desktop.stopChatNotifications?.();
+      return;
+    }
+
+    let cancelled = false;
+    setDesktopNotificationMode("unknown");
+    void desktop
+      .configureChatNotifications(
+        buildDesktopChatNotificationConfig(),
+        latestDesktopStateRef.current
+      )
+      .then((result) => {
+        if (cancelled) return;
+        setDesktopNotificationMode(
+          getDesktopChatNotificationRendererMode(result) ?? "renderer"
+        );
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setDesktopNotificationMode("renderer");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, username]);
+
+  useEffect(() => {
+    if (desktopNotificationMode !== "managed") {
+      return;
+    }
+
+    const desktop = getDesktopChatNotificationApi();
+    if (!desktop?.updateChatNotificationState) {
+      return;
+    }
+
+    void desktop
+      .updateChatNotificationState(desktopState)
+      .then((result) => {
+        if (getDesktopChatNotificationRendererMode(result) !== "managed") {
+          setDesktopNotificationMode("renderer");
+        }
+      })
+      .catch(() => {
+        setDesktopNotificationMode("renderer");
+      });
+  }, [desktopNotificationMode, desktopState]);
+
+  useEffect(() => {
+    if (isBackgroundMode) {
+      void fetchRooms();
+    }
+  }, [fetchRooms, isBackgroundMode]);
+
+  useEffect(() => {
+    if (!isRendererBackgroundMode) {
       unsubscribeAllChannels();
       return;
     }
@@ -158,10 +397,10 @@ export function useBackgroundChatNotifications() {
     return () => {
       unsubscribeAllChannels();
     };
-  }, [fetchRooms, getRealtime, isBackgroundMode, setRooms, unsubscribeAllChannels, username]);
+  }, [fetchRooms, getRealtime, isRendererBackgroundMode, setRooms, unsubscribeAllChannels, username]);
 
   useEffect(() => {
-    if (!isBackgroundMode) {
+    if (!isRendererBackgroundMode) {
       return;
     }
 
@@ -190,5 +429,5 @@ export function useBackgroundChatNotifications() {
       .forEach((roomId) => {
         realtime.unsubscribeRoom(roomId);
       });
-  }, [getRealtime, handleMessageDeleted, handleRoomMessage, isBackgroundMode, rooms]);
+  }, [getRealtime, handleMessageDeleted, handleRoomMessage, isRendererBackgroundMode, rooms]);
 }

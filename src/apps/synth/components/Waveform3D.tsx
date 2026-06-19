@@ -2,6 +2,7 @@ import { useRef, useState, useEffect, useMemo } from "react";
 import * as THREE from "three";
 import * as Tone from "tone";
 import { useLatestRef } from "@/hooks/useLatestRef";
+import { useShaderEffectsEnabled } from "@/hooks/useShaderEffectsEnabled";
 
 interface Waveform3DProps {
   analyzer: Tone.Analyser | null;
@@ -60,41 +61,49 @@ export const Waveform3D: React.FC<Waveform3DProps> = ({ analyzer }) => {
   const animationFrameRef = useRef<number | null>(null);
   // Use useLatestRef to keep analyzer ref in sync without useEffect
   const analyzerRef = useLatestRef(analyzer);
+  const shaderEffectsEnabled = useShaderEffectsEnabled();
   const [isMobile, setIsMobile] = useState(false);
   const timeRef = useRef(0);
   const amplitudeRef = useRef(0);
 
   const geometry = useMemo(
-    () => new THREE.PlaneGeometry(6, 2, 96, 32),
-    []
+    () =>
+      shaderEffectsEnabled
+        ? new THREE.PlaneGeometry(6, 2, 96, 32)
+        : null,
+    [shaderEffectsEnabled]
   );
   const lowColor = useMemo(() => new THREE.Color(0x2a0050), []);
   const highColor = useMemo(() => new THREE.Color(0xff00ff), []);
 
   const material = useMemo(
     () =>
-      new THREE.ShaderMaterial({
-        uniforms: {
-          uColorLow: { value: lowColor },
-          uColorHigh: { value: highColor },
-          uTime: { value: 0 },
-          uAmplitude: { value: 0 },
-        },
-        vertexShader,
-        fragmentShader,
-        transparent: true,
-        wireframe: true,
-      }),
-    [highColor, lowColor]
+      shaderEffectsEnabled
+        ? new THREE.ShaderMaterial({
+            uniforms: {
+              uColorLow: { value: lowColor },
+              uColorHigh: { value: highColor },
+              uTime: { value: 0 },
+              uAmplitude: { value: 0 },
+            },
+            vertexShader,
+            fragmentShader,
+            transparent: true,
+            wireframe: true,
+          })
+        : null,
+    [highColor, lowColor, shaderEffectsEnabled]
   );
 
   const mesh = useMemo(() => {
+    if (!geometry || !material) return null;
     const waveformMesh = new THREE.Mesh(geometry, material);
     waveformMesh.rotation.x = -Math.PI / 6;
     return waveformMesh;
   }, [geometry, material]);
 
   const scene = useMemo(() => {
+    if (!mesh) return null;
     const waveformScene = new THREE.Scene();
     waveformScene.add(mesh);
     waveformScene.add(new THREE.AmbientLight(0x404040));
@@ -109,6 +118,7 @@ export const Waveform3D: React.FC<Waveform3DProps> = ({ analyzer }) => {
   }, []);
 
   const renderer = useMemo(() => {
+    if (!shaderEffectsEnabled) return null;
     try {
       return new THREE.WebGLRenderer({
         antialias: true,
@@ -119,7 +129,7 @@ export const Waveform3D: React.FC<Waveform3DProps> = ({ analyzer }) => {
       console.warn("[Waveform3D] WebGL unavailable, skipping renderer", error);
       return null;
     }
-  }, []);
+  }, [shaderEffectsEnabled]);
 
   // Effect to handle window resize and mobile detection
   useEffect(() => {
@@ -138,7 +148,18 @@ export const Waveform3D: React.FC<Waveform3DProps> = ({ analyzer }) => {
   // Note: analyzerRef is kept in sync via useLatestRef (no effect needed)
 
   useEffect(() => {
-    if (!containerRef.current || isMobile || !renderer) return;
+    if (
+      !shaderEffectsEnabled ||
+      !containerRef.current ||
+      isMobile ||
+      !renderer ||
+      !geometry ||
+      !material ||
+      !mesh ||
+      !scene
+    ) {
+      return;
+    }
 
     const container = containerRef.current;
     renderer.setPixelRatio(window.devicePixelRatio);
@@ -230,13 +251,25 @@ export const Waveform3D: React.FC<Waveform3DProps> = ({ analyzer }) => {
         container.removeChild(renderer.domElement);
       }
     };
-  }, [analyzerRef, camera, highColor, isMobile, lowColor, material, mesh, renderer, scene]);
+  }, [
+    analyzerRef,
+    camera,
+    geometry,
+    highColor,
+    isMobile,
+    lowColor,
+    material,
+    mesh,
+    renderer,
+    scene,
+    shaderEffectsEnabled,
+  ]);
 
   useEffect(() => {
     return () => {
       renderer?.dispose();
-      material.dispose();
-      geometry.dispose();
+      material?.dispose();
+      geometry?.dispose();
     };
   }, [geometry, material, renderer]);
 

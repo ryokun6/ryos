@@ -1,8 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 
+import * as authApi from "../src/api/auth";
+
 const storeSource = readFileSync("src/stores/useChatsStore.ts", "utf8");
-const authApiSource = readFileSync("src/api/auth.ts", "utf8");
 
 describe("chat auth API wiring", () => {
   test("routes auth HTTP calls through src/api/auth", () => {
@@ -31,8 +32,12 @@ describe("chat auth API wiring", () => {
   });
 
   test("auth API exports session and password helpers", () => {
-    for (const symbol of ["checkUserPassword", "getAuthSession", "logoutUserSafe"]) {
-      expect(authApiSource).toContain(`function ${symbol}`);
+    for (const symbol of [
+      "checkUserPassword",
+      "getAuthSession",
+      "logoutUserSafe",
+    ] as const) {
+      expect(typeof authApi[symbol]).toBe("function");
     }
   });
 });

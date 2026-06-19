@@ -91,6 +91,29 @@ class FakeIrcClient extends EventEmitter implements IrcClientLike {
   nick: string = "";
 }
 
+/** Resolve as soon as `predicate` is true, instead of sleeping a fixed amount. */
+async function waitFor(
+  predicate: () => boolean,
+  { timeoutMs = 1000, intervalMs = 2 }: { timeoutMs?: number; intervalMs?: number } = {}
+): Promise<void> {
+  const start = Date.now();
+  while (!predicate()) {
+    if (Date.now() - start > timeoutMs) {
+      throw new Error(`waitFor: condition not met within ${timeoutMs}ms`);
+    }
+    await new Promise((r) => setTimeout(r, intervalMs));
+  }
+}
+
+/** Drain the microtask queue so synchronous early-returns settle deterministically. */
+async function flushMicrotasks(): Promise<void> {
+  for (let i = 0; i < 5; i++) await Promise.resolve();
+}
+
+/** The bridge issues JOIN only after the `registered` handler ran (server ready). */
+const hasJoined = (client?: FakeIrcClient): boolean =>
+  Boolean(client?.calls.some((c) => c.type === "join"));
+
 function makeIrcRoom(overrides: Partial<Room> = {}): Room {
   return {
     id: "testroom1",
@@ -163,8 +186,8 @@ describe("IRC Bridge", () => {
     const room = makeIrcRoom();
     await bridge.bindRoom(room);
 
-    // Let the fake client register so server.ready becomes true.
-    await new Promise((r) => setTimeout(r, 5));
+    // Wait until the fake client registers + joins so server.ready is true.
+    await waitFor(() => hasJoined(fakeClients[0]));
 
     await bridge.sendMessage(room, "alice", "hello world");
 
@@ -178,7 +201,7 @@ describe("IRC Bridge", () => {
   test("incoming IRC messages are persisted via the callback", async () => {
     const room = makeIrcRoom();
     await bridge.bindRoom(room);
-    await new Promise((r) => setTimeout(r, 5));
+    await waitFor(() => hasJoined(fakeClients[0]));
 
     const client = fakeClients[0];
     client.emit("message", {
@@ -188,8 +211,8 @@ describe("IRC Bridge", () => {
       message: "hi there",
     });
 
-    // Allow the async handler (which also calls getRoom) to settle.
-    await new Promise((r) => setTimeout(r, 200));
+    // The async handler calls getRoom then persists; wait for the result.
+    await waitFor(() => persisted.length === 1);
 
     expect(persisted.length).toBe(1);
     const persistedItem = persisted[0];
@@ -201,7 +224,7 @@ describe("IRC Bridge", () => {
   test("incoming IRC 'action' events are prefixed with '*'", async () => {
     const room = makeIrcRoom();
     await bridge.bindRoom(room);
-    await new Promise((r) => setTimeout(r, 5));
+    await waitFor(() => hasJoined(fakeClients[0]));
 
     const client = fakeClients[0];
     client.emit("message", {
@@ -211,7 +234,7 @@ describe("IRC Bridge", () => {
       message: "waves",
     });
 
-    await new Promise((r) => setTimeout(r, 200));
+    await waitFor(() => persisted.length === 1);
 
     expect(persisted.length).toBe(1);
     expect(persisted[0].message.content).toBe("* waves");
@@ -220,7 +243,7 @@ describe("IRC Bridge", () => {
   test("incoming messages from unbound channels are ignored", async () => {
     const room = makeIrcRoom();
     await bridge.bindRoom(room);
-    await new Promise((r) => setTimeout(r, 5));
+    await waitFor(() => hasJoined(fakeClients[0]));
 
     const client = fakeClients[0];
     client.emit("message", {
@@ -230,14 +253,16 @@ describe("IRC Bridge", () => {
       message: "hi",
     });
 
-    await new Promise((r) => setTimeout(r, 5));
+    // The handler returns synchronously for unbound channels; drain microtasks
+    // and confirm nothing was persisted.
+    await flushMicrotasks();
     expect(persisted.length).toBe(0);
   });
 
   test("bot's own messages (by nick match) are not persisted back", async () => {
     const room = makeIrcRoom();
     await bridge.bindRoom(room);
-    await new Promise((r) => setTimeout(r, 5));
+    await waitFor(() => hasJoined(fakeClients[0]));
 
     const client = fakeClients[0];
     client.emit("message", {
@@ -247,14 +272,16 @@ describe("IRC Bridge", () => {
       message: "<alice> hello",
     });
 
-    await new Promise((r) => setTimeout(r, 5));
+    // The handler returns synchronously for the bot's own nick; drain
+    // microtasks and confirm nothing was persisted back.
+    await flushMicrotasks();
     expect(persisted.length).toBe(0);
   });
 
   test("unbindRoom parts channel and drops the binding", async () => {
     const room = makeIrcRoom();
     await bridge.bindRoom(room);
-    await new Promise((r) => setTimeout(r, 5));
+    await waitFor(() => hasJoined(fakeClients[0]));
 
     await bridge.unbindRoom(room);
 
@@ -266,7 +293,7 @@ describe("IRC Bridge", () => {
   test("repeated bindRoom for same room does not rejoin channel", async () => {
     const room = makeIrcRoom();
     await bridge.bindRoom(room);
-    await new Promise((r) => setTimeout(r, 5));
+    await waitFor(() => hasJoined(fakeClients[0]));
 
     await bridge.bindRoom(room);
 
@@ -283,7 +310,7 @@ describe("IRC Bridge", () => {
 
     await bridge.bindRoom(roomA);
     await bridge.bindRoom(roomB);
-    await new Promise((r) => setTimeout(r, 5));
+    await waitFor(() => hasJoined(fakeClients[0]));
 
     // Still only a single IRC connection.
     expect(fakeClients.length).toBe(1);
@@ -295,7 +322,7 @@ describe("IRC Bridge", () => {
   test("different servers get separate connections", async () => {
     await bridge.bindRoom(makeIrcRoom({ id: "rA", ircHost: "irc.example.com" }));
     await bridge.bindRoom(makeIrcRoom({ id: "rB", ircHost: "irc.pieter.com" }));
-    await new Promise((r) => setTimeout(r, 5));
+    await waitFor(() => fakeClients.length === 2 && fakeClients.every(hasJoined));
 
     expect(fakeClients.length).toBe(2);
     const bindings = bridge.getBindings().map((b) => b.host).sort();
@@ -306,7 +333,7 @@ describe("IRC Bridge", () => {
     // Simulate a race: sendMessage called before any bind.
     const room = makeIrcRoom({ id: "rLazy" });
     await bridge.sendMessage(room, "alice", "hi");
-    await new Promise((r) => setTimeout(r, 5));
+    await waitFor(() => fakeClients.length === 1);
 
     // A client should now exist because sendMessage triggered bindRoom.
     expect(fakeClients.length).toBe(1);
@@ -318,7 +345,7 @@ describe("IRC Bridge", () => {
   test("listChannels reuses an existing connection when available", async () => {
     const room = makeIrcRoom();
     await bridge.bindRoom(room);
-    await new Promise((r) => setTimeout(r, 10));
+    await waitFor(() => hasJoined(fakeClients[0]));
 
     // Bridge should now have a single ready client; queue a synthetic LIST
     // response on it before invoking listChannels.
@@ -452,7 +479,7 @@ describe("IRC Bridge wiring", () => {
     const fs = await import("node:fs/promises");
     const src = await fs.readFile("api/rooms/[id].ts", "utf-8");
     expect(src).toContain("notifyRoomBindingChange");
-    expect(/notifyRoomBindingChange\s*\(\s*"unbind"/.test(src)).toBe(true);
+    expect(src).toMatch(/notifyRoomBindingChange\s*\(\s*"unbind"/);
     expect(src).toContain("isIrcBridgeEnabled");
   });
 
@@ -460,7 +487,7 @@ describe("IRC Bridge wiring", () => {
     const fs = await import("node:fs/promises");
     const src = await fs.readFile("api/rooms/[id]/messages.ts", "utf-8");
     expect(src).toContain("getIrcBridge");
-    expect(/roomData\.type === "irc"/.test(src)).toBe(true);
+    expect(src).toMatch(/roomData\.type === "irc"/);
     expect(src).toContain("isIrcBridgeEnabled");
   });
 
@@ -485,7 +512,7 @@ describe("IRC Bridge wiring", () => {
     const fs = await import("node:fs/promises");
     const src = await fs.readFile("scripts/api-standalone-server.ts", "utf-8");
     expect(src).toContain("getIrcBridge");
-    expect(/getIrcBridge\(\)\.initialize\(\)/.test(src)).toBe(true);
+    expect(src).toMatch(/getIrcBridge\(\)\.initialize\(\)/);
     expect(src).toContain("isIrcBridgeEnabled");
   });
 

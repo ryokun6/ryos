@@ -157,7 +157,7 @@ describe("Chat Store Guard Wiring Tests", () => {
       const match = source.match(/API_UNAVAILABLE_COOLDOWN_MS\s*=\s*([0-9_]+)/);
       expect(match?.[1]).toBeTruthy();
       const parsedMs = Number((match?.[1] || "").replaceAll("_", ""));
-      expect(parsedMs > 0).toBe(true);
+      expect(parsedMs).toBeGreaterThan(0);
     });
 
     test("marks cooldown on fetch failures", async () => {

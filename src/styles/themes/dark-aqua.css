@@ -287,7 +287,7 @@
       rgba(34, 34, 38, 0.42)
     ) !important;
   color: rgba(255, 255, 255, 0.92) !important;
-  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55) !important;
+  text-shadow: 0 2px 2px rgba(0, 0, 0, 0.4) !important;
   box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2), 0 1px 1px rgba(0, 0, 0, 0.3),
     0 0 0 1px rgba(0, 0, 0, 0.3) !important;
 }
@@ -297,11 +297,11 @@
   select:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *)) {
   background: linear-gradient(
     to bottom,
-    rgba(72, 72, 78, 0.78),
-    rgba(34, 34, 38, 0.78)
+    rgba(72, 72, 78, 0.42),
+    rgba(34, 34, 38, 0.42)
   ) !important;
   color: rgba(255, 255, 255, 0.92) !important;
-  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55) !important;
+  text-shadow: 0 2px 2px rgba(0, 0, 0, 0.4) !important;
   box-shadow:
     0 2px 4px rgba(0, 0, 0, 0.35),
     0 1px 1px rgba(0, 0, 0, 0.35),
@@ -315,7 +315,7 @@
    reads on the dark gradient. */
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .aqua-button.secondary span {
   color: rgba(255, 255, 255, 0.92) !important;
-  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55) !important;
+  text-shadow: 0 2px 2px rgba(0, 0, 0, 0.4) !important;
 }
 
 /* Primary (OK) button keeps its pulsing Aqua-blue gradient in dark mode,
@@ -325,7 +325,7 @@
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .aqua-button.primary,
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .aqua-button.primary span {
   color: #ffffff !important;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.55) !important;
+  text-shadow: 0 2px 2px rgba(0, 0, 0, 0.4) !important;
 }
 
 /* Native <select> uses `background:` shorthand to layer a chevron SVG on
@@ -337,8 +337,8 @@
     url("data:image/svg+xml;charset=utf-8,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 2L6 7L11 2' stroke='%23e5e7eb' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"),
     linear-gradient(
       to bottom,
-      rgba(72, 72, 78, 0.78),
-      rgba(34, 34, 38, 0.78)
+      rgba(72, 72, 78, 0.42),
+      rgba(34, 34, 38, 0.42)
     ) !important;
   background-position: right 6px center, 0 0 !important;
   background-repeat: no-repeat, no-repeat !important;
@@ -368,8 +368,8 @@
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .aqua-button.secondary:before {
   background: linear-gradient(
     to bottom,
-    rgba(255, 255, 255, 0.14),
-    rgba(255, 255, 255, 0.04)
+    rgba(255, 255, 255, 0.12),
+    rgba(255, 255, 255, 0.03)
   ) !important;
 }
 
@@ -385,7 +385,7 @@
 /* Secondary variant additionally dims the highlight so the pill keeps a
    soft lift without smearing bright white across the dark gradient. */
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .aqua-button.secondary:after {
-  background: linear-gradient(rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.08)) !important;
+  background: linear-gradient(rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.06)) !important;
 }
 
 /* Pressed / focus state — push the gradient one shade darker so the
@@ -422,8 +422,8 @@
   select:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *)):active {
   background: linear-gradient(
     to bottom,
-    rgba(48, 48, 52, 0.9),
-    rgba(22, 22, 26, 0.9)
+    rgba(48, 48, 52, 0.52),
+    rgba(22, 22, 26, 0.52)
   ) !important;
   box-shadow:
     inset 0 1px 2px rgba(0, 0, 0, 0.6),
@@ -438,8 +438,8 @@
     url("data:image/svg+xml;charset=utf-8,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 2L6 7L11 2' stroke='%23e5e7eb' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"),
     linear-gradient(
       to bottom,
-      rgba(48, 48, 52, 0.9),
-      rgba(22, 22, 26, 0.9)
+      rgba(48, 48, 52, 0.52),
+      rgba(22, 22, 26, 0.52)
     ) !important;
 }
 
@@ -1027,18 +1027,70 @@
     inset 0 -1px 1px rgba(0, 0, 0, 0.4);
 }
 
-/* Off thumb on the dark switch track — the existing
-   `.os-switch:not([data-state="checked"]) .os-switch-thumb` light gradient
-   blends fine with the existing track surface, but the track itself is the
-   light Aqua `linear-gradient(#d0d0d0,#f5f5f5)` which would scream against
-   the dark window. Tone the track to a darker pill while keeping the same
-   inset-recess shading. */
-:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .os-switch,
+/* Dark mode switch track */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .os-switch {
+  --os-glass-switch-track-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5),
+    inset 0 -1px 1px rgba(255, 255, 255, 0.06),
+    0 1px 0 rgba(255, 255, 255, 0.05);
+  background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.12),
+        rgba(255, 255, 255, 0.03)
+      )
+      top / 100% 50% no-repeat,
+    linear-gradient(
+      to bottom,
+      rgba(34, 34, 38, 0.42),
+      rgba(72, 72, 78, 0.42)
+    );
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow: var(--os-glass-switch-track-shadow);
+}
+
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .os-switch[data-state="checked"] {
-  background: linear-gradient(#3a3a3f, #4d4d52);
+  background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.12) 0%,
+        rgba(255, 255, 255, 0.03) 60%,
+        rgba(255, 255, 255, 0) 100%
+      )
+      top / 100% 50% no-repeat,
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--os-accent-color, #3a73d6) 34%, transparent),
+      color-mix(in srgb, var(--os-accent-color, #3a73d6) 24%, transparent)
+    ),
+    linear-gradient(
+      to bottom,
+      rgba(34, 34, 38, 0.42),
+      rgba(72, 72, 78, 0.42)
+    );
+  box-shadow: var(--os-glass-switch-track-shadow);
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .os-switch:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .os-switch:focus-visible {
+  box-shadow: var(--os-glass-switch-track-shadow),
+    0 0 4px var(--os-color-selection-glow);
+}
+
+/* Off-state thumb in dark mode */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .os-switch:not([data-state="checked"])
+  .os-switch-thumb {
+  background: linear-gradient(
+    rgba(80, 80, 85, 0.45),
+    rgba(100, 100, 105, 0.45),
+    rgba(120, 120, 125, 0.45)
+  );
   box-shadow:
-    inset 0 1px 2px rgba(0, 0, 0, 0.6),
-    0 1px 0 rgba(255, 255, 255, 0.06);
+    0 2px 3px rgba(0, 0, 0, 0.45),
+    0 1px 1px rgba(0, 0, 0, 0.55),
+    inset 0 1px 3px rgba(0, 0, 0, 0.65),
+    inset 0 2px 3px 1px rgba(80, 80, 85, 0.5);
 }
 
 /* Generic shadcn Switch (non-aqua) — Control Panels uses
@@ -1069,7 +1121,7 @@
     #3a3a3f 100%
   ) !important;
   color: rgba(255, 255, 255, 0.85) !important;
-  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55) !important;
+  text-shadow: 0 2px 2px rgba(0, 0, 0, 0.4) !important;
   box-shadow:
     0 1px 1px rgba(0, 0, 0, 0.45),
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
@@ -1098,7 +1150,7 @@
     #232327 100%
   ) !important;
   color: rgba(255, 255, 255, 0.95) !important;
-  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6) !important;
+  text-shadow: 0 2px 2px rgba(0, 0, 0, 0.4) !important;
   box-shadow:
     inset 0 1px 2px rgba(0, 0, 0, 0.7),
     inset 0 2px 3px 1px rgba(0, 0, 0, 0.4),

@@ -1,6 +1,7 @@
 import { Water } from "@paper-design/shaders-react";
 import { useReducedGraphics } from "@/hooks/useReducedGraphics";
 import { useShaderAnimationDisabled } from "@/hooks/useShaderAnimationDisabled";
+import { useShaderEffectsEnabled } from "@/hooks/useShaderEffectsEnabled";
 
 interface WaterBackgroundProps {
   /** URL of the cover art to use as the base image */
@@ -43,9 +44,10 @@ export function WaterBackground({
   className = "",
 }: WaterBackgroundProps) {
   const reducedQuality = useReducedGraphics();
+  const shaderEffectsEnabled = useShaderEffectsEnabled();
   const animationDisabled = useShaderAnimationDisabled();
 
-  if (!isActive || !coverUrl) return null;
+  if (!isActive || !shaderEffectsEnabled || !coverUrl) return null;
 
   // speed 0 => ShaderMount halts its rAF loop, leaving a static water image.
   const speed = animationDisabled

@@ -87,7 +87,9 @@ graph TB
 
 ```
 ├── api/              # Node-style API endpoints (Vercel + standalone Bun server)
-│   └── _utils/       # Shared API utilities (api-handler, middleware, auth, redis, storage, realtime, analytics, etc.)
+│   └── _utils/       # Shared API utilities (api-handler, request-auth, redis, storage, realtime, analytics, etc.)
+├── middleware.ts     # Vercel edge middleware (OG share for SPA routes)
+├── index.html        # Vite entry / app shell
 ├── electron/         # Electron main/preload/menu/updater
 ├── public/           # Static assets
 ├── tests/            # bun:test suites
@@ -96,11 +98,12 @@ graph TB
 │   ├── apps/         # 25 app modules
 │   ├── components/   # Shared React components
 │   ├── config/       # App registry
-│   ├── hooks/        # ~60 custom hooks
-│   ├── lib/          # Libraries
+│   ├── hooks/        # ~75 custom hooks
+│   ├── lib/          # Libraries (including locales/)
+│   ├── lib/locales/  # i18n translation files (10 languages)
 │   ├── services/     # VFS and realtime service facades
 │   ├── shared/       # Contracts, sync helpers, domain types
-│   ├── stores/       # 36 Zustand store modules
+│   ├── stores/       # 38 Zustand store modules
 │   ├── styles/       # CSS
 │   ├── sync/         # Cloud Sync v2 client engine
 │   ├── themes/       # 4 theme definitions

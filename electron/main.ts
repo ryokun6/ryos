@@ -4,6 +4,7 @@ import {
   components,
   dialog,
   ipcMain,
+  Notification,
   session,
   shell,
   type WebContents,
@@ -12,12 +13,23 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { setupAutoUpdater } from "./updater";
 import { buildApplicationMenu } from "./menu";
+import { registerChatNotificationIpcHandlers } from "./chat-notifications";
 
 const DEFAULT_APP_URL = "https://os.ryo.lu";
 const APP_URL = process.env.RYOS_ELECTRON_URL?.trim() || DEFAULT_APP_URL;
+const APP_DISPLAY_NAME = "ryOS";
+const APP_ID = "lu.ryo.os";
+const APP_COPYRIGHT = "Copyright (c) 2026 Ryo Lu";
 const MAX_NATIVE_OPEN_BYTES = 100 * 1024 * 1024;
 
 let mainWindow: BrowserWindow | null = null;
+type ActiveNativeNotification = InstanceType<typeof Notification>;
+const activeNativeNotifications = new Set<ActiveNativeNotification>();
+
+app.setName(APP_DISPLAY_NAME);
+if (process.platform === "win32") {
+  app.setAppUserModelId(APP_ID);
+}
 
 type NativeFileFilter = {
   name: string;
@@ -35,6 +47,12 @@ type NativeSaveFileOptions = {
   defaultPath?: string;
   filters?: NativeFileFilter[];
   data: ArrayBuffer | ArrayBufferView;
+};
+
+type NativeNotificationOptions = {
+  title?: string;
+  body?: string;
+  chatRoomId?: string | null;
 };
 
 const ALLOWED_WEB_PERMISSIONS = new Set([
@@ -77,6 +95,115 @@ function isTrustedWebContents(contents: WebContents | null | undefined): boolean
     return false;
   }
   return isInAppNavigation(contents.getURL()) || isBlankUrl(contents.getURL());
+}
+
+function sanitizeNotificationText(
+  value: unknown,
+  maxLength: number
+): string | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const normalized = value
+    .replace(/[\u0000-\u001f\u007f]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!normalized) {
+    return undefined;
+  }
+
+  if (normalized.length <= maxLength) {
+    return normalized;
+  }
+
+  return `${normalized.slice(0, Math.max(0, maxLength - 3)).trimEnd()}...`;
+}
+
+function sanitizeNotificationOptions(
+  options: NativeNotificationOptions
+): Electron.NotificationConstructorOptions | null {
+  const title = sanitizeNotificationText(options?.title, 120);
+  if (!title) {
+    return null;
+  }
+
+  return {
+    title,
+    body: sanitizeNotificationText(options?.body, 240),
+  };
+}
+
+function getNotificationChatRoomId(
+  options: NativeNotificationOptions
+): string | null | undefined {
+  if (!("chatRoomId" in options)) {
+    return undefined;
+  }
+  return typeof options.chatRoomId === "string" || options.chatRoomId === null
+    ? options.chatRoomId
+    : undefined;
+}
+
+function canShowNativeNotifications(): boolean {
+  return (
+    typeof Notification.isSupported === "function" &&
+    Notification.isSupported()
+  );
+}
+
+function isMainWindowForeground(): boolean {
+  const win = mainWindow;
+  if (!win || win.isDestroyed() || win.isMinimized() || !win.isVisible()) {
+    return false;
+  }
+
+  return win.isFocused() || app.isFocused();
+}
+
+function focusMainWindow(): void {
+  const win = mainWindow;
+  if (!win || win.isDestroyed()) {
+    return;
+  }
+
+  if (win.isMinimized()) {
+    win.restore();
+  }
+  if (!win.isVisible()) {
+    win.show();
+  }
+
+  app.focus();
+  win.focus();
+}
+
+function showRetainedNativeNotification(
+  options: Electron.NotificationConstructorOptions,
+  onClick: () => void = focusMainWindow
+): boolean {
+  const notification = new Notification(options);
+  activeNativeNotifications.add(notification);
+
+  const releaseNotification = () => {
+    activeNativeNotifications.delete(notification);
+  };
+
+  notification.once("click", () => {
+    onClick();
+    releaseNotification();
+  });
+  notification.once("close", releaseNotification);
+  notification.once("failed", releaseNotification);
+
+  try {
+    notification.show();
+    return true;
+  } catch (error) {
+    releaseNotification();
+    throw error;
+  }
 }
 
 function sanitizeDialogFilters(filters: unknown): NativeFileFilter[] | undefined {
@@ -251,6 +378,59 @@ function registerIpcHandlers(): void {
     return app.getVersion();
   });
 
+  ipcMain.handle("ryos-desktop:can-show-notifications", (event) => {
+    return isTrustedWebContents(event.sender) && canShowNativeNotifications();
+  });
+
+  ipcMain.handle("ryos-desktop:should-show-native-notification", (event) => {
+    return (
+      isTrustedWebContents(event.sender) &&
+      canShowNativeNotifications() &&
+      !isMainWindowForeground()
+    );
+  });
+
+  ipcMain.handle(
+    "ryos-desktop:show-notification",
+    (event, options: NativeNotificationOptions = {}) => {
+      if (!isTrustedWebContents(event.sender)) {
+        return { shown: false, reason: "untrusted" };
+      }
+      if (
+        typeof Notification.isSupported !== "function" ||
+        !Notification.isSupported()
+      ) {
+        return { shown: false, reason: "unsupported" };
+      }
+
+      const notificationOptions = sanitizeNotificationOptions(options);
+      if (!notificationOptions) {
+        return { shown: false, reason: "invalid-payload" };
+      }
+      if (isMainWindowForeground()) {
+        return { shown: false, reason: "foreground" };
+      }
+
+      const chatRoomId = getNotificationChatRoomId(options);
+      showRetainedNativeNotification(
+        notificationOptions,
+        chatRoomId !== undefined
+          ? () => {
+              focusMainWindow();
+              if (!event.sender.isDestroyed()) {
+                event.sender.send(
+                  "ryos-desktop:open-chat-room-from-notification",
+                  chatRoomId
+                );
+              }
+            }
+          : undefined
+      );
+
+      return { shown: true };
+    }
+  );
+
   ipcMain.handle("ryos-desktop:is-fullscreen", () => {
     return mainWindow?.isFullScreen() ?? false;
   });
@@ -342,6 +522,34 @@ function registerIpcHandlers(): void {
       return { canceled: false, filePath: result.filePath };
     }
   );
+
+  registerChatNotificationIpcHandlers({
+    ipcMain,
+    session: session.defaultSession,
+    getMainWindow: () => mainWindow,
+    isTrustedWebContents,
+    isAllowedAppUrl: isInAppNavigation,
+    isMainWindowForeground,
+    focusMainWindow,
+    showNotification: (options, onClick) => {
+      if (!canShowNativeNotifications()) {
+        return false;
+      }
+      return showRetainedNativeNotification(options, onClick);
+    },
+  });
+}
+
+function configureAppMetadata(): void {
+  app.setName(APP_DISPLAY_NAME);
+  app.setAboutPanelOptions({
+    applicationName: APP_DISPLAY_NAME,
+    applicationVersion: app.getVersion(),
+    copyright: APP_COPYRIGHT,
+    credits: "Ryo Lu",
+    authors: ["Ryo Lu"],
+    website: DEFAULT_APP_URL,
+  });
 }
 
 async function ensureWidevineCdmReady(): Promise<void> {
@@ -357,6 +565,8 @@ async function ensureWidevineCdmReady(): Promise<void> {
 }
 
 app.whenReady().then(async () => {
+  configureAppMetadata();
+
   await ensureWidevineCdmReady();
 
   registerIpcHandlers();

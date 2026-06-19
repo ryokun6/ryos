@@ -15,6 +15,7 @@ import {
   getSong,
   getSongContentKey,
   getSongMetaKey,
+  getSongsVersionInfo,
   listSongs,
   saveSong,
 } from "../api/_utils/_song-service";
@@ -85,6 +86,68 @@ describe("runtime Redis canonical cutover", () => {
     expect(await deleteSong(redis, "am:1441633005")).toBe(true);
     expect(await redis.get(getSongMetaKey("am:1441633005"))).toBeNull();
     expect(await redis.get(getSongContentKey("am:1441633005"))).toBeNull();
+  });
+
+  test("song catalog listing and version probe batch metadata reads", async () => {
+    class CountingRedis extends FakeRedis {
+      getCalls = 0;
+      mgetCalls = 0;
+      maxMgetKeys = 0;
+
+      override async get<T = unknown>(key: string): Promise<T | null> {
+        this.getCalls += 1;
+        return super.get<T>(key);
+      }
+
+      override async mget<T = unknown>(...keys: string[]): Promise<(T | null)[]> {
+        this.mgetCalls += 1;
+        this.maxMgetKeys = Math.max(this.maxMgetKeys, keys.length);
+        return super.mget<T>(...keys);
+      }
+
+      resetCounts() {
+        this.getCalls = 0;
+        this.mgetCalls = 0;
+        this.maxMgetKeys = 0;
+      }
+    }
+
+    const fake = new CountingRedis();
+    const redis = fake as unknown as Redis;
+
+    for (let index = 0; index < 125; index++) {
+      const id = `song-${index}`;
+      await redis.set(
+        getSongMetaKey(id),
+        JSON.stringify({
+          id,
+          title: `Song ${index}`,
+          coverColor: "#123456",
+          createdBy: index % 2 === 0 ? "ryo" : "alice",
+          createdAt: 1_718_180_000_000 + index,
+          updatedAt: 1_718_180_001_000 + index,
+        })
+      );
+      await redis.sadd(redisKeys.media.songIds(), id);
+    }
+
+    fake.resetCounts();
+    const listed = await listSongs(redis, { createdBy: "ryo" });
+    expect(listed).toHaveLength(63);
+    expect(listed[0].coverColor).toBe("#123456");
+    expect(fake.getCalls).toBe(0);
+    expect(fake.mgetCalls).toBe(2);
+    expect(fake.maxMgetKeys).toBeLessThanOrEqual(100);
+
+    fake.resetCounts();
+    const versionInfo = await getSongsVersionInfo(redis, { createdBy: "ryo" });
+    expect(versionInfo).toEqual({
+      count: 63,
+      version: 1_718_180_001_124,
+    });
+    expect(fake.getCalls).toBe(0);
+    expect(fake.mgetCalls).toBe(2);
+    expect(fake.maxMgetKeys).toBeLessThanOrEqual(100);
   });
 
   test("sync2 reads/writes canonical state only and ignores legacy-only users", async () => {

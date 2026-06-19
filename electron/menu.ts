@@ -34,7 +34,7 @@ export function buildApplicationMenu(): void {
     ...(isMac
       ? [
           {
-            label: app.name,
+            label: app.getName(),
             submenu: [
               { role: "about" },
               checkForUpdatesItem,

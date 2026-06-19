@@ -48,10 +48,10 @@ graph TD
 | `edit` | Edit existing files with precise text replacement |
 | `searchSongs` | Search YouTube for songs (with API-key rotation and retry) |
 | `settings` | Change language, theme, volume, speech, check-for-updates |
-| `stickiesControl` | List/create/update/delete/clear sticky notes |
+| `stickiesControl` | List/create/update/delete/clear sticky notes (client on web via `stickiesHandler.ts`; server on Telegram via `app-state-executors.ts`) |
 | `infiniteMacControl` | Control Infinite Mac emulator (launch system, screen read, mouse/keyboard actions, pause state) |
-| `calendarControl` | Create, update, delete, and list calendar events; create, toggle, delete, and list todos |
-| `contactsControl` | Search, create, update, and delete contacts (with Telegram field support) |
+| `calendarControl` | Create, update, delete, and list calendar events; create, toggle, delete, and list todos (client on web via `calendarHandler.ts`; server on Telegram) |
+| `contactsControl` | Search, create, update, and delete contacts with Telegram field support (client on web via `contactsHandler.ts`; server on Telegram) |
 | `documentsControl` | Telegram/server-side tool for cloud-synced markdown documents; web chat uses client VFS `read`/`write`/`edit` tools |
 | `memoryWrite` | Unified memory writer (`long_term` or `daily`) |
 | `memoryRead` | Unified memory reader (`long_term` by key or `daily` by date) |
@@ -99,7 +99,7 @@ sequenceDiagram
 
     U->>C: Send message
     C->>API: POST messages + systemState
-    API->>M: streamText (static+dynamic prompts)
+    API->>M: ToolLoopAgent.stream (static+dynamic prompts, tools)
     M-->>API: Tool call(s)
     API->>T: Execute server tools / emit client tools
     T->>S: Read or mutate state
@@ -109,6 +109,8 @@ sequenceDiagram
     API-->>C: UI message stream
     C-->>U: Display response
 ```
+
+Web chat and Telegram both assemble tools via `prepareRyoConversationModelInput()` in `api/_utils/ryo-conversation.ts`, then run them through `createRyoToolLoopAgent()` (`api/_utils/ryo-agent.ts`), which wraps the AI SDK `ToolLoopAgent` with a per-channel step limit (chat: 10 steps).
 
 ## Tool Handlers
 
@@ -125,7 +127,10 @@ Tool profiles control which tools are available per channel:
 - `telegram`: Server-side subset — `webFetch`, `mapsSearchPlaces`, memory, documents, calendar, stickies, contacts, and `songLibraryControl` via Redis/sync state; cursor tools are owner-only when configured
 - `memory`: Memory tools only
 
-Client execution handlers remain in `src/apps/chats/tools/`:
+Client execution is split across two layers:
+
+- `src/apps/chats/hooks/useAiChat.ts` — primary `onToolCall` switch for app/VFS tools (`launchApp`, `closeApp`, `list`, `open`, `read`, `write`, `edit`, `aquarium`, …)
+- `src/apps/chats/tools/` — registered handlers for media/settings/app-state tools:
 
 - `appHandlers.ts` - Launch/close app execution
 - `ipodHandler.ts` / `karaokeHandler.ts` - Media control execution

@@ -580,7 +580,7 @@ const { quotes, chart } = await response.json();</code></pre>
 }</code></pre>
 <p>Accepted ops are appended to the user's journal and broadcast on the <code>private-sync-{username}</code> channel as a <code>sync-ops</code> event with the ops inlined when small (receivers apply them with zero HTTP requests). Client HLC timestamps are clamped to <code>serverNow + 5min</code>.</p>
 <h3>GET /api/sync/v2/changes?since={seq}</h3>
-<p>Returns <code>{ ok, seq, ops: [...] }</code> with the ops after <code>since</code>, <code>{ ops: [] }</code> when up to date, or <code>{ seq, snapshotRequired: true }</code> when the journal no longer covers the cursor (bounded retention; fall back to the snapshot).</p>
+<p>Returns <code>{ ok, seq, ops: [...] }</code> with the ops after <code>since</code>, <code>{ ops: [] }</code> when up to date, or <code>{ seq, snapshotRequired: true }</code> when the journal no longer covers the cursor (bounded retention; fall back to the snapshot). The <code>ops</code> are coalesced per key — only the newest op for each key in the window is returned (under LWW the client only needs each key's latest value to converge), while <code>seq</code> still reflects the server cursor.</p>
 <h3>GET /api/sync/v2/snapshot</h3>
 <p>Returns <code>{ ok, seq, entries }</code> where <code>entries</code> maps every key to <code>{ v?, del?, t, seq }</code>. Used for new-device bootstrap, journal-gap recovery, and force download. Supports <code>?prefix=</code> for partial reads. On a user's first v2 access the server imports their legacy v1 sync state into the key-value model automatically.</p>
 <h3>POST /api/sync/v2/blobs</h3>

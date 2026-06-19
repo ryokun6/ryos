@@ -7,7 +7,7 @@ import {
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
 import { useFilesStore } from "@/stores/useFilesStore";
-import { toast } from "sonner";
+import { toast } from "@/hooks/useToast";
 import { useTranslation } from "react-i18next";
 
 const getImageMimeType = (fileName: string): string => {

@@ -111,22 +111,21 @@ function getUsernameFromKvKey(key: string): string | null {
 
 /** Normalize persisted scan cursors (plain string, JSON blob, or parsed object). */
 function parseMaintenanceCursor(raw: unknown): { cursor: string } {
+  let parsed: { cursor?: unknown } | null = null;
   if (raw && typeof raw === "object" && !Array.isArray(raw)) {
-    const parsed = raw as { cursor?: unknown };
+    parsed = raw as { cursor?: unknown };
+  } else if (typeof raw === "string" && raw.trim().startsWith("{")) {
+    parsed = parseRedisJson<{ cursor?: unknown }>(raw);
+  }
+
+  if (parsed) {
     const cursor =
       typeof parsed.cursor === "number" || typeof parsed.cursor === "string"
         ? String(parsed.cursor)
         : "0";
     return { cursor };
   }
-  if (typeof raw === "string" && raw.trim().startsWith("{")) {
-    const parsed = parseRedisJson<{ cursor?: unknown }>(raw);
-    const cursor =
-      typeof parsed?.cursor === "number" || typeof parsed?.cursor === "string"
-        ? String(parsed.cursor)
-        : "0";
-    return { cursor };
-  }
+
   if (typeof raw === "number" || typeof raw === "string") {
     return { cursor: String(raw) };
   }
@@ -144,9 +143,11 @@ async function scanUserBatch(
   maxUsers: number,
   scanCount: number
 ): Promise<{ usernames: string[]; scanComplete: boolean }> {
+  // `get` may return a string, number, or — when Upstash auto-deserializes the
+  // persisted JSON cursor — an object. parseMaintenanceCursor handles all three.
   const startCursor =
-    (await redis.get(redisKeys.sync.maintenanceCursor())) ??
-    (await redis.get(LEGACY_MAINTENANCE_CURSOR_KEY)) ??
+    (await redis.get<unknown>(redisKeys.sync.maintenanceCursor())) ??
+    (await redis.get<unknown>(LEGACY_MAINTENANCE_CURSOR_KEY)) ??
     "0";
   const startState = parseMaintenanceCursor(startCursor);
   let cursor: string | number = startState.cursor;

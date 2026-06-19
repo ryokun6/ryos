@@ -16,6 +16,7 @@ import { removeChatRoomById, upsertChatRoom } from "@/utils/chatRoomList";
 import { shouldNotifyForRoomMessage } from "@/utils/chatNotifications";
 import { showRoomMessageNotification } from "@/utils/chatNotificationDisplay";
 import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
+import { shouldShowNativeToastNotification } from "@/utils/nativeToastNotifications";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { shouldSubscribeToForegroundRoomUpdates } from "@/utils/chatRoomSubscriptions";
@@ -300,13 +301,26 @@ export function useChatRoom(
           });
 
           const { currentRoomId: activeRoomId } = useChatsStore.getState();
-          if (
-            !shouldNotifyForRoomMessage({
-              chatsOpen: true,
-              currentRoomId: activeRoomId,
-              messageRoomId: data.message.roomId,
-            })
-          ) {
+          const shouldNotifyInRyOs = shouldNotifyForRoomMessage({
+            chatsOpen: true,
+            currentRoomId: activeRoomId,
+            messageRoomId: data.message.roomId,
+          });
+          if (!shouldNotifyInRyOs) {
+            void shouldShowNativeToastNotification().then((shouldShowDesktop) => {
+              if (!shouldShowDesktop) {
+                return;
+              }
+              const decoded = decodeHtmlEntities(
+                String(data.message.content || "")
+              );
+              showRoomMessageNotification({
+                username: data.message.username,
+                content: decoded,
+                roomId: data.message.roomId,
+                messageId: data.message.id,
+              });
+            });
             return;
           }
 

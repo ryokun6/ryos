@@ -22,50 +22,46 @@ describe("Error Boundary Wiring Tests", () => {
       const source = readSource(
         "src/apps/base/app-manager/AppManagerView.tsx",
       );
-      expect(source.includes("<AppErrorBoundary")).toBe(true);
-      expect(/<AppErrorBoundary[\s\S]*<AppComponent/.test(source)).toBe(true);
+      expect(source).toContain("<AppErrorBoundary");
+      expect(source).toMatch(/<AppErrorBoundary[\s\S]*<AppComponent/);
     });
 
     test("relaunches crashed instances via close-and-launch flow", async () => {
       const source = readSource(
         "src/apps/base/app-manager/AppManagerView.tsx",
       );
-      expect(source.includes("closeAppInstance(instance.instanceId);")).toBe(true);
-      expect(
-        /launchApp\(\s*appId,\s*(?:instance\.initialData|relaunchInitialData),\s*instance\.title,\s*supportsMultiWindowApp\(appId\)/.test(
-          source,
-        )
-      ).toBe(true);
+      expect(source).toContain("closeAppInstance(instance.instanceId);");
+      expect(source).toMatch(
+        /launchApp\(\s*appId,\s*(?:instance\.initialData|relaunchInitialData),\s*instance\.title,\s*supportsMultiWindowApp\(appId\)/,
+      );
     });
   });
 
   describe("Desktop shell fallback", () => {
     test("wraps AppManager in DesktopErrorBoundary", async () => {
       const source = readSource("src/App.tsx");
-      expect(source.includes("<DesktopErrorBoundary>")).toBe(true);
-      expect(
-        /<DesktopErrorBoundary>\s*<AppManager apps=\{apps\} \/>\s*<\/DesktopErrorBoundary>/.test(
-          source,
-        )
-      ).toBe(true);
+      expect(source).toContain("<DesktopErrorBoundary>");
+      expect(source).toMatch(
+        /<DesktopErrorBoundary>\s*<AppManager apps=\{apps\} \/>\s*<\/DesktopErrorBoundary>/,
+      );
     });
   });
 
   describe("Boundary implementation + reporting", () => {
     test("implements catch/reporting flow in ErrorBoundaries", async () => {
       const source = readSource("src/components/errors/ErrorBoundaries.tsx");
-      expect(source.includes("componentDidCatch")).toBe(true);
-      expect(source.includes("reportRuntimeCrash")).toBe(true);
-      expect(source.includes("RYOS_ERROR_BOUNDARY_TEST_EVENT")).toBe(true);
+      expect(source).toContain("componentDidCatch");
+      expect(source).toContain("reportRuntimeCrash");
+      expect(source).toContain("RYOS_ERROR_BOUNDARY_TEST_EVENT");
     });
 
     test("supports optional external error reporter registration", async () => {
       const source = readSource("src/utils/errorReporting.ts");
-      expect(source.includes("setRuntimeErrorReporter")).toBe(true);
-      expect(source.includes("__RYOS_ERROR_REPORTER__")).toBe(true);
-      expect(source.includes("window.reportError")).toBe(true);
-      expect(source.includes("triggerRuntimeCrashTest")).toBe(true);
-      expect(source.includes("RYOS_ERROR_BOUNDARY_TEST_EVENT")).toBe(true);
+      expect(source).toContain("setRuntimeErrorReporter");
+      expect(source).toContain("__RYOS_ERROR_REPORTER__");
+      expect(source).toContain("window.reportError");
+      expect(source).toContain("triggerRuntimeCrashTest");
+      expect(source).toContain("RYOS_ERROR_BOUNDARY_TEST_EVENT");
     });
   });
 
@@ -77,20 +73,20 @@ describe("Error Boundary Wiring Tests", () => {
       const systemTabSource = readSource(
         "src/apps/control-panels/components/control-panels-app/SystemTabContent.tsx",
       );
-      expect(
-        systemTabSource.includes('t("apps.control-panels.errorBoundaries")'),
-      ).toBe(true);
-      expect(shellSource.includes("handleTriggerAppCrashTest")).toBe(true);
-      expect(shellSource.includes("handleTriggerDesktopCrashTest")).toBe(true);
+      expect(systemTabSource).toContain(
+        't("apps.control-panels.errorBoundaries")',
+      );
+      expect(shellSource).toContain("handleTriggerAppCrashTest");
+      expect(shellSource).toContain("handleTriggerDesktopCrashTest");
     });
 
     test("dispatches shared crash events from Control Panels logic", async () => {
       const source = readSource(
         "src/apps/control-panels/hooks/useControlPanelsLogic.ts",
       );
-      expect(source.includes("triggerRuntimeCrashTest")).toBe(true);
-      expect(/scope:\s*"app"[\s\S]*appId:\s*"control-panels"/.test(source)).toBe(true);
-      expect(/scope:\s*"desktop"/.test(source)).toBe(true);
+      expect(source).toContain("triggerRuntimeCrashTest");
+      expect(source).toMatch(/scope:\s*"app"[\s\S]*appId:\s*"control-panels"/);
+      expect(source).toMatch(/scope:\s*"desktop"/);
     });
   });
 });

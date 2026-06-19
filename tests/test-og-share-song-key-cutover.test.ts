@@ -1,15 +1,33 @@
-import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
+import {
+  afterAll,
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  mock,
+  test,
+} from "bun:test";
 import { redisKeys } from "../src/shared/redisKeys";
 import { FakeRedis } from "./fake-redis";
+import * as actualRedis from "../api/_utils/redis";
 
 let fake: FakeRedis;
 
 // og-share resolves song metadata through `createRedis()` from this module
 // (dynamically imported inside createSongRedisClient). Point it at a fake so we
-// exercise the real getSongFromRedis key-reading logic.
+// exercise the real getSongFromRedis key-reading logic. Spread the real module
+// so other exports (e.g. supportsRedisPubSub, used by realtime.ts) survive —
+// Bun module mocks are global and persist across files in the same run.
 mock.module("../api/_utils/redis.js", () => ({
+  ...actualRedis,
   createRedis: () => fake,
 }));
+
+// Restore the real module after this file so the createRedis override does not
+// leak into later test files.
+afterAll(() => {
+  mock.module("../api/_utils/redis.js", () => actualRedis);
+});
 
 let ogShare: typeof import("../api/_utils/og-share");
 

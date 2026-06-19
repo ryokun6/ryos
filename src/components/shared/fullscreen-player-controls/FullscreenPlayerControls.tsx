@@ -42,8 +42,6 @@ export function FullscreenPlayerControls({
   bgOpacity = "35",
   onInteraction,
   portalContainer,
-  karaokeKtvRoomFxEnabled,
-  onToggleKaraokeKtvRoomFx,
   hideLyricsControls = false,
 }: FullscreenPlayerControlsProps) {
   const { play: playClick } = useSound(Sounds.BUTTON_CLICK, 0.3);
@@ -114,8 +112,6 @@ export function FullscreenPlayerControls({
           isLangMenuOpen={isLangMenuOpen}
           setIsLangMenuOpen={setIsLangMenuOpen}
           portalContainer={portalContainer}
-          karaokeKtvRoomFxEnabled={karaokeKtvRoomFxEnabled}
-          onToggleKaraokeKtvRoomFx={onToggleKaraokeKtvRoomFx}
           onInteraction={onInteraction}
           styles={styles}
           handleClick={handleClick}

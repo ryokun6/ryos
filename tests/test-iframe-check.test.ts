@@ -22,7 +22,7 @@ describe("iframe-check", () => {
       );
       expect(res.status).toBe(200);
       const data = await res.json();
-      expect(typeof data.allowed).toBe("boolean");
+      expect(data.allowed).toBe(true);
     });
   });
 
@@ -33,16 +33,16 @@ describe("iframe-check", () => {
       );
       expect(res.status).toBe(200);
       const data = await res.json();
-      expect(typeof data.allowed).toBe("boolean");
+      expect(data.allowed).toBe(true);
     });
 
-    test("Check mode - blocked site", async () => {
+    test("Check mode - auto-proxied site", async () => {
       const res = await fetchWithOrigin(
         `${BASE_URL}/api/iframe-check?url=https://youtube.com&mode=check`
       );
       expect(res.status).toBe(200);
       const data = await res.json();
-      expect(typeof data.allowed).toBe("boolean");
+      expect(data.allowed).toBe(false);
     });
 
     test("Check mode - auto-proxy domain", async () => {
@@ -74,7 +74,8 @@ describe("iframe-check", () => {
       );
       expect(res.status).toBe(200);
       const title = res.headers.get("X-Proxied-Page-Title");
-      expect(title !== null || true).toBe(true);
+      expect(title).not.toBeNull();
+      expect(decodeURIComponent(title ?? "")).toContain("Example");
     });
 
     test("Proxy mode - theme parameter", async () => {
@@ -83,7 +84,9 @@ describe("iframe-check", () => {
       );
       expect(res.status).toBe(200);
       const html = await res.text();
-      expect(!html.includes("Geneva-12") || html.includes("Geneva-12")).toBe(true);
+      // The macosx theme suppresses the pixel-font override that other themes
+      // inject (shouldInjectFontOverrides = theme !== "macosx").
+      expect(html).not.toContain("Geneva-12");
     });
 
     test("Proxy mode - invalid URL", async () => {
@@ -99,9 +102,8 @@ describe("iframe-check", () => {
       );
       expect(res.status).toBe(200);
       const contentType = res.headers.get("content-type") || "";
-      expect(
-        contentType.includes("text/html") || contentType.includes("application/json")
-      ).toBe(true);
+      // Default mode is proxy, which streams the rewritten HTML document.
+      expect(contentType).toContain("text/html");
     });
   });
 

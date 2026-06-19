@@ -4,6 +4,8 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, test } from "bun:test";
 
+import * as analytics from "../src/utils/analytics";
+
 const readSource = (relativePath: string): string =>
   readFileSync(resolve(process.cwd(), relativePath), "utf-8");
 
@@ -31,12 +33,15 @@ describe("client analytics wiring", () => {
   });
 
   test("exports first-party analytics SDK functions", () => {
-    const source = readSource("src/utils/analytics.ts");
-    expect(source.includes("export function track")).toBe(true);
-    expect(source.includes("export function initializeAnalytics")).toBe(true);
-    expect(source.includes("export async function flushAnalytics")).toBe(true);
-    expect(source.includes("export function getTextAnalytics")).toBe(true);
-    expect(source.includes("export function normalizeUrlForAnalytics")).toBe(true);
+    for (const name of [
+      "track",
+      "initializeAnalytics",
+      "flushAnalytics",
+      "getTextAnalytics",
+      "normalizeUrlForAnalytics",
+    ] as const) {
+      expect(typeof analytics[name]).toBe("function");
+    }
   });
 
   test("does not send raw chat messages or terminal prompts", () => {

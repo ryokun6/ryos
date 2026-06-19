@@ -333,7 +333,7 @@
 <h2>Technologies</h2>
 <ul><li><strong>React 19</strong> with TypeScript for type-safe component development</li></ul><ul><li><strong>Tailwind CSS</strong> for utility-first styling and theme support</li><li><strong>shadcn/ui</strong> component library for accessible, customizable UI primitives</li><li><strong>Motion</strong> for animations and transitions</li></ul>
 <h2>Component Architecture</h2>
-<p>The UI system follows a layered approach: <ol><li><strong>Base Layer</strong>: shadcn/ui components (24 components: button, dialog, input, select, etc.) provide accessible, themeable primitives</li></ol><ol><li><strong>Custom Layer</strong>: Specialized components (8 components: activity-indicator, aqua-checkbox, audio-bars, dial, playback-bars, etc.) extend functionality for app-specific needs</li><li><strong>Layout Layer</strong>: WindowFrame, MenuBar, Desktop, and Dock components manage the desktop environment structure</li><li><strong>Application Layer</strong>: Dialog, shared, and error components provide common patterns used across multiple apps (including runtime crash recovery)</li></ol></p>
+<p>The UI system follows a layered approach: <ol><li><strong>Base Layer</strong>: ~20 shadcn/ui primitives in <code>src/components/ui/</code></li></ol><ol><li><strong>Custom Layer</strong>: ~12 specialized UI components in the same folder (activity indicators, aqua-checkbox, audio-bars, dial, playback-bars, search-input, right-click-menu, etc.)</li><li><strong>Layout Layer</strong>: WindowFrame, MenuBar, Desktop, and Dock components manage the desktop environment structure</li><li><strong>Application Layer</strong>: Dialog, shared, and error components provide common patterns used across multiple apps (including runtime crash recovery)</li></ol></p>
 <pre class="mermaid">graph TD
     subgraph Layer 4: Application
         D1[Dialog Components]
@@ -367,7 +367,7 @@
     C1 & C2 & C3 & C4 --> D1 & D2 & D3</pre>
 <p>All components are theme-aware, automatically adapting to the active system theme (IDs: <code>system7</code>/System 7, <code>macosx</code>/Aqua, <code>xp</code>/XP, <code>win98</code>/98) through the theme system.</p>
 <h2>Subsections</h2>
-<ul><li><a href="/docs/component-library">Component Library</a> - Core UI component library including 24 shadcn-style components, 8 custom primitives, 65+ shared components, and crash boundary components</li></ul><ul><li><a href="/docs/i18n">Internationalization</a> - i18n hooks and translation system supporting 10 languages</li></ul>
+<ul><li><a href="/docs/component-library">Component Library</a> - UI primitives in <code>src/components/ui/</code> (~32 files) plus ~90+ shared components under <code>src/components/shared/</code>, and crash boundary components</li></ul><ul><li><a href="/docs/i18n">Internationalization</a> - i18n hooks and translation system supporting 10 languages</li></ul>
       </article>
       
       <nav class="nav">

@@ -11,6 +11,8 @@
 import type { Redis } from "./redis.js";
 import { redisKeys } from "../../src/shared/redisKeys.js";
 
+const REDIS_MGET_BATCH_SIZE = 100;
+
 // =============================================================================
 // Types
 // =============================================================================
@@ -160,6 +162,44 @@ async function getSongMetaRaw(redis: Redis, id: string): Promise<unknown> {
 
 async function getSongContentRaw(redis: Redis, id: string): Promise<unknown> {
   return await redis.get(getSongContentKey(id));
+}
+
+async function mgetInBatches<T = unknown>(
+  redis: Redis,
+  keys: string[]
+): Promise<(T | null)[]> {
+  if (keys.length === 0) {
+    return [];
+  }
+
+  const mget = redis.mget.bind(redis) as <TValue = unknown>(
+    ...batchKeys: string[]
+  ) => Promise<(TValue | null)[]>;
+  const results: (T | null)[] = [];
+  for (let index = 0; index < keys.length; index += REDIS_MGET_BATCH_SIZE) {
+    const batch = keys.slice(index, index + REDIS_MGET_BATCH_SIZE);
+    results.push(...(await mget<T>(...batch)));
+  }
+  return results;
+}
+
+async function getSongMetaRows(
+  redis: Redis,
+  songIds: string[]
+): Promise<Array<{ id: string; meta: SongMetadata }>> {
+  const rawMetas = await mgetInBatches<unknown>(
+    redis,
+    songIds.map((songId) => getSongMetaKey(songId))
+  );
+
+  const rows: Array<{ id: string; meta: SongMetadata }> = [];
+  for (let index = 0; index < songIds.length; index++) {
+    const meta = parseJson<SongMetadata>(rawMetas[index]);
+    if (meta) {
+      rows.push({ id: songIds[index], meta });
+    }
+  }
+  return rows;
 }
 
 /**
@@ -420,13 +460,11 @@ export async function getSongsVersionInfo(
     return { version: 0, count: 0 };
   }
 
+  const metaRows = await getSongMetaRows(redis, songIds);
+
   let version = 0;
   let count = 0;
-  for (const songId of songIds) {
-    const rawMeta = await getSongMetaRaw(redis, songId);
-    if (!rawMeta) continue;
-    const meta = parseJson<SongMetadata>(rawMeta);
-    if (!meta) continue;
+  for (const { meta } of metaRows) {
     if (createdBy && meta.createdBy !== createdBy) continue;
     count++;
     const stamp = meta.updatedAt || meta.createdAt || 0;
@@ -462,24 +500,16 @@ export async function listSongs(
     return [];
   }
 
-  // Determine if we need content
   const needsContent = getOptions.includeLyrics || getOptions.includeTranslations || 
                        getOptions.includeFurigana || getOptions.includeSoramimi;
 
-  const songs: SongDocument[] = [];
-  for (const songId of songIds) {
-    const rawMeta = await getSongMetaRaw(redis, songId);
-    if (!rawMeta) continue;
-
-    const meta = parseJson<SongMetadata>(rawMeta);
-    if (!meta) continue;
-
-    // Filter by createdBy if specified
+  const metaRows = await getSongMetaRows(redis, songIds);
+  const songsWithIds: Array<{ id: string; song: SongDocument }> = [];
+  for (const { id, meta } of metaRows) {
     if (createdBy && meta.createdBy !== createdBy) {
       continue;
     }
 
-    // Build result with metadata
     const result: SongDocument = {
       id: meta.id,
       title: meta.title,
@@ -491,18 +521,28 @@ export async function listSongs(
       result.artist = meta.artist;
       result.album = meta.album;
       result.cover = meta.cover;
+      result.coverColor = meta.coverColor;
       result.lyricOffset = meta.lyricOffset;
       result.lyricsSource = meta.lyricsSource;
       result.createdBy = meta.createdBy;
       result.importOrder = meta.importOrder;
     }
 
-    // Add content if fetched
-    if (needsContent) {
-      const rawContent = await getSongContentRaw(redis, songId);
+    songsWithIds.push({ id, song: result });
+  }
+
+  if (needsContent) {
+    const rawContents = await mgetInBatches<unknown>(
+      redis,
+      songsWithIds.map(({ id }) => getSongContentKey(id))
+    );
+
+    for (let index = 0; index < songsWithIds.length; index++) {
+      const rawContent = rawContents[index];
       if (rawContent) {
         const content = parseJson<SongContent>(rawContent);
         if (content) {
+          const result = songsWithIds[index].song;
           if (getOptions.includeLyrics && content.lyrics) {
             result.lyrics = content.lyrics;
           }
@@ -535,9 +575,9 @@ export async function listSongs(
         }
       }
     }
-
-    songs.push(result);
   }
+
+  const songs = songsWithIds.map(({ song }) => song);
 
   // Sort by createdAt (newest first), then importOrder, then updatedAt (recent activity first)
   songs.sort((a, b) => {

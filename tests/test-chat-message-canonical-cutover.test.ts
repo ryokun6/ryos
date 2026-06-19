@@ -1,10 +1,22 @@
-import { beforeAll, beforeEach, describe, expect, mock, test } from "bun:test";
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  mock,
+  test,
+} from "bun:test";
 import { redisKeys } from "../src/shared/redisKeys";
 import { FakeRedis } from "./fake-redis";
+import * as actualRedisHelpers from "../api/_utils/redis-helpers";
 
 let fake: FakeRedis;
 
+// Spread the real module so its other exports survive — Bun module mocks are
+// global and persist across files in the same run.
 mock.module("../api/_utils/redis-helpers.js", () => ({
+  ...actualRedisHelpers,
   createRedisClient: () => fake,
   generateRandomHexId: (byteLength: number) => "a".repeat(byteLength * 2),
   getCurrentTimestamp: () => 1_718_180_000_000,
@@ -21,6 +33,10 @@ mock.module("../api/_utils/redis-helpers.js", () => ({
     return null;
   },
 }));
+
+afterAll(() => {
+  mock.module("../api/_utils/redis-helpers.js", () => actualRedisHelpers);
+});
 
 let chatRedis: typeof import("../api/rooms/_helpers/_redis");
 

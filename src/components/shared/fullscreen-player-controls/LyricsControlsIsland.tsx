@@ -5,7 +5,6 @@ import type { LyricsAlignment, RomanizationSettings } from "@/types/lyrics";
 import { getLyricsFontClassName, LyricsFont } from "@/types/lyrics";
 import {
   ClockClockwise,
-  HandsClapping,
   Translate,
 } from "@phosphor-icons/react";
 import {
@@ -42,8 +41,6 @@ interface LyricsControlsIslandProps {
   isLangMenuOpen: boolean;
   setIsLangMenuOpen: (open: boolean) => void;
   portalContainer?: HTMLElement | null;
-  karaokeKtvRoomFxEnabled?: boolean;
-  onToggleKaraokeKtvRoomFx?: () => void;
   onInteraction?: () => void;
   styles: FullscreenControlStyles;
   handleClick: FullscreenControlClickHandler;
@@ -65,8 +62,6 @@ export function LyricsControlsIsland({
   isLangMenuOpen,
   setIsLangMenuOpen,
   portalContainer,
-  karaokeKtvRoomFxEnabled,
-  onToggleKaraokeKtvRoomFx,
   onInteraction,
   styles,
   handleClick,
@@ -104,28 +99,6 @@ export function LyricsControlsIsland({
         >
           <ClockClockwise
             weight="fill"
-            className={cn(
-              variant === "compact" ? "w-3.5 h-3.5" : "w-4 h-4",
-              svgClasses()
-            )}
-          />
-        </button>
-      )}
-
-      {karaokeKtvRoomFxEnabled !== undefined && onToggleKaraokeKtvRoomFx && (
-        <button
-          type="button"
-          onClick={handleClick(onToggleKaraokeKtvRoomFx)}
-          aria-pressed={karaokeKtvRoomFxEnabled}
-          aria-label={t("apps.karaoke.ktvRoomFx")}
-          className={cn(
-            buttonClasses,
-            !karaokeKtvRoomFxEnabled && "opacity-[0.42]"
-          )}
-          title={t("apps.karaoke.ktvRoomFxHint")}
-        >
-          <HandsClapping
-            weight={karaokeKtvRoomFxEnabled ? "fill" : "regular"}
             className={cn(
               variant === "compact" ? "w-3.5 h-3.5" : "w-4 h-4",
               svgClasses()

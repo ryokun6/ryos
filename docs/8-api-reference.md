@@ -103,7 +103,7 @@ graph LR
 | `/api/listen/sessions/[id]/remote-command` | Submit remote playback command |
 | `/api/listen/sessions/[id]/reaction` | Send emoji reaction |
 | `/api/irc/servers` | List/create IRC server configs |
-| `/api/irc/servers/[id]` | Read/update/delete IRC server config |
+| `/api/irc/servers/[id]` | DELETE — remove IRC server config (admin only) |
 | `/api/irc/servers/[id]/channels` | Browse IRC channels |
 | `/api/pusher/auth` | Authorize private/presence Pusher channels |
 | `/api/realtime/ticket` | Mint local WebSocket realtime tickets |
@@ -177,12 +177,40 @@ graph TD
 
 ## Authentication
 
+Browser sessions use an httpOnly `ryos_auth` cookie set by `register`, `login`, `token/verify`, `token/refresh`, and `session`. Programmatic clients may still use Bearer + `X-Username` headers:
+
 ```
 Authorization: Bearer {token}
 X-Username: {username}
 ```
 
 Token-based sessions use a 1-year TTL, refreshed on each validated request. Auth-required endpoints use the shared `request-auth` validation boundary for consistent `400/401` semantics.
+
+## Standalone Bun Server Routes
+
+When running via `scripts/api-standalone-server.ts`:
+
+| Route | Purpose |
+|-------|---------|
+| `GET /health` | Process health + route count |
+| `GET /api/health` | API health |
+| `GET /app-config.js` | Client runtime config bootstrap (`window.__RYOS_RUNTIME_CONFIG__`) |
+| WebSocket `REALTIME_WS_PATH` | Local realtime (ticket from `/api/realtime/ticket`) |
+
+## Environment Variables
+
+| Variable | Endpoints / purpose |
+|----------|---------------------|
+| `REDIS_KV_REST_API_URL` / `REDIS_KV_REST_API_TOKEN` | Core (Upstash REST) |
+| `REDIS_URL` | Core (standard Redis); required for multi-instance local realtime |
+| `PUSHER_APP_ID`, `PUSHER_KEY`, `PUSHER_SECRET`, `PUSHER_CLUSTER` | Pusher realtime + `/api/pusher/auth` |
+| `REALTIME_PROVIDER`, `REALTIME_WS_PATH` | `local` → `/api/realtime/ticket` + WebSocket |
+| `MAPKIT_*` | `/api/mapkit-token`, Maps AI tools |
+| `MUSICKIT_*` (or `MAPKIT_*` fallback) | `/api/musickit-token` |
+| `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, `TELEGRAM_BOT_USERNAME` | `/api/webhooks/telegram`, `/api/telegram/link/*` |
+| `CRON_SECRET` | `/api/cron/sync-maintenance`, `/api/cron/telegram-heartbeat` |
+| `CURSOR_API_KEY` | `/api/ai/cursor-run-followup`, admin Cursor actions |
+| `TRUSTED_PROXY_COUNT`, `AUTH_COOKIE_SECURE` | Standalone reverse-proxy hardening (see [Self-hosting](/docs/self-hosting-vps)) |
 
 ## AI Providers
 

@@ -15,7 +15,8 @@
 
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test, beforeAll, afterAll } from "bun:test";
+import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import type { AIChatMessage, ChatMessage } from "../src/types/chat";
 import { buildDisplayMessages } from "../src/apps/chats/utils/messages";
 import { getStreamPreviewThrottleMs } from "../src/components/shared/html-preview/hooks/useStreamPreview";
@@ -162,11 +163,24 @@ describe("decodeHtmlEntities streaming fast path", () => {
     expect(decodeHtmlEntities("&lt;hello&gt;")).toBe("<hello>");
   });
 
-  test("does not take the fast path when tags are present", () => {
-    // The full parse path also strips tags; the fast path must not change
-    // that behavior, so tagged input must not be returned verbatim.
-    const source = readSource("src/utils/decodeHtmlEntities.ts");
-    expect(source).toMatch(/!text\.includes\("&"\) && !text\.includes\("<"\)/);
+  describe("with a DOM available (DOMParser path)", () => {
+    beforeAll(() => {
+      if (typeof window === "undefined") {
+        GlobalRegistrator.register();
+      }
+    });
+    afterAll(() => {
+      if (GlobalRegistrator.isRegistered) {
+        GlobalRegistrator.unregister();
+      }
+    });
+
+    test("does not take the fast path when tags are present", () => {
+      // The full parse path strips tags; the fast path (reference return) must
+      // only trigger for plain text. Tagged input must not be returned verbatim.
+      expect(decodeHtmlEntities("<b>bold</b> text")).toBe("bold text");
+      expect(decodeHtmlEntities("a <span>b</span> &amp; c")).toBe("a b & c");
+    });
   });
 });
 
