@@ -38,7 +38,6 @@ interface CachedGeoEntry {
   cachedAt: number;
 }
 
-const REDIS_KEY_PREFIX = "geoip:v1:";
 const CACHE_TTL_SECONDS_HIT = 24 * 60 * 60; // 24h for successful lookups
 const CACHE_TTL_SECONDS_MISS = 60 * 60; // 1h for unresolved / errored lookups
 const FETCH_TIMEOUT_MS = 4_000; // Keep short so chat latency isn't impacted
@@ -130,11 +129,9 @@ async function readCache(
 ): Promise<CachedGeoEntry | null> {
   if (!redis) return null;
   try {
-    const raw =
-      (await redis.get<string | CachedGeoEntry>(
-        redisKeys.cache.geoip(await sha256RedisIdentifier(ip))
-      )) ??
-      (await redis.get<string | CachedGeoEntry>(`${REDIS_KEY_PREFIX}${ip}`));
+    const raw = await redis.get<string | CachedGeoEntry>(
+      redisKeys.cache.geoip(await sha256RedisIdentifier(ip))
+    );
     if (!raw) return null;
     if (typeof raw === "string") return JSON.parse(raw) as CachedGeoEntry;
     return raw as CachedGeoEntry;

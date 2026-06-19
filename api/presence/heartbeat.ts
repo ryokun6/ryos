@@ -15,7 +15,6 @@ import { redisKeys } from "../../src/shared/redisKeys.js";
 export const runtime = "nodejs";
 export const maxDuration = 10;
 
-const GLOBAL_PRESENCE_KEY = "ryos:presence:online";
 const GLOBAL_PRESENCE_TTL_SECONDS = 90;
 
 export default apiHandler(
@@ -44,16 +43,12 @@ export default apiHandler(
     const cutoff = Date.now() - GLOBAL_PRESENCE_TTL_SECONDS * 1000;
     const canonicalPresenceKey = redisKeys.presence.globalOnline();
     await redis.zremrangebyscore(canonicalPresenceKey, 0, cutoff);
-    await redis.zremrangebyscore(GLOBAL_PRESENCE_KEY, 0, cutoff);
     const onlineUsers: string[] = [
-      ...new Set([
-        ...(await redis.zrange(canonicalPresenceKey, 0, -1)),
-        ...(await redis.zrange(GLOBAL_PRESENCE_KEY, 0, -1)),
-      ]),
+      ...new Set(await redis.zrange(canonicalPresenceKey, 0, -1)),
     ];
 
     res.status(200).json({ users: onlineUsers });
   }
 );
 
-export { GLOBAL_PRESENCE_KEY, GLOBAL_PRESENCE_TTL_SECONDS, GLOBAL_PRESENCE_CHANNEL };
+export { GLOBAL_PRESENCE_TTL_SECONDS, GLOBAL_PRESENCE_CHANNEL };
