@@ -22,10 +22,6 @@ export async function getCanonicalSessionKey(token: string): Promise<string> {
   return redisKeys.auth.session(await sha256RedisIdentifier(token));
 }
 
-export async function getCanonicalUserSessionsKey(username: string): Promise<string> {
-  return redisKeys.auth.userSessions(username);
-}
-
 /**
  * Build the Redis key for grace-period token storage
  */

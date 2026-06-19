@@ -100,21 +100,3 @@ export async function validateAuth(
   return { valid: false };
 }
 
-/**
- * Quick check if token exists (no TTL refresh)
- */
-export async function tokenExists(
-  redis: Redis,
-  username: string,
-  token: string
-): Promise<boolean> {
-  const tokenHash = await sha256RedisIdentifier(token);
-  if (await redis.exists(redisKeys.auth.session(tokenHash))) {
-    const sessionHashes = await redis.smembers<string[]>(
-      redisKeys.auth.userSessions(username.toLowerCase())
-    );
-    if (sessionHashes.includes(tokenHash)) return true;
-  }
-  return false;
-}
-
