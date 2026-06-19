@@ -2,8 +2,8 @@
  * Unified Song Service
  *
  * Provides a single source of truth for song data including:
- * - Metadata (title, artist, album, etc.) - stored in song:meta:{id}
- * - Content (lyrics, translations, furigana, soramimi) - stored in song:content:{id}
+ * - Metadata (title, artist, album, etc.) - stored in media:song:meta:{id}
+ * - Content (lyrics, translations, furigana, soramimi) - stored in media:song:content:{id}
  *
  * Split storage avoids exceeding Upstash's 10MB request limit when listing songs.
  */
@@ -71,7 +71,7 @@ export interface FuriganaSegment {
 }
 
 /**
- * Song metadata stored in song:meta:{id}
+ * Song metadata stored in media:song:meta:{id}
  * Lightweight data for listing (~300 bytes per song)
  */
 export interface SongMetadata {
@@ -90,7 +90,7 @@ export interface SongMetadata {
 }
 
 /**
- * Song content stored in song:content:{id}
+ * Song content stored in media:song:content:{id}
  * Heavy data (~5-50KB per song)
  */
 export interface SongContent {

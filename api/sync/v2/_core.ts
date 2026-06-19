@@ -2,17 +2,17 @@
  * Cloud Sync v2 server core.
  *
  * Per-user state in Redis:
- * - `sync2:seq:{user}`   STRING  monotonically increasing op counter
- * - `sync2:kv:{user}`    HASH    key → JSON SyncKvEntry (latest doc per key)
- * - `sync2:jrnl:{user}`  ZSET    score = seq, member = JSON op (ascending), bounded
- * - `sync2:blobs:{user}` HASH    sha256 → JSON { url, size } dedupe registry
- * - `sync2:lock:{user}`  STRING  short-TTL write lock
+ * - `sync:v2:user:{user}:seq`    STRING  monotonically increasing op counter
+ * - `sync:v2:user:{user}:kv`     HASH    key → JSON SyncKvEntry (latest doc per key)
+ * - `sync:v2:user:{user}:jrnl`   ZSET    score = seq, member = JSON op (ascending), bounded
+ * - `sync:v2:user:{user}:blobs`  HASH    sha256 → JSON { url, size } dedupe registry
+ * - `sync:v2:user:{user}:lock`   STRING  short-TTL write lock
  *
  * The journal is a sorted set keyed by `seq` so catch-up reads an exact
  * range by rank and trimming drops the lowest scores — no list-tail
- * heuristics. (Pre-v2.1 deployments kept it as a `sync2:log:{user}` LIST;
- * that key is abandoned and expires via its TTL. Clients mid-catch-up fall
- * back to a snapshot once, then resume on the sorted-set journal.)
+ * heuristics. (Pre-v2.1 deployments kept it as a LIST; that key is abandoned
+ * and expires via its TTL. Clients mid-catch-up fall back to a snapshot once,
+ * then resume on the sorted-set journal.)
  *
  * Writes are ops resolved per key with last-writer-wins on the HLC
  * timestamp. There are no conflicts surfaced to clients: losing ops return
