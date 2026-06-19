@@ -23,7 +23,7 @@ describe("audio-transcribe", () => {
       const res = await fetchWithOrigin(`${BASE_URL}/api/audio-transcribe`, {
         method: "OPTIONS",
       });
-      expect(res.status === 200 || res.status === 204).toBe(true);
+      expect([200, 204]).toContain(res.status);
     });
   });
 
@@ -86,17 +86,14 @@ describe("audio-transcribe", () => {
         body: formData,
       });
 
+      // 400/500 are acceptable: OpenAI may reject the minimal synthetic WAV.
+      expect([200, 400, 429, 500]).toContain(res.status);
       if (res.status === 200) {
         const data = await res.json();
         expect("text" in data).toBe(true);
       } else if (res.status === 429) {
         const data = await res.json();
         expect(data.error).toBe("rate_limit_exceeded");
-      } else if (res.status === 400 || res.status === 500) {
-        // OpenAI may reject the minimal WAV - that's acceptable
-        expect(true).toBe(true);
-      } else {
-        throw new Error(`Unexpected status: ${res.status}`);
       }
     });
   });
@@ -107,7 +104,7 @@ describe("audio-transcribe", () => {
         method: "OPTIONS",
       });
       const allowOrigin = res.headers.get("Access-Control-Allow-Origin");
-      expect(allowOrigin !== null || res.status >= 400).toBe(true);
+      expect(allowOrigin).toBe("http://localhost:3000");
     });
 
     test("Rate limit headers", async () => {
@@ -120,13 +117,13 @@ describe("audio-transcribe", () => {
         body: formData,
       });
 
+      expect([200, 400, 429, 500]).toContain(res.status);
       if (res.status === 429) {
         const retryAfter = res.headers.get("Retry-After");
-        expect(retryAfter !== null).toBe(true);
+        expect(retryAfter).not.toBeNull();
         const data = await res.json();
-        expect(data.scope === "burst" || data.scope === "daily").toBe(true);
+        expect(["burst", "daily"]).toContain(data.scope);
       }
-      expect(true).toBe(true);
     });
   });
 });
@@ -148,7 +145,7 @@ describe("youtube-search", () => {
       const res = await fetchWithOrigin(`${BASE_URL}/api/youtube-search`, {
         method: "OPTIONS",
       });
-      expect(res.status === 200 || res.status === 204).toBe(true);
+      expect([200, 204]).toContain(res.status);
     });
   });
 
@@ -207,6 +204,8 @@ describe("youtube-search", () => {
         body: JSON.stringify({ query: "lofi music" }),
       });
 
+      // 403/500 are acceptable: YouTube quota exceeded or API key not configured.
+      expect([200, 403, 429, 500]).toContain(res.status);
       if (res.status === 200) {
         const data = await res.json();
         expect(Array.isArray(data.results)).toBe(true);
@@ -220,14 +219,6 @@ describe("youtube-search", () => {
       } else if (res.status === 429) {
         const data = await res.json();
         expect(data.error).toBe("rate_limit_exceeded");
-      } else if (res.status === 403) {
-        // YouTube API quota exceeded or not configured
-        expect(true).toBe(true);
-      } else if (res.status === 500) {
-        // API not configured
-        expect(true).toBe(true);
-      } else {
-        throw new Error(`Unexpected status: ${res.status}`);
       }
     });
 
@@ -238,14 +229,11 @@ describe("youtube-search", () => {
         body: JSON.stringify({ query: "jazz music", maxResults: 5 }),
       });
 
+      expect([200, 403, 429, 500]).toContain(res.status);
       if (res.status === 200) {
         const data = await res.json();
         expect(Array.isArray(data.results)).toBe(true);
         expect(data.results.length).toBeLessThanOrEqual(5);
-      } else if (res.status === 429 || res.status === 403 || res.status === 500) {
-        expect(true).toBe(true);
-      } else {
-        throw new Error(`Unexpected status: ${res.status}`);
       }
     });
   });
@@ -256,7 +244,7 @@ describe("youtube-search", () => {
         method: "OPTIONS",
       });
       const allowOrigin = res.headers.get("Access-Control-Allow-Origin");
-      expect(allowOrigin !== null || res.status >= 400).toBe(true);
+      expect(allowOrigin).toBe("http://localhost:3000");
     });
 
     test("Rate limit headers", async () => {
@@ -266,13 +254,13 @@ describe("youtube-search", () => {
         body: JSON.stringify({ query: "rate limit test" }),
       });
 
+      expect([200, 403, 429, 500]).toContain(res.status);
       if (res.status === 429) {
         const retryAfter = res.headers.get("Retry-After");
-        expect(retryAfter !== null).toBe(true);
+        expect(retryAfter).not.toBeNull();
         const data = await res.json();
-        expect(data.scope === "burst" || data.scope === "daily").toBe(true);
+        expect(["burst", "daily"]).toContain(data.scope);
       }
-      expect(true).toBe(true);
     });
   });
 });

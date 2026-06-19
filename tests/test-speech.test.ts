@@ -20,7 +20,7 @@ describe("speech", () => {
       const res = await fetchWithOrigin(`${BASE_URL}/api/speech`, {
         method: "OPTIONS",
       });
-      expect(res.status === 200 || res.status === 204).toBe(true);
+      expect([200, 204]).toContain(res.status);
     });
   });
 
@@ -31,7 +31,7 @@ describe("speech", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
       });
-      expect(res.status === 400 || res.status === 429).toBe(true);
+      expect([400, 429]).toContain(res.status);
     });
 
     test("Empty text", async () => {
@@ -40,7 +40,7 @@ describe("speech", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: "" }),
       });
-      expect(res.status === 400 || res.status === 429).toBe(true);
+      expect([400, 429]).toContain(res.status);
     });
 
     test("Whitespace only text", async () => {
@@ -49,7 +49,7 @@ describe("speech", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: "   " }),
       });
-      expect(res.status === 400 || res.status === 429).toBe(true);
+      expect([400, 429]).toContain(res.status);
     });
 
     test("Invalid JSON", async () => {
@@ -94,13 +94,10 @@ describe("speech", () => {
           voice: "alloy",
         }),
       });
+      expect([200, 429]).toContain(res.status);
       if (res.status === 200) {
         const contentType = res.headers.get("content-type") || "";
         expect(contentType).toContain("audio");
-      } else if (res.status === 429) {
-        expect(true).toBe(true);
-      } else {
-        throw new Error(`Unexpected status: ${res.status}`);
       }
     });
 
@@ -113,18 +110,14 @@ describe("speech", () => {
           model: "elevenlabs",
         }),
       });
+      expect([200, 429, 503]).toContain(res.status);
       if (res.status === 200) {
         const contentType = res.headers.get("content-type") || "";
         expect(contentType).toContain("audio");
-      } else if (res.status === 429) {
-        expect(true).toBe(true);
       } else if (res.status === 503) {
         const data = await res.json();
-        expect(
-          typeof data.error === "string" && data.error.includes("ElevenLabs")
-        ).toBe(true);
-      } else {
-        throw new Error(`Unexpected status: ${res.status}`);
+        expect(typeof data.error).toBe("string");
+        expect(data.error).toContain("ElevenLabs");
       }
     });
 
@@ -142,13 +135,10 @@ describe("speech", () => {
           speed: 1.2,
         }),
       });
+      expect([200, 429]).toContain(res.status);
       if (res.status === 200) {
         const contentType = res.headers.get("content-type") || "";
         expect(contentType).toContain("audio");
-      } else if (res.status === 429) {
-        expect(true).toBe(true);
-      } else {
-        throw new Error(`Unexpected status: ${res.status}`);
       }
     });
 
@@ -160,9 +150,7 @@ describe("speech", () => {
           text: "Testing default model.",
         }),
       });
-      expect(
-        res.status === 200 || res.status === 429 || res.status === 503
-      ).toBe(true);
+      expect([200, 429, 503]).toContain(res.status);
     });
   });
 
@@ -175,13 +163,13 @@ describe("speech", () => {
           text: "Rate limit test.",
         }),
       });
+      expect([200, 429, 503]).toContain(res.status);
       if (res.status === 429) {
         const retryAfter = res.headers.get("Retry-After");
-        expect(retryAfter !== null).toBe(true);
+        expect(retryAfter).not.toBeNull();
         const limitHeader = res.headers.get("X-RateLimit-Limit");
-        expect(limitHeader !== null).toBe(true);
+        expect(limitHeader).not.toBeNull();
       }
-      expect(true).toBe(true);
     });
 
     test("CORS headers", async () => {
@@ -193,9 +181,7 @@ describe("speech", () => {
         }),
       });
       const allowOrigin = res.headers.get("Access-Control-Allow-Origin");
-      expect(
-        allowOrigin !== null || res.status >= 400
-      ).toBe(true);
+      expect(allowOrigin).toBe("http://localhost:3000");
     });
   });
 });
