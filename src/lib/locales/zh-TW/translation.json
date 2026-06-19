@@ -3984,7 +3984,6 @@
         "tooShort": "密碼長度必須至少為 8 個字元"
       },
       "recoveryEmailOptional": "備援電子郵件 (選填)",
-      "recoveryEmailSignupHint": "新增電子郵件，以便日後找回您的帳戶。您可以在註冊後進行驗證。",
       "setPasswordRequired": "需要設定密碼",
       "setPasswordRequiredDescription": "您需要在登出前設定密碼，以確保您可以復原您的帳戶。您現在要設定密碼嗎？",
       "signupDescription": "建立帳戶以存取聊天室並儲存您的設定",

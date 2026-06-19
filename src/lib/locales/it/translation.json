@@ -3984,7 +3984,6 @@
         "tooShort": "La password deve contenere almeno 8 caratteri"
       },
       "recoveryEmailOptional": "Email di recupero (facoltativa)",
-      "recoveryEmailSignupHint": "Aggiungi un'email per poter recuperare il tuo account in seguito. Potrai verificarla dopo la registrazione.",
       "setPasswordRequired": "Imposta password richiesta",
       "setPasswordRequiredDescription": "Devi impostare una password prima di disconnetterti per assicurarti di poter recuperare il tuo account. Vuoi impostare una password ora?",
       "signupDescription": "Crea un account per accedere alle chat room e salvare le tue impostazioni",

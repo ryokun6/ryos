@@ -3984,7 +3984,6 @@
         "tooShort": "Le mot de passe doit contenir au moins 8 caractères"
       },
       "recoveryEmailOptional": "E-mail de récupération (facultatif)",
-      "recoveryEmailSignupHint": "Ajoutez une adresse e-mail pour pouvoir récupérer votre compte plus tard. Vous pourrez la vérifier après votre inscription.",
       "setPasswordRequired": "Définir un mot de passe requis",
       "setPasswordRequiredDescription": "Vous devez définir un mot de passe avant de vous déconnecter pour pouvoir récupérer votre compte. Souhaitez-vous définir un mot de passe maintenant ?",
       "signupDescription": "Créez un compte pour accéder aux salons de discussion et enregistrer vos paramètres",

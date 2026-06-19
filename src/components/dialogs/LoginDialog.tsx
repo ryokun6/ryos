@@ -214,12 +214,6 @@ export function LoginDialog({
           disabled={isSignUpLoading}
           autoComplete="email"
         />
-        <p
-          className={cn("text-neutral-500", themeFont)}
-          style={themeFontStyle}
-        >
-          {t("common.auth.recoveryEmailSignupHint")}
-        </p>
       </div>
     </div>
   );

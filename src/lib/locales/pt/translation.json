@@ -3984,7 +3984,6 @@
         "tooShort": "A senha deve ter pelo menos 8 caracteres"
       },
       "recoveryEmailOptional": "E-mail de recuperação (opcional)",
-      "recoveryEmailSignupHint": "Adicione um e-mail para poder recuperar sua conta mais tarde. Você poderá verificá-lo após se cadastrar.",
       "setPasswordRequired": "Definição de Palavra-passe Necessária",
       "setPasswordRequiredDescription": "É necessário definir uma palavra-passe antes de terminar sessão para garantir que pode recuperar a sua conta. Gostaria de definir uma palavra-passe agora?",
       "signupDescription": "Crie uma conta para aceder às salas de chat e guardar as suas definições",
