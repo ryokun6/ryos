@@ -66,13 +66,6 @@ export function buildTelegramHeartbeatRedisKey(
   );
 }
 
-export function buildLegacyTelegramHeartbeatRedisKey(
-  username: string,
-  date: Date = new Date()
-): string {
-  return `telegram:heartbeat:${username.toLowerCase()}:${getTelegramHeartbeatSlot(date)}`;
-}
-
 export interface TelegramHeartbeatNoteContext {
   entries: DailyNoteEntry[];
   latestActionableTimestamp: number | null;
