@@ -5,11 +5,7 @@ import type { Track } from "@/stores/useIpodStore";
 import { LyricsDisplay } from "@/apps/ipod/components/lyrics-display/LyricsDisplay";
 import { shouldShowKaraokeTitleCard } from "@/apps/karaoke/utils/titleCard";
 import { useSaveSongCoverColor } from "@/hooks/useSaveSongCoverColor";
-import type {
-  JapaneseFurigana,
-  KoreanDisplay,
-  LyricsAlignment,
-} from "@/types/lyrics";
+import type { LyricsAlignment } from "@/types/lyrics";
 import { useKaraokeLyricsPlayback } from "./context";
 import { KaraokeTitleCard } from "./KaraokeTitleCard";
 
@@ -35,8 +31,6 @@ interface WindowLyricsProps {
   onOpenCoverFlow?: () => void;
   t: TFunction;
   currentTrack: Track | null;
-  koreanDisplay: KoreanDisplay;
-  japaneseFurigana: JapaneseFurigana;
   lyricsAlignment: LyricsAlignment;
 }
 
@@ -58,8 +52,6 @@ export function KaraokeWindowLyricsOverlay({
   onOpenCoverFlow,
   t,
   currentTrack,
-  koreanDisplay,
-  japaneseFurigana,
   lyricsAlignment,
 }: WindowLyricsProps) {
   const {
@@ -135,8 +127,6 @@ export function KaraokeWindowLyricsOverlay({
             visible={true}
             videoVisible={true}
             alignment={lyricsAlignment}
-            koreanDisplay={koreanDisplay}
-            japaneseFurigana={japaneseFurigana}
             fontClassName={lyricsFontClassName}
             onAdjustOffset={onAdjustOffset}
             onSwipeUp={() => {

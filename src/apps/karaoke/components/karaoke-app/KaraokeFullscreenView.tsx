@@ -32,8 +32,8 @@ export function KaraokeFullscreenView({ c, isForeground }: KaraokeFullscreenView
     adjustLyricOffset, fullScreenPlayerRef, playerRef, closeSyncMode, handleRefreshLyrics,
     t, seekTime, loopCurrent, handleTrackEnd, handleProgress, handlePlay, handlePause,
     handleReady, effectiveDisplayMode, visualBackgroundActive, coverUrl,
-    showEmptyLibrary, handleAddSong, listenSession, showLyrics, isOffline, seekToTime,
-    koreanDisplay, japaneseFurigana, handleFullscreenLyricsSwipeUp, handleFullscreenLyricsSwipeDown,
+    showEmptyLibrary, handleAddSong, listenSession,     showLyrics, isOffline, seekToTime,
+    handleFullscreenLyricsSwipeUp, handleFullscreenLyricsSwipeDown,
     lyricsSourceOverride, isAddingSong, setIsLyricsSearchDialogOpen, auth, lyricsPlaybackSyncRef,
   } = c;
 
@@ -216,8 +216,6 @@ export function KaraokeFullscreenView({ c, isForeground }: KaraokeFullscreenView
               seekToTime={seekToTime}
               t={t}
               controlsVisible={controlsVisible}
-              koreanDisplay={koreanDisplay}
-              japaneseFurigana={japaneseFurigana}
               lyricsAlignment={lyricsAlignment}
               onSwipeUp={handleFullscreenLyricsSwipeUp}
               onSwipeDown={handleFullscreenLyricsSwipeDown}

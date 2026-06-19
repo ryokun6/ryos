@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
-import type { LyricLine, LyricWord, LyricsAlignment, KoreanDisplay, JapaneseFurigana, RomanizationSettings } from "@/types/lyrics";
+import type { LyricLine, LyricWord, LyricsAlignment, RomanizationSettings } from "@/types/lyrics";
 import type { FuriganaSegment } from "@/utils/romanization";
 
 export interface LyricsDisplayProps {
@@ -15,10 +15,6 @@ export interface LyricsDisplayProps {
   videoVisible?: boolean;
   /** Override alignment (if not provided, reads from store) */
   alignment?: LyricsAlignment;
-  /** Override Korean display (if not provided, reads from store) */
-  koreanDisplay?: KoreanDisplay;
-  /** Override Japanese furigana (if not provided, reads from store) */
-  japaneseFurigana?: JapaneseFurigana;
   /** Callback to adjust lyric offset in ms (positive = lyrics earlier) */
   onAdjustOffset?: (deltaMs: number) => void;
   /** Callback when swiping up (next song) */

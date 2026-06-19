@@ -28,7 +28,7 @@ export function KaraokeWindowContent({ c }: KaraokeWindowContentProps) {
   const effectiveIpodVolume = useAudioSettingsStore(selectEffectiveIpodVolume);
   const {
     t, tracks, currentIndex, loopCurrent, isPlaying, isFullScreen, showLyrics,
-    lyricsAlignment, lyricsFont, koreanDisplay, japaneseFurigana, romanization,
+    lyricsAlignment, lyricsFont, romanization,
     setRomanization, lyricsTranslationLanguage, setLyricsTranslationLanguage,
     isShuffled, toggleShuffle, isListenSessionRemoteOnly, isOffline, isLangMenuOpen,
     setIsLangMenuOpen, isPronunciationMenuOpen, setIsPronunciationMenuOpen, anyMenuOpen,
@@ -243,8 +243,6 @@ export function KaraokeWindowContent({ c }: KaraokeWindowContentProps) {
           onOpenCoverFlow={handleOpenCoverFlowFromTitleCard}
           t={t}
           currentTrack={currentTrack}
-          koreanDisplay={koreanDisplay}
-          japaneseFurigana={japaneseFurigana}
           lyricsAlignment={lyricsAlignment}
         />
         <KaraokeLyricsActivityIndicator />

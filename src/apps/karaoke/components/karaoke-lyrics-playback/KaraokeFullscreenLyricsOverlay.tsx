@@ -5,11 +5,7 @@ import type { Track } from "@/stores/useIpodStore";
 import { LyricsDisplay } from "@/apps/ipod/components/lyrics-display/LyricsDisplay";
 import { shouldShowKaraokeTitleCard } from "@/apps/karaoke/utils/titleCard";
 import { useSaveSongCoverColor } from "@/hooks/useSaveSongCoverColor";
-import type {
-  JapaneseFurigana,
-  KoreanDisplay,
-  LyricsAlignment,
-} from "@/types/lyrics";
+import type { LyricsAlignment } from "@/types/lyrics";
 import { useKaraokeLyricsPlayback } from "./context";
 import { KaraokeTitleCard } from "./KaraokeTitleCard";
 
@@ -38,8 +34,6 @@ interface FullscreenLyricsProps {
   seekToTime: (timeMs: number) => void;
   t: TFunction;
   controlsVisible: boolean;
-  koreanDisplay: KoreanDisplay;
-  japaneseFurigana: JapaneseFurigana;
   lyricsAlignment: LyricsAlignment;
   /** When set (e.g. fullscreen), replaces default next/previous swipe behavior */
   onSwipeUp?: () => void;
@@ -61,8 +55,6 @@ export function KaraokeFullscreenLyricsOverlay({
   seekToTime,
   t,
   controlsVisible,
-  koreanDisplay,
-  japaneseFurigana,
   lyricsAlignment,
   onSwipeUp: onSwipeUpOverride,
   onSwipeDown: onSwipeDownOverride,
@@ -137,8 +129,6 @@ export function KaraokeFullscreenLyricsOverlay({
             visible={true}
             videoVisible={true}
             alignment={lyricsAlignment}
-            koreanDisplay={koreanDisplay}
-            japaneseFurigana={japaneseFurigana}
             fontClassName={lyricsFontClassName}
             onAdjustOffset={onAdjustOffset}
             onSwipeUp={() => {
