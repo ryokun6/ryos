@@ -3983,6 +3983,8 @@
         "title": "パスワードをリセット",
         "tooShort": "パスワードは8文字以上である必要があります"
       },
+      "recoveryEmailOptional": "再設定用メールアドレス（任意）",
+      "recoveryEmailSignupHint": "後でアカウントを復旧できるように、メールアドレスを追加してください。登録後に認証を行うことができます。",
       "setPasswordRequired": "パスワード設定が必要です",
       "setPasswordRequiredDescription": "アカウントを復元できるように、ログアウトする前にパスワードを設定する必要があります。今すぐパスワードを設定しますか？",
       "signupDescription": "チャットルームにアクセスし、設定を保存するためにアカウントを作成してください",
