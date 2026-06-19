@@ -4,10 +4,11 @@
  * A single 3-tier signal replaces the two previously independent heuristics
  * (the boot-time on/off probe and the per-component "reduced graphics" check):
  *
- * - `"off"`     — extremely low-end / low-power devices that can't render
- *                 shaders acceptably even at reduced quality (no WebGL, no
- *                 high-precision floats, tiny GPU limits, or very few cores /
- *                 very little RAM). Shaders default OFF here.
+ * - `"off"`     — only genuinely incapable / really-bad devices: no WebGL at
+ *                 all, a single CPU core, or extremely little RAM (≤512MB).
+ *                 Everything that can plausibly render a shader lands in
+ *                 `"reduced"` instead, so phones and mid-range hardware are NOT
+ *                 cut off. Shaders default OFF only here.
  * - `"reduced"` — phones, tablets, and low-/mid-performance PCs. Shaders run in
  *                 their reduced-quality tier (lower internal resolution / frame
  *                 rate / backing-buffer size).
@@ -20,12 +21,16 @@
  */
 export type PerformanceTier = "off" | "reduced" | "full";
 
-/** Cores at/below this count are treated as extremely low-end (→ off). */
-const OFF_MAX_CORES = 2;
-/** Device memory (GB) at/below this is treated as extremely low-end (→ off). */
-const OFF_MAX_MEMORY_GB = 1;
-/** GPUs reporting a smaller max texture size are treated as too weak (→ off). */
-const OFF_MIN_TEXTURE_SIZE = 4096;
+// "off" is intentionally a very small set — only genuinely unusable hardware.
+// Quality signals that used to force "off" (high-precision floats, max texture
+// size) now only gate the full-vs-reduced decision, so capable-but-modest
+// devices (phones, tablets, budget laptops) get reduced-quality shaders rather
+// than nothing.
+
+/** A device with at most this many CPU cores is treated as really bad (→ off). */
+const OFF_MAX_CORES = 1;
+/** Device memory (GB) at/below this is treated as really bad (→ off). */
+const OFF_MAX_MEMORY_GB = 0.5;
 
 /** Non-mobile devices need at least this many cores for the full tier. */
 const FULL_MIN_CORES = 8;
@@ -159,11 +164,8 @@ export function getPerformanceTier(): PerformanceTier {
 
   const caps = getHardwareCapabilities();
 
-  // --- "off": extremely low-end / low-power, can't render shaders acceptably.
+  // --- "off": only genuinely incapable / really-bad devices.
   if (!caps.webglSupported) return "off";
-  if (!caps.highpSupported) return "off";
-  if (caps.maxTextureSize > 0 && caps.maxTextureSize < OFF_MIN_TEXTURE_SIZE)
-    return "off";
   if (caps.cores > 0 && caps.cores <= OFF_MAX_CORES) return "off";
   if (caps.memory !== null && caps.memory <= OFF_MAX_MEMORY_GB) return "off";
 
@@ -172,13 +174,14 @@ export function getPerformanceTier(): PerformanceTier {
   if (
     !mobile &&
     caps.cores >= FULL_MIN_CORES &&
+    caps.highpSupported &&
     caps.maxAnisotropy >= FULL_MIN_ANISOTROPY &&
     caps.maxTextureSize >= FULL_MIN_TEXTURE_SIZE
   ) {
     return "full";
   }
 
-  // --- "reduced": phones, tablets, low-/mid-performance PCs.
+  // --- "reduced": everything else — phones, tablets, low-/mid-performance PCs.
   return "reduced";
 }
 
