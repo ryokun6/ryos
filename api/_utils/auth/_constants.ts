@@ -6,9 +6,6 @@
 // Token Constants
 // ============================================================================
 
-/** Token key prefix in Redis */
-export const AUTH_TOKEN_PREFIX = "chat:token:";
-
 /** Token length in bytes (32 bytes = 256 bits = 64 hex chars) */
 export const TOKEN_LENGTH = 32;
 
@@ -24,9 +21,6 @@ export const TOKEN_GRACE_PERIOD = 30 * 24 * 60 * 60;
 // ============================================================================
 // Password Constants
 // ============================================================================
-
-/** Password hash key prefix in Redis */
-export const PASSWORD_HASH_PREFIX = "chat:password:";
 
 /** Password length bounds — shared with the frontend for client-side checks. */
 export {
@@ -49,10 +43,3 @@ export const RATE_LIMIT_ATTEMPTS = 10;
 
 /** Block TTL for createUser abuse (24 hours) */
 export const CREATE_USER_BLOCK_TTL_SECONDS = 24 * 60 * 60;
-
-// ============================================================================
-// User Constants
-// ============================================================================
-
-/** Users key prefix in Redis */
-export const CHAT_USERS_PREFIX = "chat:users:";
