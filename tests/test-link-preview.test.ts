@@ -73,10 +73,10 @@ describe("link-preview", () => {
       const res = await fetchWithOrigin(
         `${BASE_URL}/api/link-preview?url=https://example.com`
       );
-      if (res.status === 200) {
-        const cacheControl = res.headers.get("Cache-Control");
-        expect(cacheControl !== null || true).toBe(true);
-      }
+      expect(res.status).toBe(200);
+      const cacheControl = res.headers.get("Cache-Control");
+      expect(cacheControl).not.toBeNull();
+      expect(cacheControl).toContain("max-age");
     });
   });
 
@@ -89,7 +89,7 @@ describe("link-preview", () => {
         const data = await res.json();
         expect(data.siteName?.toLowerCase().includes("youtube") || data.title).toBe(true);
       } else {
-        expect(res.status >= 400).toBe(true);
+        expect(res.status).toBeGreaterThanOrEqual(400);
       }
     });
 
@@ -101,7 +101,7 @@ describe("link-preview", () => {
         const data = await res.json();
         expect(data.siteName).toBe("YouTube");
       } else {
-        expect(res.status >= 400).toBe(true);
+        expect(res.status).toBeGreaterThanOrEqual(400);
       }
     });
   });
@@ -111,7 +111,7 @@ describe("link-preview", () => {
       const res = await fetchWithOrigin(
         `${BASE_URL}/api/link-preview?url=https://httpstat.us/404`
       );
-      expect(res.status >= 400).toBe(true);
+      expect(res.status).toBeGreaterThanOrEqual(400);
     });
   });
 });
