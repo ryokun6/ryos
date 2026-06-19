@@ -8,7 +8,6 @@ import {
   createUserIfNotExists,
   getCurrentTimestamp,
 } from "./_redis.js";
-import { CHAT_USERS_PREFIX } from "./_constants.js";
 import { logInfo, logError } from "../../_utils/_logging.js";
 import {
   isProfaneUsername,
@@ -139,10 +138,7 @@ export async function handleGetUsers(
     const users = new Map<string, User>();
     let cursor = 0;
     const maxResults = 20;
-    const patterns = [
-      `auth:user:*${searchQuery.toLowerCase()}*:profile`,
-      `${CHAT_USERS_PREFIX}*${searchQuery.toLowerCase()}*`,
-    ];
+    const patterns = [`auth:user:*${searchQuery.toLowerCase()}*:profile`];
 
     for (const pattern of patterns) {
       cursor = 0;
