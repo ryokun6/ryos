@@ -11,9 +11,12 @@ A summary of changes and updates to ryOS, organized by month.
 - Add **selectable accent colors** for Aqua and System 7 (Control Panels → Appearance): named swatches, a wallpaper-sampled default, and a **System** option that restores each theme's classic selection color.
 - **iPod / Karaoke lyrics glow**: cache cover-derived glow color in song metadata for stable cross-device sync; default fullscreen lyrics to glow; improve palette extraction and karaoke timing/alignment fixes.
 - **Control Panels**: consolidate account actions (login, change password, logout, logout all devices) into a unified **Account** ⋯ menu on the Account tab.
+- Complete **Redis key-scheme migration** to canonical-only runtime (#1536), with Admin migration tooling, rate-limit key alignment, and legacy read-only fallbacks removed.
+- **Castlabs Electron** for Apple Music DRM playback in the desktop app; bundle main/preload for Node 24 and Castlabs EVS in CI runners.
+- Add **native toasts** and desktop **shader gating**; mirror player visuals in lyrics wallpaper backgrounds (iPod/Karaoke).
 
 <details>
-<summary>Minor changes (6)</summary>
+<summary>Minor changes (16)</summary>
 
 - Fix Workbox stale app shell caching after deploys.
 - Fix karaoke word-highlight mask timing, shadow clipping, and left alignment.
@@ -21,6 +24,16 @@ A summary of changes and updates to ryOS, organized by month.
 - Fix Chats scroll-to-bottom chevron contrast in Aqua dark mode.
 - Fix themed icon cache recovery; set root document background to black.
 - Refactor song metadata sync helpers.
+- Release desktop v1.0.7 and v1.0.6; hide desktop download prompt on mobile (v1.0.5).
+- test: fix always-pass, mislabeled, and weak-assertion tests from audit (#1539).
+- batch metadata cache listing; consistent accent-derived selection color for menus and selected items (#1535).
+- perf: throttle shader backgrounds on mobile (desktop wallpaper + iPod/Karaoke) (#1533).
+- bundle main/preload for Node 24; pass EVS `--no-ask` as top-level vmp flag; install castlabs-evs in venv on Electron build runners.
+- refactor(theme): rename `isXpTheme` → `isWindowsTheme`, `isMacOsxTheme` → `isMacOSTheme` (#1531).
+- Fix migration log autoscroll and aqua glass sidebar gap; make Redis backfill reliable on Upstash.
+- Remove legacy/deprecated code (Tauri aliases, stub @types, dead prompt builder) (#1530).
+- feat: keyboard shortcuts in menus (Cmd/Ctrl-aware) (#1511).
+- style(admin): semi-transparent amber in Cursor agents view (#1532).
 
 </details>
 
@@ -34,9 +47,10 @@ A summary of changes and updates to ryOS, organized by month.
 - **TV polish**: channel-bug logo overlay (fullscreen-safe), idle bursts, drawer SFX, square channel-strip buttons, fullscreen control parity with Karaoke (dismiss + CH± pills, viewport-scaled captions), synced reset-channel deletes, and continued CRT/UI refinements.
 - Refactor **theme platform layer** with `data-os-platform`, centralized menu tokens, and macOSX font fixes (menubar, Finder list, About dialog, TextEdit headings, chat meta).
 - Remove **CandyBar** app (dock icon pack browser added in March is no longer shipped).
+- **Cover Flow on fullscreen long-press** (#1344); add **Apple menu toggle** for browser fullscreen ryOS shell (#1338).
 
 <details>
-<summary>Minor changes (20)</summary>
+<summary>Minor changes (30)</summary>
 
 - Chats: Streamdown message rendering; subtler tool-error styling; extend Cursor SDK run Redis TTL to 90 days; rename channel prompt to "Make a new channel...".
 - iPod / Karaoke: Cover Flow title-bar toggle; Apple Music sharing copies direct links; default Cover display mode; locale-aware lyrics `auto` translation; karaoke visual-effect gating and hidden-video perf.
@@ -47,6 +61,16 @@ A summary of changes and updates to ryOS, organized by month.
 - React 19 hardening: migrate deprecated APIs, refactor cascading setState to useReducer, effect cleanups, stable list keys, admin helper hoisting.
 - CI / deploy: Coolify webhook deploy, GHCR image pipeline, decouple test/build from main pushes; security batch (password change flow, applet sandboxing, rate-limit hardening).
 - Docs: Maps app page, Virtual PC v86 refresh, Admin Cursor agents, Dashboard Aquarium; regenerate static HTML.
+- eliminate duplicate-key empty dock slots (repro in Safari) (#1358).
+- prevent empty/broken dock slots from stale or unrenderable entries (#1356).
+- perf(pwa): curated Workbox precache + network-aware prefetch + offline fixes (#1348).
+- subdued dark-mode shimmer on tool call loading states (#1350).
+- Style Cursor agent chat cards like Maps with pinstripes (#1351).
+- dark-theme lyrics search dialog to match song search (#1352).
+- refactor(ipod,karaoke): unify duplicated media app code paths (#1347).
+- refactor: split large React components into focused modules (#1342).
+- align submenu trigger font size with menu items (#1340).
+- fullscreen on `documentElement` so menubar portals stay visible (#1339).
 
 </details>
 
@@ -449,4 +473,4 @@ A summary of changes and updates to ryOS, organized by month.
 
 ---
 
-*This changelog is maintained from git history and manual curation. Last updated: 2026-06-06*
+*This changelog is maintained from git history and manual curation. Last updated: 2026-06-19*
