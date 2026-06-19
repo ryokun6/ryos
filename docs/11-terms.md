@@ -107,4 +107,4 @@ We may update these Terms as ryOS evolves. Material changes will be reflected he
 
 ## 14. Contact
 
-Questions about these Terms can be sent to **ryo@ryo.lu**.
+Questions about these Terms can be sent to **support@os.ryo.lu**.
