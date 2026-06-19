@@ -244,6 +244,8 @@
       "loginDescription": "Log in to your account",
       "signupDescription": "Create an account to access chat rooms and save your settings",
       "recoveryEmailOptional": "Recovery Email (Optional)",
+      "verifyEmailTitle": "Verify Your Email",
+      "verifyEmailDescription": "Enter the verification code we emailed you to finish securing your account.",
       "setPasswordRequired": "Set Password Required",
       "setPasswordRequiredDescription": "You need to set a password before logging out to ensure you can recover your account. Would you like to set a password now?",
       "logOut": "Log Out",

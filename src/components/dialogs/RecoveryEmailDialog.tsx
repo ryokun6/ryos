@@ -33,6 +33,12 @@ interface RecoveryEmailDialogProps {
    * (used by the post-sign-up flow so the user lands directly on code entry).
    */
   autoSubmit?: boolean;
+  /** Optional title override (e.g. "Verify Your Email" for the sign-up flow). */
+  title?: string;
+  /** Optional description override. */
+  description?: string;
+  /** Hide the "Remove" action (used by the sign-up verification flow). */
+  hideRemove?: boolean;
 }
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -42,6 +48,9 @@ export function RecoveryEmailDialog({
   onOpenChange,
   initialEmail,
   autoSubmit = false,
+  title: titleOverride,
+  description: descriptionOverride,
+  hideRemove = false,
 }: RecoveryEmailDialogProps) {
   const { t } = useTranslation();
   const { isWindowsTheme, isMacOSTheme } = useThemeFlags();
@@ -188,8 +197,9 @@ export function RecoveryEmailDialog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
-  const title = t("apps.control-panels.recoveryEmail.title");
-  const description = t("apps.control-panels.recoveryEmail.description");
+  const title = titleOverride ?? t("apps.control-panels.recoveryEmail.title");
+  const description =
+    descriptionOverride ?? t("apps.control-panels.recoveryEmail.description");
   const notConfigured = status && !status.emailConfigured;
 
   const content = (
@@ -308,7 +318,7 @@ export function RecoveryEmailDialog({
       )}
 
       <DialogFooter className="mt-2 gap-1 sm:justify-between">
-        {status?.hasEmail ? (
+        {status?.hasEmail && !hideRemove ? (
           <Button
             type="button"
             variant="retro"

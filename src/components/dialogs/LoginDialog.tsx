@@ -240,13 +240,15 @@ export function LoginDialog({
       !signUpError &&
       activeTab === "signup";
 
+    // After a successful sign-up with an optional recovery email, continue into
+    // the email verification flow. This must run regardless of `isOpen` because
+    // the parent flips the login dialog closed as soon as sign-up succeeds.
+    if (signUpFinishedSuccessfully && signupEmail.trim()) {
+      setVerifyEmail(signupEmail.trim());
+      setIsVerifyEmailOpen(true);
+    }
+
     if (isOpen && (loginFinishedSuccessfully || signUpFinishedSuccessfully)) {
-      // After a successful sign-up with an optional recovery email, continue
-      // into the email verification flow instead of just closing.
-      if (signUpFinishedSuccessfully && signupEmail.trim()) {
-        setVerifyEmail(signupEmail.trim());
-        setIsVerifyEmailOpen(true);
-      }
       onOpenChange(false);
     }
 
@@ -372,6 +374,9 @@ export function LoginDialog({
         onOpenChange={setIsVerifyEmailOpen}
         initialEmail={verifyEmail}
         autoSubmit
+        hideRemove
+        title={t("common.auth.verifyEmailTitle")}
+        description={t("common.auth.verifyEmailDescription")}
       />
     </>
   );
