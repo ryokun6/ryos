@@ -140,6 +140,15 @@ export const redisKeys = {
     session: (tokenHash: string) => redisKey("auth", "session", tokenHash),
     lastSession: (username: string) =>
       redisKey("auth", "user", username, "last-session"),
+    /** Reverse index: hashed email address -> username (for recovery lookups). */
+    emailIndex: (emailHash: string) =>
+      redisKey("auth", "email", emailHash),
+    /** Pending email-verification code (hashed) + meta for a user. */
+    emailVerify: (username: string) =>
+      redisKey("auth", "user", username, "email-verify"),
+    /** Pending password-reset code (hashed) + meta for a user. */
+    passwordReset: (username: string) =>
+      redisKey("auth", "user", username, "password-reset"),
   },
   chat: {
     roomIds: () => redisKey("chat", "rooms", "ids"),

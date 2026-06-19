@@ -67,6 +67,8 @@ The following environment variables are required for full functionality:
 - `PUSHER_CLUSTER` - Pusher cluster
 
 ### Optional Features
+- `RESEND_API_KEY` - Resend API key enabling the account-recovery **email** channel (verify recovery email + email-delivered password-reset codes). **Required together with `RECOVERY_EMAIL_FROM`** — both must be set for the email channel to work. When either is unset, email recovery is unavailable and account recovery falls back to a linked Telegram account.
+- `RECOVERY_EMAIL_FROM` - `From` address for recovery emails (e.g. `ryOS <noreply@os.ryo.lu>`). **Required together with `RESEND_API_KEY`** for the email channel to activate.
 - `ELEVENLABS_API_KEY` - ElevenLabs API (for text-to-speech)
 - `YOUTUBE_API_KEY` - YouTube Data API (for video metadata)
 - `YOUTUBE_API_KEY_2` - YouTube Data API fallback key

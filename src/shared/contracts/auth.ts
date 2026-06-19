@@ -41,3 +41,34 @@ export interface SessionResponse {
   expired?: boolean;
   timeZone?: string;
 }
+
+export type RecoveryChannel = "telegram" | "email";
+
+export interface RecoveryRequestResponse {
+  success: boolean;
+  message?: string;
+}
+
+export interface ResetPasswordResponse {
+  success: boolean;
+  username: string;
+}
+
+export interface EmailStatusResponse {
+  hasEmail: boolean;
+  /** Masked address (e.g. `a***@example.com`) or null when none set. */
+  email: string | null;
+  emailVerified: boolean;
+  /** Whether the server has an email provider configured. */
+  emailConfigured: boolean;
+}
+
+export interface EmailMutationResponse {
+  success: boolean;
+  email?: string;
+  emailVerified?: boolean;
+}
+
+export interface DeleteAccountResponse {
+  success: boolean;
+}

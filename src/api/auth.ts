@@ -1,16 +1,28 @@
 import { apiRequest, apiRequestRaw } from "@/api/core";
 import type {
   CheckPasswordResponse,
+  DeleteAccountResponse,
+  EmailMutationResponse,
+  EmailStatusResponse,
   LoginResponse,
+  RecoveryChannel,
+  RecoveryRequestResponse,
   RegisterResponse,
+  ResetPasswordResponse,
   SessionResponse,
   VerifyTokenResponse,
 } from "@/shared/contracts/auth";
 
 export type {
   CheckPasswordResponse,
+  DeleteAccountResponse,
+  EmailMutationResponse,
+  EmailStatusResponse,
   LoginResponse,
+  RecoveryChannel,
+  RecoveryRequestResponse,
   RegisterResponse,
+  ResetPasswordResponse,
   SessionResponse,
   VerifyTokenResponse,
 } from "@/shared/contracts/auth";
@@ -112,6 +124,87 @@ export async function setUserPassword(
 ): Promise<{ success: boolean }> {
   return apiRequest<{ success: boolean }, SetPasswordRequest>({
     path: "/api/auth/password/set",
+    method: "POST",
+    body: params,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Account recovery (forgot password)
+// ---------------------------------------------------------------------------
+
+export async function requestRecovery(params: {
+  identifier: string;
+  channel: RecoveryChannel;
+}): Promise<RecoveryRequestResponse> {
+  return apiRequest<RecoveryRequestResponse, typeof params>({
+    path: "/api/auth/recovery/request",
+    method: "POST",
+    body: params,
+  });
+}
+
+export async function resetPasswordWithCode(params: {
+  identifier: string;
+  code: string;
+  newPassword: string;
+}): Promise<ResetPasswordResponse> {
+  return apiRequest<ResetPasswordResponse, typeof params>({
+    path: "/api/auth/recovery/reset",
+    method: "POST",
+    body: params,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Recovery email management (authenticated)
+// ---------------------------------------------------------------------------
+
+export async function getEmailStatus(): Promise<EmailStatusResponse> {
+  return apiRequest<EmailStatusResponse>({
+    path: "/api/auth/email/status",
+    method: "GET",
+  });
+}
+
+export async function setRecoveryEmail(params: {
+  email: string;
+}): Promise<EmailMutationResponse> {
+  return apiRequest<EmailMutationResponse, typeof params>({
+    path: "/api/auth/email/set",
+    method: "POST",
+    body: params,
+  });
+}
+
+export async function verifyRecoveryEmail(params: {
+  code: string;
+}): Promise<EmailMutationResponse> {
+  return apiRequest<EmailMutationResponse, typeof params>({
+    path: "/api/auth/email/verify",
+    method: "POST",
+    body: params,
+  });
+}
+
+export async function removeRecoveryEmail(): Promise<{ success: boolean }> {
+  return apiRequest<{ success: boolean }>({
+    path: "/api/auth/email/remove",
+    method: "POST",
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Account deletion (authenticated)
+// ---------------------------------------------------------------------------
+
+export async function deleteAccount(params: {
+  confirm: boolean;
+  confirmUsername: string;
+  currentPassword?: string;
+}): Promise<DeleteAccountResponse> {
+  return apiRequest<DeleteAccountResponse, typeof params>({
+    path: "/api/auth/account/delete",
     method: "POST",
     body: params,
   });

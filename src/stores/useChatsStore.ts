@@ -15,6 +15,7 @@ import { USERNAME_REGEX, PASSWORD_MIN_LENGTH } from "@/shared/validation";
 import { normalizeChatTimestamp } from "@/shared/contracts/chat";
 import {
   checkUserPassword,
+  deleteAccount as deleteAccountApi,
   getAuthSession,
   logoutUserSafe,
   registerUser,
@@ -297,6 +298,10 @@ export interface ChatsStoreState {
 
   reset: () => void; // Reset store to initial state
   logout: () => Promise<void>; // Logout and clear all user data
+  deleteAccount: (params: {
+    confirmUsername: string;
+    currentPassword?: string;
+  }) => Promise<{ ok: boolean; error?: string }>; // Permanently delete account
 }
 
 const GREETING_FALLBACK = "👋 hey! i'm ryo. ask me anything!";
@@ -315,6 +320,7 @@ const getInitialState = (): Omit<
   | "isAdmin"
   | "reset"
   | "logout"
+  | "deleteAccount"
   | "setAiMessages"
   | "setUsername"
   | "setAuthenticated"
@@ -759,6 +765,58 @@ export const useChatsStore = create<ChatsStoreState>()(
           }
 
           console.log("[ChatsStore] User logged out successfully");
+        },
+        deleteAccount: async ({ confirmUsername, currentPassword }) => {
+          const currentUsername = get().username;
+          if (!currentUsername) {
+            return { ok: false, error: "Authentication required" };
+          }
+
+          try {
+            await deleteAccountApi({
+              confirm: true,
+              confirmUsername,
+              ...(currentPassword ? { currentPassword } : {}),
+            });
+          } catch (error) {
+            console.error("[ChatsStore] Error deleting account:", error);
+            return {
+              ok: false,
+              error:
+                error instanceof ApiRequestError
+                  ? error.message
+                  : "Network error while deleting account",
+            };
+          }
+
+          // Account is gone server-side (cookie cleared in the response). Clear
+          // all local state without calling the logout endpoint.
+          track(APP_ANALYTICS.USER_LOGOUT, { username: currentUsername });
+          localStorage.removeItem(USERNAME_RECOVERY_KEY);
+          resetRoomsFetchCache();
+
+          set((state) => ({
+            ...state,
+            aiMessages: [getInitialAiMessage()],
+            username: null,
+            isAuthenticated: false,
+            hasPassword: null,
+            currentRoomId: null,
+            rooms: [],
+            roomMessages: {},
+            unreadCounts: {},
+          }));
+
+          try {
+            await get().fetchRooms({ force: true });
+          } catch (error) {
+            console.error(
+              "[ChatsStore] Error refreshing rooms after deletion:",
+              error
+            );
+          }
+
+          return { ok: true };
         },
         fetchRooms: async (options = {}) => {
           if (roomsFetchPromise) {

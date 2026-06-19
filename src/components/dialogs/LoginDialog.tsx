@@ -19,6 +19,8 @@ import {
   ThemedTabsTrigger,
   ThemedTabsContent,
 } from "@/components/shared/ThemedTabs";
+import { ResetPasswordDialog } from "@/components/dialogs/ResetPasswordDialog";
+import { RecoveryEmailDialog } from "@/components/dialogs/RecoveryEmailDialog";
 
 interface LoginDialogProps {
   /* Common */
@@ -68,6 +70,12 @@ export function LoginDialog({
   signUpError,
 }: LoginDialogProps) {
   const [activeTab, setActiveTab] = useState<"login" | "signup">(initialTab);
+  const [isResetOpen, setIsResetOpen] = useState(false);
+  // Optional recovery email captured on the sign-up tab.
+  const [signupEmail, setSignupEmail] = useState("");
+  // Post-sign-up email verification flow.
+  const [isVerifyEmailOpen, setIsVerifyEmailOpen] = useState(false);
+  const [verifyEmail, setVerifyEmail] = useState("");
   const { isWindowsTheme, isMacOSTheme } = useThemeFlags();
   const { t } = useTranslation();
   const dialogTitle = t("common.auth.dialogTitle");
@@ -76,6 +84,7 @@ export function LoginDialog({
   useEffect(() => {
     if (isOpen) {
       setActiveTab(initialTab);
+      setSignupEmail("");
     }
   }, [isOpen, initialTab]);
 
@@ -138,6 +147,20 @@ export function LoginDialog({
           disabled={isLoginLoading}
         />
       </div>
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={() => setIsResetOpen(true)}
+          className={cn(
+            "text-neutral-500 underline underline-offset-2 hover:text-neutral-700",
+            themeFont
+          )}
+          style={themeFontStyle}
+          disabled={isLoginLoading}
+        >
+          {t("common.auth.forgotPassword")}
+        </button>
+      </div>
     </div>
   );
 
@@ -175,6 +198,23 @@ export function LoginDialog({
           disabled={isSignUpLoading}
         />
       </div>
+      <div className="space-y-2">
+        <Label
+          className={cn("text-neutral-700", themeFont)}
+          style={themeFontStyle}
+        >
+          {t("common.auth.recoveryEmailOptional")}
+        </Label>
+        <Input
+          type="email"
+          value={signupEmail}
+          onChange={(e) => setSignupEmail(e.target.value)}
+          className={cn("shadow-none h-8", themeFont)}
+          style={themeFontStyle}
+          disabled={isSignUpLoading}
+          autoComplete="email"
+        />
+      </div>
     </div>
   );
 
@@ -200,6 +240,14 @@ export function LoginDialog({
       !signUpError &&
       activeTab === "signup";
 
+    // After a successful sign-up with an optional recovery email, continue into
+    // the email verification flow. This must run regardless of `isOpen` because
+    // the parent flips the login dialog closed as soon as sign-up succeeds.
+    if (signUpFinishedSuccessfully && signupEmail.trim()) {
+      setVerifyEmail(signupEmail.trim());
+      setIsVerifyEmailOpen(true);
+    }
+
     if (isOpen && (loginFinishedSuccessfully || signUpFinishedSuccessfully)) {
       onOpenChange(false);
     }
@@ -214,6 +262,7 @@ export function LoginDialog({
     signUpError,
     activeTab,
     onOpenChange,
+    signupEmail,
   ]);
 
   const dialogContent = (
@@ -280,6 +329,7 @@ export function LoginDialog({
   );
 
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
         className={cn("max-w-[400px]", isWindowsTheme && "p-0 overflow-hidden")}
@@ -313,5 +363,21 @@ export function LoginDialog({
         )}
       </DialogContent>
     </Dialog>
+      <ResetPasswordDialog
+        isOpen={isResetOpen}
+        onOpenChange={setIsResetOpen}
+        defaultIdentifier={usernameInput}
+        onSuccess={() => onOpenChange(false)}
+      />
+      <RecoveryEmailDialog
+        isOpen={isVerifyEmailOpen}
+        onOpenChange={setIsVerifyEmailOpen}
+        initialEmail={verifyEmail}
+        autoSubmit
+        hideRemove
+        title={t("common.auth.verifyEmailTitle")}
+        description={t("common.auth.verifyEmailDescription")}
+      />
+    </>
   );
 }

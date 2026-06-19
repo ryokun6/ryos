@@ -6,7 +6,7 @@
  */
 
 import type { Redis } from "./_utils/redis.js";
-import { deleteAllUserTokens } from "./_utils/auth/index.js";
+import { deleteAllUserTokens, purgeUserAccount } from "./_utils/auth/index.js";
 import {
   getStoredUserRecord,
   setStoredUserRecord,
@@ -55,11 +55,7 @@ async function deleteUser(redis: Redis, targetUsername: string): Promise<{ succe
   if (normalizedUsername === "ryo") return { success: false, error: "Cannot delete admin user" };
 
   try {
-    await redis.del(
-      redisKeys.auth.userProfile(normalizedUsername),
-      redisKeys.auth.userPassword(normalizedUsername)
-    );
-    await deleteAllUserTokens(redis, normalizedUsername);
+    await purgeUserAccount(redis, normalizedUsername);
     return { success: true };
   } catch (error) {
     console.error(`Error deleting user ${normalizedUsername}:`, error);
