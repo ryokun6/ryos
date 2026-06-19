@@ -43,9 +43,8 @@ export default apiHandler(
     const cutoff = Date.now() - GLOBAL_PRESENCE_TTL_SECONDS * 1000;
     const canonicalPresenceKey = redisKeys.presence.globalOnline();
     await redis.zremrangebyscore(canonicalPresenceKey, 0, cutoff);
-    const onlineUsers: string[] = [
-      ...new Set(await redis.zrange(canonicalPresenceKey, 0, -1)),
-    ];
+    const online: string[] = await redis.zrange(canonicalPresenceKey, 0, -1);
+    const onlineUsers: string[] = [...new Set(online)];
 
     res.status(200).json({ users: onlineUsers });
   }
