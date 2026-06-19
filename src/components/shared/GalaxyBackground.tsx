@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from "react";
 import * as THREE from "three";
-import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
+import { useShaderEffectsEnabled } from "@/hooks/useShaderEffectsEnabled";
 import { ShaderType } from "@/types/shader";
 
 // Re-export for backwards compatibility
@@ -18,7 +18,7 @@ const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
 }) => {
   const mountRef = useRef<HTMLDivElement>(null);
   const clockRef = useRef(new THREE.Clock()); // Use Clock for time uniform
-  const shaderEffectEnabled = useDisplaySettingsStore((state) => state.shaderEffectEnabled);
+  const shaderEffectEnabled = useShaderEffectsEnabled();
 
   // Combined state for rendering condition - removed screen size check
   const shouldRender = forceRender || shaderEffectEnabled;

@@ -1,6 +1,6 @@
 appId: lu.ryo.os
 productName: ryOS
-copyright: Copyright Ryo Lu
+copyright: Copyright (c) 2026 Ryo Lu
 directories:
   output: release
   buildResources: build
@@ -16,6 +16,12 @@ afterPack: scripts/electron-vmp-after-pack.cjs
 afterSign: scripts/electron-vmp-after-sign.cjs
 extraMetadata:
   main: dist-electron/main.cjs
+  name: ryos
+  productName: ryOS
+  description: A web-based desktop operating system, reimagining classic Mac OS, Windows, and more.
+  author: Ryo Lu <me@ryo.lu> (https://ryo.lu)
+  homepage: https://os.ryo.lu
+  license: AGPL-3.0-only
 mac:
   category: public.app-category.utilities
   target:
@@ -30,6 +36,9 @@ mac:
   entitlementsInherit: build/entitlements.mac.plist
   gatekeeperAssess: false
   extendInfo:
+    CFBundleDisplayName: ryOS
+    CFBundleName: ryOS
+    NSHumanReadableCopyright: Copyright (c) 2026 Ryo Lu
     NSMicrophoneUsageDescription: ryOS needs microphone access for voice chat and recording features.
     NSCameraUsageDescription: ryOS needs camera access for Photo Booth and video chat features.
 win:
@@ -40,6 +49,7 @@ win:
 linux:
   target:
     - AppImage
+  category: Utility
   icon: build/icon.png
   artifactName: ryOS_${version}_${arch}.${ext}
 publish:

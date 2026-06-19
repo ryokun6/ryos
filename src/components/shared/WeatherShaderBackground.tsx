@@ -3,6 +3,7 @@ import * as THREE from "three";
 import type { WeatherFamily } from "@/utils/dynamicWallpaper";
 import { useReducedGraphics } from "@/hooks/useReducedGraphics";
 import { useShaderAnimationDisabled } from "@/hooks/useShaderAnimationDisabled";
+import { useShaderEffectsEnabled } from "@/hooks/useShaderEffectsEnabled";
 
 /**
  * Render at full CSS-pixel resolution so the thin rain streaks stay crisp.
@@ -333,11 +334,12 @@ export function WeatherShaderBackground({
 }: WeatherShaderBackgroundProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const reducedQuality = useReducedGraphics();
+  const shaderEffectsEnabled = useShaderEffectsEnabled();
   const animationDisabled = useShaderAnimationDisabled();
 
-  // Under reduced motion / battery-saver we skip the animated shader entirely
-  // and let the caller's static CSS gradient show through.
-  const shouldRender = isActive && !animationDisabled;
+  // When shaders are globally disabled, or animation is suppressed for reduced
+  // motion / battery-saver, let the caller's static CSS gradient show through.
+  const shouldRender = isActive && shaderEffectsEnabled && !animationDisabled;
 
   // Latest weather props, read by the render loop each frame. Using a ref (not
   // an effect) means the shader always reflects the current props regardless of

@@ -43,6 +43,18 @@ export type RyosDesktopSaveFileResult =
   | { canceled: true }
   | { canceled: false; filePath: string };
 
+export interface RyosDesktopNotificationOptions {
+  title: string;
+  body?: string;
+}
+
+export type RyosDesktopNotificationResult =
+  | { shown: true }
+  | {
+      shown: false;
+      reason: "untrusted" | "unsupported" | "invalid-payload" | "foreground";
+    };
+
 /**
  * Desktop shell API exposed by Electron preload (window.ryosDesktop).
  */
@@ -61,6 +73,14 @@ export interface RyosDesktopApi {
   ) => Promise<RyosDesktopSaveFileResult>;
   /** Native shell version (app.getVersion()). */
   getVersion: () => Promise<string>;
+  /** Whether this trusted desktop renderer can ask the OS to show notifications. */
+  canShowNotifications: () => Promise<boolean>;
+  /** Whether the desktop shell should mirror the next toast to a native OS notification. */
+  shouldShowNativeNotification: () => Promise<boolean>;
+  /** Show a text-only native OS notification from the sandboxed renderer. */
+  showNotification: (
+    options: RyosDesktopNotificationOptions
+  ) => Promise<RyosDesktopNotificationResult>;
   /** Manually trigger an update check; resolves with the available version, if any. */
   checkForUpdates: () => Promise<string | null>;
   /** Quit and install a downloaded update (no-op if none is ready). */

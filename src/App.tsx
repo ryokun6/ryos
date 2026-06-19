@@ -27,9 +27,12 @@ import { DeferredAutoCloudSync } from "@/hooks/useDeferredAutoCloudSync";
 import { AirDropListener } from "@/components/AirDropListener";
 import { useFilesStore } from "@/stores/useFilesStore";
 import { WallpaperAccentRunner } from "@/hooks/WallpaperAccentRunner";
+import { installNativeToastNotifications } from "@/utils/nativeToastNotifications";
 
 // Convert registry to array
 const apps: AnyApp[] = Object.values(appRegistry);
+
+installNativeToastNotifications();
 
 interface BootUiState {
   bootScreenMessage: string | null;

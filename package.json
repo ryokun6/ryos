@@ -1,10 +1,12 @@
 {
   "name": "ryos",
+  "productName": "ryOS",
   "private": true,
   "version": "1.0.6",
   "description": "A web-based desktop operating system, reimagining classic Mac OS, Windows, and more.",
   "author": "Ryo Lu <me@ryo.lu> (https://ryo.lu)",
   "homepage": "https://os.ryo.lu",
+  "license": "AGPL-3.0-only",
   "type": "module",
   "main": "dist-electron/main.cjs",
   "scripts": {

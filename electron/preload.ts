@@ -21,6 +21,17 @@ contextBridge.exposeInMainWorld("ryosDesktop", {
     ipcRenderer.invoke("ryos-desktop:save-file", options) as Promise<unknown>,
   getVersion: () =>
     ipcRenderer.invoke("ryos-desktop:get-app-version") as Promise<string>,
+  canShowNotifications: () =>
+    ipcRenderer.invoke("ryos-desktop:can-show-notifications") as Promise<boolean>,
+  shouldShowNativeNotification: () =>
+    ipcRenderer.invoke(
+      "ryos-desktop:should-show-native-notification"
+    ) as Promise<boolean>,
+  showNotification: (options: unknown) =>
+    ipcRenderer.invoke(
+      "ryos-desktop:show-notification",
+      options
+    ) as Promise<unknown>,
   checkForUpdates: () =>
     ipcRenderer.invoke("ryos-desktop:check-for-updates") as Promise<
       string | null

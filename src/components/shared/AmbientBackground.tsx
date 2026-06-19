@@ -2,6 +2,7 @@ import { useRef, useEffect, useCallback } from "react";
 import * as THREE from "three";
 import { useReducedGraphics } from "@/hooks/useReducedGraphics";
 import { useShaderAnimationDisabled } from "@/hooks/useShaderAnimationDisabled";
+import { useShaderEffectsEnabled } from "@/hooks/useShaderEffectsEnabled";
 
 /** Duration of crossfade between cover textures (seconds) */
 const CROSSFADE_SECONDS = 1.5;
@@ -195,6 +196,7 @@ export function AmbientBackground({
 }: AmbientBackgroundProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const reducedQuality = useReducedGraphics();
+  const shaderEffectsEnabled = useShaderEffectsEnabled();
   const animationDisabled = useShaderAnimationDisabled();
 
   const currentUrlRef = useRef<string | null>(null);
@@ -236,7 +238,7 @@ export function AmbientBackground({
   // ---------- react to cover URL changes ----------
 
   useEffect(() => {
-    if (!isActive) return;
+    if (!isActive || !shaderEffectsEnabled) return;
     if (!coverUrl || coverUrl === currentUrlRef.current) return;
     currentUrlRef.current = coverUrl;
 
@@ -261,12 +263,12 @@ export function AmbientBackground({
         staticRenderRef.current?.();
       })
       .catch(() => {});
-  }, [coverUrl, isActive, loadTexture]);
+  }, [coverUrl, isActive, shaderEffectsEnabled, loadTexture]);
 
   // ---------- Three.js setup & animation ----------
 
   useEffect(() => {
-    if (!isActive || !mountRef.current) return;
+    if (!isActive || !shaderEffectsEnabled || !mountRef.current) return;
 
     const el = mountRef.current;
     const scene = new THREE.Scene();
@@ -440,9 +442,16 @@ export function AmbientBackground({
       materialsRef.current = { material: null, textureA: null, textureB: null };
       renderer.dispose();
     };
-  }, [isActive, variant, loadTexture, reducedQuality, animationDisabled]);
+  }, [
+    isActive,
+    shaderEffectsEnabled,
+    variant,
+    loadTexture,
+    reducedQuality,
+    animationDisabled,
+  ]);
 
-  if (!isActive) return null;
+  if (!isActive || !shaderEffectsEnabled) return null;
 
   return (
     <div
