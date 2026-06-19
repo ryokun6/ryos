@@ -1,10 +1,18 @@
-import { describe, test, expect } from "bun:test";
+import { describe, test, expect, beforeAll } from "bun:test";
 
 import {
   BASE_URL,
   fetchWithOrigin,
   fetchWithAuth,
+  ensureUserAuth,
 } from "./test-utils";
+
+// A real authenticated user so the ryo-reply input-validation tests actually
+// reach the validation branches (with an invalid token they only ever got
+// 401, so the 400 paths were never exercised). Created fresh per run to avoid
+// the per-user 5/min rate limit accumulating across re-runs.
+const ryoReplyUsername = `tuser${Date.now()}`;
+let ryoReplyToken: string | null = null;
 /**
  * Tests for AI-related API endpoints
  * Tests: /api/chat, /api/applet-ai, /api/ie-generate, /api/ai/ryo-reply
@@ -25,7 +33,7 @@ async function testChatOptionsRequest(): Promise<void> {
   const res = await fetchWithOrigin(`${BASE_URL}/api/chat`, {
     method: "OPTIONS",
   });
-  expect(res.status === 200 || res.status === 204).toBeTruthy();
+  expect([200, 204]).toContain(res.status);
 }
 
 async function testChatMissingMessages(): Promise<void> {
@@ -34,7 +42,7 @@ async function testChatMissingMessages(): Promise<void> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({}),
   });
-  expect(res.status === 400 || res.status === 429).toBeTruthy();
+  expect([400, 429]).toContain(res.status);
 }
 
 async function testChatInvalidMessagesFormat(): Promise<void> {
@@ -43,7 +51,7 @@ async function testChatInvalidMessagesFormat(): Promise<void> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ messages: "not an array" }),
   });
-  expect(res.status === 400 || res.status === 429).toBeTruthy();
+  expect([400, 429]).toContain(res.status);
 }
 
 async function testChatInvalidModel(): Promise<void> {
@@ -57,7 +65,7 @@ async function testChatInvalidModel(): Promise<void> {
   });
   // Rate limiting is checked before model validation, so may get 429 first
   // Otherwise expect 400 for invalid model
-  expect(res.status === 400 || res.status === 429).toBeTruthy();
+  expect([400, 429]).toContain(res.status);
 }
 
 async function testChatInvalidJson(): Promise<void> {
@@ -66,7 +74,7 @@ async function testChatInvalidJson(): Promise<void> {
     headers: { "Content-Type": "application/json" },
     body: "not valid json{",
   });
-  expect(res.status >= 400).toBeTruthy();
+  expect(res.status).toBeGreaterThanOrEqual(400);
 }
 
 async function testChatInvalidAuthToken(): Promise<void> {
@@ -95,10 +103,10 @@ async function testChatBasicRequest(): Promise<void> {
   });
   if (res.status === 200) {
     const contentType = res.headers.get("content-type") || "";
-    expect(contentType.includes("text/") || contentType.includes("stream")).toBeTruthy();
+    expect(contentType).toMatch(/text\/|stream/);
   } else if (res.status === 429) {
     const data = await res.json();
-    expect(data.error === "rate_limit_exceeded").toBeTruthy();
+    expect(data.error).toBe("rate_limit_exceeded");
   } else {
     throw new Error(`Unexpected status: ${res.status}`);
   }
@@ -112,7 +120,7 @@ async function testChatWithModelQuery(): Promise<void> {
       messages: [{ role: "user", content: "Say hi" }],
     }),
   });
-  expect(res.status === 200 || res.status === 429).toBeTruthy();
+  expect([200, 429]).toContain(res.status);
 }
 
 // ============================================================================
@@ -130,7 +138,7 @@ async function testAppletAiOptionsRequest(): Promise<void> {
   const res = await fetchWithOrigin(`${BASE_URL}/api/applet-ai`, {
     method: "OPTIONS",
   });
-  expect(res.status === 200 || res.status === 204).toBeTruthy();
+  expect([200, 204]).toContain(res.status);
 }
 
 async function testAppletAiMissingPromptAndMessages(): Promise<void> {
@@ -188,7 +196,7 @@ async function testAppletAiInvalidJson(): Promise<void> {
     headers: { "Content-Type": "application/json" },
     body: "not valid json{",
   });
-  expect(res.status >= 400).toBeTruthy();
+  expect(res.status).toBeGreaterThanOrEqual(400);
 }
 
 async function testAppletAiInvalidAuthToken(): Promise<void> {
@@ -213,11 +221,11 @@ async function testAppletAiBasicTextRequest(): Promise<void> {
   });
   if (res.status === 200) {
     const data = await res.json();
-    expect(typeof data.reply === "string").toBeTruthy();
-    expect(data.reply.length > 0).toBeTruthy();
+    expect(typeof data.reply).toBe("string");
+    expect(data.reply.length).toBeGreaterThan(0);
   } else if (res.status === 429) {
     const data = await res.json();
-    expect(data.error === "rate_limit_exceeded").toBeTruthy();
+    expect(data.error).toBe("rate_limit_exceeded");
   } else {
     throw new Error(`Unexpected status: ${res.status}`);
   }
@@ -232,7 +240,7 @@ async function testAppletAiWithContext(): Promise<void> {
       context: "You are a calculator assistant.",
     }),
   });
-  expect(res.status === 200 || res.status === 429).toBeTruthy();
+  expect([200, 429]).toContain(res.status);
 }
 
 async function testAppletAiWithMessagesArray(): Promise<void> {
@@ -247,7 +255,7 @@ async function testAppletAiWithMessagesArray(): Promise<void> {
       ],
     }),
   });
-  expect(res.status === 200 || res.status === 429).toBeTruthy();
+  expect([200, 429]).toContain(res.status);
 }
 
 async function testAppletAiInvalidImageModeWithoutPrompt(): Promise<void> {
@@ -279,13 +287,13 @@ async function testAppletAiRateLimitHeaders(): Promise<void> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ prompt: "Rate limit test" }),
   });
+  expect([200, 400, 429]).toContain(res.status);
   if (res.status === 429) {
     const retryAfter = res.headers.get("Retry-After");
-    expect(retryAfter !== null).toBeTruthy();
+    expect(retryAfter).not.toBeNull();
     const limitHeader = res.headers.get("X-RateLimit-Limit");
-    expect(limitHeader !== null).toBeTruthy();
+    expect(limitHeader).not.toBeNull();
   }
-  expect(true).toBeTruthy();
 }
 
 // ============================================================================
@@ -303,7 +311,7 @@ async function testIeGenerateOptionsRequest(): Promise<void> {
   const res = await fetchWithOrigin(`${BASE_URL}/api/ie-generate`, {
     method: "OPTIONS",
   });
-  expect(res.status === 200 || res.status === 204).toBeTruthy();
+  expect([200, 204]).toContain(res.status);
 }
 
 async function testIeGenerateInvalidMessagesFormat(): Promise<void> {
@@ -313,7 +321,7 @@ async function testIeGenerateInvalidMessagesFormat(): Promise<void> {
     body: JSON.stringify({ messages: "not an array" }),
   });
   // Rate limiting may be checked before input validation, so 429 is also acceptable
-  expect(res.status === 400 || res.status === 429).toBeTruthy();
+  expect([400, 429]).toContain(res.status);
 }
 
 async function testIeGenerateInvalidModel(): Promise<void> {
@@ -328,7 +336,7 @@ async function testIeGenerateInvalidModel(): Promise<void> {
     }),
   });
   // Rate limiting may be checked before model validation, so 429 is also acceptable
-  expect(res.status === 400 || res.status === 429).toBeTruthy();
+  expect([400, 429]).toContain(res.status);
 }
 
 async function testIeGenerateInvalidJson(): Promise<void> {
@@ -337,7 +345,7 @@ async function testIeGenerateInvalidJson(): Promise<void> {
     headers: { "Content-Type": "application/json" },
     body: "not valid json{",
   });
-  expect(res.status >= 400).toBeTruthy();
+  expect(res.status).toBeGreaterThanOrEqual(400);
 }
 
 async function testIeGenerateBasicRequest(): Promise<void> {
@@ -350,10 +358,10 @@ async function testIeGenerateBasicRequest(): Promise<void> {
   });
   if (res.status === 200) {
     const contentType = res.headers.get("content-type") || "";
-    expect(contentType.includes("text/") || contentType.includes("stream")).toBeTruthy();
+    expect(contentType).toMatch(/text\/|stream/);
   } else if (res.status === 429) {
     const data = await res.json();
-    expect(data.error === "rate_limit_exceeded").toBeTruthy();
+    expect(data.error).toBe("rate_limit_exceeded");
   } else {
     throw new Error(`Unexpected status: ${res.status}`);
   }
@@ -369,7 +377,7 @@ async function testIeGenerateWithBodyParams(): Promise<void> {
       messages: [{ role: "user", content: "Generate a futuristic page" }],
     }),
   });
-  expect(res.status === 200 || res.status === 429).toBeTruthy();
+  expect([200, 429]).toContain(res.status);
 }
 
 async function testIeGenerateRateLimitBurst(): Promise<void> {
@@ -383,13 +391,13 @@ async function testIeGenerateRateLimitBurst(): Promise<void> {
       messages: [{ role: "user", content: "Test" }],
     }),
   });
+  expect([200, 400, 429]).toContain(res.status);
   if (res.status === 429) {
     const data = await res.json();
-    expect(data.error === "rate_limit_exceeded").toBeTruthy();
-    expect(typeof data.scope === "string").toBeTruthy();
-    expect(typeof data.limit === "number").toBeTruthy();
+    expect(data.error).toBe("rate_limit_exceeded");
+    expect(typeof data.scope).toBe("string");
+    expect(typeof data.limit).toBe("number");
   }
-  expect(true).toBeTruthy();
 }
 
 // ============================================================================
@@ -407,7 +415,7 @@ async function testRyoReplyOptionsRequest(): Promise<void> {
   const res = await fetchWithOrigin(`${BASE_URL}/api/ai/ryo-reply`, {
     method: "OPTIONS",
   });
-  expect(res.status === 200 || res.status === 204).toBeTruthy();
+  expect([200, 204]).toContain(res.status);
 }
 
 async function testRyoReplyMissingAuth(): Promise<void> {
@@ -433,63 +441,61 @@ async function testRyoReplyInvalidAuthToken(): Promise<void> {
   expect(res.status).toBe(401);
 }
 
-async function testRyoReplyMissingRoomId(): Promise<void> {
+async function testRyoReplyBlankRoomId(): Promise<void> {
+  // A blank roomId fails ROOM_ID_REGEX validation -> 400.
   const res = await fetchWithAuth(
     `${BASE_URL}/api/ai/ryo-reply`,
-    "testuser",
-    "some-token",
+    ryoReplyUsername,
+    ryoReplyToken ?? "",
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt: "Hello" }),
+      body: JSON.stringify({ roomId: "", prompt: "Hello" }),
     }
   );
-  // Will fail auth first (401) since token is invalid, which is expected
-  expect(res.status === 400 || res.status === 401).toBeTruthy();
+  expect(res.status).toBe(400);
 }
 
 async function testRyoReplyMissingPrompt(): Promise<void> {
   const res = await fetchWithAuth(
     `${BASE_URL}/api/ai/ryo-reply`,
-    "testuser",
-    "some-token",
+    ryoReplyUsername,
+    ryoReplyToken ?? "",
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ roomId: "test-room" }),
+      body: JSON.stringify({ roomId: "testroom123" }),
     }
   );
-  // Will fail auth first (401) since token is invalid, which is expected
-  expect(res.status === 400 || res.status === 401).toBeTruthy();
+  expect(res.status).toBe(400);
 }
 
 async function testRyoReplyInvalidRoomId(): Promise<void> {
   const res = await fetchWithAuth(
     `${BASE_URL}/api/ai/ryo-reply`,
-    "testuser",
-    "some-token",
+    ryoReplyUsername,
+    ryoReplyToken ?? "",
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ roomId: "invalid/room/id!", prompt: "Hello" }),
     }
   );
-  // Will fail auth first (401) or validation (400)
-  expect(res.status === 400 || res.status === 401).toBeTruthy();
+  expect(res.status).toBe(400);
 }
 
 async function testRyoReplyInvalidJson(): Promise<void> {
   const res = await fetchWithAuth(
     `${BASE_URL}/api/ai/ryo-reply`,
-    "testuser",
-    "some-token",
+    ryoReplyUsername,
+    ryoReplyToken ?? "",
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: "not valid json{",
     }
   );
-  expect(res.status >= 400).toBeTruthy();
+  expect(res.status).toBe(400);
 }
 
 // ============================================================================
@@ -651,8 +657,12 @@ describe("Ai", () => {
   });
 
   describe("AI Endpoints - /api/ai/ryo-reply - Input Validation", () => {
-    test("Missing roomId", async () => {
-      await testRyoReplyMissingRoomId();
+    beforeAll(async () => {
+      ryoReplyToken = await ensureUserAuth(ryoReplyUsername, "passw0rd123");
+    });
+
+    test("Blank roomId", async () => {
+      await testRyoReplyBlankRoomId();
     });
     test("Missing prompt", async () => {
       await testRyoReplyMissingPrompt();
