@@ -7,7 +7,7 @@
  * semantics and explicit flush/halt hooks for backup/restore/reset flows.
  */
 
-import { describe, test, expect, beforeEach } from "bun:test";
+import { describe, test, expect, beforeEach, afterEach, jest } from "bun:test";
 
 // Minimal localStorage polyfill for the bun test environment.
 const backing = new Map<string, string>();
@@ -31,29 +31,37 @@ const {
   flushDebouncedPersistWrites,
 } = await import("../src/utils/debouncedPersistStorage");
 
-const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
-
+// Fake timers make the debounce window deterministic: we advance time by an
+// exact amount instead of sleeping past it and hoping the real timer fired.
 beforeEach(() => {
+  jest.useFakeTimers();
   backing.clear();
 });
 
+afterEach(() => {
+  jest.useRealTimers();
+});
+
 describe("createDebouncedPersistStorage", () => {
-  test("setItem defers the localStorage write until the debounce window", async () => {
+  test("setItem defers the localStorage write until the debounce window", () => {
     const storage = createDebouncedPersistStorage<{ a: number }>({ delayMs: 30 });
     storage.setItem("k", { state: { a: 1 }, version: 1 });
 
+    // Just before the window closes nothing is written yet...
+    jest.advanceTimersByTime(29);
     expect(backing.has("k")).toBe(false);
-    await sleep(60);
+    // ...and exactly at the window the snapshot is serialized.
+    jest.advanceTimersByTime(1);
     expect(JSON.parse(backing.get("k")!)).toEqual({ state: { a: 1 }, version: 1 });
   });
 
-  test("only the latest snapshot in a burst is serialized", async () => {
+  test("only the latest snapshot in a burst is serialized", () => {
     const storage = createDebouncedPersistStorage<{ a: number }>({ delayMs: 30 });
     storage.setItem("k", { state: { a: 1 }, version: 1 });
     storage.setItem("k", { state: { a: 2 }, version: 1 });
     storage.setItem("k", { state: { a: 3 }, version: 1 });
 
-    await sleep(60);
+    jest.advanceTimersByTime(30);
     expect(JSON.parse(backing.get("k")!).state.a).toBe(3);
   });
 
@@ -86,13 +94,13 @@ describe("createDebouncedPersistStorage", () => {
     expect(backing.has("k")).toBe(false);
   });
 
-  test("removeItem cancels a pending write and clears storage", async () => {
+  test("removeItem cancels a pending write and clears storage", () => {
     const storage = createDebouncedPersistStorage<{ a: number }>({ delayMs: 20 });
     backing.set("k", "old");
     storage.setItem("k", { state: { a: 1 }, version: 1 });
     storage.removeItem("k");
 
-    await sleep(50);
+    jest.advanceTimersByTime(50);
     expect(backing.has("k")).toBe(false);
   });
 });
@@ -108,12 +116,12 @@ describe("haltDebouncedPersistWrites", () => {
     storage.setItem("k", { state: { a: 1 }, version: 1 });
 
     haltDebouncedPersistWrites();
-    await sleep(50);
+    jest.advanceTimersByTime(50);
     expect(backing.has("k")).toBe(false);
 
     storage.setItem("k", { state: { a: 2 }, version: 1 });
     flushDebouncedPersistWrites();
-    await sleep(50);
+    jest.advanceTimersByTime(50);
     expect(backing.has("k")).toBe(false);
   });
 });

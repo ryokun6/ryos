@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test, jest } from "bun:test";
 import {
   deleteTelegramMessage,
   editTelegramMessageText,
@@ -52,36 +52,45 @@ describe("telegram status helpers", () => {
   test("keeps the latest tool status visible while typing continues", async () => {
     const calls: Array<{ type: string; text?: string; messageId?: number }> = [];
 
-    const reporter = createTelegramStatusReporter({
-      botToken: "bot-token",
-      chatId: "chat-123",
-      typingRefreshMs: 10,
-      deps: {
-        sendMessage: async ({ text }) => {
-          calls.push({ type: "send", text });
-          return 9001;
+    // Fake timers make the typing-refresh interval deterministic: start() emits
+    // one immediate typing action, then we advance past exactly two refresh
+    // windows (10ms each) instead of sleeping 25ms and hoping the interval ran.
+    jest.useFakeTimers();
+    try {
+      const reporter = createTelegramStatusReporter({
+        botToken: "bot-token",
+        chatId: "chat-123",
+        typingRefreshMs: 10,
+        deps: {
+          sendMessage: async ({ text }) => {
+            calls.push({ type: "send", text });
+            return 9001;
+          },
+          editMessage: async ({ text, messageId }) => {
+            calls.push({ type: "edit", text, messageId });
+          },
+          deleteMessage: async ({ messageId }) => {
+            calls.push({ type: "delete", messageId });
+          },
+          sendChatAction: async () => {
+            calls.push({ type: "typing" });
+          },
         },
-        editMessage: async ({ text, messageId }) => {
-          calls.push({ type: "edit", text, messageId });
-        },
-        deleteMessage: async ({ messageId }) => {
-          calls.push({ type: "delete", messageId });
-        },
-        sendChatAction: async () => {
-          calls.push({ type: "typing" });
-        },
-      },
-    });
+      });
 
-    await reporter.start();
-    await Bun.sleep(25);
-    await reporter.markTool("memoryRead", {});
-    await reporter.markTool("memoryRead", {});
-    await reporter.markThinking();
-    await reporter.markTool("calendarControl", { action: "create" });
-    await reporter.dispose();
+      await reporter.start();
+      jest.advanceTimersByTime(25); // typing interval fires at 10ms and 20ms
+      await reporter.markTool("memoryRead", {});
+      await reporter.markTool("memoryRead", {});
+      await reporter.markThinking();
+      await reporter.markTool("calendarControl", { action: "create" });
+      await reporter.dispose();
+    } finally {
+      jest.useRealTimers();
+    }
 
-    expect(calls.filter((call) => call.type === "typing").length).toBeGreaterThanOrEqual(2);
+    // start() (1) + two interval ticks (2) = 3 typing actions.
+    expect(calls.filter((call) => call.type === "typing").length).toBe(3);
     expect(calls.filter((call) => call.type === "send")).toEqual([
       { type: "send", text: "Checking memory..." },
     ]);
