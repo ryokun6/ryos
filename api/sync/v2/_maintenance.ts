@@ -131,23 +131,38 @@ function getUsernameFromKvKey(key: string): string | null {
   return canonicalMatch?.[1] ? decodeURIComponent(canonicalMatch[1]) : null;
 }
 
-function parseMaintenanceCursor(raw: string | number): {
+function parseMaintenanceCursor(raw: unknown): {
   patternIndex: number;
   cursor: string;
 } {
-  if (typeof raw === "string" && raw.trim().startsWith("{")) {
-    const parsed = parseRedisJson<{ patternIndex?: unknown; cursor?: unknown }>(raw);
+  // The cursor is persisted as `JSON.stringify({ patternIndex, cursor })`.
+  // Upstash's REST client auto-deserializes stored JSON, so on read this can
+  // come back as an OBJECT rather than a string. Handle both shapes — passing
+  // the object straight through would yield `String(obj)` === "[object Object]"
+  // and Redis would reject it as an invalid SCAN cursor.
+  let parsed: { patternIndex?: unknown; cursor?: unknown } | null = null;
+  if (raw && typeof raw === "object") {
+    parsed = raw as { patternIndex?: unknown; cursor?: unknown };
+  } else if (typeof raw === "string" && raw.trim().startsWith("{")) {
+    parsed = parseRedisJson<{ patternIndex?: unknown; cursor?: unknown }>(raw);
+  }
+
+  if (parsed) {
     const patternIndex =
-      typeof parsed?.patternIndex === "number" && parsed.patternIndex >= 0
+      typeof parsed.patternIndex === "number" && parsed.patternIndex >= 0
         ? Math.floor(parsed.patternIndex)
         : 0;
     const cursor =
-      typeof parsed?.cursor === "number" || typeof parsed?.cursor === "string"
+      typeof parsed.cursor === "number" || typeof parsed.cursor === "string"
         ? String(parsed.cursor)
         : "0";
     return { patternIndex, cursor };
   }
-  return { patternIndex: 0, cursor: String(raw) };
+
+  if (typeof raw === "number" || typeof raw === "string") {
+    return { patternIndex: 0, cursor: String(raw) };
+  }
+  return { patternIndex: 0, cursor: "0" };
 }
 
 /**
@@ -161,9 +176,11 @@ async function scanUserBatch(
   maxUsers: number,
   scanCount: number
 ): Promise<{ usernames: string[]; scanComplete: boolean }> {
+  // `get` may return a string, number, or — when Upstash auto-deserializes the
+  // persisted JSON cursor — an object. parseMaintenanceCursor handles all three.
   const startCursor =
-    (await redis.get<string | number>(redisKeys.sync.maintenanceCursor())) ??
-    (await redis.get<string | number>(LEGACY_MAINTENANCE_CURSOR_KEY)) ??
+    (await redis.get<unknown>(redisKeys.sync.maintenanceCursor())) ??
+    (await redis.get<unknown>(LEGACY_MAINTENANCE_CURSOR_KEY)) ??
     "0";
   const patterns = ["sync:v2:user:*:kv", "sync2:kv:*"];
   const startState = parseMaintenanceCursor(startCursor);
