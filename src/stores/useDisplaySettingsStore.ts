@@ -3,7 +3,7 @@ import { useStoreShallow } from "./helpers";
 import { persist } from "zustand/middleware";
 import { ShaderType } from "@/types/shader";
 import { DisplayMode } from "@/utils/displayMode";
-import { checkShaderPerformance } from "@/utils/performanceCheck";
+import { getPerformanceTier } from "@/utils/performanceTier";
 import { ensureIndexedDBInitialized } from "@/utils/indexedDB";
 import {
   emitCloudSyncDomainChange,
@@ -130,7 +130,10 @@ interface DisplaySettingsState {
 }
 
 const STORE_VERSION = 1;
-const initialShaderState = checkShaderPerformance();
+// Default the master shader toggle on for every device except the "off" tier
+// (extremely low-end / low-power). Reduced-tier devices still default on and
+// simply render at lower quality (see useReducedGraphics).
+const initialShaderState = getPerformanceTier() !== "off";
 
 export const useDisplaySettingsStore = create<DisplaySettingsState>()(
   persist(
