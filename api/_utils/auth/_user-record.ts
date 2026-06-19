@@ -6,7 +6,6 @@
  */
 
 import type { Redis } from "../redis.js";
-import { CHAT_USERS_PREFIX } from "./_constants.js";
 import { redisKeys } from "../../../src/shared/redisKeys.js";
 
 export interface StoredUserRecord {
@@ -21,7 +20,7 @@ export interface StoredUserRecord {
 }
 
 /**
- * Parse a raw `chat:users:{username}` value into a user record.
+ * Parse a raw stored user-profile value into a user record.
  * Returns null when the value is missing or malformed.
  */
 export function parseStoredUser(userData: unknown): StoredUserRecord | null {
@@ -40,10 +39,6 @@ export function parseStoredUser(userData: unknown): StoredUserRecord | null {
  */
 export function isUserBanned(userData: unknown): boolean {
   return parseStoredUser(userData)?.banned === true;
-}
-
-export function getLegacyStoredUserKey(username: string): string {
-  return `${CHAT_USERS_PREFIX}${username.toLowerCase()}`;
 }
 
 /**
@@ -74,8 +69,7 @@ export async function getStoredUserRecord(
 ): Promise<StoredUserRecord | null> {
   const normalizedUsername = username.toLowerCase();
   return parseStoredUser(
-    (await redis.get(redisKeys.auth.userProfile(normalizedUsername))) ??
-      (await redis.get(getLegacyStoredUserKey(normalizedUsername)))
+    await redis.get(redisKeys.auth.userProfile(normalizedUsername))
   );
 }
 

@@ -43,8 +43,6 @@ export {
 
 // Token operations (Edge compatible)
 export {
-  getUserTokenKey,
-  getUserTokenPattern,
   getLastTokenKey,
   generateAuthToken,
   storeToken,

@@ -5,24 +5,31 @@ import {
   getUserPasswordHash,
   setUserPasswordHash,
 } from "../api/_utils/auth/_password-storage";
-import { getUserTokenKey, storeToken } from "../api/_utils/auth/_tokens";
+import { storeToken } from "../api/_utils/auth/_tokens";
 import {
-  getLegacyStoredUserKey,
   getStoredUserRecord,
   setStoredUserRecord,
 } from "../api/_utils/auth/_user-record";
 import { redisKeys, sha256RedisIdentifier } from "../src/shared/redisKeys";
 import { FakeRedis } from "./fake-redis";
 
+// Legacy key shapes that must no longer be read by the app once seeded data
+// only lives under the canonical scheme.
+const legacyUserTokenKey = (username: string, token: string) =>
+  `chat:token:user:${username.toLowerCase()}:${token}`;
+const legacyStoredUserKey = (username: string) =>
+  `chat:users:${username.toLowerCase()}`;
+
 describe("canonical auth sessions", () => {
-  test("validates after legacy chat token key is gone", async () => {
+  test("validates against canonical session keys only", async () => {
     const fake = new FakeRedis();
     const redis = fake as unknown as Redis;
     const username = "ryo";
     const token = "secret-token";
 
     await storeToken(redis, username, token);
-    await redis.del(getUserTokenKey(username, token));
+    // A stray legacy token key must never be relied upon.
+    await redis.del(legacyUserTokenKey(username, token));
 
     const tokenHash = await sha256RedisIdentifier(token);
     expect(await redis.exists(redisKeys.auth.session(tokenHash))).toBe(1);
@@ -32,7 +39,19 @@ describe("canonical auth sessions", () => {
     });
   });
 
-  test("reads canonical user profile and password after legacy auth keys are gone", async () => {
+  test("does not validate tokens that only exist under the legacy scheme", async () => {
+    const fake = new FakeRedis();
+    const redis = fake as unknown as Redis;
+    const username = "ryo";
+    const token = "legacy-only-token";
+
+    // Seed ONLY the legacy token key; canonical session is absent.
+    await redis.set(legacyUserTokenKey(username, token), Date.now());
+
+    expect(await validateAuth(redis, username, token)).toEqual({ valid: false });
+  });
+
+  test("reads canonical user profile and password, ignoring legacy auth keys", async () => {
     const fake = new FakeRedis();
     const redis = fake as unknown as Redis;
 
@@ -42,7 +61,7 @@ describe("canonical auth sessions", () => {
       lastActive: 2,
     });
     await setUserPasswordHash(redis, "ryo", "hashed-password");
-    await redis.del(getLegacyStoredUserKey("ryo"), "chat:password:ryo");
+    await redis.del(legacyStoredUserKey("ryo"), "chat:password:ryo");
 
     expect(await getStoredUserRecord(redis, "ryo")).toMatchObject({
       username: "ryo",

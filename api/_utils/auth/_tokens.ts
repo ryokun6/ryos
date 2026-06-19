@@ -7,7 +7,6 @@
 import type { Redis } from "../redis.js";
 import type { TokenInfo } from "./_types.js";
 import {
-  AUTH_TOKEN_PREFIX,
   TOKEN_LENGTH,
   USER_TTL_SECONDS,
   USER_EXPIRATION_TIME,
@@ -19,14 +18,6 @@ import { redisKeys, sha256RedisIdentifier } from "../../../src/shared/redisKeys.
 // Key Helpers
 // ============================================================================
 
-/**
- * Build the Redis key for user-specific tokens
- * Format: chat:token:user:{username}:{token}
- */
-export function getUserTokenKey(username: string, token: string): string {
-  return `${AUTH_TOKEN_PREFIX}user:${username.toLowerCase()}:${token}`;
-}
-
 export async function getCanonicalSessionKey(token: string): Promise<string> {
   return redisKeys.auth.session(await sha256RedisIdentifier(token));
 }
@@ -36,21 +27,10 @@ export async function getCanonicalUserSessionsKey(username: string): Promise<str
 }
 
 /**
- * Get pattern for scanning all tokens for a user
- */
-export function getUserTokenPattern(username: string): string {
-  return `${AUTH_TOKEN_PREFIX}user:${username.toLowerCase()}:*`;
-}
-
-/**
  * Build the Redis key for grace-period token storage
  */
 export function getLastTokenKey(username: string): string {
   return redisKeys.auth.lastSession(username);
-}
-
-export function getLegacyLastTokenKey(username: string): string {
-  return `${AUTH_TOKEN_PREFIX}last:${username.toLowerCase()}`;
 }
 
 // ============================================================================
@@ -114,24 +94,6 @@ export async function deleteToken(
       await redis.srem(key, tokenHash);
     }
   } while (canonicalCursor !== 0);
-
-  // Find and delete the token key by scanning
-  const pattern = `${AUTH_TOKEN_PREFIX}user:*:${token}`;
-  let cursor = 0;
-  const keysToDelete: string[] = [];
-
-  do {
-    const [newCursor, keys] = await redis.scan(cursor, {
-      match: pattern,
-      count: 100,
-    });
-    cursor = parseInt(String(newCursor));
-    keysToDelete.push(...keys);
-  } while (cursor !== 0);
-
-  if (keysToDelete.length > 0) {
-    await redis.del(...keysToDelete);
-  }
 }
 
 /**
@@ -144,11 +106,6 @@ export async function deleteAllUserTokens(
   const normalizedUsername = username.toLowerCase();
   let deletedCount = 0;
 
-  // Delete all active tokens
-  const pattern = getUserTokenPattern(normalizedUsername);
-  const userTokenKeys: string[] = [];
-  let cursor = 0;
-
   const canonicalSessionSetKey = redisKeys.auth.userSessions(normalizedUsername);
   const tokenHashes = await redis.smembers<string[]>(canonicalSessionSetKey);
   if (tokenHashes.length > 0) {
@@ -158,25 +115,10 @@ export async function deleteAllUserTokens(
   }
   deletedCount += await redis.del(canonicalSessionSetKey);
 
-  do {
-    const [newCursor, foundKeys] = await redis.scan(cursor, {
-      match: pattern,
-      count: 100,
-    });
-    cursor = parseInt(String(newCursor));
-    userTokenKeys.push(...foundKeys);
-  } while (cursor !== 0);
-
-  if (userTokenKeys.length > 0) {
-    const deleted = await redis.del(...userTokenKeys);
-    deletedCount += deleted;
-  }
-
   // Delete grace-period token
   const lastTokenKey = getLastTokenKey(normalizedUsername);
   const lastDeleted = await redis.del(lastTokenKey);
   deletedCount += lastDeleted;
-  deletedCount += await redis.del(getLegacyLastTokenKey(normalizedUsername));
 
   return deletedCount;
 }
@@ -196,26 +138,8 @@ export async function getUserTokens(
       createdAt: await redis.get<number | string>(redisKeys.auth.session(tokenHash)),
     }))
   );
-  const pattern = getUserTokenPattern(normalizedUsername);
-  const tokens: TokenInfo[] = [];
-  let cursor = 0;
 
-  do {
-    const [newCursor, keys] = await redis.scan(cursor, {
-      match: pattern,
-      count: 100,
-    });
-    cursor = parseInt(String(newCursor));
-
-    for (const key of keys) {
-      const parts = key.split(":");
-      const token = parts[parts.length - 1];
-      const timestamp = await redis.get<number | string>(key);
-      tokens.push({ token, createdAt: timestamp });
-    }
-  } while (cursor !== 0);
-
-  return [...canonicalTokens, ...tokens];
+  return canonicalTokens;
 }
 
 /**
