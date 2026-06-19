@@ -3987,7 +3987,9 @@
       "setPasswordRequired": "Passwort festlegen erforderlich",
       "setPasswordRequiredDescription": "Sie müssen ein Passwort festlegen, bevor Sie sich abmelden, um sicherzustellen, dass Sie Ihr Konto wiederherstellen können. Möchten Sie jetzt ein Passwort festlegen?",
       "signupDescription": "Erstellen Sie ein Konto, um auf Chaträume zuzugreifen und Ihre Einstellungen zu speichern",
-      "username": "Benutzername"
+      "username": "Benutzername",
+      "verifyEmailDescription": "Geben Sie den Bestätigungscode ein, den wir Ihnen per E-Mail gesendet haben, um die Sicherung Ihres Kontos abzuschließen.",
+      "verifyEmailTitle": "E-Mail-Adresse bestätigen"
     },
     "auto": "Automatisch",
     "colors": {

@@ -3987,7 +3987,9 @@
       "setPasswordRequired": "Definição de Palavra-passe Necessária",
       "setPasswordRequiredDescription": "É necessário definir uma palavra-passe antes de terminar sessão para garantir que pode recuperar a sua conta. Gostaria de definir uma palavra-passe agora?",
       "signupDescription": "Crie uma conta para aceder às salas de chat e guardar as suas definições",
-      "username": "Nome de usuário"
+      "username": "Nome de usuário",
+      "verifyEmailDescription": "Insira o código de verificação que enviamos por e-mail para concluir a proteção da sua conta.",
+      "verifyEmailTitle": "Verifique seu e-mail"
     },
     "auto": "Automático",
     "colors": {

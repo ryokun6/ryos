@@ -3987,7 +3987,9 @@
       "setPasswordRequired": "Définir un mot de passe requis",
       "setPasswordRequiredDescription": "Vous devez définir un mot de passe avant de vous déconnecter pour pouvoir récupérer votre compte. Souhaitez-vous définir un mot de passe maintenant ?",
       "signupDescription": "Créez un compte pour accéder aux salons de discussion et enregistrer vos paramètres",
-      "username": "Nom d'utilisateur"
+      "username": "Nom d'utilisateur",
+      "verifyEmailDescription": "Saisissez le code de vérification que nous vous avons envoyé par e-mail pour terminer la sécurisation de votre compte.",
+      "verifyEmailTitle": "Vérifiez votre adresse e-mail"
     },
     "auto": "Auto",
     "colors": {

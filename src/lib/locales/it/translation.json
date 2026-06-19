@@ -3987,7 +3987,9 @@
       "setPasswordRequired": "Imposta password richiesta",
       "setPasswordRequiredDescription": "Devi impostare una password prima di disconnetterti per assicurarti di poter recuperare il tuo account. Vuoi impostare una password ora?",
       "signupDescription": "Crea un account per accedere alle chat room e salvare le tue impostazioni",
-      "username": "Nome utente"
+      "username": "Nome utente",
+      "verifyEmailDescription": "Inserisci il codice di verifica che ti abbiamo inviato via email per completare la protezione del tuo account.",
+      "verifyEmailTitle": "Verifica la tua email"
     },
     "auto": "Auto",
     "colors": {

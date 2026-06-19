@@ -3987,7 +3987,9 @@
       "setPasswordRequired": "パスワード設定が必要です",
       "setPasswordRequiredDescription": "アカウントを復元できるように、ログアウトする前にパスワードを設定する必要があります。今すぐパスワードを設定しますか？",
       "signupDescription": "チャットルームにアクセスし、設定を保存するためにアカウントを作成してください",
-      "username": "ユーザー名"
+      "username": "ユーザー名",
+      "verifyEmailDescription": "アカウントのセキュリティ保護を完了するために、メールで送信された確認コードを入力してください。",
+      "verifyEmailTitle": "メールアドレスの確認"
     },
     "auto": "自動",
     "colors": {

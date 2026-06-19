@@ -3987,7 +3987,9 @@
       "setPasswordRequired": "需要設定密碼",
       "setPasswordRequiredDescription": "您需要在登出前設定密碼，以確保您可以復原您的帳戶。您現在要設定密碼嗎？",
       "signupDescription": "建立帳戶以存取聊天室並儲存您的設定",
-      "username": "使用者名稱"
+      "username": "使用者名稱",
+      "verifyEmailDescription": "請輸入我們寄給您的驗證碼，以完成帳戶安全設定。",
+      "verifyEmailTitle": "驗證您的電子郵件"
     },
     "auto": "自動",
     "colors": {

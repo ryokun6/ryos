@@ -3987,7 +3987,9 @@
       "setPasswordRequired": "비밀번호 설정 필요",
       "setPasswordRequiredDescription": "계정 복구를 위해 로그아웃하기 전에 비밀번호를 설정해야 합니다. 지금 비밀번호를 설정하시겠습니까?",
       "signupDescription": "채팅방에 접속하고 설정을 저장하려면 계정을 만드세요.",
-      "username": "사용자 이름"
+      "username": "사용자 이름",
+      "verifyEmailDescription": "계정 보안 설정을 완료하려면 이메일로 전송된 인증 코드를 입력하세요.",
+      "verifyEmailTitle": "이메일 인증"
     },
     "auto": "자동",
     "colors": {
