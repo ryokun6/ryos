@@ -133,19 +133,6 @@ export interface SaveSongOptions {
 }
 
 // =============================================================================
-// Constants
-// =============================================================================
-
-/** Redis key prefix for song metadata (lightweight) */
-export const SONG_META_PREFIX = "song:meta:";
-
-/** Redis key prefix for song content (heavy data) */
-export const SONG_CONTENT_PREFIX = "song:content:";
-
-/** Redis set tracking all song IDs */
-export const SONG_SET_KEY = "song:all";
-
-// =============================================================================
 // Utility Functions
 // =============================================================================
 
@@ -156,10 +143,6 @@ export function getSongMetaKey(id: string): string {
   return redisKeys.media.songMeta(id);
 }
 
-export function getLegacySongMetaKey(id: string): string {
-  return `${SONG_META_PREFIX}${id}`;
-}
-
 /**
  * Get the Redis key for song content
  */
@@ -167,25 +150,16 @@ export function getSongContentKey(id: string): string {
   return redisKeys.media.songContent(id);
 }
 
-export function getLegacySongContentKey(id: string): string {
-  return `${SONG_CONTENT_PREFIX}${id}`;
-}
-
 async function getSongIds(redis: Redis): Promise<string[]> {
-  return [
-    ...new Set([
-      ...((await redis.smembers<string[]>(redisKeys.media.songIds())) || []),
-      ...((await redis.smembers<string[]>(SONG_SET_KEY)) || []),
-    ]),
-  ];
+  return (await redis.smembers<string[]>(redisKeys.media.songIds())) || [];
 }
 
 async function getSongMetaRaw(redis: Redis, id: string): Promise<unknown> {
-  return (await redis.get(getSongMetaKey(id))) ?? (await redis.get(getLegacySongMetaKey(id)));
+  return await redis.get(getSongMetaKey(id));
 }
 
 async function getSongContentRaw(redis: Redis, id: string): Promise<unknown> {
-  return (await redis.get(getSongContentKey(id))) ?? (await redis.get(getLegacySongContentKey(id)));
+  return await redis.get(getSongContentKey(id));
 }
 
 /**
@@ -387,23 +361,16 @@ export async function saveSong(
  */
 export async function deleteSong(redis: Redis, id: string): Promise<boolean> {
   const metaKey = getSongMetaKey(id);
-  const legacyMetaKey = getLegacySongMetaKey(id);
 
   // Check if exists
-  const exists = await redis.exists(metaKey, legacyMetaKey);
+  const exists = await redis.exists(metaKey);
   if (!exists) return false;
 
   // Delete both metadata and content keys
-  await redis.del(
-    metaKey,
-    legacyMetaKey,
-    getSongContentKey(id),
-    getLegacySongContentKey(id)
-  );
+  await redis.del(metaKey, getSongContentKey(id));
 
   // Remove from the set
   await redis.srem(redisKeys.media.songIds(), id);
-  await redis.srem(SONG_SET_KEY, id);
 
   return true;
 }
@@ -421,13 +388,12 @@ export async function deleteAllSongs(redis: Redis): Promise<number> {
   }
 
   // Delete all metadata and content keys
-  const metaKeys = songIds.flatMap((id) => [getSongMetaKey(id), getLegacySongMetaKey(id)]);
-  const contentKeys = songIds.flatMap((id) => [getSongContentKey(id), getLegacySongContentKey(id)]);
+  const metaKeys = songIds.map((id) => getSongMetaKey(id));
+  const contentKeys = songIds.map((id) => getSongContentKey(id));
   await redis.del(...metaKeys, ...contentKeys);
 
   // Clear the set
   await redis.del(redisKeys.media.songIds());
-  await redis.del(SONG_SET_KEY);
 
   return songIds.length;
 }
