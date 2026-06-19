@@ -479,7 +479,7 @@ describe("IRC Bridge wiring", () => {
     const fs = await import("node:fs/promises");
     const src = await fs.readFile("api/rooms/[id].ts", "utf-8");
     expect(src).toContain("notifyRoomBindingChange");
-    expect(/notifyRoomBindingChange\s*\(\s*"unbind"/.test(src)).toBe(true);
+    expect(src).toMatch(/notifyRoomBindingChange\s*\(\s*"unbind"/);
     expect(src).toContain("isIrcBridgeEnabled");
   });
 
@@ -487,7 +487,7 @@ describe("IRC Bridge wiring", () => {
     const fs = await import("node:fs/promises");
     const src = await fs.readFile("api/rooms/[id]/messages.ts", "utf-8");
     expect(src).toContain("getIrcBridge");
-    expect(/roomData\.type === "irc"/.test(src)).toBe(true);
+    expect(src).toMatch(/roomData\.type === "irc"/);
     expect(src).toContain("isIrcBridgeEnabled");
   });
 
@@ -512,7 +512,7 @@ describe("IRC Bridge wiring", () => {
     const fs = await import("node:fs/promises");
     const src = await fs.readFile("scripts/api-standalone-server.ts", "utf-8");
     expect(src).toContain("getIrcBridge");
-    expect(/getIrcBridge\(\)\.initialize\(\)/.test(src)).toBe(true);
+    expect(src).toMatch(/getIrcBridge\(\)\.initialize\(\)/);
     expect(src).toContain("isIrcBridgeEnabled");
   });
 

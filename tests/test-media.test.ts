@@ -192,7 +192,7 @@ describe("youtube-search", () => {
         headers: { "Content-Type": "application/json" },
         body: "not valid json{",
       });
-      expect(res.status >= 400).toBe(true);
+      expect(res.status).toBeGreaterThanOrEqual(400);
     });
   });
 

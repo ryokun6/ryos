@@ -75,7 +75,7 @@ describe("speech", () => {
         const contentType = res.headers.get("content-type") || "";
         expect(contentType).toContain("audio");
         const buffer = await res.arrayBuffer();
-        expect(buffer.byteLength > 0).toBe(true);
+        expect(buffer.byteLength).toBeGreaterThan(0);
       } else if (res.status === 429) {
         const data = await res.json();
         expect(data.error).toBe("rate_limit_exceeded");

@@ -106,7 +106,15 @@ const PUSHER_APP_KEY = pusherRuntimeConfig.key;
 const PUSHER_CLUSTER = pusherRuntimeConfig.cluster;
 const PUSHER_FORCE_TLS = pusherRuntimeConfig.forceTLS;
 
-const getPusherConstructor = (PusherNamespace: unknown): PusherConstructor => {
+/**
+ * Resolves the Pusher constructor, preferring the module default export and
+ * falling back to a global `Pusher` (set by some script-tag builds). Throws
+ * when neither is available. Exported for unit tests (see
+ * tests/test-pusher-client-constructor-wiring.test.ts).
+ */
+export const getPusherConstructor = (
+  PusherNamespace: unknown
+): PusherConstructor => {
   const constructorFromModule = (
     PusherNamespace as unknown as { default?: PusherConstructor }
   ).default;

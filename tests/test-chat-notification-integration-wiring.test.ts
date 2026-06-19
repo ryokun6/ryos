@@ -16,9 +16,9 @@ const readSource = (relativePath: string): string =>
 const assertUsesSharedNotificationGate = (
   source: string
 ): void => {
-  expect(/from\s+["']@\/utils\/chatNotifications["']/.test(source)).toBe(true);
-  expect(/shouldNotifyForRoomMessage/.test(source)).toBe(true);
-  expect(/shouldNotifyForRoomMessage\s*\(\s*\{/.test(source)).toBe(true);
+  expect(source).toMatch(/from\s+["']@\/utils\/chatNotifications["']/);
+  expect(source).toMatch(/shouldNotifyForRoomMessage/);
+  expect(source).toMatch(/shouldNotifyForRoomMessage\s*\(\s*\{/);
 };
 
 describe("Chat Notification Integration Wiring", () => {
