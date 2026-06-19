@@ -350,7 +350,9 @@
 <table><thead><tr><th>Category</th><th>Technologies</th></tr></thead><tbody><tr><td>Frontend</td><td>React 19, TypeScript, Tailwind CSS v4, shadcn/ui, Motion</td></tr><tr><td>State</td><td>Zustand with localStorage/IndexedDB persistence</td></tr><tr><td>Audio</td><td>Tone.js, WaveSurfer.js, Web Audio API</td></tr><tr><td>3D</td><td>Three.js (shaders)</td></tr><tr><td>Text Editor</td><td>TipTap</td></tr><tr><td>Storage</td><td>IndexedDB, LocalStorage, Redis (Upstash REST / standard), Vercel Blob and compatible object storage backends</td></tr><tr><td>API Runtime</td><td>Vercel Node.js handlers + standalone Bun server</td></tr><tr><td>AI</td><td>OpenAI, Anthropic, Google via Vercel AI SDK</td></tr><tr><td>Real-time</td><td>Pusher or local WebSocket (with Redis pub/sub fanout)</td></tr><tr><td>Package Manager</td><td>Bun (<code>bun@1.3.5</code> in <code>package.json</code>; CI/Docker currently use Bun 1.3.9)</td></tr><tr><td>Build</td><td>Vite, Bun</td></tr><tr><td>Desktop</td><td>Electron + electron-builder (macOS and Windows release builds; Linux AppImage target configured)</td></tr><tr><td>Deployment</td><td>Vercel (web), standalone Bun API (self-hosted), Docker / Coolify, Electron releases</td></tr></tbody></table>
 <h2>Project Structure</h2>
 <pre><code>├── api/              # Node-style API endpoints (Vercel + standalone Bun server)
-│   └── _utils/       # Shared API utilities (api-handler, middleware, auth, redis, storage, realtime, analytics, etc.)
+│   └── _utils/       # Shared API utilities (api-handler, request-auth, redis, storage, realtime, analytics, etc.)
+├── middleware.ts     # Vercel edge middleware (OG share for SPA routes)
+├── index.html        # Vite entry / app shell
 ├── electron/         # Electron main/preload/menu/updater
 ├── public/           # Static assets
 ├── tests/            # bun:test suites
@@ -359,11 +361,12 @@
 │   ├── apps/         # 25 app modules
 │   ├── components/   # Shared React components
 │   ├── config/       # App registry
-│   ├── hooks/        # ~60 custom hooks
-│   ├── lib/          # Libraries
+│   ├── hooks/        # ~75 custom hooks
+│   ├── lib/          # Libraries (including locales/)
+│   ├── lib/locales/  # i18n translation files (10 languages)
 │   ├── services/     # VFS and realtime service facades
 │   ├── shared/       # Contracts, sync helpers, domain types
-│   ├── stores/       # 36 Zustand store modules
+│   ├── stores/       # 38 Zustand store modules
 │   ├── styles/       # CSS
 │   ├── sync/         # Cloud Sync v2 client engine
 │   ├── themes/       # 4 theme definitions

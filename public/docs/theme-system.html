@@ -308,9 +308,9 @@
       <article>
         <h1>Theme System</h1>
 <strong>Implementers:</strong> see <a href="/docs/theme-architecture">Theme architecture (implementation)</a> for <code>data-os-platform</code>, CSS layers, menu tokens, and Tailwind variants.
-<p>ryOS supports 4 themes emulating classic operating systems with comprehensive CSS variable systems, centralized metadata helpers, and platform-specific UI behaviors.</p>
+<p>ryOS supports 4 base OS themes emulating classic operating systems, plus macOS Aqua variants for material (<code>classic</code> / <code>glass</code>) and color scheme (<code>light</code> / <code>dark</code>). Themes use comprehensive CSS variable systems, centralized metadata helpers, and platform-specific UI behaviors.</p>
 <h2>Available Themes</h2>
-<table><thead><tr><th>Theme ID</th><th>Name</th><th>Platform</th><th>Era</th><th>Key Elements</th></tr></thead><tbody><tr><td><code>macosx</code></td><td>Aqua</td><td>Mac OS X</td><td>~2001</td><td>Glossy buttons, traffic lights, pinstripe, dock</td></tr><tr><td><code>system7</code></td><td>System 7</td><td>Classic Mac</td><td>~1991</td><td>Black & white, dotted titlebar pattern</td></tr><tr><td><code>xp</code></td><td>Luna</td><td>Windows XP</td><td>~2001</td><td>Blue chrome, rounded corners, taskbar</td></tr><tr><td><code>win98</code></td><td>Classic</td><td>Windows 98</td><td>~1998</td><td>3D beveled face, blue gradient titlebar</td></tr></tbody></table>
+<table><thead><tr><th>Theme ID</th><th>Name</th><th>Platform</th><th>Era</th><th>Key Elements</th></tr></thead><tbody><tr><td><code>macosx</code></td><td>Aqua</td><td>Mac OS X</td><td>~2001</td><td>Glossy buttons, traffic lights, pinstripe, dock; supports <strong>material</strong> (<code>classic</code> / <code>glass</code>) and <strong>color scheme</strong> (<code>light</code> / <code>dark</code>)</td></tr><tr><td><code>system7</code></td><td>System 7</td><td>Classic Mac</td><td>~1991</td><td>Black & white, dotted titlebar pattern</td></tr><tr><td><code>xp</code></td><td>Luna</td><td>Windows XP</td><td>~2001</td><td>Blue chrome, rounded corners, taskbar</td></tr><tr><td><code>win98</code></td><td>Classic</td><td>Windows 98</td><td>~1998</td><td>3D beveled face, blue gradient titlebar</td></tr></tbody></table>
 <h2>Theme Architecture</h2>
 <pre class="mermaid">flowchart TD
     A[User Selection] --> B[Theme Store]

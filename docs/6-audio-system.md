@@ -133,7 +133,7 @@ Both iPod (fullscreen) and Karaoke support selectable visual backgrounds behind 
 | Mesh Gradient | `DisplayMode.Mesh` | Mesh gradient shader backdrop (`MeshGradientBackground`) |
 | Water | `DisplayMode.Water` | Water/caustic shader over cover art (`WaterBackground`) |
 
-Display mode is stored in `useIpodStore` and shared between iPod and Karaoke.
+Display mode is stored per app: `useIpodStore.displayMode` for iPod, `useKaraokeStore.displayMode` for Karaoke (independent since Karaoke store v3; legacy iPod value is migrated once on first load).
 
 ### Winamp App
 
@@ -146,8 +146,8 @@ Uses Webamp with a custom `YouTubeMedia` backend:
 ### Karaoke App
 
 Uses ReactPlayer (same as iPod) with independent playback state via `useKaraokeStore`:
-- Shares iPod's music library, lyrics preferences, and display mode settings (`useIpodStore`)
-- Maintains its own playback state (current song, play/pause, loop, shuffle) so iPod and Karaoke can play different tracks simultaneously
+- Shares the music library and lyrics/display preferences via `useMediaLibraryStore` (alias of `useIpodStore`)
+- Keeps its own playback state and visual `displayMode` in `useKaraokeStore`, so iPod and Karaoke can show different backgrounds while playing different tracks
 - Full-window video/visual background with lyrics overlay
 - Fullscreen portal with synchronized player handoff (position and play state synced between main and fullscreen ReactPlayer instances)
 - Track switching guard and iOS Safari autoplay watchdog (same technique as iPod)
@@ -239,7 +239,7 @@ Provides musical feedback for typing in the Chat app:
 
 - **Pentatonic Scale**: Notes C4, D4, F4, G4, A4, C5, D5 for pleasant sounds
 - **Presets**: Classic, Ethereal, Digital, Retro, Off
-- **Effects Chain**: Filter → Tremolo → Reverb → PolySynth
+- **Effects Chain**: PolySynth → Reverb → Tremolo → Filter → Destination
 - **Voice Limiting**: 16 voices maximum
 - **Global Instance**: Synth instance persists across HMR for seamless development
 - **Volume Control**: Responds to `chatSynthVolume` and `masterVolume` settings
@@ -267,6 +267,8 @@ Provides gap-free TTS playback with intelligent queuing:
 - **Micro-Fades**: 10ms fade-out before stopping to prevent clicks
 
 ### Volume Ducking
+
+Ducking is applied through `src/lib/audioDucking.ts`, which sets transient `ttsMusicDuckingFactor` / `ttsChatSynthDuckingFactor` on `useAudioSettingsStore` while TTS is active (defaults restored to `1` when speech ends). iOS skips music ducking (`useTtsQueue.ts`).
 
 When TTS is speaking:
 - iPod and Karaoke music playback volume reduced to 35% (non-iOS only)
