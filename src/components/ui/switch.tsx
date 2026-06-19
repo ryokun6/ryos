@@ -55,11 +55,10 @@ const Switch = (
     >
       <SwitchPrimitives.Thumb
         className={cn(
-          "os-switch-thumb pointer-events-none block h-[14px] w-[14px] rounded-full bg-white transition-transform will-change-transform",
-          // macOSX needs a slight negative offset when unchecked to appear visually centered inside bordered track
-          isMacOSTheme && "data-[state=unchecked]:translate-x-[-2px]",
-          // Translate by fixed distance when checked (Tailwind requires static class name)
-          "data-[state=checked]:translate-x-[10px]"
+          "os-switch-thumb pointer-events-none block rounded-full bg-white",
+          isMacOSTheme
+            ? "h-3 w-3 transition-[translate] will-change-[translate]"
+            : "h-[14px] w-[14px] transition-transform will-change-transform data-[state=checked]:translate-x-[10px]",
         )}
       />
     </SwitchPrimitives.Root>
