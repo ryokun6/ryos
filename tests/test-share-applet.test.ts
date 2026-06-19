@@ -8,13 +8,22 @@ import { describe, test, expect, beforeAll } from "bun:test";
 import { BASE_URL, fetchWithOrigin, fetchWithAuth, ensureUserAuth } from "./test-utils";
 
 let testAppletId: string | null = null;
-let testToken: string | null = null;
-let testUsername: string | null = null;
+let testToken: string;
+let testUsername: string;
 
 describe("share-applet", () => {
   beforeAll(async () => {
     testUsername = `shareuser${Math.floor(Math.random() * 100000)}`;
-    testToken = await ensureUserAuth(testUsername, "testpassword123");
+    const token = await ensureUserAuth(testUsername, "testpassword123");
+    // Fail loudly instead of silently skipping every authed test: a missing
+    // token means auth/registration is broken, which is exactly what these
+    // tests should catch.
+    if (!token) {
+      throw new Error(
+        "share-applet test setup failed: could not obtain an auth token"
+      );
+    }
+    testToken = token;
   });
 
   describe("HTTP Methods", () => {
@@ -29,7 +38,7 @@ describe("share-applet", () => {
       const res = await fetchWithOrigin(`${BASE_URL}/api/share-applet`, {
         method: "OPTIONS",
       });
-      expect(res.status === 200 || res.status === 204).toBe(true);
+      expect([200, 204]).toContain(res.status);
     });
   });
 
@@ -82,10 +91,6 @@ describe("share-applet", () => {
     });
 
     test("POST - missing content", async () => {
-      if (!testToken || !testUsername) {
-        console.log("  ⚠️  Skipped (test user not set up)");
-        return;
-      }
       const res = await fetchWithAuth(
         `${BASE_URL}/api/share-applet`,
         testUsername,
@@ -102,10 +107,6 @@ describe("share-applet", () => {
     });
 
     test("POST - success (create)", async () => {
-      if (!testToken || !testUsername) {
-        console.log("  ⚠️  Skipped (test user not set up)");
-        return;
-      }
       const res = await fetchWithAuth(
         `${BASE_URL}/api/share-applet`,
         testUsername,
@@ -131,10 +132,8 @@ describe("share-applet", () => {
     });
 
     test("GET - created applet", async () => {
-      if (!testAppletId) {
-        console.log("  ⚠️  Skipped (test applet not created)");
-        return;
-      }
+      // Hard-fail (not silent skip) if the create step did not produce an id.
+      expect(testAppletId).toBeTruthy();
       const res = await fetchWithOrigin(
         `${BASE_URL}/api/share-applet?id=${testAppletId}`
       );
@@ -147,10 +146,7 @@ describe("share-applet", () => {
     });
 
     test("GET - list applets", async () => {
-      if (!testAppletId) {
-        console.log("  ⚠️  Skipped (test applet not created)");
-        return;
-      }
+      expect(testAppletId).toBeTruthy();
       const res = await fetchWithOrigin(
         `${BASE_URL}/api/share-applet?list=true`
       );
@@ -164,10 +160,7 @@ describe("share-applet", () => {
     });
 
     test("POST - update applet (by owner)", async () => {
-      if (!testToken || !testUsername || !testAppletId) {
-        console.log("  ⚠️  Skipped (test data not set up)");
-        return;
-      }
+      expect(testAppletId).toBeTruthy();
       const res = await fetchWithAuth(
         `${BASE_URL}/api/share-applet`,
         testUsername,
@@ -189,15 +182,15 @@ describe("share-applet", () => {
     });
 
     test("POST - update by non-owner (should create new)", async () => {
-      if (!testAppletId) return;
+      expect(testAppletId).toBeTruthy();
       const otherUsername = `otheruser${Math.floor(Math.random() * 100000)}`;
       const otherToken = await ensureUserAuth(otherUsername, "testpassword123");
-      if (!otherToken) return;
+      expect(otherToken).toBeTruthy();
 
       const res = await fetchWithAuth(
         `${BASE_URL}/api/share-applet`,
         otherUsername,
-        otherToken,
+        otherToken!,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -209,7 +202,7 @@ describe("share-applet", () => {
       );
       expect(res.status).toBe(200);
       const data = await res.json();
-      expect(data.id !== testAppletId).toBe(true);
+      expect(data.id).not.toBe(testAppletId);
     });
   });
 
@@ -223,10 +216,7 @@ describe("share-applet", () => {
     });
 
     test("DELETE - by non-admin", async () => {
-      if (!testToken || !testUsername || !testAppletId) {
-        console.log("  ⚠️  Skipped (test data not set up)");
-        return;
-      }
+      expect(testAppletId).toBeTruthy();
       const res = await fetchWithAuth(
         `${BASE_URL}/api/share-applet?id=${testAppletId}`,
         testUsername,
@@ -237,10 +227,7 @@ describe("share-applet", () => {
     });
 
     test("DELETE - with invalid token (forbidden)", async () => {
-      if (!testAppletId) {
-        console.log("  ⚠️  Skipped (test applet ID not set up)");
-        return;
-      }
+      expect(testAppletId).toBeTruthy();
       const res = await fetchWithAuth(
         `${BASE_URL}/api/share-applet?id=${testAppletId}`,
         "ryo",
@@ -265,10 +252,7 @@ describe("share-applet", () => {
     });
 
     test("PATCH - by non-admin", async () => {
-      if (!testToken || !testUsername || !testAppletId) {
-        console.log("  ⚠️  Skipped (test data not set up)");
-        return;
-      }
+      expect(testAppletId).toBeTruthy();
       const res = await fetchWithAuth(
         `${BASE_URL}/api/share-applet?id=${testAppletId}`,
         testUsername,
@@ -283,10 +267,7 @@ describe("share-applet", () => {
     });
 
     test("PATCH - with invalid token (forbidden)", async () => {
-      if (!testAppletId) {
-        console.log("  ⚠️  Skipped (test applet ID not set up)");
-        return;
-      }
+      expect(testAppletId).toBeTruthy();
       const res = await fetchWithAuth(
         `${BASE_URL}/api/share-applet?id=${testAppletId}`,
         "ryo",
