@@ -28,7 +28,7 @@ export function KaraokeFullscreenView({ c, isForeground }: KaraokeFullscreenView
     setLyricsTranslationLanguage, lyricsAlignment, cycleAlignment, lyricsFont,
     cycleLyricsFont, romanization, setRomanization, setIsSyncModeOpen, isSyncModeOpen,
     displayMode, handleDisplayModeSelect, displayModeOptions, karaokeKtvRoomFx,
-    toggleKaraokeKtvRoomFx, currentTrack, currentIndex, duration, setLyricOffset,
+    currentTrack, currentIndex, duration, setLyricOffset,
     adjustLyricOffset, fullScreenPlayerRef, playerRef, closeSyncMode, handleRefreshLyrics,
     t, seekTime, loopCurrent, handleTrackEnd, handleProgress, handlePlay, handlePause,
     handleReady, effectiveDisplayMode, visualBackgroundActive, coverUrl,
@@ -95,8 +95,6 @@ export function KaraokeFullscreenView({ c, isForeground }: KaraokeFullscreenView
       displayMode={displayMode}
       onDisplayModeSelect={handleDisplayModeSelect}
       displayModeOptions={displayModeOptions}
-      karaokeKtvRoomFxEnabled={karaokeKtvRoomFx}
-      onToggleKaraokeKtvRoomFx={toggleKaraokeKtvRoomFx}
       syncModeContent={
         <KaraokeSyncModeFullscreenPanel
           isSyncModeOpen={isSyncModeOpen}

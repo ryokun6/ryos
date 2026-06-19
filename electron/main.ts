@@ -13,6 +13,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { setupAutoUpdater } from "./updater";
 import { buildApplicationMenu } from "./menu";
+import { registerChatNotificationIpcHandlers } from "./chat-notifications";
 
 const DEFAULT_APP_URL = "https://os.ryo.lu";
 const APP_URL = process.env.RYOS_ELECTRON_URL?.trim() || DEFAULT_APP_URL;
@@ -51,6 +52,7 @@ type NativeSaveFileOptions = {
 type NativeNotificationOptions = {
   title?: string;
   body?: string;
+  chatRoomId?: string | null;
 };
 
 const ALLOWED_WEB_PERMISSIONS = new Set([
@@ -133,6 +135,17 @@ function sanitizeNotificationOptions(
   };
 }
 
+function getNotificationChatRoomId(
+  options: NativeNotificationOptions
+): string | null | undefined {
+  if (!("chatRoomId" in options)) {
+    return undefined;
+  }
+  return typeof options.chatRoomId === "string" || options.chatRoomId === null
+    ? options.chatRoomId
+    : undefined;
+}
+
 function canShowNativeNotifications(): boolean {
   return (
     typeof Notification.isSupported === "function" &&
@@ -167,8 +180,9 @@ function focusMainWindow(): void {
 }
 
 function showRetainedNativeNotification(
-  options: Electron.NotificationConstructorOptions
-): void {
+  options: Electron.NotificationConstructorOptions,
+  onClick: () => void = focusMainWindow
+): boolean {
   const notification = new Notification(options);
   activeNativeNotifications.add(notification);
 
@@ -177,7 +191,7 @@ function showRetainedNativeNotification(
   };
 
   notification.once("click", () => {
-    focusMainWindow();
+    onClick();
     releaseNotification();
   });
   notification.once("close", releaseNotification);
@@ -185,6 +199,7 @@ function showRetainedNativeNotification(
 
   try {
     notification.show();
+    return true;
   } catch (error) {
     releaseNotification();
     throw error;
@@ -396,7 +411,21 @@ function registerIpcHandlers(): void {
         return { shown: false, reason: "foreground" };
       }
 
-      showRetainedNativeNotification(notificationOptions);
+      const chatRoomId = getNotificationChatRoomId(options);
+      showRetainedNativeNotification(
+        notificationOptions,
+        chatRoomId !== undefined
+          ? () => {
+              focusMainWindow();
+              if (!event.sender.isDestroyed()) {
+                event.sender.send(
+                  "ryos-desktop:open-chat-room-from-notification",
+                  chatRoomId
+                );
+              }
+            }
+          : undefined
+      );
 
       return { shown: true };
     }
@@ -493,6 +522,22 @@ function registerIpcHandlers(): void {
       return { canceled: false, filePath: result.filePath };
     }
   );
+
+  registerChatNotificationIpcHandlers({
+    ipcMain,
+    session: session.defaultSession,
+    getMainWindow: () => mainWindow,
+    isTrustedWebContents,
+    isAllowedAppUrl: isInAppNavigation,
+    isMainWindowForeground,
+    focusMainWindow,
+    showNotification: (options, onClick) => {
+      if (!canShowNativeNotifications()) {
+        return false;
+      }
+      return showRetainedNativeNotification(options, onClick);
+    },
+  });
 }
 
 function configureAppMetadata(): void {

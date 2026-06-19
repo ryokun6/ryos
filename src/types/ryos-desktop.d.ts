@@ -1,3 +1,10 @@
+import type { ChatMessage, ChatRoom } from "@/shared/contracts/chat";
+import type {
+  DesktopChatNotificationConfig,
+  DesktopChatNotificationManageResult,
+  DesktopChatNotificationState,
+} from "@/utils/desktopChatNotificationPolicy";
+
 /**
  * Auto-update lifecycle status pushed from the Electron main process.
  * Mirrors `UpdateStatus` in electron/updater.ts — keep the two in sync.
@@ -46,6 +53,7 @@ export type RyosDesktopSaveFileResult =
 export interface RyosDesktopNotificationOptions {
   title: string;
   body?: string;
+  chatRoomId?: string | null;
 }
 
 export type RyosDesktopNotificationResult =
@@ -54,6 +62,26 @@ export type RyosDesktopNotificationResult =
       shown: false;
       reason: "untrusted" | "unsupported" | "invalid-payload" | "foreground";
     };
+
+export type RyosDesktopChatNotificationManageResult =
+  DesktopChatNotificationManageResult;
+
+export type RyosDesktopChatNotificationStatus =
+  DesktopChatNotificationManageResult;
+
+export type RyosDesktopChatNotificationEvent =
+  | { type: "room-created"; room: ChatRoom }
+  | { type: "room-deleted"; roomId: string }
+  | { type: "room-updated"; room: ChatRoom }
+  | { type: "rooms-updated"; rooms: ChatRoom[] }
+  | {
+      type: "room-message";
+      message: ChatMessage;
+      incrementUnread: boolean;
+      showInMain: boolean;
+      showInRenderer: boolean;
+    }
+  | { type: "message-deleted"; roomId: string; messageId: string };
 
 /**
  * Desktop shell API exposed by Electron preload (window.ryosDesktop).
@@ -81,6 +109,32 @@ export interface RyosDesktopApi {
   showNotification: (
     options: RyosDesktopNotificationOptions
   ) => Promise<RyosDesktopNotificationResult>;
+  /**
+   * Start/refresh the Electron main-process chat notification service with
+   * public realtime config and minimal chat state.
+   */
+  configureChatNotifications: (
+    config: DesktopChatNotificationConfig,
+    state: DesktopChatNotificationState
+  ) => Promise<RyosDesktopChatNotificationManageResult>;
+  /** Update minimal renderer state used by the main chat notification service. */
+  updateChatNotificationState: (
+    state: DesktopChatNotificationState
+  ) => Promise<RyosDesktopChatNotificationManageResult>;
+  /** Stop main-process chat notifications, usually on logout or unsupported config. */
+  stopChatNotifications: () => Promise<void>;
+  /** Subscribe to sanitized chat realtime events forwarded from Electron main. */
+  onChatNotificationEvent: (
+    callback: (event: RyosDesktopChatNotificationEvent) => void
+  ) => () => void;
+  /** Subscribe to service health/status changes from Electron main. */
+  onChatNotificationStatus: (
+    callback: (status: RyosDesktopChatNotificationStatus) => void
+  ) => () => void;
+  /** Subscribe to native notification click routing from Electron main. */
+  onOpenChatRoomFromNotification: (
+    callback: (roomId: string | null) => void
+  ) => () => void;
   /** Manually trigger an update check; resolves with the available version, if any. */
   checkForUpdates: () => Promise<string | null>;
   /** Quit and install a downloaded update (no-op if none is ready). */

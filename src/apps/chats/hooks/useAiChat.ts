@@ -43,6 +43,7 @@ import { useTranslation } from "react-i18next";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { tryInvokeParentStartGrindPlanning } from "@/utils/parentGrindPlanning";
 import { showAiMessageNotification } from "@/utils/chatNotificationDisplay";
+import { shouldShowNativeToastNotification } from "@/utils/nativeToastNotifications";
 import {
   emitAppletUpdated,
   emitDocumentUpdated,
@@ -1449,10 +1450,11 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         }
       }
 
-      // Show notification if chat app is backgrounded
-      if (!isChatsInForeground()) {
-        showBackgroundedMessageNotification(lastMsg);
-      }
+      void shouldShowNativeToastNotification().then((shouldShowDesktop) => {
+        if (!isChatsInForeground() || shouldShowDesktop) {
+          showBackgroundedMessageNotification(lastMsg);
+        }
+      });
 
       speakFinalAssistantMessageRef.current?.(lastMsg);
     };

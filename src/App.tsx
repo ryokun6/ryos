@@ -3,7 +3,7 @@ import { appRegistry } from "./config/appRegistry";
 import { useEffect, useMemo, useReducer, useCallback } from "react";
 import { applyDisplayMode } from "./utils/displayMode";
 import { Toaster } from "./components/ui/sonner";
-import { toast } from "sonner";
+import { toast } from "@/hooks/useToast";
 import { useAppStoreShallow } from "@/stores/useAppStore";
 import { useDisplaySettingsStoreShallow } from "@/stores/useDisplaySettingsStore";
 import { BootScreen } from "./components/dialogs/BootScreen";

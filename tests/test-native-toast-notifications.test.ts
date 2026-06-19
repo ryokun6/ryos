@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   getNativeToastNotification,
+  showNativeToastNotification,
   shouldShowNativeToastNotification,
   type NativeToastDesktopApi,
 } from "../src/utils/nativeToastNotifications";
@@ -14,6 +15,40 @@ describe("native toast notifications", () => {
     ).toEqual({
       title: "Saved",
       body: "Your file was saved.",
+    });
+  });
+
+  test("preserves safe chat click routing metadata", () => {
+    expect(
+      getNativeToastNotification("info", "@Ryo", {
+        description: "I found the answer.",
+        chatRoomId: null,
+      })
+    ).toEqual({
+      title: "@Ryo",
+      body: "I found the answer.",
+      chatRoomId: null,
+    });
+
+    expect(
+      getNativeToastNotification("info", "@alice", {
+        description: "See you there.",
+        chatRoomId: "room-a",
+      })
+    ).toEqual({
+      title: "@alice",
+      body: "See you there.",
+      chatRoomId: "room-a",
+    });
+
+    expect(
+      getNativeToastNotification("info", "@alice", {
+        description: "See you there.",
+        chatRoomId: { roomId: "room-a" },
+      })
+    ).toEqual({
+      title: "@alice",
+      body: "See you there.",
     });
   });
 
@@ -84,6 +119,57 @@ describe("native toast notifications", () => {
     expect(await shouldShowNativeToastNotification(backgroundApi)).toBe(true);
     expect(await shouldShowNativeToastNotification(foregroundApi)).toBe(false);
     expect(await shouldShowNativeToastNotification(null)).toBe(false);
+  });
+
+  test("reports whether the desktop shell actually showed the notification", async () => {
+    const shownPayloads: unknown[] = [];
+    const backgroundApi: NativeToastDesktopApi = {
+      shouldShowNativeNotification: async () => true,
+      showNotification: async (payload) => {
+        shownPayloads.push(payload);
+        return { shown: true };
+      },
+    };
+    const foregroundApi: NativeToastDesktopApi = {
+      shouldShowNativeNotification: async () => false,
+      showNotification: async () => ({ shown: true }),
+    };
+    const unsupportedApi: NativeToastDesktopApi = {
+      shouldShowNativeNotification: async () => true,
+      showNotification: async () => ({ shown: false, reason: "unsupported" }),
+    };
+
+    expect(
+      await showNativeToastNotification(
+        "basic",
+        "@Ryo",
+        { description: "I found the answer.", chatRoomId: null },
+        backgroundApi
+      )
+    ).toBe(true);
+    expect(shownPayloads).toEqual([
+      {
+        title: "@Ryo",
+        body: "I found the answer.",
+        chatRoomId: null,
+      },
+    ]);
+    expect(
+      await showNativeToastNotification(
+        "basic",
+        "@Ryo",
+        { description: "Foreground app." },
+        foregroundApi
+      )
+    ).toBe(false);
+    expect(
+      await showNativeToastNotification(
+        "basic",
+        "@Ryo",
+        { description: "Unsupported." },
+        unsupportedApi
+      )
+    ).toBe(false);
   });
 
   test("treats desktop gate failures as unsupported", async () => {

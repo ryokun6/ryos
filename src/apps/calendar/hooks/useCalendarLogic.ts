@@ -10,7 +10,7 @@ import {
 import { helpItems } from "../metadata";
 import { useShallow } from "zustand/react/shallow";
 import { parseIcalString, toIcalString } from "../utils/parseIcal";
-import { toast } from "sonner";
+import { toast } from "@/hooks/useToast";
 import { CALENDAR_ANALYTICS, track } from "@/utils/analytics";
 import { openNativeFile, saveBlobToDevice } from "@/utils/nativeFileDialogs";
 
