@@ -38,11 +38,6 @@ interface AdminRequest {
   modelId?: string;
   key?: string;
   confirmKey?: string;
-  pattern?: string;
-  confirmPattern?: string;
-  limit?: number;
-  dryRun?: boolean;
-  cursor?: string;
 }
 
 interface UserProfile {
@@ -87,7 +82,21 @@ async function scanRedisKeys(redis: Redis, pattern: string): Promise<string[]> {
 
 async function getAdminRoomIds(redis: Redis): Promise<string[]> {
   const canonicalIds = await redis.smembers<string[]>(redisKeys.chat.roomIds());
-  return [...new Set(canonicalIds || [])];
+  if (canonicalIds && canonicalIds.length > 0) {
+    return [...new Set(canonicalIds)];
+  }
+
+  // Self-heal: if the registry set is empty/missing, rebuild the id list from
+  // the canonical room-meta keys (`chat:rooms:<id>:meta`) so the admin view
+  // doesn't report zero rooms when metadata still exists.
+  const metaPrefix = "chat:rooms:";
+  const metaSuffix = ":meta";
+  const metaKeys = await scanRedisKeys(redis, `${metaPrefix}*${metaSuffix}`);
+  const discovered = metaKeys
+    .filter((k) => k.startsWith(metaPrefix) && k.endsWith(metaSuffix))
+    .map((k) => k.slice(metaPrefix.length, k.length - metaSuffix.length))
+    .filter((id) => id.length > 0);
+  return [...new Set(discovered)];
 }
 
 async function getAdminRoomData(redis: Redis, roomId: string): Promise<{ name?: string } | null> {
