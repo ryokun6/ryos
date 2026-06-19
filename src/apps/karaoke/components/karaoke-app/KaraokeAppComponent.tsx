@@ -53,6 +53,7 @@ export function KaraokeAppComponent({
         instanceId,
         onNavigateNext,
         onNavigatePrevious,
+        keepMountedWhenMinimized: true,
         onFullscreenToggle: toggleFullScreen,
         onCoverFlowToggle: handleToggleCoverFlow,
         isCoverFlowActive: isCoverFlowOpen,

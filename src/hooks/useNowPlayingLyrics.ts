@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useShallow } from "zustand/react/shallow";
 import {
   useIpodStore,
   getActiveIpodCurrentTrack,
@@ -6,7 +7,9 @@ import {
   type Track,
 } from "@/stores/useIpodStore";
 import { useKaraokeStore } from "@/stores/useKaraokeStore";
+import { useListenSessionStore } from "@/stores/useListenSessionStore";
 import {
+  DisplayMode,
   getLyricsFontClassName,
   LyricsFont as LyricsFontEnum,
 } from "@/types/lyrics";
@@ -21,12 +24,18 @@ export interface NowPlayingLyrics {
   coverUrl: string | null;
   /** Live playback position used for word-level highlighting (ms). */
   currentTimeMs: number;
+  /** Raw elapsed playback position (seconds, before lyric offset). */
+  elapsedSeconds: number;
   lyricsControls: ReturnType<typeof useLyrics>;
   furiganaMap: ReturnType<typeof useFurigana>["furiganaMap"];
   soramimiMap: ReturnType<typeof useFurigana>["soramimiMap"];
   lyricsFontClassName: string;
   /** True when there are lyric lines to render for the active track. */
   hasLyrics: boolean;
+  /** iPod / Karaoke View → Display mode for the active player (iPod when tied). */
+  effectiveDisplayMode: DisplayMode;
+  /** Shader / landscape / cover backgrounds animate only while playing in non-Video modes. */
+  visualBackgroundActive: boolean;
 }
 
 /**
@@ -57,6 +66,19 @@ export function useNowPlayingLyrics(): NowPlayingLyrics {
     (s) => s.lyricsTranslationLanguage
   );
   const lyricsFont = useIpodStore((s) => s.lyricsFont);
+  const ipodDisplayMode = useIpodStore((s) => s.displayMode ?? DisplayMode.Video);
+  const karaokeDisplayMode = useKaraokeStore(
+    (s) => s.displayMode ?? DisplayMode.Video
+  );
+
+  const { listenSession, isListenSessionDj, isListenSessionAnonymous } =
+    useListenSessionStore(
+      useShallow((s) => ({
+        listenSession: s.currentSession,
+        isListenSessionDj: s.isDj,
+        isListenSessionAnonymous: s.isAnonymous,
+      }))
+    );
 
   const cover = useNowPlayingCover();
 
@@ -163,16 +185,38 @@ export function useNowPlayingLyrics(): NowPlayingLyrics {
     lyricsFont ?? LyricsFontEnum.GoldGlow
   );
 
+  const displayMode =
+    source === "karaoke" ? karaokeDisplayMode : ipodDisplayMode;
+  const listenRemoteOnly =
+    source === "karaoke" &&
+    Boolean(
+      listenSession && !isListenSessionDj && !isListenSessionAnonymous
+    );
+  const effectiveDisplayMode = listenRemoteOnly
+    ? DisplayMode.Cover
+    : source === "ipod" &&
+        track?.source === "appleMusic" &&
+        displayMode === DisplayMode.Video
+      ? DisplayMode.Cover
+      : displayMode;
+  const visualBackgroundActive =
+    isPlaying &&
+    !listenRemoteOnly &&
+    effectiveDisplayMode !== DisplayMode.Video;
+
   return {
     source,
     isPlaying,
     track,
     coverUrl: cover.coverUrl,
     currentTimeMs: currentTime * 1000,
+    elapsedSeconds: elapsed,
     lyricsControls,
     furiganaMap,
     soramimiMap,
     lyricsFontClassName,
     hasLyrics: lyricsControls.lines.length > 0,
+    effectiveDisplayMode,
+    visualBackgroundActive,
   };
 }

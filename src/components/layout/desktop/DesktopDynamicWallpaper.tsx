@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { AnimatePresence, motion } from "motion/react";
@@ -13,8 +13,10 @@ import { useSaveSongCoverColor } from "@/hooks/useSaveSongCoverColor";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { useWeatherSimulationStore } from "@/stores/useWeatherSimulationStore";
 import { SF_LAT, SF_LON } from "@/stores/useWeatherStore";
-import { MeshGradientBackground } from "@/components/shared/MeshGradientBackground";
 import { WeatherShaderBackground } from "@/components/shared/WeatherShaderBackground";
+import { YouTubePlayer } from "@/components/shared/YouTubePlayer";
+import { KaraokeVisualLayers } from "@/apps/karaoke/components/karaoke-app/KaraokeVisualLayers";
+import { DisplayMode } from "@/types/lyrics";
 import { getWeatherEmoji } from "@/lib/weather/openMeteo";
 import { Emoji } from "@/components/shared/Emoji";
 import {
@@ -57,6 +59,12 @@ const LYRICS_EXTRA_LIFT = 48;
 // Extra clearance (px) when the iPod "pop player" (PiP) is showing: the floating
 // player is ~64px tall and sits just above the dock, so lift the lyrics past it.
 const LYRICS_PIP_CLEARANCE = 76;
+
+// Mirror listen-sync thresholds so the muted wallpaper player tracks the
+// primary iPod / Karaoke player without constant hard seeks.
+const WALLPAPER_SOFT_SYNC_THRESHOLD_SEC = 0.5;
+const WALLPAPER_HARD_SEEK_THRESHOLD_SEC = 3;
+const WALLPAPER_SEEK_JUMP_THRESHOLD_SEC = 0.75;
 
 function DayNightGradientLayer() {
   const [gradient, setGradient] = useState(() => getDayNightGradientCss());
@@ -366,6 +374,10 @@ function WeatherGradientLayer() {
 
 function LyricsWallpaperLayer() {
   const np = useNowPlayingLyrics();
+  const videoPlayerRef = useRef<React.ComponentRef<typeof YouTubePlayer>>(null);
+  const prevElapsedRef = useRef(np.elapsedSeconds);
+  const prevTrackIdRef = useRef(np.track?.id);
+  const wallpaperPlaybackRateRef = useRef(1);
   const { isMacOSTheme, isAquaGlass, isWinXp, isWin98 } = useThemeFlags();
   const pipActive = useIpodPipActive();
   // Persist the resolved cover color back to the song (and store) so the lyric
@@ -396,14 +408,112 @@ function LyricsWallpaperLayer() {
     };
   }, [isMacOSTheme, isAquaGlass, isWinXp, isWin98, pipActive]);
 
+  const showVideoBackground =
+    np.effectiveDisplayMode === DisplayMode.Video &&
+    np.isPlaying &&
+    np.track?.url &&
+    np.track.source !== "appleMusic";
+
+  useEffect(() => {
+    if (!showVideoBackground) return;
+    const player = videoPlayerRef.current;
+    if (!player) return;
+
+    const target = np.elapsedSeconds;
+    if (np.track?.id !== prevTrackIdRef.current) {
+      prevTrackIdRef.current = np.track?.id;
+      prevElapsedRef.current = target;
+      wallpaperPlaybackRateRef.current = 1;
+    }
+
+    const prevElapsed = prevElapsedRef.current;
+    const elapsedJump = Math.abs(target - prevElapsed);
+    prevElapsedRef.current = target;
+
+    const current = player.getCurrentTime() ?? 0;
+    const drift = target - current;
+    const absDrift = Math.abs(drift);
+
+    const setPlaybackRate = (rate: number) => {
+      if (wallpaperPlaybackRateRef.current === rate) return;
+      try {
+        const internalPlayer = player.getInternalPlayer() as
+          | { playbackRate?: number }
+          | null
+          | undefined;
+        if (
+          internalPlayer &&
+          typeof internalPlayer.playbackRate !== "undefined"
+        ) {
+          internalPlayer.playbackRate = rate;
+          wallpaperPlaybackRateRef.current = rate;
+        }
+      } catch {
+        // Some players don't support playbackRate.
+      }
+    };
+
+    if (
+      elapsedJump > WALLPAPER_SEEK_JUMP_THRESHOLD_SEC ||
+      absDrift > WALLPAPER_HARD_SEEK_THRESHOLD_SEC ||
+      (!np.isPlaying && absDrift > WALLPAPER_SOFT_SYNC_THRESHOLD_SEC)
+    ) {
+      player.seekTo(target, "seconds");
+      setPlaybackRate(1);
+      return;
+    }
+
+    if (np.isPlaying && absDrift > WALLPAPER_SOFT_SYNC_THRESHOLD_SEC) {
+      setPlaybackRate(drift > 0 ? 1.05 : 0.95);
+      return;
+    }
+
+    setPlaybackRate(1);
+  }, [
+    np.elapsedSeconds,
+    np.isPlaying,
+    np.track?.id,
+    showVideoBackground,
+  ]);
+
   return (
     <div className="absolute inset-0 w-full h-full z-[-10] overflow-hidden bg-neutral-950">
-      {/* "Gradient paper" — the same animated Paper mesh-gradient shader the
-          iPod / Karaoke use, tinted by the now-playing cover art. */}
-      <MeshGradientBackground
+      {showVideoBackground && (
+        <div className="absolute inset-0 w-full h-full overflow-hidden">
+          <div className="w-full h-[calc(100%+400px)] mt-[-200px]">
+            <YouTubePlayer
+              ref={videoPlayerRef}
+              url={np.track!.url}
+              playing={np.isPlaying}
+              volume={0}
+              width="100%"
+              height="100%"
+              style={{ pointerEvents: "none" }}
+              onReady={() => {
+                wallpaperPlaybackRateRef.current = 1;
+                videoPlayerRef.current?.seekTo(np.elapsedSeconds, "seconds");
+              }}
+              config={{
+                youtube: {
+                  playerVars: {
+                    controls: 0,
+                    fs: 0,
+                  },
+                },
+              }}
+            />
+          </div>
+        </div>
+      )}
+      <KaraokeVisualLayers
+        effectiveDisplayMode={np.effectiveDisplayMode}
+        visualBackgroundActive={np.visualBackgroundActive}
+        currentTrack={np.track}
         coverUrl={np.coverUrl}
-        isActive
-        className="absolute inset-0 w-full h-full"
+        isPlaying={np.isPlaying}
+        layerClassName="absolute inset-0 w-full h-full"
+        coverOverlayClassName="absolute inset-0"
+        onCoverInteraction={() => {}}
       />
       {/* Soft darkening keeps the lyrics and desktop icons readable. */}
       <div className="absolute inset-0 w-full h-full bg-black/30" />

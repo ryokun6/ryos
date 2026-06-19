@@ -12,8 +12,8 @@
 //     local weather condition (clear, cloudy, rain, snow, fog, storm).
 //   - `dynamic://cover`              — the now-playing cover art of the iPod or
 //     Karaoke (falls back to the paused cover).
-//   - `dynamic://lyrics`            — the now-playing synced lyrics over the same
-//     animated mesh-gradient ("gradient paper") shader used by the music apps.
+//   - `dynamic://lyrics`            — the now-playing synced lyrics over the
+//     iPod / Karaoke View → Display background (video, cover, shaders, etc.).
 //   - `shuffle://photos/<category>`  — a photo from a picker category, swapped
 //     every {@link SHUFFLE_INTERVAL_MS}.
 //   - `shuffle://tiles`              — a tiled pattern, rotated likewise.
