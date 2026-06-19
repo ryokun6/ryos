@@ -35,11 +35,12 @@ describe("analytics Redis keys", () => {
     expect(fake.allKeys().some((key) => key.startsWith("analytics:daily:"))).toBe(false);
   });
 
-  test("reads legacy API analytics when canonical counters are absent", async () => {
+  test("ignores legacy API analytics keys", async () => {
     const fake = new FakeRedis();
     const redis = fake as unknown as Redis;
     const today = new Date().toISOString().slice(0, 10);
 
+    // Seed ONLY legacy keys — they must no longer be read.
     await redis.hset(`analytics:daily:${today}`, {
       calls: "3",
       ai: "2",
@@ -54,27 +55,25 @@ describe("analytics Redis keys", () => {
 
     const summary = await getAnalyticsSummary(redis, 1);
     expect(summary.totals).toMatchObject({
-      calls: 3,
-      ai: 2,
-      errors: 1,
-      uniqueVisitors: 1,
-      avgLatencyMs: 30,
+      calls: 0,
+      ai: 0,
+      errors: 0,
+      uniqueVisitors: 0,
+      avgLatencyMs: 0,
     });
 
     const detail = await getAnalyticsDetail(redis, 1);
-    expect(detail.topEndpoints).toEqual([{ endpoint: "/api/chat", count: 2 }]);
-    expect(detail.statusCodes).toEqual([
-      { status: "200", count: 2 },
-      { status: "500", count: 1 },
-    ]);
-    expect(detail.aiByUser).toEqual([{ username: "ryo", count: 2 }]);
+    expect(detail.topEndpoints).toEqual([]);
+    expect(detail.statusCodes).toEqual([]);
+    expect(detail.aiByUser).toEqual([]);
   });
 
-  test("merges canonical and legacy analytics hashes during cutover", async () => {
+  test("reads canonical API analytics only, ignoring stray legacy hashes", async () => {
     const fake = new FakeRedis();
     const redis = fake as unknown as Redis;
     const today = new Date().toISOString().slice(0, 10);
 
+    // Stray legacy values that must be ignored.
     await redis.hset(`analytics:daily:${today}`, {
       calls: "3",
       ai: "2",
@@ -83,6 +82,11 @@ describe("analytics Redis keys", () => {
       latcnt: "1",
     });
     await redis.pfadd(`analytics:uv:${today}`, "ip:203.0.113.10");
+    await redis.hset(`analytics:ep:${today}`, { "/api/chat": "2" });
+    await redis.hset(`analytics:st:${today}`, { "200": "2" });
+    await redis.hset(`analytics:aiu:${today}`, { ryo: "2" });
+
+    // Canonical values that should be the only ones returned.
     await redis.hset(`analytics:api:daily:${today}`, {
       calls: "4",
       ai: "1",
@@ -91,33 +95,30 @@ describe("analytics Redis keys", () => {
       latcnt: "4",
     });
     await redis.pfadd(`analytics:api:uv:${today}`, "ip:203.0.113.11");
-    await redis.hset(`analytics:ep:${today}`, { "/api/chat": "2" });
     await redis.hset(`analytics:api:ep:${today}`, { "/api/chat": "1", "/api/admin": "1" });
-    await redis.hset(`analytics:st:${today}`, { "200": "2" });
     await redis.hset(`analytics:api:st:${today}`, { "200": "1", "500": "1" });
-    await redis.hset(`analytics:aiu:${today}`, { ryo: "2" });
     await redis.hset(`analytics:api:aiu:${today}`, { ryo: "1", anonymous: "1" });
 
     const summary = await getAnalyticsSummary(redis, 1);
     expect(summary.totals).toMatchObject({
-      calls: 7,
-      ai: 3,
-      errors: 1,
-      uniqueVisitors: 2,
-      avgLatencyMs: 36,
+      calls: 4,
+      ai: 1,
+      errors: 0,
+      uniqueVisitors: 1,
+      avgLatencyMs: 20,
     });
 
     const detail = await getAnalyticsDetail(redis, 1);
     expect(detail.topEndpoints).toEqual([
-      { endpoint: "/api/chat", count: 3 },
+      { endpoint: "/api/chat", count: 1 },
       { endpoint: "/api/admin", count: 1 },
     ]);
     expect(detail.statusCodes).toEqual([
-      { status: "200", count: 3 },
+      { status: "200", count: 1 },
       { status: "500", count: 1 },
     ]);
     expect(detail.aiByUser).toEqual([
-      { username: "ryo", count: 3 },
+      { username: "ryo", count: 1 },
       { username: "anonymous", count: 1 },
     ]);
   });
