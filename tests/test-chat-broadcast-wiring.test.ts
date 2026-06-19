@@ -19,7 +19,7 @@ const assertHasCall = (
   fnName: string
 ): void => {
   const callPattern = new RegExp(`\\b${fnName}\\s*\\(`);
-  expect(callPattern.test(source)).toBe(true);
+  expect(source).toMatch(callPattern);
 };
 
 const countCalls = (source: string, fnName: string): number => {
@@ -49,9 +49,9 @@ describe("Chat Broadcast Wiring Tests", () => {
     test("presence switch route emits room-updated", async () => {
       const source = readRoute("api/presence/switch.ts");
       assertHasCall(source, "broadcastRoomUpdated");
-      expect(countCalls(source, "broadcastRoomUpdated") >= 2).toBe(true);
-      expect(/broadcastRoomUpdated\s*\(\s*previousRoomId\s*\)/.test(source)).toBe(true);
-      expect(/broadcastRoomUpdated\s*\(\s*nextRoomId\s*\)/.test(source)).toBe(true);
+      expect(countCalls(source, "broadcastRoomUpdated")).toBeGreaterThanOrEqual(2);
+      expect(source).toMatch(/broadcastRoomUpdated\s*\(\s*previousRoomId\s*\)/);
+      expect(source).toMatch(/broadcastRoomUpdated\s*\(\s*nextRoomId\s*\)/);
     });
 
     test("join route emits room-updated", async () => {

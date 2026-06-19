@@ -18,6 +18,20 @@ import { useCloudSyncStore } from "../src/stores/useCloudSyncStore";
 const USERNAME = `sync2eng${Date.now().toString(36)}`;
 const PASSWORD = "test-password-123";
 
+/** Resolve as soon as `predicate` is true, instead of sleeping a fixed amount. */
+async function waitFor(
+  predicate: () => boolean,
+  { timeoutMs = 2000, intervalMs = 10 }: { timeoutMs?: number; intervalMs?: number } = {}
+): Promise<void> {
+  const start = Date.now();
+  while (!predicate()) {
+    if (Date.now() - start > timeoutMs) {
+      throw new Error(`waitFor: condition not met within ${timeoutMs}ms`);
+    }
+    await new Promise((r) => setTimeout(r, intervalMs));
+  }
+}
+
 let token: string;
 let engine: CloudSyncEngine;
 const originalFetch = globalThis.fetch;
@@ -163,8 +177,13 @@ describe("sync v2 engine end-to-end", () => {
       c: "foreign-client",
       ops: [{ k: "stickies/note:e2e-rt", v: { id: "e2e-rt", content: "realtime" }, t, seq: body.seq, c: "foreign-client" }],
     });
-    // handleRealtimeEvent applies asynchronously.
-    await new Promise((resolve) => setTimeout(resolve, 300));
+    // handleRealtimeEvent applies asynchronously; wait until it lands instead
+    // of sleeping a fixed amount.
+    await waitFor(
+      () =>
+        useStickiesStore.getState().notes.some((note) => note.id === "e2e-rt") &&
+        engine.cursor === body.seq
+    );
 
     expect(
       useStickiesStore.getState().notes.some((note) => note.id === "e2e-rt")

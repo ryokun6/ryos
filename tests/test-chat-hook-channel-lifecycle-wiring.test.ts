@@ -21,15 +21,14 @@ const readSource = (relativePath: string): string =>
 const assertUsesSharedLifecycleHelpers = (
   source: string
 ): void => {
-  expect(/subscribePusherChannel\s*\(/.test(source)).toBeTruthy();
-  expect(/unsubscribePusherChannel\s*\(/.test(source)).toBeTruthy();
-  expect(!/pusherRef\.current\?\.(subscribe|unsubscribe)\s*\(/.test(source)).toBeTruthy();
+  expect(source).toMatch(/subscribePusherChannel\s*\(/);
+  expect(source).toMatch(/unsubscribePusherChannel\s*\(/);
+  expect(source).not.toMatch(/pusherRef\.current\?\.(subscribe|unsubscribe)\s*\(/);
 };
 
 const assertNoBroadUnbinds = (source: string): void => {
   // Broad unbind looks like: channel.unbind("event")
-  const broadUnbindPattern = /\.unbind\(\s*"[^"]+"\s*\)/g;
-  expect(!broadUnbindPattern.test(source)).toBeTruthy();
+  expect(source).not.toMatch(/\.unbind\(\s*"[^"]+"\s*\)/);
 };
 
 describe("Chat Hook Channel Lifecycle Wiring", () => {
@@ -70,7 +69,7 @@ describe("Chat Hook Channel Lifecycle Wiring", () => {
   });
 
   describe("Background notifications hook", () => {
-    test("background hook uses shared lifecycle helpers", async () => {
+    test("background hook delegates to ChatRealtimeService, which uses shared lifecycle helpers", async () => {
       const source = readSource("src/hooks/useBackgroundChatNotifications.ts");
       expect(source).toContain("ChatRealtimeService");
       const serviceSource = readSource("src/services/chat/ChatRealtimeService.ts");

@@ -3,16 +3,24 @@
  * (src/utils/backgroundTask.ts).
  *
  * The pure scheduling logic is exercised by injecting a fake visibility
- * source (getter + change-event emitter) and using small real delays.
- * Without injected options the helper must degrade to a plain setInterval
- * (bun:test has no `document`), which keeps it SSR/test safe.
+ * source (getter + change-event emitter) and Bun's fake timers, so we can
+ * advance time by exact amounts and assert exact tick counts instead of
+ * sleeping past the interval and using `>=` fuzz. Without injected options the
+ * helper must degrade to a plain setInterval (bun:test has no `document`),
+ * which keeps it SSR/test safe.
  */
 
-import { describe, test, expect } from "bun:test";
+import { describe, test, expect, beforeEach, afterEach, jest } from "bun:test";
 
 import { createVisibilityGatedInterval } from "../src/utils/backgroundTask";
 
-const sleep = (ms: number) => new Promise<void>((res) => setTimeout(res, ms));
+beforeEach(() => {
+  jest.useFakeTimers();
+});
+
+afterEach(() => {
+  jest.useRealTimers();
+});
 
 /** Fake visibility source: a getter plus a manual change-event emitter. */
 const createFakeVisibility = (initiallyVisible: boolean) => {
@@ -35,55 +43,56 @@ const createFakeVisibility = (initiallyVisible: boolean) => {
 };
 
 describe("createVisibilityGatedInterval", () => {
-  test("runs the callback on the interval cadence while visible", async () => {
+  test("runs the callback on the interval cadence while visible", () => {
     const visibility = createFakeVisibility(true);
     let calls = 0;
     const dispose = createVisibilityGatedInterval(() => calls++, 40, visibility);
 
-    await sleep(150);
+    // Ticks fire at 40/80/120ms.
+    jest.advanceTimersByTime(150);
     dispose();
 
-    expect(calls).toBeGreaterThanOrEqual(2);
+    expect(calls).toBe(3);
   });
 
-  test("does not run while hidden", async () => {
+  test("does not run while hidden", () => {
     const visibility = createFakeVisibility(false);
     let calls = 0;
     const dispose = createVisibilityGatedInterval(() => calls++, 30, visibility);
 
-    await sleep(120);
+    jest.advanceTimersByTime(120);
     dispose();
 
     expect(calls).toBe(0);
   });
 
-  test("pauses when the document becomes hidden", async () => {
+  test("pauses when the document becomes hidden", () => {
     const visibility = createFakeVisibility(true);
     let calls = 0;
     const dispose = createVisibilityGatedInterval(() => calls++, 40, visibility);
 
-    await sleep(60); // at least one tick
+    jest.advanceTimersByTime(60); // one tick at 40ms
     visibility.setVisible(false);
     const callsWhenHidden = calls;
 
-    await sleep(120);
+    jest.advanceTimersByTime(120);
     dispose();
 
-    expect(callsWhenHidden).toBeGreaterThanOrEqual(1);
+    expect(callsWhenHidden).toBe(1);
     expect(calls).toBe(callsWhenHidden);
   });
 
-  test("runs immediately on becoming visible when the last run is overdue", async () => {
+  test("runs immediately on becoming visible when the last run is overdue", () => {
     const visibility = createFakeVisibility(true);
     let calls = 0;
     const dispose = createVisibilityGatedInterval(() => calls++, 50, visibility);
 
-    await sleep(70); // first tick fires (~50ms)
+    jest.advanceTimersByTime(70); // first tick fires at 50ms
     visibility.setVisible(false);
     const callsBeforeHide = calls;
-    expect(callsBeforeHide).toBeGreaterThanOrEqual(1);
+    expect(callsBeforeHide).toBe(1);
 
-    await sleep(80); // hidden for longer than the interval
+    jest.advanceTimersByTime(80); // hidden for longer than the interval
     visibility.setVisible(true);
 
     // Catch-up run happens synchronously inside the visibility handler.
@@ -91,12 +100,12 @@ describe("createVisibilityGatedInterval", () => {
     dispose();
   });
 
-  test("does not run immediately on becoming visible when the last run is fresh", async () => {
+  test("does not run immediately on becoming visible when the last run is fresh", () => {
     const visibility = createFakeVisibility(true);
     let calls = 0;
     const dispose = createVisibilityGatedInterval(() => calls++, 200, visibility);
 
-    await sleep(20); // well within the interval; no tick yet
+    jest.advanceTimersByTime(20); // well within the interval; no tick yet
     visibility.setVisible(false);
     visibility.setVisible(true);
 
@@ -104,7 +113,7 @@ describe("createVisibilityGatedInterval", () => {
     dispose();
   });
 
-  test("dispose stops the interval and unsubscribes from visibility changes", async () => {
+  test("dispose stops the interval and unsubscribes from visibility changes", () => {
     const visibility = createFakeVisibility(true);
     let calls = 0;
     const dispose = createVisibilityGatedInterval(() => calls++, 30, visibility);
@@ -113,26 +122,27 @@ describe("createVisibilityGatedInterval", () => {
     dispose();
     expect(visibility.handlerCount()).toBe(0);
 
-    await sleep(100);
+    jest.advanceTimersByTime(100);
     expect(calls).toBe(0);
 
     // Visibility flapping after dispose must not restart anything.
     visibility.setVisible(false);
     visibility.setVisible(true);
-    await sleep(80);
+    jest.advanceTimersByTime(80);
     expect(calls).toBe(0);
   });
 
-  test("falls back to a plain interval when document is undefined", async () => {
+  test("falls back to a plain interval when document is undefined", () => {
     // bun:test has no DOM, so the default options exercise the SSR path.
     expect(typeof document).toBe("undefined");
 
     let calls = 0;
     const dispose = createVisibilityGatedInterval(() => calls++, 40, {});
 
-    await sleep(150);
+    // Ticks fire at 40/80/120ms.
+    jest.advanceTimersByTime(150);
     dispose();
 
-    expect(calls).toBeGreaterThanOrEqual(2);
+    expect(calls).toBe(3);
   });
 });

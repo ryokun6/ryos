@@ -125,8 +125,10 @@ describe("register login lockout (shared with /api/auth/login)", () => {
       const res = await register(user, "definitely-wrong-password");
       last = res.status;
     }
-    // After crossing the threshold, register returns 429 (locked), not 409.
-    expect(last === 429 || last === 409).toBe(true);
+    // The final loop attempt is either the last wrong-password 409 or the
+    // first locked 429 (depends on exactly when the threshold trips); the
+    // assertion below pins that the account is definitively locked afterwards.
+    expect([409, 429]).toContain(last);
 
     const lockedRegister = await register(user, "definitely-wrong-password");
     expect(lockedRegister.status).toBe(429);

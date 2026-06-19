@@ -2,10 +2,15 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-const themesCss = readFileSync(
-  join(import.meta.dir, "../src/styles/themes.css"),
-  "utf8"
-);
+// themes.css is now just an aggregator of @imports; the macOS toast button
+// rules live in the split aqua (light) and dark-aqua (dark) theme files.
+const themesCss = [
+  readFileSync(join(import.meta.dir, "../src/styles/themes/aqua.css"), "utf8"),
+  readFileSync(
+    join(import.meta.dir, "../src/styles/themes/dark-aqua.css"),
+    "utf8"
+  ),
+].join("\n");
 const sonnerSource = readFileSync(
   join(import.meta.dir, "../src/components/ui/sonner.tsx"),
   "utf8"

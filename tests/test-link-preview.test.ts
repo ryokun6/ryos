@@ -4,12 +4,18 @@
  */
 
 import { describe, test, expect } from "bun:test";
-import { BASE_URL, fetchWithOrigin } from "./test-utils";
+import {
+  BASE_URL,
+  fetchWithOrigin,
+  makeRateLimitBypassHeaders,
+} from "./test-utils";
 
 describe("link-preview", () => {
   describe("Input Validation", () => {
     test("Missing URL parameter", async () => {
-      const res = await fetchWithOrigin(`${BASE_URL}/api/link-preview`);
+      const res = await fetchWithOrigin(`${BASE_URL}/api/link-preview`, {
+        headers: makeRateLimitBypassHeaders(),
+      });
       expect(res.status).toBe(400);
       const data = await res.json();
       expect(data.error?.includes("URL") || data.error?.includes("url")).toBe(true);
@@ -17,7 +23,8 @@ describe("link-preview", () => {
 
     test("Invalid URL format", async () => {
       const res = await fetchWithOrigin(
-        `${BASE_URL}/api/link-preview?url=not-a-valid-url`
+        `${BASE_URL}/api/link-preview?url=not-a-valid-url`,
+        { headers: makeRateLimitBypassHeaders() }
       );
       expect(res.status).toBe(400);
       const data = await res.json();
@@ -26,7 +33,8 @@ describe("link-preview", () => {
 
     test("Non-HTTP protocol", async () => {
       const res = await fetchWithOrigin(
-        `${BASE_URL}/api/link-preview?url=ftp://example.com`
+        `${BASE_URL}/api/link-preview?url=ftp://example.com`,
+        { headers: makeRateLimitBypassHeaders() }
       );
       expect(res.status).toBe(400);
       const data = await res.json();
@@ -36,6 +44,7 @@ describe("link-preview", () => {
     test("Method not allowed (POST)", async () => {
       const res = await fetchWithOrigin(`${BASE_URL}/api/link-preview`, {
         method: "POST",
+        headers: makeRateLimitBypassHeaders(),
       });
       expect(res.status).toBe(405);
     });
@@ -43,15 +52,17 @@ describe("link-preview", () => {
     test("OPTIONS request (CORS preflight)", async () => {
       const res = await fetchWithOrigin(`${BASE_URL}/api/link-preview`, {
         method: "OPTIONS",
+        headers: makeRateLimitBypassHeaders(),
       });
-      expect(res.status === 200 || res.status === 204).toBe(true);
+      expect([200, 204]).toContain(res.status);
     });
   });
 
   describe("Metadata Extraction", () => {
     test("Basic metadata extraction", async () => {
       const res = await fetchWithOrigin(
-        `${BASE_URL}/api/link-preview?url=https://example.com`
+        `${BASE_URL}/api/link-preview?url=https://example.com`,
+        { headers: makeRateLimitBypassHeaders() }
       );
       expect(res.status).toBe(200);
       const data = await res.json();
@@ -61,7 +72,8 @@ describe("link-preview", () => {
 
     test("Open Graph extraction", async () => {
       const res = await fetchWithOrigin(
-        `${BASE_URL}/api/link-preview?url=https://github.com`
+        `${BASE_URL}/api/link-preview?url=https://github.com`,
+        { headers: makeRateLimitBypassHeaders() }
       );
       expect(res.status).toBe(200);
       const data = await res.json();
@@ -71,47 +83,73 @@ describe("link-preview", () => {
 
     test("Cache headers", async () => {
       const res = await fetchWithOrigin(
-        `${BASE_URL}/api/link-preview?url=https://example.com`
+        `${BASE_URL}/api/link-preview?url=https://example.com`,
+        { headers: makeRateLimitBypassHeaders() }
       );
-      if (res.status === 200) {
-        const cacheControl = res.headers.get("Cache-Control");
-        expect(cacheControl !== null || true).toBe(true);
-      }
+      expect(res.status).toBe(200);
+      const cacheControl = res.headers.get("Cache-Control");
+      expect(cacheControl).not.toBeNull();
+      expect(cacheControl).toContain("max-age");
     });
   });
 
   describe("YouTube Handling", () => {
     test("YouTube URL (watch)", async () => {
       const res = await fetchWithOrigin(
-        `${BASE_URL}/api/link-preview?url=https://www.youtube.com/watch?v=dQw4w9WgXcQ`
+        `${BASE_URL}/api/link-preview?url=https://www.youtube.com/watch?v=dQw4w9WgXcQ`,
+        { headers: makeRateLimitBypassHeaders() }
       );
       if (res.status === 200) {
         const data = await res.json();
-        expect(data.siteName?.toLowerCase().includes("youtube") || data.title).toBe(true);
+        const looksLikeYouTube =
+          data.siteName?.toLowerCase().includes("youtube") ||
+          Boolean(data.title);
+        expect(looksLikeYouTube).toBe(true);
       } else {
-        expect(res.status >= 400).toBe(true);
+        expect(res.status).toBeGreaterThanOrEqual(400);
       }
     });
 
     test("YouTube short URL (youtu.be)", async () => {
       const res = await fetchWithOrigin(
-        `${BASE_URL}/api/link-preview?url=https://youtu.be/dQw4w9WgXcQ`
+        `${BASE_URL}/api/link-preview?url=https://youtu.be/dQw4w9WgXcQ`,
+        { headers: makeRateLimitBypassHeaders() }
       );
       if (res.status === 200) {
         const data = await res.json();
         expect(data.siteName).toBe("YouTube");
       } else {
-        expect(res.status >= 400).toBe(true);
+        expect(res.status).toBeGreaterThanOrEqual(400);
       }
     });
   });
 
   describe("Error Cases", () => {
-    test("URL returning 404", async () => {
+    // Previously this fetched https://httpstat.us/404 to exercise upstream HTTP
+    // errors, but that host is unreachable from CI and made the test time out.
+    // SSRF validation runs before any outbound fetch, so a private/reserved
+    // target deterministically exercises the endpoint's rejection path with no
+    // external dependency.
+    test("rejects private/reserved IP targets (SSRF guard)", async () => {
       const res = await fetchWithOrigin(
-        `${BASE_URL}/api/link-preview?url=https://httpstat.us/404`
+        `${BASE_URL}/api/link-preview?url=http://127.0.0.1/`,
+        { headers: makeRateLimitBypassHeaders() }
       );
-      expect(res.status >= 400).toBe(true);
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(typeof data.error).toBe("string");
+      expect(data.error).toContain("Private or reserved IPs");
+    });
+
+    test("rejects blocked hostnames (SSRF guard)", async () => {
+      const res = await fetchWithOrigin(
+        `${BASE_URL}/api/link-preview?url=http://169.254.169.254/latest/meta-data/`,
+        { headers: makeRateLimitBypassHeaders() }
+      );
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(typeof data.error).toBe("string");
+      expect(data.error).toContain("Blocked hostname");
     });
   });
 });
