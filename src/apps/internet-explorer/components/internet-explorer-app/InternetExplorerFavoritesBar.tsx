@@ -74,7 +74,7 @@ export function InternetExplorerFavoritesBar({
                               child.year
                             )
                           }
-                          className="text-md h-6 px-3 active:bg-neutral-900 active:text-white flex items-center gap-2"
+                          className="text-md h-6 px-3 active:bg-os-selection-bg active:text-os-selection-text flex items-center gap-2"
                         >
                           {child.favicon && !isOffline ? (
                             <img

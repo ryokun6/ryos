@@ -199,14 +199,14 @@ export function InternetExplorerToolbar({
                 <SelectItem
                   key={y}
                   value={y}
-                  className="text-md h-6 px-3 active:bg-neutral-900 active:text-white text-os-link"
+                  className="text-md h-6 px-3 active:bg-os-selection-bg active:text-os-selection-text text-os-link"
                 >
                   {y}
                 </SelectItem>
               ))}
               <SelectItem
                 value="current"
-                className="text-md h-6 px-3 active:bg-neutral-900 active:text-white"
+                className="text-md h-6 px-3 active:bg-os-selection-bg active:text-os-selection-text"
               >
                 {t("apps.internet-explorer.now")}
               </SelectItem>
@@ -214,7 +214,7 @@ export function InternetExplorerToolbar({
                 <SelectItem
                   key={y}
                   value={y}
-                  className={`text-md h-6 px-3 active:bg-neutral-900 active:text-white ${
+                  className={`text-md h-6 px-3 active:bg-os-selection-bg active:text-os-selection-text ${
                     parseInt(y) <= 1995 ? "text-os-link" : ""
                   }`}
                 >
