@@ -26,8 +26,6 @@ export function IpodScreenArea({ c }: IpodScreenAreaProps) {
     effectiveDisplayMode,
     showLyrics,
     lyricsAlignment,
-    koreanDisplay,
-    japaneseFurigana,
     lyricOffset,
     adjustLyricOffset,
     registerActivity,
@@ -140,8 +138,6 @@ export function IpodScreenArea({ c }: IpodScreenAreaProps) {
         showStatusCallback={showStatus}
         showLyrics={showLyrics}
         lyricsAlignment={lyricsAlignment}
-        koreanDisplay={koreanDisplay}
-        japaneseFurigana={japaneseFurigana}
         lyricOffset={lyricOffset ?? 0}
         adjustLyricOffset={(delta) => adjustLyricOffset(currentIndex, delta)}
         registerActivity={registerActivity}

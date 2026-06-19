@@ -76,8 +76,6 @@ export function IpodFullScreenView({ c }: IpodFullScreenViewProps) {
     shouldRenderFullScreenAnimatedVisuals,
     fullscreenCoverUrl,
     showLyrics,
-    koreanDisplay,
-    japaneseFurigana,
     soramimiMap,
     isOffline,
     seekToTime,
@@ -337,8 +335,6 @@ export function IpodFullScreenView({ c }: IpodFullScreenViewProps) {
                   visible={true}
                   videoVisible={true}
                   alignment={lyricsAlignment}
-                  koreanDisplay={koreanDisplay}
-                  japaneseFurigana={japaneseFurigana}
                   onAdjustOffset={(delta) => {
                     adjustLyricOffset(currentIndex, delta);
                     const newOffset = (tracks[currentIndex]?.lyricOffset ?? 0) + delta;

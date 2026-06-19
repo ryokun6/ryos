@@ -220,10 +220,6 @@ interface IpodData {
   showLyrics: boolean;
   lyricsAlignment: LyricsAlignment;
   lyricsFont: LyricsFont;
-  /** @deprecated Use romanization settings instead */
-  koreanDisplay: KoreanDisplay;
-  /** @deprecated Use romanization settings instead */
-  japaneseFurigana: JapaneseFurigana;
   /** Romanization settings for lyrics display */
   romanization: RomanizationSettings;
   /** Persistent translation language preference that persists across tracks */
@@ -381,8 +377,6 @@ const initialIpodData: IpodData = {
   showLyrics: true,
   lyricsAlignment: LyricsAlignment.Alternating,
   lyricsFont: LyricsFont.GoldGlow,
-  koreanDisplay: KoreanDisplay.Original,
-  japaneseFurigana: JapaneseFurigana.On,
   romanization: {
     enabled: true,
     japaneseFurigana: true,
@@ -787,6 +781,66 @@ export function navigateActiveIpodTrack(
   } else {
     state.previousTrack();
   }
+}
+
+/** Build romanization from legacy persisted koreanDisplay / japaneseFurigana fields. */
+function buildRomanizationFromLegacyPersisted(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  persisted: any
+): RomanizationSettings {
+  const oldJapaneseFurigana = persisted.japaneseFurigana as string | undefined;
+  const oldKoreanDisplay = persisted.koreanDisplay as string | undefined;
+
+  return {
+    enabled: true,
+    japaneseFurigana:
+      oldJapaneseFurigana === JapaneseFurigana.On ||
+      oldJapaneseFurigana === "on" ||
+      oldJapaneseFurigana === undefined,
+    japaneseRomaji: false,
+    korean:
+      oldKoreanDisplay === KoreanDisplay.Romanized ||
+      oldKoreanDisplay === "romanized"
+        ? true
+        : oldKoreanDisplay === KoreanDisplay.Original ||
+            oldKoreanDisplay === "original"
+          ? false
+          : initialIpodData.romanization.korean,
+    chinese: false,
+    soramimi: false,
+    soramamiTargetLanguage: "zh-TW",
+    pronunciationOnly: false,
+  };
+}
+
+/** Apply romanization migrations from legacy blobs and older romanization shapes. */
+function resolveMigratedRomanization(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  persisted: any
+): RomanizationSettings {
+  const romanization: RomanizationSettings = persisted.romanization
+    ? { ...persisted.romanization }
+    : buildRomanizationFromLegacyPersisted(persisted);
+
+  if (persisted.romanization) {
+    const oldChineseSoramimi = persisted.romanization.chineseSoramimi;
+    const oldEnglishSoramimi = persisted.romanization.soramimi;
+
+    if (oldChineseSoramimi || oldEnglishSoramimi) {
+      romanization.soramimi = true;
+      romanization.soramamiTargetLanguage = oldEnglishSoramimi ? "en" : "zh-TW";
+    } else {
+      romanization.soramimi = romanization.soramimi ?? false;
+      romanization.soramamiTargetLanguage =
+        romanization.soramamiTargetLanguage ?? "zh-TW";
+    }
+  }
+
+  if (romanization.pronunciationOnly === undefined) {
+    romanization.pronunciationOnly = false;
+  }
+
+  return romanization;
 }
 
 const CURRENT_IPOD_STORE_VERSION = 40; // Default fullscreen/Karaoke lyrics style is Gold Glow
@@ -2415,8 +2469,6 @@ export const useIpodStore = create<IpodState>()(
         lyricsAlignment: state.lyricsAlignment,
         lyricsFont: state.lyricsFont,
         displayMode: state.displayMode,
-        // NOTE: koreanDisplay and japaneseFurigana removed from persistence
-        // They are deprecated and migrated to romanization settings
         romanization: state.romanization,
         lyricsTranslationLanguage: state.lyricsTranslationLanguage,
         isFullScreen: state.isFullScreen,
@@ -2451,45 +2503,11 @@ export const useIpodStore = create<IpodState>()(
           );
           
           // Migrate old romanization settings to new unified format
-          const oldJapaneseFurigana = state.japaneseFurigana as string | undefined;
-          
-          const romanization: RomanizationSettings = state.romanization ?? {
-            enabled: true,
-            japaneseFurigana: oldJapaneseFurigana === JapaneseFurigana.On || oldJapaneseFurigana === "on" || oldJapaneseFurigana === undefined,
-            japaneseRomaji: false,
-            korean: true,
-            chinese: false,
-            soramimi: false,
-            soramamiTargetLanguage: "zh-TW",
-            pronunciationOnly: false,
-          };
-          
-          // Migrate old chineseSoramimi/soramimi to new unified soramimi + soramamiTargetLanguage
-          if (state.romanization) {
-            const oldChineseSoramimi = state.romanization.chineseSoramimi;
-            const oldEnglishSoramimi = state.romanization.soramimi;
-            
-            // If either old flag was enabled, enable new soramimi and set appropriate target
-            if (oldChineseSoramimi || oldEnglishSoramimi) {
-              state.romanization.soramimi = true;
-              // Prefer English if it was enabled, otherwise Chinese
-              state.romanization.soramamiTargetLanguage = oldEnglishSoramimi ? "en" : "zh-TW";
-            } else {
-              state.romanization.soramimi = state.romanization.soramimi ?? false;
-              state.romanization.soramamiTargetLanguage = state.romanization.soramamiTargetLanguage ?? "zh-TW";
-            }
-            // Remove old properties
-            delete state.romanization.chineseSoramimi;
-          }
-          
-          // Ensure existing romanization settings have pronunciationOnly
-          if (state.romanization && state.romanization.pronunciationOnly === undefined) {
-            state.romanization.pronunciationOnly = false;
-          }
+          let romanization = resolveMigratedRomanization(state);
 
           // Turn on Korean romanization for all users upgrading to this version (new default)
-          if (state.romanization && state.romanization.korean === false) {
-            state.romanization.korean = true;
+          if (romanization.korean === false) {
+            romanization = { ...romanization, korean: true };
           }
 
           const shouldUpgradeLegacyDefaultLyricsFont =
@@ -2509,14 +2527,14 @@ export const useIpodStore = create<IpodState>()(
               ? LyricsFont.SansSerif
               : state.lyricsFont ?? LyricsFont.GoldGlow,
             displayMode: state.displayMode ?? DisplayMode.Video,
-            koreanDisplay: state.koreanDisplay ?? KoreanDisplay.Original,
-            japaneseFurigana: state.japaneseFurigana ?? JapaneseFurigana.On,
             romanization,
             lyricsTranslationLanguage: state.lyricsTranslationLanguage ?? LYRICS_TRANSLATION_AUTO,
             libraryState: "uninitialized" as LibraryState,
             lastKnownVersion: state.lastKnownVersion ?? 0,
           };
         }
+
+        const romanization = resolveMigratedRomanization(state);
 
         return {
           tracks: state.tracks,
@@ -2541,9 +2559,7 @@ export const useIpodStore = create<IpodState>()(
           lyricsAlignment: state.lyricsAlignment,
           lyricsFont: state.lyricsFont,
           displayMode: state.displayMode ?? DisplayMode.Video,
-          koreanDisplay: state.koreanDisplay,
-          japaneseFurigana: state.japaneseFurigana,
-          romanization: state.romanization ?? initialIpodData.romanization,
+          romanization,
           lyricsTranslationLanguage: state.lyricsTranslationLanguage,
           isFullScreen: state.isFullScreen,
           libraryState: state.libraryState,

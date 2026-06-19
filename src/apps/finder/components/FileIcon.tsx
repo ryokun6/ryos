@@ -67,7 +67,7 @@ export const FileIcon = memo(function FileIcon({
 }: FileIconProps) {
   const { t } = useTranslation();
   const { play: playClick } = useSound(Sounds.BUTTON_CLICK, 0.3);
-  const { isWinXp: isWindowsTheme, isWin98: isWin98Theme, isMacOSTheme: isMacOSXTheme } =
+  const { isWinXp: isWindowsTheme, isWin98: isWin98Theme, isMacOSTheme } =
     useThemeFlags();
   const isFinderContext = context === "finder";
   const initialState: PreviewState = {
@@ -323,7 +323,7 @@ export const FileIcon = memo(function FileIcon({
   return (
     <div
       className={`flex flex-col items-center justify-start cursor-default ${
-        isMacOSXTheme ? "gap-0 pb-1" : "gap-0"
+        isMacOSTheme ? "gap-0 pb-1" : "gap-0"
       } ${sizes.container} ${className}`}
       onDoubleClick={handleDoubleClick}
       onPointerDown={onPointerDown}
@@ -344,15 +344,15 @@ export const FileIcon = memo(function FileIcon({
       <div className={`${sizes.labelMinH} flex items-start justify-center`}>
         <span
           className={`px-1 file-icon-label text-center leading-tight line-clamp-2 break-words ${sizes.text} ${
-            isMacOSXTheme ? "rounded" : ""
-          } ${isMacOSXTheme && !isFinderContext ? "font-bold" : ""} ${
+            isMacOSTheme ? "rounded" : ""
+          } ${isMacOSTheme && !isFinderContext ? "font-bold" : ""} ${
             isSelected
               ? ""
               : isWin98Theme
               ? "bg-white text-black"
-              : (isWindowsTheme || isMacOSXTheme) && !isFinderContext
+              : (isWindowsTheme || isMacOSTheme) && !isFinderContext
               ? "bg-transparent text-white"
-              : isMacOSXTheme && isFinderContext
+              : isMacOSTheme && isFinderContext
               ? // Finder file labels (Mac OS X): transparent so the label
                 // blends with the file pane background. This also lets dark
                 // mode stay clean — text inherits the window-body color
@@ -362,8 +362,8 @@ export const FileIcon = memo(function FileIcon({
           }`}
           data-selected={isSelected ? "true" : undefined}
           style={{
-            ...(!isSelected && (isWindowsTheme || isMacOSXTheme) && !isFinderContext
-              ? isMacOSXTheme
+            ...(!isSelected && (isWindowsTheme || isMacOSTheme) && !isFinderContext
+              ? isMacOSTheme
                 ? {
                     textShadow:
                       "rgba(0, 0, 0, 0.9) 0px 1px 0px, rgba(0, 0, 0, 0.85) 0px 1px 3px, rgba(0, 0, 0, 0.45) 0px 2px 3px",

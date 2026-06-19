@@ -291,7 +291,7 @@ export function useControlPanelsLogic({
     accent,
     macChrome,
     isWindowsTheme,
-    isMacOSTheme: isMacOSXTheme,
+    isMacOSTheme,
     isMacTheme: isClassicMacTheme,
     aquaMaterial,
   } = useThemeFlags();
@@ -1502,7 +1502,7 @@ export function useControlPanelsLogic({
     setLanguage,
     tabStyles,
     isWindowsTheme,
-    isMacOSXTheme,
+    isMacOSTheme,
     isClassicMacTheme,
     isWindowsLegacyTheme,
     uiSoundsEnabled,

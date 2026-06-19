@@ -3,7 +3,7 @@ import type { AdminImportStatus } from "./adminImportStatus";
 
 export interface AdminImportStatusBarProps {
   shouldShowImportStatus: boolean;
-  isMacOSXTheme: boolean;
+  isMacOSTheme: boolean;
   importProgressPercent: number;
   importStatusText: string;
   importStatus: AdminImportStatus;
@@ -11,7 +11,7 @@ export interface AdminImportStatusBarProps {
 
 export function AdminImportStatusBar({
   shouldShowImportStatus,
-  isMacOSXTheme,
+  isMacOSTheme,
   importProgressPercent,
   importStatusText,
   importStatus,
@@ -20,7 +20,7 @@ export function AdminImportStatusBar({
   return (
     <div className="px-2 py-1.5 border-b border-black/10">
       <div className="space-y-1">
-        {isMacOSXTheme ? (
+        {isMacOSTheme ? (
           <div className="aqua-progress w-full h-[14px]">
             <div
               className={cn(

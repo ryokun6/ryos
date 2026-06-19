@@ -39,13 +39,19 @@ Shipped-system errata for the historical proposal body below:
 - Realtime sync events are named `sync-ops`, with an 8 KiB inline payload cap.
 - Visibility/background checks use a slow heartbeat when connected and a faster
   fallback when realtime is disconnected.
+- Runtime Redis keys use the canonical `sync:v2:user:{user}:*` namespace (not
+  the pre-rename `sync2:*` shapes in the historical proposal text below).
+- v1 routes (`/api/sync/domains/*`) and modules (`src/sync/domains.ts`,
+  `api/sync/_state.ts`, `api/sync/_blob.ts`, `src/utils/cloudSyncShared.ts`,
+  `src/utils/syncLogicalDomains.ts`) were deleted in the v2 cutover. §1–§2
+  describe that superseded system for comparison only.
 
-This document studies the current cloud sync system (v1) and proposes a
+This document studies the superseded cloud sync system (v1) and proposes a
 redesign that eliminates its main inefficiencies: full-snapshot uploads and
 downloads, read-before-write round trips, multi-stage blob uploads, metadata
 refetch storms, and polling.
 
-- [1. The current system (v1), studied](#1-the-current-system-v1-studied)
+- [1. The superseded v1 system (studied before cutover)](#1-the-superseded-v1-system-studied-before-cutover)
 - [2. Why v1 is expensive](#2-why-v1-is-expensive)
 - [3. v2 design goals](#3-v2-design-goals)
 - [4. The v2 model: keys, ops, journal, cursor](#4-the-v2-model-keys-ops-journal-cursor)
@@ -60,7 +66,7 @@ refetch storms, and polling.
 
 ---
 
-## 1. The current system (v1), studied
+## 1. The superseded v1 system (studied before cutover)
 
 ### 1.1 Architecture recap
 
@@ -291,10 +297,10 @@ bootstrap/gap: GET full KV state + current seq  (1 request)
 ### 5.1 Redis data structures
 
 ```
-sync2:seq:{user}       STRING   monotonically increasing op counter (INCR)
-sync2:kv:{user}        HASH     field = key, value = JSON { v, t, del?, seq }
-sync2:jrnl:{user}      ZSET     score = seq, member = JSON-encoded op
-sync2:lock:{user}      STRING   short-TTL write lock (SET NX PX 2000)
+sync:v2:user:{user}:seq    STRING   monotonically increasing op counter (INCR)
+sync:v2:user:{user}:kv     HASH     field = key, value = JSON { v, t, del?, seq }
+sync:v2:user:{user}:jrnl   ZSET     score = seq, member = JSON-encoded op
+sync:v2:user:{user}:lock   STRING   short-TTL write lock (SET NX PX 2000)
 ```
 
 All four use commands already exposed by `RedisLike`
@@ -304,7 +310,7 @@ lightweight lock (sync writes for one user are low-frequency — the v1
 debouncer already spaces them seconds apart), and within the lock a single
 pipeline applies KV updates, journal appends, and the seq bump.
 
-Journal trimming: after append, `ZREMRANGEBYSCORE sync2:jrnl:{user} -inf (seq - 4096)`.
+Journal trimming: after append, `ZREMRANGEBYSCORE sync:v2:user:{user}:jrnl -inf (seq - 4096)`.
 (Pre-v2.1 deployments stored this as a `sync2:log:{user}` LIST; that key is
 abandoned on upgrade and expires via its TTL — clients mid-catch-up take one
 snapshot, then resume on the sorted-set journal.)
@@ -353,13 +359,13 @@ re-sending an op after a network failure compares equal-or-less on `t` and is
 a no-op.
 
 If accepted ops reference `contentRef`s, the server verifies the blobs exist
-(HEAD against `sync2:blobs:{user}` set, §6) before accepting.
+(in `sync:v2:user:{user}:blobs`, §6) before accepting.
 
 After the write, the server publishes to Pusher on the existing
 `getSyncChannelName(username)` channel:
 
 ```jsonc
-// event "ops" — payload kept under Pusher's 10 KB limit
+// event "sync-ops" — payload kept under Pusher's 10 KB limit (8 KiB inline cap in code)
 { "seq": 1042, "ops": [ /* accepted ops, inline */ ], "c": "c4f2a9" }
 // if too large: { "seq": 1042, "c": "c4f2a9" }   → receivers GET /changes
 ```
@@ -412,7 +418,7 @@ sync toggles), but is not required for the core flow.
 
 ```
 storage: sync/{username}/blobs/{sha256}.gz          (immutable, deduped)
-redis:   sync2:blobs:{user}  HASH  field = sha256, value = { size, refCount, firstSeenAt }
+redis:   sync:v2:user:{user}:blobs  HASH  field = sha256, value = { url, size }
 ```
 
 Documents reference blobs via `contentRef: { sha256, size }`. Because blobs
@@ -462,7 +468,7 @@ forces full hydration of every item on every device.
 ### 6.4 Garbage collection
 
 On accepting an op that adds/removes/changes a `contentRef`, the server
-adjusts `refCount` in `sync2:blobs:{user}` (within the same user lock).
+adjusts blob references in `sync:v2:user:{user}:blobs` (within the same user lock).
 A periodic job (or opportunistic check on write) deletes storage objects
 whose refCount has been 0 for > 30 days — a grace window that keeps undo
 and journal-replay safe.
@@ -498,9 +504,8 @@ and journal-replay safe.
   `lastLocalChangeAt` bookkeeping.
 - **Appliers**: a registry mapping key prefixes to store updaters
   (`settings/theme` → `useThemeStore`, `files/doc:` → `useFilesStore` +
-  IndexedDB `documents`, …). These already exist in v1 as the per-domain
-  apply functions in `src/sync/domains.ts`; they shrink because they receive
-  one key's document instead of deconstructing snapshots.
+  IndexedDB `documents`, …). In v1 these lived in the removed
+  `src/sync/domains.ts`; v2 implements them in `src/sync/codecs.ts`.
 
 ### 7.2 Echo suppression without timing windows
 
@@ -613,7 +618,7 @@ Retained / reused:
 - Auth, `apiHandler`, rate limiting, Pusher channel naming, the
   `RedisLike` abstraction, `StorageUploadInstruction` and storage providers.
 - IndexedDB stores and zustand stores as the app-facing local state.
-- The applier knowledge in `src/sync/domains.ts` (recast per-key).
+- Per-key appliers live in `src/sync/codecs.ts` and `src/sync/engine.ts`.
 - Manual backup/restore UI can sit on `GET /snapshot` + a restore path that
   emits ops, replacing the base64-in-JSON backup blob.
 
@@ -629,7 +634,7 @@ v1 and v2 do not coexist. The cutover replaced the v1 endpoints, client
 engine, and conflict machinery in one change:
 
 **Server.** `api/sync/v2/` (ops, changes, snapshot, blobs) plus the
-`sync2:*` Redis schema replaced `api/sync/domains/*` and the
+`sync:v2:user:{user}:*` Redis schema replaced `api/sync/domains/*` and the
 `_state`/`_blob`/`_domains`/`_physical` modules, which were deleted.
 Server-side AI tool writers (songs, contacts, calendar, stickies, files
 metadata) were rewired onto the v2 op pipeline (`_tool-state.ts`,

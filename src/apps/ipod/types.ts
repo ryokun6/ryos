@@ -1,7 +1,7 @@
 // Shared types for the iPod app
 
 import type { Track } from "@/stores/useIpodStore";
-import type { LyricsAlignment, LyricsFont, KoreanDisplay, JapaneseFurigana, RomanizationSettings, DisplayMode } from "@/types/lyrics";
+import type { LyricsAlignment, LyricsFont, RomanizationSettings, DisplayMode } from "@/types/lyrics";
 import type ReactPlayer from "react-player";
 import type { useLyrics } from "@/hooks/useLyrics";
 import type { FuriganaSegment } from "@/utils/romanization";
@@ -181,8 +181,6 @@ export interface IpodScreenProps {
   showStatusCallback: (message: string) => void;
   showLyrics: boolean;
   lyricsAlignment: LyricsAlignment;
-  koreanDisplay: KoreanDisplay;
-  japaneseFurigana: JapaneseFurigana;
   lyricOffset: number;
   adjustLyricOffset: (deltaMs: number) => void;
   registerActivity: () => void;

@@ -88,7 +88,7 @@ export function ControlPanelsAppComponent({
     setLanguage,
     tabStyles,
     isWindowsTheme,
-    isMacOSXTheme,
+    isMacOSTheme,
     isClassicMacTheme,
     isWindowsLegacyTheme,
     uiSoundsEnabled,
@@ -334,7 +334,7 @@ export function ControlPanelsAppComponent({
             isWindowsLegacyTheme ? "pt-0 pb-2 px-2" : ""
           } ${
             isClassicMacTheme
-              ? isMacOSXTheme
+              ? isMacOSTheme
                 ? "p-4 pt-2"
                 : "p-4 bg-[#E3E3E3]"
               : ""
@@ -417,7 +417,7 @@ export function ControlPanelsAppComponent({
               <SyncTabContent
                 t={t}
                 tabStyles={tabStyles}
-                isMacOSXTheme={isMacOSXTheme}
+                isMacOSTheme={isMacOSTheme}
                 username={username}
                 promptSetUsername={promptSetUsername}
                 autoSyncEnabled={autoSyncEnabled}

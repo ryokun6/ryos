@@ -10,7 +10,7 @@ import {
 
 export interface FinderWindowBodyProps {
   containerRef: RefObject<HTMLDivElement | null>;
-  isMacOSXTheme: boolean;
+  isMacOSTheme: boolean;
   isDraggingOver: boolean;
   currentPath: string;
   handleDragOver: (e: DragEvent<HTMLDivElement>) => void;
@@ -28,7 +28,7 @@ export interface FinderWindowBodyProps {
 
 export function FinderWindowBody({
   containerRef,
-  isMacOSXTheme,
+  isMacOSTheme,
   isDraggingOver,
   currentPath,
   handleDragOver,
@@ -51,7 +51,7 @@ export function FinderWindowBody({
         isDraggingOver && currentPath === "/Documents"
           ? "after:absolute after:inset-0 after:bg-black/20"
           : "",
-        isMacOSXTheme ? "bg-transparent" : ""
+        isMacOSTheme ? "bg-transparent" : ""
       )}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -61,13 +61,13 @@ export function FinderWindowBody({
       onContextMenu={handleBlankContextMenu}
       {...blankLongPressHandlers}
     >
-      {isMacOSXTheme ? (
+      {isMacOSTheme ? (
         <FinderMacToolbar {...macToolbarProps} />
       ) : (
         <FinderLegacyToolbar {...legacyToolbarProps} />
       )}
 
-      {isMacOSXTheme ? (
+      {isMacOSTheme ? (
         <FinderMacContentArea {...macContentProps} />
       ) : (
         <FinderLegacyContentArea {...legacyContentProps} />

@@ -73,8 +73,6 @@ export function IpodScreen({
   showStatusCallback,
   showLyrics,
   lyricsAlignment,
-  koreanDisplay,
-  japaneseFurigana,
   lyricOffset,
   adjustLyricOffset,
   registerActivity,
@@ -619,8 +617,6 @@ export function IpodScreen({
           setAppleMusicKitNowPlaying={setAppleMusicKitNowPlaying}
           lyricsControls={lyricsControls}
           lyricsAlignment={lyricsAlignment}
-          koreanDisplay={koreanDisplay}
-          japaneseFurigana={japaneseFurigana}
           adjustLyricOffset={adjustLyricOffset}
           showStatusCallback={showStatusCallback}
           onNextTrack={onNextTrack}
