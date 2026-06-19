@@ -190,7 +190,7 @@ describe("prompt caching structure", () => {
     expect(result.volatileStatePrompt).toContain("system_state");
   });
 
-  test("prepareRyoConversationModelInput emits two system messages without memories", async () => {
+  test("prepareRyoConversationModelInput emits three system messages without memories", async () => {
     const result = await prepareRyoConversationModelInput({
       channel: "chat",
       messages: [{ id: "1", role: "user", content: "hello" }],

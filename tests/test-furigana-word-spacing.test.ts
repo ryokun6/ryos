@@ -1,46 +1,82 @@
 import { describe, expect, test } from "bun:test";
 import { getFuriganaSegmentsPronunciationOnly } from "../src/utils/romanization";
+import type { FuriganaSegment } from "../src/utils/romanization";
+import {
+  getTrailingWhitespace,
+  mapWordTimingsToFurigana,
+} from "../src/apps/ipod/components/lyrics-display/furiganaWordMapping";
+import type { LyricWord } from "../src/types/lyrics";
 
-function stripTrailingWhitespace(text: string): string {
-  return text.replace(/\s+$/u, "");
+// Build LyricWord timings from plain strings; timing values are irrelevant to
+// the text-combining behavior under test.
+function mkWords(texts: string[]): LyricWord[] {
+  return texts.map((text, i) => ({
+    text,
+    startTimeMs: i * 100,
+    durationMs: 100,
+  }));
 }
 
-/** Mirror of LyricsDisplay.tsx timed-word combine logic for regression testing */
-function combineTimedWordParts(parts: string[]): string {
-  return stripTrailingWhitespace(parts.join(""));
+function seg(text: string, reading?: string): FuriganaSegment {
+  return reading ? { text, reading } : { text };
 }
 
-function shouldCombineAcrossWordTimings(segmentText: string): boolean {
-  return !/\s/u.test(segmentText);
-}
-
-describe("furigana timed-word spacing", () => {
-  test("preserves authored English spaces", () => {
-    expect(combineTimedWordParts(["Oh ", "no ", "loving ", "you"])).toBe("Oh no loving you");
+// These tests drive the real production combiner (mapWordTimingsToFurigana)
+// instead of re-implementing its logic, so they fail if the source changes.
+describe("furigana timed-word combine (mapWordTimingsToFurigana)", () => {
+  test("combines consecutive no-space Japanese words sharing a reading", () => {
+    const { renderItems, skipIndices } = mapWordTimingsToFurigana(
+      mkWords(["走", "る"]),
+      [seg("走る", "はしる")]
+    );
+    expect(renderItems).toHaveLength(1);
+    expect(renderItems[0].text).toBe("走る");
+    expect(renderItems[0].reading).toBe("はしる");
+    expect(renderItems[0].combinedWordIndices).toEqual([0, 1]);
+    expect([...skipIndices]).toEqual([1]);
   });
 
-  test("preserves authored Korean spaces", () => {
-    expect(combineTimedWordParts(["안녕 ", "하세요"])).toBe("안녕 하세요");
+  test("strips trailing whitespace from a combined unit", () => {
+    const { renderItems } = mapWordTimingsToFurigana(
+      mkWords(["走", "る "]),
+      [seg("走る", "はしる")]
+    );
+    expect(renderItems).toHaveLength(1);
+    expect(renderItems[0].text).toBe("走る");
   });
 
-  test("keeps Japanese chunks concatenated when source has no spaces", () => {
-    expect(combineTimedWordParts(["走", "る"])).toBe("走る");
+  test("combines a mixed Latin+kanji no-space segment", () => {
+    const { renderItems } = mapWordTimingsToFurigana(
+      mkWords(["Hello", "世界"]),
+      [seg("Hello世界", "ハローせかい")]
+    );
+    expect(renderItems).toHaveLength(1);
+    expect(renderItems[0].text).toBe("Hello世界");
   });
 
-  test("keeps mixed Latin and kanji boundary unchanged when source has no spaces", () => {
-    expect(combineTimedWordParts(["Hello", "世界"])).toBe("Hello世界");
+  test("does NOT combine grouped English phrases when the segment has spaces", () => {
+    const { renderItems, skipIndices } = mapWordTimingsToFurigana(
+      mkWords(["to ", "the"]),
+      [seg("to the", "トゥザ")]
+    );
+    expect(renderItems).toHaveLength(2);
+    expect(renderItems.map((r) => r.text)).toEqual(["to", "the"]);
+    expect(skipIndices.size).toBe(0);
   });
 
-  test("does not combine grouped English furigana phrases across multiple timings", () => {
-    expect(shouldCombineAcrossWordTimings("to the")).toBe(false);
+  test("does NOT combine grouped Korean phrases when the segment has spaces", () => {
+    const { renderItems, skipIndices } = mapWordTimingsToFurigana(
+      mkWords(["아주 ", "길게"]),
+      [seg("아주 길게", "ajoo gilge")]
+    );
+    expect(renderItems).toHaveLength(2);
+    expect(skipIndices.size).toBe(0);
   });
 
-  test("does not combine grouped Korean furigana phrases across multiple timings", () => {
-    expect(shouldCombineAcrossWordTimings("아주 길게")).toBe(false);
-  });
-
-  test("still combines Japanese no-space furigana across multiple timings", () => {
-    expect(shouldCombineAcrossWordTimings("走る")).toBe(true);
+  test("exposes authored trailing whitespace per word for spaced rendering", () => {
+    expect(getTrailingWhitespace("no ")).toBe(" ");
+    expect(getTrailingWhitespace("you")).toBe("");
+    expect(getTrailingWhitespace("안녕 ")).toBe(" ");
   });
 });
 

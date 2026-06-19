@@ -200,16 +200,11 @@ describe("sync v2 API", () => {
     expect([401, 503]).toContain(badAuth.status);
   });
 
-  test(
+  // Visibly skipped (not a silent pass) when CRON_SECRET is not configured.
+  test.skipIf(!process.env.CRON_SECRET?.trim())(
     "sync maintenance cron runs with a valid secret",
     async () => {
-      const secret = process.env.CRON_SECRET?.trim();
-      if (!secret) {
-        console.warn(
-          "[sync-v2-api] CRON_SECRET not set; skipping authorized cron test"
-        );
-        return;
-      }
+      const secret = process.env.CRON_SECRET!.trim();
       const response = await fetchWithOrigin(
         `${BASE_URL}/api/cron/sync-maintenance?maxUsers=2`,
         { headers: { Authorization: `Bearer ${secret}` } }
@@ -224,7 +219,9 @@ describe("sync v2 API", () => {
       expect(typeof body.usersProcessed).toBe("number");
       expect(typeof body.scanComplete).toBe("boolean");
     },
-    30000
+    // The cron walks the keyspace via many bounded SCAN round-trips; against a
+    // large/shared Redis a single run can take ~30s, so allow generous margin.
+    90000
   );
 
   test("ops referencing a blob register it for dedupe", async () => {

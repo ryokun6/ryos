@@ -86,8 +86,10 @@ describe("Memory System Timestamp Tests", () => {
       const [entry] = note?.entries || [];
       expect(entry.timeZone).toBe(tz);
       expect(entry.localDate).toBe(todayInTz);
-      expect(typeof entry.localTime === "string" && entry.localTime.length > 0).toBe(true);
-      expect(typeof entry.isoTimestamp === "string" && entry.isoTimestamp.endsWith("Z")).toBe(true);
+      expect(typeof entry.localTime).toBe("string");
+      expect(entry.localTime.length).toBeGreaterThan(0);
+      expect(typeof entry.isoTimestamp).toBe("string");
+      expect(entry.isoTimestamp.endsWith("Z")).toBe(true);
     });
 
     test("appendDailyNote can bucket by a source event timestamp", async () => {
