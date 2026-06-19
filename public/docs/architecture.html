@@ -323,8 +323,7 @@
     end
     
     subgraph State["State Layer"]
-        Zustand[36 Zustand Stores]
-        Contexts[React Contexts]
+        Zustand[38 Zustand Stores]
     end
     
     subgraph Persistence["Persistence Layer"]
@@ -386,7 +385,7 @@
     E --> H[localhost + HMR]</pre>
 <h2>API Runtime Modes</h2>
 <p>The API layer is shared across two execution environments: <ul><li><strong>Vercel serverless functions:</strong> <code>api/*</code> handlers run as Node.js functions for primary web deployment.</li></ul><ul><li><strong>Standalone Bun server:</strong> <code><a href="https://github.com/ryokun6/ryos/blob/main/scripts/api-standalone-server.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">scripts/api-standalone-server.ts</a></code> uses <code>Bun.serve</code> and adapts requests/responses to the Vercel handler shape for non-Vercel environments.</li></ul></p>
-<p>Shared utilities under <code>api/_utils/</code> (including <code>api-handler.ts</code>, <code>middleware.ts</code>, <code>request-auth.ts</code>, <code>redis.ts</code>, <code>storage.ts</code>, <code>realtime.ts</code>, <code>runtime-config.ts</code>, <code>constants.ts</code>, <code>_cors.ts</code>, <code>_ssrf.ts</code>, <code>_rate-limit.ts</code>, <code>_validation.ts</code>, <code>_logging.ts</code>, <code>_analytics.ts</code>, <code>_sse.ts</code>, and <code>_memory.ts</code>) provide consistent API patterns across routes.</p>
+<p>Shared utilities under <code>api/_utils/</code> (~45 modules including <code>api-handler.ts</code>, <code>request-auth.ts</code>, <code>redis.ts</code>, <code>storage.ts</code>, <code>realtime.ts</code>, <code>realtime-auth.ts</code>, <code>runtime-config.ts</code>, <code>_cors.ts</code>, <code>_ssrf.ts</code>, <code>_rate-limit.ts</code>, <code>_validation.ts</code>, <code>_logging.ts</code>, <code>_analytics.ts</code>, <code>_sse.ts</code>, <code>_memory.ts</code>, <code>auth/</code>, <code>irc/</code>, and MapKit/MusicKit JWT signers) provide consistent API patterns across routes. Domain constants live in owning modules (e.g. <code><a href="https://github.com/ryokun6/ryos/blob/main/api/_utils/auth/_constants.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">api/_utils/auth/_constants.ts</a></code>). Vercel edge OG middleware is in root <code>middleware.ts</code>.</p>
 <p>Frontend clients under <code>src/api/</code> (<code>auth</code>, <code>rooms</code>, <code>admin</code>, <code>songs</code>, <code>listen</code>, <code>core</code>, <code>telegram</code>, and <code>irc</code>) centralize request logic for app modules; the Cloud Sync v2 client engine lives in <code>src/sync/</code>.</p>
 <h2>Chunk Splitting Strategy</h2>
 <p>The build system uses intelligent chunk splitting to optimize initial load time while enabling on-demand loading of heavy dependencies.</p>
@@ -395,7 +394,7 @@
 <table><thead><tr><th>Chunk</th><th>Packages</th><th>Size</th></tr></thead><tbody><tr><td><code>react</code></td><td>react, react-dom</td><td>~150KB</td></tr><tr><td><code>ui-core</code></td><td>@radix-ui/<em> (dialog, dropdown, select, etc.)</td><td>~80KB</td></tr><tr><td><code>zustand</code></td><td>zustand, persist middleware</td><td>~10KB</td></tr><tr><td><code>motion</code></td><td>motion</td><td>~100KB</td></tr></tbody></table>
 <h3>Deferred Chunks (Lazy Load)</h3>
 <p>These chunks are loaded when their corresponding apps are opened:</p>
-<table><thead><tr><th>Chunk</th><th>Contents</th><th>Trigger Apps</th></tr></thead><tbody><tr><td><code>audio</code></td><td>tone.js, wavesurfer.js, audio-buffer-utils</td><td>Soundboard, iPod, Synth</td></tr><tr><td><code>media-player</code></td><td>react-player</td><td>iPod, Videos</td></tr><tr><td><code>tiptap</code></td><td>@tiptap/</em> (editor framework)</td><td>TextEdit</td></tr><tr><td><code>three</code></td><td>three.js (3D rendering)</td><td>Synth and shader wallpapers</td></tr><tr><td><code>ai-sdk</code></td><td>ai, @ai-sdk/*</td><td>Chats, Internet Explorer</td></tr><tr><td><code>hangul</code></td><td>hangul-romanization</td><td>Karaoke and iPod lyrics</td></tr><tr><td><code>pusher</code></td><td>pusher-js</td><td>Chats realtime</td></tr><tr><td><code>webamp</code></td><td>webamp</td><td>Winamp</td></tr><tr><td><code>v86</code></td><td>v86 emulator runtime</td><td>Virtual PC</td></tr></tbody></table>
+<table><thead><tr><th>Chunk</th><th>Contents</th><th>Trigger Apps</th></tr></thead><tbody><tr><td><code>audio</code></td><td>tone.js, wavesurfer.js, audio-buffer-utils</td><td>Soundboard, iPod, Synth</td></tr><tr><td><code>media-player</code></td><td>react-player</td><td>iPod, Videos</td></tr><tr><td><code>tiptap</code></td><td>@tiptap/</em> (editor framework)</td><td>TextEdit</td></tr><tr><td><code>three</code></td><td>three.js (3D rendering)</td><td>Synth and shader wallpapers</td></tr><tr><td><code>ai-sdk</code></td><td>ai, @ai-sdk/*</td><td>Chats, Internet Explorer</td></tr><tr><td><code>hangul</code></td><td>hangul-romanization</td><td>Karaoke and iPod lyrics</td></tr><tr><td><code>pusher</code></td><td>pusher-js</td><td>Chats realtime</td></tr><tr><td><code>webamp</code></td><td>webamp</td><td>Winamp</td></tr><tr><td><code>v86</code></td><td>v86 emulator runtime (lazy dynamic import)</td><td>Virtual PC</td></tr></tbody></table>
 <pre class="mermaid">graph TD
     subgraph Core["Core Chunks (Immediate)"]
         R[react]
@@ -459,7 +458,7 @@ function createLazyComponent&lt;T = unknown&gt;(
   const WrappedComponent = (props: AppProps&lt;T&gt;) =&gt; (
     &lt;Suspense fallback={null}&gt;
       &lt;LazyComponent {...props} /&gt;
-      &lt;LoadSignal instanceId={props.instanceId} /&gt;
+      &lt;LazyLoadSignal instanceId={props.instanceId} /&gt;
     &lt;/Suspense&gt;
   );
   
@@ -468,7 +467,7 @@ function createLazyComponent&lt;T = unknown&gt;(
 }</code></pre>
 <h2>PWA Caching Strategy</h2>
 <p>The service worker implements different caching strategies based on resource type:</p>
-<table><thead><tr><th>Resource Pattern</th><th>Strategy</th><th>TTL</th><th>Rationale</th></tr></thead><tbody><tr><td>Navigation (HTML)</td><td>NetworkFirst</td><td>1 day</td><td>Always get latest app shell; stale shell entries are purged on activation after deploys</td></tr><tr><td>JS Chunks</td><td>NetworkFirst (3s timeout)</td><td>1 day</td><td>Fresh code with fast fallback</td></tr><tr><td>CSS</td><td>StaleWhileRevalidate</td><td>7 days</td><td>Use cached, update in background</td></tr><tr><td>Images</td><td>CacheFirst</td><td>30 days</td><td>Rarely change, prioritize speed</td></tr><tr><td>Fonts</td><td>CacheFirst</td><td>1 year</td><td>Never change once deployed</td></tr><tr><td>API Responses</td><td>NetworkOnly</td><td>-</td><td>Always fresh data</td></tr></tbody></table>
+<table><thead><tr><th>Resource Pattern</th><th>Strategy</th><th>TTL</th><th>Rationale</th></tr></thead><tbody><tr><td>Navigation (HTML)</td><td>NetworkFirst</td><td>1 day</td><td>Always get latest app shell; stale shell entries are purged on activation after deploys</td></tr><tr><td><code>/assets/*.js</code> (Vite hashed chunks)</td><td>CacheFirst</td><td>1 day</td><td>New deploys get new filenames</td></tr><tr><td>Other same-origin <code>.js</code></td><td>NetworkFirst (3s timeout)</td><td>1 day</td><td>Fresh code with fast fallback</td></tr><tr><td>CSS</td><td>StaleWhileRevalidate</td><td>7 days</td><td>Use cached, update in background</td></tr><tr><td>Images</td><td>CacheFirst</td><td>30 days</td><td>Rarely change, prioritize speed</td></tr><tr><td>Fonts</td><td>CacheFirst</td><td>1 year</td><td>Never change once deployed</td></tr><tr><td><code>/api/*</code> requests</td><td>Network (excluded from SW cache)</td><td>-</td><td>Navigate denylist; fetch goes to network</td></tr></tbody></table>
 <h3>Cache Invalidation</h3>
 <pre class="mermaid">sequenceDiagram
     participant SW as Service Worker
@@ -502,19 +501,19 @@ function createLazyComponent&lt;T = unknown&gt;(
     end</pre>
 <h2>Module Resolution</h2>
 <p>The project uses TypeScript path aliases for clean imports:</p>
-<table><thead><tr><th>Alias</th><th>Path</th><th>Usage</th></tr></thead><tbody><tr><td><code>@/</code></td><td><code>src/</code></td><td>Source code root</td></tr><tr><td><code>@/components</code></td><td><code>src/components/</code></td><td>UI components</td></tr><tr><td><code>@/hooks</code></td><td><code>src/hooks/</code></td><td>Custom hooks</td></tr><tr><td><code>@/stores</code></td><td><code>src/stores/</code></td><td>Zustand stores</td></tr><tr><td><code>@/apps</code></td><td><code>src/apps/</code></td><td>App modules</td></tr><tr><td><code>@/utils</code></td><td><code>src/utils/</code></td><td>Utility functions</td></tr><tr><td><code>@/lib</code></td><td><code>src/lib/</code></td><td>Libraries</td></tr><tr><td><code>@/types</code></td><td><code>src/types/</code></td><td>TypeScript types</td></tr></tbody></table>
+<table><thead><tr><th>Alias</th><th>Path</th><th>Usage</th></tr></thead><tbody><tr><td><code>@/</code></td><td><code>src/</code></td><td>All source imports (e.g. <code>@/components/...</code>, <code>@/stores/...</code>, <code>@/apps/...</code>)</td></tr></tbody></table>
 <h2>Environment Configuration</h2>
 <h3>Development</h3>
-<pre><code># Local development with HMR
+<pre><code># Local development with HMR (implemented by scripts/dev-with-api.ts: API on 3000, Vite on 5173, /api and /ws proxied)
 bun run dev           # Full stack (API + Vite with proxy) — the default
 bun run dev:vite      # Vite dev server only (frontend-only, no API)
 bun run dev:api       # Standalone Bun API server only (port 3000)</code></pre>
 <h3>Production Build</h3>
-<pre><code>bun run build         # Production build
+<pre><code>bun run build         # TypeScript compile (tsc -b) + Vite production build
 bun run preview       # Preview production build</code></pre>
 <h3>Desktop (Electron)</h3>
 <pre><code>bun run electron:dev            # Bundle and launch Electron against local Vite
-bun run electron:build          # Build all configured desktop artifacts
+bun run electron:build          # Build desktop artifacts for the current OS (use --mac, --win, or --linux flags for cross-target builds)
 bun run electron:build:mac      # Build macOS DMG/ZIP artifacts
 bun run electron:build:windows  # Build Windows NSIS installer</code></pre>
 <h2>Performance Optimizations</h2>
@@ -544,7 +543,7 @@ bun run electron:build:windows  # Build Windows NSIS installer</code></pre>
         Assets[Static Assets]
     end
     
-    subgraph Vite["Vite Build"]
+    subgraph Vite["Vite Build (tsc -b + vite build)"]
         SWC[SWC Compiler]
         Rollup[Rollup Bundler]
         PostCSS[PostCSS]

@@ -309,16 +309,18 @@
         <h1>Auth API</h1>
 <p>Authentication endpoints for ryOS. These endpoints handle user registration, login, token management, and password operations.</p>
 <h2>Overview</h2>
-<p>The chat rooms authentication system uses token-based authentication with 1-year expiration (refreshed on each validated request). Users authenticate using:</p>
+<p>ryOS uses token-based sessions with a 1-year TTL (refreshed on each validated request).</p>
+<strong>Browser clients (primary):</strong> <code>register</code>, <code>login</code>, <code>token/verify</code>, <code>token/refresh</code>, and <code>session</code> set an httpOnly <code>ryos_auth</code> cookie. The JSON body does <strong>not</strong> include the raw token.
+<strong>Programmatic clients:</strong> send both headers together:
 <pre><code>Authorization: Bearer {token}
 X-Username: {username}</code></pre>
-<p>Tokens are issued by <code>/api/auth/register</code> and <code>/api/auth/login</code>.</p>
-<p>Most auth-protected endpoints now resolve credentials through the shared <code>request-auth</code> utility (both headers required together). <code>register</code>, <code>login</code>, and <code>token/refresh</code> remain explicit handlers.</p>
+<p>Optional request header for timezone persistence: <code>X-User-Timezone: America/Los_Angeles</code></p>
+<p>Most auth-protected endpoints resolve credentials through the shared <code>request-auth</code> utility (both headers required together for programmatic access). <code>register</code>, <code>login</code>, and <code>token/refresh</code> remain explicit handlers.</p>
 <h2>Endpoint Summary</h2>
-<table><thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/auth/register</code></td><td>Create user + issue token</td></tr><tr><td>POST</td><td><code>/api/auth/login</code></td><td>Login with password</td></tr><tr><td>POST</td><td><code>/api/auth/logout</code></td><td>Logout current session</td></tr><tr><td>POST</td><td><code>/api/auth/logout-all</code></td><td>Logout all sessions</td></tr><tr><td>POST</td><td><code>/api/auth/token/verify</code></td><td>Verify token</td></tr><tr><td>POST</td><td><code>/api/auth/token/refresh</code></td><td>Refresh token with <code>{ username, oldToken }</code></td></tr><tr><td>GET</td><td><code>/api/auth/password/check</code></td><td>Check if password set</td></tr><tr><td>POST</td><td><code>/api/auth/password/set</code></td><td>Set password</td></tr><tr><td>GET</td><td><code>/api/auth/tokens</code></td><td>List active tokens</td></tr></tbody></table>
+<table><thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/auth/register</code></td><td>Create user + issue session cookie</td></tr><tr><td>POST</td><td><code>/api/auth/login</code></td><td>Login with password</td></tr><tr><td>POST</td><td><code>/api/auth/logout</code></td><td>Logout current session</td></tr><tr><td>POST</td><td><code>/api/auth/logout-all</code></td><td>Logout all sessions</td></tr><tr><td>GET</td><td><code>/api/auth/session</code></td><td>Restore session from cookie; refresh cookie Max-Age</td></tr><tr><td>POST</td><td><code>/api/auth/token/verify</code></td><td>Verify token</td></tr><tr><td>POST</td><td><code>/api/auth/token/refresh</code></td><td>Refresh session cookie</td></tr><tr><td>GET</td><td><code>/api/auth/password/check</code></td><td>Check if password set</td></tr><tr><td>POST</td><td><code>/api/auth/password/set</code></td><td>Set or update password</td></tr><tr><td>GET</td><td><code>/api/auth/tokens</code></td><td>List active tokens</td></tr></tbody></table>
 <h2>Endpoints</h2>
 <h3>Register User</h3>
-<p>Create a new user account and receive an authentication token.</p>
+<p>Create a new user account and receive a session cookie.</p>
 <pre><code>POST /api/auth/register
 Content-Type: application/json
 
@@ -328,7 +330,11 @@ Content-Type: application/json
 }</code></pre>
 <strong>Response (201, new account):</strong>
 <pre><code>{
-  "token": "eyJhbGciOiJIUzI1NiIs...",
+  "user": { "username": "alice" }
+}</code></pre>
+<p>An httpOnly session cookie is set via <code>Set-Cookie</code>.</p>
+<strong>Response (200, existing account, password matches):</strong>
+<pre><code>{
   "user": { "username": "alice" }
 }</code></pre>
 <h3>Login</h3>
@@ -340,10 +346,26 @@ Content-Type: application/json
   "username": "alice",
   "password": "testpassword123"
 }</code></pre>
+<p>Optional body field: <code>oldToken</code> — rotates session and invalidates the previous token.</p>
 <strong>Response (200):</strong>
 <pre><code>{
-  "token": "eyJhbGciOiJIUzI1NiIs...",
-  "username": "alice"
+  "username": "alice",
+  "timeZone": "America/Los_Angeles"
+}</code></pre>
+<p>Session cookie is set; no <code>token</code> field in the JSON body.</p>
+<h3>Session</h3>
+<p>Restore session from the httpOnly cookie.</p>
+<pre><code>GET /api/auth/session</code></pre>
+<strong>Response (200, anonymous):</strong>
+<pre><code>{
+  "authenticated": false
+}</code></pre>
+<strong>Response (200, authenticated):</strong>
+<pre><code>{
+  "authenticated": true,
+  "username": "alice",
+  "expired": false,
+  "timeZone": "America/Los_Angeles"
 }</code></pre>
 <h3>Logout</h3>
 <p>Invalidate the current session token.</p>
@@ -369,8 +391,13 @@ X-Username: alice</code></pre>
 <h3>Verify Token</h3>
 <p>Check if a token is valid.</p>
 <pre><code>POST /api/auth/token/verify
-Authorization: Bearer {token}
-X-Username: alice</code></pre>
+Content-Type: application/json
+
+{
+  "username": "alice",
+  "token": "..."
+}</code></pre>
+<p>Headers (<code>Authorization</code> + <code>X-Username</code>) are an optional fallback.</p>
 <strong>Response (200):</strong>
 <pre><code>{
   "valid": true,
@@ -385,7 +412,7 @@ X-Username: alice</code></pre>
   "message": "Token is within grace period"
 }</code></pre>
 <h3>Refresh Token</h3>
-<p>Get a new token before/after expiry (within grace period) using the old token.</p>
+<p>Refresh the session cookie before/after expiry (within grace period).</p>
 <pre><code>POST /api/auth/token/refresh
 Content-Type: application/json
 
@@ -393,10 +420,12 @@ Content-Type: application/json
   "username": "alice",
   "oldToken": "previous-token"
 }</code></pre>
-<strong>Response (201):</strong>
+<p>Body may omit credentials when the httpOnly cookie is present.</p>
+<strong>Response (200):</strong>
 <pre><code>{
-  "token": "eyJhbGciOiJIUzI1NiIs..."
+  "refreshed": true
 }</code></pre>
+<p>Cookie is updated.</p>
 <h3>Check Password Status</h3>
 <p>Check if a user has set a password.</p>
 <pre><code>GET /api/auth/password/check
@@ -408,14 +437,15 @@ X-Username: alice</code></pre>
   "username": "alice"
 }</code></pre>
 <h3>Set Password</h3>
-<p>Set or update the user's password.</p>
+<p>Set or update the user's password. Requires <code>currentPassword</code> when a password is already set.</p>
 <pre><code>POST /api/auth/password/set
 Authorization: Bearer {token}
 X-Username: alice
 Content-Type: application/json
 
 {
-  "password": "newSecurePassword123"
+  "password": "newSecurePassword123",
+  "currentPassword": "oldPassword123"
 }</code></pre>
 <strong>Response (200):</strong>
 <pre><code>{

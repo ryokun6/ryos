@@ -53,8 +53,8 @@ graph LR
 
 The UI system follows a layered approach:
 
-1. **Base Layer**: shadcn/ui components (24 components: button, dialog, input, select, etc.) provide accessible, themeable primitives
-2. **Custom Layer**: Specialized components (8 components: activity-indicator, aqua-checkbox, audio-bars, dial, playback-bars, etc.) extend functionality for app-specific needs
+1. **Base Layer**: ~20 shadcn/ui primitives in `src/components/ui/`
+2. **Custom Layer**: ~12 specialized UI components in the same folder (activity indicators, aqua-checkbox, audio-bars, dial, playback-bars, search-input, right-click-menu, etc.)
 3. **Layout Layer**: WindowFrame, MenuBar, Desktop, and Dock components manage the desktop environment structure
 4. **Application Layer**: Dialog, shared, and error components provide common patterns used across multiple apps (including runtime crash recovery)
 
@@ -96,5 +96,5 @@ All components are theme-aware, automatically adapting to the active system them
 
 ## Subsections
 
-- [Component Library](/docs/component-library) - Core UI component library including 24 shadcn-style components, 8 custom primitives, 65+ shared components, and crash boundary components
+- [Component Library](/docs/component-library) - UI primitives in `src/components/ui/` (~32 files) plus ~90+ shared components under `src/components/shared/`, and crash boundary components
 - [Internationalization](/docs/i18n) - i18n hooks and translation system supporting 10 languages

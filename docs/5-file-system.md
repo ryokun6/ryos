@@ -74,6 +74,7 @@ graph TB
 | `/Videos` | Virtual | Video library (organized by artist) |
 | `/Sites` | Virtual | Internet Explorer favorites |
 | `/Applets` | Physical | HTML applets (.app, .html files) |
+| `/Applets Store` | Virtual (AI-only) | Shared applets catalog from Redis/API; visible to Chats `list`/`read`/`open` tools, not a Finder folder |
 | `/Trash` | Special | Deleted items (restorable) |
 | `/Downloads` | Physical | User downloads (AirDrop and similar) |
 | `/Desktop` | Physical | Shortcuts and aliases |
@@ -87,12 +88,13 @@ graph TD
     Root --> Videos["/Videos<br/>Virtual"]
     Root --> Sites["/Sites<br/>Virtual"]
     Root --> Applets["/Applets<br/>Physical"]
+    Root --> AppletsStore["/Applets Store<br/>Virtual (AI-only)"]
     Root --> Trash["/Trash<br/>Special"]
     Root --> Downloads["/Downloads<br/>Physical"]
     Root --> Desktop["/Desktop<br/>Physical"]
     
     Apps -.->|"from appRegistry"| AppReg[(App Registry)]
-    Music -.->|"from useIpodStore / useMediaLibraryStore"| iPod[(iPod Library)]
+    Music -.->|"from useIpodStore (alias: useMediaLibraryStore)"| iPod[(iPod Library)]
     Videos -.->|"from useVideoStore"| VidLib[(Video Library)]
     Sites -.->|"from useInternetExplorerStore"| IEFav[(IE Favorites)]
     

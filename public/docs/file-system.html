@@ -348,7 +348,7 @@
 <code>src/services/vfs/</code> provides cross-app access to Finder-backed file data:
 <table><thead><tr><th>Module</th><th>Purpose</th></tr></thead><tbody><tr><td><code>FileMetadataService</code></td><td>Metadata lookups backed by <code>useFilesStore</code></td></tr><tr><td><code>FileContentRepository</code></td><td>IndexedDB read/write by path or UUID</td></tr><tr><td><code>virtualTrees</code></td><td>Virtual <code>/Music</code> and <code>/Videos</code> directory builders</td></tr><tr><td><code>useVfsFileOperations</code></td><td>Thin cross-app wrapper for file writes</td></tr></tbody></table>
 <h2>Directory Structure</h2>
-<table><thead><tr><th>Path</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>/</code></td><td>Root</td><td>Root directory</td></tr><tr><td><code>/Applications</code></td><td>Virtual</td><td>Apps from registry (non-Finder apps)</td></tr><tr><td><code>/Documents</code></td><td>Physical</td><td>User text documents (.txt, .md)</td></tr><tr><td><code>/Images</code></td><td>Physical</td><td>User images (PNG, JPG, GIF, WebP, BMP)</td></tr><tr><td><code>/Music</code></td><td>Virtual</td><td>iPod library (organized by artist)</td></tr><tr><td><code>/Videos</code></td><td>Virtual</td><td>Video library (organized by artist)</td></tr><tr><td><code>/Sites</code></td><td>Virtual</td><td>Internet Explorer favorites</td></tr><tr><td><code>/Applets</code></td><td>Physical</td><td>HTML applets (.app, .html files)</td></tr><tr><td><code>/Trash</code></td><td>Special</td><td>Deleted items (restorable)</td></tr><tr><td><code>/Downloads</code></td><td>Physical</td><td>User downloads (AirDrop and similar)</td></tr><tr><td><code>/Desktop</code></td><td>Physical</td><td>Shortcuts and aliases</td></tr></tbody></table>
+<table><thead><tr><th>Path</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>/</code></td><td>Root</td><td>Root directory</td></tr><tr><td><code>/Applications</code></td><td>Virtual</td><td>Apps from registry (non-Finder apps)</td></tr><tr><td><code>/Documents</code></td><td>Physical</td><td>User text documents (.txt, .md)</td></tr><tr><td><code>/Images</code></td><td>Physical</td><td>User images (PNG, JPG, GIF, WebP, BMP)</td></tr><tr><td><code>/Music</code></td><td>Virtual</td><td>iPod library (organized by artist)</td></tr><tr><td><code>/Videos</code></td><td>Virtual</td><td>Video library (organized by artist)</td></tr><tr><td><code>/Sites</code></td><td>Virtual</td><td>Internet Explorer favorites</td></tr><tr><td><code>/Applets</code></td><td>Physical</td><td>HTML applets (.app, .html files)</td></tr><tr><td><code>/Applets Store</code></td><td>Virtual (AI-only)</td><td>Shared applets catalog from Redis/API; visible to Chats <code>list</code>/<code>read</code>/<code>open</code> tools, not a Finder folder</td></tr><tr><td><code>/Trash</code></td><td>Special</td><td>Deleted items (restorable)</td></tr><tr><td><code>/Downloads</code></td><td>Physical</td><td>User downloads (AirDrop and similar)</td></tr><tr><td><code>/Desktop</code></td><td>Physical</td><td>Shortcuts and aliases</td></tr></tbody></table>
 <pre class="mermaid">graph TD
     Root["/"] --> Apps["/Applications<br/>Virtual"]
     Root --> Docs["/Documents<br/>Physical"]
@@ -357,12 +357,13 @@
     Root --> Videos["/Videos<br/>Virtual"]
     Root --> Sites["/Sites<br/>Virtual"]
     Root --> Applets["/Applets<br/>Physical"]
+    Root --> AppletsStore["/Applets Store<br/>Virtual (AI-only)"]
     Root --> Trash["/Trash<br/>Special"]
     Root --> Downloads["/Downloads<br/>Physical"]
     Root --> Desktop["/Desktop<br/>Physical"]
     
     Apps -.->|"from appRegistry"| AppReg[(App Registry)]
-    Music -.->|"from useIpodStore / useMediaLibraryStore"| iPod[(iPod Library)]
+    Music -.->|"from useIpodStore (alias: useMediaLibraryStore)"| iPod[(iPod Library)]
     Videos -.->|"from useVideoStore"| VidLib[(Video Library)]
     Sites -.->|"from useInternetExplorerStore"| IEFav[(IE Favorites)]
     
