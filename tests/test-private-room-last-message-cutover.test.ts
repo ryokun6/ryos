@@ -1,16 +1,30 @@
-import { beforeAll, beforeEach, describe, expect, mock, test } from "bun:test";
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  mock,
+  test,
+} from "bun:test";
 import { redisKeys } from "../src/shared/redisKeys";
 import { FakeRedis } from "./fake-redis";
+import * as actualRedis from "../api/_utils/redis";
+import * as actualRedisHelpers from "../api/_utils/redis-helpers";
 
 let fake: FakeRedis;
 
 // Presence helpers resolve their client through createRedis() in this module.
+// Spread the real module so other exports (e.g. supportsRedisPubSub) survive —
+// Bun module mocks are global and persist across files in the same run.
 mock.module("../api/_utils/redis.js", () => ({
+  ...actualRedis,
   createRedis: () => fake,
 }));
 
 // Room discovery (getAllRoomIds) resolves its client through redis-helpers.
 mock.module("../api/_utils/redis-helpers.js", () => ({
+  ...actualRedisHelpers,
   createRedisClient: () => fake,
   generateRandomHexId: (byteLength: number) => "a".repeat(byteLength * 2),
   getCurrentTimestamp: () => 1_718_180_000_000,
@@ -27,6 +41,12 @@ mock.module("../api/_utils/redis-helpers.js", () => ({
     return null;
   },
 }));
+
+// Restore the real modules after this file so the overrides do not leak.
+afterAll(() => {
+  mock.module("../api/_utils/redis.js", () => actualRedis);
+  mock.module("../api/_utils/redis-helpers.js", () => actualRedisHelpers);
+});
 
 let presence: typeof import("../api/rooms/_helpers/_presence");
 

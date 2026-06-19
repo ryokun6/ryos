@@ -1,14 +1,22 @@
-import { beforeEach, describe, expect, mock, test } from "bun:test";
+import { afterAll, beforeEach, describe, expect, mock, test } from "bun:test";
 import { redisKeys } from "../src/shared/redisKeys";
 import { FakeRedis } from "./fake-redis";
+import * as actualRedis from "../api/_utils/redis";
 
 let fake: FakeRedis;
 
 // The IRC server registry resolves its client through createRedis() from this
-// module, so point it at a fake to exercise the real key-reading logic.
+// module, so point it at a fake to exercise the real key-reading logic. Spread
+// the real module so other exports (e.g. supportsRedisPubSub) survive — Bun
+// module mocks are global and persist across files in the same run.
 mock.module("../api/_utils/redis.js", () => ({
+  ...actualRedis,
   createRedis: () => fake,
 }));
+
+afterAll(() => {
+  mock.module("../api/_utils/redis.js", () => actualRedis);
+});
 
 let servers: typeof import("../api/_utils/irc/_servers");
 
