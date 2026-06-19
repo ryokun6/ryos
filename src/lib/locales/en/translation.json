@@ -216,7 +216,8 @@
       "system": "System",
       "mb": "MB",
       "clickToToggle": "Click to toggle",
-      "viewChangelog": "View Changelog"
+      "viewChangelog": "View Changelog",
+      "privacyPolicy": "Privacy Policy"
     },
     "toast": {
       "updatingIcons": "Updating icons",
@@ -2900,6 +2901,7 @@
       "checkForUpdates": "Check for Updates",
       "downloadMacApp": "Download Mac App",
       "viewChangelog": "View Changelog",
+      "privacyPolicy": "Privacy Policy",
       "backup": "Backup",
       "restore": "Restore",
       "backupRestoreDescription": "Backup or restore all app settings and files to a local file",

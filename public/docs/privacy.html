@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Calendar - ryOS Docs</title>
+  <title>Privacy Policy - ryOS Docs</title>
   <link rel="icon" href="/icons/mac-192.png">
   <style>
     @font-face { font-family: "Geneva"; src: url("/fonts/geneva-12.woff2") format("woff2"); }
@@ -195,14 +195,14 @@
     <a href="/docs/self-hosting-vps" class="nav-child ">1.3 Self-hosting ryOS on a VPS or Coolify (without Vercel)</a>
   </div>
 </div>
-<div class="nav-group expanded">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
+<div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
     <a href="/docs/apps" class="">2. Apps</a>
   </button>
-  <div class="nav-children" style="display: block;">
+  <div class="nav-children" style="display: none;">
     <a href="/docs/chats" class="nav-child ">2.1 Chats</a>
     <a href="/docs/internet-explorer" class="nav-child ">2.2 Internet Explorer</a>
     <a href="/docs/ipod" class="nav-child ">2.3 iPod</a>
@@ -223,7 +223,7 @@
     <a href="/docs/stickies" class="nav-child ">2.18 Stickies</a>
     <a href="/docs/infinite-mac" class="nav-child ">2.19 Infinite Mac</a>
     <a href="/docs/winamp" class="nav-child ">2.20 Winamp</a>
-    <a href="/docs/calendar" class="nav-child active">2.21 Calendar</a>
+    <a href="/docs/calendar" class="nav-child ">2.21 Calendar</a>
     <a href="/docs/dashboard" class="nav-child ">2.22 Dashboard</a>
     <a href="/docs/contacts" class="nav-child ">2.23 Contacts</a>
     <a href="/docs/tv" class="nav-child ">2.25 TV</a>
@@ -305,44 +305,83 @@
 <div class="nav-group">
   <div class="nav-toggle nav-no-toggle">
     <span class="nav-spacer"></span>
-    <a href="/docs/privacy" class="">10. Privacy Policy</a>
+    <a href="/docs/privacy" class="active">10. Privacy Policy</a>
   </div>
 </div>
     </nav>
     
     <main class="content">
       <article>
-        <h1>Calendar</h1>
-<p>Calendar is an iCal-inspired date management application for ryOS that lets you view days, weeks, and months, create events, manage todos, and organize your schedule with color coding. It provides cloud sync, AI integration, and persistent event storage.</p>
-<h2>Overview</h2>
-<p>Calendar is an iCal-inspired date management application with day, week, and month views, event creation with color coding, cloud sync, and AI integration. It helps ryOS users track appointments, deadlines, todos, and events in an Apple iCal-inspired interface with brushed metal and Aqua styling. Events sync to the cloud and Ryo can create and manage events via chat. The app supports week view as the primary view, day view for focus, month view for overview, and offers Spotlight search integration for finding events quickly.</p>
-<h2>Features</h2>
-<ul><li><strong>Day, Week & Month Views:</strong> iCal-style views with smooth navigation between focused day, weekly schedule, and monthly overview</li></ul><ul><li><strong>Create, Edit, and Delete Events:</strong> Double-click a date or use File > New Event to add events; edit and delete with color coding for visual organization</li><li><strong>Cloud Sync:</strong> Calendar events sync to the cloud</li><li><strong>AI Integration:</strong> Calendar AI tool—Ryo can create and manage events via chat</li><li><strong>Spotlight Search:</strong> Calendar events appear in Spotlight search results</li><li><strong>Brushed Metal + Aqua Styling:</strong> Matches classic macOS aesthetics</li><li><strong>Mobile-Responsive:</strong> Horizontal scrolling in week view on smaller screens</li><li><strong>Today Indicator:</strong> Red highlight for the current day</li><li><strong>Translucent Event Colors:</strong> Overlap visibility when events conflict</li><li><strong>Sync Menu Items:</strong> File menu includes sync options</li><li><strong>Date/Range Label:</strong> Displayed in the title bar (moved from bottom toolbar)</li><li><strong>Auto-Save:</strong> Events are automatically saved and persist between sessions</li></ul>
-<h2>User Guide</h2>
-<h3>Getting Started</h3>
-Launch Calendar from the application launcher. Use the day, week, or month navigation to move between time periods, or click Today to return to the current date. Week view is the default primary view with an iCal-inspired layout.
-<h3>Key Actions</h3>
-<ul><li><strong>Add Event:</strong> Double-click any date in the week or month view, or use File > New Event</li><li><strong>Sync Events:</strong> Use File menu sync options to sync calendar data with the cloud</li><li><strong>Organize with Colors:</strong> Select an event and choose a color from the color options</li><li><strong>Remove Events:</strong> Select an event and use Edit > Delete Event</li><li><strong>Search Events:</strong> Use Spotlight to find calendar events from anywhere in ryOS</li></ul>
-<h3>Tips & Shortcuts</h3>
-<ul><li>Events auto-save as you create and edit them—no manual save needed</li><li>Use colors to distinguish between work, personal, and other event types</li><li>Ask Ryo in chat to create or manage events—AI integration handles the details</li></ul>
-<h2>Technical Details</h2>
-<h3>Window Configuration</h3>
-<ul><li>Default size: 700×520px</li><li>Minimum size: 300×380px</li></ul>
-<h3>Component Architecture</h3>
-<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/calendar/components/calendar-app/CalendarAppComponent.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/calendar/components/calendar-app/CalendarAppComponent.tsx</a></code> — Main app with day, week, and month views</li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/calendar/components/CalendarMenuBar.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/calendar/components/CalendarMenuBar.tsx</a></code> — Menu bar with File, Edit, View options and sync</li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/calendar/components/tray-details/TrayDetails.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/calendar/components/tray-details/TrayDetails.tsx</a></code> — Event/todo detail tray</li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/calendar/components/tray-details/EventTrayEditor.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/calendar/components/tray-details/EventTrayEditor.tsx</a></code> — Event create/edit tray editor</li></ul>
-<h3>Hooks</h3>
-<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/calendar/hooks/useCalendarLogic.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/calendar/hooks/useCalendarLogic.ts</a></code> — Calendar state, navigation, and event management</li></ul>
-<h3>Utilities</h3>
-<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/calendar/utils/parseIcal.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/calendar/utils/parseIcal.ts</a></code> — iCal format parsing</li></ul>
-<h3>State Management</h3>
-<code>useCalendarStore</code> (<code><a href="https://github.com/ryokun6/ryos/blob/main/src/stores/useCalendarStore.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/stores/useCalendarStore.ts</a></code>) — Zustand store with IndexedDB persistence for events, calendars, and todos.
-<h2>Related Apps</h2>
-<ul><li><strong>Stickies:</strong> For quick reminders alongside scheduled events</li></ul><ul><li><strong>Dashboard:</strong> Includes a mini calendar widget that can show your events</li><li><strong>Chats:</strong> Ask Ryo to create or manage calendar events via the AI integration</li></ul>
+        <h1>Privacy Policy</h1>
+<p>ryOS is a web-based desktop environment that runs almost entirely in your browser. This policy explains what data ryOS handles, why, where it is stored, who it may be shared with, and the rights you have over it. It is written to align with the EU/UK General Data Protection Regulation (GDPR) and similar privacy laws.</p>
+<em>Last updated: June 2026.</em>
+<hr>
+<h2>Data controller and contact</h2>
+<p>The data controller for ryOS as hosted at <code>os.ryo.lu</code> is Ryo Lu. If you self-host ryOS, the operator of that deployment is the controller for their instance.</p>
+<p>For privacy questions, data-subject requests, or complaints, contact <strong>ryo@ryo.lu</strong>. You also have the right to lodge a complaint with your local data protection authority.</p>
+<hr>
+<h2>Summary</h2>
+<ul><li>ryOS stores most of your data <strong>locally in your browser</strong>. It never leaves your device unless you sign in and enable cloud sync, or use a feature that calls a server (such as AI chat).</li></ul><ul><li>ryOS does <strong>not</strong> use third-party advertising or cross-site tracking cookies. There is no Google Analytics, no advertising SDKs, and no behavioral ad profiling.</li><li>The only cookie ryOS sets is a functional, <code>HttpOnly</code> authentication cookie used after you log in.</li><li>First-party, privacy-conscious usage analytics are collected to keep the system running and improve it. Chat message contents are <strong>not</strong> collected by analytics.</li><li>You can export, reset, or delete your data at any time from <strong>Control Panels</strong>.</li></ul>
+<hr>
+<h2>Data stored locally on your device</h2>
+<p>Most ryOS state lives only in your browser and is never transmitted unless you opt into cloud sync: <ul><li><strong><code>localStorage</code></strong> — interface preferences (theme, language, wallpaper), window positions, and the state of apps (files metadata, Chats, Contacts, Calendar, Stickies, settings, and more).</li></ul><ul><li><strong><code>IndexedDB</code></strong> — file contents such as documents, images, and applets created in apps like TextEdit, Paint, and the Applet Store.</li><li><strong><code>sessionStorage</code></strong> — short-lived values such as reload guards and the current analytics session identifier.</li><li><strong>Service worker / PWA cache</strong> — application assets cached for offline use and faster loading.</li></ul></p>
+<p>You remain in control of this data. Clearing your browser storage, or using <strong>Control Panels → reset</strong>, removes it from your device.</p>
+<hr>
+<h2>Usage analytics</h2>
+<p>ryOS collects first-party usage analytics to understand how the system is used, diagnose problems, and improve features. These analytics are sent to ryOS's own API (<code>/api/analytics/events</code>) and are <strong>not</strong> shared with third-party analytics providers.</p>
+<strong>What is collected:</strong>
+<ul><li>Event metadata such as app launches and lifecycle events, navigation within Internet Explorer, settings changes, and authentication events (e.g. that a login occurred).</li></ul><ul><li>A randomly generated <strong>client identifier</strong> (<code>ryos:analytics:client-id</code>, stored in <code>localStorage</code>) and <strong>session identifier</strong> (<code>ryos:analytics:session-id</code>, stored in <code>sessionStorage</code>).</li><li>A coarse, country-level location derived from your IP address at the time of the request.</li><li>Basic technical information such as user agent.</li><li>Your username, only if you are signed in.</li></ul>
+<strong>What is not collected:</strong>
+<ul><li>The contents of your chat messages, documents, or files. Analytics records that an action happened, not what you wrote.</li></ul><ul><li>Precise location. Only a coarse country is derived, and your raw IP address is not retained as part of product analytics.</li></ul>
+<strong>Retention:</strong> aggregated API metrics are kept on a rolling basis (approximately 90 days) and then expire automatically.
+<hr>
+<h2>Cookies</h2>
+<p>ryOS sets a single functional cookie:</p>
+<table><thead><tr><th>Cookie</th><th>Purpose</th><th>Type</th></tr></thead><tbody><tr><td><code>ryos_auth</code></td><td>Keeps you signed in after login</td><td><code>HttpOnly</code>, <code>SameSite=Lax</code>, scoped to <code>/api</code></td></tr></tbody></table>
+<p>This cookie is strictly necessary for the authentication feature and is only set after you choose to log in. ryOS does not set advertising or cross-site tracking cookies, so no cookie-consent banner is required for non-essential tracking — there is none.</p>
+<hr>
+<h2>Accounts and cloud sync</h2>
+<p>Creating an account and using cloud sync are <strong>optional</strong>.</p>
+<p>If you register and sign in: <ul><li>Your username and credentials are stored on the server to authenticate you.</li></ul><ul><li>With cloud sync enabled, your local app state is replicated to the server (via <code>/api/sync/v2/*</code>) so it can be restored on other devices. Binary content (such as files and images) is content-addressed and de-duplicated.</li><li>You can log out, log out of all devices, change your password, or delete your account from <strong>Control Panels → Account</strong>.</li></ul></p>
+<p>If you never sign in, none of this data leaves your browser.</p>
+<hr>
+<h2>AI features</h2>
+<p>When you use AI features (such as Chats with Ryo, AI-generated applets, Internet Explorer's time-travel generation, audio transcription, or translation), the relevant input is sent to an AI provider to produce a response. <ul><li>For signed-in users, ryOS may store long-term "memories" and daily notes derived from your interactions (via <code>/api/ai/extract-memories</code> and <code>/api/ai/process-daily-notes</code>) so the assistant can remember context across sessions. This data is tied to your account and can be removed by deleting your account.</li></ul><ul><li>AI requests are processed by third-party model providers (see below). Do not share information through AI features that you would not want processed by those providers.</li></ul></p>
+<hr>
+<h2>Third-party services and processors</h2>
+<p>Depending on which features you use and how the instance is configured, ryOS may send data to the following third-party services. They act as processors for the corresponding feature:</p>
+<table><thead><tr><th>Service</th><th>Used for</th></tr></thead><tbody><tr><td>OpenAI / Anthropic / Google AI</td><td>AI chat, applet generation, transcription, translation</td></tr><tr><td>ElevenLabs</td><td>Text-to-speech</td></tr><tr><td>YouTube</td><td>Video metadata and playback (iPod, Videos, TV)</td></tr><tr><td>Apple MapKit / MusicKit</td><td>Maps place search and Apple Music playback</td></tr><tr><td>Pusher</td><td>Real-time chat rooms and presence</td></tr><tr><td>Telegram</td><td>Optional account linking</td></tr><tr><td>IP geolocation provider (e.g. <code>ipwho.is</code>)</td><td>Coarse country lookup for analytics</td></tr><tr><td>Google Fonts</td><td>Loading fonts</td></tr></tbody></table>
+<p>These services are contacted only when you use the relevant feature or when an operator has configured it. Each provider processes data under its own privacy policy.</p>
+<hr>
+<h2>Camera and microphone</h2>
+<p>The Photo Booth app uses your device camera, and some apps use your microphone (e.g. audio transcription). Photo Booth captures are processed and stored <strong>locally</strong> in your browser. Audio you choose to transcribe is sent to the transcription provider to produce text.</p>
+<hr>
+<h2>Legal bases for processing (GDPR)</h2>
+<p>Where GDPR applies, ryOS relies on the following legal bases: <ul><li><strong>Performance of a contract</strong> — providing the accounts, cloud sync, and features you request.</li></ul><ul><li><strong>Legitimate interests</strong> — keeping the service secure and reliable and improving it through privacy-conscious analytics, balanced against your rights.</li><li><strong>Consent</strong> — for optional features you actively choose to use (such as signing in, cloud sync, or AI features). You can withdraw consent by discontinuing the feature or deleting your account.</li></ul></p>
+<hr>
+<h2>Your rights</h2>
+<p>Subject to applicable law, you have the right to: <ul><li><strong>Access</strong> the personal data held about you.</li></ul><ul><li><strong>Export / portability</strong> — back up your local data at any time from <strong>Control Panels → backup</strong>.</li><li><strong>Rectification</strong> — correct inaccurate data.</li><li><strong>Erasure</strong> — delete your local data via <strong>Control Panels → reset</strong>, and delete server-side data by deleting your account.</li><li><strong>Restriction and objection</strong> — to certain processing, including analytics.</li><li><strong>Withdraw consent</strong> for optional, consent-based processing.</li></ul></p>
+<p>To exercise rights that cannot be handled directly in the app, contact <strong>ryo@ryo.lu</strong>.</p>
+<hr>
+<h2>International transfers</h2>
+<p>ryOS and its third-party processors may process data in countries outside your own, including the United States. Where required, transfers rely on appropriate safeguards such as the providers' standard contractual clauses.</p>
+<hr>
+<h2>Children</h2>
+<p>ryOS is not directed to children under the age required for valid consent in their jurisdiction (typically 13–16). We do not knowingly collect personal data from children below that age.</p>
+<hr>
+<h2>Data retention</h2>
+<ul><li><strong>Local data</strong> persists in your browser until you clear it or reset ryOS.</li></ul><ul><li><strong>Analytics metrics</strong> expire automatically on a rolling window (approximately 90 days).</li><li><strong>Account and synced data</strong> persist while your account exists and are removed when you delete your account.</li></ul>
+<hr>
+<h2>Self-hosting</h2>
+<p>ryOS is open source. If you run your own instance, you are the data controller for that deployment and are responsible for its configuration, the third-party keys you enable, and compliance with applicable law. The defaults above describe the behavior of the code, not any particular deployment.</p>
+<hr>
+<h2>Changes to this policy</h2>
+<p>We may update this policy as ryOS evolves. Material changes will be reflected here with an updated date at the top of the page.</p>
       </article>
       
       <nav class="nav">
-        <a href="/docs/winamp">← Winamp</a>
-        <a href="/docs/dashboard">Dashboard →</a>
+        <a href="/docs/changelog">← Changelog</a>
+        <span></span>
       </nav>
       
     </main>

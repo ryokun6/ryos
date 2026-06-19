@@ -347,6 +347,12 @@ export default defineConfig({
             res.end();
             return;
           }
+          // Redirect short /privacy URL to the docs page
+          if (url === '/privacy' || url === '/privacy/') {
+            res.writeHead(302, { Location: '/docs/privacy' });
+            res.end();
+            return;
+          }
           // Handle clean URLs for docs - serve .html files
           if (url.startsWith('/docs/') && !url.endsWith('.html')) {
             const htmlPath = url + '.html';
