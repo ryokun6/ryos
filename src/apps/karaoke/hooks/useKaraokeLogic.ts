@@ -69,8 +69,6 @@ export function useKaraokeLogic({
     showLyrics,
     lyricsAlignment,
     lyricsFont,
-    koreanDisplay,
-    japaneseFurigana,
     romanization,
     lyricsTranslationLanguage,
   } = useMediaLibraryStore(
@@ -79,8 +77,6 @@ export function useKaraokeLogic({
       showLyrics: s.showLyrics,
       lyricsAlignment: s.lyricsAlignment,
       lyricsFont: s.lyricsFont,
-      koreanDisplay: s.koreanDisplay,
-      japaneseFurigana: s.japaneseFurigana,
       romanization: s.romanization,
       lyricsTranslationLanguage: s.lyricsTranslationLanguage,
     }))
@@ -1690,8 +1686,6 @@ export function useKaraokeLogic({
     showLyrics,
     lyricsAlignment,
     lyricsFont,
-    koreanDisplay,
-    japaneseFurigana,
     romanization,
     lyricsTranslationLanguage,
     displayMode,

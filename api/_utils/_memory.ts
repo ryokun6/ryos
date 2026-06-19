@@ -17,6 +17,7 @@
  */
 
 import type { Redis } from "./redis.js";
+import { redisKeys } from "../../src/shared/redisKeys.js";
 
 // ============================================================================
 // Constants
@@ -108,20 +109,20 @@ export const CANONICAL_MEMORY_KEYS = [
  * Get Redis key for user's long-term memory index
  */
 export const getMemoryIndexKey = (username: string): string =>
-  `memory:user:${username.toLowerCase()}:index`;
+  redisKeys.memory.index(username);
 
 /**
  * Get Redis key for a specific long-term memory detail
  */
 export const getMemoryDetailKey = (username: string, key: string): string =>
-  `memory:user:${username.toLowerCase()}:detail:${key.toLowerCase()}`;
+  redisKeys.memory.detail(username, key);
 
 /**
  * Get Redis key for a user's daily note for a specific date
  * @param date - Date string in YYYY-MM-DD format
  */
 export const getDailyNoteKey = (username: string, date: string): string =>
-  `memory:user:${username.toLowerCase()}:daily:${date}`;
+  redisKeys.memory.daily(username, date);
 
 /**
  * Get today's date in YYYY-MM-DD format (in user's approximate timezone, defaults to UTC)

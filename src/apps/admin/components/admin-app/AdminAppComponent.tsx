@@ -132,7 +132,7 @@ export function AdminAppComponent({
     selectedSongId,
     importStatus,
   );
-  const isMacOSXTheme = currentTheme === "macosx";
+  const isMacOSTheme = currentTheme === "macosx";
   const importProgressPercent = getAdminImportProgressPercent(importStatus);
   const importStatusText = getAdminImportStatusText(importStatus, t);
 
@@ -235,7 +235,7 @@ export function AdminAppComponent({
           roomMessages={roomMessages}
           selectedRoom={selectedRoom}
           shouldShowImportStatus={shouldShowImportStatus}
-          isMacOSXTheme={isMacOSXTheme}
+          isMacOSTheme={isMacOSTheme}
           importProgressPercent={importProgressPercent}
           importStatusText={importStatusText}
           showCursorAgentsPanel={showCursorAgentsPanel}

@@ -350,6 +350,27 @@ describe("sync maintenance: legacy v1 object sweep", () => {
 });
 
 describe("sync maintenance: batching", () => {
+  test("ignores users that exist only under pre-canonical sync2:kv keys", async () => {
+    const fake = new FakeRedis();
+    const redis = fake as unknown as Redis;
+
+    fake.setSync("sync2:seq:legacyonly", "1");
+    await fake.hset("sync2:kv:legacyonly", {
+      "settings/theme": JSON.stringify({
+        v: { current: "aqua" },
+        t: t(0),
+        seq: 1,
+      }),
+    });
+    fake.setSync("sync:state:legacyonly:settings", JSON.stringify({ data: {} }));
+
+    const { deleteObject } = createDeleteSpy();
+    const stats = await runSyncMaintenance(redis, { deleteObject, now: NOW });
+
+    expect(stats.usersProcessed).toBe(0);
+    expect(fake.ttls.get("sync:state:legacyonly:settings")).toBeUndefined();
+  });
+
   test("walks all users across runs via the persisted scan cursor", async () => {
     const fake = new FakeRedis();
     const redis = fake as unknown as Redis;

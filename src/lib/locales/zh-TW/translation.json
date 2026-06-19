@@ -1478,6 +1478,7 @@
       "patterns": "樣式",
       "preview": "預覽",
       "previewActive": "按一下任何位置即可離開",
+      "privacyPolicy": "隱私權政策",
       "recoveryEmail": {
         "close": "關閉",
         "codeLabel": "驗證碼",
@@ -1592,6 +1593,7 @@
         "title": "Telegram"
       },
       "terminalIeAmbientSynth": "合成器",
+      "termsOfService": "服務條款",
       "theme": "主題",
       "themeDescription": "變更視窗、選單和控制項的外觀",
       "ttsModel": "TTS 模型",
@@ -3893,7 +3895,9 @@
       "description": "關於此電腦上的 ryOS 資訊",
       "largestUnusedBlock": "最大未用區塊",
       "mb": "MB",
+      "privacyPolicy": "隱私權政策",
       "system": "系統",
+      "termsOfService": "服務條款",
       "title": "關於此電腦",
       "viewChangelog": "查看變更記錄",
       "virtualMemory": "虛擬記憶體",

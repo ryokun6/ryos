@@ -1478,6 +1478,7 @@
       "patterns": "Шаблоны",
       "preview": "Предпросмотр",
       "previewActive": "Нажмите в любом месте для выхода",
+      "privacyPolicy": "Политика конфиденциальности",
       "recoveryEmail": {
         "close": "Закрыть",
         "codeLabel": "Код подтверждения",
@@ -1592,6 +1593,7 @@
         "title": "Телеграм"
       },
       "terminalIeAmbientSynth": "Синтезатор",
+      "termsOfService": "Условия использования",
       "theme": "Тема",
       "themeDescription": "Изменяет внешний вид окон, меню и элементов управления",
       "ttsModel": "Модель TTS",
@@ -3893,7 +3895,9 @@
       "description": "Информация о ryOS на этом компьютере",
       "largestUnusedBlock": "Самый большой неиспользуемый блок",
       "mb": "МБ",
+      "privacyPolicy": "Политика конфиденциальности",
       "system": "Система",
+      "termsOfService": "Условия использования",
       "title": "Об этом компьютере",
       "viewChangelog": "Просмотреть журнал изменений",
       "virtualMemory": "Виртуальная память",

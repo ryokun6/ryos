@@ -20,6 +20,7 @@ import {
   getDesktopDownloadUrl,
   getSupportedDesktopDownloadTarget,
 } from "@/utils/desktopDownload";
+import { getDocsBaseUrl } from "@/utils/runtimeConfig";
 
 interface AboutFinderDialogProps {
   isOpen: boolean;
@@ -267,6 +268,38 @@ export function AboutFinderDialog({
                     className="text-os-link hover:underline"
                   >
                     {t("common.aboutThisMac.viewChangelog")}
+                  </a>
+                </p>
+                <p>
+                  <a
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      launchApp("internet-explorer", {
+                        url: `${getDocsBaseUrl()}/privacy`,
+                        year: "current",
+                      });
+                      onOpenChange(false);
+                    }}
+                    className="text-os-link hover:underline"
+                  >
+                    {t("common.aboutThisMac.privacyPolicy")}
+                  </a>
+                </p>
+                <p>
+                  <a
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      launchApp("internet-explorer", {
+                        url: `${getDocsBaseUrl()}/terms`,
+                        year: "current",
+                      });
+                      onOpenChange(false);
+                    }}
+                    className="text-os-link hover:underline"
+                  >
+                    {t("common.aboutThisMac.termsOfService")}
                   </a>
                 </p>
               </div>

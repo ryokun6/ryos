@@ -1478,6 +1478,7 @@
       "patterns": "패턴",
       "preview": "미리보기",
       "previewActive": "아무 곳이나 클릭하여 종료",
+      "privacyPolicy": "개인정보 처리방침",
       "recoveryEmail": {
         "close": "닫기",
         "codeLabel": "인증 코드",
@@ -1592,6 +1593,7 @@
         "title": "텔레그램"
       },
       "terminalIeAmbientSynth": "신디",
+      "termsOfService": "이용 약관",
       "theme": "테마",
       "themeDescription": "창, 메뉴 및 컨트롤의 모양을 변경합니다",
       "ttsModel": "TTS 모델",
@@ -3893,7 +3895,9 @@
       "description": "이 컴퓨터의 ryOS 정보",
       "largestUnusedBlock": "가장 큰 사용 가능 블록",
       "mb": "MB",
+      "privacyPolicy": "개인정보 처리방침",
       "system": "시스템",
+      "termsOfService": "이용 약관",
       "title": "이 컴퓨터에 관하여",
       "viewChangelog": "변경 내역 보기",
       "virtualMemory": "가상 메모리",

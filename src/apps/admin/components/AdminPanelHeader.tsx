@@ -10,7 +10,7 @@ export function AdminPanelHeader({
   title: string;
   actions?: ReactNode;
 }) {
-  const { isMacOSTheme: isMacOSXTheme, isWindowsTheme } =
+  const { isMacOSTheme, isWindowsTheme } =
     useThemeFlags();
 
   return (
@@ -20,7 +20,7 @@ export function AdminPanelHeader({
         "flex flex-shrink-0 items-center gap-2 border-b px-2 py-1.5",
         isWindowsTheme
           ? "border-[#919b9c]"
-          : isMacOSXTheme
+          : isMacOSTheme
             ? "border-black/10"
             : "border-black/20"
       )}

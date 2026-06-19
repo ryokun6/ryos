@@ -11,7 +11,7 @@ import { formatRelativeTime, formatSyncStatus, type SyncAuditStatus } from "./sy
 export type SyncTabContentProps = {
   t: (key: string, opts?: Record<string, unknown>) => string;
   tabStyles: TabStyleConfig;
-  isMacOSXTheme: boolean;
+  isMacOSTheme: boolean;
   username: string | null;
   promptSetUsername: () => void;
   autoSyncEnabled: boolean;
@@ -64,7 +64,7 @@ export type SyncTabContentProps = {
 export function SyncTabContent({
   t,
   tabStyles,
-  isMacOSXTheme,
+  isMacOSTheme,
   username,
   promptSetUsername,
   autoSyncEnabled,
@@ -304,7 +304,7 @@ export function SyncTabContent({
         </div>
         {cloudProgress && (
           <div className="space-y-1">
-            {isMacOSXTheme ? (
+            {isMacOSTheme ? (
               <div className="aqua-progress w-full h-[14px]">
                 <div
                   className="aqua-progress-fill transition-all duration-300 ease-out"

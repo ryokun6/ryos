@@ -86,7 +86,7 @@ export interface AdminMainPaneProps {
   roomMessages: MessageRow[];
   selectedRoom: RoomLite | null;
   shouldShowImportStatus: boolean;
-  isMacOSXTheme: boolean;
+  isMacOSTheme: boolean;
   importProgressPercent: number;
   importStatusText: string;
   showCursorAgentsPanel: boolean;
@@ -152,7 +152,7 @@ export function AdminMainPane({
   roomMessages,
   selectedRoom,
   shouldShowImportStatus,
-  isMacOSXTheme,
+  isMacOSTheme,
   importProgressPercent,
   importStatusText,
   showCursorAgentsPanel,
@@ -233,7 +233,7 @@ export function AdminMainPane({
 
         <AdminImportStatusBar
           shouldShowImportStatus={shouldShowImportStatus}
-          isMacOSXTheme={isMacOSXTheme}
+          isMacOSTheme={isMacOSTheme}
           importProgressPercent={importProgressPercent}
           importStatusText={importStatusText}
           importStatus={importStatus}

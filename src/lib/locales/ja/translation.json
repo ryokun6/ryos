@@ -1478,6 +1478,7 @@
       "patterns": "パターン",
       "preview": "プレビュー",
       "previewActive": "どこでもクリックして終了",
+      "privacyPolicy": "プライバシーポリシー",
       "recoveryEmail": {
         "close": "閉じる",
         "codeLabel": "認証コード",
@@ -1592,6 +1593,7 @@
         "title": "テレグラム"
       },
       "terminalIeAmbientSynth": "シンセ",
+      "termsOfService": "利用規約",
       "theme": "テーマ",
       "themeDescription": "ウィンドウ、メニュー、コントロールの外観を変更します",
       "ttsModel": "TTS モデル",
@@ -3893,7 +3895,9 @@
       "description": "このコンピュータのryOSについて",
       "largestUnusedBlock": "最大の未使用ブロック",
       "mb": "MB",
+      "privacyPolicy": "プライバシーポリシー",
       "system": "システム",
+      "termsOfService": "利用規約",
       "title": "このコンピュータについて",
       "viewChangelog": "変更履歴を見る",
       "virtualMemory": "仮想メモリ",

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Endpoints - ryOS Docs</title>
+  <title>Privacy Policy - ryOS Docs</title>
   <link rel="icon" href="/icons/mac-192.png">
   <style>
     @font-face { font-family: "Geneva"; src: url("/fonts/geneva-12.woff2") format("woff2"); }
@@ -276,14 +276,14 @@
     <a href="/docs/i18n" class="nav-child ">7.2 i18n & Hooks</a>
   </div>
 </div>
-<div class="nav-group expanded">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
+<div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
     <a href="/docs/api-reference" class="">8. API Reference</a>
   </button>
-  <div class="nav-children" style="display: block;">
+  <div class="nav-children" style="display: none;">
     <a href="/docs/chat-api" class="nav-child ">8.1 Chat API</a>
     <a href="/docs/song-api" class="nav-child ">8.2 Song API</a>
     <a href="/docs/media-api" class="nav-child ">8.3 Media API</a>
@@ -291,7 +291,7 @@
     <a href="/docs/rooms-api" class="nav-child ">8.5 Rooms API</a>
     <a href="/docs/messages-api" class="nav-child ">8.6 Messages API</a>
     <a href="/docs/presence-api" class="nav-child ">8.7 Presence API</a>
-    <a href="/docs/ai-generation-apis" class="nav-child active">8.8 AI Endpoints</a>
+    <a href="/docs/ai-generation-apis" class="nav-child ">8.8 AI Endpoints</a>
     <a href="/docs/utility-apis" class="nav-child ">8.9 Utility APIs</a>
     <a href="/docs/api-design-guide" class="nav-child ">8.10 ryOS API Design Guide</a>
   </div>
@@ -305,7 +305,7 @@
 <div class="nav-group">
   <div class="nav-toggle nav-no-toggle">
     <span class="nav-spacer"></span>
-    <a href="/docs/privacy" class="">10. Privacy Policy</a>
+    <a href="/docs/privacy" class="active">10. Privacy Policy</a>
   </div>
 </div>
 <div class="nav-group">
@@ -318,239 +318,76 @@
     
     <main class="content">
       <article>
-        <h1>AI Endpoints</h1>
-<p>ryOS provides several AI-powered endpoints for content generation, separate from the main chat interface. These endpoints power specialized features like applet generation, time-travel web pages, memory extraction, and music metadata extraction.</p>
-<p>Most AI endpoints are wrapped with the shared <code>apiHandler</code> utility (CORS, method checks, auth boundaries, Redis/logger context), with endpoint-specific rate limits layered on top.</p>
-<h2>Applet AI</h2>
-<p>The Applet AI endpoint powers intelligent responses within sandboxed HTML applets, supporting both text generation and AI image generation.</p>
-<h3>Endpoint</h3>
-<table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/applet-ai</code></td><td>Generate text responses or images for applets</td></tr></tbody></table>
-<h3>Request</h3>
-<pre><code>{
-  // Text prompt (required if no messages provided)
-  prompt?: string;           // max 4000 characters
-  
-  // Conversation history (alternative to prompt)
-  messages?: Array&lt;{
-    role: "user" | "assistant" | "system";
-    content?: string;        // max 4000 characters
-    attachments?: Array&lt;{    // max 4 per message, user messages only
-      mediaType: string;     // e.g., "image/png", "image/jpeg"
-      data: string;          // base64-encoded image data
-    }&gt;;
-  }&gt;;                        // max 12 messages
-  
-  // Optional applet context
-  context?: string;          // max 2000 characters
-  
-  // Generation parameters
-  temperature?: number;      // 0-1, default 0.6
-  mode?: "text" | "image";   // default "text"
-  
-  // Image attachments (mode="image" only)
-  images?: Array&lt;{           // max 4 images
-    mediaType: string;
-    data: string;            // base64-encoded
-  }&gt;;
-}</code></pre>
-<h3>Headers</h3>
-<table><thead><tr><th>Header</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>Authorization</code></td><td>Optional</td><td><code>Bearer &lt;token&gt;</code> for authenticated requests</td></tr><tr><td><code>X-Username</code></td><td>Optional</td><td>Username for rate limit tracking</td></tr><tr><td><code>Content-Type</code></td><td>Required</td><td><code>application/json</code></td></tr></tbody></table>
-<h3>Response</h3>
-<strong>Text Mode</strong> (<code>mode: "text"</code>)
-<pre><code>{
-  "reply": "Generated response text"
-}</code></pre>
-<strong>Image Mode</strong> (<code>mode: "image"</code>)
-<p>Returns binary image data with headers:</p>
-<table><thead><tr><th>Header</th><th>Description</th></tr></thead><tbody><tr><td><code>Content-Type</code></td><td>Image MIME type (e.g., <code>image/png</code>)</td></tr><tr><td><code>X-Image-Description</code></td><td>Optional description of generated image</td></tr></tbody></table>
-<h3>Rate Limits</h3>
-<table><thead><tr><th>User Type</th><th>Text Requests</th><th>Image Requests</th><th>Window</th></tr></thead><tbody><tr><td>Anonymous</td><td>15/hour</td><td>1/hour</td><td>1 hour</td></tr><tr><td>Authenticated</td><td>50/hour</td><td>12/hour</td><td>1 hour</td></tr></tbody></table>
-<p>Note: The main Chat API (<code>/api/chat</code>) has separate rate limits: 15 messages per 5 hours for authenticated users, 3 messages per 24 hours for anonymous users.</p>
-<p>Rate limit headers included in responses: <ul><li><code>X-RateLimit-Limit</code>: Maximum requests allowed</li></ul><ul><li><code>X-RateLimit-Remaining</code>: Requests remaining</li><li><code>X-RateLimit-Reset</code>: Seconds until reset</li><li><code>Retry-After</code>: Seconds to wait (on 429)</li></ul></p>
-<h3>Models</h3>
-<ul><li><strong>Text</strong>: <code>gemini-3-flash-preview</code></li></ul><ul><li><strong>Image</strong>: <code>gemini-3.1-flash-image-preview</code></li></ul>
-<h3>Example</h3>
-<strong>Text Generation</strong>
-<pre><code>curl -X POST https://os.ryo.lu/api/applet-ai \
-  -H "Content-Type: application/json" \
-  -d '{
-    "prompt": "What is the weather like today?",
-    "context": "Weather applet showing San Francisco",
-    "temperature": 0.7
-  }'</code></pre>
-<p>Response:</p>
-<pre><code>{
-  "reply": "I don't have access to real-time weather data, but based on San Francisco's typical climate..."
-}</code></pre>
-<strong>Image Generation</strong>
-<pre><code>curl -X POST https://os.ryo.lu/api/applet-ai \
-  -H "Content-Type: application/json" \
-  -d '{
-    "mode": "image",
-    "prompt": "A pixel art sunset over mountains"
-  }' \
-  --output generated-image.png</code></pre>
-<strong>Conversation with Attachments</strong>
-<pre><code>curl -X POST https://os.ryo.lu/api/applet-ai \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer your-token" \
-  -H "X-Username: yourname" \
-  -d '{
-    "messages": [
-      {
-        "role": "user",
-        "content": "What is in this image?",
-        "attachments": [{
-          "mediaType": "image/png",
-          "data": "iVBORw0KGgoAAAANSUhEUgAA..."
-        }]
-      }
-    ]
-  }'</code></pre>
-<h3>Error Responses</h3>
-<table><thead><tr><th>Status</th><th>Error</th><th>Description</th></tr></thead><tbody><tr><td>400</td><td><code>Invalid request body</code></td><td>Missing or invalid parameters</td></tr><tr><td>401</td><td><code>Unauthorized - invalid token</code></td><td>Invalid auth token pair when headers are provided</td></tr><tr><td>403</td><td><code>Unauthorized host</code></td><td>Host header not in allowlist</td></tr><tr><td>405</td><td><code>Method not allowed</code></td><td>Non-POST request</td></tr><tr><td>429</td><td><code>rate_limit_exceeded</code></td><td>Rate limit exceeded</td></tr><tr><td>500</td><td><code>Failed to generate response</code></td><td>AI generation error</td></tr><tr><td>502</td><td><code>The model did not return an image</code></td><td>Image generation failed</td></tr></tbody></table>
+        <h1>Privacy Policy</h1>
+<p>ryOS is a web-based desktop environment that runs almost entirely in your browser. This policy explains what data ryOS handles, why, where it is stored, who it may be shared with, and the rights you have over it. It is written to align with the EU/UK General Data Protection Regulation (GDPR) and similar privacy laws.</p>
+<em>Last updated: June 2026.</em>
 <hr>
-<h2>Internet Explorer Generator</h2>
-<p>The Internet Explorer Generator creates "time-travel" web pages, reimagining how websites might have looked in different eras (past or future). It generates complete HTML pages styled to match historical design trends or speculative future aesthetics.</p>
-<h3>Endpoint</h3>
-<table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/ie-generate</code></td><td>Generate era-appropriate web page redesigns</td></tr></tbody></table>
-<h3>Request</h3>
-<strong>Query Parameters</strong>
-<table><thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>url</code></td><td>string</td><td>Target URL to redesign</td></tr><tr><td><code>year</code></td><td>string</td><td>Target year for the design</td></tr><tr><td><code>model</code></td><td>string</td><td>AI model to use (optional)</td></tr></tbody></table>
-<strong>Request Body</strong>
-<pre><code>{
-  url?: string;              // Target URL (alternative to query param)
-  year?: string;             // Target year (alternative to query param)
-  messages?: Array&lt;{         // Conversation context
-    role: "user" | "assistant" | "system";
-    content: string;
-    // ... UIMessage fields
-  }&gt;;
-  model?: SupportedModel;    // AI model selection
-}</code></pre>
-<h3>Headers</h3>
-<table><thead><tr><th>Header</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>Content-Type</code></td><td>Required</td><td><code>application/json</code></td></tr></tbody></table>
-<h3>Response</h3>
-<p>Returns a streaming response (<code>text/event-stream</code>) containing the generated HTML page. The response follows the AI SDK's UI message stream format.</p>
-<p>Generated HTML includes: <ul><li>Era-appropriate styling and typography</li><li>Historical or futuristic design elements</li><li><code>&lt;!-- TITLE: ... --&gt;</code> comment with page title</li><li>Complete, self-contained HTML document</li></ul></p>
-<p>Results are cached in Redis for future retrieval.</p>
-<h3>Rate Limits</h3>
-<table><thead><tr><th>Scope</th><th>Limit</th><th>Window</th></tr></thead><tbody><tr><td>Burst</td><td>3 requests</td><td>1 minute</td></tr><tr><td>Budget</td><td>10 requests</td><td>5 hours</td></tr></tbody></table>
-<h3>Supported Models</h3>
-<table><thead><tr><th>Model</th><th>Provider</th></tr></thead><tbody><tr><td><code>gpt-5.5</code> (default)</td><td>OpenAI</td></tr><tr><td><code>sonnet-4.6</code></td><td>Anthropic</td></tr><tr><td><code>gemini-3-flash</code></td><td>Google</td></tr><tr><td><code>gemini-3.1-pro-preview</code></td><td>Google</td></tr></tbody></table>
-<h3>Design Guidelines</h3>
-<p>The AI applies different design principles based on the target year:</p>
-<strong>Future Years</strong> (after current year):
-<ul><li>Bold, creative speculation about design trends</li><li>Embraces backdrop-blur, simple animations</li><li>Uses emojis or simple SVGs for icons</li><li>Considers potential technological breakthroughs</li></ul>
-<strong>Past Years</strong> (before current year):
-<ul><li>Matches historical design era (Art Deco, Web 1.0, etc.)</li><li>Considers available technology of the time</li><li>Simulates period-appropriate materials and textures</li><li>May output as print, newspaper, telegram, etc. for very old dates</li></ul>
-<strong>Current Year</strong>:
-<ul><li>Reflects current website state accurately</li><li>Up-to-date styling and branding</li></ul>
-<h3>Example</h3>
-<pre><code>curl -X POST "https://os.ryo.lu/api/ie-generate?url=apple.com&amp;year=1984" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "messages": [
-      {
-        "role": "user",
-        "content": "Generate a page for Apple in 1984"
-      }
-    ]
-  }'</code></pre>
-<h3>Error Responses</h3>
-<table><thead><tr><th>Status</th><th>Error</th><th>Description</th></tr></thead><tbody><tr><td>400</td><td><code>Invalid messages format</code></td><td>Malformed messages array</td></tr><tr><td>400</td><td><code>Unsupported model</code></td><td>Invalid model parameter</td></tr><tr><td>403</td><td><code>Unauthorized</code></td><td>Origin not allowed</td></tr><tr><td>405</td><td><code>Method not allowed</code></td><td>Non-POST request</td></tr><tr><td>429</td><td><code>rate_limit_exceeded</code></td><td>Burst or budget limit exceeded</td></tr><tr><td>500</td><td><code>Internal Server Error</code></td><td>Generation failed</td></tr></tbody></table>
+<h2>Data controller and contact</h2>
+<p>The data controller for ryOS as hosted at <code>os.ryo.lu</code> is Ryo Lu. If you self-host ryOS, the operator of that deployment is the controller for their instance.</p>
+<p>For privacy questions, data-subject requests, or complaints, contact <strong>support@os.ryo.lu</strong>. You also have the right to lodge a complaint with your local data protection authority.</p>
 <hr>
-<h2>Parse Title (Music Metadata)</h2>
-<p>The Parse Title endpoint uses AI to extract structured music metadata from YouTube video titles. It intelligently parses song titles, artist names, and album information from various title formats.</p>
-<h3>Endpoint</h3>
-<table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/parse-title</code></td><td>Extract music metadata from video titles</td></tr></tbody></table>
-<h3>Request</h3>
-<pre><code>{
-  title: string;           // Raw YouTube video title (required)
-  author_name?: string;    // YouTube channel name (optional, helps identify artist)
-}</code></pre>
-<h3>Headers</h3>
-<table><thead><tr><th>Header</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>Content-Type</code></td><td>Required</td><td><code>application/json</code></td></tr></tbody></table>
-<h3>Response</h3>
-<pre><code>{
-  title: string;           // Extracted song title (falls back to raw title)
-  artist?: string;         // Extracted artist name (if found)
-  album?: string;          // Extracted album name (if found)
-}</code></pre>
-<h3>Rate Limits</h3>
-<table><thead><tr><th>Scope</th><th>Limit</th><th>Window</th></tr></thead><tbody><tr><td>Burst</td><td>15 requests</td><td>1 minute</td></tr><tr><td>Daily</td><td>500 requests</td><td>24 hours</td></tr></tbody></table>
-<h3>Model</h3>
-<p>Uses <code>gemini-3-flash-preview</code> for efficient metadata parsing.</p>
-<h3>Language Handling</h3>
-<p>The parser prefers original language names over romanized/translated versions:</p>
-<table><thead><tr><th>Input</th><th>Output</th></tr></thead><tbody><tr><td><code>"Jay Chou - Sunny Day (周杰倫 - 晴天)"</code></td><td><code>{"title": "晴天", "artist": "周杰倫"}</code></td></tr><tr><td><code>"NewJeans (뉴진스) 'How Sweet' Official MV"</code></td><td><code>{"title": "How Sweet", "artist": "뉴진스"}</code></td></tr></tbody></table>
-<h3>Example</h3>
-<pre><code>curl -X POST https://os.ryo.lu/api/parse-title \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title": "Daft Punk - Get Lucky (Official Audio) ft. Pharrell Williams, Nile Rodgers",
-    "author_name": "Daft Punk"
-  }'</code></pre>
-<p>Response:</p>
-<pre><code>{
-  "title": "Get Lucky",
-  "artist": "Daft Punk"
-}</code></pre>
-<strong>Complex Title Parsing</strong>
-<pre><code>curl -X POST https://os.ryo.lu/api/parse-title \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title": "[MV] IU(아이유) _ Blueming(블루밍)",
-    "author_name": "1theK (원더케이)"
-  }'</code></pre>
-<p>Response:</p>
-<pre><code>{
-  "title": "Blueming",
-  "artist": "아이유"
-}</code></pre>
-<h3>Error Responses</h3>
-<table><thead><tr><th>Status</th><th>Error</th><th>Description</th></tr></thead><tbody><tr><td>400</td><td><code>No title provided</code></td><td>Missing or invalid title field</td></tr><tr><td>403</td><td><code>Unauthorized</code></td><td>Origin not allowed</td></tr><tr><td>405</td><td><code>Method not allowed</code></td><td>Non-POST request</td></tr><tr><td>429</td><td><code>rate_limit_exceeded</code></td><td>Burst or daily limit exceeded</td></tr><tr><td>500</td><td><code>Error parsing title</code></td><td>AI parsing failed</td></tr></tbody></table>
+<h2>Summary</h2>
+<ul><li>ryOS stores most of your data <strong>locally in your browser</strong>. It never leaves your device unless you sign in and enable cloud sync, or use a feature that calls a server (such as AI chat).</li></ul><ul><li>ryOS does <strong>not</strong> use third-party advertising or cross-site tracking cookies. There is no Google Analytics, no advertising SDKs, and no behavioral ad profiling.</li><li>The only cookie ryOS sets is a functional, <code>HttpOnly</code> authentication cookie used after you log in.</li><li>First-party, privacy-conscious usage analytics are collected to keep the system running and improve it. Chat message contents are <strong>not</strong> collected by analytics.</li><li>You can export, reset, or delete your data at any time from <strong>Control Panels</strong>.</li></ul>
 <hr>
-<h2>Memory Extraction Endpoints</h2>
-<p>These endpoints support ryOS memory features (daily notes + long-term memory).</p>
-<h3>Endpoint Summary</h3>
-<table><thead><tr><th>Method</th><th>Path</th><th>Description</th><th>Auth</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/ai/extract-memories</code></td><td>Extract daily notes + long-term memories from chat conversation</td><td>Required</td></tr><tr><td>POST</td><td><code>/api/ai/process-daily-notes</code></td><td>Process unprocessed past daily notes into long-term memories</td><td>Required</td></tr></tbody></table>
-<h3>POST /api/ai/extract-memories</h3>
-<p>Request body:</p>
-<pre><code>{
-  "messages": [{ "role": "user", "content": "..." }],
-  "timeZone": "America/Los_Angeles"
-}</code></pre>
-<p>Response:</p>
-<pre><code>{
-  "extracted": 2,
-  "dailyNotes": 4,
-  "analyzed": 3,
-  "message": "Logged 4 daily notes, extracted 2 long-term memories"
-}</code></pre>
-<h3>POST /api/ai/process-daily-notes</h3>
-<p>Request body (optional):</p>
-<pre><code>{
-  "timeZone": "America/Los_Angeles"
-}</code></pre>
-<p>Response:</p>
-<pre><code>{
-  "processed": 3,
-  "extracted": 2,
-  "created": 1,
-  "updated": 1,
-  "dates": ["2026-02-26", "2026-02-27", "2026-02-28"],
-  "skippedDates": [],
-  "message": "Processed 3 daily notes → 1 new memories, 1 updated"
-}</code></pre>
+<h2>Data stored locally on your device</h2>
+<p>Most ryOS state lives only in your browser and is never transmitted unless you opt into cloud sync: <ul><li><strong><code>localStorage</code></strong> — interface preferences (theme, language, wallpaper), window positions, and the state of apps (files metadata, Chats, Contacts, Calendar, Stickies, settings, and more).</li></ul><ul><li><strong><code>IndexedDB</code></strong> — file contents such as documents, images, and applets created in apps like TextEdit, Paint, and the Applet Store.</li><li><strong><code>sessionStorage</code></strong> — short-lived values such as reload guards and the current analytics session identifier.</li><li><strong>Service worker / PWA cache</strong> — application assets cached for offline use and faster loading.</li></ul></p>
+<p>You remain in control of this data. Clearing your browser storage, or using <strong>Control Panels → reset</strong>, removes it from your device.</p>
 <hr>
-<h2>Related</h2>
-<ul><li><strong><a href="/docs/chat-api">Chat API</a></strong> - Main AI chat endpoint with tool calling</li></ul><ul><li><strong><a href="/docs/ai-system">AI System</a></strong> - AI providers and available tools</li><li><strong><a href="/docs/api-reference">API Reference</a></strong> - Overview of all ryOS API endpoints</li><li><strong><a href="/docs/chats">Chats App</a></strong> - Frontend chat application documentation</li></ul>
+<h2>Usage analytics</h2>
+<p>ryOS collects first-party usage analytics to understand how the system is used, diagnose problems, and improve features. These analytics are sent to ryOS's own API (<code>/api/analytics/events</code>) and are <strong>not</strong> shared with third-party analytics providers.</p>
+<strong>What is collected:</strong>
+<ul><li>Event metadata such as app launches and lifecycle events, navigation within Internet Explorer, settings changes, and authentication events (e.g. that a login occurred).</li></ul><ul><li>A randomly generated <strong>client identifier</strong> (<code>ryos:analytics:client-id</code>, stored in <code>localStorage</code>) and <strong>session identifier</strong> (<code>ryos:analytics:session-id</code>, stored in <code>sessionStorage</code>).</li><li>A coarse, country-level location derived from your IP address at the time of the request.</li><li>Basic technical information such as user agent.</li><li>Your username, only if you are signed in.</li></ul>
+<strong>What is not collected:</strong>
+<ul><li>The contents of your chat messages, documents, or files. Analytics records that an action happened, not what you wrote.</li></ul><ul><li>Precise location. Only a coarse country is derived, and your raw IP address is not retained as part of product analytics.</li></ul>
+<strong>Retention:</strong> aggregated API metrics are kept on a rolling basis (approximately 90 days) and then expire automatically.
+<hr>
+<h2>Cookies</h2>
+<p>ryOS sets a single functional cookie:</p>
+<table><thead><tr><th>Cookie</th><th>Purpose</th><th>Type</th></tr></thead><tbody><tr><td><code>ryos_auth</code></td><td>Keeps you signed in after login</td><td><code>HttpOnly</code>, <code>SameSite=Lax</code>, scoped to <code>/api</code></td></tr></tbody></table>
+<p>This cookie is strictly necessary for the authentication feature and is only set after you choose to log in. ryOS does not set advertising or cross-site tracking cookies, so no cookie-consent banner is required for non-essential tracking — there is none.</p>
+<hr>
+<h2>Accounts and cloud sync</h2>
+<p>Creating an account and using cloud sync are <strong>optional</strong>.</p>
+<p>If you register and sign in: <ul><li>Your username and credentials are stored on the server to authenticate you.</li></ul><ul><li>With cloud sync enabled, your local app state is replicated to the server (via <code>/api/sync/v2/*</code>) so it can be restored on other devices. Binary content (such as files and images) is content-addressed and de-duplicated.</li><li>You can log out, log out of all devices, change your password, or delete your account from <strong>Control Panels → Account</strong>.</li></ul></p>
+<p>If you never sign in, none of this data leaves your browser.</p>
+<hr>
+<h2>AI features</h2>
+<p>When you use AI features (such as Chats with Ryo, AI-generated applets, Internet Explorer's time-travel generation, audio transcription, or translation), the relevant input is sent to an AI provider to produce a response. <ul><li>For signed-in users, ryOS may store long-term "memories" and daily notes derived from your interactions (via <code>/api/ai/extract-memories</code> and <code>/api/ai/process-daily-notes</code>) so the assistant can remember context across sessions. This data is tied to your account and can be removed by deleting your account.</li></ul><ul><li>AI requests are processed by third-party model providers (see below). Do not share information through AI features that you would not want processed by those providers.</li></ul></p>
+<hr>
+<h2>Third-party services and processors</h2>
+<p>Depending on which features you use and how the instance is configured, ryOS may send data to the following third-party services. They act as processors for the corresponding feature:</p>
+<table><thead><tr><th>Service</th><th>Used for</th></tr></thead><tbody><tr><td>OpenAI / Anthropic / Google AI</td><td>AI chat, applet generation, transcription, translation</td></tr><tr><td>ElevenLabs</td><td>Text-to-speech</td></tr><tr><td>YouTube</td><td>Video metadata and playback (iPod, Videos, TV)</td></tr><tr><td>Apple MapKit / MusicKit</td><td>Maps place search and Apple Music playback</td></tr><tr><td>Pusher</td><td>Real-time chat rooms and presence</td></tr><tr><td>Telegram</td><td>Optional account linking</td></tr><tr><td>IP geolocation provider (e.g. <code>ipwho.is</code>)</td><td>Coarse country lookup for analytics</td></tr><tr><td>Google Fonts</td><td>Loading fonts</td></tr></tbody></table>
+<p>These services are contacted only when you use the relevant feature or when an operator has configured it. Each provider processes data under its own privacy policy.</p>
+<hr>
+<h2>Camera and microphone</h2>
+<p>The Photo Booth app uses your device camera, and some apps use your microphone (e.g. audio transcription). Photo Booth captures are processed and stored <strong>locally</strong> in your browser. Audio you choose to transcribe is sent to the transcription provider to produce text.</p>
+<hr>
+<h2>Legal bases for processing (GDPR)</h2>
+<p>Where GDPR applies, ryOS relies on the following legal bases: <ul><li><strong>Performance of a contract</strong> — providing the accounts, cloud sync, and features you request.</li></ul><ul><li><strong>Legitimate interests</strong> — keeping the service secure and reliable and improving it through privacy-conscious analytics, balanced against your rights.</li><li><strong>Consent</strong> — for optional features you actively choose to use (such as signing in, cloud sync, or AI features). You can withdraw consent by discontinuing the feature or deleting your account.</li></ul></p>
+<hr>
+<h2>Your rights</h2>
+<p>Subject to applicable law, you have the right to: <ul><li><strong>Access</strong> the personal data held about you.</li></ul><ul><li><strong>Export / portability</strong> — back up your local data at any time from <strong>Control Panels → backup</strong>.</li><li><strong>Rectification</strong> — correct inaccurate data.</li><li><strong>Erasure</strong> — delete your local data via <strong>Control Panels → reset</strong>, and delete server-side data by deleting your account.</li><li><strong>Restriction and objection</strong> — to certain processing, including analytics.</li><li><strong>Withdraw consent</strong> for optional, consent-based processing.</li></ul></p>
+<p>To exercise rights that cannot be handled directly in the app, contact <strong>support@os.ryo.lu</strong>.</p>
+<hr>
+<h2>International transfers</h2>
+<p>ryOS and its third-party processors may process data in countries outside your own, including the United States. Where required, transfers rely on appropriate safeguards such as the providers' standard contractual clauses.</p>
+<hr>
+<h2>Children</h2>
+<p>ryOS is not directed to children under the age required for valid consent in their jurisdiction (typically 13–16). We do not knowingly collect personal data from children below that age.</p>
+<hr>
+<h2>Data retention</h2>
+<ul><li><strong>Local data</strong> persists in your browser until you clear it or reset ryOS.</li></ul><ul><li><strong>Analytics metrics</strong> expire automatically on a rolling window (approximately 90 days).</li><li><strong>Account and synced data</strong> persist while your account exists and are removed when you delete your account.</li></ul>
+<hr>
+<h2>Self-hosting</h2>
+<p>ryOS is open source. If you run your own instance, you are the data controller for that deployment and are responsible for its configuration, the third-party keys you enable, and compliance with applicable law. The defaults above describe the behavior of the code, not any particular deployment.</p>
+<hr>
+<h2>Changes to this policy</h2>
+<p>We may update this policy as ryOS evolves. Material changes will be reflected here with an updated date at the top of the page.</p>
       </article>
       
       <nav class="nav">
-        <a href="/docs/presence-api">← Presence API</a>
-        <a href="/docs/utility-apis">Utility APIs →</a>
+        <a href="/docs/changelog">← Changelog</a>
+        <a href="/docs/terms">Terms of Service →</a>
       </nav>
       
     </main>

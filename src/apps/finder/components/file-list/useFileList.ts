@@ -49,7 +49,7 @@ export function useFileList({
   } | null>(null);
   const {
     isWindowsTheme,
-    isMacOSTheme: isMacOSXTheme,
+    isMacOSTheme,
   } = useThemeFlags();
 
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -279,9 +279,9 @@ export function useFileList({
         labelElement.style.background = "transparent";
         labelElement.style.backgroundColor = "transparent";
 
-        if (isMacOSXTheme || isWindowsTheme) {
+        if (isMacOSTheme || isWindowsTheme) {
           labelElement.style.color = "white";
-          if (isMacOSXTheme) {
+          if (isMacOSTheme) {
             labelElement.style.textShadow =
               "rgba(0, 0, 0, 0.9) 0px 1px 0px, rgba(0, 0, 0, 0.85) 0px 1px 3px, rgba(0, 0, 0, 0.45) 0px 2px 3px";
           } else if (isWindowsTheme) {
@@ -361,7 +361,7 @@ export function useFileList({
         document.body.removeChild(dragImage);
       }
     }, 0);
-  }, [isMacOSXTheme, isWindowsTheme, viewType]);
+  }, [isMacOSTheme, isWindowsTheme, viewType]);
 
   const handleDragOver = useCallback((e: React.DragEvent<HTMLElement>, file: FileItem) => {
     if (
@@ -504,7 +504,7 @@ export function useFileList({
   return {
     files,
     viewType: viewType as ViewType,
-    isMacOSXTheme,
+    isMacOSTheme,
     dropTargetPath,
     selectedFiles,
     containerRef,

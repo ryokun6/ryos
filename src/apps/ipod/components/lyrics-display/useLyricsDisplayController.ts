@@ -68,8 +68,6 @@ export function useLyricsDisplayController(
     visible = true,
     videoVisible = true,
     alignment: alignmentOverride,
-    koreanDisplay: koreanDisplayOverride,
-    japaneseFurigana: japaneseFuriganaOverride,
     onAdjustOffset,
     onSwipeUp,
     onSwipeDown,
@@ -93,8 +91,6 @@ export function useLyricsDisplayController(
   const { alignment, fontClassName, romanization, showKoreanRomanization } =
     useLyricsDisplaySettings({
       alignment: alignmentOverride,
-      koreanDisplay: koreanDisplayOverride,
-      japaneseFurigana: japaneseFuriganaOverride,
       fontClassName: fontClassNameFromProp,
     });
 

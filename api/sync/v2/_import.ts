@@ -1,10 +1,12 @@
 /**
  * One-time import of v1 cloud sync state into the v2 key-value model.
  *
- * Runs on a user's first v2 access (see ensureSync2Initialized). Reads the
- * legacy Redis snapshot domains, the per-track song library, and the blob
- * manifests, and decomposes them into per-key entries at v2 granularity.
- * Purely additive: v1 keys are left in place (they expire via their TTLs).
+ * Runs on a user's first v2 access when `hasLegacyV1SyncData` is true (see
+ * `ensureSync2Initialized`). New users with no v1 Redis keys skip import
+ * entirely. Reads legacy snapshot domains (`sync:state:*`), per-track songs
+ * (`sync:songs:*`), and blob manifests (`sync:auto:meta:*`), decomposing them
+ * into per-key v2 entries. Purely additive: v1 keys are left in place and
+ * expire via maintenance retirement TTLs.
  */
 
 import type { Redis } from "../../_utils/redis.js";
@@ -12,6 +14,36 @@ import { hlcFromTimestamp } from "../../../src/shared/sync2/hlc.js";
 import type { SyncKvEntry } from "../../../src/shared/sync2/types.js";
 
 const LEGACY_CLIENT_ID = "legacy";
+
+/** Domains stored as monolithic v1 snapshots at `sync:state:{user}:{domain}`. */
+const V1_STATE_DOMAINS = [
+  "settings",
+  "files-metadata",
+  "songs",
+  "videos",
+  "tv",
+  "stickies",
+  "calendar",
+  "contacts",
+  "maps",
+] as const;
+
+/**
+ * True when any frozen v1 sync key still exists for this user. Used to skip
+ * the import path for brand-new accounts (no legacy data to migrate).
+ */
+export async function hasLegacyV1SyncData(
+  redis: Redis,
+  username: string
+): Promise<boolean> {
+  const probeKeys = [
+    `sync:state:meta:${username}`,
+    `sync:auto:meta:${username}`,
+    `sync:songs:${username}:meta`,
+    ...V1_STATE_DOMAINS.map((domain) => `sync:state:${username}:${domain}`),
+  ];
+  return (await redis.exists(...probeKeys)) > 0;
+}
 
 interface V1StateEntry {
   data?: unknown;

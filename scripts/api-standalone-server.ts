@@ -634,6 +634,20 @@ async function handleStaticRequest(pathname: string): Promise<Response | null> {
     });
   }
 
+  if (pathname === "/privacy" || pathname === "/privacy/") {
+    return new Response(null, {
+      status: 302,
+      headers: { location: "/docs/privacy" },
+    });
+  }
+
+  if (pathname === "/terms" || pathname === "/terms/") {
+    return new Response(null, {
+      status: 302,
+      headers: { location: "/docs/terms" },
+    });
+  }
+
   if (pathname === "/embed/infinite-mac") {
     return await serveDistPath("embed/infinite-mac.html", {
       headers: {

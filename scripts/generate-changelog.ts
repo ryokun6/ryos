@@ -138,25 +138,25 @@ async function summarizeMonth(group: MonthGroup): Promise<SummarizedMonth> {
     .map((c) => `- ${c.message}`)
     .join("\n");
 
-  const prompt = `You are summarizing git commits for a changelog. Given these ${group.commits.length} commits from ${group.label}, create a concise changelog summary.
+  const prompt = `You are summarizing git commits for a ryOS changelog. Given these ${group.commits.length} commits from ${group.label}, create a concise changelog summary.
 
 COMMITS:
 ${commitMessages}
 
 RULES:
-1. Group related commits together into single meaningful entries
-2. Major changes: New features, significant improvements, breaking changes, major refactors (3-7 items max)
-3. Minor changes: Bug fixes, small updates, documentation, chores (5-10 items max)
-4. Use clear, user-friendly language (not technical git-speak)
-5. Start each item with an action verb (Add, Fix, Update, Improve, Remove, etc.)
-6. Be concise - each item should be one short sentence
-7. Deduplicate similar commits into single entries
-8. Skip trivial changes like typo fixes or formatting
+1. Group related commits into single meaningful entries; deduplicate overlaps
+2. Major changes (3-8 items): new apps/features, platform/infrastructure rewrites, large refactors, breaking changes. Sort by impact (platform first, then new apps, then significant feature work)
+3. Minor changes (5-15 items): bug fixes, polish, refactors, chores, docs, CI. Never duplicate a major entry
+4. Major format: start with **Bold feature/app name**: then a concise description (one sentence when possible). Example: "**Cloud Sync v2**: journal-based delta sync with per-key conflict resolution."
+5. Minor format: start with a capitalized action verb (Fix, Improve, Refactor, Remove, Add, Update). No conventional-commit prefixes (feat:, fix:, refactor:). No bold unless naming a small UI surface
+6. Use clear, user-facing language; keep technical paths/PR numbers only when they add context
+7. Skip trivial changes (typos, formatting-only commits)
+8. Do not repeat the same change in both major and minor lists
 
 OUTPUT FORMAT (JSON):
 {
-  "majorChanges": ["Change 1", "Change 2", ...],
-  "minorChanges": ["Fix 1", "Update 2", ...]
+  "majorChanges": ["**Feature**: description", "**Another feature**: description"],
+  "minorChanges": ["Fix something specific.", "Refactor a module for clarity."]
 }
 
 Return ONLY valid JSON, no other text.`;
@@ -217,6 +217,8 @@ function generateMarkdown(summarizedMonths: SummarizedMonth[]): string {
     "",
     "A summary of changes and updates to ryOS, organized by month.",
     "",
+    "**Major changes** highlight new features, significant platform work, and large refactors. **Minor changes** (collapsed per month) cover fixes, polish, chores, and smaller updates.",
+    "",
     "---",
     "",
   ];
@@ -254,7 +256,7 @@ function generateMarkdown(summarizedMonths: SummarizedMonth[]): string {
   lines.push("---");
   lines.push("");
   lines.push(
-    `*This changelog is automatically generated and summarized from git history. Last updated: ${new Date().toISOString().split("T")[0]}*`
+    `*This changelog is maintained from git history and manual curation. Last updated: ${new Date().toISOString().split("T")[0]}*`
   );
   lines.push("");
 

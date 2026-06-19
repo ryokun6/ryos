@@ -1478,6 +1478,7 @@
       "patterns": "Patrones",
       "preview": "Vista previa",
       "previewActive": "Haz clic en cualquier lugar para salir",
+      "privacyPolicy": "Política de privacidad",
       "recoveryEmail": {
         "close": "Cerrar",
         "codeLabel": "Código de verificación",
@@ -1592,6 +1593,7 @@
         "title": "Telegram"
       },
       "terminalIeAmbientSynth": "Synth",
+      "termsOfService": "Términos de servicio",
       "theme": "Tema",
       "themeDescription": "Cambia la apariencia de ventanas, menús y controles",
       "ttsModel": "Modelo TTS",
@@ -3893,7 +3895,9 @@
       "description": "Información sobre ryOS en este equipo",
       "largestUnusedBlock": "Bloque Sin Usar Más Grande",
       "mb": "MB",
+      "privacyPolicy": "Política de privacidad",
       "system": "Sistema",
+      "termsOfService": "Términos de servicio",
       "title": "Acerca de Este Equipo",
       "viewChangelog": "Ver registro de cambios",
       "virtualMemory": "Memoria Virtual",

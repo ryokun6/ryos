@@ -59,8 +59,6 @@ export interface IpodScreenMediaOverlayProps {
   setAppleMusicKitNowPlaying: SetAppleMusicKitNowPlaying;
   lyricsControls: IpodScreenProps["lyricsControls"];
   lyricsAlignment: IpodScreenProps["lyricsAlignment"];
-  koreanDisplay: IpodScreenProps["koreanDisplay"];
-  japaneseFurigana: IpodScreenProps["japaneseFurigana"];
   adjustLyricOffset: IpodScreenProps["adjustLyricOffset"];
   showStatusCallback: IpodScreenProps["showStatusCallback"];
   onNextTrack?: IpodScreenProps["onNextTrack"];
@@ -102,8 +100,6 @@ export function IpodScreenMediaOverlay({
   setAppleMusicKitNowPlaying,
   lyricsControls,
   lyricsAlignment,
-  koreanDisplay,
-  japaneseFurigana,
   adjustLyricOffset,
   showStatusCallback,
   onNextTrack,
@@ -338,8 +334,6 @@ export function IpodScreenMediaOverlay({
           videoVisible={showVideo}
           fontClassName={getIpodSmallScreenLyricsFontClassName(uiVariant)}
           alignment={lyricsAlignment}
-          koreanDisplay={koreanDisplay}
-          japaneseFurigana={japaneseFurigana}
           isTranslating={lyricsControls.isTranslating}
           onAdjustOffset={(deltaMs) => {
             adjustLyricOffset(deltaMs);
