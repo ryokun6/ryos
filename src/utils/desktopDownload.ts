@@ -1,4 +1,3 @@
-export const RYOS_DESKTOP_RELEASE_TAG = "desktop";
 export const RYOS_DESKTOP_RELEASE_BASE_URL =
   "https://github.com/ryokun6/ryos/releases/download";
 
@@ -131,5 +130,6 @@ export function getDesktopDownloadUrl(
     return null;
   }
 
-  return `${RYOS_DESKTOP_RELEASE_BASE_URL}/${RYOS_DESKTOP_RELEASE_TAG}/${assetName}`;
+  const releaseTag = version.startsWith("v") ? version : `v${version}`;
+  return `${RYOS_DESKTOP_RELEASE_BASE_URL}/${releaseTag}/${assetName}`;
 }
