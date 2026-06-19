@@ -1552,6 +1552,7 @@
         "title": "テレグラム"
       },
       "terminalIeAmbientSynth": "シンセ",
+      "termsOfService": "利用規約",
       "theme": "テーマ",
       "themeDescription": "ウィンドウ、メニュー、コントロールの外観を変更します",
       "ttsModel": "TTS モデル",
@@ -3855,6 +3856,7 @@
       "mb": "MB",
       "privacyPolicy": "プライバシーポリシー",
       "system": "システム",
+      "termsOfService": "利用規約",
       "title": "このコンピュータについて",
       "viewChangelog": "変更履歴を見る",
       "virtualMemory": "仮想メモリ",

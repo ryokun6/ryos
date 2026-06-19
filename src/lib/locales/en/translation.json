@@ -217,7 +217,8 @@
       "mb": "MB",
       "clickToToggle": "Click to toggle",
       "viewChangelog": "View Changelog",
-      "privacyPolicy": "Privacy Policy"
+      "privacyPolicy": "Privacy Policy",
+      "termsOfService": "Terms of Service"
     },
     "toast": {
       "updatingIcons": "Updating icons",
@@ -2902,6 +2903,7 @@
       "downloadMacApp": "Download Mac App",
       "viewChangelog": "View Changelog",
       "privacyPolicy": "Privacy Policy",
+      "termsOfService": "Terms of Service",
       "backup": "Backup",
       "restore": "Restore",
       "backupRestoreDescription": "Backup or restore all app settings and files to a local file",

@@ -286,6 +286,22 @@ export function AboutFinderDialog({
                     {t("common.aboutThisMac.privacyPolicy")}
                   </a>
                 </p>
+                <p>
+                  <a
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      launchApp("internet-explorer", {
+                        url: `${getDocsBaseUrl()}/terms`,
+                        year: "current",
+                      });
+                      onOpenChange(false);
+                    }}
+                    className="text-os-link hover:underline"
+                  >
+                    {t("common.aboutThisMac.termsOfService")}
+                  </a>
+                </p>
               </div>
             </div>
           </div>

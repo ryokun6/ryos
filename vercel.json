@@ -280,6 +280,8 @@
     { "source": "/docs/", "destination": "/docs/overview", "permanent": false },
     { "source": "/privacy", "destination": "/docs/privacy", "permanent": false },
     { "source": "/privacy/", "destination": "/docs/privacy", "permanent": false },
+    { "source": "/terms", "destination": "/docs/terms", "permanent": false },
+    { "source": "/terms/", "destination": "/docs/terms", "permanent": false },
     { "source": "/404", "destination": "/", "permanent": false }
   ]
 }

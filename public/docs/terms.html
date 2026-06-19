@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Endpoints - ryOS Docs</title>
+  <title>Terms of Service - ryOS Docs</title>
   <link rel="icon" href="/icons/mac-192.png">
   <style>
     @font-face { font-family: "Geneva"; src: url("/fonts/geneva-12.woff2") format("woff2"); }
@@ -276,14 +276,14 @@
     <a href="/docs/i18n" class="nav-child ">7.2 i18n & Hooks</a>
   </div>
 </div>
-<div class="nav-group expanded">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
+<div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
     <a href="/docs/api-reference" class="">8. API Reference</a>
   </button>
-  <div class="nav-children" style="display: block;">
+  <div class="nav-children" style="display: none;">
     <a href="/docs/chat-api" class="nav-child ">8.1 Chat API</a>
     <a href="/docs/song-api" class="nav-child ">8.2 Song API</a>
     <a href="/docs/media-api" class="nav-child ">8.3 Media API</a>
@@ -291,7 +291,7 @@
     <a href="/docs/rooms-api" class="nav-child ">8.5 Rooms API</a>
     <a href="/docs/messages-api" class="nav-child ">8.6 Messages API</a>
     <a href="/docs/presence-api" class="nav-child ">8.7 Presence API</a>
-    <a href="/docs/ai-generation-apis" class="nav-child active">8.8 AI Endpoints</a>
+    <a href="/docs/ai-generation-apis" class="nav-child ">8.8 AI Endpoints</a>
     <a href="/docs/utility-apis" class="nav-child ">8.9 Utility APIs</a>
     <a href="/docs/api-design-guide" class="nav-child ">8.10 ryOS API Design Guide</a>
   </div>
@@ -311,246 +311,65 @@
 <div class="nav-group">
   <div class="nav-toggle nav-no-toggle">
     <span class="nav-spacer"></span>
-    <a href="/docs/terms" class="">11. Terms of Service</a>
+    <a href="/docs/terms" class="active">11. Terms of Service</a>
   </div>
 </div>
     </nav>
     
     <main class="content">
       <article>
-        <h1>AI Endpoints</h1>
-<p>ryOS provides several AI-powered endpoints for content generation, separate from the main chat interface. These endpoints power specialized features like applet generation, time-travel web pages, memory extraction, and music metadata extraction.</p>
-<p>Most AI endpoints are wrapped with the shared <code>apiHandler</code> utility (CORS, method checks, auth boundaries, Redis/logger context), with endpoint-specific rate limits layered on top.</p>
-<h2>Applet AI</h2>
-<p>The Applet AI endpoint powers intelligent responses within sandboxed HTML applets, supporting both text generation and AI image generation.</p>
-<h3>Endpoint</h3>
-<table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/applet-ai</code></td><td>Generate text responses or images for applets</td></tr></tbody></table>
-<h3>Request</h3>
-<pre><code>{
-  // Text prompt (required if no messages provided)
-  prompt?: string;           // max 4000 characters
-  
-  // Conversation history (alternative to prompt)
-  messages?: Array&lt;{
-    role: "user" | "assistant" | "system";
-    content?: string;        // max 4000 characters
-    attachments?: Array&lt;{    // max 4 per message, user messages only
-      mediaType: string;     // e.g., "image/png", "image/jpeg"
-      data: string;          // base64-encoded image data
-    }&gt;;
-  }&gt;;                        // max 12 messages
-  
-  // Optional applet context
-  context?: string;          // max 2000 characters
-  
-  // Generation parameters
-  temperature?: number;      // 0-1, default 0.6
-  mode?: "text" | "image";   // default "text"
-  
-  // Image attachments (mode="image" only)
-  images?: Array&lt;{           // max 4 images
-    mediaType: string;
-    data: string;            // base64-encoded
-  }&gt;;
-}</code></pre>
-<h3>Headers</h3>
-<table><thead><tr><th>Header</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>Authorization</code></td><td>Optional</td><td><code>Bearer &lt;token&gt;</code> for authenticated requests</td></tr><tr><td><code>X-Username</code></td><td>Optional</td><td>Username for rate limit tracking</td></tr><tr><td><code>Content-Type</code></td><td>Required</td><td><code>application/json</code></td></tr></tbody></table>
-<h3>Response</h3>
-<strong>Text Mode</strong> (<code>mode: "text"</code>)
-<pre><code>{
-  "reply": "Generated response text"
-}</code></pre>
-<strong>Image Mode</strong> (<code>mode: "image"</code>)
-<p>Returns binary image data with headers:</p>
-<table><thead><tr><th>Header</th><th>Description</th></tr></thead><tbody><tr><td><code>Content-Type</code></td><td>Image MIME type (e.g., <code>image/png</code>)</td></tr><tr><td><code>X-Image-Description</code></td><td>Optional description of generated image</td></tr></tbody></table>
-<h3>Rate Limits</h3>
-<table><thead><tr><th>User Type</th><th>Text Requests</th><th>Image Requests</th><th>Window</th></tr></thead><tbody><tr><td>Anonymous</td><td>15/hour</td><td>1/hour</td><td>1 hour</td></tr><tr><td>Authenticated</td><td>50/hour</td><td>12/hour</td><td>1 hour</td></tr></tbody></table>
-<p>Note: The main Chat API (<code>/api/chat</code>) has separate rate limits: 15 messages per 5 hours for authenticated users, 3 messages per 24 hours for anonymous users.</p>
-<p>Rate limit headers included in responses: <ul><li><code>X-RateLimit-Limit</code>: Maximum requests allowed</li></ul><ul><li><code>X-RateLimit-Remaining</code>: Requests remaining</li><li><code>X-RateLimit-Reset</code>: Seconds until reset</li><li><code>Retry-After</code>: Seconds to wait (on 429)</li></ul></p>
-<h3>Models</h3>
-<ul><li><strong>Text</strong>: <code>gemini-3-flash-preview</code></li></ul><ul><li><strong>Image</strong>: <code>gemini-3.1-flash-image-preview</code></li></ul>
-<h3>Example</h3>
-<strong>Text Generation</strong>
-<pre><code>curl -X POST https://os.ryo.lu/api/applet-ai \
-  -H "Content-Type: application/json" \
-  -d '{
-    "prompt": "What is the weather like today?",
-    "context": "Weather applet showing San Francisco",
-    "temperature": 0.7
-  }'</code></pre>
-<p>Response:</p>
-<pre><code>{
-  "reply": "I don't have access to real-time weather data, but based on San Francisco's typical climate..."
-}</code></pre>
-<strong>Image Generation</strong>
-<pre><code>curl -X POST https://os.ryo.lu/api/applet-ai \
-  -H "Content-Type: application/json" \
-  -d '{
-    "mode": "image",
-    "prompt": "A pixel art sunset over mountains"
-  }' \
-  --output generated-image.png</code></pre>
-<strong>Conversation with Attachments</strong>
-<pre><code>curl -X POST https://os.ryo.lu/api/applet-ai \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer your-token" \
-  -H "X-Username: yourname" \
-  -d '{
-    "messages": [
-      {
-        "role": "user",
-        "content": "What is in this image?",
-        "attachments": [{
-          "mediaType": "image/png",
-          "data": "iVBORw0KGgoAAAANSUhEUgAA..."
-        }]
-      }
-    ]
-  }'</code></pre>
-<h3>Error Responses</h3>
-<table><thead><tr><th>Status</th><th>Error</th><th>Description</th></tr></thead><tbody><tr><td>400</td><td><code>Invalid request body</code></td><td>Missing or invalid parameters</td></tr><tr><td>401</td><td><code>Unauthorized - invalid token</code></td><td>Invalid auth token pair when headers are provided</td></tr><tr><td>403</td><td><code>Unauthorized host</code></td><td>Host header not in allowlist</td></tr><tr><td>405</td><td><code>Method not allowed</code></td><td>Non-POST request</td></tr><tr><td>429</td><td><code>rate_limit_exceeded</code></td><td>Rate limit exceeded</td></tr><tr><td>500</td><td><code>Failed to generate response</code></td><td>AI generation error</td></tr><tr><td>502</td><td><code>The model did not return an image</code></td><td>Image generation failed</td></tr></tbody></table>
+        <h1>Terms of Service</h1>
+<p>These Terms of Service ("Terms") govern your use of ryOS, a web-based desktop environment, as hosted at <code>os.ryo.lu</code>. By using ryOS you agree to these Terms. If you do not agree, please do not use the service.</p>
+<em>Last updated: June 2026.</em>
 <hr>
-<h2>Internet Explorer Generator</h2>
-<p>The Internet Explorer Generator creates "time-travel" web pages, reimagining how websites might have looked in different eras (past or future). It generates complete HTML pages styled to match historical design trends or speculative future aesthetics.</p>
-<h3>Endpoint</h3>
-<table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/ie-generate</code></td><td>Generate era-appropriate web page redesigns</td></tr></tbody></table>
-<h3>Request</h3>
-<strong>Query Parameters</strong>
-<table><thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>url</code></td><td>string</td><td>Target URL to redesign</td></tr><tr><td><code>year</code></td><td>string</td><td>Target year for the design</td></tr><tr><td><code>model</code></td><td>string</td><td>AI model to use (optional)</td></tr></tbody></table>
-<strong>Request Body</strong>
-<pre><code>{
-  url?: string;              // Target URL (alternative to query param)
-  year?: string;             // Target year (alternative to query param)
-  messages?: Array&lt;{         // Conversation context
-    role: "user" | "assistant" | "system";
-    content: string;
-    // ... UIMessage fields
-  }&gt;;
-  model?: SupportedModel;    // AI model selection
-}</code></pre>
-<h3>Headers</h3>
-<table><thead><tr><th>Header</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>Content-Type</code></td><td>Required</td><td><code>application/json</code></td></tr></tbody></table>
-<h3>Response</h3>
-<p>Returns a streaming response (<code>text/event-stream</code>) containing the generated HTML page. The response follows the AI SDK's UI message stream format.</p>
-<p>Generated HTML includes: <ul><li>Era-appropriate styling and typography</li><li>Historical or futuristic design elements</li><li><code>&lt;!-- TITLE: ... --&gt;</code> comment with page title</li><li>Complete, self-contained HTML document</li></ul></p>
-<p>Results are cached in Redis for future retrieval.</p>
-<h3>Rate Limits</h3>
-<table><thead><tr><th>Scope</th><th>Limit</th><th>Window</th></tr></thead><tbody><tr><td>Burst</td><td>3 requests</td><td>1 minute</td></tr><tr><td>Budget</td><td>10 requests</td><td>5 hours</td></tr></tbody></table>
-<h3>Supported Models</h3>
-<table><thead><tr><th>Model</th><th>Provider</th></tr></thead><tbody><tr><td><code>gpt-5.5</code> (default)</td><td>OpenAI</td></tr><tr><td><code>sonnet-4.6</code></td><td>Anthropic</td></tr><tr><td><code>gemini-3-flash</code></td><td>Google</td></tr><tr><td><code>gemini-3.1-pro-preview</code></td><td>Google</td></tr></tbody></table>
-<h3>Design Guidelines</h3>
-<p>The AI applies different design principles based on the target year:</p>
-<strong>Future Years</strong> (after current year):
-<ul><li>Bold, creative speculation about design trends</li><li>Embraces backdrop-blur, simple animations</li><li>Uses emojis or simple SVGs for icons</li><li>Considers potential technological breakthroughs</li></ul>
-<strong>Past Years</strong> (before current year):
-<ul><li>Matches historical design era (Art Deco, Web 1.0, etc.)</li><li>Considers available technology of the time</li><li>Simulates period-appropriate materials and textures</li><li>May output as print, newspaper, telegram, etc. for very old dates</li></ul>
-<strong>Current Year</strong>:
-<ul><li>Reflects current website state accurately</li><li>Up-to-date styling and branding</li></ul>
-<h3>Example</h3>
-<pre><code>curl -X POST "https://os.ryo.lu/api/ie-generate?url=apple.com&amp;year=1984" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "messages": [
-      {
-        "role": "user",
-        "content": "Generate a page for Apple in 1984"
-      }
-    ]
-  }'</code></pre>
-<h3>Error Responses</h3>
-<table><thead><tr><th>Status</th><th>Error</th><th>Description</th></tr></thead><tbody><tr><td>400</td><td><code>Invalid messages format</code></td><td>Malformed messages array</td></tr><tr><td>400</td><td><code>Unsupported model</code></td><td>Invalid model parameter</td></tr><tr><td>403</td><td><code>Unauthorized</code></td><td>Origin not allowed</td></tr><tr><td>405</td><td><code>Method not allowed</code></td><td>Non-POST request</td></tr><tr><td>429</td><td><code>rate_limit_exceeded</code></td><td>Burst or budget limit exceeded</td></tr><tr><td>500</td><td><code>Internal Server Error</code></td><td>Generation failed</td></tr></tbody></table>
+<h2>1. The service</h2>
+<p>ryOS is a browser-based, retro-styled desktop environment offering apps such as a file manager, text editor, chat, media players, and more. Most features run locally in your browser; some features rely on servers and third-party providers (see the <a href="/docs/privacy">Privacy Policy</a>).</p>
+<p>ryOS is provided as a creative and experimental project. Features may change, break, or be removed at any time without notice.</p>
 <hr>
-<h2>Parse Title (Music Metadata)</h2>
-<p>The Parse Title endpoint uses AI to extract structured music metadata from YouTube video titles. It intelligently parses song titles, artist names, and album information from various title formats.</p>
-<h3>Endpoint</h3>
-<table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/parse-title</code></td><td>Extract music metadata from video titles</td></tr></tbody></table>
-<h3>Request</h3>
-<pre><code>{
-  title: string;           // Raw YouTube video title (required)
-  author_name?: string;    // YouTube channel name (optional, helps identify artist)
-}</code></pre>
-<h3>Headers</h3>
-<table><thead><tr><th>Header</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>Content-Type</code></td><td>Required</td><td><code>application/json</code></td></tr></tbody></table>
-<h3>Response</h3>
-<pre><code>{
-  title: string;           // Extracted song title (falls back to raw title)
-  artist?: string;         // Extracted artist name (if found)
-  album?: string;          // Extracted album name (if found)
-}</code></pre>
-<h3>Rate Limits</h3>
-<table><thead><tr><th>Scope</th><th>Limit</th><th>Window</th></tr></thead><tbody><tr><td>Burst</td><td>15 requests</td><td>1 minute</td></tr><tr><td>Daily</td><td>500 requests</td><td>24 hours</td></tr></tbody></table>
-<h3>Model</h3>
-<p>Uses <code>gemini-3-flash-preview</code> for efficient metadata parsing.</p>
-<h3>Language Handling</h3>
-<p>The parser prefers original language names over romanized/translated versions:</p>
-<table><thead><tr><th>Input</th><th>Output</th></tr></thead><tbody><tr><td><code>"Jay Chou - Sunny Day (周杰倫 - 晴天)"</code></td><td><code>{"title": "晴天", "artist": "周杰倫"}</code></td></tr><tr><td><code>"NewJeans (뉴진스) 'How Sweet' Official MV"</code></td><td><code>{"title": "How Sweet", "artist": "뉴진스"}</code></td></tr></tbody></table>
-<h3>Example</h3>
-<pre><code>curl -X POST https://os.ryo.lu/api/parse-title \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title": "Daft Punk - Get Lucky (Official Audio) ft. Pharrell Williams, Nile Rodgers",
-    "author_name": "Daft Punk"
-  }'</code></pre>
-<p>Response:</p>
-<pre><code>{
-  "title": "Get Lucky",
-  "artist": "Daft Punk"
-}</code></pre>
-<strong>Complex Title Parsing</strong>
-<pre><code>curl -X POST https://os.ryo.lu/api/parse-title \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title": "[MV] IU(아이유) _ Blueming(블루밍)",
-    "author_name": "1theK (원더케이)"
-  }'</code></pre>
-<p>Response:</p>
-<pre><code>{
-  "title": "Blueming",
-  "artist": "아이유"
-}</code></pre>
-<h3>Error Responses</h3>
-<table><thead><tr><th>Status</th><th>Error</th><th>Description</th></tr></thead><tbody><tr><td>400</td><td><code>No title provided</code></td><td>Missing or invalid title field</td></tr><tr><td>403</td><td><code>Unauthorized</code></td><td>Origin not allowed</td></tr><tr><td>405</td><td><code>Method not allowed</code></td><td>Non-POST request</td></tr><tr><td>429</td><td><code>rate_limit_exceeded</code></td><td>Burst or daily limit exceeded</td></tr><tr><td>500</td><td><code>Error parsing title</code></td><td>AI parsing failed</td></tr></tbody></table>
+<h2>2. Eligibility</h2>
+<p>You must be old enough to form a binding contract and to consent to data processing in your jurisdiction (typically at least 13–16). If you use ryOS on behalf of an organization, you represent that you are authorized to accept these Terms for it.</p>
 <hr>
-<h2>Memory Extraction Endpoints</h2>
-<p>These endpoints support ryOS memory features (daily notes + long-term memory).</p>
-<h3>Endpoint Summary</h3>
-<table><thead><tr><th>Method</th><th>Path</th><th>Description</th><th>Auth</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/ai/extract-memories</code></td><td>Extract daily notes + long-term memories from chat conversation</td><td>Required</td></tr><tr><td>POST</td><td><code>/api/ai/process-daily-notes</code></td><td>Process unprocessed past daily notes into long-term memories</td><td>Required</td></tr></tbody></table>
-<h3>POST /api/ai/extract-memories</h3>
-<p>Request body:</p>
-<pre><code>{
-  "messages": [{ "role": "user", "content": "..." }],
-  "timeZone": "America/Los_Angeles"
-}</code></pre>
-<p>Response:</p>
-<pre><code>{
-  "extracted": 2,
-  "dailyNotes": 4,
-  "analyzed": 3,
-  "message": "Logged 4 daily notes, extracted 2 long-term memories"
-}</code></pre>
-<h3>POST /api/ai/process-daily-notes</h3>
-<p>Request body (optional):</p>
-<pre><code>{
-  "timeZone": "America/Los_Angeles"
-}</code></pre>
-<p>Response:</p>
-<pre><code>{
-  "processed": 3,
-  "extracted": 2,
-  "created": 1,
-  "updated": 1,
-  "dates": ["2026-02-26", "2026-02-27", "2026-02-28"],
-  "skippedDates": [],
-  "message": "Processed 3 daily notes → 1 new memories, 1 updated"
-}</code></pre>
+<h2>3. Accounts</h2>
+<p>Some features require an account. <ul><li>You are responsible for activity that occurs under your account and for keeping your credentials secure.</li></ul><ul><li>Choose a username and content that do not impersonate others or infringe anyone's rights.</li><li>You may delete your account at any time from <strong>Control Panels → Account</strong>. We may suspend or terminate accounts that violate these Terms.</li></ul></p>
 <hr>
-<h2>Related</h2>
-<ul><li><strong><a href="/docs/chat-api">Chat API</a></strong> - Main AI chat endpoint with tool calling</li></ul><ul><li><strong><a href="/docs/ai-system">AI System</a></strong> - AI providers and available tools</li><li><strong><a href="/docs/api-reference">API Reference</a></strong> - Overview of all ryOS API endpoints</li><li><strong><a href="/docs/chats">Chats App</a></strong> - Frontend chat application documentation</li></ul>
+<h2>4. Acceptable use</h2>
+<p>When using ryOS, you agree not to: <ul><li>Break the law or infringe the rights of others, including intellectual-property and privacy rights.</li></ul><ul><li>Upload, share, or generate content that is illegal, harmful, harassing, hateful, sexually exploitative of minors, or otherwise abusive.</li><li>Attempt to disrupt, overload, reverse-engineer for abuse, gain unauthorized access to, or circumvent the security or rate limits of the service.</li><li>Use the service to send spam, distribute malware, or scrape data in violation of applicable terms.</li><li>Misuse AI features to generate prohibited content or to evade provider safety policies.</li></ul></p>
+<p>We may remove content or restrict access that we reasonably believe violates these Terms.</p>
+<hr>
+<h2>5. Your content</h2>
+<p>You retain ownership of the content you create, upload, or store in ryOS ("Your Content"). <ul><li>Most of Your Content stays in your browser. If you enable cloud sync, you grant ryOS the limited rights needed to store, transmit, and display Your Content solely to operate the service for you across your devices.</li></ul><ul><li>You are responsible for Your Content and for having the rights necessary to use it.</li><li>You are responsible for keeping your own backups. Use <strong>Control Panels → backup</strong> to export your data.</li></ul></p>
+<hr>
+<h2>6. AI features</h2>
+<p>AI features generate content based on your input using third-party model providers. <ul><li>AI output may be inaccurate, offensive, or otherwise inappropriate. Do not rely on it as professional advice, and verify anything important.</li></ul><ul><li>You are responsible for how you use AI output and for complying with the providers' policies.</li></ul></p>
+<hr>
+<h2>7. Third-party services and content</h2>
+<p>ryOS integrates with third-party services (for example AI providers, YouTube, Apple MapKit/MusicKit, Pusher, and others) and can display third-party websites and content (for example via Internet Explorer). ryOS does not control and is not responsible for third-party services or content, and your use of them may be subject to their own terms and policies.</p>
+<hr>
+<h2>8. Intellectual property</h2>
+<p>ryOS, including its name, design, and original code, is the property of its author and contributors and is licensed under the terms stated in the project repository (AGPL-3.0). These Terms do not grant you rights to ryOS's trademarks or branding. The open-source license governs your rights to the source code; these Terms govern your use of the hosted service.</p>
+<hr>
+<h2>9. Disclaimers</h2>
+<p>ryOS is provided <strong>"as is" and "as available," without warranties of any kind</strong>, whether express or implied, including warranties of merchantability, fitness for a particular purpose, and non-infringement. We do not warrant that the service will be uninterrupted, secure, error-free, or that data will never be lost.</p>
+<hr>
+<h2>10. Limitation of liability</h2>
+<p>To the maximum extent permitted by law, ryOS and its author and contributors will not be liable for any indirect, incidental, special, consequential, or punitive damages, or for any loss of data, profits, or goodwill, arising from or related to your use of the service. Nothing in these Terms excludes liability that cannot be excluded under applicable law.</p>
+<hr>
+<h2>11. Termination</h2>
+<p>You may stop using ryOS at any time and delete your data via <strong>Control Panels</strong>. We may suspend or terminate access to the service, in whole or in part, at any time, including for violations of these Terms. Sections that by their nature should survive termination (such as content ownership, disclaimers, and limitation of liability) will survive.</p>
+<hr>
+<h2>12. Self-hosting</h2>
+<p>ryOS is open source. If you run your own instance, you operate that deployment and are responsible for its configuration, the third-party keys you enable, and compliance with applicable law. These Terms describe the hosted service at <code>os.ryo.lu</code>; a self-hosted operator may set their own terms.</p>
+<hr>
+<h2>13. Changes to these Terms</h2>
+<p>We may update these Terms as ryOS evolves. Material changes will be reflected here with an updated date at the top of this page. Continued use of the service after changes take effect constitutes acceptance of the revised Terms.</p>
+<hr>
+<h2>14. Contact</h2>
+<p>Questions about these Terms can be sent to <strong>ryo@ryo.lu</strong>.</p>
       </article>
       
       <nav class="nav">
-        <a href="/docs/presence-api">← Presence API</a>
-        <a href="/docs/utility-apis">Utility APIs →</a>
+        <a href="/docs/privacy">← Privacy Policy</a>
+        <span></span>
       </nav>
       
     </main>

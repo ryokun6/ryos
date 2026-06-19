@@ -42,6 +42,20 @@ export function VersionDisplay() {
       >
         {t("apps.control-panels.privacyPolicy")}
       </a>
+      {" · "}
+      <a
+        href="#"
+        onClick={(e) => {
+          e.preventDefault();
+          launchApp("internet-explorer", {
+            url: `${getDocsBaseUrl()}/terms`,
+            year: "current",
+          });
+        }}
+        className="text-os-link hover:underline"
+      >
+        {t("apps.control-panels.termsOfService")}
+      </a>
     </p>
   );
 }

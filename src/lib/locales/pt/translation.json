@@ -1552,6 +1552,7 @@
         "title": "Telegram"
       },
       "terminalIeAmbientSynth": "Synth",
+      "termsOfService": "Termos de Serviço",
       "theme": "Tema",
       "themeDescription": "Altera a aparência de janelas, menus e controles",
       "ttsModel": "Modelo TTS",
@@ -3855,6 +3856,7 @@
       "mb": "MB",
       "privacyPolicy": "Política de Privacidade",
       "system": "Sistema",
+      "termsOfService": "Termos de Serviço",
       "title": "Sobre Este Computador",
       "viewChangelog": "Ver registro de alterações",
       "virtualMemory": "Memória Virtual",

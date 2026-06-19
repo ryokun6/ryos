@@ -1552,6 +1552,7 @@
         "title": "Telegram"
       },
       "terminalIeAmbientSynth": "合成器",
+      "termsOfService": "服務條款",
       "theme": "主題",
       "themeDescription": "變更視窗、選單和控制項的外觀",
       "ttsModel": "TTS 模型",
@@ -3855,6 +3856,7 @@
       "mb": "MB",
       "privacyPolicy": "隱私權政策",
       "system": "系統",
+      "termsOfService": "服務條款",
       "title": "關於此電腦",
       "viewChangelog": "查看變更記錄",
       "virtualMemory": "虛擬記憶體",

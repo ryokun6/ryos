@@ -353,6 +353,12 @@ export default defineConfig({
             res.end();
             return;
           }
+          // Redirect short /terms URL to the docs page
+          if (url === '/terms' || url === '/terms/') {
+            res.writeHead(302, { Location: '/docs/terms' });
+            res.end();
+            return;
+          }
           // Handle clean URLs for docs - serve .html files
           if (url.startsWith('/docs/') && !url.endsWith('.html')) {
             const htmlPath = url + '.html';
