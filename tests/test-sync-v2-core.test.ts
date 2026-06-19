@@ -451,4 +451,19 @@ describe("sync v2 v1-import", () => {
     const kv = await (r as unknown as FakeRedis).hgetall(sync2KvKey("user1"));
     expect(kv).toBeTruthy();
   });
+
+  test("skips v1 import when no legacy keys exist (brand-new user)", async () => {
+    const r = redis();
+    await ensureSync2Initialized(r, "newuser");
+    const snapshot = await readSyncSnapshot(r, "newuser");
+    expect(snapshot.seq).toBe(0);
+    expect(Object.keys(snapshot.entries)).toHaveLength(0);
+    const result = await applySyncOps(
+      r,
+      "newuser",
+      [{ k: "settings/theme", v: { current: "macosx" }, t: t(0) }],
+      "client-a"
+    );
+    expect(result.seq).toBe(1);
+  });
 });
