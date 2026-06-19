@@ -20,6 +20,7 @@ import {
   ThemedTabsContent,
 } from "@/components/shared/ThemedTabs";
 import { ResetPasswordDialog } from "@/components/dialogs/ResetPasswordDialog";
+import { RecoveryEmailDialog } from "@/components/dialogs/RecoveryEmailDialog";
 
 interface LoginDialogProps {
   /* Common */
@@ -70,6 +71,11 @@ export function LoginDialog({
 }: LoginDialogProps) {
   const [activeTab, setActiveTab] = useState<"login" | "signup">(initialTab);
   const [isResetOpen, setIsResetOpen] = useState(false);
+  // Optional recovery email captured on the sign-up tab.
+  const [signupEmail, setSignupEmail] = useState("");
+  // Post-sign-up email verification flow.
+  const [isVerifyEmailOpen, setIsVerifyEmailOpen] = useState(false);
+  const [verifyEmail, setVerifyEmail] = useState("");
   const { isWindowsTheme, isMacOSTheme } = useThemeFlags();
   const { t } = useTranslation();
   const dialogTitle = t("common.auth.dialogTitle");
@@ -78,6 +84,7 @@ export function LoginDialog({
   useEffect(() => {
     if (isOpen) {
       setActiveTab(initialTab);
+      setSignupEmail("");
     }
   }, [isOpen, initialTab]);
 
@@ -191,6 +198,29 @@ export function LoginDialog({
           disabled={isSignUpLoading}
         />
       </div>
+      <div className="space-y-2">
+        <Label
+          className={cn("text-neutral-700", themeFont)}
+          style={themeFontStyle}
+        >
+          {t("common.auth.recoveryEmailOptional")}
+        </Label>
+        <Input
+          type="email"
+          value={signupEmail}
+          onChange={(e) => setSignupEmail(e.target.value)}
+          className={cn("shadow-none h-8", themeFont)}
+          style={themeFontStyle}
+          disabled={isSignUpLoading}
+          autoComplete="email"
+        />
+        <p
+          className={cn("text-neutral-500", themeFont)}
+          style={themeFontStyle}
+        >
+          {t("common.auth.recoveryEmailSignupHint")}
+        </p>
+      </div>
     </div>
   );
 
@@ -217,6 +247,12 @@ export function LoginDialog({
       activeTab === "signup";
 
     if (isOpen && (loginFinishedSuccessfully || signUpFinishedSuccessfully)) {
+      // After a successful sign-up with an optional recovery email, continue
+      // into the email verification flow instead of just closing.
+      if (signUpFinishedSuccessfully && signupEmail.trim()) {
+        setVerifyEmail(signupEmail.trim());
+        setIsVerifyEmailOpen(true);
+      }
       onOpenChange(false);
     }
 
@@ -230,6 +266,7 @@ export function LoginDialog({
     signUpError,
     activeTab,
     onOpenChange,
+    signupEmail,
   ]);
 
   const dialogContent = (
@@ -335,6 +372,12 @@ export function LoginDialog({
         onOpenChange={setIsResetOpen}
         defaultIdentifier={usernameInput}
         onSuccess={() => onOpenChange(false)}
+      />
+      <RecoveryEmailDialog
+        isOpen={isVerifyEmailOpen}
+        onOpenChange={setIsVerifyEmailOpen}
+        initialEmail={verifyEmail}
+        autoSubmit
       />
     </>
   );

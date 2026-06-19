@@ -26,6 +26,13 @@ import { ApiRequestError } from "@/api/core";
 interface RecoveryEmailDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Prefill the email field (e.g. an address entered during sign-up). */
+  initialEmail?: string;
+  /**
+   * When true, automatically send a verification code to `initialEmail` on open
+   * (used by the post-sign-up flow so the user lands directly on code entry).
+   */
+  autoSubmit?: boolean;
 }
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -33,6 +40,8 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export function RecoveryEmailDialog({
   isOpen,
   onOpenChange,
+  initialEmail,
+  autoSubmit = false,
 }: RecoveryEmailDialogProps) {
   const { t } = useTranslation();
   const { isWindowsTheme, isMacOSTheme } = useThemeFlags();
@@ -45,34 +54,25 @@ export function RecoveryEmailDialog({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const refreshStatus = async () => {
+  const refreshStatus = async (): Promise<EmailStatusResponse | null> => {
     setLoadingStatus(true);
     try {
       const data = await getEmailStatus();
       setStatus(data);
       // Surface an unverified pending email so the user can finish verifying.
       setPendingVerify(data.hasEmail && !data.emailVerified);
+      return data;
     } catch (err) {
       setError(
         err instanceof ApiRequestError
           ? err.message
           : t("apps.control-panels.recoveryEmail.genericError")
       );
+      return null;
     } finally {
       setLoadingStatus(false);
     }
   };
-
-  useEffect(() => {
-    if (isOpen) {
-      setEmailInput("");
-      setCodeInput("");
-      setError(null);
-      setBusy(false);
-      refreshStatus();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen]);
 
   const themeFont = isWindowsTheme
     ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
@@ -84,17 +84,21 @@ export function RecoveryEmailDialog({
       }
     : undefined;
 
-  const handleSendVerification = async (e?: React.FormEvent) => {
+  const handleSendVerification = async (
+    e?: React.FormEvent,
+    emailOverride?: string
+  ) => {
     e?.preventDefault();
     if (busy) return;
-    if (!EMAIL_REGEX.test(emailInput.trim())) {
+    const email = (emailOverride ?? emailInput).trim();
+    if (!EMAIL_REGEX.test(email)) {
       setError(t("apps.control-panels.recoveryEmail.invalidEmail"));
       return;
     }
     setBusy(true);
     setError(null);
     try {
-      await setRecoveryEmail({ email: emailInput.trim() });
+      await setRecoveryEmail({ email });
       toast.success(t("apps.control-panels.recoveryEmail.codeSentTitle"), {
         description: t("apps.control-panels.recoveryEmail.codeSentDescription"),
       });
@@ -158,6 +162,31 @@ export function RecoveryEmailDialog({
       setBusy(false);
     }
   };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const prefill = initialEmail?.trim() ?? "";
+    setEmailInput(prefill);
+    setCodeInput("");
+    setError(null);
+    setBusy(false);
+    (async () => {
+      const data = await refreshStatus();
+      // Post-sign-up flow: if an email was provided and the server supports the
+      // email channel, immediately send the verification code so the user lands
+      // on code entry. Skip when an email is already on file/verified.
+      if (
+        autoSubmit &&
+        prefill &&
+        EMAIL_REGEX.test(prefill) &&
+        data?.emailConfigured &&
+        !data.hasEmail
+      ) {
+        await handleSendVerification(undefined, prefill);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
   const title = t("apps.control-panels.recoveryEmail.title");
   const description = t("apps.control-panels.recoveryEmail.description");
