@@ -1,6 +1,24 @@
 #!/usr/bin/env bun
 
-import { describe, expect, test, beforeEach, afterEach } from "bun:test";
+import { describe, expect, test, beforeAll, afterAll, beforeEach, afterEach } from "bun:test";
+import { GlobalRegistrator } from "@happy-dom/global-registrator";
+
+// These helpers operate on the real DOM (document.getElementById,
+// document.documentElement, document.fullscreenElement). Bun has no DOM by
+// default, so register happy-dom for this suite — otherwise every test would
+// silently no-op. See the previous `typeof document === "undefined"` guards.
+beforeAll(() => {
+  if (typeof document === "undefined") {
+    GlobalRegistrator.register();
+  }
+});
+
+afterAll(() => {
+  if (GlobalRegistrator.isRegistered) {
+    GlobalRegistrator.unregister();
+  }
+});
+
 import {
   RYOS_FULLSCREEN_ROOT_ID,
   getRyosFullscreenElement,
@@ -13,20 +31,16 @@ describe("ryosFullscreen", () => {
   let root: HTMLDivElement | null = null;
 
   beforeEach(() => {
-    if (typeof document === "undefined") {
-      return;
-    }
     root = document.createElement("div");
     root.id = RYOS_FULLSCREEN_ROOT_ID;
     document.body.appendChild(root);
   });
 
   afterEach(() => {
-    if (typeof document === "undefined" || !root) {
-      return;
+    if (root) {
+      root.remove();
+      root = null;
     }
-    root.remove();
-    root = null;
     Object.defineProperty(document, "fullscreenElement", {
       configurable: true,
       get: () => null,
@@ -34,26 +48,14 @@ describe("ryosFullscreen", () => {
   });
 
   test("getRyosFullscreenRoot returns the React shell root", () => {
-    if (typeof document === "undefined") {
-      expect(true).toBe(true);
-      return;
-    }
     expect(getRyosFullscreenRoot()).toBe(root);
   });
 
   test("getRyosFullscreenElement returns documentElement", () => {
-    if (typeof document === "undefined") {
-      expect(true).toBe(true);
-      return;
-    }
     expect(getRyosFullscreenElement()).toBe(document.documentElement);
   });
 
   test("isRyosFullscreenActive is false when another element is fullscreen", () => {
-    if (typeof document === "undefined" || !root) {
-      expect(true).toBe(true);
-      return;
-    }
     const other = document.createElement("div");
     document.body.appendChild(other);
     Object.defineProperty(document, "fullscreenElement", {
@@ -65,10 +67,6 @@ describe("ryosFullscreen", () => {
   });
 
   test("isRyosFullscreenActive is true when documentElement is fullscreen", () => {
-    if (typeof document === "undefined") {
-      expect(true).toBe(true);
-      return;
-    }
     Object.defineProperty(document, "fullscreenElement", {
       configurable: true,
       get: () => document.documentElement,
@@ -77,10 +75,6 @@ describe("ryosFullscreen", () => {
   });
 
   test("isRyosFullscreenSupported requires fullscreenEnabled and requestFullscreen on html", () => {
-    if (typeof document === "undefined" || !root) {
-      expect(true).toBe(true);
-      return;
-    }
     const originalEnabled = document.fullscreenEnabled;
     Object.defineProperty(document, "fullscreenEnabled", {
       configurable: true,
