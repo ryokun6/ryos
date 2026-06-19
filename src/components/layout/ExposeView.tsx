@@ -45,7 +45,7 @@ export function ExposeView({ isOpen, onClose }: ExposeViewProps) {
   );
 
   const getFileItem = useFilesStore((s) => s.getItem);
-  const { isMacOSTheme: isMacOSXTheme } = useThemeFlags();
+  const { isMacOSTheme } = useThemeFlags();
   const isMobile = useIsMobile();
 
   // Sounds for expose view open/close
@@ -204,9 +204,9 @@ export function ExposeView({ isOpen, onClose }: ExposeViewProps) {
           >
             {openInstances.length === 0 ? (
               <div
-                className={`text-white ${isMacOSXTheme ? "font-bold" : "drop-shadow-lg"}`}
+                className={`text-white ${isMacOSTheme ? "font-bold" : "drop-shadow-lg"}`}
                 style={{
-                  textShadow: isMacOSXTheme
+                  textShadow: isMacOSTheme
                     ? "rgba(0, 0, 0, 0.9) 0px 1px 0px, rgba(0, 0, 0, 0.85) 0px 1px 3px, rgba(0, 0, 0, 0.45) 0px 2px 3px"
                     : undefined,
                   fontSize: "1rem",
@@ -241,7 +241,7 @@ export function ExposeView({ isOpen, onClose }: ExposeViewProps) {
               const scaledWindowHalfHeight = (windowHeight * scale) / 2;
 
               // macOS-style text shadow (same as file icon labels)
-              const macOSTextShadow = isMacOSXTheme
+              const macOSTextShadow = isMacOSTheme
                 ? "rgba(0, 0, 0, 0.9) 0px 1px 0px, rgba(0, 0, 0, 0.85) 0px 1px 3px, rgba(0, 0, 0, 0.45) 0px 2px 3px"
                 : undefined;
 
@@ -269,7 +269,7 @@ export function ExposeView({ isOpen, onClose }: ExposeViewProps) {
                     {/* Title */}
                     <div
                       className={`text-sm font-medium text-white line-clamp-1 max-w-[200px] ${
-                        isMacOSXTheme ? "font-bold" : "drop-shadow-lg"
+                        isMacOSTheme ? "font-bold" : "drop-shadow-lg"
                       }`}
                       style={{
                         textShadow: macOSTextShadow,

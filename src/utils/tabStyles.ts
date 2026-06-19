@@ -9,13 +9,13 @@ export interface TabStyleConfig {
 }
 
 export function getTabStyles(currentTheme: OsThemeId): TabStyleConfig {
-  const isMacOSXTheme = currentTheme === "macosx";
+  const isMacOSTheme = currentTheme === "macosx";
   const isSystem7Theme = currentTheme === "system7";
 
   const separatorColor = "var(--os-color-separator)";
 
   const tabListBase = `flex w-full ${
-    isMacOSXTheme ? "" : "h-6"
+    isMacOSTheme ? "" : "h-6"
   } space-x-0.5 shadow-none`;
 
   const tabListSystem7 = "bg-os-panel-bg border-b border-os-separator";
@@ -28,8 +28,8 @@ export function getTabStyles(currentTheme: OsThemeId): TabStyleConfig {
   const tabTriggerMacOSX = "aqua-tab";
   const tabContentMacOSX = "aqua-tab-content";
 
-  const tabTriggerBase = `relative flex-1 ${isMacOSXTheme ? "" : "h-6"} px-2 ${
-    isMacOSXTheme ? "" : "-mb-[1px]"
+  const tabTriggerBase = `relative flex-1 ${isMacOSTheme ? "" : "h-6"} px-2 ${
+    isMacOSTheme ? "" : "-mb-[1px]"
   } rounded-t shadow-none! text-[16px]`;
   const tabContentBase =
     "mt-0 min-w-0 max-w-full h-[calc(100%-2rem)] overflow-x-hidden";
@@ -39,15 +39,15 @@ export function getTabStyles(currentTheme: OsThemeId): TabStyleConfig {
 
   return {
     tabListClasses: `${tabListBase} ${
-      isSystem7Theme ? tabListSystem7 : isMacOSXTheme ? tabListMacOSX : ""
+      isSystem7Theme ? tabListSystem7 : isMacOSTheme ? tabListMacOSX : ""
     }`,
     tabTriggerClasses: `${tabTriggerBase} ${
-      isSystem7Theme ? tabTriggerSystem7 : isMacOSXTheme ? tabTriggerMacOSX : ""
+      isSystem7Theme ? tabTriggerSystem7 : isMacOSTheme ? tabTriggerMacOSX : ""
     }`,
     tabContentClasses: `${tabContentBase} ${
       isSystem7Theme
         ? tabContentSystem7
-        : isMacOSXTheme
+        : isMacOSTheme
         ? tabContentMacOSX
         : tabContentDefault
     }`,

@@ -146,7 +146,7 @@ export function useFinderLogic({
   const {
     currentTheme,
     isWindowsTheme,
-    isMacOSTheme: isMacOSXTheme,
+    isMacOSTheme,
   } = useThemeFlags();
 
   // Dialog state
@@ -1620,7 +1620,7 @@ export function useFinderLogic({
     rootFolders,
     windowTitle,
     isWindowsTheme,
-    isMacOSXTheme,
+    isMacOSTheme,
     currentTheme,
 
     // Sidebar

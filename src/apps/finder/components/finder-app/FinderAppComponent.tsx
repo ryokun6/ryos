@@ -104,7 +104,7 @@ export function FinderAppComponent({
     rootFolders,
     windowTitle,
     isWindowsTheme,
-    isMacOSXTheme,
+    isMacOSTheme,
     currentTheme,
     showSidebar,
     setShowSidebar,
@@ -223,7 +223,7 @@ export function FinderAppComponent({
         onClose,
         isForeground,
         appId: "finder",
-        material: isMacOSXTheme ? "brushedmetal" : "default",
+        material: isMacOSTheme ? "brushedmetal" : "default",
         skipInitialSound,
         instanceId,
         onNavigateNext,
@@ -280,7 +280,7 @@ export function FinderAppComponent({
     >
       <FinderWindowBody
           containerRef={containerRef}
-          isMacOSXTheme={isMacOSXTheme}
+          isMacOSTheme={isMacOSTheme}
           isDraggingOver={isDraggingOver}
           currentPath={currentPath}
           handleDragOver={handleDragOver}

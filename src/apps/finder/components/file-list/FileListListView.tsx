@@ -12,7 +12,7 @@ import type { FileListViewModel } from "./useFileList";
 export function FileListListView(vm: FileListViewModel) {
   const {
     files,
-    isMacOSXTheme,
+    isMacOSTheme,
     dropTargetPath,
     selectedFiles,
     containerRef,
@@ -32,8 +32,8 @@ export function FileListListView(vm: FileListViewModel) {
     t,
   } = vm;
 
-  const listHeaderTextClass = isMacOSXTheme ? "text-[11px]" : "text-[10px]";
-  const listBodyTextClass = isMacOSXTheme ? "text-[12px]" : "text-[11px]";
+  const listHeaderTextClass = isMacOSTheme ? "text-[11px]" : "text-[10px]";
+  const listBodyTextClass = isMacOSTheme ? "text-[12px]" : "text-[11px]";
 
   return (
     <div
