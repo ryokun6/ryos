@@ -415,7 +415,7 @@
   background: linear-gradient(rgba(255, 255, 255, 0), rgb(255, 255, 255, 0.5));
   width: calc(100% - 8px);
   border-radius: 4px;
-  bottom: 1px;
+  bottom: 0;
   filter: blur(1px);
   pointer-events: none;
 }
@@ -639,7 +639,7 @@
 .aqua-button span,
 .aqua-button {
   position: relative;
-  z-index: 3;
+  z-index: 1;
   font-weight: 500;
 }
 
@@ -2359,30 +2359,75 @@
 
 /* -------------------------------------------------- */
 /* macOS Aqua Switch & Slider overrides                */
-/* Make thumbs visually identical to .aqua-button primary/secondary */
 /* -------------------------------------------------- */
 :root[data-os-theme="macosx"] .os-switch {
   position: relative;
   border-radius: 9999px;
-  background: linear-gradient(#d0d0d0, #f5f5f5);
-  border: 1px solid rgba(0, 0, 0, 0.18); /* softened border */
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12),
-    0 1px 0 rgba(255, 255, 255, 0.55);
+  --os-glass-switch-track-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2),
+    inset 0 -1px 1px rgba(255, 255, 255, 0.35),
+    0 1px 0 rgba(255, 255, 255, 0.5);
+  background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.55) 0%,
+        rgba(255, 255, 255, 0.18) 60%,
+        rgba(255, 255, 255, 0) 100%
+      )
+      top / 100% 50% no-repeat,
+    linear-gradient(rgba(188, 188, 188, 0.34), rgba(255, 255, 255, 0.3));
+  border: 1px solid rgba(0, 0, 0, 0.22);
+  box-shadow: var(--os-glass-switch-track-shadow);
   padding: 0 2px; /* room for thumb */
   height: 16px;
   width: 28px;
-  transition: background 200ms, box-shadow 200ms;
+  transition: background 200ms, border-color 200ms, box-shadow 200ms;
 }
 
-/* Track when ON stays neutral; only thumb indicates state */
 :root[data-os-theme="macosx"] .os-switch[data-state="checked"] {
-  background: linear-gradient(#d0d0d0, #f5f5f5);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12),
-    0 1px 0 rgba(255, 255, 255, 0.55);
+  background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.55) 0%,
+        rgba(255, 255, 255, 0.18) 60%,
+        rgba(255, 255, 255, 0) 100%
+      )
+      top / 100% 50% no-repeat,
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--os-accent-color, #3a73d6) 32%, transparent),
+      color-mix(in srgb, var(--os-accent-color, #3a73d6) 22%, transparent)
+    ),
+    linear-gradient(rgba(188, 188, 188, 0.34), rgba(255, 255, 255, 0.3));
+  box-shadow: var(--os-glass-switch-track-shadow);
+}
+
+:root[data-os-theme="macosx"] .os-switch:hover:not(:disabled) {
+  border-color: rgba(0, 0, 0, 0.3);
+}
+
+:root[data-os-theme="macosx"] .os-switch:focus-visible {
+  box-shadow: var(--os-glass-switch-track-shadow),
+    0 0 3px var(--os-color-selection-glow);
 }
 
 /* Base thumb shape */
-:root[data-os-theme="macosx"] .os-switch-thumb,
+:root[data-os-theme="macosx"] .os-switch-thumb {
+  position: relative;
+  height: 12px;
+  width: 12px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  padding: 0;
+  box-sizing: border-box;
+  overflow: hidden; /* hide shine overflow */
+  translate: -1px 0;
+}
+
+:root[data-os-theme="macosx"] .os-switch[data-state="checked"] .os-switch-thumb {
+  translate: 11px 0;
+}
+
 :root[data-os-theme="macosx"] .os-slider-thumb {
   position: relative;
   height: 14px;
@@ -2415,16 +2460,19 @@
     inset 0 2px 3px 1px var(--os-accent-button-inner, rgba(0, 78, 187, 0.75));
 }
 
-/* Secondary (OFF) identical to .aqua-button.secondary */
+/* Secondary (OFF) */
 :root[data-os-theme="macosx"]
   .os-switch:not([data-state="checked"])
   .os-switch-thumb {
   background: linear-gradient(
-    rgba(160, 160, 160, 0.625),
-    rgba(255, 255, 255, 0.625)
+    rgba(140, 140, 140, 0.45),
+    rgba(180, 180, 180, 0.45),
+    rgba(220, 220, 220, 0.45)
   );
-  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2), 0 1px 1px rgba(0, 0, 0, 0.3),
-    inset 0 1px 2px rgba(0, 0, 0, 0.4), inset 0 2px 3px 1px #bbbbbb;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2),
+    0 1px 1px rgba(0, 0, 0, 0.3),
+    inset 0 1px 3px rgba(0, 0, 0, 0.4),
+    inset 0 2px 3px 1px rgba(160, 160, 160, 0.4);
 }
 
 /* Shine (top) pseudo element */
@@ -2450,7 +2498,7 @@
 :root[data-os-theme="macosx"] .os-slider-thumb:after {
   content: "";
   position: absolute;
-  inset: auto 1px 1px 1px;
+  inset: auto 1px 0 1px;
   height: 40%;
   width: 80%;
   border-radius: 9999px;
