@@ -132,35 +132,21 @@ const generateRandomBrowserHeaders = (): Record<string, string> => {
   return headers;
 };
 
-// --- Constants ---
-const IE_CACHE_PREFIX = "ie:cache:";
-const WAYBACK_CACHE_PREFIX = "wayback:cache:";
-// --- End Constants ---
-
-async function getIeCacheKeys(normalizedUrlForKey: string, year: string): Promise<{
-  canonical: string;
-  legacy: string;
-}> {
-  return {
-    canonical: redisKeys.cache.ieVersions(
-      await sha256RedisIdentifier(normalizedUrlForKey),
-      year
-    ),
-    legacy: `${IE_CACHE_PREFIX}${encodeURIComponent(normalizedUrlForKey)}:${year}`,
-  };
+async function getIeCacheKey(normalizedUrlForKey: string, year: string): Promise<string> {
+  return redisKeys.cache.ieVersions(
+    await sha256RedisIdentifier(normalizedUrlForKey),
+    year
+  );
 }
 
-async function getWaybackCacheKeys(normalizedUrlForKey: string, yearMonth: string): Promise<{
-  canonical: string;
-  legacy: string;
-}> {
-  return {
-    canonical: redisKeys.cache.wayback(
-      await sha256RedisIdentifier(normalizedUrlForKey),
-      yearMonth
-    ),
-    legacy: `${WAYBACK_CACHE_PREFIX}${encodeURIComponent(normalizedUrlForKey)}:${yearMonth}`,
-  };
+async function getWaybackCacheKey(
+  normalizedUrlForKey: string,
+  yearMonth: string
+): Promise<string> {
+  return redisKeys.cache.wayback(
+    await sha256RedisIdentifier(normalizedUrlForKey),
+    yearMonth
+  );
 }
 
 /**
@@ -349,14 +335,9 @@ export default apiHandler(
     }
 
     try {
-      const { canonical: key, legacy: legacyKey } = await getIeCacheKeys(
-        normalizedUrlForKey,
-        year
-      );
+      const key = await getIeCacheKey(normalizedUrlForKey, year);
       logger.info(`Checking AI cache with key: ${key}`);
-      const html =
-        ((await redis.lindex(key, 0)) as string | null) ??
-        ((await redis.lindex(legacyKey, 0)) as string | null);
+      const html = (await redis.lindex(key, 0)) as string | null;
       if (html) {
         logger.info(`AI Cache HIT for key: ${key}`);
         res.setHeader("Content-Type", "text/html; charset=utf-8");
@@ -394,15 +375,9 @@ export default apiHandler(
       const uniqueYears = new Set<string>();
       const urlHash = await sha256RedisIdentifier(normalizedUrlForKey);
 
-      // Scan for AI Cache keys (ie:cache:...)
+      // Scan for AI Cache keys (cache:ie:{hash}:{year}:versions)
       const canonicalAiPattern = `cache:ie:${urlHash}:*:versions`;
-      const aiPattern = `${IE_CACHE_PREFIX}${encodeURIComponent(
-        normalizedUrlForKey
-      )}:*`;
-      const aiKeyPrefixLength = `${IE_CACHE_PREFIX}${encodeURIComponent(
-        normalizedUrlForKey
-      )}:`.length;
-      logger.info(`Scanning Redis for AI cache with pattern: ${aiPattern}`);
+      logger.info(`Scanning Redis for AI cache with pattern: ${canonicalAiPattern}`);
       let canonicalAiCursor = 0;
       do {
         const [nextCursor, keys] = await redis.scan(canonicalAiCursor, {
@@ -418,33 +393,10 @@ export default apiHandler(
           }
         }
       } while (canonicalAiCursor !== 0);
-      let aiCursor = 0;
-      do {
-        const [nextCursor, keys] = await redis.scan(aiCursor, {
-          match: aiPattern,
-          count: 100,
-        });
-        aiCursor = parseInt(nextCursor as unknown as string, 10);
-        for (const key of keys) {
-          const yearPart = key.substring(aiKeyPrefixLength);
-          // Validate AI year (YYYY, YYYY BC, or Y CE)
-          if (yearPart && /^(\d{1,4}( BC)?|\d+ CE)$/.test(yearPart)) {
-            uniqueYears.add(yearPart);
-          } else {
-            logger.info(`Skipping invalid AI year format in key: ${key}`);
-          }
-        }
-      } while (aiCursor !== 0);
 
-      // Scan for Wayback Cache keys (wayback:cache:...)
+      // Scan for Wayback Cache keys (cache:wayback:{hash}:{yearMonth})
       const canonicalWaybackPattern = `cache:wayback:${urlHash}:*`;
-      const waybackPattern = `${WAYBACK_CACHE_PREFIX}${encodeURIComponent(
-        normalizedUrlForKey
-      )}:*`;
-      const waybackKeyPrefixLength =
-        `${WAYBACK_CACHE_PREFIX}${encodeURIComponent(normalizedUrlForKey)}:`
-          .length;
-      logger.info(`Scanning Redis for Wayback cache with pattern: ${waybackPattern}`);
+      logger.info(`Scanning Redis for Wayback cache with pattern: ${canonicalWaybackPattern}`);
       let canonicalWaybackCursor = 0;
       do {
         const [nextCursor, keys] = await redis.scan(canonicalWaybackCursor, {
@@ -459,24 +411,6 @@ export default apiHandler(
           }
         }
       } while (canonicalWaybackCursor !== 0);
-      let waybackCursor = 0;
-      do {
-        const [nextCursor, keys] = await redis.scan(waybackCursor, {
-          match: waybackPattern,
-          count: 100,
-        });
-        waybackCursor = parseInt(nextCursor as unknown as string, 10);
-        for (const key of keys) {
-          const yearMonthPart = key.substring(waybackKeyPrefixLength);
-          // Validate Wayback year-month (YYYYMM) and extract year
-          if (yearMonthPart && /^\d{6}$/.test(yearMonthPart)) {
-            const yearExtracted = yearMonthPart.substring(0, 4);
-            uniqueYears.add(yearExtracted);
-          } else {
-            logger.info(`Skipping invalid Wayback year-month format in key: ${key}`);
-          }
-        }
-      } while (waybackCursor !== 0);
 
       // Convert Set to Array
       const sortedYears = Array.from(uniqueYears);
@@ -564,14 +498,12 @@ export default apiHandler(
       logger.info(`Initializing Wayback cache check for ${normalizedUrl} (${waybackYear}/${waybackMonth})`);
       const normalizedUrlForKey = normalizeUrlForCacheKey(normalizedUrl);
       if (normalizedUrlForKey) {
-        const { canonical: cacheKey, legacy: legacyCacheKey } = await getWaybackCacheKeys(
+        const cacheKey = await getWaybackCacheKey(
           normalizedUrlForKey,
           `${waybackYear}${waybackMonth}`
         );
         logger.info(`Generated Wayback cache key: ${cacheKey}`);
-        const cachedContent =
-          ((await redis.get(cacheKey)) as string | null) ??
-          ((await redis.get(legacyCacheKey)) as string | null);
+        const cachedContent = (await redis.get(cacheKey)) as string | null;
         if (cachedContent) {
           logger.info(`Wayback Cache HIT for ${cacheKey} (content length: ${cachedContent.length})`);
           res.setHeader("Content-Type", "text/html; charset=utf-8");
@@ -1117,7 +1049,7 @@ export default apiHandler(
             logger.info(`Attempting to cache Wayback content for ${normalizedUrl} (${waybackYear}/${waybackMonth})`);
             const normalizedUrlForKey = normalizeUrlForCacheKey(normalizedUrl);
             if (normalizedUrlForKey) {
-              const { canonical: cacheKey } = await getWaybackCacheKeys(
+              const cacheKey = await getWaybackCacheKey(
                 normalizedUrlForKey,
                 `${waybackYear}${waybackMonth}`
               );

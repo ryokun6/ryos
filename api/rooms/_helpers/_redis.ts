@@ -10,12 +10,6 @@ import {
   getCurrentTimestamp,
   parseJSON,
 } from "../../_utils/redis-helpers.js";
-import {
-  CHAT_ROOM_PREFIX,
-  CHAT_MESSAGES_PREFIX,
-  CHAT_USERS_PREFIX,
-  CHAT_ROOMS_SET,
-} from "./_constants.js";
 import { redisKeys } from "../../../src/shared/redisKeys.js";
 import {
   getStoredUserRecord,
@@ -67,9 +61,7 @@ export function parseMessageData(data: unknown): Message | null {
  */
 export async function getRoom(roomId: string): Promise<Room | null> {
   const client = createRedisClient();
-  const data =
-    (await client.get(redisKeys.chat.roomMeta(roomId))) ??
-    (await client.get(`${CHAT_ROOM_PREFIX}${roomId}`));
+  const data = await client.get(redisKeys.chat.roomMeta(roomId));
   return parseRoomData(data);
 }
 
@@ -86,7 +78,7 @@ export async function setRoom(roomId: string, room: Room): Promise<void> {
  */
 export async function deleteRoom(roomId: string): Promise<void> {
   const client = createRedisClient();
-  await client.del(redisKeys.chat.roomMeta(roomId), `${CHAT_ROOM_PREFIX}${roomId}`);
+  await client.del(redisKeys.chat.roomMeta(roomId));
 }
 
 /**
@@ -94,10 +86,7 @@ export async function deleteRoom(roomId: string): Promise<void> {
  */
 export async function roomExists(roomId: string): Promise<boolean> {
   const client = createRedisClient();
-  const exists = await client.exists(
-    redisKeys.chat.roomMeta(roomId),
-    `${CHAT_ROOM_PREFIX}${roomId}`
-  );
+  const exists = await client.exists(redisKeys.chat.roomMeta(roomId));
   return exists > 0;
 }
 
@@ -106,21 +95,27 @@ export async function roomExists(roomId: string): Promise<boolean> {
  */
 export async function getAllRoomIds(): Promise<string[]> {
   const client = createRedisClient();
-  const canonicalRoomIds = await client.smembers<string[]>(redisKeys.chat.roomIds());
-  const legacyRoomIds = await client.smembers<string[]>(CHAT_ROOMS_SET);
-  let roomIds = [...new Set([...(canonicalRoomIds || []), ...(legacyRoomIds || [])])];
+  let roomIds = await client.smembers<string[]>(redisKeys.chat.roomIds());
 
   if (!roomIds || roomIds.length === 0) {
+    // Self-heal: rebuild the registry set from the canonical room-meta keys
+    // (`chat:rooms:<id>:meta`) if the set is ever empty/missing.
+    const metaPrefix = "chat:rooms:";
+    const metaSuffix = ":meta";
     const discovered: string[] = [];
     let cursor = 0;
     do {
       const [newCursor, keys] = await client.scan(cursor, {
-        match: `${CHAT_ROOM_PREFIX}*`,
+        match: `${metaPrefix}*${metaSuffix}`,
         count: 100,
       });
       cursor = parseInt(String(newCursor));
-      const ids = keys.map((k) => k.substring(CHAT_ROOM_PREFIX.length));
-      discovered.push(...ids);
+      for (const k of keys) {
+        if (k.startsWith(metaPrefix) && k.endsWith(metaSuffix)) {
+          const id = k.slice(metaPrefix.length, k.length - metaSuffix.length);
+          if (id) discovered.push(id);
+        }
+      }
     } while (cursor !== 0);
 
     if (discovered.length) {
@@ -146,7 +141,6 @@ export async function registerRoom(roomId: string): Promise<void> {
 export async function unregisterRoom(roomId: string): Promise<void> {
   const client = createRedisClient();
   await client.srem(redisKeys.chat.roomIds(), roomId);
-  await client.srem(CHAT_ROOMS_SET, roomId);
 }
 
 // ============================================================================
@@ -190,10 +184,7 @@ export async function createUserIfNotExists(
  */
 export async function userExists(username: string): Promise<boolean> {
   const client = createRedisClient();
-  const exists = await client.exists(
-    redisKeys.auth.userProfile(username),
-    `${CHAT_USERS_PREFIX}${username}`
-  );
+  const exists = await client.exists(redisKeys.auth.userProfile(username));
   return exists > 0;
 }
 
@@ -210,16 +201,10 @@ export async function getMessages(
 ): Promise<Message[]> {
   const client = createRedisClient();
   const messagesKey = redisKeys.chat.roomMessages(roomId);
-  const legacyMessagesKey = `${CHAT_MESSAGES_PREFIX}${roomId}`;
   const rawMessages = await client.lrange<(Message | string)[]>(messagesKey, 0, limit - 1);
-  const remaining = Math.max(0, limit - rawMessages.length);
-  const legacyRawMessages =
-    remaining > 0
-      ? await client.lrange<(Message | string)[]>(legacyMessagesKey, 0, remaining - 1)
-      : [];
 
   const seenIds = new Set<string>();
-  return [...(rawMessages || []), ...(legacyRawMessages || [])].reduce<Message[]>((acc, item) => {
+  return (rawMessages || []).reduce<Message[]>((acc, item) => {
     const message = parseMessageData(item);
     if (message !== null && !seenIds.has(message.id) && acc.length < limit) {
       seenIds.add(message.id);
@@ -252,11 +237,7 @@ export async function deleteMessage(
 ): Promise<boolean> {
   const client = createRedisClient();
   const listKey = redisKeys.chat.roomMessages(roomId);
-  const legacyListKey = `${CHAT_MESSAGES_PREFIX}${roomId}`;
-  const messagesRaw = [
-    ...(await client.lrange<(Message | string)[]>(listKey, 0, -1)),
-    ...(await client.lrange<(Message | string)[]>(legacyListKey, 0, -1)),
-  ];
+  const messagesRaw = await client.lrange<(Message | string)[]>(listKey, 0, -1);
 
   let targetRaw: string | null = null;
   for (const raw of messagesRaw || []) {
@@ -270,7 +251,6 @@ export async function deleteMessage(
   if (!targetRaw) return false;
 
   await client.lrem(listKey, 1, targetRaw);
-  await client.lrem(legacyListKey, 1, targetRaw);
   return true;
 }
 
@@ -279,7 +259,7 @@ export async function deleteMessage(
  */
 export async function deleteAllMessages(roomId: string): Promise<void> {
   const client = createRedisClient();
-  await client.del(redisKeys.chat.roomMessages(roomId), `${CHAT_MESSAGES_PREFIX}${roomId}`);
+  await client.del(redisKeys.chat.roomMessages(roomId));
 }
 
 /**
@@ -288,10 +268,7 @@ export async function deleteAllMessages(roomId: string): Promise<void> {
 export async function getLastMessage(roomId: string): Promise<Message | null> {
   const client = createRedisClient();
   const messagesKey = redisKeys.chat.roomMessages(roomId);
-  const legacyMessagesKey = `${CHAT_MESSAGES_PREFIX}${roomId}`;
   const lastMessages = await client.lrange<(Message | string)[]>(messagesKey, 0, 0);
-  if (lastMessages && lastMessages.length > 0) return parseMessageData(lastMessages[0]);
-  const legacyLastMessages = await client.lrange<(Message | string)[]>(legacyMessagesKey, 0, 0);
-  if (!legacyLastMessages || legacyLastMessages.length === 0) return null;
-  return parseMessageData(legacyLastMessages[0]);
+  if (!lastMessages || lastMessages.length === 0) return null;
+  return parseMessageData(lastMessages[0]);
 }

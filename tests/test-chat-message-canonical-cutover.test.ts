@@ -33,7 +33,7 @@ beforeEach(() => {
 });
 
 describe("chat message canonical cutover", () => {
-  test("writes canonical messages only while reading and deleting legacy backlog", async () => {
+  test("reads, writes and deletes canonical messages only, ignoring legacy backlog", async () => {
     const roomId = "room-1";
     const canonicalKey = redisKeys.chat.roomMessages(roomId);
     const legacyKey = `chat:messages:${roomId}`;
@@ -52,6 +52,7 @@ describe("chat message canonical cutover", () => {
       timestamp: 2,
     };
 
+    // Seed a legacy backlog that must never be read or mutated.
     await fake.lpush(legacyKey, JSON.stringify(legacyMessage));
     await chatRedis.addMessage(roomId, canonicalMessage);
 
@@ -59,12 +60,12 @@ describe("chat message canonical cutover", () => {
     expect(await fake.llen(legacyKey)).toBe(1);
     expect((await chatRedis.getMessages(roomId, 10)).map((message) => message.id)).toEqual([
       "canonical-message",
-      "legacy-message",
     ]);
     expect((await chatRedis.getLastMessage(roomId))?.id).toBe("canonical-message");
 
-    expect(await chatRedis.deleteMessage(roomId, "legacy-message")).toBe(true);
-    expect(await fake.llen(legacyKey)).toBe(0);
+    // The legacy message is invisible to canonical-only readers.
+    expect(await chatRedis.deleteMessage(roomId, "legacy-message")).toBe(false);
+    expect(await fake.llen(legacyKey)).toBe(1);
     expect(await fake.llen(canonicalKey)).toBe(1);
   });
 });

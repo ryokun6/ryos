@@ -2,7 +2,7 @@
  * GET/PUT /api/sync/auto-sync-preference — cross-device Auto Sync toggle
  */
 import { apiHandler } from "../_utils/api-handler.js";
-import { autoSyncPreferenceKey, legacyAutoSyncPreferenceKey } from "./_keys.js";
+import { autoSyncPreferenceKey } from "./_keys.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 10;
@@ -20,12 +20,9 @@ export default apiHandler<PrefBody>(
   async ({ req, res, redis, user, body }): Promise<void> => {
     const username = user?.username || "";
     const key = autoSyncPreferenceKey(username);
-    const legacyKey = legacyAutoSyncPreferenceKey(username);
 
     if ((req.method || "GET").toUpperCase() === "GET") {
-      const raw =
-        (await redis.get<string | { enabled?: boolean }>(key)) ??
-        (await redis.get<string | { enabled?: boolean }>(legacyKey));
+      const raw = await redis.get<string | { enabled?: boolean }>(key);
       if (!raw) {
         res.status(200).json({ hasPreference: false, enabled: false });
         return;

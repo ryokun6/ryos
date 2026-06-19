@@ -7,8 +7,8 @@
  * to select.
  *
  * Storage layout:
- *   chat:irc:server:<id>      → JSON-encoded `IrcServer`
- *   chat:irc:servers          → SET of server ids
+ *   integration:irc:server:<id>   → JSON-encoded `IrcServer`
+ *   integration:irc:servers       → SET of server ids
  */
 
 import { createRedis } from "../redis.js";
@@ -20,9 +20,6 @@ import {
 import type { IrcServer } from "../../../src/shared/contracts/irc.js";
 import { redisKeys } from "../../../src/shared/redisKeys.js";
 export type { IrcServer } from "../../../src/shared/contracts/irc.js";
-
-export const IRC_SERVER_PREFIX = "chat:irc:server:";
-export const IRC_SERVERS_SET = "chat:irc:servers";
 
 const DEFAULT_SERVER_ID = "default-pieter";
 
@@ -72,18 +69,14 @@ export async function setIrcServer(server: IrcServer): Promise<void> {
 
 export async function getIrcServer(id: string): Promise<IrcServer | null> {
   const redis = getRedis();
-  const raw =
-    (await redis.get(redisKeys.integration.ircServer(id))) ??
-    (await redis.get(`${IRC_SERVER_PREFIX}${id}`));
+  const raw = await redis.get(redisKeys.integration.ircServer(id));
   return parseServerData(raw);
 }
 
 export async function deleteIrcServer(id: string): Promise<void> {
   const redis = getRedis();
   await redis.del(redisKeys.integration.ircServer(id));
-  await redis.del(`${IRC_SERVER_PREFIX}${id}`);
   await redis.srem(redisKeys.integration.ircServerIds(), id);
-  await redis.srem(IRC_SERVERS_SET, id);
 }
 
 /**
@@ -92,22 +85,14 @@ export async function deleteIrcServer(id: string): Promise<void> {
  */
 export async function listIrcServers(): Promise<IrcServer[]> {
   const redis = getRedis();
-  let ids = [
-    ...new Set([
-      ...((await redis.smembers<string[]>(redisKeys.integration.ircServerIds())) || []),
-      ...((await redis.smembers<string[]>(IRC_SERVERS_SET)) || []),
-    ]),
-  ];
+  let ids =
+    (await redis.smembers<string[]>(redisKeys.integration.ircServerIds())) || [];
 
   if (!ids.includes(DEFAULT_SERVER_ID)) {
     const seed: IrcServer = { ...DEFAULT_SERVER, createdAt: Date.now() };
     await setIrcServer(seed);
-    ids = [
-      ...new Set([
-        ...((await redis.smembers<string[]>(redisKeys.integration.ircServerIds())) || []),
-        ...((await redis.smembers<string[]>(IRC_SERVERS_SET)) || []),
-      ]),
-    ];
+    ids =
+      (await redis.smembers<string[]>(redisKeys.integration.ircServerIds())) || [];
   }
 
   if (ids.length === 0) return [];

@@ -4,14 +4,13 @@
  */
 
 import { createRedis } from "../../_utils/redis.js";
-import { parseMessageData, parseRoomData, setRoom } from "./_redis.js";
 import {
-  CHAT_ROOM_PREFIX,
-  CHAT_MESSAGES_PREFIX,
-  CHAT_ROOM_PRESENCE_ZSET_PREFIX,
-  CHAT_ROOMS_SET,
-  ROOM_PRESENCE_TTL_SECONDS,
-} from "./_constants.js";
+  getAllRoomIds,
+  parseMessageData,
+  parseRoomData,
+  setRoom,
+} from "./_redis.js";
+import { ROOM_PRESENCE_TTL_SECONDS } from "./_constants.js";
 import type { Room, RoomWithUsers } from "./_types.js";
 import { redisKeys } from "../../../src/shared/redisKeys.js";
 
@@ -42,15 +41,8 @@ async function attachPrivateRoomLastMessageAt<T extends Room>(
   const redis = getRedis();
   const lastMessages = await Promise.all(
     privateRooms.map(async (room) => {
-      // Newest message is at index 0 (messages are LPUSH-ed). Read the
-      // canonical key first, falling back to the legacy key for rooms whose
-      // messages were written before the canonical cutover.
-      const canonical = await redis.lindex(
-        redisKeys.chat.roomMessages(room.id),
-        0
-      );
-      if (canonical !== null && canonical !== undefined) return canonical;
-      return redis.lindex(`${CHAT_MESSAGES_PREFIX}${room.id}`, 0);
+      // Newest message is at index 0 (messages are LPUSH-ed).
+      return redis.lindex(redisKeys.chat.roomMessages(room.id), 0);
     })
   );
   const lastMessageAtByRoomId = new Map<string, number>();
@@ -92,9 +84,7 @@ export async function removeRoomPresence(
   username: string
 ): Promise<number> {
   const redis = getRedis();
-  const canonicalRemoved = await redis.zrem(redisKeys.chat.roomPresence(roomId), username);
-  const legacyRemoved = await redis.zrem(`${CHAT_ROOM_PRESENCE_ZSET_PREFIX}${roomId}`, username);
-  return canonicalRemoved + legacyRemoved;
+  return redis.zrem(redisKeys.chat.roomPresence(roomId), username);
 }
 
 /**
@@ -103,16 +93,9 @@ export async function removeRoomPresence(
 export async function getActiveUsersInRoom(roomId: string): Promise<string[]> {
   const redis = getRedis();
   const zkey = redisKeys.chat.roomPresence(roomId);
-  const legacyZkey = `${CHAT_ROOM_PRESENCE_ZSET_PREFIX}${roomId}`;
   const cutoff = Date.now() - ROOM_PRESENCE_TTL_SECONDS * 1000;
   await redis.zremrangebyscore(zkey, 0, cutoff);
-  await redis.zremrangebyscore(legacyZkey, 0, cutoff);
-  return [
-    ...new Set([
-      ...(await redis.zrange(zkey, 0, -1)),
-      ...(await redis.zrange(legacyZkey, 0, -1)),
-    ]),
-  ];
+  return [...new Set(await redis.zrange(zkey, 0, -1))];
 }
 
 /**
@@ -122,18 +105,11 @@ export async function getActiveUsersInRoom(roomId: string): Promise<string[]> {
 export async function refreshRoomUserCount(roomId: string): Promise<number> {
   const redis = getRedis();
   const zkey = redisKeys.chat.roomPresence(roomId);
-  const legacyZkey = `${CHAT_ROOM_PRESENCE_ZSET_PREFIX}${roomId}`;
   const cutoff = Date.now() - ROOM_PRESENCE_TTL_SECONDS * 1000;
   await redis.zremrangebyscore(zkey, 0, cutoff);
-  await redis.zremrangebyscore(legacyZkey, 0, cutoff);
-  const userCount = new Set([
-    ...(await redis.zrange(zkey, 0, -1)),
-    ...(await redis.zrange(legacyZkey, 0, -1)),
-  ]).size;
+  const userCount = new Set(await redis.zrange(zkey, 0, -1)).size;
 
-  const roomRaw =
-    (await redis.get(redisKeys.chat.roomMeta(roomId))) ??
-    (await redis.get(`${CHAT_ROOM_PREFIX}${roomId}`));
+  const roomRaw = await redis.get(redisKeys.chat.roomMeta(roomId));
   const roomData = parseRoomData(roomRaw);
   if (roomData) {
     const updatedRoom: Room = { ...roomData, userCount };
@@ -152,13 +128,7 @@ export async function cleanupExpiredPresence(): Promise<{
   error?: string;
 }> {
   try {
-    const redis = getRedis();
-    const roomIds = [
-      ...new Set([
-        ...(await redis.smembers<string[]>(redisKeys.chat.roomIds())),
-        ...(await redis.smembers<string[]>(CHAT_ROOMS_SET)),
-      ]),
-    ];
+    const roomIds = await getAllRoomIds();
     for (const roomId of roomIds) {
       const newCount = await refreshRoomUserCount(roomId);
       console.log(
@@ -180,7 +150,7 @@ export async function cleanupExpiredPresence(): Promise<{
  */
 export async function deleteRoomPresence(roomId: string): Promise<void> {
   const redis = getRedis();
-  await redis.del(redisKeys.chat.roomPresence(roomId), `${CHAT_ROOM_PRESENCE_ZSET_PREFIX}${roomId}`);
+  await redis.del(redisKeys.chat.roomPresence(roomId));
 }
 
 // ============================================================================
@@ -192,39 +162,12 @@ export async function deleteRoomPresence(roomId: string): Promise<void> {
  */
 export async function getDetailedRooms(): Promise<RoomWithUsers[]> {
   const redis = getRedis();
-  let roomIds = [
-    ...new Set([
-      ...(await redis.smembers<string[]>(redisKeys.chat.roomIds())),
-      ...(await redis.smembers<string[]>(CHAT_ROOMS_SET)),
-    ]),
-  ];
-
-  if (!roomIds || roomIds.length === 0) {
-    // Fallback: discover rooms and repopulate registry
-    const discovered: string[] = [];
-    let cursor = 0;
-    do {
-      const [newCursor, keys] = await redis.scan(cursor, {
-        match: `${CHAT_ROOM_PREFIX}*`,
-        count: 100,
-      });
-      cursor = parseInt(String(newCursor));
-      const ids = keys.map((k) => k.substring(CHAT_ROOM_PREFIX.length));
-      discovered.push(...ids);
-    } while (cursor !== 0);
-    if (discovered.length) {
-      await redis.sadd(redisKeys.chat.roomIds(), ...(discovered as [string, ...string[]]));
-      roomIds = discovered;
-    } else {
-      return [];
-    }
-  }
+  const roomIds = await getAllRoomIds();
+  if (roomIds.length === 0) return [];
 
   const rooms: RoomWithUsers[] = [];
   for (const roomId of roomIds) {
-    const raw =
-      (await redis.get(redisKeys.chat.roomMeta(roomId))) ??
-      (await redis.get(`${CHAT_ROOM_PREFIX}${roomId}`));
+    const raw = await redis.get(redisKeys.chat.roomMeta(roomId));
     if (!raw) continue;
     const roomObj = parseRoomData(raw);
     if (!roomObj) continue;
@@ -243,48 +186,20 @@ export async function getDetailedRooms(): Promise<RoomWithUsers[]> {
  */
 export async function getRoomsWithCountsFast(): Promise<Room[]> {
   const redis = getRedis();
-  let roomIds = [
-    ...new Set([
-      ...(await redis.smembers<string[]>(redisKeys.chat.roomIds())),
-      ...(await redis.smembers<string[]>(CHAT_ROOMS_SET)),
-    ]),
-  ];
-
-  if (!roomIds || roomIds.length === 0) {
-    const discovered: string[] = [];
-    let cursor = 0;
-    do {
-      const [newCursor, keys] = await redis.scan(cursor, {
-        match: `${CHAT_ROOM_PREFIX}*`,
-        count: 100,
-      });
-      cursor = parseInt(String(newCursor));
-      const ids = keys.map((k) => k.substring(CHAT_ROOM_PREFIX.length));
-      discovered.push(...ids);
-    } while (cursor !== 0);
-    if (discovered.length) {
-      await redis.sadd(redisKeys.chat.roomIds(), ...(discovered as [string, ...string[]]));
-      roomIds = discovered;
-    } else {
-      return [];
-    }
-  }
+  const roomIds = await getAllRoomIds();
+  if (roomIds.length === 0) return [];
 
   const cutoff = Date.now() - ROOM_PRESENCE_TTL_SECONDS * 1000;
   const rooms: Room[] = [];
   for (const roomId of roomIds) {
     await redis.zremrangebyscore(redisKeys.chat.roomPresence(roomId), 0, cutoff);
-    await redis.zremrangebyscore(`${CHAT_ROOM_PRESENCE_ZSET_PREFIX}${roomId}`, 0, cutoff);
-    const raw =
-      (await redis.get(redisKeys.chat.roomMeta(roomId))) ??
-      (await redis.get(`${CHAT_ROOM_PREFIX}${roomId}`));
+    const raw = await redis.get(redisKeys.chat.roomMeta(roomId));
     if (!raw) continue;
     const roomObj = parseRoomData(raw);
     if (!roomObj) continue;
-    const userCount = new Set([
-      ...(await redis.zrange(redisKeys.chat.roomPresence(roomObj.id), 0, -1)),
-      ...(await redis.zrange(`${CHAT_ROOM_PRESENCE_ZSET_PREFIX}${roomObj.id}`, 0, -1)),
-    ]).size;
+    const userCount = new Set(
+      await redis.zrange(redisKeys.chat.roomPresence(roomObj.id), 0, -1)
+    ).size;
     rooms.push({ ...roomObj, userCount });
   }
   return attachPrivateRoomLastMessageAt(rooms);

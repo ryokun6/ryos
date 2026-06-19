@@ -2,17 +2,17 @@
  * Cloud Sync v2 server core.
  *
  * Per-user state in Redis:
- * - `sync2:seq:{user}`   STRING  monotonically increasing op counter
- * - `sync2:kv:{user}`    HASH    key → JSON SyncKvEntry (latest doc per key)
- * - `sync2:jrnl:{user}`  ZSET    score = seq, member = JSON op (ascending), bounded
- * - `sync2:blobs:{user}` HASH    sha256 → JSON { url, size } dedupe registry
- * - `sync2:lock:{user}`  STRING  short-TTL write lock
+ * - `sync:v2:user:{user}:seq`    STRING  monotonically increasing op counter
+ * - `sync:v2:user:{user}:kv`     HASH    key → JSON SyncKvEntry (latest doc per key)
+ * - `sync:v2:user:{user}:jrnl`   ZSET    score = seq, member = JSON op (ascending), bounded
+ * - `sync:v2:user:{user}:blobs`  HASH    sha256 → JSON { url, size } dedupe registry
+ * - `sync:v2:user:{user}:lock`   STRING  short-TTL write lock
  *
  * The journal is a sorted set keyed by `seq` so catch-up reads an exact
  * range by rank and trimming drops the lowest scores — no list-tail
- * heuristics. (Pre-v2.1 deployments kept it as a `sync2:log:{user}` LIST;
- * that key is abandoned and expires via its TTL. Clients mid-catch-up fall
- * back to a snapshot once, then resume on the sorted-set journal.)
+ * heuristics. (Pre-v2.1 deployments kept it as a LIST; that key is abandoned
+ * and expires via its TTL. Clients mid-catch-up fall back to a snapshot once,
+ * then resume on the sorted-set journal.)
  *
  * Writes are ops resolved per key with last-writer-wins on the HLC
  * timestamp. There are no conflicts surfaced to clients: losing ops return
@@ -53,14 +53,12 @@ export function sync2SeqKey(username: string): string {
   return redisKeys.sync.v2Seq(username);
 }
 
-export function legacySync2SeqKey(username: string): string {
-  return `sync2:seq:${username.toLowerCase()}`;
-}
-
 export function sync2KvKey(username: string): string {
   return redisKeys.sync.v2Kv(username);
 }
 
+// Retained for the standalone maintenance/compaction job, which still reads the
+// pre-rename `sync2:*` HASHes. The request runtime never reads these anymore.
 export function legacySync2KvKey(username: string): string {
   return `sync2:kv:${username.toLowerCase()}`;
 }
@@ -69,24 +67,17 @@ export function sync2JournalKey(username: string): string {
   return redisKeys.sync.v2Journal(username);
 }
 
-export function legacySync2JournalKey(username: string): string {
-  return `sync2:jrnl:${username.toLowerCase()}`;
-}
-
 export function sync2BlobsKey(username: string): string {
   return redisKeys.sync.v2Blobs(username);
 }
 
+// Retained for the standalone maintenance/compaction job (see above).
 export function legacySync2BlobsKey(username: string): string {
   return `sync2:blobs:${username.toLowerCase()}`;
 }
 
 function sync2LockKey(username: string): string {
   return redisKeys.sync.v2Lock(username);
-}
-
-function legacySync2LockKey(username: string): string {
-  return `sync2:lock:${username.toLowerCase()}`;
 }
 
 export function parseRedisJson<T>(value: unknown): T | null {
@@ -124,34 +115,14 @@ async function hmgetValues<T>(
   return fields.map(() => null);
 }
 
-async function hmgetValuesWithFallback<T>(
-  redis: Redis,
-  key: string,
-  legacyKey: string,
-  fields: string[]
-): Promise<(T | null)[]> {
-  const primary = await hmgetValues<T>(redis, key, fields);
-  if (primary.every((value) => value !== null)) return primary;
-  const fallback = await hmgetValues<T>(redis, legacyKey, fields);
-  return primary.map((value, index) => value ?? fallback[index] ?? null);
-}
-
 async function sleep(ms: number): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function acquireUserLock(redis: Redis, username: string): Promise<boolean> {
   const key = sync2LockKey(username);
-  const legacyKey = legacySync2LockKey(username);
   const token = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   for (let attempt = 0; attempt <= LOCK_RETRY_DELAYS_MS.length; attempt += 1) {
-    if ((await redis.exists(legacyKey)) > 0) {
-      if (attempt < LOCK_RETRY_DELAYS_MS.length) {
-        await sleep(LOCK_RETRY_DELAYS_MS[attempt]);
-        continue;
-      }
-      return false;
-    }
     const result = await redis.set(key, token, {
       nx: true,
       ex: LOCK_TTL_SECONDS,
@@ -168,16 +139,14 @@ async function acquireUserLock(redis: Redis, username: string): Promise<boolean>
 
 async function releaseUserLock(redis: Redis, username: string): Promise<void> {
   try {
-    await redis.del(sync2LockKey(username), legacySync2LockKey(username));
+    await redis.del(sync2LockKey(username));
   } catch (error) {
     console.warn("[sync2] Failed to release user lock:", error);
   }
 }
 
 async function readSeq(redis: Redis, username: string): Promise<number | null> {
-  const raw =
-    (await redis.get<string | number>(sync2SeqKey(username))) ??
-    (await redis.get<string | number>(legacySync2SeqKey(username)));
+  const raw = await redis.get<string | number>(sync2SeqKey(username));
   if (raw === null || raw === undefined) return null;
   const parsed = typeof raw === "number" ? raw : Number.parseInt(raw, 10);
   return Number.isFinite(parsed) ? parsed : null;
@@ -348,10 +317,9 @@ export async function applySyncOps(
     }
 
     const keys = Array.from(opsByKey.keys());
-    const existingEntries = await hmgetValuesWithFallback<SyncKvEntry>(
+    const existingEntries = await hmgetValues<SyncKvEntry>(
       redis,
       sync2KvKey(username),
-      legacySync2KvKey(username),
       keys
     );
 
@@ -495,12 +463,8 @@ export async function readSyncChanges(
     return { seq, ops: [] };
   }
 
-  const canonicalJournalKey = sync2JournalKey(username);
-  const legacyJournalKey = legacySync2JournalKey(username);
-  const canonicalCount = await redis.zcard(canonicalJournalKey);
-  const legacyCount = await redis.zcard(legacyJournalKey);
-  const journalKey = canonicalCount > 0 ? canonicalJournalKey : legacyJournalKey;
-  const count = canonicalCount > 0 ? canonicalCount : legacyCount;
+  const journalKey = sync2JournalKey(username);
+  const count = await redis.zcard(journalKey);
   const missing = seq - since;
   if (missing > count) {
     return { seq, snapshotRequired: true };
@@ -545,12 +509,7 @@ export async function readSyncSnapshot(
 
   // Read seq AFTER the KV hash so the cursor can only undercount (clients
   // re-fetch ops they already have, which LWW makes harmless), never skip.
-  const legacyRaw = await redis.hgetall<Record<string, unknown>>(legacySync2KvKey(username));
-  const canonicalRaw = await redis.hgetall<Record<string, unknown>>(sync2KvKey(username));
-  const raw = {
-    ...(legacyRaw || {}),
-    ...(canonicalRaw || {}),
-  };
+  const raw = await redis.hgetall<Record<string, unknown>>(sync2KvKey(username));
   const seq = (await readSeq(redis, username)) ?? 0;
 
   const entries: Record<string, SyncKvEntry> = {};
@@ -615,10 +574,9 @@ export async function lookupSyncBlobs(
   digests: string[]
 ): Promise<(SyncBlobRegistryEntry | null)[]> {
   if (digests.length === 0) return [];
-  const values = await hmgetValuesWithFallback<SyncBlobRegistryEntry>(
+  const values = await hmgetValues<SyncBlobRegistryEntry>(
     redis,
     sync2BlobsKey(username),
-    legacySync2BlobsKey(username),
     digests
   );
   return values.map((value) =>

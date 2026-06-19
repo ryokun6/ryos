@@ -9,6 +9,25 @@ mock.module("../api/_utils/redis.js", () => ({
   createRedis: () => fake,
 }));
 
+// Room discovery (getAllRoomIds) resolves its client through redis-helpers.
+mock.module("../api/_utils/redis-helpers.js", () => ({
+  createRedisClient: () => fake,
+  generateRandomHexId: (byteLength: number) => "a".repeat(byteLength * 2),
+  getCurrentTimestamp: () => 1_718_180_000_000,
+  parseJSON: <T>(data: unknown): T | null => {
+    if (!data) return null;
+    if (typeof data === "object") return data as T;
+    if (typeof data === "string") {
+      try {
+        return JSON.parse(data) as T;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  },
+}));
+
 let presence: typeof import("../api/rooms/_helpers/_presence");
 
 beforeAll(async () => {
@@ -54,9 +73,10 @@ describe("private room lastMessageAt canonical cutover", () => {
     expect(room?.lastMessageAt).toBe(7_000);
   });
 
-  test("falls back to the legacy messages list for pre-cutover rooms", async () => {
+  test("ignores the legacy messages list for canonical-only reads", async () => {
     const roomId = "me-carol";
     await seedPrivateRoom(roomId);
+    // Seed ONLY the legacy list — it must no longer be read.
     await fake.lpush(
       `chat:messages:${roomId}`,
       JSON.stringify({
@@ -70,6 +90,6 @@ describe("private room lastMessageAt canonical cutover", () => {
 
     const rooms = await presence.getDetailedRooms();
     const room = rooms.find((r) => r.id === roomId);
-    expect(room?.lastMessageAt).toBe(4_200);
+    expect(room?.lastMessageAt).not.toBe(4_200);
   });
 });

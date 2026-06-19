@@ -4,19 +4,6 @@
  */
 
 // ============================================================================
-// Redis Key Prefixes
-// ============================================================================
-
-export const CHAT_ROOM_PREFIX = "chat:room:";
-export const CHAT_MESSAGES_PREFIX = "chat:messages:";
-// Canonical definition lives in the auth constants (shared by auth + rooms).
-export { CHAT_USERS_PREFIX } from "../../_utils/auth/_constants.js";
-export const CHAT_ROOM_USERS_PREFIX = "chat:room:users:";
-export const CHAT_ROOM_PRESENCE_PREFIX = "chat:presence:";
-export const CHAT_ROOM_PRESENCE_ZSET_PREFIX = "chat:presencez:";
-export const CHAT_ROOMS_SET = "chat:rooms";
-
-// ============================================================================
 // TTL Constants (in seconds)
 // ============================================================================
 

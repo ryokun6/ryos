@@ -6,8 +6,7 @@
  */
 
 import type { Redis } from "./_utils/redis.js";
-import { CHAT_USERS_PREFIX } from "./rooms/_helpers/_constants.js";
-import { deleteAllUserTokens, PASSWORD_HASH_PREFIX } from "./_utils/auth/index.js";
+import { deleteAllUserTokens } from "./_utils/auth/index.js";
 import {
   getStoredUserRecord,
   setStoredUserRecord,
@@ -26,12 +25,6 @@ import {
   executeCursorCloudAgent,
   listCursorSdkRunsFromRedis,
 } from "./chat/tools/cursor-repo-agent.js";
-import {
-  backfillRedisKeyScheme,
-  deleteLegacyRedisKeys,
-  getRedisMigrationStatus,
-  assertKnownLegacyRedisPattern,
-} from "./_utils/redis-key-migration.js";
 import { redisKeys } from "../src/shared/redisKeys.js";
 
 export const runtime = "nodejs";
@@ -45,11 +38,6 @@ interface AdminRequest {
   modelId?: string;
   key?: string;
   confirmKey?: string;
-  pattern?: string;
-  confirmPattern?: string;
-  limit?: number;
-  dryRun?: boolean;
-  cursor?: string;
 }
 
 interface UserProfile {
@@ -69,9 +57,7 @@ async function deleteUser(redis: Redis, targetUsername: string): Promise<{ succe
   try {
     await redis.del(
       redisKeys.auth.userProfile(normalizedUsername),
-      `${CHAT_USERS_PREFIX}${normalizedUsername}`,
-      redisKeys.auth.userPassword(normalizedUsername),
-      `${PASSWORD_HASH_PREFIX}${normalizedUsername}`
+      redisKeys.auth.userPassword(normalizedUsername)
     );
     await deleteAllUserTokens(redis, normalizedUsername);
     return { success: true };
@@ -96,29 +82,38 @@ async function scanRedisKeys(redis: Redis, pattern: string): Promise<string[]> {
 
 async function getAdminRoomIds(redis: Redis): Promise<string[]> {
   const canonicalIds = await redis.smembers<string[]>(redisKeys.chat.roomIds());
-  const legacyIds = await redis.smembers<string[]>("chat:rooms");
-  return [...new Set([...(canonicalIds || []), ...(legacyIds || [])])];
+  if (canonicalIds && canonicalIds.length > 0) {
+    return [...new Set(canonicalIds)];
+  }
+
+  // Self-heal: if the registry set is empty/missing, rebuild the id list from
+  // the canonical room-meta keys (`chat:rooms:<id>:meta`) so the admin view
+  // doesn't report zero rooms when metadata still exists.
+  const metaPrefix = "chat:rooms:";
+  const metaSuffix = ":meta";
+  const metaKeys = await scanRedisKeys(redis, `${metaPrefix}*${metaSuffix}`);
+  const discovered = metaKeys
+    .filter((k) => k.startsWith(metaPrefix) && k.endsWith(metaSuffix))
+    .map((k) => k.slice(metaPrefix.length, k.length - metaSuffix.length))
+    .filter((id) => id.length > 0);
+  return [...new Set(discovered)];
 }
 
 async function getAdminRoomData(redis: Redis, roomId: string): Promise<{ name?: string } | null> {
-  const roomData =
-    (await redis.get<{ name: string } | string>(redisKeys.chat.roomMeta(roomId))) ??
-    (await redis.get<{ name: string } | string>(`chat:room:${roomId}`));
+  const roomData = await redis.get<{ name: string } | string>(
+    redisKeys.chat.roomMeta(roomId)
+  );
   if (!roomData) return null;
   return typeof roomData === "string" ? JSON.parse(roomData) : roomData;
 }
 
 async function getAdminRoomMessages(redis: Redis, roomId: string): Promise<unknown[]> {
-  const canonicalMessages = await redis.lrange<unknown>(redisKeys.chat.roomMessages(roomId), 0, -1);
-  const legacyMessages = await redis.lrange<unknown>(`chat:messages:${roomId}`, 0, -1);
-  return canonicalMessages.length > 0 ? canonicalMessages : legacyMessages;
+  return await redis.lrange<unknown>(redisKeys.chat.roomMessages(roomId), 0, -1);
 }
 
 async function getAllUsers(redis: Redis): Promise<{ username: string; lastActive: number; banned?: boolean }[]> {
   try {
-    const canonicalKeys = await scanRedisKeys(redis, "auth:user:*:profile");
-    const legacyKeys = await scanRedisKeys(redis, `${CHAT_USERS_PREFIX}*`);
-    const keys = [...new Set([...canonicalKeys, ...legacyKeys])];
+    const keys = await scanRedisKeys(redis, "auth:user:*:profile");
     const byUsername = new Map<string, { username: string; lastActive: number; banned?: boolean }>();
     if (keys.length > 0) {
       const userData = await redis.mget<(string | { username: string; lastActive: number; banned?: boolean } | null)[]>(...keys);
@@ -968,17 +963,6 @@ export default apiHandler<AdminRequest>(
           res.status(200).json(data);
           return;
         }
-        case "getRedisKeyMigrationStatus": {
-          const limit = clampInteger(req.query.limit, 50, 1, 500);
-          const data = await getRedisMigrationStatus(redis, limit);
-          logger.info("Redis key migration status retrieved", {
-            totalLegacyKeys: data.totalLegacyKeys,
-            truncated: data.truncated,
-          });
-          logger.response(200, Date.now() - startTime);
-          res.status(200).json(data);
-          return;
-        }
         default:
           logger.response(400, Date.now() - startTime);
           res.status(400).json({ error: "Invalid action" });
@@ -1207,71 +1191,6 @@ export default apiHandler<AdminRequest>(
             success: deletedCount > 0,
             deletedCount,
           });
-          return;
-        }
-        case "backfillRedisKeyScheme": {
-          const pattern = normalizeRedisPattern(body?.pattern);
-          const confirmPattern =
-            typeof body?.confirmPattern === "string" ? body.confirmPattern : "";
-          if (confirmPattern !== pattern) {
-            logger.response(400, Date.now() - startTime);
-            res.status(400).json({ error: "Confirmation does not match Redis pattern" });
-            return;
-          }
-          try {
-            assertKnownLegacyRedisPattern(pattern);
-          } catch (error) {
-            logger.response(400, Date.now() - startTime);
-            res.status(400).json({ error: error instanceof Error ? error.message : "Invalid pattern" });
-            return;
-          }
-          const limit = clampInteger(body?.limit, 100, 1, 500);
-          const dryRun = body?.dryRun !== false;
-          const cursor = normalizeRedisCursor(body?.cursor);
-          const data = await backfillRedisKeyScheme(redis, { pattern, limit, dryRun, cursor });
-          logger.info("Redis key scheme backfill requested", {
-            pattern,
-            cursor: data.cursor,
-            dryRun,
-            scanned: data.scanned,
-            copied: data.copied,
-            skipped: data.skipped,
-            truncated: data.truncated,
-          });
-          logger.response(200, Date.now() - startTime);
-          res.status(200).json(data);
-          return;
-        }
-        case "deleteLegacyRedisKeys": {
-          const pattern = normalizeRedisPattern(body?.pattern);
-          const confirmPattern =
-            typeof body?.confirmPattern === "string" ? body.confirmPattern : "";
-          if (confirmPattern !== pattern) {
-            logger.response(400, Date.now() - startTime);
-            res.status(400).json({ error: "Confirmation does not match Redis pattern" });
-            return;
-          }
-          try {
-            assertKnownLegacyRedisPattern(pattern);
-          } catch (error) {
-            logger.response(400, Date.now() - startTime);
-            res.status(400).json({ error: error instanceof Error ? error.message : "Invalid pattern" });
-            return;
-          }
-          const limit = clampInteger(body?.limit, 100, 1, 500);
-          const dryRun = body?.dryRun !== false;
-          const cursor = normalizeRedisCursor(body?.cursor);
-          const data = await deleteLegacyRedisKeys(redis, { pattern, limit, dryRun, cursor });
-          logger.info("Legacy Redis key delete requested", {
-            pattern,
-            cursor: data.cursor,
-            dryRun,
-            scanned: data.scanned,
-            deleted: data.deleted,
-            truncated: data.truncated,
-          });
-          logger.response(200, Date.now() - startTime);
-          res.status(200).json(data);
           return;
         }
         default:

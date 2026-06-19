@@ -15,7 +15,6 @@ import {
   unregisterRoom,
 } from "./_helpers/_redis.js";
 import { getRoomReadAccessError } from "./_helpers/_access.js";
-import { CHAT_ROOM_USERS_PREFIX } from "./_helpers/_constants.js";
 import { refreshRoomUserCount, deleteRoomPresence } from "./_helpers/_presence.js";
 import { broadcastRoomDeleted, broadcastRoomUpdated } from "./_helpers/_pusher.js";
 import type { Room } from "./_helpers/_types.js";
@@ -26,7 +25,7 @@ export const maxDuration = 30;
 
 export default apiHandler(
   { methods: ["GET", "DELETE"], auth: "optional" },
-  async ({ req, res, redis, logger, startTime, user }) => {
+  async ({ req, res, logger, startTime, user }) => {
     const roomId = req.query.id as string | undefined;
     const method = (req.method || "GET").toUpperCase();
 
@@ -119,7 +118,6 @@ export default apiHandler(
           await deleteRoom(roomId);
           await deleteAllMessages(roomId);
           await unregisterRoom(roomId);
-          await redis.del(`${CHAT_ROOM_USERS_PREFIX}${roomId}`);
           await deleteRoomPresence(roomId);
 
           await broadcastRoomDeleted(roomId, roomData.type, roomData.members || []);
@@ -143,7 +141,6 @@ export default apiHandler(
         await deleteRoom(roomId);
         await deleteAllMessages(roomId);
         await unregisterRoom(roomId);
-        await redis.del(`${CHAT_ROOM_USERS_PREFIX}${roomId}`);
         await deleteRoomPresence(roomId);
 
         await broadcastRoomDeleted(roomId, roomData.type, roomData.members || []);

@@ -277,12 +277,9 @@ async function getSongFromRedis(
     const redis = await createSongRedisClient();
     if (!redis) return null;
 
-    // Fetch song metadata (split storage format). Read the canonical
-    // `media:song:…:meta` key first, falling back to the legacy `song:meta:{id}`
-    // key for songs persisted before the canonical Redis-key cutover.
-    const raw =
-      (await redis.get(redisKeys.media.songMeta(songId))) ??
-      (await redis.get(`song:meta:${songId}`));
+    // Fetch song metadata (split storage format) from the canonical
+    // `media:song:…:meta` key.
+    const raw = await redis.get(redisKeys.media.songMeta(songId));
     return getSongShareMetadataFromRaw(raw);
   } catch {
     return null;

@@ -10,9 +10,12 @@ import {
   fetchWithAuth,
   getTokenFromAuthCookie,
 } from "./test-utils";
+import { redisKeys } from "../src/shared/redisKeys";
 
 // Admin user credentials for dev testing
 const ADMIN_USERNAME = "ryo";
+// Canonical Redis key where the admin user's profile is stored post-cutover.
+const ADMIN_PROFILE_KEY = redisKeys.auth.userProfile(ADMIN_USERNAME);
 const ADMIN_PASSWORD = "testtest";
 let adminToken: string | null = null;
 
@@ -229,7 +232,7 @@ describe("admin", () => {
       }
 
       const res = await fetchWithAuth(
-        `${BASE_URL}/api/admin?action=listRedisKeys&pattern=chat:users:${ADMIN_USERNAME}&count=10`,
+        `${BASE_URL}/api/admin?action=listRedisKeys&pattern=${encodeURIComponent(ADMIN_PROFILE_KEY)}&count=10`,
         ADMIN_USERNAME,
         adminToken,
         { method: "GET" }
@@ -238,8 +241,8 @@ describe("admin", () => {
       expect(res.status).toBe(200);
       const data = await res.json();
       expect(Array.isArray(data.keys)).toBe(true);
-      expect(data.keys.some((key: { key: string }) => key.key === `chat:users:${ADMIN_USERNAME}`)).toBe(true);
-      const adminKey = data.keys.find((key: { key: string }) => key.key === `chat:users:${ADMIN_USERNAME}`);
+      expect(data.keys.some((key: { key: string }) => key.key === ADMIN_PROFILE_KEY)).toBe(true);
+      const adminKey = data.keys.find((key: { key: string }) => key.key === ADMIN_PROFILE_KEY);
       expect(adminKey.type).toBe("string");
       expect(typeof adminKey.ttl).toBe("number");
     });
@@ -250,7 +253,7 @@ describe("admin", () => {
         return;
       }
 
-      const redisKey = `chat:users:${ADMIN_USERNAME}`;
+      const redisKey = ADMIN_PROFILE_KEY;
       const res = await fetchWithAuth(
         `${BASE_URL}/api/admin?action=getRedisKey&key=${encodeURIComponent(redisKey)}`,
         ADMIN_USERNAME,
@@ -274,7 +277,7 @@ describe("admin", () => {
       }
 
       const res = await fetchWithAuth(
-        `${BASE_URL}/api/admin?action=backupRedisKeys&pattern=chat:users:${ADMIN_USERNAME}&limit=10`,
+        `${BASE_URL}/api/admin?action=backupRedisKeys&pattern=${encodeURIComponent(ADMIN_PROFILE_KEY)}&limit=10`,
         ADMIN_USERNAME,
         adminToken,
         { method: "GET" }
@@ -282,10 +285,10 @@ describe("admin", () => {
 
       expect(res.status).toBe(200);
       const data = await res.json();
-      expect(data.pattern).toBe(`chat:users:${ADMIN_USERNAME}`);
+      expect(data.pattern).toBe(ADMIN_PROFILE_KEY);
       expect(data.keyCount).toBeGreaterThanOrEqual(1);
       expect(Array.isArray(data.keys)).toBe(true);
-      expect(data.keys.some((key: { key: string }) => key.key === `chat:users:${ADMIN_USERNAME}`)).toBe(true);
+      expect(data.keys.some((key: { key: string }) => key.key === ADMIN_PROFILE_KEY)).toBe(true);
     });
 
     test("POST deleteRedisKey - requires exact confirmation", async () => {
@@ -303,82 +306,8 @@ describe("admin", () => {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             action: "deleteRedisKey",
-            key: `chat:users:${ADMIN_USERNAME}`,
+            key: ADMIN_PROFILE_KEY,
             confirmKey: "wrong-key",
-          }),
-        }
-      );
-
-      expect(res.status).toBe(400);
-      const data = await res.json();
-      expect(data.error).toContain("Confirmation");
-    });
-
-    test("GET getRedisKeyMigrationStatus - with admin token", async () => {
-      if (!adminToken) {
-        console.log("  ⚠️  Skipped (no admin token available)");
-        return;
-      }
-
-      const res = await fetchWithAuth(
-        `${BASE_URL}/api/admin?action=getRedisKeyMigrationStatus&limit=5`,
-        ADMIN_USERNAME,
-        adminToken,
-        { method: "GET" }
-      );
-
-      expect(res.status).toBe(200);
-      const data = await res.json();
-      expect(typeof data.totalLegacyKeys).toBe("number");
-      expect(Array.isArray(data.patterns)).toBe(true);
-      expect(data.patterns.some((item: { pattern: string }) => item.pattern === "chat:users:*")).toBe(true);
-    });
-
-    test("POST backfillRedisKeyScheme - requires exact pattern confirmation", async () => {
-      if (!adminToken) {
-        console.log("  ⚠️  Skipped (no admin token available)");
-        return;
-      }
-
-      const res = await fetchWithAuth(
-        `${BASE_URL}/api/admin`,
-        ADMIN_USERNAME,
-        adminToken,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "backfillRedisKeyScheme",
-            pattern: "chat:users:*",
-            confirmPattern: "wrong-pattern",
-            dryRun: true,
-          }),
-        }
-      );
-
-      expect(res.status).toBe(400);
-      const data = await res.json();
-      expect(data.error).toContain("Confirmation");
-    });
-
-    test("POST deleteLegacyRedisKeys - requires exact pattern confirmation", async () => {
-      if (!adminToken) {
-        console.log("  ⚠️  Skipped (no admin token available)");
-        return;
-      }
-
-      const res = await fetchWithAuth(
-        `${BASE_URL}/api/admin`,
-        ADMIN_USERNAME,
-        adminToken,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "deleteLegacyRedisKeys",
-            pattern: "chat:users:*",
-            confirmPattern: "wrong-pattern",
-            dryRun: true,
           }),
         }
       );

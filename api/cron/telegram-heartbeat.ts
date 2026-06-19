@@ -17,7 +17,6 @@ import {
   buildTelegramHeartbeatNoteContext,
   buildTelegramHeartbeatConversationContext,
   buildTelegramHeartbeatPrompt,
-  buildLegacyTelegramHeartbeatRedisKey,
   buildTelegramHeartbeatRedisKey,
   buildTelegramHeartbeatStateSummary,
   formatTelegramConversationEntries,
@@ -171,8 +170,7 @@ export default async function handler(
   }
 
   const slotKey = buildTelegramHeartbeatRedisKey(username);
-  const legacySlotKey = buildLegacyTelegramHeartbeatRedisKey(username);
-  if ((await redis.exists(slotKey, legacySlotKey)) > 0) {
+  if ((await redis.exists(slotKey)) > 0) {
     await appendHeartbeatLog(
       redis,
       username,

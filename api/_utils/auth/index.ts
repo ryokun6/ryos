@@ -26,25 +26,20 @@ export type {
 
 // Constants
 export {
-  AUTH_TOKEN_PREFIX,
   TOKEN_LENGTH,
   USER_TTL_SECONDS,
   USER_EXPIRATION_TIME,
   TOKEN_GRACE_PERIOD,
-  PASSWORD_HASH_PREFIX,
   PASSWORD_MIN_LENGTH,
   PASSWORD_MAX_LENGTH,
   PASSWORD_BCRYPT_ROUNDS,
   RATE_LIMIT_WINDOW_SECONDS,
   RATE_LIMIT_ATTEMPTS,
   CREATE_USER_BLOCK_TTL_SECONDS,
-  CHAT_USERS_PREFIX,
 } from "./_constants.js";
 
 // Token operations (Edge compatible)
 export {
-  getUserTokenKey,
-  getUserTokenPattern,
   getLastTokenKey,
   generateAuthToken,
   storeToken,
@@ -69,7 +64,7 @@ export {
 
 // Validation (Edge compatible)
 export type { ValidateAuthOptions } from "./_validate.js";
-export { validateAuth, tokenExists } from "./_validate.js";
+export { validateAuth } from "./_validate.js";
 
 // Request extraction (Edge compatible)
 export { extractAuth, extractAuthNormalized } from "./_extract.js";

@@ -6,7 +6,6 @@
  */
 
 import type { Redis } from "../redis.js";
-import { PASSWORD_HASH_PREFIX } from "./_constants.js";
 import { redisKeys } from "../../../src/shared/redisKeys.js";
 
 // Re-export constants for convenience
@@ -14,13 +13,6 @@ export {
   PASSWORD_MIN_LENGTH,
   PASSWORD_MAX_LENGTH,
 } from "./_constants.js";
-
-/**
- * Get Redis key for user's password hash
- */
-function getPasswordKey(username: string): string {
-  return `${PASSWORD_HASH_PREFIX}${username.toLowerCase()}`;
-}
 
 function getCanonicalPasswordKey(username: string): string {
   return redisKeys.auth.userPassword(username);
@@ -45,10 +37,7 @@ export async function getUserPasswordHash(
   redis: Redis,
   username: string
 ): Promise<string | null> {
-  return (
-    (await redis.get<string>(getCanonicalPasswordKey(username))) ??
-    (await redis.get<string>(getPasswordKey(username)))
-  );
+  return await redis.get<string>(getCanonicalPasswordKey(username));
 }
 
 /**
@@ -58,7 +47,7 @@ export async function deleteUserPasswordHash(
   redis: Redis,
   username: string
 ): Promise<void> {
-  await redis.del(getCanonicalPasswordKey(username), getPasswordKey(username));
+  await redis.del(getCanonicalPasswordKey(username));
 }
 
 /**

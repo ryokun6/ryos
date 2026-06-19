@@ -13,7 +13,6 @@ import {
   unregisterRoom,
 } from "../_helpers/_redis.js";
 import { getRoomWriteAccessError } from "../_helpers/_access.js";
-import { CHAT_ROOM_USERS_PREFIX } from "../_helpers/_constants.js";
 import {
   deleteRoomPresence,
   removeRoomPresence,
@@ -31,7 +30,7 @@ export const maxDuration = 15;
 
 export default apiHandler(
   { methods: ["POST"], auth: "required" },
-  async ({ req, res, redis, logger, startTime, user }) => {
+  async ({ req, res, logger, startTime, user }) => {
     const roomId = req.query.id as string | undefined;
 
     if (!roomId) {
@@ -103,7 +102,6 @@ export default apiHandler(
             await deleteRoom(roomId);
             await deleteAllMessages(roomId);
             await unregisterRoom(roomId);
-            await redis.del(`${CHAT_ROOM_USERS_PREFIX}${roomId}`);
             await deleteRoomPresence(roomId);
 
             await broadcastRoomDeleted(roomId, roomData.type, roomData.members || []);

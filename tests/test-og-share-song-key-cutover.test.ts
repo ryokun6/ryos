@@ -64,8 +64,9 @@ describe("og share song-key canonical cutover", () => {
     }
   });
 
-  test("falls back to the legacy song:meta key for pre-cutover songs", async () => {
+  test("ignores the legacy song:meta key for canonical-only reads", async () => {
     const songId = "am:1616228595";
+    // Seed ONLY the legacy key — it must no longer be read.
     await fake.set(
       `song:meta:${songId}`,
       JSON.stringify({
@@ -79,11 +80,7 @@ describe("og share song-key canonical cutover", () => {
       new Request("https://os.example.com/karaoke/am%3A1616228595")
     );
     const body = await response!.text();
-    expect(body).toContain(
-      '<meta property="og:title" content="Sing Legacy Song - Legacy Artist on ryOS">'
-    );
-    expect(body).toContain(
-      '<meta property="og:image" content="https://example.com/legacy.jpg">'
-    );
+    expect(body).not.toContain("Legacy Song");
+    expect(body).not.toContain("https://example.com/legacy.jpg");
   });
 });

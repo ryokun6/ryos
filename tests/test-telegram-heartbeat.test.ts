@@ -35,7 +35,7 @@ import {
   getTelegramModel,
 } from "../api/_utils/_aiModels.js";
 import { prepareRyoConversationModelInput } from "../api/_utils/ryo-conversation";
-import { CHAT_USERS_PREFIX } from "../api/_utils/auth/_constants";
+import { redisKeys } from "../src/shared/redisKeys";
 
 class FakeRedis {
   private readonly store = new Map<string, unknown>();
@@ -465,7 +465,7 @@ describe("telegram heartbeat helpers", () => {
   test("telegram prompts hydrate user local time from the stored user timezone", async () => {
     const redis = makeRedis();
     await redis.set(
-      `${CHAT_USERS_PREFIX}${TELEGRAM_HEARTBEAT_TARGET_USERNAME}`,
+      redisKeys.auth.userProfile(TELEGRAM_HEARTBEAT_TARGET_USERNAME),
       JSON.stringify({
         username: TELEGRAM_HEARTBEAT_TARGET_USERNAME,
         timeZone: "Asia/Tokyo",

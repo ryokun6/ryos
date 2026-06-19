@@ -157,6 +157,11 @@ describe("New API", () => {
       const data = await res.json();
       expect(Array.isArray(data.tokens)).toBe(true);
       expect(data.count).toBeGreaterThanOrEqual(1);
+      // The session used to make this request must be flagged as current.
+      const currentCount = data.tokens.filter(
+        (t: { isCurrent: boolean }) => t.isCurrent
+      ).length;
+      expect(currentCount).toBe(1);
     });
 
     test("Admin login", async () => {

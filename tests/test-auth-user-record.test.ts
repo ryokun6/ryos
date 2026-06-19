@@ -7,7 +7,7 @@ import {
   parseStoredUser,
   updateStoredUserTimeZone,
 } from "../api/_utils/auth/_user-record";
-import { CHAT_USERS_PREFIX } from "../api/_utils/auth/_constants";
+import { redisKeys } from "../src/shared/redisKeys";
 import { buildUserLocalTimeContext } from "../api/_utils/user-time-context";
 
 class FakeRedis {
@@ -57,7 +57,10 @@ describe("stored user record helpers", () => {
   test("validates and persists IANA timezones without accepting placeholders", async () => {
     const redis = makeRedis();
     const username = "timezone_user";
-    await redis.set(`${CHAT_USERS_PREFIX}${username}`, JSON.stringify({ username }));
+    await redis.set(
+      redisKeys.auth.userProfile(username),
+      JSON.stringify({ username })
+    );
 
     expect(normalizeUserTimeZone("Asia/Tokyo")).toBe("Asia/Tokyo");
     expect(normalizeUserTimeZone("Unknown")).toBeNull();

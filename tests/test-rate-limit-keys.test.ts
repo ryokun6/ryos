@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { Redis } from "../api/_utils/redis";
 import { makeKey } from "../api/_utils/_rate-limit";
-import { deleteLegacyRedisKeys } from "../api/_utils/redis-key-migration";
+import { deleteLegacyRedisKeys } from "../scripts/lib/redis-key-migration";
 import { FakeRedis } from "./fake-redis";
 
 describe("rate-limit Redis keys", () => {

@@ -17,7 +17,7 @@ import {
   downloadStoredObject,
   headStoredObject,
 } from "../_utils/storage.js";
-import { backupMetaKey, legacyBackupMetaKey } from "./_keys.js";
+import { backupMetaKey } from "./_keys.js";
 import { getStoredLocation } from "./_storage-location.js";
 
 export const runtime = "nodejs";
@@ -94,9 +94,7 @@ async function handleSaveMetadata(
 
   try {
     // Delete old blob if it exists and differs from the new one
-    const existingMeta =
-      (await redis.get<string | BackupMeta>(backupMetaKey(username))) ??
-      (await redis.get<string | BackupMeta>(legacyBackupMetaKey(username)));
+    const existingMeta = await redis.get<string | BackupMeta>(backupMetaKey(username));
     if (existingMeta) {
       const parsed: BackupMeta =
         typeof existingMeta === "string"
@@ -150,9 +148,7 @@ async function handleDownload(
 ): Promise<void> {
   try {
     // Get metadata from Redis
-    const rawMeta =
-      (await redis.get<string | BackupMeta>(backupMetaKey(username))) ??
-      (await redis.get<string | BackupMeta>(legacyBackupMetaKey(username)));
+    const rawMeta = await redis.get<string | BackupMeta>(backupMetaKey(username));
     if (!rawMeta) {
       res.status(404).json({ error: "No backup found" });
       return;
@@ -169,7 +165,7 @@ async function handleDownload(
 
     const objectInfo = await headStoredObject(storageUrl).catch(() => null);
     if (!objectInfo) {
-      await redis.del(backupMetaKey(username), legacyBackupMetaKey(username));
+      await redis.del(backupMetaKey(username));
       res.status(404).json({ error: "Backup data not found. It may have expired." });
       return;
     }
@@ -199,9 +195,7 @@ async function handleDelete(
   username: string
 ): Promise<void> {
   try {
-    const rawMeta =
-      (await redis.get<string | BackupMeta>(backupMetaKey(username))) ??
-      (await redis.get<string | BackupMeta>(legacyBackupMetaKey(username)));
+    const rawMeta = await redis.get<string | BackupMeta>(backupMetaKey(username));
     if (!rawMeta) {
       res.status(404).json({ error: "No backup found" });
       return;
@@ -220,7 +214,7 @@ async function handleDelete(
     }
 
     // Delete metadata
-    await redis.del(backupMetaKey(username), legacyBackupMetaKey(username));
+    await redis.del(backupMetaKey(username));
 
     res.status(200).json({ ok: true });
   } catch (error) {

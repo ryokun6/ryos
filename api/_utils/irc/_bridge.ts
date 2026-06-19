@@ -39,7 +39,6 @@ import {
   setRoom,
 } from "../../rooms/_helpers/_redis.js";
 import { refreshRoomUserCount } from "../../rooms/_helpers/_presence.js";
-import { createRedis } from "../redis.js";
 import { broadcastNewMessage } from "../../rooms/_helpers/_pusher.js";
 import { escapeHTML, filterProfanityPreservingUrls } from "../_validation.js";
 
