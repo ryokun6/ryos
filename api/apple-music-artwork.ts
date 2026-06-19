@@ -16,7 +16,6 @@ export const maxDuration = 15;
  * in Redis (artwork rarely changes) to avoid hammering Apple's API.
  */
 
-const CACHE_PREFIX = "apple:artwork:";
 const CACHE_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 days for resolved artwork
 const NEGATIVE_TTL_SECONDS = 60 * 60 * 24; // 1 day for "not found"
 
@@ -90,11 +89,10 @@ export default apiHandler(
     }
 
     const cacheKey = redisKeys.cache.appleArtwork(catalogId);
-    const legacyCacheKey = `${CACHE_PREFIX}${catalogId}`;
 
     // Serve from cache when available.
     try {
-      const cached = (await redis.get(cacheKey)) ?? (await redis.get(legacyCacheKey));
+      const cached = await redis.get(cacheKey);
       if (cached) {
         const parsed: ArtworkResult =
           typeof cached === "string" ? JSON.parse(cached) : (cached as ArtworkResult);

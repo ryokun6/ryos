@@ -72,7 +72,6 @@ export async function authorizeRealtimeChannel(
 // authenticated client mints a short-lived, single-use ticket via
 // `/api/realtime/ticket` (cookie/bearer auth) and presents it on the WS URL.
 
-const REALTIME_TICKET_PREFIX = "rt:ticket:";
 const REALTIME_TICKET_TTL_SECONDS = 60;
 
 function generateTicket(): string {
@@ -104,9 +103,8 @@ export async function consumeRealtimeTicket(
 ): Promise<string | null> {
   if (!ticket) return null;
   const key = redisKeys.realtime.ticket(await sha256RedisIdentifier(ticket));
-  const legacyKey = `${REALTIME_TICKET_PREFIX}${ticket}`;
-  const username = (await redis.get<string>(key)) ?? (await redis.get<string>(legacyKey));
+  const username = await redis.get<string>(key);
   if (!username) return null;
-  await redis.del(key, legacyKey);
+  await redis.del(key);
   return typeof username === "string" ? username : String(username);
 }

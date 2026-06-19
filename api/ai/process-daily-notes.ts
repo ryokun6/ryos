@@ -128,11 +128,6 @@ export async function processDailyNotesForUser(
   // Acquire a short-lived lock to prevent concurrent processing for the same user.
   // If another request is already processing, we skip (the other run will handle it).
   const lockKey = redisKeys.memory.processingLock(username);
-  const legacyLockKey = `memory:user:${username}:processing_lock`;
-  if ((await redis.exists(legacyLockKey)) > 0) {
-    log("[processDailyNotes] Skipping — another run already in progress", { username });
-    return EMPTY;
-  }
   const acquired = await redis.set(lockKey, "1", { nx: true, ex: 120 }); // 2-min TTL
   if (!acquired) {
     log("[processDailyNotes] Skipping — another run already in progress", { username });
@@ -143,7 +138,7 @@ export async function processDailyNotesForUser(
     return await _processDailyNotesForUserInner(redis, username, log, logError, timeZone);
   } finally {
     // Release lock when done (or on error)
-    await redis.del(lockKey, legacyLockKey).catch(() => {});
+    await redis.del(lockKey).catch(() => {});
   }
 }
 
