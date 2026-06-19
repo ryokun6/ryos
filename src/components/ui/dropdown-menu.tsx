@@ -82,13 +82,22 @@ const DropdownMenuSubTrigger = (
     ref?: React.Ref<React.ElementRef<typeof DropdownMenuPrimitive.SubTrigger>>;
   }
 ) => {
-  const { isWindowsTheme, isMacOSTheme } = useThemeFlags();
+  const { isWindowsTheme, isMacOSTheme, isSystem7Theme } = useThemeFlags();
 
   return (
     <DropdownMenuPrimitive.SubTrigger
       ref={ref}
       className={cn(
-        "flex cursor-default gap-2 select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent data-[state=open]:bg-accent [&_svg]:pointer-events-none [&_svg]:shrink-0",
+        "flex cursor-default gap-2 select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none [&_svg]:pointer-events-none [&_svg]:shrink-0",
+        // Open/focused submenu trigger uses the accent-derived selection fill
+        // on classic chromes; `bg-accent` goes near-black in macOS dark mode.
+        isSystem7Theme &&
+          "focus:bg-[var(--os-color-selection-bg)] focus:text-[var(--os-color-selection-text)] data-[state=open]:bg-[var(--os-color-selection-bg)] data-[state=open]:text-[var(--os-color-selection-text)]",
+        isMacOSTheme &&
+          "focus:bg-[var(--os-color-selection-bg)] focus:text-[var(--os-color-selection-text)] data-[state=open]:bg-[var(--os-color-selection-bg)] data-[state=open]:text-[var(--os-color-selection-text)]",
+        !isSystem7Theme &&
+          !isMacOSTheme &&
+          "focus:bg-accent data-[state=open]:bg-accent",
         inset && "pl-8",
         className
       )}

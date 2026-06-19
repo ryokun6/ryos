@@ -514,7 +514,7 @@ export function TimeMachineViewPortal({ vm, isOpen }: { vm: TimeMachineViewVm; i
                           key={type}
                           className={cn(
                             "font-geneva-12 text-[12px] flex items-center justify-between",
-                            isSelected && "bg-accent text-accent-foreground"
+                            isSelected && "bg-os-selection-bg text-os-selection-text"
                           )}
                           onClick={() => {
                             if (type === "off") {

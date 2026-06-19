@@ -761,11 +761,11 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
                       className={cn(
                         adminTableRowClass,
                         "cursor-pointer",
-                        // Selected row uses the solid accent swatch
-                        // (`--os-accent-color`), falling back to the theme's
-                        // selection color when no accent is set ("System").
+                        // Selected row uses the shared selection fill
+                        // (`--os-color-selection-bg`) — the same accent-derived
+                        // color the chat sidebar and other selected items use.
                         selectedKey === item.key &&
-                          "bg-[var(--os-accent-color,var(--os-color-selection-bg))] text-os-selection-text hover:bg-[var(--os-accent-color,var(--os-color-selection-bg))]",
+                          "bg-os-selection-bg text-os-selection-text hover:bg-os-selection-bg",
                       )}
                       onClick={() => void loadKeyDocument(item.key)}
                       onKeyDown={(event) => {

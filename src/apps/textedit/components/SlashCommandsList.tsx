@@ -73,7 +73,7 @@ export const SlashCommandsList = (
         <button
           key={`${item.title}-${item.description}`}
           className={`flex w-full items-start gap-2 rounded-md px-2 py-1 text-left ${
-            index === selectedIndex ? "bg-accent text-accent-foreground" : ""
+            index === selectedIndex ? "bg-os-selection-bg text-os-selection-text" : ""
           }`}
           onClick={() => selectItem(index)}
         >
