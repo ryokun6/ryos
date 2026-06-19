@@ -11,7 +11,7 @@ describe("desktop download URLs", () => {
     expect(
       getDesktopDownloadUrl("1.0.5", { platform: "mac", arch: "aarch64" })
     ).toBe(
-      "https://github.com/ryokun6/ryos/releases/download/desktop/ryOS_1.0.5_aarch64.dmg"
+      "https://github.com/ryokun6/ryos/releases/download/v1.0.5/ryOS_1.0.5_aarch64.dmg"
     );
   });
 
@@ -19,7 +19,7 @@ describe("desktop download URLs", () => {
     expect(
       getDesktopDownloadUrl("1.0.5", { platform: "windows", arch: "x64" })
     ).toBe(
-      "https://github.com/ryokun6/ryos/releases/download/desktop/ryOS_1.0.5_x64.exe"
+      "https://github.com/ryokun6/ryos/releases/download/v1.0.5/ryOS_1.0.5_x64.exe"
     );
   });
 
@@ -32,7 +32,7 @@ describe("desktop download URLs", () => {
       platformLabel: "Mac",
     });
     expect(target && getDesktopDownloadUrl("1.0.5", target)).toBe(
-      "https://github.com/ryokun6/ryos/releases/download/desktop/ryOS_1.0.5_aarch64.dmg"
+      "https://github.com/ryokun6/ryos/releases/download/v1.0.5/ryOS_1.0.5_aarch64.dmg"
     );
   });
 
@@ -51,7 +51,7 @@ describe("desktop download URLs", () => {
         platformLabel: "Windows",
       });
       expect(target && getDesktopDownloadUrl("1.0.5", target)).toBe(
-        "https://github.com/ryokun6/ryos/releases/download/desktop/ryOS_1.0.5_x64.exe"
+        "https://github.com/ryokun6/ryos/releases/download/v1.0.5/ryOS_1.0.5_x64.exe"
       );
     }
   });
@@ -117,7 +117,7 @@ describe("desktop download URLs", () => {
     expect(
       getDesktopDownloadUrl("2.3.4", { platform: "mac", arch: "aarch64" })
     ).toBe(
-      "https://github.com/ryokun6/ryos/releases/download/desktop/ryOS_2.3.4_aarch64.dmg"
+      "https://github.com/ryokun6/ryos/releases/download/v2.3.4/ryOS_2.3.4_aarch64.dmg"
     );
   });
 
