@@ -85,7 +85,6 @@ type AccountsPaneTab = "accounts" | "security" | "debug";
 
 export function AccountsPaneContent({
   t,
-  tabStyles,
   username,
   myContact,
   accountAvatarLabel,
