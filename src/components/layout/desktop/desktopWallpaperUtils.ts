@@ -15,12 +15,9 @@ export function getWallpaperStyles(
   // land here briefly before the runtime source resolves to a concrete asset.
   if (isDynamicWallpaper(path)) return {};
 
-  const isTiled = path.includes("/wallpapers/tiles/");
-  return {
-    backgroundImage: `url(${path})`,
-    backgroundSize: isTiled ? "64px 64px" : "cover",
-    backgroundRepeat: isTiled ? "repeat" : "no-repeat",
-    backgroundPosition: "center",
-    transition: "background-image 0.3s ease-in-out",
-  };
+  // Static photos / tiles are painted by the `DesktopStaticWallpaper` layer so
+  // wallpaper swaps can preload and crossfade instead of clearing to blank and
+  // popping the new image in once it downloads. Nothing to paint on the desktop
+  // div itself.
+  return {};
 }

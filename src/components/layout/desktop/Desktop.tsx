@@ -5,6 +5,7 @@ import { useDesktop } from "./useDesktop";
 import { DesktopIconGrid } from "./DesktopIconGrid";
 import { DesktopDragRegion } from "./DesktopDragRegion";
 import { DesktopDynamicWallpaper } from "./DesktopDynamicWallpaper";
+import { DesktopStaticWallpaper } from "./DesktopStaticWallpaper";
 
 export function Desktop(props: DesktopProps) {
   const d = useDesktop(props);
@@ -22,6 +23,7 @@ export function Desktop(props: DesktopProps) {
       style={d.finalStyles}
       {...d.longPressHandlers}
     >
+      <DesktopStaticWallpaper />
       <video
         ref={d.videoRef}
         className="absolute inset-0 w-full h-full object-cover z-[-10]"
