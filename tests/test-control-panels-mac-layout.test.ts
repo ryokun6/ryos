@@ -119,9 +119,11 @@ describe("Control Panels macOS 10.3 layout", () => {
     );
     // Measurement is decoupled from display: the measure subtree is never
     // height-constrained (the body itself scrolls past the cap), so the natural
-    // height is read straight off the measure node's border box — no scrollHeight
-    // / flex / collapsed-inner-scroller hacks that broke Safari auto-sizing.
-    expect(animatedBodySource.includes("getBoundingClientRect")).toBe(true);
+    // height is read off the measure node's layout box via offsetHeight — which
+    // ignores ancestor transforms (open animation), unlike getBoundingClientRect,
+    // and needs no scrollHeight / flex / collapsed-inner-scroller hacks.
+    expect(animatedBodySource.includes("offsetHeight")).toBe(true);
+    expect(animatedBodySource.includes("getBoundingClientRect")).toBe(false);
     expect(animatedBodySource.includes("scrollHeight")).toBe(false);
     expect(animatedBodySource.includes("collapsedOverflow")).toBe(false);
     expect(animatedBodySource.includes("data-scrollable")).toBe(true);

@@ -51,12 +51,17 @@ export function ControlPanelsMacAnimatedBody({
 
     // The measure subtree is NEVER height-constrained: when content exceeds the
     // window cap, the body (motion.div) itself scrolls, not any inner element.
-    // So the measure node's border box always reflects the true natural content
+    // So the measure node's layout box always reflects the true natural content
     // height on every engine — no scroll-overflow / flex / collapsed-inner-scroller
     // hacks. Crucially, toggling the body's overflow (data-scrollable) cannot
     // change a child's height, so there is no measure↔layout feedback loop — the
     // root cause of the Safari auto-size jank, worst for panes with inner scrollers.
-    const next = Math.ceil(root.getBoundingClientRect().height);
+    //
+    // Use offsetHeight (the layout border-box height). A visual rect would also
+    // include ancestor transforms, so the window's open/scale animation would
+    // corrupt the first measurement (locking in a too-short Show All on initial
+    // load, since a transform end fires no ResizeObserver to correct it).
+    const next = root.offsetHeight;
     if (next <= 0) return;
 
     const prev = naturalHeightRef.current;
