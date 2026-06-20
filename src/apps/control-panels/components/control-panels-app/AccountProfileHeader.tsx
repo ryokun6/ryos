@@ -59,6 +59,9 @@ export function AccountProfileHeader({
                 name={ACCOUNT_PROFILE_AVATAR_ICON}
                 alt={accountAvatarLabel}
                 className="size-full object-contain"
+                // Nudge the head/shoulders silhouette down so it sits lower in
+                // the circle (shoulders crop naturally at the bottom edge).
+                style={{ transform: "translateY(8%)" }}
               />
             )}
           </div>

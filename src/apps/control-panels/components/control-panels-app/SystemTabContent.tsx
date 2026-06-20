@@ -171,6 +171,8 @@ export function SystemTabContent({
                         name={ACCOUNT_PROFILE_AVATAR_ICON}
                         alt={accountAvatarLabel}
                         className="size-full object-contain"
+                        // Nudge the silhouette down so it sits lower in the circle.
+                        style={{ transform: "translateY(8%)" }}
                       />
                     )}
                   </div>
