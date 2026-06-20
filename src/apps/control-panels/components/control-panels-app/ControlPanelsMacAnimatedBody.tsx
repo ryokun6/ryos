@@ -13,6 +13,7 @@ import { useAppStore } from "@/stores/useAppStore";
 import { cn } from "@/lib/utils";
 import {
   CONTROL_PANELS_MAC_MAX_WINDOW_HEIGHT,
+  CONTROL_PANELS_MAC_MIN_WINDOW_HEIGHT,
   CONTROL_PANELS_MACOSX_TITLEBAR_HEIGHT,
   CONTROL_PANELS_MAC_SIZE_TRANSITION,
 } from "./controlPanelsMacMotion";
@@ -241,9 +242,14 @@ export function ControlPanelsMacAnimatedBody({
   useLayoutEffect(() => {
     if (!instanceId || animatedHeight === undefined) return;
 
-    const totalWindowHeight = Math.min(
-      CONTROL_PANELS_MAC_MAX_WINDOW_HEIGHT,
-      CONTROL_PANELS_MACOSX_TITLEBAR_HEIGHT + toolbarHeight + animatedHeight
+    // Respect the window's min/max height: never auto-shrink below the configured
+    // minimum (matches windowConstraints.minHeight) even when content is short.
+    const totalWindowHeight = Math.max(
+      CONTROL_PANELS_MAC_MIN_WINDOW_HEIGHT,
+      Math.min(
+        CONTROL_PANELS_MAC_MAX_WINDOW_HEIGHT,
+        CONTROL_PANELS_MACOSX_TITLEBAR_HEIGHT + toolbarHeight + animatedHeight
+      )
     );
 
     if (lastWindowHeightRef.current === totalWindowHeight) return;
