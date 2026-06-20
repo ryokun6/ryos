@@ -126,6 +126,12 @@
   object-fit: contain;
 }
 
+:root[data-os-theme="macosx"]
+  .control-panels-toolbar-pin:active
+  .control-panels-toolbar-pin-icon {
+  filter: brightness(0.7);
+}
+
 :root[data-os-theme="macosx"] .control-panels-toolbar-pin-phosphor {
   color: #333;
 }
@@ -239,6 +245,12 @@
   width: 32px;
   height: 32px;
   object-fit: contain;
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-category-item:active
+  .control-panels-category-icon {
+  filter: brightness(0.7);
 }
 
 :root[data-os-theme="macosx"] .control-panels-category-label {
