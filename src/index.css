@@ -1847,24 +1847,10 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     );
 }
 
-/* Glass titlebar: blurs the menu content scrolling beneath it (the
- * titlebar is sticky), tinted by the cover accent with a bright top
- * gloss and an accent-colored bottom hairline. */
-.ipod-aqua-screen .ipod-modern-titlebar {
-  background-color: color-mix(in srgb, var(--ipod-aqua-accent) 24%, white);
-  background-image: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.9) 0%,
-    color-mix(in srgb, var(--ipod-aqua-accent) 22%, rgba(255, 255, 255, 0.72))
-      55%,
-    color-mix(in srgb, var(--ipod-aqua-accent) 34%, rgba(255, 255, 255, 0.55))
-      100%
-  );
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85),
-    inset 0 -1px 0 color-mix(in srgb, var(--ipod-aqua-accent) 55%, transparent);
-  -webkit-backdrop-filter: saturate(1.6) blur(6px);
-  backdrop-filter: saturate(1.6) blur(6px);
-}
+/* Aqua Glass intentionally does NOT retint the status/title bar — it keeps
+ * the standard modern silver titlebar (from `.ipod-modern-titlebar`) so the
+ * status bar stays neutral while the rest of the screen takes the cover
+ * accent. (No `.ipod-aqua-screen .ipod-modern-titlebar` override here.) */
 
 /* Menu rows are translucent so the tinted glass surface shows through. */
 .ipod-aqua-screen .ipod-modern-row {
