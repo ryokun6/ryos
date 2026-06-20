@@ -144,7 +144,8 @@
 /* Home grid — one continuous pinstripe on the scroll area; zebra tint on even sections only */
 :root[data-os-theme="macosx"] .control-panels-category-grid {
   --control-panels-section-inset-x: 16px;
-  padding: 0 var(--control-panels-section-inset-x);
+  /* Breathing room after the last section row on the Show All screen. */
+  padding: 0 var(--control-panels-section-inset-x) 16px;
   background-image: var(--os-pinstripe-window);
 }
 
