@@ -242,19 +242,20 @@ export function AboutFinderDialog({
                 }
               >
                 <p>© Ryo Lu. 1992-{new Date().getFullYear()}</p>
-                {isMac && desktopDownloadUrl && (
-                  <p>
-                    <a
-                      href={desktopDownloadUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-os-link hover:underline"
-                    >
-                      {t("apps.control-panels.downloadMacApp")}
-                    </a>
-                  </p>
-                )}
                 <p>
+                  {isMac && desktopDownloadUrl && (
+                    <>
+                      <a
+                        href={desktopDownloadUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-os-link hover:underline"
+                      >
+                        {t("apps.control-panels.downloadMacApp")}
+                      </a>
+                      {" · "}
+                    </>
+                  )}
                   <a
                     href="#"
                     onClick={(e) => {
@@ -269,8 +270,7 @@ export function AboutFinderDialog({
                   >
                     {t("common.aboutThisMac.viewChangelog")}
                   </a>
-                </p>
-                <p>
+                  {" · "}
                   <a
                     href="#"
                     onClick={(e) => {
@@ -285,8 +285,7 @@ export function AboutFinderDialog({
                   >
                     {t("common.aboutThisMac.privacyPolicy")}
                   </a>
-                </p>
-                <p>
+                  {" · "}
                   <a
                     href="#"
                     onClick={(e) => {
