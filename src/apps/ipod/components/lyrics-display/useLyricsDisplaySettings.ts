@@ -8,7 +8,7 @@ import type { LyricsDisplayProps } from "./types";
 
 /** Small iPod LCD lyrics always use sans-serif; ignore stored lyric style. */
 export function getIpodSmallScreenLyricsFontClassName(
-  uiVariant: "classic" | "modern" | "aqua"
+  uiVariant: "classic" | "modern"
 ): string {
   return uiVariant !== "classic"
     ? "font-ipod-modern-ui font-semibold"

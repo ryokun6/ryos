@@ -212,15 +212,10 @@ interface IpodData {
    *   hardware (click wheel, body) is unchanged — only the contents of
    *   the 150px LCD swap.
    *
-   * - `"aqua"` is an Aqua Glass take on the modern skin: the same layout
-   *   and geometry, but with translucent frosted chrome whose accent
-   *   color (titlebar tint, row-selection highlight, progress fill) is
-   *   derived from the current track's cover-art dominant color.
-   *
    * Persisted across reloads. Defaults to **`"modern"`**; existing saved
    * preferences (including **`"classic"`**) are kept on rehydrate.
    */
-  uiVariant: "classic" | "modern" | "aqua";
+  uiVariant: "classic" | "modern";
   lcdFilterOn: boolean;
   showLyrics: boolean;
   lyricsAlignment: LyricsAlignment;
@@ -494,7 +489,7 @@ export interface IpodState extends IpodData {
   toggleFullScreen: () => void;
   setTheme: (theme: "classic" | "black" | "u2") => void;
   /** Switch between the monochrome classic LCD and the iOS-6 modern skin. */
-  setUiVariant: (variant: "classic" | "modern" | "aqua") => void;
+  setUiVariant: (variant: "classic" | "modern") => void;
   addTrack: (track: Track) => void;
   /** Cache a resolved cover glow color on any local copy of a track. */
   setTrackCoverColor: (trackId: string, coverColor: string) => void;
@@ -2556,11 +2551,11 @@ export const useIpodStore = create<IpodState>()(
               : "2s",
           theme: state.theme,
           uiVariant:
-            state.uiVariant === "modern" ||
-            state.uiVariant === "classic" ||
-            state.uiVariant === "aqua"
+            state.uiVariant === "modern" || state.uiVariant === "classic"
               ? state.uiVariant
-              : "modern",
+              : state.uiVariant === "aqua"
+                ? "modern"
+                : "modern",
           lcdFilterOn: state.lcdFilterOn,
           showLyrics: state.showLyrics,
           lyricsAlignment: state.lyricsAlignment,

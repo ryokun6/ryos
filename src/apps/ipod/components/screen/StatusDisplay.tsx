@@ -12,7 +12,7 @@ import {
 
 interface StatusDisplayProps {
   message: string;
-  variant?: "classic" | "modern" | "aqua";
+  variant?: "classic" | "modern";
 }
 
 // Maps the leading playback glyph used in `showStatus(...)` calls to a

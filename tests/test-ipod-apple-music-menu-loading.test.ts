@@ -8,8 +8,6 @@ import {
 describe("appleMusicMenuLoading", () => {
   test("shouldUseModernAppleMusicTitlebarLoading is false only for the classic uiVariant", () => {
     expect(shouldUseModernAppleMusicTitlebarLoading("modern")).toBe(true);
-    // Aqua Glass shares the modern color-screen layout (titlebar spinner).
-    expect(shouldUseModernAppleMusicTitlebarLoading("aqua")).toBe(true);
     expect(shouldUseModernAppleMusicTitlebarLoading("classic")).toBe(false);
     expect(shouldUseModernAppleMusicTitlebarLoading(undefined)).toBe(true);
   });

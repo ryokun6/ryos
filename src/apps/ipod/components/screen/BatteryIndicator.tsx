@@ -5,8 +5,8 @@ import type { BatteryManager } from "../../types";
 
 interface BatteryIndicatorProps {
   backlightOn: boolean;
-  /** Classic = monochrome blue 4-bar; modern/aqua = continuous green fill. */
-  variant?: "classic" | "modern" | "aqua";
+  /** Classic = monochrome blue 4-bar; modern = continuous green fill. */
+  variant?: "classic" | "modern";
 }
 
 interface BatteryIndicatorState {

@@ -766,21 +766,12 @@ export function useIpodLogic({
 
   const memoizedHandleUiThemeChange = useCallback(() => {
     const currentVariant = useIpodStore.getState().uiVariant;
-    // Cycle classic → modern → aqua → classic so the menubar shortcut
-    // can reach every on-screen skin.
-    const nextVariant =
-      currentVariant === "classic"
-        ? "modern"
-        : currentVariant === "modern"
-          ? "aqua"
-          : "classic";
+    const nextVariant = currentVariant === "classic" ? "modern" : "classic";
     setUiVariant(nextVariant);
     showStatus(
       nextVariant === "modern"
         ? t("apps.ipod.menu.screenModern")
-        : nextVariant === "aqua"
-          ? t("apps.ipod.menu.screenAqua", "Aqua Glass")
-          : t("apps.ipod.menu.screenClassic")
+        : t("apps.ipod.menu.screenClassic")
     );
     registerActivity();
   }, [setUiVariant, showStatus, registerActivity, menuLocale]);
@@ -2458,9 +2449,7 @@ export function useIpodLogic({
         value:
           uiVariant === "modern"
             ? t("apps.ipod.menu.screenModern")
-            : uiVariant === "aqua"
-              ? t("apps.ipod.menu.screenAqua", "Aqua Glass")
-              : t("apps.ipod.menu.screenClassic"),
+            : t("apps.ipod.menu.screenClassic"),
       },
       {
         label: t("apps.ipod.menuItems.librarySource", "Library"),

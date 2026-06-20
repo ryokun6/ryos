@@ -6,7 +6,6 @@ import {
   useReducer,
   useState,
   useCallback,
-  type CSSProperties,
 } from "react";
 import { cn } from "@/lib/utils";
 import {
@@ -21,9 +20,7 @@ import {
   IPOD_MODERN_SCREEN_HEIGHT_PX,
   IPOD_NOW_PLAYING_SONG_MENU_KEY,
   isModernIpodUiVariant,
-  isAquaIpodUiVariant,
 } from "../../constants";
-import { useCoverGlowColor } from "@/hooks/useCoverGlowColor";
 import { youtubeThumbnailUrl } from "@/utils/youtubeUrl";
 import { DisplayMode } from "@/types/lyrics";
 import type { IpodScreenProps } from "../../types";
@@ -43,7 +40,6 @@ import {
   menuScrollReducer,
 } from "./menuScrollReducer";
 import { IpodScreenMenuChrome } from "./IpodScreenMenuChrome";
-import { aquaNowPlayingColorsForBg } from "./aquaNowPlayingColors";
 import { IpodScreenMediaOverlay } from "./IpodScreenMediaOverlay";
 import { IpodScreenSplitArtPanel } from "./IpodScreenSplitArtPanel";
 
@@ -155,7 +151,6 @@ export function IpodScreen({
   // toggling from the menubar updates the screen instantly.
   const uiVariant = useIpodStore((s) => s.uiVariant);
   const isModernUi = isModernIpodUiVariant(uiVariant);
-  const isAquaUi = isAquaIpodUiVariant(uiVariant);
   const currentMenuModernMediaList = useMemo(() => {
     if (!menuMode || menuHistory.length === 0) return false;
     return Boolean(menuHistory[menuHistory.length - 1].modernMediaList);
@@ -246,29 +241,6 @@ export function IpodScreen({
       formatKugouImageUrl(nowPlayingDisplayTrack.cover, 400) ?? youtubeThumbnail
     );
   }, [isAppleMusicTrack, nowPlayingDisplayTrack]);
-
-  // Aqua Glass skin: derive a vivid accent from the current track's cover
-  // art (cached `coverColor` when available, otherwise extracted from the
-  // image). Drives the titlebar tint, row-selection highlight, and the
-  // now-playing progress fill via the `--ipod-aqua-accent` CSS variable.
-  // The hook always runs (rules of hooks) but only extracts when aqua is
-  // active. Falls back to a neutral Aqua blue while loading / when off.
-  const aquaAccentColor = useCoverGlowColor({
-    coverUrl,
-    coverColor: nowPlayingDisplayTrack?.coverColor,
-    enabled: isAquaUi,
-  });
-  const aquaAccent = isAquaUi ? aquaAccentColor : null;
-
-  // Aqua Glass now-playing screen: paint the whole LCD with the computed
-  // cover accent and flip the screen + titlebar text/icons between dark and
-  // light depending on that background's luminance. Only while the
-  // now-playing view is showing (not in menus / inline Cover Flow), where
-  // the frosted-glass menu chrome stays.
-  const aquaNowPlaying = isAquaUi && !menuMode && !showInlineCoverFlow;
-  const aquaNowPlayingColors = aquaNowPlaying
-    ? aquaNowPlayingColorsForBg(aquaAccentColor)
-    : null;
 
   // Current menu items (the deepest menu in the history stack).
   const currentMenuItems = useMemo(
@@ -534,8 +506,6 @@ export function IpodScreen({
       isPlaying={isPlaying}
       backlightOn={backlightOn}
       uiVariant={uiVariant}
-      aquaNowPlaying={aquaNowPlaying}
-      aquaNowPlayingColors={aquaNowPlayingColors}
       menuMode={menuMode}
       appleMusicMenuTitlebarLoading={appleMusicMenuTitlebarLoading}
       showVideo={showVideo}
@@ -585,8 +555,7 @@ export function IpodScreen({
         isModernUi
           ? cn(
               "ipod-modern-screen",
-              isAquaUi ? "ipod-aqua-screen" : "bg-white",
-              aquaNowPlaying && "ipod-aqua-now-playing",
+              "bg-white",
               !backlightOn && "ipod-modern-backlight-off"
             )
           : backlightOn
@@ -607,17 +576,6 @@ export function IpodScreen({
         contain: "layout style paint",
         WebkitUserSelect: "none",
         WebkitTouchCallout: "none",
-        ...(aquaAccent
-          ? ({
-              "--ipod-aqua-accent": aquaAccent,
-            } as CSSProperties)
-          : null),
-        ...(aquaNowPlayingColors
-          ? ({
-              "--ipod-aqua-bg": aquaNowPlayingColors.background,
-              "--ipod-aqua-fg": aquaNowPlayingColors.primary,
-            } as CSSProperties)
-          : null),
       }}
     >
       {lcdFilterOn && !isModernUi && (

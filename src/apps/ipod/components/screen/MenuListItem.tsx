@@ -29,11 +29,9 @@ interface MenuListItemProps {
    * Chicago-font row from the original 1st-gen LCD. `"modern"` switches
    * to an iOS 6 UITableViewCell look — Helvetica Neue, white background
    * with a 1px hairline separator, and a glossy blue gradient
-   * selection highlight with white text. `"aqua"` shares the modern
-   * layout but recolors the chrome from the cover-art accent (handled
-   * via the `.ipod-aqua-screen` ancestor CSS).
+   * selection highlight with white text.
    */
-  variant?: "classic" | "modern" | "aqua";
+  variant?: "classic" | "modern";
   /**
    * Modern media rows only: second line (caption). Single-line ellipsis;
    * omit or pass empty to show only the primary line.

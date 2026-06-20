@@ -8,8 +8,8 @@ interface ScrollbarProps {
     | React.MutableRefObject<HTMLDivElement | null>;
   backlightOn: boolean;
   menuMode: boolean;
-  /** Classic = monochrome blue track; modern/aqua = thin iOS 6 indicator. */
-  variant?: "classic" | "modern" | "aqua";
+  /** Classic = monochrome blue track; modern = thin iOS 6 indicator. */
+  variant?: "classic" | "modern";
 }
 
 export function Scrollbar({
