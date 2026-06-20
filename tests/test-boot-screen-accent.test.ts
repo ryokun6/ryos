@@ -2,11 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { getAccentCssVars } from "../src/themes/accents";
+import { darkAquaThemeCss } from "./theme-css-fixtures";
 
-const themesCss = readFileSync(
-  join(import.meta.dir, "../src/styles/themes.css"),
-  "utf8"
-);
 const bootScreenSource = readFileSync(
   join(import.meta.dir, "../src/components/dialogs/BootScreen.tsx"),
   "utf8"
@@ -83,9 +80,9 @@ describe("macOS boot screen accent tokens", () => {
     expect(bootScreenSource).not.toContain('filter: "grayscale(50%) brightness(1.25)"');
   });
 
-  test("themes.css wires boot apple logo filter with stock fallback", () => {
-    expect(themesCss).toContain("img.boot-screen-apple-logo");
-    expect(themesCss).toContain("--os-accent-boot-apple-filter");
-    expect(themesCss).toContain("grayscale(50%) brightness(1.25)");
+  test("dark-aqua.css wires boot apple logo filter with stock fallback", () => {
+    expect(darkAquaThemeCss).toContain("img.boot-screen-apple-logo");
+    expect(darkAquaThemeCss).toContain("--os-accent-boot-apple-filter");
+    expect(darkAquaThemeCss).toContain("grayscale(50%) brightness(1.25)");
   });
 });

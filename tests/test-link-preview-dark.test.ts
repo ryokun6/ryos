@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { aquaThemeCss } from "./theme-css-fixtures";
 
 const indexCss = readFileSync(join(import.meta.dir, "../src/index.css"), "utf8");
 const loadingSource = readFileSync(
@@ -16,10 +17,6 @@ const actionButtonsSource = readFileSync(
     import.meta.dir,
     "../src/components/shared/link-preview/components/LinkPreviewActionButtons.tsx"
   ),
-  "utf8"
-);
-const themesCss = readFileSync(
-  join(import.meta.dir, "../src/styles/themes.css"),
   "utf8"
 );
 
@@ -76,28 +73,28 @@ describe("link preview dark mode styling", () => {
   });
 
   test("macOS loading hides bubble gloss pseudo-elements so skeleton shimmer shows", () => {
-    expect(themesCss).toContain(
+    expect(aquaThemeCss).toContain(
       ".link-preview-loading.macosx-link-preview.chat-bubble:before"
     );
-    expect(themesCss).toContain("display: none");
-    expect(themesCss).toContain(".link-preview-loading.macosx-link-preview.chat-bubble");
-    expect(themesCss).toContain("padding: 0 !important");
+    expect(aquaThemeCss).toContain("display: none");
+    expect(aquaThemeCss).toContain(".link-preview-loading.macosx-link-preview.chat-bubble");
+    expect(aquaThemeCss).toContain("padding: 0 !important");
   });
 
   test("macOS themes enforce 16px radius on link preview cards and loading shells", () => {
-    expect(themesCss).toContain(
+    expect(aquaThemeCss).toContain(
       ".macosx-link-preview.chat-bubble.link-preview-container"
     );
-    expect(themesCss).toContain(
+    expect(aquaThemeCss).toContain(
       ".macosx-link-preview.chat-bubble.link-preview-loading"
     );
-    expect(themesCss).toContain("border-radius: 16px !important");
+    expect(aquaThemeCss).toContain("border-radius: 16px !important");
   });
 
   test("action row divider uses OS separator tokens on macOS", () => {
     expect(actionButtonsSource).toContain("link-preview-actions-divider");
     expect(actionButtonsSource).toContain("var(--os-color-separator)");
-    expect(actionButtonsSource).toContain("useThemeFlags");
-    expect(themesCss).toContain(".macosx-link-preview .link-preview-actions-divider");
+    expect(actionButtonsSource).toContain("isMacOSTheme");
+    expect(aquaThemeCss).toContain(".macosx-link-preview .link-preview-actions-divider");
   });
 });
