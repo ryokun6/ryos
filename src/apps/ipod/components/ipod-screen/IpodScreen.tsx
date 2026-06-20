@@ -43,6 +43,7 @@ import {
   menuScrollReducer,
 } from "./menuScrollReducer";
 import { IpodScreenMenuChrome } from "./IpodScreenMenuChrome";
+import { aquaNowPlayingColorsForBg } from "./aquaNowPlayingColors";
 import { IpodScreenMediaOverlay } from "./IpodScreenMediaOverlay";
 import { IpodScreenSplitArtPanel } from "./IpodScreenSplitArtPanel";
 
@@ -258,6 +259,16 @@ export function IpodScreen({
     enabled: isAquaUi,
   });
   const aquaAccent = isAquaUi ? aquaAccentColor : null;
+
+  // Aqua Glass now-playing screen: paint the whole LCD with the computed
+  // cover accent and flip the screen + titlebar text/icons between dark and
+  // light depending on that background's luminance. Only while the
+  // now-playing view is showing (not in menus / inline Cover Flow), where
+  // the frosted-glass menu chrome stays.
+  const aquaNowPlaying = isAquaUi && !menuMode && !showInlineCoverFlow;
+  const aquaNowPlayingColors = aquaNowPlaying
+    ? aquaNowPlayingColorsForBg(aquaAccentColor)
+    : null;
 
   // Current menu items (the deepest menu in the history stack).
   const currentMenuItems = useMemo(
@@ -523,6 +534,8 @@ export function IpodScreen({
       isPlaying={isPlaying}
       backlightOn={backlightOn}
       uiVariant={uiVariant}
+      aquaNowPlaying={aquaNowPlaying}
+      aquaNowPlayingColors={aquaNowPlayingColors}
       menuMode={menuMode}
       appleMusicMenuTitlebarLoading={appleMusicMenuTitlebarLoading}
       showVideo={showVideo}
@@ -573,6 +586,7 @@ export function IpodScreen({
           ? cn(
               "ipod-modern-screen",
               isAquaUi ? "ipod-aqua-screen" : "bg-white",
+              aquaNowPlaying && "ipod-aqua-now-playing",
               !backlightOn && "ipod-modern-backlight-off"
             )
           : backlightOn
@@ -596,6 +610,12 @@ export function IpodScreen({
         ...(aquaAccent
           ? ({
               "--ipod-aqua-accent": aquaAccent,
+            } as CSSProperties)
+          : null),
+        ...(aquaNowPlayingColors
+          ? ({
+              "--ipod-aqua-bg": aquaNowPlayingColors.background,
+              "--ipod-aqua-fg": aquaNowPlayingColors.primary,
             } as CSSProperties)
           : null),
       }}

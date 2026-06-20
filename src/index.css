@@ -1928,6 +1928,77 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     inset 0 1px 2px rgba(0, 0, 0, 0.14);
 }
 
+/* =========================================================================
+ * Aqua Glass — Now Playing screen
+ *
+ * While the now-playing view is showing (not menus / Cover Flow), the whole
+ * LCD is painted with the cover-art accent color (`--ipod-aqua-bg`) instead
+ * of the frosted glass surface, and the chrome flips to a single adaptive
+ * foreground tone (`--ipod-aqua-fg`, dark or light depending on the bg
+ * luminance — computed in `aquaNowPlayingColors.ts`).
+ * The titlebar drops its silver gradient so the accent reads edge-to-edge.
+ * (Text + icon colors are applied inline in `IpodScreenMenuChrome.tsx`.)
+ * ========================================================================= */
+.ipod-aqua-screen.ipod-aqua-now-playing {
+  background-color: var(--ipod-aqua-bg);
+  /* Slight top→bottom gradient, brighter toward the bottom. Top is nudged
+   * a touch darker so the gradient stays visible even though the bg is
+   * already a softened (near-white) tint of the cover color. */
+  background-image: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ipod-aqua-bg) 92%, black) 0%,
+    color-mix(in srgb, var(--ipod-aqua-bg) 55%, white) 100%
+  );
+}
+
+/* No solid fill — the accent shows straight through — but keep a faint
+ * translucent white→black gloss gradient and a bottom hairline stroke so
+ * the titlebar still reads as glass chrome over the cover color. */
+.ipod-aqua-now-playing .ipod-modern-titlebar {
+  background-color: transparent;
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.22) 0%,
+    rgba(255, 255, 255, 0.05) 45%,
+    rgba(0, 0, 0, 0.08) 100%
+  );
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* Monochrome battery matching the adaptive foreground tone (replaces the
+ * green glossy fill so the status icons read as "dark or light" too). */
+.ipod-aqua-now-playing .ipod-modern-battery-container {
+  border-color: var(--ipod-aqua-fg);
+  background-color: transparent;
+  background-image: none;
+}
+
+.ipod-aqua-now-playing .ipod-modern-battery-fill,
+.ipod-aqua-now-playing .ipod-modern-battery-fill--low {
+  background-color: var(--ipod-aqua-fg);
+  background-image: none;
+}
+
+.ipod-aqua-now-playing .ipod-modern-battery-cap {
+  background-color: var(--ipod-aqua-fg);
+  border-color: var(--ipod-aqua-fg);
+}
+
+/* Progress bar keeps the shared aqua cover-accent gel for the FILL
+ * (`.ipod-modern-screen.ipod-aqua-screen .aqua-progress-fill`), but the
+ * empty TRACK + its border are re-derived from the cover bg so they read
+ * as a subtle recessed channel that blends into the now-playing
+ * background instead of the bright near-white track. Chained class
+ * selector (0,4,0) outranks the base aqua-track rule (0,3,0). */
+.ipod-modern-screen.ipod-aqua-screen.ipod-aqua-now-playing .aqua-progress {
+  background: rgba(0, 0, 0, 0.05);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08),
+    inset 0 1px 1px rgba(0, 0, 0, 0.06);
+}
+
 /* When the LCD backlight times out the shared `.ipod-modern-backlight-off`
  * dimming filter already applies (the aqua screen keeps that class). */
 
