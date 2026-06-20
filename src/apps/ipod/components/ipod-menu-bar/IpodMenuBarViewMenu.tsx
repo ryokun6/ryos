@@ -92,7 +92,7 @@ export function IpodMenuBarViewMenu({ vm }: { vm: IpodMenuBarViewModel }) {
               <MenubarRadioGroup
                 value={vm.uiVariant}
                 onValueChange={(value) =>
-                  vm.setUiVariant(value as "classic" | "modern")
+                  vm.setUiVariant(value as "classic" | "modern" | "aqua")
                 }
               >
                 <MenubarRadioItem value="classic" className="text-md h-6 pr-3">
@@ -100,6 +100,9 @@ export function IpodMenuBarViewMenu({ vm }: { vm: IpodMenuBarViewModel }) {
                 </MenubarRadioItem>
                 <MenubarRadioItem value="modern" className="text-md h-6 pr-3">
                   {vm.t("apps.ipod.menu.screenModern")}
+                </MenubarRadioItem>
+                <MenubarRadioItem value="aqua" className="text-md h-6 pr-3">
+                  {vm.t("apps.ipod.menu.screenAqua", "Aqua Glass")}
                 </MenubarRadioItem>
               </MenubarRadioGroup>
             </MenubarSubContent>

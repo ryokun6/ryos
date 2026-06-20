@@ -11,6 +11,7 @@ import type { Track } from "@/stores/useIpodStore";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useEventListener } from "@/hooks/useEventListener";
+import { isModernIpodUiVariant } from "../../constants";
 import { LONG_PRESS_DELAY } from "./constants";
 import { coverFlowUiReducer } from "./coverFlowUiReducer";
 import type { CoverFlowComponentProps } from "./types";
@@ -79,7 +80,7 @@ export function useCoverFlowController({
   const containerRef = useRef<HTMLDivElement>(null);
   const { isMacOSTheme: isMacTheme } = useThemeFlags();
   const uiVariant = useIpodStore((s) => s.uiVariant);
-  const isModernIpodCoverFlow = ipodMode && uiVariant === "modern";
+  const isModernIpodCoverFlow = ipodMode && isModernIpodUiVariant(uiVariant);
 
   const swipeStartX = useRef<number | null>(null);
   const lastMoveX = useRef<number | null>(null);

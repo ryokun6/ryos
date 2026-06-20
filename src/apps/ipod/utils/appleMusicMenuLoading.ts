@@ -3,7 +3,7 @@ import type { MenuItem } from "../types";
 export function shouldUseModernAppleMusicTitlebarLoading(
   uiVariant: string | undefined
 ): boolean {
-  return (uiVariant ?? "modern") === "modern";
+  return (uiVariant ?? "modern") !== "classic";
 }
 
 export function resolveAppleMusicMenuTitlebarLoading(options: {

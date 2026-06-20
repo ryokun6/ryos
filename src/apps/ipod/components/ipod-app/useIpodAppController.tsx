@@ -12,6 +12,7 @@ import {
 } from "@/hooks/useDisplayModeMenu";
 import { IpodMenuBar } from "../ipod-menu-bar/IpodMenuBar";
 import { useIpodLogic } from "../../hooks/useIpodLogic";
+import { isModernIpodUiVariant } from "../../constants";
 
 export type UseIpodAppControllerArgs = Pick<
   AppProps<IpodInitialData>,
@@ -58,7 +59,7 @@ export function useIpodAppController({
     (s) => s.setAppleMusicKitNowPlaying
   );
   const uiVariant = useIpodStore((s) => s.uiVariant);
-  const isModernIpodUi = uiVariant === "modern";
+  const isModernIpodUi = isModernIpodUiVariant(uiVariant);
   const finalIpodVolume = useAudioSettingsStore(selectEffectiveIpodVolume);
 
   const handleClose = useCallback(() => {

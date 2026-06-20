@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState, useImperativeHandle, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useIpodStore } from "@/stores/useIpodStore";
-import { IPOD_MODERN_TITLEBAR_HEIGHT_PX } from "../../constants";
+import {
+  IPOD_MODERN_TITLEBAR_HEIGHT_PX,
+  isModernIpodUiVariant,
+} from "../../constants";
 import {
   BALL_RADIUS,
   GAME_HEIGHT,
@@ -28,7 +31,7 @@ export function useBrickGame({
 }: BrickGameProps & { ref?: React.Ref<BrickGameRef> }) {
   const { t } = useTranslation();
   const uiVariant = useIpodStore((s) => s.uiVariant ?? "modern");
-  const isModernUi = uiVariant === "modern";
+  const isModernUi = isModernIpodUiVariant(uiVariant);
   const bodyTopOffsetPx = isModernUi ? IPOD_MODERN_TITLEBAR_HEIGHT_PX : 26;
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const stateRef = useRef<GameState>(initialState());
