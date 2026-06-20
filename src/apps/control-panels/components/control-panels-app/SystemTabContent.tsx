@@ -90,7 +90,6 @@ export function SystemTabContent({
   username,
   myContact,
   accountAvatarLabel,
-  accountAvatarInitials,
   realtimeStatus,
   debugMode,
   isAdmin,

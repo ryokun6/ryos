@@ -48,7 +48,6 @@ export function AppearancePaneContent({
   accentChrome,
   setAccent,
   wallpaperAccentColor,
-  tabStyles,
 }: AppearancePaneContentProps) {
   const themeOptions = useMemo(() => buildThemeSelectOptions(t), [t]);
   const selectedThemeValue = getSelectedThemeSelectValue(currentTheme, aquaMaterial);

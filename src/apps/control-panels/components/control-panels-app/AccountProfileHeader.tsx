@@ -27,7 +27,6 @@ export function AccountProfileHeader({
   username,
   myContact,
   accountAvatarLabel,
-  accountAvatarInitials,
   realtimeStatus,
   accountJoinedAt,
   locale,
