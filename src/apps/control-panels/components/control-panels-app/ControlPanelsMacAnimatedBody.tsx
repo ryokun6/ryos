@@ -211,6 +211,12 @@ export function ControlPanelsMacAnimatedBody({
         ? bodyEl.getBoundingClientRect().bottom
         : null;
       const innerBottom = inner ? inner.getBoundingClientRect().bottom : null;
+      // Visible gap between the card (well) and the body bottom — this is the
+      // rendered bottom padding the user sees. Should be ~18 when correct.
+      const card = root?.querySelector<HTMLElement>(
+        ".control-panels-pref-tabbed > .control-panels-pref-well, .control-panels-pref-well, .control-panels-pref-form"
+      );
+      const cardBottom = card ? card.getBoundingClientRect().bottom : null;
       setLive({
         bodyRectH: bodyEl
           ? Math.round(bodyEl.getBoundingClientRect().height)
@@ -218,6 +224,10 @@ export function ControlPanelsMacAnimatedBody({
         clippedPad:
           innerBottom != null && bodyBottom != null
             ? Math.max(0, Math.round(innerBottom - bodyBottom))
+            : null,
+        wellGap:
+          cardBottom != null && bodyBottom != null
+            ? Math.round(bodyBottom - cardBottom)
             : null,
         winH: winSize?.height ?? null,
         naturalH: naturalHeightRef.current,
@@ -274,7 +284,8 @@ export function ControlPanelsMacAnimatedBody({
 }
 
 // TEMP DEBUG: portal overlay rendered to <body> so overflow:hidden ancestors
-// cannot clip it. Shows the raw measurement signals + the post-layout state.
+// cannot clip it. Tap it to copy the full signal set to the clipboard (low-res
+// screenshots are unreadable, so copy + paste the numbers instead).
 function CpAutoHeightDebugOverlay({
   diag,
   live,
@@ -282,32 +293,74 @@ function CpAutoHeightDebugOverlay({
   diag: CpAutoHeightDiag | null;
   live: CpAutoHeightDiag | null;
 }) {
+  const [copied, setCopied] = useState(false);
   if (typeof document === "undefined") return null;
   const rows: Array<[string, CpAutoHeightDiag | null]> = [
     ["measure", diag],
     ["live", live],
   ];
+  const asText = rows
+    .map(
+      ([label, data]) =>
+        `${label}: ${
+          data
+            ? Object.entries(data)
+                .map(([k, v]) => `${k}=${v}`)
+                .join(" ")
+            : "—"
+        }`
+    )
+    .join("\n");
+  const copy = () => {
+    const done = () => {
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    };
+    try {
+      if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(asText).then(done, done);
+        return;
+      }
+    } catch {
+      /* fall through to textarea */
+    }
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = asText;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+    } catch {
+      /* ignore */
+    }
+    done();
+  };
   return createPortal(
     <div
+      onClick={copy}
+      role="button"
       style={{
         position: "fixed",
         left: 6,
         bottom: 6,
         zIndex: 2147483647,
-        maxWidth: "min(92vw, 360px)",
-        padding: "6px 8px",
-        background: "rgba(0,0,0,0.82)",
+        maxWidth: "min(94vw, 420px)",
+        padding: "8px 10px",
+        background: "rgba(0,0,0,0.88)",
         color: "#0f0",
-        font: "10px/1.35 ui-monospace, Menlo, monospace",
-        borderRadius: 6,
-        pointerEvents: "none",
+        font: "12px/1.4 ui-monospace, Menlo, monospace",
+        borderRadius: 8,
+        pointerEvents: "auto",
         whiteSpace: "pre-wrap",
         wordBreak: "break-all",
       }}
     >
-      <div style={{ color: "#ff0", fontWeight: 700 }}>CP auto-height debug</div>
+      <div style={{ color: "#ff0", fontWeight: 700 }}>
+        CP auto-height debug — {copied ? "COPIED ✓" : "tap to copy"}
+      </div>
       {rows.map(([label, data]) => (
-        <div key={label} style={{ marginTop: 3 }}>
+        <div key={label} style={{ marginTop: 4 }}>
           <span style={{ color: "#0ff" }}>{label}:</span>{" "}
           {data
             ? Object.entries(data)
