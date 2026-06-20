@@ -55,15 +55,40 @@ export function ControlPanelsMacAnimatedBody({
     // collapse scrollHeight and toggle data-scrollable (height flicker).
     const content =
       root.querySelector<HTMLElement>(CONTENT_MEASURE_SELECTOR) ?? root;
-    // WebKit/Safari underreports scrollHeight for flex content by the bottom
-    // padding amount; the height-capped body then clips that padding so it looks
-    // missing. getBoundingClientRect reflects the true rendered box for the
-    // unconstrained auto-height panes, while scrollHeight still wins for the
-    // height-capped scrollable panes (where the box is flex-constrained). Take
-    // whichever is larger so both browsers keep the bottom padding.
-    const next = Math.ceil(
-      Math.max(content.scrollHeight, content.getBoundingClientRect().height)
+    // WebKit/Safari underreports the natural height of flex content in two ways
+    // that the height-capped body then clips (so padding/rows look missing on
+    // Safari but fine on Chrome):
+    //  1. scrollHeight omits the flex pane's bottom padding — getBoundingClientRect
+    //     reflects the true rendered box for the unconstrained auto-height panes.
+    //  2. flex-constrained inner scrollers (tabbed pref panels with overflow-y:auto)
+    //     collapse below their content in auto-height mode, hiding overflow that
+    //     Chrome would expand to fit.
+    // Recover both so the window grows tall enough on Safari. On Chrome these are
+    // no-ops: boundingRect === scrollHeight and the inner panels never overflow here.
+    let measured = Math.max(
+      content.scrollHeight,
+      content.getBoundingClientRect().height
     );
+
+    // Only in auto-height mode (below the cap): add back any content a collapsed
+    // inner scroller is hiding. In the capped/scrollable state scrollHeight already
+    // reports the full natural height, so skipping avoids double-counting.
+    if (measured < maxBodyHeight) {
+      let collapsedOverflow = 0;
+      content
+        .querySelectorAll<HTMLElement>(
+          ".control-panels-pref-tab-panel:not([hidden])"
+        )
+        .forEach((panel) => {
+          collapsedOverflow = Math.max(
+            collapsedOverflow,
+            panel.scrollHeight - panel.clientHeight
+          );
+        });
+      measured += collapsedOverflow;
+    }
+
+    const next = Math.ceil(measured);
     if (next <= 0) return;
 
     const prev = naturalHeightRef.current;
