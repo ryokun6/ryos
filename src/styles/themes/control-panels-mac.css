@@ -1038,35 +1038,26 @@
   pointer-events: none;
 }
 
-/* Tabbed preference pane (Desktop | Screen Saver) — tabs on pinstripe, well below */
+/* Tabbed preference pane (Desktop | Screen Saver) — tabs on pinstripe, well below.
+   Structure (display/stacking) applies in both modes; the flex-fill + overflow
+   caps that make the tab panel scroll are gated to [data-scrollable] (see below).
+   In auto-height mode the chain flows naturally so the pane-inner's bottom padding
+   renders instead of being overlaid by an over-tall flex child (Safari clip). */
 :root[data-os-theme="macosx"] .control-panels-mac-pane-scroll:has(.control-panels-pref-form-tabbed) {
   display: flex;
   flex-direction: column;
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
 }
 
 :root[data-os-theme="macosx"] .control-panels-mac-pane-inner:has(.control-panels-pref-form-tabbed) {
   display: flex;
   flex-direction: column;
-  flex: 1;
-  min-height: 0;
   /* Tabbed panes: tabs sit on pinstripe — less air above tab bar than simple wells. */
   padding-top: 4px;
-}
-
-:root[data-os-theme="macosx"] .control-panels-pref-form-tabbed {
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
 }
 
 :root[data-os-theme="macosx"] .control-panels-pref-tabbed {
   display: flex;
   flex-direction: column;
-  flex: 1;
-  min-height: 0;
   gap: 0;
 }
 
@@ -1113,12 +1104,11 @@
 }
 
 :root[data-os-theme="macosx"] .control-panels-pref-tabbed > .control-panels-pref-well {
+  /* Single-cell grid stacks both tab panels (one hidden) so the well sizes to the
+     tallest and tab swaps don't shift layout. Auto rows in auto-height mode. */
   display: grid;
-  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
-  flex: 1;
-  min-height: 0;
+  grid-template-columns: minmax(0, 1fr);
   padding: 0;
-  overflow: hidden;
 }
 
 :root[data-os-theme="macosx"] .control-panels-pref-tab-panel {
@@ -1127,6 +1117,50 @@
 
 :root[data-os-theme="macosx"] .control-panels-pref-form-tabbed .control-panels-pref-tab-panel {
   grid-area: 1 / 1;
+}
+
+/* Scrollable (height-capped) tabbed panes only: fill the capped body and scroll
+   inside the tab panel. In auto-height mode these are off, so the content flows
+   naturally and the pane-inner bottom padding is preserved (Safari fix). */
+:root[data-os-theme="macosx"]
+  .control-panels-mac-body[data-scrollable]
+  .control-panels-mac-pane-scroll:has(.control-panels-pref-form-tabbed),
+:root[data-os-theme="macosx"]
+  .control-panels-mac-body[data-scrollable]
+  .control-panels-mac-pane-inner:has(.control-panels-pref-form-tabbed),
+:root[data-os-theme="macosx"]
+  .control-panels-mac-body[data-scrollable]
+  .control-panels-pref-form-tabbed,
+:root[data-os-theme="macosx"]
+  .control-panels-mac-body[data-scrollable]
+  .control-panels-pref-tabbed {
+  flex: 1;
+  min-height: 0;
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-mac-body[data-scrollable]
+  .control-panels-mac-pane-scroll:has(.control-panels-pref-form-tabbed),
+:root[data-os-theme="macosx"]
+  .control-panels-mac-body[data-scrollable]
+  .control-panels-pref-form-tabbed {
+  overflow: hidden;
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-mac-body[data-scrollable]
+  .control-panels-pref-tabbed
+  > .control-panels-pref-well {
+  grid-template-rows: minmax(0, 1fr);
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-mac-body[data-scrollable]
+  .control-panels-pref-form-tabbed
+  .control-panels-pref-tab-panel {
   min-height: 0;
   overflow-y: auto;
 }
