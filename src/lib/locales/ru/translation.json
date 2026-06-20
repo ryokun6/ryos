@@ -1602,7 +1602,7 @@
       "ui": "Интерфейс",
       "uiSounds": "Звуки интерфейса",
       "uiVolume": "Громкость интерфейса",
-      "viewChangelog": "Просмотреть журнал изменений",
+      "viewChangelog": "Журнал изменений",
       "wallpaperCategories": {
         "aqua": "Аква",
         "black_and_white": "Чёрно-белое",
@@ -3899,7 +3899,7 @@
       "system": "Система",
       "termsOfService": "Условия использования",
       "title": "Об этом компьютере",
-      "viewChangelog": "Просмотреть журнал изменений",
+      "viewChangelog": "Журнал изменений",
       "virtualMemory": "Виртуальная память",
       "virtualMemoryOff": "Выкл."
     },
@@ -4060,7 +4060,7 @@
         "shareLinkOrScanToOpen": "Поделитесь ссылкой или отсканируйте, чтобы открыть этот {{itemType}}"
       },
       "version": "Версия",
-      "viewChangelog": "Просмотр журнала изменений",
+      "viewChangelog": "Журнал изменений",
       "viewDocs": "Смотреть документацию",
       "welcomeTo": "Добро пожаловать в {{appName}}"
     },

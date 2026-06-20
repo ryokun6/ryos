@@ -1602,7 +1602,7 @@
       "ui": "UI",
       "uiSounds": "UI Töne",
       "uiVolume": "UI-Lautstärke",
-      "viewChangelog": "Änderungsprotokoll anzeigen",
+      "viewChangelog": "Änderungsprotokoll",
       "wallpaperCategories": {
         "aqua": "Aqua",
         "black_and_white": "Schwarzweiß",
@@ -3899,7 +3899,7 @@
       "system": "System",
       "termsOfService": "Nutzungsbedingungen",
       "title": "Über diesen Computer",
-      "viewChangelog": "Änderungsprotokoll anzeigen",
+      "viewChangelog": "Änderungsprotokoll",
       "virtualMemory": "Virtueller Speicher",
       "virtualMemoryOff": "Aus"
     },
@@ -4060,7 +4060,7 @@
         "shareLinkOrScanToOpen": "Link teilen oder scannen, um diesen {{itemType}} zu öffnen"
       },
       "version": "Version",
-      "viewChangelog": "Änderungsprotokoll anzeigen",
+      "viewChangelog": "Änderungsprotokoll",
       "viewDocs": "Dokumentation anzeigen",
       "welcomeTo": "Willkommen bei {{appName}}"
     },
