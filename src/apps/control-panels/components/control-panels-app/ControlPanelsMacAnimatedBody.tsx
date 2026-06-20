@@ -55,19 +55,24 @@ export function ControlPanelsMacAnimatedBody({
     // collapse scrollHeight and toggle data-scrollable (height flicker).
     const content =
       root.querySelector<HTMLElement>(CONTENT_MEASURE_SELECTOR) ?? root;
-    // WebKit/Safari underreports the natural height of flex content in two ways
-    // that the height-capped body then clips (so padding/rows look missing on
-    // Safari but fine on Chrome):
-    //  1. scrollHeight omits the flex pane's bottom padding — getBoundingClientRect
-    //     reflects the true rendered box for the unconstrained auto-height panes.
+    // WebKit/Safari underreports the natural height of flex content in ways the
+    // height-capped body then clips (so padding/rows look missing on Safari but
+    // fine on Chrome):
+    //  1. scrollHeight omits the flex pane's bottom padding.
     //  2. flex-constrained inner scrollers (tabbed pref panels with overflow-y:auto)
     //     collapse below their content in auto-height mode, hiding overflow that
     //     Chrome would expand to fit.
-    // Recover both so the window grows tall enough on Safari. On Chrome these are
-    // no-ops: boundingRect === scrollHeight and the inner panels never overflow here.
+    // Defenses: take the largest of several height signals. getBoundingClientRect
+    // reflects the true rendered box, and `root` (the measure wrapper) is a plain
+    // block in auto-height mode whose scrollHeight reliably includes descendant
+    // padding on every engine; scrollHeight of the flex pane still wins in the
+    // height-capped/scrollable state where `root` is itself flex-constrained. On
+    // Chrome these are all equal, so this is a no-op there.
     let measured = Math.max(
       content.scrollHeight,
-      content.getBoundingClientRect().height
+      content.getBoundingClientRect().height,
+      root.scrollHeight,
+      root.getBoundingClientRect().height
     );
 
     // Only in auto-height mode (below the cap): add back any content a collapsed
