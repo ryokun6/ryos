@@ -22,14 +22,22 @@ import { useMemo } from "react";
 export function IpodModernPlayPauseIcon({
   playing,
   size = 10,
+  color,
 }: {
   playing: boolean;
   size?: number;
+  /**
+   * When set, paints the glyph as a flat solid color instead of the glossy
+   * blue gradient. Used by the Aqua Glass now-playing titlebar, where the
+   * icon flips to dark or light to stay legible on the cover-accent bg.
+   */
+  color?: string;
 }) {
   const gradientId = useMemo(
     () => `ipod-modern-titlebar-grad-${Math.random().toString(36).slice(2)}`,
     []
   );
+  const fill = color ?? `url(#${gradientId})`;
   return (
     <svg
       width={size}
@@ -38,24 +46,26 @@ export function IpodModernPlayPauseIcon({
       aria-label={playing ? "playing" : "paused"}
       role="img"
     >
-      <defs>
-        <radialGradient
-          id={gradientId}
-          cx="35%"
-          cy="25%"
-          r="85%"
-          fx="35%"
-          fy="20%"
-        >
-          <stop offset="0%" stopColor="rgb(170, 224, 255)" />
-          <stop offset="45%" stopColor="rgb(60, 162, 230)" />
-          <stop offset="100%" stopColor="rgb(36, 92, 148)" />
-        </radialGradient>
-      </defs>
+      {!color && (
+        <defs>
+          <radialGradient
+            id={gradientId}
+            cx="35%"
+            cy="25%"
+            r="85%"
+            fx="35%"
+            fy="20%"
+          >
+            <stop offset="0%" stopColor="rgb(170, 224, 255)" />
+            <stop offset="45%" stopColor="rgb(60, 162, 230)" />
+            <stop offset="100%" stopColor="rgb(36, 92, 148)" />
+          </radialGradient>
+        </defs>
+      )}
       {playing ? (
-        <path d="M8 5v14l11-7z" fill={`url(#${gradientId})`} />
+        <path d="M8 5v14l11-7z" fill={fill} />
       ) : (
-        <g fill={`url(#${gradientId})`}>
+        <g fill={fill}>
           <rect x="6" y="5" width="4" height="14" rx="0.5" />
           <rect x="14" y="5" width="4" height="14" rx="0.5" />
         </g>

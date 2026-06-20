@@ -22,6 +22,7 @@ import {
 } from "./constants";
 import { formatPlaybackTime } from "./formatPlaybackTime";
 import { ModernNowPlayingArtwork } from "./ModernNowPlayingArtwork";
+import type { AquaNowPlayingColors } from "./aquaNowPlayingColors";
 
 export interface IpodScreenMenuChromeProps {
   isModernUi: boolean;
@@ -31,6 +32,10 @@ export interface IpodScreenMenuChromeProps {
   isPlaying: boolean;
   backlightOn: boolean;
   uiVariant: "classic" | "modern" | "aqua";
+  /** Aqua Glass now-playing screen active (cover-accent bg + adaptive text). */
+  aquaNowPlaying: boolean;
+  /** Dark/light foreground colors for the aqua now-playing screen. */
+  aquaNowPlayingColors: AquaNowPlayingColors | null;
   menuMode: boolean;
   appleMusicMenuTitlebarLoading: boolean;
   showVideo: boolean;
@@ -78,6 +83,8 @@ export function IpodScreenMenuChrome({
   isPlaying,
   backlightOn,
   uiVariant,
+  aquaNowPlaying,
+  aquaNowPlayingColors,
   menuMode,
   appleMusicMenuTitlebarLoading,
   showVideo,
@@ -116,6 +123,10 @@ export function IpodScreenMenuChrome({
   onToggleVideo,
   t,
 }: IpodScreenMenuChromeProps) {
+  const aquaPrimary = aquaNowPlaying ? aquaNowPlayingColors?.primary : undefined;
+  const aquaSecondary = aquaNowPlaying
+    ? aquaNowPlayingColors?.secondary
+    : undefined;
   return (
     <>
       {/* Title bar
@@ -185,10 +196,14 @@ export function IpodScreenMenuChrome({
                   // still well under the 15px MyriadPro list rows so the
                   // header reads as secondary chrome.
                   "text-[12px] font-semibold",
-                  "[text-shadow:0_1px_0_rgba(255,255,255,0.9)]"
+                  // The white top-gloss shadow only reads on the silver
+                  // titlebar; on the aqua cover-accent bg it muddies the
+                  // adaptive dark/light text, so drop it there.
+                  !aquaNowPlaying && "[text-shadow:0_1px_0_rgba(255,255,255,0.9)]"
                 )
               : "px-1"
           )}
+          style={aquaPrimary ? { color: aquaPrimary } : undefined}
         />
         {isModernUi && menuMode && appleMusicMenuTitlebarLoading ? (
           <ActivityIndicator
@@ -224,11 +239,17 @@ export function IpodScreenMenuChrome({
                 // Same light top highlight as the title line — title uses
                 // [text-shadow:0_1px_0_rgba(255,255,255,0.9)]; SVG paths
                 // use filter drop-shadow so the blue gradient reads with
-                // identical gloss on the status bar chrome.
-                "[filter:drop-shadow(0_1px_0_rgba(255,255,255,0.9))]"
+                // identical gloss on the status bar chrome. Dropped on the
+                // aqua now-playing bg where the glyph goes flat dark/light.
+                !aquaNowPlaying &&
+                  "[filter:drop-shadow(0_1px_0_rgba(255,255,255,0.9))]"
               )}
             >
-              <IpodModernPlayPauseIcon playing={isPlaying} size={14} />
+              <IpodModernPlayPauseIcon
+                playing={isPlaying}
+                size={14}
+                color={aquaPrimary}
+              />
             </div>
           )}
           <BatteryIndicator backlightOn={backlightOn} variant={uiVariant} />
@@ -410,6 +431,7 @@ export function IpodScreenMenuChrome({
                           : "font-chicago text-[12px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]",
                         nowPlayingDisplayTrack.album ? "mb-1" : "mb-1.5"
                       )}
+                      style={aquaSecondary ? { color: aquaSecondary } : undefined}
                     >
                       <span>
                         {currentTrack?.appleMusicPlayParams?.stationId
@@ -469,6 +491,7 @@ export function IpodScreenMenuChrome({
                             fadeEdges
                             allowMarquee={modernScrollingMarqueeAllowed}
                             className="leading-[1.06] text-[15px] font-semibold text-black"
+                            style={aquaPrimary ? { color: aquaPrimary } : undefined}
                           />
                           <ScrollingText
                             text={nowPlayingDisplayTrack.artist || ""}
@@ -478,6 +501,9 @@ export function IpodScreenMenuChrome({
                             fadeEdges
                             allowMarquee={modernScrollingMarqueeAllowed}
                             className="leading-[1.06] text-[12px] font-normal text-[rgb(99,101,103)]"
+                            style={
+                              aquaSecondary ? { color: aquaSecondary } : undefined
+                            }
                           />
                           {nowPlayingDisplayTrack.album && (
                             <ScrollingText
@@ -488,6 +514,11 @@ export function IpodScreenMenuChrome({
                               fadeEdges
                               allowMarquee={modernScrollingMarqueeAllowed}
                               className="leading-[1.06] text-[12px] font-normal text-[rgb(99,101,103)]"
+                              style={
+                                aquaSecondary
+                                  ? { color: aquaSecondary }
+                                  : undefined
+                              }
                             />
                           )}
                         </div>
@@ -562,6 +593,7 @@ export function IpodScreenMenuChrome({
                             ? "font-ipod-modern-ui text-[12px] min-h-[14px] leading-[1.06] mt-1 text-[rgb(99,101,103)] font-normal tabular-nums"
                             : "font-chicago text-[16px] h-[22px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
                         )}
+                        style={aquaSecondary ? { color: aquaSecondary } : undefined}
                       >
                         <span>
                           {formatPlaybackTime(displayElapsedSeconds)}
@@ -578,6 +610,7 @@ export function IpodScreenMenuChrome({
                         ? "font-ipod-modern-ui text-[15px] text-[rgb(99,101,103)]"
                         : "font-geneva-12 text-[12px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
                     )}
+                    style={aquaSecondary ? { color: aquaSecondary } : undefined}
                   >
                     <p>Don&apos;t steal music</p>
                     <p>Ne volez pas la musique</p>
