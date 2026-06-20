@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
+import { cn } from "@/lib/utils";
 import {
   CONTROL_PANEL_CATEGORIES,
   CONTROL_PANEL_SECTIONS,
@@ -9,11 +10,20 @@ import {
 export type ControlPanelsCategoryGridProps = {
   t: (key: string) => string;
   onSelect: (paneId: ControlPanelPaneId) => void;
+  /** When true, the grid is in spotlight (search) mode: non-matches dim. */
+  spotlightActive?: boolean;
+  /** Pane IDs that match the active search query. */
+  spotlightPaneIds?: Set<ControlPanelPaneId>;
+  /** The currently highlighted result's pane (hover/keyboard) for extra glow. */
+  focusedPaneId?: ControlPanelPaneId | null;
 };
 
 export function ControlPanelsCategoryGrid({
   t,
   onSelect,
+  spotlightActive = false,
+  spotlightPaneIds,
+  focusedPaneId = null,
 }: ControlPanelsCategoryGridProps) {
   const visibleSections = CONTROL_PANEL_SECTIONS.map((section) => {
     const categories = section.paneIds
@@ -26,7 +36,13 @@ export function ControlPanelsCategoryGrid({
   }).filter(({ categories }) => categories.length > 0);
 
   return (
-    <div className="control-panels-category-grid" role="list">
+    <div
+      className={cn(
+        "control-panels-category-grid",
+        spotlightActive && "control-panels-category-grid--searching"
+      )}
+      role="list"
+    >
       {visibleSections.map(({ section, categories }) => (
         <section
           key={section.id}
@@ -42,12 +58,20 @@ export function ControlPanelsCategoryGrid({
               } as CSSProperties
             }
           >
-            {categories.map((category) => (
+            {categories.map((category) => {
+              const isMatch =
+                spotlightActive && !!spotlightPaneIds?.has(category.id);
+              const isFocused = spotlightActive && focusedPaneId === category.id;
+              return (
               <button
                 key={category.id}
                 type="button"
                 role="listitem"
-                className="control-panels-category-item p-0"
+                className={cn(
+                  "control-panels-category-item p-0",
+                  isMatch && "is-spotlight-match",
+                  isFocused && "is-spotlight-focused"
+                )}
                 onClick={() => onSelect(category.id)}
               >
                 <span className="control-panels-category-icon-shell">
@@ -62,7 +86,8 @@ export function ControlPanelsCategoryGrid({
                   {t(category.labelKey)}
                 </span>
               </button>
-            ))}
+              );
+            })}
           </div>
         </section>
       ))}

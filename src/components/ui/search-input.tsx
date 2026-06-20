@@ -43,6 +43,8 @@ interface SearchInputProps {
   /** Accessible label (and tooltip) for the clear button. */
   clearAriaLabel?: string;
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  onFocus?: (e: React.FocusEvent<HTMLInputElement>) => void;
+  onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
   disabled?: boolean;
   /** Show the magnifying glass on the left (default true). */
   showSearchIcon?: boolean;
@@ -64,6 +66,8 @@ export function SearchInput({
   title,
   clearAriaLabel,
   onKeyDown,
+  onFocus,
+  onBlur,
   disabled,
   showSearchIcon = true,
   showClear = true,
@@ -93,6 +97,8 @@ export function SearchInput({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={onKeyDown}
+        onFocus={onFocus}
+        onBlur={onBlur}
         aria-label={ariaLabel}
         aria-busy={ariaBusy || undefined}
         title={title}

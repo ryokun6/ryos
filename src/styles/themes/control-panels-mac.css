@@ -39,6 +39,8 @@
 
 :root[data-os-theme="macosx"] .control-panels-mac-toolbar {
   background: transparent;
+  padding-top: 8px;
+  padding-bottom: 8px;
 }
 
 :root[data-os-theme="macosx"] .control-panels-mac-toolbar.border-b {
@@ -239,12 +241,15 @@
   width: 32px;
   height: 32px;
   flex-shrink: 0;
+  position: relative;
 }
 
 :root[data-os-theme="macosx"] .control-panels-category-icon {
   width: 32px;
   height: 32px;
   object-fit: contain;
+  position: relative;
+  z-index: 1;
 }
 
 :root[data-os-theme="macosx"]
@@ -260,6 +265,199 @@
   max-width: 80px;
   min-height: 2.4em;
   text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+/* Spotlight search — knock out the matching pane icons from a dimming wash,
+   exactly like Mac OS X System Preferences search. */
+
+/* While searching, the BODY (the animated motion.div display box) becomes the
+   containing block for the grid's scrim pseudo. The body carries the actual
+   current content height as an inline `height` (e.g. height: 393px) — which can
+   be TALLER than the grid's natural box because the body retains a tall measured
+   height via its high-water guard when search begins from a taller pane. Anchor
+   the scrim here so the dimming wash fills the full CURRENT content area, not
+   just the short grid. The scrim is out of flow, so it never grows the measured
+   node (.control-panels-mac-body-measure) — auto-height measurement stays stable
+   and there is no measure→layout feedback loop. Gated to the searching state via
+   :has so non-search panes / normal Show All are untouched. */
+:root[data-os-theme="macosx"]
+  .control-panels-mac-body:has(.control-panels-category-grid--searching) {
+  position: relative;
+}
+
+:root[data-os-theme="macosx"] .control-panels-category-grid--searching {
+  /* Deliberately NOT position:relative — keep the grid static so the scrim
+     ::before below resolves its containing block to the body (above), letting it
+     stretch to the body's full current height instead of the grid's short box.
+     The floor min-height (the minimum window's content height, set as a CSS var
+     by the animated body) still grows the grid — and thus the body — for the
+     complementary case where the result grid is shorter than the minimum window
+     height, so the body never under-fills the floored window. The grid usually
+     exceeds it (no effect). Matching icons (z-index:2) still punch through the
+     wash (z-index:1) in the same stacking context (nothing between the body and
+     the matched items creates a stacking context). */
+  min-height: var(--control-panels-search-fill-min-height, 0);
+}
+
+/* Dimming wash over the whole body content area (resolves to the body box). */
+:root[data-os-theme="macosx"]
+  .control-panels-category-grid--searching::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: rgba(70, 72, 80, 0.34);
+  pointer-events: none;
+  animation: control-panels-spotlight-scrim-in 0.15s ease-out;
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .control-panels-category-grid--searching::before {
+  background: rgba(10, 10, 12, 0.58);
+}
+
+/* Matching panes punch through the wash. */
+:root[data-os-theme="macosx"]
+  .control-panels-category-grid--searching
+  .control-panels-category-item.is-spotlight-match {
+  position: relative;
+  z-index: 2;
+}
+
+/* The knockout circle: a bright disc that reveals the icon at full brightness. */
+:root[data-os-theme="macosx"]
+  .control-panels-category-item.is-spotlight-match
+  .control-panels-category-icon-shell::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 52px;
+  height: 52px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(248, 248, 250, 0.48) 0%,
+    rgba(248, 248, 250, 0.48) 64%,
+    rgba(248, 248, 250, 0) 86%
+  );
+  z-index: 0;
+  pointer-events: none;
+  animation: control-panels-spotlight-in 0.18s ease-out;
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .control-panels-category-item.is-spotlight-match
+  .control-panels-category-icon-shell::before {
+  background: radial-gradient(
+    circle,
+    rgba(228, 228, 234, 0.45) 0%,
+    rgba(228, 228, 234, 0.45) 64%,
+    rgba(228, 228, 234, 0) 86%
+  );
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-category-item.is-spotlight-focused
+  .control-panels-category-icon-shell::before {
+  background: radial-gradient(
+    circle,
+    rgba(248, 248, 250, 0.82) 0%,
+    rgba(248, 248, 250, 0.82) 64%,
+    rgba(248, 248, 250, 0) 86%
+  );
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .control-panels-category-item.is-spotlight-focused
+  .control-panels-category-icon-shell::before {
+  background: radial-gradient(
+    circle,
+    rgba(228, 228, 234, 0.76) 0%,
+    rgba(228, 228, 234, 0.76) 64%,
+    rgba(228, 228, 234, 0) 86%
+  );
+}
+
+@keyframes control-panels-spotlight-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.7);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes control-panels-spotlight-scrim-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Toolbar search box + typeahead menu */
+:root[data-os-theme="macosx"] .control-panels-mac-toolbar-search {
+  padding: 0 2px;
+}
+
+:root[data-os-theme="macosx"] .control-panels-search-menu {
+  --control-panels-search-item-h: 28px;
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 50;
+  min-width: 200px;
+  max-width: 280px;
+  /* Cap to 5.5 rows so a partial item hints at more results. */
+  max-height: calc(var(--control-panels-search-item-h) * 5.5 + 8px);
+  overflow-y: auto;
+  padding: 4px 0;
+  border: none;
+  border-radius: 0;
+  background: var(--os-pinstripe-window);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+:root[data-os-theme="macosx"] .control-panels-search-item {
+  display: block;
+  width: 100%;
+  height: var(--control-panels-search-item-h, 28px);
+  line-height: var(--control-panels-search-item-h, 28px);
+  margin: 1px 0;
+  padding: 0 16px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+  cursor: default;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--os-color-text-primary, #111);
+  font-family: var(--os-font-ui);
+  font-size: var(--os-menu-item-font-size, 13px);
+  -webkit-font-smoothing: antialiased;
+  text-shadow: 0 2px 3px rgba(0, 0, 0, 0.25);
+}
+
+:root[data-os-theme="macosx"] .control-panels-search-item.is-highlighted {
+  background: var(--os-color-selection-bg, rgba(39, 101, 202, 0.88));
+  color: var(--os-color-selection-text, #fff);
+}
+
+:root[data-os-theme="macosx"] .control-panels-search-empty {
+  padding: 6px 16px;
+  font-family: var(--os-font-ui);
+  font-size: var(--os-menu-item-font-size, 13px);
+  text-align: left;
+  color: rgba(0, 0, 0, 0.5);
 }
 
 /* Preference pane chrome */
@@ -1442,6 +1640,70 @@
   background-color: rgba(0, 0, 0, 0.22) !important;
   border-color: var(--control-panels-chrome-border);
   box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.08);
+}
+
+/* Aqua Glass: frosted typeahead dropdown — mirror the standard menu/popover
+   glass treatment (the frosted-popover + spotlight-panel rules in
+   aqua-glass.css) so this custom (non-Radix) search menu reads as the same
+   translucent material: lighter wash over the desktop blur, hairline rim,
+   rounded glass radius and the soft drop shadow. Classic (non-glass) Aqua keeps
+   the opaque pinstripe look from the base rule above. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .window.window-material-glass
+  .control-panels-search-menu {
+  -webkit-backdrop-filter: blur(36px) saturate(200%);
+  backdrop-filter: blur(36px) saturate(200%);
+  background: color-mix(
+    in srgb,
+    var(--os-accent-color, #3a73d6) 6%,
+    rgba(248, 250, 253, 0.62)
+  );
+  border: var(--os-metrics-border-width) solid var(--os-color-window-border);
+  border-radius: var(--os-glass-r-sm);
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  /* Inner gutter so the row highlights inset from the rounded panel edge, like
+     the modern glass menus. Vertical padding stays 4px top/bottom, so the
+     5.5-row max-height cap math (+8px) is unchanged. */
+  padding: 4px 5px;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .window.window-material-glass
+  .control-panels-search-menu {
+  background: color-mix(
+    in srgb,
+    var(--os-accent-color, #3a73d6) 7%,
+    rgba(36, 38, 44, 0.62)
+  );
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Rows: rounded highlight inset from the panel gutter (5px gutter + 11px =
+   ~16px text inset, preserving the classic alignment). Row height, single-line
+   ellipsis, fonts and the blue --os-color-selection-bg highlight are unchanged
+   — only the highlight corners round to match the glass menus. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .window.window-material-glass
+  .control-panels-search-item {
+  padding: 0 11px;
+  border-radius: var(--os-glass-r-xs);
+}
+
+/* Empty state contrast over the translucent wash. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .window.window-material-glass
+  .control-panels-search-empty {
+  color: rgba(0, 0, 0, 0.55);
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .window.window-material-glass
+  .control-panels-search-empty {
+  color: rgba(255, 255, 255, 0.55);
 }
 
 

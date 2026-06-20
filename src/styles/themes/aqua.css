@@ -246,7 +246,7 @@
   );
   border: none;
   border-right: 1px solid rgba(0, 0, 0, 0.18);
-  cursor: pointer;
+  cursor: default;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
   min-height: 22px;
   transition: background 0.1s;

@@ -43,15 +43,21 @@ describe("Control Panels macOS 10.3 layout", () => {
     expect(layoutSource.includes("navigationReducer")).toBe(true);
     expect(layoutSource.includes("ControlPanelsPreferencePane")).toBe(true);
     expect(layoutSource.includes("ControlPanelsMacAnimatedBody")).toBe(true);
-    expect(layoutSource.includes("onSelectPane={selectPane}")).toBe(true);
+    expect(layoutSource.includes("onSelect={selectPane}")).toBe(true);
     expect(layoutSource.includes("renderPane(activePane, selectPane)")).toBe(true);
     expect(layoutSource.includes("instanceId={instanceId}")).toBe(true);
     expect(layoutSource.includes("navKey={currentEntry}")).toBe(true);
     expect(layoutSource.includes("normalizeControlPanelPaneId")).toBe(true);
     expect(layoutSource.includes("onCurrentEntryChange")).toBe(true);
-    expect(layoutSource.includes("goBack")).toBe(false);
-    expect(layoutSource.includes("goForward")).toBe(false);
-    expect(layoutSource.includes("history:")).toBe(false);
+    // Navigation history (stack + index) powers back/forward.
+    expect(layoutSource.includes("goBack")).toBe(true);
+    expect(layoutSource.includes("goForward")).toBe(true);
+    expect(layoutSource.includes("history:")).toBe(true);
+    expect(layoutSource.includes("canGoBack")).toBe(true);
+    expect(layoutSource.includes("canGoForward")).toBe(true);
+    expect(layoutSource.includes('type: "back"')).toBe(true);
+    expect(layoutSource.includes('type: "forward"')).toBe(true);
+    expect(layoutSource.includes("navState.history[navState.index]")).toBe(true);
   });
 
   test("macosx window title shows pane name or default on Show All", () => {
@@ -170,8 +176,9 @@ describe("Control Panels macOS 10.3 layout", () => {
       true
     );
     expect(appSource.includes("defaultPane={defaultTab}")).toBe(false);
-    expect(layoutSource.includes('current: initialPane ?? "home"')).toBe(true);
-    expect(toolbarSource.includes("showHome &&")).toBe(true);
+    expect(layoutSource.includes('history: [initialPane ?? "home"]')).toBe(true);
+    // Show All button never renders an active/toggle state; it has no data-state binding.
+    expect(toolbarSource.includes("data-state={showHome")).toBe(false);
   });
 
   test("category icons use macosx-themed assets", () => {
@@ -499,26 +506,36 @@ describe("Control Panels macOS 10.3 layout", () => {
     ).toBe(false);
   });
 
-  test("toolbar exposes pinned quick-access pane icons without back/forward", () => {
-    expect(CONTROL_PANEL_PINNED_PANES).toEqual([
-      "appearance",
-      "desktop-screen-saver",
-      "accounts",
-    ]);
-
+  test("toolbar exposes Finder-style back/forward group and Show All button", () => {
     const toolbarSource = readSource(
       "src/apps/control-panels/components/control-panels-app/ControlPanelsMacToolbar.tsx"
     );
-    expect(toolbarSource.includes("CONTROL_PANEL_PINNED_PANES")).toBe(true);
-    expect(toolbarSource.includes("control-panels-toolbar-pin")).toBe(true);
-    expect(toolbarSource.includes("control-panels-toolbar-divider")).toBe(true);
-    expect(toolbarSource.includes("onSelectPane")).toBe(true);
-    expect(toolbarSource.includes("onGoBack")).toBe(false);
-    expect(toolbarSource.includes("onGoForward")).toBe(false);
-    expect(toolbarSource.includes("ToolbarButtonGroup")).toBe(false);
-    expect(toolbarSource.includes("SquaresFour")).toBe(false);
-    expect(toolbarSource.includes("SHOW_ALL_ICON")).toBe(true);
-    expect(toolbarSource.includes("appMetadata")).toBe(true);
+    // Back/forward navigation group, Finder-style.
+    expect(toolbarSource.includes("ToolbarButtonGroup")).toBe(true);
+    expect(toolbarSource.includes("ToolbarButton")).toBe(true);
+    expect(toolbarSource.includes("CaretLeft")).toBe(true);
+    expect(toolbarSource.includes("CaretRight")).toBe(true);
+    expect(toolbarSource.includes("onGoBack")).toBe(true);
+    expect(toolbarSource.includes("onGoForward")).toBe(true);
+    expect(toolbarSource.includes("canGoBack")).toBe(true);
+    expect(toolbarSource.includes("canGoForward")).toBe(true);
+    expect(toolbarSource.includes("apps.control-panels.toolbar.back")).toBe(true);
+    expect(toolbarSource.includes("apps.control-panels.toolbar.forward")).toBe(
+      true
+    );
+    // Show All button retained as a text-only button in its own group.
+    expect(toolbarSource.includes("onShowAll")).toBe(true);
+    expect(toolbarSource.includes("apps.control-panels.toolbar.showAll")).toBe(
+      true
+    );
+    expect(toolbarSource.includes("SHOW_ALL_ICON")).toBe(false);
+    expect(toolbarSource.includes("appMetadata")).toBe(false);
+    expect(toolbarSource.includes("ThemedIcon")).toBe(false);
+    // Old pinned-pane quick-access icons are gone.
+    expect(toolbarSource.includes("CONTROL_PANEL_PINNED_PANES")).toBe(false);
+    expect(toolbarSource.includes("control-panels-toolbar-pin")).toBe(false);
+    expect(toolbarSource.includes("control-panels-toolbar-divider")).toBe(false);
+    expect(toolbarSource.includes("onSelectPane")).toBe(false);
   });
 
   test("category and pinned pane icons resolve on macosx theme", () => {
