@@ -55,7 +55,15 @@ export function ControlPanelsMacAnimatedBody({
     // collapse scrollHeight and toggle data-scrollable (height flicker).
     const content =
       root.querySelector<HTMLElement>(CONTENT_MEASURE_SELECTOR) ?? root;
-    const next = Math.ceil(content.scrollHeight);
+    // WebKit/Safari underreports scrollHeight for flex content by the bottom
+    // padding amount; the height-capped body then clips that padding so it looks
+    // missing. getBoundingClientRect reflects the true rendered box for the
+    // unconstrained auto-height panes, while scrollHeight still wins for the
+    // height-capped scrollable panes (where the box is flex-constrained). Take
+    // whichever is larger so both browsers keep the bottom padding.
+    const next = Math.ceil(
+      Math.max(content.scrollHeight, content.getBoundingClientRect().height)
+    );
     if (next <= 0) return;
 
     const prev = naturalHeightRef.current;
