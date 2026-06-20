@@ -2512,18 +2512,41 @@
   margin: 0 auto;
 }
 
-/* Slider track */
+/* Slider track — same recessed glossy channel as the switch track so sliders
+   and switches read as one cohesive set. The top white shine highlight + base
+   gradient mirror `.os-switch` (unchecked). The shine runs across the track's
+   short axis: top→down for a horizontal track. */
 :root[data-os-theme="macosx"] .os-slider-track {
   background: linear-gradient(
-    to bottom,
-    #d0d0d0,
-    #f5f5f5
-  ) !important; /* vertical for horizontal track = 3D bevel */
-  border: 1px solid rgba(0, 0, 0, 0.35);
+        to bottom,
+        rgba(255, 255, 255, 0.55) 0%,
+        rgba(255, 255, 255, 0.18) 60%,
+        rgba(255, 255, 255, 0) 100%
+      )
+      top / 100% 50% no-repeat,
+    linear-gradient(rgba(188, 188, 188, 0.34), rgba(255, 255, 255, 0.3)) !important;
+  border: 1px solid rgba(0, 0, 0, 0.22);
   border-radius: 9999px;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12),
-    inset 0 2px 3px rgba(255, 255, 255, 0.45);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2),
+    inset 0 -1px 1px rgba(255, 255, 255, 0.35),
+    0 1px 0 rgba(255, 255, 255, 0.5);
   position: relative;
+}
+
+/* Vertical track — rotate the shine + bevel to the short (horizontal) axis so
+   the highlight sits on the leading (left) edge and reads correctly. */
+:root[data-os-theme="macosx"] .os-slider-track[data-orientation="vertical"] {
+  background: linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.55) 0%,
+        rgba(255, 255, 255, 0.18) 60%,
+        rgba(255, 255, 255, 0) 100%
+      )
+      left / 50% 100% no-repeat,
+    linear-gradient(to right, rgba(188, 188, 188, 0.34), rgba(255, 255, 255, 0.3)) !important;
+  box-shadow: inset 1px 0 2px rgba(0, 0, 0, 0.2),
+    inset -1px 0 1px rgba(255, 255, 255, 0.35),
+    1px 0 0 rgba(255, 255, 255, 0.5);
 }
 
 /* Filled portion of the track uses the same glossy accent gradient as the
@@ -2542,6 +2565,30 @@
   box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.4),
     inset 0 -1px 1px rgba(0, 0, 0, 0.18),
     0 1px 1px var(--os-accent-button-edge, rgba(0, 78, 187, 0.4));
+}
+
+/* Vertical filled range — the shared accent gradient (`--os-accent-button-bg`)
+   is a fixed top→bottom gloss, so layer a left→right white highlight on top of
+   it and flip the bevel insets to the short (horizontal) axis. */
+:root[data-os-theme="macosx"] .os-slider-range[data-orientation="vertical"] {
+  background: linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.45) 0%,
+        rgba(255, 255, 255, 0.05) 55%,
+        rgba(255, 255, 255, 0) 100%
+      ),
+    var(
+      --os-accent-button-bg,
+      linear-gradient(
+        to right,
+        rgba(0, 65, 184, 0.625),
+        rgba(45, 115, 199, 0.625),
+        rgba(33, 160, 196, 0.625)
+      )
+    ) !important;
+  box-shadow: inset 1px 0 1px rgba(255, 255, 255, 0.4),
+    inset -1px 0 1px rgba(0, 0, 0, 0.18),
+    1px 0 1px var(--os-accent-button-edge, rgba(0, 78, 187, 0.4));
 }
 
 /* Slider tick/label text - preserve explicit sizes */
