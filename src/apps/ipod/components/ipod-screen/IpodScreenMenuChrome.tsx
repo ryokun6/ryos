@@ -30,7 +30,7 @@ export interface IpodScreenMenuChromeProps {
   modernScrollingMarqueeAllowed: boolean;
   isPlaying: boolean;
   backlightOn: boolean;
-  uiVariant: "classic" | "modern";
+  uiVariant: "classic" | "modern" | "aqua";
   menuMode: boolean;
   appleMusicMenuTitlebarLoading: boolean;
   showVideo: boolean;

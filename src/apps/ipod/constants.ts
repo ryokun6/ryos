@@ -74,6 +74,34 @@ export const IPOD_NOW_PLAYING_SONG_MENU_KEY = "__nowPlayingSongMenu__";
 export const IPOD_THEMES = ["classic", "black", "u2"] as const;
 export type IpodTheme = (typeof IPOD_THEMES)[number];
 
+// On-screen UI variants for the iPod LCD.
+// - "classic": monochrome 1st-gen iPod LCD.
+// - "modern": iOS 6 inspired color skin (glossy blue gradients).
+// - "aqua": Aqua Glass variant of the modern skin — translucent frosted
+//   chrome whose accent (titlebar tint, selection highlight, progress
+//   fill) is derived from the current track's cover-art dominant color.
+export const IPOD_UI_VARIANTS = ["classic", "modern", "aqua"] as const;
+export type IpodUiVariant = (typeof IPOD_UI_VARIANTS)[number];
+
+/**
+ * Whether a UI variant uses the modern (color-screen) layout. Both the
+ * iOS-6 "modern" skin and the "aqua" glass skin share the same layout,
+ * geometry, and markup — only their CSS styling differs — so every
+ * layout branch treats them identically.
+ */
+export function isModernIpodUiVariant(
+  variant: IpodUiVariant | string | null | undefined
+): boolean {
+  return variant === "modern" || variant === "aqua";
+}
+
+/** Whether a UI variant is the cover-art-tinted Aqua Glass skin. */
+export function isAquaIpodUiVariant(
+  variant: IpodUiVariant | string | null | undefined
+): boolean {
+  return variant === "aqua";
+}
+
 // Timing constants
 export const BACKLIGHT_TIMEOUT_MS = 5000;
 export const STATUS_MESSAGE_DURATION_MS = 2000;

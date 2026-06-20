@@ -1,6 +1,9 @@
 import { cn } from "@/lib/utils";
 import { useImageLoaded } from "../../hooks/useImageLoaded";
-import { IPOD_MODERN_MEDIA_THUMB_PX } from "../../constants";
+import {
+  IPOD_MODERN_MEDIA_THUMB_PX,
+  isModernIpodUiVariant,
+} from "../../constants";
 import { IpodArtworkPlaceholder, type IpodEmptyArtworkKind } from "./IpodArtworkPlaceholder";
 import { ScrollingText } from "./ScrollingText";
 
@@ -26,9 +29,11 @@ interface MenuListItemProps {
    * Chicago-font row from the original 1st-gen LCD. `"modern"` switches
    * to an iOS 6 UITableViewCell look — Helvetica Neue, white background
    * with a 1px hairline separator, and a glossy blue gradient
-   * selection highlight with white text.
+   * selection highlight with white text. `"aqua"` shares the modern
+   * layout but recolors the chrome from the cover-art accent (handled
+   * via the `.ipod-aqua-screen` ancestor CSS).
    */
-  variant?: "classic" | "modern";
+  variant?: "classic" | "modern" | "aqua";
   /**
    * Modern media rows only: second line (caption). Single-line ellipsis;
    * omit or pass empty to show only the primary line.
@@ -68,7 +73,7 @@ export function MenuListItem({
     CJK_TEXT_PATTERN.test(text) ||
     (value ? CJK_TEXT_PATTERN.test(value) : false) ||
     (subtitle ? CJK_TEXT_PATTERN.test(subtitle) : false);
-  const isModern = variant === "modern";
+  const isModern = isModernIpodUiVariant(variant);
   const thumbSrc = isModern && mediaRow ? (thumbnailUrl ?? null) : null;
   const thumb = useImageLoaded(thumbSrc);
   const showThumbImage = Boolean(thumbSrc) && !thumb.failed;

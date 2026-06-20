@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useReducer } from "react";
 import { cn } from "@/lib/utils";
+import { isModernIpodUiVariant } from "../../constants";
 import type { BatteryManager } from "../../types";
 
 interface BatteryIndicatorProps {
   backlightOn: boolean;
-  /** Classic = monochrome blue 4-bar; modern = continuous green fill. */
-  variant?: "classic" | "modern";
+  /** Classic = monochrome blue 4-bar; modern/aqua = continuous green fill. */
+  variant?: "classic" | "modern" | "aqua";
 }
 
 interface BatteryIndicatorState {
@@ -58,7 +59,7 @@ export function BatteryIndicator({
   backlightOn,
   variant = "classic",
 }: BatteryIndicatorProps) {
-  const isModern = variant === "modern";
+  const isModern = isModernIpodUiVariant(variant);
   const [state, dispatch] = useReducer(reducer, initialState);
   const { batteryLevel, isCharging, animationFrame } = state;
   const setBatteryLevel = useCallback((value: number | null) => {

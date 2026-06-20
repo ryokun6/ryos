@@ -1,5 +1,6 @@
 import { useRef, useLayoutEffect } from "react";
 import { cn } from "@/lib/utils";
+import { isModernIpodUiVariant } from "../../constants";
 
 interface ScrollbarProps {
   containerRef:
@@ -7,8 +8,8 @@ interface ScrollbarProps {
     | React.MutableRefObject<HTMLDivElement | null>;
   backlightOn: boolean;
   menuMode: boolean;
-  /** Classic = monochrome blue track; modern = thin iOS 6 indicator. */
-  variant?: "classic" | "modern";
+  /** Classic = monochrome blue track; modern/aqua = thin iOS 6 indicator. */
+  variant?: "classic" | "modern" | "aqua";
 }
 
 export function Scrollbar({
@@ -17,7 +18,7 @@ export function Scrollbar({
   menuMode,
   variant = "classic",
 }: ScrollbarProps) {
-  const isModern = variant === "modern";
+  const isModern = isModernIpodUiVariant(variant);
   const thumbRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
 

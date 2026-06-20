@@ -45,7 +45,7 @@ export interface IpodScreenMediaOverlayProps {
   statusMessage: string | null;
   isAnyActivityActive: boolean;
   activityState: ActivityInfo;
-  uiVariant: "classic" | "modern";
+  uiVariant: "classic" | "modern" | "aqua";
   playerRef: IpodScreenProps["playerRef"];
   handleTrackEnd: IpodScreenProps["handleTrackEnd"];
   handleProgress: IpodScreenProps["handleProgress"];

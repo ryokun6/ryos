@@ -1847,6 +1847,7 @@
         "screen": "Screen",
         "screenClassic": "Classic",
         "screenModern": "Modern",
+        "screenAqua": "Aqua Glass",
         "uiTheme": "UI Theme",
         "deviceTheme": "Device Theme",
         "fullScreen": "Full Screen",

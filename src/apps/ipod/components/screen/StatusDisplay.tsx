@@ -12,7 +12,7 @@ import {
 
 interface StatusDisplayProps {
   message: string;
-  variant?: "classic" | "modern";
+  variant?: "classic" | "modern" | "aqua";
 }
 
 // Maps the leading playback glyph used in `showStatus(...)` calls to a
@@ -57,7 +57,7 @@ export function StatusDisplay({
   message,
   variant = "classic",
 }: StatusDisplayProps) {
-  const isModern = variant === "modern";
+  const isModern = variant !== "classic";
 
   return (
     <div className="absolute top-4 left-4 pointer-events-none">

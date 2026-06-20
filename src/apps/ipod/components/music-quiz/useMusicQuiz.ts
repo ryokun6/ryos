@@ -26,6 +26,7 @@ import {
   isIOSSafari,
 } from "./constants";
 import { initialQuizUiState, quizUiReducer } from "./quizState";
+import { isModernIpodUiVariant } from "../../constants";
 import { pickRound } from "./utils";
 import type { MusicQuizProps, MusicQuizRef, MusicQuizRound, Phase } from "./types";
 
@@ -44,7 +45,7 @@ export function useMusicQuiz(
     s.librarySource === "appleMusic" ? s.appleMusicTracks : s.tracks
   );
   const uiVariant = useIpodStore((s) => s.uiVariant ?? "modern");
-  const isModernUi = uiVariant === "modern";
+  const isModernUi = isModernIpodUiVariant(uiVariant);
   const bodyTopOffsetPx = isModernUi ? 17 : 26;
   const finalVolume = useAudioSettingsStore(selectEffectiveIpodVolume);
 
