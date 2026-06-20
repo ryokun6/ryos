@@ -12,8 +12,7 @@ import {
 import { RecoveryEmailDialog } from "@/components/dialogs/RecoveryEmailDialog";
 import { DeleteAccountDialog } from "@/components/dialogs/DeleteAccountDialog";
 
-const menuItemClassName =
-  "text-md min-h-9 px-3 py-2 touch-manipulation cursor-pointer font-geneva-12";
+const menuItemClassName = "text-md h-6 px-3";
 
 export type AccountActionsMenuProps = {
   t: (key: string) => string;
