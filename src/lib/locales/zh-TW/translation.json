@@ -1602,7 +1602,7 @@
       "ui": "使用者介面",
       "uiSounds": "UI 音效",
       "uiVolume": "使用者介面音量",
-      "viewChangelog": "查看更新日誌",
+      "viewChangelog": "更新日誌",
       "wallpaperCategories": {
         "aqua": "水藍",
         "black_and_white": "黑白",
@@ -3899,7 +3899,7 @@
       "system": "系統",
       "termsOfService": "服務條款",
       "title": "關於此電腦",
-      "viewChangelog": "查看變更記錄",
+      "viewChangelog": "更新日誌",
       "virtualMemory": "虛擬記憶體",
       "virtualMemoryOff": "關閉"
     },
@@ -4060,7 +4060,7 @@
         "shareLinkOrScanToOpen": "分享連結或掃描以開啟此{{itemType}}"
       },
       "version": "版本",
-      "viewChangelog": "查看更新日誌",
+      "viewChangelog": "更新日誌",
       "viewDocs": "查看文檔",
       "welcomeTo": "歡迎使用{{appName}}"
     },

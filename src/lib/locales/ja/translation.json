@@ -1602,7 +1602,7 @@
       "ui": "UI",
       "uiSounds": "UI サウンド",
       "uiVolume": "UI 音量",
-      "viewChangelog": "変更履歴を見る",
+      "viewChangelog": "変更履歴",
       "wallpaperCategories": {
         "aqua": "アクア",
         "black_and_white": "白黒",
@@ -3899,7 +3899,7 @@
       "system": "システム",
       "termsOfService": "利用規約",
       "title": "このコンピュータについて",
-      "viewChangelog": "変更履歴を見る",
+      "viewChangelog": "変更履歴",
       "virtualMemory": "仮想メモリ",
       "virtualMemoryOff": "オフ"
     },
@@ -4060,7 +4060,7 @@
         "shareLinkOrScanToOpen": "リンクを共有するか、スキャンしてこの {{itemType}} を開く"
       },
       "version": "バージョン",
-      "viewChangelog": "変更履歴を見る",
+      "viewChangelog": "変更履歴",
       "viewDocs": "ドキュメント",
       "welcomeTo": "{{appName}}へようこそ"
     },

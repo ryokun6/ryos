@@ -1602,7 +1602,7 @@
       "ui": "UI",
       "uiSounds": "UI 소리",
       "uiVolume": "UI 음량",
-      "viewChangelog": "변경 로그 보기",
+      "viewChangelog": "변경 내역",
       "wallpaperCategories": {
         "aqua": "아쿠아",
         "black_and_white": "흑백",
@@ -3899,7 +3899,7 @@
       "system": "시스템",
       "termsOfService": "이용 약관",
       "title": "이 컴퓨터에 관하여",
-      "viewChangelog": "변경 내역 보기",
+      "viewChangelog": "변경 내역",
       "virtualMemory": "가상 메모리",
       "virtualMemoryOff": "끔"
     },
@@ -4060,7 +4060,7 @@
         "shareLinkOrScanToOpen": "링크를 공유하거나 스캔하여 이 {{itemType}}을(를) 여세요."
       },
       "version": "버전",
-      "viewChangelog": "변경 내역 보기",
+      "viewChangelog": "변경 내역",
       "viewDocs": "문서 보기",
       "welcomeTo": "{{appName}}에 오신 것을 환영합니다"
     },
