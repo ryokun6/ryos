@@ -16,9 +16,6 @@ import {
   CONTROL_PANELS_MAC_SIZE_TRANSITION,
 } from "./controlPanelsMacMotion";
 
-const CONTENT_MEASURE_SELECTOR =
-  ".control-panels-category-grid, .control-panels-mac-pane";
-
 export type ControlPanelsMacAnimatedBodyProps = {
   instanceId?: string;
   toolbarHeight: number;
@@ -52,56 +49,24 @@ export function ControlPanelsMacAnimatedBody({
     const root = measureRef.current;
     if (!root) return;
 
-    // Measure unconstrained content roots so scroll-constrained flex layout cannot
-    // collapse scrollHeight and toggle data-scrollable (height flicker).
-    const content =
-      root.querySelector<HTMLElement>(CONTENT_MEASURE_SELECTOR) ?? root;
-    // WebKit/Safari underreports the natural height of flex content in ways the
-    // height-capped body then clips (so padding/rows look missing on Safari but
-    // fine on Chrome):
-    //  1. scrollHeight omits the flex pane's bottom padding.
-    //  2. flex-constrained inner scrollers (tabbed pref panels with overflow-y:auto)
-    //     collapse below their content in auto-height mode, hiding overflow that
-    //     Chrome would expand to fit.
-    // Defenses: take the largest of several height signals. getBoundingClientRect
-    // reflects the true rendered box, and `root` (the measure wrapper) is a plain
-    // block in auto-height mode whose scrollHeight reliably includes descendant
-    // padding on every engine; scrollHeight of the flex pane still wins in the
-    // height-capped/scrollable state where `root` is itself flex-constrained. On
-    // Chrome these are all equal, so this is a no-op there.
-    let measured = Math.max(
-      content.scrollHeight,
-      content.getBoundingClientRect().height,
-      root.scrollHeight,
-      root.getBoundingClientRect().height
-    );
-
-    // Only in auto-height mode (below the cap): add back any content a collapsed
-    // inner scroller is hiding. In the capped/scrollable state scrollHeight already
-    // reports the full natural height, so skipping avoids double-counting.
-    if (measured < maxBodyHeight) {
-      let collapsedOverflow = 0;
-      content
-        .querySelectorAll<HTMLElement>(
-          ".control-panels-pref-tab-panel:not([hidden])"
-        )
-        .forEach((p) => {
-          collapsedOverflow = Math.max(
-            collapsedOverflow,
-            p.scrollHeight - p.clientHeight
-          );
-        });
-      measured += collapsedOverflow;
-    }
-
-    const next = Math.ceil(measured);
+    // The measure subtree is NEVER height-constrained: when content exceeds the
+    // window cap, the body (motion.div) itself scrolls, not any inner element.
+    // So the measure node's border box always reflects the true natural content
+    // height on every engine — no scroll-overflow / flex / collapsed-inner-scroller
+    // hacks. Crucially, toggling the body's overflow (data-scrollable) cannot
+    // change a child's height, so there is no measure↔layout feedback loop — the
+    // root cause of the Safari auto-size jank, worst for panes with inner scrollers.
+    const next = Math.ceil(root.getBoundingClientRect().height);
     if (next <= 0) return;
 
     const prev = naturalHeightRef.current;
-    if (prev !== null && next < prev - 1 && next <= maxBodyHeight) {
-      return;
-    }
-
+    // Within a single pane (same navKey) grow to fit, but don't shrink on content
+    // swaps like switching tabs — the inactive tab panel is display:none, so the
+    // stacked well reports only the active tab's height. Holding the high-water
+    // mark keeps the window sized to the tallest tab so swaps don't jitter. The
+    // navKey reset (below) re-baselines when navigating to a different pane.
+    // Shrinks above the cap are allowed (the window is already maxed there).
+    if (prev !== null && next < prev - 1 && next <= maxBodyHeight) return;
     if (prev === next) return;
     naturalHeightRef.current = next;
     setNaturalHeight(next);

@@ -117,12 +117,17 @@ describe("Control Panels macOS 10.3 layout", () => {
     expect(animatedBodySource.includes("CONTROL_PANELS_MAC_SIZE_TRANSITION")).toBe(
       true
     );
-    expect(animatedBodySource.includes("scrollHeight")).toBe(true);
+    // Measurement is decoupled from display: the measure subtree is never
+    // height-constrained (the body itself scrolls past the cap), so the natural
+    // height is read straight off the measure node's border box — no scrollHeight
+    // / flex / collapsed-inner-scroller hacks that broke Safari auto-sizing.
+    expect(animatedBodySource.includes("getBoundingClientRect")).toBe(true);
+    expect(animatedBodySource.includes("scrollHeight")).toBe(false);
+    expect(animatedBodySource.includes("collapsedOverflow")).toBe(false);
     expect(animatedBodySource.includes("data-scrollable")).toBe(true);
     expect(animatedBodySource.includes("control-panels-mac-body-layout")).toBe(
       true
     );
-    expect(animatedBodySource.includes("CONTENT_MEASURE_SELECTOR")).toBe(true);
     expect(animatedBodySource.includes("naturalHeightRef")).toBe(true);
     expect(animatedBodySource.includes("isMeasuring")).toBe(true);
     expect(animatedBodySource.includes("overflow-y-auto")).toBe(false);
@@ -130,21 +135,17 @@ describe("Control Panels macOS 10.3 layout", () => {
     expect(motionSource.includes("0.25, 0.1, 0.25, 1")).toBe(true);
     expect(appSource.includes("minHeight: 200")).toBe(true);
     expect(appSource.includes("maxHeight: 600")).toBe(true);
+    // Single scroll container: cap + overflow live on the body (parent of the
+    // measured node), and there is no inner tab-panel scroller anymore.
     expect(cssSource.includes(".control-panels-mac-body[data-scrollable]")).toBe(
       true
     );
-    expect(cssSource.includes(".control-panels-mac-body-layout")).toBe(true);
-    expect(
-      cssSource.includes(
-        ".control-panels-mac-pane-scroll:not(:has(.control-panels-pref-form-tabbed))"
-      )
-    ).toBe(true);
     expect(cssSource.includes("overflow-y: auto")).toBe(true);
     expect(
       cssSource.match(
         /\.control-panels-pref-form-tabbed \.control-panels-pref-tab-panel[\s\S]*?overflow-y:\s*auto/
       )
-    ).not.toBeNull();
+    ).toBeNull();
   });
 
   test("macosx layout starts on Show All unless deep-linked", () => {
