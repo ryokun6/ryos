@@ -84,7 +84,7 @@
       "version": "Version",
       "madeBy": "Made by",
       "openInGitHub": "Open in GitHub",
-      "viewChangelog": "View Changelog",
+      "viewChangelog": "Changelog",
       "informationAboutApp": "Information about the application",
       "viewDocs": "View Docs",
       "emoji": {
@@ -216,7 +216,7 @@
       "system": "System",
       "mb": "MB",
       "clickToToggle": "Click to toggle",
-      "viewChangelog": "View Changelog",
+      "viewChangelog": "Changelog",
       "privacyPolicy": "Privacy Policy",
       "termsOfService": "Terms of Service"
     },
@@ -2970,7 +2970,7 @@
       },
       "checkForUpdates": "Check for Updates",
       "downloadMacApp": "Download Mac App",
-      "viewChangelog": "View Changelog",
+      "viewChangelog": "Changelog",
       "privacyPolicy": "Privacy Policy",
       "termsOfService": "Terms of Service",
       "backup": "Backup",
