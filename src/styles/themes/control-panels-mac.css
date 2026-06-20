@@ -16,6 +16,16 @@
 }
 
 :root[data-os-theme="macosx"] .control-panels-mac {
+  /* Grow to fill the full window-body height (the wrapper around this element is
+     `h-full`, so this flex child can fill it). This is the middle link of the
+     height chain that lets the auto-height body stretch its tint to the window
+     bottom at ANY window height: window-body → wrapper(h-full) → .control-panels-mac
+     (here) → .control-panels-mac-body (flex-grow). Without this the container would
+     collapse to its content height and leave a bare pinstripe band below the body
+     after a manual resize. Filling here never feeds back into measurement — the
+     measured subtree stays at its natural height (see body rule below). */
+  flex: 1 0 auto;
+  min-height: 0;
   background-image: var(--os-pinstripe-window);
   color: var(--os-color-text-primary, #000);
 }
@@ -37,14 +47,61 @@
   overflow-y: auto;
 }
 
+/* Stretch the body to fill the ACTUAL current window height (not just a fixed
+   floor), so the light-mode content tint painted on the body always reaches the
+   window bottom — at the auto-height minimum AND after the user drags the window
+   taller. The chain is: .window-body (full window height) → macOS content wrapper
+   (h-full) → .control-panels-mac (flex:1, fills the wrapper) → here the body grows
+   to consume whatever space is left below the toolbar.
+
+   `flex-grow: 1` does the dynamic fill; `flex-shrink: 0` (Tailwind `shrink-0` on the
+   element) keeps the body from collapsing below its content. CRITICAL: this does
+   NOT reopen the auto-height measure↔layout loop. The measured node
+   (.control-panels-mac-body-measure) is an ordinary block child of the body and
+   stays at its natural content height even when the body is flex-grown taller — a
+   flex item only stretches its own height, not its in-flow block descendants — so
+   `offsetHeight` still reports the true content height and the window keeps
+   shrinking to fit short panes.
+
+   The min-height floor is retained as a belt-and-suspenders fallback (and is the
+   value the spotlight search grid reuses); when flex actually fills, it's inert. */
+:root[data-os-theme="macosx"] .control-panels-mac-body {
+  flex-grow: 1;
+  min-height: var(--control-panels-mac-body-fill-min-height, 0);
+}
+
 :root[data-os-theme="macosx"] .control-panels-mac-toolbar {
   background: transparent;
   padding-top: 8px;
   padding-bottom: 8px;
 }
 
+/* Non-glass Aqua: a whiter translucent wash over the toolbar's pinstripe so the
+   toolbar reads lighter than the (grayer) content tint below, while the pinstripe
+   still shows through. Light mode only; excluded from Aqua Glass and dark Aqua. */
+:root[data-os-theme="macosx"]:not([data-os-aqua-material="glass"]):not([data-os-color-scheme="dark"])
+  .control-panels-mac-toolbar {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* Dark non-glass Aqua: a faint light wash over the toolbar's dark pinstripe so the
+   toolbar reads slightly LIGHTER than the (darker) content tint below — mirroring
+   how light mode's toolbar is whiter than its content. Excluded from Aqua Glass. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]:not([data-os-aqua-material="glass"])
+  .control-panels-mac-toolbar {
+  background: rgba(255, 255, 255, 0.06);
+}
+
 :root[data-os-theme="macosx"] .control-panels-mac-toolbar.border-b {
   border-bottom-color: var(--control-panels-chrome-border) !important;
+}
+
+/* Dark non-glass Aqua: the default chrome border (near-black rgba(0,0,0,0.25))
+   disappears against the dark pinstripe, so the toolbar's bottom rim reads as
+   missing. Use the window-border token so it matches the title bar's dark rim. */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]:not([data-os-aqua-material="glass"])
+  .control-panels-mac-toolbar.border-b {
+  border-bottom-color: var(--os-color-window-border) !important;
 }
 
 :root[data-os-theme="macosx"] .control-panels-mac-toolbar-title {
@@ -298,7 +355,7 @@
      exceeds it (no effect). Matching icons (z-index:2) still punch through the
      wash (z-index:1) in the same stacking context (nothing between the body and
      the matched items creates a stacking context). */
-  min-height: var(--control-panels-search-fill-min-height, 0);
+  min-height: var(--control-panels-mac-body-fill-min-height, 0);
 }
 
 /* Dimming wash over the whole body content area (resolves to the body box). */
@@ -463,6 +520,56 @@
 /* Preference pane chrome */
 :root[data-os-theme="macosx"] .control-panels-mac-pane {
   background-image: var(--os-pinstripe-window);
+}
+
+/* Non-glass Aqua: subtle translucent white tint over the content pinstripe so the
+   body reads slightly lighter than the (pinstriped) toolbar — mirrors the Chats
+   content pane's `bg-white/85`. The tint is layered ABOVE --os-pinstripe-window
+   (so it sits behind icons/text/wells and below the spotlight search scrim) and is
+   applied to the scrollable content surfaces (Show All grid + preference pane) so it
+   covers the full scroll height exactly like the pinstripe does — never the toolbar,
+   which stays pinstriped. Light mode only (dark Aqua keeps its dark pinstripe), and
+   excluded from Aqua Glass both here and via the glass override below (which strips
+   these backgrounds entirely with !important).
+
+   The same tint is also painted on the BODY itself (the scroll/clip container) using
+   the identical pinstripe base. The body is floored to the minimum window content
+   height (min-height above), so when a short grid/pane leaves the window floored
+   taller than its content, the body's tint fills that otherwise-bare strip below the
+   grid/pane down to the window bottom. The grid/pane sit on top with the identical
+   tint+pinstripe, so coverage is seamless; when content is taller and scrolls, the
+   grid/pane still paint the full scroll height (the body background only backs the
+   floored remainder). */
+:root[data-os-theme="macosx"]:not([data-os-aqua-material="glass"]):not([data-os-color-scheme="dark"])
+  .control-panels-mac-body,
+:root[data-os-theme="macosx"]:not([data-os-aqua-material="glass"]):not([data-os-color-scheme="dark"])
+  .control-panels-category-grid,
+:root[data-os-theme="macosx"]:not([data-os-aqua-material="glass"]):not([data-os-color-scheme="dark"])
+  .control-panels-mac-pane {
+  background-image: linear-gradient(
+      rgba(232, 233, 236, 0.85),
+      rgba(232, 233, 236, 0.85)
+    ),
+    var(--os-pinstripe-window);
+}
+
+/* Dark non-glass Aqua: the dark-mode mirror of the light content tint above — a
+   subtle dark translucent wash layered ABOVE --os-pinstripe-window so the content
+   surfaces read slightly DARKER than the (lighter-washed) toolbar, while the dark
+   pinstripe still shows through. Applied to the same elements (incl.
+   .control-panels-mac-body) so it inherits the full-height fill behavior for free.
+   Excluded from Aqua Glass (the glass !important strip below clears these). */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]:not([data-os-aqua-material="glass"])
+  .control-panels-mac-body,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]:not([data-os-aqua-material="glass"])
+  .control-panels-category-grid,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]:not([data-os-aqua-material="glass"])
+  .control-panels-mac-pane {
+  background-image: linear-gradient(
+      rgba(28, 30, 34, 0.18),
+      rgba(28, 30, 34, 0.18)
+    ),
+    var(--os-pinstripe-window);
 }
 
 :root[data-os-theme="macosx"] .control-panels-mac-pane-inner {
@@ -1508,6 +1615,7 @@
   :is(
     .control-panels-mac,
     .control-panels-mac-toolbar,
+    .control-panels-mac-body,
     .control-panels-mac-pane,
     .control-panels-mac-pane-scroll,
     .control-panels-mac-pane-inner,

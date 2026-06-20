@@ -22,8 +22,6 @@ export type ControlPanelsMacAnimatedBodyProps = {
   toolbarHeight: number;
   /** Changes when Show All ↔ pane navigation occurs (drives re-measure). */
   navKey: string;
-  /** When true, the spotlight scrim is active and the grid should fill the body. */
-  isSearching?: boolean;
   children: ReactNode;
   className?: string;
 };
@@ -32,7 +30,6 @@ export function ControlPanelsMacAnimatedBody({
   instanceId,
   toolbarHeight,
   navKey,
-  isSearching = false,
   children,
   className,
 }: ControlPanelsMacAnimatedBodyProps) {
@@ -115,23 +112,22 @@ export function ControlPanelsMacAnimatedBody({
     naturalHeight !== null &&
     naturalHeight > maxBodyHeight;
 
-  // While searching, the spotlight scrim lives on the grid (so matching icons can
-  // punch through it without a stacking-context trap). To blanket the FULL window
-  // content area under the toolbar — not just the grid's natural box — stretch the
-  // searching grid to at least the minimum window's content height. The grid's
-  // natural height usually exceeds this (no effect), but for a short result set,
-  // where the window floors at its minimum height, this fills the otherwise-bare
-  // area below the grid so the scrim covers it. Derived from the *constant* min
-  // window height and toolbar height (not the measured height), so it never feeds
-  // back into the auto-height measure loop.
-  const searchFillMinHeight = isSearching
-    ? Math.max(
-        0,
-        CONTROL_PANELS_MAC_MIN_WINDOW_HEIGHT -
-          CONTROL_PANELS_MACOSX_TITLEBAR_HEIGHT -
-          toolbarHeight
-      )
-    : 0;
+  // The minimum content area below the toolbar (window floor minus titlebar and
+  // toolbar). The window auto-sizes to content but never shrinks below this floor,
+  // so when content is short the window keeps the floored height and the body must
+  // still fill it — otherwise a bare pinstripe band shows below the grid/pane (and,
+  // while searching, below the spotlight scrim). CSS applies this as a `min-height`
+  // on the BODY (so the light-mode content tint fills the full floored window) and,
+  // while searching, as the floor on the grid so the scrim stretches to cover the
+  // same area. Derived from the *constant* window floor + measured toolbar height
+  // (never the measured content height), so it can't feed back into the auto-height
+  // measure loop — the floor lives on the body, the parent of the measured node.
+  const bodyFillMinHeight = Math.max(
+    0,
+    CONTROL_PANELS_MAC_MIN_WINDOW_HEIGHT -
+      CONTROL_PANELS_MACOSX_TITLEBAR_HEIGHT -
+      toolbarHeight
+  );
 
   useLayoutEffect(() => {
     if (!instanceId || animatedHeight === undefined) return;
@@ -169,8 +165,8 @@ export function ControlPanelsMacAnimatedBody({
       data-scrollable={needsScroll ? true : undefined}
       style={
         {
-          "--control-panels-search-fill-min-height": searchFillMinHeight
-            ? `${searchFillMinHeight}px`
+          "--control-panels-mac-body-fill-min-height": bodyFillMinHeight
+            ? `${bodyFillMinHeight}px`
             : undefined,
         } as CSSProperties
       }

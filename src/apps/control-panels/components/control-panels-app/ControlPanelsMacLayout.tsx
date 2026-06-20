@@ -197,7 +197,6 @@ export function ControlPanelsMacLayout({
         instanceId={instanceId}
         toolbarHeight={toolbarHeight}
         navKey={currentEntry}
-        isSearching={isSearching}
       >
         {showHome ? (
           <ControlPanelsCategoryGrid

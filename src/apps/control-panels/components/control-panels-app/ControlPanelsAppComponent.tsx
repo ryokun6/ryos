@@ -497,7 +497,7 @@ export function ControlPanelsAppComponent({
       }
     >
         <div
-          className={`flex flex-col ${isMacOSTheme ? "w-full" : "size-full"} ${
+          className={`flex flex-col ${isMacOSTheme ? "w-full h-full min-h-0" : "size-full"} ${
             isWindowsLegacyTheme ? "pt-0 pb-2 px-2" : ""
           } ${
             isClassicMacTheme
