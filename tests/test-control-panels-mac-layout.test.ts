@@ -117,11 +117,13 @@ describe("Control Panels macOS 10.3 layout", () => {
     expect(animatedBodySource.includes("CONTROL_PANELS_MAC_SIZE_TRANSITION")).toBe(
       true
     );
-    // Measurement is decoupled from display: the measure subtree is never
-    // height-constrained (the body itself scrolls past the cap), so the natural
-    // height is read off the measure node's layout box via offsetHeight — which
-    // ignores ancestor transforms (open animation), unlike getBoundingClientRect,
-    // and needs no scrollHeight / flex / collapsed-inner-scroller hacks.
+    // Measurement is decoupled from display: the first/per-pane measure runs
+    // unconstrained (data-scrollable is only set once natural height is known),
+    // so the natural height is read off the measure node's layout box via
+    // offsetHeight — which ignores ancestor transforms (open animation), unlike
+    // getBoundingClientRect, and needs no scrollHeight / collapsed-inner-scroller
+    // recovery hacks. The high-water guard then freezes it when tabbed panes
+    // constrain the subtree to scroll the inner tab panel.
     expect(animatedBodySource.includes("offsetHeight")).toBe(true);
     expect(animatedBodySource.includes("getBoundingClientRect")).toBe(false);
     expect(animatedBodySource.includes("scrollHeight")).toBe(false);
@@ -137,17 +139,20 @@ describe("Control Panels macOS 10.3 layout", () => {
     expect(motionSource.includes("0.25, 0.1, 0.25, 1")).toBe(true);
     expect(appSource.includes("minHeight: 200")).toBe(true);
     expect(appSource.includes("maxHeight: 600")).toBe(true);
-    // Single scroll container: cap + overflow live on the body (parent of the
-    // measured node), and there is no inner tab-panel scroller anymore.
+    // Cap lives on the body (parent of the measured node). Simple panes scroll
+    // the body; tabbed panes pin the tab bar and scroll INSIDE the active tab
+    // panel once capped.
     expect(cssSource.includes(".control-panels-mac-body[data-scrollable]")).toBe(
       true
     );
     expect(cssSource.includes("overflow-y: auto")).toBe(true);
+    // Tabbed panes re-introduce the inner tab-panel scroller, gated to the
+    // scrollable (capped) state so it never constrains the first measure.
     expect(
       cssSource.match(
-        /\.control-panels-pref-form-tabbed \.control-panels-pref-tab-panel[\s\S]*?overflow-y:\s*auto/
+        /\.control-panels-mac-body\[data-scrollable\][\s\S]*?\.control-panels-pref-form-tabbed[\s\S]*?\.control-panels-pref-tab-panel[\s\S]*?overflow-y:\s*auto/
       )
-    ).toBeNull();
+    ).not.toBeNull();
   });
 
   test("macosx layout starts on Show All unless deep-linked", () => {

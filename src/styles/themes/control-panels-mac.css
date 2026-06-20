@@ -1047,6 +1047,79 @@
   grid-area: 1 / 1;
 }
 
+/* Tabbed panes at the cap: keep the tab bar pinned and scroll INSIDE the active
+   tab panel rather than scrolling the whole body. Safe with the decoupled
+   measurement: the body only gains data-scrollable AFTER the first (unconstrained)
+   measure captures the natural height, and the JS high-water mark freezes it — so
+   constraining this chain can't reopen the measure↔layout feedback loop, and
+   there is no collapsed-scroller recovery math to bounce on Safari. Gated to
+   tabbed panes; simple panes still scroll the body. */
+:root[data-os-theme="macosx"]
+  .control-panels-mac-body[data-scrollable]:has(.control-panels-pref-form-tabbed) {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-mac-body[data-scrollable]:has(.control-panels-pref-form-tabbed)
+  .control-panels-mac-body-measure,
+:root[data-os-theme="macosx"]
+  .control-panels-mac-body[data-scrollable]:has(.control-panels-pref-form-tabbed)
+  .control-panels-mac-body-layout {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-mac-body[data-scrollable]
+  .control-panels-mac-pane:has(.control-panels-pref-form-tabbed),
+:root[data-os-theme="macosx"]
+  .control-panels-mac-body[data-scrollable]
+  .control-panels-mac-pane-scroll:has(.control-panels-pref-form-tabbed),
+:root[data-os-theme="macosx"]
+  .control-panels-mac-body[data-scrollable]
+  .control-panels-mac-pane-inner:has(.control-panels-pref-form-tabbed),
+:root[data-os-theme="macosx"]
+  .control-panels-mac-body[data-scrollable]
+  .control-panels-pref-form-tabbed,
+:root[data-os-theme="macosx"]
+  .control-panels-mac-body[data-scrollable]
+  .control-panels-pref-tabbed {
+  flex: 1;
+  min-height: 0;
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-mac-body[data-scrollable]
+  .control-panels-mac-pane-scroll:has(.control-panels-pref-form-tabbed),
+:root[data-os-theme="macosx"]
+  .control-panels-mac-body[data-scrollable]
+  .control-panels-pref-form-tabbed {
+  overflow: hidden;
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-mac-body[data-scrollable]
+  .control-panels-pref-tabbed
+  > .control-panels-pref-well {
+  grid-template-rows: minmax(0, 1fr);
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-mac-body[data-scrollable]
+  .control-panels-pref-form-tabbed
+  .control-panels-pref-tab-panel {
+  min-height: 0;
+  overflow-y: auto;
+}
+
 /* Stack both panels in one grid cell; keep mounted content without collapsing the well */
 :root[data-os-theme="macosx"] .control-panels-pref-form-tabbed .control-panels-pref-tab-panel[hidden] {
   display: block !important;

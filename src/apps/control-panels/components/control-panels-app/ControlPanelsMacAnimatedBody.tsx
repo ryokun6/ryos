@@ -49,13 +49,18 @@ export function ControlPanelsMacAnimatedBody({
     const root = measureRef.current;
     if (!root) return;
 
-    // The measure subtree is NEVER height-constrained: when content exceeds the
-    // window cap, the body (motion.div) itself scrolls, not any inner element.
-    // So the measure node's layout box always reflects the true natural content
-    // height on every engine — no scroll-overflow / flex / collapsed-inner-scroller
-    // hacks. Crucially, toggling the body's overflow (data-scrollable) cannot
-    // change a child's height, so there is no measure↔layout feedback loop — the
-    // root cause of the Safari auto-size jank, worst for panes with inner scrollers.
+    // The FIRST measure always runs unconstrained: data-scrollable is only set
+    // once naturalHeight is known (and isMeasuring is false), so the initial
+    // layout-effect measure (and the per-pane re-measure on navKey) reads the
+    // true natural content height — the well auto-sizes to the tallest tab.
+    //
+    // Tabbed panes then scroll INSIDE the active tab panel (pinned tab bar) once
+    // capped, which constrains this measure subtree. That can't reopen the old
+    // Safari auto-size feedback loop: the high-water guard below freezes the
+    // captured natural height, and we never try to recover it from the collapsed
+    // inner scroller (the recovery math was what bounced on Safari). Simple panes
+    // stay unconstrained — the body itself scrolls — so they measure naturally
+    // on every pass.
     //
     // Use offsetHeight (the layout border-box height). A visual rect would also
     // include ancestor transforms, so the window's open/scale animation would
