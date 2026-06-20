@@ -294,11 +294,9 @@
 }
 
 :root[data-os-theme="macosx"] .control-panels-mac-pane-inner {
-  /* Simple form panes (Appearance, International, etc.): more air below toolbar.
-     Auto-height panes size the window to scrollHeight, so the extra bottom
-     padding here becomes the breathing room beneath the last row. */
+  /* Simple form panes (Appearance, International, etc.): more air below toolbar. */
   --control-panels-pref-content-inset-x: 16px;
-  padding: 18px 18px 28px;
+  padding: 18px 18px 18px;
 }
 
 /* Simple panes: grow with content, scroll on pane-scroll (not nested in pref-form). */
