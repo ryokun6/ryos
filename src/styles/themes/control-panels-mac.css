@@ -294,9 +294,11 @@
 }
 
 :root[data-os-theme="macosx"] .control-panels-mac-pane-inner {
-  /* Simple form panes (Appearance, International, etc.): more air below toolbar. */
+  /* Simple form panes (Appearance, International, etc.): more air below toolbar.
+     The larger bottom value is the auto-height window's breathing room beneath the
+     card; it now renders on Safari too (tabbed flex caps are gated to scrollable). */
   --control-panels-pref-content-inset-x: 16px;
-  padding: 18px 18px 18px;
+  padding: 18px 18px 28px;
 }
 
 /* Simple panes: grow with content, scroll on pane-scroll (not nested in pref-form). */
