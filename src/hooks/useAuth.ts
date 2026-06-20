@@ -29,6 +29,9 @@ export function useAuth() {
   }));
 
   const [isUsernameDialogOpen, setIsUsernameDialogOpen] = useState(false);
+  const [usernameDialogInitialTab, setUsernameDialogInitialTab] = useState<
+    "login" | "signup"
+  >("signup");
   const [newUsername, setNewUsername] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [isSettingUsername, setIsSettingUsername] = useState(false);
@@ -44,12 +47,21 @@ export function useAuth() {
   const [isLogoutConfirmDialogOpen, setIsLogoutConfirmDialogOpen] =
     useState(false);
 
-  const promptSetUsername = useCallback(() => {
+  const openUsernameDialog = useCallback((tab: "login" | "signup") => {
     setNewUsername("");
     setNewPassword("");
     setUsernameError(null);
+    setUsernameDialogInitialTab(tab);
     setIsUsernameDialogOpen(true);
   }, []);
+
+  const promptSetUsername = useCallback(() => {
+    openUsernameDialog("signup");
+  }, [openUsernameDialog]);
+
+  const promptLogin = useCallback(() => {
+    openUsernameDialog("login");
+  }, [openUsernameDialog]);
 
   const submitUsernameDialog = useCallback(async () => {
     setIsSettingUsername(true);
@@ -218,6 +230,8 @@ export function useAuth() {
     hasPassword,
 
     promptSetUsername,
+    promptLogin,
+    usernameDialogInitialTab,
     isUsernameDialogOpen,
     setIsUsernameDialogOpen,
     newUsername,

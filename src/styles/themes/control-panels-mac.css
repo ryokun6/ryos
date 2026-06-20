@@ -357,6 +357,7 @@
   color: rgba(0, 0, 0, 0.55);
   line-height: 1.25;
   max-width: 180px;
+  text-wrap: pretty;
 }
 
 :root[data-os-theme="macosx"] .control-panels-pref-form-control {
@@ -987,6 +988,9 @@
   display: flex;
   flex-direction: column;
   gap: 0;
+  /* Drop the tab bar a touch below the toolbar so the strip isn't crammed
+     against the pane top (adds to pane-inner's 4px). */
+  padding-top: 10px;
 }
 
 :root[data-os-theme="macosx"] .control-panels-pref-tab-bar {
@@ -1037,10 +1041,13 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   padding: 0;
+  /* Classic tab-well look: rounded top corners connect to the tab bar, square bottom. */
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
 }
 
 :root[data-os-theme="macosx"] .control-panels-pref-tab-panel {
-  padding: 16px var(--control-panels-pref-content-inset-x, 16px) 14px;
+  padding: 20px var(--control-panels-pref-content-inset-x, 16px) 14px;
 }
 
 :root[data-os-theme="macosx"] .control-panels-pref-form-tabbed .control-panels-pref-tab-panel {

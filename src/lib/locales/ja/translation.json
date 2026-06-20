@@ -1437,6 +1437,8 @@
         "add": "追加",
         "checking": "メールの確認中…",
         "description": "パスワード再設定用のメールアドレスを追加",
+        "link": "連携",
+        "linkForRecovery": "アカウント復旧用のメールアドレスを連携",
         "loggedOutDescription": "サインインしてメールを管理",
         "manage": "管理",
         "notAvailable": "このサーバーではメールによるリカバリは利用できません",
@@ -1610,7 +1612,6 @@
         "internetNetwork": "インターネットとネットワーク",
         "personal": "パーソナル"
       },
-      "securityLoginRequired": "ログインしてパスワードと復旧設定を管理します",
       "select": "選択",
       "selectACategory": "カテゴリを選択",
       "selectAPreset": "プリセットを選択",
@@ -1630,6 +1631,7 @@
       "showBootScreen": "起動画面を表示",
       "showResizers": "リサイザーを表示",
       "showResizersDescription": "ウィンドウのサイズ変更ハンドルを強調表示",
+      "signUp": "新規登録",
       "softwareUpdateDescription": "ryOSの新しいバージョンが利用可能か確認します",
       "sound": "サウンド",
       "soundTabs": {

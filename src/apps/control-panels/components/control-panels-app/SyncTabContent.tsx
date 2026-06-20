@@ -144,7 +144,7 @@ export function SyncTabContent({
               title={t("apps.control-panels.autoSync.title")}
               subtitle={t("apps.control-panels.autoSync.description")}
             />
-            <Button variant="default" onClick={promptSetUsername} className="h-7">
+            <Button variant="retro" onClick={promptSetUsername} className="h-7">
               {t("apps.control-panels.login")}
             </Button>
           </div>

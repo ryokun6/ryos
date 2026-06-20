@@ -50,6 +50,7 @@ export type AccountsPaneContentProps = {
   debugMode: boolean;
   isAdmin: boolean;
   promptSetUsername: () => void;
+  promptLogin: () => void;
   telegramLinkedAccount: TelegramLinkedAccount | null;
   openTelegramDialog: () => void;
   isTelegramStatusLoading: boolean;
@@ -95,6 +96,7 @@ export function AccountsPaneContent({
   debugMode,
   isAdmin,
   promptSetUsername,
+  promptLogin,
   telegramLinkedAccount,
   openTelegramDialog,
   isTelegramStatusLoading,
@@ -145,7 +147,7 @@ export function AccountsPaneContent({
 
   const emailSubtitle = (() => {
     if (!username) {
-      return t("apps.control-panels.email.loggedOutDescription");
+      return t("apps.control-panels.email.linkForRecovery");
     }
     if (isEmailStatusLoading && !recoveryEmailStatus) {
       return t("apps.control-panels.email.checking");
@@ -162,7 +164,7 @@ export function AccountsPaneContent({
             email: recoveryEmailStatus.email,
           });
     }
-    return t("apps.control-panels.email.description");
+    return t("apps.control-panels.email.linkForRecovery");
   })();
 
   const emailActionLabel = (() => {
@@ -171,7 +173,7 @@ export function AccountsPaneContent({
         ? t("apps.control-panels.email.manage")
         : t("apps.control-panels.email.verify");
     }
-    return t("apps.control-panels.email.add");
+    return t("apps.control-panels.email.link");
   })();
 
   const isEmailActionDisabled =
@@ -238,6 +240,7 @@ export function AccountsPaneContent({
                 accountJoinedAt={accountJoinedAt}
                 locale={locale}
                 promptSetUsername={promptSetUsername}
+                promptLogin={promptLogin}
               />
 
               <div
@@ -281,7 +284,7 @@ export function AccountsPaneContent({
                   <div
                     className={cn(
                       controlPanelItemIconShell,
-                      "rounded-full bg-[#229ED9] text-white flex items-center justify-center"
+                      "rounded-full bg-[#229ED9] text-white flex items-center justify-center scale-90"
                     )}
                     aria-hidden="true"
                   >
@@ -365,6 +368,7 @@ export function AccountsPaneContent({
               locale={locale}
               hasPassword={hasPassword}
               promptSetUsername={promptSetUsername}
+              promptLogin={promptLogin}
               logout={logout}
               handleLogoutAllDevices={handleLogoutAllDevices}
               isLoggingOutAllDevices={isLoggingOutAllDevices}

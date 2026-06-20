@@ -1437,6 +1437,8 @@
         "add": "Hinzufügen",
         "checking": "E-Mails werden geprüft …",
         "description": "E-Mail-Adresse zur Passwortwiederherstellung hinzufügen",
+        "link": "Verknüpfen",
+        "linkForRecovery": "E-Mail-Adresse zur Kontowiederherstellung verknüpfen",
         "loggedOutDescription": "Anmelden, um E-Mails zu verwalten",
         "manage": "Verwalten",
         "notAvailable": "E-Mail-Wiederherstellung ist auf diesem Server nicht verfügbar",
@@ -1610,7 +1612,6 @@
         "internetNetwork": "Internet & Netzwerk",
         "personal": "Persönlich"
       },
-      "securityLoginRequired": "Anmelden, um Passwort- und Wiederherstellungseinstellungen zu verwalten",
       "select": "Auswählen",
       "selectACategory": "Kategorie auswählen",
       "selectAPreset": "Voreinstellung auswählen",
@@ -1630,6 +1631,7 @@
       "showBootScreen": "Startbildschirm anzeigen",
       "showResizers": "Größenänderungsgriffe anzeigen",
       "showResizersDescription": "Fenster-Größenänderungsgriffe hervorheben",
+      "signUp": "Registrieren",
       "softwareUpdateDescription": "Prüfen, ob eine neuere Version von ryOS verfügbar ist",
       "sound": "Ton",
       "soundTabs": {

@@ -1437,6 +1437,8 @@
         "add": "추가",
         "checking": "이메일 확인 중…",
         "description": "비밀번호 복구를 위한 이메일을 추가하세요.",
+        "link": "연결",
+        "linkForRecovery": "계정 복구를 위한 이메일 연결",
         "loggedOutDescription": "이메일 관리를 위해 로그인하세요.",
         "manage": "관리",
         "notAvailable": "이 서버에서는 이메일 복구를 사용할 수 없습니다.",
@@ -1610,7 +1612,6 @@
         "internetNetwork": "인터넷 및 네트워크",
         "personal": "개인"
       },
-      "securityLoginRequired": "로그인하여 암호 및 복구 설정을 관리하십시오",
       "select": "선택",
       "selectACategory": "카테고리 선택",
       "selectAPreset": "사전 설정 선택",
@@ -1630,6 +1631,7 @@
       "showBootScreen": "부팅 화면 표시",
       "showResizers": "크기 조절기 표시",
       "showResizersDescription": "윈도우 크기 조절 핸들 강조 표시",
+      "signUp": "회원가입",
       "softwareUpdateDescription": "ryOS의 최신 버전을 사용할 수 있는지 확인합니다",
       "sound": "사운드",
       "soundTabs": {

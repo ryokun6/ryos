@@ -19,6 +19,7 @@ export type SecurityPaneContentProps = {
   locale: LanguageCode;
   hasPassword: boolean | null;
   promptSetUsername: () => void;
+  promptLogin: () => void;
   logout: () => void;
   handleLogoutAllDevices: () => void;
   isLoggingOutAllDevices: boolean;
@@ -38,6 +39,7 @@ export function SecurityPaneContent({
   locale,
   hasPassword,
   promptSetUsername,
+  promptLogin,
   logout,
   handleLogoutAllDevices,
   isLoggingOutAllDevices,
@@ -67,6 +69,7 @@ export function SecurityPaneContent({
           accountJoinedAt={accountJoinedAt}
           locale={locale}
           promptSetUsername={promptSetUsername}
+          promptLogin={promptLogin}
         />
 
         {username ? (
@@ -134,11 +137,7 @@ export function SecurityPaneContent({
               </Button>
             </ControlPanelsPrefFormRow>
           </>
-        ) : (
-          <p className="text-[11px] text-neutral-600 font-geneva-12 leading-relaxed">
-            {t("apps.control-panels.securityLoginRequired")}
-          </p>
-        )}
+        ) : null}
       </div>
       <RecoveryEmailDialog
         isOpen={isRecoveryEmailOpen}

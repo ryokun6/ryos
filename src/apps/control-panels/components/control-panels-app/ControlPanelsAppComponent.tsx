@@ -134,6 +134,8 @@ export function ControlPanelsAppComponent({
     setTtsVoice,
     username,
     promptSetUsername,
+    promptLogin,
+    usernameDialogInitialTab,
     isUsernameDialogOpen,
     setIsUsernameDialogOpen,
     newUsername,
@@ -314,6 +316,7 @@ export function ControlPanelsAppComponent({
       isMacOSTheme={isMacOSTheme}
       username={username}
       promptSetUsername={promptSetUsername}
+      promptLogin={promptLogin}
       autoSyncEnabled={autoSyncEnabled}
       setAutoSyncEnabled={setAutoSyncEnabled}
       isAutoSyncChecking={isAutoSyncChecking}
@@ -458,6 +461,7 @@ export function ControlPanelsAppComponent({
           isVerifyDialogOpen={isVerifyDialogOpen}
           setVerifyDialogOpen={setVerifyDialogOpen}
           promptSetUsername={promptSetUsername}
+          usernameDialogInitialTab={usernameDialogInitialTab}
           isPasswordDialogOpen={isPasswordDialogOpen}
           setIsPasswordDialogOpen={setIsPasswordDialogOpen}
           setPasswordInput={setPasswordInput}

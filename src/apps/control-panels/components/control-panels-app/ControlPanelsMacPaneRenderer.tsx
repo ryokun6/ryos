@@ -76,6 +76,7 @@ export type ControlPanelsMacPaneRendererProps = {
   isMacOSTheme: boolean;
   username: string | null;
   promptSetUsername: () => void;
+  promptLogin: () => void;
   autoSyncEnabled: boolean;
   setAutoSyncEnabled: (enabled: boolean) => void;
   isAutoSyncChecking: boolean;
@@ -215,6 +216,7 @@ export function ControlPanelsMacPaneRenderer(
           locale={props.currentLanguage}
           hasPassword={props.hasPassword}
           promptSetUsername={props.promptSetUsername}
+          promptLogin={props.promptLogin}
           logout={props.logout}
           handleLogoutAllDevices={props.handleLogoutAllDevices}
           isLoggingOutAllDevices={props.isLoggingOutAllDevices}
@@ -339,6 +341,7 @@ export function ControlPanelsMacPaneRenderer(
           debugMode={props.debugMode}
           isAdmin={props.isAdmin}
           promptSetUsername={props.promptSetUsername}
+          promptLogin={props.promptLogin}
           telegramLinkedAccount={props.telegramLinkedAccount}
           openTelegramDialog={props.openTelegramDialog}
           isTelegramStatusLoading={props.isTelegramStatusLoading}

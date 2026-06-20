@@ -1437,6 +1437,8 @@
         "add": "Añadir",
         "checking": "Comprobando correo electrónico…",
         "description": "Añade un correo electrónico para la recuperación de la contraseña",
+        "link": "Vincular",
+        "linkForRecovery": "Vincular un correo electrónico para la recuperación de la cuenta",
         "loggedOutDescription": "Inicia sesión para gestionar el correo electrónico",
         "manage": "Gestionar",
         "notAvailable": "La recuperación por correo electrónico no está disponible en este servidor",
@@ -1610,7 +1612,6 @@
         "internetNetwork": "Internet y red",
         "personal": "Personal"
       },
-      "securityLoginRequired": "Inicia sesión para gestionar la configuración de contraseña y recuperación",
       "select": "Seleccionar",
       "selectACategory": "Seleccionar una categoría",
       "selectAPreset": "Seleccionar un preajuste",
@@ -1630,6 +1631,7 @@
       "showBootScreen": "Mostrar pantalla de arranque",
       "showResizers": "Mostrar tiradores de redimensionamiento",
       "showResizersDescription": "Resaltar los tiradores de redimensionamiento de las ventanas",
+      "signUp": "Registrarse",
       "softwareUpdateDescription": "Comprobar si hay una versión más reciente de ryOS disponible",
       "sound": "Sonido",
       "soundTabs": {

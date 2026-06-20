@@ -20,6 +20,8 @@ export type AccountProfileHeaderProps = {
   accountJoinedAt?: number | null;
   locale: LanguageCode;
   promptSetUsername: () => void;
+  /** Opens the auth dialog on the "login" tab. Falls back to `promptSetUsername`. */
+  promptLogin?: () => void;
 };
 
 export function AccountProfileHeader({
@@ -31,6 +33,7 @@ export function AccountProfileHeader({
   accountJoinedAt,
   locale,
   promptSetUsername,
+  promptLogin,
 }: AccountProfileHeaderProps) {
   if (username) {
     return (
@@ -93,13 +96,13 @@ export function AccountProfileHeader({
       <div
         className={cn(
           ACCOUNT_PROFILE_AVATAR_SIZE,
-          "shrink-0 flex items-center justify-center overflow-hidden rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.15)]"
+          "shrink-0 flex items-center justify-center"
         )}
       >
         <img
           src="/apple-touch-icon.png"
           alt={t("apps.control-panels.ryOSAccount")}
-          className="size-7 object-contain"
+          className="size-full object-contain"
         />
       </div>
       <div className="control-panels-account-profile-text">
@@ -110,13 +113,18 @@ export function AccountProfileHeader({
           {t("apps.control-panels.loginToSendMessages")}
         </span>
       </div>
-      <Button
-        variant="retro"
-        onClick={promptSetUsername}
-        className="control-panels-account-profile-login h-7"
-      >
-        {t("apps.control-panels.login")}
-      </Button>
+      <div className="control-panels-account-profile-login flex items-center justify-center gap-2">
+        <Button variant="default" onClick={promptSetUsername} className="h-7">
+          {t("apps.control-panels.signUp")}
+        </Button>
+        <Button
+          variant="retro"
+          onClick={promptLogin ?? promptSetUsername}
+          className="h-7"
+        >
+          {t("apps.control-panels.login")}
+        </Button>
+      </div>
     </div>
   );
 }

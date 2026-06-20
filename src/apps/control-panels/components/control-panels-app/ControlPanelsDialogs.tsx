@@ -46,6 +46,7 @@ export type ControlPanelsDialogsProps = {
   isVerifyDialogOpen: boolean;
   setVerifyDialogOpen: (open: boolean) => void;
   promptSetUsername: () => void;
+  usernameDialogInitialTab: "login" | "signup";
   isPasswordDialogOpen: boolean;
   setIsPasswordDialogOpen: (open: boolean) => void;
   setPasswordInput: (value: string) => void;
@@ -115,6 +116,7 @@ export function ControlPanelsDialogs(props: ControlPanelsDialogsProps) {
     isVerifyDialogOpen,
     setVerifyDialogOpen,
     promptSetUsername,
+    usernameDialogInitialTab,
     isPasswordDialogOpen,
     setIsPasswordDialogOpen,
     setPasswordInput,
@@ -174,7 +176,7 @@ export function ControlPanelsDialogs(props: ControlPanelsDialogsProps) {
         description={t("common.system.formatFileSystemDesc")}
       />
       <LoginDialog
-        initialTab="signup"
+        initialTab={usernameDialogInitialTab}
         isOpen={isUsernameDialogOpen}
         onOpenChange={setIsUsernameDialogOpen}
         usernameInput={verifyUsernameInput}

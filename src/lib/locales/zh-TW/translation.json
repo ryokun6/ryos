@@ -1437,6 +1437,8 @@
         "add": "新增",
         "checking": "正在檢查電子郵件…",
         "description": "新增用於重設密碼的電子郵件",
+        "link": "連結",
+        "linkForRecovery": "連結電子郵件以供帳號救援",
         "loggedOutDescription": "登入以管理電子郵件",
         "manage": "管理",
         "notAvailable": "此伺服器不支援電子郵件復原",
@@ -1610,7 +1612,6 @@
         "internetNetwork": "網路與連線",
         "personal": "個人"
       },
-      "securityLoginRequired": "登入以管理密碼與復原設定",
       "select": "選取",
       "selectACategory": "選取類別",
       "selectAPreset": "選取預設值",
@@ -1630,6 +1631,7 @@
       "showBootScreen": "顯示啟動畫面",
       "showResizers": "顯示調整大小控點",
       "showResizersDescription": "醒目提示視窗調整大小控點",
+      "signUp": "註冊",
       "softwareUpdateDescription": "檢查是否有較新版本的 ryOS 可供使用",
       "sound": "音效",
       "soundTabs": {

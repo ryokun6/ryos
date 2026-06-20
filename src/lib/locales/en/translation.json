@@ -2895,7 +2895,6 @@
         "file": "File",
         "edit": "Edit"
       },
-      "securityLoginRequired": "Log in to manage password and recovery settings",
       "password": "Password",
       "passwordDescription": "Protect your ryOS account with a password",
       "recoveryEmailDescription": "Add an email for password recovery",
@@ -2997,6 +2996,7 @@
       "ryOSAccount": "ryOS Account",
       "loginToSendMessages": "Login to send messages and more",
       "login": "Login",
+      "signUp": "Sign Up",
       "recoveryEmailMenu": "Recovery Email…",
       "deleteAccountMenu": "Delete Account…",
       "deleteAccountRowDescription": "Permanently remove your account and synced data",
@@ -3042,12 +3042,14 @@
       "email": {
         "title": "Email",
         "description": "Add an email for password recovery",
+        "linkForRecovery": "Link an email for account recovery",
         "loggedOutDescription": "Sign in to manage email",
         "checking": "Checking email…",
         "verifiedAs": "{{email}} · Verified",
         "unverifiedAs": "{{email}} · Not verified",
         "notAvailable": "Email recovery is not available on this server",
         "add": "Add",
+        "link": "Link",
         "verify": "Verify",
         "manage": "Manage"
       },
