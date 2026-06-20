@@ -1015,28 +1015,34 @@
    (`--os-accent-button-bg`) with a dimmer blue fallback so the default accent
    doesn't glow against the dark window. */
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .os-slider-range {
-  background: var(
-    --os-accent-button-bg,
-    linear-gradient(
-      rgba(0, 50, 130, 0.7),
-      rgba(40, 95, 165, 0.7),
-      rgba(70, 135, 195, 0.7)
-    )
-  ) !important;
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.12),
-    inset 0 -1px 1px rgba(0, 0, 0, 0.4);
+  background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.16) 0%,
+        rgba(255, 255, 255, 0.04) 60%,
+        rgba(255, 255, 255, 0) 100%
+      )
+      top / 100% 50% no-repeat,
+    var(
+      --os-accent-button-bg,
+      linear-gradient(
+        rgba(0, 50, 130, 0.7),
+        rgba(40, 95, 165, 0.7),
+        rgba(70, 135, 195, 0.7)
+      )
+    ) !important;
+  box-shadow: inset 0 -1px 1px rgba(0, 0, 0, 0.4);
 }
 
-/* Vertical filled range (dark) — layer a left→right highlight over the fixed
-   top→bottom accent gloss and flip the bevel insets to the short axis. */
+/* Vertical filled range (dark) — shine + bevel on the short (horizontal) axis. */
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"]
   .os-slider-range[data-orientation="vertical"] {
   background: linear-gradient(
         to right,
         rgba(255, 255, 255, 0.16) 0%,
-        rgba(255, 255, 255, 0.02) 55%,
+        rgba(255, 255, 255, 0.04) 60%,
         rgba(255, 255, 255, 0) 100%
-      ),
+      )
+      left / 50% 100% no-repeat,
     var(
       --os-accent-button-bg,
       linear-gradient(
@@ -1046,8 +1052,7 @@
         rgba(70, 135, 195, 0.7)
       )
     ) !important;
-  box-shadow: inset 1px 0 1px rgba(255, 255, 255, 0.12),
-    inset -1px 0 1px rgba(0, 0, 0, 0.4);
+  box-shadow: inset -1px 0 1px rgba(0, 0, 0, 0.4);
 }
 
 /* Slider track (dark) — match the dark switch track so the recessed channel
