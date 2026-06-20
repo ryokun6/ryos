@@ -11,12 +11,10 @@ import { useAppStore } from "@/stores/useAppStore";
 import { cn } from "@/lib/utils";
 import {
   CONTROL_PANELS_MAC_MAX_WINDOW_HEIGHT,
+  CONTROL_PANELS_MAC_MIN_WINDOW_HEIGHT,
   CONTROL_PANELS_MACOSX_TITLEBAR_HEIGHT,
   CONTROL_PANELS_MAC_SIZE_TRANSITION,
 } from "./controlPanelsMacMotion";
-
-const CONTENT_MEASURE_SELECTOR =
-  ".control-panels-category-grid, .control-panels-mac-pane";
 
 export type ControlPanelsMacAnimatedBodyProps = {
   instanceId?: string;
@@ -51,18 +49,34 @@ export function ControlPanelsMacAnimatedBody({
     const root = measureRef.current;
     if (!root) return;
 
-    // Measure unconstrained content roots so scroll-constrained flex layout cannot
-    // collapse scrollHeight and toggle data-scrollable (height flicker).
-    const content =
-      root.querySelector<HTMLElement>(CONTENT_MEASURE_SELECTOR) ?? root;
-    const next = Math.ceil(content.scrollHeight);
+    // The FIRST measure always runs unconstrained: data-scrollable is only set
+    // once naturalHeight is known (and isMeasuring is false), so the initial
+    // layout-effect measure (and the per-pane re-measure on navKey) reads the
+    // true natural content height — the well auto-sizes to the tallest tab.
+    //
+    // Tabbed panes then scroll INSIDE the active tab panel (pinned tab bar) once
+    // capped, which constrains this measure subtree. That can't reopen the old
+    // Safari auto-size feedback loop: the high-water guard below freezes the
+    // captured natural height, and we never try to recover it from the collapsed
+    // inner scroller (the recovery math was what bounced on Safari). Simple panes
+    // stay unconstrained — the body itself scrolls — so they measure naturally
+    // on every pass.
+    //
+    // Use offsetHeight (the layout border-box height). A visual rect would also
+    // include ancestor transforms, so the window's open/scale animation would
+    // corrupt the first measurement (locking in a too-short Show All on initial
+    // load, since a transform end fires no ResizeObserver to correct it).
+    const next = root.offsetHeight;
     if (next <= 0) return;
 
     const prev = naturalHeightRef.current;
-    if (prev !== null && next < prev - 1 && next <= maxBodyHeight) {
-      return;
-    }
-
+    // Within a single pane (same navKey) grow to fit, but don't shrink on content
+    // swaps like switching tabs — the inactive tab panel is display:none, so the
+    // stacked well reports only the active tab's height. Holding the high-water
+    // mark keeps the window sized to the tallest tab so swaps don't jitter. The
+    // navKey reset (below) re-baselines when navigating to a different pane.
+    // Shrinks above the cap are allowed (the window is already maxed there).
+    if (prev !== null && next < prev - 1 && next <= maxBodyHeight) return;
     if (prev === next) return;
     naturalHeightRef.current = next;
     setNaturalHeight(next);
@@ -100,9 +114,14 @@ export function ControlPanelsMacAnimatedBody({
   useLayoutEffect(() => {
     if (!instanceId || animatedHeight === undefined) return;
 
-    const totalWindowHeight = Math.min(
-      CONTROL_PANELS_MAC_MAX_WINDOW_HEIGHT,
-      CONTROL_PANELS_MACOSX_TITLEBAR_HEIGHT + toolbarHeight + animatedHeight
+    // Respect the window's min/max height: never auto-shrink below the configured
+    // minimum (matches windowConstraints.minHeight) even when content is short.
+    const totalWindowHeight = Math.max(
+      CONTROL_PANELS_MAC_MIN_WINDOW_HEIGHT,
+      Math.min(
+        CONTROL_PANELS_MAC_MAX_WINDOW_HEIGHT,
+        CONTROL_PANELS_MACOSX_TITLEBAR_HEIGHT + toolbarHeight + animatedHeight
+      )
     );
 
     if (lastWindowHeightRef.current === totalWindowHeight) return;

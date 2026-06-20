@@ -117,12 +117,21 @@ describe("Control Panels macOS 10.3 layout", () => {
     expect(animatedBodySource.includes("CONTROL_PANELS_MAC_SIZE_TRANSITION")).toBe(
       true
     );
-    expect(animatedBodySource.includes("scrollHeight")).toBe(true);
+    // Measurement is decoupled from display: the first/per-pane measure runs
+    // unconstrained (data-scrollable is only set once natural height is known),
+    // so the natural height is read off the measure node's layout box via
+    // offsetHeight — which ignores ancestor transforms (open animation), unlike
+    // getBoundingClientRect, and needs no scrollHeight / collapsed-inner-scroller
+    // recovery hacks. The high-water guard then freezes it when tabbed panes
+    // constrain the subtree to scroll the inner tab panel.
+    expect(animatedBodySource.includes("offsetHeight")).toBe(true);
+    expect(animatedBodySource.includes("getBoundingClientRect")).toBe(false);
+    expect(animatedBodySource.includes("scrollHeight")).toBe(false);
+    expect(animatedBodySource.includes("collapsedOverflow")).toBe(false);
     expect(animatedBodySource.includes("data-scrollable")).toBe(true);
     expect(animatedBodySource.includes("control-panels-mac-body-layout")).toBe(
       true
     );
-    expect(animatedBodySource.includes("CONTENT_MEASURE_SELECTOR")).toBe(true);
     expect(animatedBodySource.includes("naturalHeightRef")).toBe(true);
     expect(animatedBodySource.includes("isMeasuring")).toBe(true);
     expect(animatedBodySource.includes("overflow-y-auto")).toBe(false);
@@ -130,19 +139,18 @@ describe("Control Panels macOS 10.3 layout", () => {
     expect(motionSource.includes("0.25, 0.1, 0.25, 1")).toBe(true);
     expect(appSource.includes("minHeight: 200")).toBe(true);
     expect(appSource.includes("maxHeight: 600")).toBe(true);
+    // Cap lives on the body (parent of the measured node). Simple panes scroll
+    // the body; tabbed panes pin the tab bar and scroll INSIDE the active tab
+    // panel once capped.
     expect(cssSource.includes(".control-panels-mac-body[data-scrollable]")).toBe(
       true
     );
-    expect(cssSource.includes(".control-panels-mac-body-layout")).toBe(true);
-    expect(
-      cssSource.includes(
-        ".control-panels-mac-pane-scroll:not(:has(.control-panels-pref-form-tabbed))"
-      )
-    ).toBe(true);
     expect(cssSource.includes("overflow-y: auto")).toBe(true);
+    // Tabbed panes re-introduce the inner tab-panel scroller, gated to the
+    // scrollable (capped) state so it never constrains the first measure.
     expect(
       cssSource.match(
-        /\.control-panels-pref-form-tabbed \.control-panels-pref-tab-panel[\s\S]*?overflow-y:\s*auto/
+        /\.control-panels-mac-body\[data-scrollable\][\s\S]*?\.control-panels-pref-form-tabbed[\s\S]*?\.control-panels-pref-tab-panel[\s\S]*?overflow-y:\s*auto/
       )
     ).not.toBeNull();
   });

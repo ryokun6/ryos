@@ -24,55 +24,16 @@
   width: 100%;
 }
 
-/* Height-capped body: scroll inside preference panes (not the whole window). */
-:root[data-os-theme="macosx"]
-  .control-panels-mac-body[data-scrollable]:has(.control-panels-mac-pane) {
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-:root[data-os-theme="macosx"]
-  .control-panels-mac-body[data-scrollable]:not(:has(.control-panels-mac-pane)) {
-  overflow-y: auto;
-}
-
-/* Scroll constraints live on the layout shell — keep the measure root from
-   height: 100% so scrollHeight stays stable and data-scrollable does not oscillate. */
-:root[data-os-theme="macosx"]
-  .control-panels-mac-body[data-scrollable]:has(.control-panels-mac-pane)
-  .control-panels-mac-body-measure {
-  flex: 1 1 0;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-:root[data-os-theme="macosx"]
-  .control-panels-mac-body[data-scrollable]:has(.control-panels-mac-pane)
-  .control-panels-mac-body-layout {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-:root[data-os-theme="macosx"]
-  .control-panels-mac-body[data-scrollable]
-  .control-panels-mac-pane {
-  flex: 1;
-  min-height: 0;
-}
-
-:root[data-os-theme="macosx"]
-  .control-panels-mac-body[data-scrollable]
-  .control-panels-mac-pane-scroll:not(:has(.control-panels-pref-form-tabbed)):not(
-    :has(.control-panels-pref-theme-preview)
-  ) {
-  flex: 1;
-  min-height: 0;
+/* Auto-height body (single source of truth for scrolling):
+   The measure subtree (.control-panels-mac-body-measure → -layout → pane) always
+   lays out at its natural height — it is never flex/height-constrained. When that
+   natural height exceeds the window cap, the body element itself becomes the one
+   and only scroll container. Because the cap + overflow live on the *parent* of
+   the measured node, toggling data-scrollable can never change the measured
+   height: measurement is stable across the cap boundary, so there is no
+   measure↔layout feedback loop and none of the WebKit/Safari nested-flex
+   scrollHeight jank (which was worst for panes with an inner scroller). */
+:root[data-os-theme="macosx"] .control-panels-mac-body[data-scrollable] {
   overflow-y: auto;
 }
 
@@ -183,7 +144,8 @@
 /* Home grid — one continuous pinstripe on the scroll area; zebra tint on even sections only */
 :root[data-os-theme="macosx"] .control-panels-category-grid {
   --control-panels-section-inset-x: 16px;
-  padding: 0 var(--control-panels-section-inset-x);
+  /* Breathing room after the last section row on the Show All screen. */
+  padding: 0 var(--control-panels-section-inset-x) 16px;
   background-image: var(--os-pinstripe-window);
 }
 
@@ -294,9 +256,11 @@
 }
 
 :root[data-os-theme="macosx"] .control-panels-mac-pane-inner {
-  /* Simple form panes (Appearance, International, etc.): more air below toolbar. */
+  /* Simple form panes (Appearance, International, etc.): more air below toolbar.
+     The larger bottom value is the auto-height window's breathing room beneath the
+     card; it now renders on Safari too (tabbed flex caps are gated to scrollable). */
   --control-panels-pref-content-inset-x: 16px;
-  padding: 18px 18px 18px;
+  padding: 18px 18px 28px;
 }
 
 /* Simple panes: grow with content, scroll on pane-scroll (not nested in pref-form). */
@@ -447,48 +411,12 @@
   color: #111;
 }
 
-/* Appearance pane: flex fill — preview well grows/shrinks like tab panel content */
-:root[data-os-theme="macosx"]
-  .control-panels-mac-pane-scroll:has(.control-panels-pref-theme-preview) {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-}
-
-:root[data-os-theme="macosx"]
-  .control-panels-mac-pane-inner:has(.control-panels-pref-theme-preview) {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-}
-
-:root[data-os-theme="macosx"]
-  .control-panels-pref-form:has(.control-panels-pref-theme-preview) {
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-}
-
-:root[data-os-theme="macosx"]
-  .control-panels-pref-form-section:has(.control-panels-pref-theme-preview) {
-  flex: 1;
-  min-height: 0;
-}
-
-:root[data-os-theme="macosx"]
-  .control-panels-pref-form-section:has(.control-panels-pref-theme-preview)
-  > .control-panels-pref-form-row {
-  flex-shrink: 0;
-}
-
-/* Appearance pane: recessed live theme preview well */
+/* Appearance pane: recessed live theme preview well.
+   Fixed natural height (min-height) — the window auto-sizes to content, so the
+   preview no longer needs flex-fill to absorb leftover space. */
 :root[data-os-theme="macosx"] .control-panels-pref-theme-preview {
   display: flex;
   flex-direction: column;
-  flex: 1;
   min-height: 180px;
   margin-top: 2px;
   padding: 10px 12px;
@@ -1038,35 +966,26 @@
   pointer-events: none;
 }
 
-/* Tabbed preference pane (Desktop | Screen Saver) — tabs on pinstripe, well below */
+/* Tabbed preference pane (Desktop | Screen Saver) — tabs on pinstripe, well below.
+   Always flows at natural height; the body scrolls if the pane exceeds the cap.
+   No inner scroller, so measurement stays reliable and the pane-inner's bottom
+   padding always renders (the old [data-scrollable] flex/overflow caps that broke
+   Safari measurement have been removed). */
 :root[data-os-theme="macosx"] .control-panels-mac-pane-scroll:has(.control-panels-pref-form-tabbed) {
   display: flex;
   flex-direction: column;
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
 }
 
 :root[data-os-theme="macosx"] .control-panels-mac-pane-inner:has(.control-panels-pref-form-tabbed) {
   display: flex;
   flex-direction: column;
-  flex: 1;
-  min-height: 0;
   /* Tabbed panes: tabs sit on pinstripe — less air above tab bar than simple wells. */
   padding-top: 4px;
-}
-
-:root[data-os-theme="macosx"] .control-panels-pref-form-tabbed {
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
 }
 
 :root[data-os-theme="macosx"] .control-panels-pref-tabbed {
   display: flex;
   flex-direction: column;
-  flex: 1;
-  min-height: 0;
   gap: 0;
 }
 
@@ -1113,12 +1032,11 @@
 }
 
 :root[data-os-theme="macosx"] .control-panels-pref-tabbed > .control-panels-pref-well {
+  /* Single-cell grid stacks both tab panels (one hidden) so the well sizes to the
+     tallest and tab swaps don't shift layout. Auto rows in auto-height mode. */
   display: grid;
-  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
-  flex: 1;
-  min-height: 0;
+  grid-template-columns: minmax(0, 1fr);
   padding: 0;
-  overflow: hidden;
 }
 
 :root[data-os-theme="macosx"] .control-panels-pref-tab-panel {
@@ -1127,6 +1045,77 @@
 
 :root[data-os-theme="macosx"] .control-panels-pref-form-tabbed .control-panels-pref-tab-panel {
   grid-area: 1 / 1;
+}
+
+/* Tabbed panes at the cap: keep the tab bar pinned and scroll INSIDE the active
+   tab panel rather than scrolling the whole body. Safe with the decoupled
+   measurement: the body only gains data-scrollable AFTER the first (unconstrained)
+   measure captures the natural height, and the JS high-water mark freezes it — so
+   constraining this chain can't reopen the measure↔layout feedback loop, and
+   there is no collapsed-scroller recovery math to bounce on Safari. Gated to
+   tabbed panes; simple panes still scroll the body. */
+:root[data-os-theme="macosx"]
+  .control-panels-mac-body[data-scrollable]:has(.control-panels-pref-form-tabbed) {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-mac-body[data-scrollable]:has(.control-panels-pref-form-tabbed)
+  .control-panels-mac-body-measure,
+:root[data-os-theme="macosx"]
+  .control-panels-mac-body[data-scrollable]:has(.control-panels-pref-form-tabbed)
+  .control-panels-mac-body-layout {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-mac-body[data-scrollable]
+  .control-panels-mac-pane:has(.control-panels-pref-form-tabbed),
+:root[data-os-theme="macosx"]
+  .control-panels-mac-body[data-scrollable]
+  .control-panels-mac-pane-scroll:has(.control-panels-pref-form-tabbed),
+:root[data-os-theme="macosx"]
+  .control-panels-mac-body[data-scrollable]
+  .control-panels-mac-pane-inner:has(.control-panels-pref-form-tabbed),
+:root[data-os-theme="macosx"]
+  .control-panels-mac-body[data-scrollable]
+  .control-panels-pref-form-tabbed,
+:root[data-os-theme="macosx"]
+  .control-panels-mac-body[data-scrollable]
+  .control-panels-pref-tabbed {
+  flex: 1;
+  min-height: 0;
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-mac-body[data-scrollable]
+  .control-panels-mac-pane-scroll:has(.control-panels-pref-form-tabbed),
+:root[data-os-theme="macosx"]
+  .control-panels-mac-body[data-scrollable]
+  .control-panels-pref-form-tabbed {
+  overflow: hidden;
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-mac-body[data-scrollable]
+  .control-panels-pref-tabbed
+  > .control-panels-pref-well {
+  grid-template-rows: minmax(0, 1fr);
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-mac-body[data-scrollable]
+  .control-panels-pref-form-tabbed
+  .control-panels-pref-tab-panel {
   min-height: 0;
   overflow-y: auto;
 }
