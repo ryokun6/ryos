@@ -2857,8 +2857,98 @@
       "sound": "Sound",
       "sync": "Sync",
       "system": "System",
+      "sections": {
+        "personal": "Personal",
+        "hardwareSystem": "Hardware & System",
+        "internetNetwork": "Internet & Network"
+      },
+      "panes": {
+        "appearance": "Appearance",
+        "desktopScreenSaver": "Desktop & Screen Saver",
+        "international": "International",
+        "security": "Security",
+        "displays": "Displays",
+        "sound": "Sound",
+        "dotMac": "Cloud Sync",
+        "sharing": "Backup & Restore",
+        "accounts": "Accounts",
+        "softwareUpdate": "Software Update"
+      },
+      "internationalHelp": "Drag languages to set your preferred order for use in application menus, dialogs, and text processing",
+      "formatSamples": {
+        "dates": "Dates:",
+        "times": "Times:",
+        "numbers": "Numbers:"
+      },
+      "themePreview": "Theme preview",
+      "themePreviewWindowTitle": "Document",
+      "themePreviewFirstItem": "First item",
+      "themePreviewSelectedItem": "Selected item",
+      "themePreviewOtherItem": "Other item",
+      "themePreviewButton": "OK",
+      "themePreviewTabs": {
+        "general": "General",
+        "sharing": "Sharing"
+      },
+      "themePreviewMenus": {
+        "finder": "Finder",
+        "file": "File",
+        "edit": "Edit"
+      },
+      "securityLoginRequired": "Log in to manage password and recovery settings",
+      "password": "Password",
+      "passwordDescription": "Protect your ryOS account with a password",
+      "recoveryEmailDescription": "Add an email for password recovery",
+      "recoveryEmailTitle": "Recovery Email",
+      "verifyAccount": "Verify Account",
+      "verifyAccountDescription": "Confirm your identity to access protected features",
+      "verify": "Verify",
+      "manage": "Manage",
+      "displayModeDescription": "Applies a color filter over the desktop wallpaper",
+      "softwareUpdateDescription": "Check whether a newer version of ryOS is available",
+      "sharingDescription": "Back up and share your ryOS data with cloud storage",
+      "dateTimeDescription": "Date and time are set by your device. ryOS uses your browser timezone for scheduling and AI context",
+      "timeZone": "Time Zone",
+      "currentTime": "Current Time",
+      "startupDiskDescription": "Choose the system used to start up your computer",
+      "startupDiskNote": "Boot screen preview is available when Debug Mode is enabled in Accounts.",
+      "showBootScreen": "Show Boot Screen",
+      "desktopAndScreenSaver": "Desktop & Screen Saver",
+      "soundTabs": {
+        "effects": "Effects",
+        "output": "Output"
+      },
+      "cloudSyncTabs": {
+        "sync": "Sync",
+        "backup": "Backup"
+      },
+      "accountsTabs": {
+        "accounts": "Accounts",
+        "security": "Security",
+        "debug": "Debug"
+      },
+      "setup": "Setup",
+      "desktopTab": "Desktop",
+      "screenSaverTab": "Screen Saver",
+      "desktopTab": "Desktop",
+      "screenSaverTab": "Screen Saver",
+      "noMatchingPreferences": "No matching preferences",
+      "toolbar": {
+        "back": "Back",
+        "forward": "Forward",
+        "showAll": "Show All",
+        "search": "Search",
+        "lock": "Lock"
+      },
       "theme": "Theme",
       "themeDescription": "Changes the appearance of windows, menus, and controls",
+      "themeNames": {
+        "system7": "System 7",
+        "aqua": "Aqua",
+        "aquaGlass": "Aqua Glass",
+        "xp": "XP",
+        "win98": "98"
+      },
       "darkMode": "Dark Mode",
       "darkModeDescription": "Match the system or force the dark variant",
       "darkModeSystem": "System",
@@ -2881,10 +2971,15 @@
       },
       "select": "Select",
       "uiSounds": "UI Sounds",
+      "uiSoundsDescription": "Clicks and feedback for windows and menus",
+      "speechDescription": "Speaks assistant messages and selected text",
       "terminalIeAmbientSynth": "Synth",
+      "terminalIeAmbientSynthDescription": "Effects and synth for Terminal and IE",
       "chatSynth": "Chat Synth",
+      "chatSynthDescription": "Typing synth preset for Chats",
       "selectAPreset": "Select a preset",
       "loggedInToRyOS": "Logged in to ryOS",
+      "accountJoined": "Joined {{date}}",
       "connectionStatus": {
         "connected": "Connected",
         "connecting": "Connecting…",
@@ -2895,13 +2990,16 @@
       "setPassword": "Set Password",
       "changePassword": "Change Password",
       "logOut": "Log Out",
+      "logOutRowDescription": "Sign out of your ryOS account on this device",
       "loggingOut": "Logging out...",
       "logOutOfAllDevices": "Log Out of All Devices",
+      "logOutOfAllDevicesRowDescription": "Sign out of your ryOS account on every device",
       "ryOSAccount": "ryOS Account",
       "loginToSendMessages": "Login to send messages and more",
       "login": "Login",
       "recoveryEmailMenu": "Recovery Email…",
       "deleteAccountMenu": "Delete Account…",
+      "deleteAccountRowDescription": "Permanently remove your account and synced data",
       "recoveryEmail": {
         "title": "Recovery Email",
         "description": "Add an email so you can reset your password if you forget it.",
@@ -2940,6 +3038,18 @@
         "genericError": "Could not delete account. Please try again.",
         "successTitle": "Account Deleted",
         "successDescription": "Your account and data have been removed."
+      },
+      "email": {
+        "title": "Email",
+        "description": "Add an email for password recovery",
+        "loggedOutDescription": "Sign in to manage email",
+        "checking": "Checking email…",
+        "verifiedAs": "{{email}} · Verified",
+        "unverifiedAs": "{{email}} · Not verified",
+        "notAvailable": "Email recovery is not available on this server",
+        "add": "Add",
+        "verify": "Verify",
+        "manage": "Manage"
       },
       "telegram": {
         "title": "Telegram",
@@ -3008,14 +3118,15 @@
         "openSettings": "Sync Settings…"
       },
       "cloudSync": {
-        "description": "Backup or restore all settings and files to the cloud. Max {{limit}}MB.",
+        "accountDescription": "Sync settings across your devices",
+        "description": "Backup or restore all settings and files to the cloud. Max {{limit}}MB",
         "checking": "Checking cloud backup…",
         "lastBackup": "Last cloud backup: {{date}} ({{size}}MB)",
         "forceUpload": "Upload",
         "forceUploading": "Uploading…",
         "forceDownload": "Download",
         "forceDownloading": "Downloading…",
-        "forceSyncDescription": "Force upload or download enabled Auto Sync items.",
+        "forceSyncDescription": "Force upload or download enabled Auto Sync items",
         "forceUploadSuccess": "Upload to cloud completed",
         "forceUploadFailed": "Failed to upload to cloud",
         "forceDownloadSuccess": "Download from cloud completed",
@@ -3051,7 +3162,7 @@
       "resetAllSettings": "Reset All Settings",
       "resetAllSettingsDescription": "This will clear all saved settings and restore defaults",
       "formatFileSystem": "Format File System",
-      "formatFileSystemDescription": "This will clear all files (except sample docs), images, and custom wallpapers. ryOS will restart after format.",
+      "formatFileSystemDescription": "This will clear all files (except sample docs), images, and custom wallpapers. ryOS will restart after format",
       "debugMode": "Debug Mode",
       "debugModeDescription": "Enable debugging settings",
       "showResizers": "Show Resizers",
@@ -3071,10 +3182,21 @@
       "ttsVoice": "TTS Voice",
       "elevenlabsVoiceId": "ElevenLabs Voice ID",
       "openaiVoice": "OpenAI Voice",
+      "ttsVoices": {
+        "ryo": "Ryo",
+        "ryoV2": "Ryo v2",
+        "ryoV3": "Ryo v3",
+        "alloy": "Alloy",
+        "echo": "Echo",
+        "fable": "Fable",
+        "onyx": "Onyx",
+        "nova": "Nova",
+        "shimmer": "Shimmer"
+      },
       "bootScreen": "Boot Screen",
       "bootScreenDescription": "Test the boot screen animation",
       "errorBoundaries": "Error Boundaries",
-      "errorBoundariesDescription": "Trigger app or desktop crash fallbacks for testing.",
+      "errorBoundariesDescription": "Trigger app or desktop crash fallbacks for testing",
       "crashApp": "Crash App",
       "crashDesktop": "Crash Desktop",
       "show": "Show",
@@ -3177,6 +3299,16 @@
         "failedToRestoreFileSystem": "Failed to restore file system data. Only settings will be restored.",
         "failedToRestoreBackup": "Failed to restore backup: {{error}}",
         "unknownError": "Unknown error"
+      },
+      "logoutAll": {
+        "authErrorTitle": "Authentication Error",
+        "authErrorDescription": "Not authenticated",
+        "successTitle": "Logged Out",
+        "successDescription": "Logged out from all devices",
+        "failedTitle": "Logout Failed",
+        "failedDescription": "Failed to logout from all devices",
+        "networkErrorTitle": "Network Error",
+        "networkErrorDescription": "Failed to connect to server"
       }
     },
     "stickies": {

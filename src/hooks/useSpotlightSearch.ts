@@ -78,7 +78,7 @@ const SEARCHABLE_SETTINGS: Array<{
     id: "setting-wallpaper",
     titleKey: "spotlight.settings.wallpaper",
     keywords: ["wallpaper", "background", "desktop", "picture"],
-    tab: "appearance",
+    tab: "wallpaper",
     icon: "🖼️",
   },
   {
@@ -110,7 +110,7 @@ const SEARCHABLE_SETTINGS: Array<{
     id: "setting-screensaver",
     titleKey: "spotlight.settings.screenSaver",
     keywords: ["screen saver", "screensaver", "idle", "sleep"],
-    tab: "appearance",
+    tab: "screensaver",
     icon: "💫",
   },
 ];

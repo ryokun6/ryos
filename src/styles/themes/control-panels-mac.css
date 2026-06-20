@@ -1,0 +1,1439 @@
+/* macOS Aqua Control Panels — System Preferences 10.3 style (macosx theme only). */
+
+/* Toolbar bottom rim + pref well wrapper — keep in sync (border-black/25 in solid). */
+:root[data-os-theme="macosx"] {
+  --control-panels-chrome-border: rgba(0, 0, 0, 0.25);
+  /* Section grid dividers — softer than toolbar/chrome borders. */
+  --control-panels-section-divider: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.22) 0%,
+    rgba(255, 255, 255, 0.45) 100%
+  );
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"] {
+  --control-panels-chrome-border: var(--os-color-window-border);
+}
+
+:root[data-os-theme="macosx"] .control-panels-mac {
+  background-image: var(--os-pinstripe-window);
+  color: var(--os-color-text-primary, #000);
+}
+
+:root[data-os-theme="macosx"] .control-panels-mac-body-measure {
+  width: 100%;
+}
+
+/* Height-capped body: scroll inside preference panes (not the whole window). */
+:root[data-os-theme="macosx"]
+  .control-panels-mac-body[data-scrollable]:has(.control-panels-mac-pane) {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-mac-body[data-scrollable]:not(:has(.control-panels-mac-pane)) {
+  overflow-y: auto;
+}
+
+/* Scroll constraints live on the layout shell — keep the measure root from
+   height: 100% so scrollHeight stays stable and data-scrollable does not oscillate. */
+:root[data-os-theme="macosx"]
+  .control-panels-mac-body[data-scrollable]:has(.control-panels-mac-pane)
+  .control-panels-mac-body-measure {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-mac-body[data-scrollable]:has(.control-panels-mac-pane)
+  .control-panels-mac-body-layout {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-mac-body[data-scrollable]
+  .control-panels-mac-pane {
+  flex: 1;
+  min-height: 0;
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-mac-body[data-scrollable]
+  .control-panels-mac-pane-scroll:not(:has(.control-panels-pref-form-tabbed)):not(
+    :has(.control-panels-pref-theme-preview)
+  ) {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+:root[data-os-theme="macosx"] .control-panels-mac-toolbar {
+  background: transparent;
+}
+
+:root[data-os-theme="macosx"] .control-panels-mac-toolbar.border-b {
+  border-bottom-color: var(--control-panels-chrome-border) !important;
+}
+
+:root[data-os-theme="macosx"] .control-panels-mac-toolbar-title {
+  color: #222;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+
+/* Toolbar: Show All + pinned quick-access icons */
+:root[data-os-theme="macosx"] .control-panels-mac-toolbar-pins {
+  overflow-x: auto;
+  scrollbar-width: none;
+  align-self: stretch;
+}
+
+:root[data-os-theme="macosx"] .control-panels-mac-toolbar-pins::-webkit-scrollbar {
+  display: none;
+}
+
+:root[data-os-theme="macosx"] .control-panels-toolbar-divider {
+  display: inline-block;
+  width: 1px;
+  align-self: stretch;
+  margin: 0 4px;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.28) 0,
+    rgba(0, 0, 0, 0.28) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  flex-shrink: 0;
+}
+
+:root[data-os-theme="macosx"] .control-panels-toolbar-pin {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  gap: 2px;
+  min-width: 52px;
+  max-width: 72px;
+  padding: 4px 6px 3px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  cursor: default;
+  flex-shrink: 0;
+}
+
+:root[data-os-theme="macosx"] .control-panels-toolbar-pin:hover:not(.control-panels-toolbar-pin-active),
+:root[data-os-theme="macosx"] .control-panels-toolbar-pin:focus:not(.control-panels-toolbar-pin-active),
+:root[data-os-theme="macosx"] .control-panels-toolbar-pin:focus-visible:not(.control-panels-toolbar-pin-active),
+:root[data-os-theme="macosx"] .control-panels-toolbar-pin:active:not(.control-panels-toolbar-pin-active) {
+  background: transparent;
+  outline: none;
+}
+
+:root[data-os-theme="macosx"] .control-panels-toolbar-pin-active,
+:root[data-os-theme="macosx"] .control-panels-toolbar-pin-active:hover,
+:root[data-os-theme="macosx"] .control-panels-toolbar-pin-active:focus,
+:root[data-os-theme="macosx"] .control-panels-toolbar-pin-active:focus-visible {
+  border: none;
+  border-radius: 0;
+  background: rgba(0, 0, 0, 0.12);
+  box-shadow: none;
+  outline: none;
+}
+
+:root[data-os-theme="macosx"] .control-panels-toolbar-pin-icon-shell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+}
+
+:root[data-os-theme="macosx"] .control-panels-toolbar-pin-icon {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+:root[data-os-theme="macosx"] .control-panels-toolbar-pin-phosphor {
+  color: #333;
+}
+
+:root[data-os-theme="macosx"] .control-panels-toolbar-pin-label {
+  font-size: 10px;
+  line-height: 1.1;
+  color: #111;
+  text-align: center;
+  max-width: 68px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Home grid — one continuous pinstripe on the scroll area; zebra tint on even sections only */
+:root[data-os-theme="macosx"] .control-panels-category-grid {
+  --control-panels-section-inset-x: 16px;
+  padding: 0 var(--control-panels-section-inset-x);
+  background-image: var(--os-pinstripe-window);
+}
+
+:root[data-os-theme="macosx"] .control-panels-section {
+  margin: 0 calc(-1 * var(--control-panels-section-inset-x));
+  padding: 10px var(--control-panels-section-inset-x);
+  position: relative;
+  background-image: none;
+}
+
+/* Divider on the section box edge — same width as zebra/pinstripe background. */
+:root[data-os-theme="macosx"] .control-panels-section:not(:first-of-type)::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--control-panels-section-divider);
+  pointer-events: none;
+}
+
+/* 10.3 zebra: even sections (Hardware & System) — subtle neutral gray over grid pinstripe */
+:root[data-os-theme="macosx"] .control-panels-section:nth-of-type(even) {
+  background-image: linear-gradient(
+    rgba(0, 0, 0, 0.06),
+    rgba(0, 0, 0, 0.06)
+  );
+}
+
+:root[data-os-theme="macosx"] .control-panels-section-header {
+  font-size: 11px;
+  font-weight: 700;
+  color: #111;
+  margin: 0;
+  padding: 0 0 6px;
+  letter-spacing: 0.01em;
+  text-align: left;
+}
+
+:root[data-os-theme="macosx"] .control-panels-section-grid {
+  --control-panels-grid-col-width: 80px;
+  display: grid;
+  grid-template-columns: repeat(
+    var(--control-panels-section-cols, 1),
+    var(--control-panels-grid-col-width)
+  );
+  width: fit-content;
+  max-width: 100%;
+  column-gap: 6px;
+  row-gap: 8px;
+  align-items: start;
+  justify-items: center;
+  padding-bottom: 4px;
+}
+
+:root[data-os-theme="macosx"] .control-panels-category-grid > p {
+  padding: 8px;
+}
+
+:root[data-os-theme="macosx"] .control-panels-category-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  width: var(--control-panels-grid-col-width, 80px);
+  max-width: var(--control-panels-grid-col-width, 80px);
+  border: none;
+  background: transparent;
+  cursor: default;
+}
+
+:root[data-os-theme="macosx"] .control-panels-category-item:hover,
+:root[data-os-theme="macosx"] .control-panels-category-item:focus,
+:root[data-os-theme="macosx"] .control-panels-category-item:focus-visible,
+:root[data-os-theme="macosx"] .control-panels-category-item:active {
+  background: transparent;
+  outline: none;
+}
+
+:root[data-os-theme="macosx"] .control-panels-category-icon-shell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+
+:root[data-os-theme="macosx"] .control-panels-category-icon {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+:root[data-os-theme="macosx"] .control-panels-category-label {
+  font-size: 11px;
+  line-height: 1.2;
+  color: #111;
+  max-width: 80px;
+  min-height: 2.4em;
+  text-align: center;
+}
+
+/* Preference pane chrome */
+:root[data-os-theme="macosx"] .control-panels-mac-pane {
+  background-image: var(--os-pinstripe-window);
+}
+
+:root[data-os-theme="macosx"] .control-panels-mac-pane-inner {
+  /* Simple form panes (Appearance, International, etc.): more air below toolbar. */
+  --control-panels-pref-content-inset-x: 16px;
+  padding: 18px 18px 18px;
+}
+
+/* Simple panes: grow with content, scroll on pane-scroll (not nested in pref-form). */
+:root[data-os-theme="macosx"] .control-panels-mac-pane-inner:not(:has(.control-panels-pref-form-tabbed)) {
+  box-sizing: border-box;
+}
+
+:root[data-os-theme="macosx"] .control-panels-pref-form:not(.control-panels-pref-form-tabbed) {
+  height: auto;
+  min-height: min-content;
+  overflow: visible;
+  flex: none;
+}
+
+:root[data-os-theme="macosx"] .control-panels-mac-pane-inner > .space-y-4 {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+:root[data-os-theme="macosx"] .control-panels-mac-pane-inner > .space-y-4 > * {
+  margin-top: 0;
+}
+
+:root[data-os-theme="macosx"] .control-panels-mac-pane-inner > .space-y-4 > hr,
+:root[data-os-theme="macosx"] .control-panels-mac-pane-inner > .space-y-4 > .border-t {
+  margin: 12px 0;
+  border: none;
+  height: 1px;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.22) 0%,
+    rgba(255, 255, 255, 0.45) 100%
+  );
+}
+
+:root[data-os-theme="macosx"] .control-panels-mac-pane-inner .control-panels-pref-well {
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.32);
+  background: #fff;
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.12),
+    0 1px 0 rgba(255, 255, 255, 0.55);
+  padding: 12px var(--control-panels-pref-content-inset-x, 16px) 14px;
+}
+
+/* 10.3 form layout: right-aligned labels, controls on the right */
+:root[data-os-theme="macosx"] .control-panels-pref-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+:root[data-os-theme="macosx"] .control-panels-pref-form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  /* Non-well panes: subtle inset so rows align with well content (pane-inner keeps outer 18px). */
+  padding: 4px 4px;
+}
+
+:root[data-os-theme="macosx"] .control-panels-pref-well .control-panels-pref-form-section,
+:root[data-os-theme="macosx"] .control-panels-pref-tab-panel .control-panels-pref-form-section {
+  padding: 0;
+}
+
+:root[data-os-theme="macosx"] .control-panels-pref-form-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) minmax(140px, 1.2fr);
+  gap: 12px;
+  align-items: start;
+  min-height: 32px;
+}
+
+:root[data-os-theme="macosx"] .control-panels-pref-form-label {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: flex-start;
+  align-self: start;
+  text-align: right;
+  gap: 2px;
+}
+
+:root[data-os-theme="macosx"] .control-panels-pref-form-label-text {
+  font-size: 11px;
+  font-weight: 400;
+  color: #111;
+  line-height: 1.2;
+}
+
+:root[data-os-theme="macosx"] .control-panels-pref-form-label-desc {
+  font-size: 10px;
+  color: rgba(0, 0, 0, 0.55);
+  line-height: 1.25;
+  max-width: 180px;
+}
+
+:root[data-os-theme="macosx"] .control-panels-pref-form-control {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  align-self: start;
+  min-height: 24px;
+  padding-top: 1px;
+}
+
+:root[data-os-theme="macosx"] .control-panels-pref-divider {
+  margin: 12px 0;
+  border: none;
+  height: 1px;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.22) 0%,
+    rgba(255, 255, 255, 0.45) 100%
+  );
+}
+
+/* International pane: recessed locale format preview well */
+:root[data-os-theme="macosx"] .control-panels-pref-format-samples {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 2px;
+  padding: 8px 10px;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.22);
+  background: rgba(0, 0, 0, 0.035);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+:root[data-os-theme="macosx"] .control-panels-pref-format-sample-row {
+  display: grid;
+  grid-template-columns: minmax(80px, 1fr) minmax(140px, 1.2fr);
+  gap: 12px;
+  align-items: start;
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+:root[data-os-theme="macosx"] .control-panels-pref-format-sample-label {
+  text-align: right;
+  color: #111;
+  padding-top: 1px;
+}
+
+:root[data-os-theme="macosx"] .control-panels-pref-format-sample-value {
+  color: #111;
+}
+
+/* Appearance pane: flex fill — preview well grows/shrinks like tab panel content */
+:root[data-os-theme="macosx"]
+  .control-panels-mac-pane-scroll:has(.control-panels-pref-theme-preview) {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-mac-pane-inner:has(.control-panels-pref-theme-preview) {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-pref-form:has(.control-panels-pref-theme-preview) {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-pref-form-section:has(.control-panels-pref-theme-preview) {
+  flex: 1;
+  min-height: 0;
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-pref-form-section:has(.control-panels-pref-theme-preview)
+  > .control-panels-pref-form-row {
+  flex-shrink: 0;
+}
+
+/* Appearance pane: recessed live theme preview well */
+:root[data-os-theme="macosx"] .control-panels-pref-theme-preview {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 180px;
+  margin-top: 2px;
+  padding: 10px 12px;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.22);
+  background: rgba(0, 0, 0, 0.035);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-pref-theme-preview[data-preview-theme="macosx"] {
+  padding: 0;
+}
+
+:root[data-os-theme="macosx"] .control-panels-theme-preview-scene {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+/* Live macosx preview: fixed-scale scene cropped from top-left */
+:root[data-os-theme="macosx"] .control-panels-theme-preview-scale-host {
+  --control-panels-preview-inset: 0;
+  position: relative;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+}
+
+:root[data-os-theme="macosx"] .control-panels-theme-preview-canvas {
+  position: absolute;
+  top: var(--control-panels-preview-inset);
+  left: var(--control-panels-preview-inset);
+  transform-origin: 0 0;
+  overflow: visible;
+}
+
+:root[data-os-theme="macosx"] .control-panels-theme-preview-desktop-live {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  background-color: var(--os-color-window-bg);
+  background-image: var(--os-pinstripe-window);
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .control-panels-theme-preview-desktop-live {
+  background-color: var(--os-color-panel-bg);
+}
+
+:root[data-os-theme="macosx"] .control-panels-theme-preview-window-live {
+  position: absolute;
+  top: 52px;
+  width: 300px;
+  height: 196px;
+  font-size: 11px;
+}
+
+:root[data-os-theme="macosx"] .control-panels-theme-preview-window-live .title-bar {
+  height: 24px !important;
+  min-height: 24px !important;
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-theme-preview-window-live
+  .group\/traffic
+  > div {
+  width: 12px !important;
+  height: 12px !important;
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-theme-preview-window-live
+  .group\/traffic
+  > div
+  > div[aria-hidden="true"] {
+  width: 12px !important;
+  height: 12px !important;
+}
+
+:root[data-os-theme="macosx"] .control-panels-theme-preview-window-body-live {
+  padding: 6px 8px 8px;
+}
+
+:root[data-os-theme="macosx"] .control-panels-theme-preview-tab-bar-live {
+  margin-bottom: 6px;
+}
+
+:root[data-os-theme="macosx"] .control-panels-theme-preview-tab-bar-live .aqua-tab {
+  font-size: 11px;
+  padding: 3px 10px 4px;
+}
+
+:root[data-os-theme="macosx"] .control-panels-theme-preview-list-live {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+:root[data-os-theme="macosx"] .control-panels-theme-preview-list-row-live {
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-theme-preview-list-row-live-selected {
+  background: var(--os-accent-list-gradient, var(--os-color-selection-bg));
+  color: var(--os-color-selection-text, #fff);
+}
+
+/* --- macosx (Aqua) mock preview (other themes in well) --- */
+:root[data-os-theme="macosx"]
+  .control-panels-pref-theme-preview[data-preview-theme="macosx"]
+  .control-panels-theme-preview-menubar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 18px;
+  padding: 0 6px;
+  border-radius: 3px;
+  border: 1px solid rgba(0, 0, 0, 0.28);
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent 0,
+      transparent 1.5px,
+      rgba(255, 255, 255, 0.55) 1.5px,
+      rgba(255, 255, 255, 0.55) 4px
+    ),
+    linear-gradient(to bottom, #f8f8f8, #d4d4d4);
+  font-size: 9px;
+  line-height: 1;
+  color: #000;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-pref-theme-preview[data-preview-theme="macosx"][data-preview-dark="true"]
+  .control-panels-theme-preview-menubar {
+  border-color: rgba(0, 0, 0, 0.7);
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent 0,
+      transparent 1.5px,
+      rgba(255, 255, 255, 0.05) 1.5px,
+      rgba(255, 255, 255, 0.05) 4px
+    ),
+    linear-gradient(to bottom, #3b3b40, #232327);
+  color: #f4f4f5;
+  box-shadow: none;
+}
+
+:root[data-os-theme="macosx"] .control-panels-theme-preview-apple {
+  font-size: 10px;
+  line-height: 1;
+  filter: var(--os-accent-apple-filter, none);
+}
+
+:root[data-os-theme="macosx"] .control-panels-theme-preview-menu-item-active {
+  background: var(--os-color-selection-bg, rgba(39, 101, 202, 0.88));
+  color: var(--os-color-selection-text, #fff);
+  border-radius: 3px;
+  padding: 2px 5px;
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-pref-theme-preview[data-preview-theme="macosx"]
+  .control-panels-theme-preview-window {
+  border-radius: 5px;
+  border: 1px solid rgba(0, 0, 0, 0.35);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.22);
+  overflow: hidden;
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-pref-theme-preview[data-preview-theme="macosx"][data-preview-dark="true"]
+  .control-panels-theme-preview-window {
+  border-color: rgba(0, 0, 0, 0.85);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.45);
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-pref-theme-preview[data-preview-theme="macosx"]
+  .control-panels-theme-preview-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 18px;
+  padding: 0 6px;
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.3) 0%,
+      rgba(219, 219, 219, 0.6) 70%,
+      rgba(206, 206, 206, 0.7) 100%
+    ),
+    linear-gradient(to bottom, #e8e8e8, #d0d0d0);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.25);
+  font-size: 9px;
+  color: #000;
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-pref-theme-preview[data-preview-theme="macosx"][data-preview-dark="true"]
+  .control-panels-theme-preview-titlebar {
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.08) 0%,
+      rgba(255, 255, 255, 0.04) 70%,
+      rgba(0, 0, 0, 0.18) 100%
+    ),
+    linear-gradient(to bottom, #4a4a50, #2e2e33);
+  border-bottom-color: rgba(0, 0, 0, 0.65);
+  color: #f4f4f5;
+}
+
+:root[data-os-theme="macosx"] .control-panels-theme-preview-traffic-lights {
+  display: flex;
+  gap: 3px;
+}
+
+:root[data-os-theme="macosx"] .control-panels-theme-preview-traffic-lights > span {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.35);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.45);
+}
+
+:root[data-os-theme="macosx"] .control-panels-theme-preview-traffic-lights .close {
+  background: #ff5f57;
+}
+
+:root[data-os-theme="macosx"] .control-panels-theme-preview-traffic-lights .minimize {
+  background: #febc2e;
+}
+
+:root[data-os-theme="macosx"] .control-panels-theme-preview-traffic-lights .maximize {
+  background: #28c840;
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-pref-theme-preview[data-preview-theme="macosx"]
+  .control-panels-theme-preview-window-body {
+  padding: 6px 8px 8px;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent 0,
+      transparent 1.5px,
+      rgba(255, 255, 255, 0.85) 1.5px,
+      rgba(255, 255, 255, 0.85) 4px
+    ),
+    linear-gradient(to bottom, #ececec, #ececec);
+  font-size: 9px;
+  color: #111;
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-pref-theme-preview[data-preview-theme="macosx"][data-preview-aqua-material="glass"]
+  .control-panels-theme-preview-window-body {
+  background: rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(6px);
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-pref-theme-preview[data-preview-theme="macosx"][data-preview-dark="true"]
+  .control-panels-theme-preview-window-body {
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent 0,
+      transparent 1.5px,
+      rgba(255, 255, 255, 0.04) 1.5px,
+      rgba(255, 255, 255, 0.04) 4px
+    ),
+    linear-gradient(to bottom, #2b2b2e, #2b2b2e);
+  color: #f4f4f5;
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-pref-theme-preview[data-preview-theme="macosx"][data-preview-dark="true"][data-preview-aqua-material="glass"]
+  .control-panels-theme-preview-window-body {
+  background: rgba(0, 0, 0, 0.28);
+}
+
+:root[data-os-theme="macosx"] .control-panels-theme-preview-tab-bar {
+  display: flex;
+  gap: 2px;
+  align-items: flex-end;
+  margin-bottom: 6px;
+  padding-bottom: 1px;
+  border-bottom: 2px solid #8ab4f0;
+}
+
+:root[data-os-theme="macosx"] .control-panels-theme-preview-tab {
+  padding: 3px 10px 4px;
+  border-radius: 4px 4px 0 0;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  border-bottom: none;
+  background: linear-gradient(to bottom, #f0f0f0, #d8d8d8);
+  color: #333;
+  font-size: 9px;
+}
+
+:root[data-os-theme="macosx"] .control-panels-theme-preview-tab-active {
+  background: linear-gradient(#2765ca, #4a85d9, #8ab4f0);
+  border-color: #8ab4f0;
+  color: #fff;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 1px 2px rgba(39, 101, 202, 0.35);
+}
+
+:root[data-os-theme="macosx"] .control-panels-theme-preview-list-row {
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+
+:root[data-os-theme="macosx"] .control-panels-theme-preview-list-row-selected {
+  background: var(--os-color-selection-bg, rgba(39, 101, 202, 0.88));
+  color: var(--os-color-selection-text, #fff);
+}
+
+/* --- System 7 preview --- */
+:root[data-os-theme="macosx"]
+  .control-panels-pref-theme-preview[data-preview-theme="system7"]
+  .control-panels-theme-preview-menubar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 16px;
+  padding: 0 5px;
+  border: 1px solid #000;
+  background: repeating-linear-gradient(
+    180deg,
+    #fff 0 1px,
+    #000 1px 2px
+  );
+  font-family: "Chicago", "Geneva-12", monospace;
+  font-size: 9px;
+  color: #000;
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-pref-theme-preview[data-preview-theme="system7"]
+  .control-panels-theme-preview-menu-item-active {
+  background: var(--os-color-selection-bg, #000);
+  color: var(--os-color-selection-text, #fff);
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-pref-theme-preview[data-preview-theme="system7"]
+  .control-panels-theme-preview-window {
+  border: 2px solid #000;
+  background: #fff;
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-pref-theme-preview[data-preview-theme="system7"]
+  .control-panels-theme-preview-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 16px;
+  padding: 0 4px;
+  border-bottom: 1px solid #000;
+  background: #fff;
+  font-family: "Chicago", "Geneva-12", monospace;
+  font-size: 9px;
+}
+
+:root[data-os-theme="macosx"] .control-panels-theme-preview-s7-close {
+  width: 11px;
+  height: 11px;
+  border: 1px solid #000;
+  background: #fff;
+  box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #808080;
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-pref-theme-preview[data-preview-theme="system7"]
+  .control-panels-theme-preview-window-body {
+  padding: 6px;
+  font-family: "Geneva-12", monospace;
+  font-size: 9px;
+  color: #000;
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-pref-theme-preview[data-preview-theme="system7"]
+  .control-panels-theme-preview-list-row-selected {
+  background: var(--os-color-selection-bg, #000);
+  color: var(--os-color-selection-text, #fff);
+}
+
+:root[data-os-theme="macosx"] .control-panels-theme-preview-s7-button {
+  margin-top: 6px;
+  padding: 2px 10px;
+  border: 1px solid #000;
+  background: #fff;
+  box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #808080;
+  font-family: "Geneva-12", monospace;
+  font-size: 9px;
+  color: #000;
+  pointer-events: none;
+}
+
+/* --- Windows XP preview --- */
+:root[data-os-theme="macosx"]
+  .control-panels-pref-theme-preview[data-preview-theme="xp"]
+  .control-panels-theme-preview-window {
+  border: 1px solid #0054e3;
+  box-shadow: 1px 1px 0 #fff inset, -1px -1px 0 #aca899;
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-pref-theme-preview[data-preview-theme="xp"]
+  .control-panels-theme-preview-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 20px;
+  padding: 0 4px 0 6px;
+  background: linear-gradient(to bottom, #0058e6, #1941a5);
+  color: #fff;
+  font-family: Tahoma, sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+:root[data-os-theme="macosx"] .control-panels-theme-preview-win-controls {
+  display: flex;
+  gap: 2px;
+}
+
+:root[data-os-theme="macosx"] .control-panels-theme-preview-win-controls > span {
+  width: 14px;
+  height: 13px;
+  border: 1px solid #0a246a;
+  background: linear-gradient(to bottom, #3c8ef3, #2d6fd6);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+:root[data-os-theme="macosx"] .control-panels-theme-preview-win-controls .close {
+  background: linear-gradient(to bottom, #e88, #c44);
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-pref-theme-preview[data-preview-theme="xp"]
+  .control-panels-theme-preview-window-body {
+  padding: 6px;
+  background: #ece9d8;
+  font-family: Tahoma, sans-serif;
+  font-size: 9px;
+  color: #000;
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-pref-theme-preview[data-preview-theme="xp"]
+  .control-panels-theme-preview-list-row-selected {
+  background: #316ac5;
+  color: #fff;
+}
+
+:root[data-os-theme="macosx"] .control-panels-theme-preview-xp-button {
+  margin-top: 6px;
+  padding: 2px 12px;
+  border: 1px solid #aca899;
+  border-radius: 3px;
+  background: linear-gradient(to bottom, #fff, #ece9d8);
+  box-shadow: inset 0 1px 0 #fff;
+  font-family: Tahoma, sans-serif;
+  font-size: 9px;
+  pointer-events: none;
+}
+
+/* --- Windows 98 preview --- */
+:root[data-os-theme="macosx"]
+  .control-panels-pref-theme-preview[data-preview-theme="win98"]
+  .control-panels-theme-preview-window {
+  border: 2px solid #000;
+  box-shadow: inset 1px 1px 0 #dfdfdf, inset -1px -1px 0 #808080;
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-pref-theme-preview[data-preview-theme="win98"]
+  .control-panels-theme-preview-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 18px;
+  padding: 0 3px 0 4px;
+  background: linear-gradient(to right, #000084, #1084d0);
+  color: #fff;
+  font-family: "MS Sans Serif", Tahoma, sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-pref-theme-preview[data-preview-theme="win98"]
+  .control-panels-theme-preview-win-controls > span {
+  width: 13px;
+  height: 12px;
+  border: 1px solid #000;
+  background: #c0c0c0;
+  box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #808080;
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-pref-theme-preview[data-preview-theme="win98"]
+  .control-panels-theme-preview-window-body {
+  padding: 6px;
+  background: #c0c0c0;
+  font-family: "MS Sans Serif", Tahoma, sans-serif;
+  font-size: 9px;
+  color: #000;
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-pref-theme-preview[data-preview-theme="win98"]
+  .control-panels-theme-preview-list-row-selected {
+  background: #000080;
+  color: #fff;
+}
+
+:root[data-os-theme="macosx"] .control-panels-theme-preview-98-button {
+  margin-top: 6px;
+  padding: 2px 12px;
+  border: 2px solid #000;
+  background: #c0c0c0;
+  box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #808080;
+  font-family: "MS Sans Serif", Tahoma, sans-serif;
+  font-size: 9px;
+  pointer-events: none;
+}
+
+/* Tabbed preference pane (Desktop | Screen Saver) — tabs on pinstripe, well below */
+:root[data-os-theme="macosx"] .control-panels-mac-pane-scroll:has(.control-panels-pref-form-tabbed) {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+:root[data-os-theme="macosx"] .control-panels-mac-pane-inner:has(.control-panels-pref-form-tabbed) {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  /* Tabbed panes: tabs sit on pinstripe — less air above tab bar than simple wells. */
+  padding-top: 4px;
+}
+
+:root[data-os-theme="macosx"] .control-panels-pref-form-tabbed {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+:root[data-os-theme="macosx"] .control-panels-pref-tabbed {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: 0;
+}
+
+:root[data-os-theme="macosx"] .control-panels-pref-tab-bar {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 2px;
+  flex-shrink: 0;
+  /* Inactive tabs use margin-top: 4px + height: 28px; pin bar so active/inactive swaps
+     do not resize the strip and shift the well below. */
+  box-sizing: border-box;
+  min-height: 32px;
+  height: 32px;
+  overflow: visible;
+}
+
+:root[data-os-theme="macosx"] .control-panels-pref-tab-bar .aqua-tab {
+  min-width: 100px;
+  padding: 0 14px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  height: 28px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* Keep layout stable when swapping tabs — global .aqua-tab transitions margin-top. */
+  transition:
+    background 150ms,
+    box-shadow 150ms,
+    border-color 150ms,
+    color 150ms,
+    text-shadow 150ms;
+}
+
+:root[data-os-theme="macosx"] .control-panels-pref-tab-bar .aqua-tab[data-state="inactive"] {
+  margin-top: 4px;
+}
+
+:root[data-os-theme="macosx"] .control-panels-pref-tab-bar .aqua-tab[data-state="active"] {
+  margin-top: 0;
+}
+
+:root[data-os-theme="macosx"] .control-panels-pref-tabbed > .control-panels-pref-well {
+  display: grid;
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+  flex: 1;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+:root[data-os-theme="macosx"] .control-panels-pref-tab-panel {
+  padding: 16px var(--control-panels-pref-content-inset-x, 16px) 14px;
+}
+
+:root[data-os-theme="macosx"] .control-panels-pref-form-tabbed .control-panels-pref-tab-panel {
+  grid-area: 1 / 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* Stack both panels in one grid cell; keep mounted content without collapsing the well */
+:root[data-os-theme="macosx"] .control-panels-pref-form-tabbed .control-panels-pref-tab-panel[hidden] {
+  display: block !important;
+  visibility: hidden;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+:root[data-os-theme="macosx"] .control-panels-mac-pane-inner label {
+  font-size: 11px;
+}
+
+:root[data-os-theme="macosx"] .control-panels-mac-pane-inner .text-neutral-600 {
+  color: rgba(0, 0, 0, 0.55);
+}
+
+:root[data-os-theme="macosx"] .control-panels-mac-pane-inner button[class*="retro"] {
+  font-size: 11px;
+}
+
+/* Account profile header — centered stack (Security + Accounts panes) */
+:root[data-os-theme="macosx"] .control-panels-account-profile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  /* Horizontal inset comes from tab-panel / form-section; avoid double-padding. */
+  padding: 10px 0 14px;
+  text-align: center;
+}
+
+:root[data-os-theme="macosx"] .control-panels-account-profile-avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+:root[data-os-theme="macosx"] .control-panels-account-profile-presence {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  border: 1.5px solid #fff;
+}
+
+:root[data-os-theme="macosx"] .control-panels-account-profile-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+:root[data-os-theme="macosx"] .control-panels-account-profile-username {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: #111;
+}
+
+:root[data-os-theme="macosx"] .control-panels-account-profile-status {
+  font-size: 11px;
+  line-height: 1.2;
+  color: rgba(0, 0, 0, 0.55);
+}
+
+:root[data-os-theme="macosx"] .control-panels-account-profile-login {
+  margin-top: 2px;
+}
+
+/* Dark mode */
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] {
+  --control-panels-section-divider: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.28) 0%,
+    rgba(0, 0, 0, 0.1) 100%
+  );
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .control-panels-toolbar-divider {
+  background: repeating-linear-gradient(
+    to bottom,
+    var(--control-panels-chrome-border) 0,
+    var(--control-panels-chrome-border) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .control-panels-mac-toolbar-title {
+  color: var(--os-color-text-primary);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .control-panels-toolbar-pin-label,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .control-panels-section-header,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .control-panels-pref-form-label-text {
+  color: var(--os-color-text-primary);
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .control-panels-toolbar-pin-phosphor {
+  color: var(--os-color-text-primary);
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .control-panels-toolbar-pin-active,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .control-panels-toolbar-pin-active:hover,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .control-panels-toolbar-pin-active:focus,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .control-panels-toolbar-pin-active:focus-visible {
+  background: rgba(255, 255, 255, 0.12);
+  border: none;
+  box-shadow: none;
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .control-panels-category-label {
+  color: var(--os-color-text-primary);
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .control-panels-section:nth-of-type(even) {
+  background-image: linear-gradient(
+    rgba(0, 0, 0, 0.14),
+    rgba(0, 0, 0, 0.14)
+  );
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .control-panels-mac-pane-inner .control-panels-pref-well {
+  background: #2a2a2e;
+  border-color: var(--control-panels-chrome-border);
+  box-shadow:
+    inset 0 1px 2px rgba(255, 255, 255, 0.08),
+    0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .control-panels-pref-form-label-desc {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .control-panels-pref-format-samples {
+  background: rgba(0, 0, 0, 0.22);
+  border-color: var(--control-panels-chrome-border);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.08);
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .control-panels-pref-theme-preview {
+  background: rgba(0, 0, 0, 0.22);
+  border-color: var(--control-panels-chrome-border);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.08);
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .control-panels-pref-format-sample-label,
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .control-panels-pref-format-sample-value {
+  color: var(--os-color-text-primary);
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .control-panels-account-profile-username {
+  color: var(--os-color-text-primary);
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .control-panels-account-profile-status {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Aqua Glass: let the frosted window pane show through — no pinstripe slabs. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .window.window-material-glass
+  :is(
+    .control-panels-mac,
+    .control-panels-mac-toolbar,
+    .control-panels-mac-pane,
+    .control-panels-mac-pane-scroll,
+    .control-panels-mac-pane-inner,
+    .control-panels-category-grid,
+    .control-panels-section
+  ) {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+/* Zebra sections: subtle neutral gray only, no pinstripe layer. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .window.window-material-glass
+  .control-panels-section:nth-of-type(even) {
+  background-image: linear-gradient(
+    rgba(0, 0, 0, 0.06),
+    rgba(0, 0, 0, 0.06)
+  ) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .window.window-material-glass
+  .control-panels-section:nth-of-type(even) {
+  background-image: linear-gradient(
+    rgba(0, 0, 0, 0.14),
+    rgba(0, 0, 0, 0.14)
+  ) !important;
+}
+
+/* Aqua Glass toolbar: rounded pin pills + label breathing room above bottom rim. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .window.window-material-glass
+  .control-panels-mac-toolbar {
+  padding-bottom: 6px;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .window.window-material-glass
+  .control-panels-mac-toolbar-pins {
+  padding-bottom: 1px;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .window.window-material-glass
+  .control-panels-toolbar-pin,
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .window.window-material-glass
+  .control-panels-toolbar-pin-active {
+  border-radius: 4px;
+  padding: 4px 6px 4px;
+}
+
+/* Aqua Glass: frosted semi-transparent wells — form wrappers stay clear.
+   International format-samples keeps its own recessed inset fill. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .window.window-material-glass
+  :is(
+    .control-panels-pref-form,
+    .control-panels-pref-form-tabbed,
+    .control-panels-pref-tabbed,
+    .control-panels-pref-form-section
+  ) {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .window.window-material-glass
+  :is(
+    .control-panels-pref-well,
+    .control-panels-pref-tab-panel
+  ) {
+  background-color: rgba(255, 255, 255, 0.2) !important;
+  background-image: none !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .window.window-material-glass
+  .control-panels-pref-well {
+  border-color: var(--control-panels-chrome-border);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .window.window-material-glass
+  :is(
+    .control-panels-pref-well,
+    .control-panels-pref-tab-panel
+  ) {
+  background-color: rgba(0, 0, 0, 0.18) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .window.window-material-glass
+  .control-panels-pref-well {
+  border-color: var(--control-panels-chrome-border);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.08);
+}
+
+/* International locale preview: subtle recessed inset (not a full white slab). */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .window.window-material-glass
+  .control-panels-pref-format-samples {
+  background-color: rgba(0, 0, 0, 0.035) !important;
+  background-image: none !important;
+  border-color: rgba(0, 0, 0, 0.22);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .window.window-material-glass
+  .control-panels-pref-format-samples {
+  background-color: rgba(0, 0, 0, 0.22) !important;
+  border-color: var(--control-panels-chrome-border);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.08);
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .window.window-material-glass
+  .control-panels-pref-theme-preview {
+  background-color: rgba(0, 0, 0, 0.035) !important;
+  background-image: none !important;
+  border-color: rgba(0, 0, 0, 0.22);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .window.window-material-glass
+  .control-panels-pref-theme-preview {
+  background-color: rgba(0, 0, 0, 0.22) !important;
+  border-color: var(--control-panels-chrome-border);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.08);
+}
+
+

@@ -17,6 +17,14 @@ import { SoundTabContent } from "./SoundTabContent";
 import { SyncTabContent } from "./SyncTabContent";
 import { SystemTabContent } from "./SystemTabContent";
 import { ControlPanelsDialogs } from "./ControlPanelsDialogs";
+import { ControlPanelsMacLayout } from "./ControlPanelsMacLayout";
+import { ControlPanelsMacPaneRenderer } from "./ControlPanelsMacPaneRenderer";
+import {
+  getControlPanelsMacWindowTitle,
+  normalizeControlPanelPaneId,
+  type ControlPanelMacNavigationEntry,
+  type ControlPanelPaneId,
+} from "./controlPanelsCategories";
 import { getUsernameInitials } from "./syncUtils";
 import { useIsRyoAdmin } from "@/hooks/useIsRyoAdmin";
 
@@ -162,6 +170,10 @@ export function ControlPanelsAppComponent({
     handleOpenTelegramLink,
     handleCopyTelegramCode,
     handleDisconnectTelegramLink,
+    recoveryEmailStatus,
+    isEmailStatusLoading,
+    refreshRecoveryEmailStatus,
+    accountJoinedAt,
     autoSyncEnabled,
     setAutoSyncEnabled,
     syncFiles,
@@ -208,6 +220,15 @@ export function ControlPanelsAppComponent({
   } = logic;
 
   const isAdmin = useIsRyoAdmin();
+  const [macCurrentEntry, setMacCurrentEntry] =
+    React.useState<ControlPanelMacNavigationEntry>(() =>
+      normalizeControlPanelPaneId(initialData?.defaultTab) ?? "home"
+    );
+  const macWindowTitle = React.useMemo(
+    () => getControlPanelsMacWindowTitle(macCurrentEntry, t, windowTitle),
+    [macCurrentEntry, t, windowTitle]
+  );
+  const effectiveWindowTitle = isMacOSTheme ? macWindowTitle : windowTitle;
   const myContact = useContactsStore((state) =>
     state.myContactId
       ? state.contacts.find((contact) => contact.id === state.myContactId) ?? null
@@ -238,6 +259,145 @@ export function ControlPanelsAppComponent({
     ? getContactInitials(myContact)
     : getUsernameInitials(username || "");
 
+  const renderMacPane = (
+    paneId: ControlPanelPaneId,
+    onNavigateToPane: (paneId: ControlPanelPaneId) => void
+  ) => (
+    <ControlPanelsMacPaneRenderer
+      paneId={paneId}
+      onNavigateToPane={onNavigateToPane}
+      t={t}
+      tabStyles={tabStyles}
+      currentTheme={currentTheme}
+      setTheme={setTheme}
+      aquaMaterial={aquaMaterial}
+      setAquaMaterial={setAquaMaterial}
+      supportsDarkMode={supportsDarkMode}
+      darkModePreference={darkModePreference}
+      setDarkMode={setDarkMode}
+      supportsAccent={supportsAccent}
+      accent={accent}
+      accentChrome={accentChrome}
+      setAccent={setAccent}
+      wallpaperAccentColor={wallpaperAccentColor}
+      currentLanguage={currentLanguage}
+      setLanguage={setLanguage}
+      uiSoundsEnabled={uiSoundsEnabled}
+      handleUISoundsChange={handleUISoundsChange}
+      speechEnabled={speechEnabled}
+      handleSpeechChange={handleSpeechChange}
+      terminalSoundsEnabled={terminalSoundsEnabled}
+      setTerminalSoundsEnabled={setTerminalSoundsEnabled}
+      synthPreset={synthPreset}
+      handleSynthPresetChange={handleSynthPresetChange}
+      masterVolume={masterVolume}
+      setMasterVolume={setMasterVolume}
+      setPrevMasterVolume={setPrevMasterVolume}
+      handleMasterMuteToggle={handleMasterMuteToggle}
+      uiVolume={uiVolume}
+      setUiVolume={setUiVolume}
+      setPrevUiVolume={setPrevUiVolume}
+      handleUiMuteToggle={handleUiMuteToggle}
+      speechVolume={speechVolume}
+      setSpeechVolume={setSpeechVolume}
+      setPrevSpeechVolume={setPrevSpeechVolume}
+      handleSpeechMuteToggle={handleSpeechMuteToggle}
+      chatSynthVolume={chatSynthVolume}
+      setChatSynthVolume={setChatSynthVolume}
+      setPrevChatSynthVolume={setPrevChatSynthVolume}
+      handleChatSynthMuteToggle={handleChatSynthMuteToggle}
+      ipodVolume={ipodVolume}
+      setIpodVolume={setIpodVolume}
+      setPrevIpodVolume={setPrevIpodVolume}
+      handleIpodMuteToggle={handleIpodMuteToggle}
+      isIOS={isIOS}
+      isMacOSTheme={isMacOSTheme}
+      username={username}
+      promptSetUsername={promptSetUsername}
+      autoSyncEnabled={autoSyncEnabled}
+      setAutoSyncEnabled={setAutoSyncEnabled}
+      isAutoSyncChecking={isAutoSyncChecking}
+      autoSyncLastCheckedAt={autoSyncLastCheckedAt}
+      autoSyncLastError={autoSyncLastError}
+      autoSyncDomainStatus={autoSyncDomainStatus}
+      syncFiles={syncFiles}
+      syncSettings={syncSettings}
+      syncCalendar={syncCalendar}
+      syncContacts={syncContacts}
+      syncMaps={syncMaps}
+      syncSongs={syncSongs}
+      syncVideos={syncVideos}
+      syncTv={syncTv}
+      syncStickies={syncStickies}
+      setSyncFiles={setSyncFiles}
+      setSyncSettings={setSyncSettings}
+      setSyncCalendar={setSyncCalendar}
+      setSyncContacts={setSyncContacts}
+      setSyncMaps={setSyncMaps}
+      setSyncSongs={setSyncSongs}
+      setSyncVideos={setSyncVideos}
+      setSyncTv={setSyncTv}
+      setSyncStickies={setSyncStickies}
+      isCloudForceSyncing={isCloudForceSyncing}
+      isCloudBackingUp={isCloudBackingUp}
+      isCloudRestoring={isCloudRestoring}
+      isCloudForceUploading={isCloudForceUploading}
+      isCloudForceDownloading={isCloudForceDownloading}
+      setIsConfirmForceUploadOpen={setIsConfirmForceUploadOpen}
+      setIsConfirmForceDownloadOpen={setIsConfirmForceDownloadOpen}
+      handleCloudBackup={handleCloudBackup}
+      setIsConfirmCloudRestoreOpen={setIsConfirmCloudRestoreOpen}
+      cloudSyncStatus={cloudSyncStatus}
+      cloudProgress={cloudProgress}
+      isCloudStatusLoading={isCloudStatusLoading}
+      CLOUD_BACKUP_MAX_SIZE={CLOUD_BACKUP_MAX_SIZE}
+      myContact={myContact}
+      accountAvatarLabel={accountAvatarLabel}
+      accountAvatarInitials={accountAvatarInitials}
+      realtimeStatus={realtimeStatus}
+      accountJoinedAt={accountJoinedAt}
+      debugMode={debugMode}
+      isAdmin={isAdmin}
+      promptVerifyToken={promptVerifyToken}
+      hasPassword={hasPassword}
+      setPasswordInput={setPasswordInput}
+      setPasswordError={setPasswordError}
+      setIsPasswordDialogOpen={setIsPasswordDialogOpen}
+      logout={logout}
+      handleLogoutAllDevices={handleLogoutAllDevices}
+      isLoggingOutAllDevices={isLoggingOutAllDevices}
+      telegramLinkedAccount={telegramLinkedAccount}
+      openTelegramDialog={openTelegramDialog}
+      isTelegramStatusLoading={isTelegramStatusLoading}
+      recoveryEmailStatus={recoveryEmailStatus}
+      isEmailStatusLoading={isEmailStatusLoading}
+      refreshRecoveryEmailStatus={refreshRecoveryEmailStatus}
+      handleCheckForUpdates={handleCheckForUpdates}
+      handleBackup={handleBackup}
+      fileInputRef={fileInputRef}
+      handleRestore={handleRestore}
+      handleResetAll={handleResetAll}
+      setIsConfirmFormatOpen={setIsConfirmFormatOpen}
+      setDebugMode={setDebugMode}
+      showResizers={showResizers}
+      setShowResizers={setShowResizers}
+      shaderEffectEnabled={shaderEffectEnabled}
+      setShaderEffectEnabled={setShaderEffectEnabled}
+      systemFont={systemFont}
+      setSystemFont={setSystemFont}
+      AI_MODELS={AI_MODELS}
+      aiModel={aiModel}
+      setAiModel={setAiModel}
+      ttsModel={ttsModel}
+      setTtsModel={setTtsModel}
+      ttsVoice={ttsVoice}
+      setTtsVoice={setTtsVoice}
+      handleShowBootScreen={handleShowBootScreen}
+      handleTriggerAppCrashTest={handleTriggerAppCrashTest}
+      handleTriggerDesktopCrashTest={handleTriggerDesktopCrashTest}
+    />
+  );
+
   const menuBar = (
     <ControlPanelsMenuBar
       onClose={onClose}
@@ -253,7 +413,7 @@ export function ControlPanelsAppComponent({
       isForeground={isForeground}
       menuBar={menuBar}
       windowFrameProps={{
-        title: windowTitle,
+        title: effectiveWindowTitle,
         onClose,
         isForeground,
         appId: "control-panels",
@@ -261,6 +421,9 @@ export function ControlPanelsAppComponent({
         instanceId,
         onNavigateNext,
         onNavigatePrevious,
+        ...(isMacOSTheme
+          ? { windowConstraints: { maxWidth: 440, minHeight: 200, maxHeight: 600 } }
+          : {}),
       }}
       trailing={
         <ControlPanelsDialogs
@@ -330,16 +493,27 @@ export function ControlPanelsAppComponent({
       }
     >
         <div
-          className={`flex flex-col size-full ${
+          className={`flex flex-col ${isMacOSTheme ? "w-full" : "size-full"} ${
             isWindowsLegacyTheme ? "pt-0 pb-2 px-2" : ""
           } ${
             isClassicMacTheme
               ? isMacOSTheme
-                ? "p-4 pt-2"
-                : "p-4 bg-[#E3E3E3]"
+                ? ""
+                : "p-4 pt-2"
               : ""
+          } ${
+            isClassicMacTheme && !isMacOSTheme ? "bg-[#E3E3E3]" : ""
           }`}
         >
+          {isMacOSTheme ? (
+            <ControlPanelsMacLayout
+              t={t}
+              instanceId={instanceId}
+              defaultPane={initialData?.defaultTab}
+              onCurrentEntryChange={setMacCurrentEntry}
+              renderPane={renderMacPane}
+            />
+          ) : (
           <Tabs defaultValue={defaultTab} className="size-full">
             <ThemedTabsList>
               <ThemedTabsTrigger value="appearance">
@@ -509,6 +683,7 @@ export function ControlPanelsAppComponent({
               />
             </ThemedTabsContent>
           </Tabs>
+          )}
         </div>
     </AppWindowShell>
   );

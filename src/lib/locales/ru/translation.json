@@ -1276,7 +1276,13 @@
         "yellow": "Желтый"
       },
       "accentDescription": "Окрашивание выделения, меню и элементов управления",
+      "accountJoined": "Присоединился в {{date}}",
       "accountMenu": "Account",
+      "accountsTabs": {
+        "accounts": "Учетные записи",
+        "debug": "Отладка",
+        "security": "Безопасность"
+      },
       "aiModel": "Модель ИИ",
       "aiModelDescription": "Используется в чатах, IE и других местах",
       "alerts": {
@@ -1325,9 +1331,11 @@
       "bootScreenDescription": "Проверить анимацию экрана загрузки",
       "changePassword": "Изменить пароль",
       "chatSynth": "Чат-синтезатор",
+      "chatSynthDescription": "Пресет синта для набора в Чатах",
       "chatSynthVolume": "Громкость чат-синтезатора",
       "checkForUpdates": "Проверить обновления",
       "cloudSync": {
+        "accountDescription": "Настройки синхронизации на ваших устройствах",
         "backingUp": "Создание резервной копии…",
         "backupFailed": "Не удалось сохранить резервную копию в облаке",
         "backupSuccess": "Резервная копия сохранена в облаке",
@@ -1339,13 +1347,13 @@
         "confirmForceUploadDesc": "Данные в облаке будут перезаписаны текущими данными этого устройства для каждого включённого элемента автосинхронизации.",
         "confirmRestore": "Восстановить из облака?",
         "confirmRestoreDesc": "Это заменит все текущие настройки и файлы облачной резервной копией. ryOS будет перезапущена.",
-        "description": "Резервируйте или восстанавливайте все настройки и файлы в облаке. Макс. {{limit}} МБ.",
+        "description": "Резервируйте или восстанавливайте все настройки и файлы в облаке. Макс. {{limit}} МБ",
         "forceDownload": "Скачать",
         "forceDownloadFailed": "Не удалось скачать из облака",
         "forceDownloadNoData": "Данные в облаке не найдены для включённых элементов",
         "forceDownloadSuccess": "Скачивание из облака завершено",
         "forceDownloading": "Скачивание…",
-        "forceSyncDescription": "Загрузить или скачать включённые элементы автосинхронизации.",
+        "forceSyncDescription": "Загрузить или скачать включённые элементы автосинхронизации",
         "forceSyncNoDomains": "Сначала включите хотя бы один элемент автосинхронизации",
         "forceUpload": "Загрузить",
         "forceUploadFailed": "Не удалось загрузить в облако",
@@ -1368,6 +1376,10 @@
         "restoring": "Восстановление…",
         "tooLarge": "Слишком большой размер резервной копии ({{size}} МБ). Максимальный размер в сжатом виде — {{limit}} МБ."
       },
+      "cloudSyncTabs": {
+        "backup": "Резервное копирование",
+        "sync": "Синхронизация"
+      },
       "color": "Цвет",
       "connectionStatus": {
         "connected": "Подключено",
@@ -1377,12 +1389,14 @@
       "crashApp": "Сбой приложения",
       "crashDesktop": "Сбой рабочего стола",
       "crt": "ЭЛТ",
+      "currentTime": "Текущее время",
       "custom": "Пользовательский",
       "darkMode": "Тёмный режим",
       "darkModeDark": "Тёмный",
       "darkModeDescription": "Следовать системе или принудительно использовать тёмный вариант",
       "darkModeLight": "Светлый",
       "darkModeSystem": "Системный",
+      "dateTimeDescription": "Дата и время устанавливаются вашим устройством. ryOS использует часовой пояс вашего браузера для планирования и контекста ИИ",
       "debugMode": "Режим отладки",
       "debugModeDescription": "Включить параметры отладки",
       "default": "По умолчанию",
@@ -1402,8 +1416,12 @@
         "title": "Удалить учетную запись"
       },
       "deleteAccountMenu": "Удалить учетную запись…",
+      "deleteAccountRowDescription": "Безвозвратно удалить вашу учетную запись и синхронизированные данные",
       "description": "Системные настройки",
+      "desktopAndScreenSaver": "Рабочий стол и заставка",
+      "desktopTab": "Рабочий стол",
       "displayMode": "Режим отображения",
+      "displayModeDescription": "Применяет цветовой фильтр к обоям рабочего стола",
       "downloadMacApp": "Скачать приложение Mac",
       "dream": "Мечта",
       "dynamicWallpapers": {
@@ -1415,10 +1433,27 @@
       },
       "elevenlabs": "ElevenLabs",
       "elevenlabsVoiceId": "ID голоса ElevenLabs",
+      "email": {
+        "add": "Добавить",
+        "checking": "Проверка почты…",
+        "description": "Добавьте адрес электронной почты для восстановления пароля",
+        "loggedOutDescription": "Войдите, чтобы управлять почтой",
+        "manage": "Управление",
+        "notAvailable": "Восстановление по электронной почте недоступно на этом сервере",
+        "title": "Электронная почта",
+        "unverifiedAs": "{{email}} · Не подтверждено",
+        "verifiedAs": "{{email}} · Подтверждено",
+        "verify": "Подтвердить"
+      },
       "errorBoundaries": "Границы ошибок",
-      "errorBoundariesDescription": "Вызвать резервные механизмы при сбое приложения или рабочего стола для тестирования.",
+      "errorBoundariesDescription": "Вызвать резервные механизмы при сбое приложения или рабочего стола для тестирования",
       "formatFileSystem": "Форматировать файловую систему",
-      "formatFileSystemDescription": "Это удалит все файлы (кроме образцов документов), изображения и пользовательские обои. ryOS перезапустится после форматирования.",
+      "formatFileSystemDescription": "Это удалит все файлы (кроме образцов документов), изображения и пользовательские обои. ryOS перезапустится после форматирования",
+      "formatSamples": {
+        "dates": "Даты:",
+        "numbers": "Числа:",
+        "times": "Время:"
+      },
       "help": {
         "aiModel": {
           "description": "Выберите модель ИИ для работы «Чатов» и помощника Ryo в Терминале",
@@ -1446,6 +1481,7 @@
         }
       },
       "highContrast": "Высокий контраст",
+      "internationalHelp": "Перетащите языки, чтобы установить предпочтительный порядок для использования в меню приложений, диалоговых окнах и при обработке текста",
       "invert": "Инвертировать",
       "iosVolumeHint": "На iOS используйте аппаратные кнопки для управления громкостью медиа",
       "ipod": "iPod",
@@ -1453,10 +1489,23 @@
       "logIn": "Войти",
       "logOut": "Выйти",
       "logOutOfAllDevices": "Выйти со всех устройств",
+      "logOutOfAllDevicesRowDescription": "Выйти из учетной записи ryOS на всех устройствах",
+      "logOutRowDescription": "Выйти из учётной записи ryOS на этом устройстве",
       "loggedInToRyOS": "Вы вошли в ryOS",
       "loggingOut": "Выход...",
       "login": "Вход",
       "loginToSendMessages": "Войдите, чтобы отправлять сообщения и многое другое",
+      "logoutAll": {
+        "authErrorDescription": "Не авторизован",
+        "authErrorTitle": "Ошибка аутентификации",
+        "failedDescription": "Не удалось выйти на всех устройствах",
+        "failedTitle": "Ошибка выхода",
+        "networkErrorDescription": "Не удалось подключиться к серверу",
+        "networkErrorTitle": "Ошибка сети",
+        "successDescription": "Выход выполнен на всех устройствах",
+        "successTitle": "Выход выполнен"
+      },
+      "manage": "Управление",
       "master": "Общая",
       "masterVolume": "Общая громкость",
       "menu": {
@@ -1472,9 +1521,24 @@
       "mono": "Моно",
       "name": "Панели управления",
       "nameForMacosX": "Системные настройки",
+      "noMatchingPreferences": "Нет подходящих настроек",
       "noWallpapers": "Нет обоев",
       "openai": "OpenAI",
       "openaiVoice": "Голос OpenAI",
+      "panes": {
+        "accounts": "Учетные записи",
+        "appearance": "Оформление",
+        "desktopScreenSaver": "Рабочий стол и заставка",
+        "displays": "Мониторы",
+        "dotMac": "Облачная синхронизация",
+        "international": "Язык и регион",
+        "security": "Безопасность",
+        "sharing": "Резервное копирование и восстановление",
+        "softwareUpdate": "Обновление ПО",
+        "sound": "Звук"
+      },
+      "password": "Пароль",
+      "passwordDescription": "Защитите свою учетную запись ryOS паролем",
       "patterns": "Шаблоны",
       "preview": "Предпросмотр",
       "previewActive": "Нажмите в любом месте для выхода",
@@ -1503,7 +1567,9 @@
         "verify": "Подтвердить",
         "verifying": "Проверка..."
       },
+      "recoveryEmailDescription": "Добавьте адрес электронной почты для восстановления пароля",
       "recoveryEmailMenu": "Резервный адрес электронной почты…",
+      "recoveryEmailTitle": "Резервный адрес электронной почты",
       "resetAllSettings": "Сбросить все настройки",
       "resetAllSettingsDescription": "Это очистит все сохраненные настройки и восстановит значения по умолчанию",
       "restore": "Восстановить",
@@ -1537,7 +1603,14 @@
           "name": "Звездное поле"
         }
       },
+      "screenSaverTab": "Заставка",
       "screenSaverType": "Тип",
+      "sections": {
+        "hardwareSystem": "Оборудование и система",
+        "internetNetwork": "Интернет и сеть",
+        "personal": "Личное"
+      },
+      "securityLoginRequired": "Войдите, чтобы управлять паролем и настройками восстановления",
       "select": "Выбрать",
       "selectACategory": "Выберите категорию",
       "selectAPreset": "Выберите предустановку",
@@ -1549,15 +1622,26 @@
         "submitLabel": "Установить пароль",
         "title": "Установить пароль"
       },
+      "setup": "Настроить",
       "shaderEffect": "Эффект шейдера",
       "shaderEffectDescription": "Фоновый эффект, требовательный к производительности",
+      "sharingDescription": "Создавайте резервные копии и делитесь данными ryOS через облачное хранилище",
       "show": "Показать",
+      "showBootScreen": "Показывать экран загрузки",
       "showResizers": "Показать манипуляторы размера",
       "showResizersDescription": "Подсвечивать манипуляторы изменения размера окна",
+      "softwareUpdateDescription": "Проверить наличие новой версии ryOS",
       "sound": "Звук",
+      "soundTabs": {
+        "effects": "Эффекты",
+        "output": "Выход"
+      },
       "speech": "Речь",
+      "speechDescription": "Озвучивание сообщений ассистента и выделения",
       "speechVolume": "Громкость речи",
       "startAfter": "Запускать через",
+      "startupDiskDescription": "Выберите систему для запуска компьютера",
+      "startupDiskNote": "Предпросмотр экрана загрузки доступен, когда в разделе «Учетные записи» включен режим отладки.",
       "sync": "Синхронизация",
       "synth": "Синтезатор",
       "system": "Система",
@@ -1593,15 +1677,61 @@
         "title": "Телеграм"
       },
       "terminalIeAmbientSynth": "Синтезатор",
+      "terminalIeAmbientSynthDescription": "Эффекты и синт для Terminal и IE",
       "termsOfService": "Условия использования",
       "theme": "Тема",
       "themeDescription": "Изменяет внешний вид окон, меню и элементов управления",
+      "themeNames": {
+        "aqua": "Aqua",
+        "aquaGlass": "Aqua Glass",
+        "system7": "System 7",
+        "win98": "98",
+        "xp": "XP"
+      },
+      "themePreview": "Предпросмотр темы",
+      "themePreviewButton": "ОК",
+      "themePreviewFirstItem": "Первый пункт",
+      "themePreviewMenus": {
+        "edit": "Правка",
+        "file": "Файл",
+        "finder": "Finder"
+      },
+      "themePreviewOtherItem": "Другой объект",
+      "themePreviewSelectedItem": "Выбранный объект",
+      "themePreviewTabs": {
+        "general": "Основные",
+        "sharing": "Общий доступ"
+      },
+      "themePreviewWindowTitle": "Документ",
+      "timeZone": "Часовой пояс",
+      "toolbar": {
+        "back": "Назад",
+        "forward": "Вперед",
+        "lock": "Заблокировать",
+        "search": "Поиск",
+        "showAll": "Показать все"
+      },
       "ttsModel": "Модель TTS",
       "ttsModelDescription": "Поставщик преобразования текста в речь",
       "ttsVoice": "Голос TTS",
+      "ttsVoices": {
+        "alloy": "Alloy",
+        "echo": "Echo",
+        "fable": "Fable",
+        "nova": "Nova",
+        "onyx": "Onyx",
+        "ryo": "Ryo",
+        "ryoV2": "Ryo v2",
+        "ryoV3": "Ryo v3",
+        "shimmer": "Мерцание"
+      },
       "ui": "Интерфейс",
       "uiSounds": "Звуки интерфейса",
+      "uiSoundsDescription": "Щелчки и отклик для окон и меню",
       "uiVolume": "Громкость интерфейса",
+      "verify": "Подтвердить",
+      "verifyAccount": "Подтвердить аккаунт",
+      "verifyAccountDescription": "Подтвердите свою личность для доступа к защищенным функциям",
       "viewChangelog": "Журнал изменений",
       "wallpaperCategories": {
         "aqua": "Аква",
@@ -2424,9 +2554,9 @@
         "repeatOne": "Повторить одну",
         "romanization": "Романизация",
         "screen": "Экран",
+        "screenAqua": "Aqua Glass",
         "screenClassic": "Классический",
         "screenModern": "Современный",
-        "screenAqua": "Aqua Glass",
         "searchSongs": "Поиск песен",
         "shareApp": "Поделиться приложением...",
         "shareSong": "Поделиться песней...",

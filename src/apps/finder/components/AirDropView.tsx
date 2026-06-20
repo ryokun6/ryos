@@ -219,7 +219,7 @@ export function AirDropView({
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4 px-8 text-center">
         <ThemedIcon
-          name="/icons/default/cloud-sync.png"
+          name="/icons/default/airdrop.png"
           alt="AirDrop"
           className="size-20"
         />

@@ -1392,7 +1392,7 @@ export function useFinderLogic({
       {
         name: t("apps.finder.airdrop.title"),
         path: "__airdrop__",
-        icon: "/icons/default/cloud-sync.png",
+        icon: "/icons/default/airdrop.png",
         divider: false,
         isAirDrop: true,
       },

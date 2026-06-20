@@ -59,6 +59,7 @@ export type SyncTabContentProps = {
   cloudProgress: { phase: string; percent: number } | null;
   isCloudStatusLoading: boolean;
   CLOUD_BACKUP_MAX_SIZE: number;
+  prefPaneLayout?: boolean;
 };
 
 export function SyncTabContent({
@@ -104,9 +105,16 @@ export function SyncTabContent({
   cloudProgress,
   isCloudStatusLoading,
   CLOUD_BACKUP_MAX_SIZE,
+  prefPaneLayout = false,
 }: SyncTabContentProps) {
   return (
-    <div className="space-y-4 h-full overflow-y-auto p-4">
+    <div
+      className={cn(
+        "space-y-4 h-full overflow-y-auto",
+        prefPaneLayout ? "p-0" : "p-4"
+      )}
+    >
+      <div className={cn(prefPaneLayout && "control-panels-pref-well space-y-3")}>
       <div className="space-y-3 pt-1">
         {username ? (
           <div className="flex items-center justify-between gap-4">
@@ -197,9 +205,7 @@ export function SyncTabContent({
               />
               <SyncDomainRow
                 appId={AUTO_SYNC_ITEM_ICONS.tv}
-                label={t("apps.control-panels.autoSync.tvChannels", {
-                  defaultValue: "TV Channels",
-                })}
+                label={t("apps.control-panels.autoSync.tvChannels")}
                 status={formatSyncStatus(autoSyncDomainStatus.tv, t)}
                 checked={syncTv}
                 onCheckedChange={setSyncTv}
@@ -237,10 +243,13 @@ export function SyncTabContent({
         )}
       </div>
 
+      </div>
+
       <hr className="my-4 border-t" style={tabStyles.separatorStyle} />
 
       <div
         className={cn(
+          prefPaneLayout && "control-panels-pref-well space-y-2",
           "space-y-2",
           !username && "opacity-50 pointer-events-none select-none"
         )}

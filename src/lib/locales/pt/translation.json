@@ -1276,7 +1276,13 @@
         "yellow": "Amarelo"
       },
       "accentDescription": "Colore seleções, menus e controles",
+      "accountJoined": "Entrou em {{date}}",
       "accountMenu": "Account",
+      "accountsTabs": {
+        "accounts": "Contas",
+        "debug": "Depuração",
+        "security": "Segurança"
+      },
       "aiModel": "Modelo de IA",
       "aiModelDescription": "Usado em Chats, IE e mais",
       "alerts": {
@@ -1325,9 +1331,11 @@
       "bootScreenDescription": "Testar a animação da tela de inicialização",
       "changePassword": "Alterar Senha",
       "chatSynth": "Synth de Chat",
+      "chatSynthDescription": "Preset de sinte para digitação no Chats",
       "chatSynthVolume": "Volume do Sintetizador de Chat",
       "checkForUpdates": "Verificar Atualizações",
       "cloudSync": {
+        "accountDescription": "Configurações de sincronização nos seus dispositivos",
         "backingUp": "Fazendo backup…",
         "backupFailed": "Falha ao salvar backup na nuvem",
         "backupSuccess": "Backup salvo na nuvem",
@@ -1339,13 +1347,13 @@
         "confirmForceUploadDesc": "Os dados na nuvem serão substituídos pelos dados atuais deste dispositivo para cada item de Sincronização Automática ativado.",
         "confirmRestore": "Restaurar da nuvem?",
         "confirmRestoreDesc": "Isso substituirá todas as suas configurações e arquivos atuais pelo backup na nuvem. O ryOS será reiniciado.",
-        "description": "Faça backup ou restaure todas as configurações e arquivos na nuvem. Máx. {{limit}} MB.",
+        "description": "Faça backup ou restaure todas as configurações e arquivos na nuvem. Máx. {{limit}} MB",
         "forceDownload": "Baixar",
         "forceDownloadFailed": "Falha ao baixar da nuvem",
         "forceDownloadNoData": "Nenhum dado na nuvem encontrado para os itens ativados",
         "forceDownloadSuccess": "Download da nuvem concluído",
         "forceDownloading": "Baixando…",
-        "forceSyncDescription": "Enviar ou baixar itens de Sincronização Automática ativados.",
+        "forceSyncDescription": "Enviar ou baixar itens de Sincronização Automática ativados",
         "forceSyncNoDomains": "Ative pelo menos um item de Sincronização Automática primeiro",
         "forceUpload": "Enviar",
         "forceUploadFailed": "Falha ao enviar para a nuvem",
@@ -1368,6 +1376,10 @@
         "restoring": "Restaurando…",
         "tooLarge": "Backup muito grande ({{size}} MB). O tamanho máximo compactado é {{limit}} MB."
       },
+      "cloudSyncTabs": {
+        "backup": "Backup",
+        "sync": "Sincronização"
+      },
       "color": "Cor",
       "connectionStatus": {
         "connected": "Conectado",
@@ -1377,12 +1389,14 @@
       "crashApp": "Travar App",
       "crashDesktop": "Travar Desktop",
       "crt": "CRT",
+      "currentTime": "Hora atual",
       "custom": "Personalizado",
       "darkMode": "Modo Escuro",
       "darkModeDark": "Escuro",
       "darkModeDescription": "Seguir o sistema ou forçar a variante escura",
       "darkModeLight": "Claro",
       "darkModeSystem": "Sistema",
+      "dateTimeDescription": "A data e a hora são definidas pelo seu dispositivo. O ryOS utiliza o fuso horário do seu navegador para agendamentos e contexto de IA",
       "debugMode": "Modo Depuração",
       "debugModeDescription": "Ativar configurações de depuração",
       "default": "Padrão",
@@ -1402,8 +1416,12 @@
         "title": "Excluir conta"
       },
       "deleteAccountMenu": "Excluir conta…",
+      "deleteAccountRowDescription": "Remover permanentemente a sua conta e os dados sincronizados",
       "description": "Configurações do sistema",
+      "desktopAndScreenSaver": "Área de Trabalho e Protetor de Tela",
+      "desktopTab": "Área de Trabalho",
       "displayMode": "Modo de Exibição",
+      "displayModeDescription": "Aplica um filtro de cor sobre a imagem de fundo da área de trabalho",
       "downloadMacApp": "Baixar App para Mac",
       "dream": "Sonho",
       "dynamicWallpapers": {
@@ -1415,10 +1433,27 @@
       },
       "elevenlabs": "ElevenLabs",
       "elevenlabsVoiceId": "ID de Voz ElevenLabs",
+      "email": {
+        "add": "Adicionar",
+        "checking": "Verificando e-mail…",
+        "description": "Adicione um e-mail para recuperação de senha",
+        "loggedOutDescription": "Inicie sessão para gerenciar o e-mail",
+        "manage": "Gerenciar",
+        "notAvailable": "A recuperação por e-mail não está disponível neste servidor",
+        "title": "E-mail",
+        "unverifiedAs": "{{email}} · Não verificado",
+        "verifiedAs": "{{email}} · Verificado",
+        "verify": "Verificar"
+      },
       "errorBoundaries": "Limites de Erro",
-      "errorBoundariesDescription": "Acionar mecanismos de recuperação de falha do app ou do desktop para testes.",
+      "errorBoundariesDescription": "Acionar mecanismos de recuperação de falha do app ou do desktop para testes",
       "formatFileSystem": "Formatar Sistema de Arquivos",
-      "formatFileSystemDescription": "Isso apagará todos os arquivos (exceto documentos de exemplo), imagens e papéis de parede personalizados. O ryOS será reiniciado após a formatação.",
+      "formatFileSystemDescription": "Isso apagará todos os arquivos (exceto documentos de exemplo), imagens e papéis de parede personalizados. O ryOS será reiniciado após a formatação",
+      "formatSamples": {
+        "dates": "Datas:",
+        "numbers": "Números:",
+        "times": "Horas:"
+      },
       "help": {
         "aiModel": {
           "description": "Escolha qual modelo de IA alimenta o Chats e o assistente Ryo do Terminal",
@@ -1446,6 +1481,7 @@
         }
       },
       "highContrast": "Alto Contraste",
+      "internationalHelp": "Arraste os idiomas para definir a ordem de preferência para uso em menus de aplicativos, caixas de diálogo e processamento de texto",
       "invert": "Inverter",
       "iosVolumeHint": "No iOS, use os botões físicos para controlar o volume da mídia",
       "ipod": "iPod",
@@ -1453,10 +1489,23 @@
       "logIn": "Iniciar Sessão",
       "logOut": "Terminar Sessão",
       "logOutOfAllDevices": "Terminar Sessão em Todos os Dispositivos",
+      "logOutOfAllDevicesRowDescription": "Encerrar sessão da sua conta ryOS em todos os dispositivos",
+      "logOutRowDescription": "Sair da sua conta ryOS neste dispositivo",
       "loggedInToRyOS": "Sessão iniciada no ryOS",
       "loggingOut": "A terminar sessão...",
       "login": "Iniciar Sessão",
       "loginToSendMessages": "Inicie sessão para enviar mensagens e mais",
+      "logoutAll": {
+        "authErrorDescription": "Não autenticado",
+        "authErrorTitle": "Erro de autenticação",
+        "failedDescription": "Falha ao encerrar sessão em todos os dispositivos",
+        "failedTitle": "Falha ao encerrar sessão",
+        "networkErrorDescription": "Falha ao conectar ao servidor",
+        "networkErrorTitle": "Erro de rede",
+        "successDescription": "Sessão encerrada em todos os dispositivos",
+        "successTitle": "Sessão encerrada"
+      },
+      "manage": "Gerenciar",
       "master": "Principal",
       "masterVolume": "Volume Principal",
       "menu": {
@@ -1472,9 +1521,24 @@
       "mono": "Mono",
       "name": "Painéis de Controle",
       "nameForMacosX": "Preferências do Sistema",
+      "noMatchingPreferences": "Nenhuma preferência correspondente",
       "noWallpapers": "Sem papéis de parede",
       "openai": "OpenAI",
       "openaiVoice": "Voz OpenAI",
+      "panes": {
+        "accounts": "Contas",
+        "appearance": "Aparência",
+        "desktopScreenSaver": "Mesa e Protetor de Tela",
+        "displays": "Monitores",
+        "dotMac": "Sincronização na Nuvem",
+        "international": "Internacional",
+        "security": "Segurança",
+        "sharing": "Backup e Restauração",
+        "softwareUpdate": "Atualização de Software",
+        "sound": "Som"
+      },
+      "password": "Senha",
+      "passwordDescription": "Proteja sua conta ryOS com uma senha",
       "patterns": "Padrões",
       "preview": "Pré-visualizar",
       "previewActive": "Clique em qualquer lugar para sair",
@@ -1503,7 +1567,9 @@
         "verify": "Verificar",
         "verifying": "Verificando..."
       },
+      "recoveryEmailDescription": "Adicione um e-mail para recuperação de senha",
       "recoveryEmailMenu": "E-mail de recuperação…",
+      "recoveryEmailTitle": "E-mail de recuperação",
       "resetAllSettings": "Redefinir Todas as Definições",
       "resetAllSettingsDescription": "Isso apagará todas as configurações salvas e restaurará os padrões",
       "restore": "Restaurar",
@@ -1537,7 +1603,14 @@
           "name": "Campo Estelar"
         }
       },
+      "screenSaverTab": "Protetor de Tela",
       "screenSaverType": "Tipo",
+      "sections": {
+        "hardwareSystem": "Hardware e Sistema",
+        "internetNetwork": "Internet e Rede",
+        "personal": "Pessoal"
+      },
+      "securityLoginRequired": "Inicie a sessão para gerenciar as configurações de senha e recuperação",
       "select": "Selecionar",
       "selectACategory": "Selecionar uma categoria",
       "selectAPreset": "Selecionar uma predefinição",
@@ -1549,15 +1622,26 @@
         "submitLabel": "Definir Senha",
         "title": "Definir Senha"
       },
+      "setup": "Configurar",
       "shaderEffect": "Efeito Shader",
       "shaderEffectDescription": "Efeito de fundo que exige muito desempenho",
+      "sharingDescription": "Faça backup e compartilhe seus dados do ryOS com o armazenamento em nuvem",
       "show": "Mostrar",
+      "showBootScreen": "Mostrar Tela de Inicialização",
       "showResizers": "Mostrar redimensionadores",
       "showResizersDescription": "Destacar alças de redimensionamento de janelas",
+      "softwareUpdateDescription": "Verificar se uma versão mais recente do ryOS está disponível",
       "sound": "Som",
+      "soundTabs": {
+        "effects": "Efeitos",
+        "output": "Saída"
+      },
       "speech": "Fala",
+      "speechDescription": "Lê mensagens do assistente e texto selecionado",
       "speechVolume": "Volume da Fala",
       "startAfter": "Iniciar após",
+      "startupDiskDescription": "Escolha o sistema usado para inicializar seu computador",
+      "startupDiskNote": "A visualização da tela de inicialização está disponível quando o Modo de Depuração está ativado em Contas.",
       "sync": "Sincronização",
       "synth": "Sintetizador",
       "system": "Sistema",
@@ -1593,15 +1677,61 @@
         "title": "Telegram"
       },
       "terminalIeAmbientSynth": "Synth",
+      "terminalIeAmbientSynthDescription": "Efeitos e sinte no Terminal e IE",
       "termsOfService": "Termos de Serviço",
       "theme": "Tema",
       "themeDescription": "Altera a aparência de janelas, menus e controles",
+      "themeNames": {
+        "aqua": "Aqua",
+        "aquaGlass": "Aqua Glass",
+        "system7": "System 7",
+        "win98": "98",
+        "xp": "XP"
+      },
+      "themePreview": "Visualização do tema",
+      "themePreviewButton": "OK",
+      "themePreviewFirstItem": "Primeiro item",
+      "themePreviewMenus": {
+        "edit": "Editar",
+        "file": "Arquivo",
+        "finder": "Finder"
+      },
+      "themePreviewOtherItem": "Outro item",
+      "themePreviewSelectedItem": "Item selecionado",
+      "themePreviewTabs": {
+        "general": "Geral",
+        "sharing": "Compartilhamento"
+      },
+      "themePreviewWindowTitle": "Documento",
+      "timeZone": "Fuso Horário",
+      "toolbar": {
+        "back": "Voltar",
+        "forward": "Avançar",
+        "lock": "Bloquear",
+        "search": "Buscar",
+        "showAll": "Mostrar Tudo"
+      },
       "ttsModel": "Modelo TTS",
       "ttsModelDescription": "Provedor de texto para fala",
       "ttsVoice": "Voz TTS",
+      "ttsVoices": {
+        "alloy": "Alloy",
+        "echo": "Echo",
+        "fable": "Fable",
+        "nova": "Nova",
+        "onyx": "Onyx",
+        "ryo": "Ryo",
+        "ryoV2": "Ryo v2",
+        "ryoV3": "Ryo v3",
+        "shimmer": "Cintilação"
+      },
       "ui": "UI",
       "uiSounds": "Sons da UI",
+      "uiSoundsDescription": "Cliques e feedback para janelas e menus",
       "uiVolume": "Volume da UI",
+      "verify": "Verificar",
+      "verifyAccount": "Verificar conta",
+      "verifyAccountDescription": "Confirme sua identidade para acessar recursos protegidos",
       "viewChangelog": "Registro de alterações",
       "wallpaperCategories": {
         "aqua": "Aqua",
@@ -2424,9 +2554,9 @@
         "repeatOne": "Repetir Um",
         "romanization": "Romanização",
         "screen": "Tela",
+        "screenAqua": "Aqua Glass",
         "screenClassic": "Clássico",
         "screenModern": "Moderno",
-        "screenAqua": "Aqua Glass",
         "searchSongs": "Pesquisar Músicas",
         "shareApp": "Compartilhar App...",
         "shareSong": "Compartilhar Música...",

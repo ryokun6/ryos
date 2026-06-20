@@ -1,6 +1,7 @@
 import type { RefObject } from "react";
 import { PaperPlaneRight } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
+import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -24,11 +25,16 @@ import {
   type SystemFontId,
 } from "@/themes/systemFonts";
 import {
+  ACCOUNT_PROFILE_AVATAR_ICON,
   controlPanelItemIconShell,
-  userAvatarInitialsTextShadow,
 } from "./constants";
 import { AccountActionsMenu } from "./AccountActionsMenu";
 import { VersionDisplay } from "./VersionDisplay";
+import {
+  ELEVENLABS_TTS_VOICES,
+  getTtsVoiceLabel,
+  OPENAI_TTS_VOICES,
+} from "./ttsVoiceOptions";
 
 export type SystemTabContentProps = {
   t: (key: string, opts?: Record<string, unknown>) => string;
@@ -75,6 +81,7 @@ export type SystemTabContentProps = {
   handleShowBootScreen: () => void;
   handleTriggerAppCrashTest: () => void;
   handleTriggerDesktopCrashTest: () => void;
+  prefPaneLayout?: boolean;
 };
 
 export function SystemTabContent({
@@ -122,13 +129,20 @@ export function SystemTabContent({
   handleShowBootScreen,
   handleTriggerAppCrashTest,
   handleTriggerDesktopCrashTest,
+  prefPaneLayout = false,
 }: SystemTabContentProps) {
   const selectedSystemFont =
     SYSTEM_FONT_OPTIONS.find((option) => option.id === systemFont) ??
     SYSTEM_FONT_OPTIONS[0];
 
   return (
-    <div className="space-y-4 h-full overflow-y-auto p-4">
+    <div
+      className={cn(
+        "space-y-4 h-full overflow-y-auto",
+        prefPaneLayout ? "p-0" : "p-4"
+      )}
+    >
+      <div className={cn(prefPaneLayout && "control-panels-pref-well space-y-2")}>
       <div className="space-y-2 pt-1">
         {username ? (
           <div className="space-y-2">
@@ -138,16 +152,12 @@ export function SystemTabContent({
                   <div
                     className={cn(
                       controlPanelItemIconShell,
-                      "rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.15)] flex items-center justify-center text-[11px] font-semibold text-white overflow-hidden"
+                      "rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.15)] flex items-center justify-center overflow-hidden"
                     )}
                     style={
                       myContact?.picture
                         ? { background: "rgba(255, 255, 255, 0.72)" }
-                        : {
-                            background:
-                              "linear-gradient(to bottom, #dcdcdc, #b8b8b8)",
-                            textShadow: userAvatarInitialsTextShadow,
-                          }
+                        : undefined
                     }
                     aria-label={accountAvatarLabel}
                   >
@@ -158,7 +168,11 @@ export function SystemTabContent({
                         className="size-full object-contain"
                       />
                     ) : (
-                      accountAvatarInitials
+                      <ThemedIcon
+                        name={ACCOUNT_PROFILE_AVATAR_ICON}
+                        alt={accountAvatarLabel}
+                        className="size-full object-contain"
+                      />
                     )}
                   </div>
                   <span
@@ -284,8 +298,11 @@ export function SystemTabContent({
         </div>
       </div>
 
+      </div>
+
       <hr className="my-4 border-t" style={tabStyles.separatorStyle} />
 
+      <div className={cn(prefPaneLayout && "control-panels-pref-well space-y-2")}>
       <div className="space-y-2">
         <Button variant="retro" onClick={handleCheckForUpdates} className="w-full">
           {t("apps.control-panels.checkForUpdates")}
@@ -338,6 +355,7 @@ export function SystemTabContent({
         <p className="text-[11px] text-neutral-600 font-geneva-12">
           {t("apps.control-panels.formatFileSystemDescription")}
         </p>
+      </div>
       </div>
 
       {isAdmin && (
@@ -509,22 +527,23 @@ export function SystemTabContent({
             >
               <SelectTrigger className="w-[120px]">
                 <SelectValue placeholder={t("apps.control-panels.select")}>
-                  {ttsVoice === "YC3iw27qriLq7UUaqAyi"
-                    ? "Ryo v3"
-                    : ttsVoice === "kAyjEabBEu68HYYYRAHR"
-                      ? "Ryo v2"
-                      : ttsVoice === "G0mlS0y8ByHjGAOxBgvV"
-                        ? "Ryo"
-                        : t("apps.control-panels.select")}
+                  {getTtsVoiceLabel(
+                    t,
+                    "elevenlabs",
+                    ttsVoice,
+                    t("apps.control-panels.select")
+                  )}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="__null__">
                   {t("apps.control-panels.select")}
                 </SelectItem>
-                <SelectItem value="YC3iw27qriLq7UUaqAyi">Ryo v3</SelectItem>
-                <SelectItem value="kAyjEabBEu68HYYYRAHR">Ryo v2</SelectItem>
-                <SelectItem value="G0mlS0y8ByHjGAOxBgvV">Ryo</SelectItem>
+                {ELEVENLABS_TTS_VOICES.map((voice) => (
+                  <SelectItem key={voice.value} value={voice.value}>
+                    {t(voice.labelKey)}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           ) : (
@@ -536,19 +555,23 @@ export function SystemTabContent({
             >
               <SelectTrigger className="w-[120px]">
                 <SelectValue placeholder={t("apps.control-panels.select")}>
-                  {ttsVoice || t("apps.control-panels.select")}
+                  {getTtsVoiceLabel(
+                    t,
+                    "openai",
+                    ttsVoice,
+                    t("apps.control-panels.select")
+                  )}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="__null__">
                   {t("apps.control-panels.select")}
                 </SelectItem>
-                <SelectItem value="alloy">Alloy</SelectItem>
-                <SelectItem value="echo">Echo</SelectItem>
-                <SelectItem value="fable">Fable</SelectItem>
-                <SelectItem value="onyx">Onyx</SelectItem>
-                <SelectItem value="nova">Nova</SelectItem>
-                <SelectItem value="shimmer">Shimmer</SelectItem>
+                {OPENAI_TTS_VOICES.map((voice) => (
+                  <SelectItem key={voice.value} value={voice.value}>
+                    {t(voice.labelKey)}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           )}

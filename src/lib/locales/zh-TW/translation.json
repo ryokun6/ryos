@@ -1276,7 +1276,13 @@
         "yellow": "黃色"
       },
       "accentDescription": "為選取項目、選單和控制項目著色",
+      "accountJoined": "加入於 {{date}}",
       "accountMenu": "Account",
+      "accountsTabs": {
+        "accounts": "帳號",
+        "debug": "除錯",
+        "security": "安全性"
+      },
       "aiModel": "AI 模型",
       "aiModelDescription": "用於聊天、IE 等",
       "alerts": {
@@ -1325,9 +1331,11 @@
       "bootScreenDescription": "測試開機畫面動畫",
       "changePassword": "變更密碼",
       "chatSynth": "聊天合成",
+      "chatSynthDescription": "聊天打字音效的合成器預設",
       "chatSynthVolume": "聊天合成音量",
       "checkForUpdates": "檢查更新",
       "cloudSync": {
+        "accountDescription": "在裝置間同步設定",
         "backingUp": "正在備份…",
         "backupFailed": "備份到雲端失敗",
         "backupSuccess": "備份已儲存到雲端",
@@ -1368,6 +1376,10 @@
         "restoring": "正在還原…",
         "tooLarge": "備份檔過大（{{size}}MB）。壓縮後上限為 {{limit}}MB。"
       },
+      "cloudSyncTabs": {
+        "backup": "備份",
+        "sync": "同步"
+      },
       "color": "全彩",
       "connectionStatus": {
         "connected": "已連線",
@@ -1377,12 +1389,14 @@
       "crashApp": "App 崩潰",
       "crashDesktop": "桌面崩潰",
       "crt": "CRT",
+      "currentTime": "目前時間",
       "custom": "自訂",
       "darkMode": "深色模式",
       "darkModeDark": "深色",
       "darkModeDescription": "跟隨系統，或強制使用深色版本",
       "darkModeLight": "淺色",
       "darkModeSystem": "系統",
+      "dateTimeDescription": "日期與時間是由您的裝置設定。ryOS 使用您的瀏覽器時區進行排程與 AI 上下文",
       "debugMode": "偵錯模式",
       "debugModeDescription": "啟用偵錯設定",
       "default": "預設",
@@ -1402,8 +1416,12 @@
         "title": "刪除帳號"
       },
       "deleteAccountMenu": "刪除帳號…",
+      "deleteAccountRowDescription": "永久移除您的帳號及同步資料",
       "description": "系統設定",
+      "desktopAndScreenSaver": "桌面與螢幕保護程式",
+      "desktopTab": "桌面",
       "displayMode": "顯示模式",
+      "displayModeDescription": "在桌面桌布上套用色彩濾鏡",
       "downloadMacApp": "下載 Mac 應用程式",
       "dream": "夢幻",
       "dynamicWallpapers": {
@@ -1415,10 +1433,27 @@
       },
       "elevenlabs": "ElevenLabs",
       "elevenlabsVoiceId": "ElevenLabs 語音 ID",
+      "email": {
+        "add": "新增",
+        "checking": "正在檢查電子郵件…",
+        "description": "新增用於重設密碼的電子郵件",
+        "loggedOutDescription": "登入以管理電子郵件",
+        "manage": "管理",
+        "notAvailable": "此伺服器不支援電子郵件復原",
+        "title": "電子郵件",
+        "unverifiedAs": "{{email}} · 未驗證",
+        "verifiedAs": "{{email}} · 已驗證",
+        "verify": "驗證"
+      },
       "errorBoundaries": "錯誤邊界",
       "errorBoundariesDescription": "觸發 App 或桌面崩潰的備用方案以供測試。",
       "formatFileSystem": "格式化檔案系統",
       "formatFileSystemDescription": "這將清除所有檔案（範例檔案除外）、圖片和自訂桌布。格式化後 ryOS 將重新啟動。",
+      "formatSamples": {
+        "dates": "日期：",
+        "numbers": "數字：",
+        "times": "時間："
+      },
       "help": {
         "aiModel": {
           "description": "選擇驅動「聊天」與「終端機 Ryo 助手」的 AI 模型",
@@ -1446,6 +1481,7 @@
         }
       },
       "highContrast": "高對比",
+      "internationalHelp": "拖移語言來設定在應用程式選單、對話框和文字處理中使用的偏好順序",
       "invert": "反轉",
       "iosVolumeHint": "在 iOS 上，使用硬體按鈕控制媒體音量",
       "ipod": "iPod",
@@ -1453,10 +1489,23 @@
       "logIn": "登入",
       "logOut": "登出",
       "logOutOfAllDevices": "登出所有裝置",
+      "logOutOfAllDevicesRowDescription": "在所有裝置上登出您的 ryOS 帳號",
+      "logOutRowDescription": "在此裝置登出您的 ryOS 帳戶",
       "loggedInToRyOS": "已登入 ryOS",
       "loggingOut": "登出中...",
       "login": "登入",
       "loginToSendMessages": "登入以傳送訊息及更多功能",
+      "logoutAll": {
+        "authErrorDescription": "未經身份驗證",
+        "authErrorTitle": "身份驗證錯誤",
+        "failedDescription": "無法從所有裝置登出",
+        "failedTitle": "登出失敗",
+        "networkErrorDescription": "無法連線至伺服器",
+        "networkErrorTitle": "網路錯誤",
+        "successDescription": "已從所有裝置登出",
+        "successTitle": "已登出"
+      },
+      "manage": "管理",
       "master": "主控",
       "masterVolume": "主音量",
       "menu": {
@@ -1472,9 +1521,24 @@
       "mono": "黑白",
       "name": "控制台",
       "nameForMacosX": "系統偏好設定",
+      "noMatchingPreferences": "沒有相符的偏好設定",
       "noWallpapers": "沒有背景圖片",
       "openai": "OpenAI",
       "openaiVoice": "OpenAI 語音",
+      "panes": {
+        "accounts": "帳號",
+        "appearance": "外觀",
+        "desktopScreenSaver": "桌面與螢幕保護程式",
+        "displays": "顯示器",
+        "dotMac": "雲端同步",
+        "international": "語言與地區",
+        "security": "安全性",
+        "sharing": "備份與還原",
+        "softwareUpdate": "軟體更新",
+        "sound": "聲音"
+      },
+      "password": "密碼",
+      "passwordDescription": "使用密碼保護您的 ryOS 帳號",
       "patterns": "樣式",
       "preview": "預覽",
       "previewActive": "按一下任何位置即可離開",
@@ -1503,7 +1567,9 @@
         "verify": "驗證",
         "verifying": "正在驗證..."
       },
+      "recoveryEmailDescription": "新增電子郵件以復原密碼",
       "recoveryEmailMenu": "復原電子郵件…",
+      "recoveryEmailTitle": "復原電子郵件",
       "resetAllSettings": "重設所有設定",
       "resetAllSettingsDescription": "這將清除所有已儲存的設定並還原為預設值",
       "restore": "還原",
@@ -1537,7 +1603,14 @@
           "name": "星空"
         }
       },
+      "screenSaverTab": "螢幕保護程式",
       "screenSaverType": "類型",
+      "sections": {
+        "hardwareSystem": "硬體與系統",
+        "internetNetwork": "網路與連線",
+        "personal": "個人"
+      },
+      "securityLoginRequired": "登入以管理密碼與復原設定",
       "select": "選取",
       "selectACategory": "選取類別",
       "selectAPreset": "選取預設值",
@@ -1549,15 +1622,26 @@
         "submitLabel": "設定密碼",
         "title": "設定密碼"
       },
+      "setup": "設定",
       "shaderEffect": "著色器效果",
       "shaderEffectDescription": "效能密集型背景效果",
+      "sharingDescription": "使用雲端儲存空間備份並分享您的 ryOS 資料",
       "show": "顯示",
+      "showBootScreen": "顯示啟動畫面",
       "showResizers": "顯示調整大小控點",
       "showResizersDescription": "醒目提示視窗調整大小控點",
+      "softwareUpdateDescription": "檢查是否有較新版本的 ryOS 可供使用",
       "sound": "音效",
+      "soundTabs": {
+        "effects": "效果",
+        "output": "輸出"
+      },
       "speech": "語音",
+      "speechDescription": "朗讀助理訊息與選取文字",
       "speechVolume": "語音音量",
       "startAfter": "閒置後啟動",
+      "startupDiskDescription": "選擇用來啟動電腦的系統",
+      "startupDiskNote": "當「帳號」中啟用「除錯模式」時，即可預覽啟動畫面。",
       "sync": "同步",
       "synth": "合成器",
       "system": "系統",
@@ -1593,15 +1677,61 @@
         "title": "Telegram"
       },
       "terminalIeAmbientSynth": "合成器",
+      "terminalIeAmbientSynthDescription": "終端機與 IE 的音效與合成音",
       "termsOfService": "服務條款",
       "theme": "主題",
       "themeDescription": "變更視窗、選單和控制項的外觀",
+      "themeNames": {
+        "aqua": "Aqua",
+        "aquaGlass": "Aqua Glass",
+        "system7": "System 7",
+        "win98": "98",
+        "xp": "XP"
+      },
+      "themePreview": "主題預覽",
+      "themePreviewButton": "確定",
+      "themePreviewFirstItem": "第一個項目",
+      "themePreviewMenus": {
+        "edit": "編輯",
+        "file": "檔案",
+        "finder": "Finder"
+      },
+      "themePreviewOtherItem": "其他項目",
+      "themePreviewSelectedItem": "已選取項目",
+      "themePreviewTabs": {
+        "general": "一般",
+        "sharing": "共享"
+      },
+      "themePreviewWindowTitle": "文件",
+      "timeZone": "時區",
+      "toolbar": {
+        "back": "返回",
+        "forward": "前進",
+        "lock": "鎖定",
+        "search": "搜尋",
+        "showAll": "顯示全部"
+      },
       "ttsModel": "TTS 模型",
       "ttsModelDescription": "文字轉語音提供者",
       "ttsVoice": "TTS 語音",
+      "ttsVoices": {
+        "alloy": "合金",
+        "echo": "回聲",
+        "fable": "寓言",
+        "nova": "新星",
+        "onyx": "縞瑪瑙",
+        "ryo": "Ryo",
+        "ryoV2": "Ryo v2",
+        "ryoV3": "Ryo v3",
+        "shimmer": "微光"
+      },
       "ui": "使用者介面",
       "uiSounds": "UI 音效",
+      "uiSoundsDescription": "視窗和選單的點擊聲與回饋",
       "uiVolume": "使用者介面音量",
+      "verify": "驗證",
+      "verifyAccount": "驗證帳戶",
+      "verifyAccountDescription": "確認您的身分以存取受保護的功能",
       "viewChangelog": "更新日誌",
       "wallpaperCategories": {
         "aqua": "水藍",
@@ -2424,9 +2554,9 @@
         "repeatOne": "單曲重複",
         "romanization": "羅馬拼音",
         "screen": "螢幕",
+        "screenAqua": "水玻璃",
         "screenClassic": "經典",
         "screenModern": "現代",
-        "screenAqua": "水玻璃",
         "searchSongs": "搜尋歌曲",
         "shareApp": "分享應用程式…",
         "shareSong": "分享歌曲...",

@@ -25,6 +25,7 @@ import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { getApiUrl } from "@/utils/platform";
 import { getTranslatedAppName } from "@/utils/i18n";
+import { normalizeControlPanelClassicTabId } from "@/apps/control-panels/components/control-panels-app/controlPanelsCategories";
 import {
   uploadBlobWithStorageInstruction,
   type StorageUploadInstruction,
@@ -39,6 +40,8 @@ import { SETTINGS_ANALYTICS, track } from "@/utils/analytics";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 import { useShallow } from "zustand/react/shallow";
 import { useTelegramLink } from "@/hooks/useTelegramLink";
+import { useRecoveryEmail } from "@/hooks/useRecoveryEmail";
+import { useAccountJoinDate } from "@/hooks/useAccountJoinDate";
 import { getActiveCloudSyncEngine } from "@/sync/engine";
 import { SYNC_CATEGORIES } from "@/shared/sync2/namespaces";
 import {
@@ -447,8 +450,8 @@ export function useControlPanelsLogic({
     try {
       // Ensure we have auth info from the auth hook
       if (!isAuthenticated || !username) {
-        toast.error("Authentication Error", {
-          description: "Not authenticated",
+        toast.error(t("apps.control-panels.logoutAll.authErrorTitle"), {
+          description: t("apps.control-panels.logoutAll.authErrorDescription"),
         });
         return;
       }
@@ -466,8 +469,10 @@ export function useControlPanelsLogic({
       const data = await response.json();
 
       if (response.ok) {
-        toast.success("Logged Out", {
-          description: data.message || "Logged out from all devices",
+        toast.success(t("apps.control-panels.logoutAll.successTitle"), {
+          description:
+            data.message ||
+            t("apps.control-panels.logoutAll.successDescription"),
         });
 
         // Immediately clear auth via store logout (bypass confirmation)
@@ -475,14 +480,15 @@ export function useControlPanelsLogic({
 
         // No full page reload needed – UI will update via store reset
       } else {
-        toast.error("Logout Failed", {
-          description: data.error || "Failed to logout from all devices",
+        toast.error(t("apps.control-panels.logoutAll.failedTitle"), {
+          description:
+            data.error || t("apps.control-panels.logoutAll.failedDescription"),
         });
       }
     } catch (error) {
       console.error("Error logging out all devices:", error);
-      toast.error("Network Error", {
-        description: "Failed to connect to server",
+      toast.error(t("apps.control-panels.logoutAll.networkErrorTitle"), {
+        description: t("apps.control-panels.logoutAll.networkErrorDescription"),
       });
     } finally {
       setIsLoggingOutAllDevices(false);
@@ -501,6 +507,17 @@ export function useControlPanelsLogic({
     handleCopyTelegramCode,
     handleDisconnectTelegramLink,
   } = useTelegramLink({ username, isAuthenticated });
+
+  const {
+    recoveryEmailStatus,
+    isEmailStatusLoading,
+    refreshRecoveryEmailStatus,
+  } = useRecoveryEmail({ username, isAuthenticated });
+
+  const { accountJoinedAt } = useAccountJoinDate({
+    username,
+    isAuthenticated,
+  });
 
   // ====================================================================
   // Cloud Sync state
@@ -1418,7 +1435,7 @@ export function useControlPanelsLogic({
   const isWindowsLegacyTheme = isWindowsTheme;
 
   const tabStyles = getTabStyles(currentTheme);
-  const defaultTab = initialData?.defaultTab || "appearance";
+  const defaultTab = normalizeControlPanelClassicTabId(initialData?.defaultTab);
   const windowTitle = getTranslatedAppName("control-panels");
 
   const handleCheckForUpdates = () => {
@@ -1576,6 +1593,10 @@ export function useControlPanelsLogic({
     handleOpenTelegramLink,
     handleCopyTelegramCode,
     handleDisconnectTelegramLink,
+    recoveryEmailStatus,
+    isEmailStatusLoading,
+    refreshRecoveryEmailStatus,
+    accountJoinedAt,
     autoSyncEnabled,
     setAutoSyncEnabled,
     syncFiles,

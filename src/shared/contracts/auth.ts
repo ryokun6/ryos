@@ -40,6 +40,8 @@ export interface SessionResponse {
   username?: string;
   expired?: boolean;
   timeZone?: string;
+  /** Account creation timestamp (ms since epoch) from the stored user profile. */
+  createdAt?: number;
 }
 
 export type RecoveryChannel = "telegram" | "email";
