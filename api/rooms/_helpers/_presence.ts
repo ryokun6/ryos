@@ -3,7 +3,7 @@
  * Handles user presence tracking using Redis ZSETs
  */
 
-import { createRedis } from "../../_utils/redis.js";
+import { createRedis, type Redis } from "../../_utils/redis.js";
 import {
   getAllRoomIds,
   parseMessageData,
@@ -33,12 +33,12 @@ function getMessageTimestamp(value: unknown): number | undefined {
 }
 
 async function attachPrivateRoomLastMessageAt<T extends Room>(
-  rooms: T[]
+  rooms: T[],
+  redis: Redis = getRedis()
 ): Promise<T[]> {
   const privateRooms = rooms.filter((room) => room.type === "private");
   if (privateRooms.length === 0) return rooms;
 
-  const redis = getRedis();
   const lastMessages = await Promise.all(
     privateRooms.map(async (room) => {
       // Newest message is at index 0 (messages are LPUSH-ed).
@@ -69,9 +69,9 @@ async function attachPrivateRoomLastMessageAt<T extends Room>(
  */
 export async function setRoomPresence(
   roomId: string,
-  username: string
+  username: string,
+  redis: Redis = getRedis()
 ): Promise<void> {
-  const redis = getRedis();
   const entry = { score: Date.now(), member: username };
   await redis.zadd(redisKeys.chat.roomPresence(roomId), entry);
 }
@@ -81,17 +81,19 @@ export async function setRoomPresence(
  */
 export async function removeRoomPresence(
   roomId: string,
-  username: string
+  username: string,
+  redis: Redis = getRedis()
 ): Promise<number> {
-  const redis = getRedis();
   return redis.zrem(redisKeys.chat.roomPresence(roomId), username);
 }
 
 /**
  * Get active users in a room (prunes expired entries)
  */
-export async function getActiveUsersInRoom(roomId: string): Promise<string[]> {
-  const redis = getRedis();
+export async function getActiveUsersInRoom(
+  roomId: string,
+  redis: Redis = getRedis()
+): Promise<string[]> {
   const zkey = redisKeys.chat.roomPresence(roomId);
   const cutoff = Date.now() - ROOM_PRESENCE_TTL_SECONDS * 1000;
   await redis.zremrangebyscore(zkey, 0, cutoff);
@@ -102,8 +104,10 @@ export async function getActiveUsersInRoom(roomId: string): Promise<string[]> {
  * Re-calculate the active user count for a room via ZSET pruning
  * Updates the stored room object and returns the fresh count
  */
-export async function refreshRoomUserCount(roomId: string): Promise<number> {
-  const redis = getRedis();
+export async function refreshRoomUserCount(
+  roomId: string,
+  redis: Redis = getRedis()
+): Promise<number> {
   const zkey = redisKeys.chat.roomPresence(roomId);
   const cutoff = Date.now() - ROOM_PRESENCE_TTL_SECONDS * 1000;
   await redis.zremrangebyscore(zkey, 0, cutoff);
@@ -113,7 +117,7 @@ export async function refreshRoomUserCount(roomId: string): Promise<number> {
   const roomData = parseRoomData(roomRaw);
   if (roomData) {
     const updatedRoom: Room = { ...roomData, userCount };
-    await setRoom(roomId, updatedRoom);
+    await setRoom(roomId, updatedRoom, redis);
   }
 
   return userCount;
@@ -128,9 +132,10 @@ export async function cleanupExpiredPresence(): Promise<{
   error?: string;
 }> {
   try {
-    const roomIds = await getAllRoomIds();
+    const redis = getRedis();
+    const roomIds = await getAllRoomIds(redis);
     for (const roomId of roomIds) {
-      const newCount = await refreshRoomUserCount(roomId);
+      const newCount = await refreshRoomUserCount(roomId, redis);
       console.log(
         `[cleanupExpiredPresence] Updated room ${roomId} count to ${newCount}`
       );
@@ -148,8 +153,10 @@ export async function cleanupExpiredPresence(): Promise<{
 /**
  * Delete presence ZSET for a room
  */
-export async function deleteRoomPresence(roomId: string): Promise<void> {
-  const redis = getRedis();
+export async function deleteRoomPresence(
+  roomId: string,
+  redis: Redis = getRedis()
+): Promise<void> {
   await redis.del(redisKeys.chat.roomPresence(roomId));
 }
 
@@ -160,9 +167,10 @@ export async function deleteRoomPresence(roomId: string): Promise<void> {
 /**
  * Get detailed rooms with user list
  */
-export async function getDetailedRooms(): Promise<RoomWithUsers[]> {
-  const redis = getRedis();
-  const roomIds = await getAllRoomIds();
+export async function getDetailedRooms(
+  redis: Redis = getRedis()
+): Promise<RoomWithUsers[]> {
+  const roomIds = await getAllRoomIds(redis);
   if (roomIds.length === 0) return [];
 
   const rooms: RoomWithUsers[] = [];
@@ -171,22 +179,23 @@ export async function getDetailedRooms(): Promise<RoomWithUsers[]> {
     if (!raw) continue;
     const roomObj = parseRoomData(raw);
     if (!roomObj) continue;
-    const activeUsers = await getActiveUsersInRoom(roomObj.id);
+    const activeUsers = await getActiveUsersInRoom(roomObj.id, redis);
     rooms.push({
       ...roomObj,
       userCount: activeUsers.length,
       users: activeUsers,
     });
   }
-  return attachPrivateRoomLastMessageAt(rooms);
+  return attachPrivateRoomLastMessageAt(rooms, redis);
 }
 
 /**
  * Get rooms with user counts only (fast path using pipeline)
  */
-export async function getRoomsWithCountsFast(): Promise<Room[]> {
-  const redis = getRedis();
-  const roomIds = await getAllRoomIds();
+export async function getRoomsWithCountsFast(
+  redis: Redis = getRedis()
+): Promise<Room[]> {
+  const roomIds = await getAllRoomIds(redis);
   if (roomIds.length === 0) return [];
 
   const cutoff = Date.now() - ROOM_PRESENCE_TTL_SECONDS * 1000;
@@ -202,5 +211,5 @@ export async function getRoomsWithCountsFast(): Promise<Room[]> {
     ).size;
     rooms.push({ ...roomObj, userCount });
   }
-  return attachPrivateRoomLastMessageAt(rooms);
+  return attachPrivateRoomLastMessageAt(rooms, redis);
 }

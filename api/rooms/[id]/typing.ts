@@ -14,7 +14,7 @@ export const maxDuration = 5;
 
 export default apiHandler(
   { methods: ["POST"], auth: "required" },
-  async ({ req, res, logger, startTime, user }) => {
+  async ({ req, res, redis, logger, startTime, user }) => {
     const roomId = req.query.id as string | undefined;
 
     if (!roomId) {
@@ -34,7 +34,7 @@ export default apiHandler(
     }
 
     try {
-      const roomData = await getRoom(roomId);
+      const roomData = await getRoom(roomId, redis);
       if (!roomData) {
         logger.response(404, Date.now() - startTime);
         res.status(404).json({ error: "Room not found" });

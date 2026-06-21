@@ -4,6 +4,7 @@
  */
 
 import type { Room, User, Message } from "./_types.js";
+import type { Redis } from "../../_utils/redis.js";
 import {
   createRedisClient,
   generateRandomHexId,
@@ -59,8 +60,10 @@ export function parseMessageData(data: unknown): Message | null {
 /**
  * Get a room by ID
  */
-export async function getRoom(roomId: string): Promise<Room | null> {
-  const client = createRedisClient();
+export async function getRoom(
+  roomId: string,
+  client: Redis = createRedisClient()
+): Promise<Room | null> {
   const data = await client.get(redisKeys.chat.roomMeta(roomId));
   return parseRoomData(data);
 }
@@ -68,24 +71,31 @@ export async function getRoom(roomId: string): Promise<Room | null> {
 /**
  * Set a room
  */
-export async function setRoom(roomId: string, room: Room): Promise<void> {
-  const client = createRedisClient();
+export async function setRoom(
+  roomId: string,
+  room: Room,
+  client: Redis = createRedisClient()
+): Promise<void> {
   await client.set(redisKeys.chat.roomMeta(roomId), room);
 }
 
 /**
  * Delete a room
  */
-export async function deleteRoom(roomId: string): Promise<void> {
-  const client = createRedisClient();
+export async function deleteRoom(
+  roomId: string,
+  client: Redis = createRedisClient()
+): Promise<void> {
   await client.del(redisKeys.chat.roomMeta(roomId));
 }
 
 /**
  * Check if a room exists
  */
-export async function roomExists(roomId: string): Promise<boolean> {
-  const client = createRedisClient();
+export async function roomExists(
+  roomId: string,
+  client: Redis = createRedisClient()
+): Promise<boolean> {
   const exists = await client.exists(redisKeys.chat.roomMeta(roomId));
   return exists > 0;
 }
@@ -93,8 +103,9 @@ export async function roomExists(roomId: string): Promise<boolean> {
 /**
  * Get all room IDs from the registry set
  */
-export async function getAllRoomIds(): Promise<string[]> {
-  const client = createRedisClient();
+export async function getAllRoomIds(
+  client: Redis = createRedisClient()
+): Promise<string[]> {
   let roomIds = await client.smembers<string[]>(redisKeys.chat.roomIds());
 
   if (!roomIds || roomIds.length === 0) {
@@ -130,16 +141,20 @@ export async function getAllRoomIds(): Promise<string[]> {
 /**
  * Register a room ID in the registry set
  */
-export async function registerRoom(roomId: string): Promise<void> {
-  const client = createRedisClient();
+export async function registerRoom(
+  roomId: string,
+  client: Redis = createRedisClient()
+): Promise<void> {
   await client.sadd(redisKeys.chat.roomIds(), roomId);
 }
 
 /**
  * Unregister a room ID from the registry set
  */
-export async function unregisterRoom(roomId: string): Promise<void> {
-  const client = createRedisClient();
+export async function unregisterRoom(
+  roomId: string,
+  client: Redis = createRedisClient()
+): Promise<void> {
   await client.srem(redisKeys.chat.roomIds(), roomId);
 }
 
@@ -150,8 +165,10 @@ export async function unregisterRoom(roomId: string): Promise<void> {
 /**
  * Get a user by username
  */
-export async function getUser(username: string): Promise<User | null> {
-  const client = createRedisClient();
+export async function getUser(
+  username: string,
+  client: Redis = createRedisClient()
+): Promise<User | null> {
   const record = await getStoredUserRecord(client, username);
   return parseUserData(record);
 }
@@ -159,8 +176,11 @@ export async function getUser(username: string): Promise<User | null> {
 /**
  * Set a user (user records persist forever)
  */
-export async function setUser(username: string, user: User): Promise<void> {
-  const client = createRedisClient();
+export async function setUser(
+  username: string,
+  user: User,
+  client: Redis = createRedisClient()
+): Promise<void> {
   await setStoredUserRecord(client, username, user);
 }
 
@@ -170,9 +190,9 @@ export async function setUser(username: string, user: User): Promise<void> {
  */
 export async function createUserIfNotExists(
   username: string,
-  user: User
+  user: User,
+  client: Redis = createRedisClient()
 ): Promise<boolean> {
-  const client = createRedisClient();
   const existing = await getStoredUserRecord(client, username);
   if (existing) return false;
   await setStoredUserRecord(client, username, user);
@@ -182,8 +202,10 @@ export async function createUserIfNotExists(
 /**
  * Check if a user exists
  */
-export async function userExists(username: string): Promise<boolean> {
-  const client = createRedisClient();
+export async function userExists(
+  username: string,
+  client: Redis = createRedisClient()
+): Promise<boolean> {
   const exists = await client.exists(redisKeys.auth.userProfile(username));
   return exists > 0;
 }
@@ -197,9 +219,9 @@ export async function userExists(username: string): Promise<boolean> {
  */
 export async function getMessages(
   roomId: string,
-  limit: number = 20
+  limit: number = 20,
+  client: Redis = createRedisClient()
 ): Promise<Message[]> {
-  const client = createRedisClient();
   const messagesKey = redisKeys.chat.roomMessages(roomId);
   const rawMessages = await client.lrange<(Message | string)[]>(messagesKey, 0, limit - 1);
 
@@ -219,9 +241,9 @@ export async function getMessages(
  */
 export async function addMessage(
   roomId: string,
-  message: Message
+  message: Message,
+  client: Redis = createRedisClient()
 ): Promise<void> {
-  const client = createRedisClient();
   const serialized = JSON.stringify(message);
   const messagesKey = redisKeys.chat.roomMessages(roomId);
   await client.lpush(messagesKey, serialized);
@@ -233,9 +255,9 @@ export async function addMessage(
  */
 export async function deleteMessage(
   roomId: string,
-  messageId: string
+  messageId: string,
+  client: Redis = createRedisClient()
 ): Promise<boolean> {
-  const client = createRedisClient();
   const listKey = redisKeys.chat.roomMessages(roomId);
   const messagesRaw = await client.lrange<(Message | string)[]>(listKey, 0, -1);
 
@@ -257,16 +279,20 @@ export async function deleteMessage(
 /**
  * Delete all messages for a room
  */
-export async function deleteAllMessages(roomId: string): Promise<void> {
-  const client = createRedisClient();
+export async function deleteAllMessages(
+  roomId: string,
+  client: Redis = createRedisClient()
+): Promise<void> {
   await client.del(redisKeys.chat.roomMessages(roomId));
 }
 
 /**
  * Get the last message in a room (for duplicate detection)
  */
-export async function getLastMessage(roomId: string): Promise<Message | null> {
-  const client = createRedisClient();
+export async function getLastMessage(
+  roomId: string,
+  client: Redis = createRedisClient()
+): Promise<Message | null> {
   const messagesKey = redisKeys.chat.roomMessages(roomId);
   const lastMessages = await client.lrange<(Message | string)[]>(messagesKey, 0, 0);
   if (!lastMessages || lastMessages.length === 0) return null;

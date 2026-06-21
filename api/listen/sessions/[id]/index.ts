@@ -12,7 +12,7 @@ export { runtime, maxDuration };
 
 export default apiHandler(
   { methods: ["GET"] },
-  async ({ req, res, logger, startTime }) => {
+  async ({ req, res, redis, logger, startTime }) => {
     const sessionId = req.query.id as string | undefined;
 
     if (!sessionId) {
@@ -30,14 +30,14 @@ export default apiHandler(
     }
 
     try {
-      const session = await getSession(sessionId);
+      const session = await getSession(sessionId, redis);
       if (!session) {
         logger.response(404, Date.now() - startTime);
         res.status(404).json({ error: "Session not found" });
         return;
       }
 
-      await touchSession(sessionId);
+      await touchSession(sessionId, redis);
 
       logger.info("Listen session fetched", { sessionId });
       logger.response(200, Date.now() - startTime);

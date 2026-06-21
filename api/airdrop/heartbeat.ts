@@ -1,20 +1,17 @@
 import { apiHandler } from "../_utils/api-handler.js";
-import { createRedis } from "../_utils/redis.js";
 import { triggerRealtimeEvent } from "../_utils/realtime.js";
 import { redisKeys } from "../../src/shared/redisKeys.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 10;
 
-const AIRDROP_PRESENCE_KEY = "airdrop:presence";
 const AIRDROP_PRESENCE_TTL_SECONDS = 60;
 const AIRDROP_LOBBY_CHANNEL = "airdrop-lobby";
 
 export default apiHandler(
   { methods: ["POST"], auth: "required" },
-  async ({ res, user }) => {
+  async ({ res, user, redis }) => {
     const username = user!.username;
-    const redis = createRedis();
 
     const entry = {
       score: Date.now(),
@@ -32,4 +29,4 @@ export default apiHandler(
   }
 );
 
-export { AIRDROP_PRESENCE_KEY, AIRDROP_PRESENCE_TTL_SECONDS, AIRDROP_LOBBY_CHANNEL };
+export { AIRDROP_PRESENCE_TTL_SECONDS, AIRDROP_LOBBY_CHANNEL };

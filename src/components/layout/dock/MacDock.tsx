@@ -15,7 +15,7 @@ import { useDockStore } from "@/stores/useDockStore";
 import { useIsPhone } from "@/hooks/useIsPhone";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useIsRyoAdmin } from "@/hooks/useIsRyoAdmin";
-import { useLongPress } from "@/hooks/useLongPress";
+import { usePointerLongPress } from "@/hooks/usePointerLongPress";
 import { useSound, Sounds } from "@/hooks/useSound";
 import type { LaunchOriginRect } from "@/stores/useAppStore";
 import { RightClickMenu } from "@/components/ui/right-click-menu";
@@ -443,25 +443,31 @@ export function MacDock() {
   }, []);
 
   // Long press handler for divider on mobile (opens context menu)
-  const handleDividerLongPress = useCallback((e: React.TouchEvent) => {
-    e.preventDefault();
-    const touch = e.touches[0] || e.changedTouches[0];
-    if (!touch) return;
-    
+  const handleDividerLongPress = useCallback((event: { clientX: number; clientY: number }) => {
     const containerRect = dockContainerRef.current?.getBoundingClientRect();
     if (!containerRect) {
-      setDividerContextMenuPos({ x: touch.clientX, y: touch.clientY });
+      setDividerContextMenuPos({ x: event.clientX, y: event.clientY });
       return;
     }
     
     setDividerContextMenuPos({
-      x: touch.clientX - containerRect.left,
-      y: touch.clientY - containerRect.top,
+      x: event.clientX - containerRect.left,
+      y: event.clientY - containerRect.top,
     });
   }, []);
 
   // Use long press hook for divider
-  const dividerLongPress = useLongPress(handleDividerLongPress);
+  const dividerLongPressRaw = usePointerLongPress(handleDividerLongPress);
+  const dividerLongPress = {
+    onMouseDown: dividerLongPressRaw.onMouseDown,
+    onMouseMove: dividerLongPressRaw.onMouseMove,
+    onMouseUp: dividerLongPressRaw.onMouseUp,
+    onMouseLeave: dividerLongPressRaw.onMouseLeave,
+    onTouchStart: dividerLongPressRaw.onTouchStart,
+    onTouchMove: dividerLongPressRaw.onTouchMove,
+    onTouchEnd: dividerLongPressRaw.onTouchEnd,
+    onTouchCancel: dividerLongPressRaw.onTouchCancel,
+  };
 
   // Get trash items to check if trash is empty - use targeted selector
   const trashItemCount = useFilesStore(

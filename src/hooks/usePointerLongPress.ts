@@ -16,12 +16,18 @@ export type PointerLongPressBindings = {
   consumeClickIfLongPressFired: () => boolean;
 };
 
+export type PointerLongPressEvent = {
+  clientX: number;
+  clientY: number;
+  target: EventTarget | null;
+};
+
 /**
  * Long-press for mouse and touch with movement cancellation.
  * Use `consumeClickIfLongPressFired` in click handlers to avoid accidental taps.
  */
 export function usePointerLongPress(
-  onLongPress: () => void,
+  onLongPress: (event: PointerLongPressEvent) => void,
   {
     delay = DEFAULT_DELAY_MS,
     moveThreshold = DEFAULT_MOVE_THRESHOLD_PX,
@@ -63,7 +69,7 @@ export function usePointerLongPress(
       startPosRef.current = { x, y };
       timerRef.current = setTimeout(() => {
         firedRef.current = true;
-        onLongPress();
+        onLongPress({ clientX: x, clientY: y, target });
       }, delay);
     },
     [clearTimer, delay, isIgnored, onLongPress]

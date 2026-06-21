@@ -28,7 +28,7 @@ export const maxDuration = 30;
 
 export default apiHandler(
   { methods: ["GET", "POST"], auth: "optional" },
-  async ({ req, res, logger, startTime, user }) => {
+  async ({ req, res, redis, logger, startTime, user }) => {
     const method = (req.method || "GET").toUpperCase();
 
     // GET - List rooms
@@ -55,7 +55,7 @@ export default apiHandler(
 
       try {
         const claimedUsername = (req.query.username as string | undefined)?.toLowerCase() || null;
-        const allRooms = await getRoomsWithCountsFast();
+        const allRooms = await getRoomsWithCountsFast(redis);
         const visibleRooms = filterVisibleRooms(allRooms, user);
 
         logger.info("Listed rooms", {
@@ -232,11 +232,11 @@ export default apiHandler(
           }),
       };
 
-      await setRoom(roomId, room);
-      await registerRoom(roomId);
+      await setRoom(roomId, room, redis);
+      await registerRoom(roomId, redis);
 
       if (type === "private") {
-        await Promise.all(normalizedMembers.map((member: string) => setRoomPresence(roomId, member)));
+        await Promise.all(normalizedMembers.map((member: string) => setRoomPresence(roomId, member, redis)));
       }
 
       await broadcastRoomCreated(room);

@@ -96,7 +96,7 @@ export default apiHandler(
     }
 
     try {
-      const session = await getSession(sessionId);
+      const session = await getSession(sessionId, redis);
 
       if (!session) {
         logger.response(404, Date.now() - startTime);
@@ -113,7 +113,7 @@ export default apiHandler(
           session.hostUsername === username &&
           session.hostClientInstanceId === leaveClientId
         ) {
-          await deleteSession(sessionId);
+          await deleteSession(sessionId, redis);
           await broadcastSessionEnded(sessionId);
 
           logger.info("Listen session ended by host", { sessionId, username });
@@ -173,7 +173,7 @@ export default apiHandler(
         }
 
         if (session.users.length === 0) {
-          await deleteSession(sessionId);
+          await deleteSession(sessionId, redis);
           await broadcastSessionEnded(sessionId);
           logger.info("Listen session ended (last member left)", { sessionId });
           logger.response(200, Date.now() - startTime);
@@ -184,7 +184,7 @@ export default apiHandler(
         session.lastSyncAt = getCurrentTimestamp();
         session.users.sort((a, b) => a.joinedAt - b.joinedAt);
 
-        await setSession(sessionId, session);
+        await setSession(sessionId, session, redis);
 
         if (userExisted) {
           await broadcastUserLeft(sessionId, {
@@ -210,7 +210,7 @@ export default apiHandler(
         }
 
         session.lastSyncAt = getCurrentTimestamp();
-        await setSession(sessionId, session);
+        await setSession(sessionId, session, redis);
 
         logger.info("Anonymous listener left", { sessionId, anonymousId });
         logger.response(200, Date.now() - startTime);

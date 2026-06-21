@@ -26,7 +26,7 @@ interface SwitchRequest {
 
 export default apiHandler(
   { methods: ["POST"], auth: "required" },
-  async ({ req, res, logger, startTime, user }) => {
+  async ({ req, res, redis, logger, startTime, user }) => {
     const body = (req.body || {}) as SwitchRequest;
     const { previousRoomId, nextRoomId } = body;
     const claimedUsername = body.username?.toLowerCase();
@@ -67,10 +67,10 @@ export default apiHandler(
       await ensureUserExists(username, "switch-room");
 
       if (previousRoomId) {
-        const roomData = await getRoom(previousRoomId);
+        const roomData = await getRoom(previousRoomId, redis);
         if (roomData && roomData.type !== "private") {
-          await removeRoomPresence(previousRoomId, username);
-          const prevCount = await refreshRoomUserCount(previousRoomId);
+          await removeRoomPresence(previousRoomId, username, redis);
+          const prevCount = await refreshRoomUserCount(previousRoomId, redis);
           if (isIrcBridgeEnabled()) {
             try {
               await syncRoomBindingForPresence(roomData, prevCount);
@@ -86,7 +86,7 @@ export default apiHandler(
       }
 
       if (nextRoomId) {
-        const roomData = await getRoom(nextRoomId);
+        const roomData = await getRoom(nextRoomId, redis);
         if (!roomData) {
           logger.response(404, Date.now() - startTime);
           res.status(404).json({ error: "Next room not found" });
@@ -100,10 +100,10 @@ export default apiHandler(
           return;
         }
 
-        await setRoomPresence(nextRoomId, username);
-        const userCount = await refreshRoomUserCount(nextRoomId);
+        await setRoomPresence(nextRoomId, username, redis);
+        const userCount = await refreshRoomUserCount(nextRoomId, redis);
         const updatedRoom = { ...roomData, userCount };
-        await setRoom(nextRoomId, updatedRoom);
+        await setRoom(nextRoomId, updatedRoom, redis);
         if (isIrcBridgeEnabled()) {
           try {
             await syncRoomBindingForPresence(updatedRoom, userCount);

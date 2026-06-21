@@ -20,7 +20,7 @@ export default apiHandler(
     methods: ["DELETE"],
     auth: "required",
   },
-  async ({ req, res, logger, startTime, user }) => {
+  async ({ req, res, redis, logger, startTime, user }) => {
     const username = user?.username || "";
     if (username !== "ryo") {
       logger.warn("Admin required", { username });
@@ -53,7 +53,7 @@ export default apiHandler(
     }
 
     try {
-      const exists = await roomExists(roomId);
+      const exists = await roomExists(roomId, redis);
       if (!exists) {
         logger.warn("Room not found", { roomId });
         logger.response(404, Date.now() - startTime);
@@ -61,7 +61,7 @@ export default apiHandler(
         return;
       }
 
-      const roomData = await getRoom(roomId);
+      const roomData = await getRoom(roomId, redis);
       if (!roomData) {
         logger.warn("Room not found during message deletion", { roomId });
         logger.response(404, Date.now() - startTime);
@@ -69,7 +69,7 @@ export default apiHandler(
         return;
       }
 
-      const deleted = await deleteMessageFromRedis(roomId, messageId);
+      const deleted = await deleteMessageFromRedis(roomId, messageId, redis);
       if (!deleted) {
         logger.warn("Message not found", { roomId, messageId });
         logger.response(404, Date.now() - startTime);

@@ -25,7 +25,7 @@ export { runtime, maxDuration };
 
 export default apiHandler(
   { methods: ["POST"], auth: "required" },
-  async ({ req, res, logger, startTime, user }) => {
+  async ({ req, res, redis, logger, startTime, user }) => {
     const sessionId = req.query.id as string | undefined;
 
     if (!sessionId) {
@@ -77,7 +77,7 @@ export default apiHandler(
     }
 
     try {
-      const session = await getSession(sessionId);
+      const session = await getSession(sessionId, redis);
 
       if (!session) {
         logger.response(404, Date.now() - startTime);
@@ -95,7 +95,7 @@ export default apiHandler(
       const reactionId = generateSessionId();
 
       session.lastSyncAt = now;
-      await setSession(sessionId, session);
+      await setSession(sessionId, session, redis);
 
       await broadcastReaction(sessionId, {
         id: reactionId,

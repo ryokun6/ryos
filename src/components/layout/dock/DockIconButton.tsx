@@ -14,7 +14,7 @@ import {
 } from "motion/react";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
-import { useLongPress } from "@/hooks/useLongPress";
+import { usePointerLongPress } from "@/hooks/usePointerLongPress";
 import { prefetchAppChunk } from "@/config/lazyAppComponent";
 import {
   DOCK_BASE_BUTTON_SIZE,
@@ -102,18 +102,19 @@ export const DockIconButton = memo(function DockIconButton({
 
   const emojiScale = useTransform(sizeSpring, (val) => val / baseButtonSize);
 
-  const longPressHandlers = useLongPress<HTMLButtonElement>((touchEvent) => {
+  const longPressHandlers = usePointerLongPress((event) => {
     if (onContextMenu) {
-      const touch = touchEvent.touches[0];
       const syntheticEvent = {
         preventDefault: () => {},
         stopPropagation: () => {},
-        clientX: touch.clientX,
-        clientY: touch.clientY,
+        clientX: event.clientX,
+        clientY: event.clientY,
       } as unknown as React.MouseEvent<HTMLButtonElement>;
       onContextMenu(syntheticEvent);
     }
   });
+  const { consumeClickIfLongPressFired: _consumeLongPressClick, ...longPressDomBindings } =
+    longPressHandlers;
 
   const setCombinedRef = useCallback(
     (node: HTMLDivElement | null) => {
@@ -207,13 +208,19 @@ export const DockIconButton = memo(function DockIconButton({
       <button
         aria-label={label}
         title=""
-        onClick={onClick}
+        onClick={(event) => {
+          if (_consumeLongPressClick()) return;
+          onClick?.(event);
+        }}
         onContextMenu={onContextMenu}
         onMouseEnter={() => {
           runIntentPrefetch();
           onHover();
         }}
-        onMouseLeave={onLeave}
+        onMouseLeave={() => {
+          longPressDomBindings.onMouseLeave();
+          onLeave();
+        }}
         onFocus={runIntentPrefetch}
         onPointerDown={(e) => {
           if (e.pointerType === "mouse" && e.button !== 0) return;
@@ -225,7 +232,13 @@ export const DockIconButton = memo(function DockIconButton({
         onDragOver={onDragOver}
         onDrop={onDrop}
         onDragLeave={onDragLeave}
-        {...longPressHandlers}
+        onMouseDown={longPressDomBindings.onMouseDown}
+        onMouseMove={longPressDomBindings.onMouseMove}
+        onMouseUp={longPressDomBindings.onMouseUp}
+        onTouchStart={longPressDomBindings.onTouchStart}
+        onTouchMove={longPressDomBindings.onTouchMove}
+        onTouchEnd={longPressDomBindings.onTouchEnd}
+        onTouchCancel={longPressDomBindings.onTouchCancel}
         className="relative flex items-end justify-center w-full h-full"
         style={{
           willChange: "transform",

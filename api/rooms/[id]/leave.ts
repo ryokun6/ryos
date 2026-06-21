@@ -30,7 +30,7 @@ export const maxDuration = 15;
 
 export default apiHandler(
   { methods: ["POST"], auth: "required" },
-  async ({ req, res, logger, startTime, user }) => {
+  async ({ req, res, redis, logger, startTime, user }) => {
     const roomId = req.query.id as string | undefined;
 
     if (!roomId) {
@@ -69,7 +69,7 @@ export default apiHandler(
     }
 
     try {
-      const roomData = await getRoom(roomId);
+      const roomData = await getRoom(roomId, redis);
       if (!roomData) {
         logger.response(404, Date.now() - startTime);
         res.status(404).json({ error: "Room not found" });
@@ -83,10 +83,10 @@ export default apiHandler(
         return;
       }
 
-      const removed = await removeRoomPresence(roomId, username);
+      const removed = await removeRoomPresence(roomId, username, redis);
 
       if (removed) {
-        const userCount = await refreshRoomUserCount(roomId);
+        const userCount = await refreshRoomUserCount(roomId, redis);
         if (isIrcBridgeEnabled() && roomData.type !== "private") {
           try {
             await syncRoomBindingForPresence(roomData, userCount);
@@ -99,10 +99,10 @@ export default apiHandler(
           const updatedMembers = roomData.members ? roomData.members.filter((m) => m !== username) : [];
 
           if (updatedMembers.length <= 1) {
-            await deleteRoom(roomId);
-            await deleteAllMessages(roomId);
-            await unregisterRoom(roomId);
-            await deleteRoomPresence(roomId);
+            await deleteRoom(roomId, redis);
+            await deleteAllMessages(roomId, redis);
+            await unregisterRoom(roomId, redis);
+            await deleteRoomPresence(roomId, redis);
 
             await broadcastRoomDeleted(roomId, roomData.type, roomData.members || []);
             logger.info("Pusher room-deleted broadcast sent", {
@@ -111,7 +111,7 @@ export default apiHandler(
             });
           } else {
             const updatedRoom: Room = { ...roomData, members: updatedMembers, userCount };
-            await setRoom(roomId, updatedRoom);
+            await setRoom(roomId, updatedRoom, redis);
             await Promise.all([
               broadcastRoomUpdated(roomId),
               broadcastRoomDeleted(roomId, roomData.type, [username]),
