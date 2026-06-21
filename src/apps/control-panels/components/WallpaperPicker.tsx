@@ -49,7 +49,87 @@ import { DEFAULT_COVER_PALETTE } from "@/hooks/useCoverPalette";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useTranslation } from "react-i18next";
 
-// Remove unused constants
+/**
+ * Blur-up image layers shared by the photo grid items and the photo Shuffle
+ * tile so they load identically: an instant average color + tiny blurred LQIP,
+ * then the (thumbnail) image fades in once it decodes. Renders absolutely
+ * positioned layers, so the parent must be `relative`.
+ */
+function BlurUpImage({
+  lookupPath,
+  imageUrl,
+}: {
+  /** Concrete wallpaper path used to resolve color/blur placeholders (optional). */
+  lookupPath?: string;
+  /** Image actually loaded/displayed (thumbnail, full photo, or blob URL). */
+  imageUrl: string;
+}) {
+  const placeholders = useWallpaperPlaceholders();
+  const ph = lookupPath
+    ? getWallpaperPlaceholder(lookupPath, placeholders)
+    : null;
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    setLoaded(false);
+    if (!imageUrl) return;
+    let cancelled = false;
+    const img = new Image();
+    img.decoding = "async";
+    img.src = imageUrl;
+    const done = () => {
+      if (!cancelled) setLoaded(true);
+    };
+    img
+      .decode()
+      .then(done)
+      .catch(() => {
+        if (cancelled) return;
+        if (img.complete && img.naturalWidth > 0) done();
+        else img.onload = done;
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [imageUrl]);
+
+  return (
+    <>
+      {ph?.color && (
+        <div
+          aria-hidden
+          className="absolute inset-0 w-full h-full"
+          style={{ backgroundColor: ph.color }}
+        />
+      )}
+      {ph?.blur && (
+        <div
+          aria-hidden
+          className="absolute inset-0 w-full h-full"
+          style={{
+            backgroundImage: `url(${ph.blur})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            filter: "blur(12px)",
+            transform: "scale(1.1)",
+          }}
+        />
+      )}
+      <div
+        aria-hidden
+        className="absolute inset-0 w-full h-full"
+        style={{
+          backgroundImage: `url(${imageUrl})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          opacity: loaded ? 1 : 0,
+          transition: "opacity 0.4s ease-in-out",
+        }}
+      />
+    </>
+  );
+}
+
 interface WallpaperItemProps {
   path: string;
   isSelected: boolean;
@@ -71,17 +151,12 @@ function WallpaperItem({
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isLoading, setIsLoading] = useState(isVideo);
   const displayUrl = previewUrl || path;
-  const placeholders = useWallpaperPlaceholders();
-  // Blur-up placeholder: instant solid color + tiny blurred LQIP.
-  const placeholder = getWallpaperPlaceholder(path, placeholders);
-  const placeholderColor = placeholder?.color;
-  // Built-in photos (no preview blob, not a tile) load a small thumbnail
-  // instead of the multi-MB original; tiles/custom use their direct URL.
+  // Built-in photos (no preview blob, not a tile) load a small thumbnail and
+  // resolve color/blur placeholders; tiles/custom use their direct URL.
   const isBuiltInPhoto = !isTile && !previewUrl;
-  const placeholderBlur = isTile ? undefined : placeholder?.blur;
+  const placeholderLookup = isBuiltInPhoto ? path : undefined;
   const imageUrl =
     (isBuiltInPhoto ? thumbPathForSource(path) : null) || displayUrl;
-  const [imageLoaded, setImageLoaded] = useState(false);
 
   const handleClick = () => {
     playClick();
@@ -105,30 +180,6 @@ function WallpaperItem({
       }
     }
   }, [isSelected, isVideo]);
-
-  // Preload the (thumbnail) image so we can fade it in over the blur placeholder.
-  useEffect(() => {
-    if (isVideo) return;
-    setImageLoaded(false);
-    let cancelled = false;
-    const img = new Image();
-    img.decoding = "async";
-    img.src = imageUrl;
-    const done = () => {
-      if (!cancelled) setImageLoaded(true);
-    };
-    img
-      .decode()
-      .then(done)
-      .catch(() => {
-        if (cancelled) return;
-        if (img.complete && img.naturalWidth > 0) done();
-        else img.onload = done;
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [imageUrl, isVideo]);
 
   const handleVideoLoaded = () => {
     setIsLoading(false);
@@ -187,14 +238,13 @@ function WallpaperItem({
   }
 
   // Tiles are tiny and repeat at 64px, so a blur-up step is pointless — paint
-  // the pattern directly over the solid color base.
+  // the pattern directly.
   if (isTile) {
     return (
       <button
         type="button"
         className="preview-button w-full aspect-square cursor-pointer hover:opacity-90"
         style={{
-          backgroundColor: placeholderColor,
           backgroundImage: `url(${displayUrl})`,
           backgroundSize: "64px 64px",
           backgroundRepeat: "repeat",
@@ -230,39 +280,7 @@ function WallpaperItem({
         }
       }}
     >
-      {/* `.preview-button` forces a transparent background, so paint the
-          instant color base on a child layer instead. */}
-      {placeholderColor && (
-        <div
-          aria-hidden
-          className="absolute inset-0 w-full h-full"
-          style={{ backgroundColor: placeholderColor }}
-        />
-      )}
-      {placeholderBlur && (
-        <div
-          aria-hidden
-          className="absolute inset-0 w-full h-full"
-          style={{
-            backgroundImage: `url(${placeholderBlur})`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            filter: "blur(12px)",
-            transform: "scale(1.1)",
-          }}
-        />
-      )}
-      <div
-        aria-hidden
-        className="absolute inset-0 w-full h-full"
-        style={{
-          backgroundImage: `url(${imageUrl})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          opacity: imageLoaded ? 1 : 0,
-          transition: "opacity 0.4s ease-in-out",
-        }}
-      />
+      <BlurUpImage lookupPath={placeholderLookup} imageUrl={imageUrl} />
     </button>
   );
 }
@@ -274,6 +292,12 @@ interface SpecialTileProps {
   isTile?: boolean;
   /** Inline style for the tile background (gradient / cover / random art). */
   backgroundStyle?: React.CSSProperties;
+  /**
+   * Optional concrete photo path rendered as a blur-up cover (color → blurred
+   * LQIP → thumbnail), matching the regular photo grid items. Used by the photo
+   * Shuffle tile so its preview fades in instead of popping.
+   */
+  coverSource?: string;
   /** Optional muted looping video rendered as the tile background. */
   backgroundVideoUrl?: string;
   /**
@@ -298,6 +322,7 @@ function SpecialTile({
   onClick,
   isTile = false,
   backgroundStyle,
+  coverSource,
   backgroundVideoUrl,
   icon,
   children,
@@ -330,6 +355,12 @@ function SpecialTile({
         }
       }}
     >
+      {coverSource && (
+        <BlurUpImage
+          lookupPath={coverSource}
+          imageUrl={thumbPathForSource(coverSource) ?? coverSource}
+        />
+      )}
       {backgroundVideoUrl && (
         <video
           className="absolute inset-0 size-full object-cover"
@@ -1052,23 +1083,11 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
                   )
                 }
                 scrim
-                backgroundStyle={(() => {
+                coverSource={(() => {
                   const active =
                     currentWallpaper ===
                     buildShuffleDescriptor(selectedCategory);
-                  const artFull =
-                    (active && liveShuffleSource) || photoShuffleArt;
-                  // Preview is small — use the lightweight thumbnail when one exists.
-                  const art = artFull
-                    ? thumbPathForSource(artFull) ?? artFull
-                    : artFull;
-                  return art
-                    ? {
-                        backgroundImage: `url("${art}")`,
-                        backgroundSize: "cover",
-                        backgroundPosition: "center",
-                      }
-                    : undefined;
+                  return (active && liveShuffleSource) || photoShuffleArt;
                 })()}
                 icon={<Shuffle className="size-6 text-white" weight="bold" />}
               />
