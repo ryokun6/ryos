@@ -243,10 +243,12 @@ code.
 ## 6. Prioritization
 
 **Do first (low risk, high payoff):**
-- 3.1 `deleteToken` SCAN fix
-- 3.3 rate-limit unprotected proxies
-- 4.2 `/api/users` auth/limit
-- 2.2 shared persisted-store helper (+ strip prod migrate logs)
+- 3.1 `deleteToken` SCAN fix — **shipped**
+- 3.3 rate-limit unprotected proxies — **shipped** (`stocks`, `currency-rate`, rooms list)
+- 4.2 `/api/users` auth/limit — **shipped** (required auth + min query length + per-user limit)
+- 2.2 shared persisted-store helper (+ strip prod migrate logs) — *deferred to its own PR;
+  it touches ~25 stores in the most fix-prone area, so it is not actually low-risk and
+  warrants separate review + targeted testing*
 
 **Foundational (enables later work):**
 - 4.1 admin audit trail (keep `ryo` gate) → unlocks 5.2
