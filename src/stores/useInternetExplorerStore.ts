@@ -690,29 +690,38 @@ export const useInternetExplorerStore = create<InternetExplorerStore>()(
               // No need to update historyIndex here, it's set by handleGoBack/Forward
               newState.historyIndex = state.historyIndex;
             } else {
-              const mostRecentEntry = state.history[0];
-              // Check for duplicates using normalized URL and year
+              // A genuinely new navigation. If the user had navigated back
+              // (historyIndex > 0), the entries newer than the current page are
+              // a "forward" stack that must be discarded, mirroring real
+              // browser behavior. Newest entries live at the front of the
+              // array, so the current page sits at `historyIndex` and the
+              // forward stack is everything before it.
+              const currentIndex = state.historyIndex > 0 ? state.historyIndex : 0;
+              const trimmedHistory = state.history.slice(currentIndex);
+              const currentEntry = trimmedHistory[0];
+              // Check for duplicates against the current page (post-truncation)
               const isDuplicate =
-                mostRecentEntry &&
-                normalizeUrlForHistory(mostRecentEntry.url) === newEntry.url &&
-                mostRecentEntry.year === newEntry.year;
+                currentEntry &&
+                normalizeUrlForHistory(currentEntry.url) === newEntry.url &&
+                currentEntry.year === newEntry.year;
 
               if (isDuplicate) {
-                // If it's a duplicate, potentially update the title if it changed
-                if (mostRecentEntry.title !== newEntry.title) {
-                  const updatedHistory = [...state.history];
-                  updatedHistory[0] = {
-                    ...mostRecentEntry,
-                    title: newEntry.title,
-                    url: newEntry.url,
-                  }; // Update URL too, just in case
-                  newState.history = updatedHistory;
-                  addedToHistory = true; // Considered an update
-                }
+                // Re-navigating to the current page: keep it at the top, drop
+                // any forward stack, and refresh the title if it changed.
+                const updatedHistory = [...trimmedHistory];
+                updatedHistory[0] = {
+                  ...currentEntry,
+                  title: newEntry.title,
+                  url: newEntry.url,
+                };
+                newState.history = updatedHistory;
                 newState.historyIndex = 0;
+                // History changed if the title changed or we dropped a forward stack
+                addedToHistory =
+                  currentEntry.title !== newEntry.title || currentIndex > 0;
               } else {
-                // Add new entry if not a duplicate
-                newState.history = [newEntry, ...state.history].slice(0, 100);
+                // Add new entry, discarding any forward stack
+                newState.history = [newEntry, ...trimmedHistory].slice(0, 100);
                 newState.historyIndex = 0;
                 addedToHistory = true; // New entry added
               }
@@ -778,15 +787,24 @@ export const useInternetExplorerStore = create<InternetExplorerStore>()(
               timestamp: Date.now(),
             };
 
-            const mostRecentEntry = state.history[0];
-            // Check for duplicates
+            // Discard any forward stack (entries newer than the current page)
+            // so an errored navigation behaves like a real new navigation.
+            const currentIndex =
+              state.historyIndex > 0 ? state.historyIndex : 0;
+            const trimmedHistory = state.history.slice(currentIndex);
+            const currentEntry = trimmedHistory[0];
+            // Check for duplicates against the current page (post-truncation)
             const isDuplicate =
-              mostRecentEntry &&
-              normalizeUrlForHistory(mostRecentEntry.url) === newEntry.url &&
-              mostRecentEntry.year === newEntry.year;
+              currentEntry &&
+              normalizeUrlForHistory(currentEntry.url) === newEntry.url &&
+              currentEntry.year === newEntry.year;
 
             if (!isDuplicate) {
-              newState.history = [newEntry, ...state.history].slice(0, 100);
+              newState.history = [newEntry, ...trimmedHistory].slice(0, 100);
+              newState.historyIndex = 0;
+            } else if (currentIndex > 0) {
+              // Same URL but we still need to drop the forward stack
+              newState.history = trimmedHistory;
               newState.historyIndex = 0;
             }
           }
