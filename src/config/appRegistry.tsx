@@ -7,6 +7,7 @@ import type {
   IpodInitialData,
   PaintInitialData,
   VideosInitialData,
+  BooksInitialData,
 } from "@/apps/base/types";
 import type { AppletViewerInitialData } from "@/apps/applet-viewer";
 import { createLazyComponent } from "./lazyAppComponent";
@@ -164,6 +165,11 @@ const LazyMapsApp = createLazyComponent<unknown>(
   "maps"
 );
 
+const LazyBooksApp = createLazyComponent<BooksInitialData>(
+  () => import("@/apps/books/components/books-app/BooksAppComponent").then(m => ({ default: m.BooksAppComponent })),
+  "books"
+);
+
 // ============================================================================
 // APP METADATA (loaded eagerly - small, isolated from components)
 // Import from metadata.ts files to avoid eager loading of components
@@ -200,6 +206,7 @@ import { appMetadata as calendarMetadata, helpItems as calendarHelpItems } from 
 import { appMetadata as contactsMetadata, helpItems as contactsHelpItems } from "@/apps/contacts";
 import { appMetadata as dashboardMetadata, helpItems as dashboardHelpItems } from "@/apps/dashboard/metadata";
 import { appMetadata as mapsMetadata, helpItems as mapsHelpItems } from "@/apps/maps";
+import { appMetadata as booksMetadata, helpItems as booksHelpItems } from "@/apps/books/metadata";
 import { DEFAULT_WINDOW_SIZE_WITH_TITLEBAR as infiniteMacDefaultSize } from "@/apps/infinite-mac/windowConfig";
 import { DEFAULT_WINDOW_SIZE_WITH_TITLEBAR as infinitePcDefaultSize } from "@/apps/infinite-pc/windowConfig";
 
@@ -542,6 +549,19 @@ export const appRegistry = {
       minSize: { width: 400, height: 300 },
     } as WindowConstraints,
   },
+  ["books"]: {
+    id: "books",
+    name: "Books",
+    icon: { type: "image", src: booksMetadata.icon },
+    description: "Read EPUB books",
+    component: LazyBooksApp,
+    helpItems: booksHelpItems,
+    metadata: booksMetadata,
+    windowConfig: {
+      defaultSize: { width: 720, height: 560 },
+      minSize: { width: 420, height: 360 },
+    } as WindowConstraints,
+  } as BaseApp<BooksInitialData> & { windowConfig: WindowConstraints },
 } as const;
 
 // ============================================================================

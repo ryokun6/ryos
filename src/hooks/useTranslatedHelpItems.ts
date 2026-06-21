@@ -197,6 +197,14 @@ const HELP_KEYS: Record<AppId, string[]> = {
     "closeDashboard",
   ],
   maps: [...MAPS_HELP_I18N_KEYS],
+  books: [
+    "bookshelf",
+    "import",
+    "pageTurn",
+    "progress",
+    "fonts",
+    "darkMode",
+  ],
 };
 
 /**
