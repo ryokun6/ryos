@@ -27,6 +27,13 @@ export type ControlPanelsMacLayoutProps = {
   instanceId?: string;
   defaultPane?: string;
   onCurrentEntryChange?: (entry: ControlPanelMacNavigationEntry) => void;
+  /** Theme flags so the toolbar chrome is translated per OS theme. */
+  isMacOSTheme: boolean;
+  isSystem7Theme: boolean;
+  isWindowsTheme: boolean;
+  isWin98: boolean;
+  /** Title-bar height for the active theme (drives auto-resize math). */
+  titlebarHeight: number;
   renderPane: (
     paneId: ControlPanelPaneId,
     onNavigateToPane: (paneId: ControlPanelPaneId) => void
@@ -94,6 +101,11 @@ export function ControlPanelsMacLayout({
   instanceId,
   defaultPane,
   onCurrentEntryChange,
+  isMacOSTheme,
+  isSystem7Theme,
+  isWindowsTheme,
+  isWin98,
+  titlebarHeight,
   renderPane,
 }: ControlPanelsMacLayoutProps) {
   const toolbarRef = useRef<HTMLDivElement>(null);
@@ -190,12 +202,17 @@ export function ControlPanelsMacLayout({
           searchResults={searchResults}
           onSelectResult={selectPane}
           onFocusResult={setFocusedPaneId}
+          isMacOSTheme={isMacOSTheme}
+          isSystem7Theme={isSystem7Theme}
+          isWindowsTheme={isWindowsTheme}
+          isWin98={isWin98}
         />
       </div>
 
       <ControlPanelsMacAnimatedBody
         instanceId={instanceId}
         toolbarHeight={toolbarHeight}
+        titlebarHeight={titlebarHeight}
         navKey={currentEntry}
       >
         {showHome ? (

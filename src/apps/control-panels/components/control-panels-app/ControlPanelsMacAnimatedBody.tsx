@@ -20,6 +20,12 @@ import {
 export type ControlPanelsMacAnimatedBodyProps = {
   instanceId?: string;
   toolbarHeight: number;
+  /**
+   * Title-bar height for the current theme (Aqua's 24px notitlebar spacer by
+   * default). Used to convert the measured content height into a total window
+   * height when auto-resizing.
+   */
+  titlebarHeight?: number;
   /** Changes when Show All ↔ pane navigation occurs (drives re-measure). */
   navKey: string;
   children: ReactNode;
@@ -29,6 +35,7 @@ export type ControlPanelsMacAnimatedBodyProps = {
 export function ControlPanelsMacAnimatedBody({
   instanceId,
   toolbarHeight,
+  titlebarHeight = CONTROL_PANELS_MACOSX_TITLEBAR_HEIGHT,
   navKey,
   children,
   className,
@@ -41,9 +48,7 @@ export function ControlPanelsMacAnimatedBody({
 
   const maxBodyHeight = Math.max(
     0,
-    CONTROL_PANELS_MAC_MAX_WINDOW_HEIGHT -
-      CONTROL_PANELS_MACOSX_TITLEBAR_HEIGHT -
-      toolbarHeight
+    CONTROL_PANELS_MAC_MAX_WINDOW_HEIGHT - titlebarHeight - toolbarHeight
   );
 
   const readNaturalHeight = useCallback(() => {
@@ -124,9 +129,7 @@ export function ControlPanelsMacAnimatedBody({
   // measure loop — the floor lives on the body, the parent of the measured node.
   const bodyFillMinHeight = Math.max(
     0,
-    CONTROL_PANELS_MAC_MIN_WINDOW_HEIGHT -
-      CONTROL_PANELS_MACOSX_TITLEBAR_HEIGHT -
-      toolbarHeight
+    CONTROL_PANELS_MAC_MIN_WINDOW_HEIGHT - titlebarHeight - toolbarHeight
   );
 
   useLayoutEffect(() => {
@@ -138,7 +141,7 @@ export function ControlPanelsMacAnimatedBody({
       CONTROL_PANELS_MAC_MIN_WINDOW_HEIGHT,
       Math.min(
         CONTROL_PANELS_MAC_MAX_WINDOW_HEIGHT,
-        CONTROL_PANELS_MACOSX_TITLEBAR_HEIGHT + toolbarHeight + animatedHeight
+        titlebarHeight + toolbarHeight + animatedHeight
       )
     );
 
