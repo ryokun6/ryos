@@ -1,8 +1,14 @@
 import { useEffect, useRef, useState } from "react";
-import { CaretLeft, CaretRight } from "@phosphor-icons/react";
+import {
+  CaretLeft,
+  CaretRight,
+  ArrowLeft,
+  ArrowRight,
+} from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { osToolbarSurfaceClassName } from "@/components/shared/osThemePrimitives";
 import { SearchInput } from "@/components/ui/search-input";
+import { Button } from "@/components/ui/button";
 import {
   ToolbarButton,
   ToolbarButtonGroup,
@@ -24,6 +30,11 @@ export type ControlPanelsMacToolbarProps = {
   onSelectResult: (paneId: ControlPanelPaneId) => void;
   /** Highlight (spotlight) a result's pane, or clear with null. */
   onFocusResult: (paneId: ControlPanelPaneId | null) => void;
+  /** Theme flags so the toolbar chrome is translated per OS theme. */
+  isMacOSTheme: boolean;
+  isSystem7Theme: boolean;
+  isWindowsTheme: boolean;
+  isWin98: boolean;
 };
 
 export function ControlPanelsMacToolbar({
@@ -38,6 +49,10 @@ export function ControlPanelsMacToolbar({
   searchResults,
   onSelectResult,
   onFocusResult,
+  isMacOSTheme,
+  isSystem7Theme,
+  isWindowsTheme,
+  isWin98,
 }: ControlPanelsMacToolbarProps) {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
@@ -102,47 +117,124 @@ export function ControlPanelsMacToolbar({
     }
   };
 
+  const backLabel = t("apps.control-panels.toolbar.back");
+  const forwardLabel = t("apps.control-panels.toolbar.forward");
+  const showAllLabel = t("apps.control-panels.toolbar.showAll");
+
+  // Aqua renders metal-inset toolbar buttons; the classic Mac / Windows themes
+  // use the shared ghost/player buttons (matching Finder's legacy toolbar) so
+  // the chrome reads native in each OS.
+  const renderNavButtons = () => {
+    if (isMacOSTheme) {
+      return (
+        <>
+          <ToolbarButtonGroup>
+            <ToolbarButton
+              icon
+              onClick={onGoBack}
+              disabled={!canGoBack}
+              aria-label={backLabel}
+              title={backLabel}
+            >
+              <CaretLeft
+                size={14}
+                weight="fill"
+                className="scale-x-150 scale-y-90"
+              />
+            </ToolbarButton>
+            <ToolbarButton
+              icon
+              onClick={onGoForward}
+              disabled={!canGoForward}
+              aria-label={forwardLabel}
+              title={forwardLabel}
+            >
+              <CaretRight
+                size={14}
+                weight="fill"
+                className="scale-x-150 scale-y-90"
+              />
+            </ToolbarButton>
+          </ToolbarButtonGroup>
+
+          <ToolbarButtonGroup>
+            <ToolbarButton
+              onClick={onShowAll}
+              aria-label={showAllLabel}
+              title={showAllLabel}
+            >
+              {showAllLabel}
+            </ToolbarButton>
+          </ToolbarButtonGroup>
+        </>
+      );
+    }
+
+    // Every non-Aqua theme uses simple flat (ghost) icon buttons for the
+    // back/forward nav — System 7 included (no beveled "player" chrome).
+    const buttonVariant = "ghost";
+    const iconButtonClassName = cn(
+      "size-6 px-0",
+      isWindowsTheme && "text-black"
+    );
+
+    return (
+      <>
+        <Button
+          variant={buttonVariant}
+          size="icon"
+          className={iconButtonClassName}
+          onClick={onGoBack}
+          disabled={!canGoBack}
+          aria-label={backLabel}
+          title={backLabel}
+        >
+          <ArrowLeft size={16} weight="bold" />
+        </Button>
+        <Button
+          variant={buttonVariant}
+          size="icon"
+          className={iconButtonClassName}
+          onClick={onGoForward}
+          disabled={!canGoForward}
+          aria-label={forwardLabel}
+          title={forwardLabel}
+        >
+          <ArrowRight size={16} weight="bold" />
+        </Button>
+        <Button
+          variant={buttonVariant}
+          className={cn(
+            "h-6 px-2 text-[11px] font-geneva-12",
+            isWindowsTheme && "text-black"
+          )}
+          onClick={onShowAll}
+          aria-label={showAllLabel}
+          title={showAllLabel}
+        >
+          {showAllLabel}
+        </Button>
+      </>
+    );
+  };
+
   return (
     <div
       className={cn(
         "control-panels-mac-toolbar flex items-stretch gap-2 px-2 py-0 shrink-0",
         osToolbarSurfaceClassName(
-          { isMacOSTheme: true, isSystem7Theme: false, isWindowsTheme: false },
+          {
+            isMacOSTheme,
+            isSystem7Theme,
+            isWindowsTheme,
+            isWin98,
+          },
           { border: "bottom" }
         )
       )}
     >
       <div className="control-panels-mac-toolbar-nav flex items-center gap-1.5 min-w-0 flex-1">
-        <ToolbarButtonGroup>
-          <ToolbarButton
-            icon
-            onClick={onGoBack}
-            disabled={!canGoBack}
-            aria-label={t("apps.control-panels.toolbar.back")}
-            title={t("apps.control-panels.toolbar.back")}
-          >
-            <CaretLeft size={14} weight="fill" className="scale-x-150 scale-y-90" />
-          </ToolbarButton>
-          <ToolbarButton
-            icon
-            onClick={onGoForward}
-            disabled={!canGoForward}
-            aria-label={t("apps.control-panels.toolbar.forward")}
-            title={t("apps.control-panels.toolbar.forward")}
-          >
-            <CaretRight size={14} weight="fill" className="scale-x-150 scale-y-90" />
-          </ToolbarButton>
-        </ToolbarButtonGroup>
-
-        <ToolbarButtonGroup>
-          <ToolbarButton
-            onClick={onShowAll}
-            aria-label={t("apps.control-panels.toolbar.showAll")}
-            title={t("apps.control-panels.toolbar.showAll")}
-          >
-            {t("apps.control-panels.toolbar.showAll")}
-          </ToolbarButton>
-        </ToolbarButtonGroup>
+        {renderNavButtons()}
       </div>
 
       <div className="control-panels-mac-toolbar-search relative flex items-center shrink-0">

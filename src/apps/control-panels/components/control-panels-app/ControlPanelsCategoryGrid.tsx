@@ -77,6 +77,11 @@ export function ControlPanelsCategoryGrid({
                 <span className="control-panels-category-icon-shell">
                   <ThemedIcon
                     name={category.icon}
+                    // The category artwork is the macOS System Preferences icon
+                    // set (the only complete set); the unified layout reuses it
+                    // across every theme so the grid never falls back to broken
+                    // images on System 7 / Windows where these assets are absent.
+                    themeOverride="macosx"
                     alt={t(category.labelKey)}
                     className="control-panels-category-icon"
                     draggable={false}

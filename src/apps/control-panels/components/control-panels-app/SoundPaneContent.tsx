@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -11,6 +12,7 @@ import { SYNTH_PRESETS } from "@/hooks/chatSynthPresets";
 import { VolumeMixer } from "../VolumeMixer";
 import { ControlPanelsPrefFormRow } from "./ControlPanelsPrefFormRow";
 import type { SoundTabContentProps } from "./SoundTabContent";
+import { useControlPanelsTabClasses } from "./useControlPanelsTabClasses";
 
 export type SoundPaneContentProps = Omit<
   SoundTabContentProps,
@@ -52,19 +54,22 @@ export function SoundPaneContent({
   isIOS,
 }: SoundPaneContentProps) {
   const [soundTab, setSoundTab] = useState<SoundPaneTab>("effects");
+  const { barClassName, triggerClassName, triggerStyle } =
+    useControlPanelsTabClasses();
 
   return (
     <div className="control-panels-pref-form control-panels-pref-form-tabbed">
       <div className="control-panels-pref-tabbed">
         <div
           role="tablist"
-          className="aqua-tab-bar control-panels-pref-tab-bar"
+          className={cn("control-panels-pref-tab-bar", barClassName)}
           aria-label={t("apps.control-panels.sound")}
         >
           <button
             type="button"
             role="tab"
-            className="aqua-tab"
+            className={triggerClassName}
+            style={triggerStyle}
             data-state={soundTab === "effects" ? "active" : "inactive"}
             aria-selected={soundTab === "effects"}
             onClick={() => setSoundTab("effects")}
@@ -74,7 +79,8 @@ export function SoundPaneContent({
           <button
             type="button"
             role="tab"
-            className="aqua-tab"
+            className={triggerClassName}
+            style={triggerStyle}
             data-state={soundTab === "output" ? "active" : "inactive"}
             aria-selected={soundTab === "output"}
             onClick={() => setSoundTab("output")}

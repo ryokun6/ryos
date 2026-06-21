@@ -25,13 +25,20 @@ const readSource = (relativePath: string): string =>
   readFileSync(resolve(process.cwd(), relativePath), "utf-8");
 
 describe("Control Panels macOS 10.3 layout", () => {
-  test("macosx theme uses ControlPanelsMacLayout instead of ThemedTabs", () => {
+  test("all themes use the unified ControlPanelsMacLayout (legacy tabs removed)", () => {
     const source = readSource(
       "src/apps/control-panels/components/control-panels-app/ControlPanelsAppComponent.tsx"
     );
     expect(source.includes("ControlPanelsMacLayout")).toBe(true);
-    expect(source.includes("isMacOSTheme ? (")).toBe(true);
     expect(source.includes("ControlPanelsMacPaneRenderer")).toBe(true);
+    // The System Preferences layout now renders for every theme, so the
+    // layout is no longer gated behind an isMacOSTheme ternary and the legacy
+    // 4-tab ThemedTabs UI is gone.
+    expect(source.includes("isMacOSTheme ? (")).toBe(false);
+    expect(source.includes("ThemedTabsList")).toBe(false);
+    // Theme flags are threaded into the layout so the chrome is re-skinned.
+    expect(source.includes("isSystem7Theme={isSystem7Theme}")).toBe(true);
+    expect(source.includes("titlebarHeight={titlebarHeight}")).toBe(true);
   });
 
   test("mac layout provides category grid, toolbar, and navigation reducer", () => {
@@ -60,7 +67,7 @@ describe("Control Panels macOS 10.3 layout", () => {
     expect(layoutSource.includes("navState.history[navState.index]")).toBe(true);
   });
 
-  test("macosx window title shows pane name or default on Show All", () => {
+  test("window title shows pane name or default on Show All", () => {
     const appSource = readSource(
       "src/apps/control-panels/components/control-panels-app/ControlPanelsAppComponent.tsx"
     );
@@ -78,12 +85,9 @@ describe("Control Panels macOS 10.3 layout", () => {
     expect(categoriesSource.includes("category.labelKey")).toBe(true);
 
     expect(appSource.includes("getControlPanelsMacWindowTitle")).toBe(true);
-    expect(appSource.includes("macCurrentEntry")).toBe(true);
+    expect(appSource.includes("currentEntry")).toBe(true);
     expect(appSource.includes("effectiveWindowTitle")).toBe(true);
-    expect(appSource.includes("isMacOSTheme ? macWindowTitle : windowTitle")).toBe(
-      true
-    );
-    expect(appSource.includes("onCurrentEntryChange={setMacCurrentEntry}")).toBe(
+    expect(appSource.includes("onCurrentEntryChange={setCurrentEntry}")).toBe(
       true
     );
     expect(appSource.includes("title: effectiveWindowTitle")).toBe(true);
@@ -538,6 +542,44 @@ describe("Control Panels macOS 10.3 layout", () => {
     expect(toolbarSource.includes("control-panels-toolbar-pin")).toBe(false);
     expect(toolbarSource.includes("control-panels-toolbar-divider")).toBe(false);
     expect(toolbarSource.includes("onSelectPane")).toBe(false);
+  });
+
+  test("toolbar is theme-aware (Aqua metal vs classic ghost buttons)", () => {
+    const toolbarSource = readSource(
+      "src/apps/control-panels/components/control-panels-app/ControlPanelsMacToolbar.tsx"
+    );
+    // Theme flags are accepted so the chrome is translated per OS theme.
+    expect(toolbarSource.includes("isMacOSTheme")).toBe(true);
+    expect(toolbarSource.includes("isSystem7Theme")).toBe(true);
+    expect(toolbarSource.includes("isWindowsTheme")).toBe(true);
+    // Surface chrome comes from the shared themed toolbar helper.
+    expect(toolbarSource.includes("osToolbarSurfaceClassName")).toBe(true);
+    // Aqua keeps the metal-inset toolbar buttons; classic themes use the shared
+    // ghost/player Button with arrow icons (Finder's legacy toolbar pattern).
+    expect(toolbarSource.includes("ToolbarButton")).toBe(true);
+    expect(toolbarSource.includes('from "@/components/ui/button"')).toBe(true);
+    expect(toolbarSource.includes("ArrowLeft")).toBe(true);
+    expect(toolbarSource.includes("ArrowRight")).toBe(true);
+  });
+
+  test("control panels themed stylesheet skins the classic themes", () => {
+    const cssSource = readSource(
+      "src/styles/themes/control-panels-themed.css"
+    );
+    // Everything is scoped off the Aqua theme so control-panels-mac.css is
+    // untouched, and the layout primitives are reskinned for the classic themes.
+    expect(cssSource.includes(':root:not([data-os-theme="macosx"])')).toBe(true);
+    expect(cssSource.includes("control-panels-category-grid")).toBe(true);
+    expect(cssSource.includes("control-panels-pref-form-row")).toBe(true);
+    expect(cssSource.includes("control-panels-pref-tab-bar")).toBe(true);
+    expect(cssSource.includes("control-panels-search-menu")).toBe(true);
+    // Per-theme deltas exist for the three classic themes.
+    expect(cssSource.includes(':root[data-os-theme="system7"]')).toBe(true);
+    expect(cssSource.includes(':root[data-os-theme="xp"]')).toBe(true);
+    expect(cssSource.includes(':root[data-os-theme="win98"]')).toBe(true);
+    // The themed stylesheet is wired into the global theme bundle.
+    const themesSource = readSource("src/styles/themes.css");
+    expect(themesSource.includes("control-panels-themed.css")).toBe(true);
   });
 
   test("category and pinned pane icons resolve on macosx theme", () => {
