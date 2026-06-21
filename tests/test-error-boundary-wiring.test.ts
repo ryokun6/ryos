@@ -70,11 +70,16 @@ describe("Error Boundary Wiring Tests", () => {
       const shellSource = readSource(
         "src/apps/control-panels/components/control-panels-app/ControlPanelsAppComponent.tsx",
       );
-      const systemTabSource = readSource(
-        "src/apps/control-panels/components/control-panels-app/SystemTabContent.tsx",
+      // The unified layout renders the debug crash-test controls in the
+      // Accounts pane's admin-gated Debug tab.
+      const accountsPaneSource = readSource(
+        "src/apps/control-panels/components/control-panels-app/AccountsPaneContent.tsx",
       );
-      expect(systemTabSource).toContain(
-        't("apps.control-panels.errorBoundaries")',
+      expect(accountsPaneSource).toContain("handleTriggerAppCrashTest");
+      expect(accountsPaneSource).toContain("handleTriggerDesktopCrashTest");
+      expect(accountsPaneSource).toContain('t("apps.control-panels.crashApp")');
+      expect(accountsPaneSource).toContain(
+        't("apps.control-panels.crashDesktop")',
       );
       expect(shellSource).toContain("handleTriggerAppCrashTest");
       expect(shellSource).toContain("handleTriggerDesktopCrashTest");
