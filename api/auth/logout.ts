@@ -22,7 +22,7 @@ export default apiHandler(
     const username = user?.username || "";
     const token = user?.token || "";
 
-    await deleteToken(redis, token);
+    await deleteToken(redis, token, username);
 
     res.setHeader("Set-Cookie", buildClearAuthCookie());
     logger.info("User logged out", { username });

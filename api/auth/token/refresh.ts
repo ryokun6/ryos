@@ -110,7 +110,7 @@ export default apiHandler<RefreshRequest>(
     await storeLastValidToken(redis, username, oldToken, Date.now(), TOKEN_GRACE_PERIOD);
 
     // Delete old token
-    await deleteToken(redis, oldToken);
+    await deleteToken(redis, oldToken, username);
 
     // Generate new token
     const newToken = generateAuthToken();
