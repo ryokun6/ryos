@@ -56,12 +56,20 @@ export const DEFAULT_FILE_PATHS = new Set([
 
 export const getCloudSyncDomainForContentStore = (
   storeName: string
-): "files-metadata" | "files-images" | "files-trash" | "files-applets" | null => {
+):
+  | "files-metadata"
+  | "files-images"
+  | "files-books"
+  | "files-trash"
+  | "files-applets"
+  | null => {
   switch (storeName) {
     case STORES.DOCUMENTS:
       return "files-metadata";
     case STORES.IMAGES:
       return "files-images";
+    case STORES.BOOKS:
+      return "files-books";
     case STORES.TRASH:
       return "files-trash";
     case STORES.APPLETS:
@@ -77,6 +85,8 @@ export const getCloudSyncDeletionBucketForContentStore = (
   switch (storeName) {
     case STORES.IMAGES:
       return "fileImageKeys";
+    case STORES.BOOKS:
+      return "fileBookKeys";
     case STORES.TRASH:
       return "fileTrashKeys";
     case STORES.APPLETS:

@@ -40,6 +40,14 @@
       "status": "active"
     },
     {
+      "path": "/Books",
+      "name": "Books",
+      "isDirectory": true,
+      "type": "directory",
+      "icon": "/icons/default/books.png",
+      "status": "active"
+    },
+    {
       "path": "/Music",
       "name": "Music",
       "isDirectory": true,

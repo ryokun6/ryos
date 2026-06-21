@@ -1,12 +1,13 @@
 // Utility helpers for IndexedDB operations used across ryOS
 
 const DB_NAME = "ryOS";
-const DB_VERSION = 10;
+const DB_VERSION = 11;
 let hasLoggedOpenSuccess = false;
 
 export const STORES = {
   DOCUMENTS: "documents",
   IMAGES: "images",
+  BOOKS: "books",
   TRASH: "trash",
   CUSTOM_WALLPAPERS: "custom_wallpapers",
   APPLETS: "applets",

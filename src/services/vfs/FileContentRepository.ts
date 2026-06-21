@@ -8,6 +8,7 @@ import { getFileContentUuid } from "@/services/vfs/FileMetadataService";
 export type VfsContentStoreName =
   | typeof STORES.DOCUMENTS
   | typeof STORES.IMAGES
+  | typeof STORES.BOOKS
   | typeof STORES.APPLETS
   | typeof STORES.TRASH;
 
@@ -62,6 +63,13 @@ export async function readDocumentTextContent(path: string): Promise<string | nu
 export async function readImageBlobContent(path: string): Promise<Blob | null> {
   const item = await readContentForPath<StoredContent>(path, {
     expectedStore: STORES.IMAGES,
+  });
+  return item?.content instanceof Blob ? item.content : null;
+}
+
+export async function readBookBlobContent(path: string): Promise<Blob | null> {
+  const item = await readContentForPath<StoredContent>(path, {
+    expectedStore: STORES.BOOKS,
   });
   return item?.content instanceof Blob ? item.content : null;
 }
