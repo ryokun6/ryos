@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { debug } from "@/utils/debug";
 import { useStoreShallow } from "./helpers";
 import { persist } from "zustand/middleware";
 import { createDebouncedPersistStorage } from "@/utils/debouncedPersistStorage";
@@ -200,7 +201,7 @@ const clearApiUnavailable = (key: string): void => {
 function forceLogoutOnUnauthorized() {
   const store = useChatsStore.getState();
   if (!store.username) return;
-  console.log("[ChatsStore] Unauthorized — clearing auth state for", store.username);
+  debug("[ChatsStore] Unauthorized — clearing auth state for", store.username);
   localStorage.removeItem(USERNAME_RECOVERY_KEY);
   useChatsStore.setState({
     username: null,
@@ -213,7 +214,7 @@ function forceLogoutOnUnauthorized() {
 // Ensure username recovery key is set if username exists but recovery key doesn't.
 const ensureUsernameRecovery = (username: string | null) => {
   if (username && !localStorage.getItem(USERNAME_RECOVERY_KEY)) {
-    console.log(
+    debug(
       "[ChatsStore] Setting recovery key for existing username:",
       username
     );
@@ -517,13 +518,13 @@ export const useChatsStore = create<ChatsStoreState>()(
           });
 
           if (JSON.stringify(currentRooms) === JSON.stringify(sortedNewRooms)) {
-            console.log(
+            debug(
               "[ChatsStore] setRooms skipped: newRooms are identical to current rooms."
             );
             return; // Skip update if rooms haven't actually changed
           }
 
-          console.log("[ChatsStore] setRooms called. Updating rooms.");
+          debug("[ChatsStore] setRooms called. Updating rooms.");
           set({ rooms: sortedNewRooms });
         },
         setCurrentRoomId: (roomId) => set({ currentRoomId: roomId }),
@@ -721,7 +722,7 @@ export const useChatsStore = create<ChatsStoreState>()(
           set(getInitialState());
         },
         logout: async () => {
-          console.log("[ChatsStore] Logging out user...");
+          debug("[ChatsStore] Logging out user...");
 
           const currentUsername = get().username;
 
@@ -764,7 +765,7 @@ export const useChatsStore = create<ChatsStoreState>()(
             );
           }
 
-          console.log("[ChatsStore] User logged out successfully");
+          debug("[ChatsStore] User logged out successfully");
         },
         deleteAccount: async ({ confirmUsername, currentPassword }) => {
           const currentUsername = get().username;
@@ -820,16 +821,16 @@ export const useChatsStore = create<ChatsStoreState>()(
         },
         fetchRooms: async (options = {}) => {
           if (roomsFetchPromise) {
-            console.log("[ChatsStore] Reusing in-flight rooms fetch...");
+            debug("[ChatsStore] Reusing in-flight rooms fetch...");
             return roomsFetchPromise;
           }
 
           if (!options.force && Date.now() < roomsFetchFreshUntil) {
-            console.log("[ChatsStore] Skipping rooms fetch; cache is fresh.");
+            debug("[ChatsStore] Skipping rooms fetch; cache is fresh.");
             return { ok: true };
           }
 
-          console.log("[ChatsStore] Fetching rooms...");
+          debug("[ChatsStore] Fetching rooms...");
           if (isApiTemporarilyUnavailable("rooms")) {
             return { ok: false, error: "Rooms API temporarily unavailable" };
           }
@@ -866,7 +867,7 @@ export const useChatsStore = create<ChatsStoreState>()(
         fetchMessagesForRoom: async (roomId: string) => {
           if (!roomId) return { ok: false, error: "Room ID required" };
 
-          console.log(`[ChatsStore] Fetching messages for room ${roomId}...`);
+          debug(`[ChatsStore] Fetching messages for room ${roomId}...`);
           if (isApiTemporarilyUnavailable("room-messages")) {
             return { ok: false, error: "Messages API temporarily unavailable" };
           }
@@ -909,7 +910,7 @@ export const useChatsStore = create<ChatsStoreState>()(
           if (roomIds.length === 0)
             return { ok: false, error: "Room IDs required" };
 
-          console.log(
+          debug(
             `[ChatsStore] Fetching messages for rooms: ${roomIds.join(", ")}...`
           );
           if (isApiTemporarilyUnavailable("bulk-messages")) {
@@ -960,7 +961,7 @@ export const useChatsStore = create<ChatsStoreState>()(
           const currentRoomId = get().currentRoomId;
           const username = get().username;
 
-          console.log(
+          debug(
             `[ChatsStore] Switching from ${currentRoomId} to ${newRoomId}`
           );
 
@@ -993,7 +994,7 @@ export const useChatsStore = create<ChatsStoreState>()(
             track(CHAT_ANALYTICS.ROOM_SWITCH, {
               hasPreviousRoom: !!currentRoomId,
             });
-            console.log(
+            debug(
               `[ChatsStore] Fetching latest messages for room ${newRoomId}`
             );
             await get().fetchMessagesForRoom(newRoomId);
@@ -1055,7 +1056,7 @@ export const useChatsStore = create<ChatsStoreState>()(
           } catch (error) {
             if (error instanceof ApiRequestError) {
               if (error.status === 401) {
-                console.log("[ChatsStore] Received 401 — forcing logout");
+                debug("[ChatsStore] Received 401 — forcing logout");
                 forceLogoutOnUnauthorized();
               }
               return { ok: false, error: error.message || "Failed to create room" };
@@ -1085,7 +1086,7 @@ export const useChatsStore = create<ChatsStoreState>()(
           } catch (error) {
             if (error instanceof ApiRequestError) {
               if (error.status === 401) {
-                console.log("[ChatsStore] Received 401 — forcing logout");
+                debug("[ChatsStore] Received 401 — forcing logout");
                 forceLogoutOnUnauthorized();
               }
               return { ok: false, error: error.message || "Failed to delete room" };
@@ -1128,7 +1129,7 @@ export const useChatsStore = create<ChatsStoreState>()(
             get().removeMessageFromRoom(roomId, tempId);
             if (error instanceof ApiRequestError) {
               if (error.status === 401) {
-                console.log("[ChatsStore] Received 401 — forcing logout");
+                debug("[ChatsStore] Received 401 — forcing logout");
                 forceLogoutOnUnauthorized();
               }
               return { ok: false, error: error.message || "Failed to send message" };
@@ -1240,14 +1241,14 @@ export const useChatsStore = create<ChatsStoreState>()(
       }),
       // --- Migration from old localStorage keys ---
       migrate: (persistedState, version) => {
-        console.log(
+        debug(
           "[ChatsStore] Migrate function started. Version:",
           version,
           "Persisted state exists:",
           !!persistedState
         );
         if (persistedState) {
-          console.log(
+          debug(
             "[ChatsStore] Persisted state type for rooms:",
             typeof (persistedState as ChatsStoreState).rooms,
             "Is Array:",
@@ -1256,7 +1257,7 @@ export const useChatsStore = create<ChatsStoreState>()(
         }
 
         if (version < STORE_VERSION && !persistedState) {
-          console.log(
+          debug(
             `[ChatsStore] Migrating from old localStorage keys to version ${STORE_VERSION}...`
           );
           try {
@@ -1283,7 +1284,7 @@ export const useChatsStore = create<ChatsStoreState>()(
               // Save to recovery mechanism as well
               saveUsernameToRecovery(oldUsername);
               localStorage.removeItem(oldUsernameKey); // Remove here during primary migration
-              console.log(
+              debug(
                 `[ChatsStore] Migrated and removed '${oldUsernameKey}' key during version upgrade.`
               );
             }
@@ -1334,7 +1335,7 @@ export const useChatsStore = create<ChatsStoreState>()(
               }
             }
 
-            console.log("[ChatsStore] Migration data:", migratedState);
+            debug("[ChatsStore] Migration data:", migratedState);
 
             // Clean up old keys (Optional - uncomment if desired after confirming migration)
             // localStorage.removeItem('chats:messages');
@@ -1342,17 +1343,17 @@ export const useChatsStore = create<ChatsStoreState>()(
             // localStorage.removeItem('chats:sidebarVisible');
             // localStorage.removeItem('chats:cachedRooms');
             // localStorage.removeItem('chats:cachedRoomMessages');
-            // console.log("[ChatsStore] Old localStorage keys potentially removed.");
+            // debug("[ChatsStore] Old localStorage keys potentially removed.");
 
             const finalMigratedState = {
               ...getInitialState(),
               ...migratedState,
             } as ChatsStoreState;
-            console.log(
+            debug(
               "[ChatsStore] Final migrated state:",
               finalMigratedState
             );
-            console.log(
+            debug(
               "[ChatsStore] Migrated rooms type:",
               typeof finalMigratedState.rooms,
               "Is Array:",
@@ -1364,7 +1365,7 @@ export const useChatsStore = create<ChatsStoreState>()(
           }
         }
         if (persistedState) {
-          console.log("[ChatsStore] Using persisted state.");
+          debug("[ChatsStore] Using persisted state.");
           const state = persistedState as ChatsStoreState;
           const finalState = { ...state };
 
@@ -1385,8 +1386,8 @@ export const useChatsStore = create<ChatsStoreState>()(
             });
           }
 
-          console.log("[ChatsStore] Final state from persisted:", finalState);
-          console.log(
+          debug("[ChatsStore] Final state from persisted:", finalState);
+          debug(
             "[ChatsStore] Persisted state rooms type:",
             typeof finalState.rooms,
             "Is Array:",
@@ -1394,16 +1395,16 @@ export const useChatsStore = create<ChatsStoreState>()(
           );
           return finalState;
         }
-        console.log("[ChatsStore] Falling back to initial state.");
+        debug("[ChatsStore] Falling back to initial state.");
         return { ...getInitialState() } as ChatsStoreState;
       },
       onRehydrateStorage: () => {
-        console.log("[ChatsStore] Rehydrating storage...");
+        debug("[ChatsStore] Rehydrating storage...");
         return (state, error) => {
           if (error) {
             console.error("[ChatsStore] Error during rehydration:", error);
           } else if (state) {
-            console.log(
+            debug(
               "[ChatsStore] Rehydration complete. Current state username:",
               state.username
             );
@@ -1412,7 +1413,7 @@ export const useChatsStore = create<ChatsStoreState>()(
             if (state.username === null) {
               const recoveredUsername = getUsernameFromRecovery();
               if (recoveredUsername) {
-                console.log(
+                debug(
                   `[ChatsStore] Recovered username '${recoveredUsername}' from recovery storage.`
                 );
                 state.username = recoveredUsername;
@@ -1420,7 +1421,7 @@ export const useChatsStore = create<ChatsStoreState>()(
                 const oldUsernameKey = "chats:chatRoomUsername";
                 const oldUsername = localStorage.getItem(oldUsernameKey);
                 if (oldUsername) {
-                  console.log(
+                  debug(
                     `[ChatsStore] Recovered username '${oldUsername}' from legacy key.`
                   );
                   state.username = oldUsername;
@@ -1453,7 +1454,7 @@ async function restoreSessionFromCookie(expectedUsername: string) {
     const session = await getAuthSession();
 
     if (!session.ok) {
-      console.log("[ChatsStore] Session restore failed:", session.status);
+      debug("[ChatsStore] Session restore failed:", session.status);
       if (session.status === 401 || session.status === 403) {
         forceLogoutOnUnauthorized();
       }
@@ -1462,7 +1463,7 @@ async function restoreSessionFromCookie(expectedUsername: string) {
 
     const data = session.data;
     if (data.authenticated && data.username) {
-      console.log(
+      debug(
         "[ChatsStore] Session restored for",
         data.username,
         "(from cookie)"
@@ -1474,7 +1475,7 @@ async function restoreSessionFromCookie(expectedUsername: string) {
         store.checkHasPassword();
       }
     } else {
-      console.log("[ChatsStore] No valid session — logging out.");
+      debug("[ChatsStore] No valid session — logging out.");
       forceLogoutOnUnauthorized();
     }
   } catch (err) {

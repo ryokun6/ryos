@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { debug } from "@/utils/debug";
 import { useStoreShallow } from "./helpers";
 import { persist } from "zustand/middleware";
 import { createDebouncedPersistStorage } from "@/utils/debouncedPersistStorage";
@@ -666,7 +667,7 @@ export const useFilesStore = create<FilesStoreState>()(
         useCloudSyncStore
           .getState()
           .clearDeletedKeys("fileMetadataPaths", [newItem.path]);
-        console.log(`[FilesStore:addItem] Attempting to add:`, newItem); // Log item being added
+        debug(`[FilesStore:addItem] Attempting to add:`, newItem); // Log item being added
         set((state) => {
           const parentPath = getParentPath(newItem.path);
           if (
@@ -685,7 +686,7 @@ export const useFilesStore = create<FilesStoreState>()(
           const existingItem = state.items[newItem.path];
           if (existingItem) {
             // Update existing item, preserving UUID and createdAt
-            console.log(
+            debug(
               `[FilesStore] Updating existing item at path "${newItem.path}"`
             );
             const updatedItem: FileSystemItem = {
@@ -719,7 +720,7 @@ export const useFilesStore = create<FilesStoreState>()(
               icon: "/icons/trash-full.png",
             };
           }
-          console.log(
+          debug(
             `[FilesStore:addItem] Successfully added: ${newItem.path}`
           ); // Log success
           return { items: updatedItems, libraryState: "loaded" };
