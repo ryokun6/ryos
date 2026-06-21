@@ -11,13 +11,40 @@ import {
 import { SYNTH_PRESETS } from "@/hooks/chatSynthPresets";
 import { VolumeMixer } from "../VolumeMixer";
 import { ControlPanelsPrefFormRow } from "./ControlPanelsPrefFormRow";
-import type { SoundTabContentProps } from "./SoundTabContent";
 import { useControlPanelsTabClasses } from "./useControlPanelsTabClasses";
 
-export type SoundPaneContentProps = Omit<
-  SoundTabContentProps,
-  "tabStyles" | "prefPaneLayout"
->;
+export type SoundPaneContentProps = {
+  t: (key: string, opts?: Record<string, unknown>) => string;
+  uiSoundsEnabled: boolean;
+  handleUISoundsChange: (enabled: boolean) => void;
+  speechEnabled: boolean;
+  handleSpeechChange: (enabled: boolean) => void;
+  terminalSoundsEnabled: boolean;
+  setTerminalSoundsEnabled: (enabled: boolean) => void;
+  synthPreset: string;
+  handleSynthPresetChange: (preset: string) => void;
+  masterVolume: number;
+  setMasterVolume: (volume: number) => void;
+  setPrevMasterVolume: (volume: number) => void;
+  handleMasterMuteToggle: () => void;
+  uiVolume: number;
+  setUiVolume: (volume: number) => void;
+  setPrevUiVolume: (volume: number) => void;
+  handleUiMuteToggle: () => void;
+  speechVolume: number;
+  setSpeechVolume: (volume: number) => void;
+  setPrevSpeechVolume: (volume: number) => void;
+  handleSpeechMuteToggle: () => void;
+  chatSynthVolume: number;
+  setChatSynthVolume: (volume: number) => void;
+  setPrevChatSynthVolume: (volume: number) => void;
+  handleChatSynthMuteToggle: () => void;
+  ipodVolume: number;
+  setIpodVolume: (volume: number) => void;
+  setPrevIpodVolume: (volume: number) => void;
+  handleIpodMuteToggle: () => void;
+  isIOS: boolean;
+};
 
 type SoundPaneTab = "effects" | "output";
 
