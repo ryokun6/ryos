@@ -1,0 +1,1009 @@
+/* Control Panels — System Preferences layout translated to the non-Aqua themes
+   (System 7, Windows XP, Windows 98). The Aqua (macosx) skin lives in
+   control-panels-mac.css; everything here is scoped to :not([data-os-theme="macosx"])
+   so the Aqua styling is never touched. Most colors/borders/fonts come from the
+   shared --os-* design tokens so the three classic themes share one rule set,
+   with small per-theme deltas where the chrome differs (bevels, active tabs). */
+
+/* ----------------------------------------------------------------------------
+   Layout mechanics (shared with Aqua, replicated for the classic themes so the
+   auto-height body + scroll behaviour works identically).
+---------------------------------------------------------------------------- */
+:root:not([data-os-theme="macosx"]) .control-panels-mac {
+  flex: 1 0 auto;
+  min-height: 0;
+  color: var(--os-color-text-primary, #000);
+  font-family: var(--os-font-ui);
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-mac-body-measure {
+  width: 100%;
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-mac-body {
+  flex-grow: 1;
+  min-height: var(--control-panels-mac-body-fill-min-height, 0);
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-mac-body[data-scrollable] {
+  overflow-y: auto;
+}
+
+/* ----------------------------------------------------------------------------
+   Toolbar — surface chrome comes from osToolbarSurfaceClassName; just tune the
+   vertical rhythm so the back/forward/Show All controls have breathing room.
+---------------------------------------------------------------------------- */
+:root:not([data-os-theme="macosx"]) .control-panels-mac-toolbar {
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-mac-toolbar-search {
+  padding: 0 2px;
+}
+
+/* ----------------------------------------------------------------------------
+   Home grid (Show All)
+---------------------------------------------------------------------------- */
+:root:not([data-os-theme="macosx"]) .control-panels-category-grid {
+  --control-panels-section-inset-x: 14px;
+  padding: 0 var(--control-panels-section-inset-x) 14px;
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-section {
+  margin: 0 calc(-1 * var(--control-panels-section-inset-x));
+  padding: 10px var(--control-panels-section-inset-x);
+  position: relative;
+}
+
+:root:not([data-os-theme="macosx"])
+  .control-panels-section:not(:first-of-type)::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--os-color-separator);
+  pointer-events: none;
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-section-header {
+  font-family: var(--os-font-ui);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--os-color-text-primary, #111);
+  margin: 0;
+  padding: 0 0 6px;
+  text-align: left;
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-section-grid {
+  --control-panels-grid-col-width: 80px;
+  display: grid;
+  grid-template-columns: repeat(
+    var(--control-panels-section-cols, 1),
+    var(--control-panels-grid-col-width)
+  );
+  width: fit-content;
+  max-width: 100%;
+  column-gap: 6px;
+  row-gap: 8px;
+  align-items: start;
+  justify-items: center;
+  padding-bottom: 4px;
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-category-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  width: var(--control-panels-grid-col-width, 80px);
+  max-width: var(--control-panels-grid-col-width, 80px);
+  border: none;
+  background: transparent;
+  cursor: default;
+  padding: 4px 2px;
+  border-radius: 4px;
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-category-item:hover,
+:root:not([data-os-theme="macosx"]) .control-panels-category-item:focus,
+:root:not([data-os-theme="macosx"]) .control-panels-category-item:focus-visible {
+  background: transparent;
+  outline: none;
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-category-icon-shell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  position: relative;
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-category-icon {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  position: relative;
+  z-index: 1;
+}
+
+:root:not([data-os-theme="macosx"])
+  .control-panels-category-item:active
+  .control-panels-category-icon {
+  filter: brightness(0.8);
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-category-label {
+  font-family: var(--os-font-ui);
+  font-size: 11px;
+  line-height: 1.2;
+  color: var(--os-color-text-primary, #111);
+  max-width: 80px;
+  min-height: 2.4em;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+/* Spotlight search — dim the grid and knock matching icons out of the wash. */
+:root:not([data-os-theme="macosx"])
+  .control-panels-mac-body:has(.control-panels-category-grid--searching) {
+  position: relative;
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-category-grid--searching {
+  min-height: var(--control-panels-mac-body-fill-min-height, 0);
+}
+
+:root:not([data-os-theme="macosx"])
+  .control-panels-category-grid--searching::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: rgba(70, 72, 80, 0.32);
+  pointer-events: none;
+}
+
+:root:not([data-os-theme="macosx"])
+  .control-panels-category-grid--searching
+  .control-panels-category-item.is-spotlight-match {
+  position: relative;
+  z-index: 2;
+}
+
+:root:not([data-os-theme="macosx"])
+  .control-panels-category-item.is-spotlight-match
+  .control-panels-category-icon-shell::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 52px;
+  height: 52px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(248, 248, 250, 0.5) 0%,
+    rgba(248, 248, 250, 0.5) 64%,
+    rgba(248, 248, 250, 0) 86%
+  );
+  z-index: 0;
+  pointer-events: none;
+}
+
+:root:not([data-os-theme="macosx"])
+  .control-panels-category-item.is-spotlight-focused
+  .control-panels-category-icon-shell::before {
+  background: radial-gradient(
+    circle,
+    rgba(248, 248, 250, 0.85) 0%,
+    rgba(248, 248, 250, 0.85) 64%,
+    rgba(248, 248, 250, 0) 86%
+  );
+}
+
+/* ----------------------------------------------------------------------------
+   Toolbar typeahead search menu
+---------------------------------------------------------------------------- */
+:root:not([data-os-theme="macosx"]) .control-panels-search-menu {
+  --control-panels-search-item-h: 24px;
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 50;
+  min-width: 200px;
+  max-width: 280px;
+  max-height: calc(var(--control-panels-search-item-h) * 5.5 + 8px);
+  overflow-y: auto;
+  padding: 3px;
+  background: var(--os-color-window-bg, #fff);
+  border: 1px solid var(--os-color-separator);
+  box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-search-item {
+  display: block;
+  width: 100%;
+  height: var(--control-panels-search-item-h, 24px);
+  line-height: var(--control-panels-search-item-h, 24px);
+  padding: 0 10px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: default;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--os-color-text-primary, #111);
+  font-family: var(--os-font-ui);
+  font-size: 11px;
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-search-item.is-highlighted {
+  background: var(--os-color-selection-bg);
+  color: var(--os-color-selection-text);
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-search-empty {
+  padding: 6px 10px;
+  font-family: var(--os-font-ui);
+  font-size: 11px;
+  text-align: left;
+  color: var(--os-color-text-secondary);
+}
+
+/* System 7 search menu — hard black border, square drop shadow. */
+:root[data-os-theme="system7"] .control-panels-search-menu {
+  border: 1px solid #000;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
+}
+
+/* Win98 / XP — raised bevel panel. */
+:root[data-os-theme="win98"] .control-panels-search-menu {
+  border: 2px solid;
+  border-color: #fff #808080 #808080 #fff;
+  box-shadow: 1px 1px 0 #000;
+}
+
+/* ----------------------------------------------------------------------------
+   Preference pane
+---------------------------------------------------------------------------- */
+:root:not([data-os-theme="macosx"]) .control-panels-mac-pane {
+  display: flex;
+  flex-direction: column;
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-mac-pane-inner {
+  --control-panels-pref-content-inset-x: 16px;
+  padding: 14px 16px 22px;
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-mac-pane-inner label {
+  font-size: 11px;
+}
+
+:root:not([data-os-theme="macosx"])
+  .control-panels-mac-pane-inner
+  .text-neutral-600 {
+  color: var(--os-color-text-secondary);
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-mac-pane-inner > .space-y-4 {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+:root:not([data-os-theme="macosx"])
+  .control-panels-mac-pane-inner
+  > .space-y-4
+  > * {
+  margin-top: 0;
+}
+
+:root:not([data-os-theme="macosx"])
+  .control-panels-mac-pane-inner
+  > .space-y-4
+  > hr,
+:root:not([data-os-theme="macosx"])
+  .control-panels-mac-pane-inner
+  > .space-y-4
+  > .border-t {
+  margin: 12px 0;
+  border: none;
+  height: 1px;
+  background: var(--os-color-separator);
+}
+
+/* ----------------------------------------------------------------------------
+   10.3-style form rows — labels left-aligned for the classic themes (matching
+   how System 7 / Windows settings dialogs read), controls on the right.
+---------------------------------------------------------------------------- */
+:root:not([data-os-theme="macosx"]) .control-panels-pref-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+:root:not([data-os-theme="macosx"])
+  .control-panels-pref-form:not(.control-panels-pref-form-tabbed) {
+  height: auto;
+  min-height: min-content;
+  overflow: visible;
+  flex: none;
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-pref-form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px;
+}
+
+:root:not([data-os-theme="macosx"])
+  .control-panels-pref-well
+  .control-panels-pref-form-section,
+:root:not([data-os-theme="macosx"])
+  .control-panels-pref-tab-panel
+  .control-panels-pref-form-section {
+  padding: 0;
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-pref-form-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) minmax(140px, 1.2fr);
+  gap: 12px;
+  align-items: start;
+  min-height: 30px;
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-pref-form-label {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  align-self: start;
+  text-align: left;
+  gap: 2px;
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-pref-form-label-text {
+  font-family: var(--os-font-ui);
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--os-color-text-primary, #111);
+  line-height: 1.2;
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-pref-form-label-desc {
+  font-family: var(--os-font-ui);
+  font-size: 10px;
+  color: var(--os-color-text-secondary);
+  line-height: 1.25;
+  max-width: 200px;
+  text-wrap: pretty;
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-pref-form-control {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  align-self: start;
+  min-height: 22px;
+  padding-top: 1px;
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-pref-divider {
+  margin: 12px 0;
+  border: none;
+  height: 1px;
+  background: var(--os-color-separator);
+}
+
+/* ----------------------------------------------------------------------------
+   Wells — recessed/raised panels per theme
+---------------------------------------------------------------------------- */
+:root:not([data-os-theme="macosx"])
+  .control-panels-mac-pane-inner
+  .control-panels-pref-well {
+  border: 1px solid var(--os-color-separator);
+  background: var(--os-color-window-bg, #fff);
+  padding: 12px var(--control-panels-pref-content-inset-x, 16px) 14px;
+}
+
+:root[data-os-theme="system7"]
+  .control-panels-mac-pane-inner
+  .control-panels-pref-well {
+  border: 1px solid #000;
+  background: #fff;
+  box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.4);
+}
+
+:root[data-os-theme="win98"]
+  .control-panels-mac-pane-inner
+  .control-panels-pref-well {
+  border: 2px solid;
+  border-color: #808080 #fff #fff #808080;
+  background: var(--os-color-window-bg, #c0c0c0);
+  box-shadow: inset 1px 1px 0 #000, inset -1px -1px 0 #dfdfdf;
+}
+
+:root[data-os-theme="xp"]
+  .control-panels-mac-pane-inner
+  .control-panels-pref-well {
+  border: 1px solid var(--os-color-separator);
+  border-radius: 3px;
+  background: #fff;
+}
+
+/* International locale preview / format samples */
+:root:not([data-os-theme="macosx"]) .control-panels-pref-format-samples {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 2px;
+  padding: 8px 10px;
+  border: 1px solid var(--os-color-separator);
+  background: rgba(0, 0, 0, 0.035);
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-pref-format-sample-row {
+  display: grid;
+  grid-template-columns: minmax(80px, 1fr) minmax(140px, 1.2fr);
+  gap: 12px;
+  align-items: start;
+  font-family: var(--os-font-ui);
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-pref-format-sample-label {
+  text-align: left;
+  color: var(--os-color-text-primary, #111);
+  padding-top: 1px;
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-pref-format-sample-value {
+  color: var(--os-color-text-primary, #111);
+}
+
+/* ----------------------------------------------------------------------------
+   Tabbed preference panes (Desktop | Screen Saver, Cloud Sync, Accounts).
+   The markup keeps the .aqua-tab / .aqua-tab-bar classes; here we strip the
+   Aqua chrome and reskin the tabs per theme.
+---------------------------------------------------------------------------- */
+:root:not([data-os-theme="macosx"])
+  .control-panels-mac-pane-inner:has(.control-panels-pref-form-tabbed) {
+  display: flex;
+  flex-direction: column;
+  padding-top: 6px;
+}
+
+:root:not([data-os-theme="macosx"])
+  .control-panels-mac-pane-scroll:has(.control-panels-pref-form-tabbed) {
+  display: flex;
+  flex-direction: column;
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-pref-tabbed {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding-top: 8px;
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-pref-tab-bar {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 2px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  min-height: 28px;
+  height: 28px;
+  overflow: visible;
+  border-bottom: 1px solid var(--os-color-separator);
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-pref-tab-bar.aqua-tab-bar::after {
+  display: none !important;
+  content: none !important;
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-pref-tab-bar .aqua-tab {
+  position: static;
+  min-width: 96px;
+  padding: 0 14px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  height: 24px;
+  margin-top: 0;
+  margin-bottom: -1px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--os-color-panel-bg);
+  border: 1px solid var(--os-color-separator);
+  border-bottom: 1px solid var(--os-color-separator);
+  border-radius: 4px 4px 0 0;
+  box-shadow: none;
+  color: var(--os-color-text-primary, #111);
+  font-family: var(--os-font-ui);
+  font-size: 11px;
+  overflow: visible;
+  transition: none;
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-pref-tab-bar .aqua-tab::before,
+:root:not([data-os-theme="macosx"]) .control-panels-pref-tab-bar .aqua-tab::after {
+  display: none !important;
+  content: none !important;
+}
+
+:root:not([data-os-theme="macosx"])
+  .control-panels-pref-tab-bar
+  .aqua-tab[data-state="active"] {
+  background: var(--os-color-window-bg, #fff);
+  border-bottom-color: var(--os-color-window-bg, #fff);
+  color: var(--os-color-text-primary, #111);
+  z-index: 1;
+}
+
+/* System 7 — flat bordered tabs on the gray strip. */
+:root[data-os-theme="system7"] .control-panels-pref-tab-bar .aqua-tab {
+  border: 1px solid #000;
+  border-radius: 0;
+  background: #d4d4d4;
+}
+
+:root[data-os-theme="system7"]
+  .control-panels-pref-tab-bar
+  .aqua-tab[data-state="active"] {
+  background: var(--os-color-window-bg, #fff);
+  border-bottom-color: var(--os-color-window-bg, #fff);
+}
+
+/* Windows XP / 98 — black active tab, pixel font, matching the app's other tabs. */
+:root[data-os-theme="xp"] .control-panels-pref-tab-bar,
+:root[data-os-theme="win98"] .control-panels-pref-tab-bar {
+  justify-content: flex-start;
+}
+
+:root[data-os-theme="xp"] .control-panels-pref-tab-bar .aqua-tab,
+:root[data-os-theme="win98"] .control-panels-pref-tab-bar .aqua-tab {
+  border-radius: 0;
+  background: #fff;
+  border: 1px solid var(--os-color-separator);
+}
+
+:root[data-os-theme="xp"]
+  .control-panels-pref-tab-bar
+  .aqua-tab[data-state="active"],
+:root[data-os-theme="win98"]
+  .control-panels-pref-tab-bar
+  .aqua-tab[data-state="active"] {
+  background: #000;
+  border-color: #000;
+  color: #fff;
+}
+
+/* Tabbed well: stack both tab panels in one grid cell, sized to the tallest. */
+:root:not([data-os-theme="macosx"])
+  .control-panels-pref-tabbed
+  > .control-panels-pref-well {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  padding: 0;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-pref-tab-panel {
+  padding: 16px var(--control-panels-pref-content-inset-x, 16px) 14px;
+}
+
+:root:not([data-os-theme="macosx"])
+  .control-panels-pref-form-tabbed
+  .control-panels-pref-tab-panel {
+  grid-area: 1 / 1;
+}
+
+:root:not([data-os-theme="macosx"])
+  .control-panels-pref-form-tabbed
+  .control-panels-pref-tab-panel[hidden] {
+  display: block !important;
+  visibility: hidden;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* When the pane exceeds the window cap, pin the tab bar and scroll inside the
+   active tab panel (mirrors the Aqua behaviour). */
+:root:not([data-os-theme="macosx"])
+  .control-panels-mac-body[data-scrollable]:has(.control-panels-pref-form-tabbed) {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+:root:not([data-os-theme="macosx"])
+  .control-panels-mac-body[data-scrollable]:has(.control-panels-pref-form-tabbed)
+  .control-panels-mac-body-measure,
+:root:not([data-os-theme="macosx"])
+  .control-panels-mac-body[data-scrollable]:has(.control-panels-pref-form-tabbed)
+  .control-panels-mac-body-layout {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+:root:not([data-os-theme="macosx"])
+  .control-panels-mac-body[data-scrollable]
+  .control-panels-mac-pane:has(.control-panels-pref-form-tabbed),
+:root:not([data-os-theme="macosx"])
+  .control-panels-mac-body[data-scrollable]
+  .control-panels-mac-pane-scroll:has(.control-panels-pref-form-tabbed),
+:root:not([data-os-theme="macosx"])
+  .control-panels-mac-body[data-scrollable]
+  .control-panels-mac-pane-inner:has(.control-panels-pref-form-tabbed),
+:root:not([data-os-theme="macosx"])
+  .control-panels-mac-body[data-scrollable]
+  .control-panels-pref-form-tabbed,
+:root:not([data-os-theme="macosx"])
+  .control-panels-mac-body[data-scrollable]
+  .control-panels-pref-tabbed {
+  flex: 1;
+  min-height: 0;
+}
+
+:root:not([data-os-theme="macosx"])
+  .control-panels-mac-body[data-scrollable]
+  .control-panels-mac-pane-scroll:has(.control-panels-pref-form-tabbed),
+:root:not([data-os-theme="macosx"])
+  .control-panels-mac-body[data-scrollable]
+  .control-panels-pref-form-tabbed {
+  overflow: hidden;
+}
+
+:root:not([data-os-theme="macosx"])
+  .control-panels-mac-body[data-scrollable]
+  .control-panels-pref-tabbed
+  > .control-panels-pref-well {
+  grid-template-rows: minmax(0, 1fr);
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+:root:not([data-os-theme="macosx"])
+  .control-panels-mac-body[data-scrollable]
+  .control-panels-pref-form-tabbed
+  .control-panels-pref-tab-panel {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* ----------------------------------------------------------------------------
+   Account profile header (Security / Accounts panes)
+---------------------------------------------------------------------------- */
+:root:not([data-os-theme="macosx"]) .control-panels-account-profile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 0 14px;
+  text-align: center;
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-account-profile-avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-account-profile-presence {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  border: 1.5px solid var(--os-color-window-bg, #fff);
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-account-profile-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-account-profile-username {
+  font-family: var(--os-font-ui);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--os-color-text-primary, #111);
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-account-profile-status {
+  font-family: var(--os-font-ui);
+  font-size: 11px;
+  line-height: 1.2;
+  color: var(--os-color-text-secondary);
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-account-profile-login {
+  margin-top: 2px;
+}
+
+/* ----------------------------------------------------------------------------
+   Appearance live theme preview — the mini-mockups of each OS. These render the
+   currently-selected theme's window mock; the markup/classes are shared with the
+   Aqua skin, so replicate the System 7 / XP / Win98 mockups here scoped off Aqua.
+---------------------------------------------------------------------------- */
+:root:not([data-os-theme="macosx"]) .control-panels-pref-theme-preview {
+  display: flex;
+  flex-direction: column;
+  min-height: 170px;
+  margin-top: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--os-color-separator);
+  background: rgba(0, 0, 0, 0.035);
+  overflow: hidden;
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-theme-preview-scene {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-theme-preview-apple {
+  font-size: 10px;
+  line-height: 1;
+  filter: var(--os-accent-apple-filter, none);
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-theme-preview-menu-item-active {
+  background: var(--os-color-selection-bg, #000);
+  color: var(--os-color-selection-text, #fff);
+  border-radius: 2px;
+  padding: 2px 5px;
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-theme-preview-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 9px;
+  line-height: 1.35;
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-theme-preview-list-row {
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+
+/* --- System 7 mock --- */
+:root:not([data-os-theme="macosx"])
+  .control-panels-pref-theme-preview[data-preview-theme="system7"]
+  .control-panels-theme-preview-menubar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 16px;
+  padding: 0 5px;
+  border: 1px solid #000;
+  background: repeating-linear-gradient(180deg, #fff 0 1px, #000 1px 2px);
+  font-family: "Chicago", "Geneva-12", monospace;
+  font-size: 9px;
+  color: #000;
+}
+
+:root:not([data-os-theme="macosx"])
+  .control-panels-pref-theme-preview[data-preview-theme="system7"]
+  .control-panels-theme-preview-window {
+  border: 2px solid #000;
+  background: #fff;
+}
+
+:root:not([data-os-theme="macosx"])
+  .control-panels-pref-theme-preview[data-preview-theme="system7"]
+  .control-panels-theme-preview-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 16px;
+  padding: 0 4px;
+  border-bottom: 1px solid #000;
+  background: #fff;
+  font-family: "Chicago", "Geneva-12", monospace;
+  font-size: 9px;
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-theme-preview-s7-close {
+  width: 11px;
+  height: 11px;
+  border: 1px solid #000;
+  background: #fff;
+  box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #808080;
+}
+
+:root:not([data-os-theme="macosx"])
+  .control-panels-pref-theme-preview[data-preview-theme="system7"]
+  .control-panels-theme-preview-window-body {
+  padding: 6px;
+  font-family: "Geneva-12", monospace;
+  font-size: 9px;
+  color: #000;
+}
+
+:root:not([data-os-theme="macosx"])
+  .control-panels-pref-theme-preview[data-preview-theme="system7"]
+  .control-panels-theme-preview-list-row-selected {
+  background: var(--os-color-selection-bg, #000);
+  color: var(--os-color-selection-text, #fff);
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-theme-preview-s7-button {
+  margin-top: 6px;
+  padding: 2px 10px;
+  border: 1px solid #000;
+  background: #fff;
+  box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #808080;
+  font-family: "Geneva-12", monospace;
+  font-size: 9px;
+  color: #000;
+  pointer-events: none;
+}
+
+/* --- Windows XP mock --- */
+:root:not([data-os-theme="macosx"])
+  .control-panels-pref-theme-preview[data-preview-theme="xp"]
+  .control-panels-theme-preview-window {
+  border: 1px solid #0054e3;
+  box-shadow: 1px 1px 0 #fff inset, -1px -1px 0 #aca899;
+}
+
+:root:not([data-os-theme="macosx"])
+  .control-panels-pref-theme-preview[data-preview-theme="xp"]
+  .control-panels-theme-preview-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 20px;
+  padding: 0 4px 0 6px;
+  background: linear-gradient(to bottom, #0058e6, #1941a5);
+  color: #fff;
+  font-family: Tahoma, sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-theme-preview-win-controls {
+  display: flex;
+  gap: 2px;
+}
+
+:root:not([data-os-theme="macosx"])
+  .control-panels-pref-theme-preview[data-preview-theme="xp"]
+  .control-panels-theme-preview-win-controls > span {
+  width: 14px;
+  height: 13px;
+  border: 1px solid #0a246a;
+  background: linear-gradient(to bottom, #3c8ef3, #2d6fd6);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+:root:not([data-os-theme="macosx"])
+  .control-panels-pref-theme-preview[data-preview-theme="xp"]
+  .control-panels-theme-preview-win-controls .close {
+  background: linear-gradient(to bottom, #e88, #c44);
+}
+
+:root:not([data-os-theme="macosx"])
+  .control-panels-pref-theme-preview[data-preview-theme="xp"]
+  .control-panels-theme-preview-window-body {
+  padding: 6px;
+  background: #ece9d8;
+  font-family: Tahoma, sans-serif;
+  font-size: 9px;
+  color: #000;
+}
+
+:root:not([data-os-theme="macosx"])
+  .control-panels-pref-theme-preview[data-preview-theme="xp"]
+  .control-panels-theme-preview-list-row-selected {
+  background: #316ac5;
+  color: #fff;
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-theme-preview-xp-button {
+  margin-top: 6px;
+  padding: 2px 12px;
+  border: 1px solid #aca899;
+  border-radius: 3px;
+  background: linear-gradient(to bottom, #fff, #ece9d8);
+  box-shadow: inset 0 1px 0 #fff;
+  font-family: Tahoma, sans-serif;
+  font-size: 9px;
+  pointer-events: none;
+}
+
+/* --- Windows 98 mock --- */
+:root:not([data-os-theme="macosx"])
+  .control-panels-pref-theme-preview[data-preview-theme="win98"]
+  .control-panels-theme-preview-window {
+  border: 2px solid #000;
+  box-shadow: inset 1px 1px 0 #dfdfdf, inset -1px -1px 0 #808080;
+}
+
+:root:not([data-os-theme="macosx"])
+  .control-panels-pref-theme-preview[data-preview-theme="win98"]
+  .control-panels-theme-preview-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 18px;
+  padding: 0 3px 0 4px;
+  background: linear-gradient(to right, #000084, #1084d0);
+  color: #fff;
+  font-family: "MS Sans Serif", Tahoma, sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+:root:not([data-os-theme="macosx"])
+  .control-panels-pref-theme-preview[data-preview-theme="win98"]
+  .control-panels-theme-preview-win-controls > span {
+  width: 13px;
+  height: 12px;
+  border: 1px solid #000;
+  background: #c0c0c0;
+  box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #808080;
+}
+
+:root:not([data-os-theme="macosx"])
+  .control-panels-pref-theme-preview[data-preview-theme="win98"]
+  .control-panels-theme-preview-window-body {
+  padding: 6px;
+  background: #c0c0c0;
+  font-family: "MS Sans Serif", Tahoma, sans-serif;
+  font-size: 9px;
+  color: #000;
+}
+
+:root:not([data-os-theme="macosx"])
+  .control-panels-pref-theme-preview[data-preview-theme="win98"]
+  .control-panels-theme-preview-list-row-selected {
+  background: #000080;
+  color: #fff;
+}
+
+:root:not([data-os-theme="macosx"]) .control-panels-theme-preview-98-button {
+  margin-top: 6px;
+  padding: 2px 12px;
+  border: 2px solid #000;
+  background: #c0c0c0;
+  box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #808080;
+  font-family: "MS Sans Serif", Tahoma, sans-serif;
+  font-size: 9px;
+  pointer-events: none;
+}
