@@ -663,6 +663,19 @@ export default defineConfig({
             },
           },
           {
+            // Wallpaper blur-up placeholders (large, rarely change). Serve from
+            // cache immediately and refresh in the background.
+            urlPattern: /\/wallpapers\/placeholders\.json$/i,
+            handler: "StaleWhileRevalidate",
+            options: {
+              cacheName: "manifests",
+              expiration: {
+                maxEntries: 5,
+                maxAgeSeconds: 60 * 60 * 24 * 7, // 7 days
+              },
+            },
+          },
+          {
             // Cache icon and wallpaper manifests for offline theming support
             // These are critical for resolving themed icon paths when offline
             urlPattern: /\/(icons|wallpapers)\/manifest\.json$/i,

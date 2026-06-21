@@ -19,8 +19,9 @@ import {
   CloudSun,
 } from "@phosphor-icons/react";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
-import { loadWallpaperManifest } from "@/utils/wallpapers";
+import { loadWallpaperManifest, getWallpaperPlaceholder } from "@/utils/wallpapers";
 import type { WallpaperManifest as WallpaperManifestType } from "@/utils/wallpapers";
+import { useWallpaperPlaceholders } from "@/hooks/useWallpaperPlaceholders";
 import { useNowPlayingCover } from "@/hooks/useNowPlayingCover";
 import {
   COVER_WALLPAPER,
@@ -66,6 +67,9 @@ function WallpaperItem({
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isLoading, setIsLoading] = useState(isVideo);
   const displayUrl = previewUrl || path;
+  const placeholders = useWallpaperPlaceholders();
+  // Instant solid-color base behind the thumbnail while the image loads.
+  const placeholderColor = getWallpaperPlaceholder(path, placeholders)?.color;
 
   const handleClick = () => {
     playClick();
@@ -153,6 +157,7 @@ function WallpaperItem({
         isTile ? "aspect-square" : "aspect-video"
       } cursor-pointer hover:opacity-90`}
       style={{
+        backgroundColor: placeholderColor,
         backgroundImage: `url(${displayUrl})`,
         backgroundSize: isTile ? "64px 64px" : "cover",
         backgroundPosition: isTile ? undefined : "center",
