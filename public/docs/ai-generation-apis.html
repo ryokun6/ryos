@@ -5,9 +5,154 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AI Endpoints - ryOS Docs</title>
   <link rel="icon" href="/icons/mac-192.png">
+  <meta name="color-scheme" content="light dark">
+  <script>
+    // Resolve dark mode before paint to avoid a flash. Priority:
+    //   1. ryOS parent window color scheme (when embedded same-origin, e.g. the
+    //      Internet Explorer app) — follows the OS dark-mode toggle live.
+    //   2. The browser's prefers-color-scheme (standalone docs viewing).
+    (function () {
+      var root = document.documentElement;
+      function parentScheme() {
+        try {
+          if (window.parent && window.parent !== window) {
+            var pdoc = window.parent.document;
+            if (pdoc && pdoc.documentElement) {
+              return pdoc.documentElement.getAttribute("data-os-color-scheme");
+            }
+          }
+        } catch (e) {
+          // Cross-origin parent — not readable, fall back to media query.
+        }
+        return undefined;
+      }
+      function resolveDark() {
+        var scheme = parentScheme();
+        if (scheme === "dark") return true;
+        if (scheme === "light" || scheme === "") return false;
+        // A null attribute means the parent simply isn't in dark mode; when
+        // embedded that still implies light. Only fall back to the media query
+        // when standalone.
+        if (scheme === null && window.parent && window.parent !== window) {
+          try {
+            // Confirm the parent is actually readable (same-origin) before trusting null.
+            void window.parent.document.documentElement;
+            return false;
+          } catch (e) {
+            /* unreadable -> standalone-style fallback */
+          }
+        }
+        return !!(
+          window.matchMedia &&
+          window.matchMedia("(prefers-color-scheme: dark)").matches
+        );
+      }
+      function apply() {
+        var dark = resolveDark();
+        root.setAttribute("data-color-scheme", dark ? "dark" : "light");
+        window.__ryosDocsDark = dark;
+        // Mermaid bakes its palette into the SVG at render time, so re-render
+        // any diagrams when the scheme changes after the initial paint.
+        if (typeof window.__ryosDocsRenderMermaid === "function") {
+          window.__ryosDocsRenderMermaid();
+        }
+      }
+      apply();
+      window.__ryosDocsApplyScheme = apply;
+      try {
+        if (window.matchMedia) {
+          window
+            .matchMedia("(prefers-color-scheme: dark)")
+            .addEventListener("change", apply);
+        }
+      } catch (e) {
+        /* ignore */
+      }
+      // Live-follow the ryOS dark-mode toggle when embedded same-origin.
+      try {
+        if (window.parent && window.parent !== window) {
+          var pdoc = window.parent.document;
+          if (pdoc && pdoc.documentElement && window.MutationObserver) {
+            new MutationObserver(apply).observe(pdoc.documentElement, {
+              attributes: true,
+              attributeFilter: ["data-os-color-scheme"],
+            });
+          }
+        }
+      } catch (e) {
+        /* cross-origin parent — nothing to observe */
+      }
+    })();
+  </script>
   <style>
     @font-face { font-family: "Geneva"; src: url("/fonts/geneva-12.woff2") format("woff2"); }
     @font-face { font-family: "Monaco"; src: url("/fonts/monacottf.woff2") format("woff2"); }
+
+    /* Color tokens — light defaults. Dark overrides live below, keyed on the
+       resolved data-color-scheme attribute (set by the head script) with a
+       prefers-color-scheme fallback for standalone viewing. */
+    :root {
+      --doc-bg: #fff;
+      --doc-text: #000;
+      --doc-text-secondary: #333;
+      --doc-text-tertiary: #666;
+      --doc-text-faint: #999;
+      --doc-link: #00f;
+      --doc-border: #ccc;
+      --doc-border-light: #ddd;
+      --doc-surface: #f0f0f0;
+      --doc-surface-alt: #f8f8f8;
+      --doc-hover-bg: #f0f0f0;
+      --doc-accent-bg: #000;
+      --doc-accent-text: #fff;
+      --doc-mermaid-node: #f8f8f8;
+      --doc-mermaid-stroke: #ccc;
+      --doc-mermaid-edge-label: #fff;
+      color-scheme: light;
+    }
+    :root[data-color-scheme="dark"] {
+      --doc-bg: #1e1e21;
+      --doc-text: #ededf0;
+      --doc-text-secondary: #c4c4ca;
+      --doc-text-tertiary: #9a9aa2;
+      --doc-text-faint: #6e6e74;
+      --doc-link: #6ba3ff;
+      --doc-border: rgba(255, 255, 255, 0.16);
+      --doc-border-light: rgba(255, 255, 255, 0.12);
+      --doc-surface: #2c2c30;
+      --doc-surface-alt: #27272b;
+      --doc-hover-bg: rgba(255, 255, 255, 0.08);
+      --doc-accent-bg: #ededf0;
+      --doc-accent-text: #1e1e21;
+      --doc-mermaid-node: #2c2c30;
+      --doc-mermaid-stroke: rgba(255, 255, 255, 0.22);
+      --doc-mermaid-edge-label: #1e1e21;
+      color-scheme: dark;
+    }
+    /* Standalone fallback: honor the OS preference unless the page was explicitly
+       resolved to light (data-color-scheme="light" wins over this block). */
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-color-scheme="light"]) {
+        --doc-bg: #1e1e21;
+        --doc-text: #ededf0;
+        --doc-text-secondary: #c4c4ca;
+        --doc-text-tertiary: #9a9aa2;
+        --doc-text-faint: #6e6e74;
+        --doc-link: #6ba3ff;
+        --doc-border: rgba(255, 255, 255, 0.16);
+        --doc-border-light: rgba(255, 255, 255, 0.12);
+        --doc-surface: #2c2c30;
+        --doc-surface-alt: #27272b;
+        --doc-hover-bg: rgba(255, 255, 255, 0.08);
+        --doc-accent-bg: #ededf0;
+        --doc-accent-text: #1e1e21;
+        --doc-mermaid-node: #2c2c30;
+        --doc-mermaid-stroke: rgba(255, 255, 255, 0.22);
+        --doc-mermaid-edge-label: #1e1e21;
+        color-scheme: dark;
+      }
+    }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: "Geneva", system-ui, sans-serif;
@@ -15,20 +160,20 @@
       line-height: 1.5;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
-      background: #fff;
-      color: #000;
+      background: var(--doc-bg);
+      color: var(--doc-text);
     }
-    a { color: #00f; }
+    a { color: var(--doc-link); }
     a:hover { text-decoration: none; }
     code, pre { font-family: "Monaco", monospace; font-size: 11px; }
-    code { background: #f0f0f0; padding: 1px 4px; }
-    pre { background: #f8f8f8; border: 1px solid #ddd; padding: 12px; overflow-x: auto; margin: 12px 0; }
+    code { background: var(--doc-surface); padding: 1px 4px; }
+    pre { background: var(--doc-surface-alt); border: 1px solid var(--doc-border-light); padding: 12px; overflow-x: auto; margin: 12px 0; }
     pre code { background: none; padding: 0; }
     
     /* Layout */
     .header {
       position: sticky; top: 0; z-index: 10;
-      background: #fff; border-bottom: 1px solid #ccc;
+      background: var(--doc-bg); border-bottom: 1px solid var(--doc-border);
       padding: 0 16px; height: 40px;
       display: flex; align-items: center; justify-content: space-between;
     }
@@ -36,16 +181,16 @@
     .header-left img { width: 20px; height: 20px; display: block; }
     .header-left span { font-weight: bold; }
     .header-right { display: flex; align-items: center; gap: 16px; }
-    .header-right a { text-decoration: none; color: #333; }
-    .header-right a:hover { color: #000; }
+    .header-right a { text-decoration: none; color: var(--doc-text-secondary); }
+    .header-right a:hover { color: var(--doc-text); }
     .header-right .github { display: flex; align-items: center; gap: 4px; }
-    .header-right .launch { background: #000; color: #fff; padding: 4px 12px; }
+    .header-right .launch { background: var(--doc-accent-bg); color: var(--doc-accent-text); padding: 4px 12px; }
     
     .container { display: flex; max-width: 1100px; margin: 0 auto; }
     
     .sidebar {
       width: 220px; flex-shrink: 0;
-      border-right: 1px solid #ccc;
+      border-right: 1px solid var(--doc-border);
       padding: 12px;
       position: sticky; top: 40px;
       height: calc(100vh - 40px);
@@ -53,11 +198,11 @@
     }
     .sidebar a {
       display: block; padding: 4px 8px; margin: 2px 0;
-      text-decoration: none; color: #333;
+      text-decoration: none; color: var(--doc-text-secondary);
       font-size: 11px;
     }
-    .sidebar a:hover { background: #f0f0f0; }
-    .sidebar a.active { background: #000; color: #fff; }
+    .sidebar a:hover { background: var(--doc-hover-bg); }
+    .sidebar a.active { background: var(--doc-accent-bg); color: var(--doc-accent-text); }
     
     /* Tree hierarchy styles */
     .nav-group { margin: 4px 0; }
@@ -68,19 +213,19 @@
       background: none; border: none; padding: 0; width: 100%;
       cursor: pointer; text-align: left; font: inherit; color: inherit;
     }
-    .nav-toggle:hover { background: #f0f0f0; }
+    .nav-toggle:hover { background: var(--doc-hover-bg); }
     .nav-toggle svg { flex-shrink: 0; opacity: 0.6; transition: transform 0.2s; }
     .nav-toggle a { flex: 1; padding: 4px 8px; margin: 0; pointer-events: auto; font-size: 11px; }
     .nav-children { margin-left: 12px; overflow: hidden; transition: height 0.2s ease-out; }
-    .nav-child { padding-left: 8px !important; font-size: 10px !important; color: #555 !important; }
-    .nav-child:hover { color: #000 !important; }
-    .nav-child.active { color: #fff !important; }
+    .nav-child { padding-left: 8px !important; font-size: 10px !important; color: var(--doc-text-tertiary) !important; }
+    .nav-child:hover { color: var(--doc-text) !important; }
+    .nav-child.active { color: var(--doc-accent-text) !important; }
     
     .content { flex: 1; padding: 24px 32px; min-width: 0; }
     
     /* Typography */
-    h1 { font-size: 18px; border-bottom: 1px solid #ccc; padding-bottom: 8px; margin-bottom: 16px; }
-    hr { border: none; border-top: 1px solid #ccc; margin: 16px 0; }
+    h1 { font-size: 18px; border-bottom: 1px solid var(--doc-border); padding-bottom: 8px; margin-bottom: 16px; }
+    hr { border: none; border-top: 1px solid var(--doc-border); margin: 16px 0; }
     h2 { font-size: 14px; margin: 24px 0 12px; }
     h3 { font-size: 12px; margin: 16px 0 8px; }
     h4 { font-size: 11px; margin: 12px 0 6px; font-weight: bold; }
@@ -90,14 +235,14 @@
     
     /* Tables */
     table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 11px; }
-    th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
-    th { background: #f0f0f0; font-weight: bold; }
+    th, td { border: 1px solid var(--doc-border); padding: 6px 8px; text-align: left; }
+    th { background: var(--doc-surface); font-weight: bold; }
     
     /* Mermaid diagrams */
     pre.mermaid { background: none; border: none; padding: 0; text-align: center; margin: 16px 0; }
     .mermaid svg { max-width: 100%; height: auto; font-family: "Geneva", system-ui, sans-serif !important; }
-    .mermaid .node rect, .mermaid .node circle, .mermaid .node polygon { fill: #f8f8f8 !important; stroke: #ccc !important; }
-    .mermaid .edgeLabel { background: #fff !important; font-size: 10px !important; }
+    .mermaid .node rect, .mermaid .node circle, .mermaid .node polygon { fill: var(--doc-mermaid-node) !important; stroke: var(--doc-mermaid-stroke) !important; }
+    .mermaid .edgeLabel { background: var(--doc-mermaid-edge-label) !important; font-size: 10px !important; }
     .mermaid .label { font-size: 10px !important; }
     .mermaid .nodeLabel { font-size: 10px !important; }
     .mermaid .cluster-label { font-size: 10px !important; }
@@ -109,19 +254,19 @@
     details { margin: 8px 0; }
     details summary { 
       cursor: pointer; 
-      color: #666; 
+      color: var(--doc-text-tertiary); 
       font-size: 11px;
       padding: 4px 0;
       user-select: none;
     }
-    details summary:hover { color: #000; }
+    details summary:hover { color: var(--doc-text); }
     details[open] summary { margin-bottom: 8px; }
     details ul { margin-top: 0; }
     
     /* Navigation */
-    .nav { display: flex; justify-content: space-between; margin-top: 32px; padding-top: 16px; border-top: 1px solid #ccc; }
-    .nav a { text-decoration: none; color: #333; }
-    .nav a:hover { color: #000; }
+    .nav { display: flex; justify-content: space-between; margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--doc-border); }
+    .nav a { text-decoration: none; color: var(--doc-text-secondary); }
+    .nav a:hover { color: var(--doc-text); }
     
     /* Mobile menu button */
     .menu-btn { 
@@ -150,7 +295,7 @@
       .sidebar { 
         position: fixed; left: -240px; top: 40px; 
         width: 240px; height: calc(100vh - 40px);
-        background: #fff; z-index: 20;
+        background: var(--doc-bg); z-index: 20;
         transition: left 0.2s;
       }
       .sidebar.open { left: 0; box-shadow: 2px 0 8px rgba(0,0,0,0.1); }
@@ -168,8 +313,8 @@
         <img src="/icons/mac-192.png" alt="ryOS" width="20" height="20">
         <span>ryOS</span>
       </a>
-      <span style="color:#999">/</span>
-      <span style="color:#666">Docs</span>
+      <span style="color:var(--doc-text-faint)">/</span>
+      <span style="color:var(--doc-text-tertiary)">Docs</span>
     </div>
     <div class="header-right">
       <a href="https://github.com/ryokun6/ryos" target="_blank" class="github">
@@ -587,23 +732,66 @@
   </script>
   <script type="module">
     import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
-    mermaid.initialize({
-      startOnLoad: true,
-      theme: 'base',
-      securityLevel: 'loose',
-      themeVariables: {
-        fontFamily: '"Geneva", system-ui, sans-serif',
-        fontSize: '10px',
-        primaryColor: '#f0f0f0',
-        primaryBorderColor: '#ccc',
-        primaryTextColor: '#000',
-        lineColor: '#666',
-        secondaryColor: '#f8f8f8',
-        tertiaryColor: '#fff'
-      },
-      flowchart: { curve: 'basis', padding: 8, nodeSpacing: 30, rankSpacing: 30 },
-      sequence: { actorFontSize: 10, messageFontSize: 10, noteFontSize: 10 }
+    // Stash each diagram's source so we can re-render with a fresh palette when
+    // the color scheme is toggled live (mermaid bakes colors into the SVG).
+    var diagrams = Array.prototype.slice.call(document.querySelectorAll('pre.mermaid'));
+    diagrams.forEach(function (el) {
+      if (el.getAttribute('data-mermaid-src') === null) {
+        el.setAttribute('data-mermaid-src', el.textContent);
+      }
     });
+    function themeVariables(dark) {
+      return dark
+        ? {
+            fontFamily: '"Geneva", system-ui, sans-serif',
+            fontSize: '10px',
+            primaryColor: '#2c2c30',
+            primaryBorderColor: 'rgba(255,255,255,0.22)',
+            primaryTextColor: '#ededf0',
+            lineColor: '#9a9aa2',
+            secondaryColor: '#27272b',
+            tertiaryColor: '#1e1e21'
+          }
+        : {
+            fontFamily: '"Geneva", system-ui, sans-serif',
+            fontSize: '10px',
+            primaryColor: '#f0f0f0',
+            primaryBorderColor: '#ccc',
+            primaryTextColor: '#000',
+            lineColor: '#666',
+            secondaryColor: '#f8f8f8',
+            tertiaryColor: '#fff'
+          };
+    }
+    async function renderMermaid() {
+      if (diagrams.length === 0) return;
+      var dark = !!window.__ryosDocsDark;
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: 'base',
+        securityLevel: 'loose',
+        themeVariables: themeVariables(dark),
+        flowchart: { curve: 'basis', padding: 8, nodeSpacing: 30, rankSpacing: 30 },
+        sequence: { actorFontSize: 10, messageFontSize: 10, noteFontSize: 10 }
+      });
+      diagrams.forEach(function (el) {
+        var src = el.getAttribute('data-mermaid-src');
+        if (src !== null) {
+          el.removeAttribute('data-processed');
+          // Restore the raw diagram definition as text (not innerHTML): mermaid
+          // reads the source from textContent, and the definition contains
+          // characters like ">" / "-->" that must not be parsed as HTML.
+          el.textContent = src;
+        }
+      });
+      try {
+        await mermaid.run({ nodes: diagrams });
+      } catch (e) {
+        /* ignore mermaid parse/render errors */
+      }
+    }
+    window.__ryosDocsRenderMermaid = renderMermaid;
+    renderMermaid();
   </script>
 </body>
 </html>
