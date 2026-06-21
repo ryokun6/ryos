@@ -1666,6 +1666,11 @@ export function useInternetExplorerLogic({
         console.log(
           `[IE] Received navigation request from iframe: ${messageData.url}`
         );
+        // A link click inside the page is a brand-new navigation, not a
+        // back/forward traversal. Clear the history-navigation flag so the
+        // destination is recorded in history (and any forward stack is
+        // truncated) by loadSuccess.
+        useInternetExplorerStore.getState().setNavigatingHistory(false);
         latestNavigateRef.current(messageData.url, latestYearRef.current);
       } else if (messageData.type === "goBack") {
         console.log(`[IE] Received back button request from iframe`);
@@ -1677,6 +1682,9 @@ export function useInternetExplorerLogic({
         console.log(
           `[IE] Received navigation request from AI HTML preview: ${messageData.url}`
         );
+        // Same as above: clicking a link in AI-generated content is a new
+        // navigation and must be tracked in history.
+        useInternetExplorerStore.getState().setNavigatingHistory(false);
         // Fetch the most up-to-date HTML from the store in case the closure is stale
         const contextHtml =
           useInternetExplorerStore.getState().aiGeneratedHtml;
