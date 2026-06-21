@@ -133,7 +133,7 @@ export default apiHandler(
         Date.now(),
         TOKEN_GRACE_PERIOD
       );
-      await deleteToken(redis, oldToken);
+      await deleteToken(redis, oldToken, username);
     }
 
     // Generate new token

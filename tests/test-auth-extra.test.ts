@@ -354,30 +354,64 @@ describe("Auth Extra API Tests", () => {
       expect(res.status).toBe(405);
     });
 
-    test("User search - no query", async () => {
-      const res = await fetchWithOrigin(`${BASE_URL}/api/users`);
-      expect(res.status).toBe(200);
-      const data = await res.json();
-      expect(Array.isArray(data.users)).toBe(true);
-    });
-
-    test("User search - with query", async () => {
+    test("User search - requires auth → 401", async () => {
       const res = await fetchWithOrigin(`${BASE_URL}/api/users?search=test`);
+      expect(res.status).toBe(401);
+    });
+
+    test("User search - no query (authed) → 400", async () => {
+      if (!testToken || !testUsername) return;
+      const res = await fetchWithAuth(
+        `${BASE_URL}/api/users`,
+        testUsername,
+        testToken,
+        { headers: makeRateLimitBypassHeaders() }
+      );
+      expect(res.status).toBe(400);
+    });
+
+    test("User search - with query (authed) → 200", async () => {
+      if (!testToken || !testUsername) return;
+      const res = await fetchWithAuth(
+        `${BASE_URL}/api/users?search=test`,
+        testUsername,
+        testToken,
+        { headers: makeRateLimitBypassHeaders() }
+      );
       expect(res.status).toBe(200);
       const data = await res.json();
       expect(Array.isArray(data.users)).toBe(true);
     });
 
-    test("User search - empty query", async () => {
-      const res = await fetchWithOrigin(`${BASE_URL}/api/users?search=`);
-      expect(res.status).toBe(200);
-      const data = await res.json();
-      expect(Array.isArray(data.users)).toBe(true);
+    test("User search - empty query (authed) → 400", async () => {
+      if (!testToken || !testUsername) return;
+      const res = await fetchWithAuth(
+        `${BASE_URL}/api/users?search=`,
+        testUsername,
+        testToken,
+        { headers: makeRateLimitBypassHeaders() }
+      );
+      expect(res.status).toBe(400);
     });
 
-    test("User search - special characters", async () => {
-      const res = await fetchWithOrigin(
-        `${BASE_URL}/api/users?search=${encodeURIComponent("test@#$%")}`
+    test("User search - single character (authed) → 400", async () => {
+      if (!testToken || !testUsername) return;
+      const res = await fetchWithAuth(
+        `${BASE_URL}/api/users?search=a`,
+        testUsername,
+        testToken,
+        { headers: makeRateLimitBypassHeaders() }
+      );
+      expect(res.status).toBe(400);
+    });
+
+    test("User search - special characters (authed)", async () => {
+      if (!testToken || !testUsername) return;
+      const res = await fetchWithAuth(
+        `${BASE_URL}/api/users?search=${encodeURIComponent("test@#$%")}`,
+        testUsername,
+        testToken,
+        { headers: makeRateLimitBypassHeaders() }
       );
       expect(res.status === 200 || res.status === 400).toBe(true);
       const data = await res.json();
