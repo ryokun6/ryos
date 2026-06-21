@@ -1,8 +1,13 @@
 import { apiHandler } from "./_utils/api-handler.js";
+import * as RateLimit from "./_utils/_rate-limit.js";
+import { getClientIp } from "./_utils/_rate-limit.js";
 import { crossRateFromUsdRates } from "./_utils/currency-cross-rate.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 10;
+
+const RL_BURST_WINDOW = 60;
+const RL_DAILY_WINDOW = 60 * 60 * 24;
 
 const FRANKFURTER_V2 = "https://api.frankfurter.dev/v2";
 
@@ -78,6 +83,28 @@ async function fetchOpenErApiPair(
 export default apiHandler(
   { methods: ["GET"] },
   async ({ req, res, logger, startTime }) => {
+    // Rate limit this external proxy per IP: burst 30/min + daily 2000.
+    try {
+      const ip = getClientIp(req);
+      const rl = await RateLimit.checkBurstAndDailyLimits({
+        namespace: "currency-rate",
+        identifierParts: ["ip", ip],
+        burst: { windowSeconds: RL_BURST_WINDOW, limit: 30 },
+        daily: { windowSeconds: RL_DAILY_WINDOW, limit: 2000 },
+      });
+      if (!rl.ok) {
+        const fallbackWindow =
+          rl.scope === "burst" ? RL_BURST_WINDOW : RL_DAILY_WINDOW;
+        logger.warn(`Rate limit exceeded (${rl.scope})`, { ip });
+        logger.response(429, Date.now() - startTime);
+        res.setHeader("Retry-After", String(rl.result?.resetSeconds ?? fallbackWindow));
+        res.status(429).json({ error: "rate_limit_exceeded", scope: rl.scope });
+        return;
+      }
+    } catch (e) {
+      logger.error("Rate limit check failed", e);
+    }
+
     const from = normalizeCurrency(req.query.from);
     const to = normalizeCurrency(req.query.to);
 

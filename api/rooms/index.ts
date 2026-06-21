@@ -6,6 +6,8 @@
  */
 
 import { apiHandler } from "../_utils/api-handler.js";
+import * as RateLimit from "../_utils/_rate-limit.js";
+import { getClientIp } from "../_utils/_rate-limit.js";
 import { isProfaneUsername } from "../_utils/_validation.js";
 import { getRoomsWithCountsFast } from "./_helpers/_presence.js";
 import { generateId, getCurrentTimestamp, setRoom, registerRoom } from "./_helpers/_redis.js";
@@ -31,6 +33,26 @@ export default apiHandler(
 
     // GET - List rooms
     if (method === "GET") {
+      // Loose rate limit (the chat UI polls this): burst 60/min + daily 5000.
+      try {
+        const identifier = user?.username || getClientIp(req);
+        const rl = await RateLimit.checkBurstAndDailyLimits({
+          namespace: "rooms-list",
+          identifierParts: [user ? "user" : "ip", identifier],
+          burst: { windowSeconds: 60, limit: 60 },
+          daily: { windowSeconds: 60 * 60 * 24, limit: 5000 },
+        });
+        if (!rl.ok) {
+          logger.warn(`Rate limit exceeded (${rl.scope})`, { identifier });
+          logger.response(429, Date.now() - startTime);
+          res.setHeader("Retry-After", String(rl.result?.resetSeconds ?? 60));
+          res.status(429).json({ error: "rate_limit_exceeded", scope: rl.scope });
+          return;
+        }
+      } catch (e) {
+        logger.error("Rate limit check failed", e);
+      }
+
       try {
         const claimedUsername = (req.query.username as string | undefined)?.toLowerCase() || null;
         const allRooms = await getRoomsWithCountsFast();
