@@ -171,12 +171,14 @@ helper to reduce main-thread serialization jank on big libraries.
 
 ## 4. Security & hardening
 
-### 4.1 Replace the hardcoded-`ryo` admin gate with a role flag
+### 4.1 Keep the single `ryo` admin — add an audit trail
 
-`api/_utils/api-handler.ts` treats username `ryo` as admin. A stolen `ryo`
-session = full admin, and there is no second admin or audit trail. Add an
-`isAdmin`/role field to the user profile, gate `auth: "admin"` on it, and log
-admin actions.
+`api/_utils/api-handler.ts` treats username `ryo` as admin. This single-admin
+model is intentional and stays as-is. The one gap worth closing without
+changing the gate: there is no record of admin actions. Add an append-only
+audit log of `auth: "admin"` calls (action, target, timestamp) so the growing
+moderation surface (rooms, bans, Redis browser) is reviewable. No role system
+is introduced.
 
 ### 4.2 Authenticate (or at least rate-limit) `/api/users`
 
@@ -211,11 +213,11 @@ Upstash-only deploys silently lose live chat/presence/sync. Ship a bundled
 lightweight pub/sub fallback (or document a managed Redis path in the
 self-host guide) so a single deploy gets full realtime.
 
-### 5.2 Role-based multi-admin + audit log
+### 5.2 Admin audit-log view + moderation tooling
 
-Once 4.1 lands, expose an admin "team" management pane and an append-only audit
-log of admin actions in the existing Admin app — useful for the growing
-moderation surface (rooms, bans, Redis browser).
+Building on 4.1's audit trail (the `ryo` single-admin gate stays), surface the
+admin action log inside the existing Admin app and round out moderation tooling
+(rooms, bans, Redis browser) on top of it.
 
 ### 5.3 Applet Store enhancements
 
@@ -247,7 +249,7 @@ code.
 - 2.2 shared persisted-store helper (+ strip prod migrate logs)
 
 **Foundational (enables later work):**
-- 4.1 role-based admin → unlocks 5.2
+- 4.1 admin audit trail (keep `ryo` gate) → unlocks 5.2
 - 4.3 Zod-at-`apiHandler` → unlocks 5.5
 - 2.4 finish dual-path migrations (sync v1 retirement, legacy Redis reads)
 
