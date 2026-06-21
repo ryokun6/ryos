@@ -937,6 +937,12 @@ export function useFileSystem(
             initialData: { path: file.path, content: contentToUse },
             launchOrigin,
           }); // Pass contentToUse (Blob)
+        } else if (storeName === STORES.BOOKS) {
+          // Books app loads the EPUB blob itself from the VFS path
+          launchApp("books", {
+            initialData: { path: file.path },
+            launchOrigin,
+          });
         } else if (
           storeName === STORES.APPLETS &&
           (file.path.endsWith(".app") || file.path.endsWith(".html"))
