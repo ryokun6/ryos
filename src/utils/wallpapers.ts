@@ -117,3 +117,17 @@ export function getWallpaperPlaceholder(
   if (!key) return null;
   return placeholders[key] ?? null;
 }
+
+/**
+ * Maps a built-in photo path to its generated picker thumbnail
+ * (`/wallpapers/photos/nature/aurora.jpg` →
+ * `/wallpapers/thumbs/photos/nature/aurora.webp`). Returns null for non-photo
+ * sources (tiles/videos/custom/dynamic), which have no thumbnails. Keep in sync
+ * with `thumbRelPath` in `scripts/generate-wallpaper-placeholders.ts`.
+ */
+export function thumbPathForSource(source: string): string | null {
+  const key = placeholderKeyFromSource(source);
+  if (!key || !key.startsWith("photos/")) return null;
+  const webp = key.replace(/\.[^.]+$/, "") + ".webp";
+  return `/wallpapers/thumbs/${webp}`;
+}

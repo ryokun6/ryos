@@ -19,7 +19,11 @@ import {
   CloudSun,
 } from "@phosphor-icons/react";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
-import { loadWallpaperManifest, getWallpaperPlaceholder } from "@/utils/wallpapers";
+import {
+  loadWallpaperManifest,
+  getWallpaperPlaceholder,
+  thumbPathForSource,
+} from "@/utils/wallpapers";
 import type { WallpaperManifest as WallpaperManifestType } from "@/utils/wallpapers";
 import { useWallpaperPlaceholders } from "@/hooks/useWallpaperPlaceholders";
 import { useNowPlayingCover } from "@/hooks/useNowPlayingCover";
@@ -68,8 +72,16 @@ function WallpaperItem({
   const [isLoading, setIsLoading] = useState(isVideo);
   const displayUrl = previewUrl || path;
   const placeholders = useWallpaperPlaceholders();
-  // Instant solid-color base behind the thumbnail while the image loads.
-  const placeholderColor = getWallpaperPlaceholder(path, placeholders)?.color;
+  // Blur-up placeholder: instant solid color + tiny blurred LQIP.
+  const placeholder = getWallpaperPlaceholder(path, placeholders);
+  const placeholderColor = placeholder?.color;
+  // Built-in photos (no preview blob, not a tile) load a small thumbnail
+  // instead of the multi-MB original; tiles/custom use their direct URL.
+  const isBuiltInPhoto = !isTile && !previewUrl;
+  const placeholderBlur = isTile ? undefined : placeholder?.blur;
+  const imageUrl =
+    (isBuiltInPhoto ? thumbPathForSource(path) : null) || displayUrl;
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   const handleClick = () => {
     playClick();
@@ -93,6 +105,30 @@ function WallpaperItem({
       }
     }
   }, [isSelected, isVideo]);
+
+  // Preload the (thumbnail) image so we can fade it in over the blur placeholder.
+  useEffect(() => {
+    if (isVideo) return;
+    setImageLoaded(false);
+    let cancelled = false;
+    const img = new Image();
+    img.decoding = "async";
+    img.src = imageUrl;
+    const done = () => {
+      if (!cancelled) setImageLoaded(true);
+    };
+    img
+      .decode()
+      .then(done)
+      .catch(() => {
+        if (cancelled) return;
+        if (img.complete && img.naturalWidth > 0) done();
+        else img.onload = done;
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [imageUrl, isVideo]);
 
   const handleVideoLoaded = () => {
     setIsLoading(false);
@@ -150,18 +186,38 @@ function WallpaperItem({
     );
   }
 
+  // Tiles are tiny and repeat at 64px, so a blur-up step is pointless — paint
+  // the pattern directly over the solid color base.
+  if (isTile) {
+    return (
+      <button
+        type="button"
+        className="preview-button w-full aspect-square cursor-pointer hover:opacity-90"
+        style={{
+          backgroundColor: placeholderColor,
+          backgroundImage: `url(${displayUrl})`,
+          backgroundSize: "64px 64px",
+          backgroundRepeat: "repeat",
+          boxShadow: isSelected
+            ? "0 0 0 1px var(--os-color-selection-ring-gap), 0 0 0 3px var(--os-color-selection-bg)"
+            : undefined,
+        }}
+        onClick={handleClick}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            handleClick();
+          }
+        }}
+      />
+    );
+  }
+
   return (
     <button
       type="button"
-      className={`preview-button w-full ${
-        isTile ? "aspect-square" : "aspect-video"
-      } cursor-pointer hover:opacity-90`}
+      className="preview-button w-full aspect-video cursor-pointer hover:opacity-90 relative overflow-hidden"
       style={{
-        backgroundColor: placeholderColor,
-        backgroundImage: `url(${displayUrl})`,
-        backgroundSize: isTile ? "64px 64px" : "cover",
-        backgroundPosition: isTile ? undefined : "center",
-        backgroundRepeat: isTile ? "repeat" : undefined,
         boxShadow: isSelected
           ? "0 0 0 1px var(--os-color-selection-ring-gap), 0 0 0 3px var(--os-color-selection-bg)"
           : undefined,
@@ -173,7 +229,41 @@ function WallpaperItem({
           handleClick();
         }
       }}
-    />
+    >
+      {/* `.preview-button` forces a transparent background, so paint the
+          instant color base on a child layer instead. */}
+      {placeholderColor && (
+        <div
+          aria-hidden
+          className="absolute inset-0 w-full h-full"
+          style={{ backgroundColor: placeholderColor }}
+        />
+      )}
+      {placeholderBlur && (
+        <div
+          aria-hidden
+          className="absolute inset-0 w-full h-full"
+          style={{
+            backgroundImage: `url(${placeholderBlur})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            filter: "blur(12px)",
+            transform: "scale(1.1)",
+          }}
+        />
+      )}
+      <div
+        aria-hidden
+        className="absolute inset-0 w-full h-full"
+        style={{
+          backgroundImage: `url(${imageUrl})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          opacity: imageLoaded ? 1 : 0,
+          transition: "opacity 0.4s ease-in-out",
+        }}
+      />
+    </button>
   );
 }
 
@@ -966,8 +1056,12 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
                   const active =
                     currentWallpaper ===
                     buildShuffleDescriptor(selectedCategory);
-                  const art =
+                  const artFull =
                     (active && liveShuffleSource) || photoShuffleArt;
+                  // Preview is small — use the lightweight thumbnail when one exists.
+                  const art = artFull
+                    ? thumbPathForSource(artFull) ?? artFull
+                    : artFull;
                   return art
                     ? {
                         backgroundImage: `url("${art}")`,

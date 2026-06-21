@@ -1,7 +1,10 @@
 import { describe, expect, test } from "bun:test";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import {
   placeholderKeyFromSource,
   getWallpaperPlaceholder,
+  thumbPathForSource,
   type WallpaperPlaceholder,
 } from "../src/utils/wallpapers";
 import manifestJson from "../public/wallpapers/manifest.json";
@@ -41,6 +44,15 @@ describe("generated placeholders.json", () => {
       expect(ph, `missing placeholder for ${rel}`).toBeDefined();
       expect(ph.color).toMatch(/^#[0-9a-f]{6}$/i);
       expect(ph.blur).toBeUndefined();
+    }
+  });
+
+  test("every photo has a generated .webp thumbnail on disk", () => {
+    for (const rel of photoPaths) {
+      const thumbUrl = thumbPathForSource(`/wallpapers/${rel}`);
+      expect(thumbUrl, `no thumb path derived for ${rel}`).toBeTruthy();
+      const abs = join("public", thumbUrl!);
+      expect(existsSync(abs), `missing thumbnail file ${abs}`).toBe(true);
     }
   });
 });
@@ -97,5 +109,25 @@ describe("getWallpaperPlaceholder", () => {
       getWallpaperPlaceholder("/wallpapers/photos/nature/aurora.jpg", null)
     ).toBeNull();
     expect(getWallpaperPlaceholder("blob:abc", MAP)).toBeNull();
+  });
+});
+
+describe("thumbPathForSource", () => {
+  test("maps a photo to its .webp thumbnail path", () => {
+    expect(thumbPathForSource("/wallpapers/photos/nature/aurora.jpg")).toBe(
+      "/wallpapers/thumbs/photos/nature/aurora.webp"
+    );
+    expect(
+      thumbPathForSource("https://os.ryo.lu/wallpapers/photos/aqua/0.png")
+    ).toBe("/wallpapers/thumbs/photos/aqua/0.webp");
+  });
+
+  test("returns null for tiles, videos, custom, and dynamic sources", () => {
+    expect(thumbPathForSource("/wallpapers/tiles/azul_dark.png")).toBeNull();
+    expect(
+      thumbPathForSource("/wallpapers/videos/blue_flowers_loop.mp4")
+    ).toBeNull();
+    expect(thumbPathForSource("blob:abc-123")).toBeNull();
+    expect(thumbPathForSource("dynamic://weather")).toBeNull();
   });
 });

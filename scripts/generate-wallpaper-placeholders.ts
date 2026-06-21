@@ -1,36 +1,44 @@
 #!/usr/bin/env node
 /**
- * Generates blur-up loading placeholders for built-in wallpapers.
+ * Generates blur-up loading placeholders + picker thumbnails for built-in
+ * wallpapers.
  *
  * For every photo we emit:
  *   - `color`: the average RGB of the image as a hex string. Used as an instant
  *     solid-color base while the blurred + full images decode.
  *   - `blur`: a tiny (~24px wide) heavily-compressed JPEG encoded as a base64
  *     data URI. Painted (CSS-blurred) immediately as a low-quality placeholder
- *     so the desktop never shows a blank flash while the multi-MB full image
+ *     so the desktop / picker never shows a blank flash while the larger image
  *     downloads.
+ *   - a thumbnail WebP under `public/wallpapers/thumbs/<rel>.webp` so the
+ *     wallpaper picker loads ~5KB thumbnails instead of the multi-MB originals.
  *
  * Tiles only get a `color` (they are small, tile at 64px, and load fast, so a
- * blurred LQIP is meaningless). Videos are skipped entirely.
+ * blurred LQIP / thumbnail is meaningless). Videos are skipped entirely.
  *
  * Output: public/wallpapers/placeholders.json — kept separate from
  * manifest.json (which is fetched `no-store` on every load) so the larger blur
  * payload can be cached aggressively.
  *
  * Run AFTER the manifest exists: `bun run generate:wallpapers` chains this.
- * Sharp aborts under Bun, so this script is executed with Node (via tsx).
+ * Sharp aborts under Bun, so this script is executed with Node.
  */
-import { readFile, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
 import sharp from "sharp";
 
 const WALLPAPERS_ROOT = "public/wallpapers";
 const MANIFEST_PATH = join(WALLPAPERS_ROOT, "manifest.json");
 const OUT_PATH = join(WALLPAPERS_ROOT, "placeholders.json");
+const THUMBS_DIR = join(WALLPAPERS_ROOT, "thumbs");
 
 /** Low-quality image placeholder tuning (small + blurry = tiny payload). */
 const LQIP_WIDTH = 24;
 const LQIP_QUALITY = 40;
+
+/** Picker thumbnail tuning (covers 2x retina for the small grid cells). */
+const THUMB_WIDTH = 512;
+const THUMB_QUALITY = 72;
 
 interface WallpaperManifest {
   tiles: string[];
@@ -81,6 +89,23 @@ async function lqipDataUri(absPath: string): Promise<string> {
   return `data:image/jpeg;base64,${buf.toString("base64")}`;
 }
 
+/** Manifest-relative thumbnail path for a photo (mirrors `thumbPathForSource`). */
+function thumbRelPath(rel: string): string {
+  return `thumbs/${rel.replace(/\.[^.]+$/, "")}.webp`;
+}
+
+/** Writes a small WebP thumbnail used by the wallpaper picker grid. */
+async function writeThumbnail(rel: string, absPath: string): Promise<void> {
+  const outRel = thumbRelPath(rel);
+  const outAbs = join(WALLPAPERS_ROOT, outRel);
+  await mkdir(dirname(outAbs), { recursive: true });
+  const buf = await sharp(absPath)
+    .resize(THUMB_WIDTH, null, { fit: "inside", withoutEnlargement: true })
+    .webp({ quality: THUMB_QUALITY })
+    .toBuffer();
+  await writeFile(outAbs, buf);
+}
+
 async function build() {
   const manifestRaw = await readFile(MANIFEST_PATH, "utf8");
   const manifest = JSON.parse(manifestRaw) as WallpaperManifest;
@@ -97,6 +122,7 @@ async function build() {
       const [color, blur] = await Promise.all([
         averageColor(abs),
         lqipDataUri(abs),
+        writeThumbnail(rel, abs),
       ]);
       placeholders[rel] = { color, blur };
     } catch (err) {
