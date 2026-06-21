@@ -6,6 +6,18 @@
         "loginPrompt": "관리자 계정으로 로그인해 주세요.",
         "title": "접근 거부됨"
       },
+      "auditLog": {
+        "action": "작업",
+        "details": "상세 정보",
+        "empty": "아직 기록된 관리자 작업이 없습니다",
+        "loadFailed": "감사 로그를 불러올 수 없습니다",
+        "loading": "감사 로그를 불러오는 중…",
+        "refresh": "새로고침",
+        "retry": "다시 시도",
+        "target": "대상",
+        "time": "시간",
+        "title": "감사 로그"
+      },
       "cursorAgents": {
         "colLink": "링크",
         "colModel": "모델",
@@ -312,6 +324,7 @@
         "websocket": "웹소켓 (푸셔)"
       },
       "sidebar": {
+        "auditLog": "감사 로그",
         "cursorAgents": "커서 에이전트",
         "dashboard": "대시보드",
         "messagesCount": "{{count}}개 메시지",
@@ -364,6 +377,8 @@
         "noSongsToExport": "내보낼 노래가 없습니다."
       },
       "statusBar": {
+        "auditLogCount_one": "{{count}}개 항목",
+        "auditLogCount_other": "{{count}}개 항목",
         "cursorAgentsCount": "{{count}}개 커서 에이전트",
         "cursorAgentsCount_plural": "{{count}}개 커서 에이전트",
         "loggedInAs": "{{username}}님으로 로그인됨",
@@ -541,6 +556,80 @@
         "updatedWeeksAgo": "{{weeks}}주 전 업데이트됨",
         "updatedYearsAgo": "{{years}}년 전 업데이트됨",
         "updatedYesterday": "어제 업데이트됨"
+      }
+    },
+    "books": {
+      "columns": {
+        "auto": "자동",
+        "double": "두 페이지",
+        "single": "한 페이지"
+      },
+      "description": "EPUB 도서 읽기",
+      "help": {
+        "bookshelf": {
+          "description": "가져온 EPUB 도서들이 나무 책장에 나열됩니다. 책을 클릭하여 열고 읽기 시작하세요.",
+          "title": "내 책장"
+        },
+        "darkMode": {
+          "description": "뷰어는 시스템 테마를 따르며, 보기 ▸ 테마에서 밝게, 세피아 또는 어둡게 페이지를 설정할 수 있습니다.",
+          "title": "다크 모드"
+        },
+        "fonts": {
+          "description": "보기 메뉴에서 독서용 서체(EB Garamond 포함), 텍스트 크기, 단일 또는 이중 단 설정을 선택하십시오.",
+          "title": "서체 및 레이아웃"
+        },
+        "import": {
+          "description": "파일 ▸ 가져오기를 사용하여 .epub 파일을 추가하십시오. 책은 /Books에 저장되며 클라우드에 동기화됩니다.",
+          "title": "EPUB 가져오기"
+        },
+        "pageTurn": {
+          "description": "페이지 가장자리를 클릭하거나 화살표 키를 사용하거나 쓸어넘겨서 책장을 넘길 수 있습니다.",
+          "title": "페이지 넘기기"
+        },
+        "progress": {
+          "description": "읽던 위치가 자동으로 저장되며 다음에 책을 열 때 복원됩니다.",
+          "title": "독서 진행 상황"
+        }
+      },
+      "import": {
+        "title": "EPUB 가져오기"
+      },
+      "menu": {
+        "aboutBooks": "Books 정보",
+        "backToShelf": "서재로 돌아가기",
+        "booksHelp": "Books 도움말",
+        "columns": "단",
+        "font": "서체",
+        "import": "EPUB 가져오기…",
+        "textSize": "텍스트 크기",
+        "textSizeDecrease": "작게",
+        "textSizeIncrease": "크게",
+        "textSizeReset": "기본 크기",
+        "theme": "테마"
+      },
+      "name": "도서",
+      "reader": {
+        "backToShelf": "책장"
+      },
+      "shelf": {
+        "emptyHint": "'도서 추가'를 클릭하여 EPUB를 가져오세요.",
+        "emptyTitle": "책장이 비어 있습니다",
+        "finished": "완료",
+        "import": "도서 추가",
+        "percentRead": "{{percent}}%"
+      },
+      "theme": {
+        "auto": "자동",
+        "dark": "다크",
+        "light": "라이트",
+        "sepia": "세피아"
+      },
+      "title": "도서",
+      "toasts": {
+        "importFailed": "도서를 가져오지 못했습니다",
+        "imported": "도서를 가져왔습니다",
+        "invalidFile": "지원되지 않는 파일",
+        "invalidFileDesc": ".epub 도서만 가져올 수 있습니다."
       }
     },
     "calendar": {
@@ -1491,8 +1580,8 @@
       "ipodVolume": "iPod 음량",
       "logIn": "로그인",
       "logOut": "로그아웃",
-      "logOutOfAllDevices": "모든 기기에서 로그아웃",
       "logOutAll": "전체 로그아웃",
+      "logOutOfAllDevices": "모든 기기에서 로그아웃",
       "logOutOfAllDevicesRowDescription": "모든 기기에서 ryOS 계정 로그아웃",
       "logOutRowDescription": "이 기기에서 ryOS 계정에서 로그아웃",
       "loggedInToRyOS": "ryOS에 로그인됨",
@@ -2003,6 +2092,7 @@
       "folders": {
         "applets": "애플릿",
         "applications": "응용 프로그램",
+        "books": "도서",
         "desktop": "바탕 화면",
         "documents": "문서",
         "downloads": "다운로드",

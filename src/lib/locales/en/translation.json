@@ -515,6 +515,7 @@
         "desktop": "Desktop",
         "downloads": "Downloads",
         "images": "Images",
+        "books": "Books",
         "music": "Music",
         "videos": "Videos",
         "sites": "Sites",
@@ -4389,6 +4390,80 @@
         "poweredByApple": {
           "title": "Powered by Apple Maps",
           "description": "Maps tiles, search, and geocoding are provided by Apple MapKit JS"
+        }
+      }
+    },
+    "books": {
+      "name": "Books",
+      "title": "Books",
+      "description": "Read EPUB books",
+      "menu": {
+        "import": "Import EPUB…",
+        "backToShelf": "Back to Shelf",
+        "font": "Font",
+        "textSize": "Text Size",
+        "textSizeIncrease": "Bigger",
+        "textSizeDecrease": "Smaller",
+        "textSizeReset": "Default Size",
+        "columns": "Columns",
+        "theme": "Theme",
+        "booksHelp": "Books Help",
+        "aboutBooks": "About Books"
+      },
+      "columns": {
+        "auto": "Auto",
+        "single": "Single",
+        "double": "Double"
+      },
+      "theme": {
+        "auto": "Auto",
+        "light": "Light",
+        "sepia": "Sepia",
+        "dark": "Dark"
+      },
+      "shelf": {
+        "import": "Add Book",
+        "percentRead": "{{percent}}%",
+        "finished": "Finished",
+        "emptyTitle": "Your bookshelf is empty",
+        "emptyHint": "Click Add Book to import an EPUB."
+      },
+      "reader": {
+        "backToShelf": "Shelf"
+      },
+      "import": {
+        "title": "Import EPUB"
+      },
+      "toasts": {
+        "imported": "Book imported",
+        "importFailed": "Failed to import book",
+        "invalidFile": "Unsupported file",
+        "invalidFileDesc": "Only .epub books can be imported."
+      },
+      "help": {
+        "bookshelf": {
+          "title": "Your Bookshelf",
+          "description": "Imported EPUBs line the wooden shelf. Click a book to open and start reading."
+        },
+        "import": {
+          "title": "Import EPUBs",
+          "description": "Use File ▸ Import to add .epub files. Books are saved to /Books and synced to the cloud."
+        },
+        "pageTurn": {
+          "title": "Turn Pages",
+          "description": "Click the page edges, use the arrow keys, or swipe to flip through the book."
+        },
+        "progress": {
+          "title": "Reading Progress",
+          "description": "Your place is saved automatically and restored the next time you open the book."
+        },
+        "fonts": {
+          "title": "Fonts & Layout",
+          "description": "Pick a reading font (including EB Garamond), text size, and single or double columns from the View menu."
+        },
+        "darkMode": {
+          "title": "Dark Mode",
+          "description": "The reader follows the system theme, or set a light, sepia, or dark page from View ▸ Theme."
         }
       }
     }

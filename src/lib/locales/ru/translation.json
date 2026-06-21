@@ -6,6 +6,18 @@
         "loginPrompt": "Пожалуйста, войдите с учетной записью администратора.",
         "title": "Доступ запрещен"
       },
+      "auditLog": {
+        "action": "Действие",
+        "details": "Подробности",
+        "empty": "Действия администратора пока не записаны",
+        "loadFailed": "Не удалось загрузить журнал аудита",
+        "loading": "Загрузка журнала аудита…",
+        "refresh": "Обновить",
+        "retry": "Повторить",
+        "target": "Объект",
+        "time": "Время",
+        "title": "Журнал аудита"
+      },
       "cursorAgents": {
         "colLink": "Ссылка",
         "colModel": "Модель",
@@ -312,6 +324,7 @@
         "websocket": "WebSocket (Pusher)"
       },
       "sidebar": {
+        "auditLog": "Журнал аудита",
         "cursorAgents": "Агенты курсора",
         "dashboard": "Дашборд",
         "messagesCount": "{{count}} сообщений",
@@ -364,6 +377,8 @@
         "noSongsToExport": "Нет песен для экспорта"
       },
       "statusBar": {
+        "auditLogCount_one": "{{count}} запись",
+        "auditLogCount_other": "{{count}} записей",
         "cursorAgentsCount": "{{count}} агент курсора",
         "cursorAgentsCount_plural": "{{count}} агентов курсора",
         "loggedInAs": "Вы вошли как {{username}}",
@@ -541,6 +556,80 @@
         "updatedWeeksAgo": "Обновлено {{weeks}} нед. назад",
         "updatedYearsAgo": "Обновлено {{years}} г. назад",
         "updatedYesterday": "Обновлено вчера"
+      }
+    },
+    "books": {
+      "columns": {
+        "auto": "Авто",
+        "double": "Две страницы",
+        "single": "Одна страница"
+      },
+      "description": "Читайте книги EPUB",
+      "help": {
+        "bookshelf": {
+          "description": "Импортированные книги EPUB расставлены на деревянной полке. Нажмите на книгу, чтобы открыть её и начать чтение.",
+          "title": "Ваша книжная полка"
+        },
+        "darkMode": {
+          "description": "Читалка следует системной теме, или выберите светлую, сепию или тёмную тему в меню Вид ▸ Тема.",
+          "title": "Тёмный режим"
+        },
+        "fonts": {
+          "description": "Выберите шрифт для чтения (включая EB Garamond), размер текста, а также одну или две колонки в меню «Вид».",
+          "title": "Шрифты и макет"
+        },
+        "import": {
+          "description": "Используйте «Файл» ▸ «Импортировать», чтобы добавить файлы .epub. Книги сохраняются в папку /Books и синхронизируются с облаком.",
+          "title": "Импорт EPUB"
+        },
+        "pageTurn": {
+          "description": "Нажимайте на края страниц, используйте клавиши со стрелками или жест смахивания, чтобы листать книгу.",
+          "title": "Листание страниц"
+        },
+        "progress": {
+          "description": "Место, на котором вы остановились, сохраняется автоматически и восстанавливается при следующем открытии книги.",
+          "title": "Прогресс чтения"
+        }
+      },
+      "import": {
+        "title": "Импортировать EPUB"
+      },
+      "menu": {
+        "aboutBooks": "О приложении «Книги»",
+        "backToShelf": "На полку",
+        "booksHelp": "Справка Книг",
+        "columns": "Колонки",
+        "font": "Шрифт",
+        "import": "Импортировать EPUB…",
+        "textSize": "Размер текста",
+        "textSizeDecrease": "Меньше",
+        "textSizeIncrease": "Больше",
+        "textSizeReset": "Размер по умолчанию",
+        "theme": "Тема"
+      },
+      "name": "Книги",
+      "reader": {
+        "backToShelf": "Полка"
+      },
+      "shelf": {
+        "emptyHint": "Нажмите «Добавить книгу», чтобы импортировать EPUB.",
+        "emptyTitle": "Ваша книжная полка пуста",
+        "finished": "Прочитано",
+        "import": "Добавить книгу",
+        "percentRead": "{{percent}}%"
+      },
+      "theme": {
+        "auto": "Авто",
+        "dark": "Темная",
+        "light": "Светлая",
+        "sepia": "Сепия"
+      },
+      "title": "Книги",
+      "toasts": {
+        "importFailed": "Не удалось импортировать книгу",
+        "imported": "Книга импортирована",
+        "invalidFile": "Неподдерживаемый файл",
+        "invalidFileDesc": "Можно импортировать только книги в формате .epub."
       }
     },
     "calendar": {
@@ -1491,8 +1580,8 @@
       "ipodVolume": "Громкость iPod",
       "logIn": "Войти",
       "logOut": "Выйти",
-      "logOutOfAllDevices": "Выйти со всех устройств",
       "logOutAll": "Выйти везде",
+      "logOutOfAllDevices": "Выйти со всех устройств",
       "logOutOfAllDevicesRowDescription": "Выйти из учетной записи ryOS на всех устройствах",
       "logOutRowDescription": "Выйти из учётной записи ryOS на этом устройстве",
       "loggedInToRyOS": "Вы вошли в ryOS",
@@ -2003,6 +2092,7 @@
       "folders": {
         "applets": "Апплеты",
         "applications": "Приложения",
+        "books": "Книги",
         "desktop": "Рабочий стол",
         "documents": "Документы",
         "downloads": "Загрузки",

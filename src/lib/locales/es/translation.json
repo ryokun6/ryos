@@ -6,6 +6,18 @@
         "loginPrompt": "Inicia sesión con una cuenta de administrador.",
         "title": "Acceso denegado"
       },
+      "auditLog": {
+        "action": "Acción",
+        "details": "Detalles",
+        "empty": "Aún no se han registrado acciones de administración",
+        "loadFailed": "No se pudo cargar el registro de auditoría",
+        "loading": "Cargando registro de auditoría…",
+        "refresh": "Actualizar",
+        "retry": "Reintentar",
+        "target": "Objetivo",
+        "time": "Hora",
+        "title": "Registro de auditoría"
+      },
       "cursorAgents": {
         "colLink": "Enlace",
         "colModel": "Modelo",
@@ -312,6 +324,7 @@
         "websocket": "WebSocket (Pusher)"
       },
       "sidebar": {
+        "auditLog": "Registro de auditoría",
         "cursorAgents": "Agentes de cursor",
         "dashboard": "Panel",
         "messagesCount": "{{count}} mensajes",
@@ -364,6 +377,8 @@
         "noSongsToExport": "No hay canciones para exportar"
       },
       "statusBar": {
+        "auditLogCount_one": "{{count}} entrada",
+        "auditLogCount_other": "{{count}} entradas",
         "cursorAgentsCount": "{{count}} agente de cursor",
         "cursorAgentsCount_plural": "{{count}} agentes de cursor",
         "loggedInAs": "Sesión iniciada como {{username}}",
@@ -541,6 +556,80 @@
         "updatedWeeksAgo": "Actualizado hace {{weeks}}s",
         "updatedYearsAgo": "Actualizado hace {{years}}a",
         "updatedYesterday": "Actualizado ayer"
+      }
+    },
+    "books": {
+      "columns": {
+        "auto": "Automático",
+        "double": "Doble",
+        "single": "Sencilla"
+      },
+      "description": "Leer libros EPUB",
+      "help": {
+        "bookshelf": {
+          "description": "Los EPUB importados se alinean en la estantería de madera. Haz clic en un libro para abrirlo y empezar a leer.",
+          "title": "Tu estantería"
+        },
+        "darkMode": {
+          "description": "El lector sigue el tema del sistema, o puedes elegir una página clara, sepia o oscura desde Visualización ▸ Tema.",
+          "title": "Modo oscuro"
+        },
+        "fonts": {
+          "description": "Elige una tipografía de lectura (incluida EB Garamond), el tamaño del texto y una o dos columnas en el menú Visualización.",
+          "title": "Tipografía y diseño"
+        },
+        "import": {
+          "description": "Usa Archivo ▸ Importar para añadir archivos .epub. Los libros se guardan en /Books y se sincronizan con la nube.",
+          "title": "Importar EPUBs"
+        },
+        "pageTurn": {
+          "description": "Haz clic en los bordes de la página, usa las teclas de flecha o desliza para pasar las páginas del libro.",
+          "title": "Pasar páginas"
+        },
+        "progress": {
+          "description": "Tu posición se guarda automáticamente y se recupera la próxima vez que abras el libro.",
+          "title": "Progreso de lectura"
+        }
+      },
+      "import": {
+        "title": "Importar EPUB"
+      },
+      "menu": {
+        "aboutBooks": "Acerca de Libros",
+        "backToShelf": "Volver a la estantería",
+        "booksHelp": "Ayuda de Libros",
+        "columns": "Columnas",
+        "font": "Tipo de letra",
+        "import": "Importar EPUB…",
+        "textSize": "Tamaño del texto",
+        "textSizeDecrease": "Más pequeño",
+        "textSizeIncrease": "Más grande",
+        "textSizeReset": "Tamaño predeterminado",
+        "theme": "Tema"
+      },
+      "name": "Libros",
+      "reader": {
+        "backToShelf": "Estantería"
+      },
+      "shelf": {
+        "emptyHint": "Haz clic en Añadir libro para importar un EPUB.",
+        "emptyTitle": "Tu estantería está vacía",
+        "finished": "Terminado",
+        "import": "Añadir libro",
+        "percentRead": "{{percent}}%"
+      },
+      "theme": {
+        "auto": "Automático",
+        "dark": "Oscuro",
+        "light": "Claro",
+        "sepia": "Sepia"
+      },
+      "title": "Libros",
+      "toasts": {
+        "importFailed": "Error al importar el libro",
+        "imported": "Libro importado",
+        "invalidFile": "Archivo no compatible",
+        "invalidFileDesc": "Solo se pueden importar libros .epub."
       }
     },
     "calendar": {
@@ -1491,8 +1580,8 @@
       "ipodVolume": "Volumen del iPod",
       "logIn": "Iniciar sesión",
       "logOut": "Cerrar sesión",
-      "logOutOfAllDevices": "Cerrar sesión en todos los dispositivos",
       "logOutAll": "Cerrar todo",
+      "logOutOfAllDevices": "Cerrar sesión en todos los dispositivos",
       "logOutOfAllDevicesRowDescription": "Cerrar sesión de tu cuenta de ryOS en todos los dispositivos",
       "logOutRowDescription": "Cerrar sesión de tu cuenta de ryOS en este dispositivo",
       "loggedInToRyOS": "Sesión iniciada en ryOS",
@@ -2003,6 +2092,7 @@
       "folders": {
         "applets": "Applets",
         "applications": "Aplicaciones",
+        "books": "Libros",
         "desktop": "Escritorio",
         "documents": "Documentos",
         "downloads": "Descargas",

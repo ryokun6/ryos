@@ -6,6 +6,18 @@
         "loginPrompt": "管理者アカウントでログインしてください。",
         "title": "アクセス拒否"
       },
+      "auditLog": {
+        "action": "アクション",
+        "details": "詳細",
+        "empty": "管理アクションはまだ記録されていません",
+        "loadFailed": "監査ログを読み込めませんでした",
+        "loading": "監査ログを読み込み中…",
+        "refresh": "更新",
+        "retry": "再試行",
+        "target": "対象",
+        "time": "日時",
+        "title": "監査ログ"
+      },
       "cursorAgents": {
         "colLink": "リンク",
         "colModel": "モデル",
@@ -312,6 +324,7 @@
         "websocket": "WebSocket (Pusher)"
       },
       "sidebar": {
+        "auditLog": "監査ログ",
         "cursorAgents": "Cursorエージェント",
         "dashboard": "ダッシュボード",
         "messagesCount": "メッセージ{{count}}件",
@@ -364,6 +377,8 @@
         "noSongsToExport": "書き出す曲がありません"
       },
       "statusBar": {
+        "auditLogCount_one": "{{count}} 件",
+        "auditLogCount_other": "{{count}} 件",
         "cursorAgentsCount": "{{count}}個のCursorエージェント",
         "cursorAgentsCount_plural": "{{count}}個のCursorエージェント",
         "loggedInAs": "{{username}}としてログイン中",
@@ -541,6 +556,80 @@
         "updatedWeeksAgo": "{{weeks}}週間前更新",
         "updatedYearsAgo": "{{years}}年前更新",
         "updatedYesterday": "昨日更新"
+      }
+    },
+    "books": {
+      "columns": {
+        "auto": "自動",
+        "double": "見開き",
+        "single": "1ページ"
+      },
+      "description": "EPUB形式の本を読む",
+      "help": {
+        "bookshelf": {
+          "description": "インポートされたEPUBが木製の棚に並んでいます。本をクリックして開き、読書を始めましょう。",
+          "title": "あなたの本棚"
+        },
+        "darkMode": {
+          "description": "リーダーはシステムテーマに従います。「表示 ▸ テーマ」からライト、セピア、またはダークのページを設定することもできます。",
+          "title": "ダークモード"
+        },
+        "fonts": {
+          "description": "「表示」メニューから、読書用のフォント（EB Garamondを含む）、テキストサイズ、および1段組みまたは2段組みを選択できます。",
+          "title": "フォントとレイアウト"
+        },
+        "import": {
+          "description": "「ファイル」▸「読み込む」を使用して.epubファイルを追加します。ブックは/Booksに保存され、クラウドに同期されます。",
+          "title": "EPUBを読み込む"
+        },
+        "pageTurn": {
+          "description": "ページの端をクリックするか、矢印キーを使用するか、スワイプしてページをめくります。",
+          "title": "ページをめくる"
+        },
+        "progress": {
+          "description": "読書位置は自動的に保存され、次にブックを開いたときに復元されます。",
+          "title": "読書の進捗"
+        }
+      },
+      "import": {
+        "title": "EPUBを読み込む"
+      },
+      "menu": {
+        "aboutBooks": "Booksについて",
+        "backToShelf": "本棚に戻る",
+        "booksHelp": "Booksヘルプ",
+        "columns": "段組み",
+        "font": "フォント",
+        "import": "EPUBを読み込む…",
+        "textSize": "テキストサイズ",
+        "textSizeDecrease": "小さく",
+        "textSizeIncrease": "大きく",
+        "textSizeReset": "デフォルトサイズ",
+        "theme": "テーマ"
+      },
+      "name": "ブック",
+      "reader": {
+        "backToShelf": "本棚"
+      },
+      "shelf": {
+        "emptyHint": "「本を追加」をクリックしてEPUBをインポートしてください。",
+        "emptyTitle": "本棚は空です",
+        "finished": "完了",
+        "import": "本を追加",
+        "percentRead": "{{percent}}%"
+      },
+      "theme": {
+        "auto": "自動",
+        "dark": "ダーク",
+        "light": "ライト",
+        "sepia": "セピア"
+      },
+      "title": "ブック",
+      "toasts": {
+        "importFailed": "本のインポートに失敗しました",
+        "imported": "本をインポートしました",
+        "invalidFile": "サポートされていないファイル",
+        "invalidFileDesc": ".epub形式の本のみインポートできます。"
       }
     },
     "calendar": {
@@ -1491,8 +1580,8 @@
       "ipodVolume": "iPodの音量",
       "logIn": "ログイン",
       "logOut": "ログアウト",
-      "logOutOfAllDevices": "すべてのデバイスからログアウト",
       "logOutAll": "すべてログアウト",
+      "logOutOfAllDevices": "すべてのデバイスからログアウト",
       "logOutOfAllDevicesRowDescription": "すべてのデバイスでryOSアカウントからサインアウトする",
       "logOutRowDescription": "このデバイスで ryOS アカウントからサインアウト",
       "loggedInToRyOS": "ryOSにログイン済み",
@@ -2003,6 +2092,7 @@
       "folders": {
         "applets": "アプレット",
         "applications": "アプリケーション",
+        "books": "ブック",
         "desktop": "デスクトップ",
         "documents": "書類",
         "downloads": "ダウンロード",
