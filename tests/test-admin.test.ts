@@ -391,6 +391,78 @@ describe("admin", () => {
     );
   });
 
+  describe("Audit Log", () => {
+    test("GET getAuditLog - without auth (forbidden)", async () => {
+      const res = await fetchWithOrigin(
+        `${BASE_URL}/api/admin?action=getAuditLog`,
+        { method: "GET" }
+      );
+      expect(res.status).toBe(403);
+    });
+
+    test.skipIf(skipWithoutAdmin)(
+      "GET getAuditLog - returns entries array",
+      async () => {
+        const res = await fetchWithAuth(
+          `${BASE_URL}/api/admin?action=getAuditLog&limit=50`,
+          ADMIN_USERNAME,
+          adminToken!,
+          { method: "GET" }
+        );
+        expect(res.status).toBe(200);
+        const data = await res.json();
+        expect(Array.isArray(data.entries)).toBe(true);
+      }
+    );
+
+    test.skipIf(skipWithoutAdmin)(
+      "mutating action is recorded in the audit log",
+      async () => {
+        // A deterministic, side-effect-free mutation: delete a key that does
+        // not exist. It still records a `deleteRedisKey` audit entry.
+        const targetKey = `audit-test:${Date.now()}:${Math.floor(
+          Math.random() * 1e6
+        )}`;
+        const delRes = await fetchWithAuth(
+          `${BASE_URL}/api/admin`,
+          ADMIN_USERNAME,
+          adminToken!,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "deleteRedisKey",
+              key: targetKey,
+              confirmKey: targetKey,
+            }),
+          }
+        );
+        expect(delRes.status).toBe(200);
+
+        const res = await fetchWithAuth(
+          `${BASE_URL}/api/admin?action=getAuditLog&limit=100`,
+          ADMIN_USERNAME,
+          adminToken!,
+          { method: "GET" }
+        );
+        expect(res.status).toBe(200);
+        const data = await res.json();
+        expect(Array.isArray(data.entries)).toBe(true);
+
+        const entry = data.entries.find(
+          (e: { action: string; target?: string }) =>
+            e.action === "deleteRedisKey" && e.target === targetKey
+        );
+        expect(entry).toBeTruthy();
+        expect(entry.actor.toLowerCase()).toBe(ADMIN_USERNAME.toLowerCase());
+        expect(typeof entry.ts).toBe("number");
+        expect(typeof entry.id).toBe("string");
+        // newest-first ordering: our just-written entry should be near the top
+        expect(data.entries.indexOf(entry)).toBeLessThan(10);
+      }
+    );
+  });
+
   describe("Error Cases", () => {
     test.skipIf(skipWithoutAdmin)("GET invalid action", async () => {
       const res = await fetchWithAuth(
