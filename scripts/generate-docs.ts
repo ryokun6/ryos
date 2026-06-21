@@ -745,7 +745,10 @@ function generatePage(doc: DocEntry, allDocs: DocEntry[], currentIndex: number):
         var src = el.getAttribute('data-mermaid-src');
         if (src !== null) {
           el.removeAttribute('data-processed');
-          el.innerHTML = src;
+          // Restore the raw diagram definition as text (not innerHTML): mermaid
+          // reads the source from textContent, and the definition contains
+          // characters like ">" / "-->" that must not be parsed as HTML.
+          el.textContent = src;
         }
       });
       try {
