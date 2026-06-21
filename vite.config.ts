@@ -569,12 +569,12 @@ export default defineConfig({
             // Videos need range request support which CacheFirst doesn't handle well.
             // Keep this before the generic image route so wallpapers use their
             // larger, dedicated cache instead of consuming the shared image cache.
-            urlPattern: /\/wallpapers\/(?:photos|tiles)\/.+\.(?:jpg|jpeg|png|webp)(?:\?.*)?$/i,
+            urlPattern: /\/wallpapers\/(?:photos|tiles|thumbs)\/.+\.(?:jpg|jpeg|png|webp)(?:\?.*)?$/i,
             handler: "CacheFirst",
             options: {
               cacheName: "wallpapers",
               expiration: {
-                maxEntries: 100,
+                maxEntries: 300,
                 maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
               },
             },
@@ -660,6 +660,19 @@ export default defineConfig({
                 maxAgeSeconds: 60 * 60 * 24, // 1 day
               },
               networkTimeoutSeconds: 3, // Fall back to cache after 3s
+            },
+          },
+          {
+            // Wallpaper blur-up placeholders (large, rarely change). Serve from
+            // cache immediately and refresh in the background.
+            urlPattern: /\/wallpapers\/placeholders\.json$/i,
+            handler: "StaleWhileRevalidate",
+            options: {
+              cacheName: "manifests",
+              expiration: {
+                maxEntries: 5,
+                maxAgeSeconds: 60 * 60 * 24 * 7, // 7 days
+              },
             },
           },
           {
