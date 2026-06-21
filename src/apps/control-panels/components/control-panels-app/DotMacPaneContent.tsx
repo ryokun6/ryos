@@ -8,6 +8,7 @@ import { AUTO_SYNC_ITEM_ICONS } from "./constants";
 import { SyncDomainRow } from "./SyncDomainRow";
 import { SyncSectionTitle } from "./SyncSectionTitle";
 import { formatRelativeTime, formatSyncStatus, type SyncAuditStatus } from "./syncUtils";
+import { useControlPanelsTabClasses } from "./useControlPanelsTabClasses";
 
 export type DotMacPaneContentProps = {
   t: (key: string, opts?: Record<string, unknown>) => string;
@@ -109,19 +110,22 @@ export function DotMacPaneContent({
   CLOUD_BACKUP_MAX_SIZE,
 }: DotMacPaneContentProps) {
   const [dotMacTab, setDotMacTab] = useState<DotMacPaneTab>("sync");
+  const { barClassName, triggerClassName, triggerStyle } =
+    useControlPanelsTabClasses();
 
   return (
     <div className="control-panels-pref-form control-panels-pref-form-tabbed h-full overflow-y-auto">
       <div className="control-panels-pref-tabbed">
         <div
           role="tablist"
-          className="aqua-tab-bar control-panels-pref-tab-bar"
+          className={cn("control-panels-pref-tab-bar", barClassName)}
           aria-label={t("apps.control-panels.panes.dotMac")}
         >
           <button
             type="button"
             role="tab"
-            className="aqua-tab"
+            className={triggerClassName}
+            style={triggerStyle}
             data-state={dotMacTab === "sync" ? "active" : "inactive"}
             aria-selected={dotMacTab === "sync"}
             onClick={() => setDotMacTab("sync")}
@@ -131,7 +135,8 @@ export function DotMacPaneContent({
           <button
             type="button"
             role="tab"
-            className="aqua-tab"
+            className={triggerClassName}
+            style={triggerStyle}
             data-state={dotMacTab === "backup" ? "active" : "inactive"}
             aria-selected={dotMacTab === "backup"}
             onClick={() => setDotMacTab("backup")}

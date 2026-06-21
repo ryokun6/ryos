@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { cn } from "@/lib/utils";
 import { WallpaperPicker } from "../WallpaperPicker";
 import { ScreenSaverPicker } from "../ScreenSaverPicker";
+import { useControlPanelsTabClasses } from "./useControlPanelsTabClasses";
 
 export type DesktopScreenSaverPaneContentProps = {
   t: (key: string, opts?: Record<string, unknown>) => string;
@@ -12,19 +14,22 @@ export function DesktopScreenSaverPaneContent({
   t,
 }: DesktopScreenSaverPaneContentProps) {
   const [desktopTab, setDesktopTab] = useState<DesktopPaneTab>("desktop");
+  const { barClassName, triggerClassName, triggerStyle } =
+    useControlPanelsTabClasses();
 
   return (
     <div className="control-panels-pref-form control-panels-pref-form-tabbed">
       <div className="control-panels-pref-tabbed">
         <div
           role="tablist"
-          className="aqua-tab-bar control-panels-pref-tab-bar"
+          className={cn("control-panels-pref-tab-bar", barClassName)}
           aria-label={t("apps.control-panels.desktopAndScreenSaver")}
         >
           <button
             type="button"
             role="tab"
-            className="aqua-tab"
+            className={triggerClassName}
+            style={triggerStyle}
             data-state={desktopTab === "desktop" ? "active" : "inactive"}
             aria-selected={desktopTab === "desktop"}
             onClick={() => setDesktopTab("desktop")}
@@ -34,7 +39,8 @@ export function DesktopScreenSaverPaneContent({
           <button
             type="button"
             role="tab"
-            className="aqua-tab"
+            className={triggerClassName}
+            style={triggerStyle}
             data-state={desktopTab === "screenSaver" ? "active" : "inactive"}
             aria-selected={desktopTab === "screenSaver"}
             onClick={() => setDesktopTab("screenSaver")}

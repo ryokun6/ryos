@@ -13,7 +13,16 @@
   flex: 1 0 auto;
   min-height: 0;
   color: var(--os-color-text-primary, #000);
-  font-family: var(--os-font-ui);
+  /* Control Panels UI font, defaults to the theme's UI font. */
+  --control-panels-font: var(--os-font-ui);
+  font-family: var(--control-panels-font);
+}
+
+/* System 7 uses Geneva 12 across the Control Panels app instead of Chicago,
+   matching the System 7 settings dialogs (Chicago stays on window chrome). */
+:root[data-os-theme="system7"] .control-panels-mac {
+  --control-panels-font: "Geneva-12", "ArkPixel", "SerenityOS-Emoji", system-ui,
+    sans-serif;
 }
 
 :root:not([data-os-theme="macosx"]) .control-panels-mac-body-measure {
@@ -69,7 +78,7 @@
 }
 
 :root:not([data-os-theme="macosx"]) .control-panels-section-header {
-  font-family: var(--os-font-ui);
+  font-family: var(--control-panels-font);
   font-size: 11px;
   font-weight: 700;
   color: var(--os-color-text-primary, #111);
@@ -140,7 +149,7 @@
 }
 
 :root:not([data-os-theme="macosx"]) .control-panels-category-label {
-  font-family: var(--os-font-ui);
+  font-family: var(--control-panels-font);
   font-size: 11px;
   line-height: 1.2;
   color: var(--os-color-text-primary, #111);
@@ -243,7 +252,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   color: var(--os-color-text-primary, #111);
-  font-family: var(--os-font-ui);
+  font-family: var(--control-panels-font);
   font-size: 11px;
 }
 
@@ -254,7 +263,7 @@
 
 :root:not([data-os-theme="macosx"]) .control-panels-search-empty {
   padding: 6px 10px;
-  font-family: var(--os-font-ui);
+  font-family: var(--control-panels-font);
   font-size: 11px;
   text-align: left;
   color: var(--os-color-text-secondary);
@@ -376,7 +385,7 @@
 }
 
 :root:not([data-os-theme="macosx"]) .control-panels-pref-form-label-text {
-  font-family: var(--os-font-ui);
+  font-family: var(--control-panels-font);
   font-size: 11px;
   font-weight: 400;
   color: var(--os-color-text-primary, #111);
@@ -384,7 +393,7 @@
 }
 
 :root:not([data-os-theme="macosx"]) .control-panels-pref-form-label-desc {
-  font-family: var(--os-font-ui);
+  font-family: var(--control-panels-font);
   font-size: 10px;
   color: var(--os-color-text-secondary);
   line-height: 1.25;
@@ -460,7 +469,7 @@
   grid-template-columns: minmax(80px, 1fr) minmax(140px, 1.2fr);
   gap: 12px;
   align-items: start;
-  font-family: var(--os-font-ui);
+  font-family: var(--control-panels-font);
   font-size: 11px;
   line-height: 1.3;
 }
@@ -477,8 +486,9 @@
 
 /* ----------------------------------------------------------------------------
    Tabbed preference panes (Desktop | Screen Saver, Cloud Sync, Accounts).
-   The markup keeps the .aqua-tab / .aqua-tab-bar classes; here we strip the
-   Aqua chrome and reskin the tabs per theme.
+   The tab strip/triggers carry each theme's real tab classes (via
+   useControlPanelsTabClasses, mirroring ThemedTabs), so we only own the
+   container layout here; the tabbed well is skinned to match tab content.
 ---------------------------------------------------------------------------- */
 :root:not([data-os-theme="macosx"])
   .control-panels-mac-pane-inner:has(.control-panels-pref-form-tabbed) {
@@ -500,104 +510,16 @@
   padding-top: 8px;
 }
 
+/* The tab strip carries the theme's real tab-list classes (display/bg/border);
+   we only own sizing so it sits flush against the tabbed well below. */
 :root:not([data-os-theme="macosx"]) .control-panels-pref-tab-bar {
-  display: flex;
+  flex-shrink: 0;
+  box-sizing: border-box;
   width: 100%;
-  justify-content: center;
-  align-items: flex-end;
-  gap: 2px;
-  flex-shrink: 0;
-  box-sizing: border-box;
-  min-height: 28px;
-  height: 28px;
-  overflow: visible;
-  border-bottom: 1px solid var(--os-color-separator);
 }
 
-:root:not([data-os-theme="macosx"]) .control-panels-pref-tab-bar.aqua-tab-bar::after {
-  display: none !important;
-  content: none !important;
-}
-
-:root:not([data-os-theme="macosx"]) .control-panels-pref-tab-bar .aqua-tab {
-  position: static;
-  min-width: 96px;
-  padding: 0 14px;
-  flex-shrink: 0;
-  box-sizing: border-box;
-  height: 24px;
-  margin-top: 0;
-  margin-bottom: -1px;
-  line-height: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--os-color-panel-bg);
-  border: 1px solid var(--os-color-separator);
-  border-bottom: 1px solid var(--os-color-separator);
-  border-radius: 4px 4px 0 0;
-  box-shadow: none;
-  color: var(--os-color-text-primary, #111);
-  font-family: var(--os-font-ui);
-  font-size: 11px;
-  overflow: visible;
-  transition: none;
-}
-
-:root:not([data-os-theme="macosx"]) .control-panels-pref-tab-bar .aqua-tab::before,
-:root:not([data-os-theme="macosx"]) .control-panels-pref-tab-bar .aqua-tab::after {
-  display: none !important;
-  content: none !important;
-}
-
-:root:not([data-os-theme="macosx"])
-  .control-panels-pref-tab-bar
-  .aqua-tab[data-state="active"] {
-  background: var(--os-color-window-bg, #fff);
-  border-bottom-color: var(--os-color-window-bg, #fff);
-  color: var(--os-color-text-primary, #111);
-  z-index: 1;
-}
-
-/* System 7 — flat bordered tabs on the gray strip. */
-:root[data-os-theme="system7"] .control-panels-pref-tab-bar .aqua-tab {
-  border: 1px solid #000;
-  border-radius: 0;
-  background: #d4d4d4;
-}
-
-:root[data-os-theme="system7"]
-  .control-panels-pref-tab-bar
-  .aqua-tab[data-state="active"] {
-  background: var(--os-color-window-bg, #fff);
-  border-bottom-color: var(--os-color-window-bg, #fff);
-}
-
-/* Windows XP / 98 — black active tab, pixel font, matching the app's other tabs. */
-:root[data-os-theme="xp"] .control-panels-pref-tab-bar,
-:root[data-os-theme="win98"] .control-panels-pref-tab-bar {
-  justify-content: flex-start;
-}
-
-:root[data-os-theme="xp"] .control-panels-pref-tab-bar .aqua-tab,
-:root[data-os-theme="win98"] .control-panels-pref-tab-bar .aqua-tab {
-  border-radius: 0;
-  background: #fff;
-  border: 1px solid var(--os-color-separator);
-}
-
-:root[data-os-theme="xp"]
-  .control-panels-pref-tab-bar
-  .aqua-tab[data-state="active"],
-:root[data-os-theme="win98"]
-  .control-panels-pref-tab-bar
-  .aqua-tab[data-state="active"] {
-  background: #000;
-  border-color: #000;
-  color: #fff;
-}
-
-/* Tabbed well: stack both tab panels in one grid cell, sized to the tallest. */
+/* Tabbed well: stack both tab panels in one grid cell, sized to the tallest,
+   and skin it like the active theme's tab content so the tabs connect to it. */
 :root:not([data-os-theme="macosx"])
   .control-panels-pref-tabbed
   > .control-panels-pref-well {
@@ -606,6 +528,28 @@
   padding: 0;
   border-top-left-radius: 0;
   border-top-right-radius: 0;
+}
+
+/* System 7 — gray panel-bg content, separator border (no top, tabs sit on it). */
+:root[data-os-theme="system7"]
+  .control-panels-pref-tabbed
+  > .control-panels-pref-well {
+  background: var(--os-color-panel-bg, #e3e3e3);
+  border: 1px solid var(--os-color-separator);
+  border-top: none;
+  box-shadow: none;
+}
+
+/* Windows XP / 98 — white field with a hairline border, like a real tab body. */
+:root[data-os-theme="xp"]
+  .control-panels-pref-tabbed
+  > .control-panels-pref-well,
+:root[data-os-theme="win98"]
+  .control-panels-pref-tabbed
+  > .control-panels-pref-well {
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  box-shadow: none;
 }
 
 :root:not([data-os-theme="macosx"]) .control-panels-pref-tab-panel {
@@ -734,7 +678,7 @@
 }
 
 :root:not([data-os-theme="macosx"]) .control-panels-account-profile-username {
-  font-family: var(--os-font-ui);
+  font-family: var(--control-panels-font);
   font-size: 13px;
   font-weight: 500;
   line-height: 1.2;
@@ -742,7 +686,7 @@
 }
 
 :root:not([data-os-theme="macosx"]) .control-panels-account-profile-status {
-  font-family: var(--os-font-ui);
+  font-family: var(--control-panels-font);
   font-size: 11px;
   line-height: 1.2;
   color: var(--os-color-text-secondary);
@@ -801,7 +745,9 @@
   border-radius: 3px;
 }
 
-/* --- System 7 mock --- */
+/* --- System 7 mock --- the menu bar / striped title bar are the real System 7
+   window chrome (Chicago menu bar, racing-stripe active title bar with the
+   title in a white notch and a square close box). --- */
 :root:not([data-os-theme="macosx"])
   .control-panels-pref-theme-preview[data-preview-theme="system7"]
   .control-panels-theme-preview-menubar {
@@ -811,7 +757,7 @@
   min-height: 16px;
   padding: 0 5px;
   border: 1px solid #000;
-  background: repeating-linear-gradient(180deg, #fff 0 1px, #000 1px 2px);
+  background: #fff;
   font-family: "Chicago", "Geneva-12", monospace;
   font-size: 9px;
   color: #000;
@@ -820,8 +766,9 @@
 :root:not([data-os-theme="macosx"])
   .control-panels-pref-theme-preview[data-preview-theme="system7"]
   .control-panels-theme-preview-window {
-  border: 2px solid #000;
+  border: 1px solid #000;
   background: #fff;
+  box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.35);
 }
 
 :root:not([data-os-theme="macosx"])
@@ -829,21 +776,40 @@
   .control-panels-theme-preview-titlebar {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   min-height: 16px;
   padding: 0 4px;
   border-bottom: 1px solid #000;
-  background: #fff;
+  /* Active System 7 title bar = six horizontal racing stripes. */
+  background: repeating-linear-gradient(
+    0deg,
+    #000 0,
+    #000 1px,
+    #fff 1px,
+    #fff 2px
+  );
   font-family: "Chicago", "Geneva-12", monospace;
   font-size: 9px;
 }
 
+:root:not([data-os-theme="macosx"])
+  .control-panels-pref-theme-preview[data-preview-theme="system7"]
+  .control-panels-theme-preview-window-title {
+  margin: 0 auto;
+  padding: 0 6px;
+  background: #fff;
+  color: #000;
+  line-height: 1.1;
+}
+
 :root:not([data-os-theme="macosx"]) .control-panels-theme-preview-s7-close {
-  width: 11px;
-  height: 11px;
+  position: relative;
+  z-index: 1;
+  width: 9px;
+  height: 9px;
   border: 1px solid #000;
   background: #fff;
-  box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #808080;
+  box-shadow: 0 0 0 2px #fff;
 }
 
 :root:not([data-os-theme="macosx"])
@@ -855,6 +821,21 @@
   color: #000;
 }
 
+/* System 7 list control — white box with a 1px black frame. */
+:root:not([data-os-theme="macosx"])
+  .control-panels-pref-theme-preview[data-preview-theme="system7"]
+  .control-panels-theme-preview-list {
+  padding: 2px;
+  border: 1px solid #000;
+  background: #fff;
+}
+
+:root:not([data-os-theme="macosx"])
+  .control-panels-pref-theme-preview[data-preview-theme="system7"]
+  .control-panels-theme-preview-list-row {
+  border-radius: 0;
+}
+
 :root:not([data-os-theme="macosx"])
   .control-panels-pref-theme-preview[data-preview-theme="system7"]
   .control-panels-theme-preview-list-row-selected {
@@ -862,24 +843,30 @@
   color: var(--os-color-selection-text, #fff);
 }
 
+/* System 7 default push button — rounded rect with a bold default ring. */
 :root:not([data-os-theme="macosx"]) .control-panels-theme-preview-s7-button {
+  align-self: flex-start;
   margin-top: 6px;
-  padding: 2px 10px;
+  padding: 1px 12px;
   border: 1px solid #000;
+  border-radius: 8px;
   background: #fff;
-  box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #808080;
+  box-shadow: 0 0 0 1px #fff, 0 0 0 2px #000;
   font-family: "Geneva-12", monospace;
   font-size: 9px;
   color: #000;
   pointer-events: none;
 }
 
-/* --- Windows XP mock --- */
+/* --- Windows XP mock --- Luna: rounded blue title bar with a glossy top
+   highlight, real caption buttons, ECE9D8 body, a sunken white listbox. --- */
 :root:not([data-os-theme="macosx"])
   .control-panels-pref-theme-preview[data-preview-theme="xp"]
   .control-panels-theme-preview-window {
-  border: 1px solid #0054e3;
-  box-shadow: 1px 1px 0 #fff inset, -1px -1px 0 #aca899;
+  border: 1px solid #0831d9;
+  border-radius: 7px 7px 0 0;
+  background: #ece9d8;
+  overflow: hidden;
 }
 
 :root:not([data-os-theme="macosx"])
@@ -888,13 +875,22 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 20px;
-  padding: 0 4px 0 6px;
-  background: linear-gradient(to bottom, #0058e6, #1941a5);
+  min-height: 21px;
+  padding: 0 3px 0 6px;
+  background: linear-gradient(
+    to bottom,
+    #0997ff 0%,
+    #0053ee 8%,
+    #0050ee 40%,
+    #0e6dfb 88%,
+    #0531c9 100%
+  );
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
   color: #fff;
   font-family: Tahoma, sans-serif;
   font-size: 9px;
   font-weight: 700;
+  text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.45);
 }
 
 :root:not([data-os-theme="macosx"]) .control-panels-theme-preview-win-controls {
@@ -907,15 +903,16 @@
   .control-panels-theme-preview-win-controls > span {
   width: 14px;
   height: 13px;
-  border: 1px solid #0a246a;
-  background: linear-gradient(to bottom, #3c8ef3, #2d6fd6);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 3px;
+  background: linear-gradient(to bottom, #4d9bff 0%, #1c5fd6 55%, #0e3fae 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
 :root:not([data-os-theme="macosx"])
   .control-panels-pref-theme-preview[data-preview-theme="xp"]
   .control-panels-theme-preview-win-controls .close {
-  background: linear-gradient(to bottom, #e88, #c44);
+  background: linear-gradient(to bottom, #f08b6f 0%, #e1481f 55%, #c12f12 100%);
 }
 
 :root:not([data-os-theme="macosx"])
@@ -928,6 +925,21 @@
   color: #000;
 }
 
+/* XP listbox — white field with the Luna hairline frame. */
+:root:not([data-os-theme="macosx"])
+  .control-panels-pref-theme-preview[data-preview-theme="xp"]
+  .control-panels-theme-preview-list {
+  padding: 2px;
+  border: 1px solid #7f9db9;
+  background: #fff;
+}
+
+:root:not([data-os-theme="macosx"])
+  .control-panels-pref-theme-preview[data-preview-theme="xp"]
+  .control-panels-theme-preview-list-row {
+  border-radius: 0;
+}
+
 :root:not([data-os-theme="macosx"])
   .control-panels-pref-theme-preview[data-preview-theme="xp"]
   .control-panels-theme-preview-list-row-selected {
@@ -936,23 +948,34 @@
 }
 
 :root:not([data-os-theme="macosx"]) .control-panels-theme-preview-xp-button {
+  align-self: flex-start;
   margin-top: 6px;
   padding: 2px 12px;
-  border: 1px solid #aca899;
+  border: 1px solid #003c74;
   border-radius: 3px;
-  background: linear-gradient(to bottom, #fff, #ece9d8);
-  box-shadow: inset 0 1px 0 #fff;
+  background: linear-gradient(
+    to bottom,
+    #fff 0%,
+    #f3f3ee 48%,
+    #e3e1d2 52%,
+    #eceae0 100%
+  );
+  box-shadow: inset 0 0 0 1px #fff;
   font-family: Tahoma, sans-serif;
   font-size: 9px;
   pointer-events: none;
 }
 
-/* --- Windows 98 mock --- */
+/* --- Windows 98 mock --- raised silver window bevel, navy gradient title bar,
+   beveled caption buttons, and a sunken white listbox. --- */
 :root:not([data-os-theme="macosx"])
   .control-panels-pref-theme-preview[data-preview-theme="win98"]
   .control-panels-theme-preview-window {
-  border: 2px solid #000;
-  box-shadow: inset 1px 1px 0 #dfdfdf, inset -1px -1px 0 #808080;
+  background: #c0c0c0;
+  border: 1px solid #000;
+  /* Classic raised window bevel. */
+  box-shadow: inset 1px 1px 0 #dfdfdf, inset -1px -1px 0 #808080,
+    inset 2px 2px 0 #fff, inset -2px -2px 0 #000;
 }
 
 :root:not([data-os-theme="macosx"])
@@ -962,8 +985,9 @@
   align-items: center;
   justify-content: space-between;
   min-height: 18px;
-  padding: 0 3px 0 4px;
-  background: linear-gradient(to right, #000084, #1084d0);
+  margin: 2px;
+  padding: 0 2px 0 4px;
+  background: linear-gradient(to right, #000080, #1084d0);
   color: #fff;
   font-family: "MS Sans Serif", Tahoma, sans-serif;
   font-size: 9px;
@@ -973,11 +997,38 @@
 :root:not([data-os-theme="macosx"])
   .control-panels-pref-theme-preview[data-preview-theme="win98"]
   .control-panels-theme-preview-win-controls > span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 13px;
   height: 12px;
   border: 1px solid #000;
   background: #c0c0c0;
   box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #808080;
+  color: #000;
+  font-family: "Marlett", "MS Sans Serif", sans-serif;
+  font-size: 7px;
+  line-height: 1;
+}
+
+:root:not([data-os-theme="macosx"])
+  .control-panels-pref-theme-preview[data-preview-theme="win98"]
+  .control-panels-theme-preview-win-controls .minimize::before {
+  content: "_";
+  transform: translateY(-2px);
+}
+
+:root:not([data-os-theme="macosx"])
+  .control-panels-pref-theme-preview[data-preview-theme="win98"]
+  .control-panels-theme-preview-win-controls .maximize::before {
+  content: "\25A1";
+}
+
+:root:not([data-os-theme="macosx"])
+  .control-panels-pref-theme-preview[data-preview-theme="win98"]
+  .control-panels-theme-preview-win-controls .close::before {
+  content: "\00D7";
+  font-size: 9px;
 }
 
 :root:not([data-os-theme="macosx"])
@@ -990,6 +1041,22 @@
   color: #000;
 }
 
+/* Win98 listbox — sunken white field. */
+:root:not([data-os-theme="macosx"])
+  .control-panels-pref-theme-preview[data-preview-theme="win98"]
+  .control-panels-theme-preview-list {
+  padding: 2px;
+  background: #fff;
+  border: 1px solid #808080;
+  box-shadow: inset 1px 1px 0 #000, inset -1px -1px 0 #dfdfdf;
+}
+
+:root:not([data-os-theme="macosx"])
+  .control-panels-pref-theme-preview[data-preview-theme="win98"]
+  .control-panels-theme-preview-list-row {
+  border-radius: 0;
+}
+
 :root:not([data-os-theme="macosx"])
   .control-panels-pref-theme-preview[data-preview-theme="win98"]
   .control-panels-theme-preview-list-row-selected {
@@ -998,11 +1065,13 @@
 }
 
 :root:not([data-os-theme="macosx"]) .control-panels-theme-preview-98-button {
+  align-self: flex-start;
   margin-top: 6px;
   padding: 2px 12px;
-  border: 2px solid #000;
+  border: 1px solid #000;
   background: #c0c0c0;
-  box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #808080;
+  box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #808080,
+    inset 2px 2px 0 #dfdfdf, inset -2px -2px 0 #000;
   font-family: "MS Sans Serif", Tahoma, sans-serif;
   font-size: 9px;
   pointer-events: none;

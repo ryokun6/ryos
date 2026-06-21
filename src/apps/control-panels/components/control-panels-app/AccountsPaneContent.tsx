@@ -35,6 +35,7 @@ import {
 import { RecoveryEmailDialog } from "@/components/dialogs/RecoveryEmailDialog";
 import type { EmailStatusResponse } from "@/shared/contracts/auth";
 import { SecurityPaneContent } from "./SecurityPaneContent";
+import { useControlPanelsTabClasses } from "./useControlPanelsTabClasses";
 import type { ControlPanelPaneId } from "./controlPanelsCategories";
 
 export type AccountsPaneContentProps = {
@@ -129,6 +130,8 @@ export function AccountsPaneContent({
 }: AccountsPaneContentProps) {
   const [accountsTab, setAccountsTab] = useState<AccountsPaneTab>("accounts");
   const [isRecoveryEmailOpen, setIsRecoveryEmailOpen] = useState(false);
+  const { barClassName, triggerClassName, triggerStyle } =
+    useControlPanelsTabClasses();
   const selectedSystemFont =
     SYSTEM_FONT_OPTIONS.find((option) => option.id === systemFont) ??
     SYSTEM_FONT_OPTIONS[0];
@@ -186,13 +189,14 @@ export function AccountsPaneContent({
       <div className="control-panels-pref-tabbed">
         <div
           role="tablist"
-          className="aqua-tab-bar control-panels-pref-tab-bar"
+          className={cn("control-panels-pref-tab-bar", barClassName)}
           aria-label={t("apps.control-panels.panes.accounts")}
         >
           <button
             type="button"
             role="tab"
-            className="aqua-tab"
+            className={triggerClassName}
+            style={triggerStyle}
             data-state={accountsTab === "accounts" ? "active" : "inactive"}
             aria-selected={accountsTab === "accounts"}
             onClick={() => setAccountsTab("accounts")}
@@ -202,7 +206,8 @@ export function AccountsPaneContent({
           <button
             type="button"
             role="tab"
-            className="aqua-tab"
+            className={triggerClassName}
+            style={triggerStyle}
             data-state={accountsTab === "security" ? "active" : "inactive"}
             aria-selected={accountsTab === "security"}
             onClick={() => setAccountsTab("security")}
@@ -213,7 +218,8 @@ export function AccountsPaneContent({
             <button
               type="button"
               role="tab"
-              className="aqua-tab"
+              className={triggerClassName}
+              style={triggerStyle}
               data-state={accountsTab === "debug" ? "active" : "inactive"}
               aria-selected={accountsTab === "debug"}
               onClick={() => setAccountsTab("debug")}
