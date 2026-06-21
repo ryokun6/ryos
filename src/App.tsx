@@ -27,6 +27,7 @@ import { DeferredAutoCloudSync } from "@/hooks/useDeferredAutoCloudSync";
 import { AirDropListener } from "@/components/AirDropListener";
 import { useFilesStore } from "@/stores/useFilesStore";
 import { WallpaperAccentRunner } from "@/hooks/WallpaperAccentRunner";
+import { DesktopCornerMask } from "@/components/layout/desktop/DesktopCornerMask";
 import { installNativeToastNotifications } from "@/utils/nativeToastNotifications";
 
 // Convert registry to array
@@ -234,16 +235,19 @@ export function App() {
 
   if (showBootScreen) {
     return (
-      <BootScreen
-        isOpen={true}
-        onOpenChange={() => {}}
-        title={bootScreenMessage || t("common.system.systemRestoring")}
-        debugMode={bootDebugMode}
-        onBootComplete={() => {
-          clearNextBootMessage();
-          setShowBootScreen(false);
-        }}
-      />
+      <>
+        <BootScreen
+          isOpen={true}
+          onOpenChange={() => {}}
+          title={bootScreenMessage || t("common.system.systemRestoring")}
+          debugMode={bootDebugMode}
+          onBootComplete={() => {
+            clearNextBootMessage();
+            setShowBootScreen(false);
+          }}
+        />
+        <DesktopCornerMask />
+      </>
     );
   }
 
