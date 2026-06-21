@@ -541,7 +541,7 @@
     ├── ImageAttachment.tsx
     ├── LyricsSyncMode.tsx
     └── ...</code></pre>
-<code>AppManager</code> is part of the application shell (<code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/base/AppManager.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/base/AppManager.tsx</a></code>), where windows are rendered and wrapped with per-instance <code>AppErrorBoundary</code>.
+<code>AppManager</code> is part of the application shell (<code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/base/AppManager.tsx" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/apps/base/AppManager.tsx</a></code>), where windows are rendered and wrapped with per-instance <code>AppErrorBoundary</code>.
 <h2>Layout Components</h2>
 <h3>Desktop (<code>Desktop.tsx</code>)</h3>
 <p>The root desktop surface handling wallpaper, icons, and drag-drop.</p>
@@ -737,14 +737,14 @@
 <strong>Features:</strong>
 <ul><li>Gradient fills matching Aqua design</li><li>Inactive state styling</li><li>Enlarged clickable area</li><li>Proper accessibility labels</li></ul>
 <h3>EmojiAquarium</h3>
-<p>Animated emoji aquarium in <code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/shared/EmojiAquarium.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/components/shared/EmojiAquarium.tsx</a></code>; used by Chats bubbles and the Dashboard aquarium widget.</p>
+<p>Animated emoji aquarium in <code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/shared/EmojiAquarium.tsx" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/components/shared/EmojiAquarium.tsx</a></code>; used by Chats bubbles and the Dashboard aquarium widget.</p>
 <pre><code>interface EmojiAquariumProps {
   seed?: string;
   className?: string;
   variant?: "chat" | "widget";
 }</code></pre>
 <h3>EmojiTerrarium</h3>
-<p>Land-biome companion in <code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/shared/EmojiTerrarium.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/components/shared/EmojiTerrarium.tsx</a></code> for the Dashboard terrarium widget: soil/moss strata, floating motes and fireflies, snail, frog, butterfly, and ladybug. Seeded placements and CSS/Framer motion only (no canvas).</p>
+<p>Land-biome companion in <code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/shared/EmojiTerrarium.tsx" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/components/shared/EmojiTerrarium.tsx</a></code> for the Dashboard terrarium widget: soil/moss strata, floating motes and fireflies, snail, frog, butterfly, and ladybug. Seeded placements and CSS/Framer motion only (no canvas).</p>
 <pre><code>interface EmojiTerrariumProps {
   seed?: string;
   className?: string;
@@ -757,7 +757,7 @@
   compact?: boolean;
 }</code></pre>
 <h2>Error Boundary Components</h2>
-<code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/errors/ErrorBoundaries.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/components/errors/ErrorBoundaries.tsx</a></code> provides two shell-level resilience primitives:
+<code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/errors/ErrorBoundaries.tsx" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/components/errors/ErrorBoundaries.tsx</a></code> provides two shell-level resilience primitives:
 <ul><li><code>DesktopErrorBoundary</code>: wraps the desktop shell in <code>App.tsx</code> and offers a desktop reload recovery action.</li><li><code>AppErrorBoundary</code>: wraps each rendered app instance in <code>AppManager</code>, presenting a themed crash dialog with <strong>Relaunch</strong> and <strong>Quit</strong> buttons so the user can recover or dismiss a crashed window without taking down other windows. Crash details are reported via <code>reportRuntimeCrash</code>.</li></ul>
 <h2>Theme Integration Pattern</h2>
 <h3>Standard Pattern</h3>

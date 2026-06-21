@@ -515,7 +515,7 @@
     tile?: string;
   };
 }</code></pre>
-<p>TypeScript theme definitions intentionally store metadata and wallpaper defaults only. Runtime visual values live in <code><a href="https://github.com/ryokun6/ryos/blob/main/src/styles/themes/tokens.css" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/styles/themes/tokens.css</a></code> and are consumed through <code>--os-*</code> CSS variables and Tailwind <code>os-*</code> utilities.</p>
+<p>TypeScript theme definitions intentionally store metadata and wallpaper defaults only. Runtime visual values live in <code><a href="https://github.com/ryokun6/ryos/blob/main/src/styles/themes/tokens.css" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/styles/themes/tokens.css</a></code> and are consumed through <code>--os-*</code> CSS variables and Tailwind <code>os-*</code> utilities.</p>
 <h2>CSS Variable System</h2>
 <p>Themes are applied via the <code>data-os-theme</code> attribute on the document root:</p>
 <pre><code>:root[data-os-theme="macosx"] {

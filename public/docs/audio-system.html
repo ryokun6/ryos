@@ -507,7 +507,7 @@
     GainNode --> AC --> Dest
     AC --> Listeners</pre>
 <h2>Audio Context Management</h2>
-<p>The audio system uses a centralized AudioContext (<code><a href="https://github.com/ryokun6/ryos/blob/main/src/lib/audioContext.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/lib/audioContext.ts</a></code>) with sophisticated lifecycle management:</p>
+<p>The audio system uses a centralized AudioContext (<code><a href="https://github.com/ryokun6/ryos/blob/main/src/lib/audioContext.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/lib/audioContext.ts</a></code>) with sophisticated lifecycle management:</p>
 <pre class="mermaid">stateDiagram-v2
     [*] --> Running: Create Context
     Running --> Suspended: Tab Hidden / iOS Background
@@ -581,7 +581,7 @@ const MAX_CACHE_SIZE = isMobileDevice ? 15 : 30;</code></pre>
 <h3>Features</h3>
 <ul><li><strong>Gap-Free Playback</strong>: Uses AudioContext timeline scheduling (<code>source.start(startTime)</code>)</li></ul><ul><li><strong>Parallel Fetching</strong>: Up to 3 concurrent TTS requests</li><li><strong>TTS Providers</strong>: OpenAI and ElevenLabs support</li><li><strong>Volume Control</strong>: Dedicated <code>speechVolume</code> with master multiplier</li><li><strong>Micro-Fades</strong>: 10ms fade-out before stopping to prevent clicks</li></ul>
 <h3>Volume Ducking</h3>
-<p>Ducking is applied through <code><a href="https://github.com/ryokun6/ryos/blob/main/src/lib/audioDucking.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/lib/audioDucking.ts</a></code>, which sets transient <code>ttsMusicDuckingFactor</code> / <code>ttsChatSynthDuckingFactor</code> on <code>useAudioSettingsStore</code> while TTS is active (defaults restored to <code>1</code> when speech ends). iOS skips music ducking (<code>useTtsQueue.ts</code>).</p>
+<p>Ducking is applied through <code><a href="https://github.com/ryokun6/ryos/blob/main/src/lib/audioDucking.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/lib/audioDucking.ts</a></code>, which sets transient <code>ttsMusicDuckingFactor</code> / <code>ttsChatSynthDuckingFactor</code> on <code>useAudioSettingsStore</code> while TTS is active (defaults restored to <code>1</code> when speech ends). iOS skips music ducking (<code>useTtsQueue.ts</code>).</p>
 <p>When TTS is speaking: <ul><li>iPod and Karaoke music playback volume reduced to 35% (non-iOS only)</li><li>Chat synth volume reduced to 60%</li><li>Original volumes restored when speech ends</li></ul></p>
 <pre><code>// Ducking example
 if (isSpeaking &amp;&amp; ipodIsPlaying &amp;&amp; !isIOS) {
@@ -625,7 +625,7 @@ if (isSpeaking &amp;&amp; ipodIsPlaying &amp;&amp; !isIOS) {
 export const selectUiVolume = (state) =&gt; state.uiVolume;
 export const selectUiSoundsEnabled = (state) =&gt; state.uiSoundsEnabled;</code></pre>
 <h2>Audio Utilities</h2>
-<p>Helper functions in <code><a href="https://github.com/ryokun6/ryos/blob/main/src/utils/audio.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/utils/audio.ts</a></code>:</p>
+<p>Helper functions in <code><a href="https://github.com/ryokun6/ryos/blob/main/src/utils/audio.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/utils/audio.ts</a></code>:</p>
 <h3><code>createWaveform(container, base64Data, format?)</code></h3>
 Creates a WaveSurfer instance for waveform visualization. Ensures shared AudioContext is ready first to avoid Safari's context limit issues.
 <h3><code>createAudioFromBase64(base64Data, format?)</code></h3>

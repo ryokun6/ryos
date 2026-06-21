@@ -628,7 +628,7 @@ registerFilesForLazyLoad(files, items);
 
 // Load content when file is opened
 await ensureFileContentLoaded(filePath, uuid);</code></pre>
-<p>Files with <code>assetPath</code> in <code><a href="https://github.com/ryokun6/ryos/blob/main/public/data/filesystem.js" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">public/data/filesystem.js</a>on</code> are fetched on-demand, not during app initialization. This improves startup performance.</p>
+<p>Files with <code>assetPath</code> in <code><a href="https://github.com/ryokun6/ryos/blob/main/public/data/filesystem.js" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">public/data/filesystem.js</a>on</code> are fetched on-demand, not during app initialization. This improves startup performance.</p>
 <code>preloadFileSystemData()</code> starts fetching <code>filesystem.json</code> and <code>applets.json</code> during bootstrap so metadata is warm before Finder mounts, while binary file assets still load on first open.
 <h2>Finder App Integration</h2>
 <h3>Multi-Window Support</h3>
@@ -654,7 +654,7 @@ await ensureFileContentLoaded(filePath, uuid);</code></pre>
 <h3>Reactive File View</h3>
 <p>Finder automatically refreshes when the file store's <code>items</code> reference changes (e.g., after move-to-trash, restore, empty-trash, or cloud sync). This is achieved via a Zustand <code>subscribe()</code> call that triggers <code>loadFiles()</code> whenever <code>state.items</code> changes. Cloud sync updates for images are also detected through <code>useCloudSyncStore</code> subscription.</p>
 <h3>Sorting with Localized Names</h3>
-<p>Finder sorts items using locale-aware comparison via <code>compareFinderItemsByDisplayName()</code> and <code>compareFinderSortText()</code> from <code><a href="https://github.com/ryokun6/ryos/blob/main/src/utils/finderDisplay.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/utils/finderDisplay.ts</a></code>. These utilities use <code>Intl.Collator</code> with the current UI language so that translated folder names (e.g., Japanese, Korean) sort correctly alongside Latin names.</p>
+<p>Finder sorts items using locale-aware comparison via <code>compareFinderItemsByDisplayName()</code> and <code>compareFinderSortText()</code> from <code><a href="https://github.com/ryokun6/ryos/blob/main/src/utils/finderDisplay.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/utils/finderDisplay.ts</a></code>. These utilities use <code>Intl.Collator</code> with the current UI language so that translated folder names (e.g., Japanese, Korean) sort correctly alongside Latin names.</p>
 <h3>View Type Preferences</h3>
 <p>Per-path view type preferences persist across sessions:</p>
 <pre><code>// useFinderStore.getDefaultViewTypeForPath(path)
@@ -689,14 +689,14 @@ fileStore.createAlias(
 <h2>Cloud Sync</h2>
 <p>The cloud sync system (Cloud Sync v2, <code>/api/sync/v2/*</code>) persists file metadata and content (documents, images, applets, trash) across devices as a per-user key → document map. It also syncs <strong>calendar</strong> events, <strong>contacts</strong>, <strong>stickies</strong>, <strong>songs</strong>, <strong>videos</strong>, <strong>custom wallpapers</strong>, and <strong>settings</strong> from their respective stores, enabling backup and real-time sync via Pusher or local WebSocket.</p>
 <h3>Per-Key Documents</h3>
-<p>The files codec (<code><a href="https://github.com/ryokun6/ryos/blob/main/src/sync/codecs.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/sync/codecs.ts</a></code>) decomposes file state into per-key documents:</p>
+<p>The files codec (<code><a href="https://github.com/ryokun6/ryos/blob/main/src/sync/codecs.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/sync/codecs.ts</a></code>) decomposes file state into per-key documents:</p>
 <table><thead><tr><th>Key</th><th>Contents</th></tr></thead><tbody><tr><td><code>files/item:{path}</code></td><td>File/folder metadata (<code>FileSystemItem</code>)</td></tr><tr><td><code>files/doc:{uuid}</code></td><td>TextEdit document contents (from IndexedDB <code>documents</code>)</td></tr><tr><td><code>images/item:{key}</code>, <code>trash/item:{key}</code>, <code>applets/item:{key}</code>, <code>wallpapers/item:{key}</code></td><td>Binary content references; the bytes are content-addressed blobs in object storage (<code>sync/{username}/blobs/{sha256}.gz</code>), uploaded and deduped by sha256 via a batched <code>POST /api/sync/v2/blobs</code></td></tr></tbody></table>
 <h3>Deletions</h3>
 <p>When items are deleted (trash, empty trash, etc.), the sync engine uploads tombstone ops for the affected keys. Deletions are inferred from shadow-map keys that are missing locally, corroborated by deletion markers (path/id → timestamp) kept in <code>useCloudSyncStore</code>. This enables correct handling of deletes across devices and safe recreation of items after deletion.</p>
 <h3>Conflict Resolution</h3>
 <p>Conflict resolution is per-key last-writer-wins using hybrid-logical-clock (HLC) timestamps. There are no snapshot merges or 409 conflicts; the newest write for each key wins.</p>
 <h3>Shadow-Diff Change Tracking</h3>
-<p>The sync engine (<code><a href="https://github.com/ryokun6/ryos/blob/main/src/sync/engine.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/sync/engine.ts</a></code>) subscribes to the file stores and keeps a persisted shadow map (key → HLC timestamp + content hash). Pending uploads are derived as diff(local state, shadow) and flushed with a ~1s debounce, so individual file operations (save, rename, move, trash, restore) sync incrementally as per-key ops rather than full-store uploads.</p>
+<p>The sync engine (<code><a href="https://github.com/ryokun6/ryos/blob/main/src/sync/engine.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/sync/engine.ts</a></code>) subscribes to the file stores and keeps a persisted shadow map (key → HLC timestamp + content hash). Pending uploads are derived as diff(local state, shadow) and flushed with a ~1s debounce, so individual file operations (save, rename, move, trash, restore) sync incrementally as per-key ops rather than full-store uploads.</p>
 <h2>Migration System</h2>
 <p>Store version migrations handle schema changes:</p>
 <pre><code>// useFilesStore persist version history (current: 13)
