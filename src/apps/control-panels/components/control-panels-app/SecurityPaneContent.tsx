@@ -80,7 +80,7 @@ export function SecurityPaneContent({
             >
               <Button variant="retro" onClick={openPasswordDialog} className="h-7">
                 {hasPassword
-                  ? t("apps.control-panels.changePassword")
+                  ? t("apps.control-panels.changePasswordButton")
                   : t("apps.control-panels.setPassword")}
               </Button>
             </ControlPanelsPrefFormRow>
@@ -119,7 +119,7 @@ export function SecurityPaneContent({
               >
                 {isLoggingOutAllDevices
                   ? t("apps.control-panels.loggingOut")
-                  : t("apps.control-panels.logOutOfAllDevices")}
+                  : t("apps.control-panels.logOutAll")}
               </Button>
             </ControlPanelsPrefFormRow>
 
