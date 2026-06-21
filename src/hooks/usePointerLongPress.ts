@@ -92,6 +92,7 @@ export function usePointerLongPress(
 
   const onMouseDown = useCallback(
     (e: React.MouseEvent) => {
+      if (e.button !== 0) return;
       if (isIgnored(e.target)) return;
       start(e.clientX, e.clientY, e.target);
     },
