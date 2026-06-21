@@ -29,14 +29,13 @@ export function useControlPanelsTabClasses(): ControlPanelsTabClasses {
   }
 
   if (isWindowsTheme) {
+    // Windows XP / 98: render as native folder tabs. The visual chrome is
+    // owned by control-panels-themed.css (targeting [role="tab"]) so it can
+    // override the XP/98 library's raised `button` bevel; here we only supply
+    // the pixel font so the labels match the rest of the OS.
     return {
-      barClassName:
-        "h-7! flex justify-start! p-0 -mt-1 -mb-[2px] bg-transparent shadow-none",
-      triggerClassName: cn(
-        "relative px-4 py-1.5 rounded-none bg-white",
-        "data-[state=active]:bg-black data-[state=active]:text-white data-[state=active]:z-10",
-        "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
-      ),
+      barClassName: "",
+      triggerClassName: "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]",
       triggerStyle: {
         fontFamily: '"Pixelated MS Sans Serif", "ArkPixel", Arial',
         fontSize: "11px",

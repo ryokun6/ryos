@@ -510,9 +510,11 @@
   padding-top: 8px;
 }
 
-/* The tab strip carries the theme's real tab-list classes (display/bg/border);
-   we only own sizing so it sits flush against the tabbed well below. */
+/* The strip carries each theme's real tab-list classes (System 7 / Aqua);
+   we own its box so it sits flush on the tabbed well below. */
 :root:not([data-os-theme="macosx"]) .control-panels-pref-tab-bar {
+  display: flex;
+  align-items: flex-end;
   flex-shrink: 0;
   box-sizing: border-box;
   width: 100%;
@@ -540,20 +542,103 @@
   box-shadow: none;
 }
 
-/* Windows XP / 98 — white field with a hairline border, like a real tab body. */
+/* ---- Windows XP / 98 native folder tabs ----------------------------------
+   The XP/98 css libraries skin bare <button> with a raised bevel; override it
+   so the tab strip reads as real folder tabs connected to the content panel. */
+:root[data-os-theme="xp"] .control-panels-pref-tab-bar,
+:root[data-os-theme="win98"] .control-panels-pref-tab-bar {
+  justify-content: flex-start;
+  gap: 0;
+  padding-left: 3px;
+  margin-bottom: -1px;
+  border: none;
+  position: relative;
+  z-index: 2;
+}
+
+:root[data-os-theme="xp"] .control-panels-pref-tab-bar [role="tab"],
+:root[data-os-theme="win98"] .control-panels-pref-tab-bar [role="tab"] {
+  position: relative;
+  display: block;
+  min-width: unset;
+  padding: 3px 12px;
+  color: #222;
+  cursor: default;
+  outline: none;
+}
+
+/* Windows XP — light folder tabs, active tab matches the white content. */
+:root[data-os-theme="xp"] .control-panels-pref-tab-bar [role="tab"] {
+  border: 1px solid #919b9c;
+  border-bottom: none;
+  border-radius: 3px 3px 0 0;
+  background: linear-gradient(180deg, #fcfcfe, #f4f3ee);
+  box-shadow: none;
+  margin-left: -1px;
+}
+
 :root[data-os-theme="xp"]
-  .control-panels-pref-tabbed
-  > .control-panels-pref-well,
+  .control-panels-pref-tab-bar
+  [role="tab"]:first-child {
+  margin-left: 0;
+}
+
+:root[data-os-theme="xp"]
+  .control-panels-pref-tab-bar
+  [role="tab"][data-state="active"] {
+  z-index: 8;
+  margin-top: -2px;
+  padding-bottom: 5px;
+  background: #fff;
+}
+
+/* Windows 98 — raised silver folder tabs, active tab grows over the content. */
+:root[data-os-theme="win98"] .control-panels-pref-tab-bar [role="tab"] {
+  background: #c0c0c0;
+  border: none;
+  border-radius: 3px 3px 0 0;
+  box-shadow: inset 1px 1px 0 #fff, inset -1px 0 0 #808080,
+    inset -2px 0 0 #000;
+  margin-right: -1px;
+  top: 1px;
+}
+
 :root[data-os-theme="win98"]
+  .control-panels-pref-tab-bar
+  [role="tab"][data-state="active"] {
+  z-index: 8;
+  top: 0;
+  margin-top: -2px;
+  padding-bottom: 5px;
+}
+
+/* Windows XP / 98 — white field tab body with a hairline / sunken frame. */
+:root[data-os-theme="xp"]
   .control-panels-pref-tabbed
   > .control-panels-pref-well {
   background: #fff;
-  border: 1px solid rgba(0, 0, 0, 0.2);
+  border: 1px solid #919b9c;
   box-shadow: none;
+}
+
+:root[data-os-theme="win98"]
+  .control-panels-pref-tabbed
+  > .control-panels-pref-well {
+  background: var(--os-color-window-bg, #c0c0c0);
+  border: none;
+  box-shadow: inset 1px 1px 0 #fff, inset 2px 2px 0 #dfdfdf,
+    inset -1px -1px 0 #000, inset -2px -2px 0 #808080;
 }
 
 :root:not([data-os-theme="macosx"]) .control-panels-pref-tab-panel {
   padding: 16px var(--control-panels-pref-content-inset-x, 16px) 14px;
+}
+
+/* The XP/98 css libraries give [role="tabpanel"] a sunken bevel; the tabbed
+   well already owns that frame, so drop it on the stacked panels. */
+:root[data-os-theme="xp"] .control-panels-pref-tab-panel,
+:root[data-os-theme="win98"] .control-panels-pref-tab-panel {
+  box-shadow: none;
 }
 
 :root:not([data-os-theme="macosx"])
