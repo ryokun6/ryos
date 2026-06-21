@@ -18,6 +18,13 @@ interface AdminDashboardState {
    */
   redisKeyCount: number | null;
   setRedisKeyCount: (count: number | null) => void;
+  /**
+   * Number of audit-log entries currently loaded in the Audit Log panel,
+   * surfaced here so the status bar can show the count without prop-drilling.
+   * `null` means the panel is inactive / hasn't loaded any entries.
+   */
+  auditLogCount: number | null;
+  setAuditLogCount: (count: number | null) => void;
 }
 
 export const useAdminDashboardStore = create<AdminDashboardState>((set) => ({
@@ -25,4 +32,6 @@ export const useAdminDashboardStore = create<AdminDashboardState>((set) => ({
   setRangeDays: (days) => set({ rangeDays: days }),
   redisKeyCount: null,
   setRedisKeyCount: (count) => set({ redisKeyCount: count }),
+  auditLogCount: null,
+  setAuditLogCount: (count) => set({ auditLogCount: count }),
 }));

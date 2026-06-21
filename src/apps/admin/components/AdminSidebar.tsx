@@ -132,6 +132,13 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
             </div>
           </SelectableListItem>
 
+          <SelectableListItem
+            isSelected={activeSection === "auditLog"}
+            onClick={() => { playButtonClick(); onSectionChange("auditLog"); onRoomSelect(null); }}
+          >
+            {t("apps.admin.sidebar.auditLog", "Audit Log")}
+          </SelectableListItem>
+
           {/* Rooms Section Header */}
           <div
             className={cn(

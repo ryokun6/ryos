@@ -107,6 +107,10 @@ export function AdminMenuBar({
           "cursorAgents",
           t("apps.admin.sidebar.cursorAgents", "Cursor Agents")
         ),
+        sectionCheckbox(
+          "auditLog",
+          t("apps.admin.sidebar.auditLog", "Audit Log")
+        ),
         ...(roomItems.length > 0
           ? ([{ type: "separator" }, ...roomItems] as MenuDescriptor["items"])
           : []),

@@ -1,6 +1,7 @@
 import type { ChangeEvent, Dispatch, RefObject, SetStateAction } from "react";
 import { AdminSidebar } from "../AdminSidebar";
 import { CursorAgentsPanel } from "../CursorAgentsPanel";
+import { AdminAuditLogPanel } from "../AdminAuditLogPanel";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { adminMainPaneClass } from "../../utils/adminStyles";
@@ -182,6 +183,12 @@ export function AdminMainPane({
     !selectedUserProfile &&
     !selectedSongId;
 
+  const showAuditLogPanel =
+    activeSection === "auditLog" &&
+    !selectedRoomId &&
+    !selectedUserProfile &&
+    !selectedSongId;
+
   return (
     <div ref={containerRef} className="flex size-full admin-force-font">
       <AdminSidebar
@@ -201,7 +208,8 @@ export function AdminMainPane({
           !selectedSongId &&
           activeSection !== "dashboard" &&
           activeSection !== "cursorAgents" &&
-          activeSection !== "redis" && (
+          activeSection !== "redis" &&
+          activeSection !== "auditLog" && (
             <AdminToolbar
               t={t}
               currentTheme={currentTheme}
@@ -254,11 +262,18 @@ export function AdminMainPane({
           </div>
         ) : null}
 
+        {showAuditLogPanel ? (
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <AdminAuditLogPanel />
+          </div>
+        ) : null}
+
         <ScrollArea
           ref={scrollAreaRef}
           className={cn(
             "min-h-0 min-w-0 flex-1",
-            (showCursorAgentsPanel || showRedisPanel) && "hidden",
+            (showCursorAgentsPanel || showRedisPanel || showAuditLogPanel) &&
+              "hidden",
           )}
         >
           <AdminScrollContent

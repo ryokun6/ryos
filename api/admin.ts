@@ -20,6 +20,8 @@ import {
 } from "./_utils/redis.js";
 import { getRealtimeProvider } from "./_utils/runtime-config.js";
 import { getAnalyticsSummary, getAnalyticsDetail, type AnalyticsSummary, type AnalyticsDetail } from "./_utils/_analytics.js";
+import { recordAdminAction, getAdminAuditLog } from "./_utils/_admin-audit.js";
+import { getClientIp } from "./_utils/_rate-limit.js";
 import {
   CURSOR_REPO_AGENT_OWNER,
   executeCursorCloudAgent,
@@ -765,6 +767,21 @@ export default apiHandler<AdminRequest>(
 
     const action = req.query.action as string | undefined;
 
+    // Append-only audit trail for state-changing admin actions. Best-effort:
+    // never blocks or fails the underlying action.
+    const audit = (
+      auditAction: string,
+      target?: string,
+      details?: Record<string, unknown>
+    ): Promise<void> =>
+      recordAdminAction(redis, {
+        actor: user?.username || "ryo",
+        action: auditAction,
+        ...(target ? { target } : {}),
+        ...(details ? { details } : {}),
+        ip: getClientIp(req),
+      });
+
     if (req.method === "GET") {
       logger.info("GET request", { action });
 
@@ -955,8 +972,23 @@ export default apiHandler<AdminRequest>(
             keyCount: data.keyCount,
             truncated: data.truncated,
           });
+          await audit("backupRedisKeys", pattern, {
+            keyCount: data.keyCount,
+            truncated: data.truncated,
+          });
           logger.response(200, Date.now() - startTime);
           res.status(200).json(data);
+          return;
+        }
+        case "getAuditLog": {
+          const limit = Math.min(
+            Math.max(parseInt((req.query.limit as string) || "100", 10) || 100, 1),
+            500
+          );
+          const entries = await getAdminAuditLog(redis, limit);
+          logger.info("Admin audit log retrieved", { count: entries.length, limit });
+          logger.response(200, Date.now() - startTime);
+          res.status(200).json({ entries });
           return;
         }
         default:
@@ -982,6 +1014,7 @@ export default apiHandler<AdminRequest>(
           const result = await deleteUser(redis, targetUsername);
           if (result.success) {
             logger.info("User deleted", { targetUsername });
+            await audit("deleteUser", targetUsername);
             logger.response(200, Date.now() - startTime);
             res.status(200).json({ success: true });
             return;
@@ -1000,6 +1033,7 @@ export default apiHandler<AdminRequest>(
           const result = await banUser(redis, targetUsername, reason);
           if (result.success) {
             logger.info("User banned", { targetUsername, reason });
+            await audit("banUser", targetUsername, reason ? { reason } : undefined);
             logger.response(200, Date.now() - startTime);
             res.status(200).json({ success: true });
             return;
@@ -1018,6 +1052,7 @@ export default apiHandler<AdminRequest>(
           const result = await unbanUser(redis, targetUsername);
           if (result.success) {
             logger.info("User unbanned", { targetUsername });
+            await audit("unbanUser", targetUsername);
             logger.response(200, Date.now() - startTime);
             res.status(200).json({ success: true });
             return;
@@ -1037,6 +1072,9 @@ export default apiHandler<AdminRequest>(
             const memResult = await clearAllMemories(redis, targetUsername.toLowerCase());
             logger.info("User memories cleared", {
               targetUsername,
+              deletedCount: memResult.deletedCount,
+            });
+            await audit("clearUserMemories", targetUsername, {
               deletedCount: memResult.deletedCount,
             });
             logger.response(200, Date.now() - startTime);
@@ -1109,6 +1147,11 @@ export default apiHandler<AdminRequest>(
             async: "async" in result && result.async,
             runId: "runId" in result ? result.runId : undefined,
           });
+          await audit(
+            "startCursorAgent",
+            "runId" in result && result.runId ? String(result.runId) : undefined,
+            { modelId: modelId || undefined, promptChars: prompt.length }
+          );
           logger.response(200, Date.now() - startTime);
           res.status(200).json(result);
           return;
@@ -1142,6 +1185,12 @@ export default apiHandler<AdminRequest>(
               memoriesCreated: processResult.created,
               memoriesUpdated: processResult.updated,
               skippedDates: processResult.skippedDates,
+            });
+            await audit("forceProcessDailyNotes", targetUsername, {
+              notesReset: resetResult.resetCount,
+              notesProcessed: processResult.processed,
+              memoriesCreated: processResult.created,
+              memoriesUpdated: processResult.updated,
             });
             logger.response(200, Date.now() - startTime);
             res.status(200).json({
@@ -1182,6 +1231,7 @@ export default apiHandler<AdminRequest>(
           }
           const deletedCount = await redis.del(key);
           logger.info("Redis key delete requested", { key, deletedCount });
+          await audit("deleteRedisKey", key, { deletedCount });
           logger.response(200, Date.now() - startTime);
           res.status(200).json({
             success: deletedCount > 0,

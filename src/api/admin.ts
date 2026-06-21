@@ -126,6 +126,12 @@ export async function getAdminCursorAgentRuns<TResponse>(
   return adminGet<TResponse>("getCursorAgentRuns", { limit });
 }
 
+export async function getAdminAuditLog<TResponse>(
+  limit: number = 100
+): Promise<TResponse> {
+  return adminGet<TResponse>("getAuditLog", { limit });
+}
+
 export async function getAdminRedisKeys<TResponse>(input: {
   pattern?: string;
   cursor?: string;

@@ -268,5 +268,10 @@ export const redisKeys = {
      */
     migrationCopied: (legacyKey: string) =>
       redisKeyCaseSensitive("system", "migration", "copied", legacyKey),
+    /**
+     * Append-only audit log of admin (`ryo`) actions. A single bounded global
+     * LIST (newest first) recording state-changing admin operations.
+     */
+    adminAuditLog: () => redisKey("system", "admin", "audit-log"),
   },
 } as const;
