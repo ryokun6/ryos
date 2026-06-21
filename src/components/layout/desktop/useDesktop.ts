@@ -251,7 +251,6 @@ export function useDesktop({
     setContextMenuAppId(null);
   });
   const longPressHandlers = {
-    onMouseDown: desktopLongPress.onMouseDown,
     onMouseMove: desktopLongPress.onMouseMove,
     onMouseUp: desktopLongPress.onMouseUp,
     onMouseLeave: desktopLongPress.onMouseLeave,
@@ -535,6 +534,7 @@ export function useDesktop({
 
   const handleBlankMouseDown = (event: ReactMouseEvent<HTMLDivElement>) => {
     if (event.button !== 0) return;
+    desktopLongPress.onMouseDown(event);
     const target = event.target as HTMLElement;
     if (target.closest("[data-desktop-icon]")) return;
 

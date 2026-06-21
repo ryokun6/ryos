@@ -199,16 +199,23 @@ export async function getRoomsWithCountsFast(
   if (roomIds.length === 0) return [];
 
   const cutoff = Date.now() - ROOM_PRESENCE_TTL_SECONDS * 1000;
-  const rooms: Room[] = [];
+  const pipeline = redis.pipeline();
   for (const roomId of roomIds) {
-    await redis.zremrangebyscore(redisKeys.chat.roomPresence(roomId), 0, cutoff);
-    const raw = await redis.get(redisKeys.chat.roomMeta(roomId));
+    const presenceKey = redisKeys.chat.roomPresence(roomId);
+    pipeline.zremrangebyscore(presenceKey, 0, cutoff);
+    pipeline.get(redisKeys.chat.roomMeta(roomId));
+    pipeline.zcard(presenceKey);
+  }
+
+  const results = await pipeline.exec();
+  const rooms: Room[] = [];
+  for (let index = 0; index < roomIds.length; index++) {
+    const raw = results[index * 3 + 1];
     if (!raw) continue;
     const roomObj = parseRoomData(raw);
     if (!roomObj) continue;
-    const userCount = new Set(
-      await redis.zrange(redisKeys.chat.roomPresence(roomObj.id), 0, -1)
-    ).size;
+    const rawCount = results[index * 3 + 2];
+    const userCount = typeof rawCount === "number" ? rawCount : Number(rawCount) || 0;
     rooms.push({ ...roomObj, userCount });
   }
   return attachPrivateRoomLastMessageAt(rooms, redis);
