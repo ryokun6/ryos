@@ -170,7 +170,9 @@ export function ControlPanelsMacToolbar({
       );
     }
 
-    const buttonVariant = isSystem7Theme ? "player" : "ghost";
+    // Every non-Aqua theme uses simple flat (ghost) icon buttons for the
+    // back/forward nav — System 7 included (no beveled "player" chrome).
+    const buttonVariant = "ghost";
     const iconButtonClassName = cn(
       "size-6 px-0",
       isWindowsTheme && "text-black"

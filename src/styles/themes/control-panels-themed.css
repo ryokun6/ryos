@@ -333,8 +333,8 @@
 }
 
 /* ----------------------------------------------------------------------------
-   10.3-style form rows — labels left-aligned for the classic themes (matching
-   how System 7 / Windows settings dialogs read), controls on the right.
+   10.3-style form rows — labels right-aligned against the control column
+   (matching the Aqua System Preferences layout), controls on the right.
 ---------------------------------------------------------------------------- */
 :root:not([data-os-theme="macosx"]) .control-panels-pref-form {
   display: flex;
@@ -377,10 +377,10 @@
 :root:not([data-os-theme="macosx"]) .control-panels-pref-form-label {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: flex-end;
   justify-content: flex-start;
   align-self: start;
-  text-align: left;
+  text-align: right;
   gap: 2px;
 }
 
@@ -475,7 +475,7 @@
 }
 
 :root:not([data-os-theme="macosx"]) .control-panels-pref-format-sample-label {
-  text-align: left;
+  text-align: right;
   color: var(--os-color-text-primary, #111);
   padding-top: 1px;
 }
