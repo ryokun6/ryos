@@ -499,7 +499,7 @@
     WF --> AppN</pre>
 <h2>Core Components</h2>
 <h3>WindowFrame Component</h3>
-<p>The <code>WindowFrame</code> component (<code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/layout/WindowFrame.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/components/layout/WindowFrame.tsx</a></code>) renders window chrome, handles user interactions, and provides animations.</p>
+<p>The <code>WindowFrame</code> component (<code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/layout/WindowFrame.tsx" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/components/layout/WindowFrame.tsx</a></code>) renders window chrome, handles user interactions, and provides animations.</p>
 <h4>Props Interface</h4>
 <pre><code>interface WindowFrameProps {
   children: React.ReactNode;
@@ -530,7 +530,7 @@
 <h4>Material Modes</h4>
 <table><thead><tr><th>Mode</th><th>Description</th><th>Use Case</th></tr></thead><tbody><tr><td><code>default</code></td><td>Standard opaque window background</td><td>Most apps</td></tr><tr><td><code>transparent</code></td><td>Semi-transparent background</td><td>iPod, Photo Booth</td></tr><tr><td><code>notitlebar</code></td><td>Immersive mode with floating titlebar on hover</td><td>Videos, games</td></tr><tr><td><code>brushedmetal</code></td><td>macOS brushed aluminum surface</td><td>Terminal, Synth</td></tr></tbody></table>
 <h3>useWindowManager Hook</h3>
-<p>The <code>useWindowManager</code> hook (<code><a href="https://github.com/ryokun6/ryos/blob/main/src/hooks/useWindowManager.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/hooks/useWindowManager.ts</a></code>) manages window positioning, dragging, and resizing.</p>
+<p>The <code>useWindowManager</code> hook (<code><a href="https://github.com/ryokun6/ryos/blob/main/src/hooks/useWindowManager.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/hooks/useWindowManager.ts</a></code>) manages window positioning, dragging, and resizing.</p>
 <pre><code>interface UseWindowManagerProps {
   appId: AppId;
   instanceId?: string;

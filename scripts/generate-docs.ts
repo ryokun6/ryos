@@ -170,7 +170,7 @@ function markdownToHtml(md: string, appContext?: string): string {
     const githubUrl = `${GITHUB_BLOB}/${fullPath}`;
     const linkedContent = content.replace(
       filePathMatch[0],
-      `<a href="${githubUrl}" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">${filePathMatch[0]}</a>`
+      `<a href="${githubUrl}" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">${filePathMatch[0]}</a>`
     );
     return `<code>${linkedContent}</code>`;
   });
