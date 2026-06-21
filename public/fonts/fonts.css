@@ -35,6 +35,22 @@
 }
 
 @font-face {
+  font-family: "EB Garamond";
+  src: url("/fonts/EBGaramond-Latin.woff2") format("woff2");
+  font-weight: 400 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "EB Garamond";
+  src: url("/fonts/EBGaramond-Italic-Latin.woff2") format("woff2");
+  font-weight: 400 800;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
   font-family: "AppleGaramond";
   src: url("/fonts/AppleGaramond-Light.woff2") format("woff2");
   font-weight: normal;
