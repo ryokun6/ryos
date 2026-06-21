@@ -355,6 +355,8 @@ describe("Control Panels macOS 10.3 layout", () => {
     expect(securitySource.includes("logOutRowDescription")).toBe(true);
     expect(securitySource.includes("logOutOfAllDevices")).toBe(true);
     expect(securitySource.includes("logOutOfAllDevicesRowDescription")).toBe(true);
+    expect(securitySource.includes("changePasswordButton")).toBe(true);
+    expect(securitySource.includes("logOutAll")).toBe(true);
     expect(securitySource.includes("verifyAccount")).toBe(false);
     expect(securityCase.includes("logout")).toBe(true);
     expect(securityCase.includes("handleLogoutAllDevices")).toBe(true);
