@@ -6,6 +6,7 @@
  * traffic metrics.
  */
 
+import { z } from "zod";
 import { apiHandler } from "../_utils/api-handler.js";
 import {
   recordProductAnalyticsEvents,
@@ -18,6 +19,14 @@ import { resolveIpGeolocation } from "../_utils/_geolocation.js";
 export const runtime = "nodejs";
 export const maxDuration = 10;
 
+// Permissive on purpose: the only hard requirement is that `events` is an
+// array. Individual events are validated/sanitized per-event downstream
+// (`recordProductAnalyticsEvents` drops malformed events and caps the batch),
+// so a single bad event never rejects the whole batch.
+const AnalyticsBatchSchema = z.object({
+  events: z.array(z.unknown()),
+}) as unknown as z.ZodType<ProductAnalyticsBatch>;
+
 export default apiHandler<ProductAnalyticsBatch>(
   {
     methods: ["POST"],
@@ -25,14 +34,10 @@ export default apiHandler<ProductAnalyticsBatch>(
     allowExpiredAuth: true,
     parseJsonBody: true,
     analytics: false,
+    bodySchema: AnalyticsBatchSchema,
   },
   async ({ req, res, redis, logger, startTime, user, body }) => {
-    if (!body || !Array.isArray(body.events)) {
-      logger.response(400, Date.now() - startTime);
-      res.status(400).json({ error: "Invalid analytics event batch" });
-      return;
-    }
-
+    // Body is validated at the handler boundary via `bodySchema`.
     const ip = getClientIp(req);
 
     // Resolve a coarse country bucket for the request so the admin
@@ -48,7 +53,7 @@ export default apiHandler<ProductAnalyticsBatch>(
       country = null;
     }
 
-    recordProductAnalyticsEvents(redis, body, {
+    recordProductAnalyticsEvents(redis, body!, {
       ip,
       username: user?.username,
       userAgent: getHeader(req, "user-agent"),

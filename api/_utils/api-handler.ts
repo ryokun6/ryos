@@ -11,13 +11,42 @@ import { updateStoredUserTimeZone } from "./auth/_user-record.js";
 
 type AuthMode = "none" | "optional" | "required" | "admin";
 
-export interface ApiHandlerOptions {
+/**
+ * Minimal structural contract for a request-body validator. A Zod schema
+ * (`z.object(...)`) satisfies this directly, so callers can pass a Zod schema
+ * without `api-handler` taking a hard dependency on Zod's types. The output
+ * type `TBody` is inferred from the schema.
+ */
+export interface ApiBodyParseResult<TBody> {
+  success: boolean;
+  data?: TBody;
+  error?: {
+    issues: ReadonlyArray<{
+      path: ReadonlyArray<PropertyKey>;
+      message: string;
+    }>;
+  };
+}
+
+export interface ApiBodySchema<TBody> {
+  safeParse(data: unknown): ApiBodyParseResult<TBody>;
+}
+
+export interface ApiHandlerOptions<TBody = unknown> {
   methods: string[];
   auth?: AuthMode;
   allowExpiredAuth?: boolean;
   parseJsonBody?: boolean;
   contentType?: string | null;
   analytics?: boolean;
+  /**
+   * Optional schema validating the parsed JSON request body. When provided,
+   * the body is read and validated at the handler boundary: on failure the
+   * request is rejected with `400 { error: "validation_error", issues }`
+   * before the handler runs; on success `context.body` is the parsed,
+   * typed value. Implies `parseJsonBody`.
+   */
+  bodySchema?: ApiBodySchema<TBody>;
 }
 
 export interface ApiHandlerContext<TBody = unknown> {
@@ -44,7 +73,7 @@ function sendJsonError(
 }
 
 export function apiHandler<TBody = unknown>(
-  options: ApiHandlerOptions,
+  options: ApiHandlerOptions<TBody>,
   handler: WrappedApiHandler<TBody>
 ): (req: VercelRequest, res: VercelResponse) => Promise<void> {
   const {
@@ -54,7 +83,9 @@ export function apiHandler<TBody = unknown>(
     parseJsonBody = false,
     contentType = "application/json",
     analytics = true,
+    bodySchema,
   } = options;
+  const shouldReadBody = parseJsonBody || !!bodySchema;
 
   return async (req: VercelRequest, res: VercelResponse): Promise<void> => {
     const { logger } = initLogger();
@@ -94,7 +125,7 @@ export function apiHandler<TBody = unknown>(
     const redis = createRedis();
 
     let body: TBody | null = null;
-    if (parseJsonBody) {
+    if (shouldReadBody) {
       try {
         body = (req.body as TBody | undefined) ?? null;
       } catch {
@@ -140,6 +171,22 @@ export function apiHandler<TBody = unknown>(
           );
         }
       }
+    }
+
+    // Validate the request body after auth so unauthorized callers can't
+    // probe body requirements (and get a consistent 401/403 first).
+    if (bodySchema) {
+      const result = bodySchema.safeParse(body);
+      if (!result.success) {
+        const issues = (result.error?.issues ?? []).map((issue) => ({
+          path: issue.path.map((part) => String(part)).join("."),
+          message: issue.message,
+        }));
+        logger.response(400, Date.now() - startTime);
+        res.status(400).json({ error: "validation_error", issues });
+        return;
+      }
+      body = result.data as TBody;
     }
 
     let finalStatus = 200;
