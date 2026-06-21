@@ -4,7 +4,8 @@ export type AdminSection =
   | "rooms"
   | "songs"
   | "redis"
-  | "cursorAgents";
+  | "cursorAgents"
+  | "auditLog";
 
 export interface AdminDetailSelectionState {
   selectedRoomId: string | null;

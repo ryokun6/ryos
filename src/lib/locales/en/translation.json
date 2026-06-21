@@ -3929,9 +3929,22 @@
         "redis": "Redis",
         "server": "Server",
         "cursorAgents": "Cursor Agents",
+        "auditLog": "Audit Log",
         "private": "Private",
         "messagesCount": "{{count}} messages",
         "online": "online"
+      },
+      "auditLog": {
+        "title": "Audit Log",
+        "loading": "Loading audit log…",
+        "loadFailed": "Could not load audit log",
+        "retry": "Retry",
+        "refresh": "Refresh",
+        "empty": "No admin actions recorded yet",
+        "action": "Action",
+        "target": "Target",
+        "details": "Details",
+        "time": "Time"
       },
       "cursorAgents": {
         "loading": "Loading Cursor agent runs…",
@@ -4168,6 +4181,8 @@
         "redis": "Redis Browser",
         "redisKeysCount_one": "{{count}} key",
         "redisKeysCount_other": "{{count}} keys",
+        "auditLogCount_one": "{{count}} entry",
+        "auditLogCount_other": "{{count}} entries",
         "loggedInAs": "Logged in as {{username}}"
       },
       "accessDenied": {
