@@ -8,31 +8,47 @@ A summary of changes and updates to ryOS, organized by month.
 
 ## June 2026
 
+- **Aqua Glass theme**: a new macOS theme variant with frosted-glass chrome, backdrop blur, and squircle corners (progressive enhancement with rounded-rect fallback). A transparent menubar adapts text and pill highlights to the wallpaper, and frosted toolbars, menus, sidebars, and inputs carry across Chats, Admin, Finder, Soundboard, and Spotlight.
 - **Cloud Sync v2**: full rewrite to journal-based delta sync. State is a per-user `key → document` map; changes travel as ops with hybrid-logical-clock timestamps through `/api/sync/v2/*`, conflicts resolve per key (last-writer-wins, no 409s), small remote changes apply straight from realtime events with zero HTTP requests, and binary content is content-addressed with batched dedupe. Legacy v1 data imports lazily on first sync.
-- **Redis canonical-only runtime** (#1536): API and app code read/write only canonical Redis keys (`src/shared/redisKeys.ts`); legacy key backfill and deletion moved to the standalone CLI `scripts/redis-key-migration.ts` (admin migration API/UI removed); rate-limit keys aligned and legacy read-only fallbacks removed.
-- **Selectable accent colors**: named swatches in Control Panels → Appearance for Aqua and System 7, a wallpaper-sampled default, and a **System** option that restores each theme's classic selection color.
-- **iPod / Karaoke lyrics glow**: cache cover-derived glow color in song metadata for stable cross-device sync; default fullscreen lyrics to glow; improve palette extraction and karaoke timing/alignment.
-- **Control Panels Account menu**: consolidate login, change password, logout, and logout-all-devices into a unified **Account** ⋯ menu on the Account tab.
-- **Desktop app (Castlabs Electron)**: Apple Music DRM playback in the desktop build; bundle main/preload for Node 24 and Castlabs EVS in CI runners.
-- **Native toasts and shader gating**: desktop-native toast notifications; throttle shader backgrounds on mobile; mirror player visuals in lyrics wallpaper backgrounds (iPod/Karaoke).
+- **Redis canonical-only runtime**: API and app code read/write only canonical Redis keys (`src/shared/redisKeys.ts`); legacy key backfill and deletion moved to the standalone CLI `scripts/redis-key-migration.ts` (admin migration API/UI removed); rate-limit keys aligned and legacy read-only fallbacks removed.
+- **Desktop app (Electron)**: replace the Tauri shell with Electron — signed macOS releases, auto-update with Check for Updates, native app permissions, background chat notifications, native toasts, and Castlabs Electron for Apple Music DRM playback (releases v1.0.3–v1.0.8).
+- **Performance sweep**: cut ~1MB of boot-critical JS, narrowed store/instance/clock subscriptions, debounced write-behind localStorage persistence, lazy Pusher runtime, transient drag/resize and dock scaling, visibility-gated polling, and content-visibility for long lists.
+- **Control Panels redesign**: a macOS System Preferences layout across all themes with a Preferences-style search field, a consolidated **Account** ⋯ menu (login, change password, logout, logout-all-devices), reliable Safari auto-height, and Aqua polish.
+- **Dynamic wallpapers**: day/night gradient, now-playing cover, and shuffle options, plus animated **Weather** and **Lyrics** live wallpapers backed by unified weather data and per-user deterministic shuffle that stays in sync across devices.
+- **Selectable accent colors**: named swatches in Control Panels → Appearance for Aqua and System 7, a wallpaper-sampled default, a **System** option that restores each theme's classic selection color, and accent theming applied across menus, sliders, progress bars, links, toasts, and Ryo AI bubbles.
+- **Self-service account recovery and deletion**: recover access to and delete your account without admin involvement.
+- **Privacy Policy & Terms of Service**: add GDPR Privacy Policy and Terms of Service pages.
+- **iPod / Karaoke lyrics glow**: cache cover-derived glow color in song metadata for stable cross-device sync; default fullscreen lyrics to glow; mirror player visuals in lyrics wallpaper backgrounds; improve palette extraction and karaoke timing/alignment.
 
 <details>
-<summary>Minor changes (14)</summary>
+<summary>Minor changes (26)</summary>
 
+- Secure realtime: authorize private chat/sync channels (fixes a channel-auth leak); enforce banned users and apply shared login lockout to registration.
+- Refactor menubars: migrate remaining app menus to descriptors (radio + submenu-disabled support); surface cloud sync activity in a menubar dropdown on hover or tap.
+- Add keyboard shortcuts in menus (Cmd/Ctrl-aware) and a stored user timezone context.
+- Add an admin Redis browser with prefix-tree navigation, metadata pipelining, and doc caching; add an admin action audit log; list rooms in a View-menu submenu.
+- Add blur-up progressive loading and crossfade transitions for wallpapers; new default wallpapers (Mt Fuji, dandelion seeds, earth moon horizon); now-playing cover fills the desktop.
+- Show a rounded corner mask during boot; accent-theme the Aqua boot overlay and logo.
+- Add dark mode for docs pages and Internet Explorer chrome; make the IE loading bar dark-mode aware; refresh stale documentation.
+- Unify shader perf heuristics into a 3-tier classifier (off/reduced/full), migrate existing users, and throttle shader backgrounds on mobile.
+- iPod / Karaoke: restart-on-previous and Apple Music shuffle-history parity; fix karaoke word-highlight mask timing, shadow clipping, and left alignment; skip redundant cached glow recalculation.
+- Reactively merge external/sync/cloud TextEdit updates without losing the caret; fix the TextEdit slash menu and editor state bugs.
+- Stop a Telegram document tool-call retry loop with idempotent updates.
+- Add a sync maintenance cron (`/api/cron/sync-maintenance`): retire frozen v1 sync keys with 90-day TTLs and garbage-collect unreferenced content-addressed blobs (mark-and-sweep with a 24h grace window).
+- Sort private chats by online status and recency; fix mobile Chats sidebar scrolling and overlay borders.
+- Restrict IRC room creation to admins; scope IRC channel updates to active chat rooms.
+- Simplify audio ducking and volume handling.
+- Extract pure helpers from large hooks (Finder file system, IE url bar, Chats fuzzy search); unify the file-content `StoredContent` type; route Ryo tool loops through `ToolLoopAgent`.
+- Rename theme flags `isXpTheme` → `isWindowsTheme`, `isMacOsxTheme` → `isMacOSTheme` via `useThemeFlags()`; refactor song metadata sync helpers.
+- Remove React Scan integration, legacy migration paths, and dead code.
+- Improve batch metadata cache listing and apply consistent accent-derived selection color for menus and selected items.
+- Style the Admin Cursor agents view with semi-transparent amber.
 - Fix Workbox stale app shell caching after deploys.
-- Fix karaoke word-highlight mask timing, shadow clipping, and left alignment.
-- Fix iPod cover-color sync drift; skip redundant cached glow recalculation.
-- Fix Chats scroll-to-bottom chevron contrast in Aqua dark mode.
-- Fix themed icon cache recovery; set root document background to black.
-- Fix migration log autoscroll and Aqua glass sidebar gap; make Redis backfill reliable on Upstash.
-- Add keyboard shortcuts in menus (Cmd/Ctrl-aware) (#1511).
-- Add sync maintenance cron (`/api/cron/sync-maintenance`): retire frozen v1 sync keys with 90-day TTLs and garbage-collect unreferenced content-addressed blobs (mark-and-sweep with a 24h grace window).
-- Improve batch metadata cache listing; apply consistent accent-derived selection color for menus and selected items (#1535).
-- Refactor song metadata sync helpers; rename theme flags `isXpTheme` → `isWindowsTheme`, `isMacOsxTheme` → `isMacOSTheme` with `useThemeFlags()` (#1531).
-- Remove legacy/deprecated code (Tauri aliases, stub `@types`, dead prompt builder) (#1530).
-- Release desktop v1.0.7 and v1.0.6; hide desktop download prompt on mobile (v1.0.5).
-- Style Admin Cursor agents view with semi-transparent amber (#1532).
-- Fix always-pass, mislabeled, and weak-assertion tests from audit (#1539).
+- Fix iPod cover-color sync drift and the Chats scroll-to-bottom chevron contrast in Aqua dark mode.
+- Fix themed icon cache recovery; set the root document background to black.
+- Make Redis backfill reliable on Upstash; fix migration log autoscroll and the Aqua glass sidebar gap.
+- Add a codebase audit roadmap with "do first" API hardening.
+- Fix always-pass, mislabeled, and weak-assertion tests from the audit.
 
 </details>
 
@@ -46,7 +62,7 @@ A summary of changes and updates to ryOS, organized by month.
 - **TV polish**: channel-bug logo overlay (fullscreen-safe), idle bursts, drawer SFX, square channel-strip buttons, fullscreen control parity with Karaoke (dismiss + CH± pills, viewport-scaled captions), synced reset-channel deletes, and continued CRT/UI refinements.
 - **Theme platform layer**: refactor with `data-os-platform`, centralized menu tokens, and macOSX font fixes (menubar, Finder list, About dialog, TextEdit headings, chat meta).
 - Remove **CandyBar** app (dock icon pack browser added in March is no longer shipped).
-- **Cover Flow on fullscreen long-press** (#1344); **Apple menu toggle** for browser fullscreen ryOS shell (#1338).
+- **Cover Flow on fullscreen long-press**; **Apple menu toggle** for browser fullscreen ryOS shell.
 
 <details>
 <summary>Minor changes (30)</summary>
@@ -60,16 +76,16 @@ A summary of changes and updates to ryOS, organized by month.
 - React 19 hardening: migrate deprecated APIs, refactor cascading setState to useReducer, effect cleanups, stable list keys, admin helper hoisting.
 - CI / deploy: Coolify webhook deploy, GHCR image pipeline, decouple test/build from main pushes; security batch (password change flow, applet sandboxing, rate-limit hardening).
 - Docs: Maps app page, Virtual PC v86 refresh, Admin Cursor agents, Dashboard Aquarium; regenerate static HTML.
-- Fix duplicate-key empty dock slots (repro in Safari) (#1358).
-- Fix empty/broken dock slots from stale or unrenderable entries (#1356).
-- Improve PWA precache with curated Workbox entries, network-aware prefetch, and offline fixes (#1348).
-- Subdue dark-mode shimmer on tool call loading states (#1350).
-- Style Cursor agent chat cards like Maps with pinstripes (#1351).
-- Match dark-theme lyrics search dialog to song search (#1352).
-- Unify duplicated iPod and Karaoke media app code paths (#1347).
-- Split large React components into focused modules (#1342).
-- Align submenu trigger font size with menu items (#1340).
-- Fullscreen on `documentElement` so menubar portals stay visible (#1339).
+- Fix duplicate-key empty dock slots (repro in Safari).
+- Fix empty/broken dock slots from stale or unrenderable entries.
+- Improve PWA precache with curated Workbox entries, network-aware prefetch, and offline fixes.
+- Subdue dark-mode shimmer on tool call loading states.
+- Style Cursor agent chat cards like Maps with pinstripes.
+- Match dark-theme lyrics search dialog to song search.
+- Unify duplicated iPod and Karaoke media app code paths.
+- Split large React components into focused modules.
+- Align submenu trigger font size with menu items.
+- Fullscreen on `documentElement` so menubar portals stay visible.
 
 </details>
 
@@ -472,4 +488,4 @@ A summary of changes and updates to ryOS, organized by month.
 
 ---
 
-*This changelog is maintained from git history and manual curation. Last updated: 2026-06-19*
+*This changelog is maintained from git history and manual curation. Last updated: 2026-06-21*
