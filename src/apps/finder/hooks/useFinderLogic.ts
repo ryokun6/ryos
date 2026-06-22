@@ -42,6 +42,18 @@ type FinderUndoAction =
 
 const SIDEBAR_HIDDEN_FOLDERS = new Set(["/Trash", "/Sites"]);
 
+// Explicit sidebar folder order; any visible folders not listed here keep their
+// natural order, appended after these.
+const SIDEBAR_FOLDER_ORDER = [
+  "/Applications",
+  "/Applets",
+  "/Documents",
+  "/Images",
+  "/Music",
+  "/Videos",
+  "/Books",
+];
+
 // Type for Finder initial data
 export interface FinderInitialData {
   path?: string;
@@ -1420,17 +1432,14 @@ export function useFinderLogic({
     const visibleRootFolders = rootFolders.filter(
       (f) => !SIDEBAR_HIDDEN_FOLDERS.has(f.path)
     );
-    const desktopIndex = visibleRootFolders.findIndex(
-      (folder) => folder.path === "/Desktop"
-    );
-    const applicationsIndex = visibleRootFolders.findIndex(
-      (folder) => folder.path === "/Applications"
-    );
 
-    if (desktopIndex > applicationsIndex && applicationsIndex !== -1) {
-      const [desktopFolder] = visibleRootFolders.splice(desktopIndex, 1);
-      visibleRootFolders.splice(applicationsIndex, 0, desktopFolder);
-    }
+    // Order by the explicit list; unlisted folders keep their natural order
+    // after the listed ones (stable sort).
+    const orderRank = (path: string) => {
+      const i = SIDEBAR_FOLDER_ORDER.indexOf(path);
+      return i === -1 ? Number.MAX_SAFE_INTEGER : i;
+    };
+    visibleRootFolders.sort((a, b) => orderRank(a.path) - orderRank(b.path));
 
     const places = visibleRootFolders
       .map((f) => ({
@@ -1441,14 +1450,14 @@ export function useFinderLogic({
         isAirDrop: false,
       }));
     return [
+      { name: t("apps.finder.window.macintoshHd"), path: "/", icon: "/icons/default/disk.png", divider: false, isAirDrop: false },
       {
         name: t("apps.finder.airdrop.title"),
         path: "__airdrop__",
         icon: "/icons/default/airdrop.png",
-        divider: false,
+        divider: true,
         isAirDrop: true,
       },
-      { name: t("apps.finder.window.macintoshHd"), path: "/", icon: "/icons/default/disk.png", divider: true, isAirDrop: false },
       ...places,
     ];
   }, [rootFolders, t]);

@@ -264,11 +264,13 @@ export function InfinitePcAppComponent({
 
   if (!isWindowOpen) return null;
 
+  // Browse grid has its own header, so the window titlebar shows nothing there;
+  // only the running OS preset / game name appears in the titlebar in-session.
   const windowTitle = selectedPreset
     ? getPcPresetName(selectedPreset, t)
     : isGameRunning && selectedGame
       ? selectedGame.name
-      : t("apps.pc.title");
+      : "";
 
   const isDarkTitlebar = currentTheme === "macosx";
   const backButton = (

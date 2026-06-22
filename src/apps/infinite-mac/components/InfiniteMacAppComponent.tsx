@@ -134,9 +134,9 @@ export function InfiniteMacAppComponent({
   if (!isWindowOpen) return null;
 
   // Dynamic title based on selected preset
-  const windowTitle = selectedPreset
-    ? selectedPreset.name
-    : t("apps.infinite-mac.title");
+  // Grid has its own header, so the window titlebar shows nothing there; only
+  // the running system's name appears in the titlebar once a preset is selected.
+  const windowTitle = selectedPreset ? selectedPreset.name : "";
 
   // Grid button for titlebar (back to systems). macOS X notitlebar: light icon + shadow. System 7/XP/98: dark icon, no shadow, fixed height.
   const isDarkTitlebar = currentTheme === "macosx";

@@ -10,6 +10,7 @@ import {
 import { RightClickMenu, type MenuItem } from "@/components/ui/right-click-menu";
 import { usePointerLongPress } from "@/hooks/usePointerLongPress";
 import { useResizeObserverWithRef } from "@/hooks/useResizeObserver";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import type {
   BooksLibraryEntry,
   BookOriginRect,
@@ -73,6 +74,7 @@ export function BooksShelfView({
   onMoveToBottom,
 }: BooksShelfViewProps) {
   const { t } = useTranslation();
+  const { isDarkMode } = useThemeFlags();
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
@@ -185,6 +187,16 @@ export function BooksShelfView({
       className="relative flex h-full w-full flex-col overflow-hidden"
       style={WOOD_BG}
     >
+      {/* Dark-mode dim: a scrim above the wood (back panel + ledges, which are
+          z-auto) but below the books (z-[1]) and toolbar (z-20), so only the
+          wood is dimmed and the covers stay vivid. */}
+      {isDarkMode && (
+        <div
+          className="pointer-events-none absolute inset-0 z-0"
+          style={{ backgroundColor: "rgba(0,0,0,0.34)" }}
+          aria-hidden
+        />
+      )}
       {/* Top toolbar */}
       <div className="sticky top-0 z-20 flex items-center justify-between gap-2 px-3 pb-2 pt-7 bg-gradient-to-b from-black/45 via-black/25 to-transparent">
         <span
