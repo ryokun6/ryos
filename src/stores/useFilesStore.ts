@@ -365,8 +365,18 @@ export async function ensureFileContentLoaded(
       }
     }
 
-    // Check if this file has pending lazy load data
-    const pendingFile = pendingLazyLoadFiles.get(filePath);
+    // Check if this file has pending lazy load data. Force reloads are used to
+    // recover from browser-specific persisted binary read failures, so they must
+    // be able to find the default asset even after the first lazy load removed
+    // it from the pending map.
+    let pendingFile = pendingLazyLoadFiles.get(filePath);
+    if (!pendingFile?.assetPath && options.forceReload) {
+      const data = await loadDefaultFiles();
+      pendingFile = data.files.find((file) => file.path === filePath);
+      if (pendingFile?.assetPath) {
+        pendingLazyLoadFiles.set(filePath, pendingFile);
+      }
+    }
     if (!pendingFile?.assetPath) {
       return false;
     }
