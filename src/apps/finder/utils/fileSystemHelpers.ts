@@ -50,6 +50,7 @@ export const arePathArraysEqual = (
 export const DEFAULT_FILE_PATHS = new Set([
   "/Documents/README.md",
   "/Documents/Quick Tips.md",
+  "/Books/Meditations - Marcus Aurelius.epub",
   "/Images/steve-jobs.png",
   "/Images/susan-kare.png",
 ]);

@@ -47,7 +47,7 @@ export interface FileSystemItem {
 // Define a type for JSON file entries
 interface FileSystemItemData extends Omit<FileSystemItem, "status"> {
   content?: string; // For documents
-  assetPath?: string; // For images
+  assetPath?: string; // For binary default assets
 }
 
 
@@ -302,6 +302,8 @@ export async function ensureFileContentLoaded(
     ? STORES.DOCUMENTS
     : filePath.startsWith("/Images/")
     ? STORES.IMAGES
+    : filePath.startsWith("/Books/")
+    ? STORES.BOOKS
     : filePath.startsWith("/Applets/")
     ? STORES.APPLETS
     : null;
@@ -521,8 +523,12 @@ async function saveDefaultContents(
 // Function to generate an empty initial state (just for typing)
 const getEmptyFileSystemState = (): Record<string, FileSystemItem> => ({});
 
-const STORE_VERSION = 13; // System 7: show Chats, IE, Karaoke on desktop after iPod
+const STORE_VERSION = 14; // Add Meditations as a default Books EPUB
 const STORE_NAME = "ryos:files";
+
+const DEFAULT_MEDITATIONS_BOOK_PATH = "/Books/Meditations - Marcus Aurelius.epub";
+const DEFAULT_MEDITATIONS_BOOK_NAME = "Meditations - Marcus Aurelius.epub";
+const DEFAULT_MEDITATIONS_BOOK_SIZE = 1378157;
 
 const DEFAULT_APPLICATIONS_FOLDER_ALIAS_NAME = "Applications";
 
@@ -638,6 +644,51 @@ function migrateV13System7ProminentDesktopApps(
       };
     }
   }
+  return newState;
+}
+
+/** v14: add the default Meditations EPUB to existing loaded libraries once. */
+function migrateV14DefaultMeditationsBook(
+  items: Record<string, FileSystemItem>,
+  libraryState: LibraryState | undefined,
+  now: number
+): Record<string, FileSystemItem> {
+  if (libraryState === "cleared" || items[DEFAULT_MEDITATIONS_BOOK_PATH]) {
+    return items;
+  }
+
+  const booksDir = items["/Books"];
+  if (booksDir?.status === "trashed") {
+    return items;
+  }
+
+  const newState = { ...items };
+  if (!booksDir) {
+    newState["/Books"] = {
+      path: "/Books",
+      name: "Books",
+      isDirectory: true,
+      type: "directory",
+      icon: "/icons/default/books-folder.png",
+      status: "active",
+      createdAt: now,
+      modifiedAt: now,
+    };
+  }
+
+  newState[DEFAULT_MEDITATIONS_BOOK_PATH] = {
+    path: DEFAULT_MEDITATIONS_BOOK_PATH,
+    name: DEFAULT_MEDITATIONS_BOOK_NAME,
+    isDirectory: false,
+    type: "epub",
+    icon: "/icons/default/books.png",
+    status: "active",
+    uuid: uuidv4(),
+    size: DEFAULT_MEDITATIONS_BOOK_SIZE,
+    createdAt: now,
+    modifiedAt: now,
+  };
+
   return newState;
 }
 
@@ -1667,8 +1718,12 @@ export const useFilesStore = create<FilesStoreState>()(
           }
 
           return {
-            items: migrateV13System7ProminentDesktopApps(
-              migrateV12DesktopDefaultShortcuts(newState, now),
+            items: migrateV14DefaultMeditationsBook(
+              migrateV13System7ProminentDesktopApps(
+                migrateV12DesktopDefaultShortcuts(newState, now),
+                now
+              ),
+              oldState.libraryState,
               now
             ),
             libraryState: oldState.libraryState || "loaded",
@@ -1683,8 +1738,12 @@ export const useFilesStore = create<FilesStoreState>()(
           const now = Date.now();
 
           return {
-            items: migrateV13System7ProminentDesktopApps(
-              migrateV12DesktopDefaultShortcuts(oldState.items, now),
+            items: migrateV14DefaultMeditationsBook(
+              migrateV13System7ProminentDesktopApps(
+                migrateV12DesktopDefaultShortcuts(oldState.items, now),
+                now
+              ),
+              oldState.libraryState,
               now
             ),
             libraryState: oldState.libraryState || "loaded",
@@ -1699,7 +1758,28 @@ export const useFilesStore = create<FilesStoreState>()(
           const now = Date.now();
 
           return {
-            items: migrateV13System7ProminentDesktopApps(oldState.items, now),
+            items: migrateV14DefaultMeditationsBook(
+              migrateV13System7ProminentDesktopApps(oldState.items, now),
+              oldState.libraryState,
+              now
+            ),
+            libraryState: oldState.libraryState || "loaded",
+          };
+        }
+
+        if (version < 14) {
+          const oldState = persistedState as {
+            items: Record<string, FileSystemItem>;
+            libraryState?: LibraryState;
+          };
+          const now = Date.now();
+
+          return {
+            items: migrateV14DefaultMeditationsBook(
+              oldState.items,
+              oldState.libraryState,
+              now
+            ),
             libraryState: oldState.libraryState || "loaded",
           };
         }

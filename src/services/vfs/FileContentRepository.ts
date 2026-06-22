@@ -4,6 +4,7 @@ import {
   type StoredContent,
 } from "@/utils/indexedDBOperations";
 import { getFileContentUuid } from "@/services/vfs/FileMetadataService";
+import { ensureFileContentLoaded } from "@/stores/useFilesStore";
 
 export type VfsContentStoreName =
   | typeof STORES.DOCUMENTS
@@ -14,6 +15,17 @@ export type VfsContentStoreName =
 
 export interface VfsStoredContent extends StoredContent {
   contentUrl?: string;
+}
+
+function isBlobLike(value: unknown): value is Blob {
+  return (
+    value instanceof Blob ||
+    (typeof value === "object" &&
+      value !== null &&
+      typeof (value as Blob).arrayBuffer === "function" &&
+      typeof (value as Blob).text === "function" &&
+      typeof (value as Blob).size === "number")
+  );
 }
 
 export async function readContentByKey<T extends StoredContent = StoredContent>(
@@ -46,6 +58,12 @@ export async function readContentForPath<T extends StoredContent = StoredContent
 
   const uuid = getFileContentUuid(path);
   if (!uuid) return null;
+  const existing = await readContentByKey<T>(storeName, uuid);
+  if (existing) return existing;
+
+  const loaded = await ensureFileContentLoaded(path, uuid);
+  if (!loaded) return null;
+
   return (await readContentByKey<T>(storeName, uuid)) ?? null;
 }
 
@@ -64,14 +82,14 @@ export async function readImageBlobContent(path: string): Promise<Blob | null> {
   const item = await readContentForPath<StoredContent>(path, {
     expectedStore: STORES.IMAGES,
   });
-  return item?.content instanceof Blob ? item.content : null;
+  return isBlobLike(item?.content) ? item.content : null;
 }
 
 export async function readBookBlobContent(path: string): Promise<Blob | null> {
   const item = await readContentForPath<StoredContent>(path, {
     expectedStore: STORES.BOOKS,
   });
-  return item?.content instanceof Blob ? item.content : null;
+  return isBlobLike(item?.content) ? item.content : null;
 }
 
 export async function readAppletTextContent(path: string): Promise<string | null> {

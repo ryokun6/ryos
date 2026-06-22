@@ -342,7 +342,13 @@ export function BooksReaderPane({
           .then(() => activeBook.locations.generate(1600))
           .catch(() => undefined);
       } catch (err) {
-        if (!cancelled) console.error("[Books] Failed to open book", err);
+        if (!cancelled) {
+          console.error("[Books] Failed to open book", err);
+          setLoadError(t("apps.books.reader.error"));
+          setCoverVisible(false);
+          setIsReady(true);
+        }
+        cleanupInstance();
       }
     })();
 
