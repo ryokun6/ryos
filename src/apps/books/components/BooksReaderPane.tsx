@@ -28,6 +28,12 @@ interface FlipState {
   id: number;
 }
 
+// Extra top clearance so the page never sits under the auto-hiding window
+// title bar (the window uses the full-bleed "notitlebar" material).
+const TOP_CLEARANCE = 36;
+// Footer that holds the reading-progress bar.
+const FOOTER_HEIGHT = 30;
+
 export function BooksReaderPane({
   entry,
   settings,
@@ -49,6 +55,7 @@ export function BooksReaderPane({
   const [flip, setFlip] = useState<FlipState | null>(null);
   const [atStart, setAtStart] = useState(true);
   const [atEnd, setAtEnd] = useState(false);
+  const [progressPct, setProgressPct] = useState(0);
 
   const { info: coverInfo, loading: coverLoading } = useBookCover(
     entry.path,
@@ -152,6 +159,7 @@ export function BooksReaderPane({
             } catch {
               // ignore
             }
+            setProgressPct(Math.min(1, Math.max(0, pct || 0)));
             onProgressRef.current(cfi, pct || 0);
           }
         );
@@ -219,9 +227,10 @@ export function BooksReaderPane({
     }
   }, [isReady, settings.columnMode]);
 
-  // Keep the rendition sized to the viewport.
+  // Keep the rendition sized to the render host (which is inset below the top
+  // clearance and above the progress footer).
   useResizeObserverWithRef(
-    viewportRef,
+    renderHostRef,
     (resizeEntry) => {
       const rendition = renditionRef.current;
       if (!rendition) return;
@@ -285,24 +294,62 @@ export function BooksReaderPane({
       className="relative h-full w-full overflow-hidden outline-none"
       style={{ backgroundColor: palette.background }}
     >
-      {/* The epub.js render target */}
-      <div ref={renderHostRef} className="h-full w-full" />
+      {/* The epub.js render target, inset below the top clearance and above
+          the progress footer. */}
+      <div
+        ref={renderHostRef}
+        className="absolute left-0 right-0"
+        style={{ top: TOP_CLEARANCE, bottom: FOOTER_HEIGHT }}
+      />
 
-      {/* Click zones for page turning */}
+      {/* Click zones for page turning (aligned with the render host) */}
       <button
         type="button"
         aria-label="Previous page"
         onClick={() => turnPage("prev")}
         disabled={atStart}
-        className="absolute inset-y-0 left-0 z-10 w-[22%] cursor-w-resize disabled:cursor-default"
+        style={{ top: TOP_CLEARANCE, bottom: FOOTER_HEIGHT }}
+        className="absolute left-0 z-10 w-[22%] cursor-w-resize disabled:cursor-default"
       />
       <button
         type="button"
         aria-label="Next page"
         onClick={() => turnPage("next")}
         disabled={atEnd}
-        className="absolute inset-y-0 right-0 z-10 w-[22%] cursor-e-resize disabled:cursor-default"
+        style={{ top: TOP_CLEARANCE, bottom: FOOTER_HEIGHT }}
+        className="absolute right-0 z-10 w-[22%] cursor-e-resize disabled:cursor-default"
       />
+
+      {/* Reading-progress footer */}
+      <div
+        className="absolute inset-x-0 bottom-0 z-10 flex items-center gap-2 px-4"
+        style={{ height: FOOTER_HEIGHT }}
+      >
+        <div
+          className={cn(
+            "h-[3px] flex-1 overflow-hidden rounded-full",
+            palette.isDark ? "bg-white/15" : "bg-black/10"
+          )}
+        >
+          <div
+            className="h-full rounded-full transition-[width] duration-300"
+            style={{
+              width: `${Math.round(progressPct * 100)}%`,
+              backgroundColor: palette.isDark
+                ? "rgba(255,255,255,0.7)"
+                : "rgba(0,0,0,0.55)",
+            }}
+          />
+        </div>
+        <span
+          className={cn(
+            "shrink-0 font-os-ui text-[10px] tabular-nums",
+            palette.isDark ? "text-white/65" : "text-black/55"
+          )}
+        >
+          {Math.round(progressPct * 100)}%
+        </span>
+      </div>
 
       {/* Page-turn flip animation */}
       <AnimatePresence
