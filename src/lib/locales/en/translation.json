@@ -4423,10 +4423,12 @@
       },
       "shelf": {
         "import": "Add Book",
+        "gridView": "Grid View",
+        "listView": "List View",
         "percentRead": "{{percent}}%",
         "finished": "Finished",
         "emptyTitle": "Your bookshelf is empty",
-        "emptyHint": "Click Add Book to import an EPUB."
+        "emptyHint": "Click + to import an EPUB."
       },
       "reader": {
         "backToShelf": "Shelf"

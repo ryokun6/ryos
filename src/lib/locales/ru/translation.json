@@ -615,7 +615,9 @@
         "emptyHint": "Нажмите «Добавить книгу», чтобы импортировать EPUB.",
         "emptyTitle": "Ваша книжная полка пуста",
         "finished": "Прочитано",
+        "gridView": "[TODO] Grid View",
         "import": "Добавить книгу",
+        "listView": "[TODO] List View",
         "percentRead": "{{percent}}%"
       },
       "theme": {

@@ -615,7 +615,9 @@
         "emptyHint": "「本を追加」をクリックしてEPUBをインポートしてください。",
         "emptyTitle": "本棚は空です",
         "finished": "完了",
+        "gridView": "[TODO] Grid View",
         "import": "本を追加",
+        "listView": "[TODO] List View",
         "percentRead": "{{percent}}%"
       },
       "theme": {

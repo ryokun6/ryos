@@ -35,6 +35,8 @@ export function BooksAppComponent({
     closeBook,
     settings,
     updateSettings,
+    shelfView,
+    setShelfView,
     progressByPath,
     saveProgress,
     handleImport,
@@ -68,6 +70,7 @@ export function BooksAppComponent({
         onClose,
         isForeground,
         appId: "books",
+        material: "notitlebar",
         skipInitialSound,
         instanceId,
         onNavigateNext,
@@ -120,6 +123,8 @@ export function BooksAppComponent({
             <BooksShelfView
               library={library}
               progressByPath={progressByPath}
+              shelfView={shelfView}
+              onSetShelfView={setShelfView}
               onOpenBook={(entry) => openBook(entry.path)}
               onImport={handleImport}
             />

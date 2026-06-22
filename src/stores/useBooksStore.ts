@@ -3,6 +3,7 @@ import { persist } from "zustand/middleware";
 
 export type BooksColumnMode = "auto" | "single" | "double";
 export type BooksThemeOverride = "auto" | "light" | "sepia" | "dark";
+export type BooksShelfView = "grid" | "list";
 
 export interface BookProgress {
   /** EPUB CFI of the current location. */
@@ -40,11 +41,13 @@ export const BOOKS_FONT_SIZE_STEP = 10;
 interface BooksStoreState {
   progressByPath: Record<string, BookProgress>;
   settings: BooksReaderSettings;
+  shelfView: BooksShelfView;
   lastOpenedPath: string | null;
   setProgress: (path: string, progress: BookProgress) => void;
   getProgress: (path: string) => BookProgress | undefined;
   clearProgress: (path: string) => void;
   updateSettings: (partial: Partial<BooksReaderSettings>) => void;
+  setShelfView: (view: BooksShelfView) => void;
   setLastOpenedPath: (path: string | null) => void;
   /** Move progress when a file is renamed/moved in the VFS. */
   renameProgressPath: (oldPath: string, newPath: string) => void;
@@ -55,6 +58,7 @@ export const useBooksStore = create<BooksStoreState>()(
     (set, get) => ({
       progressByPath: {},
       settings: { ...DEFAULT_BOOKS_SETTINGS },
+      shelfView: "grid",
       lastOpenedPath: null,
       setProgress: (path, progress) =>
         set((state) => ({
@@ -70,6 +74,7 @@ export const useBooksStore = create<BooksStoreState>()(
         }),
       updateSettings: (partial) =>
         set((state) => ({ settings: { ...state.settings, ...partial } })),
+      setShelfView: (view) => set({ shelfView: view }),
       setLastOpenedPath: (path) => set({ lastOpenedPath: path }),
       renameProgressPath: (oldPath, newPath) =>
         set((state) => {
@@ -87,6 +92,7 @@ export const useBooksStore = create<BooksStoreState>()(
       partialize: (state) => ({
         progressByPath: state.progressByPath,
         settings: state.settings,
+        shelfView: state.shelfView,
         lastOpenedPath: state.lastOpenedPath,
       }),
     }

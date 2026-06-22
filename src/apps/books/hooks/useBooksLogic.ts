@@ -63,6 +63,8 @@ export function useBooksLogic({
 
   const settings = useBooksStore((s) => s.settings);
   const updateSettings = useBooksStore((s) => s.updateSettings);
+  const shelfView = useBooksStore((s) => s.shelfView);
+  const setShelfView = useBooksStore((s) => s.setShelfView);
   const progressByPath = useBooksStore((s) => s.progressByPath);
   const setLastOpenedPath = useBooksStore((s) => s.setLastOpenedPath);
   const setProgressAction = useBooksStore((s) => s.setProgress);
@@ -207,6 +209,8 @@ export function useBooksLogic({
     closeBook,
     settings,
     updateSettings,
+    shelfView,
+    setShelfView,
     progressByPath,
     saveProgress,
     handleImport,

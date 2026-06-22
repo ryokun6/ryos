@@ -348,7 +348,10 @@ export function BooksReaderPane({
             layoutId={`bookcover-${entry.path}`}
             className="pointer-events-none absolute inset-0 z-30 overflow-hidden"
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.35 }}
+            transition={{
+              layout: { duration: 0.45, ease: [0.32, 0.72, 0, 1] },
+              opacity: { duration: 0.35 },
+            }}
           >
             <BookCover
               title={entry.name}

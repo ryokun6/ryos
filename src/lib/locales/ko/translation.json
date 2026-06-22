@@ -615,7 +615,9 @@
         "emptyHint": "'도서 추가'를 클릭하여 EPUB를 가져오세요.",
         "emptyTitle": "책장이 비어 있습니다",
         "finished": "완료",
+        "gridView": "[TODO] Grid View",
         "import": "도서 추가",
+        "listView": "[TODO] List View",
         "percentRead": "{{percent}}%"
       },
       "theme": {

@@ -615,7 +615,9 @@
         "emptyHint": "Fai clic su Aggiungi libro per importare un EPUB.",
         "emptyTitle": "La tua libreria è vuota",
         "finished": "Finito",
+        "gridView": "[TODO] Grid View",
         "import": "Aggiungi libro",
+        "listView": "[TODO] List View",
         "percentRead": "{{percent}}%"
       },
       "theme": {

@@ -615,7 +615,9 @@
         "emptyHint": "點擊「新增書籍」以匯入 EPUB。",
         "emptyTitle": "您的書架是空的",
         "finished": "已完成",
+        "gridView": "[TODO] Grid View",
         "import": "新增書籍",
+        "listView": "[TODO] List View",
         "percentRead": "{{percent}}%"
       },
       "theme": {
