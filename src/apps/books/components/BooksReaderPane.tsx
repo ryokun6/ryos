@@ -84,6 +84,10 @@ export const ZOOM_DURATION = 0.45;
 export const ZOOM_EASE = [0.32, 0.72, 0, 1] as const;
 const REVEAL_DELAY_MS = 480;
 const MAX_DEBUG_EVENTS = 80;
+const DEFAULT_BOOK_ASSET_BY_PATH: Record<string, string> = {
+  "/Books/Meditations - Marcus Aurelius.epub":
+    "/assets/books/meditations-marcus-aurelius.epub",
+};
 
 function isRuntimeBooksDebugEnabled(): boolean {
   try {
@@ -247,6 +251,34 @@ export function BooksReaderPane({
     []
   );
 
+  const readActiveBookBlob = useCallback(async (): Promise<Blob | null> => {
+    const fallbackAssetUrl = DEFAULT_BOOK_ASSET_BY_PATH[entry.path];
+    try {
+      const storedBlob = await readBookBlobContent(entry.path);
+      if (storedBlob) return storedBlob;
+      appendDebugEvent("content:vfs:missing", { fallbackAssetUrl }, "warn");
+    } catch (error) {
+      appendDebugEvent("content:vfs:failed", error, "error");
+    }
+
+    if (!fallbackAssetUrl) return null;
+
+    appendDebugEvent("content:fallbackFetch:start", { fallbackAssetUrl });
+    const response = await fetch(fallbackAssetUrl, { credentials: "same-origin" });
+    appendDebugEvent("content:fallbackFetch:response", {
+      ok: response.ok,
+      status: response.status,
+      statusText: response.statusText,
+      contentType: response.headers.get("content-type"),
+      contentLength: response.headers.get("content-length"),
+    });
+    if (!response.ok) return null;
+
+    const blob = await response.blob();
+    appendDebugEvent("content:fallbackFetch:success", { blob });
+    return blob;
+  }, [appendDebugEvent, entry.path]);
+
   const palette = resolveReadingPalette(settings.themeOverride, osIsDark);
 
   // Measure the zoom-in geometry before first paint so the cover overlay starts
@@ -363,7 +395,7 @@ export function BooksReaderPane({
     (async () => {
       try {
         appendDebugEvent("content:read:start");
-        const blob = await readBookBlobContent(entry.path);
+        const blob = await readActiveBookBlob();
         if (cancelled) return;
         if (!blob) {
           // No readable EPUB bytes — surface an error instead of hanging on the
