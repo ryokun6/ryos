@@ -88,6 +88,24 @@ export function resolveReadingPalette(
 }
 
 /**
+ * EPUBs are ZIP archives, so a valid file begins with the ZIP magic bytes
+ * ("PK" + a local-file / empty / spanned marker). Validate this before handing
+ * bytes to epub.js so a stray non-EPUB payload — e.g. a `{"error":"Not found"}`
+ * JSON body that got stored as the book blob when a cloud download failed —
+ * isn't rendered as the book's content.
+ */
+export function isLikelyEpubBuffer(buffer: ArrayBuffer): boolean {
+  if (buffer.byteLength < 4) return false;
+  const b = new Uint8Array(buffer, 0, 4);
+  if (b[0] !== 0x50 || b[1] !== 0x4b) return false; // "PK"
+  return (
+    (b[2] === 0x03 && b[3] === 0x04) || // local file header (normal zip)
+    (b[2] === 0x05 && b[3] === 0x06) || // empty archive
+    (b[2] === 0x07 && b[3] === 0x08) // spanned archive
+  );
+}
+
+/**
  * Build the epub.js theme object applied to the book body. Returns a nested
  * CSS-in-JS object understood by epub.js Themes.
  */
@@ -142,6 +160,11 @@ export function buildEpubTheme(
 
   return {
     body: bodyRules,
+    // Catch-all: force the reading color on EVERY element except links, so no
+    // publisher rule (incl. colors on span/div/blockquote/table cells, etc.)
+    // can leave text dark-on-dark. Inline `color` styles are also stripped in
+    // the content hook so even `color: … !important` inline can't win.
+    "*:not(a)": { color: `${palette.text} !important` },
     // Force colors so dark/sepia modes are legible regardless of publisher CSS.
     p: withFont(flowText),
     div: withFont({}),
@@ -155,7 +178,9 @@ export function buildEpubTheme(
     h4: withFont(textColor),
     h5: withFont(textColor),
     h6: withFont(textColor),
-    a: { color: `${palette.link} !important` },
+    // Links (and anything inside them) stay the distinguishable link color,
+    // overriding the catch-all above via higher specificity.
+    "a, a *": { color: `${palette.link} !important` },
     "::selection": {
       background: palette.isDark
         ? "rgba(127,171,255,0.35)"

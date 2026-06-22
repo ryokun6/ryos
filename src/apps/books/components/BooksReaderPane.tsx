@@ -16,6 +16,7 @@ import {
   buildEpubTheme,
   buildFontFaceCss,
   columnModeToSpread,
+  isLikelyEpubBuffer,
   resolveReadingPalette,
 } from "../utils/booksReader";
 import { useBookCover } from "../utils/useBookCover";
@@ -195,6 +196,17 @@ export function BooksReaderPane({
         }
         const buffer = await blob.arrayBuffer();
         if (cancelled) return;
+        // The stored blob isn't a valid EPUB (zip). This happens when a cloud
+        // content download failed and an error payload (e.g. a 404
+        // `{"error":"Not found"}` JSON body) got saved as the book's bytes —
+        // show the error instead of feeding garbage to epub.js (which would
+        // otherwise render the raw error text as the "book").
+        if (!isLikelyEpubBuffer(buffer)) {
+          setLoadError(t("apps.books.reader.error"));
+          setCoverVisible(false);
+          setIsReady(true);
+          return;
+        }
 
         const host = renderHostRef.current;
         if (!host) return;
@@ -235,6 +247,24 @@ export function BooksReaderPane({
               const docEl = contents.document?.documentElement;
               if (docEl && !docEl.getAttribute("lang")) {
                 docEl.setAttribute("lang", "en");
+              }
+            } catch {
+              // ignore
+            }
+            // Strip publisher inline `color` styles so the themed reading color
+            // always wins. A stylesheet (even `!important`) can't beat an inline
+            // `color: … !important`, so removing the inline declaration is the
+            // only reliable way to guarantee legibility (e.g. dark-on-dark).
+            try {
+              const doc = contents.document;
+              if (doc) {
+                doc
+                  .querySelectorAll<HTMLElement>("[style]")
+                  .forEach((el) => {
+                    if (el.style?.color) {
+                      el.style.removeProperty("color");
+                    }
+                  });
               }
             } catch {
               // ignore

@@ -79,6 +79,8 @@ export function BooksShelfView({
   const scrollRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
   const [viewportHeight, setViewportHeight] = useState(0);
+  // Only fade the top once scrolled, so the first row isn't dimmed at rest.
+  const [scrolled, setScrolled] = useState(false);
   const [contextMenu, setContextMenu] = useState<ShelfContextMenu | null>(null);
 
   const openContextMenu = useMemo(
@@ -193,7 +195,7 @@ export function BooksShelfView({
       {isDarkMode && (
         <div
           className="pointer-events-none absolute inset-0 z-0"
-          style={{ backgroundColor: "rgba(0,0,0,0.34)" }}
+          style={{ backgroundColor: "rgba(0,0,0,0.3)" }}
           aria-hidden
         />
       )}
@@ -242,6 +244,19 @@ export function BooksShelfView({
         ref={scrollRef}
         data-books-scroll
         className="min-h-0 flex-1 overflow-y-auto"
+        onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 0)}
+        // Soft gradient mask at the top so content fades under the toolbar as it
+        // scrolls — only once scrolled, so the first row isn't dimmed at rest.
+        style={
+          scrolled
+            ? {
+                maskImage:
+                  "linear-gradient(to bottom, transparent 0, black 28px)",
+                WebkitMaskImage:
+                  "linear-gradient(to bottom, transparent 0, black 28px)",
+              }
+            : undefined
+        }
       >
         {library.length === 0 ? (
           <motion.div
@@ -288,17 +303,18 @@ export function BooksShelfView({
                           onContextMenu={openContextMenu}
                           morphLayout
                           layoutAnimated={layoutAnimated}
+                          isDark={isDarkMode}
                         />
                       ))}
                     </div>
-                    <ShelfLedge />
+                    <ShelfLedge isDark={isDarkMode} />
                   </div>
                 ))}
                 {/* Empty shelves so the bookcase fills the viewport */}
                 {Array.from({ length: emptyRowCount }).map((_, i) => (
                   <div key={`empty-${i}`} className="relative" aria-hidden>
                     <div style={{ minHeight: 168 }} />
-                    <ShelfLedge />
+                    <ShelfLedge isDark={isDarkMode} />
                   </div>
                 ))}
               </div>
@@ -313,6 +329,7 @@ export function BooksShelfView({
                     onContextMenu={openContextMenu}
                     morphLayout
                     layoutAnimated={layoutAnimated}
+                    isDark={isDarkMode}
                   />
                 ))}
               </div>
@@ -338,9 +355,13 @@ export function BooksShelfView({
   );
 }
 
-function ShelfLedge() {
+function ShelfLedge({ isDark }: { isDark?: boolean }) {
   return (
-    <div className="relative px-2">
+    <div
+      className="relative px-2"
+      // Match the back-panel scrim so the wooden shelves dim too in dark mode.
+      style={isDark ? { filter: "brightness(0.85)" } : undefined}
+    >
       {/* Upper face — the board's top surface in perspective: a trapezoid that's
           wider at the front edge (bottom) and narrows toward the back wall (top),
           so it recedes inward. Lit at the front, shadowed at the back. */}
@@ -388,6 +409,7 @@ function BookListRow({
   onContextMenu,
   morphLayout,
   layoutAnimated,
+  isDark,
 }: {
   entry: BooksLibraryEntry;
   progress?: BookProgress;
@@ -395,6 +417,7 @@ function BookListRow({
   onContextMenu?: (entry: BooksLibraryEntry, x: number, y: number) => void;
   morphLayout?: boolean;
   layoutAnimated?: boolean;
+  isDark?: boolean;
 }) {
   const { t } = useTranslation();
   const { info, loading } = useBookCover(entry.path, entry.modifiedAt);
@@ -435,6 +458,7 @@ function BookListRow({
         variant="list"
         morphLayout={morphLayout}
         layoutAnimated={layoutAnimated}
+        isDark={isDark}
         coverRef={coverRef}
       />
       <div className="min-w-0 flex-1">

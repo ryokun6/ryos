@@ -22,6 +22,8 @@ interface ShelfBookProps {
   morphLayout?: boolean;
   /** Animate the layout change (only true on a grid<->list toggle). */
   layoutAnimated?: boolean;
+  /** Dim the cover in dark mode (restored on hover). */
+  isDark?: boolean;
 }
 
 // Shared-layout transition for the book morph between grid and list views.
@@ -53,6 +55,7 @@ export function BookMorphCover({
   variant,
   morphLayout,
   layoutAnimated,
+  isDark,
   coverRef,
 }: {
   entry: BooksLibraryEntry;
@@ -64,6 +67,8 @@ export function BookMorphCover({
   /** Animate layout changes (true only on a grid<->list toggle); otherwise the
    *  change applies instantly so initial load / reflow stays static. */
   layoutAnimated?: boolean;
+  /** Dim the cover in dark mode (restored to full brightness on hover). */
+  isDark?: boolean;
   coverRef?: Ref<HTMLDivElement>;
 }) {
   const { t } = useTranslation();
@@ -82,8 +87,11 @@ export function BookMorphCover({
         "relative shrink-0 overflow-hidden",
         isGrid
           ? // Lighter resting shadow; grows on hover (button is `group`).
-            "h-[160px] w-[104px] rounded-[2px] rounded-l-[4px] transition-shadow duration-200 shadow-[0_6px_10px_-5px_rgba(0,0,0,0.75),-2px_0_3px_-2px_rgba(0,0,0,0.45)] group-hover:shadow-[0_18px_26px_-8px_rgba(0,0,0,0.62),-3px_0_5px_-2px_rgba(0,0,0,0.42)]"
-          : "h-[52px] w-[36px] rounded-[2px] rounded-l-[3px]"
+            "h-[160px] w-[104px] rounded-[2px] rounded-l-[4px] transition-[box-shadow,filter] duration-200 shadow-[0_6px_10px_-5px_rgba(0,0,0,0.75),-2px_0_3px_-2px_rgba(0,0,0,0.45)] group-hover:shadow-[0_18px_26px_-8px_rgba(0,0,0,0.62),-3px_0_5px_-2px_rgba(0,0,0,0.42)]"
+          : "h-[52px] w-[36px] rounded-[2px] rounded-l-[3px] transition-[filter] duration-200",
+        // Dark mode dims the cover; hovering the book (the `group` button/row)
+        // restores it to full brightness.
+        isDark && "brightness-[0.85] group-hover:brightness-100"
       )}
       style={
         isGrid ? undefined : { boxShadow: "0 3px 6px -2px rgba(0,0,0,0.6)" }
@@ -117,6 +125,7 @@ export function ShelfBook({
   onContextMenu,
   morphLayout,
   layoutAnimated,
+  isDark,
 }: ShelfBookProps) {
   const { info, loading } = useBookCover(entry.path, entry.modifiedAt);
   const percent = progress ? Math.round(progress.percentage * 100) : 0;
@@ -164,6 +173,7 @@ export function ShelfBook({
         variant="grid"
         morphLayout={morphLayout}
         layoutAnimated={layoutAnimated}
+        isDark={isDark}
       />
     </motion.button>
   );
