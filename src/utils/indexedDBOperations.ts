@@ -10,7 +10,7 @@ import { ensureIndexedDBInitialized, STORES } from "./indexedDB";
 // Structure for content stored in IndexedDB
 export interface StoredContent {
   name: string;
-  content: string | Blob;
+  content: string | Blob | ArrayBuffer;
 }
 
 const IMAGE_FILE_EXTENSIONS = new Set([

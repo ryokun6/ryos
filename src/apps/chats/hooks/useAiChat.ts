@@ -81,6 +81,14 @@ import {
 } from "../tools";
 import { SERVER_EXECUTED_TOOL_NAME_SET } from "@/shared/tools/serverExecuted";
 
+async function storedContentToText(
+  content: DocumentContent["content"]
+): Promise<string> {
+  if (typeof content === "string") return content;
+  if (content instanceof Blob) return content.text();
+  return new TextDecoder().decode(content);
+}
+
 const recentlyCreatedTextEditInstances = new Map<
   string,
   { instanceId: string; path: string; timestamp: number }
@@ -719,12 +727,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   throw new Error(`Failed to read applet content: ${path}`);
                 }
 
-                let content: string;
-                if (contentData.content instanceof Blob) {
-                  content = await contentData.content.text();
-                } else {
-                  content = contentData.content;
-                }
+                const content = await storedContentToText(contentData.content);
 
                 launchApp("applet-viewer", {
                   initialData: { path, content },
@@ -795,12 +798,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   throw new Error(`Failed to read document content: ${path}`);
                 }
 
-                let content: string;
-                if (contentData.content instanceof Blob) {
-                  content = await contentData.content.text();
-                } else {
-                  content = contentData.content;
-                }
+                const content = await storedContentToText(contentData.content);
 
                 // Pass initialData directly to launchApp (consistent with Terminal/Finder approach).
                 // TextEdit handles markdown-to-HTML conversion internally.
@@ -910,14 +908,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   throw new Error(`Failed to read file content: ${path}`);
                 }
 
-                let content: string;
-                if (typeof contentData.content === "string") {
-                  content = contentData.content;
-                } else if (contentData.content instanceof Blob) {
-                  content = await contentData.content.text();
-                } else {
-                  throw new Error("Unsupported content type");
-                }
+                const content = await storedContentToText(contentData.content);
 
                 const fileLabel = isApplet ? i18n.t("apps.chats.toolCalls.applet") : i18n.t("apps.chats.toolCalls.document");
                 addToolOutput({
@@ -1016,9 +1007,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               if (!isNewFile && mode !== "overwrite" && existingItem?.uuid) {
                 const existingData = await dbOperations.get<DocumentContent>(STORES.DOCUMENTS, existingItem.uuid);
                 if (existingData?.content) {
-                  const existingContent = typeof existingData.content === "string"
-                    ? existingData.content
-                    : await existingData.content.text();
+                  const existingContent = await storedContentToText(
+                    existingData.content
+                  );
                   finalContent = mode === "prepend"
                     ? content + existingContent
                     : existingContent + content;
@@ -1137,9 +1128,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   throw new Error(`Failed to read document content: ${path}`);
                 }
 
-                const existingContent = typeof contentData.content === "string"
-                  ? contentData.content
-                  : await contentData.content.text();
+                const existingContent = await storedContentToText(
+                  contentData.content
+                );
 
                 // Normalize existing content
                 const normalizedExisting = existingContent.replace(/\r\n?/g, "\n");
@@ -1215,9 +1206,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   throw new Error(`Failed to read applet content: ${path}`);
                 }
 
-                const existingContent = typeof contentData.content === "string"
-                  ? contentData.content
-                  : await contentData.content.text();
+                const existingContent = await storedContentToText(
+                  contentData.content
+                );
 
                 // Normalize existing content
                 const normalizedExisting = existingContent.replace(/\r\n?/g, "\n");

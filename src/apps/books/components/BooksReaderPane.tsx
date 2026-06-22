@@ -2,6 +2,7 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -12,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { useResizeObserverWithRef } from "@/hooks/useResizeObserver";
 import { readBookBlobContent } from "@/services/vfs/FileContentRepository";
 import type { BooksReaderSettings } from "@/stores/useBooksStore";
+import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import {
   buildEpubTheme,
   buildFontFaceCss,
@@ -53,6 +55,15 @@ interface FlipState {
   id: number;
 }
 
+type BooksDebugLevel = "info" | "warn" | "error";
+
+interface BooksDebugEvent {
+  at: string;
+  level: BooksDebugLevel;
+  step: string;
+  data?: unknown;
+}
+
 // Extra top clearance so the page never sits under the always-visible window
 // title bar (the window uses the full-bleed "notitlebar" material).
 const TOP_CLEARANCE = 36;
@@ -72,6 +83,94 @@ const SPREAD_MIN_WIDTH = 560;
 export const ZOOM_DURATION = 0.45;
 export const ZOOM_EASE = [0.32, 0.72, 0, 1] as const;
 const REVEAL_DELAY_MS = 480;
+const MAX_DEBUG_EVENTS = 80;
+
+function isRuntimeBooksDebugEnabled(): boolean {
+  try {
+    if (typeof window === "undefined") return false;
+    const url = new URL(window.location.href);
+    return (
+      url.searchParams.get("booksDebug") === "1" ||
+      window.localStorage.getItem("ryos:debug") === "1"
+    );
+  } catch {
+    return false;
+  }
+}
+
+function serializeDebugValue(
+  value: unknown,
+  seen = new WeakSet<object>()
+): unknown {
+  if (value instanceof Error) {
+    return {
+      name: value.name,
+      message: value.message,
+      stack: value.stack,
+    };
+  }
+  if (value instanceof DOMException) {
+    return {
+      name: value.name,
+      message: value.message,
+      code: value.code,
+      stack: value.stack,
+    };
+  }
+  if (value instanceof Blob) {
+    return {
+      kind: "Blob",
+      size: value.size,
+      type: value.type,
+      constructorName: value.constructor?.name,
+    };
+  }
+  if (value instanceof ArrayBuffer) {
+    return {
+      kind: "ArrayBuffer",
+      byteLength: value.byteLength,
+    };
+  }
+  if (ArrayBuffer.isView(value)) {
+    return {
+      kind: value.constructor?.name,
+      byteLength: value.byteLength,
+      length: "length" in value ? value.length : undefined,
+    };
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => serializeDebugValue(item, seen));
+  }
+  if (value && typeof value === "object") {
+    if (seen.has(value)) return "[Circular]";
+    seen.add(value);
+    const result: Record<string, unknown> = {};
+    for (const [key, nested] of Object.entries(value)) {
+      result[key] = serializeDebugValue(nested, seen);
+    }
+    return result;
+  }
+  return value;
+}
+
+function getBooksDebugEnvironment() {
+  if (typeof window === "undefined") return {};
+  return {
+    href: window.location.href,
+    userAgent: window.navigator.userAgent,
+    platform: window.navigator.platform,
+    language: window.navigator.language,
+    viewport: {
+      innerWidth: window.innerWidth,
+      innerHeight: window.innerHeight,
+      devicePixelRatio: window.devicePixelRatio,
+    },
+    standalone:
+      "standalone" in window.navigator
+        ? Boolean((window.navigator as Navigator & { standalone?: boolean }).standalone)
+        : undefined,
+  };
+}
 
 export function BooksReaderPane({
   entry,
@@ -97,6 +196,10 @@ export function BooksReaderPane({
   // Set when the EPUB can't be opened (missing blob or display failure) so the
   // user sees a message instead of being stuck on the loading shim / cover.
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [debugEvents, setDebugEvents] = useState<BooksDebugEvent[]>([]);
+  const [debugCopyStatus, setDebugCopyStatus] = useState<
+    "idle" | "copied" | "failed"
+  >("idle");
   // Zoom-in geometry for the cover overlay: animates from the clicked shelf
   // cover (`from`) to full-bleed (`to`), both in viewport-local coordinates.
   const [zoom, setZoom] = useState<{ from: ZoomRect; to: ZoomRect } | null>(
@@ -119,6 +222,29 @@ export function BooksReaderPane({
   const { info: coverInfo, loading: coverLoading } = useBookCover(
     entry.path,
     entry.modifiedAt
+  );
+
+  const displayDebugMode = useDisplaySettingsStore((s) => s.debugMode);
+  const booksDebugEnabled = displayDebugMode || isRuntimeBooksDebugEnabled();
+  const booksDebugEnabledRef = useRef(booksDebugEnabled);
+  booksDebugEnabledRef.current = booksDebugEnabled;
+
+  const appendDebugEvent = useCallback(
+    (step: string, data?: unknown, level: BooksDebugLevel = "info") => {
+      if (!booksDebugEnabledRef.current) return;
+      const event: BooksDebugEvent = {
+        at: new Date().toISOString(),
+        level,
+        step,
+        data: serializeDebugValue(data),
+      };
+      setDebugEvents((events) =>
+        [...events, event].slice(-MAX_DEBUG_EVENTS)
+      );
+      const log = level === "error" ? console.error : level === "warn" ? console.warn : console.log;
+      log("[BooksReader]", step, event.data);
+    },
+    []
   );
 
   const palette = resolveReadingPalette(settings.themeOverride, osIsDark);
@@ -151,6 +277,36 @@ export function BooksReaderPane({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    if (!booksDebugEnabled) return;
+    const onError = (event: ErrorEvent) => {
+      appendDebugEvent(
+        "window.error",
+        {
+          message: event.message,
+          filename: event.filename,
+          lineno: event.lineno,
+          colno: event.colno,
+          error: event.error,
+        },
+        "error"
+      );
+    };
+    const onUnhandledRejection = (event: PromiseRejectionEvent) => {
+      appendDebugEvent(
+        "window.unhandledrejection",
+        { reason: event.reason },
+        "error"
+      );
+    };
+    window.addEventListener("error", onError);
+    window.addEventListener("unhandledrejection", onUnhandledRejection);
+    return () => {
+      window.removeEventListener("error", onError);
+      window.removeEventListener("unhandledrejection", onUnhandledRejection);
+    };
+  }, [appendDebugEvent, booksDebugEnabled]);
+
   // Create the book + rendition for the active EPUB.
   useEffect(() => {
     let cancelled = false;
@@ -159,11 +315,33 @@ export function BooksReaderPane({
     setIsReady(false);
     setCoverVisible(true);
     setLoadError(null);
+    setDebugCopyStatus("idle");
+    setDebugEvents([]);
+    appendDebugEvent("open:start", {
+      path: entry.path,
+      fileName: entry.fileName,
+      name: entry.name,
+      modifiedAt: entry.modifiedAt,
+      initialCfi: initialCfiRef.current,
+      settings,
+      environment: getBooksDebugEnvironment(),
+    });
 
     const nextFrame = () =>
       new Promise<void>((resolve) =>
         requestAnimationFrame(() => resolve())
       );
+
+    const watch = async <T,>(step: string, promise: Promise<T>): Promise<T> => {
+      const timeout = window.setTimeout(() => {
+        appendDebugEvent(`${step}:stillPending`, undefined, "warn");
+      }, 8000);
+      try {
+        return await promise;
+      } finally {
+        window.clearTimeout(timeout);
+      }
+    };
 
     const cleanupInstance = () => {
       try {
@@ -184,6 +362,7 @@ export function BooksReaderPane({
 
     (async () => {
       try {
+        appendDebugEvent("content:read:start");
         const blob = await readBookBlobContent(entry.path);
         if (cancelled) return;
         if (!blob) {
@@ -192,10 +371,24 @@ export function BooksReaderPane({
           setLoadError(t("apps.books.reader.error"));
           setCoverVisible(false);
           setIsReady(true);
+          appendDebugEvent("content:read:missing", undefined, "error");
           return;
         }
+        appendDebugEvent("content:read:success", {
+          blob,
+          isBlobInstance: blob instanceof Blob,
+          hasArrayBuffer: typeof blob.arrayBuffer === "function",
+        });
+        appendDebugEvent("blob:arrayBuffer:start");
         const buffer = await blob.arrayBuffer();
         if (cancelled) return;
+        const magic = Array.from(new Uint8Array(buffer, 0, 4)).map((byte) =>
+          byte.toString(16).padStart(2, "0")
+        );
+        appendDebugEvent("blob:arrayBuffer:success", {
+          byteLength: buffer.byteLength,
+          magic,
+        });
         // The stored blob isn't a valid EPUB (zip). This happens when a cloud
         // content download failed and an error payload (e.g. a 404
         // `{"error":"Not found"}` JSON body) got saved as the book's bytes —
@@ -205,21 +398,87 @@ export function BooksReaderPane({
           setLoadError(t("apps.books.reader.error"));
           setCoverVisible(false);
           setIsReady(true);
+          appendDebugEvent("epub:magic:invalid", { magic }, "error");
           return;
         }
+        appendDebugEvent("epub:magic:valid", { magic });
 
         const host = renderHostRef.current;
-        if (!host) return;
+        if (!host) {
+          setLoadError(t("apps.books.reader.error"));
+          setCoverVisible(false);
+          setIsReady(true);
+          appendDebugEvent("renderHost:missing", undefined, "error");
+          return;
+        }
         // Wait until the host has a measurable size so epub.js can lay out.
         for (let i = 0; i < 40 && host.clientHeight < 2; i++) {
           await nextFrame();
           if (cancelled) return;
         }
+        appendDebugEvent("renderHost:measured", {
+          clientWidth: host.clientWidth,
+          clientHeight: host.clientHeight,
+          rect: host.getBoundingClientRect().toJSON?.() ?? {
+            width: host.getBoundingClientRect().width,
+            height: host.getBoundingClientRect().height,
+            top: host.getBoundingClientRect().top,
+            left: host.getBoundingClientRect().left,
+          },
+        });
+        if (host.clientWidth < 2 || host.clientHeight < 2) {
+          setLoadError(t("apps.books.reader.error"));
+          setCoverVisible(false);
+          setIsReady(true);
+          appendDebugEvent(
+            "renderHost:zeroSize",
+            { clientWidth: host.clientWidth, clientHeight: host.clientHeight },
+            "error"
+          );
+          return;
+        }
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        appendDebugEvent("epubjs:createBook:start");
         book = ePub(buffer as any);
         bookRef.current = book;
+        appendDebugEvent("epubjs:createBook:success", {
+          archived: book.archived,
+          settings: book.settings,
+        });
 
+        const bookEvents = book as unknown as {
+          on?: (eventName: string, handler: (...args: unknown[]) => void) => void;
+        };
+        bookEvents.on?.("openFailed", (error) => {
+          appendDebugEvent("epubjs:book:openFailed", error, "error");
+          if (!cancelled) {
+            setLoadError(t("apps.books.reader.error"));
+            setCoverVisible(false);
+            setIsReady(true);
+          }
+        });
+
+        appendDebugEvent("epubjs:bookReady:start");
+        await watch("epubjs:bookReady", book.ready);
+        const readyBook = book as unknown as {
+          container?: { packagePath?: string };
+          package?: { metadata?: unknown };
+        };
+        appendDebugEvent("epubjs:bookReady:success", {
+          packagePath: readyBook.container?.packagePath,
+          metadata: readyBook.package?.metadata,
+        });
+        if (cancelled) {
+          cleanupInstance();
+          return;
+        }
+
+        appendDebugEvent("epubjs:renderTo:start", {
+          width: host.clientWidth,
+          height: host.clientHeight,
+          spread: columnModeToSpread(settings.columnMode),
+        });
         rendition = book.renderTo(host, {
           width: host.clientWidth || "100%",
           height: host.clientHeight || "100%",
@@ -229,6 +488,37 @@ export function BooksReaderPane({
           manager: "default",
         });
         renditionRef.current = rendition;
+        appendDebugEvent("epubjs:renderTo:success");
+
+        rendition.on("started", () =>
+          appendDebugEvent("epubjs:rendition:started")
+        );
+        rendition.on("attached", () =>
+          appendDebugEvent("epubjs:rendition:attached")
+        );
+        rendition.on("rendered", (section: { href?: string; idref?: string }) =>
+          appendDebugEvent("epubjs:rendition:rendered", {
+            href: section?.href,
+            idref: section?.idref,
+          })
+        );
+        rendition.on("displayed", (section: { href?: string; idref?: string }) =>
+          appendDebugEvent("epubjs:rendition:displayed", {
+            href: section?.href,
+            idref: section?.idref,
+          })
+        );
+        rendition.on("displayError", (error: unknown) =>
+          appendDebugEvent("epubjs:rendition:displayError", error, "error")
+        );
+        rendition.on(
+          "layout",
+          (props: unknown, changed: unknown) =>
+            appendDebugEvent("epubjs:rendition:layout", { props, changed })
+        );
+        rendition.on("resized", (size: unknown) =>
+          appendDebugEvent("epubjs:rendition:resized", size)
+        );
 
         const fontFaceCss = buildFontFaceCss(window.location.origin);
         rendition.hooks.content.register(
@@ -238,8 +528,9 @@ export function BooksReaderPane({
           }) => {
             try {
               contents.addStylesheetCss(fontFaceCss, "ryos-book-fonts");
+              appendDebugEvent("epubjs:contentHook:fonts:success");
             } catch {
-              // ignore
+              appendDebugEvent("epubjs:contentHook:fonts:failed", undefined, "warn");
             }
             // `hyphens: auto` only kicks in when the content language is known.
             // Many EPUBs omit it, so default to English when absent.
@@ -274,6 +565,7 @@ export function BooksReaderPane({
 
         rendition.themes.default(buildEpubTheme(settings, palette));
         rendition.themes.fontSize(`${settings.fontSizePct}%`);
+        appendDebugEvent("epubjs:theme:applied");
 
         const activeBook = book;
         rendition.on(
@@ -314,12 +606,20 @@ export function BooksReaderPane({
         rendition.on("keyup", (event: KeyboardEvent) => handleKey(event));
 
         try {
-          await rendition.display(initialCfiRef.current || undefined);
+          appendDebugEvent("epubjs:display:start", {
+            initialCfi: initialCfiRef.current,
+          });
+          await watch(
+            "epubjs:display",
+            rendition.display(initialCfiRef.current || undefined)
+          );
+          appendDebugEvent("epubjs:display:success");
         } catch (err) {
           // Corrupt / incompatible EPUB — show an error instead of revealing an
           // empty reader shell. Do not proceed to setIsReady / cover hide.
           if (!cancelled) {
             console.error("[Books] Failed to display book", err);
+            appendDebugEvent("epubjs:display:failed", err, "error");
             setLoadError(t("apps.books.reader.error"));
             setCoverVisible(false);
             setIsReady(true);
@@ -332,6 +632,7 @@ export function BooksReaderPane({
           return;
         }
         setIsReady(true);
+        appendDebugEvent("reader:ready");
         // Reveal the page shortly after the zoom-in cover settles.
         window.setTimeout(() => {
           if (!cancelled) setCoverVisible(false);
@@ -340,10 +641,14 @@ export function BooksReaderPane({
         // Generate locations for accurate progress percentages (best-effort).
         activeBook.ready
           .then(() => activeBook.locations.generate(1600))
-          .catch(() => undefined);
+          .then(() => appendDebugEvent("epubjs:locations:generated"))
+          .catch((error) =>
+            appendDebugEvent("epubjs:locations:failed", error, "warn")
+          );
       } catch (err) {
         if (!cancelled) {
           console.error("[Books] Failed to open book", err);
+          appendDebugEvent("reader:open:failed", err, "error");
           setLoadError(t("apps.books.reader.error"));
           setCoverVisible(false);
           setIsReady(true);
@@ -448,6 +753,61 @@ export function BooksReaderPane({
     host.addEventListener("keydown", onKeyDown);
     return () => host.removeEventListener("keydown", onKeyDown);
   }, [handleKey]);
+
+  const debugSnapshot = useMemo(
+    () =>
+      JSON.stringify(
+        {
+          book: {
+            path: entry.path,
+            fileName: entry.fileName,
+            name: entry.name,
+            modifiedAt: entry.modifiedAt,
+          },
+          state: {
+            isReady,
+            coverVisible,
+            loadError,
+            progressPct,
+            atStart,
+            atEnd,
+            initialCfi,
+            initialPercentage,
+            settings,
+          },
+          environment: getBooksDebugEnvironment(),
+          events: debugEvents,
+        },
+        null,
+        2
+      ),
+    [
+      atEnd,
+      atStart,
+      coverVisible,
+      debugEvents,
+      entry.fileName,
+      entry.modifiedAt,
+      entry.name,
+      entry.path,
+      initialCfi,
+      initialPercentage,
+      isReady,
+      loadError,
+      progressPct,
+      settings,
+    ]
+  );
+
+  const copyDebugSnapshot = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(debugSnapshot);
+      setDebugCopyStatus("copied");
+    } catch (error) {
+      setDebugCopyStatus("failed");
+      appendDebugEvent("debug:copy:failed", error, "warn");
+    }
+  }, [appendDebugEvent, debugSnapshot]);
 
   return (
     <div
@@ -575,6 +935,50 @@ export function BooksReaderPane({
           >
             {loadError}
           </span>
+        </div>
+      )}
+
+      {booksDebugEnabled && (
+        <div
+          className={cn(
+            "absolute bottom-8 left-3 right-3 z-[70] max-h-[42%] overflow-hidden rounded border p-2 text-left shadow-xl",
+            palette.isDark
+              ? "border-white/20 bg-black/85 text-white"
+              : "border-black/20 bg-white/90 text-black"
+          )}
+        >
+          <div className="mb-1 flex items-center justify-between gap-2">
+            <span className="font-os-ui text-[10px] font-bold uppercase tracking-wide">
+              {t("apps.books.reader.debugTitle", {
+                defaultValue: "EPUB debug log",
+              })}
+            </span>
+            <button
+              type="button"
+              onClick={copyDebugSnapshot}
+              className={cn(
+                "rounded px-2 py-1 font-os-ui text-[10px]",
+                palette.isDark
+                  ? "bg-white/15 text-white hover:bg-white/25"
+                  : "bg-black/10 text-black hover:bg-black/15"
+              )}
+            >
+              {debugCopyStatus === "copied"
+                ? t("apps.books.reader.debugCopied", {
+                    defaultValue: "Copied",
+                  })
+                : debugCopyStatus === "failed"
+                  ? t("apps.books.reader.debugCopyFailed", {
+                      defaultValue: "Copy failed",
+                    })
+                  : t("apps.books.reader.debugCopy", {
+                      defaultValue: "Copy logs",
+                    })}
+            </button>
+          </div>
+          <pre className="max-h-[calc(42vh-48px)] overflow-auto whitespace-pre-wrap break-words rounded bg-black/80 p-2 font-mono text-[10px] leading-snug text-lime-100">
+            {debugSnapshot}
+          </pre>
         </div>
       )}
 

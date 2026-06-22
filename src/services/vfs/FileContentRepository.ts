@@ -58,7 +58,21 @@ export async function readContentForPath<T extends StoredContent = StoredContent
 
   const uuid = getFileContentUuid(path);
   if (!uuid) return null;
-  const existing = await readContentByKey<T>(storeName, uuid);
+  let existing: T | undefined;
+  try {
+    existing = await readContentByKey<T>(storeName, uuid);
+  } catch (error) {
+    if (storeName !== STORES.BOOKS) {
+      throw error;
+    }
+    const recovered = await ensureFileContentLoaded(path, uuid, {
+      forceReload: true,
+    });
+    if (!recovered) {
+      throw error;
+    }
+    return (await readContentByKey<T>(storeName, uuid)) ?? null;
+  }
   if (existing) return existing;
 
   const loaded = await ensureFileContentLoaded(path, uuid);
@@ -89,6 +103,9 @@ export async function readBookBlobContent(path: string): Promise<Blob | null> {
   const item = await readContentForPath<StoredContent>(path, {
     expectedStore: STORES.BOOKS,
   });
+  if (item?.content instanceof ArrayBuffer) {
+    return new Blob([item.content], { type: "application/epub+zip" });
+  }
   return isBlobLike(item?.content) ? item.content : null;
 }
 

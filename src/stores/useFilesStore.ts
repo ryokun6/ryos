@@ -296,7 +296,8 @@ function registerFilesForLazyLoad(
  */
 export async function ensureFileContentLoaded(
   filePath: string,
-  uuid: string
+  uuid: string,
+  options: { forceReload?: boolean } = {}
 ): Promise<boolean> {
   const storeName = filePath.startsWith("/Documents/")
     ? STORES.DOCUMENTS
@@ -310,7 +311,7 @@ export async function ensureFileContentLoaded(
   if (!storeName) return false;
 
   // Prevent duplicate concurrent loads
-  if (loadingAssets.has(uuid)) {
+  if (loadingAssets.has(uuid) && !options.forceReload) {
     // Wait for existing load to complete
     await new Promise((resolve) => {
       const checkComplete = () => {
@@ -349,17 +350,19 @@ export async function ensureFileContentLoaded(
   try {
     db = await ensureIndexedDBInitialized();
     
-    // Check if content already exists in IndexedDB
-    const existing = await new Promise<StoredContent | undefined>((resolve) => {
-      const tx = db!.transaction(storeName, "readonly");
-      const store = tx.objectStore(storeName);
-      const req = store.get(uuid);
-      req.onsuccess = () => resolve(req.result as StoredContent | undefined);
-      req.onerror = () => resolve(undefined);
-    });
-    
-    if (existing) {
-      return true;
+    if (!options.forceReload) {
+      // Check if content already exists in IndexedDB
+      const existing = await new Promise<StoredContent | undefined>((resolve) => {
+        const tx = db!.transaction(storeName, "readonly");
+        const store = tx.objectStore(storeName);
+        const req = store.get(uuid);
+        req.onsuccess = () => resolve(req.result as StoredContent | undefined);
+        req.onerror = () => resolve(undefined);
+      });
+      
+      if (existing) {
+        return true;
+      }
     }
 
     // Check if this file has pending lazy load data
@@ -378,7 +381,8 @@ export async function ensureFileContentLoaded(
         retry: { maxAttempts: 2, initialDelayMs: 500 },
       });
       
-      const content = await resp.blob();
+      const content =
+        storeName === STORES.BOOKS ? await resp.arrayBuffer() : await resp.blob();
       
       // Save to IndexedDB
       await new Promise<void>((resolve, reject) => {

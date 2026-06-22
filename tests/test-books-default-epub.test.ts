@@ -23,6 +23,8 @@ const { readBookBlobContent } = await import(
   "../src/services/vfs/FileContentRepository"
 );
 const { useFilesStore } = await import("../src/stores/useFilesStore");
+const { dbOperations, STORES } = await import("../src/utils/indexedDB");
+const { ensureFileContentLoaded } = await import("../src/stores/useFilesStore");
 
 const BOOK_PATH = "/Books/Meditations - Marcus Aurelius.epub";
 const BOOK_ASSET_PATH = "/assets/books/meditations-marcus-aurelius.epub";
@@ -102,5 +104,30 @@ describe("default Books EPUB", () => {
 
     const bytes = new Uint8Array(await blob!.arrayBuffer(), 0, 4);
     expect(Array.from(bytes)).toEqual([0x50, 0x4b, 0x03, 0x04]);
+
+    const stored = await dbOperations.get<{ content: unknown }>(
+      STORES.BOOKS,
+      item!.uuid!
+    );
+    expect(stored?.content).toBeInstanceOf(ArrayBuffer);
+  });
+
+  test("force-reloads default EPUB bytes over an unreadable stored record", async () => {
+    await useFilesStore.getState().resetLibrary();
+    const item = useFilesStore.getState().getItem(BOOK_PATH);
+    expect(item?.uuid).toBeTruthy();
+
+    await dbOperations.put(
+      STORES.BOOKS,
+      { name: item!.name, content: new Blob(["bad"]) },
+      item!.uuid!
+    );
+
+    await ensureFileContentLoaded(BOOK_PATH, item!.uuid!, { forceReload: true });
+    const stored = await dbOperations.get<{ content: unknown }>(
+      STORES.BOOKS,
+      item!.uuid!
+    );
+    expect(stored?.content).toBeInstanceOf(ArrayBuffer);
   });
 });
