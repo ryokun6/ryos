@@ -9,7 +9,7 @@ import {
   DropdownMenuSubContent,
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
-import { ReactNode, useEffect } from "react";
+import { ReactNode, useCallback, useEffect } from "react";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { useSound, Sounds } from "@/hooks/useSound";
 
@@ -183,6 +183,9 @@ export function RightClickMenu({
   align = "start",
 }: RightClickMenuProps) {
   const { play: playMenuOpen } = useSound(Sounds.MENU_OPEN);
+  const stopMenuEventPropagation = useCallback((event: React.SyntheticEvent) => {
+    event.stopPropagation();
+  }, []);
 
   // Play open sound when menu appears
   useEffect(() => {
@@ -211,6 +214,11 @@ export function RightClickMenu({
         sideOffset={4}
         alignOffset={4}
         className="px-0"
+        onPointerDown={stopMenuEventPropagation}
+        onMouseDown={stopMenuEventPropagation}
+        onTouchStart={stopMenuEventPropagation}
+        onClick={stopMenuEventPropagation}
+        onContextMenu={stopMenuEventPropagation}
       >
         {renderItems(items)}
       </DropdownMenuContent>
