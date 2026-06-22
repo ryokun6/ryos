@@ -41,6 +41,7 @@ import {
   deserializeStoreItem,
   readStoreItems,
   serializeStoreItems,
+  type IndexedDBStoreSerializationOptions,
   type IndexedDBStoreItemWithKey as StoreItemWithKey,
 } from "@/utils/indexedDBBackup";
 import type { SyncNamespace } from "@/shared/sync2/namespaces";
@@ -145,9 +146,20 @@ export function clearDeletionMarkerForKey(key: string): void {
 async function upsertStoreItems(
   db: IDBDatabase,
   storeName: string,
-  items: StoreItemWithKey[]
+  items: StoreItemWithKey[],
+  options?: {
+    mapValue?: (value: Record<string, unknown>) => Promise<Record<string, unknown>>;
+  }
 ): Promise<void> {
   if (items.length === 0) return;
+  const restoredItems = await Promise.all(
+    items.map(async (item) => ({
+      key: item.key,
+      value: options?.mapValue
+        ? await options.mapValue(deserializeStoreItem(item))
+        : deserializeStoreItem(item),
+    }))
+  );
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(storeName, "readwrite");
     const store = transaction.objectStore(storeName);
@@ -156,14 +168,38 @@ async function upsertStoreItems(
     transaction.onabort = () =>
       reject(transaction.error || new Error(`Transaction aborted: ${storeName}`));
     try {
-      for (const item of items) {
-        store.put(deserializeStoreItem(item), item.key);
+      for (const item of restoredItems) {
+        store.put(item.value, item.key);
       }
     } catch (error) {
       transaction.abort();
       reject(error);
     }
   });
+}
+
+const BOOK_BLOB_SERIALIZATION_OPTIONS: IndexedDBStoreSerializationOptions = {
+  arrayBufferFieldsAsBlobs: {
+    content: "application/epub+zip",
+  },
+};
+
+function getBlobStoreSerializationOptions(
+  storeName: string
+): IndexedDBStoreSerializationOptions | undefined {
+  return storeName === STORES.BOOKS ? BOOK_BLOB_SERIALIZATION_OPTIONS : undefined;
+}
+
+async function normalizeBookStoreValue(
+  value: Record<string, unknown>
+): Promise<Record<string, unknown>> {
+  if (value.content instanceof Blob) {
+    return {
+      ...value,
+      content: await value.content.arrayBuffer(),
+    };
+  }
+  return value;
 }
 
 async function deleteStoreItemsByKey(
@@ -1494,7 +1530,10 @@ function createBlobCodec(
       // Blob codec collect returns serialized items keyed by sync key; the
       // engine converts them to `{ blob: ref }` docs after content upload.
       const db = requireDb(ctx, namespace);
-      const items = await serializeStoreItems(await readStoreItems(db, storeName));
+      const items = await serializeStoreItems(
+        await readStoreItems(db, storeName),
+        getBlobStoreSerializationOptions(storeName)
+      );
       const docs = new Map<string, unknown>();
       for (const item of items) {
         if (item.key) {
@@ -1505,7 +1544,9 @@ function createBlobCodec(
     },
     async putItems(items, ctx) {
       const db = requireDb(ctx, namespace);
-      await upsertStoreItems(db, storeName, items);
+      await upsertStoreItems(db, storeName, items, {
+        mapValue: storeName === STORES.BOOKS ? normalizeBookStoreValue : undefined,
+      });
     },
     async deleteItems(keys, ctx) {
       const db = requireDb(ctx, namespace);

@@ -7,23 +7,9 @@ export interface IndexedDBStoreItemWithKey {
   value: IndexedDBStoreItem;
 }
 
-export const blobToBase64 = (blob: Blob): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result as string);
-    reader.onerror = () =>
-      reject(reader.error || new Error("Failed to serialize blob"));
-    reader.readAsDataURL(blob);
-  });
-
-export const base64ToBlob = (dataUrl: string): Blob => {
-  const [meta, base64] = dataUrl.split(",");
-  const mimeMatch = meta.match(/data:(.*);base64/);
-  const mime = mimeMatch ? mimeMatch[1] : "application/octet-stream";
-  const binary = atob(base64);
-  const array = Uint8Array.from(binary, (char) => char.charCodeAt(0));
-  return new Blob([array], { type: mime });
-};
+export interface IndexedDBStoreSerializationOptions {
+  arrayBufferFieldsAsBlobs?: Record<string, string>;
+}
 
 const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
   const bytes = new Uint8Array(buffer);
@@ -40,19 +26,25 @@ const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
   return btoa(chunks.join(""));
 };
 
-const base64ToArrayBuffer = (base64: string): ArrayBuffer => {
+export const blobToBase64 = async (blob: Blob): Promise<string> => {
+  const base64 = arrayBufferToBase64(await blob.arrayBuffer());
+  return `data:${blob.type || "application/octet-stream"};base64,${base64}`;
+};
+
+export const base64ToBlob = (dataUrl: string): Blob => {
+  const [meta, base64] = dataUrl.split(",");
+  const mimeMatch = meta.match(/data:(.*);base64/);
+  const mime = mimeMatch ? mimeMatch[1] : "application/octet-stream";
   const binary = atob(base64);
-  const array = new Uint8Array(binary.length);
-  for (let index = 0; index < binary.length; index += 1) {
-    array[index] = binary.charCodeAt(index);
-  }
-  return array.buffer;
+  const array = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+  return new Blob([array], { type: mime });
 };
 
 export async function readAndSerializeStoreItemByKey(
   db: IDBDatabase,
   storeName: string,
-  key: string
+  key: string,
+  options?: IndexedDBStoreSerializationOptions
 ): Promise<IndexedDBStoreItemWithKey | null> {
   return new Promise((resolve, reject) => {
     try {
@@ -68,7 +60,7 @@ export async function readAndSerializeStoreItemByKey(
           key,
           value: request.result as IndexedDBStoreItem,
         };
-        resolve(await serializeStoreItem(item));
+        resolve(await serializeStoreItem(item, options));
       };
       request.onerror = () => reject(request.error);
     } catch (error) {
@@ -80,11 +72,12 @@ export async function readAndSerializeStoreItemByKey(
 export async function readAndSerializeStoreItemsByKeys(
   db: IDBDatabase,
   storeName: string,
-  keys: string[]
+  keys: string[],
+  options?: IndexedDBStoreSerializationOptions
 ): Promise<IndexedDBStoreItemWithKey[]> {
   const unique = [...new Set(keys.filter(Boolean))];
   const results = await Promise.all(
-    unique.map((k) => readAndSerializeStoreItemByKey(db, storeName, k))
+    unique.map((k) => readAndSerializeStoreItemByKey(db, storeName, k, options))
   );
   return results.filter((x): x is IndexedDBStoreItemWithKey => x != null);
 }
@@ -122,7 +115,8 @@ export async function readStoreItems(
 }
 
 export async function serializeStoreItem(
-  item: IndexedDBStoreItemWithKey
+  item: IndexedDBStoreItemWithKey,
+  options?: IndexedDBStoreSerializationOptions
 ): Promise<IndexedDBStoreItemWithKey> {
   const serializedValue: Record<string, unknown> = {
     ...item.value,
@@ -132,9 +126,16 @@ export async function serializeStoreItem(
     if (item.value[key] instanceof Blob) {
       serializedValue[key] = await blobToBase64(item.value[key] as Blob);
       serializedValue[`_isBlob_${key}`] = true;
-    } else if (item.value[key] instanceof ArrayBuffer) {
-      serializedValue[key] = arrayBufferToBase64(item.value[key] as ArrayBuffer);
-      serializedValue[`_isArrayBuffer_${key}`] = true;
+    } else if (
+      item.value[key] instanceof ArrayBuffer &&
+      options?.arrayBufferFieldsAsBlobs?.[key]
+    ) {
+      serializedValue[key] = await blobToBase64(
+        new Blob([item.value[key] as ArrayBuffer], {
+          type: options.arrayBufferFieldsAsBlobs[key],
+        })
+      );
+      serializedValue[`_isBlob_${key}`] = true;
     }
   }
 
@@ -145,9 +146,10 @@ export async function serializeStoreItem(
 }
 
 export async function serializeStoreItems(
-  items: IndexedDBStoreItemWithKey[]
+  items: IndexedDBStoreItemWithKey[],
+  options?: IndexedDBStoreSerializationOptions
 ): Promise<IndexedDBStoreItemWithKey[]> {
-  return Promise.all(items.map((item) => serializeStoreItem(item)));
+  return Promise.all(items.map((item) => serializeStoreItem(item, options)));
 }
 
 export function deserializeStoreItem(
@@ -159,16 +161,9 @@ export function deserializeStoreItem(
 
   for (const key of Object.keys(item.value)) {
     const isBlobKey = `_isBlob_${key}`;
-    const isArrayBufferKey = `_isArrayBuffer_${key}`;
     if (item.value[isBlobKey] === true && typeof item.value[key] === "string") {
       restoredValue[key] = base64ToBlob(item.value[key] as string);
       delete restoredValue[isBlobKey];
-    } else if (
-      item.value[isArrayBufferKey] === true &&
-      typeof item.value[key] === "string"
-    ) {
-      restoredValue[key] = base64ToArrayBuffer(item.value[key] as string);
-      delete restoredValue[isArrayBufferKey];
     }
   }
 
