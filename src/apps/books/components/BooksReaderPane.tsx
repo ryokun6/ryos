@@ -61,6 +61,9 @@ const FOOTER_HEIGHT = 30;
 // epub.js render host (rather than body padding) so epub.js's paginated column
 // math stays correct — it computes columns from the host width.
 const SIDE_CLEARANCE = 32;
+// Width at which auto column mode switches to a two-page spread. epub.js
+// defaults to 800; a lower value shows two columns on narrower windows.
+const SPREAD_MIN_WIDTH = 560;
 
 // Open transition timings. Keep the page reveal slightly after the cover zoom
 // settles so the two never fight (which reads as a "pop"). Shared with the
@@ -210,6 +213,7 @@ export function BooksReaderPane({
           height: host.clientHeight || "100%",
           flow: "paginated",
           spread: columnModeToSpread(settings.columnMode),
+          minSpreadWidth: SPREAD_MIN_WIDTH,
           manager: "default",
         });
         renditionRef.current = rendition;
