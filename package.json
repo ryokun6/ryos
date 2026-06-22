@@ -183,6 +183,7 @@
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.26",
+    "fake-indexeddb": "^6.2.5",
     "globals": "^15.15.0",
     "happy-dom": "^20.10.6",
     "playwright": "^1.58.0",

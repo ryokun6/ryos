@@ -791,7 +791,7 @@ export function useFileSystem(
       }
 
       // 2. Handle Files (Fetch content if needed)
-      let contentToUse: string | Blob | undefined = undefined;
+      let contentToUse: string | Blob | ArrayBuffer | undefined = undefined;
       const contentUrlToUse: string | undefined = undefined;
       let contentAsString: string | undefined = undefined;
 
@@ -867,6 +867,12 @@ export function useFileSystem(
         }
 
         // Process content: Read blob to string for TextEdit and Applets, create URL for Paint
+        if (contentToUse instanceof ArrayBuffer) {
+          contentToUse = new Blob([contentToUse], {
+            type: storeName === STORES.BOOKS ? "application/epub+zip" : undefined,
+          });
+        }
+
         if (contentToUse instanceof Blob) {
           if (
             storeName === STORES.DOCUMENTS ||
@@ -934,7 +940,10 @@ export function useFileSystem(
         } else if (storeName === STORES.IMAGES) {
           // Pass the Blob object itself to Paint via initialData
           launchApp("paint", {
-            initialData: { path: file.path, content: contentToUse },
+            initialData: {
+              path: file.path,
+              content: contentToUse instanceof Blob ? contentToUse : undefined,
+            },
             launchOrigin,
           }); // Pass contentToUse (Blob)
         } else if (storeName === STORES.BOOKS) {
@@ -1233,7 +1242,10 @@ export function useFileSystem(
           try {
             const contentToStore: DocumentContent = {
               name: name,
-              content: content,
+              content:
+                storeName === STORES.BOOKS && content instanceof Blob
+                  ? await content.arrayBuffer()
+                  : content,
             };
             console.log(
               `[useFileSystem:saveFile] Saving content to IndexedDB (${storeName}) with UUID: ${savedItem.uuid}`
@@ -1751,6 +1763,8 @@ export function useFileSystem(
                     let size: number;
                     if (content.content instanceof Blob) {
                       size = content.content.size;
+                    } else if (content.content instanceof ArrayBuffer) {
+                      size = content.content.byteLength;
                     } else if (typeof content.content === "string") {
                       // Convert string to blob to get accurate byte size
                       size = new Blob([content.content]).size;

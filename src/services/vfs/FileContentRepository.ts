@@ -4,6 +4,7 @@ import {
   type StoredContent,
 } from "@/utils/indexedDBOperations";
 import { getFileContentUuid } from "@/services/vfs/FileMetadataService";
+import { ensureFileContentLoaded } from "@/stores/useFilesStore";
 
 export type VfsContentStoreName =
   | typeof STORES.DOCUMENTS
@@ -14,6 +15,17 @@ export type VfsContentStoreName =
 
 export interface VfsStoredContent extends StoredContent {
   contentUrl?: string;
+}
+
+function isBlobLike(value: unknown): value is Blob {
+  return (
+    value instanceof Blob ||
+    (typeof value === "object" &&
+      value !== null &&
+      typeof (value as Blob).arrayBuffer === "function" &&
+      typeof (value as Blob).text === "function" &&
+      typeof (value as Blob).size === "number")
+  );
 }
 
 export async function readContentByKey<T extends StoredContent = StoredContent>(
@@ -46,6 +58,26 @@ export async function readContentForPath<T extends StoredContent = StoredContent
 
   const uuid = getFileContentUuid(path);
   if (!uuid) return null;
+  let existing: T | undefined;
+  try {
+    existing = await readContentByKey<T>(storeName, uuid);
+  } catch (error) {
+    if (storeName !== STORES.BOOKS) {
+      throw error;
+    }
+    const recovered = await ensureFileContentLoaded(path, uuid, {
+      forceReload: true,
+    });
+    if (!recovered) {
+      throw error;
+    }
+    return (await readContentByKey<T>(storeName, uuid)) ?? null;
+  }
+  if (existing) return existing;
+
+  const loaded = await ensureFileContentLoaded(path, uuid);
+  if (!loaded) return null;
+
   return (await readContentByKey<T>(storeName, uuid)) ?? null;
 }
 
@@ -64,14 +96,25 @@ export async function readImageBlobContent(path: string): Promise<Blob | null> {
   const item = await readContentForPath<StoredContent>(path, {
     expectedStore: STORES.IMAGES,
   });
-  return item?.content instanceof Blob ? item.content : null;
+  return isBlobLike(item?.content) ? item.content : null;
 }
 
 export async function readBookBlobContent(path: string): Promise<Blob | null> {
+  const uuid = getFileContentUuid(path);
+  if (uuid) {
+    // Safari can throw "UnknownError: Internal error" just by reading a Blob
+    // previously persisted in IndexedDB. For bundled default books, overwrite
+    // from the same-origin asset before any read so the bad record is replaced
+    // without touching it.
+    await ensureFileContentLoaded(path, uuid, { forceReload: true });
+  }
   const item = await readContentForPath<StoredContent>(path, {
     expectedStore: STORES.BOOKS,
   });
-  return item?.content instanceof Blob ? item.content : null;
+  if (item?.content instanceof ArrayBuffer) {
+    return new Blob([item.content], { type: "application/epub+zip" });
+  }
+  return isBlobLike(item?.content) ? item.content : null;
 }
 
 export async function readAppletTextContent(path: string): Promise<string | null> {

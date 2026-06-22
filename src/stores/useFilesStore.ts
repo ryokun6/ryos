@@ -47,7 +47,7 @@ export interface FileSystemItem {
 // Define a type for JSON file entries
 interface FileSystemItemData extends Omit<FileSystemItem, "status"> {
   content?: string; // For documents
-  assetPath?: string; // For images
+  assetPath?: string; // For binary default assets
 }
 
 
@@ -296,19 +296,22 @@ function registerFilesForLazyLoad(
  */
 export async function ensureFileContentLoaded(
   filePath: string,
-  uuid: string
+  uuid: string,
+  options: { forceReload?: boolean } = {}
 ): Promise<boolean> {
   const storeName = filePath.startsWith("/Documents/")
     ? STORES.DOCUMENTS
     : filePath.startsWith("/Images/")
     ? STORES.IMAGES
+    : filePath.startsWith("/Books/")
+    ? STORES.BOOKS
     : filePath.startsWith("/Applets/")
     ? STORES.APPLETS
     : null;
   if (!storeName) return false;
 
   // Prevent duplicate concurrent loads
-  if (loadingAssets.has(uuid)) {
+  if (loadingAssets.has(uuid) && !options.forceReload) {
     // Wait for existing load to complete
     await new Promise((resolve) => {
       const checkComplete = () => {
@@ -347,21 +350,33 @@ export async function ensureFileContentLoaded(
   try {
     db = await ensureIndexedDBInitialized();
     
-    // Check if content already exists in IndexedDB
-    const existing = await new Promise<StoredContent | undefined>((resolve) => {
-      const tx = db!.transaction(storeName, "readonly");
-      const store = tx.objectStore(storeName);
-      const req = store.get(uuid);
-      req.onsuccess = () => resolve(req.result as StoredContent | undefined);
-      req.onerror = () => resolve(undefined);
-    });
-    
-    if (existing) {
-      return true;
+    if (!options.forceReload) {
+      // Check if content already exists in IndexedDB
+      const existing = await new Promise<StoredContent | undefined>((resolve) => {
+        const tx = db!.transaction(storeName, "readonly");
+        const store = tx.objectStore(storeName);
+        const req = store.get(uuid);
+        req.onsuccess = () => resolve(req.result as StoredContent | undefined);
+        req.onerror = () => resolve(undefined);
+      });
+      
+      if (existing) {
+        return true;
+      }
     }
 
-    // Check if this file has pending lazy load data
-    const pendingFile = pendingLazyLoadFiles.get(filePath);
+    // Check if this file has pending lazy load data. Force reloads are used to
+    // recover from browser-specific persisted binary read failures, so they must
+    // be able to find the default asset even after the first lazy load removed
+    // it from the pending map.
+    let pendingFile = pendingLazyLoadFiles.get(filePath);
+    if (!pendingFile?.assetPath && options.forceReload) {
+      const data = await loadDefaultFiles();
+      pendingFile = data.files.find((file) => file.path === filePath);
+      if (pendingFile?.assetPath) {
+        pendingLazyLoadFiles.set(filePath, pendingFile);
+      }
+    }
     if (!pendingFile?.assetPath) {
       return false;
     }
@@ -376,7 +391,8 @@ export async function ensureFileContentLoaded(
         retry: { maxAttempts: 2, initialDelayMs: 500 },
       });
       
-      const content = await resp.blob();
+      const content =
+        storeName === STORES.BOOKS ? await resp.arrayBuffer() : await resp.blob();
       
       // Save to IndexedDB
       await new Promise<void>((resolve, reject) => {
@@ -521,8 +537,12 @@ async function saveDefaultContents(
 // Function to generate an empty initial state (just for typing)
 const getEmptyFileSystemState = (): Record<string, FileSystemItem> => ({});
 
-const STORE_VERSION = 13; // System 7: show Chats, IE, Karaoke on desktop after iPod
+const STORE_VERSION = 14; // Add Meditations as a default Books EPUB
 const STORE_NAME = "ryos:files";
+
+const DEFAULT_MEDITATIONS_BOOK_PATH = "/Books/Meditations - Marcus Aurelius.epub";
+const DEFAULT_MEDITATIONS_BOOK_NAME = "Meditations - Marcus Aurelius.epub";
+const DEFAULT_MEDITATIONS_BOOK_SIZE = 1378157;
 
 const DEFAULT_APPLICATIONS_FOLDER_ALIAS_NAME = "Applications";
 
@@ -638,6 +658,51 @@ function migrateV13System7ProminentDesktopApps(
       };
     }
   }
+  return newState;
+}
+
+/** v14: add the default Meditations EPUB to existing loaded libraries once. */
+function migrateV14DefaultMeditationsBook(
+  items: Record<string, FileSystemItem>,
+  libraryState: LibraryState | undefined,
+  now: number
+): Record<string, FileSystemItem> {
+  if (libraryState === "cleared" || items[DEFAULT_MEDITATIONS_BOOK_PATH]) {
+    return items;
+  }
+
+  const booksDir = items["/Books"];
+  if (booksDir?.status === "trashed") {
+    return items;
+  }
+
+  const newState = { ...items };
+  if (!booksDir) {
+    newState["/Books"] = {
+      path: "/Books",
+      name: "Books",
+      isDirectory: true,
+      type: "directory",
+      icon: "/icons/default/books-folder.png",
+      status: "active",
+      createdAt: now,
+      modifiedAt: now,
+    };
+  }
+
+  newState[DEFAULT_MEDITATIONS_BOOK_PATH] = {
+    path: DEFAULT_MEDITATIONS_BOOK_PATH,
+    name: DEFAULT_MEDITATIONS_BOOK_NAME,
+    isDirectory: false,
+    type: "epub",
+    icon: "/icons/default/books.png",
+    status: "active",
+    uuid: uuidv4(),
+    size: DEFAULT_MEDITATIONS_BOOK_SIZE,
+    createdAt: now,
+    modifiedAt: now,
+  };
+
   return newState;
 }
 
@@ -1667,8 +1732,12 @@ export const useFilesStore = create<FilesStoreState>()(
           }
 
           return {
-            items: migrateV13System7ProminentDesktopApps(
-              migrateV12DesktopDefaultShortcuts(newState, now),
+            items: migrateV14DefaultMeditationsBook(
+              migrateV13System7ProminentDesktopApps(
+                migrateV12DesktopDefaultShortcuts(newState, now),
+                now
+              ),
+              oldState.libraryState,
               now
             ),
             libraryState: oldState.libraryState || "loaded",
@@ -1683,8 +1752,12 @@ export const useFilesStore = create<FilesStoreState>()(
           const now = Date.now();
 
           return {
-            items: migrateV13System7ProminentDesktopApps(
-              migrateV12DesktopDefaultShortcuts(oldState.items, now),
+            items: migrateV14DefaultMeditationsBook(
+              migrateV13System7ProminentDesktopApps(
+                migrateV12DesktopDefaultShortcuts(oldState.items, now),
+                now
+              ),
+              oldState.libraryState,
               now
             ),
             libraryState: oldState.libraryState || "loaded",
@@ -1699,7 +1772,28 @@ export const useFilesStore = create<FilesStoreState>()(
           const now = Date.now();
 
           return {
-            items: migrateV13System7ProminentDesktopApps(oldState.items, now),
+            items: migrateV14DefaultMeditationsBook(
+              migrateV13System7ProminentDesktopApps(oldState.items, now),
+              oldState.libraryState,
+              now
+            ),
+            libraryState: oldState.libraryState || "loaded",
+          };
+        }
+
+        if (version < 14) {
+          const oldState = persistedState as {
+            items: Record<string, FileSystemItem>;
+            libraryState?: LibraryState;
+          };
+          const now = Date.now();
+
+          return {
+            items: migrateV14DefaultMeditationsBook(
+              oldState.items,
+              oldState.libraryState,
+              now
+            ),
             libraryState: oldState.libraryState || "loaded",
           };
         }

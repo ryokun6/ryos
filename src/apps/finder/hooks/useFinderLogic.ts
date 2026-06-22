@@ -944,7 +944,10 @@ export function useFinderLogic({
           fileMetadata.uuid
         );
         if (contentData) {
-          contentToCopy = contentData.content;
+          contentToCopy =
+            contentData.content instanceof ArrayBuffer
+              ? new Blob([contentData.content])
+              : contentData.content;
         }
       }
 
