@@ -447,30 +447,14 @@ export function BooksReaderPane({
         className="absolute right-0 z-10 w-[22%] cursor-e-resize disabled:cursor-default"
       />
 
-      {/* Reading-progress footer */}
+      {/* Reading-progress footer — centered percentage, no bar. */}
       <div
-        className="absolute inset-x-0 bottom-0 z-10 flex items-center gap-2 px-4"
+        className="absolute inset-x-0 bottom-0 z-10 flex items-center justify-center px-4"
         style={{ height: FOOTER_HEIGHT }}
       >
-        <div
-          className={cn(
-            "h-[3px] flex-1 overflow-hidden rounded-full",
-            palette.isDark ? "bg-white/15" : "bg-black/10"
-          )}
-        >
-          <div
-            className="h-full rounded-full transition-[width] duration-300"
-            style={{
-              width: `${Math.round(progressPct * 100)}%`,
-              backgroundColor: palette.isDark
-                ? "rgba(255,255,255,0.7)"
-                : "rgba(0,0,0,0.55)",
-            }}
-          />
-        </div>
         <span
           className={cn(
-            "shrink-0 font-os-ui text-[10px] tabular-nums",
+            "font-os-ui text-[10px] tabular-nums",
             palette.isDark ? "text-white/65" : "text-black/55"
           )}
         >

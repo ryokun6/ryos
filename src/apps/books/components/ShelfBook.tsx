@@ -1,9 +1,8 @@
 import { motion } from "motion/react";
-import { useRef, type Ref } from "react";
+import type { Ref } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
-import { useLongPress } from "@/hooks/useLongPress";
-import { isTouchDevice } from "@/utils/device";
+import { usePointerLongPress } from "@/hooks/usePointerLongPress";
 import type {
   BooksLibraryEntry,
   BookOriginRect,
@@ -104,29 +103,31 @@ export function ShelfBook({
 }: ShelfBookProps) {
   const { info, loading } = useBookCover(entry.path, entry.modifiedAt);
   const percent = progress ? Math.round(progress.percentage * 100) : 0;
-  // A long-press opens the context menu; suppress the click-to-open that the
-  // touchend would otherwise fire.
-  const suppressClickRef = useRef(false);
-  const longPressHandlers = useLongPress<HTMLButtonElement>((e) => {
-    suppressClickRef.current = true;
-    const touch = e.touches[0];
-    onContextMenu?.(entry, touch.clientX, touch.clientY);
+  // Long-press (mouse or touch) opens the context menu; the hook's
+  // consumeClickIfLongPressFired guards the click-to-open that follows.
+  const longPress = usePointerLongPress((e) => {
+    onContextMenu?.(entry, e.clientX, e.clientY);
   });
 
   return (
     <motion.button
       type="button"
       onClick={(e) => {
-        if (suppressClickRef.current) {
-          suppressClickRef.current = false;
-          return;
-        }
+        if (longPress.consumeClickIfLongPressFired()) return;
         onOpen(entry, e.currentTarget.getBoundingClientRect());
       }}
       onContextMenu={(e) => {
         e.preventDefault();
         onContextMenu?.(entry, e.clientX, e.clientY);
       }}
+      onMouseDown={longPress.onMouseDown}
+      onMouseMove={longPress.onMouseMove}
+      onMouseUp={longPress.onMouseUp}
+      onMouseLeave={longPress.onMouseLeave}
+      onTouchStart={longPress.onTouchStart}
+      onTouchMove={longPress.onTouchMove}
+      onTouchEnd={longPress.onTouchEnd}
+      onTouchCancel={longPress.onTouchCancel}
       whileHover={{ y: -8 }}
       whileTap={{ scale: 0.96 }}
       transition={{
@@ -136,7 +137,6 @@ export function ShelfBook({
       // to the button would chop the morph as it travels to/from the list.
       className="relative block h-[160px] w-[104px] shrink-0 focus:outline-none"
       title={info?.title || entry.name}
-      {...(isTouchDevice() ? longPressHandlers : {})}
     >
       <BookMorphCover
         entry={entry}

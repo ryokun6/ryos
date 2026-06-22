@@ -8,8 +8,7 @@ import {
   ToolbarButtonGroup,
 } from "@/components/ui/toolbar-button";
 import { RightClickMenu, type MenuItem } from "@/components/ui/right-click-menu";
-import { useLongPress } from "@/hooks/useLongPress";
-import { isTouchDevice } from "@/utils/device";
+import { usePointerLongPress } from "@/hooks/usePointerLongPress";
 import { useResizeObserverWithRef } from "@/hooks/useResizeObserver";
 import type {
   BooksLibraryEntry,
@@ -332,30 +331,32 @@ function BookListRow({
   const { info, loading } = useBookCover(entry.path, entry.modifiedAt);
   const percent = progress ? Math.round(progress.percentage * 100) : 0;
   const coverRef = useRef<HTMLDivElement>(null);
-  // Long-press opens the context menu on touch; suppress the resulting click.
-  const suppressClickRef = useRef(false);
-  const longPressHandlers = useLongPress<HTMLButtonElement>((e) => {
-    suppressClickRef.current = true;
-    const touch = e.touches[0];
-    onContextMenu?.(entry, touch.clientX, touch.clientY);
+  // Long-press (mouse or touch) opens the context menu; the hook's
+  // consumeClickIfLongPressFired guards the click-to-open that follows.
+  const longPress = usePointerLongPress((e) => {
+    onContextMenu?.(entry, e.clientX, e.clientY);
   });
 
   return (
     <button
       type="button"
       onClick={() => {
-        if (suppressClickRef.current) {
-          suppressClickRef.current = false;
-          return;
-        }
+        if (longPress.consumeClickIfLongPressFired()) return;
         onOpen(entry, coverRef.current?.getBoundingClientRect());
       }}
       onContextMenu={(e) => {
         e.preventDefault();
         onContextMenu?.(entry, e.clientX, e.clientY);
       }}
+      onMouseDown={longPress.onMouseDown}
+      onMouseMove={longPress.onMouseMove}
+      onMouseUp={longPress.onMouseUp}
+      onMouseLeave={longPress.onMouseLeave}
+      onTouchStart={longPress.onTouchStart}
+      onTouchMove={longPress.onTouchMove}
+      onTouchEnd={longPress.onTouchEnd}
+      onTouchCancel={longPress.onTouchCancel}
       className="group flex w-full items-center gap-3 rounded-[4px] bg-black/15 px-2 py-1.5 text-left transition-colors hover:bg-black/30"
-      {...(isTouchDevice() ? longPressHandlers : {})}
     >
       <BookMorphCover
         entry={entry}
