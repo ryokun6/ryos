@@ -9,6 +9,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
+import { useAppHelpAboutDialogs } from "@/hooks/useAppHelpAboutDialogs";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useFilesStore } from "@/stores/useFilesStore";
 import { useAppStore } from "@/stores/useAppStore";
@@ -46,8 +47,12 @@ export function useBooksLogic({
   const themeFlags = useThemeFlags();
   const { isWindowsTheme, isMacOSTheme, isDarkMode } = themeFlags;
 
-  const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
-  const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
+  const {
+    isHelpDialogOpen,
+    setIsHelpDialogOpen,
+    isAboutDialogOpen,
+    setIsAboutDialogOpen,
+  } = useAppHelpAboutDialogs();
 
   const [activeBookPath, setActiveBookPath] = useState<string | null>(null);
 
@@ -123,10 +128,15 @@ export function useBooksLogic({
       }
       try {
         const path = `${BOOKS_PATH}/${file.name}`;
+        // Persist the raw bytes as a fresh Blob. Storing the File reference
+        // from the picker directly can make IndexedDB reads fail later with
+        // "Internal error" once the OS-file backing is gone.
+        const bytes = await file.arrayBuffer();
+        const blob = new Blob([bytes], { type: "application/epub+zip" });
         await saveFile({
           name: file.name,
           path,
-          content: file,
+          content: blob,
           type: "epub",
         });
         emitFileSaved({ name: file.name, path });

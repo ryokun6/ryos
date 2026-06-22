@@ -716,10 +716,15 @@ export function useFinderLogic({
         try {
           const fileName = file.name;
           const filePath = `/Books/${fileName}`;
+          // Store the raw bytes as a Blob rather than the picker File so the
+          // IndexedDB record stays readable after reloads (a File reference
+          // can later throw "Internal error" on read).
+          const bytes = await file.arrayBuffer();
+          const blob = new Blob([bytes], { type: "application/epub+zip" });
           await saveFile({
             name: fileName,
             path: filePath,
-            content: file,
+            content: blob,
             type: "epub",
           });
           emitFileSaved({ name: fileName, path: filePath });

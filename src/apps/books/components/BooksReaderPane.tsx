@@ -60,95 +60,131 @@ export function BooksReaderPane({
   // Create the book + rendition for the active EPUB.
   useEffect(() => {
     let cancelled = false;
+    let book: Book | null = null;
+    let rendition: Rendition | null = null;
     setIsReady(false);
     setCoverVisible(true);
 
-    (async () => {
-      const blob = await readBookBlobContent(entry.path);
-      if (!blob || cancelled || !renderHostRef.current) return;
-      const buffer = await blob.arrayBuffer();
-      if (cancelled || !renderHostRef.current) return;
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const book = ePub(buffer as any);
-      bookRef.current = book;
-
-      const rendition = book.renderTo(renderHostRef.current, {
-        width: "100%",
-        height: "100%",
-        flow: "paginated",
-        spread: columnModeToSpread(settings.columnMode),
-        manager: "default",
-        allowScriptedContent: false,
-      });
-      renditionRef.current = rendition;
-
-      const fontFaceCss = buildFontFaceCss(window.location.origin);
-      rendition.hooks.content.register((contents: { addStylesheetCss: (css: string, key: string) => void }) => {
-        try {
-          contents.addStylesheetCss(fontFaceCss, "ryos-book-fonts");
-        } catch {
-          // ignore
-        }
-      });
-
-      rendition.themes.default(buildEpubTheme(settings, palette));
-      rendition.themes.fontSize(`${settings.fontSizePct}%`);
-
-      rendition.on(
-        "relocated",
-        (location: {
-          start?: { cfi?: string; percentage?: number };
-          atStart?: boolean;
-          atEnd?: boolean;
-        }) => {
-          const cfi = location?.start?.cfi;
-          setAtStart(!!location?.atStart);
-          setAtEnd(!!location?.atEnd);
-          if (!cfi) return;
-          let pct = location?.start?.percentage ?? 0;
-          try {
-            const total = book.locations?.length?.() ?? 0;
-            if ((!pct || pct === 0) && total > 0) {
-              pct = book.locations.percentageFromCfi(cfi);
-            }
-          } catch {
-            // ignore
-          }
-          onProgressRef.current(cfi, pct || 0);
-        }
+    const nextFrame = () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => resolve())
       );
 
-      rendition.on("keyup", (event: KeyboardEvent) => handleKey(event));
+    const cleanupInstance = () => {
+      try {
+        rendition?.destroy();
+      } catch {
+        // ignore
+      }
+      try {
+        book?.destroy();
+      } catch {
+        // ignore
+      }
+      if (renditionRef.current === rendition) renditionRef.current = null;
+      if (bookRef.current === book) bookRef.current = null;
+      rendition = null;
+      book = null;
+    };
 
-      await rendition.display(initialCfiRef.current || undefined);
-      if (cancelled) return;
-      setIsReady(true);
-      // Reveal the page shortly after the zoom-in cover settles.
-      window.setTimeout(() => {
-        if (!cancelled) setCoverVisible(false);
-      }, 420);
+    (async () => {
+      try {
+        const blob = await readBookBlobContent(entry.path);
+        if (cancelled || !blob) return;
+        const buffer = await blob.arrayBuffer();
+        if (cancelled) return;
 
-      // Generate locations for accurate progress percentages (async, best-effort).
-      book.ready
-        .then(() => book.locations.generate(1600))
-        .catch(() => undefined);
+        const host = renderHostRef.current;
+        if (!host) return;
+        // Wait until the host has a measurable size so epub.js can lay out.
+        for (let i = 0; i < 40 && host.clientHeight < 2; i++) {
+          await nextFrame();
+          if (cancelled) return;
+        }
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        book = ePub(buffer as any);
+        bookRef.current = book;
+
+        rendition = book.renderTo(host, {
+          width: host.clientWidth || "100%",
+          height: host.clientHeight || "100%",
+          flow: "paginated",
+          spread: columnModeToSpread(settings.columnMode),
+          manager: "default",
+        });
+        renditionRef.current = rendition;
+
+        const fontFaceCss = buildFontFaceCss(window.location.origin);
+        rendition.hooks.content.register(
+          (contents: {
+            addStylesheetCss: (css: string, key: string) => void;
+          }) => {
+            try {
+              contents.addStylesheetCss(fontFaceCss, "ryos-book-fonts");
+            } catch {
+              // ignore
+            }
+          }
+        );
+
+        rendition.themes.default(buildEpubTheme(settings, palette));
+        rendition.themes.fontSize(`${settings.fontSizePct}%`);
+
+        const activeBook = book;
+        rendition.on(
+          "relocated",
+          (location: {
+            start?: { cfi?: string; percentage?: number };
+            atStart?: boolean;
+            atEnd?: boolean;
+          }) => {
+            const cfi = location?.start?.cfi;
+            setAtStart(!!location?.atStart);
+            setAtEnd(!!location?.atEnd);
+            if (!cfi) return;
+            let pct = location?.start?.percentage ?? 0;
+            try {
+              const total = activeBook.locations?.length?.() ?? 0;
+              if ((!pct || pct === 0) && total > 0) {
+                pct = activeBook.locations.percentageFromCfi(cfi);
+              }
+            } catch {
+              // ignore
+            }
+            onProgressRef.current(cfi, pct || 0);
+          }
+        );
+
+        rendition.on("keyup", (event: KeyboardEvent) => handleKey(event));
+
+        try {
+          await rendition.display(initialCfiRef.current || undefined);
+        } catch (err) {
+          if (!cancelled) console.error("[Books] Failed to display book", err);
+        }
+        if (cancelled) {
+          cleanupInstance();
+          return;
+        }
+        setIsReady(true);
+        // Reveal the page shortly after the zoom-in cover settles.
+        window.setTimeout(() => {
+          if (!cancelled) setCoverVisible(false);
+        }, 420);
+
+        // Generate locations for accurate progress percentages (best-effort).
+        activeBook.ready
+          .then(() => activeBook.locations.generate(1600))
+          .catch(() => undefined);
+      } catch (err) {
+        if (!cancelled) console.error("[Books] Failed to open book", err);
+      }
     })();
 
     return () => {
       cancelled = true;
-      try {
-        renditionRef.current?.destroy();
-      } catch {
-        // ignore
-      }
-      try {
-        bookRef.current?.destroy();
-      } catch {
-        // ignore
-      }
-      renditionRef.current = null;
-      bookRef.current = null;
+      cleanupInstance();
     };
     // Only re-create when the book changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
