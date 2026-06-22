@@ -15,6 +15,8 @@ import { useCustomEventListener, useEventListener } from "@/hooks/useEventListen
 import { useLibraryUpdateChecker } from "./useLibraryUpdateChecker";
 import { useIpodActiveLibrary } from "./useIpodActiveLibrary";
 import { useIpodPlayback } from "./useIpodPlayback";
+import { useIpodScale } from "./useIpodScale";
+import { useIpodStatusBacklight } from "./useIpodStatusBacklight";
 import {
   useAppleMusicLibrary,
   syncAppleMusicResource,
@@ -102,14 +104,6 @@ const IS_IOS_SAFARI = IS_IOS && IS_SAFARI;
 
 /** Stable fallback so `rebuildMenuItems` never returns a fresh `[]` per call. */
 const EMPTY_IPOD_MENU_ITEMS: MenuItem[] = [];
-const BACKLIGHT_TIMEOUT_BY_SETTING: Record<
-  Exclude<IpodBacklightTimeout, "off" | "always-on">,
-  number
-> = {
-  "2s": 2000,
-  "10s": 10000,
-};
-
 export interface UseIpodLogicOptions {
   isWindowOpen: boolean;
   isForeground: boolean | undefined;
@@ -306,7 +300,6 @@ export function useIpodLogic({
   // on library or track-selection updates.
   const lyricOffset = tracks[currentIndex]?.lyricOffset ?? 0;
 
-  const prevIsForeground = useRef(isForeground);
   const {
     bringInstanceToForeground,
     clearIpodInitialData,
@@ -327,13 +320,8 @@ export function useIpodLogic({
 
   const joinListenSession = useListenSessionStore((s) => s.joinSession);
 
-  // Status management. Use a lazy initializer for `Date.now()` so the
-  // timestamp is captured exactly once on mount instead of on every render
-  // (the result is immediately discarded after the first commit anyway).
-  const [lastActivityTime, setLastActivityTime] = useState(() => Date.now());
-  const backlightTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Status / backlight / activity state is owned by useIpodStatusBacklight
+  // (composed below, after the playback + games state it depends on).
 
   // Dialog state
   const {
@@ -613,41 +601,25 @@ export function useIpodLogic({
   const isSafari = IS_SAFARI;
   const isIOSSafari = IS_IOS_SAFARI;
 
-  // Status helper functions
-  const showStatus = useCallback((message: string) => {
-    setStatusMessage(message);
-    if (statusTimeoutRef.current) {
-      clearTimeout(statusTimeoutRef.current);
-    }
-    statusTimeoutRef.current = setTimeout(() => {
-      setStatusMessage(null);
-    }, 2000);
-  }, []);
-
-  const showOfflineStatus = useCallback(() => {
-    toast.error(t("apps.ipod.dialogs.youreOffline"), {
-      id: "ipod-offline",
-      description: t("apps.ipod.dialogs.ipodRequiresInternet"),
-    });
-    showStatus("🚫");
-  }, [showStatus, menuLocale]);
-
-  // Ref-only version — marks activity without triggering any React state update.
-  // Use this on high-frequency paths (e.g. brick game wheel) to keep the RAF
-  // loop uninterrupted.
-  const registerActivityRef = useCallback(() => {
-    userHasInteractedRef.current = true;
-  }, []);
-
-  const registerActivity = useCallback(() => {
-    setLastActivityTime(Date.now());
-    userHasInteractedRef.current = true;
-    const { backlightOn: isBacklightOn, backlightTimeout: timeoutSetting } =
-      useIpodStore.getState();
-    if (timeoutSetting !== "off" && !isBacklightOn) {
-      toggleBacklight();
-    }
-  }, [toggleBacklight]);
+  // Status message, last-activity clock, and backlight auto-off/foreground-wake.
+  const {
+    statusMessage,
+    setLastActivityTime,
+    showStatus,
+    showOfflineStatus,
+    registerActivity,
+    registerActivityRef,
+  } = useIpodStatusBacklight({
+    t,
+    menuLocale,
+    isForeground,
+    toggleBacklight,
+    userHasInteractedRef,
+    isMusicQuizOpen,
+    isBrickGameOpen,
+    backlightOn,
+    backlightTimeout,
+  });
 
   // Memoized toggle functions
   const memoizedToggleShuffle = useCallback(() => {
@@ -1345,62 +1317,7 @@ export function useIpodLogic({
     menuLocale,
   ]);
 
-  // Backlight timer
-  useEffect(() => {
-    if (backlightTimerRef.current) {
-      clearTimeout(backlightTimerRef.current);
-    }
-
-    const timeoutMs =
-      backlightTimeout === "off" || backlightTimeout === "always-on"
-        ? null
-        : BACKLIGHT_TIMEOUT_BY_SETTING[backlightTimeout];
-
-    if (backlightOn && timeoutMs !== null) {
-      backlightTimerRef.current = setTimeout(() => {
-        const currentShowVideo = useIpodStore.getState().showVideo;
-        const currentIsPlaying = useIpodStore.getState().isPlaying;
-        const isGameOpen = isMusicQuizOpen || isBrickGameOpen;
-        if (
-          Date.now() - lastActivityTime >= timeoutMs &&
-          !(currentShowVideo && currentIsPlaying) &&
-          !isGameOpen
-        ) {
-          toggleBacklight();
-        }
-      }, timeoutMs);
-    }
-
-    return () => {
-      if (backlightTimerRef.current) {
-        clearTimeout(backlightTimerRef.current);
-      }
-    };
-  }, [
-    backlightOn,
-    backlightTimeout,
-    isBrickGameOpen,
-    isMusicQuizOpen,
-    lastActivityTime,
-    toggleBacklight,
-  ]);
-
-  // Foreground handling
-  useEffect(() => {
-    if (isForeground && !prevIsForeground.current) {
-      const { backlightOn: isBacklightOn, backlightTimeout: timeoutSetting } =
-        useIpodStore.getState();
-      if (!isBacklightOn && timeoutSetting !== "off") {
-        toggleBacklight();
-      }
-      registerActivity();
-    } else if (!isForeground && prevIsForeground.current) {
-      if (useIpodStore.getState().backlightOn) {
-        toggleBacklight();
-      }
-    }
-    prevIsForeground.current = isForeground;
-  }, [isForeground, toggleBacklight, registerActivity]);
+  // Backlight timer + foreground handling live in useIpodStatusBacklight.
 
   // Reset elapsed time on track change and set track switching guard
   // This catches track changes from any source (AI tools, shared URLs, menu selections, etc.)
@@ -1459,17 +1376,15 @@ export function useIpodLogic({
     };
   }, [currentIndex, tracks, isFullScreen, showStatus]);
 
-  // Cleanup status timeout
+  // Cleanup track-switch timeout on unmount (status timeout cleanup lives in
+  // useIpodStatusBacklight).
   useEffect(() => {
     return () => {
-      if (statusTimeoutRef.current) {
-        clearTimeout(statusTimeoutRef.current);
-      }
       if (trackSwitchTimeoutRef.current) {
         clearTimeout(trackSwitchTimeoutRef.current);
       }
     };
-  }, []);
+  }, [trackSwitchTimeoutRef]);
 
   // Group tracks by artist once per `tracks` change. With large libraries
   // (e.g. an Apple Music sync of several thousand songs) this is expensive
@@ -4662,58 +4577,8 @@ export function useIpodLogic({
     [playScrollSound, registerActivity, registerActivityRef, menuMode, menuHistory, isFullScreen, showStatus, isCoverFlowOpen, isMusicQuizOpen, isBrickGameOpen, getMenuItemLetter, scheduleFastScrollIdle, setSelectedMenuItem]
   );
 
-  // Scaling
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(1);
-  const prevMinimizedRef = useRef(isMinimized);
-
-  useEffect(() => {
-    let timeoutId: number;
-
-    const handleResize = () => {
-      if (!containerRef.current) return;
-
-      requestAnimationFrame(() => {
-        if (!containerRef.current) return;
-        const containerWidth = containerRef.current.clientWidth;
-        const containerHeight = containerRef.current.clientHeight;
-        const baseWidth = 250;
-        const baseHeight = 400;
-        const availableWidth = containerWidth - 50;
-        const availableHeight = containerHeight - 50;
-        const widthScale = availableWidth / baseWidth;
-        const heightScale = availableHeight / baseHeight;
-        const newScale = Math.min(widthScale, heightScale, 2);
-        const finalScale = Math.max(1, newScale);
-
-        setScale((prevScale) => {
-          if (Math.abs(prevScale - finalScale) > 0.01) return finalScale;
-          return prevScale;
-        });
-      });
-    };
-
-    timeoutId = window.setTimeout(handleResize, 10);
-
-    if (prevMinimizedRef.current && !isMinimized) {
-      [50, 100, 200, 300, 500].forEach((delay) => {
-        window.setTimeout(handleResize, delay);
-      });
-    }
-    prevMinimizedRef.current = isMinimized;
-
-    const resizeObserver = new ResizeObserver(() => {
-      clearTimeout(timeoutId);
-      timeoutId = window.setTimeout(handleResize, 10);
-    });
-
-    if (containerRef.current) resizeObserver.observe(containerRef.current);
-
-    return () => {
-      clearTimeout(timeoutId);
-      resizeObserver.disconnect();
-    };
-  }, [isWindowOpen, isMinimized]);
+  // Scaling (extracted to useIpodScale)
+  const { containerRef, scale } = useIpodScale({ isWindowOpen, isMinimized });
 
   // Share and lyrics handlers
   const handleShareSong = useCallback(() => {
