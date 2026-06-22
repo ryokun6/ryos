@@ -4401,6 +4401,9 @@
       "menu": {
         "import": "Import EPUB…",
         "backToShelf": "Back to Shelf",
+        "previousPage": "Previous Page",
+        "nextPage": "Next Page",
+        "chapters": "Chapters",
         "font": "Font",
         "textSize": "Text Size",
         "textSizeIncrease": "Bigger",

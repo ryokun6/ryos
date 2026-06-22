@@ -1,10 +1,27 @@
 import { useTranslation } from "react-i18next";
+import {
+  MenubarCheckboxItem,
+  MenubarContent,
+  MenubarItem,
+  MenubarMenu,
+  MenubarSeparator,
+  MenubarSub,
+  MenubarSubContent,
+  MenubarSubTrigger,
+  MenubarTrigger,
+} from "@/components/ui/menubar";
 import { AppMenuBarShell } from "@/components/shared/menubar/AppMenuBarShell";
 import {
   AppMenuBarMenus,
   type MenuDescriptor,
 } from "@/components/shared/menubar/AppMenuBarMenus";
+import {
+  MENUBAR_ITEM_CLASS,
+  MENUBAR_SEPARATOR_CLASS,
+  MENUBAR_TRIGGER_CLASS,
+} from "@/components/shared/menubar/menubarStyles";
 import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
+import { cn } from "@/lib/utils";
 import {
   BOOK_FONTS,
   type BookFontOption,
@@ -15,6 +32,7 @@ import {
   BOOKS_FONT_SIZE_STEP,
   type BooksReaderSettings,
 } from "@/stores/useBooksStore";
+import type { BooksNavigationState } from "./BooksReaderPane";
 
 interface BooksMenuBarProps {
   onClose: () => void;
@@ -25,6 +43,10 @@ interface BooksMenuBarProps {
   isReading: boolean;
   settings: BooksReaderSettings;
   updateSettings: (partial: Partial<BooksReaderSettings>) => void;
+  navigationState: BooksNavigationState;
+  onGoToPreviousPage: () => void;
+  onGoToNextPage: () => void;
+  onGoToChapter: (href: string) => void;
 }
 
 export function BooksMenuBar({
@@ -36,6 +58,10 @@ export function BooksMenuBar({
   isReading,
   settings,
   updateSettings,
+  navigationState,
+  onGoToPreviousPage,
+  onGoToNextPage,
+  onGoToChapter,
 }: BooksMenuBarProps) {
   const { t } = useTranslation();
   const {
@@ -55,8 +81,7 @@ export function BooksMenuBar({
     updateSettings({ fontSizePct: next });
   };
 
-  const menus: MenuDescriptor[] = [
-    {
+  const fileMenu: MenuDescriptor = {
       label: t("common.menu.file"),
       items: [
         {
@@ -78,8 +103,9 @@ export function BooksMenuBar({
           shortcutId: "close",
         },
       ],
-    },
-    {
+    };
+
+  const viewMenu: MenuDescriptor = {
       label: t("common.menu.view"),
       items: [
         {
@@ -164,8 +190,10 @@ export function BooksMenuBar({
           ],
         },
       ],
-    },
-  ];
+    };
+
+  const chapters = navigationState.chapters;
+  const canNavigateReader = isReading && navigationState.isReady;
 
   return (
     <AppMenuBarShell
@@ -180,7 +208,57 @@ export function BooksMenuBar({
       onShowHelp={onShowHelp}
       onShowAbout={onShowAbout}
     >
-      <AppMenuBarMenus menus={menus} />
+      <AppMenuBarMenus menus={[fileMenu]} />
+      <MenubarMenu>
+        <MenubarTrigger className={MENUBAR_TRIGGER_CLASS}>
+          {t("common.menu.go")}
+        </MenubarTrigger>
+        <MenubarContent align="start" sideOffset={1} className="px-0">
+          <MenubarItem
+            onClick={onGoToPreviousPage}
+            disabled={!canNavigateReader || !navigationState.canGoPreviousPage}
+            className={MENUBAR_ITEM_CLASS}
+          >
+            {t("apps.books.menu.previousPage")}
+          </MenubarItem>
+          <MenubarItem
+            onClick={onGoToNextPage}
+            disabled={!canNavigateReader || !navigationState.canGoNextPage}
+            className={MENUBAR_ITEM_CLASS}
+          >
+            {t("apps.books.menu.nextPage")}
+          </MenubarItem>
+          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
+          <MenubarSub>
+            <MenubarSubTrigger
+              disabled={!canNavigateReader || chapters.length === 0}
+              className={MENUBAR_ITEM_CLASS}
+            >
+              {t("apps.books.menu.chapters")}
+            </MenubarSubTrigger>
+            <MenubarSubContent className="px-0 max-w-[260px] sm:max-w-[320px] max-h-[400px] overflow-y-auto">
+              {chapters.map((chapter, index) => (
+                <MenubarCheckboxItem
+                  key={chapter.id}
+                  checked={index === navigationState.currentChapterIndex}
+                  onCheckedChange={() => onGoToChapter(chapter.href)}
+                  className={cn(
+                    "text-md h-6 pr-3 truncate max-w-[260px] sm:max-w-[320px]"
+                  )}
+                >
+                  <span
+                    className="truncate min-w-0"
+                    style={{ paddingLeft: `${chapter.depth * 12}px` }}
+                  >
+                    {chapter.label}
+                  </span>
+                </MenubarCheckboxItem>
+              ))}
+            </MenubarSubContent>
+          </MenubarSub>
+        </MenubarContent>
+      </MenubarMenu>
+      <AppMenuBarMenus menus={[viewMenu]} />
     </AppMenuBarShell>
   );
 }

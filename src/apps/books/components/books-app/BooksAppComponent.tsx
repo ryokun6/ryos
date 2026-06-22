@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useCallback, useRef, useState } from "react";
 import { SquaresFour } from "@phosphor-icons/react";
 import type { AppProps, BooksInitialData } from "@/apps/base/types";
 import { AppWindowShell } from "@/components/shared/AppWindowShell";
@@ -7,7 +7,12 @@ import { appMetadata } from "../../metadata";
 import { useBooksLogic } from "../../hooks/useBooksLogic";
 import { BooksMenuBar } from "../BooksMenuBar";
 import { BooksShelfView } from "../BooksShelfView";
-import { BooksReaderPane } from "../BooksReaderPane";
+import {
+  BooksReaderPane,
+  createInitialBooksNavigationState,
+  type BooksNavigationState,
+  type BooksReaderPaneHandle,
+} from "../BooksReaderPane";
 import { BookCloseZoom } from "../BookCloseZoom";
 
 export function BooksAppComponent({
@@ -55,6 +60,13 @@ export function BooksAppComponent({
 
   // Positioning box for the transient closing-zoom overlay.
   const contentRef = useRef<HTMLDivElement>(null);
+  const readerRef = useRef<BooksReaderPaneHandle>(null);
+  const [readerNavigationState, setReaderNavigationState] =
+    useState<BooksNavigationState>(createInitialBooksNavigationState);
+  const handleReaderNavigationStateChange = useCallback(
+    (state: BooksNavigationState) => setReaderNavigationState(state),
+    []
+  );
 
   const menuBar = (
     <BooksMenuBar
@@ -66,6 +78,10 @@ export function BooksAppComponent({
       isReading={viewMode === "reader"}
       settings={settings}
       updateSettings={updateSettings}
+      navigationState={readerNavigationState}
+      onGoToPreviousPage={() => readerRef.current?.goToPreviousPage()}
+      onGoToNextPage={() => readerRef.current?.goToNextPage()}
+      onGoToChapter={(href) => readerRef.current?.goToChapter(href)}
     />
   );
 
@@ -153,6 +169,7 @@ export function BooksAppComponent({
       >
         {viewMode === "reader" && activeBook ? (
           <BooksReaderPane
+            ref={readerRef}
             key={activeBook.path}
             entry={activeBook}
             settings={settings}
@@ -163,6 +180,7 @@ export function BooksAppComponent({
             onProgress={(cfi, percentage) =>
               saveProgress(activeBook.path, cfi, percentage)
             }
+            onNavigationStateChange={handleReaderNavigationStateChange}
           />
         ) : (
           <BooksShelfView
