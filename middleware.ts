@@ -29,7 +29,11 @@ export const config = {
     "/applet-viewer/:path*",
     "/control-panels",
     "/winamp",
+    "/calendar",
+    "/contacts",
     "/dashboard",
+    "/maps",
+    "/books",
   ],
 };
 
