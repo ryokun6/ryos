@@ -226,6 +226,89 @@ export function buildFontFaceCss(origin: string): string {
 `.trim();
 }
 
+export interface EpubContentVisibilitySnapshot {
+  textLength: number;
+  sampleText: string;
+  imageCount: number;
+  loadedImageCount: number;
+  vectorCount: number;
+  mediaCount: number;
+  bodyChildCount: number;
+  scrollWidth: number;
+  scrollHeight: number;
+  isBlank: boolean;
+}
+
+function getElementArea(element: Element): number {
+  try {
+    const rect = element.getBoundingClientRect();
+    return Math.max(0, rect.width) * Math.max(0, rect.height);
+  } catch {
+    return 0;
+  }
+}
+
+function hasLoadedRasterImage(element: Element): boolean {
+  if (element.tagName.toLowerCase() !== "img") return false;
+  const image = element as HTMLImageElement;
+  return image.complete && image.naturalWidth > 0 && image.naturalHeight > 0;
+}
+
+function hasVisibleVectorContent(element: Element): boolean {
+  const tagName = element.tagName.toLowerCase();
+  if (tagName !== "svg") return false;
+  return element.childElementCount > 0 && getElementArea(element) > 4;
+}
+
+function hasVisibleEmbeddedMedia(element: Element): boolean {
+  const tagName = element.tagName.toLowerCase();
+  if (tagName === "canvas") {
+    const canvas = element as HTMLCanvasElement;
+    return canvas.width > 0 && canvas.height > 0;
+  }
+  if (tagName === "video") {
+    const video = element as HTMLVideoElement;
+    return video.videoWidth > 0 && video.videoHeight > 0;
+  }
+  return getElementArea(element) > 4;
+}
+
+/**
+ * Safari can resolve epub.js display/render events even when the current iframe
+ * paints no visible content (commonly a titlepage/cover image section whose
+ * raster never decodes). Summarize the rendered section so the reader can move
+ * past genuinely blank spine items instead of leaving a white page.
+ */
+export function getEpubContentVisibilitySnapshot(
+  document: Document
+): EpubContentVisibilitySnapshot {
+  const body = document.body;
+  const rawText = (body?.textContent ?? "").replace(/\s+/g, " ").trim();
+  const images = Array.from(document.querySelectorAll("img"));
+  const loadedImageCount = images.filter(hasLoadedRasterImage).length;
+  const vectorCount = Array.from(document.querySelectorAll("svg")).filter(
+    hasVisibleVectorContent
+  ).length;
+  const mediaCount = Array.from(
+    document.querySelectorAll("canvas, video, object, embed")
+  ).filter(hasVisibleEmbeddedMedia).length;
+  const hasVisibleContent =
+    rawText.length > 0 || loadedImageCount > 0 || vectorCount > 0 || mediaCount > 0;
+
+  return {
+    textLength: rawText.length,
+    sampleText: rawText.slice(0, 80),
+    imageCount: images.length,
+    loadedImageCount,
+    vectorCount,
+    mediaCount,
+    bodyChildCount: body?.childElementCount ?? 0,
+    scrollWidth: document.documentElement?.scrollWidth ?? 0,
+    scrollHeight: document.documentElement?.scrollHeight ?? 0,
+    isBlank: !hasVisibleContent,
+  };
+}
+
 /** Map the column-mode setting to an epub.js spread value. */
 export function columnModeToSpread(
   columnMode: BooksReaderSettings["columnMode"]

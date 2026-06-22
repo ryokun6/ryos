@@ -18,6 +18,7 @@ import {
   buildEpubTheme,
   buildFontFaceCss,
   columnModeToSpread,
+  getEpubContentVisibilitySnapshot,
   isLikelyEpubBuffer,
   resolveReadingPalette,
 } from "../utils/booksReader";
@@ -84,6 +85,7 @@ export const ZOOM_DURATION = 0.45;
 export const ZOOM_EASE = [0.32, 0.72, 0, 1] as const;
 const REVEAL_DELAY_MS = 480;
 const MAX_DEBUG_EVENTS = 80;
+const MAX_BLANK_SECTION_ADVANCES = 3;
 const DEFAULT_BOOK_ASSET_BY_PATH: Record<string, string> = {
   "/Books/Meditations - Marcus Aurelius.epub":
     "/assets/books/meditations-marcus-aurelius.epub",
@@ -375,6 +377,81 @@ export function BooksReaderPane({
       }
     };
 
+    const getRenditionContents = (): Array<{ document?: Document }> => {
+      const value = (
+        rendition as unknown as {
+          getContents?: () => unknown;
+        } | null
+      )?.getContents?.();
+      if (Array.isArray(value)) {
+        return value as Array<{ document?: Document }>;
+      }
+      return value ? [value as { document?: Document }] : [];
+    };
+
+    const waitForContentPaint = async () => {
+      await nextFrame();
+      await nextFrame();
+      const contents = getRenditionContents();
+      const imageSettles = contents.flatMap((content) => {
+        const doc = content?.document;
+        if (!doc) return [];
+        return Array.from(doc.querySelectorAll("img"))
+          .filter((image) => !image.complete)
+          .map(
+            (image) =>
+              new Promise<void>((resolve) => {
+                const done = () => {
+                  image.removeEventListener("load", done);
+                  image.removeEventListener("error", done);
+                  resolve();
+                };
+                image.addEventListener("load", done, { once: true });
+                image.addEventListener("error", done, { once: true });
+              })
+          );
+      });
+      if (imageSettles.length > 0) {
+        await Promise.race([
+          Promise.allSettled(imageSettles),
+          new Promise((resolve) => window.setTimeout(resolve, 700)),
+        ]);
+        await nextFrame();
+      }
+    };
+
+    const getRenderedContentSnapshots = () => {
+      const contents = getRenditionContents();
+      return contents.map((content) =>
+        content.document
+          ? getEpubContentVisibilitySnapshot(content.document)
+          : null
+      ).filter(
+        (snapshot): snapshot is ReturnType<typeof getEpubContentVisibilitySnapshot> =>
+          snapshot !== null
+      );
+    };
+
+    const advancePastBlankSections = async () => {
+      if (!rendition) return;
+      for (let attempt = 0; attempt <= MAX_BLANK_SECTION_ADVANCES; attempt += 1) {
+        await waitForContentPaint();
+        if (cancelled) return;
+        const snapshots = getRenderedContentSnapshots();
+        const isBlank =
+          snapshots.length === 0 || snapshots.every((snapshot) => snapshot.isBlank);
+        appendDebugEvent(
+          "epubjs:blankCheck",
+          { attempt, isBlank, snapshots },
+          isBlank ? "warn" : "info"
+        );
+        if (!isBlank || attempt === MAX_BLANK_SECTION_ADVANCES) return;
+        appendDebugEvent("epubjs:blankRecovery:next:start", { attempt });
+        await watch("epubjs:blankRecovery:next", Promise.resolve(rendition.next()));
+        appendDebugEvent("epubjs:blankRecovery:next:success", { attempt });
+      }
+    };
+
     const cleanupInstance = () => {
       try {
         rendition?.destroy();
@@ -646,6 +723,7 @@ export function BooksReaderPane({
             rendition.display(initialCfiRef.current || undefined)
           );
           appendDebugEvent("epubjs:display:success");
+          await advancePastBlankSections();
         } catch (err) {
           // Corrupt / incompatible EPUB — show an error instead of revealing an
           // empty reader shell. Do not proceed to setIsReady / cover hide.
