@@ -100,6 +100,14 @@ export async function readImageBlobContent(path: string): Promise<Blob | null> {
 }
 
 export async function readBookBlobContent(path: string): Promise<Blob | null> {
+  const uuid = getFileContentUuid(path);
+  if (uuid) {
+    // Safari can throw "UnknownError: Internal error" just by reading a Blob
+    // previously persisted in IndexedDB. For bundled default books, overwrite
+    // from the same-origin asset before any read so the bad record is replaced
+    // without touching it.
+    await ensureFileContentLoaded(path, uuid, { forceReload: true });
+  }
   const item = await readContentForPath<StoredContent>(path, {
     expectedStore: STORES.BOOKS,
   });
