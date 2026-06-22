@@ -44,7 +44,7 @@
       "name": "Books",
       "isDirectory": true,
       "type": "directory",
-      "icon": "/icons/default/books.png",
+      "icon": "/icons/default/books-folder.png",
       "status": "active"
     },
     {

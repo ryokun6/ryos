@@ -1,5 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { AnimatePresence, motion } from "motion/react";
+import { useTranslation } from "react-i18next";
 import ePub, { type Book, type Rendition } from "epubjs";
 import { cn } from "@/lib/utils";
 import { useResizeObserverWithRef } from "@/hooks/useResizeObserver";
@@ -13,14 +20,31 @@ import {
 } from "../utils/booksReader";
 import { useBookCover } from "../utils/useBookCover";
 import { BookCover } from "./BookCover";
-import type { BooksLibraryEntry } from "../hooks/useBooksLogic";
+import type {
+  BooksLibraryEntry,
+  BookOriginRect,
+} from "../hooks/useBooksLogic";
 
 interface BooksReaderPaneProps {
   entry: BooksLibraryEntry;
   settings: BooksReaderSettings;
   osIsDark: boolean;
+  /** Page-space rect of the clicked shelf cover, to zoom in from. */
+  originRect?: BookOriginRect | null;
   initialCfi?: string;
+  /** Cached reading progress (0..1) so the footer shows it without a 0% flash. */
+  initialPercentage?: number;
   onProgress: (cfi: string, percentage: number) => void;
+}
+
+const clamp01 = (value: number): number =>
+  Math.min(1, Math.max(0, Number.isFinite(value) ? value : 0));
+
+interface ZoomRect {
+  top: number;
+  left: number;
+  width: number;
+  height: number;
 }
 
 interface FlipState {
@@ -28,17 +52,30 @@ interface FlipState {
   id: number;
 }
 
-// Extra top clearance so the page never sits under the auto-hiding window
+// Extra top clearance so the page never sits under the always-visible window
 // title bar (the window uses the full-bleed "notitlebar" material).
 const TOP_CLEARANCE = 36;
 // Footer that holds the reading-progress bar.
 const FOOTER_HEIGHT = 30;
+// Horizontal gutter around the text column. Applied as a left/right inset on the
+// epub.js render host (rather than body padding) so epub.js's paginated column
+// math stays correct — it computes columns from the host width.
+const SIDE_CLEARANCE = 32;
+
+// Open transition timings. Keep the page reveal slightly after the cover zoom
+// settles so the two never fight (which reads as a "pop"). Shared with the
+// closing zoom (BookCloseZoom) so open + close mirror each other exactly.
+export const ZOOM_DURATION = 0.45;
+export const ZOOM_EASE = [0.32, 0.72, 0, 1] as const;
+const REVEAL_DELAY_MS = 480;
 
 export function BooksReaderPane({
   entry,
   settings,
   osIsDark,
+  originRect,
   initialCfi,
+  initialPercentage,
   onProgress,
 }: BooksReaderPaneProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -50,12 +87,30 @@ export function BooksReaderPane({
   onProgressRef.current = onProgress;
   const initialCfiRef = useRef(initialCfi);
 
+  const { t } = useTranslation();
   const [isReady, setIsReady] = useState(false);
   const [coverVisible, setCoverVisible] = useState(true);
+  // Set when the EPUB can't be opened (missing blob or display failure) so the
+  // user sees a message instead of being stuck on the loading shim / cover.
+  const [loadError, setLoadError] = useState<string | null>(null);
+  // Zoom-in geometry for the cover overlay: animates from the clicked shelf
+  // cover (`from`) to full-bleed (`to`), both in viewport-local coordinates.
+  const [zoom, setZoom] = useState<{ from: ZoomRect; to: ZoomRect } | null>(
+    null
+  );
   const [flip, setFlip] = useState<FlipState | null>(null);
   const [atStart, setAtStart] = useState(true);
   const [atEnd, setAtEnd] = useState(false);
-  const [progressPct, setProgressPct] = useState(0);
+  // Seed from cached progress so the footer shows the real value immediately
+  // (keyed by path, so this re-seeds per book). Refined once epub.js has real
+  // locations and fires `relocated`.
+  const [progressPct, setProgressPct] = useState(() =>
+    clamp01(initialPercentage ?? 0)
+  );
+  // Latest progress, so the relocated handler can avoid clobbering a known-good
+  // value with a transient 0 (epub.js reports 0 until locations are generated).
+  const progressPctRef = useRef(progressPct);
+  progressPctRef.current = progressPct;
 
   const { info: coverInfo, loading: coverLoading } = useBookCover(
     entry.path,
@@ -64,6 +119,34 @@ export function BooksReaderPane({
 
   const palette = resolveReadingPalette(settings.themeOverride, osIsDark);
 
+  // Measure the zoom-in geometry before first paint so the cover overlay starts
+  // exactly on top of the clicked shelf book and grows to full-bleed. Runs once
+  // per book (the pane is keyed by path), so the captured origin stays stable.
+  useLayoutEffect(() => {
+    const host = viewportRef.current;
+    if (!host) return;
+    const hostRect = host.getBoundingClientRect();
+    const to: ZoomRect = {
+      top: 0,
+      left: 0,
+      width: hostRect.width,
+      height: hostRect.height,
+    };
+    // Fall back to a plain full-bleed reveal (no fly-in) when there is no
+    // origin, e.g. opened via deep link / "last opened" rather than a tap.
+    const from: ZoomRect =
+      originRect && originRect.width > 0 && originRect.height > 0
+        ? {
+            top: originRect.top - hostRect.top,
+            left: originRect.left - hostRect.left,
+            width: originRect.width,
+            height: originRect.height,
+          }
+        : to;
+    setZoom({ from, to });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Create the book + rendition for the active EPUB.
   useEffect(() => {
     let cancelled = false;
@@ -71,6 +154,7 @@ export function BooksReaderPane({
     let rendition: Rendition | null = null;
     setIsReady(false);
     setCoverVisible(true);
+    setLoadError(null);
 
     const nextFrame = () =>
       new Promise<void>((resolve) =>
@@ -97,7 +181,15 @@ export function BooksReaderPane({
     (async () => {
       try {
         const blob = await readBookBlobContent(entry.path);
-        if (cancelled || !blob) return;
+        if (cancelled) return;
+        if (!blob) {
+          // No readable EPUB bytes — surface an error instead of hanging on the
+          // loading shim / zoom cover forever.
+          setLoadError(t("apps.books.reader.error"));
+          setCoverVisible(false);
+          setIsReady(true);
+          return;
+        }
         const buffer = await blob.arrayBuffer();
         if (cancelled) return;
 
@@ -126,9 +218,20 @@ export function BooksReaderPane({
         rendition.hooks.content.register(
           (contents: {
             addStylesheetCss: (css: string, key: string) => void;
+            document?: Document;
           }) => {
             try {
               contents.addStylesheetCss(fontFaceCss, "ryos-book-fonts");
+            } catch {
+              // ignore
+            }
+            // `hyphens: auto` only kicks in when the content language is known.
+            // Many EPUBs omit it, so default to English when absent.
+            try {
+              const docEl = contents.document?.documentElement;
+              if (docEl && !docEl.getAttribute("lang")) {
+                docEl.setAttribute("lang", "en");
+              }
             } catch {
               // ignore
             }
@@ -147,7 +250,8 @@ export function BooksReaderPane({
             atEnd?: boolean;
           }) => {
             const cfi = location?.start?.cfi;
-            setAtStart(!!location?.atStart);
+            const atStartNow = !!location?.atStart;
+            setAtStart(atStartNow);
             setAtEnd(!!location?.atEnd);
             if (!cfi) return;
             let pct = location?.start?.percentage ?? 0;
@@ -159,8 +263,17 @@ export function BooksReaderPane({
             } catch {
               // ignore
             }
-            setProgressPct(Math.min(1, Math.max(0, pct || 0)));
-            onProgressRef.current(cfi, pct || 0);
+            const computed = clamp01(pct || 0);
+            // A 0 that isn't genuinely the start of the book means epub.js
+            // hasn't generated locations yet — don't drop the seeded/known value
+            // to 0. Keep showing it and persist the cfi with the known percentage
+            // so the cache isn't clobbered either.
+            if (computed > 0 || atStartNow) {
+              setProgressPct(computed);
+              onProgressRef.current(cfi, computed);
+            } else {
+              onProgressRef.current(cfi, progressPctRef.current);
+            }
           }
         );
 
@@ -169,7 +282,16 @@ export function BooksReaderPane({
         try {
           await rendition.display(initialCfiRef.current || undefined);
         } catch (err) {
-          if (!cancelled) console.error("[Books] Failed to display book", err);
+          // Corrupt / incompatible EPUB — show an error instead of revealing an
+          // empty reader shell. Do not proceed to setIsReady / cover hide.
+          if (!cancelled) {
+            console.error("[Books] Failed to display book", err);
+            setLoadError(t("apps.books.reader.error"));
+            setCoverVisible(false);
+            setIsReady(true);
+          }
+          cleanupInstance();
+          return;
         }
         if (cancelled) {
           cleanupInstance();
@@ -179,7 +301,7 @@ export function BooksReaderPane({
         // Reveal the page shortly after the zoom-in cover settles.
         window.setTimeout(() => {
           if (!cancelled) setCoverVisible(false);
-        }, 420);
+        }, REVEAL_DELAY_MS);
 
         // Generate locations for accurate progress percentages (best-effort).
         activeBook.ready
@@ -294,12 +416,17 @@ export function BooksReaderPane({
       className="relative h-full w-full overflow-hidden outline-none"
       style={{ backgroundColor: palette.background }}
     >
-      {/* The epub.js render target, inset below the top clearance and above
-          the progress footer. */}
+      {/* The epub.js render target, inset below the top clearance, above the
+          progress footer, and with side gutters for a comfortable measure. */}
       <div
         ref={renderHostRef}
-        className="absolute left-0 right-0"
-        style={{ top: TOP_CLEARANCE, bottom: FOOTER_HEIGHT }}
+        className="absolute"
+        style={{
+          top: TOP_CLEARANCE,
+          bottom: FOOTER_HEIGHT,
+          left: SIDE_CLEARANCE,
+          right: SIDE_CLEARANCE,
+        }}
       />
 
       {/* Click zones for page turning (aligned with the render host) */}
@@ -351,7 +478,12 @@ export function BooksReaderPane({
         </span>
       </div>
 
-      {/* Page-turn flip animation */}
+      {/* Page-turn animation. epub.js only ever has the single current page
+          rendered, so a true two-page slide (or a curl showing the outgoing
+          page) would require expensive DOM snapshotting (html2canvas), which is
+          too slow/janky to be worth it. Instead an opaque "page" sheet slides
+          off in the reading direction, revealing the freshly-rendered next/prev
+          page underneath — so the transition shows real content, cheaply. */}
       <AnimatePresence
         onExitComplete={() => {
           flipLockRef.current = false;
@@ -360,44 +492,94 @@ export function BooksReaderPane({
         {flip && (
           <motion.div
             key={flip.id}
-            className="pointer-events-none absolute inset-0 z-20"
-            style={{ perspective: 1600 }}
+            className="pointer-events-none absolute inset-0 z-20 overflow-hidden"
           >
             <motion.div
               className="absolute inset-0"
               style={{
-                transformOrigin:
-                  flip.dir === "next" ? "left center" : "right center",
+                backgroundColor: palette.background,
+                // Subtle fold shading along the sheet's leading edge.
                 backgroundImage:
                   flip.dir === "next"
-                    ? "linear-gradient(to left, rgba(0,0,0,0.18), rgba(255,255,255,0.04) 40%, rgba(0,0,0,0.04))"
-                    : "linear-gradient(to right, rgba(0,0,0,0.18), rgba(255,255,255,0.04) 40%, rgba(0,0,0,0.04))",
-                backgroundColor: palette.background,
+                    ? "linear-gradient(to right, rgba(0,0,0,0) 86%, rgba(0,0,0,0.08))"
+                    : "linear-gradient(to left, rgba(0,0,0,0) 86%, rgba(0,0,0,0.08))",
+                // Drop shadow cast onto the page being revealed.
                 boxShadow:
                   flip.dir === "next"
-                    ? "-12px 0 24px rgba(0,0,0,0.25)"
-                    : "12px 0 24px rgba(0,0,0,0.25)",
+                    ? "10px 0 26px rgba(0,0,0,0.28)"
+                    : "-10px 0 26px rgba(0,0,0,0.28)",
               }}
-              initial={{ rotateY: 0 }}
-              animate={{ rotateY: flip.dir === "next" ? -105 : 105 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.45, ease: [0.33, 0, 0.2, 1] }}
-              onAnimationComplete={() => setFlip(null)}
+              initial={{ x: "0%" }}
+              animate={{ x: flip.dir === "next" ? "-100%" : "100%" }}
+              exit={{ opacity: 0, transition: { duration: 0.1 } }}
+              transition={{ duration: 0.42, ease: [0.4, 0, 0.2, 1] }}
+              onAnimationComplete={() => {
+                // Release the lock as soon as the slide settles (not after the
+                // exit fade) so fast page-turning stays responsive.
+                flipLockRef.current = false;
+                setFlip(null);
+              }}
             />
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Zoom-in cover overlay (shares layoutId with the shelf book) */}
+      {/* Loading shim shown behind the cover while the EPUB lays out. */}
+      {!isReady && !loadError && (
+        <div
+          className={cn(
+            "absolute inset-0 z-30 flex items-center justify-center",
+            palette.isDark ? "text-white/70" : "text-black/50"
+          )}
+          style={{ backgroundColor: palette.background }}
+        >
+          <span className="font-os-ui text-sm">…</span>
+        </div>
+      )}
+
+      {/* Error message shown when the EPUB can't be opened. */}
+      {loadError && (
+        <div
+          className="absolute inset-0 z-50 flex items-center justify-center px-6 text-center"
+          style={{ backgroundColor: palette.background }}
+        >
+          <span
+            className={cn(
+              "font-os-ui text-sm",
+              palette.isDark ? "text-white/70" : "text-black/55"
+            )}
+          >
+            {loadError}
+          </span>
+        </div>
+      )}
+
+      {/* Zoom-in cover overlay: grows from the clicked shelf cover to full-bleed.
+          Animating width/height (not transform-scale) keeps the object-cover
+          image from distorting during the zoom. */}
       <AnimatePresence>
-        {coverVisible && (
+        {coverVisible && zoom && (
           <motion.div
-            layoutId={`bookcover-${entry.path}`}
-            className="pointer-events-none absolute inset-0 z-30 overflow-hidden"
+            className="pointer-events-none absolute z-40 overflow-hidden"
+            style={{ backgroundColor: palette.background }}
+            initial={{
+              top: zoom.from.top,
+              left: zoom.from.left,
+              width: zoom.from.width,
+              height: zoom.from.height,
+              borderRadius: 4,
+            }}
+            animate={{
+              top: zoom.to.top,
+              left: zoom.to.left,
+              width: zoom.to.width,
+              height: zoom.to.height,
+              borderRadius: 0,
+            }}
             exit={{ opacity: 0 }}
             transition={{
-              layout: { duration: 0.45, ease: [0.32, 0.72, 0, 1] },
-              opacity: { duration: 0.35 },
+              default: { duration: ZOOM_DURATION, ease: ZOOM_EASE },
+              opacity: { duration: 0.3 },
             }}
           >
             <BookCover
@@ -406,22 +588,11 @@ export function BooksReaderPane({
               info={coverInfo}
               loading={coverLoading}
               large
+              fit="contain"
             />
           </motion.div>
         )}
       </AnimatePresence>
-
-      {!isReady && (
-        <div
-          className={cn(
-            "absolute inset-0 z-40 flex items-center justify-center",
-            palette.isDark ? "text-white/70" : "text-black/50"
-          )}
-          style={{ backgroundColor: palette.background }}
-        >
-          <span className="font-os-ui text-sm">…</span>
-        </div>
-      )}
     </div>
   );
 }

@@ -11,6 +11,12 @@ interface BookCoverProps {
   className?: string;
   /** Larger typography for the full-size (zoomed) cover. */
   large?: boolean;
+  /**
+   * How the cover image fills its box. `"cover"` (default) crops to fill;
+   * `"contain"` shows the full cover centered (used by the zoom overlay so the
+   * whole book is visible as it grows).
+   */
+  fit?: "cover" | "contain";
 }
 
 /**
@@ -24,6 +30,7 @@ export function BookCover({
   loading,
   className,
   large = false,
+  fit = "cover",
 }: BookCoverProps) {
   const displayTitle = info?.title || title;
   const author = info?.author || null;
@@ -35,7 +42,8 @@ export function BookCover({
         alt={displayTitle}
         draggable={false}
         className={cn(
-          "h-full w-full select-none object-cover",
+          "h-full w-full select-none object-center",
+          fit === "contain" ? "object-contain" : "object-cover",
           className
         )}
       />

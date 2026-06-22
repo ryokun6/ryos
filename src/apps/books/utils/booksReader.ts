@@ -19,18 +19,20 @@ export const BOOK_FONTS: BookFontOption[] = [
   {
     id: "eb-garamond",
     label: "EB Garamond",
-    cssStack: '"EB Garamond", Georgia, "Times New Roman", serif',
+    cssStack:
+      '"EB Garamond", "Charter", "Iowan Old Style", "Palatino", "Palatino Linotype", "Book Antiqua", Georgia, "Times New Roman", serif',
   },
   {
     id: "serif",
     label: "Serif",
-    cssStack: 'Georgia, "Times New Roman", "AppleGaramond", serif',
+    cssStack:
+      '"Charter", "Iowan Old Style", "Palatino", "Palatino Linotype", "Book Antiqua", Georgia, "Times New Roman", serif',
   },
   {
     id: "sans",
     label: "Sans Serif",
     cssStack:
-      '-apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif',
+      '-apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, "Lucida Grande", Arial, sans-serif',
   },
   {
     id: "geneva",
@@ -96,12 +98,28 @@ export function buildEpubTheme(
   const font = getBookFont(settings.fontId);
   const fontFamily = font.cssStack ? `${font.cssStack} !important` : null;
 
+  // Left-align with automatic hyphenation reads far better than justified text
+  // in a narrow column (justify opens up ugly rivers of whitespace). Applied
+  // with !important so it overrides publisher `text-align: justify`. orphans/
+  // widows reduce stranded single lines at column breaks.
+  const readingFlow: Record<string, string> = {
+    "text-align": "left !important",
+    "-webkit-hyphens": "auto !important",
+    hyphens: "auto !important",
+    "-webkit-hyphenate-limit-before": "3",
+    "-webkit-hyphenate-limit-after": "3",
+    "hyphenate-limit-chars": "6 3 3 !important",
+    orphans: "2",
+    widows: "2",
+  };
+
   const bodyRules: Record<string, string> = {
     background: `${palette.background} !important`,
     color: `${palette.text} !important`,
     "line-height": `${settings.lineHeight} !important`,
     "padding-top": "0 !important",
     "padding-bottom": "0 !important",
+    ...readingFlow,
   };
   if (fontFamily) {
     bodyRules["font-family"] = fontFamily;
@@ -118,13 +136,19 @@ export function buildEpubTheme(
     color: `${palette.text} !important`,
   };
 
+  // Paragraph/list rules also force left-align + hyphenation so publisher CSS
+  // on `p`/`li` (commonly `text-align: justify`) can't win the cascade.
+  const flowText: Record<string, string> = { ...textColor, ...readingFlow };
+
   return {
     body: bodyRules,
     // Force colors so dark/sepia modes are legible regardless of publisher CSS.
-    p: withFont(textColor),
+    p: withFont(flowText),
     div: withFont({}),
     span: withFont({}),
-    li: withFont(textColor),
+    li: withFont(flowText),
+    // Headings keep their original alignment (often intentionally centered) but
+    // still take the reading color + font.
     h1: withFont(textColor),
     h2: withFont(textColor),
     h3: withFont(textColor),

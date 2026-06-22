@@ -43,6 +43,10 @@ interface BooksStoreState {
   settings: BooksReaderSettings;
   shelfView: BooksShelfView;
   lastOpenedPath: string | null;
+  /** Paths explicitly pinned to the top of the shelf (first = highest). */
+  pinnedTop: string[];
+  /** Paths explicitly pinned to the bottom of the shelf (last = lowest). */
+  pinnedBottom: string[];
   setProgress: (path: string, progress: BookProgress) => void;
   getProgress: (path: string) => BookProgress | undefined;
   clearProgress: (path: string) => void;
@@ -51,7 +55,14 @@ interface BooksStoreState {
   setLastOpenedPath: (path: string | null) => void;
   /** Move progress when a file is renamed/moved in the VFS. */
   renameProgressPath: (oldPath: string, newPath: string) => void;
+  /** Pin a book to the top of the shelf (removes it from the bottom). */
+  moveBookToTop: (path: string) => void;
+  /** Pin a book to the bottom of the shelf (removes it from the top). */
+  moveBookToBottom: (path: string) => void;
 }
+
+const without = (list: string[], path: string) =>
+  list.filter((p) => p !== path);
 
 export const useBooksStore = create<BooksStoreState>()(
   persist(
@@ -60,6 +71,8 @@ export const useBooksStore = create<BooksStoreState>()(
       settings: { ...DEFAULT_BOOKS_SETTINGS },
       shelfView: "grid",
       lastOpenedPath: null,
+      pinnedTop: [],
+      pinnedBottom: [],
       setProgress: (path, progress) =>
         set((state) => ({
           progressByPath: { ...state.progressByPath, [path]: progress },
@@ -79,21 +92,53 @@ export const useBooksStore = create<BooksStoreState>()(
       renameProgressPath: (oldPath, newPath) =>
         set((state) => {
           const existing = state.progressByPath[oldPath];
-          if (!existing) return state;
+          const inTop = state.pinnedTop.includes(oldPath);
+          const inBottom = state.pinnedBottom.includes(oldPath);
+          if (!existing && !inTop && !inBottom) return state;
           const next = { ...state.progressByPath };
-          delete next[oldPath];
-          next[newPath] = existing;
-          return { progressByPath: next };
+          if (existing) {
+            delete next[oldPath];
+            next[newPath] = existing;
+          }
+          return {
+            progressByPath: next,
+            pinnedTop: inTop
+              ? state.pinnedTop.map((p) => (p === oldPath ? newPath : p))
+              : state.pinnedTop,
+            pinnedBottom: inBottom
+              ? state.pinnedBottom.map((p) => (p === oldPath ? newPath : p))
+              : state.pinnedBottom,
+          };
         }),
+      moveBookToTop: (path) =>
+        set((state) => ({
+          pinnedTop: [path, ...without(state.pinnedTop, path)],
+          pinnedBottom: without(state.pinnedBottom, path),
+        })),
+      moveBookToBottom: (path) =>
+        set((state) => ({
+          pinnedTop: without(state.pinnedTop, path),
+          pinnedBottom: [...without(state.pinnedBottom, path), path],
+        })),
     }),
     {
       name: "ryos:books",
-      version: 1,
+      version: 2,
+      migrate: (persisted, version) => {
+        const state = (persisted ?? {}) as Partial<BooksStoreState>;
+        if (version < 2) {
+          state.pinnedTop = state.pinnedTop ?? [];
+          state.pinnedBottom = state.pinnedBottom ?? [];
+        }
+        return state as BooksStoreState;
+      },
       partialize: (state) => ({
         progressByPath: state.progressByPath,
         settings: state.settings,
         shelfView: state.shelfView,
         lastOpenedPath: state.lastOpenedPath,
+        pinnedTop: state.pinnedTop,
+        pinnedBottom: state.pinnedBottom,
       }),
     }
   )

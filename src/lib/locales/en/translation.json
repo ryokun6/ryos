@@ -4430,8 +4430,14 @@
         "emptyTitle": "Your bookshelf is empty",
         "emptyHint": "Click + to import an EPUB."
       },
+      "contextMenu": {
+        "moveToTop": "Move to Top",
+        "moveToBottom": "Move to Bottom",
+        "delete": "Delete"
+      },
       "reader": {
-        "backToShelf": "Shelf"
+        "backToShelf": "Shelf",
+        "error": "Couldn’t open this book."
       },
       "import": {
         "title": "Import EPUB"
@@ -4440,7 +4446,9 @@
         "imported": "Book imported",
         "importFailed": "Failed to import book",
         "invalidFile": "Unsupported file",
-        "invalidFileDesc": "Only .epub books can be imported."
+        "invalidFileDesc": "Only .epub books can be imported.",
+        "deleted": "Book deleted",
+        "deleteFailed": "Failed to delete book"
       },
       "help": {
         "bookshelf": {

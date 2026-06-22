@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-06-20T10:29:23.102Z",
+  "generatedAt": "2026-06-22T02:32:28.647Z",
   "themes": {
     "default": [
       "admin.png",
@@ -11,6 +11,8 @@
       "applets.png",
       "applications.png",
       "bomb.svg",
+      "books-folder.png",
+      "books.png",
       "calendar.png",
       "cdrom.png",
       "chats.png",
@@ -161,6 +163,8 @@
       "automator.png",
       "band.png",
       "bento.png",
+      "books-folder.png",
+      "books.png",
       "calendar.png",
       "cdrom.png",
       "chats.png",
@@ -232,6 +236,8 @@
       "winamp.png"
     ],
     "system7": [
+      "books-folder.png",
+      "books.png",
       "chats.png",
       "maps.png"
     ],
@@ -244,6 +250,8 @@
       "applets.png",
       "applications.png",
       "bomb.svg",
+      "books-folder.png",
+      "books.png",
       "calendar.png",
       "cdrom.png",
       "chats.png",
@@ -387,6 +395,8 @@
       "applets.png",
       "applications.png",
       "bomb.svg",
+      "books-folder.png",
+      "books.png",
       "calendar.png",
       "cdrom.png",
       "chats.png",

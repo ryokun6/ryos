@@ -76,9 +76,15 @@ export function useBookCover(path: string, modifiedAt?: number) {
   const [info, setInfo] = useState<BookCoverInfo | null>(
     coverCache.get(key) ?? null
   );
-  const [loading, setLoading] = useState(!coverCache.has(key));
+  const [loading, setLoading] = useState(!!path && !coverCache.has(key));
 
   useEffect(() => {
+    // No active path (e.g. called for "no book") — nothing to load.
+    if (!path) {
+      setInfo(null);
+      setLoading(false);
+      return;
+    }
     let cancelled = false;
     const cached = coverCache.get(key);
     if (cached) {
