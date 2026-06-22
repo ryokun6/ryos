@@ -56,12 +56,25 @@ export interface BlobUploadItem {
   item: unknown;
 }
 
+export interface BlobUploadBatchProgress {
+  loadedBytes: number;
+  totalBytes: number;
+  percentage: number;
+  completedItems: number;
+  totalItems: number;
+}
+
+interface BlobUploadItemsOptions {
+  onProgress?: (progress: BlobUploadBatchProgress) => void;
+}
+
 /**
  * Upload a batch of blob items, skipping content the server already has.
  * Returns a map key → SyncBlobRef for inclusion in docs.
  */
 export async function uploadBlobItems(
-  items: BlobUploadItem[]
+  items: BlobUploadItem[],
+  options: BlobUploadItemsOptions = {}
 ): Promise<Map<string, SyncBlobRef>> {
   const refs = new Map<string, SyncBlobRef>();
   if (items.length === 0) return refs;
@@ -87,6 +100,28 @@ export async function uploadBlobItems(
   });
 
   const uploads = response.uploads || [];
+  const uploadResults = uploads.filter((result) => result.upload);
+  const totalUploadBytes = uploadResults.reduce((sum, result) => {
+    const entry = byDigest.get(result.sha256);
+    return sum + (entry?.compressed.length ?? 0);
+  }, 0);
+  const totalUploadItems = uploadResults.length;
+  let completedUploadBytes = 0;
+  let completedUploadItems = 0;
+  const emitProgress = (loadedBytes: number) => {
+    options.onProgress?.({
+      loadedBytes,
+      totalBytes: totalUploadBytes,
+      percentage:
+        totalUploadBytes > 0 ? (loadedBytes / totalUploadBytes) * 100 : 100,
+      completedItems: completedUploadItems,
+      totalItems: totalUploadItems,
+    });
+  };
+  if (options.onProgress) {
+    emitProgress(0);
+  }
+
   for (const result of uploads) {
     const entry = byDigest.get(result.sha256);
     if (!entry) continue;
@@ -99,9 +134,15 @@ export async function uploadBlobItems(
         new Blob([entry.compressed.slice().buffer as ArrayBuffer], {
           type: "application/gzip",
         }),
-        result.upload as StorageUploadInstruction
+        result.upload as StorageUploadInstruction,
+        (progress) => {
+          emitProgress(completedUploadBytes + progress.loaded);
+        }
       );
       url = uploadResult.storageUrl;
+      completedUploadBytes += entry.compressed.length;
+      completedUploadItems += 1;
+      emitProgress(completedUploadBytes);
     }
 
     if (!url) {

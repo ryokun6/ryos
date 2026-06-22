@@ -15,6 +15,10 @@ import {
   mergePersistedCloudSyncCategoryStatus,
   useCloudSyncStore,
 } from "../src/stores/useCloudSyncStore";
+import {
+  formatSyncStatus,
+  formatUploadingStatus,
+} from "../src/apps/control-panels/components/control-panels-app/syncUtils";
 
 /**
  * Cloud Sync v2 codec round-trips: collect must decompose store state into
@@ -497,6 +501,7 @@ describe("cloud sync store", () => {
     } as never);
     expect(merged.files.lastUploadedAt).toBe("2024-06-01T00:00:00.000Z");
     expect(merged.files.isUploading).toBe(false); // transient flags reset
+    expect(merged.files.uploadProgress).toBeNull();
     expect(merged.maps).toBeDefined();
     expect(merged.tv).toBeDefined();
   });
@@ -507,5 +512,49 @@ describe("cloud sync store", () => {
     expect(useCloudSyncStore.getState().isCategoryEnabled("tv")).toBe(false);
     store.setCategoryEnabled("tv", true);
     expect(useCloudSyncStore.getState().isCategoryEnabled("tv")).toBe(true);
+  });
+
+  test("upload progress is clamped and cleared with upload activity", () => {
+    const store = useCloudSyncStore.getState();
+    store.markCategorySyncing("files", "upload", true);
+    store.markCategoryUploadProgress("files", 41.6);
+    expect(useCloudSyncStore.getState().categoryStatus.files.uploadProgress).toBe(
+      41.6
+    );
+
+    store.markCategoryUploadProgress("files", 140);
+    expect(useCloudSyncStore.getState().categoryStatus.files.uploadProgress).toBe(
+      100
+    );
+
+    store.markCategorySyncing("files", "upload", false);
+    const status = useCloudSyncStore.getState().categoryStatus.files;
+    expect(status.isUploading).toBe(false);
+    expect(status.uploadProgress).toBeNull();
+  });
+
+  test("sync status includes upload percentage when available", () => {
+    const t = (key: string) => {
+      const labels: Record<string, string> = {
+        "apps.control-panels.autoSync.uploading": "Uploading",
+        "apps.control-panels.autoSync.neverFetched": "Never fetched",
+      };
+      return labels[key] || key;
+    };
+
+    expect(formatUploadingStatus(41.6, t)).toBe("Uploading 42%");
+    expect(
+      formatSyncStatus(
+        {
+          lastUploadedAt: null,
+          lastFetchedAt: null,
+          lastAppliedRemoteAt: null,
+          isUploading: true,
+          isDownloading: false,
+          uploadProgress: 41.6,
+        },
+        t
+      )
+    ).toBe("Uploading 42% · Never fetched");
   });
 });

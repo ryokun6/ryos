@@ -9,6 +9,7 @@ export type SyncAuditStatus = {
   lastAppliedRemoteAt: string | null;
   isUploading?: boolean;
   isDownloading?: boolean;
+  uploadProgress?: number | null;
 };
 
 const AUTO_SYNC_TIME_KEYS: RelativeTimeKeys = {
@@ -38,7 +39,7 @@ export function formatSyncStatus(
   const parts: string[] = [];
 
   if (status.isUploading) {
-    parts.push(t("apps.control-panels.autoSync.uploading"));
+    parts.push(formatUploadingStatus(status.uploadProgress, t));
   } else {
     parts.push(
       uploadedRelative
@@ -62,6 +63,17 @@ export function formatSyncStatus(
   }
 
   return parts.join(" · ");
+}
+
+export function formatUploadingStatus(
+  uploadProgress: number | null | undefined,
+  t: (key: string, opts?: Record<string, unknown>) => string
+): string {
+  const label = t("apps.control-panels.autoSync.uploading");
+  if (typeof uploadProgress !== "number" || !Number.isFinite(uploadProgress)) {
+    return label;
+  }
+  return `${label} ${Math.round(Math.max(0, Math.min(100, uploadProgress)))}%`;
 }
 
 export function getUsernameInitials(username: string): string {

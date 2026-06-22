@@ -236,7 +236,23 @@ export class CloudSyncEngine {
               pendingTimestamps.set(key, this.state.nextTimestamp());
             }
             if (pendingUploads.length > 0) {
-              const refs = await uploadBlobItems(pendingUploads);
+              const category = getSyncNamespaceCategory(namespace);
+              syncStore.markCategorySyncing(category, "upload", true);
+              syncStore.markCategoryUploadProgress(category, 0);
+              let refs: Awaited<ReturnType<typeof uploadBlobItems>>;
+              try {
+                refs = await uploadBlobItems(pendingUploads, {
+                  onProgress: (progress) => {
+                    syncStore.markCategoryUploadProgress(
+                      category,
+                      progress.percentage
+                    );
+                  },
+                });
+              } catch (error) {
+                syncStore.markCategorySyncing(category, "upload", false);
+                throw error;
+              }
               for (const upload of pendingUploads) {
                 const ref = refs.get(upload.key);
                 if (!ref) continue;

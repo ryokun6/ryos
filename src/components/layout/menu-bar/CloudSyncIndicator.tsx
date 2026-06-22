@@ -22,6 +22,7 @@ import {
   formatRelativeTime,
   type RelativeTimeKeys,
 } from "@/utils/formatRelativeTime";
+import { formatUploadingStatus } from "@/apps/control-panels/components/control-panels-app/syncUtils";
 
 const AUTO_SYNC_TIME_KEYS: RelativeTimeKeys = {
   justNow: "apps.control-panels.autoSync.justNow",
@@ -77,6 +78,7 @@ interface SyncCategoryActivity {
   category: CloudSyncCategory;
   isUploading: boolean;
   isDownloading: boolean;
+  uploadProgress: number | null;
 }
 
 export function CloudSyncIndicator() {
@@ -105,10 +107,21 @@ export function CloudSyncIndicator() {
       category,
       isUploading: categoryStatus[category].isUploading,
       isDownloading: categoryStatus[category].isDownloading,
+      uploadProgress: categoryStatus[category].uploadProgress,
     })
   ).filter((entry) => entry.isUploading || entry.isDownloading);
 
   const isCloudSyncActive = isCheckingRemote || activeCategories.length > 0;
+  const activeUploadProgress = activeCategories
+    .map((entry) => entry.uploadProgress)
+    .filter((progress): progress is number => typeof progress === "number");
+  const triggerUploadProgress =
+    activeUploadProgress.length > 0
+      ? Math.round(
+          activeUploadProgress.reduce((sum, progress) => sum + progress, 0) /
+            activeUploadProgress.length
+        )
+      : null;
 
   const syncLabel = t("apps.control-panels.autoSync.title");
 
@@ -138,7 +151,7 @@ export function CloudSyncIndicator() {
             initial={{ opacity: 0, scale: 0.85 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className="flex items-center justify-center"
+            className="flex items-center justify-center gap-1"
           >
             <ArrowsClockwise
               aria-hidden="true"
@@ -151,6 +164,11 @@ export function CloudSyncIndicator() {
                   : undefined,
               }}
             />
+            {triggerUploadProgress !== null && (
+              <span className="min-w-[2.1em] text-[10px] leading-none tabular-nums opacity-80">
+                {triggerUploadProgress}%
+              </span>
+            )}
           </motion.span>
         </MenubarTrigger>
         <MenubarContent
@@ -159,8 +177,12 @@ export function CloudSyncIndicator() {
           className="min-w-[200px]"
         >
           <AnimatePresence initial={false}>
-            {activeCategories.map(({ category, isUploading }) => {
+            {activeCategories.map(({ category, isUploading, uploadProgress }) => {
               const meta = SYNC_CATEGORY_META[category];
+              const progress =
+                typeof uploadProgress === "number"
+                  ? Math.round(Math.max(0, Math.min(100, uploadProgress)))
+                  : null;
               return (
                 <motion.div
                   key={category}
@@ -171,7 +193,7 @@ export function CloudSyncIndicator() {
                   className="overflow-hidden"
                 >
                   <MenubarItem
-                    className="text-md h-6 px-3 flex items-center gap-2"
+                    className="text-md min-h-7 px-3 flex items-center gap-2"
                     onSelect={(event) => event.preventDefault()}
                   >
                     <ThemedIcon
@@ -179,10 +201,23 @@ export function CloudSyncIndicator() {
                       alt=""
                       className="size-4 shrink-0 object-contain"
                     />
-                    <span>{t(meta.labelKey)}</span>
-                    <span className="ml-auto pl-3 text-xs opacity-60">
+                    <span className="min-w-0 flex-1">
+                      <span>{t(meta.labelKey)}</span>
+                      {isUploading && progress !== null && (
+                        <span
+                          className="mt-1 block h-1 overflow-hidden rounded-full bg-black/15 os-dark:bg-white/20"
+                          aria-hidden="true"
+                        >
+                          <span
+                            className="block h-full rounded-full bg-current opacity-70"
+                            style={{ width: `${progress}%` }}
+                          />
+                        </span>
+                      )}
+                    </span>
+                    <span className="ml-auto pl-3 text-xs tabular-nums opacity-60">
                       {isUploading
-                        ? t("apps.control-panels.autoSync.uploading")
+                        ? formatUploadingStatus(uploadProgress, t)
                         : t("apps.control-panels.autoSync.fetching")}
                     </span>
                   </MenubarItem>
