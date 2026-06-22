@@ -24,7 +24,11 @@ const APP_NAMES: Record<string, string> = {
   stickies: "Stickies",
   "infinite-mac": "Infinite Mac",
   winamp: "Winamp",
+  calendar: "Calendar",
+  contacts: "Contacts",
   dashboard: "Dashboard",
+  maps: "Maps",
+  books: "Books",
 };
 
 // App descriptions
@@ -49,7 +53,11 @@ const APP_DESCRIPTIONS: Record<string, string> = {
   stickies: "Colorful sticky notes for reminders and quick notes",
   "infinite-mac": "Run classic Mac OS and NeXT in your browser",
   winamp: "Classic Winamp media player in your browser",
+  calendar: "Calendar with events",
+  contacts: "Address book with vCard import",
   dashboard: "Widgets dashboard with clock, calendar, and weather",
+  maps: "Find places with Apple Maps",
+  books: "Read EPUB books",
 };
 
 // App ID to macOS icon mapping
@@ -74,7 +82,11 @@ const APP_ICONS: Record<string, string> = {
   stickies: "stickies.png",
   "infinite-mac": "infinite-mac.png",
   winamp: "winamp.png",
+  calendar: "calendar.png",
+  contacts: "contacts.png",
   dashboard: "dashboard.png",
+  maps: "maps.png",
+  books: "books.png",
 };
 
 export type SongShareMetadata = {

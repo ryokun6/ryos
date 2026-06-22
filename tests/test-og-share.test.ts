@@ -5,6 +5,7 @@ import {
   resolveSongShareId,
 } from "../api/_utils/og-share";
 import { UpdateSongSchema } from "../api/songs/_constants";
+import { config as middlewareConfig } from "../middleware";
 
 const ORIGINAL_ENV = { ...process.env };
 
@@ -41,6 +42,60 @@ describe("og share response", () => {
     expect(body).toContain(
       'location.replace("https://coolify.example.com/finder?_ryo=1")'
     );
+  });
+
+  test("serves app icon OG previews for newer app routes", async () => {
+    process.env.APP_PUBLIC_ORIGIN = "https://os.example.com";
+
+    const appCases = [
+      {
+        id: "calendar",
+        title: "Calendar on ryOS",
+        description: "Calendar with events",
+        icon: "calendar.png",
+      },
+      {
+        id: "contacts",
+        title: "Contacts on ryOS",
+        description: "Address book with vCard import",
+        icon: "contacts.png",
+      },
+      {
+        id: "maps",
+        title: "Maps on ryOS",
+        description: "Find places with Apple Maps",
+        icon: "maps.png",
+      },
+      {
+        id: "books",
+        title: "Books on ryOS",
+        description: "Read EPUB books",
+        icon: "books.png",
+      },
+    ];
+
+    for (const app of appCases) {
+      expect(middlewareConfig.matcher).toContain(`/${app.id}`);
+
+      const response = await createOgShareResponse(
+        new Request(`https://os.example.com/${app.id}`)
+      );
+
+      expect(response).not.toBeNull();
+      const body = await response!.text();
+      expect(body).toContain(
+        `<meta property="og:title" content="${app.title}">`
+      );
+      expect(body).toContain(
+        `<meta property="og:description" content="${app.description}">`
+      );
+      expect(body).toContain(
+        `<meta property="og:image" content="https://os.example.com/icons/macosx/${app.icon}">`
+      );
+      expect(body).toContain(
+        `location.replace("https://os.example.com/${app.id}?_ryo=1")`
+      );
+    }
   });
 
   test("skips requests that already include the bypass query", async () => {
