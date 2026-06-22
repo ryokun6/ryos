@@ -72,7 +72,7 @@ const FOOTER_HEIGHT = 30;
 // Horizontal gutter around the text column. Applied as a left/right inset on the
 // epub.js render host (rather than body padding) so epub.js's paginated column
 // math stays correct — it computes columns from the host width.
-const SIDE_CLEARANCE = 32;
+const SIDE_CLEARANCE = 24;
 // Width at which auto column mode switches to a two-page spread. epub.js
 // defaults to 800; a lower value shows two columns on narrower windows.
 const SPREAD_MIN_WIDTH = 560;
