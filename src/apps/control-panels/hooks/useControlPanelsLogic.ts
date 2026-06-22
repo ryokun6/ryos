@@ -357,6 +357,7 @@ export function useControlPanelsLogic({
     syncCalendar,
     syncContacts,
     syncMaps,
+    syncBooks,
     isCheckingRemote: isAutoSyncChecking,
     lastCheckedAt: autoSyncLastCheckedAt,
     lastError: autoSyncLastError,
@@ -375,6 +376,7 @@ export function useControlPanelsLogic({
       syncCalendar: state.syncCalendar,
       syncContacts: state.syncContacts,
       syncMaps: state.syncMaps,
+      syncBooks: state.syncBooks,
       isCheckingRemote: state.isCheckingRemote,
       lastCheckedAt: state.lastCheckedAt,
       lastError: state.lastError,
@@ -1612,6 +1614,7 @@ export function useControlPanelsLogic({
     syncCalendar,
     syncContacts,
     syncMaps,
+    syncBooks,
     setSyncFiles: (enabled: boolean) => setCategoryEnabled("files", enabled),
     setSyncSettings: (enabled: boolean) =>
       setCategoryEnabled("settings", enabled),
@@ -1625,6 +1628,7 @@ export function useControlPanelsLogic({
     setSyncContacts: (enabled: boolean) =>
       setCategoryEnabled("contacts", enabled),
     setSyncMaps: (enabled: boolean) => setCategoryEnabled("maps", enabled),
+    setSyncBooks: (enabled: boolean) => setCategoryEnabled("books", enabled),
     isAutoSyncChecking,
     autoSyncLastCheckedAt,
     autoSyncLastError,

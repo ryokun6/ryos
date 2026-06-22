@@ -1,12 +1,15 @@
 import "./local-storage-stub";
 import { beforeEach, describe, expect, test } from "bun:test";
 import { SYNC_CODECS } from "../src/sync/codecs";
+import { CloudSyncEngine } from "../src/sync/engine";
+import { hashDoc, SyncClientState } from "../src/sync/state";
 import { useStickiesStore } from "../src/stores/useStickiesStore";
 import { useCalendarStore } from "../src/stores/useCalendarStore";
 import { useVideoStore } from "../src/stores/useVideoStore";
 import { useTvStore } from "../src/stores/useTvStore";
 import { useIpodStore } from "../src/stores/useIpodStore";
 import { useMapsStore } from "../src/stores/useMapsStore";
+import { useBooksStore } from "../src/stores/useBooksStore";
 import { useAudioSettingsStore } from "../src/stores/useAudioSettingsStore";
 import {
   mergePersistedCloudSyncCategoryStatus,
@@ -214,6 +217,209 @@ describe("maps codec", () => {
     const state = useMapsStore.getState();
     expect(state.home).toMatchObject({ name: "Home" });
     expect(state.favorites.map((favorite) => favorite.id)).toEqual(["f1"]);
+  });
+});
+
+describe("bookshelf codec", () => {
+  beforeEach(() => {
+    useBooksStore.setState({
+      progressByPath: {},
+      pinnedTop: [],
+      pinnedBottom: [],
+      lastOpenedPath: null,
+    } as never);
+  });
+
+  test("collect emits per-book progress plus order + last-opened docs", () => {
+    useBooksStore.setState({
+      progressByPath: {
+        "/Books/a.epub": { cfi: "epubcfi(/2)", percentage: 0.3, updatedAt: 10 },
+      },
+      pinnedTop: ["/Books/a.epub"],
+      pinnedBottom: [],
+      lastOpenedPath: "/Books/a.epub",
+    } as never);
+    const docs = SYNC_CODECS.bookshelf.collect(ctx) as Map<string, unknown>;
+    expect(docs.has("bookshelf/progress:/Books/a.epub")).toBe(true);
+    expect(docs.get("bookshelf/order")).toMatchObject({
+      pinnedTop: ["/Books/a.epub"],
+    });
+    expect(docs.get("bookshelf/last-opened")).toMatchObject({
+      path: "/Books/a.epub",
+    });
+  });
+
+  test("apply upserts progress, ordering, and last-opened", async () => {
+    await SYNC_CODECS.bookshelf.apply(
+      [
+        {
+          k: "bookshelf/progress:/Books/a.epub",
+          v: { cfi: "epubcfi(/4)", percentage: 0.5, updatedAt: 20 },
+          t,
+        },
+        { k: "bookshelf/order", v: { pinnedTop: ["/Books/a.epub"], pinnedBottom: [] }, t },
+        { k: "bookshelf/last-opened", v: { path: "/Books/a.epub" }, t },
+      ],
+      ctx
+    );
+    const state = useBooksStore.getState();
+    expect(state.progressByPath["/Books/a.epub"]).toMatchObject({ percentage: 0.5 });
+    expect(state.pinnedTop).toEqual(["/Books/a.epub"]);
+    expect(state.lastOpenedPath).toBe("/Books/a.epub");
+  });
+
+  test("stale remote progress does not clobber newer local progress", async () => {
+    useBooksStore.setState({
+      progressByPath: {
+        "/Books/a.epub": { cfi: "epubcfi(/8)", percentage: 0.9, updatedAt: 100 },
+      },
+    } as never);
+    const result = await SYNC_CODECS.bookshelf.apply(
+      [
+        {
+          k: "bookshelf/progress:/Books/a.epub",
+          v: { cfi: "epubcfi(/2)", percentage: 0.1, updatedAt: 50 },
+          t,
+        },
+      ],
+      ctx
+    );
+    // Local updatedAt (100) is newer than the incoming op (50): keep local.
+    expect(
+      useBooksStore.getState().progressByPath["/Books/a.epub"].percentage
+    ).toBe(0.9);
+    // ...and the codec reports the key as rejected so the engine re-uploads.
+    expect(result).toEqual({
+      rejectedKeys: ["bookshelf/progress:/Books/a.epub"],
+    });
+  });
+
+  test("newer remote progress applies and is not reported rejected", async () => {
+    useBooksStore.setState({
+      progressByPath: {
+        "/Books/a.epub": { cfi: "epubcfi(/8)", percentage: 0.4, updatedAt: 100 },
+      },
+    } as never);
+    const result = await SYNC_CODECS.bookshelf.apply(
+      [
+        {
+          k: "bookshelf/progress:/Books/a.epub",
+          v: { cfi: "epubcfi(/12)", percentage: 0.95, updatedAt: 200 },
+          t,
+        },
+      ],
+      ctx
+    );
+    expect(
+      useBooksStore.getState().progressByPath["/Books/a.epub"].percentage
+    ).toBe(0.95);
+    expect(result).toBeUndefined();
+  });
+
+  test("removeBook clears progress, ordering, and last-opened", () => {
+    useBooksStore.setState({
+      progressByPath: {
+        "/Books/a.epub": { cfi: "epubcfi(/2)", percentage: 0.3, updatedAt: 10 },
+        "/Books/b.epub": { cfi: "epubcfi(/4)", percentage: 0.6, updatedAt: 20 },
+      },
+      pinnedTop: ["/Books/a.epub"],
+      pinnedBottom: ["/Books/a.epub"],
+      lastOpenedPath: "/Books/a.epub",
+    } as never);
+
+    useBooksStore.getState().removeBook("/Books/a.epub");
+
+    const state = useBooksStore.getState();
+    expect(state.progressByPath["/Books/a.epub"]).toBeUndefined();
+    expect(state.progressByPath["/Books/b.epub"]).toBeDefined();
+    expect(state.pinnedTop).toEqual([]);
+    expect(state.pinnedBottom).toEqual([]);
+    expect(state.lastOpenedPath).toBeNull();
+
+    // collect must stop emitting the removed book's progress doc so the engine
+    // shadow-diff can tombstone it cross-device.
+    const docs = SYNC_CODECS.bookshelf.collect(ctx) as Map<string, unknown>;
+    expect(docs.has("bookshelf/progress:/Books/a.epub")).toBe(false);
+    expect(docs.has("bookshelf/progress:/Books/b.epub")).toBe(true);
+  });
+});
+
+describe("bookshelf sync engine wiring (stale-reject re-upload)", () => {
+  beforeEach(() => {
+    useBooksStore.setState({
+      progressByPath: {},
+      pinnedTop: [],
+      pinnedBottom: [],
+      lastOpenedPath: null,
+    } as never);
+    const syncStore = useCloudSyncStore.getState();
+    syncStore.applyServerAutoSyncPreference(true);
+    syncStore.setCategoryEnabled("books", true);
+  });
+
+  test("rejecting a stale remote op re-marks the namespace dirty and leaves the shadow != local", async () => {
+    const key = "bookshelf/progress:/Books/a.epub";
+    const localProgress = {
+      cfi: "epubcfi(/8)",
+      percentage: 0.9,
+      updatedAt: 100,
+    };
+    useBooksStore.setState({ progressByPath: { "/Books/a.epub": localProgress } } as never);
+
+    const engine = new CloudSyncEngine(`bookshelf-eng-${Date.now().toString(36)}`);
+    try {
+      // A lagging device wins the HLC race with stale progress (updatedAt 50).
+      await engine.applyRemoteOps([
+        {
+          k: key,
+          v: { cfi: "epubcfi(/2)", percentage: 0.1, updatedAt: 50 },
+          t,
+        },
+      ]);
+
+      // Local newer progress is kept.
+      expect(
+        useBooksStore.getState().progressByPath["/Books/a.epub"].percentage
+      ).toBe(0.9);
+
+      const state = (engine as unknown as { state: SyncClientState }).state;
+      // The namespace is re-marked dirty so the next flush re-collects it.
+      expect(state.dirtyNamespaces).toContain("bookshelf");
+      // The shadow differs from the (winning) local value, so the flush diff
+      // will re-upload the local progress and re-converge peers.
+      expect(state.getShadow(key)?.h).not.toBe(hashDoc(localProgress));
+    } finally {
+      engine.stop();
+    }
+  });
+
+  test("applying a newer remote op updates the shadow and does not re-mark dirty", async () => {
+    const key = "bookshelf/progress:/Books/a.epub";
+    useBooksStore.setState({
+      progressByPath: {
+        "/Books/a.epub": { cfi: "epubcfi(/8)", percentage: 0.4, updatedAt: 100 },
+      },
+    } as never);
+
+    const engine = new CloudSyncEngine(`bookshelf-eng-${Date.now().toString(36)}`);
+    try {
+      const newer = {
+        cfi: "epubcfi(/12)",
+        percentage: 0.95,
+        updatedAt: 200,
+      };
+      await engine.applyRemoteOps([{ k: key, v: newer, t }]);
+
+      expect(
+        useBooksStore.getState().progressByPath["/Books/a.epub"].percentage
+      ).toBe(0.95);
+      const state = (engine as unknown as { state: SyncClientState }).state;
+      expect(state.dirtyNamespaces).not.toContain("bookshelf");
+      // Shadow matches the applied remote value (no pending re-upload).
+      expect(state.getShadow(key)?.h).toBe(hashDoc(newer));
+    } finally {
+      engine.stop();
+    }
   });
 });
 

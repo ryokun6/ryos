@@ -3,6 +3,7 @@ export const AUTO_SYNC_ITEM_ICONS = {
   settings: "control-panels",
   calendar: "calendar",
   contacts: "contacts",
+  books: "books",
   maps: "maps",
   songs: "ipod",
   videos: "videos",

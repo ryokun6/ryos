@@ -20,11 +20,22 @@ interface ShelfBookProps {
   onContextMenu?: (entry: BooksLibraryEntry, x: number, y: number) => void;
   /** When true, the book shares a `layoutId` so it morphs to/from list view. */
   morphLayout?: boolean;
+  /** Animate the layout change (only true on a grid<->list toggle). */
+  layoutAnimated?: boolean;
 }
 
 // Shared-layout transition for the book morph between grid and list views.
 export const COVER_LAYOUT_TRANSITION = {
   layout: { duration: 0.4, ease: [0.32, 0.72, 0, 1] as const },
+};
+
+// Instant (no-op) layout transition. Used for every layout change that ISN'T a
+// grid<->list toggle (e.g. the async library populating, covers loading, the
+// window-open resize reflow) so those settle silently — while `layout`/
+// `layoutId` stay attached from mount, keeping Framer's projection snapshots
+// fresh so the real toggle morph still starts from the correct position.
+export const INSTANT_LAYOUT_TRANSITION = {
+  layout: { duration: 0 },
 };
 
 /**
@@ -41,6 +52,7 @@ export function BookMorphCover({
   percent,
   variant,
   morphLayout,
+  layoutAnimated,
   coverRef,
 }: {
   entry: BooksLibraryEntry;
@@ -49,6 +61,9 @@ export function BookMorphCover({
   percent: number;
   variant: "grid" | "list";
   morphLayout?: boolean;
+  /** Animate layout changes (true only on a grid<->list toggle); otherwise the
+   *  change applies instantly so initial load / reflow stays static. */
+  layoutAnimated?: boolean;
   coverRef?: Ref<HTMLDivElement>;
 }) {
   const { t } = useTranslation();
@@ -60,7 +75,9 @@ export function BookMorphCover({
       data-book-path={entry.path}
       layoutId={morphLayout ? `bookcover-${entry.path}` : undefined}
       layout={morphLayout}
-      transition={COVER_LAYOUT_TRANSITION}
+      transition={
+        layoutAnimated ? COVER_LAYOUT_TRANSITION : INSTANT_LAYOUT_TRANSITION
+      }
       className={cn(
         "relative shrink-0 overflow-hidden",
         isGrid
@@ -99,6 +116,7 @@ export function ShelfBook({
   onOpen,
   onContextMenu,
   morphLayout,
+  layoutAnimated,
 }: ShelfBookProps) {
   const { info, loading } = useBookCover(entry.path, entry.modifiedAt);
   const percent = progress ? Math.round(progress.percentage * 100) : 0;
@@ -145,6 +163,7 @@ export function ShelfBook({
         percent={percent}
         variant="grid"
         morphLayout={morphLayout}
+        layoutAnimated={layoutAnimated}
       />
     </motion.button>
   );

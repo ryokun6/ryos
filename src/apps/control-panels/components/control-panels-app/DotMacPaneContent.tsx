@@ -30,6 +30,7 @@ export type DotMacPaneContentProps = {
   syncVideos: boolean;
   syncTv: boolean;
   syncStickies: boolean;
+  syncBooks: boolean;
   setSyncFiles: (enabled: boolean) => void;
   setSyncSettings: (enabled: boolean) => void;
   setSyncCalendar: (enabled: boolean) => void;
@@ -39,6 +40,7 @@ export type DotMacPaneContentProps = {
   setSyncVideos: (enabled: boolean) => void;
   setSyncTv: (enabled: boolean) => void;
   setSyncStickies: (enabled: boolean) => void;
+  setSyncBooks: (enabled: boolean) => void;
   isMacOSTheme: boolean;
   isCloudForceSyncing: boolean;
   isCloudBackingUp: boolean;
@@ -85,6 +87,7 @@ export function DotMacPaneContent({
   syncVideos,
   syncTv,
   syncStickies,
+  syncBooks,
   setSyncFiles,
   setSyncSettings,
   setSyncCalendar,
@@ -94,6 +97,7 @@ export function DotMacPaneContent({
   setSyncVideos,
   setSyncTv,
   setSyncStickies,
+  setSyncBooks,
   isMacOSTheme,
   isCloudForceSyncing,
   isCloudBackingUp,
@@ -216,6 +220,13 @@ export function DotMacPaneContent({
                     status={formatSyncStatus(autoSyncDomainStatus.contacts, t)}
                     checked={syncContacts}
                     onCheckedChange={setSyncContacts}
+                  />
+                  <SyncDomainRow
+                    appId={AUTO_SYNC_ITEM_ICONS.books}
+                    label={t("apps.control-panels.autoSync.books")}
+                    status={formatSyncStatus(autoSyncDomainStatus.books, t)}
+                    checked={syncBooks}
+                    onCheckedChange={setSyncBooks}
                   />
                   <SyncDomainRow
                     appId={AUTO_SYNC_ITEM_ICONS.maps}

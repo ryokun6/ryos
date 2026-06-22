@@ -85,6 +85,7 @@ function createInitialCategoryStatus(): CloudSyncCategoryStatusMap {
     calendar: empty(),
     contacts: empty(),
     maps: empty(),
+    books: empty(),
   };
 }
 
@@ -119,6 +120,7 @@ interface CloudSyncStoreState {
   syncCalendar: boolean;
   syncContacts: boolean;
   syncMaps: boolean;
+  syncBooks: boolean;
   isCheckingRemote: boolean;
   lastCheckedAt: string | null;
   lastError: string | null;
@@ -166,6 +168,7 @@ const CATEGORY_TOGGLE_FIELDS: Record<SyncCategory, keyof CloudSyncStoreState> = 
   calendar: "syncCalendar",
   contacts: "syncContacts",
   maps: "syncMaps",
+  books: "syncBooks",
 };
 
 export const useCloudSyncStore = create<CloudSyncStoreState>()(
@@ -181,6 +184,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
       syncCalendar: true,
       syncContacts: true,
       syncMaps: true,
+      syncBooks: true,
       isCheckingRemote: false,
       lastCheckedAt: null,
       lastError: null,
@@ -335,6 +339,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
         syncCalendar: state.syncCalendar,
         syncContacts: state.syncContacts,
         syncMaps: state.syncMaps,
+        syncBooks: state.syncBooks,
         lastCheckedAt: state.lastCheckedAt,
         deletionMarkers: state.deletionMarkers,
         categoryStatus: Object.fromEntries(
@@ -373,6 +378,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
           calendar: "calendar",
           contacts: "contacts",
           maps: "maps",
+          bookshelf: "books",
         };
         const newest = (a: string | null, b: string | null | undefined): string | null => {
           if (!b) return a;
@@ -440,6 +446,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
           syncCalendar: candidate.syncCalendar ?? true,
           syncContacts: candidate.syncContacts ?? true,
           syncMaps: candidate.syncMaps ?? true,
+          syncBooks: candidate.syncBooks ?? true,
           lastCheckedAt: candidate.lastCheckedAt ?? null,
           deletionMarkers,
           categoryStatus,

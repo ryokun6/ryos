@@ -50,6 +50,13 @@ interface BooksStoreState {
   setProgress: (path: string, progress: BookProgress) => void;
   getProgress: (path: string) => BookProgress | undefined;
   clearProgress: (path: string) => void;
+  /**
+   * Forget all synced reading state for a removed book: progress, shelf
+   * ordering, and last-opened. Used when a book is deleted so the bookshelf
+   * codec stops emitting stale docs (and the engine tombstones the dropped
+   * progress key cross-device via shadow diff).
+   */
+  removeBook: (path: string) => void;
   updateSettings: (partial: Partial<BooksReaderSettings>) => void;
   setShelfView: (view: BooksShelfView) => void;
   setLastOpenedPath: (path: string | null) => void;
@@ -84,6 +91,29 @@ export const useBooksStore = create<BooksStoreState>()(
           const next = { ...state.progressByPath };
           delete next[path];
           return { progressByPath: next };
+        }),
+      removeBook: (path) =>
+        set((state) => {
+          const hadProgress = path in state.progressByPath;
+          const inTop = state.pinnedTop.includes(path);
+          const inBottom = state.pinnedBottom.includes(path);
+          const wasLastOpened = state.lastOpenedPath === path;
+          if (!hadProgress && !inTop && !inBottom && !wasLastOpened) {
+            return state;
+          }
+          let progressByPath = state.progressByPath;
+          if (hadProgress) {
+            progressByPath = { ...state.progressByPath };
+            delete progressByPath[path];
+          }
+          return {
+            progressByPath,
+            pinnedTop: inTop ? without(state.pinnedTop, path) : state.pinnedTop,
+            pinnedBottom: inBottom
+              ? without(state.pinnedBottom, path)
+              : state.pinnedBottom,
+            lastOpenedPath: wasLastOpened ? null : state.lastOpenedPath,
+          };
         }),
       updateSettings: (partial) =>
         set((state) => ({ settings: { ...state.settings, ...partial } })),

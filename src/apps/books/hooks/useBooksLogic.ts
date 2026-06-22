@@ -17,6 +17,7 @@ import { useBooksStore } from "@/stores/useBooksStore";
 import { useVfsFileOperations } from "@/services/vfs/useVfsFileOperations";
 import { openNativeFile } from "@/utils/nativeFileDialogs";
 import { emitFileSaved, onFileRenamed } from "@/utils/appEventBus";
+import { requestCloudSyncDomainCheck } from "@/utils/cloudSyncEvents";
 import { helpItems } from "../metadata";
 import { useBookCover } from "../utils/useBookCover";
 import type { BooksInitialData } from "@/apps/base/types";
@@ -107,6 +108,7 @@ export function useBooksLogic({
   const pinnedBottom = useBooksStore((s) => s.pinnedBottom);
   const moveBookToTop = useBooksStore((s) => s.moveBookToTop);
   const moveBookToBottom = useBooksStore((s) => s.moveBookToBottom);
+  const removeBook = useBooksStore((s) => s.removeBook);
 
   const saveProgress = useCallback(
     (path: string, cfi: string, percentage: number) => {
@@ -195,6 +197,13 @@ export function useBooksLogic({
           path: entry.path,
           name: entry.fileName,
         } as Parameters<typeof moveToTrash>[0]);
+        // Forget the book's synced reading state (progress, shelf ordering,
+        // last-opened) so the bookshelf codec stops emitting stale docs for
+        // a book that no longer exists; the engine tombstones the dropped
+        // progress key across devices via its shadow diff. Only done on an
+        // explicit delete — the drop-to-shelf effect also fires for renames
+        // and moves (handled by renameProgressPath), where state must be kept.
+        removeBook(entry.path);
         toast.success(t("apps.books.toasts.deleted"), {
           description: entry.fileName,
         });
@@ -203,8 +212,17 @@ export function useBooksLogic({
         toast.error(t("apps.books.toasts.deleteFailed"));
       }
     },
-    [moveToTrash, t]
+    [moveToTrash, removeBook, t]
   );
+
+  // On open, reconcile Books cloud-sync state (reading progress, shelf
+  // ordering, last-opened) so the shelf reflects the latest synced data from
+  // other devices. This pulls via the shared cursor; the `bookshelf` namespace
+  // applies independently of the (large) file blobs.
+  useEffect(() => {
+    if (!isWindowOpen) return;
+    requestCloudSyncDomainCheck("bookshelf");
+  }, [isWindowOpen]);
 
   // Handle being launched / re-targeted with a specific book path.
   useEffect(() => {

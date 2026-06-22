@@ -536,13 +536,24 @@ export class CloudSyncEngine {
           if (isSyncBlobNamespace(namespace)) {
             await this.applyBlobOps(namespace, namespaceOps, ctx);
           } else {
-            await SYNC_CODECS[namespace].apply(namespaceOps, ctx);
+            const result = await SYNC_CODECS[namespace].apply(
+              namespaceOps,
+              ctx
+            );
             for (const op of namespaceOps) {
               if (op.del) {
                 this.state.deleteShadow(op.k);
               } else {
                 this.state.setShadow(op.k, { t: op.t, h: hashDoc(op.v) });
               }
+            }
+            // A codec can reject an op when a newer local value won an
+            // app-level merge (e.g. bookshelf progress updatedAt LWW). The
+            // shadow above still records the rejected remote value, so it now
+            // differs from local — re-mark the namespace dirty so the next
+            // flush re-uploads the local winner and re-converges peers.
+            if (result?.rejectedKeys && result.rejectedKeys.length > 0) {
+              this.markDirty(namespace);
             }
           }
           syncStore.markCategoryApplied(category, new Date().toISOString());

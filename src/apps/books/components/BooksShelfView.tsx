@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { LayoutGroup, motion } from "motion/react";
 import { useTranslation } from "react-i18next";
@@ -138,6 +138,21 @@ export function BooksShelfView({
   // grid->list toggle animates like every subsequent one.
   const measured = width > 0;
 
+  // Keep layout changes instant ONLY for the initial load (first appearance /
+  // async library population / window-open reflow), then animate everything
+  // after — both the resize re-layout AND grid<->list toggles. `layoutId`/
+  // `layout` stay attached from mount, so this only gates the transition
+  // duration, never the projection registration (first toggle still morphs).
+  const [layoutAnimated, setLayoutAnimated] = useState(false);
+  useEffect(() => {
+    if (layoutAnimated || library.length === 0) return;
+    // Wait one frame past the first committed render that has books so the
+    // initial books + the window-open reflow settle instantly, then enable
+    // real animations for all subsequent layout changes.
+    const id = requestAnimationFrame(() => setLayoutAnimated(true));
+    return () => cancelAnimationFrame(id);
+  }, [layoutAnimated, library.length]);
+
   const perRow = useMemo(() => {
     const usable = Math.max(0, width - SHELF_GUTTER * 2);
     // Fit N covers + (N-1) gaps (no trailing gap) within the usable width, so a
@@ -260,6 +275,7 @@ export function BooksShelfView({
                           onOpen={onOpenBook}
                           onContextMenu={openContextMenu}
                           morphLayout
+                          layoutAnimated={layoutAnimated}
                         />
                       ))}
                     </div>
@@ -284,6 +300,7 @@ export function BooksShelfView({
                     onOpen={onOpenBook}
                     onContextMenu={openContextMenu}
                     morphLayout
+                    layoutAnimated={layoutAnimated}
                   />
                 ))}
               </div>
@@ -358,12 +375,14 @@ function BookListRow({
   onOpen,
   onContextMenu,
   morphLayout,
+  layoutAnimated,
 }: {
   entry: BooksLibraryEntry;
   progress?: BookProgress;
   onOpen: (entry: BooksLibraryEntry, originRect?: BookOriginRect) => void;
   onContextMenu?: (entry: BooksLibraryEntry, x: number, y: number) => void;
   morphLayout?: boolean;
+  layoutAnimated?: boolean;
 }) {
   const { t } = useTranslation();
   const { info, loading } = useBookCover(entry.path, entry.modifiedAt);
@@ -403,6 +422,7 @@ function BookListRow({
         percent={percent}
         variant="list"
         morphLayout={morphLayout}
+        layoutAnimated={layoutAnimated}
         coverRef={coverRef}
       />
       <div className="min-w-0 flex-1">

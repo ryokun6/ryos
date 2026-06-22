@@ -3096,6 +3096,7 @@
         "title": "Cloud Sync",
         "description": "Sync apps and settings across devices",
         "files": "Files",
+        "books": "Books",
         "settings": "Settings",
         "songs": "Songs",
         "videos": "Videos",

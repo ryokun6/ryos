@@ -29,6 +29,7 @@ export type SyncTabContentProps = {
   syncVideos: boolean;
   syncTv: boolean;
   syncStickies: boolean;
+  syncBooks: boolean;
   setSyncFiles: (enabled: boolean) => void;
   setSyncSettings: (enabled: boolean) => void;
   setSyncCalendar: (enabled: boolean) => void;
@@ -38,6 +39,7 @@ export type SyncTabContentProps = {
   setSyncVideos: (enabled: boolean) => void;
   setSyncTv: (enabled: boolean) => void;
   setSyncStickies: (enabled: boolean) => void;
+  setSyncBooks: (enabled: boolean) => void;
   isCloudForceSyncing: boolean;
   isCloudBackingUp: boolean;
   isCloudRestoring: boolean;
@@ -83,6 +85,7 @@ export function SyncTabContent({
   syncVideos,
   syncTv,
   syncStickies,
+  syncBooks,
   setSyncFiles,
   setSyncSettings,
   setSyncCalendar,
@@ -92,6 +95,7 @@ export function SyncTabContent({
   setSyncVideos,
   setSyncTv,
   setSyncStickies,
+  setSyncBooks,
   isCloudForceSyncing,
   isCloudBackingUp,
   isCloudRestoring,
@@ -181,6 +185,13 @@ export function SyncTabContent({
                 status={formatSyncStatus(autoSyncDomainStatus.contacts, t)}
                 checked={syncContacts}
                 onCheckedChange={setSyncContacts}
+              />
+              <SyncDomainRow
+                appId={AUTO_SYNC_ITEM_ICONS.books}
+                label={t("apps.control-panels.autoSync.books")}
+                status={formatSyncStatus(autoSyncDomainStatus.books, t)}
+                checked={syncBooks}
+                onCheckedChange={setSyncBooks}
               />
               <SyncDomainRow
                 appId={AUTO_SYNC_ITEM_ICONS.maps}

@@ -55,6 +55,7 @@ const SYNC_CATEGORY_META: Record<
     labelKey: "apps.control-panels.autoSync.stickies",
     appId: "stickies",
   },
+  books: { labelKey: "apps.control-panels.autoSync.books", appId: "books" },
 };
 
 const SYNC_CATEGORY_ORDER: CloudSyncCategory[] = [
@@ -62,6 +63,7 @@ const SYNC_CATEGORY_ORDER: CloudSyncCategory[] = [
   "settings",
   "calendar",
   "contacts",
+  "books",
   "maps",
   "songs",
   "videos",

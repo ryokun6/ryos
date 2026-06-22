@@ -31,6 +31,7 @@ import { useStickiesStore, type StickyNote } from "@/stores/useStickiesStore";
 import { useCalendarStore } from "@/stores/useCalendarStore";
 import { useContactsStore } from "@/stores/useContactsStore";
 import { useMapsStore } from "@/stores/useMapsStore";
+import { useBooksStore, type BookProgress } from "@/stores/useBooksStore";
 import {
   useCloudSyncStore,
   type CloudSyncDeletionBucket,
@@ -56,13 +57,31 @@ export interface CodecContext {
   db?: IDBDatabase;
 }
 
+export interface SyncApplyResult {
+  /**
+   * Keys whose remote op the codec declined to apply because a newer local
+   * value won an app-level merge (e.g. bookshelf progress `updatedAt` LWW).
+   * The engine re-marks the namespace dirty for these keys so the local
+   * winner is re-uploaded and peers re-converge — otherwise the shadow would
+   * silently record the stale remote value and the divergence would persist
+   * until some unrelated mutation in the namespace happened to flush.
+   */
+  rejectedKeys?: string[];
+}
+
 export interface SyncCodec {
   namespace: SyncNamespace;
   usesIndexedDb?: boolean;
   /** Local state as key → document. */
   collect(ctx: CodecContext): Promise<Map<string, unknown>> | Map<string, unknown>;
-  /** Apply remote ops onto local stores. */
-  apply(ops: AppliedSyncOp[], ctx: CodecContext): Promise<void> | void;
+  /**
+   * Apply remote ops onto local stores. May return a {@link SyncApplyResult}
+   * to tell the engine which ops were rejected by an app-level merge.
+   */
+  apply(
+    ops: AppliedSyncOp[],
+    ctx: CodecContext
+  ): Promise<void | SyncApplyResult> | void | SyncApplyResult;
   /** Subscribe to local changes; invoke onChange to mark the namespace dirty. */
   subscribe(onChange: () => void): () => void;
   /** False while backing stores haven't hydrated; collect is skipped. */
@@ -1301,6 +1320,142 @@ const mapsCodec: SyncCodec = {
 };
 
 // ---------------------------------------------------------------------------
+// Bookshelf codec (Books app reading state: progress + ordering + last-opened)
+//
+// The EPUB *files* sync via the `books` blob namespace (under the "files"
+// category). This codec owns the lightweight per-book reading state held in
+// useBooksStore so it can sync independently of the large file blobs.
+//
+// Keys:
+//   bookshelf/progress:<path> — { cfi, percentage, updatedAt } per book
+//   bookshelf/order           — { pinnedTop, pinnedBottom } shelf ordering
+//   bookshelf/last-opened     — { path } most recently opened book
+//
+// Reading progress reconciles per book with `updatedAt`-aware last-writer-wins
+// on apply (a stale remote op never clobbers newer local progress), layered on
+// top of the engine's per-key timestamp LWW. Reader font/theme `settings` and
+// `shelfView` are intentionally NOT synced — they are device-local display
+// preferences.
+//
+// Deleting a book: `useBooksLogic.deleteBook` calls `useBooksStore.removeBook`,
+// which drops the book's `progress` entry and prunes it from the order. On the
+// next flush, `collect` no longer emits `bookshelf/progress:<path>`, so the
+// engine's shadow diff infers the removal and uploads a tombstone (`del`) that
+// removes the key on peers. The `order`/`last-opened` docs are singletons that
+// always exist and simply update. Like the structurally identical `videos`
+// namespace (per-item keys + a singleton order doc), `bookshelf` has no
+// dedicated deletion-marker bucket: single-book deletes are never "suspicious"
+// (see the mass-delete guard in the engine), so shadow-diff tombstoning is
+// sufficient and a tombstone bucket would be over-engineering.
+// ---------------------------------------------------------------------------
+
+const bookshelfCodec: SyncCodec = {
+  namespace: "bookshelf",
+  collect() {
+    const docs = new Map<string, unknown>();
+    const state = useBooksStore.getState();
+    for (const [path, progress] of Object.entries(state.progressByPath)) {
+      if (!path || !progress) continue;
+      docs.set(`bookshelf/progress:${path}`, progress);
+    }
+    docs.set("bookshelf/order", {
+      pinnedTop: state.pinnedTop,
+      pinnedBottom: state.pinnedBottom,
+    });
+    docs.set("bookshelf/last-opened", { path: state.lastOpenedPath ?? null });
+    return docs;
+  },
+  apply(ops) {
+    const progressUpserts = new Map<string, BookProgress>();
+    const progressDeletes = new Set<string>();
+    let order: Record<string, unknown> | null = null;
+    let lastOpened: string | null | undefined;
+
+    for (const op of ops) {
+      if (op.k.startsWith("bookshelf/progress:")) {
+        const path = op.k.slice("bookshelf/progress:".length);
+        if (op.del) {
+          progressDeletes.add(path);
+        } else if (asRecord(op.v)) {
+          progressUpserts.set(path, op.v as BookProgress);
+        }
+      } else if (op.k === "bookshelf/order" && !op.del) {
+        order = asRecord(op.v);
+      } else if (op.k === "bookshelf/last-opened" && !op.del) {
+        const doc = asRecord(op.v);
+        if (doc && "path" in doc) {
+          lastOpened = typeof doc.path === "string" ? doc.path : null;
+        }
+      }
+    }
+
+    // Progress keys the engine should treat as still-pending: the newer local
+    // value won the updatedAt LWW, so the local progress must be re-uploaded
+    // (the engine otherwise records the stale remote value in the shadow and
+    // never re-propagates the winner — devices silently diverge).
+    const rejectedKeys: string[] = [];
+
+    useBooksStore.setState((state) => {
+      let progressByPath = state.progressByPath;
+      if (progressUpserts.size > 0 || progressDeletes.size > 0) {
+        progressByPath = { ...state.progressByPath };
+        for (const path of progressDeletes) {
+          delete progressByPath[path];
+        }
+        for (const [path, incoming] of progressUpserts) {
+          const existing = progressByPath[path];
+          // updatedAt-aware LWW: keep the newer reading position so a stale
+          // remote op (e.g. an offline device flushing old progress) can't
+          // roll back fresher local progress.
+          if (
+            !existing ||
+            (incoming.updatedAt ?? 0) >= (existing.updatedAt ?? 0)
+          ) {
+            progressByPath[path] = incoming;
+          } else {
+            rejectedKeys.push(`bookshelf/progress:${path}`);
+          }
+        }
+      }
+
+      const filterPaths = (value: unknown): string[] | null =>
+        Array.isArray(value)
+          ? value.filter((p): p is string => typeof p === "string")
+          : null;
+
+      const pinnedTop = order ? filterPaths(order.pinnedTop) : null;
+      const pinnedBottom = order ? filterPaths(order.pinnedBottom) : null;
+
+      return {
+        progressByPath,
+        pinnedTop: pinnedTop ?? state.pinnedTop,
+        pinnedBottom: pinnedBottom ?? state.pinnedBottom,
+        lastOpenedPath:
+          lastOpened !== undefined ? lastOpened : state.lastOpenedPath,
+      };
+    });
+
+    return rejectedKeys.length > 0 ? { rejectedKeys } : undefined;
+  },
+  subscribe(onChange) {
+    return useBooksStore.subscribe((state, prev) => {
+      if (
+        state.progressByPath !== prev.progressByPath ||
+        state.pinnedTop !== prev.pinnedTop ||
+        state.pinnedBottom !== prev.pinnedBottom ||
+        state.lastOpenedPath !== prev.lastOpenedPath
+      ) {
+        if (!useBooksStore.persist.hasHydrated()) return;
+        onChange();
+      }
+    });
+  },
+  isReady() {
+    return useBooksStore.persist.hasHydrated();
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Blob codecs (images / trash / applets / wallpapers)
 // ---------------------------------------------------------------------------
 
@@ -1394,6 +1549,7 @@ export const SYNC_CODECS: Record<SyncNamespace, SyncCodec> = {
   maps: mapsCodec,
   images: imagesCodec,
   books: booksCodec,
+  bookshelf: bookshelfCodec,
   trash: trashCodec,
   applets: appletsCodec,
   wallpapers: wallpapersCodec,
@@ -1415,6 +1571,7 @@ export const NAMESPACE_APPLY_ORDER: SyncNamespace[] = [
   "applets",
   "settings",
   "files",
+  "bookshelf",
   "songs",
   "videos",
   "tv",
