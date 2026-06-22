@@ -428,6 +428,7 @@
         "gifImage": "GIF Image",
         "webpImage": "WebP Image",
         "bmpImage": "BMP Image",
+        "book": "Book",
         "document": "Document",
         "htmlApplet": "HTML Applet",
         "unknown": "Unknown"

@@ -2076,6 +2076,7 @@
       },
       "fileTypes": {
         "application": "애플리케이션",
+        "book": "책",
         "bmpImage": "BMP 이미지",
         "directory": "디렉터리",
         "document": "문서",

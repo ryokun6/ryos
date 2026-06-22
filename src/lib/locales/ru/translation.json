@@ -2076,6 +2076,7 @@
       },
       "fileTypes": {
         "application": "Приложение",
+        "book": "Книга",
         "bmpImage": "Изображение BMP",
         "directory": "Каталог",
         "document": "Документ",

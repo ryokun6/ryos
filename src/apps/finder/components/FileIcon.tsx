@@ -5,6 +5,10 @@ import { isTouchDevice } from "@/utils/device";
 import { usePointerLongPress } from "@/hooks/usePointerLongPress";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
+import {
+  BOOK_FILE_ICON_PATH,
+  isEpubFile,
+} from "@/apps/finder/utils/fileSystemHelpers";
 
 interface FileIconProps {
   name: string;
@@ -151,6 +155,7 @@ export const FileIcon = memo(function FileIcon({
   };
 
   const getIconPath = () => {
+    if (!isDirectory && isEpubFile(name)) return BOOK_FILE_ICON_PATH;
     if (icon) return icon;
     if (isDirectory) return "/icons/directory.png"; // legacy logical path
     if (name.endsWith(".txt") || name.endsWith(".md"))

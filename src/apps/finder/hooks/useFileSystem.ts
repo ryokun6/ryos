@@ -35,6 +35,8 @@ import {
   getCloudSyncDomainForContentStore,
   getCloudSyncDeletionBucketForContentStore,
   getFileTypeFromExtension,
+  BOOK_FILE_ICON_PATH,
+  isEpubFile,
 } from "../utils/fileSystemHelpers";
 
 // Interface for content stored in IndexedDB. The persisted shape is the shared
@@ -98,6 +100,10 @@ function getFileIcon(item: FileSystemItem): string {
       }
       return "/icons/default/file.png";
     }
+  }
+
+  if (isEpubFile(item.name, item.type)) {
+    return BOOK_FILE_ICON_PATH;
   }
 
   // Use stored icon if available (but only if not an alias, since aliases should resolve)

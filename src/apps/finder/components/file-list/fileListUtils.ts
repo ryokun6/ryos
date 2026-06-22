@@ -1,4 +1,8 @@
 import type { FileItem } from "./types";
+import {
+  BOOK_FILE_ICON_PATH,
+  isEpubFile,
+} from "@/apps/finder/utils/fileSystemHelpers";
 
 export function isImageFile(file: FileItem): boolean {
   const ext = file.name.split(".").pop()?.toLowerCase();
@@ -39,6 +43,9 @@ export function shouldShowThumbnail(file: FileItem): boolean {
 }
 
 export function getIconPath(file: FileItem): string {
+  if (!file.isDirectory && isEpubFile(file.name, file.type)) {
+    return BOOK_FILE_ICON_PATH;
+  }
   if (file.icon) return file.icon;
   if (file.isDirectory) return "/icons/directory.png";
   if (file.name.endsWith(".txt") || file.name.endsWith(".md"))
