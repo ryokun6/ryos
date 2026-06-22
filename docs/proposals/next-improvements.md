@@ -31,8 +31,8 @@ final-cleanup phase:
   (`api/sync/backup.ts`, `status.ts`, `backup-token.ts`) still back the
   Control Panels backup UI and remain until that UI has a v2-only replacement.
 - **Canonical Redis key scheme** — `src/shared/redisKeys.ts` is now the source
-  of truth, but several hot paths still carry legacy dual-read fallbacks
-  (listen sessions, airdrop presence, rate-limit counters).
+  of truth. Listen-session and Airdrop presence dual reads are retired, and
+  `rl:*` rate-limit callers canonicalize through `makeKey` into `rate:*`.
 - **macOS Aqua / "Aqua Glass" theme overhaul** — large CSS surface
   (`src/styles/themes/aqua.css` ~2.8k lines, `aqua-glass.css` ~1.4k,
   `dark-aqua.css` ~1.9k, `control-panels-mac.css` ~1.6k). This is the single
@@ -67,7 +67,7 @@ Quantitative hotspots (lines):
 
 ## 2. Refactoring proposals
 
-### 2.1 Decompose the iPod stack (highest debt concentration) — **pending PR**
+### 2.1 Decompose the iPod stack (highest debt concentration) — **started**
 
 `useIpodLogic.ts` (5,143) + `useIpodStore.ts` (2,535) + `useAppleMusicLibrary.ts`
 (1,778) ≈ 9.4k lines, and recent history shows recurring Apple Music
@@ -86,7 +86,11 @@ Proposal:
 Risk: high (most-touched user-facing app) — do behind the existing test suite
 (`test-ipod-*`) and add playback-race regression tests first.
 
-### 2.2 Generalize store persistence — **partial pending PR**
+Current status: the first extraction landed (`useIpodScale`,
+`useIpodStatusBacklight`). The remaining cohesive clusters still need follow-up
+PRs.
+
+### 2.2 Generalize store persistence — **partial**
 
 ~25 stores hand-roll `STORE_VERSION` + `partialize` + bespoke `migrate`, and the
 biggest ones leave verbose `console.log` in the production migrate path
@@ -97,9 +101,9 @@ partialize })` helper with typed, registered migrations and a debug logger that
 is silent in production. Generalize the already-good `createDebouncedPersistStorage`
 (currently only in `useFilesStore`/`useIpodStore`/`useChatsStore`).
 
-Current status: PR #1566 covers the production-silent debug logger slice for the
-noisiest stores. The typed persisted-store factory remains pending because it
-touches ~25 stores and should stay isolated from unrelated cleanup.
+Current status: the production-silent debug logger slice landed for the noisiest
+stores. The typed persisted-store factory remains pending because it touches
+~25 stores and should stay isolated from unrelated cleanup.
 
 ### 2.3 Split the API god-files
 
@@ -126,9 +130,11 @@ touches ~25 stores and should stay isolated from unrelated cleanup.
 
 ### 2.5 Adopt shared UI primitives everywhere
 
-- **Help/About**: `useAppHelpAboutDialogs` + `AppHelpAboutDialogs` exist and are
-  used by ~15 apps, but iPod, Karaoke, Videos, Chats, Admin, IE, and Applet
-  Viewer still hand-roll `isHelpDialogOpen`/`isAboutDialogOpen`.
+- **Help/About**: **shipped** — `useAppHelpAboutDialogs` +
+  `AppHelpAboutDialogs` are now used directly or composed through
+  `useMediaAppDialogs` across the remaining app surfaces (including iPod,
+  Karaoke, Videos, IE, Applet Viewer, TextEdit, Soundboard, Photo Booth, and
+  Synth).
 - **Media menu bars**: iPod/Karaoke/Videos/TV share the `AppMenuBarShell` +
   File/Controls/View/Library structure but duplicate `use*MenuBar.ts`
   view-models — extract a media-menu factory.
@@ -192,13 +198,18 @@ is introduced.
 search with no limits. At minimum require `optional`→`required` auth for the
 full search and add a rate bucket.
 
-### 4.3 Add a Zod validation layer at the `apiHandler` boundary — **pending PR**
+### 4.3 Add a Zod validation layer at the `apiHandler` boundary — **started**
 
 Zod is used in only ~12 API files. High-value untyped bodies: `POST /api/chat`
 (messages/systemState validated only with `Array.isArray`), `speech.ts`,
 `rooms` message bodies, `analytics/events`. Add an optional `schema` option to
 `apiHandler` that parses + 400s on invalid input, returning structured error
 codes.
+
+Current status: `apiHandler` supports request-body schemas and a first set of
+endpoints adopted it (`analytics/events`, `tv/create-channel`,
+`youtube-search`). Additional high-value endpoints can adopt boundary schemas
+incrementally.
 
 ### 4.4 Session lifetime & cookie review
 
@@ -258,12 +269,12 @@ code.
 
 **Foundational (enables later work):**
 - 4.1 admin audit trail (keep `ryo` gate) → unlocks 5.2
-- 4.3 Zod-at-`apiHandler` → unlocks 5.5 — **pending PR #1565**
+- 4.3 Zod-at-`apiHandler` → unlocks 5.5 — **started**
 - 2.4 finish dual-path migrations — **legacy Redis reads shipped; sync v1
   retirement remains blocked by live backup UI**
 
 **Large but high-value:**
-- 2.1 iPod stack decomposition — **pending PR #1569**
+- 2.1 iPod stack decomposition — **started**
 - 2.3 API god-file splits
 - 3.2 structural fixes for the recurring bug classes (esp. Aqua Glass)
 

@@ -1,9 +1,9 @@
 /**
  * Guardrail tests for the shared dialog-state hooks.
  *
- * App logic hooks must use `useAppHelpAboutDialogs` (or, for media apps,
- * `useMediaAppDialogs`) instead of re-declaring per-app
- * `useState(false)` pairs for the Help/About dialogs.
+ * App logic hooks must use `useAppHelpAboutDialogs` directly, or compose it
+ * through `useMediaAppDialogs`, instead of re-declaring per-app
+ * Help/About dialog state.
  */
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
@@ -42,12 +42,15 @@ const collectAppHookFiles = (): string[] => {
 // Logic hooks that live outside a hooks/ directory but were migrated too.
 const EXTRA_MIGRATED_FILES = [
   "src/apps/chats/components/chats-app/useChatsAppController.tsx",
+  "src/apps/textedit/components/DialogManager.tsx",
 ];
 
 const HELP_DIALOG_USESTATE =
   /const \[isHelpDialogOpen,\s*setIsHelpDialogOpen\]\s*=\s*useState/;
 const ABOUT_DIALOG_USESTATE =
   /const \[isAboutDialogOpen,\s*setIsAboutDialogOpen\]\s*=\s*useState/;
+const HELP_ABOUT_INITIAL_STATE =
+  /(isHelpDialogOpen|isAboutDialogOpen|isHelpOpen|isAboutOpen):\s*false/;
 
 describe("Shared dialog state wiring", () => {
   test("no logic hook under src/apps/**/hooks declares useState for isHelpDialogOpen/isAboutDialogOpen", () => {
@@ -56,7 +59,8 @@ describe("Shared dialog state wiring", () => {
       const source = readFileSync(file, "utf-8");
       if (
         HELP_DIALOG_USESTATE.test(source) ||
-        ABOUT_DIALOG_USESTATE.test(source)
+        ABOUT_DIALOG_USESTATE.test(source) ||
+        HELP_ABOUT_INITIAL_STATE.test(source)
       ) {
         offenders.push(file);
       }
@@ -69,6 +73,7 @@ describe("Shared dialog state wiring", () => {
       const source = readSource(relativePath);
       expect(HELP_DIALOG_USESTATE.test(source)).toBe(false);
       expect(ABOUT_DIALOG_USESTATE.test(source)).toBe(false);
+      expect(HELP_ABOUT_INITIAL_STATE.test(source)).toBe(false);
       expect(source).toContain("useAppHelpAboutDialogs()");
     }
   });
@@ -103,6 +108,7 @@ describe("Shared dialog state wiring", () => {
 
     const mediaDialogs = readSource("src/hooks/useMediaAppDialogs.ts");
     expect(mediaDialogs).toContain("export function useMediaAppDialogs");
+    expect(mediaDialogs).toContain("useAppHelpAboutDialogs()");
     for (const key of [
       "isHelpDialogOpen",
       "isAboutDialogOpen",

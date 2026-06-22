@@ -4,6 +4,7 @@ import { useSoundboard } from "@/hooks/useSoundboard";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 import type { DialogState, Soundboard } from "@/types/types";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
+import { useAppHelpAboutDialogs } from "@/hooks/useAppHelpAboutDialogs";
 import { useSoundboardStore } from "@/stores/useSoundboardStore";
 import { useTranslation } from "react-i18next";
 import { helpItems as sharedHelpItems } from "..";
@@ -90,8 +91,12 @@ export function useSoundboardLogic({
     value: "",
   });
 
-  const [helpDialogOpen, setHelpDialogOpen] = useState(false);
-  const [aboutDialogOpen, setAboutDialogOpen] = useState(false);
+  const {
+    isHelpDialogOpen: helpDialogOpen,
+    setIsHelpDialogOpen: setHelpDialogOpen,
+    isAboutDialogOpen: aboutDialogOpen,
+    setIsAboutDialogOpen: setAboutDialogOpen,
+  } = useAppHelpAboutDialogs();
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
   const importInputRef = useRef<HTMLInputElement>(null);
   const { t } = useTranslation();

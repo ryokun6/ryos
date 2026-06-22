@@ -3,6 +3,7 @@ import ReactPlayer from "react-player";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
+import { useAppHelpAboutDialogs } from "@/hooks/useAppHelpAboutDialogs";
 import { useVideoStore, DEFAULT_VIDEOS } from "@/stores/useVideoStore";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useAppStore } from "@/stores/useAppStore";
@@ -114,8 +115,6 @@ export function useVideosLogic({
     originalOrder: Video[];
     urlInput: string;
     isAddDialogOpen: boolean;
-    isHelpDialogOpen: boolean;
-    isAboutDialogOpen: boolean;
     isConfirmClearOpen: boolean;
     isConfirmResetOpen: boolean;
     isAddingVideo: boolean;
@@ -135,8 +134,6 @@ export function useVideosLogic({
     originalOrder: videos,
     urlInput: "",
     isAddDialogOpen: false,
-    isHelpDialogOpen: false,
-    isAboutDialogOpen: false,
     isConfirmClearOpen: false,
     isConfirmResetOpen: false,
     isAddingVideo: false,
@@ -168,8 +165,6 @@ export function useVideosLogic({
     originalOrder,
     urlInput,
     isAddDialogOpen,
-    isHelpDialogOpen,
-    isAboutDialogOpen,
     isConfirmClearOpen,
     isConfirmResetOpen,
     isAddingVideo,
@@ -183,6 +178,12 @@ export function useVideosLogic({
     isDraggingSeek,
     dragSeekTime,
   } = uiState;
+  const {
+    isHelpDialogOpen,
+    setIsHelpDialogOpen,
+    isAboutDialogOpen,
+    setIsAboutDialogOpen,
+  } = useAppHelpAboutDialogs();
   const setAnimationDirection = useCallback((value: "next" | "prev") => {
     dispatchUi({ type: "patch", payload: { animationDirection: value } });
   }, []);
@@ -194,12 +195,6 @@ export function useVideosLogic({
   }, []);
   const setIsAddDialogOpen = useCallback((value: boolean) => {
     dispatchUi({ type: "patch", payload: { isAddDialogOpen: value } });
-  }, []);
-  const setIsHelpDialogOpen = useCallback((value: boolean) => {
-    dispatchUi({ type: "patch", payload: { isHelpDialogOpen: value } });
-  }, []);
-  const setIsAboutDialogOpen = useCallback((value: boolean) => {
-    dispatchUi({ type: "patch", payload: { isAboutDialogOpen: value } });
   }, []);
   const setIsConfirmClearOpen = useCallback((value: boolean) => {
     dispatchUi({ type: "patch", payload: { isConfirmClearOpen: value } });

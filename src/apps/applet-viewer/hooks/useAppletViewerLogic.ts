@@ -2,6 +2,7 @@ import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { helpItems, AppletViewerInitialData } from "../index";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
+import { useAppHelpAboutDialogs } from "@/hooks/useAppHelpAboutDialogs";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useAppletStore } from "@/stores/useAppletStore";
 import { useAppStore } from "@/stores/useAppStore";
@@ -47,8 +48,6 @@ interface UseAppletViewerLogicProps {
 }
 
 interface ViewerUiState {
-  isHelpDialogOpen: boolean;
-  isAboutDialogOpen: boolean;
   isShareDialogOpen: boolean;
   shareId: string;
   sharedContent: string;
@@ -58,8 +57,6 @@ interface ViewerUiState {
 }
 
 const initialState: ViewerUiState = {
-  isHelpDialogOpen: false,
-  isAboutDialogOpen: false,
   isShareDialogOpen: false,
   shareId: "",
   sharedContent: "",
@@ -69,8 +66,6 @@ const initialState: ViewerUiState = {
 };
 
 type ViewerUiAction =
-  | { type: "setHelpDialogOpen"; value: boolean }
-  | { type: "setAboutDialogOpen"; value: boolean }
   | { type: "setShareDialogOpen"; value: boolean }
   | { type: "setShareId"; value: string }
   | { type: "setSharedContent"; value: string }
@@ -89,10 +84,6 @@ type ViewerUiAction =
 
 function reducer(state: ViewerUiState, action: ViewerUiAction): ViewerUiState {
   switch (action.type) {
-    case "setHelpDialogOpen":
-      return { ...state, isHelpDialogOpen: action.value };
-    case "setAboutDialogOpen":
-      return { ...state, isAboutDialogOpen: action.value };
     case "setShareDialogOpen":
       return { ...state, isShareDialogOpen: action.value };
     case "setShareId":
@@ -136,7 +127,11 @@ export function useAppletViewerLogic({
   const [uiState, dispatch] = useReducer(reducer, initialState);
   const {
     isHelpDialogOpen,
+    setIsHelpDialogOpen,
     isAboutDialogOpen,
+    setIsAboutDialogOpen,
+  } = useAppHelpAboutDialogs();
+  const {
     isShareDialogOpen,
     shareId,
     sharedContent,
@@ -144,12 +139,6 @@ export function useAppletViewerLogic({
     sharedTitle,
     sharedCreatedBy,
   } = uiState;
-  const setIsHelpDialogOpen = useCallback((value: boolean) => {
-    dispatch({ type: "setHelpDialogOpen", value });
-  }, []);
-  const setIsAboutDialogOpen = useCallback((value: boolean) => {
-    dispatch({ type: "setAboutDialogOpen", value });
-  }, []);
   const setIsShareDialogOpen = useCallback((value: boolean) => {
     dispatch({ type: "setShareDialogOpen", value });
   }, []);

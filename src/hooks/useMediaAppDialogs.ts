@@ -1,4 +1,5 @@
 import { useCallback, useReducer } from "react";
+import { useAppHelpAboutDialogs } from "@/hooks/useAppHelpAboutDialogs";
 
 /**
  * Reducer-based dialog/overlay open state shared by the media apps (iPod,
@@ -17,8 +18,6 @@ export type MediaAppDialogSetter = (
 ) => void;
 
 export interface MediaAppDialogState {
-  isHelpDialogOpen: boolean;
-  isAboutDialogOpen: boolean;
   isConfirmClearOpen: boolean;
   isShareDialogOpen: boolean;
   isLyricsSearchDialogOpen: boolean;
@@ -33,8 +32,6 @@ export interface MediaAppDialogState {
 }
 
 const initialState: MediaAppDialogState = {
-  isHelpDialogOpen: false,
-  isAboutDialogOpen: false,
   isConfirmClearOpen: false,
   isShareDialogOpen: false,
   isLyricsSearchDialogOpen: false,
@@ -69,6 +66,12 @@ function dialogReducer(
 
 export function useMediaAppDialogs() {
   const [state, dispatch] = useReducer(dialogReducer, initialState);
+  const {
+    isHelpDialogOpen,
+    setIsHelpDialogOpen,
+    isAboutDialogOpen,
+    setIsAboutDialogOpen,
+  } = useAppHelpAboutDialogs();
 
   const setBool = useCallback(
     (
@@ -80,14 +83,6 @@ export function useMediaAppDialogs() {
     []
   );
 
-  const setIsHelpDialogOpen = useCallback<MediaAppDialogSetter>(
-    (value) => setBool("isHelpDialogOpen", value),
-    [setBool]
-  );
-  const setIsAboutDialogOpen = useCallback<MediaAppDialogSetter>(
-    (value) => setBool("isAboutDialogOpen", value),
-    [setBool]
-  );
   const setIsConfirmClearOpen = useCallback<MediaAppDialogSetter>(
     (value) => setBool("isConfirmClearOpen", value),
     [setBool]
@@ -134,9 +129,11 @@ export function useMediaAppDialogs() {
   );
 
   return {
-    ...state,
+    isHelpDialogOpen,
     setIsHelpDialogOpen,
+    isAboutDialogOpen,
     setIsAboutDialogOpen,
+    ...state,
     setIsConfirmClearOpen,
     setIsShareDialogOpen,
     setIsLyricsSearchDialogOpen,

@@ -28,6 +28,7 @@ import { checkOfflineAndShowError } from "@/utils/offline";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
+import { useAppHelpAboutDialogs } from "@/hooks/useAppHelpAboutDialogs";
 import { useInternetExplorerStoreShallow } from "@/stores/useInternetExplorerStore";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { onAppUpdate } from "@/utils/appEventBus";
@@ -89,8 +90,6 @@ export function useInternetExplorerLogic({
     historyIndex,
     isTitleDialogOpen,
     newFavoriteTitle,
-    isHelpDialogOpen,
-    isAboutDialogOpen,
     isNavigatingHistory,
     isClearFavoritesDialogOpen,
     isClearHistoryDialogOpen,
@@ -121,8 +120,6 @@ export function useInternetExplorerLogic({
     clearHistory,
     setTitleDialogOpen,
     setNewFavoriteTitle,
-    setHelpDialogOpen,
-    setAboutDialogOpen,
     setNavigatingHistory,
     setClearFavoritesDialogOpen,
     setClearHistoryDialogOpen,
@@ -145,8 +142,6 @@ export function useInternetExplorerLogic({
     historyIndex: state.historyIndex,
     isTitleDialogOpen: state.isTitleDialogOpen,
     newFavoriteTitle: state.newFavoriteTitle,
-    isHelpDialogOpen: state.isHelpDialogOpen,
-    isAboutDialogOpen: state.isAboutDialogOpen,
     isNavigatingHistory: state.isNavigatingHistory,
     isClearFavoritesDialogOpen: state.isClearFavoritesDialogOpen,
     isClearHistoryDialogOpen: state.isClearHistoryDialogOpen,
@@ -177,8 +172,6 @@ export function useInternetExplorerLogic({
     clearHistory: state.clearHistory,
     setTitleDialogOpen: state.setTitleDialogOpen,
     setNewFavoriteTitle: state.setNewFavoriteTitle,
-    setHelpDialogOpen: state.setHelpDialogOpen,
-    setAboutDialogOpen: state.setAboutDialogOpen,
     setNavigatingHistory: state.setNavigatingHistory,
     setClearFavoritesDialogOpen: state.setClearFavoritesDialogOpen,
     setClearHistoryDialogOpen: state.setClearHistoryDialogOpen,
@@ -194,6 +187,12 @@ export function useInternetExplorerLogic({
   }));
 
   const { t } = useTranslation();
+  const {
+    isHelpDialogOpen,
+    setIsHelpDialogOpen: setHelpDialogOpen,
+    isAboutDialogOpen,
+    setIsAboutDialogOpen: setAboutDialogOpen,
+  } = useAppHelpAboutDialogs();
   const translatedHelpItems = useTranslatedHelpItems(
     "internet-explorer",
     helpItems ?? []
