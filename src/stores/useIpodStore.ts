@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { debug } from "@/utils/debug";
 import { useStoreShallow } from "./helpers";
 import { persist } from "zustand/middleware";
 import {
@@ -949,11 +950,11 @@ async function saveLyricOffsetToServer(
   
   // Skip if not authenticated
   if (!username || !isAuthenticated) {
-    console.log(`[iPod Store] Skipping lyric offset save for ${trackId} - user not logged in`);
+    debug(`[iPod Store] Skipping lyric offset save for ${trackId} - user not logged in`);
     return false;
   }
 
-  console.log(`[iPod Store] Saving lyric offset for ${trackId}: ${lyricOffset}ms...`);
+  debug(`[iPod Store] Saving lyric offset for ${trackId}: ${lyricOffset}ms...`);
   
   try {
     const data = await patchSongMetadata(
@@ -962,7 +963,7 @@ async function saveLyricOffsetToServer(
       { username, isAuthenticated }
     );
     if (data.success) {
-      console.log(`[iPod Store] ✓ Saved lyric offset for ${trackId}: ${lyricOffset}ms (by ${data.createdBy || username})`);
+      debug(`[iPod Store] ✓ Saved lyric offset for ${trackId}: ${lyricOffset}ms (by ${data.createdBy || username})`);
       return true;
     }
     console.warn(`[iPod Store] Server returned failure for ${trackId}:`, data);
@@ -974,7 +975,7 @@ async function saveLyricOffsetToServer(
         return false;
       }
       if (error.status === 403) {
-        console.log(`[iPod Store] Cannot save lyric offset for ${trackId} - song owned by another user`);
+        debug(`[iPod Store] Cannot save lyric offset for ${trackId} - song owned by another user`);
         return false;
       }
       console.warn(`[iPod Store] Failed to save lyric offset for ${trackId}: ${error.status} - ${error.message}`);
@@ -1028,7 +1029,7 @@ export async function flushPendingLyricOffsetSave(trackId: string): Promise<void
     pendingLyricOffsets.delete(trackId);
     
     // Save immediately and wait for completion
-    console.log(`[iPod Store] Flushing pending lyric offset save for ${trackId}: ${pendingOffset}ms`);
+    debug(`[iPod Store] Flushing pending lyric offset save for ${trackId}: ${pendingOffset}ms`);
     await saveLyricOffsetToServer(trackId, pendingOffset);
   }
 }
@@ -1047,7 +1048,7 @@ async function saveLyricsSourceToServer(
   
   // Skip if not authenticated
   if (!username || !isAuthenticated) {
-    console.log(`[iPod Store] Skipping lyrics source save for ${trackId} - user not logged in`);
+    debug(`[iPod Store] Skipping lyrics source save for ${trackId} - user not logged in`);
     return;
   }
 
@@ -1070,7 +1071,7 @@ async function saveLyricsSourceToServer(
       },
       { username, isAuthenticated }
     );
-    console.log(`[iPod Store] Saved lyrics source for ${trackId}, cleared translations/furigana (by ${data.createdBy || username})`);
+    debug(`[iPod Store] Saved lyrics source for ${trackId}, cleared translations/furigana (by ${data.createdBy || username})`);
   } catch (error) {
     if (error instanceof ApiRequestError) {
       if (error.status === 401) {
@@ -1078,7 +1079,7 @@ async function saveLyricsSourceToServer(
         return;
       }
       if (error.status === 403) {
-        console.log(`[iPod Store] Cannot save lyrics source for ${trackId} - song owned by another user`);
+        debug(`[iPod Store] Cannot save lyrics source for ${trackId} - song owned by another user`);
         return;
       }
       console.warn(`[iPod Store] Failed to save lyrics source for ${trackId}: ${error.status}`);
@@ -1681,7 +1682,7 @@ export const useIpodStore = create<IpodState>()(
         // Check if track already exists in library - skip fetching metadata if so
         const existingTrack = get().tracks.find((track) => track.id === videoId);
         if (existingTrack) {
-          console.log(`[iPod Store] Track ${videoId} already exists in library, skipping metadata fetch`);
+          debug(`[iPod Store] Track ${videoId} already exists in library, skipping metadata fetch`);
           // Set as current track and optionally autoplay
           const currentState = get();
           const isSameTrack = currentState.currentSongId === videoId;
@@ -1702,7 +1703,7 @@ export const useIpodStore = create<IpodState>()(
         try {
           const cachedMetadata = await getCachedSongMetadata(videoId);
           if (cachedMetadata) {
-            console.log(`[iPod Store] Using cached metadata for ${videoId}`);
+            debug(`[iPod Store] Using cached metadata for ${videoId}`);
             const newTrack: Track = {
               id: videoId,
               url: youtubeUrl,
@@ -1779,7 +1780,7 @@ export const useIpodStore = create<IpodState>()(
           // Use metadata from server (Kugou source) if available
           if (fetchData.metadata?.lyricsSource) {
             const meta = fetchData.metadata;
-            console.log(`[iPod Store] Got metadata from Kugou for ${videoId}:`, {
+            debug(`[iPod Store] Got metadata from Kugou for ${videoId}:`, {
               title: meta.title,
               artist: meta.artist,
               cover: meta.cover,
@@ -1798,7 +1799,7 @@ export const useIpodStore = create<IpodState>()(
 
         // If no Kugou match found (no lyricsSource), fall back to AI title parsing
         if (!trackInfo.lyricsSource) {
-          console.log(`[iPod Store] No Kugou match for ${videoId}, falling back to AI parse`);
+          debug(`[iPod Store] No Kugou match for ${videoId}, falling back to AI parse`);
           const parsed = await parseYouTubeTitle(rawTitle, authorName);
           trackInfo.title = parsed.title;
           trackInfo.artist = parsed.artist;
@@ -1918,7 +1919,7 @@ export const useIpodStore = create<IpodState>()(
           );
 
           if (tracksNotInDefaultLibrary.length > 0) {
-            console.log(`[iPod Store] Fetching metadata for ${tracksNotInDefaultLibrary.length} tracks not in default library`);
+            debug(`[iPod Store] Fetching metadata for ${tracksNotInDefaultLibrary.length} tracks not in default library`);
             
             try {
               // Batch fetch metadata for tracks not in default library
@@ -2498,7 +2499,7 @@ export const useIpodStore = create<IpodState>()(
 
         // If the persisted version is older than the current version, update defaults
         if (version < CURRENT_IPOD_STORE_VERSION) {
-          console.log(
+          debug(
             `Migrating iPod store from version ${version} to ${CURRENT_IPOD_STORE_VERSION}`
           );
           
