@@ -22,9 +22,9 @@ const YouTubeSearchRequestSchema = z.object({
 
 type YouTubeSearchRequest = z.infer<typeof YouTubeSearchRequestSchema>;
 
-export default apiHandler(
-  { methods: ["POST"] },
-  async ({ req, res, logger, startTime, origin }) => {
+export default apiHandler<YouTubeSearchRequest>(
+  { methods: ["POST"], parseJsonBody: true, bodySchema: YouTubeSearchRequestSchema },
+  async ({ req, res, logger, startTime, origin, body }) => {
     const apiKeys = getYouTubeApiKeys(process.env);
     logger.info("Request details", {
       method: req.method,
@@ -72,17 +72,8 @@ export default apiHandler(
 
     logger.info("Available API keys", { count: apiKeys.length });
 
-    let body: YouTubeSearchRequest;
-    try {
-      body = YouTubeSearchRequestSchema.parse(req.body);
-    } catch (err) {
-      logger.error("Invalid request body", err);
-      logger.response(400, Date.now() - startTime);
-      res.status(400).json({ error: "Invalid request body" });
-      return;
-    }
-
-    const { query, maxResults, category } = body;
+    // Body is validated at the handler boundary via `bodySchema`.
+    const { query, maxResults, category } = body!;
     logger.info("Searching YouTube", { query, maxResults, category });
 
     const result = await youtubeSearch(

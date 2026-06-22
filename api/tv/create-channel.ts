@@ -120,6 +120,7 @@ export default apiHandler<CreateChannelRequest>(
     // anonymous IPs can't burn 8 channels/day per IP.
     auth: "required",
     parseJsonBody: true,
+    bodySchema: RequestSchema,
   },
   async ({ req, res, logger, startTime, body, user }) => {
     // Rate limit per username AND per IP. Username limit is the real
@@ -174,15 +175,7 @@ export default apiHandler<CreateChannelRequest>(
       logger.error("Rate limit check failed", err);
     }
 
-    const parsed = RequestSchema.safeParse(body);
-    if (!parsed.success) {
-      logger.response(400, Date.now() - startTime);
-      res
-        .status(400)
-        .json({ error: "Invalid request body", details: parsed.error.format() });
-      return;
-    }
-
+    // Body is validated at the handler boundary via `bodySchema`.
     const apiKeys = getYouTubeApiKeys(process.env);
 
     if (apiKeys.length === 0) {
@@ -192,7 +185,7 @@ export default apiHandler<CreateChannelRequest>(
       return;
     }
 
-    const { description } = parsed.data;
+    const { description } = body!;
     logger.info("Creating channel", { description });
 
     // Step 1: AI plans the channel.
