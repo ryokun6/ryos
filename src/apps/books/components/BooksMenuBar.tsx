@@ -232,14 +232,17 @@ export function BooksMenuBar({
           <MenubarSub>
             <MenubarSubTrigger
               disabled={!canNavigateReader || chapters.length === 0}
-              className={MENUBAR_ITEM_CLASS}
+              className={cn(
+                MENUBAR_ITEM_CLASS,
+                "data-[state=open]:bg-[var(--os-color-selection-bg)] data-[state=open]:text-[var(--os-color-selection-text)]"
+              )}
             >
               {t("apps.books.menu.chapters")}
             </MenubarSubTrigger>
             <MenubarSubContent className="px-0 max-w-[260px] sm:max-w-[320px] max-h-[400px] overflow-y-auto">
               {chapters.map((chapter, index) => (
                 <MenubarCheckboxItem
-                  key={chapter.id}
+                  key={`${chapter.id}-${index}`}
                   checked={index === navigationState.currentChapterIndex}
                   onCheckedChange={() => onGoToChapter(chapter.href)}
                   className={cn(
