@@ -25,30 +25,6 @@ export const base64ToBlob = (dataUrl: string): Blob => {
   return new Blob([array], { type: mime });
 };
 
-const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
-  const bytes = new Uint8Array(buffer);
-  const chunkSize = 0x8000;
-  const chunks: string[] = [];
-  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
-    let chunk = "";
-    const end = Math.min(offset + chunkSize, bytes.length);
-    for (let index = offset; index < end; index += 1) {
-      chunk += String.fromCharCode(bytes[index]);
-    }
-    chunks.push(chunk);
-  }
-  return btoa(chunks.join(""));
-};
-
-const base64ToArrayBuffer = (base64: string): ArrayBuffer => {
-  const binary = atob(base64);
-  const array = new Uint8Array(binary.length);
-  for (let index = 0; index < binary.length; index += 1) {
-    array[index] = binary.charCodeAt(index);
-  }
-  return array.buffer;
-};
-
 export async function readAndSerializeStoreItemByKey(
   db: IDBDatabase,
   storeName: string,
@@ -132,9 +108,6 @@ export async function serializeStoreItem(
     if (item.value[key] instanceof Blob) {
       serializedValue[key] = await blobToBase64(item.value[key] as Blob);
       serializedValue[`_isBlob_${key}`] = true;
-    } else if (item.value[key] instanceof ArrayBuffer) {
-      serializedValue[key] = arrayBufferToBase64(item.value[key] as ArrayBuffer);
-      serializedValue[`_isArrayBuffer_${key}`] = true;
     }
   }
 
@@ -159,16 +132,9 @@ export function deserializeStoreItem(
 
   for (const key of Object.keys(item.value)) {
     const isBlobKey = `_isBlob_${key}`;
-    const isArrayBufferKey = `_isArrayBuffer_${key}`;
     if (item.value[isBlobKey] === true && typeof item.value[key] === "string") {
       restoredValue[key] = base64ToBlob(item.value[key] as string);
       delete restoredValue[isBlobKey];
-    } else if (
-      item.value[isArrayBufferKey] === true &&
-      typeof item.value[key] === "string"
-    ) {
-      restoredValue[key] = base64ToArrayBuffer(item.value[key] as string);
-      delete restoredValue[isArrayBufferKey];
     }
   }
 
