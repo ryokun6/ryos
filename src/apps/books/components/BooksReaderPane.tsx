@@ -1,6 +1,8 @@
 import {
+  forwardRef,
   useCallback,
   useEffect,
+  useImperativeHandle,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -8,7 +10,7 @@ import {
 } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { useTranslation } from "react-i18next";
-import ePub, { type Book, type Rendition } from "epubjs";
+import ePub, { type Book, type NavItem, type Rendition } from "epubjs";
 import { cn } from "@/lib/utils";
 import { useResizeObserverWithRef } from "@/hooks/useResizeObserver";
 import { readBookBlobContent } from "@/services/vfs/FileContentRepository";
@@ -38,10 +40,32 @@ interface BooksReaderPaneProps {
   /** Cached reading progress (0..1) so the footer shows it without a 0% flash. */
   initialPercentage?: number;
   onProgress: (cfi: string, percentage: number) => void;
+  onNavigationStateChange?: (state: BooksNavigationState) => void;
 }
 
 const clamp01 = (value: number): number =>
   Math.min(1, Math.max(0, Number.isFinite(value) ? value : 0));
+
+export interface BooksChapterNavigationItem {
+  id: string;
+  label: string;
+  href: string;
+  depth: number;
+}
+
+export interface BooksNavigationState {
+  isReady: boolean;
+  canGoPreviousPage: boolean;
+  canGoNextPage: boolean;
+  chapters: BooksChapterNavigationItem[];
+  currentChapterIndex: number;
+}
+
+export interface BooksReaderPaneHandle {
+  goToPreviousPage: () => void;
+  goToNextPage: () => void;
+  goToChapter: (href: string) => void;
+}
 
 interface ZoomRect {
   top: number;
@@ -88,6 +112,58 @@ const DEFAULT_BOOK_ASSET_BY_PATH: Record<string, string> = {
   "/Books/Meditations - Marcus Aurelius.epub":
     "/assets/books/meditations-marcus-aurelius.epub",
 };
+
+export function createInitialBooksNavigationState(): BooksNavigationState {
+  return {
+    isReady: false,
+    canGoPreviousPage: false,
+    canGoNextPage: false,
+    chapters: [],
+    currentChapterIndex: -1,
+  };
+}
+
+function stripHrefFragment(href?: string): string {
+  return (href ?? "").split("#")[0].replace(/^\.\//, "");
+}
+
+function hrefMatches(activeHref: string | undefined, chapterHref: string): boolean {
+  const active = stripHrefFragment(activeHref);
+  const chapter = stripHrefFragment(chapterHref);
+  if (!active || !chapter) return false;
+  return (
+    active === chapter ||
+    active.endsWith(`/${chapter}`) ||
+    chapter.endsWith(`/${active}`)
+  );
+}
+
+function findCurrentChapterIndex(
+  chapters: BooksChapterNavigationItem[],
+  activeHref: string | undefined
+): number {
+  if (!activeHref) return -1;
+  return chapters.findIndex((chapter) => hrefMatches(activeHref, chapter.href));
+}
+
+function flattenBookChapters(
+  items: NavItem[] | undefined,
+  depth = 0,
+  parentKey = "chapter"
+): BooksChapterNavigationItem[] {
+  if (!items?.length) return [];
+  return items.flatMap((item, index) => {
+    const key = item.id || `${parentKey}-${index}`;
+    const label = item.label?.trim() || `Chapter ${index + 1}`;
+    const current = item.href
+      ? [{ id: key, label, href: item.href, depth }]
+      : [];
+    return [
+      ...current,
+      ...flattenBookChapters(item.subitems, depth + 1, key),
+    ];
+  });
+}
 
 function isRuntimeBooksDebugEnabled(): boolean {
   try {
@@ -176,15 +252,22 @@ function getBooksDebugEnvironment() {
   };
 }
 
-export function BooksReaderPane({
-  entry,
-  settings,
-  osIsDark,
-  originRect,
-  initialCfi,
-  initialPercentage,
-  onProgress,
-}: BooksReaderPaneProps) {
+export const BooksReaderPane = forwardRef<
+  BooksReaderPaneHandle,
+  BooksReaderPaneProps
+>(function BooksReaderPane(
+  {
+    entry,
+    settings,
+    osIsDark,
+    originRect,
+    initialCfi,
+    initialPercentage,
+    onProgress,
+    onNavigationStateChange,
+  },
+  ref
+) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const renderHostRef = useRef<HTMLDivElement>(null);
   const bookRef = useRef<Book | null>(null);
@@ -193,6 +276,7 @@ export function BooksReaderPane({
   const onProgressRef = useRef(onProgress);
   onProgressRef.current = onProgress;
   const initialCfiRef = useRef(initialCfi);
+  const activeSectionHrefRef = useRef<string | undefined>(undefined);
 
   const { t } = useTranslation();
   const [isReady, setIsReady] = useState(false);
@@ -212,6 +296,11 @@ export function BooksReaderPane({
   const [flip, setFlip] = useState<FlipState | null>(null);
   const [atStart, setAtStart] = useState(true);
   const [atEnd, setAtEnd] = useState(false);
+  const [navigationState, setNavigationState] = useState(
+    createInitialBooksNavigationState
+  );
+  const navigationStateRef = useRef(navigationState);
+  navigationStateRef.current = navigationState;
   // Seed from cached progress so the footer shows the real value immediately
   // (keyed by path, so this re-seeds per book). Refined once epub.js has real
   // locations and fires `relocated`.
@@ -232,6 +321,15 @@ export function BooksReaderPane({
   const booksDebugEnabled = displayDebugMode || isRuntimeBooksDebugEnabled();
   const booksDebugEnabledRef = useRef(booksDebugEnabled);
   booksDebugEnabledRef.current = booksDebugEnabled;
+
+  useEffect(() => {
+    onNavigationStateChange?.(navigationState);
+  }, [navigationState, onNavigationStateChange]);
+
+  useEffect(
+    () => () => onNavigationStateChange?.(createInitialBooksNavigationState()),
+    [onNavigationStateChange]
+  );
 
   const appendDebugEvent = useCallback(
     (step: string, data?: unknown, level: BooksDebugLevel = "info") => {
@@ -349,6 +447,8 @@ export function BooksReaderPane({
     setLoadError(null);
     setDebugCopyStatus("idle");
     setDebugEvents([]);
+    activeSectionHrefRef.current = undefined;
+    setNavigationState(createInitialBooksNavigationState());
     appendDebugEvent("open:start", {
       path: entry.path,
       fileName: entry.fileName,
@@ -501,6 +601,18 @@ export function BooksReaderPane({
           packagePath: readyBook.container?.packagePath,
           metadata: readyBook.package?.metadata,
         });
+        const chapters = flattenBookChapters(book.navigation?.toc);
+        setNavigationState((state) => ({
+          ...state,
+          chapters,
+          currentChapterIndex: findCurrentChapterIndex(
+            chapters,
+            activeSectionHrefRef.current
+          ),
+        }));
+        appendDebugEvent("epubjs:navigation:loaded", {
+          chapterCount: chapters.length,
+        });
         if (cancelled) {
           cleanupInstance();
           return;
@@ -603,14 +715,26 @@ export function BooksReaderPane({
         rendition.on(
           "relocated",
           (location: {
-            start?: { cfi?: string; percentage?: number };
+            start?: { cfi?: string; href?: string; percentage?: number };
             atStart?: boolean;
             atEnd?: boolean;
           }) => {
             const cfi = location?.start?.cfi;
             const atStartNow = !!location?.atStart;
+            const atEndNow = !!location?.atEnd;
+            const activeHref = location?.start?.href;
+            activeSectionHrefRef.current = activeHref;
             setAtStart(atStartNow);
-            setAtEnd(!!location?.atEnd);
+            setAtEnd(atEndNow);
+            setNavigationState((state) => ({
+              ...state,
+              canGoPreviousPage: !atStartNow,
+              canGoNextPage: !atEndNow,
+              currentChapterIndex: findCurrentChapterIndex(
+                state.chapters,
+                activeHref
+              ),
+            }));
             if (!cfi) return;
             let pct = location?.start?.percentage ?? 0;
             try {
@@ -664,6 +788,7 @@ export function BooksReaderPane({
           return;
         }
         setIsReady(true);
+        setNavigationState((state) => ({ ...state, isReady: true }));
         appendDebugEvent("reader:ready");
         // Reveal the page shortly after the zoom-in cover settles.
         window.setTimeout(() => {
@@ -748,6 +873,9 @@ export function BooksReaderPane({
   const turnPage = useCallback((dir: "next" | "prev") => {
     const rendition = renditionRef.current;
     if (!rendition || flipLockRef.current) return;
+    const state = navigationStateRef.current;
+    if (dir === "prev" && !state.canGoPreviousPage) return;
+    if (dir === "next" && !state.canGoNextPage) return;
     flipLockRef.current = true;
     setFlip({ dir, id: Date.now() });
     const action = dir === "next" ? rendition.next() : rendition.prev();
@@ -755,6 +883,24 @@ export function BooksReaderPane({
       // flip animation onComplete releases the lock
     });
   }, []);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      goToPreviousPage: () => turnPage("prev"),
+      goToNextPage: () => turnPage("next"),
+      goToChapter: (href: string) => {
+        const rendition = renditionRef.current;
+        if (!rendition || !href) return;
+        flipLockRef.current = false;
+        setFlip(null);
+        Promise.resolve(rendition.display(href)).catch((error) =>
+          appendDebugEvent("epubjs:chapterDisplay:failed", error, "error")
+        );
+      },
+    }),
+    [appendDebugEvent, turnPage]
+  );
 
   const handleKey = useCallback(
     (event: KeyboardEvent) => {
@@ -1055,4 +1201,4 @@ export function BooksReaderPane({
       </AnimatePresence>
     </div>
   );
-}
+});

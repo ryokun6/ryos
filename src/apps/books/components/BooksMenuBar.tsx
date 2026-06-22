@@ -15,6 +15,7 @@ import {
   BOOKS_FONT_SIZE_STEP,
   type BooksReaderSettings,
 } from "@/stores/useBooksStore";
+import type { BooksNavigationState } from "./BooksReaderPane";
 
 interface BooksMenuBarProps {
   onClose: () => void;
@@ -25,6 +26,10 @@ interface BooksMenuBarProps {
   isReading: boolean;
   settings: BooksReaderSettings;
   updateSettings: (partial: Partial<BooksReaderSettings>) => void;
+  navigationState: BooksNavigationState;
+  onGoToPreviousPage: () => void;
+  onGoToNextPage: () => void;
+  onGoToChapter: (href: string) => void;
 }
 
 export function BooksMenuBar({
@@ -36,6 +41,10 @@ export function BooksMenuBar({
   isReading,
   settings,
   updateSettings,
+  navigationState,
+  onGoToPreviousPage,
+  onGoToNextPage,
+  onGoToChapter,
 }: BooksMenuBarProps) {
   const { t } = useTranslation();
   const {
@@ -55,8 +64,7 @@ export function BooksMenuBar({
     updateSettings({ fontSizePct: next });
   };
 
-  const menus: MenuDescriptor[] = [
-    {
+  const fileMenu: MenuDescriptor = {
       label: t("common.menu.file"),
       items: [
         {
@@ -78,8 +86,9 @@ export function BooksMenuBar({
           shortcutId: "close",
         },
       ],
-    },
-    {
+    };
+
+  const viewMenu: MenuDescriptor = {
       label: t("common.menu.view"),
       items: [
         {
@@ -164,8 +173,64 @@ export function BooksMenuBar({
           ],
         },
       ],
-    },
-  ];
+    };
+
+  const chapters = navigationState.chapters;
+  const canNavigateReader = isReading && navigationState.isReady;
+  const goMenu: MenuDescriptor = {
+    label: t("common.menu.go"),
+    items: [
+      {
+        type: "action",
+        label: t("apps.books.menu.previousPage"),
+        onClick: onGoToPreviousPage,
+        disabled: !canNavigateReader || !navigationState.canGoPreviousPage,
+      },
+      {
+        type: "action",
+        label: t("apps.books.menu.nextPage"),
+        onClick: onGoToNextPage,
+        disabled: !canNavigateReader || !navigationState.canGoNextPage,
+      },
+      { type: "separator" },
+      {
+        type: "submenu",
+        label: t("apps.books.menu.chapters"),
+        disabled: !canNavigateReader || chapters.length === 0,
+        className:
+          "data-[state=open]:bg-[var(--os-color-selection-bg)] data-[state=open]:text-[var(--os-color-selection-text)]",
+        contentClassName:
+          "max-w-[260px] sm:max-w-[320px] max-h-[400px] overflow-y-auto",
+        items: [
+          {
+            type: "radioGroup",
+            value:
+              navigationState.currentChapterIndex >= 0
+                ? String(navigationState.currentChapterIndex)
+                : "",
+            onValueChange: (value) => {
+              const index = Number(value);
+              const chapter = chapters[index];
+              if (chapter) onGoToChapter(chapter.href);
+            },
+            options: chapters.map((chapter, index) => ({
+              value: String(index),
+              label: (
+                <span
+                  className="truncate min-w-0"
+                  style={{ paddingLeft: `${chapter.depth * 12}px` }}
+                >
+                  {chapter.label}
+                </span>
+              ),
+              className:
+                "text-md h-6 pr-3 truncate max-w-[260px] sm:max-w-[320px]",
+            })),
+          },
+        ],
+      },
+    ],
+  };
 
   return (
     <AppMenuBarShell
@@ -180,7 +245,7 @@ export function BooksMenuBar({
       onShowHelp={onShowHelp}
       onShowAbout={onShowAbout}
     >
-      <AppMenuBarMenus menus={menus} />
+      <AppMenuBarMenus menus={[fileMenu, viewMenu, goMenu]} />
     </AppMenuBarShell>
   );
 }
