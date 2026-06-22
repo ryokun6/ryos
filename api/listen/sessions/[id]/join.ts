@@ -103,7 +103,7 @@ export default apiHandler(
     try {
       if (username) {
         const [session, userData] = await Promise.all([
-          getSession(sessionId),
+          getSession(sessionId, redis),
           getStoredUserRecord(redis, username),
         ]);
 
@@ -158,7 +158,7 @@ export default apiHandler(
         session.lastSyncAt = now;
         session.users.sort((a, b) => a.joinedAt - b.joinedAt);
 
-        await setSession(sessionId, session);
+        await setSession(sessionId, session, redis);
 
         if (shouldBroadcast) {
           await broadcastUserJoined(sessionId, { username, clientInstanceId: clientId });
@@ -168,7 +168,7 @@ export default apiHandler(
         logger.response(200, Date.now() - startTime);
         res.status(200).json({ session });
       } else {
-        const session = await getSession(sessionId);
+        const session = await getSession(sessionId, redis);
 
         if (!session) {
           logger.response(404, Date.now() - startTime);
@@ -200,7 +200,7 @@ export default apiHandler(
         }
 
         session.lastSyncAt = now;
-        await setSession(sessionId, session);
+        await setSession(sessionId, session, redis);
 
         logger.info("Anonymous listener joined", { sessionId, anonymousId });
         logger.response(200, Date.now() - startTime);

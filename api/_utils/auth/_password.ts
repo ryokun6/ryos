@@ -6,6 +6,7 @@
  */
 
 import bcrypt from "bcryptjs";
+import { PASSWORD_BCRYPT_ROUNDS } from "./_constants.js";
 
 // Re-export storage functions for convenience in Node.js endpoints
 export {
@@ -17,14 +18,11 @@ export {
   PASSWORD_MAX_LENGTH,
 } from "./_password-storage.js";
 
-// Bcrypt configuration
-const BCRYPT_ROUNDS = 10;
-
 /**
  * Hash a password using bcrypt (Node.js only)
  */
 export async function hashPassword(password: string): Promise<string> {
-  return bcrypt.hash(password, BCRYPT_ROUNDS);
+  return bcrypt.hash(password, PASSWORD_BCRYPT_ROUNDS);
 }
 
 /**

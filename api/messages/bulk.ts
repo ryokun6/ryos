@@ -14,7 +14,7 @@ export const maxDuration = 15;
 
 export default apiHandler(
   { methods: ["GET"], auth: "optional" },
-  async ({ req, res, logger, startTime, user }) => {
+  async ({ req, res, redis, logger, startTime, user }) => {
     const roomIdsParam = req.query.roomIds as string | undefined;
 
     if (!roomIdsParam) {
@@ -46,7 +46,7 @@ export default apiHandler(
     }
 
     try {
-      const rooms = await Promise.all(roomIds.map((roomId) => getRoom(roomId)));
+      const rooms = await Promise.all(roomIds.map((roomId) => getRoom(roomId, redis)));
       const validRoomIds: string[] = [];
       const invalidRoomIds: string[] = [];
 
@@ -69,7 +69,7 @@ export default apiHandler(
       }
 
       const messagePromises = validRoomIds.map(async (roomId) => {
-        const messages = await getMessages(roomId, 20);
+        const messages = await getMessages(roomId, 20, redis);
         return { roomId, messages };
       });
 

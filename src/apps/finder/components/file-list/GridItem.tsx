@@ -1,7 +1,6 @@
 import { memo } from "react";
 import { FileIcon } from "../FileIcon";
-import { useLongPress } from "@/hooks/useLongPress";
-import { isTouchDevice } from "@/utils/device";
+import { usePointerLongPress } from "@/hooks/usePointerLongPress";
 import type { LaunchOriginRect } from "@/stores/useAppStore";
 import { hasToggleModifier } from "@/utils/selection";
 import type { GridItemProps } from "./types";
@@ -25,14 +24,13 @@ export const GridItem = memo(function GridItem({
 }: GridItemProps) {
   const isSelected = selectedFiles.includes(file.path);
 
-  const longPressHandlers = useLongPress((touchEvent) => {
+  const longPressHandlers = usePointerLongPress((event) => {
     if (onItemContextMenu) {
-      const touch = touchEvent.touches[0];
       onItemContextMenu(file, {
         preventDefault: () => {},
         stopPropagation: () => {},
-        clientX: touch.clientX,
-        clientY: touch.clientY,
+        clientX: event.clientX,
+        clientY: event.clientY,
       } as unknown as React.MouseEvent);
     }
   });
@@ -40,6 +38,7 @@ export const GridItem = memo(function GridItem({
   return (
     <div
       onMouseDown={(e) => {
+        longPressHandlers.onMouseDown(e);
         if (
           e.button === 0 &&
           !file.isDirectory &&
@@ -54,6 +53,13 @@ export const GridItem = memo(function GridItem({
       onDragLeave={onDragLeave}
       onDrop={(e) => onDrop(e, file)}
       onDragEnd={onDragEnd}
+      onMouseMove={longPressHandlers.onMouseMove}
+      onMouseUp={longPressHandlers.onMouseUp}
+      onMouseLeave={longPressHandlers.onMouseLeave}
+      onTouchStart={longPressHandlers.onTouchStart}
+      onTouchMove={longPressHandlers.onTouchMove}
+      onTouchEnd={longPressHandlers.onTouchEnd}
+      onTouchCancel={longPressHandlers.onTouchCancel}
       className="transition-all duration-75"
       style={{
         // Skip layout/paint for icons scrolled out of view in large folders.
@@ -67,7 +73,6 @@ export const GridItem = memo(function GridItem({
       }}
       data-file-item="true"
       data-file-path={file.path}
-      {...(isTouchDevice() ? longPressHandlers : {})}
     >
       <FileIcon
         name={getDisplayName(file)}

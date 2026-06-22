@@ -15,7 +15,7 @@ import { FileItem } from "../components/FileList";
 import { useFinderStore } from "@/stores/useFinderStore";
 import { useAppStore, type LaunchOriginRect } from "@/stores/useAppStore";
 import { MenuItem } from "@/components/ui/right-click-menu";
-import { useLongPress } from "@/hooks/useLongPress";
+import { usePointerLongPress } from "@/hooks/usePointerLongPress";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { toast } from "sonner";
 import { importAppletFile } from "@/utils/appletImportExport";
@@ -1022,18 +1022,27 @@ export function useFinderLogic({
   };
 
   // ------------------ Mobile long-press support (blank area) ------------------
-  const blankLongPressHandlers = useLongPress((e) => {
+  const blankLongPress = usePointerLongPress((event) => {
     // Check if the target is within a file item - if so, don't show blank context menu
-    const target = e.target as HTMLElement;
+    const target = event.target as HTMLElement;
     const fileItem = target.closest("[data-file-item]");
     if (fileItem) {
       return; // Let the file item handle its own context menu
     }
 
-    const touch = e.touches[0];
-    setContextMenuPos({ x: touch.clientX, y: touch.clientY });
+    setContextMenuPos({ x: event.clientX, y: event.clientY });
     setContextMenuFile(null);
   });
+  const blankLongPressHandlers = {
+    onMouseDown: blankLongPress.onMouseDown,
+    onMouseMove: blankLongPress.onMouseMove,
+    onMouseUp: blankLongPress.onMouseUp,
+    onMouseLeave: blankLongPress.onMouseLeave,
+    onTouchStart: blankLongPress.onTouchStart,
+    onTouchMove: blankLongPress.onTouchMove,
+    onTouchEnd: blankLongPress.onTouchEnd,
+    onTouchCancel: blankLongPress.onTouchCancel,
+  };
 
   // Inside component before return create two arrays
   const blankMenuItems: MenuItem[] = useMemo(

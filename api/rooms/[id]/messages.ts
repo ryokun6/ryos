@@ -56,7 +56,7 @@ export default apiHandler(
     // GET - Get messages
     if (method === "GET") {
       try {
-        const roomData = await getRoom(roomId);
+        const roomData = await getRoom(roomId, redis);
         if (!roomData) {
           logger.warn("Room not found", { roomId });
           logger.response(404, Date.now() - startTime);
@@ -78,7 +78,7 @@ export default apiHandler(
         const limitParam = req.query.limit as string | undefined;
         const limit = limitParam ? Math.min(parseInt(limitParam, 10) || 20, 500) : 20;
 
-        const messages = await getMessages(roomId, limit);
+        const messages = await getMessages(roomId, limit, redis);
 
         logger.info("Messages retrieved", { roomId, count: messages.length });
         logger.response(200, Date.now() - startTime);
@@ -120,7 +120,7 @@ export default apiHandler(
 
     const content = escapeHTML(filterProfanityPreservingUrls(originalContent));
 
-    const roomData = await getRoom(roomId);
+    const roomData = await getRoom(roomId, redis);
     if (!roomData) {
       logger.warn("Room not found", { roomId });
       logger.response(404, Date.now() - startTime);
@@ -209,7 +209,7 @@ export default apiHandler(
         return;
       }
 
-      const lastMsg = await getLastMessage(roomId);
+      const lastMsg = await getLastMessage(roomId, redis);
       if (lastMsg && lastMsg.username === username && lastMsg.content === content) {
         logger.warn("Duplicate message detected", { username, roomId });
         logger.response(400, Date.now() - startTime);
@@ -225,13 +225,13 @@ export default apiHandler(
         timestamp: getCurrentTimestamp(),
       };
 
-      await addMessage(roomId, message);
+      await addMessage(roomId, message, redis);
 
       // setUser's plain SET clears any legacy TTL: user records persist
       // forever (an old expire call here used to attach one on each send).
       const updatedUser = { ...userData, lastActive: getCurrentTimestamp() };
-      await setUser(username, updatedUser);
-      await setRoomPresence(roomId, username);
+      await setUser(username, updatedUser, redis);
+      await setRoomPresence(roomId, username, redis);
 
       await broadcastNewMessage(roomId, message, roomData);
       logger.info("Pusher room-message broadcast sent", { roomId, messageId: message.id });

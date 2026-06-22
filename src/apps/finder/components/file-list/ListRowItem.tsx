@@ -6,7 +6,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useSound, Sounds } from "@/hooks/useSound";
-import { useLongPress } from "@/hooks/useLongPress";
+import { usePointerLongPress } from "@/hooks/usePointerLongPress";
 import { isTouchDevice } from "@/utils/device";
 import type { LaunchOriginRect } from "@/stores/useAppStore";
 import { hasToggleModifier } from "@/utils/selection";
@@ -37,19 +37,19 @@ export const ListRowItem = memo(function ListRowItem({
   const lastClickSoundRef = useRef(0);
   const CLICK_SOUND_COOLDOWN_MS = 400;
 
-  const longPressHandlers = useLongPress((touchEvent) => {
+  const longPressHandlers = usePointerLongPress((event) => {
     if (onItemContextMenu) {
-      const touch = touchEvent.touches[0];
       onItemContextMenu(file, {
         preventDefault: () => {},
         stopPropagation: () => {},
-        clientX: touch.clientX,
-        clientY: touch.clientY,
+        clientX: event.clientX,
+        clientY: event.clientY,
       } as unknown as React.MouseEvent);
     }
   });
 
   const handleClick = (e: React.MouseEvent<HTMLTableRowElement>) => {
+    if (longPressHandlers.consumeClickIfLongPressFired()) return;
     const now = Date.now();
     if (now - lastClickSoundRef.current >= CLICK_SOUND_COOLDOWN_MS) {
       lastClickSoundRef.current = now;
@@ -99,6 +99,7 @@ export const ListRowItem = memo(function ListRowItem({
       data-selected={isSelected || dropTargetPath === file.path ? "true" : undefined}
       onClick={handleClick}
       onMouseDown={(e) => {
+        longPressHandlers.onMouseDown(e);
         if (
           e.button === 0 &&
           !file.isDirectory &&
@@ -119,9 +120,15 @@ export const ListRowItem = memo(function ListRowItem({
       onDragLeave={onDragLeave}
       onDrop={(e) => onDrop(e, file)}
       onDragEnd={onDragEnd}
+      onMouseMove={longPressHandlers.onMouseMove}
+      onMouseUp={longPressHandlers.onMouseUp}
+      onMouseLeave={longPressHandlers.onMouseLeave}
+      onTouchStart={longPressHandlers.onTouchStart}
+      onTouchMove={longPressHandlers.onTouchMove}
+      onTouchEnd={longPressHandlers.onTouchEnd}
+      onTouchCancel={longPressHandlers.onTouchCancel}
       data-file-item="true"
       data-file-path={file.path}
-      {...(isTouchDevice() ? longPressHandlers : {})}
     >
       <TableCell className="flex items-center gap-2">
         {file.icon &&

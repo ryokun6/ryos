@@ -2,7 +2,7 @@ import { useSound, Sounds } from "@/hooks/useSound";
 import { memo, useCallback, useEffect, useReducer, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { isTouchDevice } from "@/utils/device";
-import { useLongPress } from "@/hooks/useLongPress";
+import { usePointerLongPress } from "@/hooks/usePointerLongPress";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 
@@ -283,7 +283,23 @@ export const FileIcon = memo(function FileIcon({
     );
   };
 
+  // Add long-press support for context menus across touch and mouse input.
+  const longPressHandlers = usePointerLongPress((event) => {
+    if (onContextMenu) {
+      const syntheticEvent = {
+        preventDefault: () => {},
+        stopPropagation: () => {},
+        clientX: event.clientX,
+        clientY: event.clientY,
+      } as unknown as React.MouseEvent<HTMLDivElement>;
+      onContextMenu(syntheticEvent);
+    }
+  });
+  const { consumeClickIfLongPressFired, ...longPressDomBindings } = longPressHandlers;
+
   const handleClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (consumeClickIfLongPressFired()) return;
+
     const now = Date.now();
     if (now - lastClickSoundRef.current >= CLICK_SOUND_COOLDOWN_MS) {
       lastClickSoundRef.current = now;
@@ -297,7 +313,7 @@ export const FileIcon = memo(function FileIcon({
       // On desktop, execute the regular onClick handler (selection)
       onClick?.(e);
     }
-  }, [onClick, onDoubleClick, playClick]);
+  }, [consumeClickIfLongPressFired, onClick, onDoubleClick, playClick]);
 
   const handleDoubleClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     // Only handle double-click on desktop (touch uses single tap)
@@ -305,20 +321,6 @@ export const FileIcon = memo(function FileIcon({
       onDoubleClick?.(e);
     }
   }, [onDoubleClick]);
-
-  // Add long-press support for context menu on mobile
-  const longPressHandlers = useLongPress((touchEvent) => {
-    if (onContextMenu) {
-      const touch = touchEvent.touches[0];
-      const syntheticEvent = {
-        preventDefault: () => {},
-        stopPropagation: () => {},
-        clientX: touch.clientX,
-        clientY: touch.clientY,
-      } as unknown as React.MouseEvent<HTMLDivElement>;
-      onContextMenu(syntheticEvent);
-    }
-  });
 
   return (
     <div
@@ -330,7 +332,7 @@ export const FileIcon = memo(function FileIcon({
       onClick={handleClick}
       onContextMenu={onContextMenu}
       data-desktop-icon="true"
-      {...longPressHandlers}
+      {...longPressDomBindings}
     >
       <div
         className={`flex items-center justify-center ${sizes.icon} ${

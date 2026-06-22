@@ -25,7 +25,7 @@ export const maxDuration = 30;
 
 export default apiHandler(
   { methods: ["GET", "DELETE"], auth: "optional" },
-  async ({ req, res, logger, startTime, user }) => {
+  async ({ req, res, redis, logger, startTime, user }) => {
     const roomId = req.query.id as string | undefined;
     const method = (req.method || "GET").toUpperCase();
 
@@ -45,7 +45,7 @@ export default apiHandler(
 
     if (method === "GET") {
       try {
-        const roomObj = await getRoom(roomId);
+        const roomObj = await getRoom(roomId, redis);
         if (!roomObj) {
           logger.response(404, Date.now() - startTime);
           res.status(404).json({ error: "Room not found" });
@@ -59,7 +59,7 @@ export default apiHandler(
           return;
         }
 
-        const userCount = await refreshRoomUserCount(roomId);
+        const userCount = await refreshRoomUserCount(roomId, redis);
         const room: Room = { ...roomObj, userCount };
         logger.info("Room fetched", { roomId, userCount });
         logger.response(200, Date.now() - startTime);
@@ -83,7 +83,7 @@ export default apiHandler(
     const username = user.username;
 
     try {
-      const roomData = await getRoom(roomId);
+      const roomData = await getRoom(roomId, redis);
       if (!roomData) {
         logger.response(404, Date.now() - startTime);
         res.status(404).json({ error: "Room not found" });
@@ -115,10 +115,10 @@ export default apiHandler(
       if (roomData.type === "private") {
         const updatedMembers = roomData.members!.filter((m) => m !== username);
         if (updatedMembers.length <= 1) {
-          await deleteRoom(roomId);
-          await deleteAllMessages(roomId);
-          await unregisterRoom(roomId);
-          await deleteRoomPresence(roomId);
+          await deleteRoom(roomId, redis);
+          await deleteAllMessages(roomId, redis);
+          await unregisterRoom(roomId, redis);
+          await deleteRoomPresence(roomId, redis);
 
           await broadcastRoomDeleted(roomId, roomData.type, roomData.members || []);
           logger.info("Pusher room-deleted broadcast sent", {
@@ -127,7 +127,7 @@ export default apiHandler(
           });
         } else {
           const updatedRoom: Room = { ...roomData, members: updatedMembers, userCount: updatedMembers.length };
-          await setRoom(roomId, updatedRoom);
+          await setRoom(roomId, updatedRoom, redis);
 
           await broadcastRoomUpdated(roomId);
           await broadcastRoomDeleted(roomId, roomData.type, [username]);
@@ -138,10 +138,10 @@ export default apiHandler(
           });
         }
       } else {
-        await deleteRoom(roomId);
-        await deleteAllMessages(roomId);
-        await unregisterRoom(roomId);
-        await deleteRoomPresence(roomId);
+        await deleteRoom(roomId, redis);
+        await deleteAllMessages(roomId, redis);
+        await unregisterRoom(roomId, redis);
+        await deleteRoomPresence(roomId, redis);
 
         await broadcastRoomDeleted(roomId, roomData.type, roomData.members || []);
         logger.info("Pusher room-deleted broadcast sent", {

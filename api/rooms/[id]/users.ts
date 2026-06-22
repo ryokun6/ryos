@@ -13,7 +13,7 @@ export const runtime = "nodejs";
 
 export default apiHandler(
   { methods: ["GET"], auth: "optional" },
-  async ({ req, res, logger, startTime, user }) => {
+  async ({ req, res, redis, logger, startTime, user }) => {
     const roomId = req.query.id as string | undefined;
 
     if (!roomId) {
@@ -33,7 +33,7 @@ export default apiHandler(
     }
 
     try {
-      const room = await getRoom(roomId);
+      const room = await getRoom(roomId, redis);
       if (!room) {
         logger.warn("Room not found", { roomId });
         logger.response(404, Date.now() - startTime);
@@ -49,7 +49,7 @@ export default apiHandler(
         return;
       }
 
-      const users = await getActiveUsersInRoom(roomId);
+      const users = await getActiveUsersInRoom(roomId, redis);
 
       logger.info("Users retrieved", { roomId, count: users.length });
       logger.response(200, Date.now() - startTime);

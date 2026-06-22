@@ -33,7 +33,7 @@ export default apiHandler<RyoReplyRequest>(
     auth: "required",
     parseJsonBody: true,
   },
-  async ({ res, logger, startTime, user, body }) => {
+  async ({ res, redis, logger, startTime, user, body }) => {
     const username = user?.username || "";
 
     // Rate limiting: 5/min per user
@@ -79,7 +79,7 @@ export default apiHandler<RyoReplyRequest>(
       return;
     }
 
-    const exists = await roomExists(roomId);
+    const exists = await roomExists(roomId, redis);
     if (!exists) {
       logger.warn("Room not found", { roomId });
       logger.response(404, Date.now() - startTime);
@@ -127,7 +127,7 @@ export default apiHandler<RyoReplyRequest>(
       timestamp: getCurrentTimestamp(),
     };
 
-    await addMessage(roomId, message);
+    await addMessage(roomId, message, redis);
 
     // Broadcast the message to all clients in the room via Pusher
     try {

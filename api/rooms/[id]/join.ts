@@ -61,7 +61,7 @@ export default apiHandler(
 
     try {
       const [roomData, userData] = await Promise.all([
-        getRoom(roomId),
+        getRoom(roomId, redis),
         getStoredUserRecord(redis, username),
       ]);
 
@@ -84,10 +84,10 @@ export default apiHandler(
         return;
       }
 
-      await setRoomPresence(roomId, username);
-      const userCount = await refreshRoomUserCount(roomId);
+      await setRoomPresence(roomId, username, redis);
+      const userCount = await refreshRoomUserCount(roomId, redis);
       const updatedRoom: Room = { ...roomData, userCount };
-      await setRoom(roomId, updatedRoom);
+      await setRoom(roomId, updatedRoom, redis);
       if (isIrcBridgeEnabled()) {
         try {
           await syncRoomBindingForPresence(updatedRoom, userCount);

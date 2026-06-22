@@ -1,6 +1,7 @@
 # Next Improvements — Codebase Audit & Proposals
 
-Status: **proposal** (audit + roadmap; nothing implemented yet)
+Status: **active cleanup roadmap** (several low-risk items shipped; larger
+structural items are either pending PRs or still tracked below)
 
 This document is a point-in-time audit of the ryOS codebase and a prioritized
 set of proposals for the next round of refactoring, reliability/performance
@@ -26,8 +27,9 @@ Recent work has been dominated by a few large efforts that are now in their
 final-cleanup phase:
 
 - **Cloud Sync v2** — journal-based delta sync, shipped via direct cutover
-  (`docs/proposals/cloud-sync-v2.md`). v1 backup routes (`api/sync/backup.ts`,
-  `status.ts`, `backup-token.ts`) still run in parallel.
+  (`docs/proposals/cloud-sync-v2.md`). v1 manual-backup routes
+  (`api/sync/backup.ts`, `status.ts`, `backup-token.ts`) still back the
+  Control Panels backup UI and remain until that UI has a v2-only replacement.
 - **Canonical Redis key scheme** — `src/shared/redisKeys.ts` is now the source
   of truth, but several hot paths still carry legacy dual-read fallbacks
   (listen sessions, airdrop presence, rate-limit counters).
@@ -65,7 +67,7 @@ Quantitative hotspots (lines):
 
 ## 2. Refactoring proposals
 
-### 2.1 Decompose the iPod stack (highest debt concentration)
+### 2.1 Decompose the iPod stack (highest debt concentration) — **pending PR**
 
 `useIpodLogic.ts` (5,143) + `useIpodStore.ts` (2,535) + `useAppleMusicLibrary.ts`
 (1,778) ≈ 9.4k lines, and recent history shows recurring Apple Music
@@ -84,7 +86,7 @@ Proposal:
 Risk: high (most-touched user-facing app) — do behind the existing test suite
 (`test-ipod-*`) and add playback-race regression tests first.
 
-### 2.2 Generalize store persistence
+### 2.2 Generalize store persistence — **partial pending PR**
 
 ~25 stores hand-roll `STORE_VERSION` + `partialize` + bespoke `migrate`, and the
 biggest ones leave verbose `console.log` in the production migrate path
@@ -94,6 +96,10 @@ Proposal: introduce a `createPersistedStore({ name, version, migrate,
 partialize })` helper with typed, registered migrations and a debug logger that
 is silent in production. Generalize the already-good `createDebouncedPersistStorage`
 (currently only in `useFilesStore`/`useIpodStore`/`useChatsStore`).
+
+Current status: PR #1566 covers the production-silent debug logger slice for the
+noisiest stores. The typed persisted-store factory remains pending because it
+touches ~25 stores and should stay isolated from unrelated cleanup.
 
 ### 2.3 Split the API god-files
 
@@ -106,13 +112,13 @@ is silent in production. Generalize the already-good `createDebouncedPersistStor
 
 ### 2.4 Finish the migrations that left dual paths
 
-- **Sync v1 retirement**: remove `api/sync/backup*.ts` + `status.ts` once v2
-  adoption is confirmed (telemetry on v1 route hits first).
-- **Legacy Redis dual-reads**: drop fallback reads in `listen/_helpers/_redis.ts`,
-  `airdrop/send.ts`, and the `rl:*` → `rate:*` translation once the migration
-  CLI has been run everywhere. Reuse the handler-injected `redis` client in
-  `rooms/_helpers/_redis.ts` and `listen/_helpers/_redis.ts` instead of calling
-  `createRedisClient()` per operation.
+- **Sync v1 retirement**: remove `api/sync/backup*.ts` + `status.ts` once the
+  Control Panels backup UI no longer calls them (or has explicit v2-only
+  replacement telemetry).
+- **Legacy Redis dual-reads**: **shipped** for listen sessions and Airdrop
+  presence; `rl:*` callers already canonicalize through `makeKey` into `rate:*`.
+  Room/listen helpers now accept handler-injected `redis` clients while keeping
+  lazy defaults for background utilities.
 - **Theme-token consolidation**: ~20 components still branch on raw theme-id
   strings (`AdminToolbar`, `WindowsTaskbar`, `EditorToolbar`, etc.) despite
   `useThemeFlags` + `themes/index.ts` helpers. Finish routing these through the
@@ -126,8 +132,8 @@ is silent in production. Generalize the already-good `createDebouncedPersistStor
 - **Media menu bars**: iPod/Karaoke/Videos/TV share the `AppMenuBarShell` +
   File/Controls/View/Library structure but duplicate `use*MenuBar.ts`
   view-models — extract a media-menu factory.
-- **Long-press**: deprecate touch-only `useLongPress` in favor of
-  `usePointerLongPress`.
+- **Long-press**: **shipped** — shared touch-only `useLongPress` was removed;
+  Finder, Desktop, and Dock call sites now use `usePointerLongPress`.
 - **Admin prop-drilling**: `AdminAppComponent` passes 40+ props from a flat
   `useAdminLogic` bag — group into context or sub-view-models.
 
@@ -186,7 +192,7 @@ is introduced.
 search with no limits. At minimum require `optional`→`required` auth for the
 full search and add a rate bucket.
 
-### 4.3 Add a Zod validation layer at the `apiHandler` boundary
+### 4.3 Add a Zod validation layer at the `apiHandler` boundary — **pending PR**
 
 Zod is used in only ~12 API files. High-value untyped bodies: `POST /api/chat`
 (messages/systemState validated only with `Array.isArray`), `speech.ts`,
@@ -197,8 +203,8 @@ codes.
 ### 4.4 Session lifetime & cookie review
 
 1-year session TTL (`USER_TTL_SECONDS`) is long. Consider shorter sliding
-sessions with refresh, and reconcile the `PASSWORD_BCRYPT_ROUNDS` constant with
-the hardcoded `10` in `_password.ts`.
+sessions with refresh. The bcrypt round-count duplication is **shipped**:
+`_password.ts` now uses the exported `PASSWORD_BCRYPT_ROUNDS` constant.
 
 ---
 
@@ -252,11 +258,12 @@ code.
 
 **Foundational (enables later work):**
 - 4.1 admin audit trail (keep `ryo` gate) → unlocks 5.2
-- 4.3 Zod-at-`apiHandler` → unlocks 5.5
-- 2.4 finish dual-path migrations (sync v1 retirement, legacy Redis reads)
+- 4.3 Zod-at-`apiHandler` → unlocks 5.5 — **pending PR #1565**
+- 2.4 finish dual-path migrations — **legacy Redis reads shipped; sync v1
+  retirement remains blocked by live backup UI**
 
 **Large but high-value:**
-- 2.1 iPod stack decomposition
+- 2.1 iPod stack decomposition — **pending PR #1569**
 - 2.3 API god-file splits
 - 3.2 structural fixes for the recurring bug classes (esp. Aqua Glass)
 

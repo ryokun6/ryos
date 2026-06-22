@@ -40,13 +40,13 @@ export default apiHandler(
     // GET - List all active sessions (no auth required)
     if (method === "GET") {
       try {
-        const sessionIds = await getActiveSessionIds();
+        const sessionIds = await getActiveSessionIds(redis);
         const sessions: ListenSessionSummary[] = [];
         const now = Date.now();
         const STALE_THRESHOLD_MS = 30 * 60 * 1000;
 
         const sessionPromises = sessionIds.map(async (id) => {
-          const session = await getSession(id);
+          const session = await getSession(id, redis);
           if (session) {
             const isStale = (now - session.lastSyncAt) > STALE_THRESHOLD_MS;
 
@@ -173,7 +173,7 @@ export default apiHandler(
     };
 
     try {
-      await setSession(sessionId, session);
+      await setSession(sessionId, session, redis);
       await broadcastUserJoined(sessionId, { username, clientInstanceId: hostClientId });
 
       logger.info("Listen session created", { sessionId, username });

@@ -3,17 +3,14 @@
  */
 
 import type { ListenSession } from "./_types.js";
+import type { Redis } from "../../_utils/redis.js";
 import {
   createRedisClient,
   generateRandomHexId,
   getCurrentTimestamp,
   parseJSON,
 } from "../../_utils/redis-helpers.js";
-import {
-  LISTEN_SESSION_PREFIX,
-  LISTEN_SESSIONS_SET,
-  LISTEN_SESSION_TTL_SECONDS,
-} from "./_constants.js";
+import { LISTEN_SESSION_TTL_SECONDS } from "./_constants.js";
 import { redisKeys } from "../../../src/shared/redisKeys.js";
 
 // ============================================================================
@@ -38,49 +35,47 @@ export function parseSessionData(data: unknown): ListenSession | null {
 // Session Operations
 // ============================================================================
 
-export async function getSession(sessionId: string): Promise<ListenSession | null> {
-  const client = createRedisClient();
-  const data =
-    (await client.get(redisKeys.session.listen(sessionId))) ??
-    (await client.get(`${LISTEN_SESSION_PREFIX}${sessionId}`));
+export async function getSession(
+  sessionId: string,
+  client: Redis = createRedisClient()
+): Promise<ListenSession | null> {
+  const data = await client.get(redisKeys.session.listen(sessionId));
   return parseSessionData(data);
 }
 
 export async function setSession(
   sessionId: string,
-  session: ListenSession
+  session: ListenSession,
+  client: Redis = createRedisClient()
 ): Promise<void> {
-  const client = createRedisClient();
   await client.set(redisKeys.session.listen(sessionId), JSON.stringify(session), {
     ex: LISTEN_SESSION_TTL_SECONDS,
   });
   await client.sadd(redisKeys.session.listenIds(), sessionId);
 }
 
-export async function deleteSession(sessionId: string): Promise<void> {
-  const client = createRedisClient();
+export async function deleteSession(
+  sessionId: string,
+  client: Redis = createRedisClient()
+): Promise<void> {
   const pipeline = client.pipeline();
   pipeline.del(redisKeys.session.listen(sessionId));
-  pipeline.del(`${LISTEN_SESSION_PREFIX}${sessionId}`);
   pipeline.srem(redisKeys.session.listenIds(), sessionId);
-  pipeline.srem(LISTEN_SESSIONS_SET, sessionId);
   await pipeline.exec();
 }
 
-export async function touchSession(sessionId: string): Promise<void> {
-  const client = createRedisClient();
+export async function touchSession(
+  sessionId: string,
+  client: Redis = createRedisClient()
+): Promise<void> {
   await client.expire(
     redisKeys.session.listen(sessionId),
     LISTEN_SESSION_TTL_SECONDS
   );
 }
 
-export async function getActiveSessionIds(): Promise<string[]> {
-  const client = createRedisClient();
-  return [
-    ...new Set([
-      ...((await client.smembers<string[]>(redisKeys.session.listenIds())) || []),
-      ...((await client.smembers<string[]>(LISTEN_SESSIONS_SET)) || []),
-    ]),
-  ];
+export async function getActiveSessionIds(
+  client: Redis = createRedisClient()
+): Promise<string[]> {
+  return (await client.smembers<string[]>(redisKeys.session.listenIds())) || [];
 }

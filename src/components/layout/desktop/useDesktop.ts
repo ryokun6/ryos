@@ -9,7 +9,7 @@ import {
 } from "react";
 import type { DragEvent, MouseEvent as ReactMouseEvent } from "react";
 import { SortType } from "@/apps/finder/components/FinderMenuBar";
-import { useLongPress } from "@/hooks/useLongPress";
+import { usePointerLongPress } from "@/hooks/usePointerLongPress";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useFilesStore, type FileSystemItem } from "@/stores/useFilesStore";
 import { useShallow } from "zustand/react/shallow";
@@ -240,17 +240,25 @@ export function useDesktop({
     }
   };
 
-  const longPressHandlers = useLongPress((e) => {
-    const target = e.target as HTMLElement;
+  const desktopLongPress = usePointerLongPress((event) => {
+    const target = event.target as HTMLElement;
     const iconContainer = target.closest("[data-desktop-icon]");
     if (iconContainer) {
       return;
     }
 
-    const touch = e.touches[0];
-    setContextMenuPos({ x: touch.clientX, y: touch.clientY });
+    setContextMenuPos({ x: event.clientX, y: event.clientY });
     setContextMenuAppId(null);
   });
+  const longPressHandlers = {
+    onMouseMove: desktopLongPress.onMouseMove,
+    onMouseUp: desktopLongPress.onMouseUp,
+    onMouseLeave: desktopLongPress.onMouseLeave,
+    onTouchStart: desktopLongPress.onTouchStart,
+    onTouchMove: desktopLongPress.onTouchMove,
+    onTouchEnd: desktopLongPress.onTouchEnd,
+    onTouchCancel: desktopLongPress.onTouchCancel,
+  };
 
   const finalStyles = {
     ...getWallpaperStyles(wallpaperSource, isVideoWallpaper),
@@ -526,6 +534,7 @@ export function useDesktop({
 
   const handleBlankMouseDown = (event: ReactMouseEvent<HTMLDivElement>) => {
     if (event.button !== 0) return;
+    desktopLongPress.onMouseDown(event);
     const target = event.target as HTMLElement;
     if (target.closest("[data-desktop-icon]")) return;
 
