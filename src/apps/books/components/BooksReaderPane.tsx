@@ -447,9 +447,9 @@ export function BooksReaderPane({
         className="absolute right-0 z-10 w-[22%] cursor-e-resize disabled:cursor-default"
       />
 
-      {/* Reading-progress footer — centered percentage, no bar. */}
+      {/* Reading-progress footer — right-aligned percentage, no bar. */}
       <div
-        className="absolute inset-x-0 bottom-0 z-10 flex items-center justify-center px-4"
+        className="absolute inset-x-0 bottom-0 z-10 flex items-center justify-end px-4"
         style={{ height: FOOTER_HEIGHT }}
       >
         <span

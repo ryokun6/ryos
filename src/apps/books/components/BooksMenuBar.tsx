@@ -85,7 +85,6 @@ export function BooksMenuBar({
         {
           type: "submenu",
           label: t("apps.books.menu.font"),
-          disabled: !isReading,
           items: [
             {
               type: "radioGroup",
@@ -101,7 +100,6 @@ export function BooksMenuBar({
         {
           type: "submenu",
           label: t("apps.books.menu.textSize"),
-          disabled: !isReading,
           items: [
             {
               type: "action",
@@ -128,7 +126,6 @@ export function BooksMenuBar({
         {
           type: "submenu",
           label: t("apps.books.menu.columns"),
-          disabled: !isReading,
           items: [
             {
               type: "radioGroup",

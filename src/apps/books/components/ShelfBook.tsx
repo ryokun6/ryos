@@ -64,14 +64,13 @@ export function BookMorphCover({
       className={cn(
         "relative shrink-0 overflow-hidden",
         isGrid
-          ? "h-[160px] w-[104px] rounded-[2px] rounded-l-[4px]"
+          ? // Lighter resting shadow; grows on hover (button is `group`).
+            "h-[160px] w-[104px] rounded-[2px] rounded-l-[4px] transition-shadow duration-200 shadow-[0_6px_10px_-5px_rgba(0,0,0,0.75),-2px_0_3px_-2px_rgba(0,0,0,0.45)] group-hover:shadow-[0_18px_26px_-8px_rgba(0,0,0,0.62),-3px_0_5px_-2px_rgba(0,0,0,0.42)]"
           : "h-[52px] w-[36px] rounded-[2px] rounded-l-[3px]"
       )}
-      style={{
-        boxShadow: isGrid
-          ? "0 10px 14px -6px rgba(0,0,0,0.65), -3px 0 4px -2px rgba(0,0,0,0.4)"
-          : "0 3px 6px -2px rgba(0,0,0,0.6)",
-      }}
+      style={
+        isGrid ? undefined : { boxShadow: "0 3px 6px -2px rgba(0,0,0,0.6)" }
+      }
     >
       <BookCover
         title={entry.name}
@@ -135,7 +134,8 @@ export function ShelfBook({
       }}
       // No overflow-hidden here: the morphing book lives inside, and clipping it
       // to the button would chop the morph as it travels to/from the list.
-      className="relative block h-[160px] w-[104px] shrink-0 focus:outline-none"
+      // `group` so the cover's shadow can grow on hover.
+      className="group relative block h-[160px] w-[104px] shrink-0 focus:outline-none"
       title={info?.title || entry.name}
     >
       <BookMorphCover

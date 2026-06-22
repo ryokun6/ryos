@@ -71,7 +71,7 @@ export function BookCover({
         )}
         style={{ fontFamily: '"EB Garamond", Georgia, serif' }}
       >
-        {loading ? "…" : displayTitle}
+        {loading ? "" : displayTitle}
       </div>
       {author && (
         <div

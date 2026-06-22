@@ -36,12 +36,16 @@ interface ShelfContextMenu {
   y: number;
 }
 
-const BOOK_SLOT_WIDTH = 124; // cover width + horizontal gap
-const SHELF_PADDING_X = 28;
+const BOOK_COVER_WIDTH = 104; // standing cover width (matches ShelfBook)
+const BOOK_GAP = 20; // horizontal gap between books (gap-5)
+// Left/right gutter. Books are left-aligned; the fit math below counts no
+// trailing gap so a book isn't forced to wrap just to reserve one.
+const SHELF_GUTTER = 32;
 
-// Books slot min-height (168) + wooden ledge (14 + 10). Used to backfill the
-// shelf with empty rows so it always looks like a full bookcase.
-const SHELF_ROW_HEIGHT = 168 + 24;
+// Books slot min-height (168) + wooden ledge (top face 12 + front lip 14 +
+// shadow spacer 16). Used to backfill the shelf with empty rows so it always
+// looks like a full bookcase.
+const SHELF_ROW_HEIGHT = 168 + 42;
 
 // Brighter warm-wood backdrop shared by the shelf surface and ledges. The
 // `soft-light` warm-amber wash over the texture boosts saturation + brightness
@@ -49,9 +53,11 @@ const SHELF_ROW_HEIGHT = 168 + 24;
 const WOOD_BG: React.CSSProperties = {
   backgroundColor: "#a8662a",
   backgroundImage:
-    "linear-gradient(rgba(236,164,78,0.5), rgba(206,124,52,0.5)), url('/assets/books/wood-shelf.png')",
+    "linear-gradient(rgba(255,216,152,0.55), rgba(226,156,88,0.6)), url('/assets/books/wood-shelf.webp')",
   backgroundBlendMode: "soft-light, normal",
-  backgroundSize: "auto, 512px auto",
+  // Texture is a 2x2 mirror-tiled seamless image; render it at 1024px so each
+  // mirrored sub-tile shows at the original ~512px grain scale.
+  backgroundSize: "auto, 1024px auto",
   backgroundRepeat: "repeat",
 };
 
@@ -133,8 +139,13 @@ export function BooksShelfView({
   const measured = width > 0;
 
   const perRow = useMemo(() => {
-    const usable = Math.max(0, width - SHELF_PADDING_X * 2);
-    return Math.max(1, Math.floor(usable / BOOK_SLOT_WIDTH) || 1);
+    const usable = Math.max(0, width - SHELF_GUTTER * 2);
+    // Fit N covers + (N-1) gaps (no trailing gap) within the usable width, so a
+    // book isn't forced to wrap just because of a reserved trailing gap.
+    return Math.max(
+      1,
+      Math.floor((usable + BOOK_GAP) / (BOOK_COVER_WIDTH + BOOK_GAP)) || 1
+    );
   }, [width]);
 
   const rows = useMemo(() => {
@@ -229,13 +240,16 @@ export function BooksShelfView({
               <div className="flex flex-col pb-3 pt-1">
                 {rows.map((row, rowIndex) => (
                   <div key={rowIndex} className="relative">
-                    {/* Books standing directly on the shelf (flush, no gap) */}
+                    {/* Books stand on the shelf, their base resting halfway down
+                        the upper face (negative margin overlaps the ledge by half
+                        the 12px face); z-[1] keeps books in front of that face. */}
                     <div
-                      className="flex items-end gap-5"
+                      className="relative z-[1] flex items-end gap-5"
                       style={{
-                        paddingLeft: SHELF_PADDING_X,
-                        paddingRight: SHELF_PADDING_X,
+                        paddingLeft: SHELF_GUTTER,
+                        paddingRight: SHELF_GUTTER,
                         minHeight: 168,
+                        marginBottom: -6,
                       }}
                     >
                       {row.map((entry) => (
@@ -277,6 +291,7 @@ export function BooksShelfView({
           </LayoutGroup>
         )}
       </div>
+
       {/* Right-click / long-press context menu. Portaled to <body> so its
           absolute position resolves against the viewport (the shelf root is a
           `relative` containing block), matching the clientX/clientY we capture. */}
@@ -297,19 +312,42 @@ export function BooksShelfView({
 function ShelfLedge() {
   return (
     <div className="relative px-2">
+      {/* Upper face — the board's top surface in perspective: a trapezoid that's
+          wider at the front edge (bottom) and narrows toward the back wall (top),
+          so it recedes inward. Lit at the front, shadowed at the back. */}
       <div
-        className="h-[14px] w-full rounded-[2px]"
+        className="h-[12px] w-full"
         style={{
           ...WOOD_BG,
           backgroundImage:
-            "linear-gradient(rgba(255,206,128,0.45), rgba(92,52,18,0.45)), url('/assets/books/wood-shelf.png')",
+            "linear-gradient(to top, rgba(192,146,88,0.6), rgba(58,38,18,0.64)), url('/assets/books/wood-shelf.webp')",
           backgroundBlendMode: "overlay, normal",
           backgroundPosition: "center",
-          boxShadow:
-            "0 0 0 0.5px rgba(0,0,0,0.55), 0 6px 10px -2px rgba(0,0,0,0.45), inset 0 2px 1px rgba(255,236,200,0.45)",
+          clipPath:
+            "polygon(28px 0, calc(100% - 28px) 0, 100% 100%, 0 100%)",
+          // Warm mid-tone at the front (darker + more color than before, but
+          // lighter than the dark back where it meets the wall).
+          boxShadow: "inset 0 4px 5px -3px rgba(0,0,0,0.6)",
         }}
       />
-      <div className="h-[10px] w-full bg-gradient-to-b from-black/30 to-transparent" />
+      {/* Front lip — the rounded wooden edge that protrudes toward the viewer. */}
+      <div
+        className="h-[14px] w-full rounded-b-[3px]"
+        style={{
+          ...WOOD_BG,
+          backgroundImage:
+            "linear-gradient(rgba(250,216,150,0.5), rgba(86,58,28,0.5)), url('/assets/books/wood-shelf.webp')",
+          backgroundBlendMode: "overlay, normal",
+          backgroundPosition: "center",
+          // The wide, soft drop shadow IS the cast shadow — box-shadow diffuses
+          // on all sides (no hard clipped edges like a gradient rectangle had).
+          boxShadow:
+            "0 0 0 0.5px rgba(0,0,0,0.5), 0 14px 22px -4px rgba(0,0,0,0.7), 0 6px 10px -3px rgba(0,0,0,0.55), inset 0 2px 1px rgba(255,240,205,0.6)",
+        }}
+      />
+      {/* Transparent spacer so the soft cast shadow has room before the next
+          shelf row (the shadow itself comes from the lip's box-shadow above). */}
+      <div className="h-[16px] w-full" />
     </div>
   );
 }
