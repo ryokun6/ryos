@@ -209,6 +209,7 @@ export function BooksMenuBar({
       onShowAbout={onShowAbout}
     >
       <AppMenuBarMenus menus={[fileMenu]} />
+      <AppMenuBarMenus menus={[viewMenu]} />
       <MenubarMenu>
         <MenubarTrigger className={MENUBAR_TRIGGER_CLASS}>
           {t("common.menu.go")}
@@ -261,7 +262,6 @@ export function BooksMenuBar({
           </MenubarSub>
         </MenubarContent>
       </MenubarMenu>
-      <AppMenuBarMenus menus={[viewMenu]} />
     </AppMenuBarShell>
   );
 }
