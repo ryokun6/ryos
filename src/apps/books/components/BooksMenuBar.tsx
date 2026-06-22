@@ -208,8 +208,7 @@ export function BooksMenuBar({
       onShowHelp={onShowHelp}
       onShowAbout={onShowAbout}
     >
-      <AppMenuBarMenus menus={[fileMenu]} />
-      <AppMenuBarMenus menus={[viewMenu]} />
+      <AppMenuBarMenus menus={[fileMenu, viewMenu]} />
       <MenubarMenu>
         <MenubarTrigger className={MENUBAR_TRIGGER_CLASS}>
           {t("common.menu.go")}
