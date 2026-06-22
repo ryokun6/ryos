@@ -7,10 +7,6 @@ export interface IndexedDBStoreItemWithKey {
   value: IndexedDBStoreItem;
 }
 
-export interface IndexedDBStoreSerializationOptions {
-  arrayBufferFieldsAsBlobs?: Record<string, string>;
-}
-
 const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
   const bytes = new Uint8Array(buffer);
   const chunkSize = 0x8000;
@@ -43,8 +39,7 @@ export const base64ToBlob = (dataUrl: string): Blob => {
 export async function readAndSerializeStoreItemByKey(
   db: IDBDatabase,
   storeName: string,
-  key: string,
-  options?: IndexedDBStoreSerializationOptions
+  key: string
 ): Promise<IndexedDBStoreItemWithKey | null> {
   return new Promise((resolve, reject) => {
     try {
@@ -60,7 +55,7 @@ export async function readAndSerializeStoreItemByKey(
           key,
           value: request.result as IndexedDBStoreItem,
         };
-        resolve(await serializeStoreItem(item, options));
+        resolve(await serializeStoreItem(item));
       };
       request.onerror = () => reject(request.error);
     } catch (error) {
@@ -72,12 +67,11 @@ export async function readAndSerializeStoreItemByKey(
 export async function readAndSerializeStoreItemsByKeys(
   db: IDBDatabase,
   storeName: string,
-  keys: string[],
-  options?: IndexedDBStoreSerializationOptions
+  keys: string[]
 ): Promise<IndexedDBStoreItemWithKey[]> {
   const unique = [...new Set(keys.filter(Boolean))];
   const results = await Promise.all(
-    unique.map((k) => readAndSerializeStoreItemByKey(db, storeName, k, options))
+    unique.map((k) => readAndSerializeStoreItemByKey(db, storeName, k))
   );
   return results.filter((x): x is IndexedDBStoreItemWithKey => x != null);
 }
@@ -115,8 +109,7 @@ export async function readStoreItems(
 }
 
 export async function serializeStoreItem(
-  item: IndexedDBStoreItemWithKey,
-  options?: IndexedDBStoreSerializationOptions
+  item: IndexedDBStoreItemWithKey
 ): Promise<IndexedDBStoreItemWithKey> {
   const serializedValue: Record<string, unknown> = {
     ...item.value,
@@ -125,16 +118,6 @@ export async function serializeStoreItem(
   for (const key of Object.keys(item.value)) {
     if (item.value[key] instanceof Blob) {
       serializedValue[key] = await blobToBase64(item.value[key] as Blob);
-      serializedValue[`_isBlob_${key}`] = true;
-    } else if (
-      item.value[key] instanceof ArrayBuffer &&
-      options?.arrayBufferFieldsAsBlobs?.[key]
-    ) {
-      serializedValue[key] = await blobToBase64(
-        new Blob([item.value[key] as ArrayBuffer], {
-          type: options.arrayBufferFieldsAsBlobs[key],
-        })
-      );
       serializedValue[`_isBlob_${key}`] = true;
     }
   }
@@ -146,10 +129,9 @@ export async function serializeStoreItem(
 }
 
 export async function serializeStoreItems(
-  items: IndexedDBStoreItemWithKey[],
-  options?: IndexedDBStoreSerializationOptions
+  items: IndexedDBStoreItemWithKey[]
 ): Promise<IndexedDBStoreItemWithKey[]> {
-  return Promise.all(items.map((item) => serializeStoreItem(item, options)));
+  return Promise.all(items.map((item) => serializeStoreItem(item)));
 }
 
 export function deserializeStoreItem(
