@@ -703,6 +703,45 @@ export function useFinderLogic({
         return;
       }
 
+      // EPUB books: store the binary as a Blob in /Books
+      const isBooksDir = currentPath === "/Books";
+      if (isBooksDir || fileExtension.endsWith(".epub")) {
+        if (!fileExtension.endsWith(".epub")) {
+          toast.error(t("apps.finder.messages.invalidFileType"), {
+            description: t("apps.finder.messages.invalidFileTypeDesc"),
+          });
+          e.target.value = "";
+          return;
+        }
+        try {
+          const fileName = file.name;
+          const filePath = `/Books/${fileName}`;
+          // Store the raw bytes as a Blob rather than the picker File so the
+          // IndexedDB record stays readable after reloads (a File reference
+          // can later throw "Internal error" on read).
+          const bytes = await file.arrayBuffer();
+          const blob = new Blob([bytes], { type: "application/epub+zip" });
+          await saveFile({
+            name: fileName,
+            path: filePath,
+            content: blob,
+            type: "epub",
+          });
+          emitFileSaved({ name: fileName, path: filePath });
+          if (!isBooksDir) {
+            navigateToPath("/Books");
+          }
+        } catch (err) {
+          console.error("Error importing book:", err);
+          toast.error(t("apps.finder.messages.importFailed"), {
+            description: t("apps.finder.messages.importFailedDesc"),
+          });
+        } finally {
+          e.target.value = "";
+        }
+        return;
+      }
+
       // Check if we're in Applets directory for HTML files
       if (isAppletsDir) {
         // In Applets: accept .html and .htm files
@@ -954,8 +993,10 @@ export function useFinderLogic({
   const canCreateFolder =
     currentPath === "/Documents" ||
     currentPath === "/Images" ||
+    currentPath === "/Books" ||
     currentPath.startsWith("/Documents/") ||
-    currentPath.startsWith("/Images/");
+    currentPath.startsWith("/Images/") ||
+    currentPath.startsWith("/Books/");
 
   // Get all root folders for the Go menu using fileStore
   // This will always show root folders regardless of current path
@@ -988,6 +1029,7 @@ export function useFinderLogic({
       file.path === "/Desktop" ||
       file.path === "/Downloads" ||
       file.path === "/Images" ||
+      file.path === "/Books" ||
       file.path === "/Applications" ||
       file.path === "/Trash" ||
       file.path === "/Music" ||
@@ -1316,6 +1358,7 @@ export function useFinderLogic({
               file.path.startsWith("/Trash") ||
               file.path === "/Documents" ||
               file.path === "/Images" ||
+              file.path === "/Books" ||
               file.path === "/Applications",
           },
     ];

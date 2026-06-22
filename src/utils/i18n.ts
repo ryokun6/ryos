@@ -26,7 +26,8 @@ export type AppId =
   | "calendar"
   | "contacts"
   | "dashboard"
-  | "maps";
+  | "maps"
+  | "books";
 
 /**
  * Get translated app name with theme-awareness
@@ -76,6 +77,7 @@ export function getTranslatedFolderName(folderPath: string): string {
     "/Desktop": "desktop",
     "/Downloads": "downloads",
     "/Images": "images",
+    "/Books": "books",
     "/Music": "music",
     "/Videos": "videos",
     "/Sites": "sites",
@@ -106,6 +108,7 @@ export function getTranslatedFolderNameFromName(folderName: string): string {
     "Desktop": "desktop",
     "Downloads": "downloads",
     "Images": "images",
+    "Books": "books",
     "Music": "music",
     "Videos": "videos",
     "Sites": "sites",
@@ -170,6 +173,7 @@ export function getTranslatedHelpItems(appId: AppId): Array<{
     contacts: ["browseContacts", "createContacts", "editDetails", "importVCards", "useWithRyo", "cloudSync"],
     dashboard: ["openDashboard", "clockWidget", "calendarWidget", "weatherWidget", "moveWidgets", "closeDashboard"],
     maps: ["searchPlaces", "dropPins", "locateMe", "mapTypes", "poweredByApple", "switchMapStyle"],
+    books: ["bookshelf", "import", "pageTurn", "progress", "fonts", "darkMode"],
   };
 
   const keys = helpKeys[appId] || [];

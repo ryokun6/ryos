@@ -13,6 +13,7 @@ import {
 const LEGACY_DOMAIN_ALIASES: Record<string, SyncNamespace> = {
   "files-metadata": "files",
   "files-images": "images",
+  "files-books": "books",
   "files-trash": "trash",
   "files-applets": "applets",
   "custom-wallpapers": "wallpapers",

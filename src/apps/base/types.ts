@@ -45,7 +45,8 @@ export interface BaseApp<TInitialData = unknown> {
     | "calendar"
     | "contacts"
     | "dashboard"
-    | "maps";
+    | "maps"
+    | "books";
   name: string;
   icon: string | { type: "image"; src: string };
   description: string;
@@ -111,6 +112,10 @@ export interface VideosInitialData {
   videoId?: string;
 }
 
+export interface BooksInitialData {
+  path?: string;
+}
+
 export interface FinderInitialData {
   path?: string;
 }
@@ -133,6 +138,7 @@ export type AnyApp =
   | BaseApp<KaraokeInitialData>
   | BaseApp<PaintInitialData>
   | BaseApp<VideosInitialData>
+  | BaseApp<BooksInitialData>
   | BaseApp<AppletViewerInitialData>
   | BaseApp<TerminalInitialData>
   | BaseApp<ChatsInitialData>
@@ -146,6 +152,7 @@ export type AnyInitialData =
   | KaraokeInitialData
   | PaintInitialData
   | VideosInitialData
+  | BooksInitialData
   | FinderInitialData
   | AppletViewerInitialData
   | TerminalInitialData

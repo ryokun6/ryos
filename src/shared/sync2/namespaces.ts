@@ -18,6 +18,7 @@ export const SYNC_NAMESPACES = [
   "contacts",
   "maps",
   "images",
+  "books",
   "trash",
   "applets",
   "wallpapers",
@@ -28,6 +29,7 @@ export type SyncNamespace = (typeof SYNC_NAMESPACES)[number];
 /** Namespaces whose documents reference object-storage blobs. */
 export const SYNC_BLOB_NAMESPACES = [
   "images",
+  "books",
   "trash",
   "applets",
   "wallpapers",
@@ -61,6 +63,7 @@ const NAMESPACE_TO_CATEGORY: Record<SyncNamespace, SyncCategory> = {
   contacts: "contacts",
   maps: "maps",
   images: "files",
+  books: "files",
   trash: "files",
   applets: "files",
   wallpapers: "files",

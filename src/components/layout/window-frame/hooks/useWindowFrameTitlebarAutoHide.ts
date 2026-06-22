@@ -9,6 +9,16 @@ export function useWindowFrameTitlebarAutoHide(
   );
   const titlebarHideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // When auto-hide gets disabled (e.g. switching from the Books reader back to
+  // the shelf), force the titlebar visible. The initial state only evaluates
+  // once, so without this the titlebar would stay hidden after returning from a
+  // view where it had been hidden.
+  useEffect(() => {
+    if (disableTitlebarAutoHide && isNoTitlebar) {
+      setIsTitlebarHovered(true);
+    }
+  }, [disableTitlebarAutoHide, isNoTitlebar]);
+
   const startTitlebarAutoHideTimer = useCallback(() => {
     if (titlebarHideTimeoutRef.current) {
       clearTimeout(titlebarHideTimeoutRef.current);

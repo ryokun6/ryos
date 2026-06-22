@@ -253,6 +253,13 @@ export function emitFileRenamed(
   emitEvent("fileRenamed", detail, target);
 }
 
+export function onFileRenamed(
+  handler: (event: CustomEvent<FileRenamedEventDetail>) => void,
+  target?: AppEventTarget | null,
+): () => void {
+  return subscribeToEvent("fileRenamed", handler, target);
+}
+
 export function emitDocumentUpdated(
   detail: DocumentUpdatedEventDetail,
   target?: AppEventTarget | null,

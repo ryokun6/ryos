@@ -36,6 +36,11 @@ export interface VideosInitialData {
   videoId?: string;
 }
 
+/** Books initial data - for opening a specific EPUB by path */
+export interface BooksInitialData {
+  path?: string;
+}
+
 /** Applet Viewer initial data - for opening applets */
 export interface AppletViewerInitialData {
   path?: string;
@@ -60,6 +65,7 @@ export interface AppInitialDataMap {
   "internet-explorer": InternetExplorerInitialData;
   ipod: IpodInitialData;
   videos: VideosInitialData;
+  books: BooksInitialData;
   "applet-viewer": AppletViewerInitialData;
   finder: FinderInitialData;
 }
@@ -82,6 +88,7 @@ export type AnyAppInitialData =
   | InternetExplorerInitialData
   | IpodInitialData
   | VideosInitialData
+  | BooksInitialData
   | AppletViewerInitialData
   | FinderInitialData
   | undefined;

@@ -86,6 +86,7 @@ export const DELETION_BUCKET_PREFIXES: Record<CloudSyncDeletionBucket, string> =
   contactIds: "contacts/contact:",
   fileMetadataPaths: "files/item:",
   fileImageKeys: "images/item:",
+  fileBookKeys: "books/item:",
   fileTrashKeys: "trash/item:",
   fileAppletKeys: "applets/item:",
   customWallpaperKeys: "wallpapers/item:",
@@ -1326,7 +1327,7 @@ async function finalizeCustomWallpaperSync(ctx: CodecContext): Promise<void> {
 }
 
 function createBlobCodec(
-  namespace: "images" | "trash" | "applets" | "wallpapers",
+  namespace: "images" | "books" | "trash" | "applets" | "wallpapers",
   storeName: string,
   options?: { afterApply?: (ctx: CodecContext) => Promise<void> }
 ): BlobSyncCodec {
@@ -1370,6 +1371,7 @@ function createBlobCodec(
 }
 
 const imagesCodec = createBlobCodec("images", STORES.IMAGES);
+const booksCodec = createBlobCodec("books", STORES.BOOKS);
 const trashCodec = createBlobCodec("trash", STORES.TRASH);
 const appletsCodec = createBlobCodec("applets", STORES.APPLETS);
 const wallpapersCodec = createBlobCodec("wallpapers", STORES.CUSTOM_WALLPAPERS, {
@@ -1391,6 +1393,7 @@ export const SYNC_CODECS: Record<SyncNamespace, SyncCodec> = {
   contacts: contactsCodec,
   maps: mapsCodec,
   images: imagesCodec,
+  books: booksCodec,
   trash: trashCodec,
   applets: appletsCodec,
   wallpapers: wallpapersCodec,
@@ -1407,6 +1410,7 @@ export function isBlobCodec(codec: SyncCodec): codec is BlobSyncCodec {
 export const NAMESPACE_APPLY_ORDER: SyncNamespace[] = [
   "wallpapers",
   "images",
+  "books",
   "trash",
   "applets",
   "settings",

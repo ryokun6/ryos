@@ -17,6 +17,8 @@ export function FinderHiddenFileInput({
       accept={
         currentPath === "/Applets"
           ? ".app,.gz,.html,.htm"
+          : currentPath === "/Books"
+          ? ".epub,application/epub+zip"
           : ".app,.gz,.txt,.md,text/*"
       }
       onChange={onChange}

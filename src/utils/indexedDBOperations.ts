@@ -24,6 +24,14 @@ const IMAGE_FILE_EXTENSIONS = new Set([
 
 const APPLET_FILE_EXTENSIONS = new Set(["app", "html", "htm"]);
 
+const BOOK_FILE_EXTENSIONS = new Set(["epub"]);
+
+const BOOK_FILE_TYPES = new Set([
+  "epub",
+  "book",
+  "application/epub+zip",
+]);
+
 const IMAGE_FILE_TYPES = new Set([
   "image",
   "png",
@@ -221,6 +229,7 @@ export function getStoreForFile(
 ): string | null {
   if (filePath.startsWith("/Documents/")) return STORES.DOCUMENTS;
   if (filePath.startsWith("/Images/")) return STORES.IMAGES;
+  if (filePath.startsWith("/Books/")) return STORES.BOOKS;
   if (filePath.startsWith("/Applets/")) return STORES.APPLETS;
   if (!filePath.startsWith("/Downloads/")) return null;
 
@@ -232,6 +241,13 @@ export function getStoreForFile(
     IMAGE_FILE_EXTENSIONS.has(extension)
   ) {
     return STORES.IMAGES;
+  }
+
+  if (
+    BOOK_FILE_TYPES.has(normalizedType) ||
+    BOOK_FILE_EXTENSIONS.has(extension)
+  ) {
+    return STORES.BOOKS;
   }
 
   if (

@@ -6,6 +6,18 @@
         "loginPrompt": "請使用管理員帳戶登入。",
         "title": "存取遭拒"
       },
+      "auditLog": {
+        "action": "操作",
+        "details": "詳細資訊",
+        "empty": "尚未記錄任何管理員操作",
+        "loadFailed": "無法載入稽核記錄",
+        "loading": "正在載入稽核記錄…",
+        "refresh": "重新整理",
+        "retry": "重試",
+        "target": "目標",
+        "time": "時間",
+        "title": "稽核記錄"
+      },
       "cursorAgents": {
         "colLink": "連結",
         "colModel": "模型",
@@ -312,6 +324,7 @@
         "websocket": "WebSocket (Pusher)"
       },
       "sidebar": {
+        "auditLog": "稽核記錄",
         "cursorAgents": "Cursor 智能體",
         "dashboard": "儀表板",
         "messagesCount": "{{count}} 則訊息",
@@ -364,6 +377,8 @@
         "noSongsToExport": "沒有歌曲可供匯出"
       },
       "statusBar": {
+        "auditLogCount_one": "{{count}} 筆項目",
+        "auditLogCount_other": "{{count}} 筆項目",
         "cursorAgentsCount": "{{count}} 個 Cursor 智能體",
         "cursorAgentsCount_plural": "{{count}} 個 Cursor 智能體",
         "loggedInAs": "已登入為 {{username}}",
@@ -541,6 +556,82 @@
         "updatedWeeksAgo": "{{weeks}} 週前更新",
         "updatedYearsAgo": "{{years}} 年前更新",
         "updatedYesterday": "昨天更新"
+      }
+    },
+    "books": {
+      "columns": {
+        "auto": "自動",
+        "double": "雙頁",
+        "single": "單頁"
+      },
+      "description": "閱讀 EPUB 書籍",
+      "help": {
+        "bookshelf": {
+          "description": "匯入的 EPUB 書籍排列在木製書架上。點擊書籍即可開啟並開始閱讀。",
+          "title": "您的書架"
+        },
+        "darkMode": {
+          "description": "閱讀器會跟隨系統佈景主題，或者您可以從「檢視 ▸ 佈景主題」中設定淺色、懷舊褐色或深色頁面。",
+          "title": "深色模式"
+        },
+        "fonts": {
+          "description": "從「顯示」選單中選擇閱讀字體（包含 EB Garamond）、文字大小以及單欄或雙欄顯示。",
+          "title": "字體與版面"
+        },
+        "import": {
+          "description": "使用「檔案 ▸ 匯入」來加入 .epub 檔案。書籍會儲存至 /Books 並同步至雲端。",
+          "title": "匯入 EPUB"
+        },
+        "pageTurn": {
+          "description": "點擊頁面邊緣、使用方向鍵或滑動來翻閱書籍。",
+          "title": "翻頁"
+        },
+        "progress": {
+          "description": "系統會自動儲存您的閱讀進度，並在下次開啟書籍時恢復。",
+          "title": "閱讀進度"
+        }
+      },
+      "import": {
+        "title": "匯入 EPUB"
+      },
+      "menu": {
+        "aboutBooks": "關於「書籍」",
+        "backToShelf": "返回書架",
+        "booksHelp": "「書籍」說明",
+        "columns": "欄數",
+        "font": "字體",
+        "import": "匯入 EPUB…",
+        "textSize": "文字大小",
+        "textSizeDecrease": "縮小",
+        "textSizeIncrease": "放大",
+        "textSizeReset": "預設大小",
+        "theme": "主題"
+      },
+      "name": "書籍",
+      "reader": {
+        "backToShelf": "書架"
+      },
+      "shelf": {
+        "emptyHint": "點擊「新增書籍」以匯入 EPUB。",
+        "emptyTitle": "您的書架是空的",
+        "finished": "已完成",
+        "gridView": "[TODO] Grid View",
+        "import": "新增書籍",
+        "listView": "[TODO] List View",
+        "percentRead": "{{percent}}%"
+      },
+      "theme": {
+        "auto": "自動",
+        "dark": "深色",
+        "light": "淺色",
+        "sepia": "復古"
+      },
+      "title": "書籍",
+      "toasts": {
+        "importFailed": "匯入書籍失敗",
+        "imported": "書籍已匯入",
+        "invalidFile": "不支援的檔案",
+        "invalidFileDesc": "僅能匯入 .epub 格式的書籍。"
       }
     },
     "calendar": {
@@ -1491,8 +1582,8 @@
       "ipodVolume": "iPod 音量",
       "logIn": "登入",
       "logOut": "登出",
-      "logOutOfAllDevices": "登出所有裝置",
       "logOutAll": "全部登出",
+      "logOutOfAllDevices": "登出所有裝置",
       "logOutOfAllDevicesRowDescription": "在所有裝置上登出您的 ryOS 帳號",
       "logOutRowDescription": "在此裝置登出您的 ryOS 帳戶",
       "loggedInToRyOS": "已登入 ryOS",
@@ -2003,6 +2094,7 @@
       "folders": {
         "applets": "小程式",
         "applications": "應用程式",
+        "books": "書籍",
         "desktop": "桌面",
         "documents": "文件",
         "downloads": "下載",
