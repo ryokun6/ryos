@@ -64,6 +64,10 @@ export type MenuItemDescriptor =
       label: ReactNode;
       items: MenuItemDescriptor[];
       disabled?: boolean;
+      /** Extra classes merged onto the shared submenu trigger class. */
+      className?: string;
+      /** Extra classes merged onto the submenu content container. */
+      contentClassName?: string;
     };
 
 export type MenuDescriptor = {
@@ -130,11 +134,11 @@ function renderItems(items: MenuItemDescriptor[]) {
           <MenubarSub key={index}>
             <MenubarSubTrigger
               disabled={item.disabled}
-              className={MENUBAR_ITEM_CLASS}
+              className={cn(MENUBAR_ITEM_CLASS, item.className)}
             >
               {item.label}
             </MenubarSubTrigger>
-            <MenubarSubContent className="px-0">
+            <MenubarSubContent className={cn("px-0", item.contentClassName)}>
               {renderItems(item.items)}
             </MenubarSubContent>
           </MenubarSub>

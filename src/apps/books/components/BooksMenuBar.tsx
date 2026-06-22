@@ -1,27 +1,10 @@
 import { useTranslation } from "react-i18next";
-import {
-  MenubarCheckboxItem,
-  MenubarContent,
-  MenubarItem,
-  MenubarMenu,
-  MenubarSeparator,
-  MenubarSub,
-  MenubarSubContent,
-  MenubarSubTrigger,
-  MenubarTrigger,
-} from "@/components/ui/menubar";
 import { AppMenuBarShell } from "@/components/shared/menubar/AppMenuBarShell";
 import {
   AppMenuBarMenus,
   type MenuDescriptor,
 } from "@/components/shared/menubar/AppMenuBarMenus";
-import {
-  MENUBAR_ITEM_CLASS,
-  MENUBAR_SEPARATOR_CLASS,
-  MENUBAR_TRIGGER_CLASS,
-} from "@/components/shared/menubar/menubarStyles";
 import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
-import { cn } from "@/lib/utils";
 import {
   BOOK_FONTS,
   type BookFontOption,
@@ -194,6 +177,60 @@ export function BooksMenuBar({
 
   const chapters = navigationState.chapters;
   const canNavigateReader = isReading && navigationState.isReady;
+  const goMenu: MenuDescriptor = {
+    label: t("common.menu.go"),
+    items: [
+      {
+        type: "action",
+        label: t("apps.books.menu.previousPage"),
+        onClick: onGoToPreviousPage,
+        disabled: !canNavigateReader || !navigationState.canGoPreviousPage,
+      },
+      {
+        type: "action",
+        label: t("apps.books.menu.nextPage"),
+        onClick: onGoToNextPage,
+        disabled: !canNavigateReader || !navigationState.canGoNextPage,
+      },
+      { type: "separator" },
+      {
+        type: "submenu",
+        label: t("apps.books.menu.chapters"),
+        disabled: !canNavigateReader || chapters.length === 0,
+        className:
+          "data-[state=open]:bg-[var(--os-color-selection-bg)] data-[state=open]:text-[var(--os-color-selection-text)]",
+        contentClassName:
+          "max-w-[260px] sm:max-w-[320px] max-h-[400px] overflow-y-auto",
+        items: [
+          {
+            type: "radioGroup",
+            value:
+              navigationState.currentChapterIndex >= 0
+                ? String(navigationState.currentChapterIndex)
+                : "",
+            onValueChange: (value) => {
+              const index = Number(value);
+              const chapter = chapters[index];
+              if (chapter) onGoToChapter(chapter.href);
+            },
+            options: chapters.map((chapter, index) => ({
+              value: String(index),
+              label: (
+                <span
+                  className="truncate min-w-0"
+                  style={{ paddingLeft: `${chapter.depth * 12}px` }}
+                >
+                  {chapter.label}
+                </span>
+              ),
+              className:
+                "text-md h-6 pr-3 truncate max-w-[260px] sm:max-w-[320px]",
+            })),
+          },
+        ],
+      },
+    ],
+  };
 
   return (
     <AppMenuBarShell
@@ -208,59 +245,7 @@ export function BooksMenuBar({
       onShowHelp={onShowHelp}
       onShowAbout={onShowAbout}
     >
-      <AppMenuBarMenus menus={[fileMenu, viewMenu]} />
-      <MenubarMenu>
-        <MenubarTrigger className={MENUBAR_TRIGGER_CLASS}>
-          {t("common.menu.go")}
-        </MenubarTrigger>
-        <MenubarContent align="start" sideOffset={1} className="px-0">
-          <MenubarItem
-            onClick={onGoToPreviousPage}
-            disabled={!canNavigateReader || !navigationState.canGoPreviousPage}
-            className={MENUBAR_ITEM_CLASS}
-          >
-            {t("apps.books.menu.previousPage")}
-          </MenubarItem>
-          <MenubarItem
-            onClick={onGoToNextPage}
-            disabled={!canNavigateReader || !navigationState.canGoNextPage}
-            className={MENUBAR_ITEM_CLASS}
-          >
-            {t("apps.books.menu.nextPage")}
-          </MenubarItem>
-          <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
-          <MenubarSub>
-            <MenubarSubTrigger
-              disabled={!canNavigateReader || chapters.length === 0}
-              className={cn(
-                MENUBAR_ITEM_CLASS,
-                "data-[state=open]:bg-[var(--os-color-selection-bg)] data-[state=open]:text-[var(--os-color-selection-text)]"
-              )}
-            >
-              {t("apps.books.menu.chapters")}
-            </MenubarSubTrigger>
-            <MenubarSubContent className="px-0 max-w-[260px] sm:max-w-[320px] max-h-[400px] overflow-y-auto">
-              {chapters.map((chapter, index) => (
-                <MenubarCheckboxItem
-                  key={`${chapter.id}-${index}`}
-                  checked={index === navigationState.currentChapterIndex}
-                  onCheckedChange={() => onGoToChapter(chapter.href)}
-                  className={cn(
-                    "text-md h-6 pr-3 truncate max-w-[260px] sm:max-w-[320px]"
-                  )}
-                >
-                  <span
-                    className="truncate min-w-0"
-                    style={{ paddingLeft: `${chapter.depth * 12}px` }}
-                  >
-                    {chapter.label}
-                  </span>
-                </MenubarCheckboxItem>
-              ))}
-            </MenubarSubContent>
-          </MenubarSub>
-        </MenubarContent>
-      </MenubarMenu>
+      <AppMenuBarMenus menus={[fileMenu, viewMenu, goMenu]} />
     </AppMenuBarShell>
   );
 }
