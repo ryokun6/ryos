@@ -148,6 +148,12 @@ async function upsertStoreItems(
   items: StoreItemWithKey[]
 ): Promise<void> {
   if (items.length === 0) return;
+  const restoredItems = await Promise.all(
+    items.map(async (item) => ({
+      key: item.key,
+      value: await prepareStoreValueForWrite(storeName, deserializeStoreItem(item)),
+    }))
+  );
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(storeName, "readwrite");
     const store = transaction.objectStore(storeName);
@@ -156,14 +162,45 @@ async function upsertStoreItems(
     transaction.onabort = () =>
       reject(transaction.error || new Error(`Transaction aborted: ${storeName}`));
     try {
-      for (const item of items) {
-        store.put(deserializeStoreItem(item), item.key);
+      for (const item of restoredItems) {
+        store.put(item.value, item.key);
       }
     } catch (error) {
       transaction.abort();
       reject(error);
     }
   });
+}
+
+function prepareStoreItemForSync(
+  storeName: string,
+  item: StoreItemWithKey
+): StoreItemWithKey {
+  if (storeName === STORES.BOOKS && item.value.content instanceof ArrayBuffer) {
+    return {
+      key: item.key,
+      value: {
+        ...item.value,
+        content: new Blob([item.value.content], {
+          type: "application/epub+zip",
+        }),
+      },
+    };
+  }
+  return item;
+}
+
+async function prepareStoreValueForWrite(
+  storeName: string,
+  value: Record<string, unknown>
+): Promise<Record<string, unknown>> {
+  if (storeName === STORES.BOOKS && value.content instanceof Blob) {
+    return {
+      ...value,
+      content: await value.content.arrayBuffer(),
+    };
+  }
+  return value;
 }
 
 async function deleteStoreItemsByKey(
@@ -1494,7 +1531,11 @@ function createBlobCodec(
       // Blob codec collect returns serialized items keyed by sync key; the
       // engine converts them to `{ blob: ref }` docs after content upload.
       const db = requireDb(ctx, namespace);
-      const items = await serializeStoreItems(await readStoreItems(db, storeName));
+      const items = await serializeStoreItems(
+        (await readStoreItems(db, storeName)).map((item) =>
+          prepareStoreItemForSync(storeName, item)
+        )
+      );
       const docs = new Map<string, unknown>();
       for (const item of items) {
         if (item.key) {

@@ -7,14 +7,25 @@ export interface IndexedDBStoreItemWithKey {
   value: IndexedDBStoreItem;
 }
 
-export const blobToBase64 = (blob: Blob): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result as string);
-    reader.onerror = () =>
-      reject(reader.error || new Error("Failed to serialize blob"));
-    reader.readAsDataURL(blob);
-  });
+const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 0x8000;
+  const chunks: string[] = [];
+  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+    let chunk = "";
+    const end = Math.min(offset + chunkSize, bytes.length);
+    for (let index = offset; index < end; index += 1) {
+      chunk += String.fromCharCode(bytes[index]);
+    }
+    chunks.push(chunk);
+  }
+  return btoa(chunks.join(""));
+};
+
+export const blobToBase64 = async (blob: Blob): Promise<string> => {
+  const base64 = arrayBufferToBase64(await blob.arrayBuffer());
+  return `data:${blob.type || "application/octet-stream"};base64,${base64}`;
+};
 
 export const base64ToBlob = (dataUrl: string): Blob => {
   const [meta, base64] = dataUrl.split(",");
