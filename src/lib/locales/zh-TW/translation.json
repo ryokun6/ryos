@@ -2076,6 +2076,7 @@
       },
       "fileTypes": {
         "application": "應用程式",
+        "book": "書籍",
         "bmpImage": "BMP 影像",
         "directory": "目錄",
         "document": "檔案",

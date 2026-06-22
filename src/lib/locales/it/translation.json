@@ -2076,6 +2076,7 @@
       },
       "fileTypes": {
         "application": "Applicazione",
+        "book": "Libro",
         "bmpImage": "Immagine BMP",
         "directory": "Cartella",
         "document": "Documento",

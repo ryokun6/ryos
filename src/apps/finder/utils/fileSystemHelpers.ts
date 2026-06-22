@@ -55,6 +55,16 @@ export const DEFAULT_FILE_PATHS = new Set([
   "/Images/susan-kare.png",
 ]);
 
+export const BOOK_FILE_ICON_PATH = "/icons/default/books.png";
+
+export function isEpubFile(fileName: string, type?: string): boolean {
+  return (
+    fileName.toLowerCase().endsWith(".epub") ||
+    type === "epub" ||
+    type === "application/epub+zip"
+  );
+}
+
 export const getCloudSyncDomainForContentStore = (
   storeName: string
 ):
@@ -123,6 +133,8 @@ export function getFileTypeFromExtension(fileName: string): string {
     case "html":
     case "htm":
       return "html";
+    case "epub":
+      return "epub";
     default:
       return "unknown";
   }

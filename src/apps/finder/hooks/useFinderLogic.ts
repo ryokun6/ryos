@@ -112,6 +112,8 @@ const getFileType = (
       return t("apps.finder.fileTypes.quicktimeMovie");
     case "html":
       return t("apps.finder.fileTypes.htmlApplet");
+    case "epub":
+      return t("apps.finder.fileTypes.book");
     default:
       return t("apps.finder.fileTypes.unknown");
   }

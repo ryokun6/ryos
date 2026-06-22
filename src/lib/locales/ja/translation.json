@@ -2076,6 +2076,7 @@
       },
       "fileTypes": {
         "application": "アプリケーション",
+        "book": "本",
         "bmpImage": "BMP 画像",
         "directory": "ディレクトリ",
         "document": "ドキュメント",
