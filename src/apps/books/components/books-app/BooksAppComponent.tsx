@@ -3,7 +3,6 @@ import { SquaresFour } from "@phosphor-icons/react";
 import type { AppProps, BooksInitialData } from "@/apps/base/types";
 import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { AppHelpAboutDialogs } from "@/components/shared/AppHelpAboutDialogs";
-import { getTranslatedAppName } from "@/utils/i18n";
 import { appMetadata } from "../../metadata";
 import { useBooksLogic } from "../../hooks/useBooksLogic";
 import { BooksMenuBar } from "../BooksMenuBar";
@@ -113,10 +112,9 @@ export function BooksAppComponent({
       isForeground={isForeground}
       menuBar={menuBar}
       windowFrameProps={{
-        title:
-          isReading && activeBook
-            ? activeBookTitle || activeBook.name
-            : getTranslatedAppName("books"),
+        // Shelf has its own header, so the window titlebar shows nothing there;
+        // only the open book's title appears in the titlebar while reading.
+        title: isReading && activeBook ? activeBookTitle || activeBook.name : "",
         onClose,
         isForeground,
         appId: "books",
