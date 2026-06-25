@@ -22,6 +22,10 @@ import {
   formatRelativeTime,
   type RelativeTimeKeys,
 } from "@/utils/formatRelativeTime";
+import {
+  formatFetchingStatus,
+  formatUploadingStatus,
+} from "@/apps/control-panels/components/control-panels-app/syncUtils";
 
 const AUTO_SYNC_TIME_KEYS: RelativeTimeKeys = {
   justNow: "apps.control-panels.autoSync.justNow",
@@ -77,6 +81,8 @@ interface SyncCategoryActivity {
   category: CloudSyncCategory;
   isUploading: boolean;
   isDownloading: boolean;
+  uploadProgress: number | null;
+  downloadProgress: number | null;
 }
 
 export function CloudSyncIndicator() {
@@ -105,10 +111,24 @@ export function CloudSyncIndicator() {
       category,
       isUploading: categoryStatus[category].isUploading,
       isDownloading: categoryStatus[category].isDownloading,
+      uploadProgress: categoryStatus[category].uploadProgress,
+      downloadProgress: categoryStatus[category].downloadProgress,
     })
   ).filter((entry) => entry.isUploading || entry.isDownloading);
 
   const isCloudSyncActive = isCheckingRemote || activeCategories.length > 0;
+  const activeTransferProgress = activeCategories
+    .map((entry) =>
+      entry.isUploading ? entry.uploadProgress : entry.downloadProgress
+    )
+    .filter((progress): progress is number => typeof progress === "number");
+  const triggerTransferProgress =
+    activeTransferProgress.length > 0
+      ? Math.round(
+          activeTransferProgress.reduce((sum, progress) => sum + progress, 0) /
+            activeTransferProgress.length
+        )
+      : null;
 
   const syncLabel = t("apps.control-panels.autoSync.title");
 
@@ -138,7 +158,7 @@ export function CloudSyncIndicator() {
             initial={{ opacity: 0, scale: 0.85 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className="flex items-center justify-center"
+            className="flex items-center justify-center gap-1"
           >
             <ArrowsClockwise
               aria-hidden="true"
@@ -151,6 +171,11 @@ export function CloudSyncIndicator() {
                   : undefined,
               }}
             />
+            {triggerTransferProgress !== null && (
+              <span className="min-w-[2.1em] text-[10px] leading-none tabular-nums opacity-80">
+                {triggerTransferProgress}%
+              </span>
+            )}
           </motion.span>
         </MenubarTrigger>
         <MenubarContent
@@ -159,36 +184,63 @@ export function CloudSyncIndicator() {
           className="min-w-[200px]"
         >
           <AnimatePresence initial={false}>
-            {activeCategories.map(({ category, isUploading }) => {
-              const meta = SYNC_CATEGORY_META[category];
-              return (
-                <motion.div
-                  key={category}
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.15, ease: "easeOut" }}
-                  className="overflow-hidden"
-                >
-                  <MenubarItem
-                    className="text-md h-6 px-3 flex items-center gap-2"
-                    onSelect={(event) => event.preventDefault()}
+            {activeCategories.map(
+              ({ category, isUploading, uploadProgress, downloadProgress }) => {
+                const meta = SYNC_CATEGORY_META[category];
+                const activeProgress = isUploading
+                  ? uploadProgress
+                  : downloadProgress;
+                const progress =
+                  typeof activeProgress === "number"
+                    ? Math.round(Math.max(0, Math.min(100, activeProgress)))
+                    : null;
+                const transferLabel = isUploading
+                  ? t("apps.control-panels.autoSync.uploading")
+                  : t("apps.control-panels.autoSync.fetching");
+                const transferStatusLabel = isUploading
+                  ? formatUploadingStatus(uploadProgress, t)
+                  : formatFetchingStatus(downloadProgress, t);
+                return (
+                  <motion.div
+                    key={category}
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.15, ease: "easeOut" }}
+                    className="overflow-hidden"
                   >
-                    <ThemedIcon
-                      name={getAppIconPath(meta.appId)}
-                      alt=""
-                      className="size-4 shrink-0 object-contain"
-                    />
-                    <span>{t(meta.labelKey)}</span>
-                    <span className="ml-auto pl-3 text-xs opacity-60">
-                      {isUploading
-                        ? t("apps.control-panels.autoSync.uploading")
-                        : t("apps.control-panels.autoSync.fetching")}
-                    </span>
-                  </MenubarItem>
-                </motion.div>
-              );
-            })}
+                    <MenubarItem
+                      className="text-md min-h-7 px-3 flex items-center gap-2"
+                      onSelect={(event) => event.preventDefault()}
+                    >
+                      <ThemedIcon
+                        name={getAppIconPath(meta.appId)}
+                        alt=""
+                        className="size-4 shrink-0 object-contain"
+                      />
+                      <span className="min-w-0 flex-1">{t(meta.labelKey)}</span>
+                      <span
+                        className="ml-auto pl-3 text-xs opacity-60 flex items-center gap-1.5"
+                        aria-label={transferStatusLabel}
+                      >
+                        <span>{transferLabel}</span>
+                        {progress !== null && (
+                          <span
+                            className="block h-1 w-12 overflow-hidden rounded-full bg-black/15 os-dark:bg-white/20"
+                            aria-hidden="true"
+                          >
+                            <span
+                              className="block h-full rounded-full bg-current opacity-70"
+                              style={{ width: `${progress}%` }}
+                            />
+                          </span>
+                        )}
+                      </span>
+                    </MenubarItem>
+                  </motion.div>
+                );
+              }
+            )}
           </AnimatePresence>
           {activeCategories.length === 0 && (
             <MenubarItem disabled className="text-md h-6 px-3 opacity-70">

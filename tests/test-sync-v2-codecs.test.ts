@@ -15,6 +15,12 @@ import {
   mergePersistedCloudSyncCategoryStatus,
   useCloudSyncStore,
 } from "../src/stores/useCloudSyncStore";
+import {
+  formatFetchingStatus,
+  formatSyncStatus,
+  formatUploadingStatus,
+} from "../src/apps/control-panels/components/control-panels-app/syncUtils";
+import { downloadBlobItem, gzipJson } from "../src/sync/blobs";
 
 /**
  * Cloud Sync v2 codec round-trips: collect must decompose store state into
@@ -497,6 +503,8 @@ describe("cloud sync store", () => {
     } as never);
     expect(merged.files.lastUploadedAt).toBe("2024-06-01T00:00:00.000Z");
     expect(merged.files.isUploading).toBe(false); // transient flags reset
+    expect(merged.files.uploadProgress).toBeNull();
+    expect(merged.files.downloadProgress).toBeNull();
     expect(merged.maps).toBeDefined();
     expect(merged.tv).toBeDefined();
   });
@@ -507,5 +515,112 @@ describe("cloud sync store", () => {
     expect(useCloudSyncStore.getState().isCategoryEnabled("tv")).toBe(false);
     store.setCategoryEnabled("tv", true);
     expect(useCloudSyncStore.getState().isCategoryEnabled("tv")).toBe(true);
+  });
+
+  test("upload progress is clamped and cleared with upload activity", () => {
+    const store = useCloudSyncStore.getState();
+    store.markCategorySyncing("files", "upload", true);
+    store.markCategoryUploadProgress("files", 41.6);
+    expect(useCloudSyncStore.getState().categoryStatus.files.uploadProgress).toBe(
+      41.6
+    );
+
+    store.markCategoryUploadProgress("files", 140);
+    expect(useCloudSyncStore.getState().categoryStatus.files.uploadProgress).toBe(
+      100
+    );
+
+    store.markCategorySyncing("files", "upload", false);
+    const status = useCloudSyncStore.getState().categoryStatus.files;
+    expect(status.isUploading).toBe(false);
+    expect(status.uploadProgress).toBeNull();
+  });
+
+  test("download progress is clamped and cleared with download activity", () => {
+    const store = useCloudSyncStore.getState();
+    store.markCategorySyncing("files", "download", true);
+    store.markCategoryDownloadProgress("files", 58.4);
+    expect(
+      useCloudSyncStore.getState().categoryStatus.files.downloadProgress
+    ).toBe(58.4);
+
+    store.markCategoryDownloadProgress("files", -20);
+    expect(
+      useCloudSyncStore.getState().categoryStatus.files.downloadProgress
+    ).toBe(0);
+
+    store.markCategorySyncing("files", "download", false);
+    const status = useCloudSyncStore.getState().categoryStatus.files;
+    expect(status.isDownloading).toBe(false);
+    expect(status.downloadProgress).toBeNull();
+  });
+
+  test("sync status includes upload percentage when available", () => {
+    const t = (key: string) => {
+      const labels: Record<string, string> = {
+        "apps.control-panels.autoSync.fetching": "Fetching",
+        "apps.control-panels.autoSync.uploading": "Uploading",
+        "apps.control-panels.autoSync.neverFetched": "Never fetched",
+        "apps.control-panels.autoSync.neverUploaded": "Never uploaded",
+      };
+      return labels[key] || key;
+    };
+
+    expect(formatUploadingStatus(41.6, t)).toBe("Uploading 42%");
+    expect(formatFetchingStatus(58.4, t)).toBe("Fetching 58%");
+    expect(
+      formatSyncStatus(
+        {
+          lastUploadedAt: null,
+          lastFetchedAt: null,
+          lastAppliedRemoteAt: null,
+          isUploading: true,
+          isDownloading: false,
+          uploadProgress: 41.6,
+        },
+        t
+      )
+    ).toBe("Uploading 42% · Never fetched");
+    expect(
+      formatSyncStatus(
+        {
+          lastUploadedAt: null,
+          lastFetchedAt: null,
+          lastAppliedRemoteAt: null,
+          isUploading: false,
+          isDownloading: true,
+          downloadProgress: 58.4,
+        },
+        t
+      )
+    ).toBe("Never uploaded · Fetching 58%");
+  });
+});
+
+describe("cloud sync blob downloads", () => {
+  test("downloadBlobItem reports byte progress", async () => {
+    const originalFetch = globalThis.fetch;
+    const payload = { key: "book-1", value: { title: "Synced Book" } };
+    const compressed = await gzipJson(payload);
+    const progress: number[] = [];
+
+    globalThis.fetch = (async () =>
+      new Response(new Blob([compressed]), {
+        status: 200,
+        headers: { "content-length": String(compressed.byteLength) },
+      })) as typeof fetch;
+
+    try {
+      const item = await downloadBlobItem("https://example.test/book.gz", {
+        expectedBytes: compressed.byteLength,
+        onProgress: (next) => progress.push(next.percentage),
+      });
+
+      expect(item).toEqual(payload);
+      expect(progress[0]).toBe(0);
+      expect(progress.at(-1)).toBe(100);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
   });
 });
