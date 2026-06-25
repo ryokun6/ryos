@@ -413,6 +413,7 @@ export function WindowFrame({
                     isForeground={isForeground}
                     isNoTitlebar={isNoTitlebar}
                     disableTitlebarAutoHide={disableTitlebarAutoHide}
+                    isGlassNoTitlebar={isGlassNoTitlebar}
                     isTitlebarHovered={isTitlebarHovered}
                     effectiveTransparentBackground={
                       effectiveTransparentBackground

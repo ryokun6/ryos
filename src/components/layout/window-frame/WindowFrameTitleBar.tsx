@@ -15,6 +15,7 @@ export interface WindowFrameTitleBarProps {
   isForeground: boolean;
   isNoTitlebar: boolean;
   disableTitlebarAutoHide: boolean;
+  isGlassNoTitlebar: boolean;
   effectiveTransparentBackground: boolean;
   isBrushedMetal: boolean;
   isGlassSurface: boolean;
@@ -48,6 +49,7 @@ export function WindowFrameTitleBar({
   isForeground,
   isNoTitlebar,
   disableTitlebarAutoHide,
+  isGlassNoTitlebar,
   effectiveTransparentBackground,
   isBrushedMetal,
   isGlassSurface,
@@ -219,6 +221,7 @@ export function WindowFrameTitleBar({
             isNoTitlebar
               ? "absolute top-0 left-0 right-0 transition-opacity duration-200"
               : "shrink-0",
+            isGlassNoTitlebar && "window-titlebar-notitlebar-glass",
             effectiveTransparentBackground && !isNoTitlebar && "mt-0"
           )}
           style={{

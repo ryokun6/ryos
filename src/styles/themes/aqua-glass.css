@@ -235,7 +235,7 @@
 
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
   .window.window-material-notitlebar-glass
-  > .title-bar.absolute {
+  > .window-titlebar-notitlebar-glass {
   border-radius: var(--os-glass-r-metal) var(--os-glass-r-metal) 0 0 !important;
 }
 
