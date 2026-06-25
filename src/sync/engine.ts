@@ -592,6 +592,7 @@ export class CloudSyncEngine {
   ): Promise<void> {
     const codec = SYNC_CODECS[namespace];
     if (!isBlobCodec(codec)) return;
+    const syncStore = useCloudSyncStore.getState();
 
     const prefix = `${namespace}/item:`;
     const deletes: string[] = [];
