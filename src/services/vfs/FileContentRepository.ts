@@ -99,22 +99,52 @@ export async function readImageBlobContent(path: string): Promise<Blob | null> {
   return isBlobLike(item?.content) ? item.content : null;
 }
 
-export async function readBookBlobContent(path: string): Promise<Blob | null> {
-  const uuid = getFileContentUuid(path);
-  if (uuid) {
-    // Safari can throw "UnknownError: Internal error" just by reading a Blob
-    // previously persisted in IndexedDB. For bundled default books, overwrite
-    // from the same-origin asset before any read so the bad record is replaced
-    // without touching it.
-    await ensureFileContentLoaded(path, uuid, { forceReload: true });
+function blobFromBookContent(
+  content: StoredContent["content"] | undefined
+): Blob | null {
+  if (content instanceof ArrayBuffer) {
+    return new Blob([content], { type: "application/epub+zip" });
   }
+  return isBlobLike(content) ? content : null;
+}
+
+async function isBlobReadable(blob: Blob): Promise<boolean> {
+  try {
+    const probe =
+      typeof blob.slice === "function" ? blob.slice(0, Math.min(blob.size, 1)) : blob;
+    await probe.arrayBuffer();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function readBookBlobContent(path: string): Promise<Blob | null> {
   const item = await readContentForPath<StoredContent>(path, {
     expectedStore: STORES.BOOKS,
   });
-  if (item?.content instanceof ArrayBuffer) {
-    return new Blob([item.content], { type: "application/epub+zip" });
+  const blob = blobFromBookContent(item?.content);
+  if (!blob) {
+    return null;
   }
-  return isBlobLike(item?.content) ? item.content : null;
+  if (item?.content instanceof ArrayBuffer || (await isBlobReadable(blob))) {
+    return blob;
+  }
+
+  const uuid = getFileContentUuid(path);
+  if (!uuid) return null;
+
+  // Safari can throw "UnknownError: Internal error" when reading a Blob
+  // previously persisted in IndexedDB. Only pay the reload cost after proving
+  // the stored Blob is unreadable; bundled defaults can then recover from the
+  // same-origin asset without re-fetching on every normal read.
+  const recovered = await ensureFileContentLoaded(path, uuid, { forceReload: true });
+  if (!recovered) return null;
+
+  const recoveredItem = await readContentForPath<StoredContent>(path, {
+    expectedStore: STORES.BOOKS,
+  });
+  return blobFromBookContent(recoveredItem?.content);
 }
 
 export async function readAppletTextContent(path: string): Promise<string | null> {
