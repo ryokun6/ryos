@@ -184,54 +184,63 @@ export function CloudSyncIndicator() {
           className="min-w-[200px]"
         >
           <AnimatePresence initial={false}>
-            {activeCategories.map(({ category, isUploading, uploadProgress, downloadProgress }) => {
-              const meta = SYNC_CATEGORY_META[category];
-              const activeProgress = isUploading ? uploadProgress : downloadProgress;
-              const progress =
-                typeof activeProgress === "number"
-                  ? Math.round(Math.max(0, Math.min(100, activeProgress)))
-                  : null;
-              return (
-                <motion.div
-                  key={category}
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.15, ease: "easeOut" }}
-                  className="overflow-hidden"
-                >
-                  <MenubarItem
-                    className="text-md min-h-7 px-3 flex items-center gap-2"
-                    onSelect={(event) => event.preventDefault()}
+            {activeCategories.map(
+              ({ category, isUploading, uploadProgress, downloadProgress }) => {
+                const meta = SYNC_CATEGORY_META[category];
+                const activeProgress = isUploading
+                  ? uploadProgress
+                  : downloadProgress;
+                const progress =
+                  typeof activeProgress === "number"
+                    ? Math.round(Math.max(0, Math.min(100, activeProgress)))
+                    : null;
+                const transferLabel = isUploading
+                  ? t("apps.control-panels.autoSync.uploading")
+                  : t("apps.control-panels.autoSync.fetching");
+                const transferStatusLabel = isUploading
+                  ? formatUploadingStatus(uploadProgress, t)
+                  : formatFetchingStatus(downloadProgress, t);
+                return (
+                  <motion.div
+                    key={category}
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.15, ease: "easeOut" }}
+                    className="overflow-hidden"
                   >
-                    <ThemedIcon
-                      name={getAppIconPath(meta.appId)}
-                      alt=""
-                      className="size-4 shrink-0 object-contain"
-                    />
-                    <span className="min-w-0 flex-1">
-                      <span>{t(meta.labelKey)}</span>
-                      {progress !== null && (
-                        <span
-                          className="mt-1 block h-1 overflow-hidden rounded-full bg-black/15 os-dark:bg-white/20"
-                          aria-hidden="true"
-                        >
+                    <MenubarItem
+                      className="text-md min-h-7 px-3 flex items-center gap-2"
+                      onSelect={(event) => event.preventDefault()}
+                    >
+                      <ThemedIcon
+                        name={getAppIconPath(meta.appId)}
+                        alt=""
+                        className="size-4 shrink-0 object-contain"
+                      />
+                      <span className="min-w-0 flex-1">{t(meta.labelKey)}</span>
+                      <span
+                        className="ml-auto pl-3 text-xs opacity-60 flex items-center gap-1.5"
+                        aria-label={transferStatusLabel}
+                      >
+                        <span>{transferLabel}</span>
+                        {progress !== null && (
                           <span
-                            className="block h-full rounded-full bg-current opacity-70"
-                            style={{ width: `${progress}%` }}
-                          />
-                        </span>
-                      )}
-                    </span>
-                    <span className="ml-auto pl-3 text-xs tabular-nums opacity-60">
-                      {isUploading
-                        ? formatUploadingStatus(uploadProgress, t)
-                        : formatFetchingStatus(downloadProgress, t)}
-                    </span>
-                  </MenubarItem>
-                </motion.div>
-              );
-            })}
+                            className="block h-1 w-12 overflow-hidden rounded-full bg-black/15 os-dark:bg-white/20"
+                            aria-hidden="true"
+                          >
+                            <span
+                              className="block h-full rounded-full bg-current opacity-70"
+                              style={{ width: `${progress}%` }}
+                            />
+                          </span>
+                        )}
+                      </span>
+                    </MenubarItem>
+                  </motion.div>
+                );
+              }
+            )}
           </AnimatePresence>
           {activeCategories.length === 0 && (
             <MenubarItem disabled className="text-md h-6 px-3 opacity-70">
