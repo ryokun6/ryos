@@ -1,7 +1,17 @@
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, mock, test } from "bun:test";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  mock,
+  test,
+} from "bun:test";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import React from "react";
 import { createRoot, type Root } from "react-dom/client";
+import { dbOperations, STORES } from "../src/utils/indexedDB";
 
 let activeReads = 0;
 let maxActiveReads = 0;
@@ -35,8 +45,17 @@ mock.module("epubjs", () => ({
 
 const { useBookCover } = await import("../src/apps/books/utils/useBookCover");
 
-function CoverProbe({ path }: { path: string }) {
-  useBookCover(path, 1);
+function CoverProbe({
+  path,
+  onSnapshot,
+}: {
+  path: string;
+  onSnapshot?: (snapshot: ReturnType<typeof useBookCover>) => void;
+}) {
+  const snapshot = useBookCover(path, 1);
+  React.useEffect(() => {
+    onSnapshot?.(snapshot);
+  }, [onSnapshot, snapshot]);
   return null;
 }
 
@@ -101,5 +120,50 @@ describe("Books cover loading queue", () => {
 
     expect(readCalls).toBe(12);
     expect(maxActiveReads).toBeLessThanOrEqual(3);
+
+    const cached = await dbOperations.get<{ title?: string; author?: string }>(
+      STORES.BOOK_THUMBNAILS,
+      "/Books/queued-book-0.epub::1"
+    );
+    expect(cached).toMatchObject({ title: "T", author: "A" });
+  });
+
+  test("uses cached shelf thumbnail metadata without reading EPUB bytes", async () => {
+    const path = "/Books/cached-thumbnail.epub";
+    await dbOperations.put(
+      STORES.BOOK_THUMBNAILS,
+      {
+        version: 1,
+        title: "Cached title",
+        author: "Cached author",
+        coverBlob: null,
+      },
+      `${path}::1`
+    );
+
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    root = createRoot(host);
+    let latest: ReturnType<typeof useBookCover> | null = null;
+
+    root.render(
+      React.createElement(CoverProbe, {
+        path,
+        onSnapshot: (snapshot) => {
+          latest = snapshot;
+        },
+      })
+    );
+
+    await waitFor(
+      () => latest?.loading === false && latest.info?.title === "Cached title"
+    );
+
+    expect(latest?.info).toMatchObject({
+      title: "Cached title",
+      author: "Cached author",
+    });
+    expect(readCalls).toBe(0);
+    expect(epubCreates).toBe(0);
   });
 });
