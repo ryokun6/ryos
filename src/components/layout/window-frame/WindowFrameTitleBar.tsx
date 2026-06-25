@@ -221,11 +221,14 @@ export function WindowFrameTitleBar({
             isNoTitlebar
               ? "absolute top-0 left-0 right-0 transition-opacity duration-200"
               : "shrink-0",
-            isGlassNoTitlebar && "window-titlebar-notitlebar-glass",
             effectiveTransparentBackground && !isNoTitlebar && "mt-0"
           )}
           style={{
-            borderRadius: isNoTitlebar ? "8px 8px 0px 0px" : "8px 8px 0px 0px",
+            borderRadius: isNoTitlebar
+              ? isGlassNoTitlebar
+                ? "var(--os-glass-r-metal) var(--os-glass-r-metal) 0px 0px"
+                : "8px 8px 0px 0px"
+              : "8px 8px 0px 0px",
             // For notitlebar: gradient background for visibility, opacity based on hover
             ...(isNoTitlebar
               ? {

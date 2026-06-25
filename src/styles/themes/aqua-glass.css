@@ -226,19 +226,6 @@
   backdrop-filter: blur(26px) saturate(80%);
 }
 
-/* Immersive no-titlebar windows use the larger brushed-metal corner proportion
-   in Aqua Glass so map/video-like content clips with the same soft chrome arc. */
-:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
-  .window.window-material-notitlebar-glass {
-  border-radius: var(--os-glass-r-metal) !important;
-}
-
-:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
-  .window.window-material-notitlebar-glass
-  > .window-titlebar-notitlebar-glass {
-  border-radius: var(--os-glass-r-metal) var(--os-glass-r-metal) 0 0 !important;
-}
-
 /* Drop the hard titlebar divider — on a single frosted pane the seam reads as
    an ugly line, so the titlebar blends straight into the window body. */
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"]

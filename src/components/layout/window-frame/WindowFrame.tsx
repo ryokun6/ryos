@@ -401,6 +401,9 @@ export function WindowFrame({
                     ...(!isWindowsTheme
                       ? getSwipeStyle(isPhone, isSwiping, swipeDirection)
                       : undefined),
+                    ...(isGlassNoTitlebar
+                      ? { borderRadius: "var(--os-glass-r-metal)" }
+                      : undefined),
                   }}
                   onMouseEnter={noTitlebarMouseHandlers.onMouseEnter}
                   onMouseMove={noTitlebarMouseHandlers.onMouseMove}
