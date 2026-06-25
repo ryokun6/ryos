@@ -247,11 +247,23 @@ export function HelpDialog({
       >
         {isWindowsTheme ? (
           <>
+            <DialogTitle className="sr-only">
+              {t("common.dialog.help")}
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              {t("common.dialog.informationAboutApp")}
+            </DialogDescription>
             <DialogHeader>{t("common.dialog.help")}</DialogHeader>
             <div className="window-body overflow-hidden">{dialogContent}</div>
           </>
         ) : isMacTheme ? (
           <>
+            <DialogTitle className="sr-only">
+              {t("common.dialog.help")}
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              {t("common.dialog.informationAboutApp")}
+            </DialogDescription>
             <DialogHeader>{t("common.dialog.help")}</DialogHeader>
             {dialogContent}
           </>

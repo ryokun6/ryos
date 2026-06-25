@@ -10,6 +10,7 @@ import { useSound, Sounds } from "@/hooks/useSound";
 import { useLatestRef } from "@/hooks/useLatestRef";
 import { useTranslation } from "react-i18next";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
+import { useAppHelpAboutDialogs } from "@/hooks/useAppHelpAboutDialogs";
 import { helpItems } from "..";
 import { useShallow } from "zustand/react/shallow";
 import { track } from "@/utils/analytics";
@@ -72,8 +73,6 @@ export const useSynthLogic = ({
   const handleKeyUpRef = useRef<(e: KeyboardEvent) => void>(() => {});
 
   interface SynthUiState {
-    isHelpOpen: boolean;
-    isAboutOpen: boolean;
     isPresetDialogOpen: boolean;
     isSavingNewPreset: boolean;
     presetName: string;
@@ -83,8 +82,6 @@ export const useSynthLogic = ({
   }
 
   const initialState: SynthUiState = {
-    isHelpOpen: false,
-    isAboutOpen: false,
     isPresetDialogOpen: false,
     isSavingNewPreset: true,
     presetName: "",
@@ -106,8 +103,6 @@ export const useSynthLogic = ({
 
   const [uiState, dispatchUi] = useReducer(reducer, initialState);
   const {
-    isHelpOpen,
-    isAboutOpen,
     isPresetDialogOpen,
     isSavingNewPreset,
     presetName,
@@ -115,12 +110,12 @@ export const useSynthLogic = ({
     isControlsVisible,
     visibleKeyCount,
   } = uiState;
-  const setIsHelpOpen = useCallback((value: boolean) => {
-    dispatchUi({ type: "patch", payload: { isHelpOpen: value } });
-  }, []);
-  const setIsAboutOpen = useCallback((value: boolean) => {
-    dispatchUi({ type: "patch", payload: { isAboutOpen: value } });
-  }, []);
+  const {
+    isHelpDialogOpen: isHelpOpen,
+    setIsHelpDialogOpen: setIsHelpOpen,
+    isAboutDialogOpen: isAboutOpen,
+    setIsAboutDialogOpen: setIsAboutOpen,
+  } = useAppHelpAboutDialogs();
   const setIsPresetDialogOpen = useCallback((value: boolean) => {
     dispatchUi({ type: "patch", payload: { isPresetDialogOpen: value } });
   }, []);

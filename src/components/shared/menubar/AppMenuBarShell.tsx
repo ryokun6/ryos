@@ -41,23 +41,25 @@ export function AppMenuBarShell({
   onShowAbout,
 }: AppMenuBarShellProps) {
   return (
-    <MenuBar inWindowFrame={isWindowsTheme}>
-      {children}
-      <AppMenuBarHelpMenu
-        helpItemLabel={helpItemLabel}
-        aboutItemLabel={aboutItemLabel}
-        shareItemLabel={shareItemLabel}
-        isMacOSTheme={isMacOSTheme}
-        onShowHelp={onShowHelp}
-        onShowAbout={onShowAbout}
-        onOpenShareDialog={() => setIsShareDialogOpen(true)}
-      />
+    <>
+      <MenuBar inWindowFrame={isWindowsTheme}>
+        {children}
+        <AppMenuBarHelpMenu
+          helpItemLabel={helpItemLabel}
+          aboutItemLabel={aboutItemLabel}
+          shareItemLabel={shareItemLabel}
+          isMacOSTheme={isMacOSTheme}
+          onShowHelp={onShowHelp}
+          onShowAbout={onShowAbout}
+          onOpenShareDialog={() => setIsShareDialogOpen(true)}
+        />
+      </MenuBar>
       <AppShareItemDialog
         appId={appId}
         appName={appName}
         isOpen={isShareDialogOpen}
         onClose={() => setIsShareDialogOpen(false)}
       />
-    </MenuBar>
+    </>
   );
 }

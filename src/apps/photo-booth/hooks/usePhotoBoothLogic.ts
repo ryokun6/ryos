@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { TouchEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
+import { useAppHelpAboutDialogs } from "@/hooks/useAppHelpAboutDialogs";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
 import { usePhotoBoothStore } from "@/stores/usePhotoBoothStore";
@@ -70,8 +71,12 @@ export function usePhotoBoothLogic({
 }: UsePhotoBoothLogicProps) {
   const { t } = useTranslation();
   const translatedHelpItems = useTranslatedHelpItems("photo-booth", helpItems);
-  const [showHelp, setShowHelp] = useState(false);
-  const [showAbout, setShowAbout] = useState(false);
+  const {
+    isHelpDialogOpen: showHelp,
+    setIsHelpDialogOpen: setShowHelp,
+    isAboutDialogOpen: showAbout,
+    setIsAboutDialogOpen: setShowAbout,
+  } = useAppHelpAboutDialogs();
   const [showEffects, setShowEffects] = useState(false);
   const [showPhotoStrip, setShowPhotoStrip] = useState(false);
   const [currentEffectsPage, setCurrentEffectsPage] = useState(0); // 0 = CSS filters, 1 = distortions

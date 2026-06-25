@@ -434,8 +434,6 @@ interface InternetExplorerStore {
   // Dialog states
   isTitleDialogOpen: boolean;
   newFavoriteTitle: string;
-  isHelpDialogOpen: boolean;
-  isAboutDialogOpen: boolean;
   isNavigatingHistory: boolean;
   isClearFavoritesDialogOpen: boolean;
   isClearHistoryDialogOpen: boolean;
@@ -497,8 +495,6 @@ interface InternetExplorerStore {
   // Dialog actions
   setTitleDialogOpen: (isOpen: boolean) => void;
   setNewFavoriteTitle: (title: string) => void;
-  setHelpDialogOpen: (isOpen: boolean) => void;
-  setAboutDialogOpen: (isOpen: boolean) => void;
   setNavigatingHistory: (isNavigating: boolean) => void;
   setClearFavoritesDialogOpen: (isOpen: boolean) => void;
   setClearHistoryDialogOpen: (isOpen: boolean) => void;
@@ -585,8 +581,6 @@ const getInitialState = () => ({
   location: "auto" as LocationOption,
   isTitleDialogOpen: false,
   newFavoriteTitle: "",
-  isHelpDialogOpen: false,
-  isAboutDialogOpen: false,
   isNavigatingHistory: false,
   isClearFavoritesDialogOpen: false,
   isClearHistoryDialogOpen: false,
@@ -832,8 +826,6 @@ export const useInternetExplorerStore = create<InternetExplorerStore>()(
 
       setTitleDialogOpen: (isOpen) => set({ isTitleDialogOpen: isOpen }),
       setNewFavoriteTitle: (title) => set({ newFavoriteTitle: title }),
-      setHelpDialogOpen: (isOpen) => set({ isHelpDialogOpen: isOpen }),
-      setAboutDialogOpen: (isOpen) => set({ isAboutDialogOpen: isOpen }),
       setNavigatingHistory: (isNavigating) =>
         set({ isNavigatingHistory: isNavigating }),
       setClearFavoritesDialogOpen: (isOpen) =>
