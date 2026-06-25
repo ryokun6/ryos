@@ -121,14 +121,14 @@ const SystemStateSchema = z
 interface ChatRequest {
   messages: SimpleConversationMessage[];
   systemState?: SystemState;
-  model?: string;
+  model?: string | null;
   proactiveGreeting?: boolean;
 }
 
 const ChatRequestSchema = z.object({
   messages: z.array(ChatMessageSchema),
   systemState: SystemStateSchema.optional(),
-  model: z.string().optional(),
+  model: z.string().nullable().optional(),
   proactiveGreeting: z.boolean().optional(),
 }) as z.ZodType<ChatRequest>;
 

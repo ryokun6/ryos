@@ -165,6 +165,22 @@ describe("apiHandler bodySchema validation", () => {
       expect(res.status).toBe(400);
       expect(await res.text()).toContain("Unsupported model");
     });
+
+    test("null model reaches chat handler", async () => {
+      const res = await fetchWithOrigin(
+        `${BASE_URL}/api/chat?model=not-a-real-model`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            messages: [],
+            model: null,
+          }),
+        }
+      );
+      expect(res.status).toBe(400);
+      expect(await res.text()).toContain("Unsupported model");
+    });
   });
 
   describe("POST /api/tv/create-channel", () => {
