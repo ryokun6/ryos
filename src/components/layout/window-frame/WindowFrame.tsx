@@ -123,9 +123,11 @@ export function WindowFrame({
   // glass pane. Brushed-metal windows keep their `window-material-brushedmetal`
   // class and are converted to glass purely via CSS overrides (so apps can
   // still opt into the metal material). Transparent / notitlebar materials keep
-  // their own treatment.
+  // their own treatment, with a small glass-only radius adjustment for
+  // immersive notitlebar apps.
   const isGlassRegular =
     isAquaGlass && !isTransparent && !isBrushedMetal;
+  const isGlassNoTitlebar = isAquaGlass && isNoTitlebar && isMacOSTheme;
   const effectiveTransparentBackground =
     isMacOSTheme ? true : isTransparent;
 
@@ -392,7 +394,8 @@ export function WindowFrame({
                     isBrushedMetal &&
                       isMacOSTheme &&
                       "window-material-brushedmetal",
-                    isGlassRegular && "window-material-glass"
+                    isGlassRegular && "window-material-glass",
+                    isGlassNoTitlebar && "window-material-notitlebar-glass"
                   )}
                   style={{
                     ...(!isWindowsTheme
