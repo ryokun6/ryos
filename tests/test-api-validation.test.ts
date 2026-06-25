@@ -152,6 +152,19 @@ describe("apiHandler bodySchema validation", () => {
         data.issues.some((i: { path: string }) => i.path === "systemState")
       ).toBe(true);
     });
+
+    test("valid body reaches chat handler", async () => {
+      const res = await fetchWithOrigin(`${BASE_URL}/api/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [],
+          model: "not-a-real-model",
+        }),
+      });
+      expect(res.status).toBe(400);
+      expect(await res.text()).toContain("Unsupported model");
+    });
   });
 
   describe("POST /api/tv/create-channel", () => {
