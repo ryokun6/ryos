@@ -29,6 +29,7 @@ const { ensureFileContentLoaded } = await import("../src/stores/useFilesStore");
 const BOOK_PATH = "/Books/Meditations - Marcus Aurelius.epub";
 const BOOK_ASSET_PATH = "/assets/books/meditations-marcus-aurelius.epub";
 const originalFetch = globalThis.fetch;
+let bookAssetFetchCount = 0;
 
 const filesystemJson = readFileSync("public/data/filesystem.json", "utf8");
 const meditationsEpub = readFileSync(
@@ -45,6 +46,7 @@ async function deleteRyOsDatabase(): Promise<void> {
 }
 
 beforeEach(async () => {
+  bookAssetFetchCount = 0;
   await deleteRyOsDatabase();
   useFilesStore.setState({
     items: {},
@@ -62,6 +64,7 @@ beforeEach(async () => {
         });
       }
       if (url === BOOK_ASSET_PATH) {
+        bookAssetFetchCount += 1;
         return new Response(meditationsEpub, {
           status: 200,
           headers: { "Content-Type": "application/epub+zip" },
@@ -110,6 +113,23 @@ describe("default Books EPUB", () => {
       item!.uuid!
     );
     expect(stored?.content).toBeInstanceOf(ArrayBuffer);
+    expect(bookAssetFetchCount).toBe(1);
+  });
+
+  test("reuses cached default EPUB bytes across repeated reads", async () => {
+    await useFilesStore.getState().resetLibrary();
+
+    const item = useFilesStore.getState().getItem(BOOK_PATH);
+    expect(item?.uuid).toBeTruthy();
+
+    await dbOperations.delete(STORES.BOOKS, item!.uuid!);
+
+    const first = await readBookBlobContent(BOOK_PATH);
+    const second = await readBookBlobContent(BOOK_PATH);
+
+    expect(first?.size).toBe(meditationsEpub.byteLength);
+    expect(second?.size).toBe(meditationsEpub.byteLength);
+    expect(bookAssetFetchCount).toBe(1);
   });
 
   test("force-reloads default EPUB bytes over an unreadable stored record", async () => {

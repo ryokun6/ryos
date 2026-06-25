@@ -13,6 +13,32 @@ export interface BookCoverInfo {
 // for the session.
 const coverCache = new Map<string, BookCoverInfo>();
 const inflight = new Map<string, Promise<BookCoverInfo>>();
+const MAX_CONCURRENT_COVER_LOADS = 3;
+let activeCoverLoads = 0;
+const pendingCoverLoadSlots: Array<() => void> = [];
+
+async function acquireCoverLoadSlot(): Promise<void> {
+  if (activeCoverLoads >= MAX_CONCURRENT_COVER_LOADS) {
+    await new Promise<void>((resolve) => {
+      pendingCoverLoadSlots.push(resolve);
+    });
+  }
+  activeCoverLoads += 1;
+}
+
+function releaseCoverLoadSlot(): void {
+  activeCoverLoads = Math.max(0, activeCoverLoads - 1);
+  pendingCoverLoadSlots.shift()?.();
+}
+
+async function runWithCoverLoadSlot<T>(task: () => Promise<T>): Promise<T> {
+  await acquireCoverLoadSlot();
+  try {
+    return await task();
+  } finally {
+    releaseCoverLoadSlot();
+  }
+}
 
 function cacheKey(path: string, modifiedAt?: number): string {
   return `${path}::${modifiedAt ?? 0}`;
@@ -28,7 +54,7 @@ async function loadCover(
   const existing = inflight.get(key);
   if (existing) return existing;
 
-  const promise = (async (): Promise<BookCoverInfo> => {
+  const promise = runWithCoverLoadSlot(async (): Promise<BookCoverInfo> => {
     const result: BookCoverInfo = {
       coverUrl: null,
       title: null,
@@ -36,36 +62,41 @@ async function loadCover(
     };
     try {
       const blob = await readBookBlobContent(path);
-      if (!blob) return result;
-      const buffer = await blob.arrayBuffer();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const book = ePub(buffer as any);
-      await book.ready;
-      try {
-        const metadata = await book.loaded.metadata;
-        result.title = metadata?.title || null;
-        result.author = metadata?.creator || null;
-      } catch {
-        // ignore metadata failures
-      }
-      try {
-        const url = await book.coverUrl();
-        if (url) {
-          const response = await fetch(url);
-          const coverBlob = await response.blob();
-          result.coverUrl = URL.createObjectURL(coverBlob);
+      if (blob) {
+        const buffer = await blob.arrayBuffer();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const book = ePub(buffer as any);
+        try {
+          await book.ready;
+          try {
+            const metadata = await book.loaded.metadata;
+            result.title = metadata?.title || null;
+            result.author = metadata?.creator || null;
+          } catch {
+            // ignore metadata failures
+          }
+          try {
+            const url = await book.coverUrl();
+            if (url) {
+              const response = await fetch(url);
+              const coverBlob = await response.blob();
+              result.coverUrl = URL.createObjectURL(coverBlob);
+            }
+          } catch {
+            // no cover available
+          }
+        } finally {
+          book.destroy();
         }
-      } catch {
-        // no cover available
       }
-      book.destroy();
     } catch (err) {
       console.warn("[Books] Failed to load cover for", path, err);
     }
     coverCache.set(key, result);
-    inflight.delete(key);
     return result;
-  })();
+  }).finally(() => {
+    inflight.delete(key);
+  });
 
   inflight.set(key, promise);
   return promise;
