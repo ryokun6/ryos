@@ -1,6 +1,7 @@
 import { generateText, smoothStream } from "ai";
 import { geolocation } from "@vercel/functions";
 import { google } from "@ai-sdk/google";
+import { z } from "zod";
 import {
   DEFAULT_MODEL,
   SUPPORTED_AI_MODELS,
@@ -31,6 +32,106 @@ import {
 import { buildUserLocalTimeContext } from "./_utils/user-time-context.js";
 type SystemState = RyoConversationSystemState;
 
+const ChatMessagePartSchema = z
+  .object({
+    type: z.string().min(1),
+    text: z.string().optional(),
+  })
+  .passthrough();
+
+const ChatMessageSchema = z
+  .object({
+    id: z.string().optional(),
+    role: z.string().min(1),
+    content: z.string().optional(),
+    parts: z.array(ChatMessagePartSchema).optional(),
+  })
+  .passthrough();
+
+const NullableStringSchema = z.string().nullable().optional();
+
+const SystemStateSchema = z
+  .object({
+    username: NullableStringSchema,
+    userOS: z.string().optional(),
+    locale: z.string().optional(),
+    userLocalTime: z
+      .object({
+        timeString: z.string(),
+        dateString: z.string(),
+        timeZone: z.string(),
+      })
+      .optional(),
+    requestGeo: z
+      .object({
+        city: z.string().optional(),
+        region: z.string().optional(),
+        country: z.string().optional(),
+        latitude: z.string().optional(),
+        longitude: z.string().optional(),
+      })
+      .passthrough()
+      .optional(),
+    runningApps: z
+      .object({
+        foreground: z
+          .object({
+            instanceId: z.string(),
+            appId: z.string(),
+            title: z.string().optional(),
+            appletPath: z.string().optional(),
+            appletId: z.string().optional(),
+          })
+          .passthrough()
+          .nullable(),
+        background: z.array(
+          z
+            .object({
+              instanceId: z.string(),
+              appId: z.string(),
+              title: z.string().optional(),
+              appletPath: z.string().optional(),
+              appletId: z.string().optional(),
+            })
+            .passthrough()
+        ),
+      })
+      .passthrough()
+      .optional(),
+    internetExplorer: z
+      .object({
+        url: z.string().optional(),
+        year: z.string().optional(),
+        currentPageTitle: NullableStringSchema,
+        aiGeneratedMarkdown: NullableStringSchema,
+      })
+      .passthrough()
+      .optional(),
+    chatRoomContext: z
+      .object({
+        roomId: z.string(),
+        recentMessages: z.string(),
+        mentionedMessage: z.string(),
+      })
+      .passthrough()
+      .optional(),
+  })
+  .passthrough();
+
+interface ChatRequest {
+  messages: SimpleConversationMessage[];
+  systemState?: SystemState;
+  model?: string;
+  proactiveGreeting?: boolean;
+}
+
+const ChatRequestSchema = z.object({
+  messages: z.array(ChatMessageSchema),
+  systemState: SystemStateSchema.optional(),
+  model: z.string().optional(),
+  proactiveGreeting: z.boolean().optional(),
+}) as z.ZodType<ChatRequest>;
+
 const CHAT_MODEL_ALIASES: Record<string, SupportedModel> = {
   "claude-sonnet": "sonnet-4.6",
 };
@@ -44,20 +145,16 @@ function normalizeChatModel(model: string): string {
 export const runtime = "nodejs";
 export const maxDuration = 80;
 
-export default apiHandler<{
-  messages: unknown[];
-  systemState?: SystemState;
-  model?: string;
-  proactiveGreeting?: boolean;
-}>(
+export default apiHandler<ChatRequest>(
   {
     methods: ["POST"],
     auth: "optional",
     allowExpiredAuth: true,
     parseJsonBody: true,
+    bodySchema: ChatRequestSchema,
     contentType: null,
   },
-  async ({ req, res, redis, logger, startTime, origin, user }) => {
+  async ({ req, res, redis, logger, startTime, origin, user, body }) => {
     const validOrigin = origin || "http://localhost";
     try {
     // Parse query string to get model parameter
@@ -70,23 +167,10 @@ export default apiHandler<{
       systemState: incomingSystemState, // still passed for dynamic prompt generation but NOT for auth
       model: bodyModel = DEFAULT_MODEL,
       proactiveGreeting: isProactiveGreeting,
-    } = req.body as {
-      messages: unknown[];
-      systemState?: SystemState;
-      model?: string;
-      proactiveGreeting?: boolean;
-    };
+    } = body!;
 
     // Use query parameter if available, otherwise use body parameter, otherwise use default
     const model = normalizeChatModel(queryModel || bodyModel || DEFAULT_MODEL);
-
-    if (!messages || !Array.isArray(messages)) {
-      logger.error("400 Error: Invalid messages format", { messages });
-      logger.response(400, Date.now() - startTime);
-      res.setHeader("Access-Control-Allow-Origin", validOrigin);
-      res.status(400).send("Invalid messages format");
-      return;
-    }
 
     // ---------------------------
     // Extract auth headers FIRST so we can use username for logging

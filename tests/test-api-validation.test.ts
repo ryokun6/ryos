@@ -3,6 +3,8 @@
  *
  * Exercised through endpoints that opt into a Zod body schema:
  * - POST /api/analytics/events (optional auth — easy to drive without a token)
+ * - POST /api/speech (optional auth — invalid-body path avoids TTS providers)
+ * - POST /api/chat (optional auth — invalid-body path avoids AI providers)
  * - POST /api/tv/create-channel (required auth — invalid-body path only, so
  *   no AI/YouTube quota is spent)
  */
@@ -65,6 +67,90 @@ describe("apiHandler bodySchema validation", () => {
         }),
       });
       expect(res.status).toBe(204);
+    });
+  });
+
+  describe("POST /api/speech", () => {
+    test("missing text → 400 validation_error", async () => {
+      const res = await fetchWithOrigin(`${BASE_URL}/api/speech`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.error).toBe("validation_error");
+      expect(data.issues.some((i: { path: string }) => i.path === "text")).toBe(
+        true
+      );
+    });
+
+    test("invalid speech options → 400 validation_error", async () => {
+      const res = await fetchWithOrigin(`${BASE_URL}/api/speech`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: "hello",
+          model: "bad-provider",
+          speed: 99,
+        }),
+      });
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.error).toBe("validation_error");
+      expect(data.issues.some((i: { path: string }) => i.path === "model")).toBe(
+        true
+      );
+      expect(data.issues.some((i: { path: string }) => i.path === "speed")).toBe(
+        true
+      );
+    });
+  });
+
+  describe("POST /api/chat", () => {
+    test("missing messages → 400 validation_error", async () => {
+      const res = await fetchWithOrigin(`${BASE_URL}/api/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.error).toBe("validation_error");
+      expect(data.issues.some((i: { path: string }) => i.path === "messages")).toBe(
+        true
+      );
+    });
+
+    test("invalid message shape → 400 validation_error", async () => {
+      const res = await fetchWithOrigin(`${BASE_URL}/api/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: [{ content: "missing role" }] }),
+      });
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.error).toBe("validation_error");
+      expect(
+        data.issues.some((i: { path: string }) => i.path === "messages.0.role")
+      ).toBe(true);
+    });
+
+    test("invalid system state → 400 validation_error", async () => {
+      const res = await fetchWithOrigin(`${BASE_URL}/api/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [],
+          systemState: "not-an-object",
+        }),
+      });
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.error).toBe("validation_error");
+      expect(
+        data.issues.some((i: { path: string }) => i.path === "systemState")
+      ).toBe(true);
     });
   });
 

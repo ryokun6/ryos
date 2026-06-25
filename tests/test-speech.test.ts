@@ -31,7 +31,9 @@ describe("speech", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
       });
-      expect([400, 429]).toContain(res.status);
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.error).toBe("validation_error");
     });
 
     test("Empty text", async () => {
@@ -40,7 +42,9 @@ describe("speech", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: "" }),
       });
-      expect([400, 429]).toContain(res.status);
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.error).toBe("validation_error");
     });
 
     test("Whitespace only text", async () => {
@@ -49,7 +53,9 @@ describe("speech", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: "   " }),
       });
-      expect([400, 429]).toContain(res.status);
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.error).toBe("validation_error");
     });
 
     test("Invalid JSON", async () => {

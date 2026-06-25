@@ -1,5 +1,6 @@
 import { experimental_generateSpeech as generateSpeech } from "ai";
 import { openai } from "@ai-sdk/openai";
+import { z } from "zod";
 import * as RateLimit from "./_utils/_rate-limit.js";
 import { getClientIp } from "./_utils/_rate-limit.js";
 import { apiHandler } from "./_utils/api-handler.js";
@@ -29,10 +30,41 @@ interface SpeechRequest {
   voice_settings?: ElevenLabsVoiceSettings;
 }
 
+const ElevenLabsOutputFormatSchema = z.enum([
+  "mp3_44100_128",
+  "mp3_22050_32",
+  "pcm_16000",
+  "pcm_22050",
+  "pcm_24000",
+  "pcm_44100",
+  "ulaw_8000",
+]);
+
+const ElevenLabsVoiceSettingsSchema = z
+  .object({
+    stability: z.number().finite().min(0).max(1).optional(),
+    similarity_boost: z.number().finite().min(0).max(1).optional(),
+    use_speaker_boost: z.boolean().optional(),
+    speed: z.number().finite().min(0.7).max(1.2).optional(),
+  })
+  .passthrough();
+
+const SpeechRequestSchema = z.object({
+  text: z.string().trim().min(1, "'text' is required"),
+  voice: z.string().min(1).nullable().optional(),
+  speed: z.number().finite().min(0.25).max(4).optional(),
+  model: z.enum(["openai", "elevenlabs"]).nullable().optional(),
+  voice_id: z.string().min(1).nullable().optional(),
+  model_id: z.string().min(1).optional(),
+  output_format: ElevenLabsOutputFormatSchema.optional(),
+  voice_settings: ElevenLabsVoiceSettingsSchema.optional(),
+}) satisfies z.ZodType<SpeechRequest>;
+
 export default apiHandler<SpeechRequest>(
   {
     methods: ["POST"],
     parseJsonBody: true,
+    bodySchema: SpeechRequestSchema,
     auth: "optional",
     contentType: null,
   },
@@ -147,13 +179,6 @@ export default apiHandler<SpeechRequest>(
         output_format,
         voice_settings,
       });
-
-      if (!text || typeof text !== "string" || text.trim().length === 0) {
-        logger.error("'text' is required");
-        logger.response(400, Date.now() - startTime);
-        res.status(400).json({ error: "'text' is required" });
-        return;
-      }
 
       let audioData: ArrayBuffer;
       let mimeType = "audio/mpeg";

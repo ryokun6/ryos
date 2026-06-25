@@ -183,14 +183,12 @@ helper to reduce main-thread serialization jank on big libraries.
 
 ## 4. Security & hardening
 
-### 4.1 Keep the single `ryo` admin — add an audit trail
+### 4.1 Keep the single `ryo` admin — add an audit trail — **shipped**
 
 `api/_utils/api-handler.ts` treats username `ryo` as admin. This single-admin
-model is intentional and stays as-is. The one gap worth closing without
-changing the gate: there is no record of admin actions. Add an append-only
-audit log of `auth: "admin"` calls (action, target, timestamp) so the growing
-moderation surface (rooms, bans, Redis browser) is reviewable. No role system
-is introduced.
+model is intentional and stays as-is. The append-only audit log for
+state-changing admin calls has shipped, along with the Admin app Audit Log view.
+No role system is introduced.
 
 ### 4.2 Authenticate (or at least rate-limit) `/api/users`
 
@@ -230,11 +228,11 @@ Upstash-only deploys silently lose live chat/presence/sync. Ship a bundled
 lightweight pub/sub fallback (or document a managed Redis path in the
 self-host guide) so a single deploy gets full realtime.
 
-### 5.2 Admin audit-log view + moderation tooling
+### 5.2 Admin audit-log view + moderation tooling — **partial**
 
-Building on 4.1's audit trail (the `ryo` single-admin gate stays), surface the
-admin action log inside the existing Admin app and round out moderation tooling
-(rooms, bans, Redis browser) on top of it.
+Building on 4.1's shipped audit trail (the `ryo` single-admin gate stays), the
+Admin app now surfaces the action log. Remaining follow-up: round out moderation
+tooling (rooms, bans, Redis browser) on top of it.
 
 ### 5.3 Applet Store enhancements
 
@@ -268,7 +266,7 @@ code.
   warrants separate review + targeted testing*
 
 **Foundational (enables later work):**
-- 4.1 admin audit trail (keep `ryo` gate) → unlocks 5.2
+- 4.1 admin audit trail (keep `ryo` gate) → unlocks 5.2 — **shipped**
 - 4.3 Zod-at-`apiHandler` → unlocks 5.5 — **started**
 - 2.4 finish dual-path migrations — **legacy Redis reads shipped; sync v1
   retirement remains blocked by live backup UI**
