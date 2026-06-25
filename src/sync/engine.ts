@@ -595,8 +595,12 @@ export class CloudSyncEngine {
 
     const prefix = `${namespace}/item:`;
     const deletes: string[] = [];
-    const downloads: Array<{ op: AppliedSyncOp; contentHash: string; url: string }> =
-      [];
+    const downloads: Array<{
+      op: AppliedSyncOp;
+      contentHash: string;
+      url: string;
+      size: number;
+    }> = [];
 
     for (const op of ops) {
       if (!op.k.startsWith(prefix)) continue;
@@ -614,7 +618,7 @@ export class CloudSyncEngine {
         this.state.setShadow(op.k, { t: op.t, h: contentHash });
         continue;
       }
-      downloads.push({ op, contentHash, url: ref.url });
+      downloads.push({ op, contentHash, url: ref.url, size: ref.size });
     }
 
     if (deletes.length > 0) {
@@ -623,18 +627,39 @@ export class CloudSyncEngine {
 
     if (downloads.length > 0) {
       const urls = await resolveBlobDownloadUrls(
-        downloads.map((d) => ({ url: d.url, size: 0 }))
+        downloads.map((d) => ({ url: d.url, size: d.size }))
       );
       const items: StoreItemWithKey[] = [];
+      const totalDownloadBytes = downloads.reduce(
+        (sum, download) => sum + Math.max(0, download.size || 0),
+        0
+      );
+      let completedDownloadBytes = 0;
+      const category = getSyncNamespaceCategory(namespace);
+      const emitProgress = (loadedBytes: number) => {
+        syncStore.markCategoryDownloadProgress(
+          category,
+          totalDownloadBytes > 0 ? (loadedBytes / totalDownloadBytes) * 100 : 0
+        );
+      };
+      emitProgress(0);
+
       for (let index = 0; index < downloads.length; index += 1) {
-        const { op, contentHash } = downloads[index];
+        const { op, contentHash, size } = downloads[index];
         const downloadUrl = urls[index];
         if (!downloadUrl) {
           console.warn(`[sync2] No download URL for ${op.k}`);
+          completedDownloadBytes += Math.max(0, size || 0);
+          emitProgress(completedDownloadBytes);
           continue;
         }
         try {
-          const item = (await downloadBlobItem(downloadUrl)) as StoreItemWithKey;
+          const item = (await downloadBlobItem(downloadUrl, {
+            expectedBytes: size,
+            onProgress: (progress) => {
+              emitProgress(completedDownloadBytes + progress.loadedBytes);
+            },
+          })) as StoreItemWithKey;
           if (item && typeof item === "object" && typeof item.key === "string") {
             items.push(item);
             this.state.setShadow(op.k, {
@@ -644,6 +669,9 @@ export class CloudSyncEngine {
           }
         } catch (error) {
           console.error(`[sync2] Failed to download blob for ${op.k}:`, error);
+        } finally {
+          completedDownloadBytes += Math.max(0, size || 0);
+          emitProgress(completedDownloadBytes);
         }
       }
       if (items.length > 0) {

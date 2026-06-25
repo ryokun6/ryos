@@ -22,7 +22,10 @@ import {
   formatRelativeTime,
   type RelativeTimeKeys,
 } from "@/utils/formatRelativeTime";
-import { formatUploadingStatus } from "@/apps/control-panels/components/control-panels-app/syncUtils";
+import {
+  formatFetchingStatus,
+  formatUploadingStatus,
+} from "@/apps/control-panels/components/control-panels-app/syncUtils";
 
 const AUTO_SYNC_TIME_KEYS: RelativeTimeKeys = {
   justNow: "apps.control-panels.autoSync.justNow",
@@ -79,6 +82,7 @@ interface SyncCategoryActivity {
   isUploading: boolean;
   isDownloading: boolean;
   uploadProgress: number | null;
+  downloadProgress: number | null;
 }
 
 export function CloudSyncIndicator() {
@@ -108,18 +112,21 @@ export function CloudSyncIndicator() {
       isUploading: categoryStatus[category].isUploading,
       isDownloading: categoryStatus[category].isDownloading,
       uploadProgress: categoryStatus[category].uploadProgress,
+      downloadProgress: categoryStatus[category].downloadProgress,
     })
   ).filter((entry) => entry.isUploading || entry.isDownloading);
 
   const isCloudSyncActive = isCheckingRemote || activeCategories.length > 0;
-  const activeUploadProgress = activeCategories
-    .map((entry) => entry.uploadProgress)
+  const activeTransferProgress = activeCategories
+    .map((entry) =>
+      entry.isUploading ? entry.uploadProgress : entry.downloadProgress
+    )
     .filter((progress): progress is number => typeof progress === "number");
-  const triggerUploadProgress =
-    activeUploadProgress.length > 0
+  const triggerTransferProgress =
+    activeTransferProgress.length > 0
       ? Math.round(
-          activeUploadProgress.reduce((sum, progress) => sum + progress, 0) /
-            activeUploadProgress.length
+          activeTransferProgress.reduce((sum, progress) => sum + progress, 0) /
+            activeTransferProgress.length
         )
       : null;
 
@@ -164,9 +171,9 @@ export function CloudSyncIndicator() {
                   : undefined,
               }}
             />
-            {triggerUploadProgress !== null && (
+            {triggerTransferProgress !== null && (
               <span className="min-w-[2.1em] text-[10px] leading-none tabular-nums opacity-80">
-                {triggerUploadProgress}%
+                {triggerTransferProgress}%
               </span>
             )}
           </motion.span>
@@ -177,11 +184,12 @@ export function CloudSyncIndicator() {
           className="min-w-[200px]"
         >
           <AnimatePresence initial={false}>
-            {activeCategories.map(({ category, isUploading, uploadProgress }) => {
+            {activeCategories.map(({ category, isUploading, uploadProgress, downloadProgress }) => {
               const meta = SYNC_CATEGORY_META[category];
+              const activeProgress = isUploading ? uploadProgress : downloadProgress;
               const progress =
-                typeof uploadProgress === "number"
-                  ? Math.round(Math.max(0, Math.min(100, uploadProgress)))
+                typeof activeProgress === "number"
+                  ? Math.round(Math.max(0, Math.min(100, activeProgress)))
                   : null;
               return (
                 <motion.div
@@ -203,7 +211,7 @@ export function CloudSyncIndicator() {
                     />
                     <span className="min-w-0 flex-1">
                       <span>{t(meta.labelKey)}</span>
-                      {isUploading && progress !== null && (
+                      {progress !== null && (
                         <span
                           className="mt-1 block h-1 overflow-hidden rounded-full bg-black/15 os-dark:bg-white/20"
                           aria-hidden="true"
@@ -218,7 +226,7 @@ export function CloudSyncIndicator() {
                     <span className="ml-auto pl-3 text-xs tabular-nums opacity-60">
                       {isUploading
                         ? formatUploadingStatus(uploadProgress, t)
-                        : t("apps.control-panels.autoSync.fetching")}
+                        : formatFetchingStatus(downloadProgress, t)}
                     </span>
                   </MenubarItem>
                 </motion.div>

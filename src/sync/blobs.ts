@@ -68,6 +68,17 @@ interface BlobUploadItemsOptions {
   onProgress?: (progress: BlobUploadBatchProgress) => void;
 }
 
+export interface BlobDownloadProgress {
+  loadedBytes: number;
+  totalBytes: number;
+  percentage: number;
+}
+
+interface BlobDownloadOptions {
+  expectedBytes?: number;
+  onProgress?: (progress: BlobDownloadProgress) => void;
+}
+
 /**
  * Upload a batch of blob items, skipping content the server already has.
  * Returns a map key → SyncBlobRef for inclusion in docs.
@@ -187,13 +198,70 @@ export async function resolveBlobDownloadUrls(
   return resolved;
 }
 
+async function readResponseWithProgress(
+  response: Response,
+  options: BlobDownloadOptions
+): Promise<ArrayBuffer> {
+  const contentLength = Number(response.headers.get("content-length") || 0);
+  const totalBytes =
+    typeof options.expectedBytes === "number" && options.expectedBytes > 0
+      ? options.expectedBytes
+      : Number.isFinite(contentLength) && contentLength > 0
+        ? contentLength
+        : 0;
+
+  const emitProgress = (loadedBytes: number) => {
+    options.onProgress?.({
+      loadedBytes,
+      totalBytes,
+      percentage: totalBytes > 0 ? (loadedBytes / totalBytes) * 100 : 0,
+    });
+  };
+  options.onProgress?.({
+    loadedBytes: 0,
+    totalBytes,
+    percentage: 0,
+  });
+
+  if (!response.body) {
+    const buffer = await response.arrayBuffer();
+    emitProgress(totalBytes || buffer.byteLength);
+    return buffer;
+  }
+
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let loadedBytes = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (!value) continue;
+    chunks.push(value);
+    loadedBytes += value.byteLength;
+    emitProgress(loadedBytes);
+  }
+
+  const result = new Uint8Array(loadedBytes);
+  let offset = 0;
+  for (const chunk of chunks) {
+    result.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return result.buffer;
+}
+
 /** Download and decode one blob item (v2 bare item or v1 envelope). */
-export async function downloadBlobItem(downloadUrl: string): Promise<unknown> {
+export async function downloadBlobItem(
+  downloadUrl: string,
+  options: BlobDownloadOptions = {}
+): Promise<unknown> {
   const response = await fetch(downloadUrl);
   if (!response.ok) {
     throw new Error(`Failed to fetch sync blob: ${response.status}`);
   }
-  const parsed = await gunzipJson<unknown>(await response.arrayBuffer());
+  const parsed = await gunzipJson<unknown>(
+    await readResponseWithProgress(response, options)
+  );
   // v1 per-item envelopes wrap the item as { domain, key, version, data }.
   if (
     parsed &&

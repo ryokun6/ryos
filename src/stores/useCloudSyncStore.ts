@@ -17,6 +17,7 @@ export interface CloudSyncCategoryStatus {
   isUploading: boolean;
   isDownloading: boolean;
   uploadProgress: number | null;
+  downloadProgress: number | null;
 }
 
 export type CloudSyncCategoryStatusMap = Record<
@@ -76,6 +77,7 @@ function createInitialCategoryStatus(): CloudSyncCategoryStatusMap {
     isUploading: false,
     isDownloading: false,
     uploadProgress: null,
+    downloadProgress: null,
   });
   return {
     files: empty(),
@@ -106,6 +108,7 @@ export function mergePersistedCloudSyncCategoryStatus(
         isUploading: false,
         isDownloading: false,
         uploadProgress: null,
+        downloadProgress: null,
       };
     }
   }
@@ -142,6 +145,10 @@ interface CloudSyncStoreState {
     active: boolean
   ) => void;
   markCategoryUploadProgress: (
+    category: SyncCategory,
+    progress: number | null
+  ) => void;
+  markCategoryDownloadProgress: (
     category: SyncCategory,
     progress: number | null
   ) => void;
@@ -233,7 +240,10 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
                     isUploading: active,
                     ...(!active ? { uploadProgress: null } : {}),
                   }
-                : { isDownloading: active }),
+                : {
+                    isDownloading: active,
+                    ...(!active ? { downloadProgress: null } : {}),
+                  }),
             },
           },
         })),
@@ -250,6 +260,23 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
               [category]: {
                 ...state.categoryStatus[category],
                 uploadProgress: normalized,
+              },
+            },
+          };
+        }),
+
+      markCategoryDownloadProgress: (category, progress) =>
+        set((state) => {
+          const normalized =
+            typeof progress === "number" && Number.isFinite(progress)
+              ? Math.max(0, Math.min(100, progress))
+              : null;
+          return {
+            categoryStatus: {
+              ...state.categoryStatus,
+              [category]: {
+                ...state.categoryStatus[category],
+                downloadProgress: normalized,
               },
             },
           };
@@ -276,6 +303,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
               ...state.categoryStatus[category],
               lastFetchedAt: appliedAt,
               lastAppliedRemoteAt: appliedAt,
+              downloadProgress: null,
             },
           },
           lastError: null,
@@ -380,6 +408,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
               isUploading: false,
               isDownloading: false,
               uploadProgress: null,
+              downloadProgress: null,
             },
           ])
         ) as CloudSyncCategoryStatusMap,
@@ -434,6 +463,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
               isUploading: false,
               isDownloading: false,
               uploadProgress: null,
+              downloadProgress: null,
             };
           }
         } else if (candidate?.categoryStatus) {
@@ -447,6 +477,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
                 isUploading: false,
                 isDownloading: false,
                 uploadProgress: null,
+                downloadProgress: null,
               };
             }
           }
