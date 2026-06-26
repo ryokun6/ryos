@@ -667,6 +667,11 @@ export const calendarControlSchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/, { message: "Date must be YYYY-MM-DD format" })
     .optional()
     .describe("For events: event date (YYYY-MM-DD). For 'createTodo': optional due date. For 'list': filter events by date. For 'listTodos': filter by due date — OMIT to return ALL todos (most todos have no due date)."),
+  endDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, { message: "End date must be YYYY-MM-DD format" })
+    .optional()
+    .describe("For all-day events only: inclusive end date (YYYY-MM-DD). Omit for single-day or timed events."),
   startTime: z
     .string()
     .regex(/^\d{2}:\d{2}$/, { message: "Time must be HH:MM format" })
@@ -707,6 +712,20 @@ export const calendarControlSchema = z.object({
       code: z.ZodIssueCode.custom,
       message: "The 'create' action requires the 'date' parameter (YYYY-MM-DD).",
       path: ["date"],
+    });
+  }
+  if (data.endDate && data.date && data.endDate < data.date) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "The 'endDate' parameter must be on or after 'date'.",
+      path: ["endDate"],
+    });
+  }
+  if (data.endDate && (data.startTime || data.endTime)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Use 'endDate' only for all-day events; omit startTime/endTime for multi-day all-day events.",
+      path: ["endDate"],
     });
   }
   if ((data.action === "update" || data.action === "delete") && !data.id) {

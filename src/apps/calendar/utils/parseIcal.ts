@@ -1,8 +1,13 @@
 import type { CalendarEvent, EventColor } from "@/stores/useCalendarStore";
+import {
+  addDaysToDateString,
+  normalizeAllDayEndDate,
+} from "@/shared/calendarEventDates";
 
 export interface ParsedIcalEvent {
   title: string;
   date: string; // YYYY-MM-DD
+  endDate?: string; // YYYY-MM-DD, inclusive for all-day events
   startTime?: string; // HH:MM
   endTime?: string; // HH:MM
   notes?: string;
@@ -46,7 +51,8 @@ export function toIcalString(events: CalendarEvent[]): string {
       }
     } else {
       lines.push(`DTSTART;VALUE=DATE:${datePart}`);
-      const nextDay = getNextDay(ev.date);
+      const allDayEndDate = normalizeAllDayEndDate(ev.date, ev.endDate) || ev.date;
+      const nextDay = addDaysToDateString(allDayEndDate, 1);
       lines.push(`DTEND;VALUE=DATE:${nextDay.replace(/-/g, "")}`);
     }
 
@@ -66,12 +72,6 @@ export function toIcalString(events: CalendarEvent[]): string {
 function formatIcalDateTime(d: Date): string {
   const p = (n: number) => String(n).padStart(2, "0");
   return `${d.getUTCFullYear()}${p(d.getUTCMonth() + 1)}${p(d.getUTCDate())}T${p(d.getUTCHours())}${p(d.getUTCMinutes())}${p(d.getUTCSeconds())}`;
-}
-
-function getNextDay(dateStr: string): string {
-  const [y, m, d] = dateStr.split("-").map(Number);
-  const next = new Date(y, m - 1, d + 1);
-  return `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}-${String(next.getDate()).padStart(2, "0")}`;
 }
 
 /**
@@ -232,6 +232,11 @@ function buildEvent(
     if (end?.time) {
       event.endTime = end.time;
     }
+  } else if (raw.isAllDay && end?.date) {
+    event.endDate = normalizeAllDayEndDate(
+      start.date,
+      addDaysToDateString(end.date, -1)
+    );
   }
 
   if (raw.description) {

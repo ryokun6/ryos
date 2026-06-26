@@ -1,6 +1,11 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
+import {
+  calendarEventOccursOnDate,
+  calendarEventOverlapsDateRange,
+  normalizeAllDayEndDate,
+} from "@/shared/calendarEventDates";
 
 export type EventColor = "blue" | "red" | "green" | "orange" | "purple";
 
@@ -15,6 +20,7 @@ export interface CalendarEvent {
   id: string;
   title: string;
   date: string; // YYYY-MM-DD
+  endDate?: string; // YYYY-MM-DD, inclusive for all-day multi-day events
   startTime?: string; // HH:MM (optional — all-day if omitted)
   endTime?: string; // HH:MM
   color: EventColor;
@@ -159,8 +165,12 @@ export const useCalendarStore = create<CalendarStoreState>()(
           const timestamp = Date.now();
           const calendarId = eventData.calendarId || get().calendars[0]?.id || "home";
           const calendar = get().calendars.find((c) => c.id === calendarId);
+          const endDate = eventData.startTime
+            ? undefined
+            : normalizeAllDayEndDate(eventData.date, eventData.endDate);
           const newEvent: CalendarEvent = {
             ...eventData,
+            endDate,
             id,
             calendarId,
             color: calendar?.color || eventData.color,
@@ -175,11 +185,14 @@ export const useCalendarStore = create<CalendarStoreState>()(
 
         updateEvent: (id, updates) => {
           set((state) => ({
-            events: state.events.map((ev) =>
-              ev.id === id
-                ? { ...ev, ...updates, updatedAt: Date.now() }
-                : ev
-            ),
+            events: state.events.map((ev) => {
+              if (ev.id !== id) return ev;
+              const next = { ...ev, ...updates, updatedAt: Date.now() };
+              next.endDate = next.startTime
+                ? undefined
+                : normalizeAllDayEndDate(next.date, next.endDate);
+              return next;
+            }),
           }));
         },
 
@@ -290,13 +303,16 @@ export const useCalendarStore = create<CalendarStoreState>()(
             }, [])
           );
           return state.events.filter(
-            (ev) => ev.date === date && visibleCalendarIds.has(ev.calendarId || "home")
+            (ev) =>
+              calendarEventOccursOnDate(ev, date) &&
+              visibleCalendarIds.has(ev.calendarId || "home")
           );
         },
 
         getEventsForMonth: (year, month) => {
           const state = get();
-          const prefix = `${year}-${String(month + 1).padStart(2, "0")}`;
+          const startDate = `${year}-${String(month + 1).padStart(2, "0")}-01`;
+          const endDate = formatDate(new Date(year, month + 1, 0));
           const visibleCalendarIds = new Set(
             state.calendars.reduce<string[]>((acc, calendar) => {
               if (calendar.visible) {
@@ -306,7 +322,9 @@ export const useCalendarStore = create<CalendarStoreState>()(
             }, [])
           );
           return state.events.filter(
-            (ev) => ev.date.startsWith(prefix) && visibleCalendarIds.has(ev.calendarId || "home")
+            (ev) =>
+              calendarEventOverlapsDateRange(ev, startDate, endDate) &&
+              visibleCalendarIds.has(ev.calendarId || "home")
           );
         },
       };

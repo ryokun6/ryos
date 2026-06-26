@@ -13,6 +13,7 @@ import { parseIcalString, toIcalString } from "../utils/parseIcal";
 import { toast } from "@/hooks/useToast";
 import { CALENDAR_ANALYTICS, track } from "@/utils/analytics";
 import { openNativeFile, saveBlobToDevice } from "@/utils/nativeFileDialogs";
+import { calendarEventOccursOnDate } from "@/shared/calendarEventDates";
 
 type CalendarUndoAction =
   | { type: "addEvent"; event: CalendarEvent }
@@ -246,19 +247,14 @@ export function useCalendarLogic() {
     const sunday = new Date(sel);
     sunday.setDate(sunday.getDate() - dayOfWeek);
 
-    const eventsByDate = new Map<string, CalendarEvent[]>();
-    for (const ev of visibleEvents) {
-      const existing = eventsByDate.get(ev.date);
-      if (existing) existing.push(ev);
-      else eventsByDate.set(ev.date, [ev]);
-    }
-
     const days: WeekDay[] = [];
     for (let i = 0; i < 7; i++) {
       const date = new Date(sunday);
       date.setDate(date.getDate() + i);
       const dateStr = formatDate(date);
-      const dayEvents = eventsByDate.get(dateStr) || [];
+      const dayEvents = visibleEvents.filter((ev) =>
+        calendarEventOccursOnDate(ev, dateStr)
+      );
 
       days.push({
         date: dateStr,
@@ -305,13 +301,6 @@ export function useCalendarLogic() {
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
     const daysInPrevMonth = new Date(currentYear, currentMonth, 0).getDate();
 
-    const eventsByDate = new Map<string, CalendarEvent[]>();
-    for (const ev of visibleEvents) {
-      const existing = eventsByDate.get(ev.date);
-      if (existing) existing.push(ev);
-      else eventsByDate.set(ev.date, [ev]);
-    }
-
     const weeks: CalendarDayCell[][] = [];
     let dayCounter = 1;
     let nextMonthCounter = 1;
@@ -332,7 +321,9 @@ export function useCalendarLogic() {
             isCurrentMonth: false,
             isToday: dateStr === todayStr,
             isSelected: dateStr === selectedDate,
-            events: eventsByDate.get(dateStr) || [],
+            events: visibleEvents.filter((ev) =>
+              calendarEventOccursOnDate(ev, dateStr)
+            ),
           });
         } else if (dayCounter <= daysInMonth) {
           const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-${String(dayCounter).padStart(2, "0")}`;
@@ -342,7 +333,9 @@ export function useCalendarLogic() {
             isCurrentMonth: true,
             isToday: dateStr === todayStr,
             isSelected: dateStr === selectedDate,
-            events: eventsByDate.get(dateStr) || [],
+            events: visibleEvents.filter((ev) =>
+              calendarEventOccursOnDate(ev, dateStr)
+            ),
           });
           dayCounter++;
         } else {
@@ -355,7 +348,9 @@ export function useCalendarLogic() {
             isCurrentMonth: false,
             isToday: dateStr === todayStr,
             isSelected: dateStr === selectedDate,
-            events: eventsByDate.get(dateStr) || [],
+            events: visibleEvents.filter((ev) =>
+              calendarEventOccursOnDate(ev, dateStr)
+            ),
           });
           nextMonthCounter++;
         }
@@ -368,7 +363,7 @@ export function useCalendarLogic() {
   // Events for the selected date (filtered)
   const selectedDateEvents = useMemo(() => {
     return visibleEvents
-      .filter((ev) => ev.date === selectedDate)
+      .filter((ev) => calendarEventOccursOnDate(ev, selectedDate))
       .sort((a, b) => {
         if (!a.startTime && b.startTime) return -1;
         if (a.startTime && !b.startTime) return 1;

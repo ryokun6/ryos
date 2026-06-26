@@ -29,7 +29,7 @@ export function matchesSearchQuery(value: string | undefined, normalizedQuery: s
 }
 
 export function getEventSearchText(event: CalendarEvent) {
-  return [event.title, event.notes, event.date, event.startTime, event.endTime].filter(Boolean).join(" ");
+  return [event.title, event.notes, event.date, event.endDate, event.startTime, event.endTime].filter(Boolean).join(" ");
 }
 
 export function getEventOpacity(event: CalendarEvent, normalizedQuery: string) {

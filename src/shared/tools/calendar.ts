@@ -4,6 +4,10 @@ import type {
   CalendarSnapshotData,
   TodoItemDto,
 } from "../domains/calendar";
+import {
+  calendarEventOccursOnDate,
+  normalizeAllDayEndDate,
+} from "../calendarEventDates";
 
 export const CALENDAR_ACTIONS = [
   "list",
@@ -25,6 +29,7 @@ export interface CalendarControlInput {
   id?: string;
   title?: string;
   date?: string;
+  endDate?: string;
   startTime?: string;
   endTime?: string;
   color?: CalendarColor;
@@ -38,6 +43,7 @@ export interface CalendarEventToolRecord {
   id: string;
   title: string;
   date: string;
+  endDate?: string;
   startTime?: string;
   endTime?: string;
   color: string;
@@ -118,6 +124,7 @@ export function serializeCalendarEvent(
     id: event.id,
     title: event.title,
     date: event.date,
+    endDate: event.endDate,
     startTime: event.startTime,
     endTime: event.endTime,
     color: event.color,
@@ -159,7 +166,9 @@ export function applyCalendarToolAction(
   switch (input.action) {
     case "list": {
       const events = input.date
-        ? state.events.filter((event) => event.date === input.date)
+        ? state.events.filter((event) =>
+            calendarEventOccursOnDate(event, input.date!)
+          )
         : state.events;
       return {
         ok: true,
@@ -178,6 +187,9 @@ export function applyCalendarToolAction(
         id: deps.generateId(),
         title: input.title,
         date: input.date,
+        endDate: input.startTime
+          ? undefined
+          : normalizeAllDayEndDate(input.date, input.endDate),
         startTime: input.startTime,
         endTime: input.endTime,
         color: resolveCalendarColor(input, state.calendars),
@@ -199,10 +211,19 @@ export function applyCalendarToolAction(
       if (!input.id) return { ok: false, error: "missing_id" };
       const index = state.events.findIndex((event) => event.id === input.id);
       if (index === -1) return { ok: false, error: "not_found", id: input.id };
+      const existing = state.events[index];
+      const nextDate = input.date ?? existing.date;
+      const nextStartTime =
+        input.startTime !== undefined ? input.startTime : existing.startTime;
+      const nextEndDate =
+        input.endDate !== undefined ? input.endDate : existing.endDate;
       const event = {
-        ...state.events[index],
+        ...existing,
         ...(input.title !== undefined ? { title: input.title } : {}),
-        ...(input.date !== undefined ? { date: input.date } : {}),
+        ...(input.date !== undefined ? { date: nextDate } : {}),
+        endDate: nextStartTime
+          ? undefined
+          : normalizeAllDayEndDate(nextDate, nextEndDate),
         ...(input.startTime !== undefined ? { startTime: input.startTime } : {}),
         ...(input.endTime !== undefined ? { endTime: input.endTime } : {}),
         ...(input.color !== undefined ? { color: input.color } : {}),

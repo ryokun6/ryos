@@ -11,6 +11,7 @@ import {
 import { TrayFieldRow } from "./TrayFieldRow";
 import type { TrayThemeProps } from "./types";
 import { formatDateLabel } from "./utils";
+import { normalizeAllDayEndDate } from "@/shared/calendarEventDates";
 
 export function EventTrayEditor({
   event,
@@ -32,11 +33,12 @@ export function EventTrayEditor({
   onDelete: (id: string) => void;
 }) {
   const [state, dispatch] = useReducer(eventEditorReducer, event, getEventEditorState);
-  const { title, location, notes, date, startTime, endTime } = state;
+  const { title, location, notes, date, endDate, startTime, endTime } = state;
   const setTitle = (value: string) => dispatch({ type: "setTitle", value });
   const setLocation = (value: string) => dispatch({ type: "setLocation", value });
   const setNotes = (value: string) => dispatch({ type: "setNotes", value });
   const setDate = (value: string) => dispatch({ type: "setDate", value });
+  const setEndDate = (value: string) => dispatch({ type: "setEndDate", value });
   const allDay = !event.startTime;
   useEffect(() => {
     dispatch({ type: "resetFromEvent", event });
@@ -47,6 +49,7 @@ export function EventTrayEditor({
     event.location,
     event.notes,
     event.date,
+    event.endDate,
     event.startTime,
     event.endTime,
   ]);
@@ -75,15 +78,41 @@ export function EventTrayEditor({
   };
 
   const commitDate = (nextDate: string) => {
+    if (!nextDate) return;
     setDate(nextDate);
-    if (nextDate !== event.date) onUpdate(event.id, { date: nextDate });
+    if (!allDay) {
+      if (nextDate !== event.date) onUpdate(event.id, { date: nextDate });
+      return;
+    }
+
+    const clampedEndDate = endDate < nextDate ? nextDate : endDate;
+    if (clampedEndDate !== endDate) setEndDate(clampedEndDate);
+    const nextStoredEndDate = normalizeAllDayEndDate(nextDate, clampedEndDate);
+    if (nextDate !== event.date || nextStoredEndDate !== event.endDate) {
+      onUpdate(event.id, { date: nextDate, endDate: nextStoredEndDate });
+    }
+  };
+
+  const commitEndDate = (nextEndDate: string) => {
+    if (!nextEndDate) return;
+    const clampedEndDate = nextEndDate < date ? date : nextEndDate;
+    setEndDate(clampedEndDate);
+    const nextStoredEndDate = normalizeAllDayEndDate(date, clampedEndDate);
+    if (nextStoredEndDate !== event.endDate) {
+      onUpdate(event.id, { endDate: nextStoredEndDate });
+    }
   };
 
   const setAllDay = (next: boolean) => {
     if (next) {
-      onUpdate(event.id, { startTime: undefined, endTime: undefined });
+      onUpdate(event.id, {
+        startTime: undefined,
+        endTime: undefined,
+        endDate: normalizeAllDayEndDate(date, endDate),
+      });
     } else {
       onUpdate(event.id, {
+        endDate: undefined,
         startTime: startTime || "09:00",
         endTime: endTime || "10:00",
       });
@@ -93,7 +122,7 @@ export function EventTrayEditor({
   const commitTimes = (st: string, et: string) => {
     dispatch({ type: "setTimes", startTime: st, endTime: et });
     if (!allDay && (st !== event.startTime || et !== (event.endTime || ""))) {
-      onUpdate(event.id, { startTime: st, endTime: et });
+      onUpdate(event.id, { startTime: st, endTime: et, endDate: undefined });
     }
   };
 
@@ -239,23 +268,43 @@ export function EventTrayEditor({
             </TrayFieldRow>
           </>
         ) : (
-          <TrayFieldRow label={t("apps.calendar.tray.from")} useGeneva={useGeneva}>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => commitDate(e.target.value)}
-              onKeyDown={(e) => e.stopPropagation()}
-              className={fieldInputClass}
-            />
-            <p
-              className={cn(
-                "text-[10px] text-black/45 mt-0.5 truncate",
-                useGeneva && "font-geneva-12"
-              )}
-            >
-              {formatDateLabel(date, locale)}
-            </p>
-          </TrayFieldRow>
+          <>
+            <TrayFieldRow label={t("apps.calendar.tray.from")} useGeneva={useGeneva}>
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => commitDate(e.target.value)}
+                onKeyDown={(e) => e.stopPropagation()}
+                className={fieldInputClass}
+              />
+              <p
+                className={cn(
+                  "text-[10px] text-black/45 mt-0.5 truncate",
+                  useGeneva && "font-geneva-12"
+                )}
+              >
+                {formatDateLabel(date, locale)}
+              </p>
+            </TrayFieldRow>
+            <TrayFieldRow label={t("apps.calendar.tray.to")} useGeneva={useGeneva}>
+              <input
+                type="date"
+                value={endDate}
+                min={date}
+                onChange={(e) => commitEndDate(e.target.value)}
+                onKeyDown={(e) => e.stopPropagation()}
+                className={fieldInputClass}
+              />
+              <p
+                className={cn(
+                  "text-[10px] text-black/45 mt-0.5 truncate",
+                  useGeneva && "font-geneva-12"
+                )}
+              >
+                {formatDateLabel(endDate, locale)}
+              </p>
+            </TrayFieldRow>
+          </>
         )}
 
         <TrayFieldRow label={t("apps.calendar.event.calendar")} useGeneva={useGeneva}>
