@@ -247,28 +247,41 @@ function TimezoneComboboxImpl({
 
       {open && rect
         ? createPortal(
+            // Fake the Radix popper wrapper so themed popover CSS (Aqua Glass
+            // frost, dark-mode surfaces) — scoped to
+            // `[data-radix-popper-content-wrapper] [role="listbox"]/[role="option"]`
+            // — applies to this custom dropdown exactly like a real Select.
             <div
               ref={panelRef}
-              role="listbox"
-              className={cn(
-                "fixed z-[9999] flex flex-col overflow-hidden",
-                !isMacOSTheme &&
-                  "rounded-md border bg-popover text-popover-foreground shadow-md"
-              )}
+              data-radix-popper-content-wrapper=""
               style={{
+                position: "fixed",
                 left: rect.left,
                 top: rect.top,
                 width: rect.width,
-                ...(isMacOSTheme && {
-                  border: "none",
-                  borderRadius: "0px",
-                  background: "var(--os-pinstripe-window)",
-                  ...(isAquaGlass ? {} : { opacity: 0.95 }),
-                  boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
-                }),
+                zIndex: 9999,
               }}
             >
-              <div className="px-2 pt-1.5 pb-1.5 border-b border-black/15">
+              <div
+                role="listbox"
+                className={cn(
+                  "flex flex-col overflow-hidden w-full",
+                  !isMacOSTheme &&
+                    "rounded-md border bg-popover text-popover-foreground shadow-md"
+                )}
+                style={
+                  isMacOSTheme
+                    ? {
+                        border: "none",
+                        borderRadius: "0px",
+                        background: "var(--os-pinstripe-window)",
+                        ...(isAquaGlass ? {} : { opacity: 0.95 }),
+                        boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
+                      }
+                    : undefined
+                }
+              >
+                <div className="px-2 pt-1.5 pb-1.5 border-b border-black/15">
                 <SearchInput
                   inputRef={inputRef}
                   value={query}
@@ -332,6 +345,7 @@ function TimezoneComboboxImpl({
                     );
                   })
                 )}
+                </div>
               </div>
             </div>,
             document.body
