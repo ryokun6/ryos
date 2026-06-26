@@ -101,6 +101,30 @@ export function EventTrayEditor({
     }
   };
 
+  const parseDateInputValue = (value: string) => {
+    const trimmed = value.trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+    const slashMatch = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (!slashMatch) return null;
+    const month = Number(slashMatch[1]);
+    const day = Number(slashMatch[2]);
+    const year = Number(slashMatch[3]);
+    if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+    return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  };
+
+  const updateAllDayStartInput = (value: string) => {
+    setDate(value);
+    const parsed = parseDateInputValue(value);
+    if (parsed) commitDate(parsed);
+  };
+
+  const updateAllDayEndInput = (value: string) => {
+    setEndDate(value);
+    const parsed = parseDateInputValue(value);
+    if (parsed) commitEndDate(parsed);
+  };
+
   const setAllDay = (next: boolean) => {
     if (next) {
       onUpdate(event.id, {
@@ -273,24 +297,47 @@ export function EventTrayEditor({
           <>
             <TrayFieldRow label={t("apps.calendar.tray.from")} useGeneva={useGeneva}>
               <input
-                type="date"
+                type="text"
                 value={date}
-                onChange={(e) => commitDate(e.target.value)}
-                onInput={(e) => commitDate(e.currentTarget.value)}
-                onBlur={(e) => commitDate(e.currentTarget.value)}
-                onKeyDown={(e) => e.stopPropagation()}
+                inputMode="numeric"
+                placeholder="YYYY-MM-DD"
+                onChange={(e) => updateAllDayStartInput(e.target.value)}
+                onBlur={(e) => {
+                  const parsed = parseDateInputValue(e.currentTarget.value);
+                  if (parsed) commitDate(parsed);
+                  else setDate(event.date);
+                }}
+                onKeyDown={(e) => {
+                  e.stopPropagation();
+                  if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                  if (e.key === "Escape") {
+                    setDate(event.date);
+                    (e.target as HTMLInputElement).blur();
+                  }
+                }}
                 className={fieldInputClass}
               />
             </TrayFieldRow>
             <TrayFieldRow label={t("apps.calendar.tray.to")} useGeneva={useGeneva}>
               <input
-                type="date"
+                type="text"
                 value={endDate}
-                min={date}
-                onChange={(e) => commitEndDate(e.target.value)}
-                onInput={(e) => commitEndDate(e.currentTarget.value)}
-                onBlur={(e) => commitEndDate(e.currentTarget.value)}
-                onKeyDown={(e) => e.stopPropagation()}
+                inputMode="numeric"
+                placeholder="YYYY-MM-DD"
+                onChange={(e) => updateAllDayEndInput(e.target.value)}
+                onBlur={(e) => {
+                  const parsed = parseDateInputValue(e.currentTarget.value);
+                  if (parsed) commitEndDate(parsed);
+                  else setEndDate(event.endDate || event.date);
+                }}
+                onKeyDown={(e) => {
+                  e.stopPropagation();
+                  if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                  if (e.key === "Escape") {
+                    setEndDate(event.endDate || event.date);
+                    (e.target as HTMLInputElement).blur();
+                  }
+                }}
                 className={fieldInputClass}
               />
             </TrayFieldRow>
