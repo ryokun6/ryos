@@ -5,6 +5,7 @@ export interface EventEditorState {
   location: string;
   notes: string;
   date: string;
+  endDate: string;
   startTime: string;
   endTime: string;
 }
@@ -14,6 +15,7 @@ export const getEventEditorState = (event: CalendarEvent): EventEditorState => (
   location: event.location || "",
   notes: event.notes || "",
   date: event.date,
+  endDate: event.endDate || event.date,
   startTime: event.startTime || "09:00",
   endTime: event.endTime || "10:00",
 });
@@ -24,6 +26,7 @@ export type EventEditorAction =
   | { type: "setLocation"; value: string }
   | { type: "setNotes"; value: string }
   | { type: "setDate"; value: string }
+  | { type: "setEndDate"; value: string }
   | { type: "setStartTime"; value: string }
   | { type: "setEndTime"; value: string }
   | { type: "setTimes"; startTime: string; endTime: string };
@@ -43,6 +46,8 @@ export function eventEditorReducer(
       return { ...state, notes: action.value };
     case "setDate":
       return { ...state, date: action.value };
+    case "setEndDate":
+      return { ...state, endDate: action.value };
     case "setStartTime":
       return { ...state, startTime: action.value };
     case "setEndTime":

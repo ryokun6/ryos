@@ -1,5 +1,9 @@
 import { useRef, useCallback } from "react";
 import type { CalendarEvent } from "@/stores/useCalendarStore";
+import {
+  calendarEventOccursOnDate,
+  getCalendarEventEndDate,
+} from "@/shared/calendarEventDates";
 import type { CalendarDayCell } from "../../hooks/useCalendarLogic";
 import { osSeparatorBorderClassName } from "@/components/shared/osThemePrimitives";
 import {
@@ -74,14 +78,27 @@ export function MonthGrid({
                     backgroundColor: cell.isToday ? (isWindowsTheme ? TODAY_RED_XP : TODAY_RED) : "transparent", color: cell.isToday ? "#FFF" : undefined }}
                 >{cell.day}</span>
                 <div className="flex flex-col gap-px mt-px w-full">
-                  {cell.events.slice(0, 2).map((ev) => (
-                    <button key={ev.id} type="button" onClick={(e) => handleEventTap(ev, e)}
-                      className="text-[8px] truncate rounded px-0.5 leading-snug w-full text-left"
-                      style={{ backgroundColor: EVENT_COLOR_LIGHT[ev.color] || EVENT_COLOR_LIGHT.blue, color: EVENT_COLOR_MAP[ev.color] || EVENT_COLOR_MAP.blue,
-                        border: selectedEventId === ev.id ? `1px solid ${EVENT_COLOR_MAP[ev.color]}` : "1px solid transparent",
-                        opacity: getEventOpacity(ev, searchQuery) }}
-                    >{ev.title}</button>
-                  ))}
+                  {cell.events.slice(0, 2).map((ev) => {
+                    const isAllDayRange = !ev.startTime;
+                    const rangeEndDate = getCalendarEventEndDate(ev);
+                    const continuesFromPreviousDay = isAllDayRange && ev.date < cell.date;
+                    const continuesToNextDay = isAllDayRange && rangeEndDate > cell.date;
+                    const firstVisibleDateInWeek =
+                      week.find((day) => calendarEventOccursOnDate(ev, day.date))?.date;
+                    const showTitle = cell.date === firstVisibleDateInWeek;
+
+                    return (
+                      <button key={ev.id} type="button" onClick={(e) => handleEventTap(ev, e)}
+                        className="text-[8px] truncate rounded px-0.5 leading-snug w-full text-left"
+                        style={{ backgroundColor: EVENT_COLOR_LIGHT[ev.color] || EVENT_COLOR_LIGHT.blue, color: EVENT_COLOR_MAP[ev.color] || EVENT_COLOR_MAP.blue,
+                          border: selectedEventId === ev.id ? `1px solid ${EVENT_COLOR_MAP[ev.color]}` : "1px solid transparent",
+                          borderRadius: `${continuesFromPreviousDay ? 0 : 3}px ${continuesToNextDay ? 0 : 3}px ${continuesToNextDay ? 0 : 3}px ${continuesFromPreviousDay ? 0 : 3}px`,
+                          marginLeft: continuesFromPreviousDay ? "-2px" : undefined,
+                          marginRight: continuesToNextDay ? "-2px" : undefined,
+                          opacity: getEventOpacity(ev, searchQuery) }}
+                      >{showTitle ? ev.title : "\u00a0"}</button>
+                    );
+                  })}
                   {cell.events.length > 2 && <span className="text-[8px] opacity-40 px-0.5">+{cell.events.length - 2}</span>}
                 </div>
               </button>

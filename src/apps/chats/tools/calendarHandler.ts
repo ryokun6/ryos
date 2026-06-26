@@ -1,6 +1,7 @@
 import type { ToolHandler } from "./types";
 import { useCalendarStore } from "@/stores/useCalendarStore";
 import type { EventColor } from "@/stores/useCalendarStore";
+import { calendarEventOccursOnDate } from "@/shared/calendarEventDates";
 import i18n from "@/lib/i18n";
 
 export interface CalendarControlInput {
@@ -8,6 +9,7 @@ export interface CalendarControlInput {
   id?: string;
   title?: string;
   date?: string;
+  endDate?: string;
   startTime?: string;
   endTime?: string;
   color?: EventColor;
@@ -31,12 +33,13 @@ export const handleCalendarControl: ToolHandler<CalendarControlInput> = (
     case "list": {
       let events = store.events;
       if (input.date) {
-        events = events.filter((ev) => ev.date === input.date);
+        events = events.filter((ev) => calendarEventOccursOnDate(ev, input.date!));
       }
       const formatted = events.map((ev) => ({
         id: ev.id,
         title: ev.title,
         date: ev.date,
+        endDate: ev.endDate,
         startTime: ev.startTime,
         endTime: ev.endTime,
         color: ev.color,
@@ -72,6 +75,7 @@ export const handleCalendarControl: ToolHandler<CalendarControlInput> = (
       const eventId = store.addEvent({
         title: input.title,
         date: input.date,
+        endDate: input.endDate,
         startTime: input.startTime,
         endTime: input.endTime,
         color: input.color || "blue",
@@ -91,6 +95,7 @@ export const handleCalendarControl: ToolHandler<CalendarControlInput> = (
             id: eventId,
             title: input.title,
             date: input.date,
+            endDate: input.endDate,
             startTime: input.startTime,
             endTime: input.endTime,
             color: input.color || "blue",
@@ -126,6 +131,7 @@ export const handleCalendarControl: ToolHandler<CalendarControlInput> = (
       const updates: Record<string, unknown> = {};
       if (input.title !== undefined) updates.title = input.title;
       if (input.date !== undefined) updates.date = input.date;
+      if (input.endDate !== undefined) updates.endDate = input.endDate;
       if (input.startTime !== undefined) updates.startTime = input.startTime;
       if (input.endTime !== undefined) updates.endTime = input.endTime;
       if (input.color !== undefined) updates.color = input.color;

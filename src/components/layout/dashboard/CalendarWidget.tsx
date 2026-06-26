@@ -4,6 +4,7 @@ import { requestAppLaunch } from "@/utils/appEventBus";
 import { useTranslation } from "react-i18next";
 import { useDashboardStore, type CalendarWidgetConfig } from "@/stores/useDashboardStore";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
+import { calendarEventOccursOnDate } from "@/shared/calendarEventDates";
 
 function getLocalizedDayHeaders(locale: string): string[] {
   const fmt = new Intl.DateTimeFormat(locale, { weekday: "narrow" });
@@ -63,13 +64,6 @@ export function CalendarWidget({ widgetId }: CalendarWidgetProps) {
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const daysInPrev = new Date(year, month, 0).getDate();
 
-    const eventsByDate = new Map<string, CalendarEvent[]>();
-    for (const ev of events) {
-      const existing = eventsByDate.get(ev.date);
-      if (existing) existing.push(ev);
-      else eventsByDate.set(ev.date, [ev]);
-    }
-
     const weeks: Array<
       Array<{
         day: number;
@@ -92,16 +86,16 @@ export function CalendarWidget({ widgetId }: CalendarWidgetProps) {
           const pm = month === 0 ? 11 : month - 1;
           const py = month === 0 ? year - 1 : year;
           const ds = `${py}-${String(pm + 1).padStart(2, "0")}-${String(prevDay).padStart(2, "0")}`;
-          row.push({ day: prevDay, dateStr: ds, isCurrentMonth: false, isToday: ds === todayStr, events: eventsByDate.get(ds) || [] });
+          row.push({ day: prevDay, dateStr: ds, isCurrentMonth: false, isToday: ds === todayStr, events: events.filter((ev) => calendarEventOccursOnDate(ev, ds)) });
         } else if (dayCounter <= daysInMonth) {
           const ds = `${year}-${String(month + 1).padStart(2, "0")}-${String(dayCounter).padStart(2, "0")}`;
-          row.push({ day: dayCounter, dateStr: ds, isCurrentMonth: true, isToday: ds === todayStr, events: eventsByDate.get(ds) || [] });
+          row.push({ day: dayCounter, dateStr: ds, isCurrentMonth: true, isToday: ds === todayStr, events: events.filter((ev) => calendarEventOccursOnDate(ev, ds)) });
           dayCounter++;
         } else {
           const nm = month === 11 ? 0 : month + 1;
           const ny = month === 11 ? year + 1 : year;
           const ds = `${ny}-${String(nm + 1).padStart(2, "0")}-${String(nextCounter).padStart(2, "0")}`;
-          row.push({ day: nextCounter, dateStr: ds, isCurrentMonth: false, isToday: ds === todayStr, events: eventsByDate.get(ds) || [] });
+          row.push({ day: nextCounter, dateStr: ds, isCurrentMonth: false, isToday: ds === todayStr, events: events.filter((ev) => calendarEventOccursOnDate(ev, ds)) });
           nextCounter++;
         }
       }

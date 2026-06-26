@@ -15,6 +15,7 @@ export interface CalendarEventDto {
   id: string;
   title: string;
   date: string;
+  endDate?: string;
   startTime?: string;
   endTime?: string;
   color: CalendarColor;
@@ -67,6 +68,7 @@ export function isCalendarEventDto(value: unknown): value is CalendarEventDto {
     typeof event.id === "string" &&
     typeof event.title === "string" &&
     typeof event.date === "string" &&
+    (event.endDate === undefined || typeof event.endDate === "string") &&
     isCalendarColor(event.color) &&
     isFiniteNumber(event.createdAt) &&
     isFiniteNumber(event.updatedAt)

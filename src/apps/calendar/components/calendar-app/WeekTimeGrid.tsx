@@ -3,6 +3,10 @@ import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { osSeparatorBorderClassName } from "@/components/shared/osThemePrimitives";
 import type { CalendarEvent } from "@/stores/useCalendarStore";
+import {
+  calendarEventOccursOnDate,
+  getCalendarEventEndDate,
+} from "@/shared/calendarEventDates";
 import type { WeekDay } from "../../hooks/useCalendarLogic";
 import {
   DEFAULT_TIME_GRID_HOUR_HEIGHT,
@@ -157,24 +161,38 @@ export function WeekTimeGrid({
             </div>
             {weekDates.map((day) => (
               <div key={day.date} className="flex-1 flex flex-col gap-px py-px px-px min-w-0">
-                {day.allDayEvents.map((ev) => (
-                  <button
-                    key={ev.id}
-                    type="button"
-                    onClick={() => handleEventTap(ev)}
-                    className="text-[9px] truncate rounded px-1 leading-snug text-left"
-                    style={{
-                      backgroundColor: EVENT_COLOR_LIGHT[ev.color] || EVENT_COLOR_LIGHT.blue,
-                      color: EVENT_COLOR_MAP[ev.color] || EVENT_COLOR_MAP.blue,
-                      border: selectedEventId === ev.id
-                        ? `1px solid ${EVENT_COLOR_MAP[ev.color] || EVENT_COLOR_MAP.blue}`
-                        : "1px solid transparent",
-                      opacity: getEventOpacity(ev, searchQuery),
-                    }}
-                  >
-                    {ev.title}
-                  </button>
-                ))}
+                {day.allDayEvents.map((ev) => {
+                  const rangeEndDate = getCalendarEventEndDate(ev);
+                  const continuesFromPreviousDay = ev.date < day.date;
+                  const continuesToNextDay = rangeEndDate > day.date;
+                  const firstVisibleDateInWeek =
+                    weekDates.find((weekDay) =>
+                      calendarEventOccursOnDate(ev, weekDay.date)
+                    )?.date;
+                  const showTitle = day.date === firstVisibleDateInWeek;
+
+                  return (
+                    <button
+                      key={ev.id}
+                      type="button"
+                      onClick={() => handleEventTap(ev)}
+                      className="text-[9px] truncate rounded px-1 leading-snug text-left"
+                      style={{
+                        backgroundColor: EVENT_COLOR_LIGHT[ev.color] || EVENT_COLOR_LIGHT.blue,
+                        color: EVENT_COLOR_MAP[ev.color] || EVENT_COLOR_MAP.blue,
+                        border: selectedEventId === ev.id
+                          ? `1px solid ${EVENT_COLOR_MAP[ev.color] || EVENT_COLOR_MAP.blue}`
+                          : "1px solid transparent",
+                        borderRadius: `${continuesFromPreviousDay ? 0 : 4}px ${continuesToNextDay ? 0 : 4}px ${continuesToNextDay ? 0 : 4}px ${continuesFromPreviousDay ? 0 : 4}px`,
+                        marginLeft: continuesFromPreviousDay ? "-1px" : undefined,
+                        marginRight: continuesToNextDay ? "-1px" : undefined,
+                        opacity: getEventOpacity(ev, searchQuery),
+                      }}
+                    >
+                      {showTitle ? ev.title : "\u00a0"}
+                    </button>
+                  );
+                })}
               </div>
             ))}
           </div>

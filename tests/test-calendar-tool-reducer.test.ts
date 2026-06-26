@@ -53,6 +53,7 @@ describe("calendar tool shared reducer", () => {
         action: "create",
         title: "Dinner",
         date: "2026-06-08",
+        endDate: "2026-06-10",
         calendarId: "home",
         location: "Osaka",
       },
@@ -62,7 +63,35 @@ describe("calendar tool shared reducer", () => {
     if (!result.ok || result.kind !== "create") return;
     expect(result.event.id).toBe("generated-id");
     expect(result.event.color).toBe("green");
+    expect(result.event.endDate).toBe("2026-06-10");
     expect(result.event.location).toBe("Osaka");
+  });
+
+  test("lists multi-day all-day events on covered dates", () => {
+    const current = state();
+    current.events[0] = {
+      ...current.events[0],
+      date: "2026-06-07",
+      endDate: "2026-06-09",
+    };
+
+    const middle = applyCalendarToolAction(
+      current,
+      { action: "list", date: "2026-06-08" },
+      deps
+    );
+    expect(middle.ok).toBe(true);
+    if (!middle.ok || middle.kind !== "list") return;
+    expect(middle.events.map((event) => event.id)).toEqual(["event-1"]);
+
+    const after = applyCalendarToolAction(
+      current,
+      { action: "list", date: "2026-06-10" },
+      deps
+    );
+    expect(after.ok).toBe(true);
+    if (!after.ok || after.kind !== "list") return;
+    expect(after.events).toEqual([]);
   });
 
   test("updates and deletes events with tombstones", () => {

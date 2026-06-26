@@ -12,6 +12,7 @@ function event(id: string, updatedAt: number) {
     id,
     title: `event ${id}`,
     date: "2026-06-07",
+    endDate: "2026-06-09",
     color: "blue" as const,
     calendarId: "home",
     location: "Tokyo",

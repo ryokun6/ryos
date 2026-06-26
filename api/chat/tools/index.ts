@@ -208,7 +208,7 @@ export const TOOL_DESCRIPTIONS = {
     "Manage calendar events and todos in ryOS. " +
     "Event actions: " +
     "'list' returns all events (optionally filter by date); " +
-    "'create' adds a new event (requires title and date in YYYY-MM-DD format, optional startTime/endTime in HH:MM, color, notes); " +
+    "'create' adds a new event (requires title and date in YYYY-MM-DD format, optional startTime/endTime in HH:MM for timed events, optional inclusive endDate for multi-day all-day events, color, notes); " +
     "'update' modifies an existing event by ID; " +
     "'delete' removes an event by ID. " +
     "Todo actions: " +
