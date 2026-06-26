@@ -42,6 +42,29 @@ function normalizeOrigin(value: string | null | undefined): string | null {
   }
 }
 
+/**
+ * Normalize a base URL while preserving pathname (unlike {@link normalizeOrigin},
+ * which strips everything after the host). Used for docsBaseUrl so
+ * `https://host/docs` is not reduced to `https://host` (which would make
+ * help links resolve to app routes like `/ipod` instead of `/docs/ipod`).
+ */
+function normalizeBaseUrl(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const first = trimmed.split(",")[0]?.trim();
+  if (!first) return null;
+  try {
+    const url = new URL(first.startsWith("http") ? first : `https://${first}`);
+    const path = url.pathname.replace(/\/+$/, "") || "";
+    const base = `${url.origin}${path === "/" ? "" : path}`;
+    if (base.includes(",")) return null;
+    return base;
+  } catch {
+    return null;
+  }
+}
+
 function readWindowRuntimeConfig(): ClientRuntimeConfig {
   if (typeof window === "undefined") {
     return {};
@@ -84,7 +107,7 @@ export function getAppPublicOrigin(): string {
 }
 
 export function getDocsBaseUrl(): string {
-  const runtimeDocsBase = normalizeOrigin(getClientRuntimeConfig().docsBaseUrl);
+  const runtimeDocsBase = normalizeBaseUrl(getClientRuntimeConfig().docsBaseUrl);
   if (runtimeDocsBase) return runtimeDocsBase;
   return `${getAppPublicOrigin()}/docs`;
 }

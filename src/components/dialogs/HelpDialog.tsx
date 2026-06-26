@@ -169,7 +169,9 @@ export function HelpDialog({
   const handleViewDocs = () => {
     // Get the doc name for this app (use mapping or fall back to appId)
     const docName = appId ? (APP_DOC_NAMES[appId] || appId) : "";
-    const docsBaseUrl = getDocsBaseUrl();
+    // Preserve /docs in the base URL (runtime docsBaseUrl must not be origin-only
+    // or IE opens app routes like /ipod instead of /docs/ipod).
+    const docsBaseUrl = getDocsBaseUrl().replace(/\/+$/, "");
     const docsUrl = docName ? `${docsBaseUrl}/${docName}` : docsBaseUrl;
 
     launchApp("internet-explorer", {
