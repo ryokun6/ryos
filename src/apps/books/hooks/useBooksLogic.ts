@@ -17,7 +17,6 @@ import { useBooksStore } from "@/stores/useBooksStore";
 import { useVfsFileOperations } from "@/services/vfs/useVfsFileOperations";
 import { openNativeFile } from "@/utils/nativeFileDialogs";
 import { emitFileSaved, onFileRenamed } from "@/utils/appEventBus";
-import { requestCloudSyncDomainCheck } from "@/utils/cloudSyncEvents";
 import { helpItems } from "../metadata";
 import { useBookCover } from "../utils/useBookCover";
 import type { BooksInitialData } from "@/apps/base/types";
@@ -214,15 +213,6 @@ export function useBooksLogic({
     },
     [moveToTrash, removeBook, t]
   );
-
-  // On open, reconcile Books cloud-sync state (reading progress, shelf
-  // ordering, last-opened) so the shelf reflects the latest synced data from
-  // other devices. This pulls via the shared cursor; the `bookshelf` namespace
-  // applies independently of the (large) file blobs.
-  useEffect(() => {
-    if (!isWindowOpen) return;
-    requestCloudSyncDomainCheck("bookshelf");
-  }, [isWindowOpen]);
 
   // Handle being launched / re-targeted with a specific book path.
   useEffect(() => {
