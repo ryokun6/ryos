@@ -1,27 +1,24 @@
 import { useEffect, useMemo, useState } from "react";
+import { cn } from "@/lib/utils";
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
-  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
 import type { LanguageCode } from "@/stores/useLanguageStore";
 import type { TimezonePreference } from "@/lib/timezoneConfig";
 import {
-  AUTO_TIMEZONE,
   formatOffsetLabel,
   formatTimezoneCity,
-  getSupportedTimezones,
   getTimezoneOffsetMinutes,
-  groupTimezonesByRegion,
   resolveEffectiveTimezone,
 } from "@/lib/timezoneConfig";
 import { ControlPanelsPrefFormRow } from "./ControlPanelsPrefFormRow";
-import { InternationalGlobe } from "./InternationalGlobe";
+import { InternationalWorldMap } from "./InternationalWorldMap";
+import { TimezoneCombobox } from "./TimezoneCombobox";
+import { useControlPanelsTabClasses } from "./useControlPanelsTabClasses";
 
 /** Fixed reference instant for locale format previews (classic 10.3 International). */
 const SAMPLE_INSTANT = new Date(2006, 5, 20, 15, 30, 0);
@@ -48,6 +45,8 @@ function getLocaleFormatSamples(locale: LanguageCode, timeZone: string) {
   };
 }
 
+type InternationalTab = "language" | "dateTime";
+
 export type InternationalPaneContentProps = {
   t: (key: string, opts?: Record<string, unknown>) => string;
   currentLanguage: LanguageCode;
@@ -63,6 +62,9 @@ export function InternationalPaneContent({
   timezone,
   setTimezone,
 }: InternationalPaneContentProps) {
+  const [tab, setTab] = useState<InternationalTab>("language");
+  const { barClassName, triggerClassName, triggerStyle } =
+    useControlPanelsTabClasses();
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
@@ -73,11 +75,6 @@ export function InternationalPaneContent({
   const effectiveTimezone = useMemo(
     () => resolveEffectiveTimezone(timezone),
     [timezone]
-  );
-
-  const timezoneGroups = useMemo(
-    () => groupTimezonesByRegion(getSupportedTimezones()),
-    []
   );
 
   const offsetLabel = useMemo(
@@ -109,11 +106,6 @@ export function InternationalPaneContent({
 
   const cityLabel = formatTimezoneCity(effectiveTimezone);
 
-  const timezoneTriggerLabel =
-    timezone === AUTO_TIMEZONE
-      ? t("apps.control-panels.timezoneAutomaticCity", { city: cityLabel })
-      : `${cityLabel} (${offsetLabel})`;
-
   const formatSamples = useMemo(
     () => getLocaleFormatSamples(currentLanguage, effectiveTimezone),
     [currentLanguage, effectiveTimezone]
@@ -143,114 +135,171 @@ export function InternationalPaneContent({
   );
 
   return (
-    <div className="control-panels-pref-form space-y-0 h-full overflow-y-auto">
-      <div className="control-panels-pref-form-section">
-        <ControlPanelsPrefFormRow
-          label={t("settings.language.title")}
-          description={t("settings.language.description")}
-        >
-          <Select
-            value={currentLanguage}
-            onValueChange={(value) => setLanguage(value as LanguageCode)}
-          >
-            <SelectTrigger className="w-[140px] flex-shrink-0">
-              <SelectValue>{languageLabel}</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="en">{t("settings.language.english")}</SelectItem>
-              <SelectItem value="zh-TW">
-                {t("settings.language.chineseTraditional")}
-              </SelectItem>
-              <SelectItem value="ja">{t("settings.language.japanese")}</SelectItem>
-              <SelectItem value="ko">{t("settings.language.korean")}</SelectItem>
-              <SelectItem value="es">{t("settings.language.spanish")}</SelectItem>
-              <SelectItem value="fr">{t("settings.language.french")}</SelectItem>
-              <SelectItem value="de">{t("settings.language.german")}</SelectItem>
-              <SelectItem value="pt">{t("settings.language.portuguese")}</SelectItem>
-              <SelectItem value="it">{t("settings.language.italian")}</SelectItem>
-              <SelectItem value="ru">{t("settings.language.russian")}</SelectItem>
-            </SelectContent>
-          </Select>
-        </ControlPanelsPrefFormRow>
-
-        <ControlPanelsPrefFormRow
-          label={t("apps.control-panels.timeZone")}
-          description={t("apps.control-panels.timeZoneDescription")}
-        >
-          <Select
-            value={timezone}
-            onValueChange={(value) =>
-              setTimezone(value as TimezonePreference)
-            }
-          >
-            <SelectTrigger className="w-[180px] flex-shrink-0">
-              <SelectValue>{timezoneTriggerLabel}</SelectValue>
-            </SelectTrigger>
-            <SelectContent className="max-h-[280px]">
-              <SelectItem value={AUTO_TIMEZONE}>
-                {t("apps.control-panels.timezoneAutomatic")}
-              </SelectItem>
-              <SelectSeparator />
-              {timezoneGroups.map((group) => (
-                <SelectGroup key={group.region}>
-                  <SelectLabel>{group.region}</SelectLabel>
-                  {group.zones.map((zone) => (
-                    <SelectItem key={zone} value={zone}>
-                      {formatTimezoneCity(zone)}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              ))}
-            </SelectContent>
-          </Select>
-        </ControlPanelsPrefFormRow>
-
+    <div className="control-panels-pref-form control-panels-pref-form-tabbed">
+      <div className="control-panels-pref-tabbed">
         <div
-          className="flex items-center justify-center gap-4 py-2"
-          aria-live="polite"
+          role="tablist"
+          className={cn("control-panels-pref-tab-bar", barClassName)}
+          aria-label={t("apps.control-panels.panes.international")}
         >
-          <InternationalGlobe timeZone={effectiveTimezone} size={132} />
-          <div className="flex flex-col gap-0.5 font-geneva-12 min-w-[120px]">
-            <div className="text-[13px] font-semibold leading-tight">
-              {cityLabel}
-            </div>
-            <div className="text-[20px] font-semibold tabular-nums leading-tight">
-              {localTime}
-            </div>
-            <div className="text-[11px] opacity-70 leading-tight">
-              {localDate}
-            </div>
-            <div className="text-[11px] opacity-70 leading-tight">
-              {offsetLabel}
-            </div>
-          </div>
+          <button
+            type="button"
+            role="tab"
+            className={triggerClassName}
+            style={triggerStyle}
+            data-state={tab === "language" ? "active" : "inactive"}
+            aria-selected={tab === "language"}
+            onClick={() => setTab("language")}
+          >
+            {t("apps.control-panels.internationalTabs.language")}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            className={triggerClassName}
+            style={triggerStyle}
+            data-state={tab === "dateTime" ? "active" : "inactive"}
+            aria-selected={tab === "dateTime"}
+            onClick={() => setTab("dateTime")}
+          >
+            {t("apps.control-panels.internationalTabs.dateTime")}
+          </button>
         </div>
 
-        <div className="control-panels-pref-format-samples" aria-live="polite">
-          <div className="control-panels-pref-format-sample-row">
-            <span className="control-panels-pref-format-sample-label">
-              {t("apps.control-panels.formatSamples.dates")}
-            </span>
-            <div className="control-panels-pref-format-sample-value">
-              <div>{formatSamples.dateShort}</div>
-              <div>{formatSamples.dateLong}</div>
+        <div className="control-panels-pref-well">
+          <div
+            role="tabpanel"
+            className="control-panels-pref-tab-panel"
+            hidden={tab !== "language"}
+            aria-hidden={tab !== "language"}
+          >
+            <div className="control-panels-pref-form-section">
+              <ControlPanelsPrefFormRow
+                label={t("settings.language.title")}
+                description={t("settings.language.description")}
+              >
+                <Select
+                  value={currentLanguage}
+                  onValueChange={(value) => setLanguage(value as LanguageCode)}
+                >
+                  <SelectTrigger className="w-[140px] flex-shrink-0">
+                    <SelectValue>{languageLabel}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="en">
+                      {t("settings.language.english")}
+                    </SelectItem>
+                    <SelectItem value="zh-TW">
+                      {t("settings.language.chineseTraditional")}
+                    </SelectItem>
+                    <SelectItem value="ja">
+                      {t("settings.language.japanese")}
+                    </SelectItem>
+                    <SelectItem value="ko">
+                      {t("settings.language.korean")}
+                    </SelectItem>
+                    <SelectItem value="es">
+                      {t("settings.language.spanish")}
+                    </SelectItem>
+                    <SelectItem value="fr">
+                      {t("settings.language.french")}
+                    </SelectItem>
+                    <SelectItem value="de">
+                      {t("settings.language.german")}
+                    </SelectItem>
+                    <SelectItem value="pt">
+                      {t("settings.language.portuguese")}
+                    </SelectItem>
+                    <SelectItem value="it">
+                      {t("settings.language.italian")}
+                    </SelectItem>
+                    <SelectItem value="ru">
+                      {t("settings.language.russian")}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </ControlPanelsPrefFormRow>
+
+              <div
+                className="control-panels-pref-format-samples"
+                aria-live="polite"
+              >
+                <div className="control-panels-pref-format-sample-row">
+                  <span className="control-panels-pref-format-sample-label">
+                    {t("apps.control-panels.formatSamples.dates")}
+                  </span>
+                  <div className="control-panels-pref-format-sample-value">
+                    <div>{formatSamples.dateShort}</div>
+                    <div>{formatSamples.dateLong}</div>
+                  </div>
+                </div>
+                <div className="control-panels-pref-format-sample-row">
+                  <span className="control-panels-pref-format-sample-label">
+                    {t("apps.control-panels.formatSamples.times")}
+                  </span>
+                  <span className="control-panels-pref-format-sample-value">
+                    {formatSamples.time}
+                  </span>
+                </div>
+                <div className="control-panels-pref-format-sample-row">
+                  <span className="control-panels-pref-format-sample-label">
+                    {t("apps.control-panels.formatSamples.numbers")}
+                  </span>
+                  <span className="control-panels-pref-format-sample-value">
+                    {formatSamples.number}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
-          <div className="control-panels-pref-format-sample-row">
-            <span className="control-panels-pref-format-sample-label">
-              {t("apps.control-panels.formatSamples.times")}
-            </span>
-            <span className="control-panels-pref-format-sample-value">
-              {formatSamples.time}
-            </span>
-          </div>
-          <div className="control-panels-pref-format-sample-row">
-            <span className="control-panels-pref-format-sample-label">
-              {t("apps.control-panels.formatSamples.numbers")}
-            </span>
-            <span className="control-panels-pref-format-sample-value">
-              {formatSamples.number}
-            </span>
+
+          <div
+            role="tabpanel"
+            className="control-panels-pref-tab-panel"
+            hidden={tab !== "dateTime"}
+            aria-hidden={tab !== "dateTime"}
+          >
+            <div className="control-panels-pref-form-section">
+              <div
+                className="overflow-hidden rounded-[6px] border border-black/30"
+                aria-hidden
+              >
+                <InternationalWorldMap timeZone={effectiveTimezone} />
+              </div>
+
+              <ControlPanelsPrefFormRow
+                label={t("apps.control-panels.timeZone")}
+                description={t("apps.control-panels.timeZoneDescription")}
+              >
+                <TimezoneCombobox
+                  value={timezone}
+                  onChange={setTimezone}
+                  t={t}
+                />
+              </ControlPanelsPrefFormRow>
+
+              <div
+                className="flex items-baseline justify-between gap-3 font-geneva-12"
+                aria-live="polite"
+              >
+                <div className="flex flex-col">
+                  <span className="text-[13px] font-semibold leading-tight">
+                    {cityLabel}
+                  </span>
+                  <span className="text-[11px] opacity-70 leading-tight">
+                    {localDate}
+                  </span>
+                </div>
+                <div className="flex flex-col items-end">
+                  <span className="text-[20px] font-semibold tabular-nums leading-tight">
+                    {localTime}
+                  </span>
+                  <span className="text-[11px] opacity-70 leading-tight">
+                    {offsetLabel}
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
