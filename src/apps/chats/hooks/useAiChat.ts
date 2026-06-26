@@ -9,7 +9,7 @@ import { useChatsStore } from "@/stores/useChatsStore";
 import type { AIChatMessage } from "@/types/chat";
 import { useAppStore } from "@/stores/useAppStore";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
-import { getBrowserTimeZoneHeaders } from "@/api/core";
+import { getBrowserTimeZone, getBrowserTimeZoneHeaders } from "@/api/core";
 import { getApiUrl } from "@/utils/platform";
 import {
   getActiveIpodTracks,
@@ -1848,8 +1848,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     // Capture current messages before we clear them
     const messagesToAnalyze = [...aiMessages];
     const currentUsername = username;
-    const currentTimeZone =
-      Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+    const currentTimeZone = getBrowserTimeZone() || "UTC";
 
     // Only extract if user is logged in and there are messages worth analyzing
     if (currentUsername && isAuthenticated && messagesToAnalyze.length > 2) {

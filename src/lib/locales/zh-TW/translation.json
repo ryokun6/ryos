@@ -564,6 +564,11 @@
         "double": "雙頁",
         "single": "單頁"
       },
+      "contextMenu": {
+        "delete": "刪除",
+        "moveToBottom": "移至底端",
+        "moveToTop": "移至頂端"
+      },
       "description": "閱讀 EPUB 書籍",
       "help": {
         "bookshelf": {
@@ -612,15 +617,20 @@
       },
       "name": "書籍",
       "reader": {
-        "backToShelf": "書架"
+        "backToShelf": "書架",
+        "debugCopied": "已複製",
+        "debugCopy": "複製記錄",
+        "debugCopyFailed": "複製失敗",
+        "debugTitle": "EPUB 除錯記錄",
+        "error": "無法開啟此書。"
       },
       "shelf": {
         "emptyHint": "點擊「新增書籍」以匯入 EPUB。",
         "emptyTitle": "您的書架是空的",
         "finished": "已完成",
-        "gridView": "[TODO] Grid View",
+        "gridView": "網格檢視",
         "import": "新增書籍",
-        "listView": "[TODO] List View",
+        "listView": "列表檢視",
         "percentRead": "{{percent}}%"
       },
       "theme": {
@@ -631,6 +641,8 @@
       },
       "title": "書籍",
       "toasts": {
+        "deleteFailed": "刪除書籍失敗",
+        "deleted": "書籍已刪除",
         "importFailed": "匯入書籍失敗",
         "imported": "書籍已匯入",
         "invalidFile": "不支援的檔案",
@@ -1390,6 +1402,7 @@
       },
       "appearance": "外觀",
       "autoSync": {
+        "books": "書籍",
         "calendar": "行事曆",
         "checking": "正在檢查雲端更新…",
         "contacts": "聯絡人",
@@ -1491,7 +1504,7 @@
       "darkModeDescription": "跟隨系統，或強制使用深色版本",
       "darkModeLight": "淺色",
       "darkModeSystem": "系統",
-      "dateTimeDescription": "日期與時間是由您的裝置設定。ryOS 使用您的瀏覽器時區進行排程與 AI 上下文",
+      "dateTimeDescription": "日期與時間由您的裝置設定。ryOS 會將您的時區偏好設定用於時鐘、排程及 AI 內容脈絡。",
       "debugMode": "偵錯模式",
       "debugModeDescription": "啟用偵錯設定",
       "default": "預設",
@@ -1579,6 +1592,10 @@
       },
       "highContrast": "高對比",
       "internationalHelp": "拖移語言來設定在應用程式選單、對話框和文字處理中使用的偏好順序",
+      "internationalTabs": {
+        "dateTime": "日期與時間",
+        "language": "語言"
+      },
       "invert": "反轉",
       "iosVolumeHint": "在 iOS 上，使用硬體按鈕控制媒體音量",
       "ipod": "iPod",
@@ -1802,15 +1819,11 @@
       },
       "themePreviewWindowTitle": "文件",
       "timeZone": "時區",
-      "timeZoneDescription": "Used for scheduling, formatting, and AI context",
-      "timezoneAutomatic": "Automatic",
-      "timezoneAutomaticCity": "Automatic ({{city}})",
-      "timezoneSearchPlaceholder": "Search time zones…",
-      "timezoneNoResults": "No matching time zones",
-      "internationalTabs": {
-        "language": "Language",
-        "dateTime": "Date & Time"
-      },
+      "timeZoneDescription": "用於時鐘、排程、格式設定及 AI 內容脈絡",
+      "timezoneAutomatic": "自動",
+      "timezoneAutomaticCity": "自動 ({{city}})",
+      "timezoneNoResults": "沒有相符的時區",
+      "timezoneSearchPlaceholder": "搜尋時區…",
       "toolbar": {
         "back": "返回",
         "forward": "前進",
@@ -2088,8 +2101,8 @@
       },
       "fileTypes": {
         "application": "應用程式",
-        "book": "書籍",
         "bmpImage": "BMP 影像",
+        "book": "書籍",
         "directory": "目錄",
         "document": "檔案",
         "file": "檔案",
@@ -4416,6 +4429,7 @@
       "showAllWindows": "按一下來顯示所有視窗 (F3)",
       "volume": "音量"
     },
+    "noResults": "查無結果",
     "startMenu": {
       "aboutThisComputer": "關於這部電腦",
       "run": "執行...",

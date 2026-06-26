@@ -564,6 +564,11 @@
         "double": "Double",
         "single": "Simple"
       },
+      "contextMenu": {
+        "delete": "Supprimer",
+        "moveToBottom": "Placer tout en bas",
+        "moveToTop": "Placer tout en haut"
+      },
       "description": "Lire des livres EPUB",
       "help": {
         "bookshelf": {
@@ -612,15 +617,20 @@
       },
       "name": "Livres",
       "reader": {
-        "backToShelf": "Bibliothèque"
+        "backToShelf": "Bibliothèque",
+        "debugCopied": "Copié",
+        "debugCopy": "Copier les journaux",
+        "debugCopyFailed": "Échec de la copie",
+        "debugTitle": "Journal de débogage EPUB",
+        "error": "Impossible d’ouvrir ce livre."
       },
       "shelf": {
         "emptyHint": "Cliquez sur Ajouter un livre pour importer un EPUB.",
         "emptyTitle": "Votre bibliothèque est vide",
         "finished": "Terminé",
-        "gridView": "[TODO] Grid View",
+        "gridView": "Vue Grille",
         "import": "Ajouter un livre",
-        "listView": "[TODO] List View",
+        "listView": "Vue Liste",
         "percentRead": "{{percent}} %"
       },
       "theme": {
@@ -631,6 +641,8 @@
       },
       "title": "Livres",
       "toasts": {
+        "deleteFailed": "Échec de la suppression du livre",
+        "deleted": "Livre supprimé",
         "importFailed": "Échec de l'importation du livre",
         "imported": "Livre importé",
         "invalidFile": "Fichier non pris en charge",
@@ -1390,6 +1402,7 @@
       },
       "appearance": "Apparence",
       "autoSync": {
+        "books": "Livres",
         "calendar": "Calendrier",
         "checking": "Vérification des mises à jour cloud…",
         "contacts": "Contacts",
@@ -1491,7 +1504,7 @@
       "darkModeDescription": "Suivre le système ou forcer la variante sombre",
       "darkModeLight": "Clair",
       "darkModeSystem": "Système",
-      "dateTimeDescription": "La date et l'heure sont définies par votre appareil. ryOS utilise le fuseau horaire de votre navigateur pour la planification et le contexte de l'IA",
+      "dateTimeDescription": "La date et l’heure sont définies par votre appareil. ryOS utilise votre fuseau horaire pour l’horloge, la programmation et le contexte de l’IA",
       "debugMode": "Mode débogage",
       "debugModeDescription": "Activer les réglages de débogage",
       "default": "Par défaut",
@@ -1579,6 +1592,10 @@
       },
       "highContrast": "Contraste élevé",
       "internationalHelp": "Faites glisser les langues pour définir votre ordre de préférence pour les menus d’application, les boîtes de dialogue et le traitement de texte",
+      "internationalTabs": {
+        "dateTime": "Date et heure",
+        "language": "Langue"
+      },
       "invert": "Inversion",
       "iosVolumeHint": "Sous iOS, utilisez les boutons physiques pour contrôler le volume des médias",
       "ipod": "iPod",
@@ -1802,15 +1819,11 @@
       },
       "themePreviewWindowTitle": "Document",
       "timeZone": "Fuseau horaire",
-      "timeZoneDescription": "Used for scheduling, formatting, and AI context",
-      "timezoneAutomatic": "Automatic",
-      "timezoneAutomaticCity": "Automatic ({{city}})",
-      "timezoneSearchPlaceholder": "Search time zones…",
-      "timezoneNoResults": "No matching time zones",
-      "internationalTabs": {
-        "language": "Language",
-        "dateTime": "Date & Time"
-      },
+      "timeZoneDescription": "Utilisé pour l’horloge, la programmation, le formatage et le contexte de l’IA",
+      "timezoneAutomatic": "Auto",
+      "timezoneAutomaticCity": "Auto ({{city}})",
+      "timezoneNoResults": "Aucun fuseau horaire correspondant",
+      "timezoneSearchPlaceholder": "Rechercher des fuseaux horaires…",
       "toolbar": {
         "back": "Précédent",
         "forward": "Suivant",
@@ -2088,8 +2101,8 @@
       },
       "fileTypes": {
         "application": "Application",
-        "book": "Livre",
         "bmpImage": "Image BMP",
+        "book": "Livre",
         "directory": "Dossier",
         "document": "Document",
         "file": "Fichier",
@@ -4416,6 +4429,7 @@
       "showAllWindows": "Cliquer pour afficher toutes les fenêtres (F3)",
       "volume": "Volume"
     },
+    "noResults": "Aucun résultat",
     "startMenu": {
       "aboutThisComputer": "À propos de cet ordinateur",
       "run": "Exécuter...",

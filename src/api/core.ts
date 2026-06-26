@@ -1,10 +1,6 @@
 import { abortableFetch, type AbortableFetchOptions } from "@/utils/abortableFetch";
 import { getApiUrl } from "@/utils/platform";
-import {
-  AUTO_TIMEZONE,
-  isValidTimezone,
-  readPersistedTimezonePreference,
-} from "@/lib/timezoneConfig";
+import { getEffectiveTimezone } from "@/lib/timezoneConfig";
 
 export interface ApiErrorPayload {
   error?: string;
@@ -43,15 +39,9 @@ export function getBrowserTimeZone(): string | null {
     return null;
   }
 
-  // Honor a user-selected timezone override (International control panel) when
-  // set; otherwise fall back to the browser's resolved timezone.
-  const preference = readPersistedTimezonePreference();
-  if (preference && preference !== AUTO_TIMEZONE && isValidTimezone(preference)) {
-    return preference;
-  }
-
+  // Honor the International control panel preference (`auto` or a saved IANA id).
   try {
-    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const timeZone = getEffectiveTimezone();
     return timeZone && timeZone !== "Unknown" ? timeZone : null;
   } catch {
     return null;

@@ -564,6 +564,11 @@
         "double": "두 페이지",
         "single": "한 페이지"
       },
+      "contextMenu": {
+        "delete": "삭제",
+        "moveToBottom": "맨 아래로 이동",
+        "moveToTop": "맨 위로 이동"
+      },
       "description": "EPUB 도서 읽기",
       "help": {
         "bookshelf": {
@@ -612,15 +617,20 @@
       },
       "name": "도서",
       "reader": {
-        "backToShelf": "책장"
+        "backToShelf": "책장",
+        "debugCopied": "복사됨",
+        "debugCopy": "로그 복사",
+        "debugCopyFailed": "복사 실패",
+        "debugTitle": "EPUB 디버그 로그",
+        "error": "이 책을 열 수 없습니다."
       },
       "shelf": {
         "emptyHint": "'도서 추가'를 클릭하여 EPUB를 가져오세요.",
         "emptyTitle": "책장이 비어 있습니다",
         "finished": "완료",
-        "gridView": "[TODO] Grid View",
+        "gridView": "격자 보기",
         "import": "도서 추가",
-        "listView": "[TODO] List View",
+        "listView": "목록 보기",
         "percentRead": "{{percent}}%"
       },
       "theme": {
@@ -631,6 +641,8 @@
       },
       "title": "도서",
       "toasts": {
+        "deleteFailed": "도서 삭제 실패",
+        "deleted": "도서 삭제됨",
         "importFailed": "도서를 가져오지 못했습니다",
         "imported": "도서를 가져왔습니다",
         "invalidFile": "지원되지 않는 파일",
@@ -1390,6 +1402,7 @@
       },
       "appearance": "모양",
       "autoSync": {
+        "books": "도서",
         "calendar": "캘린더",
         "checking": "클라우드 업데이트 확인 중…",
         "contacts": "연락처",
@@ -1491,7 +1504,7 @@
       "darkModeDescription": "시스템 설정을 따르거나 어두운 버전을 강제로 사용합니다",
       "darkModeLight": "라이트",
       "darkModeSystem": "시스템",
-      "dateTimeDescription": "날짜 및 시간은 기기에서 설정됩니다. ryOS는 일정 예약 및 AI 컨텍스트를 위해 브라우저 시간대를 사용합니다.",
+      "dateTimeDescription": "날짜 및 시간은 기기에서 설정됩니다. ryOS는 시계, 일정 예약 및 AI 컨텍스트에 사용자의 시간대 설정을 사용합니다.",
       "debugMode": "디버그 모드",
       "debugModeDescription": "디버깅 설정을 활성화합니다",
       "default": "기본값",
@@ -1579,6 +1592,10 @@
       },
       "highContrast": "고대비",
       "internationalHelp": "언어를 드래그하여 앱 메뉴, 대화 상자 및 텍스트 처리에 사용할 선호하는 순서를 설정하십시오.",
+      "internationalTabs": {
+        "dateTime": "날짜 및 시간",
+        "language": "언어"
+      },
       "invert": "반전",
       "iosVolumeHint": "iOS에서 하드웨어 버튼을 사용하여 미디어 볼륨을 제어합니다",
       "ipod": "iPod",
@@ -1802,15 +1819,11 @@
       },
       "themePreviewWindowTitle": "도큐먼트",
       "timeZone": "시간대",
-      "timeZoneDescription": "Used for scheduling, formatting, and AI context",
-      "timezoneAutomatic": "Automatic",
-      "timezoneAutomaticCity": "Automatic ({{city}})",
-      "timezoneSearchPlaceholder": "Search time zones…",
-      "timezoneNoResults": "No matching time zones",
-      "internationalTabs": {
-        "language": "Language",
-        "dateTime": "Date & Time"
-      },
+      "timeZoneDescription": "시계, 일정 예약, 서식 및 AI 컨텍스트에 사용됩니다.",
+      "timezoneAutomatic": "자동",
+      "timezoneAutomaticCity": "자동({{city}})",
+      "timezoneNoResults": "일치하는 시간대 없음",
+      "timezoneSearchPlaceholder": "시간대 검색…",
       "toolbar": {
         "back": "뒤로",
         "forward": "앞으로",
@@ -2088,8 +2101,8 @@
       },
       "fileTypes": {
         "application": "애플리케이션",
-        "book": "책",
         "bmpImage": "BMP 이미지",
+        "book": "책",
         "directory": "디렉터리",
         "document": "문서",
         "file": "파일",
@@ -4416,6 +4429,7 @@
       "showAllWindows": "모든 윈도우 표시 (F3) 클릭",
       "volume": "볼륨"
     },
+    "noResults": "결과 없음",
     "startMenu": {
       "aboutThisComputer": "이 컴퓨터에 관하여",
       "run": "실행...",

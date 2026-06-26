@@ -5,6 +5,12 @@ import { useTranslation } from "react-i18next";
 import { useDashboardStore, type CalendarWidgetConfig } from "@/stores/useDashboardStore";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { calendarEventOccursOnDate } from "@/shared/calendarEventDates";
+import { useEffectiveTimezone } from "@/hooks/useEffectiveTimezone";
+import {
+  formatInTimeZone,
+  formatZonedDateString,
+  getZonedDateTimeParts,
+} from "@/lib/timezoneConfig";
 
 function getLocalizedDayHeaders(locale: string): string[] {
   const fmt = new Intl.DateTimeFormat(locale, { weekday: "narrow" });
@@ -12,12 +18,22 @@ function getLocalizedDayHeaders(locale: string): string[] {
   return Array.from({ length: 7 }, (_, i) => fmt.format(new Date(2023, 11, 31 + i)));
 }
 
-function getLocalizedDayName(date: Date, locale: string, style: "long" | "short" = "short"): string {
-  return new Intl.DateTimeFormat(locale, { weekday: style }).format(date);
+function getLocalizedDayName(
+  date: Date,
+  locale: string,
+  style: "long" | "short" = "short",
+  timeZone?: string
+): string {
+  return formatInTimeZone(date, timeZone ?? "UTC", locale, { weekday: style });
 }
 
-function getLocalizedMonthName(date: Date, locale: string, style: "long" | "short" = "short"): string {
-  return new Intl.DateTimeFormat(locale, { month: style }).format(date);
+function getLocalizedMonthName(
+  date: Date,
+  locale: string,
+  style: "long" | "short" = "short",
+  timeZone?: string
+): string {
+  return formatInTimeZone(date, timeZone ?? "UTC", locale, { month: style });
 }
 
 const EVENT_COLOR_MAP: Record<string, string> = {
@@ -37,6 +53,7 @@ export function CalendarWidget({ widgetId }: CalendarWidgetProps) {
   const { i18n } = useTranslation();
   const locale = i18n.language || "en";
   const { isWindowsTheme } = useThemeFlags();
+  const timeZone = useEffectiveTimezone();
 
   const widget = useDashboardStore((s) => widgetId ? s.widgets.find((w) => w.id === widgetId) : undefined);
   const calConfig = widget?.config as CalendarWidgetConfig | undefined;
@@ -50,15 +67,19 @@ export function CalendarWidget({ widgetId }: CalendarWidgetProps) {
   }, [allEvents, hiddenColors]);
 
   const now = useMemo(() => new Date(), []);
-  const todayStr = useMemo(() => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  }, []);
+  const todayStr = useMemo(
+    () => formatZonedDateString(now, timeZone),
+    [now, timeZone]
+  );
+  const zonedNow = useMemo(
+    () => getZonedDateTimeParts(now, timeZone),
+    [now, timeZone]
+  );
 
-  // Build mini calendar grid
+  // Build mini calendar grid (month/year from the user's effective timezone)
   const weeks = useMemo(() => {
-    const month = now.getMonth();
-    const year = now.getFullYear();
+    const month = zonedNow.month - 1;
+    const year = zonedNow.year;
     const firstDay = new Date(year, month, 1);
     const startDow = firstDay.getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -103,7 +124,7 @@ export function CalendarWidget({ widgetId }: CalendarWidgetProps) {
     }
 
     return weeks;
-  }, [events, todayStr, now]);
+  }, [events, todayStr, zonedNow]);
 
   const dayHeaders = useMemo(() => getLocalizedDayHeaders(locale), [locale]);
   const keyedDayHeaders = useMemo(
@@ -124,7 +145,7 @@ export function CalendarWidget({ widgetId }: CalendarWidgetProps) {
     return (
       <div className="p-2 cursor-pointer" onClick={handleClick} style={{ color: "#000" }}>
         <div className="text-center text-xs font-semibold mb-1">
-          {getLocalizedMonthName(now, locale, "long")} {now.getFullYear()}
+          {getLocalizedMonthName(now, locale, "long", timeZone)} {zonedNow.year}
         </div>
         <div className="grid grid-cols-7 mb-0.5">
           {keyedDayHeaders.map((header) => (
@@ -158,8 +179,8 @@ export function CalendarWidget({ widgetId }: CalendarWidgetProps) {
     );
   }
 
-  const dayAbbrev = getLocalizedDayName(now, locale, "short");
-  const monthAbbrev = getLocalizedMonthName(now, locale, "short");
+  const dayAbbrev = getLocalizedDayName(now, locale, "short", timeZone);
+  const monthAbbrev = getLocalizedMonthName(now, locale, "short", timeZone);
 
   const brown = "#A33A2A";
   const brownDark = "#7C2418";
@@ -201,7 +222,7 @@ export function CalendarWidget({ widgetId }: CalendarWidgetProps) {
             boxShadow: "0 2px 6px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.8)",
           }}
         >
-          <div className="font-bold leading-none" style={{ fontSize: 56, color: brown, fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}>{now.getDate()}</div>
+          <div className="font-bold leading-none" style={{ fontSize: 56, color: brown, fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}>{zonedNow.day}</div>
         </div>
       </div>
 

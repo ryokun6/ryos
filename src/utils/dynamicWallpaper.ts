@@ -25,6 +25,10 @@
 // (see `pickDeterministicCandidate` and `useShuffleWallpaper`).
 
 import type { WallpaperManifest } from "@/utils/wallpapers";
+import {
+  getEffectiveTimezone,
+  getZonedFractionalHour,
+} from "@/lib/timezoneConfig";
 
 export const DYNAMIC_PREFIX = "dynamic://";
 export const SHUFFLE_PREFIX = "shuffle://";
@@ -250,9 +254,12 @@ const rgbToCss = ([r, g, b]: RGB) => `rgb(${r}, ${g}, ${b})`;
  */
 function interpolateGradientKeyframes(
   frames: GradientKeyframe[],
-  date: Date
+  date: Date,
+  timeZone?: string
 ): [RGB, RGB, RGB] {
-  const hour = date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
+  const hour = timeZone
+    ? getZonedFractionalHour(date, timeZone)
+    : date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
 
   // Find the surrounding keyframes (with wraparound past the last one).
   let start = frames[frames.length - 1];
@@ -285,13 +292,19 @@ function interpolateGradientKeyframes(
 }
 
 /** Compute the interpolated [top, mid, bottom] colors for a given time. */
-export function getDayNightGradientColors(date: Date = new Date()): [RGB, RGB, RGB] {
-  return interpolateGradientKeyframes(DAY_NIGHT_KEYFRAMES, date);
+export function getDayNightGradientColors(
+  date: Date = new Date(),
+  timeZone: string = getEffectiveTimezone()
+): [RGB, RGB, RGB] {
+  return interpolateGradientKeyframes(DAY_NIGHT_KEYFRAMES, date, timeZone);
 }
 
 /** Build a CSS `linear-gradient(...)` string for the current time of day. */
-export function getDayNightGradientCss(date: Date = new Date()): string {
-  const [top, mid, bottom] = getDayNightGradientColors(date);
+export function getDayNightGradientCss(
+  date: Date = new Date(),
+  timeZone: string = getEffectiveTimezone()
+): string {
+  const [top, mid, bottom] = getDayNightGradientColors(date, timeZone);
   return `linear-gradient(to bottom, ${rgbToCss(top)} 0%, ${rgbToCss(
     mid
   )} 55%, ${rgbToCss(bottom)} 100%)`;
@@ -408,18 +421,20 @@ export function weatherCodeToFamily(
  */
 export function getWeatherGradientColors(
   code: number | null | undefined,
-  date: Date = new Date()
+  date: Date = new Date(),
+  timeZone: string = getEffectiveTimezone()
 ): [RGB, RGB, RGB] {
   const frames = WEATHER_KEYFRAMES[weatherCodeToFamily(code)];
-  return interpolateGradientKeyframes(frames, date);
+  return interpolateGradientKeyframes(frames, date, timeZone);
 }
 
 /** Build a CSS `linear-gradient(...)` string for the current time + weather. */
 export function getWeatherGradientCss(
   code: number | null | undefined,
-  date: Date = new Date()
+  date: Date = new Date(),
+  timeZone: string = getEffectiveTimezone()
 ): string {
-  const [top, mid, bottom] = getWeatherGradientColors(code, date);
+  const [top, mid, bottom] = getWeatherGradientColors(code, date, timeZone);
   return `linear-gradient(to bottom, ${rgbToCss(top)} 0%, ${rgbToCss(
     mid
   )} 55%, ${rgbToCss(bottom)} 100%)`;

@@ -4,6 +4,12 @@ import { MapPin, MagnifyingGlass, NavigationArrow } from "@phosphor-icons/react"
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
+import { useEffectiveTimezone } from "@/hooks/useEffectiveTimezone";
+import {
+  formatInTimeZone,
+  formatTimezoneCity,
+  getZonedDateTimeParts,
+} from "@/lib/timezoneConfig";
 
 interface CityResult {
   name: string;
@@ -30,11 +36,9 @@ function getPopularCities(t: TFunction): CityResult[] {
   ];
 }
 
-function getCityFromTimezone(tz?: string): string {
+function getCityFromTimezone(tz: string): string {
   try {
-    const timezone = tz || Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const city = timezone.split("/").pop() || "";
-    return city.replace(/_/g, " ").toUpperCase();
+    return formatTimezoneCity(tz).toUpperCase();
   } catch {
     return "";
   }
@@ -73,15 +77,19 @@ export function ClockWidget({ widgetId, isFlipped }: ClockWidgetProps) {
   const { t } = useTranslation();
   const [time, setTime] = useState(() => new Date());
   const { isWindowsTheme } = useThemeFlags();
+  const effectiveTimezone = useEffectiveTimezone();
   const widget = useDashboardStore((s) => widgetId ? s.widgets.find((w) => w.id === widgetId) : undefined);
   const config = widget?.config as ClockWidgetConfig | undefined;
   const gradId = useMemo(() => widgetId?.replace(/[^a-zA-Z0-9]/g, "") ?? "default", [widgetId]);
 
+  // Per-widget override (world clock city) or the user's International timezone.
+  const displayTimezone = config?.timezone || effectiveTimezone;
+
   const cityName = useMemo(() => {
     if (config?.cityKey) return t(config.cityKey).toUpperCase();
     if (config?.cityName) return config.cityName.toUpperCase();
-    return getCityFromTimezone(config?.timezone) || t("apps.dashboard.cities.local");
-  }, [config?.cityKey, config?.cityName, config?.timezone, t]);
+    return getCityFromTimezone(displayTimezone) || t("apps.dashboard.cities.local");
+  }, [config?.cityKey, config?.cityName, displayTimezone, t]);
 
   useEffect(() => {
     if (isFlipped) return;
@@ -90,25 +98,24 @@ export function ClockWidget({ widgetId, isFlipped }: ClockWidgetProps) {
     return () => clearInterval(interval);
   }, [isFlipped]);
 
-  const displayTime = useMemo(() => {
-    if (!config?.timezone) return time;
-    try {
-      const str = time.toLocaleString("en-US", { timeZone: config.timezone });
-      return new Date(str);
-    } catch {
-      return time;
-    }
-  }, [time, config?.timezone]);
+  const zoned = useMemo(
+    () => getZonedDateTimeParts(time, displayTimezone),
+    [time, displayTimezone]
+  );
 
-  const hours = displayTime.getHours();
+  const hours = zoned.hour;
   const isDark = !isWindowsTheme && (hours >= 19 || hours < 6);
-  const minutes = displayTime.getMinutes();
-  const seconds = displayTime.getSeconds();
+  const minutes = zoned.minute;
+  const seconds = zoned.second;
 
   const secondAngle = (seconds / 60) * 360;
   const minuteAngle = (minutes / 60) * 360 + (seconds / 60) * 6;
   const hourAngle = ((hours % 12) / 12) * 360 + (minutes / 60) * 30;
-  const digitalTime = displayTime.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true });
+  const digitalTime = formatInTimeZone(time, displayTimezone, undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
 
   const svgSize = 170;
   const clockCenterX = svgSize / 2;

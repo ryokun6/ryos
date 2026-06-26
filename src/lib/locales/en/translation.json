@@ -1,6 +1,7 @@
 {
   "common": {
     "auto": "Auto",
+    "noResults": "No results",
     "loading": {
       "default": "Loading...",
       "openingAppletStore": "Opening Applet Store...",
@@ -2908,11 +2909,11 @@
       "displayModeDescription": "Applies a color filter over the desktop wallpaper",
       "softwareUpdateDescription": "Check whether a newer version of ryOS is available",
       "sharingDescription": "Back up and share your ryOS data with cloud storage",
-      "dateTimeDescription": "Date and time are set by your device. ryOS uses your browser timezone for scheduling and AI context",
+      "dateTimeDescription": "Date and time are set by your device. ryOS uses your time zone preference for clocks, scheduling, and AI context",
       "timeZone": "Time Zone",
-      "timeZoneDescription": "Used for scheduling, formatting, and AI context",
-      "timezoneAutomatic": "Automatic",
-      "timezoneAutomaticCity": "Automatic ({{city}})",
+      "timeZoneDescription": "Used for clocks, scheduling, formatting, and AI context",
+      "timezoneAutomatic": "Auto",
+      "timezoneAutomaticCity": "Auto ({{city}})",
       "timezoneSearchPlaceholder": "Search time zones…",
       "timezoneNoResults": "No matching time zones",
       "internationalTabs": {

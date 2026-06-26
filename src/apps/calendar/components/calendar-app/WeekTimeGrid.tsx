@@ -22,6 +22,8 @@ import {
   TODAY_RED,
   TODAY_RED_XP,
 } from "./calendarAppConstants";
+import { useEffectiveTimezone } from "@/hooks/useEffectiveTimezone";
+import { getZonedMinutesSinceMidnight } from "@/lib/timezoneConfig";
 
 export function WeekTimeGrid({
   weekDates,
@@ -90,10 +92,9 @@ export function WeekTimeGrid({
     }
   }, [onEventClick, onEventDoubleClick]);
 
-  const [currentMinute, setCurrentMinute] = useState(() => {
-    const now = new Date();
-    return now.getHours() * 60 + now.getMinutes();
-  });
+  const timeZone = useEffectiveTimezone();
+  const [, setMinuteTick] = useState(0);
+  const currentMinute = getZonedMinutesSinceMidnight(new Date(), timeZone);
 
   useLayoutEffect(() => {
     const el = scrollRef.current;
@@ -103,10 +104,7 @@ export function WeekTimeGrid({
   }, []);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      const now = new Date();
-      setCurrentMinute(now.getHours() * 60 + now.getMinutes());
-    }, 60000);
+    const interval = setInterval(() => setMinuteTick((n) => n + 1), 60000);
     return () => clearInterval(interval);
   }, []);
 

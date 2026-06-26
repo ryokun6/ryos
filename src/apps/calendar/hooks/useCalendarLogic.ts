@@ -14,6 +14,8 @@ import { toast } from "@/hooks/useToast";
 import { CALENDAR_ANALYTICS, track } from "@/utils/analytics";
 import { openNativeFile, saveBlobToDevice } from "@/utils/nativeFileDialogs";
 import { calendarEventOccursOnDate } from "@/shared/calendarEventDates";
+import { useEffectiveTimezone } from "@/hooks/useEffectiveTimezone";
+import { formatZonedDateString } from "@/lib/timezoneConfig";
 
 type CalendarUndoAction =
   | { type: "addEvent"; event: CalendarEvent }
@@ -48,6 +50,7 @@ const formatDate = (d: Date): string =>
 export function useCalendarLogic() {
   const { t, i18n } = useTranslation();
   const locale = i18n.language;
+  const timeZone = useEffectiveTimezone();
   const translatedHelpItems = useTranslatedHelpItems("calendar", helpItems);
 
   // Theme
@@ -208,11 +211,11 @@ export function useCalendarLogic() {
     return events.filter((ev) => visibleCalendarIds.has(ev.calendarId || "home"));
   }, [events, visibleCalendarIds]);
 
-  // Today string
-  const todayStr = useMemo(() => {
-    const d = new Date();
-    return formatDate(d);
-  }, []);
+  // Today string (calendar day in the user's effective timezone preference)
+  const todayStr = useMemo(
+    () => formatZonedDateString(new Date(), timeZone),
+    [timeZone]
+  );
 
   // Locale-aware day names (Sun=0 .. Sat=6)
   const shortDayNames = useMemo(() => {

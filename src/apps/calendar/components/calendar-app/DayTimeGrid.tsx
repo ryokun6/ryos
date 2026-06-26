@@ -16,6 +16,11 @@ import {
   TODAY_RED,
   TODAY_RED_XP,
 } from "./calendarAppConstants";
+import { useEffectiveTimezone } from "@/hooks/useEffectiveTimezone";
+import {
+  formatZonedDateString,
+  getZonedMinutesSinceMidnight,
+} from "@/lib/timezoneConfig";
 
 export function DayTimeGrid({
   date,
@@ -66,10 +71,10 @@ export function DayTimeGrid({
     }
   }, [onEventClick, onEventDoubleClick]);
 
-  const [currentMinute, setCurrentMinute] = useState(() => {
-    const now = new Date();
-    return now.getHours() * 60 + now.getMinutes();
-  });
+  const timeZone = useEffectiveTimezone();
+  // Interval only forces a re-render; minute-of-day is derived during render.
+  const [, setMinuteTick] = useState(0);
+  const currentMinute = getZonedMinutesSinceMidnight(new Date(), timeZone);
 
   const { allDayEvents, timedEvents } = useMemo(() => {
     const nextAllDayEvents: CalendarEvent[] = [];
@@ -93,8 +98,7 @@ export function DayTimeGrid({
     };
   }, [events]);
 
-  const d = new Date();
-  const todayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const todayStr = formatZonedDateString(new Date(), timeZone);
   const isToday = date === todayStr;
 
   useLayoutEffect(() => {
@@ -105,10 +109,7 @@ export function DayTimeGrid({
   }, []);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      const now = new Date();
-      setCurrentMinute(now.getHours() * 60 + now.getMinutes());
-    }, 60000);
+    const interval = setInterval(() => setMinuteTick((n) => n + 1), 60000);
     return () => clearInterval(interval);
   }, []);
 

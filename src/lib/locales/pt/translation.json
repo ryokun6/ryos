@@ -564,6 +564,11 @@
         "double": "Duplo",
         "single": "Simples"
       },
+      "contextMenu": {
+        "delete": "Excluir",
+        "moveToBottom": "Mover para o final",
+        "moveToTop": "Mover para o topo"
+      },
       "description": "Ler livros EPUB",
       "help": {
         "bookshelf": {
@@ -612,15 +617,20 @@
       },
       "name": "Livros",
       "reader": {
-        "backToShelf": "Estante"
+        "backToShelf": "Estante",
+        "debugCopied": "Copiado",
+        "debugCopy": "Copiar logs",
+        "debugCopyFailed": "Falha ao copiar",
+        "debugTitle": "Log de depuração EPUB",
+        "error": "Não foi possível abrir este livro."
       },
       "shelf": {
         "emptyHint": "Clique em Adicionar Livro para importar um EPUB.",
         "emptyTitle": "Sua estante está vazia",
         "finished": "Concluído",
-        "gridView": "[TODO] Grid View",
+        "gridView": "Visualização em grade",
         "import": "Adicionar Livro",
-        "listView": "[TODO] List View",
+        "listView": "Visualização em lista",
         "percentRead": "{{percent}}%"
       },
       "theme": {
@@ -631,6 +641,8 @@
       },
       "title": "Livros",
       "toasts": {
+        "deleteFailed": "Falha ao excluir livro",
+        "deleted": "Livro excluído",
         "importFailed": "Falha ao importar o livro",
         "imported": "Livro importado",
         "invalidFile": "Arquivo não suportado",
@@ -1390,6 +1402,7 @@
       },
       "appearance": "Aparência",
       "autoSync": {
+        "books": "Livros",
         "calendar": "Calendário",
         "checking": "A verificar atualizações da nuvem…",
         "contacts": "Contatos",
@@ -1491,7 +1504,7 @@
       "darkModeDescription": "Seguir o sistema ou forçar a variante escura",
       "darkModeLight": "Claro",
       "darkModeSystem": "Sistema",
-      "dateTimeDescription": "A data e a hora são definidas pelo seu dispositivo. O ryOS utiliza o fuso horário do seu navegador para agendamentos e contexto de IA",
+      "dateTimeDescription": "A data e a hora são definidas pelo seu dispositivo. O ryOS usa sua preferência de fuso horário para relógios, agendamentos e contexto de IA",
       "debugMode": "Modo Depuração",
       "debugModeDescription": "Ativar configurações de depuração",
       "default": "Padrão",
@@ -1579,6 +1592,10 @@
       },
       "highContrast": "Alto Contraste",
       "internationalHelp": "Arraste os idiomas para definir a ordem de preferência para uso em menus de aplicativos, caixas de diálogo e processamento de texto",
+      "internationalTabs": {
+        "dateTime": "Data e Hora",
+        "language": "Idioma"
+      },
       "invert": "Inverter",
       "iosVolumeHint": "No iOS, use os botões físicos para controlar o volume da mídia",
       "ipod": "iPod",
@@ -1802,15 +1819,11 @@
       },
       "themePreviewWindowTitle": "Documento",
       "timeZone": "Fuso Horário",
-      "timeZoneDescription": "Used for scheduling, formatting, and AI context",
-      "timezoneAutomatic": "Automatic",
-      "timezoneAutomaticCity": "Automatic ({{city}})",
-      "timezoneSearchPlaceholder": "Search time zones…",
-      "timezoneNoResults": "No matching time zones",
-      "internationalTabs": {
-        "language": "Language",
-        "dateTime": "Date & Time"
-      },
+      "timeZoneDescription": "Usado para relógios, agendamentos, formatação e contexto de IA",
+      "timezoneAutomatic": "Auto",
+      "timezoneAutomaticCity": "Auto ({{city}})",
+      "timezoneNoResults": "Nenhum fuso horário correspondente",
+      "timezoneSearchPlaceholder": "Pesquisar fusos horários…",
       "toolbar": {
         "back": "Voltar",
         "forward": "Avançar",
@@ -2088,8 +2101,8 @@
       },
       "fileTypes": {
         "application": "Aplicativo",
-        "book": "Livro",
         "bmpImage": "Imagem BMP",
+        "book": "Livro",
         "directory": "Diretório",
         "document": "Documento",
         "file": "Arquivo",
@@ -4401,6 +4414,7 @@
       "showAllWindows": "Clique para mostrar todas as janelas (F3)",
       "volume": "Volume"
     },
+    "noResults": "Nenhum resultado",
     "startMenu": {
       "aboutThisComputer": "Sobre Este Computador",
       "run": "Executar...",

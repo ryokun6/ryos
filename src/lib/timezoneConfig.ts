@@ -138,14 +138,27 @@ export function formatTimezoneCity(tz: string): string {
   return city.replace(/_/g, " ");
 }
 
+/** Wall-clock fields for an instant in a given IANA timezone. */
+export type ZonedDateTimeParts = {
+  year: number;
+  month: number; // 1–12
+  day: number;
+  hour: number; // 0–23
+  minute: number;
+  second: number;
+};
+
 /**
- * Current UTC offset (in minutes) for the timezone. Positive values are east of
- * UTC. Computed by comparing the zone's wall-clock time to the instant's UTC.
+ * Calendar / clock fields for `date` as observed in `timeZone`. Falls back to
+ * the host environment's local fields when the zone is invalid.
  */
-export function getTimezoneOffsetMinutes(tz: string, date = new Date()): number {
+export function getZonedDateTimeParts(
+  date: Date,
+  timeZone: string
+): ZonedDateTimeParts {
   try {
     const dtf = new Intl.DateTimeFormat("en-US", {
-      timeZone: tz,
+      timeZone,
       hourCycle: "h23",
       year: "numeric",
       month: "2-digit",
@@ -161,13 +174,79 @@ export function getTimezoneOffsetMinutes(tz: string, date = new Date()): number 
         map[part.type] = Number(part.value);
       }
     }
+    return {
+      year: map.year ?? date.getFullYear(),
+      month: map.month ?? date.getMonth() + 1,
+      day: map.day ?? date.getDate(),
+      hour: map.hour ?? date.getHours(),
+      minute: map.minute ?? date.getMinutes(),
+      second: map.second ?? date.getSeconds(),
+    };
+  } catch {
+    return {
+      year: date.getFullYear(),
+      month: date.getMonth() + 1,
+      day: date.getDate(),
+      hour: date.getHours(),
+      minute: date.getMinutes(),
+      second: date.getSeconds(),
+    };
+  }
+}
+
+/** `YYYY-MM-DD` for `date` in `timeZone` (calendar day in that zone). */
+export function formatZonedDateString(date: Date, timeZone: string): string {
+  const { year, month, day } = getZonedDateTimeParts(date, timeZone);
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+/** Minutes since local midnight in `timeZone` (for calendar "now" indicators). */
+export function getZonedMinutesSinceMidnight(
+  date: Date,
+  timeZone: string
+): number {
+  const { hour, minute } = getZonedDateTimeParts(date, timeZone);
+  return hour * 60 + minute;
+}
+
+/** Fractional hour-of-day in `timeZone` (0–24), for day/night gradients. */
+export function getZonedFractionalHour(date: Date, timeZone: string): number {
+  const { hour, minute, second } = getZonedDateTimeParts(date, timeZone);
+  return hour + minute / 60 + second / 3600;
+}
+
+/**
+ * Format an instant with `Intl` in a specific timezone (locale-aware display).
+ */
+export function formatInTimeZone(
+  date: Date,
+  timeZone: string,
+  locale: string | undefined,
+  options: Intl.DateTimeFormatOptions
+): string {
+  try {
+    return new Intl.DateTimeFormat(locale, { ...options, timeZone }).format(
+      date
+    );
+  } catch {
+    return new Intl.DateTimeFormat(locale, options).format(date);
+  }
+}
+
+/**
+ * Current UTC offset (in minutes) for the timezone. Positive values are east of
+ * UTC. Computed by comparing the zone's wall-clock time to the instant's UTC.
+ */
+export function getTimezoneOffsetMinutes(tz: string, date = new Date()): number {
+  try {
+    const map = getZonedDateTimeParts(date, tz);
     const asUTC = Date.UTC(
       map.year,
-      (map.month ?? 1) - 1,
-      map.day ?? 1,
-      map.hour ?? 0,
-      map.minute ?? 0,
-      map.second ?? 0
+      map.month - 1,
+      map.day,
+      map.hour,
+      map.minute,
+      map.second
     );
     return Math.round((asUTC - date.getTime()) / 60000);
   } catch {
@@ -217,4 +296,17 @@ export function readPersistedTimezonePreference(): TimezonePreference {
   } catch {
     return AUTO_TIMEZONE;
   }
+}
+
+/**
+ * Effective IANA timezone for display and API headers: resolves the given
+ * preference (or the persisted International setting) through
+ * {@link resolveEffectiveTimezone}.
+ */
+export function getEffectiveTimezone(
+  preference?: TimezonePreference | null
+): string {
+  return resolveEffectiveTimezone(
+    preference === undefined ? readPersistedTimezonePreference() : preference
+  );
 }

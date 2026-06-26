@@ -564,6 +564,11 @@
         "double": "Zweiseitig",
         "single": "Einseitig"
       },
+      "contextMenu": {
+        "delete": "Löschen",
+        "moveToBottom": "Nach ganz unten",
+        "moveToTop": "Nach ganz oben"
+      },
       "description": "EPUB-Bücher lesen",
       "help": {
         "bookshelf": {
@@ -612,15 +617,20 @@
       },
       "name": "Bücher",
       "reader": {
-        "backToShelf": "Regal"
+        "backToShelf": "Regal",
+        "debugCopied": "Kopiert",
+        "debugCopy": "Logs kopieren",
+        "debugCopyFailed": "Kopieren fehlgeschlagen",
+        "debugTitle": "EPUB-Debug-Log",
+        "error": "Dieses Buch konnte nicht geöffnet werden."
       },
       "shelf": {
         "emptyHint": "Klicke auf „Buch hinzufügen“, um ein EPUB zu importieren.",
         "emptyTitle": "Dein Bücherregal ist leer",
         "finished": "Fertig",
-        "gridView": "[TODO] Grid View",
+        "gridView": "Gitteransicht",
         "import": "Buch hinzufügen",
-        "listView": "[TODO] List View",
+        "listView": "Listenansicht",
         "percentRead": "{{percent}}%"
       },
       "theme": {
@@ -631,6 +641,8 @@
       },
       "title": "Bücher",
       "toasts": {
+        "deleteFailed": "Buch konnte nicht gelöscht werden",
+        "deleted": "Buch gelöscht",
         "importFailed": "Buch konnte nicht importiert werden",
         "imported": "Buch importiert",
         "invalidFile": "Nicht unterstützte Datei",
@@ -1390,6 +1402,7 @@
       },
       "appearance": "Erscheinungsbild",
       "autoSync": {
+        "books": "Bücher",
         "calendar": "Kalender",
         "checking": "Cloud-Updates werden geprüft…",
         "contacts": "Kontakte",
@@ -1491,7 +1504,7 @@
       "darkModeDescription": "Dem System folgen oder die dunkle Variante erzwingen",
       "darkModeLight": "Hell",
       "darkModeSystem": "System",
-      "dateTimeDescription": "Datum und Uhrzeit werden von deinem Gerät festgelegt. ryOS nutzt die Zeitzone deines Browsers für die Zeitplanung und den KI-Kontext.",
+      "dateTimeDescription": "Datum und Uhrzeit werden von deinem Gerät festgelegt. ryOS verwendet deine Zeitzoneneinstellung für Uhren, Zeitpläne und den KI-Kontext",
       "debugMode": "Debug-Modus",
       "debugModeDescription": "Debugging-Einstellungen aktivieren",
       "default": "Standard",
@@ -1579,6 +1592,10 @@
       },
       "highContrast": "Hoher Kontrast",
       "internationalHelp": "Ziehen Sie Sprachen in die gewünschte Reihenfolge, um sie in Programmmenüs, Dialogen und bei der Textverarbeitung zu verwenden",
+      "internationalTabs": {
+        "dateTime": "Datum & Uhrzeit",
+        "language": "Sprache"
+      },
       "invert": "Invertieren",
       "iosVolumeHint": "Unter iOS verwenden Sie Hardware-Tasten, um die Medienlautstärke zu steuern",
       "ipod": "iPod",
@@ -1802,15 +1819,11 @@
       },
       "themePreviewWindowTitle": "Dokument",
       "timeZone": "Zeitzone",
-      "timeZoneDescription": "Used for scheduling, formatting, and AI context",
-      "timezoneAutomatic": "Automatic",
-      "timezoneAutomaticCity": "Automatic ({{city}})",
-      "timezoneSearchPlaceholder": "Search time zones…",
-      "timezoneNoResults": "No matching time zones",
-      "internationalTabs": {
-        "language": "Language",
-        "dateTime": "Date & Time"
-      },
+      "timeZoneDescription": "Wird für Uhren, Zeitpläne, Formatierung und den KI-Kontext verwendet",
+      "timezoneAutomatic": "Auto",
+      "timezoneAutomaticCity": "Auto ({{city}})",
+      "timezoneNoResults": "Keine passenden Zeitzonen",
+      "timezoneSearchPlaceholder": "Zeitzonen suchen…",
       "toolbar": {
         "back": "Zurück",
         "forward": "Vorwärts",
@@ -2088,8 +2101,8 @@
       },
       "fileTypes": {
         "application": "Anwendung",
-        "book": "Buch",
         "bmpImage": "BMP-Bild",
+        "book": "Buch",
         "directory": "Verzeichnis",
         "document": "Dokument",
         "file": "Datei",
@@ -4416,6 +4429,7 @@
       "showAllWindows": "Klicken, um alle Fenster anzuzeigen (F3)",
       "volume": "Lautstärke"
     },
+    "noResults": "Keine Ergebnisse",
     "startMenu": {
       "aboutThisComputer": "Über diesen Computer",
       "run": "Ausführen...",

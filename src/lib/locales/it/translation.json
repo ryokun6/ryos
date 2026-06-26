@@ -564,6 +564,11 @@
         "double": "Doppia",
         "single": "Singola"
       },
+      "contextMenu": {
+        "delete": "Elimina",
+        "moveToBottom": "Sposta in fondo",
+        "moveToTop": "Sposta in cima"
+      },
       "description": "Leggi libri EPUB",
       "help": {
         "bookshelf": {
@@ -612,15 +617,20 @@
       },
       "name": "Libri",
       "reader": {
-        "backToShelf": "Libreria"
+        "backToShelf": "Libreria",
+        "debugCopied": "Copiato",
+        "debugCopy": "Copia log",
+        "debugCopyFailed": "Copia non riuscita",
+        "debugTitle": "Log di debug EPUB",
+        "error": "Impossibile aprire questo libro."
       },
       "shelf": {
         "emptyHint": "Fai clic su Aggiungi libro per importare un EPUB.",
         "emptyTitle": "La tua libreria è vuota",
         "finished": "Finito",
-        "gridView": "[TODO] Grid View",
+        "gridView": "Vista a griglia",
         "import": "Aggiungi libro",
-        "listView": "[TODO] List View",
+        "listView": "Vista a elenco",
         "percentRead": "{{percent}}%"
       },
       "theme": {
@@ -631,6 +641,8 @@
       },
       "title": "Libri",
       "toasts": {
+        "deleteFailed": "Impossibile eliminare il libro",
+        "deleted": "Libro eliminato",
         "importFailed": "Impossibile importare il libro",
         "imported": "Libro importato",
         "invalidFile": "File non supportato",
@@ -1390,6 +1402,7 @@
       },
       "appearance": "Aspetto",
       "autoSync": {
+        "books": "Libri",
         "calendar": "Calendario",
         "checking": "Controllo degli aggiornamenti cloud…",
         "contacts": "Contatti",
@@ -1491,7 +1504,7 @@
       "darkModeDescription": "Segui il sistema o forza la variante scura",
       "darkModeLight": "Chiaro",
       "darkModeSystem": "Sistema",
-      "dateTimeDescription": "La data e l'ora sono impostate dal tuo dispositivo. ryOS utilizza il fuso orario del tuo browser per la pianificazione e il contesto dell'IA",
+      "dateTimeDescription": "La data e l'ora sono impostate dal dispositivo. ryOS utilizza la preferenza del fuso orario per orologi, pianificazione e contesto AI",
       "debugMode": "Modalità Debug",
       "debugModeDescription": "Abilita impostazioni di debug",
       "default": "Predefinito",
@@ -1579,6 +1592,10 @@
       },
       "highContrast": "Contrasto elevato",
       "internationalHelp": "Trascina le lingue per impostare l'ordine preferito da utilizzare nei menu delle applicazioni, nelle finestre di dialogo e nell'elaborazione del testo",
+      "internationalTabs": {
+        "dateTime": "Data e ora",
+        "language": "Lingua"
+      },
       "invert": "Inverti",
       "iosVolumeHint": "Su iOS, usa i pulsanti hardware per controllare il volume dei media",
       "ipod": "iPod",
@@ -1802,15 +1819,11 @@
       },
       "themePreviewWindowTitle": "Documento",
       "timeZone": "Fuso orario",
-      "timeZoneDescription": "Used for scheduling, formatting, and AI context",
-      "timezoneAutomatic": "Automatic",
-      "timezoneAutomaticCity": "Automatic ({{city}})",
-      "timezoneSearchPlaceholder": "Search time zones…",
-      "timezoneNoResults": "No matching time zones",
-      "internationalTabs": {
-        "language": "Language",
-        "dateTime": "Date & Time"
-      },
+      "timeZoneDescription": "Usata per orologi, pianificazione, formattazione e contesto AI",
+      "timezoneAutomatic": "Auto",
+      "timezoneAutomaticCity": "Auto ({{city}})",
+      "timezoneNoResults": "Nessun fuso orario corrispondente",
+      "timezoneSearchPlaceholder": "Cerca fusi orari…",
       "toolbar": {
         "back": "Indietro",
         "forward": "Avanti",
@@ -2088,8 +2101,8 @@
       },
       "fileTypes": {
         "application": "Applicazione",
-        "book": "Libro",
         "bmpImage": "Immagine BMP",
+        "book": "Libro",
         "directory": "Cartella",
         "document": "Documento",
         "file": "File",
@@ -4401,6 +4414,7 @@
       "showAllWindows": "Clicca per mostrare tutte le finestre (F3)",
       "volume": "Volume"
     },
+    "noResults": "Nessun risultato",
     "startMenu": {
       "aboutThisComputer": "Informazioni su questo computer",
       "run": "Esegui...",

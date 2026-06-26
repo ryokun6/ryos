@@ -6,6 +6,11 @@ import {
   calendarEventOverlapsDateRange,
   normalizeAllDayEndDate,
 } from "@/shared/calendarEventDates";
+import {
+  formatZonedDateString,
+  getEffectiveTimezone,
+  getZonedDateTimeParts,
+} from "@/lib/timezoneConfig";
 
 export type EventColor = "blue" | "red" | "green" | "orange" | "purple";
 
@@ -90,13 +95,11 @@ interface CalendarStoreState {
   getEventsForMonth: (year: number, month: number) => CalendarEvent[];
 }
 
-/** Get today as YYYY-MM-DD */
-const getTodayStr = (): string => {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-};
+/** Get today as YYYY-MM-DD in the user's effective timezone preference. */
+const getTodayStr = (): string =>
+  formatZonedDateString(new Date(), getEffectiveTimezone());
 
-/** Format a Date as YYYY-MM-DD */
+/** Format a Date as YYYY-MM-DD (civil date in host local — used for nav only). */
 const formatDate = (d: Date): string =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
@@ -104,14 +107,15 @@ export const useCalendarStore = create<CalendarStoreState>()(
   persist(
     (set, get) => {
       const now = new Date();
+      const zoned = getZonedDateTimeParts(now, getEffectiveTimezone());
       return {
         events: [],
         calendars: DEFAULT_CALENDARS,
         todos: [],
         showTodoSidebar: false,
         selectedDate: getTodayStr(),
-        currentMonth: now.getMonth(),
-        currentYear: now.getFullYear(),
+        currentMonth: zoned.month - 1,
+        currentYear: zoned.year,
         view: "week" as CalendarView,
 
         addCalendar: (name, color) => {
@@ -285,10 +289,11 @@ export const useCalendarStore = create<CalendarStoreState>()(
 
         goToToday: () => {
           const now = new Date();
+          const zoned = getZonedDateTimeParts(now, getEffectiveTimezone());
           set({
-            selectedDate: getTodayStr(),
-            currentMonth: now.getMonth(),
-            currentYear: now.getFullYear(),
+            selectedDate: formatZonedDateString(now, getEffectiveTimezone()),
+            currentMonth: zoned.month - 1,
+            currentYear: zoned.year,
           });
         },
 
@@ -341,13 +346,16 @@ export const useCalendarStore = create<CalendarStoreState>()(
       }),
       merge: (persistedState, currentState) => {
         const now = new Date();
+        const tz = getEffectiveTimezone();
+        const zoned = getZonedDateTimeParts(now, tz);
         const p = persistedState as Partial<CalendarStoreState>;
         return {
           ...currentState,
           ...p,
-          selectedDate: getTodayStr(),
-          currentMonth: now.getMonth(),
-          currentYear: now.getFullYear(),
+          // Always land on "today" in the user's effective timezone on rehydrate.
+          selectedDate: formatZonedDateString(now, tz),
+          currentMonth: zoned.month - 1,
+          currentYear: zoned.year,
         };
       },
     }

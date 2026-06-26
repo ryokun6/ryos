@@ -564,6 +564,11 @@
         "double": "Две страницы",
         "single": "Одна страница"
       },
+      "contextMenu": {
+        "delete": "Удалить",
+        "moveToBottom": "Переместить в конец",
+        "moveToTop": "Переместить в начало"
+      },
       "description": "Читайте книги EPUB",
       "help": {
         "bookshelf": {
@@ -612,15 +617,20 @@
       },
       "name": "Книги",
       "reader": {
-        "backToShelf": "Полка"
+        "backToShelf": "Полка",
+        "debugCopied": "Скопировано",
+        "debugCopy": "Копировать логи",
+        "debugCopyFailed": "Ошибка копирования",
+        "debugTitle": "Журнал отладки EPUB",
+        "error": "Не удалось открыть эту книгу."
       },
       "shelf": {
         "emptyHint": "Нажмите «Добавить книгу», чтобы импортировать EPUB.",
         "emptyTitle": "Ваша книжная полка пуста",
         "finished": "Прочитано",
-        "gridView": "[TODO] Grid View",
+        "gridView": "Сетка",
         "import": "Добавить книгу",
-        "listView": "[TODO] List View",
+        "listView": "Список",
         "percentRead": "{{percent}}%"
       },
       "theme": {
@@ -631,6 +641,8 @@
       },
       "title": "Книги",
       "toasts": {
+        "deleteFailed": "Не удалось удалить книгу",
+        "deleted": "Книга удалена",
         "importFailed": "Не удалось импортировать книгу",
         "imported": "Книга импортирована",
         "invalidFile": "Неподдерживаемый файл",
@@ -1390,6 +1402,7 @@
       },
       "appearance": "Внешний вид",
       "autoSync": {
+        "books": "Книги",
         "calendar": "Календарь",
         "checking": "Проверка облачных обновлений…",
         "contacts": "Контакты",
@@ -1491,7 +1504,7 @@
       "darkModeDescription": "Следовать системе или принудительно использовать тёмный вариант",
       "darkModeLight": "Светлый",
       "darkModeSystem": "Системный",
-      "dateTimeDescription": "Дата и время устанавливаются вашим устройством. ryOS использует часовой пояс вашего браузера для планирования и контекста ИИ",
+      "dateTimeDescription": "Дата и время устанавливаются вашим устройством. ryOS использует настройки часового пояса для часов, планирования и контекста ИИ",
       "debugMode": "Режим отладки",
       "debugModeDescription": "Включить параметры отладки",
       "default": "По умолчанию",
@@ -1579,6 +1592,10 @@
       },
       "highContrast": "Высокий контраст",
       "internationalHelp": "Перетащите языки, чтобы установить предпочтительный порядок для использования в меню приложений, диалоговых окнах и при обработке текста",
+      "internationalTabs": {
+        "dateTime": "Дата и время",
+        "language": "Язык"
+      },
       "invert": "Инвертировать",
       "iosVolumeHint": "На iOS используйте аппаратные кнопки для управления громкостью медиа",
       "ipod": "iPod",
@@ -1802,15 +1819,11 @@
       },
       "themePreviewWindowTitle": "Документ",
       "timeZone": "Часовой пояс",
-      "timeZoneDescription": "Used for scheduling, formatting, and AI context",
-      "timezoneAutomatic": "Automatic",
-      "timezoneAutomaticCity": "Automatic ({{city}})",
-      "timezoneSearchPlaceholder": "Search time zones…",
-      "timezoneNoResults": "No matching time zones",
-      "internationalTabs": {
-        "language": "Language",
-        "dateTime": "Date & Time"
-      },
+      "timeZoneDescription": "Используется для часов, планирования, форматирования и контекста ИИ",
+      "timezoneAutomatic": "Авто",
+      "timezoneAutomaticCity": "Авто ({{city}})",
+      "timezoneNoResults": "Нет подходящих часовых поясов",
+      "timezoneSearchPlaceholder": "Поиск часовых поясов…",
       "toolbar": {
         "back": "Назад",
         "forward": "Вперед",
@@ -2088,8 +2101,8 @@
       },
       "fileTypes": {
         "application": "Приложение",
-        "book": "Книга",
         "bmpImage": "Изображение BMP",
+        "book": "Книга",
         "directory": "Каталог",
         "document": "Документ",
         "file": "Файл",
@@ -4401,6 +4414,7 @@
       "showAllWindows": "Нажмите, чтобы показать все окна (F3)",
       "volume": "Громкость"
     },
+    "noResults": "Нет результатов",
     "startMenu": {
       "aboutThisComputer": "Об этом компьютере",
       "run": "Выполнить...",

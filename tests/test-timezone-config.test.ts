@@ -1,10 +1,14 @@
 import { describe, expect, test } from "bun:test";
 import {
   AUTO_TIMEZONE,
+  formatInTimeZone,
   formatOffsetLabel,
   formatTimezoneCity,
+  formatZonedDateString,
   getSupportedTimezones,
   getTimezoneOffsetMinutes,
+  getZonedDateTimeParts,
+  getZonedMinutesSinceMidnight,
   groupTimezonesByRegion,
   isValidTimezone,
   offsetMinutesToLongitude,
@@ -89,5 +93,32 @@ describe("timezoneConfig", () => {
     // Invalid id resolves to the browser timezone (same as auto).
     expect(resolveEffectiveTimezone("Not/AZone")).toBe(browser);
     expect(resolveEffectiveTimezone(null)).toBe(browser);
+  });
+
+  test("getZonedDateTimeParts reflects the target zone", () => {
+    // 2023-01-15 12:00 UTC → Taipei is 20:00 on the same day.
+    const ref = new Date("2023-01-15T12:00:00Z");
+    const taipei = getZonedDateTimeParts(ref, "Asia/Taipei");
+    expect(taipei.year).toBe(2023);
+    expect(taipei.month).toBe(1);
+    expect(taipei.day).toBe(15);
+    expect(taipei.hour).toBe(20);
+    expect(taipei.minute).toBe(0);
+    expect(formatZonedDateString(ref, "Asia/Taipei")).toBe("2023-01-15");
+    // Near UTC midnight crossing into Tokyo next day.
+    const late = new Date("2023-01-15T16:00:00Z");
+    expect(formatZonedDateString(late, "Asia/Tokyo")).toBe("2023-01-16");
+    expect(getZonedMinutesSinceMidnight(ref, "Asia/Taipei")).toBe(20 * 60);
+  });
+
+  test("formatInTimeZone passes timeZone to Intl", () => {
+    const ref = new Date("2023-01-15T12:00:00Z");
+    const out = formatInTimeZone(ref, "UTC", "en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: false,
+      hourCycle: "h23",
+    });
+    expect(out).toMatch(/12:00|12/);
   });
 });
