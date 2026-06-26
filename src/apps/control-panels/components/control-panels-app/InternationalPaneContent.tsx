@@ -271,11 +271,11 @@ export function InternationalPaneContent({
                 />
               </ControlPanelsPrefFormRow>
 
-              <div
-                className="overflow-hidden rounded-[6px] border border-black/30"
-                aria-hidden
-              >
-                <InternationalWorldMap timeZone={effectiveTimezone} />
+              <div className="rounded-[6px] border border-black/30 p-0.5">
+                <InternationalWorldMap
+                  timeZone={effectiveTimezone}
+                  onSelectTimezone={setTimezone}
+                />
               </div>
 
               <div

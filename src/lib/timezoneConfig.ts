@@ -4,8 +4,10 @@
  * The user picks an IANA timezone (e.g. "Asia/Taipei") or the sentinel
  * {@link AUTO_TIMEZONE}, which defers to the browser's resolved timezone. The
  * helpers here resolve the effective timezone, compute UTC offsets, and derive
- * an approximate longitude so the globe visualization can rotate to face it.
+ * map coordinates for the International world map marker.
  */
+
+import { TIMEZONE_CITY_COORDS } from "./timezoneCityCoords";
 
 /** Sentinel preference: follow the browser's reported timezone. */
 export const AUTO_TIMEZONE = "auto";
@@ -20,48 +22,182 @@ export type TimezonePreference = string;
 
 /**
  * Curated fallback list for engines that lack `Intl.supportedValuesOf`.
- * Covers every UTC offset plus the cities most users recognize.
+ * Covers major offsets plus cities/countries users commonly search for.
  */
 const FALLBACK_TIMEZONES: string[] = [
   "Pacific/Midway",
   "Pacific/Honolulu",
+  "America/Adak",
   "America/Anchorage",
+  "America/Vancouver",
   "America/Los_Angeles",
+  "America/Tijuana",
+  "America/Phoenix",
   "America/Denver",
+  "America/Edmonton",
+  "America/Mexico_City",
   "America/Chicago",
+  "America/Winnipeg",
+  "America/Bogota",
+  "America/Lima",
   "America/New_York",
+  "America/Toronto",
+  "America/Havana",
   "America/Caracas",
+  "America/Santiago",
   "America/Halifax",
   "America/Sao_Paulo",
+  "America/Argentina/Buenos_Aires",
+  "America/St_Johns",
   "Atlantic/South_Georgia",
   "Atlantic/Azores",
+  "Atlantic/Reykjavik",
   "UTC",
   "Europe/London",
+  "Europe/Dublin",
+  "Europe/Lisbon",
   "Europe/Paris",
   "Europe/Berlin",
+  "Europe/Amsterdam",
+  "Europe/Brussels",
   "Europe/Madrid",
   "Europe/Rome",
+  "Europe/Zurich",
+  "Europe/Stockholm",
+  "Europe/Warsaw",
   "Europe/Athens",
+  "Europe/Istanbul",
   "Europe/Moscow",
+  "Africa/Casablanca",
+  "Africa/Lagos",
   "Africa/Cairo",
+  "Africa/Nairobi",
   "Africa/Johannesburg",
+  "Asia/Jerusalem",
+  "Asia/Riyadh",
   "Asia/Dubai",
   "Asia/Tehran",
   "Asia/Karachi",
   "Asia/Kolkata",
   "Asia/Dhaka",
   "Asia/Bangkok",
+  "Asia/Jakarta",
+  "Asia/Ho_Chi_Minh",
   "Asia/Shanghai",
   "Asia/Hong_Kong",
+  "Asia/Macau",
   "Asia/Taipei",
+  "Asia/Manila",
   "Asia/Singapore",
+  "Asia/Kuala_Lumpur",
   "Asia/Tokyo",
   "Asia/Seoul",
   "Australia/Perth",
+  "Australia/Adelaide",
+  "Australia/Darwin",
+  "Australia/Brisbane",
   "Australia/Sydney",
+  "Australia/Melbourne",
   "Pacific/Guam",
+  "Pacific/Port_Moresby",
+  "Pacific/Fiji",
   "Pacific/Auckland",
 ];
+
+/**
+ * Extra searchable aliases (countries, regions, well-known cities) keyed by
+ * IANA id. Complements path segments and Intl abbreviations.
+ */
+const TIMEZONE_SEARCH_ALIASES: Record<string, string> = {
+  "America/Los_Angeles":
+    "usa us united states california seattle san francisco sf la los angeles pacific pdt pst",
+  "America/Vancouver": "canada british columbia vancouver pdt pst",
+  "America/Denver": "usa us united states colorado denver mountain mdt mst",
+  "America/Phoenix": "usa us arizona phoenix mst",
+  "America/Chicago": "usa us united states texas chicago central cdt cst",
+  "America/Mexico_City": "mexico ciudad de mexico central",
+  "America/New_York":
+    "usa us united states new york nyc boston miami washington dc eastern edt est",
+  "America/Toronto": "canada ontario toronto eastern edt est",
+  "America/Sao_Paulo": "brazil brasil sao paulo",
+  "America/Argentina/Buenos_Aires": "argentina buenos aires",
+  "America/Santiago": "chile santiago",
+  "America/Bogota": "colombia bogota",
+  "America/Lima": "peru lima",
+  "America/Caracas": "venezuela caracas",
+  "America/Havana": "cuba havana",
+  "America/Anchorage": "usa us alaska anchorage akst akdt",
+  "America/Halifax": "canada nova scotia halifax atlantic adt ast",
+  "America/St_Johns": "canada newfoundland st johns",
+  "Pacific/Honolulu": "usa us hawaii honolulu hst",
+  "Europe/London": "uk united kingdom england britain gmt bst",
+  "Europe/Dublin": "ireland dublin ist",
+  "Europe/Paris": "france paris cet cest",
+  "Europe/Berlin": "germany deutschland berlin cet cest",
+  "Europe/Amsterdam": "netherlands holland amsterdam cet cest",
+  "Europe/Brussels": "belgium brussels cet cest",
+  "Europe/Madrid": "spain espana madrid cet cest",
+  "Europe/Rome": "italy italia rome roma cet cest",
+  "Europe/Zurich": "switzerland zurich cet cest",
+  "Europe/Stockholm": "sweden stockholm cet cest",
+  "Europe/Warsaw": "poland warsaw warszawa cet cest",
+  "Europe/Athens": "greece athens eet eest",
+  "Europe/Istanbul": "turkey turkiye istanbul",
+  "Europe/Moscow": "russia moscow msk",
+  "Europe/Lisbon": "portugal lisbon west",
+  "Africa/Cairo": "egypt cairo",
+  "Africa/Johannesburg": "south africa johannesburg",
+  "Africa/Lagos": "nigeria lagos west africa",
+  "Africa/Nairobi": "kenya nairobi east africa",
+  "Africa/Casablanca": "morocco casablanca",
+  "Asia/Dubai": "uae united arab emirates dubai gulf",
+  "Asia/Riyadh": "saudi arabia riyadh",
+  "Asia/Jerusalem": "israel palestine jerusalem",
+  "Asia/Tehran": "iran tehran",
+  "Asia/Karachi": "pakistan karachi",
+  "Asia/Kolkata": "india bharat mumbai delhi bangalore calcutta ist",
+  "Asia/Dhaka": "bangladesh dhaka",
+  "Asia/Bangkok": "thailand bangkok indochina",
+  "Asia/Jakarta": "indonesia jakarta wib",
+  "Asia/Ho_Chi_Minh": "vietnam saigon ho chi minh",
+  "Asia/Shanghai": "china prc beijing shanghai cst",
+  "Asia/Hong_Kong": "hong kong hkt china",
+  "Asia/Macau": "macau macao",
+  "Asia/Taipei": "taiwan taipei roc",
+  "Asia/Singapore": "singapore sg",
+  "Asia/Kuala_Lumpur": "malaysia kuala lumpur",
+  "Asia/Manila": "philippines manila",
+  "Asia/Tokyo": "japan tokyo jst",
+  "Asia/Seoul": "korea south korea seoul kst",
+  "Australia/Sydney": "australia sydney aedt aest",
+  "Australia/Melbourne": "australia melbourne aedt aest",
+  "Australia/Brisbane": "australia brisbane aest",
+  "Australia/Perth": "australia perth awst",
+  "Australia/Adelaide": "australia adelaide acdt acst",
+  "Australia/Darwin": "australia darwin acst",
+  "Pacific/Auckland": "new zealand auckland nzdt nzst",
+  "Pacific/Fiji": "fiji",
+  "Pacific/Guam": "guam",
+  UTC: "utc gmt coordinated universal zulu z",
+};
+
+/** Coarse region-prefix → country / area search tokens. */
+const REGION_SEARCH_ALIASES: Record<string, string> = {
+  Africa: "africa",
+  America: "americas north america south america latin america",
+  Antarctica: "antarctica",
+  Arctic: "arctic",
+  Asia: "asia",
+  Atlantic: "atlantic",
+  Australia: "australia oceania",
+  Europe: "europe eu",
+  Indian: "indian ocean",
+  Pacific: "pacific oceania",
+};
+
+/** Zones treated as southern-hemisphere for map click tie-breaking. */
+const SOUTHERN_HEMISPHERE_HINT =
+  /Argentina|Santiago|Sao_Paulo|Montevideo|Asuncion|La_Paz|Lima|Sydney|Melbourne|Brisbane|Adelaide|Darwin|Perth|Hobart|Auckland|Fiji|Johannesburg|Buenos_Aires|Antarctica|Easter|Rarotonga|Tahiti|Apia|Tongatapu|Norfolk|Lord_Howe|Chatham|Enderbury|Fakaofo|Kiritimati/i;
 
 /** The browser's resolved IANA timezone, or "UTC" when unavailable. */
 export function getBrowserTimezone(): string {
@@ -136,6 +272,187 @@ export function groupTimezonesByRegion(
 export function formatTimezoneCity(tz: string): string {
   const city = tz.split("/").pop() ?? tz;
   return city.replace(/_/g, " ");
+}
+
+/**
+ * Short / long timezone names from Intl (e.g. PDT, PST, Pacific Daylight Time)
+ * sampled in winter and summer so DST abbreviations are both searchable.
+ */
+export function getTimezoneNameVariants(
+  tz: string,
+  date = new Date()
+): string[] {
+  const year = date.getUTCFullYear();
+  const samples = [
+    date,
+    new Date(Date.UTC(year, 0, 15, 12, 0, 0)),
+    new Date(Date.UTC(year, 6, 15, 12, 0, 0)),
+  ];
+  const styles: Intl.DateTimeFormatOptions["timeZoneName"][] = [
+    "short",
+    "long",
+    "shortOffset",
+    "longOffset",
+  ];
+  const names = new Set<string>();
+  for (const sample of samples) {
+    for (const timeZoneName of styles) {
+      try {
+        const parts = new Intl.DateTimeFormat("en-US", {
+          timeZone: tz,
+          timeZoneName,
+        }).formatToParts(sample);
+        const value = parts.find((p) => p.type === "timeZoneName")?.value;
+        if (value) names.add(value);
+      } catch {
+        // Unsupported style or zone — skip.
+      }
+    }
+  }
+  return [...names];
+}
+
+/**
+ * Lowercased search blob for combobox filtering: IANA path, city segments,
+ * region, GMT/UTC offsets, Intl abbreviations (PDT/PST…), and country aliases.
+ */
+export function buildTimezoneSearchText(tz: string, date = new Date()): string {
+  const slash = tz.indexOf("/");
+  const region = slash === -1 ? "" : tz.slice(0, slash);
+  const segments = tz.split("/").map((s) => s.replace(/_/g, " "));
+  const city = formatTimezoneCity(tz);
+  const offset = getTimezoneOffsetMinutes(tz, date);
+  const offsetLabel = formatOffsetLabel(offset);
+  const hours = offset / 60;
+  const hourToken =
+    Number.isInteger(hours) ? String(hours) : hours.toFixed(1).replace(/\.0$/, "");
+  const variants = getTimezoneNameVariants(tz, date);
+  const alias = TIMEZONE_SEARCH_ALIASES[tz] ?? "";
+  const regionAlias = region ? (REGION_SEARCH_ALIASES[region] ?? "") : "";
+
+  return [
+    tz,
+    tz.replace(/\//g, " "),
+    ...segments,
+    city,
+    region,
+    regionAlias,
+    alias,
+    offsetLabel,
+    `utc${hourToken}`,
+    `utc+${hourToken}`,
+    `utc-${Math.abs(Number(hourToken))}`,
+    `gmt${hourToken}`,
+    `gmt+${hourToken}`,
+    ...variants,
+  ]
+    .join(" ")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export type TimezoneCoordinates = {
+  /** Degrees east-positive, [-180, 180]. */
+  longitude: number;
+  /** Degrees north-positive, [-90, 90]. */
+  latitude: number;
+  /** `city` when a known principal-city coordinate is used. */
+  source: "city" | "estimated";
+};
+
+/**
+ * Map position for a timezone: principal-city coordinates when known, otherwise
+ * offset-derived longitude plus a latitude heuristic (so the marker is not
+ * stuck on the equator).
+ */
+export function getTimezoneCoordinates(
+  tz: string,
+  date = new Date()
+): TimezoneCoordinates {
+  const known = TIMEZONE_CITY_COORDS[tz];
+  if (known) {
+    return {
+      longitude: known[0],
+      latitude: known[1],
+      source: "city",
+    };
+  }
+
+  const longitude = offsetMinutesToLongitude(
+    getTimezoneOffsetMinutes(tz, date)
+  );
+  let latitude = 25;
+  if (tz.startsWith("Antarctica/")) latitude = -75;
+  else if (tz.startsWith("Arctic/")) latitude = 78;
+  else if (SOUTHERN_HEMISPHERE_HINT.test(tz)) latitude = -30;
+  else if (tz.startsWith("Australia/")) latitude = -25;
+  else if (tz.startsWith("Pacific/")) latitude = -10;
+  else if (tz.startsWith("Africa/")) latitude = 5;
+  else if (tz.startsWith("Europe/")) latitude = 50;
+  else if (tz.startsWith("Asia/")) latitude = 30;
+  else if (tz.startsWith("America/")) latitude = 30;
+  else if (tz === "UTC" || tz.startsWith("Etc/")) latitude = 0;
+
+  return { longitude, latitude, source: "estimated" };
+}
+
+/** Great-circle-ish distance on an equirectangular plane (degrees²-ish). */
+function geoDistanceScore(
+  lonA: number,
+  latA: number,
+  lonB: number,
+  latB: number
+): number {
+  let dLon = Math.abs(lonA - lonB);
+  if (dLon > 180) dLon = 360 - dLon;
+  const midLat = ((latA + latB) / 2) * (Math.PI / 180);
+  const x = dLon * Math.cos(midLat);
+  const y = latA - latB;
+  return x * x + y * y;
+}
+
+/**
+ * Pick the supported IANA zone whose representative city (or estimated
+ * coordinates) is closest to the map click. Used by the International world
+ * map click handler.
+ */
+export function findClosestTimezone(
+  longitude: number,
+  options?: {
+    latitude?: number;
+    date?: Date;
+    timezones?: string[];
+  }
+): string {
+  const zones = options?.timezones ?? getSupportedTimezones();
+  if (zones.length === 0) return "UTC";
+
+  const date = options?.date ?? new Date();
+  const lat = options?.latitude ?? 0;
+
+  let best = zones[0]!;
+  let bestScore = Infinity;
+
+  for (const tz of zones) {
+    const coords = getTimezoneCoordinates(tz, date);
+    const score = geoDistanceScore(
+      longitude,
+      lat,
+      coords.longitude,
+      coords.latitude
+    );
+
+    if (
+      score < bestScore ||
+      (score === bestScore && tz.localeCompare(best) < 0)
+    ) {
+      bestScore = score;
+      best = tz;
+    }
+  }
+
+  return best;
 }
 
 /** Wall-clock fields for an instant in a given IANA timezone. */

@@ -1,11 +1,15 @@
 import { describe, expect, test } from "bun:test";
 import {
   AUTO_TIMEZONE,
+  buildTimezoneSearchText,
+  findClosestTimezone,
+  getTimezoneCoordinates,
   formatInTimeZone,
   formatOffsetLabel,
   formatTimezoneCity,
   formatZonedDateString,
   getSupportedTimezones,
+  getTimezoneNameVariants,
   getTimezoneOffsetMinutes,
   getZonedDateTimeParts,
   getZonedMinutesSinceMidnight,
@@ -120,5 +124,67 @@ describe("timezoneConfig", () => {
       hourCycle: "h23",
     });
     expect(out).toMatch(/12:00|12/);
+  });
+
+  test("buildTimezoneSearchText includes abbreviations and country aliases", () => {
+    const text = buildTimezoneSearchText(
+      "America/Los_Angeles",
+      new Date("2023-07-15T12:00:00Z")
+    );
+    expect(text).toContain("los angeles");
+    expect(text).toContain("america");
+    // Summer + winter abbreviations (PDT and/or PST depending on engine).
+    const variants = getTimezoneNameVariants(
+      "America/Los_Angeles",
+      new Date("2023-07-15T12:00:00Z")
+    ).map((v) => v.toLowerCase());
+    const hasAbbrev = variants.some((v) => /p[ds]t|pacific/.test(v));
+    expect(hasAbbrev).toBe(true);
+    expect(text.includes("pdt") || text.includes("pst") || text.includes("pacific")).toBe(
+      true
+    );
+    expect(text).toContain("usa");
+    expect(text).toContain("california");
+  });
+
+  test("getTimezoneCoordinates uses principal city when known", () => {
+    const la = getTimezoneCoordinates("America/Los_Angeles");
+    expect(la.source).toBe("city");
+    expect(la.longitude).toBeCloseTo(-118.24, 1);
+    expect(la.latitude).toBeCloseTo(34.05, 1);
+    const taipei = getTimezoneCoordinates("Asia/Taipei");
+    expect(taipei.latitude).toBeGreaterThan(20);
+  });
+
+  test("findClosestTimezone picks a zone near the click coordinates", () => {
+    const zones = [
+      "America/Los_Angeles",
+      "America/New_York",
+      "Europe/London",
+      "Asia/Tokyo",
+      "UTC",
+    ];
+    const winter = new Date("2023-01-15T12:00:00Z");
+    expect(
+      findClosestTimezone(-118.2, {
+        latitude: 34,
+        date: winter,
+        timezones: zones,
+      })
+    ).toBe("America/Los_Angeles");
+    expect(
+      findClosestTimezone(139.7, {
+        latitude: 35.7,
+        date: winter,
+        timezones: zones,
+      })
+    ).toBe("Asia/Tokyo");
+    expect(
+      findClosestTimezone(-70.7, {
+        latitude: -33.5,
+        date: winter,
+        timezones: [...zones, "America/Santiago"],
+      })
+    ).toBe("America/Santiago");
   });
 });

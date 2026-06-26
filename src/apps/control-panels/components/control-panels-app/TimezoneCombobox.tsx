@@ -2,9 +2,11 @@ import { memo, useMemo } from "react";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import {
   AUTO_TIMEZONE,
+  buildTimezoneSearchText,
   formatOffsetLabel,
   formatTimezoneCity,
   getSupportedTimezones,
+  getTimezoneNameVariants,
   getTimezoneOffsetMinutes,
   resolveEffectiveTimezone,
   type TimezonePreference,
@@ -23,7 +25,7 @@ function TimezoneComboboxImpl({
   t,
   className,
 }: TimezoneComboboxProps) {
-  // Computing offsets for every zone is non-trivial; do it once per mount.
+  // Computing offsets / abbreviations for every zone is non-trivial; once per mount.
   const autoCity = useMemo(
     () => formatTimezoneCity(resolveEffectiveTimezone(AUTO_TIMEZONE)),
     []
@@ -45,12 +47,18 @@ function TimezoneComboboxImpl({
       const region = slash === -1 ? "" : id.slice(0, slash).replace(/_/g, " ");
       const city = formatTimezoneCity(id);
       const offsetLabel = formatOffsetLabel(getTimezoneOffsetMinutes(id, now));
-      const description = region ? `${region} · ${offsetLabel}` : offsetLabel;
+      const abbrevs = getTimezoneNameVariants(id, now)
+        .filter((n) => /^[A-Za-z]{2,5}$/.test(n))
+        .slice(0, 3);
+      const abbrevSuffix = abbrevs.length > 0 ? ` · ${abbrevs.join("/")}` : "";
+      const description = region
+        ? `${region} · ${offsetLabel}${abbrevSuffix}`
+        : `${offsetLabel}${abbrevSuffix}`;
       zones.push({
         value: id,
         label: city,
         description,
-        searchText: `${id} ${city} ${region} ${offsetLabel}`.toLowerCase(),
+        searchText: buildTimezoneSearchText(id, now),
       });
     }
     return zones;
