@@ -234,6 +234,8 @@ export function EventTrayEditor({
                   type="date"
                   value={date}
                   onChange={(e) => commitDate(e.target.value)}
+                  onInput={(e) => commitDate(e.currentTarget.value)}
+                  onBlur={(e) => commitDate(e.currentTarget.value)}
                   onKeyDown={(e) => e.stopPropagation()}
                   className={cn(fieldInputClass, "min-w-0 flex-1")}
                 />
@@ -252,6 +254,8 @@ export function EventTrayEditor({
                   type="date"
                   value={date}
                   onChange={(e) => commitDate(e.target.value)}
+                  onInput={(e) => commitDate(e.currentTarget.value)}
+                  onBlur={(e) => commitDate(e.currentTarget.value)}
                   onKeyDown={(e) => e.stopPropagation()}
                   className={cn(fieldInputClass, "min-w-0 flex-1")}
                 />
@@ -272,6 +276,8 @@ export function EventTrayEditor({
                 type="date"
                 value={date}
                 onChange={(e) => commitDate(e.target.value)}
+                onInput={(e) => commitDate(e.currentTarget.value)}
+                onBlur={(e) => commitDate(e.currentTarget.value)}
                 onKeyDown={(e) => e.stopPropagation()}
                 className={fieldInputClass}
               />
@@ -282,6 +288,8 @@ export function EventTrayEditor({
                 value={endDate}
                 min={date}
                 onChange={(e) => commitEndDate(e.target.value)}
+                onInput={(e) => commitEndDate(e.currentTarget.value)}
+                onBlur={(e) => commitEndDate(e.currentTarget.value)}
                 onKeyDown={(e) => e.stopPropagation()}
                 className={fieldInputClass}
               />
