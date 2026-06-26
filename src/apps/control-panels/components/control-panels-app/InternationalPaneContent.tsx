@@ -260,13 +260,6 @@ export function InternationalPaneContent({
             aria-hidden={tab !== "dateTime"}
           >
             <div className="control-panels-pref-form-section">
-              <div
-                className="overflow-hidden rounded-[6px] border border-black/30"
-                aria-hidden
-              >
-                <InternationalWorldMap timeZone={effectiveTimezone} />
-              </div>
-
               <ControlPanelsPrefFormRow
                 label={t("apps.control-panels.timeZone")}
                 description={t("apps.control-panels.timeZoneDescription")}
@@ -277,6 +270,13 @@ export function InternationalPaneContent({
                   t={t}
                 />
               </ControlPanelsPrefFormRow>
+
+              <div
+                className="overflow-hidden rounded-[6px] border border-black/30"
+                aria-hidden
+              >
+                <InternationalWorldMap timeZone={effectiveTimezone} />
+              </div>
 
               <div
                 className="flex items-baseline justify-between gap-3 font-geneva-12"

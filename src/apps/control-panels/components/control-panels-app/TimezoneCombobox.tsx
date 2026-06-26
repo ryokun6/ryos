@@ -1,4 +1,5 @@
 import {
+  memo,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -7,10 +8,11 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
-import { CaretDown, MagnifyingGlass, Check } from "@phosphor-icons/react";
+import { CaretDown, Check } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useSound, Sounds } from "@/hooks/useSound";
+import { SearchInput } from "@/components/ui/search-input";
 import {
   AUTO_TIMEZONE,
   formatOffsetLabel,
@@ -25,8 +27,8 @@ type ZoneOption = {
   id: string;
   city: string;
   region: string;
-  offsetMinutes: number;
   offsetLabel: string;
+  description: string;
   search: string;
 };
 
@@ -36,14 +38,13 @@ function buildZoneOptions(): ZoneOption[] {
     const slash = id.indexOf("/");
     const region = slash === -1 ? "" : id.slice(0, slash).replace(/_/g, " ");
     const city = formatTimezoneCity(id);
-    const offsetMinutes = getTimezoneOffsetMinutes(id, now);
-    const offsetLabel = formatOffsetLabel(offsetMinutes);
+    const offsetLabel = formatOffsetLabel(getTimezoneOffsetMinutes(id, now));
     return {
       id,
       city,
       region,
-      offsetMinutes,
       offsetLabel,
+      description: region ? `${region} · ${offsetLabel}` : offsetLabel,
       search: `${id} ${city} ${region} ${offsetLabel}`.toLowerCase(),
     };
   });
@@ -56,13 +57,13 @@ export type TimezoneComboboxProps = {
   className?: string;
 };
 
-export function TimezoneCombobox({
+function TimezoneComboboxImpl({
   value,
   onChange,
   t,
   className,
 }: TimezoneComboboxProps) {
-  const { isMacOSTheme } = useThemeFlags();
+  const { isMacOSTheme, isAquaGlass } = useThemeFlags();
   const { play: playOpen } = useSound(Sounds.MENU_OPEN);
   const { play: playClose } = useSound(Sounds.MENU_CLOSE);
   const { play: playClick } = useSound(Sounds.BUTTON_CLICK, 0.3);
@@ -84,15 +85,19 @@ export function TimezoneCombobox({
   // Computing offsets for every zone is non-trivial; do it once.
   const zoneOptions = useMemo(() => buildZoneOptions(), []);
 
+  const autoCity = useMemo(
+    () => formatTimezoneCity(resolveEffectiveTimezone(AUTO_TIMEZONE)),
+    []
+  );
+
   const triggerLabel = useMemo(() => {
     if (value === AUTO_TIMEZONE) {
-      const city = formatTimezoneCity(resolveEffectiveTimezone(AUTO_TIMEZONE));
-      return t("apps.control-panels.timezoneAutomaticCity", { city });
+      return t("apps.control-panels.timezoneAutomaticCity", { city: autoCity });
     }
     const city = formatTimezoneCity(value);
     const offset = formatOffsetLabel(getTimezoneOffsetMinutes(value));
     return `${city} (${offset})`;
-  }, [value, t]);
+  }, [value, t, autoCity]);
 
   const q = query.trim().toLowerCase();
   const filteredZones = useMemo(() => {
@@ -105,9 +110,7 @@ export function TimezoneCombobox({
     t("apps.control-panels.timezoneAutomatic").toLowerCase().includes(q) ||
     "automatic".includes(q);
 
-  type Row =
-    | { kind: "auto" }
-    | { kind: "zone"; zone: ZoneOption };
+  type Row = { kind: "auto" } | { kind: "zone"; zone: ZoneOption };
   const rows = useMemo<Row[]>(() => {
     const out: Row[] = [];
     if (automaticMatches) out.push({ kind: "auto" });
@@ -119,11 +122,7 @@ export function TimezoneCombobox({
     const el = triggerRef.current;
     if (!el) return;
     const r = el.getBoundingClientRect();
-    setRect({
-      left: r.left,
-      top: r.bottom + 4,
-      width: Math.max(r.width, 240),
-    });
+    setRect({ left: r.left, top: r.bottom + 4, width: Math.max(r.width, 240) });
   }, []);
 
   const openPanel = useCallback(() => {
@@ -137,7 +136,6 @@ export function TimezoneCombobox({
   const closePanel = useCallback(() => {
     setOpen(false);
     playClose();
-    triggerRef.current?.focus();
   }, [playClose]);
 
   const selectRow = useCallback(
@@ -155,13 +153,12 @@ export function TimezoneCombobox({
   }, [open, updateRect]);
 
   useEffect(() => {
-    if (open) {
-      const id = window.setTimeout(() => inputRef.current?.focus(), 0);
-      return () => window.clearTimeout(id);
-    }
+    if (!open) return;
+    const id = window.setTimeout(() => inputRef.current?.focus(), 0);
+    return () => window.clearTimeout(id);
   }, [open]);
 
-  // Close on outside interaction; reposition on resize.
+  // Close on outside interaction; follow the trigger when ancestors scroll.
   useEffect(() => {
     if (!open) return;
     const onPointerDown = (e: PointerEvent) => {
@@ -173,30 +170,29 @@ export function TimezoneCombobox({
         return;
       }
       setOpen(false);
-      playClose();
     };
-    const onResize = () => setOpen(false);
     const onScroll = (e: Event) => {
-      // Ignore scrolling within the dropdown's own list.
+      // Reposition (don't close) unless the dropdown's own list scrolled.
       if (panelRef.current?.contains(e.target as Node)) return;
-      setOpen(false);
+      updateRect();
     };
+    const onResize = () => updateRect();
     document.addEventListener("pointerdown", onPointerDown, true);
-    window.addEventListener("resize", onResize);
     window.addEventListener("scroll", onScroll, true);
+    window.addEventListener("resize", onResize);
     return () => {
       document.removeEventListener("pointerdown", onPointerDown, true);
-      window.removeEventListener("resize", onResize);
       window.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("resize", onResize);
     };
-  }, [open, playClose]);
+  }, [open, updateRect]);
 
   // Keep the highlighted row in view.
   useEffect(() => {
     if (!open) return;
-    const list = listRef.current;
-    const node = list?.querySelector<HTMLElement>(`[data-row="${highlight}"]`);
-    node?.scrollIntoView({ block: "nearest" });
+    listRef.current
+      ?.querySelector<HTMLElement>(`[data-row="${highlight}"]`)
+      ?.scrollIntoView({ block: "nearest" });
   }, [highlight, open]);
 
   const onInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -213,10 +209,11 @@ export function TimezoneCombobox({
     } else if (e.key === "Escape") {
       e.preventDefault();
       closePanel();
+      triggerRef.current?.focus();
     }
   };
 
-  const currentId = value === AUTO_TIMEZONE ? AUTO_TIMEZONE : value;
+  const currentId = value;
 
   return (
     <>
@@ -225,18 +222,27 @@ export function TimezoneCombobox({
         type="button"
         aria-haspopup="listbox"
         aria-expanded={open}
-        onClick={() => (open ? closePanel() : openPanel())}
+        onClick={() => {
+          playClick();
+          if (open) {
+            closePanel();
+          } else {
+            openPanel();
+          }
+        }}
         className={cn(
           !isMacOSTheme &&
-            "flex h-9 items-center justify-between whitespace-nowrap rounded-md border border-input bg-transparent px-3 py-2 text-sm [border-image:url('/assets/button.svg')_30_stretch] border-[5px] focus:outline-none",
+            "flex h-9 items-center justify-between whitespace-nowrap rounded-md border border-input bg-transparent px-3 py-2 text-sm [border-image:url('/assets/button.svg')_30_stretch] border-[5px] focus:outline-none [&>span]:line-clamp-1",
           isMacOSTheme &&
-            "macos-select-trigger os-select-trigger-macos flex items-center justify-between whitespace-nowrap px-2 py-1 text-sm focus:outline-none",
+            "macos-select-trigger os-select-trigger-macos flex items-center justify-between whitespace-nowrap px-2 py-1 text-sm focus:outline-none [&>span]:line-clamp-1",
           "w-[180px] flex-shrink-0",
           className
         )}
       >
         <span className="line-clamp-1 text-left">{triggerLabel}</span>
-        <CaretDown size={12} weight="bold" className="opacity-50 ml-1" />
+        {!isMacOSTheme && (
+          <CaretDown size={12} weight="bold" className="opacity-50 ml-1" />
+        )}
       </button>
 
       {open && rect
@@ -244,41 +250,44 @@ export function TimezoneCombobox({
             <div
               ref={panelRef}
               role="listbox"
-              className="fixed z-[9999] flex flex-col rounded-md border border-black/20 bg-popover text-popover-foreground shadow-lg overflow-hidden"
+              className={cn(
+                "fixed z-[9999] flex flex-col overflow-hidden",
+                !isMacOSTheme &&
+                  "rounded-md border bg-popover text-popover-foreground shadow-md"
+              )}
               style={{
                 left: rect.left,
                 top: rect.top,
                 width: rect.width,
-                background: isMacOSTheme
-                  ? "var(--os-pinstripe-window)"
-                  : undefined,
+                ...(isMacOSTheme && {
+                  border: "none",
+                  borderRadius: "0px",
+                  background: "var(--os-pinstripe-window)",
+                  ...(isAquaGlass ? {} : { opacity: 0.95 }),
+                  boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
+                }),
               }}
             >
-              <div className="flex items-center gap-1.5 border-b border-black/10 px-2 py-1.5">
-                <MagnifyingGlass
-                  size={12}
-                  weight="bold"
-                  className="opacity-40 flex-shrink-0"
-                />
-                <input
-                  ref={inputRef}
+              <div className="px-2 pt-1.5 pb-1.5 border-b border-black/15">
+                <SearchInput
+                  inputRef={inputRef}
                   value={query}
-                  onChange={(e) => {
-                    setQuery(e.target.value);
+                  onChange={(v) => {
+                    setQuery(v);
                     setHighlight(0);
                   }}
                   onKeyDown={onInputKeyDown}
-                  placeholder={t("apps.control-panels.timezoneSearchPlaceholder")}
-                  className="flex-1 bg-transparent text-[12px] outline-none placeholder:opacity-40"
+                  placeholder={t(
+                    "apps.control-panels.timezoneSearchPlaceholder"
+                  )}
+                  ariaLabel={t("apps.control-panels.timeZone")}
+                  showClear={false}
                 />
               </div>
 
-              <div
-                ref={listRef}
-                className="max-h-[240px] overflow-y-auto py-1"
-              >
+              <div ref={listRef} className="max-h-[240px] overflow-y-auto py-1">
                 {rows.length === 0 ? (
-                  <div className="px-3 py-3 text-center text-[11px] opacity-50">
+                  <div className="px-4 py-3 text-center text-[11px] opacity-60 font-geneva-12">
                     {t("apps.control-panels.timezoneNoResults")}
                   </div>
                 ) : (
@@ -287,6 +296,10 @@ export function TimezoneCombobox({
                     const rowId = isAuto ? AUTO_TIMEZONE : row.zone.id;
                     const selected = rowId === currentId;
                     const active = index === highlight;
+                    const label = isAuto
+                      ? t("apps.control-panels.timezoneAutomatic")
+                      : row.zone.city;
+                    const description = isAuto ? autoCity : row.zone.description;
                     return (
                       <button
                         key={rowId}
@@ -297,32 +310,24 @@ export function TimezoneCombobox({
                         onMouseEnter={() => setHighlight(index)}
                         onClick={() => selectRow(row)}
                         className={cn(
-                          "flex w-full items-center justify-between gap-2 px-2.5 py-1.5 text-left text-[12px]",
+                          "os-select-item-with-description group relative flex w-full cursor-default select-none items-center pl-4 pr-7 py-1.5 text-sm text-left outline-none",
                           active && "bg-accent text-accent-foreground"
                         )}
                       >
-                        <span className="flex min-w-0 items-center gap-1.5">
-                          <Check
-                            size={11}
-                            weight="bold"
-                            className={cn(
-                              "flex-shrink-0",
-                              selected ? "opacity-100" : "opacity-0"
-                            )}
-                          />
-                          <span className="truncate">
-                            {isAuto
-                              ? t("apps.control-panels.timezoneAutomatic")
-                              : row.zone.city}
-                          </span>
+                        <span className="absolute right-2 top-2 flex size-3.5 items-center justify-center">
+                          {selected ? <Check size={12} weight="bold" /> : null}
                         </span>
-                        {!isAuto && (
-                          <span className="flex-shrink-0 text-[10px] opacity-50">
-                            {row.zone.region
-                              ? `${row.zone.region} · ${row.zone.offsetLabel}`
-                              : row.zone.offsetLabel}
+                        <div className="flex min-w-0 flex-col gap-0.5">
+                          <span className="truncate">{label}</span>
+                          <span
+                            className={cn(
+                              "text-[11px] font-normal leading-tight truncate",
+                              active ? "text-inherit" : "text-neutral-500"
+                            )}
+                          >
+                            {description}
                           </span>
-                        )}
+                        </div>
                       </button>
                     );
                   })
@@ -335,3 +340,5 @@ export function TimezoneCombobox({
     </>
   );
 }
+
+export const TimezoneCombobox = memo(TimezoneComboboxImpl);
