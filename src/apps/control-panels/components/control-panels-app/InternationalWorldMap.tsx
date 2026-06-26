@@ -148,16 +148,6 @@ export function InternationalWorldMap({
         stroke="#fff"
         strokeWidth={1}
       />
-
-      <rect
-        x={0.5}
-        y={0.5}
-        width={MAP_W - 1}
-        height={MAP_H - 1}
-        fill="none"
-        stroke="rgba(0,0,0,0.4)"
-        strokeWidth={1}
-      />
     </svg>
   );
 }
