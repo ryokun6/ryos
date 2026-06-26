@@ -1,4 +1,4 @@
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, useMemo } from "react";
 import type { CalendarEvent } from "@/stores/useCalendarStore";
 import {
   calendarEventOccursOnDate,
@@ -23,6 +23,17 @@ export function MonthGrid({
 }) {
   const lastEventTapRef = useRef<{ id: string; time: number } | null>(null);
   const lastDateTapRef = useRef<{ id: string; time: number } | null>(null);
+  const gridEvents = useMemo(() => {
+    const byId = new Map<string, CalendarEvent>();
+    for (const week of calendarGrid) {
+      for (const cell of week) {
+        for (const event of cell.events) {
+          byId.set(event.id, event);
+        }
+      }
+    }
+    return Array.from(byId.values());
+  }, [calendarGrid]);
 
   const handleEventTap = useCallback((ev: CalendarEvent, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -68,17 +79,22 @@ export function MonthGrid({
       <div className="flex-1 grid grid-rows-6">
         {calendarGrid.map((week, wi) => (
           <div key={wi} className="grid grid-cols-7 border-b" style={{ borderColor: "rgba(0,0,0,0.04)" }}>
-            {week.map((cell) => (
-              <button key={cell.date} type="button" onClick={() => handleDateTap(cell.date)}
-                className="flex flex-col items-start p-0.5 min-h-[40px] relative transition-colors select-none overflow-hidden"
-                style={{ opacity: cell.isCurrentMonth ? 1 : 0.3, backgroundColor: cell.isSelected ? (isWindowsTheme ? "rgba(0,0,0,0.08)" : "rgba(0,0,0,0.06)") : "transparent" }}
-              >
-                <span className="text-[10px] font-medium self-end mr-0.5"
-                  style={{ width: 18, height: 18, lineHeight: "18px", textAlign: "center", borderRadius: "50%", display: "inline-block",
-                    backgroundColor: cell.isToday ? (isWindowsTheme ? TODAY_RED_XP : TODAY_RED) : "transparent", color: cell.isToday ? "#FFF" : undefined }}
-                >{cell.day}</span>
-                <div className="flex flex-col gap-px mt-px w-full">
-                  {cell.events.slice(0, 2).map((ev) => {
+            {week.map((cell) => {
+              const cellEvents = gridEvents.filter((event) =>
+                calendarEventOccursOnDate(event, cell.date)
+              );
+
+              return (
+                <button key={cell.date} type="button" onClick={() => handleDateTap(cell.date)}
+                  className="flex flex-col items-start p-0.5 min-h-[40px] relative transition-colors select-none overflow-hidden"
+                  style={{ opacity: cell.isCurrentMonth ? 1 : 0.3, backgroundColor: cell.isSelected ? (isWindowsTheme ? "rgba(0,0,0,0.08)" : "rgba(0,0,0,0.06)") : "transparent" }}
+                >
+                  <span className="text-[10px] font-medium self-end mr-0.5"
+                    style={{ width: 18, height: 18, lineHeight: "18px", textAlign: "center", borderRadius: "50%", display: "inline-block",
+                      backgroundColor: cell.isToday ? (isWindowsTheme ? TODAY_RED_XP : TODAY_RED) : "transparent", color: cell.isToday ? "#FFF" : undefined }}
+                  >{cell.day}</span>
+                  <div className="flex flex-col gap-px mt-px w-full">
+                    {cellEvents.slice(0, 2).map((ev) => {
                     const isAllDayRange = !ev.startTime;
                     const rangeEndDate = getCalendarEventEndDate(ev);
                     const continuesFromPreviousDay = isAllDayRange && ev.date < cell.date;
@@ -99,10 +115,11 @@ export function MonthGrid({
                       >{showTitle ? ev.title : "\u00a0"}</button>
                     );
                   })}
-                  {cell.events.length > 2 && <span className="text-[8px] opacity-40 px-0.5">+{cell.events.length - 2}</span>}
-                </div>
-              </button>
-            ))}
+                    {cellEvents.length > 2 && <span className="text-[8px] opacity-40 px-0.5">+{cellEvents.length - 2}</span>}
+                  </div>
+                </button>
+              );
+            })}
           </div>
         ))}
       </div>
