@@ -10,6 +10,7 @@ import {
   getTimezoneOffsetMinutes,
   offsetMinutesToLongitude,
 } from "@/lib/timezoneConfig";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import worldLandRaw from "./data/worldLand.json";
 
 const worldLand = worldLandRaw as unknown as FeatureCollection;
@@ -52,6 +53,7 @@ export function InternationalWorldMap({
   timeZone,
   className,
 }: InternationalWorldMapProps) {
+  const { isDarkMode } = useThemeFlags();
   const [now, setNow] = useState(() => new Date());
 
   // Day/night drifts slowly — refresh once a minute is plenty.
@@ -124,8 +126,12 @@ export function InternationalWorldMap({
         strokeWidth={0.3}
       />
 
-      {/* Live day/night shadow. */}
-      <path d={nightPath} fill="rgba(0,0,0,0.28)" stroke="none" />
+      {/* Live day/night shadow — lighter on light chrome, stronger in dark mode. */}
+      <path
+        d={nightPath}
+        fill={isDarkMode ? "rgba(0,0,0,0.38)" : "rgba(0,0,0,0.14)"}
+        stroke="none"
+      />
 
       {/* Selected timezone meridian + marker, tinted with the OS accent color.
           `--os-accent-color` is only set for non-default accents, so fall back
