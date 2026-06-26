@@ -129,13 +129,13 @@ export function BooksAppComponent({
       menuBar={menuBar}
       windowFrameProps={{
         // Shelf has its own header, so the window titlebar shows nothing there;
-        // only the open book's title appears in the titlebar while reading.
+        // while reading, the book title appears in hover-revealed chrome.
         title: isReading && activeBook ? activeBookTitle || activeBook.name : "",
         onClose,
         isForeground,
         appId: "books",
         material: "notitlebar",
-        disableTitlebarAutoHide: true,
+        disableTitlebarAutoHide: !isReading,
         skipInitialSound,
         instanceId,
         onNavigateNext,

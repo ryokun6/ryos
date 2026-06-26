@@ -15,6 +15,10 @@ export function useWindowFrameTitlebarAutoHide(
   // view where it had been hidden.
   useEffect(() => {
     if (disableTitlebarAutoHide && isNoTitlebar) {
+      if (titlebarHideTimeoutRef.current) {
+        clearTimeout(titlebarHideTimeoutRef.current);
+        titlebarHideTimeoutRef.current = null;
+      }
       setIsTitlebarHovered(true);
     }
   }, [disableTitlebarAutoHide, isNoTitlebar]);
@@ -36,6 +40,14 @@ export function useWindowFrameTitlebarAutoHide(
       startTitlebarAutoHideTimer();
     }
   }, [startTitlebarAutoHideTimer, disableTitlebarAutoHide]);
+
+  // When auto-hide becomes active after a pinned state, let the currently
+  // visible titlebar linger briefly and then hide.
+  useEffect(() => {
+    if (isNoTitlebar && !disableTitlebarAutoHide) {
+      startTitlebarAutoHideTimer();
+    }
+  }, [isNoTitlebar, disableTitlebarAutoHide, startTitlebarAutoHideTimer]);
 
   const hideTitlebar = useCallback(() => {
     setIsTitlebarHovered(false);

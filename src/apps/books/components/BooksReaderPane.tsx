@@ -88,8 +88,8 @@ interface BooksDebugEvent {
   data?: unknown;
 }
 
-// Extra top clearance so the page never sits under the always-visible window
-// title bar (the window uses the full-bleed "notitlebar" material).
+// Extra top clearance so the page never sits under the hover-revealed window
+// titlebar (the window uses the full-bleed "notitlebar" material).
 const TOP_CLEARANCE = 36;
 // Footer that holds the reading-progress bar.
 const FOOTER_HEIGHT = 30;
