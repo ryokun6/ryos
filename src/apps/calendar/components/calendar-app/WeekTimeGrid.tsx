@@ -3,7 +3,10 @@ import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { osSeparatorBorderClassName } from "@/components/shared/osThemePrimitives";
 import type { CalendarEvent } from "@/stores/useCalendarStore";
-import { getCalendarEventEndDate } from "@/shared/calendarEventDates";
+import {
+  calendarEventOccursOnDate,
+  getCalendarEventEndDate,
+} from "@/shared/calendarEventDates";
 import type { WeekDay } from "../../hooks/useCalendarLogic";
 import {
   DEFAULT_TIME_GRID_HOUR_HEIGHT,
@@ -162,7 +165,11 @@ export function WeekTimeGrid({
                   const rangeEndDate = getCalendarEventEndDate(ev);
                   const continuesFromPreviousDay = ev.date < day.date;
                   const continuesToNextDay = rangeEndDate > day.date;
-                  const showTitle = !continuesFromPreviousDay || day.date === weekDates[0]?.date;
+                  const firstVisibleDateInWeek =
+                    weekDates.find((weekDay) =>
+                      calendarEventOccursOnDate(ev, weekDay.date)
+                    )?.date;
+                  const showTitle = day.date === firstVisibleDateInWeek;
 
                   return (
                     <button
@@ -176,10 +183,7 @@ export function WeekTimeGrid({
                         border: selectedEventId === ev.id
                           ? `1px solid ${EVENT_COLOR_MAP[ev.color] || EVENT_COLOR_MAP.blue}`
                           : "1px solid transparent",
-                        borderTopLeftRadius: continuesFromPreviousDay ? 0 : undefined,
-                        borderBottomLeftRadius: continuesFromPreviousDay ? 0 : undefined,
-                        borderTopRightRadius: continuesToNextDay ? 0 : undefined,
-                        borderBottomRightRadius: continuesToNextDay ? 0 : undefined,
+                        borderRadius: `${continuesFromPreviousDay ? 0 : 4}px ${continuesToNextDay ? 0 : 4}px ${continuesToNextDay ? 0 : 4}px ${continuesFromPreviousDay ? 0 : 4}px`,
                         marginLeft: continuesFromPreviousDay ? "-1px" : undefined,
                         marginRight: continuesToNextDay ? "-1px" : undefined,
                         opacity: getEventOpacity(ev, searchQuery),

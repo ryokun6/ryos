@@ -1,6 +1,9 @@
 import { useRef, useCallback } from "react";
 import type { CalendarEvent } from "@/stores/useCalendarStore";
-import { getCalendarEventEndDate } from "@/shared/calendarEventDates";
+import {
+  calendarEventOccursOnDate,
+  getCalendarEventEndDate,
+} from "@/shared/calendarEventDates";
 import type { CalendarDayCell } from "../../hooks/useCalendarLogic";
 import { osSeparatorBorderClassName } from "@/components/shared/osThemePrimitives";
 import {
@@ -80,17 +83,16 @@ export function MonthGrid({
                     const rangeEndDate = getCalendarEventEndDate(ev);
                     const continuesFromPreviousDay = isAllDayRange && ev.date < cell.date;
                     const continuesToNextDay = isAllDayRange && rangeEndDate > cell.date;
-                    const showTitle = !continuesFromPreviousDay || cell.date === week[0]?.date;
+                    const firstVisibleDateInWeek =
+                      week.find((day) => calendarEventOccursOnDate(ev, day.date))?.date;
+                    const showTitle = cell.date === firstVisibleDateInWeek;
 
                     return (
                       <button key={ev.id} type="button" onClick={(e) => handleEventTap(ev, e)}
                         className="text-[8px] truncate rounded px-0.5 leading-snug w-full text-left"
                         style={{ backgroundColor: EVENT_COLOR_LIGHT[ev.color] || EVENT_COLOR_LIGHT.blue, color: EVENT_COLOR_MAP[ev.color] || EVENT_COLOR_MAP.blue,
                           border: selectedEventId === ev.id ? `1px solid ${EVENT_COLOR_MAP[ev.color]}` : "1px solid transparent",
-                          borderTopLeftRadius: continuesFromPreviousDay ? 0 : undefined,
-                          borderBottomLeftRadius: continuesFromPreviousDay ? 0 : undefined,
-                          borderTopRightRadius: continuesToNextDay ? 0 : undefined,
-                          borderBottomRightRadius: continuesToNextDay ? 0 : undefined,
+                          borderRadius: `${continuesFromPreviousDay ? 0 : 3}px ${continuesToNextDay ? 0 : 3}px ${continuesToNextDay ? 0 : 3}px ${continuesFromPreviousDay ? 0 : 3}px`,
                           marginLeft: continuesFromPreviousDay ? "-2px" : undefined,
                           marginRight: continuesToNextDay ? "-2px" : undefined,
                           opacity: getEventOpacity(ev, searchQuery) }}
