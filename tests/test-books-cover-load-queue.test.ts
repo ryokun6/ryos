@@ -17,6 +17,7 @@ let activeReads = 0;
 let maxActiveReads = 0;
 let readCalls = 0;
 let epubCreates = 0;
+let readBlobBytes = new Uint8Array([0x50, 0x4b, 0x03, 0x04]);
 
 mock.module("@/services/vfs/FileContentRepository", () => ({
   readBookBlobContent: mock(async () => {
@@ -25,7 +26,7 @@ mock.module("@/services/vfs/FileContentRepository", () => ({
     maxActiveReads = Math.max(maxActiveReads, activeReads);
     await new Promise((resolve) => setTimeout(resolve, 20));
     activeReads -= 1;
-    return new Blob([new Uint8Array([0x50, 0x4b, 0x03, 0x04])], {
+    return new Blob([readBlobBytes], {
       type: "application/epub+zip",
     });
   }),
@@ -81,6 +82,7 @@ describe("Books cover loading queue", () => {
     maxActiveReads = 0;
     readCalls = 0;
     epubCreates = 0;
+    readBlobBytes = new Uint8Array([0x50, 0x4b, 0x03, 0x04]);
   });
 
   afterEach(async () => {
@@ -98,7 +100,7 @@ describe("Books cover loading queue", () => {
     }
   });
 
-  test("limits concurrent shelf EPUB cover reads", async () => {
+  test("serializes shelf EPUB cover reads to limit startup memory", async () => {
     const host = document.createElement("div");
     document.body.appendChild(host);
     root = createRoot(host);
@@ -119,7 +121,7 @@ describe("Books cover loading queue", () => {
     await waitFor(() => epubCreates === 12);
 
     expect(readCalls).toBe(12);
-    expect(maxActiveReads).toBeLessThanOrEqual(3);
+    expect(maxActiveReads).toBeLessThanOrEqual(1);
 
     const cached = await dbOperations.get<{ title?: string; author?: string }>(
       STORES.BOOK_THUMBNAILS,
@@ -165,5 +167,34 @@ describe("Books cover loading queue", () => {
     });
     expect(readCalls).toBe(0);
     expect(epubCreates).toBe(0);
+  });
+
+  test("does not parse invalid synced blobs as EPUB covers", async () => {
+    readBlobBytes = new TextEncoder().encode('{"error":"Not found"}');
+    const path = "/Books/invalid-synced-payload.epub";
+
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    root = createRoot(host);
+    let latest: ReturnType<typeof useBookCover> | null = null;
+
+    root.render(
+      React.createElement(CoverProbe, {
+        path,
+        onSnapshot: (snapshot) => {
+          latest = snapshot;
+        },
+      })
+    );
+
+    await waitFor(() => latest?.loading === false);
+
+    expect(readCalls).toBe(1);
+    expect(epubCreates).toBe(0);
+    expect(latest?.info).toMatchObject({
+      coverUrl: null,
+      title: null,
+      author: null,
+    });
   });
 });

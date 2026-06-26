@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import ePub from "epubjs";
 import { readBookBlobContent } from "@/services/vfs/FileContentRepository";
 import { STORES, dbOperations } from "@/utils/indexedDB";
+import { isLikelyEpubBuffer } from "./booksReader";
 
 export interface BookCoverInfo {
   coverUrl: string | null;
@@ -14,7 +15,7 @@ export interface BookCoverInfo {
 // for the session.
 const coverCache = new Map<string, BookCoverInfo>();
 const inflight = new Map<string, Promise<BookCoverInfo>>();
-const MAX_CONCURRENT_COVER_LOADS = 3;
+const MAX_CONCURRENT_COVER_LOADS = 1;
 const THUMBNAIL_CACHE_VERSION = 1;
 let activeCoverLoads = 0;
 const pendingCoverLoadSlots: Array<() => void> = [];
@@ -136,6 +137,11 @@ async function loadCover(
         const blob = await readBookBlobContent(path);
         if (blob) {
           const buffer = await blob.arrayBuffer();
+          if (!isLikelyEpubBuffer(buffer)) {
+            await writeStoredThumbnail(key, result, coverBlob);
+            coverCache.set(key, result);
+            return result;
+          }
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const book = ePub(buffer as any);
           try {
