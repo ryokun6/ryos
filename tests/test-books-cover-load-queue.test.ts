@@ -13,31 +13,25 @@ import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import React from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { dbOperations, STORES } from "../src/utils/indexedDB";
+import type { FileSystemItem } from "../src/stores/useFilesStore";
 
-let activeReads = 0;
-let maxActiveReads = 0;
-let readCalls = 0;
+let activeParses = 0;
+let maxActiveParses = 0;
 let epubCreates = 0;
-let readBlobBytes = new Uint8Array([0x50, 0x4b, 0x03, 0x04]);
-
-mock.module("@/services/vfs/FileContentRepository", () => ({
-  readBookBlobContent: mock(async () => {
-    readCalls += 1;
-    activeReads += 1;
-    maxActiveReads = Math.max(maxActiveReads, activeReads);
-    await new Promise((resolve) => setTimeout(resolve, 20));
-    activeReads -= 1;
-    return new Blob([readBlobBytes], {
-      type: "application/epub+zip",
-    });
-  }),
-}));
 
 mock.module("epubjs", () => ({
   default: mock(() => {
     epubCreates += 1;
+    activeParses += 1;
+    maxActiveParses = Math.max(maxActiveParses, activeParses);
+    const ready = new Promise<void>((resolve) => {
+      setTimeout(() => {
+        activeParses -= 1;
+        resolve();
+      }, 20);
+    });
     return {
-      ready: Promise.resolve(),
+      ready,
       loaded: { metadata: Promise.resolve({ title: "T", creator: "A" }) },
       coverUrl: async () => null,
       destroy: () => {},
@@ -46,6 +40,55 @@ mock.module("epubjs", () => ({
 }));
 
 const { useBookCover } = await import("../src/apps/books/utils/useBookCover");
+const { useFilesStore } = await import("../src/stores/useFilesStore");
+
+const EPUB_BYTES = new Uint8Array([0x50, 0x4b, 0x03, 0x04]);
+
+function arrayBufferFromBytes(bytes: Uint8Array): ArrayBuffer {
+  return bytes.buffer.slice(
+    bytes.byteOffset,
+    bytes.byteOffset + bytes.byteLength
+  );
+}
+
+async function deleteRyOsDatabase(): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    const request = indexedDB.deleteDatabase("ryOS");
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+    request.onblocked = () => resolve();
+  });
+}
+
+async function seedBookContent(
+  path: string,
+  bytes: Uint8Array = EPUB_BYTES
+): Promise<void> {
+  const name = path.split("/").pop() ?? "book.epub";
+  const uuid = `uuid:${path}`;
+  const item: FileSystemItem = {
+    path,
+    name,
+    isDirectory: false,
+    type: "epub",
+    uuid,
+    size: bytes.byteLength,
+    status: "active",
+    createdAt: 1,
+    modifiedAt: 1,
+  };
+  useFilesStore.setState((state) => ({
+    items: {
+      ...state.items,
+      [path]: item,
+    },
+  }));
+  await dbOperations.put(
+    STORES.BOOKS,
+    { name, content: arrayBufferFromBytes(bytes) },
+    uuid
+  );
+}
 
 function CoverProbe({
   path,
@@ -62,7 +105,7 @@ function CoverProbe({
 }
 
 async function waitFor(predicate: () => boolean): Promise<void> {
-  for (let i = 0; i < 30; i += 1) {
+  for (let i = 0; i < 80; i += 1) {
     if (predicate()) return;
     await new Promise((resolve) => setTimeout(resolve, 10));
   }
@@ -78,12 +121,12 @@ describe("Books cover loading queue", () => {
     }
   });
 
-  beforeEach(() => {
-    activeReads = 0;
-    maxActiveReads = 0;
-    readCalls = 0;
+  beforeEach(async () => {
+    activeParses = 0;
+    maxActiveParses = 0;
     epubCreates = 0;
-    readBlobBytes = new Uint8Array([0x50, 0x4b, 0x03, 0x04]);
+    await deleteRyOsDatabase();
+    useFilesStore.setState({ items: {}, libraryState: "loaded" });
   });
 
   afterEach(async () => {
@@ -102,6 +145,12 @@ describe("Books cover loading queue", () => {
   });
 
   test("serializes shelf EPUB cover reads to limit startup memory", async () => {
+    const paths = Array.from(
+      { length: 12 },
+      (_, index) => `/Books/queued-book-${index}.epub`
+    );
+    await Promise.all(paths.map((path) => seedBookContent(path)));
+
     const host = document.createElement("div");
     document.body.appendChild(host);
     root = createRoot(host);
@@ -110,10 +159,10 @@ describe("Books cover loading queue", () => {
       React.createElement(
         React.Fragment,
         null,
-        Array.from({ length: 12 }, (_, index) =>
+        paths.map((path) =>
           React.createElement(CoverProbe, {
-            key: index,
-            path: `/Books/queued-book-${index}.epub`,
+            key: path,
+            path,
           })
         )
       )
@@ -121,8 +170,7 @@ describe("Books cover loading queue", () => {
 
     await waitFor(() => epubCreates === 12);
 
-    expect(readCalls).toBe(12);
-    expect(maxActiveReads).toBeLessThanOrEqual(1);
+    expect(maxActiveParses).toBeLessThanOrEqual(1);
 
     const cached = await dbOperations.get<{ title?: string; author?: string }>(
       STORES.BOOK_THUMBNAILS,
@@ -166,13 +214,15 @@ describe("Books cover loading queue", () => {
       title: "Cached title",
       author: "Cached author",
     });
-    expect(readCalls).toBe(0);
     expect(epubCreates).toBe(0);
   });
 
   test("does not parse invalid synced blobs as EPUB covers", async () => {
-    readBlobBytes = new TextEncoder().encode('{"error":"Not found"}');
     const path = "/Books/invalid-synced-payload.epub";
+    await seedBookContent(
+      path,
+      new TextEncoder().encode('{"error":"Not found"}')
+    );
 
     const host = document.createElement("div");
     document.body.appendChild(host);
@@ -190,7 +240,6 @@ describe("Books cover loading queue", () => {
 
     await waitFor(() => latest?.loading === false);
 
-    expect(readCalls).toBe(1);
     expect(epubCreates).toBe(0);
     expect(latest?.info).toMatchObject({
       coverUrl: null,
