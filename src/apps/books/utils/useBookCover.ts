@@ -15,6 +15,8 @@ export interface BookCoverInfo {
 // for the session.
 const coverCache = new Map<string, BookCoverInfo>();
 const inflight = new Map<string, Promise<BookCoverInfo>>();
+// Cover extraction reads and parses full EPUB archives; keep this serial so an
+// online sync burst cannot stack multiple book-sized ArrayBuffers at startup.
 const MAX_CONCURRENT_COVER_LOADS = 1;
 const THUMBNAIL_CACHE_VERSION = 1;
 let activeCoverLoads = 0;

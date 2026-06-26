@@ -8,6 +8,7 @@ import {
   mock,
   test,
 } from "bun:test";
+import "fake-indexeddb/auto";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import React from "react";
 import { createRoot, type Root } from "react-dom/client";
