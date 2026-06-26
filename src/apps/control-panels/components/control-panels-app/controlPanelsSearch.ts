@@ -130,6 +130,20 @@ export const CONTROL_PANEL_SEARCH_ENTRIES: ControlPanelSearchEntry[] = [
       "russian",
     ],
   },
+  {
+    paneId: "international",
+    labelKey: `${CP}.timeZone`,
+    keywords: [
+      "timezone",
+      "time zone",
+      "clock",
+      "utc",
+      "gmt",
+      "globe",
+      "region",
+      "offset",
+    ],
+  },
 
   // Security
   {

@@ -14,6 +14,7 @@
 import { STORES } from "@/utils/indexedDB";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useLanguageStore } from "@/stores/useLanguageStore";
+import { useTimezoneStore } from "@/stores/useTimezoneStore";
 import {
   DEFAULT_WALLPAPER_PATH,
   useDisplaySettingsStore,
@@ -353,6 +354,15 @@ const SETTINGS_SCHEMA: SettingsSection[] = [
           }
         },
       },
+      {
+        field: "timezone",
+        read: () => useTimezoneStore.getState().timezone,
+        write: (v) => {
+          if (typeof v === "string" && v) {
+            useTimezoneStore.getState().setTimezone(v);
+          }
+        },
+      },
     ],
   },
   {
@@ -632,6 +642,9 @@ const settingsCodec: SyncCodec = {
       }),
       useLanguageStore.subscribe((state, prev) => {
         if (state.current !== prev.current) onChange();
+      }),
+      useTimezoneStore.subscribe((state, prev) => {
+        if (state.timezone !== prev.timezone) onChange();
       }),
       useDisplaySettingsStore.subscribe((state, prev) => {
         if (

@@ -1802,6 +1802,15 @@
       },
       "themePreviewWindowTitle": "文件",
       "timeZone": "時區",
+      "timeZoneDescription": "Used for scheduling, formatting, and AI context",
+      "timezoneAutomatic": "Automatic",
+      "timezoneAutomaticCity": "Automatic ({{city}})",
+      "timezoneSearchPlaceholder": "Search time zones…",
+      "timezoneNoResults": "No matching time zones",
+      "internationalTabs": {
+        "language": "Language",
+        "dateTime": "Date & Time"
+      },
       "toolbar": {
         "back": "返回",
         "forward": "前進",

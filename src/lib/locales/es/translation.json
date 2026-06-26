@@ -1802,6 +1802,15 @@
       },
       "themePreviewWindowTitle": "Documento",
       "timeZone": "Zona horaria",
+      "timeZoneDescription": "Used for scheduling, formatting, and AI context",
+      "timezoneAutomatic": "Automatic",
+      "timezoneAutomaticCity": "Automatic ({{city}})",
+      "timezoneSearchPlaceholder": "Search time zones…",
+      "timezoneNoResults": "No matching time zones",
+      "internationalTabs": {
+        "language": "Language",
+        "dateTime": "Date & Time"
+      },
       "toolbar": {
         "back": "Atrás",
         "forward": "Adelante",

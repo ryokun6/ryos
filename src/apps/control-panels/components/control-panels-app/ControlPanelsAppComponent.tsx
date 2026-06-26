@@ -84,6 +84,8 @@ export function ControlPanelsAppComponent({
     wallpaperAccentColor,
     currentLanguage,
     setLanguage,
+    timezone,
+    setTimezone,
     tabStyles,
     isWindowsTheme,
     isMacOSTheme,
@@ -278,6 +280,8 @@ export function ControlPanelsAppComponent({
       wallpaperAccentColor={wallpaperAccentColor}
       currentLanguage={currentLanguage}
       setLanguage={setLanguage}
+      timezone={timezone}
+      setTimezone={setTimezone}
       uiSoundsEnabled={uiSoundsEnabled}
       handleUISoundsChange={handleUISoundsChange}
       speechEnabled={speechEnabled}
