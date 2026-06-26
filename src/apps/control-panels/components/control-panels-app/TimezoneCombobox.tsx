@@ -71,6 +71,10 @@ function TimezoneComboboxImpl({
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [highlight, setHighlight] = useState(0);
+  // Only paint the highlight when it follows the pointer; keyboard navigation
+  // (and the initial index) moves the selection silently, matching the request
+  // to keep the keyboard-select color out of the menu.
+  const [hovering, setHovering] = useState(false);
   const [rect, setRect] = useState<{
     left: number;
     top: number;
@@ -129,6 +133,7 @@ function TimezoneComboboxImpl({
     updateRect();
     setQuery("");
     setHighlight(0);
+    setHovering(false);
     setOpen(true);
     playOpen();
   }, [updateRect, playOpen]);
@@ -198,9 +203,11 @@ function TimezoneComboboxImpl({
   const onInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
+      setHovering(false);
       setHighlight((h) => Math.min(h + 1, rows.length - 1));
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
+      setHovering(false);
       setHighlight((h) => Math.max(h - 1, 0));
     } else if (e.key === "Enter") {
       e.preventDefault();
@@ -288,6 +295,7 @@ function TimezoneComboboxImpl({
                   onChange={(v) => {
                     setQuery(v);
                     setHighlight(0);
+                    setHovering(false);
                   }}
                   onKeyDown={onInputKeyDown}
                   placeholder={t(
@@ -308,7 +316,7 @@ function TimezoneComboboxImpl({
                     const isAuto = row.kind === "auto";
                     const rowId = isAuto ? AUTO_TIMEZONE : row.zone.id;
                     const selected = rowId === currentId;
-                    const active = index === highlight;
+                    const highlighted = hovering && index === highlight;
                     const label = isAuto
                       ? t("apps.control-panels.timezoneAutomatic")
                       : row.zone.city;
@@ -320,11 +328,18 @@ function TimezoneComboboxImpl({
                         role="option"
                         aria-selected={selected}
                         data-row={index}
-                        onMouseEnter={() => setHighlight(index)}
+                        data-highlighted={highlighted ? "" : undefined}
+                        onMouseEnter={() => {
+                          setHighlight(index);
+                          setHovering(true);
+                        }}
                         onClick={() => selectRow(row)}
                         className={cn(
                           "os-select-item-with-description group relative flex w-full cursor-default select-none items-center pl-4 pr-7 py-1.5 text-sm text-left outline-none",
-                          active && "bg-accent text-accent-foreground"
+                          // Generic fallback for non-mac themes; the macOS themed
+                          // CSS overrides `[role="option"][data-highlighted]` with
+                          // the OS accent selection color.
+                          "data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground"
                         )}
                       >
                         <span className="absolute right-2 top-2 flex size-3.5 items-center justify-center">
@@ -335,7 +350,7 @@ function TimezoneComboboxImpl({
                           <span
                             className={cn(
                               "text-[11px] font-normal leading-tight truncate",
-                              active ? "text-inherit" : "text-neutral-500"
+                              highlighted ? "text-inherit" : "text-neutral-500"
                             )}
                           >
                             {description}

@@ -96,45 +96,47 @@ export function InternationalWorldMap({
       preserveAspectRatio="xMidYMid meet"
       style={{ display: "block", width: "100%", height: "auto" }}
     >
-      <defs>
-        <linearGradient id="cp-ocean" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#3b6ea5" />
-          <stop offset="100%" stopColor="#244b73" />
-        </linearGradient>
-      </defs>
-
+      {/* Sea: a neutral, semi-transparent tint so the panel surface shows
+          through (works on both light and dark window backgrounds). */}
       <rect
         x={0}
         y={0}
         width={MAP_W}
         height={MAP_H}
-        fill="url(#cp-ocean)"
+        fill="rgba(127,127,127,0.12)"
       />
 
       <path
         d={graticulePath}
         fill="none"
-        stroke="rgba(255,255,255,0.12)"
+        stroke="rgba(127,127,127,0.25)"
         strokeWidth={0.3}
       />
 
+      {/* Land: tinted with the OS accent color. `--os-accent-color` is only set
+          for non-default accents, so fall back to the classic map green for the
+          "System"/default accent. */}
       <path
         d={landPath}
-        fill="#6f9e5a"
-        stroke="rgba(0,0,0,0.35)"
+        style={{ fill: "var(--os-accent-color, #6f9e5a)" }}
+        fillOpacity={0.6}
+        stroke="rgba(0,0,0,0.3)"
         strokeWidth={0.3}
       />
 
       {/* Live day/night shadow. */}
-      <path d={nightPath} fill="rgba(8,16,34,0.42)" stroke="none" />
+      <path d={nightPath} fill="rgba(0,0,0,0.28)" stroke="none" />
 
-      {/* Selected timezone meridian + marker. */}
+      {/* Selected timezone meridian + marker, tinted with the OS accent color.
+          `--os-accent-color` is only set for non-default accents, so fall back
+          to the classic Mac OS "Time Zone" red when "System" is selected. */}
       <line
         x1={marker.x}
         y1={0}
         x2={marker.x}
         y2={MAP_H}
-        stroke="rgba(255,90,70,0.55)"
+        style={{ stroke: "var(--os-accent-color, #ff5a46)" }}
+        strokeOpacity={0.7}
         strokeWidth={0.8}
         strokeDasharray="2 2"
       />
@@ -142,18 +144,8 @@ export function InternationalWorldMap({
         cx={marker.x}
         cy={MAP_H / 2}
         r={3}
-        fill="#ff4d4d"
+        style={{ fill: "var(--os-accent-color, #ff4d4d)" }}
         stroke="#fff"
-        strokeWidth={1}
-      />
-
-      <rect
-        x={0.5}
-        y={0.5}
-        width={MAP_W - 1}
-        height={MAP_H - 1}
-        fill="none"
-        stroke="rgba(0,0,0,0.4)"
         strokeWidth={1}
       />
     </svg>
