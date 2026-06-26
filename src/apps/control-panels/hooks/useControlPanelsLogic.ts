@@ -33,6 +33,7 @@ import {
 import { saveBlobToDevice } from "@/utils/nativeFileDialogs";
 import { getTabStyles } from "@/utils/tabStyles";
 import { useLanguageStore } from "@/stores/useLanguageStore";
+import { useTimezoneStore } from "@/stores/useTimezoneStore";
 import type { ControlPanelsInitialData } from "@/apps/base/types";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { triggerRuntimeCrashTest } from "@/utils/errorReporting";
@@ -311,6 +312,10 @@ export function useControlPanelsLogic({
   // Language state
   const currentLanguage = useLanguageStore((state) => state.current);
   const setLanguage = useLanguageStore((state) => state.setLanguage);
+
+  // Timezone state
+  const timezone = useTimezoneStore((state) => state.timezone);
+  const setTimezone = useTimezoneStore((state) => state.setTimezone);
 
   // Use auth hook
   const {
@@ -1521,6 +1526,8 @@ export function useControlPanelsLogic({
     wallpaperAccentColor,
     currentLanguage,
     setLanguage,
+    timezone,
+    setTimezone,
     tabStyles,
     isWindowsTheme,
     isMacOSTheme,

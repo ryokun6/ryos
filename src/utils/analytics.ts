@@ -159,6 +159,7 @@ export const LISTEN_ANALYTICS = {
 export const SETTINGS_ANALYTICS = {
   THEME_CHANGE: "settings:theme_change",
   LANGUAGE_CHANGE: "settings:language_change",
+  TIMEZONE_CHANGE: "settings:timezone_change",
   DISPLAY_MODE_CHANGE: "settings:display_mode_change",
   WALLPAPER_CHANGE: "settings:wallpaper_change",
   SHADER_TOGGLE: "settings:shader_toggle",

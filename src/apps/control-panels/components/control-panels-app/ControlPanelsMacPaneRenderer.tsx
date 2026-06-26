@@ -5,6 +5,7 @@ import type { TelegramLinkedAccount } from "@/api/telegram";
 import type { EmailStatusResponse } from "@/shared/contracts/auth";
 import type { RealtimeConnectionState } from "@/lib/pusherClient";
 import type { LanguageCode } from "@/stores/useLanguageStore";
+import type { TimezonePreference } from "@/lib/timezoneConfig";
 import type { OsThemeId } from "@/themes/types";
 import type { AccentChrome, AccentId } from "@/themes/accents";
 import type { TabStyleConfig } from "@/utils/tabStyles";
@@ -44,6 +45,8 @@ export type ControlPanelsMacPaneRendererProps = {
   wallpaperAccentColor: string | null;
   currentLanguage: LanguageCode;
   setLanguage: (language: LanguageCode) => void;
+  timezone: TimezonePreference;
+  setTimezone: (timezone: TimezonePreference) => void;
   uiSoundsEnabled: boolean;
   handleUISoundsChange: (enabled: boolean) => void;
   speechEnabled: boolean;
@@ -203,6 +206,8 @@ export function ControlPanelsMacPaneRenderer(
           t={t}
           currentLanguage={props.currentLanguage}
           setLanguage={props.setLanguage}
+          timezone={props.timezone}
+          setTimezone={props.setTimezone}
         />
       );
     case "security":

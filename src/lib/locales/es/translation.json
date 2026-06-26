@@ -1802,6 +1802,9 @@
       },
       "themePreviewWindowTitle": "Documento",
       "timeZone": "Zona horaria",
+      "timeZoneDescription": "Used for scheduling, formatting, and AI context",
+      "timezoneAutomatic": "Automatic",
+      "timezoneAutomaticCity": "Automatic ({{city}})",
       "toolbar": {
         "back": "Atrás",
         "forward": "Adelante",

@@ -1802,6 +1802,9 @@
       },
       "themePreviewWindowTitle": "Documento",
       "timeZone": "Fuso Horário",
+      "timeZoneDescription": "Used for scheduling, formatting, and AI context",
+      "timezoneAutomatic": "Automatic",
+      "timezoneAutomaticCity": "Automatic ({{city}})",
       "toolbar": {
         "back": "Voltar",
         "forward": "Avançar",

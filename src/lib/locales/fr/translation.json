@@ -1802,6 +1802,9 @@
       },
       "themePreviewWindowTitle": "Document",
       "timeZone": "Fuseau horaire",
+      "timeZoneDescription": "Used for scheduling, formatting, and AI context",
+      "timezoneAutomatic": "Automatic",
+      "timezoneAutomaticCity": "Automatic ({{city}})",
       "toolbar": {
         "back": "Précédent",
         "forward": "Suivant",
