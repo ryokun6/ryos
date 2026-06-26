@@ -96,37 +96,36 @@ export function InternationalWorldMap({
       preserveAspectRatio="xMidYMid meet"
       style={{ display: "block", width: "100%", height: "auto" }}
     >
-      <defs>
-        <linearGradient id="cp-ocean" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#3b6ea5" />
-          <stop offset="100%" stopColor="#244b73" />
-        </linearGradient>
-      </defs>
-
+      {/* Sea: a neutral, semi-transparent tint so the panel surface shows
+          through (works on both light and dark window backgrounds). */}
       <rect
         x={0}
         y={0}
         width={MAP_W}
         height={MAP_H}
-        fill="url(#cp-ocean)"
+        fill="rgba(127,127,127,0.12)"
       />
 
       <path
         d={graticulePath}
         fill="none"
-        stroke="rgba(255,255,255,0.12)"
+        stroke="rgba(127,127,127,0.25)"
         strokeWidth={0.3}
       />
 
+      {/* Land: tinted with the OS accent color. `--os-accent-color` is only set
+          for non-default accents, so fall back to the classic map green for the
+          "System"/default accent. */}
       <path
         d={landPath}
-        fill="#6f9e5a"
-        stroke="rgba(0,0,0,0.35)"
+        style={{ fill: "var(--os-accent-color, #6f9e5a)" }}
+        fillOpacity={0.6}
+        stroke="rgba(0,0,0,0.3)"
         strokeWidth={0.3}
       />
 
       {/* Live day/night shadow. */}
-      <path d={nightPath} fill="rgba(8,16,34,0.42)" stroke="none" />
+      <path d={nightPath} fill="rgba(0,0,0,0.28)" stroke="none" />
 
       {/* Selected timezone meridian + marker, tinted with the OS accent color.
           `--os-accent-color` is only set for non-default accents, so fall back
