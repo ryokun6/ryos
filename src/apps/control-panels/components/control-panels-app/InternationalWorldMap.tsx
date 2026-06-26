@@ -128,13 +128,16 @@ export function InternationalWorldMap({
       {/* Live day/night shadow. */}
       <path d={nightPath} fill="rgba(8,16,34,0.42)" stroke="none" />
 
-      {/* Selected timezone meridian + marker. */}
+      {/* Selected timezone meridian + marker, tinted with the OS accent color.
+          `--os-accent-color` is only set for non-default accents, so fall back
+          to the classic Mac OS "Time Zone" red when "System" is selected. */}
       <line
         x1={marker.x}
         y1={0}
         x2={marker.x}
         y2={MAP_H}
-        stroke="rgba(255,90,70,0.55)"
+        style={{ stroke: "var(--os-accent-color, #ff5a46)" }}
+        strokeOpacity={0.7}
         strokeWidth={0.8}
         strokeDasharray="2 2"
       />
@@ -142,7 +145,7 @@ export function InternationalWorldMap({
         cx={marker.x}
         cy={MAP_H / 2}
         r={3}
-        fill="#ff4d4d"
+        style={{ fill: "var(--os-accent-color, #ff4d4d)" }}
         stroke="#fff"
         strokeWidth={1}
       />
