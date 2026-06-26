@@ -10,7 +10,6 @@ import {
 } from "./eventEditorReducer";
 import { TrayFieldRow } from "./TrayFieldRow";
 import type { TrayThemeProps } from "./types";
-import { formatDateLabel } from "./utils";
 import { normalizeAllDayEndDate } from "@/shared/calendarEventDates";
 
 export function EventTrayEditor({
@@ -20,7 +19,6 @@ export function EventTrayEditor({
   isMacOSTheme,
   isSystem7Theme,
   isWindowsTheme,
-  locale,
   t,
   onUpdate,
   onDelete,
@@ -277,14 +275,6 @@ export function EventTrayEditor({
                 onKeyDown={(e) => e.stopPropagation()}
                 className={fieldInputClass}
               />
-              <p
-                className={cn(
-                  "text-[10px] text-black/45 mt-0.5 truncate",
-                  useGeneva && "font-geneva-12"
-                )}
-              >
-                {formatDateLabel(date, locale)}
-              </p>
             </TrayFieldRow>
             <TrayFieldRow label={t("apps.calendar.tray.to")} useGeneva={useGeneva}>
               <input
@@ -295,14 +285,6 @@ export function EventTrayEditor({
                 onKeyDown={(e) => e.stopPropagation()}
                 className={fieldInputClass}
               />
-              <p
-                className={cn(
-                  "text-[10px] text-black/45 mt-0.5 truncate",
-                  useGeneva && "font-geneva-12"
-                )}
-              >
-                {formatDateLabel(endDate, locale)}
-              </p>
             </TrayFieldRow>
           </>
         )}
