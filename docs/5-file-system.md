@@ -27,6 +27,7 @@ graph TB
         subgraph Stores["Object Stores"]
             Docs[documents]
             Imgs[images]
+            Books[books]
             Apps[applets]
             Trash[trash]
             Wall[custom_wallpapers]
@@ -70,6 +71,7 @@ graph TB
 | `/Applications` | Virtual | Apps from registry (non-Finder apps) |
 | `/Documents` | Physical | User text documents (.txt, .md) |
 | `/Images` | Physical | User images (PNG, JPG, GIF, WebP, BMP) |
+| `/Books` | Physical | EPUB books (content stored in IndexedDB; ships with a default Meditations book) |
 | `/Music` | Virtual | iPod library (organized by artist) |
 | `/Videos` | Virtual | Video library (organized by artist) |
 | `/Sites` | Virtual | Internet Explorer favorites |
@@ -84,6 +86,7 @@ graph TD
     Root["/"] --> Apps["/Applications<br/>Virtual"]
     Root --> Docs["/Documents<br/>Physical"]
     Root --> Imgs["/Images<br/>Physical"]
+    Root --> Books["/Books<br/>Physical"]
     Root --> Music["/Music<br/>Virtual"]
     Root --> Videos["/Videos<br/>Virtual"]
     Root --> Sites["/Sites<br/>Virtual"]
@@ -100,6 +103,7 @@ graph TD
     
     Docs -->|"stored in"| IDB[(IndexedDB)]
     Imgs -->|"stored in"| IDB
+    Books -->|"stored in"| IDB
     Applets -->|"stored in"| IDB
 ```
 
@@ -146,12 +150,14 @@ interface FileSystemItem {
 
 ## IndexedDB Storage
 
-Database: `ryOS` (version 10)
+Database: `ryOS` (version 12)
 
 | Object Store | Content Type | Key |
 |--------------|--------------|-----|
 | `documents` | Text files (strings) | UUID |
 | `images` | Binary images (Blobs) | UUID |
+| `books` | EPUB book files (Blobs) | UUID |
+| `book_thumbnails` | Generated book cover thumbnails | UUID |
 | `applets` | HTML applet content | UUID |
 | `trash` | Deleted file content | UUID |
 | `custom_wallpapers` | User wallpapers | UUID |
@@ -327,6 +333,7 @@ function getFileTypeFromExtension(fileName: string): string {
 | `.md` | Markdown | TextEdit | IndexedDB (documents) |
 | `.txt` | Plain text | TextEdit | IndexedDB (documents) |
 | `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.bmp` | Image | Paint | IndexedDB (images) |
+| `.epub` | EPUB book | Books | IndexedDB (books) |
 | `.app`, `.html` | HTML Applet | Applet Viewer | IndexedDB (applets) |
 | `.mp3` | Audio | iPod | Virtual (iPod store) |
 | `.mov` | Video | Videos | Virtual (Video store) |
@@ -382,7 +389,7 @@ The sync engine (`src/sync/engine.ts`) subscribes to the file stores and keeps a
 Store version migrations handle schema changes:
 
 ```typescript
-// useFilesStore persist version history (current: 13)
+// useFilesStore persist version history (current: 14)
 // v5: Added UUID-based content keys
 // v6: Added timestamps (createdAt, modifiedAt)
 // v7: Added file size tracking
@@ -390,6 +397,7 @@ Store version migrations handle schema changes:
 // v11: Expand legacy macosx-only hiddenOnThemes desktop shortcuts
 // v12: Migrate default desktop shortcuts
 // v13: Add prominent System 7 desktop app shortcuts
+// v14: Add the default Meditations EPUB to /Books
 ```
 
 ## Events

@@ -1,13 +1,13 @@
 # Overview
 
-ryOS is a web-based desktop environment that brings the nostalgia of classic operating systems to modern browsers. Experience the charm of Mac OS X Aqua, System 7, Windows XP, and Windows 98—all running in your browser with 25 fully-functional apps, an AI assistant, and a complete virtual file system.
+ryOS is a web-based desktop environment that brings the nostalgia of classic operating systems to modern browsers. Experience the charm of Mac OS X Aqua, System 7, Windows XP, and Windows 98—all running in your browser with 26 fully-functional apps, an AI assistant, and a complete virtual file system.
 
 Whether you're exploring the retro aesthetics, building HTML applets, or chatting with Ryo (the AI assistant), ryOS offers a unique blend of nostalgia and modern web technology.
 
 ```mermaid
 graph TB
     subgraph Presentation["Presentation Layer"]
-        Apps[25 App Modules]
+        Apps[26 App Modules]
         UI[UI Components]
         Themes[4 Themes]
     end
@@ -54,7 +54,7 @@ graph TB
 ## Key Features
 
 - **[Multi-Theme Support](/docs/theme-system):** system7/System 7, macosx/Aqua, xp/XP, win98/98
-- **[Built-in Apps](/docs/apps):** Finder, TextEdit, Paint, iPod, Infinite Mac, Winamp, Calendar, Dashboard, Contacts, and more
+- **[Built-in Apps](/docs/apps):** Finder, TextEdit, Paint, iPod, Infinite Mac, Winamp, Calendar, Dashboard, Contacts, Maps, Books (EPUB reader), and more
 - **[AI Assistant (Ryo)](/docs/ai-system):** Chat, tool calling, app control, code generation
 - **[Virtual File System](/docs/file-system):** IndexedDB-backed with lazy loading and cloud sync
 - **[Real-time Chat](/docs/rooms-api):** RESTful rooms with AI integration
@@ -95,7 +95,7 @@ graph TB
 ├── tests/            # bun:test suites
 ├── src/
 │   ├── api/          # Frontend API clients (auth, rooms, admin, songs, listen, core, telegram, irc)
-│   ├── apps/         # 25 app modules
+│   ├── apps/         # 26 app modules
 │   ├── components/   # Shared React components
 │   ├── config/       # App registry
 │   ├── hooks/        # ~75 custom hooks
