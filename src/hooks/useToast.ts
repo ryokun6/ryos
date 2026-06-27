@@ -25,8 +25,3 @@ export const toast = new Proxy(callableToast, {
     return Reflect.get(sonnerToast, property, receiver);
   },
 }) as SonnerToast;
-
-// The useToast hook is kept for compatibility but now just returns the toast function
-export function useToast() {
-  return { toast };
-}

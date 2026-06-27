@@ -2,7 +2,7 @@
 
 ryOS includes 26 built-in applications, each designed to replicate classic desktop experiences while adding modern functionality.
 
-Registry IDs and docs slugs mostly match, with a few intentional aliases: Applet Store is registered as `applet-viewer`, Virtual PC is registered as `pc`, and legacy `infinite-pc` IDs resolve to `pc` for persisted shortcuts.
+Registry IDs and docs slugs mostly match; Applet Store is registered as `applet-viewer`, and Virtual PC is registered as `pc`.
 
 ## App Overview
 

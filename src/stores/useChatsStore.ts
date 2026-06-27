@@ -156,13 +156,6 @@ const saveUsernameToRecovery = (username: string | null) => {
 const getUsernameFromRecovery = (): string | null => {
   const raw = localStorage.getItem(USERNAME_RECOVERY_KEY);
   if (!raw) return null;
-  // Attempt to decode legacy btoa-encoded values
-  try {
-    const maybeDecoded = atob(raw).split("").reverse().join("");
-    if (/^[a-z0-9_-]+$/i.test(maybeDecoded)) return maybeDecoded;
-  } catch {
-    // Not base64 — treat as plain-text
-  }
   return raw;
 };
 
@@ -1239,165 +1232,6 @@ export const useChatsStore = create<ChatsStoreState>()(
         unreadCounts: state.unreadCounts,
         hasEverUsedChats: state.hasEverUsedChats,
       }),
-      // --- Migration from old localStorage keys ---
-      migrate: (persistedState, version) => {
-        debug(
-          "[ChatsStore] Migrate function started. Version:",
-          version,
-          "Persisted state exists:",
-          !!persistedState
-        );
-        if (persistedState) {
-          debug(
-            "[ChatsStore] Persisted state type for rooms:",
-            typeof (persistedState as ChatsStoreState).rooms,
-            "Is Array:",
-            Array.isArray((persistedState as ChatsStoreState).rooms)
-          );
-        }
-
-        if (version < STORE_VERSION && !persistedState) {
-          debug(
-            `[ChatsStore] Migrating from old localStorage keys to version ${STORE_VERSION}...`
-          );
-          try {
-            const migratedState: Partial<ChatsStoreState> = {};
-
-            // Migrate AI Messages
-            const oldAiMessagesRaw = localStorage.getItem("chats:messages");
-            if (oldAiMessagesRaw) {
-              try {
-                migratedState.aiMessages = JSON.parse(oldAiMessagesRaw);
-              } catch (e) {
-                console.warn(
-                  "Failed to parse old AI messages during migration",
-                  e
-                );
-              }
-            }
-
-            // Migrate Username
-            const oldUsernameKey = "chats:chatRoomUsername"; // Define old key
-            const oldUsername = localStorage.getItem(oldUsernameKey);
-            if (oldUsername) {
-              migratedState.username = oldUsername;
-              // Save to recovery mechanism as well
-              saveUsernameToRecovery(oldUsername);
-              localStorage.removeItem(oldUsernameKey); // Remove here during primary migration
-              debug(
-                `[ChatsStore] Migrated and removed '${oldUsernameKey}' key during version upgrade.`
-              );
-            }
-
-            // Migrate Last Opened Room ID
-            const oldCurrentRoomId = localStorage.getItem(
-              "chats:lastOpenedRoomId"
-            );
-            if (oldCurrentRoomId)
-              migratedState.currentRoomId = oldCurrentRoomId;
-
-            // Migrate Sidebar Visibility
-            const oldSidebarVisibleRaw = localStorage.getItem(
-              "chats:sidebarVisible"
-            );
-            if (oldSidebarVisibleRaw) {
-              // Check if it's explicitly "false", otherwise default to true (initial state)
-              migratedState.isSidebarVisible = oldSidebarVisibleRaw !== "false";
-            }
-
-            // Migrate Cached Rooms
-            const oldCachedRoomsRaw = localStorage.getItem("chats:cachedRooms");
-            if (oldCachedRoomsRaw) {
-              try {
-                migratedState.rooms = JSON.parse(oldCachedRoomsRaw);
-              } catch (e) {
-                console.warn(
-                  "Failed to parse old cached rooms during migration",
-                  e
-                );
-              }
-            }
-
-            // Migrate Cached Room Messages
-            const oldCachedRoomMessagesRaw = localStorage.getItem(
-              "chats:cachedRoomMessages"
-            ); // Assuming this key
-            if (oldCachedRoomMessagesRaw) {
-              try {
-                migratedState.roomMessages = JSON.parse(
-                  oldCachedRoomMessagesRaw
-                );
-              } catch (e) {
-                console.warn(
-                  "Failed to parse old cached room messages during migration",
-                  e
-                );
-              }
-            }
-
-            debug("[ChatsStore] Migration data:", migratedState);
-
-            // Clean up old keys (Optional - uncomment if desired after confirming migration)
-            // localStorage.removeItem('chats:messages');
-            // localStorage.removeItem('chats:lastOpenedRoomId');
-            // localStorage.removeItem('chats:sidebarVisible');
-            // localStorage.removeItem('chats:cachedRooms');
-            // localStorage.removeItem('chats:cachedRoomMessages');
-            // debug("[ChatsStore] Old localStorage keys potentially removed.");
-
-            const finalMigratedState = {
-              ...getInitialState(),
-              ...migratedState,
-            } as ChatsStoreState;
-            debug(
-              "[ChatsStore] Final migrated state:",
-              finalMigratedState
-            );
-            debug(
-              "[ChatsStore] Migrated rooms type:",
-              typeof finalMigratedState.rooms,
-              "Is Array:",
-              Array.isArray(finalMigratedState.rooms)
-            );
-            return finalMigratedState;
-          } catch (e) {
-            console.error("[ChatsStore] Migration failed:", e);
-          }
-        }
-        if (persistedState) {
-          debug("[ChatsStore] Using persisted state.");
-          const state = persistedState as ChatsStoreState;
-          const finalState = { ...state };
-
-          // Auth lives in httpOnly cookies — no token in persisted state.
-
-          ensureUsernameRecovery(finalState.username);
-
-          // Filter out private rooms the current user is not a member of.
-          // Persisted state may contain stale private rooms from a
-          // previous session or a different user. IRC rooms are public-like.
-          if (Array.isArray(finalState.rooms)) {
-            const lowerUser = finalState.username?.toLowerCase() ?? null;
-            finalState.rooms = finalState.rooms.filter((room) => {
-              if (!room.type || room.type === "public" || room.type === "irc")
-                return true;
-              if (!lowerUser) return false;
-              return Array.isArray(room.members) && room.members.includes(lowerUser);
-            });
-          }
-
-          debug("[ChatsStore] Final state from persisted:", finalState);
-          debug(
-            "[ChatsStore] Persisted state rooms type:",
-            typeof finalState.rooms,
-            "Is Array:",
-            Array.isArray(finalState.rooms)
-          );
-          return finalState;
-        }
-        debug("[ChatsStore] Falling back to initial state.");
-        return { ...getInitialState() } as ChatsStoreState;
-      },
       onRehydrateStorage: () => {
         debug("[ChatsStore] Rehydrating storage...");
         return (state, error) => {
@@ -1417,17 +1251,6 @@ export const useChatsStore = create<ChatsStoreState>()(
                   `[ChatsStore] Recovered username '${recoveredUsername}' from recovery storage.`
                 );
                 state.username = recoveredUsername;
-              } else {
-                const oldUsernameKey = "chats:chatRoomUsername";
-                const oldUsername = localStorage.getItem(oldUsernameKey);
-                if (oldUsername) {
-                  debug(
-                    `[ChatsStore] Recovered username '${oldUsername}' from legacy key.`
-                  );
-                  state.username = oldUsername;
-                  saveUsernameToRecovery(oldUsername);
-                  localStorage.removeItem(oldUsernameKey);
-                }
               }
             }
 

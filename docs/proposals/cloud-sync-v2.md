@@ -4,8 +4,8 @@ Status: **implemented** (full rewrite / direct cutover — no v1 coexistence)
 
 Implementation map:
 
-- Server core: `api/sync/v2/_core.ts` (KV + journal + LWW), `_import.ts`
-  (lazy v1 → v2 import on first access), `_tool-state.ts` (AI tool adapters)
+- Server core: `api/sync/v2/_core.ts` (KV + journal + LWW),
+  `_tool-state.ts` (AI tool adapters)
 - Routes: `api/sync/v2/{ops,changes,snapshot,blobs}.ts`
 - Shared: `src/shared/sync2/{types,hlc,namespaces}.ts`
 - Client: `src/sync/{engine,codecs,state,blobs,transport}.ts`,
@@ -24,12 +24,8 @@ proposal text below:
   (storage-eviction guard), instead of marker-driven delete ops.
 - **The journal is a bounded Redis list** (op JSON, ascending seq) rather
   than a zset; per-user writes are serialized by a short-TTL lock.
-- **v1 import runs lazily server-side** on a user's first v2 access (the
-  legacy per-item blob signatures are reused as content hashes, so existing
-  libraries do not re-upload).
 - **Blob GC is implemented** via `/api/cron/sync-maintenance`: unreferenced
-  content-addressed blobs are swept with a grace window, and legacy v1 keys are
-  retired in bounded batches.
+  content-addressed blobs are swept with a grace window.
 
 Shipped-system errata for the historical proposal body below:
 

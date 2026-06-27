@@ -337,6 +337,21 @@ export default defineConfig({
       : []),
     // Serve static docs HTML files (before SPA fallback kicks in)
     {
+      name: 'block-removed-legacy-routes',
+      configureServer(server) {
+        server.middlewares.use((req, res, next) => {
+          const pathPart = (req.url || '').split('?')[0];
+          if (pathPart !== '/infinite-pc' && pathPart !== '/embed/infinite-pc') {
+            next();
+            return;
+          }
+          res.statusCode = 404;
+          res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+          res.end('Not Found');
+        });
+      },
+    },
+    {
       name: 'serve-static-docs',
       configureServer(server) {
         server.middlewares.use((req, res, next) => {
@@ -377,7 +392,7 @@ export default defineConfig({
       },
     },
     // Serve cross-origin-isolated embed wrappers in dev
-    // (e.g. /embed/infinite-mac, /embed/infinite-pc).
+    // (e.g. /embed/infinite-mac, /embed/pc).
     // Vercel applies COEP/COOP headers via vercel.json + rewrites in prod;
     // this plugin mirrors that behavior for the Vite dev server.
     {
@@ -391,8 +406,7 @@ export default defineConfig({
           const match = pathPart.match(/^\/embed\/([a-zA-Z0-9_-]+)$/);
           if (!match) return next();
           const name = match[1];
-          const htmlName = name === 'infinite-pc' ? 'pc' : name;
-          const htmlPath = path.resolve(__dirname, 'public/embed', `${htmlName}.html`);
+          const htmlPath = path.resolve(__dirname, 'public/embed', `${name}.html`);
           import('node:fs').then(({ promises: fs }) => {
             fs.readFile(htmlPath)
               .then((buf) => {

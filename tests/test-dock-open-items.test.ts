@@ -147,15 +147,15 @@ describe("computeDockPinnedItems", () => {
     ]);
   });
 
-  test("normalizes legacy pinned app ids before icon rendering", () => {
+  test("drops removed infinite-pc app id pins", () => {
     const result = computeDockPinnedItems([
       { type: "app", id: "infinite-pc" },
     ]);
 
-    expect(result).toEqual([{ type: "app", id: "pc" }]);
+    expect(result).toEqual([]);
   });
 
-  test("deduplicates pinned apps after legacy id normalization", () => {
+  test("keeps pc pins without infinite-pc alias normalization", () => {
     const result = computeDockPinnedItems([
       { type: "app", id: "infinite-pc" },
       { type: "app", id: "pc" },

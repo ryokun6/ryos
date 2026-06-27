@@ -22,16 +22,6 @@ export const usePaintStore = create<PaintStoreState>()(
       version: STORE_VERSION,
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({ lastFilePath: state.lastFilePath }),
-      migrate: (persistedState, version) => {
-        if (!persistedState || version < STORE_VERSION) {
-          const legacy = localStorage.getItem("paint:lastFilePath");
-          if (legacy) {
-            localStorage.removeItem("paint:lastFilePath");
-            return { lastFilePath: legacy } as Partial<PaintStoreState>;
-          }
-        }
-        return persistedState as Partial<PaintStoreState>;
-      },
     }
   )
 ); 

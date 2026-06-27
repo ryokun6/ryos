@@ -22,6 +22,7 @@ import {
   emitCloudSyncDomainChange,
   emitCloudSyncDomainChanges,
 } from "@/utils/cloudSyncEvents";
+import { isSyncNamespace, type SyncNamespace } from "@/shared/sync2/namespaces";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { FINDER_ANALYTICS, track } from "@/utils/analytics";
@@ -31,7 +32,6 @@ import {
   getFinderAnalyticsPathInfo,
   getFinderSizeBucket,
   arePathArraysEqual,
-  DEFAULT_FILE_PATHS,
   getCloudSyncDomainForContentStore,
   getCloudSyncDeletionBucketForContentStore,
   getFileTypeFromExtension,
@@ -44,6 +44,9 @@ import {
 export interface DocumentContent extends StoredContent {
   contentUrl?: string; // URL for Blob content (managed temporarily)
 }
+
+const isSyncNamespaceValue = (value: unknown): value is SyncNamespace =>
+  isSyncNamespace(value);
 
 const trackFinderFileOperation = (
   eventName: string,
@@ -391,7 +394,7 @@ export function useFileSystem(
           },
           uuid
         );
-        emitCloudSyncDomainChange("files-applets");
+        emitCloudSyncDomainChange("applets");
 
         const metadataUpdates: Partial<FileSystemItem> = {};
 
@@ -1366,9 +1369,7 @@ export function useFileSystem(
               [
                 getCloudSyncDomainForContentStore(sourceStoreName),
                 getCloudSyncDomainForContentStore(targetStoreName),
-              ].filter(Boolean) as Array<
-                "files-metadata" | "files-images" | "files-trash" | "files-applets"
-              >
+              ].filter(isSyncNamespaceValue)
             );
           }
         }
@@ -1539,10 +1540,8 @@ export function useFileSystem(
             emitCloudSyncDomainChanges(
               [
                 getCloudSyncDomainForContentStore(storeName),
-                "files-trash",
-              ].filter(Boolean) as Array<
-                "files-metadata" | "files-images" | "files-trash" | "files-applets"
-              >
+                "trash",
+              ].filter(isSyncNamespaceValue)
             );
             console.log(
               `[useFileSystem] Moved content for ${fileMetadata.name} from ${storeName} to Trash DB with UUID ${fileMetadata.uuid}.`
@@ -1614,10 +1613,8 @@ export function useFileSystem(
             emitCloudSyncDomainChanges(
               [
                 getCloudSyncDomainForContentStore(targetStoreName),
-                "files-trash",
-              ].filter(Boolean) as Array<
-                "files-metadata" | "files-images" | "files-trash" | "files-applets"
-              >
+                "trash",
+              ].filter(isSyncNamespaceValue)
             );
             console.log(
               `[useFileSystem] Restored content for ${fileMetadata.name} from Trash DB to ${targetStoreName} with UUID ${fileMetadata.uuid}.`
@@ -1660,7 +1657,7 @@ export function useFileSystem(
         useCloudSyncStore
           .getState()
           .markDeletedKeys("fileTrashKeys", contentUUIDsToDelete);
-        emitCloudSyncDomainChange("files-trash");
+        emitCloudSyncDomainChange("trash");
       }
       console.log("[useFileSystem] Cleared trash content from IndexedDB.");
       track(FINDER_ANALYTICS.EMPTY_TRASH, {
@@ -1692,14 +1689,11 @@ export function useFileSystem(
       ]);
       await dbOperations.clear(STORES.DOCUMENTS);
       emitCloudSyncDomainChanges([
-        "files-metadata",
-        "files-images",
-        "files-trash",
-        "custom-wallpapers",
+        "files",
+        "images",
+        "trash",
+        "wallpapers",
       ]);
-
-      // Clear the size/timestamp sync flag so it will run again after reset
-      localStorage.removeItem("ryos:file-size-timestamp-sync-v1");
 
       // Reset metadata store (this will trigger re-initialization with new UUIDs)
       resetFilesStore();
@@ -1727,117 +1721,6 @@ export function useFileSystem(
 
   // Calculate trash count based on store data
   const trashItemsCount = getItemsInPath("/Trash").length;
-
-  // --- One-time sync for file sizes and timestamps --- //
-  useEffect(() => {
-    const syncFileSizesAndTimestamps = async () => {
-      // Check if we've already done this sync
-      const syncKey = "ryos:file-size-timestamp-sync-v1";
-      if (localStorage.getItem(syncKey)) {
-        return;
-      }
-
-      console.log(
-        "[useFileSystem] Starting one-time file size and timestamp sync..."
-      );
-
-      try {
-        const fileStoreState = useFilesStore.getState();
-        const allItems = Object.values(fileStoreState.items);
-
-        // Process all files (not directories)
-        for (const item of allItems) {
-          if (!item.isDirectory && item.uuid && item.status === "active") {
-            let updateNeeded = false;
-            const updates: Partial<FileSystemItem> = {};
-
-            // Calculate size if missing
-            if (item.size === undefined || item.size === null) {
-              const storeName = getStoreForFile(item.path, {
-                name: item.name,
-                type: item.type,
-              });
-
-              if (storeName) {
-                try {
-                  const content = await dbOperations.get<DocumentContent>(
-                    storeName,
-                    item.uuid
-                  );
-
-                  if (content?.content) {
-                    let size: number;
-                    if (content.content instanceof Blob) {
-                      size = content.content.size;
-                    } else if (content.content instanceof ArrayBuffer) {
-                      size = content.content.byteLength;
-                    } else if (typeof content.content === "string") {
-                      // Convert string to blob to get accurate byte size
-                      size = new Blob([content.content]).size;
-                    } else {
-                      size = 0;
-                    }
-
-                    updates.size = size;
-                    updateNeeded = true;
-                    console.log(
-                      `[useFileSystem] Updated size for ${item.path}: ${size} bytes`
-                    );
-                  }
-                } catch (err) {
-                  console.warn(
-                    `[useFileSystem] Could not get content for ${item.path}:`,
-                    err
-                  );
-                }
-              }
-            }
-
-            // Set reasonable timestamps if missing
-            if (!item.createdAt || !item.modifiedAt) {
-              const now = Date.now();
-              // For default files, use a date in the past
-              const isDefaultFile = DEFAULT_FILE_PATHS.has(item.path);
-
-              const baseTime = isDefaultFile
-                ? now - 30 * 24 * 60 * 60 * 1000 // 30 days ago for default files
-                : now;
-
-              if (!item.createdAt) {
-                updates.createdAt = baseTime;
-                updateNeeded = true;
-              }
-              if (!item.modifiedAt) {
-                updates.modifiedAt = baseTime;
-                updateNeeded = true;
-              }
-            }
-
-            // Apply updates if needed
-            if (updateNeeded) {
-              fileStoreState.addItem({
-                ...item,
-                ...updates,
-              });
-            }
-          }
-        }
-
-        // Mark sync as complete
-        localStorage.setItem(syncKey, "done");
-        console.log("[useFileSystem] File size and timestamp sync complete");
-      } catch (err) {
-        console.error(
-          "[useFileSystem] Error during file size/timestamp sync:",
-          err
-        );
-      }
-    };
-
-    // Run sync after a short delay to avoid blocking initial render
-    const timer = setTimeout(syncFileSizesAndTimestamps, 500);
-    return () => clearTimeout(timer);
-  }, []); // Run once on mount
 
   return {
     currentPath,

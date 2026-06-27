@@ -303,116 +303,7 @@ describe("sync v2 changes feed", () => {
   });
 });
 
-describe("sync v2 v1-import", () => {
-  test("decomposes v1 snapshot domains into per-key entries", async () => {
-    const r = redis();
-    const fake = r as unknown as FakeRedis;
-    const updatedAt = "2024-06-01T00:00:00.000Z";
-
-    fake.setSync(
-      "sync:state:user1:settings",
-      JSON.stringify({
-        data: {
-          theme: "macosx",
-          themeDarkMode: { macosx: "dark" },
-          language: "en",
-          languageInitialized: true,
-          aiModel: null,
-          display: { displayMode: "color", currentWallpaper: "/wallpapers/a.png" },
-          audio: { masterVolume: 0.5 },
-          ipod: { showLyrics: true },
-          dock: { scale: 1 },
-          dashboard: { widgets: [] },
-          sectionUpdatedAt: { theme: "2024-06-02T00:00:00.000Z" },
-        },
-        updatedAt,
-        createdAt: updatedAt,
-        version: 1,
-      })
-    );
-    fake.setSync(
-      "sync:state:user1:stickies",
-      JSON.stringify({
-        data: {
-          notes: [{ id: "n1", content: "hello", updatedAt: 1717200000000 }],
-          deletedNoteIds: { n2: "2024-06-03T00:00:00.000Z" },
-        },
-        updatedAt,
-        createdAt: updatedAt,
-        version: 1,
-      })
-    );
-    fake.setSync(
-      "sync:auto:meta:user1",
-      JSON.stringify({
-        "files-images": {
-          updatedAt,
-          items: {
-            img1: {
-              storageUrl: "s3://bucket/sync/user1/files-images/items/img1.gz",
-              signature: "f".repeat(64),
-              size: 1234,
-              updatedAt,
-            },
-          },
-          deletedItems: { img2: updatedAt },
-        },
-      })
-    );
-    // Songs in the v1 per-track layout.
-    fake.setSync(
-      "sync:songs:user1:meta",
-      JSON.stringify({
-        trackOrder: ["s1"],
-        libraryState: "loaded",
-        lastKnownVersion: 7,
-        deletedTrackIds: { s2: updatedAt },
-        updatedAt,
-      })
-    );
-    fake.setSync(
-      "sync:songs:user1:track:s1",
-      JSON.stringify({ id: "s1", title: "Song", url: "https://youtu.be/s1" })
-    );
-
-    await ensureSync2Initialized(r, "user1");
-    const snapshot = await readSyncSnapshot(r, "user1");
-
-    expect(snapshot.entries["settings/theme"].v).toMatchObject({
-      current: "macosx",
-      darkMode: { macosx: "dark" },
-    });
-    // Section timestamp from sectionUpdatedAt wins over entry.updatedAt.
-    expect(parseHlcMs(snapshot.entries["settings/theme"].t)).toBe(
-      new Date("2024-06-02T00:00:00.000Z").getTime()
-    );
-    expect(snapshot.entries["settings/language"].v).toEqual({
-      current: "en",
-      initialized: true,
-    });
-    expect(snapshot.entries["stickies/note:n1"].v).toMatchObject({ id: "n1" });
-    expect(snapshot.entries["stickies/note:n2"].del).toBe(true);
-    expect(snapshot.entries["songs/track:s1"].v).toMatchObject({ id: "s1" });
-    expect(snapshot.entries["songs/track:s2"].del).toBe(true);
-    expect(snapshot.entries["songs/lib"].v).toMatchObject({
-      libraryState: "loaded",
-      lastKnownVersion: 7,
-    });
-    expect(snapshot.entries["images/item:img1"].v).toMatchObject({
-      blob: {
-        url: "s3://bucket/sync/user1/files-images/items/img1.gz",
-        size: 1234,
-        sig: "f".repeat(64),
-      },
-    });
-    expect(snapshot.entries["images/item:img2"].del).toBe(true);
-
-    // Import is a baseline: cursor starts at 0 with an empty journal.
-    expect(snapshot.seq).toBe(0);
-    const changes = await readSyncChanges(r, "user1", 0);
-    expect(changes.ops).toEqual([]);
-  });
-
+describe("sync v2 initialization", () => {
   test("reads refresh sync data TTLs (throttled once per day)", async () => {
     const r = redis();
     const fake = r as unknown as FakeRedis;
@@ -437,7 +328,7 @@ describe("sync v2 v1-import", () => {
     expect(fake.ttls.get(sync2KvKey("user1"))).toBeUndefined();
   });
 
-  test("import is skipped once initialized and writes proceed normally", async () => {
+  test("initialization is idempotent and writes proceed normally", async () => {
     const r = redis();
     await ensureSync2Initialized(r, "user1");
     await ensureSync2Initialized(r, "user1");
@@ -452,7 +343,7 @@ describe("sync v2 v1-import", () => {
     expect(kv).toBeTruthy();
   });
 
-  test("skips v1 import when no legacy keys exist (brand-new user)", async () => {
+  test("brand-new user initializes with an empty snapshot", async () => {
     const r = redis();
     await ensureSync2Initialized(r, "newuser");
     const snapshot = await readSyncSnapshot(r, "newuser");

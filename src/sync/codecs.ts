@@ -248,15 +248,10 @@ function asRecord(value: unknown): Record<string, unknown> | null {
 // concurrent edits to different fields of the same section merge under
 // per-key LWW instead of one section-level write clobbering the other.
 //
-// Legacy bundled section docs (`settings/<section>`, written by pre-per-field
-// clients and the v1 import) are still understood on apply: their fields are
-// fanned out to the per-field writers. A migrating client re-uploads the
-// fields as per-field keys and tombstones the now-redundant bundled key, so
-// the old shape self-retires.
 // ---------------------------------------------------------------------------
 
 interface SettingsField {
-  /** Field name; also the property key inside a legacy bundled section doc. */
+  /** Field name. */
   field: string;
   /** Current value from the store (always defined; absent → null). */
   read(): unknown;
@@ -565,12 +560,12 @@ function settingsFieldKey(section: string, field: string): string {
 
 function parseSettingsKey(
   key: string
-): { section: string; field?: string } | null {
+): { section: string; field: string } | null {
   if (!key.startsWith(SETTINGS_KEY_PREFIX)) return null;
   const rest = key.slice(SETTINGS_KEY_PREFIX.length);
   if (!rest) return null;
   const slash = rest.indexOf("/");
-  if (slash === -1) return { section: rest }; // legacy bundled section doc
+  if (slash === -1) return null;
   return { section: rest.slice(0, slash), field: rest.slice(slash + 1) };
 }
 
@@ -590,20 +585,6 @@ async function applySettingsOp(op: AppliedSyncOp): Promise<void> {
   const entry = SETTINGS_SECTIONS_BY_NAME.get(parsed.section);
   if (!entry) return;
 
-  if (parsed.field === undefined) {
-    // Legacy bundled section doc: fan its fields out to the per-field writers.
-    // A bundled tombstone is ignored — the data now lives in per-field keys.
-    if (op.del) return;
-    const doc = asRecord(op.v);
-    if (!doc) return;
-    for (const f of entry.section.fields) {
-      if (f.field in doc && doc[f.field] !== undefined) {
-        await f.write(doc[f.field]);
-      }
-    }
-    return;
-  }
-
   if (op.del) return; // settings fields are never deleted
   const field = entry.fieldsByName.get(parsed.field);
   if (!field) return;
@@ -614,8 +595,6 @@ const settingsCodec: SyncCodec = {
   namespace: "settings",
   collect: collectSettings,
   async apply(ops) {
-    // Apply oldest-first so a legacy bundled doc and a newer per-field op in
-    // the same batch converge to the newer value regardless of input order.
     const sorted = [...ops].sort((a, b) =>
       a.t < b.t ? -1 : a.t > b.t ? 1 : 0
     );

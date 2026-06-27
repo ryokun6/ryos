@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { resolveAppId, type AppId } from "@/config/appRegistryData";
+import { appIds, type AppId } from "@/config/appRegistryData";
 
 // Dock item can be an app or a file/applet
 export interface DockItem {
@@ -24,9 +24,10 @@ const DEFAULT_PINNED_ITEMS: DockItem[] = [
 ];
 
 const DOCK_STORE_VERSION = 1;
+const APP_ID_SET = new Set<string>(appIds);
 
 /**
- * Persisted dock state can outlive renamed or removed apps. Keep app pins
+ * Persisted dock state can outlive removed apps. Keep app pins
  * renderable before any icon lookup, drag/drop index math, or duplicate check.
  */
 export function computeDockPinnedItems(pinnedItems: DockItem[]): DockItem[] {
@@ -39,13 +40,12 @@ export function computeDockPinnedItems(pinnedItems: DockItem[]): DockItem[] {
       continue;
     }
 
-    const appId = resolveAppId(item.id);
-    if (!appId || seenAppIds.has(appId)) {
+    if (!APP_ID_SET.has(item.id) || seenAppIds.has(item.id as AppId)) {
       continue;
     }
 
-    seenAppIds.add(appId);
-    items.push(appId === item.id ? item : { ...item, id: appId });
+    seenAppIds.add(item.id as AppId);
+    items.push(item);
   }
 
   return items;
@@ -53,8 +53,7 @@ export function computeDockPinnedItems(pinnedItems: DockItem[]): DockItem[] {
 
 function normalizeDockItem(item: DockItem): DockItem | null {
   if (item.type !== "app") return item;
-  const appId = resolveAppId(item.id);
-  return appId ? { ...item, id: appId } : null;
+  return APP_ID_SET.has(item.id) ? item : null;
 }
 
 interface DockStoreState {
@@ -186,19 +185,6 @@ export const useDockStore = create<DockStoreState>()(
       name: "dock-storage",
       version: DOCK_STORE_VERSION,
       storage: createJSONStorage(() => localStorage),
-      migrate: (persistedState) => {
-        if (!persistedState || typeof persistedState !== "object") {
-          return persistedState;
-        }
-        const state = persistedState as Partial<DockStoreState>;
-        if (!Array.isArray(state.pinnedItems)) {
-          return persistedState;
-        }
-        return {
-          ...state,
-          pinnedItems: computeDockPinnedItems(state.pinnedItems),
-        };
-      },
     }
   )
 );

@@ -227,10 +227,7 @@ export function useFinderLogic({
 
     // Get initial path from initialData or localStorage
     const typedInitialData = initialData as FinderInitialData | undefined;
-    // Try new key first, fall back to legacy
-    const storedPath =
-      localStorage.getItem("ryos:app:finder:initial-path") ||
-      localStorage.getItem("app_finder_initialPath");
+    const storedPath = localStorage.getItem("ryos:app:finder:initial-path");
     const initialPath = typedInitialData?.path || storedPath || "/";
     createFinderInstance(instanceId, initialPath);
 
@@ -245,7 +242,6 @@ export function useFinderLogic({
     // Clear the localStorage if we used it
     if (storedPath) {
       localStorage.removeItem("ryos:app:finder:initial-path");
-      localStorage.removeItem("app_finder_initialPath");
     }
   }, [
     instanceId,

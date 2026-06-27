@@ -5,29 +5,17 @@ import {
 
 /**
  * Lightweight event bus connecting app code to the cloud sync engine:
- * - domain change events mark a namespace dirty (upload path)
+ * - namespace change events mark a namespace dirty (upload path)
  * - check requests trigger a cursor pull (download path)
  */
 
-/** Legacy v1 domain names still used by a few call sites. */
-const LEGACY_DOMAIN_ALIASES: Record<string, SyncNamespace> = {
-  "files-metadata": "files",
-  "files-images": "images",
-  "files-books": "books",
-  "files-trash": "trash",
-  "files-applets": "applets",
-  "custom-wallpapers": "wallpapers",
-};
-
-export type CloudSyncChangeSource =
-  | SyncNamespace
-  | keyof typeof LEGACY_DOMAIN_ALIASES;
+export type CloudSyncChangeSource = SyncNamespace;
 
 export function normalizeSyncNamespace(
   value: CloudSyncChangeSource
 ): SyncNamespace | null {
   if (isSyncNamespace(value)) return value;
-  return LEGACY_DOMAIN_ALIASES[value] || null;
+  return null;
 }
 
 type NamespaceListener = (namespace: SyncNamespace) => void;

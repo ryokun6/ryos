@@ -157,34 +157,6 @@ export const useTerminalStore = create<TerminalStoreState>()(
         commandHistory: state.commandHistory,
         currentPath: state.currentPath,
       }),
-      migrate: (persistedState, version) => {
-        // Attempt to migrate from old localStorage keys if present
-        if (!persistedState || version < STORE_VERSION) {
-          try {
-            const rawHistory = localStorage.getItem(
-              "terminal:commandHistory" // legacy key from APP_STORAGE_KEYS.terminal.COMMAND_HISTORY
-            );
-            const rawCurrentPath = localStorage.getItem(
-              "terminal:currentPath" // legacy key
-            );
-            const history: TerminalCommand[] = rawHistory
-              ? JSON.parse(rawHistory)
-              : [];
-            const path = rawCurrentPath || "/";
-            // Clean up old keys
-            if (rawHistory) localStorage.removeItem("terminal:commandHistory");
-            if (rawCurrentPath)
-              localStorage.removeItem("terminal:currentPath");
-            return {
-              commandHistory: history,
-              currentPath: path,
-            } as Partial<TerminalStoreState>;
-          } catch (e) {
-            console.warn("[TerminalStore] Migration failed", e);
-          }
-        }
-        return persistedState as Partial<TerminalStoreState>;
-      },
     }
   )
 ); 

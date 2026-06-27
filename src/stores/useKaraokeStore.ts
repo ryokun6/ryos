@@ -86,31 +86,6 @@ const initialKaraokeData: KaraokeData = {
 
 const CURRENT_KARAOKE_STORE_VERSION = 3; // Independent displayMode from iPod store
 
-function readLegacyIpodDisplayMode(): DisplayMode {
-  try {
-    const ipodRaw = localStorage.getItem("ryos:ipod");
-    if (!ipodRaw) return DisplayMode.Video;
-    const parsed = JSON.parse(ipodRaw) as {
-      state?: { displayMode?: string };
-    };
-    const mode = parsed.state?.displayMode;
-    if (mode === "liquid") return DisplayMode.Water;
-    if (
-      mode === DisplayMode.Video ||
-      mode === DisplayMode.Cover ||
-      mode === DisplayMode.Landscapes ||
-      mode === DisplayMode.Shader ||
-      mode === DisplayMode.Mesh ||
-      mode === DisplayMode.Water
-    ) {
-      return mode;
-    }
-  } catch {
-    // ignore parse errors
-  }
-  return DisplayMode.Video;
-}
-
 export const useKaraokeStore = create<KaraokeState>()(
   persist(
     (set, get) => ({
@@ -271,28 +246,6 @@ export const useKaraokeStore = create<KaraokeState>()(
         displayMode: state.displayMode,
         // Don't persist isPlaying or playbackHistory
       }),
-      migrate: (persistedState, version) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        let state = persistedState as any;
-        if (version < 2) {
-          console.log(
-            `Migrating Karaoke store from version ${version} to ${CURRENT_KARAOKE_STORE_VERSION}`
-          );
-          state = {
-            ...state,
-            currentSongId: null,
-            isPlaying: false,
-            playbackHistory: [],
-          };
-        }
-        if (version < 3) {
-          state = {
-            ...state,
-            displayMode: state.displayMode ?? readLegacyIpodDisplayMode(),
-          };
-        }
-        return state;
-      },
     }
   )
 );

@@ -154,14 +154,6 @@ export const useBooksStore = create<BooksStoreState>()(
     {
       name: "ryos:books",
       version: 2,
-      migrate: (persisted, version) => {
-        const state = (persisted ?? {}) as Partial<BooksStoreState>;
-        if (version < 2) {
-          state.pinnedTop = state.pinnedTop ?? [];
-          state.pinnedBottom = state.pinnedBottom ?? [];
-        }
-        return state as BooksStoreState;
-      },
       partialize: (state) => ({
         progressByPath: state.progressByPath,
         settings: state.settings,

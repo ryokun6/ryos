@@ -39,7 +39,6 @@ import {
   type SyncOpsRealtimeEvent,
 } from "../../../src/shared/sync2/types.js";
 import { redisKeys } from "../../../src/shared/redisKeys.js";
-import { hasLegacyV1SyncData, importV1SyncState } from "./_import.js";
 
 export const MAX_OPS_PER_REQUEST = 1000;
 export const MAX_OP_VALUE_BYTES = 512 * 1024;
@@ -173,9 +172,8 @@ async function touchTtlsThrottled(redis: Redis, username: string): Promise<void>
 }
 
 /**
- * Initialize the user's v2 state on first access. Imports frozen v1 sync data
- * once when legacy keys exist; brand-new users get an empty baseline. The seq
- * key marks an initialized user (import is not re-run).
+ * Initialize the user's v2 state on first access. The seq key marks an
+ * initialized user.
  */
 export async function ensureSync2Initialized(
   redis: Redis,
@@ -194,41 +192,9 @@ export async function ensureSync2Initialized(
       throw new Error("Could not acquire sync lock for initialization");
     }
 
-    const entries = (await hasLegacyV1SyncData(redis, username))
-      ? await importV1SyncState(redis, username)
-      : {};
-    const blobRegistry: Record<string, string> = {};
-    const kvFields: Record<string, string> = {};
-    for (const [key, entry] of Object.entries(entries)) {
-      kvFields[key] = JSON.stringify(entry);
-      const blobRef = entry.del ? null : getSyncBlobRef(entry.v);
-      // Legacy v1 signatures are SHA-256 over the same serialization, so
-      // imported refs participate in dedupe and GC like native ones.
-      const digest = blobRef?.sha256 || blobRef?.sig;
-      if (digest) {
-        blobRegistry[digest] = JSON.stringify({
-          url: blobRef!.url,
-          size: blobRef!.size,
-        });
-      }
-    }
-
-    if (Object.keys(kvFields).length > 0) {
-      await redis.hset(sync2KvKey(username), kvFields);
-    }
-    if (Object.keys(blobRegistry).length > 0) {
-      await redis.hset(sync2BlobsKey(username), blobRegistry);
-    }
-    // The import is a baseline snapshot, not journal history: clients that
-    // have never synced v2 bootstrap from the snapshot anyway.
     await redis.set(sync2SeqKey(username), "0", { ex: USER_TTL_SECONDS });
     await touchTtls(redis, username);
-    const imported = Object.keys(kvFields).length;
-    console.log(
-      imported > 0
-        ? `[sync2] Initialized ${username} (${imported} keys imported from v1)`
-        : `[sync2] Initialized ${username} (no legacy v1 data)`
-    );
+    console.log(`[sync2] Initialized ${username}`);
   } finally {
     if (locked) {
       await releaseUserLock(redis, username);

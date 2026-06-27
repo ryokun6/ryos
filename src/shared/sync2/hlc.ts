@@ -72,7 +72,7 @@ export function nextHlc(
   return formatHlc(lastMs, lastCounter + 1, clientId);
 }
 
-/** Build an HLC from a wall-clock timestamp (v1 import, server tools). */
+/** Build an HLC from a wall-clock timestamp. */
 export function hlcFromTimestamp(
   timestamp: string | number | null | undefined,
   clientId: string
