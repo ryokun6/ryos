@@ -70,7 +70,7 @@ export function StickyNote({
   isForeground,
 }: StickyNoteProps) {
   const { t } = useTranslation();
-  
+
   const noteRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   interface StickyNoteUiState {
@@ -113,6 +113,9 @@ export function StickyNote({
   }, []);
   const draftPositionRef = useRef(note.position);
   const draftSizeRef = useRef(note.size);
+  // rAF handle used to coalesce high-frequency pointermove updates into at most
+  // one React state update per animation frame while dragging/resizing.
+  const moveRafRef = useRef<number | null>(null);
 
   const colors = COLOR_STYLES[note.color];
 
@@ -209,6 +212,18 @@ export function StickyNote({
   useEffect(() => {
     if (!isDragging && !isResizing) return;
 
+    // Flush the latest draft position/size into React state once per frame.
+    const flushMove = () => {
+      moveRafRef.current = null;
+      if (isDragging) setDraftPosition(draftPositionRef.current);
+      if (isResizing) setDraftSize(draftSizeRef.current);
+    };
+
+    const scheduleFlush = () => {
+      if (moveRafRef.current !== null) return;
+      moveRafRef.current = requestAnimationFrame(flushMove);
+    };
+
     const handleMove = (clientX: number, clientY: number) => {
       if (isDragging) {
         let newX = clientX - dragOffset.x;
@@ -220,9 +235,7 @@ export function StickyNote({
         newX = Math.max(0, Math.min(newX, maxX));
         newY = Math.max(24, Math.min(newY, maxY)); // 24px for menu bar
 
-        const nextPosition = { x: newX, y: newY };
-        draftPositionRef.current = nextPosition;
-        setDraftPosition(nextPosition);
+        draftPositionRef.current = { x: newX, y: newY };
       }
 
       if (isResizing) {
@@ -233,10 +246,11 @@ export function StickyNote({
         const newWidth = Math.max(180, clientX - rect.left);
         const newHeight = Math.max(120, clientY - rect.top);
 
-        const nextSize = { width: newWidth, height: newHeight };
-        draftSizeRef.current = nextSize;
-        setDraftSize(nextSize);
+        draftSizeRef.current = { width: newWidth, height: newHeight };
       }
+
+      // Coalesce updates: at most one re-render per animation frame.
+      scheduleFlush();
     };
 
     const handleMouseMove = (e: MouseEvent) => {
@@ -251,6 +265,10 @@ export function StickyNote({
     };
 
     const handleEnd = () => {
+      if (moveRafRef.current !== null) {
+        cancelAnimationFrame(moveRafRef.current);
+        moveRafRef.current = null;
+      }
       const updates: Partial<Omit<StickyNoteType, "id" | "createdAt">> = {};
 
       if (isDragging) {
@@ -298,6 +316,10 @@ export function StickyNote({
       document.removeEventListener("touchmove", handleTouchMove);
       document.removeEventListener("touchend", handleEnd);
       document.removeEventListener("touchcancel", handleEnd);
+      if (moveRafRef.current !== null) {
+        cancelAnimationFrame(moveRafRef.current);
+        moveRafRef.current = null;
+      }
     };
   }, [
     isDragging,
@@ -308,6 +330,8 @@ export function StickyNote({
     note.size.width,
     note.size.height,
     onUpdate,
+    setDraftPosition,
+    setDraftSize,
   ]);
 
   // Handle content change

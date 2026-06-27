@@ -1,8 +1,9 @@
+import { memo } from "react";
 import type { FC, PointerEvent } from "react";
 import { cn } from "@/lib/utils";
 import type { NoteLabelType } from "@/stores/useSynthStore";
 
-export const SynthPianoKey: FC<{
+const SynthPianoKeyComponent: FC<{
   note: string;
   isBlack?: boolean;
   isPressed?: boolean;
@@ -91,3 +92,5 @@ export const SynthPianoKey: FC<{
     </button>
   );
 };
+
+export const SynthPianoKey = memo(SynthPianoKeyComponent);
