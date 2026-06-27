@@ -649,6 +649,129 @@
         "invalidFileDesc": "Solo se pueden importar libros .epub."
       }
     },
+    "calculator": {
+      "name": "Calculadora",
+      "title": "Calculadora",
+      "description": "Calculadora básica, científica y de conversión de unidades",
+      "menu": {
+        "help": "Ayuda de Calculadora",
+        "about": "Acerca de la Calculadora",
+        "clear": "Borrar",
+        "basic": "Básica",
+        "scientific": "Científica",
+        "conversion": "Conversión"
+      },
+      "angle": {
+        "deg": "Grados",
+        "rad": "Radianes",
+        "degShort": "Gr",
+        "radShort": "Rad"
+      },
+      "status": {
+        "memory": "M={{value}}"
+      },
+      "conversion": {
+        "title": "Convertir",
+        "category": "Categoría",
+        "from": "Desde",
+        "to": "Hasta",
+        "swap": "Intercambiar",
+        "selectUnit": "Unidad",
+        "amount": "Cantidad",
+        "result": "Resultado",
+        "currencyError": "No se pudo cargar la tasa de cambio",
+        "categories": {
+          "length": "Longitud",
+          "area": "Área",
+          "volume": "Volumen",
+          "mass": "Peso y Masa",
+          "temperature": "Temperatura",
+          "speed": "Velocidad",
+          "time": "Tiempo",
+          "pressure": "Presión",
+          "energy": "Energía",
+          "currency": "Divisa"
+        },
+        "units": {
+          "m": "Metros",
+          "km": "Kilómetros",
+          "cm": "Centímetros",
+          "mm": "Milímetros",
+          "in": "Pulgadas",
+          "ft": "Pies",
+          "yd": "Yardas",
+          "mi": "Millas",
+          "sqm": "Metros Cuadrados",
+          "sqkm": "Kilómetros Cuadrados",
+          "sqft": "Pies Cuadrados",
+          "sqmi": "Millas Cuadradas",
+          "acre": "Acres",
+          "ha": "Hectáreas",
+          "l": "Litros",
+          "ml": "Mililitros",
+          "gal": "Galones (EE. UU.)",
+          "qt": "Cuartos",
+          "pt": "Pintas",
+          "floz": "Onzas Líquidas",
+          "cup": "Tazas",
+          "kg": "Kilogramos",
+          "g": "Gramos",
+          "mg": "Miligramos",
+          "lb": "Libras",
+          "oz": "Onzas",
+          "t": "Toneladas Métricas",
+          "c": "Celsius",
+          "f": "Fahrenheit",
+          "k": "Kelvin",
+          "mps": "Metros/Secundo",
+          "kph": "Kilómetros/Hora",
+          "mph": "Millas/Hora",
+          "knot": "Nudos",
+          "s": "Segundos",
+          "min": "Minutos",
+          "hr": "Horas",
+          "day": "Días",
+          "wk": "Semanas",
+          "pa": "Pascales",
+          "kpa": "Kilopascales",
+          "bar": "Barra",
+          "atm": "Atmósferas",
+          "psi": "PSI",
+          "j": "Julios",
+          "kj": "Kilojulios",
+          "cal": "Calorías",
+          "kcal": "Kilocalorías",
+          "wh": "Vatios-hora",
+          "kwh": "Kilovatios-hora"
+        }
+      },
+      "help": {
+        "basicMode": {
+          "title": "Modo Básico",
+          "description": "Suma, resta, multiplica y divide con teclas de memoria y porcentaje"
+        },
+        "scientificMode": {
+          "title": "Modo Científico",
+          "description": "Trigonometría, logaritmos, potencias, raíces, factorial, π, e, y cambio entre grados/radianes"
+        },
+        "conversionMode": {
+          "title": "Modo Conversión",
+          "description": "Convierte longitud, masa, temperatura, divisas y más con tasas en vivo"
+        },
+        "themeDesigns": {
+          "title": "Diseños de Tema",
+          "description": "Chrome de calculadora clásico de Mac, Aqua, Windows 98 y Windows XP por tema"
+        },
+        "keyboard": {
+          "title": "Teclado",
+          "description": "Escribe dígitos y operadores desde el teclado; Ver menú cambia modos"
+        },
+        "liveCurrency": {
+          "title": "Divisa en Vivo",
+          "description": "Las conversiones de divisas obtienen tasas de cambio a través de la API de ryOS"
+        }
+      }
+    },
     "calendar": {
       "description": "Calendario con eventos",
       "event": {
@@ -1823,7 +1946,6 @@
       "timezoneAutomatic": "Auto",
       "timezoneAutomaticCity": "Auto ({{city}})",
       "timezoneNoResults": "No hay zonas horarias coincidentes",
-      "timezoneSearchPlaceholder": "Buscar husos horarios…",
       "timezoneRegions": {
         "africa": "África",
         "america": "Américas",
@@ -1834,9 +1956,10 @@
         "australia": "Australia",
         "europe": "Europa",
         "indian": "Océano Índico",
-        "pacific": "Pacífico",
-        "other": "Otro"
+        "other": "Otro",
+        "pacific": "Pacífico"
       },
+      "timezoneSearchPlaceholder": "Buscar husos horarios…",
       "toolbar": {
         "back": "Atrás",
         "forward": "Adelante",

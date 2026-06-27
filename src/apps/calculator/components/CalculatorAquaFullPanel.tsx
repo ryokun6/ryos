@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { CalculatorDisplay, CalculatorKey } from "./CalculatorKey";
 import type { CalculatorTheme } from "./types";
 
@@ -55,15 +56,20 @@ export function CalculatorAquaFullPanel({
   onPower,
   onDoubleZero,
 }: CalculatorAquaFullPanelProps) {
+  const { t } = useTranslation();
   const theme: CalculatorTheme = "aqua";
   const fn = "text-[10px] leading-tight";
+  const angleLabel =
+    angleMode === "deg"
+      ? t("apps.calculator.angle.degShort")
+      : t("apps.calculator.angle.radShort");
 
   return (
     <div className="calc-aqua-full flex flex-col gap-1">
       <CalculatorDisplay value={display} theme={theme} />
       <div className="calc-aqua-full-grid">
         {/* Row 1 */}
-        <CalculatorKey label={angleMode === "deg" ? "Deg" : "Rad"} onClick={onToggleAngle} theme={theme} variant="function" className={fn} style={{ gridColumn: 1, gridRow: 1 }} />
+        <CalculatorKey label={angleLabel} onClick={onToggleAngle} theme={theme} variant="function" className={fn} style={{ gridColumn: 1, gridRow: 1 }} />
         <CalculatorKey label="sin" onClick={() => onUnary("sin")} theme={theme} variant="function" className={fn} style={{ gridColumn: 2, gridRow: 1 }} />
         <CalculatorKey label="7" onClick={() => onDigit("7")} theme={theme} style={{ gridColumn: 3, gridRow: 1 }} />
         <CalculatorKey label="8" onClick={() => onDigit("8")} theme={theme} style={{ gridColumn: 4, gridRow: 1 }} />

@@ -649,6 +649,129 @@
         "invalidFileDesc": "È possibile importare solo libri .epub."
       }
     },
+    "calculator": {
+      "name": "Calcolatrice",
+      "title": "Calcolatrice",
+      "description": "Calcolatrice di base, scientifica e di conversione unità",
+      "menu": {
+        "help": "Aiuto Calcolatrice",
+        "about": "Informazioni sulla Calcolatrice",
+        "clear": "Cancella",
+        "basic": "Base",
+        "scientific": "Scientifica",
+        "conversion": "Conversione"
+      },
+      "angle": {
+        "deg": "Gradi",
+        "rad": "Radianti",
+        "degShort": "Gradi",
+        "radShort": "Rad"
+      },
+      "status": {
+        "memory": "M={{value}}"
+      },
+      "conversion": {
+        "title": "Converti",
+        "category": "Categoria",
+        "from": "Da",
+        "to": "A",
+        "swap": "Scambia",
+        "selectUnit": "Unità",
+        "amount": "Importo",
+        "result": "Risultato",
+        "currencyError": "Impossibile caricare il tasso di cambio",
+        "categories": {
+          "length": "Lunghezza",
+          "area": "Area",
+          "volume": "Volume",
+          "mass": "Peso e Massa",
+          "temperature": "Temperatura",
+          "speed": "Velocità",
+          "time": "Tempo",
+          "pressure": "Pressione",
+          "energy": "Energia",
+          "currency": "Valuta"
+        },
+        "units": {
+          "m": "Metri",
+          "km": "Chilometri",
+          "cm": "Centimetri",
+          "mm": "Millimetri",
+          "in": "Pollici",
+          "ft": "Piedi",
+          "yd": "Yarde",
+          "mi": "Miglia",
+          "sqm": "Metri Quadrati",
+          "sqkm": "Chilometri Quadrati",
+          "sqft": "Piedi Quadrati",
+          "sqmi": "Miglia Quadrate",
+          "acre": "Acres",
+          "ha": "Ettari",
+          "l": "Litri",
+          "ml": "Millilitri",
+          "gal": "Galloni (US)",
+          "qt": "Quart",
+          "pt": "Pinte",
+          "floz": "Ounce Fluide",
+          "cup": "Tazze",
+          "kg": "Chilogrammi",
+          "g": "Grammi",
+          "mg": "Milligrammi",
+          "lb": "Libbre",
+          "oz": "Ounce",
+          "t": "Tonelada Metica",
+          "c": "Celsius",
+          "f": "Fahrenheit",
+          "k": "Kelvin",
+          "mps": "Metri/Secondo",
+          "kph": "Chilometri/Ora",
+          "mph": "Miglia/Ora",
+          "knot": "Nodi",
+          "s": "Secondi",
+          "min": "Minuti",
+          "hr": "Ore",
+          "day": "Giorni",
+          "wk": "Settimane",
+          "pa": "Pascal",
+          "kpa": "Chilopascal",
+          "bar": "Bar",
+          "atm": "Atmosfere",
+          "psi": "PSI",
+          "j": "Joule",
+          "kj": "Kilojoule",
+          "cal": "Calorie",
+          "kcal": "Chilocalorie",
+          "wh": "Watt-ora",
+          "kwh": "Chilowatt-ora"
+        }
+      },
+      "help": {
+        "basicMode": {
+          "title": "Modalità Base",
+          "description": "Aggiungi, sottrai, moltiplica e dividi con i tasti di memoria e percentuale"
+        },
+        "scientificMode": {
+          "title": "Modalità Scientifica",
+          "description": "Trigonometria, logaritmi, potenze, radici, fattoriale, π, e passaggio da gradi a radianti"
+        },
+        "conversionMode": {
+          "title": "Modalità Conversione",
+          "description": "Converti lunghezza, massa, temperatura, valuta e altro con tassi in tempo reale"
+        },
+        "themeDesigns": {
+          "title": "Design Temi",
+          "description": "Chrome della calcolatrice classica Mac, Aqua, Windows 98, e Windows XP per tema"
+        },
+        "keyboard": {
+          "title": "Tastiera",
+          "description": "Digita cifre e operatori dalla tastiera; Il menu visualizza i cambi di modalità"
+        },
+        "liveCurrency": {
+          "title": "Valuta in Tempo Reale",
+          "description": "Le conversioni valutarie recuperano i tassi di cambio tramite l'API ryOS"
+        }
+      }
+    },
     "calendar": {
       "description": "Calendario con eventi",
       "event": {
@@ -1823,7 +1946,6 @@
       "timezoneAutomatic": "Auto",
       "timezoneAutomaticCity": "Auto ({{city}})",
       "timezoneNoResults": "Nessun fuso orario corrispondente",
-      "timezoneSearchPlaceholder": "Cerca fusi orari…",
       "timezoneRegions": {
         "africa": "Africa",
         "america": "Americhe",
@@ -1834,9 +1956,10 @@
         "australia": "Australia",
         "europe": "Europa",
         "indian": "Oceano Indiano",
-        "pacific": "Pacifico",
-        "other": "Altro"
+        "other": "Altro",
+        "pacific": "Pacifico"
       },
+      "timezoneSearchPlaceholder": "Cerca fusi orari…",
       "toolbar": {
         "back": "Indietro",
         "forward": "Avanti",

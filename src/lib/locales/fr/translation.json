@@ -649,6 +649,129 @@
         "invalidFileDesc": "Seuls les livres au format .epub peuvent être importés."
       }
     },
+    "calculator": {
+      "name": "Calculatrice",
+      "title": "Calculatrice",
+      "description": "Calculatrice basique, scientifique et de conversion d'unités",
+      "menu": {
+        "help": "Aide à la Calculatrice",
+        "about": "À propos de la Calculatrice",
+        "clear": "Effacer",
+        "basic": "Basique",
+        "scientific": "Scientifique",
+        "conversion": "Conversion"
+      },
+      "angle": {
+        "deg": "Degrés",
+        "rad": "Radians",
+        "degShort": "Deg",
+        "radShort": "Rad"
+      },
+      "status": {
+        "memory": "M={{value}}"
+      },
+      "conversion": {
+        "title": "Convertir",
+        "category": "Catégorie",
+        "from": "De",
+        "to": "À",
+        "swap": "Échanger",
+        "selectUnit": "Unité",
+        "amount": "Montant",
+        "result": "Résultat",
+        "currencyError": "Impossible de charger le taux de change",
+        "categories": {
+          "length": "Longueur",
+          "area": "Surface",
+          "volume": "Volume",
+          "mass": "Poids & Masse",
+          "temperature": "Température",
+          "speed": "Vitesse",
+          "time": "Temps",
+          "pressure": "Pression",
+          "energy": "Énergie",
+          "currency": "Monnaie"
+        },
+        "units": {
+          "m": "Mètres",
+          "km": "Kilomètres",
+          "cm": "Centimètres",
+          "mm": "Millimètres",
+          "in": "Pouces",
+          "ft": "Pieds",
+          "yd": "Yards",
+          "mi": "Miles",
+          "sqm": "Mètres carrés",
+          "sqkm": "Kilomètres carrés",
+          "sqft": "Pieds carrés",
+          "sqmi": "Miles carrés",
+          "acre": "Acres",
+          "ha": "Hectares",
+          "l": "Litres",
+          "ml": "Millilitres",
+          "gal": "Gallons (US)",
+          "qt": "Quarts",
+          "pt": "Pintes",
+          "floz": "Onces liquides",
+          "cup": "Tasses",
+          "kg": "Kilogrammes",
+          "g": "Grammes",
+          "mg": "Milligrammes",
+          "lb": "Livres",
+          "oz": "Onces",
+          "t": "Tonnes",
+          "c": "Celsius",
+          "f": "Fahrenheit",
+          "k": "Kelvin",
+          "mps": "Mètres/Seconde",
+          "kph": "Kilomètres/Heure",
+          "mph": "Miles/Heure",
+          "knot": "Nœuds",
+          "s": "Secondes",
+          "min": "Minutes",
+          "hr": "Heures",
+          "day": "Jours",
+          "wk": "Semaines",
+          "pa": "Pascals",
+          "kpa": "Kilopascals",
+          "bar": "Bar",
+          "atm": "Atmosphères",
+          "psi": "PSI",
+          "j": "Joules",
+          "kj": "Kilojoules",
+          "cal": "Calories",
+          "kcal": "Kilocalories",
+          "wh": "Watt-heures",
+          "kwh": "Kilowatt-heures"
+        }
+      },
+      "help": {
+        "basicMode": {
+          "title": "Mode Basique",
+          "description": "Ajouter, soustraire, multiplier et diviser avec les touches mémoire et pourcentage"
+        },
+        "scientificMode": {
+          "title": "Mode Scientifique",
+          "description": "Trig, logs, puissances, racines, factoriel, π, e, et basculement degré/radian"
+        },
+        "conversionMode": {
+          "title": "Mode Conversion",
+          "description": "Convertir la longueur, la masse, la température, la monnaie, et plus avec des taux en direct"
+        },
+        "themeDesigns": {
+          "title": "Designs de Thème",
+          "description": "Chrome de la calculatrice classique Mac, Aqua, Windows 98 et Windows XP par thème"
+        },
+        "keyboard": {
+          "title": "Clavier",
+          "description": "Taper des chiffres et des opérateurs depuis le clavier; le menu d'affichage change de modes"
+        },
+        "liveCurrency": {
+          "title": "Monnaie en Direct",
+          "description": "Les conversions de monnaies récupèrent les taux de change via l'API ryOS"
+        }
+      }
+    },
     "calendar": {
       "description": "Calendrier avec événements",
       "event": {
@@ -1823,7 +1946,6 @@
       "timezoneAutomatic": "Auto",
       "timezoneAutomaticCity": "Auto ({{city}})",
       "timezoneNoResults": "Aucun fuseau horaire correspondant",
-      "timezoneSearchPlaceholder": "Rechercher des fuseaux horaires…",
       "timezoneRegions": {
         "africa": "Afrique",
         "america": "Amériques",
@@ -1834,9 +1956,10 @@
         "australia": "Australie",
         "europe": "Europe",
         "indian": "Océan Indien",
-        "pacific": "Pacifique",
-        "other": "Autre"
+        "other": "Autre",
+        "pacific": "Pacifique"
       },
+      "timezoneSearchPlaceholder": "Rechercher des fuseaux horaires…",
       "toolbar": {
         "back": "Précédent",
         "forward": "Suivant",

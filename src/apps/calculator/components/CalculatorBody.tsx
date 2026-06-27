@@ -63,11 +63,11 @@ export function CalculatorBody({ logic }: CalculatorBodyProps) {
     theme !== "aqua" &&
     theme !== "system7" &&
     calcState.memory !== 0
-      ? `M=${calcState.memory}`
+      ? t("apps.calculator.status.memory", { value: calcState.memory })
       : mode === "scientific" && theme !== "aqua" && theme !== "system7"
         ? calcState.angleMode === "deg"
-          ? t("apps.calculator.angle.deg", "Degrees")
-          : t("apps.calculator.angle.rad", "Radians")
+          ? t("apps.calculator.angle.deg")
+          : t("apps.calculator.angle.rad")
         : null;
 
   const calcHandlers = {
@@ -91,7 +91,7 @@ export function CalculatorBody({ logic }: CalculatorBodyProps) {
         <>
           <CalculatorDisplay
             value={conversionAmount}
-            secondary={t("apps.calculator.conversion.title", "Convert")}
+            secondary={t("apps.calculator.conversion.title")}
             theme={theme}
           />
           <CalculatorConversionPanel

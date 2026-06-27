@@ -649,6 +649,129 @@
         "invalidFileDesc": "僅能匯入 .epub 格式的書籍。"
       }
     },
+    "calculator": {
+      "name": "計算器",
+      "title": "計算器",
+      "description": "基本、科學和單位轉換計算器",
+      "menu": {
+        "help": "計算器幫助",
+        "about": "關於計算器",
+        "clear": "清除",
+        "basic": "基本",
+        "scientific": "科學",
+        "conversion": "轉換"
+      },
+      "angle": {
+        "deg": "度",
+        "rad": "弧度",
+        "degShort": "度",
+        "radShort": "弧度"
+      },
+      "status": {
+        "memory": "M={{value}}"
+      },
+      "conversion": {
+        "title": "轉換",
+        "category": "類別",
+        "from": "從",
+        "to": "到",
+        "swap": "互換",
+        "selectUnit": "單位",
+        "amount": "數量",
+        "result": "結果",
+        "currencyError": "無法加載匯率",
+        "categories": {
+          "length": "長度",
+          "area": "面積",
+          "volume": "體積",
+          "mass": "重量 & 質量",
+          "temperature": "溫度",
+          "speed": "速度",
+          "time": "時間",
+          "pressure": "壓力",
+          "energy": "能量",
+          "currency": "貨幣"
+        },
+        "units": {
+          "m": "米",
+          "km": "公里",
+          "cm": "厘米",
+          "mm": "毫米",
+          "in": "英寸",
+          "ft": "英尺",
+          "yd": "碼",
+          "mi": "英里",
+          "sqm": "平方米",
+          "sqkm": "平方公里",
+          "sqft": "平方英尺",
+          "sqmi": "平方英里",
+          "acre": "英畝",
+          "ha": "公頃",
+          "l": "升",
+          "ml": "毫升",
+          "gal": "加侖（美制）",
+          "qt": "夸脫",
+          "pt": "品脫",
+          "floz": "液盎司",
+          "cup": "杯",
+          "kg": "千克",
+          "g": "克",
+          "mg": "毫克",
+          "lb": "磅",
+          "oz": "盎司",
+          "t": "公噸",
+          "c": "攝氏",
+          "f": "華氏",
+          "k": "開爾文",
+          "mps": "米/秒",
+          "kph": "公里/小時",
+          "mph": "英里/小時",
+          "knot": "節",
+          "s": "秒",
+          "min": "分鐘",
+          "hr": "小時",
+          "day": "天",
+          "wk": "週",
+          "pa": "帕斯卡",
+          "kpa": "千帕斯卡",
+          "bar": "巴",
+          "atm": "大氣壓",
+          "psi": "磅/平方英寸",
+          "j": "焦耳",
+          "kj": "千焦耳",
+          "cal": "卡路里",
+          "kcal": "千卡路里",
+          "wh": "瓦時",
+          "kwh": "千瓦時"
+        }
+      },
+      "help": {
+        "basicMode": {
+          "title": "基本模式",
+          "description": "使用記憶鍵和百分比進行加、減、乘和除"
+        },
+        "scientificMode": {
+          "title": "科學模式",
+          "description": "三角函數、對數、冪、根、階乘、π、e 和度/弧度切換"
+        },
+        "conversionMode": {
+          "title": "轉換模式",
+          "description": "以實時匯率轉換長度、質量、溫度、貨幣等"
+        },
+        "themeDesigns": {
+          "title": "主題設計",
+          "description": "經典Mac、Aqua、Windows 98和Windows XP計算器主題"
+        },
+        "keyboard": {
+          "title": "鍵盤",
+          "description": "從鍵盤輸入數字和運算符；查看菜單可切換模式"
+        },
+        "liveCurrency": {
+          "title": "實時貨幣",
+          "description": "貨幣轉換通過ryOS API獲取匯率"
+        }
+      }
+    },
     "calendar": {
       "description": "含有事件的日曆",
       "event": {
@@ -1823,7 +1946,6 @@
       "timezoneAutomatic": "自動",
       "timezoneAutomaticCity": "自動 ({{city}})",
       "timezoneNoResults": "沒有相符的時區",
-      "timezoneSearchPlaceholder": "搜尋時區…",
       "timezoneRegions": {
         "africa": "非洲",
         "america": "美洲",
@@ -1834,9 +1956,10 @@
         "australia": "澳洲",
         "europe": "歐洲",
         "indian": "印度洋",
-        "pacific": "太平洋",
-        "other": "其他"
+        "other": "其他",
+        "pacific": "太平洋"
       },
+      "timezoneSearchPlaceholder": "搜尋時區…",
       "toolbar": {
         "back": "返回",
         "forward": "前進",

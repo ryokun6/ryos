@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { CalculatorKey } from "./CalculatorKey";
 import type { CalculatorTheme } from "./types";
 
@@ -38,12 +39,17 @@ export function CalculatorScientificPanel({
   onToggleAngle,
   onPower,
 }: CalculatorScientificPanelProps) {
+  const { t } = useTranslation();
   const fnSize = theme === "aqua" ? "text-[11px]" : "text-[10px]";
 
   return (
     <div className="grid grid-cols-5 gap-1 mb-1">
       <CalculatorKey
-        label={angleMode === "deg" ? "Deg" : "Rad"}
+        label={
+          angleMode === "deg"
+            ? t("apps.calculator.angle.degShort")
+            : t("apps.calculator.angle.radShort")
+        }
         onClick={onToggleAngle}
         theme={theme}
         variant="function"
