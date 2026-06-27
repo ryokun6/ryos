@@ -16,6 +16,16 @@ interface CalculatorBodyProps {
   logic: CalculatorLogic;
 }
 
+const AQUA_OPERATOR_LABELS: Record<string, string> = {
+  "+": "+",
+  "-": "−",
+  "*": "×",
+  "/": "÷",
+  "%": "%",
+  "^": "xʸ",
+  root: "ʸ√x",
+};
+
 export function CalculatorBody({ logic }: CalculatorBodyProps) {
   const {
     calculatorTheme,
@@ -36,6 +46,9 @@ export function CalculatorBody({ logic }: CalculatorBodyProps) {
     pressE,
     pressFactorial,
     pressToggleAngle,
+    pressOpenParenthesis,
+    pressCloseParenthesis,
+    pressRandom,
     pressDoubleZero,
     pressMemoryClear,
     pressMemoryRecall,
@@ -59,6 +72,13 @@ export function CalculatorBody({ logic }: CalculatorBodyProps) {
 
   const theme = calculatorTheme as CalculatorTheme;
   const themeClass = `calc-theme-${theme}`;
+  const aquaStatus = calcState.pendingOperator
+    ? AQUA_OPERATOR_LABELS[calcState.pendingOperator]
+    : mode === "scientific"
+      ? calcState.angleMode === "deg"
+        ? t("apps.calculator.angle.degShort")
+        : t("apps.calculator.angle.radShort")
+      : null;
 
   const secondary =
     mode !== "conversion" &&
@@ -116,10 +136,17 @@ export function CalculatorBody({ logic }: CalculatorBodyProps) {
           />
         </>
       ) : theme === "aqua" && mode === "basic" ? (
-        <CalculatorAquaCompactPanel display={calcState.display} {...calcHandlers} />
+        <CalculatorAquaCompactPanel
+          display={calcState.display}
+          status={aquaStatus}
+          memoryActive={calcState.memory !== 0}
+          {...calcHandlers}
+        />
       ) : theme === "aqua" && mode === "scientific" ? (
         <CalculatorAquaFullPanel
           display={calcState.display}
+          status={aquaStatus}
+          memoryActive={calcState.memory !== 0}
           angleMode={calcState.angleMode}
           onDigit={pressDigit}
           onOperator={pressOperator}
@@ -128,13 +155,20 @@ export function CalculatorBody({ logic }: CalculatorBodyProps) {
           onClearEntry={pressClearEntry}
           onDecimal={pressDecimal}
           onNegate={pressNegate}
+          onPercent={pressPercent}
           onUnary={pressUnary}
           onPi={pressPi}
-          onE={pressE}
           onFactorial={pressFactorial}
           onToggleAngle={pressToggleAngle}
+          onOpenParenthesis={pressOpenParenthesis}
+          onCloseParenthesis={pressCloseParenthesis}
+          onRandom={pressRandom}
           onPower={() => pressOperator("^")}
-          onDoubleZero={pressDoubleZero}
+          onRoot={() => pressOperator("root")}
+          onMemoryClear={pressMemoryClear}
+          onMemoryRecall={pressMemoryRecall}
+          onMemoryAdd={pressMemoryAdd}
+          onMemorySubtract={pressMemorySubtract}
         />
       ) : theme === "system7" ? (
         <CalculatorSystem7Panel

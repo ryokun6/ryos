@@ -70,21 +70,48 @@ export const calculatorStyles = `
     font-size: 22px;
     font-weight: 400;
     text-align: right;
-    padding: 4px 8px;
-    min-height: 36px;
+    padding: 3px 8px 2px;
+    min-height: 51px;
     letter-spacing: 0.02em;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+  }
+  .calc-theme-aqua .calc-display-value {
+    line-height: 1.05;
+  }
+  .calc-theme-aqua .calc-display-status {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 10px;
+    font-size: 10px;
+    line-height: 1;
+    letter-spacing: 0.04em;
+    opacity: 0.58;
+  }
+  .calc-theme-aqua .calc-aqua-compact {
+    gap: 10px;
+  }
+  .calc-theme-aqua .calc-aqua-full {
+    gap: 12px;
   }
   .calc-aqua-compact-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     grid-template-rows: repeat(6, 28px);
-    gap: 4px;
+    gap: 6px;
   }
   .calc-aqua-full-grid {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    grid-template-rows: repeat(6, 26px);
-    gap: 4px;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(6, 24px);
+    column-gap: 5px;
+    row-gap: 10px;
+  }
+  .calc-aqua-full-grid .calc-number-group-start {
+    margin-left: 4px;
   }
   /* Aqua keys reuse Finder toolbar metal-inset-btn via ToolbarButton */
   .calc-theme-aqua .calc-aqua-key-group {

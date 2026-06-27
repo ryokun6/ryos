@@ -28,6 +28,8 @@ import {
   memoryStore,
   memorySubtract,
   negate,
+  openParenthesis,
+  closeParenthesis,
   percentOf,
   toggleAngleMode,
   unaryFunctions,
@@ -265,6 +267,18 @@ export function useCalculatorLogic({
   );
   const pressFactorial = useCallback(() => runCalc(factorial), [runCalc]);
   const pressToggleAngle = useCallback(() => runCalc(toggleAngleMode), [runCalc]);
+  const pressOpenParenthesis = useCallback(
+    () => runCalc(openParenthesis),
+    [runCalc]
+  );
+  const pressCloseParenthesis = useCallback(
+    () => runCalc(closeParenthesis),
+    [runCalc]
+  );
+  const pressRandom = useCallback(
+    () => runCalc((s) => insertConstant(s, Math.random())),
+    [runCalc]
+  );
 
   const pressMemoryClear = useCallback(() => runCalc(memoryClear), [runCalc]);
   const pressMemoryRecall = useCallback(() => runCalc(memoryRecall), [runCalc]);
@@ -321,6 +335,9 @@ export function useCalculatorLogic({
     pressE,
     pressFactorial,
     pressToggleAngle,
+    pressOpenParenthesis,
+    pressCloseParenthesis,
+    pressRandom,
     pressMemoryClear,
     pressMemoryRecall,
     pressMemoryAdd,
