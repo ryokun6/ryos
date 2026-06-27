@@ -15,7 +15,6 @@ import {
   fetchAutoSyncPreferenceFromServer,
   persistAutoSyncPreferenceToServer,
 } from "@/utils/autoSyncPreference";
-import { writeAgentDebugLog } from "@/utils/agentDebugLog";
 import { getSyncChannelName } from "@/shared/constants/realtime";
 import {
   SYNC_OPS_REALTIME_EVENT,
@@ -62,21 +61,6 @@ export function useAutoCloudSync() {
       const result = await fetchAutoSyncPreferenceFromServer();
       checking = false;
       if (cancelled) return;
-      // #region agent log
-      writeAgentDebugLog({
-        hypothesisId: "H2",
-        location: "src/hooks/useAutoCloudSync.ts:66",
-        message: "auto sync preference check completed",
-        data: {
-          ok: result.ok,
-          apply: result.ok ? result.apply : null,
-          enabledFromServer: result.ok && result.apply ? result.enabled : null,
-          localAutoSyncEnabled: useCloudSyncStore.getState().autoSyncEnabled,
-          hasUsername: Boolean(username),
-          isAuthenticated,
-        },
-      });
-      // #endregion
       if (!result.ok) {
         setSyncApiAvailable(false);
         retryTimer = setTimeout(

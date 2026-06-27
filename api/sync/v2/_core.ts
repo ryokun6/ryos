@@ -338,26 +338,29 @@ export async function applySyncOps(
     }
 
     if (accepted.length > 0) {
-      await redis.hset(sync2KvKey(username), kvWrites);
       const journalKey = sync2JournalKey(username);
-      for (const { seq, member } of journalEntries) {
-        await redis.zadd(journalKey, { score: seq, member });
-      }
       const pipeline = redis.pipeline();
+      pipeline.hset(sync2KvKey(username), kvWrites);
+      for (const { seq, member } of journalEntries) {
+        pipeline.zadd(journalKey, { score: seq, member });
+      }
       pipeline.set(sync2SeqKey(username), String(nextSeq), {
         ex: USER_TTL_SECONDS,
       });
-      await pipeline.exec();
       // Trim to the last JOURNAL_MAX_LENGTH ops by dropping the lowest seqs.
-      await redis.zremrangebyscore(
+      pipeline.zremrangebyscore(
         journalKey,
         "-inf",
         nextSeq - JOURNAL_MAX_LENGTH
       );
       if (Object.keys(blobRegistry).length > 0) {
-        await redis.hset(sync2BlobsKey(username), blobRegistry);
+        pipeline.hset(sync2BlobsKey(username), blobRegistry);
       }
-      await touchTtls(redis, username);
+      pipeline.expire(sync2SeqKey(username), USER_TTL_SECONDS);
+      pipeline.expire(sync2KvKey(username), USER_TTL_SECONDS);
+      pipeline.expire(journalKey, USER_TTL_SECONDS);
+      pipeline.expire(sync2BlobsKey(username), USER_TTL_SECONDS);
+      await pipeline.exec();
     }
 
     return { seq: nextSeq, results, accepted };

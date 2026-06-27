@@ -43,6 +43,7 @@ export interface RedisPipelineLike {
   zadd(key: string, entry: RedisSortedSetEntry): this;
   zcard(key: string): this;
   hincrby(key: string, field: string, increment: number): this;
+  hset(key: string, fields: Record<string, unknown>): this;
   hgetall(key: string): this;
   pfadd(key: string, ...elements: string[]): this;
   pfcount(...keys: string[]): this;
@@ -248,6 +249,13 @@ class StandardRedisPipelineAdapter implements RedisPipelineLike {
 
   hincrby(key: string, field: string, increment: number): this {
     this.pipelineClient.hincrby(key, field, increment);
+    return this;
+  }
+
+  hset(key: string, fields: Record<string, unknown>): this {
+    if (Object.keys(fields).length > 0) {
+      this.pipelineClient.hset(key, fields);
+    }
     return this;
   }
 

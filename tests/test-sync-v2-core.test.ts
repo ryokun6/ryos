@@ -32,6 +32,29 @@ function redis(): Redis {
   return new FakeRedis() as unknown as Redis;
 }
 
+class TrackingRedis extends FakeRedis {
+  directZaddCount = 0;
+  pipelineZaddCount = 0;
+
+  async zadd(
+    key: string,
+    entry: { score: number; member: string }
+  ): Promise<number> {
+    this.directZaddCount += 1;
+    return super.zadd(key, entry);
+  }
+
+  pipeline(): ReturnType<FakeRedis["pipeline"]> {
+    const pipeline = super.pipeline();
+    const originalZadd = pipeline.zadd.bind(pipeline);
+    pipeline.zadd = ((key, entry) => {
+      this.pipelineZaddCount += 1;
+      return originalZadd(key, entry);
+    }) as typeof pipeline.zadd;
+    return pipeline;
+  }
+}
+
 const NOW = Date.now();
 const t = (offsetMs: number, clientId = "client-a") =>
   formatHlc(NOW + offsetMs, 0, clientId);
@@ -187,6 +210,21 @@ describe("sync v2 ops + LWW", () => {
     );
     const [entry] = await lookupSyncBlobs(r, "user1", [sha]);
     expect(entry?.url).toBe("s3://bucket/sync/user1/blobs/aa.gz");
+  });
+
+  test("pipelines journal writes for large accepted batches", async () => {
+    const r = new TrackingRedis();
+    const ops = Array.from({ length: 25 }, (_, index) => ({
+      k: `settings/bulk-${index}`,
+      v: { value: index },
+      t: t(index),
+    }));
+
+    await applySyncOps(r as unknown as Redis, "bulk-user", ops, "client-a");
+
+    expect(r.directZaddCount).toBe(0);
+    expect(r.pipelineZaddCount).toBe(ops.length);
+    expect(await r.zcard(sync2JournalKey("bulk-user"))).toBe(ops.length);
   });
 });
 

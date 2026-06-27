@@ -16,7 +16,6 @@
 
 import { ensureIndexedDBInitialized } from "@/utils/indexedDB";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
-import { writeAgentDebugLog } from "@/utils/agentDebugLog";
 import {
   getSyncKeyNamespace,
   getSyncNamespaceCategory,
@@ -127,20 +126,6 @@ export class CloudSyncEngine {
   async start(): Promise<void> {
     if (this.started) return;
     this.started = true;
-    // #region agent log
-    writeAgentDebugLog({
-      hypothesisId: "H2,H3,H4",
-      location: "src/sync/engine.ts:132",
-      message: "cloud sync engine start entered",
-      data: {
-        cursorIsNull: this.state.cursor === null,
-        dirtyNamespaceCount: this.state.dirtyNamespaces.length,
-        enabledCategories: SYNC_NAMESPACES.filter((namespace) =>
-          this.isNamespaceEnabled(namespace)
-        ).length,
-      },
-    });
-    // #endregion
 
     for (const namespace of SYNC_NAMESPACES) {
       const codec = SYNC_CODECS[namespace];
@@ -359,19 +344,6 @@ export class CloudSyncEngine {
         options.force ? [...SYNC_NAMESPACES] : this.state.dirtyNamespaces
       ).filter((namespace) => this.isNamespaceEnabled(namespace));
       if (namespaces.length === 0) return;
-      // #region agent log
-      writeAgentDebugLog({
-        hypothesisId: "H4",
-        location: "src/sync/engine.ts:351",
-        message: "cloud sync flush collecting namespaces",
-        data: {
-          force: options.force === true,
-          namespaceCount: namespaces.length,
-          namespaces,
-          dirtyNamespaceCount: this.state.dirtyNamespaces.length,
-        },
-      });
-      // #endregion
 
       const syncStore = useCloudSyncStore.getState();
       const needsDb = namespaces.some((ns) => SYNC_CODECS[ns].usesIndexedDb);
@@ -490,25 +462,6 @@ export class CloudSyncEngine {
             }
           }
         }
-
-        const opCountsByNamespace = ops.reduce<Record<string, number>>((acc, op) => {
-          const namespace = getSyncKeyNamespace(op.k) || "unknown";
-          acc[namespace] = (acc[namespace] || 0) + 1;
-          return acc;
-        }, {});
-        // #region agent log
-        writeAgentDebugLog({
-          hypothesisId: "H4,H5",
-          location: "src/sync/engine.ts:480",
-          message: "cloud sync flush collected ops",
-          data: {
-            flushedNamespaceCount: flushedNamespaces.length,
-            flushedNamespaces,
-            opCount: ops.length,
-            opCountsByNamespace,
-          },
-        });
-        // #endregion
 
         // Clear dirty before the network call; failures re-mark below.
         this.state.clearDirty(flushedNamespaces);
@@ -705,19 +658,6 @@ export class CloudSyncEngine {
       if (!force && shadow && shadow.t === entry.t) continue;
       ops.push(this.entryToOp(key, entry));
     }
-    // #region agent log
-    writeAgentDebugLog({
-      hypothesisId: "H3",
-      location: "src/sync/engine.ts:676",
-      message: "cloud sync snapshot fetched",
-      data: {
-        force,
-        seq: snapshot.seq,
-        entryCount: Object.keys(snapshot.entries).length,
-        applyOpCount: ops.length,
-      },
-    });
-    // #endregion
 
     if (ops.length > 0) {
       await this.applyRemoteOps(ops);
