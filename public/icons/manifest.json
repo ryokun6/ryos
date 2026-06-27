@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-06-27T07:58:07.455Z",
+  "generatedAt": "2026-06-27T08:44:46.559Z",
   "themes": {
     "default": [
       "admin.png",
@@ -254,6 +254,7 @@
       "bomb.svg",
       "books-folder.png",
       "books.png",
+      "calculator.png",
       "calendar.png",
       "cdrom.png",
       "chats.png",
@@ -399,6 +400,7 @@
       "bomb.svg",
       "books-folder.png",
       "books.png",
+      "calculator.png",
       "calendar.png",
       "cdrom.png",
       "chats.png",

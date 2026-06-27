@@ -59,7 +59,7 @@ export function CalculatorAquaFullPanel({
   const fn = "text-[10px] leading-tight";
 
   return (
-    <div className="calc-aqua-full flex flex-col gap-[3px]">
+    <div className="calc-aqua-full flex flex-col gap-1">
       <CalculatorDisplay value={display} theme={theme} />
       <div className="calc-aqua-full-grid">
         {/* Row 1 */}
