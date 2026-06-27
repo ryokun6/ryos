@@ -22,7 +22,7 @@ import {
   emitCloudSyncDomainChange,
   emitCloudSyncDomainChanges,
 } from "@/utils/cloudSyncEvents";
-import { type SyncNamespace } from "@/shared/sync2/namespaces";
+import { isSyncNamespace, type SyncNamespace } from "@/shared/sync2/namespaces";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { FINDER_ANALYTICS, track } from "@/utils/analytics";
@@ -45,9 +45,8 @@ export interface DocumentContent extends StoredContent {
   contentUrl?: string; // URL for Blob content (managed temporarily)
 }
 
-const isSyncNamespaceValue = (
-  value: SyncNamespace | null
-): value is SyncNamespace => value !== null;
+const isSyncNamespaceValue = (value: unknown): value is SyncNamespace =>
+  isSyncNamespace(value);
 
 const trackFinderFileOperation = (
   eventName: string,
