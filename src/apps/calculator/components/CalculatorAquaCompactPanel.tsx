@@ -55,21 +55,21 @@ export function CalculatorAquaCompactPanel({
         <CalculatorKey label="4" onClick={() => onDigit("4")} theme={theme} style={{ gridColumn: 1, gridRow: 4 }} />
         <CalculatorKey label="5" onClick={() => onDigit("5")} theme={theme} style={{ gridColumn: 2, gridRow: 4 }} />
         <CalculatorKey label="6" onClick={() => onDigit("6")} theme={theme} style={{ gridColumn: 3, gridRow: 4 }} />
-        <CalculatorKey
-          label="+"
-          onClick={() => onOperator("+")}
-          theme={theme}
-          variant="operator"
-          style={{ gridColumn: 4, gridRow: "4 / span 2" }}
-        />
+        <CalculatorKey label="+" onClick={() => onOperator("+")} theme={theme} variant="operator" style={{ gridColumn: 4, gridRow: 4 }} />
 
         <CalculatorKey label="1" onClick={() => onDigit("1")} theme={theme} style={{ gridColumn: 1, gridRow: 5 }} />
         <CalculatorKey label="2" onClick={() => onDigit("2")} theme={theme} style={{ gridColumn: 2, gridRow: 5 }} />
         <CalculatorKey label="3" onClick={() => onDigit("3")} theme={theme} style={{ gridColumn: 3, gridRow: 5 }} />
+        <CalculatorKey
+          label="="
+          onClick={onEquals}
+          theme={theme}
+          variant="equals"
+          style={{ gridColumn: 4, gridRow: "5 / span 2" }}
+        />
 
         <CalculatorKey label="0" onClick={() => onDigit("0")} theme={theme} variant="wide" style={{ gridColumn: "1 / span 2", gridRow: 6 }} />
         <CalculatorKey label="." onClick={onDecimal} theme={theme} style={{ gridColumn: 3, gridRow: 6 }} />
-        <CalculatorKey label="=" onClick={onEquals} theme={theme} variant="equals" style={{ gridColumn: 4, gridRow: 6 }} />
       </div>
     </div>
   );
