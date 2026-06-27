@@ -219,9 +219,31 @@ export const Waveform3D: React.FC<Waveform3DProps> = ({ analyzer }) => {
       }
 
       renderer.render(scene, camera);
+      // Pause the loop while the tab is hidden so a backgrounded window
+      // doesn't keep the GPU busy rendering an invisible visualizer.
+      // `onVisibility` resumes it. Mirrors the gating in `TvCrtEffects`.
+      if (document.hidden) {
+        animationFrameRef.current = null;
+        return;
+      }
       animationFrameRef.current = requestAnimationFrame(animate);
     };
-    animate();
+
+    const onVisibility = () => {
+      if (document.hidden) {
+        if (animationFrameRef.current !== null) {
+          cancelAnimationFrame(animationFrameRef.current);
+          animationFrameRef.current = null;
+        }
+      } else if (animationFrameRef.current === null) {
+        animate();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
+    if (!document.hidden) {
+      animate();
+    }
 
     // Handle resize with ResizeObserver
     const handleResize = () => {
@@ -242,6 +264,7 @@ export const Waveform3D: React.FC<Waveform3DProps> = ({ analyzer }) => {
     handleResize();
 
     return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
       resizeObserver.disconnect();
       if (animationFrameRef.current !== null) {
         cancelAnimationFrame(animationFrameRef.current);
