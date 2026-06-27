@@ -114,7 +114,10 @@ export function CalculatorBody({ logic }: CalculatorBodyProps) {
   };
 
   return (
-    <div className={cn("flex flex-col h-full w-full calc-body", themeClass)}>
+    <div
+      className={cn("flex flex-col h-full w-full calc-body", themeClass)}
+      data-os-font={theme === "system7" ? "geneva" : undefined}
+    >
       {mode === "conversion" ? (
         <CalculatorConversionPanel
           theme={theme}
@@ -182,7 +185,6 @@ export function CalculatorBody({ logic }: CalculatorBodyProps) {
           onOperator={pressOperator}
           onEquals={pressEquals}
           onClear={pressClear}
-          onClearEntry={pressClearEntry}
           onDecimal={pressDecimal}
         />
       ) : theme === "win98" || theme === "xp" ? (

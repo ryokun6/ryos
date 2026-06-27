@@ -9,39 +9,41 @@ export const calculatorStyles = `
 
   /* ── System 7 desk accessory ── */
   .calc-theme-system7.calc-body {
-    background-color: #c0c0c0;
-    background-image: radial-gradient(circle, #000 0.55px, transparent 0.55px);
-    background-size: 2px 2px;
-    padding: 6px;
-    gap: 4px;
+    background-color: #d0d0d0;
+    background-image: radial-gradient(circle, rgba(0, 0, 0, 0.55) 0.4px, transparent 0.4px);
+    background-size: 3px 3px;
+    font-family: "Geneva-12", Geneva, "ArkPixel", sans-serif;
+    padding: 10px;
+    gap: 6px;
   }
   .calc-theme-system7 .calc-display {
     background: #fff;
     color: #000;
     border: 1px solid #000;
     box-shadow: inset 1px 1px 0 #000;
-    font-family: Chicago, Geneva, var(--os-font-ui), sans-serif;
+    font-family: "Geneva-12", Geneva, "ArkPixel", sans-serif;
     text-align: right;
     padding: 2px 4px;
-    min-height: 22px;
-    font-size: 16px;
-    font-weight: 700;
+    min-height: 26px;
+    font-size: 14px;
+    font-weight: 400;
     border-radius: 0;
   }
   .calc-s7-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    grid-template-rows: repeat(5, 26px);
-    gap: 4px;
+    grid-template-rows: repeat(5, 28px);
+    gap: 5px;
   }
   .calc-theme-system7 .calc-key {
     background: #fff;
     border: 1px solid #000;
     border-radius: 0;
     color: #000;
-    font-size: 13px;
-    font-weight: 700;
-    min-height: 26px;
+    font-family: "Geneva-12", Geneva, "ArkPixel", sans-serif;
+    font-size: 11px;
+    font-weight: 400;
+    min-height: 28px;
     box-shadow: 1px 1px 0 #000;
   }
   .calc-theme-system7 .calc-key:active {
@@ -158,7 +160,7 @@ export const calculatorStyles = `
     color: #000;
     border: none;
     box-shadow: inset -1px -1px #fff, inset 1px 1px #808080, inset -2px -2px #dfdfdf, inset 2px 2px #0a0a0a;
-    font-family: "Lucida Console", monospace;
+    font-family: "Pixelated MS Sans Serif", "ArkPixel", Arial, sans-serif;
     font-size: 20px;
     text-align: right;
     padding: 4px 6px;
@@ -324,6 +326,7 @@ export const calculatorStyles = `
     color: inherit !important;
     font-size: 10px !important;
     font-weight: 600;
+    letter-spacing: 0;
     opacity: 0.62;
   }
   .calc-conversion-unit-trigger::before {

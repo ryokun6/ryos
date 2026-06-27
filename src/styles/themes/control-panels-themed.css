@@ -23,6 +23,19 @@
 :root[data-os-theme="system7"] .control-panels-mac {
   --control-panels-font: "Geneva-12", "ArkPixel", "SerenityOS-Emoji", system-ui,
     sans-serif;
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+  font-smooth: always !important;
+}
+
+:root[data-os-theme="system7"]
+  .control-panels-mac
+  :is(button[role="combobox"], select) {
+  font-family: "ChicagoKare", "ArkPixel", "SerenityOS-Emoji", system-ui,
+    sans-serif !important;
+  -webkit-font-smoothing: none !important;
+  -moz-osx-font-smoothing: unset !important;
+  font-smooth: never !important;
 }
 
 :root:not([data-os-theme="macosx"]) .control-panels-mac-body-measure {
@@ -85,6 +98,15 @@
   margin: 0;
   padding: 0 0 6px;
   text-align: left;
+}
+
+:root[data-os-theme="system7"] .control-panels-section-header {
+  font-family: "ChicagoKare", "ArkPixel", "SerenityOS-Emoji", system-ui,
+    sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  -webkit-font-smoothing: none;
+  font-smooth: never;
 }
 
 :root:not([data-os-theme="macosx"]) .control-panels-section-grid {
@@ -520,6 +542,18 @@
   width: 100%;
 }
 
+:root[data-os-theme="system7"] .control-panels-pref-tab-bar {
+  height: 30px !important;
+}
+
+:root[data-os-theme="system7"]
+  .control-panels-pref-tab-bar
+  [role="tab"] {
+  height: 30px !important;
+  padding-top: 5px !important;
+  padding-bottom: 5px !important;
+}
+
 /* Tabbed well: stack both tab panels in one grid cell, sized to the tallest,
    and skin it like the active theme's tab content so the tabs connect to it. */
 :root:not([data-os-theme="macosx"])
@@ -883,7 +917,9 @@
   padding: 0 5px;
   border: 1px solid #000;
   background: #fff;
-  font-family: "Chicago", "Geneva-12", monospace;
+  font-family: "ChicagoKare", "ArkPixel", monospace;
+  -webkit-font-smoothing: none;
+  font-smooth: never;
   font-size: 9px;
   color: #000;
 }
@@ -913,7 +949,9 @@
     #fff 1px,
     #fff 2px
   );
-  font-family: "Chicago", "Geneva-12", monospace;
+  font-family: "ChicagoKare", "ArkPixel", monospace;
+  -webkit-font-smoothing: none;
+  font-smooth: never;
   font-size: 9px;
 }
 

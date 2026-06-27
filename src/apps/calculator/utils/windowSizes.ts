@@ -14,14 +14,14 @@ const AQUA_SIZES: Record<CalculatorMode, { width: number; height: number }> = {
 };
 
 const SYSTEM7_SIZES: Record<CalculatorMode, { width: number; height: number }> = {
-  basic: { width: 148, height: 208 },
-  scientific: { width: 148, height: 208 },
-  conversion: { width: 220, height: 300 },
+  basic: { width: 176, height: 244 },
+  scientific: { width: 176, height: 244 },
+  conversion: { width: 220, height: 370 },
 };
 
 const WINDOWS_SIZES: Record<CalculatorMode, { width: number; height: number }> = {
-  basic: { width: 272, height: 300 },
-  scientific: { width: 320, height: 480 },
+  basic: { width: 272, height: 260 },
+  scientific: { width: 320, height: 380 },
   conversion: { width: 300, height: 420 },
 };
 

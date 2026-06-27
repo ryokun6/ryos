@@ -1065,7 +1065,9 @@
     #fff 0 1px,
     #000 1px 2px
   );
-  font-family: "Chicago", "Geneva-12", monospace;
+  font-family: "ChicagoKare", "ArkPixel", monospace;
+  -webkit-font-smoothing: none;
+  font-smooth: never;
   font-size: 9px;
   color: #000;
 }
@@ -1094,7 +1096,9 @@
   padding: 0 4px;
   border-bottom: 1px solid #000;
   background: #fff;
-  font-family: "Chicago", "Geneva-12", monospace;
+  font-family: "ChicagoKare", "ArkPixel", monospace;
+  -webkit-font-smoothing: none;
+  font-smooth: never;
   font-size: 9px;
 }
 
