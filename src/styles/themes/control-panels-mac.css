@@ -825,13 +825,22 @@
   padding: 6px 8px 8px;
 }
 
-:root[data-os-theme="macosx"] .control-panels-theme-preview-tab-bar-live {
-  margin-bottom: 6px;
+/* Faithful preview tab group: reuses the real preference tab strip + well so
+   the tabs read identically to the live settings (centered Aqua tabs, bordered
+   well connected to the strip). */
+:root[data-os-theme="macosx"] .control-panels-theme-preview-tabbed {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
 }
 
-:root[data-os-theme="macosx"] .control-panels-theme-preview-tab-bar-live .aqua-tab {
-  font-size: 11px;
-  padding: 3px 10px 4px;
+/* Connect the well to the tab bar: square top corners sit flush under tabs. */
+:root[data-os-theme="macosx"]
+  .control-panels-mac-pane-inner
+  .control-panels-pref-well.control-panels-theme-preview-tab-well {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
 }
 
 :root[data-os-theme="macosx"] .control-panels-theme-preview-list-live {
@@ -1031,35 +1040,6 @@
   background: rgba(0, 0, 0, 0.28);
 }
 
-:root[data-os-theme="macosx"] .control-panels-theme-preview-tab-bar {
-  display: flex;
-  gap: 2px;
-  align-items: flex-end;
-  margin-bottom: 6px;
-  padding-bottom: 1px;
-  border-bottom: 2px solid #8ab4f0;
-}
-
-:root[data-os-theme="macosx"] .control-panels-theme-preview-tab {
-  padding: 3px 10px 4px;
-  border-radius: 4px 4px 0 0;
-  border: 1px solid rgba(0, 0, 0, 0.18);
-  border-bottom: none;
-  background: linear-gradient(to bottom, #f0f0f0, #d8d8d8);
-  color: #333;
-  font-size: 9px;
-}
-
-:root[data-os-theme="macosx"] .control-panels-theme-preview-tab-active {
-  background: linear-gradient(#2765ca, #4a85d9, #8ab4f0);
-  border-color: #8ab4f0;
-  color: #fff;
-  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.35),
-    0 1px 2px rgba(39, 101, 202, 0.35);
-}
-
 :root[data-os-theme="macosx"] .control-panels-theme-preview-list-row {
   padding: 2px 4px;
   border-radius: 3px;
@@ -1142,18 +1122,6 @@
   color: var(--os-color-selection-text, #fff);
 }
 
-:root[data-os-theme="macosx"] .control-panels-theme-preview-s7-button {
-  margin-top: 6px;
-  padding: 2px 10px;
-  border: 1px solid #000;
-  background: #fff;
-  box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #808080;
-  font-family: "Geneva-12", monospace;
-  font-size: 9px;
-  color: #000;
-  pointer-events: none;
-}
-
 /* --- Windows XP preview --- */
 :root[data-os-theme="macosx"]
   .control-panels-pref-theme-preview[data-preview-theme="xp"]
@@ -1211,18 +1179,6 @@
   color: #fff;
 }
 
-:root[data-os-theme="macosx"] .control-panels-theme-preview-xp-button {
-  margin-top: 6px;
-  padding: 2px 12px;
-  border: 1px solid #aca899;
-  border-radius: 3px;
-  background: linear-gradient(to bottom, #fff, #ece9d8);
-  box-shadow: inset 0 1px 0 #fff;
-  font-family: Tahoma, sans-serif;
-  font-size: 9px;
-  pointer-events: none;
-}
-
 /* --- Windows 98 preview --- */
 :root[data-os-theme="macosx"]
   .control-panels-pref-theme-preview[data-preview-theme="win98"]
@@ -1271,17 +1227,6 @@
   .control-panels-theme-preview-list-row-selected {
   background: #000080;
   color: #fff;
-}
-
-:root[data-os-theme="macosx"] .control-panels-theme-preview-98-button {
-  margin-top: 6px;
-  padding: 2px 12px;
-  border: 2px solid #000;
-  background: #c0c0c0;
-  box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #808080;
-  font-family: "MS Sans Serif", Tahoma, sans-serif;
-  font-size: 9px;
-  pointer-events: none;
 }
 
 /* Tabbed preference pane (Desktop | Screen Saver) — tabs on pinstripe, well below.

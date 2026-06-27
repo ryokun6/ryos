@@ -7,6 +7,7 @@ import {
   type AccentId,
 } from "@/themes/accents";
 import { AppearanceMacosxPreviewScene } from "./AppearanceMacosxPreviewScene";
+import { AppearancePreviewTabGroup } from "./AppearancePreviewTabGroup";
 
 function subscribeSystemDark(onStoreChange: () => void) {
   const mq = window.matchMedia("(prefers-color-scheme: dark)");
@@ -128,17 +129,16 @@ function System7ThemePreview({ t }: { t: AppearanceThemePreviewProps["t"] }) {
           </span>
         </div>
         <div className="control-panels-theme-preview-window-body">
-          <div className="control-panels-theme-preview-list">
-            <div className="control-panels-theme-preview-list-row control-panels-theme-preview-list-row-selected">
-              {t("apps.control-panels.themePreviewSelectedItem")}
+          <AppearancePreviewTabGroup t={t}>
+            <div className="control-panels-theme-preview-list">
+              <div className="control-panels-theme-preview-list-row control-panels-theme-preview-list-row-selected">
+                {t("apps.control-panels.themePreviewSelectedItem")}
+              </div>
+              <div className="control-panels-theme-preview-list-row">
+                {t("apps.control-panels.themePreviewOtherItem")}
+              </div>
             </div>
-            <div className="control-panels-theme-preview-list-row">
-              {t("apps.control-panels.themePreviewOtherItem")}
-            </div>
-          </div>
-          <button type="button" className="control-panels-theme-preview-s7-button" tabIndex={-1}>
-            {t("apps.control-panels.themePreviewButton")}
-          </button>
+          </AppearancePreviewTabGroup>
         </div>
       </div>
     </div>
@@ -160,17 +160,16 @@ function XpThemePreview({ t }: { t: AppearanceThemePreviewProps["t"] }) {
           </div>
         </div>
         <div className="control-panels-theme-preview-window-body">
-          <div className="control-panels-theme-preview-list">
-            <div className="control-panels-theme-preview-list-row control-panels-theme-preview-list-row-selected">
-              {t("apps.control-panels.themePreviewSelectedItem")}
+          <AppearancePreviewTabGroup t={t}>
+            <div className="control-panels-theme-preview-list">
+              <div className="control-panels-theme-preview-list-row control-panels-theme-preview-list-row-selected">
+                {t("apps.control-panels.themePreviewSelectedItem")}
+              </div>
+              <div className="control-panels-theme-preview-list-row">
+                {t("apps.control-panels.themePreviewOtherItem")}
+              </div>
             </div>
-            <div className="control-panels-theme-preview-list-row">
-              {t("apps.control-panels.themePreviewOtherItem")}
-            </div>
-          </div>
-          <button type="button" className="control-panels-theme-preview-xp-button" tabIndex={-1}>
-            {t("apps.control-panels.themePreviewButton")}
-          </button>
+          </AppearancePreviewTabGroup>
         </div>
       </div>
     </div>
@@ -192,17 +191,16 @@ function Win98ThemePreview({ t }: { t: AppearanceThemePreviewProps["t"] }) {
           </div>
         </div>
         <div className="control-panels-theme-preview-window-body">
-          <div className="control-panels-theme-preview-list">
-            <div className="control-panels-theme-preview-list-row control-panels-theme-preview-list-row-selected">
-              {t("apps.control-panels.themePreviewSelectedItem")}
+          <AppearancePreviewTabGroup t={t}>
+            <div className="control-panels-theme-preview-list">
+              <div className="control-panels-theme-preview-list-row control-panels-theme-preview-list-row-selected">
+                {t("apps.control-panels.themePreviewSelectedItem")}
+              </div>
+              <div className="control-panels-theme-preview-list-row">
+                {t("apps.control-panels.themePreviewOtherItem")}
+              </div>
             </div>
-            <div className="control-panels-theme-preview-list-row">
-              {t("apps.control-panels.themePreviewOtherItem")}
-            </div>
-          </div>
-          <button type="button" className="control-panels-theme-preview-98-button" tabIndex={-1}>
-            {t("apps.control-panels.themePreviewButton")}
-          </button>
+          </AppearancePreviewTabGroup>
         </div>
       </div>
     </div>

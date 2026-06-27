@@ -747,7 +747,22 @@ describe("Control Panels macOS 10.3 layout", () => {
     );
     expect(macosxSceneSource.includes("useWallpaper")).toBe(true);
     expect(macosxSceneSource.includes("TrafficLightButton")).toBe(true);
-    expect(macosxSceneSource.includes("aqua-tab-bar")).toBe(true);
+    // Tabs are now rendered through the shared preview tab group, which reuses
+    // the real settings tab strip + well so the preview reads identically to
+    // live settings in every theme (centered Aqua tabs with a bordered well).
+    expect(macosxSceneSource.includes("AppearancePreviewTabGroup")).toBe(true);
+    const previewTabGroupSource = readSource(
+      "src/apps/control-panels/components/control-panels-app/AppearancePreviewTabGroup.tsx"
+    );
+    expect(previewTabGroupSource.includes("useControlPanelsTabClasses")).toBe(
+      true
+    );
+    expect(previewTabGroupSource.includes("control-panels-pref-tab-bar")).toBe(
+      true
+    );
+    expect(
+      previewTabGroupSource.includes("control-panels-theme-preview-tab-well")
+    ).toBe(true);
     expect(macosxSceneSource.includes("desktop-background")).toBe(true);
     expect(macosxSceneSource.includes("mac-top-menubar")).toBe(false);
     expect(macosxSceneSource.includes("control-panels-theme-preview-menubar-live")).toBe(
