@@ -4,6 +4,7 @@ import { AirDropView } from "../AirDropView";
 import { FinderSidebarItem } from "./FinderSidebarItem";
 import { FinderFileListContent, type FinderFileListContentProps } from "./FinderFileListContent";
 import type { TFunction } from "i18next";
+import { formatStorageSize } from "@/stores/useFinderStore";
 
 const FinderPanel = AppSidebarPanel;
 
@@ -113,7 +114,7 @@ export function FinderMacContentArea({
         {sortedFilesCount !== 1
           ? t("apps.finder.statusBar.items")
           : t("apps.finder.statusBar.item")}
-        , {Math.round((storageSpaceAvailable / 1024 / 1024) * 10) / 10} MB{" "}
+        , {formatStorageSize(storageSpaceAvailable)}{" "}
         {t("apps.finder.statusBar.available")}
       </div>
     </>

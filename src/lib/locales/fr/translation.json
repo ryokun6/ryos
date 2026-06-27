@@ -4284,6 +4284,7 @@
       "description": "Informations sur ryOS sur cet ordinateur",
       "largestUnusedBlock": "Plus grand bloc inutilisé",
       "mb": "Mo",
+      "gb": "Go",
       "privacyPolicy": "Politique de confidentialité",
       "system": "Système",
       "termsOfService": "Conditions d'utilisation",

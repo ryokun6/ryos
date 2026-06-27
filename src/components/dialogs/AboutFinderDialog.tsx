@@ -33,6 +33,50 @@ interface AppMemoryUsage {
   percentage: number;
 }
 
+// Read the real memory metrics the browser exposes:
+// - navigator.deviceMemory: the device's approximate total RAM in GB (coarsened
+//   for privacy, capped at 8). Available on Chromium-based browsers.
+// - performance.memory.usedJSHeapSize: the live JS heap usage (Chromium-only,
+//   non-standard) which represents the memory actually consumed by the running
+//   ryOS process. jsHeapSizeLimit is used as a total fallback.
+// Returns megabytes (or null when a metric is unavailable so callers can fall
+// back to the legacy simulated values).
+const readRealMemory = (): { totalMB: number | null; usedMB: number | null } => {
+  let totalMB: number | null = null;
+  let usedMB: number | null = null;
+
+  try {
+    if (typeof navigator !== "undefined") {
+      const deviceMemoryGB = (
+        navigator as Navigator & { deviceMemory?: number }
+      ).deviceMemory;
+      if (typeof deviceMemoryGB === "number" && deviceMemoryGB > 0) {
+        totalMB = deviceMemoryGB * 1024;
+      }
+    }
+
+    if (typeof performance !== "undefined") {
+      const perfMemory = (
+        performance as Performance & {
+          memory?: { usedJSHeapSize?: number; jsHeapSizeLimit?: number };
+        }
+      ).memory;
+      if (perfMemory) {
+        if (typeof perfMemory.usedJSHeapSize === "number") {
+          usedMB = perfMemory.usedJSHeapSize / (1024 * 1024);
+        }
+        if (totalMB === null && typeof perfMemory.jsHeapSizeLimit === "number") {
+          totalMB = perfMemory.jsHeapSizeLimit / (1024 * 1024);
+        }
+      }
+    }
+  } catch {
+    // Ignore — callers fall back to simulated values.
+  }
+
+  return { totalMB, usedMB };
+};
+
 export function AboutFinderDialog({
   isOpen,
   onOpenChange,
@@ -104,9 +148,22 @@ export function AboutFinderDialog({
 
   const isAdmin = useIsRyoAdmin();
 
+  // Poll the real memory metrics while the dialog is open so the live JS heap
+  // usage stays current. Falls back to simulated values when unavailable.
+  const [realMemory, setRealMemory] = useState(() => readRealMemory());
+  useEffect(() => {
+    if (!isOpen) return;
+    const update = () => setRealMemory(readRealMemory());
+    update();
+    const interval = setInterval(update, 2000);
+    return () => clearInterval(interval);
+  }, [isOpen]);
+
+  // Total physical memory: real device RAM when available, else 32MB (retro
+  // default). Kept in MB for consistent math; formatted to GB for display.
+  const totalMemoryMB = realMemory.totalMB ?? 32;
+
   const memoryUsage = useMemo(() => {
-    const totalMemory = 32; // 32MB total memory
-    const systemUsage = 8.5; // System takes about 8.5MB
     const apps = getNonFinderApps(isAdmin);
 
     // Derive open app IDs from instances
@@ -120,29 +177,56 @@ export function AboutFinderDialog({
     // Get only open apps
     const openApps = apps.filter((app) => openAppIds.has(app.id as AppId));
 
-    // Calculate memory usage for system and open apps (limited to 4)
-    const appUsages: AppMemoryUsage[] = [
+    // Relative weights for the per-process breakdown. The browser can't report
+    // per-app memory, so we keep the classic System baseline + per-app weights.
+    // When the real used JS heap is known we scale these weights so the bars
+    // sum to the actual measured usage; otherwise we use the legacy simulated
+    // MB values directly (scale = 1).
+    const systemWeight = 8.5;
+    const appWeights = openApps.map((_, index) => 1.5 + index * 0.5);
+    const totalWeight =
+      systemWeight + appWeights.reduce((acc, w) => acc + w, 0);
+
+    const realUsed = realMemory.usedMB;
+    const scale =
+      realUsed != null && totalWeight > 0 ? realUsed / totalWeight : 1;
+
+    const entries = [
       {
         name: t("common.aboutThisMac.system"),
-        memoryMB: systemUsage,
-        percentage: (systemUsage / totalMemory) * 100,
+        memoryMB: systemWeight * scale,
       },
-      ...openApps.map((app, index) => {
-        const memory = 1.5 + index * 0.5; // Simulate different memory usage per app
-        return {
-          name: getTranslatedAppName(app.id),
-          memoryMB: memory,
-          percentage: (memory / totalMemory) * 100,
-        };
-      }),
+      ...openApps.map((app, index) => ({
+        name: getTranslatedAppName(app.id),
+        memoryMB: appWeights[index] * scale,
+      })),
     ];
 
+    // Bars show each process's share of the memory currently in use, so they
+    // stay visible regardless of how large the real total RAM is.
+    const used = entries.reduce((acc, e) => acc + e.memoryMB, 0);
+
+    const appUsages: AppMemoryUsage[] = entries.map((e) => ({
+      ...e,
+      percentage: used > 0 ? (e.memoryMB / used) * 100 : 0,
+    }));
+
     return appUsages;
-  }, [instances, isAdmin, t]);
+  }, [instances, isAdmin, t, realMemory]);
 
   const totalUsedMemory = useMemo(() => {
     return memoryUsage.reduce((acc, app) => acc + app.memoryMB, 0);
   }, [memoryUsage]);
+
+  // Format a megabyte value as GB (>= 1024MB) or MB, matching retro display.
+  const formatMemorySize = (mb: number) => {
+    if (mb >= 1024) {
+      const gb = mb / 1024;
+      const rounded = Number.isInteger(gb) ? gb : Math.round(gb * 10) / 10;
+      return `${rounded}${t("common.aboutThisMac.gb")}`;
+    }
+    return `${Math.round(mb)}${t("common.aboutThisMac.mb")}`;
+  };
 
   const aboutFinderSmallClass = cn(
     "about-finder-small",
@@ -217,10 +301,10 @@ export function AboutFinderDialog({
 
             <div className="flex-1 space-y-4">
               <div className={aboutFinderSmallClass}>
-                <div>{t("common.aboutThisMac.builtInMemory")}: 32{t("common.aboutThisMac.mb")}</div>
+                <div>{t("common.aboutThisMac.builtInMemory")}: {formatMemorySize(totalMemoryMB)}</div>
                 <div>{t("common.aboutThisMac.virtualMemory")}: {t("common.aboutThisMac.virtualMemoryOff")}</div>
                 <div>
-                  {t("common.aboutThisMac.largestUnusedBlock")}: {(32 - totalUsedMemory).toFixed(1)}{t("common.aboutThisMac.mb")}
+                  {t("common.aboutThisMac.largestUnusedBlock")}: {formatMemorySize(Math.max(totalMemoryMB - totalUsedMemory, 0))}
                 </div>
               </div>
               <div
@@ -314,9 +398,9 @@ export function AboutFinderDialog({
           <div className={cn("space-y-2 p-2 px-4 pb-4", aboutFinderSmallClass)}>
             {memoryUsage.map((app) => (
               <div className="flex flex-row items-center gap-1" key={app.name}>
-                <div className="flex justify-between w-full">
-                  <div className="w-1/2 truncate">{app.name}</div>
-                  <div className="w-1/3">{app.memoryMB.toFixed(1)} {t("common.aboutThisMac.mb")}</div>
+                <div className="flex justify-between w-full gap-2">
+                  <div className="flex-1 min-w-0 truncate">{app.name}</div>
+                  <div className="shrink-0 whitespace-nowrap text-right">{app.memoryMB.toFixed(1)} {t("common.aboutThisMac.mb")}</div>
                 </div>
                 <div
                   className={cn(
