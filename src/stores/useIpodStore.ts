@@ -42,6 +42,7 @@ import {
   saveAppleMusicPlaylistTracks,
   saveAppleMusicTrackCollection,
 } from "@/utils/appleMusicLibraryCache";
+import type { IpodMenuKind } from "@/apps/ipod/types";
 
 /** Special value for lyricsTranslationLanguage that means "use ryOS locale" */
 export const LYRICS_TRANSLATION_AUTO = "auto";
@@ -807,6 +808,26 @@ const INDEXED_DB_BACKED_APPLE_MUSIC_KEYS = [
   "appleMusicKitNowPlaying",
 ] as const;
 
+const VALID_IPOD_MENU_KINDS = new Set<IpodMenuKind>([
+  "root",
+  "music",
+  "settings",
+  "extras",
+  "artists",
+  "albums",
+  "songs",
+  "playlists",
+  "recentlyAdded",
+  "favorites",
+  "radio",
+  "artist",
+  "album",
+  "artistAllSongs",
+  "artistAlbum",
+  "appleMusicPlaylist",
+  "nowPlayingSong",
+]);
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -830,7 +851,10 @@ function sanitizePersistedIpodMenuBreadcrumb(
         : 0;
     return [
       {
-        ...(typeof entry.kind === "string" && { kind: entry.kind }),
+        ...(typeof entry.kind === "string" &&
+          VALID_IPOD_MENU_KINDS.has(entry.kind as IpodMenuKind) && {
+            kind: entry.kind as IpodMenuKind,
+          }),
         ...(typeof entry.id === "string" && { id: entry.id }),
         title: entry.title,
         ...(typeof entry.displayTitle === "string" && {
