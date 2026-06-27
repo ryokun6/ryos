@@ -27,7 +27,8 @@ export type AppId =
   | "contacts"
   | "dashboard"
   | "maps"
-  | "books";
+  | "books"
+  | "calculator";
 
 /**
  * Get translated app name with theme-awareness
@@ -174,6 +175,7 @@ export function getTranslatedHelpItems(appId: AppId): Array<{
     dashboard: ["openDashboard", "clockWidget", "calendarWidget", "weatherWidget", "moveWidgets", "closeDashboard"],
     maps: ["searchPlaces", "dropPins", "locateMe", "mapTypes", "poweredByApple", "switchMapStyle"],
     books: ["bookshelf", "import", "pageTurn", "progress", "fonts", "darkMode"],
+    calculator: ["basicMode", "scientificMode", "conversionMode", "themeDesigns", "keyboard", "liveCurrency"],
   };
 
   const keys = helpKeys[appId] || [];
