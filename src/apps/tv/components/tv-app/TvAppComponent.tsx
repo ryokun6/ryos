@@ -191,7 +191,6 @@ export function TvAppComponent(props: AppProps) {
                       songId={c.currentVideo?.id}
                       title={c.currentVideo?.title}
                       artist={c.currentVideo?.artist}
-                      playedSeconds={c.playedSeconds}
                       visible={
                         !c.screenOff &&
                         !c.poweringOff &&
@@ -289,7 +288,6 @@ export function TvAppComponent(props: AppProps) {
                   songId={c.currentVideo?.id}
                   title={c.currentVideo?.title}
                   artist={c.currentVideo?.artist}
-                  playedSeconds={c.playedSeconds}
                   visible={
                     !c.screenOff &&
                     !c.poweringOff &&

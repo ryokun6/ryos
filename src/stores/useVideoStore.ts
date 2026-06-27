@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { useStoreShallow } from "./helpers";
 import { persist } from "zustand/middleware";
+import { shouldUpdatePlaybackTime } from "./playbackTime";
 
 export interface Video {
   id: string;
@@ -133,6 +134,16 @@ interface VideoStoreState {
   loopCurrent: boolean;
   isShuffled: boolean;
   isPlaying: boolean;
+  /**
+   * Transient playback clock reported by ReactPlayer's `onProgress`. NOT
+   * persisted. `playedSeconds` is the fine-grained value (drives the seek
+   * bar); `elapsedTime` is the floored-second value (drives the LCD readout)
+   * and only changes ~1x/sec. Living here — rather than in `useVideosLogic`
+   * reducer state — keeps the ~1Hz tick from re-rendering the whole Videos
+   * tree; only the leaf subscribers re-render. Mirrors the iPod pattern.
+   */
+  playedSeconds: number;
+  elapsedTime: number;
   // actions
   setVideos: (videos: Video[] | ((prev: Video[]) => Video[])) => void;
   setCurrentVideoId: (videoId: string | null) => void;
@@ -141,6 +152,10 @@ interface VideoStoreState {
   setIsShuffled: (val: boolean) => void;
   togglePlay: () => void;
   setIsPlaying: (val: boolean) => void;
+  /** Update the playback clock from a progress tick (fine + floored). */
+  setPlaybackTime: (seconds: number) => void;
+  /** Reset the playback clock to zero (e.g. on track change). */
+  resetPlaybackTime: () => void;
   // derived state helpers
   getCurrentIndex: () => number;
   getCurrentVideo: () => Video | null;
@@ -155,6 +170,8 @@ const getInitialState = () => ({
   loopCurrent: false,
   isShuffled: false,
   isPlaying: false,
+  playedSeconds: 0,
+  elapsedTime: 0,
 });
 
 export const useVideoStore = create<VideoStoreState>()(
@@ -198,6 +215,26 @@ export const useVideoStore = create<VideoStoreState>()(
       setIsShuffled: (val) => set({ isShuffled: val }),
       togglePlay: () => set((state) => ({ isPlaying: !state.isPlaying })),
       setIsPlaying: (val) => set({ isPlaying: val }),
+      setPlaybackTime: (seconds) =>
+        set((state) => {
+          const flooredSeconds = Math.floor(seconds);
+          const nextPlayed = shouldUpdatePlaybackTime(
+            state.playedSeconds,
+            seconds
+          )
+            ? seconds
+            : state.playedSeconds;
+          // `elapsedTime` only flips on whole-second boundaries, so it
+          // re-renders the LCD readout subscriber at most ~1x/sec.
+          if (
+            nextPlayed === state.playedSeconds &&
+            flooredSeconds === state.elapsedTime
+          ) {
+            return {};
+          }
+          return { playedSeconds: nextPlayed, elapsedTime: flooredSeconds };
+        }),
+      resetPlaybackTime: () => set({ playedSeconds: 0, elapsedTime: 0 }),
 
       // Derived state helpers
       getCurrentIndex: () => {

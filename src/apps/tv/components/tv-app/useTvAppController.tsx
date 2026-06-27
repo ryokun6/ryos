@@ -62,7 +62,6 @@ export function useTvAppController({
     animationDirection,
     scheduleNowTitle,
     scheduleNextTitle,
-    playedSeconds,
     videoIndex,
   } = useTvLogic({ isWindowOpen, isForeground });
 
@@ -295,7 +294,6 @@ export function useTvAppController({
     animationDirection,
     scheduleNowTitle,
     scheduleNextTitle,
-    playedSeconds,
     videoIndex,
     lcdSlot,
     scheduleAnimDirection,

@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useShallow } from "zustand/react/shallow";
 import { useLyrics } from "@/hooks/useLyrics";
 import { useIpodStore } from "@/stores/useIpodStore";
+import { useTvPlayedSeconds } from "@/apps/tv/hooks/useTvPlayedSeconds";
 import { cn } from "@/lib/utils";
 import type { LyricLine } from "@/types/lyrics";
 
@@ -17,8 +18,6 @@ interface MtvLyricsOverlayProps {
   title?: string;
   /** Optional artist used as a fallback for the same reason. */
   artist?: string;
-  /** Current playback time, in seconds, from ReactPlayer's onProgress. */
-  playedSeconds: number;
   /** When false, no overlay is rendered. */
   visible: boolean;
   /**
@@ -109,10 +108,14 @@ export function MtvLyricsOverlay({
   songId,
   title,
   artist,
-  playedSeconds,
   visible,
   variant = "windowed",
 }: MtvLyricsOverlayProps) {
+  // Subscribe to the playback clock directly here (the lone leaf that needs
+  // it) so the ~1Hz tick re-renders only this overlay, never the TV tree.
+  // Gating on `visible` opts out of tick re-renders while the caption is
+  // hidden (wrong channel, screen off, buffering, etc.).
+  const playedSeconds = useTvPlayedSeconds(visible);
   // Pull the matching iPod track so we can apply its `lyricOffset`. Using
   // a shallow selector keeps this overlay from re-rendering on unrelated
   // ipod store changes.
