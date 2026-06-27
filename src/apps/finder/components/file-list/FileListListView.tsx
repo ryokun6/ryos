@@ -41,19 +41,25 @@ export function FileListListView(vm: FileListViewModel) {
       className="relative font-geneva-12"
       {...containerDragHandlers}
     >
-      <Table key={listTableKey} className="min-w-[480px]">
+      <Table key={listTableKey} className="min-w-[480px] table-fixed">
+        <colgroup>
+          <col />
+          <col className="w-[80px]" />
+          <col className="w-[76px]" />
+          <col className="w-[112px]" />
+        </colgroup>
         <TableHeader>
           <TableRow className={`${listHeaderTextClass} border-none font-normal`}>
-            <TableHead className="font-normal h-[24px]">
+            <TableHead className="h-[24px] truncate whitespace-nowrap font-normal">
               {t("apps.finder.tableHeaders.name")}
             </TableHead>
-            <TableHead className="font-normal h-[24px]">
+            <TableHead className="h-[24px] truncate whitespace-nowrap font-normal">
               {t("apps.finder.tableHeaders.type")}
             </TableHead>
-            <TableHead className="font-normal h-[24px] whitespace-nowrap">
+            <TableHead className="h-[24px] truncate whitespace-nowrap font-normal">
               {t("apps.finder.tableHeaders.size")}
             </TableHead>
-            <TableHead className="font-normal h-[24px] whitespace-nowrap">
+            <TableHead className="h-[24px] truncate whitespace-nowrap font-normal">
               {t("apps.finder.tableHeaders.modified")}
             </TableHead>
           </TableRow>
