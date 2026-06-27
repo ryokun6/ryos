@@ -560,7 +560,7 @@ function settingsFieldKey(section: string, field: string): string {
 
 function parseSettingsKey(
   key: string
-): { section: string; field?: string } | null {
+): { section: string; field: string } | null {
   if (!key.startsWith(SETTINGS_KEY_PREFIX)) return null;
   const rest = key.slice(SETTINGS_KEY_PREFIX.length);
   if (!rest) return null;

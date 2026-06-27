@@ -22,6 +22,7 @@ import {
   emitCloudSyncDomainChange,
   emitCloudSyncDomainChanges,
 } from "@/utils/cloudSyncEvents";
+import { type SyncNamespace } from "@/shared/sync2/namespaces";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { FINDER_ANALYTICS, track } from "@/utils/analytics";
@@ -43,6 +44,10 @@ import {
 export interface DocumentContent extends StoredContent {
   contentUrl?: string; // URL for Blob content (managed temporarily)
 }
+
+const isSyncNamespaceValue = (
+  value: SyncNamespace | null
+): value is SyncNamespace => value !== null;
 
 const trackFinderFileOperation = (
   eventName: string,
@@ -1365,7 +1370,7 @@ export function useFileSystem(
               [
                 getCloudSyncDomainForContentStore(sourceStoreName),
                 getCloudSyncDomainForContentStore(targetStoreName),
-              ].filter(Boolean)
+              ].filter(isSyncNamespaceValue)
             );
           }
         }
@@ -1537,7 +1542,7 @@ export function useFileSystem(
               [
                 getCloudSyncDomainForContentStore(storeName),
                 "trash",
-              ].filter(Boolean)
+              ].filter(isSyncNamespaceValue)
             );
             console.log(
               `[useFileSystem] Moved content for ${fileMetadata.name} from ${storeName} to Trash DB with UUID ${fileMetadata.uuid}.`
@@ -1610,7 +1615,7 @@ export function useFileSystem(
               [
                 getCloudSyncDomainForContentStore(targetStoreName),
                 "trash",
-              ].filter(Boolean)
+              ].filter(isSyncNamespaceValue)
             );
             console.log(
               `[useFileSystem] Restored content for ${fileMetadata.name} from Trash DB to ${targetStoreName} with UUID ${fileMetadata.uuid}.`
