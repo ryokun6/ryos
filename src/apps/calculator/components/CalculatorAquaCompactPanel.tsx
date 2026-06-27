@@ -25,7 +25,7 @@ export function CalculatorAquaCompactPanel({
   onClear,
   onDecimal,
   onNegate,
-  onPercent,
+  onPercent: _onPercent,
   onMemoryClear,
   onMemoryRecall,
   onMemoryAdd,
@@ -37,34 +37,39 @@ export function CalculatorAquaCompactPanel({
     <div className="calc-aqua-compact flex flex-col gap-[3px]">
       <CalculatorDisplay value={display} theme={theme} />
       <div className="calc-aqua-compact-grid">
-        <CalculatorKey label="MC" onClick={onMemoryClear} theme={theme} variant="function" />
-        <CalculatorKey label="M+" onClick={onMemoryAdd} theme={theme} variant="function" />
-        <CalculatorKey label="M−" onClick={onMemorySubtract} theme={theme} variant="function" />
-        <CalculatorKey label="MR" onClick={onMemoryRecall} theme={theme} variant="function" />
+        <CalculatorKey label="MC" onClick={onMemoryClear} theme={theme} variant="function" style={{ gridColumn: 1, gridRow: 1 }} />
+        <CalculatorKey label="M+" onClick={onMemoryAdd} theme={theme} variant="function" style={{ gridColumn: 2, gridRow: 1 }} />
+        <CalculatorKey label="M−" onClick={onMemorySubtract} theme={theme} variant="function" style={{ gridColumn: 3, gridRow: 1 }} />
+        <CalculatorKey label="MR" onClick={onMemoryRecall} theme={theme} variant="function" style={{ gridColumn: 4, gridRow: 1 }} />
 
-        <CalculatorKey label="C" onClick={onClear} theme={theme} variant="function" />
-        <CalculatorKey label="±" onClick={onNegate} theme={theme} variant="function" />
-        <CalculatorKey label="%" onClick={onPercent} theme={theme} variant="function" />
-        <CalculatorKey label="÷" onClick={() => onOperator("/")} theme={theme} variant="operator" />
+        <CalculatorKey label="C" onClick={onClear} theme={theme} variant="function" style={{ gridColumn: 1, gridRow: 2 }} />
+        <CalculatorKey label="±" onClick={onNegate} theme={theme} variant="function" style={{ gridColumn: 2, gridRow: 2 }} />
+        <CalculatorKey label="÷" onClick={() => onOperator("/")} theme={theme} variant="operator" style={{ gridColumn: 3, gridRow: 2 }} />
+        <CalculatorKey label="×" onClick={() => onOperator("*")} theme={theme} variant="operator" style={{ gridColumn: 4, gridRow: 2 }} />
 
-        <CalculatorKey label="7" onClick={() => onDigit("7")} theme={theme} />
-        <CalculatorKey label="8" onClick={() => onDigit("8")} theme={theme} />
-        <CalculatorKey label="9" onClick={() => onDigit("9")} theme={theme} />
-        <CalculatorKey label="×" onClick={() => onOperator("*")} theme={theme} variant="operator" />
+        <CalculatorKey label="7" onClick={() => onDigit("7")} theme={theme} style={{ gridColumn: 1, gridRow: 3 }} />
+        <CalculatorKey label="8" onClick={() => onDigit("8")} theme={theme} style={{ gridColumn: 2, gridRow: 3 }} />
+        <CalculatorKey label="9" onClick={() => onDigit("9")} theme={theme} style={{ gridColumn: 3, gridRow: 3 }} />
+        <CalculatorKey label="−" onClick={() => onOperator("-")} theme={theme} variant="operator" style={{ gridColumn: 4, gridRow: 3 }} />
 
-        <CalculatorKey label="4" onClick={() => onDigit("4")} theme={theme} />
-        <CalculatorKey label="5" onClick={() => onDigit("5")} theme={theme} />
-        <CalculatorKey label="6" onClick={() => onDigit("6")} theme={theme} />
-        <CalculatorKey label="−" onClick={() => onOperator("-")} theme={theme} variant="operator" />
+        <CalculatorKey label="4" onClick={() => onDigit("4")} theme={theme} style={{ gridColumn: 1, gridRow: 4 }} />
+        <CalculatorKey label="5" onClick={() => onDigit("5")} theme={theme} style={{ gridColumn: 2, gridRow: 4 }} />
+        <CalculatorKey label="6" onClick={() => onDigit("6")} theme={theme} style={{ gridColumn: 3, gridRow: 4 }} />
+        <CalculatorKey
+          label="+"
+          onClick={() => onOperator("+")}
+          theme={theme}
+          variant="operator"
+          style={{ gridColumn: 4, gridRow: "4 / span 2" }}
+        />
 
-        <CalculatorKey label="1" onClick={() => onDigit("1")} theme={theme} />
-        <CalculatorKey label="2" onClick={() => onDigit("2")} theme={theme} />
-        <CalculatorKey label="3" onClick={() => onDigit("3")} theme={theme} />
-        <CalculatorKey label="+" onClick={() => onOperator("+")} theme={theme} variant="operator" />
+        <CalculatorKey label="1" onClick={() => onDigit("1")} theme={theme} style={{ gridColumn: 1, gridRow: 5 }} />
+        <CalculatorKey label="2" onClick={() => onDigit("2")} theme={theme} style={{ gridColumn: 2, gridRow: 5 }} />
+        <CalculatorKey label="3" onClick={() => onDigit("3")} theme={theme} style={{ gridColumn: 3, gridRow: 5 }} />
 
-        <CalculatorKey label="0" onClick={() => onDigit("0")} theme={theme} variant="wide" />
-        <CalculatorKey label="." onClick={onDecimal} theme={theme} />
-        <CalculatorKey label="=" onClick={onEquals} theme={theme} variant="equals" />
+        <CalculatorKey label="0" onClick={() => onDigit("0")} theme={theme} variant="wide" style={{ gridColumn: "1 / span 2", gridRow: 6 }} />
+        <CalculatorKey label="." onClick={onDecimal} theme={theme} style={{ gridColumn: 3, gridRow: 6 }} />
+        <CalculatorKey label="=" onClick={onEquals} theme={theme} variant="equals" style={{ gridColumn: 4, gridRow: 6 }} />
       </div>
     </div>
   );

@@ -58,11 +58,14 @@ export const calculatorStyles = `
     gap: 4px;
   }
   .calc-theme-aqua .calc-display {
-    background: linear-gradient(180deg, #f2f6dc 0%, #e4eab8 100%);
+    background: linear-gradient(180deg, #f8fae6 0%, #eef2d4 42%, #e6ecbc 100%);
     color: #000;
-    border: 1px solid #8a8a7a;
-    border-radius: 4px;
-    box-shadow: inset 0 1px 3px rgba(0,0,0,0.18);
+    border: 1px solid #6e6e62;
+    border-radius: 5px;
+    box-shadow:
+      inset 0 2px 4px rgba(0, 0, 0, 0.16),
+      inset 0 1px 0 rgba(0, 0, 0, 0.1),
+      0 1px 0 rgba(255, 255, 255, 0.35);
     font-family: "Lucida Grande", Geneva, var(--os-font-ui), sans-serif;
     font-size: 22px;
     font-weight: 400;
@@ -83,23 +86,46 @@ export const calculatorStyles = `
     grid-template-rows: repeat(6, 26px);
     gap: 2px;
   }
+  /* Raised plastic keys — Tiger Calculator pill texture */
   .calc-theme-aqua .calc-key {
-    border-radius: 4px;
-    border: 1px solid #6a6a6a;
-    background: linear-gradient(180deg, #fefefe 0%, #ececec 38%, #d4d4d4 72%, #c8c8c8 100%);
-    box-shadow: 0 1px 0 rgba(255,255,255,0.85) inset, 0 1px 1px rgba(0,0,0,0.12);
-    color: #111;
+    position: relative;
+    border-radius: 6px;
+    border: 1px solid rgba(0, 0, 0, 0.52);
+    background: linear-gradient(
+      180deg,
+      #fcfcfc 0%,
+      #f0f0f0 14%,
+      #e4e4e4 38%,
+      #d2d2d2 68%,
+      #c6c6c6 88%,
+      #bcbcbc 100%
+    );
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.92) inset,
+      0 -1px 0 rgba(0, 0, 0, 0.05) inset,
+      0 1px 2px rgba(0, 0, 0, 0.2);
+    color: #1c1c1c;
     font-size: 13px;
     font-weight: 500;
     min-height: 26px;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.72);
   }
   .calc-theme-aqua .calc-key:active {
-    background: linear-gradient(180deg, #d0d0d0 0%, #b8b8b8 100%);
-    box-shadow: inset 0 1px 2px rgba(0,0,0,0.25);
+    background: linear-gradient(180deg, #c4c4c4 0%, #a8a8a8 55%, #989898 100%);
+    box-shadow:
+      inset 0 1px 3px rgba(0, 0, 0, 0.32),
+      inset 0 0 1px rgba(0, 0, 0, 0.18);
+    text-shadow: none;
   }
   .calc-theme-aqua .calc-key-function {
     font-size: 11px;
-    background: linear-gradient(180deg, #f4f4f4 0%, #e0e0e0 50%, #cccccc 100%);
+    background: linear-gradient(
+      180deg,
+      #f6f6f6 0%,
+      #ececec 30%,
+      #dadada 65%,
+      #cecece 100%
+    );
   }
   .calc-theme-aqua .calc-key-operator {
     font-weight: 600;
@@ -113,6 +139,51 @@ export const calculatorStyles = `
   }
   .calc-theme-aqua .calc-key-equals-wide {
     grid-column: span 2;
+  }
+
+  /* Aqua dark mode — graphite keys on dark brushed metal */
+  :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .calc-theme-aqua .calc-display {
+    background: linear-gradient(180deg, #242428 0%, #161618 55%, #101012 100%);
+    color: #d8e8cc;
+    border: 1px solid rgba(0, 0, 0, 0.92);
+    box-shadow:
+      inset 0 2px 5px rgba(0, 0, 0, 0.72),
+      inset 0 1px 0 rgba(255, 255, 255, 0.04),
+      0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+  :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .calc-theme-aqua .calc-key {
+    border: 1px solid rgba(0, 0, 0, 0.88);
+    background: linear-gradient(
+      180deg,
+      #56565c 0%,
+      #4a4a50 18%,
+      #3e3e44 45%,
+      #323238 72%,
+      #2a2a2f 92%,
+      #36363c 100%
+    );
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.12) inset,
+      0 -1px 0 rgba(0, 0, 0, 0.35) inset,
+      0 1px 2px rgba(0, 0, 0, 0.55);
+    color: rgba(255, 255, 255, 0.9);
+    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55);
+  }
+  :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .calc-theme-aqua .calc-key:active {
+    background: linear-gradient(180deg, #2e2e33 0%, #242428 55%, #1c1c20 100%);
+    box-shadow:
+      inset 0 1px 3px rgba(0, 0, 0, 0.55),
+      inset 0 0 1px rgba(0, 0, 0, 0.35);
+    text-shadow: none;
+  }
+  :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .calc-theme-aqua .calc-key-function {
+    background: linear-gradient(
+      180deg,
+      #505056 0%,
+      #44444a 35%,
+      #36363c 70%,
+      #2c2c32 100%
+    );
   }
 
   /* ── Windows 98 ── */
