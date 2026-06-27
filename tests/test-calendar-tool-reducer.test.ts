@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { applyCalendarToolAction } from "../src/shared/tools/calendar";
+import { calendarControlSchema } from "../api/chat/tools/schemas";
 import type { CalendarSnapshotData } from "../src/shared/domains/calendar";
 
 function state(): CalendarSnapshotData {
@@ -146,5 +147,50 @@ describe("calendar tool shared reducer", () => {
     expect(deleted.state.deletedTodoIds).toEqual({
       "todo-1": "2026-06-07T22:00:00.000Z",
     });
+  });
+});
+
+describe("calendarControlSchema accepts over-filled tool-model input", () => {
+  // Regression: tool-calling models (e.g. gpt-5.5) emit EVERY schema field, so
+  // the schema must not reject calls that include endDate alongside
+  // startTime/endTime. A blocking cross-field refinement here previously made
+  // calendarControl unusable (every call failed validation before executing).
+  test("a 'list' call with all fields populated still validates", () => {
+    const parsed = calendarControlSchema.safeParse({
+      action: "list",
+      id: "",
+      title: "",
+      date: "2026-06-27",
+      endDate: "2026-06-27",
+      startTime: "00:00",
+      endTime: "23:59",
+      color: "blue",
+      notes: "",
+      completed: false,
+      calendarId: "",
+    });
+    expect(parsed.success).toBe(true);
+  });
+
+  test("a timed 'create' with endDate present still validates", () => {
+    const parsed = calendarControlSchema.safeParse({
+      action: "create",
+      title: "Standup",
+      date: "2026-06-27",
+      endDate: "2026-06-27",
+      startTime: "09:00",
+      endTime: "09:30",
+    });
+    expect(parsed.success).toBe(true);
+  });
+
+  test("a multi-day all-day 'create' validates", () => {
+    const parsed = calendarControlSchema.safeParse({
+      action: "create",
+      title: "Trip",
+      date: "2026-06-27",
+      endDate: "2026-06-29",
+    });
+    expect(parsed.success).toBe(true);
   });
 });

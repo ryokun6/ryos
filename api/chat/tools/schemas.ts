@@ -714,20 +714,13 @@ export const calendarControlSchema = z.object({
       path: ["date"],
     });
   }
-  if (data.endDate && data.date && data.endDate < data.date) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "The 'endDate' parameter must be on or after 'date'.",
-      path: ["endDate"],
-    });
-  }
-  if (data.endDate && (data.startTime || data.endTime)) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "Use 'endDate' only for all-day events; omit startTime/endTime for multi-day all-day events.",
-      path: ["endDate"],
-    });
-  }
+  // NOTE: Intentionally no cross-field validation between `endDate` and
+  // `date`/`startTime`/`endTime`. Tool-calling models (e.g. gpt-5.5) tend to
+  // emit *every* schema field, so any "omit X when Y" refinement here would
+  // reject otherwise-valid calls (e.g. `list`) and make the whole tool
+  // unusable. `endDate` is normalized server-side in `applyCalendarToolAction`
+  // (and client-side in the calendar store) via `normalizeAllDayEndDate`,
+  // which drops `endDate` for timed events or when it is on/before `date`.
   if ((data.action === "update" || data.action === "delete") && !data.id) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
