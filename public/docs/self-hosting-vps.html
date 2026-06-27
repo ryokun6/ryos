@@ -371,6 +371,7 @@
     <a href="/docs/calendar" class="nav-child ">2.21 Calendar</a>
     <a href="/docs/dashboard" class="nav-child ">2.22 Dashboard</a>
     <a href="/docs/contacts" class="nav-child ">2.23 Contacts</a>
+    <a href="/docs/books" class="nav-child ">2.24 Books</a>
     <a href="/docs/tv" class="nav-child ">2.25 TV</a>
     <a href="/docs/maps" class="nav-child ">2.26 Maps</a>
   </div>
@@ -476,7 +477,7 @@ bun run build
 APP_PUBLIC_ORIGIN="https://your-domain.com" \
 API_ALLOWED_ORIGINS="https://your-domain.com" \
 bun run start</code></pre>
-<p>Important runtime envs: <ul><li><code>PORT</code> or <code>API_PORT</code> — listening port (defaults to <code>3000</code>)</li></ul><ul><li><code>API_HOST</code> — bind host (defaults to <code>0.0.0.0</code>)</li><li><code>APP_PUBLIC_ORIGIN</code> — canonical browser origin, e.g. <code>https://your-domain.com</code></li><li><code>API_ALLOWED_ORIGINS</code> — comma-separated allowed browser origins for <code>/api/*</code>; supports wildcard subdomain patterns (e.g. <code>*.example.com</code>), and <code>*</code> to allow all origins</li><li><code>STORAGE_PROVIDER</code> — optional explicit storage backend (<code>s3</code>, <code>vercel-blob</code>); auto-detected if unset</li><li><code>TRUSTED_PROXY_COUNT</code> — set to <code>1</code> when behind one trusted reverse proxy (nginx/Caddy/Coolify) so per-IP rate limits use <code>X-Forwarded-For</code> correctly</li><li><code>AUTH_COOKIE_SECURE</code> — set to <code>1</code>/<code>true</code> on HTTPS self-hosts if the auth cookie Secure flag is wrong</li></ul></p>
+<p>Important runtime envs: <ul><li><code>PORT</code> or <code>API_PORT</code> — listening port (defaults to <code>3000</code>)</li></ul><ul><li><code>API_HOST</code> — bind host (defaults to <code>0.0.0.0</code>)</li><li><code>APP_PUBLIC_ORIGIN</code> — canonical browser origin, e.g. <code>https://your-domain.com</code></li><li><code>API_ALLOWED_ORIGINS</code> — comma-separated allowed browser origins for <code>/api/*</code>; supports wildcard subdomain patterns (e.g. <code>*.example.com</code>), and <code>*</code> to allow all origins</li><li><code>STORAGE_PROVIDER</code> — optional explicit storage backend (<code>s3</code>, <code>vercel-blob</code>); auto-detected if unset</li><li><code>TRUSTED_PROXY_COUNT</code> — set to <code>1</code> when behind one trusted reverse proxy (nginx/Caddy/Coolify) so per-IP rate limits use <code>X-Forwarded-For</code> correctly</li><li><code>AUTH_COOKIE_SECURE</code> — set to <code>1</code>/<code>true</code> on HTTPS self-hosts if the auth cookie Secure flag is wrong</li><li><code>IP_GEOLOCATION_URL_TEMPLATE</code> — optional override for the IP-geolocation provider used as a fallback when Vercel's <code>geolocation()</code> returns nothing (defaults to <code>https://ipwho.is/{ip}</code>); use <code>{ip}</code> as the placeholder</li><li><code>IP_GEOLOCATION_DISABLED</code> — set to <code>1</code>/<code>true</code> to disable the IP-geolocation fallback entirely (no outbound calls)</li></ul></p>
 <hr>
 <h2>3) Redis backend options</h2>
 <p>ryOS supports <strong>two Redis modes</strong>.</p>

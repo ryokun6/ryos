@@ -371,6 +371,7 @@
     <a href="/docs/calendar" class="nav-child ">2.21 Calendar</a>
     <a href="/docs/dashboard" class="nav-child ">2.22 Dashboard</a>
     <a href="/docs/contacts" class="nav-child ">2.23 Contacts</a>
+    <a href="/docs/books" class="nav-child ">2.24 Books</a>
     <a href="/docs/tv" class="nav-child ">2.25 TV</a>
     <a href="/docs/maps" class="nav-child ">2.26 Maps</a>
   </div>
@@ -674,8 +675,40 @@ results.forEach(video =&gt; {
   console.log(`${video.title} - ${video.channelTitle}`);
 });</code></pre>
 <hr>
+<h2>Apple Music Artwork</h2>
+<p>Resolves Apple Music catalog artwork (and basic metadata) for an <code>am:</code> catalog song ID using Apple's public iTunes Lookup API (no Apple auth required). Apple Music songs cached in Redis often have no <code>cover</code> because client-side MusicKit artwork is never persisted server-side; this endpoint backfills real cover art (used by the admin UI). Results are cached in Redis.</p>
+<h3>Endpoint</h3>
+<table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td>GET</td><td><code>/api/apple-music-artwork</code></td><td>Resolve cover art + metadata for a catalog song</td></tr></tbody></table>
+<h3>Request</h3>
+<strong>Query Parameters:</strong>
+<table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>id</code></td><td>string</td><td>Yes</td><td>Apple Music catalog ID in the form <code>am:&lt;number&gt;</code></td></tr></tbody></table>
+<p>Only numeric catalog IDs can be resolved. Library IDs (<code>i.&lt;hash&gt;</code>), stations (<code>station:…</code>), and playlists (<code>playlist:…</code>) are not catalog songs and return <code>400</code>.</p>
+<h3>Response</h3>
+<strong>Success (200):</strong>
+<pre><code>{
+  "cover": "https://.../{w}x{h}bb.jpg",
+  "artist": "Artist Name",
+  "title": "Track Name",
+  "album": "Album Name",
+  "url": "https://music.apple.com/..."
+}</code></pre>
+<table><thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>cover</code></td><td>string \</td><td>null</td><td>Cover URL with <code>{w}</code>/<code>{h}</code> size placeholders, or <code>null</code> when unavailable</td></tr><tr><td><code>artist</code></td><td>string?</td><td>Artist name</td></tr><tr><td><code>title</code></td><td>string?</td><td>Track name</td></tr><tr><td><code>album</code></td><td>string?</td><td>Collection/album name</td></tr><tr><td><code>url</code></td><td>string?</td><td>Track or collection view URL</td></tr></tbody></table>
+<strong>Not Found (404):</strong>
+<p>When no artwork can be resolved, the same shape is returned with <code>cover: null</code>.</p>
+<pre><code>{
+  "cover": null
+}</code></pre>
+<strong>Error (400) - Invalid ID:</strong>
+<pre><code>{
+  "error": "Expected an Apple Music catalog id (am:&lt;number&gt;)"
+}</code></pre>
+<h3>Caching</h3>
+<ul><li>Resolved artwork is cached for 30 days; "not found" results for 1 day.</li></ul><ul><li>Successful responses send <code>Cache-Control: public, max-age=86400</code>; misses send <code>public, max-age=3600</code>.</li></ul>
+<h3>Rate Limits</h3>
+<table><thead><tr><th>Scope</th><th>Limit</th><th>Window</th></tr></thead><tbody><tr><td>Per-IP</td><td>60 requests</td><td>1 minute</td></tr></tbody></table>
+<hr>
 <h2>Environment Variables</h2>
-<table><thead><tr><th>Variable</th><th>Required For</th><th>Description</th></tr></thead><tbody><tr><td><code>OPENAI_API_KEY</code></td><td>TTS (OpenAI), Transcription</td><td>OpenAI API key</td></tr><tr><td><code>ELEVENLABS_API_KEY</code></td><td>TTS (ElevenLabs)</td><td>ElevenLabs API key</td></tr><tr><td><code>YOUTUBE_API_KEY</code></td><td>YouTube Search</td><td>Primary YouTube Data API v3 key</td></tr><tr><td><code>YOUTUBE_API_KEY_2</code></td><td>YouTube Search</td><td>Backup YouTube API key (optional)</td></tr><tr><td><code>REDIS_KV_REST_API_URL</code></td><td>Rate Limiting</td><td>Upstash Redis URL</td></tr><tr><td><code>REDIS_KV_REST_API_TOKEN</code></td><td>Rate Limiting</td><td>Upstash Redis token</td></tr></tbody></table>
+<table><thead><tr><th>Variable</th><th>Required For</th><th>Description</th></tr></thead><tbody><tr><td><code>OPENAI_API_KEY</code></td><td>TTS (OpenAI), Transcription</td><td>OpenAI API key</td></tr><tr><td><code>ELEVENLABS_API_KEY</code></td><td>TTS (ElevenLabs)</td><td>ElevenLabs API key</td></tr><tr><td><code>YOUTUBE_API_KEY</code></td><td>YouTube Search</td><td>Primary YouTube Data API v3 key</td></tr><tr><td><code>YOUTUBE_API_KEY_2</code></td><td>YouTube Search</td><td>Backup YouTube API key (optional)</td></tr><tr><td><code>REDIS_KV_REST_API_URL</code></td><td>Rate Limiting, Artwork cache</td><td>Upstash Redis URL</td></tr><tr><td><code>REDIS_KV_REST_API_TOKEN</code></td><td>Rate Limiting, Artwork cache</td><td>Upstash Redis token</td></tr></tbody></table>
 <hr>
 <h2>Related</h2>
 <ul><li><a href="/docs/song-api">Song API</a> - Song library management for karaoke</li></ul><ul><li><a href="/docs/chat-api">Chat API</a> - AI chat with voice integration</li><li><a href="/docs/ai-system">AI System</a> - Overview of AI capabilities</li></ul>

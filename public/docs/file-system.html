@@ -371,6 +371,7 @@
     <a href="/docs/calendar" class="nav-child ">2.21 Calendar</a>
     <a href="/docs/dashboard" class="nav-child ">2.22 Dashboard</a>
     <a href="/docs/contacts" class="nav-child ">2.23 Contacts</a>
+    <a href="/docs/books" class="nav-child ">2.24 Books</a>
     <a href="/docs/tv" class="nav-child ">2.25 TV</a>
     <a href="/docs/maps" class="nav-child ">2.26 Maps</a>
   </div>
@@ -485,6 +486,7 @@
         subgraph Stores["Object Stores"]
             Docs[documents]
             Imgs[images]
+            Books[books]
             Apps[applets]
             Trash[trash]
             Wall[custom_wallpapers]
@@ -505,11 +507,12 @@
 <code>src/services/vfs/</code> provides cross-app access to Finder-backed file data:
 <table><thead><tr><th>Module</th><th>Purpose</th></tr></thead><tbody><tr><td><code>FileMetadataService</code></td><td>Metadata lookups backed by <code>useFilesStore</code></td></tr><tr><td><code>FileContentRepository</code></td><td>IndexedDB read/write by path or UUID</td></tr><tr><td><code>virtualTrees</code></td><td>Virtual <code>/Music</code> and <code>/Videos</code> directory builders</td></tr><tr><td><code>useVfsFileOperations</code></td><td>Thin cross-app wrapper for file writes</td></tr></tbody></table>
 <h2>Directory Structure</h2>
-<table><thead><tr><th>Path</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>/</code></td><td>Root</td><td>Root directory</td></tr><tr><td><code>/Applications</code></td><td>Virtual</td><td>Apps from registry (non-Finder apps)</td></tr><tr><td><code>/Documents</code></td><td>Physical</td><td>User text documents (.txt, .md)</td></tr><tr><td><code>/Images</code></td><td>Physical</td><td>User images (PNG, JPG, GIF, WebP, BMP)</td></tr><tr><td><code>/Music</code></td><td>Virtual</td><td>iPod library (organized by artist)</td></tr><tr><td><code>/Videos</code></td><td>Virtual</td><td>Video library (organized by artist)</td></tr><tr><td><code>/Sites</code></td><td>Virtual</td><td>Internet Explorer favorites</td></tr><tr><td><code>/Applets</code></td><td>Physical</td><td>HTML applets (.app, .html files)</td></tr><tr><td><code>/Applets Store</code></td><td>Virtual (AI-only)</td><td>Shared applets catalog from Redis/API; visible to Chats <code>list</code>/<code>read</code>/<code>open</code> tools, not a Finder folder</td></tr><tr><td><code>/Trash</code></td><td>Special</td><td>Deleted items (restorable)</td></tr><tr><td><code>/Downloads</code></td><td>Physical</td><td>User downloads (AirDrop and similar)</td></tr><tr><td><code>/Desktop</code></td><td>Physical</td><td>Shortcuts and aliases</td></tr></tbody></table>
+<table><thead><tr><th>Path</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>/</code></td><td>Root</td><td>Root directory</td></tr><tr><td><code>/Applications</code></td><td>Virtual</td><td>Apps from registry (non-Finder apps)</td></tr><tr><td><code>/Documents</code></td><td>Physical</td><td>User text documents (.txt, .md)</td></tr><tr><td><code>/Images</code></td><td>Physical</td><td>User images (PNG, JPG, GIF, WebP, BMP)</td></tr><tr><td><code>/Books</code></td><td>Physical</td><td>EPUB books (content stored in IndexedDB; ships with a default Meditations book)</td></tr><tr><td><code>/Music</code></td><td>Virtual</td><td>iPod library (organized by artist)</td></tr><tr><td><code>/Videos</code></td><td>Virtual</td><td>Video library (organized by artist)</td></tr><tr><td><code>/Sites</code></td><td>Virtual</td><td>Internet Explorer favorites</td></tr><tr><td><code>/Applets</code></td><td>Physical</td><td>HTML applets (.app, .html files)</td></tr><tr><td><code>/Applets Store</code></td><td>Virtual (AI-only)</td><td>Shared applets catalog from Redis/API; visible to Chats <code>list</code>/<code>read</code>/<code>open</code> tools, not a Finder folder</td></tr><tr><td><code>/Trash</code></td><td>Special</td><td>Deleted items (restorable)</td></tr><tr><td><code>/Downloads</code></td><td>Physical</td><td>User downloads (AirDrop and similar)</td></tr><tr><td><code>/Desktop</code></td><td>Physical</td><td>Shortcuts and aliases</td></tr></tbody></table>
 <pre class="mermaid">graph TD
     Root["/"] --> Apps["/Applications<br/>Virtual"]
     Root --> Docs["/Documents<br/>Physical"]
     Root --> Imgs["/Images<br/>Physical"]
+    Root --> Books["/Books<br/>Physical"]
     Root --> Music["/Music<br/>Virtual"]
     Root --> Videos["/Videos<br/>Virtual"]
     Root --> Sites["/Sites<br/>Virtual"]
@@ -526,6 +529,7 @@
     
     Docs -->|"stored in"| IDB[(IndexedDB)]
     Imgs -->|"stored in"| IDB
+    Books -->|"stored in"| IDB
     Applets -->|"stored in"| IDB</pre>
 <h2>File Metadata</h2>
 <pre><code>interface FileSystemItem {
@@ -565,8 +569,8 @@
   hiddenOnThemes?: OsThemeId[];  // Hide on specific OS themes
 }</code></pre>
 <h2>IndexedDB Storage</h2>
-<p>Database: <code>ryOS</code> (version 10)</p>
-<table><thead><tr><th>Object Store</th><th>Content Type</th><th>Key</th></tr></thead><tbody><tr><td><code>documents</code></td><td>Text files (strings)</td><td>UUID</td></tr><tr><td><code>images</code></td><td>Binary images (Blobs)</td><td>UUID</td></tr><tr><td><code>applets</code></td><td>HTML applet content</td><td>UUID</td></tr><tr><td><code>trash</code></td><td>Deleted file content</td><td>UUID</td></tr><tr><td><code>custom_wallpapers</code></td><td>User wallpapers</td><td>UUID</td></tr><tr><td><code>apple_music_library</code></td><td>Apple Music library cache</td><td>Apple Music ID</td></tr><tr><td><code>apple_music_playlists</code></td><td>Apple Music playlist cache</td><td>Playlist ID</td></tr><tr><td><code>apple_music_playlist_tracks</code></td><td>Apple Music playlist track cache</td><td>Playlist ID</td></tr></tbody></table>
+<p>Database: <code>ryOS</code> (version 12)</p>
+<table><thead><tr><th>Object Store</th><th>Content Type</th><th>Key</th></tr></thead><tbody><tr><td><code>documents</code></td><td>Text files (strings)</td><td>UUID</td></tr><tr><td><code>images</code></td><td>Binary images (Blobs)</td><td>UUID</td></tr><tr><td><code>books</code></td><td>EPUB book files (Blobs)</td><td>UUID</td></tr><tr><td><code>book_thumbnails</code></td><td>Generated book cover thumbnails</td><td>UUID</td></tr><tr><td><code>applets</code></td><td>HTML applet content</td><td>UUID</td></tr><tr><td><code>trash</code></td><td>Deleted file content</td><td>UUID</td></tr><tr><td><code>custom_wallpapers</code></td><td>User wallpapers</td><td>UUID</td></tr><tr><td><code>apple_music_library</code></td><td>Apple Music library cache</td><td>Apple Music ID</td></tr><tr><td><code>apple_music_playlists</code></td><td>Apple Music playlist cache</td><td>Playlist ID</td></tr><tr><td><code>apple_music_playlist_tracks</code></td><td>Apple Music playlist track cache</td><td>Playlist ID</td></tr></tbody></table>
 <p>Content structure stored in IndexedDB: <pre><code>interface StoredContent {
   name: string;               // Original filename
   content: string | Blob;     // File content
@@ -675,7 +679,7 @@ await ensureFileContentLoaded(filePath, uuid);</code></pre>
   }
 }</code></pre>
 <h2>Supported File Types</h2>
-<table><thead><tr><th>Extension</th><th>Type</th><th>Opens With</th><th>Storage</th></tr></thead><tbody><tr><td><code>.md</code></td><td>Markdown</td><td>TextEdit</td><td>IndexedDB (documents)</td></tr><tr><td><code>.txt</code></td><td>Plain text</td><td>TextEdit</td><td>IndexedDB (documents)</td></tr><tr><td><code>.png</code>, <code>.jpg</code>, <code>.jpeg</code>, <code>.gif</code>, <code>.webp</code>, <code>.bmp</code></td><td>Image</td><td>Paint</td><td>IndexedDB (images)</td></tr><tr><td><code>.app</code>, <code>.html</code></td><td>HTML Applet</td><td>Applet Viewer</td><td>IndexedDB (applets)</td></tr><tr><td><code>.mp3</code></td><td>Audio</td><td>iPod</td><td>Virtual (iPod store)</td></tr><tr><td><code>.mov</code></td><td>Video</td><td>Videos</td><td>Virtual (Video store)</td></tr><tr><td><code>.webloc</code></td><td>Web link</td><td>Internet Explorer</td><td>Virtual (IE store)</td></tr></tbody></table>
+<table><thead><tr><th>Extension</th><th>Type</th><th>Opens With</th><th>Storage</th></tr></thead><tbody><tr><td><code>.md</code></td><td>Markdown</td><td>TextEdit</td><td>IndexedDB (documents)</td></tr><tr><td><code>.txt</code></td><td>Plain text</td><td>TextEdit</td><td>IndexedDB (documents)</td></tr><tr><td><code>.png</code>, <code>.jpg</code>, <code>.jpeg</code>, <code>.gif</code>, <code>.webp</code>, <code>.bmp</code></td><td>Image</td><td>Paint</td><td>IndexedDB (images)</td></tr><tr><td><code>.epub</code></td><td>EPUB book</td><td>Books</td><td>IndexedDB (books)</td></tr><tr><td><code>.app</code>, <code>.html</code></td><td>HTML Applet</td><td>Applet Viewer</td><td>IndexedDB (applets)</td></tr><tr><td><code>.mp3</code></td><td>Audio</td><td>iPod</td><td>Virtual (iPod store)</td></tr><tr><td><code>.mov</code></td><td>Video</td><td>Videos</td><td>Virtual (Video store)</td></tr><tr><td><code>.webloc</code></td><td>Web link</td><td>Internet Explorer</td><td>Virtual (IE store)</td></tr></tbody></table>
 <h2>Desktop Shortcuts</h2>
 <p>Aliases/shortcuts on Desktop:</p>
 <pre><code>// Create alias from context menu or drag
@@ -699,14 +703,15 @@ fileStore.createAlias(
 <p>The sync engine (<code><a href="https://github.com/ryokun6/ryos/blob/main/src/sync/engine.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/sync/engine.ts</a></code>) subscribes to the file stores and keeps a persisted shadow map (key → HLC timestamp + content hash). Pending uploads are derived as diff(local state, shadow) and flushed with a ~1s debounce, so individual file operations (save, rename, move, trash, restore) sync incrementally as per-key ops rather than full-store uploads.</p>
 <h2>Migration System</h2>
 <p>Store version migrations handle schema changes:</p>
-<pre><code>// useFilesStore persist version history (current: 13)
+<pre><code>// useFilesStore persist version history (current: 14)
 // v5: Added UUID-based content keys
 // v6: Added timestamps (createdAt, modifiedAt)
 // v7: Added file size tracking
 // v8: No shape change; cloud sync on rehydrate
 // v11: Expand legacy macosx-only hiddenOnThemes desktop shortcuts
 // v12: Migrate default desktop shortcuts
-// v13: Add prominent System 7 desktop app shortcuts</code></pre>
+// v13: Add prominent System 7 desktop app shortcuts
+// v14: Add the default Meditations EPUB to /Books</code></pre>
 <h2>Events</h2>
 <p>File system changes emit custom events:</p>
 <pre><code>// File saved/updated

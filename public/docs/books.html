@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>i18n & Hooks - ryOS Docs</title>
+  <title>Books - ryOS Docs</title>
   <link rel="icon" href="/icons/mac-192.png">
   <meta name="color-scheme" content="light dark">
   <script>
@@ -340,14 +340,14 @@
     <a href="/docs/self-hosting-vps" class="nav-child ">1.3 Self-hosting ryOS on a VPS or Coolify (without Vercel)</a>
   </div>
 </div>
-<div class="nav-group ">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+<div class="nav-group expanded">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
     <a href="/docs/apps" class="">2. Apps</a>
   </button>
-  <div class="nav-children" style="display: none;">
+  <div class="nav-children" style="display: block;">
     <a href="/docs/chats" class="nav-child ">2.1 Chats</a>
     <a href="/docs/internet-explorer" class="nav-child ">2.2 Internet Explorer</a>
     <a href="/docs/ipod" class="nav-child ">2.3 iPod</a>
@@ -371,7 +371,7 @@
     <a href="/docs/calendar" class="nav-child ">2.21 Calendar</a>
     <a href="/docs/dashboard" class="nav-child ">2.22 Dashboard</a>
     <a href="/docs/contacts" class="nav-child ">2.23 Contacts</a>
-    <a href="/docs/books" class="nav-child ">2.24 Books</a>
+    <a href="/docs/books" class="nav-child active">2.24 Books</a>
     <a href="/docs/tv" class="nav-child ">2.25 TV</a>
     <a href="/docs/maps" class="nav-child ">2.26 Maps</a>
   </div>
@@ -410,16 +410,16 @@
     <a href="/docs/audio-system" class="">6. Audio System</a>
   </div>
 </div>
-<div class="nav-group expanded">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
+<div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
     <a href="/docs/ui-components" class="">7. UI Components and Shared Systems</a>
   </button>
-  <div class="nav-children" style="display: block;">
+  <div class="nav-children" style="display: none;">
     <a href="/docs/component-library" class="nav-child ">7.1 Components</a>
-    <a href="/docs/i18n" class="nav-child active">7.2 i18n & Hooks</a>
+    <a href="/docs/i18n" class="nav-child ">7.2 i18n & Hooks</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -464,59 +464,46 @@
     
     <main class="content">
       <article>
-        <h1>i18n & Hooks</h1>
-<p>Internationalization and roughly 75 custom hooks.</p>
-<h2>Supported Languages</h2>
-<table><thead><tr><th>Code</th><th>Language</th><th>Native Name</th></tr></thead><tbody><tr><td><code>en</code></td><td>English (default)</td><td>English</td></tr><tr><td><code>zh-TW</code></td><td>Chinese Traditional</td><td>中文</td></tr><tr><td><code>ja</code></td><td>Japanese</td><td>日本語</td></tr><tr><td><code>ko</code></td><td>Korean</td><td>한국어</td></tr><tr><td><code>fr</code></td><td>French</td><td>Français</td></tr><tr><td><code>de</code></td><td>German</td><td>Deutsch</td></tr><tr><td><code>es</code></td><td>Spanish</td><td>Español</td></tr><tr><td><code>pt</code></td><td>Portuguese</td><td>Português</td></tr><tr><td><code>it</code></td><td>Italian</td><td>Italiano</td></tr><tr><td><code>ru</code></td><td>Russian</td><td>Русский</td></tr></tbody></table>
-<h2>i18n Configuration</h2>
-<p>The i18n system is configured in <code><a href="https://github.com/ryokun6/ryos/blob/main/src/lib/i18n.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/lib/i18n.ts</a></code> and <code><a href="https://github.com/ryokun6/ryos/blob/main/src/lib/languageConfig.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/lib/languageConfig.ts</a></code>: <ul><li><strong>Library</strong>: i18next with react-i18next bindings</li></ul><ul><li><strong>Detection</strong>: Custom locale resolution via <code>resolveInitialLanguage()</code> (uses <code>navigator.languages</code> with fuzzy locale matching)</li><li><strong>Storage</strong>: Language preference saved to localStorage (<code>ryos:language</code>, <code>ryos:language-initialized</code>)</li><li><strong>Fallback</strong>: English (<code>en</code>) as default fallback language</li><li><strong>Runtime switching</strong>: <code>applyLanguage()</code> ensures resources are loaded before <code>i18n.changeLanguage()</code></li></ul></p>
-<h3>Locale Bundle Loading</h3>
-<ul><li><strong>Eager default locale</strong>: English (<code>en</code>) translation bundle is imported at startup</li></ul><ul><li><strong>Lazy non-default locales</strong>: Other locale JSON files are dynamically imported on demand (<code>localeLoaders</code>)</li><li><strong>Deduplicated loading</strong>: Concurrent requests for the same locale share a single promise (<code>loadingLanguages</code>)</li><li><strong>Bootstrap flow</strong>: <code>initializeI18n()</code> initializes i18n, resolves initial language, lazy-loads if needed, then applies language</li></ul>
-<h3>Translation File Structure</h3>
-<p>Translations are stored in <code>src/lib/locales/{lang}/translation.json</code>:</p>
-<pre><code>src/lib/locales/
-├── en/translation.json
-├── zh-TW/translation.json
-├── ja/translation.json
-├── ko/translation.json
-├── fr/translation.json
-├── de/translation.json
-├── es/translation.json
-├── pt/translation.json
-├── it/translation.json
-└── ru/translation.json</code></pre>
-<h3>Translation Key Patterns</h3>
-<table><thead><tr><th>Pattern</th><th>Description</th><th>Example</th></tr></thead><tbody><tr><td><code>common.*</code></td><td>Shared UI elements (menus, dialogs, buttons)</td><td><code>common.menu.file</code></td></tr><tr><td><code>apps.{appId}.*</code></td><td>App-specific translations</td><td><code>apps.finder.name</code></td></tr><tr><td><code>apps.{appId}.menu.*</code></td><td>App menu items</td><td><code>apps.ipod.menu.addSong</code></td></tr><tr><td><code>apps.{appId}.help.*</code></td><td>App help content</td><td><code>apps.chats.help.chatWithRyo</code></td></tr><tr><td><code>apps.{appId}.dialogs.*</code></td><td>App dialog text</td><td><code>apps.videos.dialogs.clearPlaylistTitle</code></td></tr><tr><td><code>apps.{appId}.widgets.*</code></td><td>Widget translations (Dashboard)</td><td><code>apps.dashboard.widgets.clock</code></td></tr><tr><td><code>apps.calendar.*</code></td><td>Calendar views, events, sidebar</td><td><code>apps.calendar.views.month</code></td></tr><tr><td><code>apps.contacts.*</code></td><td>Address book, groups, fields</td><td><code>apps.contacts.groups.all</code></td></tr><tr><td><code>apps.dashboard.*</code></td><td>Dashboard widgets, dictionary, stocks</td><td><code>apps.dashboard.stocks.loading</code></td></tr><tr><td><code>settings.*</code></td><td>Settings panel translations</td><td><code>settings.language.title</code></td></tr><tr><td><code>components.*</code></td><td>Shared component translations</td><td><code>components.linkPreview.openIpod</code></td></tr><tr><td><code>spotlight.*</code></td><td>Spotlight Search UI and sections</td><td><code>spotlight.placeholder</code>, <code>spotlight.sections.apps</code></td></tr></tbody></table>
-<h2>Key Hooks</h2>
-<strong>Window & App Management:</strong>
-<table><thead><tr><th>Hook</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useLaunchApp</code></td><td>Launch apps with multi-window support</td></tr><tr><td><code>useWindowManager</code></td><td>Drag, resize, snap-to-edge</td></tr><tr><td><code>useWindowInsets</code></td><td>Theme-dependent constraints</td></tr></tbody></table>
-<strong>Audio System:</strong>
-<table><thead><tr><th>Hook</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useSound</code></td><td>Web Audio API playback</td></tr><tr><td><code>useChatSynth</code></td><td>Chat typing sounds</td></tr><tr><td><code>useTerminalSounds</code></td><td>Terminal feedback</td></tr><tr><td><code>useTtsQueue</code></td><td>Text-to-speech queue</td></tr><tr><td><code>useAudioRecorder</code></td><td>Audio recording</td></tr></tbody></table>
-<strong>Device Detection:</strong>
-<table><thead><tr><th>Hook</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useIsMobile</code></td><td>Mobile detection (<768px)</td></tr><tr><td><code>useIsPhone</code></td><td>Phone detection (<640px)</td></tr><tr><td><code>useMediaQuery</code></td><td>CSS media query hook</td></tr></tbody></table>
-<h2>Using i18n</h2>
-<pre><code>import { useTranslation } from "react-i18next";
-
-const { t } = useTranslation();
-
-// Simple key lookup
-t("common.menu.file")              // "File"
-t("apps.finder.name")              // "Finder"
-
-// With interpolation
-t("common.dialog.aboutApp", { appName: "Finder" })  // "About Finder"
-t("apps.ipod.dialogs.addedSongsToTop", { count: 5, plural: "s" })
-
-// Pluralization
-t("apps.admin.statusBar.usersCount", { count: 1 })  // "1 user"
-t("apps.admin.statusBar.usersCount_plural", { count: 5 })  // "5 users"</code></pre>
-<h2>Helper Functions (src/utils/i18n.ts)</h2>
-<table><thead><tr><th>Function</th><th>Purpose</th></tr></thead><tbody><tr><td><code>getTranslatedAppName(appId)</code></td><td>Get localized app name (theme-aware)</td></tr><tr><td><code>getTranslatedAppDescription(appId)</code></td><td>Get localized app description</td></tr><tr><td><code>getTranslatedFolderName(path)</code></td><td>Get localized folder name from path</td></tr><tr><td><code>getTranslatedHelpItems(appId)</code></td><td>Get localized help items for an app</td></tr></tbody></table>
+        <h1>Books</h1>
+<p>Books is the native EPUB reader for ryOS, designed to provide a tactile and immersive reading experience. It combines a skeuomorphic "wooden bookshelf" interface for library management with a high-performance, customizable reader for digital publications.</p>
+<h2>Overview</h2>
+<p>The Books app serves as the central hub for all electronic publications within the ryOS ecosystem. Its primary goal is to bridge the gap between digital convenience and the physical feel of reading, featuring smooth page-turn animations and a sophisticated zoom transition that moves the user seamlessly from the library shelf into the text.</p>
+<p>Beyond simple viewing, Books integrates deeply with the ryOS file system. It automatically monitors the <code>/Books</code> directory, ensuring that any EPUB files imported via Finder or the app's own import utility are instantly cataloged, synchronized to the cloud, and assigned generated cover art for a consistent visual aesthetic.</p>
+<h2>Features</h2>
+<h3>Core Functionality</h3>
+<ul><li><strong>EPUB Support:</strong> High-fidelity rendering of standard EPUB files with support for complex layouts.</li><li><strong>Cloud Synchronization:</strong> Reading progress and library contents are automatically synced across ryOS instances.</li><li><strong>Finder Integration:</strong> Import books directly through the File menu or by placing files in the system <code>/Books</code> folder.</li></ul>
+<h3>User Interface</h3>
+<ul><li><strong>The Wooden Bookshelf:</strong> A skeuomorphic shelf view that displays your collection with dynamically generated book covers.</li><li><strong>Interactive Page-Turns:</strong> A realistic reading interface where users can flip pages via click, keyboard, or touch gestures.</li><li><strong>Animated Transitions:</strong> Smooth zoom-in and zoom-out effects when opening or closing books to maintain spatial context.</li></ul>
+<h3>Customization & Accessibility</h3>
+<ul><li><strong>Typography Control:</strong> Choose from curated reading fonts, including the classic EB Garamond, and adjust text size for comfort.</li><li><strong>Flexible Layouts:</strong> Toggle between single-column and double-column views to suit different window sizes and screen aspect ratios.</li><li><strong>Adaptive Themes:</strong> Support for Light, Sepia, and Dark modes, with the ability to follow the global ryOS system theme automatically.</li></ul>
+<h2>User Guide</h2>
+<h3>Getting Started</h3>
+To begin, launch the Books app from the ryOS App Launcher. If your library is empty, go to <strong>File ▸ Import</strong> to select an EPUB file from your local disk or ryOS storage. The book will appear on your shelf once the import is complete.
+<h3>Key Actions</h3>
+<ul><li><strong>Opening a Book:</strong> Click any book cover on the shelf. The interface will zoom into the cover and transition into the reader view.</li><li><strong>Navigating Pages:</strong> Click the left or right edges of the page to turn. Alternatively, use the <strong>Left/Right Arrow keys</strong> on your keyboard or swipe gestures on touch-enabled devices.</li><li><strong>Adjusting the View:</strong> Use the <strong>View</strong> menu to change the theme (Light, Sepia, Dark), modify font sizes, or switch between single and double-column layouts.</li><li><strong>Returning to Shelf:</strong> Click the "Back" or "Close" button in the navigation bar to trigger the reverse zoom animation and return to your collection.</li></ul>
+<h3>Tips & Shortcuts</h3>
+<ul><li><strong>Automatic Bookmarks:</strong> You never need to manually save your place. Books remembers your exact progress and will return you to the same page next time you open the app.</li><li><strong>Responsive Resizing:</strong> If you prefer a "paperback" feel, resize the window to a narrower width; the reader will automatically switch to a single-column layout.</li></ul>
+<h2>Technical Details</h2>
+<h3>Window Configuration</h3>
+<ul><li><strong>Default Size:</strong> 720×560px</li><li><strong>Minimum Size:</strong> 420×360px</li></ul>
+<h3>Component Architecture</h3>
+The app is built using a modular React architecture, utilizing <code>motion</code> (from Framer Motion) for high-performance layout animations.
+<strong>Component Files:</strong>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/books/components/BookCloseZoom.tsx" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/apps/books/components/BookCloseZoom.tsx</a></code>: Handles the "reverse-zoom" animation from reader to shelf.</li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/books/components/BookCover.tsx" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/apps/books/components/BookCover.tsx</a></code>: Renders the visual representation of a book's front cover.</li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/books/components/BooksMenuBar.tsx" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/apps/books/components/BooksMenuBar.tsx</a></code>: The top-level application menu for File and View actions.</li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/books/components/BooksReaderPane.tsx" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/apps/books/components/BooksReaderPane.tsx</a></code>: The main container for the EPUB reading engine.</li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/books/components/BooksShelfView.tsx" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/apps/books/components/BooksShelfView.tsx</a></code>: Manages the grid layout and wooden shelf styling.</li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/books/components/ShelfBook.tsx" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/apps/books/components/ShelfBook.tsx</a></code>: Individual book items within the shelf view.</li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/books/components/books-app/BooksAppComponent.tsx" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/apps/books/components/books-app/BooksAppComponent.tsx</a></code>: The primary entry point and orchestrator for the app.</li></ul>
+<h3>Hooks & Utilities</h3>
+<strong>Custom Hooks:</strong>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/books/hooks/useBooksLogic.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/apps/books/hooks/useBooksLogic.ts</a></code>: Centralizes library management, file system watchers, and import logic.</li></ul>
+<strong>Utilities:</strong>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/books/utils/booksReader.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/apps/books/utils/booksReader.ts</a></code>: Logic for parsing EPUB content and managing pagination.</li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/books/utils/useBookCover.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/apps/books/utils/useBookCover.ts</a></code>: Utility for extracting or generating cover images from EPUB metadata.</li></ul>
+<h3>State Management</h3>
+Books utilizes a combination of local component state (for UI transitions) and a dedicated <code>useBooksStore</code> (Zustand). The store tracks the user's library, current reading settings (font, size, theme), and the reading progress for every book in the collection.
+<h2>Related Apps</h2>
+<ul><li><strong>Finder:</strong> Use Finder to organize your <code>.epub</code> files within the <code>/Books</code> directory for automatic library updates.</li></ul><ul><li><strong>Control Panels:</strong> Configure system-wide appearance settings to have the Books app automatically toggle between Light and Dark reading modes.</li></ul>
       </article>
       
       <nav class="nav">
-        <a href="/docs/component-library">← Components</a>
-        <a href="/docs/api-reference">API Reference →</a>
+        <a href="/docs/contacts">← Contacts</a>
+        <a href="/docs/tv">TV →</a>
       </nav>
       
     </main>
