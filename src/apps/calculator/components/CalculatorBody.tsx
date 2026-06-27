@@ -9,12 +9,23 @@ import { CalculatorSystem7Panel } from "./CalculatorSystem7Panel";
 import { CalculatorWin98Panel } from "./CalculatorWin98Panel";
 import type { CalculatorTheme } from "./types";
 import type { useCalculatorLogic } from "../hooks/useCalculatorLogic";
+import type { ConversionCategoryId } from "../utils/conversionData";
 
 type CalculatorLogic = ReturnType<typeof useCalculatorLogic>;
 
 interface CalculatorBodyProps {
   logic: CalculatorLogic;
 }
+
+const AQUA_OPERATOR_LABELS: Record<string, string> = {
+  "+": "+",
+  "-": "−",
+  "*": "×",
+  "/": "÷",
+  "%": "%",
+  "^": "xʸ",
+  root: "ʸ√x",
+};
 
 export function CalculatorBody({ logic }: CalculatorBodyProps) {
   const {
@@ -31,25 +42,33 @@ export function CalculatorBody({ logic }: CalculatorBodyProps) {
     pressDecimal,
     pressNegate,
     pressPercent,
+    pressConversionDigit,
+    pressConversionOperator,
+    pressConversionEquals,
+    pressConversionClear,
+    pressConversionBackspace,
+    pressConversionDecimal,
+    pressConversionNegate,
+    pressConversionPercent,
     pressUnary,
     pressPi,
     pressE,
     pressFactorial,
     pressToggleAngle,
-    pressDoubleZero,
+    pressOpenParenthesis,
+    pressCloseParenthesis,
+    pressRandom,
     pressMemoryClear,
     pressMemoryRecall,
     pressMemoryAdd,
     pressMemorySubtract,
     pressMemoryStore,
-    conversionCategory,
     handleCategoryChange,
     fromUnit,
     setFromUnit,
     toUnit,
     setToUnit,
     conversionAmount,
-    setConversionAmount,
     conversionResult,
     category,
     swapConversionUnits,
@@ -59,6 +78,13 @@ export function CalculatorBody({ logic }: CalculatorBodyProps) {
 
   const theme = calculatorTheme as CalculatorTheme;
   const themeClass = `calc-theme-${theme}`;
+  const aquaStatus = calcState.pendingOperator
+    ? AQUA_OPERATOR_LABELS[calcState.pendingOperator]
+    : mode === "scientific"
+      ? calcState.angleMode === "deg"
+        ? t("apps.calculator.angle.degShort")
+        : t("apps.calculator.angle.radShort")
+      : null;
 
   const secondary =
     mode !== "conversion" &&
@@ -88,53 +114,69 @@ export function CalculatorBody({ logic }: CalculatorBodyProps) {
   };
 
   return (
-    <div className={cn("flex flex-col h-full w-full calc-body", themeClass)}>
+    <div
+      className={cn("flex flex-col h-full w-full calc-body", themeClass)}
+      data-os-font={theme === "system7" ? "geneva" : undefined}
+    >
       {mode === "conversion" ? (
-        <>
-          <CalculatorDisplay
-            value={conversionAmount}
-            secondary={t("apps.calculator.conversion.title")}
-            theme={theme}
-          />
-          <CalculatorConversionPanel
-            theme={theme}
-            category={category}
-            fromUnit={fromUnit}
-            toUnit={toUnit}
-            amount={conversionAmount}
-            result={conversionResult}
-            loading={currencyLoading}
-            error={currencyError}
-            onCategoryChange={(id) =>
-              handleCategoryChange(id as typeof conversionCategory)
-            }
-            onFromUnitChange={setFromUnit}
-            onToUnitChange={setToUnit}
-            onAmountChange={setConversionAmount}
-            onSwap={swapConversionUnits}
-            t={t}
-          />
-        </>
+        <CalculatorConversionPanel
+          theme={theme}
+          category={category}
+          fromUnit={fromUnit}
+          toUnit={toUnit}
+          amount={conversionAmount}
+          result={conversionResult}
+          loading={currencyLoading}
+          error={currencyError}
+          onCategoryChange={(id) =>
+            handleCategoryChange(id as ConversionCategoryId)
+          }
+          onFromUnitChange={setFromUnit}
+          onToUnitChange={setToUnit}
+          onSwap={swapConversionUnits}
+          onDigit={pressConversionDigit}
+          onOperator={pressConversionOperator}
+          onEquals={pressConversionEquals}
+          onClear={pressConversionClear}
+          onBackspace={pressConversionBackspace}
+          onDecimal={pressConversionDecimal}
+          onNegate={pressConversionNegate}
+          onPercent={pressConversionPercent}
+          t={t}
+        />
       ) : theme === "aqua" && mode === "basic" ? (
-        <CalculatorAquaCompactPanel display={calcState.display} {...calcHandlers} />
+        <CalculatorAquaCompactPanel
+          display={calcState.display}
+          status={aquaStatus}
+          memoryActive={calcState.memory !== 0}
+          {...calcHandlers}
+        />
       ) : theme === "aqua" && mode === "scientific" ? (
         <CalculatorAquaFullPanel
           display={calcState.display}
+          status={aquaStatus}
+          memoryActive={calcState.memory !== 0}
           angleMode={calcState.angleMode}
           onDigit={pressDigit}
           onOperator={pressOperator}
           onEquals={pressEquals}
           onClear={pressClear}
-          onClearEntry={pressClearEntry}
           onDecimal={pressDecimal}
           onNegate={pressNegate}
+          onPercent={pressPercent}
           onUnary={pressUnary}
           onPi={pressPi}
-          onE={pressE}
           onFactorial={pressFactorial}
           onToggleAngle={pressToggleAngle}
+          onOpenParenthesis={pressOpenParenthesis}
+          onCloseParenthesis={pressCloseParenthesis}
+          onRandom={pressRandom}
           onPower={() => pressOperator("^")}
-          onDoubleZero={pressDoubleZero}
+          onRoot={() => pressOperator("root")}
+          onMemoryClear={pressMemoryClear}
+          onMemoryRecall={pressMemoryRecall}
+          onMemoryAdd={pressMemoryAdd}
+          onMemorySubtract={pressMemorySubtract}
         />
       ) : theme === "system7" ? (
         <CalculatorSystem7Panel
@@ -143,7 +185,6 @@ export function CalculatorBody({ logic }: CalculatorBodyProps) {
           onOperator={pressOperator}
           onEquals={pressEquals}
           onClear={pressClear}
-          onClearEntry={pressClearEntry}
           onDecimal={pressDecimal}
         />
       ) : theme === "win98" || theme === "xp" ? (

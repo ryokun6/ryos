@@ -1,5 +1,10 @@
 export type AngleMode = "deg" | "rad";
-export type Operator = "+" | "-" | "*" | "/" | "%" | "^";
+export type Operator = "+" | "-" | "*" | "/" | "%" | "^" | "root";
+
+interface ParenthesisFrame {
+  accumulator: number | null;
+  pendingOperator: Operator | null;
+}
 
 export interface CalcState {
   display: string;
@@ -9,6 +14,7 @@ export interface CalcState {
   memory: number;
   angleMode: AngleMode;
   error: boolean;
+  parentheses: ParenthesisFrame[];
 }
 
 const MAX_DISPLAY_CHARS = 16;
@@ -22,6 +28,7 @@ export function createInitialCalcState(): CalcState {
     memory: 0,
     angleMode: "deg",
     error: false,
+    parentheses: [],
   };
 }
 
@@ -33,7 +40,7 @@ function fromRadians(value: number, mode: AngleMode): number {
   return mode === "deg" ? (value * 180) / Math.PI : value;
 }
 
-function formatNumber(value: number): string {
+export function formatNumber(value: number): string {
   if (!Number.isFinite(value)) return "Error";
   if (Math.abs(value) >= 1e16 || (Math.abs(value) > 0 && Math.abs(value) < 1e-10)) {
     return value.toExponential(10).replace(/\.?0+e/, "e");
@@ -73,6 +80,8 @@ function applyPending(state: CalcState, nextValue: number): number {
       return accumulator % nextValue;
     case "^":
       return Math.pow(accumulator, nextValue);
+    case "root":
+      return accumulator === 0 ? NaN : Math.pow(nextValue, 1 / accumulator);
     default:
       return nextValue;
   }
@@ -139,6 +148,56 @@ export function calculate(state: CalcState): CalcState {
     accumulator: null,
     pendingOperator: null,
     waitingForOperand: true,
+  };
+}
+
+export function openParenthesis(state: CalcState): CalcState {
+  if (state.error) return state;
+  return {
+    ...state,
+    display: "0",
+    accumulator: null,
+    pendingOperator: null,
+    waitingForOperand: true,
+    parentheses: [
+      ...state.parentheses,
+      {
+        accumulator: state.accumulator,
+        pendingOperator: state.pendingOperator,
+      },
+    ],
+  };
+}
+
+export function closeParenthesis(state: CalcState): CalcState {
+  if (state.error || state.parentheses.length === 0) return state;
+  const current = parseDisplay(state.display);
+  if (!Number.isFinite(current)) return withError(state);
+  const innerValue =
+    state.accumulator != null && state.pendingOperator
+      ? applyPending(state, current)
+      : current;
+  if (!Number.isFinite(innerValue)) return withError(state);
+
+  const frame = state.parentheses[state.parentheses.length - 1];
+  const outerState = {
+    ...state,
+    accumulator: frame.accumulator,
+    pendingOperator: frame.pendingOperator,
+  };
+  const result =
+    frame.accumulator != null && frame.pendingOperator
+      ? applyPending(outerState, innerValue)
+      : innerValue;
+  if (!Number.isFinite(result)) return withError(state);
+
+  return {
+    ...state,
+    display: formatNumber(result),
+    accumulator: null,
+    pendingOperator: null,
+    waitingForOperand: true,
+    parentheses: state.parentheses.slice(0, -1),
   };
 }
 
@@ -212,6 +271,10 @@ export const unaryFunctions = {
   reciprocal: (v: number) => 1 / v,
   exp: (v: number) => Math.exp(v),
   exp2: (v: number) => Math.pow(2, v),
+  exp10: (v: number) => Math.pow(10, v),
+  sinh: (v: number) => Math.sinh(v),
+  cosh: (v: number) => Math.cosh(v),
+  tanh: (v: number) => Math.tanh(v),
 };
 
 export function memoryClear(state: CalcState): CalcState {

@@ -36,7 +36,7 @@ export const base64ToBlob = (dataUrl: string): Blob => {
   return new Blob([array], { type: mime });
 };
 
-export async function readAndSerializeStoreItemByKey(
+export async function readStoreItemByKey(
   db: IDBDatabase,
   storeName: string,
   key: string
@@ -46,22 +46,42 @@ export async function readAndSerializeStoreItemByKey(
       const transaction = db.transaction(storeName, "readonly");
       const store = transaction.objectStore(storeName);
       const request = store.get(key);
-      request.onsuccess = async () => {
+      request.onsuccess = () => {
         if (request.result === undefined || request.result === null) {
           resolve(null);
           return;
         }
-        const item: IndexedDBStoreItemWithKey = {
+        resolve({
           key,
           value: request.result as IndexedDBStoreItem,
-        };
-        resolve(await serializeStoreItem(item));
+        });
       };
       request.onerror = () => reject(request.error);
     } catch (error) {
       reject(error);
     }
   });
+}
+
+export async function readStoreItemsByKeys(
+  db: IDBDatabase,
+  storeName: string,
+  keys: string[]
+): Promise<IndexedDBStoreItemWithKey[]> {
+  const unique = [...new Set(keys.filter(Boolean))];
+  const results = await Promise.all(
+    unique.map((key) => readStoreItemByKey(db, storeName, key))
+  );
+  return results.filter((item): item is IndexedDBStoreItemWithKey => item != null);
+}
+
+export async function readAndSerializeStoreItemByKey(
+  db: IDBDatabase,
+  storeName: string,
+  key: string
+): Promise<IndexedDBStoreItemWithKey | null> {
+  const item = await readStoreItemByKey(db, storeName, key);
+  return item ? serializeStoreItem(item) : null;
 }
 
 export async function readAndSerializeStoreItemsByKeys(

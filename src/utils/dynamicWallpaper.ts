@@ -108,7 +108,9 @@ export function resolveWallpaperSourceForSelection(
   previousSource: string | undefined | null
 ): string {
   if (!isShuffleWallpaper(selection)) return selection;
-  return isConcreteWallpaperSource(previousSource) ? previousSource : "";
+  return isConcreteWallpaperSource(previousSource)
+    ? (previousSource ?? "")
+    : "";
 }
 
 export type ShuffleTarget =

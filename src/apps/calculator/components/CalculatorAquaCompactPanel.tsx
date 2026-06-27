@@ -3,6 +3,8 @@ import type { CalculatorTheme } from "./types";
 
 interface CalculatorAquaCompactPanelProps {
   display: string;
+  status?: string | null;
+  memoryActive: boolean;
   onDigit: (digit: string) => void;
   onOperator: (op: "+" | "-" | "*" | "/") => void;
   onEquals: () => void;
@@ -19,6 +21,8 @@ interface CalculatorAquaCompactPanelProps {
 /** Mac OS X Tiger Calculator — compact brushed-metal layout. */
 export function CalculatorAquaCompactPanel({
   display,
+  status,
+  memoryActive,
   onDigit,
   onOperator,
   onEquals,
@@ -35,7 +39,12 @@ export function CalculatorAquaCompactPanel({
 
   return (
     <div className="calc-aqua-compact flex flex-col gap-1">
-      <CalculatorDisplay value={display} theme={theme} />
+      <CalculatorDisplay
+        value={display}
+        secondary={status}
+        memoryActive={memoryActive}
+        theme={theme}
+      />
       <div className="calc-aqua-compact-grid">
         <CalculatorKey label="MC" onClick={onMemoryClear} theme={theme} variant="function" style={{ gridColumn: 1, gridRow: 1 }} />
         <CalculatorKey label="M+" onClick={onMemoryAdd} theme={theme} variant="function" style={{ gridColumn: 2, gridRow: 1 }} />

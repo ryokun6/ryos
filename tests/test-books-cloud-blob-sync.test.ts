@@ -109,4 +109,26 @@ describe("Books cloud blob sync", () => {
       Array.from(epubHeader)
     );
   });
+
+  test("collects only explicitly dirty book keys", async () => {
+    await dbOperations.put(
+      STORES.BOOKS,
+      { name: "a.epub", content: new Uint8Array([1]).buffer },
+      "book-a"
+    );
+    await dbOperations.put(
+      STORES.BOOKS,
+      { name: "b.epub", content: new Uint8Array([2]).buffer },
+      "book-b"
+    );
+
+    const db = await ensureIndexedDBInitialized();
+    const docs = await SYNC_CODECS.books.collect(
+      { db },
+      new Set(["books/item:book-b"])
+    );
+    db.close();
+
+    expect([...docs.keys()]).toEqual(["books/item:book-b"]);
+  });
 });

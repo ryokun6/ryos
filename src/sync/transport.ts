@@ -26,25 +26,31 @@ async function parseJsonOrThrow<T>(response: Response, context: string): Promise
 
 export async function postSyncOps(
   clientId: string,
-  ops: SyncOp[]
+  ops: SyncOp[],
+  signal?: AbortSignal
 ): Promise<PostOpsResponse> {
   const response = await abortableFetch(getApiUrl("/api/sync/v2/ops"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ clientId, ops }),
     timeout: 20000,
+    signal,
     throwOnHttpError: false,
     retry: { maxAttempts: 2, initialDelayMs: 500 },
   });
   return parseJsonOrThrow<PostOpsResponse>(response, "Sync upload");
 }
 
-export async function getSyncChanges(since: number): Promise<GetChangesResponse> {
+export async function getSyncChanges(
+  since: number,
+  signal?: AbortSignal
+): Promise<GetChangesResponse> {
   const response = await abortableFetch(
     getApiUrl(`/api/sync/v2/changes?since=${encodeURIComponent(since)}`),
     {
       method: "GET",
       timeout: 15000,
+      signal,
       throwOnHttpError: false,
       retry: { maxAttempts: 2, initialDelayMs: 500 },
     }
@@ -52,25 +58,32 @@ export async function getSyncChanges(since: number): Promise<GetChangesResponse>
   return parseJsonOrThrow<GetChangesResponse>(response, "Sync changes");
 }
 
-export async function getSyncSnapshot(): Promise<GetSnapshotResponse> {
+export async function getSyncSnapshot(
+  signal?: AbortSignal
+): Promise<GetSnapshotResponse> {
   const response = await abortableFetch(getApiUrl("/api/sync/v2/snapshot"), {
     method: "GET",
     timeout: 30000,
+    signal,
     throwOnHttpError: false,
     retry: { maxAttempts: 2, initialDelayMs: 500 },
   });
   return parseJsonOrThrow<GetSnapshotResponse>(response, "Sync snapshot");
 }
 
-export async function postSyncBlobs(body: {
-  upload?: BlobUploadRequestItem[];
-  download?: string[];
-}): Promise<PostBlobsResponse> {
+export async function postSyncBlobs(
+  body: {
+    upload?: BlobUploadRequestItem[];
+    download?: string[];
+  },
+  signal?: AbortSignal
+): Promise<PostBlobsResponse> {
   const response = await abortableFetch(getApiUrl("/api/sync/v2/blobs"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
     timeout: 20000,
+    signal,
     throwOnHttpError: false,
     retry: { maxAttempts: 2, initialDelayMs: 500 },
   });

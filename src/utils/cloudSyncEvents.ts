@@ -1,4 +1,5 @@
 import {
+  isSyncBlobNamespace,
   isSyncNamespace,
   type SyncNamespace,
 } from "@/shared/sync2/namespaces";
@@ -18,18 +19,39 @@ export function normalizeSyncNamespace(
   return null;
 }
 
-type NamespaceListener = (namespace: SyncNamespace) => void;
+export function getCloudSyncContentKey(
+  namespace: SyncNamespace,
+  localKey: string
+): string | null {
+  if (!localKey) return null;
+  if (namespace === "files") return `files/doc:${localKey}`;
+  if (isSyncBlobNamespace(namespace)) {
+    return `${namespace}/item:${localKey}`;
+  }
+  return null;
+}
+
+type NamespaceListener = (
+  namespace: SyncNamespace,
+  keys?: ReadonlySet<string>
+) => void;
 type SyncCheckRequestListener = () => void;
 
 const changeListeners = new Set<NamespaceListener>();
 const syncCheckListeners = new Set<SyncCheckRequestListener>();
 
-export function emitCloudSyncDomainChange(domain: CloudSyncChangeSource): void {
+export function emitCloudSyncDomainChange(
+  domain: CloudSyncChangeSource,
+  keys?: Iterable<string>
+): void {
   const namespace = normalizeSyncNamespace(domain);
   if (!namespace) return;
+  const normalizedKeys = keys
+    ? new Set(Array.from(keys).filter((key) => typeof key === "string" && key))
+    : undefined;
   changeListeners.forEach((listener) => {
     try {
-      listener(namespace);
+      listener(namespace, normalizedKeys);
     } catch (error) {
       console.error("[CloudSyncEvents] Listener failed:", error);
     }

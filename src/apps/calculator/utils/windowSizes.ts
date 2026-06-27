@@ -8,20 +8,20 @@ const DEFAULT_SIZES: Record<CalculatorMode, { width: number; height: number }> =
 };
 
 const AQUA_SIZES: Record<CalculatorMode, { width: number; height: number }> = {
-  basic: { width: 206, height: 304 },
-  scientific: { width: 346, height: 280 },
-  conversion: { width: 280, height: 340 },
+  basic: { width: 260, height: 304 },
+  scientific: { width: 420, height: 304 },
+  conversion: { width: 260, height: 360 },
 };
 
 const SYSTEM7_SIZES: Record<CalculatorMode, { width: number; height: number }> = {
-  basic: { width: 148, height: 208 },
-  scientific: { width: 148, height: 208 },
-  conversion: { width: 220, height: 300 },
+  basic: { width: 176, height: 244 },
+  scientific: { width: 176, height: 244 },
+  conversion: { width: 220, height: 370 },
 };
 
 const WINDOWS_SIZES: Record<CalculatorMode, { width: number; height: number }> = {
-  basic: { width: 272, height: 300 },
-  scientific: { width: 320, height: 480 },
+  basic: { width: 272, height: 260 },
+  scientific: { width: 320, height: 380 },
   conversion: { width: 300, height: 420 },
 };
 

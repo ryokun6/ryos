@@ -1,6 +1,8 @@
 import { cn } from "@/lib/utils";
 import { ToolbarButton, ToolbarButtonGroup } from "@/components/ui/toolbar-button";
+import { useLanguageStore } from "@/stores/useLanguageStore";
 import type { CSSProperties } from "react";
+import { formatCalculatorDisplay } from "../utils/formatCalculatorDisplay";
 import type { CalculatorTheme } from "./types";
 
 export interface CalculatorKeyProps {
@@ -41,7 +43,10 @@ export function CalculatorKey({
   if (theme === "aqua") {
     return (
       <ToolbarButtonGroup
-        className={cn("calc-aqua-key-group h-full min-h-[26px] w-full", gridSpanClass)}
+        className={cn(
+          "calc-aqua-key-group h-full min-h-[26px] w-full",
+          gridSpanClass
+        )}
         style={style}
       >
         <ToolbarButton
@@ -71,11 +76,19 @@ export function CalculatorKey({
 export interface CalculatorDisplayProps {
   value: string;
   secondary?: string | null;
+  memoryActive?: boolean;
   theme: CalculatorTheme;
 }
 
-export function CalculatorDisplay({ value, secondary, theme }: CalculatorDisplayProps) {
+export function CalculatorDisplay({
+  value,
+  secondary,
+  memoryActive = false,
+  theme,
+}: CalculatorDisplayProps) {
+  const locale = useLanguageStore((state) => state.current);
   const hideSecondary = theme === "aqua" || theme === "system7";
+  const formattedValue = formatCalculatorDisplay(value, locale);
 
   return (
     <div className="flex flex-col gap-0.5">
@@ -89,8 +102,14 @@ export function CalculatorDisplay({ value, secondary, theme }: CalculatorDisplay
           {secondary}
         </div>
       ) : null}
-      <div className="calc-display truncate" title={value}>
-        {value}
+      <div className="calc-display" title={value}>
+        <div className="calc-display-value truncate">{formattedValue}</div>
+        {theme === "aqua" ? (
+          <div className="calc-display-status" aria-live="polite">
+            <span>{memoryActive ? "M" : "\u00a0"}</span>
+            <span>{secondary || "\u00a0"}</span>
+          </div>
+        ) : null}
       </div>
     </div>
   );

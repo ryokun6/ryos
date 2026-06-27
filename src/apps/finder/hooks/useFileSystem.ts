@@ -21,8 +21,9 @@ import { getStoreForFile, type StoredContent } from "@/utils/indexedDBOperations
 import {
   emitCloudSyncDomainChange,
   emitCloudSyncDomainChanges,
+  getCloudSyncContentKey,
 } from "@/utils/cloudSyncEvents";
-import { isSyncNamespace, type SyncNamespace } from "@/shared/sync2/namespaces";
+import type { SyncNamespace } from "@/shared/sync2/namespaces";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { FINDER_ANALYTICS, track } from "@/utils/analytics";
@@ -45,8 +46,13 @@ export interface DocumentContent extends StoredContent {
   contentUrl?: string; // URL for Blob content (managed temporarily)
 }
 
-const isSyncNamespaceValue = (value: unknown): value is SyncNamespace =>
-  isSyncNamespace(value);
+const emitCloudSyncContentChange = (
+  namespace: SyncNamespace,
+  localKey: string
+) => {
+  const syncKey = getCloudSyncContentKey(namespace, localKey);
+  emitCloudSyncDomainChange(namespace, syncKey ? [syncKey] : undefined);
+};
 
 const trackFinderFileOperation = (
   eventName: string,
@@ -394,7 +400,7 @@ export function useFileSystem(
           },
           uuid
         );
-        emitCloudSyncDomainChange("applets");
+        emitCloudSyncContentChange("applets", uuid);
 
         const metadataUpdates: Partial<FileSystemItem> = {};
 
@@ -1266,7 +1272,7 @@ export function useFileSystem(
             );
             const syncDomain = getCloudSyncDomainForContentStore(storeName);
             if (syncDomain) {
-              emitCloudSyncDomainChange(syncDomain);
+              emitCloudSyncContentChange(syncDomain, savedItem.uuid);
             }
             console.log(
               `[useFileSystem:saveFile] Content saved to IndexedDB with UUID: ${savedItem.uuid}`
@@ -1365,12 +1371,16 @@ export function useFileSystem(
             );
             // Delete from source store
             await dbOperations.delete(sourceStoreName, sourceFile.uuid);
-            emitCloudSyncDomainChanges(
-              [
-                getCloudSyncDomainForContentStore(sourceStoreName),
-                getCloudSyncDomainForContentStore(targetStoreName),
-              ].filter(isSyncNamespaceValue)
-            );
+            const sourceSyncDomain =
+              getCloudSyncDomainForContentStore(sourceStoreName);
+            const targetSyncDomain =
+              getCloudSyncDomainForContentStore(targetStoreName);
+            if (sourceSyncDomain) {
+              emitCloudSyncContentChange(sourceSyncDomain, sourceFile.uuid);
+            }
+            if (targetSyncDomain) {
+              emitCloudSyncContentChange(targetSyncDomain, sourceFile.uuid);
+            }
           }
         }
 
@@ -1447,7 +1457,7 @@ export function useFileSystem(
               ); // Keep same UUID
               const syncDomain = getCloudSyncDomainForContentStore(storeName);
               if (syncDomain) {
-                emitCloudSyncDomainChange(syncDomain);
+                emitCloudSyncContentChange(syncDomain, itemToRename.uuid);
               }
             } else {
               console.warn(
@@ -1537,12 +1547,15 @@ export function useFileSystem(
                 .getState()
                 .markDeletedKeys(deletionBucket, [fileMetadata.uuid]);
             }
-            emitCloudSyncDomainChanges(
-              [
-                getCloudSyncDomainForContentStore(storeName),
-                "trash",
-              ].filter(isSyncNamespaceValue)
-            );
+            const sourceSyncDomain =
+              getCloudSyncDomainForContentStore(storeName);
+            if (sourceSyncDomain) {
+              emitCloudSyncContentChange(
+                sourceSyncDomain,
+                fileMetadata.uuid
+              );
+            }
+            emitCloudSyncContentChange("trash", fileMetadata.uuid);
             console.log(
               `[useFileSystem] Moved content for ${fileMetadata.name} from ${storeName} to Trash DB with UUID ${fileMetadata.uuid}.`
             );
@@ -1610,12 +1623,15 @@ export function useFileSystem(
             useCloudSyncStore
               .getState()
               .markDeletedKeys("fileTrashKeys", [fileMetadata.uuid]);
-            emitCloudSyncDomainChanges(
-              [
-                getCloudSyncDomainForContentStore(targetStoreName),
-                "trash",
-              ].filter(isSyncNamespaceValue)
-            );
+            const targetSyncDomain =
+              getCloudSyncDomainForContentStore(targetStoreName);
+            if (targetSyncDomain) {
+              emitCloudSyncContentChange(
+                targetSyncDomain,
+                fileMetadata.uuid
+              );
+            }
+            emitCloudSyncContentChange("trash", fileMetadata.uuid);
             console.log(
               `[useFileSystem] Restored content for ${fileMetadata.name} from Trash DB to ${targetStoreName} with UUID ${fileMetadata.uuid}.`
             );

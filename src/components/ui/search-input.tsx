@@ -72,7 +72,7 @@ export function SearchInput({
   showSearchIcon = true,
   showClear = true,
 }: SearchInputProps) {
-  const { isMacOSTheme } = useThemeFlags();
+  const { isMacOSTheme, isWindowsTheme } = useThemeFlags();
   const canClear = showClear && value.length > 0 && !disabled;
 
   return (
@@ -105,6 +105,14 @@ export function SearchInput({
         placeholder={placeholder}
         disabled={disabled}
         data-os-search-input="true"
+        style={
+          isWindowsTheme
+            ? {
+                paddingLeft: showSearchIcon ? 28 : 12,
+                paddingRight: canClear ? 28 : 12,
+              }
+            : undefined
+        }
         className={osPillInputClasses(
           isMacOSTheme,
           {

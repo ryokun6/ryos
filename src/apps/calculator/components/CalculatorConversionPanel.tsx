@@ -1,22 +1,20 @@
+import { useMemo } from "react";
 import type { TFunction } from "i18next";
 import { ArrowsDownUp } from "@phosphor-icons/react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { ToolbarButton, ToolbarButtonGroup } from "@/components/ui/toolbar-button";
-import { cn } from "@/lib/utils";
-import { useThemeFlags } from "@/hooks/useThemeFlags";
+  Combobox,
+  type ComboboxFilter,
+  type ComboboxOption,
+} from "@/components/ui/combobox";
+import { useLanguageStore } from "@/stores/useLanguageStore";
 import {
   CONVERSION_CATEGORIES,
   type ConversionCategory,
+  type ConversionCategoryId,
   type ConversionUnit,
 } from "../utils/conversionData";
+import { formatCalculatorDisplay } from "../utils/formatCalculatorDisplay";
+import { CalculatorKey } from "./CalculatorKey";
 import type { CalculatorTheme } from "./types";
 
 interface CalculatorConversionPanelProps {
@@ -31,76 +29,155 @@ interface CalculatorConversionPanelProps {
   onCategoryChange: (categoryId: string) => void;
   onFromUnitChange: (unitId: string) => void;
   onToUnitChange: (unitId: string) => void;
-  onAmountChange: (value: string) => void;
   onSwap: () => void;
+  onDigit: (digit: string) => void;
+  onOperator: (operator: "+" | "-" | "*" | "/") => void;
+  onEquals: () => void;
+  onClear: () => void;
+  onBackspace: () => void;
+  onDecimal: () => void;
+  onNegate: () => void;
+  onPercent: () => void;
   t: TFunction;
 }
 
-function unitLabel(unit: ConversionUnit, t: TFunction): string {
-  return unit.labelKey.startsWith("apps.")
-    ? t(unit.labelKey)
-    : unit.labelKey;
+function translatedUnitLabel(
+  unit: ConversionUnit,
+  categoryId: ConversionCategoryId,
+  locale: string,
+  t: TFunction
+): string {
+  if (categoryId === "currency") {
+    try {
+      return (
+        new Intl.DisplayNames([locale], { type: "currency" }).of(unit.id) ??
+        unit.id
+      );
+    } catch {
+      return unit.id;
+    }
+  }
+  return unit.labelKey.startsWith("apps.") ? t(unit.labelKey) : unit.labelKey;
 }
 
-function UnitSelect({
+function ConversionUnitCombobox({
   value,
-  units,
+  category,
   onChange,
   t,
-  className,
 }: {
   value: string;
-  units: ConversionUnit[];
-  onChange: (unitId: string) => void;
+  category: ConversionCategory;
+  onChange: (categoryId: ConversionCategoryId, unitId: string) => void;
   t: TFunction;
-  className?: string;
 }) {
-  const selected = units.find((u) => u.id === value);
+  const locale = useLanguageStore((state) => state.current);
+  const options = useMemo<ComboboxOption[]>(
+    () =>
+      CONVERSION_CATEGORIES.flatMap((conversionCategory) =>
+        conversionCategory.units.map((unit) => {
+          const label = translatedUnitLabel(
+            unit,
+            conversionCategory.id,
+            locale,
+            t
+          );
+          return {
+            value: `${conversionCategory.id}:${unit.id}`,
+            label,
+            description: unit.id.toUpperCase(),
+            category: conversionCategory.id,
+            searchText: `${label} ${unit.id} ${t(conversionCategory.labelKey)}`.toLowerCase(),
+          };
+        })
+      ),
+    [locale, t]
+  );
+  const filters = useMemo<ComboboxFilter[]>(
+    () =>
+      CONVERSION_CATEGORIES.map((conversionCategory) => ({
+        value: conversionCategory.id,
+        label: t(conversionCategory.labelKey),
+      })),
+    [t]
+  );
+  const selected = category.units.find((unit) => unit.id === value);
+  const displayValue = selected
+    ? `${translatedUnitLabel(selected, category.id, locale, t)} · ${selected.id.toUpperCase()}`
+    : value;
 
   return (
-    <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className={cn("h-8 shrink-0 text-xs", className)}>
-        <SelectValue placeholder={t("apps.calculator.conversion.selectUnit")}>
-          {selected ? unitLabel(selected, t) : value}
-        </SelectValue>
-      </SelectTrigger>
-      <SelectContent>
-        {units.map((unit) => (
-          <SelectItem key={unit.id} value={unit.id}>
-            {unitLabel(unit, t)}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <Combobox
+      value={`${category.id}:${value}`}
+      onChange={(nextValue) => {
+        const separator = nextValue.indexOf(":");
+        if (separator === -1) return;
+        onChange(
+          nextValue.slice(0, separator) as ConversionCategoryId,
+          nextValue.slice(separator + 1)
+        );
+      }}
+      options={options}
+      displayValue={displayValue}
+      searchPlaceholder={t("apps.calculator.conversion.selectUnit")}
+      searchAriaLabel={t("apps.calculator.conversion.selectUnit")}
+      filters={filters}
+      filterValue={category.id}
+      onFilterChange={(categoryId) =>
+        onChange(categoryId as ConversionCategoryId, "")
+      }
+      minPanelWidth={260}
+      maxListHeight={300}
+      className="calc-conversion-unit-trigger"
+    />
   );
 }
 
-function CategorySelect({
-  categoryId,
-  onCategoryChange,
-  t,
-}: {
-  categoryId: string;
-  onCategoryChange: (categoryId: string) => void;
-  t: TFunction;
-}) {
-  const selected = CONVERSION_CATEGORIES.find((c) => c.id === categoryId);
-
+function ConversionKeypad({
+  theme,
+  onDigit,
+  onOperator,
+  onEquals,
+  onClear,
+  onBackspace,
+  onDecimal,
+  onNegate,
+  onPercent,
+}: Pick<
+  CalculatorConversionPanelProps,
+  | "theme"
+  | "onDigit"
+  | "onOperator"
+  | "onEquals"
+  | "onClear"
+  | "onBackspace"
+  | "onDecimal"
+  | "onNegate"
+  | "onPercent"
+>) {
   return (
-    <Select value={categoryId} onValueChange={onCategoryChange}>
-      <SelectTrigger className="h-8 w-full text-xs">
-        <SelectValue placeholder={t("apps.calculator.conversion.category")}>
-          {selected ? t(selected.labelKey) : categoryId}
-        </SelectValue>
-      </SelectTrigger>
-      <SelectContent>
-        {CONVERSION_CATEGORIES.map((cat) => (
-          <SelectItem key={cat.id} value={cat.id}>
-            {t(cat.labelKey)}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <div className="calc-conversion-keypad">
+      <CalculatorKey label="⌫" onClick={onBackspace} theme={theme} variant="function" />
+      <CalculatorKey label="AC" onClick={onClear} theme={theme} variant="function" />
+      <CalculatorKey label="%" onClick={onPercent} theme={theme} variant="function" />
+      <CalculatorKey label="÷" onClick={() => onOperator("/")} theme={theme} variant="operator" />
+      <CalculatorKey label="7" onClick={() => onDigit("7")} theme={theme} />
+      <CalculatorKey label="8" onClick={() => onDigit("8")} theme={theme} />
+      <CalculatorKey label="9" onClick={() => onDigit("9")} theme={theme} />
+      <CalculatorKey label="×" onClick={() => onOperator("*")} theme={theme} variant="operator" />
+      <CalculatorKey label="4" onClick={() => onDigit("4")} theme={theme} />
+      <CalculatorKey label="5" onClick={() => onDigit("5")} theme={theme} />
+      <CalculatorKey label="6" onClick={() => onDigit("6")} theme={theme} />
+      <CalculatorKey label="−" onClick={() => onOperator("-")} theme={theme} variant="operator" />
+      <CalculatorKey label="1" onClick={() => onDigit("1")} theme={theme} />
+      <CalculatorKey label="2" onClick={() => onDigit("2")} theme={theme} />
+      <CalculatorKey label="3" onClick={() => onDigit("3")} theme={theme} />
+      <CalculatorKey label="+" onClick={() => onOperator("+")} theme={theme} variant="operator" />
+      <CalculatorKey label="±" onClick={onNegate} theme={theme} variant="function" />
+      <CalculatorKey label="0" onClick={() => onDigit("0")} theme={theme} />
+      <CalculatorKey label="." onClick={onDecimal} theme={theme} />
+      <CalculatorKey label="=" onClick={onEquals} theme={theme} variant="equals" />
+    </div>
   );
 }
 
@@ -116,102 +193,100 @@ export function CalculatorConversionPanel({
   onCategoryChange,
   onFromUnitChange,
   onToUnitChange,
-  onAmountChange,
   onSwap,
+  onDigit,
+  onOperator,
+  onEquals,
+  onClear,
+  onBackspace,
+  onDecimal,
+  onNegate,
+  onPercent,
   t,
 }: CalculatorConversionPanelProps) {
-  const { isMacOSTheme, isSystem7Theme } = useThemeFlags();
-
-  const fieldLabelClass = cn(
-    "text-xs text-os-text-secondary",
-    isSystem7Theme && "font-bold text-black"
-  );
+  const locale = useLanguageStore((state) => state.current);
+  const selectUnit = (
+    side: "from" | "to",
+    categoryId: ConversionCategoryId,
+    unitId: string
+  ) => {
+    if (categoryId !== category.id) {
+      onCategoryChange(categoryId);
+      const nextCategory =
+        CONVERSION_CATEGORIES.find((candidate) => candidate.id === categoryId) ??
+        category;
+      const selectedUnit =
+        unitId ||
+        nextCategory.units[side === "from" ? 0 : 1]?.id ||
+        nextCategory.units[0]?.id ||
+        "";
+      if (side === "from") onFromUnitChange(selectedUnit);
+      else onToUnitChange(selectedUnit);
+      return;
+    }
+    if (!unitId) return;
+    if (side === "from") onFromUnitChange(unitId);
+    else onToUnitChange(unitId);
+  };
 
   return (
-    <div className="calc-conversion-panel flex flex-col gap-2 flex-1 min-h-0">
-      <div className="flex flex-col gap-1">
-        <span className={fieldLabelClass}>
-          {t("apps.calculator.conversion.category")}
-        </span>
-        <CategorySelect
-          categoryId={category.id}
-          onCategoryChange={onCategoryChange}
-          t={t}
-        />
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <span className={fieldLabelClass}>
-          {t("apps.calculator.conversion.from")}
-        </span>
-        <div className="flex gap-1 items-center">
-          <Input
-            className="h-8 flex-1 text-right font-mono text-sm"
-            value={amount}
-            onChange={(e) => onAmountChange(e.target.value)}
-            inputMode="decimal"
-            aria-label={t("apps.calculator.conversion.amount")}
-          />
-          <UnitSelect
+    <div className="calc-conversion-panel flex min-h-0 flex-1 flex-col">
+      <div className="calc-display calc-conversion-lcd">
+        <div className="calc-conversion-value-row">
+          <div className="calc-display-value truncate">
+            {formatCalculatorDisplay(amount, locale)}
+          </div>
+          <ConversionUnitCombobox
             value={fromUnit}
-            units={category.units}
-            onChange={onFromUnitChange}
+            category={category}
+            onChange={(categoryId, unitId) =>
+              selectUnit("from", categoryId, unitId)
+            }
             t={t}
-            className="w-[96px]"
           />
         </div>
-      </div>
 
-      <div className="flex justify-center py-0.5">
-        {isMacOSTheme && theme === "aqua" ? (
-          <ToolbarButtonGroup>
-            <ToolbarButton className="calc-swap-btn gap-1 px-3" onClick={onSwap}>
-              <ArrowsDownUp size={14} aria-hidden />
-              {t("apps.calculator.conversion.swap")}
-            </ToolbarButton>
-          </ToolbarButtonGroup>
-        ) : (
-          <Button
-            type="button"
-            variant={isMacOSTheme ? "secondary" : isSystem7Theme ? "player" : "default"}
-            className={cn(
-              "calc-swap-btn h-[24px] px-3 text-xs gap-1",
-              theme === "win98" && "text-black"
-            )}
-            onClick={onSwap}
-          >
-            <ArrowsDownUp size={14} aria-hidden />
-            {t("apps.calculator.conversion.swap")}
-          </Button>
-        )}
-      </div>
+        <div className="calc-conversion-divider">
+          <div className="calc-conversion-swap">
+            <button
+              type="button"
+              className="calc-conversion-swap-button"
+              onClick={onSwap}
+              aria-label={t("apps.calculator.conversion.swap")}
+            >
+              <ArrowsDownUp size={16} weight="bold" aria-hidden />
+            </button>
+          </div>
+        </div>
 
-      <div className="flex flex-col gap-1">
-        <span className={fieldLabelClass}>
-          {t("apps.calculator.conversion.to")}
-        </span>
-        <div className="flex gap-1 items-center">
-          <Input
-            readOnly
-            tabIndex={-1}
-            className={cn(
-              "h-8 flex-1 text-right font-mono text-sm opacity-90",
-              loading && "opacity-50"
-            )}
-            value={loading ? "…" : result}
-            aria-label={t("apps.calculator.conversion.result")}
-          />
-          <UnitSelect
+        <div className="calc-conversion-value-row">
+          <div className="calc-display-value truncate">
+            {loading ? "–" : result}
+          </div>
+          <ConversionUnitCombobox
             value={toUnit}
-            units={category.units}
-            onChange={onToUnitChange}
+            category={category}
+            onChange={(categoryId, unitId) =>
+              selectUnit("to", categoryId, unitId)
+            }
             t={t}
-            className="w-[96px]"
           />
         </div>
       </div>
 
-      {error ? <p className="text-xs text-red-600">{error}</p> : null}
+      {error ? <p className="px-1 text-xs text-red-600">{error}</p> : null}
+
+      <ConversionKeypad
+        theme={theme}
+        onDigit={onDigit}
+        onOperator={onOperator}
+        onEquals={onEquals}
+        onClear={onClear}
+        onBackspace={onBackspace}
+        onDecimal={onDecimal}
+        onNegate={onNegate}
+        onPercent={onPercent}
+      />
     </div>
   );
 }

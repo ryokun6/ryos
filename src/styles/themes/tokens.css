@@ -127,6 +127,15 @@
   --os-window-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 0.5);
 }
 
+/* Geneva is System 7's antialiased content font; Chicago chrome stays pixel-sharp. */
+:root[data-os-theme="system7"]
+  :where(.font-geneva-12, [data-os-font="geneva"]) {
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+  font-smooth: always !important;
+  text-rendering: auto;
+}
+
 /* Inactive selection palette for background windows (System 7) */
 :root[data-os-theme="system7"] .window:not(.is-foreground) {
   --os-color-selection-bg: #cfcfcf; /* neutral gray */

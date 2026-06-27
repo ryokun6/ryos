@@ -30,7 +30,6 @@ import sharp from "sharp";
 const WALLPAPERS_ROOT = "public/wallpapers";
 const MANIFEST_PATH = join(WALLPAPERS_ROOT, "manifest.json");
 const OUT_PATH = join(WALLPAPERS_ROOT, "placeholders.json");
-const THUMBS_DIR = join(WALLPAPERS_ROOT, "thumbs");
 
 /** Low-quality image placeholder tuning (small + blurry = tiny payload). */
 const LQIP_WIDTH = 24;

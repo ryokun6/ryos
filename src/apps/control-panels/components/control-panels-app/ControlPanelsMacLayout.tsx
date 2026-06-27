@@ -34,6 +34,8 @@ export type ControlPanelsMacLayoutProps = {
   isWin98: boolean;
   /** Title-bar height for the active theme (drives auto-resize math). */
   titlebarHeight: number;
+  /** In-window menu-bar height for Windows themes. */
+  menubarHeight: number;
   renderPane: (
     paneId: ControlPanelPaneId,
     onNavigateToPane: (paneId: ControlPanelPaneId) => void
@@ -106,6 +108,7 @@ export function ControlPanelsMacLayout({
   isWindowsTheme,
   isWin98,
   titlebarHeight,
+  menubarHeight,
   renderPane,
 }: ControlPanelsMacLayoutProps) {
   const toolbarRef = useRef<HTMLDivElement>(null);
@@ -213,6 +216,7 @@ export function ControlPanelsMacLayout({
         instanceId={instanceId}
         toolbarHeight={toolbarHeight}
         titlebarHeight={titlebarHeight}
+        menubarHeight={menubarHeight}
         navKey={currentEntry}
       >
         {showHome ? (

@@ -9,7 +9,10 @@ import { useRealtimeConnectionStatus } from "@/hooks/useRealtimeConnectionStatus
 import { ControlPanelsDialogs } from "./ControlPanelsDialogs";
 import { ControlPanelsMacLayout } from "./ControlPanelsMacLayout";
 import { ControlPanelsMacPaneRenderer } from "./ControlPanelsMacPaneRenderer";
-import { getControlPanelsTitlebarHeight } from "./controlPanelsMacMotion";
+import {
+  CONTROL_PANELS_WINDOWS_MENUBAR_HEIGHT,
+  getControlPanelsTitlebarHeight,
+} from "./controlPanelsMacMotion";
 import {
   getControlPanelsMacWindowTitle,
   normalizeControlPanelPaneId,
@@ -217,6 +220,9 @@ export function ControlPanelsAppComponent({
   const isSystem7Theme = currentTheme === "system7";
   const isWin98 = currentTheme === "win98";
   const titlebarHeight = getControlPanelsTitlebarHeight(currentTheme);
+  const menubarHeight = isWindowsTheme
+    ? CONTROL_PANELS_WINDOWS_MENUBAR_HEIGHT
+    : 0;
   const [currentEntry, setCurrentEntry] =
     React.useState<ControlPanelMacNavigationEntry>(() =>
       normalizeControlPanelPaneId(initialData?.defaultTab) ?? "home"
@@ -505,6 +511,7 @@ export function ControlPanelsAppComponent({
             isWindowsTheme={isWindowsTheme}
             isWin98={isWin98}
             titlebarHeight={titlebarHeight}
+            menubarHeight={menubarHeight}
             renderPane={renderMacPane}
           />
         </div>

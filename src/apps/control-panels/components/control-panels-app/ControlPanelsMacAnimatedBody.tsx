@@ -26,6 +26,8 @@ export type ControlPanelsMacAnimatedBodyProps = {
    * height when auto-resizing.
    */
   titlebarHeight?: number;
+  /** In-window menu-bar height, present on Windows themes. */
+  menubarHeight?: number;
   /** Changes when Show All ↔ pane navigation occurs (drives re-measure). */
   navKey: string;
   children: ReactNode;
@@ -36,6 +38,7 @@ export function ControlPanelsMacAnimatedBody({
   instanceId,
   toolbarHeight,
   titlebarHeight = CONTROL_PANELS_MACOSX_TITLEBAR_HEIGHT,
+  menubarHeight = 0,
   navKey,
   children,
   className,
@@ -45,10 +48,11 @@ export function ControlPanelsMacAnimatedBody({
   const [naturalHeight, setNaturalHeight] = useState<number | null>(null);
   const [isMeasuring, setIsMeasuring] = useState(true);
   const lastWindowHeightRef = useRef<number | null>(null);
+  const fixedChromeHeight = titlebarHeight + menubarHeight + toolbarHeight;
 
   const maxBodyHeight = Math.max(
     0,
-    CONTROL_PANELS_MAC_MAX_WINDOW_HEIGHT - titlebarHeight - toolbarHeight
+    CONTROL_PANELS_MAC_MAX_WINDOW_HEIGHT - fixedChromeHeight
   );
 
   const readNaturalHeight = useCallback(() => {
@@ -129,7 +133,7 @@ export function ControlPanelsMacAnimatedBody({
   // measure loop — the floor lives on the body, the parent of the measured node.
   const bodyFillMinHeight = Math.max(
     0,
-    CONTROL_PANELS_MAC_MIN_WINDOW_HEIGHT - titlebarHeight - toolbarHeight
+    CONTROL_PANELS_MAC_MIN_WINDOW_HEIGHT - fixedChromeHeight
   );
 
   useLayoutEffect(() => {
@@ -141,7 +145,7 @@ export function ControlPanelsMacAnimatedBody({
       CONTROL_PANELS_MAC_MIN_WINDOW_HEIGHT,
       Math.min(
         CONTROL_PANELS_MAC_MAX_WINDOW_HEIGHT,
-        titlebarHeight + toolbarHeight + animatedHeight
+        fixedChromeHeight + animatedHeight
       )
     );
 
@@ -160,7 +164,7 @@ export function ControlPanelsMacAnimatedBody({
         height: totalWindowHeight,
       }
     );
-  }, [instanceId, animatedHeight, toolbarHeight]);
+  }, [instanceId, animatedHeight, fixedChromeHeight]);
 
   return (
     <motion.div

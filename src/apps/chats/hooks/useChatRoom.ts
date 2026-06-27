@@ -710,8 +710,8 @@ export function useChatRoom(
       const idleId = window.requestIdleCallback(runInit, { timeout: 2000 });
       return () => window.cancelIdleCallback(idleId);
     }
-    const timeoutId = window.setTimeout(runInit, 0);
-    return () => window.clearTimeout(timeoutId);
+    const timeoutId = globalThis.setTimeout(runInit, 0);
+    return () => globalThis.clearTimeout(timeoutId);
   }, [isWindowOpen, initializePusher, fetchRooms, fetchBulkMessages]);
 
   // Handle username changes

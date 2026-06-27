@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { createJSONStorage, persist } from "zustand/middleware";
+import { persist } from "zustand/middleware";
 import {
   SYNC_CATEGORIES,
   type SyncCategory,
@@ -9,6 +9,7 @@ import {
   type DeletionMarkerMap,
 } from "@/utils/cloudSyncDeletionMarkers";
 import { persistAutoSyncPreferenceToServer } from "@/utils/autoSyncPreference";
+import { createDebouncedPersistStorage } from "@/utils/debouncedPersistStorage";
 
 export interface CloudSyncCategoryStatus {
   lastUploadedAt: string | null;
@@ -252,8 +253,11 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
         set((state) => {
           const normalized =
             typeof progress === "number" && Number.isFinite(progress)
-              ? Math.max(0, Math.min(100, progress))
+              ? Math.round(Math.max(0, Math.min(100, progress)))
               : null;
+          if (state.categoryStatus[category].uploadProgress === normalized) {
+            return state;
+          }
           return {
             categoryStatus: {
               ...state.categoryStatus,
@@ -269,8 +273,11 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
         set((state) => {
           const normalized =
             typeof progress === "number" && Number.isFinite(progress)
-              ? Math.max(0, Math.min(100, progress))
+              ? Math.round(Math.max(0, Math.min(100, progress)))
               : null;
+          if (state.categoryStatus[category].downloadProgress === normalized) {
+            return state;
+          }
           return {
             categoryStatus: {
               ...state.categoryStatus,
@@ -372,7 +379,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
     {
       name: STORE_NAME,
       version: STORE_VERSION,
-      storage: createJSONStorage(() => localStorage),
+      storage: createDebouncedPersistStorage(),
       merge: (persistedState, currentState) => {
         if (!persistedState || typeof persistedState !== "object") {
           return currentState;

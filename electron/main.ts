@@ -14,6 +14,7 @@ import path from "node:path";
 import { setupAutoUpdater } from "./updater";
 import { buildApplicationMenu } from "./menu";
 import { registerChatNotificationIpcHandlers } from "./chat-notifications";
+import { replaceControlCharacters } from "../src/shared/sanitizeControlCharacters";
 
 const DEFAULT_APP_URL = "https://os.ryo.lu";
 const APP_URL = process.env.RYOS_ELECTRON_URL?.trim() || DEFAULT_APP_URL;
@@ -105,8 +106,7 @@ function sanitizeNotificationText(
     return undefined;
   }
 
-  const normalized = value
-    .replace(/[\u0000-\u001f\u007f]/g, " ")
+  const normalized = replaceControlCharacters(value)
     .replace(/\s+/g, " ")
     .trim();
 
