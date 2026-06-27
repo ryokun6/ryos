@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { JSONContent } from "@tiptap/core";
 import { AppProps } from "@/apps/base/types";
 import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { TextEditMenuBar } from "./TextEditMenuBar";
@@ -35,6 +36,12 @@ import { useMenuShortcuts } from "@/hooks/useMenuShortcuts";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { getTextAnalytics, TEXTEDIT_ANALYTICS, track } from "@/utils/analytics";
 import { openNativeFile } from "@/utils/nativeFileDialogs";
+
+// Debounce window for mirroring the editor content into the persisted store on
+// each keystroke, plus a max wait so continuous typing still snapshots for
+// crash recovery.
+const CONTENT_PERSIST_DEBOUNCE_MS = 500;
+const CONTENT_PERSIST_MAX_WAIT_MS = 2000;
 
 // Inner component that has access to editor context
 function TextEditContent({
@@ -83,6 +90,57 @@ function TextEditContent({
     setContentJson,
     setHasUnsavedChanges,
   } = useTextEditState({ instanceId: instanceId! });
+
+  // The TextEdit store is `persist`-backed, so every `setContentJson` writes all
+  // open documents to localStorage synchronously. Writing on every keystroke
+  // caused typing jank, so the per-keystroke mirror is debounced (with a max
+  // wait so a long uninterrupted typing burst still snapshots periodically for
+  // crash recovery). `lastWrittenJsonRef` records the exact object we persist so
+  // the external-merge effect can tell our own writes apart from genuinely
+  // external updates (AI edits, cloud/file sync) and not fight the user's edits.
+  const lastWrittenJsonRef = useRef<JSONContent | null>(null);
+  const persistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastPersistAtRef = useRef(0);
+
+  const flushContentJson = useCallback(() => {
+    if (persistTimerRef.current !== null) {
+      clearTimeout(persistTimerRef.current);
+      persistTimerRef.current = null;
+    }
+    if (!editor) return;
+    const json = editor.getJSON();
+    lastWrittenJsonRef.current = json;
+    lastPersistAtRef.current = Date.now();
+    setContentJson(json);
+  }, [editor, setContentJson]);
+
+  const scheduleContentJsonPersist = useCallback(() => {
+    // Snapshot immediately if it has been a while (bounds recovery staleness
+    // during continuous typing); otherwise debounce the trailing write.
+    if (Date.now() - lastPersistAtRef.current >= CONTENT_PERSIST_MAX_WAIT_MS) {
+      flushContentJson();
+      return;
+    }
+    if (persistTimerRef.current !== null) {
+      clearTimeout(persistTimerRef.current);
+    }
+    persistTimerRef.current = setTimeout(
+      flushContentJson,
+      CONTENT_PERSIST_DEBOUNCE_MS
+    );
+  }, [flushContentJson]);
+
+  // Flush any pending content snapshot when the editor goes away / unmounts, or
+  // when the page is being hidden/unloaded (reload, tab close, navigation) so a
+  // debounced edit can't be lost from crash-recovery on a fast reload.
+  useEffect(() => {
+    const handlePageHide = () => flushContentJson();
+    window.addEventListener("pagehide", handlePageHide);
+    return () => {
+      window.removeEventListener("pagehide", handlePageHide);
+      flushContentJson();
+    };
+  }, [flushContentJson]);
 
   const {
     handleSave,
@@ -140,9 +198,11 @@ function TextEditContent({
       // "external" meta. Ignore them here so merging cloud/sync/AI updates does
       // not mark the document dirty or fight the user's edits.
       if (transaction?.getMeta("external")) return;
-      // Only mark changes and store latest content/JSON in onUpdate
-      const currentJson = editor.getJSON();
-      setContentJson(currentJson); // Update store JSON for recovery
+      // Mirror the latest content into the (persisted) store for recovery, but
+      // debounced so we don't serialize every open document to localStorage on
+      // every keystroke. The unsaved flag is still flipped immediately so the
+      // title indicator and close confirmation react without delay.
+      scheduleContentJsonPersist();
       if (!hasUnsavedChanges) {
         setHasUnsavedChanges(true);
         console.log(
@@ -162,7 +222,7 @@ function TextEditContent({
   }, [
     editor,
     hasUnsavedChanges,
-    setContentJson,
+    scheduleContentJsonPersist,
     setHasUnsavedChanges,
     instanceId,
     currentFilePath,
@@ -329,6 +389,10 @@ function TextEditContent({
   // Sync editor when contentJson is externally updated (e.g. AI edit tool)
   useEffect(() => {
     if (!editor || !contentJson) return;
+    // Skip our own debounced user-originated writes (matched by reference) so a
+    // slightly-stale persisted snapshot can never be merged back over newer
+    // keystrokes. Genuinely external updates arrive as different objects.
+    if (contentJson === lastWrittenJsonRef.current) return;
 
     const currentJson = editor.getJSON();
     if (JSON.stringify(currentJson) === JSON.stringify(contentJson)) return;

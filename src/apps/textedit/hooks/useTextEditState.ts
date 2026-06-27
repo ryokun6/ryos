@@ -17,7 +17,12 @@ export function useTextEditState({ instanceId }: UseTextEditStateProps) {
   const updateTextEditInstance = useTextEditStore(
     (state) => state.updateInstance
   );
-  const textEditInstances = useTextEditStore((state) => state.instances);
+  // Subscribe only to THIS instance, not the whole instances map. Subscribing to
+  // the entire map re-rendered every open TextEdit window whenever any instance
+  // changed (e.g. another window's per-keystroke content write).
+  const currentInstance = useTextEditStore(
+    (state) => state.instances[instanceId] || null
+  );
 
   // Create instance when component mounts
   useEffect(() => {
@@ -30,9 +35,6 @@ export function useTextEditState({ instanceId }: UseTextEditStateProps) {
       removeTextEditInstance(instanceId);
     };
   }, [instanceId, removeTextEditInstance]);
-
-  // Get current instance data
-  const currentInstance = textEditInstances[instanceId] || null;
 
   // Instance state
   const currentFilePath = currentInstance?.filePath || null;
