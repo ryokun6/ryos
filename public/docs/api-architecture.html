@@ -371,6 +371,7 @@
     <a href="/docs/calendar" class="nav-child ">2.21 Calendar</a>
     <a href="/docs/dashboard" class="nav-child ">2.22 Dashboard</a>
     <a href="/docs/contacts" class="nav-child ">2.23 Contacts</a>
+    <a href="/docs/books" class="nav-child ">2.24 Books</a>
     <a href="/docs/tv" class="nav-child ">2.25 TV</a>
     <a href="/docs/maps" class="nav-child ">2.26 Maps</a>
   </div>
@@ -570,16 +571,16 @@ import { extractAuth, extractAuthNormalized } from "../_utils/auth/index.js";</c
   {
     methods: ["POST"],
     auth: "required",
-    parseJsonBody: true,
+    bodySchema: RequestBodySchema, // Zod schema (implies parseJsonBody)
   },
-  async ({ res, user, logger, startTime }) =&gt; {
+  async ({ res, user, body, logger, startTime }) =&gt; {
     logger.info("Request accepted", { username: user?.username });
     logger.response(200, Date.now() - startTime);
     res.status(200).json({ success: true });
   }
 );</code></pre>
 <code>apiHandler</code> provides:
-<ul><li>Shared CORS + origin checks</li></ul><ul><li>Method allow-list enforcement (<code>405</code> on unsupported methods)</li><li>Optional/required auth resolution via <code>request-auth.ts</code></li><li>Shared Redis/logger/request context for handlers</li><li>Consistent <code>500</code> handling for uncaught exceptions</li></ul>
+<ul><li>Shared CORS + origin checks</li></ul><ul><li>Method allow-list enforcement (<code>405</code> on unsupported methods)</li><li>Optional/required auth resolution via <code>request-auth.ts</code></li><li>Optional <code>bodySchema</code> request-body validation: any object with a <code>safeParse(data)</code> method works, and a Zod schema (<code>z.object(...)</code>) satisfies it directly. The parsed/typed body is exposed as <code>body</code>; invalid bodies short-circuit with <code>400 { error: "validation_error", issues }</code>. Setting <code>bodySchema</code> implies <code>parseJsonBody</code>.</li><li>Shared Redis/logger/request context for handlers</li><li>Consistent <code>500</code> handling for uncaught exceptions</li></ul>
 <h3>Specialized route wrappers</h3>
 <p>Routes should default to <code>apiHandler()</code>. If an endpoint needs multipart upload, webhook verification, or cron-only auth behavior, it should use a specialized wrapper that keeps the same shared entry flow instead of introducing a separate request-context pattern.</p>
 <h3>Auth Utilities</h3>

@@ -371,6 +371,7 @@
     <a href="/docs/calendar" class="nav-child ">2.21 Calendar</a>
     <a href="/docs/dashboard" class="nav-child ">2.22 Dashboard</a>
     <a href="/docs/contacts" class="nav-child ">2.23 Contacts</a>
+    <a href="/docs/books" class="nav-child ">2.24 Books</a>
     <a href="/docs/tv" class="nav-child ">2.25 TV</a>
     <a href="/docs/maps" class="nav-child ">2.26 Maps</a>
   </div>
@@ -687,6 +688,40 @@
   "dates": ["2026-02-26", "2026-02-27", "2026-02-28"],
   "skippedDates": [],
   "message": "Processed 3 daily notes → 1 new memories, 1 updated"
+}</code></pre>
+<hr>
+<h2>Cursor Cloud Agent Endpoints</h2>
+<p>These endpoints back the chat's Cursor Cloud "repo agent" tool, which runs coding agents asynchronously and streams their events. Both require authentication and are restricted to the admin account (<code>ryo</code>); others receive <code>403</code>.</p>
+<h3>Endpoint Summary</h3>
+<table><thead><tr><th>Method</th><th>Path</th><th>Description</th><th>Auth</th></tr></thead><tbody><tr><td>GET</td><td><code>/api/ai/cursor-run-status</code></td><td>Poll stored events for an async agent run</td><td>Admin (<code>ryo</code>)</td></tr><tr><td>POST</td><td><code>/api/ai/cursor-run-followup</code></td><td>Send a follow-up prompt to an existing run</td><td>Admin (<code>ryo</code>)</td></tr></tbody></table>
+<h3>GET /api/ai/cursor-run-status</h3>
+<p>Polls the Redis-buffered event stream for a Cursor SDK run.</p>
+<strong>Query Parameters:</strong>
+<table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>runId</code></td><td>string</td><td>Yes</td><td>The run to poll</td></tr></tbody></table>
+<p>Returns <code>404</code> when the run is unknown and <code>403</code> when the run is owned by a different user.</p>
+<strong>Response (200):</strong>
+<pre><code>{
+  "runId": "run_abc",
+  "meta": { "username": "ryo" },
+  "events": [ { "type": "..." } ],
+  "done": true,
+  "terminal": { "type": "terminal" }
+}</code></pre>
+<code>events</code> are returned in chronological order; <code>done</code> is <code>true</code> once a <code>terminal</code> event is present.
+<h3>POST /api/ai/cursor-run-followup</h3>
+<p>Resumes the Cursor Cloud agent that owns an existing run, sends a new prompt, and starts a fresh background streaming consumer. The new <code>runId</code> is returned so the UI can switch its poll target.</p>
+<strong>Request Body:</strong>
+<pre><code>{
+  "runId": "run_abc",
+  "prompt": "Also add tests"
+}</code></pre>
+<p>Both <code>runId</code> and <code>prompt</code> are required. Returns <code>503</code> when <code>CURSOR_API_KEY</code> is not configured.</p>
+<strong>Response (200):</strong>
+<pre><code>{
+  "runId": "run_def",
+  "agentId": "agent_123",
+  "previousRunId": "run_abc",
+  "message": "..."
 }</code></pre>
 <hr>
 <h2>Related</h2>

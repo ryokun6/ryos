@@ -371,6 +371,7 @@
     <a href="/docs/calendar" class="nav-child ">2.21 Calendar</a>
     <a href="/docs/dashboard" class="nav-child ">2.22 Dashboard</a>
     <a href="/docs/contacts" class="nav-child ">2.23 Contacts</a>
+    <a href="/docs/books" class="nav-child ">2.24 Books</a>
     <a href="/docs/tv" class="nav-child ">2.25 TV</a>
     <a href="/docs/maps" class="nav-child ">2.26 Maps</a>
   </div>
@@ -712,6 +713,78 @@ const { applets } = await fetch('/api/share-applet?list=true').then(r =&gt; r.js
 <pre><code>const response = await fetch('/api/stocks?symbols=AAPL,GOOGL,MSFT&amp;chart=AAPL&amp;range=1mo');
 const { quotes, chart } = await response.json();</code></pre>
 <hr>
+<h2>Currency Rate</h2>
+<p>Proxies foreign-exchange rates for currency conversion features. Uses Frankfurter as the primary source and <code>open.er-api.com</code> as a fallback.</p>
+<h3>Endpoint</h3>
+<table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td>GET</td><td><code>/api/currency-rate</code></td><td>Fetch the exchange rate for a currency pair</td></tr></tbody></table>
+<h3>Request</h3>
+<strong>Query Parameters:</strong>
+<table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>from</code></td><td>string</td><td>Yes</td><td>3-letter base currency code (e.g. <code>USD</code>)</td></tr><tr><td><code>to</code></td><td>string</td><td>Yes</td><td>3-letter quote currency code (e.g. <code>EUR</code>)</td></tr></tbody></table>
+<h3>Response</h3>
+<strong>Success (200):</strong>
+<pre><code>{
+  "rate": 0.92,
+  "rateDate": "2026-02-29",
+  "source": "frankfurter"
+}</code></pre>
+<table><thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>rate</code></td><td>number</td><td>Units of <code>to</code> per 1 unit of <code>from</code></td></tr><tr><td><code>rateDate</code></td><td>string</td><td>Date the rate is valid for (<code>YYYY-MM-DD</code>)</td></tr><tr><td><code>source</code></td><td>string</td><td><code>frankfurter</code>, <code>open.er-api</code>, or <code>identity</code> (when <code>from === to</code>)</td></tr></tbody></table>
+<strong>Error Responses:</strong>
+<table><thead><tr><th>Status</th><th>Description</th></tr></thead><tbody><tr><td>400</td><td><code>from</code>/<code>to</code> are not valid 3-letter currency codes</td></tr><tr><td>429</td><td>Rate limit exceeded</td></tr><tr><td>502</td><td>Could not load exchange rate from either source</td></tr></tbody></table>
+<h3>Rate Limits</h3>
+<table><thead><tr><th>Scope</th><th>Limit</th><th>Window</th></tr></thead><tbody><tr><td>Burst</td><td>30 requests</td><td>1 minute</td></tr><tr><td>Daily</td><td>2000 requests</td><td>24 hours</td></tr></tbody></table>
+<hr>
+<h2>Apple Token APIs</h2>
+<p>Mint short-lived Apple-issued ES256 JWTs for client-side Apple SDKs. Both endpoints sign and cache a token in memory, returning the same <code>{ token, expiresAt }</code> shape and a <code>Cache-Control: private</code> header. They return <code>500</code> (with the missing env vars) when not configured.</p>
+<h3>Endpoints</h3>
+<table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td>GET</td><td><code>/api/mapkit-token</code></td><td>MapKit JS developer token (Maps app + AI maps tools)</td></tr><tr><td>GET</td><td><code>/api/musickit-token</code></td><td>MusicKit JS developer token (iPod "Apple Music" mode)</td></tr></tbody></table>
+<h3>Response</h3>
+<strong>Success (200):</strong>
+<pre><code>{
+  "token": "eyJ...",
+  "expiresAt": 1704067200000
+}</code></pre>
+<table><thead><tr><th>Endpoint</th><th>Token TTL</th><th>Response cache</th></tr></thead><tbody><tr><td><code>/api/mapkit-token</code></td><td>30 minutes</td><td>5 minutes</td></tr><tr><td><code>/api/musickit-token</code></td><td>7 days</td><td>30 minutes</td></tr></tbody></table>
+<code>musickit-token</code> falls back to the <code>MAPKIT_*</code> key material when the <code>MUSICKIT_*</code> variants are unset (see <a href="/docs/api-reference">Environment Variables</a>).
+<hr>
+<h2>TV Create Channel</h2>
+<p>AI-assisted creation of a themed YouTube "TV channel" for the TV app. Given a short description, an AI planner produces a channel name, tagline, and 2–4 diverse YouTube search queries, then fans those out against the YouTube Data API and returns a de-duplicated video lineup. Requires authentication.</p>
+<h3>Endpoint</h3>
+<table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/tv/create-channel</code></td><td>Generate a themed channel + video lineup</td></tr></tbody></table>
+<h3>Request</h3>
+<pre><code>{
+  "description": "lofi study beats"
+}</code></pre>
+<table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>description</code></td><td>string</td><td>Yes</td><td>Channel idea (2–280 characters)</td></tr></tbody></table>
+<h3>Response</h3>
+<strong>Success (200):</strong>
+<pre><code>{
+  "name": "Lofi Desk",
+  "description": "mellow beats to study to",
+  "queries": ["lofi hip hop study", "chillhop instrumental", "jazzy lofi mix"],
+  "videos": [
+    { "id": "abc123", "url": "https://youtu.be/abc123", "title": "Lofi Mix", "artist": "Channel Name" }
+  ]
+}</code></pre>
+<strong>Error Responses:</strong>
+<table><thead><tr><th>Status</th><th>Description</th></tr></thead><tbody><tr><td>404</td><td>No videos found for the channel idea</td></tr><tr><td>429</td><td>Rate limit exceeded (burst or daily)</td></tr><tr><td>500</td><td>YouTube API not configured</td></tr><tr><td>502</td><td>AI failed to plan the channel</td></tr></tbody></table>
+<h3>Rate Limits</h3>
+<p>Limited per username (and per IP as a backstop):</p>
+<table><thead><tr><th>Scope</th><th>Limit</th><th>Window</th></tr></thead><tbody><tr><td>Burst</td><td>5 requests</td><td>1 minute</td></tr><tr><td>Daily</td><td>30 requests</td><td>24 hours</td></tr></tbody></table>
+<hr>
+<h2>Analytics Events</h2>
+<p>First-party product-analytics ingestion. Accepts a batch of client events; malformed events are dropped per-event and the batch is capped server-side. Auth is optional (a username is recorded when present). The endpoint resolves a coarse country bucket from the request but never persists the raw IP.</p>
+<h3>Endpoint</h3>
+<table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/analytics/events</code></td><td>Record a batch of analytics events</td></tr></tbody></table>
+<h3>Request</h3>
+<pre><code>{
+  "events": [
+    { "name": "app_open", "ts": 1704067200000, "props": { "app": "finder" } }
+  ]
+}</code></pre>
+<p>Only <code>events</code> (an array) is required; individual event shapes are validated/sanitized downstream.</p>
+<h3>Response</h3>
+<strong>Success:</strong> <code>204 No Content</code> (empty body).
+<hr>
 <h2>Sync APIs</h2>
 <p>Cloud sync uses a journal-based delta protocol (v2): all synced state is a per-user map of <code>key → document</code>, changes travel as ops with hybrid-logical- clock timestamps, and a single integer cursor (<code>seq</code>) answers "am I up to date?". Conflicts resolve per key via last-writer-wins; losing writes receive the winning entry inline (no 409s, no retry loops). See <code><a href="https://github.com/ryokun6/ryos/blob/main/docs/proposals/cloud-sync-v2.md" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">docs/proposals/cloud-sync-v2.md</a></code> for the full design.</p>
 <h3>Endpoint Summary</h3>
@@ -1031,12 +1104,18 @@ await fetch('/api/admin', {
   "deepLink": "https://t.me/ryos_bot?start=link_abc123",
   "linkedAccount": null
 }</code></pre>
-<p>If already linked:</p>
+<p>If already linked, <code>linkedAccount</code> is populated:</p>
 <pre><code>{
-  "code": null,
+  "code": "abc123",
+  "expiresIn": 300,
+  "botUsername": "ryos_bot",
+  "deepLink": "https://t.me/ryos_bot?start=link_abc123",
   "linkedAccount": {
-    "telegramId": 123456789,
-    "firstName": "Alice"
+    "telegramUserId": 123456789,
+    "telegramUsername": "alice_tg",
+    "firstName": "Alice",
+    "lastName": "Smith",
+    "linkedAt": 1704067200000
   }
 }</code></pre>
 <h3>GET /api/telegram/link/status</h3>
@@ -1045,17 +1124,67 @@ await fetch('/api/admin', {
 <pre><code>{
   "linked": true,
   "account": {
-    "telegramId": 123456789,
-    "firstName": "Alice"
+    "telegramUserId": 123456789,
+    "telegramUsername": "alice_tg",
+    "firstName": "Alice",
+    "lastName": "Smith",
+    "linkedAt": 1704067200000
   },
-  "pending": null
+  "pendingLink": null
 }</code></pre>
+<p>When not linked but a link is pending, <code>account</code> is <code>null</code> and <code>pendingLink</code> contains <code>{ code, expiresIn, botUsername, deepLink }</code>.</p>
 <h3>POST /api/telegram/link/disconnect</h3>
 <p>Disconnect a linked Telegram account.</p>
 <strong>Response (200):</strong>
 <pre><code>{
   "success": true
 }</code></pre>
+<hr>
+<h2>AirDrop API</h2>
+<p>Peer-to-peer file sharing between online ryOS users, modeled on AirDrop. Presence is tracked in a shared lobby (60-second TTL) and transfers are relayed through Redis with realtime notifications. All endpoints require authentication.</p>
+<h3>Endpoint Summary</h3>
+<table><thead><tr><th>Method</th><th>Path</th><th>Description</th><th>Auth</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/airdrop/heartbeat</code></td><td>Announce presence in the AirDrop lobby</td><td>Required</td></tr><tr><td>GET</td><td><code>/api/airdrop/discover</code></td><td>List other nearby (online) users</td><td>Required</td></tr><tr><td>POST</td><td><code>/api/airdrop/send</code></td><td>Offer a file to a recipient</td><td>Required</td></tr><tr><td>POST</td><td><code>/api/airdrop/respond</code></td><td>Accept or decline a transfer</td><td>Required</td></tr></tbody></table>
+<h3>POST /api/airdrop/heartbeat</h3>
+<p>Adds the authenticated user to the lobby and broadcasts <code>airdrop-presence</code>. <strong>Response (200):</strong> <code>{ "success": true }</code>.</p>
+<h3>GET /api/airdrop/discover</h3>
+<p>Prunes stale entries and returns online usernames other than the caller.</p>
+<pre><code>{
+  "users": ["bob", "carol"]
+}</code></pre>
+<h3>POST /api/airdrop/send</h3>
+<p>Offers a file to an online recipient. The transfer is stored for 5 minutes and an <code>airdrop-request</code> event is delivered to the recipient.</p>
+<pre><code>{
+  "recipient": "bob",
+  "fileName": "notes.md",
+  "fileType": "text",
+  "content": "..."
+}</code></pre>
+<code>recipient</code>, <code>fileName</code>, and <code>content</code> are required. <code>content</code> is capped at 2 MB (<code>413</code> if exceeded). Returns <code>404</code> if the recipient is not currently available.
+<strong>Response (200):</strong>
+<pre><code>{
+  "success": true,
+  "transferId": "uuid"
+}</code></pre>
+<h3>POST /api/airdrop/respond</h3>
+<p>The recipient accepts or declines a pending transfer.</p>
+<pre><code>{
+  "transferId": "uuid",
+  "accept": true
+}</code></pre>
+<p>On accept, the file payload is returned and the sender is notified (<code>airdrop-accepted</code>):</p>
+<pre><code>{
+  "success": true,
+  "fileName": "notes.md",
+  "fileType": "text",
+  "content": "...",
+  "sender": "alice"
+}</code></pre>
+<p>On decline, the sender is notified (<code>airdrop-declined</code>):</p>
+<pre><code>{
+  "success": true,
+  "declined": true
+}</code></pre>
+<p>Returns <code>404</code> if the transfer expired/not found, and <code>403</code> if the transfer is not addressed to the caller.</p>
 <hr>
 <h2>Error Handling</h2>
 <p>All utility APIs return consistent error responses:</p>

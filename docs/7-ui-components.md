@@ -6,7 +6,7 @@ Overview of shared UI components and system-wide utilities that power the ryOS d
 
 The ryOS component architecture is organized into distinct categories, each serving specific purposes across the desktop environment. Components are built with React and TypeScript, leveraging Tailwind CSS for styling and shadcn/ui as the foundation for consistent, accessible UI elements. The system emphasizes reusability, theme-aware components, and cross-app compatibility.
 
-The component library is structured hierarchically: base UI components provide fundamental building blocks, layout components handle window management and desktop structure, dialog components manage modal interactions, shared components offer cross-application utilities, and error components provide crash recovery surfaces. This organization ensures consistent behavior and appearance across all 25 built-in applications while maintaining flexibility for app-specific customizations.
+The component library is structured hierarchically: base UI components provide fundamental building blocks, layout components handle window management and desktop structure, dialog components manage modal interactions, shared components offer cross-application utilities, and error components provide crash recovery surfaces. This organization ensures consistent behavior and appearance across all 26 built-in applications while maintaining flexibility for app-specific customizations.
 
 ## Component Categories
 
@@ -96,5 +96,5 @@ All components are theme-aware, automatically adapting to the active system them
 
 ## Subsections
 
-- [Component Library](/docs/component-library) - UI primitives in `src/components/ui/` (~32 files) plus ~90+ shared components under `src/components/shared/`, and crash boundary components
+- [Component Library](/docs/component-library) - UI primitives in `src/components/ui/` (~33 files) plus ~30 top-level shared components (≈65 files including nested subfolders) under `src/components/shared/`, and crash boundary components
 - [Internationalization](/docs/i18n) - i18n hooks and translation system supporting 10 languages
