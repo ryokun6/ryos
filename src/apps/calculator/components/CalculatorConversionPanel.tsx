@@ -38,7 +38,7 @@ interface CalculatorConversionPanelProps {
 
 function unitLabel(unit: ConversionUnit, t: TFunction): string {
   return unit.labelKey.startsWith("apps.")
-    ? t(unit.labelKey, unit.id)
+    ? t(unit.labelKey)
     : unit.labelKey;
 }
 
@@ -60,7 +60,7 @@ function UnitSelect({
   return (
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger className={cn("h-8 shrink-0 text-xs", className)}>
-        <SelectValue placeholder={t("apps.calculator.conversion.selectUnit", "Unit")}>
+        <SelectValue placeholder={t("apps.calculator.conversion.selectUnit")}>
           {selected ? unitLabel(selected, t) : value}
         </SelectValue>
       </SelectTrigger>
@@ -89,14 +89,14 @@ function CategorySelect({
   return (
     <Select value={categoryId} onValueChange={onCategoryChange}>
       <SelectTrigger className="h-8 w-full text-xs">
-        <SelectValue placeholder={t("apps.calculator.conversion.category", "Category")}>
-          {selected ? t(selected.labelKey, selected.id) : categoryId}
+        <SelectValue placeholder={t("apps.calculator.conversion.category")}>
+          {selected ? t(selected.labelKey) : categoryId}
         </SelectValue>
       </SelectTrigger>
       <SelectContent>
         {CONVERSION_CATEGORIES.map((cat) => (
           <SelectItem key={cat.id} value={cat.id}>
-            {t(cat.labelKey, cat.id)}
+            {t(cat.labelKey)}
           </SelectItem>
         ))}
       </SelectContent>
@@ -131,7 +131,7 @@ export function CalculatorConversionPanel({
     <div className="calc-conversion-panel flex flex-col gap-2 flex-1 min-h-0">
       <div className="flex flex-col gap-1">
         <span className={fieldLabelClass}>
-          {t("apps.calculator.conversion.category", "Category")}
+          {t("apps.calculator.conversion.category")}
         </span>
         <CategorySelect
           categoryId={category.id}
@@ -142,7 +142,7 @@ export function CalculatorConversionPanel({
 
       <div className="flex flex-col gap-1">
         <span className={fieldLabelClass}>
-          {t("apps.calculator.conversion.from", "From")}
+          {t("apps.calculator.conversion.from")}
         </span>
         <div className="flex gap-1 items-center">
           <Input
@@ -150,7 +150,7 @@ export function CalculatorConversionPanel({
             value={amount}
             onChange={(e) => onAmountChange(e.target.value)}
             inputMode="decimal"
-            aria-label={t("apps.calculator.conversion.amount", "Amount")}
+            aria-label={t("apps.calculator.conversion.amount")}
           />
           <UnitSelect
             value={fromUnit}
@@ -167,7 +167,7 @@ export function CalculatorConversionPanel({
           <ToolbarButtonGroup>
             <ToolbarButton className="calc-swap-btn gap-1 px-3" onClick={onSwap}>
               <ArrowsDownUp size={14} aria-hidden />
-              {t("apps.calculator.conversion.swap", "Swap")}
+              {t("apps.calculator.conversion.swap")}
             </ToolbarButton>
           </ToolbarButtonGroup>
         ) : (
@@ -181,14 +181,14 @@ export function CalculatorConversionPanel({
             onClick={onSwap}
           >
             <ArrowsDownUp size={14} aria-hidden />
-            {t("apps.calculator.conversion.swap", "Swap")}
+            {t("apps.calculator.conversion.swap")}
           </Button>
         )}
       </div>
 
       <div className="flex flex-col gap-1">
         <span className={fieldLabelClass}>
-          {t("apps.calculator.conversion.to", "To")}
+          {t("apps.calculator.conversion.to")}
         </span>
         <div className="flex gap-1 items-center">
           <Input
@@ -199,7 +199,7 @@ export function CalculatorConversionPanel({
               loading && "opacity-50"
             )}
             value={loading ? "…" : result}
-            aria-label={t("apps.calculator.conversion.result", "Result")}
+            aria-label={t("apps.calculator.conversion.result")}
           />
           <UnitSelect
             value={toUnit}

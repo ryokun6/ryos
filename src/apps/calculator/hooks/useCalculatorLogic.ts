@@ -184,7 +184,7 @@ export function useCalculatorLogic({
         if (err instanceof DOMException && err.name === "AbortError") return;
         if (!controller.signal.aborted) {
           setCurrencyError(
-            t("apps.calculator.conversion.currencyError", "Could not load exchange rate")
+            t("apps.calculator.conversion.currencyError")
           );
           setCurrencyLoading(false);
         }

@@ -649,6 +649,129 @@
         "invalidFileDesc": ".epub 도서만 가져올 수 있습니다."
       }
     },
+    "calculator": {
+      "name": "계산기",
+      "title": "계산기",
+      "description": "기본, 과학, 단위 변환 계산기",
+      "menu": {
+        "help": "계산기 도움말",
+        "about": "계산기 정보",
+        "clear": "지우기",
+        "basic": "기본",
+        "scientific": "과학",
+        "conversion": "변환"
+      },
+      "angle": {
+        "deg": "도",
+        "rad": "라디안",
+        "degShort": "도",
+        "radShort": "라"
+      },
+      "status": {
+        "memory": "M={{value}}"
+      },
+      "conversion": {
+        "title": "변환",
+        "category": "카테고리",
+        "from": "에서",
+        "to": "로",
+        "swap": "전환",
+        "selectUnit": "단위",
+        "amount": "수량",
+        "result": "결과",
+        "currencyError": "환율을 로드할 수 없습니다",
+        "categories": {
+          "length": "길이",
+          "area": "면적",
+          "volume": "부피",
+          "mass": "무게 및 질량",
+          "temperature": "온도",
+          "speed": "속도",
+          "time": "시간",
+          "pressure": "압력",
+          "energy": "에너지",
+          "currency": "통화"
+        },
+        "units": {
+          "m": "미터",
+          "km": "킬로미터",
+          "cm": "센티미터",
+          "mm": "밀리미터",
+          "in": "인치",
+          "ft": "피트",
+          "yd": "야드",
+          "mi": "마일",
+          "sqm": "제곱미터",
+          "sqkm": "제곱킬로미터",
+          "sqft": "제곱피트",
+          "sqmi": "제곱마일",
+          "acre": "에이커",
+          "ha": "헥타르",
+          "l": "리터",
+          "ml": "밀리리터",
+          "gal": "갤런 (미국)",
+          "qt": "쿼트",
+          "pt": "파인트",
+          "floz": "액량 온스",
+          "cup": "컵",
+          "kg": "킬로그램",
+          "g": "그램",
+          "mg": "밀리그램",
+          "lb": "파운드",
+          "oz": "온스",
+          "t": "메트릭 톤",
+          "c": "섭씨",
+          "f": "화씨",
+          "k": "켈빈",
+          "mps": "미터/초",
+          "kph": "킬로미터/시",
+          "mph": "마일/시",
+          "knot": "노트",
+          "s": "초",
+          "min": "분",
+          "hr": "시간",
+          "day": "일",
+          "wk": "주",
+          "pa": "파스칼",
+          "kpa": "킬로파스칼",
+          "bar": "바",
+          "atm": "대기압",
+          "psi": "PSI",
+          "j": "줄",
+          "kj": "킬로줄",
+          "cal": "칼로리",
+          "kcal": "킬로칼로리",
+          "wh": "와트-시",
+          "kwh": "킬로와트-시"
+        }
+      },
+      "help": {
+        "basicMode": {
+          "title": "기본 모드",
+          "description": "메모리 키와 백분율로 덧셈, 뺄셈, 곱셈 및 나눗셈"
+        },
+        "scientificMode": {
+          "title": "과학 모드",
+          "description": "삼각 함수, 로그, 거듭제곱, 제곱근, 계승, π, e, 도/라디안 전환"
+        },
+        "conversionMode": {
+          "title": "변환 모드",
+          "description": "실시간 환율로 길이, 질량, 온도, 통화 등을 변환"
+        },
+        "themeDesigns": {
+          "title": "테마 디자인",
+          "description": "클래식 Mac, Aqua, Windows 98 및 Windows XP 계산기 크롬"
+        },
+        "keyboard": {
+          "title": "키보드",
+          "description": "키보드에서 숫자와 연산자를 입력; 메뉴 보기 전환 모드"
+        },
+        "liveCurrency": {
+          "title": "실시간 통화",
+          "description": "통화 변환은 ryOS API를 통해 환율을 가져옵니다"
+        }
+      }
+    },
     "calendar": {
       "description": "이벤트 캘린더",
       "event": {
@@ -1823,7 +1946,6 @@
       "timezoneAutomatic": "자동",
       "timezoneAutomaticCity": "자동({{city}})",
       "timezoneNoResults": "일치하는 시간대 없음",
-      "timezoneSearchPlaceholder": "시간대 검색…",
       "timezoneRegions": {
         "africa": "아프리카",
         "america": "아메리카",
@@ -1834,9 +1956,10 @@
         "australia": "오스트레일리아",
         "europe": "유럽",
         "indian": "인도양",
-        "pacific": "태평양",
-        "other": "기타"
+        "other": "기타",
+        "pacific": "태평양"
       },
+      "timezoneSearchPlaceholder": "시간대 검색…",
       "toolbar": {
         "back": "뒤로",
         "forward": "앞으로",

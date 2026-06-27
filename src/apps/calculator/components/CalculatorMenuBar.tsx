@@ -39,8 +39,8 @@ export function CalculatorMenuBar({
       appName={appName}
       isShareDialogOpen={isShareDialogOpen}
       setIsShareDialogOpen={setIsShareDialogOpen}
-      helpItemLabel={t("apps.calculator.menu.help", "Calculator Help")}
-      aboutItemLabel={t("apps.calculator.menu.about", "About Calculator")}
+      helpItemLabel={t("apps.calculator.menu.help")}
+      aboutItemLabel={t("apps.calculator.menu.about")}
       onShowHelp={onShowHelp}
       onShowAbout={onShowAbout}
     >
@@ -51,7 +51,7 @@ export function CalculatorMenuBar({
             items: [
               {
                 type: "action",
-                label: t("apps.calculator.menu.clear", "Clear"),
+                label: t("apps.calculator.menu.clear"),
                 onClick: onClear,
               },
               { type: "separator" },
@@ -72,15 +72,15 @@ export function CalculatorMenuBar({
                 onValueChange: (value) => onSetMode(value as CalculatorMode),
                 options: [
                   {
-                    label: t("apps.calculator.menu.basic", "Basic"),
+                    label: t("apps.calculator.menu.basic"),
                     value: "basic",
                   },
                   {
-                    label: t("apps.calculator.menu.scientific", "Scientific"),
+                    label: t("apps.calculator.menu.scientific"),
                     value: "scientific",
                   },
                   {
-                    label: t("apps.calculator.menu.conversion", "Conversion"),
+                    label: t("apps.calculator.menu.conversion"),
                     value: "conversion",
                   },
                 ],

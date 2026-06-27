@@ -4523,7 +4523,12 @@
       },
       "angle": {
         "deg": "Degrees",
-        "rad": "Radians"
+        "rad": "Radians",
+        "degShort": "Deg",
+        "radShort": "Rad"
+      },
+      "status": {
+        "memory": "M={{value}}"
       },
       "conversion": {
         "title": "Convert",
@@ -4531,6 +4536,9 @@
         "from": "From",
         "to": "To",
         "swap": "Swap",
+        "selectUnit": "Unit",
+        "amount": "Amount",
+        "result": "Result",
         "currencyError": "Could not load exchange rate",
         "categories": {
           "length": "Length",

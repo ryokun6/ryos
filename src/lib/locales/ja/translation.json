@@ -649,6 +649,129 @@
         "invalidFileDesc": ".epub形式の本のみインポートできます。"
       }
     },
+    "calculator": {
+      "name": "計算機",
+      "title": "計算機",
+      "description": "基本、科学、単位変換計算機",
+      "menu": {
+        "help": "計算機ヘルプ",
+        "about": "計算機について",
+        "clear": "クリア",
+        "basic": "基本",
+        "scientific": "科学",
+        "conversion": "変換"
+      },
+      "angle": {
+        "deg": "度",
+        "rad": "ラジアン",
+        "degShort": "度",
+        "radShort": "ラジ"
+      },
+      "status": {
+        "memory": "M={{value}}"
+      },
+      "conversion": {
+        "title": "変換",
+        "category": "カテゴリ",
+        "from": "から",
+        "to": "へ",
+        "swap": "入れ替え",
+        "selectUnit": "単位",
+        "amount": "量",
+        "result": "結果",
+        "currencyError": "為替レートを読み込めませんでした",
+        "categories": {
+          "length": "長さ",
+          "area": "面積",
+          "volume": "体積",
+          "mass": "重量と質量",
+          "temperature": "温度",
+          "speed": "速度",
+          "time": "時間",
+          "pressure": "圧力",
+          "energy": "エネルギー",
+          "currency": "通貨"
+        },
+        "units": {
+          "m": "メートル",
+          "km": "キロメートル",
+          "cm": "センチメートル",
+          "mm": "ミリメートル",
+          "in": "インチ",
+          "ft": "フィート",
+          "yd": "ヤード",
+          "mi": "マイル",
+          "sqm": "平方メートル",
+          "sqkm": "平方キロメートル",
+          "sqft": "平方フィート",
+          "sqmi": "平方マイル",
+          "acre": "エーカー",
+          "ha": "ヘクタール",
+          "l": "リットル",
+          "ml": "ミリリットル",
+          "gal": "ガロン（米国）",
+          "qt": "クォート",
+          "pt": "パイント",
+          "floz": "液体オンス",
+          "cup": "カップ",
+          "kg": "キログラム",
+          "g": "グラム",
+          "mg": "ミリグラム",
+          "lb": "ポンド",
+          "oz": "オンス",
+          "t": "メトリックトン",
+          "c": "セルシウス",
+          "f": "華氏",
+          "k": "ケルビン",
+          "mps": "メートル/秒",
+          "kph": "キロメートル/時",
+          "mph": "マイル/時",
+          "knot": "ノット",
+          "s": "秒",
+          "min": "分",
+          "hr": "時間",
+          "day": "日",
+          "wk": "週",
+          "pa": "パスカル",
+          "kpa": "キロパスカル",
+          "bar": "バール",
+          "atm": "大気圧",
+          "psi": "PSI",
+          "j": "ジュール",
+          "kj": "キロジュール",
+          "cal": "カロリー",
+          "kcal": "キロカロリー",
+          "wh": "ワット時",
+          "kwh": "キロワット時"
+        }
+      },
+      "help": {
+        "basicMode": {
+          "title": "基本モード",
+          "description": "メモリキーとパーセントを使用して、加算、減算、乗算、除算を行います"
+        },
+        "scientificMode": {
+          "title": "科学モード",
+          "description": "三角関数、対数、累乗、平方根、階乗、π、e、度/ラジアン切り替え"
+        },
+        "conversionMode": {
+          "title": "変換モード",
+          "description": "長さ、質量、温度、通貨などをライブレートで変換します"
+        },
+        "themeDesigns": {
+          "title": "テーマデザイン",
+          "description": "テーマごとのクラシックMac、Aqua、Windows 98、Windows XP計算機の外観"
+        },
+        "keyboard": {
+          "title": "キーボード",
+          "description": "キーボードから数字と演算子を入力; メニュー表示はモードを切り替えます"
+        },
+        "liveCurrency": {
+          "title": "ライブ通貨",
+          "description": "通貨変換はryOS APIを通じて為替レートを取得します"
+        }
+      }
+    },
     "calendar": {
       "description": "イベント付きカレンダー",
       "event": {
@@ -1823,7 +1946,6 @@
       "timezoneAutomatic": "自動",
       "timezoneAutomaticCity": "自動 ({{city}})",
       "timezoneNoResults": "一致するタイムゾーンがありません",
-      "timezoneSearchPlaceholder": "タイムゾーンを検索…",
       "timezoneRegions": {
         "africa": "アフリカ",
         "america": "アメリカ大陸",
@@ -1834,9 +1956,10 @@
         "australia": "オーストラリア",
         "europe": "ヨーロッパ",
         "indian": "インド洋",
-        "pacific": "太平洋",
-        "other": "その他"
+        "other": "その他",
+        "pacific": "太平洋"
       },
+      "timezoneSearchPlaceholder": "タイムゾーンを検索…",
       "toolbar": {
         "back": "戻る",
         "forward": "進む",

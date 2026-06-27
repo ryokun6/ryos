@@ -649,6 +649,129 @@
         "invalidFileDesc": "Nur .epub-Bücher können importiert werden."
       }
     },
+    "calculator": {
+      "name": "Taschenrechner",
+      "title": "Taschenrechner",
+      "description": "Basis-, wissenschaftlicher und Umrechnungsrechner",
+      "menu": {
+        "help": "Hilfe zum Taschenrechner",
+        "about": "Über den Taschenrechner",
+        "clear": "Löschen",
+        "basic": "Basis",
+        "scientific": "Wissenschaftlich",
+        "conversion": "Umrechnung"
+      },
+      "angle": {
+        "deg": "Grad",
+        "rad": "Bogenmaß",
+        "degShort": "Grad",
+        "radShort": "Rad"
+      },
+      "status": {
+        "memory": "M={{value}}"
+      },
+      "conversion": {
+        "title": "Umrechnen",
+        "category": "Kategorie",
+        "from": "Von",
+        "to": "Nach",
+        "swap": "Tauschen",
+        "selectUnit": "Einheit",
+        "amount": "Menge",
+        "result": "Ergebnis",
+        "currencyError": "Wechselkurs konnte nicht geladen werden",
+        "categories": {
+          "length": "Länge",
+          "area": "Fläche",
+          "volume": "Volumen",
+          "mass": "Gewicht & Masse",
+          "temperature": "Temperatur",
+          "speed": "Geschwindigkeit",
+          "time": "Zeit",
+          "pressure": "Druck",
+          "energy": "Energie",
+          "currency": "Währung"
+        },
+        "units": {
+          "m": "Meter",
+          "km": "Kilometer",
+          "cm": "Zentimeter",
+          "mm": "Millimeter",
+          "in": "Zoll",
+          "ft": "Fuß",
+          "yd": "Yard",
+          "mi": "Meilen",
+          "sqm": "Quadratmeter",
+          "sqkm": "Quadratkilometer",
+          "sqft": "Quadratfuß",
+          "sqmi": "Quadratmeilen",
+          "acre": "Acker",
+          "ha": "Hektar",
+          "l": "Liter",
+          "ml": "Milliliter",
+          "gal": "Gallonen (US)",
+          "qt": "Quarts",
+          "pt": "Pints",
+          "floz": "Fluidunzen",
+          "cup": "Tassen",
+          "kg": "Kilogramm",
+          "g": "Gramm",
+          "mg": "Milligramm",
+          "lb": "Pfund",
+          "oz": "Unzen",
+          "t": "Tonnen",
+          "c": "Celsius",
+          "f": "Fahrenheit",
+          "k": "Kelvin",
+          "mps": "Meter/Sekunde",
+          "kph": "Kilometer/Stunde",
+          "mph": "Meilen/Stunde",
+          "knot": "Knoten",
+          "s": "Sekunden",
+          "min": "Minuten",
+          "hr": "Stunden",
+          "day": "Tage",
+          "wk": "Wochen",
+          "pa": "Pascal",
+          "kpa": "Kilopascal",
+          "bar": "Bar",
+          "atm": "Atmosphären",
+          "psi": "PSI",
+          "j": "Joule",
+          "kj": "Kilojoule",
+          "cal": "Kalorien",
+          "kcal": "Kilokalorien",
+          "wh": "Wattstunden",
+          "kwh": "Kilowattstunden"
+        }
+      },
+      "help": {
+        "basicMode": {
+          "title": "Basis Modus",
+          "description": "Addieren, subtrahieren, multiplizieren und dividieren mit Speicher-Tasten und Prozent"
+        },
+        "scientificMode": {
+          "title": "Wissenschaftlicher Modus",
+          "description": "Trigonometrie, Logarithmen, Potenzen, Wurzeln, Fakultät, π, e, und Grad/Bogenmaß-Umschalter"
+        },
+        "conversionMode": {
+          "title": "Umrechnungsmodus",
+          "description": "Länge, Masse, Temperatur, Währung und mehr mit aktuellen Kursen umrechnen"
+        },
+        "themeDesigns": {
+          "title": "Themen Designs",
+          "description": "Klassisch Mac, Aqua, Windows 98 und Windows XP Taschenrechner Chrome pro Thema"
+        },
+        "keyboard": {
+          "title": "Tastatur",
+          "description": "Ziffern und Operationen von der Tastatur eingeben; Menüansicht wechselt die Modi"
+        },
+        "liveCurrency": {
+          "title": "Echtzeit-Währung",
+          "description": "Währungsumrechnungen holen Wechselkurse über die ryOS API"
+        }
+      }
+    },
     "calendar": {
       "description": "Kalender mit Ereignissen",
       "event": {
@@ -1823,7 +1946,6 @@
       "timezoneAutomatic": "Auto",
       "timezoneAutomaticCity": "Auto ({{city}})",
       "timezoneNoResults": "Keine passenden Zeitzonen",
-      "timezoneSearchPlaceholder": "Zeitzonen suchen…",
       "timezoneRegions": {
         "africa": "Afrika",
         "america": "Amerika",
@@ -1834,9 +1956,10 @@
         "australia": "Australien",
         "europe": "Europa",
         "indian": "Indischer Ozean",
-        "pacific": "Pazifik",
-        "other": "Andere"
+        "other": "Andere",
+        "pacific": "Pazifik"
       },
+      "timezoneSearchPlaceholder": "Zeitzonen suchen…",
       "toolbar": {
         "back": "Zurück",
         "forward": "Vorwärts",
