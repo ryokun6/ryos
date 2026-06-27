@@ -830,6 +830,46 @@
   border-radius: 3px;
 }
 
+/* Faithful preview tab group (classic themes): reuse the real preference tab
+   strip + well so the preview tabs read identically to the live settings —
+   System 7 framed tabs over a panel-bg well, Windows XP/98 folder tabs over a
+   connected content field. */
+:root:not([data-os-theme="macosx"]) .control-panels-theme-preview-tabbed {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Connect the well to the tab strip (square top corners), mirroring the real
+   `.control-panels-pref-tabbed > .control-panels-pref-well` look per theme. */
+:root[data-os-theme="system7"]
+  .control-panels-mac-pane-inner
+  .control-panels-pref-well.control-panels-theme-preview-tab-well {
+  background: var(--os-color-panel-bg, #e3e3e3);
+  border: 1px solid var(--os-color-separator);
+  border-top: none;
+  box-shadow: none;
+}
+
+:root[data-os-theme="xp"]
+  .control-panels-mac-pane-inner
+  .control-panels-pref-well.control-panels-theme-preview-tab-well {
+  background: #fff;
+  border: 1px solid #919b9c;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+:root[data-os-theme="win98"]
+  .control-panels-mac-pane-inner
+  .control-panels-pref-well.control-panels-theme-preview-tab-well {
+  background: var(--os-color-window-bg, #c0c0c0);
+  border: none;
+  box-shadow: inset 1px 1px 0 #fff, inset 2px 2px 0 #dfdfdf,
+    inset -1px -1px 0 #000, inset -2px -2px 0 #808080;
+}
+
 /* --- System 7 mock --- the menu bar / striped title bar are the real System 7
    window chrome (Chicago menu bar, racing-stripe active title bar with the
    title in a white notch and a square close box). --- */

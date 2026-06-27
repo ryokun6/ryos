@@ -10,6 +10,7 @@ import {
   isDynamicWallpaper,
 } from "@/utils/dynamicWallpaper";
 import { cn } from "@/lib/utils";
+import { AppearancePreviewTabGroup } from "./AppearancePreviewTabGroup";
 
 const noopClick = () => {};
 
@@ -175,39 +176,19 @@ export function AppearanceMacosxPreviewScene({
               </div>
 
               <div className="window-body control-panels-theme-preview-window-body-live flex min-h-0 flex-1 flex-col">
-                <div
-                  className="aqua-tab-bar control-panels-theme-preview-tab-bar-live"
-                  role="tablist"
-                >
-                  <button
-                    type="button"
-                    className="aqua-tab"
-                    data-state="active"
-                    tabIndex={-1}
+                <AppearancePreviewTabGroup t={t}>
+                  <div
+                    className="control-panels-theme-preview-list-live"
+                    style={listStyle}
                   >
-                    {t("apps.control-panels.themePreviewTabs.general")}
-                  </button>
-                  <button
-                    type="button"
-                    className="aqua-tab"
-                    data-state="inactive"
-                    tabIndex={-1}
-                  >
-                    {t("apps.control-panels.themePreviewTabs.sharing")}
-                  </button>
-                </div>
-
-                <div
-                  className="control-panels-theme-preview-list-live"
-                  style={listStyle}
-                >
-                  <div className="control-panels-theme-preview-list-row-live">
-                    {t("apps.control-panels.themePreviewFirstItem")}
+                    <div className="control-panels-theme-preview-list-row-live">
+                      {t("apps.control-panels.themePreviewFirstItem")}
+                    </div>
+                    <div className="control-panels-theme-preview-list-row-live control-panels-theme-preview-list-row-live-selected">
+                      {t("apps.control-panels.themePreviewSelectedItem")}
+                    </div>
                   </div>
-                  <div className="control-panels-theme-preview-list-row-live control-panels-theme-preview-list-row-live-selected">
-                    {t("apps.control-panels.themePreviewSelectedItem")}
-                  </div>
-                </div>
+                </AppearancePreviewTabGroup>
               </div>
             </div>
       </div>
