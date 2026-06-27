@@ -7,6 +7,7 @@ import {
   type Channel,
 } from "@/apps/tv/data/channels";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
+import { shouldUpdatePlaybackTime } from "@/stores/playbackTime";
 import type { Video } from "@/stores/useVideoStore";
 
 /** Persisted custom channel; `number` is assigned at runtime from lineup order. */
@@ -44,6 +45,14 @@ interface TvStoreState {
   lcdFilterOn: boolean;
   /** MTV (and similar) word-timed lyric captions over the picture. */
   closedCaptionsOn: boolean;
+  /**
+   * Transient playback clock (seconds) reported by ReactPlayer's `onProgress`.
+   * NOT persisted. Lives here — rather than in `useTvLogic` React state — so
+   * the ~1Hz tick only re-renders the lone leaf subscriber
+   * (`MtvLyricsOverlay`) instead of the whole TV tree. Mirrors the iPod
+   * `elapsedTime` pattern.
+   */
+  playedSeconds: number;
   setCurrentChannelId: (id: string) => void;
   setVideoIndex: (channelId: string, index: number) => void;
   setIsPlaying: (playing: boolean) => void;
@@ -52,6 +61,7 @@ interface TvStoreState {
   setLcdFilterOn: (on: boolean) => void;
   toggleClosedCaptions: () => void;
   setClosedCaptionsOn: (on: boolean) => void;
+  setPlayedSeconds: (seconds: number) => void;
   addCustomChannel: (
     channel: Omit<CustomChannel, "id" | "createdAt"> & { id?: string }
   ) => CustomChannel;
@@ -103,6 +113,7 @@ export const useTvStore = create<TvStoreState>()(
       hiddenDefaultChannelIdsResetAt: null,
       lcdFilterOn: true,
       closedCaptionsOn: true,
+      playedSeconds: 0,
       setCurrentChannelId: (id) => set({ currentChannelId: id }),
       setVideoIndex: (channelId, index) =>
         set((s) => ({
@@ -119,6 +130,12 @@ export const useTvStore = create<TvStoreState>()(
       toggleClosedCaptions: () =>
         set((s) => ({ closedCaptionsOn: !s.closedCaptionsOn })),
       setClosedCaptionsOn: (on) => set({ closedCaptionsOn: on }),
+      setPlayedSeconds: (seconds) =>
+        set((s) =>
+          shouldUpdatePlaybackTime(s.playedSeconds, seconds)
+            ? { playedSeconds: seconds }
+            : {}
+        ),
       addCustomChannel: (channel) => {
         const existing = get().customChannels;
         const created: CustomChannel = {

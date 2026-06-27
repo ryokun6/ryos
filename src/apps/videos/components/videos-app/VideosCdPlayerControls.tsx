@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { SkipBack, SkipForward, Play, Pause } from "@phosphor-icons/react";
 import { AnimatedNumber } from "@/components/shared/lcd/AnimatedNumber";
 import { LcdAnimatedTitle } from "@/components/shared/lcd/LcdAnimatedTitle";
+import { VideosLcdTime } from "./VideosLcdTime";
 import type { VideosAppController } from "./useVideosAppController";
 
 type VideosCdPlayerControlsProps = {
@@ -19,7 +20,6 @@ export function VideosCdPlayerControls({ c }: VideosCdPlayerControlsProps) {
     formatTime,
     isDraggingSeek,
     dragSeekTime,
-    elapsedTime,
     getCurrentVideo,
     animationDirection,
     previousVideo,
@@ -69,9 +69,11 @@ export function VideosCdPlayerControls({ c }: VideosCdPlayerControlsProps) {
           >
             <div>{t("apps.videos.status.time")}</div>
             <div className="text-xl">
-              {formatTime(
-                isDraggingSeek ? Math.floor(dragSeekTime) : elapsedTime
-              )}
+              <VideosLcdTime
+                formatTime={formatTime}
+                isDraggingSeek={isDraggingSeek}
+                dragSeekTime={dragSeekTime}
+              />
             </div>
           </div>
         </div>

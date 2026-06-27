@@ -119,11 +119,9 @@ export function useVideosLogic({
     isConfirmResetOpen: boolean;
     isAddingVideo: boolean;
     isFullScreen: boolean;
-    elapsedTime: number;
     statusMessage: string | null;
     isShareDialogOpen: boolean;
     duration: number;
-    playedSeconds: number;
     isVideoHovered: boolean;
     isDraggingSeek: boolean;
     dragSeekTime: number;
@@ -138,11 +136,9 @@ export function useVideosLogic({
     isConfirmResetOpen: false,
     isAddingVideo: false,
     isFullScreen: false,
-    elapsedTime: 0,
     statusMessage: null,
     isShareDialogOpen: false,
     duration: 0,
-    playedSeconds: 0,
     isVideoHovered: false,
     isDraggingSeek: false,
     dragSeekTime: 0,
@@ -169,11 +165,9 @@ export function useVideosLogic({
     isConfirmResetOpen,
     isAddingVideo,
     isFullScreen,
-    elapsedTime,
     statusMessage,
     isShareDialogOpen,
     duration,
-    playedSeconds,
     isVideoHovered,
     isDraggingSeek,
     dragSeekTime,
@@ -207,9 +201,6 @@ export function useVideosLogic({
   }, []);
   const setIsFullScreen = useCallback((value: boolean) => {
     dispatchUi({ type: "patch", payload: { isFullScreen: value } });
-  }, []);
-  const setElapsedTime = useCallback((value: number) => {
-    dispatchUi({ type: "patch", payload: { elapsedTime: value } });
   }, []);
   const setStatusMessage = useCallback((value: string | null) => {
     dispatchUi({ type: "patch", payload: { statusMessage: value } });
@@ -606,13 +597,10 @@ export function useVideosLogic({
   }, [loopCurrent, setIsPlaying, nextVideo]);
 
   const handleProgress = useCallback((state: { playedSeconds: number }) => {
-    dispatchUi({
-      type: "patch",
-      payload: {
-        playedSeconds: state.playedSeconds,
-        elapsedTime: Math.floor(state.playedSeconds),
-      },
-    });
+    // Write straight to the store (not reducer state) so the ~1Hz tick only
+    // re-renders the seek-bar + LCD-time leaf subscribers, not the whole
+    // Videos tree.
+    useVideoStore.getState().setPlaybackTime(state.playedSeconds);
   }, []);
 
   const handleDuration = useCallback((duration: number) => {
@@ -823,9 +811,10 @@ export function useVideosLogic({
     }
   }, [videos, currentVideoId, safeSetCurrentVideoId]);
 
-  // Reset elapsed time when changing tracks
+  // Reset the playback clock when changing tracks so the LCD readout and
+  // seek-bar fill don't briefly show the previous track's position.
   useEffect(() => {
-    setElapsedTime(0);
+    useVideoStore.getState().resetPlaybackTime();
   }, [currentVideoId]);
 
   // Shuffle initialization: when shuffle was persisted as enabled, re-shuffle
@@ -983,7 +972,9 @@ export function useVideosLogic({
 
     if (isFullScreen && !prevFullScreenRef.current) {
       // Just entered fullscreen - sync position from main player to fullscreen player
-      const currentTime = playerRef.current?.getCurrentTime() || playedSeconds;
+      const currentTime =
+        playerRef.current?.getCurrentTime() ||
+        useVideoStore.getState().playedSeconds;
       const wasPlaying = isPlaying;
 
       // Wait for fullscreen player to be ready before seeking
@@ -1021,7 +1012,7 @@ export function useVideosLogic({
       timeoutIds.forEach((timeoutId) => clearTimeout(timeoutId));
       timeoutIds.clear();
     };
-  }, [isFullScreen, playedSeconds, isPlaying]);
+  }, [isFullScreen, isPlaying]);
 
   // Listen for App Menu fullscreen toggle
   useCustomEventListener<{ appId: string; instanceId: string }>(
@@ -1073,12 +1064,10 @@ export function useVideosLogic({
     setIsConfirmResetOpen,
     isAddingVideo,
     isFullScreen,
-    elapsedTime,
     statusMessage,
     isShareDialogOpen,
     setIsShareDialogOpen,
     duration,
-    playedSeconds,
     isVideoHovered,
     setIsVideoHovered,
     isDraggingSeek,

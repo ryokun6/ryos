@@ -75,7 +75,6 @@ export function useTvLogic({ isWindowOpen, isForeground }: UseTvLogicOptions) {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [duration, setDuration] = useState(0);
-  const [playedSeconds, setPlayedSeconds] = useState(0);
   const [isVideoHovered, setIsVideoHovered] = useState(false);
   const [animationDirection, setAnimationDirection] = useState<"next" | "prev">(
     "next"
@@ -371,7 +370,9 @@ export function useTvLogic({ isWindowOpen, isForeground }: UseTvLogicOptions) {
 
   const handleProgress = useCallback(
     (state: { playedSeconds: number }) => {
-      setPlayedSeconds(state.playedSeconds);
+      // Write straight to the store (not React state) so the ~1Hz tick only
+      // re-renders the MTV caption overlay, not the whole TV tree.
+      useTvStore.getState().setPlayedSeconds(state.playedSeconds);
     },
     []
   );
@@ -579,7 +580,6 @@ export function useTvLogic({ isWindowOpen, isForeground }: UseTvLogicOptions) {
     handleProgress,
     handleDuration,
     handleSeek,
-    playedSeconds,
     duration,
     isVideoHovered,
     setIsVideoHovered,

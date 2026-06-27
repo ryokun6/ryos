@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "motion/react";
 import { YouTubePlayer } from "@/components/shared/YouTubePlayer";
-import { SeekBar } from "../SeekBar";
+import { VideosSeekBar } from "./VideosSeekBar";
 import { LcdStatusDisplay } from "@/components/shared/lcd/LcdStatusDisplay";
 import { VideosWhiteNoiseOverlay } from "./VideosWhiteNoise";
 import { STATUS_FADE_TRANSITION } from "@/components/shared/lcd/lcdMotionConstants";
@@ -32,7 +32,6 @@ export function VideosVideoPane({
     loopCurrent,
     setIsVideoHovered,
     duration,
-    playedSeconds,
     handleSeek,
     isVideoHovered,
     setIsDraggingSeek,
@@ -126,9 +125,8 @@ export function VideosVideoPane({
         />
       </div>
       <div className="absolute bottom-0 left-0 right-0 z-30">
-        <SeekBar
+        <VideosSeekBar
           duration={duration}
-          currentTime={playedSeconds}
           onSeek={handleSeek}
           isPlaying={isPlaying}
           isHovered={isVideoHovered}
