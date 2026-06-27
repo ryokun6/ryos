@@ -618,10 +618,6 @@
       "name": "Libros",
       "reader": {
         "backToShelf": "Estantería",
-        "debugCopied": "Copiado",
-        "debugCopy": "Copiar registros",
-        "debugCopyFailed": "Error al copiar",
-        "debugTitle": "Registro de depuración EPUB",
         "error": "No se pudo abrir este libro."
       },
       "shelf": {

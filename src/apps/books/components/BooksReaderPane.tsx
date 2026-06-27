@@ -4,7 +4,6 @@ import {
   useEffect,
   useImperativeHandle,
   useLayoutEffect,
-  useMemo,
   useRef,
   useState,
 } from "react";
@@ -81,13 +80,6 @@ interface FlipState {
 
 type BooksDebugLevel = "info" | "warn" | "error";
 
-interface BooksDebugEvent {
-  at: string;
-  level: BooksDebugLevel;
-  step: string;
-  data?: unknown;
-}
-
 // Extra top clearance so the page never sits under the hover-revealed window
 // titlebar (the window uses the full-bleed "notitlebar" material).
 const TOP_CLEARANCE = 36;
@@ -107,7 +99,6 @@ const SPREAD_MIN_WIDTH = 560;
 export const ZOOM_DURATION = 0.45;
 export const ZOOM_EASE = [0.32, 0.72, 0, 1] as const;
 const REVEAL_DELAY_MS = 480;
-const MAX_DEBUG_EVENTS = 80;
 const DEFAULT_BOOK_ASSET_BY_PATH: Record<string, string> = {
   "/Books/Meditations - Marcus Aurelius.epub":
     "/assets/books/meditations-marcus-aurelius.epub",
@@ -163,19 +154,6 @@ function flattenBookChapters(
       ...flattenBookChapters(item.subitems, depth + 1, key),
     ];
   });
-}
-
-function isRuntimeBooksDebugEnabled(): boolean {
-  try {
-    if (typeof window === "undefined") return false;
-    const url = new URL(window.location.href);
-    return (
-      url.searchParams.get("booksDebug") === "1" ||
-      window.localStorage.getItem("ryos:debug") === "1"
-    );
-  } catch {
-    return false;
-  }
 }
 
 function serializeDebugValue(
@@ -284,10 +262,6 @@ export const BooksReaderPane = forwardRef<
   // Set when the EPUB can't be opened (missing blob or display failure) so the
   // user sees a message instead of being stuck on the loading shim / cover.
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [debugEvents, setDebugEvents] = useState<BooksDebugEvent[]>([]);
-  const [debugCopyStatus, setDebugCopyStatus] = useState<
-    "idle" | "copied" | "failed"
-  >("idle");
   // Zoom-in geometry for the cover overlay: animates from the clicked shelf
   // cover (`from`) to full-bleed (`to`), both in viewport-local coordinates.
   const [zoom, setZoom] = useState<{ from: ZoomRect; to: ZoomRect } | null>(
@@ -318,9 +292,8 @@ export const BooksReaderPane = forwardRef<
   );
 
   const displayDebugMode = useDisplaySettingsStore((s) => s.debugMode);
-  const booksDebugEnabled = displayDebugMode || isRuntimeBooksDebugEnabled();
-  const booksDebugEnabledRef = useRef(booksDebugEnabled);
-  booksDebugEnabledRef.current = booksDebugEnabled;
+  const displayDebugModeRef = useRef(displayDebugMode);
+  displayDebugModeRef.current = displayDebugMode;
 
   useEffect(() => {
     onNavigationStateChange?.(navigationState);
@@ -333,18 +306,15 @@ export const BooksReaderPane = forwardRef<
 
   const appendDebugEvent = useCallback(
     (step: string, data?: unknown, level: BooksDebugLevel = "info") => {
-      if (!booksDebugEnabledRef.current) return;
-      const event: BooksDebugEvent = {
-        at: new Date().toISOString(),
-        level,
-        step,
-        data: serializeDebugValue(data),
-      };
-      setDebugEvents((events) =>
-        [...events, event].slice(-MAX_DEBUG_EVENTS)
-      );
-      const log = level === "error" ? console.error : level === "warn" ? console.warn : console.log;
-      log("[BooksReader]", step, event.data);
+      if (!displayDebugModeRef.current) return;
+      const debugData = serializeDebugValue(data);
+      const log =
+        level === "error"
+          ? console.error
+          : level === "warn"
+            ? console.warn
+            : console.log;
+      log("[BooksReader]", step, debugData);
     },
     []
   );
@@ -408,7 +378,7 @@ export const BooksReaderPane = forwardRef<
   }, []);
 
   useEffect(() => {
-    if (!booksDebugEnabled) return;
+    if (!displayDebugMode) return;
     const onError = (event: ErrorEvent) => {
       appendDebugEvent(
         "window.error",
@@ -435,7 +405,7 @@ export const BooksReaderPane = forwardRef<
       window.removeEventListener("error", onError);
       window.removeEventListener("unhandledrejection", onUnhandledRejection);
     };
-  }, [appendDebugEvent, booksDebugEnabled]);
+  }, [appendDebugEvent, displayDebugMode]);
 
   // Create the book + rendition for the active EPUB.
   useEffect(() => {
@@ -445,8 +415,6 @@ export const BooksReaderPane = forwardRef<
     setIsReady(false);
     setCoverVisible(true);
     setLoadError(null);
-    setDebugCopyStatus("idle");
-    setDebugEvents([]);
     activeSectionHrefRef.current = undefined;
     setNavigationState(createInitialBooksNavigationState());
     appendDebugEvent("open:start", {
@@ -931,61 +899,6 @@ export const BooksReaderPane = forwardRef<
     return () => host.removeEventListener("keydown", onKeyDown);
   }, [handleKey]);
 
-  const debugSnapshot = useMemo(
-    () =>
-      JSON.stringify(
-        {
-          book: {
-            path: entry.path,
-            fileName: entry.fileName,
-            name: entry.name,
-            modifiedAt: entry.modifiedAt,
-          },
-          state: {
-            isReady,
-            coverVisible,
-            loadError,
-            progressPct,
-            atStart,
-            atEnd,
-            initialCfi,
-            initialPercentage,
-            settings,
-          },
-          environment: getBooksDebugEnvironment(),
-          events: debugEvents,
-        },
-        null,
-        2
-      ),
-    [
-      atEnd,
-      atStart,
-      coverVisible,
-      debugEvents,
-      entry.fileName,
-      entry.modifiedAt,
-      entry.name,
-      entry.path,
-      initialCfi,
-      initialPercentage,
-      isReady,
-      loadError,
-      progressPct,
-      settings,
-    ]
-  );
-
-  const copyDebugSnapshot = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(debugSnapshot);
-      setDebugCopyStatus("copied");
-    } catch (error) {
-      setDebugCopyStatus("failed");
-      appendDebugEvent("debug:copy:failed", error, "warn");
-    }
-  }, [appendDebugEvent, debugSnapshot]);
-
   return (
     <div
       ref={viewportRef}
@@ -1112,50 +1025,6 @@ export const BooksReaderPane = forwardRef<
           >
             {loadError}
           </span>
-        </div>
-      )}
-
-      {booksDebugEnabled && (
-        <div
-          className={cn(
-            "absolute bottom-8 left-3 right-3 z-[70] max-h-[42%] overflow-hidden rounded border p-2 text-left shadow-xl",
-            palette.isDark
-              ? "border-white/20 bg-black/85 text-white"
-              : "border-black/20 bg-white/90 text-black"
-          )}
-        >
-          <div className="mb-1 flex items-center justify-between gap-2">
-            <span className="font-os-ui text-[10px] font-bold uppercase tracking-wide">
-              {t("apps.books.reader.debugTitle", {
-                defaultValue: "EPUB debug log",
-              })}
-            </span>
-            <button
-              type="button"
-              onClick={copyDebugSnapshot}
-              className={cn(
-                "rounded px-2 py-1 font-os-ui text-[10px]",
-                palette.isDark
-                  ? "bg-white/15 text-white hover:bg-white/25"
-                  : "bg-black/10 text-black hover:bg-black/15"
-              )}
-            >
-              {debugCopyStatus === "copied"
-                ? t("apps.books.reader.debugCopied", {
-                    defaultValue: "Copied",
-                  })
-                : debugCopyStatus === "failed"
-                  ? t("apps.books.reader.debugCopyFailed", {
-                      defaultValue: "Copy failed",
-                    })
-                  : t("apps.books.reader.debugCopy", {
-                      defaultValue: "Copy logs",
-                    })}
-            </button>
-          </div>
-          <pre className="max-h-[calc(42vh-48px)] overflow-auto whitespace-pre-wrap break-words rounded bg-black/80 p-2 font-mono text-[10px] leading-snug text-lime-100">
-            {debugSnapshot}
-          </pre>
         </div>
       )}
 

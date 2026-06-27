@@ -4466,11 +4466,7 @@
       },
       "reader": {
         "backToShelf": "Shelf",
-        "error": "Couldn’t open this book.",
-        "debugTitle": "EPUB debug log",
-        "debugCopy": "Copy logs",
-        "debugCopied": "Copied",
-        "debugCopyFailed": "Copy failed"
+        "error": "Couldn’t open this book."
       },
       "import": {
         "title": "Import EPUB"

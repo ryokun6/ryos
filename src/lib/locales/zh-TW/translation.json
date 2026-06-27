@@ -618,10 +618,6 @@
       "name": "書籍",
       "reader": {
         "backToShelf": "書架",
-        "debugCopied": "已複製",
-        "debugCopy": "複製記錄",
-        "debugCopyFailed": "複製失敗",
-        "debugTitle": "EPUB 除錯記錄",
         "error": "無法開啟此書。"
       },
       "shelf": {

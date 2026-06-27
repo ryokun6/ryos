@@ -618,10 +618,6 @@
       "name": "Книги",
       "reader": {
         "backToShelf": "Полка",
-        "debugCopied": "Скопировано",
-        "debugCopy": "Копировать логи",
-        "debugCopyFailed": "Ошибка копирования",
-        "debugTitle": "Журнал отладки EPUB",
         "error": "Не удалось открыть эту книгу."
       },
       "shelf": {
