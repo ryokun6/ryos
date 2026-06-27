@@ -62,16 +62,37 @@ function WhiteNoiseEffect({ active }: { active: boolean }) {
       }
 
       ctx.putImageData(imageData, 0, 0);
+      // Pause while the tab is hidden so a backgrounded window doesn't keep
+      // painting static; `onVisibility` resumes it. Mirrors `TvCrtEffects`.
+      if (document.hidden) {
+        animationFrameRef.current = null;
+        return;
+      }
       animationFrameRef.current = requestAnimationFrame(drawNoise);
     };
 
-    resizeCanvas();
-    drawNoise();
+    const onVisibility = () => {
+      if (document.hidden) {
+        if (animationFrameRef.current !== null) {
+          cancelAnimationFrame(animationFrameRef.current);
+          animationFrameRef.current = null;
+        }
+      } else if (animationFrameRef.current === null) {
+        drawNoise();
+      }
+    };
 
+    resizeCanvas();
     window.addEventListener("resize", resizeCanvas);
+    document.addEventListener("visibilitychange", onVisibility);
+
+    if (!document.hidden) {
+      drawNoise();
+    }
 
     return () => {
       window.removeEventListener("resize", resizeCanvas);
+      document.removeEventListener("visibilitychange", onVisibility);
       if (animationFrameRef.current !== null) {
         cancelAnimationFrame(animationFrameRef.current);
         animationFrameRef.current = null;

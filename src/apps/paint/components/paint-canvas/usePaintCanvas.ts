@@ -181,12 +181,31 @@ export function usePaintCanvas({
 
       // Update dash offset
       dashOffsetRef.current = (dashOffsetRef.current + 1) % 10;
+      // Pause the marching-ants loop while the tab is hidden; `onVisibility`
+      // resumes it. Mirrors the visibility gating in `TvCrtEffects`.
+      if (document.hidden) {
+        animationFrameRef.current = null;
+        return;
+      }
       animationFrameRef.current = requestAnimationFrame(animate);
     };
+
+    const onVisibility = () => {
+      if (document.hidden) {
+        if (animationFrameRef.current !== null) {
+          cancelAnimationFrame(animationFrameRef.current);
+          animationFrameRef.current = null;
+        }
+      } else if (animationFrameRef.current === null) {
+        animate();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
 
     animate();
 
     return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
       if (animationFrameRef.current !== null) {
         cancelAnimationFrame(animationFrameRef.current);
         animationFrameRef.current = null;
