@@ -627,6 +627,10 @@ function buildAppConfigScript(origin: string): string {
 }
 
 async function handleStaticRequest(pathname: string): Promise<Response | null> {
+  if (pathname === "/infinite-pc" || pathname === "/embed/infinite-pc") {
+    return new Response("Not Found", { status: 404 });
+  }
+
   if (pathname === "/docs" || pathname === "/docs/") {
     return new Response(null, {
       status: 302,

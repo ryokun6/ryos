@@ -337,6 +337,21 @@ export default defineConfig({
       : []),
     // Serve static docs HTML files (before SPA fallback kicks in)
     {
+      name: 'block-removed-legacy-routes',
+      configureServer(server) {
+        server.middlewares.use((req, res, next) => {
+          const pathPart = (req.url || '').split('?')[0];
+          if (pathPart !== '/infinite-pc' && pathPart !== '/embed/infinite-pc') {
+            next();
+            return;
+          }
+          res.statusCode = 404;
+          res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+          res.end('Not Found');
+        });
+      },
+    },
+    {
       name: 'serve-static-docs',
       configureServer(server) {
         server.middlewares.use((req, res, next) => {
