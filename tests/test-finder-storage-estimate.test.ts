@@ -26,4 +26,21 @@ describe("storage helpers", () => {
     const fb = calculateStorageSpace();
     expect(r.total).toBe(fb.total);
   });
+
+  test("estimateStorageSpace falls back when estimate() rejects", async () => {
+    // Mirrors the observed cloud-VM behavior where Chrome throws
+    // "Internal error when calculating storage usage".
+    (globalThis as any).navigator = {
+      storage: {
+        estimate: async () => {
+          throw new TypeError("Internal error when calculating storage usage");
+        },
+      },
+    };
+    (globalThis as any).localStorage = { length: 0, key: () => null, getItem: () => null };
+    const r = await estimateStorageSpace();
+    const fb = calculateStorageSpace();
+    expect(r.total).toBe(fb.total);
+    expect(r.available).toBe(fb.total - fb.used);
+  });
 });
