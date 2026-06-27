@@ -28,6 +28,7 @@ import { AirDropListener } from "@/components/AirDropListener";
 import { WallpaperAccentRunner } from "@/hooks/WallpaperAccentRunner";
 import { DesktopCornerMask } from "@/components/layout/desktop/DesktopCornerMask";
 import { installNativeToastNotifications } from "@/utils/nativeToastNotifications";
+import { DebugLogOverlay } from "@/components/debug/DebugLogOverlay";
 
 // Convert registry to array
 const apps: AnyApp[] = Object.values(appRegistry);
@@ -252,6 +253,7 @@ export function App() {
       <DeferredAutoCloudSync />
       <WallpaperAccentRunner />
       <ScreenSaverOverlay />
+      <DebugLogOverlay />
     </>
   );
 }
