@@ -6,6 +6,7 @@ import { CalculatorConversionPanel } from "./CalculatorConversionPanel";
 import { CalculatorDisplay } from "./CalculatorKey";
 import { CalculatorScientificPanel } from "./CalculatorScientificPanel";
 import { CalculatorSystem7Panel } from "./CalculatorSystem7Panel";
+import { CalculatorWin98Panel } from "./CalculatorWin98Panel";
 import type { CalculatorTheme } from "./types";
 import type { useCalculatorLogic } from "../hooks/useCalculatorLogic";
 
@@ -40,6 +41,7 @@ export function CalculatorBody({ logic }: CalculatorBodyProps) {
     pressMemoryRecall,
     pressMemoryAdd,
     pressMemorySubtract,
+    pressMemoryStore,
     conversionCategory,
     handleCategoryChange,
     fromUnit,
@@ -144,6 +146,51 @@ export function CalculatorBody({ logic }: CalculatorBodyProps) {
           onClearEntry={pressClearEntry}
           onDecimal={pressDecimal}
         />
+      ) : theme === "win98" || theme === "xp" ? (
+        <>
+          <CalculatorDisplay
+            value={calcState.display}
+            secondary={
+              mode === "scientific"
+                ? calcState.angleMode === "deg"
+                  ? t("apps.calculator.angle.deg")
+                  : t("apps.calculator.angle.rad")
+                : null
+            }
+            theme={theme}
+          />
+          {mode === "scientific" ? (
+            <CalculatorScientificPanel
+              theme={theme}
+              angleMode={calcState.angleMode}
+              onUnary={pressUnary}
+              onPi={pressPi}
+              onE={pressE}
+              onFactorial={pressFactorial}
+              onToggleAngle={pressToggleAngle}
+              onPower={() => pressOperator("^")}
+            />
+          ) : null}
+          <CalculatorWin98Panel
+            theme={theme}
+            memoryActive={calcState.memory !== 0}
+            onDigit={pressDigit}
+            onOperator={pressOperator}
+            onEquals={pressEquals}
+            onClear={pressClear}
+            onClearEntry={pressClearEntry}
+            onBackspace={pressBackspace}
+            onDecimal={pressDecimal}
+            onNegate={pressNegate}
+            onPercent={pressPercent}
+            onUnary={pressUnary}
+            onMemoryClear={pressMemoryClear}
+            onMemoryRecall={pressMemoryRecall}
+            onMemoryStore={pressMemoryStore}
+            onMemoryAdd={pressMemoryAdd}
+            onMemorySubtract={pressMemorySubtract}
+          />
+        </>
       ) : (
         <>
           <CalculatorDisplay
