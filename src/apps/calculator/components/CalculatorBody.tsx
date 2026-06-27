@@ -42,6 +42,14 @@ export function CalculatorBody({ logic }: CalculatorBodyProps) {
     pressDecimal,
     pressNegate,
     pressPercent,
+    pressConversionDigit,
+    pressConversionOperator,
+    pressConversionEquals,
+    pressConversionClear,
+    pressConversionBackspace,
+    pressConversionDecimal,
+    pressConversionNegate,
+    pressConversionPercent,
     pressUnary,
     pressPi,
     pressE,
@@ -61,7 +69,6 @@ export function CalculatorBody({ logic }: CalculatorBodyProps) {
     toUnit,
     setToUnit,
     conversionAmount,
-    setConversionAmount,
     conversionResult,
     category,
     swapConversionUnits,
@@ -109,31 +116,31 @@ export function CalculatorBody({ logic }: CalculatorBodyProps) {
   return (
     <div className={cn("flex flex-col h-full w-full calc-body", themeClass)}>
       {mode === "conversion" ? (
-        <>
-          <CalculatorDisplay
-            value={conversionAmount}
-            secondary={t("apps.calculator.conversion.title")}
-            theme={theme}
-          />
-          <CalculatorConversionPanel
-            theme={theme}
-            category={category}
-            fromUnit={fromUnit}
-            toUnit={toUnit}
-            amount={conversionAmount}
-            result={conversionResult}
-            loading={currencyLoading}
-            error={currencyError}
-            onCategoryChange={(id) =>
-              handleCategoryChange(id as ConversionCategoryId)
-            }
-            onFromUnitChange={setFromUnit}
-            onToUnitChange={setToUnit}
-            onAmountChange={setConversionAmount}
-            onSwap={swapConversionUnits}
-            t={t}
-          />
-        </>
+        <CalculatorConversionPanel
+          theme={theme}
+          category={category}
+          fromUnit={fromUnit}
+          toUnit={toUnit}
+          amount={conversionAmount}
+          result={conversionResult}
+          loading={currencyLoading}
+          error={currencyError}
+          onCategoryChange={(id) =>
+            handleCategoryChange(id as ConversionCategoryId)
+          }
+          onFromUnitChange={setFromUnit}
+          onToUnitChange={setToUnit}
+          onSwap={swapConversionUnits}
+          onDigit={pressConversionDigit}
+          onOperator={pressConversionOperator}
+          onEquals={pressConversionEquals}
+          onClear={pressConversionClear}
+          onBackspace={pressConversionBackspace}
+          onDecimal={pressConversionDecimal}
+          onNegate={pressConversionNegate}
+          onPercent={pressConversionPercent}
+          t={t}
+        />
       ) : theme === "aqua" && mode === "basic" ? (
         <CalculatorAquaCompactPanel
           display={calcState.display}

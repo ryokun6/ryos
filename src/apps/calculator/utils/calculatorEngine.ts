@@ -40,7 +40,7 @@ function fromRadians(value: number, mode: AngleMode): number {
   return mode === "deg" ? (value * 180) / Math.PI : value;
 }
 
-function formatNumber(value: number): string {
+export function formatNumber(value: number): string {
   if (!Number.isFinite(value)) return "Error";
   if (Math.abs(value) >= 1e16 || (Math.abs(value) > 0 && Math.abs(value) < 1e-10)) {
     return value.toExponential(10).replace(/\.?0+e/, "e");

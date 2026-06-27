@@ -272,8 +272,95 @@ export const calculatorStyles = `
 
   .calc-conversion-panel {
     font-family: var(--os-font-ui), Geneva, Tahoma, sans-serif;
+    gap: 10px;
   }
-  .calc-conversion-panel .calc-swap-btn {
-    font-size: 11px;
+  .calc-conversion-lcd {
+    min-height: 124px !important;
+    padding: 3px 10px !important;
+    display: flex;
+    flex-direction: column;
+    justify-content: stretch !important;
+    gap: 0 !important;
+  }
+  .calc-conversion-value-row {
+    display: flex;
+    min-height: 0;
+    width: 100%;
+    flex: 1;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .calc-conversion-lcd .calc-display-value {
+    font-size: 22px;
+    line-height: 1.1;
+    max-width: 100%;
+  }
+  .calc-conversion-divider {
+    position: relative;
+    width: 100%;
+    height: 1px;
+    flex: 0 0 1px;
+  }
+  .calc-conversion-divider::after {
+    content: "";
+    position: absolute;
+    left: 38px;
+    right: 0;
+    top: 0;
+    height: 1px;
+    background: rgba(0, 0, 0, 0.2);
+  }
+  .calc-conversion-unit-trigger {
+    width: auto;
+    min-height: 0 !important;
+    height: 17px !important;
+    align-self: flex-end;
+    border: 0 !important;
+    border-image: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 16px 0 2px !important;
+    color: inherit !important;
+    font-size: 10px !important;
+    font-weight: 600;
+    opacity: 0.62;
+  }
+  .calc-conversion-unit-trigger::before {
+    content: none !important;
+    background: none !important;
+  }
+  .calc-conversion-unit-trigger::after {
+    right: 2px !important;
+  }
+  .calc-conversion-swap {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    z-index: 2;
+    transform: translateY(-50%);
+  }
+  .calc-conversion-swap-button {
+    display: flex;
+    width: 28px;
+    height: 28px;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    padding: 0;
+    color: var(--os-color-selection-bg);
+    cursor: pointer;
+  }
+  .calc-conversion-swap-button:active {
+    transform: translateY(1px);
+  }
+  .calc-conversion-keypad {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-rows: repeat(5, 30px);
+    gap: 7px;
+    margin-top: 2px;
   }
 `;

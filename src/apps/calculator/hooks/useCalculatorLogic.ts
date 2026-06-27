@@ -18,6 +18,7 @@ import {
   clearEntry,
   createInitialCalcState,
   factorial,
+  formatNumber,
   inputDecimal,
   inputDigit,
   inputOperator,
@@ -87,7 +88,7 @@ export function useCalculatorLogic({
   isWindowOpen?: boolean;
   isForeground?: boolean;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const translatedHelpItems = useTranslatedHelpItems("calculator", helpItems);
   const {
     isWindowsTheme,
@@ -116,9 +117,14 @@ export function useCalculatorLogic({
   );
   const [fromUnit, setFromUnit] = useStateWithDefault(persisted.fromUnit ?? "m");
   const [toUnit, setToUnit] = useStateWithDefault(persisted.toUnit ?? "ft");
-  const [conversionAmount, setConversionAmount] = useStateWithDefault(
-    persisted.conversionAmount ?? "1"
+  const [conversionCalcState, dispatchConversionCalc] = useReducer(
+    calcReducer,
+    {
+      ...createInitialCalcState(),
+      display: persisted.conversionAmount ?? "1",
+    }
   );
+  const conversionAmount = conversionCalcState.display;
   const [currencyRate, setCurrencyRate] = useState(1);
   const [currencyLoading, setCurrencyLoading] = useState(false);
   const [currencyError, setCurrencyError] = useState<string | null>(null);
@@ -206,32 +212,84 @@ export function useCalculatorLogic({
     }
   }, [category, fromUnit, toUnit]);
 
-  const conversionResult = useMemo(() => {
+  const conversionRawResult = useMemo(() => {
     const amount = Number(conversionAmount.replace(/,/g, ""));
-    if (!Number.isFinite(amount)) return "—";
-    const result = convertValue(
+    if (!Number.isFinite(amount)) return NaN;
+    return convertValue(
       amount,
       conversionCategory,
       fromUnit,
       toUnit,
       currencyRate
     );
-    if (!Number.isFinite(result)) return "—";
-    if (conversionCategory === "currency") {
-      return new Intl.NumberFormat(undefined, {
-        maximumFractionDigits: toUnit === "JPY" || toUnit === "KRW" ? 0 : 4,
-      }).format(result);
-    }
-    return new Intl.NumberFormat(undefined, { maximumFractionDigits: 8 }).format(result);
-  }, [conversionAmount, conversionCategory, fromUnit, toUnit, currencyRate]);
+  }, [
+    conversionAmount,
+    conversionCategory,
+    fromUnit,
+    toUnit,
+    currencyRate,
+  ]);
 
-  const setMode = useCallback((next: CalculatorMode) => {
-    setModeState(next);
-  }, []);
+  const conversionResult = useMemo(() => {
+    if (!Number.isFinite(conversionRawResult)) return "—";
+    const locale = i18n.resolvedLanguage || i18n.language;
+    if (conversionCategory === "currency") {
+      return new Intl.NumberFormat(locale, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(conversionRawResult);
+    }
+    return new Intl.NumberFormat(locale, { maximumFractionDigits: 8 }).format(
+      conversionRawResult
+    );
+  }, [
+    conversionRawResult,
+    conversionCategory,
+    i18n.resolvedLanguage,
+    i18n.language,
+  ]);
+
+  const setMode = useCallback(
+    (next: CalculatorMode) => {
+      if (next === mode) return;
+      if (next === "conversion") {
+        dispatchConversionCalc({
+          type: "set",
+          payload: {
+            ...createInitialCalcState(),
+            display: calcState.error ? "0" : calcState.display,
+          },
+        });
+      } else if (mode === "conversion") {
+        dispatchCalc({
+          type: "set",
+          payload: {
+            ...calcState,
+            display: conversionCalcState.error
+              ? "0"
+              : conversionCalcState.display,
+            accumulator: null,
+            pendingOperator: null,
+            waitingForOperand: true,
+            error: false,
+            parentheses: [],
+          },
+        });
+      }
+      setModeState(next);
+    },
+    [mode, calcState, conversionCalcState]
+  );
 
   const runCalc = useCallback((reducer: (state: CalcState) => CalcState) => {
     dispatchCalc({ type: "dispatch", reducer });
   }, []);
+  const runConversionCalc = useCallback(
+    (reducer: (state: CalcState) => CalcState) => {
+      dispatchConversionCalc({ type: "dispatch", reducer });
+    },
+    []
+  );
 
   const pressDigit = useCallback(
     (digit: string) => runCalc((s) => inputDigit(s, digit)),
@@ -250,6 +308,43 @@ export function useCalculatorLogic({
   const pressDecimal = useCallback(() => runCalc(inputDecimal), [runCalc]);
   const pressNegate = useCallback(() => runCalc(negate), [runCalc]);
   const pressPercent = useCallback(() => runCalc(percentOf), [runCalc]);
+  const pressConversionDigit = useCallback(
+    (digit: string) => runConversionCalc((state) => inputDigit(state, digit)),
+    [runConversionCalc]
+  );
+  const pressConversionOperator = useCallback(
+    (operator: Operator) =>
+      runConversionCalc((state) => inputOperator(state, operator)),
+    [runConversionCalc]
+  );
+  const pressConversionEquals = useCallback(
+    () => runConversionCalc(calculate),
+    [runConversionCalc]
+  );
+  const pressConversionClear = useCallback(
+    () => runConversionCalc(clearAll),
+    [runConversionCalc]
+  );
+  const pressConversionBackspace = useCallback(
+    () => runConversionCalc(backspace),
+    [runConversionCalc]
+  );
+  const pressConversionDecimal = useCallback(
+    () => runConversionCalc(inputDecimal),
+    [runConversionCalc]
+  );
+  const pressConversionNegate = useCallback(
+    () => runConversionCalc(negate),
+    [runConversionCalc]
+  );
+  const pressConversionPercent = useCallback(
+    () =>
+      runConversionCalc((state) => {
+        if (state.accumulator != null) return percentOf(state);
+        return applyUnary(state, (value) => value / 100);
+      }),
+    [runConversionCalc]
+  );
 
   const pressUnary = useCallback(
     (name: keyof typeof unaryFunctions) =>
@@ -294,9 +389,27 @@ export function useCalculatorLogic({
   }, []);
 
   const swapConversionUnits = useCallback(() => {
+    if (Number.isFinite(conversionRawResult)) {
+      dispatchConversionCalc({
+        type: "set",
+        payload: {
+          ...createInitialCalcState(),
+          display: formatNumber(conversionRawResult),
+        },
+      });
+    }
+    if (conversionCategory === "currency" && currencyRate !== 0) {
+      setCurrencyRate(1 / currencyRate);
+    }
     setFromUnit(toUnit);
     setToUnit(fromUnit);
-  }, [fromUnit, toUnit]);
+  }, [
+    conversionRawResult,
+    conversionCategory,
+    currencyRate,
+    fromUnit,
+    toUnit,
+  ]);
 
   return {
     t,
@@ -319,6 +432,14 @@ export function useCalculatorLogic({
     pressDecimal,
     pressNegate,
     pressPercent,
+    pressConversionDigit,
+    pressConversionOperator,
+    pressConversionEquals,
+    pressConversionClear,
+    pressConversionBackspace,
+    pressConversionDecimal,
+    pressConversionNegate,
+    pressConversionPercent,
     pressUnary,
     pressPi,
     pressE,
@@ -339,7 +460,6 @@ export function useCalculatorLogic({
     toUnit,
     setToUnit,
     conversionAmount,
-    setConversionAmount,
     conversionResult,
     category,
     swapConversionUnits,

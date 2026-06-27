@@ -18,8 +18,14 @@ export type ComboboxOption = {
   value: string;
   label: string;
   description?: string;
+  category?: string;
   /** Lowercase haystack for filtering; defaults to value + label + description. */
   searchText?: string;
+};
+
+export type ComboboxFilter = {
+  value: string;
+  label: string;
 };
 
 export type ComboboxProps = {
@@ -37,6 +43,9 @@ export type ComboboxProps = {
   /** Max height of the scrollable option list in px. Default 240. */
   maxListHeight?: number;
   disabled?: boolean;
+  filters?: ComboboxFilter[];
+  filterValue?: string;
+  onFilterChange?: (value: string) => void;
 };
 
 function optionSearchHaystack(option: ComboboxOption): string {
@@ -69,6 +78,9 @@ function ComboboxImpl({
   minPanelWidth = 240,
   maxListHeight = 240,
   disabled = false,
+  filters,
+  filterValue,
+  onFilterChange,
 }: ComboboxProps) {
   const { t } = useTranslation();
   const resolvedEmptyMessage = emptyMessage ?? t("common.noResults");
@@ -93,6 +105,7 @@ function ComboboxImpl({
   const panelRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const filterListRef = useRef<HTMLDivElement>(null);
 
   const selectedOption = useMemo(
     () => options.find((o) => o.value === value),
@@ -103,9 +116,14 @@ function ComboboxImpl({
 
   const q = query.trim().toLowerCase();
   const filtered = useMemo(() => {
-    if (!q) return options;
-    return options.filter((o) => optionSearchHaystack(o).includes(q));
-  }, [options, q]);
+    const categoryOptions = filterValue
+      ? options.filter((option) => option.category === filterValue)
+      : options;
+    if (!q) return categoryOptions;
+    return categoryOptions.filter((o) =>
+      optionSearchHaystack(o).includes(q)
+    );
+  }, [options, q, filterValue]);
 
   // Derive a safe index during render (no clamp effect).
   const safeHighlight =
@@ -155,6 +173,9 @@ function ComboboxImpl({
 
     inputRef.current?.focus();
     updateRect();
+    filterListRef.current
+      ?.querySelector<HTMLElement>('[data-filter-selected="true"]')
+      ?.scrollIntoView({ block: "nearest", inline: "center" });
 
     const onPointerDown = (e: PointerEvent) => {
       const target = e.target as Node;
@@ -180,7 +201,7 @@ function ComboboxImpl({
       window.removeEventListener("scroll", onScroll, true);
       window.removeEventListener("resize", onResize);
     };
-  }, [open, updateRect]);
+  }, [open, updateRect, filterValue]);
 
   const onInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "ArrowDown") {
@@ -296,6 +317,38 @@ function ComboboxImpl({
                     showClear={false}
                   />
                 </div>
+
+                {filters && filters.length > 0 ? (
+                  <div
+                    ref={filterListRef}
+                    className="flex gap-1 overflow-x-auto border-b border-os-separator px-2 pb-1.5"
+                  >
+                    {filters.map((filter) => {
+                      const selected = filter.value === filterValue;
+                      return (
+                        <button
+                          key={filter.value}
+                          type="button"
+                          aria-pressed={selected}
+                          data-filter-selected={selected ? "true" : undefined}
+                          onClick={() => {
+                            onFilterChange?.(filter.value);
+                            setHighlight(0);
+                            setHovering(false);
+                          }}
+                          className={cn(
+                            "shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold",
+                            selected
+                              ? "bg-os-selection-bg text-os-selection-text"
+                              : "text-os-text-secondary hover:bg-os-selection-bg hover:text-os-selection-text"
+                          )}
+                        >
+                          {filter.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : null}
 
                 <div
                   ref={listRef}

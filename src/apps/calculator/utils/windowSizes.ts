@@ -8,9 +8,9 @@ const DEFAULT_SIZES: Record<CalculatorMode, { width: number; height: number }> =
 };
 
 const AQUA_SIZES: Record<CalculatorMode, { width: number; height: number }> = {
-  basic: { width: 240, height: 304 },
+  basic: { width: 260, height: 304 },
   scientific: { width: 420, height: 304 },
-  conversion: { width: 280, height: 340 },
+  conversion: { width: 260, height: 360 },
 };
 
 const SYSTEM7_SIZES: Record<CalculatorMode, { width: number; height: number }> = {
