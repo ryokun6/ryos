@@ -1,13 +1,14 @@
 import { cn } from "@/lib/utils";
-
+import type { CSSProperties } from "react";
 import type { CalculatorTheme } from "./types";
 
 export interface CalculatorKeyProps {
   label: string;
   onClick: () => void;
   theme: CalculatorTheme;
-  variant?: "default" | "operator" | "function" | "equals" | "wide";
+  variant?: "default" | "operator" | "function" | "equals" | "equals-wide" | "wide";
   className?: string;
+  style?: CSSProperties;
   ariaLabel?: string;
 }
 
@@ -17,16 +18,19 @@ export function CalculatorKey({
   theme: _theme,
   variant = "default",
   className,
+  style,
   ariaLabel,
 }: CalculatorKeyProps) {
   return (
     <button
       type="button"
+      style={style}
       className={cn(
         "calc-key",
         variant === "operator" && "calc-key-operator",
         variant === "function" && "calc-key-function",
         variant === "equals" && "calc-key-equals",
+        variant === "equals-wide" && "calc-key-equals-wide",
         variant === "wide" && "calc-key-wide",
         className
       )}
@@ -45,14 +49,14 @@ export interface CalculatorDisplayProps {
 }
 
 export function CalculatorDisplay({ value, secondary, theme }: CalculatorDisplayProps) {
+  const hideSecondary = theme === "aqua" || theme === "system7";
+
   return (
     <div className="flex flex-col gap-0.5">
-      {secondary ? (
+      {secondary && !hideSecondary ? (
         <div
           className={cn(
             "text-right text-xs opacity-70 px-1 truncate",
-            theme === "system7" && "text-black",
-            theme === "aqua" && "text-neutral-600",
             (theme === "win98" || theme === "xp") && "text-neutral-700"
           )}
         >

@@ -34,7 +34,8 @@ import {
   type CalcState,
   type Operator,
 } from "../utils/calculatorEngine";
-import { CALCULATOR_WINDOW_SIZES } from "../utils/windowSizes";
+import { getCalculatorWindowSize } from "../utils/windowSizes";
+import type { CalculatorTheme } from "../components/types";
 import { helpItems } from "..";
 
 export type CalculatorMode = "basic" | "scientific" | "conversion";
@@ -123,6 +124,16 @@ export function useCalculatorLogic({
 
   const helpAbout = useAppHelpAboutDialogs();
 
+  const calculatorTheme: CalculatorTheme = isSystem7Theme
+    ? "system7"
+    : isMacOSTheme
+      ? "aqua"
+      : isWinXp
+        ? "xp"
+        : isWin98
+          ? "win98"
+          : "win98";
+
   useEffect(() => {
     dispatchCalc({
       type: "dispatch",
@@ -142,11 +153,11 @@ export function useCalculatorLogic({
   }, [mode, calcState.angleMode, conversionCategory, fromUnit, toUnit, conversionAmount]);
 
   useEffect(() => {
-    const size = CALCULATOR_WINDOW_SIZES[mode];
+    const size = getCalculatorWindowSize(mode, calculatorTheme);
     if (!instanceId || !instance) return;
     const position = instance.position ?? { x: 120, y: 120 };
     updateInstanceWindowState(instanceId, position, size);
-  }, [mode, instanceId, instance, updateInstanceWindowState]);
+  }, [mode, calculatorTheme, instanceId, instance, updateInstanceWindowState]);
 
   useEffect(() => {
     if (conversionCategory !== "currency") return;
@@ -273,15 +284,16 @@ export function useCalculatorLogic({
     setToUnit(fromUnit);
   }, [fromUnit, toUnit]);
 
-  const calculatorTheme = isSystem7Theme
-    ? "system7"
-    : isMacOSTheme
-      ? "aqua"
-      : isWinXp
-        ? "xp"
-        : isWin98
-          ? "win98"
-          : "win98";
+  const pressDoubleZero = useCallback(() => {
+    runCalc((s) => {
+      if (s.error) return s;
+      if (s.waitingForOperand || s.display === "0") {
+        return { ...s, display: "00", waitingForOperand: false };
+      }
+      if (s.display.length + 2 > 16) return s;
+      return { ...s, display: `${s.display}00` };
+    });
+  }, [runCalc]);
 
   return {
     t,
@@ -314,6 +326,7 @@ export function useCalculatorLogic({
     pressMemoryAdd,
     pressMemorySubtract,
     pressMemoryStore,
+    pressDoubleZero,
     conversionCategory,
     handleCategoryChange,
     fromUnit,

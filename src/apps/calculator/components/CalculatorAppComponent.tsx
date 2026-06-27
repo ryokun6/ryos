@@ -4,7 +4,7 @@ import { AppProps } from "@/apps/base/types";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { appMetadata } from "..";
 import { calculatorStyles } from "../utils/calculatorStyles";
-import { CALCULATOR_WINDOW_SIZES } from "../utils/windowSizes";
+import { getCalculatorWindowSize } from "../utils/windowSizes";
 import { CalculatorBody } from "./CalculatorBody";
 import { CalculatorMenuBar } from "./CalculatorMenuBar";
 import { useCalculatorLogic } from "../hooks/useCalculatorLogic";
@@ -27,12 +27,13 @@ export function CalculatorAppComponent({
     setIsAboutDialogOpen,
     isWindowsTheme,
     isMacTheme,
+    calculatorTheme,
     mode,
     setMode,
     pressClear,
   } = logic;
 
-  const size = CALCULATOR_WINDOW_SIZES[mode];
+  const size = getCalculatorWindowSize(mode, calculatorTheme);
 
   const menuBar = (
     <CalculatorMenuBar

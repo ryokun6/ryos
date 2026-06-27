@@ -4,93 +4,118 @@ export const calculatorStyles = `
     user-select: none;
     touch-action: manipulation;
     line-height: 1;
+    padding: 0;
   }
 
-  /* System 7 — 1984 Macintosh desk accessory */
-  .calc-theme-system7 {
-    background: #dddddd;
+  /* ── System 7 desk accessory ── */
+  .calc-theme-system7.calc-body {
+    background-color: #c0c0c0;
+    background-image: radial-gradient(circle, #000 0.55px, transparent 0.55px);
+    background-size: 2px 2px;
     padding: 6px;
     gap: 4px;
   }
   .calc-theme-system7 .calc-display {
-    background: #000;
-    color: #fff;
-    border: 2px inset #808080;
-    font-family: Monaco, "Courier New", monospace;
+    background: #fff;
+    color: #000;
+    border: 1px solid #000;
+    box-shadow: inset 1px 1px 0 #000;
+    font-family: Chicago, Geneva, var(--os-font-ui), sans-serif;
     text-align: right;
-    padding: 4px 6px;
-    min-height: 28px;
-    font-size: 18px;
-    letter-spacing: 1px;
+    padding: 2px 4px;
+    min-height: 22px;
+    font-size: 16px;
+    font-weight: 700;
+    border-radius: 0;
+  }
+  .calc-s7-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(5, 26px);
+    gap: 4px;
   }
   .calc-theme-system7 .calc-key {
     background: #fff;
     border: 1px solid #000;
     border-radius: 0;
     color: #000;
-    font-size: 14px;
-    font-weight: 600;
-    min-height: 28px;
-    box-shadow: none;
+    font-size: 13px;
+    font-weight: 700;
+    min-height: 26px;
+    box-shadow: 1px 1px 0 #000;
   }
   .calc-theme-system7 .calc-key:active {
-    background: #000;
-    color: #fff;
-  }
-  .calc-theme-system7 .calc-key-operator {
-    background: #eee;
+    box-shadow: none;
+    transform: translate(1px, 1px);
   }
   .calc-theme-system7 .calc-key-wide {
     grid-column: span 2;
   }
-  .calc-theme-aqua {
+  /* ── Mac OS X Tiger brushed metal (Aqua) ── */
+  .calc-theme-aqua.calc-body {
     background: transparent;
-    padding: 8px 10px 10px;
-    gap: 6px;
+    padding: 6px 8px 8px;
+    gap: 4px;
   }
   .calc-theme-aqua .calc-display {
-    background: linear-gradient(180deg, #1a1a1a 0%, #0a0a0a 100%);
-    color: #fff;
-    border: 1px solid rgba(0,0,0,0.8);
-    border-radius: 8px;
-    box-shadow: inset 0 2px 6px rgba(0,0,0,0.65), 0 1px 0 rgba(255,255,255,0.35);
-    font-family: "Lucida Grande", Geneva, sans-serif;
-    font-size: 28px;
-    font-weight: 300;
+    background: linear-gradient(180deg, #f2f6dc 0%, #e4eab8 100%);
+    color: #000;
+    border: 1px solid #8a8a7a;
+    border-radius: 4px;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.18);
+    font-family: "Lucida Grande", Geneva, var(--os-font-ui), sans-serif;
+    font-size: 22px;
+    font-weight: 400;
     text-align: right;
-    padding: 10px 12px;
-    min-height: 52px;
+    padding: 4px 8px;
+    min-height: 36px;
+    letter-spacing: 0.02em;
+  }
+  .calc-aqua-compact-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(6, 28px);
+    gap: 2px;
+  }
+  .calc-aqua-full-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    grid-template-rows: repeat(6, 26px);
+    gap: 2px;
   }
   .calc-theme-aqua .calc-key {
-    border-radius: 10px;
-    border: 1px solid rgba(0,0,0,0.45);
-    background: linear-gradient(180deg, #f8f8f8 0%, #d8d8d8 45%, #b8b8b8 100%);
-    box-shadow: 0 1px 0 rgba(255,255,255,0.8) inset, 0 1px 2px rgba(0,0,0,0.25);
+    border-radius: 4px;
+    border: 1px solid #6a6a6a;
+    background: linear-gradient(180deg, #fefefe 0%, #ececec 38%, #d4d4d4 72%, #c8c8c8 100%);
+    box-shadow: 0 1px 0 rgba(255,255,255,0.85) inset, 0 1px 1px rgba(0,0,0,0.12);
     color: #111;
-    font-size: 15px;
+    font-size: 13px;
     font-weight: 500;
-    min-height: 34px;
+    min-height: 26px;
   }
   .calc-theme-aqua .calc-key:active {
-    background: linear-gradient(180deg, #c8c8c8 0%, #a8a8a8 100%);
-    box-shadow: inset 0 1px 3px rgba(0,0,0,0.35);
-  }
-  .calc-theme-aqua .calc-key-operator {
-    background: linear-gradient(180deg, #ffd080 0%, #f0a030 50%, #d08010 100%);
-    color: #1a1000;
-    font-weight: 600;
+    background: linear-gradient(180deg, #d0d0d0 0%, #b8b8b8 100%);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.25);
   }
   .calc-theme-aqua .calc-key-function {
-    background: linear-gradient(180deg, #e8e8ec 0%, #c8c8d0 50%, #a8a8b0 100%);
-    font-size: 12px;
+    font-size: 11px;
+    background: linear-gradient(180deg, #f4f4f4 0%, #e0e0e0 50%, #cccccc 100%);
   }
-  .calc-theme-aqua .calc-key-equals {
-    background: linear-gradient(180deg, #90c0ff 0%, #5090e0 50%, #2060c0 100%);
-    color: #fff;
-    font-weight: 700;
+  .calc-theme-aqua .calc-key-operator {
+    font-weight: 600;
+  }
+  .calc-theme-aqua .calc-key-equals,
+  .calc-theme-aqua .calc-key-equals-wide {
+    font-weight: 600;
+  }
+  .calc-theme-aqua .calc-key-wide {
+    grid-column: span 2;
+  }
+  .calc-theme-aqua .calc-key-equals-wide {
+    grid-column: span 2;
   }
 
-  /* Windows 98 classic gray bevel */
+  /* ── Windows 98 ── */
   .calc-theme-win98 {
     background: #c0c0c0;
     padding: 4px;
@@ -123,7 +148,7 @@ export const calculatorStyles = `
     font-weight: 700;
   }
 
-  /* Windows XP Luna */
+  /* ── Windows XP ── */
   .calc-theme-xp {
     background: #ece9d8;
     padding: 6px;
@@ -164,7 +189,6 @@ export const calculatorStyles = `
     font-weight: 700;
   }
   .calc-theme-xp .calc-key-equals {
-    background: linear-gradient(180deg, #fff 0%, #ece9d8 100%);
     font-weight: 700;
   }
 
