@@ -34,7 +34,7 @@ export function CalculatorAquaCompactPanel({
   const theme: CalculatorTheme = "aqua";
 
   return (
-    <div className="calc-aqua-compact flex flex-col gap-[3px]">
+    <div className="calc-aqua-compact flex flex-col gap-1">
       <CalculatorDisplay value={display} theme={theme} />
       <div className="calc-aqua-compact-grid">
         <CalculatorKey label="MC" onClick={onMemoryClear} theme={theme} variant="function" style={{ gridColumn: 1, gridRow: 1 }} />

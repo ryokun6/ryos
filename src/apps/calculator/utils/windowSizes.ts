@@ -4,19 +4,19 @@ import type { CalculatorTheme } from "../components/types";
 const DEFAULT_SIZES: Record<CalculatorMode, { width: number; height: number }> = {
   basic: { width: 240, height: 360 },
   scientific: { width: 320, height: 520 },
-  conversion: { width: 300, height: 460 },
+  conversion: { width: 300, height: 420 },
 };
 
 const AQUA_SIZES: Record<CalculatorMode, { width: number; height: number }> = {
-  basic: { width: 198, height: 292 },
-  scientific: { width: 338, height: 268 },
-  conversion: { width: 280, height: 380 },
+  basic: { width: 206, height: 304 },
+  scientific: { width: 346, height: 280 },
+  conversion: { width: 280, height: 340 },
 };
 
 const SYSTEM7_SIZES: Record<CalculatorMode, { width: number; height: number }> = {
   basic: { width: 148, height: 208 },
   scientific: { width: 148, height: 208 },
-  conversion: { width: 220, height: 320 },
+  conversion: { width: 220, height: 300 },
 };
 
 export function getCalculatorWindowSize(

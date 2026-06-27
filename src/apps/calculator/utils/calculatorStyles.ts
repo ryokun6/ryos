@@ -78,70 +78,41 @@ export const calculatorStyles = `
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     grid-template-rows: repeat(6, 28px);
-    gap: 2px;
+    gap: 4px;
   }
   .calc-aqua-full-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     grid-template-rows: repeat(6, 26px);
-    gap: 2px;
+    gap: 4px;
   }
-  /* Raised plastic keys — Tiger Calculator pill texture */
-  .calc-theme-aqua .calc-key {
-    position: relative;
-    border-radius: 6px;
-    border: 1px solid rgba(0, 0, 0, 0.52);
-    background: linear-gradient(
-      180deg,
-      #fcfcfc 0%,
-      #f0f0f0 14%,
-      #e4e4e4 38%,
-      #d2d2d2 68%,
-      #c6c6c6 88%,
-      #bcbcbc 100%
-    );
-    box-shadow:
-      0 1px 0 rgba(255, 255, 255, 0.92) inset,
-      0 -1px 0 rgba(0, 0, 0, 0.05) inset,
-      0 1px 2px rgba(0, 0, 0, 0.2);
-    color: #1c1c1c;
+  /* Aqua keys reuse Finder toolbar metal-inset-btn via ToolbarButton */
+  .calc-theme-aqua .calc-aqua-key-group {
+    min-width: 0;
+  }
+  .calc-theme-aqua .calc-aqua-key {
     font-size: 13px;
     font-weight: 500;
-    min-height: 26px;
-    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.72);
-  }
-  .calc-theme-aqua .calc-key:active {
-    background: linear-gradient(180deg, #c4c4c4 0%, #a8a8a8 55%, #989898 100%);
-    box-shadow:
-      inset 0 1px 3px rgba(0, 0, 0, 0.32),
-      inset 0 0 1px rgba(0, 0, 0, 0.18);
-    text-shadow: none;
+    padding: 2px 4px;
   }
   .calc-theme-aqua .calc-key-function {
     font-size: 11px;
-    background: linear-gradient(
-      180deg,
-      #f6f6f6 0%,
-      #ececec 30%,
-      #dadada 65%,
-      #cecece 100%
-    );
   }
-  .calc-theme-aqua .calc-key-operator {
-    font-weight: 600;
-  }
+  .calc-theme-aqua .calc-key-operator,
   .calc-theme-aqua .calc-key-equals,
   .calc-theme-aqua .calc-key-equals-wide {
     font-weight: 600;
   }
-  .calc-theme-aqua .calc-key-wide {
+  .calc-theme-aqua .calc-key-wide,
+  .calc-theme-aqua .calc-aqua-key-group.calc-key-wide {
     grid-column: span 2;
   }
-  .calc-theme-aqua .calc-key-equals-wide {
+  .calc-theme-aqua .calc-key-equals-wide,
+  .calc-theme-aqua .calc-aqua-key-group.calc-key-equals-wide {
     grid-column: span 2;
   }
 
-  /* Aqua dark mode — graphite keys on dark brushed metal */
+  /* Aqua dark mode — recessed LCD display (keys follow metal-inset-btn dark rules) */
   :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .calc-theme-aqua .calc-display {
     background: linear-gradient(180deg, #242428 0%, #161618 55%, #101012 100%);
     color: #d8e8cc;
@@ -150,40 +121,6 @@ export const calculatorStyles = `
       inset 0 2px 5px rgba(0, 0, 0, 0.72),
       inset 0 1px 0 rgba(255, 255, 255, 0.04),
       0 1px 0 rgba(255, 255, 255, 0.05);
-  }
-  :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .calc-theme-aqua .calc-key {
-    border: 1px solid rgba(0, 0, 0, 0.88);
-    background: linear-gradient(
-      180deg,
-      #56565c 0%,
-      #4a4a50 18%,
-      #3e3e44 45%,
-      #323238 72%,
-      #2a2a2f 92%,
-      #36363c 100%
-    );
-    box-shadow:
-      0 1px 0 rgba(255, 255, 255, 0.12) inset,
-      0 -1px 0 rgba(0, 0, 0, 0.35) inset,
-      0 1px 2px rgba(0, 0, 0, 0.55);
-    color: rgba(255, 255, 255, 0.9);
-    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55);
-  }
-  :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .calc-theme-aqua .calc-key:active {
-    background: linear-gradient(180deg, #2e2e33 0%, #242428 55%, #1c1c20 100%);
-    box-shadow:
-      inset 0 1px 3px rgba(0, 0, 0, 0.55),
-      inset 0 0 1px rgba(0, 0, 0, 0.35);
-    text-shadow: none;
-  }
-  :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .calc-theme-aqua .calc-key-function {
-    background: linear-gradient(
-      180deg,
-      #505056 0%,
-      #44444a 35%,
-      #36363c 70%,
-      #2c2c32 100%
-    );
   }
 
   /* ── Windows 98 ── */
@@ -263,9 +200,10 @@ export const calculatorStyles = `
     font-weight: 700;
   }
 
-  .calc-conversion-panel select,
-  .calc-conversion-panel input {
+  .calc-conversion-panel {
     font-family: var(--os-font-ui), Geneva, Tahoma, sans-serif;
-    font-size: 12px;
+  }
+  .calc-conversion-panel .calc-swap-btn {
+    font-size: 11px;
   }
 `;

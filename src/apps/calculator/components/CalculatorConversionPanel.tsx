@@ -1,6 +1,22 @@
 import type { TFunction } from "i18next";
+import { ArrowsDownUp } from "@phosphor-icons/react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ToolbarButton, ToolbarButtonGroup } from "@/components/ui/toolbar-button";
 import { cn } from "@/lib/utils";
-import type { ConversionCategory } from "../utils/conversionData";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
+import {
+  CONVERSION_CATEGORIES,
+  type ConversionCategory,
+  type ConversionUnit,
+} from "../utils/conversionData";
 import type { CalculatorTheme } from "./types";
 
 interface CalculatorConversionPanelProps {
@@ -20,6 +36,74 @@ interface CalculatorConversionPanelProps {
   t: TFunction;
 }
 
+function unitLabel(unit: ConversionUnit, t: TFunction): string {
+  return unit.labelKey.startsWith("apps.")
+    ? t(unit.labelKey, unit.id)
+    : unit.labelKey;
+}
+
+function UnitSelect({
+  value,
+  units,
+  onChange,
+  t,
+  className,
+}: {
+  value: string;
+  units: ConversionUnit[];
+  onChange: (unitId: string) => void;
+  t: TFunction;
+  className?: string;
+}) {
+  const selected = units.find((u) => u.id === value);
+
+  return (
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger className={cn("h-8 shrink-0 text-xs", className)}>
+        <SelectValue placeholder={t("apps.calculator.conversion.selectUnit", "Unit")}>
+          {selected ? unitLabel(selected, t) : value}
+        </SelectValue>
+      </SelectTrigger>
+      <SelectContent>
+        {units.map((unit) => (
+          <SelectItem key={unit.id} value={unit.id}>
+            {unitLabel(unit, t)}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+function CategorySelect({
+  categoryId,
+  onCategoryChange,
+  t,
+}: {
+  categoryId: string;
+  onCategoryChange: (categoryId: string) => void;
+  t: TFunction;
+}) {
+  const selected = CONVERSION_CATEGORIES.find((c) => c.id === categoryId);
+
+  return (
+    <Select value={categoryId} onValueChange={onCategoryChange}>
+      <SelectTrigger className="h-8 w-full text-xs">
+        <SelectValue placeholder={t("apps.calculator.conversion.category", "Category")}>
+          {selected ? t(selected.labelKey, selected.id) : categoryId}
+        </SelectValue>
+      </SelectTrigger>
+      <SelectContent>
+        {CONVERSION_CATEGORIES.map((cat) => (
+          <SelectItem key={cat.id} value={cat.id}>
+            {t(cat.labelKey, cat.id)}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
 export function CalculatorConversionPanel({
   theme,
   category,
@@ -36,115 +120,96 @@ export function CalculatorConversionPanel({
   onSwap,
   t,
 }: CalculatorConversionPanelProps) {
-  const selectClass = cn(
-    "w-full border px-1 py-0.5 bg-os-input-bg text-os-text-primary",
-    theme === "system7" && "rounded-none border-black",
-    theme === "aqua" && "rounded-md border-black/30",
-    (theme === "win98" || theme === "xp") && "rounded-none border-neutral-500"
-  );
+  const { isMacOSTheme, isSystem7Theme } = useThemeFlags();
 
-  const inputClass = cn(
-    "w-full border px-2 py-1 text-right bg-os-input-bg text-os-text-primary font-mono",
-    theme === "system7" && "rounded-none border-black",
-    theme === "aqua" && "rounded-md border-black/30 text-lg",
-    (theme === "win98" || theme === "xp") && "rounded-none border-neutral-500"
+  const fieldLabelClass = cn(
+    "text-xs text-os-text-secondary",
+    isSystem7Theme && "font-bold text-black"
   );
 
   return (
-    <div className="calc-conversion-panel flex flex-col gap-2 flex-1">
-      <label className="flex flex-col gap-0.5 text-xs">
-        <span>{t("apps.calculator.conversion.category", "Category")}</span>
-        <select
-          className={selectClass}
-          value={category.id}
-          onChange={(e) => onCategoryChange(e.target.value)}
-        >
-          {[
-            "length",
-            "area",
-            "volume",
-            "mass",
-            "temperature",
-            "speed",
-            "time",
-            "pressure",
-            "energy",
-            "currency",
-          ].map((id) => (
-            <option key={id} value={id}>
-              {t(`apps.calculator.conversion.categories.${id}`, id)}
-            </option>
-          ))}
-        </select>
-      </label>
+    <div className="calc-conversion-panel flex flex-col gap-2 flex-1 min-h-0">
+      <div className="flex flex-col gap-1">
+        <span className={fieldLabelClass}>
+          {t("apps.calculator.conversion.category", "Category")}
+        </span>
+        <CategorySelect
+          categoryId={category.id}
+          onCategoryChange={onCategoryChange}
+          t={t}
+        />
+      </div>
 
-      <label className="flex flex-col gap-0.5 text-xs">
-        <span>{t("apps.calculator.conversion.from", "From")}</span>
+      <div className="flex flex-col gap-1">
+        <span className={fieldLabelClass}>
+          {t("apps.calculator.conversion.from", "From")}
+        </span>
         <div className="flex gap-1 items-center">
-          <input
-            className={inputClass}
+          <Input
+            className="h-8 flex-1 text-right font-mono text-sm"
             value={amount}
             onChange={(e) => onAmountChange(e.target.value)}
             inputMode="decimal"
+            aria-label={t("apps.calculator.conversion.amount", "Amount")}
           />
-          <select
-            className={cn(selectClass, "w-auto min-w-[88px]")}
+          <UnitSelect
             value={fromUnit}
-            onChange={(e) => onFromUnitChange(e.target.value)}
-          >
-            {category.units.map((unit) => (
-              <option key={unit.id} value={unit.id}>
-                {unit.labelKey.startsWith("apps.")
-                  ? t(unit.labelKey, unit.id)
-                  : unit.labelKey}
-              </option>
-            ))}
-          </select>
+            units={category.units}
+            onChange={onFromUnitChange}
+            t={t}
+            className="w-[96px]"
+          />
         </div>
-      </label>
-
-      <div className="flex justify-center">
-        <button
-          type="button"
-          className={cn(
-            "calc-key px-3 py-0.5 text-xs",
-            theme === "aqua" && "rounded-md",
-            theme === "system7" && "border border-black bg-white",
-            (theme === "win98" || theme === "xp") && "border border-neutral-500 bg-[#c0c0c0]"
-          )}
-          onClick={onSwap}
-        >
-          ⇅ {t("apps.calculator.conversion.swap", "Swap")}
-        </button>
       </div>
 
-      <label className="flex flex-col gap-0.5 text-xs">
-        <span>{t("apps.calculator.conversion.to", "To")}</span>
-        <div className="flex gap-1 items-center">
-          <div
+      <div className="flex justify-center py-0.5">
+        {isMacOSTheme && theme === "aqua" ? (
+          <ToolbarButtonGroup>
+            <ToolbarButton className="calc-swap-btn gap-1 px-3" onClick={onSwap}>
+              <ArrowsDownUp size={14} aria-hidden />
+              {t("apps.calculator.conversion.swap", "Swap")}
+            </ToolbarButton>
+          </ToolbarButtonGroup>
+        ) : (
+          <Button
+            type="button"
+            variant={isMacOSTheme ? "secondary" : isSystem7Theme ? "player" : "default"}
             className={cn(
-              inputClass,
-              "flex-1 min-h-[32px] flex items-center justify-end opacity-90",
+              "calc-swap-btn h-[24px] px-3 text-xs gap-1",
+              theme === "win98" && "text-black"
+            )}
+            onClick={onSwap}
+          >
+            <ArrowsDownUp size={14} aria-hidden />
+            {t("apps.calculator.conversion.swap", "Swap")}
+          </Button>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <span className={fieldLabelClass}>
+          {t("apps.calculator.conversion.to", "To")}
+        </span>
+        <div className="flex gap-1 items-center">
+          <Input
+            readOnly
+            tabIndex={-1}
+            className={cn(
+              "h-8 flex-1 text-right font-mono text-sm opacity-90",
               loading && "opacity-50"
             )}
-          >
-            {loading ? "…" : result}
-          </div>
-          <select
-            className={cn(selectClass, "w-auto min-w-[88px]")}
+            value={loading ? "…" : result}
+            aria-label={t("apps.calculator.conversion.result", "Result")}
+          />
+          <UnitSelect
             value={toUnit}
-            onChange={(e) => onToUnitChange(e.target.value)}
-          >
-            {category.units.map((unit) => (
-              <option key={unit.id} value={unit.id}>
-                {unit.labelKey.startsWith("apps.")
-                  ? t(unit.labelKey, unit.id)
-                  : unit.labelKey}
-              </option>
-            ))}
-          </select>
+            units={category.units}
+            onChange={onToUnitChange}
+            t={t}
+            className="w-[96px]"
+          />
         </div>
-      </label>
+      </div>
 
       {error ? <p className="text-xs text-red-600">{error}</p> : null}
     </div>
