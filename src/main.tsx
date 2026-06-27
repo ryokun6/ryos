@@ -9,6 +9,7 @@ import { initPrefetch } from "./utils/prefetch";
 import { initializeI18nForFirstPaint } from "./lib/i18n";
 import { primeReactResources } from "./lib/reactResources";
 import { initializeAnalytics, track, SYSTEM_ANALYTICS } from "./utils/analytics";
+import { writeAgentDebugLog } from "./utils/agentDebugLog";
 import {
   isInReloadLoop,
   trackReload,
@@ -56,6 +57,19 @@ let isPreloadReloading = false;
 
 const handlePreloadError = (event: Event) => {
   console.warn("[ryOS] Chunk load failed:", event);
+  // #region agent log
+  writeAgentDebugLog({
+    hypothesisId: "H1",
+    location: "src/main.tsx:59",
+    message: "vite preload error handler invoked",
+    data: {
+      online: navigator.onLine,
+      reloadLoop: isInReloadLoop(),
+      cooldown: isStaleReloadOnCooldown(),
+      hrefHasCacheBust: window.location.search.includes("_cb="),
+    },
+  });
+  // #endregion
 
   if (isPreloadReloading) return;
 
