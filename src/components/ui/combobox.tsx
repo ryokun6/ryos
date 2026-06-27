@@ -53,17 +53,61 @@ function optionSearchHaystack(option: ComboboxOption): string {
   return `${option.value} ${option.label} ${option.description ?? ""}`.toLowerCase();
 }
 
-function measureTriggerRect(
+const VIEWPORT_MARGIN = 8;
+const PANEL_GAP = 4;
+
+type PanelRect = {
+  left: number;
+  top: number;
+  width: number;
+  maxHeight: number;
+};
+
+// Position the dropdown next to the trigger, flipping above and shifting
+// horizontally as needed so it always stays within the viewport ("pop wherever
+// there is space"). When a rendered panel is supplied its measured height is
+// used to decide whether to flip; otherwise we fall back to an estimate.
+function computePanelRect(
   trigger: HTMLButtonElement | null,
-  minPanelWidth: number
-): { left: number; top: number; width: number } | null {
+  panel: HTMLDivElement | null,
+  minPanelWidth: number,
+  estimatedHeight: number
+): PanelRect | null {
   if (!trigger) return null;
   const r = trigger.getBoundingClientRect();
-  return {
-    left: r.left,
-    top: r.bottom + 4,
-    width: Math.max(r.width, minPanelWidth),
-  };
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+
+  const width = Math.min(
+    Math.max(r.width, minPanelWidth),
+    Math.max(viewportWidth - VIEWPORT_MARGIN * 2, 0)
+  );
+
+  // Horizontal: align to the trigger's left edge, then clamp into view.
+  let left = r.left;
+  if (left + width > viewportWidth - VIEWPORT_MARGIN) {
+    left = viewportWidth - VIEWPORT_MARGIN - width;
+  }
+  if (left < VIEWPORT_MARGIN) left = VIEWPORT_MARGIN;
+
+  const spaceBelow = viewportHeight - r.bottom - PANEL_GAP - VIEWPORT_MARGIN;
+  const spaceAbove = r.top - PANEL_GAP - VIEWPORT_MARGIN;
+  const desired = panel ? panel.offsetHeight : estimatedHeight;
+
+  // Prefer below; flip above only when it doesn't fit below but fits better above.
+  const openBelow = desired <= spaceBelow || spaceBelow >= spaceAbove;
+
+  let top: number;
+  let maxHeight: number;
+  if (openBelow) {
+    top = r.bottom + PANEL_GAP;
+    maxHeight = spaceBelow;
+  } else {
+    maxHeight = spaceAbove;
+    top = r.top - PANEL_GAP - Math.min(desired, maxHeight);
+  }
+
+  return { left, top, width, maxHeight: Math.max(maxHeight, 0) };
 }
 
 function ComboboxImpl({
@@ -95,11 +139,7 @@ function ComboboxImpl({
   // Only paint the highlight when it follows the pointer; keyboard navigation
   // (and the initial index) moves the selection silently.
   const [hovering, setHovering] = useState(false);
-  const [rect, setRect] = useState<{
-    left: number;
-    top: number;
-    width: number;
-  } | null>(null);
+  const [rect, setRect] = useState<PanelRect | null>(null);
 
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -137,20 +177,37 @@ function ComboboxImpl({
       ?.scrollIntoView({ block: "nearest" });
   }, []);
 
+  // Header (search + optional filters) height estimate used before the panel
+  // has rendered and can be measured precisely.
+  const estimatedHeight =
+    maxListHeight + (filters && filters.length > 0 ? 96 : 56);
+
   const updateRect = useCallback(() => {
-    const next = measureTriggerRect(triggerRef.current, minPanelWidth);
+    const next = computePanelRect(
+      triggerRef.current,
+      panelRef.current,
+      minPanelWidth,
+      estimatedHeight
+    );
     if (next) setRect(next);
-  }, [minPanelWidth]);
+  }, [minPanelWidth, estimatedHeight]);
 
   const openPanel = useCallback(() => {
     if (disabled) return;
-    setRect(measureTriggerRect(triggerRef.current, minPanelWidth));
+    setRect(
+      computePanelRect(
+        triggerRef.current,
+        null,
+        minPanelWidth,
+        estimatedHeight
+      )
+    );
     setQuery("");
     setHighlight(0);
     setHovering(false);
     setOpen(true);
     playOpen();
-  }, [disabled, minPanelWidth, playOpen]);
+  }, [disabled, minPanelWidth, estimatedHeight, playOpen]);
 
   const closePanel = useCallback(() => {
     setOpen(false);
@@ -293,13 +350,14 @@ function ComboboxImpl({
                 style={
                   isMacOSTheme
                     ? {
+                        maxHeight: rect.maxHeight,
                         border: "none",
                         borderRadius: "0px",
                         background: "var(--os-pinstripe-window)",
                         ...(isAquaGlass ? {} : { opacity: 0.95 }),
                         boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
                       }
-                    : undefined
+                    : { maxHeight: rect.maxHeight }
                 }
               >
                 <div className="px-2 pt-1.5 pb-1.5">
@@ -352,7 +410,7 @@ function ComboboxImpl({
 
                 <div
                   ref={listRef}
-                  className="overflow-y-auto py-1"
+                  className="min-h-0 flex-1 overflow-y-auto py-1"
                   style={{ maxHeight: maxListHeight }}
                 >
                   {filtered.length === 0 ? (
