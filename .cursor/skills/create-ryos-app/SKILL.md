@@ -12,11 +12,13 @@ description: Create new applications for ryOS following established patterns and
 - [ ] 2. Create main component: components/[AppName]AppComponent.tsx
 - [ ] 3. Create menu bar: components/[AppName]MenuBar.tsx
 - [ ] 4. Create logic hook: hooks/use[AppName]Logic.ts
-- [ ] 5. Create app definition: index.tsx (include 6 help items)
-- [ ] 6. Add icon: public/icons/default/[app-name].png
-- [ ] 7. Register in src/config/appRegistry.tsx
-- [ ] 8. Add translation keys to src/lib/locales/en/translation.json
-- [ ] 9. Localize (last): add en strings, sync locales; use the localize skill to finish
+- [ ] 5. Create metadata: metadata.ts (appMetadata + exactly 6 help items)
+- [ ] 6. Create app definition: index.tsx (re-export metadata, declare initialData type)
+- [ ] 7. Add icon: public/icons/default/[app-name].png
+- [ ] 8. Register the app id: add to appIds + appNames in src/config/appRegistryData.ts
+- [ ] 9. Register the app: lazy component + registry entry in src/config/appRegistry.tsx
+- [ ] 10. Add translation keys to src/lib/locales/en/translation.json
+- [ ] 11. Localize (last): add en strings, sync locales; use the localize skill to finish
 ```
 
 ## Directory Structure
@@ -28,10 +30,17 @@ src/apps/[app-name]/
 │   └── [AppName]MenuBar.tsx       # Menu bar (required)
 ├── hooks/
 │   └── use[AppName]Logic.ts       # Logic hook (recommended)
-└── index.tsx                      # App definition (required)
+├── metadata.ts                    # appMetadata + helpItems (required)
+└── index.tsx                      # App definition: re-export metadata, initialData types (required)
 ```
 
-## 1. App Definition (`index.tsx`)
+### Why metadata lives in its own file
+
+`appRegistry.tsx` imports `appMetadata`/`helpItems` **eagerly** so the dock, About/Help dialogs, and search can show app info without loading the (lazy) component bundle. Keep these in a tiny `metadata.ts` that imports nothing heavy. Most current apps follow this split (`@/apps/<id>/metadata`). `index.tsx` then re-exports from `metadata.ts` and is the home for `initialData` types and any app-specific exported types.
+
+## 1. Metadata (`metadata.ts`)
+
+Keep app metadata and help items in `metadata.ts` so the registry can load them eagerly without pulling in the component.
 
 ```tsx
 export const appMetadata = {
@@ -51,6 +60,19 @@ export const helpItems = [
   { icon: "⌨️", title: "Shortcuts", description: "Use keyboard shortcuts for faster workflows" },
   { icon: "❓", title: "Help & About", description: "Open Help from the Help menu for more info" },
 ];
+```
+
+### App Definition (`index.tsx`)
+
+Re-export the metadata and declare any `initialData` type. This is what other files import as `@/apps/[app-name]`.
+
+```tsx
+export { appMetadata, helpItems } from "./metadata";
+
+// Optional: typed startup payload for launchApp("[app-name]", { ... })
+export interface [AppName]InitialData {
+  // e.g. filePath?: string;
+}
 ```
 
 ## 2. Main Component (`[AppName]AppComponent.tsx`)
@@ -224,20 +246,41 @@ export function [AppName]MenuBar({ onClose, onShowHelp, onShowAbout }: [AppName]
 }
 ```
 
-## 5. Register in `appRegistry.tsx`
+## 5. Register the App ID (`appRegistryData.ts`)
+
+The `AppId` union type, dock/search ordering, and store lookups all derive from `src/config/appRegistryData.ts`. **Add the id here first** — otherwise `appRegistry.tsx` (and everything typed against `AppId`) will not compile.
 
 ```tsx
-// Import
-import { appMetadata as [appName]Metadata, helpItems as [appName]HelpItems } from "@/apps/[app-name]";
+// src/config/appRegistryData.ts
+export const appIds = [
+  // ...existing ids...
+  "[app-name]",
+] as const;
 
-// Lazy component
+export const appNames: Record<AppId, string> = {
+  // ...existing names...
+  "[app-name]": "[App Name]",
+};
+```
+
+If you ever rename an app's id, add the old id to `LEGACY_APP_ID_ALIASES` so persisted/bookmarked references still resolve.
+
+## 6. Register in `appRegistry.tsx`
+
+`createLazyComponent` lives in `src/config/lazyAppComponent.tsx` (already imported at the top of `appRegistry.tsx`) and registers the chunk for intent-based prefetch. Import metadata from the lightweight `metadata.ts`, not the component.
+
+```tsx
+// Metadata import (eager, lightweight) — note the /metadata path
+import { appMetadata as [appName]Metadata, helpItems as [appName]HelpItems } from "@/apps/[app-name]/metadata";
+
+// Lazy component (loaded on open). Use your initialData type instead of unknown if you declared one.
 const Lazy[AppName]App = createLazyComponent<unknown>(
   () => import("@/apps/[app-name]/components/[AppName]AppComponent")
     .then(m => ({ default: m.[AppName]AppComponent })),
-  "[app-name]"
+  "[app-name]" // cache key = app id, keeps refs stable across HMR + enables prefetch
 );
 
-// Add to registry
+// Add to the appRegistry object
 ["[app-name]"]: {
   id: "[app-name]",
   name: "[App Name]",
@@ -313,7 +356,7 @@ export const use[AppName]Store = create<State>()(
 );
 ```
 
-## 9. Localize (Do Last)
+## 7. Localize (Do Last)
 
 After the app is built and wired up, finish by localizing:
 
