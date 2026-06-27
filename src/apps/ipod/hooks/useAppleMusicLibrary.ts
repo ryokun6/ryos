@@ -392,6 +392,34 @@ const FAVORITE_SONGS_COLLECTION_KEY: AppleMusicTrackCollectionKey =
 const RADIO_STATIONS_COLLECTION_KEY: AppleMusicTrackCollectionKey =
   "radio-stations";
 
+function describeAppleMusicError(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (typeof err === "object" && err !== null) {
+    const errorLike = err as {
+      message?: unknown;
+      status?: unknown;
+      statusCode?: unknown;
+      response?: { status?: unknown };
+    };
+    const message =
+      typeof errorLike.message === "string" ? errorLike.message : undefined;
+    const status =
+      errorLike.status ?? errorLike.statusCode ?? errorLike.response?.status;
+    if (message && status) return `${message} (status ${String(status)})`;
+    if (message) return message;
+    if (status) return `status ${String(status)}`;
+  }
+  return String(err);
+}
+
+function warnAppleMusic(message: string, err?: unknown): void {
+  if (err === undefined) {
+    console.warn(message);
+    return;
+  }
+  console.warn(`${message}: ${describeAppleMusicError(err)}`);
+}
+
 function getAppleMusicInstanceForUser() {
   const instance = getMusicKitInstance();
   if (!instance) throw new Error("MusicKit instance is not configured");
@@ -505,7 +533,7 @@ export async function fetchAppleMusicRadioStations(
 
     const recommendations = await fetchAppleMusicRecommendations().catch(
       (err) => {
-        console.warn("[apple music] failed to load recommendation stations", err);
+        warnAppleMusic("[apple music] failed to load recommendation stations", err);
         return [] as AppleMusicRecommendationResource[];
       }
     );
@@ -542,7 +570,7 @@ export async function fetchAppleMusicRadioStations(
     return stations;
   } catch (err) {
     if (cached) {
-      console.warn(
+      warnAppleMusic(
         "[apple music] radio refresh failed (using cached stations)",
         err
       );
@@ -638,7 +666,7 @@ async function fetchAppleMusicRecentlyAddedTracksFromApi(): Promise<Track[]> {
           addTrack(track);
         }
       } catch (err) {
-        console.warn(
+        warnAppleMusic(
           `[apple music] failed to load recently added album ${resource.id}`,
           err
         );
@@ -679,7 +707,7 @@ export async function fetchAppleMusicRecentlyAddedTracks(
     return tracks;
   } catch (err) {
     if (cached?.tracks.length) {
-      console.warn(
+      warnAppleMusic(
         "[apple music] recently added refresh failed (using cached collection)",
         err
       );
@@ -761,7 +789,7 @@ export async function fetchAppleMusicFavoriteSongTracks(
     return tracks;
   } catch (err) {
     if (cached?.tracks.length) {
-      console.warn(
+      warnAppleMusic(
         "[apple music] favorite songs refresh failed (using cached collection)",
         err
       );
@@ -1099,7 +1127,7 @@ export async function refreshStaleAppleMusicPlaylistTracks(
           try {
             await fetchAppleMusicPlaylistTracks(id, { force: true });
           } catch (err) {
-            console.warn(
+            warnAppleMusic(
               `[apple music] background refresh of playlist ${id} failed`,
               err
             );
@@ -1385,7 +1413,7 @@ export async function fetchAppleMusicLibrary(
       // background path.
       await refreshAppleMusicPlaylists({ force: true });
     } catch (err) {
-      console.warn("[apple music] playlist sync failed (songs kept)", err);
+      warnAppleMusic("[apple music] playlist sync failed (songs kept)", err);
     }
 
     // After the playlist list is fresh, kick off a background pre-fetch
@@ -1402,7 +1430,7 @@ export async function fetchAppleMusicLibrary(
     //     down the library sync if a single playlist fetch fails.
     void refreshStaleAppleMusicPlaylistTracks({ includeUncached: true }).catch(
       (err) => {
-        console.warn(
+        warnAppleMusic(
           "[apple music] background pre-fetch of playlist tracks failed",
           err
         );
@@ -1816,7 +1844,7 @@ export function useAppleMusicLibrary({
         // refresh quietly in the background. Don't show the progress
         // toast — the user already has a working library.
         fetchAppleMusicLibrary({ force: true }).catch((err) => {
-          console.warn(
+          warnAppleMusic(
             "[apple music] background library refresh failed (using cached copy)",
             err
           );
@@ -1828,7 +1856,9 @@ export function useAppleMusicLibrary({
       // toast since the user has nothing to look at until this
       // finishes.
       runWithProgressToast(false).catch((err) => {
-        console.error("[apple music] initial library load failed", err);
+        console.error(
+          `[apple music] initial library load failed: ${describeAppleMusicError(err)}`
+        );
       });
     };
 
@@ -1901,7 +1931,7 @@ export function useAppleMusicLibrary({
         // failure here would be unexpected (e.g. MusicKit instance went
         // away mid-refresh). Log + swallow so opportunistic background
         // work never bubbles into the UI.
-        console.warn(
+        warnAppleMusic(
           "[apple music] opportunistic playlist refresh failed",
           err
         );
