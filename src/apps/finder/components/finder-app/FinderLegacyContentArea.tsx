@@ -1,6 +1,7 @@
 import { AirDropView } from "../AirDropView";
 import { FinderFileListContent, type FinderFileListContentProps } from "./FinderFileListContent";
 import type { TFunction } from "i18next";
+import { formatStorageSize } from "@/stores/useFinderStore";
 
 export interface FinderLegacyContentAreaProps {
   t: TFunction;
@@ -49,7 +50,7 @@ export function FinderLegacyContentArea({
             : t("apps.finder.statusBar.item")}
         </span>
         <span>
-          {Math.round((storageSpaceAvailable / 1024 / 1024) * 10) / 10} MB{" "}
+          {formatStorageSize(storageSpaceAvailable)}{" "}
           {t("apps.finder.statusBar.available")}
         </span>
       </div>

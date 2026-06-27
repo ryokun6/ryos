@@ -10,7 +10,10 @@ import { useTranslation } from "react-i18next";
 import { ViewType, SortType } from "../components/FinderMenuBar";
 import { useFileSystem, DocumentContent } from "./useFileSystem";
 import { STORES, dbOperations } from "@/utils/indexedDB";
-import { calculateStorageSpace } from "@/stores/useFinderStore";
+import {
+  calculateStorageSpace,
+  estimateStorageSpace,
+} from "@/stores/useFinderStore";
 import { FileItem } from "../components/FileList";
 import { useFinderStore } from "@/stores/useFinderStore";
 import { useAppStore, type LaunchOriginRect } from "@/stores/useAppStore";
@@ -448,13 +451,24 @@ export function useFinderLogic({
   // Use the original saveFile directly without TextEditStore updates
   const saveFile = originalSaveFile;
 
-  // Update storage space periodically
+  // Update storage space periodically using the accurate StorageManager
+  // estimate (covers IndexedDB + Cache Storage + localStorage), falling back
+  // to the rough localStorage heuristic when the API is unavailable.
   useEffect(() => {
-    const interval = setInterval(() => {
-      setStorageSpace(calculateStorageSpace());
-    }, 15000); // Update every 15 seconds
+    let cancelled = false;
 
-    return () => clearInterval(interval);
+    const refresh = async () => {
+      const space = await estimateStorageSpace();
+      if (!cancelled) setStorageSpace(space);
+    };
+
+    void refresh();
+    const interval = setInterval(() => void refresh(), 15000); // Update every 15 seconds
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
   }, []);
 
   // Sort files

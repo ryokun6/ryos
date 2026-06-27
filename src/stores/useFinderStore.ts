@@ -209,3 +209,50 @@ export const calculateStorageSpace = () => {
     percentUsed: Math.round((used / total) * 100),
   };
 };
+
+// ---------------------------------------------
+// Utility: estimateStorageSpace (async, accurate)
+// Uses the StorageManager API (navigator.storage.estimate) which reports the
+// real per-origin usage across ALL storage backends (localStorage, IndexedDB,
+// Cache Storage, etc.) plus the browser-granted quota. Falls back to the rough
+// localStorage-only heuristic when the API is unavailable (e.g. older Safari).
+export const estimateStorageSpace = async (): Promise<
+  ReturnType<typeof calculateStorageSpace>
+> => {
+  try {
+    if (
+      typeof navigator !== "undefined" &&
+      navigator.storage &&
+      typeof navigator.storage.estimate === "function"
+    ) {
+      const { usage, quota } = await navigator.storage.estimate();
+      if (typeof quota === "number" && quota > 0) {
+        const total = quota;
+        const used = typeof usage === "number" ? usage : 0;
+        const available = Math.max(total - used, 0);
+        return {
+          total,
+          used,
+          available,
+          percentUsed: Math.round((used / total) * 100),
+        };
+      }
+    }
+  } catch (err) {
+    console.error("[FinderStore] Error estimating storage space", err);
+  }
+
+  // Fallback: rough localStorage-only heuristic.
+  return calculateStorageSpace();
+};
+
+// Format a byte count for the Finder status bar, using GB for large quotas
+// (real StorageManager quotas are often several GB) and MB otherwise.
+export const formatStorageSize = (bytes: number): string => {
+  const mb = bytes / (1024 * 1024);
+  if (mb >= 1024) {
+    const gb = mb / 1024;
+    return `${Math.round(gb * 10) / 10} GB`;
+  }
+  return `${Math.round(mb * 10) / 10} MB`;
+};

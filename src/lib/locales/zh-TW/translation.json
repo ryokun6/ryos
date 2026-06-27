@@ -4284,6 +4284,7 @@
       "description": "關於此電腦上的 ryOS 資訊",
       "largestUnusedBlock": "最大未用區塊",
       "mb": "MB",
+      "gb": "GB",
       "privacyPolicy": "隱私權政策",
       "system": "系統",
       "termsOfService": "服務條款",

@@ -4284,6 +4284,7 @@
       "description": "이 컴퓨터의 ryOS 정보",
       "largestUnusedBlock": "가장 큰 사용 가능 블록",
       "mb": "MB",
+      "gb": "GB",
       "privacyPolicy": "개인정보 처리방침",
       "system": "시스템",
       "termsOfService": "이용 약관",

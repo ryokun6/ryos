@@ -4284,6 +4284,7 @@
       "description": "このコンピュータのryOSについて",
       "largestUnusedBlock": "最大の未使用ブロック",
       "mb": "MB",
+      "gb": "GB",
       "privacyPolicy": "プライバシーポリシー",
       "system": "システム",
       "termsOfService": "利用規約",
