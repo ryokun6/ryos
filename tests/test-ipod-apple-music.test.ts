@@ -58,6 +58,7 @@ const {
   getActiveIpodTracks,
   getIpodTracksForLibrary,
   getIpodChatContextTrack,
+  sanitizePersistedIpodStateForRehydrate,
 } = await import("../src/stores/useIpodStore");
 const { handleIpodControl } = await import("../src/apps/chats/tools/ipodHandler");
 const { handleKaraokeControl } = await import("../src/apps/chats/tools/karaokeHandler");
@@ -480,6 +481,57 @@ describe("useIpodStore Apple Music slice", () => {
       },
     ]);
     expect(useIpodStore.getState().appleMusicCurrentSongId).toBe("am:1");
+  });
+
+  test("rehydrate sanitizer drops legacy Apple Music cache payloads from localStorage", () => {
+    const staleTrack = {
+      id: "am:legacy",
+      url: "applemusic:legacy",
+      title: "Legacy Track",
+      source: "appleMusic",
+      rawMusicKitResource: {
+        attributes: { name: "Legacy Track" },
+        relationships: { catalog: { data: Array.from({ length: 20 }) } },
+      },
+    };
+
+    const sanitized = sanitizePersistedIpodStateForRehydrate({
+      librarySource: "appleMusic",
+      appleMusicCurrentSongId: "am:legacy",
+      appleMusicPlaybackQueue: [staleTrack, "am:legacy", "", "am:next"],
+      appleMusicTracks: [staleTrack],
+      appleMusicPlaylists: [{ id: "p.1", name: "Playlist" }],
+      appleMusicPlaylistTracks: { "p.1": [staleTrack] },
+      appleMusicRecentlyAddedTracks: [staleTrack],
+      appleMusicFavoriteTracks: [staleTrack],
+      appleMusicLibraryLoading: true,
+      appleMusicKitNowPlaying: { title: "Live Song", id: "123" },
+      ipodMenuBreadcrumb: [
+        {
+          title: "Songs",
+          selectedIndex: 3,
+          items: [staleTrack],
+          action: { giant: staleTrack },
+        },
+      ],
+    });
+
+    expect(sanitized.librarySource).toBe("appleMusic");
+    expect(sanitized.appleMusicCurrentSongId).toBe("am:legacy");
+    expect(sanitized.appleMusicPlaybackQueue).toEqual([
+      "am:legacy",
+      "am:next",
+    ]);
+    expect(sanitized.appleMusicTracks).toBeUndefined();
+    expect(sanitized.appleMusicPlaylists).toBeUndefined();
+    expect(sanitized.appleMusicPlaylistTracks).toBeUndefined();
+    expect(sanitized.appleMusicRecentlyAddedTracks).toBeUndefined();
+    expect(sanitized.appleMusicFavoriteTracks).toBeUndefined();
+    expect(sanitized.appleMusicLibraryLoading).toBeUndefined();
+    expect(sanitized.appleMusicKitNowPlaying).toBeUndefined();
+    expect(sanitized.ipodMenuBreadcrumb).toEqual([
+      { title: "Songs", selectedIndex: 3 },
+    ]);
   });
 
   test("appleMusicNextTrack walks the library forward without touching the YouTube slice", () => {
@@ -992,6 +1044,30 @@ describe("Apple Music opportunistic playlist refresh", () => {
     // No cached playlist tracks → nothing to revalidate, no network call.
     await refreshStaleAppleMusicPlaylistTracks();
     const state = useIpodStore.getState();
+    expect(state.appleMusicPlaylistTracksLoadedAt).toEqual({});
+    expect(state.appleMusicPlaylistTracksLoading).toEqual({});
+  });
+
+  test("refreshStaleAppleMusicPlaylistTracks ignores playlist-list rows that were never opened", async () => {
+    useIpodStore.setState({
+      appleMusicPlaylists: [
+        {
+          id: "p:never-opened",
+          name: "Never Opened",
+          artworkUrl: undefined,
+          trackCount: 42,
+          canEdit: false,
+        },
+      ],
+      appleMusicPlaylistTracks: {},
+      appleMusicPlaylistTracksLoadedAt: {},
+      appleMusicPlaylistTracksLoading: {},
+    });
+
+    await refreshStaleAppleMusicPlaylistTracks();
+
+    const state = useIpodStore.getState();
+    expect(state.appleMusicPlaylistTracks).toEqual({});
     expect(state.appleMusicPlaylistTracksLoadedAt).toEqual({});
     expect(state.appleMusicPlaylistTracksLoading).toEqual({});
   });

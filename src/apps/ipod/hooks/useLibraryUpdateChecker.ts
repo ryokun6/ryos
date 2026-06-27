@@ -8,6 +8,7 @@ import { hasLibraryTrackMetadataChanges } from "@/stores/ipodTrackMetadataSync";
 import { mapCatalogSongToTrack } from "@/stores/ipodCatalogTrackMapping";
 import { fetchSongsVersion, type SongsVersionInfo } from "@/api/songs";
 import { createVisibilityGatedInterval } from "@/utils/backgroundTask";
+import { debug } from "@/utils/debug";
 
 const CHECK_INTERVAL = 5 * 60 * 1000; // Check every 5 minutes
 
@@ -65,7 +66,9 @@ export function useLibraryUpdateChecker(isActive: boolean) {
           versionInfo.version === lastInSync.version &&
           versionInfo.count === lastInSync.count
         ) {
-          console.log("[iPod] Catalog version unchanged, skipping full check", versionInfo);
+          debug(
+            `[iPod] Catalog version unchanged, skipping full check (version=${versionInfo.version}, count=${versionInfo.count})`
+          );
           return;
         }
 
@@ -75,7 +78,7 @@ export function useLibraryUpdateChecker(isActive: boolean) {
         const cachedSongs = await listAllCachedSongMetadata("ryo");
         
         if (cachedSongs.length === 0) {
-          console.log("[iPod] No songs found in Redis cache, skipping update check");
+          debug("[iPod] No songs found in Redis cache, skipping update check");
           return;
         }
         
@@ -102,14 +105,9 @@ export function useLibraryUpdateChecker(isActive: boolean) {
           }
         });
 
-        console.log("[iPod] Auto update check:", {
-          newTracksCount,
-          tracksUpdated,
-          currentTracksCount: currentTracks.length,
-          serverTracksCount: serverTracks.length,
-          serverVersion,
-          currentLastKnownVersion: useIpodStore.getState().lastKnownVersion,
-        });
+        debug(
+          `[iPod] Auto update check: new=${newTracksCount}, updated=${tracksUpdated}, current=${currentTracks.length}, server=${serverTracks.length}, version=${serverVersion}, known=${useIpodStore.getState().lastKnownVersion}`
+        );
 
         if (newTracksCount === 0 && tracksUpdated === 0) {
           // Fully in sync — remember the server version so the next polls
@@ -129,7 +127,7 @@ export function useLibraryUpdateChecker(isActive: boolean) {
               lastInSyncVersionRef.current = versionInfo;
             }
             if (result.newTracksAdded === 0 && result.tracksUpdated === 0) {
-              console.log("[iPod] Auto update check resolved with no applied changes");
+              debug("[iPod] Auto update check resolved with no applied changes");
               return;
             }
             const message =
@@ -159,7 +157,7 @@ export function useLibraryUpdateChecker(isActive: boolean) {
               duration: 4000,
             });
 
-            console.log(
+            debug(
               `[iPod] Auto-updated: ${result.newTracksAdded} new tracks, ${result.tracksUpdated} updated tracks`
             );
           } catch (error) {
@@ -181,7 +179,7 @@ export function useLibraryUpdateChecker(isActive: boolean) {
     
     const immediateCheckTimeout = shouldCheckImmediately
       ? setTimeout(() => {
-          console.log(
+          debug(
             "[iPod] Running immediate library update check on app activation"
           );
           checkForUpdates();
@@ -190,7 +188,7 @@ export function useLibraryUpdateChecker(isActive: boolean) {
       : null;
     
     if (!shouldCheckImmediately) {
-      console.log(
+      debug(
         `[iPod] Skipping immediate check - last checked ${Math.round(timeSinceLastCheck / 1000)}s ago (< ${CHECK_INTERVAL / 1000}s)`
       );
     }

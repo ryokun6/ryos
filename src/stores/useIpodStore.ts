@@ -42,6 +42,7 @@ import {
   saveAppleMusicPlaylistTracks,
   saveAppleMusicTrackCollection,
 } from "@/utils/appleMusicLibraryCache";
+import type { IpodMenuKind } from "@/apps/ipod/types";
 
 /** Special value for lyricsTranslationLanguage that means "use ryOS locale" */
 export const LYRICS_TRANSLATION_AUTO = "auto";
@@ -781,7 +782,142 @@ export function navigateActiveIpodTrack(
   }
 }
 
-const CURRENT_IPOD_STORE_VERSION = 40; // Default fullscreen/Karaoke lyrics style is Gold Glow
+const CURRENT_IPOD_STORE_VERSION = 41; // Drop legacy Apple Music cache payloads from localStorage
+
+type PersistedIpodData = Partial<IpodData> & Record<string, unknown>;
+
+const INDEXED_DB_BACKED_APPLE_MUSIC_KEYS = [
+  "appleMusicTracks",
+  "appleMusicPlaylists",
+  "appleMusicPlaylistsLoadedAt",
+  "appleMusicPlaylistsLoading",
+  "appleMusicPlaylistTracks",
+  "appleMusicPlaylistTracksLoadedAt",
+  "appleMusicPlaylistTracksLoading",
+  "appleMusicRecentlyAddedTracks",
+  "appleMusicRecentlyAddedLoadedAt",
+  "appleMusicRecentlyAddedLoading",
+  "appleMusicFavoriteTracks",
+  "appleMusicFavoriteTracksLoadedAt",
+  "appleMusicFavoritesLoading",
+  "appleMusicPlaybackHistory",
+  "appleMusicLibraryLoadedAt",
+  "appleMusicLibraryLoading",
+  "appleMusicLibraryError",
+  "appleMusicStorefrontId",
+  "appleMusicKitNowPlaying",
+] as const;
+
+const VALID_IPOD_MENU_KINDS = new Set<IpodMenuKind>([
+  "root",
+  "music",
+  "settings",
+  "extras",
+  "artists",
+  "albums",
+  "songs",
+  "playlists",
+  "recentlyAdded",
+  "favorites",
+  "radio",
+  "artist",
+  "album",
+  "artistAllSongs",
+  "artistAlbum",
+  "appleMusicPlaylist",
+  "nowPlayingSong",
+]);
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function sanitizePersistedString(value: unknown): string | null | undefined {
+  if (typeof value === "string") return value;
+  if (value === null) return null;
+  return undefined;
+}
+
+function sanitizePersistedIpodMenuBreadcrumb(
+  value: unknown
+): IpodData["ipodMenuBreadcrumb"] {
+  if (!Array.isArray(value)) return null;
+  const breadcrumb = value.flatMap((entry) => {
+    if (!isRecord(entry) || typeof entry.title !== "string") return [];
+    const selectedIndex =
+      typeof entry.selectedIndex === "number" &&
+      Number.isFinite(entry.selectedIndex)
+        ? Math.max(0, Math.floor(entry.selectedIndex))
+        : 0;
+    return [
+      {
+        ...(typeof entry.kind === "string" &&
+          VALID_IPOD_MENU_KINDS.has(entry.kind as IpodMenuKind) && {
+            kind: entry.kind as IpodMenuKind,
+          }),
+        ...(typeof entry.id === "string" && { id: entry.id }),
+        title: entry.title,
+        ...(typeof entry.displayTitle === "string" && {
+          displayTitle: entry.displayTitle,
+        }),
+        selectedIndex,
+        ...(typeof entry.modernMediaList === "boolean" && {
+          modernMediaList: entry.modernMediaList,
+        }),
+        ...(typeof entry.alphabetic === "boolean" && {
+          alphabetic: entry.alphabetic,
+        }),
+      },
+    ];
+  });
+  return breadcrumb.length > 0 ? breadcrumb : null;
+}
+
+export function sanitizePersistedIpodStateForRehydrate(
+  persistedState: unknown
+): Partial<IpodData> {
+  if (!isRecord(persistedState)) return {};
+
+  const state = { ...persistedState } as PersistedIpodData;
+  for (const key of INDEXED_DB_BACKED_APPLE_MUSIC_KEYS) {
+    delete state[key];
+  }
+
+  if (state.librarySource !== "youtube" && state.librarySource !== "appleMusic") {
+    delete state.librarySource;
+  }
+
+  const currentSongId = sanitizePersistedString(state.currentSongId);
+  if (currentSongId === undefined) delete state.currentSongId;
+  else state.currentSongId = currentSongId;
+
+  const appleMusicCurrentSongId = sanitizePersistedString(
+    state.appleMusicCurrentSongId
+  );
+  if (appleMusicCurrentSongId === undefined) {
+    delete state.appleMusicCurrentSongId;
+  } else {
+    state.appleMusicCurrentSongId = appleMusicCurrentSongId;
+  }
+
+  if (Array.isArray(state.appleMusicPlaybackQueue)) {
+    state.appleMusicPlaybackQueue = normalizeAppleMusicPlaybackQueue(
+      state.appleMusicPlaybackQueue.filter(
+        (id): id is string => typeof id === "string"
+      )
+    );
+  } else if (state.appleMusicPlaybackQueue !== null) {
+    state.appleMusicPlaybackQueue = null;
+  }
+
+  if ("ipodMenuBreadcrumb" in state) {
+    state.ipodMenuBreadcrumb = sanitizePersistedIpodMenuBreadcrumb(
+      state.ipodMenuBreadcrumb
+    );
+  }
+
+  return state;
+}
 
 // Helper function to get unplayed track IDs from history
 function getUnplayedTrackIds(
@@ -2387,6 +2523,12 @@ export const useIpodStore = create<IpodState>()(
       // JSON.stringify'd and written synchronously on every persisted
       // mutation. Serialization now happens once per quiet window.
       storage: createDebouncedPersistStorage(),
+      migrate: (persistedState) =>
+        sanitizePersistedIpodStateForRehydrate(persistedState),
+      merge: (persistedState, currentState) => ({
+        ...currentState,
+        ...sanitizePersistedIpodStateForRehydrate(persistedState),
+      }),
       partialize: (state) => ({
         tracks: state.tracks,
         currentSongId: state.currentSongId,
