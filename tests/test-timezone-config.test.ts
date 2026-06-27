@@ -7,6 +7,8 @@ import {
   formatInTimeZone,
   formatOffsetLabel,
   formatTimezoneCity,
+  formatTimezoneCityLocalized,
+  formatTimezoneRegionLocalized,
   formatZonedDateString,
   getSupportedTimezones,
   getTimezoneNameVariants,
@@ -43,6 +45,27 @@ describe("timezoneConfig", () => {
       "Buenos Aires"
     );
     expect(formatTimezoneCity("UTC")).toBe("UTC");
+  });
+
+  test("formatTimezoneCityLocalized uses localized timezone names when available", () => {
+    expect(formatTimezoneCityLocalized("Asia/Tokyo", "en")).toBe("Tokyo");
+    const localized = formatTimezoneCityLocalized(
+      "Asia/Tokyo",
+      "ja",
+      new Date("2023-01-15T12:00:00Z")
+    );
+    expect(localized).toContain("日本");
+  });
+
+  test("formatTimezoneRegionLocalized reads translated region labels", () => {
+    const t = (key: string) =>
+      key === "apps.control-panels.timezoneRegions.america"
+        ? "Americas translated"
+        : key;
+    expect(formatTimezoneRegionLocalized("America", t)).toBe(
+      "Americas translated"
+    );
+    expect(formatTimezoneRegionLocalized("Unknown")).toBe("Unknown");
   });
 
   test("getTimezoneOffsetMinutes computes fixed offsets", () => {
@@ -145,6 +168,17 @@ describe("timezoneConfig", () => {
     );
     expect(text).toContain("usa");
     expect(text).toContain("california");
+  });
+
+  test("buildTimezoneSearchText preserves English aliases and adds localized names", () => {
+    const text = buildTimezoneSearchText(
+      "Asia/Tokyo",
+      new Date("2023-01-15T12:00:00Z"),
+      "ja"
+    );
+    expect(text).toContain("tokyo");
+    expect(text).toContain("japan");
+    expect(text).toContain("日本");
   });
 
   test("getTimezoneCoordinates uses principal city when known", () => {

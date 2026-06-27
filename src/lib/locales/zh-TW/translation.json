@@ -1824,6 +1824,19 @@
       "timezoneAutomaticCity": "自動 ({{city}})",
       "timezoneNoResults": "沒有相符的時區",
       "timezoneSearchPlaceholder": "搜尋時區…",
+      "timezoneRegions": {
+        "africa": "非洲",
+        "america": "美洲",
+        "antarctica": "南極洲",
+        "arctic": "北極",
+        "asia": "亞洲",
+        "atlantic": "大西洋",
+        "australia": "澳洲",
+        "europe": "歐洲",
+        "indian": "印度洋",
+        "pacific": "太平洋",
+        "other": "其他"
+      },
       "toolbar": {
         "back": "返回",
         "forward": "前進",

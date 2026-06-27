@@ -2916,6 +2916,19 @@
       "timezoneAutomaticCity": "Auto ({{city}})",
       "timezoneSearchPlaceholder": "Search time zones…",
       "timezoneNoResults": "No matching time zones",
+      "timezoneRegions": {
+        "africa": "Africa",
+        "america": "Americas",
+        "antarctica": "Antarctica",
+        "arctic": "Arctic",
+        "asia": "Asia",
+        "atlantic": "Atlantic",
+        "australia": "Australia",
+        "europe": "Europe",
+        "indian": "Indian Ocean",
+        "pacific": "Pacific",
+        "other": "Other"
+      },
       "internationalTabs": {
         "language": "Language",
         "dateTime": "Date & Time"

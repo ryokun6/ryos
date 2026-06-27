@@ -37,6 +37,7 @@ export interface WeatherSnapshot {
   isDay: boolean;
   daily: WeatherSnapshotDaily;
   city: string | null;
+  cityLocale?: string | null;
   lat: number;
   lon: number;
   fetchedAt: number;

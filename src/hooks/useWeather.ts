@@ -38,9 +38,10 @@ export function buildForecast(
 
 export function useWeather(
   location: WeatherLocation,
-  opts?: { active?: boolean }
+  opts?: { active?: boolean; locale?: string }
 ): UseWeatherResult {
   const active = opts?.active ?? true;
+  const locale = opts?.locale;
   const locKind = location.kind;
   const locLat = location.kind === "coords" ? location.lat : undefined;
   const locLon = location.kind === "coords" ? location.lon : undefined;
@@ -73,10 +74,13 @@ export function useWeather(
       locKind === "coords"
         ? { kind: "coords", lat: locLat as number, lon: locLon as number }
         : { kind: "geo" };
-    ensureWeather(loc);
-    const id = window.setInterval(() => ensureWeather(loc), WEATHER_TTL_MS);
+    ensureWeather(loc, { locale });
+    const id = window.setInterval(
+      () => ensureWeather(loc, { locale }),
+      WEATHER_TTL_MS
+    );
     return () => window.clearInterval(id);
-  }, [active, locKind, locLat, locLon, ensureWeather]);
+  }, [active, locKind, locLat, locLon, ensureWeather, locale]);
 
   return {
     snapshot,

@@ -1824,6 +1824,19 @@
       "timezoneAutomaticCity": "자동({{city}})",
       "timezoneNoResults": "일치하는 시간대 없음",
       "timezoneSearchPlaceholder": "시간대 검색…",
+      "timezoneRegions": {
+        "africa": "아프리카",
+        "america": "아메리카",
+        "antarctica": "남극",
+        "arctic": "북극",
+        "asia": "아시아",
+        "atlantic": "대서양",
+        "australia": "오스트레일리아",
+        "europe": "유럽",
+        "indian": "인도양",
+        "pacific": "태평양",
+        "other": "기타"
+      },
       "toolbar": {
         "back": "뒤로",
         "forward": "앞으로",

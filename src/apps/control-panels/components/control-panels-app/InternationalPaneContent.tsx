@@ -11,7 +11,7 @@ import type { LanguageCode } from "@/stores/useLanguageStore";
 import type { TimezonePreference } from "@/lib/timezoneConfig";
 import {
   formatOffsetLabel,
-  formatTimezoneCity,
+  formatTimezoneCityLocalized,
   getTimezoneOffsetMinutes,
   resolveEffectiveTimezone,
 } from "@/lib/timezoneConfig";
@@ -104,7 +104,10 @@ export function InternationalPaneContent({
     }
   }, [currentLanguage, effectiveTimezone, now]);
 
-  const cityLabel = formatTimezoneCity(effectiveTimezone);
+  const cityLabel = useMemo(
+    () => formatTimezoneCityLocalized(effectiveTimezone, currentLanguage, now),
+    [currentLanguage, effectiveTimezone, now]
+  );
 
   const formatSamples = useMemo(
     () => getLocaleFormatSamples(currentLanguage, effectiveTimezone),
@@ -268,6 +271,7 @@ export function InternationalPaneContent({
                   value={timezone}
                   onChange={setTimezone}
                   t={t}
+                  locale={currentLanguage}
                 />
               </ControlPanelsPrefFormRow>
 

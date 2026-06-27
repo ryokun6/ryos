@@ -7,9 +7,10 @@ import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useEffectiveTimezone } from "@/hooks/useEffectiveTimezone";
 import {
   formatInTimeZone,
-  formatTimezoneCity,
+  formatTimezoneCityLocalized,
   getZonedDateTimeParts,
 } from "@/lib/timezoneConfig";
+import { formatCountryDisplay } from "@/utils/formatCountryDisplay";
 
 interface CityResult {
   name: string;
@@ -36,9 +37,9 @@ function getPopularCities(t: TFunction): CityResult[] {
   ];
 }
 
-function getCityFromTimezone(tz: string): string {
+function getCityFromTimezone(tz: string, locale: string): string {
   try {
-    return formatTimezoneCity(tz).toUpperCase();
+    return formatTimezoneCityLocalized(tz, locale).toLocaleUpperCase(locale);
   } catch {
     return "";
   }
@@ -74,7 +75,8 @@ interface ClockWidgetProps {
 }
 
 export function ClockWidget({ widgetId, isFlipped }: ClockWidgetProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language || "en";
   const [time, setTime] = useState(() => new Date());
   const { isWindowsTheme } = useThemeFlags();
   const effectiveTimezone = useEffectiveTimezone();
@@ -86,10 +88,10 @@ export function ClockWidget({ widgetId, isFlipped }: ClockWidgetProps) {
   const displayTimezone = config?.timezone || effectiveTimezone;
 
   const cityName = useMemo(() => {
-    if (config?.cityKey) return t(config.cityKey).toUpperCase();
-    if (config?.cityName) return config.cityName.toUpperCase();
-    return getCityFromTimezone(displayTimezone) || t("apps.dashboard.cities.local");
-  }, [config?.cityKey, config?.cityName, displayTimezone, t]);
+    if (config?.cityKey) return t(config.cityKey).toLocaleUpperCase(locale);
+    if (config?.cityName) return config.cityName.toLocaleUpperCase(locale);
+    return getCityFromTimezone(displayTimezone, locale) || t("apps.dashboard.cities.local");
+  }, [config?.cityKey, config?.cityName, displayTimezone, locale, t]);
 
   useEffect(() => {
     if (isFlipped) return;
@@ -111,7 +113,7 @@ export function ClockWidget({ widgetId, isFlipped }: ClockWidgetProps) {
   const secondAngle = (seconds / 60) * 360;
   const minuteAngle = (minutes / 60) * 360 + (seconds / 60) * 6;
   const hourAngle = ((hours % 12) / 12) * 360 + (minutes / 60) * 30;
-  const digitalTime = formatInTimeZone(time, displayTimezone, undefined, {
+  const digitalTime = formatInTimeZone(time, displayTimezone, locale, {
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
@@ -226,15 +228,17 @@ export function ClockWidget({ widgetId, isFlipped }: ClockWidgetProps) {
   );
 }
 
-function formatCityLabel(city: CityResult): string {
+function formatCityLabel(city: CityResult, locale: string): string {
   const parts = [city.name];
   if (city.state) parts.push(city.state);
-  parts.push(city.country);
+  const country = formatCountryDisplay(city.country, locale).name;
+  if (country) parts.push(country);
   return parts.join(", ");
 }
 
 export function ClockBackPanel({ widgetId, onDone }: { widgetId: string; onDone?: () => void }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language || "en";
   const popularCities = useMemo(() => getPopularCities(t), [t]);
   const { isWindowsTheme } = useThemeFlags();
   const updateWidgetConfig = useDashboardStore((s) => s.updateWidgetConfig);
@@ -289,7 +293,10 @@ export function ClockBackPanel({ widgetId, onDone }: { widgetId: string; onDone?
     try {
       const res = await fetch(
         `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=6&addressdetails=1&featuretype=city`,
-        { signal: controller.signal }
+        {
+          signal: controller.signal,
+          headers: { "Accept-Language": locale },
+        }
       );
       if (res.ok) {
         const data = await res.json();
@@ -314,7 +321,7 @@ export function ClockBackPanel({ widgetId, onDone }: { widgetId: string; onDone?
       // search failed silently
     }
     dispatch({ type: "searchResults", results: [] });
-  }, []);
+  }, [locale]);
 
   useEffect(() => {
     return () => {
@@ -415,7 +422,7 @@ export function ClockBackPanel({ widgetId, onDone }: { widgetId: string; onDone?
               onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
             >
               <MapPin size={10} weight="fill" style={{ color: isWindowsTheme ? "#999" : "rgba(255,255,255,0.25)", flexShrink: 0 }} />
-              <span className="text-[11px] truncate" style={{ color: textColor }}>{formatCityLabel(city)}</span>
+              <span className="text-[11px] truncate" style={{ color: textColor }}>{formatCityLabel(city, locale)}</span>
             </button>
           ))
         )}

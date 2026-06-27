@@ -4,7 +4,8 @@ import {
   AUTO_TIMEZONE,
   buildTimezoneSearchText,
   formatOffsetLabel,
-  formatTimezoneCity,
+  formatTimezoneCityLocalized,
+  formatTimezoneRegionLocalized,
   getSupportedTimezones,
   getTimezoneNameVariants,
   getTimezoneOffsetMinutes,
@@ -16,6 +17,7 @@ export type TimezoneComboboxProps = {
   value: TimezonePreference;
   onChange: (value: TimezonePreference) => void;
   t: (key: string, opts?: Record<string, unknown>) => string;
+  locale: string;
   className?: string;
 };
 
@@ -23,12 +25,17 @@ function TimezoneComboboxImpl({
   value,
   onChange,
   t,
+  locale,
   className,
 }: TimezoneComboboxProps) {
   // Computing offsets / abbreviations for every zone is non-trivial; once per mount.
   const autoCity = useMemo(
-    () => formatTimezoneCity(resolveEffectiveTimezone(AUTO_TIMEZONE)),
-    []
+    () =>
+      formatTimezoneCityLocalized(
+        resolveEffectiveTimezone(AUTO_TIMEZONE),
+        locale
+      ),
+    [locale]
   );
 
   const options = useMemo<ComboboxOption[]>(() => {
@@ -44,34 +51,34 @@ function TimezoneComboboxImpl({
     ];
     for (const id of getSupportedTimezones()) {
       const slash = id.indexOf("/");
-      const region = slash === -1 ? "" : id.slice(0, slash).replace(/_/g, " ");
-      const city = formatTimezoneCity(id);
+      const region = slash === -1 ? "" : id.slice(0, slash);
+      const city = formatTimezoneCityLocalized(id, locale, now);
       const offsetLabel = formatOffsetLabel(getTimezoneOffsetMinutes(id, now));
-      const abbrevs = getTimezoneNameVariants(id, now)
+      const abbrevs = getTimezoneNameVariants(id, now, "en-US")
         .filter((n) => /^[A-Za-z]{2,5}$/.test(n))
         .slice(0, 3);
       const abbrevSuffix = abbrevs.length > 0 ? ` · ${abbrevs.join("/")}` : "";
       const description = region
-        ? `${region} · ${offsetLabel}${abbrevSuffix}`
+        ? `${formatTimezoneRegionLocalized(region, t)} · ${offsetLabel}${abbrevSuffix}`
         : `${offsetLabel}${abbrevSuffix}`;
       zones.push({
         value: id,
         label: city,
         description,
-        searchText: buildTimezoneSearchText(id, now),
+        searchText: buildTimezoneSearchText(id, now, locale),
       });
     }
     return zones;
-  }, [t, autoCity]);
+  }, [t, autoCity, locale]);
 
   const displayValue = useMemo(() => {
     if (value === AUTO_TIMEZONE) {
       return t("apps.control-panels.timezoneAutomaticCity", { city: autoCity });
     }
-    const city = formatTimezoneCity(value);
+    const city = formatTimezoneCityLocalized(value, locale);
     const offset = formatOffsetLabel(getTimezoneOffsetMinutes(value));
     return `${city} (${offset})`;
-  }, [value, t, autoCity]);
+  }, [value, t, autoCity, locale]);
 
   return (
     <Combobox
