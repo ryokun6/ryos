@@ -12,7 +12,6 @@ interface CalculatorAquaFullPanelProps {
   onOperator: (op: "+" | "-" | "*" | "/") => void;
   onEquals: () => void;
   onClear: () => void;
-  onClearEntry: () => void;
   onDecimal: () => void;
   onNegate: () => void;
   onPercent: () => void;
@@ -61,7 +60,6 @@ export function CalculatorAquaFullPanel({
   onOperator,
   onEquals,
   onClear,
-  onClearEntry,
   onDecimal,
   onNegate,
   onPercent,
@@ -116,7 +114,7 @@ export function CalculatorAquaFullPanel({
         <CalculatorKey label="x³" onClick={() => onUnary("cube")} theme={theme} variant="function" className={fn} style={{ gridColumn: 3, gridRow: 2 }} />
         <CalculatorKey label="xʸ" onClick={onPower} theme={theme} variant="function" className={fn} style={{ gridColumn: 4, gridRow: 2 }} />
         <CalculatorKey label="AC" onClick={onClear} theme={theme} variant="function" className={fn} style={{ gridColumn: 6, gridRow: 2 }} />
-        <CalculatorKey label="C" onClick={onClearEntry} theme={theme} variant="function" className={fn} style={{ gridColumn: 7, gridRow: 2 }} />
+        <CalculatorKey label="±" onClick={onNegate} theme={theme} variant="function" className={fn} style={{ gridColumn: 7, gridRow: 2 }} />
         <CalculatorKey label="÷" onClick={() => onOperator("/")} theme={theme} variant="operator" style={{ gridColumn: 8, gridRow: 2 }} />
         <CalculatorKey label="×" onClick={() => onOperator("*")} theme={theme} variant="operator" style={{ gridColumn: 9, gridRow: 2 }} />
 

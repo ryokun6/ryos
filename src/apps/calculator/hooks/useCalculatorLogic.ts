@@ -298,17 +298,6 @@ export function useCalculatorLogic({
     setToUnit(fromUnit);
   }, [fromUnit, toUnit]);
 
-  const pressDoubleZero = useCallback(() => {
-    runCalc((s) => {
-      if (s.error) return s;
-      if (s.waitingForOperand || s.display === "0") {
-        return { ...s, display: "00", waitingForOperand: false };
-      }
-      if (s.display.length + 2 > 16) return s;
-      return { ...s, display: `${s.display}00` };
-    });
-  }, [runCalc]);
-
   return {
     t,
     translatedHelpItems,
@@ -343,7 +332,6 @@ export function useCalculatorLogic({
     pressMemoryAdd,
     pressMemorySubtract,
     pressMemoryStore,
-    pressDoubleZero,
     conversionCategory,
     handleCategoryChange,
     fromUnit,

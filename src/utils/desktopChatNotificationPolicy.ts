@@ -2,6 +2,7 @@ import type { RoomType } from "../shared/contracts/chat";
 import type { RealtimeProvider } from "./runtimeConfig";
 import { shouldNotifyForRoomMessage } from "./chatNotifications";
 import { sanitizeDesktopChatNotificationWebSocketUrl } from "./desktopChatNotificationRealtime";
+import { replaceControlCharacters } from "../shared/sanitizeControlCharacters";
 
 export interface DesktopChatNotificationRoom {
   id: string;
@@ -80,8 +81,7 @@ function normalizeOrigin(value: unknown): string | null {
 
 function normalizeText(value: unknown): string | null {
   if (typeof value !== "string") return null;
-  const normalized = value
-    .replace(/[\u0000-\u001f\u007f]/g, " ")
+  const normalized = replaceControlCharacters(value)
     .replace(/\s+/g, " ")
     .trim();
   return normalized || null;

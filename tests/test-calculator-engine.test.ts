@@ -2,7 +2,6 @@ import { describe, expect, test } from "bun:test";
 import {
   applyUnary,
   calculate,
-  clearAll,
   createInitialCalcState,
   inputDigit,
   inputOperator,

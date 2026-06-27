@@ -9,6 +9,7 @@ import { CalculatorSystem7Panel } from "./CalculatorSystem7Panel";
 import { CalculatorWin98Panel } from "./CalculatorWin98Panel";
 import type { CalculatorTheme } from "./types";
 import type { useCalculatorLogic } from "../hooks/useCalculatorLogic";
+import type { ConversionCategoryId } from "../utils/conversionData";
 
 type CalculatorLogic = ReturnType<typeof useCalculatorLogic>;
 
@@ -49,13 +50,11 @@ export function CalculatorBody({ logic }: CalculatorBodyProps) {
     pressOpenParenthesis,
     pressCloseParenthesis,
     pressRandom,
-    pressDoubleZero,
     pressMemoryClear,
     pressMemoryRecall,
     pressMemoryAdd,
     pressMemorySubtract,
     pressMemoryStore,
-    conversionCategory,
     handleCategoryChange,
     fromUnit,
     setFromUnit,
@@ -126,7 +125,7 @@ export function CalculatorBody({ logic }: CalculatorBodyProps) {
             loading={currencyLoading}
             error={currencyError}
             onCategoryChange={(id) =>
-              handleCategoryChange(id as typeof conversionCategory)
+              handleCategoryChange(id as ConversionCategoryId)
             }
             onFromUnitChange={setFromUnit}
             onToUnitChange={setToUnit}
@@ -152,7 +151,6 @@ export function CalculatorBody({ logic }: CalculatorBodyProps) {
           onOperator={pressOperator}
           onEquals={pressEquals}
           onClear={pressClear}
-          onClearEntry={pressClearEntry}
           onDecimal={pressDecimal}
           onNegate={pressNegate}
           onPercent={pressPercent}

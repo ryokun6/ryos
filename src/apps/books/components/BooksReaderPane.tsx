@@ -570,9 +570,8 @@ export const BooksReaderPane = forwardRef<
           return;
         }
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         appendDebugEvent("epubjs:createBook:start");
-        book = ePub(buffer as any);
+        book = ePub(buffer);
         bookRef.current = book;
         appendDebugEvent("epubjs:createBook:success", {
           archived: book.archived,

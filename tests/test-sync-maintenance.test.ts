@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { Redis } from "../api/_utils/redis";
-import { applySyncOps, ensureSync2Initialized, sync2BlobsKey } from "../api/sync/v2/_core";
+import { applySyncOps, sync2BlobsKey } from "../api/sync/v2/_core";
 import { runSyncMaintenance } from "../api/sync/v2/_maintenance";
 import { redisKeys } from "../src/shared/redisKeys";
 import { formatHlc } from "../src/shared/sync2/hlc";

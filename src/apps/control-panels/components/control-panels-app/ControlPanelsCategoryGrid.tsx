@@ -66,7 +66,6 @@ export function ControlPanelsCategoryGrid({
               <button
                 key={category.id}
                 type="button"
-                role="listitem"
                 className={cn(
                   "control-panels-category-item p-0",
                   isMatch && "is-spotlight-match",

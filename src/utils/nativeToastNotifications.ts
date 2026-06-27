@@ -3,6 +3,7 @@ import type {
   RyosDesktopNotificationOptions,
 } from "@/types/ryos-desktop";
 import { toast } from "sonner";
+import { replaceControlCharacters } from "@/shared/sanitizeControlCharacters";
 
 export type NativeToastKind = "basic" | "success" | "error" | "info" | "warning";
 
@@ -78,8 +79,7 @@ function toSafeNotificationText(
     return null;
   }
 
-  const normalized = value
-    .replace(/[\u0000-\u001f\u007f]/g, " ")
+  const normalized = replaceControlCharacters(value)
     .replace(/\s+/g, " ")
     .trim();
 
