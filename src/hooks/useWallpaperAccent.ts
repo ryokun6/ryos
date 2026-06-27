@@ -13,6 +13,7 @@ import {
 import {
   getDayNightGradientColors,
   getWeatherGradientColors,
+  isConcreteWallpaperSource,
   isCoverWallpaper,
   isDayNightGradientWallpaper,
   isLyricsWallpaper,
@@ -80,8 +81,8 @@ export function useWallpaperAccent(): { weatherAccentActive: boolean } {
   if (isWallpaperAccent && !isGradient && !isWeather) {
     if (isCoverBased) {
       sampleUrl = nowPlayingCoverUrl;
-    } else if (!isVideoWallpaper) {
-      sampleUrl = wallpaperSource || null;
+    } else if (!isVideoWallpaper && isConcreteWallpaperSource(wallpaperSource)) {
+      sampleUrl = wallpaperSource;
     }
   }
 

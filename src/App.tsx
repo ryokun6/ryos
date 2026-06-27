@@ -25,7 +25,6 @@ import { useBackgroundChatNotifications } from "./hooks/useBackgroundChatNotific
 import { DesktopErrorBoundary } from "@/components/errors/ErrorBoundaries";
 import { DeferredAutoCloudSync } from "@/hooks/useDeferredAutoCloudSync";
 import { AirDropListener } from "@/components/AirDropListener";
-import { useFilesStore } from "@/stores/useFilesStore";
 import { WallpaperAccentRunner } from "@/hooks/WallpaperAccentRunner";
 import { DesktopCornerMask } from "@/components/layout/desktop/DesktopCornerMask";
 import { installNativeToastNotifications } from "@/utils/nativeToastNotifications";
@@ -134,14 +133,6 @@ export function App() {
   useEffect(() => {
     applyDisplayMode(displayMode);
   }, [displayMode]);
-
-  useEffect(() => {
-    Promise.resolve(
-      useFilesStore.getState().syncRootDirectoriesFromDefaults()
-    ).catch((err) => {
-      console.error("Root directory sync failed on app mount", err);
-    });
-  }, []);
 
   useEffect(() => {
     // Only show boot screen for system operations (reset/restore/format/debug)

@@ -12,7 +12,11 @@ import {
 import { convertImageFileToWallpaperJpeg } from "@/utils/customWallpaperProcessing";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 import { SETTINGS_ANALYTICS, track } from "@/utils/analytics";
-import { buildShuffleDescriptor } from "@/utils/dynamicWallpaper";
+import {
+  buildShuffleDescriptor,
+  isDynamicWallpaper,
+  resolveWallpaperSourceForSelection,
+} from "@/utils/dynamicWallpaper";
 
 /** Default desktop wallpaper selection. */
 export const DEFAULT_WALLPAPER_PATH = buildShuffleDescriptor("nature");
@@ -166,9 +170,16 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
 
       // Wallpaper
       currentWallpaper: DEFAULT_WALLPAPER_PATH,
-      wallpaperSource: DEFAULT_WALLPAPER_PATH,
+      // Shuffle / dynamic selections resolve to a concrete asset at runtime.
+      wallpaperSource: "",
       setCurrentWallpaper: (p) => {
-        set({ currentWallpaper: p, wallpaperSource: p });
+        set((state) => ({
+          currentWallpaper: p,
+          wallpaperSource: resolveWallpaperSourceForSelection(
+            p,
+            state.wallpaperSource
+          ),
+        }));
         track(SETTINGS_ANALYTICS.WALLPAPER_CHANGE, {
           wallpaperKind: p.startsWith(INDEXEDDB_PREFIX) ? "custom" : "built-in",
         });
@@ -197,7 +208,13 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
           ]);
         }
         if (!wall.startsWith(INDEXEDDB_PREFIX)) {
-          set({ currentWallpaper: wall, wallpaperSource: wall });
+          set((state) => ({
+            currentWallpaper: wall,
+            wallpaperSource: resolveWallpaperSourceForSelection(
+              wall,
+              state.wallpaperSource
+            ),
+          }));
         } else {
           const fallbackSource = get().wallpaperSource;
           const data = await get().getWallpaperData(wall);
@@ -258,7 +275,7 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
           if (get().currentWallpaper === reference) {
             set({
               currentWallpaper: DEFAULT_WALLPAPER_PATH,
-              wallpaperSource: DEFAULT_WALLPAPER_PATH,
+              wallpaperSource: "",
             });
           }
           get().bumpCustomWallpapersRevision();
@@ -368,6 +385,17 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
           (ws.startsWith("blob:") || ws === cw)
         ) {
           return { ...merged, wallpaperSource: cw };
+        }
+        if (typeof cw === "string" && isDynamicWallpaper(cw)) {
+          const reusableSource =
+            typeof ws === "string" && !ws.startsWith("blob:") ? ws : "";
+          return {
+            ...merged,
+            wallpaperSource: resolveWallpaperSourceForSelection(
+              cw,
+              reusableSource
+            ),
+          };
         }
         return merged;
       },

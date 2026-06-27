@@ -1,5 +1,6 @@
 import { useMemo, useEffect, useRef } from "react";
 import { useDisplaySettingsStore, INDEXEDDB_PREFIX } from "@/stores/useDisplaySettingsStore";
+import { isShuffleWallpaper } from "@/utils/dynamicWallpaper";
 
 /**
  * Hook exposing wallpaper state & helpers.
@@ -37,6 +38,10 @@ export function useWallpaper() {
     const sourceLooksStale =
       wallpaperSource === currentWallpaper || // Not resolved yet
       wallpaperSource.startsWith("blob:"); // Could be an invalid Object URL after reload
+
+    // Shuffle wallpapers resolve via `useShuffleWallpaper`; do not re-apply the
+    // descriptor as `wallpaperSource` (it is not a loadable image URL).
+    if (isShuffleWallpaper(currentWallpaper)) return;
 
     if (isCustom && sourceLooksStale) {
       hasAttemptedRefresh.current = true; // Avoid infinite loops

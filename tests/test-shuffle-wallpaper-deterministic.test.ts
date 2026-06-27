@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
   SHUFFLE_INTERVAL_MS,
   pickDeterministicCandidate,
+  resolveWallpaperSourceForSelection,
   shuffleBucket,
 } from "../src/utils/dynamicWallpaper";
 
@@ -100,5 +101,39 @@ describe("deterministic shuffle wallpaper", () => {
   test("edge cases: empty and single-candidate lists", () => {
     expect(pickDeterministicCandidate([], "seed")).toBeNull();
     expect(pickDeterministicCandidate(["only.jpg"], "seed")).toBe("only.jpg");
+  });
+
+  test("keeps a concrete source while a shuffle selection resolves", () => {
+    const current = "/wallpapers/photos/nature/a.jpg";
+    expect(
+      resolveWallpaperSourceForSelection(
+        "shuffle://photos/nature",
+        current
+      )
+    ).toBe(current);
+  });
+
+  test("does not reuse unresolved descriptors for shuffle", () => {
+    expect(
+      resolveWallpaperSourceForSelection(
+        "shuffle://photos/nature",
+        "dynamic://gradient/day-night"
+      )
+    ).toBe("");
+    expect(
+      resolveWallpaperSourceForSelection(
+        "shuffle://photos/nature",
+        "indexeddb://custom"
+      )
+    ).toBe("");
+  });
+
+  test("replaces stale sources for non-shuffle dynamic wallpapers", () => {
+    expect(
+      resolveWallpaperSourceForSelection(
+        "dynamic://gradient/day-night",
+        "/wallpapers/videos/previous.mp4"
+      )
+    ).toBe("dynamic://gradient/day-night");
   });
 });

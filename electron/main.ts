@@ -159,7 +159,7 @@ function isMainWindowForeground(): boolean {
     return false;
   }
 
-  return win.isFocused() || app.isFocused();
+  return win.isFocused();
 }
 
 function focusMainWindow(): void {

@@ -1503,7 +1503,7 @@ async function finalizeCustomWallpaperSync(ctx: CodecContext): Promise<void> {
     } else {
       useDisplaySettingsStore.setState({
         currentWallpaper: DEFAULT_WALLPAPER_PATH,
-        wallpaperSource: DEFAULT_WALLPAPER_PATH,
+        wallpaperSource: "",
       });
     }
   }

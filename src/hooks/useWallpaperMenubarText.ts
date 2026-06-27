@@ -15,6 +15,7 @@ import {
 import {
   getDayNightGradientColors,
   getWeatherGradientColors,
+  isConcreteWallpaperSource,
   isCoverWallpaper,
   isDayNightGradientWallpaper,
   isLyricsWallpaper,
@@ -132,7 +133,9 @@ export function useWallpaperMenubarText(enabled: boolean): WallpaperMenubarText 
   let sampleSource: string | null = null;
   if (!isGradient && !isWeather) {
     if (isCoverBased) sampleSource = nowPlayingCoverUrl;
-    else if (!isVideoWallpaper) sampleSource = wallpaperSource || null;
+    else if (!isVideoWallpaper && isConcreteWallpaperSource(wallpaperSource)) {
+      sampleSource = wallpaperSource;
+    }
   }
 
   const [result, setResult] = useState<WallpaperMenubarText>(() => {

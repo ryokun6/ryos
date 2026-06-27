@@ -4,7 +4,6 @@ import { App } from "./App";
 import "./index.css";
 import { useThemeStore } from "./stores/useThemeStore";
 import { useLanguageStore } from "./stores/useLanguageStore";
-import { preloadFileSystemData } from "./stores/useFilesStore";
 import { preloadIpodData } from "./stores/ipodPreload";
 import { initPrefetch } from "./utils/prefetch";
 import { initializeI18nForFirstPaint } from "./lib/i18n";
@@ -123,12 +122,13 @@ if (import.meta.hot) {
   });
 }
 
-// ============================================================================
-// PRELOADING - Start fetching JSON data early (non-blocking)
-// These run in parallel before React even mounts
-// ============================================================================
-preloadFileSystemData();
-preloadIpodData();
+const scheduleIdleWork = (fn: () => void, timeoutMs = 2500) => {
+  if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+    window.requestIdleCallback(() => fn(), { timeout: timeoutMs });
+  } else {
+    setTimeout(fn, 0);
+  }
+};
 
 const renderApp = () => {
   initializeAnalytics();
@@ -151,13 +151,14 @@ const bootstrap = async () => {
 
   useLanguageStore.getState().hydrate();
 
-  // ============================================================================
-  // PREFETCHING - Cache icons, sounds, and app components after boot
-  // This runs during idle time to populate the service worker cache
-  // ============================================================================
-  initPrefetch();
-
   renderApp();
+
+  // Non-critical network work after first paint so it does not compete with
+  // the initial JS/CSS/i18n critical path.
+  scheduleIdleWork(() => {
+    preloadIpodData();
+    initPrefetch();
+  });
 };
 
 void bootstrap();

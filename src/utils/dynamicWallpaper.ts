@@ -81,6 +81,36 @@ export function isShuffleWallpaper(
   return !!wallpaper && wallpaper.startsWith(SHUFFLE_PREFIX);
 }
 
+/**
+ * Whether `source` can be passed to `Image`, `background-image`, or canvas
+ * sampling. Dynamic / shuffle descriptors and IndexedDB references must be
+ * resolved to a concrete asset first.
+ */
+export function isConcreteWallpaperSource(
+  source: string | undefined | null
+): boolean {
+  if (!source) return false;
+  if (isDynamicWallpaper(source)) return false;
+  if (source.startsWith("indexeddb://")) return false;
+  return true;
+}
+
+/**
+ * Resolve the runtime source to use when a wallpaper selection changes.
+ *
+ * Shuffle selections keep the previous concrete image/video visible until the
+ * asynchronous picker resolves its next candidate. Other selections replace
+ * the source immediately, including dynamic descriptors, so stale videos or
+ * deleted blob URLs do not keep rendering behind the new wallpaper.
+ */
+export function resolveWallpaperSourceForSelection(
+  selection: string,
+  previousSource: string | undefined | null
+): string {
+  if (!isShuffleWallpaper(selection)) return selection;
+  return isConcreteWallpaperSource(previousSource) ? previousSource : "";
+}
+
 export type ShuffleTarget =
   | { kind: "tiles" }
   | { kind: "videos" }

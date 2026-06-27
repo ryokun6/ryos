@@ -54,6 +54,7 @@ export function useShuffleWallpaper() {
     let cancelled = false;
     let intervalId: ReturnType<typeof setInterval> | null = null;
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    let idleCallbackId: number | null = null;
     let candidates: string[] = [];
     // Seed combines a stable per-user id and the descriptor so every device of
     // the same user resolves the same wallpaper for a given wall-clock bucket.
@@ -91,21 +92,31 @@ export function useShuffleWallpaper() {
       if (shuffleBucket() !== lastBucket) resolve();
     };
 
-    loadWallpaperManifest()
-      .then((manifest) => {
-        if (cancelled) return;
-        candidates = getShuffleCandidatePaths(manifest, target);
-        if (candidates.length === 0) return;
+    const startManifestLoad = () => {
+      loadWallpaperManifest()
+        .then((manifest) => {
+          if (cancelled) return;
+          candidates = getShuffleCandidatePaths(manifest, target);
+          if (candidates.length === 0) return;
 
-        // Resolve the deterministic pick for the current bucket immediately. If
-        // the restored source already matches, `resolve` is a no-op; otherwise
-        // we snap to the wallpaper this user's other devices are showing.
-        resolve();
-        scheduleNextBoundary();
-      })
-      .catch((err) =>
-        console.error("Failed to load manifest for shuffle wallpaper", err)
-      );
+          // Resolve the deterministic pick for the current bucket immediately. If
+          // the restored source already matches, `resolve` is a no-op; otherwise
+          // we snap to the wallpaper this user's other devices are showing.
+          resolve();
+          scheduleNextBoundary();
+        })
+        .catch((err) =>
+          console.error("Failed to load manifest for shuffle wallpaper", err)
+        );
+    };
+
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      idleCallbackId = window.requestIdleCallback(startManifestLoad, {
+        timeout: 1500,
+      });
+    } else {
+      startManifestLoad();
+    }
 
     document.addEventListener("visibilitychange", resolveIfOverdue);
     window.addEventListener("focus", resolveIfOverdue);
@@ -114,6 +125,9 @@ export function useShuffleWallpaper() {
       cancelled = true;
       if (intervalId) clearInterval(intervalId);
       if (timeoutId) clearTimeout(timeoutId);
+      if (idleCallbackId !== null) {
+        window.cancelIdleCallback(idleCallbackId);
+      }
       document.removeEventListener("visibilitychange", resolveIfOverdue);
       window.removeEventListener("focus", resolveIfOverdue);
     };

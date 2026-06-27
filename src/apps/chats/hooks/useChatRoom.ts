@@ -645,60 +645,73 @@ export function useChatRoom(
 
   // --- Effects ---
 
-  // Initialize when window opens
+  // Initialize when window opens (deferred so the window can paint first).
   useEffect(() => {
     if (!isWindowOpen || hasInitialized.current) return;
 
     console.log("[Room Hook] Initializing chat room...");
-    hasInitialized.current = true;
 
-    initializePusher();
-    (async () => {
-      const getInitialRoomIds = () =>
-        useChatsStore
-          .getState()
-          .rooms.slice(0, 5)
-          .map((room) => room.id);
+    const runInit = () => {
+      if (hasInitialized.current) return;
+      hasInitialized.current = true;
+      initializePusher();
 
-      const fetchInitialMessages = async (roomIds: string[]) => {
-        if (roomIds.length === 0) return null;
+      void (async () => {
+        const getInitialRoomIds = () =>
+          useChatsStore
+            .getState()
+            .rooms.slice(0, 5)
+            .map((room) => room.id);
 
-        console.log(
-          `[useChatRoom] Initial bulk fetch of messages for ${roomIds.length} rooms`
-        );
-        return fetchBulkMessages(roomIds);
-      };
+        const fetchInitialMessages = async (roomIds: string[]) => {
+          if (roomIds.length === 0) return null;
 
-      const cachedRoomIds = getInitialRoomIds();
-      const roomsPromise = fetchRooms();
-      const cachedMessagesPromise = fetchInitialMessages(cachedRoomIds);
-      const [roomsResult, cachedBulkResult] = await Promise.all([
-        roomsPromise,
-        cachedMessagesPromise,
-      ]);
-
-      const bulkResult =
-        cachedBulkResult ??
-        (roomsResult.ok ? await fetchInitialMessages(getInitialRoomIds()) : null);
-
-      // For experienced users, don't recalculate unreads on reload - only track new messages going forward
-      if (bulkResult?.ok) {
-        const { hasEverUsedChats, setHasEverUsedChats } =
-          useChatsStore.getState();
-
-        if (!hasEverUsedChats) {
-          // First time user - mark all as read from this point forward
           console.log(
-            `[useChatRoom] First-time user detected - skipping unread calculation and marking as experienced user`
+            `[useChatRoom] Initial bulk fetch of messages for ${roomIds.length} rooms`
           );
-          setHasEverUsedChats(true);
-        } else {
-          console.log(
-            `[useChatRoom] Experienced user - skipping unread recalculation on reload, will track new messages only`
-          );
+          return fetchBulkMessages(roomIds);
+        };
+
+        const cachedRoomIds = getInitialRoomIds();
+        const roomsPromise = fetchRooms();
+        const cachedMessagesPromise = fetchInitialMessages(cachedRoomIds);
+        const [roomsResult, cachedBulkResult] = await Promise.all([
+          roomsPromise,
+          cachedMessagesPromise,
+        ]);
+
+        const bulkResult =
+          cachedBulkResult ??
+          (roomsResult.ok
+            ? await fetchInitialMessages(getInitialRoomIds())
+            : null);
+
+        // For experienced users, don't recalculate unreads on reload - only track new messages going forward
+        if (bulkResult?.ok) {
+          const { hasEverUsedChats, setHasEverUsedChats } =
+            useChatsStore.getState();
+
+          if (!hasEverUsedChats) {
+            // First time user - mark all as read from this point forward
+            console.log(
+              `[useChatRoom] First-time user detected - skipping unread calculation and marking as experienced user`
+            );
+            setHasEverUsedChats(true);
+          } else {
+            console.log(
+              `[useChatRoom] Experienced user - skipping unread recalculation on reload, will track new messages only`
+            );
+          }
         }
-      }
-    })();
+      })();
+    };
+
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      const idleId = window.requestIdleCallback(runInit, { timeout: 2000 });
+      return () => window.cancelIdleCallback(idleId);
+    }
+    const timeoutId = window.setTimeout(runInit, 0);
+    return () => window.clearTimeout(timeoutId);
   }, [isWindowOpen, initializePusher, fetchRooms, fetchBulkMessages]);
 
   // Handle username changes

@@ -27,7 +27,7 @@ export function Desktop(props: DesktopProps) {
       <video
         ref={d.videoRef}
         className="absolute inset-0 w-full h-full object-cover z-[-10]"
-        src={d.wallpaperSource}
+        src={d.isVideoWallpaper ? d.wallpaperSource || undefined : undefined}
         autoPlay
         loop
         muted
