@@ -65,6 +65,15 @@ export class FakeRedisPipeline {
     return this;
   }
 
+  zremrangebyscore(
+    key: string,
+    min: number | string,
+    max: number | string
+  ): this {
+    this.operations.push(() => this.redis.zremrangebyscoreSync(key, min, max));
+    return this;
+  }
+
   srem(key: string, ...members: string[]): this {
     this.operations.push(() => this.redis.sremSync(key, ...members));
     return this;
@@ -72,6 +81,11 @@ export class FakeRedisPipeline {
 
   hincrby(key: string, field: string, increment: number): this {
     this.operations.push(() => this.redis.hincrbySync(key, field, increment));
+    return this;
+  }
+
+  hset(key: string, fields: Record<string, unknown>): this {
+    this.operations.push(() => this.redis.hsetSync(key, fields));
     return this;
   }
 
@@ -298,6 +312,10 @@ export class FakeRedis {
   }
 
   async hset(key: string, fields: Record<string, unknown>): Promise<number> {
+    return this.hsetSync(key, fields);
+  }
+
+  hsetSync(key: string, fields: Record<string, unknown>): number {
     const hash = this.hashes.get(key) || new Map<string, string>();
     let added = 0;
     for (const [field, value] of Object.entries(fields)) {
@@ -511,6 +529,14 @@ export class FakeRedis {
     min: number | string,
     max: number | string
   ): Promise<number> {
+    return this.zremrangebyscoreSync(key, min, max);
+  }
+
+  zremrangebyscoreSync(
+    key: string,
+    min: number | string,
+    max: number | string
+  ): number {
     const zset = this.zsets.get(key);
     if (!zset) return 0;
     const lo = min === "-inf" ? -Infinity : Number(min);
