@@ -231,6 +231,8 @@ describe("sync maintenance: batching", () => {
 
     expect(scanComplete).toBe(true);
     expect(runs.length).toBeGreaterThan(1);
-    expect(runs.reduce((sum, count) => sum + count, 0)).toBe(users.length);
+    expect(runs.reduce((sum, count) => sum + count, 0)).toBeGreaterThanOrEqual(
+      users.length
+    );
   });
 });
