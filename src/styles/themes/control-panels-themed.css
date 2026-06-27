@@ -969,20 +969,6 @@
 }
 
 /* System 7 default push button — rounded rect with a bold default ring. */
-:root:not([data-os-theme="macosx"]) .control-panels-theme-preview-s7-button {
-  align-self: flex-start;
-  margin-top: 6px;
-  padding: 1px 12px;
-  border: 1px solid #000;
-  border-radius: 8px;
-  background: #fff;
-  box-shadow: 0 0 0 1px #fff, 0 0 0 2px #000;
-  font-family: "Geneva-12", monospace;
-  font-size: 9px;
-  color: #000;
-  pointer-events: none;
-}
-
 /* --- Windows XP mock --- Luna: rounded blue title bar with a glossy top
    highlight, real caption buttons, ECE9D8 body, a sunken white listbox. --- */
 :root:not([data-os-theme="macosx"])
@@ -1070,25 +1056,6 @@
   .control-panels-theme-preview-list-row-selected {
   background: #316ac5;
   color: #fff;
-}
-
-:root:not([data-os-theme="macosx"]) .control-panels-theme-preview-xp-button {
-  align-self: flex-start;
-  margin-top: 6px;
-  padding: 2px 12px;
-  border: 1px solid #003c74;
-  border-radius: 3px;
-  background: linear-gradient(
-    to bottom,
-    #fff 0%,
-    #f3f3ee 48%,
-    #e3e1d2 52%,
-    #eceae0 100%
-  );
-  box-shadow: inset 0 0 0 1px #fff;
-  font-family: Tahoma, sans-serif;
-  font-size: 9px;
-  pointer-events: none;
 }
 
 /* --- Windows 98 mock --- raised silver window bevel, navy gradient title bar,
@@ -1189,15 +1156,3 @@
   color: #fff;
 }
 
-:root:not([data-os-theme="macosx"]) .control-panels-theme-preview-98-button {
-  align-self: flex-start;
-  margin-top: 6px;
-  padding: 2px 12px;
-  border: 1px solid #000;
-  background: #c0c0c0;
-  box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #808080,
-    inset 2px 2px 0 #dfdfdf, inset -2px -2px 0 #000;
-  font-family: "MS Sans Serif", Tahoma, sans-serif;
-  font-size: 9px;
-  pointer-events: none;
-}
