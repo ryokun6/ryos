@@ -315,11 +315,21 @@ export function ChangePasswordDialog({
       >
         {isWindowsTheme ? (
           <>
+            {/* The themed titlebar is decorative; expose an accessible name/description for screen readers. */}
+            <DialogTitle className="sr-only">{dialogTitle}</DialogTitle>
+            <DialogDescription className="sr-only">
+              {dialogDescription}
+            </DialogDescription>
             <DialogHeader>{dialogTitle}</DialogHeader>
             <div className="window-body">{dialogBody}</div>
           </>
         ) : isMacTheme ? (
           <>
+            {/* The themed titlebar is decorative; expose an accessible name/description for screen readers. */}
+            <DialogTitle className="sr-only">{dialogTitle}</DialogTitle>
+            <DialogDescription className="sr-only">
+              {dialogDescription}
+            </DialogDescription>
             <DialogHeader>{dialogTitle}</DialogHeader>
             {dialogBody}
           </>

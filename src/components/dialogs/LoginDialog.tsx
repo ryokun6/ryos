@@ -338,11 +338,25 @@ export function LoginDialog({
       >
         {isWindowsTheme ? (
           <>
+            {/* The themed titlebar is decorative; expose an accessible name/description for screen readers. */}
+            <DialogTitle className="sr-only">{dialogTitle}</DialogTitle>
+            <DialogDescription className="sr-only">
+              {activeTab === "login"
+                ? t("common.auth.loginDescription")
+                : t("common.auth.signupDescription")}
+            </DialogDescription>
             <DialogHeader>{dialogTitle}</DialogHeader>
             <div className="window-body">{dialogContent}</div>
           </>
         ) : isMacOSTheme ? (
           <>
+            {/* The themed titlebar is decorative; expose an accessible name/description for screen readers. */}
+            <DialogTitle className="sr-only">{dialogTitle}</DialogTitle>
+            <DialogDescription className="sr-only">
+              {activeTab === "login"
+                ? t("common.auth.loginDescription")
+                : t("common.auth.signupDescription")}
+            </DialogDescription>
             <DialogHeader>{dialogTitle}</DialogHeader>
             {dialogContent}
           </>
