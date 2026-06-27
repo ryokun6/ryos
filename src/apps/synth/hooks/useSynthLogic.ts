@@ -1,4 +1,11 @@
-import { useState, useRef, useEffect, useCallback, useReducer } from "react";
+import {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  useReducer,
+  useMemo,
+} from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import * as Tone from "tone";
 import {
@@ -22,6 +29,75 @@ interface UseSynthLogicOptions {
   isWindowOpen: boolean;
   isForeground?: boolean;
 }
+
+// Keyboard layout with extended range (constant — defined at module scope so
+// the array/object references stay stable across renders and don't break the
+// memoization of SynthPianoKey).
+const ALL_WHITE_KEYS = [
+  "C3",
+  "D3",
+  "E3",
+  "F3",
+  "G3",
+  "A3",
+  "B3",
+  "C4",
+  "D4",
+  "E4",
+  "F4",
+  "G4",
+  "A4",
+  "B4",
+  "C5",
+  "D5",
+  "E5",
+  "F5",
+];
+const ALL_BLACK_KEYS = [
+  "C#3",
+  "D#3",
+  null,
+  "F#3",
+  "G#3",
+  "A#3",
+  null,
+  "C#4",
+  "D#4",
+  null,
+  "F#4",
+  "G#4",
+  "A#4",
+  null,
+  "C#5",
+  "D#5",
+  null,
+  "F#5",
+];
+
+// Keyboard-key -> note mapping (constant; stable reference for memoized keys).
+const KEY_TO_NOTE_MAP: Record<string, string> = {
+  // Middle octave (C4-B4)
+  a: "C4",
+  w: "C#4",
+  s: "D4",
+  e: "D#4",
+  d: "E4",
+  f: "F4",
+  t: "F#4",
+  g: "G4",
+  y: "G#4",
+  h: "A4",
+  u: "A#4",
+  j: "B4",
+
+  // Upper octave (C5-F5)
+  k: "C5",
+  o: "C#5",
+  l: "D5",
+  p: "D#5",
+  ";": "E5",
+  "'": "F5",
+};
 
 // Function to shift note by octave
 const shiftNoteByOctave = (note: string, offset: number): string => {
@@ -197,48 +273,6 @@ export const useSynthLogic = ({
   } = useThemeFlags();
   const isClassicTheme = isMacOSTheme || isWindowsTheme;
 
-  // Define keyboard layout with extended range
-  const allWhiteKeys = [
-    "C3",
-    "D3",
-    "E3",
-    "F3",
-    "G3",
-    "A3",
-    "B3",
-    "C4",
-    "D4",
-    "E4",
-    "F4",
-    "G4",
-    "A4",
-    "B4",
-    "C5",
-    "D5",
-    "E5",
-    "F5",
-  ];
-  const allBlackKeys = [
-    "C#3",
-    "D#3",
-    null,
-    "F#3",
-    "G#3",
-    "A#3",
-    null,
-    "C#4",
-    "D#4",
-    null,
-    "F#4",
-    "G#4",
-    "A#4",
-    null,
-    "C#5",
-    "D#5",
-    null,
-    "F#5",
-  ];
-
   // Reference to the app container
   const appContainerRef = useRef<HTMLDivElement>(null);
 
@@ -273,19 +307,22 @@ export const useSynthLogic = ({
   }, [isWindowOpen]);
 
   // Get visible keys based on container width
-  // Start with a base of 8 keys (C4-C5) and add more keys on both sides as container gets wider
-  const baseIndex = 7; // Index of C4 in allWhiteKeys
-  const keysToAddLeft = Math.floor(visibleKeyCount / 2);
-  const keysToAddRight = Math.ceil(visibleKeyCount / 2);
+  // Start with a base of 8 keys (C4-C5) and add more keys on both sides as container gets wider.
+  // Memoized on visibleKeyCount so the slices keep stable references between
+  // unrelated re-renders (e.g. note presses), preserving SynthPianoKey memoization.
+  const { whiteKeys, blackKeys } = useMemo(() => {
+    const baseIndex = 7; // Index of C4 in ALL_WHITE_KEYS
+    const keysToAddLeft = Math.floor(visibleKeyCount / 2);
+    const keysToAddRight = Math.ceil(visibleKeyCount / 2);
 
-  const startIndex = Math.max(0, baseIndex - keysToAddLeft);
-  const endIndex = Math.min(
-    allWhiteKeys.length,
-    baseIndex + 8 + keysToAddRight
-  );
+    const startIndex = Math.max(0, baseIndex - keysToAddLeft);
+    const endIndex = Math.min(ALL_WHITE_KEYS.length, baseIndex + 8 + keysToAddRight);
 
-  const whiteKeys = allWhiteKeys.slice(startIndex, endIndex);
-  const blackKeys = allBlackKeys.slice(startIndex, endIndex);
+    return {
+      whiteKeys: ALL_WHITE_KEYS.slice(startIndex, endIndex),
+      blackKeys: ALL_BLACK_KEYS.slice(startIndex, endIndex),
+    };
+  }, [visibleKeyCount]);
 
   // Use labelType from persisted store
 
@@ -542,30 +579,8 @@ export const useSynthLogic = ({
     gainRef.current.gain.value = currentPreset.effects.gain * currentVolume;
   }, [currentPreset.effects.gain, currentVolume]);
 
-  // Keyboard event handlers - extended mapping
-  const keyToNoteMap: Record<string, string> = {
-    // Middle octave (C4-B4)
-    a: "C4",
-    w: "C#4",
-    s: "D4",
-    e: "D#4",
-    d: "E4",
-    f: "F4",
-    t: "F#4",
-    g: "G4",
-    y: "G#4",
-    h: "A4",
-    u: "A#4",
-    j: "B4",
-
-    // Upper octave (C5-F5)
-    k: "C5",
-    o: "C#5",
-    l: "D5",
-    p: "D#5",
-    ";": "E5",
-    "'": "F5",
-  };
+  // Keyboard event handlers - extended mapping (module-level KEY_TO_NOTE_MAP).
+  const keyToNoteMap = KEY_TO_NOTE_MAP;
 
   // Ensure Tone.js AudioContext is started (required for Safari)
   const ensureToneStarted = useCallback(async () => {
