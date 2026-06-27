@@ -155,6 +155,32 @@ export const calculatorStyles = `
   .calc-theme-win98 .calc-key-operator {
     font-weight: 700;
   }
+  .calc-win98-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    grid-template-rows: repeat(5, 28px);
+    gap: 3px;
+  }
+  .calc-win98-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 28px;
+    font-family: "MS Sans Serif", Tahoma, sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: #800000;
+    box-shadow: inset -1px -1px #fff, inset 1px 1px #808080, inset -2px -2px #dfdfdf, inset 2px 2px #0a0a0a;
+    background: #c0c0c0;
+  }
+  .calc-theme-win98 .calc-key-memory,
+  .calc-theme-win98 .calc-key-clear,
+  .calc-theme-win98 .calc-key-operator-red {
+    color: #800000;
+  }
+  .calc-theme-win98 .calc-key:not(.calc-key-memory):not(.calc-key-clear):not(.calc-key-operator-red) {
+    color: #000080;
+  }
 
   /* ── Windows XP ── */
   .calc-theme-xp {
@@ -198,6 +224,26 @@ export const calculatorStyles = `
   }
   .calc-theme-xp .calc-key-equals {
     font-weight: 700;
+  }
+  .calc-theme-xp .calc-win98-grid {
+    grid-template-rows: repeat(5, 26px);
+    gap: 2px;
+  }
+  .calc-theme-xp .calc-win98-status {
+    min-height: 26px;
+    font-family: Tahoma, sans-serif;
+    color: #800000;
+    border: 1px solid #888;
+    box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.15);
+    background: #fff;
+  }
+  .calc-theme-xp .calc-key-memory,
+  .calc-theme-xp .calc-key-clear,
+  .calc-theme-xp .calc-key-operator-red {
+    color: #800000;
+  }
+  .calc-theme-xp .calc-key:not(.calc-key-memory):not(.calc-key-clear):not(.calc-key-operator-red) {
+    color: #000080;
   }
 
   .calc-conversion-panel {

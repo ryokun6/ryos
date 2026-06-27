@@ -19,12 +19,19 @@ const SYSTEM7_SIZES: Record<CalculatorMode, { width: number; height: number }> =
   conversion: { width: 220, height: 300 },
 };
 
+const WINDOWS_SIZES: Record<CalculatorMode, { width: number; height: number }> = {
+  basic: { width: 272, height: 300 },
+  scientific: { width: 320, height: 480 },
+  conversion: { width: 300, height: 420 },
+};
+
 export function getCalculatorWindowSize(
   mode: CalculatorMode,
   theme: CalculatorTheme
 ): { width: number; height: number } {
   if (theme === "aqua") return AQUA_SIZES[mode];
   if (theme === "system7") return SYSTEM7_SIZES[mode];
+  if (theme === "win98" || theme === "xp") return WINDOWS_SIZES[mode];
   return DEFAULT_SIZES[mode];
 }
 
