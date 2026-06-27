@@ -1,6 +1,6 @@
 # Apps
 
-ryOS includes 25 built-in applications, each designed to replicate classic desktop experiences while adding modern functionality.
+ryOS includes 26 built-in applications, each designed to replicate classic desktop experiences while adding modern functionality.
 
 Registry IDs and docs slugs mostly match, with a few intentional aliases: Applet Store is registered as `applet-viewer`, Virtual PC is registered as `pc`, and legacy `infinite-pc` IDs resolve to `pc` for persisted shortcuts.
 
@@ -28,6 +28,7 @@ Registry IDs and docs slugs mostly match, with a few intentional aliases: Applet
 | [Virtual PC](/docs/virtual-pc) | x86 emulator powered by v86 with classic OS presets, plus a DOS games library via js-dos | Entertainment |
 | [Infinite Mac](/docs/infinite-mac) | Classic Mac OS emulators | Entertainment |
 | [Stickies](/docs/stickies) | Sticky notes for quick reminders | Productivity |
+| [Books](/docs/books) | EPUB reader with a wooden bookshelf, page-turn reader, reading-progress sync, and Finder import | Productivity |
 | [Calendar](/docs/calendar) | iCal-style calendar with month, week, and day views, todos, and cloud sync | Productivity |
 | [Contacts](/docs/contacts) | Address book with vCard import, Smart Groups, and cloud sync | Productivity |
 | [Dashboard](/docs/dashboard) | Tiger-style widget overlay with clock, calendar, weather, stocks, iPod, translation, dictionary, sticky notes, aquarium, and terrarium | Utilities |

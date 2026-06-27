@@ -45,6 +45,7 @@ const APP_CONFIGS: Record<string, { sectionNum: string; docName: string }> = {
   "calendar": { sectionNum: "2.21", docName: "calendar" },
   "dashboard": { sectionNum: "2.22", docName: "dashboard" },
   "contacts": { sectionNum: "2.23", docName: "contacts" },
+  "books": { sectionNum: "2.24", docName: "books" },
   "tv": { sectionNum: "2.25", docName: "tv" },
   "maps": { sectionNum: "2.26", docName: "maps" },
 };
@@ -204,7 +205,7 @@ function getWindowConfig(appId: string): AppInfo["windowConfig"] {
   // Default window configs - these match appRegistry.tsx
   const configs: Record<string, AppInfo["windowConfig"]> = {
     finder: {
-      defaultSize: { width: 400, height: 300 },
+      defaultSize: { width: 680, height: 400 },
       minSize: { width: 300, height: 200 },
     },
     soundboard: {
@@ -257,8 +258,8 @@ function getWindowConfig(appId: string): AppInfo["windowConfig"] {
     },
     pc: {
       defaultSize: { width: 645, height: 511 },
-      minSize: { width: 645, height: 511 },
-      maxSize: { width: 645, height: 511 },
+      minSize: { width: 640, height: 400 },
+      maxSize: { width: 1280, height: 1024 },
     },
     terminal: {
       defaultSize: { width: 600, height: 400 },
@@ -269,9 +270,9 @@ function getWindowConfig(appId: string): AppInfo["windowConfig"] {
       minSize: { width: 300, height: 200 },
     },
     "control-panels": {
-      defaultSize: { width: 365, height: 415 },
-      minSize: { width: 320, height: 415 },
-      maxSize: { width: 365, height: 600 },
+      defaultSize: { width: 400, height: 415 },
+      minSize: { width: 400, height: 415 },
+      maxSize: { width: 560, height: 600 },
     },
     admin: {
       defaultSize: { width: 800, height: 500 },
@@ -292,6 +293,22 @@ function getWindowConfig(appId: string): AppInfo["windowConfig"] {
     dashboard: {
       defaultSize: { width: 500, height: 400 },
       minSize: { width: 300, height: 250 },
+    },
+    contacts: {
+      defaultSize: { width: 820, height: 560 },
+      minSize: { width: 360, height: 420 },
+    },
+    books: {
+      defaultSize: { width: 720, height: 560 },
+      minSize: { width: 420, height: 360 },
+    },
+    maps: {
+      defaultSize: { width: 560, height: 560 },
+      minSize: { width: 400, height: 300 },
+    },
+    tv: {
+      defaultSize: { width: 480, height: 520 },
+      minSize: { width: 320, height: 360 },
     },
   };
 
@@ -560,6 +577,7 @@ async function generateAppDocumentation(appId: string, dryRun: boolean = false, 
     calendar: "iCal-style calendar with month, week, and day views, todos, iCal import/export, and cloud sync",
     dashboard: "Tiger-style widget overlay (F4) with clock, calendar, weather, stocks, iPod, translation, dictionary, sticky note, aquarium, and terrarium",
     contacts: "Address book with vCard import, Smart Groups, and cloud sync",
+    books: "EPUB reader with a wooden bookshelf, page-turn reader, reading-progress sync, and Finder import",
     tv: "Channel-surfing YouTube TV with CRT effects, MTV synced lyrics, and AI-generated channels",
     maps: "Apple MapKit search and pins; directions open in Apple Maps in a new tab",
   };
