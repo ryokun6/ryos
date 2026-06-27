@@ -170,6 +170,11 @@ const LazyBooksApp = createLazyComponent<BooksInitialData>(
   "books"
 );
 
+const LazyCalculatorApp = createLazyComponent<unknown>(
+  () => import("@/apps/calculator/components/CalculatorAppComponent").then(m => ({ default: m.CalculatorAppComponent })),
+  "calculator"
+);
+
 // ============================================================================
 // APP METADATA (loaded eagerly - small, isolated from components)
 // Import from metadata.ts files to avoid eager loading of components
@@ -207,6 +212,7 @@ import { appMetadata as contactsMetadata, helpItems as contactsHelpItems } from 
 import { appMetadata as dashboardMetadata, helpItems as dashboardHelpItems } from "@/apps/dashboard/metadata";
 import { appMetadata as mapsMetadata, helpItems as mapsHelpItems } from "@/apps/maps";
 import { appMetadata as booksMetadata, helpItems as booksHelpItems } from "@/apps/books/metadata";
+import { appMetadata as calculatorMetadata, helpItems as calculatorHelpItems } from "@/apps/calculator/metadata";
 import { DEFAULT_WINDOW_SIZE_WITH_TITLEBAR as infiniteMacDefaultSize } from "@/apps/infinite-mac/windowConfig";
 import { DEFAULT_WINDOW_SIZE_WITH_TITLEBAR as infinitePcDefaultSize } from "@/apps/infinite-pc/windowConfig";
 
@@ -562,6 +568,20 @@ export const appRegistry = {
       minSize: { width: 420, height: 360 },
     } as WindowConstraints,
   } as BaseApp<BooksInitialData> & { windowConfig: WindowConstraints },
+  ["calculator"]: {
+    id: "calculator",
+    name: "Calculator",
+    icon: { type: "image", src: calculatorMetadata.icon },
+    description: "Basic, scientific, and unit conversion calculator",
+    component: LazyCalculatorApp,
+    helpItems: calculatorHelpItems,
+    metadata: calculatorMetadata,
+    windowConfig: {
+      defaultSize: { width: 240, height: 360 },
+      minSize: { width: 240, height: 360 },
+      maxSize: { width: 320, height: 520 },
+    } as WindowConstraints,
+  },
 } as const;
 
 // ============================================================================

@@ -205,6 +205,14 @@ const HELP_KEYS: Record<AppId, string[]> = {
     "fonts",
     "darkMode",
   ],
+  calculator: [
+    "basicMode",
+    "scientificMode",
+    "conversionMode",
+    "themeDesigns",
+    "keyboard",
+    "liveCurrency",
+  ],
 };
 
 /**

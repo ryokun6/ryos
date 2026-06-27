@@ -4508,6 +4508,121 @@
           "description": "The reader follows the system theme, or set a light, sepia, or dark page from View ▸ Theme."
         }
       }
+    },
+    "calculator": {
+      "name": "Calculator",
+      "title": "Calculator",
+      "description": "Basic, scientific, and unit conversion calculator",
+      "menu": {
+        "help": "Calculator Help",
+        "about": "About Calculator",
+        "clear": "Clear",
+        "basic": "Basic",
+        "scientific": "Scientific",
+        "conversion": "Conversion"
+      },
+      "angle": {
+        "deg": "Degrees",
+        "rad": "Radians"
+      },
+      "conversion": {
+        "title": "Convert",
+        "category": "Category",
+        "from": "From",
+        "to": "To",
+        "swap": "Swap",
+        "currencyError": "Could not load exchange rate",
+        "categories": {
+          "length": "Length",
+          "area": "Area",
+          "volume": "Volume",
+          "mass": "Weight & Mass",
+          "temperature": "Temperature",
+          "speed": "Speed",
+          "time": "Time",
+          "pressure": "Pressure",
+          "energy": "Energy",
+          "currency": "Currency"
+        },
+        "units": {
+          "m": "Meters",
+          "km": "Kilometers",
+          "cm": "Centimeters",
+          "mm": "Millimeters",
+          "in": "Inches",
+          "ft": "Feet",
+          "yd": "Yards",
+          "mi": "Miles",
+          "sqm": "Square Meters",
+          "sqkm": "Square Kilometers",
+          "sqft": "Square Feet",
+          "sqmi": "Square Miles",
+          "acre": "Acres",
+          "ha": "Hectares",
+          "l": "Liters",
+          "ml": "Milliliters",
+          "gal": "Gallons (US)",
+          "qt": "Quarts",
+          "pt": "Pints",
+          "floz": "Fluid Ounces",
+          "cup": "Cups",
+          "kg": "Kilograms",
+          "g": "Grams",
+          "mg": "Milligrams",
+          "lb": "Pounds",
+          "oz": "Ounces",
+          "t": "Metric Tons",
+          "c": "Celsius",
+          "f": "Fahrenheit",
+          "k": "Kelvin",
+          "mps": "Meters/Second",
+          "kph": "Kilometers/Hour",
+          "mph": "Miles/Hour",
+          "knot": "Knots",
+          "s": "Seconds",
+          "min": "Minutes",
+          "hr": "Hours",
+          "day": "Days",
+          "wk": "Weeks",
+          "pa": "Pascals",
+          "kpa": "Kilopascals",
+          "bar": "Bar",
+          "atm": "Atmospheres",
+          "psi": "PSI",
+          "j": "Joules",
+          "kj": "Kilojoules",
+          "cal": "Calories",
+          "kcal": "Kilocalories",
+          "wh": "Watt-hours",
+          "kwh": "Kilowatt-hours"
+        }
+      },
+      "help": {
+        "basicMode": {
+          "title": "Basic Mode",
+          "description": "Add, subtract, multiply, and divide with memory keys and percent"
+        },
+        "scientificMode": {
+          "title": "Scientific Mode",
+          "description": "Trig, logs, powers, roots, factorial, π, e, and degree/radian toggle"
+        },
+        "conversionMode": {
+          "title": "Conversion Mode",
+          "description": "Convert length, mass, temperature, currency, and more with live rates"
+        },
+        "themeDesigns": {
+          "title": "Theme Designs",
+          "description": "Classic Mac, Aqua, Windows 98, and Windows XP calculator chrome per theme"
+        },
+        "keyboard": {
+          "title": "Keyboard",
+          "description": "Type digits and operators from the keyboard; View menu switches modes"
+        },
+        "liveCurrency": {
+          "title": "Live Currency",
+          "description": "Currency conversions fetch exchange rates through the ryOS API"
+        }
+      }
     }
   },
   "components": {
