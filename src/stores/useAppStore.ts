@@ -3,7 +3,6 @@ import { useStoreShallow } from "./helpers";
 import { persist } from "zustand/middleware";
 import { AppId, getWindowConfig, getMobileWindowSize } from "@/config/appRegistry";
 import { prefetchAppChunk } from "@/config/lazyAppComponent";
-import { resolveAppId } from "@/config/appRegistryData";
 import { useAppletStore } from "@/stores/useAppletStore";
 import { AppState } from "@/apps/base/types";
 import { AIModel } from "@/types/aiModels";
@@ -155,31 +154,6 @@ export const selectIsInstanceForeground = (
   state: { foregroundInstanceId: string | null },
   instanceId: string
 ) => state.foregroundInstanceId === instanceId;
-
-function remapLegacyAppIdsInAppStore(prev: {
-  instances?: Record<string, AppInstance>;
-  recentApps?: RecentApp[];
-  recentDocuments?: RecentDocument[];
-}) {
-  if (prev.instances) {
-    for (const inst of Object.values(prev.instances)) {
-      const resolved = resolveAppId(inst.appId);
-      if (resolved) inst.appId = resolved;
-    }
-  }
-  if (prev.recentApps) {
-    prev.recentApps = prev.recentApps.map((entry) => {
-      const resolved = resolveAppId(entry.appId);
-      return resolved ? { ...entry, appId: resolved } : entry;
-    });
-  }
-  if (prev.recentDocuments) {
-    prev.recentDocuments = prev.recentDocuments.map((entry) => {
-      const resolved = resolveAppId(entry.appId);
-      return resolved ? { ...entry, appId: resolved } : entry;
-    });
-  }
-}
 
 // ---------------- Store ---------------------------------------------------------
 const createUseAppStore = () =>
@@ -798,7 +772,6 @@ const createUseAppStore = () =>
         }),
         onRehydrateStorage: () => (state) => {
         if (!state) return;
-        remapLegacyAppIdsInAppStore(state);
         // Clean instanceOrder after rehydrate
         if (
           (state as unknown as { instanceOrder?: string[] }).instanceOrder &&

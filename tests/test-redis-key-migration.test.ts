@@ -35,11 +35,6 @@ describe("Redis key scheme migration helpers", () => {
       targetKey: null,
       action: "skip",
     });
-    await expect(planRedisKeyMigration("sync:state:alice:settings")).resolves.toMatchObject({
-      targetKey: "sync:v2:user:alice:kv",
-      action: "import-v1-sync",
-      username: "alice",
-    });
   });
 
   test("backfills strings and preserves TTLs without deleting legacy keys", async () => {
@@ -254,34 +249,6 @@ describe("Redis key scheme migration helpers", () => {
     expect(scanned).toBeGreaterThanOrEqual(2);
     expect(await redis.get(redisKeys.auth.userProfile("alice"))).not.toBeNull();
     expect(await redis.get(redisKeys.auth.userProfile("bob"))).not.toBeNull();
-  });
-
-  test("imports legacy sync v1 keys into sync2 instead of warning", async () => {
-    const fake = new FakeRedis();
-    const redis = fake as unknown as Redis;
-    fake.setSync(
-      "sync:state:alice:settings",
-      JSON.stringify({
-        data: {
-          display: { desktopScale: 1 },
-        },
-        updatedAt: "2026-01-01T00:00:00.000Z",
-      })
-    );
-
-    const result = await backfillRedisKeyScheme(redis, {
-      pattern: "sync:state:*",
-      limit: 10,
-      dryRun: false,
-    });
-
-    expect(result.scanned).toBe(1);
-    expect(result.planned).toBe(1);
-    expect(result.copied).toBe(1);
-    expect(result.warnings).toEqual([]);
-    expect(await redis.get(redisKeys.sync.v2Seq("alice"))).toBe("0");
-    const kv = await redis.hgetall(redisKeys.sync.v2Kv("alice"));
-    expect(Object.keys(kv || {})).toContain("settings/display");
   });
 
   test("backfills sync2 journals as zsets while preserving scores", async () => {

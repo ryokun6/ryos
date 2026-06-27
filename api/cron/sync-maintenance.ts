@@ -9,10 +9,9 @@ export const maxDuration = 60;
 
 /**
  * Cloud Sync v2 maintenance cron (see vercel.json `crons`):
- * retires frozen v1 sync keys with a TTL, garbage-collects unreferenced
- * content-addressed blobs (mark-and-sweep with a grace period), and sweeps
- * orphaned legacy v1 storage objects. Bounded per run; successive runs walk
- * the user base via a persisted scan cursor.
+ * garbage-collects unreferenced content-addressed blobs (mark-and-sweep with
+ * a grace period) and heals user records. Bounded per run; successive runs
+ * walk the user base via a persisted scan cursor.
  *
  * Auth matches the telegram heartbeat cron: `Authorization: Bearer ${CRON_SECRET}`.
  */

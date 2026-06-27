@@ -657,7 +657,7 @@ async function handleStaticRequest(pathname: string): Promise<Response | null> {
     });
   }
 
-  if (pathname === "/embed/pc" || pathname === "/embed/infinite-pc") {
+  if (pathname === "/embed/pc") {
     return await serveDistPath("embed/pc.html", {
       headers: {
         "Cross-Origin-Embedder-Policy": "credentialless",

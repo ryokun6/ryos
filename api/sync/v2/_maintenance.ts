@@ -1,17 +1,11 @@
 /**
  * Cloud Sync v2 maintenance (cron):
  *
- * 1. **Legacy v1 key retirement** — v1 sync snapshots were written without
- *    TTLs. Once a user is on v2 (imported), their v1 keys are frozen
- *    leftovers; this puts a retirement TTL on them so they expire.
- * 2. **Blob garbage collection** — content-addressed blobs whose digest is
+ * 1. **Blob garbage collection** — content-addressed blobs whose digest is
  *    no longer referenced by any KV document are deleted with a
  *    mark-and-sweep grace period (a blob must be unreferenced across two
  *    runs spaced beyond the grace window before its object is removed).
- * 3. **Legacy blob sweep** — v1 per-item/monolithic objects listed in the
- *    frozen `sync:auto:meta` manifests are deleted once no current KV doc
- *    references them (v1 has no writers anymore, so this cannot race).
- * 4. **User record healing** — `chat:users:*` records are meant to persist
+ * 2. **User record healing** — `chat:users:*` records are meant to persist
  *    forever, but an old room-message code path attached a TTL on each
  *    send; any such stale TTL is removed (PERSIST).
  *
@@ -31,31 +25,10 @@ import {
 } from "./_core.js";
 import { redisKeys } from "../../../src/shared/redisKeys.js";
 
-/**
- * Retirement TTL for frozen v1 keys. These are dead copies of data already
- * imported into v2, so they expire on a shorter clock than live sync data.
- */
-export const V1_RETIREMENT_TTL_SECONDS = 90 * 24 * 60 * 60;
-
 /** Unreferenced blobs must stay marked this long before deletion. */
 export const BLOB_GC_GRACE_MS = 24 * 60 * 60 * 1000;
 
-/** Pre-canonical cursor key; read once during cutover, then deleted. */
-const LEGACY_MAINTENANCE_CURSOR_KEY = "sync2:maint:cursor";
-
 const USER_KV_SCAN_PATTERN = "sync:v2:user:*:kv";
-
-const V1_REDIS_DOMAINS = [
-  "settings",
-  "files-metadata",
-  "songs",
-  "videos",
-  "tv",
-  "stickies",
-  "calendar",
-  "contacts",
-  "maps",
-] as const;
 
 export interface SyncMaintenanceOptions {
   /** Stop discovering users once at least this many are collected. */
@@ -75,11 +48,9 @@ export interface SyncMaintenanceStats {
   usersProcessed: number;
   /** True when the scan wrapped — the whole user base has been visited. */
   scanComplete: boolean;
-  v1KeysExpired: number;
   blobsMarked: number;
   blobsUnmarked: number;
   blobsDeleted: number;
-  legacyObjectsDeleted: number;
   userRecordsPersisted: number;
   errors: number;
 }
@@ -89,19 +60,6 @@ interface BlobRegistryEntry {
   size?: number;
   /** Mark timestamp (ms) set when the blob was first seen unreferenced. */
   gc?: number;
-}
-
-interface V1ManifestItem {
-  storageUrl?: string;
-  blobUrl?: string;
-  [key: string]: unknown;
-}
-
-interface V1ManifestEntry {
-  storageUrl?: string;
-  blobUrl?: string;
-  items?: Record<string, V1ManifestItem>;
-  [key: string]: unknown;
 }
 
 function getUsernameFromKvKey(key: string): string | null {
@@ -147,7 +105,6 @@ async function scanUserBatch(
   // persisted JSON cursor — an object. parseMaintenanceCursor handles all three.
   const startCursor =
     (await redis.get<unknown>(redisKeys.sync.maintenanceCursor())) ??
-    (await redis.get<unknown>(LEGACY_MAINTENANCE_CURSOR_KEY)) ??
     "0";
   const startState = parseMaintenanceCursor(startCursor);
   let cursor: string | number = startState.cursor;
@@ -173,7 +130,7 @@ async function scanUserBatch(
   scanComplete = cursor === "0";
 
   if (scanComplete) {
-    await redis.del(redisKeys.sync.maintenanceCursor(), LEGACY_MAINTENANCE_CURSOR_KEY);
+    await redis.del(redisKeys.sync.maintenanceCursor());
   } else {
     await redis.set(redisKeys.sync.maintenanceCursor(), cursor, {
       ex: 7 * 24 * 60 * 60,
@@ -203,44 +160,6 @@ async function collectReferencedBlobs(
     urls.add(ref.url);
   }
   return { hashes, urls };
-}
-
-async function expireV1Keys(
-  redis: Redis,
-  username: string,
-  stats: SyncMaintenanceStats
-): Promise<void> {
-  const keys: string[] = [
-    ...V1_REDIS_DOMAINS.map((domain) => `sync:state:${username}:${domain}`),
-    `sync:state:meta:${username}`,
-    `sync:auto:meta:${username}`,
-    `sync:songs:${username}:meta`,
-  ];
-
-  // Per-track song keys are listed in the v1 songs meta document.
-  const songsMeta = parseRedisJson<{ trackOrder?: unknown }>(
-    await redis.get(`sync:songs:${username}:meta`)
-  );
-  if (Array.isArray(songsMeta?.trackOrder)) {
-    for (const id of songsMeta.trackOrder) {
-      if (typeof id === "string" && id.length > 0) {
-        keys.push(`sync:songs:${username}:track:${id}`);
-      }
-    }
-  }
-
-  for (const key of keys) {
-    try {
-      // ttl: -2 = missing, -1 = persistent, >= 0 = already expiring.
-      if ((await redis.ttl(key)) === -1) {
-        await redis.expire(key, V1_RETIREMENT_TTL_SECONDS);
-        stats.v1KeysExpired += 1;
-      }
-    } catch (error) {
-      stats.errors += 1;
-      console.warn(`[sync2:maint] Failed to expire ${key}:`, error);
-    }
-  }
 }
 
 /**
@@ -322,105 +241,6 @@ async function sweepBlobRegistry(
   }
 }
 
-/**
- * Delete v1 storage objects no longer referenced by any KV doc, pruning
- * swept items out of the frozen manifest so they are not retried. The
- * manifest key's retirement TTL is preserved across the rewrite.
- */
-async function sweepLegacyManifest(
-  redis: Redis,
-  username: string,
-  referencedUrls: Set<string>,
-  budget: DeleteBudget,
-  stats: SyncMaintenanceStats,
-  options: Required<Pick<SyncMaintenanceOptions, "deleteObject">>
-): Promise<void> {
-  const manifestKey = `sync:auto:meta:${username}`;
-  const manifests = parseRedisJson<Record<string, V1ManifestEntry | null>>(
-    await redis.get(manifestKey)
-  );
-  if (!manifests || typeof manifests !== "object") return;
-
-  let changed = false;
-  let remainingEntries = 0;
-
-  for (const [domain, manifest] of Object.entries(manifests)) {
-    if (!manifest || typeof manifest !== "object") continue;
-
-    // v1 monolithic snapshot object (never referenced by v2 docs).
-    const monolithicUrl = manifest.storageUrl || manifest.blobUrl;
-    if (monolithicUrl && !referencedUrls.has(monolithicUrl)) {
-      if (budget.remaining <= 0) {
-        remainingEntries += 1;
-      } else {
-        try {
-          budget.remaining -= 1;
-          await options.deleteObject(monolithicUrl);
-          delete manifest.storageUrl;
-          delete manifest.blobUrl;
-          stats.legacyObjectsDeleted += 1;
-          changed = true;
-        } catch (error) {
-          stats.errors += 1;
-          remainingEntries += 1;
-          console.warn(
-            `[sync2:maint] Failed to delete legacy ${domain} snapshot:`,
-            error
-          );
-        }
-      }
-    }
-
-    const items = manifest.items;
-    if (items && typeof items === "object") {
-      for (const [itemKey, item] of Object.entries(items)) {
-        const url = item?.storageUrl || item?.blobUrl;
-        if (!url) {
-          delete items[itemKey];
-          changed = true;
-          continue;
-        }
-        if (referencedUrls.has(url)) {
-          remainingEntries += 1;
-          continue;
-        }
-        if (budget.remaining <= 0) {
-          remainingEntries += 1;
-          continue;
-        }
-        try {
-          budget.remaining -= 1;
-          await options.deleteObject(url);
-          delete items[itemKey];
-          stats.legacyObjectsDeleted += 1;
-          changed = true;
-        } catch (error) {
-          stats.errors += 1;
-          remainingEntries += 1;
-          console.warn(
-            `[sync2:maint] Failed to delete legacy item ${domain}/${itemKey}:`,
-            error
-          );
-        }
-      }
-    }
-  }
-
-  if (!changed) return;
-
-  if (remainingEntries === 0) {
-    await redis.del(manifestKey);
-    return;
-  }
-
-  const previousTtl = await redis.ttl(manifestKey);
-  await redis.set(manifestKey, JSON.stringify(manifests));
-  await redis.expire(
-    manifestKey,
-    previousTtl > 0 ? previousTtl : V1_RETIREMENT_TTL_SECONDS
-  );
-}
-
 export async function runSyncMaintenance(
   redis: Redis,
   options: SyncMaintenanceOptions = {}
@@ -437,11 +257,9 @@ export async function runSyncMaintenance(
   const stats: SyncMaintenanceStats = {
     usersProcessed: 0,
     scanComplete: false,
-    v1KeysExpired: 0,
     blobsMarked: 0,
     blobsUnmarked: 0,
     blobsDeleted: 0,
-    legacyObjectsDeleted: 0,
     userRecordsPersisted: 0,
     errors: 0,
   };
@@ -457,13 +275,9 @@ export async function runSyncMaintenance(
     try {
       const referenced = await collectReferencedBlobs(redis, username);
       await healUserRecord(redis, username, stats);
-      await expireV1Keys(redis, username, stats);
       await sweepBlobRegistry(redis, username, referenced, budget, stats, {
         graceMs,
         now,
-        deleteObject,
-      });
-      await sweepLegacyManifest(redis, username, referenced.urls, budget, stats, {
         deleteObject,
       });
       stats.usersProcessed += 1;

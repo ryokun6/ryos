@@ -35,16 +35,10 @@ export const appIds = [
 
 export type AppId = (typeof appIds)[number];
 
-/** Persisted / bookmarked IDs that were renamed in the registry */
-export const LEGACY_APP_ID_ALIASES: Record<string, AppId> = {
-  "infinite-pc": "pc",
-};
-
 const APP_ID_SET = new Set<string>(appIds);
 
 export function resolveAppId(id: string): AppId | undefined {
-  const candidate = (LEGACY_APP_ID_ALIASES[id] ?? id) as AppId;
-  return APP_ID_SET.has(candidate) ? candidate : undefined;
+  return APP_ID_SET.has(id) ? (id as AppId) : undefined;
 }
 
 /** Minimal app data for stores that don't need full registry */

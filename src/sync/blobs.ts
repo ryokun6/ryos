@@ -37,10 +37,7 @@ export async function gunzipJson<T>(data: ArrayBuffer | Uint8Array): Promise<T> 
   return JSON.parse(text) as T;
 }
 
-/**
- * SHA-256 hex of the serialized item JSON. Matches the v1 per-item
- * signature algorithm so legacy-imported refs dedupe against local content.
- */
+/** SHA-256 hex of the serialized item JSON. */
 export async function sha256Json(value: unknown): Promise<string> {
   const payload = new TextEncoder().encode(JSON.stringify(value));
   const digest = await crypto.subtle.digest("SHA-256", payload);
@@ -250,7 +247,7 @@ async function readResponseWithProgress(
   return result.buffer;
 }
 
-/** Download and decode one blob item (v2 bare item or v1 envelope). */
+/** Download and decode one blob item. */
 export async function downloadBlobItem(
   downloadUrl: string,
   options: BlobDownloadOptions = {}
@@ -259,18 +256,7 @@ export async function downloadBlobItem(
   if (!response.ok) {
     throw new Error(`Failed to fetch sync blob: ${response.status}`);
   }
-  const parsed = await gunzipJson<unknown>(
+  return await gunzipJson<unknown>(
     await readResponseWithProgress(response, options)
   );
-  // v1 per-item envelopes wrap the item as { domain, key, version, data }.
-  if (
-    parsed &&
-    typeof parsed === "object" &&
-    "data" in parsed &&
-    "domain" in parsed &&
-    "key" in parsed
-  ) {
-    return (parsed as { data: unknown }).data;
-  }
-  return parsed;
 }

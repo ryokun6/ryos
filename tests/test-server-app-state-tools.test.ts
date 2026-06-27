@@ -8,6 +8,7 @@ import {
   type MemoryToolContext,
 } from "../api/chat/tools/executors";
 import { readSyncSnapshot } from "../api/sync/v2/_core";
+import { redisKeys } from "../src/shared/redisKeys";
 import { FakeRedis } from "./fake-redis";
 
 const calendarData = {
@@ -131,16 +132,68 @@ const filesMetadataData = {
   createdAt: "2026-03-06T00:00:00.000Z",
 };
 
-/**
- * Seeds v1-format sync snapshots; the v2 core imports them on first access,
- * which doubles as coverage for the v1 → v2 migration path.
- */
-function createMockRedis(initialData: Record<string, unknown> = {}) {
+const TEST_SYNC_T = "01718180000000-0000-test";
+
+function createMockRedis(initialEntries: Record<string, unknown> = {}) {
   const fake = new FakeRedis();
-  for (const [key, value] of Object.entries(initialData)) {
-    fake.setSync(key, JSON.stringify(value));
+  const entries = Object.entries(initialEntries);
+  if (entries.length > 0) {
+    fake.setSync(redisKeys.sync.v2Seq("testuser"), "0");
+    fake.hashes.set(
+      redisKeys.sync.v2Kv("testuser"),
+      new Map(
+        entries.map(([key, value], index) => [
+          key,
+          JSON.stringify({ v: value, t: TEST_SYNC_T, seq: index }),
+        ])
+      )
+    );
   }
   return fake;
+}
+
+function filesMetadataEntries(snapshot: typeof filesMetadataData): Record<string, unknown> {
+  return {
+    "files/lib": { libraryState: snapshot.data.libraryState },
+    ...Object.fromEntries(
+      Object.entries(snapshot.data.items).map(([path, item]) => [
+        `files/item:${path}`,
+        item,
+      ])
+    ),
+    ...Object.fromEntries(
+      snapshot.data.documents.map((document) => [
+        `files/doc:${document.key}`,
+        document,
+      ])
+    ),
+  };
+}
+
+function calendarEntries(snapshot: typeof calendarData): Record<string, unknown> {
+  return {
+    ...Object.fromEntries(
+      snapshot.data.events.map((event) => [`calendar/event:${event.id}`, event])
+    ),
+    ...Object.fromEntries(
+      snapshot.data.calendars.map((calendar) => [`calendar/cal:${calendar.id}`, calendar])
+    ),
+    ...Object.fromEntries(
+      snapshot.data.todos.map((todo) => [`calendar/todo:${todo.id}`, todo])
+    ),
+  };
+}
+
+function stickiesEntries(snapshot: typeof stickiesData): Record<string, unknown> {
+  return Object.fromEntries(
+    snapshot.data.notes.map((note) => [`stickies/note:${note.id}`, note])
+  );
+}
+
+function contactsEntries(snapshot: typeof contactsData): Record<string, unknown> {
+  return Object.fromEntries(
+    snapshot.data.contacts.map((contact) => [`contacts/contact:${contact.id}`, contact])
+  );
 }
 
 async function getKvEntry(
@@ -170,9 +223,7 @@ describe("Server-side Documents Executor", () => {
   let context: ReturnType<typeof createMockContext>;
 
   beforeEach(() => {
-    redis = createMockRedis({
-      "sync:state:testuser:files-metadata": filesMetadataData,
-    });
+    redis = createMockRedis(filesMetadataEntries(filesMetadataData));
     context = createMockContext(redis);
   });
 
@@ -186,8 +237,8 @@ describe("Server-side Documents Executor", () => {
   });
 
   test("list falls back to the filename when synced metadata is missing a name", async () => {
-    const namelessRedis = createMockRedis({
-      "sync:state:testuser:files-metadata": {
+    const namelessRedis = createMockRedis(
+      filesMetadataEntries({
         ...filesMetadataData,
         data: {
           ...filesMetadataData.data,
@@ -199,8 +250,8 @@ describe("Server-side Documents Executor", () => {
             },
           },
         },
-      },
-    });
+      })
+    );
     const namelessContext = createMockContext(namelessRedis);
 
     const result = await executeDocumentsControl({ action: "list" }, namelessContext);
@@ -243,8 +294,8 @@ describe("Server-side Documents Executor", () => {
   });
 
   test("write clears deleted path tombstones when recreating a document", async () => {
-    const tombstonedRedis = createMockRedis({
-      "sync:state:testuser:files-metadata": {
+    const tombstonedRedis = createMockRedis(
+      filesMetadataEntries({
         ...filesMetadataData,
         data: {
           ...filesMetadataData.data,
@@ -252,8 +303,8 @@ describe("Server-side Documents Executor", () => {
             "/Documents/todo.md": "2026-03-12T16:40:00.000Z",
           },
         },
-      },
-    });
+      })
+    );
     const tombstonedContext = createMockContext(tombstonedRedis);
 
     const result = await executeDocumentsControl(
@@ -306,8 +357,8 @@ describe("Server-side Documents Executor", () => {
   });
 
   test("edit fails when old_string matches multiple locations", async () => {
-    const repeatedRedis = createMockRedis({
-      "sync:state:testuser:files-metadata": {
+    const repeatedRedis = createMockRedis(
+      filesMetadataEntries({
         ...filesMetadataData,
         data: {
           ...filesMetadataData.data,
@@ -321,8 +372,8 @@ describe("Server-side Documents Executor", () => {
             },
           ],
         },
-      },
-    });
+      })
+    );
     const repeatedContext = createMockContext(repeatedRedis);
 
     const result = await executeDocumentsControl(
@@ -360,9 +411,7 @@ describe("Server-side Calendar Executor", () => {
   let context: ReturnType<typeof createMockContext>;
 
   beforeEach(() => {
-    redis = createMockRedis({
-      "sync:state:testuser:calendar": calendarData,
-    });
+    redis = createMockRedis(calendarEntries(calendarData));
     context = createMockContext(redis);
   });
 
@@ -493,9 +542,7 @@ describe("Server-side Stickies Executor", () => {
   let context: ReturnType<typeof createMockContext>;
 
   beforeEach(() => {
-    redis = createMockRedis({
-      "sync:state:testuser:stickies": stickiesData,
-    });
+    redis = createMockRedis(stickiesEntries(stickiesData));
     context = createMockContext(redis);
   });
 
@@ -566,9 +613,7 @@ describe("Server-side Contacts Executor", () => {
   let context: ReturnType<typeof createMockContext>;
 
   beforeEach(() => {
-    redis = createMockRedis({
-      "sync:state:testuser:contacts": contactsData,
-    });
+    redis = createMockRedis(contactsEntries(contactsData));
     context = createMockContext(redis);
   });
 

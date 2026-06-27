@@ -41,9 +41,9 @@ export interface SyncBlobRef {
   url: string;
   /** Compressed size in bytes. */
   size: number;
-  /** SHA-256 of the serialized item JSON; absent on legacy-imported refs. */
+  /** SHA-256 of the serialized item JSON. */
   sha256?: string;
-  /** Legacy v1 per-item signature (imported manifests only). */
+  /** Alternate content signature for older blob refs. */
   sig?: string;
 }
 

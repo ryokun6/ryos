@@ -206,7 +206,7 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
             wallpaperSource: data || fallbackSource,
           });
           if (!data) {
-            requestCloudSyncDomainCheck("custom-wallpapers");
+            requestCloudSyncDomainCheck("wallpapers");
           }
         }
         window.dispatchEvent(
@@ -262,7 +262,7 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
             });
           }
           get().bumpCustomWallpapersRevision();
-          emitCloudSyncDomainChange("custom-wallpapers");
+          emitCloudSyncDomainChange("wallpapers");
         } catch (e) {
           console.error("deleteCustomWallpaper", e);
         }

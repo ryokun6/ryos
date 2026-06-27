@@ -390,7 +390,7 @@ export function useFileSystem(
           },
           uuid
         );
-        emitCloudSyncDomainChange("files-applets");
+        emitCloudSyncDomainChange("applets");
 
         const metadataUpdates: Partial<FileSystemItem> = {};
 
@@ -1365,9 +1365,7 @@ export function useFileSystem(
               [
                 getCloudSyncDomainForContentStore(sourceStoreName),
                 getCloudSyncDomainForContentStore(targetStoreName),
-              ].filter(Boolean) as Array<
-                "files-metadata" | "files-images" | "files-trash" | "files-applets"
-              >
+              ].filter(Boolean)
             );
           }
         }
@@ -1538,10 +1536,8 @@ export function useFileSystem(
             emitCloudSyncDomainChanges(
               [
                 getCloudSyncDomainForContentStore(storeName),
-                "files-trash",
-              ].filter(Boolean) as Array<
-                "files-metadata" | "files-images" | "files-trash" | "files-applets"
-              >
+                "trash",
+              ].filter(Boolean)
             );
             console.log(
               `[useFileSystem] Moved content for ${fileMetadata.name} from ${storeName} to Trash DB with UUID ${fileMetadata.uuid}.`
@@ -1613,10 +1609,8 @@ export function useFileSystem(
             emitCloudSyncDomainChanges(
               [
                 getCloudSyncDomainForContentStore(targetStoreName),
-                "files-trash",
-              ].filter(Boolean) as Array<
-                "files-metadata" | "files-images" | "files-trash" | "files-applets"
-              >
+                "trash",
+              ].filter(Boolean)
             );
             console.log(
               `[useFileSystem] Restored content for ${fileMetadata.name} from Trash DB to ${targetStoreName} with UUID ${fileMetadata.uuid}.`
@@ -1659,7 +1653,7 @@ export function useFileSystem(
         useCloudSyncStore
           .getState()
           .markDeletedKeys("fileTrashKeys", contentUUIDsToDelete);
-        emitCloudSyncDomainChange("files-trash");
+        emitCloudSyncDomainChange("trash");
       }
       console.log("[useFileSystem] Cleared trash content from IndexedDB.");
       track(FINDER_ANALYTICS.EMPTY_TRASH, {
@@ -1691,10 +1685,10 @@ export function useFileSystem(
       ]);
       await dbOperations.clear(STORES.DOCUMENTS);
       emitCloudSyncDomainChanges([
-        "files-metadata",
-        "files-images",
-        "files-trash",
-        "custom-wallpapers",
+        "files",
+        "images",
+        "trash",
+        "wallpapers",
       ]);
 
       // Reset metadata store (this will trigger re-initialization with new UUIDs)

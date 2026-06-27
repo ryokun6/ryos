@@ -131,7 +131,7 @@ graph LR
 | `/api/sync/v2/changes` | Read journal ops after a cursor |
 | `/api/sync/v2/snapshot` | Read full key-value sync snapshot |
 | `/api/sync/v2/blobs` | Prepare/dedupe content-addressed blob uploads |
-| `/api/cron/sync-maintenance` | Retire legacy v1 keys and garbage-collect sync blobs |
+| `/api/cron/sync-maintenance` | Garbage-collect unreferenced sync blobs and heal user records |
 | `/api/analytics/events` | Record lightweight client analytics events |
 | `/api/admin` | Admin operations |
 | `/api/airdrop/heartbeat` | AirDrop presence heartbeat |
