@@ -279,11 +279,23 @@ export function EmojiDialog({
       >
         {isWindowsTheme ? (
           <>
+            <DialogTitle className="sr-only">
+              {t("common.dialog.emoji.setEmoji")}
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              {t("common.dialog.emoji.description")}
+            </DialogDescription>
             <DialogHeader>{t("common.dialog.emoji.setEmoji")}</DialogHeader>
             <div className="window-body">{dialogContent}</div>
           </>
         ) : isMacOSTheme ? (
           <>
+            <DialogTitle className="sr-only">
+              {t("common.dialog.emoji.setEmoji")}
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              {t("common.dialog.emoji.description")}
+            </DialogDescription>
             <DialogHeader>{t("common.dialog.emoji.setEmoji")}</DialogHeader>
             {dialogContent}
           </>

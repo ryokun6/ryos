@@ -256,6 +256,9 @@ export function TelegramLinkDialog({
       >
         {isMacOSTheme ? (
           <>
+            <DialogTitle className="sr-only">
+              {t("apps.control-panels.telegram.title")}
+            </DialogTitle>
             <DialogHeader>{t("apps.control-panels.telegram.title")}</DialogHeader>
             <DialogDescription className="sr-only">
               {t("apps.control-panels.telegram.description")}

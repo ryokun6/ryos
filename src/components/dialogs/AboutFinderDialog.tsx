@@ -434,11 +434,23 @@ export function AboutFinderDialog({
       >
         {isWindowsTheme ? (
           <>
+            <DialogTitle className="sr-only">
+              {t("common.aboutThisMac.title")}
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              {t("common.aboutThisMac.description")}
+            </DialogDescription>
             <DialogHeader>{t("common.aboutThisMac.title")}</DialogHeader>
             <div className="window-body">{dialogContent}</div>
           </>
         ) : currentTheme === "macosx" ? (
           <>
+            <DialogTitle className="sr-only">
+              {t("common.aboutThisMac.title")}
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              {t("common.aboutThisMac.description")}
+            </DialogDescription>
             <DialogHeader>{t("common.aboutThisMac.title")}</DialogHeader>
             {dialogContent}
           </>

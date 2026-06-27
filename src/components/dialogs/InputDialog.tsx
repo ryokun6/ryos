@@ -224,11 +224,15 @@ export function InputDialog({
       >
         {isWindowsTheme ? (
           <>
+            <DialogTitle className="sr-only">{title}</DialogTitle>
+            <DialogDescription className="sr-only">{description}</DialogDescription>
             <DialogHeader>{title}</DialogHeader>
             <div className="window-body">{dialogContent}</div>
           </>
         ) : isMacTheme ? (
           <>
+            <DialogTitle className="sr-only">{title}</DialogTitle>
+            <DialogDescription className="sr-only">{description}</DialogDescription>
             <DialogHeader>{title}</DialogHeader>
             {dialogContent}
           </>

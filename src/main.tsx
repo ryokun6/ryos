@@ -16,6 +16,11 @@ import {
   markStaleReload,
   clearStaleReload,
 } from "./utils/reloadGuard";
+import { installConsoleCapture } from "./utils/consoleCapture";
+
+// Mirror console output into the in-app debug console buffer as early as
+// possible so logs are available when Debug Mode's console overlay is opened.
+installConsoleCapture();
 
 // Prime React 19 resource hints before anything else runs
 primeReactResources();

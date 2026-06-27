@@ -291,11 +291,15 @@ function CrashDialog({
       >
         {isWindowsTheme ? (
           <>
+            <DialogTitle className="sr-only">{titleBarLabel}</DialogTitle>
+            <DialogDescription className="sr-only">{description}</DialogDescription>
             <DialogHeader>{titleBarLabel}</DialogHeader>
             <div className="window-body">{dialogBody}</div>
           </>
         ) : isMacTheme ? (
           <>
+            <DialogTitle className="sr-only">{titleBarLabel}</DialogTitle>
+            <DialogDescription className="sr-only">{description}</DialogDescription>
             <DialogHeader>{titleBarLabel}</DialogHeader>
             {dialogBody}
           </>

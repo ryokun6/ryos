@@ -408,6 +408,12 @@ export function JoinSessionDialog({
       >
         {isWindowsTheme ? (
           <>
+            <DialogTitle className="sr-only">
+              {t("apps.karaoke.liveListen.joinSession")}
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              {t("apps.karaoke.liveListen.pasteLinkOrId")}
+            </DialogDescription>
             <DialogHeader>
               {t("apps.karaoke.liveListen.joinSession")}
             </DialogHeader>
@@ -415,6 +421,12 @@ export function JoinSessionDialog({
           </>
         ) : isMacTheme ? (
           <>
+            <DialogTitle className="sr-only">
+              {t("apps.karaoke.liveListen.joinSession")}
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              {t("apps.karaoke.liveListen.pasteLinkOrId")}
+            </DialogDescription>
             <DialogHeader>
               {t("apps.karaoke.liveListen.joinSession")}
             </DialogHeader>

@@ -27,6 +27,14 @@ export function CreateRoomDialog(props: CreateRoomDialogProps) {
       >
         {isWindowsTheme ? (
           <>
+            <DialogTitle className="sr-only">
+              {t("apps.chats.dialogs.newChatTitle")}
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              {isAdmin
+                ? t("apps.chats.dialogs.newChatDescription")
+                : t("apps.chats.dialogs.newChatDescriptionPrivate")}
+            </DialogDescription>
             <DialogHeader>
               {t("apps.chats.dialogs.newChatTitle")}
             </DialogHeader>
@@ -36,6 +44,14 @@ export function CreateRoomDialog(props: CreateRoomDialogProps) {
           </>
         ) : isMacOSTheme ? (
           <>
+            <DialogTitle className="sr-only">
+              {t("apps.chats.dialogs.newChatTitle")}
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              {isAdmin
+                ? t("apps.chats.dialogs.newChatDescription")
+                : t("apps.chats.dialogs.newChatDescriptionPrivate")}
+            </DialogDescription>
             <DialogHeader>
               {t("apps.chats.dialogs.newChatTitle")}
             </DialogHeader>

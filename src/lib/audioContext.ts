@@ -142,7 +142,10 @@ export const resumeAudioContext = async (): Promise<void> => {
           return; // Successfully resumed, exit early
         }
       } catch (err) {
-        console.error("[audioContext] Failed to resume AudioContext:", err);
+        // Expected on iOS Safari when the context is "interrupted"/"suspended"
+        // (e.g. returning from background). We immediately recreate the context
+        // below, so keep this at debug level to avoid alarming error noise.
+        console.debug("[audioContext] Failed to resume AudioContext:", err);
       }
     }
 

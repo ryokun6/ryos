@@ -313,6 +313,9 @@ export function ShareItemDialog({
       >
         {isMacOSTheme ? (
           <>
+            <DialogTitle className="sr-only">
+              {t("common.dialog.share.shareItem", { itemType: translatedItemType })}
+            </DialogTitle>
             <DialogHeader>{t("common.dialog.share.shareItem", { itemType: translatedItemType })}</DialogHeader>
             <DialogDescription className="sr-only">
               {t("common.dialog.share.shareItemViaLinkOrQrCode", { itemType: translatedItemType.toLowerCase() })}
