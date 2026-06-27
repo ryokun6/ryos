@@ -188,7 +188,6 @@ export function CalculatorBody({ logic }: CalculatorBodyProps) {
             onMemoryRecall={pressMemoryRecall}
             onMemoryStore={pressMemoryStore}
             onMemoryAdd={pressMemoryAdd}
-            onMemorySubtract={pressMemorySubtract}
           />
         </>
       ) : (

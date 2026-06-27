@@ -19,7 +19,6 @@ interface CalculatorWin98PanelProps {
   onMemoryRecall: () => void;
   onMemoryStore: () => void;
   onMemoryAdd: () => void;
-  onMemorySubtract: () => void;
 }
 
 /** Classic Windows 98 Calculator — 6-column standard layout. */
@@ -40,7 +39,6 @@ export function CalculatorWin98Panel({
   onMemoryRecall,
   onMemoryStore,
   onMemoryAdd,
-  onMemorySubtract,
 }: CalculatorWin98PanelProps) {
   return (
     <div className="calc-win98-panel flex flex-col gap-1">
