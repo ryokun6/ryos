@@ -15,9 +15,7 @@ export function DeferredAutoCloudSync() {
     const load = () => {
       if (cancelled) return;
       void import("./AutoCloudSyncRunner").then((mod) => {
-        if (!cancelled) {
-          setRunner(() => mod.AutoCloudSyncRunner);
-        }
+        if (!cancelled) setRunner(() => mod.AutoCloudSyncRunner);
       });
     };
 
