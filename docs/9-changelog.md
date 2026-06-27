@@ -14,6 +14,8 @@ A summary of changes and updates to ryOS, organized by month.
 - **Desktop app (Electron)**: replace the Tauri shell with Electron — signed macOS releases, auto-update with Check for Updates, native app permissions, background chat notifications, native toasts, and Castlabs Electron for Apple Music DRM playback (releases v1.0.3–v1.0.8).
 - **Performance sweep**: cut ~1MB of boot-critical JS, narrowed store/instance/clock subscriptions, debounced write-behind localStorage persistence, lazy Pusher runtime, transient drag/resize and dock scaling, visibility-gated polling, and content-visibility for long lists.
 - **Control Panels redesign**: a macOS System Preferences layout across all themes with a Preferences-style search field, a consolidated **Account** ⋯ menu (login, change password, logout, logout-all-devices), reliable Safari auto-height, and Aqua polish.
+- **Books**: a new EPUB reader app with a 3D wooden bookshelf, a page-turn reader (zoom-in/out transitions, reading fonts including EB Garamond, single/double-column layouts, and light/sepia/dark page themes), auto-saved reading progress synced across devices, Finder `.epub` import into a protected `/Books` root, and *Meditations* bundled as the default book.
+- **International preferences**: a new Control Panels area (Language and Date & Time tabs) for locale formats and an interactive Earth-map time zone picker; the selected time zone is honored across the menubar clock, Dashboard, and Calendar, with localized time-zone and weather city names.
 - **Dynamic wallpapers**: day/night gradient, now-playing cover, and shuffle options, plus animated **Weather** and **Lyrics** live wallpapers backed by unified weather data and per-user deterministic shuffle that stays in sync across devices.
 - **Selectable accent colors**: named swatches in Control Panels → Appearance for Aqua and System 7, a wallpaper-sampled default, a **System** option that restores each theme's classic selection color, and accent theming applied across menus, sliders, progress bars, links, toasts, and Ryo AI bubbles.
 - **Self-service account recovery and deletion**: recover access to and delete your account without admin involvement.
@@ -21,8 +23,15 @@ A summary of changes and updates to ryOS, organized by month.
 - **iPod / Karaoke lyrics glow**: cache cover-derived glow color in song metadata for stable cross-device sync; default fullscreen lyrics to glow; mirror player visuals in lyrics wallpaper backgrounds; improve palette extraction and karaoke timing/alignment.
 
 <details>
-<summary>Minor changes (26)</summary>
+<summary>Minor changes (33)</summary>
 
+- Allow multi-day all-day calendar events.
+- Show cloud sync upload progress in the menubar.
+- Adopt a shared Help/About dialog state across apps.
+- Add a Zod request-body validation layer at the apiHandler boundary.
+- Add Open Graph share previews for newer apps.
+- Decompose the iPod logic hook into focused sub-hooks and route store debug logs through a production-silent logger.
+- Fix mobile desktop context-menu taps, Internet Explorer history tracking on proxied link navigation, and help-doc links opening app routes instead of /docs.
 - Secure realtime: authorize private chat/sync channels (fixes a channel-auth leak); enforce banned users and apply shared login lockout to registration.
 - Refactor menubars: migrate remaining app menus to descriptors (radio + submenu-disabled support); surface cloud sync activity in a menubar dropdown on hover or tap.
 - Add keyboard shortcuts in menus (Cmd/Ctrl-aware) and a stored user timezone context.
@@ -488,4 +497,4 @@ A summary of changes and updates to ryOS, organized by month.
 
 ---
 
-*This changelog is maintained from git history and manual curation. Last updated: 2026-06-21*
+*This changelog is maintained from git history and manual curation. Last updated: 2026-06-27*
