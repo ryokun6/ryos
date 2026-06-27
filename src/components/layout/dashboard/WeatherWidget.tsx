@@ -12,6 +12,7 @@ import {
 } from "@/lib/weather/openMeteo";
 import { coordKey, SF_LAT, SF_LON } from "@/stores/useWeatherStore";
 import type { CityResult, WeatherLocation } from "@/lib/weather/types";
+import { formatCountryDisplay } from "@/utils/formatCountryDisplay";
 
 function getPopularCities(t: TFunction): CityResult[] {
   return [
@@ -65,10 +66,11 @@ function getSkyGradient(code: number, isDay: boolean): string {
   return "linear-gradient(180deg, #4A90C4 0%, #7AB4D8 40%, #A8CBE0 100%)";
 }
 
-function formatCityLabel(city: CityResult): string {
+function formatCityLabel(city: CityResult, locale: string): string {
   const parts = [city.name];
   if (city.state) parts.push(city.state);
-  parts.push(city.country);
+  const country = formatCountryDisplay(city.country, locale).name;
+  if (country) parts.push(country);
   return parts.join(", ");
 }
 
@@ -89,7 +91,10 @@ export function WeatherWidget({ widgetId }: WeatherWidgetProps) {
       ? { kind: "coords", lat: cityConfig.lat, lon: cityConfig.lon }
       : { kind: "geo" };
 
-  const { snapshot, loading, error } = useWeather(location, { active: true });
+  const { snapshot, loading, error } = useWeather(location, {
+    active: true,
+    locale,
+  });
 
   const forecast = useMemo(
     () => (snapshot ? buildForecast(snapshot.daily, locale) : []),
@@ -322,7 +327,8 @@ export function WeatherEmojiOverflow({ widgetId }: { widgetId: string }) {
 
 // Back panel: city picker for the weather widget settings
 export function WeatherBackPanel({ widgetId, onDone }: { widgetId: string; onDone?: () => void }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language || "en";
   const popularCities = useMemo(() => getPopularCities(t), [t]);
   const { isWindowsTheme } = useThemeFlags();
   const updateWidgetConfig = useDashboardStore((s) => s.updateWidgetConfig);
@@ -378,7 +384,7 @@ export function WeatherBackPanel({ widgetId, onDone }: { widgetId: string; onDon
     searchAbortRef.current = controller;
     dispatchSearch({ type: "searchStart" });
     try {
-      const results = await searchCitiesApi(query, controller.signal);
+      const results = await searchCitiesApi(query, controller.signal, locale);
       dispatchSearch({ type: "searchResults", results });
       return;
     } catch (err) {
@@ -387,7 +393,7 @@ export function WeatherBackPanel({ widgetId, onDone }: { widgetId: string; onDon
       // search failed silently
     }
     dispatchSearch({ type: "searchResults", results: [] });
-  }, []);
+  }, [locale]);
 
   useEffect(() => {
     return () => {
@@ -474,7 +480,7 @@ export function WeatherBackPanel({ widgetId, onDone }: { widgetId: string; onDon
               onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
             >
               <MapPin size={10} weight="fill" style={{ color: isWindowsTheme ? "#999" : "rgba(255,255,255,0.25)", flexShrink: 0 }} />
-              <span className="text-[11px] truncate" style={{ color: textColor }}>{formatCityLabel(city)}</span>
+              <span className="text-[11px] truncate" style={{ color: textColor }}>{formatCityLabel(city, locale)}</span>
             </button>
           ))
         )}

@@ -1824,6 +1824,19 @@
       "timezoneAutomaticCity": "Авто ({{city}})",
       "timezoneNoResults": "Нет подходящих часовых поясов",
       "timezoneSearchPlaceholder": "Поиск часовых поясов…",
+      "timezoneRegions": {
+        "africa": "Африка",
+        "america": "Америка",
+        "antarctica": "Антарктика",
+        "arctic": "Арктика",
+        "asia": "Азия",
+        "atlantic": "Атлантика",
+        "australia": "Австралия",
+        "europe": "Европа",
+        "indian": "Индийский океан",
+        "pacific": "Тихий океан",
+        "other": "Другое"
+      },
       "toolbar": {
         "back": "Назад",
         "forward": "Вперед",

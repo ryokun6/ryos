@@ -13,7 +13,11 @@ export function getWeatherEmoji(code: number, isDay = true): string {
   return isDay ? "🌤️" : "☁️";
 }
 
-type WeatherPayload = Omit<WeatherSnapshot, "city">;
+type WeatherPayload = Omit<WeatherSnapshot, "city" | "cityLocale">;
+
+function languageHeaders(locale?: string): HeadersInit | undefined {
+  return locale ? { "Accept-Language": locale } : undefined;
+}
 
 export async function fetchWeatherPayload(
   lat: number,
@@ -45,11 +49,13 @@ export async function fetchWeatherPayload(
 
 export async function reverseGeocodeCity(
   lat: number,
-  lon: number
+  lon: number,
+  locale?: string
 ): Promise<string | null> {
   try {
     const res = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=10`
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=10`,
+      { headers: languageHeaders(locale) }
     );
     if (!res.ok) return null;
     const data = await res.json();
@@ -67,14 +73,15 @@ export async function reverseGeocodeCity(
 
 export async function searchCities(
   query: string,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  locale?: string
 ): Promise<CityResult[]> {
   if (query.length < 2) return [];
   const res = await fetch(
     `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
       query
     )}&format=json&limit=6&addressdetails=1&featuretype=city`,
-    { signal }
+    { signal, headers: languageHeaders(locale) }
   );
   if (!res.ok) return [];
   const data = await res.json();

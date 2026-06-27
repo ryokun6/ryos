@@ -28,7 +28,7 @@ export interface WeatherStoreState {
   errors: Record<string, string>;
   ensureWeather: (
     location: WeatherLocation,
-    opts?: { force?: boolean }
+    opts?: { force?: boolean; locale?: string }
   ) => void;
 }
 
@@ -55,23 +55,37 @@ function setError(key: string, message: string) {
   }));
 }
 
-function refresh(lat: number, lon: number, force = false) {
+function refresh(
+  lat: number,
+  lon: number,
+  force = false,
+  locale?: string
+) {
   const key = coordKey(lat, lon);
   const existing = useWeatherStore.getState().entries[key];
   const isFresh = existing && Date.now() - existing.fetchedAt <= WEATHER_TTL_MS;
-  if (!force && isFresh) return;
+  const sfFallback = isSfCoords(lat, lon);
+  const cityLocale = locale ?? null;
+  const needsCityLocale =
+    !sfFallback && !!locale && existing?.cityLocale !== cityLocale;
+  if (!force && isFresh && !needsCityLocale) return;
   if (inFlight.has(key)) return;
 
-  const sfFallback = isSfCoords(lat, lon);
   const promise = (async () => {
     const payload = await fetchWeatherPayload(lat, lon);
-    const prevCity = useWeatherStore.getState().entries[key]?.city ?? null;
-    setEntry(key, { ...payload, city: sfFallback ? null : prevCity });
-    if (!sfFallback && !prevCity) {
-      const city = await reverseGeocodeCity(lat, lon);
+    const previous = useWeatherStore.getState().entries[key];
+    const prevCity = previous?.city ?? null;
+    const prevCityLocale = previous?.cityLocale ?? null;
+    setEntry(key, {
+      ...payload,
+      city: sfFallback ? null : prevCity,
+      cityLocale: sfFallback ? null : prevCityLocale,
+    });
+    if (!sfFallback && (!prevCity || prevCityLocale !== cityLocale)) {
+      const city = await reverseGeocodeCity(lat, lon, locale);
       if (city) {
         const cur = useWeatherStore.getState().entries[key];
-        if (cur) setEntry(key, { ...cur, city });
+        if (cur) setEntry(key, { ...cur, city, cityLocale });
       }
     }
   })()
@@ -87,11 +101,11 @@ function refresh(lat: number, lon: number, force = false) {
   inFlight.set(key, promise);
 }
 
-function resolveGeoThenFetch(force: boolean) {
+function resolveGeoThenFetch(force: boolean, locale?: string) {
   if (geoResolving) return;
   if (typeof navigator === "undefined" || !navigator.geolocation) {
     useWeatherStore.setState({ geoFailed: true });
-    refresh(SF_LAT, SF_LON, force);
+    refresh(SF_LAT, SF_LON, force, locale);
     return;
   }
   geoResolving = true;
@@ -103,12 +117,12 @@ function resolveGeoThenFetch(force: boolean) {
         geoCoords: { lat: latitude, lon: longitude },
         geoFailed: false,
       });
-      refresh(latitude, longitude, force);
+      refresh(latitude, longitude, force, locale);
     },
     () => {
       geoResolving = false;
       useWeatherStore.setState({ geoFailed: true });
-      refresh(SF_LAT, SF_LON, force);
+      refresh(SF_LAT, SF_LON, force, locale);
     },
     { timeout: 10000, maximumAge: WEATHER_TTL_MS }
   );
@@ -116,7 +130,7 @@ function resolveGeoThenFetch(force: boolean) {
 
 // Re-resolve the device position in the background (no prompt when permission
 // was already granted) and re-key if it moved materially.
-function refreshDevicePosition() {
+function refreshDevicePosition(locale?: string) {
   if (typeof navigator === "undefined" || !navigator.geolocation) return;
   const now = Date.now();
   if (now - lastGeoRefreshAt < WEATHER_TTL_MS) return;
@@ -129,7 +143,7 @@ function refreshDevicePosition() {
         useWeatherStore.setState({
           geoCoords: { lat: latitude, lon: longitude },
         });
-        refresh(latitude, longitude, false);
+        refresh(latitude, longitude, false, locale);
       }
     },
     () => {},
@@ -146,22 +160,23 @@ export const useWeatherStore = create<WeatherStoreState>()(
       errors: {},
       ensureWeather: (location, opts) => {
         const force = opts?.force ?? false;
+        const locale = opts?.locale;
         if (location.kind === "coords") {
-          refresh(location.lat, location.lon, force);
+          refresh(location.lat, location.lon, force, locale);
           return;
         }
         if (typeof navigator === "undefined") {
           useWeatherStore.setState({ geoFailed: true });
-          refresh(SF_LAT, SF_LON, force);
+          refresh(SF_LAT, SF_LON, force, locale);
           return;
         }
         const persisted = get().geoCoords;
         if (persisted) {
-          refresh(persisted.lat, persisted.lon, force);
-          refreshDevicePosition();
+          refresh(persisted.lat, persisted.lon, force, locale);
+          refreshDevicePosition(locale);
           return;
         }
-        resolveGeoThenFetch(force);
+        resolveGeoThenFetch(force, locale);
       },
     }),
     {

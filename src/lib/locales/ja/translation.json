@@ -1824,6 +1824,19 @@
       "timezoneAutomaticCity": "自動 ({{city}})",
       "timezoneNoResults": "一致するタイムゾーンがありません",
       "timezoneSearchPlaceholder": "タイムゾーンを検索…",
+      "timezoneRegions": {
+        "africa": "アフリカ",
+        "america": "アメリカ大陸",
+        "antarctica": "南極",
+        "arctic": "北極",
+        "asia": "アジア",
+        "atlantic": "大西洋",
+        "australia": "オーストラリア",
+        "europe": "ヨーロッパ",
+        "indian": "インド洋",
+        "pacific": "太平洋",
+        "other": "その他"
+      },
       "toolbar": {
         "back": "戻る",
         "forward": "進む",

@@ -195,9 +195,39 @@ const REGION_SEARCH_ALIASES: Record<string, string> = {
   Pacific: "pacific oceania",
 };
 
+const TIMEZONE_REGION_KEYS: Record<string, string> = {
+  Africa: "africa",
+  America: "america",
+  Antarctica: "antarctica",
+  Arctic: "arctic",
+  Asia: "asia",
+  Atlantic: "atlantic",
+  Australia: "australia",
+  Europe: "europe",
+  Indian: "indian",
+  Pacific: "pacific",
+  Other: "other",
+};
+
+const TIMEZONE_REGION_FALLBACKS: Record<string, string> = {
+  Africa: "Africa",
+  America: "Americas",
+  Antarctica: "Antarctica",
+  Arctic: "Arctic",
+  Asia: "Asia",
+  Atlantic: "Atlantic",
+  Australia: "Australia",
+  Europe: "Europe",
+  Indian: "Indian Ocean",
+  Pacific: "Pacific",
+  Other: "Other",
+};
+
 /** Zones treated as southern-hemisphere for map click tie-breaking. */
 const SOUTHERN_HEMISPHERE_HINT =
   /Argentina|Santiago|Sao_Paulo|Montevideo|Asuncion|La_Paz|Lima|Sydney|Melbourne|Brisbane|Adelaide|Darwin|Perth|Hobart|Auckland|Fiji|Johannesburg|Buenos_Aires|Antarctica|Easter|Rarotonga|Tahiti|Apia|Tongatapu|Norfolk|Lord_Howe|Chatham|Enderbury|Fakaofo|Kiritimati/i;
+
+type TranslationFn = (key: string, opts?: Record<string, unknown>) => string;
 
 /** The browser's resolved IANA timezone, or "UTC" when unavailable. */
 export function getBrowserTimezone(): string {
@@ -274,13 +304,62 @@ export function formatTimezoneCity(tz: string): string {
   return city.replace(/_/g, " ");
 }
 
+function isEnglishLocale(locale: string | undefined): boolean {
+  return !locale || locale.toLowerCase().startsWith("en");
+}
+
+function getLocalizedTimezoneName(
+  tz: string,
+  locale: string | undefined,
+  date = new Date()
+): string | null {
+  if (!locale || isEnglishLocale(locale)) return null;
+  try {
+    const parts = new Intl.DateTimeFormat(locale, {
+      timeZone: tz,
+      timeZoneName: "longGeneric",
+    }).formatToParts(date);
+    const value = parts.find((p) => p.type === "timeZoneName")?.value?.trim();
+    if (!value || /^GMT|^UTC/i.test(value)) return null;
+    return value;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Locale-aware timezone display label. English keeps the classic principal-city
+ * label, while other locales use CLDR timezone names when available.
+ */
+export function formatTimezoneCityLocalized(
+  tz: string,
+  locale: string | undefined,
+  date = new Date()
+): string {
+  return getLocalizedTimezoneName(tz, locale, date) ?? formatTimezoneCity(tz);
+}
+
+export function formatTimezoneRegionLocalized(
+  region: string,
+  t?: TranslationFn
+): string {
+  const normalized = region || "Other";
+  const key = TIMEZONE_REGION_KEYS[normalized] ?? "other";
+  const fallback = TIMEZONE_REGION_FALLBACKS[normalized] ?? normalized;
+  if (!t) return fallback;
+  const translationKey = `apps.control-panels.timezoneRegions.${key}`;
+  const translated = t(translationKey);
+  return translated && translated !== translationKey ? translated : fallback;
+}
+
 /**
  * Short / long timezone names from Intl (e.g. PDT, PST, Pacific Daylight Time)
  * sampled in winter and summer so DST abbreviations are both searchable.
  */
 export function getTimezoneNameVariants(
   tz: string,
-  date = new Date()
+  date = new Date(),
+  locale = "en-US"
 ): string[] {
   const year = date.getUTCFullYear();
   const samples = [
@@ -298,7 +377,7 @@ export function getTimezoneNameVariants(
   for (const sample of samples) {
     for (const timeZoneName of styles) {
       try {
-        const parts = new Intl.DateTimeFormat("en-US", {
+        const parts = new Intl.DateTimeFormat(locale, {
           timeZone: tz,
           timeZoneName,
         }).formatToParts(sample);
@@ -316,17 +395,27 @@ export function getTimezoneNameVariants(
  * Lowercased search blob for combobox filtering: IANA path, city segments,
  * region, GMT/UTC offsets, Intl abbreviations (PDT/PST…), and country aliases.
  */
-export function buildTimezoneSearchText(tz: string, date = new Date()): string {
+export function buildTimezoneSearchText(
+  tz: string,
+  date = new Date(),
+  locale?: string
+): string {
   const slash = tz.indexOf("/");
   const region = slash === -1 ? "" : tz.slice(0, slash);
   const segments = tz.split("/").map((s) => s.replace(/_/g, " "));
   const city = formatTimezoneCity(tz);
+  const localizedCity = formatTimezoneCityLocalized(tz, locale, date);
   const offset = getTimezoneOffsetMinutes(tz, date);
   const offsetLabel = formatOffsetLabel(offset);
   const hours = offset / 60;
   const hourToken =
     Number.isInteger(hours) ? String(hours) : hours.toFixed(1).replace(/\.0$/, "");
-  const variants = getTimezoneNameVariants(tz, date);
+  const variants = new Set([
+    ...getTimezoneNameVariants(tz, date, "en-US"),
+    ...(locale && !isEnglishLocale(locale)
+      ? getTimezoneNameVariants(tz, date, locale)
+      : []),
+  ]);
   const alias = TIMEZONE_SEARCH_ALIASES[tz] ?? "";
   const regionAlias = region ? (REGION_SEARCH_ALIASES[region] ?? "") : "";
 
@@ -335,6 +424,7 @@ export function buildTimezoneSearchText(tz: string, date = new Date()): string {
     tz.replace(/\//g, " "),
     ...segments,
     city,
+    localizedCity,
     region,
     regionAlias,
     alias,

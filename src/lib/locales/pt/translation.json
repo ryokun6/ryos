@@ -1824,6 +1824,19 @@
       "timezoneAutomaticCity": "Auto ({{city}})",
       "timezoneNoResults": "Nenhum fuso horário correspondente",
       "timezoneSearchPlaceholder": "Pesquisar fusos horários…",
+      "timezoneRegions": {
+        "africa": "África",
+        "america": "Américas",
+        "antarctica": "Antártida",
+        "arctic": "Ártico",
+        "asia": "Ásia",
+        "atlantic": "Atlântico",
+        "australia": "Austrália",
+        "europe": "Europa",
+        "indian": "Oceano Índico",
+        "pacific": "Pacífico",
+        "other": "Outro"
+      },
       "toolbar": {
         "back": "Voltar",
         "forward": "Avançar",
