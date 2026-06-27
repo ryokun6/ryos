@@ -146,6 +146,23 @@
   outline: none;
 }
 
+:root:is([data-os-theme="win98"], [data-os-theme="xp"])
+  .control-panels-category-item,
+:root:is([data-os-theme="win98"], [data-os-theme="xp"])
+  .control-panels-category-item:hover,
+:root:is([data-os-theme="win98"], [data-os-theme="xp"])
+  .control-panels-category-item:focus,
+:root:is([data-os-theme="win98"], [data-os-theme="xp"])
+  .control-panels-category-item:focus-visible,
+:root:is([data-os-theme="win98"], [data-os-theme="xp"])
+  .control-panels-category-item:active {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+}
+
 :root:not([data-os-theme="macosx"]) .control-panels-category-icon-shell {
   display: flex;
   align-items: center;
@@ -672,7 +689,12 @@
    well already owns that frame, so drop it on the stacked panels. */
 :root[data-os-theme="xp"] .control-panels-pref-tab-panel,
 :root[data-os-theme="win98"] .control-panels-pref-tab-panel {
+  clear: none;
+  margin: 0;
+  border: 0;
+  background: transparent;
   box-shadow: none;
+  z-index: auto;
 }
 
 :root:not([data-os-theme="macosx"])

@@ -24,6 +24,9 @@ export const CONTROL_PANELS_TITLEBAR_HEIGHT_BY_THEME: Record<string, number> = {
   win98: 22,
 };
 
+/** Fixed 28px in-window Windows menu bar plus its 1px bottom border. */
+export const CONTROL_PANELS_WINDOWS_MENUBAR_HEIGHT = 29;
+
 /** Resolve the title-bar height for a theme, falling back to the Aqua spacer. */
 export function getControlPanelsTitlebarHeight(themeId: string): number {
   return (
