@@ -105,13 +105,10 @@ export const calculatorStyles = `
   }
   .calc-aqua-full-grid {
     display: grid;
-    grid-template-columns: repeat(8, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr)) 0 repeat(4, minmax(0, 1fr));
     grid-template-rows: repeat(6, 24px);
     column-gap: 5px;
     row-gap: 10px;
-  }
-  .calc-aqua-full-grid .calc-number-group-start {
-    margin-left: 4px;
   }
   /* Aqua keys reuse Finder toolbar metal-inset-btn via ToolbarButton */
   .calc-theme-aqua .calc-aqua-key-group {

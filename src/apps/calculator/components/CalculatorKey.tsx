@@ -11,7 +11,6 @@ export interface CalculatorKeyProps {
   theme: CalculatorTheme;
   variant?: "default" | "operator" | "function" | "equals" | "equals-wide" | "wide";
   className?: string;
-  groupClassName?: string;
   style?: CSSProperties;
   ariaLabel?: string;
 }
@@ -22,7 +21,6 @@ export function CalculatorKey({
   theme,
   variant = "default",
   className,
-  groupClassName,
   style,
   ariaLabel,
 }: CalculatorKeyProps) {
@@ -47,8 +45,7 @@ export function CalculatorKey({
       <ToolbarButtonGroup
         className={cn(
           "calc-aqua-key-group h-full min-h-[26px] w-full",
-          gridSpanClass,
-          groupClassName
+          gridSpanClass
         )}
         style={style}
       >
