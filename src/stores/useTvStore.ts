@@ -351,35 +351,6 @@ export const useTvStore = create<TvStoreState>()(
     {
       name: "ryos:tv",
       version: 5,
-      migrate: (persisted, version) => {
-        if (!persisted || typeof persisted !== "object") {
-          return persisted as typeof persisted;
-        }
-        const state = persisted as {
-          customChannels?: CustomChannel[];
-          hiddenDefaultChannelIds?: unknown;
-          hiddenDefaultChannelIdsUpdatedAt?: unknown;
-          hiddenDefaultChannelIdsResetAt?: unknown;
-        };
-        if (version < 4 && Array.isArray(state.customChannels)) {
-          state.customChannels = state.customChannels.map((entry) => {
-            const { number: _n, ...rest } = entry as CustomChannel & {
-              number?: number;
-            };
-            return rest as CustomChannel;
-          });
-        }
-        if (!Array.isArray(state.hiddenDefaultChannelIds)) {
-          state.hiddenDefaultChannelIds = [];
-        }
-        if (typeof state.hiddenDefaultChannelIdsUpdatedAt !== "string") {
-          state.hiddenDefaultChannelIdsUpdatedAt = null;
-        }
-        if (typeof state.hiddenDefaultChannelIdsResetAt !== "string") {
-          state.hiddenDefaultChannelIdsResetAt = null;
-        }
-        return state as typeof persisted;
-      },
       // Channel lineup rotation uses an in-memory per-channel shuffle (see
       // `useTvLogic`); persisted indices would drift after reload.
       partialize: (s) => ({

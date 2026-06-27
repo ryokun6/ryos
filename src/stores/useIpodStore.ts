@@ -4,8 +4,6 @@ import { useStoreShallow } from "./helpers";
 import { persist } from "zustand/middleware";
 import {
   LyricsAlignment,
-  KoreanDisplay,
-  JapaneseFurigana,
   LyricsFont,
   RomanizationSettings,
   DisplayMode,
@@ -782,66 +780,6 @@ export function navigateActiveIpodTrack(
   } else {
     state.previousTrack();
   }
-}
-
-/** Build romanization from legacy persisted koreanDisplay / japaneseFurigana fields. */
-function buildRomanizationFromLegacyPersisted(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  persisted: any
-): RomanizationSettings {
-  const oldJapaneseFurigana = persisted.japaneseFurigana as string | undefined;
-  const oldKoreanDisplay = persisted.koreanDisplay as string | undefined;
-
-  return {
-    enabled: true,
-    japaneseFurigana:
-      oldJapaneseFurigana === JapaneseFurigana.On ||
-      oldJapaneseFurigana === "on" ||
-      oldJapaneseFurigana === undefined,
-    japaneseRomaji: false,
-    korean:
-      oldKoreanDisplay === KoreanDisplay.Romanized ||
-      oldKoreanDisplay === "romanized"
-        ? true
-        : oldKoreanDisplay === KoreanDisplay.Original ||
-            oldKoreanDisplay === "original"
-          ? false
-          : initialIpodData.romanization.korean,
-    chinese: false,
-    soramimi: false,
-    soramamiTargetLanguage: "zh-TW",
-    pronunciationOnly: false,
-  };
-}
-
-/** Apply romanization migrations from legacy blobs and older romanization shapes. */
-function resolveMigratedRomanization(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  persisted: any
-): RomanizationSettings {
-  const romanization: RomanizationSettings = persisted.romanization
-    ? { ...persisted.romanization }
-    : buildRomanizationFromLegacyPersisted(persisted);
-
-  if (persisted.romanization) {
-    const oldChineseSoramimi = persisted.romanization.chineseSoramimi;
-    const oldEnglishSoramimi = persisted.romanization.soramimi;
-
-    if (oldChineseSoramimi || oldEnglishSoramimi) {
-      romanization.soramimi = true;
-      romanization.soramamiTargetLanguage = oldEnglishSoramimi ? "en" : "zh-TW";
-    } else {
-      romanization.soramimi = romanization.soramimi ?? false;
-      romanization.soramamiTargetLanguage =
-        romanization.soramamiTargetLanguage ?? "zh-TW";
-    }
-  }
-
-  if (romanization.pronunciationOnly === undefined) {
-    romanization.pronunciationOnly = false;
-  }
-
-  return romanization;
 }
 
 const CURRENT_IPOD_STORE_VERSION = 40; // Default fullscreen/Karaoke lyrics style is Gold Glow
@@ -2488,96 +2426,6 @@ export const useIpodStore = create<IpodState>()(
         ipodMenuBreadcrumb: state.ipodMenuBreadcrumb,
         ipodMenuMode: state.ipodMenuMode,
       }),
-      migrate: (persistedState, version) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        let state = persistedState as any;
-
-        // Migrate liquid -> water (Liquid display mode removed, replaced by Water)
-        if (state.displayMode === "liquid") {
-          state.displayMode = "water";
-        }
-
-        // If the persisted version is older than the current version, update defaults
-        if (version < CURRENT_IPOD_STORE_VERSION) {
-          debug(
-            `Migrating iPod store from version ${version} to ${CURRENT_IPOD_STORE_VERSION}`
-          );
-          
-          // Migrate old romanization settings to new unified format
-          let romanization = resolveMigratedRomanization(state);
-
-          // Turn on Korean romanization for all users upgrading to this version (new default)
-          if (romanization.korean === false) {
-            romanization = { ...romanization, korean: true };
-          }
-
-          const shouldUpgradeLegacyDefaultLyricsFont =
-            version < 31 &&
-            (state.lyricsFont === undefined || state.lyricsFont === LyricsFont.Serif);
-
-          // Migrate currentIndex to currentSongId (will be null, library will re-initialize)
-          state = {
-            ...state,
-            tracks: [],
-            currentSongId: null, // Reset - library will re-initialize
-            isPlaying: false,
-            isShuffled: state.isShuffled,
-            showLyrics: state.showLyrics ?? true,
-            lyricsAlignment: state.lyricsAlignment ?? LyricsAlignment.Alternating,
-            lyricsFont: shouldUpgradeLegacyDefaultLyricsFont
-              ? LyricsFont.SansSerif
-              : state.lyricsFont ?? LyricsFont.GoldGlow,
-            displayMode: state.displayMode ?? DisplayMode.Video,
-            romanization,
-            lyricsTranslationLanguage: state.lyricsTranslationLanguage ?? LYRICS_TRANSLATION_AUTO,
-            libraryState: "uninitialized" as LibraryState,
-            lastKnownVersion: state.lastKnownVersion ?? 0,
-          };
-        }
-
-        const romanization = resolveMigratedRomanization(state);
-
-        return {
-          tracks: state.tracks,
-          currentSongId: state.currentSongId,
-          loopAll: state.loopAll,
-          loopCurrent: state.loopCurrent,
-          isShuffled: state.isShuffled,
-          backlightTimeout:
-            state.backlightTimeout === "2s" ||
-            state.backlightTimeout === "10s" ||
-            state.backlightTimeout === "always-on" ||
-            state.backlightTimeout === "off"
-              ? state.backlightTimeout
-              : "2s",
-          theme: state.theme,
-          uiVariant:
-            state.uiVariant === "modern" || state.uiVariant === "classic"
-              ? state.uiVariant
-              : state.uiVariant === "aqua"
-                ? "modern"
-                : "modern",
-          lcdFilterOn: state.lcdFilterOn,
-          showLyrics: state.showLyrics,
-          lyricsAlignment: state.lyricsAlignment,
-          lyricsFont: state.lyricsFont,
-          displayMode: state.displayMode ?? DisplayMode.Video,
-          romanization,
-          lyricsTranslationLanguage: state.lyricsTranslationLanguage,
-          isFullScreen: state.isFullScreen,
-          libraryState: state.libraryState,
-          librarySource:
-            (state.librarySource as LibrarySource) ?? "youtube",
-          appleMusicCurrentSongId: state.appleMusicCurrentSongId ?? null,
-          ipodMenuBreadcrumb: Array.isArray(state.ipodMenuBreadcrumb)
-            ? state.ipodMenuBreadcrumb
-            : null,
-          ipodMenuMode:
-            typeof state.ipodMenuMode === "boolean"
-              ? state.ipodMenuMode
-              : null,
-        } as IpodState;
-      },
       onRehydrateStorage: () => {
         return (state, error) => {
           if (error) {

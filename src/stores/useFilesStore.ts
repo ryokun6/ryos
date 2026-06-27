@@ -1698,11 +1698,6 @@ export const useFilesStore = create<FilesStoreState>()(
           };
         }
 
-        if (version < 8) {
-          // Version 8 didn't change persisted shape; sync runs on rehydrate.
-          // Do not return early — later migrations (e.g. v11) must still run.
-        }
-
         if (version < 11) {
           const oldState = persistedState as {
             items: Record<string, FileSystemItem>;

@@ -186,19 +186,6 @@ export const useDockStore = create<DockStoreState>()(
       name: "dock-storage",
       version: DOCK_STORE_VERSION,
       storage: createJSONStorage(() => localStorage),
-      migrate: (persistedState) => {
-        if (!persistedState || typeof persistedState !== "object") {
-          return persistedState;
-        }
-        const state = persistedState as Partial<DockStoreState>;
-        if (!Array.isArray(state.pinnedItems)) {
-          return persistedState;
-        }
-        return {
-          ...state,
-          pinnedItems: computeDockPinnedItems(state.pinnedItems),
-        };
-      },
     }
   )
 );

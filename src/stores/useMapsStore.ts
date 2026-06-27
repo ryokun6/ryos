@@ -119,19 +119,6 @@ export const useMapsStore = create<MapsStoreState>()(
         selectedPlace: state.selectedPlace,
         updatedAt: state.updatedAt,
       }),
-      migrate: (persistedState, fromVersion) => {
-        if (!persistedState || typeof persistedState !== "object") {
-          return persistedState as MapsStoreState;
-        }
-        const persisted = persistedState as Partial<MapsStoreState>;
-        if (fromVersion < 2 && typeof persisted.updatedAt !== "number") {
-          return {
-            ...persisted,
-            updatedAt: 0,
-          } as MapsStoreState;
-        }
-        return persisted as MapsStoreState;
-      },
     }
   )
 );

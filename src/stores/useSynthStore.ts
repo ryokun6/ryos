@@ -141,80 +141,12 @@ interface SynthStoreState {
 const STORE_VERSION = 1;
 const STORE_NAME = "ryos:synth";
 
-// Helper to get values from old localStorage keys
-const getOldPresets = (): SynthPreset[] => {
-  try {
-    const savedPresetsStr = localStorage.getItem("synth-presets");
-    if (!savedPresetsStr) return defaultPresets;
-
-    const savedPresets = JSON.parse(savedPresetsStr);
-    if (savedPresets && savedPresets.length > 0) {
-      // Add default gain to presets that don't have it
-      return savedPresets.map((preset: SynthPreset) => ({
-        ...preset,
-        effects: {
-          ...preset.effects,
-          gain: preset.effects.gain ?? 0.8,
-          chorus: preset.effects.chorus ?? 0,
-          phaser: preset.effects.phaser ?? 0,
-          bitcrusher: preset.effects.bitcrusher ?? 0,
-        },
-      }));
-    }
-    return defaultPresets;
-  } catch (error) {
-    console.error("Error loading presets:", error);
-    return defaultPresets;
-  }
-};
-
-const getOldCurrentPreset = (): SynthPreset => {
-  try {
-    const savedCurrentPresetStr = localStorage.getItem("synth-current-preset");
-    if (!savedCurrentPresetStr) return defaultPresets[0];
-
-    const savedCurrentPreset = JSON.parse(savedCurrentPresetStr);
-    const savedPresets = getOldPresets();
-    
-    if (
-      savedCurrentPreset &&
-      savedPresets.find((p) => p.id === savedCurrentPreset.id)
-    ) {
-      // Add default values for missing effects
-      return {
-        ...savedCurrentPreset,
-        effects: {
-          ...savedCurrentPreset.effects,
-          gain: savedCurrentPreset.effects.gain ?? 0.8,
-          chorus: savedCurrentPreset.effects.chorus ?? 0,
-          phaser: savedCurrentPreset.effects.phaser ?? 0,
-          bitcrusher: savedCurrentPreset.effects.bitcrusher ?? 0,
-        },
-      };
-    }
-    
-    return savedPresets[0] || defaultPresets[0];
-  } catch (error) {
-    console.error("Error loading current preset:", error);
-    return defaultPresets[0];
-  }
-};
-
-const getOldLabelType = (): NoteLabelType => {
-  try {
-    const savedLabelType = localStorage.getItem("synth-label-type") as NoteLabelType;
-    return savedLabelType || "off";
-  } catch {
-    return "off";
-  }
-};
-
 export const useSynthStore = create<SynthStoreState>()(
   persist(
     (set) => ({
-      presets: getOldPresets(),
-      currentPreset: getOldCurrentPreset(),
-      labelType: getOldLabelType(),
+      presets: defaultPresets,
+      currentPreset: defaultPresets[0],
+      labelType: "off",
       currentOctave: 0,
       currentVolume: 1,
       sustainedNotes: new Set(),
@@ -268,17 +200,6 @@ export const useSynthStore = create<SynthStoreState>()(
         currentOctave: state.currentOctave,
         currentVolume: state.currentVolume,
       }),
-      // Migration from old localStorage keys
-      onRehydrateStorage: () => {
-        return (state) => {
-          if (state) {
-            // Remove old localStorage keys now that migration is complete
-            localStorage.removeItem("synth-presets");
-            localStorage.removeItem("synth-current-preset");
-            localStorage.removeItem("synth-label-type");
-          }
-        };
-      },
     }
   )
 ); 

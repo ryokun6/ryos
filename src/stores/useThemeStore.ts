@@ -260,7 +260,6 @@ async function ensureLegacyCss(theme: OsThemeId) {
 
 // Storage keys
 const THEME_KEY = "ryos:theme";
-const LEGACY_THEME_KEY = "os_theme";
 /**
  * Per-theme dark-mode preferences, keyed by theme id.
  * Stored as a single JSON blob so settings sync (which round-trips localStorage)
@@ -470,8 +469,6 @@ const createThemeStore = () => create<ThemeState>((set) => ({
     const nextDark = effectiveDarkFor(safe, map);
     set({ current: safe, isDark: nextDark });
     localStorage.setItem(THEME_KEY, safe);
-    // Clean up legacy key
-    localStorage.removeItem(LEGACY_THEME_KEY);
     applyRootThemeAttributes(
       safe,
       nextDark,
@@ -613,14 +610,7 @@ const createThemeStore = () => create<ThemeState>((set) => ({
     }
   },
   hydrate: () => {
-    let saved = localStorage.getItem(THEME_KEY);
-    if (!saved) {
-      saved = localStorage.getItem(LEGACY_THEME_KEY);
-      if (saved) {
-        localStorage.setItem(THEME_KEY, saved);
-        localStorage.removeItem(LEGACY_THEME_KEY);
-      }
-    }
+    const saved = localStorage.getItem(THEME_KEY);
     const theme = sanitizeStoredTheme(saved);
     if (saved && theme !== saved) {
       localStorage.setItem(THEME_KEY, theme);

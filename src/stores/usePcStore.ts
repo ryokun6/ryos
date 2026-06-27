@@ -90,10 +90,6 @@ export const usePcStore = create<PcStoreState>()(
       name: "ryos:pc",
       version: 6,
       partialize: (state) => ({ games: state.games }),
-      migrate: () => {
-        // Reset to default games on version change
-        return { games: DEFAULT_GAMES };
-      },
     }
   )
 );

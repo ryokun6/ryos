@@ -336,46 +336,7 @@ export const DEFAULT_FAVORITES: Favorite[] = [
 ];
 
 // Define the current version for the store
-const RESET_IE_STORE_BEFORE_VERSION = 5;
 const CURRENT_IE_STORE_VERSION = 6;
-
-const REMOVED_DEFAULT_FAVORITE_HOSTS = new Set(["baby-cursor.ryo.lu"]);
-
-const getFavoriteHostname = (url?: string): string | null => {
-  if (!url) return null;
-
-  try {
-    return new URL(url.startsWith("http") ? url : `https://${url}`).hostname;
-  } catch {
-    return null;
-  }
-};
-
-const isRemovedBrowserFavorite = (favorite: Favorite): boolean => {
-  const hostname = getFavoriteHostname(favorite.url);
-  return (
-    favorite.title.trim().toLowerCase() === "baby cursor" ||
-    (hostname !== null && REMOVED_DEFAULT_FAVORITE_HOSTS.has(hostname))
-  );
-};
-
-export const removeRemovedDefaultFavorites = (
-  favorites: Favorite[]
-): Favorite[] =>
-  favorites.reduce<Favorite[]>((acc, favorite) => {
-    if (isRemovedBrowserFavorite(favorite)) {
-      return acc;
-    }
-    acc.push(
-      favorite.children
-        ? {
-            ...favorite,
-            children: removeRemovedDefaultFavorites(favorite.children),
-          }
-        : favorite
-    );
-    return acc;
-  }, []);
 
 // Helper function to classify year into navigation mode
 function classifyYear(year: string): NavigationMode {
@@ -920,55 +881,6 @@ export const useInternetExplorerStore = create<InternetExplorerStore>()(
         language: state.language,
         location: state.location,
       }),
-      migrate: (persistedState: unknown, version: number) => {
-        // Use Record<string, unknown> to allow safe property access with type checking
-        let state = persistedState as Record<string, unknown>;
-
-        if (version < RESET_IE_STORE_BEFORE_VERSION) {
-          console.log(
-            `Migrating Internet Explorer store from version ${version} to ${CURRENT_IE_STORE_VERSION}`
-          );
-          state = {
-            ...getInitialState(),
-          };
-          console.log("IE Store migration applied, resetting to defaults.");
-        }
-
-        const initialStateDefaults = getInitialState();
-        const partializedKeys = [
-          "url",
-          "year",
-          "favorites",
-          "history",
-          "timelineSettings",
-          "language",
-          "location",
-        ];
-        const finalState: Partial<InternetExplorerStore> = {};
-
-        for (const key of partializedKeys) {
-          const defaultValue =
-            initialStateDefaults[
-              key as keyof ReturnType<typeof getInitialState>
-            ];
-
-          // Explicitly add the property with proper type assertion
-          // Use Record<string, unknown> to avoid 'any' but allow dynamic property access
-          (finalState as Record<string, unknown>)[key] =
-            state?.[key] !== undefined && state?.[key] !== null
-              ? state[key]
-              : defaultValue;
-        }
-
-        finalState.history = Array.isArray(finalState.history)
-          ? finalState.history.slice(0, 50)
-          : [];
-        finalState.favorites = Array.isArray(finalState.favorites)
-          ? removeRemovedDefaultFavorites(finalState.favorites as Favorite[])
-          : DEFAULT_FAVORITES;
-
-        return finalState as InternetExplorerStore;
-      },
     }
   )
 );

@@ -34,23 +34,6 @@ export const usePhotoBoothStore = create<PhotoBoothStoreState>()(
       partialize: (state) => ({
         photos: state.photos,
       }),
-      migrate: (persistedState, version) => {
-        if (!persistedState || version < STORE_VERSION) {
-          try {
-            const saved = localStorage.getItem("photo-booth:photos");
-            if (saved) {
-              const parsed = JSON.parse(saved);
-              if (Array.isArray(parsed)) {
-                localStorage.removeItem("photo-booth:photos");
-                return { photos: parsed } as Partial<PhotoBoothStoreState>;
-              }
-            }
-          } catch (e) {
-            console.warn("[PhotoBoothStore] Migration failed", e);
-          }
-        }
-        return persistedState as Partial<PhotoBoothStoreState>;
-      },
     }
   )
 ); 

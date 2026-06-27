@@ -340,26 +340,6 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
     {
       name: "ryos:display-settings",
       version: STORE_VERSION,
-      migrate: (persistedState, fromVersion) => {
-        const state = persistedState as
-          | Partial<DisplaySettingsState>
-          | undefined;
-        if (!state) return persistedState as DisplaySettingsState;
-        // v1 → v2: the old heuristic disabled shaders on phones / mid devices.
-        // Re-enable them wherever the device now classifies above "off"; leave
-        // truly low-end ("off") devices and any other choices untouched.
-        if (
-          fromVersion < 2 &&
-          state.shaderEffectEnabled === false &&
-          getPerformanceTier() !== "off"
-        ) {
-          return {
-            ...state,
-            shaderEffectEnabled: true,
-          } as unknown as DisplaySettingsState;
-        }
-        return state as unknown as DisplaySettingsState;
-      },
       partialize: (state) => ({
         displayMode: state.displayMode,
         shaderEffectEnabled: state.shaderEffectEnabled,

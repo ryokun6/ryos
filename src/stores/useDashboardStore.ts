@@ -196,25 +196,6 @@ export const useDashboardStore = create<DashboardStoreState>()(
     {
       name: "dashboard-storage",
       version: DASHBOARD_STORE_VERSION,
-      migrate: (persistedState, version) => {
-        const state = (persistedState ?? {}) as Partial<DashboardStoreState>;
-        if (version < 1) {
-          // v1: Normalize widths/heights for currency/translation/aquarium/dictionary
-          // to match the weather widget width (340) and trim currency height.
-          const TYPES_TO_RESIZE: WidgetType[] = [
-            "currency",
-            "translation",
-            "aquarium",
-            "dictionary",
-          ];
-          state.widgets = (state.widgets ?? []).map((w) => {
-            if (!TYPES_TO_RESIZE.includes(w.type)) return w;
-            const target = DEFAULT_WIDGET_SIZES[w.type];
-            return { ...w, size: { ...target } };
-          });
-        }
-        return state as DashboardStoreState;
-      },
     }
   )
 );
