@@ -21,6 +21,10 @@ import {
   formatUploadingStatus,
 } from "../src/apps/control-panels/components/control-panels-app/syncUtils";
 import { downloadBlobItem, gzipJson } from "../src/sync/blobs";
+import {
+  fetchAutoSyncPreferenceFromServer,
+  persistAutoSyncPreferenceToServer,
+} from "../src/utils/autoSyncPreference";
 
 /**
  * Cloud Sync v2 codec round-trips: collect must decompose store state into
@@ -358,9 +362,10 @@ describe("bookshelf sync engine wiring (stale-reject re-upload)", () => {
       pinnedBottom: [],
       lastOpenedPath: null,
     } as never);
-    const syncStore = useCloudSyncStore.getState();
-    syncStore.applyServerAutoSyncPreference(true);
-    syncStore.setCategoryEnabled("books", true);
+    useCloudSyncStore.setState({
+      autoSyncEnabled: true,
+      syncBooks: true,
+    });
   });
 
   test("rejecting a stale remote op re-marks the namespace dirty and leaves the shadow != local", async () => {
@@ -372,7 +377,9 @@ describe("bookshelf sync engine wiring (stale-reject re-upload)", () => {
     };
     useBooksStore.setState({ progressByPath: { "/Books/a.epub": localProgress } } as never);
 
-    const engine = new CloudSyncEngine(`bookshelf-eng-${Date.now().toString(36)}`);
+    const engine = new CloudSyncEngine(
+      `bookshelf-eng-${crypto.randomUUID()}`
+    );
     try {
       // A lagging device wins the HLC race with stale progress (updatedAt 50).
       await engine.applyRemoteOps([
@@ -407,7 +414,9 @@ describe("bookshelf sync engine wiring (stale-reject re-upload)", () => {
       },
     } as never);
 
-    const engine = new CloudSyncEngine(`bookshelf-eng-${Date.now().toString(36)}`);
+    const engine = new CloudSyncEngine(
+      `bookshelf-eng-${crypto.randomUUID()}`
+    );
     try {
       const newer = {
         cfi: "epubcfi(/12)",
@@ -496,14 +505,17 @@ describe("cloud sync store", () => {
     const store = useCloudSyncStore.getState();
     store.markCategorySyncing("files", "upload", true);
     store.markCategoryUploadProgress("files", 41.6);
-    expect(useCloudSyncStore.getState().categoryStatus.files.uploadProgress).toBe(
-      41.6
-    );
+    expect(
+      useCloudSyncStore.getState().categoryStatus.files.uploadProgress
+    ).toBe(42);
+    const roundedStatus = useCloudSyncStore.getState().categoryStatus;
+    store.markCategoryUploadProgress("files", 42.4);
+    expect(useCloudSyncStore.getState().categoryStatus).toBe(roundedStatus);
 
     store.markCategoryUploadProgress("files", 140);
-    expect(useCloudSyncStore.getState().categoryStatus.files.uploadProgress).toBe(
-      100
-    );
+    expect(
+      useCloudSyncStore.getState().categoryStatus.files.uploadProgress
+    ).toBe(100);
 
     store.markCategorySyncing("files", "upload", false);
     const status = useCloudSyncStore.getState().categoryStatus.files;
@@ -517,7 +529,7 @@ describe("cloud sync store", () => {
     store.markCategoryDownloadProgress("files", 58.4);
     expect(
       useCloudSyncStore.getState().categoryStatus.files.downloadProgress
-    ).toBe(58.4);
+    ).toBe(58);
 
     store.markCategoryDownloadProgress("files", -20);
     expect(
@@ -569,6 +581,98 @@ describe("cloud sync store", () => {
         t
       )
     ).toBe("Never uploaded · Fetching 58%");
+  });
+});
+
+describe("cloud sync engine resilience", () => {
+  test("does not schedule a full upload scan after the initial pull fails", async () => {
+    const username = `sync-failure-${Date.now().toString(36)}`;
+    localStorage.setItem(
+      `ryos:sync2:state:${username}`,
+      JSON.stringify({
+        cursor: 1,
+        lastHlc: null,
+        shadow: {},
+        dirty: [],
+      })
+    );
+
+    const originalFetch = globalThis.fetch;
+    const originalConsoleError = console.error;
+    globalThis.fetch = (async () =>
+      new Response(JSON.stringify({ error: "unavailable" }), {
+        status: 503,
+        headers: { "Content-Type": "application/json" },
+      })) as typeof fetch;
+    console.error = () => {};
+
+    const engine = new CloudSyncEngine(username);
+    try {
+      await engine.start();
+      const state = (engine as unknown as { state: SyncClientState }).state;
+      expect(state.dirtyNamespaces).toEqual([]);
+    } finally {
+      engine.stop();
+      globalThis.fetch = originalFetch;
+      console.error = originalConsoleError;
+    }
+  });
+
+  test("treats an unavailable local sync API as a non-throwing result", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async () =>
+      new Response(JSON.stringify({ error: "unavailable" }), {
+        status: 503,
+        headers: { "Content-Type": "application/json" },
+      })) as typeof fetch;
+
+    try {
+      expect(await fetchAutoSyncPreferenceFromServer()).toEqual({ ok: false });
+      expect(await persistAutoSyncPreferenceToServer(true)).toBe(false);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  test("requeues a partially sent namespace when the engine stops", async () => {
+    const username = `sync-stop-${Date.now().toString(36)}`;
+    useCloudSyncStore.setState({
+      autoSyncEnabled: true,
+      syncStickies: true,
+    });
+    useStickiesStore.setState({
+      notes: Array.from({ length: 401 }, (_, index) => ({
+        id: `note-${index}`,
+        content: `note ${index}`,
+      })) as never,
+    });
+
+    const originalFetch = globalThis.fetch;
+    const engine = new CloudSyncEngine(username);
+    globalThis.fetch = (async (_input, init) => {
+      const body = JSON.parse(String(init?.body)) as {
+        ops: Array<{ k: string }>;
+      };
+      engine.stop();
+      return new Response(
+        JSON.stringify({
+          seq: body.ops.length,
+          results: body.ops.map((op) => ({ k: op.k, accepted: true })),
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    }) as typeof fetch;
+
+    try {
+      engine.markDirty("stickies");
+      await engine.flush();
+      const state = (engine as unknown as { state: SyncClientState }).state;
+      expect(state.dirtyNamespaces).toContain("stickies");
+    } finally {
+      engine.stop();
+      globalThis.fetch = originalFetch;
+      useStickiesStore.setState({ notes: [] });
+    }
   });
 });
 

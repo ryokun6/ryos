@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 import {
@@ -20,16 +20,15 @@ import {
   SYNC_OPS_REALTIME_EVENT,
   type SyncOpsRealtimeEvent,
 } from "@/shared/sync2/types";
-import {
-  createCloudSyncEngine,
-  destroyCloudSyncEngine,
-} from "@/sync/engine";
+import { createCloudSyncEngine, destroyCloudSyncEngine } from "@/sync/engine";
 
 // Realtime delivers changes; polling is only a safety net for missed events.
 const POLL_INTERVAL_CONNECTED_MS = 30 * 60 * 1000;
 const POLL_INTERVAL_DISCONNECTED_MS = 5 * 60 * 1000;
 const VISIBILITY_CHECK_COOLDOWN_MS = 30_000;
+const EXPLICIT_CHECK_COOLDOWN_MS = 2_000;
 const RECONNECT_CATCHUP_DEBOUNCE_MS = 500;
+const API_AVAILABILITY_RETRY_MS = 15_000;
 
 /**
  * Mounts the Cloud Sync v2 engine while a logged-in user has Auto Sync
@@ -41,30 +40,69 @@ export function useAutoCloudSync() {
   const username = useChatsStore((state) => state.username);
   const isAuthenticated = useChatsStore((state) => state.isAuthenticated);
   const autoSyncEnabled = useCloudSyncStore((state) => state.autoSyncEnabled);
+  const [syncApiAvailable, setSyncApiAvailable] = useState(false);
 
   const lastVisibilityCheckRef = useRef(0);
+  const lastExplicitCheckRef = useRef(0);
 
   // Adopt the cross-device Auto Sync preference on login.
   useEffect(() => {
-    if (!username || !isAuthenticated) return;
+    if (!username || !isAuthenticated) {
+      setSyncApiAvailable(false);
+      return;
+    }
     let cancelled = false;
-    void (async () => {
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    let checking = false;
+
+    const checkAvailability = async () => {
+      if (checking || cancelled) return;
+      checking = true;
       const result = await fetchAutoSyncPreferenceFromServer();
-      if (cancelled || !result.ok) return;
+      checking = false;
+      if (cancelled) return;
+      if (!result.ok) {
+        setSyncApiAvailable(false);
+        retryTimer = setTimeout(
+          () => void checkAvailability(),
+          API_AVAILABILITY_RETRY_MS
+        );
+        return;
+      }
+      setSyncApiAvailable(true);
       if (result.apply) {
-        useCloudSyncStore.getState().applyServerAutoSyncPreference(result.enabled);
+        useCloudSyncStore
+          .getState()
+          .applyServerAutoSyncPreference(result.enabled);
         return;
       }
       if (useCloudSyncStore.getState().autoSyncEnabled) {
         void persistAutoSyncPreferenceToServer(true);
       }
-    })();
+    };
+
+    const checkNow = () => {
+      if (retryTimer) {
+        clearTimeout(retryTimer);
+        retryTimer = null;
+      }
+      void checkAvailability();
+    };
+
+    setSyncApiAvailable(false);
+    checkNow();
+    window.addEventListener("online", checkNow);
     return () => {
       cancelled = true;
+      window.removeEventListener("online", checkNow);
+      if (retryTimer) clearTimeout(retryTimer);
     };
   }, [username, isAuthenticated]);
 
-  const isSyncActive = Boolean(username && isAuthenticated && autoSyncEnabled);
+  const syncRequested = Boolean(
+    username && isAuthenticated && autoSyncEnabled && syncApiAvailable
+  );
+  const isSyncActive = syncRequested;
 
   useEffect(() => {
     if (!isSyncActive || !username) {
@@ -77,14 +115,21 @@ export function useAutoCloudSync() {
     });
     void engine.start();
 
-    const unsubscribeChanges = subscribeToCloudSyncDomainChanges((namespace) => {
-      if (engine.isApplyingNamespace(namespace)) return;
-      engine.markDirty(namespace);
-    });
+    const unsubscribeChanges = subscribeToCloudSyncDomainChanges(
+      (namespace, keys) => {
+        if (engine.isApplyingNamespace(namespace)) return;
+        engine.markDirty(namespace, keys);
+      }
+    );
 
     const unsubscribeChecks = subscribeToCloudSyncCheckRequests(() => {
+      const now = Date.now();
+      if (now - lastExplicitCheckRef.current < EXPLICIT_CHECK_COOLDOWN_MS) {
+        return;
+      }
+      lastExplicitCheckRef.current = now;
       void engine.pull();
-      void engine.flush();
+      engine.schedulePendingFlush();
     });
 
     // Realtime: inline ops apply with zero HTTP requests; gaps trigger a pull.
@@ -103,7 +148,7 @@ export function useAutoCloudSync() {
       }
       lastVisibilityCheckRef.current = now;
       void engine.pull();
-      void engine.flush();
+      engine.schedulePendingFlush();
     };
     const onVisibilityChange = () => {
       if (document.visibilityState === "visible") {
@@ -128,7 +173,7 @@ export function useAutoCloudSync() {
           : POLL_INTERVAL_DISCONNECTED_MS;
       pollTimer = setInterval(() => {
         void engine.pull();
-        void engine.flush();
+        engine.schedulePendingFlush();
       }, pollMs);
     };
     startPolling();
@@ -139,7 +184,7 @@ export function useAutoCloudSync() {
         reconnectTimer = setTimeout(() => {
           reconnectTimer = null;
           void engine.pull();
-          void engine.flush();
+          engine.schedulePendingFlush();
         }, RECONNECT_CATCHUP_DEBOUNCE_MS);
         startPolling();
       } else if (state === "disconnected") {

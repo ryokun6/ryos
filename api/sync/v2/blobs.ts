@@ -14,6 +14,7 @@ export const maxDuration = 15;
 const MAX_BLOB_SIZE = 50 * 1024 * 1024;
 const MAX_UPLOAD_ITEMS = 200;
 const MAX_DOWNLOAD_ITEMS = 500;
+const UPLOAD_DESCRIPTOR_CONCURRENCY = 20;
 const RATE_LIMIT_WINDOW = 60;
 const RATE_LIMIT_MAX = 120;
 
@@ -108,29 +109,47 @@ export default apiHandler<PostBlobsBody>(
         const digests = uploadRequests.map((item) => item.sha256!);
         const known = await lookupSyncBlobs(redis, username, digests);
 
-        for (let index = 0; index < uploadRequests.length; index += 1) {
-          const sha256 = digests[index];
-          const existing = known[index];
-          if (existing) {
-            uploads.push({ sha256, exists: true, url: existing.url });
-            continue;
-          }
+        for (
+          let offset = 0;
+          offset < uploadRequests.length;
+          offset += UPLOAD_DESCRIPTOR_CONCURRENCY
+        ) {
+          const end = Math.min(
+            uploadRequests.length,
+            offset + UPLOAD_DESCRIPTOR_CONCURRENCY
+          );
+          const preparedUploads = await Promise.all(
+            uploadRequests
+              .slice(offset, end)
+              .map(async (_item, batchIndex): Promise<BlobUploadResultItem> => {
+                const index = offset + batchIndex;
+                const sha256 = digests[index];
+                const existing = known[index];
+                if (existing) {
+                  return { sha256, exists: true, url: existing.url };
+                }
 
-          const descriptor = await createStorageUploadDescriptor({
-            pathname: blobPath(username, sha256),
-            contentType: "application/gzip",
-            allowedContentTypes: ["application/gzip", "application/octet-stream"],
-            maximumSizeInBytes: MAX_BLOB_SIZE,
-            allowOverwrite: true,
-          });
-          uploads.push({
-            sha256,
-            exists: false,
-            upload: descriptor,
-            ...(getStorageBackend() === "s3" && "storageUrl" in descriptor
-              ? { storageUrl: descriptor.storageUrl }
-              : {}),
-          });
+                const descriptor = await createStorageUploadDescriptor({
+                  pathname: blobPath(username, sha256),
+                  contentType: "application/gzip",
+                  allowedContentTypes: [
+                    "application/gzip",
+                    "application/octet-stream",
+                  ],
+                  maximumSizeInBytes: MAX_BLOB_SIZE,
+                  allowOverwrite: true,
+                });
+                return {
+                  sha256,
+                  exists: false,
+                  upload: descriptor,
+                  ...(getStorageBackend() === "s3" && "storageUrl" in descriptor
+                    ? { storageUrl: descriptor.storageUrl }
+                    : {}),
+                };
+              })
+          );
+          uploads.push(...preparedUploads);
         }
       }
 

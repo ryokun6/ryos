@@ -189,6 +189,35 @@ describe("sync v2 API", () => {
     expect(body.downloads?.[1]).toBeNull();
   });
 
+  test(
+    "blob endpoint prepares a large descriptor batch within its function budget",
+    async () => {
+      const upload = Array.from({ length: 40 }, (_, index) => ({
+        sha256: index.toString(16).padStart(64, "0"),
+        size: 1024 + index,
+      }));
+      const response = await fetchWithAuth(
+        `${BASE_URL}/api/sync/v2/blobs`,
+        USERNAME,
+        token,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ upload }),
+        }
+      );
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as {
+        uploads?: Array<{ sha256: string }>;
+      };
+      expect(body.uploads).toHaveLength(upload.length);
+      expect(body.uploads?.map((item) => item.sha256)).toEqual(
+        upload.map((item) => item.sha256)
+      );
+    },
+    15_000
+  );
+
   test("sync maintenance cron rejects missing/invalid secrets", async () => {
     const noAuth = await fetchWithOrigin(`${BASE_URL}/api/cron/sync-maintenance`);
     // 401 invalid secret, or 503 when the server has no CRON_SECRET configured.

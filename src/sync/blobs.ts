@@ -63,6 +63,7 @@ export interface BlobUploadBatchProgress {
 
 interface BlobUploadItemsOptions {
   onProgress?: (progress: BlobUploadBatchProgress) => void;
+  signal?: AbortSignal;
 }
 
 export interface BlobDownloadProgress {
@@ -74,6 +75,7 @@ export interface BlobDownloadProgress {
 interface BlobDownloadOptions {
   expectedBytes?: number;
   onProgress?: (progress: BlobDownloadProgress) => void;
+  signal?: AbortSignal;
 }
 
 /**
@@ -90,6 +92,7 @@ export async function uploadBlobItems(
   // Pre-compress to know sizes; dedupe identical content within the batch.
   const byDigest = new Map<string, { compressed: Uint8Array; keys: string[] }>();
   for (const item of items) {
+    options.signal?.throwIfAborted();
     const existing = byDigest.get(item.sha256);
     if (existing) {
       existing.keys.push(item.key);
@@ -100,12 +103,15 @@ export async function uploadBlobItems(
   }
 
   const digests = Array.from(byDigest.keys());
-  const response = await postSyncBlobs({
-    upload: digests.map((sha256) => ({
-      sha256,
-      size: byDigest.get(sha256)!.compressed.length,
-    })),
-  });
+  const response = await postSyncBlobs(
+    {
+      upload: digests.map((sha256) => ({
+        sha256,
+        size: byDigest.get(sha256)!.compressed.length,
+      })),
+    },
+    options.signal
+  );
 
   const uploads = response.uploads || [];
   const uploadResults = uploads.filter((result) => result.upload);
@@ -131,6 +137,7 @@ export async function uploadBlobItems(
   }
 
   for (const result of uploads) {
+    options.signal?.throwIfAborted();
     const entry = byDigest.get(result.sha256);
     if (!entry) continue;
     let url: string | undefined;
@@ -173,7 +180,8 @@ export async function uploadBlobItems(
  * through; s3:// locations are signed via the API in one batch.
  */
 export async function resolveBlobDownloadUrls(
-  refs: SyncBlobRef[]
+  refs: SyncBlobRef[],
+  signal?: AbortSignal
 ): Promise<(string | null)[]> {
   const needsSigning: number[] = [];
   const resolved: (string | null)[] = refs.map((ref, index) => {
@@ -183,9 +191,12 @@ export async function resolveBlobDownloadUrls(
   });
 
   if (needsSigning.length > 0) {
-    const response = await postSyncBlobs({
-      download: needsSigning.map((index) => refs[index].url),
-    });
+    const response = await postSyncBlobs(
+      {
+        download: needsSigning.map((index) => refs[index].url),
+      },
+      signal
+    );
     const signed = response.downloads || [];
     needsSigning.forEach((refIndex, signedIndex) => {
       resolved[refIndex] = signed[signedIndex] || null;
@@ -252,7 +263,7 @@ export async function downloadBlobItem(
   downloadUrl: string,
   options: BlobDownloadOptions = {}
 ): Promise<unknown> {
-  const response = await fetch(downloadUrl);
+  const response = await fetch(downloadUrl, { signal: options.signal });
   if (!response.ok) {
     throw new Error(`Failed to fetch sync blob: ${response.status}`);
   }

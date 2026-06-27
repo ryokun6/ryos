@@ -27,7 +27,6 @@ import {
   parseYouTubeTitle,
 } from "@/utils/youtubeMetadata";
 import { parseYouTubeVideoId } from "@/utils/youtubeUrl";
-import { emitCloudSyncDomainChange } from "@/utils/cloudSyncEvents";
 import { sortTracksLikeServerOrder } from "@/stores/ipodTrackOrder";
 import { shouldUpdatePlaybackTime } from "@/stores/playbackTime";
 import { createDebouncedPersistStorage } from "@/utils/debouncedPersistStorage";
@@ -1429,7 +1428,6 @@ export const useIpodStore = create<IpodState>()(
       setShowVideo: (show) => set({ showVideo: show }),
       toggleLyrics: () => {
         set((state) => ({ showLyrics: !state.showLyrics }));
-        emitCloudSyncDomainChange("settings");
       },
       refreshLyrics: () =>
         set((state) => ({
@@ -1529,14 +1527,12 @@ export const useIpodStore = create<IpodState>()(
           return;
         }
         set({ lyricsAlignment: alignment });
-        emitCloudSyncDomainChange("settings");
       },
       setLyricsFont: (font) => {
         if (get().lyricsFont === font) {
           return;
         }
         set({ lyricsFont: font });
-        emitCloudSyncDomainChange("settings");
       },
       setRomanization: (settings) => {
         const nextRomanization = { ...get().romanization, ...settings };
@@ -1544,13 +1540,11 @@ export const useIpodStore = create<IpodState>()(
           return;
         }
         set({ romanization: nextRomanization });
-        emitCloudSyncDomainChange("settings");
       },
       toggleRomanization: () => {
         set((state) => ({
           romanization: { ...state.romanization, enabled: !state.romanization.enabled },
         }));
-        emitCloudSyncDomainChange("settings");
       },
       setLyricsTranslationLanguage: (language) => {
         if (get().lyricsTranslationLanguage === language) {
@@ -1559,7 +1553,6 @@ export const useIpodStore = create<IpodState>()(
         set({
           lyricsTranslationLanguage: language,
         });
-        emitCloudSyncDomainChange("settings");
       },
       importLibrary: (json: string) => {
         try {

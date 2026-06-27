@@ -279,7 +279,9 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
             });
           }
           get().bumpCustomWallpapersRevision();
-          emitCloudSyncDomainChange("wallpapers");
+          emitCloudSyncDomainChange("wallpapers", [
+            `wallpapers/item:${id}`,
+          ]);
         } catch (e) {
           console.error("deleteCustomWallpaper", e);
         }

@@ -41,18 +41,22 @@ export async function fetchAutoSyncPreferenceFromServer(): Promise<AutoSyncPrefe
 
 export async function persistAutoSyncPreferenceToServer(
   enabled: boolean
-): Promise<void> {
+): Promise<boolean> {
   try {
-    await abortableFetch(getApiUrl("/api/sync/auto-sync-preference"), {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ enabled }),
-      credentials: "include",
-      throwOnHttpError: false,
-      timeout: 12000,
-      retry: { maxAttempts: 2, initialDelayMs: 400 },
-    });
-  } catch (e) {
-    console.warn("[CloudSync] Failed to persist auto-sync preference:", e);
+    const response = await abortableFetch(
+      getApiUrl("/api/sync/auto-sync-preference"),
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled }),
+        credentials: "include",
+        throwOnHttpError: false,
+        timeout: 12000,
+        retry: { maxAttempts: 2, initialDelayMs: 400 },
+      }
+    );
+    return response.ok;
+  } catch {
+    return false;
   }
 }

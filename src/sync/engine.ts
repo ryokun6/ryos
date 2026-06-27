@@ -59,13 +59,26 @@ import type { IndexedDBStoreItemWithKey as StoreItemWithKey } from "@/utils/inde
 
 const FLUSH_DEBOUNCE_MS = 1000;
 const FLUSH_MAX_DEBOUNCE_MS = 3000;
+const FLUSH_IDLE_TIMEOUT_MS = 2000;
+const FLUSH_FAILURE_BACKOFF_BASE_MS = 2000;
+const FLUSH_FAILURE_BACKOFF_MAX_MS = 60_000;
+const BLOB_HASH_YIELD_INTERVAL = 4;
 const OPS_BATCH_SIZE = 400;
+const SYNC_FLUSH_LOCK = "ryos:cloud-sync-flush";
 
 // Suppress inferred mass-deletions unless corroborated by explicit markers:
 // more than this many uncorroborated deletes covering most of a namespace
 // looks like local storage loss, not user intent.
 const SUSPICIOUS_DELETE_COUNT = 10;
 const SUSPICIOUS_DELETE_RATIO = 0.8;
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === "AbortError";
+}
+
+async function yieldToMainThread(): Promise<void> {
+  await new Promise<void>((resolve) => setTimeout(resolve, 0));
+}
 
 interface EngineStatusCallbacks {
   onError?: (error: string | null) => void;
@@ -74,12 +87,21 @@ interface EngineStatusCallbacks {
 export class CloudSyncEngine {
   private readonly state: SyncClientState;
   private readonly callbacks: EngineStatusCallbacks;
+  private readonly abortController = new AbortController();
   private readonly applyingNamespaces = new Set<SyncNamespace>();
+  private readonly fullDirtyNamespaces = new Set<SyncNamespace>();
+  private readonly dirtyKeysByNamespace = new Map<
+    SyncNamespace,
+    Set<string>
+  >();
   private unsubscribers: Array<() => void> = [];
   private flushTimer: ReturnType<typeof setTimeout> | null = null;
+  private flushIdleCallbackId: number | null = null;
   private firstDirtyAt = 0;
   private flushInFlight = false;
   private flushQueued = false;
+  private consecutiveFlushFailures = 0;
+  private nextFlushAllowedAt = 0;
   private pullInFlight: Promise<void> | null = null;
   private stopped = false;
   private started = false;
@@ -107,32 +129,40 @@ export class CloudSyncEngine {
 
     for (const namespace of SYNC_NAMESPACES) {
       const codec = SYNC_CODECS[namespace];
-      const unsubscribe = codec.subscribe(() => {
+      const unsubscribe = codec.subscribe((keys) => {
         if (this.applyingNamespaces.has(namespace)) return;
-        this.markDirty(namespace);
+        this.markDirty(namespace, keys);
       });
       this.unsubscribers.push(unsubscribe);
     }
 
+    let initialSyncSucceeded = false;
     try {
       if (this.state.cursor === null) {
         await this.bootstrap();
       } else {
-        await this.pull();
+        await this.pull({ throwOnError: true });
       }
+      initialSyncSucceeded = true;
     } catch (error) {
-      this.reportError(error, "initial sync");
+      if (!this.stopped && !isAbortError(error)) {
+        this.reportError(error, "initial sync");
+      }
     }
+
+    if (!initialSyncSucceeded || this.stopped) return;
 
     // Upload anything that changed while sync was off / offline.
     for (const namespace of SYNC_NAMESPACES) {
       this.state.markDirty(namespace);
+      this.fullDirtyNamespaces.add(namespace);
     }
     this.scheduleFlush();
   }
 
   stop(): void {
     this.stopped = true;
+    this.abortController.abort();
     for (const unsubscribe of this.unsubscribers) {
       unsubscribe();
     }
@@ -140,6 +170,14 @@ export class CloudSyncEngine {
     if (this.flushTimer) {
       clearTimeout(this.flushTimer);
       this.flushTimer = null;
+    }
+    if (
+      this.flushIdleCallbackId !== null &&
+      typeof window !== "undefined" &&
+      typeof window.cancelIdleCallback === "function"
+    ) {
+      window.cancelIdleCallback(this.flushIdleCallbackId);
+      this.flushIdleCallbackId = null;
     }
     this.state.persistNow();
   }
@@ -153,14 +191,65 @@ export class CloudSyncEngine {
   // Dirty tracking + flush
   // -------------------------------------------------------------------------
 
-  markDirty(namespace: SyncNamespace): void {
+  markDirty(namespace: SyncNamespace, keys?: Iterable<string>): void {
     if (this.stopped) return;
     this.state.markDirty(namespace);
+    const keyList = keys ? [...keys].filter(Boolean) : [];
+    if (keyList.length === 0) {
+      this.fullDirtyNamespaces.add(namespace);
+      this.dirtyKeysByNamespace.delete(namespace);
+    } else if (!this.fullDirtyNamespaces.has(namespace)) {
+      const pending = this.dirtyKeysByNamespace.get(namespace) ?? new Set();
+      for (const key of keyList) pending.add(key);
+      this.dirtyKeysByNamespace.set(namespace, pending);
+    }
+    this.scheduleFlush();
+  }
+
+  private takeDirtyScope(namespace: SyncNamespace): ReadonlySet<string> | null {
+    if (this.fullDirtyNamespaces.delete(namespace)) {
+      this.dirtyKeysByNamespace.delete(namespace);
+      return null;
+    }
+    const keys = this.dirtyKeysByNamespace.get(namespace);
+    this.dirtyKeysByNamespace.delete(namespace);
+    // Persisted dirty namespaces have no in-memory key hints, so they require
+    // a full collect after reload.
+    return keys ? new Set(keys) : null;
+  }
+
+  private restoreDirtyScope(
+    namespace: SyncNamespace,
+    scope: ReadonlySet<string> | null
+  ): void {
+    this.state.markDirty(namespace);
+    if (scope === null) {
+      this.fullDirtyNamespaces.add(namespace);
+      this.dirtyKeysByNamespace.delete(namespace);
+      return;
+    }
+    if (this.fullDirtyNamespaces.has(namespace)) return;
+    const pending = this.dirtyKeysByNamespace.get(namespace) ?? new Set();
+    for (const key of scope) pending.add(key);
+    this.dirtyKeysByNamespace.set(namespace, pending);
+  }
+
+  private hasPendingDirtyScope(namespace: SyncNamespace): boolean {
+    return (
+      this.fullDirtyNamespaces.has(namespace) ||
+      this.dirtyKeysByNamespace.has(namespace)
+    );
+  }
+
+  /** Queue pending local work for an idle period instead of blocking input. */
+  schedulePendingFlush(): void {
+    if (this.state.dirtyNamespaces.length === 0) return;
     this.scheduleFlush();
   }
 
   private scheduleFlush(): void {
     if (this.stopped) return;
+    if (this.flushIdleCallbackId !== null) return;
     const now = Date.now();
     if (!this.firstDirtyAt) {
       this.firstDirtyAt = now;
@@ -170,11 +259,28 @@ export class CloudSyncEngine {
       if (now - this.firstDirtyAt >= FLUSH_MAX_DEBOUNCE_MS) return;
       clearTimeout(this.flushTimer);
     }
-    this.flushTimer = setTimeout(() => {
-      this.flushTimer = null;
-      this.firstDirtyAt = 0;
-      void this.flush();
-    }, FLUSH_DEBOUNCE_MS);
+    const backoffDelay = Math.max(0, this.nextFlushAllowedAt - now);
+    this.flushTimer = setTimeout(
+      () => {
+        this.flushTimer = null;
+        const run = () => {
+          this.flushIdleCallbackId = null;
+          this.firstDirtyAt = 0;
+          if (!this.stopped) void this.flush();
+        };
+        if (
+          typeof window !== "undefined" &&
+          typeof window.requestIdleCallback === "function"
+        ) {
+          this.flushIdleCallbackId = window.requestIdleCallback(run, {
+            timeout: FLUSH_IDLE_TIMEOUT_MS,
+          });
+        } else {
+          run();
+        }
+      },
+      Math.max(FLUSH_DEBOUNCE_MS, backoffDelay)
+    );
   }
 
   private isNamespaceEnabled(namespace: SyncNamespace): boolean {
@@ -185,15 +291,55 @@ export class CloudSyncEngine {
     );
   }
 
-  async flush(options: { force?: boolean } = {}): Promise<void> {
+  private async acquireCrossTabFlushLease(): Promise<() => void> {
+    if (
+      typeof navigator === "undefined" ||
+      typeof navigator.locks?.request !== "function"
+    ) {
+      return () => {};
+    }
+
+    let releaseLease = () => {};
+    let resolveAcquired: (() => void) | null = null;
+    let rejectAcquired: ((error: unknown) => void) | null = null;
+    const acquired = new Promise<void>((resolve, reject) => {
+      resolveAcquired = resolve;
+      rejectAcquired = reject;
+    });
+    const request = navigator.locks.request(
+      SYNC_FLUSH_LOCK,
+      { mode: "exclusive", signal: this.abortController.signal },
+      async () => {
+        const held = new Promise<void>((resolve) => {
+          releaseLease = resolve;
+        });
+        resolveAcquired?.();
+        await held;
+      }
+    );
+    void request.catch((error) => rejectAcquired?.(error));
+
+    await acquired;
+    return () => {
+      releaseLease();
+      void request.catch(() => {});
+    };
+  }
+
+  async flush(
+    options: { force?: boolean; throwOnError?: boolean } = {}
+  ): Promise<void> {
     if (this.stopped) return;
     if (this.flushInFlight) {
       this.flushQueued = true;
       return;
     }
     this.flushInFlight = true;
+    let releaseCrossTabLease: (() => void) | null = null;
 
     try {
+      releaseCrossTabLease = await this.acquireCrossTabFlushLease();
+      if (this.stopped) return;
       const namespaces = (
         options.force ? [...SYNC_NAMESPACES] : this.state.dirtyNamespaces
       ).filter((namespace) => this.isNamespaceEnabled(namespace));
@@ -208,6 +354,10 @@ export class CloudSyncEngine {
         const ops: SyncOp[] = [];
         const shadowUpdates = new Map<string, { t: string; h: string }>();
         const flushedNamespaces: SyncNamespace[] = [];
+        const flushedScopes = new Map<
+          SyncNamespace,
+          ReadonlySet<string> | null
+        >();
 
         for (const namespace of namespaces) {
           const codec = SYNC_CODECS[namespace];
@@ -215,20 +365,29 @@ export class CloudSyncEngine {
             continue; // stays dirty; retried on next flush
           }
 
+          const dirtyScope = this.takeDirtyScope(namespace);
           let collected: Map<string, unknown>;
           try {
-            collected = await codec.collect(ctx);
+            collected = await codec.collect(ctx, dirtyScope ?? undefined);
           } catch (error) {
+            this.restoreDirtyScope(namespace, dirtyScope);
             console.error(`[sync2] collect failed for ${namespace}:`, error);
             continue;
           }
           flushedNamespaces.push(namespace);
+          flushedScopes.set(namespace, dirtyScope);
 
           // Upserts: keys whose content hash differs from the shadow.
           if (isSyncBlobNamespace(namespace)) {
             const pendingUploads: BlobUploadItem[] = [];
             const pendingTimestamps = new Map<string, string>();
+            let itemIndex = 0;
             for (const [key, item] of collected) {
+              if (itemIndex > 0 && itemIndex % BLOB_HASH_YIELD_INTERVAL === 0) {
+                await yieldToMainThread();
+                if (this.stopped) return;
+              }
+              itemIndex += 1;
               const sha256 = await sha256Json(item);
               const shadow = this.state.getShadow(key);
               if (!options.force && shadow?.h === sha256) continue;
@@ -242,6 +401,7 @@ export class CloudSyncEngine {
               let refs: Awaited<ReturnType<typeof uploadBlobItems>>;
               try {
                 refs = await uploadBlobItems(pendingUploads, {
+                  signal: this.abortController.signal,
                   onProgress: (progress) => {
                     syncStore.markCategoryUploadProgress(
                       category,
@@ -274,7 +434,12 @@ export class CloudSyncEngine {
 
           // Deletions: shadow keys that vanished locally.
           const collectedKeys = new Set(collected.keys());
-          const shadowKeys = this.state.shadowKeysForNamespace(namespace);
+          const shadowKeys =
+            dirtyScope === null
+              ? this.state.shadowKeysForNamespace(namespace)
+              : [...dirtyScope].filter(
+                  (key) => this.state.getShadow(key) !== null
+                );
           const missing = shadowKeys.filter((key) => !collectedKeys.has(key));
           if (missing.length > 0) {
             const corroborated = missing.filter((key) =>
@@ -300,8 +465,14 @@ export class CloudSyncEngine {
 
         // Clear dirty before the network call; failures re-mark below.
         this.state.clearDirty(flushedNamespaces);
+        for (const namespace of flushedNamespaces) {
+          if (this.hasPendingDirtyScope(namespace)) {
+            this.state.markDirty(namespace);
+          }
+        }
 
         if (ops.length === 0) {
+          this.resetFlushBackoff();
           return;
         }
 
@@ -318,10 +489,14 @@ export class CloudSyncEngine {
           for (const category of categories) {
             syncStore.markCategoryUploaded(category, uploadedAt);
           }
+          this.resetFlushBackoff();
           this.reportError(null);
         } catch (error) {
           for (const namespace of flushedNamespaces) {
-            this.state.markDirty(namespace);
+            this.restoreDirtyScope(
+              namespace,
+              flushedScopes.get(namespace) ?? null
+            );
           }
           throw error;
         } finally {
@@ -333,14 +508,34 @@ export class CloudSyncEngine {
         db?.close();
       }
     } catch (error) {
-      this.reportError(error, "upload");
+      if (!this.stopped && !isAbortError(error)) {
+        this.recordFlushFailure();
+        this.reportError(error, "upload");
+        if (options.throwOnError) throw error;
+      }
     } finally {
+      releaseCrossTabLease?.();
       this.flushInFlight = false;
       if (this.flushQueued) {
         this.flushQueued = false;
         this.scheduleFlush();
       }
     }
+  }
+
+  private recordFlushFailure(): void {
+    this.consecutiveFlushFailures += 1;
+    const delay = Math.min(
+      FLUSH_FAILURE_BACKOFF_MAX_MS,
+      FLUSH_FAILURE_BACKOFF_BASE_MS *
+        2 ** Math.max(0, this.consecutiveFlushFailures - 1)
+    );
+    this.nextFlushAllowedAt = Date.now() + delay;
+  }
+
+  private resetFlushBackoff(): void {
+    this.consecutiveFlushFailures = 0;
+    this.nextFlushAllowedAt = 0;
   }
 
   private async sendOps(
@@ -352,7 +547,14 @@ export class CloudSyncEngine {
     for (let offset = 0; offset < ops.length; offset += OPS_BATCH_SIZE) {
       const batch = ops.slice(offset, offset + OPS_BATCH_SIZE);
       const cursorBefore = this.state.cursor ?? 0;
-      const response = await postSyncOps(clientId, batch);
+      const response = await postSyncOps(
+        clientId,
+        batch,
+        this.abortController.signal
+      );
+      if (this.stopped) {
+        throw new DOMException("Cloud sync stopped", "AbortError");
+      }
 
       let acceptedCount = 0;
       const superseded: AppliedSyncOp[] = [];
@@ -399,7 +601,7 @@ export class CloudSyncEngine {
   // Pull / bootstrap / realtime
   // -------------------------------------------------------------------------
 
-  async pull(): Promise<void> {
+  async pull(options: { throwOnError?: boolean } = {}): Promise<void> {
     if (this.stopped) return;
     if (this.pullInFlight) return this.pullInFlight;
 
@@ -408,7 +610,11 @@ export class CloudSyncEngine {
       syncStore.setCheckingRemote(true);
       try {
         const since = this.state.cursor ?? 0;
-        const response = await getSyncChanges(since);
+        const response = await getSyncChanges(
+          since,
+          this.abortController.signal
+        );
+        if (this.stopped) return;
         if (response.snapshotRequired) {
           await this.applySnapshot(false);
           return;
@@ -419,6 +625,8 @@ export class CloudSyncEngine {
         this.state.setCursor(response.seq);
         this.reportError(null);
       } catch (error) {
+        if (this.stopped || isAbortError(error)) return;
+        if (options.throwOnError) throw error;
         this.reportError(error, "download");
       } finally {
         syncStore.setCheckingRemote(false);
@@ -440,7 +648,8 @@ export class CloudSyncEngine {
    * timestamp matches the shadow are skipped.
    */
   async applySnapshot(force: boolean): Promise<void> {
-    const snapshot = await getSyncSnapshot();
+    const snapshot = await getSyncSnapshot(this.abortController.signal);
+    if (this.stopped) return;
     const ops: SyncOp[] = [];
 
     for (const [key, entry] of Object.entries(snapshot.entries)) {
@@ -574,6 +783,7 @@ export class CloudSyncEngine {
           }
           syncStore.markCategoryApplied(category, new Date().toISOString());
         } catch (error) {
+          if (this.stopped || isAbortError(error)) throw error;
           console.error(`[sync2] Failed to apply ops for ${namespace}:`, error);
         } finally {
           this.applyingNamespaces.delete(namespace);
@@ -628,7 +838,8 @@ export class CloudSyncEngine {
 
     if (downloads.length > 0) {
       const urls = await resolveBlobDownloadUrls(
-        downloads.map((d) => ({ url: d.url, size: d.size }))
+        downloads.map((d) => ({ url: d.url, size: d.size })),
+        this.abortController.signal
       );
       const items: StoreItemWithKey[] = [];
       const totalDownloadBytes = downloads.reduce(
@@ -657,11 +868,16 @@ export class CloudSyncEngine {
         try {
           const item = (await downloadBlobItem(downloadUrl, {
             expectedBytes: size,
+            signal: this.abortController.signal,
             onProgress: (progress) => {
               emitProgress(completedDownloadBytes + progress.loadedBytes);
             },
           })) as StoreItemWithKey;
-          if (item && typeof item === "object" && typeof item.key === "string") {
+          if (
+            item &&
+            typeof item === "object" &&
+            typeof item.key === "string"
+          ) {
             items.push(item);
             this.state.setShadow(op.k, {
               t: op.t,
@@ -669,6 +885,7 @@ export class CloudSyncEngine {
             });
           }
         } catch (error) {
+          if (this.stopped || isAbortError(error)) throw error;
           console.error(`[sync2] Failed to download blob for ${op.k}:`, error);
         } finally {
           completedDownloadBytes += Math.max(0, size || 0);
@@ -690,7 +907,7 @@ export class CloudSyncEngine {
   // -------------------------------------------------------------------------
 
   async forceUpload(): Promise<void> {
-    await this.flush({ force: true });
+    await this.flush({ force: true, throwOnError: true });
   }
 
   async forceDownload(): Promise<void> {

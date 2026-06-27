@@ -40,7 +40,9 @@ import {
 import { areRomanizationSettingsEqual } from "@/types/lyrics";
 import {
   deserializeStoreItem,
+  readAndSerializeStoreItemsByKeys,
   readStoreItems,
+  readStoreItemsByKeys,
   serializeStoreItems,
   type IndexedDBStoreItemWithKey as StoreItemWithKey,
 } from "@/utils/indexedDBBackup";
@@ -74,7 +76,10 @@ export interface SyncCodec {
   namespace: SyncNamespace;
   usesIndexedDb?: boolean;
   /** Local state as key → document. */
-  collect(ctx: CodecContext): Promise<Map<string, unknown>> | Map<string, unknown>;
+  collect(
+    ctx: CodecContext,
+    keys?: ReadonlySet<string>
+  ): Promise<Map<string, unknown>> | Map<string, unknown>;
   /**
    * Apply remote ops onto local stores. May return a {@link SyncApplyResult}
    * to tell the engine which ops were rejected by an app-level merge.
@@ -84,7 +89,7 @@ export interface SyncCodec {
     ctx: CodecContext
   ): Promise<void | SyncApplyResult> | void | SyncApplyResult;
   /** Subscribe to local changes; invoke onChange to mark the namespace dirty. */
-  subscribe(onChange: () => void): () => void;
+  subscribe(onChange: (keys?: Iterable<string>) => void): () => void;
   /** False while backing stores haven't hydrated; collect is skipped. */
   isReady?(): boolean;
 }
@@ -702,7 +707,7 @@ const settingsCodec: SyncCodec = {
 const filesCodec: SyncCodec = {
   namespace: "files",
   usesIndexedDb: true,
-  async collect(ctx) {
+  async collect(ctx, keys) {
     const docs = new Map<string, unknown>();
     const filesState = useFilesStore.getState();
 
@@ -713,9 +718,19 @@ const filesCodec: SyncCodec = {
     docs.set("files/lib", { libraryState: filesState.libraryState });
 
     const db = requireDb(ctx, "files");
-    const documents = await serializeStoreItems(
-      await readStoreItems(db, STORES.DOCUMENTS)
-    );
+    const documentPrefix = "files/doc:";
+    const documentKeys = keys
+      ? [...keys]
+          .filter((key) => key.startsWith(documentPrefix))
+          .map((key) => key.slice(documentPrefix.length))
+      : null;
+    const documents = documentKeys
+      ? await readAndSerializeStoreItemsByKeys(
+          db,
+          STORES.DOCUMENTS,
+          documentKeys
+        )
+      : await serializeStoreItems(await readStoreItems(db, STORES.DOCUMENTS));
     for (const doc of documents) {
       if (doc.key) {
         docs.set(`files/doc:${doc.key}`, doc);
@@ -811,8 +826,22 @@ const filesCodec: SyncCodec = {
   },
   subscribe(onChange) {
     return useFilesStore.subscribe((state, prev) => {
-      if (state.items !== prev.items || state.libraryState !== prev.libraryState) {
+      if (state.libraryState !== prev.libraryState) {
         onChange();
+        return;
+      }
+      if (state.items !== prev.items) {
+        const paths = new Set([
+          ...Object.keys(state.items),
+          ...Object.keys(prev.items),
+        ]);
+        const changedKeys = new Set<string>();
+        for (const path of paths) {
+          if (state.items[path] !== prev.items[path]) {
+            changedKeys.add(`files/item:${path}`);
+          }
+        }
+        if (changedKeys.size > 0) onChange(changedKeys);
       }
     });
   },
@@ -1519,12 +1548,21 @@ function createBlobCodec(
     namespace,
     usesIndexedDb: true,
     storeName,
-    async collect(ctx) {
+    async collect(ctx, keys) {
       // Blob codec collect returns serialized items keyed by sync key; the
       // engine converts them to `{ blob: ref }` docs after content upload.
       const db = requireDb(ctx, namespace);
+      const itemPrefix = `${namespace}/item:`;
+      const itemKeys = keys
+        ? [...keys]
+            .filter((key) => key.startsWith(itemPrefix))
+            .map((key) => key.slice(itemPrefix.length))
+        : null;
+      const storeItems = itemKeys
+        ? await readStoreItemsByKeys(db, storeName, itemKeys)
+        : await readStoreItems(db, storeName);
       const items = await serializeStoreItems(
-        (await readStoreItems(db, storeName)).map((item) =>
+        storeItems.map((item) =>
           prepareStoreItemForSync(storeName, item)
         )
       );
