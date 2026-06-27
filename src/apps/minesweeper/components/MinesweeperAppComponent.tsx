@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { memo, useState, useCallback, useRef } from "react";
 import { AppProps } from "../../base/types";
 import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { MinesweeperMenuBar } from "./MinesweeperMenuBar";
@@ -97,7 +97,7 @@ function useLongPress(
   };
 }
 
-function Cell({
+const Cell = memo(function Cell({
   cell,
   rowIndex,
   colIndex,
@@ -154,7 +154,7 @@ function Cell({
       ) : null}
     </button>
   );
-}
+});
 
 export function MinesweeperAppComponent({
   isWindowOpen,

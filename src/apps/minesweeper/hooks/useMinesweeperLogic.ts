@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import { useLatestRef } from "@/hooks/useLatestRef";
 import { useAppHelpAboutDialogs } from "@/hooks/useAppHelpAboutDialogs";
 import { useTranslation } from "react-i18next";
 import { helpItems } from "..";
@@ -125,6 +126,14 @@ export function useMinesweeperLogic() {
     initializeBoard()
   );
 
+  // Keep the latest game state in refs so the cell click handlers can have a
+  // stable identity (empty/minimal deps), which keeps memoized <Cell> children
+  // from re-rendering just because a new board was produced.
+  const gameBoardRef = useLatestRef(gameBoard);
+  const gameOverRef = useLatestRef(gameOver);
+  const gameWonRef = useLatestRef(gameWon);
+  const remainingMinesRef = useLatestRef(remainingMines);
+
   const { play: playClick } = useSound(Sounds.CLICK, 0.3);
   const { play: playMineHit } = useSound(Sounds.ALERT_BONK, 0.3);
   const { play: playGameWin } = useSound(Sounds.ALERT_INDIGO, 0.3);
@@ -146,7 +155,9 @@ export function useMinesweeperLogic() {
       return;
     }
 
-    board[row][col].isRevealed = true;
+    // Replace the cell with a new object (instead of mutating in place) so that
+    // memoized <Cell> components only re-render for cells that actually changed.
+    board[row][col] = { ...board[row][col], isRevealed: true };
 
     if (board[row][col].neighborMines === 0) {
       for (let i = -1; i <= 1; i++) {
@@ -160,8 +171,8 @@ export function useMinesweeperLogic() {
   const revealAllMines = useCallback((board: CellContent[][]) => {
     for (let row = 0; row < BOARD_SIZE; row++) {
       for (let col = 0; col < BOARD_SIZE; col++) {
-        if (board[row][col].isMine) {
-          board[row][col].isRevealed = true;
+        if (board[row][col].isMine && !board[row][col].isRevealed) {
+          board[row][col] = { ...board[row][col], isRevealed: true };
         }
       }
     }
@@ -187,7 +198,9 @@ export function useMinesweeperLogic() {
 
   const handleCellClick = useCallback(
     (row: number, col: number, isDoubleClick: boolean = false) => {
-      if (gameOver || gameWon || gameBoard[row][col].isFlagged) return;
+      const gameBoard = gameBoardRef.current;
+      if (gameOverRef.current || gameWonRef.current || gameBoard[row][col].isFlagged)
+        return;
 
       const newBoard = [...gameBoard.map((row) => [...row])];
 
@@ -271,9 +284,9 @@ export function useMinesweeperLogic() {
       checkWinCondition(newBoard);
     },
     [
-      gameBoard,
-      gameOver,
-      gameWon,
+      gameBoardRef,
+      gameOverRef,
+      gameWonRef,
       playClick,
       playMineHit,
       revealAllMines,
@@ -287,23 +300,24 @@ export function useMinesweeperLogic() {
       if (e instanceof MouseEvent || "button" in e) {
         e.preventDefault();
       }
-      if (gameOver || gameWon || gameBoard[row][col].isRevealed) return;
+      const gameBoard = gameBoardRef.current;
+      if (gameOverRef.current || gameWonRef.current || gameBoard[row][col].isRevealed)
+        return;
 
       playFlag();
       const newBoard = [...gameBoard.map((row) => [...row])];
-      newBoard[row][col].isFlagged = !newBoard[row][col].isFlagged;
+      const nextFlagged = !newBoard[row][col].isFlagged;
+      newBoard[row][col] = { ...newBoard[row][col], isFlagged: nextFlagged };
       setGameBoard(newBoard);
       track(MINESWEEPER_ANALYTICS.FLAG, {
-        isFlagged: newBoard[row][col].isFlagged,
-        remainingMines: newBoard[row][col].isFlagged
-          ? remainingMines - 1
-          : remainingMines + 1,
+        isFlagged: nextFlagged,
+        remainingMines: nextFlagged
+          ? remainingMinesRef.current - 1
+          : remainingMinesRef.current + 1,
       });
-      setRemainingMines((prev) =>
-        newBoard[row][col].isFlagged ? prev - 1 : prev + 1
-      );
+      setRemainingMines((prev) => (nextFlagged ? prev - 1 : prev + 1));
     },
-    [gameBoard, gameOver, gameWon, playFlag, remainingMines]
+    [gameBoardRef, gameOverRef, gameWonRef, remainingMinesRef, playFlag]
   );
 
   const startNewGame = useCallback(() => {
