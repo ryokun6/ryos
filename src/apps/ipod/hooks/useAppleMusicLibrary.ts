@@ -1055,10 +1055,10 @@ export async function refreshAppleMusicPlaylists(
 const inFlightPlaylistTracksRefresh = new Set<string>();
 
 /**
- * Refresh stale tracks for every playlist that currently has a cached
- * copy in memory or IndexedDB. Iterates with bounded concurrency so a
- * user with 50 cached playlists doesn't fire 50 simultaneous Apple Music
- * requests on iPod open.
+ * Refresh stale tracks for playlists that are already present in memory.
+ * This deliberately does not scan IndexedDB or enumerate the playlist list:
+ * opening the iPod should not touch per-playlist track caches until the user
+ * drills into a playlist.
  *
  * Playback safety: each refresh uses
  * `setAppleMusicPlaylistTracks(playlistId, ...)`, which only mutates the
@@ -1074,14 +1074,6 @@ export async function refreshStaleAppleMusicPlaylistTracks(
   options: {
     force?: boolean;
     concurrency?: number;
-    /**
-     * Also include playlists that exist in `appleMusicPlaylists` but have
-     * never been viewed (no `loadedAt` entry). This makes the function
-     * pre-fetch every playlist's tracks during the initial library sync
-     * so the Playlists menu row subtitles ("N songs") render correctly
-     * without requiring the user to click into each playlist first.
-     */
-    includeUncached?: boolean;
   } = {}
 ): Promise<void> {
   const instance = getMusicKitInstance();
@@ -1090,11 +1082,6 @@ export async function refreshStaleAppleMusicPlaylistTracks(
   const state = useIpodStore.getState();
   const loadedAtMap = state.appleMusicPlaylistTracksLoadedAt;
   const knownIds = new Set<string>(Object.keys(loadedAtMap));
-  if (options.includeUncached) {
-    for (const playlist of state.appleMusicPlaylists) {
-      knownIds.add(playlist.id);
-    }
-  }
   const playlistIds = Array.from(knownIds);
   if (playlistIds.length === 0) return;
 
@@ -1415,27 +1402,6 @@ export async function fetchAppleMusicLibrary(
     } catch (err) {
       warnAppleMusic("[apple music] playlist sync failed (songs kept)", err);
     }
-
-    // After the playlist list is fresh, kick off a background pre-fetch
-    // of EVERY playlist's tracks (including playlists the user has never
-    // opened). This populates `appleMusicPlaylistTracks[playlistId]`, so
-    // the Playlists menu can show accurate "N songs" subtitles for every
-    // row without the user having to click into each playlist first.
-    //
-    // Fire-and-forget on purpose:
-    //   - We don't want the library-load promise to wait for potentially
-    //     dozens of per-playlist round-trips before resolving.
-    //   - `refreshStaleAppleMusicPlaylistTracks` already runs with bounded
-    //     concurrency and swallows per-playlist errors, so it can't take
-    //     down the library sync if a single playlist fetch fails.
-    void refreshStaleAppleMusicPlaylistTracks({ includeUncached: true }).catch(
-      (err) => {
-        warnAppleMusic(
-          "[apple music] background pre-fetch of playlist tracks failed",
-          err
-        );
-      }
-    );
 
     return aggregated.length || existingTracks.length;
   } catch (err) {
@@ -1913,18 +1879,10 @@ export function useAppleMusicLibrary({
         // hit separate Apple Music endpoints and don't share the same
         // in-flight guard.
         //
-        // `refreshStaleAppleMusicPlaylistTracks` is included with
-        // `includeUncached: true` so the per-playlist track caches get
-        // populated for every playlist (not just those the user has
-        // already opened). This is what backs the Playlists menu's
-        // "N songs" subtitles, so without this they'd stay at 0 for any
-        // playlist the user hasn't drilled into yet. The helper has its
-        // own per-playlist in-flight guard + bounded concurrency, so
-        // running it here in parallel with the other refreshes is safe.
         await Promise.allSettled([
           refreshAppleMusicRecentlyAdded(),
           refreshAppleMusicFavorites(),
-          refreshStaleAppleMusicPlaylistTracks({ includeUncached: true }),
+          refreshStaleAppleMusicPlaylistTracks(),
         ]);
       } catch (err) {
         // Each helper handles its own per-call errors; a top-level

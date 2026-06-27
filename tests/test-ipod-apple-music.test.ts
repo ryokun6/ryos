@@ -1048,6 +1048,30 @@ describe("Apple Music opportunistic playlist refresh", () => {
     expect(state.appleMusicPlaylistTracksLoading).toEqual({});
   });
 
+  test("refreshStaleAppleMusicPlaylistTracks ignores playlist-list rows that were never opened", async () => {
+    useIpodStore.setState({
+      appleMusicPlaylists: [
+        {
+          id: "p:never-opened",
+          name: "Never Opened",
+          artworkUrl: undefined,
+          trackCount: 42,
+          canEdit: false,
+        },
+      ],
+      appleMusicPlaylistTracks: {},
+      appleMusicPlaylistTracksLoadedAt: {},
+      appleMusicPlaylistTracksLoading: {},
+    });
+
+    await refreshStaleAppleMusicPlaylistTracks();
+
+    const state = useIpodStore.getState();
+    expect(state.appleMusicPlaylistTracks).toEqual({});
+    expect(state.appleMusicPlaylistTracksLoadedAt).toEqual({});
+    expect(state.appleMusicPlaylistTracksLoading).toEqual({});
+  });
+
   test("refreshStaleAppleMusicPlaylistTracks no-ops silently when MusicKit isn't available even with stale entries", async () => {
     useIpodStore.setState({
       appleMusicPlaylistTracks: { "p:1": [] },

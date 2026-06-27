@@ -24,7 +24,6 @@ import {
   fetchAppleMusicGeniusTrack,
   addAppleMusicTrackToFavorites,
   cacheAppleMusicFavoriteSongTrack,
-  refreshStaleAppleMusicPlaylistTracks,
   type AppleMusicSearchScope,
 } from "./useAppleMusicLibrary";
 import { useMusicKit } from "@/hooks/useMusicKit";
@@ -1056,21 +1055,6 @@ export function useIpodLogic({
       await syncAppleMusicResource({
         kind: "playlists",
         allowEmpty: true,
-      });
-      // Kick off a background pre-fetch of tracks for every cached
-      // playlist (including ones the user has never opened) so the
-      // "N songs" subtitles render correctly on first paint instead of
-      // showing 0 until the user clicks into each row. Fire-and-forget:
-      // the helper runs with bounded concurrency and dedupes against
-      // any in-flight per-playlist fetches, so this is safe to call
-      // every time the Playlists menu opens.
-      void refreshStaleAppleMusicPlaylistTracks({
-        includeUncached: true,
-      }).catch((err) => {
-        console.warn(
-          "[apple music] background pre-fetch of playlist tracks failed",
-          err
-        );
       });
     } catch (err) {
       const hasCached = useIpodStore.getState().appleMusicPlaylists.length > 0;
