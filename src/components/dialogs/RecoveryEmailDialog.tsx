@@ -369,11 +369,15 @@ export function RecoveryEmailDialog({
       >
         {isWindowsTheme ? (
           <>
+            <DialogTitle className="sr-only">{title}</DialogTitle>
+            <DialogDescription className="sr-only">{description}</DialogDescription>
             <DialogHeader>{title}</DialogHeader>
             <div className="window-body">{body}</div>
           </>
         ) : isMacOSTheme ? (
           <>
+            <DialogTitle className="sr-only">{title}</DialogTitle>
+            <DialogDescription className="sr-only">{description}</DialogDescription>
             <DialogHeader>{title}</DialogHeader>
             {body}
           </>

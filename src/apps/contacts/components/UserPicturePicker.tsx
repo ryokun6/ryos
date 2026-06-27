@@ -148,11 +148,19 @@ export function UserPicturePicker({
       >
         {isWindowsTheme ? (
           <>
+            <DialogTitle className="sr-only">{title}</DialogTitle>
+            <DialogDescription className="sr-only">
+              {t("apps.contacts.picturePicker.description")}
+            </DialogDescription>
             <DialogHeader>{title}</DialogHeader>
             <div className="window-body">{dialogContent}</div>
           </>
         ) : isMacTheme ? (
           <>
+            <DialogTitle className="sr-only">{title}</DialogTitle>
+            <DialogDescription className="sr-only">
+              {t("apps.contacts.picturePicker.description")}
+            </DialogDescription>
             <DialogHeader>{title}</DialogHeader>
             {dialogContent}
           </>

@@ -217,6 +217,12 @@ const FutureSettingsDialog = ({
       >
         {isWindowsTheme ? (
           <>
+            <DialogTitle className="sr-only">
+              {t("apps.internet-explorer.futureTimeline.title")}
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              {t("apps.internet-explorer.futureTimeline.description")}
+            </DialogDescription>
             <DialogHeader>
               {t("apps.internet-explorer.futureTimeline.title")}
             </DialogHeader>
@@ -224,6 +230,12 @@ const FutureSettingsDialog = ({
           </>
         ) : isMacTheme ? (
           <>
+            <DialogTitle className="sr-only">
+              {t("apps.internet-explorer.futureTimeline.title")}
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              {t("apps.internet-explorer.futureTimeline.description")}
+            </DialogDescription>
             <DialogHeader>
               {t("apps.internet-explorer.futureTimeline.title")}
             </DialogHeader>

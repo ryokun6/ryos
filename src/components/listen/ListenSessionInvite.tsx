@@ -181,6 +181,9 @@ export function ListenSessionInvite({
       >
         {isMacOSTheme ? (
           <>
+            <DialogTitle className="sr-only">
+              {t("apps.karaoke.liveListen.inviteToListen")}
+            </DialogTitle>
             <DialogHeader>{t("apps.karaoke.liveListen.inviteToListen")}</DialogHeader>
             <DialogDescription className="sr-only">
               {t("apps.karaoke.liveListen.shareLinkInvite")}

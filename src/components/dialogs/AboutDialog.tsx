@@ -133,6 +133,12 @@ export function AboutDialog({
       >
         {isWindowsTheme ? (
           <>
+            <DialogTitle className="sr-only">
+              {t("common.dialog.aboutApp", { appName: displayName })}
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              {t("common.dialog.informationAboutApp")}
+            </DialogDescription>
             <DialogHeader>{t("common.dialog.aboutApp", { appName: displayName })}</DialogHeader>
             <div className={`window-body ${isWindowsTheme ? "p-2 px-4" : "p-4"}`}>
               {dialogContent}
@@ -140,6 +146,12 @@ export function AboutDialog({
           </>
         ) : isMacOSTheme ? (
           <>
+            <DialogTitle className="sr-only">
+              {t("common.dialog.aboutApp", { appName: displayName })}
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              {t("common.dialog.informationAboutApp")}
+            </DialogDescription>
             <DialogHeader>{t("common.dialog.aboutApp", { appName: displayName })}</DialogHeader>
             {dialogContent}
           </>

@@ -25,11 +25,23 @@ export function SongSearchDialog(props: SongSearchDialogProps) {
       >
         {isWindowsTheme ? (
           <>
+            <DialogTitle className="sr-only">
+              {t("apps.ipod.dialogs.addSongTitle")}
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              {t("apps.ipod.dialogs.songSearchDescription")}
+            </DialogDescription>
             <DialogHeader>{t("apps.ipod.dialogs.addSongTitle")}</DialogHeader>
             <div className="window-body">{dialogContent}</div>
           </>
         ) : isMacTheme ? (
           <>
+            <DialogTitle className="sr-only">
+              {t("apps.ipod.dialogs.addSongTitle")}
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              {t("apps.ipod.dialogs.songSearchDescription")}
+            </DialogDescription>
             <DialogHeader>{t("apps.ipod.dialogs.addSongTitle")}</DialogHeader>
             {dialogContent}
           </>

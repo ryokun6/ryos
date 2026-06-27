@@ -248,11 +248,23 @@ export function CreateChannelDialog({
       >
         {isWindowsTheme ? (
           <>
+            <DialogTitle className="sr-only">
+              {t("apps.tv.create.title")}
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              {t("apps.tv.create.description")}
+            </DialogDescription>
             <DialogHeader>{t("apps.tv.create.title")}</DialogHeader>
             <div className="window-body">{dialogContent}</div>
           </>
         ) : isMacTheme ? (
           <>
+            <DialogTitle className="sr-only">
+              {t("apps.tv.create.title")}
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              {t("apps.tv.create.description")}
+            </DialogDescription>
             <DialogHeader>{t("apps.tv.create.title")}</DialogHeader>
             {dialogContent}
           </>

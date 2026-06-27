@@ -582,6 +582,15 @@ export function LyricsSearchDialog({
       >
         {isWindowsTheme ? (
           <>
+            <DialogTitle className="sr-only">
+              {t("apps.ipod.dialogs.lyricsSearchTitle")}
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              {t("apps.ipod.dialogs.lyricsSearchDescription", {
+                title: trackTitle,
+                artist: trackArtist || t("apps.ipod.menu.unknownArtist"),
+              })}
+            </DialogDescription>
             <DialogHeader>
               {t("apps.ipod.dialogs.lyricsSearchTitle")}
             </DialogHeader>
@@ -589,6 +598,15 @@ export function LyricsSearchDialog({
           </>
         ) : isMacTheme ? (
           <>
+            <DialogTitle className="sr-only">
+              {t("apps.ipod.dialogs.lyricsSearchTitle")}
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              {t("apps.ipod.dialogs.lyricsSearchDescription", {
+                title: trackTitle,
+                artist: trackArtist || t("apps.ipod.menu.unknownArtist"),
+              })}
+            </DialogDescription>
             <DialogHeader>
               {t("apps.ipod.dialogs.lyricsSearchTitle")}
             </DialogHeader>
