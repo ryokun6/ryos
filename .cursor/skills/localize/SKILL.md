@@ -19,7 +19,7 @@ description: Localize ryOS apps and components by extracting hardcoded strings, 
 ## Step 1: Extract Hardcoded Strings
 
 ```bash
-bun run scripts/extract-strings.ts --pattern [PATTERN]
+bun run i18n:extract --pattern [PATTERN]
 ```
 
 ## Step 2: Replace Strings with t() Calls
@@ -38,6 +38,9 @@ apps.[appName].dialogs.*     # Dialog titles/descriptions
 apps.[appName].status.*      # Status messages
 apps.[appName].ariaLabels.*  # Accessibility labels
 apps.[appName].help.*        # Help items (auto-translated)
+apps.[appName].speech.*      # Spoken feedback / speech labels
+apps.[appName].conversion.*  # Unit conversion labels
+apps.[appName].angle.*       # Angle-mode labels
 ```
 
 ### Common Patterns
@@ -75,15 +78,15 @@ Add to `src/lib/locales/en/translation.json`:
 ## Step 4: Sync Across Languages
 
 ```bash
-bun run scripts/sync-translations.ts --mark-untranslated
+bun run i18n:sync:mark-todo
 ```
 
-Adds missing keys to all language files, marked with `[TODO]`.
+Adds missing keys to all 10 language files, marked with `[TODO]`.
 
 ## Step 5: Machine Translate
 
 ```bash
-bun run scripts/machine-translate.ts
+bun run i18n:translate
 ```
 
 Requires `GOOGLE_GENERATIVE_AI_API_KEY` env variable.
@@ -91,7 +94,8 @@ Requires `GOOGLE_GENERATIVE_AI_API_KEY` env variable.
 ## Step 6: Validate
 
 ```bash
-bun run scripts/find-untranslated-strings.ts
+bun run i18n:sync:dry-run
+bun run i18n:find-untranslated
 ```
 
 ## Component Guidelines
@@ -107,4 +111,5 @@ bun run scripts/find-untranslated-strings.ts
 
 - Emoji/symbols (♪, ✓) can stay hardcoded
 - Help items use pattern: `apps.[appName].help.[key].title/description`
+- Help item key order lives in `src/hooks/useTranslatedHelpItems.ts`; apps can export their key list (for example `src/apps/maps/helpKeys.ts` or `src/apps/calculator/helpKeys.ts`) and add a small alignment test
 - Include `t` in dependency arrays when used in `useMemo`/`useCallback`

@@ -159,7 +159,7 @@ const translatedHelpItems = useTranslatedHelpItems("finder", helpItems);
 
 Run the helper script:
 ```bash
-bun run scripts/find-untranslated-strings.ts
+bun run i18n:find-untranslated
 ```
 
 This will scan the codebase for common English strings that might need translation.
@@ -167,9 +167,10 @@ This will scan the codebase for common English strings that might need translati
 ## Adding New Translation Keys
 
 1. **Add to English file first** (`src/lib/locales/en/translation.json`)
-2. **Add to all other language files** (zh-TW, ja, ko, fr, de)
+2. **Sync to all other language files** with `bun run i18n:sync:mark-todo`
 3. **Use consistent naming** - follow the existing structure
-4. **Test** with language switcher
+4. **Translate `[TODO]` entries** with `bun run i18n:translate` after exporting `GOOGLE_GENERATIVE_AI_API_KEY`
+5. **Validate** with `bun run i18n:sync:dry-run` and the language switcher
 
 ## Testing Checklist
 
@@ -185,7 +186,7 @@ After translating a component:
 
 ## Common Pitfalls
 
-1. **Forgetting to add keys to all languages** - Always update all 6 language files
+1. **Forgetting to add keys to all languages** - Always sync all 10 language files (`en`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `pt`, `it`, `ru`)
 2. **Using wrong key path** - Double-check the key structure matches JSON
 3. **Not testing all languages** - Some languages have longer text that can break layouts
 4. **Hardcoding fallbacks** - Use `defaultValue` in `t()` instead

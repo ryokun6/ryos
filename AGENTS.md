@@ -88,6 +88,16 @@ These knobs only matter when the API is **not** running on Vercel (i.e. Coolify,
 ### Localization / Scripts
 - `GOOGLE_GENERATIVE_AI_API_KEY` - Google Generative AI (for machine translation of locale files)
 
+Useful i18n maintenance scripts:
+
+```bash
+bun run i18n:extract --pattern "src/apps/[app]/**/*.{ts,tsx}" # Find hardcoded strings
+bun run i18n:sync:mark-todo                                  # Add missing locale keys as [TODO]
+bun run i18n:translate                                       # Machine-translate [TODO] keys
+bun run i18n:sync:dry-run                                    # Validate key coverage
+bun run i18n:find-untranslated                               # Heuristic hardcoded-string scan
+```
+
 **Note:** The application will run with limited functionality without these environment variables. API endpoints requiring these services will fail gracefully.
 
 ### Using `.env.local`
@@ -96,7 +106,7 @@ The project includes a `.env.local` file with all required keys pre-configured. 
 
 ```bash
 export GOOGLE_GENERATIVE_AI_API_KEY="$(grep GOOGLE_GENERATIVE_AI_API_KEY .env.local | cut -d'"' -f2)"
-bun run scripts/machine-translate.ts
+bun run i18n:translate
 ```
 
 ## Project Structure

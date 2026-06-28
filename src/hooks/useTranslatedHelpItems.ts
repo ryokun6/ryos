@@ -1,5 +1,6 @@
 import { useMemo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { CALCULATOR_HELP_I18N_KEYS } from "@/apps/calculator/helpKeys";
 import { MAPS_HELP_I18N_KEYS } from "@/apps/maps/helpKeys";
 import type { AppId } from "@/utils/i18n";
 
@@ -205,14 +206,7 @@ const HELP_KEYS: Record<AppId, string[]> = {
     "fonts",
     "darkMode",
   ],
-  calculator: [
-    "basicMode",
-    "scientificMode",
-    "conversionMode",
-    "themeDesigns",
-    "keyboard",
-    "liveCurrency",
-  ],
+  calculator: [...CALCULATOR_HELP_I18N_KEYS],
 };
 
 /**
