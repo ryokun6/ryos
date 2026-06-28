@@ -13,6 +13,7 @@ export const TELEGRAM_HEARTBEAT_TOPIC = "telegram-heartbeat";
 export const TELEGRAM_HEARTBEAT_LOG_PREFIX = "[telegram heartbeat]";
 export const TELEGRAM_HEARTBEAT_SKIP_TOKEN = "NO_HEARTBEAT";
 export const TELEGRAM_HEARTBEAT_HISTORY_LOOKBACK_DAYS = 7;
+export const TELEGRAM_HEARTBEAT_INSTRUCTIONS_MAX_LENGTH = 1200;
 
 export const TELEGRAM_BRIEFING_MORNING_HOUR = 8;
 export const TELEGRAM_BRIEFING_EVENING_HOUR = 19;
@@ -91,6 +92,7 @@ export interface TelegramHeartbeatPromptOptions {
   heartbeatLogSnapshot: string;
   recentTelegramSnapshot: string;
   briefingType?: TelegramBriefingType;
+  customInstructions?: string | null;
 }
 
 export interface TelegramHeartbeatResult {
@@ -103,6 +105,75 @@ export interface TelegramHeartbeatConversationContext {
   recentMessages: TelegramConversationMessage[];
   latestUserTimestamp: number | null;
   latestMessageTimestamp: number | null;
+}
+
+export interface TelegramHeartbeatSettings {
+  instructions: string;
+  updatedAt: number | null;
+}
+
+export function normalizeTelegramHeartbeatInstructions(input: unknown): string {
+  if (typeof input !== "string") {
+    return "";
+  }
+
+  return input
+    .replace(/\r\n?/g, "\n")
+    .trim()
+    .slice(0, TELEGRAM_HEARTBEAT_INSTRUCTIONS_MAX_LENGTH);
+}
+
+function parseTelegramHeartbeatSettings(raw: unknown): TelegramHeartbeatSettings {
+  if (!raw) {
+    return { instructions: "", updatedAt: null };
+  }
+
+  try {
+    const parsed =
+      typeof raw === "string"
+        ? (JSON.parse(raw) as Partial<TelegramHeartbeatSettings>)
+        : (raw as Partial<TelegramHeartbeatSettings>);
+    return {
+      instructions: normalizeTelegramHeartbeatInstructions(parsed.instructions),
+      updatedAt: typeof parsed.updatedAt === "number" ? parsed.updatedAt : null,
+    };
+  } catch {
+    return { instructions: "", updatedAt: null };
+  }
+}
+
+export async function getTelegramHeartbeatSettings(
+  redis: { get<T = unknown>(key: string): Promise<T | null> },
+  username: string
+): Promise<TelegramHeartbeatSettings> {
+  const raw = await redis.get<string>(
+    redisKeys.integration.telegramHeartbeatSettings(username)
+  );
+  return parseTelegramHeartbeatSettings(raw);
+}
+
+export async function setTelegramHeartbeatInstructions(
+  redis: {
+    set(key: string, value: unknown): Promise<unknown>;
+    del(...keys: string[]): Promise<number>;
+  },
+  username: string,
+  instructionsInput: unknown
+): Promise<TelegramHeartbeatSettings> {
+  const instructions = normalizeTelegramHeartbeatInstructions(instructionsInput);
+  const key = redisKeys.integration.telegramHeartbeatSettings(username);
+
+  if (!instructions) {
+    await redis.del(key);
+    return { instructions: "", updatedAt: null };
+  }
+
+  const settings: TelegramHeartbeatSettings = {
+    instructions,
+    updatedAt: Date.now(),
+  };
+  await redis.set(key, JSON.stringify(settings));
+  return settings;
 }
 
 export function getTelegramConversationSinceLastHeartbeat(
@@ -382,8 +453,11 @@ export function buildTelegramHeartbeatPrompt({
   heartbeatLogSnapshot,
   recentTelegramSnapshot,
   briefingType,
+  customInstructions,
 }: TelegramHeartbeatPromptOptions): string {
   const isBriefing = briefingType === "morning" || briefingType === "evening";
+  const normalizedCustomInstructions =
+    normalizeTelegramHeartbeatInstructions(customInstructions);
 
   const baseInstructions = isBriefing
     ? buildBriefingInstructions(briefingType)
@@ -412,6 +486,13 @@ export function buildTelegramHeartbeatPrompt({
   return [
     ...baseInstructions,
     ...sharedInstructions,
+    ...(normalizedCustomInstructions
+      ? [
+          "",
+          "USER-CUSTOMIZED HEARTBEAT INSTRUCTIONS:",
+          normalizedCustomInstructions,
+        ]
+      : []),
     "",
     "TODAY'S DAILY NOTES:",
     dailyNoteSnapshot || "(none)",

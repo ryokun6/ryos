@@ -5,6 +5,8 @@ import {
   createTelegramLink,
   disconnectTelegramLink,
   getTelegramLinkStatus,
+  updateTelegramHeartbeatSettings,
+  type TelegramHeartbeatSettings,
   type TelegramLinkCreateResponse,
   type TelegramLinkSession,
   type TelegramLinkedAccount,
@@ -44,28 +46,39 @@ export function useTelegramLink({
   const [isCreatingTelegramLink, setIsCreatingTelegramLink] = useState(false);
   const [isDisconnectingTelegramLink, setIsDisconnectingTelegramLink] =
     useState(false);
+  const [telegramHeartbeatSettings, setTelegramHeartbeatSettings] =
+    useState<TelegramHeartbeatSettings>({
+      instructions: "",
+      updatedAt: null,
+    });
+  const [
+    isSavingTelegramHeartbeatSettings,
+    setIsSavingTelegramHeartbeatSettings,
+  ] = useState(false);
 
   const refreshTelegramLinkStatus = useCallback(
     async (): Promise<TelegramLinkStatusResponse | null> => {
-    if (!username || !isAuthenticated) {
-      setTelegramLinkedAccount(null);
-      setTelegramLinkSession(null);
-      setIsTelegramStatusLoading(false);
-      return null;
-    }
+      if (!username || !isAuthenticated) {
+        setTelegramLinkedAccount(null);
+        setTelegramLinkSession(null);
+        setTelegramHeartbeatSettings({ instructions: "", updatedAt: null });
+        setIsTelegramStatusLoading(false);
+        return null;
+      }
 
-    setIsTelegramStatusLoading(true);
-    try {
-      const result = await getTelegramLinkStatus();
-      setTelegramLinkedAccount(result.account);
-      setTelegramLinkSession(result.account ? null : result.pendingLink);
-      return result;
-    } catch (error) {
-      console.error("[Telegram] Failed to fetch link status:", error);
-      return null;
-    } finally {
-      setIsTelegramStatusLoading(false);
-    }
+      setIsTelegramStatusLoading(true);
+      try {
+        const result = await getTelegramLinkStatus();
+        setTelegramLinkedAccount(result.account);
+        setTelegramLinkSession(result.account ? null : result.pendingLink);
+        setTelegramHeartbeatSettings(result.heartbeatSettings);
+        return result;
+      } catch (error) {
+        console.error("[Telegram] Failed to fetch link status:", error);
+        return null;
+      } finally {
+        setIsTelegramStatusLoading(false);
+      }
     },
     [username, isAuthenticated]
   );
@@ -148,16 +161,43 @@ export function useTelegramLink({
     }
   }, [username, isAuthenticated, t]);
 
+  const handleSaveTelegramHeartbeatInstructions = useCallback(
+    async (instructions: string): Promise<boolean> => {
+      if (!username || !isAuthenticated) {
+        toast.error(t("apps.control-panels.telegram.loginRequired"));
+        return false;
+      }
+
+      setIsSavingTelegramHeartbeatSettings(true);
+      try {
+        const result = await updateTelegramHeartbeatSettings(instructions);
+        setTelegramHeartbeatSettings(result.settings);
+        toast.success(t("apps.control-panels.telegram.heartbeatInstructionsSaved"));
+        return true;
+      } catch (error) {
+        console.error("[Telegram] Failed to save heartbeat instructions:", error);
+        toast.error(t("apps.control-panels.telegram.heartbeatInstructionsFailed"));
+        return false;
+      } finally {
+        setIsSavingTelegramHeartbeatSettings(false);
+      }
+    },
+    [username, isAuthenticated, t]
+  );
+
   return {
     telegramLinkedAccount,
     telegramLinkSession,
     isTelegramStatusLoading,
     isCreatingTelegramLink,
     isDisconnectingTelegramLink,
+    telegramHeartbeatSettings,
+    isSavingTelegramHeartbeatSettings,
     refreshTelegramLinkStatus,
     handleCreateTelegramLink,
     handleOpenTelegramLink,
     handleCopyTelegramCode,
     handleDisconnectTelegramLink,
+    handleSaveTelegramHeartbeatInstructions,
   };
 }

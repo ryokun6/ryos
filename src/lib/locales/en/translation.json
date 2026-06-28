@@ -3107,7 +3107,15 @@
         "deepLinkUnavailable": "Telegram deep link is not available",
         "disconnected": "Telegram disconnected",
         "disconnectFailed": "Failed to disconnect Telegram",
-        "loginRequired": "Please log in to link Telegram"
+        "loginRequired": "Please log in to link Telegram",
+        "heartbeatInstructionsLabel": "Heartbeat instructions",
+        "heartbeatInstructionsDescription": "Customize what Ryo should prioritize when sending proactive Telegram check-ins.",
+        "heartbeatInstructionsPlaceholder": "Example: Focus on unfinished ryOS work, avoid generic reminders, and keep morning briefings action-oriented.",
+        "saveInstructions": "Save",
+        "savingInstructions": "Saving...",
+        "resetInstructions": "Reset",
+        "heartbeatInstructionsSaved": "Telegram heartbeat instructions saved",
+        "heartbeatInstructionsFailed": "Failed to save Telegram heartbeat instructions"
       },
       "checkForUpdates": "Check for Updates",
       "downloadMacApp": "Download Mac App",

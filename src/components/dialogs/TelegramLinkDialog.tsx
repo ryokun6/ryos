@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import type {
+  TelegramHeartbeatSettings,
   TelegramLinkSession,
   TelegramLinkedAccount,
 } from "@/api/telegram";
@@ -26,10 +27,13 @@ interface TelegramLinkDialogProps {
   isStatusLoading: boolean;
   isCreatingLink: boolean;
   isDisconnectingLink: boolean;
+  heartbeatSettings: TelegramHeartbeatSettings;
+  isSavingHeartbeatSettings: boolean;
   onCreateLink: () => void;
   onOpenTelegramLink: () => void;
   onCopyTelegramCode: () => void;
   onDisconnectTelegramLink: () => void;
+  onSaveHeartbeatInstructions: (instructions: string) => Promise<boolean>;
 }
 
 export function TelegramLinkDialog({
@@ -40,10 +44,13 @@ export function TelegramLinkDialog({
   isStatusLoading,
   isCreatingLink,
   isDisconnectingLink,
+  heartbeatSettings,
+  isSavingHeartbeatSettings,
   onCreateLink,
   onOpenTelegramLink,
   onCopyTelegramCode,
   onDisconnectTelegramLink,
+  onSaveHeartbeatInstructions,
 }: TelegramLinkDialogProps) {
   const { t } = useTranslation();
   const {
@@ -55,9 +62,34 @@ export function TelegramLinkDialog({
   const linkedAccountLabel = linkedAccount
     ? getTelegramLinkedAccountLabel(linkedAccount)
     : null;
+  const [heartbeatInstructionsDraft, setHeartbeatInstructionsDraft] =
+    React.useState(heartbeatSettings.instructions);
   const shouldShowLinkSession = !linkedAccount && !!linkSession;
   const hasDeepLink = shouldShowLinkSession && !!linkSession?.deepLink;
   const stackedActionButtonClass = "h-7 w-full shrink-0 sm:w-auto sm:flex-1";
+  const normalizedHeartbeatInstructionsDraft = heartbeatInstructionsDraft.trim();
+  const hasHeartbeatInstructionsChanges =
+    heartbeatInstructionsDraft !== heartbeatSettings.instructions;
+
+  React.useEffect(() => {
+    if (isOpen) {
+      setHeartbeatInstructionsDraft(heartbeatSettings.instructions);
+    }
+  }, [heartbeatSettings.instructions, isOpen]);
+
+  const handleSaveHeartbeatInstructions = async () => {
+    const didSave = await onSaveHeartbeatInstructions(heartbeatInstructionsDraft);
+    if (didSave) {
+      setHeartbeatInstructionsDraft(normalizedHeartbeatInstructionsDraft);
+    }
+  };
+
+  const handleResetHeartbeatInstructions = async () => {
+    const didSave = await onSaveHeartbeatInstructions("");
+    if (didSave) {
+      setHeartbeatInstructionsDraft("");
+    }
+  };
 
   const descriptionText = linkedAccount
     ? t("apps.control-panels.telegram.linkedAs", {
@@ -127,6 +159,99 @@ export function TelegramLinkDialog({
           {descriptionText}
         </p>
       </div>
+
+      {linkedAccount ? (
+        <div className="mt-1 space-y-2 rounded-os border-[length:var(--os-metrics-border-width)] border-os-input-border bg-os-panel-bg p-2 text-os-text-primary">
+          <div className="space-y-1">
+            <label
+              htmlFor="telegram-heartbeat-instructions"
+              className={cn(
+                "block",
+                isWindowsTheme
+                  ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[10px]"
+                  : "font-geneva-12 text-[11px]"
+              )}
+            >
+              {t("apps.control-panels.telegram.heartbeatInstructionsLabel")}
+            </label>
+            <p
+              className={cn(
+                "text-os-text-secondary",
+                isWindowsTheme
+                  ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[9px]"
+                  : "font-geneva-12 text-[10px]"
+              )}
+            >
+              {t("apps.control-panels.telegram.heartbeatInstructionsDescription")}
+            </p>
+          </div>
+          <textarea
+            id="telegram-heartbeat-instructions"
+            value={heartbeatInstructionsDraft}
+            onChange={(event) =>
+              setHeartbeatInstructionsDraft(event.currentTarget.value.slice(0, 1200))
+            }
+            placeholder={t(
+              "apps.control-panels.telegram.heartbeatInstructionsPlaceholder"
+            )}
+            maxLength={1200}
+            rows={5}
+            className={cn(
+              "w-full resize-none rounded-os border-[length:var(--os-metrics-border-width)] border-os-input-border bg-os-input-bg p-2 text-os-text-primary shadow-inner outline-none focus:border-os-input-focusBorder",
+              isWindowsTheme
+                ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[10px]"
+                : "font-geneva-12 text-[11px]"
+            )}
+          />
+          <div className="flex items-center justify-between gap-2">
+            <span
+              className={cn(
+                "text-os-text-secondary",
+                isWindowsTheme
+                  ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[9px]"
+                  : "font-geneva-12 text-[10px]"
+              )}
+            >
+              {heartbeatInstructionsDraft.length}/1200
+            </span>
+            <div className="flex gap-1">
+              <Button
+                onClick={handleResetHeartbeatInstructions}
+                disabled={
+                  isSavingHeartbeatSettings ||
+                  (!heartbeatSettings.instructions && !heartbeatInstructionsDraft)
+                }
+                variant="retro"
+                className={cn(
+                  "h-7",
+                  isWindowsTheme
+                    ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
+                    : "font-geneva-12 text-[12px]"
+                )}
+              >
+                {t("apps.control-panels.telegram.resetInstructions")}
+              </Button>
+              <Button
+                onClick={handleSaveHeartbeatInstructions}
+                disabled={
+                  isSavingHeartbeatSettings || !hasHeartbeatInstructionsChanges
+                }
+                variant="retro"
+                className={cn(
+                  "h-7",
+                  isWindowsTheme
+                    ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
+                    : "font-geneva-12 text-[12px]"
+                )}
+              >
+                {isSavingHeartbeatSettings
+                  ? t("apps.control-panels.telegram.savingInstructions")
+                  : t("apps.control-panels.telegram.saveInstructions")}
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <DialogFooter className="mt-2 flex justify-end gap-1">
         {linkedAccount ? (
@@ -223,7 +348,7 @@ export function TelegramLinkDialog({
     return (
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
         <DialogContent
-          className={cn("window max-w-xs overflow-hidden border-0 p-0")}
+          className={cn("window max-w-sm overflow-hidden border-0 p-0")}
           style={{ fontSize: "11px" }}
           onKeyDown={(e: React.KeyboardEvent) => e.stopPropagation()}
         >
@@ -251,7 +376,7 @@ export function TelegramLinkDialog({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
-        className="max-w-xs rounded-os border-[length:var(--os-metrics-border-width)] border-os-window bg-os-window-bg shadow-os-window"
+        className="max-w-sm rounded-os border-[length:var(--os-metrics-border-width)] border-os-window bg-os-window-bg shadow-os-window"
         onKeyDown={(e: React.KeyboardEvent) => e.stopPropagation()}
       >
         {isMacOSTheme ? (

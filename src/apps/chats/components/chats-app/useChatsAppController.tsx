@@ -410,11 +410,14 @@ export function useChatsAppController({
     isTelegramStatusLoading,
     isCreatingTelegramLink,
     isDisconnectingTelegramLink,
+    telegramHeartbeatSettings,
+    isSavingTelegramHeartbeatSettings,
     refreshTelegramLinkStatus,
     handleCreateTelegramLink,
     handleOpenTelegramLink,
     handleCopyTelegramCode,
     handleDisconnectTelegramLink,
+    handleSaveTelegramHeartbeatInstructions,
   } = useTelegramLink({ username, isAuthenticated });
 
   const handleShowHelp = useCallback(() => {
@@ -502,11 +505,14 @@ export function useChatsAppController({
         isTelegramStatusLoading={isTelegramStatusLoading}
         isCreatingTelegramLink={isCreatingTelegramLink}
         isDisconnectingTelegramLink={isDisconnectingTelegramLink}
+        telegramHeartbeatSettings={telegramHeartbeatSettings}
+        isSavingTelegramHeartbeatSettings={isSavingTelegramHeartbeatSettings}
         onRefreshTelegramLinkStatus={refreshTelegramLinkStatus}
         onCreateTelegramLink={handleCreateTelegramLink}
         onOpenTelegramLink={handleOpenTelegramLink}
         onCopyTelegramCode={handleCopyTelegramCode}
         onDisconnectTelegramLink={handleDisconnectTelegramLink}
+        onSaveTelegramHeartbeatInstructions={handleSaveTelegramHeartbeatInstructions}
       />
     ),
     [
@@ -543,11 +549,14 @@ export function useChatsAppController({
       isTelegramStatusLoading,
       isCreatingTelegramLink,
       isDisconnectingTelegramLink,
+      telegramHeartbeatSettings,
+      isSavingTelegramHeartbeatSettings,
       refreshTelegramLinkStatus,
       handleCreateTelegramLink,
       handleOpenTelegramLink,
       handleCopyTelegramCode,
       handleDisconnectTelegramLink,
+      handleSaveTelegramHeartbeatInstructions,
     ]
   );
 
