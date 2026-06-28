@@ -94,6 +94,7 @@ export function DebugLogOverlay() {
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const stickToBottomRef = useRef(true);
+  const pendingStickToBottomRef = useRef(false);
   const rowHeightsRef = useRef<Map<number, number>>(new Map());
   const [heightRevision, setHeightRevision] = useState(0);
   const [viewportHeight, setViewportHeight] = useState(0);
@@ -162,6 +163,7 @@ export function DebugLogOverlay() {
 
       const previous = rowHeightsRef.current.get(entryId);
       if (previous === undefined || Math.abs(previous - height) > 0.5) {
+        if (stickToBottomRef.current) pendingStickToBottomRef.current = true;
         rowHeightsRef.current.set(entryId, height);
         setHeightRevision((revision) => revision + 1);
       }
@@ -174,6 +176,7 @@ export function DebugLogOverlay() {
     if (!el) return;
     el.scrollTo({ top: el.scrollHeight });
     stickToBottomRef.current = true;
+    pendingStickToBottomRef.current = false;
     setIsAtBottom(true);
     setScrollTop(el.scrollTop);
   }, []);
@@ -182,6 +185,7 @@ export function DebugLogOverlay() {
     clearConsoleCapture();
     rowHeightsRef.current.clear();
     stickToBottomRef.current = true;
+    pendingStickToBottomRef.current = false;
     setIsAtBottom(true);
     setScrollTop(0);
   }, []);
@@ -193,6 +197,7 @@ export function DebugLogOverlay() {
     }
     if (entries.length === 0) {
       stickToBottomRef.current = true;
+      pendingStickToBottomRef.current = false;
       setIsAtBottom(true);
       setScrollTop(0);
     }
@@ -220,7 +225,9 @@ export function DebugLogOverlay() {
 
   useLayoutEffect(() => {
     if (!open) return;
-    if (stickToBottomRef.current) scrollToBottom();
+    if (stickToBottomRef.current || pendingStickToBottomRef.current) {
+      scrollToBottom();
+    }
   }, [open, scrollToBottom, totalHeight]);
 
   const copyText = useMemo(
