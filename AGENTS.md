@@ -97,7 +97,11 @@ Useful i18n maintenance scripts:
 bun run i18n:extract --pattern "src/apps/[app]/**/*.{ts,tsx}" # Find hardcoded strings
 bun run i18n:sync:mark-todo                                  # Add missing locale keys as [TODO]
 bun run i18n:translate                                       # Machine-translate [TODO] keys
+bun run i18n:translate:dry-run                               # Preview machine translations
 bun run i18n:sync:dry-run                                    # Validate key coverage
+bun run i18n:audit                                           # Validate terminology, placeholders, and plurals
+bun run i18n:audit:fix                                       # Safely fix supported terminology drift
+bun run i18n:apple-glossary                                  # Refresh Apple terminology source data
 bun run i18n:find-untranslated                               # Heuristic hardcoded-string scan
 ```
 
