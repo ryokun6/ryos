@@ -7,6 +7,9 @@ import { useAppStore } from "@/stores/useAppStore";
 import { fetchCurrencyRateForWidget } from "@/lib/currency/frankfurter";
 import {
   convertValue,
+  DEFAULT_CONVERSION_CATEGORY,
+  DEFAULT_CONVERSION_FROM_UNIT,
+  DEFAULT_CONVERSION_TO_UNIT,
   getCategoryById,
   type ConversionCategoryId,
 } from "../utils/conversionData";
@@ -124,10 +127,14 @@ export function useCalculatorLogic({
     createInitialCalcState()
   );
   const [conversionCategory, setConversionCategory] = useStateWithDefault<ConversionCategoryId>(
-    persisted.conversionCategory ?? "length"
+    persisted.conversionCategory ?? DEFAULT_CONVERSION_CATEGORY
   );
-  const [fromUnit, setFromUnit] = useStateWithDefault(persisted.fromUnit ?? "m");
-  const [toUnit, setToUnit] = useStateWithDefault(persisted.toUnit ?? "ft");
+  const [fromUnit, setFromUnit] = useStateWithDefault(
+    persisted.fromUnit ?? DEFAULT_CONVERSION_FROM_UNIT
+  );
+  const [toUnit, setToUnit] = useStateWithDefault(
+    persisted.toUnit ?? DEFAULT_CONVERSION_TO_UNIT
+  );
   const [conversionCalcState, dispatchConversionCalc] = useReducer(
     calcReducer,
     {

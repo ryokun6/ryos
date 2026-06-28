@@ -11,7 +11,14 @@ import {
   memoryRecall,
   unaryFunctions,
 } from "../src/apps/calculator/utils/calculatorEngine";
-import { convertTemperature, convertValue } from "../src/apps/calculator/utils/conversionData";
+import {
+  CONVERSION_CATEGORIES,
+  convertTemperature,
+  convertValue,
+  DEFAULT_CONVERSION_CATEGORY,
+  DEFAULT_CONVERSION_FROM_UNIT,
+  DEFAULT_CONVERSION_TO_UNIT,
+} from "../src/apps/calculator/utils/conversionData";
 import { formatCalculatorDisplay } from "../src/apps/calculator/utils/formatCalculatorDisplay";
 
 describe("calculatorEngine", () => {
@@ -90,6 +97,24 @@ describe("formatCalculatorDisplay", () => {
 });
 
 describe("conversionData", () => {
+  test("currency is the default and first conversion category", () => {
+    expect(DEFAULT_CONVERSION_CATEGORY).toBe("currency");
+    expect(DEFAULT_CONVERSION_FROM_UNIT).toBe("USD");
+    expect(DEFAULT_CONVERSION_TO_UNIT).toBe("EUR");
+    expect(CONVERSION_CATEGORIES[0]?.id).toBe("currency");
+  });
+
+  test("includes Taiwan, Singapore, and Korean currencies", () => {
+    const currency = CONVERSION_CATEGORIES.find(
+      (category) => category.id === "currency"
+    );
+    const currencyIds = currency?.units.map((unit) => unit.id);
+
+    expect(currencyIds).toContain("TWD");
+    expect(currencyIds).toContain("SGD");
+    expect(currencyIds).toContain("KRW");
+  });
+
   test("length feet to meters", () => {
     const result = convertValue(3, "length", "ft", "m");
     expect(result).toBeCloseTo(0.9144, 4);

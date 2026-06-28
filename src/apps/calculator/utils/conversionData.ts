@@ -23,7 +23,29 @@ export interface ConversionCategory {
   units: ConversionUnit[];
 }
 
+export const DEFAULT_CONVERSION_CATEGORY: ConversionCategoryId = "currency";
+export const DEFAULT_CONVERSION_FROM_UNIT = "USD";
+export const DEFAULT_CONVERSION_TO_UNIT = "EUR";
+
 export const CONVERSION_CATEGORIES: ConversionCategory[] = [
+  {
+    id: "currency",
+    labelKey: "apps.calculator.conversion.categories.currency",
+    units: [
+      { id: "USD", labelKey: "USD" },
+      { id: "EUR", labelKey: "EUR" },
+      { id: "GBP", labelKey: "GBP" },
+      { id: "JPY", labelKey: "JPY" },
+      { id: "CHF", labelKey: "CHF" },
+      { id: "CAD", labelKey: "CAD" },
+      { id: "AUD", labelKey: "AUD" },
+      { id: "CNY", labelKey: "CNY" },
+      { id: "INR", labelKey: "INR" },
+      { id: "TWD", labelKey: "TWD" },
+      { id: "SGD", labelKey: "SGD" },
+      { id: "KRW", labelKey: "KRW" },
+    ],
+  },
   {
     id: "length",
     labelKey: "apps.calculator.conversion.categories.length",
@@ -126,22 +148,6 @@ export const CONVERSION_CATEGORIES: ConversionCategory[] = [
       { id: "kcal", labelKey: "apps.calculator.conversion.units.kcal", factor: 4184 },
       { id: "wh", labelKey: "apps.calculator.conversion.units.wh", factor: 3600 },
       { id: "kwh", labelKey: "apps.calculator.conversion.units.kwh", factor: 3_600_000 },
-    ],
-  },
-  {
-    id: "currency",
-    labelKey: "apps.calculator.conversion.categories.currency",
-    units: [
-      { id: "USD", labelKey: "USD" },
-      { id: "EUR", labelKey: "EUR" },
-      { id: "GBP", labelKey: "GBP" },
-      { id: "JPY", labelKey: "JPY" },
-      { id: "CHF", labelKey: "CHF" },
-      { id: "CAD", labelKey: "CAD" },
-      { id: "AUD", labelKey: "AUD" },
-      { id: "CNY", labelKey: "CNY" },
-      { id: "INR", labelKey: "INR" },
-      { id: "KRW", labelKey: "KRW" },
     ],
   },
 ];
