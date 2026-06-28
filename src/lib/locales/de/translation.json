@@ -4417,7 +4417,7 @@
         "codeRequired": "Reset-Code eingeben",
         "codeSent": "Falls ein passendes Konto gefunden wurde, wurde ein Reset-Code gesendet.",
         "confirmPassword": "Neues Passwort bestätigen",
-        "description": "Senden Sie einen Reset-Code an einen Wiederherstellungskanal und wählen Sie dann ein neues Passwort.",
+        "description": "Senden Sie einen Reset-Code an Ihre verfügbaren Wiederherstellungsmethoden und wählen Sie dann ein neues Passwort.",
         "genericError": "Passwort konnte nicht zurückgesetzt werden. Überprüfen Sie den Code und versuchen Sie es erneut.",
         "identifier": "Benutzername oder E-Mail",
         "identifierRequired": "Benutzername oder E-Mail eingeben",

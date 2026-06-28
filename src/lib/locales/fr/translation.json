@@ -4421,7 +4421,7 @@
         "codeRequired": "Saisissez le code de réinitialisation",
         "codeSent": "Si un compte correspond, un code de réinitialisation a été envoyé.",
         "confirmPassword": "Confirmer le nouveau mot de passe",
-        "description": "Envoyez un code de réinitialisation vers un canal de récupération, puis choisissez un nouveau mot de passe.",
+        "description": "Envoyez un code de réinitialisation vers vos méthodes de récupération disponibles, puis choisissez un nouveau mot de passe.",
         "genericError": "Impossible de réinitialiser le mot de passe. Vérifiez votre code et réessayez.",
         "identifier": "Nom d’utilisateur ou e-mail",
         "identifierRequired": "Saisissez votre nom d’utilisateur ou e-mail",

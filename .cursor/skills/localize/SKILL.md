@@ -41,6 +41,7 @@ apps.[appName].help.*        # Help items (auto-translated)
 apps.[appName].speech.*      # Spoken feedback / speech labels
 apps.[appName].conversion.*  # Unit conversion labels
 apps.[appName].angle.*       # Angle-mode labels
+common.auth.*                # Shared login/signup/recovery dialog labels
 ```
 
 ### Common Patterns
@@ -111,6 +112,7 @@ Use `bun run i18n:audit:fix` only for terminology drift the script can safely re
 | Dialogs | Titles, descriptions, button labels |
 | Status | `showStatus()` calls, toasts |
 | Help items | Auto-translated via `useTranslatedHelpItems` |
+| Shared auth dialogs | `common.auth.*`, for login/signup/password recovery copy |
 
 ## Notes
 

@@ -4421,7 +4421,7 @@
         "codeRequired": "Introduce el código de restablecimiento",
         "codeSent": "Si existe una cuenta coincidente, se ha enviado un código de restablecimiento.",
         "confirmPassword": "Confirmar nueva contraseña",
-        "description": "Envía un código de restablecimiento a un canal de recuperación y, a continuación, elige una nueva contraseña.",
+        "description": "Envía un código de restablecimiento a tus métodos de recuperación disponibles y, a continuación, elige una nueva contraseña.",
         "genericError": "No se pudo restablecer la contraseña. Comprueba el código e inténtalo de nuevo.",
         "identifier": "Nombre de usuario o correo electrónico",
         "identifierRequired": "Introduce tu nombre de usuario o correo electrónico",
