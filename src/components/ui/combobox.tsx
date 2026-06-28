@@ -379,7 +379,7 @@ function ComboboxImpl({
                 {filters && filters.length > 0 ? (
                   <div
                     ref={filterListRef}
-                    className="flex gap-1 overflow-x-auto border-b border-os-separator px-2 pb-1.5"
+                    className="flex gap-px overflow-x-auto border-b border-os-separator px-2 pb-1.5"
                   >
                     {filters.map((filter) => {
                       const selected = filter.value === filterValue;

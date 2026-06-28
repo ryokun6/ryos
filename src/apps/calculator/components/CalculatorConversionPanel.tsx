@@ -14,7 +14,7 @@ import {
   type ConversionUnit,
 } from "../utils/conversionData";
 import { formatCalculatorDisplay } from "../utils/formatCalculatorDisplay";
-import { CalculatorKey } from "./CalculatorKey";
+import { CalculatorDisplayValue, CalculatorKey } from "./CalculatorKey";
 import type { CalculatorTheme } from "./types";
 
 interface CalculatorConversionPanelProps {
@@ -233,9 +233,9 @@ export function CalculatorConversionPanel({
     <div className="calc-conversion-panel flex min-h-0 flex-1 flex-col">
       <div className="calc-display calc-conversion-lcd">
         <div className="calc-conversion-value-row">
-          <div className="calc-display-value truncate">
-            {formatCalculatorDisplay(amount, locale)}
-          </div>
+          <CalculatorDisplayValue
+            value={formatCalculatorDisplay(amount, locale)}
+          />
           <ConversionUnitCombobox
             value={fromUnit}
             category={category}
@@ -260,9 +260,7 @@ export function CalculatorConversionPanel({
         </div>
 
         <div className="calc-conversion-value-row">
-          <div className="calc-display-value truncate">
-            {loading ? "–" : result}
-          </div>
+          <CalculatorDisplayValue value={loading ? "–" : result} />
           <ConversionUnitCombobox
             value={toUnit}
             category={category}
