@@ -6,6 +6,7 @@ import { LogoutDialog } from "@/components/dialogs/LogoutDialog";
 import { TelegramLinkDialog } from "@/components/dialogs/TelegramLinkDialog";
 import { appMetadata } from "../..";
 import type {
+  TelegramHeartbeatSettings,
   TelegramLinkCreateResponse,
   TelegramLinkSession,
   TelegramLinkedAccount,
@@ -77,10 +78,13 @@ export type ControlPanelsDialogsProps = {
   isTelegramStatusLoading: boolean;
   isCreatingTelegramLink: boolean;
   isDisconnectingTelegramLink: boolean;
+  telegramHeartbeatSettings: TelegramHeartbeatSettings;
+  isSavingTelegramHeartbeatSettings: boolean;
   handleCreateTelegramLink: () => Promise<TelegramLinkCreateResponse | null>;
   handleOpenTelegramLink: () => void;
   handleCopyTelegramCode: () => Promise<void>;
   handleDisconnectTelegramLink: () => Promise<void>;
+  handleSaveTelegramHeartbeatInstructions: (instructions: string) => Promise<boolean>;
 };
 
 export function ControlPanelsDialogs(props: ControlPanelsDialogsProps) {
@@ -144,10 +148,13 @@ export function ControlPanelsDialogs(props: ControlPanelsDialogsProps) {
     isTelegramStatusLoading,
     isCreatingTelegramLink,
     isDisconnectingTelegramLink,
+    telegramHeartbeatSettings,
+    isSavingTelegramHeartbeatSettings,
     handleCreateTelegramLink,
     handleOpenTelegramLink,
     handleCopyTelegramCode,
     handleDisconnectTelegramLink,
+    handleSaveTelegramHeartbeatInstructions,
   } = props;
 
   return (
@@ -286,10 +293,13 @@ export function ControlPanelsDialogs(props: ControlPanelsDialogsProps) {
         isStatusLoading={isTelegramStatusLoading}
         isCreatingLink={isCreatingTelegramLink}
         isDisconnectingLink={isDisconnectingTelegramLink}
+        heartbeatSettings={telegramHeartbeatSettings}
+        isSavingHeartbeatSettings={isSavingTelegramHeartbeatSettings}
         onCreateLink={handleCreateTelegramLink}
         onOpenTelegramLink={handleOpenTelegramLink}
         onCopyTelegramCode={handleCopyTelegramCode}
         onDisconnectTelegramLink={handleDisconnectTelegramLink}
+        onSaveHeartbeatInstructions={handleSaveTelegramHeartbeatInstructions}
       />
     </>
   );
