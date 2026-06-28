@@ -3,6 +3,7 @@ const SCIENTIFIC_PATTERN = /^(-?\d+)(?:\.(\d+))?([eE][+-]?\d+)$/;
 const MAX_CONVERSION_SIGNIFICANT_DIGITS = 12;
 const MAX_STANDARD_DISPLAY_DIGITS = 12;
 const SCIENTIFIC_FRACTION_DIGITS = 8;
+const SCIENTIFIC_LOWER_MAGNITUDE = 1e-9;
 
 interface FittedFontSizeInput {
   baseFontSize: number;
@@ -100,7 +101,11 @@ export function formatCalculatorConversionResult(
 ): string {
   if (!Number.isFinite(value)) return "—";
 
-  if (Math.abs(value) >= 10 ** MAX_STANDARD_DISPLAY_DIGITS) {
+  const magnitude = Math.abs(value);
+  if (
+    magnitude >= 10 ** MAX_STANDARD_DISPLAY_DIGITS ||
+    (magnitude > 0 && magnitude < SCIENTIFIC_LOWER_MAGNITUDE)
+  ) {
     return formatScientificNumber(value, locale);
   }
 
@@ -111,10 +116,7 @@ export function formatCalculatorConversionResult(
     }).format(value);
   }
 
-  const rounded = Number(
-    value.toPrecision(MAX_CONVERSION_SIGNIFICANT_DIGITS)
-  );
   return new Intl.NumberFormat(locale, {
-    maximumFractionDigits: 8,
-  }).format(rounded);
+    maximumSignificantDigits: MAX_CONVERSION_SIGNIFICANT_DIGITS,
+  }).format(value);
 }

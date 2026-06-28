@@ -19,6 +19,7 @@ import {
   DEFAULT_CONVERSION_FROM_UNIT,
   DEFAULT_CONVERSION_TO_UNIT,
   formatSwappedConversionValue,
+  resolveConversionAmount,
 } from "../src/apps/calculator/utils/conversionData";
 import {
   calculateFittedCalculatorFontSize,
@@ -173,6 +174,32 @@ describe("conversionData", () => {
     expect(formatSwappedConversionValue(12.3, "1.00e+3")).toBe("12.30");
     expect(formatSwappedConversionValue(12.3, "1")).toBe("12.3");
     expect(formatSwappedConversionValue(12.3, "1.")).toBe("12.3");
+  });
+
+  test("uses the unrounded amount for conversion swap round trips", () => {
+    const originalAmount = 1.23;
+    const rate = 0.9134567;
+    const exactSwappedAmount = convertValue(
+      originalAmount,
+      "currency",
+      "USD",
+      "EUR",
+      rate
+    );
+    const displayedSwappedAmount = formatSwappedConversionValue(
+      exactSwappedAmount,
+      "1.00"
+    );
+    const resolvedAmount = resolveConversionAmount(
+      displayedSwappedAmount,
+      exactSwappedAmount
+    );
+
+    expect(displayedSwappedAmount).toBe("1.12");
+    expect(
+      convertValue(resolvedAmount, "currency", "EUR", "USD", 1 / rate)
+    ).toBeCloseTo(originalAmount, 12);
+    expect(resolveConversionAmount("1.12", null)).toBe(1.12);
   });
 
   test("length feet to meters", () => {

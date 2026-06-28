@@ -29,6 +29,16 @@ export const DEFAULT_CONVERSION_CATEGORY: ConversionCategoryId = "currency";
 export const DEFAULT_CONVERSION_FROM_UNIT = "USD";
 export const DEFAULT_CONVERSION_TO_UNIT = "EUR";
 
+export function resolveConversionAmount(
+  displayValue: string,
+  exactAmount: number | null
+): number {
+  if (exactAmount != null && Number.isFinite(exactAmount)) {
+    return exactAmount;
+  }
+  return Number(displayValue.replace(/,/g, ""));
+}
+
 export function formatSwappedConversionValue(
   value: number,
   sourceDisplay: string
