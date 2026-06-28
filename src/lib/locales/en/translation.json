@@ -1927,6 +1927,7 @@
         "trackPosition": "{{current}} of {{total}}"
       },
       "syncMode": {
+        "title": "Sync Lyrics",
         "instructions": "Tap the line you're hearing to sync lyrics",
         "offset": "Offset",
         "hint": "Press ESC or tap X to exit",
@@ -2010,6 +2011,7 @@
         "lyricsSearchEmptyQuery": "Please enter a search query",
         "lyricsSearchNoResults": "No results found",
         "lyricsSearchError": "Error searching for lyrics",
+        "lyricsSearchHttpError": "Search failed (status {{status}})",
         "lyricsSearchInvalidResponse": "Invalid response from server",
         "songSearchTitle": "Search Songs",
         "songSearchDescription": "Search song, artist, or paste YouTube URL",
@@ -2022,8 +2024,11 @@
         "songSearchEmptyQuery": "Please enter a search query",
         "songSearchNoResults": "No results found",
         "songSearchError": "Error searching for songs",
+        "songSearchHttpError": "Search failed (status {{status}})",
+        "songSearchHttpErrorWithHint": "{{error}} - {{hint}}",
         "songSearchInvalidResponse": "Invalid response from server",
-        "songSearchAdding": "Adding song..."
+        "songSearchAdding": "Adding song...",
+        "appleMusicPlaylistsFailed": "Failed to load playlists"
       },
       "menuItems": {
         "music": "Music",
@@ -3776,6 +3781,7 @@
       "ipod": {
         "noTrack": "No Track",
         "openIpod": "Open iPod App",
+        "openKaraoke": "Open Karaoke App",
         "nowPlaying": "Now Playing",
         "pause": "Pause",
         "play": "Play",
@@ -3783,6 +3789,10 @@
         "next": "Next",
         "menu": "MENU",
         "iTunesNotOpen": "iTunes is not open",
+        "karaokeNotOpen": "Karaoke is not open",
+        "controlLabel": "Controls",
+        "modeIpod": "iPod",
+        "modeKaraoke": "Karaoke",
         "shuffle": "Shuffle",
         "repeatOne": "Repeat One",
         "repeatAll": "Repeat All"

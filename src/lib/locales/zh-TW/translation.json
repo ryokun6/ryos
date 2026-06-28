@@ -2090,7 +2090,12 @@
         "previous": "上一首",
         "repeatAll": "重複全部",
         "repeatOne": "重複一首",
-        "shuffle": "隨機播放"
+        "shuffle": "隨機播放",
+        "openKaraoke": "開啟 Karaoke App",
+        "karaokeNotOpen": "Karaoke 尚未開啟",
+        "controlLabel": "控制項",
+        "modeIpod": "iPod",
+        "modeKaraoke": "Karaoke"
       },
       "menu": {
         "about": "關於儀表板",
@@ -2697,7 +2702,11 @@
         "syncFailed": "同步失敗",
         "unknownError": "未知的錯誤",
         "updateCheckFailed": "檢查更新失敗",
-        "youreOffline": "您已離線"
+        "youreOffline": "您已離線",
+        "lyricsSearchHttpError": "搜尋失敗（狀態 {{status}}）",
+        "songSearchHttpError": "搜尋失敗（狀態 {{status}}）",
+        "songSearchHttpErrorWithHint": "{{error}} - {{hint}}",
+        "appleMusicPlaylistsFailed": "載入播放列表失敗"
       },
       "help": {
         "addSongs": {
@@ -2943,7 +2952,8 @@
         "instructions": "點擊你正在聽到的歌詞",
         "offset": "偏移",
         "searchLyrics": "搜尋歌詞",
-        "syncScroll": "同步捲動"
+        "syncScroll": "同步捲動",
+        "title": "同步歌詞"
       },
       "translationLanguages": {
         "auto": "自動",

@@ -135,8 +135,17 @@ export function useSongSearchDialog({
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         let errorMsg =
-          errorData.error || `Failed to search (status ${response.status})`;
-        if (errorData.hint) errorMsg += ` - ${errorData.hint}`;
+          typeof errorData.error === "string" && errorData.error
+            ? errorData.error
+            : t("apps.ipod.dialogs.songSearchHttpError", {
+                status: response.status,
+              });
+        if (typeof errorData.hint === "string" && errorData.hint) {
+          errorMsg = t("apps.ipod.dialogs.songSearchHttpErrorWithHint", {
+            error: errorMsg,
+            hint: errorData.hint,
+          });
+        }
         throw new Error(
           response.status === 404
             ? t("apps.ipod.dialogs.songSearchNoResults")

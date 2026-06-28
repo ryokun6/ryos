@@ -2090,7 +2090,12 @@
         "previous": "Предыдущий",
         "repeatAll": "Повторять все",
         "repeatOne": "Повторять один",
-        "shuffle": "Перемешать"
+        "shuffle": "Перемешать",
+        "openKaraoke": "Открыть приложение Karaoke",
+        "karaokeNotOpen": "Karaoke не открыт",
+        "controlLabel": "Управление",
+        "modeIpod": "iPod",
+        "modeKaraoke": "Karaoke"
       },
       "menu": {
         "about": "О Панели",
@@ -2697,7 +2702,11 @@
         "syncFailed": "Сбой синхронизации",
         "unknownError": "Неизвестная ошибка",
         "updateCheckFailed": "Сбой проверки обновлений",
-        "youreOffline": "Вы не в сети"
+        "youreOffline": "Вы не в сети",
+        "lyricsSearchHttpError": "Ошибка поиска (статус {{status}})",
+        "songSearchHttpError": "Ошибка поиска (статус {{status}})",
+        "songSearchHttpErrorWithHint": "{{error}} - {{hint}}",
+        "appleMusicPlaylistsFailed": "Не удалось загрузить плейлисты"
       },
       "help": {
         "addSongs": {
@@ -2943,7 +2952,8 @@
         "instructions": "Нажмите на строку, которую слышите",
         "offset": "Смещение",
         "searchLyrics": "Поиск текста",
-        "syncScroll": "Синхронная прокрутка"
+        "syncScroll": "Синхронная прокрутка",
+        "title": "Синхронизировать текст"
       },
       "translationLanguages": {
         "auto": "Авто",

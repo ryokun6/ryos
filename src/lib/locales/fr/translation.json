@@ -2090,7 +2090,12 @@
         "previous": "Précédent",
         "repeatAll": "Répéter tout",
         "repeatOne": "Répéter un",
-        "shuffle": "Aléatoire"
+        "shuffle": "Aléatoire",
+        "openKaraoke": "Ouvrir l'app Karaoke",
+        "karaokeNotOpen": "Karaoke n'est pas ouvert",
+        "controlLabel": "Commandes",
+        "modeIpod": "iPod",
+        "modeKaraoke": "Karaoke"
       },
       "menu": {
         "about": "À propos du tableau de bord",
@@ -2697,7 +2702,11 @@
         "syncFailed": "Échec de la synchronisation",
         "unknownError": "Erreur inconnue",
         "updateCheckFailed": "Échec de la vérification des mises à jour",
-        "youreOffline": "Vous êtes hors ligne"
+        "youreOffline": "Vous êtes hors ligne",
+        "lyricsSearchHttpError": "La recherche a echoue (statut {{status}})",
+        "songSearchHttpError": "La recherche a echoue (statut {{status}})",
+        "songSearchHttpErrorWithHint": "{{error}} - {{hint}}",
+        "appleMusicPlaylistsFailed": "Echec du chargement des playlists"
       },
       "help": {
         "addSongs": {
@@ -2943,7 +2952,8 @@
         "instructions": "Appuyez sur la ligne que vous entendez",
         "offset": "Décalage",
         "searchLyrics": "Rechercher les paroles",
-        "syncScroll": "Synchroniser le défilement"
+        "syncScroll": "Synchroniser le défilement",
+        "title": "Synchroniser les paroles"
       },
       "translationLanguages": {
         "auto": "Auto",

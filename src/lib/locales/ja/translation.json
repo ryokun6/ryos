@@ -2090,7 +2090,12 @@
         "previous": "前へ",
         "repeatAll": "すべてをリピート",
         "repeatOne": "1曲リピート",
-        "shuffle": "シャッフル"
+        "shuffle": "シャッフル",
+        "openKaraoke": "Karaokeアプリを開く",
+        "karaokeNotOpen": "Karaokeが開いていません",
+        "controlLabel": "コントロール",
+        "modeIpod": "iPod",
+        "modeKaraoke": "Karaoke"
       },
       "menu": {
         "about": "ダッシュボードについて",
@@ -2697,7 +2702,11 @@
         "syncFailed": "同期失敗",
         "unknownError": "不明なエラー",
         "updateCheckFailed": "更新確認失敗",
-        "youreOffline": "オフライン"
+        "youreOffline": "オフライン",
+        "lyricsSearchHttpError": "検索に失敗しました（ステータス {{status}}）",
+        "songSearchHttpError": "検索に失敗しました（ステータス {{status}}）",
+        "songSearchHttpErrorWithHint": "{{error}} - {{hint}}",
+        "appleMusicPlaylistsFailed": "プレイリストの読み込みに失敗しました"
       },
       "help": {
         "addSongs": {
@@ -2943,7 +2952,8 @@
         "instructions": "聞こえている行をタップ",
         "offset": "オフセット",
         "searchLyrics": "歌詞検索",
-        "syncScroll": "同期スクロール"
+        "syncScroll": "同期スクロール",
+        "title": "歌詞を同期"
       },
       "translationLanguages": {
         "auto": "自動",

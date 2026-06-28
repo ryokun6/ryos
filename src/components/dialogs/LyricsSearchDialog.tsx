@@ -188,7 +188,9 @@ export function LyricsSearchDialog({
         throw new Error(
           response.status === 404
             ? t("apps.ipod.dialogs.lyricsSearchNoResults")
-            : `Failed to search (status ${response.status})`
+            : t("apps.ipod.dialogs.lyricsSearchHttpError", {
+                status: response.status,
+              })
         );
       }
 
