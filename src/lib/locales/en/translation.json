@@ -4717,6 +4717,10 @@
     "showConsole": "Show console",
     "scrollToBottom": "Scroll to bottom",
     "noLogsYet": "No logs captured yet.",
+    "noLogsForFilter": "No logs match this filter.",
+    "filterAll": "All logs",
+    "filterOther": "Other",
+    "filterByLogger": "Filter by logger",
     "toggleLabel": "Debug"
   },
   "updates": {

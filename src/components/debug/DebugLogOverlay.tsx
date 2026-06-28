@@ -7,7 +7,23 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
-import { ArrowDown, Bug, Check, Copy, Trash, Wrench, X } from "@phosphor-icons/react";
+import {
+  ArrowDown,
+  Bug,
+  CaretDown,
+  Check,
+  Copy,
+  Trash,
+  Wrench,
+  X,
+} from "@phosphor-icons/react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
@@ -37,6 +53,14 @@ const LEVEL_TEXT_CLASS: Record<ConsoleLogLevel, string> = {
 const ESTIMATED_LOG_ROW_HEIGHT = 22;
 const VIRTUAL_OVERSCAN = 8;
 const STICK_TO_BOTTOM_THRESHOLD = 24;
+const LOGGER_TAG_RE = /^\[([^\]]+)\]/;
+const ALL_LOGGERS_FILTER = "__all__";
+const OTHER_LOGGER_FILTER = "__other__";
+
+function extractLoggerTag(text: string): string | null {
+  const match = text.match(LOGGER_TAG_RE);
+  return match ? match[1] : null;
+}
 
 const DEBUG_FIX_PROMPT_HEADER =
   "Investigate these debug console logs and fix any errors in the ryOS codebase.";
@@ -51,6 +75,23 @@ function buildDebugFixPrompt(logText: string): string {
     logs = `… (truncated — showing last ${maxLogChars} chars)\n${logs.slice(-maxLogChars)}`;
   }
   return `${DEBUG_FIX_PROMPT_HEADER}\n\n\`\`\`\n${logs}\n\`\`\``;
+}
+
+function LoggerFilterMenuLabel({
+  label,
+  count,
+}: {
+  label: string;
+  count: number;
+}) {
+  return (
+    <span className="flex flex-1 min-w-0 items-center justify-between gap-2">
+      <span className="truncate">{label}</span>
+      <span className="shrink-0 tabular-nums text-os-text-secondary">
+        {count}
+      </span>
+    </span>
+  );
 }
 
 function formatTime(timestamp: number): string {
@@ -103,6 +144,7 @@ export function DebugLogOverlay() {
     ? `calc(env(safe-area-inset-bottom, 0px) + ${metadata.taskbarHeight + debugFabGapPx}px)`
     : `calc(env(safe-area-inset-bottom, 0px) + ${debugFabGapPx}px)`;
   const [open, setOpen] = useState(false);
+  const [loggerFilter, setLoggerFilter] = useState(ALL_LOGGERS_FILTER);
   const [copied, setCopied] = useState(false);
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -117,6 +159,45 @@ export function DebugLogOverlay() {
     getConsoleCaptureSnapshot
   );
 
+  const loggerStats = useMemo(() => {
+    const counts = new Map<string, number>();
+    let otherCount = 0;
+    for (const entry of entries) {
+      const tag = extractLoggerTag(entry.text);
+      if (tag) {
+        counts.set(tag, (counts.get(tag) ?? 0) + 1);
+      } else {
+        otherCount += 1;
+      }
+    }
+    const sorted = [...counts.entries()].sort((a, b) =>
+      a[0].localeCompare(b[0])
+    );
+    return { counts, sorted, otherCount };
+  }, [entries]);
+
+  const filteredEntries = useMemo(() => {
+    if (loggerFilter === ALL_LOGGERS_FILTER) return entries;
+    if (loggerFilter === OTHER_LOGGER_FILTER) {
+      return entries.filter((entry) => !extractLoggerTag(entry.text));
+    }
+    return entries.filter(
+      (entry) => extractLoggerTag(entry.text) === loggerFilter
+    );
+  }, [entries, loggerFilter]);
+
+  useEffect(() => {
+    if (loggerFilter === ALL_LOGGERS_FILTER) return;
+    if (loggerFilter === OTHER_LOGGER_FILTER) {
+      if (loggerStats.otherCount === 0) setLoggerFilter(ALL_LOGGERS_FILTER);
+      return;
+    }
+    if (!loggerStats.counts.has(loggerFilter)) {
+      setLoggerFilter(ALL_LOGGERS_FILTER);
+    }
+  }, [loggerFilter, loggerStats]);
+
+  const overlayRootRef = useRef<HTMLDivElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const stickToBottomRef = useRef(true);
   const pendingStickToBottomRef = useRef(false);
@@ -139,17 +220,17 @@ export function DebugLogOverlay() {
 
   const { offsets, totalHeight } = useMemo(() => {
     let height = 0;
-    const nextOffsets = entries.map((entry) => {
+    const nextOffsets = filteredEntries.map((entry) => {
       const offset = height;
       height += rowHeightsRef.current.get(entry.id) ?? ESTIMATED_LOG_ROW_HEIGHT;
       return offset;
     });
 
     return { offsets: nextOffsets, totalHeight: height };
-  }, [entries, heightRevision]);
+  }, [filteredEntries, heightRevision]);
 
   const virtualItems = useMemo(() => {
-    if (entries.length === 0) return [];
+    if (filteredEntries.length === 0) return [];
 
     const visibleHeight = viewportHeight || ESTIMATED_LOG_ROW_HEIGHT;
     const firstVisibleIndex = findFirstVisibleIndex(
@@ -164,7 +245,7 @@ export function DebugLogOverlay() {
     );
     const startIndex = Math.max(0, firstVisibleIndex - VIRTUAL_OVERSCAN);
     const endIndex = Math.min(
-      entries.length - 1,
+      filteredEntries.length - 1,
       lastVisibleIndex + VIRTUAL_OVERSCAN
     );
     const items: Array<{
@@ -174,11 +255,15 @@ export function DebugLogOverlay() {
     }> = [];
 
     for (let index = startIndex; index <= endIndex; index += 1) {
-      items.push({ entry: entries[index], index, start: offsets[index] });
+      items.push({
+        entry: filteredEntries[index],
+        index,
+        start: offsets[index],
+      });
     }
 
     return items;
-  }, [entries, offsets, scrollTop, totalHeight, viewportHeight]);
+  }, [filteredEntries, offsets, scrollTop, totalHeight, viewportHeight]);
 
   const measureRow = useCallback(
     (entryId: number, node: HTMLDivElement | null) => {
@@ -256,8 +341,8 @@ export function DebugLogOverlay() {
   }, [open, scrollToBottom, totalHeight]);
 
   const copyText = useMemo(
-    () => formatConsoleEntriesForCopy(entries),
-    [entries]
+    () => formatConsoleEntriesForCopy(filteredEntries),
+    [filteredEntries]
   );
 
   const handleCopy = useCallback(async () => {
@@ -301,17 +386,33 @@ export function DebugLogOverlay() {
 
   if (!debugMode) return null;
 
-  const errorCount = entries.reduce(
+  const errorCount = filteredEntries.reduce(
     (acc, e) => (e.level === "error" ? acc + 1 : acc),
     0
   );
-  const warnCount = entries.reduce(
+  const warnCount = filteredEntries.reduce(
+    (acc, e) => (e.level === "warn" ? acc + 1 : acc),
+    0
+  );
+  const fabErrorCount = entries.reduce(
+    (acc, e) => (e.level === "error" ? acc + 1 : acc),
+    0
+  );
+  const fabWarnCount = entries.reduce(
     (acc, e) => (e.level === "warn" ? acc + 1 : acc),
     0
   );
 
+  const filterTriggerLabel =
+    loggerFilter === ALL_LOGGERS_FILTER
+      ? t("debug.console")
+      : loggerFilter === OTHER_LOGGER_FILTER
+        ? t("debug.filterOther")
+        : loggerFilter;
+
   return (
     <div
+      ref={overlayRootRef}
       className={cn(
         "fixed select-none flex flex-col",
         isWindowsTheme ? "right-2 items-end" : "left-2 items-start"
@@ -334,16 +435,72 @@ export function DebugLogOverlay() {
           {/* Header */}
           <div
             className={cn(
-              "flex items-center gap-1.5 pl-3 pr-2 py-1.5 border-b shrink-0",
+              "flex items-center gap-1.5 px-2 py-1.5 border-b shrink-0",
               "border-[color:var(--os-color-separator)]"
             )}
           >
-            <span className="font-os-ui text-[13px]">
-              {t("debug.console")}
-            </span>
-            <span className="font-os-ui text-[12px] opacity-60">
-              {entries.length}
-            </span>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  aria-label={t("debug.filterByLogger")}
+                  title={t("debug.filterByLogger")}
+                  className="flex items-center gap-1 rounded px-1.5 py-0.5 font-os-ui text-[12px] hover:bg-black/10 os-mac-aqua-dark:hover:bg-white/15"
+                >
+                  <span>{filterTriggerLabel}</span>
+                  <span className="tabular-nums opacity-60">
+                    {filteredEntries.length}
+                  </span>
+                  <CaretDown
+                    size={10}
+                    weight="bold"
+                    className="shrink-0 opacity-50"
+                    aria-hidden
+                  />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="start"
+                sideOffset={4}
+                container={overlayRootRef.current}
+                className="min-w-[12rem]"
+              >
+                <DropdownMenuRadioGroup
+                  value={loggerFilter}
+                  onValueChange={setLoggerFilter}
+                >
+                  <DropdownMenuRadioItem
+                    value={ALL_LOGGERS_FILTER}
+                    className="font-os-ui text-[12px]"
+                  >
+                    <LoggerFilterMenuLabel
+                      label={t("debug.filterAll")}
+                      count={entries.length}
+                    />
+                  </DropdownMenuRadioItem>
+                  {loggerStats.sorted.map(([tag, count]) => (
+                    <DropdownMenuRadioItem
+                      key={tag}
+                      value={tag}
+                      className="font-os-ui text-[12px]"
+                    >
+                      <LoggerFilterMenuLabel label={tag} count={count} />
+                    </DropdownMenuRadioItem>
+                  ))}
+                  {loggerStats.otherCount > 0 ? (
+                    <DropdownMenuRadioItem
+                      value={OTHER_LOGGER_FILTER}
+                      className="font-os-ui text-[12px]"
+                    >
+                      <LoggerFilterMenuLabel
+                        label={t("debug.filterOther")}
+                        count={loggerStats.otherCount}
+                      />
+                    </DropdownMenuRadioItem>
+                  ) : null}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
             {errorCount > 0 && (
               <span className="font-os-ui text-[12px] text-red-500">
                 {t("debug.errorCount", { count: errorCount })}
@@ -414,6 +571,10 @@ export function DebugLogOverlay() {
                 <div className="py-4 text-center text-[11px] opacity-50">
                   {t("debug.noLogsYet")}
                 </div>
+              ) : filteredEntries.length === 0 ? (
+                <div className="py-4 text-center text-[11px] opacity-50">
+                  {t("debug.noLogsForFilter")}
+                </div>
               ) : (
                 <div
                   className="relative w-full"
@@ -443,7 +604,7 @@ export function DebugLogOverlay() {
                 </div>
               )}
             </div>
-            {entries.length > 0 && !isAtBottom && (
+            {filteredEntries.length > 0 && !isAtBottom && (
               <button
                 type="button"
                 onClick={scrollToBottom}
@@ -482,14 +643,14 @@ export function DebugLogOverlay() {
       >
         <Bug weight="fill" className="size-3.5" />
         <span>{t("debug.toggleLabel")}</span>
-        {(errorCount > 0 || warnCount > 0) && (
+        {(fabErrorCount > 0 || fabWarnCount > 0) && (
           <span
             className={cn(
               "min-w-[14px] rounded-full px-1 text-center text-[9px] font-bold text-white",
-              errorCount > 0 ? "bg-red-500" : "bg-amber-500"
+              fabErrorCount > 0 ? "bg-red-500" : "bg-amber-500"
             )}
           >
-            {errorCount > 0 ? errorCount : warnCount}
+            {fabErrorCount > 0 ? fabErrorCount : fabWarnCount}
           </span>
         )}
       </button>
