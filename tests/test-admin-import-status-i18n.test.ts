@@ -42,13 +42,13 @@ describe("admin import status i18n", () => {
         makeImportStatus({ phase: "reading-file", fileName: "library.json" }),
         t,
       ),
-    ).toBe("Reading library.json...");
+    ).toBe("Reading library.json…");
     expect(
       getAdminImportStatusText(makeImportStatus({ phase: "parsing-file" }), t),
-    ).toBe("Parsing import file...");
+    ).toBe("Parsing import file…");
     expect(
       getAdminImportStatusText(makeImportStatus({ phase: "validating-data" }), t),
-    ).toBe("Validating import data...");
+    ).toBe("Validating import data…");
     expect(
       getAdminImportStatusText(
         makeImportStatus({ phase: "preparing-songs" }),
@@ -66,7 +66,7 @@ describe("admin import status i18n", () => {
         makeImportStatus({ phase: "waiting-rate-limit" }),
         t,
       ),
-    ).toBe("Rate limited. Waiting briefly before retrying...");
+    ).toBe("Rate limited. Waiting briefly before retrying…");
     expect(
       getAdminImportStatusText(
         makeImportStatus({
@@ -81,7 +81,7 @@ describe("admin import status i18n", () => {
         makeImportStatus({ phase: "refreshing-library" }),
         t,
       ),
-    ).toBe("Import uploaded. Refreshing library...");
+    ).toBe("Import uploaded. Refreshing library…");
     expect(
       getAdminImportStatusText(makeImportStatus({ phase: "completed" }), t),
     ).toBe("Import complete: 3 new, 1 updated");

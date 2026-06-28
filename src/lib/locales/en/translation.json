@@ -4063,7 +4063,7 @@
       "songs": {
         "import": "Import Library",
         "importingProgress": "Importing {{processed}}/{{total}}",
-        "importingLibrary": "Importing library...",
+        "importingLibrary": "Importing library…",
         "export": "Export Library",
         "deleteAll": "Delete All Songs",
         "noSongs": "No songs in cache",
@@ -4073,14 +4073,14 @@
         "allSongs": "all songs",
         "importStatus": {
           "fileFallback": "file",
-          "reading": "Reading {{fileName}}...",
-          "parsing": "Parsing import file...",
-          "validating": "Validating import data...",
+          "reading": "Reading {{fileName}}…",
+          "parsing": "Parsing import file…",
+          "validating": "Validating import data…",
           "preparing": "Preparing songs {{processed}}/{{total}}",
           "uploading": "Uploading songs {{processed}}/{{total}}",
           "rateLimited": "Rate limited. {{message}}",
-          "rateLimitedFallback": "Waiting briefly before retrying...",
-          "refreshing": "Import uploaded. Refreshing library...",
+          "rateLimitedFallback": "Waiting briefly before retrying…",
+          "refreshing": "Import uploaded. Refreshing library…",
           "completed": "Import complete: {{imported}} new, {{updated}} updated",
           "failed": "Import failed: {{error}}",
           "messages": {

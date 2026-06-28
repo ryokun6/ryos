@@ -161,7 +161,7 @@ export function AdminToolbar({
                     })
                   : t(
                       "apps.admin.songs.importingLibrary",
-                      "Importing library...",
+                      "Importing library…",
                     )
                 : t("apps.admin.songs.import", "Import Library")
             }

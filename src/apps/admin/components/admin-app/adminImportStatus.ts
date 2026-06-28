@@ -89,15 +89,15 @@ export function getAdminImportStatusText(
         t("apps.admin.songs.importStatus.fileFallback", "file");
       return t("apps.admin.songs.importStatus.reading", {
         fileName,
-        defaultValue: `Reading ${fileName}...`,
+        defaultValue: `Reading ${fileName}…`,
       });
     }
     case "parsing-file":
-      return t("apps.admin.songs.importStatus.parsing", "Parsing import file...");
+      return t("apps.admin.songs.importStatus.parsing", "Parsing import file…");
     case "validating-data":
       return t(
         "apps.admin.songs.importStatus.validating",
-        "Validating import data...",
+        "Validating import data…",
       );
     case "preparing-songs":
       return t("apps.admin.songs.importStatus.preparing", {
@@ -116,7 +116,7 @@ export function getAdminImportStatusText(
         importStatus.message ||
         t(
           "apps.admin.songs.importStatus.rateLimitedFallback",
-          "Waiting briefly before retrying...",
+          "Waiting briefly before retrying…",
         );
       return t("apps.admin.songs.importStatus.rateLimited", {
         message,
@@ -126,7 +126,7 @@ export function getAdminImportStatusText(
     case "refreshing-library":
       return t(
         "apps.admin.songs.importStatus.refreshing",
-        "Import uploaded. Refreshing library...",
+        "Import uploaded. Refreshing library…",
       );
     case "completed":
       return t("apps.admin.songs.importStatus.completed", {
