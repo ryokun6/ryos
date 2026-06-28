@@ -153,14 +153,16 @@ export function AdminToolbar({
             className="size-7 p-0"
             title={
               isImporting
-                ? t("apps.admin.songs.importing", {
-                    processed: importStatus.processedSongs,
-                    total: importStatus.totalSongs,
-                    defaultValue:
-                      importStatus.totalSongs > 0
-                        ? `Importing ${importStatus.processedSongs}/${importStatus.totalSongs}`
-                        : "Importing library...",
-                  })
+                ? importStatus.totalSongs > 0
+                  ? t("apps.admin.songs.importingProgress", {
+                      processed: importStatus.processedSongs,
+                      total: importStatus.totalSongs,
+                      defaultValue: `Importing ${importStatus.processedSongs}/${importStatus.totalSongs}`,
+                    })
+                  : t(
+                      "apps.admin.songs.importingLibrary",
+                      "Importing library...",
+                    )
                 : t("apps.admin.songs.import", "Import Library")
             }
           >

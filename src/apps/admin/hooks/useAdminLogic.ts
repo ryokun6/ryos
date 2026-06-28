@@ -629,7 +629,7 @@ export function useAdminLogic({ isWindowOpen, initialData }: UseAdminLogicProps)
         currentBatch: 0,
         totalBatches: 0,
         currentBatchSize: 0,
-        message: "Reading file",
+        message: t("apps.admin.songs.importStatus.messages.readingFile"),
         error: null,
         startedAt,
         finishedAt: null,
@@ -640,14 +640,14 @@ export function useAdminLogic({ isWindowOpen, initialData }: UseAdminLogicProps)
         setImportStatus((prev) => ({
           ...prev,
           phase: "parsing-file",
-          message: "Parsing file",
+          message: t("apps.admin.songs.importStatus.messages.parsingFile"),
         }));
         const data = JSON.parse(text);
 
         setImportStatus((prev) => ({
           ...prev,
           phase: "validating-data",
-          message: "Validating file format",
+          message: t("apps.admin.songs.importStatus.messages.validatingFile"),
         }));
 
         // Support both formats: { videos: [...] } or direct array
@@ -676,7 +676,7 @@ export function useAdminLogic({ isWindowOpen, initialData }: UseAdminLogicProps)
           phase: "preparing-songs",
           totalSongs: videos.length,
           processedSongs: 0,
-          message: "Preparing songs for import",
+          message: t("apps.admin.songs.importStatus.messages.preparingSongs"),
         }));
 
         // Map to the expected song format, including content fields
@@ -739,19 +739,39 @@ export function useAdminLogic({ isWindowOpen, initialData }: UseAdminLogicProps)
                 : progress.stage === "rate-limited"
                 ? "waiting-rate-limit"
                 : "uploading-batches";
-            const message =
-              progress.message ||
-              (progress.stage === "batch-split"
-                ? "Splitting batch to fit upload limits"
-                : progress.stage === "batch-start"
-                ? "Uploading songs"
-                : progress.stage === "rate-limited"
-                ? "Rate limited, waiting to retry"
-                : progress.stage === "complete"
-                ? "Import uploaded, refreshing library"
-                : progress.stage === "error"
-                ? "Import failed"
-                : "Import progress updated");
+            const message = (() => {
+              switch (progress.stage) {
+                case "batch-split":
+                  return t(
+                    "apps.admin.songs.importStatus.messages.splittingBatch",
+                  );
+                case "batch-start":
+                  return t("apps.admin.songs.importStatus.messages.uploadingSongs");
+                case "rate-limited": {
+                  const seconds = Math.max(
+                    1,
+                    Math.ceil((progress.retryAfterMs ?? 0) / 1000),
+                  );
+                  return t("apps.admin.songs.importStatus.messages.rateLimitedRetry", {
+                    count: seconds,
+                  });
+                }
+                case "complete":
+                  return t(
+                    "apps.admin.songs.importStatus.messages.uploadedRefreshing",
+                  );
+                case "error":
+                  return (
+                    progress.message ||
+                    t("apps.admin.songs.importStatus.messages.failed")
+                  );
+                default:
+                  return (
+                    progress.message ||
+                    t("apps.admin.songs.importStatus.messages.progressUpdated")
+                  );
+              }
+            })();
 
             setImportStatus((prev) => ({
               ...prev,
@@ -776,7 +796,7 @@ export function useAdminLogic({ isWindowOpen, initialData }: UseAdminLogicProps)
             processedSongs: result.total,
             imported: result.imported,
             updated: result.updated,
-            message: "Refreshing song list",
+            message: t("apps.admin.songs.importStatus.messages.refreshingSongList"),
             error: null,
           }));
           await fetchSongs();
@@ -787,7 +807,10 @@ export function useAdminLogic({ isWindowOpen, initialData }: UseAdminLogicProps)
             processedSongs: result.total,
             imported: result.imported,
             updated: result.updated,
-            message: `Import complete: ${result.imported} new, ${result.updated} updated`,
+            message: t("apps.admin.songs.importStatus.messages.completed", {
+              imported: result.imported,
+              updated: result.updated,
+            }),
             error: null,
             finishedAt: Date.now(),
           }));

@@ -75,56 +75,71 @@ export function getAdminImportStatusText(
   importStatus: AdminImportStatus,
   t: TFunction,
 ): string {
-  return importStatus.phase === "reading-file"
-    ? t("apps.admin.songs.importStatus.reading", {
-        fileName: importStatus.fileName || "",
-        defaultValue: `Reading ${importStatus.fileName || "file"}...`,
-      })
-    : importStatus.phase === "parsing-file"
-      ? t("apps.admin.songs.importStatus.parsing", "Parsing import file...")
-      : importStatus.phase === "validating-data"
-        ? t(
-            "apps.admin.songs.importStatus.validating",
-            "Validating import data...",
-          )
-        : importStatus.phase === "preparing-songs"
-          ? t("apps.admin.songs.importStatus.preparing", {
-              processed: importStatus.processedSongs,
-              total: importStatus.totalSongs,
-              defaultValue: `Preparing songs ${importStatus.processedSongs}/${importStatus.totalSongs}`,
-            })
-          : importStatus.phase === "uploading-batches"
-            ? t("apps.admin.songs.importStatus.uploading", {
-                processed: importStatus.processedSongs,
-                total: importStatus.totalSongs,
-                defaultValue: `Uploading songs ${importStatus.processedSongs}/${importStatus.totalSongs}`,
-              })
-            : importStatus.phase === "waiting-rate-limit"
-              ? t("apps.admin.songs.importStatus.rateLimited", {
-                  message:
-                    importStatus.message ||
-                    "Rate limited. Waiting briefly before retrying...",
-                  defaultValue:
-                    importStatus.message ||
-                    "Rate limited. Waiting briefly before retrying...",
-                })
-              : importStatus.phase === "refreshing-library"
-                ? t(
-                    "apps.admin.songs.importStatus.refreshing",
-                    "Import uploaded. Refreshing library...",
-                  )
-                : importStatus.phase === "completed"
-                  ? t("apps.admin.songs.importStatus.completed", {
-                      imported: importStatus.imported,
-                      updated: importStatus.updated,
-                      defaultValue: `Import complete: ${importStatus.imported} new, ${importStatus.updated} updated`,
-                    })
-                  : importStatus.phase === "failed"
-                    ? t("apps.admin.songs.importStatus.failed", {
-                        error:
-                          importStatus.error ||
-                          t("apps.admin.errors.importFailed", "Import failed"),
-                        defaultValue: `Import failed: ${importStatus.error || t("apps.admin.errors.importFailed", "Import failed")}`,
-                      })
-                    : "";
+  switch (importStatus.phase) {
+    case "reading-file": {
+      const fileName =
+        importStatus.fileName ||
+        t("apps.admin.songs.importStatus.fileFallback", "file");
+      return t("apps.admin.songs.importStatus.reading", {
+        fileName,
+        defaultValue: `Reading ${fileName}...`,
+      });
+    }
+    case "parsing-file":
+      return t("apps.admin.songs.importStatus.parsing", "Parsing import file...");
+    case "validating-data":
+      return t(
+        "apps.admin.songs.importStatus.validating",
+        "Validating import data...",
+      );
+    case "preparing-songs":
+      return t("apps.admin.songs.importStatus.preparing", {
+        processed: importStatus.processedSongs,
+        total: importStatus.totalSongs,
+        defaultValue: `Preparing songs ${importStatus.processedSongs}/${importStatus.totalSongs}`,
+      });
+    case "uploading-batches":
+      return t("apps.admin.songs.importStatus.uploading", {
+        processed: importStatus.processedSongs,
+        total: importStatus.totalSongs,
+        defaultValue: `Uploading songs ${importStatus.processedSongs}/${importStatus.totalSongs}`,
+      });
+    case "waiting-rate-limit": {
+      const message =
+        importStatus.message ||
+        t(
+          "apps.admin.songs.importStatus.rateLimitedFallback",
+          "Waiting briefly before retrying...",
+        );
+      return t("apps.admin.songs.importStatus.rateLimited", {
+        message,
+        defaultValue: `Rate limited. ${message}`,
+      });
+    }
+    case "refreshing-library":
+      return t(
+        "apps.admin.songs.importStatus.refreshing",
+        "Import uploaded. Refreshing library...",
+      );
+    case "completed":
+      return t("apps.admin.songs.importStatus.completed", {
+        imported: importStatus.imported,
+        updated: importStatus.updated,
+        defaultValue: `Import complete: ${importStatus.imported} new, ${importStatus.updated} updated`,
+      });
+    case "failed": {
+      const error =
+        importStatus.error || t("apps.admin.errors.importFailed", "Import failed");
+      return t("apps.admin.songs.importStatus.failed", {
+        error,
+        defaultValue: `Import failed: ${error}`,
+      });
+    }
+    case "idle":
+      return "";
+    default: {
+      const _exhaustive: never = importStatus.phase;
+      return _exhaustive;
+    }
+  }
 }
