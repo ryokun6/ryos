@@ -372,11 +372,41 @@
         "export": "Esporta libreria",
         "filterByRyo": "Filtro: brani creati da ryo",
         "import": "Importa",
+        "importStatus": {
+          "completed": "Importazione completata: {{imported}} nuovi, {{updated}} aggiornati",
+          "failed": "Importazione non riuscita: {{error}}",
+          "fileFallback": "file",
+          "messages": {
+            "completed": "Importazione completata: {{imported}} nuovi, {{updated}} aggiornati",
+            "failed": "Importazione non riuscita",
+            "parsingFile": "Analisi del file",
+            "preparingSongs": "Preparazione dei brani per l'importazione",
+            "progressUpdated": "Avanzamento dell'importazione aggiornato",
+            "rateLimitedRetry": "Nuovo tentativo tra {{count}} s",
+            "readingFile": "Lettura del file",
+            "refreshingSongList": "Aggiornamento dell'elenco brani",
+            "splittingBatch": "Suddivisione del batch per rispettare i limiti di caricamento",
+            "uploadedRefreshing": "Importazione caricata, aggiornamento della libreria",
+            "uploadingSongs": "Caricamento dei brani",
+            "validatingFile": "Convalida del formato del file"
+          },
+          "parsing": "Analisi del file di importazione...",
+          "preparing": "Preparazione dei brani {{processed}}/{{total}}",
+          "rateLimited": "Limite di frequenza superato. {{message}}",
+          "rateLimitedFallback": "Attesa prima di riprovare...",
+          "reading": "Lettura di {{fileName}}...",
+          "refreshing": "Importazione caricata. Aggiornamento libreria...",
+          "uploading": "Caricamento brani {{processed}}/{{total}}",
+          "validating": "Convalida dati di importazione..."
+        },
+        "importingLibrary": "Importazione libreria...",
+        "importingProgress": "Importazione {{processed}}/{{total}}",
         "noSongs": "Nessun brano nella cache",
         "noSongsMatchFilter": "Nessun brano corrisponde al filtro attuale",
         "noSongsToExport": "Nessuna canzone da esportare"
       },
       "statusBar": {
+        "auditLogCount_many": "{{count}} voci",
         "auditLogCount_one": "{{count}} voce",
         "auditLogCount_other": "{{count}} voci",
         "cursorAgentsCount": "{{count}} agente cursore",
@@ -385,15 +415,14 @@
         "messagesCount": "{{count}} messaggio",
         "messagesCount_plural": "{{count}} messaggi",
         "redis": "Browser Redis",
+        "redisKeysCount_many": "{{count}} chiavi",
         "redisKeysCount_one": "{{count}} chiave",
         "redisKeysCount_other": "{{count}} chiavi",
         "roomsCount": "{{count}} stanza",
         "roomsCount_plural": "{{count}} stanze",
         "songsCount": "{{count}} brani",
         "usersCount": "{{count}} utente",
-        "usersCount_plural": "{{count}} utenti",
-        "redisKeysCount_many": "{{count}} chiavi",
-        "auditLogCount_many": "{{count}} voci"
+        "usersCount_plural": "{{count}} utenti"
       },
       "tableHeaders": {
         "added": "Aggiunto",
@@ -2889,6 +2918,7 @@
         "off": "Disattivo",
         "on": "Attivo",
         "one": "Uno",
+        "playlistTrackCount_many": "{{count}} brani",
         "playlistTrackCount_one": "{{count}} brano",
         "playlistTrackCount_other": "{{count}} brani",
         "playlists": "Playlist",
@@ -2903,8 +2933,7 @@
         "songs": "Brani",
         "theme": "Tema",
         "unconfigured": "Non configurato",
-        "unknownAlbum": "Album sconosciuto",
-        "playlistTrackCount_many": "{{count}} brani"
+        "unknownAlbum": "Album sconosciuto"
       },
       "musicQuiz": {
         "correct": "Esatto!",
@@ -4156,10 +4185,10 @@
         "exportSuccess": "Canali esportati",
         "importEmpty": "Nessun canale valido trovato in quel file",
         "importFailed": "Impossibile importare i canali — il file potrebbe non essere valido",
+        "importSuccess_many": "Importati {{count}} canali ({{skipped}} ignorati)",
         "importSuccess_one": "Importato {{count}} canale ({{skipped}} ignorati)",
         "importSuccess_other": "Importati {{count}} canali ({{skipped}} ignorati)",
-        "resetSuccess": "Canali ripristinati ai valori predefiniti",
-        "importSuccess_many": "Importati {{count}} canali ({{skipped}} ignorati)"
+        "resetSuccess": "Canali ripristinati ai valori predefiniti"
       },
       "youtubePaste": {
         "added": "Aggiunto «{{title}}» a questo canale",

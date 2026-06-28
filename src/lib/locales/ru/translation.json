@@ -372,11 +372,42 @@
         "export": "Экспорт медиатеки",
         "filterByRyo": "Фильтр: песни, созданные ryo",
         "import": "Импорт",
+        "importStatus": {
+          "completed": "Импорт завершен: {{imported}} новых, {{updated}} обновлено",
+          "failed": "Ошибка импорта: {{error}}",
+          "fileFallback": "файл",
+          "messages": {
+            "completed": "Импорт завершен: {{imported}} новых, {{updated}} обновлено",
+            "failed": "Ошибка импорта",
+            "parsingFile": "Анализ файла",
+            "preparingSongs": "Подготовка песен к импорту",
+            "progressUpdated": "Прогресс импорта обновлен",
+            "rateLimitedRetry": "Повторная попытка через {{count}} с",
+            "readingFile": "Чтение файла",
+            "refreshingSongList": "Обновление списка песен",
+            "splittingBatch": "Разделение пакета для соответствия лимитам загрузки",
+            "uploadedRefreshing": "Импорт загружен, обновление медиатеки",
+            "uploadingSongs": "Загрузка песен",
+            "validatingFile": "Проверка формата файла"
+          },
+          "parsing": "Анализ файла импорта...",
+          "preparing": "Подготовка песен: {{processed}}/{{total}}",
+          "rateLimited": "Превышен лимит запросов. {{message}}",
+          "rateLimitedFallback": "Ожидание перед повторной попыткой...",
+          "reading": "Чтение {{fileName}}...",
+          "refreshing": "Импорт загружен. Обновление медиатеки...",
+          "uploading": "Загрузка песен: {{processed}}/{{total}}",
+          "validating": "Проверка данных импорта..."
+        },
+        "importingLibrary": "Импорт медиатеки...",
+        "importingProgress": "Импорт: {{processed}}/{{total}}",
         "noSongs": "Нет песен в кэше",
         "noSongsMatchFilter": "Песни не найдены, соответствующие текущему фильтру",
         "noSongsToExport": "Нет песен для экспорта"
       },
       "statusBar": {
+        "auditLogCount_few": "{{count}} записи",
+        "auditLogCount_many": "{{count}} записей",
         "auditLogCount_one": "{{count}} запись",
         "auditLogCount_other": "{{count}} записей",
         "cursorAgentsCount": "{{count}} агент курсора",
@@ -385,17 +416,15 @@
         "messagesCount": "{{count}} сообщение",
         "messagesCount_plural": "{{count}} сообщений",
         "redis": "Браузер Redis",
+        "redisKeysCount_few": "{{count}} ключа",
+        "redisKeysCount_many": "{{count}} ключей",
         "redisKeysCount_one": "{{count}} ключ",
         "redisKeysCount_other": "{{count}} ключей",
         "roomsCount": "{{count}} комната",
         "roomsCount_plural": "{{count}} комнат",
         "songsCount": "{{count}} песен",
         "usersCount": "{{count}} пользователь",
-        "usersCount_plural": "{{count}} пользователей",
-        "redisKeysCount_few": "{{count}} ключа",
-        "redisKeysCount_many": "{{count}} ключей",
-        "auditLogCount_few": "{{count}} записи",
-        "auditLogCount_many": "{{count}} записей"
+        "usersCount_plural": "{{count}} пользователей"
       },
       "tableHeaders": {
         "added": "Добавлено",
@@ -1522,9 +1551,9 @@
       "searchPlaceholder": "Поиск контактов…",
       "status": {
         "cardsCount": "{{count}} карточек",
-        "cardsCount_one": "{{count}} карточка",
         "cardsCount_few": "{{count}} карточки",
         "cardsCount_many": "{{count}} карточек",
+        "cardsCount_one": "{{count}} карточка",
         "cardsCount_other": "{{count}} карточек"
       },
       "title": "Контакты",
@@ -2894,6 +2923,8 @@
         "off": "Выкл.",
         "on": "Вкл.",
         "one": "Один",
+        "playlistTrackCount_few": "{{count}} песни",
+        "playlistTrackCount_many": "{{count}} песен",
         "playlistTrackCount_one": "{{count}} песня",
         "playlistTrackCount_other": "{{count}} песен",
         "playlists": "Плейлисты",
@@ -2908,9 +2939,7 @@
         "songs": "Песни",
         "theme": "Тема",
         "unconfigured": "Не настроено",
-        "unknownAlbum": "Неизвестный альбом",
-        "playlistTrackCount_few": "{{count}} песни",
-        "playlistTrackCount_many": "{{count}} песен"
+        "unknownAlbum": "Неизвестный альбом"
       },
       "musicQuiz": {
         "correct": "Верно!",
@@ -4162,11 +4191,11 @@
         "exportSuccess": "Каналы экспортированы",
         "importEmpty": "В этом файле не найдено подходящих каналов",
         "importFailed": "Не удалось импортировать каналы — возможно, файл недействителен",
+        "importSuccess_few": "Импортировано {{count}} канала ({{skipped}} пропущено)",
+        "importSuccess_many": "Импортировано {{count}} каналов ({{skipped}} пропущено)",
         "importSuccess_one": "Импортирован {{count}} канал ({{skipped}} пропущено)",
         "importSuccess_other": "Импортировано {{count}} каналов ({{skipped}} пропущено)",
-        "resetSuccess": "Каналы сброшены к значениям по умолчанию",
-        "importSuccess_few": "Импортировано {{count}} канала ({{skipped}} пропущено)",
-        "importSuccess_many": "Импортировано {{count}} каналов ({{skipped}} пропущено)"
+        "resetSuccess": "Каналы сброшены к значениям по умолчанию"
       },
       "youtubePaste": {
         "added": "Добавлено «{{title}}» на этот канал",
