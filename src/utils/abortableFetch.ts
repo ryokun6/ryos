@@ -89,15 +89,29 @@ export async function abortableFetch(
         externalSignal.removeEventListener("abort", abortHandler);
       }
 
-      // Timeout path: surface an explicit, non-retryable TimeoutError. Checked
-      // before the AbortError branch because the timeout fires via
-      // `controller.abort()`, which makes `fetch` reject with an AbortError.
+      // Timeout path: surface an explicit TimeoutError. Checked before the
+      // AbortError branch because the timeout fires via `controller.abort()`,
+      // which makes `fetch` reject with an AbortError.
       if (timedOut) {
         const timeoutError = new Error(
           `Request timed out after ${timeout}ms`
         );
         timeoutError.name = "TimeoutError";
-        throw timeoutError;
+        if (attempt >= maxAttempts) {
+          throw timeoutError;
+        }
+
+        const delayMs =
+          initialDelayMs * Math.pow(backoffMultiplier, attempt - 1);
+        retry?.onRetry?.(attempt, delayMs, timeoutError);
+
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+        if (externalSignal?.aborted) {
+          throw new DOMException("Aborted", "AbortError");
+        }
+
+        attempt++;
+        continue;
       }
 
       // Don't retry on intentional cancellations. An external-signal / unmount
