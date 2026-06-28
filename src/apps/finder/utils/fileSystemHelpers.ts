@@ -48,6 +48,17 @@ export const arePathArraysEqual = (
   first.length === second.length &&
   first.every((path, index) => path === second[index]);
 
+export interface FinderSelectionSnapshot {
+  selectedFile: string | null;
+  selectedFiles: string[];
+  selectionAnchorPath: string | null;
+}
+
+export const resolveFinderSelectionSnapshot = (
+  instanceSelection: FinderSelectionSnapshot | null | undefined,
+  localSelection: FinderSelectionSnapshot
+): FinderSelectionSnapshot => instanceSelection ?? localSelection;
+
 export const DEFAULT_FILE_PATHS = new Set([
   "/Documents/README.md",
   "/Documents/Quick Tips.md",
