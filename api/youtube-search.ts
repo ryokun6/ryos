@@ -56,6 +56,9 @@ export default apiHandler<YouTubeSearchRequest>(
       }
     } catch (err) {
       logger.error("Rate limit check failed", err);
+      logger.response(503, Date.now() - startTime);
+      res.status(503).json({ error: "rate_limit_unavailable" });
+      return;
     }
 
     if (apiKeys.length === 0) {

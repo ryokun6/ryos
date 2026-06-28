@@ -19,7 +19,12 @@ import { PROACTIVE_GREETING_INSTRUCTIONS } from "./_utils/_aiPrompts.js";
 import {
   checkAndIncrementAIMessageCount,
   getClientIp,
+  runFailClosedRateLimit,
 } from "./_utils/_rate-limit.js";
+import {
+  ChatRequestSchema,
+  type ValidatedChatRequest,
+} from "./_utils/ai-request-validation.js";
 import { apiHandler } from "./_utils/api-handler.js";
 import { getHeader } from "./_utils/request-helpers.js";
 import { resolveIpGeolocation } from "./_utils/_geolocation.js";
@@ -44,12 +49,7 @@ function normalizeChatModel(model: string): string {
 export const runtime = "nodejs";
 export const maxDuration = 80;
 
-export default apiHandler<{
-  messages: unknown[];
-  systemState?: SystemState;
-  model?: string;
-  proactiveGreeting?: boolean;
-}>(
+export default apiHandler<ValidatedChatRequest>(
   {
     methods: ["POST"],
     auth: "optional",
@@ -65,28 +65,31 @@ export default apiHandler<{
     const url = new URL(req.url || "/", "http://localhost");
     const queryModel = url.searchParams.get("model") as SupportedModel | null;
 
+    const parsedRequest = ChatRequestSchema.safeParse(req.body);
+    if (!parsedRequest.success) {
+      logger.warn("Invalid chat request", {
+        issues: parsedRequest.error.issues.map((issue) => ({
+          path: issue.path.join("."),
+          message: issue.message,
+        })),
+      });
+      logger.response(400, Date.now() - startTime);
+      res.status(400).json({
+        error: "invalid_request",
+        issues: parsedRequest.error.issues,
+      });
+      return;
+    }
+
     const {
       messages,
       systemState: incomingSystemState, // still passed for dynamic prompt generation but NOT for auth
       model: bodyModel = DEFAULT_MODEL,
       proactiveGreeting: isProactiveGreeting,
-    } = req.body as {
-      messages: unknown[];
-      systemState?: SystemState;
-      model?: string;
-      proactiveGreeting?: boolean;
-    };
+    } = parsedRequest.data;
 
     // Use query parameter if available, otherwise use body parameter, otherwise use default
     const model = normalizeChatModel(queryModel || bodyModel || DEFAULT_MODEL);
-
-    if (!messages || !Array.isArray(messages)) {
-      logger.error("400 Error: Invalid messages format", { messages });
-      logger.response(400, Date.now() - startTime);
-      res.setHeader("Access-Control-Allow-Origin", validOrigin);
-      res.status(400).send("Invalid messages format");
-      return;
-    }
 
     // ---------------------------
     // Extract auth headers FIRST so we can use username for logging
@@ -110,51 +113,55 @@ export default apiHandler<{
     const isAuthenticated = !!user;
     const identifier = isAuthenticated && username ? username : `anon:${ip}`;
 
-    // Only check rate limits for user messages (not system messages)
-    const userMessages = (messages as Array<{ role: string }>).filter(
-      (m) => m.role === "user"
-    );
-    if (userMessages.length > 0) {
-      const rateLimitResult = await checkAndIncrementAIMessageCount(
+    // Validate the model before charging. Every valid generation request,
+    // including proactive greetings, is charged exactly once.
+    if (model !== null && !SUPPORTED_AI_MODELS.includes(model as SupportedModel)) {
+      logError(`400 Error: Unsupported model - ${model}`);
+      res.status(400).send(`Unsupported model: ${model}`);
+      return;
+    }
+
+    const chargeResult = await runFailClosedRateLimit(() =>
+      checkAndIncrementAIMessageCount(
         identifier,
         isAuthenticated,
         authToken
-      );
-
-      if (!rateLimitResult.allowed) {
-        log(
-          `Rate limit exceeded: ${identifier} (${rateLimitResult.count}/${rateLimitResult.limit})`
-        );
-
-        const errorResponse = {
-          error: "rate_limit_exceeded",
-          isAuthenticated,
-          count: rateLimitResult.count,
-          limit: rateLimitResult.limit,
-          message: `You've hit your limit of ${rateLimitResult.limit} messages in this 5-hour window. Please wait a few hours and try again.`,
-        };
-
-        res.status(429).json(errorResponse);
-        return;
-      }
-
-      log(
-        `Rate limit check passed: ${identifier} (${rateLimitResult.count}/${rateLimitResult.limit})`
-      );
+      )
+    );
+    if (!chargeResult.available) {
+      logError("Rate limit backend unavailable", chargeResult.error);
+      logger.response(503, Date.now() - startTime);
+      res.status(503).json({ error: "rate_limit_unavailable" });
+      return;
     }
+    const rateLimitResult = chargeResult.result;
+
+    if (!rateLimitResult.allowed) {
+      log(
+        `Rate limit exceeded: ${identifier} (${rateLimitResult.count}/${rateLimitResult.limit})`
+      );
+
+      const errorResponse = {
+        error: "rate_limit_exceeded",
+        isAuthenticated,
+        count: rateLimitResult.count,
+        limit: rateLimitResult.limit,
+        message: `You've hit your limit of ${rateLimitResult.limit} messages in this 5-hour window. Please wait a few hours and try again.`,
+      };
+
+      res.status(429).json(errorResponse);
+      return;
+    }
+
+    log(
+      `Rate limit check passed: ${identifier} (${rateLimitResult.count}/${rateLimitResult.limit})`
+    );
 
     log(
       `Using model: ${model || DEFAULT_MODEL} (${
         queryModel ? "from query" : model ? "from body" : "using default"
       })`
     );
-
-    // Additional validation for model
-    if (model !== null && !SUPPORTED_AI_MODELS.includes(model as SupportedModel)) {
-      logError(`400 Error: Unsupported model - ${model}`);
-      res.status(400).send(`Unsupported model: ${model}`);
-      return;
-    }
 
     // --- Geolocation ---
     // 1) Try Vercel's `geolocation()` first — instant, no outbound call.
@@ -282,7 +289,9 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
         });
 
         const greeting = text.trim();
-        log(`Generated proactive greeting (${greeting.length} chars, finishReason=${finishReason}): "${greeting}"`);
+        log(
+          `Generated proactive greeting (${greeting.length} chars, finishReason=${finishReason})`
+        );
 
         res.setHeader("Access-Control-Allow-Origin", validOrigin);
         res.status(200).json({ greeting });
@@ -316,14 +325,7 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
     const approxTokens = staticSystemPrompt.length / 4;
     log(`Approximate prompt tokens: ${Math.round(approxTokens)}`);
 
-    // Log all messages right before model call (as per user preference)
-    enrichedMessages.forEach((msg, index) => {
-      const contentStr =
-        typeof msg.content === "string"
-          ? msg.content
-          : JSON.stringify(msg.content);
-      log(`Message ${index} [${msg.role}]: ${contentStr.substring(0, 100)}...`);
-    });
+    log(`Prepared ${enrichedMessages.length} messages for model call`);
 
     const agent = createRyoToolLoopAgent({
       preset: "chat",

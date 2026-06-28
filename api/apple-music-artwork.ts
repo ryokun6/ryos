@@ -86,6 +86,9 @@ export default apiHandler(
       }
     } catch (e) {
       logger.error("Rate limit check failed", e);
+      logger.response(503, Date.now() - startTime);
+      res.status(503).json({ error: "rate_limit_unavailable" });
+      return;
     }
 
     const cacheKey = redisKeys.cache.appleArtwork(catalogId);

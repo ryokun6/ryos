@@ -207,8 +207,9 @@ export default apiHandler<IEGenerateRequestBody>(
         });
       }
     } catch (e) {
-      // Fail open on limiter error to avoid blocking
       logger.error("IE generate rate-limit error", e);
+      logger.response(503, Date.now() - startTime);
+      return res.status(503).json({ error: "rate_limit_unavailable" });
     }
 
     // Extract query parameters

@@ -107,6 +107,9 @@ export default async function handler(
       }
     } catch (rlErr) {
       logger.error("Rate limit check failed", rlErr);
+      logger.response(503, Date.now() - startTime);
+      res.status(503).json({ error: "rate_limit_unavailable" });
+      return;
     }
 
     // Parse form data

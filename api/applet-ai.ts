@@ -35,6 +35,9 @@ You are an AI assistant embedded inside a sandboxed ryOS applet window.
 - If a call to /api/applet-ai fails with a 429 rate_limit_exceeded error, explain that the request limit was reached and suggest waiting a while before retrying.
 </applet_ai>`;
 
+const MAX_BASE64_IMAGE_CHARS = 2_800_000;
+const MAX_TOTAL_BASE64_IMAGE_CHARS = 10_000_000;
+
 const ImageAttachmentSchema = z.object({
   mediaType: z
     .string()
@@ -42,7 +45,13 @@ const ImageAttachmentSchema = z.object({
       /^image\/[a-z0-9.+-]+$/i,
       "Attachment mediaType must be an image/* MIME type."
     ),
-  data: z.string().min(1, "Attachment data must be a base64-encoded string."),
+  data: z
+    .string()
+    .min(1, "Attachment data must be a base64-encoded string.")
+    .max(
+      MAX_BASE64_IMAGE_CHARS,
+      `Attachment data must not exceed ${MAX_BASE64_IMAGE_CHARS} characters.`
+    ),
 });
 
 const MessageSchema = z
@@ -73,7 +82,7 @@ const MessageSchema = z
     }
   );
 
-const RequestSchema = z
+export const APPLET_AI_REQUEST_SCHEMA = z
   .object({
     prompt: z.string().min(1).max(4000).optional(),
     messages: z.array(MessageSchema).min(1).max(12).optional(),
@@ -111,7 +120,28 @@ const RequestSchema = z
       message: "Image requests require text instructions and/or image attachments.",
       path: ["images"],
     }
-  );
+  )
+  .superRefine((data, context) => {
+    const messageImageChars =
+      data.messages?.reduce(
+        (total, message) =>
+          total +
+          (message.attachments?.reduce(
+            (messageTotal, attachment) => messageTotal + attachment.data.length,
+            0
+          ) ?? 0),
+        0
+      ) ?? 0;
+    const requestImageChars =
+      data.images?.reduce((total, image) => total + image.data.length, 0) ?? 0;
+    if (messageImageChars + requestImageChars > MAX_TOTAL_BASE64_IMAGE_CHARS) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["images"],
+        message: `Image data must not exceed ${MAX_TOTAL_BASE64_IMAGE_CHARS} characters per request.`,
+      });
+    }
+  });
 
 type RateLimitScope = "text-hour" | "image-hour";
 
@@ -294,7 +324,7 @@ const buildModelMessages = (
 // Route Handler
 // ============================================================================
 
-export default apiHandler<z.infer<typeof RequestSchema>>(
+export default apiHandler<z.infer<typeof APPLET_AI_REQUEST_SCHEMA>>(
   {
     methods: ["POST"],
     auth: "optional",
@@ -322,7 +352,7 @@ export default apiHandler<z.infer<typeof RequestSchema>>(
       user: usernameLogLabel,
     });
 
-    const parsedBodyResult = RequestSchema.safeParse(body);
+    const parsedBodyResult = APPLET_AI_REQUEST_SCHEMA.safeParse(body);
     if (!parsedBodyResult.success) {
       logger.error("Invalid request body", parsedBodyResult.error.format());
       logger.response(400, Date.now() - startTime);
@@ -452,6 +482,8 @@ export default apiHandler<z.infer<typeof RequestSchema>>(
       }
     } catch (error) {
       logger.error("Rate limit check failed:", error);
+      logger.response(503, Date.now() - startTime);
+      return res.status(503).json({ error: "rate_limit_unavailable" });
     }
   }
 
@@ -514,6 +546,7 @@ export default apiHandler<z.infer<typeof RequestSchema>>(
           },
         ],
         ...(typeof temperature === "number" ? { temperature } : {}),
+        maxOutputTokens: 1_024,
         providerOptions: APPLET_IMAGE_PROVIDER_OPTIONS,
       });
 
@@ -580,7 +613,7 @@ export default apiHandler<z.infer<typeof RequestSchema>>(
       model: google("gemini-3-flash-preview"),
       messages: finalMessages,
       temperature: temperature ?? 0.6,
-      maxOutputTokens: 4000,
+      maxOutputTokens: 2_000,
     });
 
     const trimmedReply = text.trim();

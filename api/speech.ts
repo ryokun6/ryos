@@ -123,6 +123,9 @@ export default apiHandler<SpeechRequest>(
       }
     } catch (e) {
       logger.error("Rate limit check failed (tts)", e);
+      logger.response(503, Date.now() - startTime);
+      res.status(503).json({ error: "rate_limit_unavailable" });
+      return;
     }
 
     try {

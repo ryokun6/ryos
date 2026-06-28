@@ -10,8 +10,8 @@ import type { PreparedRyoConversation } from "./ryo-conversation.js";
 export const RYO_AGENT_PRESETS = {
   chat: {
     id: "ryo-chat",
-    stopAfterSteps: 10,
-    maxOutputTokens: 48000,
+    stopAfterSteps: 8,
+    maxOutputTokens: 8192,
   },
   telegram: {
     id: "ryo-telegram",

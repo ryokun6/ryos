@@ -83,6 +83,31 @@ interface ParsedBody {
   rawBody: Uint8Array | null;
 }
 
+export const DEFAULT_REQUEST_BODY_LIMIT_BYTES = 2 * 1024 * 1024;
+export const AUDIO_TRANSCRIBE_REQUEST_BODY_LIMIT_BYTES = 3 * 1024 * 1024;
+export const APPLET_AI_REQUEST_BODY_LIMIT_BYTES = 12 * 1024 * 1024;
+export const SYNC_BLOB_REQUEST_BODY_LIMIT_BYTES = 50 * 1024 * 1024;
+
+export function getRequestBodyLimitBytes(pathname: string): number {
+  if (pathname === "/api/sync/v2/blob-upload") {
+    return SYNC_BLOB_REQUEST_BODY_LIMIT_BYTES;
+  }
+  if (pathname === "/api/applet-ai") {
+    return APPLET_AI_REQUEST_BODY_LIMIT_BYTES;
+  }
+  if (pathname === "/api/audio-transcribe") {
+    return AUDIO_TRANSCRIBE_REQUEST_BODY_LIMIT_BYTES;
+  }
+  return DEFAULT_REQUEST_BODY_LIMIT_BYTES;
+}
+
+class RequestBodyTooLargeError extends Error {
+  constructor(readonly limitBytes: number) {
+    super(`Request body exceeds ${limitBytes} bytes`);
+    this.name = "RequestBodyTooLargeError";
+  }
+}
+
 class BunRequestShim extends Readable {
   method: string;
   url: string;
@@ -481,7 +506,47 @@ function buildHeaderMap(
   return headers;
 }
 
-async function parseBody(request: Request): Promise<ParsedBody> {
+async function readRequestBody(
+  request: Request,
+  limitBytes: number
+): Promise<Uint8Array> {
+  const declaredLength = request.headers.get("content-length");
+  if (declaredLength) {
+    const parsedLength = Number.parseInt(declaredLength, 10);
+    if (Number.isFinite(parsedLength) && parsedLength > limitBytes) {
+      throw new RequestBodyTooLargeError(limitBytes);
+    }
+  }
+
+  if (!request.body) return new Uint8Array();
+
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    totalBytes += value.byteLength;
+    if (totalBytes > limitBytes) {
+      await reader.cancel("request body too large").catch(() => undefined);
+      throw new RequestBodyTooLargeError(limitBytes);
+    }
+    chunks.push(value);
+  }
+
+  const body = new Uint8Array(totalBytes);
+  let offset = 0;
+  for (const chunk of chunks) {
+    body.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return body;
+}
+
+async function parseBody(
+  request: Request,
+  limitBytes: number
+): Promise<ParsedBody> {
   const method = request.method.toUpperCase();
   if (method === "GET" || method === "HEAD" || method === "OPTIONS") {
     return { bodyValue: undefined, bodyError: null, rawBody: null };
@@ -490,7 +555,7 @@ async function parseBody(request: Request): Promise<ParsedBody> {
   const contentType = request.headers.get("content-type")?.toLowerCase() || "";
 
   if (contentType.includes("multipart/form-data")) {
-    const rawBody = new Uint8Array(await request.arrayBuffer());
+    const rawBody = await readRequestBody(request, limitBytes);
     return { bodyValue: undefined, bodyError: null, rawBody };
   }
 
@@ -498,7 +563,9 @@ async function parseBody(request: Request): Promise<ParsedBody> {
     contentType.includes("application/json") ||
     contentType.includes("+json")
   ) {
-    const text = await request.text();
+    const text = new TextDecoder().decode(
+      await readRequestBody(request, limitBytes)
+    );
     if (text.length === 0) {
       return { bodyValue: undefined, bodyError: null, rawBody: null };
     }
@@ -515,7 +582,9 @@ async function parseBody(request: Request): Promise<ParsedBody> {
   }
 
   if (contentType.includes("application/x-www-form-urlencoded")) {
-    const text = await request.text();
+    const text = new TextDecoder().decode(
+      await readRequestBody(request, limitBytes)
+    );
     const params = new URLSearchParams(text);
     const body: QueryMap = {};
     for (const [key, value] of params.entries()) {
@@ -531,7 +600,7 @@ async function parseBody(request: Request): Promise<ParsedBody> {
     contentType.startsWith("audio/") ||
     contentType.startsWith("video/")
   ) {
-    const rawBody = new Uint8Array(await request.arrayBuffer());
+    const rawBody = await readRequestBody(request, limitBytes);
     return { bodyValue: undefined, bodyError: null, rawBody };
   }
 
@@ -932,7 +1001,37 @@ async function bootstrap(): Promise<void> {
         }
       }
 
-      const { bodyValue, bodyError, rawBody } = await parseBody(request);
+      const bodyLimitBytes = getRequestBodyLimitBytes(pathname);
+      const declaredLength = request.headers.get("content-length");
+      if (declaredLength) {
+        const parsedLength = Number.parseInt(declaredLength, 10);
+        if (Number.isFinite(parsedLength) && parsedLength > bodyLimitBytes) {
+          return jsonResponse(
+            {
+              error: "payload_too_large",
+              limitBytes: bodyLimitBytes,
+            },
+            413
+          );
+        }
+      }
+
+      let parsedBody: ParsedBody;
+      try {
+        parsedBody = await parseBody(request, bodyLimitBytes);
+      } catch (error) {
+        if (error instanceof RequestBodyTooLargeError) {
+          return jsonResponse(
+            {
+              error: "payload_too_large",
+              limitBytes: error.limitBytes,
+            },
+            413
+          );
+        }
+        throw error;
+      }
+      const { bodyValue, bodyError, rawBody } = parsedBody;
       const reqShim = new BunRequestShim({
         method: request.method.toUpperCase(),
         url: `${url.pathname}${url.search}`,
@@ -1060,9 +1159,11 @@ async function bootstrap(): Promise<void> {
   }
 }
 
-try {
-  await bootstrap();
-} catch (error) {
-  console.error("[api-standalone] Failed to start server", error);
-  process.exit(1);
+if (import.meta.main) {
+  try {
+    await bootstrap();
+  } catch (error) {
+    console.error("[api-standalone] Failed to start server", error);
+    process.exit(1);
+  }
 }

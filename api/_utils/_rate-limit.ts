@@ -31,7 +31,8 @@ interface AIRateLimitResult {
 export async function checkAndIncrementAIMessageCount(
   identifier: string,
   isAuthenticated: boolean,
-  authToken: string | null = null
+  authToken: string | null = null,
+  options: { internal?: boolean } = {}
 ): Promise<AIRateLimitResult> {
   const key = getAIRateLimitKey(identifier);
 
@@ -41,6 +42,12 @@ export async function checkAndIncrementAIMessageCount(
   // Set limit and window based on authentication status
   const limit = isAnonymous ? AI_LIMIT_ANON_PER_DAY : AI_LIMIT_PER_5_HOURS;
   const ttlSeconds = isAnonymous ? AI_WINDOW_ANONYMOUS : AI_WINDOW_AUTHENTICATED;
+
+  // This option is available only to trusted server call sites and is never
+  // populated from request data.
+  if (options.internal === true) {
+    return { allowed: true, count: 0, limit };
+  }
 
   // Identify privileged user (ryo)
   const isRyo = identifier === "ryo";
@@ -59,12 +66,6 @@ export async function checkAndIncrementAIMessageCount(
       };
     }
 
-    // If the request is from ryo **and** the token is valid, bypass rate limits entirely
-    if (isRyo) {
-      const currentCount = await redis.get<string>(key);
-      const count = currentCount ? parseInt(currentCount, 10) : 0;
-      return { allowed: true, count, limit };
-    }
   }
 
   // If the user *claims* to be ryo but is **not** authenticated, deny the request outright
@@ -112,6 +113,25 @@ export interface CounterLimitResult {
   remaining: number;
   windowSeconds: number;
   resetSeconds: number;
+}
+
+export type FailClosedRateLimitResult<T> =
+  | { available: true; result: T }
+  | { available: false; error: unknown };
+
+/**
+ * Convert Redis limiter failures into an explicit unavailable result.
+ * Expensive public routes use this to return 503 instead of silently
+ * continuing without abuse protection.
+ */
+export async function runFailClosedRateLimit<T>(
+  check: () => Promise<T>
+): Promise<FailClosedRateLimitResult<T>> {
+  try {
+    return { available: true, result: await check() };
+  } catch (error) {
+    return { available: false, error };
+  }
 }
 
 /**
