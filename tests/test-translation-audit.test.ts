@@ -3,11 +3,26 @@ import i18next from "i18next";
 import {
   APPLE_STYLE_GUIDE_SOURCE,
   APPLE_UI_TERMINOLOGY,
+  ENGLISH_STYLE_EXPECTATIONS,
   getExpectedAppleUiTerm,
 } from "../scripts/apple-ui-terminology";
 import { auditTranslations } from "../scripts/audit-translations";
 import en from "../src/lib/locales/en/translation.json";
 import ru from "../src/lib/locales/ru/translation.json";
+
+function getNestedTranslationValue(
+  source: Record<string, unknown>,
+  key: string
+): string | undefined {
+  let current: unknown = source;
+  for (const segment of key.split(".")) {
+    if (!current || typeof current !== "object" || !(segment in current)) {
+      return undefined;
+    }
+    current = (current as Record<string, unknown>)[segment];
+  }
+  return typeof current === "string" ? current : undefined;
+}
 
 describe("translation audit", () => {
   test("uses Apple English account and punctuation style", () => {
@@ -29,6 +44,16 @@ describe("translation audit", () => {
       }
     }
     expect(asciiEllipsisValues).toEqual([]);
+  });
+
+  test("uses Apple glossary casing and inclusive-language English labels", () => {
+    for (const [key, expected] of Object.entries(ENGLISH_STYLE_EXPECTATIONS)) {
+      expect(getNestedTranslationValue(en, key)).toBe(expected);
+    }
+
+    expect(getNestedTranslationValue(en, "apps.control-panels.masterVolume")).not.toMatch(
+      /\bMaster\b/u
+    );
   });
 
   test("uses the expanded terminology extracted from Apple glossaries", () => {

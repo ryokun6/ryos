@@ -62,7 +62,7 @@ export function VolumeMixer({
   return (
     <TooltipProvider>
       <div className="flex justify-around items-end py-2">
-        {/* Master Volume */}
+        {/* Main Volume */}
         <div className="flex flex-col items-center gap-0">
           <Slider
             orientation="vertical"

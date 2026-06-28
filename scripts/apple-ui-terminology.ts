@@ -18,6 +18,23 @@ export const APPLE_STYLE_GUIDE_SOURCE = {
     "76118d81e4ff9eb74b1217ff8b82bbd01f62d1ff0057a1802bec288d20a5bbfe",
 } as const;
 
+/**
+ * High-confidence English source strings aligned with Apple glossaries and the
+ * June 2026 Apple Style Guide. Non-English locales keep their existing
+ * translations; these keys are enforced in unit tests only.
+ */
+export const ENGLISH_STYLE_EXPECTATIONS = {
+  "apps.control-panels.masterVolume": "Main Volume",
+  "apps.chats.tokenStatus.authenticated": "Signed In",
+  "apps.finder.menu.goUp": "go up",
+  "apps.ipod.menu.repeatAll": "repeat all",
+  "apps.ipod.menu.repeatOne": "repeat one",
+  "apps.videos.menu.repeatAll": "repeat all",
+  "apps.videos.menu.repeatOne": "repeat one",
+  "apps.karaoke.menu.repeatAll": "repeat all",
+  "apps.karaoke.menu.repeatOne": "repeat one",
+} as const satisfies Record<string, string>;
+
 export const TRANSLATION_LOCALES = [
   "zh-TW",
   "ja",
