@@ -55,14 +55,32 @@ export function useSoundboardLogic({
   );
   const hasInitialized = useSoundboardStore((state) => state.hasInitialized);
 
+  // The store persists to IndexedDB, which hydrates asynchronously. Wait for
+  // hydration to finish before seeding default boards so we never overwrite the
+  // user's saved soundboards with the bundled defaults.
+  const [hasHydrated, setHasHydrated] = useState(() =>
+    useSoundboardStore.persist.hasHydrated()
+  );
+
+  useEffect(() => {
+    if (useSoundboardStore.persist.hasHydrated()) {
+      setHasHydrated(true);
+      return;
+    }
+    const unsub = useSoundboardStore.persist.onFinishHydration(() =>
+      setHasHydrated(true)
+    );
+    return unsub;
+  }, []);
+
   // Get current theme
   const { currentTheme, isWindowsTheme } = useThemeFlags();
 
   useEffect(() => {
-    if (!hasInitialized) {
+    if (hasHydrated && !hasInitialized) {
       initializeBoards();
     }
-  }, [hasInitialized, initializeBoards]);
+  }, [hasHydrated, hasInitialized, initializeBoards]);
 
   const storeSetSlotPlaybackState = useSoundboardStore(
     (state) => state.setSlotPlaybackState

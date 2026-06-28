@@ -11,6 +11,7 @@ import {
   flushDebouncedPersistWrites,
   haltDebouncedPersistWrites,
 } from "@/utils/debouncedPersistStorage";
+import { settlePersistWrites } from "@/utils/indexedDBPersistStorage";
 import { useAppStoreShallow } from "@/stores/useAppStore";
 import { useAudioSettingsStoreShallow } from "@/stores/useAudioSettingsStore";
 import { useDisplaySettingsStoreShallow } from "@/stores/useDisplaySettingsStore";
@@ -162,6 +163,9 @@ const BACKUP_INDEXEDDB_STORES = [
   "trash",
   "custom_wallpapers",
   "applets",
+  // zustand persist slices that live in IndexedDB instead of localStorage
+  // (e.g. Soundboard recordings). Captured so manual backups stay complete.
+  "persisted_state",
 ] as const;
 
 function upgradeLegacyBackupStoreValue(
@@ -718,6 +722,7 @@ export function useControlPanelsLogic({
         trash: StoreItemWithKey[];
         custom_wallpapers: StoreItemWithKey[];
         applets: StoreItemWithKey[];
+        persisted_state: StoreItemWithKey[];
       };
       timestamp: string;
       version: number; // Add version to identify backup format
@@ -729,14 +734,16 @@ export function useControlPanelsLogic({
         trash: [],
         custom_wallpapers: [],
         applets: [],
+        persisted_state: [],
       },
       timestamp: new Date().toISOString(),
-      version: 3, // Version 3 includes applets support
+      version: 4, // Version 4 includes IndexedDB-persisted store slices
     };
 
-    // Backup all localStorage data (flush write-behind persist queues so
-    // the snapshot includes the latest store state)
-    flushDebouncedPersistWrites();
+    // Backup all localStorage data. Settle write-behind persist queues
+    // (localStorage + IndexedDB) so the snapshot includes the latest store
+    // state, including IndexedDB-persisted slices read below.
+    await settlePersistWrites();
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key && shouldIncludeManualBackupLocalStorageKey(key)) {
