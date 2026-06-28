@@ -40,6 +40,10 @@ import {
 import { getCalculatorWindowSize } from "../utils/windowSizes";
 import type { CalculatorTheme } from "../components/types";
 import { helpItems } from "..";
+import {
+  DEFAULT_CALCULATOR_SPEECH,
+  useCalculatorSpeech,
+} from "./useCalculatorSpeech";
 
 export type CalculatorMode = "basic" | "scientific" | "conversion";
 
@@ -50,6 +54,9 @@ type CalculatorPersistedState = {
   fromUnit: string;
   toUnit: string;
   conversionAmount: string;
+  speechEnabled?: boolean;
+  speakButtonPresses?: boolean;
+  speakResults?: boolean;
 };
 
 const STORAGE_KEY = "calculator-app-state-v1";
@@ -79,6 +86,10 @@ type CalcAction =
 function calcReducer(state: CalcState, action: CalcAction): CalcState {
   if (action.type === "set") return action.payload;
   return action.reducer(state);
+}
+
+function shouldSpeakCalculatorResult(prev: CalcState, next: CalcState): boolean {
+  return next.display !== prev.display || (next.error && !prev.error);
 }
 
 export function useCalculatorLogic({
@@ -125,12 +136,23 @@ export function useCalculatorLogic({
     }
   );
   const conversionAmount = conversionCalcState.display;
+  const calcStateRef = useRef(calcState);
+  calcStateRef.current = calcState;
+  const conversionCalcStateRef = useRef(conversionCalcState);
+  conversionCalcStateRef.current = conversionCalcState;
   const [currencyRate, setCurrencyRate] = useState(1);
   const [currencyLoading, setCurrencyLoading] = useState(false);
   const [currencyError, setCurrencyError] = useState<string | null>(null);
   const currencyAbortRef = useRef<AbortController | null>(null);
 
   const helpAbout = useAppHelpAboutDialogs();
+
+  const speech = useCalculatorSpeech({
+    speechEnabled: persisted.speechEnabled ?? DEFAULT_CALCULATOR_SPEECH.speechEnabled,
+    speakButtonPresses:
+      persisted.speakButtonPresses ?? DEFAULT_CALCULATOR_SPEECH.speakButtonPresses,
+    speakResults: persisted.speakResults ?? DEFAULT_CALCULATOR_SPEECH.speakResults,
+  });
 
   const calculatorTheme: CalculatorTheme = isSystem7Theme
     ? "system7"
@@ -157,8 +179,21 @@ export function useCalculatorLogic({
       fromUnit,
       toUnit,
       conversionAmount,
+      speechEnabled: speech.speechEnabled,
+      speakButtonPresses: speech.speakButtonPresses,
+      speakResults: speech.speakResults,
     });
-  }, [mode, calcState.angleMode, conversionCategory, fromUnit, toUnit, conversionAmount]);
+  }, [
+    mode,
+    calcState.angleMode,
+    conversionCategory,
+    fromUnit,
+    toUnit,
+    conversionAmount,
+    speech.speechEnabled,
+    speech.speakButtonPresses,
+    speech.speakResults,
+  ]);
 
   useEffect(() => {
     const size = getCalculatorWindowSize(mode, calculatorTheme);
@@ -281,105 +316,187 @@ export function useCalculatorLogic({
     [mode, calcState, conversionCalcState]
   );
 
-  const runCalc = useCallback((reducer: (state: CalcState) => CalcState) => {
-    dispatchCalc({ type: "dispatch", reducer });
-  }, []);
-  const runConversionCalc = useCallback(
-    (reducer: (state: CalcState) => CalcState) => {
-      dispatchConversionCalc({ type: "dispatch", reducer });
+  const runCalc = useCallback(
+    (
+      reducer: (state: CalcState) => CalcState,
+      options?: { speakResult?: boolean }
+    ) => {
+      const prev = calcStateRef.current;
+      const next = reducer(prev);
+      calcStateRef.current = next;
+      dispatchCalc({ type: "set", payload: next });
+      if (options?.speakResult && shouldSpeakCalculatorResult(prev, next)) {
+        speech.speakResult(next.display);
+      }
     },
-    []
+    [speech]
+  );
+  const runConversionCalc = useCallback(
+    (
+      reducer: (state: CalcState) => CalcState,
+      options?: { speakResult?: boolean }
+    ) => {
+      const prev = conversionCalcStateRef.current;
+      const next = reducer(prev);
+      conversionCalcStateRef.current = next;
+      dispatchConversionCalc({ type: "set", payload: next });
+      if (options?.speakResult && shouldSpeakCalculatorResult(prev, next)) {
+        speech.speakResult(next.display);
+      }
+    },
+    [speech]
   );
 
   const pressDigit = useCallback(
-    (digit: string) => runCalc((s) => inputDigit(s, digit)),
-    [runCalc]
+    (digit: string) => {
+      runCalc((s) => inputDigit(s, digit));
+      speech.speakKey(digit);
+    },
+    [runCalc, speech]
   );
 
   const pressOperator = useCallback(
-    (op: Operator) => runCalc((s) => inputOperator(s, op)),
-    [runCalc]
+    (op: Operator) => {
+      speech.speakKey(op);
+      runCalc((s) => inputOperator(s, op), { speakResult: true });
+    },
+    [runCalc, speech]
   );
 
-  const pressEquals = useCallback(() => runCalc(calculate), [runCalc]);
-  const pressClear = useCallback(() => runCalc(clearAll), [runCalc]);
-  const pressClearEntry = useCallback(() => runCalc(clearEntry), [runCalc]);
-  const pressBackspace = useCallback(() => runCalc(backspace), [runCalc]);
-  const pressDecimal = useCallback(() => runCalc(inputDecimal), [runCalc]);
-  const pressNegate = useCallback(() => runCalc(negate), [runCalc]);
-  const pressPercent = useCallback(() => runCalc(percentOf), [runCalc]);
+  const pressEquals = useCallback(() => {
+    speech.speakKey("=");
+    runCalc(calculate, { speakResult: true });
+  }, [runCalc, speech]);
+  const pressClear = useCallback(() => {
+    runCalc(clearAll);
+    speech.speakKey("C");
+  }, [runCalc, speech]);
+  const pressClearEntry = useCallback(() => {
+    runCalc(clearEntry);
+    speech.speakKey("CE");
+  }, [runCalc, speech]);
+  const pressBackspace = useCallback(() => {
+    runCalc(backspace);
+    speech.speakKey("⌫");
+  }, [runCalc, speech]);
+  const pressDecimal = useCallback(() => {
+    runCalc(inputDecimal);
+    speech.speakKey(".");
+  }, [runCalc, speech]);
+  const pressNegate = useCallback(() => {
+    speech.speakKey("±");
+    runCalc(negate, { speakResult: true });
+  }, [runCalc, speech]);
+  const pressPercent = useCallback(() => {
+    speech.speakKey("%");
+    runCalc(percentOf, { speakResult: true });
+  }, [runCalc, speech]);
   const pressConversionDigit = useCallback(
-    (digit: string) => runConversionCalc((state) => inputDigit(state, digit)),
-    [runConversionCalc]
+    (digit: string) => {
+      runConversionCalc((state) => inputDigit(state, digit));
+      speech.speakKey(digit);
+    },
+    [runConversionCalc, speech]
   );
   const pressConversionOperator = useCallback(
-    (operator: Operator) =>
-      runConversionCalc((state) => inputOperator(state, operator)),
-    [runConversionCalc]
+    (operator: Operator) => {
+      speech.speakKey(operator);
+      runConversionCalc((state) => inputOperator(state, operator), {
+        speakResult: true,
+      });
+    },
+    [runConversionCalc, speech]
   );
-  const pressConversionEquals = useCallback(
-    () => runConversionCalc(calculate),
-    [runConversionCalc]
-  );
-  const pressConversionClear = useCallback(
-    () => runConversionCalc(clearAll),
-    [runConversionCalc]
-  );
-  const pressConversionBackspace = useCallback(
-    () => runConversionCalc(backspace),
-    [runConversionCalc]
-  );
-  const pressConversionDecimal = useCallback(
-    () => runConversionCalc(inputDecimal),
-    [runConversionCalc]
-  );
-  const pressConversionNegate = useCallback(
-    () => runConversionCalc(negate),
-    [runConversionCalc]
-  );
+  const pressConversionEquals = useCallback(() => {
+    speech.speakKey("=");
+    runConversionCalc(calculate, { speakResult: true });
+  }, [runConversionCalc, speech]);
+  const pressConversionClear = useCallback(() => {
+    runConversionCalc(clearAll);
+    speech.speakKey("C");
+  }, [runConversionCalc, speech]);
+  const pressConversionBackspace = useCallback(() => {
+    runConversionCalc(backspace);
+    speech.speakKey("⌫");
+  }, [runConversionCalc, speech]);
+  const pressConversionDecimal = useCallback(() => {
+    runConversionCalc(inputDecimal);
+    speech.speakKey(".");
+  }, [runConversionCalc, speech]);
+  const pressConversionNegate = useCallback(() => {
+    speech.speakKey("±");
+    runConversionCalc(negate, { speakResult: true });
+  }, [runConversionCalc, speech]);
   const pressConversionPercent = useCallback(
-    () =>
+    () => {
+      speech.speakKey("%");
       runConversionCalc((state) => {
         if (state.accumulator != null) return percentOf(state);
         return applyUnary(state, (value) => value / 100);
-      }),
-    [runConversionCalc]
+      }, { speakResult: true });
+    },
+    [runConversionCalc, speech]
   );
 
   const pressUnary = useCallback(
-    (name: keyof typeof unaryFunctions) =>
-      runCalc((s) => applyUnary(s, (v, mode) => unaryFunctions[name](v, mode))),
-    [runCalc]
+    (name: keyof typeof unaryFunctions) => {
+      speech.speakKey(name);
+      runCalc((s) => applyUnary(s, (v, mode) => unaryFunctions[name](v, mode)), {
+        speakResult: true,
+      });
+    },
+    [runCalc, speech]
   );
 
-  const pressPi = useCallback(
-    () => runCalc((s) => insertConstant(s, Math.PI)),
-    [runCalc]
-  );
-  const pressE = useCallback(
-    () => runCalc((s) => insertConstant(s, Math.E)),
-    [runCalc]
-  );
-  const pressFactorial = useCallback(() => runCalc(factorial), [runCalc]);
-  const pressToggleAngle = useCallback(() => runCalc(toggleAngleMode), [runCalc]);
-  const pressOpenParenthesis = useCallback(
-    () => runCalc(openParenthesis),
-    [runCalc]
-  );
-  const pressCloseParenthesis = useCallback(
-    () => runCalc(closeParenthesis),
-    [runCalc]
-  );
-  const pressRandom = useCallback(
-    () => runCalc((s) => insertConstant(s, Math.random())),
-    [runCalc]
-  );
+  const pressPi = useCallback(() => {
+    speech.speakKey("π");
+    runCalc((s) => insertConstant(s, Math.PI), { speakResult: true });
+  }, [runCalc, speech]);
+  const pressE = useCallback(() => {
+    speech.speakKey("e");
+    runCalc((s) => insertConstant(s, Math.E), { speakResult: true });
+  }, [runCalc, speech]);
+  const pressFactorial = useCallback(() => {
+    speech.speakKey("!");
+    runCalc(factorial, { speakResult: true });
+  }, [runCalc, speech]);
+  const pressToggleAngle = useCallback(() => {
+    runCalc(toggleAngleMode);
+    speech.speakKey(calcState.angleMode === "deg" ? "Rad" : "Deg");
+  }, [runCalc, speech, calcState.angleMode]);
+  const pressOpenParenthesis = useCallback(() => {
+    runCalc(openParenthesis);
+    speech.speakKey("(");
+  }, [runCalc, speech]);
+  const pressCloseParenthesis = useCallback(() => {
+    speech.speakKey(")");
+    runCalc(closeParenthesis, { speakResult: true });
+  }, [runCalc, speech]);
+  const pressRandom = useCallback(() => {
+    speech.speakKey("Rand");
+    runCalc((s) => insertConstant(s, Math.random()), { speakResult: true });
+  }, [runCalc, speech]);
 
-  const pressMemoryClear = useCallback(() => runCalc(memoryClear), [runCalc]);
-  const pressMemoryRecall = useCallback(() => runCalc(memoryRecall), [runCalc]);
-  const pressMemoryAdd = useCallback(() => runCalc(memoryAdd), [runCalc]);
-  const pressMemorySubtract = useCallback(() => runCalc(memorySubtract), [runCalc]);
-  const pressMemoryStore = useCallback(() => runCalc(memoryStore), [runCalc]);
+  const pressMemoryClear = useCallback(() => {
+    runCalc(memoryClear);
+    speech.speakKey("MC");
+  }, [runCalc, speech]);
+  const pressMemoryRecall = useCallback(() => {
+    speech.speakKey("MR");
+    runCalc(memoryRecall, { speakResult: true });
+  }, [runCalc, speech]);
+  const pressMemoryAdd = useCallback(() => {
+    runCalc(memoryAdd);
+    speech.speakKey("M+");
+  }, [runCalc, speech]);
+  const pressMemorySubtract = useCallback(() => {
+    runCalc(memorySubtract);
+    speech.speakKey("M−");
+  }, [runCalc, speech]);
+  const pressMemoryStore = useCallback(() => {
+    runCalc(memoryStore);
+    speech.speakKey("MS");
+  }, [runCalc, speech]);
 
   const handleCategoryChange = useCallback((id: ConversionCategoryId) => {
     setConversionCategory(id);
@@ -465,6 +582,12 @@ export function useCalculatorLogic({
     swapConversionUnits,
     currencyLoading,
     currencyError,
+    speechEnabled: speech.speechEnabled,
+    setSpeechEnabled: speech.setSpeechEnabled,
+    speakButtonPresses: speech.speakButtonPresses,
+    setSpeakButtonPresses: speech.setSpeakButtonPresses,
+    speakResults: speech.speakResults,
+    setSpeakResults: speech.setSpeakResults,
   };
 }
 

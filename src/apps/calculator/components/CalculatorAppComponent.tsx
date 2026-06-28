@@ -31,6 +31,12 @@ export function CalculatorAppComponent({
     mode,
     setMode,
     pressClear,
+    speechEnabled,
+    setSpeechEnabled,
+    speakButtonPresses,
+    setSpeakButtonPresses,
+    speakResults,
+    setSpeakResults,
   } = logic;
 
   const size = getCalculatorWindowSize(mode, calculatorTheme);
@@ -43,6 +49,12 @@ export function CalculatorAppComponent({
       mode={mode}
       onSetMode={setMode}
       onClear={pressClear}
+      speechEnabled={speechEnabled}
+      onSpeechEnabledChange={setSpeechEnabled}
+      speakButtonPresses={speakButtonPresses}
+      onSpeakButtonPressesChange={setSpeakButtonPresses}
+      speakResults={speakResults}
+      onSpeakResultsChange={setSpeakResults}
     />
   );
 
