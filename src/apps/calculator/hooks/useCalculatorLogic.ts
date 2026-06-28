@@ -41,6 +41,7 @@ import {
   type Operator,
 } from "../utils/calculatorEngine";
 import { getCalculatorWindowSize } from "../utils/windowSizes";
+import { formatCalculatorConversionResult } from "../utils/formatCalculatorDisplay";
 import type { CalculatorTheme } from "../components/types";
 import { helpItems } from "..";
 import {
@@ -273,16 +274,11 @@ export function useCalculatorLogic({
   ]);
 
   const conversionResult = useMemo(() => {
-    if (!Number.isFinite(conversionRawResult)) return "—";
     const locale = i18n.resolvedLanguage || i18n.language;
-    if (conversionCategory === "currency") {
-      return new Intl.NumberFormat(locale, {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      }).format(conversionRawResult);
-    }
-    return new Intl.NumberFormat(locale, { maximumFractionDigits: 8 }).format(
-      conversionRawResult
+    return formatCalculatorConversionResult(
+      conversionRawResult,
+      locale,
+      conversionCategory === "currency"
     );
   }, [
     conversionRawResult,

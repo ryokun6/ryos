@@ -1,5 +1,6 @@
 const DECIMAL_PATTERN = /^-?\d+(?:\.\d*)?$/;
 const SCIENTIFIC_PATTERN = /^(-?\d+)(?:\.(\d+))?([eE][+-]?\d+)$/;
+const MAX_CONVERSION_SIGNIFICANT_DIGITS = 12;
 
 function getDecimalSeparator(locale: string): string {
   return (
@@ -43,4 +44,26 @@ export function formatCalculatorDisplay(
   } catch {
     return value;
   }
+}
+
+export function formatCalculatorConversionResult(
+  value: number,
+  locale: string,
+  isCurrency: boolean
+): string {
+  if (!Number.isFinite(value)) return "—";
+
+  if (isCurrency) {
+    return new Intl.NumberFormat(locale, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
+  }
+
+  const rounded = Number(
+    value.toPrecision(MAX_CONVERSION_SIGNIFICANT_DIGITS)
+  );
+  return new Intl.NumberFormat(locale, {
+    maximumFractionDigits: 8,
+  }).format(rounded);
 }

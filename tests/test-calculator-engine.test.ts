@@ -20,7 +20,10 @@ import {
   DEFAULT_CONVERSION_TO_UNIT,
   formatSwappedConversionValue,
 } from "../src/apps/calculator/utils/conversionData";
-import { formatCalculatorDisplay } from "../src/apps/calculator/utils/formatCalculatorDisplay";
+import {
+  formatCalculatorConversionResult,
+  formatCalculatorDisplay,
+} from "../src/apps/calculator/utils/formatCalculatorDisplay";
 
 describe("calculatorEngine", () => {
   test("basic addition chain", () => {
@@ -94,6 +97,21 @@ describe("formatCalculatorDisplay", () => {
     expect(formatCalculatorDisplay("1234567890123456", "en")).toBe(
       "1,234,567,890,123,456"
     );
+  });
+
+  test("limits conversion results to 12 significant digits", () => {
+    const result = formatCalculatorConversionResult(
+      2238385.82677165,
+      "en",
+      false
+    );
+
+    expect(result).toBe("2,238,385.82677");
+    expect(result.replace(/\D/g, "")).toHaveLength(12);
+  });
+
+  test("keeps currency results at two decimal places", () => {
+    expect(formatCalculatorConversionResult(12.3, "en", true)).toBe("12.30");
   });
 });
 
