@@ -3,6 +3,7 @@ import { persist } from "zustand/middleware";
 import { Soundboard, SoundSlot, PlaybackState } from "@/types/types";
 import i18n from "@/lib/i18n";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { createIndexedDBPersistStorage } from "@/utils/indexedDBPersistStorage";
 
 // Helper to create a default soundboard
 const createDefaultBoard = (): Soundboard => ({
@@ -79,6 +80,18 @@ export const useSoundboardStore = create<SoundboardStoreState>()(
             timeout: 15000,
             retry: { maxAttempts: 2, initialDelayMs: 500 },
           });
+          // IndexedDB persistence hydrates asynchronously, so a slow boot could
+          // have finished rehydrating the user's saved boards while this fetch
+          // was in flight. Re-check before seeding defaults to avoid clobbering
+          // restored data.
+          if (get().hasInitialized || get().boards.length > 0) {
+            const existing = get().boards;
+            set({
+              hasInitialized: true,
+              activeBoardId: get().activeBoardId ?? existing[0]?.id ?? null,
+            });
+            return;
+          }
           const data = await response.json();
           const importedBoardsRaw =
             data.boards || (Array.isArray(data) ? data : [data]);
@@ -223,6 +236,11 @@ export const useSoundboardStore = create<SoundboardStoreState>()(
     {
       name: SOUNDBOARD_STORE_NAME,
       version: SOUNDBOARD_STORE_VERSION,
+      // Recorded audio is stored inline as base64 in `boards`, which easily
+      // exceeds localStorage's per-origin quota (a historical crash source on
+      // mobile Safari). Persist to IndexedDB instead; existing localStorage
+      // data is migrated transparently on first read.
+      storage: createIndexedDBPersistStorage(),
       partialize: (state) => ({
         boards: state.boards,
         activeBoardId: state.activeBoardId,
