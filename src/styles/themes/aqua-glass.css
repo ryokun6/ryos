@@ -1013,38 +1013,96 @@
 /* Admin → Cursor Agents: semi-transparent amber for running rows (overrides zebra) */
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
   .admin-cursor-agents-panel
-  .admin-cursor-agent-running-row {
-  background-color: rgba(251, 191, 36, 0.12) !important;
-}
-
-:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
-  .admin-cursor-agents-panel
-  .admin-cursor-agent-running-row:nth-child(odd) {
+  .admin-cursor-agent-running-row:not(.admin-cursor-agent-running-selected-row) {
   background-color: rgba(251, 191, 36, 0.18) !important;
 }
 
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
   .admin-cursor-agents-panel
-  .admin-cursor-agent-running-row:hover {
-  background-color: rgba(251, 191, 36, 0.22) !important;
+  .admin-cursor-agent-running-row:not(.admin-cursor-agent-running-selected-row):nth-child(odd) {
+  background-color: rgba(251, 191, 36, 0.24) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .admin-cursor-agents-panel
+  .admin-cursor-agent-running-row:not(.admin-cursor-agent-running-selected-row):hover {
+  background-color: rgba(251, 191, 36, 0.28) !important;
 }
 
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
   .admin-cursor-agents-panel
-  .admin-cursor-agent-running-row {
-  background-color: rgba(251, 191, 36, 0.1) !important;
-}
-
-:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
-  .admin-cursor-agents-panel
-  .admin-cursor-agent-running-row:nth-child(odd) {
+  .admin-cursor-agent-running-row:not(.admin-cursor-agent-running-selected-row) {
   background-color: rgba(251, 191, 36, 0.14) !important;
 }
 
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
   .admin-cursor-agents-panel
-  .admin-cursor-agent-running-row:hover {
-  background-color: rgba(251, 191, 36, 0.18) !important;
+  .admin-cursor-agent-running-row:not(.admin-cursor-agent-running-selected-row):nth-child(odd) {
+  background-color: rgba(251, 191, 36, 0.2) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .admin-cursor-agents-panel
+  .admin-cursor-agent-running-row:not(.admin-cursor-agent-running-selected-row):hover {
+  background-color: rgba(251, 191, 36, 0.24) !important;
+}
+
+/* Selected + running — darker amber; readable title (not selection white) */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .admin-cursor-agents-panel
+  .admin-cursor-agent-running-selected-row {
+  background-color: rgba(245, 158, 11, 0.35) !important;
+  color: rgb(69, 26, 3) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .admin-cursor-agents-panel
+  .admin-cursor-agent-running-selected-row:nth-child(odd) {
+  background-color: rgba(245, 158, 11, 0.4) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .admin-cursor-agents-panel
+  .admin-cursor-agent-running-selected-row:hover {
+  background-color: rgba(245, 158, 11, 0.45) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .admin-cursor-agents-panel
+  .admin-cursor-agent-running-selected-row {
+  background-color: rgba(245, 158, 11, 0.28) !important;
+  color: rgb(254, 243, 199) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .admin-cursor-agents-panel
+  .admin-cursor-agent-running-selected-row:nth-child(odd) {
+  background-color: rgba(245, 158, 11, 0.32) !important;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .admin-cursor-agents-panel
+  .admin-cursor-agent-running-selected-row:hover {
+  background-color: rgba(245, 158, 11, 0.38) !important;
+}
+
+/* Selected idle row — accent fill over zebra */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .admin-cursor-agents-panel
+  .admin-cursor-agent-selected-row {
+  background-color: var(--os-color-selection-bg) !important;
+  color: var(--os-color-selection-text) !important;
+  text-shadow: var(--os-color-selection-text-shadow);
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .admin-cursor-agents-panel
+  .admin-cursor-agent-selected-row:nth-child(odd),
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .admin-cursor-agents-panel
+  .admin-cursor-agent-selected-row:hover {
+  background-color: var(--os-color-selection-bg) !important;
+  color: var(--os-color-selection-text) !important;
 }
 
 :root[data-os-theme="macosx"] .admin-card-header {

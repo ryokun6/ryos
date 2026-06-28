@@ -81,4 +81,12 @@ export const adminCursorAgentBannerClass =
 
 /** Running agent row — amber wash; glass theme overrides in aqua-glass.css. */
 export const adminCursorAgentRunningRowClass =
-  "admin-cursor-agent-running-row !bg-amber-400/12 odd:!bg-amber-400/18 hover:!bg-amber-400/22 os-mac-aqua-dark:!bg-amber-400/10 os-mac-aqua-dark:odd:!bg-amber-400/14 os-mac-aqua-dark:hover:!bg-amber-400/18";
+  "admin-cursor-agent-running-row !bg-amber-400/18 odd:!bg-amber-400/24 hover:!bg-amber-400/28 os-mac-aqua-dark:!bg-amber-400/14 os-mac-aqua-dark:odd:!bg-amber-400/20 os-mac-aqua-dark:hover:!bg-amber-400/24";
+
+/** Selected agent row (idle) — accent selection fill over zebra stripes. */
+export const adminCursorAgentSelectedRowClass =
+  "admin-cursor-agent-selected-row !bg-os-selection-bg !text-os-selection-text odd:!bg-os-selection-bg hover:!bg-os-selection-bg [text-shadow:var(--os-color-selection-text-shadow)]";
+
+/** Selected + running — stronger amber wash; overrides global [data-selected] white text. */
+export const adminCursorAgentRunningSelectedRowClass =
+  "admin-cursor-agent-running-selected-row !bg-amber-500/35 odd:!bg-amber-500/40 hover:!bg-amber-500/45 !text-amber-950 os-mac-aqua-dark:!bg-amber-500/28 os-mac-aqua-dark:odd:!bg-amber-500/32 os-mac-aqua-dark:hover:!bg-amber-500/38 os-mac-aqua-dark:!text-amber-50";

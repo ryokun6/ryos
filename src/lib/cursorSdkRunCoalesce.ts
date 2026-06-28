@@ -33,6 +33,27 @@ function collectTsRange(group: Record<string, unknown>[]): {
 }
 
 /**
+ * Merge one streaming chunk into accumulated markdown. The Cursor SDK may emit
+ * true deltas, repeated tails, or full cumulative snapshots on the final row.
+ */
+function appendStreamingText(accumulated: string, incoming: string): string {
+  if (!incoming) return accumulated;
+  if (!accumulated) return incoming;
+  if (incoming === accumulated) return accumulated;
+  if (incoming.startsWith(accumulated)) return incoming;
+  if (accumulated.startsWith(incoming)) return accumulated;
+  if (accumulated.endsWith(incoming)) return accumulated;
+
+  const maxOverlap = Math.min(accumulated.length, incoming.length);
+  for (let overlap = maxOverlap; overlap > 0; overlap--) {
+    if (accumulated.endsWith(incoming.slice(0, overlap))) {
+      return accumulated + incoming.slice(overlap);
+    }
+  }
+  return accumulated + incoming;
+}
+
+/**
  * Walk one or more consecutive assistant rows (oldest first) and preserve content order:
  * streaming text deltas concatenate into one markdown segment until a tool_use breaks the flow.
  */
@@ -58,7 +79,7 @@ export function mergeAssistantStream(
     for (const part of msg.content) {
       if (!isRecord(part)) continue;
       if (part.type === "text" && typeof part.text === "string") {
-        mdBuf += part.text;
+        mdBuf = appendStreamingText(mdBuf, part.text);
       } else if (part.type === "tool_use") {
         flushMarkdown();
         const name = typeof part.name === "string" ? part.name : "tool";
@@ -304,10 +325,17 @@ export function coalesceCursorRunRows(events: unknown[]): CoalescedCursorRow[] {
 
     if (isAssistantRow(row)) {
       const group: Record<string, unknown>[] = [];
-      while (i < events.length && isAssistantRow(events[i])) {
-        group.push(events[i] as Record<string, unknown>);
+      while (i < events.length) {
+        const next = events[i];
+        if (isStatusRow(next)) {
+          i++;
+          continue;
+        }
+        if (!isAssistantRow(next)) break;
+        group.push(next as Record<string, unknown>);
         i++;
       }
+      if (group.length === 0) continue;
       const { tsStart, tsEnd } = collectTsRange(group);
       out.push({
         kind: "merged_assistant",

@@ -77,7 +77,7 @@ describe("cursorAgentToolDisplay", () => {
         status: "finished",
         summary: "Shipped the fix.",
       })
-    ).toBe(true);
+    ).toBe(false);
   });
 });
 

@@ -130,7 +130,8 @@ export function CursorRepoAgentChatCard({
             isWin98,
             embed: isPanel ? "panel" : "chat",
           }),
-          isPanel && "h-full min-h-0"
+          isPanel &&
+            "h-full min-h-0 rounded-none border-0 border-transparent !border-none shadow-none"
         )}
       >
         <div

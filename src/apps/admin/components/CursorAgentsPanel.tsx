@@ -18,6 +18,8 @@ import { CursorRepoAgentChatCard } from "@/components/shared/CursorRepoAgentChat
 import {
   adminCursorAgentBannerClass,
   adminCursorAgentRunningRowClass,
+  adminCursorAgentRunningSelectedRowClass,
+  adminCursorAgentSelectedRowClass,
   adminCursorAgentsPanelClass,
   adminSurfaceClass,
   adminTableRowClass,
@@ -405,6 +407,12 @@ export function CursorAgentsPanel({
                   adminTableRowClass,
                   "cursor-pointer",
                   run.status === "running" && adminCursorAgentRunningRowClass,
+                  selectedRunId === run.runId &&
+                    run.status === "running" &&
+                    adminCursorAgentRunningSelectedRowClass,
+                  selectedRunId === run.runId &&
+                    run.status !== "running" &&
+                    adminCursorAgentSelectedRowClass,
                 )}
                 data-selected={selectedRunId === run.runId ? "true" : undefined}
               >

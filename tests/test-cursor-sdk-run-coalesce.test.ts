@@ -1,5 +1,95 @@
 import { describe, expect, test } from "bun:test";
-import { coalesceCursorRunRows } from "../src/lib/cursorSdkRunCoalesce.js";
+import {
+  coalesceCursorRunRows,
+  mergeAssistantStream,
+} from "../src/lib/cursorSdkRunCoalesce.js";
+
+describe("mergeAssistantStream", () => {
+  test("merges deltas without repeating a final cumulative snapshot", () => {
+    const finalText = "Done! Added a dark mode toggle to Settings.";
+    const rows = [
+      {
+        ts: 1,
+        ev: {
+          type: "assistant",
+          message: { content: [{ type: "text", text: "Done! Added a " }] },
+        },
+      },
+      {
+        ts: 2,
+        ev: {
+          type: "assistant",
+          message: {
+            content: [{ type: "text", text: "dark mode toggle to Settings." }],
+          },
+        },
+      },
+      {
+        ts: 3,
+        ev: {
+          type: "assistant",
+          message: { content: [{ type: "text", text: finalText }] },
+        },
+      },
+    ];
+
+    const segments = mergeAssistantStream(rows);
+    expect(segments).toEqual([{ type: "markdown", text: finalText }]);
+  });
+
+  test("ignores a repeated full snapshot row", () => {
+    const finalText = "All tests pass.";
+    const rows = [
+      {
+        ts: 1,
+        ev: {
+          type: "assistant",
+          message: { content: [{ type: "text", text: finalText }] },
+        },
+      },
+      {
+        ts: 2,
+        ev: {
+          type: "assistant",
+          message: { content: [{ type: "text", text: finalText }] },
+        },
+      },
+    ];
+
+    const segments = mergeAssistantStream(rows);
+    expect(segments).toEqual([{ type: "markdown", text: finalText }]);
+  });
+});
+
+describe("coalesceCursorRunRows assistant", () => {
+  test("merges assistant rows separated by status ticks", () => {
+    const finalText = "Shipped the fix.";
+    const rows = [
+      {
+        ts: 1,
+        ev: {
+          type: "assistant",
+          message: { content: [{ type: "text", text: "Shipped " }] },
+        },
+      },
+      { ts: 2, ev: { type: "status", status: "running", message: "tick" } },
+      {
+        ts: 3,
+        ev: {
+          type: "assistant",
+          message: { content: [{ type: "text", text: "the fix." }] },
+        },
+      },
+    ];
+
+    const out = coalesceCursorRunRows(rows);
+    expect(out).toHaveLength(1);
+    expect(out[0]?.kind).toBe("merged_assistant");
+    if (out[0]?.kind === "merged_assistant") {
+      expect(out[0].segments).toEqual([{ type: "markdown", text: finalText }]);
+    }
+  });
+});
 
 describe("coalesceCursorRunRows tool calls", () => {
   test("collapses lifecycle updates for the same tool call", () => {
