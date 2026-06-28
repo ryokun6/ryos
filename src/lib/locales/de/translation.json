@@ -4384,9 +4384,6 @@
       "password": "Passwort",
       "recovery": {
         "back": "Zurück",
-        "channel": "Code senden via",
-        "channelEmail": "E-Mail",
-        "channelTelegram": "Telegram",
         "code": "Reset-Code",
         "codeRequired": "Reset-Code eingeben",
         "codeSent": "Falls ein passendes Konto gefunden wurde, wurde ein Reset-Code gesendet.",

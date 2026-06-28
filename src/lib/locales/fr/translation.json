@@ -4388,9 +4388,6 @@
       "password": "Mot de passe",
       "recovery": {
         "back": "Retour",
-        "channel": "Envoyer le code via",
-        "channelEmail": "E-mail",
-        "channelTelegram": "Telegram",
         "code": "Code de réinitialisation",
         "codeRequired": "Saisissez le code de réinitialisation",
         "codeSent": "Si un compte correspond, un code de réinitialisation a été envoyé.",

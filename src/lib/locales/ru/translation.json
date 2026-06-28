@@ -4395,9 +4395,6 @@
       "password": "Пароль",
       "recovery": {
         "back": "Назад",
-        "channel": "Отправить код через",
-        "channelEmail": "Email",
-        "channelTelegram": "Telegram",
         "code": "Код сброса",
         "codeRequired": "Введите код сброса",
         "codeSent": "Если учетная запись найдена, код сброса был отправлен.",

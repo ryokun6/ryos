@@ -4388,9 +4388,6 @@
       "password": "Senha",
       "recovery": {
         "back": "Voltar",
-        "channel": "Enviar código via",
-        "channelEmail": "E-mail",
-        "channelTelegram": "Telegram",
         "code": "Código de redefinição",
         "codeRequired": "Insira o código de redefinição",
         "codeSent": "Se uma conta corresponder, um código de redefinição foi enviado.",

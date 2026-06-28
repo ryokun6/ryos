@@ -18,7 +18,6 @@ export type {
   EmailMutationResponse,
   EmailStatusResponse,
   LoginResponse,
-  RecoveryChannel,
   RecoveryRequestResponse,
   RegisterResponse,
   ResetPasswordResponse,

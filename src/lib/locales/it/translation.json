@@ -4388,9 +4388,6 @@
       "password": "Password",
       "recovery": {
         "back": "Indietro",
-        "channel": "Invia codice tramite",
-        "channelEmail": "E-mail",
-        "channelTelegram": "Telegram",
         "code": "Codice di ripristino",
         "codeRequired": "Inserisci il codice di ripristino",
         "codeSent": "Se esiste un account corrispondente, è stato inviato un codice di ripristino.",
