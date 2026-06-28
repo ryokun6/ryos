@@ -255,7 +255,7 @@
         "unban": "Разблокировать пользователя"
       },
       "redis": {
-        "backup": "Резервное копирование",
+        "backup": "Резервная копия",
         "breadcrumbs": "Путь ключа",
         "delete": "Удалить ключ Redis",
         "deleteDescription": "Удалить ключ Redis «{{key}}»? Это действие нельзя отменить.",
@@ -759,11 +759,11 @@
         }
       },
       "menu": {
-        "about": "О калькуляторе",
+        "about": "О приложении «Калькулятор»",
         "basic": "Базовый",
         "clear": "Очистить",
         "conversion": "Конверсия",
-        "help": "Справка по калькулятору",
+        "help": "Справка Калькулятора",
         "scientific": "Научный",
         "sound": "Звук",
         "speakButtonPresses": "Проговаривание нажатий",
@@ -870,7 +870,7 @@
         "successPlural": "Импортировано {{count}} событий"
       },
       "menu": {
-        "about": "О Календаре",
+        "about": "О приложении «Календарь»",
         "dayView": "Дневной вид",
         "deleteEvent": "Удалить событие",
         "editEvent": "Редактировать событие",
@@ -1442,7 +1442,7 @@
         "addresses": "Адреса",
         "birthday": "День рождения",
         "displayName": "Отображаемое имя",
-        "emails": "Адреса электронной почты",
+        "emails": "Адреса e-mail",
         "firstName": "Имя",
         "jobTitle": "Должность",
         "lastName": "Фамилия",
@@ -1493,9 +1493,9 @@
         }
       },
       "menu": {
-        "about": "О контактах",
+        "about": "О приложении «Контакты»",
         "deleteContact": "Удалить контакт",
-        "help": "Справка по Контактам",
+        "help": "Справка Контактов",
         "importVCard": "Импортировать vCard…",
         "markAsMine": "Отметить как моё",
         "newContact": "Новый контакт",
@@ -1599,7 +1599,7 @@
         "videos": "Видео",
         "waiting": "Ожидание следующего подходящего изменения"
       },
-      "backup": "Резервное копирование",
+      "backup": "Резервная копия",
       "backupRestoreDescription": "Резервное копирование или восстановление всех настроек и файлов приложения",
       "bootScreen": "Экран загрузки",
       "bootScreenDescription": "Проверить анимацию экрана загрузки",
@@ -1611,28 +1611,28 @@
       "checkForUpdates": "Проверить обновления",
       "cloudSync": {
         "accountDescription": "Настройки синхронизации на ваших устройствах",
-        "backingUp": "Создание резервной копии…",
+        "backingUp": "Резервное копирование…",
         "backupFailed": "Не удалось сохранить резервную копию в облаке",
         "backupSuccess": "Резервная копия сохранена в облаке",
         "backupToCloud": "Резервная копия в облако",
         "checking": "Проверка облачной копии…",
-        "confirmForceDownload": "Скачать из облака?",
+        "confirmForceDownload": "Загрузить из облака?",
         "confirmForceDownloadDesc": "Данные этого устройства будут перезаписаны данными из облака для каждого включённого элемента автосинхронизации.",
-        "confirmForceUpload": "Загрузить в облако?",
+        "confirmForceUpload": "Выгрузить в облако?",
         "confirmForceUploadDesc": "Данные в облаке будут перезаписаны текущими данными этого устройства для каждого включённого элемента автосинхронизации.",
         "confirmRestore": "Восстановить из облака?",
         "confirmRestoreDesc": "Это заменит все текущие настройки и файлы облачной резервной копией. ryOS будет перезапущена.",
         "description": "Резервируйте или восстанавливайте все настройки и файлы в облаке. Макс. {{limit}} МБ",
         "forceDownload": "Загрузить",
-        "forceDownloadFailed": "Не удалось скачать из облака",
+        "forceDownloadFailed": "Не удалось загрузить из облака",
         "forceDownloadNoData": "Данные в облаке не найдены для включённых элементов",
-        "forceDownloadSuccess": "Скачивание из облака завершено",
-        "forceDownloading": "Скачивание…",
-        "forceSyncDescription": "Загрузить или скачать включённые элементы автосинхронизации",
+        "forceDownloadSuccess": "Загрузка из облака завершена",
+        "forceDownloading": "Загрузка…",
+        "forceSyncDescription": "Выгрузить или загрузить включённые элементы автосинхронизации",
         "forceSyncNoDomains": "Сначала включите хотя бы один элемент автосинхронизации",
         "forceUpload": "Выгрузить",
-        "forceUploadFailed": "Не удалось загрузить в облако",
-        "forceUploadSuccess": "Загрузка в облако завершена",
+        "forceUploadFailed": "Не удалось выгрузить в облако",
+        "forceUploadSuccess": "Выгрузка в облако завершена",
         "forceUploading": "Выгрузка…",
         "lastBackup": "Последняя облачная копия: {{date}} ({{size}} МБ)",
         "loginRequired": "Войдите, чтобы использовать облачную синхронизацию",
@@ -1640,11 +1640,11 @@
           "collecting": "Сбор данных…",
           "compressing": "Сжатие…",
           "decompressing": "Распаковка…",
-          "downloading": "Скачивание из облака…",
+          "downloading": "Загрузка из облака…",
           "finishing": "Завершение…",
           "restoring": "Восстановление данных…",
           "serializing": "Сериализация файлов…",
-          "uploading": "Загрузка в облако…"
+          "uploading": "Выгрузка в облако…"
         },
         "restoreFailed": "Не удалось восстановить из облака",
         "restoreFromCloud": "Восстановить из облака",
@@ -1652,7 +1652,7 @@
         "tooLarge": "Слишком большой размер резервной копии ({{size}} МБ). Максимальный размер в сжатом виде — {{limit}} МБ."
       },
       "cloudSyncTabs": {
-        "backup": "Резервное копирование",
+        "backup": "Резервная копия",
         "sync": "Синхронизация"
       },
       "color": "Цвет",
@@ -1774,7 +1774,7 @@
       "logOutOfAllDevicesRowDescription": "Выйти из учетной записи ryOS на всех устройствах",
       "logOutRowDescription": "Выйти из учетной записи ryOS на этом устройстве",
       "loggedInToRyOS": "Вы вошли в ryOS",
-      "loggingOut": "Выход…",
+      "loggingOut": "Выполняется выход…",
       "login": "Войти",
       "loginToSendMessages": "Войдите, чтобы отправлять сообщения и многое другое",
       "logoutAll": {
@@ -1791,10 +1791,10 @@
       "master": "Общая",
       "masterVolume": "Общая громкость",
       "menu": {
-        "aboutControlPanels": "О панелях управления",
-        "aboutControlPanelsForMacosX": "О Системных настройках",
+        "aboutControlPanels": "О приложении «Панели управления»",
+        "aboutControlPanelsForMacosX": "О приложении «Системные настройки»",
         "app": "Приложение",
-        "controlPanelsHelp": "Справка по панелям управления",
+        "controlPanelsHelp": "Справка Панелей управления",
         "controlPanelsHelpForMacosX": "Справка Системных настроек"
       },
       "min": "мин.",
@@ -2350,7 +2350,7 @@
         }
       },
       "menu": {
-        "aboutFinder": "О Finder",
+        "aboutFinder": "О приложении Finder",
         "back": "Назад",
         "byDate": "по дате",
         "byIcon": "По значкам",
@@ -3673,7 +3673,7 @@
         }
       },
       "menu": {
-        "aboutPhotoBooth": "О приложении Фотокабина",
+        "aboutPhotoBooth": "О приложении Photo Booth",
         "camera": "Камера",
         "clearAllPhotos": "Удалить все фотографии",
         "effects": "Эффекты",
@@ -3770,11 +3770,11 @@
         }
       },
       "menu": {
-        "about": "О программе «Стикеры»",
+        "about": "О приложении «Записки»",
         "clearAll": "Удалить все заметки",
         "color": "Цвет",
         "deleteNote": "Удалить заметку",
-        "help": "Справка по «Стикерам»",
+        "help": "Справка Записок",
         "newNote": "Новая заметка",
         "note": "Заметка",
         "syncStickies": "Синхронизировать Заметки"
@@ -4021,7 +4021,7 @@
       },
       "italic": "Курсив",
       "menu": {
-        "aboutTextEdit": "О TextEdit",
+        "aboutTextEdit": "О приложении TextEdit",
         "alignCenter": "Выровнять по центру",
         "alignLeft": "Выровнять по левому краю",
         "alignRight": "Выровнять по правому краю",
@@ -4143,7 +4143,7 @@
         }
       },
       "menu": {
-        "about": "О TV",
+        "about": "О приложении TV",
         "channelDown": "Канал вниз",
         "channelUp": "Канал вверх",
         "channels": "Каналы",
@@ -4244,7 +4244,7 @@
         }
       },
       "menu": {
-        "aboutVideos": "О программе «Видео»",
+        "aboutVideos": "О приложении «Видео»",
         "addToLibrary": "Добавить в медиатеку…",
         "allVideos": "Все видео",
         "clearLibrary": "Очистить медиатеку…",
@@ -4262,7 +4262,7 @@
         "shareVideo": "Поделиться видео…",
         "shuffle": "Перемешать",
         "unknownArtist": "Неизвестный артист",
-        "videosHelp": "Справка по видео"
+        "videosHelp": "Справка Видео"
       },
       "name": "Видео",
       "status": {
