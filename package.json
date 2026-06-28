@@ -140,7 +140,6 @@
     "formidable": "^3.5.4",
     "hangul-romanization": "^1.0.1",
     "i18next": "^25.7.3",
-    "i18next-browser-languagedetector": "^8.2.0",
     "ioredis": "^5.10.0",
     "ios-vibrator-pro-max": "^1.3.2",
     "irc-framework": "^4.14.0",

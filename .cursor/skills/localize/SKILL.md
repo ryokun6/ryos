@@ -75,6 +75,8 @@ Add to `src/lib/locales/en/translation.json`:
 }
 ```
 
+Do not rely on `defaultValue` as the only copy of a new key. `t("some.key", { defaultValue: "English" })` renders, but sync and audit scripts only compare locale JSON files, so missing keys stay invisible until the English catalog contains them.
+
 ## Step 4: Sync Across Languages
 
 ```bash
