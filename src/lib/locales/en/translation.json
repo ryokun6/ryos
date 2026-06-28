@@ -854,7 +854,7 @@
         "dailyLimitReached": "Daily AI message limit reached.",
         "loginToContinue": "Sign in to continue chatting with Ryo.",
         "sessionExpired": "Session expired. Please sign in again.",
-        "loginRequired": "Sign-In Required",
+        "loginRequired": "Sign In Required",
         "pleaseLoginToSendMessages": "Please sign in to send messages.",
         "pleaseLoginToDeleteRooms": "Please sign in to delete rooms.",
         "loginButton": "Sign In",
@@ -907,7 +907,7 @@
         "greeting": "👋 hey! i'm ryo. ask me anything!"
       },
       "toasts": {
-        "loginRequired": "Sign-In Required",
+        "loginRequired": "Sign In Required",
         "pleaseLoginToContinueChatting": "Please sign in to continue chatting.",
         "loginButton": "Sign In",
         "rateLimitExceeded": "Rate Limit Exceeded",
@@ -2776,7 +2776,7 @@
         "couldNotCompressAppletFile": "Could not compress the applet file.",
         "noAppletToShare": "No applet to share",
         "pleaseOpenAppletFirst": "Please open an applet first.",
-        "loginRequired": "Sign-In Required",
+        "loginRequired": "Sign In Required",
         "mustBeLoggedInToShare": "You must be signed in to share applets.",
         "appletAlreadyShared": "Applet already shared",
         "showingExistingShareLink": "Showing existing share link.",
