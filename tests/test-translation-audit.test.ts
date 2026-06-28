@@ -87,9 +87,45 @@ describe("translation audit", () => {
       resources: { ru: { translation: ru } },
     });
 
-    const key = "apps.ipod.menuItems.playlistTrackCount";
-    expect(i18n.t(key, { count: 1 })).toBe("1 песня");
-    expect(i18n.t(key, { count: 2 })).toBe("2 песни");
-    expect(i18n.t(key, { count: 5 })).toBe("5 песен");
+    const cases: Array<[string, [number, string][]]> = [
+      [
+        "apps.ipod.menuItems.playlistTrackCount",
+        [
+          [1, "1 песня"],
+          [2, "2 песни"],
+          [5, "5 песен"],
+        ],
+      ],
+      [
+        "apps.contacts.status.cardsCount",
+        [
+          [1, "1 карточка"],
+          [2, "2 карточки"],
+          [5, "5 карточек"],
+        ],
+      ],
+      [
+        "apps.admin.statusBar.auditLogCount",
+        [
+          [1, "1 запись"],
+          [2, "2 записи"],
+          [5, "5 записей"],
+        ],
+      ],
+      [
+        "apps.admin.statusBar.redisKeysCount",
+        [
+          [1, "1 ключ"],
+          [2, "2 ключа"],
+          [5, "5 ключей"],
+        ],
+      ],
+    ];
+
+    for (const [key, samples] of cases) {
+      for (const [count, expected] of samples) {
+        expect(i18n.t(key, { count })).toBe(expected);
+      }
+    }
   });
 });

@@ -211,6 +211,17 @@ function pluralCategories(locale: TranslationLocale): Set<string> {
   );
 }
 
+function hasEnglishPluralPair(
+  base: string,
+  englishKeys: Set<string>
+): boolean {
+  if (!englishKeys.has(`${base}_one`)) {
+    return false;
+  }
+
+  return englishKeys.has(`${base}_other`) || englishKeys.has(base);
+}
+
 function isLocalePluralKey(
   key: string,
   locale: TranslationLocale,
@@ -224,8 +235,7 @@ function isLocalePluralKey(
   const base = key.slice(0, -match[0].length);
   return (
     pluralCategories(locale).has(match[1]) &&
-    englishKeys.has(`${base}_one`) &&
-    englishKeys.has(`${base}_other`)
+    hasEnglishPluralPair(base, englishKeys)
   );
 }
 
