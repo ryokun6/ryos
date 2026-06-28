@@ -132,6 +132,54 @@ const generateRandomBrowserHeaders = (): Record<string, string> => {
   return headers;
 };
 
+/**
+ * Resolve the Wayback Machine snapshot closest to a requested year/month using
+ * the public availability API. Previously the proxy always requested
+ * `web.archive.org/web/{year}{currentMonth}01/{url}`, which frequently 404s
+ * (no capture that exact day) or silently redirects to an unrelated capture.
+ * Asking the availability API for the closest capture to the requested
+ * timestamp yields a real snapshot far more often.
+ *
+ * Returns the absolute archive URL (forced to https) and its 14-digit
+ * timestamp, or `null` when no snapshot exists / the lookup fails (caller then
+ * falls back to the constructed URL).
+ */
+async function resolveClosestWaybackSnapshot(
+  normalizedUrl: string,
+  year: string,
+  month: string
+): Promise<{ snapshotUrl: string; timestamp: string } | null> {
+  const targetTimestamp = `${year}${month}01`;
+  const availabilityUrl = `https://archive.org/wayback/available?url=${encodeURIComponent(
+    normalizedUrl
+  )}&timestamp=${targetTimestamp}`;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+  try {
+    const res = await fetch(availabilityUrl, {
+      signal: controller.signal,
+      headers: { Accept: "application/json" },
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as {
+      archived_snapshots?: {
+        closest?: { available?: boolean; url?: string; timestamp?: string };
+      };
+    };
+    const closest = data?.archived_snapshots?.closest;
+    if (!closest?.available || !closest.url) return null;
+    const snapshotUrl = closest.url.replace(/^http:\/\//i, "https://");
+    return {
+      snapshotUrl,
+      timestamp: closest.timestamp || targetTimestamp,
+    };
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function getIeCacheKey(normalizedUrlForKey: string, year: string): Promise<string> {
   return redisKeys.cache.ieVersions(
     await sha256RedisIdentifier(normalizedUrlForKey),
@@ -479,6 +527,8 @@ export default apiHandler(
   if (year && month && mode === "proxy") {
     // Only construct Wayback URL if proxying with year/month
     if (/^\d{4}$/.test(year) && /^\d{2}$/.test(month)) {
+      // Fallback target; replaced with the closest real capture below (after
+      // the cache miss is confirmed, to avoid an availability lookup on hits).
       targetUrl = `https://web.archive.org/web/${year}${month}01/${normalizedUrl}`;
       logger.info(`Using Wayback Machine URL: ${targetUrl}`);
       isWaybackRequest = true;
@@ -519,6 +569,28 @@ export default apiHandler(
     } catch (e) {
       logger.error(`Wayback cache check failed for ${normalizedUrl} (${waybackYear}/${waybackMonth})`, e);
       // Continue with normal flow if cache check fails
+    }
+
+    // Cache missed: resolve the closest real capture to the requested
+    // year/month instead of guessing `{year}{month}01`, which often 404s.
+    try {
+      const resolved = await resolveClosestWaybackSnapshot(
+        normalizedUrl,
+        waybackYear,
+        waybackMonth
+      );
+      if (resolved) {
+        targetUrl = resolved.snapshotUrl;
+        logger.info(
+          `Resolved closest Wayback snapshot (${resolved.timestamp}): ${targetUrl}`
+        );
+      } else {
+        logger.info(
+          `No Wayback availability result; using constructed URL: ${targetUrl}`
+        );
+      }
+    } catch (resolveErr) {
+      logger.warn("Wayback snapshot resolution failed", resolveErr);
     }
   }
 
@@ -666,6 +738,21 @@ export default apiHandler(
       // If the upstream fetch failed (e.g., 403 Forbidden, 404 Not Found), return an error response
       if (!upstreamRes.ok) {
         logger.error(`Upstream fetch failed with status ${upstreamRes.status}`, { url: targetUrl });
+        // Distinguish "site actively blocked us" (auth / bot protection /
+        // legal block) from a plain not-found so the UI can give a clearer
+        // explanation. These statuses commonly come from Cloudflare/Akamai
+        // anti-bot challenges that reject the proxy's datacenter IP.
+        const isAccessBlocked = [401, 403, 405, 406, 429, 451].includes(
+          upstreamRes.status
+        );
+        const blockedMessage = `This website blocked the request (HTTP ${
+          upstreamRes.status
+        } - ${
+          upstreamRes.statusText || "Forbidden"
+        }). It may protect against automated access or require signing in.`;
+        const notFoundMessage = `The page cannot be found. HTTP ${
+          upstreamRes.status
+        } - ${upstreamRes.statusText || "File not found"}`;
         res.setHeader("Content-Type", "application/json");
         res.setHeader("Access-Control-Allow-Origin", "*");
         logger.response(upstreamRes.status, Date.now() - startTime);
@@ -673,10 +760,8 @@ export default apiHandler(
           error: true,
           status: upstreamRes.status,
           statusText: upstreamRes.statusText || "File not found",
-          type: "http_error",
-          message: `The page cannot be found. HTTP ${upstreamRes.status} - ${
-            upstreamRes.statusText || "File not found"
-          }`,
+          type: isAccessBlocked ? "access_blocked" : "http_error",
+          message: isAccessBlocked ? blockedMessage : notFoundMessage,
         });
       }
 

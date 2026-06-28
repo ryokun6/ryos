@@ -49,6 +49,10 @@ import {
   urlBarUiReducer,
   urlBarUiInitialState,
 } from "../utils/urlBarUiReducer";
+import {
+  getPastYears,
+  getFutureYears,
+} from "../components/ie-menu-bar/yearLists";
 
 const log = createClientLogger("InternetExplorer");
 
@@ -390,45 +394,24 @@ export function useInternetExplorerLogic({
   const { currentTheme, isWindowsTheme } = useThemeFlags();
 
   const currentYear = new Date().getFullYear();
-  const pastYears = [
-    "1000 BC",
-    "1 CE",
-    "500",
-    "800",
-    "1000",
-    "1200",
-    "1400",
-    "1600",
-    "1700",
-    "1800",
-    "1900",
-    "1910",
-    "1920",
-    "1930",
-    "1940",
-    "1950",
-    "1960",
-    "1970",
-    "1980",
-    "1985",
-    "1990",
-    ...Array.from({ length: currentYear - 1991 + 1 }, (_, i) =>
-      (1991 + i).toString()
-    ).filter((year) => parseInt(year) !== currentYear),
-  ].reverse();
-  const futureYears = [
-    "2150",
-    "2200",
-    "2250",
-    "2300",
-    "2400",
-    "2500",
-    "2750",
-    "3000",
-  ].sort((a, b) => parseInt(b) - parseInt(a));
+  // Single source of truth for the year dropdowns, shared with the menu bar
+  // (see `ie-menu-bar/yearLists.ts`). Previously the toolbar duplicated a
+  // smaller future-year list (2150+ only), which caused menu-selected years
+  // like 2030–2090 to classify as `future` mode yet still render the iframe
+  // branch — navigation appeared to do nothing. Using the canonical lists
+  // keeps the toolbar, menu bar, and `mode` classification consistent.
+  const pastYears = useMemo(() => getPastYears(currentYear), [currentYear]);
+  const futureYears = useMemo(
+    () => getFutureYears(currentYear),
+    [currentYear]
+  );
 
-  // Check if current year is in the future
-  const isFutureYear = futureYears.includes(year);
+  // A page renders as an AI-generated reconstruction whenever the active
+  // navigation mode is "future" (any year beyond the current one), regardless
+  // of whether that specific year is in the dropdown. Deriving this from the
+  // store's `mode` — rather than membership in a hardcoded list — ensures the
+  // content pane reliably shows the AI view for every future year.
+  const isFutureYear = mode === "future";
 
   // Define loading state early to prevent hoisting issues
   const isLoading =

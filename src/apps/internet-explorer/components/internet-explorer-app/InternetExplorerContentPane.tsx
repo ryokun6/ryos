@@ -105,7 +105,8 @@ export function InternetExplorerContentPane({
       <div className="flex-1 relative bg-white">
         {errorDetails ? (
           renderErrorPage()
-        ) : isFutureYear ||
+        ) : mode === "future" ||
+          isFutureYear ||
           (mode === "past" && (isAiLoading || aiGeneratedHtml !== null)) ? (
           <div className="size-full overflow-hidden absolute inset-0 font-geneva-12">
             <HtmlPreview
