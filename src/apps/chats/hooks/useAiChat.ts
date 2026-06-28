@@ -56,7 +56,7 @@ import {
 import { getAssistantVisibleText } from "../utils/aiMessageText";
 import { useChatSpeechSync } from "./useChatSpeechSync";
 import { useSyncedAiMessages } from "./useSyncedAiMessages";
-import { detectUserOS, getSystemState } from "../utils/systemState";
+import { getSystemState } from "../utils/systemState";
 import {
   handleLaunchApp,
   handleCloseApp,
@@ -306,7 +306,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       const toolContext: ToolContext = {
         launchApp: (appId, options) => launchApp(appId as AppId, options),
         addToolOutput,
-        detectUserOS,
       };
 
       try {

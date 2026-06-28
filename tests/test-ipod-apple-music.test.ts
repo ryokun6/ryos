@@ -918,7 +918,6 @@ describe("useIpodStore Apple Music slice", () => {
       {
         launchApp: () => "ipod-instance",
         addToolOutput: (result) => results.push(result),
-        detectUserOS: () => "Linux",
       }
     );
 
@@ -951,7 +950,6 @@ describe("useIpodStore Apple Music slice", () => {
       {
         launchApp: () => "ipod-instance",
         addToolOutput: () => {},
-        detectUserOS: () => "Linux",
       }
     );
 
@@ -991,7 +989,6 @@ describe("useIpodStore Apple Music slice", () => {
       {
         launchApp: () => "karaoke-instance",
         addToolOutput: (result) => results.push(result),
-        detectUserOS: () => "Linux",
       }
     );
 
