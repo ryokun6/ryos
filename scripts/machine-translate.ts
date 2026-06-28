@@ -21,10 +21,16 @@ import { readFile, writeFile } from "fs/promises";
 import { join } from "path";
 import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
+import {
+  formatAppleContextualTerminologyForPrompt,
+  formatAppleTerminologyForPrompt,
+  TRANSLATION_LOCALES,
+  type TranslationLocale,
+} from "./apple-ui-terminology";
 
 const LOCALES_DIR = join(process.cwd(), "src/lib/locales");
 const ENGLISH_FILE = join(LOCALES_DIR, "en/translation.json");
-const OTHER_LANGUAGES = ["zh-TW", "ja", "ko", "fr", "de", "es", "pt", "it", "ru"];
+const OTHER_LANGUAGES: readonly TranslationLocale[] = TRANSLATION_LOCALES;
 
 // Language names for better context in prompts
 const LANGUAGE_NAMES: Record<string, string> = {
@@ -34,7 +40,7 @@ const LANGUAGE_NAMES: Record<string, string> = {
   "fr": "French",
   "de": "German",
   "es": "Spanish",
-  "pt": "Portuguese",
+  "pt": "Brazilian Portuguese",
   "it": "Italian",
   "ru": "Russian",
 };
@@ -118,23 +124,38 @@ function updateNestedValue(
  * Translate a batch of strings using Gemini 2.5 Flash
  */
 async function translateBatch(
-  texts: string[],
-  targetLanguage: string
+  items: TodoKey[],
+  targetLanguage: TranslationLocale
 ): Promise<string[]> {
   const languageName = LANGUAGE_NAMES[targetLanguage] || targetLanguage;
+  const terminology = formatAppleTerminologyForPrompt(targetLanguage);
+  const contextualTerminology =
+    formatAppleContextualTerminologyForPrompt(targetLanguage);
+  const sourceEntries = items.map((item) => ({
+    key: item.path.join("."),
+    english: item.englishValue,
+  }));
   
   const prompt = `You are a professional translator. Translate the following English strings to ${languageName}.
 
 Rules:
 - Maintain the exact same meaning and tone
 - Keep technical terms consistent (e.g., "Finder", "iPod", "Applet")
+- Apply the Apple terminology below exactly to standalone labels and naturally to compounds
+- Apply key-specific terminology when an input key matches
 - Preserve formatting and special characters
 - For UI strings, use natural, concise language appropriate for that language
 - Return ONLY a JSON array of translated strings in the same order
 - Do not include any explanations or additional text
 
-English strings to translate:
-${JSON.stringify(texts, null, 2)}
+Apple UI terminology:
+${terminology}
+
+Key-specific terminology:
+${contextualTerminology}
+
+English strings and their translation keys:
+${JSON.stringify(sourceEntries, null, 2)}
 
 Return ONLY a valid JSON array of strings, nothing else.`;
 
@@ -158,8 +179,8 @@ Return ONLY a valid JSON array of strings, nothing else.`;
     
     const translated = JSON.parse(jsonStr);
     
-    if (!Array.isArray(translated) || translated.length !== texts.length) {
-      throw new Error(`Invalid response format: expected array of ${texts.length} strings`);
+    if (!Array.isArray(translated) || translated.length !== items.length) {
+      throw new Error(`Invalid response format: expected array of ${items.length} strings`);
     }
 
     return translated;
@@ -192,7 +213,7 @@ function sortKeys(obj: TranslationObject): TranslationObject {
  * Translate all [TODO] keys for a language
  */
 async function translateLanguage(
-  lang: string,
+  lang: TranslationLocale,
   dryRun: boolean = false,
   batchSize: number = 20
 ): Promise<{ translated: number; total: number }> {
@@ -232,12 +253,11 @@ async function translateLanguage(
 
   for (let i = 0; i < todoKeys.length; i += batchSize) {
     const batch = todoKeys.slice(i, i + batchSize);
-    const batchTexts = batch.map((k) => k.englishValue);
 
     console.log(`   Translating batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(todoKeys.length / batchSize)} (${batch.length} strings)...`);
 
     try {
-      const translatedTexts = await translateBatch(batchTexts, lang);
+      const translatedTexts = await translateBatch(batch, lang);
 
       // Update translations
       batch.forEach((key, index) => {
@@ -314,15 +334,15 @@ Environment:
   console.log("🤖 Machine Translation using Gemini 2.5 Flash");
   console.log("═".repeat(60));
 
-  let languagesToProcess: string[];
+  let languagesToProcess: readonly TranslationLocale[];
   
   if (langArg) {
-    if (!OTHER_LANGUAGES.includes(langArg)) {
+    if (!(OTHER_LANGUAGES as readonly string[]).includes(langArg)) {
       console.error(`❌ Error: Invalid language "${langArg}"`);
       console.error(`Valid languages: ${OTHER_LANGUAGES.join(", ")}`);
       process.exit(1);
     }
-    languagesToProcess = [langArg];
+    languagesToProcess = [langArg as TranslationLocale];
   } else {
     languagesToProcess = OTHER_LANGUAGES;
   }

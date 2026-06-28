@@ -181,7 +181,7 @@
         "aboutAdmin": "Über Admin",
         "adminHelp": "Admin-Hilfe",
         "refreshData": "Daten aktualisieren",
-        "showSidebar": "Seitenleiste anzeigen"
+        "showSidebar": "Seitenleiste einblenden"
       },
       "messages": {
         "addingToLibrary": "Wird zur Bibliothek hinzugefügt...",
@@ -333,14 +333,14 @@
         "redis": "Redis",
         "rooms": "Räume",
         "server": "Server",
-        "songs": "Lieder",
+        "songs": "Titel",
         "users": "Benutzer"
       },
       "song": {
         "album": "Album",
         "appleMusicId": "Apple Music-ID",
         "createdAt": "Erstellt",
-        "delete": "Song löschen",
+        "delete": "Titel löschen",
         "forceRefresh": "Aktualisierung erzwingen",
         "forceRefreshTooltip": "Liedtext von Kugou erneut abrufen und zwischengespeicherte Anmerkungen löschen",
         "furigana": "Furigana",
@@ -524,9 +524,9 @@
         "html": "HTML",
         "importFromDevice": "Von Gerät importieren...",
         "logOut": "Abmelden",
-        "login": "Anmelden...",
+        "login": "Anmelden…",
         "noAppletsOpen": "Keine Applets geöffnet",
-        "open": "Öffnen...",
+        "open": "Öffnen…",
         "openAppletStore": "Applet Store öffnen",
         "ryosApp": "ryOS App",
         "shareApplet": "Applet teilen...",
@@ -546,7 +546,7 @@
       "status": {
         "get": "Holen",
         "open": "Öffnen",
-        "save": "Speichern",
+        "save": "Sichern",
         "update": "Aktualisieren",
         "updatedDaysAgo": "Vor {{days}} Tagen aktualisiert",
         "updatedHoursAgo": "Vor {{hours}} Stunden aktualisiert",
@@ -605,7 +605,7 @@
         "booksHelp": "Books-Hilfe",
         "chapters": "Kapitel",
         "columns": "Spalten",
-        "font": "Schriftart",
+        "font": "Schrift",
         "import": "EPUB importieren …",
         "nextPage": "Nächste Seite",
         "previousPage": "Vorherige Seite",
@@ -766,7 +766,7 @@
         "speakResults": "Ergebnisse sprechen",
         "speechEnabled": "Sprachausgabe"
       },
-      "name": "Taschenrechner",
+      "name": "Rechner",
       "speech": {
         "error": "Fehler",
         "keys": {
@@ -783,9 +783,9 @@
           "ln": "natürlicher Logarithmus",
           "log": "Logarithmus",
           "memoryClear": "Speicher löschen",
-          "memoryMinus": "Speicher minus",
-          "memoryPlus": "Speicher plus",
-          "memoryRecall": "Speicherabruf",
+          "memoryMinus": "Speicher subtrahieren",
+          "memoryPlus": "Speicher addieren",
+          "memoryRecall": "Speicher zurückholen",
           "memoryStore": "Speichern",
           "minus": "Minus",
           "negate": "Plus/Minus",
@@ -809,7 +809,7 @@
       "status": {
         "memory": "M={{value}}"
       },
-      "title": "Taschenrechner"
+      "title": "Rechner"
     },
     "calendar": {
       "description": "Kalender mit Ereignissen",
@@ -826,7 +826,7 @@
         "newEvent": "Neues Ereignis",
         "noEvents": "Keine Ereignisse",
         "notes": "Notizen",
-        "save": "Speichern",
+        "save": "Sichern",
         "startTime": "Startzeit",
         "title": "Titel"
       },
@@ -991,21 +991,17 @@
         "clearChat": "Chat leeren",
         "createAccount": "Konto erstellen...",
         "decreaseFontSize": "Schriftgröße verkleinern",
-        "enableBrowserNotifications": "Browser-Benachrichtigungen aktivieren",
         "increaseFontSize": "Schriftgröße vergrößern",
         "keepTalking": "Weiter sprechen",
         "linkToTelegram": "Link zu Telegram",
         "logOut": "Abmelden",
-        "login": "Anmelden...",
+        "login": "Anmelden…",
         "newChat": "Neuer Chat...",
-        "notificationsBlocked": "Benachrichtigungen blockiert – in den Browsereinstellungen aktivieren",
         "resetFontSize": "Schriftgröße zurücksetzen",
         "saveTranscript": "Transkript speichern...",
         "showRooms": "Räume anzeigen",
         "sound": "Ton",
         "systemNotifications": "Systemmitteilungen",
-        "turnOffNotifications": "Benachrichtigungen deaktivieren",
-        "turnOnNotifications": "Benachrichtigungen aktivieren",
         "typingSynth": "Tipp-Synthesizer"
       },
       "messages": {
@@ -1301,10 +1297,10 @@
         "launching": "{{appName}} wird gestartet…",
         "launchingApp": "App wird gestartet…",
         "listCursorCloudAgentRuns": {
-          "listed": "Listed {{count}} recent run(s).",
-          "loading": "Listing Cursor Cloud agent runs…",
-          "openDashboard": "Open agent in Cursor",
-          "truncatedHint": "(list may be truncated)"
+          "listed": "Anzahl der aufgelisteten letzten Ausführungen: {{count}}.",
+          "loading": "Cursor Cloud-Agent-Ausführungen werden aufgelistet…",
+          "openDashboard": "Agent in Cursor öffnen",
+          "truncatedHint": "(Liste ist möglicherweise gekürzt)"
         },
         "listedItems": "Elemente aufgelistet",
         "listingApplications": "Anwendungen werden aufgelistet…",
@@ -1538,7 +1534,7 @@
         "graphite": "Graphit",
         "green": "Grün",
         "orange": "Orange",
-        "pink": "Pink",
+        "pink": "Rosa",
         "purple": "Lila",
         "red": "Rot",
         "teal": "Blaugrün",
@@ -1588,8 +1584,8 @@
         "neverUploaded": "Nie hochgeladen",
         "openSettings": "Synchronisierungseinstellungen…",
         "settings": "Einstellungen",
-        "songs": "Musik",
-        "stickies": "Haftnotizen",
+        "songs": "Titel",
+        "stickies": "Notizzettel",
         "title": "Cloud-Synchronisierung",
         "tvChannels": "TV-Sender",
         "uploading": "Wird hochgeladen",
@@ -1698,7 +1694,7 @@
       "dream": "Traum",
       "dynamicWallpapers": {
         "dayNight": "Tag & Nacht",
-        "lyrics": "Songtext",
+        "lyrics": "Liedtext",
         "nowPlaying": "Läuft gerade",
         "shuffle": "Zufällig",
         "weather": "Wetter"
@@ -1915,7 +1911,7 @@
         "effects": "Effekte",
         "output": "Ausgabe"
       },
-      "speech": "Sprache",
+      "speech": "Sprachausgabe",
       "speechDescription": "Assistentennachrichten und Auswahl vorlesen",
       "speechVolume": "Sprachlautstärke",
       "startAfter": "Starten nach",
@@ -1959,7 +1955,7 @@
         "openTelegram": "Telegram öffnen",
         "preparing": "Wird vorbereitet...",
         "resetInstructions": "Zurücksetzen",
-        "saveInstructions": "Speichern",
+        "saveInstructions": "Sichern",
         "savingInstructions": "Speichern...",
         "title": "Telegram"
       },
@@ -2062,7 +2058,7 @@
           "purple": "Lila",
           "red": "Rot"
         },
-        "showColors": "Farben anzeigen"
+        "showColors": "Farben einblenden"
       },
       "cities": {
         "berlin": "Berlin",
@@ -2188,7 +2184,7 @@
         "inputPlaceholder": "Text eingeben...",
         "outputPlaceholder": "Übersetzung",
         "poweredBy": "Unterstützt von MyMemory",
-        "save": "Speichern",
+        "save": "Sichern",
         "swap": "Sprachen tauschen",
         "to": "Nach",
         "translateFrom": "Übersetzen von",
@@ -2255,7 +2251,7 @@
         "addToDesktop": "Zum Schreibtisch hinzufügen",
         "date": "Datum",
         "duplicate": "Duplizieren",
-        "emptyTrash": "Papierkorb leeren...",
+        "emptyTrash": "Papierkorb entleeren…",
         "kind": "Art",
         "moveToTrash": "In den Papierkorb legen",
         "name": "Name",
@@ -2278,7 +2274,7 @@
       "dialogs": {
         "emptyTrash": {
           "description": "Möchten Sie den Papierkorb wirklich leeren? Dieser Vorgang kann nicht rückgängig gemacht werden.",
-          "title": "Papierkorb leeren"
+          "title": "Papierkorb entleeren"
         },
         "newFolder": {
           "description": "Geben Sie einen Namen für den neuen Ordner ein:",
@@ -2290,7 +2286,7 @@
         }
       },
       "fileTypes": {
-        "application": "Anwendung",
+        "application": "Programm",
         "bmpImage": "BMP-Bild",
         "book": "Buch",
         "directory": "Verzeichnis",
@@ -2309,7 +2305,7 @@
       },
       "folders": {
         "applets": "Applets",
-        "applications": "Anwendungen",
+        "applications": "Programme",
         "books": "Bücher",
         "desktop": "Schreibtisch",
         "documents": "Dokumente",
@@ -2357,15 +2353,15 @@
         "bySize": "nach Größe",
         "bySmallIcon": "als kleine Symbole",
         "duplicate": "Duplizieren",
-        "emptyTrash": "Papierkorb leeren...",
+        "emptyTrash": "Papierkorb entleeren…",
         "finderHelp": "Finder-Hilfe",
         "forward": "Vorwärts",
         "goUp": "Übergeordneter Ordner",
         "import": "Datei importieren…",
         "importFromDevice": "Von Gerät importieren...",
         "moveToTrash": "In den Papierkorb legen",
-        "newFinderWindow": "Neues Finder-Fenster",
-        "newFolder": "Neuer Ordner...",
+        "newFinderWindow": "Neues Fenster",
+        "newFolder": "Neuer Ordner…",
         "newWindow": "Neues Fenster",
         "putBack": "Zurücklegen",
         "rename": "Umbenennen...",
@@ -2704,7 +2700,7 @@
         "appleMusicSignInFailed": "Anmeldung fehlgeschlagen",
         "autoUpdateFailed": "Auto-Update fehlgeschlagen",
         "autoUpdatedLibraryAddedSongs": "Bibliothek automatisch aktualisiert: {{newCount}} Song{{newPlural}} neu an den Anfang hinzugefügt{{updatedText}}",
-        "autoUpdatedTrackMetadata": "{{count}} Track-Metadaten automatisch aktualisiert",
+        "autoUpdatedTrackMetadata": "Automatisch aktualisierte Titelmetadaten: {{count}}",
         "clearLibraryDescription": "Möchten Sie Ihre gesamte Musikbibliothek wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
         "clearLibraryTitle": "Bibliothek löschen",
         "errorAdding": "Fehler beim Hinzufügen:",
@@ -2720,7 +2716,7 @@
         "libraryExportedSuccessfully": "Bibliothek erfolgreich exportiert",
         "libraryImportedSuccessfully": "Bibliothek erfolgreich importiert",
         "librarySynced": "Bibliothek synchronisiert",
-        "libraryUpToDateWithSongs": "Bibliothek ist mit {{count}} Songs auf dem neuesten Stand",
+        "libraryUpToDateWithSongs": "Die Mediathek ist auf dem neuesten Stand. Titel: {{count}}",
         "libraryUpdated": "Bibliothek aktualisiert",
         "listenSessionJoinFailed": "Beitritt zur Sitzung fehlgeschlagen",
         "lyricsSearchCurrentSelection": "Aktuelle Auswahl:",
@@ -2898,7 +2894,7 @@
         "alwaysOn": "Eingeschaltet lassen",
         "appleMusicSignIn": "Apple Music",
         "appleMusicSignOut": "Apple Music",
-        "artists": "Interpreten",
+        "artists": "Künstler",
         "backlight": "Hintergrundbeleuchtung",
         "brickGame": "Brick",
         "extras": "Extras",
@@ -2911,21 +2907,21 @@
         "loading": "Laden …",
         "music": "Musik",
         "musicQuiz": "Musik-Quiz",
-        "noSongs": "Keine Titel",
+        "noSongs": "Keine Musiktitel",
         "noStations": "Keine Sender",
         "nowPlaying": "Aktuelle Wiedergabe",
         "off": "Aus",
         "on": "Ein",
         "one": "Eins",
-        "playlistTrackCount_one": "{{count}} song",
-        "playlistTrackCount_other": "{{count}} songs",
+        "playlistTrackCount_one": "{{count}} Titel",
+        "playlistTrackCount_other": "{{count}} Titel",
         "playlists": "Playlists",
         "radio": "Radio",
         "recentlyAdded": "Zuletzt hinzugefügt",
         "repeat": "Wiederholen",
         "settings": "Einstellungen",
         "shuffle": "Mischen",
-        "shuffleSongs": "Titel mischen",
+        "shuffleSongs": "Titel zufällig wiedergeben",
         "signedIn": "Angemeldet",
         "signedOut": "Abgemeldet",
         "songs": "Titel",
@@ -3351,10 +3347,10 @@
         "filters": "Filter",
         "importFromDevice": "Von Gerät importieren...",
         "newFile": "Neue Datei",
-        "open": "Öffnen...",
+        "open": "Öffnen…",
         "paintHelp": "Paint-Hilfe",
-        "save": "Speichern",
-        "saveEllipsis": "Speichern..."
+        "save": "Sichern",
+        "saveEllipsis": "Sichern…"
       },
       "name": "Malprogramm",
       "selectedPattern": "Ausgewähltes Muster",
@@ -3675,7 +3671,7 @@
         "exportPhotos": "Fotos exportieren",
         "photoBoothHelp": "Fotokabine-Hilfe"
       },
-      "name": "Fotokabine"
+      "name": "Photo Booth"
     },
     "soundboard": {
       "description": "Soundeffekte abspielen",
@@ -3728,7 +3724,7 @@
         "blue": "Blau",
         "green": "Grün",
         "orange": "Orange",
-        "pink": "Pink",
+        "pink": "Rosa",
         "purple": "Lila",
         "yellow": "Gelb"
       },
@@ -3774,9 +3770,9 @@
         "note": "Notiz",
         "syncStickies": "Stickies synchronisieren"
       },
-      "name": "Stickies",
+      "name": "Notizzettel",
       "placeholder": "Notiz schreiben...",
-      "title": "Stickies"
+      "title": "Notizzettel"
     },
     "synth": {
       "addPreset": "VOREINSTELLUNG HINZUFÜGEN",
@@ -3980,7 +3976,7 @@
         "enterANameForYourFile": "Geben Sie einen Namen für Ihre Datei ein",
         "enterFilenameToSaveOrDeleteItBeforeClosing": "Geben Sie einen Dateinamen zum Speichern ein, oder löschen Sie sie vor dem Schließen.",
         "keepNewDocument": "Neues Dokument behalten",
-        "saveChanges": "Änderungen speichern",
+        "saveChanges": "Änderungen sichern",
         "saveFile": "Datei speichern",
         "saveYourChangesBeforeClosing": "Speichern Sie Ihre Änderungen, bevor Sie schließen."
       },
@@ -4033,16 +4029,16 @@
         "markdown": "Markdown",
         "newFile": "Neue Datei",
         "numberedList": "Nummerierte Liste",
-        "open": "Öffnen...",
+        "open": "Öffnen…",
         "plainText": "Reiner Text",
-        "save": "Speichern",
-        "saveEllipsis": "Speichern unter...",
+        "save": "Sichern",
+        "saveEllipsis": "Sichern…",
         "taskList": "Aufgabenliste",
         "text": "Text",
         "texteditHelp": "Texteditor-Hilfe",
         "underline": "Unterstreichen"
       },
-      "name": "Texteditor",
+      "name": "TextEdit",
       "numberedList": "Nummerierte Liste",
       "slashCommands": {
         "bulletList": {
@@ -4257,7 +4253,7 @@
         "unknownArtist": "Unbekannter Künstler",
         "videosHelp": "Videos-Hilfe"
       },
-      "name": "Filme",
+      "name": "Videos",
       "status": {
         "add": "HINZUFÜGEN",
         "addVideos": "Videos hinzufügen",
@@ -4372,7 +4368,7 @@
       "controlPanels": "Systemsteuerung…",
       "createAccount": "Account erstellen…",
       "enterFullScreen": "Vollbild aktivieren",
-      "exitFullScreen": "Vollbild beenden",
+      "exitFullScreen": "Vollbildmodus aus",
       "logOut": "{{username}} abmelden…",
       "login": "Anmelden…",
       "moreApps": "Mehr Apps…",
@@ -4497,7 +4493,7 @@
           "applet": "Applet",
           "item": "Element",
           "page": "Seite",
-          "song": "Lied"
+          "song": "Titel"
         },
         "linkCopied": "Link kopiert",
         "linkCopiedToClipboard": "{{itemType}}-Link in die Zwischenablage kopiert",
@@ -4516,7 +4512,7 @@
     "dock": {
       "addToDock": "Zum Dock hinzufügen",
       "appletStore": "Applet Store",
-      "applications": "Anwendungen",
+      "applications": "Programme",
       "folderContents": "Ordnerinhalt",
       "hide": "Ausblenden",
       "minimized": "(minimiert)",
@@ -4581,33 +4577,18 @@
       "openingSharedVideo": "Freigegebenes Video wird geöffnet..."
     },
     "menu": {
-      "aboutFinder": "Über Finder",
       "applications": "Programme",
-      "back": "Zurück",
-      "byDate": "Datum",
-      "byIcon": "Symbole",
-      "byKind": "Art",
-      "byList": "Liste",
-      "byName": "Name",
-      "bySize": "Größe",
-      "bySmallIcon": "Kleine Symbole",
       "clear": "Löschen",
       "close": "Schließen",
       "copy": "Kopieren",
       "cut": "Ausschneiden",
       "documents": "Dokumente",
       "edit": "Bearbeiten",
-      "emptyTrash": "Papierkorb leeren...",
       "file": "Ablage",
-      "finderHelp": "Finder-Hilfe",
-      "forward": "Vor",
       "go": "Gehe zu",
       "help": "Hilfe",
       "images": "Bilder",
-      "moveToTrash": "In den Papierkorb verschieben",
       "music": "Musik",
-      "newFinderWindow": "Neues Finder-Fenster",
-      "newFolder": "Neuer Ordner",
       "paste": "Einsetzen",
       "redo": "Wiederholen",
       "selectAll": "Alles auswählen",
@@ -4615,8 +4596,8 @@
       "shareApp": "App teilen...",
       "sites": "Websites",
       "trash": "Papierkorb",
-      "undo": "Rückgängig",
-      "videos": "Filme",
+      "undo": "Widerrufen",
+      "videos": "Videos",
       "view": "Darstellung"
     },
     "menuBar": {
@@ -4630,7 +4611,7 @@
       "aboutThisComputer": "Über diesen Computer",
       "run": "Ausführen...",
       "ryos98": "98",
-      "ryosProfessional": "Professional",
+      "ryosProfessional": "Professionell",
       "start": "Start"
     },
     "swipeInstructions": {
@@ -4674,7 +4655,7 @@
       "fullscreen": "Vollbild",
       "maximize": "Maximieren",
       "maximizeDisabled": "Maximieren (deaktiviert)",
-      "minimize": "Minimieren",
+      "minimize": "Im Dock ablegen",
       "minimizeDisabled": "Minimieren (deaktiviert)"
     }
   },
@@ -4689,7 +4670,7 @@
   "debug": {
     "clearLogs": "Logs löschen",
     "closeConsole": "Konsole schließen",
-    "console": "Logs",
+    "console": "Protokolle",
     "copied": "Kopiert",
     "copy": "Kopieren",
     "copyLogs": "Logs kopieren",
@@ -4761,7 +4742,7 @@
     "tabs": {
       "label": "Debug-Panel-Ansichten",
       "live": "Live",
-      "logs": "Logs"
+      "logs": "Protokolle"
     },
     "toggleLabel": "Debug",
     "warnCount": "{{count}} Warn."
@@ -4776,7 +4757,7 @@
       "italian": "Italiano",
       "japanese": "日本語",
       "korean": "한국어",
-      "portuguese": "Português",
+      "portuguese": "Português (Brasil)",
       "russian": "Русский",
       "spanish": "Español",
       "title": "Sprache"

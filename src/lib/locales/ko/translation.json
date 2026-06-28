@@ -12,7 +12,7 @@
         "empty": "아직 기록된 관리자 작업이 없습니다",
         "loadFailed": "감사 로그를 불러올 수 없습니다",
         "loading": "감사 로그를 불러오는 중…",
-        "refresh": "새로고침",
+        "refresh": "새로 고침",
         "retry": "다시 시도",
         "target": "대상",
         "time": "시간",
@@ -34,7 +34,7 @@
         "newAgentPlaceholder": "Cursor로 전송",
         "openAgent": "에이전트",
         "openPr": "PR",
-        "refresh": "새로고침",
+        "refresh": "새로 고침",
         "retry": "재시도",
         "scanIncompleteHint": "Redis 키 스캔이 조기에 중단되었습니다. 다시 시도하거나 문제가 지속되면 운영팀에 문의하세요.",
         "startAgent": "실행",
@@ -181,7 +181,7 @@
         "aboutAdmin": "관리자 정보",
         "adminHelp": "관리자 도움말",
         "refreshData": "데이터 새로 고침",
-        "showSidebar": "사이드바 표시"
+        "showSidebar": "사이드바 보기"
       },
       "messages": {
         "addingToLibrary": "라이브러리에 추가 중...",
@@ -211,7 +211,7 @@
         "title": "오프라인"
       },
       "profile": {
-        "actions": "작업",
+        "actions": "동작",
         "activeRooms": "채팅방 활동",
         "back": "뒤로",
         "ban": "사용자 차단",
@@ -333,7 +333,7 @@
         "redis": "Redis",
         "rooms": "방",
         "server": "서버",
-        "songs": "곡",
+        "songs": "노래",
         "users": "사용자"
       },
       "song": {
@@ -524,9 +524,9 @@
         "html": "HTML",
         "importFromDevice": "기기에서 가져오기...",
         "logOut": "로그아웃",
-        "login": "로그인...",
+        "login": "로그인…",
         "noAppletsOpen": "열린 애플릿 없음",
-        "open": "열기...",
+        "open": "열기…",
         "openAppletStore": "애플릿 스토어 열기",
         "ryosApp": "ryOS 앱",
         "shareApplet": "애플릿 공유...",
@@ -764,7 +764,7 @@
         "sound": "소리",
         "speakButtonPresses": "버튼 누를 때 말하기",
         "speakResults": "결과 말하기",
-        "speechEnabled": "음성"
+        "speechEnabled": "말하기"
       },
       "name": "계산기",
       "speech": {
@@ -783,9 +783,9 @@
           "ln": "자연 로그",
           "log": "로그",
           "memoryClear": "메모리 지우기",
-          "memoryMinus": "메모리 빼기",
-          "memoryPlus": "메모리 더하기",
-          "memoryRecall": "메모리 리콜",
+          "memoryMinus": "메모리에서 빼기",
+          "memoryPlus": "메모리에 더하기",
+          "memoryRecall": "메모리 재호출",
           "memoryStore": "메모리 저장",
           "minus": "빼기",
           "negate": "플러스 마이너스",
@@ -953,9 +953,9 @@
         "saveTranscriptDescription": "채팅 기록 파일의 이름을 입력하세요",
         "saveTranscriptTitle": "기록 저장",
         "searchUsernamePlaceholder": "사용자 이름 검색...",
-        "setPasswordButton": "비밀번호 설정",
+        "setPasswordButton": "암호 설정",
         "setPasswordDescription": "계정 복구를 위해 비밀번호를 설정하세요. 접근 권한을 잃었을 경우 이 비밀번호로 새 토큰을 받을 수 있습니다.",
-        "setPasswordTitle": "비밀번호 설정"
+        "setPasswordTitle": "암호 설정"
       },
       "help": {
         "chatWithRyo": {
@@ -991,21 +991,17 @@
         "clearChat": "채팅 지우기",
         "createAccount": "계정 생성...",
         "decreaseFontSize": "글자 크기 줄이기",
-        "enableBrowserNotifications": "브라우저 알림 사용",
         "increaseFontSize": "글자 크기 늘리기",
         "keepTalking": "계속 말하기",
         "linkToTelegram": "텔레그램 연결",
         "logOut": "로그아웃",
-        "login": "로그인...",
+        "login": "로그인…",
         "newChat": "새 채팅...",
-        "notificationsBlocked": "알림 차단됨 – 브라우저 설정에서 사용 설정",
         "resetFontSize": "글자 크기 재설정",
         "saveTranscript": "대화 기록 저장...",
         "showRooms": "방 보기",
         "sound": "소리",
         "systemNotifications": "시스템 알림",
-        "turnOffNotifications": "알림 끄기",
-        "turnOnNotifications": "알림 켜기",
         "typingSynth": "타이핑 신디"
       },
       "messages": {
@@ -1301,10 +1297,10 @@
         "launching": "{{appName}} 실행 중…",
         "launchingApp": "앱 실행 중…",
         "listCursorCloudAgentRuns": {
-          "listed": "Listed {{count}} recent run(s).",
-          "loading": "Listing Cursor Cloud agent runs…",
-          "openDashboard": "Open agent in Cursor",
-          "truncatedHint": "(list may be truncated)"
+          "listed": "최근 실행 {{count}}개를 표시했습니다.",
+          "loading": "Cursor Cloud 에이전트 실행 목록을 불러오는 중…",
+          "openDashboard": "Cursor에서 에이전트 열기",
+          "truncatedHint": "(목록이 일부 생략되었을 수 있음)"
         },
         "listedItems": "항목 목록 표시됨",
         "listingApplications": "애플리케이션 목록 표시 중…",
@@ -1547,7 +1543,7 @@
       },
       "accentDescription": "선택 항목, 메뉴 및 제어기에 색상을 입힙니다",
       "accountJoined": "{{date}}에 가입",
-      "accountMenu": "Account",
+      "accountMenu": "계정",
       "accountsTabs": {
         "accounts": "계정",
         "debug": "디버그",
@@ -1588,7 +1584,7 @@
         "neverUploaded": "업로드한 적 없음",
         "openSettings": "동기화 설정…",
         "settings": "설정",
-        "songs": "음악",
+        "songs": "노래",
         "stickies": "스티커",
         "title": "클라우드 동기화",
         "tvChannels": "TV 채널",
@@ -1894,7 +1890,7 @@
       "selectAPreset": "사전 설정 선택",
       "selectScreenSaver": "화면 보호기 선택",
       "sepia": "세피아",
-      "setPassword": "비밀번호 설정",
+      "setPassword": "암호 설정",
       "setPasswordDialog": {
         "description": "계정 복구를 활성화하려면 암호를 설정하십시오. 접근 권한을 잃어버린 경우 이 암호를 사용하여 새 토큰을 받을 수 있습니다.",
         "submitLabel": "암호 설정",
@@ -1915,7 +1911,7 @@
         "effects": "효과",
         "output": "출력"
       },
-      "speech": "음성",
+      "speech": "말하기",
       "speechDescription": "어시스턴트와 선택 텍스트 읽어주기",
       "speechVolume": "음성 음량",
       "startAfter": "대기 시간",
@@ -1989,7 +1985,7 @@
         "general": "일반",
         "sharing": "공유"
       },
-      "themePreviewWindowTitle": "도큐먼트",
+      "themePreviewWindowTitle": "문서",
       "timeZone": "시간대",
       "timeZoneDescription": "시계, 일정 예약, 서식 및 AI 컨텍스트에 사용됩니다.",
       "timezoneAutomatic": "자동",
@@ -2056,13 +2052,13 @@
     "dashboard": {
       "calendar": {
         "colors": {
-          "blue": "파랑",
-          "green": "초록",
+          "blue": "파란색",
+          "green": "초록색",
           "orange": "주황",
           "purple": "보라",
-          "red": "빨강"
+          "red": "빨간색"
         },
-        "showColors": "색상 표시"
+        "showColors": "색상 보기"
       },
       "cities": {
         "berlin": "베를린",
@@ -2159,11 +2155,11 @@
       "name": "대시보드",
       "stickyNote": {
         "colors": {
-          "blue": "파랑",
-          "green": "초록",
-          "pink": "분홍",
+          "blue": "파란색",
+          "green": "초록색",
+          "pink": "분홍색",
           "purple": "보라",
-          "yellow": "노랑"
+          "yellow": "노란색"
         },
         "noteColor": "메모 색상",
         "placeholder": "메모 입력..."
@@ -2255,11 +2251,11 @@
         "addToDesktop": "바탕 화면에 추가",
         "date": "날짜",
         "duplicate": "복제",
-        "emptyTrash": "휴지통 비우기...",
+        "emptyTrash": "휴지통 비우기…",
         "kind": "종류",
         "moveToTrash": "휴지통으로 이동",
         "name": "이름",
-        "newFolder": "새 폴더…",
+        "newFolder": "새로운 폴더…",
         "noAirDropUsersAvailable": "근처 사용자가 없습니다",
         "open": "열기",
         "openAirDrop": "AirDrop 열기",
@@ -2282,7 +2278,7 @@
         },
         "newFolder": {
           "description": "새 폴더의 이름을 입력하십시오:",
-          "title": "새 폴더"
+          "title": "새로운 폴더"
         },
         "renameItem": {
           "description": "\"{{name}}\"의 새 이름을 입력하십시오.",
@@ -2290,10 +2286,10 @@
         }
       },
       "fileTypes": {
-        "application": "애플리케이션",
+        "application": "응용 프로그램",
         "bmpImage": "BMP 이미지",
         "book": "책",
-        "directory": "디렉터리",
+        "directory": "디렉토리",
         "document": "문서",
         "file": "파일",
         "folder": "폴더",
@@ -2311,14 +2307,14 @@
         "applets": "애플릿",
         "applications": "응용 프로그램",
         "books": "도서",
-        "desktop": "바탕 화면",
+        "desktop": "데스크탑",
         "documents": "문서",
         "downloads": "다운로드",
         "images": "이미지",
         "music": "음악",
         "sites": "사이트",
         "trash": "휴지통",
-        "videos": "동영상"
+        "videos": "비디오"
       },
       "help": {
         "airdropSharing": {
@@ -2357,16 +2353,16 @@
         "bySize": "크기별",
         "bySmallIcon": "작은 아이콘별",
         "duplicate": "복제",
-        "emptyTrash": "휴지통 비우기...",
+        "emptyTrash": "휴지통 비우기…",
         "finderHelp": "Finder 도움말",
         "forward": "앞으로",
         "goUp": "상위 폴더로 이동",
         "import": "파일 가져오기…",
         "importFromDevice": "기기에서 가져오기...",
         "moveToTrash": "휴지통으로 이동",
-        "newFinderWindow": "새 Finder 윈도우",
-        "newFolder": "새 폴더...",
-        "newWindow": "새 윈도우",
+        "newFinderWindow": "새로운 Finder 윈도우",
+        "newFolder": "새로운 폴더…",
+        "newWindow": "새로운 윈도우",
         "putBack": "되돌리기",
         "rename": "이름 변경...",
         "sidebar": "사이드바"
@@ -2643,9 +2639,9 @@
         "cycleLyricFont": "가사 글꼴 순환",
         "cycleLyricLayout": "가사 레이아웃 전환",
         "enterFullscreen": "전체 화면 열기",
-        "nextTrack": "다음 곡",
+        "nextTrack": "다음 트랙",
         "playPause": "재생/일시 정지",
-        "previousTrack": "이전 곡",
+        "previousTrack": "이전 트랙",
         "select": "선택",
         "shuffleOn": "임의 재생 켬",
         "toggleFurigana": "후리가나 전환",
@@ -2917,15 +2913,15 @@
         "off": "끔",
         "on": "켬",
         "one": "하나",
-        "playlistTrackCount_one": "{{count}} song",
-        "playlistTrackCount_other": "{{count}} songs",
+        "playlistTrackCount_one": "{{count}}곡",
+        "playlistTrackCount_other": "{{count}}곡",
         "playlists": "플레이리스트",
         "radio": "라디오",
         "recentlyAdded": "최근 추가된 항목",
         "repeat": "반복",
         "settings": "설정",
         "shuffle": "셔플",
-        "shuffleSongs": "곡 셔플",
+        "shuffleSongs": "노래 임의 재생",
         "signedIn": "로그인됨",
         "signedOut": "로그아웃됨",
         "songs": "노래",
@@ -3127,7 +3123,7 @@
       "help": {
         "directions": {
           "description": "장소 카드에서 Apple 지도로 운전 경로를 엽니다 — 새 탭에서 열려 ryOS는 그대로 유지됩니다(지도 안 경로 안내는 아직 없음).",
-          "title": "길찾기"
+          "title": "경로"
         },
         "dropPins": {
           "description": "목록에서 결과를 선택하여 핀을 고정하고 지도의 중심을 맞추십시오.",
@@ -3166,7 +3162,7 @@
       "placeCard": {
         "addFavorite": "즐겨찾기에 추가",
         "close": "장소 카드 닫기",
-        "directions": "길찾기",
+        "directions": "경로",
         "favorite": "즐겨찾기",
         "favorited": "즐겨찾기에 추가됨",
         "home": "집",
@@ -3351,10 +3347,10 @@
         "filters": "필터",
         "importFromDevice": "기기에서 가져오기...",
         "newFile": "새 파일",
-        "open": "열기...",
+        "open": "열기…",
         "paintHelp": "페인트 도움말",
         "save": "저장",
-        "saveEllipsis": "저장..."
+        "saveEllipsis": "저장…"
       },
       "name": "페인트",
       "selectedPattern": "선택된 패턴",
@@ -3675,7 +3671,7 @@
         "exportPhotos": "사진 내보내기",
         "photoBoothHelp": "포토 부스 도움말"
       },
-      "name": "포토 부스"
+      "name": "Photo Booth"
     },
     "soundboard": {
       "description": "효과음 재생",
@@ -3725,12 +3721,12 @@
     },
     "stickies": {
       "colors": {
-        "blue": "파랑",
-        "green": "초록",
+        "blue": "파란색",
+        "green": "초록색",
         "orange": "주황",
-        "pink": "분홍",
+        "pink": "분홍색",
         "purple": "보라",
-        "yellow": "노랑"
+        "yellow": "노란색"
       },
       "description": "빠른 알림을 위한 스티커 메모",
       "empty": {
@@ -3774,9 +3770,9 @@
         "note": "메모",
         "syncStickies": "스티키 동기화"
       },
-      "name": "스티커 메모",
+      "name": "스티커",
       "placeholder": "메모 작성...",
-      "title": "스티커 메모"
+      "title": "스티커"
     },
     "synth": {
       "addPreset": "프리셋 추가",
@@ -3862,7 +3858,7 @@
     },
     "terminal": {
       "commands": {
-        "about": "터미널 정보",
+        "about": "터미널에 관하여",
         "ai": "ryo와 AI 채팅 모드 시작",
         "cat": "파일 내용 보기",
         "cd": "디렉토리 변경",
@@ -3916,7 +3912,7 @@
         }
       },
       "menu": {
-        "aboutTerminal": "터미널 정보",
+        "aboutTerminal": "터미널에 관하여",
         "clearTerminal": "터미널 지우기",
         "decreaseFontSize": "글꼴 크기 줄이기",
         "increaseFontSize": "글꼴 크기 늘리기",
@@ -3947,7 +3943,7 @@
         "noFilesFound": "파일 없음",
         "noItemsFound": "항목 없음",
         "noSuchDirectory": "cd: {{dir}}: 해당 디렉터리 없음",
-        "openExamples": "예시",
+        "openExamples": "예제",
         "openNotFound": "'{{target}}'를 열 수 없음: 앱 또는 파일 없음",
         "opened": "열림",
         "openedApp": "{{app}} 열림",
@@ -3971,7 +3967,7 @@
       "alignCenter": "가운데 정렬",
       "alignLeft": "왼쪽 정렬",
       "alignRight": "오른쪽 정렬",
-      "bold": "굵게",
+      "bold": "볼드체",
       "bulletList": "글머리 기호 목록",
       "description": "간단한 리치 텍스트 편집기",
       "dialogs": {
@@ -3980,7 +3976,7 @@
         "enterANameForYourFile": "파일 이름을 입력하세요.",
         "enterFilenameToSaveOrDeleteItBeforeClosing": "저장할 파일 이름을 입력하거나 닫기 전에 삭제하세요.",
         "keepNewDocument": "새 문서 유지",
-        "saveChanges": "변경 사항 저장",
+        "saveChanges": "변경사항 저장",
         "saveFile": "파일 저장",
         "saveYourChangesBeforeClosing": "닫기 전에 변경 사항을 저장하세요."
       },
@@ -4014,7 +4010,7 @@
           "title": "음성 받아쓰기"
         }
       },
-      "italic": "기울임꼴",
+      "italic": "이탤릭체",
       "menu": {
         "aboutTextEdit": "텍스트 편집기 정보",
         "alignCenter": "가운데 정렬",
@@ -4030,13 +4026,13 @@
         "html": "HTML",
         "importFromDevice": "기기에서 가져오기...",
         "italic": "이탤릭체",
-        "markdown": "마크다운",
+        "markdown": "Markdown",
         "newFile": "새 파일",
-        "numberedList": "번호 매기기 목록",
-        "open": "열기...",
+        "numberedList": "번호 목록",
+        "open": "열기…",
         "plainText": "일반 텍스트",
         "save": "저장",
-        "saveEllipsis": "저장...",
+        "saveEllipsis": "저장…",
         "taskList": "작업 목록",
         "text": "텍스트",
         "texteditHelp": "텍스트 편집기 도움말",
@@ -4257,7 +4253,7 @@
         "unknownArtist": "알 수 없는 아티스트",
         "videosHelp": "동영상 도움말"
       },
-      "name": "동영상",
+      "name": "비디오",
       "status": {
         "add": "추가",
         "addVideos": "비디오 추가",
@@ -4411,7 +4407,7 @@
       "logOutDescription": "로그아웃하시겠습니까? 계정에서 로그아웃됩니다.",
       "loggingIn": "로그인 중...",
       "loginDescription": "계정에 로그인",
-      "password": "비밀번호",
+      "password": "암호",
       "recovery": {
         "back": "뒤로",
         "channel": "다음을 통해 코드 보내기",
@@ -4482,7 +4478,7 @@
       "openInGitHub": "GitHub에서 열기",
       "save": "저장",
       "saveBeforeClosing": "닫기 전에 변경 사항을 저장하세요.",
-      "saveChanges": "변경 사항 저장",
+      "saveChanges": "변경사항 저장",
       "saveFile": "파일 저장",
       "share": {
         "by": "작성자",
@@ -4497,7 +4493,7 @@
           "applet": "애플릿",
           "item": "항목",
           "page": "페이지",
-          "song": "곡"
+          "song": "노래"
         },
         "linkCopied": "링크 복사됨",
         "linkCopiedToClipboard": "{{itemType}} 링크가 클립보드에 복사되었습니다.",
@@ -4520,7 +4516,7 @@
       "folderContents": "폴더 내용",
       "hide": "가리기",
       "minimized": "(최소화됨)",
-      "newWindow": "새 창",
+      "newWindow": "새로운 윈도우",
       "open": "열기",
       "quit": "종료",
       "removeFromDock": "Dock에서 제거",
@@ -4581,33 +4577,18 @@
       "openingSharedVideo": "공유된 비디오 여는 중..."
     },
     "menu": {
-      "aboutFinder": "Finder 정보",
       "applications": "응용 프로그램",
-      "back": "뒤로",
-      "byDate": "날짜",
-      "byIcon": "아이콘",
-      "byKind": "종류",
-      "byList": "목록",
-      "byName": "이름",
-      "bySize": "크기",
-      "bySmallIcon": "작은 아이콘",
       "clear": "지우기",
       "close": "닫기",
-      "copy": "복사",
-      "cut": "잘라내기",
+      "copy": "복사하기",
+      "cut": "오려두기",
       "documents": "문서",
       "edit": "편집",
-      "emptyTrash": "휴지통 비우기...",
       "file": "파일",
-      "finderHelp": "Finder 도움말",
-      "forward": "앞으로",
       "go": "이동",
       "help": "도움말",
       "images": "이미지",
-      "moveToTrash": "휴지통으로 이동",
       "music": "음악",
-      "newFinderWindow": "새 Finder 창",
-      "newFolder": "새 폴더",
       "paste": "붙여넣기",
       "redo": "다시 실행",
       "selectAll": "모두 선택",
@@ -4616,7 +4597,7 @@
       "sites": "사이트",
       "trash": "휴지통",
       "undo": "실행 취소",
-      "videos": "동영상",
+      "videos": "비디오",
       "view": "보기"
     },
     "menuBar": {
@@ -4691,7 +4672,7 @@
     "closeConsole": "콘솔 닫기",
     "console": "로그",
     "copied": "복사됨",
-    "copy": "복사",
+    "copy": "복사하기",
     "copyLogs": "로그 복사",
     "errorCount": "{{count}} 오류",
     "filterAll": "모든 로그",
@@ -4776,7 +4757,7 @@
       "italian": "Italiano",
       "japanese": "日本語",
       "korean": "한국어",
-      "portuguese": "Português",
+      "portuguese": "Português (Brasil)",
       "russian": "Русский",
       "spanish": "Español",
       "title": "언어"

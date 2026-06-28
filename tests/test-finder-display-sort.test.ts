@@ -56,10 +56,10 @@ describe("finder localized display sorting", () => {
     Reflect.deleteProperty(globalThis, "navigator");
   });
 
-  test("uses translated application names for display", async () => {
+  test("uses Apple-standard localized application names for display", async () => {
     await applyLanguage("ja");
 
-    expect(getFinderDisplayName(applications[0])).toBe("フォトブース");
+    expect(getFinderDisplayName(applications[0])).toBe("Photo Booth");
     expect(getFinderDisplayName(applications[1])).toBe("バーチャルPC");
   });
 
@@ -75,6 +75,6 @@ describe("finder localized display sorting", () => {
       .map((file) => getFinderDisplayName(file));
 
     expect(englishOrder).toEqual(["Photo Booth", "Virtual PC"]);
-    expect(japaneseOrder).toEqual(["バーチャルPC", "フォトブース"]);
+    expect(japaneseOrder).toEqual(["Photo Booth", "バーチャルPC"]);
   });
 });

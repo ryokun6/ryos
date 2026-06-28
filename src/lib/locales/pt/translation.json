@@ -22,7 +22,7 @@
         "colLink": "Link",
         "colModel": "Modelo",
         "colRun": "Execução / agente",
-        "colStatus": "Status",
+        "colStatus": "Estado",
         "colTask": "Tarefa",
         "colUpdated": "Atualizado",
         "emptyHint": "As execuções aparecem aqui quando a ferramenta do agente do repositório inicia um trabalho no Cursor Cloud (modo assíncrono com Redis). As chaves expiram após cerca de 24 horas.",
@@ -340,7 +340,7 @@
         "album": "Álbum",
         "appleMusicId": "ID do Apple Music",
         "createdAt": "Criado",
-        "delete": "Excluir Música",
+        "delete": "Apagar Música",
         "forceRefresh": "Forçar Atualização",
         "forceRefreshTooltip": "Buscar novamente as letras do Kugou e limpar anotações em cache",
         "furigana": "Furigana",
@@ -348,7 +348,7 @@
         "lines": "linhas",
         "lyricsContent": "Conteúdo das Letras",
         "lyricsOffset": "Deslocamento da Letra",
-        "lyricsSource": "Letras",
+        "lyricsSource": "Letra",
         "metadata": "Metadados",
         "notAvailable": "Não disponível",
         "notFound": "Música não encontrada",
@@ -391,7 +391,9 @@
         "roomsCount_plural": "{{count}} salas",
         "songsCount": "{{count}} músicas",
         "usersCount": "{{count}} usuário",
-        "usersCount_plural": "{{count}} usuários"
+        "usersCount_plural": "{{count}} usuários",
+        "redisKeysCount_many": "{{count}} chaves",
+        "auditLogCount_many": "{{count}} entradas"
       },
       "tableHeaders": {
         "added": "Adicionado",
@@ -400,7 +402,7 @@
         "lastActive": "Última Atividade",
         "message": "Mensagem",
         "role": "Função",
-        "status": "Status",
+        "status": "Estado",
         "time": "Hora",
         "title": "Título",
         "user": "Usuário",
@@ -417,7 +419,7 @@
         "active": "Ativo",
         "admin": "admin",
         "banned": "Banido",
-        "user": "usuário"
+        "user": "Usuário"
       }
     },
     "applet-viewer": {
@@ -523,10 +525,10 @@
         "exportAs": "Exportar Como...",
         "html": "HTML",
         "importFromDevice": "Importar de Dispositivo...",
-        "logOut": "Sair",
-        "login": "Entrar...",
+        "logOut": "Finalizar Sessão",
+        "login": "Iniciar Sessão…",
         "noAppletsOpen": "Nenhum applet aberto",
-        "open": "Abrir...",
+        "open": "Abrir…",
         "openAppletStore": "Abrir Loja de Applets",
         "ryosApp": "Aplicativo ryOS",
         "shareApplet": "Compartilhar Applet...",
@@ -565,7 +567,7 @@
         "single": "Simples"
       },
       "contextMenu": {
-        "delete": "Excluir",
+        "delete": "Apagar",
         "moveToBottom": "Mover para o final",
         "moveToTop": "Mover para o topo"
       },
@@ -607,7 +609,7 @@
         "columns": "Colunas",
         "font": "Fonte",
         "import": "Importar EPUB…",
-        "nextPage": "Próxima Página",
+        "nextPage": "Página Seguinte",
         "previousPage": "Página Anterior",
         "textSize": "Tamanho do Texto",
         "textSizeDecrease": "Menor",
@@ -991,25 +993,21 @@
         "clearChat": "Limpar Chat",
         "createAccount": "Criar Conta...",
         "decreaseFontSize": "Diminuir Tamanho da Fonte",
-        "enableBrowserNotifications": "Ativar Notificações do Navegador",
         "increaseFontSize": "Aumentar Tamanho da Fonte",
         "keepTalking": "Continuar a falar",
         "linkToTelegram": "Conectar ao Telegram",
-        "logOut": "Sair",
-        "login": "Entrar...",
+        "logOut": "Finalizar Sessão",
+        "login": "Iniciar Sessão…",
         "newChat": "Novo Chat...",
-        "notificationsBlocked": "Notificações bloqueadas – ative nas configurações do navegador",
         "resetFontSize": "Redefinir Tamanho da Fonte",
         "saveTranscript": "Salvar Transcrição...",
         "showRooms": "Mostrar Salas",
         "sound": "Som",
         "systemNotifications": "Notificações do Sistema",
-        "turnOffNotifications": "Desativar Notificações",
-        "turnOnNotifications": "Ativar Notificações",
         "typingSynth": "Sintetizador de Digitação"
       },
       "messages": {
-        "delete": "Excluir",
+        "delete": "Apagar",
         "greeting": "👋 olá! sou ryo. pergunte-me qualquer coisa!",
         "ryo": "Ryo",
         "you": "Você"
@@ -1034,7 +1032,7 @@
         "editing": "editando...",
         "leave": "Sair",
         "listening": "Ouvindo",
-        "loginButton": "Entrar",
+        "loginButton": "Iniciar Sessão",
         "loginRequired": "Login Necessário",
         "loginToChat": "Entrar no Chat",
         "loginToContinue": "Faça login para continuar conversando com Ryo.",
@@ -1061,7 +1059,7 @@
         "aiError": "Erro de IA",
         "failedToGetResponse": "Falha ao obter resposta.",
         "failedToSaveTranscript": "Falha ao salvar a transcrição",
-        "loginButton": "Entrar",
+        "loginButton": "Iniciar Sessão",
         "loginRequired": "Login necessário",
         "open": "Abrir",
         "pleaseLoginToContinueChatting": "Por favor, faça login para continuar conversando.",
@@ -1183,7 +1181,7 @@
             "runEnded": "Execução concluída · {{status}}",
             "runEndedError": "A execução terminou com um erro",
             "showLess": "Mostrar menos",
-            "status": "Status",
+            "status": "Estado",
             "system": "Sessão iniciada",
             "thinking": "Pensando",
             "toolCall": "Ferramenta · {{name}}",
@@ -1301,10 +1299,10 @@
         "launching": "Iniciando {{appName}}…",
         "launchingApp": "Iniciando aplicativo…",
         "listCursorCloudAgentRuns": {
-          "listed": "Listed {{count}} recent run(s).",
-          "loading": "Listing Cursor Cloud agent runs…",
-          "openDashboard": "Open agent in Cursor",
-          "truncatedHint": "(list may be truncated)"
+          "listed": "Execuções recentes listadas: {{count}}.",
+          "loading": "Listando execuções do agente do Cursor Cloud…",
+          "openDashboard": "Abrir agente no Cursor",
+          "truncatedHint": "(a lista pode estar truncada)"
         },
         "listedItems": "Itens listados",
         "listingApplications": "Listando aplicativos…",
@@ -1547,7 +1545,7 @@
       },
       "accentDescription": "Colore seleções, menus e controles",
       "accountJoined": "Entrou em {{date}}",
-      "accountMenu": "Account",
+      "accountMenu": "Conta",
       "accountsTabs": {
         "accounts": "Contas",
         "debug": "Depuração",
@@ -1574,7 +1572,7 @@
         "description": "Sincroniza automaticamente os dados e definições selecionados com a nuvem após alterações importantes",
         "error": "Problema de sincronização: {{error}}",
         "fetching": "Buscando",
-        "files": "Ficheiros",
+        "files": "Arquivos",
         "hoursAgo": "{{count}}h atrás",
         "justNow": "agora",
         "lastChecked": "Última verificação {{date}}",
@@ -1587,9 +1585,9 @@
         "neverSynced": "Ainda não sincronizado",
         "neverUploaded": "Nunca enviado",
         "openSettings": "Definições de sincronização…",
-        "settings": "Definições",
-        "songs": "Música",
-        "stickies": "Notas adesivas",
+        "settings": "Ajustes",
+        "songs": "Músicas",
+        "stickies": "Anotações",
         "title": "Sincronização na nuvem",
         "tvChannels": "Canais de TV",
         "uploading": "Enviando",
@@ -1691,14 +1689,14 @@
       "deleteAccountRowDescription": "Remover permanentemente a sua conta e os dados sincronizados",
       "description": "Configurações do sistema",
       "desktopAndScreenSaver": "Área de Trabalho e Protetor de Tela",
-      "desktopTab": "Área de Trabalho",
+      "desktopTab": "Mesa",
       "displayMode": "Modo de Exibição",
       "displayModeDescription": "Aplica um filtro de cor sobre a imagem de fundo da área de trabalho",
       "downloadMacApp": "Baixar App para Mac",
       "dream": "Sonho",
       "dynamicWallpapers": {
         "dayNight": "Dia e Noite",
-        "lyrics": "Letras",
+        "lyrics": "Letra",
         "nowPlaying": "Reproduzindo agora",
         "shuffle": "Aleatório",
         "weather": "Clima"
@@ -1765,7 +1763,7 @@
       "ipod": "iPod",
       "ipodVolume": "Volume do iPod",
       "logIn": "Iniciar Sessão",
-      "logOut": "Terminar Sessão",
+      "logOut": "Finalizar Sessão",
       "logOutAll": "Sair de Todos",
       "logOutOfAllDevices": "Terminar Sessão em Todos os Dispositivos",
       "logOutOfAllDevicesRowDescription": "Encerrar sessão da sua conta ryOS em todos os dispositivos",
@@ -1830,7 +1828,7 @@
         "codeSentTitle": "Verificação enviada",
         "currentLabel": "E-mail de recuperação atual",
         "description": "Adicione um e-mail para poder redefinir sua senha caso a esqueça.",
-        "emailLabel": "Endereço de e-mail",
+        "emailLabel": "Endereço de e‑mail",
         "genericError": "Algo deu errado. Tente novamente.",
         "invalidEmail": "Insira um endereço de e-mail válido",
         "notConfigured": "A recuperação por e-mail não está disponível neste servidor. Você ainda pode recuperar através de uma conta do Telegram vinculada.",
@@ -2230,7 +2228,7 @@
         "ipod": "iPod",
         "removeWidget": "Remover Widget",
         "stickyNote": "Nota Autoadesiva",
-        "stocks": "Ações",
+        "stocks": "Bolsa",
         "terrarium": "Terrário",
         "translation": "Tradução",
         "weather": "Tempo"
@@ -2255,9 +2253,9 @@
         "addToDesktop": "Adicionar à Área de Trabalho",
         "date": "Data",
         "duplicate": "Duplicar",
-        "emptyTrash": "Esvaziar Lixeira...",
+        "emptyTrash": "Esvaziar Lixo…",
         "kind": "Tipo",
-        "moveToTrash": "Mover para a Lixeira",
+        "moveToTrash": "Mover para o Lixo",
         "name": "Nome",
         "newFolder": "Nova Pasta…",
         "noAirDropUsersAvailable": "Nenhum usuário próximo",
@@ -2278,7 +2276,7 @@
       "dialogs": {
         "emptyTrash": {
           "description": "Tem certeza de que deseja esvaziar a Lixeira? Esta ação não pode ser desfeita.",
-          "title": "Esvaziar Lixeira"
+          "title": "Esvaziar Lixo"
         },
         "newFolder": {
           "description": "Insira um nome para a nova pasta:",
@@ -2311,13 +2309,13 @@
         "applets": "Applets",
         "applications": "Aplicativos",
         "books": "Livros",
-        "desktop": "Ambiente de Trabalho",
+        "desktop": "Mesa",
         "documents": "Documentos",
         "downloads": "Downloads",
         "images": "Imagens",
         "music": "Música",
         "sites": "Sites",
-        "trash": "Lixeira",
+        "trash": "Lixo",
         "videos": "Vídeos"
       },
       "help": {
@@ -2357,7 +2355,7 @@
         "bySize": "por Tamanho",
         "bySmallIcon": "por Ícone Pequeno",
         "duplicate": "Duplicar",
-        "emptyTrash": "Esvaziar Lixo...",
+        "emptyTrash": "Esvaziar Lixo…",
         "finderHelp": "Ajuda do Finder",
         "forward": "Avançar",
         "goUp": "Subir",
@@ -2365,11 +2363,11 @@
         "importFromDevice": "Importar de Dispositivo...",
         "moveToTrash": "Mover para o Lixo",
         "newFinderWindow": "Nova Janela do Finder",
-        "newFolder": "Nova Pasta...",
-        "newWindow": "Nova janela",
+        "newFolder": "Nova Pasta…",
+        "newWindow": "Nova Janela",
         "putBack": "Colocar de Volta",
         "rename": "Renomear...",
-        "sidebar": "Barra lateral"
+        "sidebar": "Barra Lateral"
       },
       "messages": {
         "appletImported": "Applet importado!",
@@ -2704,7 +2702,7 @@
         "appleMusicSignInFailed": "Falha ao iniciar sessão",
         "autoUpdateFailed": "Falha na Atualização Automática",
         "autoUpdatedLibraryAddedSongs": "Biblioteca atualizada automaticamente: adicionada{{newPlural}} {{newCount}} nova{{newPlural}} música{{newPlural}} ao topo{{updatedText}}",
-        "autoUpdatedTrackMetadata": "Metadados de {{count}} faixa{{plural}} atualizados automaticamente",
+        "autoUpdatedTrackMetadata": "Metadados de faixas atualizados automaticamente: {{count}}",
         "clearLibraryDescription": "Tem certeza de que deseja limpar toda a sua biblioteca de músicas? Esta ação não pode ser desfeita.",
         "clearLibraryTitle": "Limpar Biblioteca",
         "errorAdding": "Erro ao adicionar:",
@@ -2720,7 +2718,7 @@
         "libraryExportedSuccessfully": "Biblioteca exportada com sucesso",
         "libraryImportedSuccessfully": "Biblioteca importada com sucesso",
         "librarySynced": "Biblioteca Sincronizada",
-        "libraryUpToDateWithSongs": "Biblioteca está atualizada com {{count}} música{{plural}}",
+        "libraryUpToDateWithSongs": "A biblioteca está atualizada. Músicas: {{count}}",
         "libraryUpdated": "Biblioteca Atualizada",
         "listenSessionJoinFailed": "Falha ao entrar na sessão",
         "lyricsSearchCurrentSelection": "Seleção atual:",
@@ -2854,7 +2852,7 @@
         "libraryAppleMusic": "Apple Music",
         "librarySource": "Biblioteca",
         "libraryYoutube": "Biblioteca do YouTube",
-        "lyrics": "Letras",
+        "lyrics": "Letra",
         "menubarArtistLimit": "Mostrando {{limit}} de {{total}} artistas",
         "menubarTrackLimit": "Mostrando {{limit}} de {{total}} — abra o iPod para navegar por tudo",
         "multi": "Múltiplo",
@@ -2917,8 +2915,8 @@
         "off": "Desligado",
         "on": "Ligado",
         "one": "Uma",
-        "playlistTrackCount_one": "{{count}} song",
-        "playlistTrackCount_other": "{{count}} songs",
+        "playlistTrackCount_one": "{{count}} música",
+        "playlistTrackCount_other": "{{count}} músicas",
         "playlists": "Playlists",
         "radio": "Rádio",
         "recentlyAdded": "Adicionadas Recentemente",
@@ -2931,7 +2929,8 @@
         "songs": "Músicas",
         "theme": "Tema",
         "unconfigured": "Não Configurado",
-        "unknownAlbum": "Álbum desconhecido"
+        "unknownAlbum": "Álbum desconhecido",
+        "playlistTrackCount_many": "{{count}} músicas"
       },
       "musicQuiz": {
         "correct": "Correto!",
@@ -3127,7 +3126,7 @@
       "help": {
         "directions": {
           "description": "No cartão do local, abra indicações de condução no Apple Mapas — abre num novo separador para manter o ryOS aberto (rotas no mapa ainda não disponíveis).",
-          "title": "Indicações"
+          "title": "Itinerários"
         },
         "dropPins": {
           "description": "Escolha um resultado da lista para fixar um marcador e centralizar o mapa nele",
@@ -3166,7 +3165,7 @@
       "placeCard": {
         "addFavorite": "Adicionar aos Favoritos",
         "close": "Fechar cartão do local",
-        "directions": "Indicações",
+        "directions": "Itinerários",
         "favorite": "Favorito",
         "favorited": "Favoritado",
         "home": "Casa",
@@ -3351,10 +3350,10 @@
         "filters": "Filtros",
         "importFromDevice": "Importar do Dispositivo...",
         "newFile": "Novo Arquivo",
-        "open": "Abrir...",
+        "open": "Abrir…",
         "paintHelp": "Ajuda da Pintura",
         "save": "Salvar",
-        "saveEllipsis": "Salvar..."
+        "saveEllipsis": "Salvar…"
       },
       "name": "Pintar",
       "selectedPattern": "Padrão Selecionado",
@@ -3675,7 +3674,7 @@
         "exportPhotos": "Exportar Fotos",
         "photoBoothHelp": "Ajuda da Cabine de Fotos"
       },
-      "name": "Cabine de Fotos"
+      "name": "Photo Booth"
     },
     "soundboard": {
       "description": "Reproduzir efeitos sonoros",
@@ -3774,9 +3773,9 @@
         "note": "Nota",
         "syncStickies": "Sincronizar Stickies"
       },
-      "name": "Stickies",
+      "name": "Anotações",
       "placeholder": "Escreva uma nota...",
-      "title": "Stickies"
+      "title": "Anotações"
     },
     "synth": {
       "addPreset": "ADICIONAR PREDEFINIÇÃO",
@@ -3862,7 +3861,7 @@
     },
     "terminal": {
       "commands": {
-        "about": "Sobre o terminal",
+        "about": "Sobre o Terminal",
         "ai": "Entrar no modo de chat de IA com ryo",
         "cat": "Visualizar conteúdo do arquivo",
         "cd": "Mudar diretório",
@@ -4033,10 +4032,10 @@
         "markdown": "Markdown",
         "newFile": "Novo Arquivo",
         "numberedList": "Lista Numerada",
-        "open": "Abrir...",
+        "open": "Abrir…",
         "plainText": "Texto Simples",
         "save": "Salvar",
-        "saveEllipsis": "Salvar...",
+        "saveEllipsis": "Salvar…",
         "taskList": "Lista de Tarefas",
         "text": "Texto",
         "texteditHelp": "Ajuda do TextEdit",
@@ -4185,7 +4184,8 @@
         "importFailed": "Não foi possível importar os canais — o arquivo pode ser inválido",
         "importSuccess_one": "Importado {{count}} canal ({{skipped}} ignorado)",
         "importSuccess_other": "Importados {{count}} canais ({{skipped}} ignorados)",
-        "resetSuccess": "Canais redefinidos para os padrões"
+        "resetSuccess": "Canais redefinidos para os padrões",
+        "importSuccess_many": "Importados {{count}} canais ({{skipped}} ignorados)"
       },
       "youtubePaste": {
         "added": "«{{title}}» adicionado a este canal",
@@ -4331,7 +4331,7 @@
         "default": "Padrão"
       },
       "status": {
-        "unknownArtist": "Artista desconhecido"
+        "unknownArtist": "Artista Desconhecido"
       },
       "title": "Winamp"
     }
@@ -4372,7 +4372,7 @@
       "controlPanels": "Painel de Controlo…",
       "createAccount": "Criar Conta…",
       "enterFullScreen": "Entrar em ecrã inteiro",
-      "exitFullScreen": "Sair de ecrã inteiro",
+      "exitFullScreen": "Sair da Tela Cheia",
       "logOut": "Terminar Sessão de {{username}}…",
       "login": "Iniciar Sessão…",
       "moreApps": "Mais Apps…",
@@ -4406,8 +4406,8 @@
       "creatingAccount": "A criar...",
       "dialogTitle": "Login do ryOS",
       "forgotPassword": "Esqueceu a senha?",
-      "logIn": "Entrar",
-      "logOut": "Terminar Sessão",
+      "logIn": "Iniciar Sessão",
+      "logOut": "Finalizar Sessão",
       "logOutDescription": "Tem a certeza de que pretende terminar sessão? Será desconectado da sua conta.",
       "loggingIn": "A iniciar sessão...",
       "loginDescription": "Iniciar sessão na sua conta",
@@ -4464,7 +4464,7 @@
       "cancel": "Cancelar",
       "close": "Fechar",
       "confirm": "Confirmar",
-      "delete": "Excluir",
+      "delete": "Apagar",
       "discardChanges": "Descartar Alterações",
       "discardChangesDesc": "Deseja descartar suas alterações e criar um novo arquivo?",
       "done": "Concluído",
@@ -4522,7 +4522,7 @@
       "minimized": "(minimizado)",
       "newWindow": "Nova Janela",
       "open": "Abrir",
-      "quit": "Sair",
+      "quit": "Encerrar",
       "removeFromDock": "Remover do Dock",
       "showAllWindows": "Mostrar Todas as Janelas",
       "trash": "Lixo",
@@ -4585,7 +4585,7 @@
       "clear": "Limpar",
       "close": "Fechar",
       "copy": "Copiar",
-      "cut": "Recortar",
+      "cut": "Cortar",
       "documents": "Documentos",
       "edit": "Editar",
       "file": "Arquivo",
@@ -4596,7 +4596,7 @@
       "paste": "Colar",
       "redo": "Refazer",
       "selectAll": "Selecionar Tudo",
-      "settings": "Configurações",
+      "settings": "Ajustes",
       "shareApp": "Compartilhar App...",
       "sites": "Sites",
       "trash": "Lixo",
@@ -4615,7 +4615,7 @@
       "aboutThisComputer": "Sobre Este Computador",
       "run": "Executar...",
       "ryos98": "98",
-      "ryosProfessional": "Professional",
+      "ryosProfessional": "Profissional",
       "start": "Iniciar"
     },
     "swipeInstructions": {
@@ -4674,7 +4674,7 @@
   "debug": {
     "clearLogs": "Limpar logs",
     "closeConsole": "Fechar console",
-    "console": "Logs",
+    "console": "Registros",
     "copied": "Copiado",
     "copy": "Copiar",
     "copyLogs": "Copiar logs",
@@ -4746,7 +4746,7 @@
     "tabs": {
       "label": "Visualizações do painel de depuração",
       "live": "Ao vivo",
-      "logs": "Logs"
+      "logs": "Registros"
     },
     "toggleLabel": "Debug",
     "warnCount": "{{count}} warn"
@@ -4761,7 +4761,7 @@
       "italian": "Italiano",
       "japanese": "日本語",
       "korean": "한국어",
-      "portuguese": "Português",
+      "portuguese": "Português (Brasil)",
       "russian": "Русский",
       "spanish": "Español",
       "title": "Idioma"
@@ -4783,16 +4783,16 @@
       "apps": "Aplicativos",
       "calendar": "Calendário",
       "commands": "Comandos",
-      "contacts": "Contactos",
+      "contacts": "Contatos",
       "documents": "Documentos",
       "music": "Música",
-      "settings": "Configurações",
+      "settings": "Ajustes",
       "sites": "Sites",
       "videos": "Vídeos"
     },
     "settings": {
       "language": "Idioma",
-      "screenSaver": "Protetor de tela",
+      "screenSaver": "Protetor de Tela",
       "sounds": "Sons e volume",
       "theme": "Tema",
       "wallpaper": "Papel de parede"

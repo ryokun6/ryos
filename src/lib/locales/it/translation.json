@@ -391,7 +391,9 @@
         "roomsCount_plural": "{{count}} stanze",
         "songsCount": "{{count}} brani",
         "usersCount": "{{count}} utente",
-        "usersCount_plural": "{{count}} utenti"
+        "usersCount_plural": "{{count}} utenti",
+        "redisKeysCount_many": "{{count}} chiavi",
+        "auditLogCount_many": "{{count}} voci"
       },
       "tableHeaders": {
         "added": "Aggiunto",
@@ -417,7 +419,7 @@
         "active": "Attivo",
         "admin": "amministratore",
         "banned": "Bannato",
-        "user": "utente"
+        "user": "Utente"
       }
     },
     "applet-viewer": {
@@ -524,9 +526,9 @@
         "html": "HTML",
         "importFromDevice": "Importa da Dispositivo...",
         "logOut": "Esci",
-        "login": "Accedi...",
+        "login": "Accedi…",
         "noAppletsOpen": "Nessuna applet aperta",
-        "open": "Apri...",
+        "open": "Apri…",
         "openAppletStore": "Apri Applet Store",
         "ryosApp": "App ryOS",
         "shareApplet": "Condividi Applet...",
@@ -784,8 +786,8 @@
           "log": "logaritmo",
           "memoryClear": "cancella memoria",
           "memoryMinus": "sottrai dalla memoria",
-          "memoryPlus": "aggiungi alla memoria",
-          "memoryRecall": "richiamo memoria",
+          "memoryPlus": "somma alla memoria",
+          "memoryRecall": "richiama dalla memoria",
           "memoryStore": "memoria",
           "minus": "meno",
           "negate": "più meno",
@@ -953,9 +955,9 @@
         "saveTranscriptDescription": "Inserisci un nome per il file della trascrizione della chat",
         "saveTranscriptTitle": "Salva Trascrizione",
         "searchUsernamePlaceholder": "Cerca nome utente...",
-        "setPasswordButton": "Imposta Password",
+        "setPasswordButton": "Imposta password",
         "setPasswordDescription": "Imposta una password per abilitare il recupero dell'account. Puoi usare questa password per ottenere un nuovo token se perdi l'accesso.",
-        "setPasswordTitle": "Imposta Password"
+        "setPasswordTitle": "Imposta password"
       },
       "help": {
         "chatWithRyo": {
@@ -991,21 +993,17 @@
         "clearChat": "Svuota Chat",
         "createAccount": "Crea Account...",
         "decreaseFontSize": "Riduci Dimensione Carattere",
-        "enableBrowserNotifications": "Abilita Notifiche Browser",
         "increaseFontSize": "Aumenta Dimensione Carattere",
         "keepTalking": "Continua a parlare",
         "linkToTelegram": "Collega a Telegram",
         "logOut": "Esci",
-        "login": "Accedi...",
+        "login": "Accedi…",
         "newChat": "Nuova Chat...",
-        "notificationsBlocked": "Notifiche bloccate – abilita nelle impostazioni browser",
         "resetFontSize": "Reimposta Dimensione Carattere",
         "saveTranscript": "Salva Trascrizione...",
         "showRooms": "Mostra Stanze",
         "sound": "Suono",
         "systemNotifications": "Notifiche di Sistema",
-        "turnOffNotifications": "Disattiva Notifiche",
-        "turnOnNotifications": "Attiva Notifiche",
         "typingSynth": "Sintesi Digitazione"
       },
       "messages": {
@@ -1301,10 +1299,10 @@
         "launching": "Avvio {{appName}}…",
         "launchingApp": "Avvio app…",
         "listCursorCloudAgentRuns": {
-          "listed": "Listed {{count}} recent run(s).",
-          "loading": "Listing Cursor Cloud agent runs…",
-          "openDashboard": "Open agent in Cursor",
-          "truncatedHint": "(list may be truncated)"
+          "listed": "Esecuzioni recenti elencate: {{count}}.",
+          "loading": "Elenco delle esecuzioni dell’agente Cursor Cloud…",
+          "openDashboard": "Apri l’agente in Cursor",
+          "truncatedHint": "(l’elenco potrebbe essere troncato)"
         },
         "listedItems": "Elementi elencati",
         "listingApplications": "Elenco applicazioni…",
@@ -1588,8 +1586,8 @@
         "neverUploaded": "Mai caricato",
         "openSettings": "Impostazioni di sincronizzazione…",
         "settings": "Impostazioni",
-        "songs": "Musica",
-        "stickies": "Note adesive",
+        "songs": "Brani",
+        "stickies": "Memo",
         "title": "Sincronizzazione cloud",
         "tvChannels": "Canali TV",
         "uploading": "Caricamento...",
@@ -1691,7 +1689,7 @@
       "deleteAccountRowDescription": "Rimuovi permanentemente il tuo account e i dati sincronizzati",
       "description": "Impostazioni di sistema",
       "desktopAndScreenSaver": "Desktop e Salvaschermo",
-      "desktopTab": "Desktop",
+      "desktopTab": "Scrivania",
       "displayMode": "Modalità di visualizzazione",
       "displayModeDescription": "Applica un filtro colore allo sfondo del desktop",
       "downloadMacApp": "Scarica App Mac",
@@ -1830,7 +1828,7 @@
         "codeSentTitle": "Verifica inviata",
         "currentLabel": "Email di recupero attuale",
         "description": "Aggiungi un'email per poter reimpostare la password se la dimentichi.",
-        "emailLabel": "Indirizzo email",
+        "emailLabel": "Indirizzo e-mail",
         "genericError": "Qualcosa è andato storto. Riprova.",
         "invalidEmail": "Inserisci un indirizzo email valido",
         "notConfigured": "Il recupero tramite email non è disponibile su questo server. Puoi ancora effettuare il recupero tramite un account Telegram collegato.",
@@ -2255,11 +2253,11 @@
         "addToDesktop": "Aggiungi alla Scrivania",
         "date": "Data",
         "duplicate": "Duplica",
-        "emptyTrash": "Svuota Cestino...",
+        "emptyTrash": "Svuota il Cestino…",
         "kind": "Tipo",
         "moveToTrash": "Sposta nel Cestino",
         "name": "Nome",
-        "newFolder": "Nuova Cartella…",
+        "newFolder": "Nuova cartella…",
         "noAirDropUsersAvailable": "Nessun utente nelle vicinanze",
         "open": "Apri",
         "openAirDrop": "Apri AirDrop",
@@ -2278,11 +2276,11 @@
       "dialogs": {
         "emptyTrash": {
           "description": "Sei sicuro di voler svuotare il Cestino? Questa azione non può essere annullata.",
-          "title": "Svuota Cestino"
+          "title": "Svuota il Cestino"
         },
         "newFolder": {
           "description": "Inserisci un nome per la nuova cartella:",
-          "title": "Nuova Cartella"
+          "title": "Nuova cartella"
         },
         "renameItem": {
           "description": "Inserisci un nuovo nome per \"{{name}}\"",
@@ -2293,7 +2291,7 @@
         "application": "Applicazione",
         "bmpImage": "Immagine BMP",
         "book": "Libro",
-        "directory": "Cartella",
+        "directory": "Directory",
         "document": "Documento",
         "file": "File",
         "folder": "Cartella",
@@ -2311,7 +2309,7 @@
         "applets": "Applet",
         "applications": "Applicazioni",
         "books": "Libri",
-        "desktop": "Desktop",
+        "desktop": "Scrivania",
         "documents": "Documenti",
         "downloads": "Download",
         "images": "Immagini",
@@ -2357,15 +2355,15 @@
         "bySize": "per Dimensione",
         "bySmallIcon": "Per icona piccola",
         "duplicate": "Duplica",
-        "emptyTrash": "Svuota Cestino...",
+        "emptyTrash": "Svuota il Cestino…",
         "finderHelp": "Aiuto Finder",
         "forward": "Avanti",
         "goUp": "Vai su",
         "import": "Importa file…",
         "importFromDevice": "Importa da dispositivo...",
         "moveToTrash": "Sposta nel Cestino",
-        "newFinderWindow": "Nuova finestra Finder",
-        "newFolder": "Nuova cartella...",
+        "newFinderWindow": "Nuova finestra del Finder",
+        "newFolder": "Nuova cartella…",
         "newWindow": "Nuova finestra",
         "putBack": "Ripristina",
         "rename": "Rinomina...",
@@ -2704,7 +2702,7 @@
         "appleMusicSignInFailed": "Accesso non riuscito",
         "autoUpdateFailed": "Aggiornamento automatico non riuscito",
         "autoUpdatedLibraryAddedSongs": "Libreria aggiornata automaticamente: aggiunti {{newCount}} nuovi brano{{newPlural}} in cima{{updatedText}}",
-        "autoUpdatedTrackMetadata": "Aggiornati automaticamente i metadati di {{count}} brani",
+        "autoUpdatedTrackMetadata": "Metadati dei brani aggiornati automaticamente: {{count}}",
         "clearLibraryDescription": "Sei sicuro di voler svuotare l'intera libreria musicale? Questa azione non può essere annullata.",
         "clearLibraryTitle": "Svuota Libreria",
         "errorAdding": "Errore durante l'aggiunta:",
@@ -2720,7 +2718,7 @@
         "libraryExportedSuccessfully": "Libreria esportata con successo",
         "libraryImportedSuccessfully": "Libreria importata con successo",
         "librarySynced": "Libreria sincronizzata",
-        "libraryUpToDateWithSongs": "Libreria aggiornata con {{count}} brani",
+        "libraryUpToDateWithSongs": "La libreria è aggiornata. Brani: {{count}}",
         "libraryUpdated": "Libreria aggiornata",
         "listenSessionJoinFailed": "Impossibile partecipare alla sessione",
         "lyricsSearchCurrentSelection": "Selezione corrente:",
@@ -2838,7 +2836,7 @@
         "fontSansSerif": "Sans Serif",
         "fontSerif": "Serif",
         "fontSerifRed": "Serif (Contorno)",
-        "fullScreen": "Schermo intero",
+        "fullScreen": "A tutto schermo",
         "furigana": "Furigana",
         "goToAlbum": "Vai all'album",
         "goToArtist": "Vai all'artista",
@@ -2917,8 +2915,8 @@
         "off": "Disattivo",
         "on": "Attivo",
         "one": "Uno",
-        "playlistTrackCount_one": "{{count}} song",
-        "playlistTrackCount_other": "{{count}} songs",
+        "playlistTrackCount_one": "{{count}} brano",
+        "playlistTrackCount_other": "{{count}} brani",
         "playlists": "Playlist",
         "radio": "Radio",
         "recentlyAdded": "Aggiunti di recente",
@@ -2931,7 +2929,8 @@
         "songs": "Brani",
         "theme": "Tema",
         "unconfigured": "Non configurato",
-        "unknownAlbum": "Album sconosciuto"
+        "unknownAlbum": "Album sconosciuto",
+        "playlistTrackCount_many": "{{count}} brani"
       },
       "musicQuiz": {
         "correct": "Esatto!",
@@ -3351,10 +3350,10 @@
         "filters": "Filtri",
         "importFromDevice": "Importa da Dispositivo...",
         "newFile": "Nuovo file",
-        "open": "Apri...",
+        "open": "Apri…",
         "paintHelp": "Aiuto Pittura",
         "save": "Salva",
-        "saveEllipsis": "Salva..."
+        "saveEllipsis": "Salva…"
       },
       "name": "Disegno",
       "selectedPattern": "Modello selezionato",
@@ -3425,7 +3424,7 @@
         "backToPresets": "Torna ai sistemi",
         "captureScreenshot": "Cattura screenshot",
         "controls": "Controlli",
-        "fullScreen": "Schermo Intero",
+        "fullScreen": "A tutto schermo",
         "loadGame": "Carica Gioco",
         "loadState": "Carica Stato",
         "mouseSensitivity": "Sensibilità Mouse",
@@ -3675,7 +3674,7 @@
         "exportPhotos": "Esporta foto",
         "photoBoothHelp": "Aiuto Cabina fotografica"
       },
-      "name": "Cabina fotografica"
+      "name": "Photo Booth"
     },
     "soundboard": {
       "description": "Riproduci effetti sonori",
@@ -3774,9 +3773,9 @@
         "note": "Nota",
         "syncStickies": "Sincronizza Note Adesive"
       },
-      "name": "Stickies",
+      "name": "Memo",
       "placeholder": "Scrivi una nota...",
-      "title": "Stickies"
+      "title": "Memo"
     },
     "synth": {
       "addPreset": "AGGIUNGI PRESET",
@@ -3862,7 +3861,7 @@
     },
     "terminal": {
       "commands": {
-        "about": "Informazioni sul terminale",
+        "about": "Informazioni su Terminale",
         "ai": "Entra in modalità chat AI con ryo",
         "cat": "Visualizza contenuto file",
         "cd": "Cambia directory",
@@ -4033,16 +4032,16 @@
         "markdown": "Markdown",
         "newFile": "Nuovo file",
         "numberedList": "Elenco numerato",
-        "open": "Apri...",
-        "plainText": "Testo semplice",
+        "open": "Apri…",
+        "plainText": "Solo testo",
         "save": "Salva",
-        "saveEllipsis": "Salva con nome...",
+        "saveEllipsis": "Salva…",
         "taskList": "Elenco attività",
         "text": "Testo",
         "texteditHelp": "Aiuto TextEdit",
         "underline": "Sottolineato"
       },
-      "name": "Editor di testo",
+      "name": "TextEdit",
       "numberedList": "Elenco numerato",
       "slashCommands": {
         "bulletList": {
@@ -4074,7 +4073,7 @@
           "title": "Testo"
         }
       },
-      "speak": "Parla",
+      "speak": "Leggi",
       "stopSpeech": "Interrompi voce",
       "text": "Testo",
       "underline": "Sottolineato",
@@ -4146,7 +4145,7 @@
         "controls": "Controlli",
         "deleteChannel": "Elimina canale",
         "exportChannels": "Esporta canali...",
-        "fullScreen": "Schermo intero",
+        "fullScreen": "A tutto schermo",
         "importChannels": "Importa canali...",
         "lcdFilter": "Filtro LCD",
         "newChannel": "Nuovo canale...",
@@ -4185,7 +4184,8 @@
         "importFailed": "Impossibile importare i canali — il file potrebbe non essere valido",
         "importSuccess_one": "Importato {{count}} canale ({{skipped}} ignorati)",
         "importSuccess_other": "Importati {{count}} canali ({{skipped}} ignorati)",
-        "resetSuccess": "Canali ripristinati ai valori predefiniti"
+        "resetSuccess": "Canali ripristinati ai valori predefiniti",
+        "importSuccess_many": "Importati {{count}} canali ({{skipped}} ignorati)"
       },
       "youtubePaste": {
         "added": "Aggiunto «{{title}}» a questo canale",
@@ -4242,7 +4242,7 @@
         "allVideos": "Tutti i video",
         "clearLibrary": "Svuota libreria...",
         "controls": "Controlli",
-        "fullScreen": "Schermo intero",
+        "fullScreen": "A tutto schermo",
         "library": "Libreria",
         "next": "Successivo",
         "openVideo": "Apri video...",
@@ -4360,7 +4360,7 @@
     "appMenu": {
       "aboutApp": "Informazioni su {{appName}}",
       "appHelp": "Aiuto {{appName}}",
-      "fullScreen": "Schermo intero",
+      "fullScreen": "A tutto schermo",
       "hideApp": "Nascondi {{appName}}",
       "hideOthers": "Nascondi altri",
       "quitApp": "Esci da {{appName}}",
@@ -4372,7 +4372,7 @@
       "controlPanels": "Pannello di Controllo…",
       "createAccount": "Crea Account…",
       "enterFullScreen": "Attiva schermo intero",
-      "exitFullScreen": "Esci da schermo intero",
+      "exitFullScreen": "Disattiva modalità a tutto schermo",
       "logOut": "Esci da {{username}}…",
       "login": "Accedi…",
       "moreApps": "Altre App…",
@@ -4615,7 +4615,7 @@
       "aboutThisComputer": "Informazioni su questo computer",
       "run": "Esegui...",
       "ryos98": "98",
-      "ryosProfessional": "Professional",
+      "ryosProfessional": "Professionale",
       "start": "Avvio"
     },
     "swipeInstructions": {
@@ -4656,10 +4656,10 @@
     },
     "window": {
       "close": "Chiudi",
-      "fullscreen": "Schermo intero",
+      "fullscreen": "A tutto schermo",
       "maximize": "Ingrandisci",
       "maximizeDisabled": "Ingrandisci (disabilitato)",
-      "minimize": "Riduci a icona",
+      "minimize": "Contrai",
       "minimizeDisabled": "Riduci a icona (disabilitato)"
     }
   },
@@ -4761,7 +4761,7 @@
       "italian": "Italiano",
       "japanese": "日本語",
       "korean": "한국어",
-      "portuguese": "Portoghese",
+      "portuguese": "Português (Brasil)",
       "russian": "Russo",
       "spanish": "Spagnolo",
       "title": "Lingua"

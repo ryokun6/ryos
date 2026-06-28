@@ -22,7 +22,7 @@
         "colLink": "リンク",
         "colModel": "モデル",
         "colRun": "実行 / エージェント",
-        "colStatus": "ステータス",
+        "colStatus": "状況",
         "colTask": "タスク",
         "colUpdated": "更新日時",
         "emptyHint": "リポジトリエージェントツールがCursor Cloudジョブ（Redisを使用した非同期モード）を開始すると、ここに実行が表示されます。キーの有効期限は約24時間です。",
@@ -318,7 +318,7 @@
         "realtime": "リアルタイム / WebSocket",
         "redis": "Redis",
         "services": "サービス",
-        "title": "サーバー",
+        "title": "サーバ",
         "unhealthy": "不健全",
         "version": "バージョン",
         "websocket": "WebSocket (Pusher)"
@@ -332,7 +332,7 @@
         "private": "プライベート",
         "redis": "Redis",
         "rooms": "ルーム",
-        "server": "サーバー",
+        "server": "サーバ",
         "songs": "曲",
         "users": "ユーザー"
       },
@@ -394,16 +394,16 @@
         "usersCount_plural": "{{count}}人"
       },
       "tableHeaders": {
-        "added": "追加",
+        "added": "追加済み",
         "addedBy": "作成者",
         "artist": "アーティスト",
         "lastActive": "最終アクティブ",
         "message": "メッセージ",
         "role": "役割",
-        "status": "ステータス",
+        "status": "状況",
         "time": "時間",
         "title": "曲名",
-        "user": "ユーザー",
+        "user": "ユーザ",
         "username": "ユーザー名"
       },
       "time": {
@@ -417,7 +417,7 @@
         "active": "アクティブ",
         "admin": "管理者",
         "banned": "BAN済み",
-        "user": "ユーザー"
+        "user": "ユーザ"
       }
     },
     "applet-viewer": {
@@ -523,10 +523,10 @@
         "exportAs": "名前を付けて書き出す...",
         "html": "HTML",
         "importFromDevice": "デバイスから読み込む...",
-        "logOut": "ログアウト",
-        "login": "ログイン...",
+        "logOut": "サインアウト",
+        "login": "サインイン…",
         "noAppletsOpen": "アプレットは開いていません",
-        "open": "開く...",
+        "open": "開く…",
         "openAppletStore": "アプレットストアを開く",
         "ryosApp": "ryOSアプリ",
         "shareApplet": "アプレットを共有...",
@@ -783,9 +783,9 @@
           "ln": "自然対数",
           "log": "log",
           "memoryClear": "メモリークリア",
-          "memoryMinus": "メモリーマイナス",
-          "memoryPlus": "メモリープラス",
-          "memoryRecall": "メモリーリコール",
+          "memoryMinus": "メモリ減算",
+          "memoryPlus": "メモリ加算",
+          "memoryRecall": "メモリ読み出し",
           "memoryStore": "メモリー保存",
           "minus": "マイナス",
           "negate": "プラスマイナス",
@@ -991,21 +991,17 @@
         "clearChat": "チャットをクリア",
         "createAccount": "アカウントを作成...",
         "decreaseFontSize": "フォントサイズを小さく",
-        "enableBrowserNotifications": "ブラウザ通知を有効にする",
         "increaseFontSize": "フォントサイズを大きく",
         "keepTalking": "会話を続ける",
         "linkToTelegram": "Telegramにリンク",
-        "logOut": "ログアウト",
-        "login": "ログイン...",
+        "logOut": "サインアウト",
+        "login": "サインイン…",
         "newChat": "新規チャット...",
-        "notificationsBlocked": "通知はブロックされています – ブラウザ設定で有効にしてください",
         "resetFontSize": "フォントサイズをリセット",
         "saveTranscript": "履歴を保存...",
         "showRooms": "ルームを表示",
         "sound": "サウンド",
         "systemNotifications": "システム通知",
-        "turnOffNotifications": "通知をオフにする",
-        "turnOnNotifications": "通知をオンにする",
         "typingSynth": "タイピングシンセ"
       },
       "messages": {
@@ -1034,7 +1030,7 @@
         "editing": "編集中...",
         "leave": "退出",
         "listening": "聴取中",
-        "loginButton": "ログイン",
+        "loginButton": "サインイン",
         "loginRequired": "ログインが必要です",
         "loginToChat": "チャットにログイン",
         "loginToContinue": "Ryoとのチャットを続けるにはログインしてください。",
@@ -1061,7 +1057,7 @@
         "aiError": "AIエラー",
         "failedToGetResponse": "応答の取得に失敗しました。",
         "failedToSaveTranscript": "文字起こしの保存に失敗しました",
-        "loginButton": "ログイン",
+        "loginButton": "サインイン",
         "loginRequired": "ログインが必要です",
         "open": "開く",
         "pleaseLoginToContinueChatting": "チャットを続けるにはログインしてください。",
@@ -1183,7 +1179,7 @@
             "runEnded": "実行完了 · {{status}}",
             "runEndedError": "エラーで終了",
             "showLess": "折りたたむ",
-            "status": "ステータス",
+            "status": "状況",
             "system": "セッション開始",
             "thinking": "思考中",
             "toolCall": "ツール · {{name}}",
@@ -1193,7 +1189,7 @@
             "workedFor": "{{duration}} 作業"
           }
         },
-        "document": "ドキュメント",
+        "document": "書類",
         "edited": "{{fileName}} を編集しました",
         "editedApplet": "アプレットを正常に編集しました: {{path}}",
         "editedDocument": "ドキュメントを正常に編集しました: {{path}}",
@@ -1301,10 +1297,10 @@
         "launching": "{{appName}} を起動中…",
         "launchingApp": "アプリを起動中…",
         "listCursorCloudAgentRuns": {
-          "listed": "Listed {{count}} recent run(s).",
-          "loading": "Listing Cursor Cloud agent runs…",
-          "openDashboard": "Open agent in Cursor",
-          "truncatedHint": "(list may be truncated)"
+          "listed": "最近の実行を {{count}} 件表示しました。",
+          "loading": "Cursor Cloud エージェントの実行を一覧表示中…",
+          "openDashboard": "Cursor でエージェントを開く",
+          "truncatedHint": "（一覧は省略されている場合があります）"
         },
         "listedItems": "項目を一覧表示しました",
         "listingApplications": "アプリケーションを一覧表示中…",
@@ -1547,7 +1543,7 @@
       },
       "accentDescription": "選択部分、メニュー、およびコントロールに色を付けます",
       "accountJoined": "{{date}}に参加",
-      "accountMenu": "Account",
+      "accountMenu": "アカウント",
       "accountsTabs": {
         "accounts": "アカウント",
         "debug": "デバッグ",
@@ -1588,7 +1584,7 @@
         "neverUploaded": "未アップロード",
         "openSettings": "同期設定…",
         "settings": "設定",
-        "songs": "音楽",
+        "songs": "曲",
         "stickies": "スティッキーズ",
         "title": "クラウド同期",
         "tvChannels": "テレビチャンネル",
@@ -1764,15 +1760,15 @@
       "iosVolumeHint": "iOSでは、ハードウェアボタンでメディア音量を調整します",
       "ipod": "iPod",
       "ipodVolume": "iPodの音量",
-      "logIn": "ログイン",
-      "logOut": "ログアウト",
+      "logIn": "サインイン",
+      "logOut": "サインアウト",
       "logOutAll": "すべてログアウト",
       "logOutOfAllDevices": "すべてのデバイスからログアウト",
       "logOutOfAllDevicesRowDescription": "すべてのデバイスでryOSアカウントからサインアウトする",
       "logOutRowDescription": "このデバイスで ryOS アカウントからサインアウト",
       "loggedInToRyOS": "ryOSにログイン済み",
       "loggingOut": "ログアウト中...",
-      "login": "ログイン",
+      "login": "サインイン",
       "loginToSendMessages": "メッセージの送信などにはログイン",
       "logoutAll": {
         "authErrorDescription": "認証されていません",
@@ -1790,7 +1786,7 @@
       "menu": {
         "aboutControlPanels": "コントロールパネルについて",
         "aboutControlPanelsForMacosX": "システム環境設定について",
-        "app": "アプリ",
+        "app": "App",
         "controlPanelsHelp": "コントロールパネルヘルプ",
         "controlPanelsHelpForMacosX": "システム環境設定ヘルプ"
       },
@@ -1853,7 +1849,7 @@
       "resetAllSettingsDescription": "これにより、保存されているすべての設定が消去され、初期設定に戻ります",
       "restore": "復元",
       "ryOSAccount": "ryOS アカウント",
-      "screenSaver": "スクリーンセーバー",
+      "screenSaver": "スクリーンセーバ",
       "screenSaverDescription": "一定時間操作がないと起動します",
       "screenSaverExitHint": "クリックまたは、いずれかのキーを押して終了",
       "screenSaverOptions": {
@@ -1990,7 +1986,7 @@
         "sharing": "共有"
       },
       "themePreviewWindowTitle": "書類",
-      "timeZone": "タイムゾーン",
+      "timeZone": "時間帯",
       "timeZoneDescription": "時計、スケジュール、書式設定、AIコンテキストに使用されます",
       "timezoneAutomatic": "自動",
       "timezoneAutomaticCity": "自動 ({{city}})",
@@ -2056,11 +2052,11 @@
     "dashboard": {
       "calendar": {
         "colors": {
-          "blue": "青",
-          "green": "緑",
+          "blue": "ブルー",
+          "green": "グリーン",
           "orange": "オレンジ",
           "purple": "紫",
-          "red": "赤"
+          "red": "レッド"
         },
         "showColors": "色を表示"
       },
@@ -2159,11 +2155,11 @@
       "name": "ダッシュボード",
       "stickyNote": {
         "colors": {
-          "blue": "青",
-          "green": "緑",
+          "blue": "ブルー",
+          "green": "グリーン",
           "pink": "ピンク",
           "purple": "紫",
-          "yellow": "黄"
+          "yellow": "イエロー"
         },
         "noteColor": "メモの色",
         "placeholder": "メモを入力..."
@@ -2255,7 +2251,7 @@
         "addToDesktop": "デスクトップに追加",
         "date": "日付",
         "duplicate": "複製",
-        "emptyTrash": "ゴミ箱を空にする...",
+        "emptyTrash": "ゴミ箱を空にする…",
         "kind": "種類",
         "moveToTrash": "ゴミ箱に入れる",
         "name": "名前",
@@ -2294,15 +2290,15 @@
         "bmpImage": "BMP 画像",
         "book": "本",
         "directory": "ディレクトリ",
-        "document": "ドキュメント",
+        "document": "書類",
         "file": "ファイル",
         "folder": "フォルダ",
-        "gifImage": "GIF 画像",
+        "gifImage": "GIFイメージ",
         "htmlApplet": "HTMLアプレット",
         "internetShortcut": "インターネットショートカット",
-        "jpegImage": "JPEG 画像",
+        "jpegImage": "JPEGイメージ",
         "mp3Audio": "MP3オーディオ",
-        "pngImage": "PNG 画像",
+        "pngImage": "PNGイメージ",
         "quicktimeMovie": "QuickTimeムービー",
         "unknown": "不明",
         "webpImage": "WebP 画像"
@@ -2314,7 +2310,7 @@
         "desktop": "デスクトップ",
         "documents": "書類",
         "downloads": "ダウンロード",
-        "images": "画像",
+        "images": "イメージ",
         "music": "ミュージック",
         "sites": "サイト",
         "trash": "ゴミ箱",
@@ -2357,15 +2353,15 @@
         "bySize": "サイズ順",
         "bySmallIcon": "小さいアイコン",
         "duplicate": "複製",
-        "emptyTrash": "ゴミ箱を空にする...",
+        "emptyTrash": "ゴミ箱を空にする…",
         "finderHelp": "Finder ヘルプ",
         "forward": "進む",
         "goUp": "上の階層へ",
         "import": "ファイルを読み込む…",
         "importFromDevice": "デバイスから読み込む...",
         "moveToTrash": "ゴミ箱に入れる",
-        "newFinderWindow": "新規 Finder ウインドウ",
-        "newFolder": "新規フォルダ...",
+        "newFinderWindow": "新規Finderウインドウ",
+        "newFolder": "新規フォルダ…",
         "newWindow": "新規ウインドウ",
         "putBack": "元に戻す",
         "rename": "名称変更...",
@@ -2555,7 +2551,7 @@
         "editFuture": "未来を編集...",
         "english": "英語",
         "favorites": "お気に入り",
-        "folder": "フォルダー",
+        "folder": "フォルダ",
         "forward": "進む",
         "france": "フランス",
         "french": "フランス語",
@@ -2643,9 +2639,9 @@
         "cycleLyricFont": "歌詞フォントを切り替える",
         "cycleLyricLayout": "歌詞レイアウトを切り替える",
         "enterFullscreen": "フルスクリーンを開く",
-        "nextTrack": "次の曲",
+        "nextTrack": "次のトラック",
         "playPause": "再生/一時停止",
-        "previousTrack": "前の曲",
+        "previousTrack": "前のトラック",
         "select": "選択",
         "shuffleOn": "シャッフル：オン",
         "toggleFurigana": "フリガナ切り替え",
@@ -2704,7 +2700,7 @@
         "appleMusicSignInFailed": "サインインに失敗しました",
         "autoUpdateFailed": "自動更新失敗",
         "autoUpdatedLibraryAddedSongs": "ライブラリを自動更新しました：先頭に {{newCount}} 曲の新しい曲を追加しました{{updatedText}}",
-        "autoUpdatedTrackMetadata": "{{count}} 曲のメタデータを自動更新しました",
+        "autoUpdatedTrackMetadata": "{{count}}曲のメタデータを自動更新しました",
         "clearLibraryDescription": "音楽ライブラリ全体を消去してもよろしいですか？この操作は元に戻せません。",
         "clearLibraryTitle": "ライブラリを消去",
         "errorAdding": "追加エラー:",
@@ -2720,7 +2716,7 @@
         "libraryExportedSuccessfully": "ライブラリが正常にエクスポートされました",
         "libraryImportedSuccessfully": "ライブラリが正常にインポートされました",
         "librarySynced": "ライブラリ同期済み",
-        "libraryUpToDateWithSongs": "ライブラリは {{count}} 曲で最新です",
+        "libraryUpToDateWithSongs": "ライブラリは{{count}}曲で最新です",
         "libraryUpdated": "ライブラリ更新済み",
         "listenSessionJoinFailed": "セッションへの参加に失敗しました",
         "lyricsSearchCurrentSelection": "現在の選択:",
@@ -2838,7 +2834,7 @@
         "fontSansSerif": "ゴシック",
         "fontSerif": "明朝",
         "fontSerifRed": "明朝（縁取り）",
-        "fullScreen": "全画面表示",
+        "fullScreen": "フルスクリーン",
         "furigana": "フリガナ",
         "goToAlbum": "アルバムへ移動",
         "goToArtist": "アーティストへ移動",
@@ -2911,14 +2907,14 @@
         "loading": "読み込み中…",
         "music": "ミュージック",
         "musicQuiz": "ミュージッククイズ",
-        "noSongs": "曲がありません",
+        "noSongs": "曲なし",
         "noStations": "ステーションがありません",
         "nowPlaying": "再生中",
         "off": "オフ",
         "on": "オン",
         "one": "1曲",
-        "playlistTrackCount_one": "{{count}} song",
-        "playlistTrackCount_other": "{{count}} songs",
+        "playlistTrackCount_one": "{{count}}曲",
+        "playlistTrackCount_other": "{{count}}曲",
         "playlists": "プレイリスト",
         "radio": "ラジオ",
         "recentlyAdded": "最近追加した項目",
@@ -3127,7 +3123,7 @@
       "help": {
         "directions": {
           "description": "場所カードから Apple マップで車のルートを開きます。新しいタブで開くため ryOS はそのままです（地図内のルートは未対応）。",
-          "title": "ルート"
+          "title": "経路"
         },
         "dropPins": {
           "description": "リストから結果を選択してピンをドロップし、マップの中心をその場所に合わせます",
@@ -3166,7 +3162,7 @@
       "placeCard": {
         "addFavorite": "よく使う項目に追加",
         "close": "場所のカードを閉じる",
-        "directions": "ルート",
+        "directions": "経路",
         "favorite": "よく使う項目",
         "favorited": "よく使う項目に追加済み",
         "home": "自宅",
@@ -3351,10 +3347,10 @@
         "filters": "フィルター",
         "importFromDevice": "デバイスからインポート...",
         "newFile": "新規ファイル",
-        "open": "開く...",
+        "open": "開く…",
         "paintHelp": "ペイントヘルプ",
         "save": "保存",
-        "saveEllipsis": "名前を付けて保存..."
+        "saveEllipsis": "保存…"
       },
       "name": "ペイント",
       "selectedPattern": "選択中のパターン",
@@ -3675,7 +3671,7 @@
         "exportPhotos": "写真を書き出す",
         "photoBoothHelp": "フォトブースヘルプ"
       },
-      "name": "フォトブース"
+      "name": "Photo Booth"
     },
     "soundboard": {
       "description": "効果音を再生",
@@ -3725,12 +3721,12 @@
     },
     "stickies": {
       "colors": {
-        "blue": "青",
-        "green": "緑",
+        "blue": "ブルー",
+        "green": "グリーン",
         "orange": "オレンジ",
         "pink": "ピンク",
         "purple": "紫",
-        "yellow": "黄色"
+        "yellow": "イエロー"
       },
       "description": "ちょっとした付箋",
       "empty": {
@@ -3971,7 +3967,7 @@
       "alignCenter": "中央揃え",
       "alignLeft": "左揃え",
       "alignRight": "右揃え",
-      "bold": "太字",
+      "bold": "ボールド",
       "bulletList": "箇条書き",
       "description": "シンプルなリッチテキストエディタ",
       "dialogs": {
@@ -3980,7 +3976,7 @@
         "enterANameForYourFile": "ファイル名を入力してください",
         "enterFilenameToSaveOrDeleteItBeforeClosing": "保存するファイル名を入力するか、閉じる前に削除してください。",
         "keepNewDocument": "新規ドキュメントを保持",
-        "saveChanges": "変更を保存",
+        "saveChanges": "変更内容を保存",
         "saveFile": "ファイルを保存",
         "saveYourChangesBeforeClosing": "閉じる前に変更を保存してください。"
       },
@@ -4014,13 +4010,13 @@
           "title": "音声入力"
         }
       },
-      "italic": "斜体",
+      "italic": "イタリック",
       "menu": {
         "aboutTextEdit": "テキストエディットについて",
         "alignCenter": "中央揃え",
         "alignLeft": "左揃え",
         "alignRight": "右揃え",
-        "bold": "太字",
+        "bold": "ボールド",
         "bulletList": "箇条書き",
         "exportAs": "名前を付けて書き出す...",
         "format": "書式",
@@ -4029,14 +4025,14 @@
         "heading3": "見出し3",
         "html": "HTML",
         "importFromDevice": "デバイスから読み込む...",
-        "italic": "斜体",
-        "markdown": "Markdown",
+        "italic": "イタリック",
+        "markdown": "マークダウン",
         "newFile": "新規ファイル",
         "numberedList": "番号付きリスト",
-        "open": "開く...",
+        "open": "開く…",
         "plainText": "標準テキスト",
         "save": "保存",
-        "saveEllipsis": "保存...",
+        "saveEllipsis": "保存…",
         "taskList": "タスクリスト",
         "text": "テキスト",
         "texteditHelp": "テキストエディットのヘルプ",
@@ -4074,7 +4070,7 @@
           "title": "テキスト"
         }
       },
-      "speak": "話す",
+      "speak": "読み上げる",
       "stopSpeech": "音声停止",
       "text": "テキスト",
       "underline": "下線",
@@ -4298,7 +4294,7 @@
         },
         "playMusic": {
           "description": "オーディオファイルをWinampの任意の場所にドラッグするか、プレイリストエディタから追加します",
-          "title": "音楽を再生"
+          "title": "ミュージックを再生"
         },
         "playlist": {
           "description": "キューの管理、トラックの並べ替え、.m3uプレイリストの保存が可能です",
@@ -4374,7 +4370,7 @@
       "enterFullScreen": "フルスクリーンにする",
       "exitFullScreen": "フルスクリーンを解除",
       "logOut": "{{username}}をログアウト…",
-      "login": "ログイン…",
+      "login": "サインイン…",
       "moreApps": "その他のアプリ…",
       "moreDocuments": "その他の書類…",
       "noRecentApps": "最近使ったアプリはありません",
@@ -4406,8 +4402,8 @@
       "creatingAccount": "作成中...",
       "dialogTitle": "ryOSログイン",
       "forgotPassword": "パスワードをお忘れですか？",
-      "logIn": "ログイン",
-      "logOut": "ログアウト",
+      "logIn": "サインイン",
+      "logOut": "サインアウト",
       "logOutDescription": "ログアウトしますか？アカウントからサインアウトされます。",
       "loggingIn": "ログイン中...",
       "loginDescription": "アカウントにログイン",
@@ -4482,7 +4478,7 @@
       "openInGitHub": "GitHubで開く",
       "save": "保存",
       "saveBeforeClosing": "閉じる前に変更を保存してください。",
-      "saveChanges": "変更を保存",
+      "saveChanges": "変更内容を保存",
       "saveFile": "ファイルを保存",
       "share": {
         "by": "による",
@@ -4493,7 +4489,7 @@
         "from": "から",
         "generating": "生成中...",
         "itemTypes": {
-          "app": "アプリ",
+          "app": "App",
           "applet": "アプレット",
           "item": "項目",
           "page": "ページ",
@@ -4581,33 +4577,18 @@
       "openingSharedVideo": "共有ビデオを開いています..."
     },
     "menu": {
-      "aboutFinder": "Finderについて",
       "applications": "アプリケーション",
-      "back": "戻る",
-      "byDate": "日付",
-      "byIcon": "アイコン",
-      "byKind": "種類",
-      "byList": "リスト",
-      "byName": "名前",
-      "bySize": "サイズ",
-      "bySmallIcon": "小さいアイコン",
       "clear": "クリア",
       "close": "閉じる",
       "copy": "コピー",
       "cut": "カット",
       "documents": "書類",
       "edit": "編集",
-      "emptyTrash": "ゴミ箱を空にする...",
       "file": "ファイル",
-      "finderHelp": "Finderヘルプ",
-      "forward": "進む",
       "go": "移動",
       "help": "ヘルプ",
-      "images": "画像",
-      "moveToTrash": "ゴミ箱へ移動",
+      "images": "イメージ",
       "music": "ミュージック",
-      "newFinderWindow": "新規Finderウィンドウ",
-      "newFolder": "新規フォルダ",
       "paste": "ペースト",
       "redo": "やり直す",
       "selectAll": "すべてを選択",
@@ -4674,7 +4655,7 @@
       "fullscreen": "フルスクリーン",
       "maximize": "最大化",
       "maximizeDisabled": "最大化 (無効)",
-      "minimize": "最小化",
+      "minimize": "しまう",
       "minimizeDisabled": "最小化 (無効)"
     }
   },
@@ -4701,7 +4682,7 @@
     "fixLogs": "ログを Cursor エージェントに送信",
     "hideConsole": "コンソールを非表示",
     "live": {
-      "appVersion": "アプリ",
+      "appVersion": "App",
       "average": "平均",
       "bufferedLogs": "{{count}}件バッファ済み",
       "copySnapshot": "環境スナップショットをコピー",
@@ -4776,7 +4757,7 @@
       "italian": "Italiano",
       "japanese": "日本語",
       "korean": "한국어",
-      "portuguese": "Português",
+      "portuguese": "Português (Brasil)",
       "russian": "Русский",
       "spanish": "Español",
       "title": "言語"
@@ -4807,7 +4788,7 @@
     },
     "settings": {
       "language": "言語",
-      "screenSaver": "スクリーンセーバー",
+      "screenSaver": "スクリーンセーバ",
       "sounds": "サウンドと音量",
       "theme": "テーマ",
       "wallpaper": "壁紙"

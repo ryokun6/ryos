@@ -348,7 +348,7 @@
         "lines": "líneas",
         "lyricsContent": "Contenido de las letras",
         "lyricsOffset": "Desplazamiento de letras",
-        "lyricsSource": "Letras",
+        "lyricsSource": "Letra",
         "metadata": "Metadatos",
         "notAvailable": "No disponible",
         "notFound": "Canción no encontrada",
@@ -391,7 +391,9 @@
         "roomsCount_plural": "{{count}} habitaciones",
         "songsCount": "{{count}} canciones",
         "usersCount": "{{count}} usuario",
-        "usersCount_plural": "{{count}} usuarios"
+        "usersCount_plural": "{{count}} usuarios",
+        "redisKeysCount_many": "{{count}} claves",
+        "auditLogCount_many": "{{count}} entradas"
       },
       "tableHeaders": {
         "added": "Añadido",
@@ -417,7 +419,7 @@
         "active": "Activo",
         "admin": "administrador",
         "banned": "Bloqueado",
-        "user": "usuario"
+        "user": "Usuario"
       }
     },
     "applet-viewer": {
@@ -524,9 +526,9 @@
         "html": "HTML",
         "importFromDevice": "Importar desde Dispositivo...",
         "logOut": "Cerrar sesión",
-        "login": "Iniciar sesión...",
+        "login": "Iniciar sesión…",
         "noAppletsOpen": "No hay applets abiertos",
-        "open": "Abrir...",
+        "open": "Abrir…",
         "openAppletStore": "Abrir Tienda de Applets",
         "ryosApp": "App de ryOS",
         "shareApplet": "Compartir Applet...",
@@ -953,9 +955,9 @@
         "saveTranscriptDescription": "Introduce un nombre para tu archivo de transcripción de chat",
         "saveTranscriptTitle": "Guardar Transcripción",
         "searchUsernamePlaceholder": "Buscar nombre de usuario...",
-        "setPasswordButton": "Establecer Contraseña",
+        "setPasswordButton": "Definir contraseña",
         "setPasswordDescription": "Establece una contraseña para habilitar la recuperación de la cuenta. Puedes usar esta contraseña para obtener un nuevo token si pierdes el acceso.",
-        "setPasswordTitle": "Establecer Contraseña"
+        "setPasswordTitle": "Definir contraseña"
       },
       "help": {
         "chatWithRyo": {
@@ -991,21 +993,17 @@
         "clearChat": "Borrar chat",
         "createAccount": "Crear cuenta...",
         "decreaseFontSize": "Disminuir tamaño de fuente",
-        "enableBrowserNotifications": "Habilitar notificaciones del navegador",
         "increaseFontSize": "Aumentar tamaño de fuente",
         "keepTalking": "Seguir hablando",
         "linkToTelegram": "Vincular a Telegram",
         "logOut": "Cerrar sesión",
-        "login": "Iniciar sesión...",
+        "login": "Iniciar sesión…",
         "newChat": "Nuevo chat...",
-        "notificationsBlocked": "Notificaciones bloqueadas – habilítalas en la configuración del navegador",
         "resetFontSize": "Restablecer tamaño de fuente",
         "saveTranscript": "Guardar transcripción...",
         "showRooms": "Mostrar salas",
         "sound": "Sonido",
         "systemNotifications": "Notificaciones del Sistema",
-        "turnOffNotifications": "Desactivar notificaciones",
-        "turnOnNotifications": "Activar notificaciones",
         "typingSynth": "Sintetizador de escritura"
       },
       "messages": {
@@ -1301,10 +1299,10 @@
         "launching": "Iniciando {{appName}}…",
         "launchingApp": "Iniciando aplicación…",
         "listCursorCloudAgentRuns": {
-          "listed": "Listed {{count}} recent run(s).",
-          "loading": "Listing Cursor Cloud agent runs…",
-          "openDashboard": "Open agent in Cursor",
-          "truncatedHint": "(list may be truncated)"
+          "listed": "Ejecuciones recientes mostradas: {{count}}.",
+          "loading": "Mostrando ejecuciones del agente de Cursor Cloud…",
+          "openDashboard": "Abrir agente en Cursor",
+          "truncatedHint": "(la lista puede estar truncada)"
         },
         "listedItems": "Elementos listados",
         "listingApplications": "Listando aplicaciones…",
@@ -1547,7 +1545,7 @@
       },
       "accentDescription": "Tiñe las selecciones, los menús y los controles",
       "accountJoined": "Se unió en {{date}}",
-      "accountMenu": "Account",
+      "accountMenu": "Cuenta",
       "accountsTabs": {
         "accounts": "Cuentas",
         "debug": "Depuración",
@@ -1588,8 +1586,8 @@
         "neverUploaded": "Nunca subido",
         "openSettings": "Ajustes de sincronización…",
         "settings": "Ajustes",
-        "songs": "Música",
-        "stickies": "Notas adhesivas",
+        "songs": "Canciones",
+        "stickies": "Notas Adhesivas",
         "title": "Sincronización en la nube",
         "tvChannels": "Canales de TV",
         "uploading": "Subiendo",
@@ -1698,7 +1696,7 @@
       "dream": "Sueño",
       "dynamicWallpapers": {
         "dayNight": "Día y noche",
-        "lyrics": "Letras",
+        "lyrics": "Letra",
         "nowPlaying": "Reproduciendo ahora",
         "shuffle": "Aleatorio",
         "weather": "Clima"
@@ -1790,7 +1788,7 @@
       "menu": {
         "aboutControlPanels": "Acerca de Paneles de control",
         "aboutControlPanelsForMacosX": "Acerca de Preferencias del Sistema",
-        "app": "Aplicación",
+        "app": "App",
         "controlPanelsHelp": "Ayuda de Paneles de control",
         "controlPanelsHelpForMacosX": "Ayuda de Preferencias del Sistema"
       },
@@ -1853,7 +1851,7 @@
       "resetAllSettingsDescription": "Esto borrará todos los ajustes guardados y restaurará los valores predeterminados",
       "restore": "Restaurar",
       "ryOSAccount": "Cuenta de ryOS",
-      "screenSaver": "Protector de pantalla",
+      "screenSaver": "Salvapantallas",
       "screenSaverDescription": "Se activa después de un período de inactividad",
       "screenSaverExitHint": "Haz clic o pulsa cualquier tecla para salir",
       "screenSaverOptions": {
@@ -1894,11 +1892,11 @@
       "selectAPreset": "Seleccionar un preajuste",
       "selectScreenSaver": "Seleccionar protector de pantalla",
       "sepia": "Sepia",
-      "setPassword": "Establecer contraseña",
+      "setPassword": "Definir contraseña",
       "setPasswordDialog": {
         "description": "Establece una contraseña para habilitar la recuperación de la cuenta. Puedes usar esta contraseña para obtener un nuevo token si pierdes el acceso.",
-        "submitLabel": "Establecer contraseña",
-        "title": "Establecer contraseña"
+        "submitLabel": "Definir contraseña",
+        "title": "Definir contraseña"
       },
       "setup": "Configurar",
       "shaderEffect": "Efecto de sombreador",
@@ -1915,7 +1913,7 @@
         "effects": "Efectos",
         "output": "Salida"
       },
-      "speech": "Voz",
+      "speech": "Habla",
       "speechDescription": "Lee mensajes del asistente y texto seleccionado",
       "speechVolume": "Volumen de voz",
       "startAfter": "Iniciar después de",
@@ -2255,11 +2253,11 @@
         "addToDesktop": "Añadir al Escritorio",
         "date": "Fecha",
         "duplicate": "Duplicar",
-        "emptyTrash": "Vaciar Papelera...",
+        "emptyTrash": "Vaciar papelera…",
         "kind": "Tipo",
-        "moveToTrash": "Mover a la Papelera",
+        "moveToTrash": "Trasladar a la papelera",
         "name": "Nombre",
-        "newFolder": "Nueva Carpeta…",
+        "newFolder": "Nueva carpeta…",
         "noAirDropUsersAvailable": "No hay usuarios cercanos",
         "open": "Abrir",
         "openAirDrop": "Abrir AirDrop",
@@ -2278,11 +2276,11 @@
       "dialogs": {
         "emptyTrash": {
           "description": "¿Está seguro de que desea vaciar la Papelera? Esta acción no se puede deshacer.",
-          "title": "Vaciar Papelera"
+          "title": "Vaciar papelera"
         },
         "newFolder": {
           "description": "Introduzca un nombre para la nueva carpeta:",
-          "title": "Nueva Carpeta"
+          "title": "Nueva carpeta"
         },
         "renameItem": {
           "description": "Introduzca un nuevo nombre para \"{{name}}\"",
@@ -2357,15 +2355,15 @@
         "bySize": "por Tamaño",
         "bySmallIcon": "por icono pequeño",
         "duplicate": "Duplicar",
-        "emptyTrash": "Vaciar papelera...",
+        "emptyTrash": "Vaciar papelera…",
         "finderHelp": "Ayuda de Finder",
         "forward": "Adelante",
         "goUp": "Subir",
         "import": "Importar archivo…",
         "importFromDevice": "Importar desde dispositivo...",
-        "moveToTrash": "Mover a la papelera",
+        "moveToTrash": "Trasladar a la papelera",
         "newFinderWindow": "Nueva ventana del Finder",
-        "newFolder": "Nueva carpeta...",
+        "newFolder": "Nueva carpeta…",
         "newWindow": "Nueva ventana",
         "putBack": "Volver a colocar",
         "rename": "Renombrar...",
@@ -2643,7 +2641,7 @@
         "cycleLyricFont": "Alternar fuente de la letra",
         "cycleLyricLayout": "Alternar diseño de letra",
         "enterFullscreen": "Entrar en pantalla completa",
-        "nextTrack": "Siguiente pista",
+        "nextTrack": "Pista siguiente",
         "playPause": "Reproducir/Pausar",
         "previousTrack": "Pista anterior",
         "select": "Seleccionar",
@@ -2704,7 +2702,7 @@
         "appleMusicSignInFailed": "Error al iniciar sesión",
         "autoUpdateFailed": "Error de Autoactualización",
         "autoUpdatedLibraryAddedSongs": "Biblioteca autoactualizada: se añadió{{newPlural}} {{newCount}} canción{{newPlural}} nueva{{newPlural}} al inicio{{updatedText}}",
-        "autoUpdatedTrackMetadata": "Metadatos de {{count}} pista{{plural}} actualizados automáticamente",
+        "autoUpdatedTrackMetadata": "Metadatos de pistas actualizados automáticamente: {{count}}",
         "clearLibraryDescription": "¿Estás seguro de que quieres vaciar toda tu biblioteca de música? Esta acción no se puede deshacer.",
         "clearLibraryTitle": "Vaciar Biblioteca",
         "errorAdding": "Error al añadir:",
@@ -2720,7 +2718,7 @@
         "libraryExportedSuccessfully": "Biblioteca exportada correctamente",
         "libraryImportedSuccessfully": "Biblioteca importada correctamente",
         "librarySynced": "Biblioteca Sincronizada",
-        "libraryUpToDateWithSongs": "La biblioteca está actualizada con {{count}} canción{{plural}}",
+        "libraryUpToDateWithSongs": "La biblioteca está actualizada. Canciones: {{count}}",
         "libraryUpdated": "Biblioteca Actualizada",
         "listenSessionJoinFailed": "Error al unirse a la sesión",
         "lyricsSearchCurrentSelection": "Selección actual:",
@@ -2854,7 +2852,7 @@
         "libraryAppleMusic": "Apple Music",
         "librarySource": "Biblioteca",
         "libraryYoutube": "Biblioteca de YouTube",
-        "lyrics": "Letras",
+        "lyrics": "Letra",
         "menubarArtistLimit": "Mostrando {{limit}} de {{total}} artistas",
         "menubarTrackLimit": "Mostrando {{limit}} de {{total}} — abre el iPod para ver todo",
         "multi": "Múltiple",
@@ -2917,21 +2915,22 @@
         "off": "Desactivado",
         "on": "Activado",
         "one": "Una",
-        "playlistTrackCount_one": "{{count}} song",
-        "playlistTrackCount_other": "{{count}} songs",
+        "playlistTrackCount_one": "{{count}} canción",
+        "playlistTrackCount_other": "{{count}} canciones",
         "playlists": "Listas de reproducción",
         "radio": "Radio",
         "recentlyAdded": "Añadidas recientemente",
         "repeat": "Repetir",
         "settings": "Ajustes",
         "shuffle": "Aleatorio",
-        "shuffleSongs": "Reproducción aleatoria",
+        "shuffleSongs": "Canciones aleatorias",
         "signedIn": "Sesión iniciada",
         "signedOut": "Sesión cerrada",
         "songs": "Canciones",
         "theme": "Tema",
         "unconfigured": "Sin configurar",
-        "unknownAlbum": "Álbum desconocido"
+        "unknownAlbum": "Álbum desconocido",
+        "playlistTrackCount_many": "{{count}} canciones"
       },
       "musicQuiz": {
         "correct": "¡Correcto!",
@@ -3127,7 +3126,7 @@
       "help": {
         "directions": {
           "description": "Desde la tarjeta del lugar, abre las indicaciones de conducción en Apple Maps: se abre en una pestaña nueva para mantener ryOS abierto (no hay rutas dentro del mapa todavía).",
-          "title": "Indicaciones"
+          "title": "Ruta"
         },
         "dropPins": {
           "description": "Elige un resultado de la lista para soltar un marcador y volver a centrar el mapa en él",
@@ -3166,7 +3165,7 @@
       "placeCard": {
         "addFavorite": "Añadir a Favoritos",
         "close": "Cerrar tarjeta de lugar",
-        "directions": "Indicaciones",
+        "directions": "Ruta",
         "favorite": "Favorito",
         "favorited": "En favoritos",
         "home": "Casa",
@@ -3224,7 +3223,7 @@
         "theater": "Teatro",
         "university": "Universidad",
         "winery": "Bodega",
-        "zoo": "Zoológico"
+        "zoo": "Zoo"
       },
       "searchButton": "Buscar",
       "searchFailed": "Error en la búsqueda",
@@ -3351,10 +3350,10 @@
         "filters": "Filtros",
         "importFromDevice": "Importar desde dispositivo...",
         "newFile": "Nuevo archivo",
-        "open": "Abrir...",
+        "open": "Abrir…",
         "paintHelp": "Ayuda de Paint",
         "save": "Guardar",
-        "saveEllipsis": "Guardar..."
+        "saveEllipsis": "Guardar…"
       },
       "name": "Pintar",
       "selectedPattern": "Patrón seleccionado",
@@ -3675,7 +3674,7 @@
         "exportPhotos": "Exportar fotos",
         "photoBoothHelp": "Ayuda de Cabina de fotos"
       },
-      "name": "Cabina de fotos"
+      "name": "Photo Booth"
     },
     "soundboard": {
       "description": "Reproducir efectos de sonido",
@@ -3774,9 +3773,9 @@
         "note": "Nota",
         "syncStickies": "Sincronizar Notas Adhesivas"
       },
-      "name": "Notas rápidas",
+      "name": "Notas Adhesivas",
       "placeholder": "Escribir una nota...",
-      "title": "Notas rápidas"
+      "title": "Notas Adhesivas"
     },
     "synth": {
       "addPreset": "AÑADIR PREAJUSTE",
@@ -3862,7 +3861,7 @@
     },
     "terminal": {
       "commands": {
-        "about": "Acerca del terminal",
+        "about": "Acerca de Terminal",
         "ai": "Entrar en modo de chat de IA con ryo",
         "cat": "Ver contenido del archivo",
         "cd": "Cambiar directorio",
@@ -4033,16 +4032,16 @@
         "markdown": "Markdown",
         "newFile": "Nuevo archivo",
         "numberedList": "Lista numerada",
-        "open": "Abrir...",
+        "open": "Abrir…",
         "plainText": "Texto sin formato",
         "save": "Guardar",
-        "saveEllipsis": "Guardar...",
+        "saveEllipsis": "Guardar…",
         "taskList": "Lista de tareas",
         "text": "Texto",
         "texteditHelp": "Ayuda de TextEdit",
         "underline": "Subrayado"
       },
-      "name": "Editor de texto",
+      "name": "TextEdit",
       "numberedList": "Lista numerada",
       "slashCommands": {
         "bulletList": {
@@ -4185,7 +4184,8 @@
         "importFailed": "No se pudieron importar los canales: el archivo puede no ser válido",
         "importSuccess_one": "Se importó {{count}} canal ({{skipped}} omitido)",
         "importSuccess_other": "Se importaron {{count}} canales ({{skipped}} omitidos)",
-        "resetSuccess": "Canales restablecidos a los predeterminados"
+        "resetSuccess": "Canales restablecidos a los predeterminados",
+        "importSuccess_many": "Se importaron {{count}} canales ({{skipped}} omitidos)"
       },
       "youtubePaste": {
         "added": "Se añadió «{{title}}» a este canal",
@@ -4374,7 +4374,7 @@
       "enterFullScreen": "Entrar en pantalla completa",
       "exitFullScreen": "Salir de pantalla completa",
       "logOut": "Cerrar Sesión de {{username}}…",
-      "login": "Iniciar Sesión…",
+      "login": "Iniciar sesión…",
       "moreApps": "Más Apps…",
       "moreDocuments": "Más Documentos…",
       "noRecentApps": "No hay apps recientes",
@@ -4520,7 +4520,7 @@
       "folderContents": "Contenido de la Carpeta",
       "hide": "Ocultar",
       "minimized": "(minimizado)",
-      "newWindow": "Nueva Ventana",
+      "newWindow": "Nueva ventana",
       "open": "Abrir",
       "quit": "Salir",
       "removeFromDock": "Quitar del Dock",
@@ -4596,7 +4596,7 @@
       "paste": "Pegar",
       "redo": "Rehacer",
       "selectAll": "Seleccionar todo",
-      "settings": "Configuración",
+      "settings": "Ajustes",
       "shareApp": "Compartir aplicación...",
       "sites": "Sitios",
       "trash": "Papelera",
@@ -4615,7 +4615,7 @@
       "aboutThisComputer": "Acerca de Este Equipo",
       "run": "Ejecutar...",
       "ryos98": "98",
-      "ryosProfessional": "Professional",
+      "ryosProfessional": "Profesional",
       "start": "Inicio"
     },
     "swipeInstructions": {
@@ -4686,7 +4686,7 @@
     "fixLogs": "Enviar registros al agente Cursor",
     "hideConsole": "Ocultar consola",
     "live": {
-      "appVersion": "Aplicación",
+      "appVersion": "App",
       "average": "Promedio",
       "bufferedLogs": "{{count}} en búfer",
       "copySnapshot": "Copiar instantánea del entorno",
@@ -4761,7 +4761,7 @@
       "italian": "Italiano",
       "japanese": "日本語",
       "korean": "한국어",
-      "portuguese": "Português",
+      "portuguese": "Português (Brasil)",
       "russian": "Русский",
       "spanish": "Español",
       "title": "Idioma"
@@ -4792,7 +4792,7 @@
     },
     "settings": {
       "language": "Idioma",
-      "screenSaver": "Protector de pantalla",
+      "screenSaver": "Salvapantallas",
       "sounds": "Sonidos y volumen",
       "theme": "Tema",
       "wallpaper": "Fondo de pantalla"
