@@ -2,15 +2,18 @@
  * Console capture buffer.
  *
  * Patches the global `console` methods (and global error handlers) so that log
- * output is mirrored into an in-memory ring buffer. The captured entries power
- * the in-app debug console overlay (see `DebugLogOverlay`), which lets users
- * inspect and copy logs without opening dev tools — useful on mobile/desktop
- * shells where the browser console is not reachable.
+ * output can be mirrored into an in-memory ring buffer while Debug Mode is on.
+ * The captured entries power the in-app debug console overlay (see
+ * `DebugLogOverlay`), which lets users inspect and copy logs without opening
+ * dev tools — useful on mobile/desktop shells where the browser console is not
+ * reachable.
  *
  * The original console behavior is always preserved (we call through), so this
  * is non-destructive. Notifications to subscribers are batched on a microtask
  * to avoid render storms when something logs in a tight loop.
  */
+
+import { DEBUG_FLAG_KEY } from "./debug";
 
 export type ConsoleLogLevel = "log" | "info" | "warn" | "error" | "debug";
 
@@ -29,9 +32,21 @@ let buffer: ConsoleLogEntry[] = [];
 let snapshot: ConsoleLogEntry[] = buffer;
 let nextId = 1;
 let installed = false;
+let captureEnabled = readInitialCaptureEnabled();
 
 const listeners = new Set<() => void>();
 let flushScheduled = false;
+
+function readInitialCaptureEnabled(): boolean {
+  try {
+    return (
+      typeof localStorage !== "undefined" &&
+      localStorage.getItem(DEBUG_FLAG_KEY) === "1"
+    );
+  } catch {
+    return false;
+  }
+}
 
 function scheduleFlush(): void {
   if (flushScheduled) return;
@@ -80,12 +95,29 @@ function formatArg(arg: unknown): string {
 }
 
 function pushEntry(level: ConsoleLogLevel, args: unknown[]): void {
+  if (!captureEnabled) return;
   const text = args.map(formatArg).join(" ");
   buffer.push({ id: nextId++, level, timestamp: Date.now(), text });
   if (buffer.length > MAX_ENTRIES) {
     buffer = buffer.slice(buffer.length - MAX_ENTRIES);
   }
   scheduleFlush();
+}
+
+/**
+ * Enable or disable buffering. Console methods stay patched once installed so
+ * early boot errors keep flowing through the original console path either way.
+ */
+export function setConsoleCaptureEnabled(enabled: boolean): void {
+  captureEnabled = enabled;
+  if (!enabled) {
+    clearConsoleCapture();
+  }
+}
+
+/** Exposed for tests and wiring assertions. */
+export function isConsoleCaptureEnabled(): boolean {
+  return captureEnabled;
 }
 
 /**

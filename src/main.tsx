@@ -18,8 +18,8 @@ import {
 } from "./utils/reloadGuard";
 import { installConsoleCapture } from "./utils/consoleCapture";
 
-// Mirror console output into the in-app debug console buffer as early as
-// possible so logs are available when Debug Mode's console overlay is opened.
+// Patch console output as early as possible; buffering is enabled only when
+// Debug Mode is on so normal sessions do not retain an in-memory log history.
 installConsoleCapture();
 
 // Prime React 19 resource hints before anything else runs

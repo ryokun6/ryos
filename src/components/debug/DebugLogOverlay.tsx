@@ -18,7 +18,6 @@ import {
   clearConsoleCapture,
   formatConsoleEntriesForCopy,
   getConsoleCaptureSnapshot,
-  installConsoleCapture,
   subscribeConsoleCapture,
   type ConsoleLogEntry,
   type ConsoleLogLevel,
@@ -87,7 +86,7 @@ function findFirstVisibleIndex(
 
 /**
  * Floating, togglable console overlay shown only while Debug Mode is enabled
- * (Control Panels → System). Mirrors captured `console.*` output into an
+ * (Control Panels → Accounts → Debug). Mirrors captured `console.*` output into an
  * in-app panel with a one-tap copy button so logs can be inspected on devices
  * where the browser dev tools are unavailable.
  */
@@ -105,11 +104,6 @@ export function DebugLogOverlay() {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Ensure capture is running whenever the overlay is mounted (debug on).
-  useEffect(() => {
-    installConsoleCapture();
-  }, []);
 
   const entries = useSyncExternalStore(
     subscribeConsoleCapture,

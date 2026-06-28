@@ -4,6 +4,7 @@ import {
   formatConsoleEntriesForCopy,
   getConsoleCaptureSnapshot,
   installConsoleCapture,
+  setConsoleCaptureEnabled,
   subscribeConsoleCapture,
 } from "../src/utils/consoleCapture";
 
@@ -13,6 +14,7 @@ const flush = () => new Promise<void>((r) => queueMicrotask(() => r()));
 describe("consoleCapture", () => {
   beforeEach(async () => {
     installConsoleCapture();
+    setConsoleCaptureEnabled(true);
     clearConsoleCapture();
     await flush();
   });
@@ -73,5 +75,21 @@ describe("consoleCapture", () => {
     await flush();
     const text = formatConsoleEntriesForCopy(getConsoleCaptureSnapshot());
     expect(text).toContain("[LOG] copy line");
+  });
+
+  test("skips buffering while capture is disabled", async () => {
+    setConsoleCaptureEnabled(false);
+    await flush();
+
+    console.log("not buffered");
+    await flush();
+
+    expect(getConsoleCaptureSnapshot()).toHaveLength(0);
+
+    setConsoleCaptureEnabled(true);
+    console.log("buffered again");
+    await flush();
+
+    expect(getConsoleCaptureSnapshot().at(-1)?.text).toBe("buffered again");
   });
 });
